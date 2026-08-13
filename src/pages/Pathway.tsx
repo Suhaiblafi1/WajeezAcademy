@@ -138,10 +138,10 @@ export default function PathwayPage() {
   const { id } = useParams();
   const pathway = pathwayById(id ?? "");
   const [user, setUser] = useState<string | null>(readUserName);
-  const [checkout, setCheckout] = useState<{ title: string; amount: number; kind: "pathway" | "course"; courseId?: string } | null>(null);
-  const [purchased, setPurchased] = useState<{ kind: "pathway" | "course"; courseId?: string } | null>(null);
+  const [checkout, setCheckout] = useState<{ title: string; amount: number; kind: "pathway" | "course" | "courses"; courseId?: string; courseIds?: string[] } | null>(null);
+  const [purchased, setPurchased] = useState<{ kind: "pathway" | "course" | "courses"; courseId?: string } | null>(null);
   const [modalCourse, setModalCourse] = useState<Course | null>(null);
-  const [singleCourseId, setSingleCourseId] = useState<string | null>(null);
+  const [pickedIds, setPickedIds] = useState<string[]>([]);
 
   /* تخصيصه المحفوظ من صفحة التشخيص */
   const custom = useMemo(() => {
@@ -201,6 +201,13 @@ export default function PathwayPage() {
 
   const advisor = ADVISORS[pathway.id.split("-")[1]] ?? ADVISORS.FND;
   const waText = encodeURIComponent(`مرحبا ${advisor.name}، أكملت تشخيص وجيز ورُشّح لي مسار «${pathway.name}» وأريد استشارتك قبل البدء.`);
+
+  /* اختيار الدورات المتعدد — دورة واحدة أو عدة دورات بحرية كاملة */
+  const buyableCourses = pathwayCoursesList.filter((c) => c.id !== custom?.giftId);
+  const picked = buyableCourses.filter((c) => pickedIds.includes(c.id));
+  const pickedTotal = picked.reduce((s, c) => s + coursePriceOf(c), 0);
+  const togglePick = (cid: string) =>
+    setPickedIds(pickedIds.includes(cid) ? pickedIds.filter((x) => x !== cid) : [...pickedIds, cid]);
   const totalWeeks = pathwayCoursesList.reduce((s, c) => s + c.weeks, 0);
 
   return (
@@ -425,16 +432,16 @@ export default function PathwayPage() {
               >
                 ادخل منصة الطالب الآن
               </Link>
-              {purchased.kind === "course" && (
+              {purchased.kind !== "pathway" && (
                 <div className="mx-auto mt-6 max-w-lg rounded-2xl border border-[#FABC05]/40 bg-[#FABC05]/10 p-5">
                   <p className="flex items-center justify-center gap-2 font-black text-[#FABC05]">
                     <TrendingUp className="h-5 w-5" />
                     خطوتك التالية الأذكى: أكمل المسار كاملا
                   </p>
                   <p className="mt-2 text-sm leading-relaxed text-white/70">
-                    اشتريت دورة — ممتاز. لكن الدورة وحدها خطوة، والمسار رحلة.
+                    اشتريت {purchased.kind === "courses" ? "دورات مختارة" : "دورة"} — ممتاز. لكن الدورات المتفرقة خطوات، والمسار رحلة مكتملة.
                     أكمل «{pathway.name}» كاملا بـ{pathwayTotal}$ وسنخصم لك ما دفعته للتو —
-                    فتصبح دورتك عمليا مجانية.
+                    فتصبح مشترياتك الأولى عمليا مجانية.
                   </p>
                   <Button
                     onClick={() => setCheckout({ title: `إكمال مسار «${pathway.name}» كاملا`, amount: pathwayTotal, kind: "pathway" })}
@@ -452,37 +459,81 @@ export default function PathwayPage() {
             <div className="story-fade mt-10 overflow-hidden rounded-3xl border border-[#FABC05]/40 bg-gradient-to-b from-[#2A2108]/60 to-transparent p-6 md:p-8">
               <h3 className="text-xl font-black text-[#FABC05]">اشترِ بالطريقة التي تناسبك</h3>
               <div className="mt-6 grid gap-5 md:grid-cols-2">
-                {/* دورة واحدة */}
+                {/* دورة أو أكثر — اختيار حر */}
                 <div className="flex flex-col rounded-2xl border border-white/15 bg-black/30 p-5">
-                  <p className="font-black text-sm">دورة واحدة من المسار</p>
-                  <p className="mt-1 text-xs text-white/50">تعرف بالضبط ما تحتاجه؟ اختر دورته وابدأ اليوم</p>
-                  <select
-                    value={singleCourseId ?? pathwayCoursesList[0]?.id}
-                    onChange={(e) => setSingleCourseId(e.target.value)}
-                    className="mt-4 cursor-pointer rounded-xl border border-white/15 bg-[#0D0D0D] px-3 py-2.5 text-sm text-white focus:border-[#6EC7D1] focus:outline-none"
-                  >
-                    {pathwayCoursesList.filter((c) => c.id !== custom?.giftId).map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                  {(() => {
-                    const sc = pathwayCoursesList.find((c) => c.id === (singleCourseId ?? pathwayCoursesList[0]?.id));
-                    return sc ? (
-                      <div className="mt-3 flex items-end gap-2">
-                        <span className="text-3xl font-black text-white">{coursePriceOf(sc)}$</span>
-                        <span className="mb-1 text-xs text-white/45">{sc.weeks} {sc.weeks === 1 ? "أسبوع" : "أسابيع"} · {courseTrainer(sc).name}</span>
-                      </div>
-                    ) : null;
-                  })()}
+                  <p className="font-black text-sm">دورة أو أكثر من المسار</p>
+                  <p className="mt-1 text-xs text-white/50">اختر ما تحتاجه بالضبط — دورة واحدة أو عدة دورات — وادفع مجموعها فقط</p>
+                  <div className="mt-4 space-y-2">
+                    {buyableCourses.map((c) => {
+                      const on = pickedIds.includes(c.id);
+                      return (
+                        <button
+                          key={c.id}
+                          onClick={() => togglePick(c.id)}
+                          aria-pressed={on}
+                          className={`flex w-full items-center justify-between gap-3 rounded-xl border px-4 py-3 text-right transition ${
+                            on
+                              ? "border-[#38A7B4] bg-[#38A7B4]/15"
+                              : "border-white/10 bg-white/[0.03] hover:border-[#38A7B4]/50"
+                          }`}
+                        >
+                          <span className="flex items-center gap-3">
+                            <span
+                              className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border transition ${
+                                on ? "border-[#38A7B4] bg-[#38A7B4] text-[#08272B]" : "border-white/25 text-transparent"
+                              }`}
+                            >
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                            </span>
+                            <span>
+                              <span className="block text-sm font-bold leading-snug">{c.name}</span>
+                              <span className="text-[11px] text-white/45">
+                                {c.weeks} {c.weeks === 1 ? "أسبوع" : "أسابيع"} · {courseTrainer(c).name}
+                              </span>
+                            </span>
+                          </span>
+                          <span className="shrink-0 text-sm font-black text-white/85">{coursePriceOf(c)}$</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* المجموع الحي والتلميح الذكي */}
+                  {picked.length > 0 && (
+                    <div className="mt-4 flex items-end justify-between gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3">
+                      <span className="text-xs text-white/55">
+                        اخترت {picked.length === 1 ? "دورة واحدة" : `${picked.length} دورات`} من {buyableCourses.length}
+                      </span>
+                      <span className="text-2xl font-black text-white">{pickedTotal}$</span>
+                    </div>
+                  )}
+                  {picked.length > 0 && pickedTotal >= pathwayTotal && (
+                    <p className="mt-2 rounded-xl border border-[#FABC05]/40 bg-[#FABC05]/10 px-4 py-2.5 text-[11px] font-semibold leading-relaxed text-[#FABC05]">
+                      انتبه — مجموع مختاراتك {pickedTotal}$ {pickedTotal > pathwayTotal ? "تجاوز" : "ساوى"} سعر المسار كاملا {pathwayTotal}$!
+                      المسار الكامل أوفر لك ويشمل التشخيص والمتابعة ودورة إضافية هدية.
+                    </p>
+                  )}
                   <Button
-                    onClick={() => {
-                      const sc = pathwayCoursesList.find((c) => c.id === (singleCourseId ?? pathwayCoursesList[0]?.id));
-                      if (sc) setCheckout({ title: `دورة «${sc.name}» من مسار ${pathway.name}`, amount: coursePriceOf(sc), kind: "course", courseId: sc.id });
-                    }}
+                    onClick={() =>
+                      setCheckout({
+                        title:
+                          picked.length === 1
+                            ? `دورة «${picked[0].name}» من مسار ${pathway.name}`
+                            : `${picked.length} دورات مختارة من مسار ${pathway.name}`,
+                        amount: pickedTotal,
+                        kind: picked.length === 1 ? "course" : "courses",
+                        courseIds: picked.map((c) => c.id),
+                      })
+                    }
+                    disabled={picked.length === 0}
                     variant="outline"
-                    className="mt-4 h-11 rounded-full border-[#38A7B4]/60 bg-transparent font-black text-[#6EC7D1] hover:bg-[#38A7B4]/10 hover:text-[#6EC7D1]"
+                    className="mt-4 h-11 rounded-full border-[#38A7B4]/60 bg-transparent font-black text-[#6EC7D1] hover:bg-[#38A7B4]/10 hover:text-[#6EC7D1] disabled:opacity-40"
                   >
-                    اشترِ هذه الدورة
+                    {picked.length === 0
+                      ? "اختر دورة واحدة على الأقل"
+                      : picked.length === 1
+                        ? "اشترِ الدورة المختارة"
+                        : `اشترِ الدورات المختارة (${picked.length})`}
                   </Button>
                 </div>
                 {/* المسار كاملا */}
@@ -550,7 +601,7 @@ export default function PathwayPage() {
             grantEnrollment({
               pathwayId: pathway.id,
               pathwayName: pathway.name,
-              courseIds,
+              courseIds: checkout.kind === "pathway" ? courseIds : (checkout.courseIds ?? courseIds),
               giftId: custom?.giftId ?? null,
               kind: checkout.kind,
               amount: checkout.amount,

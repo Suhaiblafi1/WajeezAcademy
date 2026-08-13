@@ -16,7 +16,7 @@ export interface Enrollment {
   pathwayName: string;
   courseIds: string[];
   giftId?: string | null;
-  kind: "pathway" | "course";
+  kind: "pathway" | "course" | "courses";
   amount: number;
   purchasedAt: number;
   /** مرجع الطلب — عند الربط الحقيقي يصبح payment_intent / invoice id */
