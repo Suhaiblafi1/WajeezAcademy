@@ -1,22 +1,41 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router";
-import { GraduationCap, LayoutDashboard, Route as RouteIcon, Trophy, Award, Lock, Eye, LogOut } from "lucide-react";
+import { GraduationCap, LayoutDashboard, Route as RouteIcon, Trophy, Award, Lock, Eye, LogOut, Bell, CheckCheck } from "lucide-react";
 import { canAccessPortal, enablePreview, getEnrollment, isOwnerUnlocked, unlockOwner } from "@/services/access";
 import { signOut } from "@/services/auth";
-import { readUserName } from "@/data/student";
+import { loadPortal, readUserName, savePortal, type PortalNotification } from "@/data/student";
+import { pathways } from "@/data/pathways";
+import { pathwayCourses } from "@/data/courses";
 
-/** إطار بوابة الطالب: شريط علوي + تنقل + حارس الوصول (دفع سابق أو معاينة تجريبية) */
+/** إطار بوابة الطالب: شريط علوي + تنقل + إشعارات + حارس الوصول (دفع سابق أو معاينة تجريبية) */
 export default function PortalLayout({ children, title }: { children: React.ReactNode; title: string }) {
   const [allowed, setAllowed] = useState<boolean | null>(null);
+  const [bellOpen, setBellOpen] = useState(false);
+  const [notifs, setNotifs] = useState<PortalNotification[]>([]);
   const navigate = useNavigate();
   const user = readUserName();
   const enrollment = getEnrollment();
+  const pathwayId = enrollment?.pathwayId ?? pathways.find((p) => (pathwayCourses[p.id] ?? []).length >= 4)?.id ?? "";
 
   useEffect(() => {
     /* فتح علم المالك مرة واحدة عبر ?preview=owner في العنوان */
     if (new URLSearchParams(window.location.search).get("preview") === "owner") unlockOwner();
     setAllowed(canAccessPortal());
   }, []);
+
+  /* تحميل آخر الإشعارات بعد السماح بالوصول */
+  useEffect(() => {
+    if (allowed && pathwayId) setNotifs(loadPortal(pathwayId).notifications.slice(0, 6));
+  }, [allowed, pathwayId]);
+
+  const unreadCount = notifs.filter((n) => !n.read).length;
+  const markAllRead = () => {
+    if (!pathwayId) return;
+    const s = loadPortal(pathwayId);
+    s.notifications = s.notifications.map((n) => ({ ...n, read: true }));
+    savePortal(s);
+    setNotifs(s.notifications.slice(0, 6));
+  };
 
   if (allowed === null) return null;
 
@@ -81,6 +100,38 @@ export default function PortalLayout({ children, title }: { children: React.Reac
             ))}
           </nav>
           <div className="flex items-center gap-2 text-xs text-white/55">
+            {/* جرس الإشعارات */}
+            <div className="relative">
+              <button
+                onClick={() => setBellOpen((v) => !v)}
+                aria-label="الإشعارات"
+                className="relative grid h-8 w-8 cursor-pointer place-items-center rounded-full border border-white/10 text-white/45 transition hover:border-[#6EC7D1]/50 hover:text-[#6EC7D1]"
+              >
+                <Bell className="h-3.5 w-3.5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -left-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-[#FABC05] px-1 text-[9px] font-black text-[#0D0D0D]">{unreadCount}</span>
+                )}
+              </button>
+              {bellOpen && (
+                <>
+                  <button aria-label="إغلاق الإشعارات" onClick={() => setBellOpen(false)} className="fixed inset-0 z-40 cursor-default" />
+                  <div className="absolute left-0 top-10 z-50 w-80 max-w-[85vw] rounded-2xl border border-white/10 bg-[#141414] p-3 shadow-2xl">
+                    <div className="flex items-center justify-between px-1 pb-2">
+                      <p className="text-xs font-black text-white/80">الإشعارات</p>
+                      <button onClick={markAllRead} className="flex cursor-pointer items-center gap-1 text-[10px] font-bold text-[#6EC7D1] transition hover:text-white">
+                        <CheckCheck className="h-3 w-3" /> تعليم الكل كمقروء
+                      </button>
+                    </div>
+                    <div className="max-h-72 space-y-1.5 overflow-y-auto">
+                      {notifs.length === 0 && <p className="px-2 py-6 text-center text-[11px] text-white/35">لا إشعارات بعد</p>}
+                      {notifs.map((n) => (
+                        <p key={n.id} className={`rounded-xl border px-3 py-2 text-[11px] leading-5 ${n.read ? "border-white/5 text-white/40" : "border-[#38A7B4]/25 bg-[#38A7B4]/5 text-white/75"}`}>{n.text}</p>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
             <GraduationCap className="h-4 w-4 text-[#6EC7D1]" />
             <span className="max-w-[110px] truncate">{user}</span>
             <button

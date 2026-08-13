@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router";
 import {
-  ArrowRight, Award, BookOpen, CheckCircle2, ClipboardList, FileUp,
+  ArrowLeft, ArrowRight, Award, BookOpen, CheckCircle2, ClipboardList, FileUp,
   HelpCircle, Lock, MessageSquare, Send, Upload, Video, XCircle,
 } from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import VideoPlayer from "@/components/VideoPlayer";
+import BookSummaryCard from "@/components/BookSummaryCard";
 import { getEnrollment } from "@/services/access";
 import { wajeezBooks, type BookSummary } from "@/services/wajeezBooks";
 import { zoom, type ZoomJoinInfo } from "@/services/zoom";
@@ -147,6 +148,11 @@ export default function CourseView() {
               <h3 className="flex items-center gap-2 font-black"><Video className="h-4 w-4 text-[#6EC7D1]" /> {lesson.title}</h3>
               <span className="text-[11px] text-white/40">{lesson.minutes} د · {lesson.kind === "video" ? "فيديو" : "نشاط تطبيقي"}</span>
             </div>
+            <p className="mt-1.5 text-xs leading-6 text-white/50">
+              {lesson.kind === "activity"
+                ? `نشاط تطبيقي: طبّق «${lesson.title}» على حالة من واقعك ووثّق النتيجة — سترفقها في واجب الدورة.`
+                : `درس مرئي يشرح «${lesson.title}» خطوة بخطوة مع أمثلة من واقع العمل.`}
+            </p>
             <div className="mt-4">
               <VideoPlayer
                 key={lesson.id}
@@ -177,6 +183,21 @@ export default function CourseView() {
                 );
               })}
             </div>
+            {/* الانتقال التلقائي للدرس التالي عند اكتمال الحالي */}
+            {lessonPct >= 90 && activeLesson < lessons.length - 1 && (
+              <button
+                onClick={() => setActiveLesson(activeLesson + 1)}
+                className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-[#38A7B4] py-3 text-sm font-black text-[#08272B] transition hover:bg-[#6EC7D1]"
+              >
+                الدرس التالي: {lessons[activeLesson + 1].title}
+                <ArrowLeft className="h-4 w-4" />
+              </button>
+            )}
+            {lessonPct >= 90 && activeLesson === lessons.length - 1 && !progress.quiz.passed && (
+              <p className="mt-4 flex items-center justify-center gap-2 rounded-full border border-[#FABC05]/40 bg-[#FABC05]/5 py-3 text-sm font-bold text-[#FABC05]">
+                <CheckCircle2 className="h-4 w-4" /> أنهيت كل الدروس — اختبار الدورة بانتظارك بالأسفل
+              </p>
+            )}
           </section>
 
           {/* الاختبار النهائي */}
@@ -361,26 +382,19 @@ export default function CourseView() {
           {/* كتب وجيز */}
           <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
             <h3 className="flex items-center gap-2 text-sm font-black"><BookOpen className="h-4 w-4 text-[#6EC7D1]" /> ملخصات كتب وجيز لهذه الدورة</h3>
-            <p className="mt-1.5 text-[11px] text-white/45">اسمع الملخص ثم اختبر نفسك فيه — جزء من إكمالك.</p>
-            <div className="mt-4 space-y-3">
-              {books.map((b) => {
-                const done = progress.bookQuiz[b.id]?.passed;
-                return (
-                  <div key={b.id} className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                    <p className="text-sm font-bold">{b.title}</p>
-                    <p className="mt-1 text-[11px] text-white/45">{b.author} · استماع {b.minutes} دقيقة · {b.quizQuestions} أسئلة</p>
-                    <button
-                      onClick={() => update((s) => { s.courses[course.id].bookQuiz[b.id] = { passed: true, score: 100 }; })}
-                      disabled={!!done}
-                      className={`mt-3 w-full cursor-pointer rounded-full py-2 text-xs font-black transition disabled:cursor-default ${
-                        done ? "bg-[#38A7B4]/20 text-[#6EC7D1]" : "bg-[#38A7B4] text-[#08272B] hover:bg-[#6EC7D1]"
-                      }`}
-                    >
-                      {done ? "اجتزت اختبار الملخص ✓" : "اسمع ثم اختبر نفسك"}
-                    </button>
-                  </div>
-                );
-              })}
+            <p className="mt-1.5 text-[11px] leading-5 text-white/45">اسمع الملخص كاملا ثم اجتز اختباره القصير — يُوثق في ملف مهاراتك.</p>
+            <div className="mt-4 space-y-4">
+              {books.map((b) => (
+                <BookSummaryCard
+                  key={b.id}
+                  book={b}
+                  saved={progress.bookQuiz[b.id]}
+                  onPass={(score) => update((s) => {
+                    s.courses[course.id].bookQuiz[b.id] = { passed: true, score };
+                    s.notifications.unshift({ id: `n-${Date.now()}`, text: `أُضيف ملخص «${b.title}» لملفك بدرجة ${score}%`, kind: "content", read: false });
+                  })}
+                />
+              ))}
             </div>
           </section>
 

@@ -51,7 +51,7 @@ export default function StudentDashboard() {
   const totalCourses = (pathwayCourses[pathwayId] ?? []).length;
 
   return (
-    <PortalLayout title={`أهلا ${user} — لوحتك التعليمية`}>
+    <PortalLayout title={`${new Date().getHours() < 12 ? "صباح الخير" : new Date().getHours() < 17 ? "طاب يومك" : "مساء الخير"} يا ${user.split(" ")[0]}`}>
       {isPreview() && (
         <p className="mb-5 rounded-xl border border-dashed border-[#FABC05]/40 bg-[#FABC05]/5 px-4 py-2 text-center text-xs text-[#FABC05]">
           وضع المعاينة التجريبية — بيانات محاكاة لمسار «{pathway?.name}»
@@ -68,9 +68,20 @@ export default function StudentDashboard() {
               {completedCount} من {totalCourses} دورات مكتملة · {pathway?.weeklyHours} أسبوعيا
             </p>
           </div>
-          <div className="text-left">
-            <p className="text-4xl font-black text-[#6EC7D1]">{pct}%</p>
-            <p className="text-[11px] text-white/45">من رحلتك</p>
+          <div className="relative h-24 w-24 shrink-0">
+            <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90" aria-hidden="true">
+              <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="9" />
+              <circle
+                cx="50" cy="50" r="42" fill="none" stroke="#38A7B4" strokeWidth="9" strokeLinecap="round"
+                strokeDasharray={2 * Math.PI * 42}
+                strokeDashoffset={2 * Math.PI * 42 * (1 - pct / 100)}
+                className="transition-all duration-700"
+              />
+            </svg>
+            <span className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-xl font-black text-[#6EC7D1]">{pct}%</span>
+              <span className="text-[9px] text-white/40">من رحلتك</span>
+            </span>
           </div>
         </div>
         <div className="mt-4 h-3 overflow-hidden rounded-full bg-white/10">
