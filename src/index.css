@@ -1,0 +1,114 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Wajeez dark identity */
+    --background: 180 9% 5%;          /* #0D0D0D-ish */
+    --foreground: 0 0% 98%;
+    --card: 184 17% 8%;               /* #1B2729-ish */
+    --card-foreground: 0 0% 98%;
+    --popover: 184 17% 8%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 186 52% 43%;           /* #38A7B4 wajeez teal */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 184 17% 12%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 184 17% 12%;
+    --muted-foreground: 185 10% 65%;
+    --accent: 41 96% 50%;             /* #FABC05 wajeez amber */
+    --accent-foreground: 180 9% 5%;
+    --destructive: 0 62.8% 45%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 184 14% 16%;
+    --input: 184 14% 16%;
+    --ring: 186 52% 43%;
+    --radius: 1rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: "IBM Plex Sans Arabic", "Neo Sans Arabic", system-ui, sans-serif;
+  }
+  ::selection {
+    background: hsl(var(--primary) / 0.35);
+  }
+}
+
+@layer utilities {
+  .text-teal {
+    color: #38a7b4;
+  }
+  .text-teal-light {
+    color: #6ec7d1;
+  }
+  .text-amber-brand {
+    color: #fabc05;
+  }
+  .bg-teal {
+    background-color: #38a7b4;
+  }
+  .bg-teal-deep {
+    background-color: #247b84;
+  }
+  .border-teal {
+    border-color: #38a7b4;
+  }
+
+  /* entrance animations */
+  .reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .reveal.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  @keyframes float-slow {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-16px); }
+  }
+  .animate-float-slow {
+    animation: float-slow 7s ease-in-out infinite;
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% { opacity: 0.45; }
+    50% { opacity: 0.9; }
+  }
+  .animate-pulse-glow {
+    animation: pulse-glow 6s ease-in-out infinite;
+  }
+
+  @keyframes dash-move {
+    to { stroke-dashoffset: -24; }
+  }
+
+  .story-fade {
+    animation: story-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  @keyframes story-in {
+    from { opacity: 0; transform: translateY(18px) scale(0.985); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
