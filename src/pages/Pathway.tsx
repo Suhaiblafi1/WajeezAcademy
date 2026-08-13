@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
 import {
   ArrowRight,
@@ -19,13 +19,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import AuthGate from "@/components/AuthGate";
+import AdvisorContact from "@/components/AdvisorContact";
 import CourseModal from "@/components/CourseModal";
 import Modal from "@/components/Modal";
 import { pathwayById } from "@/data/pathways";
-import { courseById, pathwayCourses, coursePriceOf, pathwayPriceFor, pathwayTrainers, courseTrainer, type Course } from "@/data/courses";
+import { courseById, pathwayCourses, coursePriceOf, pathwayPriceFor, pathwayTrainers, courseTrainer, weeksLabel, type Course } from "@/data/courses";
 import { GOAL_LABELS, GAP_LABELS, OBSTACLE_TO_GAP } from "@/data/diagnostic";
 import { grantEnrollment } from "@/services/access";
 import { useCurrency, usePriceFormatter } from "@/services/currency";
+import { track } from "@/services/analytics";
+import SeoHead from "@/components/SeoHead";
 
 /* اسم المستخدم — يدعم الصيغتين: JSON الجديدة والنص القديم، ويحترم انتهاء الجلسة */
 function readUserName(): string | null {
@@ -56,8 +59,7 @@ const ADVISORS: Record<string, { name: string; title: string }> = {
   FAM: { name: "أ. ريم القحطاني", title: "مستشارة المسارات الأسرية" },
   WELL: { name: "أ. ريم القحطاني", title: "مستشارة التركيز والرفاه" },
 }
-// رقم تجريبي — يُستبدل برقم واتساب أعمال وجيز عند الإطلاق
-const WHATSAPP_NUMBER = "966555555555"
+// قناة مراسلة المستشار تُدار مركزيا عبر مكوّن AdvisorContact وبيانات CONTACT
 
 const PERSONA_LABELS: Record<string, string> = {
   student: "طالب يستعد لسوق العمل", graduate: "خريج جديد يبحث عن فرصته الأولى",
@@ -87,6 +89,8 @@ function StripeCheckout({
   const [processing, setProcessing] = useState(false);
   const cur = useCurrency();
   const fmt = usePriceFormatter();
+  /* فتح نافذة الدفع = بدء عملية شراء */
+  useEffect(() => { track("checkout_started"); }, []);
   const pay = () => {
     if (card.replace(/\s/g, "").length < 12) return;
     setProcessing(true);
@@ -155,6 +159,11 @@ export default function PathwayPage() {
   const [pickedIds, setPickedIds] = useState<string[]>([]);
   const fmt = usePriceFormatter();
 
+  /* تتبع مشاهدة صفحة المسار — بلا بيانات شخصية */
+  useEffect(() => {
+    if (pathway) track("pathway_viewed", { sector: pathway.sector });
+  }, [pathway]);
+
   /* تخصيصه المحفوظ من صفحة التشخيص */
   const custom = useMemo(() => {
     try {
@@ -212,7 +221,7 @@ export default function PathwayPage() {
   }
 
   const advisor = ADVISORS[pathway.id.split("-")[1]] ?? ADVISORS.FND;
-  const waText = encodeURIComponent(`مرحبا ${advisor.name}، أكملت تشخيص وجيز ورُشّح لي مسار «${pathway.name}» وأريد استشارتك قبل البدء.`);
+  const advisorMsg = `مرحبا ${advisor.name}، أكملت تشخيص وجيز ورُشّح لي مسار «${pathway.name}» وأريد استشارتك قبل البدء.`;
 
   /* اختيار الدورات المتعدد — دورة واحدة أو عدة دورات بحرية كاملة */
   const buyableCourses = pathwayCoursesList.filter((c) => c.id !== custom?.giftId);
@@ -224,6 +233,11 @@ export default function PathwayPage() {
 
   return (
     <div dir="rtl" className="min-h-screen bg-[#0D0D0D] text-white">
+      <SeoHead
+        title={pathway.name}
+        description={`${pathway.transformation} — مسار ${pathway.level} من ${weeksLabel(pathway.durationWeeks)} في أكاديمي وجيز.`}
+        path={`/pathways/${pathway.id}`}
+      />
       {/* Top bar */}
       <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0D0D0D]/85 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-5">
@@ -264,7 +278,7 @@ export default function PathwayPage() {
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                 <CalendarClock className="h-5 w-5 text-[#6EC7D1]" />
                 <p className="mt-2 text-sm text-white/50">المدة</p>
-                <p className="font-black">{custom ? `${totalWeeks} أسابيعا (مخصصة)` : `${pathway.durationWeeks} أسبوعًا`}</p>
+                <p className="font-black">{custom ? `${weeksLabel(totalWeeks)} (مخصصة)` : weeksLabel(pathway.durationWeeks)}</p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                 <Clock3 className="h-5 w-5 text-[#6EC7D1]" />
@@ -588,10 +602,11 @@ export default function PathwayPage() {
                 </p>
               </div>
               <Button asChild className="h-12 rounded-full bg-[#25D366] px-6 font-black text-white hover:bg-[#25D366]/85">
-                <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=${waText}`} target="_blank" rel="noreferrer">
-                  <MessageCircle className="ml-2 h-5 w-5" />
-                  كلم مستشارك واتساب
-                </a>
+                <AdvisorContact
+                  text={advisorMsg}
+                  label="كلم مستشارك"
+                  icon={<MessageCircle className="ml-2 h-5 w-5" />}
+                />
               </Button>
             </div>
           </div>
@@ -618,6 +633,7 @@ export default function PathwayPage() {
               kind: checkout.kind,
               amount: checkout.amount,
             });
+            track("payment_completed", { kind: checkout.kind, courses: checkout.kind === "pathway" ? courseIds.length : (checkout.courseIds?.length ?? 1) });
             setPurchased({ kind: checkout.kind, courseId: checkout.courseId });
             setCheckout(null);
             window.scrollTo({ top: 0, behavior: "smooth" });

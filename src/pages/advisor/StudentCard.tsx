@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
 import {
   AlertTriangle, ArrowRight, CalendarPlus, CheckCircle2, GitBranch,
-  MessageCircle, ShieldAlert, X,
+  ShieldAlert, X,
 } from "lucide-react";
 import AdvisorLayout, { advisorIdentity } from "./AdvisorLayout";
 import {
@@ -15,7 +15,7 @@ const KIND_ICON: Record<string, string> = {
   message: "💬", call: "📞", payment: "💳", login: "🟢", complete: "🏁",
   absence: "⚠️", submission: "📤", grade: "📝", note: "📌",
 };
-const WHATSAPP_NUMBER = "966555555555";
+import AdvisorContact from "@/components/AdvisorContact";
 
 /** بطاقة الطالب للمستشار — القسم 14.2: خط زمني موحد + الإجراء الأفضل + تغيير المسار عبر موافقة */
 export default function StudentCard() {
@@ -40,7 +40,7 @@ export default function StudentCard() {
   const nba = nextBestAction(s);
   const courses = studentCourseCount(s);
   const ids = pathwayCourses[s.pathwayId] ?? [];
-  const waText = encodeURIComponent(`مرحبا ${s.name.split(" ")[0]}، معك ${me?.name ?? "مستشارك"} من أكاديمي وجيز — أتابع تقدمك في مسارك وأردت الاطمئنان عليك.`);
+  const advisorMsg = `مرحبا ${s.name.split(" ")[0]}، معك ${me?.name ?? "مستشارك"} من أكاديمي وجيز — أتابع تقدمك في مسارك وأردت الاطمئنان عليك.`;
 
   const submitWorkflow = () => {
     logAudit(me?.name ?? "مستشار", `طلب تغيير دورة إلى «${courseById(swapCourse)?.name ?? swapCourse}» — بانتظار موافقة المنسق`, s.id);
@@ -91,10 +91,11 @@ export default function StudentCard() {
             <p className="mt-2 font-black leading-7">{nba.action}</p>
             <p className="mt-1.5 text-xs leading-6 text-white/55">{nba.why}</p>
             {nba.channel === "whatsapp" && (
-              <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=${waText}`} target="_blank" rel="noreferrer"
-                className="mt-4 flex items-center justify-center gap-2 rounded-full bg-[#25D366] py-2.5 text-sm font-black text-white hover:bg-[#25D366]/85">
-                <MessageCircle className="h-4 w-4" /> راسله واتساب
-              </a>
+              <AdvisorContact
+                text={advisorMsg}
+                label="راسله"
+                className="mt-4 flex items-center justify-center gap-2 rounded-full bg-[#25D366] py-2.5 text-sm font-black text-white hover:bg-[#25D366]/85"
+              />
             )}
             {nba.channel === "booking" && (
               <button className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-[#FABC05]/50 py-2.5 text-sm font-black text-[#FABC05] hover:bg-[#FABC05]/10">

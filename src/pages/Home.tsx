@@ -2,15 +2,17 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import {
   Sparkles, Compass, Route, BadgeCheck, BrainCircuit, Target,
-  FileCheck, ShieldCheck, Quote, ChevronDown, Menu, X, ArrowLeft,
+  FileCheck, Quote, ChevronDown, Menu, X, ArrowLeft,
   Clock, User, Award, GraduationCap, Building2, Landmark,
-  CheckCircle2, CalendarDays, Play, Flame, ChevronLeft, ChevronRight, BookOpen,
-  Star, Users
+  CheckCircle2, Play, Flame, ChevronLeft, ChevronRight, BookOpen,
+  Users, Mail
 } from 'lucide-react'
 import { bestsellers, pathwayById } from '@/data/pathways'
-import { bestsellerCourses, courseById, courseCategories, pathwayTrainers, type Course } from '@/data/courses'
+import { bestsellerCourses, courseById, courseCategories, pathwayTrainers, weeksLabel, type Course } from '@/data/courses'
 import { faqs } from '@/data/siteContent'
-import AuthGate from '@/components/AuthGate'
+import { CONTACT } from '@/data/stories'
+import { track } from '@/services/analytics'
+import SeoHead from '@/components/SeoHead'
 import CourseModal from '@/components/CourseModal'
 import Modal from '@/components/Modal'
 import { CURRENCIES, setCurrency, useCurrency, type CurrencyCode } from '@/services/currency'
@@ -51,108 +53,9 @@ function useReveal() {
   }, [])
 }
 
-/* ───────────────────────── data ───────────────────────── */
-const stories = [
-  {
-    id: 'sara',
-    gender: 'f' as const,
-    tag: 'تصميم تجربة المستخدم',
-    name: 'سارة',
-    role: 'مصممة جرافيك — جدة',
-    img: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=1200&q=80&auto=format&fit=crop',
-    before: 'كانت سارة تقفز بين دورات متفرقة منذ سنتين، تتعلم كثيرا ولا يتغير شيء في ملف أعمالها.',
-    turn: 'في التشخيص، ظهرت فجوتها الحقيقية بوضوح: ليست الأدوات، بل أبحاث المستخدم وبناء الرحلات.',
-    pathway: 'مسار تجربة المستخدم الاحترافي',
-    trainer: 'م. لينا الحربي',
-    duration: '12 أسبوعا — 6 دورات — مختلط',
-    output: 'ملف أعمال من 3 مشاريع حقيقية راجعها المدرب مشروعا بمشروع.',
-    courses: [
-      { name: 'أساسيات أبحاث المستخدم', output: 'أجرت 5 مقابلات مستخدمين حقيقية وحللتها بمنهجية واضحة.' },
-      { name: 'بناء رحلات المستخدم والنماذج الأولية', output: 'صممت رحلة كاملة لتطبيق خدمات، اختُبرت مع مستخدمين فعليين.' },
-      { name: 'ملف الأعمال الاحترافي', output: 'رتّبت مشاريعها الثلاثة في ملف يحكي قصة كل قرار تصميمي.' },
-    ],
-    result: 'بعد ثلاثة أشهر، لم تعد سارة تقول "أعرف التصميم" — صارت تُري عملها. قدّمت ملفها الجديد وبدأت أول مشروع استشاري مستقل لها.',
-  },
-  {
-    id: 'mohammed',
-    gender: 'm' as const,
-    tag: 'تحليل البيانات',
-    name: 'محمد',
-    role: 'محاسب — الرياض',
-    img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1200&q=80&auto=format&fit=crop',
-    before: 'كان محمد محاسبا يحلم بالانتقال إلى تحليل البيانات، لكن خريطة الطريق أمامه كانت ضبابية: من أين يبدأ؟',
-    turn: 'حدّد التشخيص مستواه الحالي ووقته المتاح (4 ساعات أسبوعيا)، فرُسم له مسار لا يحرقه ولا يبطئه.',
-    pathway: 'مسار تحليل البيانات للأعمال',
-    trainer: 'د. فيصل العتيبي',
-    duration: '16 أسبوعا — 8 دورات — مباشر',
-    output: 'لوحة مؤشرات كاملة بُنيت على بيانات شركته الفعلية.',
-    courses: [
-      { name: 'أساسيات تحليل البيانات', output: 'انتقل من الجداول الجاهزة إلى بناء تحليله الخاص خطوة بخطوة.' },
-      { name: 'SQL واستخراج البيانات', output: 'سحب بيانات شركته الفعلية بنفسه لأول مرة دون انتظار أحد.' },
-      { name: 'لوحات المؤشرات التفاعلية', output: 'بنى لوحة المؤشرات التي صارت مرجع الإدارة الأسبوعي.' },
-    ],
-    result: 'في الربع التالي، صارت لوحة محمد هي مرجع الإدارة في اجتماعها الأسبوعي — وتوسّع دوره رسميا ليشمل التقارير التحليلية.',
-  },
-  {
-    id: 'nouf',
-    gender: 'f' as const,
-    tag: 'اكتشاف الاتجاه',
-    name: 'نوف',
-    role: 'طالبة جامعية — الدمام',
-    img: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=1200&q=80&auto=format&fit=crop',
-    before: 'وصلت نوف إلى وجيز بسؤال واحد صادق: "لا أعرف أي مجال يناسبني أصلا."',
-    turn: 'لم يستعجلها التشخيص؛ فتح أسئلة استكشاف حتى اتضح ميلها: التنظيم، والتفاصيل، والتعامل مع الناس.',
-    pathway: 'مسار أساسيات إدارة المشاريع (تمهيدي)',
-    trainer: 'أ. ريم القحطاني',
-    duration: '8 أسابيع — 4 دورات — مسجل + لقاءات',
-    output: 'خطة مشروع تخرجها الجامعي، مبنية بمنهجية احترافية.',
-    courses: [
-      { name: 'أساسيات إدارة المشاريع', output: 'فهمت دورة حياة المشروع ورسمت أول خطة لها بمعايير مهنية.' },
-      { name: 'إدارة الوقت وأولويات الطالب', output: 'نظمت فصلها الدراسي بجدول واقعي التزمت به حتى النهاية.' },
-    ],
-    result: 'أنهت نوف المسار وهي تعرف أخيرا لماذا اختارت طريقها — ومشروع تخرجها حاز أعلى تقييم في دفعتها.',
-  },
-  {
-    id: 'khaled',
-    gender: 'm' as const,
-    tag: 'القطاع الحكومي',
-    name: 'خالد',
-    role: 'موظف خدمة جمهور — الرياض',
-    img: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=1200&q=80&auto=format&fit=crop',
-    before: 'كان خالد يستقبل عشرات المراجعين يوميا في جهته الحكومية، ويشعر أن عمله روتين لا يُقدَّر ولا يتطور.',
-    turn: 'رشّحته جهته ضمن برنامج التدريب الحكومي مع أكاديمي وجيز، وكشف التشخيص أن فجوته ليست المعرفة بل أدوات التعامل تحت الضغط.',
-    pathway: 'مسار موظف خدمة الجمهور المتميز (ترشيح حكومي)',
-    trainer: 'أ. هند العمري',
-    duration: '6 أسابيع — 4 دورات — شعبة حكومية مباشرة',
-    output: 'دليل تعامل شخصي مع الحالات الصعبة، طبّقه فعليا على نافذته.',
-    courses: [
-      { name: 'فن خدمة الجمهور', output: 'تحول من "موظف شباك" إلى سفير لجهته عند كل مراجع.' },
-      { name: 'إدارة المشاعر والتعامل تحت الضغط', output: 'تعلم تفريغ التوتر وصار زميله الأهدأ في أصعب الأيام.' },
-      { name: 'التواصل الحكومي الفعال', output: 'صاغ ردودا رسمية واضحة خفّضت شكاوى المراجعين المكررة.' },
-    ],
-    result: 'بعد شهرين، اختير خالد موظف الربع في جهته، وكتب مديره في التقييم: "تحوّل ملموس في التعامل مع المراجعين — نموذج يُحتذى."',
-  },
-  {
-    id: 'team',
-    gender: 'm' as const,
-    tag: 'حلول الشركات',
-    name: 'فريق القيادات الجديدة',
-    role: 'شركة لوجستية — 14 مديرا',
-    img: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=1200&q=80&auto=format&fit=crop',
-    before: 'رقّت الشركة 14 موظفا إلى مناصب قيادية دفعة واحدة، ثم اكتشفت أن الترقية وحدها لا تصنع قائدا.',
-    turn: 'شخّصت وجيز فجوات الفريق كاملا، فوجدتها متقاربة: إدارة الوقت، والتغذية الراجعة، والمحادثات الصعبة.',
-    pathway: 'مسار قيادة الفرق للمدراء الجدد (دفعة خاصة)',
-    trainer: 'م. سلطان الدوسري',
-    duration: '10 أسابيع — 6 دورات — شعبة مباشرة',
-    output: 'خطة قيادة فردية لكل مدير، قيّمها المدرب مع كل واحد على حدة.',
-    courses: [
-      { name: 'أساسيات قيادة الفرق', output: 'انتقل كل مدير من "مشرف مهام" إلى قائد يملك رؤية لفريقه.' },
-      { name: 'التغذية الراجعة والمحادثات الصعبة', output: 'تدرّبوا على محادثات حقيقية كانوا يؤجلونها منذ شهور.' },
-      { name: 'إدارة الوقت القيادي', output: 'خرج كل مدير بنظام أسبوعي يحمي وقته للأهم لا الأعجل.' },
-    ],
-    result: 'بعد دورتين، قالت مديرة الموارد البشرية جملة واحدة تلخص كل شيء: "لأول مرة، الاجتماعات عندنا تنتهي بقرارات."',
-  },
-]
+/* ───────────────────────── data ─────────────────────────
+   القصص والشعارات انتقلت إلى مصدر مشترك تتقاسمه صفحة القصص المستقلة */
+import { stories, partnerLogos } from '@/data/stories'
 
 /* «وقفة صدق» — خمسة أسئلة وعي مستقلة: تُحفظ محليا على جهاز الزائر فقط ولا تغذي التشخيص،
    بل توقظ فيه السؤال الصحيح وتفتح شهيته لخدمتنا، ثم يبدأ التشخيص الكامل من الصفر باحترافية */
@@ -218,8 +121,7 @@ function readUserName(): string | null {
 
 function Nav() {
   const [open, setOpen] = useState(false)
-  const [authOpen, setAuthOpen] = useState(false)
-  const [userName, setUserName] = useState<string | null>(readUserName)
+  const [userName] = useState<string | null>(readUserName)
   const menuBtnRef = useRef<HTMLButtonElement>(null)
   const mobileNavRef = useRef<HTMLElement>(null)
 
@@ -238,13 +140,19 @@ function Nav() {
     return () => document.removeEventListener('keydown', onKey)
   }, [open])
 
-  const links = [
+  const links: { label: string; href: string; route?: boolean }[] = [
     { label: 'وقفة صدق', href: '#diagnostic' },
-    { label: 'كيف نعمل', href: '#how' },
-    { label: 'قصص المتعلمين', href: '#stories' },
-    { label: 'مختارات وجيز', href: '#bestsellers' },
+    { label: 'المسارات', href: '/pathways', route: true },
+    { label: 'الدورات', href: '/courses', route: true },
+    { label: 'قصص المتعلمين', href: '/stories', route: true },
     { label: 'الأسئلة', href: '#faq' },
   ]
+  const renderLink = (l: (typeof links)[number], className: string, onClick?: () => void) =>
+    l.route ? (
+      <Link key={l.href} to={l.href} onClick={onClick} className={className}>{l.label}</Link>
+    ) : (
+      <a key={l.href} href={l.href} onClick={onClick} className={className}>{l.label}</a>
+    )
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-white/5 bg-[#0D0D0D]/80 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
@@ -256,9 +164,9 @@ function Nav() {
           </div>
         </a>
         <nav className="hidden items-center gap-7 text-sm text-muted-foreground md:flex">
-          {links.map((l) => (
-            <a key={l.href} href={l.href} className="transition hover:text-teal-light">{l.label}</a>
-          ))}
+          {links.map((l) =>
+            renderLink(l, 'transition hover:text-teal-light')
+          )}
         </nav>
         <div className="flex items-center gap-3">
           <CurrencySwitcher />
@@ -268,13 +176,13 @@ function Nav() {
               {userName}
             </Link>
           ) : (
-            <button
-              onClick={() => setAuthOpen(true)}
+            <Link
+              to="/auth"
               className="hidden items-center gap-2 rounded-xl border border-white/15 px-4 py-2 text-sm font-semibold text-muted-foreground transition hover:border-teal/50 hover:text-teal-light md:inline-flex"
             >
               <User className="h-4 w-4" />
               دخول
-            </button>
+            </Link>
           )}
           <a
             href="#diagnostic"
@@ -296,22 +204,21 @@ function Nav() {
       </div>
       {open && (
         <nav id="mobile-menu" ref={mobileNavRef} aria-label="قائمة التنقل الرئيسية" className="border-t border-white/5 bg-[#0D0D0D] px-5 py-4 md:hidden">
-          {links.map((l) => (
-            <a key={l.href} href={l.href} onClick={() => setOpen(false)} className="block py-2.5 text-muted-foreground hover:text-teal-light">
-              {l.label}
-            </a>
-          ))}
+          {links.map((l) =>
+            renderLink(l, 'block py-2.5 text-muted-foreground hover:text-teal-light', () => setOpen(false))
+          )}
           {userName ? (
             <Link to="/student" onClick={() => setOpen(false)} className="mt-2 flex items-center justify-center gap-2 rounded-xl border border-teal/40 px-5 py-3 font-semibold text-teal-light">
               <User className="h-4 w-4" /> {userName}
             </Link>
           ) : (
-            <button
-              onClick={() => { setOpen(false); setAuthOpen(true) }}
+            <Link
+              to="/auth"
+              onClick={() => setOpen(false)}
               className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 px-5 py-3 font-semibold text-muted-foreground"
             >
               <User className="h-4 w-4" /> دخول / إنشاء حساب
-            </button>
+            </Link>
           )}
           <a href="#diagnostic" onClick={() => setOpen(false)} className="btn-teal mt-2 flex w-full px-5 py-3">
             جرّب وقفة صدق
@@ -320,14 +227,6 @@ function Nav() {
             <CurrencySwitcher compact />
           </div>
         </nav>
-      )}
-      {authOpen && (
-        <Modal onClose={() => setAuthOpen(false)} label="تسجيل الدخول أو إنشاء حساب" panelClassName="w-full max-w-md">
-          <AuthGate
-            message="سجّل دخولك أو أنشئ حسابك — ليُحفظ مسارك وتشخيصك وشهاداتك في مكان واحد"
-            onDone={() => { setAuthOpen(false); setUserName(readUserName()) }}
-          />
-        </Modal>
       )}
     </header>
   )
@@ -358,6 +257,7 @@ function Hero() {
         <div className="reveal is-visible mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <a
             href="#diagnostic"
+            onClick={() => track('hero_cta_clicked')}
             className="group btn-teal w-full px-8 py-4 shadow-[0_0_40px_-8px_#38A7B4] sm:w-auto"
           >
             خذ وقفة صدق
@@ -403,6 +303,8 @@ function DiagnosticTeaser() {
 
   const pick = (qid: string, value: string) => {
     if (picked) return // ضغطة واحدة تكفي — نمنع التكرار أثناء الانتقال
+    if (step === 0) track('mirror_started')
+    if (step + 1 === mirrorQuestions.length) track('mirror_completed')
     setPicked(value)
     setAnswers((a) => ({ ...a, [qid]: value }))
     window.setTimeout(() => {
@@ -801,12 +703,15 @@ function Bestsellers() {
     if (e.key === 'ArrowRight') { e.preventDefault(); scroll(ref, 'prev') }
   }
 
+  /* الرئيسية تعرض نخبة فقط — 6 مسارات و4 دورات كحد أقصى، والكتالوج الكامل في صفحته */
   const shownPathways = bestsellers
     .map((b) => ({ ...b, p: pathwayById(b.id)! }))
     .filter((b) => b.p && (cat === 'الكل' || pwCategory(b.p.id) === cat))
+    .slice(0, 6)
   const shownCourses = bestsellerCourses
     .map((b) => ({ ...b, c: courseById(b.id)! }))
     .filter((b) => b.c && (cat === 'الكل' || b.c.category === cat))
+    .slice(0, 4)
   const spotlight = shownPathways[0]
   const railPathways = shownPathways.slice(1)
 
@@ -873,7 +778,7 @@ function Bestsellers() {
               <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground">
                 <span>{spotlight.p.level}</span>
                 <span className="text-white/20">•</span>
-                <span>{spotlight.p.durationWeeks} أسبوعا</span>
+                <span>{weeksLabel(spotlight.p.durationWeeks)}</span>
                 <span className="text-white/20">•</span>
                 <span>{spotlight.p.weeklyHours}</span>
                 <span className="text-white/20">•</span>
@@ -918,7 +823,7 @@ function Bestsellers() {
             </div>
             <h3 className="mt-4 text-lg font-bold leading-relaxed">{p.name}</h3>
             <div className="mt-2 text-xs leading-6 text-muted-foreground">
-              {p.level} · {p.durationWeeks} أسبوعا · {p.weeklyHours}
+              {p.level} · {weeksLabel(p.durationWeeks)} · {p.weeklyHours}
             </div>
             <div className="mt-3 flex items-center gap-1.5 text-[11px] leading-5 text-muted-foreground">
               <Users className="h-3.5 w-3.5 shrink-0 text-teal" />
@@ -1008,12 +913,30 @@ function Bestsellers() {
               </span>
             )}
             <div className="mt-auto pt-4">
-              <button onClick={() => setModalCourse(c)} className="w-full cursor-pointer rounded-lg border border-white/15 py-2 text-xs font-semibold transition group-hover:border-teal/50 group-hover:text-teal-light">
+              <button onClick={() => { track('course_viewed', { category: c.category }); setModalCourse(c) }} className="w-full cursor-pointer rounded-lg border border-white/15 py-2 text-xs font-semibold transition group-hover:border-teal/50 group-hover:text-teal-light">
                 تفاصيل الدورة
               </button>
             </div>
           </article>
         ))}
+      </div>
+
+      {/* روابط الكتالوج الكامل */}
+      <div className="mx-auto mt-10 flex max-w-6xl flex-wrap items-center justify-center gap-3 px-5">
+        <Link
+          to="/pathways"
+          className="inline-flex items-center gap-2 rounded-2xl border border-teal/40 px-6 py-3 text-sm font-bold text-teal-light transition hover:bg-[#247B84] hover:text-white"
+        >
+          تصفح كل المسارات
+          <ArrowLeft className="h-4 w-4" />
+        </Link>
+        <Link
+          to="/courses"
+          className="inline-flex items-center gap-2 rounded-2xl border border-white/15 px-6 py-3 text-sm font-bold text-muted-foreground transition hover:border-amber-brand/50 hover:text-amber-brand"
+        >
+          تصفح كل الدورات
+          <ArrowLeft className="h-4 w-4" />
+        </Link>
       </div>
 
       {/* نافذة تفاصيل الدورة */}
@@ -1028,83 +951,6 @@ function Bestsellers() {
   )
 }
 
-/* ───────────────── numbers ───────────────── */
-const numbers = [
-  { value: 'قصتك', label: 'أولا قبل أي دورة', sub: 'تشخيص يفهم هدفك وواقعك قبل أن يوصي' },
-  { value: 'مخرج', label: 'حقيقي يُراجع', sub: 'القيمة بالإنجاز والإثبات، لا بساعات المشاهدة' },
-  { value: '3', label: 'أطر علمية موثوقة', sub: 'RIASEC للميول · O*NET وESCO للمهارات · DigComp للجاهزية الرقمية' },
-  { value: '4', label: 'خطوات للرحلة', sub: 'فهم، توصية، تعلم، إثبات' },
-]
-
-function Numbers() {
-  return (
-    <section className="border-y border-white/5 bg-white/[0.02] py-16 md:py-20">
-      <div className="mx-auto grid max-w-6xl grid-cols-2 gap-8 px-5 md:grid-cols-4">
-        {numbers.map((n, i) => (
-          <div key={n.label} className="reveal text-center" style={{ transitionDelay: `${i * 80}ms` }}>
-            <div className="text-4xl font-bold text-teal-light md:text-5xl">{n.value}</div>
-            <div className="mt-2 font-semibold">{n.label}</div>
-            <div className="mt-1 text-xs leading-6 text-muted-foreground">{n.sub}</div>
-          </div>
-        ))}
-      </div>
-    </section>
-  )
-}
-
-/* ───────────────── why different ───────────────── */
-const why = [
-  {
-    icon: BrainCircuit,
-    title: 'الفهم قبل البيع',
-    text: 'لن يصلك سعر أو رابط دفع قبل أن نفهم هدفك. التشخيص أولا — دائما.',
-  },
-  {
-    icon: ShieldCheck,
-    title: 'توصية تشرح نفسها',
-    text: 'كل توصية تأتي مع "لماذا" ودرجة ثقة. وعند الشك، مستشار بشري يقرر معك — لا خوارزمية متسرعة.',
-  },
-  {
-    icon: BadgeCheck,
-    title: 'القيمة بالمخرج',
-    text: 'لا نحتفل بعدد ساعات المشاهدة. نحتفل بمشروع سلّمته ومهارة أثبتّها.',
-  },
-]
-
-function Why() {
-  return (
-    <section id="why" className="py-20 md:py-28">
-      <div className="mx-auto max-w-6xl px-5">
-        <div className="reveal text-center">
-          <SectionLabel>لماذا وجيز مختلفة</SectionLabel>
-          <h2 className="mt-5 text-3xl font-bold md:text-4xl">لا نبيع دورات. نبني رحلات.</h2>
-        </div>
-        <div className="mt-14 grid gap-6 md:grid-cols-3">
-          {why.map((w, i) => (
-            <div key={w.title} className="reveal rounded-3xl border border-white/10 bg-card p-8 transition hover:border-teal/40" style={{ transitionDelay: `${i * 90}ms` }}>
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#38A7B4]/12 text-teal">
-                <w.icon className="h-6 w-6" />
-              </div>
-              <h3 className="mt-5 text-xl font-bold">{w.title}</h3>
-              <p className="mt-3 leading-8 text-muted-foreground">{w.text}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* honesty strip */}
-        <div className="reveal mt-10 rounded-3xl border border-amber-brand/25 bg-[#FABC05]/5 p-8 text-center md:p-10">
-          <p className="mx-auto max-w-2xl text-lg leading-9 md:text-xl md:leading-10">
-            <span className="font-bold text-amber-brand">وعد الشفافية:</span>{' '}
-            لا نعدك بوظيفة ولا بدخل. نعدك بمسار مدروس، ومهارات قابلة للقياس،
-            ومشاريع حقيقية تثبت جاهزيتك.
-          </p>
-        </div>
-      </div>
-    </section>
-  )
-}
-
-/* ───────────────── pricing clarity ───────────────── */
 /* ───────────────── FAQ ───────────────── */
 function Faq() {
   const [open, setOpen] = useState<number | null>(0)
@@ -1166,23 +1012,17 @@ function FinalCta() {
             href="#diagnostic"
             className="btn-teal px-10 py-5 text-lg shadow-[0_0_60px_-10px_#38A7B4]"
           >
-            جرّب خمسة أسئلة الآن
+            خذ وقفة صدق الآن
             <ArrowLeft className="h-5 w-5" />
           </a>
-          <p className="mt-4 text-xs text-muted-foreground">مجاني · بدون حساب · إجاباتك تُحفظ وتُكمل معك للتشخيص الكامل</p>
+          <p className="mt-4 text-xs text-muted-foreground">مجاني · بدون حساب · إجاباتك تُحفظ على جهازك فقط</p>
         </div>
       </div>
     </section>
   )
 }
 
-/* ───────────────── partners (من موقع وجيز الأم) ───────────────── */
-const partnerLogos = [
-  { name: 'BBC', src: 'https://wajeez.com/_next/image?url=%2Fassets%2Fimages%2Fbbc-dark.png&w=256&q=75' },
-  { name: 'Forbes', src: 'https://wajeez.com/_next/image?url=%2Fassets%2Fimages%2Fforbes-dark.png&w=256&q=75' },
-  { name: 'صحيفة الوطن', src: 'https://wajeez.com/_next/image?url=%2Fassets%2Fimages%2Falwatan-dark.png&w=256&q=75' },
-]
-
+/* ───────────────── partners (شعارات من موقع وجيز الأم — من المصدر المشترك) ───────────────── */
 function Partners() {
   return (
     <section id="partners" className="py-14 md:py-16">
@@ -1210,62 +1050,17 @@ function Partners() {
   )
 }
 
-/* ───────────────── آراء المستخدمين الحقيقية (من موقع وجيز) ───────────────── */
-const reviews = [
-  { name: 'أحمد سدر', text: 'تطبيق وجيز غيّر طريقة تفكيري في استغلال الوقت. أستمع يوميا أثناء المشي أو القيادة، وأشعر أنني أتعلم بدون مجهود.' },
-  { name: 'نورة الخالدي', text: 'الاشتراك المدفوع يستحق كل ريال. فتحت لي الأبواب على مكتبة ضخمة من المعرفة خلال دقائق فقط.' },
-  { name: 'خالد جمال', text: 'كنت أظن أنني لا أملك وقتا للقراءة، لكن مع وجيز صارت المعرفة ترافقني أينما ذهبت.' },
-  { name: 'سامر الخطيب', text: 'وجيز ساعدني أطور نفسي مهنيا وشخصيا، وصار جزءا من روتيني الصباحي.' },
-  { name: 'عبدالله', text: 'أحببت خاصية المسارات، فهي تتيح لي التعلم المنهجي في مجالات محددة مثل القيادة أو التفكير النقدي.' },
-  { name: 'راكان', text: 'من خلال وجيز، اكتشفت كتبا كنت أجهلها، واستفدت من أفكار ملهمة غيّرت بعض قراراتي.' },
-  { name: 'تركي بدر', text: 'وجود التطبيق على هاتفي أعطاني إحساسا بأنني أستثمر وقتي حتى في الدقائق الضائعة.' },
-  { name: 'مها زياد', text: 'وجيز ليس مجرد تطبيق، بل أسلوب حياة جديد لمن يحب التطوير والمعرفة.' },
-  { name: 'راشد جميل', text: 'الملخصات تلامس جوهر الكتب فعلا، وتحفزني أحيانا لقراءة النسخة الكاملة.' },
-]
-
-function Reviews() {
-  return (
-    <section className="border-t border-white/5 py-16 md:py-20">
-      <div className="mx-auto max-w-6xl px-5">
-        <div className="reveal text-center">
-          <SectionLabel>ماذا يقول مستخدمو تطبيق وجيز</SectionLabel>
-          <h2 className="mt-5 text-3xl font-bold md:text-4xl">تجربتهم مع علامة وجيز</h2>
-          <p className="mx-auto mt-4 max-w-xl leading-8 text-muted-foreground">
-            من تقييمات مستخدمي تطبيق وجيز على المتجرين — عن تجربتهم مع العلامة.
-          </p>
-        </div>
-        <div className="mt-12 grid gap-5 md:grid-cols-3">
-          {reviews.map((r, i) => (
-            <figure key={r.name} className="reveal rounded-3xl border border-white/10 bg-card p-6 transition hover:border-teal/40" style={{ transitionDelay: `${(i % 3) * 80}ms` }}>
-              <div className="flex items-center gap-1 text-amber-brand">
-                {[...Array(5)].map((_, s) => <Star key={s} className="h-4 w-4 fill-current" />)}
-              </div>
-              <blockquote className="mt-4 text-sm leading-8 text-foreground/90">"{r.text}"</blockquote>
-              <figcaption className="mt-4 flex items-center gap-3">
-                <span className="grid h-9 w-9 place-items-center rounded-full bg-teal/15 text-sm font-bold text-teal-light">
-                  {r.name.charAt(0)}
-                </span>
-                <span className="text-sm font-semibold">{r.name}</span>
-              </figcaption>
-            </figure>
-          ))}
-        </div>
-      </div>
-    </section>
-  )
-}
-
 /* ───────────────── footer (full sitemap) ───────────────── */
 const footerCols: { title: string; icon: typeof GraduationCap; links: { label: string; to: string }[] }[] = [
   {
     title: 'المنصة',
     icon: GraduationCap,
     links: [
-      { label: 'مختارات وجيز', to: '#bestsellers' },
-      { label: 'الدورات المنفردة', to: '#top-courses' },
-      { label: 'وقفة صدق والتشخيص', to: '#diagnostic' },
-      { label: 'قصص المتعلمين', to: '#stories' },
-      { label: 'بوابة الطالب', to: '/student' },
+      { label: 'كل المسارات', to: '/pathways' },
+      { label: 'كل الدورات', to: '/courses' },
+      { label: 'وقفة صدق والتشخيص', to: '/diagnostic' },
+      { label: 'قصص المتعلمين', to: '/stories' },
+      { label: 'المدربون والمستشارون', to: '/trainers' },
       { label: 'التحقق من شهادة', to: '/verify' },
     ],
   },
@@ -1274,26 +1069,25 @@ const footerCols: { title: string; icon: typeof GraduationCap; links: { label: s
     icon: User,
     links: [
       { label: 'من نحن', to: '/p/about' },
-      { label: 'المدربون والمستشارون', to: '/p/about' },
       { label: 'شركاؤنا', to: '#partners' },
-      { label: 'انضم كمدرب', to: '/p/contact' },
+      { label: 'انضم كمدرب', to: '/contact' },
     ],
   },
   {
     title: 'الحلول',
     icon: Building2,
     links: [
-      { label: 'للأفراد', to: '#bestsellers' },
-      { label: 'للشركات', to: '/p/contact' },
-      { label: 'للجهات الحكومية', to: '/p/contact' },
-      { label: 'طلب عرض مؤسسي', to: '/p/contact' },
+      { label: 'للأفراد', to: '/pathways' },
+      { label: 'للشركات', to: '/for-business' },
+      { label: 'للجهات الحكومية', to: '/for-government' },
+      { label: 'طلب عرض مؤسسي', to: '/contact' },
     ],
   },
   {
     title: 'الدعم',
     icon: Landmark,
     links: [
-      { label: 'تواصل معنا', to: '/p/contact' },
+      { label: 'تواصل معنا', to: '/contact' },
       { label: 'الأسئلة الشائعة', to: '/p/faq' },
       { label: 'شروط الاستخدام', to: '/p/terms' },
       { label: 'سياسة الخصوصية', to: '/p/privacy' },
@@ -1316,8 +1110,8 @@ function Footer() {
               منصة تفهم الإنسان قبل أن تقترح ما يتعلمه — من مجموعة وجيز wajeez.com
             </p>
             <div className="mt-5 flex items-center gap-2 text-xs text-muted-foreground">
-              <CalendarDays className="h-4 w-4 text-teal" />
-              أقرب شعبة تبدأ قريبا — احجز تشخيصك اليوم
+              <Mail className="h-4 w-4 text-teal" />
+              <span dir="ltr">{CONTACT.email}</span>
             </div>
           </div>
           {footerCols.map((col) => (
@@ -1352,27 +1146,31 @@ function Footer() {
   )
 }
 
-/* ───────────────── page ───────────────── */
+/* ───────────────── page ─────────────────
+   الترتيب المعتمد: بطل واضح ← وقفة صدق ← كيف تعمل الرحلة ← مخرجات التعلم
+   ← ستة مسارات مميزة ← أربع دورات مميزة ← قصص حقيقية ← شركاء ← أسئلة ← دعوة أخيرة */
 export default function Home() {
   useReveal()
   const topRef = useRef<HTMLDivElement>(null)
   return (
     <div ref={topRef} dir="rtl" className="min-h-screen bg-background text-foreground">
+      <SeoHead
+        title="مسارك يبدأ من فهمك"
+        description="أكاديمي وجيز — تشخيص تعليمي ذكي يفهم هدفك وواقعك، ثم يرسم لك مسارا واحدا مفسّرا بمدربين حقيقيين ومخرج عملي يثبت جاهزيتك."
+        path="/"
+      />
       <Nav />
-      <main>
+      <div>
         <Hero />
         <DiagnosticTeaser />
         <HowItWorks />
         <ImageBand />
-        <Stories />
         <Bestsellers />
-        <Numbers />
+        <Stories />
         <Partners />
-        <Why />
-        <Reviews />
         <Faq />
         <FinalCta />
-      </main>
+      </div>
       <Footer />
     </div>
   )

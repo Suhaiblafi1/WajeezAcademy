@@ -3,8 +3,60 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="أكاديمي وجيز — منصة تفهمك قبل أن تقترح ما تتعلمه. تشخيص ذكي، مسارات مهارات، ومخرجات عملية تثبت جاهزيتك." />
+    <meta name="theme-color" content="#0D0D0D" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- الهوية والوصف الافتراضيان — كل صفحة تحدّثهما عبر SeoHead -->
     <title>أكاديمي وجيز — مسارك يبدأ من فهمك</title>
+    <meta name="description" content="أكاديمي وجيز — تشخيص تعليمي ذكي يفهم هدفك وواقعك، ثم يرسم لك مسارا واحدا مفسّرا بمدربين حقيقيين ومخرج عملي يثبت جاهزيتك." />
+    <!-- النطاق النهائي يُضبط عند النشر — انظر docs/DEPLOYMENT.md -->
+    <link rel="canonical" href="https://academy.wajeez.com/" />
+
+    <!-- المشاركة الاجتماعية -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="أكاديمي وجيز" />
+    <meta property="og:title" content="أكاديمي وجيز — مسارك يبدأ من فهمك" />
+    <meta property="og:description" content="تشخيص ذكي يفهمك، مسار واحد مفسّر، ومخرج عملي يثبت جاهزيتك — من مجموعة وجيز." />
+    <meta property="og:url" content="https://academy.wajeez.com/" />
+    <meta property="og:locale" content="ar_AR" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="أكاديمي وجيز — مسارك يبدأ من فهمك" />
+    <meta name="twitter:description" content="تشخيص ذكي يفهمك، مسار واحد مفسّر، ومخرج عملي يثبت جاهزيتك." />
+
+    <!-- بيانات منظمة: المنظمة + الموقع + الأسئلة الشائعة الظاهرة فعليا في الصفحة -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "name": "أكاديمي وجيز",
+          "alternateName": "Wajeez Academy",
+          "url": "https://academy.wajeez.com/",
+          "parentOrganization": { "@type": "Organization", "name": "وجيز", "url": "https://wajeez.com" },
+          "email": "support@wajeez.co",
+          "address": { "@type": "PostalAddress", "addressLocality": "الرياض — حي الياسمين — شارع أنس بن مالك", "addressCountry": "SA" }
+        },
+        {
+          "@type": "WebSite",
+          "name": "أكاديمي وجيز",
+          "url": "https://academy.wajeez.com/",
+          "inLanguage": "ar"
+        },
+        {
+          "@type": "FAQPage",
+          "mainEntity": [
+            { "@type": "Question", "name": "هل التشخيص اختبار نفسي؟", "acceptedAnswer": { "@type": "Answer", "text": "لا. هو أداة فهم تعليمية تسألك عن هدفك وواقعك وأسلوبك ثم تترجم إجاباتك إلى توصية مسار مفسّرة — لا تشخيص نفسيا ولا طبيا." } },
+            { "@type": "Question", "name": "ماذا يشمل سعر المسار؟", "acceptedAnswer": { "@type": "Answer", "text": "الدورات حسب مسارك، دورة إضافية مجانية، ملخصات كتب وجيز الصوتية واختباراتها، مرافقة المدرب والمستشار، الواجبات المقيمة بشريا، مشروع التخرج، وشهادة الإتمام الموثقة — السعر كاملا في صفحة مسارك قبل أي دفع." } },
+            { "@type": "Question", "name": "كيف أعرف أن المسار مناسب لي فعلا؟", "acceptedAnswer": { "@type": "Answer", "text": "كل توصية تأتي مع سببها ودرجة ثقتها، وعند انخفاض الثقة نحوّلك لمستشار بشري قبل أي دفع." } },
+            { "@type": "Question", "name": "هل تضمنون وظيفة أو دخلا بعد المسار؟", "acceptedAnswer": { "@type": "Answer", "text": "لا. نضمن مسارا مدروسا ومهارات قابلة للقياس ومشاريع حقيقية تثبت جاهزيتك — ولا نعد بوظيفة أو دخل." } },
+            { "@type": "Question", "name": "ماذا لو بدأت ولم يناسبني المسار؟", "acceptedAnswer": { "@type": "Answer", "text": "تبديل الدورات قبل بدئها مجاني، وسياسة الاسترداد مكتوبة كاملة في صفحة سياسة الاسترداد قبل أن تدفع." } }
+          ]
+        }
+      ]
+    }
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

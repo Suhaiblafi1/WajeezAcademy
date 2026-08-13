@@ -9,6 +9,7 @@ import {
   signIn,
   signUp,
 } from "@/services/auth";
+import { track } from "@/services/analytics";
 
 /* أيقونة قوقل الرسمية بألوانها الأربعة — جاهزة ليوم اكتمال ربط OAuth */
 function GoogleMark() {
@@ -104,16 +105,19 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
     }
     setBusy(true);
     setErr("");
+    track("account_started", { mode });
     // محاكاة زمن الخادم — تُستبدل بنداء API حقيقي عند الربط
     window.setTimeout(() => {
       const result =
         mode === "signup" ? signUp(name, email, pass) : signIn(email, pass);
       setBusy(false);
       if (!result.ok) {
+        track("account_failed");
         setErr(result.error);
         return;
       }
       if (mode === "signup") {
+        track("account_created");
         setView("verify");
         setResent(false);
       } else {

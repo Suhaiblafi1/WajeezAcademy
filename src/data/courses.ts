@@ -291,6 +291,10 @@ export const courseCategories = ['الكل', 'أساسيات', 'طلاب ومه�
 /* سعر الدورة المنفردة: 130–180 دولارا حسب مدتها */
 export const coursePrice = (weeks: number) => Math.min(180, 105 + weeks * 25)
 
+/** جمع الأسابيع بالعربية السليمة: «4 أسابيع» و«12 أسبوعا» */
+export const weeksLabel = (n: number) =>
+  n === 1 ? 'أسبوع واحد' : n === 2 ? 'أسبوعان' : n >= 3 && n <= 10 ? `${n} أسابيع` : `${n} أسبوعا`
+
 /* سعر المسار الكامل التفضيلي الموحد */
 export const PATHWAY_PRICE = 600
 
@@ -318,7 +322,7 @@ export interface Trainer {
   name: string
   role: string
 }
-const TRAINER_POOLS: Record<string, Trainer[]> = {
+export const TRAINER_POOLS: Record<string, Trainer[]> = {
   FND: [
     { name: 'أ. ريم القحطاني', role: 'مدربة التعلم الذاتي وبناء العادات' },
     { name: 'أ. محمد الشهري', role: 'مدرب الكفاءة الرقمية' },

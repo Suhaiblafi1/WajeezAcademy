@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- خريطة الصفحات العامة فقط — حدّث النطاق عند النشر (docs/DEPLOYMENT.md) -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://academy.wajeez.com/</loc><priority>1.0</priority></url>
+  <url><loc>https://academy.wajeez.com/diagnostic</loc><priority>0.9</priority></url>
+  <url><loc>https://academy.wajeez.com/pathways</loc><priority>0.9</priority></url>
+  <url><loc>https://academy.wajeez.com/courses</loc><priority>0.8</priority></url>
+  <url><loc>https://academy.wajeez.com/stories</loc><priority>0.7</priority></url>
+  <url><loc>https://academy.wajeez.com/trainers</loc><priority>0.6</priority></url>
+  <url><loc>https://academy.wajeez.com/for-business</loc><priority>0.6</priority></url>
+  <url><loc>https://academy.wajeez.com/for-government</loc><priority>0.6</priority></url>
+  <url><loc>https://academy.wajeez.com/contact</loc><priority>0.6</priority></url>
+  <url><loc>https://academy.wajeez.com/p/about</loc><priority>0.5</priority></url>
+  <url><loc>https://academy.wajeez.com/p/faq</loc><priority>0.5</priority></url>
+  <url><loc>https://academy.wajeez.com/p/terms</loc><priority>0.3</priority></url>
+  <url><loc>https://academy.wajeez.com/p/privacy</loc><priority>0.3</priority></url>
+  <url><loc>https://academy.wajeez.com/p/refund</loc><priority>0.3</priority></url>
+  <url><loc>https://academy.wajeez.com/verify</loc><priority>0.4</priority></url>
+</urlset>

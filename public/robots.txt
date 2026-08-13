@@ -1,0 +1,13 @@
+# أكاديمي وجيز — قواعد الزحف
+# الصفحات الداخلية (بوابات الطالب والمدرب والمستشار والإدارة) لا تُفهرس
+
+User-agent: *
+Allow: /
+Disallow: /student
+Disallow: /advisor
+Disallow: /trainer
+Disallow: /admin
+Disallow: /auth
+
+# فعّل السطر التالي بعد ضبط النطاق النهائي (انظر docs/DEPLOYMENT.md):
+# Sitemap: https://academy.wajeez.com/sitemap.xml

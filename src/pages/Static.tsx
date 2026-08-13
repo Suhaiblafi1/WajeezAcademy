@@ -1,9 +1,8 @@
 import { Link, useParams } from "react-router";
-import { ArrowRight, CheckCircle2, ChevronDown, Mail, MessageCircle } from "lucide-react";
+import { ArrowRight, CheckCircle2, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { staticPageBySlug, faqs } from "@/data/siteContent";
-
-const WHATSAPP_NUMBER = "966555555555";
+import SeoHead from "@/components/SeoHead";
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
@@ -40,6 +39,7 @@ function StaticContent({ slug }: { slug: string }) {
   }
   return (
     <Shell>
+      <SeoHead title={page.title} description={page.intro} path={`/p/${page.slug}`} />
       <h1 className="text-3xl font-black leading-snug md:text-4xl">{page.title}</h1>
       <p className="mt-4 text-lg leading-loose text-white/60">{page.intro}</p>
       <div className="mt-10 space-y-8">
@@ -67,30 +67,16 @@ function StaticContent({ slug }: { slug: string }) {
           </section>
         ))}
       </div>
-      {slug === "contact" && (
-        <div className="mt-8 rounded-3xl border border-[#38A7B4]/40 bg-[#38A7B4]/10 p-6 text-center md:p-8">
-          <h2 className="text-xl font-black">تفضّل بالكلام مباشرة</h2>
-          <p className="mt-2 text-sm text-white/60">أسرع طريقين للوصول إلينا:</p>
-          <div className="mt-5 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <a
-              href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("مرحبا، لدي استفسار عن أكاديمي وجيز")}`}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-2xl bg-[#25D366] px-6 py-3 font-bold text-[#0D0D0D] transition hover:opacity-90"
-            >
-              <MessageCircle className="h-5 w-5" />
-              واتساب المستشارين
-            </a>
-            <a
-              href="mailto:care@wajeez.com"
-              className="inline-flex items-center gap-2 rounded-2xl border border-white/20 px-6 py-3 font-bold text-white transition hover:border-[#6EC7D1] hover:text-[#6EC7D1]"
-            >
-              <Mail className="h-5 w-5" />
-              care@wajeez.com
-            </a>
-          </div>
-        </div>
-      )}
+      <div className="mt-8 rounded-3xl border border-[#38A7B4]/40 bg-[#38A7B4]/10 p-6 text-center md:p-8">
+        <h2 className="text-xl font-black">لم تجد إجابتك؟</h2>
+        <p className="mt-2 text-sm text-white/60">فريقنا يقرأ كل رسالة بنفسه ويرد خلال يوم عمل واحد.</p>
+        <Link
+          to="/contact"
+          className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-[#247B84] px-6 py-3 font-bold text-white transition hover:bg-[#1E666E]"
+        >
+          صفحة التواصل
+        </Link>
+      </div>
       <div className="mt-10 text-center">
         <Link to="/diagnostic" className="inline-flex items-center gap-2 rounded-2xl bg-[#38A7B4] px-8 py-4 font-black text-[#0D0D0D] transition hover:bg-[#6EC7D1]">
           ابدأ التشخيص الذكي مجانا
@@ -105,6 +91,7 @@ function FaqPage() {
   const [open, setOpen] = useState<number | null>(0);
   return (
     <Shell>
+      <SeoHead title="الأسئلة الشائعة" description="إجابات صريحة عن أكثر ما يسألنا عنه الزوار: التشخيص، الأسعار، الشهادات، والاسترداد." path="/p/faq" />
       <h1 className="text-3xl font-black leading-snug md:text-4xl">الأسئلة الشائعة</h1>
       <p className="mt-4 text-lg leading-loose text-white/60">جمعنا ما يسألنا عنه الزوار فعلا — وأجبنا بلا مجاملة.</p>
       <div className="mt-10 space-y-3">

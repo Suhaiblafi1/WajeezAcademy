@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router";
 import { GraduationCap, LayoutDashboard, Route as RouteIcon, Trophy, Award, Lock, Eye, LogOut } from "lucide-react";
-import { canAccessPortal, enablePreview, getEnrollment } from "@/services/access";
+import { canAccessPortal, enablePreview, getEnrollment, isOwnerUnlocked, unlockOwner } from "@/services/access";
 import { signOut } from "@/services/auth";
 import { readUserName } from "@/data/student";
 
@@ -13,6 +13,8 @@ export default function PortalLayout({ children, title }: { children: React.Reac
   const enrollment = getEnrollment();
 
   useEffect(() => {
+    /* فتح علم المالك مرة واحدة عبر ?preview=owner في العنوان */
+    if (new URLSearchParams(window.location.search).get("preview") === "owner") unlockOwner();
     setAllowed(canAccessPortal());
   }, []);
 
@@ -33,12 +35,14 @@ export default function PortalLayout({ children, title }: { children: React.Reac
           <Link to="/" className="rounded-full border border-white/15 px-6 py-3 font-bold text-white/80 hover:border-white/40">
             الرئيسية
           </Link>
-          <button
-            onClick={() => { enablePreview(); setAllowed(true); }}
-            className="flex cursor-pointer items-center gap-1.5 rounded-full border border-dashed border-white/20 px-4 py-2 text-xs text-white/40 hover:border-[#6EC7D1]/50 hover:text-[#6EC7D1]"
-          >
-            <Eye className="h-3.5 w-3.5" /> معاينة تجريبية (للمالك)
-          </button>
+          {isOwnerUnlocked() && (
+            <button
+              onClick={() => { enablePreview(); setAllowed(true); }}
+              className="flex cursor-pointer items-center gap-1.5 rounded-full border border-dashed border-white/20 px-4 py-2 text-xs text-white/40 hover:border-[#6EC7D1]/50 hover:text-[#6EC7D1]"
+            >
+              <Eye className="h-3.5 w-3.5" /> معاينة تجريبية (للمالك)
+            </button>
+          )}
         </div>
       </div>
     );

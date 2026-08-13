@@ -21,7 +21,7 @@ const ADVISORS: Record<string, { name: string; title: string }> = {
   BIZ: { name: "م. لينا الحربي", title: "مستشارة ريادة الأعمال" },
   LEAD: { name: "م. سلطان الدوسري", title: "مستشار القيادة" },
 };
-const WHATSAPP_NUMBER = "966555555555";
+import AdvisorContact from "@/components/AdvisorContact";
 
 export default function StudentDashboard() {
   const enrollment = getEnrollment();
@@ -45,7 +45,7 @@ export default function StudentDashboard() {
   }, [pathwayId, state.startedAt]);
 
   const advisor = ADVISORS[pathwayId.split("-")[1]] ?? ADVISORS.EMP;
-  const waText = encodeURIComponent(`مرحبا ${advisor.name}، أنا ${user} طالب مسار «${pathway?.name}» وأريد استشارتك.`);
+  const advisorMsg = `مرحبا ${advisor.name}، أنا ${user} طالب مسار «${pathway?.name}» وأريد استشارتك.`;
   const unread = state.notifications.filter((n) => !n.read).length;
   const completedCount = (pathwayCourses[pathwayId] ?? []).filter((id) => courseGate(pathwayId, id, state).status === "completed").length;
   const totalCourses = (pathwayCourses[pathwayId] ?? []).length;
@@ -110,13 +110,11 @@ export default function StudentDashboard() {
             </div>
           </div>
           <p className="mt-3 text-xs leading-6 text-white/50">آخر ملاحظة: «بداية موفقة — ركز على إنهاء دروس الدورة الأولى هذا الأسبوع.»</p>
-          <a
-            href={`https://wa.me/${WHATSAPP_NUMBER}?text=${waText}`}
-            target="_blank" rel="noreferrer"
+          <AdvisorContact
+            text={advisorMsg}
+            label="راسل مستشارك"
             className="mt-4 flex items-center justify-center gap-2 rounded-full bg-[#25D366] py-2.5 text-sm font-black text-white hover:bg-[#25D366]/85"
-          >
-            <MessageCircle className="h-4 w-4" /> راسل مستشارك
-          </a>
+          />
         </section>
       </div>
 

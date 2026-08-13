@@ -19,7 +19,7 @@ const STATUS_META: Record<CourseStatus, { label: string; cls: string; icon: type
   completed: { label: "مكتملة", cls: "border-[#38A7B4]/60 text-[#38A7B4]", icon: CheckCircle2 },
 };
 
-const WHATSAPP_NUMBER = "966555555555";
+import AdvisorContact from "@/components/AdvisorContact";
 
 export default function MyPathway() {
   const enrollment = getEnrollment();
@@ -29,7 +29,7 @@ export default function MyPathway() {
   const ids = pathwayCourses[pathwayId] ?? [];
   const conditions = useMemo(() => projectConditions(pathwayId, state), [pathwayId, state]);
   const metCount = conditions.filter((c) => c.met).length;
-  const waReview = encodeURIComponent(`مرحبا، أنا طالب مسار «${pathway?.name}» وأريد مراجعة مساري (تبديل/إضافة دورة).`);
+  const reviewMsg = `مرحبا، أنا طالب مسار «${pathway?.name}» وأريد مراجعة مساري (تبديل/إضافة دورة).`;
 
   return (
     <PortalLayout title={`مساري — ${pathway?.name}`}>
@@ -41,13 +41,12 @@ export default function MyPathway() {
             <h2 className="mt-1 text-lg font-black">ماذا ستتقن في نهاية هذا المسار؟</h2>
             <p className="mt-1 max-w-2xl text-sm leading-7 text-white/60">{pathway?.output}</p>
           </div>
-          <a
-            href={`https://wa.me/${WHATSAPP_NUMBER}?text=${waReview}`}
-            target="_blank" rel="noreferrer"
+          <AdvisorContact
+            text={reviewMsg}
+            label="مراجعة مساري"
+            icon={<RefreshCcw className="h-4 w-4" />}
             className="flex items-center gap-2 rounded-full border border-[#FABC05]/40 px-5 py-2.5 text-sm font-bold text-[#FABC05] transition hover:bg-[#FABC05]/10"
-          >
-            <RefreshCcw className="h-4 w-4" /> مراجعة مساري
-          </a>
+          />
         </div>
         <p className="mt-3 text-[11px] text-white/35">
           التبديل لا يتم عشوائيا — تطلب مراجعة مع مستشارك يفحص الأهلية والتكافؤ ثم يُنفذ بأثر موثق.
@@ -161,13 +160,12 @@ export default function MyPathway() {
                   <p className="text-sm font-bold">{c.name}</p>
                   <p className="mt-0.5 text-[11px] text-white/45">{c.weeks} أسابيع · {formatPrice(coursePriceOf(c))} منفردة</p>
                 </div>
-                <a
-                  href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`أريد إضافة دورة «${c.name}» لمساري`)}`}
-                  target="_blank" rel="noreferrer"
+                <AdvisorContact
+                  text={`أريد إضافة دورة «${c.name}» لمساري`}
+                  label="أضفها عبر مستشارك"
+                  icon={<MessageCircle className="h-3 w-3" />}
                   className="flex shrink-0 items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-bold text-white/70 transition hover:border-[#25D366] hover:text-[#25D366]"
-                >
-                  <MessageCircle className="h-3 w-3" /> أضفها عبر مستشارك
-                </a>
+                />
               </div>
             ) : null;
           })}

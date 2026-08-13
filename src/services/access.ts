@@ -55,6 +55,16 @@ export function isPreview(): boolean {
   return localStorage.getItem("wajeez_portal_preview") === "1";
 }
 
+/** علم المالك: يُفتح مرة واحدة عبر ?preview=owner في العنوان ويُخزن محليا —
+    لا يظهر زر المعاينة ولا بوابات الفريق لمن لم يفتح هذا العلم */
+const OWNER_KEY = "wajeez_owner_gateways";
+export function unlockOwner(): void {
+  localStorage.setItem(OWNER_KEY, "1");
+}
+export function isOwnerUnlocked(): boolean {
+  return localStorage.getItem(OWNER_KEY) === "1";
+}
+
 /** هل يحق للمستخدم دخول البوابة؟ دفع سابق أو معاينة تجريبية */
 export function canAccessPortal(): boolean {
   return getEnrollment() !== null || isPreview();

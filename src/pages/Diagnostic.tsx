@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
 import {
   ArrowRight,
@@ -31,6 +31,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/services/currency";
+import { track } from "@/services/analytics";
+import SeoHead from "@/components/SeoHead";
 import { Badge } from "@/components/ui/badge";
 import AuthGate from "@/components/AuthGate";
 import {
@@ -54,6 +56,7 @@ import {
   pathwayPriceFor,
   MIN_PATHWAY_COURSES,
   MAX_PATHWAY_COURSES,
+  weeksLabel,
 } from "@/data/courses";
 import type { Pathway } from "@/data/pathways";
 
@@ -578,6 +581,17 @@ export default function Diagnostic() {
   const [savedFlash, setSavedFlash] = useState(false);
 
   /* تحذير قبل مغادرة تشخيص غير محفوظ — التقدم محفوظ تلقائيا لكن نطمئنه */
+  const stageRef = useRef(stage);
+  useEffect(() => {
+    stageRef.current = stage;
+  }, [stage]);
+  /* من غادر أثناء الأسئلة دون إكمال — حدث "هجر" واحد عند مغادرة الصفحة */
+  useEffect(
+    () => () => {
+      if (stageRef.current === "questions") track("diagnostic_abandoned");
+    },
+    []
+  );
   useEffect(() => {
     if (stage !== "questions") return;
     const warn = (e: BeforeUnloadEvent) => {
@@ -628,6 +642,7 @@ export default function Diagnostic() {
   };
 
   const start = () => {
+    track("diagnostic_started");
     const first = nextQuestion({}, []);
     setAnswers({});
     setAsked([]);
@@ -678,6 +693,7 @@ export default function Diagnostic() {
     setStage("computing");
     clearProgress();
     setSavedProgress(null);
+    track("diagnostic_completed", { questions: Object.keys(finalAnswers).length });
     const res = computeResult(finalAnswers);
     // نحفظ إجاباته ونتيجته وJSON القرار — في الجلسة وعلى الجهاز ليبقى التشخيص بعد إغلاق المتصفح
     for (const store of [sessionStorage, localStorage]) {
@@ -691,6 +707,7 @@ export default function Diagnostic() {
       window.clearInterval(ticker);
       setResult(res);
       setTopPathway(res.top);
+      track("recommendation_viewed", { confidence: res.confidence });
       setStage("result");
     }, 1900);
   };
@@ -699,6 +716,7 @@ export default function Diagnostic() {
     if (!question) return;
     const next = { ...answers, [qid]: value };
     const nextAsked = asked.includes(qid) ? asked : [...asked, qid];
+    track("diagnostic_question_completed", { count: nextAsked.length });
     setAnswers(next);
     setAsked(nextAsked);
     setHistory([...history, question]);
@@ -784,6 +802,11 @@ export default function Diagnostic() {
 
   return (
     <div dir="rtl" className="min-h-screen bg-[#0D0D0D] text-white">
+      <SeoHead
+        title="التشخيص الذكي"
+        description="تشخيص تعليمي تكيفي يفهم هدفك وواقعك، ويوصي بمسار واحد مفسّر بدرجة ثقة — مجاني ودون حساب."
+        path="/diagnostic"
+      />
       {/* Top bar */}
       <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0D0D0D]/85 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-5">
@@ -1258,7 +1281,7 @@ export default function Diagnostic() {
                 <div className="rounded-xl bg-white/[0.05] p-4">
                   <CalendarClock className="h-5 w-5 text-[#6EC7D1]" />
                   <p className="mt-2 text-sm text-white/50">المدة</p>
-                  <p className="font-black">{topPathway.durationWeeks} أسبوعًا</p>
+                  <p className="font-black">{weeksLabel(topPathway.durationWeeks)}</p>
                 </div>
                 <div className="rounded-xl bg-white/[0.05] p-4">
                   <Clock3 className="h-5 w-5 text-[#6EC7D1]" />
@@ -1465,7 +1488,7 @@ export default function Diagnostic() {
                   <dl className="mt-3 space-y-1.5 text-xs text-white/55">
                     <div className="flex items-center justify-between gap-2">
                       <dt>المدة</dt>
-                      <dd className="font-bold text-white/85">{topPathway.durationWeeks} أسبوعا</dd>
+                      <dd className="font-bold text-white/85">{weeksLabel(topPathway.durationWeeks)}</dd>
                     </div>
                     <div className="flex items-center justify-between gap-2">
                       <dt>الوقت الأسبوعي</dt>
@@ -1487,7 +1510,7 @@ export default function Diagnostic() {
                     <dl className="mt-3 space-y-1.5 text-xs text-white/55">
                       <div className="flex items-center justify-between gap-2">
                         <dt>المدة</dt>
-                        <dd className="font-bold text-white/85">{result.faster.durationWeeks} أسبوعا</dd>
+                        <dd className="font-bold text-white/85">{weeksLabel(result.faster.durationWeeks)}</dd>
                       </div>
                       <div className="flex items-center justify-between gap-2">
                         <dt>الوقت الأسبوعي</dt>
@@ -1515,7 +1538,7 @@ export default function Diagnostic() {
                     <dl className="mt-3 space-y-1.5 text-xs text-white/55">
                       <div className="flex items-center justify-between gap-2">
                         <dt>المدة</dt>
-                        <dd className="font-bold text-white/85">{result.cheaper.p.durationWeeks} أسبوعا</dd>
+                        <dd className="font-bold text-white/85">{weeksLabel(result.cheaper.p.durationWeeks)}</dd>
                       </div>
                       <div className="flex items-center justify-between gap-2">
                         <dt>الوقت الأسبوعي</dt>
