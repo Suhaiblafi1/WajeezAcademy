@@ -157,7 +157,7 @@ function Nav() {
     <header className="fixed inset-x-0 top-0 z-50 border-b border-white/5 bg-[#0D0D0D]/80 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
         <a href="#top" className="flex items-center">
-          <img src="/logo-full.png" alt="شعار أكاديمية وجيز" className="h-14 w-auto rounded-xl bg-white object-contain p-1.5" />
+          <img src="/logo-full.png" alt="شعار أكاديمية وجيز" className="h-14 w-auto object-contain" />
         </a>
         <nav className="hidden items-center gap-7 text-sm text-muted-foreground md:flex">
           {links.map((l) =>
