@@ -180,6 +180,16 @@ export default function PathwayPage() {
     } catch { return null; }
   }, []);
 
+  /* المسار الذي اعتمده تشخيصه سابقا — إن وُجد */
+  const diagTopId = useMemo(() => {
+    try {
+      return sessionStorage.getItem("wajeez_diag_top");
+    } catch {
+      return null;
+    }
+  }, []);
+  const diagTopPathway = diagTopId ? pathwayById(diagTopId) : undefined;
+
   if (!pathway) {
     return (
       <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-[#0D0D0D] text-white">
@@ -274,16 +284,38 @@ export default function PathwayPage() {
             </p>
           </div>
 
-          {/* فرصة التشخيص قبل الالتزام */}
-          <div className="story-fade mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-dashed border-[#38A7B4]/40 bg-[#38A7B4]/5 px-6 py-4">
-            <p className="text-sm leading-relaxed text-white/70">
-              <span className="font-black text-[#6EC7D1]">لست متأكدا أن هذا مسارك الأنسب؟ </span>
-              خمس دقائق من التشخيص تطابقك مع أكثر من 45 مسارا وتشرح لك السبب.
-            </p>
-            <Button variant="outline" className="border-[#38A7B4]/60 text-[#6EC7D1] hover:bg-[#38A7B4]/15" asChild>
-              <Link to="/diagnostic">خذ التشخيص أولا</Link>
-            </Button>
-          </div>
+          {/* التشخيص: دعوة للزائر الجديد — وشارة اعتماد لمن جاء من تشخيصه */}
+          {!report && (
+            <div className="story-fade mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-dashed border-[#38A7B4]/40 bg-[#38A7B4]/5 px-6 py-4">
+              <p className="text-sm leading-relaxed text-white/70">
+                <span className="font-black text-[#6EC7D1]">لست متأكدا أن هذا مسارك الأنسب؟ </span>
+                خمس دقائق من التشخيص تطابقك مع أكثر من 45 مسارا وتشرح لك السبب.
+              </p>
+              <Button variant="outline" className="border-[#38A7B4]/60 text-[#6EC7D1] hover:bg-[#38A7B4]/15" asChild>
+                <Link to="/diagnostic">خذ التشخيص أولا</Link>
+              </Button>
+            </div>
+          )}
+          {report && diagTopId === pathway.id && (
+            <div className="story-fade mt-6 flex items-center gap-3 rounded-2xl border border-[#38A7B4]/50 bg-[#38A7B4]/10 px-6 py-4">
+              <CheckCircle2 className="h-5 w-5 shrink-0 text-[#6EC7D1]" />
+              <p className="text-sm leading-relaxed text-white/80">
+                <span className="font-black text-[#6EC7D1]">هذا المسار اعتمده تشخيصك. </span>
+                لم يُختَر من كتالوج — بل بُني على إجاباتك أنت: هدفك وفجواتك وإيقاع حياتك.
+              </p>
+            </div>
+          )}
+          {report && diagTopId && diagTopId !== pathway.id && diagTopPathway && (
+            <div className="story-fade mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-4">
+              <p className="text-sm leading-relaxed text-white/70">
+                <span className="font-black text-[#6EC7D1]">تذكير: </span>
+                تشخيصك اعتمد لك مسار «{diagTopPathway.name}» — وأنت الآن تستعرض مسارا آخر.
+              </p>
+              <Button variant="outline" className="border-[#38A7B4]/60 text-[#6EC7D1] hover:bg-[#38A7B4]/15" asChild>
+                <Link to={`/pathways/${diagTopId}`}>انتقل لمساري المعتمد</Link>
+              </Button>
+            </div>
+          )}
 
           {/* تقريره الشخصي */}
           {report && (

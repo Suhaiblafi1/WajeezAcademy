@@ -5,7 +5,7 @@ import {
   FileCheck, ShieldCheck, Quote, ChevronDown, Menu, X, ArrowLeft,
   Clock, User, Award, GraduationCap, Building2, Landmark,
   CheckCircle2, CalendarDays, Play, Flame, ChevronLeft, ChevronRight, BookOpen,
-  Star, Gift, Users
+  Star, Users
 } from 'lucide-react'
 import { bestsellers, pathwayById } from '@/data/pathways'
 import { bestsellerCourses, courseById, courseCategories, pathwayTrainers, type Course } from '@/data/courses'
@@ -483,120 +483,162 @@ function ImageBand() {
 
 /* ───────────────── stories (the heart) ───────────────── */
 function Stories() {
-  const [active, setActive] = useState(0)
-  const story = stories[active]
+  const [open, setOpen] = useState<(typeof stories)[number] | null>(null)
 
   return (
-    <section id="stories" className="relative py-20 md:py-28">
+    <section id="stories" className="relative py-20 md:py-24">
       <div className="pointer-events-none absolute left-1/3 top-0 h-[400px] w-[400px] rounded-full bg-[#38A7B4]/8 blur-[130px]" />
       <div className="mx-auto max-w-6xl px-5">
         <div className="reveal text-center">
           <SectionLabel>قصص حدثت بالفعل</SectionLabel>
           <h2 className="mt-5 text-3xl font-bold md:text-4xl">مسارات مشى فيها غيرك قبلك</h2>
           <p className="mx-auto mt-4 max-w-xl leading-8 text-muted-foreground">
-            كل قصة بدأت بتشخيص، ومرّت بمسار ومدرب، وانتهت بمخرج يمكنك أن تراه.
+            كل قصة بدأت بتشخيص، ومرّت بمسار ومدرب، وانتهت بمخرج يمكنك أن تراه — اختر قصة واقرأها كاملة.
           </p>
         </div>
+      </div>
 
-        {/* story tabs */}
-        <div className="reveal mt-12 flex flex-wrap justify-center gap-3">
-          {stories.map((s, i) => (
-            <button
-              key={s.id}
-              onClick={() => setActive(i)}
-              className={`rounded-2xl border px-5 py-3 text-sm font-semibold transition ${
-                i === active
-                  ? 'border-teal bg-teal text-white shadow-[0_0_30px_-8px_#38A7B4]'
-                  : 'border-white/10 bg-white/[0.03] text-muted-foreground hover:border-teal/40 hover:text-teal-light'
-              }`}
-            >
-              {s.name} · {s.tag}
-            </button>
-          ))}
-        </div>
-
-        {/* story card */}
-        <div key={story.id} className="story-fade mx-auto mt-10 max-w-4xl">
-          <div className="overflow-hidden rounded-3xl border border-white/10 bg-card">
-            {/* صورة القصة */}
-            <div className="relative h-56 overflow-hidden md:h-72">
+      {/* شريط القصص المضغوط — بطاقة لكل قصة، والتفاصيل في نافذتها */}
+      <div className="scrollbar-hide mt-10 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-4 md:px-[max(1.25rem,calc((100vw-72rem)/2+1.25rem))]">
+        {stories.map((s) => (
+          <button
+            key={s.id}
+            onClick={() => setOpen(s)}
+            className="group flex w-[280px] shrink-0 snap-start flex-col overflow-hidden rounded-3xl border border-white/10 bg-card text-right transition hover:border-teal/40 hover:shadow-[0_20px_60px_-30px_rgba(56,167,180,0.4)]"
+          >
+            <div className="relative h-36 overflow-hidden">
               <img
-                src={story.img}
-                alt={`قصة ${story.name}`}
+                src={s.img}
+                alt={`قصة ${s.name}`}
                 loading="lazy"
-                className="h-full w-full object-cover"
+                className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-transparent" />
-              <div className="absolute bottom-4 right-6 flex items-center gap-3">
-                <span className="rounded-full bg-teal/90 px-4 py-1.5 text-sm font-bold text-white">{story.tag}</span>
-                <span className="text-sm text-white/80">{story.name} — {story.role}</span>
-              </div>
+              <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
+              <span className="absolute bottom-3 right-4 rounded-full bg-teal/90 px-3 py-1 text-[11px] font-bold text-white">{s.tag}</span>
             </div>
-            {/* narrative */}
-            <div className="border-b border-white/5 p-8 md:p-10">
-              <Quote className="h-8 w-8 text-teal/50" />
-              <p className="mt-5 text-lg leading-9 text-foreground/90 md:text-xl md:leading-10">
-                {story.before} {story.turn}
+            <div className="flex flex-1 flex-col p-5">
+              <p className="text-sm font-bold">
+                {s.name} <span className="font-normal text-muted-foreground">— {s.role}</span>
               </p>
+              <p className="mt-2 line-clamp-2 text-xs leading-6 text-muted-foreground">{s.before}</p>
+              <p className="mt-2 line-clamp-2 text-xs leading-6 text-foreground/85">
+                <span className="font-bold text-amber-brand">النتيجة: </span>
+                {s.result}
+              </p>
+              <span className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-teal-light">
+                اقرأ القصة كاملة
+                <ArrowLeft className="h-3.5 w-3.5 transition group-hover:-translate-x-1" />
+              </span>
             </div>
+          </button>
+        ))}
 
-            {/* pathway details */}
-            <div className="grid gap-px bg-white/5 md:grid-cols-3">
-              <div className="bg-card p-6">
-                <div className="flex items-center gap-2 text-xs text-teal-light"><Route className="h-4 w-4" /> المسار الذي سلكه</div>
-                <div className="mt-2 font-bold leading-7">{story.pathway}</div>
-                <div className="mt-1 text-xs text-muted-foreground">{story.duration}</div>
-              </div>
-              <div className="bg-card p-6">
-                <div className="flex items-center gap-2 text-xs text-teal-light"><User className="h-4 w-4" /> المدرب</div>
-                <div className="mt-2 font-bold">{story.trainer}</div>
-                <div className="mt-1 text-xs text-muted-foreground">رافقه في التقييم والمتابعة طوال المسار</div>
-              </div>
-              <div className="bg-card p-6">
-                <div className="flex items-center gap-2 text-xs text-teal-light"><FileCheck className="h-4 w-4" /> المخرج العملي</div>
-                <div className="mt-2 font-bold leading-7">{story.output}</div>
-              </div>
-            </div>
+        {/* بطاقة ختامية تعيد للتشخيص */}
+        <Link
+          to="/diagnostic"
+          className="flex w-[240px] shrink-0 snap-start flex-col items-center justify-center rounded-3xl border border-dashed border-teal/30 bg-[#38A7B4]/5 p-6 text-center transition hover:border-teal/60 hover:bg-[#38A7B4]/10"
+        >
+          <Compass className="h-7 w-7 text-teal" />
+          <p className="mt-3 text-sm font-bold leading-relaxed">وقصتك التالية؟</p>
+          <p className="mt-1.5 text-xs leading-6 text-muted-foreground">تبدأ بخمس دقائق من التشخيص</p>
+          <span className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-teal-light">
+            ابدأ الآن
+            <ArrowLeft className="h-3.5 w-3.5" />
+          </span>
+        </Link>
+      </div>
 
-            {/* دورات القصة ومخرجاتها */}
-            <div className="border-t border-white/5 p-8 md:px-10">
-              <div className="flex items-center gap-2 text-xs text-teal-light">
-                <BookOpen className="h-4 w-4" /> الدورات التي أخذها {story.name} — وماذا خرج من كل واحدة
-              </div>
-              <div className="mt-4 grid gap-3 md:grid-cols-3">
-                {story.courses.map((c) => (
-                  <div key={c.name} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                    <p className="text-sm font-bold leading-relaxed">{c.name}</p>
-                    <p className="mt-2 flex items-start gap-1.5 text-xs leading-6 text-muted-foreground">
-                      <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-teal" />
-                      {c.output}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* result */}
-            <div className="border-t border-white/5 bg-gradient-to-l from-[#38A7B4]/10 to-transparent p-8 md:px-10">
-              <div className="flex items-start gap-3">
-                <Award className="mt-1 h-6 w-6 shrink-0 text-amber-brand" />
-                <div>
-                  <div className="text-sm font-semibold text-amber-brand">وكيف انتهت القصة؟</div>
-                  <p className="mt-2 leading-8 text-foreground/90">{story.result}</p>
-                  <div className="mt-4 text-xs text-muted-foreground">— {story.name}، {story.role}</div>
+      {/* نافذة القصة الكاملة */}
+      {open && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm" onClick={() => setOpen(null)}>
+          <div className="mx-auto my-8 max-w-3xl px-4 pb-8">
+            <div
+              className="story-fade overflow-hidden rounded-3xl border border-white/10 bg-card"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* صورة القصة */}
+              <div className="relative h-56 overflow-hidden md:h-72">
+                <img src={open.img} alt={`قصة ${open.name}`} className="h-full w-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-transparent" />
+                <button
+                  onClick={() => setOpen(null)}
+                  aria-label="إغلاق القصة"
+                  className="absolute left-4 top-4 grid h-9 w-9 place-items-center rounded-full bg-black/50 text-white/80 backdrop-blur transition hover:bg-black/70 hover:text-white"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+                <div className="absolute bottom-4 right-6 flex items-center gap-3">
+                  <span className="rounded-full bg-teal/90 px-4 py-1.5 text-sm font-bold text-white">{open.tag}</span>
+                  <span className="text-sm text-white/80">{open.name} — {open.role}</span>
                 </div>
               </div>
+
+              {/* الحكاية */}
+              <div className="border-b border-white/5 p-8 md:p-10">
+                <Quote className="h-8 w-8 text-teal/50" />
+                <p className="mt-5 text-lg leading-9 text-foreground/90 md:text-xl md:leading-10">
+                  {open.before} {open.turn}
+                </p>
+              </div>
+
+              {/* تفاصيل المسار */}
+              <div className="grid gap-px bg-white/5 md:grid-cols-3">
+                <div className="bg-card p-6">
+                  <div className="flex items-center gap-2 text-xs text-teal-light"><Route className="h-4 w-4" /> المسار الذي سلكه</div>
+                  <div className="mt-2 font-bold leading-7">{open.pathway}</div>
+                  <div className="mt-1 text-xs text-muted-foreground">{open.duration}</div>
+                </div>
+                <div className="bg-card p-6">
+                  <div className="flex items-center gap-2 text-xs text-teal-light"><User className="h-4 w-4" /> المدرب</div>
+                  <div className="mt-2 font-bold">{open.trainer}</div>
+                  <div className="mt-1 text-xs text-muted-foreground">رافقه في التقييم والمتابعة طوال المسار</div>
+                </div>
+                <div className="bg-card p-6">
+                  <div className="flex items-center gap-2 text-xs text-teal-light"><FileCheck className="h-4 w-4" /> المخرج العملي</div>
+                  <div className="mt-2 font-bold leading-7">{open.output}</div>
+                </div>
+              </div>
+
+              {/* دورات القصة ومخرجاتها */}
+              <div className="border-t border-white/5 p-8 md:px-10">
+                <div className="flex items-center gap-2 text-xs text-teal-light">
+                  <BookOpen className="h-4 w-4" /> الدورات التي أخذها {open.name} — وماذا خرج من كل واحدة
+                </div>
+                <div className="mt-4 grid gap-3 md:grid-cols-3">
+                  {open.courses.map((c) => (
+                    <div key={c.name} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                      <p className="text-sm font-bold leading-relaxed">{c.name}</p>
+                      <p className="mt-2 flex items-start gap-1.5 text-xs leading-6 text-muted-foreground">
+                        <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-teal" />
+                        {c.output}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* النهاية */}
+              <div className="border-t border-white/5 bg-gradient-to-l from-[#38A7B4]/10 to-transparent p-8 md:px-10">
+                <div className="flex items-start gap-3">
+                  <Award className="mt-1 h-6 w-6 shrink-0 text-amber-brand" />
+                  <div>
+                    <div className="text-sm font-semibold text-amber-brand">وكيف انتهت القصة؟</div>
+                    <p className="mt-2 leading-8 text-foreground/90">{open.result}</p>
+                    <div className="mt-4 text-xs text-muted-foreground">— {open.name}، {open.role}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-white/5 p-6 text-center">
+                <Link to="/diagnostic" className="inline-flex items-center gap-2 font-semibold text-teal-light transition hover:text-teal">
+                  قصتك التالية تبدأ من تشخيصك
+                  <ArrowLeft className="h-4 w-4" />
+                </Link>
+              </div>
             </div>
           </div>
-
-          <div className="mt-6 text-center">
-            <Link to="/diagnostic" className="inline-flex items-center gap-2 font-semibold text-teal-light transition hover:text-teal">
-              قصتك التالية تبدأ من تشخيصك
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </div>
         </div>
-      </div>
+      )}
     </section>
   )
 }
@@ -624,6 +666,8 @@ function Bestsellers() {
   const shownCourses = bestsellerCourses
     .map((b) => ({ ...b, c: courseById(b.id)! }))
     .filter((b) => b.c && (cat === 'الكل' || b.c.category === cat))
+  const spotlight = shownPathways[0]
+  const railPathways = shownPathways.slice(1)
 
   return (
     <section id="bestsellers" className="py-16 md:py-20">
@@ -666,17 +710,54 @@ function Bestsellers() {
         </div>
       </div>
 
-      {/* راويل المسارات */}
+      {/* البطاقة المميزة — اختيار وجيز الأول في هذا المجال */}
+      {spotlight && (
+        <div className="mx-auto max-w-6xl px-5">
+          <Link
+            to={`/pathways/${spotlight.id}`}
+            className="reveal group mt-8 grid overflow-hidden rounded-3xl border border-teal/30 bg-gradient-to-l from-[#12343B] to-card transition hover:border-teal/60 hover:shadow-[0_30px_80px_-40px_rgba(56,167,180,0.5)] md:grid-cols-5"
+          >
+            <div className="relative flex min-h-[190px] items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_70%_30%,rgba(56,167,180,0.4),transparent_65%)] md:col-span-2">
+              <Route className="h-16 w-16 text-teal-light/70" />
+              <span className="absolute right-5 top-5 inline-flex items-center gap-1.5 rounded-full bg-[#FABC05] px-3.5 py-1.5 text-xs font-black text-[#0D0D0D]">
+                <Flame className="h-3.5 w-3.5" />
+                {spotlight.note}
+              </span>
+            </div>
+            <div className="p-8 md:col-span-3 md:p-10">
+              <span className="kicker">اختيار وجيز الأول في هذا المجال</span>
+              <h3 className="mt-3 text-2xl font-black leading-snug md:text-3xl">{spotlight.p.name}</h3>
+              <p className="mt-3 max-w-lg text-sm leading-8 text-muted-foreground">{spotlight.p.transformation}</p>
+              <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground">
+                <span>{spotlight.p.level}</span>
+                <span className="text-white/20">•</span>
+                <span>{spotlight.p.durationWeeks} أسبوعا</span>
+                <span className="text-white/20">•</span>
+                <span>{spotlight.p.weeklyHours}</span>
+                <span className="text-white/20">•</span>
+                <span className="flex items-center gap-1.5">
+                  <Users className="h-3.5 w-3.5 text-teal" />
+                  {pathwayTrainers(spotlight.id).map((t) => t.name).join('، ')}
+                </span>
+              </div>
+              <span className="mt-6 inline-flex items-center gap-2 rounded-full bg-teal px-6 py-2.5 text-sm font-bold text-white transition group-hover:bg-teal-deep">
+                افتح المسار
+                <ArrowLeft className="h-4 w-4 transition group-hover:-translate-x-1" />
+              </span>
+            </div>
+          </Link>
+        </div>
+      )}
+
+      {/* راويل المسارات — بطاقات أنحف وأنظف */}
       <div
         ref={pwRailRef}
         className="scrollbar-hide mt-8 flex snap-x snap-mandatory gap-5 overflow-x-auto px-5 pb-4 md:px-[max(1.25rem,calc((100vw-72rem)/2+1.25rem))]"
       >
-        {shownPathways.map(({ id, note, p }) => {
-          const trainers = pathwayTrainers(id)
-          return (
+        {railPathways.map(({ id, note, p }) => (
           <article
             key={id}
-            className="group flex w-[300px] shrink-0 snap-start flex-col rounded-3xl border border-white/10 bg-card p-6 transition hover:border-teal/40 hover:shadow-[0_20px_60px_-30px_rgba(56,167,180,0.4)]"
+            className="group flex w-[280px] shrink-0 snap-start flex-col rounded-3xl border border-white/10 bg-card p-6 transition hover:border-teal/40 hover:shadow-[0_20px_60px_-30px_rgba(56,167,180,0.4)]"
           >
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FABC05]/10 px-3 py-1 text-xs font-bold text-amber-brand">
@@ -686,52 +767,28 @@ function Bestsellers() {
               <span className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-muted-foreground">{pwCategory(id)}</span>
             </div>
             <h3 className="mt-4 text-lg font-bold leading-relaxed">{p.name}</h3>
-            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-              <span>{p.level}</span>
-              <span className="text-white/20">•</span>
-              <span>{p.durationWeeks} أسبوعا</span>
-              <span className="text-white/20">•</span>
-              <span>{p.weeklyHours}</span>
+            <div className="mt-2 text-xs leading-6 text-muted-foreground">
+              {p.level} · {p.durationWeeks} أسبوعا · {p.weeklyHours}
             </div>
-            <div className="mt-4 flex flex-wrap gap-1.5">
-              {p.coreSkills.slice(0, 3).map((s) => (
-                <span key={s} className="rounded-full border border-teal/25 bg-[#38A7B4]/10 px-2.5 py-1 text-[11px] text-teal-light">
-                  {s}
-                </span>
-              ))}
+            <div className="mt-3 flex items-center gap-1.5 text-[11px] leading-5 text-muted-foreground">
+              <Users className="h-3.5 w-3.5 shrink-0 text-teal" />
+              {pathwayTrainers(id).map((t) => t.name).join('، ')}
             </div>
-            <p className="mt-4 line-clamp-2 text-sm leading-7 text-muted-foreground">
-              المخرج: {p.output}
-            </p>
-            <div className="mt-3 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-              <Users className="h-3.5 w-3.5 text-teal" />
-              المدربون: {trainers.map((t) => t.name).join('، ')}
-            </div>
-            <div className="mt-auto flex items-center justify-between gap-3 border-t border-white/5 pt-4">
-              <div>
-                <div className="flex items-center gap-1 text-[11px] font-semibold text-amber-brand">
-                  <BadgeCheck className="h-3.5 w-3.5" />
-                  سعر تفضيلي موحد — يظهر في صفحة المسار
-                </div>
-                <div className="mt-0.5 flex items-center gap-1 text-[10px] text-teal-light">
-                  <Gift className="h-3 w-3" /> + دورة مجانية هدية
-                </div>
-              </div>
+            <div className="mt-auto pt-5">
               <Link
                 to={`/pathways/${id}`}
-                className="shrink-0 rounded-xl border border-teal/40 px-4 py-2 text-sm font-semibold text-teal-light transition group-hover:bg-teal group-hover:text-white"
+                className="block rounded-xl border border-teal/40 py-2.5 text-center text-sm font-semibold text-teal-light transition group-hover:bg-teal group-hover:text-white"
               >
                 تفاصيل المسار
               </Link>
             </div>
           </article>
-          )
-        })}
+        ))}
 
         {/* بطاقة ختامية تعيد للتشخيص */}
         <Link
           to="/diagnostic"
-          className="flex w-[300px] shrink-0 snap-start flex-col items-center justify-center rounded-3xl border border-dashed border-teal/30 bg-[#38A7B4]/5 p-6 text-center transition hover:border-teal/60 hover:bg-[#38A7B4]/10"
+          className="flex w-[280px] shrink-0 snap-start flex-col items-center justify-center rounded-3xl border border-dashed border-teal/30 bg-[#38A7B4]/5 p-6 text-center transition hover:border-teal/60 hover:bg-[#38A7B4]/10"
         >
           <Compass className="h-8 w-8 text-teal" />
           <p className="mt-4 font-bold leading-relaxed">لم تجد ما يناسبك؟</p>
@@ -786,21 +843,15 @@ function Bestsellers() {
               <span className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-muted-foreground">{c.category}</span>
             </div>
             <h4 className="mt-3 font-bold leading-relaxed">{c.name}</h4>
-            <p className="mt-1 text-xs text-muted-foreground">من مسار «{c.pathwayName}»</p>
-            <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-              <span>{c.weeks} {c.weeks === 1 ? 'أسبوع' : 'أسابيع'}</span>
-            </div>
+            <p className="mt-1 text-xs text-muted-foreground">من مسار «{c.pathwayName}» · {c.weeks} {c.weeks === 1 ? 'أسبوع' : 'أسابيع'}</p>
             {c.skill && (
               <span className="mt-3 w-fit rounded-full border border-teal/25 bg-[#38A7B4]/10 px-2.5 py-1 text-[11px] text-teal-light">
                 {c.skill}
               </span>
             )}
-            <div className="mt-auto flex items-center justify-between gap-2 border-t border-white/5 pt-3">
-              <div>
-                <span className="block text-[11px] font-semibold text-teal-light">تُخصم من مسارها لو أكملته</span>
-              </div>
-              <button onClick={() => setModalCourse(c)} className="shrink-0 cursor-pointer rounded-lg border border-white/15 px-3 py-1.5 text-xs font-semibold transition group-hover:border-teal/50 group-hover:text-teal-light">
-                التفاصيل
+            <div className="mt-auto pt-4">
+              <button onClick={() => setModalCourse(c)} className="w-full cursor-pointer rounded-lg border border-white/15 py-2 text-xs font-semibold transition group-hover:border-teal/50 group-hover:text-teal-light">
+                تفاصيل الدورة
               </button>
             </div>
           </article>

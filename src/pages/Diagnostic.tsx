@@ -757,15 +757,6 @@ export default function Diagnostic() {
   const qText = question ? resolve(question.text, answers) : "";
   const qHint = question ? resolve(question.hint, answers) : undefined;
   const qOptions: DiagOption[] = question ? (resolve(question.options, answers) ?? []) : [];
-  const topPrice = topPathway
-    ? pathwayPriceFor((pathwayCourses[topPathway.id] ?? []).length || 6)
-    : 600;
-  const topSeparate = topPathway
-    ? (pathwayCourses[topPathway.id] ?? [])
-        .map((id) => courseById(id))
-        .filter((c): c is NonNullable<typeof c> => Boolean(c))
-        .reduce((s, c) => s + coursePriceOf(c), 0)
-    : 0;
 
   return (
     <div dir="rtl" className="min-h-screen bg-[#0D0D0D] text-white">
@@ -1231,9 +1222,10 @@ export default function Diagnostic() {
               )}
 
               <p className="mt-5 rounded-xl border border-white/10 bg-white/[0.04] p-4 text-sm leading-relaxed text-white/70">
-                <span className="font-bold text-[#6EC7D1]">قيمة مسارك: </span>
-                دوراته مجتمعة تكلف {topSeparate}$ لو اشتريتها منفردة — تأخذها كلها بسعر تفضيلي {topPrice}$،
-                ويشمل التشخيص والمتابعة الأسبوعية والمراجعة البشرية، ودورة إضافية مجانية هدية من وجيز.
+                <span className="font-bold text-[#6EC7D1]">ماذا يشمل مسارك: </span>
+                الدورات المسجلة والمباشرة، والتشخيص الكامل، والمتابعة الأسبوعية، والمراجعة البشرية،
+                وملخصات كتب تسمعها وتُختبر فيها — ودورة إضافية مجانية هدية من وجيز.
+                تفاصيل الاستثمار والخصم تجدها في صفحة مسارك بعد اعتماده.
               </p>
             </div>
           </div>
@@ -1391,6 +1383,7 @@ export default function Diagnostic() {
               <h3 className="h-card">خياراتك الثلاثة في ميزان واحد — بدّل بثقة</h3>
               <p className="mt-2 text-xs leading-relaxed text-white/50">
                 ثلاثة مسارات انتقاها المحرك لحالتك تحديدا: توصيتنا الأساسية، وبديل أسرع، وبديل أوفر — والقرار الأخير لك.
+                تفاصيل الاستثمار تظهر في صفحة المسار بعد اعتماده.
               </p>
               <div className="mt-6 grid gap-4 md:grid-cols-3">
                 {/* الأساسي */}
@@ -1405,10 +1398,6 @@ export default function Diagnostic() {
                     <div className="flex items-center justify-between gap-2">
                       <dt>الوقت الأسبوعي</dt>
                       <dd className="font-bold text-white/85">{topPathway.weeklyHours}</dd>
-                    </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <dt>السعر التفضيلي</dt>
-                      <dd className="font-black text-[#FABC05]">{topPrice}$</dd>
                     </div>
                   </dl>
                   <span className="mt-4 flex items-center gap-1.5 text-xs font-bold text-[#6EC7D1]">
@@ -1431,12 +1420,6 @@ export default function Diagnostic() {
                       <div className="flex items-center justify-between gap-2">
                         <dt>الوقت الأسبوعي</dt>
                         <dd className="font-bold text-white/85">{result.faster.weeklyHours}</dd>
-                      </div>
-                      <div className="flex items-center justify-between gap-2">
-                        <dt>السعر التفضيلي</dt>
-                        <dd className="font-black text-[#FABC05]">
-                          {pathwayPriceFor((pathwayCourses[result.faster.id] ?? []).length || 6)}$
-                        </dd>
                       </div>
                     </dl>
                     <Button
@@ -1466,10 +1449,6 @@ export default function Diagnostic() {
                         <dt>الوقت الأسبوعي</dt>
                         <dd className="font-bold text-white/85">{result.cheaper.p.weeklyHours}</dd>
                       </div>
-                      <div className="flex items-center justify-between gap-2">
-                        <dt>السعر التفضيلي</dt>
-                        <dd className="font-black text-[#FABC05]">{result.cheaper.price}$</dd>
-                      </div>
                     </dl>
                     <Button
                       variant="outline"
@@ -1489,38 +1468,28 @@ export default function Diagnostic() {
           {/* تخصيص المسار */}
           <CustomizePathway pathway={topPathway} gaps={result.gaps} onReset={swapCount} />
 
-          {/* CTA */}
+          {/* CTA — قرار واحد واضح: اعتماد المسار */}
           <div className="mt-10 rounded-3xl bg-[#FABC05] p-6 text-center text-[#0D0D0D] md:p-8">
-            <h3 className="text-xl font-black md:text-2xl">جاهز تبدأ «{topPathway.name}»؟</h3>
-            <p className="mx-auto mt-2 max-w-md text-sm font-semibold text-[#0D0D0D]/75">
-              {answers["commit_pref"] === "single_course" ? (
-                <>
-                  اخترت أن تبدأ بدورة واحدة أولا — خطوة ذكية: دورات هذا المسار منفردة 130–180$،
-                  وإن أحببت التجربة فالمسار كاملا بـ<span className="font-black">{topPrice}$</span> بدل{' '}
-                  <span className="font-black line-through decoration-2">{topSeparate}$</span> مع دورة إضافية هدية.
-                </>
-              ) : (
-                <>
-                  قيمة دورات هذا المسار منفردة: <span className="font-black line-through decoration-2">{topSeparate}$</span> —
-                  تأخذها كلها مع التشخيص والمتابعة والشهادة بـ<span className="font-black">{topPrice}$</span> فقط،
-                  أو ابدأ بدورة واحدة 130–180$
-                </>
-              )}
+            <h3 className="text-xl font-black md:text-2xl">مسارك جاهز — بقي قرارك</h3>
+            <p className="mx-auto mt-2 max-w-md text-sm font-semibold leading-relaxed text-[#0D0D0D]/75">
+              اعتمده الآن لتفتح صفحته الكاملة: مدربوه، وجدوله، وتفاصيل الاستثمار وقيمة الخصم —
+              ومنها تبدأ رحلتك فعليا.
             </p>
-            <div className="mt-5 flex flex-wrap justify-center gap-3">
-              <Button size="lg" className="h-12 rounded-full bg-[#0D0D0D] px-8 font-black text-white hover:bg-[#0D0D0D]/85" asChild>
-                <Link to={`/pathways/${topPathway.id}`}>افتح صفحة مساري</Link>
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={restart}
-                className="h-12 rounded-full border-[#0D0D0D]/40 bg-transparent px-8 font-black text-[#0D0D0D] hover:bg-[#0D0D0D]/10"
-              >
-                <RefreshCcw className="ml-2 h-4 w-4" />
-                أعد التشخيص
+            <div className="mt-6">
+              <Button size="lg" className="h-14 rounded-full bg-[#0D0D0D] px-12 text-lg font-black text-white hover:bg-[#0D0D0D]/85" asChild>
+                <Link to={`/pathways/${topPathway.id}`}>
+                  اعتمد مساري «{topPathway.name}»
+                  <ArrowLeft className="mr-2 h-5 w-5" />
+                </Link>
               </Button>
             </div>
+            <button
+              onClick={restart}
+              className="mx-auto mt-4 flex items-center gap-1.5 text-xs font-semibold text-[#0D0D0D]/60 transition hover:text-[#0D0D0D]"
+            >
+              <RefreshCcw className="h-3.5 w-3.5" />
+              لا يشبهني؟ أعد التشخيص من جديد
+            </button>
           </div>
 
           <p className="mt-6 text-center text-xs leading-relaxed text-white/35">
