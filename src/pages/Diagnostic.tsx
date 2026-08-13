@@ -516,7 +516,7 @@ function CustomizePathway({
         <Button
           size="lg"
           onClick={recompose}
-          className="h-12 rounded-full bg-[#38A7B4] px-8 font-black text-white hover:bg-[#247B84]"
+          className="h-12 rounded-full bg-[#38A7B4] px-8 font-black text-[#08272B] hover:bg-[#247B84] hover:text-white"
         >
           <Wand2 className="ml-2 h-4 w-4" />
           أعد صياغة مساري

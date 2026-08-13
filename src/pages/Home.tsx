@@ -12,6 +12,7 @@ import { bestsellerCourses, courseById, courseCategories, pathwayTrainers, type 
 import { faqs } from '@/data/siteContent'
 import AuthGate from '@/components/AuthGate'
 import CourseModal from '@/components/CourseModal'
+import Modal from '@/components/Modal'
 import { CURRENCIES, setCurrency, useCurrency, type CurrencyCode } from '@/services/currency'
 import '../App.css'
 
@@ -54,6 +55,7 @@ function useReveal() {
 const stories = [
   {
     id: 'sara',
+    gender: 'f' as const,
     tag: 'تصميم تجربة المستخدم',
     name: 'سارة',
     role: 'مصممة جرافيك — جدة',
@@ -73,6 +75,7 @@ const stories = [
   },
   {
     id: 'mohammed',
+    gender: 'm' as const,
     tag: 'تحليل البيانات',
     name: 'محمد',
     role: 'محاسب — الرياض',
@@ -92,6 +95,7 @@ const stories = [
   },
   {
     id: 'nouf',
+    gender: 'f' as const,
     tag: 'اكتشاف الاتجاه',
     name: 'نوف',
     role: 'طالبة جامعية — الدمام',
@@ -110,6 +114,7 @@ const stories = [
   },
   {
     id: 'khaled',
+    gender: 'm' as const,
     tag: 'القطاع الحكومي',
     name: 'خالد',
     role: 'موظف خدمة جمهور — الرياض',
@@ -129,6 +134,7 @@ const stories = [
   },
   {
     id: 'team',
+    gender: 'm' as const,
     tag: 'حلول الشركات',
     name: 'فريق القيادات الجديدة',
     role: 'شركة لوجستية — 14 مديرا',
@@ -214,6 +220,24 @@ function Nav() {
   const [open, setOpen] = useState(false)
   const [authOpen, setAuthOpen] = useState(false)
   const [userName, setUserName] = useState<string | null>(readUserName)
+  const menuBtnRef = useRef<HTMLButtonElement>(null)
+  const mobileNavRef = useRef<HTMLElement>(null)
+
+  /* قائمة الجوال: عند فتحها ينتقل التركيز إليها، وتُغلق بـEscape ويعود التركيز لزرها */
+  useEffect(() => {
+    if (!open) return
+    const first = mobileNavRef.current?.querySelector<HTMLElement>('a, button')
+    first?.focus()
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setOpen(false)
+        menuBtnRef.current?.focus()
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open])
+
   const links = [
     { label: 'وقفة صدق', href: '#diagnostic' },
     { label: 'كيف نعمل', href: '#how' },
@@ -225,7 +249,7 @@ function Nav() {
     <header className="fixed inset-x-0 top-0 z-50 border-b border-white/5 bg-[#0D0D0D]/80 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
         <a href="#top" className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal text-white font-bold text-lg">و</div>
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal text-[#08272B] font-bold text-lg">و</div>
           <div className="leading-tight">
             <div className="font-bold">وجيز <span className="text-teal-light">أكاديمي</span></div>
             <div className="text-[10px] text-muted-foreground">من مجموعة wajeez.com</div>
@@ -254,17 +278,24 @@ function Nav() {
           )}
           <a
             href="#diagnostic"
-            className="hidden rounded-xl bg-teal px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-deep md:inline-block"
+            className="btn-teal hidden px-5 py-2.5 text-sm md:inline-flex"
           >
             جرّب وقفة صدق
           </a>
-          <button className="md:hidden text-foreground" onClick={() => setOpen(!open)} aria-label="القائمة">
+          <button
+            ref={menuBtnRef}
+            className="md:hidden text-foreground"
+            onClick={() => setOpen(!open)}
+            aria-label={open ? 'إغلاق قائمة التنقل' : 'فتح قائمة التنقل'}
+            aria-expanded={open}
+            aria-controls="mobile-menu"
+          >
             {open ? <X /> : <Menu />}
           </button>
         </div>
       </div>
       {open && (
-        <nav className="border-t border-white/5 bg-[#0D0D0D] px-5 py-4 md:hidden">
+        <nav id="mobile-menu" ref={mobileNavRef} aria-label="قائمة التنقل الرئيسية" className="border-t border-white/5 bg-[#0D0D0D] px-5 py-4 md:hidden">
           {links.map((l) => (
             <a key={l.href} href={l.href} onClick={() => setOpen(false)} className="block py-2.5 text-muted-foreground hover:text-teal-light">
               {l.label}
@@ -282,7 +313,7 @@ function Nav() {
               <User className="h-4 w-4" /> دخول / إنشاء حساب
             </button>
           )}
-          <a href="#diagnostic" onClick={() => setOpen(false)} className="mt-2 block rounded-xl bg-teal px-5 py-3 text-center font-semibold text-white">
+          <a href="#diagnostic" onClick={() => setOpen(false)} className="btn-teal mt-2 flex w-full px-5 py-3">
             جرّب وقفة صدق
           </a>
           <div className="mt-3 flex justify-center">
@@ -291,17 +322,12 @@ function Nav() {
         </nav>
       )}
       {authOpen && (
-        <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 px-5 backdrop-blur-sm"
-          onClick={() => setAuthOpen(false)}
-        >
-          <div onClick={(e) => e.stopPropagation()} className="w-full max-w-md">
-            <AuthGate
-              message="سجّل دخولك أو أنشئ حسابك — ليُحفظ مسارك وتشخيصك وشهاداتك في مكان واحد"
-              onDone={() => { setAuthOpen(false); setUserName(readUserName()) }}
-            />
-          </div>
-        </div>
+        <Modal onClose={() => setAuthOpen(false)} label="تسجيل الدخول أو إنشاء حساب" panelClassName="w-full max-w-md">
+          <AuthGate
+            message="سجّل دخولك أو أنشئ حسابك — ليُحفظ مسارك وتشخيصك وشهاداتك في مكان واحد"
+            onDone={() => { setAuthOpen(false); setUserName(readUserName()) }}
+          />
+        </Modal>
       )}
     </header>
   )
@@ -332,7 +358,7 @@ function Hero() {
         <div className="reveal is-visible mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <a
             href="#diagnostic"
-            className="group inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-teal px-8 py-4 font-semibold text-white shadow-[0_0_40px_-8px_#38A7B4] transition hover:bg-teal-deep sm:w-auto"
+            className="group btn-teal w-full px-8 py-4 shadow-[0_0_40px_-8px_#38A7B4] sm:w-auto"
           >
             خذ وقفة صدق
             <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
@@ -504,7 +530,7 @@ function DiagnosticTeaser() {
                   من مواقفك الحقيقية — ثم يرسم لك مسارا مفسّرا تستطيع تخصيصه.
                 </p>
                 <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                  <Link to="/diagnostic" className="inline-flex items-center gap-2 rounded-2xl bg-teal px-8 py-4 font-semibold text-white transition hover:bg-teal-deep">
+                  <Link to="/diagnostic" className="btn-teal px-8 py-4">
                     ابدأ التشخيص الكامل
                     <ArrowLeft className="h-4 w-4" />
                   </Link>
@@ -603,7 +629,18 @@ function Stories() {
       </div>
 
       {/* شريط القصص المضغوط — بطاقة لكل قصة، والتفاصيل في نافذتها */}
-      <div className="scrollbar-hide mt-10 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-4 md:px-[max(1.25rem,calc((100vw-72rem)/2+1.25rem))]">
+      <p className="sr-only">{`يعرض ${stories.length} قصص — اسحب بإصبعك أو استخدم أسهم لوحة المفاتيح للتنقل بينها`}</p>
+      <div
+        role="region"
+        aria-roledescription="شريط بطاقات"
+        aria-label="قصص متعلمي وجيز"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowLeft') { e.preventDefault(); e.currentTarget.scrollBy({ left: -320, behavior: 'smooth' }) }
+          if (e.key === 'ArrowRight') { e.preventDefault(); e.currentTarget.scrollBy({ left: 320, behavior: 'smooth' }) }
+        }}
+        className="scrollbar-hide mt-10 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-4 md:px-[max(1.25rem,calc((100vw-72rem)/2+1.25rem))]"
+      >
         {stories.map((s) => (
           <button
             key={s.id}
@@ -618,7 +655,7 @@ function Stories() {
                 className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
-              <span className="absolute bottom-3 right-4 rounded-full bg-teal/90 px-3 py-1 text-[11px] font-bold text-white">{s.tag}</span>
+              <span className="tag-teal absolute bottom-3 right-4 rounded-full px-3 py-1 text-[11px] font-bold">{s.tag}</span>
             </div>
             <div className="flex flex-1 flex-col p-5">
               <p className="text-sm font-bold">
@@ -654,25 +691,21 @@ function Stories() {
 
       {/* نافذة القصة الكاملة */}
       {open && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm" onClick={() => setOpen(null)}>
-          <div className="mx-auto my-8 max-w-3xl px-4 pb-8">
-            <div
-              className="story-fade overflow-hidden rounded-3xl border border-white/10 bg-card"
-              onClick={(e) => e.stopPropagation()}
-            >
+        <Modal onClose={() => setOpen(null)} label={`قصة ${open.name} كاملة`} panelClassName="my-8 w-full max-w-3xl">
+          <div dir="rtl" className="story-fade overflow-hidden rounded-3xl border border-white/10 bg-card">
               {/* صورة القصة */}
               <div className="relative h-56 overflow-hidden md:h-72">
-                <img src={open.img} alt={`قصة ${open.name}`} className="h-full w-full object-cover" />
+                <img src={open.img} alt={`صورة رمزية لقصة ${open.name}`} loading="lazy" width="1200" height="600" className="h-full w-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-transparent" />
                 <button
                   onClick={() => setOpen(null)}
                   aria-label="إغلاق القصة"
-                  className="absolute left-4 top-4 grid h-9 w-9 place-items-center rounded-full bg-black/50 text-white/80 backdrop-blur transition hover:bg-black/70 hover:text-white"
+                  className="absolute left-4 top-4 grid h-11 w-11 place-items-center rounded-full bg-black/50 text-white/80 backdrop-blur transition hover:bg-black/70 hover:text-white"
                 >
                   <X className="h-5 w-5" />
                 </button>
                 <div className="absolute bottom-4 right-6 flex items-center gap-3">
-                  <span className="rounded-full bg-teal/90 px-4 py-1.5 text-sm font-bold text-white">{open.tag}</span>
+                  <span className="tag-teal rounded-full px-4 py-1.5 text-sm font-bold">{open.tag}</span>
                   <span className="text-sm text-white/80">{open.name} — {open.role}</span>
                 </div>
               </div>
@@ -688,14 +721,14 @@ function Stories() {
               {/* تفاصيل المسار */}
               <div className="grid gap-px bg-white/5 md:grid-cols-3">
                 <div className="bg-card p-6">
-                  <div className="flex items-center gap-2 text-xs text-teal-light"><Route className="h-4 w-4" /> المسار الذي سلكه</div>
+                  <div className="flex items-center gap-2 text-xs text-teal-light"><Route className="h-4 w-4" /> المسار الذي {open.gender === 'f' ? 'سلكته' : 'سلكه'}</div>
                   <div className="mt-2 font-bold leading-7">{open.pathway}</div>
                   <div className="mt-1 text-xs text-muted-foreground">{open.duration}</div>
                 </div>
                 <div className="bg-card p-6">
                   <div className="flex items-center gap-2 text-xs text-teal-light"><User className="h-4 w-4" /> المدرب</div>
                   <div className="mt-2 font-bold">{open.trainer}</div>
-                  <div className="mt-1 text-xs text-muted-foreground">رافقه في التقييم والمتابعة طوال المسار</div>
+                  <div className="mt-1 text-xs text-muted-foreground">{open.gender === 'f' ? 'رافقها' : 'رافقه'} في التقييم والمتابعة طوال المسار</div>
                 </div>
                 <div className="bg-card p-6">
                   <div className="flex items-center gap-2 text-xs text-teal-light"><FileCheck className="h-4 w-4" /> المخرج العملي</div>
@@ -706,7 +739,7 @@ function Stories() {
               {/* دورات القصة ومخرجاتها */}
               <div className="border-t border-white/5 p-8 md:px-10">
                 <div className="flex items-center gap-2 text-xs text-teal-light">
-                  <BookOpen className="h-4 w-4" /> الدورات التي أخذها {open.name} — وماذا خرج من كل واحدة
+                  <BookOpen className="h-4 w-4" /> الدورات التي {open.gender === 'f' ? 'أخذتها' : 'أخذها'} {open.name} — وماذا خرج{open.gender === 'f' ? 'ت' : ''} من كل واحدة
                 </div>
                 <div className="mt-4 grid gap-3 md:grid-cols-3">
                   {open.courses.map((c) => (
@@ -739,9 +772,8 @@ function Stories() {
                   <ArrowLeft className="h-4 w-4" />
                 </Link>
               </div>
-            </div>
           </div>
-        </div>
+        </Modal>
       )}
     </section>
   )
@@ -763,6 +795,11 @@ function Bestsellers() {
   // في RTL المحتوى الزائد يكون يسارا؛ scrollBy النسبي يعمل في كل المتصفحات
   const scroll = (ref: React.RefObject<HTMLDivElement | null>, dir: 'next' | 'prev') =>
     ref.current?.scrollBy({ left: dir === 'next' ? -420 : 420, behavior: 'smooth' })
+  // تحكم لوحة المفاتيح في الشرائط: الأسهم تحرك الشريط ذاته
+  const railKeys = (ref: React.RefObject<HTMLDivElement | null>) => (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowLeft') { e.preventDefault(); scroll(ref, 'next') }
+    if (e.key === 'ArrowRight') { e.preventDefault(); scroll(ref, 'prev') }
+  }
 
   const shownPathways = bestsellers
     .map((b) => ({ ...b, p: pathwayById(b.id)! }))
@@ -796,15 +833,16 @@ function Bestsellers() {
           </div>
         </div>
 
-        {/* فلاتر المجالات */}
-        <div className="reveal mt-8 flex flex-wrap gap-2">
+        {/* فلاتر المجالات — أزرار تبديل تعلن حالتها لقارئ الشاشة */}
+        <div className="reveal mt-8 flex flex-wrap gap-2" role="group" aria-label="تصفية المسارات حسب المجال">
           {courseCategories.map((c) => (
             <button
               key={c}
               onClick={() => setCat(c)}
+              aria-pressed={cat === c}
               className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
                 cat === c
-                  ? 'border-teal bg-teal text-white shadow-[0_0_24px_-6px_#38A7B4]'
+                  ? 'border-teal bg-[#247B84] text-white shadow-[0_0_24px_-6px_#38A7B4]'
                   : 'border-white/10 bg-white/[0.03] text-muted-foreground hover:border-teal/40 hover:text-teal-light'
               }`}
             >
@@ -844,7 +882,7 @@ function Bestsellers() {
                   {pathwayTrainers(spotlight.id).map((t) => t.name).join('، ')}
                 </span>
               </div>
-              <span className="mt-6 inline-flex items-center gap-2 rounded-full bg-teal px-6 py-2.5 text-sm font-bold text-white transition group-hover:bg-teal-deep">
+              <span className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#247B84] px-6 py-2.5 text-sm font-bold text-white transition group-hover:bg-[#1E666E]">
                 افتح المسار
                 <ArrowLeft className="h-4 w-4 transition group-hover:-translate-x-1" />
               </span>
@@ -854,8 +892,16 @@ function Bestsellers() {
       )}
 
       {/* راويل المسارات — بطاقات أنحف وأنظف */}
+      <p className="sr-only" aria-live="polite">
+        {`يعرض ${railPathways.length} ${railPathways.length === 1 ? 'مسارا' : 'مسارات'} — اسحب بإصبعك أو استخدم أسهم لوحة المفاتيح للتنقل بينها`}
+      </p>
       <div
         ref={pwRailRef}
+        role="region"
+        aria-roledescription="شريط بطاقات"
+        aria-label="مسارات مختارات وجيز"
+        tabIndex={0}
+        onKeyDown={railKeys(pwRailRef)}
         className="scrollbar-hide mt-8 flex snap-x snap-mandatory gap-5 overflow-x-auto px-5 pb-4 md:px-[max(1.25rem,calc((100vw-72rem)/2+1.25rem))]"
       >
         {railPathways.map(({ id, note, p }) => (
@@ -881,7 +927,7 @@ function Bestsellers() {
             <div className="mt-auto pt-5">
               <Link
                 to={`/pathways/${id}`}
-                className="block rounded-xl border border-teal/40 py-2.5 text-center text-sm font-semibold text-teal-light transition group-hover:bg-teal group-hover:text-white"
+                className="block rounded-xl border border-teal/40 py-2.5 text-center text-sm font-semibold text-teal-light transition group-hover:bg-[#247B84] group-hover:text-white"
               >
                 تفاصيل المسار
               </Link>
@@ -930,8 +976,16 @@ function Bestsellers() {
           </div>
         </div>
       </div>
+      <p className="sr-only" aria-live="polite">
+        {`يعرض ${shownCourses.length} ${shownCourses.length === 1 ? 'دورة' : 'دورات'} — اسحب بإصبعك أو استخدم أسهم لوحة المفاتيح للتنقل بينها`}
+      </p>
       <div
         ref={crRailRef}
+        role="region"
+        aria-roledescription="شريط بطاقات"
+        aria-label="دورات مختارة من وجيز"
+        tabIndex={0}
+        onKeyDown={railKeys(crRailRef)}
         className="scrollbar-hide mt-6 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-4 md:px-[max(1.25rem,calc((100vw-72rem)/2+1.25rem))]"
       >
         {shownCourses.map(({ id, note, c }) => (
@@ -1066,12 +1120,20 @@ function Faq() {
             <div key={i} className="reveal overflow-hidden rounded-2xl border border-white/10 bg-card transition hover:border-teal/30" style={{ transitionDelay: `${i * 60}ms` }}>
               <button
                 onClick={() => setOpen(open === i ? null : i)}
+                aria-expanded={open === i}
+                aria-controls={`faq-answer-${i}`}
+                id={`faq-question-${i}`}
                 className="flex w-full items-center justify-between gap-4 px-6 py-5 text-right font-semibold"
               >
                 {f.q}
-                <ChevronDown className={`h-5 w-5 shrink-0 text-teal-light transition-transform duration-300 ${open === i ? 'rotate-180' : ''}`} />
+                <ChevronDown aria-hidden="true" className={`h-5 w-5 shrink-0 text-teal-light transition-transform duration-300 ${open === i ? 'rotate-180' : ''}`} />
               </button>
-              <div className={`grid transition-all duration-300 ${open === i ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+              <div
+                id={`faq-answer-${i}`}
+                role="region"
+                aria-labelledby={`faq-question-${i}`}
+                className={`grid transition-all duration-300 ${open === i ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
+              >
                 <div className="overflow-hidden">
                   <p className="px-6 pb-6 leading-8 text-muted-foreground">{f.a}</p>
                 </div>
@@ -1102,7 +1164,7 @@ function FinalCta() {
         <div className="reveal mt-9">
           <a
             href="#diagnostic"
-            className="inline-flex items-center gap-2 rounded-2xl bg-teal px-10 py-5 text-lg font-bold text-white shadow-[0_0_60px_-10px_#38A7B4] transition hover:bg-teal-deep"
+            className="btn-teal px-10 py-5 text-lg shadow-[0_0_60px_-10px_#38A7B4]"
           >
             جرّب خمسة أسئلة الآن
             <ArrowLeft className="h-5 w-5" />
@@ -1247,7 +1309,7 @@ function Footer() {
         <div className="grid gap-10 md:grid-cols-5">
           <div className="md:col-span-1">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal font-bold text-white">و</div>
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal font-bold text-[#08272B]">و</div>
               <div className="font-bold">وجيز <span className="text-teal-light">أكاديمي</span></div>
             </div>
             <p className="mt-4 text-sm leading-7 text-muted-foreground">

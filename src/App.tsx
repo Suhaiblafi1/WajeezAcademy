@@ -33,31 +33,37 @@ function ScrollToTop() {
 export default function App() {
   return (
     <>
+      {/* رابط تجاوز إلى المحتوى — أول ما يصل إليه مستخدم لوحة المفاتيح */}
+      <a href="#main-content" className="skip-link">
+        تجاوز إلى المحتوى الرئيسي
+      </a>
       <ScrollToTop />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/diagnostic" element={<Diagnostic />} />
-        <Route path="/pathways/:id" element={<PathwayPage />} />
-        <Route path="/verify" element={<Verify />} />
-        <Route path="/verify/:number" element={<Verify />} />
-        <Route path="/p/:slug" element={<StaticPage />} />
-        <Route path="/student" element={<StudentDashboard />} />
-        <Route path="/student/pathway" element={<MyPathway />} />
-        <Route path="/student/course/:courseId" element={<CourseView />} />
-        <Route path="/student/project" element={<Project />} />
-        <Route path="/student/certificates" element={<Certificates />} />
-        <Route path="/advisor" element={<AdvisorDashboard />} />
-        <Route path="/advisor/reviews" element={<Reviews />} />
-        <Route path="/advisor/student/:id" element={<StudentCard />} />
-        <Route path="/trainer" element={<TrainerDashboard />} />
-        <Route path="/trainer/grading" element={<GradingQueue />} />
-        <Route path="/trainer/cohort/:id" element={<CohortView />} />
-        <Route path="/trainer/earnings" element={<Earnings />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/admin/cohorts" element={<AdminCohorts />} />
-        <Route path="/admin/exceptions" element={<Exceptions />} />
-        <Route path="/admin/content" element={<ContentWorkflow />} />
-      </Routes>
+      <main id="main-content" tabIndex={-1}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/diagnostic" element={<Diagnostic />} />
+          <Route path="/pathways/:id" element={<PathwayPage />} />
+          <Route path="/verify" element={<Verify />} />
+          <Route path="/verify/:number" element={<Verify />} />
+          <Route path="/p/:slug" element={<StaticPage />} />
+          <Route path="/student" element={<StudentDashboard />} />
+          <Route path="/student/pathway" element={<MyPathway />} />
+          <Route path="/student/course/:courseId" element={<CourseView />} />
+          <Route path="/student/project" element={<Project />} />
+          <Route path="/student/certificates" element={<Certificates />} />
+          <Route path="/advisor" element={<AdvisorDashboard />} />
+          <Route path="/advisor/reviews" element={<Reviews />} />
+          <Route path="/advisor/student/:id" element={<StudentCard />} />
+          <Route path="/trainer" element={<TrainerDashboard />} />
+          <Route path="/trainer/grading" element={<GradingQueue />} />
+          <Route path="/trainer/cohort/:id" element={<CohortView />} />
+          <Route path="/trainer/earnings" element={<Earnings />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/cohorts" element={<AdminCohorts />} />
+          <Route path="/admin/exceptions" element={<Exceptions />} />
+          <Route path="/admin/content" element={<ContentWorkflow />} />
+        </Routes>
+      </main>
     </>
   )
 }

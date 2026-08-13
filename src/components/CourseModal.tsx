@@ -1,8 +1,9 @@
 import { X, BookOpen, User, ListChecks, Target, Clock3 } from "lucide-react";
 import { courseDetails, coursePriceOf, type Course } from "@/data/courses";
 import { formatPrice } from "@/services/currency";
+import Modal from "@/components/Modal";
 
-/** نافذة تفاصيل الدورة — المدرب، المحاور، المخرج، السعر */
+/** نافذة تفاصيل الدورة — المدرب، المحاور، المخرج، السعر (وصول كامل: حبس تركيز وEscape) */
 export default function CourseModal({
   course,
   onClose,
@@ -15,14 +16,10 @@ export default function CourseModal({
   const d = courseDetails(course);
   const price = coursePriceOf(course);
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-5 backdrop-blur-sm"
-      onClick={onClose}
-    >
+    <Modal onClose={onClose} label={`تفاصيل دورة ${course.name}`} panelClassName="w-full max-w-lg">
       <div
         dir="rtl"
-        className="story-fade max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-white/10 bg-[#121B1D] p-7"
-        onClick={(e) => e.stopPropagation()}
+        className="story-fade max-h-[85vh] overflow-y-auto rounded-3xl border border-white/10 bg-[#121B1D] p-7"
       >
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -32,7 +29,7 @@ export default function CourseModal({
             <h3 className="mt-3 text-xl font-black leading-relaxed">{course.name}</h3>
             <p className="mt-1 text-xs text-white/45">من مسار «{course.pathwayName}»</p>
           </div>
-          <button onClick={onClose} aria-label="إغلاق" className="text-white/40 transition hover:text-white">
+          <button onClick={onClose} aria-label="إغلاق نافذة التفاصيل" className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-white/40 transition hover:bg-white/5 hover:text-white">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -54,7 +51,7 @@ export default function CourseModal({
 
         {/* المدرب */}
         <div className="mt-4 flex items-center gap-3 rounded-2xl border border-[#38A7B4]/25 bg-[#38A7B4]/5 p-4">
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#38A7B4] to-[#247B84] text-base font-black text-white">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#38A7B4] to-[#247B84] text-base font-black text-[#08272B]">
             {d.trainer.name.replace(/^(أ\.|د\.|م\.)\s*/, "").charAt(0)}
           </span>
           <div>
@@ -105,6 +102,6 @@ export default function CourseModal({
           )}
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

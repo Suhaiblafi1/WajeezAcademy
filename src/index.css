@@ -65,6 +65,81 @@
   }
 }
 
+/* ═════════ أسس الوصول — WCAG 2.2 AA ═════════ */
+@layer base {
+  :root {
+    /* تباين: النص فوق التركواز داكن دائما (الأبيض فوقه لا يحقق 4.5:1) */
+    --primary-foreground: 186 100% 8%; /* #08272B تقريبا */
+  }
+
+  /* تركيز واضح لكل عنصر تفاعلي — لوحة المفاتيح أولا */
+  :focus-visible {
+    outline: 2px solid #6ec7d1;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* أهداف اللمس: لا يقل أي زر أو رابط رئيسي عن 44×44 */
+  button,
+  [role="button"],
+  select {
+    min-height: 44px;
+  }
+  nav a,
+  header a,
+  footer a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* الحركة: نحترم من يفضّل تقليلها */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+    .reveal {
+      opacity: 1 !important;
+      transform: none !important;
+    }
+  }
+}
+
+@layer components {
+  /* رابط «تجاوز إلى المحتوى» — مخفي حتى يُركّز بلوحة المفاتيح */
+  .skip-link {
+    @apply fixed right-4 top-4 z-[100] -translate-y-24 rounded-xl bg-[#FABC05] px-5 py-3 font-black text-[#0D0D0D] transition-transform;
+  }
+  .skip-link:focus-visible {
+    transform: translateY(0);
+  }
+}
+
+@layer utilities {
+  /* نص داكن فوق التركواز — يحقق التباين المطلوب */
+  .text-on-teal {
+    color: #08272b;
+  }
+}
+
+@layer components {
+  /* زر تركوازي محقق للتباين: تركواز معمّق + نص أبيض (4.8:1) */
+  .btn-teal {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl bg-[#247B84] font-bold text-white transition hover:bg-[#1E666E] disabled:opacity-40;
+  }
+  /* شارة صغيرة فوق الصور — تركواز معمّق شبه ممتلئ */
+  .tag-teal {
+    @apply bg-[#1E666E]/95 text-white;
+  }
+}
+
 /* ═════════ نظام التصميم الموحد — مقياس واحد لكل الموقع ═════════ */
 @layer components {
   /* العناوين: ثلاثة مستويات فقط */

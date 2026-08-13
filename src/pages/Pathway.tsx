@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import AuthGate from "@/components/AuthGate";
 import CourseModal from "@/components/CourseModal";
+import Modal from "@/components/Modal";
 import { pathwayById } from "@/data/pathways";
 import { courseById, pathwayCourses, coursePriceOf, pathwayPriceFor, pathwayTrainers, courseTrainer, type Course } from "@/data/courses";
 import { GOAL_LABELS, GAP_LABELS, OBSTACLE_TO_GAP } from "@/data/diagnostic";
@@ -92,14 +93,14 @@ function StripeCheckout({
     window.setTimeout(onSuccess, 1600);
   };
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-5 backdrop-blur-sm" onClick={onClose}>
-      <div className="story-fade w-full max-w-md rounded-3xl border border-white/10 bg-[#121B1D] p-7" onClick={(e) => e.stopPropagation()}>
+    <Modal onClose={onClose} label={`إتمام الدفع: ${title}`} panelClassName="w-full max-w-md">
+      <div className="story-fade rounded-3xl border border-white/10 bg-[#121B1D] p-7">
         <div className="flex items-center justify-between">
           <h3 className="flex items-center gap-2 text-lg font-black">
             <CreditCard className="h-5 w-5 text-[#6EC7D1]" />
             دفع آمن عبر Stripe
           </h3>
-          <button onClick={onClose} className="text-white/40 hover:text-white">✕</button>
+          <button onClick={onClose} aria-label="إغلاق نافذة الدفع" className="grid h-11 w-11 place-items-center rounded-full text-white/40 transition hover:bg-white/5 hover:text-white">✕</button>
         </div>
         <p className="mt-2 text-sm text-white/55">{title}</p>
         <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
@@ -139,7 +140,7 @@ function StripeCheckout({
           تشفير كامل · ستصلك رسالة تأكيد على بريدك فور نجاح الدفع
         </p>
       </div>
-    </div>
+    </Modal>
   );
 }
 

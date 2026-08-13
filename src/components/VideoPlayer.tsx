@@ -57,7 +57,7 @@ export default function VideoPlayer({
             if (playing && pct > lastSaved.current) { lastSaved.current = pct; onProgress(pct); }
             setPlaying(!playing);
           }}
-          className="grid h-16 w-16 cursor-pointer place-items-center rounded-full bg-[#38A7B4]/90 text-white shadow-[0_0_40px_-5px_#38A7B4] transition hover:scale-105"
+          className="grid h-16 w-16 cursor-pointer place-items-center rounded-full bg-[#38A7B4]/90 text-[#08272B] shadow-[0_0_40px_-5px_#38A7B4] transition hover:scale-105"
           aria-label={playing ? "إيقاف" : "تشغيل"}
         >
           {playing ? <Pause className="h-7 w-7" /> : <Play className="h-7 w-7 -translate-x-0.5" />}
