@@ -1,0 +1,16 @@
+# إعداد Replit — أكاديمي وجيز
+# النشر كموقع ثابت (أرخص خيار): لا خادم يعمل 24/7، فقط بناء + تقديم ملفات
+
+entrypoint = "dist/index.html"
+
+# التطوير المحلي داخل Replit عند الحاجة
+run = "npm run dev"
+
+[deployment]
+deploymentTarget = "static"
+publicDir = "dist"
+build = ["npm", "run", "build"]
+
+# عند إضافة الخلفية لاحقا (Stripe webhooks، المصادقة، زووم):
+# بدّل هذا القسم إلى deploymentTarget = "autoscale"
+# مع run = ["node", "server/index.js"] — التفاصيل في docs/DEPLOYMENT.md
