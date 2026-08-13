@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import {
   ArrowRight,
@@ -23,6 +23,9 @@ import {
   Zap,
   Wallet,
   Lightbulb,
+  BarChart3,
+  Footprints,
+  History,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +35,9 @@ import {
   estimateTotal,
   buildState,
   computeResult,
+  scenarioLevels,
+  GAP_LABELS,
+  OBSTACLE_TO_GAP,
   type DiagQuestion,
   type DiagOption,
   type DiagResult,
@@ -62,6 +68,269 @@ const DIM_LABELS: Record<Dim, string> = {
   interest: "اهتماماتك",
   constraints: "إيقاعك وظروفك",
 };
+
+/* ═══════════ وحدات الرحلة الخمس — شريط التقدم الجديد ═══════════ */
+const JOURNEY_STAGES = [
+  { key: "who", label: "من أنت" },
+  { key: "goal", label: "هدفك" },
+  { key: "story", label: "قصتك وواقعك" },
+  { key: "skills", label: "مهاراتك ورصيدك" },
+  { key: "life", label: "ظروفك وخطتك" },
+] as const;
+
+function stageIndexOf(q: DiagQuestion | null): number {
+  if (!q) return 0;
+  const m = q.module;
+  if (m === "M1") return 0;
+  if (m === "M2" || m === "M2B" || m === "M8") return 1;
+  if (m.startsWith("M3")) return 2;
+  if (m === "M4" || m === "M4B") return 3;
+  return 4; // M7 وM9
+}
+
+/* ═══════════ الحفظ والاستئناف — لا تشخيص يضيع بعد اليوم ═══════════ */
+const PROGRESS_KEY = "wajeez_diag_progress";
+interface SavedProgress {
+  answers: DiagAnswers;
+  asked: string[];
+  savedAt: number;
+}
+function loadProgress(): SavedProgress | null {
+  try {
+    const raw = localStorage.getItem(PROGRESS_KEY);
+    if (!raw) return null;
+    const p = JSON.parse(raw) as SavedProgress;
+    return p && Array.isArray(p.asked) && p.asked.length >= 2 ? p : null;
+  } catch {
+    return null;
+  }
+}
+function saveProgress(answers: DiagAnswers, asked: string[]) {
+  try {
+    localStorage.setItem(PROGRESS_KEY, JSON.stringify({ answers, asked, savedAt: Date.now() }));
+  } catch {
+    /* مساحة ممتلئة — نتجاهل بهدوء */
+  }
+}
+function clearProgress() {
+  try {
+    localStorage.removeItem(PROGRESS_KEY);
+  } catch {
+    /* لا شيء */
+  }
+}
+
+/** إعادة بناء سلسلة الأسئلة من الإجابات المحفوظة — المحرك قطعي فتُعاد نفس الأسئلة */
+function rebuildHistory(answers: DiagAnswers, asked: string[]): DiagQuestion[] {
+  const hist: DiagQuestion[] = [];
+  let a: DiagAnswers = {};
+  const soFar: string[] = [];
+  for (const qid of asked) {
+    const q = nextQuestion(a, soFar);
+    if (!q || q.id !== qid) break; // تغيّر منطق المحرك — نكتفي بما تطابق
+    hist.push(q);
+    a = { ...a, [qid]: answers[qid] ?? "" };
+    soFar.push(qid);
+  }
+  return hist;
+}
+
+/* ═══════════ ملخص القصة — يقرأ نفسه في صفحة النتيجة ═══════════ */
+const PERSONA_L: Record<string, string> = {
+  student: "طالبا",
+  graduate: "خريجا جديدا يبحث عن أول فرصة",
+  employee: "موظفا",
+  entrepreneur: "رائد أعمال يطارد أهدافه",
+  family: "والدا — هدفك الأسري أولويتك",
+  unsure: "شخصا ما زال يستكشف اتجاهه",
+};
+const GOAL_L: Record<string, string> = {
+  job: "وظيفة أولى أو ترقية",
+  project: "إطلاق مشروع أو دخل إضافي",
+  change: "تغيير مسارك المهني بالكامل",
+  skill: "إتقان مهارة محددة تحتاجها الآن",
+  performance: "تحسين أدائك في وظيفتك الحالية",
+  family: "هدفا أسريا ورفاها شخصيا",
+};
+const SECTOR_L: Record<string, string> = { private: "القطاع الخاص", government: "القطاع الحكومي" };
+const OBSTACLE_L: Record<string, string> = {
+  writing: "التقارير والكتابة المهنية",
+  data: "البيانات والجداول",
+  projects: "إدارة المشاريع والمتابعة",
+  leadership: "قيادة الفريق والتفويض",
+  communication: "التواصل والعرض أمام الآخرين",
+  digital_ai: "الأدوات الرقمية والذكاء الاصطناعي",
+  complaints: "التعامل مع الشكاوى والضغط",
+};
+const FORMAT_L: Record<string, string> = {
+  live: "المباشر مع مدرب",
+  recorded: "المسجل بوتيرتك الخاصة",
+  mixed: "المزيج بين المباشر والمسجل",
+  applied: "التطبيق والمشاريع",
+};
+const LANG_L: Record<string, string> = {
+  arabic: "بالعربية",
+  english_ok: "بالعربية أو الإنجليزية",
+  either: "بأي لغة — المهم المحتوى",
+};
+const TARGET_L: Record<string, string> = {
+  soon: "خلال شهر إلى ثلاثة أشهر",
+  mid: "خلال ثلاثة إلى ستة أشهر",
+  year: "خلال سنة",
+};
+
+function storySummary(a: DiagAnswers): string[] {
+  const lines: string[] = [];
+  const persona = PERSONA_L[a.persona];
+  const goal = GOAL_L[a.goal];
+  const sector = SECTOR_L[a.emp_sector];
+  if (persona) {
+    lines.push(
+      `أنت ${persona}${sector ? ` في ${sector}` : ""}، وغايتك ${goal ?? "أن يختلف شيء حقيقي في حياتك بعد أشهر"}.`
+    );
+  }
+  const obstacles = (a.emp_obstacle ?? "")
+    .split(",")
+    .filter(Boolean)
+    .map((o) => OBSTACLE_L[o])
+    .filter(Boolean);
+  if (obstacles.length) {
+    lines.push(`ما يبطئك فعلا في يومك: ${obstacles.join(" و")} — ومسارك مبني ليعالج هذا أولا.`);
+  }
+  const gaps = (a.sk_gaps ?? "")
+    .split(",")
+    .filter((g) => g && g !== "none")
+    .map((g) => GAP_LABELS[g])
+    .filter(Boolean);
+  if (gaps.length) {
+    lines.push(`وبلسانك أشرت إلى رغبتك في تقوية: ${gaps.join("، ")}.`);
+  }
+  const format = FORMAT_L[a.format];
+  const lang = LANG_L[a.learn_lang];
+  const target = TARGET_L[a.target_date];
+  if (format || lang || target) {
+    lines.push(
+      `تتعلم أفضل بصيغة ${format ?? "مرنة"}${lang ? ` ${lang}` : ""}، وتريد نتيجة ملموسة ${target ?? "قريبا"}.`
+    );
+  }
+  return lines;
+}
+
+/* ═══════════ خريطة المهارات المرئية — مستويات مستنتجة من المواقف ═══════════ */
+function SkillMap({ answers }: { answers: DiagAnswers }) {
+  const levels = scenarioLevels(answers);
+  const declared = new Set(
+    [
+      ...(answers.sk_gaps ?? "").split(",").filter((g) => g && g !== "none"),
+      ...(answers.emp_obstacle ?? "").split(",").map((o) => OBSTACLE_TO_GAP[o]),
+    ].filter(Boolean)
+  );
+  const TARGET = 4;
+  const WORDS = ["", "بداية", "أساسيات", "متوسط", "متقدم", "خبير"];
+  return (
+    <div className="card-soft mt-8">
+      <h3 className="h-card flex items-center gap-2">
+        <BarChart3 className="h-5 w-5 text-[#6EC7D1]" />
+        خريطة مهاراتك — كما استنتجها التشخيص من مواقفك
+      </h3>
+      <p className="mt-2 text-xs leading-relaxed text-white/50">
+        لا تقييم ذاتيا هنا — كل مستوى استُنتج من موقف حقيقي حكيته أثناء التشخيص.
+        العلامة العنبرية: المستوى المستهدف لهدفك.
+      </p>
+      <div className="mt-6 space-y-5">
+        {Object.entries(GAP_LABELS).map(([key, label]) => {
+          const lv = parseInt(levels[key] ?? "", 10);
+          const measured = !isNaN(lv);
+          const isGap = declared.has(key);
+          return (
+            <div key={key}>
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-sm">
+                <span className="font-bold text-white/85">
+                  {label}
+                  {isGap && (
+                    <span className="mr-2 rounded-full bg-[#FABC05]/15 px-2 py-0.5 text-[10px] font-bold text-[#FABC05]">
+                      فجوة معلنة
+                    </span>
+                  )}
+                </span>
+                <span className="text-xs text-white/50">
+                  {measured ? `${WORDS[lv]} — ${lv}/5` : "لم تُقس — لم تُذكر فجوة فيها"}
+                </span>
+              </div>
+              <div className="relative h-2.5 rounded-full bg-white/10" dir="ltr">
+                {measured && (
+                  <div
+                    className={`h-full rounded-full ${isGap ? "bg-[#FABC05]" : "bg-[#38A7B4]"}`}
+                    style={{ width: `${(lv / 5) * 100}%` }}
+                  />
+                )}
+                <div
+                  className="absolute -bottom-1 -top-1 w-0.5 rounded bg-[#FABC05]"
+                  style={{ left: `${(TARGET / 5) * 100}%` }}
+                  title="المستهدف"
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════ رحلة المسار خطوة بخطوة — خط زمني لا قائمة ═══════════ */
+function JourneyTimeline({ pathway }: { pathway: Pathway }) {
+  const list = (pathwayCourses[pathway.id] ?? [])
+    .map((id) => courseById(id))
+    .filter((c): c is NonNullable<typeof c> => Boolean(c));
+  let week = 1;
+  const steps = list.map((c) => {
+    const start = week;
+    week += c.weeks;
+    return { c, start, end: week - 1 };
+  });
+  const totalWeeks = Math.max(0, week - 1);
+  const weeksWord = (n: number) => (n === 1 ? "أسبوع" : n === 2 ? "أسبوعين" : n <= 10 ? `${n} أسابيع` : `${n} أسبوعا`);
+  return (
+    <div className="card-soft mt-8">
+      <h3 className="h-card flex items-center gap-2">
+        <Footprints className="h-5 w-5 text-[#6EC7D1]" />
+        رحلتك خطوة بخطوة — {list.length} دورات على {weeksWord(totalWeeks)}
+      </h3>
+      <ol className="mt-6">
+        {steps.map((s, i) => (
+          <li key={s.c.id} className="relative flex gap-4 pb-6">
+            {i < steps.length && <span className="absolute right-[13px] top-8 h-[calc(100%-24px)] w-px bg-white/10" />}
+            <span className="z-10 grid h-7 w-7 shrink-0 place-items-center rounded-full border border-[#38A7B4]/50 bg-[#0D0D0D] text-xs font-black text-[#6EC7D1]">
+              {i + 1}
+            </span>
+            <div className="flex-1">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm font-bold">{s.c.name}</p>
+                <span className="text-xs text-white/45">
+                  الأسبوع {s.start}
+                  {s.end !== s.start ? `–${s.end}` : ""}
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-white/50">
+                {s.c.skill} · {weeksWord(s.c.weeks)}
+              </p>
+            </div>
+          </li>
+        ))}
+        <li className="relative flex gap-4">
+          <span className="z-10 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#FABC05] text-xs font-black text-[#0D0D0D]">
+            ✓
+          </span>
+          <div className="flex-1">
+            <p className="text-sm font-bold text-[#FABC05]">شهادة إتمام المسار + تقرير إنجازك الشخصي</p>
+            <p className="mt-1 text-xs text-white/50">تُعرض في ملفك ويشاركها أصحاب العمل عبر رابط تحقق</p>
+          </div>
+        </li>
+      </ol>
+    </div>
+  );
+}
 
 /* ─────────── مكوّن تخصيص المسار ─────────── */
 function CustomizePathway({
@@ -298,8 +567,17 @@ export default function Diagnostic() {
   const [result, setResult] = useState<DiagResult | null>(null);
   const [topPathway, setTopPathway] = useState<Pathway | null>(null);
   const [swapCount, setSwapCount] = useState(0);
+  const [savedProgress, setSavedProgress] = useState<SavedProgress | null>(() => loadProgress());
+  const [resumeAfterGate, setResumeAfterGate] = useState(false);
 
   const isAuthed = () => Boolean(localStorage.getItem("wajeez_user"));
+
+  /* حفظ تلقائي مع كل إجابة — لا تشخيص يضيع لو خرج وعاد */
+  useEffect(() => {
+    if (stage === "questions" && asked.length > 0) {
+      saveProgress(answers, asked);
+    }
+  }, [stage, answers, asked]);
 
   /* حالة الفهم الحية — تتحدث مع كل إجابة */
   const state = useMemo(() => buildState(answers, asked.length), [answers, asked]);
@@ -308,7 +586,15 @@ export default function Diagnostic() {
   const understoodDims = (Object.keys(DIM_LABELS) as Dim[]).filter((d) => state.dims[d] >= 0.6);
   const prelimTop = state.overall >= 0.3 ? state.ranked[0]?.p : undefined;
 
-  // التسجيل أولا — ثم يبدأ من حيث انتهت لمحة «جرّب بنفسك» — لا سؤال يتكرر
+  /* مراحل الرحلة الخمس — أيها اكتمل وأيها نشط الآن */
+  const currentStageIdx = stageIndexOf(question);
+  const passedStages = useMemo(() => {
+    const s = new Set(history.map((q) => stageIndexOf(q)));
+    s.add(currentStageIdx);
+    return s;
+  }, [history, currentStageIdx]);
+
+  // التسجيل أولا — ثم يبدأ التشخيص الكامل من أول سؤال
   const begin = () => {
     if (!isAuthed()) {
       setStage("gate");
@@ -332,8 +618,47 @@ export default function Diagnostic() {
     setStage("questions");
   };
 
+  /* استئناف تشخيص غير مكتمل — يعيد بناء الأسئلة من الإجابات المحفوظة */
+  const doResume = () => {
+    const saved = loadProgress();
+    if (!saved) {
+      start();
+      return;
+    }
+    const hist = rebuildHistory(saved.answers, saved.asked);
+    const next = nextQuestion(saved.answers, saved.asked);
+    setAnswers(saved.answers);
+    setAsked(saved.asked);
+    setHistory(hist);
+    setMultiDraft([]);
+    setTextDraft("");
+    if (!next) {
+      finish(saved.answers);
+      return;
+    }
+    setQuestion(next);
+    setStage("questions");
+    window.scrollTo(0, 0);
+  };
+
+  const resume = () => {
+    if (!isAuthed()) {
+      setResumeAfterGate(true);
+      setStage("gate");
+      return;
+    }
+    doResume();
+  };
+
+  const discardSaved = () => {
+    clearProgress();
+    setSavedProgress(null);
+  };
+
   const finish = (finalAnswers: DiagAnswers) => {
     setStage("computing");
+    clearProgress();
+    setSavedProgress(null);
     const res = computeResult(finalAnswers);
     // نحفظ إجاباته ونتيجته وJSON القرار لبناء تقريره الشخصي في صفحة المسار
     sessionStorage.setItem("wajeez_diag_answers", JSON.stringify(finalAnswers));
@@ -408,6 +733,8 @@ export default function Diagnostic() {
     setResult(null);
     setTopPathway(null);
     setMultiDraft([]);
+    clearProgress();
+    setSavedProgress(null);
     setStage("intro");
     window.scrollTo(0, 0);
   };
@@ -497,6 +824,33 @@ export default function Diagnostic() {
             <ArrowLeft className="mr-2 h-5 w-5" />
           </Button>
           <p className="mt-4 text-xs text-white/40">يتطلب حسابا ليُحفظ تشخيصك ومسارك · بالمتابعة أنت توافق على استخدام إجاباتك لبناء التوصية</p>
+
+          {/* بطاقة الاستئناف — تشخيص غير مكتمل ينتظر صاحبه */}
+          {savedProgress && (
+            <div className="mx-auto mt-8 max-w-xl rounded-2xl border border-[#38A7B4]/40 bg-[#38A7B4]/10 p-5">
+              <p className="flex items-center justify-center gap-2 text-sm font-bold text-[#6EC7D1]">
+                <History className="h-4 w-4" />
+                لديك تشخيص غير مكتمل — أجبت على {savedProgress.asked.length} من الأسئلة
+              </p>
+              <p className="mt-1.5 text-xs text-white/50">إجاباتك محفوظة على جهازك — أكمل من حيث توقفت متى شئت</p>
+              <div className="mt-4 flex flex-wrap justify-center gap-3">
+                <Button
+                  onClick={resume}
+                  className="rounded-full bg-[#38A7B4] px-6 font-black text-[#08272B] hover:bg-[#38A7B4]/90"
+                >
+                  أكمل من حيث توقفت
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={discardSaved}
+                  className="rounded-full border-white/20 text-white/70 hover:bg-white/5"
+                >
+                  احذفها وابدأ من جديد
+                </Button>
+              </div>
+            </div>
+          )}
         </section>
       )}
 
@@ -505,7 +859,14 @@ export default function Diagnostic() {
         <section className="story-fade mx-auto max-w-3xl px-5 py-16">
           <AuthGate
             message="خطوة واحدة قبل تشخيصك — سجّل ليُحفظ مسارك ونتيجتك في حسابك"
-            onDone={start}
+            onDone={() => {
+              if (resumeAfterGate) {
+                setResumeAfterGate(false);
+                doResume();
+              } else {
+                start();
+              }
+            }}
           />
           <p className="mt-6 text-center text-xs text-white/40">
             التسجيل يفتح لك: نتيجة التشخيص · تخصيص المسار · صفحة مسارك وتقريرك الشخصي
@@ -516,8 +877,37 @@ export default function Diagnostic() {
       {/* ─── Questions ─── */}
       {stage === "questions" && question && (
         <section className="story-fade mx-auto max-w-2xl px-5 py-12 md:py-16">
+          {/* شريط الوحدات الخمس — رحلة مفهومة لا استبيان لا نهائي */}
           <div className="mb-6">
-            <div className="mb-3 flex items-center justify-between text-xs text-white/50">
+            <div className="mb-4 flex items-center justify-between gap-1" dir="rtl">
+              {JOURNEY_STAGES.map((s, i) => {
+                const active = i === currentStageIdx;
+                const done = passedStages.has(i) && !active;
+                return (
+                  <div key={s.key} className="flex flex-1 flex-col items-center gap-1.5">
+                    <span
+                      className={`grid h-7 w-7 place-items-center rounded-full border text-[11px] font-black transition ${
+                        active
+                          ? "border-[#FABC05] bg-[#FABC05] text-[#0D0D0D]"
+                          : done
+                            ? "border-[#38A7B4] bg-[#38A7B4]/20 text-[#6EC7D1]"
+                            : "border-white/15 text-white/35"
+                      }`}
+                    >
+                      {done ? <CheckCircle2 className="h-4 w-4" /> : i + 1}
+                    </span>
+                    <span
+                      className={`text-center text-[10px] font-bold leading-tight md:text-[11px] ${
+                        active ? "text-[#FABC05]" : done ? "text-[#6EC7D1]" : "text-white/35"
+                      }`}
+                    >
+                      {s.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mb-2 flex items-center justify-between text-xs text-white/50">
               <span>
                 سؤال {asked.length + 1} من ~{estimatedTotal}
               </span>
@@ -766,6 +1156,30 @@ export default function Diagnostic() {
             </div>
           </div>
 
+          {/* قصتك كما فهمناها — يقرأ نفسه قبل أن يرى التوصية */}
+          {storySummary(answers).length > 0 && (
+            <div className="card-soft mt-10 border-[#38A7B4]/30">
+              <h3 className="h-card flex items-center gap-2">
+                <UserCheck className="h-5 w-5 text-[#6EC7D1]" />
+                قصتك كما فهمناها
+              </h3>
+              <div className="mt-4 space-y-2.5">
+                {storySummary(answers).map((line) => (
+                  <p key={line} className="flex items-start gap-3 text-sm leading-relaxed text-white/75">
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#38A7B4]" />
+                    {line}
+                  </p>
+                ))}
+              </div>
+              <p className="mt-4 text-xs leading-relaxed text-white/40">
+                كل توصية في هذه الصفحة مبنية على هذه الفقرة — إن كانت لا تشبهك، أعد التشخيص وستتغير النتيجة معك.
+              </p>
+            </div>
+          )}
+
+          {/* خريطة المهارات المرئية */}
+          <SkillMap answers={answers} />
+
           {/* Top pathway card */}
           <div className="mt-10 overflow-hidden rounded-3xl border border-[#38A7B4]/40 bg-gradient-to-b from-[#12343B] to-[#0D0D0D]">
             <div className="border-b border-white/10 bg-[#38A7B4]/10 px-6 py-3 text-sm font-bold text-[#6EC7D1]">
@@ -823,6 +1237,9 @@ export default function Diagnostic() {
               </p>
             </div>
           </div>
+
+          {/* رحلة المسار خطوة بخطوة — خط زمني لا قائمة */}
+          <JourneyTimeline pathway={topPathway} />
 
           {/* Why this recommendation */}
           <div className="mt-8 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
@@ -968,21 +1385,60 @@ export default function Diagnostic() {
             </div>
           )}
 
-          {/* البديلان المنتقى — أسرع وأقل تكلفة */}
+          {/* مقارنة الخيارات الثلاثة — الأساسي والأسرع والأوفر في ميزان واحد */}
           {(result.faster || result.cheaper) && (
-            <div className="mt-8">
-              <h3 className="text-lg font-black text-white/85">بديلان منتقىان لحالتك — بدّل إن شئت</h3>
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div className="card-soft mt-8">
+              <h3 className="h-card">خياراتك الثلاثة في ميزان واحد — بدّل بثقة</h3>
+              <p className="mt-2 text-xs leading-relaxed text-white/50">
+                ثلاثة مسارات انتقاها المحرك لحالتك تحديدا: توصيتنا الأساسية، وبديل أسرع، وبديل أوفر — والقرار الأخير لك.
+              </p>
+              <div className="mt-6 grid gap-4 md:grid-cols-3">
+                {/* الأساسي */}
+                <div className="flex flex-col rounded-2xl border border-[#38A7B4]/50 bg-[#38A7B4]/10 p-5">
+                  <span className="kicker">توصيتك الحالية</span>
+                  <h4 className="mt-3 text-sm font-black leading-snug">{topPathway.name}</h4>
+                  <dl className="mt-3 space-y-1.5 text-xs text-white/55">
+                    <div className="flex items-center justify-between gap-2">
+                      <dt>المدة</dt>
+                      <dd className="font-bold text-white/85">{topPathway.durationWeeks} أسبوعا</dd>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <dt>الوقت الأسبوعي</dt>
+                      <dd className="font-bold text-white/85">{topPathway.weeklyHours}</dd>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <dt>السعر التفضيلي</dt>
+                      <dd className="font-black text-[#FABC05]">{topPrice}$</dd>
+                    </div>
+                  </dl>
+                  <span className="mt-4 flex items-center gap-1.5 text-xs font-bold text-[#6EC7D1]">
+                    <CheckCircle2 className="h-4 w-4" />
+                    هذا خيارك المعروض أعلاه
+                  </span>
+                </div>
+                {/* الأسرع */}
                 {result.faster && (
                   <div className="flex flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-                    <span className="flex w-fit items-center gap-1.5 rounded-full bg-[#38A7B4]/15 px-3 py-1 text-[11px] font-bold text-[#6EC7D1]">
+                    <span className="kicker">
                       <Zap className="h-3 w-3" /> بديل أسرع
                     </span>
-                    <h4 className="mt-3 font-black leading-snug">{result.faster.name}</h4>
-                    <p className="mt-2 text-xs leading-relaxed text-white/50">{result.faster.transformation}</p>
-                    <p className="mt-3 text-xs text-white/45">
-                      {result.faster.durationWeeks} أسبوعًا · {result.faster.weeklyHours}
-                    </p>
+                    <h4 className="mt-3 text-sm font-black leading-snug">{result.faster.name}</h4>
+                    <dl className="mt-3 space-y-1.5 text-xs text-white/55">
+                      <div className="flex items-center justify-between gap-2">
+                        <dt>المدة</dt>
+                        <dd className="font-bold text-white/85">{result.faster.durationWeeks} أسبوعا</dd>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <dt>الوقت الأسبوعي</dt>
+                        <dd className="font-bold text-white/85">{result.faster.weeklyHours}</dd>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <dt>السعر التفضيلي</dt>
+                        <dd className="font-black text-[#FABC05]">
+                          {pathwayPriceFor((pathwayCourses[result.faster.id] ?? []).length || 6)}$
+                        </dd>
+                      </div>
+                    </dl>
                     <Button
                       variant="outline"
                       size="sm"
@@ -994,16 +1450,27 @@ export default function Diagnostic() {
                     </Button>
                   </div>
                 )}
+                {/* الأوفر */}
                 {result.cheaper && (
                   <div className="flex flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-                    <span className="flex w-fit items-center gap-1.5 rounded-full bg-[#FABC05]/15 px-3 py-1 text-[11px] font-bold text-[#FABC05]">
-                      <Wallet className="h-3 w-3" /> أقل تكلفة — {result.cheaper.price}$
+                    <span className="kicker-amber">
+                      <Wallet className="h-3 w-3" /> بديل أوفر
                     </span>
-                    <h4 className="mt-3 font-black leading-snug">{result.cheaper.p.name}</h4>
-                    <p className="mt-2 text-xs leading-relaxed text-white/50">{result.cheaper.p.transformation}</p>
-                    <p className="mt-3 text-xs text-white/45">
-                      {result.cheaper.p.durationWeeks} أسبوعًا · {result.cheaper.p.weeklyHours}
-                    </p>
+                    <h4 className="mt-3 text-sm font-black leading-snug">{result.cheaper.p.name}</h4>
+                    <dl className="mt-3 space-y-1.5 text-xs text-white/55">
+                      <div className="flex items-center justify-between gap-2">
+                        <dt>المدة</dt>
+                        <dd className="font-bold text-white/85">{result.cheaper.p.durationWeeks} أسبوعا</dd>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <dt>الوقت الأسبوعي</dt>
+                        <dd className="font-bold text-white/85">{result.cheaper.p.weeklyHours}</dd>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <dt>السعر التفضيلي</dt>
+                        <dd className="font-black text-[#FABC05]">{result.cheaper.price}$</dd>
+                      </div>
+                    </dl>
                     <Button
                       variant="outline"
                       size="sm"

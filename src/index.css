@@ -63,7 +63,50 @@
   .border-teal {
     border-color: #38a7b4;
   }
+}
 
+/* ═════════ نظام التصميم الموحد — مقياس واحد لكل الموقع ═════════ */
+@layer components {
+  /* العناوين: ثلاثة مستويات فقط */
+  .h-display {
+    @apply text-3xl font-black leading-snug md:text-5xl;
+  }
+  .h-section {
+    @apply text-2xl font-bold leading-snug md:text-3xl;
+  }
+  .h-card {
+    @apply text-lg font-black leading-snug;
+  }
+
+  /* البطاقات: شكل واحد */
+  .card-soft {
+    @apply rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8;
+  }
+  .card-row {
+    @apply rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3;
+  }
+
+  /* الأزرار: رئيسي واحد في كل مقطع، والباقي ثانوي */
+  .btn-cta {
+    @apply inline-flex h-12 items-center justify-center gap-2 rounded-full bg-[#FABC05] px-8 font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90 disabled:opacity-40;
+  }
+  .btn-outline-brand {
+    @apply inline-flex h-11 items-center justify-center gap-2 rounded-full border border-[#38A7B4]/50 px-6 text-sm font-bold text-[#6EC7D1] transition hover:bg-[#38A7B4]/15 disabled:opacity-40;
+  }
+  .btn-ghost-muted {
+    @apply inline-flex items-center gap-2 text-sm font-semibold text-white/50 transition hover:text-white;
+  }
+
+  /* شارة القسم الصغيرة فوق العناوين */
+  .kicker {
+    @apply inline-flex w-fit items-center gap-1.5 rounded-full border border-[#38A7B4]/40 bg-[#38A7B4]/10 px-3.5 py-1 text-xs font-bold text-[#6EC7D1];
+  }
+  .kicker-amber {
+    @apply inline-flex w-fit items-center gap-1.5 rounded-full border border-[#FABC05]/40 bg-[#FABC05]/10 px-3.5 py-1 text-xs font-bold text-[#FABC05];
+  }
+}
+
+@layer utilities {
   /* entrance animations */
   .reveal {
     opacity: 0;
