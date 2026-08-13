@@ -24,13 +24,18 @@ import { pathwayById } from "@/data/pathways";
 import { courseById, pathwayCourses, coursePriceOf, pathwayPriceFor, pathwayTrainers, courseTrainer, type Course } from "@/data/courses";
 import { GOAL_LABELS, GAP_LABELS, OBSTACLE_TO_GAP } from "@/data/diagnostic";
 import { grantEnrollment } from "@/services/access";
+import { useCurrency, usePriceFormatter } from "@/services/currency";
 
-/* اسم المستخدم — يدعم الصيغتين: JSON الجديدة والنص القديم */
+/* اسم المستخدم — يدعم الصيغتين: JSON الجديدة والنص القديم، ويحترم انتهاء الجلسة */
 function readUserName(): string | null {
   const raw = localStorage.getItem("wajeez_user");
   if (!raw) return null;
   try {
-    const parsed = JSON.parse(raw) as { name?: string };
+    const parsed = JSON.parse(raw) as { name?: string; exp?: number };
+    if (typeof parsed.exp === "number" && Date.now() > parsed.exp) {
+      localStorage.removeItem("wajeez_user");
+      return null;
+    }
     return parsed.name ?? raw;
   } catch {
     return raw;
@@ -79,6 +84,8 @@ function StripeCheckout({
 }) {
   const [card, setCard] = useState("");
   const [processing, setProcessing] = useState(false);
+  const cur = useCurrency();
+  const fmt = usePriceFormatter();
   const pay = () => {
     if (card.replace(/\s/g, "").length < 12) return;
     setProcessing(true);
@@ -98,8 +105,11 @@ function StripeCheckout({
         <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
           <div className="flex items-baseline justify-between">
             <span className="text-sm text-white/60">الإجمالي</span>
-            <span className="text-3xl font-black text-[#FABC05]">{amount}$</span>
+            <span className="text-3xl font-black text-[#FABC05]">{fmt(amount)}</span>
           </div>
+          {cur.code !== "USD" && (
+            <p className="mt-1 text-left text-[11px] text-white/40">يعادل {amount}$ — التحويل بسعر ثابت للعرض</p>
+          )}
         </div>
         <div className="mt-4 space-y-3">
           <input
@@ -122,7 +132,7 @@ function StripeCheckout({
           disabled={processing || card.replace(/\s/g, "").length < 12}
           className="mt-5 h-12 w-full rounded-xl bg-[#635BFF] font-black text-white hover:bg-[#635BFF]/85"
         >
-          {processing ? "جارٍ تأكيد الدفع…" : `ادفع ${amount}$ الآن`}
+          {processing ? "جارٍ تأكيد الدفع…" : `ادفع ${fmt(amount)} الآن`}
         </Button>
         <p className="mt-3 flex items-center justify-center gap-1.5 text-[11px] text-white/40">
           <ShieldCheck className="h-3.5 w-3.5" />
@@ -142,6 +152,7 @@ export default function PathwayPage() {
   const [purchased, setPurchased] = useState<{ kind: "pathway" | "course" | "courses"; courseId?: string } | null>(null);
   const [modalCourse, setModalCourse] = useState<Course | null>(null);
   const [pickedIds, setPickedIds] = useState<string[]>([]);
+  const fmt = usePriceFormatter();
 
   /* تخصيصه المحفوظ من صفحة التشخيص */
   const custom = useMemo(() => {
@@ -296,7 +307,7 @@ export default function PathwayPage() {
             <div className="story-fade mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-dashed border-[#38A7B4]/40 bg-[#38A7B4]/5 px-6 py-4">
               <p className="text-sm leading-relaxed text-white/70">
                 <span className="font-black text-[#6EC7D1]">لست متأكدا أن هذا مسارك الأنسب؟ </span>
-                خمس دقائق من التشخيص تطابقك مع أكثر من 45 مسارا وتشرح لك السبب.
+                خمس دقائق من التشخيص تطابقك مع مساراتنا المصممة وتشرح لك السبب.
               </p>
               <Button variant="outline" className="border-[#38A7B4]/60 text-[#6EC7D1] hover:bg-[#38A7B4]/15" asChild>
                 <Link to="/diagnostic">خذ التشخيص أولا</Link>
@@ -374,7 +385,7 @@ export default function PathwayPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      {!isGift && <span className="text-sm font-bold text-white/60">{coursePriceOf(c)}$ منفردة</span>}
+                      {!isGift && <span className="text-sm font-bold text-white/60">{fmt(coursePriceOf(c))} منفردة</span>}
                       <button
                         onClick={() => setModalCourse(c)}
                         className="rounded-lg border border-white/15 px-3 py-1.5 text-xs font-semibold transition hover:border-[#6EC7D1]/60 hover:text-[#6EC7D1]"
@@ -440,14 +451,14 @@ export default function PathwayPage() {
                   </p>
                   <p className="mt-2 text-sm leading-relaxed text-white/70">
                     اشتريت {purchased.kind === "courses" ? "دورات مختارة" : "دورة"} — ممتاز. لكن الدورات المتفرقة خطوات، والمسار رحلة مكتملة.
-                    أكمل «{pathway.name}» كاملا بـ{pathwayTotal}$ وسنخصم لك ما دفعته للتو —
+                    أكمل «{pathway.name}» كاملا بـ{fmt(pathwayTotal)} وسنخصم لك ما دفعته للتو —
                     فتصبح مشترياتك الأولى عمليا مجانية.
                   </p>
                   <Button
                     onClick={() => setCheckout({ title: `إكمال مسار «${pathway.name}» كاملا`, amount: pathwayTotal, kind: "pathway" })}
                     className="mt-4 rounded-full bg-[#FABC05] px-8 font-black text-[#0D0D0D] hover:bg-[#FABC05]/90"
                   >
-                    أكمل المسار بـ{pathwayTotal}$
+                    أكمل المسار بـ{fmt(pathwayTotal)}
                   </Button>
                 </div>
               )}
@@ -492,7 +503,7 @@ export default function PathwayPage() {
                               </span>
                             </span>
                           </span>
-                          <span className="shrink-0 text-sm font-black text-white/85">{coursePriceOf(c)}$</span>
+                          <span className="shrink-0 text-sm font-black text-white/85">{fmt(coursePriceOf(c))}</span>
                         </button>
                       );
                     })}
@@ -504,12 +515,12 @@ export default function PathwayPage() {
                       <span className="text-xs text-white/55">
                         اخترت {picked.length === 1 ? "دورة واحدة" : `${picked.length} دورات`} من {buyableCourses.length}
                       </span>
-                      <span className="text-2xl font-black text-white">{pickedTotal}$</span>
+                      <span className="text-2xl font-black text-white">{fmt(pickedTotal)}</span>
                     </div>
                   )}
                   {picked.length > 0 && pickedTotal >= pathwayTotal && (
                     <p className="mt-2 rounded-xl border border-[#FABC05]/40 bg-[#FABC05]/10 px-4 py-2.5 text-[11px] font-semibold leading-relaxed text-[#FABC05]">
-                      انتبه — مجموع مختاراتك {pickedTotal}$ {pickedTotal > pathwayTotal ? "تجاوز" : "ساوى"} سعر المسار كاملا {pathwayTotal}$!
+                      انتبه — مجموع مختاراتك {fmt(pickedTotal)} {pickedTotal > pathwayTotal ? "تجاوز" : "ساوى"} سعر المسار كاملا {fmt(pathwayTotal)}!
                       المسار الكامل أوفر لك ويشمل التشخيص والمتابعة ودورة إضافية هدية.
                     </p>
                   )}
@@ -542,10 +553,10 @@ export default function PathwayPage() {
                   <p className="font-black text-sm">المسار كاملا</p>
                   <p className="mt-1 text-xs text-white/50">كل الدورات + التشخيص الكامل + المنظومة التسع أعلاه</p>
                   <div className="mt-4 flex items-end gap-2">
-                    <span className="text-3xl font-black text-white">{pathwayTotal}$</span>
-                    {savingPct > 0 && <span className="mb-1 text-sm text-white/45 line-through">{separateCost}$</span>}
+                    <span className="text-3xl font-black text-white">{fmt(pathwayTotal)}</span>
+                    {savingPct > 0 && <span className="mb-1 text-sm text-white/45 line-through">{fmt(separateCost)}</span>}
                   </div>
-                  {savingPct > 0 && <p className="mt-1 text-xs text-[#6EC7D1]">بدل {separateCost}$ لو اشتريت الدورات منفردة — توفير {savingPct}%</p>}
+                  {savingPct > 0 && <p className="mt-1 text-xs text-[#6EC7D1]">بدل {fmt(separateCost)} لو اشتريت الدورات منفردة — توفير {savingPct}%</p>}
                   <p className="mt-1.5 flex items-center gap-1.5 text-xs text-[#FABC05]">
                     <Gift className="h-3.5 w-3.5" /> + دورة إضافية مجانية من اختيارك هدية
                   </p>

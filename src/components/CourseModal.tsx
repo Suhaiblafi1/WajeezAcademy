@@ -1,5 +1,6 @@
 import { X, BookOpen, User, ListChecks, Target, Clock3 } from "lucide-react";
 import { courseDetails, coursePriceOf, type Course } from "@/data/courses";
+import { formatPrice } from "@/services/currency";
 
 /** نافذة تفاصيل الدورة — المدرب، المحاور، المخرج، السعر */
 export default function CourseModal({
@@ -91,7 +92,7 @@ export default function CourseModal({
         {/* السعر والشراء */}
         <div className="mt-6 flex items-center justify-between gap-4 border-t border-white/10 pt-5">
           <div>
-            <p className="text-2xl font-black text-white">{price}$</p>
+            <p className="text-2xl font-black text-white">{formatPrice(price)}</p>
             <p className="text-[11px] text-[#6EC7D1]">تُخصم كاملة من مسارها لو أكملته لاحقا</p>
           </div>
           {onBuy && (

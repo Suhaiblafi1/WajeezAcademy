@@ -155,3 +155,36 @@
     display: none;
   }
 }
+
+/* ─────────── طباعة نتيجة التشخيص: ورقة بيضاء نظيفة بلا أزرار ولا شريط علوي ─────────── */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #111111 !important;
+  }
+  header,
+  .print\:hidden {
+    display: none !important;
+  }
+  section,
+  div,
+  p,
+  h1,
+  h2,
+  h3,
+  h4,
+  span,
+  td,
+  th,
+  li {
+    background-color: transparent !important;
+    background-image: none !important;
+    color: #111111 !important;
+    border-color: #dddddd !important;
+    box-shadow: none !important;
+  }
+  a {
+    color: #111111 !important;
+    text-decoration: none !important;
+  }
+}

@@ -9,6 +9,7 @@ import { getEnrollment } from "@/services/access";
 import { pathwayById, pathways } from "@/data/pathways";
 import { courseById, pathwayCourses, courseTrainer, coursePriceOf } from "@/data/courses";
 import { loadPortal, courseGate, coursePercent, projectConditions, type CourseStatus } from "@/data/student";
+import { formatPrice } from "@/services/currency";
 
 const STATUS_META: Record<CourseStatus, { label: string; cls: string; icon: typeof Lock }> = {
   locked: { label: "مقفلة", cls: "border-white/10 text-white/35", icon: Lock },
@@ -158,7 +159,7 @@ export default function MyPathway() {
               <div key={cid} className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/20 p-4">
                 <div>
                   <p className="text-sm font-bold">{c.name}</p>
-                  <p className="mt-0.5 text-[11px] text-white/45">{c.weeks} أسابيع · {coursePriceOf(c)}$ منفردة</p>
+                  <p className="mt-0.5 text-[11px] text-white/45">{c.weeks} أسابيع · {formatPrice(coursePriceOf(c))} منفردة</p>
                 </div>
                 <a
                   href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`أريد إضافة دورة «${c.name}» لمساري`)}`}

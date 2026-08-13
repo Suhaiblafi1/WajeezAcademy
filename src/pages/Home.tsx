@@ -12,7 +12,30 @@ import { bestsellerCourses, courseById, courseCategories, pathwayTrainers, type 
 import { faqs } from '@/data/siteContent'
 import AuthGate from '@/components/AuthGate'
 import CourseModal from '@/components/CourseModal'
+import { CURRENCIES, setCurrency, useCurrency, type CurrencyCode } from '@/services/currency'
 import '../App.css'
+
+/* ───────────────────────── مبدّل العملة ───────────────────────── */
+function CurrencySwitcher({ compact = false }: { compact?: boolean }) {
+  const cur = useCurrency()
+  return (
+    <label className={`flex items-center gap-1.5 rounded-xl border border-white/15 px-2.5 py-1.5 text-xs font-semibold text-muted-foreground transition hover:border-teal/50 ${compact ? '' : 'hidden md:flex'}`}>
+      <span className="sr-only">عملة العرض</span>
+      <select
+        aria-label="عملة العرض"
+        value={cur.code}
+        onChange={(e) => setCurrency(e.target.value as CurrencyCode)}
+        className="cursor-pointer bg-transparent text-xs font-semibold text-muted-foreground outline-none [&>option]:bg-[#121B1D] [&>option]:text-white"
+      >
+        {(Object.keys(CURRENCIES) as CurrencyCode[]).map((code) => (
+          <option key={code} value={code}>
+            {CURRENCIES[code].symbol} {CURRENCIES[code].label}
+          </option>
+        ))}
+      </select>
+    </label>
+  )
+}
 
 /* ───────────────────────── scroll reveal hook ───────────────────────── */
 function useReveal() {
@@ -125,36 +148,36 @@ const stories = [
   },
 ]
 
-/* «مرآة وجيز» — خمسة أسئلة وعي مستقلة تماما: لا تُحفظ ولا تغذي التشخيص،
-   بل توقظ في الزائر السؤال الصحيح وتفتح شهيته لخدمتنا، ثم يبدأ التشخيص الكامل من الصفر باحترافية */
+/* «وقفة صدق» — خمسة أسئلة وعي مستقلة: تُحفظ محليا على جهاز الزائر فقط ولا تغذي التشخيص،
+   بل توقظ فيه السؤال الصحيح وتفتح شهيته لخدمتنا، ثم يبدأ التشخيص الكامل من الصفر باحترافية */
 const mirrorQuestions = [
   {
-    id: 'm1', moduleLabel: 'المرآة',
+    id: 'm1', moduleLabel: 'الوقفة',
     text: 'خلال هذا العام — كم مرة قررت أن تتعلم شيئا جديدا... ثم انشغلت؟',
     options: ['أكثر مما أعترف به لنفسي', 'مرة أو مرتين', 'بدأت فعلا لكني توقفت', 'لا — أنا منتظم غالبا'],
   },
   {
-    id: 'm2', moduleLabel: 'المرآة',
+    id: 'm2', moduleLabel: 'الوقفة',
     text: 'لو سألنا مديرك أو أستاذك: ما المهارة التي تنقصك فعلا؟ — هل تعرف إجابته فورا؟',
     options: ['نعم — أعرفها بالضبط', 'لدي تخمين لا أكثر', 'بصراحة؟ لا أعرف'],
   },
   {
-    id: 'm3', moduleLabel: 'المرآة',
+    id: 'm3', moduleLabel: 'الوقفة',
     text: 'كم دورة إلكترونية بدأتها في حياتك... وأكملتها فعلا للنهاية؟',
     options: ['أكملت معظمها', 'بعضها فقط', 'أبدأ بحماس وأتوقف — قصتي المعتادة'],
   },
   {
-    id: 'm4', moduleLabel: 'المرآة',
+    id: 'm4', moduleLabel: 'الوقفة',
     text: 'عندما تفكر في وضعك المهني بعد سنتين — كيف تبدو الصورة؟',
     options: ['واضحة ومكتوبة', 'في رأسي تقريبا', 'ضبابية — وهذا يقلقني أحيانا'],
   },
   {
-    id: 'm5', moduleLabel: 'المرآة',
+    id: 'm5', moduleLabel: 'الوقفة',
     text: 'وما الذي يمنعك اليوم من البدء فعلا؟',
     options: ['لا أعرف من أين أبدأ', 'الخيارات كثيرة وتشتتني', 'أخاف أدفع ثمن شيء لا يناسبني', 'ظروفي لا تسمح الآن'],
   },
 ]
-/* جواب المانع الأخير يقود رسالة المرآة — هنا تُشرح قيمة الخدمة بلغة حالته هو */
+/* جواب المانع الأخير يقود رسالة الوقفة — هنا تُشرح قيمة الخدمة بلغة حالته هو */
 const mirrorPitch: Record<string, string> = {
   'لا أعرف من أين أبدأ': 'لهذا بالضبط وُجد التشخيص: يبدأ منك أنت — هدفك وقصتك وظروفك — لا من قائمة دورات نفرضها عليك.',
   'الخيارات كثيرة وتشتتني': 'التشخيص يحسم التشتت: مسار واحد مفسَّر بدرجة ثقة، بدل أربعين قائمة تتنافس على انتباهك.',
@@ -176,7 +199,12 @@ function readUserName(): string | null {
   const raw = localStorage.getItem('wajeez_user')
   if (!raw) return null
   try {
-    return (JSON.parse(raw) as { name?: string }).name ?? raw
+    const parsed = JSON.parse(raw) as { name?: string; exp?: number }
+    if (typeof parsed.exp === 'number' && Date.now() > parsed.exp) {
+      localStorage.removeItem('wajeez_user')
+      return null
+    }
+    return parsed.name ?? raw
   } catch {
     return raw
   }
@@ -187,10 +215,10 @@ function Nav() {
   const [authOpen, setAuthOpen] = useState(false)
   const [userName, setUserName] = useState<string | null>(readUserName)
   const links = [
-    { label: 'مرآة وجيز', href: '#diagnostic' },
+    { label: 'وقفة صدق', href: '#diagnostic' },
     { label: 'كيف نعمل', href: '#how' },
     { label: 'قصص المتعلمين', href: '#stories' },
-    { label: 'الأكثر مبيعا', href: '#bestsellers' },
+    { label: 'مختارات وجيز', href: '#bestsellers' },
     { label: 'الأسئلة', href: '#faq' },
   ]
   return (
@@ -209,6 +237,7 @@ function Nav() {
           ))}
         </nav>
         <div className="flex items-center gap-3">
+          <CurrencySwitcher />
           {userName ? (
             <Link to="/student" className="hidden items-center gap-2 rounded-xl border border-teal/40 bg-[#38A7B4]/10 px-4 py-2 text-sm font-semibold text-teal-light transition hover:bg-[#38A7B4]/20 md:inline-flex">
               <User className="h-4 w-4" />
@@ -227,7 +256,7 @@ function Nav() {
             href="#diagnostic"
             className="hidden rounded-xl bg-teal px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-deep md:inline-block"
           >
-            جرّب مرآة وجيز
+            جرّب وقفة صدق
           </a>
           <button className="md:hidden text-foreground" onClick={() => setOpen(!open)} aria-label="القائمة">
             {open ? <X /> : <Menu />}
@@ -254,8 +283,11 @@ function Nav() {
             </button>
           )}
           <a href="#diagnostic" onClick={() => setOpen(false)} className="mt-2 block rounded-xl bg-teal px-5 py-3 text-center font-semibold text-white">
-            جرّب مرآة وجيز
+            جرّب وقفة صدق
           </a>
+          <div className="mt-3 flex justify-center">
+            <CurrencySwitcher compact />
+          </div>
         </nav>
       )}
       {authOpen && (
@@ -302,7 +334,7 @@ function Hero() {
             href="#diagnostic"
             className="group inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-teal px-8 py-4 font-semibold text-white shadow-[0_0_40px_-8px_#38A7B4] transition hover:bg-teal-deep sm:w-auto"
           >
-            انظر في مرآة وجيز
+            خذ وقفة صدق
             <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
           </a>
           <a
@@ -314,25 +346,54 @@ function Hero() {
           </a>
         </div>
         <p className="reveal is-visible mt-6 text-xs text-muted-foreground">
-          دقيقة واحدة في المرآة · ثم تشخيص كامل يفهمك بلا تقييم ذاتي ولا سؤال مكرر
+          دقيقة واحدة من الصدق · ثم تشخيص كامل يفهمك بلا تقييم ذاتي ولا سؤال مكرر
         </p>
       </div>
     </section>
   )
 }
 
-/* ───────────────── مرآة وجيز — خمسة أسئلة وعي مستقلة ───────────────── */
+/* ───────────────── وقفة صدق — خمسة أسئلة صدق مع النفس ───────────────── */
 function DiagnosticTeaser() {
   const [step, setStep] = useState(0)
   const [answers, setAnswers] = useState<Record<string, string>>({})
+  const [picked, setPicked] = useState<string | null>(null) // إظهار الاختيار لحظيا ومنع الضغط المتكرر
   const done = step >= mirrorQuestions.length
   const current = mirrorQuestions[Math.min(step, mirrorQuestions.length - 1)]
 
+  /* حفظ مؤقت محلي آمن — لا يغادر جهاز الزائر ولا يُرسل لأي خادم */
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('wajeez_mirror') ?? 'null') as { step?: number; answers?: Record<string, string> } | null
+      if (saved && typeof saved.step === 'number' && saved.answers) {
+        setStep(Math.min(saved.step, mirrorQuestions.length))
+        setAnswers(saved.answers)
+      }
+    } catch { /* لا محفوظات صالحة */ }
+  }, [])
+  useEffect(() => {
+    localStorage.setItem('wajeez_mirror', JSON.stringify({ step, answers }))
+  }, [step, answers])
+
   const pick = (qid: string, value: string) => {
-    setAnswers({ ...answers, [qid]: value })
-    setStep(step + 1)
+    if (picked) return // ضغطة واحدة تكفي — نمنع التكرار أثناء الانتقال
+    setPicked(value)
+    setAnswers((a) => ({ ...a, [qid]: value }))
+    window.setTimeout(() => {
+      setStep((s) => s + 1)
+      setPicked(null)
+    }, 300)
   }
-  const reset = () => { setStep(0); setAnswers({}) }
+  const back = () => {
+    if (picked || step === 0) return
+    setStep(step - 1)
+  }
+  const reset = () => {
+    setStep(0)
+    setAnswers({})
+    setPicked(null)
+    localStorage.removeItem('wajeez_mirror')
+  }
   const blocker = answers['m5']
   const pitch = blocker ? mirrorPitch[blocker] : null
   const answeredLabels = mirrorQuestions
@@ -343,38 +404,81 @@ function DiagnosticTeaser() {
     <section id="diagnostic" className="relative py-20 md:py-28">
       <div className="mx-auto max-w-4xl px-5">
         <div className="reveal text-center">
-          <SectionLabel>مرآة وجيز — دقيقة واحدة</SectionLabel>
+          <SectionLabel>وقفة صدق — دقيقة واحدة</SectionLabel>
           <h2 className="mt-5 text-3xl font-bold md:text-4xl">قبل أن نتحدث نحن… اسمع نفسك</h2>
           <p className="mx-auto mt-4 max-w-lg text-muted-foreground leading-8">
-            خمسة أسئلة قصيرة عن علاقتك بالتعلم — لا تُحفظ ولا تُقيّمك.
-            مهمتها واحدة: أن ترى في المرآة ما نراه نحن كل يوم.
+            خمسة أسئلة صدق مع النفس — لا تُقيّمك ولا تُرسل لأي جهة.
+            مهمتها واحدة: أن ترى في إجاباتك ما نراه نحن كل يوم.
           </p>
         </div>
 
         <div className="reveal mt-10 overflow-hidden rounded-3xl border border-white/10 bg-card shadow-[0_20px_80px_-30px_rgba(56,167,180,0.25)]">
-          {/* progress */}
-          <div className="flex gap-2 px-8 pt-7">
+          {/* مؤشر التقدم */}
+          <div
+            className="flex gap-2 px-8 pt-7"
+            role="progressbar"
+            aria-label={`التقدم: أجبت عن ${Math.min(step, mirrorQuestions.length)} من ${mirrorQuestions.length} أسئلة`}
+            aria-valuemin={0}
+            aria-valuemax={mirrorQuestions.length}
+            aria-valuenow={Math.min(step, mirrorQuestions.length)}
+          >
             {mirrorQuestions.map((_, i) => (
               <div key={i} className={`h-1.5 flex-1 rounded-full transition-colors duration-500 ${i < step ? 'bg-teal' : i === step ? 'bg-[#6EC7D1]/60' : 'bg-white/10'}`} />
             ))}
           </div>
 
+          {/* إعلان السؤال لقارئ الشاشة */}
+          <p className="sr-only" aria-live="polite">
+            {!done ? `سؤال ${step + 1} من ${mirrorQuestions.length}: ${current.text}` : 'اكتملت الوقفة — تظهر خلاصتك الآن'}
+          </p>
+
           <div className="p-8 md:p-10" key={step}>
             {!done ? (
               <div className="story-fade">
-                <div className="text-sm text-teal-light">سؤال {step + 1} من {mirrorQuestions.length}</div>
-                <h3 className="mt-3 text-2xl font-bold leading-relaxed">{current.text}</h3>
-                <div className="mt-7 grid gap-3">
-                  {current.options.map((opt) => (
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-teal-light">سؤال {step + 1} من {mirrorQuestions.length}</div>
+                  <div className="flex items-center gap-4 text-xs">
+                    {step > 0 && (
+                      <button
+                        onClick={back}
+                        disabled={Boolean(picked)}
+                        className="inline-flex items-center gap-1 text-muted-foreground transition hover:text-teal-light disabled:opacity-40"
+                      >
+                        <ChevronRight className="h-3.5 w-3.5" />
+                        السؤال السابق
+                      </button>
+                    )}
                     <button
-                      key={opt}
-                      onClick={() => pick(current.id, opt)}
-                      className="group flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4 text-right font-medium transition hover:border-teal/50 hover:bg-[#38A7B4]/10 hover:text-teal-light"
+                      onClick={reset}
+                      className="text-muted-foreground/70 transition hover:text-teal-light"
                     >
-                      {opt}
-                      <ArrowLeft className="h-4 w-4 opacity-0 transition group-hover:opacity-100" />
+                      إعادة البدء
                     </button>
-                  ))}
+                  </div>
+                </div>
+                <h3 className="mt-3 text-2xl font-bold leading-relaxed">{current.text}</h3>
+                <div className="mt-7 grid gap-3" role="group" aria-label={`خيارات السؤال ${step + 1}`}>
+                  {current.options.map((opt) => {
+                    const selected = picked === opt || (!picked && answers[current.id] === opt)
+                    return (
+                      <button
+                        key={opt}
+                        onClick={() => pick(current.id, opt)}
+                        aria-pressed={selected}
+                        className={`group flex items-center justify-between rounded-2xl border px-5 py-4 text-right font-medium transition ${
+                          selected
+                            ? 'border-teal bg-[#38A7B4]/20 text-teal-light'
+                            : 'border-white/10 bg-white/[0.03] hover:border-teal/50 hover:bg-[#38A7B4]/10 hover:text-teal-light'
+                        }`}
+                      >
+                        <span className="flex items-center gap-2.5">
+                          {selected && <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-light" />}
+                          {opt}
+                        </span>
+                        {!selected && <ArrowLeft className="h-4 w-4 opacity-0 transition group-hover:opacity-100" />}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
             ) : (
@@ -396,7 +500,7 @@ function DiagnosticTeaser() {
                   </p>
                 )}
                 <p className="mx-auto mt-4 max-w-md leading-8 text-muted-foreground">
-                  المرآة أدت وظيفتها. الآن يبدأ العمل الحقيقي: تشخيص كامل يفهم قصتك ويستنتج مستواك
+                  الوقفة أدت وظيفتها. الآن يبدأ العمل الحقيقي: تشخيص كامل يفهم قصتك ويستنتج مستواك
                   من مواقفك الحقيقية — ثم يرسم لك مسارا مفسّرا تستطيع تخصيصه.
                 </p>
                 <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -405,7 +509,7 @@ function DiagnosticTeaser() {
                     <ArrowLeft className="h-4 w-4" />
                   </Link>
                   <button onClick={reset} className="text-sm text-muted-foreground underline-offset-4 hover:text-teal-light hover:underline">
-                    أعد النظر في المرآة
+                    أعد الوقفة من جديد
                   </button>
                 </div>
               </div>
@@ -674,8 +778,8 @@ function Bestsellers() {
       <div className="mx-auto max-w-6xl px-5">
         <div className="reveal flex flex-wrap items-end justify-between gap-4">
           <div>
-            <SectionLabel>الأكثر مبيعا</SectionLabel>
-            <h2 className="mt-4 text-3xl font-bold md:text-4xl">مسارات ودورات جرّبها من سبقوك</h2>
+            <SectionLabel>مختارات وجيز</SectionLabel>
+            <h2 className="mt-4 text-3xl font-bold md:text-4xl">مسارات ودورات منتقاة بعناية</h2>
             <p className="mt-3 max-w-lg leading-8 text-muted-foreground">
               لا تريد البدء بالتشخيص؟ اختر مجالك أولا — ثم مسارا كاملا، أو دورة واحدة إن كنت تعرف ما تريد بالضبط.
             </p>
@@ -793,7 +897,7 @@ function Bestsellers() {
           <Compass className="h-8 w-8 text-teal" />
           <p className="mt-4 font-bold leading-relaxed">لم تجد ما يناسبك؟</p>
           <p className="mt-2 text-sm leading-7 text-muted-foreground">
-            التشخيص يطابقك مع أكثر من 45 مسارا — ويشرح لك لماذا.
+            التشخيص يطابقك مع مساراتنا المصممة — ويشرح لك لماذا.
           </p>
           <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-teal-light">
             ابدأ التشخيص
@@ -802,13 +906,13 @@ function Bestsellers() {
         </Link>
       </div>
 
-      {/* راويل الدورات الأكثر مبيعا */}
+      {/* راويل الدورات المختارة */}
       <div id="top-courses" className="mx-auto mt-12 max-w-6xl scroll-mt-24 px-5">
         <div className="reveal flex flex-wrap items-end justify-between gap-4">
           <div>
             <h3 className="flex items-center gap-2 text-2xl font-bold">
               <BookOpen className="h-6 w-6 text-amber-brand" />
-              الدورات الأكثر مبيعا
+              دورات مختارة بعناية
             </h3>
             <p className="mt-2 max-w-lg text-sm leading-7 text-muted-foreground">
               تعرف تماما ما تريد؟ خذ دورة واحدة وابدأ اليوم — وإن أكملت لاحقا لمسارها الكامل، خُصم ما دفعته من سعره.
@@ -872,8 +976,8 @@ function Bestsellers() {
 
 /* ───────────────── numbers ───────────────── */
 const numbers = [
-  { value: '45', label: 'مسارا جاهزا', sub: 'للأفراد والشركات والجهات الحكومية' },
-  { value: '216', label: 'مهارة في قاموسنا', sub: 'بمستويات إتقان من 0 إلى 5' },
+  { value: 'قصتك', label: 'أولا قبل أي دورة', sub: 'تشخيص يفهم هدفك وواقعك قبل أن يوصي' },
+  { value: 'مخرج', label: 'حقيقي يُراجع', sub: 'القيمة بالإنجاز والإثبات، لا بساعات المشاهدة' },
   { value: '3', label: 'أطر علمية موثوقة', sub: 'RIASEC للميول · O*NET وESCO للمهارات · DigComp للجاهزية الرقمية' },
   { value: '4', label: 'خطوات للرحلة', sub: 'فهم، توصية، تعلم، إثبات' },
 ]
@@ -1062,10 +1166,10 @@ function Reviews() {
     <section className="border-t border-white/5 py-16 md:py-20">
       <div className="mx-auto max-w-6xl px-5">
         <div className="reveal text-center">
-          <SectionLabel>ماذا يقول مستخدمونا</SectionLabel>
-          <h2 className="mt-5 text-3xl font-bold md:text-4xl">آراء حقيقية من مجتمع وجيز</h2>
+          <SectionLabel>ماذا يقول مستخدمو تطبيق وجيز</SectionLabel>
+          <h2 className="mt-5 text-3xl font-bold md:text-4xl">تجربتهم مع علامة وجيز</h2>
           <p className="mx-auto mt-4 max-w-xl leading-8 text-muted-foreground">
-            من تقييمات تطبيق وجيز على قوقل بلاي وآب ستور — أكثر من 50 ألف تقييم.
+            من تقييمات مستخدمي تطبيق وجيز على المتجرين — عن تجربتهم مع العلامة.
           </p>
         </div>
         <div className="mt-12 grid gap-5 md:grid-cols-3">
@@ -1095,9 +1199,9 @@ const footerCols: { title: string; icon: typeof GraduationCap; links: { label: s
     title: 'المنصة',
     icon: GraduationCap,
     links: [
-      { label: 'المسارات الأكثر مبيعا', to: '#bestsellers' },
+      { label: 'مختارات وجيز', to: '#bestsellers' },
       { label: 'الدورات المنفردة', to: '#top-courses' },
-      { label: 'مرآة وجيز والتشخيص', to: '#diagnostic' },
+      { label: 'وقفة صدق والتشخيص', to: '#diagnostic' },
       { label: 'قصص المتعلمين', to: '#stories' },
       { label: 'بوابة الطالب', to: '/student' },
       { label: 'التحقق من شهادة', to: '/verify' },

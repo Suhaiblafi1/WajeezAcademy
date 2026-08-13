@@ -290,7 +290,11 @@ export function readUserName(): string {
   try {
     const raw = localStorage.getItem("wajeez_user");
     if (!raw) return "متعلم وجيز";
-    const parsed = JSON.parse(raw) as { name?: string };
+    const parsed = JSON.parse(raw) as { name?: string; exp?: number };
+    if (typeof parsed.exp === "number" && Date.now() > parsed.exp) {
+      localStorage.removeItem("wajeez_user"); // جلسة منتهية — تمسح بأمان
+      return "متعلم وجيز";
+    }
     return parsed.name ?? "متعلم وجيز";
   } catch { return "متعلم وجيز"; }
 }

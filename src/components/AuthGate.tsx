@@ -1,8 +1,16 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import { Check, Eye, EyeOff, Linkedin, Lock, Mail, ShieldCheck, UserRound } from "lucide-react";
+import {
+  OAUTH_READY,
+  lockedMinutes,
+  requestPasswordReset,
+  resendVerification,
+  signIn,
+  signUp,
+} from "@/services/auth";
 
-/* أيقونة قوقل الرسمية بألوانها الأربعة */
+/* أيقونة قوقل الرسمية بألوانها الأربعة — جاهزة ليوم اكتمال ربط OAuth */
 function GoogleMark() {
   return (
     <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
@@ -44,50 +52,189 @@ const STRENGTH_META = [
   { label: "قوية", color: "#34A853" },
 ];
 
-/** بوابة الدخول والتسجيل — صفحة مهيبة بلا مشتتات، تحقق فوري، وثقة قبل كل شيء */
+type View = "auth" | "reset" | "verify";
+
+const FIELD_CLS =
+  "h-12 w-full rounded-2xl border border-white/15 bg-white/[0.04] pr-11 pl-11 text-left text-sm text-white placeholder:text-white/30 focus:border-[#38A7B4] focus:outline-none";
+const LABEL_CLS = "mb-1.5 block text-xs font-bold text-white/60";
+
+/** بوابة الدخول والتسجيل — نموذج حقيقي، تحقق آمن، ورسائل عربية لا تكشف شيئا */
 export default function AuthGate({ onDone, message }: { onDone: () => void; message?: string }) {
   const [mode, setMode] = useState<"login" | "signup">("signup");
+  const [view, setView] = useState<View>("auth");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [showPass, setShowPass] = useState(false);
+  const [agreed, setAgreed] = useState(false);
   const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [resent, setResent] = useState(false);
 
   const emailValid = EMAIL_RE.test(email.trim());
   const passValid = pass.length >= 8;
+  const confirmValid = mode === "login" || confirm === pass;
   const nameValid = mode === "login" || name.trim().length >= 2;
-  const formValid = emailValid && passValid && nameValid;
+  const consentValid = mode === "login" || agreed;
+  const formValid = emailValid && passValid && confirmValid && nameValid && consentValid;
   const strength = strengthOf(pass);
+  const locked = lockedMinutes();
 
-  const socialLogin = (provider: string) => {
-    localStorage.setItem("wajeez_user", JSON.stringify({ name: `عضو عبر ${provider}`, at: Date.now() }));
-    onDone();
-  };
-
-  const submit = () => {
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (busy) return;
+    if (locked > 0) {
+      setErr(`محاولات كثيرة متتالية — انتظر ${locked} دقائق ثم حاول مجددا`);
+      return;
+    }
     if (!formValid) {
       setErr(
         !nameValid
           ? "أدخل اسمك — لنرحب بك باسمك لا برقم"
           : !emailValid
             ? "صيغة البريد غير صحيحة — مثال: name@mail.com"
-            : "كلمة المرور ٨ أحرف على الأقل — أضف رقما أو رمزا لتقويتها"
+            : !passValid
+              ? "كلمة المرور ٨ أحرف على الأقل — أضف رقما أو رمزا لتقويتها"
+              : !confirmValid
+                ? "تأكيد كلمة المرور لا يطابقها — أعد كتابتها"
+                : "نحتاج موافقتك على شروط الاستخدام وسياسة الخصوصية أولا"
       );
       return;
     }
-    const display = name.trim() || email.trim().split("@")[0];
-    localStorage.setItem("wajeez_user", JSON.stringify({ name: display, email: email.trim(), at: Date.now() }));
-    onDone();
+    setBusy(true);
+    setErr("");
+    // محاكاة زمن الخادم — تُستبدل بنداء API حقيقي عند الربط
+    window.setTimeout(() => {
+      const result =
+        mode === "signup" ? signUp(name, email, pass) : signIn(email, pass);
+      setBusy(false);
+      if (!result.ok) {
+        setErr(result.error);
+        return;
+      }
+      if (mode === "signup") {
+        setView("verify");
+        setResent(false);
+      } else {
+        onDone();
+      }
+    }, 700);
   };
 
+  const submitReset = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (busy || !emailValid) return;
+    setBusy(true);
+    window.setTimeout(() => {
+      setBusy(false);
+      setErr("");
+      setView("auth");
+      setMode("login");
+      // رسالة آمنة لا تكشف وجود الحساب
+      setNotice(requestPasswordReset(email));
+    }, 700);
+  };
+
+  const [notice, setNotice] = useState("");
+
+  /* ── شاشة: تحقق من بريدك (بعد إنشاء الحساب) ── */
+  if (view === "verify") {
+    return (
+      <div className="mx-auto max-w-md">
+        <div className="overflow-hidden rounded-3xl border border-[#38A7B4]/25 bg-gradient-to-b from-[#12262A] to-[#0D0D0D] px-8 py-10 text-center shadow-[0_24px_80px_-24px_rgba(56,167,180,0.35)]">
+          <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[#38A7B4]/15">
+            <Mail className="h-7 w-7 text-[#6EC7D1]" />
+          </span>
+          <h2 className="mt-5 text-2xl font-black text-white">تم إنشاء حسابك — بقي تأكيد بريدك</h2>
+          <p className="mt-3 text-sm leading-relaxed text-white/55">
+            أرسلنا رابط تحقق إلى <span dir="ltr" className="font-bold text-white/80">{email.trim()}</span>.
+            افتح الرسالة واضغط الرابط لتفعيل حسابك بالكامل.
+          </p>
+          <div className="mt-6 space-y-3">
+            <button
+              onClick={() => {
+                resendVerification(email);
+                setResent(true);
+              }}
+              disabled={resent}
+              className="h-11 w-full rounded-2xl border border-white/15 text-sm font-bold text-white/70 transition hover:border-[#38A7B4]/50 hover:text-[#6EC7D1] disabled:opacity-50"
+            >
+              {resent ? "أُعيد إرسال الرسالة — تفقد بريدك" : "لم تصلك؟ أعد إرسال رسالة التحقق"}
+            </button>
+            <button
+              onClick={onDone}
+              className="h-12 w-full rounded-2xl bg-[#FABC05] text-sm font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90"
+            >
+              متابعة — سأؤكد بريدي لاحقا
+            </button>
+          </div>
+          <p className="mt-5 text-[11px] leading-relaxed text-white/35">
+            تفقد مجلد الرسائل غير المرغوبة إن لم تجدها خلال دقائق
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── شاشة: استعادة كلمة المرور ── */
+  if (view === "reset") {
+    return (
+      <div className="mx-auto max-w-md">
+        <div className="overflow-hidden rounded-3xl border border-[#38A7B4]/25 bg-gradient-to-b from-[#12262A] to-[#0D0D0D] shadow-[0_24px_80px_-24px_rgba(56,167,180,0.35)]">
+          <div className="border-b border-white/5 px-8 pb-6 pt-8 text-center">
+            <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-[#38A7B4] text-xl font-black text-[#08272B]">و</span>
+            <h2 className="mt-4 text-2xl font-black text-white">استعادة كلمة المرور</h2>
+            <p className="mt-2 text-sm leading-relaxed text-white/55">
+              أدخل بريدك وسنرسل لك رابط إعادة التعيين
+            </p>
+          </div>
+          <form onSubmit={submitReset} noValidate className="px-8 py-6">
+            <label htmlFor="reset-email" className={LABEL_CLS}>البريد الإلكتروني</label>
+            <div className="relative">
+              <Mail className="absolute right-3.5 top-3.5 h-4 w-4 text-white/35" />
+              <input
+                id="reset-email"
+                name="email"
+                dir="ltr"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="name@mail.com"
+                autoComplete="email"
+                className={FIELD_CLS}
+              />
+            </div>
+            {!emailValid && email.length > 0 && (
+              <p className="mt-1.5 text-[11px] font-semibold text-red-300">صيغة البريد غير صحيحة — مثال: name@mail.com</p>
+            )}
+            <button
+              type="submit"
+              disabled={busy || !emailValid}
+              className="mt-4 h-12 w-full rounded-2xl bg-[#FABC05] text-sm font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {busy ? "جارٍ الإرسال…" : "أرسل رابط الاستعادة"}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setView("auth"); setErr(""); }}
+              className="mt-3 w-full text-center text-xs text-white/45 transition hover:text-[#6EC7D1]"
+            >
+              عودة لتسجيل الدخول
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── الشاشة الرئيسية: دخول / حساب جديد ── */
   return (
     <div className="mx-auto max-w-md">
       <div className="overflow-hidden rounded-3xl border border-[#38A7B4]/25 bg-gradient-to-b from-[#12262A] to-[#0D0D0D] shadow-[0_24px_80px_-24px_rgba(56,167,180,0.35)]">
-        {/* الترويسة */}
         <div className="border-b border-white/5 px-8 pb-6 pt-8 text-center">
-          <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-[#38A7B4] text-xl font-black text-[#08272B]">
-            و
-          </span>
+          <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-[#38A7B4] text-xl font-black text-[#08272B]">و</span>
           <h2 className="mt-4 text-2xl font-black text-white">
             {mode === "signup" ? "ابدأ رحلتك مع وجيز" : "أهلا بعودتك"}
           </h2>
@@ -98,13 +245,16 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
 
         <div className="px-8 py-6">
           {/* تبويب الوضع */}
-          <div className="mb-6 grid grid-cols-2 rounded-full border border-white/10 bg-white/[0.04] p-1">
+          <div className="mb-6 grid grid-cols-2 rounded-full border border-white/10 bg-white/[0.04] p-1" role="tablist">
             {(["signup", "login"] as const).map((m) => (
               <button
                 key={m}
+                role="tab"
+                aria-selected={mode === m}
                 onClick={() => {
                   setMode(m);
                   setErr("");
+                  setNotice("");
                 }}
                 className={`rounded-full py-2 text-sm font-bold transition ${
                   mode === m ? "bg-[#38A7B4] text-[#08272B]" : "text-white/55 hover:text-white"
@@ -115,141 +265,219 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
             ))}
           </div>
 
-          {/* الدخول الاجتماعي أولا — أسرع طريق */}
-          <div className="space-y-3">
-            <button
-              onClick={() => socialLogin("قوقل")}
-              className="flex h-12 w-full items-center justify-center gap-3 rounded-2xl bg-white text-sm font-black text-[#1F1F1F] transition hover:bg-white/90"
-            >
-              <GoogleMark />
-              المتابعة بحساب قوقل
-            </button>
-            <button
-              onClick={() => socialLogin("لينكدإن")}
-              className="flex h-12 w-full items-center justify-center gap-3 rounded-2xl bg-[#0A66C2] text-sm font-black text-white transition hover:bg-[#0A66C2]/90"
-            >
-              <Linkedin className="h-5 w-5" />
-              المتابعة بحساب لينكدإن
-            </button>
-            <p className="flex items-center justify-center gap-1.5 text-[11px] text-white/40">
-              <ShieldCheck className="h-3.5 w-3.5 text-[#38A7B4]" />
-              لن ننشر شيئا باسمك أبدا — حسابك لحفظ مسارك ونتيجتك فقط
-            </p>
-          </div>
+          {/* الدخول الاجتماعي — مخفي حتى يكتمل ربط OAuth الحقيقي والمختبَر */}
+          {OAUTH_READY && (
+            <>
+              <div className="space-y-3">
+                <button className="flex h-12 w-full items-center justify-center gap-3 rounded-2xl bg-white text-sm font-black text-[#1F1F1F] transition hover:bg-white/90">
+                  <GoogleMark />
+                  المتابعة بحساب قوقل
+                </button>
+                <button className="flex h-12 w-full items-center justify-center gap-3 rounded-2xl bg-[#0A66C2] text-sm font-black text-white transition hover:bg-[#0A66C2]/90">
+                  <Linkedin className="h-5 w-5" />
+                  المتابعة بحساب لينكدإن
+                </button>
+                <p className="flex items-center justify-center gap-1.5 text-[11px] text-white/40">
+                  <ShieldCheck className="h-3.5 w-3.5 text-[#38A7B4]" />
+                  لن ننشر شيئا باسمك أبدا — حسابك لحفظ مسارك ونتيجتك فقط
+                </p>
+              </div>
+              <div className="my-5 flex items-center gap-3 text-xs text-white/35">
+                <span className="h-px flex-1 bg-white/10" />
+                أو بالبريد الإلكتروني
+                <span className="h-px flex-1 bg-white/10" />
+              </div>
+            </>
+          )}
 
-          <div className="my-5 flex items-center gap-3 text-xs text-white/35">
-            <span className="h-px flex-1 bg-white/10" />
-            أو بالبريد الإلكتروني
-            <span className="h-px flex-1 bg-white/10" />
-          </div>
-
-          {/* النموذج */}
-          <div className="space-y-3">
+          <form onSubmit={submit} noValidate className="space-y-4">
             {mode === "signup" && (
-              <div className="relative">
-                <UserRound className="absolute right-3.5 top-3.5 h-4 w-4 text-white/35" />
-                {name.trim().length >= 2 && (
-                  <Check className="absolute left-3.5 top-3.5 h-4 w-4 text-[#34A853]" />
-                )}
-                <input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="اسمك الكريم"
-                  autoComplete="name"
-                  className="h-12 w-full rounded-2xl border border-white/15 bg-white/[0.04] pr-11 pl-11 text-sm text-white placeholder:text-white/30 focus:border-[#38A7B4] focus:outline-none"
-                />
+              <div>
+                <label htmlFor="auth-name" className={LABEL_CLS}>الاسم الكريم</label>
+                <div className="relative">
+                  <UserRound className="absolute right-3.5 top-3.5 h-4 w-4 text-white/35" />
+                  {name.trim().length >= 2 && <Check className="absolute left-3.5 top-3.5 h-4 w-4 text-[#34A853]" />}
+                  <input
+                    id="auth-name"
+                    name="name"
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="مثال: سارة العتيبي"
+                    autoComplete="name"
+                    className={`${FIELD_CLS} text-right`}
+                  />
+                </div>
               </div>
             )}
-            <div className="relative">
-              <Mail className="absolute right-3.5 top-3.5 h-4 w-4 text-white/35" />
-              {emailValid && <Check className="absolute left-3.5 top-3.5 h-4 w-4 text-[#34A853]" />}
-              <input
-                dir="ltr"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@mail.com"
-                autoComplete="email"
-                className="h-12 w-full rounded-2xl border border-white/15 bg-white/[0.04] pr-11 pl-11 text-left text-sm text-white placeholder:text-white/30 focus:border-[#38A7B4] focus:outline-none"
-              />
+
+            <div>
+              <label htmlFor="auth-email" className={LABEL_CLS}>البريد الإلكتروني</label>
+              <div className="relative">
+                <Mail className="absolute right-3.5 top-3.5 h-4 w-4 text-white/35" />
+                {emailValid && <Check className="absolute left-3.5 top-3.5 h-4 w-4 text-[#34A853]" />}
+                <input
+                  id="auth-email"
+                  name="email"
+                  dir="ltr"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@mail.com"
+                  autoComplete="email"
+                  aria-describedby="auth-email-hint"
+                  className={FIELD_CLS}
+                />
+              </div>
+              {email.length > 0 && !emailValid && (
+                <p id="auth-email-hint" className="mt-1.5 text-[11px] font-semibold text-red-300">
+                  صيغة البريد غير صحيحة — مثال: name@mail.com
+                </p>
+              )}
             </div>
-            <div className="relative">
-              <Lock className="absolute right-3.5 top-3.5 h-4 w-4 text-white/35" />
-              <button
-                type="button"
-                onClick={() => setShowPass(!showPass)}
-                aria-label={showPass ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
-                className="absolute left-3.5 top-3.5 text-white/35 transition hover:text-white/70"
-              >
-                {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-              <input
-                dir="ltr"
-                type={showPass ? "text" : "password"}
-                value={pass}
-                onChange={(e) => setPass(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && submit()}
-                placeholder="كلمة المرور — ٨ أحرف فأكثر"
-                autoComplete={mode === "signup" ? "new-password" : "current-password"}
-                className="h-12 w-full rounded-2xl border border-white/15 bg-white/[0.04] pr-11 pl-11 text-left text-sm text-white placeholder:text-white/30 focus:border-[#38A7B4] focus:outline-none"
-              />
+
+            <div>
+              <label htmlFor="auth-pass" className={LABEL_CLS}>كلمة المرور</label>
+              <div className="relative">
+                <Lock className="absolute right-3.5 top-3.5 h-4 w-4 text-white/35" />
+                <button
+                  type="button"
+                  onClick={() => setShowPass(!showPass)}
+                  aria-label={showPass ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
+                  className="absolute left-3.5 top-3.5 text-white/35 transition hover:text-white/70"
+                >
+                  {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+                <input
+                  id="auth-pass"
+                  name="password"
+                  dir="ltr"
+                  type={showPass ? "text" : "password"}
+                  required
+                  minLength={8}
+                  value={pass}
+                  onChange={(e) => setPass(e.target.value)}
+                  placeholder="٨ أحرف على الأقل"
+                  autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                  className={FIELD_CLS}
+                />
+              </div>
+              {mode === "signup" && (
+                <p className="mt-1.5 text-[11px] text-white/40">
+                  ٨ أحرف فأكثر — ويُفضّل رقم أو رمز (! @ #) لتقويتها
+                </p>
+              )}
             </div>
 
             {/* مؤشر القوة أثناء الكتابة */}
             {mode === "signup" && pass.length > 0 && (
-              <div>
+              <div aria-live="polite">
                 <div className="flex gap-1.5" dir="ltr">
                   {[1, 2, 3].map((i) => (
                     <span
                       key={i}
                       className="h-1 flex-1 rounded-full transition-colors duration-300"
-                      style={{
-                        backgroundColor:
-                          i <= strength ? STRENGTH_META[strength].color : "rgba(255,255,255,0.1)",
-                      }}
+                      style={{ backgroundColor: i <= strength ? STRENGTH_META[strength].color : "rgba(255,255,255,0.1)" }}
                     />
                   ))}
                 </div>
                 <p className="mt-1.5 text-[11px] font-semibold" style={{ color: STRENGTH_META[strength].color }}>
                   كلمة مرور {STRENGTH_META[strength].label}
-                  {strength < 3 && " — أضف رقما أو رمزا (! @ #) لتقويتها"}
                 </p>
+              </div>
+            )}
+
+            {mode === "signup" && (
+              <div>
+                <label htmlFor="auth-confirm" className={LABEL_CLS}>تأكيد كلمة المرور</label>
+                <div className="relative">
+                  <Lock className="absolute right-3.5 top-3.5 h-4 w-4 text-white/35" />
+                  {confirm.length > 0 && confirmValid && <Check className="absolute left-3.5 top-3.5 h-4 w-4 text-[#34A853]" />}
+                  <input
+                    id="auth-confirm"
+                    name="password-confirm"
+                    dir="ltr"
+                    type={showPass ? "text" : "password"}
+                    required
+                    value={confirm}
+                    onChange={(e) => setConfirm(e.target.value)}
+                    placeholder="أعد كتابتها للتأكيد"
+                    autoComplete="new-password"
+                    aria-describedby="auth-confirm-hint"
+                    className={FIELD_CLS}
+                  />
+                </div>
+                {confirm.length > 0 && !confirmValid && (
+                  <p id="auth-confirm-hint" className="mt-1.5 text-[11px] font-semibold text-red-300">
+                    لا تطابق كلمة المرور — أعد كتابتها
+                  </p>
+                )}
               </div>
             )}
 
             {mode === "login" && (
               <p className="text-left">
-                <Link to="/p/contact" className="text-xs text-white/45 transition hover:text-[#6EC7D1]">
-                  نسيت كلمة المرور؟ راسلنا وسنساعدك
-                </Link>
+                <button
+                  type="button"
+                  onClick={() => { setView("reset"); setErr(""); setNotice(""); }}
+                  className="text-xs text-white/45 transition hover:text-[#6EC7D1]"
+                >
+                  نسيت كلمة المرور؟
+                </button>
               </p>
             )}
 
+            {mode === "signup" && (
+              <label htmlFor="auth-consent" className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                <input
+                  id="auth-consent"
+                  name="consent"
+                  type="checkbox"
+                  required
+                  checked={agreed}
+                  onChange={(e) => setAgreed(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-[#38A7B4]"
+                />
+                <span className="text-[11px] leading-relaxed text-white/55">
+                  أوافق على{" "}
+                  <Link to="/p/terms" className="font-bold text-white/75 underline underline-offset-4 hover:text-[#6EC7D1]">
+                    شروط الاستخدام
+                  </Link>{" "}
+                  و
+                  <Link to="/p/privacy" className="font-bold text-white/75 underline underline-offset-4 hover:text-[#6EC7D1]">
+                    سياسة الخصوصية
+                  </Link>
+                </span>
+              </label>
+            )}
+
+            {notice && (
+              <p className="rounded-xl border border-[#38A7B4]/30 bg-[#38A7B4]/10 px-4 py-2.5 text-center text-xs font-semibold leading-relaxed text-[#6EC7D1]">
+                {notice}
+              </p>
+            )}
             {err && (
-              <p className="rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-2.5 text-center text-xs font-semibold leading-relaxed text-red-300">
+              <p role="alert" className="rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-2.5 text-center text-xs font-semibold leading-relaxed text-red-300">
                 {err}
               </p>
             )}
 
             <button
-              onClick={submit}
-              disabled={!formValid}
+              type="submit"
+              disabled={busy || !formValid}
               className="h-12 w-full rounded-2xl bg-[#FABC05] text-sm font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {mode === "signup" ? "أنشئ حسابي وابدأ" : "ادخل إلى حسابي"}
+              {busy ? "لحظات…" : mode === "signup" ? "أنشئ حسابي وابدأ" : "ادخل إلى حسابي"}
             </button>
-          </div>
+          </form>
 
-          <p className="mt-5 text-center text-[11px] leading-relaxed text-white/35">
-            بالمتابعة أنت توافق على{" "}
-            <Link to="/p/terms" className="text-white/55 underline underline-offset-4 hover:text-[#6EC7D1]">
-              شروط الاستخدام
-            </Link>{" "}
-            و
-            <Link to="/p/privacy" className="text-white/55 underline underline-offset-4 hover:text-[#6EC7D1]">
-              سياسة الخصوصية
-            </Link>
-          </p>
+          {mode === "login" && (
+            <p className="mt-4 text-center text-[11px] leading-relaxed text-white/35">
+              لحمايتك: يُقفل الدخول مؤقتا بعد خمس محاولات خاطئة
+            </p>
+          )}
         </div>
       </div>
     </div>

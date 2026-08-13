@@ -26,8 +26,11 @@ import {
   BarChart3,
   Footprints,
   History,
+  Lock,
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { formatPrice } from "@/services/currency";
 import { Badge } from "@/components/ui/badge";
 import AuthGate from "@/components/AuthGate";
 import {
@@ -534,9 +537,9 @@ function CustomizePathway({
               <p className="text-xs text-white/55">أسبوعا تقريبا</p>
             </div>
             <div className="rounded-xl bg-white/[0.05] p-3 text-center">
-              <p className="text-2xl font-black text-[#FABC05]">{price}$</p>
+              <p className="text-2xl font-black text-[#FABC05]">{formatPrice(price)}</p>
               <p className="text-xs text-white/55">
-                {saving > 0 ? `وفّرت ${saving}$ عن ${separateCost}$ منفردة` : "سعر المسار التفضيلي"}
+                {saving > 0 ? `وفّرت ${formatPrice(saving)} عن ${formatPrice(separateCost)} منفردة` : "سعر المسار التفضيلي"}
               </p>
             </div>
           </div>
@@ -568,9 +571,34 @@ export default function Diagnostic() {
   const [topPathway, setTopPathway] = useState<Pathway | null>(null);
   const [swapCount, setSwapCount] = useState(0);
   const [savedProgress, setSavedProgress] = useState<SavedProgress | null>(() => loadProgress());
-  const [resumeAfterGate, setResumeAfterGate] = useState(false);
+  /* الضيف أولا: يكمل التشخيص كاملا ويرى ملخصه الأولي، والحساب يُطلب فقط لفتح التفاصيل والحفظ */
+  const [authed, setAuthed] = useState(() => Boolean(localStorage.getItem("wajeez_user")));
+  const [offline, setOffline] = useState(() => !navigator.onLine);
+  const [computeMsg, setComputeMsg] = useState(0);
+  const [savedFlash, setSavedFlash] = useState(false);
 
-  const isAuthed = () => Boolean(localStorage.getItem("wajeez_user"));
+  /* تحذير قبل مغادرة تشخيص غير محفوظ — التقدم محفوظ تلقائيا لكن نطمئنه */
+  useEffect(() => {
+    if (stage !== "questions") return;
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [stage]);
+
+  /* انقطاع الشبكة — كل شيء محلي هنا، لكن نخبره بوضوح */
+  useEffect(() => {
+    const on = () => setOffline(false);
+    const off = () => setOffline(true);
+    window.addEventListener("online", on);
+    window.addEventListener("offline", off);
+    return () => {
+      window.removeEventListener("online", on);
+      window.removeEventListener("offline", off);
+    };
+  }, []);
 
   /* حفظ تلقائي مع كل إجابة — لا تشخيص يضيع لو خرج وعاد */
   useEffect(() => {
@@ -594,12 +622,8 @@ export default function Diagnostic() {
     return s;
   }, [history, currentStageIdx]);
 
-  // التسجيل أولا — ثم يبدأ التشخيص الكامل من أول سؤال
+  // يبدأ فورا كضيف — الحساب يُطلب لاحقا عند حفظ النتيجة وتخصيصها
   const begin = () => {
-    if (!isAuthed()) {
-      setStage("gate");
-      return;
-    }
     start();
   };
 
@@ -642,12 +666,7 @@ export default function Diagnostic() {
   };
 
   const resume = () => {
-    if (!isAuthed()) {
-      setResumeAfterGate(true);
-      setStage("gate");
-      return;
-    }
-    doResume();
+    doResume(); // الاستئناف أيضا متاح للضيف — إجاباته على جهازه
   };
 
   const discardSaved = () => {
@@ -660,15 +679,20 @@ export default function Diagnostic() {
     clearProgress();
     setSavedProgress(null);
     const res = computeResult(finalAnswers);
-    // نحفظ إجاباته ونتيجته وJSON القرار لبناء تقريره الشخصي في صفحة المسار
-    sessionStorage.setItem("wajeez_diag_answers", JSON.stringify(finalAnswers));
-    sessionStorage.setItem("wajeez_diag_top", res.top.id);
-    sessionStorage.setItem("wajeez_result_json", JSON.stringify(res.resultJson));
+    // نحفظ إجاباته ونتيجته وJSON القرار — في الجلسة وعلى الجهاز ليبقى التشخيص بعد إغلاق المتصفح
+    for (const store of [sessionStorage, localStorage]) {
+      store.setItem("wajeez_diag_answers", JSON.stringify(finalAnswers));
+      store.setItem("wajeez_diag_top", res.top.id);
+      store.setItem("wajeez_result_json", JSON.stringify(res.resultJson));
+    }
+    setComputeMsg(0);
+    const ticker = window.setInterval(() => setComputeMsg((m) => m + 1), 620);
     window.setTimeout(() => {
+      window.clearInterval(ticker);
       setResult(res);
       setTopPathway(res.top);
       setStage("result");
-    }, 1800);
+    }, 1900);
   };
 
   const answer = (qid: string, value: string) => {
@@ -791,7 +815,7 @@ export default function Diagnostic() {
             {[
               { icon: Compass, text: "توصية مفسَّرة، ليست حظًا" },
               { icon: Clock3, text: "٥–٨ دقائق فقط" },
-              { icon: ShieldCheck, text: "سرّي — ليس اختبارًا نفسيًا" },
+              { icon: ShieldCheck, text: "تشخيص تعليمي — لا نفسي ولا طبي" },
             ].map((f) => (
               <div key={f.text} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
                 <f.icon className="h-5 w-5 text-[#6EC7D1]" />
@@ -814,7 +838,7 @@ export default function Diagnostic() {
             ابدأ الحديث
             <ArrowLeft className="mr-2 h-5 w-5" />
           </Button>
-          <p className="mt-4 text-xs text-white/40">يتطلب حسابا ليُحفظ تشخيصك ومسارك · بالمتابعة أنت توافق على استخدام إجاباتك لبناء التوصية</p>
+          <p className="mt-4 text-xs text-white/40">ابدأ فورا كضيف — الحساب يُطلب فقط عند حفظ نتيجتك وتخصيصها · بالمتابعة أنت توافق على استخدام إجاباتك لبناء التوصية</p>
 
           {/* بطاقة الاستئناف — تشخيص غير مكتمل ينتظر صاحبه */}
           {savedProgress && (
@@ -845,29 +869,36 @@ export default function Diagnostic() {
         </section>
       )}
 
-      {/* ─── بوابة التسجيل ─── */}
+      {/* ─── بوابة التسجيل — بعد النتيجة: لحفظها وفتح تفاصيلها ─── */}
       {stage === "gate" && (
         <section className="story-fade mx-auto max-w-3xl px-5 py-16">
           <AuthGate
-            message="خطوة واحدة قبل تشخيصك — سجّل ليُحفظ مسارك ونتيجتك في حسابك"
+            message="نتيجتك جاهزة — أنشئ حسابك المجاني لتحفظها وتفتح تفاصيلها الكاملة"
             onDone={() => {
-              if (resumeAfterGate) {
-                setResumeAfterGate(false);
-                doResume();
-              } else {
-                start();
-              }
+              setAuthed(true);
+              setStage("result");
             }}
           />
           <p className="mt-6 text-center text-xs text-white/40">
-            التسجيل يفتح لك: نتيجة التشخيص · تخصيص المسار · صفحة مسارك وتقريرك الشخصي
+            يفتح لك الحساب: التفسير الكامل للتوصية · البدائل المناسبة · تخصيص المسار دورة بدورة · اعتماده ومتابعته
           </p>
+          <button
+            onClick={() => setStage("result")}
+            className="mx-auto mt-4 block text-xs text-white/45 underline-offset-4 transition hover:text-[#6EC7D1] hover:underline"
+          >
+            عودة لملخص نتيجتي
+          </button>
         </section>
       )}
 
       {/* ─── Questions ─── */}
       {stage === "questions" && question && (
         <section className="story-fade mx-auto max-w-2xl px-5 py-12 md:py-16">
+          {offline && (
+            <div role="status" className="mb-5 rounded-2xl border border-[#FABC05]/40 bg-[#FABC05]/10 px-5 py-3 text-center text-xs font-bold text-[#FABC05]">
+              انقطع الاتصال بالشبكة — لا تقلق: تشخيصك يعمل على جهازك وإجاباتك محفوظة، أكمل بثقة
+            </div>
+          )}
           {/* شريط الوحدات الخمس — رحلة مفهومة لا استبيان لا نهائي */}
           <div className="mb-6">
             <div className="mb-4 flex items-center justify-between gap-1" dir="rtl">
@@ -1103,6 +1134,25 @@ export default function Diagnostic() {
                 <ArrowRight className="h-4 w-4" />
                 السؤال السابق
               </button>
+              <button
+                onClick={() => {
+                  saveProgress(answers, asked);
+                  setSavedFlash(true);
+                  window.setTimeout(() => setSavedFlash(false), 2200);
+                }}
+                className={`flex items-center gap-2 text-sm font-semibold transition ${
+                  savedFlash ? "text-[#6EC7D1]" : "text-white/50 hover:text-white"
+                }`}
+              >
+                {savedFlash ? (
+                  <>
+                    <CheckCircle2 className="h-4 w-4" />
+                    حُفظ تقدمك — أكمل لاحقا متى شئت
+                  </>
+                ) : (
+                  "احفظ وأكمل لاحقا"
+                )}
+              </button>
               {answers[question.id] && question.type === "single" && (
                 <span className="flex items-center gap-1.5 text-xs text-[#6EC7D1]">
                   <CheckCircle2 className="h-4 w-4" /> تمت الإجابة
@@ -1121,10 +1171,12 @@ export default function Diagnostic() {
             <Sparkles className="absolute inset-0 m-auto h-8 w-8 text-[#FABC05]" />
           </div>
           <h2 className="mt-8 text-2xl font-black">جارٍ بناء توصيتك…</h2>
-          <p className="mt-3 leading-loose text-white/55">
-            نطابق قصتك وهدفك وفجواتك مع أكثر من 45 مسارًا مصممًا،
-            <br />
-            ونحسب درجة الثقة ونراجع الحالات الاستثنائية.
+          <p className="mt-3 min-h-14 leading-loose text-white/55" aria-live="polite">
+            {[
+              "نقرأ قصتك وهدفك وظروف يومك…",
+              "نطابق فجواتك مع كتالوج مساراتنا المصممة…",
+              "نحسب درجة الثقة ونراجع الحالات الاستثنائية…",
+            ][computeMsg % 3]}
           </p>
         </section>
       )}
@@ -1145,6 +1197,23 @@ export default function Diagnostic() {
                 {result.confidenceBand}
               </span>
             </div>
+            {/* شرح الثقة بلغة مبسطة — شفافية لا صناديق سوداء */}
+            <details className="mx-auto mt-4 max-w-md rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-right text-xs leading-relaxed text-white/55 print:hidden">
+              <summary className="cursor-pointer text-center font-bold text-white/70">كيف حسبنا درجة الثقة؟</summary>
+              <p className="mt-2">
+                تبدأ من اكتمال صورتك: كل إجابة توضّح هدفك وواقعك ومهاراتك أكثر. ترتفع الدرجة عندما تتفق
+                إجاباتك مع بعضها، وتنخفض عند التناقض أو عندما تقف حالتك بين مسارين متقاربين.
+                فوق ٧٥٪ المحرك واثق بتوصيته، وبين ٥٠ و٧٥٪ التوصية قوية ونعرض معها بدائل،
+                ودون ذلك نحيلك لمستشار بشري قبل أي قرار.
+              </p>
+            </details>
+            <button
+              onClick={() => window.print()}
+              className="mx-auto mt-4 flex items-center gap-2 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-white/60 transition hover:border-[#6EC7D1]/50 hover:text-[#6EC7D1] print:hidden"
+            >
+              <FileText className="h-3.5 w-3.5" />
+              اطبع نتيجتك أو حمّلها ملفا
+            </button>
           </div>
 
           {/* قصتك كما فهمناها — يقرأ نفسه قبل أن يرى التوصية */}
@@ -1230,6 +1299,9 @@ export default function Diagnostic() {
             </div>
           </div>
 
+          {/* التفاصيل الكاملة تُفتح بحساب مجاني — ما فوق هذا السطر متاح للضيف كملخص أولي */}
+          {authed ? (
+            <>
           {/* رحلة المسار خطوة بخطوة — خط زمني لا قائمة */}
           <JourneyTimeline pathway={topPathway} />
 
@@ -1491,10 +1563,53 @@ export default function Diagnostic() {
               لا يشبهني؟ أعد التشخيص من جديد
             </button>
           </div>
+            </>
+          ) : (
+            /* بطاقة الضيف — رأى الملخص الأولي، والتفاصيل الكاملة بانتظار حساب يحفظها */
+            <div className="mt-10 overflow-hidden rounded-3xl border border-[#FABC05]/40 bg-gradient-to-b from-[#2A2200] to-[#0D0D0D] p-6 text-center md:p-10">
+              <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[#FABC05]/15">
+                <Lock className="h-7 w-7 text-[#FABC05]" />
+              </span>
+              <h3 className="mt-5 text-xl font-black md:text-2xl">ملخصك بيدك الآن — والتفاصيل الكاملة تنتظرك</h3>
+              <p className="mx-auto mt-3 max-w-md text-sm leading-loose text-white/60">
+                رأيت مسارك الموصى به وقصتك وخريطة مهاراتك. أنشئ حسابك المجاني لتحفظ نتيجتك وتفتح:
+              </p>
+              <div className="mx-auto mt-6 grid max-w-lg gap-2.5 text-right sm:grid-cols-2">
+                {[
+                  "التفسير الكامل: لماذا هذا المسار تحديدا",
+                  "البدائل المناسبة: أسرع وأوفر — بدّل بثقة",
+                  "تخصيص المسار: احذف وأضف دورات كما تشاء",
+                  "اعتماد المسار وفتح صفحته وتقريرك الشخصي",
+                ].map((f) => (
+                  <p key={f} className="flex items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-xs font-semibold leading-relaxed text-white/75">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#FABC05]" />
+                    {f}
+                  </p>
+                ))}
+              </div>
+              <Button
+                size="lg"
+                onClick={() => setStage("gate")}
+                className="mt-8 h-14 rounded-full bg-[#FABC05] px-10 text-lg font-black text-[#0D0D0D] hover:bg-[#FABC05]/90"
+              >
+                احفظ نتيجتي وافتح التفاصيل
+                <ArrowLeft className="mr-2 h-5 w-5" />
+              </Button>
+              <p className="mt-3 text-[11px] text-white/40">حساب مجاني بالبريد فقط — نتيجتك محفوظة على جهازك ولن تضيع</p>
+              <button
+                onClick={restart}
+                className="mx-auto mt-4 flex items-center gap-1.5 text-xs font-semibold text-white/45 transition hover:text-white"
+              >
+                <RefreshCcw className="h-3.5 w-3.5" />
+                لا يشبهني؟ أعد التشخيص من جديد
+              </button>
+            </div>
+          )}
 
           <p className="mt-6 text-center text-xs leading-relaxed text-white/35">
             التوصية صادرة عن محرك تشخيص قطعي مبني على إجاباتك، وهي نقطة بداية مفسَّرة —
             القرار النهائي دائمًا بيدك، ومستشارونا موجودون عند الحاجة.
+            هذا تشخيص تعليمي مهني: ليس تقييما نفسيا أو طبيا، ولا وعدا بوظيفة أو دخل.
           </p>
         </section>
       )}
