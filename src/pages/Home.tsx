@@ -5,7 +5,7 @@ import {
   FileCheck, Quote, ChevronDown, Menu, X, ArrowLeft,
   Clock, User, Award, GraduationCap, Building2, Landmark,
   CheckCircle2, Play, Flame, ChevronLeft, ChevronRight, BookOpen,
-  Users, Mail, MessageCircle, Headset
+  Users, Mail, MessageCircle, Headset, MapPin
 } from 'lucide-react'
 import { bestsellers, pathwayById } from '@/data/pathways'
 import { bestsellerCourses, courseById, courseCategories, pathwayTrainers, weeksLabel, type Course } from '@/data/courses'
@@ -134,8 +134,8 @@ function Nav() {
     <header className="fixed inset-x-0 top-0 z-50 border-b border-white/5 bg-[#0D0D0D]/80 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
         <a href="#top" className="flex items-center gap-2.5">
-          <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-10 w-10 object-contain" />
-          <span className="text-lg font-black leading-none">أكاديمية <span className="text-teal-light">وجيز</span></span>
+          <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-8 w-8 object-contain md:h-10 md:w-10" />
+          <span className="text-base font-black leading-none md:text-lg"><span className="hidden min-[370px]:inline">أكاديمية </span><span className="text-teal-light">وجيز</span></span>
         </a>
         <nav className="hidden items-center gap-7 text-sm text-muted-foreground md:flex">
           {links.map((l) =>
@@ -161,7 +161,7 @@ function Nav() {
             href="#diagnostic"
             className="btn-teal hidden px-5 py-2.5 text-sm md:inline-flex"
           >
-            جرّب مؤشر وجيز
+            ابدأ مؤشر وجيز
           </a>
           <button
             ref={menuBtnRef}
@@ -194,7 +194,7 @@ function Nav() {
             </Link>
           )}
           <a href="#diagnostic" onClick={() => setOpen(false)} className="btn-teal mt-2 flex w-full px-5 py-3">
-            جرّب مؤشر وجيز
+            ابدأ مؤشر وجيز
           </a>
           <div className="mt-3 flex justify-center">
           </div>
@@ -206,7 +206,7 @@ function Nav() {
 
 function Hero() {
   return (
-    <section id="top" className="relative overflow-hidden pt-32 pb-20 md:pt-40 md:pb-28">
+    <section id="top" className="relative overflow-hidden pt-28 pb-6 md:pt-36 md:pb-8">
       {/* ambient glows */}
       <div className="pointer-events-none absolute -top-40 right-1/4 h-[480px] w-[480px] rounded-full bg-[#38A7B4]/15 blur-[140px] animate-pulse-glow" />
       <div className="pointer-events-none absolute top-40 left-0 h-[380px] w-[380px] rounded-full bg-[#247B84]/20 blur-[120px] animate-pulse-glow" style={{ animationDelay: '2s' }} />
@@ -243,9 +243,15 @@ function Hero() {
             <span className="underline-offset-4 hover:underline">أو شاهد رحلات من سبقوك أولا</span>
           </a>
         </div>
-        <p className="reveal is-visible mt-6 text-xs text-muted-foreground">
+        <p className="reveal is-visible mt-5 text-xs text-muted-foreground">
           دقيقة واحدة مع مؤشر وجيز · بلا تسجيل · ثم تشخيص كامل يفهمك بلا تقييم ذاتي ولا سؤال مكرر
         </p>
+        {/* سطر إثبات رشيق يجسر الانتقال إلى المؤشر بدل الفراغ */}
+        <div className="reveal is-visible mt-7 flex flex-wrap items-center justify-center gap-2 text-[11px] font-semibold text-white/55">
+          {['نقرأ هدفك', 'وقتك المتاح', 'فجوتك الأقرب'].map((chip) => (
+            <span key={chip} className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1">{chip}</span>
+          ))}
+        </div>
       </div>
     </section>
   )
@@ -318,7 +324,7 @@ function DiagnosticTeaser() {
     .filter(Boolean) as string[]).slice(0, 2)
 
   return (
-    <section id="diagnostic" className="relative py-20 md:py-24">
+    <section id="diagnostic" className="relative pb-20 pt-4 md:pb-24 md:pt-6">
       <div className="mx-auto max-w-4xl px-5">
         <div className="reveal text-center">
           <SectionLabel>مؤشر وجيز — دقيقة واحدة</SectionLabel>
@@ -534,10 +540,13 @@ function Stories() {
       <div className="pointer-events-none absolute left-1/3 top-0 h-[400px] w-[400px] rounded-full bg-[#38A7B4]/8 blur-[130px]" />
       <div className="mx-auto max-w-6xl px-5">
         <div className="reveal text-center">
-          <SectionLabel>قصص حدثت بالفعل</SectionLabel>
+          <SectionLabel>رحلات تعلم من واقع متعلمينا</SectionLabel>
           <h2 className="mt-5 text-3xl font-bold md:text-4xl">مسارات مشى فيها غيرك قبلك</h2>
           <p className="mx-auto mt-4 max-w-xl leading-8 text-muted-foreground">
             كل قصة بدأت بتشخيص، ومرّت بمسار ومدرب، وانتهت بمخرج يمكنك أن تراه — اختر قصة واقرأها كاملة.
+          </p>
+          <p className="mx-auto mt-3 max-w-md text-xs leading-6 text-muted-foreground/80">
+            نعرض الأسماء الأولى والأحرف فقط حفاظا على خصوصية أصحاب القصص.
           </p>
         </div>
       </div>
@@ -562,12 +571,20 @@ function Stories() {
             className="group flex w-[280px] shrink-0 snap-start flex-col overflow-hidden rounded-3xl border border-white/10 bg-card text-right transition-all duration-200 hover:-translate-y-1 hover:border-teal/50 hover:shadow-[0_20px_60px_-30px_rgba(56,167,180,0.4)]"
           >
             <div className="relative h-36 overflow-hidden">
-              <img
-                src={s.img}
-                alt={`قصة ${s.name}`}
-                loading="lazy"
-                className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-              />
+              {s.img ? (
+                <img
+                  src={s.img}
+                  alt={`مشهد من قصة ${s.name}`}
+                  loading="lazy"
+                  className="h-full w-full object-cover object-top transition duration-500 group-hover:scale-105"
+                />
+              ) : (
+                <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_60%_20%,rgba(56,167,180,0.35),transparent_65%)]">
+                  <span className="grid h-16 w-16 place-items-center rounded-full border border-teal/30 bg-[#12343B] text-2xl font-black text-teal-light">
+                    {s.name.slice(0, 1)}
+                  </span>
+                </div>
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
               <span className="tag-teal absolute bottom-3 right-4 rounded-full px-3 py-1 text-[11px] font-bold">{s.tag}</span>
             </div>
@@ -609,7 +626,15 @@ function Stories() {
           <div dir="rtl" className="story-fade overflow-hidden rounded-3xl border border-white/10 bg-card">
               {/* صورة القصة */}
               <div className="relative h-56 overflow-hidden md:h-72">
-                <img src={open.img} alt={`صورة رمزية لقصة ${open.name}`} loading="lazy" width="1200" height="600" className="h-full w-full object-cover" />
+                {open.img ? (
+                  <img src={open.img} alt={`مشهد من قصة ${open.name}`} loading="lazy" width="1200" height="600" className="h-full w-full object-cover object-top" />
+                ) : (
+                  <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_60%_20%,rgba(56,167,180,0.35),transparent_65%)]">
+                    <span className="grid h-20 w-20 place-items-center rounded-full border border-teal/30 bg-[#12343B] text-3xl font-black text-teal-light">
+                      {open.name.slice(0, 1)}
+                    </span>
+                  </div>
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-transparent" />
                 <button
                   onClick={() => setOpen(null)}
@@ -776,14 +801,14 @@ function Bestsellers() {
             to={`/pathways/${spotlight.id}`}
             className="reveal group mt-8 grid overflow-hidden rounded-3xl border border-teal/30 bg-gradient-to-l from-[#12343B] to-card transition hover:border-teal/60 hover:shadow-[0_30px_80px_-40px_rgba(56,167,180,0.5)] md:grid-cols-5"
           >
-            <div className="relative flex min-h-[190px] items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_70%_30%,rgba(56,167,180,0.4),transparent_65%)] md:col-span-2">
-              <Route className="h-16 w-16 text-teal-light/70" />
-              <span className="absolute right-5 top-5 inline-flex items-center gap-1.5 rounded-full bg-[#FABC05] px-3.5 py-1.5 text-xs font-black text-[#0D0D0D]">
+            <div className="relative flex min-h-[104px] items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_70%_30%,rgba(56,167,180,0.4),transparent_65%)] md:col-span-2 md:min-h-[190px]">
+              <Route className="h-10 w-10 text-teal-light/70 md:h-16 md:w-16" />
+              <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-[#FABC05] px-2.5 py-1 text-[10px] font-black text-[#0D0D0D] md:right-5 md:top-5 md:gap-1.5 md:px-3.5 md:py-1.5 md:text-xs">
                 <Flame className="h-3.5 w-3.5" />
                 {spotlight.note}
               </span>
             </div>
-            <div className="p-8 md:col-span-3 md:p-10">
+            <div className="p-5 md:col-span-3 md:p-10">
               <span className="kicker">اختيار وجيز الأول في هذا المجال</span>
               <h3 className="mt-3 text-2xl font-black leading-snug md:text-3xl">{spotlight.p.name}</h3>
               <p className="mt-3 max-w-lg text-sm leading-8 text-muted-foreground">{spotlight.p.transformation}</p>
@@ -812,6 +837,7 @@ function Bestsellers() {
       <p className="sr-only" aria-live="polite">
         {`يعرض ${railPathways.length} ${railPathways.length === 1 ? 'مسارا' : 'مسارات'} — اسحب بإصبعك أو استخدم أسهم لوحة المفاتيح للتنقل بينها`}
       </p>
+      <div className="mx-auto max-w-6xl px-5">
       <div
         ref={pwRailRef}
         role="region"
@@ -819,7 +845,7 @@ function Bestsellers() {
         aria-label="مسارات مختارات وجيز"
         tabIndex={0}
         onKeyDown={railKeys(pwRailRef)}
-        className="scrollbar-hide mt-8 flex snap-x snap-mandatory gap-5 overflow-x-auto px-5 pb-4 md:px-[max(1.25rem,calc((100vw-72rem)/2+1.25rem))]"
+        className="scrollbar-hide mt-8 flex snap-x snap-mandatory gap-5 overflow-x-auto pb-4"
       >
         {railPathways.map(({ id, note, p }) => (
           <article
@@ -868,6 +894,7 @@ function Bestsellers() {
           </span>
         </Link>
       </div>
+      </div>
 
       {/* راويل الدورات المختارة */}
       <div id="top-courses" className="mx-auto mt-12 max-w-6xl scroll-mt-24 px-5">
@@ -896,6 +923,7 @@ function Bestsellers() {
       <p className="sr-only" aria-live="polite">
         {`يعرض ${shownCourses.length} ${shownCourses.length === 1 ? 'دورة' : 'دورات'} — اسحب بإصبعك أو استخدم أسهم لوحة المفاتيح للتنقل بينها`}
       </p>
+      <div className="mx-auto max-w-6xl px-5">
       <div
         ref={crRailRef}
         role="region"
@@ -903,7 +931,7 @@ function Bestsellers() {
         aria-label="دورات مختارة من وجيز"
         tabIndex={0}
         onKeyDown={railKeys(crRailRef)}
-        className="scrollbar-hide mt-6 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-4 md:px-[max(1.25rem,calc((100vw-72rem)/2+1.25rem))]"
+        className="scrollbar-hide mt-6 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4"
       >
         {shownCourses.map(({ id, note, c }) => (
           <article
@@ -931,6 +959,7 @@ function Bestsellers() {
             </div>
           </article>
         ))}
+      </div>
       </div>
 
       {/* روابط الكتالوج الكامل */}
@@ -1024,7 +1053,7 @@ function FinalCta() {
             href="#diagnostic"
             className="btn-teal px-10 py-5 text-lg shadow-[0_0_60px_-10px_#38A7B4]"
           >
-            شغّل مؤشر وجيز الآن
+            ابدأ مؤشر وجيز الآن
             <ArrowLeft className="h-5 w-5" />
           </a>
           <p className="mt-4 text-xs text-muted-foreground">مجاني · بدون حساب · إجاباتك تُحفظ على جهازك فقط</p>
@@ -1111,28 +1140,42 @@ const footerCols: { title: string; icon: typeof GraduationCap; links: { label: s
 function Footer() {
   return (
     <footer className="border-t border-white/5 bg-[#0A0A0A]">
-      <div className="mx-auto max-w-6xl px-5 py-16">
-        <div className="grid gap-10 md:grid-cols-5">
+      <div className="mx-auto max-w-6xl px-5 py-12">
+        <div className="grid gap-8 md:grid-cols-5">
           <div className="md:col-span-1">
             <div className="flex items-center gap-2.5">
               <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 object-contain" />
               <div className="font-bold">وجيز <span className="text-teal-light">أكاديمي</span></div>
             </div>
-            <p className="mt-4 text-sm leading-7 text-muted-foreground">
+            <p className="mt-3 text-sm leading-7 text-muted-foreground">
               منصة تفهم الإنسان قبل أن تقترح ما يتعلمه — من مجموعة وجيز wajeez.com
             </p>
-            <div className="mt-5 flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
               <Mail className="h-4 w-4 text-teal" />
               <span dir="ltr">{CONTACT.email}</span>
+            </div>
+            <div className="mt-3 space-y-1.5">
+              {CONTACT.locations.map((loc) => (
+                <div key={loc.label} className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <MapPin className="h-3.5 w-3.5 shrink-0 text-teal" />
+                  {loc.href ? (
+                    <a href={loc.href} target="_blank" rel="noreferrer" className="transition hover:text-teal-light">
+                      {loc.label}{loc.address ? ` — ${loc.address}` : ''}
+                    </a>
+                  ) : (
+                    <span>{loc.label}{loc.address ? ` — ${loc.address}` : ''}</span>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
           {footerCols.map((col) => (
             <div key={col.title}>
-              <div className="mb-4 flex items-center gap-2 font-bold">
+              <div className="mb-3 flex items-center gap-2 font-bold">
                 <col.icon className="h-4 w-4 text-teal" />
                 {col.title}
               </div>
-              <ul className="space-y-2.5 text-sm text-muted-foreground">
+              <ul className="space-y-2 text-sm text-muted-foreground">
                 {col.links.map((l) => (
                   <li key={l.label}>
                     {l.to.startsWith('#') ? (
@@ -1146,7 +1189,7 @@ function Footer() {
             </div>
           ))}
         </div>
-        <div className="mt-14 flex flex-col items-center justify-between gap-4 border-t border-white/5 pt-8 text-xs text-muted-foreground md:flex-row">
+        <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-white/5 pt-6 text-xs text-muted-foreground md:flex-row">
           <div>© 2026 أكاديمي وجيز — جميع الحقوق محفوظة</div>
           <div className="flex items-center gap-2">
             <Clock className="h-3.5 w-3.5" />
@@ -1198,38 +1241,6 @@ function ChannelBadge() {
       <span className={`h-1.5 w-1.5 rounded-full ${isWhatsApp ? 'bg-gradient-to-br from-emerald-300 to-teal' : 'bg-teal'}`} />
       {isWhatsApp ? 'واتساب' : 'بريد'}
     </span>
-  )
-}
-
-/* زر عائم زجاجي — يظهر بعد أول تمرير، ولا يغطي شريط الجوال السفلي */
-function AdvisorFloat() {
-  const [visible, setVisible] = useState(false)
-  useEffect(() => {
-    const onScroll = () => setVisible(window.scrollY > 600)
-    onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
-  const isWhatsApp = Boolean(CONTACT.whatsapp)
-  return (
-    <a
-      href={advisorHref()}
-      target={isWhatsApp ? '_blank' : undefined}
-      rel={isWhatsApp ? 'noreferrer' : undefined}
-      aria-hidden={!visible}
-      aria-label="تحدث مع مستشار مهني"
-      className={`group fixed bottom-24 left-4 z-40 flex items-center gap-3 rounded-full border border-white/10 bg-[#12343B]/85 py-2 pl-4 pr-2 shadow-[0_12px_40px_-12px_rgba(56,167,180,0.45)] backdrop-blur-xl transition-all duration-300 hover:border-teal/50 md:bottom-6 md:left-6 ${visible ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-4 opacity-0'}`}
-    >
-      <span className="relative grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-teal to-[#247B84] text-[#08272B]">
-        <Headset className="h-5 w-5" />
-        <span className="absolute -left-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-emerald-300 ring-2 ring-[#0D0D0D]" />
-      </span>
-      <span className="hidden text-right sm:block">
-        <span className="block text-xs font-black leading-4">تحدث مع مستشار مهني</span>
-        <span className="block text-[10px] leading-4 text-white/55">مجاني · بلا التزام</span>
-      </span>
-      <ChevronLeft className="hidden h-4 w-4 text-teal-light transition-transform group-hover:-translate-x-0.5 sm:block" />
-    </a>
   )
 }
 
@@ -1297,7 +1308,6 @@ export default function Home() {
       </div>
       {/* تعويض ارتفاع شريط الدعوة الثابت على الجوال */}
       <div className="h-20 md:hidden" />
-      <AdvisorFloat />
       <MobileCtaBar />
       <Footer />
     </div>

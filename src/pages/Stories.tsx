@@ -37,13 +37,21 @@ export default function StoriesPage() {
             onClick={() => setOpen(s)}
             className="group flex cursor-pointer flex-col overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] text-right transition hover:border-[#38A7B4]/40 hover:shadow-[0_20px_60px_-30px_rgba(56,167,180,0.4)]"
           >
-            <div className="relative h-44 overflow-hidden">
-              <img
-                src={s.img}
-                alt={`قصة ${s.name}`}
-                loading="lazy"
-                className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-              />
+            <div className="relative aspect-[4/3] overflow-hidden">
+              {s.img ? (
+                <img
+                  src={s.img}
+                  alt={`مشهد من قصة ${s.name}`}
+                  loading="lazy"
+                  className="h-full w-full object-cover object-top transition duration-500 group-hover:scale-105"
+                />
+              ) : (
+                <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_60%_20%,rgba(56,167,180,0.35),transparent_65%)]">
+                  <span className="grid h-16 w-16 place-items-center rounded-full border border-[#38A7B4]/30 bg-[#12343B] text-2xl font-black text-[#6EC7D1]">
+                    {s.name.slice(0, 1)}
+                  </span>
+                </div>
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-[#101415] to-transparent" />
               <span className="absolute bottom-3 right-4 rounded-full bg-[#247B84] px-3 py-1 text-[11px] font-bold text-white">{s.tag}</span>
             </div>
@@ -104,7 +112,15 @@ export default function StoriesPage() {
         <Modal onClose={() => setOpen(null)} label={`قصة ${open.name} كاملة`} panelClassName="my-8 w-full max-w-3xl">
           <div dir="rtl" className="overflow-hidden rounded-3xl border border-white/10 bg-[#101415]">
             <div className="relative h-56 overflow-hidden md:h-72">
-              <img src={open.img} alt={`صورة رمزية لقصة ${open.name}`} loading="lazy" width="1200" height="600" className="h-full w-full object-cover" />
+              {open.img ? (
+                <img src={open.img} alt={`مشهد من قصة ${open.name}`} loading="lazy" width="1200" height="600" className="h-full w-full object-cover object-top" />
+              ) : (
+                <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_60%_20%,rgba(56,167,180,0.35),transparent_65%)]">
+                  <span className="grid h-20 w-20 place-items-center rounded-full border border-[#38A7B4]/30 bg-[#12343B] text-3xl font-black text-[#6EC7D1]">
+                    {open.name.slice(0, 1)}
+                  </span>
+                </div>
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-[#101415] via-[#101415]/40 to-transparent" />
               <button
                 onClick={() => setOpen(null)}

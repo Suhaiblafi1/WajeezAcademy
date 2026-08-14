@@ -28,6 +28,7 @@ import {
   History,
   Lock,
   FileText,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/services/currency";
@@ -52,12 +53,15 @@ import {
   courseById,
   pathwayCourses,
   courses,
+  courseDetails,
   coursePriceOf,
   pathwayPriceFor,
   MIN_PATHWAY_COURSES,
   MAX_PATHWAY_COURSES,
   weeksLabel,
 } from "@/data/courses";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import AdvisorContact from "@/components/AdvisorContact";
 import type { Pathway } from "@/data/pathways";
 
 type DiagAnswers = Record<string, string>;
@@ -339,6 +343,92 @@ function JourneyTimeline({ pathway }: { pathway: Pathway }) {
 }
 
 /* ─────────── مكوّن تخصيص المسار ─────────── */
+/* صف دورة قابل للطي — السهم يفتح المحاور والمخرج والمدرب من courseDetails() دون نافذة */
+function CourseRow({
+  courseId,
+  gift = false,
+  onRemove,
+  removeDisabled = false,
+  removeLabel,
+}: {
+  courseId: string;
+  gift?: boolean;
+  onRemove: () => void;
+  removeDisabled?: boolean;
+  removeLabel?: string;
+}) {
+  const c = courseById(courseId);
+  if (!c) return null;
+  const d = courseDetails(c);
+  return (
+    <Collapsible
+      className={`rounded-xl border px-4 py-3 ${
+        gift ? "border-[#FABC05]/40 bg-[#FABC05]/[0.06]" : "border-white/10 bg-white/[0.04]"
+      }`}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <CollapsibleTrigger
+          className="group flex min-w-0 flex-1 items-center gap-3 text-right"
+          aria-label={`محاور ${c.name}`}
+        >
+          {gift ? (
+            <Gift className="h-4 w-4 shrink-0 text-[#FABC05]" />
+          ) : (
+            <BookOpen className="h-4 w-4 shrink-0 text-[#6EC7D1]" />
+          )}
+          <span className="min-w-0">
+            <span className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-bold">{c.name}</span>
+              {gift && (
+                <span className="rounded-full bg-[#FABC05] px-2 py-0.5 text-[10px] font-black text-[#0D0D0D]">هدية مجانية</span>
+              )}
+            </span>
+            <span className="mt-0.5 block text-xs text-white/45">
+              {c.weeks} {c.weeks === 1 ? "أسبوع" : "أسابيع"} · {c.skill}
+            </span>
+          </span>
+          <ChevronDown className="h-4 w-4 shrink-0 text-white/40 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+        </CollapsibleTrigger>
+        <button
+          onClick={onRemove}
+          disabled={removeDisabled}
+          aria-label={removeLabel ?? `حذف ${c.name}`}
+          className={`grid h-7 w-7 shrink-0 place-items-center rounded-full border transition disabled:opacity-30 ${
+            gift
+              ? "border-[#FABC05]/30 text-[#FABC05]/80 hover:border-[#FABC05]/60 hover:text-[#FABC05]"
+              : "border-white/10 text-white/50 hover:border-red-400/50 hover:text-red-300"
+          }`}
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+      <CollapsibleContent className="data-[state=open]:story-fade">
+        <div className="mt-3 space-y-2.5 border-t border-white/10 pt-3 text-xs leading-6">
+          <p className="text-white/55">
+            <span className="font-bold text-[#6EC7D1]">المدرب: </span>
+            {d.trainer.name}
+          </p>
+          <div>
+            <p className="mb-1.5 font-bold text-[#6EC7D1]">المحاور:</p>
+            <ul className="grid gap-1 sm:grid-cols-2">
+              {d.topics.map((topic) => (
+                <li key={topic} className="flex items-start gap-2 text-white/60">
+                  <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-[#38A7B4]" />
+                  {topic}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <p className="text-white/55">
+            <span className="font-bold text-[#6EC7D1]">المخرج العملي: </span>
+            {d.outcome}
+          </p>
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
 function CustomizePathway({
   pathway,
   gaps,
@@ -422,33 +512,22 @@ function CustomizePathway({
         ثم أعد صياغة مسارك لترى مهاراته وسعره الجديد.
       </p>
 
-      {/* دورات المسار الحالية */}
+      {/* دورات المسار الحالية — والهدية عنصر أخير فيها بلا أثر على العدد ولا السعر */}
       <p className="mt-6 mb-3 text-sm font-bold text-white/70">
-        دورات مسارك ({chosen.length} من {MIN_PATHWAY_COURSES}–{MAX_PATHWAY_COURSES})
+        دورات مسارك ({allShown.length} {gift ? "— إحداها هدية مجانية" : `من ${MIN_PATHWAY_COURSES}–${MAX_PATHWAY_COURSES}`})
       </p>
       <div className="grid gap-2">
         {chosen.map((c) => (
-          <div
-            key={c.id}
-            className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3"
-          >
-            <div className="flex items-center gap-3">
-              <BookOpen className="h-4 w-4 shrink-0 text-[#6EC7D1]" />
-              <div>
-                <span className="text-sm font-bold">{c.name}</span>
-                <span className="mr-2 text-xs text-white/45">{c.weeks} {c.weeks === 1 ? "أسبوع" : "أسابيع"} · {c.skill}</span>
-              </div>
-            </div>
-            <button
-              onClick={() => removeCourse(c.id)}
-              disabled={chosenIds.length <= MIN_PATHWAY_COURSES}
-              aria-label={`حذف ${c.name}`}
-              className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/10 text-white/50 transition hover:border-red-400/50 hover:text-red-300 disabled:opacity-30"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
+          <CourseRow key={c.id} courseId={c.id} onRemove={() => removeCourse(c.id)} removeDisabled={chosenIds.length <= MIN_PATHWAY_COURSES} />
         ))}
+        {gift && (
+          <CourseRow
+            courseId={gift.id}
+            gift
+            onRemove={() => pickGift(gift.id)}
+            removeLabel={`إلغاء الهدية ${gift.name}`}
+          />
+        )}
       </div>
       {chosenIds.length <= MIN_PATHWAY_COURSES && (
         <p className="mt-2 text-xs text-[#FABC05]/80">وصلت للحد الأدنى — {MIN_PATHWAY_COURSES} دورات هي نواة المسار.</p>
@@ -507,9 +586,8 @@ function CustomizePathway({
           ))}
         </div>
         {gift && (
-          <p className="mt-3 flex items-center gap-2 text-xs text-[#FABC05]">
-            <Gift className="h-3.5 w-3.5" />
-            هديتك: {gift.name} — مجانية تماما فوق سعر المسار.
+          <p className="mt-3 text-xs text-white/50">
+            تظهر هديتك الآن آخر قائمة الدورات بشارة «هدية مجانية» — ويمكنك إلغاؤها أو تغييرها متى شئت.
           </p>
         )}
       </div>
@@ -850,7 +928,7 @@ export default function Diagnostic() {
       {/* ─── Intro ─── */}
       {stage === "intro" && (
         <section className="story-fade mx-auto max-w-3xl px-5 py-16 text-center md:py-24">
-          <Badge className="border border-[#FABC05]/40 bg-[#FABC05]/10 text-[#FABC05]">مؤشر وجيز الكاملة</Badge>
+          <Badge className="border border-[#FABC05]/40 bg-[#FABC05]/10 text-[#FABC05]">مؤشر وجيز الكامل</Badge>
           <h1 className="mt-5 text-3xl font-black leading-snug md:text-5xl">
             خمس دقائق من الصدق
             <span className="text-[#6EC7D1]"> تختصر عليك شهورا من التخبط</span>
@@ -1366,12 +1444,33 @@ export default function Diagnostic() {
                 </p>
               )}
 
-              <p className="mt-5 rounded-xl border border-white/10 bg-white/[0.04] p-4 text-sm leading-relaxed text-white/70">
-                <span className="font-bold text-[#6EC7D1]">ماذا يشمل مسارك: </span>
-                الدورات المسجلة والمباشرة، والتشخيص الكامل، والمتابعة الأسبوعية، والمراجعة البشرية،
-                وملخصات كتب تسمعها وتُختبر فيها — ودورة إضافية مجانية هدية من وجيز.
-                تفاصيل الاستثمار والخصم تجدها في صفحة مسارك بعد اعتماده.
-              </p>
+              <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+                <p className="text-sm font-black text-[#6EC7D1]">ماذا ستحصل عليه فعليا؟</p>
+                <p className="mt-1.5 text-xs leading-6 text-white/55">
+                  لا تحصل على قائمة دورات فقط؛ تحصل على ترتيب تعلم، ومتابعة، ومراجعة، ومخرجا تطبيقيا يثبت أنك تقدمت.
+                </p>
+                <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-4">
+                  {[
+                    { icon: RouteIcon, label: "خطة تعلم شخصية", hint: "مرتبة على هدفك أنت" },
+                    { icon: BookOpen, label: "دورات مسجلة ومباشرة", hint: "بالترتيب الصحيح لك" },
+                    { icon: CalendarClock, label: "متابعة أسبوعية", hint: "لا تتعثر وحدك" },
+                    { icon: UserCheck, label: "مراجعة بشرية", hint: "مدرب يقرأ واجبك" },
+                    { icon: FileText, label: "مشروع تطبيقي", hint: "يُقيَّم ويُعتمد" },
+                    { icon: BrainCircuit, label: "ملخصات كتب وجيز", hint: "تسمعها وتُختبر فيها" },
+                    { icon: ShieldCheck, label: "شهادة إتمام", hint: "بمخرج يثبت جاهزيتك" },
+                    { icon: Gift, label: "دورة إضافية مجانية", hint: "هدية فوق مسارك" },
+                  ].map((f) => (
+                    <div key={f.label} className="rounded-xl border border-white/[0.07] bg-white/[0.03] p-3">
+                      <f.icon className="h-4 w-4 text-[#6EC7D1]" />
+                      <p className="mt-1.5 text-xs font-bold leading-5">{f.label}</p>
+                      <p className="mt-0.5 text-[11px] leading-5 text-white/45">{f.hint}</p>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-3 text-[11px] leading-5 text-white/40">
+                  تفاصيل الاستثمار وقيمة الخصم تظهر في صفحة مسارك بعد اعتماده.
+                </p>
+              </div>
             </div>
           </div>
 
@@ -1516,6 +1615,17 @@ export default function Diagnostic() {
                 </li>
               ))}
             </ul>
+            <div className="mt-5 flex flex-col items-start gap-3 rounded-2xl border border-[#38A7B4]/25 bg-[#38A7B4]/[0.06] p-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="flex items-center gap-2.5 text-xs leading-6 text-white/65">
+                <UserCheck className="h-4 w-4 shrink-0 text-[#6EC7D1]" />
+                هل توجد معلومة مهمة لم تذكرها؟ أرسل نتيجتك للمستشار وسيراجعها معك.
+              </p>
+              <AdvisorContact
+                text={`مرحبا، أكملت مؤشر وجيز ورُشّح لي مسار «${topPathway.name}»، وأود أن أضيف معلومة قد تغيّر نتيجتي.`}
+                label="أرسل نتيجتك للمستشار"
+                className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[#38A7B4]/50 px-4 py-2 text-xs font-bold text-[#6EC7D1] transition hover:bg-[#38A7B4]/15"
+              />
+            </div>
           </div>
 
           {/* Advisor flag */}
@@ -1530,9 +1640,11 @@ export default function Diagnostic() {
                 نوصي بجلسة تعريفية مع مستشار وجيز (30 دقيقة) لصياغة خطتك بدقة — التشخيص الذي
                 أتممته للتو سيجعل الجلسة أقصر وأعمق.
               </p>
-              <Button variant="outline" className="mt-4 border-[#FABC05]/60 text-[#FABC05] hover:bg-[#FABC05]/10" asChild>
-                <a href="mailto:care@wajeez.com?subject=طلب جلسة مستشار بعد التشخيص">احجز جلسة مستشار</a>
-              </Button>
+              <AdvisorContact
+                text={`مرحبا، أكملت مؤشر وجيز وأخبرني أن حالتي تستحق جلسة مع مستشار بشري — أريد حجز الجلسة التعريفية.`}
+                label="احجز جلسة مستشار عبر واتساب"
+                className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#FABC05]/60 px-5 py-2.5 text-sm font-bold text-[#FABC05] transition hover:bg-[#FABC05]/10"
+              />
             </div>
           )}
 
