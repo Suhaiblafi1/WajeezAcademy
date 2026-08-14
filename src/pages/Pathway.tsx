@@ -26,7 +26,7 @@ import { pathwayById } from "@/data/pathways";
 import { courseById, pathwayCourses, coursePriceOf, pathwayPriceFor, pathwayTrainers, courseTrainer, weeksLabel, type Course } from "@/data/courses";
 import { GOAL_LABELS, GAP_LABELS, OBSTACLE_TO_GAP } from "@/data/diagnostic";
 import { grantEnrollment } from "@/services/access";
-import { useCurrency, usePriceFormatter } from "@/services/currency";
+import { useCurrency, usePriceFormatter, CURRENCIES, setCurrency, type CurrencyCode } from "@/services/currency";
 import { track } from "@/services/analytics";
 import SeoHead from "@/components/SeoHead";
 
@@ -115,6 +115,20 @@ function StripeCheckout({
           {cur.code !== "USD" && (
             <p className="mt-1 text-left text-[11px] text-white/40">يعادل {amount}$ — التحويل بسعر ثابت للعرض</p>
           )}
+          {/* عملة الدفع — تُختار هنا فقط لحظة الدفع، والافتراضي دينار أردني */}
+          <label className="mt-3 flex items-center justify-between gap-3 border-t border-white/5 pt-3 text-[11px] text-white/50">
+            <span>عملة الدفع</span>
+            <select
+              aria-label="عملة الدفع"
+              value={cur.code}
+              onChange={(e) => setCurrency(e.target.value as CurrencyCode)}
+              className="cursor-pointer rounded-lg border border-white/15 bg-transparent px-2 py-1.5 text-xs font-bold text-white/80 outline-none [&>option]:bg-[#121B1D]"
+            >
+              {(Object.keys(CURRENCIES) as CurrencyCode[]).map((code) => (
+                <option key={code} value={code}>{CURRENCIES[code].label} ({CURRENCIES[code].symbol})</option>
+              ))}
+            </select>
+          </label>
         </div>
         <div className="mt-4 space-y-3">
           <input

@@ -6,7 +6,7 @@ import { useSyncExternalStore } from "react";
    بجدول ثابت، وتتيح للزائر التبديل يدويا. عند الربط الحقيقي مع Stripe
    يُمرر المبلغ المحوّل والعملة نفسها إلى جلسة الدفع. */
 
-export type CurrencyCode = "USD" | "SAR" | "AED" | "KWD" | "EGP";
+export type CurrencyCode = "JOD" | "USD" | "SAR" | "AED" | "KWD" | "EGP";
 
 export interface CurrencyInfo {
   code: CurrencyCode;
@@ -17,6 +17,7 @@ export interface CurrencyInfo {
 }
 
 export const CURRENCIES: Record<CurrencyCode, CurrencyInfo> = {
+  JOD: { code: "JOD", symbol: "د.أ", label: "دينار أردني", rate: 0.71, round: (v) => Math.round(v) },
   USD: { code: "USD", symbol: "$", label: "دولار أمريكي", rate: 1, round: (v) => Math.round(v) },
   SAR: { code: "SAR", symbol: "ر.س", label: "ريال سعودي", rate: 3.75, round: (v) => Math.round(v / 5) * 5 },
   AED: { code: "AED", symbol: "د.إ", label: "درهم إماراتي", rate: 3.67, round: (v) => Math.round(v / 5) * 5 },
@@ -39,6 +40,7 @@ function countryFromLocale(): string | null {
 
 /* بلد الزائر من المنطقة الزمنية كاحتياط */
 const TZ_COUNTRY: Array<[string, string]> = [
+  ["Amman", "JO"],
   ["Riyadh", "SA"], ["Jeddah", "SA"],
   ["Dubai", "AE"], ["Abu_Dhabi", "AE"],
   ["Kuwait", "KW"],
@@ -53,14 +55,19 @@ function countryFromTimezone(): string | null {
 }
 
 const COUNTRY_CURRENCY: Record<string, CurrencyCode> = {
-  SA: "SAR", AE: "AED", KW: "KWD", EG: "EGP",
+  JO: "JOD", SA: "SAR", AE: "AED", KW: "KWD", EG: "EGP",
 };
 
 export function detectCurrency(): CurrencyCode {
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved && saved in CURRENCIES) return saved as CurrencyCode;
+  return "JOD"; // الافتراضي دائما: الدينار الأردني — الكشف الجغرافي يُفعَّل لاحقا
+}
+
+/* جاهز للتفعيل لاحقا: كشف عملة الزائر من موقعه (لغة المتصفح ثم المنطقة الزمنية) */
+export function detectGeoCurrency(): CurrencyCode {
   const country = countryFromLocale() ?? countryFromTimezone();
-  return (country && COUNTRY_CURRENCY[country]) || "USD";
+  return (country && COUNTRY_CURRENCY[country]) || "JOD";
 }
 
 export function getCurrency(): CurrencyInfo {

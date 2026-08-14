@@ -574,6 +574,15 @@ export default function Diagnostic() {
   const [topPathway, setTopPathway] = useState<Pathway | null>(null);
   const [swapCount, setSwapCount] = useState(0);
   const [savedProgress, setSavedProgress] = useState<SavedProgress | null>(() => loadProgress());
+  /* نتيجة مكتملة محفوظة — من أنهى البوصلة سابقا لا يبدأ من الصفر أبدا */
+  const [savedDone] = useState(() => {
+    try {
+      const top = localStorage.getItem("wajeez_diag_top");
+      const raw = localStorage.getItem("wajeez_diag_answers");
+      if (!top || !raw) return null;
+      return { top, answers: JSON.parse(raw) as DiagAnswers };
+    } catch { return null; }
+  });
   /* الضيف أولا: يكمل التشخيص كاملا ويرى ملخصه الأولي، والحساب يُطلب فقط لفتح التفاصيل والحفظ */
   const [authed, setAuthed] = useState(() => Boolean(localStorage.getItem("wajeez_user")));
   const [offline, setOffline] = useState(() => !navigator.onLine);
@@ -687,6 +696,23 @@ export default function Diagnostic() {
   const discardSaved = () => {
     clearProgress();
     setSavedProgress(null);
+  };
+
+  const showSavedResult = () => {
+    if (!savedDone) return;
+    const res = computeResult(savedDone.answers);
+    setResult(res);
+    setTopPathway(res.top);
+    setStage("result");
+  };
+
+  const restartFresh = () => {
+    for (const store of [sessionStorage, localStorage]) {
+      store.removeItem("wajeez_diag_answers");
+      store.removeItem("wajeez_diag_top");
+      store.removeItem("wajeez_result_json");
+    }
+    window.location.reload();
   };
 
   const finish = (finalAnswers: DiagAnswers) => {
@@ -824,7 +850,7 @@ export default function Diagnostic() {
       {/* ─── Intro ─── */}
       {stage === "intro" && (
         <section className="story-fade mx-auto max-w-3xl px-5 py-16 text-center md:py-24">
-          <Badge className="border border-[#FABC05]/40 bg-[#FABC05]/10 text-[#FABC05]">التشخيص الكامل</Badge>
+          <Badge className="border border-[#FABC05]/40 bg-[#FABC05]/10 text-[#FABC05]">بوصلة وجيز الكاملة</Badge>
           <h1 className="mt-5 text-3xl font-black leading-snug md:text-5xl">
             خمس دقائق من الصدق
             <span className="text-[#6EC7D1]"> تختصر عليك شهورا من التخبط</span>
@@ -885,6 +911,33 @@ export default function Diagnostic() {
                   className="rounded-full border-white/20 text-white/70 hover:bg-white/5"
                 >
                   احذفها وابدأ من جديد
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* نتيجة مكتملة محفوظة — لا نطلب البوصلة مرتين */}
+          {!savedProgress && savedDone && (
+            <div className="mx-auto mt-8 max-w-xl rounded-2xl border border-[#38A7B4]/40 bg-[#38A7B4]/10 p-5">
+              <p className="flex items-center justify-center gap-2 text-sm font-bold text-[#6EC7D1]">
+                <History className="h-4 w-4" />
+                لديك نتيجة بوصلة محفوظة على جهازك
+              </p>
+              <p className="mt-1.5 text-xs text-white/50">أكملت التشخيص سابقا — لا حاجة لإعادته إلا إذا تغيرت ظروفك</p>
+              <div className="mt-4 flex flex-wrap justify-center gap-3">
+                <Button
+                  onClick={showSavedResult}
+                  className="rounded-full bg-[#38A7B4] px-6 font-black text-[#08272B] hover:bg-[#38A7B4]/90"
+                >
+                  اعرض نتيجتي المحفوظة
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={restartFresh}
+                  className="rounded-full border-white/20 text-white/70 hover:bg-white/5"
+                >
+                  أعد البوصلة من جديد
                 </Button>
               </div>
             </div>

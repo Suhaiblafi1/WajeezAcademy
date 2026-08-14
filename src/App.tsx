@@ -30,6 +30,8 @@ const CohortView = lazy(() => import('./pages/trainer/CohortView'))
 const Earnings = lazy(() => import('./pages/trainer/Earnings'))
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
 const AdminCohorts = lazy(() => import('./pages/admin/AdminCohorts'))
+const AdminTrainerApps = lazy(() => import('./pages/admin/TrainerApplications'))
+const JoinTrainer = lazy(() => import('./pages/JoinTrainer'))
 const Exceptions = lazy(() => import('./pages/admin/Exceptions'))
 const ContentWorkflow = lazy(() => import('./pages/admin/ContentWorkflow'))
 
@@ -74,6 +76,7 @@ export default function App() {
           <Route path="/pathways/:id" element={<PathwayPage />} />
           <Route path="/stories" element={<StoriesPage />} />
           <Route path="/trainers" element={<Trainers />} />
+          <Route path="/join-trainer" element={<JoinTrainer />} />
           <Route path="/for-business" element={<Business kind="business" />} />
           <Route path="/for-government" element={<Business kind="government" />} />
           <Route path="/contact" element={<Contact />} />
@@ -98,6 +101,7 @@ export default function App() {
           <Route path="/admin/cohorts" element={<AdminCohorts />} />
           <Route path="/admin/exceptions" element={<Exceptions />} />
           <Route path="/admin/content" element={<ContentWorkflow />} />
+          <Route path="/admin/trainers" element={<AdminTrainerApps />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         </Suspense>

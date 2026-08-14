@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, NavLink } from "react-router";
-import { BookMarked, CalendarCog, Crown, ShieldAlert, LayoutDashboard } from "lucide-react";
+import { BookMarked, CalendarCog, Crown, ShieldAlert, LayoutDashboard, UserPlus } from "lucide-react";
 
 const KEY = "wajeez_admin_identity";
 const ADMINS = [
@@ -50,6 +50,7 @@ export default function AdminLayout({ children, title }: { children: React.React
     { to: "/admin/cohorts", label: "الشعب", icon: CalendarCog },
     { to: "/admin/exceptions", label: "الاستثناءات", icon: ShieldAlert },
     { to: "/admin/content", label: "المحتوى", icon: BookMarked },
+    { to: "/admin/trainers", label: "طلبات المدربين", icon: UserPlus },
   ];
 
   return (
