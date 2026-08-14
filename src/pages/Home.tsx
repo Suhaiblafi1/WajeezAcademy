@@ -325,6 +325,23 @@ function DiagnosticTeaser() {
     .map((q) => (q.options.includes(answers[q.id]) ? answers[q.id] : null))
     .filter(Boolean) as string[]
 
+  /* صورة أولية صادقة مشتقة من إجابات الوقفة نفسها — بلا أرقام ولا ادعاءات */
+  const mirrorInsights: Record<string, string> = {
+    'نعم — أعرفها بالضبط': 'تعرف فجوتك بالاسم — نصف الطريق قطعتَه، والباقي خطة تنفيذ لا بحث.',
+    'لدي تخمين لا أكثر': 'عندك تخمين عن فجوتك — التشخيص الكامل يحوّله إلى يقين موثّق.',
+    'بصراحة؟ لا أعرف': 'لم تُسمِّ فجوتك بعد — وهذا أول ما يكشفه لك التشخيص الكامل.',
+    'أكملت معظمها': 'عادتك في الإكمال قوية — تحتاج فقط ما يستحق إكماله.',
+    'بعضها فقط': 'تُكمل بعض ما تبدأ — الفرق عندنا مرافقة بشرية تحميك من التوقف الصامت.',
+    'أبدأ بحماس وأتوقف — قصتي المعتادة': 'قصة التوقف المتكرر لا تُحل بإرادة أقوى — بل بمسار مرافَق يعرف متى تتعثر.',
+    'واضحة ومكتوبة': 'صورتك عن سنتين واضحة — سنبني عليها لا أن نعيد رسمها.',
+    'في رأسي تقريبا': 'صورتك موجودة لكنها شفافة — التشخيص يحوّلها إلى خطة مكتوبة بموعد.',
+    'ضبابية — وهذا يقلقني أحيانا': 'ضبابية الصورة أخطر إشارة — وأكثر ما يجيده التشخيص الكامل هو تبلورها.',
+  }
+  const insights = (['m2', 'm3', 'm4']
+    .map((id) => answers[id])
+    .map((a) => (a ? mirrorInsights[a] : null))
+    .filter(Boolean) as string[]).slice(0, 2)
+
   return (
     <section id="diagnostic" className="relative py-20 md:py-28">
       <div className="mx-auto max-w-4xl px-5">
@@ -423,6 +440,23 @@ function DiagnosticTeaser() {
                   <p className="mx-auto mt-5 max-w-md rounded-2xl border border-teal/30 bg-[#38A7B4]/10 p-5 leading-8 text-teal-light">
                     {pitch}
                   </p>
+                )}
+                {/* مكافأة فورية: صورة أولية مشتقة من إجاباته هو — تجعل الانتقال للتشخيص الكامل مكافأة لا التزاما */}
+                {insights.length > 0 && (
+                  <div className="mx-auto mt-4 max-w-md rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+                    <p className="flex items-center justify-center gap-1.5 text-sm font-bold text-white/85">
+                      <Sparkles className="h-4 w-4 text-teal-light" />
+                      صورتك الأولية — من إجاباتك أنت
+                    </p>
+                    <ul className="mt-3 space-y-2 text-right">
+                      {insights.map((line) => (
+                        <li key={line} className="flex items-start gap-2 text-xs leading-6 text-muted-foreground">
+                          <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#6EC7D1]" />
+                          {line}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
                 <p className="mx-auto mt-4 max-w-md leading-8 text-muted-foreground">
                   الوقفة أدت وظيفتها. الآن يبدأ العمل الحقيقي: تشخيص كامل يفهم قصتك ويستنتج مستواك
@@ -1143,9 +1177,32 @@ function Footer() {
   )
 }
 
+/* ───────────────── شريط الدعوة الثابت للجوال ─────────────────
+   يظهر بعد تجاوز البطل، ويختفي عند العودة لأعلى — دعوة واحدة دائمة في متناول الإبهام */
+function MobileCtaBar() {
+  const [visible, setVisible] = useState(false)
+  useEffect(() => {
+    const onScroll = () => setVisible(window.scrollY > 450)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+  return (
+    <div
+      aria-hidden={!visible}
+      className={`fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[#0D0D0D]/90 px-5 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-3 backdrop-blur-xl transition-transform duration-300 md:hidden ${visible ? 'translate-y-0' : 'translate-y-full'}`}
+    >
+      <a href="#diagnostic" className="btn-teal w-full py-3.5">
+        خذ وقفة صدق — دقيقة واحدة
+        <ArrowLeft className="h-4 w-4" />
+      </a>
+    </div>
+  )
+}
+
 /* ───────────────── page ─────────────────
-   الترتيب المعتمد: بطل واضح ← وقفة صدق ← كيف تعمل الرحلة ← مخرجات التعلم
-   ← ستة مسارات مميزة ← أربع دورات مميزة ← قصص حقيقية ← شركاء ← أسئلة ← دعوة أخيرة */
+   الترتيب المعتمد: بطل واضح ← وقفة صدق ← كيف تعمل الرحلة ← شركاء (دليل ثقة مبكر)
+   ← مخرجات التعلم ← ستة مسارات مميزة ← أربع دورات مميزة ← قصص حقيقية ← أسئلة ← دعوة أخيرة */
 export default function Home() {
   useReveal()
   const topRef = useRef<HTMLDivElement>(null)
@@ -1161,13 +1218,16 @@ export default function Home() {
         <Hero />
         <DiagnosticTeaser />
         <HowItWorks />
+        <Partners />
         <ImageBand />
         <Bestsellers />
         <Stories />
-        <Partners />
         <Faq />
         <FinalCta />
       </div>
+      {/* تعويض ارتفاع شريط الدعوة الثابت على الجوال */}
+      <div className="h-20 md:hidden" />
+      <MobileCtaBar />
       <Footer />
     </div>
   )
