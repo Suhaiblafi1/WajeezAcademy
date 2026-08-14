@@ -1,0 +1,5978 @@
+{
+  "metadata": {
+    "name": "Wajeez Diagnostic Question Bank v1",
+    "version": "1.0",
+    "date": "2026-08-09",
+    "language": "ar",
+    "direction": "rtl",
+    "question_count": 192,
+    "module_count": 14,
+    "warning": "هذا بنك تشخيص تعليمي ومهني، وليس اختبارا نفسيا أو طبيا ولا يضمن وظيفة أو دخلا."
+  },
+  "modules": [
+    {
+      "module_id": "M0",
+      "name_ar": "الموافقة والهوية التشغيلية",
+      "description_ar": "أسئلة تشغيلية لحفظ الجلسة، الموافقة، صاحب القرار، وضوابط القاصرين والخصوصية.",
+      "question_count": 10
+    },
+    {
+      "module_id": "M1",
+      "name_ar": "السياق ومرحلة الحياة والعمل",
+      "description_ar": "يفهم من هو الشخص الآن: تعليمه، عمله، خبرته، وضعه، وسجل تعلمه.",
+      "question_count": 12
+    },
+    {
+      "module_id": "M2",
+      "name_ar": "الهدف والتحول المطلوب",
+      "description_ar": "يحدد الحلم، النتيجة المطلوبة، معيار النجاح، مدى وضوح الهدف، وسقف الزمن.",
+      "question_count": 16
+    },
+    {
+      "module_id": "M3A",
+      "name_ar": "طالب أو خريج جديد",
+      "description_ar": "يفتح للطالب والخريج لتقدير جاهزية أول وظيفة أو مسار مهني أول.",
+      "question_count": 12
+    },
+    {
+      "module_id": "M3B",
+      "name_ar": "موظف قطاع خاص أو حكومي",
+      "description_ar": "يفتح للموظف لتحديد فجوة الأداء والترقية والتحول الرقمي والخدمة والقيادة.",
+      "question_count": 16
+    },
+    {
+      "module_id": "M3C",
+      "name_ar": "رائد أعمال أو مستقل",
+      "description_ar": "يفتح لرائد الأعمال أو المستقل لتحديد عنق الزجاجة التجاري والتشغيلي.",
+      "question_count": 14
+    },
+    {
+      "module_id": "M3D",
+      "name_ar": "والد/والدة أو هدف أسري ورفاه",
+      "description_ar": "يفتح لمن لديه هدف أسري أو رفاه شخصي، دون ادعاء تشخيص صحي أو نفسي.",
+      "question_count": 10
+    },
+    {
+      "module_id": "M3E",
+      "name_ar": "غير متأكد أو متغير مسار",
+      "description_ar": "يفتح عند غموض الهدف أو الرغبة في تغيير المسار، ويقترح مسار استكشاف.",
+      "question_count": 10
+    },
+    {
+      "module_id": "M4",
+      "name_ar": "خط أساس المهارات المحورية",
+      "description_ar": "يقيس مستوى أوليا في مهارات محورية مشتركة وربطها بفجوات التعلم.",
+      "question_count": 26
+    },
+    {
+      "module_id": "M5",
+      "name_ar": "الميول المهنية RIASEC",
+      "description_ar": "أسئلة ميول مهنية خفيفة مستوحاة من RIASEC وليست اختبارا نفسيا كاملا.",
+      "question_count": 18
+    },
+    {
+      "module_id": "M6",
+      "name_ar": "أساليب العمل والتعلم",
+      "description_ar": "أسئلة أسلوب عمل وتعلم مستوحاة من O*NET Work Styles وIPIP بصورة غير سريرية.",
+      "question_count": 14
+    },
+    {
+      "module_id": "M7",
+      "name_ar": "قيود وتفضيلات التعلم",
+      "description_ar": "يضبط الجدول، اللغة، الميزانية، نمط التعلم، والدعم اللازم للإكمال.",
+      "question_count": 12
+    },
+    {
+      "module_id": "M8",
+      "name_ar": "التحقق والتناقض والإحالة",
+      "description_ar": "أسئلة تحقق تظهر عند انخفاض الثقة، التناقض، أو ارتفاع حساسية القرار.",
+      "question_count": 10
+    },
+    {
+      "module_id": "M9",
+      "name_ar": "طبقة B2B/B2G المؤسسية",
+      "description_ar": "طبقة إضافية لحملات المؤسسات والجهات الحكومية وتجميع الاحتياج التدريبي.",
+      "question_count": 12
+    }
+  ],
+  "answer_options": {
+    "decision_owner": [
+      "أنا المتعلم",
+      "ولي أمر أو عائلة",
+      "جهة العمل",
+      "مستشار",
+      "غير ذلك"
+    ],
+    "age_band": [
+      "أقل من 16",
+      "من 16 إلى 18",
+      "من 19 إلى 24",
+      "من 25 إلى 34",
+      "من 35 إلى 44",
+      "45 فأكثر"
+    ],
+    "language_pref": [
+      "العربية",
+      "الإنجليزية",
+      "كلاهما",
+      "حسب المادة"
+    ],
+    "yes_no_unsure": [
+      "نعم",
+      "لا",
+      "لست متأكدا"
+    ],
+    "yes_no_optional": [
+      "نعم",
+      "لا",
+      "أفضل عدم الإجابة"
+    ],
+    "comfort_5": [
+      "غير مرتاح إطلاقا",
+      "غير مرتاح",
+      "محايد",
+      "مرتاح",
+      "مرتاح جدا"
+    ],
+    "stage": [
+      "طالب مدرسة",
+      "طالب جامعة",
+      "خريج جديد",
+      "موظف",
+      "رائد أعمال/مستقل",
+      "باحث عن عمل",
+      "أب/أم",
+      "غير متأكد"
+    ],
+    "education": [
+      "مدرسة",
+      "دبلوم",
+      "بكالوريوس",
+      "ماجستير أو أكثر",
+      "تعلم ذاتي",
+      "غير ذلك"
+    ],
+    "employment": [
+      "لا أعمل حاليا",
+      "دوام جزئي",
+      "دوام كامل",
+      "عمل حر",
+      "صاحب مشروع",
+      "موظف حكومي",
+      "أبحث عن عمل"
+    ],
+    "experience_years": [
+      "لا توجد",
+      "أقل من سنة",
+      "من سنة إلى 3 سنوات",
+      "من 4 إلى 7 سنوات",
+      "8 سنوات فأكثر"
+    ],
+    "goal_type": [
+      "وظيفة أو ترقية",
+      "مشروع أو دخل",
+      "تغيير مسار",
+      "ثقافة عامة",
+      "أسرة ورفاه",
+      "قيادة وتأثير",
+      "لا أعرف بعد"
+    ],
+    "timeline": [
+      "خلال شهر",
+      "3 أشهر",
+      "6 أشهر",
+      "من 9 إلى 12 شهرا",
+      "أكثر من سنة",
+      "لا يوجد موعد"
+    ],
+    "clarity_5": [
+      "غير واضح",
+      "غامض قليلا",
+      "متوسط",
+      "واضح",
+      "واضح جدا"
+    ],
+    "priority_5": [
+      "منخفضة جدا",
+      "منخفضة",
+      "متوسطة",
+      "عالية",
+      "حاسمة"
+    ],
+    "skill_level_5": [
+      "لا أعرفها",
+      "مبتدئ",
+      "أستخدمها أحيانا",
+      "جيد عمليًا",
+      "متقدم وأطبقها بثقة"
+    ],
+    "evidence_level": [
+      "لا يوجد دليل",
+      "تعلمت عنها فقط",
+      "طبقتها مرة",
+      "طبقتها عدة مرات",
+      "لدي نتيجة أو مشروع أو شهادة"
+    ],
+    "likert_5": [
+      "لا ينطبق أبدا",
+      "ينطبق قليلا",
+      "ينطبق أحيانا",
+      "ينطبق غالبا",
+      "ينطبق جدا"
+    ],
+    "time_weekly": [
+      "أقل من ساعتين",
+      "من 2 إلى 4 ساعات",
+      "من 5 إلى 7 ساعات",
+      "من 8 إلى 12 ساعة",
+      "أكثر من 12 ساعة"
+    ],
+    "budget": [
+      "مجاني فقط",
+      "منخفض",
+      "متوسط",
+      "مرتفع عند وضوح القيمة",
+      "الجهة تدفع"
+    ],
+    "format_pref": [
+      "فيديو ذاتي",
+      "مباشر مع مدرب",
+      "تطبيق ومشاريع",
+      "قراءة وملخصات",
+      "مختلط"
+    ],
+    "sector": [
+      "خاص",
+      "حكومي",
+      "منظمات/تعليم",
+      "تقني",
+      "تجاري",
+      "صحي",
+      "مالي",
+      "غير ذلك"
+    ],
+    "org_level": [
+      "فردي",
+      "فريق",
+      "إدارة",
+      "مؤسسة كاملة",
+      "جهة حكومية"
+    ],
+    "completion_pattern": [
+      "أكمل غالبا",
+      "أكمل إذا كان هناك موعد أو متابعة",
+      "أبدأ ثم أتوقف",
+      "أتنقل بين مصادر كثيرة",
+      "لا أملك نمطا واضحا"
+    ],
+    "life_constraints": [
+      "وقت",
+      "مال",
+      "لغة",
+      "مسؤوليات عائلية",
+      "ضغط عمل",
+      "تشتت",
+      "ضعف إنترنت/جهاز",
+      "لا يوجد قيد كبير"
+    ],
+    "secondary_goals": [
+      "دخل",
+      "ترقية",
+      "مشروع",
+      "لغة",
+      "قيادة",
+      "أسرة",
+      "ثقافة مالية",
+      "ذكاء اصطناعي",
+      "لا يوجد"
+    ],
+    "anti_goals": [
+      "مسار طويل جدا",
+      "محتوى نظري فقط",
+      "تكلفة عالية",
+      "لغة غير مناسبة",
+      "تشتت بين مواضيع كثيرة",
+      "ضغط واجبات",
+      "لا يوجد"
+    ],
+    "value_priorities": [
+      "الدخل",
+      "الأثر",
+      "المكانة",
+      "الاستقرار",
+      "الحرية",
+      "المعرفة",
+      "خدمة الأسرة",
+      "خدمة المجتمع"
+    ],
+    "breadth_depth": [
+      "توسع أفقي منظم أولا",
+      "تعمق عمودي الآن",
+      "مزيج متوازن",
+      "لا أعرف"
+    ],
+    "scope_type": [
+      "مهارة واحدة واضحة",
+      "مسار متكامل",
+      "استكشاف قبل المسار",
+      "مراجعة مستشار"
+    ],
+    "unavailable_skill_preference": [
+      "إظهارها في الخطة وانتظار توفرها",
+      "اقتراح مصدر خارجي موثوق",
+      "استبدالها فقط إذا وجد بديل قريب",
+      "التواصل معي عند توفرها"
+    ],
+    "function_specialization": [
+      "خدمة جمهور",
+      "مشتريات/عطاءات",
+      "مالية/موازنة",
+      "موارد بشرية",
+      "مبيعات",
+      "عمليات",
+      "تحول رقمي",
+      "قيادة",
+      "غير ذلك"
+    ],
+    "child_development_goals": [
+      "الثقة",
+      "الخطابة",
+      "الثقافة المالية",
+      "اللغة الإنجليزية",
+      "عادات التعلم",
+      "تقليل التشتت",
+      "المهارات الرقمية"
+    ],
+    "family_content_format": [
+      "تطبيق عملي",
+      "جلسات حوارية",
+      "كتب وملخصات",
+      "بودكاست",
+      "ورش مباشرة",
+      "نشاطات أسرية قصيرة"
+    ],
+    "family_beneficiary": [
+      "لي أنا",
+      "لأحد الأبناء",
+      "للأسرة ككل",
+      "لي وللأبناء معا"
+    ],
+    "domain_shortlist": [
+      "تقنية",
+      "أعمال",
+      "تسويق",
+      "تعليم",
+      "صناعة محتوى",
+      "قيادة",
+      "حكومة/سياسات",
+      "مالية",
+      "لا أعرف"
+    ],
+    "transferable_skills": [
+      "تواصل",
+      "تنظيم",
+      "تحليل",
+      "كتابة",
+      "مبيعات",
+      "تعليم/تدريب",
+      "قيادة",
+      "تعلم سريع",
+      "علاقات"
+    ],
+    "cohort_preference": [
+      "دفعة ومجموعة",
+      "فردي ذاتي",
+      "فردي مع مستشار",
+      "مختلط",
+      "لا يهم"
+    ],
+    "completion_support": [
+      "مدرب يتابعني",
+      "مجموعة تعلم",
+      "مهام قصيرة",
+      "تذكيرات",
+      "مشروع تطبيقي",
+      "شهادة",
+      "موعد نهائي"
+    ],
+    "time_goal_conflict_resolution": [
+      "مسار مضغوط",
+      "تمديد المدة",
+      "تقليل نطاق الهدف",
+      "مستشار يساعدني أختار"
+    ],
+    "goal_path_conflict": [
+      "رغبة مؤكدة",
+      "تجربة أولية",
+      "اختيار مؤقت",
+      "أحتاج مساعدة"
+    ],
+    "tie_breaker": [
+      "الأقرب للهدف",
+      "الأسرع نتيجة",
+      "الأقل تكلفة",
+      "الأكثر عمقا",
+      "الأكثر عملية",
+      "الأكثر متعة"
+    ],
+    "depth_choice": [
+      "نتيجة مختصرة الآن",
+      "أسئلة إضافية لتقرير أعمق",
+      "أريد مستشارا",
+      "لست متأكدا"
+    ],
+    "job_level": [
+      "مبتدئ",
+      "متوسط",
+      "مشرف",
+      "مدير",
+      "قيادة عليا",
+      "خدمة جمهور",
+      "تخصصي"
+    ],
+    "management_hypothesis": [
+      "ضعف مهارات رقمية",
+      "ضعف تواصل",
+      "ضعف قيادة",
+      "بطء إجراءات",
+      "ضعف خدمة",
+      "ضعف بيانات",
+      "مقاومة تغيير",
+      "غير واضح"
+    ]
+  },
+  "references": [
+    {
+      "name": "WEF Future of Jobs Report 2025",
+      "url": "https://www.weforum.org/publications/the-future-of-jobs-report-2025/",
+      "use": "مهارات المستقبل، فجوات المهارات، التحول الرقمي والذكاء الاصطناعي."
+    },
+    {
+      "name": "O*NET Content Model",
+      "url": "https://www.onetcenter.org/content.html",
+      "use": "تفكيك العمل إلى مهارات، معرفة، قدرات، أنشطة، وأساليب عمل."
+    },
+    {
+      "name": "O*NET OnLine",
+      "url": "https://www.onetonline.org/",
+      "use": "التحقق لاحقا من ربط المسارات بالمهن والمتطلبات العملية."
+    },
+    {
+      "name": "DigComp 2.2",
+      "url": "https://publications.jrc.ec.europa.eu/repository/handle/JRC128415",
+      "use": "الكفاءة الرقمية، البيانات، المحتوى الرقمي، السلامة، وحل المشكلات."
+    },
+    {
+      "name": "ESCO Skills & Competences",
+      "url": "https://esco.ec.europa.eu/en/classification/skill_main",
+      "use": "تصنيف المهارات والمعارف والمهارات العرضية وربطها بالمهن."
+    },
+    {
+      "name": "IPIP 50-item sample",
+      "url": "https://ipip.ori.org/new_ipip-50-item-scale.htm",
+      "use": "إلهام أسئلة أساليب العمل والتعلم دون استخدامها كتشخيص نفسي."
+    },
+    {
+      "name": "OECD Skills Strategies",
+      "url": "https://www.oecd.org/en/topics/skills-strategies.html",
+      "use": "التفكير في تنمية المهارات واستخدامها وحوكمة المهارات للمؤسسات والحكومات."
+    },
+    {
+      "name": "UNESCO AI Competency Framework for Students",
+      "url": "https://www.unesco.org/en/articles/ai-competency-framework-students",
+      "use": "وعي الذكاء الاصطناعي، الاستخدام المسؤول، التفكير النقدي، والتصميم البشري."
+    },
+    {
+      "name": "1EdTech CLR and Open Badges",
+      "url": "https://www.1edtech.org/clr/faq",
+      "use": "التمهيد لسجل تعلم ومهارات قابل للتحقق في المراحل اللاحقة."
+    }
+  ],
+  "questions": [
+    {
+      "question_id": "QB-M0-001",
+      "module_id": "M0",
+      "module_name": "الموافقة والهوية التشغيلية",
+      "version": "1.0",
+      "text_ar": "من هو صاحب قرار التعلم في هذه الجلسة؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "أنا المتعلم",
+        "ولي أمر أو عائلة",
+        "جهة العمل",
+        "مستشار",
+        "غير ذلك"
+      ],
+      "options_key": "decision_owner",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "decision_owner"
+      ],
+      "decision_impact": "يضبط اللغة، الموافقة، وطريقة عرض النتيجة.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.5,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M0-002",
+      "module_id": "M0",
+      "module_name": "الموافقة والهوية التشغيلية",
+      "version": "1.0",
+      "text_ar": "ما الفئة العمرية للمتعلم؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "أقل من 16",
+        "من 16 إلى 18",
+        "من 19 إلى 24",
+        "من 25 إلى 34",
+        "من 35 إلى 44",
+        "45 فأكثر"
+      ],
+      "options_key": "age_band",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "age_band",
+        "minor_rules"
+      ],
+      "decision_impact": "يفعل قواعد القاصرين ويعدل لغة الأسئلة.",
+      "sensitivity_level": "medium",
+      "required_level": "core",
+      "weight": 1.5,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M0-003",
+      "module_id": "M0",
+      "module_name": "الموافقة والهوية التشغيلية",
+      "version": "1.0",
+      "text_ar": "في أي دولة يقيم المتعلم غالبا؟",
+      "answer_type": "single_choice_or_text",
+      "options_ar": [],
+      "options_key": null,
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "country",
+        "regional_context"
+      ],
+      "decision_impact": "يساعد في تخصيص المسارات واللغة والوقت.",
+      "sensitivity_level": "medium",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M0-004",
+      "module_id": "M0",
+      "module_name": "الموافقة والهوية التشغيلية",
+      "version": "1.0",
+      "text_ar": "ما اللغة الأنسب للتعلم والتقرير؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "العربية",
+        "الإنجليزية",
+        "كلاهما",
+        "حسب المادة"
+      ],
+      "options_key": "language_pref",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "language"
+      ],
+      "decision_impact": "يضبط لغة المواد المقترحة.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.2,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M0-005",
+      "module_id": "M0",
+      "module_name": "الموافقة والهوية التشغيلية",
+      "version": "1.0",
+      "text_ar": "هل تريد حفظ النتيجة والعودة لها لاحقا؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "نعم",
+        "لا",
+        "لست متأكدا"
+      ],
+      "options_key": "yes_no_unsure",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "save_preference"
+      ],
+      "decision_impact": "يحدد إنشاء حساب/رابط متابعة.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 0.8,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M0-006",
+      "module_id": "M0",
+      "module_name": "الموافقة والهوية التشغيلية",
+      "version": "1.0",
+      "text_ar": "هل توافق على استخدام إجاباتك لتوليد توصية تعلم شخصية؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "نعم",
+        "لا",
+        "لست متأكدا"
+      ],
+      "options_key": "yes_no_unsure",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "diagnostic_consent"
+      ],
+      "decision_impact": "شرط لإصدار نتيجة شخصية.",
+      "sensitivity_level": "medium",
+      "required_level": "core",
+      "weight": 2.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M0-007",
+      "module_id": "M0",
+      "module_name": "الموافقة والهوية التشغيلية",
+      "version": "1.0",
+      "text_ar": "هل توافق على التواصل معك عند توفر مسار أو مهارة غير متاحة حاليا؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "نعم",
+        "لا",
+        "أفضل عدم الإجابة"
+      ],
+      "options_key": "yes_no_optional",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "marketing_consent",
+        "unavailable_skill_notify"
+      ],
+      "decision_impact": "يفصل موافقة التشخيص عن التسويق.",
+      "sensitivity_level": "medium",
+      "required_level": "optional",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M0-008",
+      "module_id": "M0",
+      "module_name": "الموافقة والهوية التشغيلية",
+      "version": "1.0",
+      "text_ar": "هل المتعلم أقل من 18 عاما؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "نعم",
+        "لا",
+        "لست متأكدا"
+      ],
+      "options_key": "yes_no_unsure",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "minor_flag"
+      ],
+      "decision_impact": "يفتح موافقة ولي الأمر عند الحاجة.",
+      "sensitivity_level": "medium",
+      "required_level": "core",
+      "weight": 1.5,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M0-009",
+      "module_id": "M0",
+      "module_name": "الموافقة والهوية التشغيلية",
+      "version": "1.0",
+      "text_ar": "من المتوقع أن يتحمل تكلفة التعلم؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "أنا المتعلم",
+        "ولي أمر أو عائلة",
+        "جهة العمل",
+        "مستشار",
+        "غير ذلك"
+      ],
+      "options_key": "decision_owner",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "payer_type",
+        "budget_context"
+      ],
+      "decision_impact": "يضبط عرض السعر وخيارات B2B/B2G.",
+      "sensitivity_level": "medium",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M0-010",
+      "module_id": "M0",
+      "module_name": "الموافقة والهوية التشغيلية",
+      "version": "1.0",
+      "text_ar": "ما مدى ارتياحك لمشاركة معلومات مهنية وتعليمية لأجل تشخيص أدق؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "غير مرتاح إطلاقا",
+        "غير مرتاح",
+        "محايد",
+        "مرتاح",
+        "مرتاح جدا"
+      ],
+      "options_key": "comfort_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "privacy_comfort"
+      ],
+      "decision_impact": "يحدد عمق الأسئلة ويقلل الاحتكاك.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 0.8,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M1-001",
+      "module_id": "M1",
+      "module_name": "السياق ومرحلة الحياة والعمل",
+      "version": "1.0",
+      "text_ar": "أي وصف يقترب أكثر من وضعك الحالي؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "طالب مدرسة",
+        "طالب جامعة",
+        "خريج جديد",
+        "موظف",
+        "رائد أعمال/مستقل",
+        "باحث عن عمل",
+        "أب/أم",
+        "غير متأكد"
+      ],
+      "options_key": "stage",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "persona_type"
+      ],
+      "decision_impact": "يفتح وحدة الأسئلة المناسبة.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 2.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M1-002",
+      "module_id": "M1",
+      "module_name": "السياق ومرحلة الحياة والعمل",
+      "version": "1.0",
+      "text_ar": "ما أعلى مرحلة تعليمية أنهيتها أو تدرسها حاليا؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "مدرسة",
+        "دبلوم",
+        "بكالوريوس",
+        "ماجستير أو أكثر",
+        "تعلم ذاتي",
+        "غير ذلك"
+      ],
+      "options_key": "education",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "education_state"
+      ],
+      "decision_impact": "يضبط المستوى المبدئي واللغة.",
+      "sensitivity_level": "medium",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M1-003",
+      "module_id": "M1",
+      "module_name": "السياق ومرحلة الحياة والعمل",
+      "version": "1.0",
+      "text_ar": "ما وضعك العملي الحالي؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "لا أعمل حاليا",
+        "دوام جزئي",
+        "دوام كامل",
+        "عمل حر",
+        "صاحب مشروع",
+        "موظف حكومي",
+        "أبحث عن عمل"
+      ],
+      "options_key": "employment",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "employment_state"
+      ],
+      "decision_impact": "يفرق بين طالب، موظف، رائد أعمال، وباحث عن عمل.",
+      "sensitivity_level": "medium",
+      "required_level": "core",
+      "weight": 1.5,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M1-004",
+      "module_id": "M1",
+      "module_name": "السياق ومرحلة الحياة والعمل",
+      "version": "1.0",
+      "text_ar": "كم سنة خبرة عملية لديك في أي مجال؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "لا توجد",
+        "أقل من سنة",
+        "من سنة إلى 3 سنوات",
+        "من 4 إلى 7 سنوات",
+        "8 سنوات فأكثر"
+      ],
+      "options_key": "experience_years",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "experience_years"
+      ],
+      "decision_impact": "يضبط عمق المسار والمهام التطبيقية.",
+      "sensitivity_level": "medium",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M1-005",
+      "module_id": "M1",
+      "module_name": "السياق ومرحلة الحياة والعمل",
+      "version": "1.0",
+      "text_ar": "ما المجال الأقرب لما تدرسه أو تعمل فيه الآن؟",
+      "answer_type": "single_choice_or_text",
+      "options_ar": [],
+      "options_key": null,
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "current_domain"
+      ],
+      "decision_impact": "يربط التشخيص بقاموس المهارات والمسارات.",
+      "sensitivity_level": "medium",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M1-006",
+      "module_id": "M1",
+      "module_name": "السياق ومرحلة الحياة والعمل",
+      "version": "1.0",
+      "text_ar": "ما المسؤولية الأكبر التي تأخذ وقتك حاليا؟",
+      "answer_type": "short_text",
+      "options_ar": [],
+      "options_key": null,
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "current_responsibility"
+      ],
+      "decision_impact": "يفسر القيود والزمن والطاقة.",
+      "sensitivity_level": "medium",
+      "required_level": "deep",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M1-007",
+      "module_id": "M1",
+      "module_name": "السياق ومرحلة الحياة والعمل",
+      "version": "1.0",
+      "text_ar": "ما أكثر شيء يزعجك أو يبطئك في وضعك الحالي؟",
+      "answer_type": "single_choice_or_text",
+      "options_ar": [],
+      "options_key": null,
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "current_pain"
+      ],
+      "decision_impact": "يوجه فجوة التعلم الأساسية.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.3,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M1-008",
+      "module_id": "M1",
+      "module_name": "السياق ومرحلة الحياة والعمل",
+      "version": "1.0",
+      "text_ar": "هل لديك جهاز واتصال مناسبان للتعلم عبر الإنترنت؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "نعم",
+        "لا",
+        "لست متأكدا"
+      ],
+      "options_key": "yes_no_unsure",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "access_readiness"
+      ],
+      "decision_impact": "يكشف قيود الوصول وبدائل الصيغة.",
+      "sensitivity_level": "medium",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M1-009",
+      "module_id": "M1",
+      "module_name": "السياق ومرحلة الحياة والعمل",
+      "version": "1.0",
+      "text_ar": "خلال آخر سنة، كم مرة أنهيت دورة أو برنامجا تعليميا؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "لا توجد",
+        "أقل من سنة",
+        "من سنة إلى 3 سنوات",
+        "من 4 إلى 7 سنوات",
+        "8 سنوات فأكثر"
+      ],
+      "options_key": "experience_years",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "completion_history"
+      ],
+      "decision_impact": "يدخل في احتمال الإكمال.",
+      "sensitivity_level": "medium",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M1-010",
+      "module_id": "M1",
+      "module_name": "السياق ومرحلة الحياة والعمل",
+      "version": "1.0",
+      "text_ar": "عندما تبدأ شيئا تعليميا جديدا، ما النتيجة الأكثر تكرارا؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "أكمل غالبا",
+        "أكمل إذا كان هناك موعد أو متابعة",
+        "أبدأ ثم أتوقف",
+        "أتنقل بين مصادر كثيرة",
+        "لا أملك نمطا واضحا"
+      ],
+      "options_key": "completion_pattern",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "completion_pattern"
+      ],
+      "decision_impact": "يفتح أسئلة الدافع والدعم عند الحاجة.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M1-011",
+      "module_id": "M1",
+      "module_name": "السياق ومرحلة الحياة والعمل",
+      "version": "1.0",
+      "text_ar": "هل لديك دليل حالي على مهاراتك: مشروع، شهادة، ملف أعمال، أو نتيجة عملية؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "لا يوجد دليل",
+        "تعلمت عنها فقط",
+        "طبقتها مرة",
+        "طبقتها عدة مرات",
+        "لدي نتيجة أو مشروع أو شهادة"
+      ],
+      "options_key": "evidence_level",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "evidence_strength"
+      ],
+      "decision_impact": "يفرق بين الادعاء والدليل.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.5,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M1-012",
+      "module_id": "M1",
+      "module_name": "السياق ومرحلة الحياة والعمل",
+      "version": "1.0",
+      "text_ar": "ما أكبر قيد في حياتك حاليا يؤثر على التعلم؟",
+      "answer_type": "multi_choice",
+      "options_ar": [
+        "وقت",
+        "مال",
+        "لغة",
+        "مسؤوليات عائلية",
+        "ضغط عمل",
+        "تشتت",
+        "ضعف إنترنت/جهاز",
+        "لا يوجد قيد كبير"
+      ],
+      "options_key": "life_constraints",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "life_constraints"
+      ],
+      "decision_impact": "يضبط طول المسار والعبء الأسبوعي.",
+      "sensitivity_level": "medium",
+      "required_level": "deep",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M2-001",
+      "module_id": "M2",
+      "module_name": "الهدف والتحول المطلوب",
+      "version": "1.0",
+      "text_ar": "ما الهدف الأساسي الذي تريد أن يساعدك وجيز على تحقيقه؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "وظيفة أو ترقية",
+        "مشروع أو دخل",
+        "تغيير مسار",
+        "ثقافة عامة",
+        "أسرة ورفاه",
+        "قيادة وتأثير",
+        "لا أعرف بعد"
+      ],
+      "options_key": "goal_type",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "primary_goal"
+      ],
+      "decision_impact": "يحدد نوع القرار النهائي.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 2.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M2-002",
+      "module_id": "M2",
+      "module_name": "الهدف والتحول المطلوب",
+      "version": "1.0",
+      "text_ar": "اكتب حلمك أو النتيجة التي تريدها بجملة واحدة.",
+      "answer_type": "short_text",
+      "options_ar": [],
+      "options_key": null,
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "dream_statement"
+      ],
+      "decision_impact": "يدخل في تفسير التوصية وربط المسار بالحلم.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.5,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M2-003",
+      "module_id": "M2",
+      "module_name": "الهدف والتحول المطلوب",
+      "version": "1.0",
+      "text_ar": "ما النتيجة العملية التي ستعتبرها نجاحا؟",
+      "answer_type": "single_choice_or_text",
+      "options_ar": [],
+      "options_key": null,
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "success_metric"
+      ],
+      "decision_impact": "يحدد معيار التوصية والقياس.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.7,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M2-004",
+      "module_id": "M2",
+      "module_name": "الهدف والتحول المطلوب",
+      "version": "1.0",
+      "text_ar": "متى تريد أن ترى نتيجة ملموسة؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "خلال شهر",
+        "3 أشهر",
+        "6 أشهر",
+        "من 9 إلى 12 شهرا",
+        "أكثر من سنة",
+        "لا يوجد موعد"
+      ],
+      "options_key": "timeline",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "target_date"
+      ],
+      "decision_impact": "يضبط كثافة المسار وجدول التعلم.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.4,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M2-005",
+      "module_id": "M2",
+      "module_name": "الهدف والتحول المطلوب",
+      "version": "1.0",
+      "text_ar": "ما مدى وضوح هدفك الآن؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "غير واضح",
+        "غامض قليلا",
+        "متوسط",
+        "واضح",
+        "واضح جدا"
+      ],
+      "options_key": "clarity_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "goal_clarity"
+      ],
+      "decision_impact": "يفتح مسار استكشاف عند الغموض.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.8,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M2-006",
+      "module_id": "M2",
+      "module_name": "الهدف والتحول المطلوب",
+      "version": "1.0",
+      "text_ar": "لماذا تريد هذا الهدف الآن تحديدا؟",
+      "answer_type": "single_choice_or_text",
+      "options_ar": [],
+      "options_key": null,
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "motivation_driver"
+      ],
+      "decision_impact": "يميز الدافع العميق عن الاهتمام اللحظي.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M2-007",
+      "module_id": "M2",
+      "module_name": "الهدف والتحول المطلوب",
+      "version": "1.0",
+      "text_ar": "هل لديك هدف ثانوي مهم لا تريد تجاهله؟",
+      "answer_type": "multi_choice",
+      "options_ar": [
+        "دخل",
+        "ترقية",
+        "مشروع",
+        "لغة",
+        "قيادة",
+        "أسرة",
+        "ثقافة مالية",
+        "ذكاء اصطناعي",
+        "لا يوجد"
+      ],
+      "options_key": "secondary_goals",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "secondary_goals"
+      ],
+      "decision_impact": "يسمح بمسارات داعمة دون تشتيت.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M2-008",
+      "module_id": "M2",
+      "module_name": "الهدف والتحول المطلوب",
+      "version": "1.0",
+      "text_ar": "ما الشيء الذي لا تريد أن يحدث في مسارك التعليمي؟",
+      "answer_type": "multi_choice",
+      "options_ar": [
+        "مسار طويل جدا",
+        "محتوى نظري فقط",
+        "تكلفة عالية",
+        "لغة غير مناسبة",
+        "تشتت بين مواضيع كثيرة",
+        "ضغط واجبات",
+        "لا يوجد"
+      ],
+      "options_key": "anti_goals",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "anti_goals"
+      ],
+      "decision_impact": "يمنع توصيات غير مناسبة.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M2-009",
+      "module_id": "M2",
+      "module_name": "الهدف والتحول المطلوب",
+      "version": "1.0",
+      "text_ar": "ما الأهم لك الآن: دخل، أثر، مكانة، استقرار، حرية، أو معرفة؟",
+      "answer_type": "rank_top3",
+      "options_ar": [
+        "الدخل",
+        "الأثر",
+        "المكانة",
+        "الاستقرار",
+        "الحرية",
+        "المعرفة",
+        "خدمة الأسرة",
+        "خدمة المجتمع"
+      ],
+      "options_key": "value_priorities",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "value_priorities"
+      ],
+      "decision_impact": "يضبط PathwayFit والبدائل.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.3,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M2-010",
+      "module_id": "M2",
+      "module_name": "الهدف والتحول المطلوب",
+      "version": "1.0",
+      "text_ar": "هل تريد أن تتوسع أفقيا أولا أم تتعمق عموديا في مجال محدد؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "توسع أفقي منظم أولا",
+        "تعمق عمودي الآن",
+        "مزيج متوازن",
+        "لا أعرف"
+      ],
+      "options_key": "breadth_depth",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "breadth_depth_preference"
+      ],
+      "decision_impact": "يضبط تصميم المسار بين اكتشاف واحتراف.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.2,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M2-011",
+      "module_id": "M2",
+      "module_name": "الهدف والتحول المطلوب",
+      "version": "1.0",
+      "text_ar": "ما مستوى المخاطرة المقبول لديك في اختيار مسار جديد؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "منخفضة جدا",
+        "منخفضة",
+        "متوسطة",
+        "عالية",
+        "حاسمة"
+      ],
+      "options_key": "priority_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "risk_tolerance"
+      ],
+      "decision_impact": "يفرق بين مسارات آمنة وتجريبية.",
+      "sensitivity_level": "medium",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M2-012",
+      "module_id": "M2",
+      "module_name": "الهدف والتحول المطلوب",
+      "version": "1.0",
+      "text_ar": "من هو الشخص أو الدور الذي تتمنى أن تقترب منه بعد سنة؟",
+      "answer_type": "short_text",
+      "options_ar": [],
+      "options_key": null,
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "role_model",
+        "aspirational_role"
+      ],
+      "decision_impact": "يساعد في ربط المسار بالمهن والمهارات.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M2-013",
+      "module_id": "M2",
+      "module_name": "الهدف والتحول المطلوب",
+      "version": "1.0",
+      "text_ar": "ما الشيء الذي لو تحقق سيجعلك تقول: أنا تغيرت من شخص أ إلى شخص ب؟",
+      "answer_type": "short_text",
+      "options_ar": [],
+      "options_key": null,
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "transformation_marker"
+      ],
+      "decision_impact": "ينتج لغة تقرير شخصية وقوية.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.4,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M2-014",
+      "module_id": "M2",
+      "module_name": "الهدف والتحول المطلوب",
+      "version": "1.0",
+      "text_ar": "هل تبحث عن مهارة واحدة واضحة أم بناء مسار متكامل؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "مهارة واحدة واضحة",
+        "مسار متكامل",
+        "استكشاف قبل المسار",
+        "مراجعة مستشار"
+      ],
+      "options_key": "scope_type",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "scope_type"
+      ],
+      "decision_impact": "يفرق بين single_course وpathway.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.5,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M2-015",
+      "module_id": "M2",
+      "module_name": "الهدف والتحول المطلوب",
+      "version": "1.0",
+      "text_ar": "ما مدى استعدادك لتطبيق عملي ومهام خارج مشاهدة المحتوى؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "منخفضة جدا",
+        "منخفضة",
+        "متوسطة",
+        "عالية",
+        "حاسمة"
+      ],
+      "options_key": "priority_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "application_readiness"
+      ],
+      "decision_impact": "يفضل المسارات العملية أو النظرية.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.2,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M2-016",
+      "module_id": "M2",
+      "module_name": "الهدف والتحول المطلوب",
+      "version": "1.0",
+      "text_ar": "إذا ظهر أن ما تحتاجه غير متوفر في وجيز حاليا، ماذا تفضل؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "إظهارها في الخطة وانتظار توفرها",
+        "اقتراح مصدر خارجي موثوق",
+        "استبدالها فقط إذا وجد بديل قريب",
+        "التواصل معي عند توفرها"
+      ],
+      "options_key": "unavailable_skill_preference",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "unavailable_skill_preference"
+      ],
+      "decision_impact": "يضبط عرض المهارات غير المتوفرة والإشعارات.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3A-001",
+      "module_id": "M3A",
+      "module_name": "طالب أو خريج جديد",
+      "version": "1.0",
+      "text_ar": "ما مرحلتك الدراسية الحالية أو الأقرب؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "مدرسة",
+        "دبلوم",
+        "بكالوريوس",
+        "ماجستير أو أكثر",
+        "تعلم ذاتي",
+        "غير ذلك"
+      ],
+      "options_key": "education",
+      "persona_scope": [
+        "student",
+        "graduate"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "student_stage"
+      ],
+      "decision_impact": "يضبط أسئلة الوظيفة الأولى.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3A-002",
+      "module_id": "M3A",
+      "module_name": "طالب أو خريج جديد",
+      "version": "1.0",
+      "text_ar": "ما المجال أو التخصص الذي تدرسه أو تخرجت منه؟",
+      "answer_type": "single_choice_or_text",
+      "options_ar": [],
+      "options_key": null,
+      "persona_scope": [
+        "student",
+        "graduate"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "major_domain"
+      ],
+      "decision_impact": "يربط المسار بالمهن المحتملة.",
+      "sensitivity_level": "medium",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3A-003",
+      "module_id": "M3A",
+      "module_name": "طالب أو خريج جديد",
+      "version": "1.0",
+      "text_ar": "هل لديك تصور واضح لأول وظيفة تريدها؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "غير واضح",
+        "غامض قليلا",
+        "متوسط",
+        "واضح",
+        "واضح جدا"
+      ],
+      "options_key": "clarity_5",
+      "persona_scope": [
+        "student",
+        "graduate"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "first_job_clarity"
+      ],
+      "decision_impact": "يفتح ميول مهنية عند الغموض.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.5,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3A-004",
+      "module_id": "M3A",
+      "module_name": "طالب أو خريج جديد",
+      "version": "1.0",
+      "text_ar": "هل لديك سيرة ذاتية أو LinkedIn أو ملف تعريفي جاهز؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "نعم",
+        "لا",
+        "لست متأكدا"
+      ],
+      "options_key": "yes_no_unsure",
+      "persona_scope": [
+        "student",
+        "graduate"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "career_assets"
+      ],
+      "decision_impact": "يوصي بمسار جاهزية وظيفية.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3A-005",
+      "module_id": "M3A",
+      "module_name": "طالب أو خريج جديد",
+      "version": "1.0",
+      "text_ar": "هل لديك مشروع أو ملف أعمال يمكن عرضه؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "لا يوجد دليل",
+        "تعلمت عنها فقط",
+        "طبقتها مرة",
+        "طبقتها عدة مرات",
+        "لدي نتيجة أو مشروع أو شهادة"
+      ],
+      "options_key": "evidence_level",
+      "persona_scope": [
+        "student",
+        "graduate"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "portfolio_evidence"
+      ],
+      "decision_impact": "يفرق بين تعلم نظري وجاهزية سوق.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.3,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3A-006",
+      "module_id": "M3A",
+      "module_name": "طالب أو خريج جديد",
+      "version": "1.0",
+      "text_ar": "ما مدى ثقتك في مقابلات العمل أو عرض نفسك؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "student",
+        "graduate"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "interview_confidence"
+      ],
+      "decision_impact": "يوصي بتواصل ومقابلات.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3A-007",
+      "module_id": "M3A",
+      "module_name": "طالب أو خريج جديد",
+      "version": "1.0",
+      "text_ar": "هل حصلت على تدريب عملي أو تطوع أو عمل جزئي مرتبط بهدفك؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "لا يوجد دليل",
+        "تعلمت عنها فقط",
+        "طبقتها مرة",
+        "طبقتها عدة مرات",
+        "لدي نتيجة أو مشروع أو شهادة"
+      ],
+      "options_key": "evidence_level",
+      "persona_scope": [
+        "student",
+        "graduate"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "practical_exposure"
+      ],
+      "decision_impact": "يقيس أدلة الخبرة.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3A-008",
+      "module_id": "M3A",
+      "module_name": "طالب أو خريج جديد",
+      "version": "1.0",
+      "text_ar": "ما مستوى اللغة الإنجليزية المطلوب لهدفك مقارنة بمستواك؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "student",
+        "graduate"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "english_gap"
+      ],
+      "decision_impact": "يوصي بمسار لغة عند الحاجة.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "ESCO",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3A-009",
+      "module_id": "M3A",
+      "module_name": "طالب أو خريج جديد",
+      "version": "1.0",
+      "text_ar": "هل تعرف المهارات المطلوبة في الوظيفة التي تريدها؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "غير واضح",
+        "غامض قليلا",
+        "متوسط",
+        "واضح",
+        "واضح جدا"
+      ],
+      "options_key": "clarity_5",
+      "persona_scope": [
+        "student",
+        "graduate"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "job_skill_awareness"
+      ],
+      "decision_impact": "يفتح توصيف مهني O*NET/ESCO لاحقا.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3A-010",
+      "module_id": "M3A",
+      "module_name": "طالب أو خريج جديد",
+      "version": "1.0",
+      "text_ar": "هل تشعر أن تخصصك الجامعي مناسب لهدفك؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "لا ينطبق أبدا",
+        "ينطبق قليلا",
+        "ينطبق أحيانا",
+        "ينطبق غالبا",
+        "ينطبق جدا"
+      ],
+      "options_key": "likert_5",
+      "persona_scope": [
+        "student",
+        "graduate"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "major_goal_fit"
+      ],
+      "decision_impact": "يفتح مسار جسر أو تغيير مسار.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3A-011",
+      "module_id": "M3A",
+      "module_name": "طالب أو خريج جديد",
+      "version": "1.0",
+      "text_ar": "ما أكبر فجوة تمنعك من أول فرصة؟",
+      "answer_type": "single_choice_or_text",
+      "options_ar": [],
+      "options_key": null,
+      "persona_scope": [
+        "student",
+        "graduate"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "first_opportunity_gap"
+      ],
+      "decision_impact": "يوجه النواة الأولى للمسار.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.5,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3A-012",
+      "module_id": "M3A",
+      "module_name": "طالب أو خريج جديد",
+      "version": "1.0",
+      "text_ar": "هل يوجد ضغط عائلي أو اجتماعي يؤثر على اختيارك؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "نعم",
+        "لا",
+        "أفضل عدم الإجابة"
+      ],
+      "options_key": "yes_no_optional",
+      "persona_scope": [
+        "student",
+        "graduate"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "social_pressure"
+      ],
+      "decision_impact": "يفتح مستشار عند تعارض شديد.",
+      "sensitivity_level": "medium",
+      "required_level": "optional",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3B-001",
+      "module_id": "M3B",
+      "module_name": "موظف قطاع خاص أو حكومي",
+      "version": "1.0",
+      "text_ar": "هل تعمل في قطاع خاص أم حكومي أم غير ذلك؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "خاص",
+        "حكومي",
+        "منظمات/تعليم",
+        "تقني",
+        "تجاري",
+        "صحي",
+        "مالي",
+        "غير ذلك"
+      ],
+      "options_key": "sector",
+      "persona_scope": [
+        "employee",
+        "gov_employee"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "sector"
+      ],
+      "decision_impact": "يفرق بين مسارات الموظف الحكومي والخاص.",
+      "sensitivity_level": "medium",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3B-002",
+      "module_id": "M3B",
+      "module_name": "موظف قطاع خاص أو حكومي",
+      "version": "1.0",
+      "text_ar": "ما عائلة وظيفتك الأقرب؟",
+      "answer_type": "single_choice_or_text",
+      "options_ar": [],
+      "options_key": null,
+      "persona_scope": [
+        "employee",
+        "gov_employee"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "job_family"
+      ],
+      "decision_impact": "يربط التشخيص بمسارات وظيفية جاهزة.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.5,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3B-003",
+      "module_id": "M3B",
+      "module_name": "موظف قطاع خاص أو حكومي",
+      "version": "1.0",
+      "text_ar": "هل تتعامل مباشرة مع الجمهور أو العملاء؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "نعم",
+        "لا",
+        "لست متأكدا"
+      ],
+      "options_key": "yes_no_unsure",
+      "persona_scope": [
+        "employee",
+        "gov_employee"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "public_facing"
+      ],
+      "decision_impact": "يفتح مهارات خدمة وتواصل.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3B-004",
+      "module_id": "M3B",
+      "module_name": "موظف قطاع خاص أو حكومي",
+      "version": "1.0",
+      "text_ar": "ما المهمة التي تؤثر أكثر على تقييم أدائك؟",
+      "answer_type": "short_text",
+      "options_ar": [],
+      "options_key": null,
+      "persona_scope": [
+        "employee",
+        "gov_employee"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "performance_driver"
+      ],
+      "decision_impact": "يربط التعلم بمؤشر أداء حقيقي.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.5,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3B-005",
+      "module_id": "M3B",
+      "module_name": "موظف قطاع خاص أو حكومي",
+      "version": "1.0",
+      "text_ar": "هل هدفك ترقية، أداء أفضل، انتقال داخلي، أم قيادة فريق؟",
+      "answer_type": "single_choice_or_text",
+      "options_ar": [],
+      "options_key": null,
+      "persona_scope": [
+        "employee",
+        "gov_employee"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "employee_goal"
+      ],
+      "decision_impact": "يضبط مسار الموظف.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.4,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3B-006",
+      "module_id": "M3B",
+      "module_name": "موظف قطاع خاص أو حكومي",
+      "version": "1.0",
+      "text_ar": "ما نوع الملاحظات التي تسمعها غالبا من مديرك أو زملائك؟",
+      "answer_type": "single_choice_or_text",
+      "options_ar": [],
+      "options_key": null,
+      "persona_scope": [
+        "employee",
+        "gov_employee"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "feedback_signal"
+      ],
+      "decision_impact": "يكشف فجوات سلوكية أو تقنية.",
+      "sensitivity_level": "medium",
+      "required_level": "deep",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3B-007",
+      "module_id": "M3B",
+      "module_name": "موظف قطاع خاص أو حكومي",
+      "version": "1.0",
+      "text_ar": "ما أكبر عائق في عملك اليومي؟",
+      "answer_type": "single_choice_or_text",
+      "options_ar": [],
+      "options_key": null,
+      "persona_scope": [
+        "employee",
+        "gov_employee"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "work_obstacle"
+      ],
+      "decision_impact": "يوجه مسار حل المشكلات أو التواصل أو الأدوات.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3B-008",
+      "module_id": "M3B",
+      "module_name": "موظف قطاع خاص أو حكومي",
+      "version": "1.0",
+      "text_ar": "ما مستوى استخدامك للأدوات الرقمية في عملك؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "employee",
+        "gov_employee"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "work_digital_level"
+      ],
+      "decision_impact": "يوصي بمهارات رقمية أو تحول رقمي.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "DigComp",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3B-009",
+      "module_id": "M3B",
+      "module_name": "موظف قطاع خاص أو حكومي",
+      "version": "1.0",
+      "text_ar": "ما مدى قوتك في كتابة تقارير أو مذكرات أو عروض عمل؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "employee",
+        "gov_employee"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "business_writing"
+      ],
+      "decision_impact": "يوصي بكتابة مهنية وبلاغة.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3B-010",
+      "module_id": "M3B",
+      "module_name": "موظف قطاع خاص أو حكومي",
+      "version": "1.0",
+      "text_ar": "ما مدى قوتك في إدارة أصحاب المصلحة المختلفين؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "employee",
+        "gov_employee"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "stakeholder_management"
+      ],
+      "decision_impact": "يوصي بتواصل وتأثير.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3B-011",
+      "module_id": "M3B",
+      "module_name": "موظف قطاع خاص أو حكومي",
+      "version": "1.0",
+      "text_ar": "هل تتعامل مع مشتريات، عطاءات، مالية، موازنة، أو موارد بشرية؟",
+      "answer_type": "multi_choice",
+      "options_ar": [
+        "خدمة جمهور",
+        "مشتريات/عطاءات",
+        "مالية/موازنة",
+        "موارد بشرية",
+        "مبيعات",
+        "عمليات",
+        "تحول رقمي",
+        "قيادة",
+        "غير ذلك"
+      ],
+      "options_key": "function_specialization",
+      "persona_scope": [
+        "employee",
+        "gov_employee"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "function_specialization"
+      ],
+      "decision_impact": "يفتح مسارات تخصصية للجهات.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3B-012",
+      "module_id": "M3B",
+      "module_name": "موظف قطاع خاص أو حكومي",
+      "version": "1.0",
+      "text_ar": "هل تدير أشخاصا أو مشاريع أو اجتماعات؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "نعم",
+        "لا",
+        "لست متأكدا"
+      ],
+      "options_key": "yes_no_unsure",
+      "persona_scope": [
+        "employee",
+        "gov_employee"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "leadership_context"
+      ],
+      "decision_impact": "يفتح قيادة وإدارة مشاريع.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3B-013",
+      "module_id": "M3B",
+      "module_name": "موظف قطاع خاص أو حكومي",
+      "version": "1.0",
+      "text_ar": "ما مدى قدرتك على تحسين إجراءات العمل لا تنفيذها فقط؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "employee",
+        "gov_employee"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "process_improvement"
+      ],
+      "decision_impact": "يوصي بتفكير تحليلي وتحسين عمليات.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "WEF",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3B-014",
+      "module_id": "M3B",
+      "module_name": "موظف قطاع خاص أو حكومي",
+      "version": "1.0",
+      "text_ar": "هل تحتاج في عملك إلى فهم أساسيات اقتصاد أو مالية عامة أو أعمال؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "منخفضة جدا",
+        "منخفضة",
+        "متوسطة",
+        "عالية",
+        "حاسمة"
+      ],
+      "options_key": "priority_5",
+      "persona_scope": [
+        "employee",
+        "gov_employee"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "economic_financial_need"
+      ],
+      "decision_impact": "يفتح اقتصاد وثقافة مالية.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3B-015",
+      "module_id": "M3B",
+      "module_name": "موظف قطاع خاص أو حكومي",
+      "version": "1.0",
+      "text_ar": "ما مدى جاهزيتك لتعلم الذكاء الاصطناعي لاستخدامه في العمل؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "منخفضة جدا",
+        "منخفضة",
+        "متوسطة",
+        "عالية",
+        "حاسمة"
+      ],
+      "options_key": "priority_5",
+      "persona_scope": [
+        "employee",
+        "gov_employee"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "ai_work_readiness"
+      ],
+      "decision_impact": "يفتح AI literacy واستخدام مسؤول.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "UNESCO AI",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3B-016",
+      "module_id": "M3B",
+      "module_name": "موظف قطاع خاص أو حكومي",
+      "version": "1.0",
+      "text_ar": "هل تشعر أن ضغط العمل يقلل تركيزك أو إكمالك للتعلم؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "لا ينطبق أبدا",
+        "ينطبق قليلا",
+        "ينطبق أحيانا",
+        "ينطبق غالبا",
+        "ينطبق جدا"
+      ],
+      "options_key": "likert_5",
+      "persona_scope": [
+        "employee",
+        "gov_employee"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "focus_energy_constraint"
+      ],
+      "decision_impact": "يضبط العبء والدعم دون تشخيص صحي.",
+      "sensitivity_level": "medium",
+      "required_level": "optional",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3C-001",
+      "module_id": "M3C",
+      "module_name": "رائد أعمال أو مستقل",
+      "version": "1.0",
+      "text_ar": "في أي مرحلة مشروعك أو عملك الحر الآن؟",
+      "answer_type": "single_choice_or_text",
+      "options_ar": [],
+      "options_key": null,
+      "persona_scope": [
+        "entrepreneur",
+        "freelancer"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "business_stage"
+      ],
+      "decision_impact": "يضبط مسار التأسيس أو النمو.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.5,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3C-002",
+      "module_id": "M3C",
+      "module_name": "رائد أعمال أو مستقل",
+      "version": "1.0",
+      "text_ar": "هل عرضك أو منتجك واضح لمن يشتريه؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "غير واضح",
+        "غامض قليلا",
+        "متوسط",
+        "واضح",
+        "واضح جدا"
+      ],
+      "options_key": "clarity_5",
+      "persona_scope": [
+        "entrepreneur",
+        "freelancer"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "offer_clarity"
+      ],
+      "decision_impact": "يفتح تموضع وعرض قيمة.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3C-003",
+      "module_id": "M3C",
+      "module_name": "رائد أعمال أو مستقل",
+      "version": "1.0",
+      "text_ar": "ما أكبر عنق زجاجة حاليا: منتج، تسويق، مبيعات، تسعير، تشغيل، فريق، أو مال؟",
+      "answer_type": "single_choice_or_text",
+      "options_ar": [],
+      "options_key": null,
+      "persona_scope": [
+        "entrepreneur",
+        "freelancer"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "business_bottleneck"
+      ],
+      "decision_impact": "يوجه النواة الأولى للمسار.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 2.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3C-004",
+      "module_id": "M3C",
+      "module_name": "رائد أعمال أو مستقل",
+      "version": "1.0",
+      "text_ar": "هل لديك عملاء حاليون أو مبيعات متكررة؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "نعم",
+        "لا",
+        "لست متأكدا"
+      ],
+      "options_key": "yes_no_unsure",
+      "persona_scope": [
+        "entrepreneur",
+        "freelancer"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "revenue_signal"
+      ],
+      "decision_impact": "يفرق بين إثبات سوق ونمو.",
+      "sensitivity_level": "medium",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3C-005",
+      "module_id": "M3C",
+      "module_name": "رائد أعمال أو مستقل",
+      "version": "1.0",
+      "text_ar": "ما مدى ثقتك في التسعير الحالي؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "entrepreneur",
+        "freelancer"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "pricing_confidence"
+      ],
+      "decision_impact": "يوصي بتسعير ونموذج أعمال.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3C-006",
+      "module_id": "M3C",
+      "module_name": "رائد أعمال أو مستقل",
+      "version": "1.0",
+      "text_ar": "من أين يأتي العملاء غالبا؟",
+      "answer_type": "single_choice_or_text",
+      "options_ar": [],
+      "options_key": null,
+      "persona_scope": [
+        "entrepreneur",
+        "freelancer"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "acquisition_channel"
+      ],
+      "decision_impact": "يوجه تسويق ومبيعات.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3C-007",
+      "module_id": "M3C",
+      "module_name": "رائد أعمال أو مستقل",
+      "version": "1.0",
+      "text_ar": "هل تتحدث مع العملاء لفهم مشاكلهم قبل بناء الحل؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "لا ينطبق أبدا",
+        "ينطبق قليلا",
+        "ينطبق أحيانا",
+        "ينطبق غالبا",
+        "ينطبق جدا"
+      ],
+      "options_key": "likert_5",
+      "persona_scope": [
+        "entrepreneur",
+        "freelancer"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "customer_discovery"
+      ],
+      "decision_impact": "يوصي ببحث عملاء وتجارب.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3C-008",
+      "module_id": "M3C",
+      "module_name": "رائد أعمال أو مستقل",
+      "version": "1.0",
+      "text_ar": "ما مدى قوتك في إغلاق البيع أو التفاوض؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "entrepreneur",
+        "freelancer"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "sales_negotiation"
+      ],
+      "decision_impact": "يوصي ببيع وتفاوض.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3C-009",
+      "module_id": "M3C",
+      "module_name": "رائد أعمال أو مستقل",
+      "version": "1.0",
+      "text_ar": "هل تعرف أرقامك الأساسية: تكلفة، هامش، تدفق نقدي؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "entrepreneur",
+        "freelancer"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "business_finance"
+      ],
+      "decision_impact": "يفتح ثقافة مالية وإدارة نقد.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3C-010",
+      "module_id": "M3C",
+      "module_name": "رائد أعمال أو مستقل",
+      "version": "1.0",
+      "text_ar": "ما مدى انتظام العمليات اليومية في مشروعك؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "entrepreneur",
+        "freelancer"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "operations_maturity"
+      ],
+      "decision_impact": "يوصي بعمليات وإدارة.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3C-011",
+      "module_id": "M3C",
+      "module_name": "رائد أعمال أو مستقل",
+      "version": "1.0",
+      "text_ar": "هل تعمل وحدك أم مع فريق؟",
+      "answer_type": "single_choice_or_text",
+      "options_ar": [],
+      "options_key": null,
+      "persona_scope": [
+        "entrepreneur",
+        "freelancer"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "team_context"
+      ],
+      "decision_impact": "يضبط قيادة وتفويض.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3C-012",
+      "module_id": "M3C",
+      "module_name": "رائد أعمال أو مستقل",
+      "version": "1.0",
+      "text_ar": "هل تستخدم أدوات رقمية أو ذكاء اصطناعي في التسويق أو التشغيل؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "entrepreneur",
+        "freelancer"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "business_ai_digital"
+      ],
+      "decision_impact": "يفتح أتمتة وAI عملي.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "DigComp",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3C-013",
+      "module_id": "M3C",
+      "module_name": "رائد أعمال أو مستقل",
+      "version": "1.0",
+      "text_ar": "ما الجانب القانوني أو المحاسبي الذي تشعر أنه غير واضح؟",
+      "answer_type": "single_choice_or_text",
+      "options_ar": [],
+      "options_key": null,
+      "persona_scope": [
+        "entrepreneur",
+        "freelancer"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "legal_accounting_gap"
+      ],
+      "decision_impact": "يسجل مهارات غير متوفرة أو إحالة محتوى.",
+      "sensitivity_level": "medium",
+      "required_level": "deep",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3C-014",
+      "module_id": "M3C",
+      "module_name": "رائد أعمال أو مستقل",
+      "version": "1.0",
+      "text_ar": "إذا تعلمت شيئا واحدا الآن سينعكس على مشروعك خلال 30 يوما، ما هو؟",
+      "answer_type": "short_text",
+      "options_ar": [],
+      "options_key": null,
+      "persona_scope": [
+        "entrepreneur",
+        "freelancer"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "quick_business_win"
+      ],
+      "decision_impact": "يرشح مسارا قصيرا أو دورة مفردة.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.3,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3D-001",
+      "module_id": "M3D",
+      "module_name": "والد/والدة أو هدف أسري ورفاه",
+      "version": "1.0",
+      "text_ar": "هل هدفك الحالي مرتبط بدورك كأب/أم أو بالحياة الأسرية؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "نعم",
+        "لا",
+        "لست متأكدا"
+      ],
+      "options_key": "yes_no_unsure",
+      "persona_scope": [
+        "parent",
+        "wellbeing"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "family_goal_flag"
+      ],
+      "decision_impact": "يفتح مسار أسري داعم.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3D-002",
+      "module_id": "M3D",
+      "module_name": "والد/والدة أو هدف أسري ورفاه",
+      "version": "1.0",
+      "text_ar": "ما أكثر جانب تريد تحسينه داخل الأسرة؟",
+      "answer_type": "single_choice_or_text",
+      "options_ar": [],
+      "options_key": null,
+      "persona_scope": [
+        "parent",
+        "wellbeing"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "family_priority"
+      ],
+      "decision_impact": "يوجه تربية، تواصل، أو ثقافة مالية.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3D-003",
+      "module_id": "M3D",
+      "module_name": "والد/والدة أو هدف أسري ورفاه",
+      "version": "1.0",
+      "text_ar": "ما الفئة العمرية الأقرب لأبنائك إن كان السؤال مناسبا؟",
+      "answer_type": "multi_choice",
+      "options_ar": [
+        "أقل من 16",
+        "من 16 إلى 18",
+        "من 19 إلى 24",
+        "من 25 إلى 34",
+        "من 35 إلى 44",
+        "45 فأكثر"
+      ],
+      "options_key": "age_band",
+      "persona_scope": [
+        "parent"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "child_age_band"
+      ],
+      "decision_impact": "يضبط لغة التوصيات الأسرية.",
+      "sensitivity_level": "medium",
+      "required_level": "optional",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3D-004",
+      "module_id": "M3D",
+      "module_name": "والد/والدة أو هدف أسري ورفاه",
+      "version": "1.0",
+      "text_ar": "هل تريد مساعدة الأبناء في الثقة، الخطابة، المال، اللغة، أو التعلم؟",
+      "answer_type": "multi_choice",
+      "options_ar": [
+        "الثقة",
+        "الخطابة",
+        "الثقافة المالية",
+        "اللغة الإنجليزية",
+        "عادات التعلم",
+        "تقليل التشتت",
+        "المهارات الرقمية"
+      ],
+      "options_key": "child_development_goals",
+      "persona_scope": [
+        "parent"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "child_development_goals"
+      ],
+      "decision_impact": "يبني مسارات داعمة للأبناء.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3D-005",
+      "module_id": "M3D",
+      "module_name": "والد/والدة أو هدف أسري ورفاه",
+      "version": "1.0",
+      "text_ar": "ما مدى انتظام وقتك العائلي أو الشخصي بعيدا عن العمل؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "لا ينطبق أبدا",
+        "ينطبق قليلا",
+        "ينطبق أحيانا",
+        "ينطبق غالبا",
+        "ينطبق جدا"
+      ],
+      "options_key": "likert_5",
+      "persona_scope": [
+        "parent",
+        "wellbeing"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "personal_rhythm"
+      ],
+      "decision_impact": "يضبط عبء التعلم والرفاه.",
+      "sensitivity_level": "medium",
+      "required_level": "optional",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3D-006",
+      "module_id": "M3D",
+      "module_name": "والد/والدة أو هدف أسري ورفاه",
+      "version": "1.0",
+      "text_ar": "هل تشعر أن التشتت الرقمي يؤثر على تركيزك؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "لا ينطبق أبدا",
+        "ينطبق قليلا",
+        "ينطبق أحيانا",
+        "ينطبق غالبا",
+        "ينطبق جدا"
+      ],
+      "options_key": "likert_5",
+      "persona_scope": [
+        "parent",
+        "wellbeing"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "digital_distraction"
+      ],
+      "decision_impact": "يفتح عادات تركيز وإدارة انتباه.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "DigComp",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3D-007",
+      "module_id": "M3D",
+      "module_name": "والد/والدة أو هدف أسري ورفاه",
+      "version": "1.0",
+      "text_ar": "ما مدى اهتمامك ببناء عادات صحة ورفاه تدعم التعلم؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "منخفضة جدا",
+        "منخفضة",
+        "متوسطة",
+        "عالية",
+        "حاسمة"
+      ],
+      "options_key": "priority_5",
+      "persona_scope": [
+        "parent",
+        "wellbeing"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "wellbeing_interest"
+      ],
+      "decision_impact": "يضيف توصيات رفاه غير طبية.",
+      "sensitivity_level": "medium",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3D-008",
+      "module_id": "M3D",
+      "module_name": "والد/والدة أو هدف أسري ورفاه",
+      "version": "1.0",
+      "text_ar": "ما نوع المحتوى الأسري الذي تقبله: عملي، حواري، كتب، ورش، أو بودكاست؟",
+      "answer_type": "multi_choice",
+      "options_ar": [
+        "تطبيق عملي",
+        "جلسات حوارية",
+        "كتب وملخصات",
+        "بودكاست",
+        "ورش مباشرة",
+        "نشاطات أسرية قصيرة"
+      ],
+      "options_key": "family_content_format",
+      "persona_scope": [
+        "parent",
+        "wellbeing"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "family_content_format"
+      ],
+      "decision_impact": "يضبط مصادر غير دورية.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3D-009",
+      "module_id": "M3D",
+      "module_name": "والد/والدة أو هدف أسري ورفاه",
+      "version": "1.0",
+      "text_ar": "هل تريد أن يكون المسار لك أنت، لأحد الأبناء، أم للأسرة ككل؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "لي أنا",
+        "لأحد الأبناء",
+        "للأسرة ككل",
+        "لي وللأبناء معا"
+      ],
+      "options_key": "family_beneficiary",
+      "persona_scope": [
+        "parent"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "family_beneficiary"
+      ],
+      "decision_impact": "يضبط صاحب النتيجة والموافقة.",
+      "sensitivity_level": "medium",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3D-010",
+      "module_id": "M3D",
+      "module_name": "والد/والدة أو هدف أسري ورفاه",
+      "version": "1.0",
+      "text_ar": "ما النتيجة الأسرية التي تريد رؤيتها خلال 3 أشهر؟",
+      "answer_type": "short_text",
+      "options_ar": [],
+      "options_key": null,
+      "persona_scope": [
+        "parent"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "family_success_marker"
+      ],
+      "decision_impact": "يضبط خطة قصيرة ومؤشرات متابعة.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3E-001",
+      "module_id": "M3E",
+      "module_name": "غير متأكد أو متغير مسار",
+      "version": "1.0",
+      "text_ar": "ما السبب الأقرب لعدم وضوح اتجاهك؟",
+      "answer_type": "single_choice_or_text",
+      "options_ar": [],
+      "options_key": null,
+      "persona_scope": [
+        "unclear",
+        "career_changer"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "uncertainty_reason"
+      ],
+      "decision_impact": "يفرق بين غموض ميول، نقص معلومات، أو خوف.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.5,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3E-002",
+      "module_id": "M3E",
+      "module_name": "غير متأكد أو متغير مسار",
+      "version": "1.0",
+      "text_ar": "ما المجالات التي تجذبك ولو قليلا؟",
+      "answer_type": "multi_choice",
+      "options_ar": [
+        "تقنية",
+        "أعمال",
+        "تسويق",
+        "تعليم",
+        "صناعة محتوى",
+        "قيادة",
+        "حكومة/سياسات",
+        "مالية",
+        "لا أعرف"
+      ],
+      "options_key": "domain_shortlist",
+      "persona_scope": [
+        "unclear",
+        "career_changer"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "interest_shortlist"
+      ],
+      "decision_impact": "يفتح RIASEC ومسار استكشاف.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3E-003",
+      "module_id": "M3E",
+      "module_name": "غير متأكد أو متغير مسار",
+      "version": "1.0",
+      "text_ar": "ما المجالات التي لا تريدها إطلاقا؟",
+      "answer_type": "multi_choice",
+      "options_ar": [
+        "تقنية",
+        "أعمال",
+        "تسويق",
+        "تعليم",
+        "صناعة محتوى",
+        "قيادة",
+        "حكومة/سياسات",
+        "مالية",
+        "لا أعرف"
+      ],
+      "options_key": "domain_shortlist",
+      "persona_scope": [
+        "unclear",
+        "career_changer"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "excluded_domains"
+      ],
+      "decision_impact": "يمنع توصيات مزعجة.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3E-004",
+      "module_id": "M3E",
+      "module_name": "غير متأكد أو متغير مسار",
+      "version": "1.0",
+      "text_ar": "هل جرّبت عمليا أي مسار قبل الحكم عليه؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "لا يوجد دليل",
+        "تعلمت عنها فقط",
+        "طبقتها مرة",
+        "طبقتها عدة مرات",
+        "لدي نتيجة أو مشروع أو شهادة"
+      ],
+      "options_key": "evidence_level",
+      "persona_scope": [
+        "unclear",
+        "career_changer"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "exploration_evidence"
+      ],
+      "decision_impact": "يفرق بين تخيل وتجربة.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3E-005",
+      "module_id": "M3E",
+      "module_name": "غير متأكد أو متغير مسار",
+      "version": "1.0",
+      "text_ar": "ما أقل دخل أو استقرار تحتاجه أثناء تغيير المسار؟",
+      "answer_type": "single_choice_or_text",
+      "options_ar": [],
+      "options_key": null,
+      "persona_scope": [
+        "career_changer"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "minimum_stability_need"
+      ],
+      "decision_impact": "يضبط مخاطرة الانتقال.",
+      "sensitivity_level": "medium",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3E-006",
+      "module_id": "M3E",
+      "module_name": "غير متأكد أو متغير مسار",
+      "version": "1.0",
+      "text_ar": "ما المهارات القابلة للنقل التي تشعر أنك تملكها؟",
+      "answer_type": "multi_choice",
+      "options_ar": [
+        "تواصل",
+        "تنظيم",
+        "تحليل",
+        "كتابة",
+        "مبيعات",
+        "تعليم/تدريب",
+        "قيادة",
+        "تعلم سريع",
+        "علاقات"
+      ],
+      "options_key": "transferable_skills",
+      "persona_scope": [
+        "unclear",
+        "career_changer"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "transferable_skills"
+      ],
+      "decision_impact": "يبني جسرا من الحالي إلى الجديد.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3E-007",
+      "module_id": "M3E",
+      "module_name": "غير متأكد أو متغير مسار",
+      "version": "1.0",
+      "text_ar": "ما أكثر خوف يمنعك من الالتزام بمسار؟",
+      "answer_type": "single_choice_or_text",
+      "options_ar": [],
+      "options_key": null,
+      "persona_scope": [
+        "unclear",
+        "career_changer"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "commitment_fear"
+      ],
+      "decision_impact": "يفتح مستشار أو مسار تجربة.",
+      "sensitivity_level": "medium",
+      "required_level": "optional",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3E-008",
+      "module_id": "M3E",
+      "module_name": "غير متأكد أو متغير مسار",
+      "version": "1.0",
+      "text_ar": "هل تقبل تجربة قصيرة لمدة أسبوعين قبل اختيار مسار طويل؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "نعم",
+        "لا",
+        "لست متأكدا"
+      ],
+      "options_key": "yes_no_unsure",
+      "persona_scope": [
+        "unclear",
+        "career_changer"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "experiment_readiness"
+      ],
+      "decision_impact": "يدعم قرار exploration.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.2,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3E-009",
+      "module_id": "M3E",
+      "module_name": "غير متأكد أو متغير مسار",
+      "version": "1.0",
+      "text_ar": "هل لديك موعد خارجي يجبرك على قرار قريب؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "خلال شهر",
+        "3 أشهر",
+        "6 أشهر",
+        "من 9 إلى 12 شهرا",
+        "أكثر من سنة",
+        "لا يوجد موعد"
+      ],
+      "options_key": "timeline",
+      "persona_scope": [
+        "unclear",
+        "career_changer"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "decision_deadline"
+      ],
+      "decision_impact": "يضبط سرعة التشخيص.",
+      "sensitivity_level": "medium",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M3E-010",
+      "module_id": "M3E",
+      "module_name": "غير متأكد أو متغير مسار",
+      "version": "1.0",
+      "text_ar": "من يمكنه دعمك أو مراجعة قرارك؟",
+      "answer_type": "single_choice_or_text",
+      "options_ar": [],
+      "options_key": null,
+      "persona_scope": [
+        "unclear",
+        "career_changer"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "support_network"
+      ],
+      "decision_impact": "يفتح جلسة مستشار عند ضعف الدعم.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-001",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في التفكير التحليلي: تحليل مشكلة إلى أسباب وبدائل.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "analytical_thinking",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "WEF",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-002",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في التفكير الإبداعي: توليد حلول أو أفكار غير تقليدية.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "creative_thinking",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "WEF",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-003",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في أساسيات الذكاء الاصطناعي: فهم ما يستطيع AI فعله وما لا يستطيع.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "ai_literacy",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "UNESCO AI",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-004",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في استخدام أدوات AI في العمل أو التعلم بطريقة مسؤولة.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "ai_applied_use",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "UNESCO AI",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-005",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في المهارات الرقمية العامة: الملفات، السحابة، الاجتماعات، البحث، والإنتاجية.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "digital_literacy",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "DigComp",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-006",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في التعامل مع البيانات: قراءة جداول، مؤشرات، ورسوم بسيطة.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "data_literacy",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "DigComp",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-007",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في الأمان الرقمي والخصوصية: كلمات مرور، احتيال، مشاركة بيانات.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "cyber_safety",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "DigComp",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-008",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في إنتاج محتوى رقمي: عروض، مستندات، صور، أو فيديوهات بسيطة.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "digital_content",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "DigComp",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-009",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في اللغة الإنجليزية للتعلم والعمل.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "english",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "ESCO",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-010",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في الكتابة العربية المهنية: بريد، تقرير، عرض، أو مذكرة.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "arabic_business_writing",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-011",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في الخطابة والعرض والتحدث أمام الآخرين.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "public_speaking",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-012",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في التواصل والإقناع دون تصعيد أو غموض.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "communication_persuasion",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-013",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في التفاوض وطلب ما تريد بطريقة واضحة.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "negotiation",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-014",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في الثقافة المالية الشخصية: ميزانية، ادخار، ديون، استثمار أولي.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "financial_literacy",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "OECD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-015",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في أساسيات الاقتصاد وفهم الأسواق والقرارات العامة.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "economics_basics",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "OECD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-016",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في التسويق الرقمي: جمهور، رسالة، قناة، قياس.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "digital_marketing",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "WEF",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-017",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في المبيعات: فهم حاجة العميل، عرض القيمة، وإغلاق قرار.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "sales",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-018",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في إدارة المشاريع والمهام والمواعيد.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "project_management",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-019",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في القيادة والتأثير الاجتماعي.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "leadership_influence",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "WEF",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-020",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في الذكاء العاطفي في العمل والتعامل مع الآخرين.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "emotional_intelligence",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-021",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في حل المشكلات واتخاذ القرار تحت نقص المعلومات.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "problem_solving",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-022",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في البحث والتعلم الذاتي من مصادر موثوقة.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "research_learning",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "DigComp",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-023",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في مرونة التعلم: تغيير الطريقة عندما لا تنجح الخطة الأولى.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "learning_agility",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "WEF",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-024",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في إدارة الوقت والطاقة على مدار الأسبوع.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "time_energy_management",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-025",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في تقليل التشتت وبناء تركيز عملي.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "focus_management",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-026",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في أساسيات بناء مشروع أو مبادرة صغيرة.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "entrepreneurship_basics",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "WEF",
+      "active": true
+    },
+    {
+      "question_id": "QB-M5-001",
+      "module_id": "M5",
+      "module_name": "الميول المهنية RIASEC",
+      "version": "1.0",
+      "text_ar": "أستمتع بالأعمال التي تتضمن أدوات، أجهزة، أو نتائج ملموسة.",
+      "answer_type": "likert_5",
+      "options_ar": [
+        "لا ينطبق أبدا",
+        "ينطبق قليلا",
+        "ينطبق أحيانا",
+        "ينطبق غالبا",
+        "ينطبق جدا"
+      ],
+      "options_key": "likert_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "riasec_realistic",
+        "interest_vector"
+      ],
+      "decision_impact": "يرفع أو يخفض ملاءمة المسارات المهنية حسب نمط الميل.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.8,
+      "reference_anchor": "RIASEC/O*NET Interest Profiler",
+      "active": true
+    },
+    {
+      "question_id": "QB-M5-002",
+      "module_id": "M5",
+      "module_name": "الميول المهنية RIASEC",
+      "version": "1.0",
+      "text_ar": "أحب إصلاح الأشياء أو تحسين طريقة عملها.",
+      "answer_type": "likert_5",
+      "options_ar": [
+        "لا ينطبق أبدا",
+        "ينطبق قليلا",
+        "ينطبق أحيانا",
+        "ينطبق غالبا",
+        "ينطبق جدا"
+      ],
+      "options_key": "likert_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "riasec_realistic",
+        "interest_vector"
+      ],
+      "decision_impact": "يرفع أو يخفض ملاءمة المسارات المهنية حسب نمط الميل.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.8,
+      "reference_anchor": "RIASEC/O*NET Interest Profiler",
+      "active": true
+    },
+    {
+      "question_id": "QB-M5-003",
+      "module_id": "M5",
+      "module_name": "الميول المهنية RIASEC",
+      "version": "1.0",
+      "text_ar": "أفضل مهاما عملية واضحة على نقاشات طويلة مجردة.",
+      "answer_type": "likert_5",
+      "options_ar": [
+        "لا ينطبق أبدا",
+        "ينطبق قليلا",
+        "ينطبق أحيانا",
+        "ينطبق غالبا",
+        "ينطبق جدا"
+      ],
+      "options_key": "likert_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "riasec_realistic",
+        "interest_vector"
+      ],
+      "decision_impact": "يرفع أو يخفض ملاءمة المسارات المهنية حسب نمط الميل.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.8,
+      "reference_anchor": "RIASEC/O*NET Interest Profiler",
+      "active": true
+    },
+    {
+      "question_id": "QB-M5-004",
+      "module_id": "M5",
+      "module_name": "الميول المهنية RIASEC",
+      "version": "1.0",
+      "text_ar": "أستمتع بتحليل معلومات معقدة للوصول إلى تفسير.",
+      "answer_type": "likert_5",
+      "options_ar": [
+        "لا ينطبق أبدا",
+        "ينطبق قليلا",
+        "ينطبق أحيانا",
+        "ينطبق غالبا",
+        "ينطبق جدا"
+      ],
+      "options_key": "likert_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "riasec_investigative",
+        "interest_vector"
+      ],
+      "decision_impact": "يرفع أو يخفض ملاءمة المسارات المهنية حسب نمط الميل.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.8,
+      "reference_anchor": "RIASEC/O*NET Interest Profiler",
+      "active": true
+    },
+    {
+      "question_id": "QB-M5-005",
+      "module_id": "M5",
+      "module_name": "الميول المهنية RIASEC",
+      "version": "1.0",
+      "text_ar": "أحب البحث والقراءة العميقة قبل اتخاذ قرار.",
+      "answer_type": "likert_5",
+      "options_ar": [
+        "لا ينطبق أبدا",
+        "ينطبق قليلا",
+        "ينطبق أحيانا",
+        "ينطبق غالبا",
+        "ينطبق جدا"
+      ],
+      "options_key": "likert_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "riasec_investigative",
+        "interest_vector"
+      ],
+      "decision_impact": "يرفع أو يخفض ملاءمة المسارات المهنية حسب نمط الميل.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.8,
+      "reference_anchor": "RIASEC/O*NET Interest Profiler",
+      "active": true
+    },
+    {
+      "question_id": "QB-M5-006",
+      "module_id": "M5",
+      "module_name": "الميول المهنية RIASEC",
+      "version": "1.0",
+      "text_ar": "تجذبني الأسئلة التي لا تملك إجابة مباشرة.",
+      "answer_type": "likert_5",
+      "options_ar": [
+        "لا ينطبق أبدا",
+        "ينطبق قليلا",
+        "ينطبق أحيانا",
+        "ينطبق غالبا",
+        "ينطبق جدا"
+      ],
+      "options_key": "likert_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "riasec_investigative",
+        "interest_vector"
+      ],
+      "decision_impact": "يرفع أو يخفض ملاءمة المسارات المهنية حسب نمط الميل.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.8,
+      "reference_anchor": "RIASEC/O*NET Interest Profiler",
+      "active": true
+    },
+    {
+      "question_id": "QB-M5-007",
+      "module_id": "M5",
+      "module_name": "الميول المهنية RIASEC",
+      "version": "1.0",
+      "text_ar": "أحب صناعة محتوى أو تصميم أو سرد قصة بطريقة مختلفة.",
+      "answer_type": "likert_5",
+      "options_ar": [
+        "لا ينطبق أبدا",
+        "ينطبق قليلا",
+        "ينطبق أحيانا",
+        "ينطبق غالبا",
+        "ينطبق جدا"
+      ],
+      "options_key": "likert_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "riasec_artistic",
+        "interest_vector"
+      ],
+      "decision_impact": "يرفع أو يخفض ملاءمة المسارات المهنية حسب نمط الميل.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.8,
+      "reference_anchor": "RIASEC/O*NET Interest Profiler",
+      "active": true
+    },
+    {
+      "question_id": "QB-M5-008",
+      "module_id": "M5",
+      "module_name": "الميول المهنية RIASEC",
+      "version": "1.0",
+      "text_ar": "أرتاح في المهام المفتوحة التي تسمح بأسلوبي الخاص.",
+      "answer_type": "likert_5",
+      "options_ar": [
+        "لا ينطبق أبدا",
+        "ينطبق قليلا",
+        "ينطبق أحيانا",
+        "ينطبق غالبا",
+        "ينطبق جدا"
+      ],
+      "options_key": "likert_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "riasec_artistic",
+        "interest_vector"
+      ],
+      "decision_impact": "يرفع أو يخفض ملاءمة المسارات المهنية حسب نمط الميل.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.8,
+      "reference_anchor": "RIASEC/O*NET Interest Profiler",
+      "active": true
+    },
+    {
+      "question_id": "QB-M5-009",
+      "module_id": "M5",
+      "module_name": "الميول المهنية RIASEC",
+      "version": "1.0",
+      "text_ar": "تجذبني اللغة، الصورة، الفكرة، أو التجربة الجمالية.",
+      "answer_type": "likert_5",
+      "options_ar": [
+        "لا ينطبق أبدا",
+        "ينطبق قليلا",
+        "ينطبق أحيانا",
+        "ينطبق غالبا",
+        "ينطبق جدا"
+      ],
+      "options_key": "likert_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "riasec_artistic",
+        "interest_vector"
+      ],
+      "decision_impact": "يرفع أو يخفض ملاءمة المسارات المهنية حسب نمط الميل.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.8,
+      "reference_anchor": "RIASEC/O*NET Interest Profiler",
+      "active": true
+    },
+    {
+      "question_id": "QB-M5-010",
+      "module_id": "M5",
+      "module_name": "الميول المهنية RIASEC",
+      "version": "1.0",
+      "text_ar": "أستمتع بمساعدة الآخرين على الفهم أو النمو.",
+      "answer_type": "likert_5",
+      "options_ar": [
+        "لا ينطبق أبدا",
+        "ينطبق قليلا",
+        "ينطبق أحيانا",
+        "ينطبق غالبا",
+        "ينطبق جدا"
+      ],
+      "options_key": "likert_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "riasec_social",
+        "interest_vector"
+      ],
+      "decision_impact": "يرفع أو يخفض ملاءمة المسارات المهنية حسب نمط الميل.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.8,
+      "reference_anchor": "RIASEC/O*NET Interest Profiler",
+      "active": true
+    },
+    {
+      "question_id": "QB-M5-011",
+      "module_id": "M5",
+      "module_name": "الميول المهنية RIASEC",
+      "version": "1.0",
+      "text_ar": "أجد نفسي غالبا أشرح أو أدرّب أو أوجه من حولي.",
+      "answer_type": "likert_5",
+      "options_ar": [
+        "لا ينطبق أبدا",
+        "ينطبق قليلا",
+        "ينطبق أحيانا",
+        "ينطبق غالبا",
+        "ينطبق جدا"
+      ],
+      "options_key": "likert_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "riasec_social",
+        "interest_vector"
+      ],
+      "decision_impact": "يرفع أو يخفض ملاءمة المسارات المهنية حسب نمط الميل.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.8,
+      "reference_anchor": "RIASEC/O*NET Interest Profiler",
+      "active": true
+    },
+    {
+      "question_id": "QB-M5-012",
+      "module_id": "M5",
+      "module_name": "الميول المهنية RIASEC",
+      "version": "1.0",
+      "text_ar": "التعاون والعلاقة مع الناس يزيدان طاقتي.",
+      "answer_type": "likert_5",
+      "options_ar": [
+        "لا ينطبق أبدا",
+        "ينطبق قليلا",
+        "ينطبق أحيانا",
+        "ينطبق غالبا",
+        "ينطبق جدا"
+      ],
+      "options_key": "likert_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "riasec_social",
+        "interest_vector"
+      ],
+      "decision_impact": "يرفع أو يخفض ملاءمة المسارات المهنية حسب نمط الميل.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.8,
+      "reference_anchor": "RIASEC/O*NET Interest Profiler",
+      "active": true
+    },
+    {
+      "question_id": "QB-M5-013",
+      "module_id": "M5",
+      "module_name": "الميول المهنية RIASEC",
+      "version": "1.0",
+      "text_ar": "أحب قيادة مبادرة وإقناع الآخرين بها.",
+      "answer_type": "likert_5",
+      "options_ar": [
+        "لا ينطبق أبدا",
+        "ينطبق قليلا",
+        "ينطبق أحيانا",
+        "ينطبق غالبا",
+        "ينطبق جدا"
+      ],
+      "options_key": "likert_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "riasec_enterprising",
+        "interest_vector"
+      ],
+      "decision_impact": "يرفع أو يخفض ملاءمة المسارات المهنية حسب نمط الميل.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.8,
+      "reference_anchor": "RIASEC/O*NET Interest Profiler",
+      "active": true
+    },
+    {
+      "question_id": "QB-M5-014",
+      "module_id": "M5",
+      "module_name": "الميول المهنية RIASEC",
+      "version": "1.0",
+      "text_ar": "أستمتع بالبيع أو التفاوض أو عرض فكرة على جمهور.",
+      "answer_type": "likert_5",
+      "options_ar": [
+        "لا ينطبق أبدا",
+        "ينطبق قليلا",
+        "ينطبق أحيانا",
+        "ينطبق غالبا",
+        "ينطبق جدا"
+      ],
+      "options_key": "likert_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "riasec_enterprising",
+        "interest_vector"
+      ],
+      "decision_impact": "يرفع أو يخفض ملاءمة المسارات المهنية حسب نمط الميل.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.8,
+      "reference_anchor": "RIASEC/O*NET Interest Profiler",
+      "active": true
+    },
+    {
+      "question_id": "QB-M5-015",
+      "module_id": "M5",
+      "module_name": "الميول المهنية RIASEC",
+      "version": "1.0",
+      "text_ar": "المنافسة وتحقيق نتائج واضحة يحفزانني.",
+      "answer_type": "likert_5",
+      "options_ar": [
+        "لا ينطبق أبدا",
+        "ينطبق قليلا",
+        "ينطبق أحيانا",
+        "ينطبق غالبا",
+        "ينطبق جدا"
+      ],
+      "options_key": "likert_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "riasec_enterprising",
+        "interest_vector"
+      ],
+      "decision_impact": "يرفع أو يخفض ملاءمة المسارات المهنية حسب نمط الميل.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.8,
+      "reference_anchor": "RIASEC/O*NET Interest Profiler",
+      "active": true
+    },
+    {
+      "question_id": "QB-M5-016",
+      "module_id": "M5",
+      "module_name": "الميول المهنية RIASEC",
+      "version": "1.0",
+      "text_ar": "أحب تنظيم المعلومات والملفات والخطوات بدقة.",
+      "answer_type": "likert_5",
+      "options_ar": [
+        "لا ينطبق أبدا",
+        "ينطبق قليلا",
+        "ينطبق أحيانا",
+        "ينطبق غالبا",
+        "ينطبق جدا"
+      ],
+      "options_key": "likert_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "riasec_conventional",
+        "interest_vector"
+      ],
+      "decision_impact": "يرفع أو يخفض ملاءمة المسارات المهنية حسب نمط الميل.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.8,
+      "reference_anchor": "RIASEC/O*NET Interest Profiler",
+      "active": true
+    },
+    {
+      "question_id": "QB-M5-017",
+      "module_id": "M5",
+      "module_name": "الميول المهنية RIASEC",
+      "version": "1.0",
+      "text_ar": "أفضّل وجود إجراءات ومعايير واضحة للنجاح.",
+      "answer_type": "likert_5",
+      "options_ar": [
+        "لا ينطبق أبدا",
+        "ينطبق قليلا",
+        "ينطبق أحيانا",
+        "ينطبق غالبا",
+        "ينطبق جدا"
+      ],
+      "options_key": "likert_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "riasec_conventional",
+        "interest_vector"
+      ],
+      "decision_impact": "يرفع أو يخفض ملاءمة المسارات المهنية حسب نمط الميل.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.8,
+      "reference_anchor": "RIASEC/O*NET Interest Profiler",
+      "active": true
+    },
+    {
+      "question_id": "QB-M5-018",
+      "module_id": "M5",
+      "module_name": "الميول المهنية RIASEC",
+      "version": "1.0",
+      "text_ar": "أنتبه للتفاصيل والأخطاء أكثر من معظم من حولي.",
+      "answer_type": "likert_5",
+      "options_ar": [
+        "لا ينطبق أبدا",
+        "ينطبق قليلا",
+        "ينطبق أحيانا",
+        "ينطبق غالبا",
+        "ينطبق جدا"
+      ],
+      "options_key": "likert_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "riasec_conventional",
+        "interest_vector"
+      ],
+      "decision_impact": "يرفع أو يخفض ملاءمة المسارات المهنية حسب نمط الميل.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.8,
+      "reference_anchor": "RIASEC/O*NET Interest Profiler",
+      "active": true
+    },
+    {
+      "question_id": "QB-M6-001",
+      "module_id": "M6",
+      "module_name": "أساليب العمل والتعلم",
+      "version": "1.0",
+      "text_ar": "ألتزم بالخطة حتى عندما يصبح الحماس الأول أقل.",
+      "answer_type": "likert_5",
+      "options_ar": [
+        "لا ينطبق أبدا",
+        "ينطبق قليلا",
+        "ينطبق أحيانا",
+        "ينطبق غالبا",
+        "ينطبق جدا"
+      ],
+      "options_key": "likert_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "self_discipline_positive",
+        "work_style_vector"
+      ],
+      "decision_impact": "يضبط أسلوب المسار والدعم واحتمال الإكمال، دون تشخيص نفسي.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.8,
+      "reference_anchor": "IPIP-lite/O*NET Work Styles",
+      "active": true
+    },
+    {
+      "question_id": "QB-M6-002",
+      "module_id": "M6",
+      "module_name": "أساليب العمل والتعلم",
+      "version": "1.0",
+      "text_ar": "أبدأ أشياء كثيرة ثم أتركها قبل أن تظهر نتيجة.",
+      "answer_type": "likert_5",
+      "options_ar": [
+        "لا ينطبق أبدا",
+        "ينطبق قليلا",
+        "ينطبق أحيانا",
+        "ينطبق غالبا",
+        "ينطبق جدا"
+      ],
+      "options_key": "likert_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "self_discipline_reverse",
+        "work_style_vector"
+      ],
+      "decision_impact": "يضبط أسلوب المسار والدعم واحتمال الإكمال، دون تشخيص نفسي.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.8,
+      "reference_anchor": "IPIP-lite/O*NET Work Styles",
+      "active": true
+    },
+    {
+      "question_id": "QB-M6-003",
+      "module_id": "M6",
+      "module_name": "أساليب العمل والتعلم",
+      "version": "1.0",
+      "text_ar": "أرتاح عندما تكون الأولويات والخطوات مكتوبة بوضوح.",
+      "answer_type": "likert_5",
+      "options_ar": [
+        "لا ينطبق أبدا",
+        "ينطبق قليلا",
+        "ينطبق أحيانا",
+        "ينطبق غالبا",
+        "ينطبق جدا"
+      ],
+      "options_key": "likert_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "structure_need",
+        "work_style_vector"
+      ],
+      "decision_impact": "يضبط أسلوب المسار والدعم واحتمال الإكمال، دون تشخيص نفسي.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.8,
+      "reference_anchor": "IPIP-lite/O*NET Work Styles",
+      "active": true
+    },
+    {
+      "question_id": "QB-M6-004",
+      "module_id": "M6",
+      "module_name": "أساليب العمل والتعلم",
+      "version": "1.0",
+      "text_ar": "أراجع التفاصيل قبل تسليم عمل مهم.",
+      "answer_type": "likert_5",
+      "options_ar": [
+        "لا ينطبق أبدا",
+        "ينطبق قليلا",
+        "ينطبق أحيانا",
+        "ينطبق غالبا",
+        "ينطبق جدا"
+      ],
+      "options_key": "likert_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "attention_to_detail",
+        "work_style_vector"
+      ],
+      "decision_impact": "يضبط أسلوب المسار والدعم واحتمال الإكمال، دون تشخيص نفسي.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.8,
+      "reference_anchor": "IPIP-lite/O*NET Work Styles",
+      "active": true
+    },
+    {
+      "question_id": "QB-M6-005",
+      "module_id": "M6",
+      "module_name": "أساليب العمل والتعلم",
+      "version": "1.0",
+      "text_ar": "أتعلم أفكارا جديدة حتى لو لم تكن مطلوبة مني مباشرة.",
+      "answer_type": "likert_5",
+      "options_ar": [
+        "لا ينطبق أبدا",
+        "ينطبق قليلا",
+        "ينطبق أحيانا",
+        "ينطبق غالبا",
+        "ينطبق جدا"
+      ],
+      "options_key": "likert_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "openness_learning",
+        "work_style_vector"
+      ],
+      "decision_impact": "يضبط أسلوب المسار والدعم واحتمال الإكمال، دون تشخيص نفسي.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.8,
+      "reference_anchor": "IPIP-lite/O*NET Work Styles",
+      "active": true
+    },
+    {
+      "question_id": "QB-M6-006",
+      "module_id": "M6",
+      "module_name": "أساليب العمل والتعلم",
+      "version": "1.0",
+      "text_ar": "أفضل الطرق المجربة دائما حتى لو ظهرت بدائل أفضل.",
+      "answer_type": "likert_5",
+      "options_ar": [
+        "لا ينطبق أبدا",
+        "ينطبق قليلا",
+        "ينطبق أحيانا",
+        "ينطبق غالبا",
+        "ينطبق جدا"
+      ],
+      "options_key": "likert_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "openness_reverse",
+        "work_style_vector"
+      ],
+      "decision_impact": "يضبط أسلوب المسار والدعم واحتمال الإكمال، دون تشخيص نفسي.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.8,
+      "reference_anchor": "IPIP-lite/O*NET Work Styles",
+      "active": true
+    },
+    {
+      "question_id": "QB-M6-007",
+      "module_id": "M6",
+      "module_name": "أساليب العمل والتعلم",
+      "version": "1.0",
+      "text_ar": "عند الضغط العملي أستطيع تهدئة نفسي والعودة للتصرف.",
+      "answer_type": "likert_5",
+      "options_ar": [
+        "لا ينطبق أبدا",
+        "ينطبق قليلا",
+        "ينطبق أحيانا",
+        "ينطبق غالبا",
+        "ينطبق جدا"
+      ],
+      "options_key": "likert_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "stress_regulation",
+        "work_style_vector"
+      ],
+      "decision_impact": "يضبط أسلوب المسار والدعم واحتمال الإكمال، دون تشخيص نفسي.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.8,
+      "reference_anchor": "IPIP-lite/O*NET Work Styles",
+      "active": true
+    },
+    {
+      "question_id": "QB-M6-008",
+      "module_id": "M6",
+      "module_name": "أساليب العمل والتعلم",
+      "version": "1.0",
+      "text_ar": "أتجنب المهام التي قد تظهر أنني مبتدئ.",
+      "answer_type": "likert_5",
+      "options_ar": [
+        "لا ينطبق أبدا",
+        "ينطبق قليلا",
+        "ينطبق أحيانا",
+        "ينطبق غالبا",
+        "ينطبق جدا"
+      ],
+      "options_key": "likert_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "learning_vulnerability_reverse",
+        "work_style_vector"
+      ],
+      "decision_impact": "يضبط أسلوب المسار والدعم واحتمال الإكمال، دون تشخيص نفسي.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.8,
+      "reference_anchor": "IPIP-lite/O*NET Work Styles",
+      "active": true
+    },
+    {
+      "question_id": "QB-M6-009",
+      "module_id": "M6",
+      "module_name": "أساليب العمل والتعلم",
+      "version": "1.0",
+      "text_ar": "أستمد طاقة من النقاش والعمل مع الآخرين.",
+      "answer_type": "likert_5",
+      "options_ar": [
+        "لا ينطبق أبدا",
+        "ينطبق قليلا",
+        "ينطبق أحيانا",
+        "ينطبق غالبا",
+        "ينطبق جدا"
+      ],
+      "options_key": "likert_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "social_energy",
+        "work_style_vector"
+      ],
+      "decision_impact": "يضبط أسلوب المسار والدعم واحتمال الإكمال، دون تشخيص نفسي.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.8,
+      "reference_anchor": "IPIP-lite/O*NET Work Styles",
+      "active": true
+    },
+    {
+      "question_id": "QB-M6-010",
+      "module_id": "M6",
+      "module_name": "أساليب العمل والتعلم",
+      "version": "1.0",
+      "text_ar": "أفضّل التعلم الفردي الهادئ على المجموعات.",
+      "answer_type": "likert_5",
+      "options_ar": [
+        "لا ينطبق أبدا",
+        "ينطبق قليلا",
+        "ينطبق أحيانا",
+        "ينطبق غالبا",
+        "ينطبق جدا"
+      ],
+      "options_key": "likert_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "solo_learning_pref",
+        "work_style_vector"
+      ],
+      "decision_impact": "يضبط أسلوب المسار والدعم واحتمال الإكمال، دون تشخيص نفسي.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.8,
+      "reference_anchor": "IPIP-lite/O*NET Work Styles",
+      "active": true
+    },
+    {
+      "question_id": "QB-M6-011",
+      "module_id": "M6",
+      "module_name": "أساليب العمل والتعلم",
+      "version": "1.0",
+      "text_ar": "أطلب ملاحظات صريحة حتى لو كانت غير مريحة.",
+      "answer_type": "likert_5",
+      "options_ar": [
+        "لا ينطبق أبدا",
+        "ينطبق قليلا",
+        "ينطبق أحيانا",
+        "ينطبق غالبا",
+        "ينطبق جدا"
+      ],
+      "options_key": "likert_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "feedback_seeking",
+        "work_style_vector"
+      ],
+      "decision_impact": "يضبط أسلوب المسار والدعم واحتمال الإكمال، دون تشخيص نفسي.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.8,
+      "reference_anchor": "IPIP-lite/O*NET Work Styles",
+      "active": true
+    },
+    {
+      "question_id": "QB-M6-012",
+      "module_id": "M6",
+      "module_name": "أساليب العمل والتعلم",
+      "version": "1.0",
+      "text_ar": "عندما أخطئ، أستطيع تحويل الخطأ إلى تعديل في الخطة.",
+      "answer_type": "likert_5",
+      "options_ar": [
+        "لا ينطبق أبدا",
+        "ينطبق قليلا",
+        "ينطبق أحيانا",
+        "ينطبق غالبا",
+        "ينطبق جدا"
+      ],
+      "options_key": "likert_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "growth_response",
+        "work_style_vector"
+      ],
+      "decision_impact": "يضبط أسلوب المسار والدعم واحتمال الإكمال، دون تشخيص نفسي.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.8,
+      "reference_anchor": "IPIP-lite/O*NET Work Styles",
+      "active": true
+    },
+    {
+      "question_id": "QB-M6-013",
+      "module_id": "M6",
+      "module_name": "أساليب العمل والتعلم",
+      "version": "1.0",
+      "text_ar": "أحتاج شخصا أو مجموعة تتابعني حتى أكمل.",
+      "answer_type": "likert_5",
+      "options_ar": [
+        "لا ينطبق أبدا",
+        "ينطبق قليلا",
+        "ينطبق أحيانا",
+        "ينطبق غالبا",
+        "ينطبق جدا"
+      ],
+      "options_key": "likert_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "accountability_need",
+        "work_style_vector"
+      ],
+      "decision_impact": "يضبط أسلوب المسار والدعم واحتمال الإكمال، دون تشخيص نفسي.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.8,
+      "reference_anchor": "IPIP-lite/O*NET Work Styles",
+      "active": true
+    },
+    {
+      "question_id": "QB-M6-014",
+      "module_id": "M6",
+      "module_name": "أساليب العمل والتعلم",
+      "version": "1.0",
+      "text_ar": "أستطيع تحويل المعرفة إلى تطبيق عملي سريع.",
+      "answer_type": "likert_5",
+      "options_ar": [
+        "لا ينطبق أبدا",
+        "ينطبق قليلا",
+        "ينطبق أحيانا",
+        "ينطبق غالبا",
+        "ينطبق جدا"
+      ],
+      "options_key": "likert_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "application_style",
+        "work_style_vector"
+      ],
+      "decision_impact": "يضبط أسلوب المسار والدعم واحتمال الإكمال، دون تشخيص نفسي.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.8,
+      "reference_anchor": "IPIP-lite/O*NET Work Styles",
+      "active": true
+    },
+    {
+      "question_id": "QB-M7-001",
+      "module_id": "M7",
+      "module_name": "قيود وتفضيلات التعلم",
+      "version": "1.0",
+      "text_ar": "كم ساعة واقعية يمكنك تخصيصها أسبوعيا للتعلم؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "أقل من ساعتين",
+        "من 2 إلى 4 ساعات",
+        "من 5 إلى 7 ساعات",
+        "من 8 إلى 12 ساعة",
+        "أكثر من 12 ساعة"
+      ],
+      "options_key": "time_weekly",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "weekly_load"
+      ],
+      "decision_impact": "يضبط مدة المسار واحتمال الإكمال.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.7,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M7-002",
+      "module_id": "M7",
+      "module_name": "قيود وتفضيلات التعلم",
+      "version": "1.0",
+      "text_ar": "ما الصيغة التي تتعلم بها أفضل؟",
+      "answer_type": "multi_choice",
+      "options_ar": [
+        "فيديو ذاتي",
+        "مباشر مع مدرب",
+        "تطبيق ومشاريع",
+        "قراءة وملخصات",
+        "مختلط"
+      ],
+      "options_key": "format_pref",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "learning_format"
+      ],
+      "decision_impact": "يضبط ترتيب الدورات والمصادر.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.1,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M7-003",
+      "module_id": "M7",
+      "module_name": "قيود وتفضيلات التعلم",
+      "version": "1.0",
+      "text_ar": "هل تفضل التعلم ضمن دفعة/مجموعة أم بشكل فردي؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "دفعة ومجموعة",
+        "فردي ذاتي",
+        "فردي مع مستشار",
+        "مختلط",
+        "لا يهم"
+      ],
+      "options_key": "cohort_preference",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "cohort_preference"
+      ],
+      "decision_impact": "يفرق بين cohort وself-paced.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M7-004",
+      "module_id": "M7",
+      "module_name": "قيود وتفضيلات التعلم",
+      "version": "1.0",
+      "text_ar": "ما اللغة المقبولة للمحتوى المتقدم؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "العربية",
+        "الإنجليزية",
+        "كلاهما",
+        "حسب المادة"
+      ],
+      "options_key": "language_pref",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "content_language"
+      ],
+      "decision_impact": "يفتح مصادر إنجليزية أو يحصر العربية.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M7-005",
+      "module_id": "M7",
+      "module_name": "قيود وتفضيلات التعلم",
+      "version": "1.0",
+      "text_ar": "ما مستوى الميزانية المناسب لك أو للجهة؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "مجاني فقط",
+        "منخفض",
+        "متوسط",
+        "مرتفع عند وضوح القيمة",
+        "الجهة تدفع"
+      ],
+      "options_key": "budget",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "budget_profile"
+      ],
+      "decision_impact": "يضبط Affordability دون تسعير تمييزي.",
+      "sensitivity_level": "medium",
+      "required_level": "core",
+      "weight": 1.2,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M7-006",
+      "module_id": "M7",
+      "module_name": "قيود وتفضيلات التعلم",
+      "version": "1.0",
+      "text_ar": "هل تحتاج مدربا أو مستشارا لمتابعة التطبيق؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "منخفضة جدا",
+        "منخفضة",
+        "متوسطة",
+        "عالية",
+        "حاسمة"
+      ],
+      "options_key": "priority_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "mentor_need"
+      ],
+      "decision_impact": "يرشح جلسة مستشار أو مسار موجه.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M7-007",
+      "module_id": "M7",
+      "module_name": "قيود وتفضيلات التعلم",
+      "version": "1.0",
+      "text_ar": "هل تقبل واجبات ومشاريع عملية بين الجلسات؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "منخفضة جدا",
+        "منخفضة",
+        "متوسطة",
+        "عالية",
+        "حاسمة"
+      ],
+      "options_key": "priority_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "homework_acceptance"
+      ],
+      "decision_impact": "يفرق بين تعلم نظري وعملي.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M7-008",
+      "module_id": "M7",
+      "module_name": "قيود وتفضيلات التعلم",
+      "version": "1.0",
+      "text_ar": "ما أفضل وقت للتعلم غالبا؟",
+      "answer_type": "single_choice_or_text",
+      "options_ar": [],
+      "options_key": null,
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "schedule_window"
+      ],
+      "decision_impact": "يضبط التذكير والدفعات.",
+      "sensitivity_level": "medium",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M7-009",
+      "module_id": "M7",
+      "module_name": "قيود وتفضيلات التعلم",
+      "version": "1.0",
+      "text_ar": "ما أهمية الشهادة بالنسبة لك مقارنة بالمهارة نفسها؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "منخفضة جدا",
+        "منخفضة",
+        "متوسطة",
+        "عالية",
+        "حاسمة"
+      ],
+      "options_key": "priority_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "certificate_importance"
+      ],
+      "decision_impact": "يضبط لغة التسويق والتقرير.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M7-010",
+      "module_id": "M7",
+      "module_name": "قيود وتفضيلات التعلم",
+      "version": "1.0",
+      "text_ar": "هل لديك احتياج وصول خاص في التعلم أو القراءة أو الصوت؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "نعم",
+        "لا",
+        "أفضل عدم الإجابة"
+      ],
+      "options_key": "yes_no_optional",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "accessibility_need"
+      ],
+      "decision_impact": "يضبط تجربة الوصول دون إلزام.",
+      "sensitivity_level": "medium",
+      "required_level": "optional",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M7-011",
+      "module_id": "M7",
+      "module_name": "قيود وتفضيلات التعلم",
+      "version": "1.0",
+      "text_ar": "ما الجهاز الأساسي الذي ستتعلم منه؟",
+      "answer_type": "single_choice_or_text",
+      "options_ar": [],
+      "options_key": null,
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "learning_device"
+      ],
+      "decision_impact": "يتجنب توصية أدوات غير مناسبة.",
+      "sensitivity_level": "medium",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M7-012",
+      "module_id": "M7",
+      "module_name": "قيود وتفضيلات التعلم",
+      "version": "1.0",
+      "text_ar": "ما الذي يساعدك غالبا على الإكمال؟",
+      "answer_type": "multi_choice",
+      "options_ar": [
+        "مدرب يتابعني",
+        "مجموعة تعلم",
+        "مهام قصيرة",
+        "تذكيرات",
+        "مشروع تطبيقي",
+        "شهادة",
+        "موعد نهائي"
+      ],
+      "options_key": "completion_support",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "completion_support"
+      ],
+      "decision_impact": "يضبط التحفيز والمتابعة.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M8-001",
+      "module_id": "M8",
+      "module_name": "التحقق والتناقض والإحالة",
+      "version": "1.0",
+      "text_ar": "قلت إن هدفك عاجل، لكن وقتك الأسبوعي منخفض. هل تريد مسارا مضغوطا أم تمديد المدة؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "مسار مضغوط",
+        "تمديد المدة",
+        "تقليل نطاق الهدف",
+        "مستشار يساعدني أختار"
+      ],
+      "options_key": "time_goal_conflict_resolution",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "goal_urgent AND weekly_load_low",
+      "measures": [
+        "time_goal_conflict_resolution"
+      ],
+      "decision_impact": "يفتح عند goal urgency > high وweekly_load منخفض.",
+      "sensitivity_level": "low",
+      "required_level": "conditional",
+      "weight": 1.5,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M8-002",
+      "module_id": "M8",
+      "module_name": "التحقق والتناقض والإحالة",
+      "version": "1.0",
+      "text_ar": "قيّمت مهارات كثيرة كمتقدمة. ما أقوى دليل تملكه على ذلك؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "لا يوجد دليل",
+        "تعلمت عنها فقط",
+        "طبقتها مرة",
+        "طبقتها عدة مرات",
+        "لدي نتيجة أو مشروع أو شهادة"
+      ],
+      "options_key": "evidence_level",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "many_high_skills AND low_evidence",
+      "measures": [
+        "overclaim_evidence_check"
+      ],
+      "decision_impact": "يفتح عند ارتفاع غير مدعوم في skill_vector.",
+      "sensitivity_level": "low",
+      "required_level": "conditional",
+      "weight": 1.5,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M8-003",
+      "module_id": "M8",
+      "module_name": "التحقق والتناقض والإحالة",
+      "version": "1.0",
+      "text_ar": "تقول إن الهدف غير واضح لكنك اخترت مسارا محددا. هل المسار رغبة مؤكدة أم تجربة؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "رغبة مؤكدة",
+        "تجربة أولية",
+        "اختيار مؤقت",
+        "أحتاج مساعدة"
+      ],
+      "options_key": "goal_path_conflict",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "goal_clarity_low AND pathway_selected",
+      "measures": [
+        "goal_path_conflict"
+      ],
+      "decision_impact": "يفرق بين ready وexploration.",
+      "sensitivity_level": "low",
+      "required_level": "conditional",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M8-004",
+      "module_id": "M8",
+      "module_name": "التحقق والتناقض والإحالة",
+      "version": "1.0",
+      "text_ar": "هل تريد أن يراجع مستشار بشري النتيجة قبل عرض المسار النهائي؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "نعم",
+        "لا",
+        "لست متأكدا"
+      ],
+      "options_key": "yes_no_unsure",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "confidence_medium_or_user_request",
+      "measures": [
+        "advisor_preference"
+      ],
+      "decision_impact": "يفتح advisor عند طلب المستخدم.",
+      "sensitivity_level": "low",
+      "required_level": "conditional",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M8-005",
+      "module_id": "M8",
+      "module_name": "التحقق والتناقض والإحالة",
+      "version": "1.0",
+      "text_ar": "ما الإجابة التي تشعر أنها قد لا تمثلك بدقة؟",
+      "answer_type": "short_text",
+      "options_ar": [],
+      "options_key": null,
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "low_confidence OR user_flagged_uncertainty",
+      "measures": [
+        "answer_uncertainty_note"
+      ],
+      "decision_impact": "يسجل ملاحظة للمستشار أو المحرك.",
+      "sensitivity_level": "low",
+      "required_level": "conditional",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M8-006",
+      "module_id": "M8",
+      "module_name": "التحقق والتناقض والإحالة",
+      "version": "1.0",
+      "text_ar": "إذا عرضنا مسارين متقاربين، ما العامل الحاسم لك؟",
+      "answer_type": "rank_top3",
+      "options_ar": [
+        "الأقرب للهدف",
+        "الأسرع نتيجة",
+        "الأقل تكلفة",
+        "الأكثر عمقا",
+        "الأكثر عملية",
+        "الأكثر متعة"
+      ],
+      "options_key": "tie_breaker",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "top_two_pathways_close",
+      "measures": [
+        "tie_breaker"
+      ],
+      "decision_impact": "يفصل بين أفضل مسارين عند تقارب PathwayFit.",
+      "sensitivity_level": "low",
+      "required_level": "conditional",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M8-007",
+      "module_id": "M8",
+      "module_name": "التحقق والتناقض والإحالة",
+      "version": "1.0",
+      "text_ar": "هل توجد معلومة حساسة لا تريد أن تدخل في التوصية؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "نعم",
+        "لا",
+        "أفضل عدم الإجابة"
+      ],
+      "options_key": "yes_no_optional",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "sensitive_answers_present",
+      "measures": [
+        "exclude_sensitive_info"
+      ],
+      "decision_impact": "يحترم الخصوصية ويعيد الحساب.",
+      "sensitivity_level": "high",
+      "required_level": "conditional",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M8-008",
+      "module_id": "M8",
+      "module_name": "التحقق والتناقض والإحالة",
+      "version": "1.0",
+      "text_ar": "هل تفضل نتيجة مختصرة الآن أم تقريرا أعمق بعد أسئلة إضافية؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "نتيجة مختصرة الآن",
+        "أسئلة إضافية لتقرير أعمق",
+        "أريد مستشارا",
+        "لست متأكدا"
+      ],
+      "options_key": "depth_choice",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "enough_for_basic_result",
+      "measures": [
+        "depth_choice"
+      ],
+      "decision_impact": "يضبط quick/deep mode.",
+      "sensitivity_level": "low",
+      "required_level": "conditional",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M8-009",
+      "module_id": "M8",
+      "module_name": "التحقق والتناقض والإحالة",
+      "version": "1.0",
+      "text_ar": "هل النتيجة المقترحة تبدو لك منطقية مبدئيا؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "نعم",
+        "لا",
+        "لست متأكدا"
+      ],
+      "options_key": "yes_no_unsure",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "recommendation_generated",
+      "measures": [
+        "recommendation_face_validity"
+      ],
+      "decision_impact": "يولد feedback ويحسن القواعد.",
+      "sensitivity_level": "low",
+      "required_level": "conditional",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M8-010",
+      "module_id": "M8",
+      "module_name": "التحقق والتناقض والإحالة",
+      "version": "1.0",
+      "text_ar": "ما السبب الأساسي إذا رفضت المسار المقترح؟",
+      "answer_type": "single_choice_or_text",
+      "options_ar": [],
+      "options_key": null,
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "recommendation_rejected",
+      "measures": [
+        "rejection_reason"
+      ],
+      "decision_impact": "يرسل إشارة لتحسين المسارات أو المحتوى.",
+      "sensitivity_level": "low",
+      "required_level": "conditional",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M9-001",
+      "module_id": "M9",
+      "module_name": "طبقة B2B/B2G المؤسسية",
+      "version": "1.0",
+      "text_ar": "ما نوع الجهة التي تنفذ التشخيص؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "فردي",
+        "فريق",
+        "إدارة",
+        "مؤسسة كاملة",
+        "جهة حكومية"
+      ],
+      "options_key": "org_level",
+      "persona_scope": [
+        "b2b",
+        "b2g"
+      ],
+      "trigger_condition": "organization_campaign",
+      "measures": [
+        "org_context"
+      ],
+      "decision_impact": "يفرق بين B2C وB2B/B2G.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M9-002",
+      "module_id": "M9",
+      "module_name": "طبقة B2B/B2G المؤسسية",
+      "version": "1.0",
+      "text_ar": "ما القطاع أو المجال المؤسسي؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "خاص",
+        "حكومي",
+        "منظمات/تعليم",
+        "تقني",
+        "تجاري",
+        "صحي",
+        "مالي",
+        "غير ذلك"
+      ],
+      "options_key": "sector",
+      "persona_scope": [
+        "b2b",
+        "b2g"
+      ],
+      "trigger_condition": "organization_campaign",
+      "measures": [
+        "organization_sector"
+      ],
+      "decision_impact": "يضبط قوالب التقارير والمسارات.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M9-003",
+      "module_id": "M9",
+      "module_name": "طبقة B2B/B2G المؤسسية",
+      "version": "1.0",
+      "text_ar": "ما عائلة الوظائف المستهدفة في هذه الحملة؟",
+      "answer_type": "single_choice_or_text",
+      "options_ar": [],
+      "options_key": null,
+      "persona_scope": [
+        "b2b",
+        "b2g"
+      ],
+      "trigger_condition": "organization_campaign",
+      "measures": [
+        "target_job_family"
+      ],
+      "decision_impact": "يربط التشخيص بمسارات جماعية.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M9-004",
+      "module_id": "M9",
+      "module_name": "طبقة B2B/B2G المؤسسية",
+      "version": "1.0",
+      "text_ar": "ما مستوى المشاركين الوظيفي؟",
+      "answer_type": "multi_choice",
+      "options_ar": [
+        "مبتدئ",
+        "متوسط",
+        "مشرف",
+        "مدير",
+        "قيادة عليا",
+        "خدمة جمهور",
+        "تخصصي"
+      ],
+      "options_key": "job_level",
+      "persona_scope": [
+        "b2b",
+        "b2g"
+      ],
+      "trigger_condition": "organization_campaign",
+      "measures": [
+        "job_level"
+      ],
+      "decision_impact": "يضبط القيادة والعمق.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M9-005",
+      "module_id": "M9",
+      "module_name": "طبقة B2B/B2G المؤسسية",
+      "version": "1.0",
+      "text_ar": "ما الأولوية الاستراتيجية للجهة خلال 12 شهرا؟",
+      "answer_type": "single_choice_or_text",
+      "options_ar": [],
+      "options_key": null,
+      "persona_scope": [
+        "b2b",
+        "b2g"
+      ],
+      "trigger_condition": "organization_campaign",
+      "measures": [
+        "strategic_priority"
+      ],
+      "decision_impact": "يربط التدريب بالأداء المؤسسي.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "OECD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M9-006",
+      "module_id": "M9",
+      "module_name": "طبقة B2B/B2G المؤسسية",
+      "version": "1.0",
+      "text_ar": "ما مؤشر الأداء الذي تريد الجهة تحسينه؟",
+      "answer_type": "single_choice_or_text",
+      "options_ar": [],
+      "options_key": null,
+      "persona_scope": [
+        "b2b",
+        "b2g"
+      ],
+      "trigger_condition": "organization_campaign",
+      "measures": [
+        "org_kpi"
+      ],
+      "decision_impact": "يحدد قياس الأثر.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M9-007",
+      "module_id": "M9",
+      "module_name": "طبقة B2B/B2G المؤسسية",
+      "version": "1.0",
+      "text_ar": "ما الفجوة التي تراها الإدارة قبل التشخيص؟",
+      "answer_type": "multi_choice",
+      "options_ar": [
+        "ضعف مهارات رقمية",
+        "ضعف تواصل",
+        "ضعف قيادة",
+        "بطء إجراءات",
+        "ضعف خدمة",
+        "ضعف بيانات",
+        "مقاومة تغيير",
+        "غير واضح"
+      ],
+      "options_key": "management_hypothesis",
+      "persona_scope": [
+        "b2b",
+        "b2g"
+      ],
+      "trigger_condition": "organization_campaign",
+      "measures": [
+        "management_hypothesis"
+      ],
+      "decision_impact": "يقارن فرضية الإدارة بنتائج الموظفين.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M9-008",
+      "module_id": "M9",
+      "module_name": "طبقة B2B/B2G المؤسسية",
+      "version": "1.0",
+      "text_ar": "هل توجد حساسية تنظيمية أو قانونية في نوع الأسئلة؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "نعم",
+        "لا",
+        "لست متأكدا"
+      ],
+      "options_key": "yes_no_unsure",
+      "persona_scope": [
+        "b2b",
+        "b2g"
+      ],
+      "trigger_condition": "organization_campaign",
+      "measures": [
+        "org_sensitivity"
+      ],
+      "decision_impact": "يفعل مراجعة الخصوصية.",
+      "sensitivity_level": "high",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M9-009",
+      "module_id": "M9",
+      "module_name": "طبقة B2B/B2G المؤسسية",
+      "version": "1.0",
+      "text_ar": "كم عدد المشاركين المتوقع؟",
+      "answer_type": "single_choice_or_text",
+      "options_ar": [],
+      "options_key": null,
+      "persona_scope": [
+        "b2b",
+        "b2g"
+      ],
+      "trigger_condition": "organization_campaign",
+      "measures": [
+        "cohort_size"
+      ],
+      "decision_impact": "يضبط التشغيل والتقارير.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M9-010",
+      "module_id": "M9",
+      "module_name": "طبقة B2B/B2G المؤسسية",
+      "version": "1.0",
+      "text_ar": "هل سيشارك المدير المباشر في اعتماد المسار؟",
+      "answer_type": "single_choice",
+      "options_ar": [
+        "نعم",
+        "لا",
+        "لست متأكدا"
+      ],
+      "options_key": "yes_no_unsure",
+      "persona_scope": [
+        "b2b",
+        "b2g"
+      ],
+      "trigger_condition": "organization_campaign",
+      "measures": [
+        "manager_involvement"
+      ],
+      "decision_impact": "يضبط workflow الموافقة.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M9-011",
+      "module_id": "M9",
+      "module_name": "طبقة B2B/B2G المؤسسية",
+      "version": "1.0",
+      "text_ar": "ما مستوى التفصيل المسموح في التقرير الفردي للجهة؟",
+      "answer_type": "single_choice_or_text",
+      "options_ar": [],
+      "options_key": null,
+      "persona_scope": [
+        "b2b",
+        "b2g"
+      ],
+      "trigger_condition": "organization_campaign",
+      "measures": [
+        "data_sharing_policy"
+      ],
+      "decision_impact": "يحمي الخصوصية ويحدد التجميع.",
+      "sensitivity_level": "high",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M9-012",
+      "module_id": "M9",
+      "module_name": "طبقة B2B/B2G المؤسسية",
+      "version": "1.0",
+      "text_ar": "هل توجد برامج تدريب سابقة يجب عدم تكرارها؟",
+      "answer_type": "single_choice_or_text",
+      "options_ar": [],
+      "options_key": null,
+      "persona_scope": [
+        "b2b",
+        "b2g"
+      ],
+      "trigger_condition": "organization_campaign",
+      "measures": [
+        "previous_training"
+      ],
+      "decision_impact": "يمنع التكرار ويقيس أثر سابق.",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.0,
+      "reference_anchor": "Wajeez-PRD",
+      "active": true
+    }
+  ]
+}

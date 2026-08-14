@@ -37,18 +37,14 @@ import SeoHead from "@/components/SeoHead";
 import { Badge } from "@/components/ui/badge";
 import AuthGate from "@/components/AuthGate";
 import {
-  nextQuestion,
-  estimateTotal,
-  buildState,
-  computeResult,
-  scenarioLevels,
-  GAP_LABELS,
-  OBSTACLE_TO_GAP,
   type DiagQuestion,
   type DiagOption,
   type DiagResult,
   type Dim,
 } from "@/data/diagnostic";
+import { AssessmentSession, createAssessment, diagQuestionById } from "@/application/diagnostic/assessment-service";
+import { loadSession, saveLastResult, loadLastResult, clearAllSessionData } from "@/application/diagnostic/session-store";
+import type { SkillBar } from "@/application/diagnostic/view-model";
 import {
   courseById,
   pathwayCourses,
@@ -62,7 +58,7 @@ import {
 } from "@/data/courses";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import AdvisorContact from "@/components/AdvisorContact";
-import type { Pathway } from "@/data/pathways";
+import { pathways, type Pathway } from "@/data/pathways";
 
 type DiagAnswers = Record<string, string>;
 type Stage = "intro" | "gate" | "questions" | "computing" | "result";
@@ -91,186 +87,72 @@ const JOURNEY_STAGES = [
 function stageIndexOf(q: DiagQuestion | null): number {
   if (!q) return 0;
   const m = q.module;
-  if (m === "M1") return 0;
+  if (m === "M0" || m === "M1") return 0;
   if (m === "M2" || m === "M2B" || m === "M8") return 1;
   if (m.startsWith("M3")) return 2;
-  if (m === "M4" || m === "M4B") return 3;
+  if (m === "M4" || m === "M4B" || m === "M5" || m === "M6") return 3;
   return 4; // M7 وM9
 }
 
-/* ═══════════ الحفظ والاستئناف — لا تشخيص يضيع بعد اليوم ═══════════ */
-const PROGRESS_KEY = "wajeez_diag_progress";
+/* ═══════════ الحفظ والاستئناف — عبر مستودع الجلسة المحلي (demo-only) ═══════════ */
 interface SavedProgress {
   answers: DiagAnswers;
   asked: string[];
   savedAt: number;
 }
+/** قراءة تقدم محفوظ من المستودع الجديد */
 function loadProgress(): SavedProgress | null {
-  try {
-    const raw = localStorage.getItem(PROGRESS_KEY);
-    if (!raw) return null;
-    const p = JSON.parse(raw) as SavedProgress;
-    return p && Array.isArray(p.asked) && p.asked.length >= 2 ? p : null;
-  } catch {
-    return null;
-  }
-}
-function saveProgress(answers: DiagAnswers, asked: string[]) {
-  try {
-    localStorage.setItem(PROGRESS_KEY, JSON.stringify({ answers, asked, savedAt: Date.now() }));
-  } catch {
-    /* مساحة ممتلئة — نتجاهل بهدوء */
-  }
+  const s = loadSession();
+  if (!s || s.answers.length < 2) return null;
+  return {
+    answers: Object.fromEntries(
+      s.answers.map((a) => [a.questionId, Array.isArray(a.value) ? a.value.join(",") : a.value])
+    ),
+    asked: s.answers.map((a) => a.questionId),
+    savedAt: Date.parse(s.savedAt) || Date.now(),
+  };
 }
 function clearProgress() {
-  try {
-    localStorage.removeItem(PROGRESS_KEY);
-  } catch {
-    /* لا شيء */
-  }
+  /* الإزالة الفعلية تتم عبر AssessmentSession.abandon() أو عند الحفظ النهائي */
 }
 
-/** إعادة بناء سلسلة الأسئلة من الإجابات المحفوظة — المحرك قطعي فتُعاد نفس الأسئلة */
-function rebuildHistory(answers: DiagAnswers, asked: string[]): DiagQuestion[] {
-  const hist: DiagQuestion[] = [];
-  let a: DiagAnswers = {};
-  const soFar: string[] = [];
-  for (const qid of asked) {
-    const q = nextQuestion(a, soFar);
-    if (!q || q.id !== qid) break; // تغيّر منطق المحرك — نكتفي بما تطابق
-    hist.push(q);
-    a = { ...a, [qid]: answers[qid] ?? "" };
-    soFar.push(qid);
-  }
-  return hist;
-}
 
-/* ═══════════ ملخص القصة — يقرأ نفسه في صفحة النتيجة ═══════════ */
-const PERSONA_L: Record<string, string> = {
-  student: "طالبا",
-  graduate: "خريجا جديدا يبحث عن أول فرصة",
-  employee: "موظفا",
-  entrepreneur: "رائد أعمال يطارد أهدافه",
-  family: "والدا — هدفك الأسري أولويتك",
-  unsure: "شخصا ما زال يستكشف اتجاهه",
-};
-const GOAL_L: Record<string, string> = {
-  job: "وظيفة أولى أو ترقية",
-  project: "إطلاق مشروع أو دخل إضافي",
-  change: "تغيير مسارك المهني بالكامل",
-  skill: "إتقان مهارة محددة تحتاجها الآن",
-  performance: "تحسين أدائك في وظيفتك الحالية",
-  family: "هدفا أسريا ورفاها شخصيا",
-};
-const SECTOR_L: Record<string, string> = { private: "القطاع الخاص", government: "القطاع الحكومي" };
-const OBSTACLE_L: Record<string, string> = {
-  writing: "التقارير والكتابة المهنية",
-  data: "البيانات والجداول",
-  projects: "إدارة المشاريع والمتابعة",
-  leadership: "قيادة الفريق والتفويض",
-  communication: "التواصل والعرض أمام الآخرين",
-  digital_ai: "الأدوات الرقمية والذكاء الاصطناعي",
-  complaints: "التعامل مع الشكاوى والضغط",
-};
-const FORMAT_L: Record<string, string> = {
-  live: "المباشر مع مدرب",
-  recorded: "المسجل بوتيرتك الخاصة",
-  mixed: "المزيج بين المباشر والمسجل",
-  applied: "التطبيق والمشاريع",
-};
-const LANG_L: Record<string, string> = {
-  arabic: "بالعربية",
-  english_ok: "بالعربية أو الإنجليزية",
-  either: "بأي لغة — المهم المحتوى",
-};
-const TARGET_L: Record<string, string> = {
-  soon: "خلال شهر إلى ثلاثة أشهر",
-  mid: "خلال ثلاثة إلى ستة أشهر",
-  year: "خلال سنة",
-};
-
-function storySummary(a: DiagAnswers): string[] {
-  const lines: string[] = [];
-  const persona = PERSONA_L[a.persona];
-  const goal = GOAL_L[a.goal];
-  const sector = SECTOR_L[a.emp_sector];
-  if (persona) {
-    lines.push(
-      `أنت ${persona}${sector ? ` في ${sector}` : ""}، وغايتك ${goal ?? "أن يختلف شيء حقيقي في حياتك بعد أشهر"}.`
-    );
-  }
-  const obstacles = (a.emp_obstacle ?? "")
-    .split(",")
-    .filter(Boolean)
-    .map((o) => OBSTACLE_L[o])
-    .filter(Boolean);
-  if (obstacles.length) {
-    lines.push(`ما يبطئك فعلا في يومك: ${obstacles.join(" و")} — ومسارك مبني ليعالج هذا أولا.`);
-  }
-  const gaps = (a.sk_gaps ?? "")
-    .split(",")
-    .filter((g) => g && g !== "none")
-    .map((g) => GAP_LABELS[g])
-    .filter(Boolean);
-  if (gaps.length) {
-    lines.push(`وبلسانك أشرت إلى رغبتك في تقوية: ${gaps.join("، ")}.`);
-  }
-  const format = FORMAT_L[a.format];
-  const lang = LANG_L[a.learn_lang];
-  const target = TARGET_L[a.target_date];
-  if (format || lang || target) {
-    lines.push(
-      `تتعلم أفضل بصيغة ${format ?? "مرنة"}${lang ? ` ${lang}` : ""}، وتريد نتيجة ملموسة ${target ?? "قريبا"}.`
-    );
-  }
-  return lines;
-}
-
-/* ═══════════ خريطة المهارات المرئية — مستويات مستنتجة من المواقف ═══════════ */
-function SkillMap({ answers }: { answers: DiagAnswers }) {
-  const levels = scenarioLevels(answers);
-  const declared = new Set(
-    [
-      ...(answers.sk_gaps ?? "").split(",").filter((g) => g && g !== "none"),
-      ...(answers.emp_obstacle ?? "").split(",").map((o) => OBSTACLE_TO_GAP[o]),
-    ].filter(Boolean)
-  );
+/* ═══════════ خريطة المهارات المرئية — من متجه مهارات المحرك مباشرة ═══════════ */
+function SkillMap({ bars }: { bars: SkillBar[] }) {
   const TARGET = 4;
   const WORDS = ["", "بداية", "أساسيات", "متوسط", "متقدم", "خبير"];
+  if (bars.length === 0) return null;
   return (
     <div className="card-soft mt-8">
       <h3 className="h-card flex items-center gap-2">
         <BarChart3 className="h-5 w-5 text-[#6EC7D1]" />
-        خريطة مهاراتك — كما استنتجها التشخيص من مواقفك
+        خريطة مهاراتك — كما سجّلها التشخيص من إجاباتك
       </h3>
       <p className="mt-2 text-xs leading-relaxed text-white/50">
-        لا تقييم ذاتيا هنا — كل مستوى استُنتج من موقف حقيقي حكيته أثناء التشخيص.
-        العلامة العنبرية: المستوى المستهدف لهدفك.
+        كل مستوى من إجابة قدّمتها أثناء التشخيص. العلامة العنبرية: المستوى المستهدف لهدفك.
       </p>
       <div className="mt-6 space-y-5">
-        {Object.entries(GAP_LABELS).map(([key, label]) => {
-          const lv = parseInt(levels[key] ?? "", 10);
-          const measured = !isNaN(lv);
-          const isGap = declared.has(key);
+        {bars.map((bar) => {
+          const lv = bar.level;
           return (
-            <div key={key}>
+            <div key={bar.slug}>
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-sm">
                 <span className="font-bold text-white/85">
-                  {label}
-                  {isGap && (
+                  {bar.label}
+                  {bar.isGap && (
                     <span className="mr-2 rounded-full bg-[#FABC05]/15 px-2 py-0.5 text-[10px] font-bold text-[#FABC05]">
-                      فجوة معلنة
+                      فجوة يعالجها مسارك
                     </span>
                   )}
                 </span>
                 <span className="text-xs text-white/50">
-                  {measured ? `${WORDS[lv]} — ${lv}/5` : "لم تُقس — لم تُذكر فجوة فيها"}
+                  {bar.measured ? `${WORDS[Math.min(5, Math.max(1, lv))]} — ${lv}/5` : "لم تُقس — فجوة يغطيها المسار"}
                 </span>
               </div>
               <div className="relative h-2.5 rounded-full bg-white/10" dir="ltr">
-                {measured && (
+                {bar.measured && (
                   <div
-                    className={`h-full rounded-full ${isGap ? "bg-[#FABC05]" : "bg-[#38A7B4]"}`}
+                    className={`h-full rounded-full ${bar.isGap ? "bg-[#FABC05]" : "bg-[#38A7B4]"}`}
                     style={{ width: `${(lv / 5) * 100}%` }}
                   />
                 )}
@@ -293,13 +175,11 @@ function JourneyTimeline({ pathway }: { pathway: Pathway }) {
   const list = (pathwayCourses[pathway.id] ?? [])
     .map((id) => courseById(id))
     .filter((c): c is NonNullable<typeof c> => Boolean(c));
-  let week = 1;
-  const steps = list.map((c) => {
-    const start = week;
-    week += c.weeks;
-    return { c, start, end: week - 1 };
+  const steps = list.map((c, i) => {
+    const start = 1 + list.slice(0, i).reduce((w, x) => w + x.weeks, 0);
+    return { c, start, end: start + c.weeks - 1 };
   });
-  const totalWeeks = Math.max(0, week - 1);
+  const totalWeeks = list.reduce((w, c) => w + c.weeks, 0);
   const weeksWord = (n: number) => (n === 1 ? "أسبوع" : n === 2 ? "أسبوعين" : n <= 10 ? `${n} أسابيع` : `${n} أسبوعا`);
   return (
     <div className="card-soft mt-8">
@@ -643,6 +523,7 @@ export default function Diagnostic() {
   const [stage, setStage] = useState<Stage>("intro");
   const [answers, setAnswers] = useState<DiagAnswers>({});
   const [asked, setAsked] = useState<string[]>([]);
+  const [live, setLive] = useState<ReturnType<AssessmentSession["liveState"]> | null>(null);
   const [history, setHistory] = useState<DiagQuestion[]>([]);
   const [question, setQuestion] = useState<DiagQuestion | null>(null);
   const [multiDraft, setMultiDraft] = useState<string[]>([]);
@@ -653,18 +534,12 @@ export default function Diagnostic() {
   const [swapCount, setSwapCount] = useState(0);
   const [savedProgress, setSavedProgress] = useState<SavedProgress | null>(() => loadProgress());
   /* نتيجة مكتملة محفوظة — من أنهى المؤشر سابقا لا يبدأ من الصفر أبدا */
-  const [savedDone] = useState(() => {
-    try {
-      const top = localStorage.getItem("wajeez_diag_top");
-      const raw = localStorage.getItem("wajeez_diag_answers");
-      if (!top || !raw) return null;
-      return { top, answers: JSON.parse(raw) as DiagAnswers };
-    } catch { return null; }
-  });
+  const [savedDone] = useState(() => loadLastResult<DiagResult>());
+  /* جلسة المحرك الحتمي — مصدر الأسئلة والنتيجة الوحيد */
+  const sessionRef = useRef<AssessmentSession | null>(null);
   /* الضيف أولا: يكمل التشخيص كاملا ويرى ملخصه الأولي، والحساب يُطلب فقط لفتح التفاصيل والحفظ */
   const [authed, setAuthed] = useState(() => Boolean(localStorage.getItem("wajeez_user")));
   const [offline, setOffline] = useState(() => !navigator.onLine);
-  const [computeMsg, setComputeMsg] = useState(0);
   const [savedFlash, setSavedFlash] = useState(false);
 
   /* تحذير قبل مغادرة تشخيص غير محفوظ — التقدم محفوظ تلقائيا لكن نطمئنه */
@@ -701,19 +576,14 @@ export default function Diagnostic() {
     };
   }, []);
 
-  /* حفظ تلقائي مع كل إجابة — لا تشخيص يضيع لو خرج وعاد */
-  useEffect(() => {
-    if (stage === "questions" && asked.length > 0) {
-      saveProgress(answers, asked);
-    }
-  }, [stage, answers, asked]);
-
-  /* حالة الفهم الحية — تتحدث مع كل إجابة */
-  const state = useMemo(() => buildState(answers, asked.length), [answers, asked]);
-  const estimatedTotal = useMemo(() => estimateTotal(answers, asked), [answers, asked]);
-  const progress = Math.min(100, Math.round(((asked.length + (question ? 1 : 0)) / estimatedTotal) * 100));
-  const understoodDims = (Object.keys(DIM_LABELS) as Dim[]).filter((d) => state.dims[d] >= 0.6);
-  const prelimTop = state.overall >= 0.3 ? state.ranked[0]?.p : undefined;
+  /* حالة الفهم الحية — تُحدَّث مع كل خطوة محرك، لا تُقرأ من المرجع أثناء التصيير */
+  const ESTIMATE_MAX = 14; // «غالبا 8–14 سؤالا» — توقف تكيفي
+  const estimatedTotal = Math.max(8, Math.min(ESTIMATE_MAX, asked.length + 3));
+  const progress = Math.min(100, Math.round(((asked.length + (question ? 1 : 0)) / ESTIMATE_MAX) * 100));
+  const liveNow = stage === "questions" ? live : null;
+  const understoodDims = liveNow ? (Object.keys(DIM_LABELS) as Dim[]).filter((d) => liveNow.dims[d] >= 0.6) : [];
+  const prelimTopId = liveNow && liveNow.overall >= 0.3 ? liveNow.rankedPathwayIds[0]?.id : undefined;
+  const prelimTop = prelimTopId ? pathways.find((p) => p.id === prelimTopId) : undefined;
 
   /* مراحل الرحلة الخمس — أيها اكتمل وأيها نشط الآن */
   const currentStageIdx = stageIndexOf(question);
@@ -728,42 +598,47 @@ export default function Diagnostic() {
     start();
   };
 
-  const start = () => {
-    track("diagnostic_started");
-    const first = nextQuestion({}, []);
-    setAnswers({});
-    setAsked([]);
-    setHistory([]);
+  /** يدفع خطوة المحرك إلى حالة الواجهة */
+  const applyStep = (step: { question: DiagQuestion | null }) => {
+    const session = sessionRef.current;
+    if (session) {
+      const snapshot = session.answersSnapshot;
+      setAsked(snapshot.map((a) => a.questionId));
+      setAnswers(
+        Object.fromEntries(snapshot.map((a) => [a.questionId, Array.isArray(a.value) ? a.value.join(",") : a.value]))
+      );
+      setLive(step.question ? session.liveState() : null);
+    }
     setMultiDraft([]);
     setTextDraft("");
-    if (!first) {
-      finish({});
+    setRatingsDraft({});
+    if (!step.question) {
+      finish();
       return;
     }
-    setQuestion(first);
+    setQuestion(step.question);
     setStage("questions");
   };
 
-  /* استئناف تشخيص غير مكتمل — يعيد بناء الأسئلة من الإجابات المحفوظة */
+  const start = () => {
+    track("diagnostic_started");
+    const session = createAssessment();
+    sessionRef.current = session;
+    setHistory([]);
+    applyStep(session.next());
+  };
+
+  /* استئناف تشخيص غير مكتمل — المحرك حتمي فيعيد نفس الأسئلة لنفس الإجابات */
   const doResume = () => {
-    const saved = loadProgress();
-    if (!saved) {
+    const session = AssessmentSession.resume();
+    if (!session) {
       start();
       return;
     }
-    const hist = rebuildHistory(saved.answers, saved.asked);
-    const next = nextQuestion(saved.answers, saved.asked);
-    setAnswers(saved.answers);
-    setAsked(saved.asked);
-    setHistory(hist);
-    setMultiDraft([]);
-    setTextDraft("");
-    if (!next) {
-      finish(saved.answers);
-      return;
-    }
-    setQuestion(next);
-    setStage("questions");
+    sessionRef.current = session;
+    const snapshot = session.answersSnapshot;
+    setHistory(snapshot.map((a) => diagQuestionById(a.questionId)).filter((q): q is DiagQuestion => Boolean(q)));
+    applyStep(session.next());
     window.scrollTo(0, 0);
   };
 
@@ -773,66 +648,43 @@ export default function Diagnostic() {
 
   const discardSaved = () => {
     clearProgress();
+    sessionRef.current?.abandon();
     setSavedProgress(null);
   };
 
   const showSavedResult = () => {
     if (!savedDone) return;
-    const res = computeResult(savedDone.answers);
-    setResult(res);
-    setTopPathway(res.top);
+    setResult(savedDone);
+    setTopPathway(savedDone.top);
     setStage("result");
   };
 
   const restartFresh = () => {
-    for (const store of [sessionStorage, localStorage]) {
-      store.removeItem("wajeez_diag_answers");
-      store.removeItem("wajeez_diag_top");
-      store.removeItem("wajeez_result_json");
-    }
+    clearAllSessionData();
     window.location.reload();
   };
 
-  const finish = (finalAnswers: DiagAnswers) => {
-    setStage("computing");
-    clearProgress();
+  const finish = () => {
+    const session = sessionRef.current;
+    if (!session) return;
+    track("diagnostic_completed", { questions: session.askedCount });
+    const { result: res } = session.finish();
+    saveLastResult(res);
     setSavedProgress(null);
-    track("diagnostic_completed", { questions: Object.keys(finalAnswers).length });
-    const res = computeResult(finalAnswers);
-    // نحفظ إجاباته ونتيجته وJSON القرار — في الجلسة وعلى الجهاز ليبقى التشخيص بعد إغلاق المتصفح
-    for (const store of [sessionStorage, localStorage]) {
-      store.setItem("wajeez_diag_answers", JSON.stringify(finalAnswers));
-      store.setItem("wajeez_diag_top", res.top.id);
-      store.setItem("wajeez_result_json", JSON.stringify(res.resultJson));
-    }
-    setComputeMsg(0);
-    const ticker = window.setInterval(() => setComputeMsg((m) => m + 1), 620);
-    window.setTimeout(() => {
-      window.clearInterval(ticker);
-      setResult(res);
-      setTopPathway(res.top);
-      track("recommendation_viewed", { confidence: res.confidence });
-      setStage("result");
-    }, 1900);
+    setResult(res);
+    setTopPathway(res.top);
+    track("recommendation_viewed", { confidence: res.confidence });
+    setStage("result");
+    window.scrollTo(0, 0);
   };
 
-  const answer = (qid: string, value: string) => {
-    if (!question) return;
-    const next = { ...answers, [qid]: value };
-    const nextAsked = asked.includes(qid) ? asked : [...asked, qid];
-    track("diagnostic_question_completed", { count: nextAsked.length });
-    setAnswers(next);
-    setAsked(nextAsked);
+  const answer = (qid: string, value: string | string[]) => {
+    const session = sessionRef.current;
+    if (!question || !session) return;
+    track("diagnostic_question_completed", { count: asked.length + 1 });
     setHistory([...history, question]);
-    setMultiDraft([]);
-    setTextDraft("");
-    setRatingsDraft({});
-    const nq = nextQuestion(next, nextAsked);
-    if (!nq) {
-      finish(next);
-    } else {
-      setQuestion(nq);
-    }
+    const step = session.submit(qid, value);
+    applyStep(step);
   };
 
   const toggleMulti = (q: DiagQuestion, value: string) => {
@@ -852,26 +704,31 @@ export default function Diagnostic() {
 
   const submitMulti = (q: DiagQuestion) => {
     if (multiDraft.length === 0) return;
-    answer(q.id, multiDraft.join(","));
+    answer(q.id, multiDraft);
   };
 
   const back = () => {
-    if (history.length === 0) {
+    const session = sessionRef.current;
+    if (history.length === 0 || !session) {
       setStage("intro");
       return;
     }
+    session.popAnswer();
     const prev = history[history.length - 1];
-    const nextAnswers = { ...answers };
-    delete nextAnswers[prev.id];
-    setAnswers(nextAnswers);
-    setAsked(asked.filter((id) => id !== prev.id));
     setHistory(history.slice(0, -1));
+    const snapshot = session.answersSnapshot;
+    setAsked(snapshot.map((a) => a.questionId));
+    setAnswers(
+      Object.fromEntries(snapshot.map((a) => [a.questionId, Array.isArray(a.value) ? a.value.join(",") : a.value]))
+    );
     setQuestion(prev);
     setMultiDraft([]);
     setTextDraft("");
   };
 
   const restart = () => {
+    sessionRef.current?.abandon();
+    sessionRef.current = null;
     setAnswers({});
     setAsked([]);
     setHistory([]);
@@ -1170,14 +1027,14 @@ export default function Diagnostic() {
                     onClick={() => answer(question.id, "")}
                     className="text-sm font-semibold text-white/45 transition hover:text-white"
                   >
-                    لا شيء إضافي — أنهِ التشخيص
+                    تخطَّ هذا السؤال
                   </button>
                   <Button
                     onClick={() => answer(question.id, textDraft.trim())}
                     disabled={textDraft.trim().length === 0}
                     className="rounded-full bg-[#FABC05] px-8 font-black text-[#0D0D0D] hover:bg-[#FABC05]/90"
                   >
-                    احفظ كلمتي وأظهر النتيجة
+                    متابعة
                     <ArrowLeft className="mr-2 h-4 w-4" />
                   </Button>
                 </div>
@@ -1290,7 +1147,7 @@ export default function Diagnostic() {
               </button>
               <button
                 onClick={() => {
-                  saveProgress(answers, asked);
+                  /* الحفظ تلقائي مع كل إجابة عبر الخدمة — هذا الزر طمأنة فقط */
                   setSavedFlash(true);
                   window.setTimeout(() => setSavedFlash(false), 2200);
                 }}
@@ -1314,24 +1171,6 @@ export default function Diagnostic() {
               )}
             </div>
           </div>
-        </section>
-      )}
-
-      {/* ─── Computing ─── */}
-      {stage === "computing" && (
-        <section className="mx-auto flex min-h-[60vh] max-w-xl flex-col items-center justify-center px-5 text-center">
-          <div className="relative">
-            <div className="h-20 w-20 animate-spin rounded-full border-4 border-white/10 border-t-[#38A7B4]" />
-            <Sparkles className="absolute inset-0 m-auto h-8 w-8 text-[#FABC05]" />
-          </div>
-          <h2 className="mt-8 text-2xl font-black">جارٍ بناء توصيتك…</h2>
-          <p className="mt-3 min-h-14 leading-loose text-white/55" aria-live="polite">
-            {[
-              "نقرأ قصتك وهدفك وظروف يومك…",
-              "نطابق فجواتك مع كتالوج مساراتنا المصممة…",
-              "نحسب درجة الثقة ونراجع الحالات الاستثنائية…",
-            ][computeMsg % 3]}
-          </p>
         </section>
       )}
 
@@ -1371,14 +1210,14 @@ export default function Diagnostic() {
           </div>
 
           {/* قصتك كما فهمناها — يقرأ نفسه قبل أن يرى التوصية */}
-          {storySummary(answers).length > 0 && (
+          {((result.resultJson.story_ar as string[] | undefined) ?? []).length > 0 && (
             <div className="card-soft mt-10 border-[#38A7B4]/30">
               <h3 className="h-card flex items-center gap-2">
                 <UserCheck className="h-5 w-5 text-[#6EC7D1]" />
                 قصتك كما فهمناها
               </h3>
               <div className="mt-4 space-y-2.5">
-                {storySummary(answers).map((line) => (
+                {((result.resultJson.story_ar as string[] | undefined) ?? []).map((line) => (
                   <p key={line} className="flex items-start gap-3 text-sm leading-relaxed text-white/75">
                     <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#38A7B4]" />
                     {line}
@@ -1392,7 +1231,7 @@ export default function Diagnostic() {
           )}
 
           {/* خريطة المهارات المرئية */}
-          <SkillMap answers={answers} />
+          <SkillMap bars={((result.resultJson.skill_bars as SkillBar[] | undefined) ?? [])} />
 
           {/* Top pathway card */}
           <div className="mt-10 overflow-hidden rounded-3xl border border-[#38A7B4]/40 bg-gradient-to-b from-[#12343B] to-[#0D0D0D]">

@@ -224,8 +224,8 @@ function Hero() {
           </span>
         </h1>
         <p className="reveal is-visible mx-auto mt-6 max-w-xl text-base leading-8 text-muted-foreground md:text-lg">
-          تشخيص ذكي يسألك أسئلة قليلة، يفهم هدفك وواقعك ووقتك،
-          ثم يوصي بمسار واحد واضح — <span className="text-foreground">ويشرح لك لماذا.</span>
+          تشخيص ذكي يسألك غالبا 8–14 سؤالا بتوقف تكيفي — يتوقف حين تكتمل الصورة،
+          يفهم هدفك وواقعك ووقتك، ثم يوصي بمسار واحد واضح — <span className="text-foreground">ويشرح لك لماذا.</span>
         </p>
         <div className="reveal is-visible mt-9 flex flex-col items-center justify-center">
           <a
