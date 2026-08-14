@@ -14,7 +14,7 @@ function Shell({ children }: { children: React.ReactNode }) {
             <span className="text-sm font-medium">الرئيسية</span>
           </Link>
           <div className="flex items-center gap-2">
-            <span className="grid h-9 w-9 place-items-center rounded-lg bg-[#38A7B4] font-black text-[#08272B]">و</span>
+            <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 object-contain" />
             <span className="font-black">أكاديمي وجيز</span>
           </div>
         </div>

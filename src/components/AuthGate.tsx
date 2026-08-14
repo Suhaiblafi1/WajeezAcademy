@@ -187,7 +187,7 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
       <div className="mx-auto max-w-md">
         <div className="overflow-hidden rounded-3xl border border-[#38A7B4]/25 bg-gradient-to-b from-[#12262A] to-[#0D0D0D] shadow-[0_24px_80px_-24px_rgba(56,167,180,0.35)]">
           <div className="border-b border-white/5 px-8 pb-6 pt-8 text-center">
-            <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-[#38A7B4] text-xl font-black text-[#08272B]">و</span>
+            <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="mx-auto h-12 w-12 object-contain" />
             <h2 className="mt-4 text-2xl font-black text-white">استعادة كلمة المرور</h2>
             <p className="mt-2 text-sm leading-relaxed text-white/55">
               أدخل بريدك وسنرسل لك رابط إعادة التعيين
@@ -238,7 +238,7 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
     <div className="mx-auto max-w-md">
       <div className="overflow-hidden rounded-3xl border border-[#38A7B4]/25 bg-gradient-to-b from-[#12262A] to-[#0D0D0D] shadow-[0_24px_80px_-24px_rgba(56,167,180,0.35)]">
         <div className="border-b border-white/5 px-8 pb-6 pt-8 text-center">
-          <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-[#38A7B4] text-xl font-black text-[#08272B]">و</span>
+          <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="mx-auto h-12 w-12 object-contain" />
           <h2 className="mt-4 text-2xl font-black text-white">
             {mode === "signup" ? "ابدأ رحلتك مع وجيز" : "أهلا بعودتك"}
           </h2>

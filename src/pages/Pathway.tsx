@@ -260,7 +260,7 @@ export default function PathwayPage() {
             <span className="text-sm font-medium">الرئيسية</span>
           </Link>
           <div className="flex items-center gap-2">
-            <span className="grid h-9 w-9 place-items-center rounded-lg bg-[#38A7B4] font-black text-[#08272B]">و</span>
+            <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 object-contain" />
             <span className="font-black">أكاديمي وجيز</span>
           </div>
           {user && (
@@ -336,10 +336,10 @@ export default function PathwayPage() {
             <div className="story-fade mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-dashed border-[#38A7B4]/40 bg-[#38A7B4]/5 px-6 py-4">
               <p className="text-sm leading-relaxed text-white/70">
                 <span className="font-black text-[#6EC7D1]">لست متأكدا أن هذا مسارك الأنسب؟ </span>
-                خمس دقائق من التشخيص تطابقك مع مساراتنا المصممة وتشرح لك السبب.
+                خمس دقائق مع مؤشر وجيز تطابقك مع مساراتنا المصممة وتشرح لك السبب.
               </p>
               <Button variant="outline" className="border-[#38A7B4]/60 text-[#6EC7D1] hover:bg-[#38A7B4]/15" asChild>
-                <Link to="/diagnostic">خذ التشخيص أولا</Link>
+                <Link to="/diagnostic">ابدأ بمؤشر وجيز</Link>
               </Button>
             </div>
           )}

@@ -58,7 +58,7 @@ export default function AdminLayout({ children, title }: { children: React.React
       <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0D0D0D]/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
           <Link to="/" className="flex items-center gap-2">
-            <span className="grid h-9 w-9 place-items-center rounded-lg bg-[#FABC05] font-black text-[#0D0D0D]">و</span>
+            <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 object-contain" />
             <span className="hidden font-black sm:block">وجيز — الإدارة والعمليات</span>
           </Link>
           <nav className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1">

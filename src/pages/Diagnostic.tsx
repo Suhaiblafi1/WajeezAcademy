@@ -574,7 +574,7 @@ export default function Diagnostic() {
   const [topPathway, setTopPathway] = useState<Pathway | null>(null);
   const [swapCount, setSwapCount] = useState(0);
   const [savedProgress, setSavedProgress] = useState<SavedProgress | null>(() => loadProgress());
-  /* نتيجة مكتملة محفوظة — من أنهى البوصلة سابقا لا يبدأ من الصفر أبدا */
+  /* نتيجة مكتملة محفوظة — من أنهى المؤشر سابقا لا يبدأ من الصفر أبدا */
   const [savedDone] = useState(() => {
     try {
       const top = localStorage.getItem("wajeez_diag_top");
@@ -841,7 +841,7 @@ export default function Diagnostic() {
             <span className="text-sm font-medium">العودة للرئيسية</span>
           </Link>
           <div className="flex items-center gap-2">
-            <span className="grid h-9 w-9 place-items-center rounded-lg bg-[#38A7B4] font-black text-[#08272B]">و</span>
+            <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 object-contain" />
             <span className="font-black">أكاديمي وجيز</span>
           </div>
         </div>
@@ -850,7 +850,7 @@ export default function Diagnostic() {
       {/* ─── Intro ─── */}
       {stage === "intro" && (
         <section className="story-fade mx-auto max-w-3xl px-5 py-16 text-center md:py-24">
-          <Badge className="border border-[#FABC05]/40 bg-[#FABC05]/10 text-[#FABC05]">بوصلة وجيز الكاملة</Badge>
+          <Badge className="border border-[#FABC05]/40 bg-[#FABC05]/10 text-[#FABC05]">مؤشر وجيز الكاملة</Badge>
           <h1 className="mt-5 text-3xl font-black leading-snug md:text-5xl">
             خمس دقائق من الصدق
             <span className="text-[#6EC7D1]"> تختصر عليك شهورا من التخبط</span>
@@ -916,12 +916,12 @@ export default function Diagnostic() {
             </div>
           )}
 
-          {/* نتيجة مكتملة محفوظة — لا نطلب البوصلة مرتين */}
+          {/* نتيجة مكتملة محفوظة — لا نطلب المؤشر مرتين */}
           {!savedProgress && savedDone && (
             <div className="mx-auto mt-8 max-w-xl rounded-2xl border border-[#38A7B4]/40 bg-[#38A7B4]/10 p-5">
               <p className="flex items-center justify-center gap-2 text-sm font-bold text-[#6EC7D1]">
                 <History className="h-4 w-4" />
-                لديك نتيجة بوصلة محفوظة على جهازك
+                لديك نتيجة مؤشر محفوظة على جهازك
               </p>
               <p className="mt-1.5 text-xs text-white/50">أكملت التشخيص سابقا — لا حاجة لإعادته إلا إذا تغيرت ظروفك</p>
               <div className="mt-4 flex flex-wrap justify-center gap-3">
@@ -937,7 +937,7 @@ export default function Diagnostic() {
                   onClick={restartFresh}
                   className="rounded-full border-white/20 text-white/70 hover:bg-white/5"
                 >
-                  أعد البوصلة من جديد
+                  أعد المؤشر من جديد
                 </Button>
               </div>
             </div>
@@ -1378,6 +1378,17 @@ export default function Diagnostic() {
           {/* التفاصيل الكاملة تُفتح بحساب مجاني — ما فوق هذا السطر متاح للضيف كملخص أولي */}
           {authed ? (
             <>
+          {/* قرار مبكر لمن اقتنع — دون المرور على كل التفاصيل */}
+          <div className="mt-6 flex flex-col items-center gap-2">
+            <Button size="lg" className="h-12 rounded-full bg-[#FABC05] px-10 font-black text-[#0D0D0D] hover:bg-[#FABC05]/90" asChild>
+              <Link to={`/pathways/${topPathway.id}`}>
+                اعتمد مساري الآن
+                <ArrowLeft className="mr-2 h-4 w-4" />
+              </Link>
+            </Button>
+            <p className="text-xs text-white/45">أو تابع القراءة — التفاصيل الكاملة أسفل الصفحة</p>
+          </div>
+
           {/* رحلة المسار خطوة بخطوة — خط زمني لا قائمة */}
           <JourneyTimeline pathway={topPathway} />
 
@@ -1642,9 +1653,9 @@ export default function Diagnostic() {
             </>
           ) : (
             /* بطاقة الضيف — رأى الملخص الأولي، والتفاصيل الكاملة بانتظار حساب يحفظها */
-            <div className="mt-10 overflow-hidden rounded-3xl border border-[#FABC05]/40 bg-gradient-to-b from-[#2A2200] to-[#0D0D0D] p-6 text-center md:p-10">
-              <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[#FABC05]/15">
-                <Lock className="h-7 w-7 text-[#FABC05]" />
+            <div className="mt-10 overflow-hidden rounded-3xl border border-[#38A7B4]/40 bg-gradient-to-b from-[#12343B] to-[#0D0D0D] p-6 text-center md:p-10">
+              <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[#38A7B4]/15">
+                <Lock className="h-7 w-7 text-[#6EC7D1]" />
               </span>
               <h3 className="mt-5 text-xl font-black md:text-2xl">ملخصك بيدك الآن — والتفاصيل الكاملة تنتظرك</h3>
               <p className="mx-auto mt-3 max-w-md text-sm leading-loose text-white/60">
@@ -1658,7 +1669,7 @@ export default function Diagnostic() {
                   "اعتماد المسار وفتح صفحته وتقريرك الشخصي",
                 ].map((f) => (
                   <p key={f} className="flex items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-xs font-semibold leading-relaxed text-white/75">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#FABC05]" />
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#6EC7D1]" />
                     {f}
                   </p>
                 ))}
@@ -1666,7 +1677,7 @@ export default function Diagnostic() {
               <Button
                 size="lg"
                 onClick={() => setStage("gate")}
-                className="mt-8 h-14 rounded-full bg-[#FABC05] px-10 text-lg font-black text-[#0D0D0D] hover:bg-[#FABC05]/90"
+                className="mt-8 h-14 rounded-full bg-[#38A7B4] px-10 text-lg font-black text-[#08272B] hover:bg-[#38A7B4]/90"
               >
                 احفظ نتيجتي وافتح التفاصيل
                 <ArrowLeft className="mr-2 h-5 w-5" />

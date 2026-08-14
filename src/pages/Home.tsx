@@ -34,36 +34,36 @@ function useReveal() {
    القصص والشعارات انتقلت إلى مصدر مشترك تتقاسمه صفحة القصص المستقلة */
 import { stories, partnerLogos } from '@/data/stories'
 
-/* «بوصلة وجيز» — خمسة أسئلة وعي مستقلة: تُحفظ محليا على جهاز الزائر فقط ولا تغذي التشخيص،
+/* «مؤشر وجيز» — خمسة أسئلة وعي مستقلة: تُحفظ محليا على جهاز الزائر فقط ولا تغذي التشخيص،
    بل توقظ فيه السؤال الصحيح وتفتح شهيته لخدمتنا، ثم يبدأ التشخيص الكامل من الصفر باحترافية */
 const mirrorQuestions = [
   {
-    id: 'm1', moduleLabel: 'البوصلة',
+    id: 'm1', moduleLabel: 'المؤشر',
     text: 'خلال هذا العام — كم مرة قررت أن تتعلم شيئا جديدا... ثم انشغلت؟',
     options: ['أكثر مما أعترف به لنفسي', 'مرة أو مرتين', 'بدأت فعلا لكني توقفت', 'لا — أنا منتظم غالبا'],
   },
   {
-    id: 'm2', moduleLabel: 'البوصلة',
+    id: 'm2', moduleLabel: 'المؤشر',
     text: 'لو سألنا مديرك أو أستاذك: ما المهارة التي تنقصك فعلا؟ — هل تعرف إجابته فورا؟',
     options: ['نعم — أعرفها بالضبط', 'لدي تخمين لا أكثر', 'بصراحة؟ لا أعرف'],
   },
   {
-    id: 'm3', moduleLabel: 'البوصلة',
+    id: 'm3', moduleLabel: 'المؤشر',
     text: 'كم دورة إلكترونية بدأتها في حياتك... وأكملتها فعلا للنهاية؟',
     options: ['أكملت معظمها', 'بعضها فقط', 'أبدأ بحماس وأتوقف — قصتي المعتادة'],
   },
   {
-    id: 'm4', moduleLabel: 'البوصلة',
+    id: 'm4', moduleLabel: 'المؤشر',
     text: 'عندما تفكر في وضعك المهني بعد سنتين — كيف تبدو الصورة؟',
     options: ['واضحة ومكتوبة', 'في رأسي تقريبا', 'ضبابية — وهذا يقلقني أحيانا'],
   },
   {
-    id: 'm5', moduleLabel: 'البوصلة',
+    id: 'm5', moduleLabel: 'المؤشر',
     text: 'وما الذي يمنعك اليوم من البدء فعلا؟',
     options: ['لا أعرف من أين أبدأ', 'الخيارات كثيرة وتشتتني', 'أخاف أدفع ثمن شيء لا يناسبني', 'ظروفي لا تسمح الآن'],
   },
 ]
-/* جواب المانع الأخير يقود رسالة البوصلة — هنا تُشرح قيمة الخدمة بلغة حالته هو */
+/* جواب المانع الأخير يقود رسالة المؤشر — هنا تُشرح قيمة الخدمة بلغة حالته هو */
 const mirrorPitch: Record<string, string> = {
   'لا أعرف من أين أبدأ': 'لهذا بالضبط وُجد التشخيص: يبدأ منك أنت — هدفك وقصتك وظروفك — لا من قائمة دورات نفرضها عليك.',
   'الخيارات كثيرة وتشتتني': 'التشخيص يحسم التشتت: مسار واحد مفسَّر بدرجة ثقة، بدل أربعين قائمة تتنافس على انتباهك.',
@@ -118,7 +118,7 @@ function Nav() {
   }, [open])
 
   const links: { label: string; href: string; route?: boolean }[] = [
-    { label: 'بوصلة وجيز', href: '#diagnostic' },
+    { label: 'مؤشر وجيز', href: '#diagnostic' },
     { label: 'المسارات', href: '/pathways', route: true },
     { label: 'الدورات', href: '/courses', route: true },
     { label: 'قصص المتعلمين', href: '/stories', route: true },
@@ -161,7 +161,7 @@ function Nav() {
             href="#diagnostic"
             className="btn-teal hidden px-5 py-2.5 text-sm md:inline-flex"
           >
-            جرّب بوصلة وجيز
+            جرّب مؤشر وجيز
           </a>
           <button
             ref={menuBtnRef}
@@ -194,7 +194,7 @@ function Nav() {
             </Link>
           )}
           <a href="#diagnostic" onClick={() => setOpen(false)} className="btn-teal mt-2 flex w-full px-5 py-3">
-            جرّب بوصلة وجيز
+            جرّب مؤشر وجيز
           </a>
           <div className="mt-3 flex justify-center">
           </div>
@@ -232,7 +232,7 @@ function Hero() {
             onClick={() => track('hero_cta_clicked')}
             className="group btn-teal w-full px-8 py-4 shadow-[0_0_40px_-8px_#38A7B4] sm:w-auto"
           >
-            خذ بوصلة وجيز
+            خذ مؤشر وجيز
             <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
           </a>
           <a
@@ -251,7 +251,7 @@ function Hero() {
   )
 }
 
-/* ───────────────── بوصلة وجيز — خمسة أسئلة صدق مع النفس ───────────────── */
+/* ───────────────── مؤشر وجيز — خمسة أسئلة صدق مع النفس ───────────────── */
 function DiagnosticTeaser() {
   const [step, setStep] = useState(0)
   const [answers, setAnswers] = useState<Record<string, string>>({})
@@ -300,7 +300,7 @@ function DiagnosticTeaser() {
     .map((q) => (q.options.includes(answers[q.id]) ? answers[q.id] : null))
     .filter(Boolean) as string[]
 
-  /* صورة أولية صادقة مشتقة من إجابات البوصلة نفسها — بلا أرقام ولا ادعاءات */
+  /* صورة أولية صادقة مشتقة من إجابات المؤشر نفسها — بلا أرقام ولا ادعاءات */
   const mirrorInsights: Record<string, string> = {
     'نعم — أعرفها بالضبط': 'تعرف فجوتك بالاسم — نصف الطريق قطعتَه، والباقي خطة تنفيذ لا بحث.',
     'لدي تخمين لا أكثر': 'عندك تخمين عن فجوتك — التشخيص الكامل يحوّله إلى يقين موثّق.',
@@ -321,7 +321,7 @@ function DiagnosticTeaser() {
     <section id="diagnostic" className="relative py-20 md:py-24">
       <div className="mx-auto max-w-4xl px-5">
         <div className="reveal text-center">
-          <SectionLabel>بوصلة وجيز — دقيقة واحدة</SectionLabel>
+          <SectionLabel>مؤشر وجيز — دقيقة واحدة</SectionLabel>
           <h2 className="mt-5 text-3xl font-bold md:text-4xl">لا تشترِ دورة عشوائيا… اكتشف ما تحتاج تعلّمه أولا</h2>
           <p className="mx-auto mt-4 max-w-lg text-muted-foreground leading-8">
             بدلا من شراء دورات عشوائية — أجب عن أسئلة تتكيف مع احتياجك،
@@ -346,7 +346,7 @@ function DiagnosticTeaser() {
 
           {/* إعلان السؤال لقارئ الشاشة */}
           <p className="sr-only" aria-live="polite">
-            {!done ? `سؤال ${step + 1} من ${mirrorQuestions.length}: ${current.text}` : 'اكتملت البوصلة — تظهر خلاصتك الآن'}
+            {!done ? `سؤال ${step + 1} من ${mirrorQuestions.length}: ${current.text}` : 'اكتملت المؤشر — تظهر خلاصتك الآن'}
           </p>
 
           <div className="p-8 md:p-10" key={step}>
@@ -434,7 +434,7 @@ function DiagnosticTeaser() {
                   </div>
                 )}
                 <p className="mx-auto mt-4 max-w-md leading-8 text-muted-foreground">
-                  البوصلة أدت وظيفتها. الآن يبدأ العمل الحقيقي: تشخيص كامل يفهم قصتك ويستنتج مستواك
+                  المؤشر أدت وظيفتها. الآن يبدأ العمل الحقيقي: تشخيص كامل يفهم قصتك ويستنتج مستواك
                   من مواقفك الحقيقية — ثم يرسم لك مسارا مفسّرا تستطيع تخصيصه.
                 </p>
                 <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -443,7 +443,7 @@ function DiagnosticTeaser() {
                     <ArrowLeft className="h-4 w-4" />
                   </Link>
                   <button onClick={reset} className="text-sm text-muted-foreground underline-offset-4 hover:text-teal-light hover:underline">
-                    أعد البوصلة من جديد
+                    أعد المؤشر من جديد
                   </button>
                 </div>
               </div>
@@ -1018,7 +1018,7 @@ function FinalCta() {
             href="#diagnostic"
             className="btn-teal px-10 py-5 text-lg shadow-[0_0_60px_-10px_#38A7B4]"
           >
-            شغّل بوصلة وجيز الآن
+            شغّل مؤشر وجيز الآن
             <ArrowLeft className="h-5 w-5" />
           </a>
           <p className="mt-4 text-xs text-muted-foreground">مجاني · بدون حساب · إجاباتك تُحفظ على جهازك فقط</p>
@@ -1064,7 +1064,7 @@ const footerCols: { title: string; icon: typeof GraduationCap; links: { label: s
     links: [
       { label: 'كل المسارات', to: '/pathways' },
       { label: 'كل الدورات', to: '/courses' },
-      { label: 'بوصلة وجيز والتشخيص', to: '/diagnostic' },
+      { label: 'مؤشر وجيز والتشخيص', to: '/diagnostic' },
       { label: 'قصص المتعلمين', to: '/stories' },
       { label: 'المدربون والمستشارون', to: '/trainers' },
       { label: 'التحقق من شهادة', to: '/verify' },
@@ -1109,7 +1109,7 @@ function Footer() {
         <div className="grid gap-10 md:grid-cols-5">
           <div className="md:col-span-1">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal font-bold text-[#08272B]">و</div>
+              <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 object-contain" />
               <div className="font-bold">وجيز <span className="text-teal-light">أكاديمي</span></div>
             </div>
             <p className="mt-4 text-sm leading-7 text-muted-foreground">
@@ -1168,7 +1168,7 @@ function MobileCtaBar() {
       className={`fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[#0D0D0D]/90 px-5 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-3 backdrop-blur-xl transition-transform duration-300 md:hidden ${visible ? 'translate-y-0' : 'translate-y-full'}`}
     >
       <a href="#diagnostic" className="btn-teal w-full py-3.5">
-        بوصلة وجيز — دقيقة واحدة
+        مؤشر وجيز — دقيقة واحدة
         <ArrowLeft className="h-4 w-4" />
       </a>
     </div>
@@ -1176,7 +1176,7 @@ function MobileCtaBar() {
 }
 
 /* ───────────────── page ─────────────────
-   الترتيب المعتمد: بطل واضح ← بوصلة وجيز ← كيف تعمل الرحلة ← شركاء (دليل ثقة مبكر)
+   الترتيب المعتمد: بطل واضح ← مؤشر وجيز ← كيف تعمل الرحلة ← شركاء (دليل ثقة مبكر)
    ← مخرجات التعلم ← ستة مسارات مميزة ← أربع دورات مميزة ← قصص حقيقية ← أسئلة ← دعوة أخيرة */
 export default function Home() {
   useReveal()
