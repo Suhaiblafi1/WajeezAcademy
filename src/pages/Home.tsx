@@ -520,11 +520,11 @@ function ImageBand() {
       <div className="absolute inset-0 flex items-end">
         <div className="mx-auto w-full max-w-6xl px-5 pb-10">
           <p className="reveal max-w-xl text-2xl font-bold leading-relaxed md:text-3xl">
-            التعلم عندنا ليس مقعدا في صف —
-            <span className="text-teal-light"> بل طاولة عمل تُنجز عليها شيئا حقيقيا.</span>
+            غيرك يشاهد الدروس وينساها —
+            <span className="text-teal-light"> أنت ستنجز عملا يتحدث عنك.</span>
           </p>
           <p className="reveal mt-3 max-w-md text-sm leading-7 text-white/70">
-            مجموعات صغيرة، مدرب يراجع عملك بيده، ومشروع تخرج تضعه في ملفك المهني.
+            مدرب يراجع عملك بيده، ومشروع تخرج يدخل ملفك المهني من أول يوم.
           </p>
         </div>
       </div>
