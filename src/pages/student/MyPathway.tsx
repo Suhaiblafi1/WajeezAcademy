@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router";
 import {
   Lock, PlayCircle, CheckCircle2, AlertTriangle, Trophy, RefreshCcw,
@@ -27,7 +27,7 @@ export default function MyPathway() {
   const pathway = pathwayById(pathwayId);
   const [state] = useState(() => loadPortal(pathwayId));
   const ids = pathwayCourses[pathwayId] ?? [];
-  const conditions = useMemo(() => projectConditions(pathwayId, state), [pathwayId, state]);
+  const conditions = projectConditions(pathwayId, state);
   const metCount = conditions.filter((c) => c.met).length;
   const reviewMsg = `مرحبا، أنا طالب مسار «${pathway?.name}» وأريد مراجعة مساري (تبديل/إضافة دورة).`;
 

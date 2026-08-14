@@ -4,7 +4,8 @@ import {
   AlertTriangle, ArrowRight, CalendarPlus, CheckCircle2, GitBranch,
   ShieldAlert, X,
 } from "lucide-react";
-import AdvisorLayout, { advisorIdentity } from "./AdvisorLayout";
+import AdvisorLayout from "./AdvisorLayout";
+import { advisorIdentity } from "./advisor-identity";
 import {
   loadAdvisorStudents, riskScore, riskLevel, nextBestAction,
   studentPathwayName, studentCourseCount, currentCourseName, logAudit, RISK_RULES,

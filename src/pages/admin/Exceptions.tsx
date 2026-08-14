@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { CheckCircle2, ShieldAlert, XCircle } from "lucide-react";
-import AdminLayout, { adminIdentity } from "./AdminLayout";
+import AdminLayout from "./AdminLayout";
+import { adminIdentity } from "./admin-identity";
 import { loadExceptions, resolveException, EXCEPTION_KIND_LABEL, type ExceptionKind } from "@/data/admin";
 
 const KIND_CLS: Record<ExceptionKind, string> = {
@@ -14,7 +15,7 @@ const KIND_CLS: Record<ExceptionKind, string> = {
 export default function Exceptions() {
   const me = adminIdentity();
   const [tick, setTick] = useState(0);
-  const cases = useMemo(() => loadExceptions(), [tick]);
+  const cases = useMemo(() => { void tick; return loadExceptions(); }, [tick]); // tick عداد إبطال مقصود بعد كل كتابة
   const [note, setNote] = useState<string | null>(null);
 
   const act = (id: string, status: "approved" | "rejected") => {

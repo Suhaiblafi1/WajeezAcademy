@@ -9,24 +9,21 @@ import { pathwayCourses } from "@/data/courses";
 
 /** إطار بوابة الطالب: شريط علوي + تنقل + إشعارات + حارس الوصول (دفع سابق أو معاينة تجريبية) */
 export default function PortalLayout({ children, title }: { children: React.ReactNode; title: string }) {
-  const [allowed, setAllowed] = useState<boolean | null>(null);
+  /* فتح علم المالك عبر ?preview=owner في العنوان — مشتق أثناء التصيير لا في تأثير */
+  const previewOwner = new URLSearchParams(window.location.search).get("preview") === "owner";
+  const [allowed, setAllowed] = useState<boolean>(() => canAccessPortal() || previewOwner);
   const [bellOpen, setBellOpen] = useState(false);
-  const [notifs, setNotifs] = useState<PortalNotification[]>([]);
   const navigate = useNavigate();
   const user = readUserName();
   const enrollment = getEnrollment();
   const pathwayId = enrollment?.pathwayId ?? pathways.find((p) => (pathwayCourses[p.id] ?? []).length >= 4)?.id ?? "";
+  const [notifs, setNotifs] = useState<PortalNotification[]>(() =>
+    pathwayId ? loadPortal(pathwayId).notifications.slice(0, 6) : []
+  );
 
   useEffect(() => {
-    /* فتح علم المالك مرة واحدة عبر ?preview=owner في العنوان */
-    if (new URLSearchParams(window.location.search).get("preview") === "owner") unlockOwner();
-    setAllowed(canAccessPortal());
-  }, []);
-
-  /* تحميل آخر الإشعارات بعد السماح بالوصول */
-  useEffect(() => {
-    if (allowed && pathwayId) setNotifs(loadPortal(pathwayId).notifications.slice(0, 6));
-  }, [allowed, pathwayId]);
+    if (previewOwner) unlockOwner();
+  }, [previewOwner]);
 
   const unreadCount = notifs.filter((n) => !n.read).length;
   const markAllRead = () => {
@@ -36,8 +33,6 @@ export default function PortalLayout({ children, title }: { children: React.Reac
     savePortal(s);
     setNotifs(s.notifications.slice(0, 6));
   };
-
-  if (allowed === null) return null;
 
   if (!allowed) {
     return (

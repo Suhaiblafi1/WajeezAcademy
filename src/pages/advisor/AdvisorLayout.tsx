@@ -1,22 +1,7 @@
 import { useState } from "react";
 import { Link, NavLink } from "react-router";
 import { ClipboardList, Headset, LayoutDashboard, Users } from "lucide-react";
-
-export const ADVISOR_IDENTITIES = [
-  { id: "adv-reem", name: "أ. ريم القحطاني", title: "مستشارة الجاهزية المهنية والمسارات التأسيسية" },
-  { id: "adv-faisal", name: "د. فيصل العتيبي", title: "مستشار تطوير الموظفين" },
-  { id: "adv-sultan", name: "م. سلطان الدوسري", title: "مستشار القطاع الحكومي والقيادة" },
-  { id: "adv-lina", name: "م. لينا الحربي", title: "مستشارة ريادة الأعمال" },
-];
-
-const KEY = "wajeez_advisor_identity";
-
-export function advisorIdentity(): { id: string; name: string; title: string } | null {
-  try {
-    const raw = localStorage.getItem(KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
-}
+import { ADVISOR_IDENTITIES, ADVISOR_IDENTITY_KEY, advisorIdentity } from "./advisor-identity";
 
 /** إطار بوابة المستشار: اختيار هوية المستشار + تنقل */
 export default function AdvisorLayout({ children, title }: { children: React.ReactNode; title: string }) {
@@ -34,7 +19,7 @@ export default function AdvisorLayout({ children, title }: { children: React.Rea
           {ADVISOR_IDENTITIES.map((a) => (
             <button
               key={a.id}
-              onClick={() => { localStorage.setItem(KEY, JSON.stringify(a)); setMe(a); }}
+              onClick={() => { localStorage.setItem(ADVISOR_IDENTITY_KEY, JSON.stringify(a)); setMe(a); }}
               className="cursor-pointer rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-right transition hover:border-[#38A7B4]/50"
             >
               <p className="font-black">{a.name}</p>
@@ -78,7 +63,7 @@ export default function AdvisorLayout({ children, title }: { children: React.Rea
             ))}
           </nav>
           <button
-            onClick={() => { localStorage.removeItem(KEY); setMe(null); }}
+            onClick={() => { localStorage.removeItem(ADVISOR_IDENTITY_KEY); setMe(null); }}
             className="flex cursor-pointer items-center gap-2 text-xs text-white/55 hover:text-white"
             title="تبديل المستشار"
           >

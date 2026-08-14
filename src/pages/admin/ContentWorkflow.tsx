@@ -15,7 +15,7 @@ const STAGE_CLS: Record<ContentStage, string> = {
 /** سير مراجعة المحتوى الأكاديمي — 16.2: Draft → Academic Review → QA → Published → Retired */
 export default function ContentWorkflow() {
   const [tick, setTick] = useState(0);
-  const items = useMemo(() => loadContent(), [tick]);
+  const items = useMemo(() => { void tick; return loadContent(); }, [tick]); // tick عداد إبطال مقصود بعد كل كتابة
 
   return (
     <AdminLayout title="المحتوى الأكاديمي — سير المراجعة والإصدارات">

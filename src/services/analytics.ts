@@ -32,7 +32,7 @@ type Meta = Record<string, string | number | boolean>
 
 export function track(event: AnalyticsEvent, meta?: Meta) {
   if (import.meta.env.DEV) {
-    // eslint-disable-next-line no-console
+     
     console.debug(`[analytics] ${event}`, meta ?? {})
   }
   // نقطة الربط الإنتاجي: أرسل (event, meta) إلى المزود هنا — بلا أي محتوى شخصي

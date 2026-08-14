@@ -260,22 +260,20 @@ function Hero() {
 
 /* ───────────────── مؤشر وجيز — خمسة أسئلة صدق مع النفس ───────────────── */
 function DiagnosticTeaser() {
-  const [step, setStep] = useState(0)
-  const [answers, setAnswers] = useState<Record<string, string>>({})
+  /* استرجاع المحفوظ المحلي كحالة أولية كسولة — لا setState داخل تأثير */
+  const [savedMirror] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('wajeez_mirror') ?? 'null') as { step?: number; answers?: Record<string, string> } | null
+      return saved && typeof saved.step === 'number' && saved.answers ? saved : null
+    } catch { return null } // لا محفوظات صالحة
+  })
+  const [step, setStep] = useState(() => Math.min(savedMirror?.step ?? 0, mirrorQuestions.length))
+  const [answers, setAnswers] = useState<Record<string, string>>(() => savedMirror?.answers ?? {})
   const [picked, setPicked] = useState<string | null>(null) // إظهار الاختيار لحظيا ومنع الضغط المتكرر
   const done = step >= mirrorQuestions.length
   const current = mirrorQuestions[Math.min(step, mirrorQuestions.length - 1)]
 
   /* حفظ مؤقت محلي آمن — لا يغادر جهاز الزائر ولا يُرسل لأي خادم */
-  useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('wajeez_mirror') ?? 'null') as { step?: number; answers?: Record<string, string> } | null
-      if (saved && typeof saved.step === 'number' && saved.answers) {
-        setStep(Math.min(saved.step, mirrorQuestions.length))
-        setAnswers(saved.answers)
-      }
-    } catch { /* لا محفوظات صالحة */ }
-  }, [])
   useEffect(() => {
     localStorage.setItem('wajeez_mirror', JSON.stringify({ step, answers }))
   }, [step, answers])
@@ -735,8 +733,8 @@ function Bestsellers() {
   // في RTL المحتوى الزائد يكون يسارا؛ scrollBy النسبي يعمل في كل المتصفحات
   const scroll = (ref: React.RefObject<HTMLDivElement | null>, dir: 'next' | 'prev') =>
     ref.current?.scrollBy({ left: dir === 'next' ? -420 : 420, behavior: 'smooth' })
-  // تحكم لوحة المفاتيح في الشرائط: الأسهم تحرك الشريط ذاته
-  const railKeys = (ref: React.RefObject<HTMLDivElement | null>) => (e: React.KeyboardEvent) => {
+  // تحكم لوحة المفاتيح في الشرائط: الأسهم تحرك الشريط — المرجع يُقرأ داخل الحدث فقط
+  const railKeys = (ref: React.RefObject<HTMLDivElement | null>, e: React.KeyboardEvent) => {
     if (e.key === 'ArrowLeft') { e.preventDefault(); scroll(ref, 'next') }
     if (e.key === 'ArrowRight') { e.preventDefault(); scroll(ref, 'prev') }
   }
@@ -845,7 +843,7 @@ function Bestsellers() {
         aria-roledescription="شريط بطاقات"
         aria-label="مسارات مختارات وجيز"
         tabIndex={0}
-        onKeyDown={railKeys(pwRailRef)}
+        onKeyDown={(e) => railKeys(pwRailRef, e)}
         className="scrollbar-hide mt-8 flex snap-x snap-mandatory gap-5 overflow-x-auto pb-4"
       >
         {railPathways.map(({ id, note, p }) => (
@@ -931,7 +929,7 @@ function Bestsellers() {
         aria-roledescription="شريط بطاقات"
         aria-label="دورات مختارة من وجيز"
         tabIndex={0}
-        onKeyDown={railKeys(crRailRef)}
+        onKeyDown={(e) => railKeys(crRailRef, e)}
         className="scrollbar-hide mt-6 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4"
       >
         {shownCourses.map(({ id, note, c }) => (

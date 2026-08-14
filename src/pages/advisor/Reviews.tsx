@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { CheckCircle2, GitBranch, UserCheck } from "lucide-react";
-import AdvisorLayout, { advisorIdentity } from "./AdvisorLayout";
+import AdvisorLayout from "./AdvisorLayout";
+import { advisorIdentity } from "./advisor-identity";
 import { loadPathReviews, resolvePathReview, logAudit } from "@/data/advisor";
 import { pathwayById } from "@/data/pathways";
 

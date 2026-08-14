@@ -25,7 +25,7 @@ const CHECK_LABELS = [
 /** عمليات الشعب — US-10: لا تفتح دون مدرب وجدول ومحتوى وعقد؛ تُغلق آليا عند السعة */
 export default function AdminCohorts() {
   const [tick, setTick] = useState(0);
-  const cohorts = useMemo(() => loadAdminCohorts(), [tick]);
+  const cohorts = useMemo(() => { void tick; return loadAdminCohorts(); }, [tick]); // tick عداد إبطال مقصود بعد كل كتابة
   const [notice, setNotice] = useState<string | null>(null);
 
   const tryOpen = (id: string) => {

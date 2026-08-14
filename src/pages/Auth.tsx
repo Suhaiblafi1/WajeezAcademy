@@ -19,14 +19,13 @@ const GATEWAYS = [
 export default function Auth() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
-  const [owner, setOwner] = useState(isOwnerUnlocked)
+  /* وضع المعاينة مشتق من العنوان مباشرة — لا حالة متزامنة داخل تأثير */
+  const previewOwner = params.get('preview') === 'owner'
+  const [owner] = useState(() => isOwnerUnlocked() || previewOwner)
 
   useEffect(() => {
-    if (params.get('preview') === 'owner' && !isOwnerUnlocked()) {
-      unlockOwner()
-      setOwner(true)
-    }
-  }, [params])
+    if (previewOwner && !isOwnerUnlocked()) unlockOwner()
+  }, [previewOwner])
 
   const enterGateway = (to: string) => {
     enablePreview() // يفتح حارس بوابة الطالب أيضا — وضع معاينة المالك

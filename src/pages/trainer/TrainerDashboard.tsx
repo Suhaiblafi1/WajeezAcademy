@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 import { Link } from "react-router";
 import { AlertTriangle, ChevronLeft, ClipboardCheck, Users, Video } from "lucide-react";
-import TrainerLayout, { trainerIdentity } from "./TrainerLayout";
+import TrainerLayout from "./TrainerLayout";
+import { trainerIdentity } from "./trainer-identity";
 import { loadCohorts, loadSubmissions, type CohortStatus } from "@/data/trainer";
 
 const STATUS_LABEL: Record<CohortStatus, { label: string; cls: string }> = {

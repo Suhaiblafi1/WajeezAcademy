@@ -1,20 +1,7 @@
 import { useState } from "react";
 import { Link, NavLink } from "react-router";
 import { BookMarked, CalendarCog, Crown, ShieldAlert, LayoutDashboard, UserPlus } from "lucide-react";
-
-const KEY = "wajeez_admin_identity";
-const ADMINS = [
-  { id: "adm-ops", name: "م. عبدالله الرشيد", title: "مدير العمليات" },
-  { id: "adm-academic", name: "د. سارة العمري", title: "مديرة الشؤون الأكاديمية" },
-  { id: "adm-finance", name: "أ. محمد الحربي", title: "مدير المالية" },
-];
-
-export function adminIdentity(): { id: string; name: string; title: string } | null {
-  try {
-    const raw = localStorage.getItem(KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
-}
+import { ADMIN_IDENTITIES, ADMIN_IDENTITY_KEY, adminIdentity } from "./admin-identity";
 
 /** إطار لوحة الإدارة والعمليات */
 export default function AdminLayout({ children, title }: { children: React.ReactNode; title: string }) {
@@ -29,10 +16,10 @@ export default function AdminLayout({ children, title }: { children: React.React
           صلاحيات منفصلة: العمليات ترى الشعب والحالات، المالية ترى المبالغ لا إجابات الاختبارات — RBAC كامل.
         </p>
         <div className="mt-7 grid w-full max-w-md gap-3">
-          {ADMINS.map((a) => (
+          {ADMIN_IDENTITIES.map((a) => (
             <button
               key={a.id}
-              onClick={() => { localStorage.setItem(KEY, JSON.stringify(a)); setMe(a); }}
+              onClick={() => { localStorage.setItem(ADMIN_IDENTITY_KEY, JSON.stringify(a)); setMe(a); }}
               className="cursor-pointer rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-right transition hover:border-[#FABC05]/50"
             >
               <p className="font-black">{a.name}</p>
@@ -79,7 +66,7 @@ export default function AdminLayout({ children, title }: { children: React.React
             ))}
           </nav>
           <button
-            onClick={() => { localStorage.removeItem(KEY); setMe(null); }}
+            onClick={() => { localStorage.removeItem(ADMIN_IDENTITY_KEY); setMe(null); }}
             className="cursor-pointer text-xs text-white/55 hover:text-white"
             title="تبديل الهوية"
           >

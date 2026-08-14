@@ -4,7 +4,8 @@ import {
   AlertTriangle, ArrowRight, CheckCircle2, ClipboardCheck, FileBarChart,
   MessageSquareWarning, Video,
 } from "lucide-react";
-import TrainerLayout, { trainerIdentity } from "./TrainerLayout";
+import TrainerLayout from "./TrainerLayout";
+import { trainerIdentity } from "./trainer-identity";
 import { loadCohorts, markAttendance, requestRecordingPublish } from "@/data/trainer";
 import { zoom } from "@/services/zoom";
 
@@ -18,7 +19,7 @@ export default function CohortView() {
   const { id } = useParams();
   const me = trainerIdentity()!;
   const [tick, setTick] = useState(0);
-  const cohort = useMemo(() => loadCohorts(me.name).find((c) => c.id === id), [me.name, id, tick]);
+  const cohort = useMemo(() => { void tick; return loadCohorts(me.name).find((c) => c.id === id); }, [me.name, id, tick]); // tick عداد إبطال مقصود بعد كل كتابة
   const [reportSent, setReportSent] = useState(false);
   const [zoomLinks, setZoomLinks] = useState<Record<string, string>>({});
 

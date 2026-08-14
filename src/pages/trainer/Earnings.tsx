@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { Banknote, CheckCircle2, Clock3, ShieldCheck } from "lucide-react";
-import TrainerLayout, { trainerIdentity } from "./TrainerLayout";
+import TrainerLayout from "./TrainerLayout";
+import { trainerIdentity } from "./trainer-identity";
 import { loadEarnings, EARNING_STATUS_LABEL, EARNING_KIND_LABEL, type Earning } from "@/data/trainer";
 
 const STATUS_META: Record<Earning["status"], { icon: typeof Clock3; cls: string }> = {

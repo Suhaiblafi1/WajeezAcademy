@@ -34,15 +34,13 @@ export default function StudentDashboard() {
   const skills = pathwaySkills(pathwayId, state);
   const user = readUserName();
 
-  const sessions = useMemo(() => {
-    const start = new Date(state.startedAt);
-    return (pathwayCourses[pathwayId] ?? [])
-      .map((id) => courseById(id))
-      .filter(Boolean)
-      .flatMap((c) => courseSessions(c!, start))
-      .sort((a, b) => a.date.localeCompare(b.date))
-      .slice(0, 4);
-  }, [pathwayId, state.startedAt]);
+  const startDate = new Date(state.startedAt);
+  const sessions = (pathwayCourses[pathwayId] ?? [])
+    .map((id) => courseById(id))
+    .filter(Boolean)
+    .flatMap((c) => courseSessions(c!, startDate))
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(0, 4);
 
   const advisor = ADVISORS[pathwayId.split("-")[1]] ?? ADVISORS.EMP;
   const advisorMsg = `مرحبا ${advisor.name}، أنا ${user} طالب مسار «${pathway?.name}» وأريد استشارتك.`;

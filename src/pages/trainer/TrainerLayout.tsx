@@ -1,16 +1,8 @@
 import { useState } from "react";
 import { Link, NavLink } from "react-router";
 import { GraduationCap, ClipboardCheck, Users, Wallet } from "lucide-react";
-import { TRAINER_IDENTITIES, type TrainerIdentity } from "@/data/trainer";
-
-const KEY = "wajeez_trainer_identity";
-
-export function trainerIdentity(): TrainerIdentity | null {
-  try {
-    const raw = localStorage.getItem(KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
-}
+import { TRAINER_IDENTITIES } from "@/data/trainer";
+import { TRAINER_IDENTITY_KEY, trainerIdentity } from "./trainer-identity";
 
 /** إطار بوابة المدرب: هوية المدرب + تنقل + حدوده معلنة */
 export default function TrainerLayout({ children, title }: { children: React.ReactNode; title: string }) {
@@ -28,7 +20,7 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
           {TRAINER_IDENTITIES.map((t) => (
             <button
               key={t.id}
-              onClick={() => { localStorage.setItem(KEY, JSON.stringify(t)); setMe(t); }}
+              onClick={() => { localStorage.setItem(TRAINER_IDENTITY_KEY, JSON.stringify(t)); setMe(t); }}
               className="cursor-pointer rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-right transition hover:border-[#38A7B4]/50"
             >
               <p className="font-black">{t.name}</p>
@@ -73,7 +65,7 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
             ))}
           </nav>
           <button
-            onClick={() => { localStorage.removeItem(KEY); setMe(null); }}
+            onClick={() => { localStorage.removeItem(TRAINER_IDENTITY_KEY); setMe(null); }}
             className="cursor-pointer text-xs text-white/55 hover:text-white"
             title="تبديل المدرب"
           >

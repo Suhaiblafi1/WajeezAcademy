@@ -2,7 +2,8 @@ import { useMemo, useState } from "react";
 import {
   CheckCircle2, ChevronDown, ChevronUp, FileText, History, Lock, RotateCcw, X,
 } from "lucide-react";
-import TrainerLayout, { trainerIdentity } from "./TrainerLayout";
+import TrainerLayout from "./TrainerLayout";
+import { trainerIdentity } from "./trainer-identity";
 import {
   loadSubmissions, gradeSubmission, closeGrading, requestGradeChange,
   loadGradeAudit, ASSIGNMENT_RUBRIC, type Submission, type SubmissionStatus,
@@ -19,8 +20,8 @@ const STATUS_LABEL: Record<SubmissionStatus, { label: string; cls: string }> = {
 export default function GradingQueue() {
   const me = trainerIdentity()!;
   const [tick, setTick] = useState(0);
-  const subs = useMemo(() => loadSubmissions(me.name), [me.name, tick]);
-  const audit = useMemo(() => loadGradeAudit(), [tick]);
+  const subs = useMemo(() => { void tick; return loadSubmissions(me.name); }, [me.name, tick]); // tick عداد إبطال مقصود بعد كل كتابة
+  const audit = useMemo(() => { void tick; return loadGradeAudit(); }, [tick]); // tick عداد إبطال مقصود بعد كل كتابة
   const [filter, setFilter] = useState<"pending" | "reviewed" | "all">("pending");
   const [openId, setOpenId] = useState<string | null>(null);
   const [rubric, setRubric] = useState<Record<string, number>>({});
