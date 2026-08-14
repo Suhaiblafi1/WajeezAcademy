@@ -173,7 +173,7 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
               متابعة — سأؤكد بريدي لاحقا
             </button>
           </div>
-          <p className="mt-5 text-[11px] leading-relaxed text-white/35">
+          <p className="mt-5 text-[11px] leading-relaxed text-white/55">
             تفقد مجلد الرسائل غير المرغوبة إن لم تجدها خلال دقائق
           </p>
         </div>
@@ -196,7 +196,7 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
           <form onSubmit={submitReset} noValidate className="px-8 py-6">
             <label htmlFor="reset-email" className={LABEL_CLS}>البريد الإلكتروني</label>
             <div className="relative">
-              <Mail className="absolute right-3.5 top-3.5 h-4 w-4 text-white/35" />
+              <Mail className="absolute right-3.5 top-3.5 h-4 w-4 text-white/55" />
               <input
                 id="reset-email"
                 name="email"
@@ -286,7 +286,7 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
                   لن ننشر شيئا باسمك أبدا — حسابك لحفظ مسارك ونتيجتك فقط
                 </p>
               </div>
-              <div className="my-5 flex items-center gap-3 text-xs text-white/35">
+              <div className="my-5 flex items-center gap-3 text-xs text-white/55">
                 <span className="h-px flex-1 bg-white/10" />
                 أو بالبريد الإلكتروني
                 <span className="h-px flex-1 bg-white/10" />
@@ -299,7 +299,7 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
               <div>
                 <label htmlFor="auth-name" className={LABEL_CLS}>الاسم الكريم</label>
                 <div className="relative">
-                  <UserRound className="absolute right-3.5 top-3.5 h-4 w-4 text-white/35" />
+                  <UserRound className="absolute right-3.5 top-3.5 h-4 w-4 text-white/55" />
                   {name.trim().length >= 2 && <Check className="absolute left-3.5 top-3.5 h-4 w-4 text-[#34A853]" />}
                   <input
                     id="auth-name"
@@ -319,7 +319,7 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
             <div>
               <label htmlFor="auth-email" className={LABEL_CLS}>البريد الإلكتروني</label>
               <div className="relative">
-                <Mail className="absolute right-3.5 top-3.5 h-4 w-4 text-white/35" />
+                <Mail className="absolute right-3.5 top-3.5 h-4 w-4 text-white/55" />
                 {emailValid && <Check className="absolute left-3.5 top-3.5 h-4 w-4 text-[#34A853]" />}
                 <input
                   id="auth-email"
@@ -345,12 +345,12 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
             <div>
               <label htmlFor="auth-pass" className={LABEL_CLS}>كلمة المرور</label>
               <div className="relative">
-                <Lock className="absolute right-3.5 top-3.5 h-4 w-4 text-white/35" />
+                <Lock className="absolute right-3.5 top-3.5 h-4 w-4 text-white/55" />
                 <button
                   type="button"
                   onClick={() => setShowPass(!showPass)}
                   aria-label={showPass ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
-                  className="absolute left-3.5 top-3.5 text-white/35 transition hover:text-white/70"
+                  className="absolute left-3.5 top-3.5 text-white/55 transition hover:text-white/70"
                 >
                   {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -397,7 +397,7 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
               <div>
                 <label htmlFor="auth-confirm" className={LABEL_CLS}>تأكيد كلمة المرور</label>
                 <div className="relative">
-                  <Lock className="absolute right-3.5 top-3.5 h-4 w-4 text-white/35" />
+                  <Lock className="absolute right-3.5 top-3.5 h-4 w-4 text-white/55" />
                   {confirm.length > 0 && confirmValid && <Check className="absolute left-3.5 top-3.5 h-4 w-4 text-[#34A853]" />}
                   <input
                     id="auth-confirm"
@@ -478,7 +478,7 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
           </form>
 
           {mode === "login" && (
-            <p className="mt-4 text-center text-[11px] leading-relaxed text-white/35">
+            <p className="mt-4 text-center text-[11px] leading-relaxed text-white/55">
               لحمايتك: يُقفل الدخول مؤقتا بعد خمس محاولات خاطئة
             </p>
           )}

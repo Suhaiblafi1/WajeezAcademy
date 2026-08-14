@@ -125,7 +125,7 @@ export default function StudentCard() {
                 const active = s.signals.find((x) => x.key === r.key)?.active;
                 return (
                   <div key={r.key} className={`flex items-center justify-between rounded-xl border px-4 py-2.5 text-xs ${
-                    active ? "border-red-500/30 bg-red-500/5 text-white/85" : "border-white/5 text-white/35"
+                    active ? "border-red-500/30 bg-red-500/5 text-white/85" : "border-white/5 text-white/55"
                   }`}>
                     <span className="flex items-center gap-2">
                       {active ? <AlertTriangle className="h-3.5 w-3.5 text-red-400" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
@@ -136,7 +136,7 @@ export default function StudentCard() {
                 );
               })}
             </div>
-            <p className="mt-3 text-[10px] leading-5 text-white/35">
+            <p className="mt-3 text-[10px] leading-5 text-white/55">
               القواعد تُختبر وتُعدل دوريا، ولا تُستخدم لعقوبة آلية — القرار النهائي لك أنت كمستشار.
             </p>
           </section>
@@ -153,7 +153,7 @@ export default function StudentCard() {
                   </span>
                   <div className="pt-1">
                     <p className="text-sm leading-6 text-white/80">{e.text}</p>
-                    <p className="text-[10px] text-white/35">{e.at}</p>
+                    <p className="text-[10px] text-white/55">{e.at}</p>
                   </div>
                 </div>
               ))}

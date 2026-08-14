@@ -9,7 +9,7 @@ import { loadCohorts, markAttendance, requestRecordingPublish } from "@/data/tra
 import { zoom } from "@/services/zoom";
 
 const REC_LABEL: Record<string, { label: string; cls: string }> = {
-  none: { label: "لم يُطلب النشر", cls: "text-white/35" },
+  none: { label: "لم يُطلب النشر", cls: "text-white/55" },
   pending_review: { label: "بانتظار موافقة النشر (خصوصية)", cls: "text-[#FABC05]" },
   published: { label: "منشور للشعبة", cls: "text-[#6EC7D1]" },
 };

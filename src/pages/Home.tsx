@@ -343,7 +343,7 @@ function DiagnosticTeaser() {
     .filter(Boolean) as string[]).slice(0, 2)
 
   return (
-    <section id="diagnostic" className="relative py-20 md:py-28">
+    <section id="diagnostic" className="relative py-20 md:py-24">
       <div className="mx-auto max-w-4xl px-5">
         <div className="reveal text-center">
           <SectionLabel>وقفة صدق — دقيقة واحدة</SectionLabel>
@@ -493,7 +493,7 @@ const steps = [
 
 function HowItWorks() {
   return (
-    <section id="how" className="border-y border-white/5 bg-white/[0.02] py-20 md:py-28">
+    <section id="how" className="border-y border-white/5 bg-white/[0.02] py-20 md:py-24">
       <div className="mx-auto max-w-6xl px-5">
         <div className="reveal text-center">
           <SectionLabel>كيف تسير رحلتك</SectionLabel>
@@ -501,7 +501,7 @@ function HowItWorks() {
         </div>
         <div className="mt-14 grid gap-6 md:grid-cols-4">
           {steps.map((s, i) => (
-            <div key={s.title} className="reveal group relative rounded-3xl border border-white/10 bg-card p-7 transition hover:border-teal/40" style={{ transitionDelay: `${i * 90}ms` }}>
+            <div key={s.title} className="reveal group relative rounded-3xl border border-white/10 bg-card p-7 transition-all duration-200 hover:-translate-y-1 hover:border-teal/50 hover:shadow-[0_20px_60px_-30px_rgba(56,167,180,0.4)]" style={{ transitionDelay: `${i * 90}ms` }}>
               <div className="flex items-center justify-between">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#38A7B4]/12 text-teal transition group-hover:scale-110">
                   <s.icon className="h-6 w-6" />
@@ -578,7 +578,7 @@ function Stories() {
           <button
             key={s.id}
             onClick={() => setOpen(s)}
-            className="group flex w-[280px] shrink-0 snap-start flex-col overflow-hidden rounded-3xl border border-white/10 bg-card text-right transition hover:border-teal/40 hover:shadow-[0_20px_60px_-30px_rgba(56,167,180,0.4)]"
+            className="group flex w-[280px] shrink-0 snap-start flex-col overflow-hidden rounded-3xl border border-white/10 bg-card text-right transition-all duration-200 hover:-translate-y-1 hover:border-teal/50 hover:shadow-[0_20px_60px_-30px_rgba(56,167,180,0.4)]"
           >
             <div className="relative h-36 overflow-hidden">
               <img
@@ -747,7 +747,7 @@ function Bestsellers() {
   const railPathways = shownPathways.slice(1)
 
   return (
-    <section id="bestsellers" className="py-16 md:py-20">
+    <section id="bestsellers" className="py-20 md:py-24">
       <div className="mx-auto max-w-6xl px-5">
         <div className="reveal flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -843,10 +843,10 @@ function Bestsellers() {
         {railPathways.map(({ id, note, p }) => (
           <article
             key={id}
-            className="group flex w-[280px] shrink-0 snap-start flex-col rounded-3xl border border-white/10 bg-card p-6 transition hover:border-teal/40 hover:shadow-[0_20px_60px_-30px_rgba(56,167,180,0.4)]"
+            className="group flex w-[280px] shrink-0 snap-start flex-col rounded-3xl border border-white/10 bg-card p-6 transition-all duration-200 hover:-translate-y-1 hover:border-teal/50 hover:shadow-[0_20px_60px_-30px_rgba(56,167,180,0.4)]"
           >
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FABC05]/10 px-3 py-1 text-xs font-bold text-amber-brand">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#38A7B4]/10 px-3 py-1 text-xs font-bold text-teal-light">
                 <Flame className="h-3.5 w-3.5" />
                 {note}
               </span>
@@ -927,10 +927,10 @@ function Bestsellers() {
         {shownCourses.map(({ id, note, c }) => (
           <article
             key={id}
-            className="group flex w-[270px] shrink-0 snap-start flex-col rounded-2xl border border-white/10 bg-card p-5 transition hover:border-amber-brand/40"
+            className="group flex w-[270px] shrink-0 snap-start flex-col rounded-2xl border border-white/10 bg-card p-5 transition-all duration-200 hover:-translate-y-1 hover:border-teal/50 hover:shadow-[0_20px_60px_-30px_rgba(56,167,180,0.4)]"
           >
             <div className="flex items-center gap-2">
-              <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[#FABC05]/10 px-3 py-1 text-[11px] font-bold text-amber-brand">
+              <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[#38A7B4]/10 px-3 py-1 text-[11px] font-bold text-teal-light">
                 <Flame className="h-3 w-3" />
                 {note}
               </span>
@@ -986,7 +986,7 @@ function Bestsellers() {
 function Faq() {
   const [open, setOpen] = useState<number | null>(0)
   return (
-    <section id="faq" className="py-20 md:py-28">
+    <section id="faq" className="py-20 md:py-24">
       <div className="mx-auto max-w-3xl px-5">
         <div className="reveal text-center">
           <SectionLabel>أسئلة تصلنا كثيرا</SectionLabel>
@@ -1026,7 +1026,7 @@ function Faq() {
 /* ───────────────── final CTA ───────────────── */
 function FinalCta() {
   return (
-    <section id="cta" className="relative overflow-hidden py-24 md:py-32">
+    <section id="cta" className="relative overflow-hidden py-24 md:py-28">
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-[#38A7B4]/10 to-transparent" />
       <div className="pointer-events-none absolute right-1/2 top-1/2 h-[420px] w-[420px] -translate-y-1/2 translate-x-1/2 rounded-full bg-[#38A7B4]/20 blur-[140px] animate-pulse-glow" />
       <div className="relative mx-auto max-w-3xl px-5 text-center">

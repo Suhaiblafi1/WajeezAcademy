@@ -202,7 +202,7 @@ export default function StudentDashboard() {
                     />
                   ))}
                 </div>
-                <p className="mt-1 text-[10px] text-white/35">{s.evidence}</p>
+                <p className="mt-1 text-[10px] text-white/55">{s.evidence}</p>
               </div>
             ))}
           </div>
@@ -240,7 +240,7 @@ export default function StudentDashboard() {
         </section>
       </div>
 
-      <p className="mt-8 flex items-center justify-center gap-2 text-center text-[11px] text-white/35">
+      <p className="mt-8 flex items-center justify-center gap-2 text-center text-[11px] text-white/55">
         <Sparkles className="h-3.5 w-3.5" />
         <Clock3 className="h-3.5 w-3.5" />
         تقدمك يُحفظ تلقائيا — أكمل من أي جهاز بعد الدخول

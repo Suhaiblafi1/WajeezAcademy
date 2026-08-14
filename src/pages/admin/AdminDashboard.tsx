@@ -115,7 +115,7 @@ export default function AdminDashboard() {
             </tbody>
           </table>
         </div>
-        <p className="mt-4 flex items-center gap-1.5 text-[10px] text-white/35">
+        <p className="mt-4 flex items-center gap-1.5 text-[10px] text-white/55">
           <ArrowLeft className="h-3 w-3" />
           التعريفات: الصافي = الإجمالي − الخصومات − المستردات · الهامش = الصافي − التكلفة المباشرة (أجور مدربين ومحتوى) — لا تكاليف عامة هنا.
         </p>

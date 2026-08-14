@@ -20,7 +20,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
       <main className="mx-auto max-w-3xl px-5 py-12 md:py-16">{children}</main>
-      <footer className="border-t border-white/5 py-8 text-center text-xs text-white/35">
+      <footer className="border-t border-white/5 py-8 text-center text-xs text-white/55">
         © 2026 أكاديمي وجيز — من مجموعة wajeez.com
       </footer>
     </div>

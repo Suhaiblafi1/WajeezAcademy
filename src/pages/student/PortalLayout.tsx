@@ -82,7 +82,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
             <span className="grid h-9 w-9 place-items-center rounded-lg bg-[#38A7B4] font-black text-[#08272B]">و</span>
             <span className="hidden font-black sm:block">أكاديمي وجيز</span>
           </Link>
-          <nav className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1">
+          <nav className="hidden items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1 sm:flex">
             {tabs.map((t) => (
               <NavLink
                 key={t.to}
@@ -123,7 +123,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                       </button>
                     </div>
                     <div className="max-h-72 space-y-1.5 overflow-y-auto">
-                      {notifs.length === 0 && <p className="px-2 py-6 text-center text-[11px] text-white/35">لا إشعارات بعد</p>}
+                      {notifs.length === 0 && <p className="px-2 py-6 text-center text-[11px] text-white/55">لا إشعارات بعد</p>}
                       {notifs.map((n) => (
                         <p key={n.id} className={`rounded-xl border px-3 py-2 text-[11px] leading-5 ${n.read ? "border-white/5 text-white/40" : "border-[#38A7B4]/25 bg-[#38A7B4]/5 text-white/75"}`}>{n.text}</p>
                       ))}
@@ -145,7 +145,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-5 py-8">
+      <main className="mx-auto max-w-6xl px-5 py-8 pb-28 sm:pb-8">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-2xl font-black">{title}</h1>
           {enrollment && (
@@ -156,6 +156,24 @@ export default function PortalLayout({ children, title }: { children: React.Reac
         </div>
         {children}
       </main>
+      {/* شريط تنقل سفلي للجوال — التبويبات الأربعة كاملة بالنص في متناول الإبهام */}
+      <nav aria-label="تنقل المنصة" className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-white/10 bg-[#0D0D0D]/95 pb-[max(env(safe-area-inset-bottom),0.25rem)] backdrop-blur-xl sm:hidden">
+        {tabs.map((t) => (
+          <NavLink
+            key={t.to}
+            to={t.to}
+            end={t.end as boolean | undefined}
+            className={({ isActive }) =>
+              `flex flex-col items-center gap-1 py-2.5 text-[10px] font-bold transition ${
+                isActive ? "text-[#6EC7D1]" : "text-white/45"
+              }`
+            }
+          >
+            <t.icon className="h-5 w-5" />
+            {t.label}
+          </NavLink>
+        ))}
+      </nav>
     </div>
   );
 }

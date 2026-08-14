@@ -50,7 +50,22 @@ export default function App() {
       </a>
       <ScrollToTop />
       <main id="main-content" tabIndex={-1}>
-        <Suspense fallback={<div dir="rtl" className="grid min-h-screen place-items-center bg-[#0D0D0D] text-sm text-white/50">لحظات…</div>}>
+        <Suspense fallback={
+          <div dir="rtl" className="min-h-screen bg-[#0D0D0D] px-5 py-10" aria-busy="true" aria-label="جاري التحميل">
+            <div className="mx-auto max-w-3xl animate-pulse space-y-6">
+              <div className="mx-auto h-6 w-44 rounded-full bg-white/10" />
+              <div className="mx-auto h-10 w-3/4 rounded-2xl bg-white/10" />
+              <div className="mx-auto h-4 w-1/2 rounded-full bg-white/5" />
+              <div className="space-y-3 rounded-3xl border border-white/10 bg-white/[0.03] p-8">
+                <div className="h-2 w-24 rounded-full bg-white/10" />
+                <div className="h-8 w-5/6 rounded-xl bg-white/10" />
+                <div className="h-14 rounded-2xl bg-white/5" />
+                <div className="h-14 rounded-2xl bg-white/5" />
+                <div className="h-14 rounded-2xl bg-white/5" />
+              </div>
+            </div>
+          </div>
+        }>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/diagnostic" element={<Diagnostic />} />

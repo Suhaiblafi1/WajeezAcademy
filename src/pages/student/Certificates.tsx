@@ -45,7 +45,7 @@ export default function Certificates() {
                   {copied === c.number ? "نُسخ رابط التحقق" : "انسخ رابط التحقق"}
                 </button>
               </div>
-              <p className="mt-3 text-[11px] text-white/35">
+              <p className="mt-3 text-[11px] text-white/55">
                 أي جهة تستطيع التحقق من صحة الشهادة عبر الرقم في صفحة التحقق العامة — دون كشف بياناتك الشخصية.
               </p>
             </div>

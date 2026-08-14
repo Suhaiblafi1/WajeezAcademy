@@ -337,7 +337,7 @@ export default function CourseView() {
             </div>
             {asked.map((q, i) => (
               <p key={i} className="mt-2.5 rounded-xl border border-white/10 bg-black/20 px-4 py-2.5 text-xs leading-6 text-white/70">
-                {q} <span className="block text-[10px] text-white/35">أُرسل — سيصلك الرد إشعارا</span>
+                {q} <span className="block text-[10px] text-white/55">أُرسل — سيصلك الرد إشعارا</span>
               </p>
             ))}
           </section>

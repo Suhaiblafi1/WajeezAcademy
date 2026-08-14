@@ -71,7 +71,7 @@ export default function ContentWorkflow() {
         })}
       </div>
 
-      <p className="mt-8 text-center text-[11px] leading-6 text-white/35">
+      <p className="mt-8 text-center text-[11px] leading-6 text-white/55">
         إنشاء نسخة جديدة لا يغير تجربة الطلاب في النسخ السابقة — كل تسجيل مثبت على إصدار المسار وقت الشراء (20.2).
       </p>
     </AdminLayout>

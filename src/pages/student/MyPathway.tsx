@@ -12,7 +12,7 @@ import { loadPortal, courseGate, coursePercent, projectConditions, type CourseSt
 import { formatPrice } from "@/services/currency";
 
 const STATUS_META: Record<CourseStatus, { label: string; cls: string; icon: typeof Lock }> = {
-  locked: { label: "مقفلة", cls: "border-white/10 text-white/35", icon: Lock },
+  locked: { label: "مقفلة", cls: "border-white/10 text-white/55", icon: Lock },
   available: { label: "متاحة — ابدأ", cls: "border-[#38A7B4]/40 text-[#6EC7D1]", icon: PlayCircle },
   in_progress: { label: "قيد التنفيذ", cls: "border-[#38A7B4]/40 text-[#6EC7D1]", icon: PlayCircle },
   needs_action: { label: "تحتاج إجراء", cls: "border-[#FABC05]/50 text-[#FABC05]", icon: AlertTriangle },
@@ -48,7 +48,7 @@ export default function MyPathway() {
             className="flex items-center gap-2 rounded-full border border-[#FABC05]/40 px-5 py-2.5 text-sm font-bold text-[#FABC05] transition hover:bg-[#FABC05]/10"
           />
         </div>
-        <p className="mt-3 text-[11px] text-white/35">
+        <p className="mt-3 text-[11px] text-white/55">
           التبديل لا يتم عشوائيا — تطلب مراجعة مع مستشارك يفحص الأهلية والتكافؤ ثم يُنفذ بأثر موثق.
         </p>
       </section>
@@ -126,7 +126,7 @@ export default function MyPathway() {
             to="/student/project"
             className={`rounded-full px-5 py-2.5 text-sm font-black transition ${
               state.project.status === "not_open"
-                ? "cursor-not-allowed border border-white/10 text-white/35"
+                ? "cursor-not-allowed border border-white/10 text-white/55"
                 : "bg-[#FABC05] text-[#0D0D0D] hover:bg-[#FABC05]/90"
             }`}
           >

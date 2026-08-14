@@ -25,7 +25,7 @@ export default function SiteShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
       <div className="mx-auto max-w-6xl px-5 py-12 md:py-16">{children}</div>
-      <footer className="border-t border-white/5 py-8 text-center text-xs leading-6 text-white/35">
+      <footer className="border-t border-white/5 py-8 text-center text-xs leading-6 text-white/55">
         <div>© 2026 أكاديمي وجيز — من مجموعة wajeez.com</div>
         <div className="mt-1">
           {CONTACT.email} · {CONTACT.address}

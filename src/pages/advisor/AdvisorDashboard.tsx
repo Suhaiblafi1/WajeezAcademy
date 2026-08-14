@@ -77,7 +77,7 @@ export default function AdvisorDashboard() {
             {f === "all" ? "الكل" : LEVEL_META[f].label}
           </button>
         ))}
-        <span className="mr-auto flex items-center gap-1.5 text-[11px] text-white/35">
+        <span className="mr-auto flex items-center gap-1.5 text-[11px] text-white/55">
           <Clock3 className="h-3.5 w-3.5" /> المخاطرة حُسبت اليوم بقواعد الملحق ب — قابلة للشرح، وليست عقوبة آلية
         </span>
       </div>

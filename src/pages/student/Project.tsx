@@ -152,7 +152,7 @@ export default function Project() {
 
           {/* رفع / رابط */}
           <div className="mt-4 rounded-2xl border-2 border-dashed border-white/15 p-6 text-center text-sm text-white/50">
-            <Upload className="mx-auto h-6 w-6 text-white/35" />
+            <Upload className="mx-auto h-6 w-6 text-white/55" />
             <p className="mt-2">{kind === "link" ? "ألصق الرابط في حقل «الدليل» أعلاه" : "ارفع ملف مشروعك هنا (محاكاة — يُرفع فعليا عند الربط)"}</p>
           </div>
 

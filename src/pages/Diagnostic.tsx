@@ -936,14 +936,14 @@ export default function Diagnostic() {
                           ? "border-[#FABC05] bg-[#FABC05] text-[#0D0D0D]"
                           : done
                             ? "border-[#38A7B4] bg-[#38A7B4]/20 text-[#6EC7D1]"
-                            : "border-white/15 text-white/35"
+                            : "border-white/15 text-white/55"
                       }`}
                     >
                       {done ? <CheckCircle2 className="h-4 w-4" /> : i + 1}
                     </span>
                     <span
                       className={`text-center text-[10px] font-bold leading-tight md:text-[11px] ${
-                        active ? "text-[#FABC05]" : done ? "text-[#6EC7D1]" : "text-white/35"
+                        active ? "text-[#FABC05]" : done ? "text-[#6EC7D1]" : "text-white/55"
                       }`}
                     >
                       {s.label}
@@ -1070,7 +1070,7 @@ export default function Diagnostic() {
                               className={`h-10 flex-1 rounded-xl border text-sm font-black transition ${
                                 active
                                   ? "border-[#38A7B4] bg-[#38A7B4]/25 text-[#6EC7D1]"
-                                  : "border-white/10 bg-white/[0.03] text-white/35 hover:border-[#6EC7D1]/50"
+                                  : "border-white/10 bg-white/[0.03] text-white/55 hover:border-[#6EC7D1]/50"
                               }`}
                             >
                               {n}
@@ -1078,7 +1078,7 @@ export default function Diagnostic() {
                           );
                         })}
                       </div>
-                      <p className="mt-2 text-left text-[11px] text-white/35" dir="rtl">
+                      <p className="mt-2 text-left text-[11px] text-white/55" dir="rtl">
                         {ratingsDraft[item.key]
                           ? ["", "لم أبدأ بعد", "أعرف الأساسيات", "أستخدمها بمساعدة", "أستخدمها بثقة", "أعلّمها لغيري"][ratingsDraft[item.key]]
                           : "اختر مستواك — بصدق"}
@@ -1629,7 +1629,7 @@ export default function Diagnostic() {
             </div>
           )}
 
-          <p className="mt-6 text-center text-xs leading-relaxed text-white/35">
+          <p className="mt-6 text-center text-xs leading-relaxed text-white/55">
             التوصية صادرة عن محرك تشخيص قطعي مبني على إجاباتك، وهي نقطة بداية مفسَّرة —
             القرار النهائي دائمًا بيدك، ومستشارونا موجودون عند الحاجة.
             هذا تشخيص تعليمي مهني: ليس تقييما نفسيا أو طبيا، ولا وعدا بوظيفة أو دخل.

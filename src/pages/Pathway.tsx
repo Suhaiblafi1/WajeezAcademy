@@ -611,7 +611,7 @@ export default function PathwayPage() {
             </div>
           </div>
 
-          <p className="mt-8 flex items-center justify-center gap-2 text-center text-xs text-white/35">
+          <p className="mt-8 flex items-center justify-center gap-2 text-center text-xs text-white/55">
             <Sparkles className="h-3.5 w-3.5" />
             منصة الطالب الكاملة (الدورات، الواجبات، المتابعة) تُفتح تلقائيا بعد أول دفع ناجح — وهي محطتنا القادمة.
           </p>

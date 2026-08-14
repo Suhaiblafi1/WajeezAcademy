@@ -74,7 +74,7 @@ export default function Auth() {
               ))}
             </div>
           </div>
-          <p className="mt-4 text-center text-xs text-white/35">
+          <p className="mt-4 text-center text-xs text-white/55">
             <Link to="/" className="underline-offset-4 transition hover:text-[#6EC7D1] hover:underline">
               عودة للرئيسية
             </Link>

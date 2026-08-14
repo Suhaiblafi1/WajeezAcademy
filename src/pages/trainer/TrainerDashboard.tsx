@@ -106,7 +106,7 @@ export default function TrainerDashboard() {
         </section>
       )}
 
-      <p className="mt-8 text-center text-[11px] leading-5 text-white/35">
+      <p className="mt-8 text-center text-[11px] leading-5 text-white/55">
         حدود المدرب: لا يغير الأسعار ولا شروط الشهادات، لا يضيف طالبا دون منسق،
         ولا يرى بيانات دفع الطلاب — وتعديل الدرجة المعتمدة يحتاج سببا موثقا.
       </p>

@@ -41,7 +41,7 @@ export default function Exceptions() {
                 <p className="font-black">{e.studentName}</p>
                 <p className="mt-0.5 text-xs text-white/50">{e.pathwayName}</p>
                 <p className="mt-1.5 text-sm leading-6 text-white/65">{e.detail}</p>
-                <p className="mt-1 text-[10px] text-white/35">
+                <p className="mt-1 text-[10px] text-white/55">
                   {e.at}{e.amount ? ` · المبلغ: ${e.amount.toLocaleString()}$` : ""}
                 </p>
               </div>
@@ -69,7 +69,7 @@ export default function Exceptions() {
           </div>
         ))}
       </div>
-      <p className="mt-8 flex items-center justify-center gap-2 text-center text-[11px] text-white/35">
+      <p className="mt-8 flex items-center justify-center gap-2 text-center text-[11px] text-white/55">
         <ShieldAlert className="h-3.5 w-3.5" />
         القرارات عالية الأثر (استرداد، إلغاء شهادة، خلاف مالي) تُسجل في Audit Log مع المستخدم والوقت والقيمة السابقة — دائما.
       </p>
