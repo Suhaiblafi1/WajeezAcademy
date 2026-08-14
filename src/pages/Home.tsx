@@ -226,25 +226,25 @@ function Hero() {
           تشخيص ذكي يسألك أسئلة قليلة، يفهم هدفك وواقعك ووقتك،
           ثم يوصي بمسار واحد واضح — <span className="text-foreground">ويشرح لك لماذا.</span>
         </p>
-        <div className="reveal is-visible mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
+        <div className="reveal is-visible mt-9 flex flex-col items-center justify-center">
           <a
             href="#diagnostic"
             onClick={() => track('hero_cta_clicked')}
-            className="group btn-teal w-full px-8 py-4 shadow-[0_0_40px_-8px_#38A7B4] sm:w-auto"
+            className="group btn-teal w-full px-10 py-4 text-lg shadow-[0_0_40px_-8px_#38A7B4] sm:w-auto"
           >
-            خذ مؤشر وجيز
+            اعرف من أين تبدأ
             <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
           </a>
           <a
             href="#stories"
-            className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-8 py-4 font-semibold transition hover:border-teal/40 hover:text-teal-light sm:w-auto"
+            className="mt-5 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition hover:text-teal-light"
           >
-            <Play className="h-4 w-4" />
-            شاهد رحلات من سبقوك
+            <Play className="h-3.5 w-3.5" />
+            <span className="underline-offset-4 hover:underline">أو شاهد رحلات من سبقوك أولا</span>
           </a>
         </div>
         <p className="reveal is-visible mt-6 text-xs text-muted-foreground">
-          دقيقة واحدة من الصدق · ثم تشخيص كامل يفهمك بلا تقييم ذاتي ولا سؤال مكرر
+          دقيقة واحدة مع مؤشر وجيز · بلا تسجيل · ثم تشخيص كامل يفهمك بلا تقييم ذاتي ولا سؤال مكرر
         </p>
       </div>
     </section>
@@ -468,25 +468,31 @@ const steps = [
 
 function HowItWorks() {
   return (
-    <section id="how" className="border-y border-white/5 bg-white/[0.02] py-20 md:py-24">
+    <section id="how" className="border-y border-white/5 bg-white/[0.02] py-14 md:py-16">
       <div className="mx-auto max-w-6xl px-5">
-        <div className="reveal text-center">
-          <SectionLabel>كيف تسير رحلتك</SectionLabel>
-          <h2 className="mt-5 text-3xl font-bold md:text-4xl">أربع خطوات — لا أكثر</h2>
+        <div className="reveal flex flex-wrap items-center justify-center gap-3 text-center md:justify-between md:text-right">
+          <h2 className="text-xl font-bold md:text-2xl">كيف تسير رحلتك — أربع خطوات لا أكثر</h2>
+          <SectionLabel>من أول سؤال إلى مخرج مُثبت</SectionLabel>
         </div>
-        <div className="mt-14 grid gap-6 md:grid-cols-4">
-          {steps.map((s, i) => (
-            <div key={s.title} className="reveal group relative rounded-3xl border border-white/10 bg-card p-7 transition-all duration-200 hover:-translate-y-1 hover:border-teal/50 hover:shadow-[0_20px_60px_-30px_rgba(56,167,180,0.4)]" style={{ transitionDelay: `${i * 90}ms` }}>
-              <div className="flex items-center justify-between">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#38A7B4]/12 text-teal transition group-hover:scale-110">
-                  <s.icon className="h-6 w-6" />
+        <div className="relative mt-8">
+          {/* خط واصل يلمّ المراحل على الشاشات الكبيرة */}
+          <div className="pointer-events-none absolute inset-x-10 top-5 hidden h-px bg-gradient-to-l from-transparent via-teal/25 to-transparent md:block" />
+          <div className="grid gap-3 md:grid-cols-4">
+            {steps.map((s, i) => (
+              <div key={s.title} className="reveal group relative flex items-start gap-3.5 rounded-2xl border border-white/10 bg-card px-4 py-4 transition hover:border-teal/40">
+                <div className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#38A7B4]/12 text-teal transition group-hover:scale-105">
+                  <s.icon className="h-5 w-5" />
                 </div>
-                <span className="text-4xl font-bold text-white/5 transition group-hover:text-teal/20">{i + 1}</span>
+                <div>
+                  <h3 className="flex items-center gap-2 text-sm font-bold">
+                    <span className="text-[11px] font-black text-teal/50">{i + 1}</span>
+                    {s.title}
+                  </h3>
+                  <p className="mt-1 text-xs leading-6 text-muted-foreground">{s.text}</p>
+                </div>
               </div>
-              <h3 className="mt-5 text-xl font-bold">{s.title}</h3>
-              <p className="mt-3 text-sm leading-7 text-muted-foreground">{s.text}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </section>
