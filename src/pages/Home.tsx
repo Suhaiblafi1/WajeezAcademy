@@ -215,11 +215,12 @@ function Hero() {
         <div className="reveal is-visible">
           <SectionLabel>منصة تفهمك قبل أن تعلّمك</SectionLabel>
         </div>
-        <h1 className="reveal is-visible mx-auto mt-6 max-w-3xl text-4xl font-bold leading-[1.25] md:text-6xl md:leading-[1.2]">
-          مسارك لا يبدأ من دورة.
-          <br />
-          <span className="bg-gradient-to-l from-[#6EC7D1] via-[#38A7B4] to-[#FABC05] bg-clip-text text-transparent">
-            مسارك يبدأ من فهمك.
+        <h1 className="reveal is-visible mx-auto mt-6 max-w-3xl">
+          <span className="block text-xl font-semibold leading-relaxed text-foreground/80 md:text-2xl">
+            المسار الصحيح لا يبدأ باختيار دورة.
+          </span>
+          <span className="mt-3 block bg-gradient-to-l from-[#6EC7D1] via-[#38A7B4] to-[#FABC05] bg-clip-text text-4xl font-bold leading-[1.25] text-transparent md:text-6xl md:leading-[1.2]">
+            يبدأ بفهم هدفك.
           </span>
         </h1>
         <p className="reveal is-visible mx-auto mt-6 max-w-xl text-base leading-8 text-muted-foreground md:text-lg">
