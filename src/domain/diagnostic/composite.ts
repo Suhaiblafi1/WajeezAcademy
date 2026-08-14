@@ -58,6 +58,8 @@ interface TemplateScore {
   fit: number
   missingRequiredFacts: string[]
   rationale_ar: string[]
+  /** كتلة الأدلة: مجموع أوزان الإشارات الإيجابية المطابقة — فاصل حتمي عند تقارب الملاءمة */
+  signalMass: number
 }
 
 function scoreTemplate(
@@ -141,7 +143,13 @@ function scoreTemplate(
   // دمج إشارة الدليل الموجبة
   fit = fit * 0.85 + signalScore * 0.15
 
-  return { template: tpl, fit: Math.max(0, Math.min(1, fit)), missingRequiredFacts: missing, rationale_ar: rationale }
+  return {
+    template: tpl,
+    fit: Math.max(0, Math.min(1, fit)),
+    missingRequiredFacts: missing,
+    rationale_ar: rationale,
+    signalMass: matchedSignals.reduce((s, x) => s + x.weight, 0),
+  }
 }
 
 /** هل تُفعل طبقة القوالب؟ فقط عند حاجة ثنائية المجال */
@@ -252,8 +260,25 @@ export function selectTemplate(
   if (best.missingRequiredFacts.length > TEMPLATE_THRESHOLDS.maximum_missing_required_facts) return null
   const second = scored[1]
   if (second && best.fit - second.fit < TEMPLATE_THRESHOLDS.top_two_margin) {
-    // قالبا متقاربان: لا نحسم دون سؤال فاصل — يعالجه المحرك الرئيسي
-    return null
+    // قالبان متقاربان: فاصل حتمي موثق بكتلة الأدلة المطابقة (مجموع أوزان الإشارات
+    // الإيجابية المطابقة)؛ عند استمرار التعادل يحسم المعرف الأبجدي.
+    if (second.signalMass > best.signalMass) {
+      const resolved = second
+      const variant = planVariant(facts, resolved.fit)
+      const courses = buildCoursePlan(resolved.template, variant, masteredSkillSlugs)
+      return {
+        templateId: resolved.template.template_id,
+        nameAr: resolved.template.name_ar,
+        fit: resolved.fit,
+        variant,
+        courses,
+        missingRequiredFacts: resolved.missingRequiredFacts,
+        rationale_ar: [
+          ...resolved.rationale_ar,
+          'حُسم التقارب مع قالب آخر بكتلة الأدلة المطابقة من إجاباتك.',
+        ],
+      }
+    }
   }
   const variant = planVariant(facts, best.fit)
   const courses = buildCoursePlan(best.template, variant, masteredSkillSlugs)

@@ -175,13 +175,11 @@ function JourneyTimeline({ pathway }: { pathway: Pathway }) {
   const list = (pathwayCourses[pathway.id] ?? [])
     .map((id) => courseById(id))
     .filter((c): c is NonNullable<typeof c> => Boolean(c));
-  let week = 1;
-  const steps = list.map((c) => {
-    const start = week;
-    week += c.weeks;
-    return { c, start, end: week - 1 };
+  const steps = list.map((c, i) => {
+    const start = 1 + list.slice(0, i).reduce((w, x) => w + x.weeks, 0);
+    return { c, start, end: start + c.weeks - 1 };
   });
-  const totalWeeks = Math.max(0, week - 1);
+  const totalWeeks = list.reduce((w, c) => w + c.weeks, 0);
   const weeksWord = (n: number) => (n === 1 ? "أسبوع" : n === 2 ? "أسبوعين" : n <= 10 ? `${n} أسابيع` : `${n} أسبوعا`);
   return (
     <div className="card-soft mt-8">
@@ -525,6 +523,7 @@ export default function Diagnostic() {
   const [stage, setStage] = useState<Stage>("intro");
   const [answers, setAnswers] = useState<DiagAnswers>({});
   const [asked, setAsked] = useState<string[]>([]);
+  const [live, setLive] = useState<ReturnType<AssessmentSession["liveState"]> | null>(null);
   const [history, setHistory] = useState<DiagQuestion[]>([]);
   const [question, setQuestion] = useState<DiagQuestion | null>(null);
   const [multiDraft, setMultiDraft] = useState<string[]>([]);
@@ -577,13 +576,13 @@ export default function Diagnostic() {
     };
   }, []);
 
-  /* حالة الفهم الحية — من المحرك مباشرة */
-  const live = stage === "questions" && sessionRef.current ? sessionRef.current.liveState() : null;
+  /* حالة الفهم الحية — تُحدَّث مع كل خطوة محرك، لا تُقرأ من المرجع أثناء التصيير */
   const ESTIMATE_MAX = 14; // «غالبا 8–14 سؤالا» — توقف تكيفي
   const estimatedTotal = Math.max(8, Math.min(ESTIMATE_MAX, asked.length + 3));
   const progress = Math.min(100, Math.round(((asked.length + (question ? 1 : 0)) / ESTIMATE_MAX) * 100));
-  const understoodDims = live ? (Object.keys(DIM_LABELS) as Dim[]).filter((d) => live.dims[d] >= 0.6) : [];
-  const prelimTopId = live && live.overall >= 0.3 ? live.rankedPathwayIds[0]?.id : undefined;
+  const liveNow = stage === "questions" ? live : null;
+  const understoodDims = liveNow ? (Object.keys(DIM_LABELS) as Dim[]).filter((d) => liveNow.dims[d] >= 0.6) : [];
+  const prelimTopId = liveNow && liveNow.overall >= 0.3 ? liveNow.rankedPathwayIds[0]?.id : undefined;
   const prelimTop = prelimTopId ? pathways.find((p) => p.id === prelimTopId) : undefined;
 
   /* مراحل الرحلة الخمس — أيها اكتمل وأيها نشط الآن */
@@ -608,6 +607,7 @@ export default function Diagnostic() {
       setAnswers(
         Object.fromEntries(snapshot.map((a) => [a.questionId, Array.isArray(a.value) ? a.value.join(",") : a.value]))
       );
+      setLive(step.question ? session.liveState() : null);
     }
     setMultiDraft([]);
     setTextDraft("");

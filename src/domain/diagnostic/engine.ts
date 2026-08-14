@@ -3,14 +3,14 @@
 
 import { computeConfidence } from './confidence'
 import { detectContradictions } from './contradictions'
-import { selectTemplate } from './composite'
+import { selectTemplate, scoreTemplates, templatesActive } from './composite'
 import { buildChangeMakers, buildReasons } from './explanation'
-import { applyDerivedRules, reduceAnswer } from './facts'
+import { applyDerivedRules, decisionCriticalMissing, reduceAnswer } from './facts'
 import { matchTrainer } from './instructor-match'
 import { scorePathways } from './pathway-score'
 import { eligibleQuestions, rankQuestions } from './questions'
 import { evaluateStop } from './stop-policy'
-import { questionById } from './catalog'
+import { pathwaySkills, questionById } from './catalog'
 import { DISCLAIMER_AR, STOP_RULES } from './config'
 import type {
   Answer,
@@ -90,18 +90,33 @@ export class DiagnosticEngine {
     }
     const candidates = this.currentCandidates()
     const confidence = computeConfidence(this.state.facts, this.state.contradictions, candidates)
+    // أسئلة المهارات المستهدفة: مهارات المرشحين الثلاثة الأوائل فقط تُقاس في الوضع السريع
+    const boostSkillSlugs = new Set(
+      candidates.slice(0, 3).flatMap((c) => pathwaySkills(c.pathwayId).map((s) => s.slug)),
+    )
+    // عند تفعيل طبقة القوالب: حقائقها المطلوبة تصبح ذات أولوية تغطية
+    const templateFacts = templatesActive(candidates)
+      ? [...new Set(scoreTemplates(this.state.facts, candidates).slice(0, 2).flatMap((s) =>
+          s.template.diagnostic.required_facts.map((rf) => rf.fact_key),
+        ))]
+      : []
+    // الحقائق الحاسمة للقرار (مثل حالة العمل لخريج يطلب «وظيفة أو ترقية») أولوية تغطية أيضا
+    const criticalMissing = decisionCriticalMissing(this.state.facts)
+    const extraRequiredFacts = [...new Set([...templateFacts, ...criticalMissing])]
     const eligible = eligibleQuestions({
       ...this.triggerContext(),
       askedIds: new Set(this.state.askedQuestionIds),
       mode: this.mode,
+      boostSkillSlugs,
     })
-    const ranked = rankQuestions(eligible, this.state.facts, this.state.contradictions, candidates)
+    const ranked = rankQuestions(eligible, this.state.facts, this.state.contradictions, candidates, extraRequiredFacts)
     const stop = evaluateStop({
       askedCount: this.state.askedQuestionIds.length,
       mode: this.mode,
       candidates,
       confidence,
       rankedUtilities: ranked,
+      missingDecisionCritical: criticalMissing,
     })
     if (stop.shouldStop || ranked.length === 0) {
       const finalStop: NextQuestionResult['stop'] = stop.shouldStop
@@ -137,7 +152,7 @@ export class DiagnosticEngine {
     }
     reduceAnswer(question, answer, this.state.facts, this.state.factsRaw, this.state.skillVector, this.state.interestVector)
     applyDerivedRules(this.state.facts)
-    this.state.contradictions = detectContradictions(this.state.facts, this.state.contradictions)
+    this.state.contradictions = detectContradictions(this.state.facts, this.state.contradictions, this.state.skillVector)
 
     // حواجز حماية
     if (answer.questionId === 'QB-M0-006') {
@@ -175,7 +190,7 @@ export class DiagnosticEngine {
       if (!q) continue
       reduceAnswer(q, a, this.state.facts, this.state.factsRaw, this.state.skillVector, this.state.interestVector)
       applyDerivedRules(this.state.facts)
-      this.state.contradictions = detectContradictions(this.state.facts, this.state.contradictions)
+      this.state.contradictions = detectContradictions(this.state.facts, this.state.contradictions, this.state.skillVector)
       if (a.questionId === 'QB-M0-006' && this.state.facts['diagnostic_consent']?.value === 'yes') {
         this.state.consentGiven = true
       }

@@ -58,6 +58,7 @@ const sFile = skillsJson as unknown as { skills: SkillEntry[] }
 const cFile = coreCatalogJson as unknown as {
   launch_pathways: CatalogPathway[]
   courses: CatalogCourse[]
+  skill_extensions?: SkillEntry[]
 }
 const tFile = templatesJson as unknown as { templates: CompositeTemplate[] }
 const oeFile = optionEffectsJson as unknown as OptionEffectsFile
@@ -66,7 +67,7 @@ const trFile = trainerProfilesJson as unknown as { profiles: TrainerProfile[] }
 
 export const questionBank: BankQuestion[] = qFile.questions.filter((q) => q.active !== false)
 export const questionById = new Map(questionBank.map((q) => [q.question_id, q]))
-export const skillsCatalog: SkillEntry[] = sFile.skills
+export const skillsCatalog: SkillEntry[] = [...sFile.skills, ...(cFile.skill_extensions ?? [])]
 export const skillSlugs = new Set(skillsCatalog.map((s) => s.slug))
 export const launchPathways: CatalogPathway[] = cFile.launch_pathways
 export const catalogCourses: CatalogCourse[] = cFile.courses

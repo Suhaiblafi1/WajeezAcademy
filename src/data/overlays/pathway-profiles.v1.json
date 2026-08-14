@@ -59,7 +59,7 @@
     },
     "PW-GOV-002": {
       "personas": ["employee"],
-      "goals": ["improve_customer_experience", "operational_improvement"],
+      "goals": ["improve_customer_experience", "operational_improvement", "promotion", "employment_advancement"],
       "sectors": ["public", "private"],
       "functions": ["customer_service"],
       "min_weekly_load": "3_4",

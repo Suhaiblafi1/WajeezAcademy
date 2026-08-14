@@ -1,4 +1,5 @@
-/* تسجيل ملاءمة المسارات العشرين — خماسي الأبعاد بأوزان config */
+/* تسجيل ملاءمة المسارات العشرين — خماسي الأبعاد بأوزان config.
+   بُعد الشخصية مركب داخليا وموثق: 0.5 وصف شخصي + 0.2 قطاع + 0.2 تخصص وظيفي + 0.1 مرحلة/سياق. */
 
 import { launchPathways, pathwayProfiles, pathwaySkills } from './catalog'
 import { FIT_WEIGHTS, WEEKLY_LOAD_ORDER } from './config'
@@ -9,12 +10,38 @@ const UNKNOWN_LEVEL = 2.5
 
 function scorePersona(pathwayId: string, facts: FactBag): { score: number; reason?: string } {
   const profile = pathwayProfiles[pathwayId]
+  if (!profile) return { score: 0.5 }
   const persona = facts['persona_type']?.value as string | undefined
-  if (!profile || profile.personas.length === 0) return { score: 0.5 }
-  if (!persona) return { score: 0.4 }
-  return profile.personas.includes(persona)
-    ? { score: 1, reason: `وصفك الحالي يناسب جمهور هذا المسار.` }
-    : { score: 0.1 }
+  const sector = facts['sector']?.value as string | undefined
+  const fn = facts['function_specialization']?.value as string | string[] | undefined
+  const stage = facts['business_stage']?.value as string | undefined
+  const leadership = facts['leadership_context']?.value as string | undefined
+  const publicFacing = facts['public_facing']?.value as string | undefined
+
+  const personaPart =
+    profile.personas.length === 0 ? 0.5 : !persona ? 0.4 : profile.personas.includes(persona) ? 1 : 0.1
+  const sectorPart =
+    profile.sectors.length === 0 ? 0.5 : !sector ? 0.4 : profile.sectors.includes(sector) ? 1 : 0.1
+  const fnList = Array.isArray(fn) ? fn : fn ? [fn] : []
+  const functionPart =
+    profile.functions.length === 0 ? 0.5 : fnList.length === 0 ? 0.4 : fnList.some((f) => profile.functions.includes(f)) ? 1 : 0.15
+  let contextPart = 0.5
+  if (profile.business_stages && profile.business_stages.length > 0) {
+    contextPart = !stage ? 0.4 : profile.business_stages.includes(stage) ? 1 : 0.2
+  } else if (profile.leadership_fit && profile.leadership_fit.length > 0) {
+    contextPart = !leadership ? 0.4 : profile.leadership_fit.includes(leadership) ? 1 : 0.2
+  } else if (profile.public_facing_fit && profile.public_facing_fit.length > 0) {
+    contextPart = !publicFacing ? 0.4 : profile.public_facing_fit.includes(publicFacing) ? 1 : 0.3
+  }
+
+  const score = personaPart * 0.5 + sectorPart * 0.2 + functionPart * 0.2 + contextPart * 0.1
+  const reason =
+    personaPart === 1
+      ? sectorPart === 1 || functionPart === 1
+        ? 'وصفك وقطاعك وتخصصك كلها تناسب جمهور هذا المسار.'
+        : 'وصفك الحالي يناسب جمهور هذا المسار.'
+      : undefined
+  return { score, reason }
 }
 
 function scoreGoal(pathwayId: string, facts: FactBag): { score: number; reason?: string } {
@@ -102,7 +129,18 @@ export function scorePathways(
     }
     candidates.push({ pathwayId: p.id, fit, gapSkillSlugs: gap.gap, masteredSkillSlugs: gap.mastered })
   }
-  // ترتيب حتمي: الأعلى ملاءمة، وعند التعادل المعرف الأبجدي
-  candidates.sort((a, b) => b.fit.total - a.fit.total || a.pathwayId.localeCompare(b.pathwayId))
+  // ترتيب حتمي: الأعلى ملاءمة؛ عند التعادل التام يُفضَّل مسار تطابق ملاءمته القيادية
+  // سياق المستخدم (موثق: حقيقة leadership_context مدخلة من المستخدم نفسه)، ثم المعرف الأبجدي.
+  const leadership = facts['leadership_context']?.value as string | undefined
+  const leadAffinity = (pid: string): number => {
+    const prof = pathwayProfiles[pid]
+    return leadership && prof?.leadership_fit?.includes(leadership) ? 1 : 0
+  }
+  candidates.sort(
+    (a, b) =>
+      b.fit.total - a.fit.total ||
+      leadAffinity(b.pathwayId) - leadAffinity(a.pathwayId) ||
+      a.pathwayId.localeCompare(b.pathwayId),
+  )
   return candidates
 }

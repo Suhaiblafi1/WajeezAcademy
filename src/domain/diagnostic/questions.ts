@@ -45,14 +45,24 @@ export function scopeTags(facts: FactBag): Set<string> {
 export interface EligibilityContext extends TriggerContext {
   askedIds: Set<string>
   mode: 'quick' | 'deep'
+  /** مهارات المرشحين الأوائل — أسئلة قياسها (M4) تصبح أهلية حتى في الوضع السريع */
+  boostSkillSlugs?: Set<string>
 }
 
 export function eligibleQuestions(ctx: EligibilityContext): BankQuestion[] {
   const tags = scopeTags(ctx.facts)
+  // بوابة الموافقة: قبل معرفة موقف الموافقة على التشخيص لا يُسأل إلا أسئلة الاستقبال M0
+  // (موثق: الموافقة المستنيرة تسبق أي جمع بيانات تشخيصية)
+  const consentKnown = ctx.facts['diagnostic_consent'] !== undefined
   return questionBank.filter((q) => {
     if (ctx.askedIds.has(q.question_id)) return false
-    // الوضع السريع: أسئلة core فقط؛ العميق: كل شيء
-    if (ctx.mode === 'quick' && q.required_level !== 'core') return false
+    if (!consentKnown && q.module_id !== 'M0') return false
+    // الوضع السريع: أسئلة core + أسئلة مهارات M4 المرتبطة بالمرشحين الأوائل فقط
+    if (ctx.mode === 'quick' && q.required_level !== 'core') {
+      const isTargetedSkill =
+        q.module_id === 'M4' && q.measures[0] !== undefined && ctx.boostSkillSlugs?.has(q.measures[0])
+      if (!isTargetedSkill) return false
+    }
     // نطاق الشخصية
     const scope = q.persona_scope ?? ['all']
     if (!scope.includes('all') && !scope.some((s) => tags.has(s))) return false
@@ -72,10 +82,9 @@ const COST_BY_TYPE: Record<string, number> = {
   short_text: 0.6,
 }
 
-function measuresMissingCore(q: BankQuestion, facts: FactBag): number {
-  return q.measures.some((m) => (REQUIRED_CORE_FACTS as readonly string[]).includes(m) && facts[m] === undefined)
-    ? 1
-    : 0
+function measuresMissingCore(q: BankQuestion, facts: FactBag, extraRequiredFacts: string[]): number {
+  const required = [...(REQUIRED_CORE_FACTS as readonly string[]), ...extraRequiredFacts]
+  return q.measures.some((m) => required.includes(m) && facts[m] === undefined) ? 1 : 0
 }
 
 function measuresContradiction(q: BankQuestion, contradictions: Contradiction[]): number {
@@ -86,8 +95,12 @@ function measuresTopTwoSeparator(q: BankQuestion, candidates: PathwayCandidate[]
   if (candidates.length < 2) return 0
   const [a, b] = candidates
   if (a.fit.total - b.fit.total >= 0.08) return 0
-  // السؤال فاصل إذا كان يقيس حقيقة يختلف عليها المرشحان (هدف/شخصية/عبء)
-  const decisive = ['primary_goal', 'persona_type', 'weekly_load', 'goal_clarity', 'function_specialization', 'sector']
+  // السؤال فاصل إذا كان يقيس حقيقة يختلف عليها المرشحان (هدف/شخصية/عبء/سياق)
+  const decisive = [
+    'primary_goal', 'persona_type', 'weekly_load', 'goal_clarity', 'function_specialization', 'sector',
+    'leadership_context', 'team_context', 'business_stage', 'offer_clarity', 'revenue_signal',
+    'application_readiness', 'public_facing',
+  ]
   return q.measures.some((m) => decisive.includes(m)) ? 1 : 0.3
 }
 
@@ -96,12 +109,13 @@ export function questionUtility(
   facts: FactBag,
   contradictions: Contradiction[],
   candidates: PathwayCandidate[],
+  extraRequiredFacts: string[] = [],
 ): QuestionUtilityBreakdown {
   const decisionImpact = Math.min(1, (q.weight ?? 1) / 1.5)
   const uncertaintyReduction = q.measures.filter((m) => facts[m] === undefined).length > 0 ? 0.8 : 0.1
   const tieBreakPower = measuresTopTwoSeparator(q, candidates)
   const contradictionResolution = measuresContradiction(q, contradictions)
-  const requiredCoverage = measuresMissingCore(q, facts)
+  const requiredCoverage = measuresMissingCore(q, facts, extraRequiredFacts)
   const riskReduction = q.sensitivity_level !== 'low' && q.trigger_condition !== 'always' ? 0.6 : 0.2
   const answerCost = COST_BY_TYPE[q.answer_type] ?? 0.4
   const sensitivity = SENSITIVITY_SCORE[q.sensitivity_level] ?? 0.5
@@ -138,10 +152,11 @@ export function rankQuestions(
   facts: FactBag,
   contradictions: Contradiction[],
   candidates: PathwayCandidate[],
+  extraRequiredFacts: string[] = [],
 ): UtilityScore[] {
   const scored = questions.map((q) => ({
     questionId: q.question_id,
-    utility: questionUtility(q, facts, contradictions, candidates),
+    utility: questionUtility(q, facts, contradictions, candidates, extraRequiredFacts),
   }))
   scored.sort((a, b) => b.utility.total - a.utility.total || a.questionId.localeCompare(b.questionId))
   return scored

@@ -134,13 +134,18 @@ export function reduceAnswer(
 export function applyDerivedRules(facts: FactBag) {
   const g = (k: string) => facts[k]?.value
   // employment_advancement → first_job | promotion
-  if (g('primary_goal') === 'employment_advancement') {
+  // القاعدة إعادة-تقييمية: تعمل أيضا على القيمتين المحسومتين لأن حالة العمل قد تصل
+  // لاحقا (ترتيب الأسئلة تكيفي)، والقيمتان لا تأتيان إلا من هذه القاعدة.
+  const goalVal = g('primary_goal')
+  if (typeof goalVal === 'string' && ['employment_advancement', 'first_job', 'promotion'].includes(goalVal)) {
     const persona = g('persona_type')
     const emp = g('employment_state')
     const resolved =
-      (persona === 'student' || persona === 'early_career') && emp === 'not_working'
+      (persona === 'student' || persona === 'early_career') && (emp === 'not_working' || (emp === undefined && persona === 'student'))
         ? 'first_job'
-        : 'promotion'
+        : emp === undefined
+          ? goalVal // لا حسم بلا دليل — يبقى قابلا لإعادة التقييم
+          : 'promotion'
     const src = facts.primary_goal
     facts.primary_goal = { ...src, value: resolved }
   }
@@ -162,6 +167,32 @@ export function applyDerivedRules(facts: FactBag) {
   if (g('persona_type') === 'founder' && g('employment_state') === 'self_employed') {
     facts.persona_type = { ...facts.persona_type, value: 'freelancer' }
   }
+}
+
+/**
+ * حقائق حاسمة للقرار: فقدانها يمنع التوقف المبكر (قبل الحد الأقصى).
+ * موثق: هدف «وظيفة أو ترقية» لطالب/خريج لا يُحسم (أول وظيفة أم ترقية) دون حالة العمل،
+ * وهدف «مشروع أو دخل» لا يُحسم (إطلاق أم نمو) دون مرحلة المشروع.
+ */
+export function decisionCriticalMissing(facts: FactBag): string[] {
+  const missing: string[] = []
+  const goal = facts['primary_goal']?.value
+  const persona = facts['persona_type']?.value
+  // القاعدة المشتقة تعيد كتابة employment_advancement إلى first_job/promotion فورا،
+  // لذا نفحص القيم الثلاث — الأصل والمحسومان بلا دليل حالة عمل بعد.
+  const advancementGoals = ['employment_advancement', 'first_job', 'promotion']
+  if (
+    typeof goal === 'string' &&
+    advancementGoals.includes(goal) &&
+    (persona === 'student' || persona === 'early_career') &&
+    facts['employment_state'] === undefined
+  ) {
+    missing.push('employment_state')
+  }
+  if (goal === 'business_launch' && facts['business_stage'] === undefined) {
+    missing.push('business_stage')
+  }
+  return missing
 }
 
 export function questionOf(answer: Answer): BankQuestion | null {

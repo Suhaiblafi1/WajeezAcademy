@@ -6,7 +6,7 @@ interface Rule {
   id: string
   factKeys: string[]
   severity: 'low' | 'medium' | 'high'
-  check: (facts: FactBag) => boolean
+  check: (facts: FactBag, skillVector?: Record<string, number>) => boolean
   detail_ar: string
 }
 
@@ -22,11 +22,11 @@ const RULES: Rule[] = [
     id: 'high_self_no_evidence',
     factKeys: ['skill_vector', 'evidence_strength'],
     severity: 'high',
-    check: (f) => {
-      const highSelf = Object.entries(f).filter(
-        ([k, v]) => k.endsWith('_self') && typeof v.value === 'number' && v.value >= 4,
-      )
-      return highSelf.length >= 2 && f['evidence_strength']?.value === 'low'
+    check: (f, skillVector = {}) => {
+      const highSelf = Object.values(skillVector).filter((v) => v >= 4).length
+      const ev = f['evidence_strength']?.value
+      const evidenceLow = ev === 'low' || (typeof ev === 'number' && ev <= 2)
+      return highSelf >= 2 && evidenceLow
     },
     detail_ar: 'تقييم ذاتي مرتفع لمهارات عدة دون دليل تطبيق — نتحقق قبل تخطي المواد الأساسية.',
   },
@@ -46,11 +46,15 @@ const RULES: Rule[] = [
   },
 ]
 
-export function detectContradictions(facts: FactBag, existing: Contradiction[]): Contradiction[] {
+export function detectContradictions(
+  facts: FactBag,
+  existing: Contradiction[],
+  skillVector: Record<string, number> = {},
+): Contradiction[] {
   const known = new Map(existing.map((c) => [c.id, c]))
   const out: Contradiction[] = []
   for (const rule of RULES) {
-    if (rule.check(facts)) {
+    if (rule.check(facts, skillVector)) {
       out.push(
         known.get(rule.id) ?? {
           id: rule.id,
