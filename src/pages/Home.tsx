@@ -5,7 +5,7 @@ import {
   FileCheck, Quote, ChevronDown, Menu, X, ArrowLeft,
   Clock, User, Award, GraduationCap, Building2, Landmark,
   CheckCircle2, Play, Flame, ChevronLeft, ChevronRight, BookOpen,
-  Users, Mail
+  Users, Mail, MessageCircle, Headset
 } from 'lucide-react'
 import { bestsellers, pathwayById } from '@/data/pathways'
 import { bestsellerCourses, courseById, courseCategories, pathwayTrainers, weeksLabel, type Course } from '@/data/courses'
@@ -1181,9 +1181,97 @@ function MobileCtaBar() {
   )
 }
 
+/* ───────────────── المستشار المهني — قناة إنسانية هادئة لا تزاحم المؤشر ───────────────── */
+const ADVISOR_MSG = 'مرحبا، زرت أكاديمي وجيز وأريد حديثا قصيرا مع مستشار مهني قبل أن أبدأ تشخيصي.'
+
+function advisorHref() {
+  return CONTACT.whatsapp
+    ? `https://wa.me/${CONTACT.whatsapp}?text=${encodeURIComponent(ADVISOR_MSG)}`
+    : `mailto:${CONTACT.email}?subject=${encodeURIComponent('أكاديمي وجيز — حديث مع مستشار')}&body=${encodeURIComponent(ADVISOR_MSG)}`
+}
+
+/* شارة قناة عصرية — نقطة حية متدرجة لا شعار أخضر تقليدي */
+function ChannelBadge() {
+  const isWhatsApp = Boolean(CONTACT.whatsapp)
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-2.5 py-1 text-[10px] font-bold text-white/60">
+      <span className={`h-1.5 w-1.5 rounded-full ${isWhatsApp ? 'bg-gradient-to-br from-emerald-300 to-teal' : 'bg-teal'}`} />
+      {isWhatsApp ? 'واتساب' : 'بريد'}
+    </span>
+  )
+}
+
+/* زر عائم زجاجي — يظهر بعد أول تمرير، ولا يغطي شريط الجوال السفلي */
+function AdvisorFloat() {
+  const [visible, setVisible] = useState(false)
+  useEffect(() => {
+    const onScroll = () => setVisible(window.scrollY > 600)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+  const isWhatsApp = Boolean(CONTACT.whatsapp)
+  return (
+    <a
+      href={advisorHref()}
+      target={isWhatsApp ? '_blank' : undefined}
+      rel={isWhatsApp ? 'noreferrer' : undefined}
+      aria-hidden={!visible}
+      aria-label="تحدث مع مستشار مهني"
+      className={`group fixed bottom-24 left-4 z-40 flex items-center gap-3 rounded-full border border-white/10 bg-[#12343B]/85 py-2 pl-4 pr-2 shadow-[0_12px_40px_-12px_rgba(56,167,180,0.45)] backdrop-blur-xl transition-all duration-300 hover:border-teal/50 md:bottom-6 md:left-6 ${visible ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-4 opacity-0'}`}
+    >
+      <span className="relative grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-teal to-[#247B84] text-[#08272B]">
+        <Headset className="h-5 w-5" />
+        <span className="absolute -left-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-emerald-300 ring-2 ring-[#0D0D0D]" />
+      </span>
+      <span className="hidden text-right sm:block">
+        <span className="block text-xs font-black leading-4">تحدث مع مستشار مهني</span>
+        <span className="block text-[10px] leading-4 text-white/55">مجاني · بلا التزام</span>
+      </span>
+      <ChevronLeft className="hidden h-4 w-4 text-teal-light transition-transform group-hover:-translate-x-0.5 sm:block" />
+    </a>
+  )
+}
+
+/* شريط رفيع بعد القصص — لحظة الاقتناع العاطفي يجد فيها المتردد طمأنة بشرية */
+function AdvisorStrip() {
+  const isWhatsApp = Boolean(CONTACT.whatsapp)
+  return (
+    <section className="mx-auto max-w-6xl px-5 pb-4">
+      <div className="reveal flex flex-col items-center justify-between gap-5 rounded-3xl border border-teal/20 bg-gradient-to-l from-[#12343B]/80 to-card px-6 py-6 md:flex-row md:px-8">
+        <div className="flex items-center gap-4 text-center md:text-right">
+          <span className="relative hidden h-12 w-12 shrink-0 place-items-center rounded-2xl bg-teal/12 text-teal md:grid">
+            <Headset className="h-6 w-6" />
+            <span className="absolute -left-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-emerald-300 ring-2 ring-card" />
+          </span>
+          <div>
+            <p className="font-bold">لست جاهزا لتشخيص؟ ابدأ بحديث قصير مع مستشار مهني.</p>
+            <p className="mt-1 text-sm text-muted-foreground">يسمع هدفك، ويجيب أسئلتك، ويرشدك لأنسب بداية — ثم القرار لك.</p>
+          </div>
+        </div>
+        <div className="flex shrink-0 flex-col items-center gap-2">
+          <a
+            href={advisorHref()}
+            target={isWhatsApp ? '_blank' : undefined}
+            rel={isWhatsApp ? 'noreferrer' : undefined}
+            className="inline-flex items-center gap-2 rounded-full border border-teal/40 bg-teal/10 px-6 py-2.5 text-sm font-bold text-teal-light transition hover:bg-teal/20"
+          >
+            <MessageCircle className="h-4 w-4" />
+            احجز حديثك
+          </a>
+          <p className="flex items-center gap-2 text-[11px] text-muted-foreground">
+            مجاني · خمس عشرة دقيقة · بلا التزام
+            <ChannelBadge />
+          </p>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 /* ───────────────── page ─────────────────
    الترتيب المعتمد: بطل واضح ← مؤشر وجيز ← كيف تعمل الرحلة ← شركاء (دليل ثقة مبكر)
-   ← مخرجات التعلم ← ستة مسارات مميزة ← أربع دورات مميزة ← قصص حقيقية ← أسئلة ← دعوة أخيرة */
+   ← مخرجات التعلم ← مسارات ودورات مميزة ← قصص حقيقية ← شريط مستشار ← أسئلة ← دعوة أخيرة + زر مستشار عائم */
 export default function Home() {
   useReveal()
   const topRef = useRef<HTMLDivElement>(null)
@@ -1203,11 +1291,13 @@ export default function Home() {
         <ImageBand />
         <Bestsellers />
         <Stories />
+        <AdvisorStrip />
         <Faq />
         <FinalCta />
       </div>
       {/* تعويض ارتفاع شريط الدعوة الثابت على الجوال */}
       <div className="h-20 md:hidden" />
+      <AdvisorFloat />
       <MobileCtaBar />
       <Footer />
     </div>
