@@ -153,7 +153,7 @@ export const CONTACT = {
   whatsapp: '962771052222',
   address: 'الرياض — حي الياسمين — شارع أنس بن مالك',
   locations: [
-    { label: 'السعودية — الرياض', address: 'حي الياسمين — شارع أنس بن مالك', href: '' },
     { label: 'الأردن — عمّان', address: '', href: 'https://share.google/46d6L4G21IfU98K9z' },
+    { label: 'السعودية — الرياض', address: 'حي الياسمين — شارع أنس بن مالك', href: '' },
   ],
 }
