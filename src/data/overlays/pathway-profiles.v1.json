@@ -1,0 +1,189 @@
+{
+  "version": "1.0.0",
+  "notes_ar": "ملفات تعريف المسارات العشرين — تأليف موثق من حقول audience/before/after في core-catalog.v2.json لأن الكتالوج الأصلي لا يحمل fit_score_weights. الرموز من fact_taxonomy؛ الرموز الموسعة (personal_growth, family_wellbeing, explore) خاصة بطبقة المسارات وموثقة هنا.",
+  "profiles": {
+    "PW-STU-003": {
+      "personas": ["student", "early_career"],
+      "goals": ["career_direction", "explore"],
+      "sectors": [],
+      "functions": [],
+      "min_weekly_load": "3_4",
+      "goal_clarity_fit": ["low", "medium"],
+      "notes_ar": "لمن يملك اهتمامات متعددة بلا دليل كافٍ للاختيار."
+    },
+    "PW-STU-002": {
+      "personas": ["student", "early_career"],
+      "goals": ["first_job", "employment_advancement"],
+      "sectors": [],
+      "functions": [],
+      "min_weekly_load": "3_4",
+      "goal_clarity_fit": ["medium", "high"],
+      "notes_ar": "لمن يعرف عائلة الأدوار ويحتاج تموضعا ودليل عمل."
+    },
+    "PW-FND-003": {
+      "personas": ["employee", "manager", "freelancer", "founder", "student", "early_career"],
+      "goals": ["personal_growth", "digital_transformation", "operational_improvement"],
+      "sectors": [],
+      "functions": [],
+      "min_weekly_load": "3_4",
+      "goal_clarity_fit": ["low", "medium", "high"],
+      "notes_ar": "الذكاء الاصطناعي للإنتاجية — الأوسع جمهورا."
+    },
+    "PW-EMP-004": {
+      "personas": ["employee", "manager"],
+      "goals": ["operational_improvement", "financial_decision", "promotion", "employment_advancement"],
+      "sectors": [],
+      "functions": ["operations", "finance", "product_project"],
+      "min_weekly_load": "3_4",
+      "goal_clarity_fit": ["medium", "high"],
+      "notes_ar": "تحليل بيانات بلا برمجة لاتخاذ القرار."
+    },
+    "PW-EMP-003": {
+      "personas": ["employee", "manager"],
+      "goals": ["operational_improvement", "execute_strategy", "product_launch", "promotion", "employment_advancement"],
+      "sectors": [],
+      "functions": ["product_project", "operations"],
+      "min_weekly_load": "3_4",
+      "goal_clarity_fit": ["medium", "high"],
+      "notes_ar": "إدارة مشاريع عملية من التكليف إلى الإغلاق."
+    },
+    "PW-EMP-005": {
+      "personas": ["manager", "employee"],
+      "goals": ["lead_team", "promotion", "employment_advancement"],
+      "sectors": [],
+      "functions": [],
+      "leadership_fit": ["new_manager", "informal"],
+      "min_weekly_load": "3_4",
+      "goal_clarity_fit": ["medium", "high"],
+      "notes_ar": "المدير الجديد في أول 90 يوما."
+    },
+    "PW-GOV-002": {
+      "personas": ["employee"],
+      "goals": ["improve_customer_experience", "operational_improvement"],
+      "sectors": ["public", "private"],
+      "functions": ["customer_service"],
+      "min_weekly_load": "3_4",
+      "goal_clarity_fit": ["medium", "high"],
+      "notes_ar": "تجربة المستفيد ومعالجة الشكاوى — صف أمامي."
+    },
+    "PW-BIZ-001": {
+      "personas": ["founder", "freelancer"],
+      "goals": ["business_launch", "first_customer", "launch_service_business"],
+      "sectors": ["self_employed"],
+      "functions": [],
+      "business_stages": ["idea", "validation", "pre_revenue", "early_revenue"],
+      "min_weekly_load": "3_4",
+      "goal_clarity_fit": ["medium", "high"],
+      "notes_ar": "من الفكرة إلى أول عميل."
+    },
+    "PW-AUT-001": {
+      "personas": ["employee", "founder", "freelancer", "manager"],
+      "goals": ["operational_improvement", "digital_transformation"],
+      "sectors": [],
+      "functions": ["operations", "marketing_sales"],
+      "min_weekly_load": "3_4",
+      "goal_clarity_fit": ["medium", "high"],
+      "notes_ar": "أتمتة عملية رقمية متكررة تحت إشراف بشري."
+    },
+    "PW-MKT-001": {
+      "personas": ["employee", "founder", "freelancer"],
+      "goals": ["revenue_growth", "personal_brand", "first_customer", "business_launch"],
+      "sectors": [],
+      "functions": ["marketing_sales"],
+      "min_weekly_load": "3_4",
+      "goal_clarity_fit": ["medium", "high"],
+      "notes_ar": "نظام نمو رقمي قابل للقياس."
+    },
+    "PW-SAL-001": {
+      "personas": ["employee", "founder", "freelancer"],
+      "goals": ["revenue_growth", "first_customer"],
+      "sectors": [],
+      "functions": ["marketing_sales"],
+      "min_weekly_load": "3_4",
+      "goal_clarity_fit": ["medium", "high"],
+      "notes_ar": "مبيعات استشارية وتطوير أعمال."
+    },
+    "PW-HR-001": {
+      "personas": ["employee", "manager", "founder"],
+      "goals": ["operational_improvement", "execute_strategy", "lead_team"],
+      "sectors": [],
+      "functions": ["hr", "learning_development"],
+      "min_weekly_load": "3_4",
+      "goal_clarity_fit": ["medium", "high"],
+      "notes_ar": "إدارة مواهب قائمة على الدليل."
+    },
+    "PW-FIN-001": {
+      "personas": ["manager", "founder", "employee"],
+      "goals": ["financial_decision", "revenue_growth"],
+      "sectors": [],
+      "functions": ["finance"],
+      "min_weekly_load": "3_4",
+      "goal_clarity_fit": ["medium", "high"],
+      "notes_ar": "مالية للمديرين غير الماليين."
+    },
+    "PW-PRD-001": {
+      "personas": ["employee", "founder", "manager"],
+      "goals": ["product_launch", "digital_transformation"],
+      "sectors": [],
+      "functions": ["product_project"],
+      "min_weekly_load": "3_4",
+      "goal_clarity_fit": ["medium", "high"],
+      "notes_ar": "إدارة منتج رقمي من مشكلة مستخدم إلى إطلاق."
+    },
+    "PW-OPS-001": {
+      "personas": ["employee", "manager"],
+      "goals": ["operational_improvement", "execute_strategy"],
+      "sectors": [],
+      "functions": ["operations", "customer_service"],
+      "min_weekly_load": "3_4",
+      "goal_clarity_fit": ["medium", "high"],
+      "notes_ar": "تميز تشغيلي بأدلة لا شعارات."
+    },
+    "PW-CYB-001": {
+      "personas": ["manager", "employee", "founder"],
+      "goals": ["reduce_cyber_risk", "digital_transformation"],
+      "sectors": [],
+      "functions": ["cybersecurity", "operations"],
+      "min_weekly_load": "3_4",
+      "goal_clarity_fit": ["medium", "high"],
+      "notes_ar": "مخاطر سيبرانية لغير التقنيين."
+    },
+    "PW-SCM-001": {
+      "personas": ["employee", "manager"],
+      "goals": ["supply_chain_resilience", "operational_improvement"],
+      "sectors": [],
+      "functions": ["procurement_supply_chain", "operations"],
+      "min_weekly_load": "3_4",
+      "goal_clarity_fit": ["medium", "high"],
+      "notes_ar": "سلسلة إمداد مرنة من الطلب إلى المورد."
+    },
+    "PW-COM-001": {
+      "personas": ["employee", "manager", "founder"],
+      "goals": ["lead_team", "personal_brand", "promotion", "employment_advancement"],
+      "sectors": [],
+      "functions": [],
+      "public_facing_fit": ["sometimes", "frequent"],
+      "min_weekly_load": "3_4",
+      "goal_clarity_fit": ["medium", "high"],
+      "notes_ar": "خطابة وتواصل تنفيذي أمام لجنة."
+    },
+    "PW-NEG-001": {
+      "personas": ["manager", "employee", "founder"],
+      "goals": ["revenue_growth", "financial_decision", "lead_team"],
+      "sectors": [],
+      "functions": ["marketing_sales", "procurement_supply_chain"],
+      "min_weekly_load": "3_4",
+      "goal_clarity_fit": ["medium", "high"],
+      "notes_ar": "تفاوض وتأثير أخلاقي."
+    },
+    "PW-LND-001": {
+      "personas": ["trainer", "employee", "manager"],
+      "goals": ["design_training", "personal_brand"],
+      "sectors": [],
+      "functions": ["learning_development", "hr"],
+      "min_weekly_load": "3_4",
+      "goal_clarity_fit": ["medium", "high"],
+      "notes_ar": "تصميم تعلم وإعداد مدربين."
+    }
+  }
+}

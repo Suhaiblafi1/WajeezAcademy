@@ -1,0 +1,56 @@
+{
+  "version": "1.0.0",
+  "notes_ar": "سياسة معالجة الإجابات: كل سؤال إما له تأثير صريح في option-effects.v1.json أو يعالج بمعالج نوعي موثق هنا.",
+  "type_handlers": {
+    "likert_5": {
+      "rule_ar": "خيارات likert الخمسة مرتبة؛ الفهرس+1 (1..5) يسجل في interest_vector تحت أول مفتاح في measures (مثل riasec_realistic).",
+      "ordinal": true
+    },
+    "skill_level_5": {
+      "rule_ar": "خيارات مستوى المهارة الخمسة مرتبة؛ الفهرس+1 (1..5) يسجل في skill_vector تحت أول مفتاح في measures إن طابق slug مهارة في الكتالوج، وإلا سجل كحقيقة خام.",
+      "ordinal": true
+    },
+    "rank_top3": {
+      "rule_ar": "الترتيب المختار (حتى 3) يسجل كمصفوفة في أول مفتاح measures (مثل value_priorities)؛ الأول وزنه أعلى في تفسير الدافعية.",
+      "ordinal": false
+    },
+    "short_text": {
+      "rule_ar": "نص حر يحفظ خاما في facts_raw ولا يدخل التسجيل الرقمي إلا عبر مصنف كلمات موثق إن وجد.",
+      "ordinal": false
+    },
+    "single_choice_or_text": {
+      "rule_ar": "إن وُجد مصنف كلمات للسؤال طُبق، وإلا حفظ النص خاما. النص الحر لا يخترع رمزا.",
+      "ordinal": false
+    },
+    "multi_choice": {
+      "rule_ar": "كل خيار له تأثير صريح في option-effects؛ الخيار بلا تأثير يسجل في facts_raw فقط. الحقائق متعددة القيم تتجمع كمصفوفة.",
+      "ordinal": false
+    }
+  },
+  "derived_rules": [
+    {
+      "id": "goal_employment_advancement",
+      "rule_ar": "primary_goal=employment_advancement تُحسم إلى first_job إذا كانت persona_type في (student, early_career) وemployment_state=not_working، وإلا إلى promotion.",
+      "when": "fact primary_goal == employment_advancement"
+    },
+    {
+      "id": "goal_business_refinement",
+      "rule_ar": "primary_goal=business_launch تُحسم إلى revenue_growth إذا كان business_stage في (growing, established).",
+      "when": "fact primary_goal == business_launch AND business_stage in [growing, established]"
+    },
+    {
+      "id": "persona_manager_refinement",
+      "rule_ar": "persona_type=employee مع leadership_context في (informal, new_manager, experienced_manager, program_leader) تُرفع إلى manager.",
+      "when": "fact persona_type == employee AND leadership_context != none"
+    },
+    {
+      "id": "freelancer_refinement",
+      "rule_ar": "persona_type=founder مع employment_state=self_employed تُحسم إلى freelancer.",
+      "when": "fact persona_type == founder AND employment_state == self_employed"
+    }
+  ],
+  "uncertain_answers": {
+    "rule_ar": "إجابة «لست متأكدا» أو ما يماثلها تسجل الحقيقة بثقة أدلة 0.4 وتضع علامة low_confidence_flag؛ لا تخترع قيمة.",
+    "markers": ["لست متأكدا", "لا أعرف", "غير متأكد"]
+  }
+}
