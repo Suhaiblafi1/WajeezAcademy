@@ -32,7 +32,8 @@ export const CONFIDENCE_WEIGHTS = {
 export const STOP_RULES = {
   quickTargetMin: 8,
   quickTargetMax: 14,
-  hardCapQuick: 18,
+  /* التشخيص الأساسي 8–14 سؤالا فقط — لا سؤال خامس عشر أبدا، مهما كانت المنفعة */
+  hardCapQuick: 14,
   hardCapDeep: 35,
   minTopFit: 0.7,
   minSeparation: 0.1,

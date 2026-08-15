@@ -1,28 +1,36 @@
 /**
  * طلبات انضمام المدربين — Trainer Applications Store
  * -------------------------------------------------------
- * الآن: تُحفظ محليا (localStorage) ويعرضها الأدمن في بوابته.
- * عند النقل إلى Replit: يُرسل النموذج إلى نقطة الاستقبال الرسمية
- * (TRAINER_FORM_ENDPOINT) وتُدار الحالات من قاعدة البيانات —
- * الأنواع والحالات لن تتغير.
+ * الآن (نسخة تجريبية): تُحفظ محليا (localStorage) على جهاز المستخدم فقط
+ * ويعرضها نموذج بوابة الإدارة التجريبي. لا يصل أي طلب إلى الإدارة آليا —
+ * القناة الحقيقية اليوم هي واتساب الفريق.
+ *
+ * عند بناء المنصة: أول مسار إنتاجي كامل سيكون استقبال «الطلب الأولي»
+ * (TrainerApplicationInitial) في قاعدة البيانات، ثم فتح «الاستكمال المهني»
+ * (TrainerProfessionalProfile) بعد قرار الإدارة — العقود في trainer-contracts.ts
+ * هي الواجهة الثابتة التي لن تتغير.
+ *
+ * لا يوجد أي endpoint إنتاجي الآن — ولا يُستخدم رابط الموقع التجريبي القديم
+ * (wajeez-academy.web.app) كأنه واجهة استقبال.
  */
 
-/* نقطة الاستقبال الرسمية لطلبات المدربين — تُفعَّل عند الربط الحقيقي */
-export const TRAINER_FORM_ENDPOINT = "https://wajeez-academy.web.app";
+import type { TrainingSpecialization } from "./trainer-contracts";
 
 export type ApplicationStatus = "new" | "interview" | "accepted" | "rejected";
 
+/* نموذج التخزين المحلي — مطابق للمرحلة الأولى من العقود */
 export interface TrainerApplication {
   id: string;
   name: string;
   email: string;
   phone: string;
-  domain: string;      // المجال الرئيسي
-  years: string;       // سنوات الخبرة
-  role: string;        // الدور الحالي
-  links: string;       // لينكدإن / أعمال
-  topics: string;      // المواضيع التي يحب تدريبها
-  why: string;         // لماذا يريد الانضمام
+  specialization: TrainingSpecialization | string; // التخصص التدريبي الحقيقي
+  domain_years: string;      // سنوات خبرة المجال
+  training_experience: string; // خبرة التدريب — منفصلة عن خبرة المجال
+  role: string;              // الدور الحالي
+  links: string;             // لينكدإن / أعمال
+  topics: string;            // المواضيع التي يحب تدريبها
+  why: string;               // لماذا يريد الانضمام
   status: ApplicationStatus;
   createdAt: number;
 }

@@ -6,6 +6,7 @@ import { signOut } from "@/services/auth";
 import { loadPortal, readUserName, savePortal, type PortalNotification } from "@/data/student";
 import { pathways } from "@/data/pathways";
 import { pathwayCourses } from "@/data/courses";
+import PrototypeBanner from "@/components/PrototypeBanner";
 
 /** إطار بوابة الطالب: شريط علوي + تنقل + إشعارات + حارس الوصول (دفع سابق أو معاينة تجريبية) */
 export default function PortalLayout({ children, title }: { children: React.ReactNode; title: string }) {
@@ -71,6 +72,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
 
   return (
     <div dir="rtl" className="min-h-screen bg-[#0D0D0D] text-white">
+      <PrototypeBanner />
       <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0D0D0D]/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
           <Link to="/" className="flex items-center gap-2">

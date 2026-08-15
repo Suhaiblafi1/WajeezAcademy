@@ -26,6 +26,8 @@ import type {
 
 /** سقف أسئلة جولة التدقيق — حتمي ولا يُتجاوز أبدا */
 export const DEEPENING_MAX_QUESTIONS = 8
+/* جولة التدقيق الاختيارية 4–8 أسئلة: أقل من 4 أسئلة نافعة = الجولة لا تُعرض أصلا */
+export const DEEPENING_MIN_QUESTIONS = 4
 
 export class DiagnosticEngine {
   private state: DiagnosticState
@@ -132,6 +134,20 @@ export class DiagnosticEngine {
         utility: null,
         stop: { shouldStop: true, reason_ar: 'اكتملت جولة تدقيق الخطة.', askedCount: this.state.askedQuestionIds.length },
       }
+    }
+
+    /* السقف الصارم قبل أي استثناء: التشخيص الأساسي 8–14 سؤالا فقط.
+       لا سؤال فاصل ولا حقيقة حاسمة فوق الحد — عند بلوغه تُبنى النتيجة،
+       وإن لم تكفِ الأدلة يحوّل recommend() للمستشار تلقائيا (ثقة < 0.5). */
+    const hardCap = this.mode === 'quick' ? STOP_RULES.hardCapQuick : STOP_RULES.hardCapDeep
+    if (this.state.askedQuestionIds.length >= hardCap) {
+      const stop = {
+        shouldStop: true,
+        reason_ar: 'بلغنا الحد الأقصى للأسئلة (١٤) — نبني نتيجتك بما جمعناه، وإن لم تكفِ الأدلة نحيلك لمستشار.',
+        askedCount: this.state.askedQuestionIds.length,
+      }
+      this.traceEntry('stop_evaluated', stop.reason_ar, { askedCount: stop.askedCount, hardCap: true })
+      return { question: null, utility: null, stop }
     }
 
     const candidates = this.currentCandidates()
@@ -437,7 +453,8 @@ export class DiagnosticEngine {
       }
       plan.push({ questionId: r.questionId, targets, reason_ar: reasons.join('؛ ') + '.' })
     }
-    if (plan.length === 0) return null
+    /* جولة من أقل من 4 أسئلة نافعة لا تُفتح — صورتك مكتملة بما يكفي */
+    if (plan.length < DEEPENING_MIN_QUESTIONS) return null
 
     const before = this.snapshotRecommendation()
     this.deepening = { started: true, completed: false, plan, cursor: 0, before }

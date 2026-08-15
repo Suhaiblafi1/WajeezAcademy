@@ -37,6 +37,7 @@ import { Badge } from "@/components/ui/badge";
 import AuthGate from "@/components/AuthGate";
 import CourseJourney from "@/components/CourseJourney";
 import CvUpload from "@/components/CvUpload";
+import { ResultErrorBoundary } from "@/components/ResultErrorBoundary";
 import {
   type DiagQuestion,
   type DiagOption,
@@ -45,7 +46,7 @@ import {
 } from "@/data/diagnostic";
 import { AssessmentSession, createAssessment, diagQuestionById } from "@/application/diagnostic/assessment-service";
 import type { DeepeningComparison } from "@/application/diagnostic/assessment-service";
-import { loadSession, saveLastResult, loadLastResult, clearAllSessionData } from "@/application/diagnostic/session-store";
+import { loadSession, saveLastResult, loadLastResultSafe, clearAllSessionData } from "@/application/diagnostic/session-store";
 import { loadMirrorAnswers } from "@/domain/diagnostic/teaser-bridge";
 import { sessionContributingReferences } from "@/data/methodology";
 import type { SkillBar } from "@/application/diagnostic/view-model";
@@ -614,8 +615,11 @@ export default function Diagnostic() {
   const [savedProgress, setSavedProgress] = useState<SavedProgress | null>(() => loadProgress());
   /* إجابات مؤشر وجيز التمهيدي (الصفحة الرئيسية) تُنقل للجلسة ولا تُسأل مجددا */
   const [mirrorCarried] = useState<boolean>(() => loadMirrorAnswers(window.localStorage) !== null);
-  /* نتيجة مكتملة محفوظة — من أنهى المؤشر سابقا لا يبدأ من الصفر أبدا */
-  const [savedDone] = useState(() => loadLastResult<DiagResult>());
+  /* نتيجة مكتملة محفوظة — تُقرأ عبر مخطط صارم: تُرحّل إن أمكن، وتُحذف بأمان مع رسالة إن تعذر */
+  const [storedInitial] = useState(() => loadLastResultSafe());
+  const savedDone: DiagResult | null =
+    storedInitial.status === "ok" || storedInitial.status === "migrated" ? storedInitial.result : null;
+  const discardedResultNotice = storedInitial.status === "discarded" ? storedInitial.reason_ar : null;
   /* جلسة المحرك الحتمي — مصدر الأسئلة والنتيجة الوحيد */
   const sessionRef = useRef<AssessmentSession | null>(null);
   /* الضيف أولا: يكمل التشخيص كاملا ويرى ملخصه الأولي، والحساب يُطلب فقط لفتح التفاصيل والحفظ */
@@ -628,6 +632,8 @@ export default function Diagnostic() {
   const inDeepeningRef = useRef(false);
   /* هل الجلسة الحالية حية وتسمح بجولة تدقيق؟ — حالة تصيير لا تُقرأ من المرجع */
   const [canDeepen, setCanDeepen] = useState(false);
+  /* نُقرع الزر ولا جولة نافعة (أقل من 4 أسئلة) — رسالة بدل الصمت */
+  const [deepUnavailable, setDeepUnavailable] = useState(false);
 
   /* تحذير قبل مغادرة تشخيص غير محفوظ — التقدم محفوظ تلقائيا لكن نطمئنه */
   const stageRef = useRef(stage);
@@ -669,8 +675,7 @@ export default function Diagnostic() {
   const progress = Math.min(100, Math.round(((asked.length + (question ? 1 : 0)) / ESTIMATE_MAX) * 100));
   const liveNow = stage === "questions" ? live : null;
   const understoodDims = liveNow ? (Object.keys(DIM_LABELS) as Dim[]).filter((d) => liveNow.dims[d] >= 0.6) : [];
-  const prelimTopId = liveNow && liveNow.overall >= 0.3 ? liveNow.rankedPathwayIds[0]?.id : undefined;
-  const prelimTop = prelimTopId ? pathways.find((p) => p.id === prelimTopId) : undefined;
+  /* لا نشتق «التطابق الأولي» ولا نعرضه — اسم المسار/القالب يُكشف في النتيجة فقط */
 
   /* مراحل الرحلة الخمس — أيها اكتمل وأيها نشط الآن */
   const currentStageIdx = stageIndexOf(question);
@@ -777,7 +782,11 @@ export default function Diagnostic() {
     const session = sessionRef.current;
     if (!session || inDeepeningRef.current) return;
     const opened = session.startDeepening();
-    if (!opened) return;
+    if (!opened) {
+      /* أقل من 4 أسئلة نافعة — الجولة لا تُفتح ونخبر المستخدم بدل زر صامت */
+      setDeepUnavailable(true);
+      return;
+    }
     track("deepening_started");
     inDeepeningRef.current = true;
     setDeepReason(opened.reasonAr);
@@ -856,6 +865,7 @@ export default function Diagnostic() {
     sessionRef.current = null;
     inDeepeningRef.current = false;
     setCanDeepen(false);
+    setDeepUnavailable(false);
     setDeepStep(null);
     setDeepReason(null);
     setAnswers({});
@@ -938,9 +948,9 @@ export default function Diagnostic() {
           </div>
 
           <p className="mx-auto mt-8 max-w-lg rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4 text-xs leading-relaxed text-white/50">
-            أسئلتنا مبنية على مراجع علمية موثوقة: <span className="font-bold text-[#6EC7D1]">RIASEC</span> للميول المهنية،
+            نسترشد في بناء أسئلتنا بأطر مهنية وتعليمية معروفة: <span className="font-bold text-[#6EC7D1]">RIASEC</span> للميول المهنية،
             و<span className="font-bold text-[#6EC7D1]">O*NET وESCO</span> لخرائط المهارات،
-            و<span className="font-bold text-[#6EC7D1]">DigComp</span> للجاهزية الرقمية — نظام مبني على علم، لا على تخمين.
+            و<span className="font-bold text-[#6EC7D1]">DigComp</span> للجاهزية الرقمية — وتُعرض عليك تفاصيلها في صفحة المنهجية.
           </p>
 
           {/* إجابات المؤشر التمهيدي منقولة — لا نسألك مرتين */}
@@ -985,6 +995,17 @@ export default function Diagnostic() {
                   احذفها وابدأ من جديد
                 </Button>
               </div>
+            </div>
+          )}
+
+          {/* نتيجة قديمة لم يمكن ترحيلها — حُذفت بأمان ونطلب إعادة التشخيص بوضوح */}
+          {!savedProgress && !savedDone && discardedResultNotice && (
+            <div className="mx-auto mt-8 max-w-xl rounded-2xl border border-[#FABC05]/40 bg-[#FABC05]/[0.07] p-5">
+              <p className="flex items-center justify-center gap-2 text-sm font-bold text-[#FABC05]">
+                <History className="h-4 w-4" />
+                نتيجتك السابقة لم تعد صالحة
+              </p>
+              <p className="mt-1.5 text-xs leading-relaxed text-white/55">{discardedResultNotice}</p>
             </div>
           )}
 
@@ -1132,11 +1153,8 @@ export default function Diagnostic() {
                   {DIM_LABELS[d]}
                 </span>
               ))}
-              {prelimTop && (
-                <span className="rounded-full border border-[#FABC05]/30 bg-[#FABC05]/10 px-2.5 py-0.5 text-[11px] font-semibold text-[#FABC05]">
-                  التطابق الأولي: {prelimTop.name}
-                </span>
-              )}
+              {/* لا يُعرض اسم المسار أو القالب أثناء الأسئلة أبدا — كشف التوصية مبكرا يوجّه الإجابات.
+                  يظهر فقط ما فُهم (هدف/وقت/سياق) عبر شارات الأبعاد أعلاه. */}
             </div>
           )}
 
@@ -1345,6 +1363,7 @@ export default function Diagnostic() {
 
       {/* ─── Result ─── */}
       {stage === "result" && result && topPathway && (
+        <ResultErrorBoundary onReset={restart}>
         <section className="story-fade mx-auto max-w-3xl px-5 py-12 md:py-16">
           {(() => {
             const compositeView = (result.resultJson.composite as CompositeView | null) ?? null;
@@ -1407,9 +1426,14 @@ export default function Diagnostic() {
                 </Button>
               )}
             </div>
-            {deepeningOffered && (
+            {deepeningOffered && !deepUnavailable && (
               <p className="mt-2 text-[11px] text-white/40 print:hidden">
-                «دقّق خطتك أكثر»: أسئلة أعمق قليلة (بحد أقصى 8) تزيد وضوح التوصية — اختيارية تماما.
+                «دقّق خطتك أكثر»: جولة منفصلة اختيارية من 4 إلى 8 أسئلة تزيد وضوح التوصية.
+              </p>
+            )}
+            {deepUnavailable && (
+              <p className="mt-2 text-[11px] font-bold text-[#6EC7D1] print:hidden">
+                صورتك مكتملة بما يكفي — لا أسئلة إضافية نافعة، توصيتك جاهزة بثقة.
               </p>
             )}
             {/* شرح قوة الأدلة بلغة مبسطة + مكوناتها الخمسة — نسبة موثقة الحساب داخل توسعة */}
@@ -2087,6 +2111,7 @@ export default function Diagnostic() {
             هذا تشخيص تعليمي مهني: ليس تقييما نفسيا أو طبيا، ولا وعدا بوظيفة أو دخل.
           </p>
         </section>
+        </ResultErrorBoundary>
       )}
     </div>
   );

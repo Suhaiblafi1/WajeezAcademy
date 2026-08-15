@@ -13,19 +13,23 @@ export default function StoriesPage() {
   return (
     <SiteShell>
       <SeoHead
-        title="قصص المتعلمين"
-        description="قصص حقيقية لمتعلمين بدأوا بالتشخيص وانتهوا بمخرج يمكنك رؤيته — مع آراء مستخدمي تطبيق وجيز عن العلامة."
+        title="نماذج رحلات التعلم"
+        description="نماذج توضيحية لرحلات تعلم تبدأ بالتشخيص وتنتهي بمخرج ملموس — مع آراء مستخدمي تطبيق وجيز عن العلامة."
         path="/stories"
       />
 
       <div className="text-center">
-        <div className="inline-flex items-center gap-2 rounded-full border border-[#38A7B4]/30 bg-[#38A7B4]/10 px-4 py-1.5 text-sm text-[#6EC7D1]">
+        <div className="inline-flex items-center gap-2 rounded-full border border-[#FABC05]/40 bg-[#FABC05]/10 px-4 py-1.5 text-sm font-bold text-[#FABC05]">
           <Quote className="h-3.5 w-3.5" />
-          قصص حدثت بالفعل
+          نماذج توضيحية
         </div>
-        <h1 className="mt-5 text-3xl font-black md:text-4xl">مسارات مشى فيها غيرك قبلك</h1>
+        <h1 className="mt-5 text-3xl font-black md:text-4xl">هكذا تبدو الرحلة عندنا</h1>
         <p className="mx-auto mt-3 max-w-xl leading-8 text-white/60">
-          كل قصة بدأت بتشخيص، ومرّت بمسار ومدرب، وانتهت بمخرج يمكنك أن تراه — اختر قصة واقرأها كاملة.
+          كل رحلة تبدأ بتشخيص، وتمر بمسار ومدرب، وتنتهي بمخرج يمكنك أن تراه — اختر نموذجا واقرأه كاملا.
+        </p>
+        <p className="mx-auto mt-3 max-w-lg text-xs leading-6 text-white/45">
+          هذه نماذج توضيحية مركبة من أنماط شائعة بين المتعلمين — ليست شهادات لأشخاص حقيقيين.
+          قصص المتعلمين الموثقة بموافقة أصحابها تُنشر هنا بعد اعتمادها.
         </p>
       </div>
 
@@ -132,6 +136,7 @@ export default function StoriesPage() {
               <div className="absolute bottom-4 right-6 flex items-center gap-3">
                 <span className="rounded-full bg-[#247B84] px-4 py-1.5 text-sm font-bold text-white">{open.tag}</span>
                 <span className="text-sm text-white/80">{open.name} — {open.role}</span>
+                <span className="rounded-full border border-[#FABC05]/50 bg-black/40 px-3 py-1 text-[11px] font-bold text-[#FABC05]">نموذج توضيحي</span>
               </div>
             </div>
 

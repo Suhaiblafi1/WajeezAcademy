@@ -3,6 +3,5 @@ dist/
 *.log
 .DS_Store
 
-# لقطات الفحص المحلية وسكربتاتها المؤقتة
+# لقطات الفحص المحلية
 verification/
-scripts/tmp/

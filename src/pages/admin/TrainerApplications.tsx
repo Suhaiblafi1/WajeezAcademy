@@ -40,8 +40,9 @@ export default function TrainerApplications() {
                 <div>
                   <h3 className="font-black">{a.name}</h3>
                   <p className="mt-1 text-xs text-white/50">
-                    {a.domain} · خبرة {a.years}{a.role ? ` · ${a.role}` : ""} · {new Date(a.createdAt).toLocaleDateString("ar-SA")}
+                    {a.specialization} · خبرة مجال {a.domain_years}{a.role ? ` · ${a.role}` : ""} · {new Date(a.createdAt).toLocaleDateString("ar-SA")}
                   </p>
+                  <p className="mt-1 text-[11px] text-white/40">خبرة التدريب: {a.training_experience || "—"}</p>
                   <p className="mt-1 text-[11px] text-white/40" dir="ltr">{a.email}{a.phone ? ` · ${a.phone}` : ""}</p>
                 </div>
                 <span className={`rounded-full border px-3 py-1 text-[11px] font-bold ${STATUS_STYLE[a.status]}`}>

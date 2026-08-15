@@ -192,85 +192,88 @@ export function coursePriceOf(c: Course): number {
   return Math.min(180, base + premium)
 }
 
-/* ─────────── مدربو المسارات — تشكيلة توضيحية بانتظار قائمة موثقة ─────────── */
+/* ─────────── مدربو المسارات — لا أسماء غير معتمدة ───────────
+   نزاهة تسويقية: لا يُعرض اسم مدرب إلا بعد اعتماد الشعبة وحصوله على
+   public_visibility. حتى ذلك الحين يظهر التخصص التدريبي + العبارة الموحدة. */
+export const TRAINER_PENDING_AR = 'يُعلن المدرب بعد اعتماد الشعبة'
 export interface Trainer {
   name: string
   role: string
 }
 export const TRAINER_POOLS: Record<string, Trainer[]> = {
   FND: [
-    { name: 'أ. ريم القحطاني', role: 'مدربة التعلم الذاتي وبناء العادات' },
-    { name: 'أ. محمد الشهري', role: 'مدرب الكفاءة الرقمية' },
-    { name: 'د. نورة السبيعي', role: 'مدربة تطبيقات الذكاء الاصطناعي' },
+    { name: TRAINER_PENDING_AR, role: 'مدربة التعلم الذاتي وبناء العادات' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب الكفاءة الرقمية' },
+    { name: TRAINER_PENDING_AR, role: 'مدربة تطبيقات الذكاء الاصطناعي' },
   ],
   STU: [
-    { name: 'أ. ريم القحطاني', role: 'مدربة الجاهزية المهنية' },
-    { name: 'أ. عبدالله المطيري', role: 'مدرب التخطيط المهني للطلاب' },
+    { name: TRAINER_PENDING_AR, role: 'مدربة الجاهزية المهنية' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب التخطيط المهني للطلاب' },
   ],
   EMP: [
-    { name: 'د. فيصل العتيبي', role: 'مدرب تطوير الموظفين' },
-    { name: 'أ. سارة الدوسري', role: 'مدربة الكتابة والعروض المهنية' },
-    { name: 'م. خالد العنزي', role: 'مدرب إدارة المشاريع والبيانات' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب تطوير الموظفين' },
+    { name: TRAINER_PENDING_AR, role: 'مدربة الكتابة والعروض المهنية' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب إدارة المشاريع والبيانات' },
   ],
   COM: [
-    { name: 'أ. سارة الدوسري', role: 'مدربة العروض والخطابة' },
-    { name: 'د. منيرة الزهراني', role: 'مدربة الحوار والإقناع' },
+    { name: TRAINER_PENDING_AR, role: 'مدربة العروض والخطابة' },
+    { name: TRAINER_PENDING_AR, role: 'مدربة الحوار والإقناع' },
   ],
   NEG: [
-    { name: 'د. فيصل العتيبي', role: 'مدرب التفاوض' },
-    { name: 'م. سلطان الدوسري', role: 'مدرب إدارة النزاعات' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب التفاوض' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب إدارة النزاعات' },
   ],
   GOV: [
-    { name: 'م. سلطان الدوسري', role: 'مدرب التطوير الحكومي' },
-    { name: 'أ. هند العمري', role: 'مدربة خدمة الجمهور والمراسلات' },
-    { name: 'د. بدر القحطاني', role: 'مدرب المشتريات والمالية العامة' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب التطوير الحكومي' },
+    { name: TRAINER_PENDING_AR, role: 'مدربة خدمة الجمهور والمراسلات' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب المشتريات والمالية العامة' },
   ],
   BIZ: [
-    { name: 'م. لينا الحربي', role: 'مدربة ريادة الأعمال' },
-    { name: 'أ. فهد الغامدي', role: 'مدرب التسويق والمبيعات' },
+    { name: TRAINER_PENDING_AR, role: 'مدربة ريادة الأعمال' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب التسويق والمبيعات' },
   ],
   AUT: [
-    { name: 'د. نورة السبيعي', role: 'مدربة الذكاء الاصطناعي التطبيقي' },
-    { name: 'أ. محمد الشهري', role: 'مدرب الأتمتة والإنتاجية' },
+    { name: TRAINER_PENDING_AR, role: 'مدربة الذكاء الاصطناعي التطبيقي' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب الأتمتة والإنتاجية' },
   ],
   MKT: [
-    { name: 'أ. فهد الغامدي', role: 'مدرب التسويق الرقمي' },
-    { name: 'م. لينا الحربي', role: 'مدربة النمو' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب التسويق الرقمي' },
+    { name: TRAINER_PENDING_AR, role: 'مدربة النمو' },
   ],
   SAL: [
-    { name: 'أ. فهد الغامدي', role: 'مدرب المبيعات الاستشارية' },
-    { name: 'د. فيصل العتيبي', role: 'مدرب تطوير الأعمال' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب المبيعات الاستشارية' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب تطوير الأعمال' },
   ],
   HR: [
-    { name: 'د. منيرة الزهراني', role: 'مدربة الموارد البشرية' },
-    { name: 'أ. هند العمري', role: 'مدربة تجربة الموظف' },
+    { name: TRAINER_PENDING_AR, role: 'مدربة الموارد البشرية' },
+    { name: TRAINER_PENDING_AR, role: 'مدربة تجربة الموظف' },
   ],
   FIN: [
-    { name: 'د. بدر القحطاني', role: 'مدرب المالية للمديرين' },
-    { name: 'م. خالد العنزي', role: 'مدرب التحليل المالي' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب المالية للمديرين' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب التحليل المالي' },
   ],
   PRD: [
-    { name: 'م. خالد العنزي', role: 'مدرب إدارة المنتج' },
-    { name: 'د. نورة السبيعي', role: 'مدربة تجربة المستخدم' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب إدارة المنتج' },
+    { name: TRAINER_PENDING_AR, role: 'مدربة تجربة المستخدم' },
   ],
   OPS: [
-    { name: 'م. سلطان الدوسري', role: 'مدرب التميز التشغيلي' },
-    { name: 'م. خالد العنزي', role: 'مدرب تحسين العمليات' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب التميز التشغيلي' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب تحسين العمليات' },
   ],
   CYB: [
-    { name: 'م. خالد العنزي', role: 'مدرب إدارة المخاطر السيبرانية' },
-    { name: 'أ. محمد الشهري', role: 'مدرب الأمن الرقمي' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب إدارة المخاطر السيبرانية' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب الأمن الرقمي' },
   ],
   SCM: [
-    { name: 'د. بدر القحطاني', role: 'مدرب المشتريات وسلاسل الإمداد' },
-    { name: 'م. سلطان الدوسري', role: 'مدرب العمليات' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب المشتريات وسلاسل الإمداد' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب العمليات' },
   ],
   LND: [
-    { name: 'م. سلطان الدوسري', role: 'مدرب القيادة' },
-    { name: 'د. منيرة الزهراني', role: 'مدربة الحوار والتغذية الراجعة' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب القيادة' },
+    { name: TRAINER_PENDING_AR, role: 'مدربة الحوار والتغذية الراجعة' },
   ],
 }
-/** مدربو مسار معين — 2–3 مدربين مشاركين (تشكيلة توضيحية؛ يُؤكَّد التعيين بعد اعتماد الشعبة) */
+/** مدربو مسار معين — مقاعد التخصصات التدريبية المشاركة (2–3)؛ الاسم يُعلن بعد اعتماد الشعبة */
 export function pathwayTrainers(pathwayId: string): Trainer[] {
   const family = pathwayId.split('-')[1] ?? 'FND'
   const pool = TRAINER_POOLS[family] ?? TRAINER_POOLS.FND

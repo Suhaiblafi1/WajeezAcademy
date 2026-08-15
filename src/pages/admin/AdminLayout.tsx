@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, NavLink } from "react-router";
 import { BookMarked, CalendarCog, Crown, ShieldAlert, LayoutDashboard, UserPlus } from "lucide-react";
 import { ADMIN_IDENTITIES, ADMIN_IDENTITY_KEY, adminIdentity } from "./admin-identity";
+import PrototypeBanner from "@/components/PrototypeBanner";
 
 /** إطار لوحة الإدارة والعمليات */
 export default function AdminLayout({ children, title }: { children: React.ReactNode; title: string }) {
@@ -27,6 +28,7 @@ export default function AdminLayout({ children, title }: { children: React.React
             </button>
           ))}
         </div>
+        <p className="mt-4 text-[11px] font-bold text-[#FABC05]/70">نسخة تجريبية — البيانات المعروضة محلية وليست تشغيلية</p>
         <Link to="/" className="mt-6 text-xs text-white/40 hover:text-white/70">العودة للموقع العام</Link>
       </div>
     );
@@ -42,6 +44,7 @@ export default function AdminLayout({ children, title }: { children: React.React
 
   return (
     <div dir="rtl" className="min-h-screen bg-[#0D0D0D] text-white">
+      <PrototypeBanner />
       <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0D0D0D]/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
           <Link to="/" className="flex items-center gap-2">

@@ -426,7 +426,7 @@ function DiagnosticTeaser() {
           </div>
         </div>
         <p className="reveal mt-4 text-center text-xs text-muted-foreground">
-          مبني على مراجع علمية موثوقة: RIASEC للميول المهنية · O*NET وESCO للمهارات · DigComp للجاهزية الرقمية
+          نسترشد بأطر مهنية وتعليمية معروفة: RIASEC للميول المهنية · O*NET وESCO للمهارات · DigComp للجاهزية الرقمية
         </p>
       </div>
     </section>
@@ -563,13 +563,13 @@ function Stories() {
       <div className="pointer-events-none absolute left-1/3 top-0 h-[400px] w-[400px] rounded-full bg-[#38A7B4]/8 blur-[130px]" />
       <div className="mx-auto max-w-6xl px-5">
         <div className="reveal text-center">
-          <SectionLabel>رحلات تعلم من واقع متعلمينا</SectionLabel>
-          <h2 className="mt-5 text-3xl font-bold md:text-4xl">مسارات مشى فيها غيرك قبلك</h2>
+          <SectionLabel>نماذج توضيحية لرحلات التعلم</SectionLabel>
+          <h2 className="mt-5 text-3xl font-bold md:text-4xl">هكذا تُبنى الرحلة عندنا</h2>
           <p className="mx-auto mt-4 max-w-xl leading-8 text-muted-foreground">
-            كل قصة بدأت بتشخيص، ومرّت بمسار ومدرب، وانتهت بمخرج يمكنك أن تراه — اختر قصة واقرأها كاملة.
+            كل رحلة تبدأ بتشخيص، وتمر بمسار ومدرب، وتنتهي بمخرج يمكنك أن تراه — اختر نموذجا واقرأه كاملا.
           </p>
           <p className="mx-auto mt-3 max-w-md text-xs leading-6 text-muted-foreground/80">
-            نعرض الأسماء الأولى والأحرف فقط حفاظا على خصوصية أصحاب القصص.
+            نماذج توضيحية مركبة من أنماط شائعة — ليست شهادات لأشخاص حقيقيين.
           </p>
         </div>
       </div>
@@ -666,9 +666,10 @@ function Stories() {
                 >
                   <X className="h-5 w-5" />
                 </button>
-                <div className="absolute bottom-4 right-6 flex items-center gap-3">
+                <div className="absolute bottom-4 right-6 flex flex-wrap items-center gap-3">
                   <span className="tag-teal rounded-full px-4 py-1.5 text-sm font-bold">{open.tag}</span>
                   <span className="text-sm text-white/80">{open.name} — {open.role}</span>
+                  <span className="rounded-full border border-[#FABC05]/50 bg-black/40 px-3 py-1 text-[11px] font-bold text-[#FABC05]">نموذج توضيحي</span>
                 </div>
               </div>
 

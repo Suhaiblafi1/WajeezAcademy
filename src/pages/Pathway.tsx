@@ -308,27 +308,28 @@ export default function PathwayPage() {
             </div>
           </div>
 
-          {/* مدربو المسار — أكثر من مدرب يرافقك */}
+          {/* مقاعد التخصصات التدريبية — الأسماء تُعلن بعد اعتماد الشعبة */}
           <div className="story-fade mt-8 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-7">
             <h2 className="flex items-center gap-2 text-lg font-black">
               <User className="h-5 w-5 text-[#6EC7D1]" />
-              مدربو هذا المسار
+              الفريق التدريبي لهذا المسار
             </h2>
             <div className="mt-4 grid gap-3 sm:grid-cols-3">
               {pathwayTrainers(pathway.id).map((t) => (
-                <div key={t.name} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                <div key={t.role} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
                   <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#38A7B4] to-[#247B84] text-base font-black text-white">
-                    {t.name.replace(/^(أ\.|د\.|م\.)\s*/, "").charAt(0)}
+                    <User className="h-5 w-5" />
                   </span>
                   <div>
-                    <p className="text-sm font-black">{t.name}</p>
-                    <p className="mt-0.5 text-xs leading-relaxed text-[#6EC7D1]">{t.role}</p>
+                    <p className="text-sm font-black leading-relaxed">{t.role}</p>
+                    <p className="mt-0.5 text-xs leading-relaxed text-[#6EC7D1]">{t.name}</p>
                   </div>
                 </div>
               ))}
             </div>
             <p className="mt-3 text-xs text-white/40">
               كل دورة يقدمها المدرب الأعمق في موضوعها — وينسّقون معا حتى تتكامل المهارات لا أن تتكرر.
+              تُعلن أسماء المدربين بعد اعتماد الشعبة رسميا.
             </p>
           </div>
 
