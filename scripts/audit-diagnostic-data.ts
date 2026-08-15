@@ -118,19 +118,87 @@ for (const q of questions.questions as {
   }
 }
 
-/* 6) القوالب المركبة: دوراتها موجودة وليست مسارات */
+/* 6) القوالب المركبة: دوراتها موجودة وليست مسارات، ونسخها المضمنة متسقة مع الكتالوج المركزي */
+const courseTitleById = new Map(core.courses.map((c: { course_id: string; title_ar: string }) => [c.course_id, c.title_ar]))
+const courseHoursById = new Map(core.courses.map((c: { course_id: string; total_hours: number }) => [c.course_id, c.total_hours]))
+const coursePathwayById = new Map(core.courses.map((c: { course_id: string; pathway_id: string }) => [c.course_id, c.pathway_id]))
+const pathwayTitleById = new Map(core.launch_pathways.map((p: { id: string; title: string }) => [p.id, p.title]))
+
+interface TemplateCourseRef {
+  course_id: string
+  course_title_ar?: string
+  pathway_id?: string
+  pathway_title_ar?: string
+  hours?: number
+}
+const checkTemplateRef = (tId: string, kind: string, rc: TemplateCourseRef) => {
+  check(courseIds.has(rc.course_id), `قالب ${tId} (${kind}) يشير لدورة غير موجودة ${rc.course_id}`)
+  if (!courseIds.has(rc.course_id)) return
+  /* النسخ المضمنة توثيقية فقط — المحرك يقرأ من الكتالوج المركزي؛
+     أي انحراف هنا يعني نسخة متقادمة ستضلل المراجع البشري */
+  if (rc.course_title_ar !== undefined) {
+    check(rc.course_title_ar === courseTitleById.get(rc.course_id), `قالب ${tId} (${kind}): عنوان مضمن متقادم لـ${rc.course_id} — «${rc.course_title_ar}» ≠ «${courseTitleById.get(rc.course_id)}»`)
+  }
+  if (rc.hours !== undefined) {
+    check(rc.hours === courseHoursById.get(rc.course_id), `قالب ${tId} (${kind}): ساعات مضمنة متقادمة لـ${rc.course_id} — ${rc.hours} ≠ ${courseHoursById.get(rc.course_id)}`)
+  }
+  if (rc.pathway_id !== undefined) {
+    check(rc.pathway_id === coursePathwayById.get(rc.course_id), `قالب ${tId} (${kind}): مسار مضمن خاطئ لـ${rc.course_id} — ${rc.pathway_id} ≠ ${coursePathwayById.get(rc.course_id)}`)
+  }
+  if (rc.pathway_title_ar !== undefined) {
+    check(rc.pathway_title_ar === pathwayTitleById.get(rc.pathway_id ?? ''), `قالب ${tId} (${kind}): اسم مسار مضمن متقادم لـ${rc.course_id}`)
+  }
+}
+
 for (const t of templates.templates as {
   template_id: string
   not_counted_as_pathway?: boolean
-  required_courses?: { course_id: string }[]
-  starter_courses?: { course_id: string }[]
+  required_courses?: TemplateCourseRef[]
+  conditional_courses?: TemplateCourseRef[]
+  bridge_courses?: TemplateCourseRef[]
+  starter_courses?: TemplateCourseRef[]
   diagnostic?: { required_facts?: { question_ids: string[] }[] }
 }[]) {
   check(t.not_counted_as_pathway === true, `قالب ${t.template_id} لا يحمل not_counted_as_pathway=true`)
-  for (const rc of t.required_courses ?? []) check(courseIds.has(rc.course_id), `قالب ${t.template_id} يشير لدورة غير موجودة ${rc.course_id}`)
-  for (const sc of t.starter_courses ?? []) check(courseIds.has(sc.course_id), `قالب ${t.template_id} (مبدئي) يشير لدورة غير موجودة ${sc.course_id}`)
+  for (const rc of t.required_courses ?? []) checkTemplateRef(t.template_id, 'مطلوبة', rc)
+  for (const rc of t.conditional_courses ?? []) checkTemplateRef(t.template_id, 'شرطية', rc)
+  for (const rc of t.bridge_courses ?? []) checkTemplateRef(t.template_id, 'جسرية', rc)
+  for (const rc of t.starter_courses ?? []) checkTemplateRef(t.template_id, 'مبدئية', rc)
   for (const rf of t.diagnostic?.required_facts ?? []) {
     for (const qid of rf.question_ids) check(questionIds.has(qid), `قالب ${t.template_id} يشير لسؤال غير موجود ${qid}`)
+  }
+}
+
+/* 6ب) الدورة كيان مركزي واحد — لا تكرار محتوى بلا سبب موثق:
+   لا عنوانان متطابقان، لا مجموعتا مهارات متطابقتان، لا وصفان مكرران حرفيا */
+{
+  const seenTitles = new Map<string, string>()
+  const seenSkillSets = new Map<string, string>()
+  const seenDescs = new Map<string, string>()
+  for (const c of core.courses as { course_id: string; title_ar: string; description_ar?: string; skill_slugs?: string[] }[]) {
+    const title = c.title_ar.trim()
+    const prevT = seenTitles.get(title)
+    check(prevT === undefined, `عنوان دورة مكرر بلا سبب موثق: «${title}» في ${prevT} و${c.course_id}`)
+    seenTitles.set(title, c.course_id)
+
+    const skillSet = (c.skill_slugs ?? []).slice().sort().join('|')
+    if (skillSet) {
+      const prevS = seenSkillSets.get(skillSet)
+      check(prevS === undefined, `دورتان متطابقتان في المهارات كليا بلا سبب موثق: ${prevS} و${c.course_id} (${skillSet})`)
+      seenSkillSets.set(skillSet, c.course_id)
+    }
+
+    const desc = (c.description_ar ?? '').trim()
+    if (desc) {
+      const prevD = seenDescs.get(desc)
+      check(prevD === undefined, `وصف مكرر حرفيا بين دورتين: ${prevD} و${c.course_id}`)
+      seenDescs.set(desc, c.course_id)
+    }
+  }
+  /* المسار يشير للدورات بمعرفات نصية فقط — ممنوع تضمين نسخة كاملة من الدورة داخله */
+  for (const p of core.launch_pathways as { id: string; course_ids: unknown[]; courses?: unknown } & Record<string, unknown>) {
+    check(!('courses' in p), `مسار ${p.id} يضمّن نسخة كاملة من الدورات بدل المرجعية — انقلها للكتالوج المركزي`)
+    for (const cid of p.course_ids) check(typeof cid === 'string', `مسار ${p.id} يضمّن سجل دورة بدل معرف نصي`)
   }
 }
 
@@ -149,3 +217,4 @@ if (problems.length > 0) {
 console.log('✅ تدقيق بيانات التشخيص ناجح:')
 console.log('   192 سؤالا · 216 مهارة · 20 مسارا · 100 دورة · 400 وحدة · 16 قالبا مركبا')
 console.log('   لا معرفات مكررة · كل المراجع سليمة · كل المحفزات معروفة · كل الأسئلة الحاسمة مغطاة بتأثير موثق')
+console.log('   الدورات كيانات مركزية فريدة: لا تكرار عناوين/مهارات/أوصاف · القوالب تشير مرجعيا ونسخها المضمنة متسقة')

@@ -1,11 +1,19 @@
 /* فحص واجهة فعلي بـ Playwright — يعمل على خادم معاينة مؤقت ثم يُقتل الخادم.
    يشغَّل بـ: node scripts/verify-ui.mjs   (يتطلب: npm i --no-save playwright) */
 import { chromium } from 'playwright'
-import { mkdirSync } from 'node:fs'
+import { mkdirSync, readFileSync } from 'node:fs'
 
 const BASE = process.env.BASE_URL ?? 'http://localhost:4173'
 const OUT = new URL('../verification/', import.meta.url).pathname
 mkdirSync(OUT, { recursive: true })
+
+/* رصد أخطاء console المؤثرة — يتجاهل الضجيج المعروف */
+const consoleErrors = []
+const watchConsole = (page, tag) => {
+  page.on('console', (msg) => { if (msg.type() === 'error') consoleErrors.push(`${tag}: ${msg.text()}`) })
+  page.on('pageerror', (err) => consoleErrors.push(`${tag}: ${String(err)}`))
+}
+const ignorable = (e) => e.includes('favicon') || e.includes('DevTools')
 
 const results = []
 const note = (name, ok, extra = '') => {
@@ -72,6 +80,7 @@ const browser = await chromium.launch({ channel: 'chrome' }).catch(() => chromiu
 /* ── سطح المكتب ── */
 const desktop = await browser.newContext({ viewport: { width: 1440, height: 900 } })
 const d = await desktop.newPage()
+watchConsole(d, 'سطح-المكتب')
 
 await d.goto(`${BASE}/`, { waitUntil: 'networkidle' })
 note('الرئيسية تفتح على سطح المكتب', true)
@@ -131,6 +140,7 @@ await desktop.close()
 /* ── الجوال ── */
 const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
 const m = await mobile.newPage()
+watchConsole(m, 'الجوال')
 await m.goto(`${BASE}/`, { waitUntil: 'networkidle' })
 note('الرئيسية بلا تمرير أفقي (جوال)', await noHScroll(m))
 await m.screenshot({ path: `${OUT}/home-mobile.png` })
@@ -173,6 +183,43 @@ note('بوابة المدرب موسومة «نسخة تجريبية»', await s
 await s.goto(`${BASE}/admin`, { waitUntil: 'networkidle' })
 note('لوحة الإدارة موسومة «نسخة تجريبية»', await s.getByText('نسخة تجريبية').first().isVisible().catch(() => false))
 await stale.close()
+
+/* ── عرض نتيجة «خطة مركبة مخصصة» محفوظة — بذرة حقيقية من المحرك ── */
+let compositeSeed = null
+try {
+  compositeSeed = readFileSync(new URL('../verification/composite-result.seed.json', import.meta.url), 'utf8')
+} catch { /* لم تُولد بعد */ }
+note('بذرة النتيجة المركبة موجودة (node_modules/tsx scripts/seed-composite-result.ts)', Boolean(compositeSeed))
+if (compositeSeed) {
+  const comp = await browser.newContext({ viewport: { width: 1440, height: 900 } })
+  const cp = await comp.newPage()
+  watchConsole(cp, 'النتيجة-المركبة')
+  await cp.goto(`${BASE}/diagnostic`, { waitUntil: 'networkidle' })
+  await cp.evaluate((payload) => {
+    window.localStorage.clear()
+    window.localStorage.setItem('wajeez_diag_v2_last_full', payload)
+  }, compositeSeed)
+  await cp.reload({ waitUntil: 'networkidle' })
+  const savedCard = await cp.getByText('لديك نتيجة مؤشر محفوظة').first().isVisible().catch(() => false)
+  note('بطاقة «لديك نتيجة محفوظة» تظهر للنتيجة المركبة', savedCard)
+  if (savedCard) {
+    const seedData = JSON.parse(compositeSeed)
+    const compName = seedData?.result?.resultJson?.composite?.name_ar ?? ''
+    const firstCourseTitle = seedData?.result?.resultJson?.composite?.courses?.[0]?.titleAr ?? ''
+    await cp.getByRole('button', { name: 'اعرض نتيجتي المحفوظة' }).click()
+    await cp.waitForTimeout(700)
+    note('وسم «خطة مركبة مخصصة» يظهر في النتيجة', await cp.getByText('خطة مركبة مخصصة').first().isVisible().catch(() => false))
+    note('اسم الخطة المركبة يظهر كاملا', compName ? await cp.getByText(compName).first().isVisible().catch(() => false) : false, compName)
+    note('دورات الخطة تُعرض بعناوين الكتالوج المركزي', firstCourseTitle ? (await cp.getByText(firstCourseTitle).count()) > 0 : false, firstCourseTitle)
+    note('النتيجة المركبة بلا تمرير أفقي', await noHScroll(cp))
+    await cp.screenshot({ path: `${OUT}/composite-result-desktop.png`, fullPage: true })
+  }
+  await comp.close()
+}
+
+/* ── أخطاء console المؤثرة عبر كل الصفحات المفتوحة ── */
+const serious = consoleErrors.filter((e) => !ignorable(e))
+note('لا أخطاء console مؤثرة في كل الصفحات المفحوصة', serious.length === 0, serious.slice(0, 2).join(' | '))
 
 await browser.close()
 

@@ -301,25 +301,26 @@ export function buildCoursePlan(
     courseId: string,
     sequence: number,
     type: CoursePlanItem['type'],
-    titleAr?: string,
-    hours?: number,
   ) => {
     if (items.some((i) => i.courseId === courseId)) return // منع التكرار
+    /* المصدر الوحيد للحقيقة: الكتالوج المركزي. الحقول المضمنة في القالب
+       (course_title_ar / hours) توثيقية للمراجعة البشرية فقط، لا يعتمد عليها
+       المحرك — ويضبط اتساقها تدقيقُ البيانات حتى لا تتقادم */
     const c = courseById.get(courseId)
     if (isVerifiedMastered(courseId)) {
       /* الحذف فقط بدليل إتقان موثق (ليس تقييما ذاتيا) — وكل قدرات الدورة متقنة
          بحكم الشرط نفسه، فتبقى القدرات المستهدفة مغطاة بعد الحذف */
       removed.push({
         courseId,
-        titleAr: titleAr ?? c?.title_ar ?? courseId,
+        titleAr: c?.title_ar ?? courseId,
         reason_ar: 'أُزيلت لأن إتقان مهاراتها كافة مثبت بدليل موثق — لا تدفع ثمن ما تتقنه.',
       })
       return
     }
     items.push({
       courseId,
-      titleAr: titleAr ?? c?.title_ar ?? courseId,
-      hours: hours ?? c?.total_hours ?? 0,
+      titleAr: c?.title_ar ?? courseId,
+      hours: c?.total_hours ?? 0,
       sequence,
       type,
       reason_ar:
@@ -332,9 +333,9 @@ export function buildCoursePlan(
   }
 
   if (variant === 'starter') {
-    for (const s of tpl.starter_courses ?? []) push(s.course_id, s.sequence, 'required', s.course_title_ar, s.hours)
+    for (const s of tpl.starter_courses ?? []) push(s.course_id, s.sequence, 'required')
   } else {
-    for (const r of tpl.required_courses ?? []) push(r.course_id, r.sequence, 'required', r.course_title_ar, r.hours)
+    for (const r of tpl.required_courses ?? []) push(r.course_id, r.sequence, 'required')
     const maxCond =
       variant === 'extended'
         ? TEMPLATE_THRESHOLDS.max_conditional_courses_extended
@@ -343,11 +344,11 @@ export function buildCoursePlan(
     for (const cc of tpl.conditional_courses ?? []) {
       if (cond >= maxCond) break
       const before = items.length
-      push(cc.course_id, 100 + cond, 'conditional', cc.course_title_ar, cc.hours)
+      push(cc.course_id, 100 + cond, 'conditional')
       if (items.length > before) cond++
     }
     if (variant === 'extended') {
-      for (const bc of tpl.bridge_courses ?? []) push(bc.course_id, 200, 'bridge', bc.course_title_ar, bc.hours)
+      for (const bc of tpl.bridge_courses ?? []) push(bc.course_id, 200, 'bridge')
     }
   }
 
