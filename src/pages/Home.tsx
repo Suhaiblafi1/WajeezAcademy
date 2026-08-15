@@ -10,6 +10,7 @@ import {
 import { bestsellers, pathwayById } from '@/data/pathways'
 import { bestsellerCourses, courseById, courseCategories, pathwayTrainers, weeksLabel, type Course } from '@/data/courses'
 import { faqs } from '@/data/siteContent'
+import { referenceBadges } from '@/data/methodology'
 import { CONTACT } from '@/data/stories'
 import { track } from '@/services/analytics'
 import SeoHead from '@/components/SeoHead'
@@ -63,13 +64,6 @@ const mirrorQuestions = [
     options: ['لا أعرف من أين أبدأ', 'الخيارات كثيرة وتشتتني', 'أخاف أدفع ثمن شيء لا يناسبني', 'ظروفي لا تسمح الآن'],
   },
 ]
-/* جواب المانع الأخير يقود رسالة المؤشر — هنا تُشرح قيمة الخدمة بلغة حالته هو */
-const mirrorPitch: Record<string, string> = {
-  'لا أعرف من أين أبدأ': 'لهذا بالضبط وُجد التشخيص: يبدأ منك أنت — هدفك وقصتك وظروفك — لا من قائمة دورات نفرضها عليك.',
-  'الخيارات كثيرة وتشتتني': 'التشخيص يحسم التشتت: مسار واحد مفسَّر بدرجة ثقة، بدل أربعين قائمة تتنافس على انتباهك.',
-  'أخاف أدفع ثمن شيء لا يناسبني': 'خوفك في محله — ولهذا التشخيص مجاني والتوصية مفسَّرة: لن تدفع ريالا قبل أن تفهم لماذا هذا المسار لك تحديدا.',
-  'ظروفي لا تسمح الآن': 'المسارات عندنا تُبنى على ظروفك أنت: موعدك المستهدف ولغتك وصيغة تعلمك — لا على حياة شخص مثالي لا وجود له.',
-}
 
 /* ───────────────────────── small components ───────────────────────── */
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -223,10 +217,11 @@ function Hero() {
             يبدأ بفهم هدفك.
           </span>
         </h1>
-        <p className="reveal is-visible mx-auto mt-6 max-w-xl text-base leading-8 text-muted-foreground md:text-lg">
-          تشخيص ذكي يسألك غالبا 8–14 سؤالا بتوقف تكيفي — يتوقف حين تكتمل الصورة،
-          يفهم هدفك وواقعك ووقتك، ثم يوصي بمسار واحد واضح — <span className="text-foreground">ويشرح لك لماذا.</span>
-        </p>
+        <div className="reveal is-visible mx-auto mt-7 flex max-w-xl flex-wrap items-center justify-center gap-2.5 text-sm font-bold text-white/75 md:text-base">
+          {['نقرأ هدفك', 'وقتك المتاح', 'فجواتك الأقرب'].map((chip) => (
+            <span key={chip} className="rounded-full border border-teal/25 bg-teal/[0.07] px-4 py-1.5">{chip}</span>
+          ))}
+        </div>
         <div className="reveal is-visible mt-9 flex flex-col items-center justify-center">
           <a
             href="#diagnostic"
@@ -247,12 +242,6 @@ function Hero() {
         <p className="reveal is-visible mt-5 text-xs text-muted-foreground">
           دقيقة واحدة مع مؤشر وجيز · بلا تسجيل · ثم تشخيص كامل يفهمك بلا تقييم ذاتي ولا سؤال مكرر
         </p>
-        {/* سطر إثبات رشيق يجسر الانتقال إلى المؤشر بدل الفراغ */}
-        <div className="reveal is-visible mt-7 flex flex-wrap items-center justify-center gap-2 text-[11px] font-semibold text-white/55">
-          {['نقرأ هدفك', 'وقتك المتاح', 'فجوتك الأقرب'].map((chip) => (
-            <span key={chip} className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1">{chip}</span>
-          ))}
-        </div>
       </div>
     </section>
   )
@@ -299,17 +288,12 @@ function DiagnosticTeaser() {
     setPicked(null)
     localStorage.removeItem('wajeez_mirror')
   }
-  const blocker = answers['m5']
-  const pitch = blocker ? mirrorPitch[blocker] : null
-  const answeredLabels = mirrorQuestions
-    .map((q) => (q.options.includes(answers[q.id]) ? answers[q.id] : null))
-    .filter(Boolean) as string[]
 
   /* صورة أولية صادقة مشتقة من إجابات المؤشر نفسها — بلا أرقام ولا ادعاءات */
   const mirrorInsights: Record<string, string> = {
-    'نعم — أعرفها بالضبط': 'تعرف فجوتك بالاسم — نصف الطريق قطعتَه، والباقي خطة تنفيذ لا بحث.',
-    'لدي تخمين لا أكثر': 'عندك تخمين عن فجوتك — التشخيص الكامل يحوّله إلى يقين موثّق.',
-    'بصراحة؟ لا أعرف': 'لم تُسمِّ فجوتك بعد — وهذا أول ما يكشفه لك التشخيص الكامل.',
+    'نعم — أعرفها بالضبط': 'تعرف فجواتك بالاسم — نصف الطريق قطعتَه، والباقي خطة تنفيذ لا بحث.',
+    'لدي تخمين لا أكثر': 'عندك تخمين عن فجواتك — التشخيص الكامل يحوّله إلى يقين موثّق.',
+    'بصراحة؟ لا أعرف': 'لم تُسمِّ فجواتك بعد — وهذا أول ما يكشفه لك التشخيص الكامل.',
     'أكملت معظمها': 'عادتك في الإكمال قوية — تحتاج فقط ما يستحق إكماله.',
     'بعضها فقط': 'تُكمل بعض ما تبدأ — الفرق عندنا مرافقة بشرية تحميك من التوقف الصامت.',
     'أبدأ بحماس وأتوقف — قصتي المعتادة': 'قصة التوقف المتكرر لا تُحل بإرادة أقوى — بل بمسار مرافَق يعرف متى تتعثر.',
@@ -329,8 +313,7 @@ function DiagnosticTeaser() {
           <SectionLabel>مؤشر وجيز — دقيقة واحدة</SectionLabel>
           <h2 className="mt-5 text-3xl font-bold md:text-4xl">لا تشترِ دورة عشوائيا… اكتشف ما تحتاج تعلّمه أولا</h2>
           <p className="mx-auto mt-4 max-w-lg text-muted-foreground leading-8">
-            بدلا من شراء دورات عشوائية — أجب عن أسئلة تتكيف مع احتياجك،
-            وسنحدد لك المهارات التي تحتاجها والدورات المناسبة وترتيب دراستها للوصول إلى هدفك.
+            خمسة أسئلة صادقة تكشف لك: ما الذي تحتاج تعلّمه فعلا — وبأي ترتيب.
           </p>
         </div>
 
@@ -408,19 +391,7 @@ function DiagnosticTeaser() {
                 <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#38A7B4]/15">
                   <BrainCircuit className="h-8 w-8 text-teal" />
                 </div>
-                <h3 className="mt-5 text-2xl font-bold leading-relaxed">رأيتَ ما نراه؟ أنت لست وحدك في هذا.</h3>
-                <div className="mx-auto mt-4 flex max-w-lg flex-wrap justify-center gap-2">
-                  {answeredLabels.map((l) => (
-                    <span key={l} className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-muted-foreground">
-                      {l}
-                    </span>
-                  ))}
-                </div>
-                {pitch && (
-                  <p className="mx-auto mt-5 max-w-md rounded-2xl border border-teal/30 bg-[#38A7B4]/10 p-5 leading-8 text-teal-light">
-                    {pitch}
-                  </p>
-                )}
+                <h3 className="mt-5 text-2xl font-bold leading-relaxed">سمعناك — صورتك بدأت تتضح.</h3>
                 {/* مكافأة فورية: صورة أولية مشتقة من إجاباته هو — تجعل الانتقال للتشخيص الكامل مكافأة لا التزاما */}
                 {insights.length > 0 && (
                   <div className="mx-auto mt-4 max-w-md rounded-2xl border border-white/10 bg-white/[0.03] p-5">
@@ -439,8 +410,7 @@ function DiagnosticTeaser() {
                   </div>
                 )}
                 <p className="mx-auto mt-4 max-w-md leading-8 text-muted-foreground">
-                  المؤشر أدت وظيفتها. الآن يبدأ العمل الحقيقي: تشخيص كامل يفهم قصتك ويستنتج مستواك
-                  من مواقفك الحقيقية — ثم يرسم لك مسارا مفسّرا تستطيع تخصيصه.
+                  الآن يبدأ العمل الحقيقي: تشخيص كامل يفهم قصتك — ثم يرسم لك مسارا مفسّرا تستطيع تخصيصه.
                 </p>
                 <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
                   <Link to="/diagnostic" className="btn-teal px-8 py-4">
@@ -497,6 +467,60 @@ function HowItWorks() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ───────────────── منهجية وجيز — ثقة علمية بلا استعراض شعارات ───────────────── */
+function MethodologyTeaser() {
+  const steps = [
+    { icon: Compass, text: 'نفهم اتجاهك وميولك المهنية.' },
+    { icon: Target, text: 'نحدد المهارات التي تحتاج إلى تطويرها.' },
+    { icon: Route, text: 'نربط احتياجك بالمسار أو الخطة المركبة الأنسب.' },
+    { icon: BadgeCheck, text: 'نحوّل الاحتياج إلى دورات ذات مخرجات قابلة للقياس.' },
+  ]
+  const badges = referenceBadges()
+  return (
+    <section className="py-14 md:py-16">
+      <div className="mx-auto max-w-6xl px-5">
+        <div className="reveal overflow-hidden rounded-3xl border border-teal/15 bg-gradient-to-l from-[#12343B]/60 to-card px-6 py-8 md:px-10 md:py-10">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-xl font-bold md:text-2xl">توصية مبنية على منهجية، لا على التخمين</h2>
+            <SectionLabel>شفافية كاملة</SectionLabel>
+          </div>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
+            يحلل مؤشر وجيز ميولك وأهدافك وفجوات مهاراتك، ثم يربطها بما تحتاج إلى تعلمه ضمن مسار ذي مخرجات واضحة.
+          </p>
+          <div className="mt-7 grid gap-3 sm:grid-cols-2 md:grid-cols-4">
+            {steps.map((s, i) => (
+              <div key={s.text} className="flex items-start gap-3 rounded-2xl bg-white/[0.04] px-4 py-3.5">
+                <s.icon className="mt-0.5 h-4 w-4 shrink-0 text-teal" />
+                <p className="text-xs leading-6 text-white/80">
+                  <span className="ml-1 font-black text-teal/60">{i + 1}.</span>
+                  {s.text}
+                </p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-7 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[11px] font-bold text-muted-foreground">أطر مهنية نسترشد بها:</span>
+              {badges.map((b) => (
+                <span key={b} className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-[11px] font-bold text-white/65">
+                  {b}
+                </span>
+              ))}
+            </div>
+            <Link
+              to="/methodology"
+              className="inline-flex items-center gap-2 rounded-full border border-teal/40 bg-teal/10 px-5 py-2 text-sm font-bold text-teal-light transition hover:bg-teal/20"
+            >
+              اكتشف كيف نبني توصيتك
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
           </div>
         </div>
       </div>
@@ -1109,6 +1133,7 @@ const footerCols: { title: string; icon: typeof GraduationCap; links: { label: s
     icon: User,
     links: [
       { label: 'من نحن', to: '/p/about' },
+      { label: 'منهجية وجيز', to: '/methodology' },
       { label: 'شركاؤنا', to: '#partners' },
       { label: 'انضم كمدرب', to: '/join-trainer' },
     ],
@@ -1297,6 +1322,7 @@ export default function Home() {
         <Hero />
         <DiagnosticTeaser />
         <HowItWorks />
+        <MethodologyTeaser />
         <Partners />
         <ImageBand />
         <Bestsellers />

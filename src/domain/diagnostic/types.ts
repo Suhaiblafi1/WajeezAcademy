@@ -159,9 +159,44 @@ export interface UtilityScore {
 
 export interface DecisionTraceEntry {
   step: number
-  kind: 'question_selected' | 'answer_reduced' | 'candidates_scored' | 'stop_evaluated' | 'recommendation' | 'template_selected' | 'template_layer' | 'trainer_match' | 'contradiction' | 'guardrail' | 'facts_seeded'
+  kind: 'question_selected' | 'answer_reduced' | 'candidates_scored' | 'stop_evaluated' | 'recommendation' | 'template_selected' | 'template_layer' | 'trainer_match' | 'contradiction' | 'guardrail' | 'facts_seeded' | 'deepening_started' | 'deepening_completed'
   summary_ar: string
   data?: Record<string, unknown>
+}
+
+/* ─────────── جولة تدقيق الخطة (التشخيص الإضافي الاختياري) ─────────── */
+
+/** لقطة التوصية قبل/بعد التدقيق — للمقارنة الموثقة */
+export interface DeepeningSnapshot {
+  kind: Recommendation['kind']
+  /** معرف المسار الأول أو القالب المركب */
+  topId: string | null
+  topLabel_ar: string
+  confidenceTotal: number
+  confidenceBand: ConfidenceBreakdown['band']
+  confidenceBand_ar: string
+}
+
+/** سؤال مخطط في جولة التدقيق — مع سبب اختياره وأثر إجابته */
+export interface DeepeningPlanItem {
+  questionId: string
+  /** مناطق عدم اليقين التي يعالجها: tie | weak_skill | missing_constraint | goal_unclear | contradiction | coverage */
+  targets: string[]
+  /** لماذا اختير هذا السؤال وكيف ستؤثر إجابته في التوصية */
+  reason_ar: string
+}
+
+/** نتيجة المقارنة قبل/بعد التدقيق */
+export interface DeepeningComparison {
+  before: DeepeningSnapshot
+  after: DeepeningSnapshot
+  /** هل تغيرت التوصية نفسها (نوعها أو هويتها)؟ */
+  changed: boolean
+  /** «دعمت إجاباتك الإضافية التوصية الحالية.» أو «ظهرت معلومات إضافية جعلت هذا الاختيار أكثر ملاءمة.» */
+  note_ar: string
+  /** أسباب التغيير أو عدمه بلغة المتعلم */
+  reasons_ar: string[]
+  answeredCount: number
 }
 
 export interface StopDecision {

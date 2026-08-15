@@ -86,6 +86,14 @@ export default function CourseModal({
           {d.outcome}
         </p>
 
+        {/* منهجية تصميم الدورة — سطر واحد صادق */}
+        <p className="mt-4 text-[11px] leading-6 text-white/45">
+          صُممت مخرجات هذه الدورة انطلاقًا مما يجب أن تتمكن من إنجازه عمليًا بعد إتمامها.{" "}
+          <a href="/methodology" className="font-bold text-[#6EC7D1] transition hover:text-white">
+            كيف نصمم دورات وجيز؟
+          </a>
+        </p>
+
         {/* السعر والشراء */}
         <div className="mt-6 flex items-center justify-between gap-4 border-t border-white/10 pt-5">
           <div>

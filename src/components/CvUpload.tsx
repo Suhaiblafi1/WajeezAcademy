@@ -1,0 +1,152 @@
+import { useEffect, useRef, useState } from "react";
+import { FileUp, CheckCircle2, Trash2, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  CV_CONSENT_TEXT_AR,
+  deleteCv,
+  loadCvMeta,
+  saveCvPrivate,
+  validateCvFile,
+  type CvMeta,
+} from "@/application/cv/cv-store";
+
+/* «أرسل سيرتك للمستشار» — اختياري تماما، لا يمنع رؤية النتيجة.
+   الملف يُخزن خاصا على جهاز المستخدم (IndexedDB) في هذا الإصدار،
+   ولا يُرسل لأي نموذج ذكاء اصطناعي — يقرأه المستشار البشري فقط. */
+export default function CvUpload({
+  sessionId,
+  userId,
+  defaultName,
+  defaultPhone,
+}: {
+  sessionId: string;
+  userId?: string | null;
+  defaultName?: string | null;
+  defaultPhone?: string | null;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [consent, setConsent] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [saved, setSaved] = useState<CvMeta | null>(null);
+
+  /* سيرة محفوظة سابقا لهذه الجلسة — تظهر حالتها فور العودة */
+  useEffect(() => {
+    loadCvMeta(sessionId)
+      .then((m) => setSaved(m))
+      .catch(() => setSaved(null));
+  }, [sessionId]);
+
+  const pick = (f: File | null) => {
+    setError(null);
+    if (!f) return;
+    const v = validateCvFile(f);
+    if (!v.ok) {
+      setFile(null);
+      setError(v.reason_ar);
+      return;
+    }
+    setFile(f);
+  };
+
+  const send = async () => {
+    if (!file || !consent || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const meta = await saveCvPrivate(file, {
+        diagnosticSessionId: sessionId,
+        userId: userId ?? null,
+        name: defaultName ?? null,
+        phone: defaultPhone ?? null,
+      });
+      setSaved(meta);
+      setFile(null);
+      setConsent(false);
+    } catch {
+      setError("تعذر حفظ الملف على جهازك — تحقق من مساحة التخزين أو جرّب متصفحا آخر.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const remove = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await deleteCv(sessionId);
+      setSaved(null);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (saved) {
+    return (
+      <div className="rounded-2xl border border-[#38A7B4]/40 bg-[#38A7B4]/[0.07] p-4">
+        <p className="flex items-start gap-2.5 text-sm font-bold leading-relaxed text-[#6EC7D1]">
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+          تم استلام سيرتك، وسيتمكن المستشار من مراجعتها عند التواصل معك.
+        </p>
+        <p className="mt-2 text-xs leading-relaxed text-white/50">
+          الملف: {saved.original_filename} — محفوظ بشكل خاص، وحالته «بانتظار مراجعة المستشار».
+        </p>
+        <button
+          onClick={remove}
+          disabled={busy}
+          className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-white/50 transition hover:text-red-300 disabled:opacity-40"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          احذف سيرتي قبل مراجعتها
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".pdf,.doc,.docx"
+        className="hidden"
+        aria-label="اختيار ملف السيرة الذاتية"
+        onChange={(e) => pick(e.target.files?.[0] ?? null)}
+      />
+      <button
+        onClick={() => inputRef.current?.click()}
+        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/20 bg-white/[0.03] px-4 py-4 text-sm font-bold text-white/70 transition hover:border-[#6EC7D1]/60 hover:text-[#6EC7D1]"
+      >
+        <FileUp className="h-4 w-4" />
+        {file ? file.name : "اختر ملف سيرتك — PDF أو DOC أو DOCX (حتى 5MB)"}
+      </button>
+      {error && (
+        <p role="alert" className="mt-2 text-xs font-semibold leading-relaxed text-[#FABC05]">
+          {error}
+        </p>
+      )}
+      {file && (
+        <div className="story-fade mt-3">
+          <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.03] p-3 text-xs leading-relaxed text-white/65">
+            <input
+              type="checkbox"
+              checked={consent}
+              onChange={(e) => setConsent(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 accent-[#38A7B4]"
+            />
+            {CV_CONSENT_TEXT_AR}
+          </label>
+          <Button
+            onClick={send}
+            disabled={!consent || busy}
+            className="mt-3 h-10 w-full rounded-full bg-[#38A7B4] font-black text-[#08272B] hover:bg-[#38A7B4]/90 disabled:opacity-40"
+          >
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileUp className="ml-2 h-4 w-4" />}
+            إرسال السيرة للمستشار
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}

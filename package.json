@@ -11,7 +11,8 @@
     "audit:diagnostic": "tsx scripts/audit-diagnostic-data.ts",
     "test:diagnostic": "vitest run src/tests/diagnostic",
     "test:scenarios": "tsx scripts/simulate-diagnostic-cohort.ts",
-    "test": "npm run test:diagnostic && npm run test:scenarios"
+    "test": "npm run test:diagnostic && npm run test:scenarios",
+    "audit:methodology": "tsx scripts/audit-methodology.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

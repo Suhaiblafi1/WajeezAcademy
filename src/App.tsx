@@ -12,6 +12,7 @@ import Auth from './pages/Auth'
 import NotFound from './pages/NotFound'
 
 /* محرك التشخيص وصفحة المسار ثقيلان — يُحمَّلان عند الطلب */
+const Methodology = lazy(() => import('./pages/Methodology'))
 const Diagnostic = lazy(() => import('./pages/Diagnostic'))
 const PathwayPage = lazy(() => import('./pages/Pathway'))
 
@@ -70,6 +71,7 @@ export default function App() {
         }>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/methodology" element={<Methodology />} />
           <Route path="/diagnostic" element={<Diagnostic />} />
           <Route path="/pathways" element={<Catalog kind="pathways" />} />
           <Route path="/courses" element={<Catalog kind="courses" />} />

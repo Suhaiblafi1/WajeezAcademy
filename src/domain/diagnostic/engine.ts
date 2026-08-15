@@ -10,10 +10,13 @@ import { matchTrainer } from './instructor-match'
 import { scorePathways } from './pathway-score'
 import { eligibleQuestions, rankQuestions } from './questions'
 import { evaluateStop } from './stop-policy'
-import { pathwaySkills, questionById } from './catalog'
+import { launchPathways, pathwaySkills, questionById } from './catalog'
 import { DISCLAIMER_AR, STOP_RULES, TEMPLATE_THRESHOLDS } from './config'
 import type {
   Answer,
+  DeepeningComparison,
+  DeepeningPlanItem,
+  DeepeningSnapshot,
   DiagnosticState,
   FactBag,
   NextQuestionResult,
@@ -21,10 +24,21 @@ import type {
   Recommendation,
 } from './types'
 
+/** سقف أسئلة جولة التدقيق — حتمي ولا يُتجاوز أبدا */
+export const DEEPENING_MAX_QUESTIONS = 8
+
 export class DiagnosticEngine {
   private state: DiagnosticState
   private mode: 'quick' | 'deep' = 'quick'
   private recommendationGenerated = false
+  /* جولة تدقيق الخطة: خطة أسئلة ثابتة تُبنى مرة واحدة من الحالة لحظة الفتح — حتمية كاملة */
+  private deepening: {
+    started: boolean
+    completed: boolean
+    plan: DeepeningPlanItem[]
+    cursor: number
+    before: DeepeningSnapshot | null
+  } = { started: false, completed: false, plan: [], cursor: 0, before: null }
 
   constructor(sessionId?: string) {
     this.state = {
@@ -107,6 +121,19 @@ export class DiagnosticEngine {
         stop: { shouldStop: true, reason_ar: this.state.guardrailStop, askedCount: this.state.askedQuestionIds.length },
       }
     }
+
+    /* جولة تدقيق الخطة: أسئلة مخططة سلفا، تُتخطى إن صارت محسومة بأدلة كافية، وتتوقف عند سقفها */
+    if (this.deepening.started && !this.deepening.completed) {
+      return this.nextDeepeningQuestion()
+    }
+    if (this.deepening.completed) {
+      return {
+        question: null,
+        utility: null,
+        stop: { shouldStop: true, reason_ar: 'اكتملت جولة تدقيق الخطة.', askedCount: this.state.askedQuestionIds.length },
+      }
+    }
+
     const candidates = this.currentCandidates()
 
     /* سؤال فاصل بين خطتين مركبتين متقاربتين (< 0.08): يُطرح قبل أي توقف،
@@ -282,6 +309,11 @@ export class DiagnosticEngine {
     const last = this.state.answers.pop()
     if (!last) return null
     this.state.askedQuestionIds = this.state.askedQuestionIds.filter((id) => id !== last.questionId)
+    /* داخل جولة التدقيق: أعد المؤشر إلى موضع السؤال المتراجع عنه ليُعاد طرحه */
+    if (this.deepening.started && !this.deepening.completed) {
+      const idx = this.deepening.plan.findIndex((p) => p.questionId === last.questionId)
+      if (idx >= 0) this.deepening.cursor = Math.min(this.deepening.cursor, idx)
+    }
     this.rebuild()
     return last.questionId
   }
@@ -292,6 +324,235 @@ export class DiagnosticEngine {
 
   setMode(mode: 'quick' | 'deep') {
     this.mode = mode
+  }
+
+  /* ═══════════ جولة تدقيق الخطة — «دقّق خطتك أكثر» ═══════════
+     اختيارية بالكامل، حتمية، مرتبطة بالجلسة الأصلية: نفس الحقائق والمتجهات،
+     والخطة تُبنى مرة واحدة من مناطق عدم اليقين لحظة الفتح. */
+
+  /** لقطة التوصية الحالية دون آثار جانبية — أساس المقارنة قبل/بعد */
+  private snapshotRecommendation(): DeepeningSnapshot {
+    const candidates = this.currentCandidates()
+    const confidence = computeConfidence(this.state.facts, this.state.contradictions, candidates)
+    const masteryFact = this.state.facts['verified_mastery']
+    const verifiedMastered =
+      masteryFact && masteryFact.evidenceQuality >= 0.8 && Array.isArray(masteryFact.value)
+        ? (masteryFact.value as string[])
+        : []
+    const composite = selectTemplate(this.state.facts, candidates, verifiedMastered)
+    const primary = candidates[0]
+    const pathwayTitle = (id: string) => launchPathways.find((p) => p.id === id)?.title ?? id
+    return {
+      kind: composite ? 'composite_template' : primary ? 'single_pathway' : 'advisor_referral',
+      topId: composite?.templateId ?? primary?.pathwayId ?? null,
+      topLabel_ar: composite?.nameAr ?? (primary ? pathwayTitle(primary.pathwayId) : 'إحالة لمستشار'),
+      confidenceTotal: confidence.total,
+      confidenceBand: confidence.band,
+      confidenceBand_ar: confidence.band_ar,
+    }
+  }
+
+  /**
+   * يفتح جولة التدقيق: يحدد مناطق عدم اليقين، يبني خطة أسئلة (بحد أقصى 8) من الأسئلة
+   * غير المطروحة، ويسجل سبب الفتح وسبب كل سؤال في أثر القرار.
+   * يعيد null إن كانت الجولة مفتوحة سلفا أو لا أسئلة نافعة متبقية.
+   */
+  startDeepening(): { reason_ar: string; plan: DeepeningPlanItem[]; before: DeepeningSnapshot } | null {
+    if (this.deepening.started || this.state.guardrailStop) return null
+
+    const candidates = this.currentCandidates()
+    const margin = this.currentMargin()
+
+    /* مناطق عدم اليقين — المعايير السبعة الموثقة في المواصفة */
+    const unmeasuredGapSkills = new Set(
+      (candidates[0]?.gapSkillSlugs ?? []).filter((s) => this.state.skillVector[s] === undefined),
+    )
+    const missingConstraints = ['weekly_load', 'budget_profile', 'learning_format'].filter(
+      (k) => this.state.facts[k] === undefined,
+    )
+    const unresolvedContradictions = this.state.contradictions.filter((c) => !c.resolved)
+    const goalUnclear =
+      this.state.facts['primary_goal'] === undefined || this.state.facts['goal_clarity']?.value === 'low'
+
+    const reasonParts: string[] = []
+    if (margin !== null && margin < 0.12) reasonParts.push('تقارب المسارين المتصدرين')
+    if (unmeasuredGapSkills.size > 0) reasonParts.push('مهارات فجوة لم تُقس بدليل مباشر')
+    if (missingConstraints.length > 0) reasonParts.push('قيود لم تُحسم بعد')
+    if (goalUnclear) reasonParts.push('وضوح الهدف يحتاج تدقيقا')
+    if (unresolvedContradictions.length > 0) reasonParts.push('تناقض ظاهر بين بعض الإجابات')
+    if (reasonParts.length === 0) reasonParts.push('رفع جودة الأدلة واكتمال الصورة')
+
+    /* الأسئلة الأهلية في الوضع العميق — باستثناء ما طُرح وما صارت حقائقه محسومة */
+    const askedSet = new Set(this.state.askedQuestionIds)
+    const eligible = eligibleQuestions({
+      ...this.triggerContext(),
+      userRequestedDeep: true,
+      askedIds: askedSet,
+      mode: 'deep',
+      boostSkillSlugs: unmeasuredGapSkills,
+    }).filter((q) => q.measures.some((m) => this.state.facts[m] === undefined))
+
+    const criticalMissing = decisionCriticalMissing(this.state.facts)
+    const ranked = rankQuestions(eligible, this.state.facts, this.state.contradictions, candidates, criticalMissing)
+
+    const skillNameAr = (slug: string) =>
+      pathwaySkills(candidates[0]?.pathwayId ?? '').find((s) => s.slug === slug)?.nameAr ?? slug
+    const CONSTRAINT_AR: Record<string, string> = {
+      weekly_load: 'وقتك الأسبوعي المتاح',
+      budget_profile: 'ميزانيتك',
+      learning_format: 'طريقة التعلم الأنسب لك',
+    }
+
+    const plan: DeepeningPlanItem[] = []
+    for (const r of ranked) {
+      if (plan.length >= DEEPENING_MAX_QUESTIONS) break
+      const q = questionById.get(r.questionId)!
+      const targets: string[] = []
+      const reasons: string[] = []
+      if (r.utility.tieBreakPower > 0) {
+        targets.push('tie')
+        reasons.push('يفصل بين المسارين المتصدرين المتقاربين — إجابتك قد تبدّل التوصية الأولى')
+      }
+      const skillHit = q.measures.find((m) => unmeasuredGapSkills.has(m))
+      if (skillHit) {
+        targets.push('weak_skill')
+        reasons.push(`يقيس مهارة «${skillNameAr(skillHit)}» بسؤال مباشر بدل افتراضها فجوة`)
+      }
+      const constraintHit = q.measures.find((m) => missingConstraints.includes(m))
+      if (constraintHit) {
+        targets.push('missing_constraint')
+        reasons.push(`يحسم قيد «${CONSTRAINT_AR[constraintHit] ?? constraintHit}» المؤثر في جدوى خطتك`)
+      }
+      if (goalUnclear && q.measures.some((m) => m === 'primary_goal' || m === 'goal_clarity')) {
+        targets.push('goal_unclear')
+        reasons.push('يوضح هدفك المهني — أساس اختيار المسار كله')
+      }
+      if (r.utility.contradictionResolution > 0) {
+        targets.push('contradiction')
+        reasons.push('يحسم تناقضا ظهر بين إجاباتك السابقة')
+      }
+      if (targets.length === 0) {
+        targets.push('coverage')
+        reasons.push('يرفع اكتمال صورتك وجودة الأدلة — فتثبت التوصية أكثر')
+      }
+      plan.push({ questionId: r.questionId, targets, reason_ar: reasons.join('؛ ') + '.' })
+    }
+    if (plan.length === 0) return null
+
+    const before = this.snapshotRecommendation()
+    this.deepening = { started: true, completed: false, plan, cursor: 0, before }
+    this.traceEntry('deepening_started', `فتح جولة تدقيق الخطة: ${reasonParts.join('، ')}.`, {
+      reason_ar: `فُتحت الجولة بسبب: ${reasonParts.join('، ')}.`,
+      plan: plan.map((p) => ({ questionId: p.questionId, targets: p.targets, reason_ar: p.reason_ar })),
+      maxQuestions: DEEPENING_MAX_QUESTIONS,
+      before,
+    })
+    return { reason_ar: `فتحنا هذه الجولة بسبب: ${reasonParts.join('، ')}.`, plan, before }
+  }
+
+  /** السؤال التالي داخل جولة التدقيق — يتخطى ما صار محسوما ويتوقف عند السقف */
+  private nextDeepeningQuestion(): NextQuestionResult {
+    const askedSet = new Set(this.state.askedQuestionIds)
+    while (this.deepening.cursor < this.deepening.plan.length) {
+      const item = this.deepening.plan[this.deepening.cursor]
+      this.deepening.cursor += 1
+      const q = questionById.get(item.questionId)
+      if (!q) continue
+      if (askedSet.has(q.question_id)) continue // لا تكرار أبدا
+      if (q.measures.every((m) => this.state.facts[m] !== undefined)) continue // صارت محسومة بأدلة كافية
+      this.traceEntry('question_selected', `سؤال تدقيق ${q.question_id}: ${q.text_ar}`, {
+        deepening: true,
+        targets: item.targets,
+        winnerReason_ar: item.reason_ar,
+      })
+      return {
+        question: q,
+        utility: null,
+        stop: { shouldStop: false, reason_ar: 'جولة تدقيق الخطة جارية.', askedCount: this.state.askedQuestionIds.length },
+      }
+    }
+    this.deepening.completed = true
+    return {
+      question: null,
+      utility: null,
+      stop: { shouldStop: true, reason_ar: 'اكتملت أسئلة تدقيق الخطة.', askedCount: this.state.askedQuestionIds.length },
+    }
+  }
+
+  /** حالة الجولة للواجهة: رقم السؤال الحالي وسقف الجولة وسبب السؤال المعروض */
+  deepeningStatus(): { index: number; total: number; currentReason_ar: string | null } | null {
+    if (!this.deepening.started || this.deepening.completed) return null
+    const current = this.deepening.plan[this.deepening.cursor - 1]
+    return {
+      index: this.deepening.cursor,
+      total: this.deepening.plan.length,
+      currentReason_ar: current?.reason_ar ?? null,
+    }
+  }
+
+  /**
+   * يختم جولة التدقيق: يعيد توليد التوصية من الحالة المحدثة،
+   * ويقارن قبل/بعد، ويسجل كل ذلك في أثر القرار.
+   */
+  finishDeepening(): { recommendation: Recommendation; comparison: DeepeningComparison } {
+    if (!this.deepening.started || !this.deepening.before) {
+      throw new Error('لا جولة تدقيق مفتوحة لإنهائها.')
+    }
+    this.deepening.completed = true
+    const before = this.deepening.before
+    const recommendation = this.recommend()
+    const after: DeepeningSnapshot = {
+      kind: recommendation.kind,
+      topId: recommendation.composite?.templateId ?? recommendation.primaryPathway?.pathwayId ?? null,
+      topLabel_ar:
+        recommendation.composite?.nameAr ??
+        (recommendation.primaryPathway
+          ? (launchPathways.find((p) => p.id === recommendation.primaryPathway!.pathwayId)?.title ??
+            recommendation.primaryPathway.pathwayId)
+          : 'إحالة لمستشار'),
+      confidenceTotal: recommendation.confidence.total,
+      confidenceBand: recommendation.confidence.band,
+      confidenceBand_ar: recommendation.confidence.band_ar,
+    }
+
+    const changed = before.topId !== after.topId || before.kind !== after.kind
+    const reasons: string[] = []
+    if (changed) {
+      reasons.push(`تغيرت التوصية من «${before.topLabel_ar}» إلى «${after.topLabel_ar}».`)
+    } else {
+      reasons.push('بقيت التوصية نفسها بعد إجاباتك الإضافية.')
+    }
+    if (after.confidenceBand !== before.confidenceBand) {
+      reasons.push(`انتقل مستوى الثبات من «${before.confidenceBand_ar}» إلى «${after.confidenceBand_ar}».`)
+    } else if (Math.abs(after.confidenceTotal - before.confidenceTotal) >= 0.03) {
+      reasons.push(
+        after.confidenceTotal > before.confidenceTotal
+          ? 'ارتفعت قوة الأدلة بعد إجاباتك الإضافية.'
+          : 'انخفضت قوة الأدلة قليلا — ظهرت تفاصيل جعلت الصورة أدق.',
+      )
+    }
+    const answeredInRound = this.state.askedQuestionIds.filter((id) =>
+      this.deepening.plan.some((p) => p.questionId === id),
+    ).length
+
+    const comparison: DeepeningComparison = {
+      before,
+      after,
+      changed,
+      note_ar: changed
+        ? 'ظهرت معلومات إضافية جعلت هذا الاختيار أكثر ملاءمة.'
+        : 'دعمت إجاباتك الإضافية التوصية الحالية.',
+      reasons_ar: reasons,
+      answeredCount: answeredInRound,
+    }
+    this.traceEntry('deepening_completed', comparison.note_ar, {
+      before,
+      after,
+      changed,
+      reasons_ar: reasons,
+      answeredCount: answeredInRound,
+    })
+    return { recommendation, comparison }
   }
 
   /** يولد التوصية النهائية */

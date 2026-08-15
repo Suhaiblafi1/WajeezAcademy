@@ -26,6 +26,8 @@ export type AnalyticsEvent =
   | 'payment_failed'
   | 'refund_requested'
   | 'contact_submitted'
+  | 'deepening_started'
+  | 'deepening_completed'
 
 /** سمات وصفية غير شخصية فقط: أرقام أسئلة، مجالات، أنواع شراء */
 type Meta = Record<string, string | number | boolean>

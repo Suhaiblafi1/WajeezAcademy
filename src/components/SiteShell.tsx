@@ -40,6 +40,11 @@ export default function SiteShell({ children }: { children: React.ReactNode }) {
             </span>
           ))}
         </div>
+        <div className="mt-2">
+          <Link to="/methodology" className="font-semibold text-white/50 transition hover:text-teal-light">
+            منهجية وجيز
+          </Link>
+        </div>
       </footer>
     </div>
   )

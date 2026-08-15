@@ -52,6 +52,8 @@ export function recommendationToDiagResult(
   skillVector: Record<string, number>,
   facts?: Record<string, { value: unknown }>,
   factsRaw?: Record<string, string>,
+  interestVector?: Record<string, number>,
+  deepeningComparison?: unknown,
 ): DiagResult {
   const topPathway = rec.primaryPathway ? pathwayById(rec.primaryPathway.pathwayId) : undefined
   const top = topPathway ?? pathways[0]
@@ -149,6 +151,11 @@ export function recommendationToDiagResult(
       decision_trace: rec.trace,
       story_ar: storyLines ?? [],
       skill_bars: skillBars ?? [],
+      /** متجهات الجلسة — تغذي قسم «كيف بُنيت توصيتك؟» بالمراجع التي ساهمت فعلا */
+      skill_vector: skillVector,
+      interest_vector: interestVector ?? {},
+      /** مقارنة قبل/بعد جولة تدقيق الخطة إن أجريت */
+      deepening: deepeningComparison ?? null,
     },
   }
 }

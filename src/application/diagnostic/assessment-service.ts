@@ -42,6 +42,8 @@ export interface NextStep {
   question: DiagQuestion | null
   askedCount: number
   stopReasonAr: string | null
+  /** حالة جولة تدقيق الخطة إن كانت جارية — رقم السؤال، سقف الجولة، وسبب اختيار السؤال */
+  deepening?: { index: number; total: number; reasonAr: string | null } | null
 }
 
 export class AssessmentSession {
@@ -104,10 +106,12 @@ export class AssessmentSession {
 
   next(): NextStep {
     const r = this.engine.nextQuestion()
+    const ds = this.engine.deepeningStatus()
     return {
       question: r.question ? toDiagQuestion(r.question) : null,
       askedCount: this.askedCount,
       stopReasonAr: r.stop.shouldStop ? r.stop.reason_ar : null,
+      deepening: ds ? { index: ds.index, total: ds.total, reasonAr: ds.currentReason_ar } : null,
     }
   }
 
@@ -136,7 +140,9 @@ export class AssessmentSession {
       state.skillVector,
       state.facts as unknown as Record<string, { value: unknown }>,
       state.factsRaw,
+      state.interestVector,
     )
+    result.resultJson.session_id = state.sessionId
     const legacyAnswers = factsToLegacyAnswers(
       recommendation,
       state.facts as unknown as Record<string, { value: unknown }>,
@@ -145,6 +151,36 @@ export class AssessmentSession {
     saveResult(result.resultJson, legacyAnswers, result.top?.id ?? null)
     this.persistQuietly((s) => this.repo.saveDecision(s.sessionId, result.resultJson))
     return { result, recommendation }
+  }
+
+  /** يفتح جولة تدقيق الخطة — يعيد null إن كانت مفتوحة سلفا أو لا أسئلة نافعة متبقية */
+  startDeepening(): { step: NextStep; reasonAr: string } | null {
+    const opened = this.engine.startDeepening()
+    if (!opened) return null
+    return { step: this.next(), reasonAr: opened.reason_ar }
+  }
+
+  /** يختم جولة التدقيق ويعيد توليد النتيجة مع مقارنة قبل/بعد موثقة */
+  finishDeepening(): { result: DiagResult; recommendation: Recommendation; comparison: unknown } {
+    const { recommendation, comparison } = this.engine.finishDeepening()
+    const state = this.engine.getState()
+    const result = recommendationToDiagResult(
+      recommendation,
+      state.skillVector,
+      state.facts as unknown as Record<string, { value: unknown }>,
+      state.factsRaw,
+      state.interestVector,
+      comparison,
+    )
+    result.resultJson.session_id = state.sessionId
+    const legacyAnswers = factsToLegacyAnswers(
+      recommendation,
+      state.facts as unknown as Record<string, { value: unknown }>,
+      state.factsRaw,
+    )
+    saveResult(result.resultJson, legacyAnswers, result.top?.id ?? null)
+    this.persistQuietly((s) => this.repo.saveDecision(s.sessionId, result.resultJson))
+    return { result, recommendation, comparison }
   }
 
   /** حالة الفهم الحية للواجهة — أبعاد مألوفة + ترتيب أولي للمسارات */
@@ -196,3 +232,5 @@ export function diagQuestionById(id: string): DiagQuestion | null {
   const q = questionById.get(id)
   return q ? toDiagQuestion(q) : null
 }
+
+export type { DeepeningComparison } from '../../domain/diagnostic/types'

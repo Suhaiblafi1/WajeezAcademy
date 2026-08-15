@@ -21,9 +21,10 @@ import { Badge } from "@/components/ui/badge";
 import AuthGate from "@/components/AuthGate";
 import AdvisorContact from "@/components/AdvisorContact";
 import CourseModal from "@/components/CourseModal";
+import CourseJourney from "@/components/CourseJourney";
 import Modal from "@/components/Modal";
 import { pathwayById } from "@/data/pathways";
-import { courseById, pathwayCourses, coursePriceOf, pathwayPriceFor, pathwayTrainers, courseTrainer, weeksLabel, type Course } from "@/data/courses";
+import { courseById, pathwayCourses, pathwayDelivery, coursePriceOf, pathwayPriceFor, pathwayTrainers, courseTrainer, weeksLabel, type Course } from "@/data/courses";
 import { GOAL_LABELS, GAP_LABELS, OBSTACLE_TO_GAP } from "@/data/diagnostic";
 import { grantEnrollment } from "@/services/access";
 import { useCurrency, usePriceFormatter, CURRENCIES, setCurrency, type CurrencyCode } from "@/services/currency";
@@ -427,6 +428,13 @@ export default function PathwayPage() {
               })}
             </div>
           </div>
+
+          {/* «ماذا ستحقق من خلال خطتك؟» — رحلة الدورات التعليمية بأكورديون داخل الصفحة */}
+          <CourseJourney
+            courseIds={pathwayCoursesList.map((c) => c.id)}
+            delivery={pathwayDelivery(pathway.id)}
+            headingLevel="h2"
+          />
 
           {/* ما ستحصل عليه مع المسار — من عروض أكاديمية وجيز */}
           <div className="story-fade mt-10 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">

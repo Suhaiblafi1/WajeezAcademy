@@ -6,6 +6,7 @@ import { pathwayCategory } from './pathways'
 export interface Course {
   id: string
   name: string
+  legacyName?: string
   pathwayId: string
   pathwayName: string
   category: string
@@ -13,28 +14,83 @@ export interface Course {
   skill: string
 }
 
+/* تفاصيل الدورة الكاملة لعرض الرحلة التعليمية — مشتقة من الكتالوج الموثق */
+export interface CourseFull {
+  id: string
+  title: string
+  legacyTitle?: string
+  shortPromise: string
+  description: string
+  targetAudience: string
+  prerequisites: string
+  level: string
+  totalHours: number
+  learningObjectives: string[]
+  learningOutcomes: string[]
+  modules: { id: string; title: string; outcome: string; activity: string; artifact: string; hours: number }[]
+  practicalProject: string
+  relatedSkills: string[]
+  referenceIds: string[]
+}
+
+interface RawModule {
+  module_id: string
+  course_id: string
+  sequence: number
+  title_ar: string
+  module_outcome_ar: string
+  practice_activity_ar: string
+  evidence_artifact_ar: string
+  expected_hours: number
+}
+
 interface RawCourse {
   course_id: string
   pathway_id: string
   sequence: number
   title_ar: string
+  legacy_title_ar?: string
   subtitle_ar?: string
+  short_promise_ar?: string
+  description_ar?: string
+  target_audience_ar?: string
+  prerequisites_ar?: string
+  level_ar?: string
   total_hours: number
+  skill_slugs?: string[]
   skill_names_ar: string[]
+  learning_objectives_ar?: string[]
+  learning_outcomes_ar?: string[]
+  summative_assessment_ar?: string
+  source_codes?: string[]
 }
 interface RawPathway {
   id: string
   title: string
   course_ids: string[]
+  delivery?: string
 }
 
-const raw = coreCatalog as unknown as { launch_pathways: RawPathway[]; courses: RawCourse[] }
+const raw = coreCatalog as unknown as {
+  launch_pathways: RawPathway[]
+  courses: RawCourse[]
+  modules: RawModule[]
+}
 
 const pathwayTitle = new Map(raw.launch_pathways.map((p) => [p.id, p.title]))
+
+const modulesByCourse = new Map<string, RawModule[]>()
+for (const m of raw.modules) {
+  const list = modulesByCourse.get(m.course_id) ?? []
+  list.push(m)
+  modulesByCourse.set(m.course_id, list)
+}
+for (const list of modulesByCourse.values()) list.sort((a, b) => a.sequence - b.sequence)
 
 export const courses: Course[] = raw.courses.map((c) => ({
   id: c.course_id,
   name: c.title_ar,
+  legacyName: c.legacy_title_ar,
   pathwayId: c.pathway_id,
   pathwayName: pathwayTitle.get(c.pathway_id) ?? '',
   category: pathwayCategory(c.pathway_id),
@@ -42,11 +98,45 @@ export const courses: Course[] = raw.courses.map((c) => ({
   skill: c.skill_names_ar[0] ?? '',
 }))
 
+/** تفاصيل الدورة الكاملة بمعرفها — للرحلة التعليمية والأكورديون */
+export function courseFullById(id: string): CourseFull | null {
+  const c = raw.courses.find((x) => x.course_id === id)
+  if (!c) return null
+  return {
+    id: c.course_id,
+    title: c.title_ar,
+    legacyTitle: c.legacy_title_ar,
+    shortPromise: c.short_promise_ar ?? c.subtitle_ar ?? '',
+    description: c.description_ar ?? '',
+    targetAudience: c.target_audience_ar ?? '',
+    prerequisites: c.prerequisites_ar ?? '',
+    level: c.level_ar ?? '',
+    totalHours: c.total_hours,
+    learningObjectives: c.learning_objectives_ar ?? [],
+    learningOutcomes: c.learning_outcomes_ar ?? [],
+    modules: (modulesByCourse.get(id) ?? []).map((m) => ({
+      id: m.module_id,
+      title: m.title_ar,
+      outcome: m.module_outcome_ar,
+      activity: m.practice_activity_ar,
+      artifact: m.evidence_artifact_ar,
+      hours: m.expected_hours,
+    })),
+    practicalProject: c.summative_assessment_ar ?? '',
+    relatedSkills: c.skill_names_ar,
+    referenceIds: c.source_codes ?? [],
+  }
+}
+
 export const courseById = (id: string) => courses.find((c) => c.id === id)
 
 export const pathwayCourses: Record<string, string[]> = Object.fromEntries(
   raw.launch_pathways.map((p) => [p.id, p.course_ids]),
 )
+
+/** طريقة تقديم المسار من الكتالوج الموثق — تُعرض ضمن تفاصيل دورات الرحلة */
+export const pathwayDelivery = (pathwayId: string): string | undefined =>
+  raw.launch_pathways.find((p) => p.id === pathwayId)?.delivery
 
 /* مختارات وجيز من الدورات — منتقاة تحريريا، الدورة الثانية من كل مسار مختار */
 function pickCourse(pathwayId: string, index: number): string | null {
