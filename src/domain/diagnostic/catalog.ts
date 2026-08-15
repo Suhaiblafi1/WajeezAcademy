@@ -4,7 +4,7 @@ import questionsJson from '../../data/catalog/questions.v1.ar.json'
 import skillsJson from '../../data/catalog/skills.v1.ar.json'
 import coreCatalogJson from '../../data/catalog/core-catalog.v2.json'
 import templatesJson from '../../data/catalog/composite-templates.v1.json'
-import optionEffectsJson from '../../data/overlays/option-effects.v1.json'
+import optionEffectsJson from '../../data/overlays/option-effects.v2.json'
 import pathwayProfilesJson from '../../data/overlays/pathway-profiles.v1.json'
 import trainerProfilesJson from '../../data/overlays/trainer-profiles.v1.json'
 import type {
@@ -40,6 +40,21 @@ export interface CompositeTemplate {
     required_facts: { fact_key: string; question_ids: string[]; importance: string; minimum_confidence: number }[]
     positive_signals: { fact_key: string; operator: string; values: (string | number)[]; weight: number; rationale_ar?: string }[]
     negative_signals?: { fact_key: string; operator: string; values: (string | number)[]; weight: number; rationale_ar?: string }[]
+    /** مرشحات صارمة من ملف القوالب — exclude/recommend_bridge يستبعدان القالب، advisor_handoff يوجّه للمستشار */
+    hard_filters?: {
+      filter_id: string
+      condition: { fact_key: string; operator: string; values: (string | number)[] }
+      action: 'exclude' | 'recommend_bridge' | 'advisor_handoff'
+      rationale_ar?: string
+    }[]
+    /** أسئلة فاصلة موثقة تُطرح عند تقارب قالبين — لا حسم بالترتيب الأبجدي */
+    differentiators?: {
+      against_template_ids: string[]
+      question_id: string
+      question_ar?: string
+      interpretation_if_positive_ar?: string
+      interpretation_if_negative_ar?: string
+    }[]
   }
   plan?: {
     starter_course_count?: number
@@ -77,6 +92,26 @@ export const optionEffects = oeFile.option_effects
 export const keywordClassifiers = oeFile.keyword_classifiers
 export const pathwayProfiles: Record<string, PathwayProfile> = ppFile.profiles
 export const trainerProfiles: TrainerProfile[] = trFile.profiles
+
+/** معرف خيار ثابت من ترتيبه (1-based) — النص العربي قابل للتعديل دون تغيير النتيجة */
+export function optionIdAt(question: BankQuestion, index: number): string {
+  if (index < 0 || index >= question.options_ar.length) {
+    throw new RangeError(`ترتيب خيار خارج النطاق في ${question.question_id}: ${index}`)
+  }
+  return `o${index + 1}`
+}
+
+/** ترتيب الخيار (0-based) من معرفه الثابت؛ -1 إن لم يطابق النمط */
+export function optionIndexOfId(optionId: string): number {
+  const m = /^o(\d+)$/.exec(optionId)
+  return m ? Number(m[1]) - 1 : -1
+}
+
+/** تحويل نص خيار قديم إلى معرفه الثابت — جسر ترحيل الجلسات المحلية القديمة */
+export function optionIdFromText(question: BankQuestion, text: string): string | null {
+  const idx = question.options_ar.indexOf(text)
+  return idx >= 0 ? optionIdAt(question, idx) : null
+}
 
 export function pathwaySkills(pathwayId: string): { slug: string; nameAr: string }[] {
   const p = launchPathways.find((x) => x.id === pathwayId)

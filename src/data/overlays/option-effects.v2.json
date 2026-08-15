@@ -1,0 +1,734 @@
+{
+ "version": "2.0.0",
+ "id_scheme": "o{index_1based} — مستمد من ترتيب الخيار في بنك الأسئلة؛ النص العربي قابل للتعديل دون تغيير المعرف",
+ "option_effects": {
+  "QB-M0-001": {
+   "o1": {
+    "decision_owner": "self"
+   },
+   "o2": {
+    "decision_owner": "guardian"
+   },
+   "o3": {
+    "decision_owner": "employer"
+   },
+   "o4": {
+    "decision_owner": "advisor"
+   },
+   "o5": {
+    "decision_owner": "other"
+   }
+  },
+  "QB-M0-002": {
+   "o1": {
+    "age_band": "under_16",
+    "minor_flag": "yes"
+   },
+   "o2": {
+    "age_band": "16_18",
+    "minor_flag": "yes"
+   },
+   "o3": {
+    "age_band": "19_24",
+    "minor_flag": "no"
+   },
+   "o4": {
+    "age_band": "25_34",
+    "minor_flag": "no"
+   },
+   "o5": {
+    "age_band": "35_44",
+    "minor_flag": "no"
+   },
+   "o6": {
+    "age_band": "45_plus",
+    "minor_flag": "no"
+   }
+  },
+  "QB-M0-004": {
+   "o1": {
+    "language": "ar"
+   },
+   "o2": {
+    "language": "en"
+   },
+   "o3": {
+    "language": "both"
+   },
+   "o4": {
+    "language": "both"
+   }
+  },
+  "QB-M0-005": {
+   "o1": {
+    "save_preference": "yes"
+   },
+   "o2": {
+    "save_preference": "no"
+   },
+   "o3": {
+    "save_preference": "unsure"
+   }
+  },
+  "QB-M0-006": {
+   "o1": {
+    "diagnostic_consent": "yes"
+   },
+   "o2": {
+    "diagnostic_consent": "no"
+   },
+   "o3": {
+    "diagnostic_consent": "unsure"
+   }
+  },
+  "QB-M0-007": {
+   "o1": {
+    "marketing_consent": "yes"
+   },
+   "o2": {
+    "marketing_consent": "no"
+   },
+   "o3": {
+    "marketing_consent": "declined"
+   }
+  },
+  "QB-M0-008": {
+   "o1": {
+    "minor_flag": "yes"
+   },
+   "o2": {
+    "minor_flag": "no"
+   },
+   "o3": {
+    "minor_flag": "unsure"
+   }
+  },
+  "QB-M0-009": {
+   "o1": {
+    "payer_type": "self"
+   },
+   "o2": {
+    "payer_type": "guardian"
+   },
+   "o3": {
+    "payer_type": "employer"
+   },
+   "o4": {
+    "payer_type": "advisor"
+   },
+   "o5": {
+    "payer_type": "other"
+   }
+  },
+  "QB-M0-010": {
+   "o1": {
+    "privacy_comfort": "very_low"
+   },
+   "o2": {
+    "privacy_comfort": "low"
+   },
+   "o3": {
+    "privacy_comfort": "medium"
+   },
+   "o4": {
+    "privacy_comfort": "high"
+   },
+   "o5": {
+    "privacy_comfort": "very_high"
+   }
+  },
+  "QB-M1-001": {
+   "o1": {
+    "persona_type": "student"
+   },
+   "o2": {
+    "persona_type": "student"
+   },
+   "o3": {
+    "persona_type": "early_career"
+   },
+   "o4": {
+    "persona_type": "employee"
+   },
+   "o5": {
+    "persona_type": "founder"
+   },
+   "o6": {
+    "persona_type": "early_career"
+   },
+   "o7": {
+    "persona_branch": "family"
+   },
+   "o8": {
+    "persona_branch": "unsure"
+   }
+  },
+  "QB-M1-002": {
+   "o1": {
+    "education_state": "school"
+   },
+   "o2": {
+    "education_state": "diploma"
+   },
+   "o3": {
+    "education_state": "university"
+   },
+   "o4": {
+    "education_state": "graduate"
+   },
+   "o5": {
+    "education_state": "continuing_education"
+   },
+   "o6": {
+    "education_state": "continuing_education"
+   }
+  },
+  "QB-M1-003": {
+   "o1": {
+    "employment_state": "not_working"
+   },
+   "o2": {
+    "employment_state": "employed"
+   },
+   "o3": {
+    "employment_state": "employed"
+   },
+   "o4": {
+    "employment_state": "self_employed",
+    "persona_type": "freelancer"
+   },
+   "o5": {
+    "employment_state": "business_owner",
+    "persona_type": "founder"
+   },
+   "o6": {
+    "employment_state": "employed",
+    "sector": "public"
+   },
+   "o7": {
+    "employment_state": "not_working"
+   }
+  },
+  "QB-M2-001": {
+   "o1": {
+    "primary_goal": "employment_advancement"
+   },
+   "o2": {
+    "primary_goal": "business_launch"
+   },
+   "o3": {
+    "primary_goal": "career_direction"
+   },
+   "o4": {
+    "primary_goal": "personal_growth"
+   },
+   "o5": {
+    "primary_goal": "family_wellbeing"
+   },
+   "o6": {
+    "primary_goal": "lead_team"
+   },
+   "o7": {
+    "primary_goal": "explore",
+    "goal_clarity": "low"
+   }
+  },
+  "QB-M2-005": {
+   "o1": {
+    "goal_clarity": "low"
+   },
+   "o2": {
+    "goal_clarity": "low"
+   },
+   "o3": {
+    "goal_clarity": "medium"
+   },
+   "o4": {
+    "goal_clarity": "high"
+   },
+   "o5": {
+    "goal_clarity": "high"
+   }
+  },
+  "QB-M2-010": {
+   "o1": {
+    "breadth_depth_preference": "breadth"
+   },
+   "o2": {
+    "breadth_depth_preference": "depth"
+   },
+   "o3": {
+    "breadth_depth_preference": "mix"
+   },
+   "o4": {
+    "breadth_depth_preference": "unknown"
+   }
+  },
+  "QB-M2-015": {
+   "o1": {
+    "application_readiness": "low"
+   },
+   "o2": {
+    "application_readiness": "low"
+   },
+   "o3": {
+    "application_readiness": "medium"
+   },
+   "o4": {
+    "application_readiness": "high"
+   },
+   "o5": {
+    "application_readiness": "high"
+   }
+  },
+  "QB-M3A-003": {
+   "o1": {
+    "first_job_clarity": "low"
+   },
+   "o2": {
+    "first_job_clarity": "low"
+   },
+   "o3": {
+    "first_job_clarity": "medium"
+   },
+   "o4": {
+    "first_job_clarity": "high"
+   },
+   "o5": {
+    "first_job_clarity": "high"
+   }
+  },
+  "QB-M3A-004": {
+   "o1": {
+    "career_assets": "ready"
+   },
+   "o2": {
+    "career_assets": "none"
+   },
+   "o3": {
+    "career_assets": "basic"
+   }
+  },
+  "QB-M3A-006": {
+   "o1": {
+    "interview_confidence": "low"
+   },
+   "o2": {
+    "interview_confidence": "low"
+   },
+   "o3": {
+    "interview_confidence": "medium"
+   },
+   "o4": {
+    "interview_confidence": "high"
+   },
+   "o5": {
+    "interview_confidence": "high"
+   }
+  },
+  "QB-M3A-007": {
+   "o1": {
+    "practical_exposure": "none"
+   },
+   "o2": {
+    "practical_exposure": "limited"
+   },
+   "o3": {
+    "practical_exposure": "limited"
+   },
+   "o4": {
+    "practical_exposure": "relevant"
+   },
+   "o5": {
+    "practical_exposure": "relevant"
+   }
+  },
+  "QB-M3B-001": {
+   "o1": {
+    "sector": "private"
+   },
+   "o2": {
+    "sector": "public"
+   },
+   "o3": {
+    "sector": "nonprofit"
+   },
+   "o4": {
+    "sector": "private",
+    "industry_note": "tech"
+   },
+   "o5": {
+    "sector": "private",
+    "industry_note": "commerce"
+   },
+   "o6": {
+    "sector": "private",
+    "industry_note": "health"
+   },
+   "o7": {
+    "sector": "private",
+    "industry_note": "finance"
+   },
+   "o8": {
+    "sector": "other"
+   }
+  },
+  "QB-M3B-003": {
+   "o1": {
+    "public_facing": "frequent"
+   },
+   "o2": {
+    "public_facing": "rare"
+   },
+   "o3": {
+    "public_facing": "sometimes"
+   }
+  },
+  "QB-M3B-011": {
+   "o1": {
+    "function_specialization": "customer_service"
+   },
+   "o2": {
+    "function_specialization": "procurement_supply_chain"
+   },
+   "o3": {
+    "function_specialization": "finance"
+   },
+   "o4": {
+    "function_specialization": "hr"
+   },
+   "o5": {
+    "function_specialization": "marketing_sales"
+   },
+   "o6": {
+    "function_specialization": "operations"
+   },
+   "o7": {
+    "function_specialization": "digital_transformation_role"
+   },
+   "o8": {
+    "function_specialization": "leadership_role"
+   },
+   "o9": {}
+  },
+  "QB-M3B-012": {
+   "o1": {
+    "leadership_context": "informal"
+   },
+   "o2": {
+    "leadership_context": "none"
+   },
+   "o3": {
+    "leadership_context": "none"
+   }
+  },
+  "QB-M3C-002": {
+   "o1": {
+    "offer_clarity": "unclear"
+   },
+   "o2": {
+    "offer_clarity": "unclear"
+   },
+   "o3": {
+    "offer_clarity": "partial"
+   },
+   "o4": {
+    "offer_clarity": "clear"
+   },
+   "o5": {
+    "offer_clarity": "clear"
+   }
+  },
+  "QB-M3C-004": {
+   "o1": {
+    "revenue_signal": "some_repeat"
+   },
+   "o2": {
+    "revenue_signal": "none"
+   },
+   "o3": {
+    "revenue_signal": "none",
+    "low_confidence_flag": "yes"
+   }
+  },
+  "QB-M3C-010": {
+   "o1": {
+    "operations_maturity": "chaotic"
+   },
+   "o2": {
+    "operations_maturity": "chaotic"
+   },
+   "o3": {
+    "operations_maturity": "repeatable"
+   },
+   "o4": {
+    "operations_maturity": "measured"
+   },
+   "o5": {
+    "operations_maturity": "optimized"
+   }
+  },
+  "QB-M7-001": {
+   "o1": {
+    "weekly_load": "lt_3"
+   },
+   "o2": {
+    "weekly_load": "3_4"
+   },
+   "o3": {
+    "weekly_load": "5_6"
+   },
+   "o4": {
+    "weekly_load": "7_plus"
+   },
+   "o5": {
+    "weekly_load": "7_plus"
+   }
+  },
+  "QB-M7-002": {
+   "o1": {
+    "learning_format": "self_video"
+   },
+   "o2": {
+    "learning_format": "live_trainer"
+   },
+   "o3": {
+    "learning_format": "applied_projects"
+   },
+   "o4": {
+    "learning_format": "reading"
+   },
+   "o5": {
+    "learning_format": "mixed"
+   }
+  },
+  "QB-M7-003": {
+   "o1": {
+    "cohort_preference": "cohort"
+   },
+   "o2": {
+    "cohort_preference": "solo_self"
+   },
+   "o3": {
+    "cohort_preference": "solo_advisor"
+   },
+   "o4": {
+    "cohort_preference": "mixed"
+   },
+   "o5": {
+    "cohort_preference": "any"
+   }
+  },
+  "QB-M7-004": {
+   "o1": {
+    "content_language": "ar"
+   },
+   "o2": {
+    "content_language": "en"
+   },
+   "o3": {
+    "content_language": "both"
+   },
+   "o4": {
+    "content_language": "both"
+   }
+  },
+  "QB-M7-005": {
+   "o1": {
+    "budget_profile": "free_only"
+   },
+   "o2": {
+    "budget_profile": "low"
+   },
+   "o3": {
+    "budget_profile": "medium"
+   },
+   "o4": {
+    "budget_profile": "high_if_value"
+   },
+   "o5": {
+    "budget_profile": "employer_paid"
+   }
+  }
+ },
+ "keyword_classifiers": {
+  "QB-M3C-001": {
+   "fact_key": "business_stage",
+   "rules": [
+    {
+     "code": "established",
+     "any": [
+      "مستقر",
+      "قائم منذ",
+      "سنوات",
+      "راسخ"
+     ]
+    },
+    {
+     "code": "growing",
+     "any": [
+      "نمو",
+      "ينمو",
+      "يتوسع",
+      "مبيعات متكررة",
+      "زبائن دائمون"
+     ]
+    },
+    {
+     "code": "early_revenue",
+     "any": [
+      "أول عميل",
+      "بدأت أبيع",
+      "مبيعات أولى",
+      "أولى مبيعات",
+      "بدأ البيع"
+     ]
+    },
+    {
+     "code": "pre_revenue",
+     "any": [
+      "لم أبع",
+      "لا مبيعات",
+      "قبل الإيراد",
+      "بدون دخل",
+      "لم يدفع أحد"
+     ]
+    },
+    {
+     "code": "validation",
+     "any": [
+      "أتحقق",
+      "أختبر",
+      "أجرب",
+      "تجربة أولى",
+      "نموذج أولي",
+      "أدرس الجدوى"
+     ]
+    },
+    {
+     "code": "idea",
+     "any": [
+      "فكرة",
+      "أفكر",
+      "لم أبدأ",
+      "تصور مبدئي"
+     ]
+    }
+   ]
+  },
+  "QB-M3C-011": {
+   "fact_key": "team_context",
+   "rules": [
+    {
+     "code": "multi_team",
+     "any": [
+      "عدة فرق",
+      "فرق متعددة",
+      "إدارات"
+     ]
+    },
+    {
+     "code": "cross_functional",
+     "any": [
+      "متعدد الوظائف",
+      "دوائر مختلفة",
+      "أقسام مختلفة"
+     ]
+    },
+    {
+     "code": "small_team",
+     "any": [
+      "فريق صغير",
+      "شريك",
+      "شخصان",
+      "ثلاثة",
+      "فريق"
+     ]
+    },
+    {
+     "code": "solo",
+     "any": [
+      "وحدي",
+      "لوحدي",
+      "بمفردي",
+      "منفرد"
+     ]
+    }
+   ]
+  },
+  "QB-M9-005": {
+   "fact_key": "strategic_priority",
+   "rules": [
+    {
+     "code": "growth",
+     "any": [
+      "نمو",
+      "توسع",
+      "زيادة الإيراد",
+      "حصة سوقية"
+     ]
+    },
+    {
+     "code": "efficiency",
+     "any": [
+      "كفاءة",
+      "تقليل تكلفة",
+      "خفض المصاريف",
+      "ترشيد"
+     ]
+    },
+    {
+     "code": "customer_experience",
+     "any": [
+      "تجربة العميل",
+      "تجربة المستفيد",
+      "رضا العملاء",
+      "رضا المستفيد"
+     ]
+    },
+    {
+     "code": "digital_transformation",
+     "any": [
+      "تحول رقمي",
+      "رقمنة",
+      "أتمتة"
+     ]
+    },
+    {
+     "code": "risk_resilience",
+     "any": [
+      "مخاطر",
+      "امتثال",
+      "أمن",
+      "استمرارية"
+     ]
+    },
+    {
+     "code": "people_capability",
+     "any": [
+      "كوادر",
+      "تدريب الموظفين",
+      "قدرات الفريق",
+      "تأهيل"
+     ]
+    },
+    {
+     "code": "service_quality",
+     "any": [
+      "جودة الخدمة",
+      "تحسين الخدمة",
+      "جودة"
+     ]
+    },
+    {
+     "code": "execution",
+     "any": [
+      "تنفيذ",
+      "إنجاز الخطة",
+      "متابعة التنفيذ"
+     ]
+    }
+   ]
+  }
+ }
+}

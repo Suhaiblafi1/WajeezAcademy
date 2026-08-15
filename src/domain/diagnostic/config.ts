@@ -87,6 +87,11 @@ export const WEEKLY_LOAD_ORDER: Record<string, number> = {
   '7_plus': 4,
 }
 
+/** إصدارات القرار — تُخزن مع كل جلسة ونتيجة لضمان قابلية المراجعة والتدقيق */
+export const CATALOG_VERSION = 'core-catalog.v2'
+export const RULES_VERSION = 'diagnostic-rules.v1'
+export const DECISION_VERSION = 'decision-engine.2.0.0'
+
 export const DISCLAIMER_AR =
   'هذا التشخيص تعليمي مهني مبني على إجاباتك، وليس تشخيصا نفسيا أو طبيا، ولا وعدا بوظيفة أو دخل.'
 

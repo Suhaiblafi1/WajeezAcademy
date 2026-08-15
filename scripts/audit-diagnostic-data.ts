@@ -12,7 +12,7 @@ const questions = read('src/data/catalog/questions.v1.ar.json')
 const skills = read('src/data/catalog/skills.v1.ar.json')
 const core = read('src/data/catalog/core-catalog.v2.json')
 const templates = read('src/data/catalog/composite-templates.v1.json')
-const optionEffects = read('src/data/overlays/option-effects.v1.json')
+const optionEffects = read('src/data/overlays/option-effects.v2.json')
 const pathwayProfiles = read('src/data/overlays/pathway-profiles.v1.json')
 const trainers = read('src/data/overlays/trainer-profiles.v1.json')
 
@@ -112,8 +112,8 @@ for (const q of questions.questions as {
   const eff = optionEffects.option_effects[q.question_id]
   check(eff !== undefined, `سؤال حاسم ${q.question_id} بلا تأثيرات خيارات موثقة`)
   if (eff) {
-    for (const opt of q.options_ar) {
-      check(eff[opt] !== undefined, `سؤال ${q.question_id}: خيار بلا تأثير «${opt}»`)
+    for (let i = 0; i < q.options_ar.length; i++) {
+      check(eff[`o${i + 1}`] !== undefined, `سؤال ${q.question_id}: خيار بلا تأثير «${q.options_ar[i]}» (o${i + 1})`)
     }
   }
 }

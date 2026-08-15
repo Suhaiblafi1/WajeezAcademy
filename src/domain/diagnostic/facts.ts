@@ -1,7 +1,7 @@
 /* اختزال الإجابات إلى حقائق — حتمي وموثق.
    الأولوية: تأثير صريح في option-effects ← معالج نوعي موثق في question-policy ← حفظ خام. */
 
-import { keywordClassifiers, optionEffects, questionById, skillSlugs } from './catalog'
+import { keywordClassifiers, optionEffects, optionIdFromText, optionIndexOfId, questionById, skillSlugs } from './catalog'
 import type { Answer, BankQuestion, FactBag, FactValue } from './types'
 
 const UNCERTAIN_MARKERS = ['لست متأكدا', 'لا أعرف', 'غير متأكد', 'أفضل عدم الإجابة']
@@ -62,11 +62,29 @@ export function reduceAnswer(
   const isUncertain = UNCERTAIN_MARKERS.some((m) => normAr(primary).includes(normAr(m)))
   const eq = isUncertain ? 0.4 : question.answer_type === 'short_text' ? 0.6 : 0.9
 
-  // 1) تأثيرات صريحة لكل خيار
+  /* معرفات الخيارات هي أساس القرار؛ النص جسر ترحيل فقط للجلسات القديمة */
+  const ids: (string | null)[] = values.map((v, i) => {
+    const given = answer.optionIds?.[i]
+    if (given) return given
+    return optionIdFromText(question, v)
+  })
+  /** ترتيب الخيار (0-based) من معرفه إن أمكن، وإلا من نصه (ترحيل) */
+  const ordinalOf = (i: number): number => {
+    const id = ids[i]
+    if (id) {
+      const idx = optionIndexOfId(id)
+      if (idx >= 0 && idx < question.options_ar.length) return idx
+    }
+    return question.options_ar.indexOf(values[i] ?? '')
+  }
+
+  // 1) تأثيرات صريحة لكل خيار — تُقرأ بمعرف الخيار الثابت
   const effects = optionEffects[qid]
   if (effects) {
-    for (const v of values) {
-      const eff = effects[v]
+    for (let i = 0; i < values.length; i++) {
+      const v = values[i]
+      const id = ids[i]
+      const eff = id ? effects[id] : undefined
       if (!eff) {
         factsRaw[`${qid}:${v}`] = v
         continue
@@ -81,14 +99,14 @@ export function reduceAnswer(
   // 2) معالجات نوعية موثقة
   switch (question.answer_type) {
     case 'likert_5': {
-      const idx = question.options_ar.indexOf(primary)
+      const idx = ordinalOf(0)
       const score = idx >= 0 ? idx + 1 : 3
       const key = question.measures[0]
       if (key) interestVector[key] = score
       return
     }
     case 'skill_level_5': {
-      const idx = question.options_ar.indexOf(primary)
+      const idx = ordinalOf(0)
       const score = idx >= 0 ? idx + 1 : 1
       const key = question.measures[0]
       if (key && skillSlugs.has(key)) {
@@ -119,7 +137,7 @@ export function reduceAnswer(
       const key = question.measures[0]
       if (!key) return
       if (question.answer_type === 'single_choice') {
-        const idx = question.options_ar.indexOf(primary)
+        const idx = ordinalOf(0)
         if (idx >= 0) putFact(facts, key, idx + 1, qid, eq, primary)
         else factsRaw[key] = primary
       } else {

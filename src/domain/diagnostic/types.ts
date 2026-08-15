@@ -95,7 +95,9 @@ export type FactBag = Record<string, FactValue>
 
 export interface Answer {
   questionId: string
-  /** نص الخيار المختار، أو قائمة للخيارات المتعددة/الترتيب، أو النص الحر */
+  /** معرفات الخيارات الثابتة (o1..on) — أساس القرار. النص العربي لعرض وتدقيق فقط */
+  optionIds?: string[]
+  /** نص الخيار المختار (خام، للعرض والتدقيق)، أو قائمة للخيارات المتعددة/الترتيب، أو النص الحر */
   value: string | string[]
 }
 
@@ -157,7 +159,7 @@ export interface UtilityScore {
 
 export interface DecisionTraceEntry {
   step: number
-  kind: 'question_selected' | 'answer_reduced' | 'candidates_scored' | 'stop_evaluated' | 'recommendation' | 'template_selected' | 'contradiction' | 'guardrail'
+  kind: 'question_selected' | 'answer_reduced' | 'candidates_scored' | 'stop_evaluated' | 'recommendation' | 'template_selected' | 'template_layer' | 'trainer_match' | 'contradiction' | 'guardrail' | 'facts_seeded'
   summary_ar: string
   data?: Record<string, unknown>
 }
@@ -185,8 +187,20 @@ export interface CompositeSelection {
   fit: number
   variant: PlanVariant
   courses: CoursePlanItem[]
+  /** دورات أُزيلت بدليل إتقان موثق — مع سبب كل إزالة */
+  removedCourses: { courseId: string; titleAr: string; reason_ar: string }[]
+  /** الدورات المطلوبة وحدها تتجاوز 80 ساعة — تُحال لمستشار ولا تُصدر آليا */
+  requiredHoursOverflow: boolean
   missingRequiredFacts: string[]
   rationale_ar: string[]
+  /** المسارات الأساسية التي استُمدت منها الخطة */
+  representedPathwayIds: string[]
+  capstone_ar?: string
+  success_metric_ar?: string
+  /** أقرب قالب بديل ولماذا لم يُختر */
+  nearestAlternative?: { templateId: string; nameAr: string; fit: number; whyNot_ar: string }
+  /** مرشح صارم من نوع advisor_handoff انطبق على القالب الفائز — التوصية تُحال لمستشار */
+  advisorHandoff?: { filterId: string; rationale_ar: string }
 }
 
 export interface TrainerProfile {
@@ -198,7 +212,20 @@ export interface TrainerProfile {
   languages: string[]
   availability_weekly_hours: number
   quality_score: number
+  /** التوثيق — شروط إلزامية للترشيح، لا يُرشَّح مدرب غير موثق أبدا */
+  verified: boolean
   verified_source?: string
+  /** تاريخ التوثيق ISO — صلاحيته 12 شهرا ثم يجب التجديد */
+  verified_at?: string
+  /** حالة العقد — «active» شرط للترشيح */
+  contract_status?: 'active' | 'suspended' | 'ended'
+  /** السعة — لا يُرشَّح من بلغ سقف متعلميه */
+  capacity_active_learners?: number
+  capacity_max_learners?: number
+  /** المستويات التي يدرّسها (مبتدئ/متوسط/متقدم...) */
+  levels?: string[]
+  /** النوافذ الأسبوعية المتاحة — لفحص تعارض المواعيد */
+  weekly_schedule?: { day: string; start: string; end: string }[]
 }
 
 export interface TrainerMatch {

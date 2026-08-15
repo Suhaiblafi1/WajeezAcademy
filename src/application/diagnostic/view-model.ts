@@ -96,7 +96,7 @@ export function recommendationToDiagResult(
     top,
     faster,
     cheaper: cheaperEntry,
-    confidence: Math.round(rec.confidence.total * 100),
+    confidence: Math.floor(rec.confidence.total * 100),
     confidenceBand: rec.confidence.band_ar,
     needsAdvisor: rec.kind === 'advisor_referral',
     reasons: rec.reasons_ar,
@@ -110,6 +110,17 @@ export function recommendationToDiagResult(
     resultJson: {
       kind: rec.kind,
       pathway_id: rec.primaryPathway?.pathwayId ?? null,
+      /** مكونات ملاءمة المسار الأول الخمسة — شفافية التوصية */
+      primary_fit: rec.primaryPathway
+        ? {
+            persona: rec.primaryPathway.fit.persona,
+            goal: rec.primaryPathway.fit.goal,
+            skill_gap: rec.primaryPathway.fit.skillGap,
+            feasibility: rec.primaryPathway.fit.feasibility,
+            motivation: rec.primaryPathway.fit.motivation,
+            total: rec.primaryPathway.fit.total,
+          }
+        : null,
       composite: rec.composite
         ? {
             template_id: rec.composite.templateId,
@@ -118,6 +129,15 @@ export function recommendationToDiagResult(
             label_ar: 'خطة مركبة مخصصة',
             courses: rec.composite.courses,
             fit: rec.composite.fit,
+            removed_courses: rec.composite.removedCourses,
+            required_hours_overflow: rec.composite.requiredHoursOverflow,
+            missing_required_facts: rec.composite.missingRequiredFacts,
+            rationale_ar: rec.composite.rationale_ar,
+            represented_pathway_ids: rec.composite.representedPathwayIds,
+            capstone_ar: rec.composite.capstone_ar ?? null,
+            success_metric_ar: rec.composite.success_metric_ar ?? null,
+            nearest_alternative: rec.composite.nearestAlternative ?? null,
+            advisor_handoff: rec.composite.advisorHandoff ?? null,
           }
         : null,
       confidence: rec.confidence,

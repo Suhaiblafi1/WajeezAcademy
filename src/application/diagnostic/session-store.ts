@@ -8,7 +8,7 @@ const LEGACY_TOP_KEY = 'wajeez_diag_top'
 const LEGACY_JSON_KEY = 'wajeez_result_json'
 
 export interface SavedSession {
-  answers: { questionId: string; value: string | string[] }[]
+  answers: { questionId: string; value: string | string[]; optionIds?: string[] }[]
   savedAt: string
 }
 

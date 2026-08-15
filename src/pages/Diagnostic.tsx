@@ -44,6 +44,7 @@ import {
 } from "@/data/diagnostic";
 import { AssessmentSession, createAssessment, diagQuestionById } from "@/application/diagnostic/assessment-service";
 import { loadSession, saveLastResult, loadLastResult, clearAllSessionData } from "@/application/diagnostic/session-store";
+import { loadMirrorAnswers } from "@/domain/diagnostic/teaser-bridge";
 import type { SkillBar } from "@/application/diagnostic/view-model";
 import {
   courseById,
@@ -518,6 +519,159 @@ function CustomizePathway({
   );
 }
 
+/* ─────────── الخطة المركبة المخصصة — تعرض عندما يختار المحرك قالبا مركبا ─────────── */
+interface CompositeView {
+  template_id: string;
+  name_ar: string;
+  variant: "starter" | "full" | "extended";
+  label_ar: string;
+  courses: { courseId: string; titleAr: string; hours: number; sequence: number; type: "required" | "conditional" | "bridge"; reason_ar: string }[];
+  fit: number;
+  removed_courses: { courseId: string; titleAr: string; reason_ar: string }[];
+  missing_required_facts: string[];
+  rationale_ar: string[];
+  represented_pathway_ids: string[];
+  capstone_ar: string | null;
+  success_metric_ar: string | null;
+  nearest_alternative: { templateId: string; nameAr: string; fit: number; whyNot_ar: string } | null;
+  advisor_handoff: { filterId: string; rationale_ar: string } | null;
+}
+
+const VARIANT_AR: Record<CompositeView["variant"], { label: string; hint: string }> = {
+  starter: { label: "نسخة البداية", hint: "جوهر الخطة بأقل عبء — تبدأ بها وتتوسع لاحقا" },
+  full: { label: "النسخة الكاملة", hint: "كل الدورات الأساسية مع ما يناسب ظرفك من الشرطية" },
+  extended: { label: "النسخة الموسعة", hint: "الكاملة مع دورات جسرية تربط المجالين" },
+};
+
+const COURSE_TYPE_AR: Record<string, { label: string; cls: string }> = {
+  required: { label: "أساسية", cls: "border-[#38A7B4]/50 bg-[#38A7B4]/10 text-[#6EC7D1]" },
+  conditional: { label: "شرطية", cls: "border-[#FABC05]/50 bg-[#FABC05]/10 text-[#FABC05]" },
+  bridge: { label: "جسرية", cls: "border-white/25 bg-white/[0.06] text-white/75" },
+};
+
+function CompositePlan({ composite }: { composite: CompositeView }) {
+  const totalHours = composite.courses.reduce((s, c) => s + c.hours, 0);
+  const variant = VARIANT_AR[composite.variant] ?? VARIANT_AR.full;
+  const represented = composite.represented_pathway_ids
+    .map((id) => pathways.find((p) => p.id === id))
+    .filter((p): p is Pathway => Boolean(p));
+  return (
+    <div className="mt-10 overflow-hidden rounded-3xl border border-[#FABC05]/40 bg-gradient-to-b from-[#1A1A1A] to-[#0D0D0D]">
+      <div className="border-b border-white/10 bg-[#FABC05]/10 px-6 py-3">
+        <span className="text-sm font-black text-[#FABC05]">{composite.label_ar}</span>
+        <span className="mr-2 text-xs text-white/50">
+          خطة مبنية لحالتك من أكثر من مجال — وليست مسارا جاهزا من الكتالوج
+        </span>
+      </div>
+      <div className="p-6 md:p-8">
+        <h3 className="text-xl font-black leading-snug md:text-2xl">{composite.name_ar}</h3>
+
+        {/* المسارات التي استُمدت منها الخطة */}
+        {represented.length > 0 && (
+          <p className="mt-3 text-xs leading-relaxed text-white/55">
+            رُكّبت من: {represented.map((p) => p.name).join(" + ")}
+          </p>
+        )}
+
+        {/* النسخة والساعات */}
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <div className="rounded-xl bg-white/[0.05] p-4">
+            <p className="text-sm text-white/50">نسخة خطتك</p>
+            <p className="font-black text-[#FABC05]">{variant.label}</p>
+            <p className="mt-1 text-[11px] leading-5 text-white/45">{variant.hint}</p>
+          </div>
+          <div className="rounded-xl bg-white/[0.05] p-4">
+            <p className="text-sm text-white/50">إجمالي ساعات الخطة</p>
+            <p className="font-black">{totalHours} ساعة</p>
+            <p className="mt-1 text-[11px] leading-5 text-white/45">موزعة على إيقاعك الأسبوعي الذي أخبرتنا به</p>
+          </div>
+        </div>
+
+        {/* لماذا رُكّبت هذه الخطة */}
+        {composite.rationale_ar.length > 0 && (
+          <ul className="mt-5 space-y-2">
+            {composite.rationale_ar.slice(0, 4).map((r) => (
+              <li key={r} className="flex items-start gap-2.5 text-sm leading-relaxed text-white/70">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#FABC05]" />
+                {r}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {/* دورات الخطة مرتبة مع سبب كل دورة */}
+        <div className="mt-6">
+          <p className="mb-3 text-sm font-black text-white/70">دورات خطتك بالترتيب — وسبب وجود كل منها:</p>
+          <ol className="space-y-2.5">
+            {composite.courses.map((c, i) => {
+              const t = COURSE_TYPE_AR[c.type] ?? COURSE_TYPE_AR.required;
+              return (
+                <li key={c.courseId} className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#FABC05]/15 text-xs font-black text-[#FABC05]">
+                    {i + 1}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-sm font-bold text-white/90">{c.titleAr}</p>
+                      <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${t.cls}`}>{t.label}</span>
+                      <span className="text-[11px] text-white/40">{c.hours} ساعة</span>
+                    </div>
+                    <p className="mt-1 text-xs leading-relaxed text-white/50">{c.reason_ar}</p>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+
+        {/* دورات أُزيلت بدليل إتقان موثق */}
+        {composite.removed_courses.length > 0 && (
+          <div className="mt-5 rounded-2xl border border-[#38A7B4]/30 bg-[#38A7B4]/[0.06] p-4">
+            <p className="text-sm font-black text-[#6EC7D1]">أزلناها لأنك تتقنها — لا تدفع ثمن ما تعرفه:</p>
+            <ul className="mt-2 space-y-1.5">
+              {composite.removed_courses.map((r) => (
+                <li key={r.courseId} className="text-xs leading-relaxed text-white/60">
+                  <span className="font-bold text-white/80">{r.titleAr}</span> — {r.reason_ar}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* مشروع التخرج ومؤشر النجاح */}
+        {(composite.capstone_ar || composite.success_metric_ar) && (
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            {composite.capstone_ar && (
+              <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
+                <p className="flex items-center gap-2 text-xs font-black text-[#FABC05]">
+                  <FileText className="h-4 w-4" /> مشروع إثبات الجاهزية
+                </p>
+                <p className="mt-2 text-xs leading-6 text-white/65">{composite.capstone_ar}</p>
+              </div>
+            )}
+            {composite.success_metric_ar && (
+              <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
+                <p className="flex items-center gap-2 text-xs font-black text-[#6EC7D1]">
+                  <Gauge className="h-4 w-4" /> كيف تعرف أنك نجحت؟
+                </p>
+                <p className="mt-2 text-xs leading-6 text-white/65">{composite.success_metric_ar}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* أقرب بديل ولماذا لم يُختر */}
+        {composite.nearest_alternative && (
+          <p className="mt-5 rounded-xl border border-white/10 bg-white/[0.03] p-4 text-xs leading-6 text-white/55">
+            <span className="font-bold text-white/75">أقرب خطة بديلة كانت «{composite.nearest_alternative.nameAr}»</span>
+            {" "}— {composite.nearest_alternative.whyNot_ar}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ─────────── الصفحة ─────────── */
 export default function Diagnostic() {
   const [stage, setStage] = useState<Stage>("intro");
@@ -533,6 +687,8 @@ export default function Diagnostic() {
   const [topPathway, setTopPathway] = useState<Pathway | null>(null);
   const [swapCount, setSwapCount] = useState(0);
   const [savedProgress, setSavedProgress] = useState<SavedProgress | null>(() => loadProgress());
+  /* إجابات مؤشر وجيز التمهيدي (الصفحة الرئيسية) تُنقل للجلسة ولا تُسأل مجددا */
+  const [mirrorCarried] = useState<boolean>(() => loadMirrorAnswers(window.localStorage) !== null);
   /* نتيجة مكتملة محفوظة — من أنهى المؤشر سابقا لا يبدأ من الصفر أبدا */
   const [savedDone] = useState(() => loadLastResult<DiagResult>());
   /* جلسة المحرك الحتمي — مصدر الأسئلة والنتيجة الوحيد */
@@ -678,12 +834,12 @@ export default function Diagnostic() {
     window.scrollTo(0, 0);
   };
 
-  const answer = (qid: string, value: string | string[]) => {
+  const answer = (qid: string, value: string | string[], optionIds?: string[]) => {
     const session = sessionRef.current;
     if (!question || !session) return;
     track("diagnostic_question_completed", { count: asked.length + 1 });
     setHistory([...history, question]);
-    const step = session.submit(qid, value);
+    const step = session.submit(qid, value, optionIds);
     applyStep(step);
   };
 
@@ -704,7 +860,9 @@ export default function Diagnostic() {
 
   const submitMulti = (q: DiagQuestion) => {
     if (multiDraft.length === 0) return;
-    answer(q.id, multiDraft);
+    /* معرفات الخيارات تُشتق من الخيارات المعروضة نفسها — القرار لا يعتمد على النص */
+    const ids = multiDraft.map((v) => qOptions.find((o) => o.value === v)?.optionId).filter((x): x is string => Boolean(x));
+    answer(q.id, multiDraft, ids.length === multiDraft.length ? ids : undefined);
   };
 
   const back = () => {
@@ -813,6 +971,14 @@ export default function Diagnostic() {
             و<span className="font-bold text-[#6EC7D1]">O*NET وESCO</span> لخرائط المهارات،
             و<span className="font-bold text-[#6EC7D1]">DigComp</span> للجاهزية الرقمية — نظام مبني على علم، لا على تخمين.
           </p>
+
+          {/* إجابات المؤشر التمهيدي منقولة — لا نسألك مرتين */}
+          {mirrorCarried && (
+            <p className="mx-auto mt-4 flex max-w-lg items-center justify-center gap-2 rounded-2xl border border-[#38A7B4]/30 bg-[#38A7B4]/[0.08] px-5 py-3 text-xs font-semibold leading-relaxed text-[#6EC7D1]">
+              <CheckCircle2 className="h-4 w-4 shrink-0" />
+              إجاباتك في مؤشر وجيز التمهيدي محفوظة ومنقولة لهذه الجلسة — لن نسألك عنها مرة أخرى.
+            </p>
+          )}
 
           <Button
             size="lg"
@@ -999,7 +1165,7 @@ export default function Diagnostic() {
                   return (
                     <button
                       key={opt.value}
-                      onClick={() => answer(question.id, opt.value)}
+                      onClick={() => answer(question.id, opt.value, opt.optionId ? [opt.optionId] : undefined)}
                       className={`rounded-2xl border p-5 text-right transition-all ${
                         selected
                           ? "border-[#6EC7D1] bg-[#38A7B4]/15"
@@ -1183,22 +1349,53 @@ export default function Diagnostic() {
             <div className="mx-auto mt-4 flex w-fit flex-wrap items-center justify-center gap-2">
               <span className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 text-sm">
                 <Gauge className="h-4 w-4 text-[#FABC05]" />
-                <span className="text-white/70">درجة الثقة:</span>
+                <span className="text-white/70">قوة أدلة التوصية:</span>
                 <span className="font-black text-[#FABC05]">{result.confidence}%</span>
               </span>
               <span className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 text-xs text-white/60">
                 {result.confidenceBand}
               </span>
             </div>
-            {/* شرح الثقة بلغة مبسطة — شفافية لا صناديق سوداء */}
+            {/* شرح قوة الأدلة بلغة مبسطة + مكوناتها الخمسة — شفافية لا صناديق سوداء */}
             <details className="mx-auto mt-4 max-w-md rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-right text-xs leading-relaxed text-white/55 print:hidden">
-              <summary className="cursor-pointer text-center font-bold text-white/70">كيف حسبنا درجة الثقة؟</summary>
+              <summary className="cursor-pointer text-center font-bold text-white/70">كيف حسبنا قوة أدلة التوصية؟</summary>
               <p className="mt-2">
-                تبدأ من اكتمال صورتك: كل إجابة توضّح هدفك وواقعك ومهاراتك أكثر. ترتفع الدرجة عندما تتفق
+                تبدأ من اكتمال صورتك: كل إجابة توضّح هدفك وواقعك ومهاراتك أكثر. ترتفع عندما تتفق
                 إجاباتك مع بعضها، وتنخفض عند التناقض أو عندما تقف حالتك بين مسارين متقاربين.
                 فوق ٧٥٪ المحرك واثق بتوصيته، وبين ٥٠ و٧٥٪ التوصية قوية ونعرض معها بدائل،
                 ودون ذلك نحيلك لمستشار بشري قبل أي قرار.
               </p>
+              {(() => {
+                const conf = result.resultJson.confidence as
+                  | { coverage: number; consistency: number; separation: number; evidenceQuality: number; stability: number }
+                  | undefined
+                if (!conf) return null
+                const parts = [
+                  { label: "اكتمال الصورة", value: conf.coverage },
+                  { label: "اتساق إجاباتك", value: conf.consistency },
+                  { label: "وضوح الفارق بين المسارات", value: conf.separation },
+                  { label: "جودة الأدلة", value: conf.evidenceQuality },
+                  { label: "ثبات النتيجة", value: conf.stability },
+                ]
+                return (
+                  <div className="mt-3 space-y-2 border-t border-white/10 pt-3">
+                    {parts.map((p) => (
+                      <div key={p.label} className="flex items-center gap-2">
+                        <span className="w-32 shrink-0 text-white/60">{p.label}</span>
+                        <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
+                          <span
+                            className="block h-full rounded-full bg-[#38A7B4]"
+                            style={{ width: `${Math.max(0, Math.min(100, Math.floor(p.value * 100)))}%` }}
+                          />
+                        </span>
+                        <span className="w-9 shrink-0 text-left font-bold text-white/70">
+                          {Math.floor(p.value * 100)}٪
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )
+              })()}
             </details>
             <button
               onClick={() => window.print()}
@@ -1313,22 +1510,10 @@ export default function Diagnostic() {
             </div>
           </div>
 
-          {/* التفاصيل الكاملة تُفتح بحساب مجاني — ما فوق هذا السطر متاح للضيف كملخص أولي */}
-          {authed ? (
-            <>
-          {/* قرار مبكر لمن اقتنع — دون المرور على كل التفاصيل */}
-          <div className="mt-6 flex flex-col items-center gap-2">
-            <Button size="lg" className="h-12 rounded-full bg-[#FABC05] px-10 font-black text-[#0D0D0D] hover:bg-[#FABC05]/90" asChild>
-              <Link to={`/pathways/${topPathway.id}`}>
-                اعتمد مساري الآن
-                <ArrowLeft className="mr-2 h-4 w-4" />
-              </Link>
-            </Button>
-            <p className="text-xs text-white/45">أو تابع القراءة — التفاصيل الكاملة أسفل الصفحة</p>
-          </div>
-
-          {/* رحلة المسار خطوة بخطوة — خط زمني لا قائمة */}
-          <JourneyTimeline pathway={topPathway} />
+          {/* الخطة المركبة المخصصة — عندما تمتد حاجتك إلى مجالين */}
+          {((result.resultJson.composite as CompositeView | null) ?? null) && (
+            <CompositePlan composite={result.resultJson.composite as CompositeView} />
+          )}
 
           {/* Why this recommendation */}
           <div className="mt-8 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
@@ -1356,6 +1541,44 @@ export default function Diagnostic() {
                 سيقرأها مدربك قبل أول لقاء ليعرف من أين يبدأ معك.
               </p>
             )}
+            {/* مكونات الملاءمة الخمسة للمسار الأول — شفافية كاملة */}
+            {(() => {
+              const fit = result.resultJson.primary_fit as
+                | { persona: number; goal: number; skill_gap: number; feasibility: number; motivation: number }
+                | null
+                | undefined
+              if (!fit) return null
+              const parts = [
+                { label: "ملاءمة شخصيتك وواقعك", value: fit.persona },
+                { label: "ملاءمة هدفك", value: fit.goal },
+                { label: "سدّ فجوة مهاراتك", value: fit.skill_gap },
+                { label: "ملاءمة وقتك وظروفك", value: fit.feasibility },
+                { label: "دافعيتك واستعدادك", value: fit.motivation },
+              ]
+              return (
+                <details className="mt-5 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-xs print:hidden">
+                  <summary className="cursor-pointer font-bold text-white/70">
+                    درجة ملاءمة المسار لك: {Math.floor(((result.resultJson.primary_fit as { total?: number })?.total ?? 0) * 100)}٪ — كيف توزعت؟
+                  </summary>
+                  <div className="mt-3 space-y-2">
+                    {parts.map((p) => (
+                      <div key={p.label} className="flex items-center gap-2">
+                        <span className="w-36 shrink-0 text-white/60">{p.label}</span>
+                        <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
+                          <span
+                            className="block h-full rounded-full bg-[#FABC05]"
+                            style={{ width: `${Math.max(0, Math.min(100, Math.floor(p.value * 100)))}%` }}
+                          />
+                        </span>
+                        <span className="w-9 shrink-0 text-left font-bold text-white/70">
+                          {Math.floor(p.value * 100)}٪
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              )
+            })()}
           </div>
 
           {/* تقاطع الرصيد السابق مع دورات التوصية — لا يدفع ثمن ما يعرفه */}
@@ -1487,6 +1710,23 @@ export default function Diagnostic() {
             </div>
           )}
 
+          {/* ما تبقى يتطلب حسابا مجانيا: اعتماد المسار وبدائله وتخصيصه */}
+          {authed ? (
+            <>
+          {/* قرار مبكر لمن اقتنع — دون المرور على كل التفاصيل */}
+          <div className="mt-6 flex flex-col items-center gap-2">
+            <Button size="lg" className="h-12 rounded-full bg-[#FABC05] px-10 font-black text-[#0D0D0D] hover:bg-[#FABC05]/90" asChild>
+              <Link to={`/pathways/${topPathway.id}`}>
+                اعتمد مساري الآن
+                <ArrowLeft className="mr-2 h-4 w-4" />
+              </Link>
+            </Button>
+            <p className="text-xs text-white/45">أو تابع القراءة — البدائل والتخصيص أسفل الصفحة</p>
+          </div>
+
+          {/* رحلة المسار خطوة بخطوة — خط زمني لا قائمة */}
+          <JourneyTimeline pathway={topPathway} />
+
           {/* مقارنة الخيارات الثلاثة — الأساسي والأسرع والأوفر في ميزان واحد */}
           {(result.faster || result.cheaper) && (
             <div className="card-soft mt-8">
@@ -1608,14 +1848,14 @@ export default function Diagnostic() {
               <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[#38A7B4]/15">
                 <Lock className="h-7 w-7 text-[#6EC7D1]" />
               </span>
-              <h3 className="mt-5 text-xl font-black md:text-2xl">ملخصك بيدك الآن — والتفاصيل الكاملة تنتظرك</h3>
+              <h3 className="mt-5 text-xl font-black md:text-2xl">نتيجتك كاملة بين يديك — بقي حفظها واعتمادها</h3>
               <p className="mx-auto mt-3 max-w-md text-sm leading-loose text-white/60">
-                رأيت مسارك الموصى به وقصتك وخريطة مهاراتك. أنشئ حسابك المجاني لتحفظ نتيجتك وتفتح:
+                رأيت مسارك الموصى به وقصتك وتفسير التوصية وخريطة فجواتك كاملة. أنشئ حسابك المجاني لتحفظ نتيجتك وتفتح:
               </p>
               <div className="mx-auto mt-6 grid max-w-lg gap-2.5 text-right sm:grid-cols-2">
                 {[
-                  "التفسير الكامل: لماذا هذا المسار تحديدا",
                   "البدائل المناسبة: أسرع وأوفر — بدّل بثقة",
+                  "رحلة المسار خطوة بخطوة حتى المخرج النهائي",
                   "تخصيص المسار: احذف وأضف دورات كما تشاء",
                   "اعتماد المسار وفتح صفحته وتقريرك الشخصي",
                 ].map((f) => (
