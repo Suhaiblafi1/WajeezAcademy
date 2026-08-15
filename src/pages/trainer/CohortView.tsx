@@ -17,9 +17,10 @@ const REC_LABEL: Record<string, { label: string; cls: string }> = {
 
 export default function CohortView() {
   const { id } = useParams();
-  const me = trainerIdentity()!;
+  const me = trainerIdentity();
+  const meName = me?.name ?? ""; // الإطار يعرض بوابة الهوية عند غيابها
   const [tick, setTick] = useState(0);
-  const cohort = useMemo(() => { void tick; return loadCohorts(me.name).find((c) => c.id === id); }, [me.name, id, tick]); // tick عداد إبطال مقصود بعد كل كتابة
+  const cohort = useMemo(() => { void tick; return loadCohorts(meName).find((c) => c.id === id); }, [meName, id, tick]); // tick عداد إبطال مقصود بعد كل كتابة
   const [reportSent, setReportSent] = useState(false);
   const [zoomLinks, setZoomLinks] = useState<Record<string, string>>({});
 
@@ -123,7 +124,7 @@ export default function CohortView() {
                 <div className="mt-2.5 flex flex-wrap gap-1.5">
                   {!s.attendanceMarked ? (
                     <button
-                      onClick={() => { markAttendance(me.name, cohort.id, s.id); setTick(tick + 1); }}
+                      onClick={() => { markAttendance(meName, cohort.id, s.id); setTick(tick + 1); }}
                       className="cursor-pointer rounded-full border border-white/15 px-2.5 py-1 text-[10px] font-bold text-white/60 hover:border-[#38A7B4]/60 hover:text-[#6EC7D1]"
                     >
                       رصد الحضور
@@ -133,7 +134,7 @@ export default function CohortView() {
                   )}
                   {s.recording === "none" ? (
                     <button
-                      onClick={() => { requestRecordingPublish(me.name, cohort.id, s.id); setTick(tick + 1); }}
+                      onClick={() => { requestRecordingPublish(meName, cohort.id, s.id); setTick(tick + 1); }}
                       className="cursor-pointer rounded-full border border-white/15 px-2.5 py-1 text-[10px] font-bold text-white/60 hover:border-[#FABC05]/60 hover:text-[#FABC05]"
                     >
                       اطلب نشر التسجيل

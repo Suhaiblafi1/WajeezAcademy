@@ -12,8 +12,9 @@ const STATUS_META: Record<Earning["status"], { icon: typeof Clock3; cls: string 
 
 /** مستحقات المدرب — القسم 17: تقديرية ومعتمدة ومدفوعة، كل بند مرتبط بحدث ومصدر، دون كشف ربحية كاملة */
 export default function Earnings() {
-  const me = trainerIdentity()!;
-  const earnings = useMemo(() => loadEarnings(me.name), [me.name]);
+  const me = trainerIdentity();
+  const meName = me?.name ?? ""; // الإطار يعرض بوابة الهوية عند غيابها
+  const earnings = useMemo(() => loadEarnings(meName), [meName]);
   const totals = useMemo(() => ({
     accrued: earnings.filter((e) => e.status === "accrued").reduce((s, e) => s + e.amount, 0),
     approved: earnings.filter((e) => e.status === "approved").reduce((s, e) => s + e.amount, 0),

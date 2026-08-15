@@ -18,9 +18,10 @@ const STATUS_LABEL: Record<SubmissionStatus, { label: string; cls: string }> = {
 
 /** طابور تقييم الواجبات — US-09: قائمة submissions + rubric + filters + feedback + audit */
 export default function GradingQueue() {
-  const me = trainerIdentity()!;
+  const me = trainerIdentity();
+  const meName = me?.name ?? ""; // الإطار يعرض بوابة الهوية عند غيابها
   const [tick, setTick] = useState(0);
-  const subs = useMemo(() => { void tick; return loadSubmissions(me.name); }, [me.name, tick]); // tick عداد إبطال مقصود بعد كل كتابة
+  const subs = useMemo(() => { void tick; return loadSubmissions(meName); }, [meName, tick]); // tick عداد إبطال مقصود بعد كل كتابة
   const audit = useMemo(() => { void tick; return loadGradeAudit(); }, [tick]); // tick عداد إبطال مقصود بعد كل كتابة
   const [filter, setFilter] = useState<"pending" | "reviewed" | "all">("pending");
   const [openId, setOpenId] = useState<string | null>(null);
@@ -39,7 +40,7 @@ export default function GradingQueue() {
   };
 
   const grade = (id: string, decision: "approved" | "revision") => {
-    gradeSubmission(me.name, id, rubric, feedback, decision);
+    gradeSubmission(meName, id, rubric, feedback, decision);
     setOpenId(null);
     setTick(tick + 1);
   };
@@ -137,7 +138,7 @@ export default function GradingQueue() {
                     {s.status === "approved" && (
                       <>
                         <button
-                          onClick={() => { closeGrading(me.name, s.id); setTick(tick + 1); setOpenId(null); }}
+                          onClick={() => { closeGrading(meName, s.id); setTick(tick + 1); setOpenId(null); }}
                           className="flex cursor-pointer items-center gap-2 rounded-full border border-white/20 px-5 py-2.5 text-sm font-bold text-white/70 transition hover:border-white/40"
                         >
                           <Lock className="h-4 w-4" /> إغلاق التقييم نهائيا
@@ -211,7 +212,7 @@ export default function GradingQueue() {
             <button
               onClick={() => {
                 const g = Math.max(0, Math.min(100, Number(editGrade.value)));
-                if (requestGradeChange(me.name, editGrade.id, g, editGrade.reason)) {
+                if (requestGradeChange(meName, editGrade.id, g, editGrade.reason)) {
                   setEditGrade(null);
                   setTick(tick + 1);
                 }

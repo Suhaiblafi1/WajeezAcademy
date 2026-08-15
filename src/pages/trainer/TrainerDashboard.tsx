@@ -14,9 +14,10 @@ const STATUS_LABEL: Record<CohortStatus, { label: string; cls: string }> = {
 };
 
 export default function TrainerDashboard() {
-  const me = trainerIdentity()!;
-  const cohorts = useMemo(() => loadCohorts(me.name), [me.name]);
-  const subs = useMemo(() => loadSubmissions(me.name), [me.name]);
+  const me = trainerIdentity();
+  const meName = me?.name ?? ""; // الإطار يعرض بوابة الهوية عند غيابها — لا نكسر الصفحة
+  const cohorts = useMemo(() => loadCohorts(meName), [meName]);
+  const subs = useMemo(() => loadSubmissions(meName), [meName]);
   const pending = subs.filter((s) => s.status === "pending").length;
   const totalStudents = cohorts.reduce((sum, c) => sum + c.students.length, 0);
   const atRisk = cohorts.reduce((sum, c) => sum + c.students.filter((s) => s.atRisk).length, 0);
@@ -26,7 +27,7 @@ export default function TrainerDashboard() {
     .slice(0, 3);
 
   return (
-    <TrainerLayout title={`شعبي — ${me.name}`}>
+    <TrainerLayout title={`شعبي — ${meName}`}>
       {/* إحصاءات */}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
