@@ -196,7 +196,7 @@ for (const t of templates.templates as {
     }
   }
   /* المسار يشير للدورات بمعرفات نصية فقط — ممنوع تضمين نسخة كاملة من الدورة داخله */
-  for (const p of core.launch_pathways as { id: string; course_ids: unknown[]; courses?: unknown } & Record<string, unknown>) {
+  for (const p of core.launch_pathways as ({ id: string; course_ids: unknown[]; courses?: unknown } & Record<string, unknown>)[]) {
     check(!('courses' in p), `مسار ${p.id} يضمّن نسخة كاملة من الدورات بدل المرجعية — انقلها للكتالوج المركزي`)
     for (const cid of p.course_ids) check(typeof cid === 'string', `مسار ${p.id} يضمّن سجل دورة بدل معرف نصي`)
   }

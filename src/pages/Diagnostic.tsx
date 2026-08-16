@@ -32,6 +32,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/services/currency";
 import { track } from "@/services/analytics";
+import { ensurePublishedSnapshot } from "@/services/catalog-snapshot";
 import SeoHead from "@/components/SeoHead";
 import { Badge } from "@/components/ui/badge";
 import AuthGate from "@/components/AuthGate";
@@ -687,7 +688,7 @@ export default function Diagnostic() {
 
   // يبدأ فورا كضيف — الحساب يُطلب لاحقا عند حفظ النتيجة وتخصيصها
   const begin = () => {
-    start();
+    void start();
   };
 
   /** يدفع خطوة المحرك إلى حالة الواجهة */
@@ -717,8 +718,10 @@ export default function Diagnostic() {
     setStage("questions");
   };
 
-  const start = () => {
+  const start = async () => {
     track("diagnostic_started");
+    /* اللقطة المنشورة أولا — المحرك يقرأ أحدث كتالوج محكوم، أو الحزمة المضمنة بصمت */
+    await ensurePublishedSnapshot();
     const session = createAssessment();
     sessionRef.current = session;
     setHistory([]);
@@ -726,10 +729,11 @@ export default function Diagnostic() {
   };
 
   /* استئناف تشخيص غير مكتمل — المحرك حتمي فيعيد نفس الأسئلة لنفس الإجابات */
-  const doResume = () => {
+  const doResume = async () => {
+    await ensurePublishedSnapshot();
     const session = AssessmentSession.resume();
     if (!session) {
-      start();
+      void start();
       return;
     }
     sessionRef.current = session;
@@ -740,7 +744,7 @@ export default function Diagnostic() {
   };
 
   const resume = () => {
-    doResume(); // الاستئناف أيضا متاح للضيف — إجاباته على جهازه
+    void doResume(); // الاستئناف أيضا متاح للضيف — إجاباته على جهازه
   };
 
   const discardSaved = () => {

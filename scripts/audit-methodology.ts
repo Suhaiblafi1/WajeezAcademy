@@ -79,7 +79,8 @@ for (const [name, text] of surfaces) {
 /* 3) لا مراجع هندسية/قانونية في سجل العميل */
 const ENGINEERING = ['WCAG', 'ARIA', 'OWASP', 'GDPR', 'React', 'TypeScript', 'GOV.UK', 'Vite', 'Tailwind']
 for (const r of refs) {
-  const hay = `${r.name_ar} ${r.name_en ?? ''} ${r.organization ?? ''}`
+  const rr = r as { id: string; name_ar: string; name_en?: string; organization?: string }
+  const hay = `${rr.name_ar} ${rr.name_en ?? ''} ${rr.organization ?? ''}`
   for (const eng of ENGINEERING) {
     check(!hay.includes(eng), `مرجع هندسي/قانوني ${eng} تسرب لسجل العميل في ${r.id}`)
   }

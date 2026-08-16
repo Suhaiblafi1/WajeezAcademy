@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, NavLink } from "react-router";
-import { BookMarked, CalendarCog, Crown, ShieldAlert, LayoutDashboard, UserPlus } from "lucide-react";
+import { BookMarked, CalendarCog, Crown, FlaskConical, GitBranch, Layers, ShieldAlert, LayoutDashboard, UserPlus } from "lucide-react";
 import { ADMIN_IDENTITIES, ADMIN_IDENTITY_KEY, adminIdentity } from "./admin-identity";
 import PrototypeBanner from "@/components/PrototypeBanner";
 
@@ -40,6 +40,9 @@ export default function AdminLayout({ children, title }: { children: React.React
     { to: "/admin/exceptions", label: "الاستثناءات", icon: ShieldAlert },
     { to: "/admin/content", label: "المحتوى", icon: BookMarked },
     { to: "/admin/trainers", label: "طلبات المدربين", icon: UserPlus },
+    { to: "/admin/catalog", label: "الكتالوج", icon: Layers },
+    { to: "/admin/publishing", label: "النشر", icon: GitBranch },
+    { to: "/admin/quality", label: "جودة التشخيص", icon: FlaskConical },
   ];
 
   return (

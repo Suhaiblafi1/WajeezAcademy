@@ -1,0 +1,40 @@
+# بيئة التطوير الإنتاجية-المماثلة: PostgreSQL 16 + MinIO (تخزين ملفات خاصة متوافق مع S3)
+# الاستعمال: docker compose up -d   ثم   npm run db:migrate
+# بدون Docker على الجهاز: كل سكربتات npm تشغّل PostgreSQL المدمج تلقائيا (منفذ 5433).
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: wajeez-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: wajeez
+      POSTGRES_PASSWORD: wajeez_local
+      POSTGRES_DB: wajeez
+    ports:
+      - "5432:5432"
+    volumes:
+      - wajeez-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wajeez -d wajeez"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    container_name: wajeez-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: wajeez
+      MINIO_ROOT_PASSWORD: wajeez_local_minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - wajeez-minio:/data
+
+volumes:
+  wajeez-pgdata:
+  wajeez-minio:

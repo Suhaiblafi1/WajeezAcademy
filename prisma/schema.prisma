@@ -1,0 +1,598 @@
+// قاعدة بيانات أكاديمية وجيز — PostgreSQL عبر Prisma
+// المبدأ الحاكم: المعرفات الثابتة (PW-/C-/TPL-/SK-/QB-) لا تتغير أبدا،
+// وكل تعديل منشور يولّد إصدارا جديدا — لا تعديل بأثر رجعي.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/* ═══════════ الهوية والصلاحيات ═══════════ */
+
+model User {
+  id           String    @id @default(uuid()) @db.Uuid
+  email        String    @unique
+  passwordHash String
+  displayName  String
+  status       String    @default("active") // active | suspended
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  suspendedAt  DateTime?
+  roles        UserRole[]
+  sessions     Session[]
+  resetTokens  PasswordResetToken[]
+}
+
+model Role {
+  id          String           @id // super_admin | academic_manager | diagnostic_manager | operations_manager | advisor | trainer | finance | support | learner
+  nameAr      String
+  permissions RolePermission[]
+  users       UserRole[]
+}
+
+model Permission {
+  key         String           @id // catalog.course.edit ...
+  description String
+  roles       RolePermission[]
+}
+
+model RolePermission {
+  roleId       String
+  permissionKey String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionKey], references: [key], onDelete: Cascade)
+  @@id([roleId, permissionKey])
+}
+
+model UserRole {
+  userId String @db.Uuid
+  roleId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  @@id([userId, roleId])
+}
+
+model Session {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @db.Uuid
+  tokenHash  String    @unique // لا يُحفظ الرمز ذاته بل هاشه
+  userAgent  String?
+  ip         String?
+  createdAt  DateTime  @default(now())
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model LoginAttempt {
+  id        String   @id @default(uuid()) @db.Uuid
+  email     String
+  ip        String?
+  success   Boolean
+  createdAt DateTime @default(now())
+  @@index([email, createdAt])
+}
+
+/* ═══════════ إصدارات الكتالوج والنشر ═══════════ */
+
+model CatalogVersion {
+  id          String    @id @default(uuid()) @db.Uuid
+  label       String    @unique // مثل 2026.08.16-01
+  status      String    @default("draft") // draft | published | superseded
+  createdBy   String?   @db.Uuid
+  createdAt   DateTime  @default(now())
+  publishedAt DateTime?
+  publishedBy String?   @db.Uuid
+  snapshots   CatalogSnapshot[]
+  events      CatalogPublishEvent[]
+}
+
+model CatalogSnapshot {
+  id               String   @id @default(uuid()) @db.Uuid
+  catalogVersionId String   @db.Uuid
+  payload          Json     // اللقطة المجمدة التي يقرأها محرك التشخيص
+  payloadHash      String
+  createdAt        DateTime @default(now())
+  catalogVersion   CatalogVersion @relation(fields: [catalogVersionId], references: [id], onDelete: Cascade)
+  @@index([catalogVersionId])
+}
+
+model CatalogPublishEvent {
+  id               String   @id @default(uuid()) @db.Uuid
+  catalogVersionId String   @db.Uuid
+  actorId          String?  @db.Uuid
+  action           String   // publish | rollback | schedule
+  details          Json?
+  createdAt        DateTime @default(now())
+  catalogVersion   CatalogVersion @relation(fields: [catalogVersionId], references: [id], onDelete: Cascade)
+}
+
+/* ═══════════ الكتالوج الأكاديمي ═══════════ */
+
+model Pathway {
+  id              String  @id // PW-BIZ-001 — ثابت لا يتغير
+  status          String  @default("draft") // draft|diagnostic_incomplete|diagnostic_ready|in_review|changes_requested|approved|published|paused|archived
+  currentVersion  Int     @default(1)
+  createdBy       String? @db.Uuid
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  versions        PathwayVersion[]
+  courses         PathwayCourse[]
+  skillRequirements PathwaySkillRequirement[]
+}
+
+model PathwayVersion {
+  id            String   @id @default(uuid()) @db.Uuid
+  pathwayId     String
+  version       Int
+  title         String
+  shortTitle    String?
+  audience      String?
+  notFor        String?
+  entry         String?
+  beforeText    String?
+  afterText     String?
+  durationWeeks Int?
+  weeklyHours   String? // نطاق نصي كما في المصدر الموثق: «4–5» — لا يُحوّل لعدد
+  level         String?
+  delivery      String?
+  capstone      String?
+  outcomeMetric String?
+  credentialAr  String?
+  status        String   @default("draft")
+  createdBy     String?  @db.Uuid
+  createdAt     DateTime @default(now())
+  pathway       Pathway  @relation(fields: [pathwayId], references: [id], onDelete: Cascade)
+  @@unique([pathwayId, version])
+  @@index([pathwayId])
+}
+
+model CompositeTemplate {
+  id             String  @id // TPL-VENTURE-001
+  status         String  @default("draft")
+  currentVersion Int     @default(1)
+  notCountedAsPathway Boolean @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  versions       CompositeTemplateVersion[]
+  courses        TemplateCourse[]
+}
+
+model CompositeTemplateVersion {
+  id             String   @id @default(uuid()) @db.Uuid
+  templateId     String
+  version        Int
+  nameAr         String
+  shortNameAr    String?
+  intentAr       String?
+  persona        Json?
+  transformation Json?
+  plan           Json?
+  diagnostic     Json?
+  status         String   @default("draft")
+  createdBy      String?  @db.Uuid
+  createdAt      DateTime @default(now())
+  template       CompositeTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  @@unique([templateId, version])
+}
+
+model Course {
+  id                    String  @id // C-BIZ-101 — ثابت حتى عند تغيير الاسم
+  status                String  @default("draft") // draft|in_review|approved|published|paused|archived
+  currentVersion        Int     @default(1)
+  recommendableDirectly Boolean @default(false)
+  priceUsd              Int?
+  availability          String  @default("available") // available | waitlist | retired
+  createdBy             String? @db.Uuid
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  versions              CourseVersion[]
+  modules               CourseModule[]
+  skillLinks            CourseSkillLink[]
+  pathwayLinks          PathwayCourse[]
+  templateLinks         TemplateCourse[]
+  prerequisites         Prerequisite[] @relation("CoursePrereq")
+  requiredBy            Prerequisite[] @relation("PrereqOf")
+}
+
+model CourseVersion {
+  id             String   @id @default(uuid()) @db.Uuid
+  courseId       String
+  version        Int
+  titleAr        String
+  legacyTitleAr  String?
+  shortPromiseAr String?
+  descriptionAr  String?
+  audienceAr     String?
+  prerequisitesAr String?
+  levelAr        String?
+  totalHours     Int
+  weeklyHours    Int?
+  deliveryAr     String?
+  languageAr     String?  @default("العربية")
+  trainerRequirements Json?
+  status         String   @default("draft")
+  createdBy      String?  @db.Uuid
+  createdAt      DateTime @default(now())
+  course         Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  objectives     LearningObjective[]
+  outcomes       LearningOutcome[]
+  project        PracticalProject?
+  assessments    Assessment[]
+  @@unique([courseId, version])
+  @@index([courseId])
+}
+
+model CourseModule {
+  id        String  @id // C-BIZ-101-M1 — ثابت
+  courseId  String
+  status    String  @default("published") // draft|published|archived — المستخدمة في شعبة لا تُحذف بل تؤرشف
+  createdAt DateTime @default(now())
+  course    Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  versions  CourseModuleVersion[]
+  @@index([courseId])
+}
+
+model CourseModuleVersion {
+  id         String   @id @default(uuid()) @db.Uuid
+  moduleId   String
+  version    Int
+  sequence   Int
+  titleAr    String
+  outcomeAr  String?
+  activityAr String?
+  artifactAr String?
+  hours      Int
+  status     String   @default("published")
+  createdAt  DateTime @default(now())
+  module     CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  @@unique([moduleId, version])
+}
+
+model LearningObjective {
+  id              String @id @default(uuid()) @db.Uuid
+  courseVersionId String @db.Uuid
+  sequence        Int
+  textAr          String
+  courseVersion   CourseVersion @relation(fields: [courseVersionId], references: [id], onDelete: Cascade)
+  @@index([courseVersionId])
+}
+
+model LearningOutcome {
+  id              String @id @default(uuid()) @db.Uuid
+  courseVersionId String @db.Uuid
+  sequence        Int
+  textAr          String
+  courseVersion   CourseVersion @relation(fields: [courseVersionId], references: [id], onDelete: Cascade)
+  @@index([courseVersionId])
+}
+
+model PracticalProject {
+  id              String @id @default(uuid()) @db.Uuid
+  courseVersionId String @unique @db.Uuid
+  descriptionAr   String
+  evidenceRequired Json?
+  courseVersion   CourseVersion @relation(fields: [courseVersionId], references: [id], onDelete: Cascade)
+}
+
+model Assessment {
+  id              String @id @default(uuid()) @db.Uuid
+  courseVersionId String @db.Uuid
+  kind            String // summative | formative | project_review
+  specAr          String?
+  courseVersion   CourseVersion @relation(fields: [courseVersionId], references: [id], onDelete: Cascade)
+  rubrics         Rubric[]
+}
+
+model Rubric {
+  id           String  @id @default(uuid()) @db.Uuid
+  assessmentId String? @db.Uuid
+  nameAr       String
+  criteria     Json    // [{criterion_ar, weight, levels:[...]}]
+  assessment   Assessment? @relation(fields: [assessmentId], references: [id], onDelete: SetNull)
+}
+
+/* ═══════════ المهارات ═══════════ */
+
+model Skill {
+  id              String  @id // SK-...
+  slug            String  @unique
+  nameAr          String
+  familyId        String? // رمز العائلة من المصدر: COG, AUT ...
+  definitionAr    String?
+  aliases         Json?   // أسماء بديلة
+  domain          String?
+  source          String? // مصدر التصنيف
+  masteryScale    Json?
+  evidenceExamples Json?
+  status          String  @default("published")
+  currentVersion  Int     @default(1)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  versions        SkillVersion[]
+  relations       SkillRelation[] @relation("SkillFrom")
+  courseLinks     CourseSkillLink[]
+  pathwayReqs     PathwaySkillRequirement[]
+  questionLinks   QuestionSkillLink[]
+}
+
+model SkillVersion {
+  id        String   @id @default(uuid()) @db.Uuid
+  skillId   String
+  version   Int
+  nameAr    String
+  definitionAr String?
+  status    String   @default("draft")
+  createdBy String?  @db.Uuid
+  createdAt DateTime @default(now())
+  skill     Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  @@unique([skillId, version])
+}
+
+model SkillRelation {
+  skillId        String
+  relatedSkillId String
+  type           String // broader | narrower | related | prerequisite
+  skill          Skill   @relation("SkillFrom", fields: [skillId], references: [id], onDelete: Cascade)
+  @@id([skillId, relatedSkillId, type])
+}
+
+model CourseSkillLink {
+  courseId    String
+  skillId     String
+  targetLevel Int     @default(3)
+  weight      Float   @default(1)
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  skill       Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  @@id([courseId, skillId])
+}
+
+model PathwaySkillRequirement {
+  pathwayId     String
+  skillId       String
+  requiredLevel Int    @default(3)
+  priority      String @default("medium") // high | medium | low
+  weight        Float  @default(1)
+  pathway       Pathway @relation(fields: [pathwayId], references: [id], onDelete: Cascade)
+  skill         Skill   @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  @@id([pathwayId, skillId])
+}
+
+model PathwayCourse {
+  pathwayId String
+  courseId  String
+  sequence  Int
+  kind      String @default("required") // required | optional | gift
+  pathway   Pathway @relation(fields: [pathwayId], references: [id], onDelete: Cascade)
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  @@id([pathwayId, courseId])
+  @@index([courseId])
+}
+
+model TemplateCourse {
+  templateId String
+  courseId   String
+  listType   String // required | conditional | bridge | starter
+  sequence   Int    @default(1)
+  roleAr     String?
+  reasonAr   String?
+  conditionAr String?
+  template   CompositeTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  course     Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  @@id([templateId, courseId, listType])
+  @@index([courseId])
+}
+
+model Prerequisite {
+  courseId         String
+  requiresCourseId String
+  course           Course @relation("CoursePrereq", fields: [courseId], references: [id], onDelete: Cascade)
+  requires         Course @relation("PrereqOf", fields: [requiresCourseId], references: [id], onDelete: Cascade)
+  @@id([courseId, requiresCourseId])
+}
+
+model MethodologyReference {
+  code       String  @id // REF-...
+  titleAr    String
+  publisherAr String?
+  url        String?
+  status     String  @default("implemented")
+  evidenceAr String?
+  createdAt  DateTime @default(now())
+}
+
+/* ═══════════ بنك الأسئلة ═══════════ */
+
+model Question {
+  id               String  @id // QB-M0-001 — ثابت
+  moduleId         String?
+  moduleName       String?
+  answerType       String
+  optionsKey       String?
+  personaScope     Json     @default("[]")
+  measures         Json
+  triggerCondition String  @default("always")
+  reasonAr         String? // سبب اختيار السؤال
+  differentiates   Json?   // مرشحو التعادل الذين يفرق بينهم
+  sensitivityLevel String  @default("low")
+  requiredLevel    String  @default("core")
+  weight           Float   @default(1)
+  active           Boolean @default(true)
+  status           String  @default("published")
+  currentVersion   Int     @default(1)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  versions         QuestionVersion[]
+  options          QuestionOption[]
+  skillLinks       QuestionSkillLink[]
+}
+
+model QuestionVersion {
+  id         String   @id @default(uuid()) @db.Uuid
+  questionId String
+  version    Int
+  textAr     String
+  status     String   @default("draft")
+  createdBy  String?  @db.Uuid
+  createdAt  DateTime @default(now())
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  @@unique([questionId, version])
+}
+
+model QuestionOption {
+  id         String  @id @default(uuid()) @db.Uuid
+  questionId String
+  optionId   String  // o1, o2 ... ثابت — لا يُستخدم النص العربي مفتاح قرار
+  orderIndex Int
+  textAr     String
+  effects    Json?   // أثر الخيار على الحقائق والأوزان
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  @@unique([questionId, optionId])
+  @@unique([questionId, orderIndex])
+}
+
+model QuestionSkillLink {
+  questionId String
+  skillId    String
+  weight     Float  @default(1)
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  skill      Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  @@id([questionId, skillId])
+}
+
+/* ═══════════ الملفات التشخيصية والتقييم ═══════════ */
+
+model DiagnosticProfile {
+  id              String  @id @default(uuid()) @db.Uuid
+  entityType      String  // pathway | template | course
+  entityId        String
+  audience        Json?
+  goals           Json?
+  requiredSkills  Json?   // [{skill_id, target_level, weight, priority}]
+  interests       Json?
+  timeConstraints Json?
+  eligibility     Json?
+  exclusion       Json?
+  positiveSignals Json?
+  negativeSignals Json?
+  differentiators Json?
+  minCoverage     Float   @default(0.8)
+  rationales      Json?
+  readinessStatus String  @default("incomplete") // incomplete | diagnostic_ready
+  profile         Json?   // اللقطة الكاملة لملف المصدر (personas/goals/sectors/functions/...) بلا اقتطاع
+  version         Int     @default(1)
+  updatedAt       DateTime @updatedAt
+  @@unique([entityType, entityId])
+}
+
+model ScoringConfigVersion {
+  id          String    @id @default(uuid()) @db.Uuid
+  version     Int       @unique
+  config      Json
+  status      String    @default("draft") // draft | published | superseded
+  createdBy   String?   @db.Uuid
+  createdAt   DateTime  @default(now())
+  publishedAt DateTime?
+}
+
+model RecommendationVersion {
+  id          String    @id @default(uuid()) @db.Uuid
+  version     Int       @unique
+  rules       Json
+  status      String    @default("draft")
+  createdBy   String?   @db.Uuid
+  createdAt   DateTime  @default(now())
+  publishedAt DateTime?
+}
+
+model SlugRedirect {
+  oldSlug    String   @id
+  entityType String   // course | pathway
+  entityId   String
+  createdAt  DateTime @default(now())
+}
+
+/* ═══════════ الحوكمة: طلبات التغيير والمراجعة ═══════════ */
+
+model ContentChangeRequest {
+  id          String    @id @default(uuid()) @db.Uuid
+  entityType  String    // pathway | course | skill | question | template
+  entityId    String
+  payload     Json      // التعديل المقترح
+  status      String    @default("draft") // draft | in_review | changes_requested | approved | rejected | applied
+  createdBy   String?   @db.Uuid
+  createdAt   DateTime  @default(now())
+  reviewedBy  String?   @db.Uuid
+  reviewedAt  DateTime?
+  comments    ContentReviewComment[]
+  decisions   ContentApprovalDecision[]
+}
+
+model ContentReviewComment {
+  id              String   @id @default(uuid()) @db.Uuid
+  changeRequestId String   @db.Uuid
+  authorId        String?  @db.Uuid
+  bodyAr          String
+  createdAt       DateTime @default(now())
+  changeRequest   ContentChangeRequest @relation(fields: [changeRequestId], references: [id], onDelete: Cascade)
+}
+
+model ContentApprovalDecision {
+  id              String   @id @default(uuid()) @db.Uuid
+  changeRequestId String   @db.Uuid
+  actorId         String?  @db.Uuid
+  decision        String   // approve | request_changes | reject
+  noteAr          String?
+  createdAt       DateTime @default(now())
+  changeRequest   ContentChangeRequest @relation(fields: [changeRequestId], references: [id], onDelete: Cascade)
+}
+
+model ImpactAnalysisRun {
+  id          String   @id @default(uuid()) @db.Uuid
+  changeRef   String   // وصف أو معرف التغيير
+  summary     Json     // ما تغير + المتأثرون + نتائج المحاكاة قبل/بعد
+  createdBy   String?  @db.Uuid
+  createdAt   DateTime @default(now())
+}
+
+model DiagnosticRegressionRun {
+  id               String   @id @default(uuid()) @db.Uuid
+  catalogVersionId String?  @db.Uuid
+  results          Json     // 12 شخصية × توصية × ثقة × حتمية
+  passed           Boolean
+  createdAt        DateTime @default(now())
+}
+
+/* ═══════════ جلسات التشخيص — الأثر التاريخي ═══════════ */
+
+model DiagnosticSession {
+  id                     String   @id @default(uuid()) @db.Uuid
+  userId                 String?  @db.Uuid
+  catalogVersionId       String?  @db.Uuid
+  engineVersion          String
+  questionBankVersion    String?
+  scoringConfigVersion   Int?
+  recommendationVersion  Int?
+  answers                Json
+  decisionTrace          Json
+  candidates             Json?    // المرشحون المقيَّمون ودرجاتهم
+  exclusionReasons       Json?
+  recommendationSnapshot Json     // لقطة النتيجة كما عُرضت — لا تتغير بأثر رجعي
+  createdAt              DateTime @default(now())
+  @@index([userId])
+  @@index([catalogVersionId])
+}

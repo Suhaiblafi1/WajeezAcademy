@@ -1,4 +1,8 @@
-/* محمّل الكتالوج — يقرأ ملفات JSON الأصلية والتراكيب ويقدمها بأنواع محكمة */
+/* محمّل الكتالوج — يقرأ لقطة catalog_version المنشورة الفعالة وقت التشغيل.
+   الافتراضي (تطوير/اختبارات/انقطاع API): الحزمة المضمنة من ملفات JSON الموثقة.
+   installCatalogSnapshot() يستبدل كل البنى دفعة واحدة — روابط ES الحية تجعل
+   كل مستورد يرى اللقطة الجديدة دون إعادة بناء، والمحرك لا يقرأ arrays ثابتة
+   وقت build عندما تتوفر لقطة منشورة من الخادم. */
 
 import questionsJson from '../../data/catalog/questions.v1.ar.json'
 import skillsJson from '../../data/catalog/skills.v1.ar.json'
@@ -6,7 +10,6 @@ import coreCatalogJson from '../../data/catalog/core-catalog.v2.json'
 import templatesJson from '../../data/catalog/composite-templates.v1.json'
 import optionEffectsJson from '../../data/overlays/option-effects.v2.json'
 import pathwayProfilesJson from '../../data/overlays/pathway-profiles.v1.json'
-import trainerProfilesJson from '../../data/overlays/trainer-profiles.v1.json'
 import type {
   BankQuestion,
   CatalogCourse,
@@ -68,30 +71,74 @@ export interface CompositeTemplate {
   status?: string
 }
 
-const qFile = questionsJson as unknown as { questions: BankQuestion[] }
-const sFile = skillsJson as unknown as { skills: SkillEntry[] }
-const cFile = coreCatalogJson as unknown as {
-  launch_pathways: CatalogPathway[]
-  courses: CatalogCourse[]
-  skill_extensions?: SkillEntry[]
+/** شكل لقطة الكتالوج المنشورة كما يقدمها API (وكما يخزنها CatalogSnapshot) */
+export interface CatalogSnapshotPayload {
+  questions: { questions: BankQuestion[] }
+  skills: { skills: SkillEntry[] }
+  coreCatalog: {
+    launch_pathways: CatalogPathway[]
+    courses: CatalogCourse[]
+    skill_extensions?: SkillEntry[]
+  }
+  templates: { templates: CompositeTemplate[] }
+  optionEffects: OptionEffectsFile
+  pathwayProfiles: { profiles: Record<string, PathwayProfile> }
 }
-const tFile = templatesJson as unknown as { templates: CompositeTemplate[] }
-const oeFile = optionEffectsJson as unknown as OptionEffectsFile
-const ppFile = pathwayProfilesJson as unknown as { profiles: Record<string, PathwayProfile> }
-const trFile = trainerProfilesJson as unknown as { profiles: TrainerProfile[] }
 
-export const questionBank: BankQuestion[] = qFile.questions.filter((q) => q.active !== false)
-export const questionById = new Map(questionBank.map((q) => [q.question_id, q]))
-export const skillsCatalog: SkillEntry[] = [...sFile.skills, ...(cFile.skill_extensions ?? [])]
-export const skillSlugs = new Set(skillsCatalog.map((s) => s.slug))
-export const launchPathways: CatalogPathway[] = cFile.launch_pathways
-export const catalogCourses: CatalogCourse[] = cFile.courses
-export const courseById = new Map(catalogCourses.map((c) => [c.course_id, c]))
-export const compositeTemplates: CompositeTemplate[] = tFile.templates
-export const optionEffects = oeFile.option_effects
-export const keywordClassifiers = oeFile.keyword_classifiers
-export const pathwayProfiles: Record<string, PathwayProfile> = ppFile.profiles
-export const trainerProfiles: TrainerProfile[] = trFile.profiles
+export let questionBank: BankQuestion[] = []
+export let questionById = new Map<string, BankQuestion>()
+export let skillsCatalog: SkillEntry[] = []
+export let skillSlugs = new Set<string>()
+export let launchPathways: CatalogPathway[] = []
+export let catalogCourses: CatalogCourse[] = []
+export let courseById = new Map<string, CatalogCourse>()
+export let compositeTemplates: CompositeTemplate[] = []
+export let optionEffects: OptionEffectsFile['option_effects'] = {}
+export let keywordClassifiers: OptionEffectsFile['keyword_classifiers'] = {}
+export let pathwayProfiles: Record<string, PathwayProfile> = {}
+export let trainerProfiles: TrainerProfile[] = []
+/** إصدار الكتالوج الفعال حاليا — «bundled» يعني الحزمة المضمنة (لا لقطة خادم) */
+export let activeCatalogLabel = 'bundled'
+
+function install(payload: CatalogSnapshotPayload, label: string): void {
+  const questions = payload.questions.questions.filter((q) => q.active !== false)
+  questionBank = questions
+  questionById = new Map(questions.map((q) => [q.question_id, q]))
+  skillsCatalog = [...payload.skills.skills, ...(payload.coreCatalog.skill_extensions ?? [])]
+  skillSlugs = new Set(skillsCatalog.map((s) => s.slug))
+  launchPathways = payload.coreCatalog.launch_pathways
+  catalogCourses = payload.coreCatalog.courses
+  courseById = new Map(catalogCourses.map((c) => [c.course_id, c]))
+  compositeTemplates = payload.templates.templates
+  optionEffects = payload.optionEffects.option_effects
+  keywordClassifiers = payload.optionEffects.keyword_classifiers
+  pathwayProfiles = payload.pathwayProfiles.profiles
+  trainerProfiles = [] // لا مدربين موثقين بعد — مطابقة المدرب ترجع unassigned دائما
+  activeCatalogLabel = label
+}
+
+/** تثبيت لقطة منشورة من الخادم — العملية ذرية: إما تُقبل اللقطة كاملة أو يبقى الحال */
+export function installCatalogSnapshot(payload: CatalogSnapshotPayload, label: string): void {
+  /* تحقق بنيوي قبل القبول — لقطة ناقصة لا تُثبَّت أبدا */
+  if (!payload?.questions?.questions?.length) throw new Error('لقطة كتالوج بلا أسئلة')
+  if (!payload?.coreCatalog?.launch_pathways?.length) throw new Error('لقطة كتالوج بلا مسارات')
+  if (!payload?.coreCatalog?.courses?.length) throw new Error('لقطة كتالوج بلا دورات')
+  if (!payload?.templates?.templates) throw new Error('لقطة كتالوج بلا قوالب')
+  install(payload, label)
+}
+
+/* التهيئة الافتراضية من الحزمة المضمنة — نفس مسار التحقق */
+install(
+  {
+    questions: questionsJson as unknown as { questions: BankQuestion[] },
+    skills: skillsJson as unknown as { skills: SkillEntry[] },
+    coreCatalog: coreCatalogJson as unknown as CatalogSnapshotPayload['coreCatalog'],
+    templates: templatesJson as unknown as { templates: CompositeTemplate[] },
+    optionEffects: optionEffectsJson as unknown as OptionEffectsFile,
+    pathwayProfiles: pathwayProfilesJson as unknown as { profiles: Record<string, PathwayProfile> },
+  },
+  'bundled',
+)
 
 /** معرف خيار ثابت من ترتيبه (1-based) — النص العربي قابل للتعديل دون تغيير النتيجة */
 export function optionIdAt(question: BankQuestion, index: number): string {

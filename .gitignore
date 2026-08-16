@@ -5,3 +5,7 @@ dist/
 
 # لقطات الفحص المحلية
 verification/
+
+# أسرار البيئة وبيانات PostgreSQL المدمج المحلية
+.env
+.pgdata/

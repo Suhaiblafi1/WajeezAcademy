@@ -35,6 +35,9 @@ const AdminTrainerApps = lazy(() => import('./pages/admin/TrainerApplications'))
 const JoinTrainer = lazy(() => import('./pages/JoinTrainer'))
 const Exceptions = lazy(() => import('./pages/admin/Exceptions'))
 const ContentWorkflow = lazy(() => import('./pages/admin/ContentWorkflow'))
+const CatalogAdmin = lazy(() => import('./pages/admin/CatalogAdmin'))
+const PublishingBoard = lazy(() => import('./pages/admin/PublishingBoard'))
+const DiagnosticQuality = lazy(() => import('./pages/admin/DiagnosticQuality'))
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -104,6 +107,9 @@ export default function App() {
           <Route path="/admin/exceptions" element={<Exceptions />} />
           <Route path="/admin/content" element={<ContentWorkflow />} />
           <Route path="/admin/trainers" element={<AdminTrainerApps />} />
+          <Route path="/admin/catalog" element={<CatalogAdmin />} />
+          <Route path="/admin/publishing" element={<PublishingBoard />} />
+          <Route path="/admin/quality" element={<DiagnosticQuality />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         </Suspense>
