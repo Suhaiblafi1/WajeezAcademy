@@ -637,11 +637,19 @@ model TrainerApplication {
   phone               String?
   country             String?
   timezone            String?
+  employmentStatus    String?   // employed | own_business | full_time_training
   jobTitle            String?
   domainYears         String?   // 1-3 | 4-7 | 8-12 | 12+
   trainingYears       String?   // خبرة التدريب منفصلة عن خبرة المجال
   bio                 String?
   linkedinUrl         String?
+  // حضور رقمي واعتماد — تساعد المراجعة الأكاديمية على التقييم
+  youtubeUrl          String?   // قناة أو فيديو تدريبي
+  instagramUrl        String?
+  hasAccreditation    Boolean?  // اعتماد/ترخيص رسمي من جهة أو هيئة تدريب
+  accreditationDetails String?  // اسم الجهة ورقم الاعتماد إن وُجد
+  targetCountries     String[]  @default([]) // الدول التي يستهدفها بالتدريب
+  targetAudiences     String[]  @default([]) // الفئات المستهدفة: طلاب، موظفون، حكومي...
   trainingLanguages   String[]  @default([])
   deliveryMode        String?   // in_person | remote | both
   motivation          String?
@@ -782,6 +790,11 @@ model TrainerProfile {
   userId             String?   @unique @db.Uuid // يُربط فقط عبر الدعوة الآمنة — المتقدم لا يمنح نفسه الدور
   headline           String?
   bioPublic          String?
+  photoUrl           String?   // صورة المدرب — لا تُعرض إلا بصورة حقيقية يرفعها المدرب/الإدارة
+  ratingAvg          Float?    // متوسط التقييم من خريجين حقيقيين — null = لا يُعرض
+  ratingCount        Int?      // عدد التقييمات
+  hoursTaught        Int?      // ساعات التدريب الفعلية مع الأكاديمية
+  graduatesCount     Int?      // عدد الخريجين الفعليين
   isVerified         Boolean   @default(false) // ملف موثق
   publicVisibility   Boolean   @default(false) // لا يظهر للعامة إلا بموافقة نشر
   publishApprovedBy  String?   @db.Uuid

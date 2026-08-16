@@ -13,8 +13,6 @@ import {
   CalendarClock,
   Route as RouteIcon,
   Gauge,
-  Plus,
-  X,
   Gift,
   Wand2,
   BookOpen,
@@ -23,21 +21,18 @@ import {
   Zap,
   Wallet,
   Lightbulb,
-  BarChart3,
   History,
   Lock,
   FileText,
-  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { formatPrice } from "@/services/currency";
 import { track } from "@/services/analytics";
 import { ensurePublishedSnapshot } from "@/services/catalog-snapshot";
 import { ensurePublishedContent } from "@/services/public-content";
 import SeoHead from "@/components/SeoHead";
 import { Badge } from "@/components/ui/badge";
 import AuthGate from "@/components/AuthGate";
-import CourseJourney from "@/components/CourseJourney";
+import CourseJourney, { type CourseSuggestion } from "@/components/CourseJourney";
 import CvUpload from "@/components/CvUpload";
 import { ResultErrorBoundary } from "@/components/ResultErrorBoundary";
 import {
@@ -48,23 +43,19 @@ import {
 } from "@/data/diagnostic";
 import { AssessmentSession, createAssessment, diagQuestionById } from "@/application/diagnostic/assessment-service";
 import type { DeepeningComparison } from "@/application/diagnostic/assessment-service";
-import { loadSession, saveLastResult, loadLastResultSafe, clearAllSessionData } from "@/application/diagnostic/session-store";
-import { loadMirrorAnswers } from "@/domain/diagnostic/teaser-bridge";
+import { loadSession, saveLastResult, loadLastResultSafe } from "@/application/diagnostic/session-store";
 import { sessionContributingReferences } from "@/data/methodology";
-import type { SkillBar } from "@/application/diagnostic/view-model";
 import {
   courseById,
+  courseFullById,
   pathwayCourses,
   pathwayDelivery,
   courses,
-  courseDetails,
-  coursePriceOf,
   pathwayPriceFor,
   MIN_PATHWAY_COURSES,
   MAX_PATHWAY_COURSES,
   weeksLabel,
 } from "@/data/courses";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import AdvisorContact from "@/components/AdvisorContact";
 import { pathways, type Pathway } from "@/data/pathways";
 
@@ -125,176 +116,38 @@ function clearProgress() {
 }
 
 
-/* ═══════════ خريطة المهارات المرئية — من متجه مهارات المحرك مباشرة ═══════════ */
-function SkillMap({ bars }: { bars: SkillBar[] }) {
-  const TARGET = 4;
-  const WORDS = ["", "بداية", "أساسيات", "متوسط", "متقدم", "خبير"];
-  if (bars.length === 0) return null;
-  return (
-    <div className="card-soft mt-8">
-      <h3 className="h-card flex items-center gap-2">
-        <BarChart3 className="h-5 w-5 text-[#6EC7D1]" />
-        خريطة مهاراتك — كما سجّلها التشخيص من إجاباتك
-      </h3>
-      <p className="mt-2 text-xs leading-relaxed text-white/50">
-        كل مستوى من إجابة قدّمتها أثناء التشخيص. العلامة العنبرية: المستوى المستهدف لهدفك.
-      </p>
-      <div className="mt-6 space-y-5">
-        {bars.map((bar) => {
-          const lv = bar.level;
-          return (
-            <div key={bar.slug}>
-              <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-sm">
-                <span className="font-bold text-white/85">
-                  {bar.label}
-                  {bar.isGap && (
-                    <span className="mr-2 rounded-full bg-[#FABC05]/15 px-2 py-0.5 text-[10px] font-bold text-[#FABC05]">
-                      فجوة يعالجها مسارك
-                    </span>
-                  )}
-                </span>
-                <span className="text-xs text-white/50">
-                  {bar.measured ? `${WORDS[Math.min(5, Math.max(1, lv))]} — ${lv}/5` : "لم تُقس — فجوة يغطيها المسار"}
-                </span>
-              </div>
-              <div className="relative h-2.5 rounded-full bg-white/10" dir="ltr">
-                {bar.measured && (
-                  <div
-                    className={`h-full rounded-full ${bar.isGap ? "bg-[#FABC05]" : "bg-[#38A7B4]"}`}
-                    style={{ width: `${(lv / 5) * 100}%` }}
-                  />
-                )}
-                <div
-                  className="absolute -bottom-1 -top-1 w-0.5 rounded bg-[#FABC05]"
-                  style={{ left: `${(TARGET / 5) * 100}%` }}
-                  title="المستهدف"
-                />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
+/* ═══════════ رحلة الدورات القابلة للتخصيص — «ماذا ستحقق من خلال خطتك؟» ═══════════ */
 
-/* ═══════════ رحلة المسار خطوة بخطوة — حل محلها CourseJourney الأغنى (خامسا) ═══════════ */
-
-/* ─────────── مكوّن تخصيص المسار ─────────── */
-/* صف دورة قابل للطي — السهم يفتح المحاور والمخرج والمدرب من courseDetails() دون نافذة */
-function CourseRow({
-  courseId,
-  gift = false,
-  onRemove,
-  removeDisabled = false,
-  removeLabel,
-}: {
-  courseId: string;
-  gift?: boolean;
-  onRemove: () => void;
-  removeDisabled?: boolean;
-  removeLabel?: string;
-}) {
-  const c = courseById(courseId);
-  if (!c) return null;
-  const d = courseDetails(c);
-  return (
-    <Collapsible
-      className={`rounded-xl border px-4 py-3 ${
-        gift ? "border-[#FABC05]/40 bg-[#FABC05]/[0.06]" : "border-white/10 bg-white/[0.04]"
-      }`}
-    >
-      <div className="flex items-center justify-between gap-3">
-        <CollapsibleTrigger
-          className="group flex min-w-0 flex-1 items-center gap-3 text-right"
-          aria-label={`محاور ${c.name}`}
-        >
-          {gift ? (
-            <Gift className="h-4 w-4 shrink-0 text-[#FABC05]" />
-          ) : (
-            <BookOpen className="h-4 w-4 shrink-0 text-[#6EC7D1]" />
-          )}
-          <span className="min-w-0">
-            <span className="flex flex-wrap items-center gap-2">
-              <span className="text-sm font-bold">{c.name}</span>
-              {gift && (
-                <span className="rounded-full bg-[#FABC05] px-2 py-0.5 text-[10px] font-black text-[#0D0D0D]">هدية مجانية</span>
-              )}
-            </span>
-            <span className="mt-0.5 block text-xs text-white/45">
-              {c.weeks} {c.weeks === 1 ? "أسبوع" : "أسابيع"} · {c.skill}
-            </span>
-          </span>
-          <ChevronDown className="h-4 w-4 shrink-0 text-white/40 transition-transform duration-200 group-data-[state=open]:rotate-180" />
-        </CollapsibleTrigger>
-        <button
-          onClick={onRemove}
-          disabled={removeDisabled}
-          aria-label={removeLabel ?? `حذف ${c.name}`}
-          className={`grid h-7 w-7 shrink-0 place-items-center rounded-full border transition disabled:opacity-30 ${
-            gift
-              ? "border-[#FABC05]/30 text-[#FABC05]/80 hover:border-[#FABC05]/60 hover:text-[#FABC05]"
-              : "border-white/10 text-white/50 hover:border-red-400/50 hover:text-red-300"
-          }`}
-        >
-          <X className="h-4 w-4" />
-        </button>
-      </div>
-      <CollapsibleContent className="data-[state=open]:story-fade">
-        <div className="mt-3 space-y-2.5 border-t border-white/10 pt-3 text-xs leading-6">
-          <p className="text-white/55">
-            <span className="font-bold text-[#6EC7D1]">المدرب: </span>
-            {d.trainer.name}
-          </p>
-          <div>
-            <p className="mb-1.5 font-bold text-[#6EC7D1]">المحاور:</p>
-            <ul className="grid gap-1 sm:grid-cols-2">
-              {d.topics.map((topic) => (
-                <li key={topic} className="flex items-start gap-2 text-white/60">
-                  <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-[#38A7B4]" />
-                  {topic}
-                </li>
-              ))}
-            </ul>
-          </div>
-          <p className="text-white/55">
-            <span className="font-bold text-[#6EC7D1]">المخرج العملي: </span>
-            {d.outcome}
-          </p>
-        </div>
-      </CollapsibleContent>
-    </Collapsible>
-  );
-}
-
-function CustomizePathway({
+/* ─────────── رحلة الدورات القابلة للتخصيص — دمج التخصيص داخل «ماذا ستحقق من خلال خطتك؟» ─────────── */
+function PlanCourses({
   pathway,
   gaps,
-  onReset,
+  authed,
+  resetKey,
 }: {
   pathway: Pathway;
   gaps: string[];
-  onReset: number; // يتغير عند تبديل المسار لإعادة التهيئة
+  authed: boolean;
+  resetKey: number; // يتغير عند تبديل المسار لإعادة التهيئة
 }) {
   const baseIds = pathwayCourses[pathway.id] ?? [];
   const [chosenIds, setChosenIds] = useState<string[]>(baseIds.slice(0, MAX_PATHWAY_COURSES));
   const [giftId, setGiftId] = useState<string | null>(null);
-  const [recomposed, setRecomposed] = useState(false);
-  const [lastReset, setLastReset] = useState(onReset);
+  const [swapForId, setSwapForId] = useState<string | null>(null);
+  const [lastReset, setLastReset] = useState(resetKey);
 
-  if (lastReset !== onReset) {
-    setLastReset(onReset);
+  if (lastReset !== resetKey) {
+    setLastReset(resetKey);
     setChosenIds((pathwayCourses[pathway.id] ?? []).slice(0, MAX_PATHWAY_COURSES));
     setGiftId(null);
-    setRecomposed(false);
+    setSwapForId(null);
   }
 
   const base = baseIds.map((id) => courseById(id)!).filter(Boolean);
-  const chosen = chosenIds.map((id) => courseById(id)!).filter(Boolean);
   const category = base[0]?.category ?? "أساسيات";
 
-  // اقتراحات: من نفس المجال أولا، وأولوية لما يعالج فجوات المستخدم
-  const suggestions = useMemo(() => {
+  /* مقترحات: من نفس المجال أولا، وأولوية لما يعالج فجوات المستخدم */
+  const pool = useMemo<CourseSuggestion[]>(() => {
     const chosenSet = new Set(chosenIds);
     if (giftId) chosenSet.add(giftId);
     return courses
@@ -304,175 +157,87 @@ function CustomizePathway({
         const ym = gaps.some((g) => y.skill && g.includes(y.skill.slice(0, 8))) ? 1 : 0;
         return ym - xm;
       })
-      .slice(0, 6);
+      .slice(0, 6)
+      .map((c) => ({ id: c.id, name: c.name, note: `${c.skill} · من مسار ${c.pathwayName}` }));
   }, [chosenIds, giftId, category, gaps]);
 
+  /* يُحفظ التخصيص فوريا مع كل تغيير — يظهر في صفحة المسار بعد اعتماده */
+  const persist = (ids: string[], gift: string | null) => {
+    sessionStorage.setItem("wajeez_custom", JSON.stringify({ pathwayId: pathway.id, chosenIds: ids, giftId: gift }));
+  };
+  const swapPick = (oldId: string, newId: string) => {
+    const next = chosenIds.map((i) => (i === oldId ? newId : i));
+    setChosenIds(next);
+    setSwapForId(null);
+    persist(next, giftId);
+  };
   const removeCourse = (id: string) => {
-    if (chosenIds.length <= MIN_PATHWAY_COURSES) return; // الحد الأدنى ٤ دورات
-    setChosenIds(chosenIds.filter((c) => c !== id));
-    setRecomposed(false);
+    if (chosenIds.length <= MIN_PATHWAY_COURSES) return;
+    const next = chosenIds.filter((i) => i !== id);
+    setChosenIds(next);
+    if (swapForId === id) setSwapForId(null);
+    persist(next, giftId);
   };
   const addCourse = (id: string) => {
-    if (chosenIds.length >= MAX_PATHWAY_COURSES) return; // الحد الأقصى ٧ دورات
-    setChosenIds([...chosenIds, id]);
-    setRecomposed(false);
+    if (chosenIds.length >= MAX_PATHWAY_COURSES) return;
+    const next = [...chosenIds, id];
+    setChosenIds(next);
+    persist(next, giftId);
   };
-  const pickGift = (id: string) => {
-    setGiftId(giftId === id ? null : id); // الهدية فوق المسار ولا تُحتسب في العدد ولا السعر
-    setRecomposed(false);
+  const giftToggle = (id: string) => {
+    const next = giftId === id ? null : id; // الهدية فوق المسار ولا تُحتسب في العدد
+    setGiftId(next);
+    persist(chosenIds, next);
   };
 
+  const shownIds = giftId ? [...chosenIds, giftId] : chosenIds;
+  const chosen = chosenIds.map((id) => courseById(id)!).filter(Boolean);
   const gift = giftId ? courseById(giftId) : undefined;
   const allShown = gift ? [...chosen, gift] : chosen;
   const totalWeeks = allShown.reduce((s, c) => s + c.weeks, 0);
   const skills = Array.from(new Set(allShown.map((c) => c.skill).filter(Boolean))).slice(0, 8);
-  const separateCost = chosen.reduce((s, c) => s + coursePriceOf(c), 0);
-  const price = pathwayPriceFor(chosenIds.length);
-  const saving = separateCost > price ? separateCost - price : 0;
-
-  const recompose = () => {
-    setRecomposed(true);
-    // نحفظ تخصيصه ليظهر له في صفحة المسار
-    sessionStorage.setItem(
-      "wajeez_custom",
-      JSON.stringify({ pathwayId: pathway.id, chosenIds, giftId })
-    );
-  };
 
   return (
-    <div className="mt-8 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
-      <h3 className="flex items-center gap-2 text-lg font-black">
-        <Wand2 className="h-5 w-5 text-[#6EC7D1]" />
-        خصّص مسارك كما تشاء
-      </h3>
-      <p className="mt-2 text-sm leading-relaxed text-white/55">
-        احذف ما لا تحتاجه، وأضف من الدورات المقترحة لك خصيصا — بين {MIN_PATHWAY_COURSES} و{MAX_PATHWAY_COURSES} دورات —
-        ثم أعد صياغة مسارك لترى مهاراته وسعره الجديد.
-      </p>
-
-      {/* دورات المسار الحالية — والهدية عنصر أخير فيها بلا أثر على العدد ولا السعر */}
-      <p className="mt-6 mb-3 text-sm font-bold text-white/70">
-        دورات مسارك ({allShown.length} {gift ? "— إحداها هدية مجانية" : `من ${MIN_PATHWAY_COURSES}–${MAX_PATHWAY_COURSES}`})
-      </p>
-      <div className="grid gap-2">
-        {chosen.map((c) => (
-          <CourseRow key={c.id} courseId={c.id} onRemove={() => removeCourse(c.id)} removeDisabled={chosenIds.length <= MIN_PATHWAY_COURSES} />
-        ))}
-        {gift && (
-          <CourseRow
-            courseId={gift.id}
-            gift
-            onRemove={() => pickGift(gift.id)}
-            removeLabel={`إلغاء الهدية ${gift.name}`}
-          />
-        )}
-      </div>
-      {chosenIds.length <= MIN_PATHWAY_COURSES && (
-        <p className="mt-2 text-xs text-[#FABC05]/80">وصلت للحد الأدنى — {MIN_PATHWAY_COURSES} دورات هي نواة المسار.</p>
-      )}
-      {chosenIds.length >= MAX_PATHWAY_COURSES && (
-        <p className="mt-2 text-xs text-[#FABC05]/80">وصلت للحد الأقصى — {MAX_PATHWAY_COURSES} دورات حتى يبقى مسارك قابلا للإنجاز.</p>
-      )}
-
-      {/* اقتراحات الإضافة */}
-      {suggestions.length > 0 && (
-        <>
-          <p className="mt-6 mb-3 text-sm font-bold text-white/70">مقترحة لك خصيصا من مجال «{category}»</p>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {suggestions.map((c) => (
-              <div
-                key={c.id}
-                className="flex items-center justify-between gap-2 rounded-xl border border-dashed border-white/15 px-4 py-3"
-              >
-                <div>
-                  <span className="text-sm font-semibold">{c.name}</span>
-                  <span className="block text-xs text-white/45">{c.skill} · من مسار {c.pathwayName}</span>
-                </div>
-                <button
-                  onClick={() => addCourse(c.id)}
-                  disabled={chosenIds.length >= MAX_PATHWAY_COURSES}
-                  aria-label={`إضافة ${c.name}`}
-                  className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-[#38A7B4]/40 text-[#6EC7D1] transition hover:bg-[#38A7B4]/20 disabled:opacity-30"
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-
-      {/* الهدية المجانية */}
-      <div className="mt-6 rounded-2xl border border-[#FABC05]/40 bg-[#FABC05]/5 p-4">
-        <p className="flex items-center gap-2 text-sm font-black text-[#FABC05]">
-          <Gift className="h-4 w-4" />
-          هدية وجيز: اختر دورة إضافية مجانية فوق دورات مسارك
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {suggestions.map((c) => (
-            <button
-              key={c.id}
-              onClick={() => pickGift(c.id)}
-              className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
-                giftId === c.id
-                  ? "border-[#FABC05] bg-[#FABC05]/20 text-[#FABC05]"
-                  : "border-white/15 text-white/60 hover:border-[#FABC05]/60 hover:text-[#FABC05]"
-              }`}
-            >
-              {c.name}
-            </button>
-          ))}
-        </div>
-        {gift && (
-          <p className="mt-3 text-xs text-white/50">
-            تظهر هديتك الآن آخر قائمة الدورات بشارة «هدية مجانية» — ويمكنك إلغاؤها أو تغييرها متى شئت.
+    <>
+      <CourseJourney
+        courseIds={shownIds}
+        delivery={pathwayDelivery(pathway.id)}
+        edit={
+          authed
+            ? {
+                giftId,
+                swapForId,
+                pool,
+                minReached: chosenIds.length <= MIN_PATHWAY_COURSES,
+                maxReached: chosenIds.length >= MAX_PATHWAY_COURSES,
+                onSwapToggle: setSwapForId,
+                onSwapPick: swapPick,
+                onRemove: removeCourse,
+                onAdd: addCourse,
+                onGiftToggle: giftToggle,
+              }
+            : undefined
+        }
+      />
+      {authed && (
+        <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4">
+          <p className="text-xs font-bold text-white/60">
+            مسارك المخصص الآن:{" "}
+            <span className="text-white">
+              {chosen.length} دورات{gift ? " + هدية مجانية" : ""}
+            </span>
+            <span className="text-white/40"> · ~{totalWeeks} أسبوعا · يُحفظ تخصيصك تلقائيا ويظهر في صفحة مسارك بعد الاعتماد</span>
           </p>
-        )}
-      </div>
-
-      {/* إعادة الصياغة */}
-      <div className="mt-6 text-center">
-        <Button
-          size="lg"
-          onClick={recompose}
-          className="h-12 rounded-full bg-[#38A7B4] px-8 font-black text-[#08272B] hover:bg-[#247B84] hover:text-white"
-        >
-          <Wand2 className="ml-2 h-4 w-4" />
-          أعد صياغة مساري
-        </Button>
-      </div>
-
-      {recomposed && (
-        <div className="story-fade mt-6 rounded-2xl border border-[#38A7B4]/50 bg-gradient-to-b from-[#12343B] to-transparent p-6">
-          <p className="text-sm font-bold text-[#6EC7D1]">مسارك بعد إعادة الصياغة</p>
-          <h4 className="mt-2 text-xl font-black">{pathway.name} — نسختك المخصصة</h4>
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-xl bg-white/[0.05] p-3 text-center">
-              <p className="text-2xl font-black text-[#6EC7D1]">{allShown.length}</p>
-              <p className="text-xs text-white/55">{giftId ? "دورات (إحداها هدية مجانية)" : "دورات"}</p>
-            </div>
-            <div className="rounded-xl bg-white/[0.05] p-3 text-center">
-              <p className="text-2xl font-black text-[#6EC7D1]">{totalWeeks}</p>
-              <p className="text-xs text-white/55">أسبوعا تقريبا</p>
-            </div>
-            <div className="rounded-xl bg-white/[0.05] p-3 text-center">
-              <p className="text-2xl font-black text-[#FABC05]">{formatPrice(price)}</p>
-              <p className="text-xs text-white/55">
-                {saving > 0 ? `وفّرت ${formatPrice(saving)} عن ${formatPrice(separateCost)} منفردة` : "سعر المسار التفضيلي"}
-              </p>
-            </div>
-          </div>
-          <p className="mt-4 mb-2 text-sm font-bold text-white/60">المهارات التي سيبنيها مسارك المخصص:</p>
-          <div className="flex flex-wrap gap-2">
+          <div className="mt-2.5 flex flex-wrap gap-1.5">
             {skills.map((s) => (
-              <span key={s} className="rounded-full border border-[#38A7B4]/40 bg-[#38A7B4]/10 px-3 py-1 text-xs font-semibold text-[#6EC7D1]">
+              <span key={s} className="rounded-full border border-[#38A7B4]/40 bg-[#38A7B4]/10 px-2.5 py-0.5 text-[11px] font-semibold text-[#6EC7D1]">
                 {s}
               </span>
             ))}
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 
@@ -615,8 +380,6 @@ export default function Diagnostic() {
   const [topPathway, setTopPathway] = useState<Pathway | null>(null);
   const [swapCount, setSwapCount] = useState(0);
   const [savedProgress, setSavedProgress] = useState<SavedProgress | null>(() => loadProgress());
-  /* إجابات مؤشر وجيز التمهيدي (الصفحة الرئيسية) تُنقل للجلسة ولا تُسأل مجددا */
-  const [mirrorCarried] = useState<boolean>(() => loadMirrorAnswers(window.localStorage) !== null);
   /* نتيجة مكتملة محفوظة — تُقرأ عبر مخطط صارم: تُرحّل إن أمكن، وتُحذف بأمان مع رسالة إن تعذر */
   const [storedInitial] = useState(() => loadLastResultSafe());
   const savedDone: DiagResult | null =
@@ -764,11 +527,6 @@ export default function Diagnostic() {
     setStage("result");
   };
 
-  const restartFresh = () => {
-    clearAllSessionData();
-    window.location.reload();
-  };
-
   const finish = () => {
     const session = sessionRef.current;
     if (!session) return;
@@ -903,6 +661,115 @@ export default function Diagnostic() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  /* بطاقة النتيجة المصممة — نافذة مستقلة ببطاقة أنيقة جاهزة للطباعة أو الحفظ ملفا */
+  const openResultCard = () => {
+    if (!result || !topPathway) return;
+    const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const compositeView = (result.resultJson.composite as CompositeView | null) ?? null;
+    const name = compositeView ? compositeView.name_ar : topPathway.name;
+    let ids: string[];
+    let giftId: string | null = null;
+    if (compositeView) {
+      ids = [...compositeView.courses].sort((a, b) => a.sequence - b.sequence).map((c) => c.courseId);
+    } else {
+      ids = pathwayCourses[topPathway.id] ?? [];
+      try {
+        /* يحمل التخصيص المحفوظ إن وجد — البطاقة تعكس مساره كما عدّله */
+        const custom = JSON.parse(sessionStorage.getItem("wajeez_custom") ?? "null") as
+          | { pathwayId?: string; chosenIds?: string[]; giftId?: string | null }
+          | null;
+        if (custom?.pathwayId === topPathway.id && Array.isArray(custom.chosenIds) && custom.chosenIds.length > 0) {
+          ids = [...custom.chosenIds];
+          giftId = custom.giftId ?? null;
+          if (giftId) ids.push(giftId);
+        }
+      } catch {
+        /* تخصيص غير صالح — نعرض التشكيلة الأساسية */
+      }
+    }
+    const confBand = (result.resultJson.confidence as { band?: string } | undefined)?.band;
+    const stabilityLabel = confBand === "strong" ? "مرتفع" : confBand === "good" ? "متوسط" : "يحتاج إلى معلومات إضافية";
+    const courseRows = ids
+      .map((id, i) => {
+        const c = courseFullById(id);
+        if (!c) return "";
+        const isGift = giftId === id;
+        return `<li class="course">
+          <span class="num${isGift ? " gift-num" : ""}">${isGift ? "🎁" : i + 1}</span>
+          <span class="course-body">
+            <span class="course-title">${esc(c.title)}${isGift ? ' <span class="gift-badge">هدية مجانية</span>' : ""}</span>
+            ${c.shortPromise ? `<span class="course-promise">${esc(c.shortPromise)}</span>` : ""}
+          </span>
+          <span class="course-weeks">${esc(weeksLabel(Math.max(1, Math.ceil(c.totalHours / 7))))}</span>
+        </li>`;
+      })
+      .join("");
+    const skills = topPathway.coreSkills.map((s) => `<span class="skill">${esc(s)}</span>`).join("");
+    const dateStr = new Date().toLocaleDateString("ar-JO", { year: "numeric", month: "long", day: "numeric" });
+    const html = `<!doctype html>
+<html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>نتيجة مؤشر وجيز — ${esc(name)}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Tahoma, "Segoe UI", Arial, sans-serif; background: #eef4f5; padding: 32px 16px; color: #12343b; }
+  .card { max-width: 640px; margin: 0 auto; background: #fff; border-radius: 20px; overflow: hidden;
+          border: 1px solid #d8e6e8; border-top: 6px solid #38a7b4; box-shadow: 0 12px 40px rgba(13,40,45,.08); }
+  .head { padding: 24px 28px 18px; border-bottom: 1px solid #e6eff0; }
+  .brand { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #5b7a80; font-weight: bold; }
+  .brand b { color: #0d2b30; font-size: 14px; }
+  h1 { font-size: 24px; line-height: 1.5; margin-top: 14px; color: #0d2b30; }
+  .reason { margin-top: 8px; font-size: 13px; line-height: 1.9; color: #4a646a; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; padding: 14px 28px; background: #f4fafa; border-bottom: 1px solid #e6eff0; }
+  .chip { font-size: 11px; font-weight: bold; color: #247b84; background: #e3f2f4; border-radius: 999px; padding: 5px 12px; }
+  .courses { list-style: none; padding: 18px 28px; }
+  .course { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; border-bottom: 1px dashed #e0ebeb; }
+  .course:last-child { border-bottom: 0; }
+  .num { flex: none; width: 26px; height: 26px; border-radius: 50%; background: #e3f2f4; color: #247b84;
+         font-size: 12px; font-weight: bold; display: grid; place-items: center; }
+  .gift-num { background: #fdf0cd; }
+  .course-body { flex: 1; }
+  .course-title { font-size: 13px; font-weight: bold; color: #14363c; }
+  .course-promise { display: block; font-size: 11px; color: #6a8389; margin-top: 3px; line-height: 1.7; }
+  .course-weeks { flex: none; font-size: 11px; color: #8aa3a8; }
+  .gift-badge { background: #fabc05; color: #0d0d0d; font-size: 9px; border-radius: 999px; padding: 2px 8px; margin-right: 6px; }
+  .skills { padding: 0 28px 18px; }
+  .skills p { font-size: 11px; font-weight: bold; color: #5b7a80; margin-bottom: 8px; }
+  .skill { display: inline-block; font-size: 11px; font-weight: bold; color: #247b84; border: 1px solid #bcdfe3;
+           border-radius: 999px; padding: 4px 10px; margin: 0 0 6px 6px; }
+  .foot { padding: 14px 28px 20px; border-top: 1px solid #e6eff0; font-size: 10px; color: #8aa3a8; line-height: 1.9; }
+  @media print { body { background: #fff; padding: 0; } .card { box-shadow: none; border-radius: 0; } }
+</style></head>
+<body>
+  <div class="card">
+    <div class="head">
+      <div class="brand"><b>أكاديمي وجيز</b><span>بطاقة نتيجة مؤشر وجيز · ${esc(dateStr)}</span></div>
+      <h1>${esc(name)}</h1>
+      ${result.reasons[0] ? `<p class="reason">${esc(result.reasons[0])}</p>` : ""}
+    </div>
+    <div class="meta">
+      <span class="chip">${compositeView ? "خطة مركبة مخصصة" : "مسار موصى به"}</span>
+      <span class="chip">${esc(weeksLabel(topPathway.durationWeeks))}</span>
+      <span class="chip">${esc(topPathway.weeklyHours)} أسبوعيا</span>
+      <span class="chip">ثبات التوصية: ${esc(stabilityLabel)}</span>
+    </div>
+    <ol class="courses">${courseRows}</ol>
+    <div class="skills"><p>المهارات المحورية التي سيبنيها هذا المسار:</p>${skills}</div>
+    <div class="foot">
+      هذه البطاقة ملخص لتوصية تشخيص مؤشر وجيز المبنية على إجاباتك — تشخيص تعليمي مهني، ليس تقييما نفسيا أو طبيا، ولا وعدا بوظيفة أو دخل.
+      <br>أكاديمي وجيز · wajeez.com
+    </div>
+  </div>
+</body></html>`;
+    const win = window.open("", "_blank", "width=760,height=900");
+    if (!win) {
+      window.print();
+      return;
+    }
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    window.setTimeout(() => win.print(), 450);
+  };
+
   const qText = question ? resolve(question.text, answers) : "";
   const qHint = question ? resolve(question.hint, answers) : undefined;
   const qOptions: DiagOption[] = question ? (resolve(question.options, answers) ?? []) : [];
@@ -933,40 +800,25 @@ export default function Diagnostic() {
         <section className="story-fade mx-auto max-w-3xl px-5 py-16 text-center md:py-24">
           <Badge className="border border-[#FABC05]/40 bg-[#FABC05]/10 text-[#FABC05]">مؤشر وجيز الكامل</Badge>
           <h1 className="mt-5 text-3xl font-black leading-snug md:text-5xl">
-            خمس دقائق من الصدق
-            <span className="text-[#6EC7D1]"> تختصر عليك شهورا من التخبط</span>
+            ثلاث دقائق من الوضوح
+            <span className="text-[#6EC7D1]"> تختصر عليك شهورا من التشتت</span>
           </h1>
           <p className="mx-auto mt-5 max-w-xl leading-loose text-white/60">
-            سنحكي معك قليلا: عن يومك، وهدفك، وما يعيقك — وكل إجابة تشكّل السؤال التالي.
-            ثم يقترح محرك التشخيص المسار الأنسب لك، مع تفسير واضح لسبب كل توصية، وحرية تخصيصه كما تشاء.
+            حديث قصير عن يومك وهدفك وما يعيقك — كل إجابة تشكّل السؤال التالي، وتنتهي بمسار واحد واضح تخصّصه كما تشاء.
           </p>
 
-          <div className="mx-auto mt-8 grid max-w-xl gap-3 text-right sm:grid-cols-3">
+          <div className="mx-auto mt-7 flex max-w-full items-center justify-center gap-1.5 whitespace-nowrap sm:gap-2">
             {[
               { icon: Compass, text: "توصية مفسَّرة، ليست حظًا" },
-              { icon: Clock3, text: "٥–٨ دقائق فقط" },
+              { icon: Clock3, text: "١–٣ دقائق فقط" },
               { icon: ShieldCheck, text: "تشخيص تعليمي — لا نفسي ولا طبي" },
             ].map((f) => (
-              <div key={f.text} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                <f.icon className="h-5 w-5 text-[#6EC7D1]" />
-                <p className="mt-2 text-sm font-semibold text-white/85">{f.text}</p>
-              </div>
+              <span key={f.text} className="inline-flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-[10px] font-bold text-white/65 sm:px-3.5 sm:text-[11px]">
+                <f.icon className="h-3 w-3 shrink-0 text-[#6EC7D1] sm:h-3.5 sm:w-3.5" />
+                {f.text}
+              </span>
             ))}
           </div>
-
-          <p className="mx-auto mt-8 max-w-lg rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4 text-xs leading-relaxed text-white/50">
-            نسترشد في بناء أسئلتنا بأطر مهنية وتعليمية معروفة: <span className="font-bold text-[#6EC7D1]">RIASEC</span> للميول المهنية،
-            و<span className="font-bold text-[#6EC7D1]">O*NET وESCO</span> لخرائط المهارات،
-            و<span className="font-bold text-[#6EC7D1]">DigComp</span> للجاهزية الرقمية — وتُعرض عليك تفاصيلها في صفحة المنهجية.
-          </p>
-
-          {/* إجابات المؤشر التمهيدي منقولة — لا نسألك مرتين */}
-          {mirrorCarried && (
-            <p className="mx-auto mt-4 flex max-w-lg items-center justify-center gap-2 rounded-2xl border border-[#38A7B4]/30 bg-[#38A7B4]/[0.08] px-5 py-3 text-xs font-semibold leading-relaxed text-[#6EC7D1]">
-              <CheckCircle2 className="h-4 w-4 shrink-0" />
-              إجاباتك في مؤشر وجيز التمهيدي محفوظة ومنقولة لهذه الجلسة — لن نسألك عنها مرة أخرى.
-            </p>
-          )}
 
           <Button
             size="lg"
@@ -1032,16 +884,16 @@ export default function Diagnostic() {
                   اعرض نتيجتي المحفوظة
                   <ArrowLeft className="mr-2 h-4 w-4" />
                 </Button>
-                <Button
-                  variant="outline"
-                  onClick={restartFresh}
-                  className="rounded-full border-white/20 text-white/70 hover:bg-white/5"
-                >
-                  أعد المؤشر من جديد
-                </Button>
               </div>
             </div>
           )}
+
+          {/* المرجعية العلمية — آخر الشاشة: تطمين هادئ لمن يريد، لا حاجز أمام البدء */}
+          <p className="mx-auto mt-10 max-w-lg rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4 text-xs leading-relaxed text-white/50">
+            نسترشد في بناء أسئلتنا بأطر مهنية وتعليمية معروفة: <span className="font-bold text-[#6EC7D1]">RIASEC</span> للميول المهنية،
+            و<span className="font-bold text-[#6EC7D1]">O*NET وESCO</span> لخرائط المهارات،
+            و<span className="font-bold text-[#6EC7D1]">DigComp</span> للجاهزية الرقمية — وتُعرض عليك تفاصيلها في صفحة المنهجية.
+          </p>
         </section>
       )}
 
@@ -1377,10 +1229,6 @@ export default function Diagnostic() {
             const confBand = (result.resultJson.confidence as { band?: string } | undefined)?.band;
             const stabilityLabel =
               confBand === "strong" ? "مرتفع" : confBand === "good" ? "متوسط" : "يحتاج إلى معلومات إضافية";
-            const topGaps =
-              result.gapDetails.length > 0
-                ? result.gapDetails.slice(0, 3).map((g) => g.skill)
-                : result.gaps.slice(0, 3);
             const deepeningDone = Boolean(result.resultJson.deepening);
             const isGuardrail = result.resultJson.kind === "guardrail_stop";
             const deepeningOffered = !deepeningDone && canDeepen && !isGuardrail;
@@ -1399,29 +1247,16 @@ export default function Diagnostic() {
             {result.reasons[0] && (
               <p className="mx-auto mt-4 max-w-xl text-sm leading-loose text-white/65">{result.reasons[0]}</p>
             )}
-            {/* أهم ثلاث فجوات + ثبات التوصية كنص لا نسبة */}
+            {/* ثبات التوصية كنص لا نسبة — بلا ذكر للفجوات هنا */}
             <div className="mx-auto mt-5 flex w-fit max-w-full flex-wrap items-center justify-center gap-2">
-              {topGaps.map((g) => (
-                <span key={g} className="rounded-full border border-[#FABC05]/35 bg-[#FABC05]/[0.08] px-3.5 py-1 text-xs font-bold text-[#FABC05]">
-                  فجوة: {g}
-                </span>
-              ))}
               <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1 text-xs font-bold text-white/70">
                 <Gauge className="h-3.5 w-3.5 text-[#6EC7D1]" />
                 ثبات التوصية: {stabilityLabel}
               </span>
             </div>
-            {/* الإجراءان الرئيسيان في أول شاشة */}
-            <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row print:hidden">
-              <Button
-                size="lg"
-                onClick={() => document.getElementById("learning-plan")?.scrollIntoView({ behavior: "smooth" })}
-                className="h-12 rounded-full bg-[#FABC05] px-8 font-black text-[#0D0D0D] hover:bg-[#FABC05]/90"
-              >
-                استعرض خطتي التعليمية
-                <ChevronDown className="mr-2 h-4 w-4" />
-              </Button>
-              {deepeningOffered && (
+            {/* جولة التدقيق — خطوة اختيارية واضحة، وخطتك تظهر أسفل مباشرة بلا زر انتقال */}
+            {deepeningOffered && (
+              <div className="mt-7 print:hidden">
                 <Button
                   size="lg"
                   variant="outline"
@@ -1429,79 +1264,50 @@ export default function Diagnostic() {
                   className="h-12 rounded-full border-[#38A7B4]/50 px-8 font-black text-[#6EC7D1] hover:bg-[#38A7B4]/15"
                 >
                   <Wand2 className="ml-2 h-4 w-4" />
-                  دقّق خطتك أكثر
+                  لديك دقيقة أخرى لنتأكد أكثر؟
                 </Button>
-              )}
-            </div>
-            {deepeningOffered && !deepUnavailable && (
-              <p className="mt-2 text-[11px] text-white/40 print:hidden">
-                «دقّق خطتك أكثر»: جولة منفصلة اختيارية من 4 إلى 8 أسئلة تزيد وضوح التوصية.
-              </p>
+                {!deepUnavailable && (
+                  <p className="mx-auto mt-2 max-w-md text-[11px] leading-relaxed text-white/40">
+                    خطوة اختيارية تماما: ٤–٨ أسئلة قصيرة تزيد دقة توصيتك — تخطَّها بلا أي أثر إن كانت الصورة واضحة لك.
+                  </p>
+                )}
+              </div>
             )}
             {deepUnavailable && (
               <p className="mt-2 text-[11px] font-bold text-[#6EC7D1] print:hidden">
                 صورتك مكتملة بما يكفي — لا أسئلة إضافية نافعة، توصيتك جاهزة بثقة.
               </p>
             )}
-            {/* شرح قوة الأدلة بلغة مبسطة + مكوناتها الخمسة — نسبة موثقة الحساب داخل توسعة */}
-            <details className="mx-auto mt-5 max-w-md rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-right text-xs leading-relaxed text-white/55 print:hidden">
-              <summary className="cursor-pointer text-center font-bold text-white/70">كيف حسبنا قوة أدلة التوصية؟</summary>
-              <p className="mt-2">
-                تبدأ من اكتمال صورتك: كل إجابة توضّح هدفك وواقعك ومهاراتك أكثر. ترتفع عندما تتفق
-                إجاباتك مع بعضها، وتنخفض عند التناقض أو عندما تقف حالتك بين مسارين متقاربين.
-                فوق ٧٥٪ المحرك واثق بتوصيته، وبين ٥٠ و٧٥٪ التوصية قوية ونعرض معها بدائل،
-                ودون ذلك نحيلك لمستشار بشري قبل أي قرار.
-              </p>
-              {(() => {
-                const conf = result.resultJson.confidence as
-                  | { coverage: number; consistency: number; separation: number; evidenceQuality: number; stability: number; total?: number }
-                  | undefined
-                if (!conf) return null
-                const parts = [
-                  { label: "اكتمال الصورة", value: conf.coverage },
-                  { label: "اتساق إجاباتك", value: conf.consistency },
-                  { label: "وضوح الفارق بين المسارات", value: conf.separation },
-                  { label: "جودة الأدلة", value: conf.evidenceQuality },
-                  { label: "ثبات النتيجة", value: conf.stability },
-                ]
-                return (
-                  <div className="mt-3 space-y-2 border-t border-white/10 pt-3">
-                    <p className="text-center font-bold text-white/70">
-                      قوة الأدلة الإجمالية: {Math.floor((conf.total ?? 0) * 100)}٪
-                    </p>
-                    {parts.map((p) => (
-                      <div key={p.label} className="flex items-center gap-2">
-                        <span className="w-32 shrink-0 text-white/60">{p.label}</span>
-                        <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
-                          <span
-                            className="block h-full rounded-full bg-[#38A7B4]"
-                            style={{ width: `${Math.max(0, Math.min(100, Math.floor(p.value * 100)))}%` }}
-                          />
-                        </span>
-                        <span className="w-9 shrink-0 text-left font-bold text-white/70">
-                          {Math.floor(p.value * 100)}٪
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )
-              })()}
-            </details>
             <button
-              onClick={() => window.print()}
+              onClick={openResultCard}
               className="mx-auto mt-4 flex items-center gap-2 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-white/60 transition hover:border-[#6EC7D1]/50 hover:text-[#6EC7D1] print:hidden"
             >
               <FileText className="h-3.5 w-3.5" />
-              اطبع نتيجتك أو حمّلها ملفا
+              حمّل نتيجتك بطاقة مصممة
             </button>
           </div>
             );
           })()}
 
-          {/* مقارنة جولة التدقيق — قبل/بعد موثقة */}
+          {/* مقارنة جولة التدقيق — صندوق قبل/بعد فقط عندما تتغير التوصية فعلا */}
           {(() => {
             const cmp = (result.resultJson.deepening as DeepeningComparison | null) ?? null;
             if (!cmp) return null;
+            if (!cmp.changed) {
+              /* النتيجة نفسها — سطر طمأنة واحد يكفي، بلا صندوق مقارنة مكرر */
+              return (
+                <div className="mt-8 flex items-start gap-3 rounded-2xl border border-[#38A7B4]/40 bg-[#38A7B4]/[0.05] px-5 py-4 text-right">
+                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#6EC7D1]" />
+                  <div>
+                    <p className="text-sm font-black text-[#6EC7D1]">اطمئن — بقي مسارك هو نفسه بعد التدقيق</p>
+                    <p className="mt-1 text-xs leading-relaxed text-white/60">
+                      {cmp.note_ar} وإن حسّنا دورة داخل مسارك أو اقترحنا إضافة تناسبك فستجدها في خطتك أدناه —
+                      ويمكنك تخصيصها بنفسك: استبدالا أو حذفا أو هدية مجانية.
+                    </p>
+                  </div>
+                </div>
+              );
+            }
             return (
               <div className={`mt-8 rounded-3xl border p-6 md:p-8 ${cmp.changed ? "border-[#FABC05]/50 bg-[#FABC05]/[0.06]" : "border-[#38A7B4]/40 bg-[#38A7B4]/[0.05]"}`}>
                 <h3 className="flex items-center gap-2 text-lg font-black">
@@ -1534,30 +1340,6 @@ export default function Diagnostic() {
               </div>
             );
           })()}
-
-          {/* قصتك كما فهمناها — يقرأ نفسه قبل أن يرى التوصية */}
-          {((result.resultJson.story_ar as string[] | undefined) ?? []).length > 0 && (
-            <div className="card-soft mt-10 border-[#38A7B4]/30">
-              <h3 className="h-card flex items-center gap-2">
-                <UserCheck className="h-5 w-5 text-[#6EC7D1]" />
-                قصتك كما فهمناها
-              </h3>
-              <div className="mt-4 space-y-2.5">
-                {((result.resultJson.story_ar as string[] | undefined) ?? []).map((line) => (
-                  <p key={line} className="flex items-start gap-3 text-sm leading-relaxed text-white/75">
-                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#38A7B4]" />
-                    {line}
-                  </p>
-                ))}
-              </div>
-              <p className="mt-4 text-xs leading-relaxed text-white/40">
-                كل توصية في هذه الصفحة مبنية على هذه الفقرة — إن كانت لا تشبهك، أعد التشخيص وستتغير النتيجة معك.
-              </p>
-            </div>
-          )}
-
-          {/* خريطة المهارات المرئية */}
-          <SkillMap bars={((result.resultJson.skill_bars as SkillBar[] | undefined) ?? [])} />
 
           {/* Top pathway card */}
           <div className="mt-10 overflow-hidden rounded-3xl border border-[#38A7B4]/40 bg-gradient-to-b from-[#12343B] to-[#0D0D0D]">
@@ -1611,13 +1393,6 @@ export default function Diagnostic() {
                 </div>
               </div>
 
-              {result.gaps.length > 0 && (
-                <p className="mt-5 rounded-xl border border-[#FABC05]/30 bg-[#FABC05]/5 p-4 text-sm leading-relaxed text-white/70">
-                  <span className="font-bold text-[#FABC05]">فجواتك الحالية التي سيركّز عليها المسار: </span>
-                  {result.gaps.join("، ")}.
-                </p>
-              )}
-
               <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.04] p-5">
                 <p className="text-sm font-black text-[#6EC7D1]">ماذا ستحصل عليه فعليا؟</p>
                 <p className="mt-1.5 text-xs leading-6 text-white/55">
@@ -1653,18 +1428,38 @@ export default function Diagnostic() {
             <CompositePlan composite={result.resultJson.composite as CompositeView} />
           )}
 
-          {/* «ماذا ستحقق من خلال خطتك؟» — رحلة الدورات الموحدة بأكورديون داخل الصفحة */}
+          {/* «ماذا ستحقق من خلال خطتك؟» — رحلة الدورات، والتخصيص داخلها للمسارات الأساسية */}
           {(() => {
             const compositeView = (result.resultJson.composite as CompositeView | null) ?? null;
             const ordered = compositeView
               ? [...compositeView.courses].sort((a, b) => a.sequence - b.sequence)
               : null;
-            const ids = ordered ? ordered.map((c) => c.courseId) : (pathwayCourses[topPathway.id] ?? []);
-            const reasons = ordered
-              ? Object.fromEntries(ordered.map((c) => [c.courseId, c.reason_ar]))
-              : undefined;
+            if (!ordered) {
+              return <PlanCourses pathway={topPathway} gaps={result.gaps} authed={authed} resetKey={swapCount} />;
+            }
+            const ids = ordered.map((c) => c.courseId);
+            const reasons = Object.fromEntries(ordered.map((c) => [c.courseId, c.reason_ar]));
             return <CourseJourney courseIds={ids} reasons={reasons} delivery={pathwayDelivery(topPathway.id)} />;
           })()}
+
+          {/* الاعتماد أسفل الخطة مباشرة — بعد أن يخصصها كما يشاء */}
+          {authed && (
+            <div className="mt-6 flex flex-col items-center gap-3">
+              <Button size="lg" className="h-14 rounded-full bg-[#FABC05] px-12 text-lg font-black text-[#0D0D0D] hover:bg-[#FABC05]/90" asChild>
+                <Link to={`/pathways/${topPathway.id}`}>
+                  اعتمد مساري «{topPathway.name}»
+                  <ArrowLeft className="mr-2 h-5 w-5" />
+                </Link>
+              </Button>
+              <button
+                onClick={restart}
+                className="flex items-center gap-1.5 text-xs font-semibold text-white/45 transition hover:text-white"
+              >
+                <RefreshCcw className="h-3.5 w-3.5" />
+                لا يشبهني؟ أعد التشخيص من جديد
+              </button>
+            </div>
+          )}
 
           {/* Why this recommendation — ثلاث نقاط قصيرة + توسعة بالتفصيل */}
           <div className="mt-8 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
@@ -1942,18 +1737,7 @@ export default function Diagnostic() {
           {/* ما تبقى يتطلب حسابا مجانيا: اعتماد المسار وبدائله وتخصيصه */}
           {authed ? (
             <>
-          {/* قرار مبكر لمن اقتنع — دون المرور على كل التفاصيل */}
-          <div className="mt-6 flex flex-col items-center gap-2">
-            <Button size="lg" className="h-12 rounded-full bg-[#FABC05] px-10 font-black text-[#0D0D0D] hover:bg-[#FABC05]/90" asChild>
-              <Link to={`/pathways/${topPathway.id}`}>
-                اعتمد مساري الآن
-                <ArrowLeft className="mr-2 h-4 w-4" />
-              </Link>
-            </Button>
-            <p className="text-xs text-white/45">أو تابع القراءة — البدائل والتخصيص أسفل الصفحة</p>
-          </div>
-
-          {/* رحلة الدورات تظهر للجميع أعلاه؛ هنا البدائل والتخصيص */}
+          {/* الاعتماد أصبح أسفل رحلة الدورات مباشرة؛ هنا البدائل فقط */}
 
           {/* مقارنة الخيارات الثلاثة — الأساسي والأسرع والأوفر في ميزان واحد */}
           {(result.faster || result.cheaper) && (
@@ -2043,32 +1827,6 @@ export default function Diagnostic() {
             </div>
           )}
 
-          {/* تخصيص المسار */}
-          <CustomizePathway pathway={topPathway} gaps={result.gaps} onReset={swapCount} />
-
-          {/* CTA — قرار واحد واضح: اعتماد المسار */}
-          <div className="mt-10 rounded-3xl bg-[#FABC05] p-6 text-center text-[#0D0D0D] md:p-8">
-            <h3 className="text-xl font-black md:text-2xl">مسارك جاهز — بقي قرارك</h3>
-            <p className="mx-auto mt-2 max-w-md text-sm font-semibold leading-relaxed text-[#0D0D0D]/75">
-              اعتمده الآن لتفتح صفحته الكاملة: مدربوه، وجدوله، وتفاصيل الاستثمار وقيمة الخصم —
-              ومنها تبدأ رحلتك فعليا.
-            </p>
-            <div className="mt-6">
-              <Button size="lg" className="h-14 rounded-full bg-[#0D0D0D] px-12 text-lg font-black text-white hover:bg-[#0D0D0D]/85" asChild>
-                <Link to={`/pathways/${topPathway.id}`}>
-                  اعتمد مساري «{topPathway.name}»
-                  <ArrowLeft className="mr-2 h-5 w-5" />
-                </Link>
-              </Button>
-            </div>
-            <button
-              onClick={restart}
-              className="mx-auto mt-4 flex items-center gap-1.5 text-xs font-semibold text-[#0D0D0D]/60 transition hover:text-[#0D0D0D]"
-            >
-              <RefreshCcw className="h-3.5 w-3.5" />
-              لا يشبهني؟ أعد التشخيص من جديد
-            </button>
-          </div>
             </>
           ) : (
             /* بطاقة الضيف — رأى الملخص الأولي، والتفاصيل الكاملة بانتظار حساب يحفظها */
@@ -2078,7 +1836,7 @@ export default function Diagnostic() {
               </span>
               <h3 className="mt-5 text-xl font-black md:text-2xl">نتيجتك كاملة بين يديك — بقي حفظها واعتمادها</h3>
               <p className="mx-auto mt-3 max-w-md text-sm leading-loose text-white/60">
-                رأيت مسارك الموصى به وقصتك وتفسير التوصية وخريطة فجواتك كاملة. أنشئ حسابك المجاني لتحفظ نتيجتك وتفتح:
+                رأيت مسارك الموصى به وخطته التعليمية وتفسير التوصية كاملة. أنشئ حسابك المجاني لتحفظ نتيجتك وتفتح:
               </p>
               <div className="mx-auto mt-6 grid max-w-lg gap-2.5 text-right sm:grid-cols-2">
                 {[
@@ -2111,6 +1869,51 @@ export default function Diagnostic() {
               </button>
             </div>
           )}
+
+          {/* شرح قوة الأدلة — أسفل التوصية كاملة لمن يريد التعمق بعد أن رأى كل شيء */}
+          <details className="mx-auto mt-10 max-w-md rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-right text-xs leading-relaxed text-white/55 print:hidden">
+            <summary className="cursor-pointer text-center font-bold text-white/70">كيف حسبنا قوة أدلة التوصية؟</summary>
+            <p className="mt-2">
+              تبدأ من اكتمال صورتك: كل إجابة توضّح هدفك وواقعك ومهاراتك أكثر. ترتفع عندما تتفق
+              إجاباتك مع بعضها، وتنخفض عند التناقض أو عندما تقف حالتك بين مسارين متقاربين.
+              فوق ٧٥٪ المحرك واثق بتوصيته، وبين ٥٠ و٧٥٪ التوصية قوية ونعرض معها بدائل،
+              ودون ذلك نحيلك لمستشار بشري قبل أي قرار.
+            </p>
+            {(() => {
+              const conf = result.resultJson.confidence as
+                | { coverage: number; consistency: number; separation: number; evidenceQuality: number; stability: number; total?: number }
+                | undefined
+              if (!conf) return null
+              const parts = [
+                { label: "اكتمال الصورة", value: conf.coverage },
+                { label: "اتساق إجاباتك", value: conf.consistency },
+                { label: "وضوح الفارق بين المسارات", value: conf.separation },
+                { label: "جودة الأدلة", value: conf.evidenceQuality },
+                { label: "ثبات النتيجة", value: conf.stability },
+              ]
+              return (
+                <div className="mt-3 space-y-2 border-t border-white/10 pt-3">
+                  <p className="text-center font-bold text-white/70">
+                    قوة الأدلة الإجمالية: {Math.floor((conf.total ?? 0) * 100)}٪
+                  </p>
+                  {parts.map((p) => (
+                    <div key={p.label} className="flex items-center gap-2">
+                      <span className="w-32 shrink-0 text-white/60">{p.label}</span>
+                      <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
+                        <span
+                          className="block h-full rounded-full bg-[#38A7B4]"
+                          style={{ width: `${Math.max(0, Math.min(100, Math.floor(p.value * 100)))}%` }}
+                        />
+                      </span>
+                      <span className="w-9 shrink-0 text-left font-bold text-white/70">
+                        {Math.floor(p.value * 100)}٪
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )
+            })()}
+          </details>
 
           <p className="mt-6 text-center text-xs leading-relaxed text-white/55">
             التوصية صادرة عن محرك تشخيص قطعي مبني على إجاباتك، وهي نقطة بداية مفسَّرة —

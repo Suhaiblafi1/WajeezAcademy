@@ -143,7 +143,14 @@ export default function TrainerApplications() {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h3 className="text-lg font-black">{a.fullName}</h3>
-                  <p className="mt-1 text-xs text-white/50">{a.jobTitle ?? "—"} · {a.country ?? "—"}</p>
+                  <p className="mt-1 text-xs text-white/50">
+                    {a.jobTitle ?? "—"} · {a.country ?? "—"}
+                    {(() => {
+                      const labels: Record<string, string> = { employed: "موظف", own_business: "عمل خاص", full_time_training: "متفرغ للتدريب" };
+                      const emp = labels[(a as Record<string, unknown>).employmentStatus as string];
+                      return emp ? ` · ${emp}` : "";
+                    })()}
+                  </p>
                   <p className="mt-1 text-[11px] text-white/40" dir="ltr">{a.email}</p>
                 </div>
                 <span className="rounded-full border border-[#38A7B4]/40 px-3 py-1 text-[11px] font-bold text-[#6EC7D1]">
@@ -157,6 +164,36 @@ export default function TrainerApplications() {
                 </p>
               )}
               {a.linkedinUrl && <p className="mt-2 text-[11px] text-[#6EC7D1]" dir="ltr">{a.linkedinUrl}</p>}
+              {(() => {
+                const yt = a.youtubeUrl as string | null | undefined
+                const ig = a.instagramUrl as string | null | undefined
+                const accred = a.hasAccreditation as boolean | null | undefined
+                const accredDetails = a.accreditationDetails as string | null | undefined
+                const tCountries = (a.targetCountries as string[] | undefined) ?? []
+                const tAudiences = (a.targetAudiences as string[] | undefined) ?? []
+                if (!yt && !ig && !accred && !tCountries.length && !tAudiences.length) return null
+                return (
+                  <div className="mt-4 space-y-2.5 rounded-xl border border-white/5 bg-black/20 p-3 text-xs leading-6 text-white/65">
+                    {(yt || ig) && (
+                      <p>
+                        <span className="font-bold text-white/40">الحضور الرقمي: </span>
+                        {yt && <span dir="ltr" className="text-[#6EC7D1]">{yt}</span>}
+                        {yt && ig && ' · '}
+                        {ig && <span dir="ltr" className="text-[#6EC7D1]">{ig}</span>}
+                      </p>
+                    )}
+                    {accred && (
+                      <p><span className="font-bold text-white/40">اعتماد رسمي: </span>{accredDetails || 'نعم — بلا تفاصيل مذكورة'}</p>
+                    )}
+                    {!!tCountries.length && (
+                      <p><span className="font-bold text-white/40">الدول المستهدفة: </span>{tCountries.join('، ')}</p>
+                    )}
+                    {!!tAudiences.length && (
+                      <p><span className="font-bold text-white/40">الفئات المستهدفة: </span>{tAudiences.join('، ')}</p>
+                    )}
+                  </div>
+                )
+              })()}
             </article>
 
             {/* الوثائق الخاصة */}

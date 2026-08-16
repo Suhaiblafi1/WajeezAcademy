@@ -5,7 +5,6 @@ import {
   CalendarClock,
   Clock3,
   Route as RouteIcon,
-  BookOpen,
   Gift,
   MessageCircle,
   ShieldCheck,
@@ -13,18 +12,25 @@ import {
   CheckCircle2,
   CreditCard,
   User,
+  UserCheck,
   TrendingUp,
   FileText,
+  MonitorPlay,
+  Headphones,
+  ClipboardCheck,
+  FolderKanban,
+  BadgeCheck,
+  BarChart3,
+  Briefcase,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import AuthGate from "@/components/AuthGate";
 import AdvisorContact from "@/components/AdvisorContact";
-import CourseModal from "@/components/CourseModal";
 import CourseJourney from "@/components/CourseJourney";
 import Modal from "@/components/Modal";
 import { pathwayById } from "@/data/pathways";
-import { courseById, pathwayCourses, pathwayDelivery, coursePriceOf, pathwayPriceFor, pathwayTrainers, courseTrainer, weeksLabel, type Course } from "@/data/courses";
+import { courseById, pathwayCourses, pathwayDelivery, coursePriceOf, pathwayPriceFor, pathwayTrainers, courseTrainer, weeksLabel } from "@/data/courses";
 import { GOAL_LABELS, GAP_LABELS, OBSTACLE_TO_GAP } from "@/data/diagnostic";
 import { grantEnrollment } from "@/services/access";
 import { useCurrency, usePriceFormatter, CURRENCIES, setCurrency, type CurrencyCode } from "@/services/currency";
@@ -172,7 +178,6 @@ export default function PathwayPage() {
   const [user, setUser] = useState<string | null>(readUserName);
   const [checkout, setCheckout] = useState<{ title: string; amount: number; kind: "pathway" | "course" | "courses"; courseId?: string; courseIds?: string[] } | null>(null);
   const [purchased, setPurchased] = useState<{ kind: "pathway" | "course" | "courses"; courseId?: string } | null>(null);
-  const [modalCourse, setModalCourse] = useState<Course | null>(null);
   const [pickedIds, setPickedIds] = useState<string[]>([]);
   const fmt = usePriceFormatter();
 
@@ -226,7 +231,6 @@ export default function PathwayPage() {
       return null;
     }
   }, []);
-  const diagTopPathway = diagTopId ? pathwayById(diagTopId) : undefined;
 
   if (!pathway) {
     return (
@@ -291,47 +295,42 @@ export default function PathwayPage() {
             <h1 className="mt-4 text-3xl font-black leading-snug md:text-4xl">{pathway.name}</h1>
             <p className="mt-4 max-w-2xl leading-loose text-white/65">{pathway.transformation}</p>
 
-            <div className="mt-6 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                <CalendarClock className="h-5 w-5 text-[#6EC7D1]" />
-                <p className="mt-2 text-sm text-white/50">المدة</p>
-                <p className="font-black">{custom ? `${weeksLabel(totalWeeks)} (مخصصة)` : weeksLabel(pathway.durationWeeks)}</p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                <Clock3 className="h-5 w-5 text-[#6EC7D1]" />
-                <p className="mt-2 text-sm text-white/50">الوقت الأسبوعي</p>
-                <p className="font-black">{pathway.weeklyHours}</p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                <RouteIcon className="h-5 w-5 text-[#6EC7D1]" />
-                <p className="mt-2 text-sm text-white/50">المخرج العملي</p>
-                <p className="text-sm font-bold leading-relaxed">{pathway.output}</p>
-              </div>
+            <div className="mt-5 flex flex-wrap items-center gap-2">
+              <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1.5 text-xs font-bold text-white/70">
+                <CalendarClock className="h-3.5 w-3.5 text-[#6EC7D1]" />
+                {custom ? `${weeksLabel(totalWeeks)} (مخصصة)` : weeksLabel(pathway.durationWeeks)}
+              </span>
+              <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1.5 text-xs font-bold text-white/70">
+                <Clock3 className="h-3.5 w-3.5 text-[#6EC7D1]" />
+                {pathway.weeklyHours} أسبوعيا
+              </span>
             </div>
+            <p className="mt-3 flex max-w-2xl items-start gap-2 text-sm leading-relaxed text-white/60">
+              <RouteIcon className="mt-0.5 h-4 w-4 shrink-0 text-[#FABC05]" />
+              <span>
+                <span className="font-bold text-white/80">المخرج العملي: </span>
+                {pathway.output}
+              </span>
+            </p>
           </div>
 
           {/* مقاعد التخصصات التدريبية — الأسماء تُعلن بعد اعتماد الشعبة */}
-          <div className="story-fade mt-8 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-7">
-            <h2 className="flex items-center gap-2 text-lg font-black">
-              <User className="h-5 w-5 text-[#6EC7D1]" />
+          <div className="story-fade mt-8 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4">
+            <h2 className="flex items-center gap-2 text-sm font-black">
+              <User className="h-4 w-4 text-[#6EC7D1]" />
               الفريق التدريبي لهذا المسار
             </h2>
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <div className="mt-3 flex flex-wrap gap-2">
               {pathwayTrainers(pathway.id).map((t) => (
-                <div key={t.role} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#38A7B4] to-[#247B84] text-base font-black text-white">
-                    <User className="h-5 w-5" />
-                  </span>
-                  <div>
-                    <p className="text-sm font-black leading-relaxed">{t.role}</p>
-                    <p className="mt-0.5 text-xs leading-relaxed text-[#6EC7D1]">{t.name}</p>
-                  </div>
-                </div>
+                <span key={t.role} className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1.5 text-xs">
+                  <User className="h-3.5 w-3.5 shrink-0 text-[#6EC7D1]" />
+                  <span className="font-bold text-white/85">{t.role}</span>
+                  <span className="text-[#6EC7D1]">{t.name}</span>
+                </span>
               ))}
             </div>
-            <p className="mt-3 text-xs text-white/40">
-              كل دورة يقدمها المدرب الأعمق في موضوعها — وينسّقون معا حتى تتكامل المهارات لا أن تتكرر.
-              تُعلن أسماء المدربين بعد اعتماد الشعبة رسميا.
+            <p className="mt-2.5 text-[11px] leading-relaxed text-white/40">
+              كل دورة يقدمها المدرب الأعمق في موضوعها — وينسّقون معا حتى تتكامل المهارات لا أن تتكرر. تُعلن الأسماء بعد اعتماد الشعبة رسميا.
             </p>
           </div>
 
@@ -340,103 +339,64 @@ export default function PathwayPage() {
             <div className="story-fade mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-dashed border-[#38A7B4]/40 bg-[#38A7B4]/5 px-6 py-4">
               <p className="text-sm leading-relaxed text-white/70">
                 <span className="font-black text-[#6EC7D1]">لست متأكدا أن هذا مسارك الأنسب؟ </span>
-                خمس دقائق مع مؤشر وجيز تطابقك مع مساراتنا المصممة وتشرح لك السبب.
+                ثلاث دقائق مع مؤشر وجيز تطابقك مع مساراتنا المصممة وتشرح لك السبب.
               </p>
               <Button variant="outline" className="border-[#38A7B4]/60 text-[#6EC7D1] hover:bg-[#38A7B4]/15" asChild>
                 <Link to="/diagnostic">ابدأ بمؤشر وجيز</Link>
               </Button>
             </div>
           )}
-          {report && diagTopId === pathway.id && (
-            <div className="story-fade mt-6 flex items-center gap-3 rounded-2xl border border-[#38A7B4]/50 bg-[#38A7B4]/10 px-6 py-4">
-              <CheckCircle2 className="h-5 w-5 shrink-0 text-[#6EC7D1]" />
-              <p className="text-sm leading-relaxed text-white/80">
-                <span className="font-black text-[#6EC7D1]">هذا المسار اعتمده تشخيصك. </span>
-                لم يُختَر من كتالوج — بل بُني على إجاباتك أنت: هدفك وفجواتك وإيقاع حياتك.
-              </p>
-            </div>
-          )}
-          {report && diagTopId && diagTopId !== pathway.id && diagTopPathway && (
-            <div className="story-fade mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-4">
-              <p className="text-sm leading-relaxed text-white/70">
-                <span className="font-black text-[#6EC7D1]">تذكير: </span>
-                تشخيصك اعتمد لك مسار «{diagTopPathway.name}» — وأنت الآن تستعرض مسارا آخر.
-              </p>
-              <Button variant="outline" className="border-[#38A7B4]/60 text-[#6EC7D1] hover:bg-[#38A7B4]/15" asChild>
-                <Link to={`/pathways/${diagTopId}`}>انتقل لمساري المعتمد</Link>
-              </Button>
-            </div>
-          )}
-
-          {/* تقريره الشخصي */}
           {report && (
-            <div className="story-fade mt-10 rounded-3xl border border-[#38A7B4]/35 bg-gradient-to-b from-[#12343B]/60 to-transparent p-6 md:p-8">
-              <h2 className="flex items-center gap-2 text-xl font-black">
-                <FileText className="h-5 w-5 text-[#6EC7D1]" />
-                تقريرك الشخصي — ما فهمناه عنك
-              </h2>
-              <div className="mt-4 space-y-3">
-                {report.lines.map((l) => (
-                  <p key={l} className="flex items-start gap-3 text-sm leading-loose text-white/75">
-                    <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-[#38A7B4]" />
-                    {l}
-                  </p>
-                ))}
-              </div>
-              {report.notes && (
-                <p className="mt-4 rounded-xl border border-white/10 bg-white/[0.04] p-4 text-sm leading-relaxed text-white/60">
-                  <span className="font-bold text-[#6EC7D1]">كلمتك التي كتبتها بنفسك: </span>«{report.notes}»
-                </p>
-              )}
-              <p className="mt-4 text-xs text-white/40">هذا التقرير مبني على إجاباتك في التشخيص — وسيطوره مستشارك معك في أول جلسة.</p>
+            <div className="story-fade mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#38A7B4]/40 bg-[#38A7B4]/[0.06] px-5 py-3">
+              <p className="flex items-center gap-2 text-xs font-bold leading-relaxed text-white/75">
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-[#6EC7D1]" />
+                {diagTopId === pathway.id
+                  ? "هذا المسار اعتمده تشخيصك — بُني على إجاباتك أنت."
+                  : "تستعرض مسارا مختلفا عن الذي اعتمده تشخيصك."}
+              </p>
+              <Link
+                to="/diagnostic"
+                className="flex items-center gap-1.5 rounded-full border border-[#38A7B4]/50 px-4 py-1.5 text-xs font-bold text-[#6EC7D1] transition hover:bg-[#38A7B4]/15"
+              >
+                <ArrowRight className="h-3.5 w-3.5" />
+                عد لنتيجتك لإعادة التخصيص
+              </Link>
             </div>
           )}
 
-          {/* دورات المسار */}
-          <div className="story-fade mt-10">
-            <h2 className="flex items-center gap-2 text-xl font-black">
-              <BookOpen className="h-5 w-5 text-[#6EC7D1]" />
-              دورات مسارك ({pathwayCoursesList.length})
-            </h2>
-            <div className="mt-5 grid gap-3">
-              {pathwayCoursesList.map((c: Course, i: number) => {
-                const isGift = custom?.giftId === c.id;
-                return (
-                  <div key={c.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4">
-                    <div className="flex items-center gap-4">
-                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#38A7B4]/15 text-sm font-black text-[#6EC7D1]">{i + 1}</span>
-                      <div>
-                        <p className="font-bold">
-                          {c.name}
-                          {isGift && (
-                            <span className="mr-2 inline-flex items-center gap-1 rounded-full bg-[#FABC05]/15 px-2 py-0.5 text-[11px] font-bold text-[#FABC05]">
-                              <Gift className="h-3 w-3" /> هديتك المجانية
-                            </span>
-                          )}
-                        </p>
-                        <p className="mt-0.5 text-xs text-white/45">{c.weeks} {c.weeks === 1 ? "أسبوع" : "أسابيع"} · {c.skill}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      {!isGift && <span className="text-sm font-bold text-white/60">{fmt(coursePriceOf(c))} منفردة</span>}
-                      <button
-                        onClick={() => setModalCourse(c)}
-                        className="rounded-lg border border-white/15 px-3 py-1.5 text-xs font-semibold transition hover:border-[#6EC7D1]/60 hover:text-[#6EC7D1]"
-                      >
-                        تفاصيل الدورة
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          {/* تقريره الشخصي — مطوي افتراضيا في تبويب صغير */}
+          {report && (
+            <details className="story-fade group mt-8 rounded-2xl border border-[#38A7B4]/35 bg-gradient-to-b from-[#12343B]/60 to-transparent">
+              <summary className="flex cursor-pointer list-none items-center gap-2 px-5 py-3 text-sm font-black text-[#6EC7D1] [&::-webkit-details-marker]:hidden">
+                <FileText className="h-4 w-4" />
+                تقريرك الشخصي — ما فهمناه عنك
+                <span className="mr-auto text-[10px] font-semibold text-white/40 transition group-open:rotate-180">▾</span>
+              </summary>
+              <div className="border-t border-white/10 px-5 py-4">
+                <div className="space-y-3">
+                  {report.lines.map((l) => (
+                    <p key={l} className="flex items-start gap-3 text-sm leading-loose text-white/75">
+                      <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-[#38A7B4]" />
+                      {l}
+                    </p>
+                  ))}
+                </div>
+                {report.notes && (
+                  <p className="mt-4 rounded-xl border border-white/10 bg-white/[0.04] p-4 text-sm leading-relaxed text-white/60">
+                    <span className="font-bold text-[#6EC7D1]">كلمتك التي كتبتها بنفسك: </span>«{report.notes}»
+                  </p>
+                )}
+                <p className="mt-4 text-xs text-white/40">هذا التقرير مبني على إجاباتك في التشخيص — وسيطوره مستشارك معك في أول جلسة.</p>
+              </div>
+            </details>
+          )}
 
-          {/* «ماذا ستحقق من خلال خطتك؟» — رحلة الدورات التعليمية بأكورديون داخل الصفحة */}
+          {/* «ماذا ستحقق من خلال خطتك؟» — رحلة الدورات بأكورديون، بلا قائمة مكررة فوقها */}
           <CourseJourney
             courseIds={pathwayCoursesList.map((c) => c.id)}
             delivery={pathwayDelivery(pathway.id)}
             headingLevel="h2"
+            giftId={custom?.giftId ?? null}
           />
 
           {/* ما ستحصل عليه مع المسار — من عروض أكاديمية وجيز */}
@@ -445,24 +405,26 @@ export default function PathwayPage() {
               <Sparkles className="h-5 w-5 text-[#FABC05]" />
               مع المسار لا تأخذ دورات فقط — تأخذ منظومة كاملة
             </h2>
-            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-5 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
               {[
-                { t: "دورات مسجلة + جلسات مباشرة", d: "وحدات فيديو وجلسة حية مع المدرب ومهمة تطبيقية لكل دورة" },
-                { t: "ملخصات كتب وجيز الصوتية", d: "اسمع ملخصات الكتب المرتبطة بمسارك — ثم اختبر نفسك فيها" },
-                { t: "واجبات تُراجع بشريا", d: "مدربك يقرأ واجبك ويعطيك تغذية راجعة عملية — لا تصحيحا آليا" },
-                { t: "مشروع تخرج حقيقي", d: "تبني مخرجا على واقعك وتقدمه للمراجعة قبل الاعتماد" },
-                { t: "شهادة موثقة بشروط إنجاز", d: "مرتبطة بالحضور والاختبار والمشروع — لا شهادة مشاهدة" },
-                { t: "خريطة مهارات قبل وبعد", d: "ترى مستواك 0–5 في كل مهارة قبل المسار وبعده" },
-                { t: "خطة تقدم شخصية", d: "خطوة تالية واضحة بعد المسار — ماذا تتعلم بعده ولماذا" },
-                { t: "مستشار نجاح يرافقك", d: "متابعة أسبوعية ورسالة مباشرة عند أي تعثر" },
-                { t: "منظومة ما بعد الإتمام", d: "لوحة وظائف وتوصيات مهنية وبرنامج سفراء وجيز" },
+                { icon: MonitorPlay, t: "دورات مسجلة + جلسات مباشرة", d: "وحدات فيديو وجلسة حية مع المدرب ومهمة تطبيقية لكل دورة" },
+                { icon: Headphones, t: "ملخصات كتب وجيز الصوتية", d: "اسمع ملخصات الكتب المرتبطة بمسارك — ثم اختبر نفسك فيها" },
+                { icon: ClipboardCheck, t: "واجبات تُراجع بشريا", d: "مدربك يقرأ واجبك ويعطيك تغذية راجعة عملية — لا تصحيحا آليا" },
+                { icon: FolderKanban, t: "مشروع تخرج حقيقي", d: "تبني مخرجا على واقعك وتقدمه للمراجعة قبل الاعتماد" },
+                { icon: BadgeCheck, t: "شهادة موثقة بشروط إنجاز", d: "مرتبطة بالحضور والاختبار والمشروع — لا شهادة مشاهدة" },
+                { icon: BarChart3, t: "خريطة مهارات قبل وبعد", d: "ترى مستواك 0–5 في كل مهارة قبل المسار وبعده" },
+                { icon: RouteIcon, t: "خطة تقدم شخصية", d: "خطوة تالية واضحة بعد المسار — ماذا تتعلم بعده ولماذا" },
+                { icon: UserCheck, t: "مستشار نجاح يرافقك", d: "متابعة أسبوعية ورسالة مباشرة عند أي تعثر" },
+                { icon: Briefcase, t: "منظومة ما بعد الإتمام", d: "لوحة وظائف وتوصيات مهنية وبرنامج سفراء وجيز" },
               ].map((b) => (
-                <div key={b.t} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                  <p className="flex items-start gap-2 text-sm font-black leading-relaxed">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#38A7B4]" />
-                    {b.t}
-                  </p>
-                  <p className="mt-1.5 pr-6 text-xs leading-relaxed text-white/50">{b.d}</p>
+                <div key={b.t} className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3.5">
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#38A7B4]/15">
+                    <b.icon className="h-4 w-4 text-[#6EC7D1]" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-black leading-relaxed">{b.t}</p>
+                    <p className="mt-1 text-xs leading-relaxed text-white/50">{b.d}</p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -666,17 +628,6 @@ export default function PathwayPage() {
         />
       )}
 
-      {/* نافذة تفاصيل الدورة */}
-      {modalCourse && (
-        <CourseModal
-          course={modalCourse}
-          onClose={() => setModalCourse(null)}
-          onBuy={(c) => {
-            setModalCourse(null);
-            setCheckout({ title: `دورة «${c.name}» من مسار ${pathway.name}`, amount: coursePriceOf(c), kind: "course", courseId: c.id });
-          }}
-        />
-      )}
     </div>
   );
 }

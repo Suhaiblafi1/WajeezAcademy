@@ -7,11 +7,12 @@ const BASE = process.env.BASE_URL ?? 'http://localhost:4173'
 const OUT = new URL('../verification/', import.meta.url).pathname
 mkdirSync(OUT, { recursive: true })
 
-/* رصد أخطاء console المؤثرة — يتجاهل الضجيج المعروف */
+/* رصد أخطاء console المؤثرة — يتجاهل الضجيج المعروف، ويسجل عنوان المورد الفاشل */
 const consoleErrors = []
 const watchConsole = (page, tag) => {
-  page.on('console', (msg) => { if (msg.type() === 'error') consoleErrors.push(`${tag}: ${msg.text()}`) })
+  page.on('console', (msg) => { if (msg.type() === 'error') consoleErrors.push(`${tag}: ${msg.text()} :: ${msg.location()?.url ?? ''}`) })
   page.on('pageerror', (err) => consoleErrors.push(`${tag}: ${String(err)}`))
+  page.on('response', (res) => { if (res.status() >= 500) consoleErrors.push(`${tag}: HTTP ${res.status()} ${res.url()}`) })
 }
 const ignorable = (e) => e.includes('favicon') || e.includes('DevTools')
 
@@ -103,9 +104,9 @@ note('الجلسة لم تُوقف بقيد حماية (إجابات بالغة)
 await d.screenshot({ path: `${OUT}/result-desktop.png`, fullPage: true })
 
 if (resultVisible && !guardrailHit) {
-  const planBtn = await d.getByRole('button', { name: 'استعرض خطتي التعليمية' }).isVisible().catch(() => false)
-  note('زر «استعرض خطتي التعليمية» موجود', planBtn)
-  const deepenBtn = d.getByRole('button', { name: 'دقّق خطتك أكثر' })
+  const cardBtn = await d.getByRole('button', { name: 'حمّل نتيجتك بطاقة مصممة' }).isVisible().catch(() => false)
+  note('زر «حمّل نتيجتك بطاقة مصممة» موجود', cardBtn)
+  const deepenBtn = d.getByRole('button', { name: 'لديك دقيقة أخرى لنتأكد أكثر؟' })
   const canDeepen = await deepenBtn.isVisible().catch(() => false)
   const deepenNote = await d.getByText('صورتك مكتملة بما يكفي').first().isVisible().catch(() => false)
   note('جولة التدقيق متاحة أو مفسَّرة بعدم الحاجة', canDeepen || deepenNote)
@@ -126,8 +127,8 @@ if (resultVisible && !guardrailHit) {
         const acted = await answerCurrent(d)
         if (!acted) break
       }
-      const cmpShown = await d.getByText(/دعمت إجاباتك|ظهرت معلومات إضافية/).first().isVisible().catch(() => false)
-      note('بطاقة مقارنة التدقيق قبل/بعد ظهرت', cmpShown, `${dq - 1} سؤال تدقيق`)
+      const cmpShown = await d.getByText(/دعمت إجاباتك|ظهرت معلومات إضافية|بقي مسارك هو نفسه/).first().isVisible().catch(() => false)
+      note('نتيجة التدقيق ظهرت (مقارنة أو طمأنة بثبات المسار)', cmpShown, `${dq - 1} سؤال تدقيق`)
       await d.screenshot({ path: `${OUT}/deepening-comparison-desktop.png`, fullPage: true })
     }
   }
@@ -172,8 +173,8 @@ await s.screenshot({ path: `${OUT}/stale-result-notice.png` })
 /* ── صفحة انضم كمدرب: التخصصات الحقيقية وحقول الخبرة المنفصلة ── */
 await s.goto(`${BASE}/join-trainer`, { waitUntil: 'networkidle' })
 note('صفحة انضم كمدرب تفتح', await s.getByText('درّب ما تتقنه').first().isVisible().catch(() => false))
-const specCount = await s.locator('#jt-spec option').count()
-note('قائمة التخصصات الحقيقية موجودة (12 تخصصا)', specCount === 13, `${specCount - 1} تخصصا`)
+const specCount = await s.locator('fieldset:has-text("تخصصاتك التدريبية") button[aria-pressed]').count()
+note('قائمة التخصصات الحقيقية موجودة (أزرار اختيار متعدد)', specCount >= 8, `${specCount} تخصصا`)
 note('حقل خبرة التدريب منفصل عن سنوات الخبرة', (await s.locator('#jt-training').count()) === 1 && (await s.locator('#jt-years').count()) === 1)
 await s.screenshot({ path: `${OUT}/join-trainer.png`, fullPage: true })
 

@@ -363,6 +363,11 @@ export class TrainerReviewService {
       id: p.id, name: p.application.fullName, headline: p.headline, bio: p.bioPublic,
       country: p.application.country,
       specialties: p.application.specialties.map((s) => s.specialty),
+      photoUrl: p.photoUrl,
+      ratingAvg: p.ratingAvg,
+      ratingCount: p.ratingCount,
+      hoursTaught: p.hoursTaught,
+      graduatesCount: p.graduatesCount,
       assignedCourseIds: p.assignments.map((a) => a.courseId),
     }))
   }

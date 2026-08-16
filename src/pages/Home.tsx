@@ -10,7 +10,6 @@ import {
 import { bestsellers, pathwayById } from '@/data/pathways'
 import { bestsellerCourses, courseById, courseCategories, pathwayTrainers, weeksLabel, type Course } from '@/data/courses'
 import { faqs } from '@/data/siteContent'
-import { referenceBadges } from '@/data/methodology'
 import { CONTACT } from '@/data/stories'
 import { track } from '@/services/analytics'
 import { usePublishedContent } from '@/services/public-content'
@@ -218,9 +217,12 @@ function Hero() {
             يبدأ بفهم هدفك.
           </span>
         </h1>
-        <div className="reveal is-visible mx-auto mt-7 flex max-w-xl flex-wrap items-center justify-center gap-2.5 text-sm font-bold text-white/75 md:text-base">
+        <div className="reveal is-visible mx-auto mt-6 flex max-w-xl flex-wrap items-center justify-center gap-2">
           {['نقرأ هدفك', 'وقتك المتاح', 'فجواتك الأقرب'].map((chip) => (
-            <span key={chip} className="rounded-full border border-teal/25 bg-teal/[0.07] px-4 py-1.5">{chip}</span>
+            <span key={chip} className="inline-flex items-center gap-1.5 rounded-full border border-teal/25 bg-[#38A7B4]/[0.07] px-3 py-1 text-xs text-teal-light/85">
+              <Sparkles className="h-3 w-3" />
+              {chip}
+            </span>
           ))}
         </div>
         <div className="reveal is-visible mt-9 flex flex-col items-center justify-center">
@@ -308,7 +310,7 @@ function DiagnosticTeaser() {
     .filter(Boolean) as string[]).slice(0, 2)
 
   return (
-    <section id="diagnostic" className="relative pb-20 pt-4 md:pb-24 md:pt-6">
+    <section id="diagnostic" className="relative py-20 md:py-24">
       <div className="mx-auto max-w-4xl px-5">
         <div className="reveal text-center">
           <SectionLabel>مؤشر وجيز — دقيقة واحدة</SectionLabel>
@@ -318,7 +320,7 @@ function DiagnosticTeaser() {
           </p>
         </div>
 
-        <div className="reveal mt-10 overflow-hidden rounded-3xl border border-white/10 bg-card shadow-[0_20px_80px_-30px_rgba(56,167,180,0.25)]">
+        <div className="reveal mt-10 overflow-hidden rounded-[2rem] border border-white/[0.08] bg-card/90 shadow-[0_24px_90px_-40px_rgba(56,167,180,0.35)] backdrop-blur-sm">
           {/* مؤشر التقدم */}
           <div
             className="flex gap-2 px-8 pt-7"
@@ -389,13 +391,13 @@ function DiagnosticTeaser() {
               </div>
             ) : (
               <div className="story-fade text-center">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#38A7B4]/15">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#38A7B4]/12 ring-1 ring-teal/25">
                   <BrainCircuit className="h-8 w-8 text-teal" />
                 </div>
                 <h3 className="mt-5 text-2xl font-bold leading-relaxed">سمعناك — صورتك بدأت تتضح.</h3>
                 {/* مكافأة فورية: صورة أولية مشتقة من إجاباته هو — تجعل الانتقال للتشخيص الكامل مكافأة لا التزاما */}
                 {insights.length > 0 && (
-                  <div className="mx-auto mt-4 max-w-md rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+                  <div className="mx-auto mt-5 max-w-md rounded-2xl border border-white/[0.08] bg-white/[0.04] p-5">
                     <p className="flex items-center justify-center gap-1.5 text-sm font-bold text-white/85">
                       <Sparkles className="h-4 w-4 text-teal-light" />
                       صورتك الأولية — من إجاباتك أنت
@@ -410,10 +412,7 @@ function DiagnosticTeaser() {
                     </ul>
                   </div>
                 )}
-                <p className="mx-auto mt-4 max-w-md leading-8 text-muted-foreground">
-                  الآن يبدأ العمل الحقيقي: تشخيص كامل يفهم قصتك — ثم يرسم لك مسارا مفسّرا تستطيع تخصيصه.
-                </p>
-                <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
                   <Link to="/diagnostic" className="btn-teal px-8 py-4">
                     ابدأ التشخيص الكامل
                     <ArrowLeft className="h-4 w-4" />
@@ -476,59 +475,6 @@ function HowItWorks() {
 }
 
 /* ───────────────── منهجية وجيز — ثقة علمية بلا استعراض شعارات ───────────────── */
-function MethodologyTeaser() {
-  const steps = [
-    { icon: Compass, text: 'نفهم اتجاهك وميولك المهنية.' },
-    { icon: Target, text: 'نحدد المهارات التي تحتاج إلى تطويرها.' },
-    { icon: Route, text: 'نربط احتياجك بالمسار أو الخطة المركبة الأنسب.' },
-    { icon: BadgeCheck, text: 'نحوّل الاحتياج إلى دورات ذات مخرجات قابلة للقياس.' },
-  ]
-  const badges = referenceBadges()
-  return (
-    <section className="py-14 md:py-16">
-      <div className="mx-auto max-w-6xl px-5">
-        <div className="reveal overflow-hidden rounded-3xl border border-teal/15 bg-gradient-to-l from-[#12343B]/60 to-card px-6 py-8 md:px-10 md:py-10">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-xl font-bold md:text-2xl">توصية مبنية على منهجية، لا على التخمين</h2>
-            <SectionLabel>شفافية كاملة</SectionLabel>
-          </div>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
-            يحلل مؤشر وجيز ميولك وأهدافك وفجوات مهاراتك، ثم يربطها بما تحتاج إلى تعلمه ضمن مسار ذي مخرجات واضحة.
-          </p>
-          <div className="mt-7 grid gap-3 sm:grid-cols-2 md:grid-cols-4">
-            {steps.map((s, i) => (
-              <div key={s.text} className="flex items-start gap-3 rounded-2xl bg-white/[0.04] px-4 py-3.5">
-                <s.icon className="mt-0.5 h-4 w-4 shrink-0 text-teal" />
-                <p className="text-xs leading-6 text-white/80">
-                  <span className="ml-1 font-black text-teal/60">{i + 1}.</span>
-                  {s.text}
-                </p>
-              </div>
-            ))}
-          </div>
-          <div className="mt-7 flex flex-wrap items-center justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[11px] font-bold text-muted-foreground">أطر مهنية نسترشد بها:</span>
-              {badges.map((b) => (
-                <span key={b} className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-[11px] font-bold text-white/65">
-                  {b}
-                </span>
-              ))}
-            </div>
-            <Link
-              to="/methodology"
-              className="inline-flex items-center gap-2 rounded-full border border-teal/40 bg-teal/10 px-5 py-2 text-sm font-bold text-teal-light transition hover:bg-teal/20"
-            >
-              اكتشف كيف نبني توصيتك
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </div>
-        </div>
-      </div>
-    </section>
-  )
-}
-
 /* ───────────────── visual band ───────────────── */
 function ImageBand() {
   return (
@@ -543,8 +489,8 @@ function ImageBand() {
       <div className="absolute inset-0 flex items-end">
         <div className="mx-auto w-full max-w-6xl px-5 pb-10">
           <p className="reveal max-w-xl text-2xl font-bold leading-relaxed md:text-3xl">
-            غيرك يشاهد الدروس وينساها —
-            <span className="text-teal-light"> أنت ستنجز عملا يتحدث عنك.</span>
+            لا نقيس تعلمك بما شاهدت —
+            <span className="text-teal-light"> بل بما أنجزت وأثبتّ.</span>
           </p>
           <p className="reveal mt-3 max-w-md text-sm leading-7 text-white/70">
             مدرب يراجع عملك بيده، ومشروع تخرج يدخل ملفك المهني من أول يوم.
@@ -636,7 +582,7 @@ function Stories() {
         >
           <Compass className="h-7 w-7 text-teal" />
           <p className="mt-3 text-sm font-bold leading-relaxed">وقصتك التالية؟</p>
-          <p className="mt-1.5 text-xs leading-6 text-muted-foreground">تبدأ بخمس دقائق من التشخيص</p>
+          <p className="mt-1.5 text-xs leading-6 text-muted-foreground">تبدأ بثلاث دقائق من التشخيص</p>
           <span className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-teal-light">
             ابدأ الآن
             <ArrowLeft className="h-3.5 w-3.5" />
@@ -783,7 +729,7 @@ function Bestsellers() {
         <div className="reveal flex flex-wrap items-end justify-between gap-4">
           <div>
             <SectionLabel>مختارات وجيز</SectionLabel>
-            <h2 className="mt-4 text-3xl font-bold md:text-4xl">مسارات ودورات منتقاة بعناية</h2>
+            <h2 className="mt-4 text-3xl font-bold md:text-4xl">مسارات ودورات من اختيارنا</h2>
             <p className="mt-3 max-w-lg leading-8 text-muted-foreground">
               لا تريد البدء بالتشخيص؟ اختر مجالك أولا — ثم مسارا كاملا، أو دورة واحدة إن كنت تعرف ما تريد بالضبط.
             </p>
@@ -1052,6 +998,50 @@ function Faq() {
               </div>
             </div>
           ))}
+
+          {/* سؤال المنهجية — مميز بإطار تركوازي وزر يقود لصفحة المنهجية */}
+          {(() => {
+            const i = faqs.length
+            return (
+              <div className="reveal overflow-hidden rounded-2xl border-2 border-teal/50 bg-gradient-to-l from-[#12343B]/50 to-card transition hover:border-teal/70" style={{ transitionDelay: `${i * 60}ms` }}>
+                <button
+                  onClick={() => setOpen(open === i ? null : i)}
+                  aria-expanded={open === i}
+                  aria-controls={`faq-answer-${i}`}
+                  id={`faq-question-${i}`}
+                  className="flex w-full items-center justify-between gap-4 px-6 py-5 text-right font-semibold"
+                >
+                  <span className="flex items-center gap-2.5">
+                    <Sparkles className="h-4.5 w-4.5 shrink-0 text-teal-light" aria-hidden="true" />
+                    كيف تبنون توصيتكم — هل هي تخمين؟
+                  </span>
+                  <ChevronDown aria-hidden="true" className={`h-5 w-5 shrink-0 text-teal-light transition-transform duration-300 ${open === i ? 'rotate-180' : ''}`} />
+                </button>
+                <div
+                  id={`faq-answer-${i}`}
+                  role="region"
+                  aria-labelledby={`faq-question-${i}`}
+                  className={`grid transition-all duration-300 ${open === i ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
+                >
+                  <div className="overflow-hidden">
+                    <div className="px-6 pb-6">
+                      <p className="leading-8 text-muted-foreground">
+                        توصية مبنية على منهجية، لا على التخمين: يحلل مؤشر وجيز ميولك وأهدافك وفجوات مهاراتك بأطر مهنية معروفة
+                        (RIASEC وO*NET وESCO وDigComp)، وكل استنتاج مرتبط بإجابة قدّمتها — بلا صناديق سوداء، وبدرجة ثقة معلنة.
+                      </p>
+                      <Link
+                        to="/methodology"
+                        className="mt-5 inline-flex items-center gap-2 rounded-full border border-teal/50 bg-teal/15 px-6 py-2.5 text-sm font-bold text-teal-light transition hover:bg-teal/25"
+                      >
+                        اكتشف كيف نبني توصيتك
+                        <ArrowLeft className="h-4 w-4" />
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
         </div>
       </div>
     </section>
@@ -1071,7 +1061,7 @@ function FinalCta() {
           <span className="text-teal-light">أكثر من دورة عشوائية.</span>
         </h2>
         <p className="reveal mx-auto mt-6 max-w-md leading-8 text-muted-foreground">
-          امنحنا خمس دقائق من الصدق، نمنحك خريطة طريق كاملة.
+          امنحنا ثلاث دقائق من الوضوح، نمنحك خريطة طريق كاملة.
         </p>
         <div className="reveal mt-9">
           <a
@@ -1325,7 +1315,6 @@ export default function Home() {
         <Hero />
         <DiagnosticTeaser />
         <HowItWorks />
-        <MethodologyTeaser />
         <Partners />
         <ImageBand />
         <Bestsellers />

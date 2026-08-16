@@ -5,6 +5,7 @@ import cookie from '@fastify/cookie'
 import swagger from '@fastify/swagger'
 import swaggerUi from '@fastify/swagger-ui'
 import cors from '@fastify/cors'
+import rateLimit from '@fastify/rate-limit'
 import type { PrismaClient } from '@prisma/client'
 import { AuthService } from '../services/auth.service'
 import { errorHandler } from './errors'
@@ -33,6 +34,10 @@ export async function buildApp(prisma: PrismaClient) {
     credentials: true,
   })
   await app.register(cookie)
+  /* تحديد معدل الطلبات — سقف عام لكل IP (يُسترخى في بيئة الاختبار الآلية فقط)،
+     وتُشدَّد نقاط الهوية في مساراتها (10/5د للدخول والتسجيل، 5/15د للاستعادة) */
+  const isTestEnv = process.env.NODE_ENV === 'test' || process.env.VITEST === 'true'
+  await app.register(rateLimit, { max: isTestEnv ? 100_000 : 300, timeWindow: '1 minute' })
   await app.register(swagger, {
     openapi: {
       info: {

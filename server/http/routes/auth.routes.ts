@@ -10,6 +10,7 @@ const password = z.string().min(8, 'كلمة المرور 8 أحرف على ال
 
 export function registerAuthRoutes(app: FastifyInstance, auth: AuthService) {
   app.post('/api/auth/register', {
+    config: { rateLimit: { max: 10, timeWindow: '5 minutes' } },
     schema: {
       tags: ['auth'], summary: 'إنشاء حساب متعلم',
       body: {
@@ -24,6 +25,7 @@ export function registerAuthRoutes(app: FastifyInstance, auth: AuthService) {
   })
 
   app.post('/api/auth/login', {
+    config: { rateLimit: { max: 10, timeWindow: '5 minutes' } },
     schema: {
       tags: ['auth'], summary: 'تسجيل الدخول — كوكي جلسة httpOnly',
       body: {
@@ -54,6 +56,7 @@ export function registerAuthRoutes(app: FastifyInstance, auth: AuthService) {
   })
 
   app.post('/api/auth/password/forgot', {
+    config: { rateLimit: { max: 5, timeWindow: '15 minutes' } },
     schema: {
       tags: ['auth'], summary: 'طلب استعادة كلمة المرور — الرد لا يكشف وجود البريد',
       body: { type: 'object', required: ['email'], properties: { email: { type: 'string', format: 'email' } } },
@@ -69,6 +72,7 @@ export function registerAuthRoutes(app: FastifyInstance, auth: AuthService) {
   })
 
   app.post('/api/auth/password/reset', {
+    config: { rateLimit: { max: 5, timeWindow: '15 minutes' } },
     schema: {
       tags: ['auth'], summary: 'تعيين كلمة مرور جديدة برمز الاستعادة — يبطل كل الجلسات',
       body: {

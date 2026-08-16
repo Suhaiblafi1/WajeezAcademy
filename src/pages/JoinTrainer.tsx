@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router";
-import { ArrowLeft, CheckCircle2, Compass, Loader2, MailCheck, Mic2, Search, Send, Users } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ChevronDown, Compass, Loader2, MailCheck, Mic2, Search, Send, Users } from "lucide-react";
 import SiteShell from "@/components/SiteShell";
 import SeoHead from "@/components/SeoHead";
 import { apiPost, apiGet, ApiError } from "@/services/api";
@@ -22,6 +22,35 @@ const TRAINING_YEARS = [
 
 const LANGUAGES = ["العربية", "الإنجليزية", "الفرنسية"];
 const COUNTRY_CODES = ["+962", "+966", "+971", "+20", "+965", "+974", "+968", "+973", "+964", "+218", "+249"];
+
+/* دول الإقامة والاستهداف — خيارات جاهزة تسهّل التقييم والمطابقة مع الشعب */
+const ARAB_COUNTRIES = [
+  "الأردن", "السعودية", "الإمارات", "مصر", "الكويت", "قطر", "عُمان", "البحرين",
+  "العراق", "فلسطين", "لبنان", "سوريا", "ليبيا", "تونس", "الجزائر", "المغرب", "السودان", "اليمن", "موريتانيا",
+];
+const ALL_ARAB = "كل الدول العربية";
+
+/* المنطقة الزمنية تُشتق تلقائيا من دولة الإقامة — لا سؤال إضافي */
+const COUNTRY_TIMEZONE: Record<string, string> = {
+  "الأردن": "Asia/Amman", "السعودية": "Asia/Riyadh", "الإمارات": "Asia/Dubai", "مصر": "Africa/Cairo",
+  "الكويت": "Asia/Kuwait", "قطر": "Asia/Qatar", "عُمان": "Asia/Muscat", "البحرين": "Asia/Bahrain",
+  "العراق": "Asia/Baghdad", "فلسطين": "Asia/Hebron", "لبنان": "Asia/Beirut", "سوريا": "Asia/Damascus",
+  "ليبيا": "Africa/Tripoli", "تونس": "Africa/Tunis", "الجزائر": "Africa/Algiers", "المغرب": "Africa/Casablanca",
+  "السودان": "Africa/Khartoum", "اليمن": "Asia/Aden", "موريتانيا": "Africa/Nouakchott",
+};
+
+/* الحالة المهنية — تساعد على فهم تفرغ المتقدم ووقته للتدريب */
+const EMPLOYMENT_STATUS = [
+  { value: "employed", label: "موظف — أعمل لدى جهة" },
+  { value: "own_business", label: "لدي عملي الخاص" },
+  { value: "full_time_training", label: "متفرغ للتدريب" },
+];
+
+/* الفئات المستهدفة — تطابق شرائح مسارات الأكاديمية */
+const TARGET_AUDIENCES = [
+  "طلاب المدارس والجامعات", "خريجون جدد", "موظفو القطاع الخاص", "موظفو القطاع الحكومي",
+  "رواد أعمال وأصحاب مشاريع", "قادة ومديرون", "مستقلون وأعمال حرة", "الباحثون عن عمل",
+];
 
 const STATUS_LABELS: Record<string, string> = {
   email_verification_pending: "بانتظار تحقق البريد",
@@ -45,6 +74,52 @@ const STATUS_LABELS: Record<string, string> = {
 const inputCls =
   "w-full rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:border-[#38A7B4] focus:outline-none";
 
+/** قائمة منسدلة متعددة الاختيار — مربع صح بجانب كل خيار، والمختار يظهر وسمًا صغيرًا قابلا للإزالة */
+function MultiPick({ id, label, options, selected, onChange }: {
+  id: string; label: string; options: string[]; selected: string[]; onChange: (next: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const toggleValue = (v: string) =>
+    onChange(selected.includes(v) ? selected.filter((x) => x !== v) : [...selected, v]);
+  return (
+    <div className="relative">
+      <button
+        type="button" id={id} aria-expanded={open} aria-haspopup="listbox"
+        onClick={() => setOpen(!open)}
+        className={`${inputCls} flex cursor-pointer items-center justify-between text-right ${selected.length ? "text-white" : "text-white/40"}`}
+      >
+        <span>{label}</span>
+        <ChevronDown aria-hidden="true" className={`h-4 w-4 shrink-0 text-[#6EC7D1] transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div role="listbox" aria-labelledby={id} aria-multiselectable="true"
+          className="absolute z-20 mt-1.5 max-h-56 w-full overflow-y-auto rounded-xl border border-white/15 bg-[#121B1D] p-1.5 shadow-xl shadow-black/40">
+          {options.map((o) => {
+            const checked = selected.includes(o);
+            return (
+              <label key={o} role="option" aria-selected={checked}
+                className={`flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-bold transition hover:bg-white/5 ${checked ? "text-[#6EC7D1]" : "text-white/70"}`}>
+                <input type="checkbox" checked={checked} onChange={() => toggleValue(o)} className="h-3.5 w-3.5 shrink-0 accent-[#38A7B4]" />
+                {o}
+              </label>
+            );
+          })}
+        </div>
+      )}
+      {selected.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {selected.map((s) => (
+            <span key={s} className="inline-flex items-center gap-1.5 rounded-full border border-[#38A7B4]/40 bg-[#38A7B4]/10 px-2.5 py-1 text-[11px] font-bold text-[#6EC7D1]">
+              {s}
+              <button type="button" onClick={() => toggleValue(s)} aria-label={`أزل ${s}`} className="cursor-pointer text-white/50 transition hover:text-white">×</button>
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface SubmitResponse {
   reference: string;
   status: string;
@@ -54,12 +129,15 @@ interface SubmitResponse {
 /** صفحة انضمام المدربين — المرحلة الأولى على API حقيقي: تقديم، تحقق بريد، متابعة حالة */
 export default function JoinTrainer() {
   const [form, setForm] = useState({
-    fullName: "", email: "", phoneCountryCode: "+962", phone: "", country: "", timezone: "",
-    jobTitle: "", domainYears: "", trainingYears: "", bio: "", linkedinUrl: "",
+    fullName: "", email: "", phoneCountryCode: "+962", phone: "", country: "",
+    jobTitle: "", employmentStatus: "", domainYears: "", trainingYears: "", bio: "", linkedinUrl: "",
+    youtubeUrl: "", instagramUrl: "", accreditationDetails: "", hasAccreditation: false,
     deliveryMode: "", motivation: "", privacyConsent: false,
   });
   const [specialties, setSpecialties] = useState<string[]>([]);
   const [languages, setLanguages] = useState<string[]>(["العربية"]);
+  const [targetCountries, setTargetCountries] = useState<string[]>([]);
+  const [targetAudiences, setTargetAudiences] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<SubmitResponse | null>(null);
@@ -83,7 +161,7 @@ export default function JoinTrainer() {
 
   const valid =
     form.fullName.trim().length >= 3 && /.+@.+\..+/.test(form.email) &&
-    specialties.length > 0 && form.domainYears && form.trainingYears && form.deliveryMode &&
+    specialties.length > 0 && form.employmentStatus && form.domainYears && form.trainingYears && form.deliveryMode &&
     form.motivation.trim().length >= 10 && form.privacyConsent;
 
   const submit = async (e: React.FormEvent) => {
@@ -94,10 +172,16 @@ export default function JoinTrainer() {
       const res = await apiPost<SubmitResponse>("/api/v1/trainer-applications", {
         fullName: form.fullName, email: form.email,
         phoneCountryCode: form.phoneCountryCode || undefined, phone: form.phone || undefined,
-        country: form.country || undefined, timezone: form.timezone || undefined,
+        country: form.country || undefined, timezone: COUNTRY_TIMEZONE[form.country] ?? undefined,
+        employmentStatus: (form.employmentStatus || undefined) as "employed" | "own_business" | "full_time_training" | undefined,
         jobTitle: form.jobTitle || undefined,
         specialties, domainYears: form.domainYears, trainingYears: form.trainingYears,
         bio: form.bio || undefined, linkedinUrl: form.linkedinUrl || undefined,
+        youtubeUrl: form.youtubeUrl || undefined, instagramUrl: form.instagramUrl || undefined,
+        hasAccreditation: form.hasAccreditation,
+        accreditationDetails: form.hasAccreditation ? form.accreditationDetails || undefined : undefined,
+        targetCountries: targetCountries.length ? targetCountries : undefined,
+        targetAudiences: targetAudiences.length ? targetAudiences : undefined,
         trainingLanguages: languages, deliveryMode: form.deliveryMode,
         motivation: form.motivation, privacyConsent: form.privacyConsent,
       });
@@ -245,11 +329,18 @@ export default function JoinTrainer() {
             </div>
             <div>
               <label htmlFor="jt-country" className="mb-1.5 block text-xs font-bold text-white/60">دولة الإقامة</label>
-              <input id="jt-country" name="country" autoComplete="country-name" value={form.country} onChange={set("country")} className={inputCls} />
+              <select id="jt-country" value={form.country} onChange={set("country")} className={`${inputCls} [&>option]:bg-[#121B1D]`}>
+                <option value="" disabled>اختر دولتك</option>
+                {ARAB_COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                <option value="أخرى">أخرى</option>
+              </select>
             </div>
             <div>
-              <label htmlFor="jt-tz" className="mb-1.5 block text-xs font-bold text-white/60">المنطقة الزمنية</label>
-              <input id="jt-tz" name="timezone" dir="ltr" placeholder="Asia/Amman" value={form.timezone} onChange={set("timezone")} className={`${inputCls} text-left`} />
+              <label htmlFor="jt-employment" className="mb-1.5 block text-xs font-bold text-white/60">حالتك المهنية الحالية *</label>
+              <select id="jt-employment" required value={form.employmentStatus} onChange={set("employmentStatus")} className={`${inputCls} [&>option]:bg-[#121B1D]`}>
+                <option value="" disabled>اختر الأقرب لواقعك</option>
+                {EMPLOYMENT_STATUS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+              </select>
             </div>
             <div>
               <label htmlFor="jt-role" className="mb-1.5 block text-xs font-bold text-white/60">المسمى المهني الحالي</label>
@@ -301,6 +392,48 @@ export default function JoinTrainer() {
           <div>
             <label htmlFor="jt-links" className="mb-1.5 block text-xs font-bold text-white/60">رابط لينكدإن أو ملف أعمال</label>
             <input id="jt-links" name="links" dir="ltr" placeholder="https://linkedin.com/in/..." value={form.linkedinUrl} onChange={set("linkedinUrl")} className={`${inputCls} text-left`} />
+          </div>
+
+          {/* حضور رقمي واعتماد — تساعد المراجعة الأكاديمية على تقييم المتقدم */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor="jt-youtube" className="mb-1.5 block text-xs font-bold text-white/60">قناة يوتيوب أو فيديو تدريبي لك</label>
+              <input id="jt-youtube" dir="ltr" placeholder="https://youtube.com/@..." value={form.youtubeUrl} onChange={set("youtubeUrl")} className={`${inputCls} text-left`} />
+            </div>
+            <div>
+              <label htmlFor="jt-instagram" className="mb-1.5 block text-xs font-bold text-white/60">حساب إنستغرام المهني</label>
+              <input id="jt-instagram" dir="ltr" placeholder="https://instagram.com/..." value={form.instagramUrl} onChange={set("instagramUrl")} className={`${inputCls} text-left`} />
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+            <label className="flex cursor-pointer items-start gap-2.5">
+              <input
+                type="checkbox" checked={form.hasAccreditation}
+                onChange={(e) => setForm({ ...form, hasAccreditation: e.target.checked, accreditationDetails: e.target.checked ? form.accreditationDetails : "" })}
+                className="mt-0.5 h-4 w-4 accent-[#38A7B4]"
+              />
+              <span className="text-xs leading-6 text-white/60">
+                لدي اعتماد أو ترخيص رسمي من جهة أو هيئة تدريب معترف بها
+              </span>
+            </label>
+            {form.hasAccreditation && (
+              <div className="mt-3">
+                <label htmlFor="jt-accred" className="mb-1.5 block text-xs font-bold text-white/60">اسم الجهة وتفاصيل الاعتماد</label>
+                <input id="jt-accred" placeholder="مثال: اعتماد هيئة تقويم التعليم والتدريب — رقم ..." value={form.accreditationDetails} onChange={set("accreditationDetails")} className={inputCls} />
+              </div>
+            )}
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor="jt-target-countries" className="mb-1.5 block text-xs font-bold text-white/60">الدول التي تستهدفها بتدريبك</label>
+              <MultiPick id="jt-target-countries" label="اختر من القائمة" options={[ALL_ARAB, ...ARAB_COUNTRIES]} selected={targetCountries} onChange={setTargetCountries} />
+            </div>
+            <div>
+              <label htmlFor="jt-target-audiences" className="mb-1.5 block text-xs font-bold text-white/60">الفئات التي تستهدفها</label>
+              <MultiPick id="jt-target-audiences" label="اختر من القائمة" options={TARGET_AUDIENCES} selected={targetAudiences} onChange={setTargetAudiences} />
+            </div>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">

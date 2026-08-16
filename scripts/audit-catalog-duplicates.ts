@@ -56,7 +56,10 @@ const main = async () => {
   const total = latestByCourse.size
   console.log(`\n${failures === 0 ? '✅ لا تكرار' : '✗ فشل'} — ${total} دورة فريدة، ${latestText.size} سؤالا فريدا`)
   await disconnectPrisma()
-  if (failures > 0) process.exit(1)
+  /* خروج صريح: عملية postgres الابنة تُنهى مع العملية — بلا رسائل إغلاق مربكة */
+  process.exit(failures > 0 ? 1 : 0)
 }
-process.on('uncaughtException', (e) => { if (!/terminat/i.test(String(e))) throw e })
+/* سباق إغلاق القاعدة المدمجة معروف — امتصاص آمن يخرج فورا كما في المستورد */
+process.on('uncaughtException', (e) => { if (/terminat/i.test(String(e))) process.exit(process.exitCode ?? 0); throw e })
+process.on('unhandledRejection', (e) => { if (/terminat/i.test(String(e))) process.exit(process.exitCode ?? 0); throw e })
 main().catch((e) => { console.error(e); process.exit(1) })

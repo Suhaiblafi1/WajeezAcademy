@@ -57,9 +57,22 @@ export class AuthService {
     return { userId: user.id }
   }
 
-  /** دخول — يسجل المحاولة دائما، ولا يكشف هل البريد موجود */
+  /** دخول — يسجل المحاولة دائما، ولا يكشف هل البريد موجود، ويقفل بعد 5 إخفاقات متتالية */
   async login(email: string, password: string, ip?: string, userAgent?: string): Promise<{ token: string; expiresAt: Date }> {
     const normalized = email.trim().toLowerCase()
+
+    /* قفل مؤقت ضد التخمين: 5 إخفاقات خلال 15 دقيقة على البريد أو الـIP تُمهّل المحاولة التالية */
+    const windowStart = new Date(Date.now() - 15 * 60_000)
+    const recentFails = await this.prisma.loginAttempt.count({
+      where: {
+        success: false, createdAt: { gte: windowStart },
+        OR: [{ email: normalized }, ...(ip ? [{ ip }] : [])],
+      },
+    })
+    if (recentFails >= 5) {
+      throw new AuthError('too_many_attempts', 'محاولات كثيرة متتالية — انتظر 15 دقيقة ثم حاول مجددا', 429)
+    }
+
     const user = await this.prisma.user.findUnique({ where: { email: normalized } })
     const ok = user ? await bcrypt.compare(password, user.passwordHash) : false
     await this.prisma.loginAttempt.create({ data: { email: normalized, ip, success: ok } })

@@ -6,6 +6,9 @@ dist/
 # لقطات الفحص المحلية
 verification/
 
+# سكربتات الفحص المؤقتة — لا تدخل Git
+scripts/tmp/
+
 # أسرار البيئة وبيانات PostgreSQL المدمج المحلية
 .env
 .pgdata/

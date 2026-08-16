@@ -75,38 +75,30 @@ export default function Contact() {
           <p className="mt-4 leading-8 text-white/60">
             سؤال عن مسار؟ استفسار مؤسسي؟ شراكة تدريبية؟ فريقنا يقرأ كل رسالة بنفسه ويرد خلال يوم عمل واحد.
           </p>
-          <div className="mt-8 space-y-4">
-            <div className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-              <Mail className="mt-0.5 h-5 w-5 shrink-0 text-[#6EC7D1]" />
-              <div>
-                <div className="text-sm font-bold">البريد الإلكتروني</div>
-                <a href={`mailto:${CONTACT.email}`} dir="ltr" className="mt-1 block text-sm text-[#6EC7D1] underline-offset-4 hover:underline">
-                  {CONTACT.email}
-                </a>
-                <p className="mt-1 text-xs text-white/45">نرد خلال يوم عمل واحد</p>
-              </div>
+          <div className="mt-6 space-y-2">
+            <div className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5">
+              <Mail className="h-4 w-4 shrink-0 text-[#6EC7D1]" />
+              <a href={`mailto:${CONTACT.email}`} dir="ltr" className="text-xs font-bold text-[#6EC7D1] underline-offset-4 hover:underline">
+                {CONTACT.email}
+              </a>
+              <span className="mr-auto text-[10px] text-white/40">نرد خلال يوم عمل</span>
             </div>
-            <div className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-              <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-[#6EC7D1]" />
-              <div>
-                <div className="text-sm font-bold">العنوان</div>
-                <p className="mt-1 text-sm text-white/70">{CONTACT.address}</p>
-              </div>
+            <div className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5">
+              <MapPin className="h-4 w-4 shrink-0 text-[#6EC7D1]" />
+              <p className="text-xs text-white/70">{CONTACT.address}</p>
             </div>
-            <div className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-              <Building2 className="mt-0.5 h-5 w-5 shrink-0 text-[#FABC05]" />
-              <div>
-                <div className="text-sm font-bold">للشركات والجهات الحكومية</div>
-                <p className="mt-1 text-xs leading-6 text-white/55">
-                  اختر «عرض مؤسسي» في النموذج واذكر جهتك وعدد المتدربين المتوقع — أو تصفح{' '}
-                  <Link to="/for-business" className="font-semibold text-[#6EC7D1] underline-offset-4 hover:underline">حلول الشركات</Link>
-                  {' '}و{' '}
-                  <Link to="/for-government" className="font-semibold text-[#6EC7D1] underline-offset-4 hover:underline">حلول الجهات الحكومية</Link>.
-                </p>
-              </div>
+            <div className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5">
+              <Building2 className="h-4 w-4 shrink-0 text-[#FABC05]" />
+              <p className="text-[11px] leading-5 text-white/55">
+                <span className="font-bold text-white/75">للشركات والجهات الحكومية: </span>
+                اختر «عرض مؤسسي» في النموذج — أو تصفح{' '}
+                <Link to="/for-business" className="font-semibold text-[#6EC7D1] underline-offset-4 hover:underline">حلول الشركات</Link>
+                {' '}و{' '}
+                <Link to="/for-government" className="font-semibold text-[#6EC7D1] underline-offset-4 hover:underline">حلول الجهات الحكومية</Link>.
+              </p>
             </div>
           </div>
-          <p className="mt-6 rounded-2xl border border-white/5 bg-white/[0.02] p-4 text-xs leading-6 text-white/45">
+          <p className="mt-4 rounded-xl border border-white/5 bg-white/[0.02] px-3.5 py-2.5 text-[11px] leading-5 text-white/45">
             إن كان سؤالك «أي مسار يناسبني؟» — فأصدق إجابة يعطيها لك{' '}
             <Link to="/diagnostic" className="font-semibold text-[#6EC7D1] underline-offset-4 hover:underline">التشخيص الذكي</Link>
             {' '}في دقائق، مجانا ودون التزام.

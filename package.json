@@ -37,12 +37,14 @@
     "test:support": "vitest run --no-file-parallelism server/tests/support",
     "test:reports": "vitest run --no-file-parallelism server/tests/reports",
     "test:e2e": "vitest run --no-file-parallelism server/tests",
+    "test:integration": "npm run test:e2e",
     "test:diagnostic-regression": "tsx scripts/test-diagnostic-regression.ts",
     "test": "npm run test:diagnostic && npm run test:scenarios"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.2",
     "@fastify/cors": "^11.3.0",
+    "@fastify/rate-limit": "^11.2.0",
     "@fastify/swagger": "^9.8.1",
     "@fastify/swagger-ui": "^6.1.1",
     "@hookform/resolvers": "^5.2.2",

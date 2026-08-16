@@ -37,17 +37,29 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
       fullName: z.string().min(3), email: z.string().email(),
       phoneCountryCode: z.string().max(6).optional(), phone: z.string().max(20).optional(),
       country: z.string().max(80).optional(), timezone: z.string().max(60).optional(),
+      employmentStatus: z.enum(['employed', 'own_business', 'full_time_training']).optional(),
       jobTitle: z.string().max(120).optional(),
       specialties: z.array(z.string().min(2)).min(1).max(12),
       domainYears: z.enum(['1-3', '4-7', '8-12', '12+']),
       trainingYears: z.string().min(1),
       bio: z.string().max(2000).optional(), linkedinUrl: z.string().url().max(300).optional().or(z.literal('')),
+      youtubeUrl: z.string().url().max(300).optional().or(z.literal('')),
+      instagramUrl: z.string().url().max(300).optional().or(z.literal('')),
+      hasAccreditation: z.boolean().optional(),
+      accreditationDetails: z.string().max(300).optional(),
+      targetCountries: z.array(z.string().min(2)).max(25).optional(),
+      targetAudiences: z.array(z.string().min(2)).max(12).optional(),
       trainingLanguages: z.array(z.string().min(2)).min(1),
       deliveryMode: z.enum(['in_person', 'remote', 'both']),
       motivation: z.string().min(10),
       privacyConsent: z.literal(true),
     }).parse(req.body)
-    const result = await svc.submitPhase1({ ...body, linkedinUrl: body.linkedinUrl || undefined })
+    const result = await svc.submitPhase1({
+      ...body,
+      linkedinUrl: body.linkedinUrl || undefined,
+      youtubeUrl: body.youtubeUrl || undefined,
+      instagramUrl: body.instagramUrl || undefined,
+    })
     return reply.status(201).send({
       reference: result.reference,
       status: 'email_verification_pending',

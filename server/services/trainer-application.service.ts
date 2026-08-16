@@ -58,12 +58,19 @@ export interface Phase1Input {
   phone?: string
   country?: string
   timezone?: string
+  employmentStatus?: 'employed' | 'own_business' | 'full_time_training'
   jobTitle?: string
   specialties: string[]
   domainYears: string
   trainingYears: string
   bio?: string
   linkedinUrl?: string
+  youtubeUrl?: string
+  instagramUrl?: string
+  hasAccreditation?: boolean
+  accreditationDetails?: string
+  targetCountries?: string[]
+  targetAudiences?: string[]
   trainingLanguages: string[]
   deliveryMode: 'in_person' | 'remote' | 'both'
   motivation: string
@@ -103,9 +110,13 @@ export class TrainerApplicationService {
         email,
         fullName: input.fullName.trim(),
         phoneCountryCode: input.phoneCountryCode, phone: input.phone,
-        country: input.country, timezone: input.timezone, jobTitle: input.jobTitle,
+        country: input.country, timezone: input.timezone,
+        employmentStatus: input.employmentStatus, jobTitle: input.jobTitle,
         domainYears: input.domainYears, trainingYears: input.trainingYears,
         bio: input.bio, linkedinUrl: input.linkedinUrl,
+        youtubeUrl: input.youtubeUrl, instagramUrl: input.instagramUrl,
+        hasAccreditation: input.hasAccreditation, accreditationDetails: input.accreditationDetails,
+        targetCountries: input.targetCountries ?? [], targetAudiences: input.targetAudiences ?? [],
         trainingLanguages: input.trainingLanguages, deliveryMode: input.deliveryMode,
         motivation: input.motivation,
         privacyConsentAt: new Date(),
