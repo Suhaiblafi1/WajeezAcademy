@@ -370,7 +370,7 @@ export class TrainerReviewService {
   /** مدربو دورة معينة للعرض العام — أو عبارة الإعلان عند غياب معتمد */
   async publicCourseTrainer(courseId: string) {
     const assignments = await this.prisma.trainerCourseAssignment.findMany({
-      where: { courseId, status: 'active', cohort: { status: { in: ['published', 'open', 'running'] } } },
+      where: { courseId, status: 'active', cohort: { status: { in: ['open', 'full', 'active'] } } },
       include: {
         profile: {
           include: { application: { select: { fullName: true } } },
@@ -401,7 +401,7 @@ export class TrainerReviewService {
   }
 
   async publishCohort(cohortId: string, actorId: string) {
-    const cohort = await this.prisma.cohort.update({ where: { id: cohortId }, data: { status: 'published' } })
+    const cohort = await this.prisma.cohort.update({ where: { id: cohortId }, data: { status: 'open' } })
     await recordAudit(this.prisma, { actorId, action: 'cohort.publish', entityType: 'cohort', entityId: cohortId })
     return cohort
   }

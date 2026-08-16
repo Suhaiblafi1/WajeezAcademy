@@ -1,0 +1,210 @@
+/* مسارات بوابة المتعلم وبوابة المدرب التشغيلية والتحقق العام من الشهادات.
+   القاعدة الذهبية: المتعلم لا يرى محتوى شعبة غير مسجل فيها،
+   والمدرب لا يرى شعبا ولا تسليمات خارج شعبه.
+   مفاتيح التخزين لا تكشف أبدا — تُحوَّل إلى روابط قراءة موقعة قصيرة العمر. */
+
+import type { FastifyInstance } from 'fastify'
+import { z } from 'zod'
+import type { PrismaClient } from '@prisma/client'
+import { CohortService } from '../../services/cohort.service'
+import { EnrollmentService } from '../../services/enrollment.service'
+import { AssessmentService } from '../../services/assessment.service'
+import { ProgressService } from '../../services/progress.service'
+import { CertificateService } from '../../services/certificate.service'
+import { AuthError } from '../../services/auth.service'
+import { requirePermission } from '../auth-plugin'
+
+/* يحوّل محتوى شعبة خاما إلى نسخة آمنة للعرض: روابط موقعة بدل مفاتيح التخزين */
+function signCohortContent<T extends {
+  sessions: { zoom: { passcodeEnc: string | null } | null; recordings: { storageKey: string | null }[] }[]
+  materials: { storageKey: string | null }[]
+}>(cohort: T, cohorts: CohortService, opts: { revealPasscode: boolean }) {
+  const sign = (key: string | null) => (key ? cohorts.signedReadUrl(key) : null)
+  return {
+    ...cohort,
+    sessions: cohort.sessions.map((s) => ({
+      ...s,
+      zoom: s.zoom
+        ? {
+            id: (s.zoom as { id?: string }).id,
+            provider: (s.zoom as { provider?: string }).provider,
+            joinUrl: (s.zoom as { joinUrl?: string }).joinUrl,
+            learnerUrl: (s.zoom as { learnerUrl?: string | null }).learnerUrl ?? null,
+            meetingId: (s.zoom as { meetingId?: string | null }).meetingId ?? null,
+            passcode: opts.revealPasscode ? s.zoom.passcodeEnc : null,
+          }
+        : null,
+      recordings: s.recordings.map((r) => ({
+        ...r,
+        readUrl: sign(r.storageKey),
+        storageKey: undefined,
+      })),
+    })),
+    materials: cohort.materials.map((m) => ({
+      ...m,
+      readUrl: sign(m.storageKey),
+      storageKey: undefined,
+    })),
+  }
+}
+
+export function registerLearningPortalRoutes(app: FastifyInstance, prisma: PrismaClient) {
+  const cohorts = new CohortService(prisma)
+  const enrollments = new EnrollmentService(prisma)
+  const assessments = new AssessmentService(prisma)
+  const progress = new ProgressService(prisma)
+  const certificates = new CertificateService(prisma)
+
+  /* ══════════ بوابة المتعلم ══════════ */
+
+  app.get('/api/learner/my-learning', {
+    preHandler: requirePermission('learner.portal'),
+    schema: { tags: ['learner-portal'], summary: 'تسجيلاتي — الشعب والتقدم والشهادات' },
+  }, async (req) => {
+    const rows = await enrollments.myEnrollments(req.auth!.userId)
+    /* لا مفاتيح تخزين في قائمة النظرة العامة */
+    return rows.map((r) => ({ ...r, cohort: { ...r.cohort } }))
+  })
+
+  app.get('/api/learner/enrollments/:id', {
+    preHandler: requirePermission('learner.portal'),
+    schema: { tags: ['learner-portal'], summary: 'محتوى شعبتي — جلسات وروابط Zoom وتسجيلات ومواد بروابط موقعة وحضوري وتقدمي' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const view = await enrollments.learnerCohortView(id)
+    if (view.userId !== req.auth!.userId) {
+      throw new AuthError('forbidden', 'هذا التسجيل ليس لك', 403)
+    }
+    if (view.status === 'dropped' || view.status === 'waitlisted') {
+      throw new AuthError('not_enrolled', 'لا تملك وصولا لهذا المحتوى — تسجيلك منسحب أو في قائمة الانتظار', 403)
+    }
+    /* المتعلم المسجل يرى رمز المرور — يحتاجه للدخول؛ غير المسجل لا يصل هنا أصلا */
+    return { ...view, cohort: signCohortContent(view.cohort, cohorts, { revealPasscode: true }) }
+  })
+
+  app.post('/api/learner/assessments/:id/submissions', {
+    preHandler: requirePermission('learner.submit'),
+    schema: { tags: ['learner-portal'], summary: 'تسليم واجب — نص أو ملف خاص حتى 100MB' },
+  }, async (req, reply) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      textAnswer: z.string().max(20000).optional(),
+      file: z.object({ originalName: z.string(), mime: z.string(), sizeBytes: z.number().int().positive() }).optional(),
+    }).parse(req.body)
+    return reply.status(201).send(await assessments.submitAssignment(req.auth!.userId, id, body))
+  })
+
+  app.post('/api/learner/assessments/:id/resubmit', {
+    preHandler: requirePermission('learner.submit'),
+    schema: { tags: ['learner-portal'], summary: 'إعادة تسليم — بعد طلب المدرب فقط' },
+  }, async (req, reply) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      textAnswer: z.string().max(20000).optional(),
+      file: z.object({ originalName: z.string(), mime: z.string(), sizeBytes: z.number().int().positive() }).optional(),
+    }).parse(req.body)
+    return reply.status(201).send(await assessments.resubmit(req.auth!.userId, id, body))
+  })
+
+  app.post('/api/learner/assessments/:id/attempts', {
+    preHandler: requirePermission('learner.submit'),
+    schema: { tags: ['learner-portal'], summary: 'محاولة تقييم — إجابات على بنود الاختبار' },
+  }, async (req, reply) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      responses: z.array(z.object({ itemId: z.string().uuid(), answer: z.unknown() })).min(1),
+    }).parse(req.body)
+    return reply.status(201).send(await assessments.submitAttempt(req.auth!.userId, id, body.responses))
+  })
+
+  app.get('/api/learner/certificates', {
+    preHandler: requirePermission('learner.portal'),
+    schema: { tags: ['learner-portal'], summary: 'شهاداتي — أرقام التحقق وحالاتها' },
+  }, async (req) => certificates.myCertificates(req.auth!.userId))
+
+  /* ══════════ بوابة المدرب التشغيلية — شعبه فقط ══════════ */
+
+  app.get('/api/trainer/my-cohorts', {
+    preHandler: requirePermission('trainer.cohort.operate'),
+    schema: { tags: ['trainer-ops'], summary: 'شعبي — جلساتها ومسجلوها وتقدمهم ومحتواها بروابط موقعة' },
+  }, async (req) => {
+    const rows = await enrollments.trainerCohorts(req.auth!.userId)
+    return rows.map((r) => ({ role: r.role, cohort: signCohortContent(r.cohort, cohorts, { revealPasscode: true }) }))
+  })
+
+  app.post('/api/trainer/sessions/:sessionId/attendance', {
+    preHandler: requirePermission('trainer.cohort.operate'),
+    schema: { tags: ['trainer-ops'], summary: 'تسجيل حضور متعلم في جلسة من شعبي — يعيد حساب تقدمه' },
+  }, async (req) => {
+    const { sessionId } = z.object({ sessionId: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      enrollmentId: z.string().uuid(),
+      status: z.enum(['present', 'late', 'absent', 'excused']),
+      note: z.string().max(500).optional(),
+    }).parse(req.body)
+    return progress.markAttendance(req.auth!.userId, sessionId, body.enrollmentId, body.status, body.note)
+  })
+
+  app.post('/api/trainer/sessions/:sessionId/recordings', {
+    preHandler: requirePermission('trainer.cohort.operate'),
+    schema: { tags: ['trainer-ops'], summary: 'رفع تسجيل جلسة من شعبي — ملف خاص برابط رفع موقع' },
+  }, async (req, reply) => {
+    const { sessionId } = z.object({ sessionId: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      title: z.string().min(2), moduleId: z.string().optional(),
+      mime: z.string(), sizeBytes: z.number().int().positive(), durationSec: z.number().int().optional(),
+    }).parse(req.body)
+    const session = await prisma.cohortSession.findUnique({ where: { id: sessionId } })
+    if (!session) throw new AuthError('not_found', 'الجلسة غير موجودة', 404)
+    /* لا تسجيلات في شعب لا يدربها */
+    await enrollments.assertCohortTrainer(req.auth!.userId, session.cohortId)
+    return reply.status(201).send(await cohorts.registerRecording(req.auth!.userId, sessionId, body))
+  })
+
+  app.get('/api/trainer/grading-queue', {
+    preHandler: requirePermission('trainer.cohort.operate'),
+    schema: { tags: ['trainer-ops'], summary: 'طابور المراجعة — تسليمات شعبي المعلقة فقط' },
+  }, async (req) => assessments.trainerQueue(req.auth!.userId))
+
+  app.post('/api/trainer/submissions/:id/review', {
+    preHandler: requirePermission('trainer.cohort.operate'),
+    schema: { tags: ['trainer-ops'], summary: 'مراجعة تسليم — بدء/طلب إعادة/قبول/رفض بسبب' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      action: z.enum(['start_review', 'request_resubmit', 'accept', 'reject']),
+      note: z.string().max(2000).optional(),
+    }).parse(req.body)
+    return assessments.reviewSubmission(req.auth!.userId, id, body.action, body.note)
+  })
+
+  app.post('/api/trainer/grade', {
+    preHandler: requirePermission('trainer.cohort.operate'),
+    schema: { tags: ['trainer-ops'], summary: 'تقدير درجة — كل تعديل لاحق يُسجل في سجل لا يُمحى' },
+  }, async (req, reply) => {
+    const body = z.object({
+      submissionId: z.string().uuid().optional(), attemptId: z.string().uuid().optional(),
+      score: z.number().min(0), maxScore: z.number().min(1),
+      rubricScores: z.array(z.object({ criterionId: z.string().uuid(), score: z.number().min(0) })).optional(),
+    }).parse(req.body)
+    return reply.status(201).send(await assessments.grade(req.auth!.userId, body))
+  })
+
+  app.post('/api/trainer/submissions/:id/feedback', {
+    preHandler: requirePermission('trainer.cohort.operate'),
+    schema: { tags: ['trainer-ops'], summary: 'تغذية راجعة مكتوبة على تسليم من شعبي' },
+  }, async (req, reply) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({ body: z.string().min(3).max(3000) }).parse(req.body)
+    return reply.status(201).send(await assessments.addFeedback(req.auth!.userId, id, body.body))
+  })
+
+  /* ══════════ التحقق العام من الشهادات — بلا دخول ══════════ */
+
+  app.get('/api/v1/certificates/verify/:number', {
+    schema: { tags: ['public'], summary: 'تحقق عام من شهادة برقمها — بيانات محدودة ويُسجل كل تحقق' },
+  }, async (req) => {
+    const { number } = z.object({ number: z.string().min(6).max(40) }).parse(req.params)
+    return certificates.verify(number, req.ip)
+  })
+}

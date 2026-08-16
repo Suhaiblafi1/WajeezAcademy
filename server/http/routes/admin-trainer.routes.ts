@@ -161,16 +161,8 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     return reply.status(201).send(await review.assignToCohort(profileId, body.courseId, body.cohortId, req.auth!.userId))
   })
 
-  app.post('/api/admin/cohorts', {
-    preHandler: requirePermission('trainer.assign'),
-    schema: { tags: ['admin-trainers'], summary: 'إنشاء شعبة لدورة' },
-  }, async (req, reply) => {
-    const body = z.object({
-      courseId: z.string(), pathwayId: z.string().optional(), title: z.string().min(3),
-      startsAt: z.coerce.date().optional(), endsAt: z.coerce.date().optional(),
-    }).parse(req.body)
-    return reply.status(201).send(await review.createCohort(req.auth!.userId, body))
-  })
+  /* إنشاء الشعب انتقل إلى admin-learning.routes — نسخة أشمل بشروط الفتح والسعة والجدولة.
+     يبقى هنا مسار النشر فقط لأنه يحمل دلالة الظهور العام لإسنادات المدربين. */
 
   app.post('/api/admin/cohorts/:cohortId/publish', {
     preHandler: requirePermission('trainer.assign'),

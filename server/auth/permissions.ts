@@ -46,6 +46,19 @@ export const PERMISSIONS = [
   // منظومة المدربين — بوابة المدرب
   { key: 'trainer.portal', description: 'دخول بوابة المدرب وعرض تأهيله وإسناداته' },
   { key: 'trainer.change.submit', description: 'اقتراح تعديل على دورة مؤهل لها أو مسندة إليه' },
+  // التشغيل الأكاديمي — الإدارة
+  { key: 'cohort.manage', description: 'إنشاء الشعب وجدولتها وإدارة جلساتها وروابطها' },
+  { key: 'cohort.open', description: 'فتح شعبة بعد تحقق شروط الفتح' },
+  { key: 'cohort.override_capacity', description: 'تجاوز سعة شعبة بشكل موثق' },
+  { key: 'enrollment.manage', description: 'تسجيل المتعلمين في الشعب وإدارة تسجيلهم' },
+  { key: 'material.manage', description: 'إدارة المواد والتسجيلات الخاصة' },
+  { key: 'certificate.issue', description: 'إصدار شهادة بعد تحقق قواعد الإكمال' },
+  { key: 'certificate.revoke', description: 'إلغاء شهادة مع سبب موثق' },
+  // التشغيل الأكاديمي — المدرب على شعبه فقط
+  { key: 'trainer.cohort.operate', description: 'تشغيل شعبه: حضور وتقييم وتغذية وتسجيلات' },
+  // المتعلم
+  { key: 'learner.portal', description: 'دخول بوابة المتعلم وعرض مساره وتقدمه' },
+  { key: 'learner.submit', description: 'تسليم الواجبات ومحاولات التقييم' },
 ] as const
 
 export type PermissionKey = (typeof PERMISSIONS)[number]['key']
@@ -62,6 +75,8 @@ export const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
     'trainer.applications.view', 'trainer.applications.review', 'trainer.applications.decide',
     'trainer.invite', 'trainer.qualify', 'trainer.assign', 'trainer.publish', 'trainer.suspend',
     'trainer.change.review',
+    'cohort.manage', 'cohort.open', 'cohort.override_capacity', 'enrollment.manage',
+    'material.manage', 'certificate.issue', 'certificate.revoke',
   ],
   diagnostic_manager: [
     'catalog.view',
@@ -69,12 +84,12 @@ export const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
     'diagnostic.question.edit', 'diagnostic.scoring.edit', 'diagnostic.scoring.publish',
     'diagnostic.simulate', 'catalog.impact.view',
   ],
-  operations_manager: ['catalog.view', 'catalog.impact.view', 'trainer.applications.view', 'trainer.assign'],
+  operations_manager: ['catalog.view', 'catalog.impact.view', 'trainer.applications.view', 'trainer.assign', 'cohort.manage', 'enrollment.manage'],
   advisor: ['catalog.view'],
-  trainer: ['trainer.portal', 'trainer.change.submit'],
+  trainer: ['trainer.portal', 'trainer.change.submit', 'trainer.cohort.operate'],
   finance: ['trainer.compensation.manage'],
   support: ['catalog.view'],
-  learner: [],
+  learner: ['learner.portal', 'learner.submit'],
 }
 
 export const ROLE_NAMES_AR: Record<string, string> = {

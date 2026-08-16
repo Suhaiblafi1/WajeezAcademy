@@ -16,6 +16,8 @@ import { registerPublishingRoutes } from './routes/publishing.routes'
 import { registerTrainerApplicationRoutes } from './routes/trainer-applications.routes'
 import { registerAdminTrainerRoutes } from './routes/admin-trainer.routes'
 import { registerTrainerPortalRoutes } from './routes/trainer-portal.routes'
+import { registerAdminLearningRoutes } from './routes/admin-learning.routes'
+import { registerLearningPortalRoutes } from './routes/learning-portal.routes'
 
 export async function buildApp(prisma: PrismaClient) {
   const app = Fastify({ logger: false })
@@ -52,6 +54,8 @@ export async function buildApp(prisma: PrismaClient) {
   registerTrainerApplicationRoutes(app, prisma)
   registerAdminTrainerRoutes(app, prisma)
   registerTrainerPortalRoutes(app, prisma)
+  registerAdminLearningRoutes(app, prisma)
+  registerLearningPortalRoutes(app, prisma)
 
   return app
 }

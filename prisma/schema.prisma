@@ -25,6 +25,7 @@ model User {
   sessions     Session[]
   resetTokens  PasswordResetToken[]
   trainerProfile TrainerProfile?
+  enrollments  Enrollment[] @relation("EnrollmentUser")
 }
 
 model Role {
@@ -789,6 +790,7 @@ model TrainerProfile {
   compensationRules  TrainerCompensationRule[]
   payouts            TrainerPayout[]
   cohortPlans        CohortDeliveryPlan[]
+  cohortTrainers     CohortTrainer[]
 }
 
 model TrainerSkill {
@@ -924,18 +926,35 @@ model TrainerPayoutItem {
    يمكن اعتماد اقتراح لشعبة واحدة دون تغيير الكتالوج. */
 
 model Cohort {
-  id        String    @id @default(uuid()) @db.Uuid
-  courseId  String
-  pathwayId String?
-  title     String
-  status    String    @default("draft") // draft | published | open | running | completed | cancelled
-  startsAt  DateTime?
-  endsAt    DateTime?
-  createdAt DateTime  @default(now())
-  course    Course    @relation(fields: [courseId], references: [id])
-  plans     CohortDeliveryPlan[]
-  assignments TrainerCourseAssignment[]
+  id           String    @id @default(uuid()) @db.Uuid
+  courseId     String
+  pathwayId    String?
+  title        String
+  status       String    @default("draft") // draft | open | full | active | completed | cancelled
+  startsAt     DateTime?
+  endsAt       DateTime?
+  /* جدولة وسعة وتقديم — تُدار من الإدارة فقط */
+  daysOfWeek   String[]  @default([])
+  startTime    String?   // مثل 18:00
+  timezone     String?
+  capacity     Int?
+  price        Decimal?  @db.Decimal(10, 2)
+  currency     String    @default("JOD")
+  language     String    @default("العربية")
+  deliveryMode String    @default("remote") // remote | in_person | hybrid
+  registrationOpen Boolean @default(false)
+  financialReady   Boolean @default(false) // إعداد مالي مكتمل — شرط فتح الشعبة
+  createdAt    DateTime  @default(now())
+  course       Course    @relation(fields: [courseId], references: [id])
+  plans        CohortDeliveryPlan[]
+  assignments  TrainerCourseAssignment[]
   changeRequests TrainerChangeRequest[]
+  trainers     CohortTrainer[]
+  sessions     CohortSession[]
+  enrollments  Enrollment[]
+  materials    LearningMaterial[]
+  assessments  CohortAssessment[]
+  completionRules CompletionRule[]
   @@index([courseId, status])
 }
 
@@ -965,4 +984,318 @@ model AuditEvent {
   createdAt  DateTime @default(now())
   @@index([entityType, entityId, createdAt])
   @@index([actorId, createdAt])
+}
+
+/* ═══════════ التشغيل الأكاديمي — شعب وجلسات وتعلم وشهادات ═══════════
+   فتح الشعبة مشروط: دورة منشورة + مدرب معتمد مؤهل + جدول + سعة + خطة تقديم + إعداد مالي.
+   التقدم يُحسب من أدلة حقيقية (حضور/وحدات/تسليمات/تقييمات) لا من فتح الصفحة. */
+
+model CohortTrainer {
+  id         String         @id @default(uuid()) @db.Uuid
+  cohortId   String         @db.Uuid
+  profileId  String         @db.Uuid
+  role       String         @default("lead") // lead | assistant
+  assignedBy String?        @db.Uuid
+  createdAt  DateTime       @default(now())
+  cohort     Cohort         @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  profile    TrainerProfile @relation(fields: [profileId], references: [id])
+  @@unique([cohortId, profileId])
+}
+
+model CohortSession {
+  id        String       @id @default(uuid()) @db.Uuid
+  cohortId  String       @db.Uuid
+  moduleId  String?      // الوحدة المرتبطة من مخطط الدورة
+  title     String
+  startsAt  DateTime
+  endsAt    DateTime?
+  timezone  String?
+  status    String       @default("scheduled") // scheduled | live | done | cancelled
+  createdAt DateTime     @default(now())
+  cohort    Cohort       @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  zoom      ZoomMeeting?
+  recordings Recording[]
+  attendance Attendance[]
+  @@index([cohortId, startsAt])
+}
+
+model ZoomMeeting {
+  id             String        @id @default(uuid()) @db.Uuid
+  sessionId      String        @unique @db.Uuid
+  provider       String        @default("manual") // manual | zoom_api — لا اجتماع حقيقي دون مفاتيح
+  joinUrl        String
+  meetingId      String?
+  passcodeEnc    String?       // محمي — لا يُعرض إلا لصاحب الحق
+  learnerUrl     String?       // رابط المتعلم إن اختلف
+  hostProfileId  String?       @db.Uuid // صلاحية المدرب على الاجتماع
+  createdBy      String?       @db.Uuid
+  createdAt      DateTime      @default(now())
+  session        CohortSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model LearningMaterial {
+  id          String   @id @default(uuid()) @db.Uuid
+  cohortId    String   @db.Uuid
+  moduleId    String?
+  title       String
+  kind        String   @default("file") // file | link | summary_audio | summary_text
+  storageKey  String?  @unique // ملفات خاصة — signed URLs فقط
+  externalUrl String?  // للروابط الخارجية
+  status      String   @default("active") // active | archived | disabled
+  createdBy   String?  @db.Uuid
+  createdAt   DateTime @default(now())
+  cohort      Cohort   @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  @@index([cohortId, status])
+}
+
+model Recording {
+  id         String        @id @default(uuid()) @db.Uuid
+  sessionId  String        @db.Uuid
+  moduleId   String?
+  title      String
+  storageKey String        @unique
+  mime       String
+  sizeBytes  Int
+  durationSec Int?
+  status     String        @default("active") // active | archived | disabled
+  createdBy  String?       @db.Uuid
+  createdAt  DateTime      @default(now())
+  session    CohortSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  @@index([sessionId])
+}
+
+model Enrollment {
+  id          String   @id @default(uuid()) @db.Uuid
+  cohortId    String   @db.Uuid
+  userId      String   @db.Uuid
+  status      String   @default("enrolled") // enrolled | waitlisted | completed | dropped
+  enrolledBy  String?  @db.Uuid
+  overrideCapacity Boolean @default(false) // تجاوز سعة موثق بصلاحية
+  createdAt   DateTime @default(now())
+  cohort      Cohort   @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  user        User     @relation("EnrollmentUser", fields: [userId], references: [id])
+  attendance  Attendance[]
+  attempts    AssessmentAttempt[]
+  submissions AssignmentSubmission[]
+  moduleProgress ModuleProgress[]
+  courseProgress CourseProgress?
+  certificates Certificate[]
+  @@unique([cohortId, userId])
+  @@index([userId, status])
+}
+
+model Attendance {
+  id           String        @id @default(uuid()) @db.Uuid
+  sessionId    String        @db.Uuid
+  enrollmentId String        @db.Uuid
+  status       String        // present | late | absent | excused
+  markedBy     String?       @db.Uuid // مدرب الشعبة فقط
+  note         String?
+  createdAt    DateTime      @default(now())
+  session      CohortSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  enrollment   Enrollment    @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  @@unique([sessionId, enrollmentId])
+}
+
+/* تقييمات الشعبة — واجبات/اختبارات/مشاريع مرتبطة بالمخطط الأساسي */
+model CohortAssessment {
+  id          String   @id @default(uuid()) @db.Uuid
+  cohortId    String   @db.Uuid
+  moduleId    String?
+  title       String
+  type        String   @default("assignment") // assignment | quiz | project
+  maxScore    Int      @default(100)
+  passScore   Int?
+  dueAt       DateTime?
+  rubricId    String?  @db.Uuid
+  status      String   @default("published") // draft | published | closed
+  createdBy   String?  @db.Uuid
+  createdAt   DateTime @default(now())
+  cohort      Cohort   @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  items       AssessmentItem[]
+  attempts    AssessmentAttempt[]
+  submissions AssignmentSubmission[]
+  rubric      GradingRubric? @relation("AssessmentRubric", fields: [rubricId], references: [id])
+  @@index([cohortId, status])
+}
+
+model AssessmentItem {
+  id           String           @id @default(uuid()) @db.Uuid
+  assessmentId String           @db.Uuid
+  sequence     Int
+  prompt       String
+  kind         String           @default("text") // text | choice | file
+  maxScore     Int              @default(10)
+  assessment   CohortAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  responses    AssessmentResponse[]
+  @@index([assessmentId])
+}
+
+model AssessmentAttempt {
+  id           String           @id @default(uuid()) @db.Uuid
+  assessmentId String           @db.Uuid
+  enrollmentId String           @db.Uuid
+  status       String           @default("submitted") // submitted | under_review | graded | returned
+  submittedAt  DateTime         @default(now())
+  gradedAt     DateTime?
+  assessment   CohortAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  enrollment   Enrollment       @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  responses    AssessmentResponse[]
+  grades       Grade[]
+  @@index([enrollmentId])
+}
+
+model AssessmentResponse {
+  id         String            @id @default(uuid()) @db.Uuid
+  attemptId  String            @db.Uuid
+  itemId     String            @db.Uuid
+  answer     Json?
+  storageKey String?           // لإجابات الملفات
+  attempt    AssessmentAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  item       AssessmentItem    @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  @@index([attemptId])
+}
+
+/* روبرك تقييم مستقل قابل لإعادة الاستخدام */
+model GradingRubric {
+  id        String   @id @default(uuid()) @db.Uuid
+  title     String
+  status    String   @default("active") // active | archived
+  createdBy String?  @db.Uuid
+  createdAt DateTime @default(now())
+  criteria  RubricCriterion[]
+  assessments CohortAssessment[] @relation("AssessmentRubric")
+}
+
+model RubricCriterion {
+  id       String        @id @default(uuid()) @db.Uuid
+  rubricId String        @db.Uuid
+  sequence Int
+  title    String
+  maxScore Int           @default(10)
+  rubric   GradingRubric @relation(fields: [rubricId], references: [id], onDelete: Cascade)
+  @@index([rubricId])
+}
+
+model AssignmentSubmission {
+  id           String           @id @default(uuid()) @db.Uuid
+  assessmentId String           @db.Uuid
+  enrollmentId String           @db.Uuid
+  storageKey   String?          // ملف التسليم — تخزين خاص
+  textAnswer   String?
+  status       String           @default("submitted")
+  // submitted | under_review | resubmit_requested | accepted | rejected
+  reviewNote   String?
+  submittedAt  DateTime         @default(now())
+  reviewedAt   DateTime?
+  reviewedBy   String?          @db.Uuid
+  assessment   CohortAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  enrollment   Enrollment       @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  grades       Grade[]
+  feedback     TrainerFeedback[]
+  @@index([enrollmentId, status])
+}
+
+model Grade {
+  id           String   @id @default(uuid()) @db.Uuid
+  submissionId String?  @db.Uuid
+  attemptId    String?  @db.Uuid
+  score        Decimal  @db.Decimal(6, 2)
+  maxScore     Decimal  @db.Decimal(6, 2)
+  rubricScores Json?    // [{criterionId, score}]
+  gradedBy     String   @db.Uuid
+  createdAt    DateTime @default(now())
+  submission   AssignmentSubmission? @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  attempt      AssessmentAttempt?    @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  history      GradeHistory[]
+}
+
+model TrainerFeedback {
+  id           String               @id @default(uuid()) @db.Uuid
+  submissionId String               @db.Uuid
+  authorId     String               @db.Uuid
+  body         String
+  createdAt    DateTime             @default(now())
+  submission   AssignmentSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  @@index([submissionId])
+}
+
+model GradeHistory {
+  id        String   @id @default(uuid()) @db.Uuid
+  gradeId   String   @db.Uuid
+  oldScore  Decimal? @db.Decimal(6, 2)
+  newScore  Decimal  @db.Decimal(6, 2)
+  reason    String
+  changedBy String   @db.Uuid
+  createdAt DateTime @default(now())
+  grade     Grade    @relation(fields: [gradeId], references: [id], onDelete: Cascade)
+  @@index([gradeId])
+}
+
+/* التقدم — مشتق من أدلة حقيقية ويُعاد حسابه عند كل حدث */
+model CourseProgress {
+  id           String     @id @default(uuid()) @db.Uuid
+  enrollmentId String     @unique @db.Uuid
+  percent      Int        @default(0)
+  evidence     Json       // {attendancePct, modulesCompleted, assignmentsAccepted, assessmentsPassed}
+  updatedAt    DateTime   @updatedAt
+  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+}
+
+model ModuleProgress {
+  id           String     @id @default(uuid()) @db.Uuid
+  enrollmentId String     @db.Uuid
+  moduleId     String
+  status       String     @default("not_started") // not_started | in_progress | completed
+  evidence     Json?      // ما الذي أثبت الإكمال
+  completedAt  DateTime?
+  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  @@unique([enrollmentId, moduleId])
+}
+
+model CompletionRule {
+  id        String   @id @default(uuid()) @db.Uuid
+  courseId  String
+  cohortId  String?  @db.Uuid // قاعدة خاصة بشعبة تتقدم على قاعدة الدورة
+  type      String   // attendance_pct | modules_completed | assignment_accepted | project_accepted | assessment_passed
+  threshold Int      @default(1) // نسبة أو عدد
+  required  Boolean  @default(true)
+  createdBy String?  @db.Uuid
+  createdAt DateTime @default(now())
+  cohort    Cohort?  @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  @@index([courseId])
+}
+
+model Certificate {
+  id            String     @id @default(uuid()) @db.Uuid
+  number        String     @unique // WJ-CERT-YYYY-#####
+  enrollmentId  String     @db.Uuid
+  learnerName   String     // لقطة وقت الإصدار
+  courseId      String
+  courseVersion Int
+  issuedAt      DateTime   @default(now())
+  issuedBy      String?    @db.Uuid // null = إصدار نظامي بعد تحقق القواعد
+  status        String     @default("active") // active | revoked
+  enrollment    Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  verifications CertificateVerification[]
+  revocation    CertificateRevocation?
+  @@index([enrollmentId])
+}
+
+model CertificateVerification {
+  id            String      @id @default(uuid()) @db.Uuid
+  certificateId String      @db.Uuid
+  ip            String?
+  createdAt     DateTime    @default(now())
+  certificate   Certificate @relation(fields: [certificateId], references: [id], onDelete: Cascade)
+  @@index([certificateId])
+}
+
+model CertificateRevocation {
+  id            String      @id @default(uuid()) @db.Uuid
+  certificateId String      @unique @db.Uuid
+  reason        String
+  revokedBy     String      @db.Uuid
+  createdAt     DateTime    @default(now())
+  certificate   Certificate @relation(fields: [certificateId], references: [id], onDelete: Cascade)
 }

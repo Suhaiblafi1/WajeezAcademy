@@ -22,6 +22,7 @@ const MyPathway = lazy(() => import('./pages/student/MyPathway'))
 const CourseView = lazy(() => import('./pages/student/CourseView'))
 const Project = lazy(() => import('./pages/student/Project'))
 const Certificates = lazy(() => import('./pages/student/Certificates'))
+const MyLearning = lazy(() => import('./pages/student/MyLearning'))
 const AdvisorDashboard = lazy(() => import('./pages/advisor/AdvisorDashboard'))
 const AdvisorReviews = lazy(() => import('./pages/advisor/Reviews'))
 const StudentCard = lazy(() => import('./pages/advisor/StudentCard'))
@@ -36,6 +37,7 @@ const JoinTrainer = lazy(() => import('./pages/JoinTrainer'))
 const JoinTrainerComplete = lazy(() => import('./pages/JoinTrainerComplete'))
 const TrainerAcceptInvite = lazy(() => import('./pages/TrainerAcceptInvite'))
 const TrainerProposals = lazy(() => import('./pages/trainer/Proposals'))
+const CohortBoard = lazy(() => import('./pages/trainer/CohortBoard'))
 const Exceptions = lazy(() => import('./pages/admin/Exceptions'))
 const ContentWorkflow = lazy(() => import('./pages/admin/ContentWorkflow'))
 const CatalogAdmin = lazy(() => import('./pages/admin/CatalogAdmin'))
@@ -99,6 +101,7 @@ export default function App() {
           <Route path="/student/course/:courseId" element={<CourseView />} />
           <Route path="/student/project" element={<Project />} />
           <Route path="/student/certificates" element={<Certificates />} />
+          <Route path="/student/learning" element={<MyLearning />} />
           <Route path="/advisor" element={<AdvisorDashboard />} />
           <Route path="/advisor/reviews" element={<AdvisorReviews />} />
           <Route path="/advisor/student/:id" element={<StudentCard />} />
@@ -107,6 +110,7 @@ export default function App() {
           <Route path="/trainer/cohort/:id" element={<CohortView />} />
           <Route path="/trainer/earnings" element={<Earnings />} />
           <Route path="/trainer/proposals" element={<TrainerProposals />} />
+          <Route path="/trainer/board" element={<CohortBoard />} />
           <Route path="/trainer/accept-invite" element={<TrainerAcceptInvite />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/cohorts" element={<AdminCohorts />} />
