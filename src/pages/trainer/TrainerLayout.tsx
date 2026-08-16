@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, NavLink } from "react-router";
-import { GraduationCap, ClipboardCheck, Users, Wallet } from "lucide-react";
+import { GraduationCap, ClipboardCheck, GitPullRequest, Users, Wallet } from "lucide-react";
 import { TRAINER_IDENTITIES } from "@/data/trainer";
 import { TRAINER_IDENTITY_KEY, trainerIdentity } from "./trainer-identity";
 import PrototypeBanner from "@/components/PrototypeBanner";
@@ -38,6 +38,7 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
   const tabs = [
     { to: "/trainer", label: "شعبي", icon: Users, end: true },
     { to: "/trainer/grading", label: "طابور التقييم", icon: ClipboardCheck },
+    { to: "/trainer/proposals", label: "اقتراحاتي", icon: GitPullRequest },
     { to: "/trainer/earnings", label: "مستحقاتي", icon: Wallet },
   ];
 

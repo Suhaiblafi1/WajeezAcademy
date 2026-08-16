@@ -33,6 +33,9 @@ const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
 const AdminCohorts = lazy(() => import('./pages/admin/AdminCohorts'))
 const AdminTrainerApps = lazy(() => import('./pages/admin/TrainerApplications'))
 const JoinTrainer = lazy(() => import('./pages/JoinTrainer'))
+const JoinTrainerComplete = lazy(() => import('./pages/JoinTrainerComplete'))
+const TrainerAcceptInvite = lazy(() => import('./pages/TrainerAcceptInvite'))
+const TrainerProposals = lazy(() => import('./pages/trainer/Proposals'))
 const Exceptions = lazy(() => import('./pages/admin/Exceptions'))
 const ContentWorkflow = lazy(() => import('./pages/admin/ContentWorkflow'))
 const CatalogAdmin = lazy(() => import('./pages/admin/CatalogAdmin'))
@@ -82,6 +85,7 @@ export default function App() {
           <Route path="/stories" element={<StoriesPage />} />
           <Route path="/trainers" element={<Trainers />} />
           <Route path="/join-trainer" element={<JoinTrainer />} />
+          <Route path="/join-trainer/complete" element={<JoinTrainerComplete />} />
           <Route path="/for-business" element={<Business kind="business" />} />
           <Route path="/for-government" element={<Business kind="government" />} />
           <Route path="/contact" element={<Contact />} />
@@ -102,6 +106,8 @@ export default function App() {
           <Route path="/trainer/grading" element={<GradingQueue />} />
           <Route path="/trainer/cohort/:id" element={<CohortView />} />
           <Route path="/trainer/earnings" element={<Earnings />} />
+          <Route path="/trainer/proposals" element={<TrainerProposals />} />
+          <Route path="/trainer/accept-invite" element={<TrainerAcceptInvite />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/cohorts" element={<AdminCohorts />} />
           <Route path="/admin/exceptions" element={<Exceptions />} />

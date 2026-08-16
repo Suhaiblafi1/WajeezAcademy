@@ -1,9 +1,16 @@
 import { Link } from 'react-router'
-import { ArrowLeft, GraduationCap, Users, ShieldCheck } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { ArrowLeft, BadgeCheck, GraduationCap, Users, ShieldCheck } from 'lucide-react'
 import { TRAINER_POOLS, TRAINER_PENDING_AR } from '@/data/courses'
 import { pathways } from '@/data/pathways'
+import { apiGet } from '@/services/api'
 import SiteShell from '@/components/SiteShell'
 import SeoHead from '@/components/SeoHead'
+
+interface PublicTrainer {
+  id: string; name: string; headline: string | null; bio: string | null;
+  country: string | null; specialties: string[]; assignedCourseIds: string[];
+}
 
 /* أسماء العائلات بالعربية */
 const FAMILY_LABEL: Record<string, string> = {
@@ -16,6 +23,12 @@ const FAMILY_LABEL: Record<string, string> = {
    نزاهة تسويقية: لا يُنشر اسم مدرب إلا بعد اعتماد الشعبة وحصوله على
    public_visibility. حتى ذلك الحين تعرض الصفحة التخصصات المطلوبة فعلا. */
 export default function Trainers() {
+  /* المدربون المعتمدون للنشر العام — من API حصرا: active + موثق + public_visibility + موافقة نشر */
+  const [approved, setApproved] = useState<PublicTrainer[]>([])
+  useEffect(() => {
+    apiGet<PublicTrainer[]>('/api/trainers/public').then(setApproved).catch(() => setApproved([]))
+  }, [])
+
   /* نجمع التخصصات الفريدة من كل العائلات مع عدد المسارات التي تحتاجها */
   const byRole = new Map<string, Set<string>>()
   Object.entries(TRAINER_POOLS).forEach(([family, list]) =>
@@ -79,6 +92,37 @@ export default function Trainers() {
           )
         })}
       </div>
+
+      {/* المدربون المعتمدون رسميا — يظهرون بالاسم فقط بعد اكتمال الاعتماد والموافقة */}
+      {approved.length > 0 && (
+        <section className="mt-12">
+          <h2 className="text-center text-2xl font-black">مدربون معتمدون</h2>
+          <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {approved.map((t) => (
+              <article key={t.id} className="rounded-3xl border border-[#38A7B4]/30 bg-[#38A7B4]/[0.06] p-6">
+                <div className="flex items-center gap-3">
+                  <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#38A7B4]/20 text-lg font-black text-[#6EC7D1]">
+                    {t.name.slice(0, 1)}
+                  </span>
+                  <div>
+                    <h3 className="flex items-center gap-1.5 font-black">
+                      {t.name}
+                      <BadgeCheck className="h-4 w-4 text-[#38A7B4]" aria-label="مدرب موثق" />
+                    </h3>
+                    {t.headline && <p className="mt-0.5 text-xs text-white/55">{t.headline}</p>}
+                  </div>
+                </div>
+                {t.bio && <p className="mt-3 text-xs leading-6 text-white/60">{t.bio}</p>}
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {t.specialties.map((s) => (
+                    <span key={s} className="rounded-full border border-[#38A7B4]/25 bg-[#38A7B4]/10 px-2.5 py-1 text-[11px] text-[#6EC7D1]">{s}</span>
+                  ))}
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="mt-14 rounded-3xl border border-[#38A7B4]/25 bg-[#38A7B4]/5 p-8 text-center">
         <p className="text-lg font-bold">هل أنت خبير وتريد التدريب معنا؟</p>

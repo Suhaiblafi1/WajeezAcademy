@@ -24,6 +24,7 @@ model User {
   roles        UserRole[]
   sessions     Session[]
   resetTokens  PasswordResetToken[]
+  trainerProfile TrainerProfile?
 }
 
 model Role {
@@ -207,6 +208,10 @@ model Course {
   templateLinks         TemplateCourse[]
   prerequisites         Prerequisite[] @relation("CoursePrereq")
   requiredBy            Prerequisite[] @relation("PrereqOf")
+  trainerQualifications TrainerCourseQualification[]
+  trainerAssignments    TrainerCourseAssignment[]
+  trainerChangeRequests TrainerChangeRequest[]
+  cohorts               Cohort[]
 }
 
 model CourseVersion {
@@ -595,4 +600,369 @@ model DiagnosticSession {
   createdAt              DateTime @default(now())
   @@index([userId])
   @@index([catalogVersionId])
+}
+
+/* ═══════════ منظومة المدربين — من الطلب العام إلى الاعتماد والنشر ═══════════
+   الحاكمية: قبول الطلب ≠ إنشاء الحساب ≠ تفعيل الدور ≠ التأهيل لدورة ≠ التعيين ≠ النشر العام.
+   كل انتقال حالة يُسجَّل في TrainerStatusHistory، وكل إجراء حساس في AuditEvent. */
+
+model TrainerApplication {
+  id                  String    @id @default(uuid()) @db.Uuid
+  reference           String    @unique // WJ-TR-2026-00001
+  status              String    @default("email_verification_pending")
+  // draft | email_verification_pending | submitted | under_review | information_requested
+  // | shortlisted | interview_scheduled | demo_requested | academic_review
+  // | conditionally_approved | contract_pending | onboarding | active
+  // | waitlisted | rejected | withdrawn | suspended
+  email               String
+  emailVerifiedAt     DateTime?
+  emailVerifyTokenHash String?  @unique // رمز تحقق البريد — هاش فقط
+  emailVerifyExpiresAt DateTime?
+  accessTokenHash     String?   @unique // رمز وصول المرشح لمرحلة الاستكمال — هاش فقط
+  // المرحلة الأولى
+  fullName            String
+  phoneCountryCode    String?
+  phone               String?
+  country             String?
+  timezone            String?
+  jobTitle            String?
+  domainYears         String?   // 1-3 | 4-7 | 8-12 | 12+
+  trainingYears       String?   // خبرة التدريب منفصلة عن خبرة المجال
+  bio                 String?
+  linkedinUrl         String?
+  trainingLanguages   String[]  @default([])
+  deliveryMode        String?   // in_person | remote | both
+  motivation          String?
+  privacyConsentAt    DateTime?
+  // المرحلة الثانية — تُفتح للمرشحين فقط
+  phase2CompletedAt   DateTime?
+  previousCourses     Json?     // [{title, org, year, learnersCount}] — حتى ثلاث
+  totalLearners       Int?
+  previousOrgs        String?
+  evidenceNotes       String?
+  availability        Json?     // {days, hoursPerWeek, startFrom}
+  demoConsent         Boolean   @default(false)
+  teachableCourseIds  String[]  @default([]) // الدورات الحالية التي يستطيع تدريسها
+  withdrawReason      String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  specialties         TrainerApplicationSpecialty[]
+  documents           TrainerApplicationDocument[]
+  reviews             TrainerApplicationReview[]
+  interviews          TrainerInterview[]
+  demoEvaluations     TrainerDemoEvaluation[]
+  references          TrainerReference[]
+  statusHistory       TrainerStatusHistory[]
+  invitations         TrainerInvitation[]
+  profile             TrainerProfile?
+  @@index([status, createdAt])
+  @@index([email])
+}
+
+model TrainerApplicationSpecialty {
+  applicationId String             @db.Uuid
+  specialty     String
+  application   TrainerApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  @@id([applicationId, specialty])
+}
+
+model TrainerApplicationDocument {
+  id            String             @id @default(uuid()) @db.Uuid
+  applicationId String             @db.Uuid
+  kind          String             // cv | training_video | certificate | evidence | reference_letter | other
+  storageKey    String             @unique // مفتاح تخزين خاص — لا يُقدَّم إلا برابط موقع مؤقت
+  originalName  String
+  mime          String
+  sizeBytes     Int
+  uploadedAt    DateTime           @default(now())
+  application   TrainerApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  @@index([applicationId])
+}
+
+model TrainerApplicationReview {
+  id            String             @id @default(uuid()) @db.Uuid
+  applicationId String             @db.Uuid
+  reviewerId    String             @db.Uuid
+  scores        Json               // {domain_expertise, evidence, facilitation, demo_quality, activity_design, feedback_skill, digital_training, values_fit, availability} 1-5
+  overallNote   String?
+  createdAt     DateTime           @default(now())
+  application   TrainerApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  @@index([applicationId])
+}
+
+model TrainerInterview {
+  id            String             @id @default(uuid()) @db.Uuid
+  applicationId String             @db.Uuid
+  scheduledAt   DateTime
+  mode          String             @default("remote") // remote | in_person
+  interviewerId String?            @db.Uuid
+  outcome       String?            // passed | hold | failed
+  notes         String?
+  createdAt     DateTime           @default(now())
+  application   TrainerApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  @@index([applicationId])
+}
+
+model TrainerDemoEvaluation {
+  id            String             @id @default(uuid()) @db.Uuid
+  applicationId String             @db.Uuid
+  evaluatorId   String             @db.Uuid
+  scores        Json               // نفس محاور الروبرك البشري
+  decision      String?            // pass | retry | fail
+  notes         String?
+  createdAt     DateTime           @default(now())
+  application   TrainerApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  @@index([applicationId])
+}
+
+model TrainerReference {
+  id            String             @id @default(uuid()) @db.Uuid
+  applicationId String             @db.Uuid
+  name          String
+  relation      String?
+  contact       String?
+  note          String?
+  verifiedAt    DateTime?
+  verifiedBy    String?            @db.Uuid
+  createdAt     DateTime           @default(now())
+  application   TrainerApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  @@index([applicationId])
+}
+
+model TrainerStatusHistory {
+  id            String             @id @default(uuid()) @db.Uuid
+  applicationId String             @db.Uuid
+  fromStatus    String?
+  toStatus      String
+  actorId       String?            @db.Uuid // null = النظام
+  note          String?
+  createdAt     DateTime           @default(now())
+  application   TrainerApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  @@index([applicationId, createdAt])
+}
+
+model TrainerInvitation {
+  id            String             @id @default(uuid()) @db.Uuid
+  applicationId String             @db.Uuid
+  tokenHash     String             @unique // لا يُحفظ الرمز ذاته
+  sentTo        String
+  expiresAt     DateTime
+  usedAt        DateTime?
+  createdBy     String?            @db.Uuid
+  createdAt     DateTime           @default(now())
+  application   TrainerApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  @@index([applicationId])
+}
+
+model TrainerOnboardingTask {
+  profileId   String          @db.Uuid
+  key         String          // sign_contract | academy_orientation | lms_setup | first_cohort_brief ...
+  title       String
+  doneAt      DateTime?
+  createdAt   DateTime        @default(now())
+  profile     TrainerProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  @@id([profileId, key])
+}
+
+model TrainerProfile {
+  id                 String    @id @default(uuid()) @db.Uuid
+  applicationId      String    @unique @db.Uuid
+  userId             String?   @unique @db.Uuid // يُربط فقط عبر الدعوة الآمنة — المتقدم لا يمنح نفسه الدور
+  headline           String?
+  bioPublic          String?
+  isVerified         Boolean   @default(false) // ملف موثق
+  publicVisibility   Boolean   @default(false) // لا يظهر للعامة إلا بموافقة نشر
+  publishApprovedBy  String?   @db.Uuid
+  publishApprovedAt  DateTime?
+  suspendedAt        DateTime?
+  suspendedBy        String?   @db.Uuid
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  application        TrainerApplication       @relation(fields: [applicationId], references: [id])
+  user               User?                  @relation(fields: [userId], references: [id])
+  skills             TrainerSkill[]
+  qualifications     TrainerCourseQualification[]
+  assignments        TrainerCourseAssignment[]
+  changeRequests     TrainerChangeRequest[]
+  onboardingTasks    TrainerOnboardingTask[]
+  contracts          TrainerContract[]
+  compensationRules  TrainerCompensationRule[]
+  payouts            TrainerPayout[]
+  cohortPlans        CohortDeliveryPlan[]
+}
+
+model TrainerSkill {
+  profileId String         @db.Uuid
+  skillId   String
+  level     Int            @default(3) // 1-5
+  profile   TrainerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  @@id([profileId, skillId])
+}
+
+model TrainerCourseQualification {
+  id          String         @id @default(uuid()) @db.Uuid
+  profileId   String         @db.Uuid
+  courseId    String
+  status      String         @default("qualified") // qualified | pending | retired
+  qualifiedBy String?        @db.Uuid
+  note        String?
+  createdAt   DateTime       @default(now())
+  profile     TrainerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  course      Course         @relation(fields: [courseId], references: [id])
+  @@unique([profileId, courseId])
+}
+
+model TrainerCourseAssignment {
+  id         String         @id @default(uuid()) @db.Uuid
+  profileId  String         @db.Uuid
+  courseId   String
+  cohortId   String?        @db.Uuid
+  status     String         @default("active") // active | completed | cancelled
+  assignedBy String?        @db.Uuid
+  createdAt  DateTime       @default(now())
+  profile    TrainerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  course     Course         @relation(fields: [courseId], references: [id])
+  cohort     Cohort?        @relation(fields: [cohortId], references: [id])
+  @@index([profileId, status])
+}
+
+model TrainerChangeRequest {
+  id                 String          @id @default(uuid()) @db.Uuid
+  profileId          String          @db.Uuid
+  courseId           String
+  baseCourseVersion  Int             // الإصدار الأساسي الذي بُني عليه الاقتراح
+  scope              String          // cohort | catalog
+  cohortId           String?         @db.Uuid
+  status             String          @default("draft")
+  // draft | submitted | under_review | changes_requested | approved_for_cohort
+  // | approved_for_catalog | rejected | withdrawn | published | superseded
+  reason             String
+  evidence           String?
+  scheduledPublishAt DateTime?
+  reviewedBy         String?         @db.Uuid
+  reviewedAt         DateTime?
+  reviewerComment    String?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  profile            TrainerProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  course             Course          @relation(fields: [courseId], references: [id])
+  cohort             Cohort?         @relation(fields: [cohortId], references: [id])
+  items              TrainerChangeRequestItem[]
+  @@index([status, createdAt])
+}
+
+model TrainerChangeRequestItem {
+  id          String              @id @default(uuid()) @db.Uuid
+  requestId   String              @db.Uuid
+  changeType  String              // module_title_edit | module_add | module_reorder | explanation_improve
+                                  // | material_add | activity_add | assignment_add | assessment_improve
+                                  // | examples_update | duration_propose | project_propose | outcome_propose
+  targetKey   String?             // مثل معرف الوحدة C-XXX-001-M2
+  beforeValue Json?
+  afterValue  Json?
+  note        String?
+  request     TrainerChangeRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  @@index([requestId])
+}
+
+model TrainerContract {
+  id        String         @id @default(uuid()) @db.Uuid
+  profileId String         @db.Uuid
+  title     String
+  terms     Json?          // شروط التعاقد المهيكلة
+  status    String         @default("draft") // draft | sent | signed | expired | terminated
+  sentAt    DateTime?
+  signedAt  DateTime?
+  createdBy String?        @db.Uuid
+  createdAt DateTime       @default(now())
+  profile   TrainerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  @@index([profileId])
+}
+
+model TrainerCompensationRule {
+  id             String         @id @default(uuid()) @db.Uuid
+  profileId      String         @db.Uuid
+  type           String         // per_seat | fixed_per_cohort | revenue_share
+  rate           Decimal        @db.Decimal(10, 2)
+  currency       String         @default("JOD")
+  effectiveFrom  DateTime       @default(now())
+  effectiveTo    DateTime?
+  createdBy      String?        @db.Uuid
+  createdAt      DateTime       @default(now())
+  profile        TrainerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  @@index([profileId])
+}
+
+model TrainerPayout {
+  id         String         @id @default(uuid()) @db.Uuid
+  profileId  String         @db.Uuid
+  period     String         // مثل 2026-08
+  status     String         @default("pending") // pending | approved | paid | cancelled
+  total      Decimal        @default(0) @db.Decimal(10, 2)
+  currency   String         @default("JOD")
+  approvedBy String?        @db.Uuid
+  paidAt     DateTime?
+  createdAt  DateTime       @default(now())
+  profile    TrainerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  items      TrainerPayoutItem[]
+  @@index([profileId, period])
+}
+
+model TrainerPayoutItem {
+  id          String        @id @default(uuid()) @db.Uuid
+  payoutId    String        @db.Uuid
+  description String
+  amount      Decimal       @db.Decimal(10, 2)
+  sourceRef   String?       // مرجع الشعبة أو الدورة
+  payout      TrainerPayout @relation(fields: [payoutId], references: [id], onDelete: Cascade)
+  @@index([payoutId])
+}
+
+/* ═══════════ الشعب وخطط التنفيذ — فصل المخطط الأساسي عن خطة الشعبة ═══════════
+   Canonical Course Blueprint = Course + CourseVersion + CourseModule (قائم أصلا).
+   CohortDeliveryPlan = مدرب الشعبة ومواعيدها وأمثلتها وموادها الإضافية وأنشطتها —
+   يمكن اعتماد اقتراح لشعبة واحدة دون تغيير الكتالوج. */
+
+model Cohort {
+  id        String    @id @default(uuid()) @db.Uuid
+  courseId  String
+  pathwayId String?
+  title     String
+  status    String    @default("draft") // draft | published | open | running | completed | cancelled
+  startsAt  DateTime?
+  endsAt    DateTime?
+  createdAt DateTime  @default(now())
+  course    Course    @relation(fields: [courseId], references: [id])
+  plans     CohortDeliveryPlan[]
+  assignments TrainerCourseAssignment[]
+  changeRequests TrainerChangeRequest[]
+  @@index([courseId, status])
+}
+
+model CohortDeliveryPlan {
+  id         String          @id @default(uuid()) @db.Uuid
+  cohortId   String          @db.Uuid
+  trainerId  String?         @db.Uuid
+  content    Json            // {schedule, examples, extraMaterials, activities, ordering}
+  status     String          @default("draft") // draft | approved | published | superseded
+  sourceChangeRequestId String? @db.Uuid // إن نُشرت من اقتراح مدرب بنطاق شعبة
+  createdBy  String?         @db.Uuid
+  createdAt  DateTime        @default(now())
+  cohort     Cohort          @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  trainer    TrainerProfile? @relation(fields: [trainerId], references: [id])
+  @@index([cohortId, status])
+}
+
+/* ═══════════ سجل التدقيق العام — كل إجراء حساس ═══════════ */
+
+model AuditEvent {
+  id         String   @id @default(uuid()) @db.Uuid
+  actorId    String?  @db.Uuid // null = النظام
+  action     String   // trainer.application.submit | trainer.status.transition | trainer.change.decide ...
+  entityType String
+  entityId   String
+  meta       Json?
+  createdAt  DateTime @default(now())
+  @@index([entityType, entityId, createdAt])
+  @@index([actorId, createdAt])
 }

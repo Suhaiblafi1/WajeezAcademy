@@ -26,6 +26,10 @@
     "simulate:diagnostic": "tsx scripts/simulate-diagnostic-cohort.ts",
     "test:catalog": "vitest run --no-file-parallelism server/tests/catalog",
     "test:catalog-publishing": "vitest run --no-file-parallelism server/tests/publishing",
+    "test:trainer-applications": "vitest run --no-file-parallelism server/tests/trainer/applications.test.ts",
+    "test:trainer-change-workflow": "vitest run --no-file-parallelism server/tests/trainer/change-workflow.test.ts",
+    "test:permissions": "vitest run --no-file-parallelism server/tests/trainer/permissions.test.ts",
+    "test:e2e": "vitest run --no-file-parallelism server/tests",
     "test:diagnostic-regression": "tsx scripts/test-diagnostic-regression.ts",
     "test": "npm run test:diagnostic && npm run test:scenarios"
   },

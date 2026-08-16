@@ -9,3 +9,6 @@ verification/
 # أسرار البيئة وبيانات PostgreSQL المدمج المحلية
 .env
 .pgdata/
+
+# تخزين وثائق المتقدمين الخاص — لا يدخل Git أبدا
+storage/private/

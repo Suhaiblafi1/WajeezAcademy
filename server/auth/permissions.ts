@@ -32,6 +32,20 @@ export const PERMISSIONS = [
   { key: 'catalog.rollback', description: 'الرجوع إلى إصدار سابق منشور' },
   // الإدارة
   { key: 'admin.users.manage', description: 'إدارة المستخدمين والأدوار وإيقاف الحسابات' },
+  // منظومة المدربين — الإدارة
+  { key: 'trainer.applications.view', description: 'عرض طلبات انضمام المدربين' },
+  { key: 'trainer.applications.review', description: 'مراجعة الطلبات وتسجيل الروبرك والمقابلات والديمو' },
+  { key: 'trainer.applications.decide', description: 'قرار القبول المشروط أو الرفض أو الانتظار' },
+  { key: 'trainer.invite', description: 'إرسال دعوة إنشاء الحساب الآمنة بعد الاعتماد والعقد' },
+  { key: 'trainer.qualify', description: 'تأهيل مدرب لدورة' },
+  { key: 'trainer.assign', description: 'إسناد مدرب إلى شعبة' },
+  { key: 'trainer.publish', description: 'الموافقة على ظهور المدرب للعامة' },
+  { key: 'trainer.suspend', description: 'إيقاف مدرب ومنع وصوله' },
+  { key: 'trainer.change.review', description: 'مراجعة اقتراحات تعديل الدورات من المدربين (checker)' },
+  { key: 'trainer.compensation.manage', description: 'إدارة العقود وقواعد التعويض والمستحقات' },
+  // منظومة المدربين — بوابة المدرب
+  { key: 'trainer.portal', description: 'دخول بوابة المدرب وعرض تأهيله وإسناداته' },
+  { key: 'trainer.change.submit', description: 'اقتراح تعديل على دورة مؤهل لها أو مسندة إليه' },
 ] as const
 
 export type PermissionKey = (typeof PERMISSIONS)[number]['key']
@@ -45,6 +59,9 @@ export const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
     'catalog.course.create', 'catalog.course.edit', 'catalog.course.review', 'catalog.course.approve', 'catalog.course.publish',
     'catalog.skill.edit', 'catalog.skill.approve',
     'catalog.impact.view', 'catalog.rollback',
+    'trainer.applications.view', 'trainer.applications.review', 'trainer.applications.decide',
+    'trainer.invite', 'trainer.qualify', 'trainer.assign', 'trainer.publish', 'trainer.suspend',
+    'trainer.change.review',
   ],
   diagnostic_manager: [
     'catalog.view',
@@ -52,10 +69,10 @@ export const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
     'diagnostic.question.edit', 'diagnostic.scoring.edit', 'diagnostic.scoring.publish',
     'diagnostic.simulate', 'catalog.impact.view',
   ],
-  operations_manager: ['catalog.view', 'catalog.impact.view'],
+  operations_manager: ['catalog.view', 'catalog.impact.view', 'trainer.applications.view', 'trainer.assign'],
   advisor: ['catalog.view'],
-  trainer: [],
-  finance: [],
+  trainer: ['trainer.portal', 'trainer.change.submit'],
+  finance: ['trainer.compensation.manage'],
   support: ['catalog.view'],
   learner: [],
 }
