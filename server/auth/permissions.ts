@@ -59,6 +59,29 @@ export const PERMISSIONS = [
   // المتعلم
   { key: 'learner.portal', description: 'دخول بوابة المتعلم وعرض مساره وتقدمه' },
   { key: 'learner.submit', description: 'تسليم الواجبات ومحاولات التقييم' },
+  // المستشارون — الحالات المسندة فقط
+  { key: 'advisor.cases.view', description: 'عرض حالات العملاء المسندة إلى المستشار فقط' },
+  { key: 'advisor.cases.operate', description: 'تشغيل الحالة المسندة: ملاحظات ومهام ومتابعات وتواصل وحالة' },
+  { key: 'advisor.assign', description: 'إسناد حالة إلى مستشار' },
+  // السير الذاتية
+  { key: 'cv.upload', description: 'رفع سيرة ذاتية بموافقة صريحة' },
+  { key: 'cv.view', description: 'عرض سيرة عميل مسند — كل مشاهدة مسجلة' },
+  { key: 'cv.manage', description: 'إدارة السير وحذفها وفق السياسة' },
+  // التسجيل والتجارة
+  { key: 'enrollment.request', description: 'طلب تسجيل في شعبة' },
+  { key: 'enrollment.request.review', description: 'مراجعة طلبات التسجيل وحجز المقاعد' },
+  { key: 'commerce.manage', description: 'إدارة الطلبات والكوبونات وخطط الاشتراك' },
+  { key: 'finance.view', description: 'عرض الفواتير والمدفوعات والاستردادات' },
+  { key: 'finance.payment.record', description: 'تسجيل دفعة يدوية موثقة' },
+  { key: 'finance.refund.process', description: 'اعتماد وتنفيذ الاسترداد' },
+  // التقارير
+  { key: 'reports.view', description: 'عرض التقارير التشغيلية' },
+  { key: 'reports.export', description: 'تصدير التقارير CSV/XLSX' },
+  // الإشعارات والدعم والإعدادات
+  { key: 'notifications.manage', description: 'إدارة قوالب الإشعارات وسجلها' },
+  { key: 'support.operate', description: 'تشغيل تذاكر الدعم المسندة' },
+  { key: 'support.assign', description: 'إسناد تذاكر الدعم لوكلاء' },
+  { key: 'settings.manage', description: 'إدارة إعدادات النظام والتكاملات غير السرية' },
 ] as const
 
 export type PermissionKey = (typeof PERMISSIONS)[number]['key']
@@ -77,19 +100,30 @@ export const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
     'trainer.change.review',
     'cohort.manage', 'cohort.open', 'cohort.override_capacity', 'enrollment.manage',
     'material.manage', 'certificate.issue', 'certificate.revoke',
+    'advisor.assign', 'cv.manage', 'cv.view',
+    'enrollment.request.review', 'commerce.manage',
+    'finance.view', 'finance.payment.record', 'finance.refund.process',
+    'reports.view', 'reports.export',
+    'notifications.manage', 'support.operate', 'support.assign', 'settings.manage',
   ],
   diagnostic_manager: [
     'catalog.view',
     'diagnostic.profile.edit', 'diagnostic.profile.review', 'diagnostic.profile.publish',
     'diagnostic.question.edit', 'diagnostic.scoring.edit', 'diagnostic.scoring.publish',
     'diagnostic.simulate', 'catalog.impact.view',
+    'reports.view', 'reports.export',
   ],
-  operations_manager: ['catalog.view', 'catalog.impact.view', 'trainer.applications.view', 'trainer.assign', 'cohort.manage', 'enrollment.manage'],
-  advisor: ['catalog.view'],
+  operations_manager: [
+    'catalog.view', 'catalog.impact.view', 'trainer.applications.view', 'trainer.assign',
+    'cohort.manage', 'enrollment.manage',
+    'advisor.assign', 'enrollment.request.review', 'support.assign',
+    'reports.view', 'reports.export',
+  ],
+  advisor: ['catalog.view', 'advisor.cases.view', 'advisor.cases.operate', 'cv.view'],
   trainer: ['trainer.portal', 'trainer.change.submit', 'trainer.cohort.operate'],
-  finance: ['trainer.compensation.manage'],
-  support: ['catalog.view'],
-  learner: ['learner.portal', 'learner.submit'],
+  finance: ['trainer.compensation.manage', 'finance.view', 'finance.payment.record', 'finance.refund.process', 'reports.view', 'reports.export'],
+  support: ['catalog.view', 'support.operate'],
+  learner: ['learner.portal', 'learner.submit', 'cv.upload', 'enrollment.request'],
 }
 
 export const ROLE_NAMES_AR: Record<string, string> = {

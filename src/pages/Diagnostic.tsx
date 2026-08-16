@@ -33,6 +33,7 @@ import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/services/currency";
 import { track } from "@/services/analytics";
 import { ensurePublishedSnapshot } from "@/services/catalog-snapshot";
+import { ensurePublishedContent } from "@/services/public-content";
 import SeoHead from "@/components/SeoHead";
 import { Badge } from "@/components/ui/badge";
 import AuthGate from "@/components/AuthGate";
@@ -722,6 +723,8 @@ export default function Diagnostic() {
     track("diagnostic_started");
     /* اللقطة المنشورة أولا — المحرك يقرأ أحدث كتالوج محكوم، أو الحزمة المضمنة بصمت */
     await ensurePublishedSnapshot();
+    /* والمحتوى العام المنشور — نتيجة التشخيص تعرض الدورات من المصدر نفسه */
+    void ensurePublishedContent();
     const session = createAssessment();
     sessionRef.current = session;
     setHistory([]);

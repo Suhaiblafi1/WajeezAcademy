@@ -2,6 +2,7 @@ import { Link } from "react-router";
 import { Compass, Target, Route, GraduationCap, MessageSquareText, AlertTriangle, ExternalLink, ArrowLeft } from "lucide-react";
 import SiteShell from "@/components/SiteShell";
 import SeoHead from "@/components/SeoHead";
+import { usePublishedContent } from "@/services/public-content";
 import { publicReferences } from "@/data/methodology";
 import { pathways } from "@/data/pathways";
 
@@ -91,6 +92,7 @@ const SECTIONS: { icon: typeof Compass; q: string; a: string; refs: string[] }[]
 ];
 
 export default function Methodology() {
+  usePublishedContent();
   const refs = publicReferences();
   return (
     <SiteShell>

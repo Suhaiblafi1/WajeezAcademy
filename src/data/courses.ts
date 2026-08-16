@@ -1,6 +1,13 @@
-/* كتالوج الدورات — محوّل يقرأ من core-catalog.v2.json (مئة دورة ضمن عشرين مسارا) */
+/* كتالوج الدورات — محوّل يقرأ من مصدر الكتالوج الجوهري (core-catalog-source)
+   الافتراضي: الحزمة المضمنة الموثقة (مئة دورة ضمن عشرين مسارا)؛ وعند توفر
+   خادم API تُستبدل المحتويات باللقطة المنشورة عبر المحوّل نفسه. */
 
-import coreCatalog from './catalog/core-catalog.v2.json'
+import {
+  getCoreCatalogRaw,
+  onCoreCatalogInstalled,
+  type CoreCatalogModule,
+  type CoreCatalogRaw,
+} from './core-catalog-source'
 import { pathwayCategory } from './pathways'
 
 export interface Course {
@@ -33,74 +40,42 @@ export interface CourseFull {
   referenceIds: string[]
 }
 
-interface RawModule {
-  module_id: string
-  course_id: string
-  sequence: number
-  title_ar: string
-  module_outcome_ar: string
-  practice_activity_ar: string
-  evidence_artifact_ar: string
-  expected_hours: number
+/* فهارس مشتقة تُبنى من المصدر الفعال وتُعاد تعبئتها عند تثبيت لقطة API */
+let pathwayTitle = new Map<string, string>()
+let modulesByCourse = new Map<string, CoreCatalogModule[]>()
+
+function rebuildIndexes(raw: CoreCatalogRaw): void {
+  pathwayTitle = new Map(raw.launch_pathways.map((p) => [p.id, p.title]))
+  const grouped = new Map<string, CoreCatalogModule[]>()
+  for (const m of raw.modules) {
+    const list = grouped.get(m.course_id) ?? []
+    list.push(m)
+    grouped.set(m.course_id, list)
+  }
+  for (const list of grouped.values()) list.sort((a, b) => a.sequence - b.sequence)
+  modulesByCourse = grouped
 }
 
-interface RawCourse {
-  course_id: string
-  pathway_id: string
-  sequence: number
-  title_ar: string
-  legacy_title_ar?: string
-  subtitle_ar?: string
-  short_promise_ar?: string
-  description_ar?: string
-  target_audience_ar?: string
-  prerequisites_ar?: string
-  level_ar?: string
-  total_hours: number
-  skill_slugs?: string[]
-  skill_names_ar: string[]
-  learning_objectives_ar?: string[]
-  learning_outcomes_ar?: string[]
-  summative_assessment_ar?: string
-  source_codes?: string[]
-}
-interface RawPathway {
-  id: string
-  title: string
-  course_ids: string[]
-  delivery?: string
+rebuildIndexes(getCoreCatalogRaw())
+
+function buildCourses(raw: CoreCatalogRaw): Course[] {
+  return raw.courses.map((c) => ({
+    id: c.course_id,
+    name: c.title_ar,
+    legacyName: c.legacy_title_ar,
+    pathwayId: c.pathway_id,
+    pathwayName: pathwayTitle.get(c.pathway_id) ?? '',
+    category: pathwayCategory(c.pathway_id),
+    weeks: Math.max(1, Math.ceil(c.total_hours / 7)),
+    skill: c.skill_names_ar[0] ?? '',
+  }))
 }
 
-const raw = coreCatalog as unknown as {
-  launch_pathways: RawPathway[]
-  courses: RawCourse[]
-  modules: RawModule[]
-}
-
-const pathwayTitle = new Map(raw.launch_pathways.map((p) => [p.id, p.title]))
-
-const modulesByCourse = new Map<string, RawModule[]>()
-for (const m of raw.modules) {
-  const list = modulesByCourse.get(m.course_id) ?? []
-  list.push(m)
-  modulesByCourse.set(m.course_id, list)
-}
-for (const list of modulesByCourse.values()) list.sort((a, b) => a.sequence - b.sequence)
-
-export const courses: Course[] = raw.courses.map((c) => ({
-  id: c.course_id,
-  name: c.title_ar,
-  legacyName: c.legacy_title_ar,
-  pathwayId: c.pathway_id,
-  pathwayName: pathwayTitle.get(c.pathway_id) ?? '',
-  category: pathwayCategory(c.pathway_id),
-  weeks: Math.max(1, Math.ceil(c.total_hours / 7)),
-  skill: c.skill_names_ar[0] ?? '',
-}))
+export const courses: Course[] = buildCourses(getCoreCatalogRaw())
 
 /** تفاصيل الدورة الكاملة بمعرفها — للرحلة التعليمية والأكورديون */
 export function courseFullById(id: string): CourseFull | null {
-  const c = raw.courses.find((x) => x.course_id === id)
+  const c = getCoreCatalogRaw().courses.find((x) => x.course_id === id)
   if (!c) return null
   return {
     id: c.course_id,
@@ -131,12 +106,12 @@ export function courseFullById(id: string): CourseFull | null {
 export const courseById = (id: string) => courses.find((c) => c.id === id)
 
 export const pathwayCourses: Record<string, string[]> = Object.fromEntries(
-  raw.launch_pathways.map((p) => [p.id, p.course_ids]),
+  getCoreCatalogRaw().launch_pathways.map((p) => [p.id, p.course_ids]),
 )
 
 /** طريقة تقديم المسار من الكتالوج الموثق — تُعرض ضمن تفاصيل دورات الرحلة */
 export const pathwayDelivery = (pathwayId: string): string | undefined =>
-  raw.launch_pathways.find((p) => p.id === pathwayId)?.delivery
+  getCoreCatalogRaw().launch_pathways.find((p) => p.id === pathwayId)?.delivery
 
 /* مختارات وجيز من الدورات — منتقاة تحريريا، الدورة الثانية من كل مسار مختار */
 function pickCourse(pathwayId: string, index: number): string | null {
@@ -157,9 +132,23 @@ const bestsellerPicks: { pathway: string; index: number; note: string }[] = [
   { pathway: 'PW-EMP-005', index: 0, note: 'خطة جاهزة' },
   { pathway: 'PW-LND-001', index: 1, note: 'للتأثير' },
 ]
-export const bestsellerCourses: { id: string; note: string }[] = bestsellerPicks.flatMap((p) => {
-  const id = pickCourse(p.pathway, p.index)
-  return id ? [{ id, note: p.note }] : []
+function buildBestsellerCourses(): { id: string; note: string }[] {
+  return bestsellerPicks.flatMap((p) => {
+    const id = pickCourse(p.pathway, p.index)
+    return id ? [{ id, note: p.note }] : []
+  })
+}
+export const bestsellerCourses: { id: string; note: string }[] = buildBestsellerCourses()
+
+/* عند تثبيت لقطة API المنشورة: إعادة بناء الفهارس وإعادة ملء المصفوفات
+   والسجلات المصدَّرة في مكانها — المراجع تبقى صالحة والمشتركون يعيدون الرسم */
+onCoreCatalogInstalled(() => {
+  const raw = getCoreCatalogRaw()
+  rebuildIndexes(raw)
+  courses.splice(0, courses.length, ...buildCourses(raw))
+  for (const k of Object.keys(pathwayCourses)) delete pathwayCourses[k]
+  Object.assign(pathwayCourses, Object.fromEntries(raw.launch_pathways.map((p) => [p.id, p.course_ids])))
+  bestsellerCourses.splice(0, bestsellerCourses.length, ...buildBestsellerCourses())
 })
 
 export const courseCategories = ['الكل', 'أساسيات', 'طلاب ومهنة', 'موظفون', 'حكومي', 'أعمال', 'تخصصات وظيفية', 'قيادة']

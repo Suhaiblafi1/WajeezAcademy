@@ -13,6 +13,7 @@ import { faqs } from '@/data/siteContent'
 import { referenceBadges } from '@/data/methodology'
 import { CONTACT } from '@/data/stories'
 import { track } from '@/services/analytics'
+import { usePublishedContent } from '@/services/public-content'
 import SeoHead from '@/components/SeoHead'
 import CourseModal from '@/components/CourseModal'
 import Modal from '@/components/Modal'
@@ -1310,6 +1311,7 @@ function AdvisorStrip() {
    ← مخرجات التعلم ← مسارات ودورات مميزة ← قصص حقيقية ← شريط مستشار ← أسئلة ← دعوة أخيرة + زر مستشار عائم */
 export default function Home() {
   useReveal()
+  usePublishedContent()
   const topRef = useRef<HTMLDivElement>(null)
   return (
     <div ref={topRef} dir="rtl" className="min-h-screen bg-background text-foreground">

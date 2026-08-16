@@ -29,6 +29,7 @@ import { GOAL_LABELS, GAP_LABELS, OBSTACLE_TO_GAP } from "@/data/diagnostic";
 import { grantEnrollment } from "@/services/access";
 import { useCurrency, usePriceFormatter, CURRENCIES, setCurrency, type CurrencyCode } from "@/services/currency";
 import { track } from "@/services/analytics";
+import { usePublishedContent } from "@/services/public-content";
 import SeoHead from "@/components/SeoHead";
 
 /* اسم المستخدم — يدعم الصيغتين: JSON الجديدة والنص القديم، ويحترم انتهاء الجلسة */
@@ -165,6 +166,7 @@ function StripeCheckout({
 
 /* ─────────── الصفحة ─────────── */
 export default function PathwayPage() {
+  usePublishedContent();
   const { id } = useParams();
   const pathway = pathwayById(id ?? "");
   const [user, setUser] = useState<string | null>(readUserName);

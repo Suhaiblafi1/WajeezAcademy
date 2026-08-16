@@ -26,6 +26,17 @@ model User {
   resetTokens  PasswordResetToken[]
   trainerProfile TrainerProfile?
   enrollments  Enrollment[] @relation("EnrollmentUser")
+  learnerProfile LearnerProfile?
+  leads        Lead[] @relation("LeadUser")
+  cvSubmissions CvSubmission[]
+  consentRecords ConsentRecord[]
+  enrollmentRequests EnrollmentRequest[]
+  subscriptions Subscription[]
+  orders       Order[]
+  notifications Notification[]
+  supportTickets SupportTicket[] @relation("TicketOwner")
+  advisorCases AdvisorCase[] @relation("CaseClient")
+  advisorAssignments AdvisorAssignment[] @relation("CaseAdvisor")
 }
 
 model Role {
@@ -952,6 +963,7 @@ model Cohort {
   trainers     CohortTrainer[]
   sessions     CohortSession[]
   enrollments  Enrollment[]
+  enrollmentRequests EnrollmentRequest[]
   materials    LearningMaterial[]
   assessments  CohortAssessment[]
   completionRules CompletionRule[]
@@ -977,10 +989,14 @@ model CohortDeliveryPlan {
 model AuditEvent {
   id         String   @id @default(uuid()) @db.Uuid
   actorId    String?  @db.Uuid // null = النظام
-  action     String   // trainer.application.submit | trainer.status.transition | trainer.change.decide ...
+  action     String   // trainer.application.submit | payment.record.manual ...
   entityType String
   entityId   String
   meta       Json?
+  reason     String?  // سبب الفعل عندما يكون مطلوبا (إلغاء، استرداد، تجاوز)
+  ip         String?  // عنوان IP عند الحاجة الأمنية
+  before     Json?    // القيم المهمة قبل التغيير
+  after      Json?    // القيم المهمة بعد التغيير
   createdAt  DateTime @default(now())
   @@index([entityType, entityId, createdAt])
   @@index([actorId, createdAt])
@@ -1298,4 +1314,392 @@ model CertificateRevocation {
   revokedBy     String      @db.Uuid
   createdAt     DateTime    @default(now())
   certificate   Certificate @relation(fields: [certificateId], references: [id], onDelete: Cascade)
+}
+
+
+/* ═══════════ منظومة العمليات والتجارة — مستشارون وسير ذاتية وتسجيل ومدفوعات
+   وإشعارات ودعم وإعدادات. المستشار يرى الحالات المسندة إليه فقط؛
+   الملاحظات الداخلية لا تظهر للعميل؛ لا تُخزن بيانات بطاقات أبدا. ═══════════ */
+
+model LearnerProfile {
+  id                 String   @id @default(uuid()) @db.Uuid
+  userId             String   @unique @db.Uuid
+  goalAr             String?  // هدفه التعلمي بصياغته
+  preferredLanguage  String?  // العربية | English | الاثنان
+  timezone           String?
+  diagnosticSnapshot Json?    // نتيجة التشخيص المرفقة بالحساب — لا تُعدل بعد الاعتماد
+  attachedAt         DateTime? // وقت ربط التشخيص بالحساب
+  createdAt          DateTime @default(now())
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Lead {
+  id            String   @id @default(uuid()) @db.Uuid
+  fullName      String
+  email         String?
+  phone         String?
+  source        String   @default("site") // diagnostic | site | referral | business
+  status        String   @default("new") // new | converted | archived
+  userId        String?  @db.Uuid // يُربط عند إنشاء الحساب
+  diagnosticSnapshot Json? // نتيجة تشخيص الضيف قبل إنشاء الحساب
+  createdAt     DateTime @default(now())
+  user          User?    @relation("LeadUser", fields: [userId], references: [id])
+  cases         AdvisorCase[]
+  @@index([status, createdAt])
+}
+
+model AdvisorCase {
+  id             String   @id @default(uuid()) @db.Uuid
+  leadId         String?  @db.Uuid
+  clientId       String?  @db.Uuid // حساب العميل إن وُجد
+  status         String   @default("new") // new | contacted | needs_review | follow_up | recommended | enrolled | not_interested | closed
+  nextAction     String?  // الإجراء التالي المقترح
+  nextFollowUpAt DateTime?
+  diagnosticSnapshot Json? // نتيجة التشخيص + decision_trace بصياغة مفهومة
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  lead           Lead?    @relation(fields: [leadId], references: [id])
+  client         User?    @relation("CaseClient", fields: [clientId], references: [id])
+  assignments    AdvisorAssignment[]
+  notes          AdvisorNote[]
+  tasks          AdvisorTask[]
+  followUps      FollowUp[]
+  contactEvents  ContactEvent[]
+  @@index([status, updatedAt])
+}
+
+model AdvisorAssignment {
+  id          String   @id @default(uuid()) @db.Uuid
+  caseId      String   @db.Uuid
+  advisorId   String   @db.Uuid
+  assignedBy  String?  @db.Uuid
+  assignedAt  DateTime @default(now())
+  unassignedAt DateTime? // التعيين النشط هو ما لم يُلغَ
+  case        AdvisorCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  advisor     User        @relation("CaseAdvisor", fields: [advisorId], references: [id])
+  @@index([advisorId, unassignedAt])
+}
+
+model AdvisorNote {
+  id        String   @id @default(uuid()) @db.Uuid
+  caseId    String   @db.Uuid
+  authorId  String?  @db.Uuid
+  body      String   // داخلية — لا تظهر للعميل أبدا
+  createdAt DateTime @default(now())
+  case      AdvisorCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  @@index([caseId, createdAt])
+}
+
+model AdvisorTask {
+  id        String   @id @default(uuid()) @db.Uuid
+  caseId    String   @db.Uuid
+  title     String
+  dueAt     DateTime?
+  status    String   @default("open") // open | done
+  createdBy String?  @db.Uuid
+  doneAt    DateTime?
+  createdAt DateTime @default(now())
+  case      AdvisorCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  @@index([caseId, status])
+}
+
+model FollowUp {
+  id          String   @id @default(uuid()) @db.Uuid
+  caseId      String   @db.Uuid
+  scheduledAt DateTime
+  channel     String   @default("whatsapp") // whatsapp | email | phone
+  outcome     String?  // reached | no_answer | rescheduled
+  note        String?
+  createdBy   String?  @db.Uuid
+  doneAt      DateTime?
+  createdAt   DateTime @default(now())
+  case        AdvisorCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  @@index([caseId, scheduledAt])
+}
+
+model ContactEvent {
+  id        String   @id @default(uuid()) @db.Uuid
+  caseId    String   @db.Uuid
+  channel   String   // whatsapp | email | phone | in_app
+  direction String   @default("out") // out | in
+  summary   String
+  createdBy String?  @db.Uuid
+  createdAt DateTime @default(now())
+  case      AdvisorCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  @@index([caseId, createdAt])
+}
+
+/* ── السير الذاتية — رفع اختياري بموافقة صريحة، تخزين خاص،
+   سجل مشاهدة عبر التدقيق، لا تُرسل لأي ذكاء اصطناعي، حذف وفق السياسة ── */
+
+model ConsentRecord {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  kind        String   // cv_upload | marketing | terms
+  textVersion String   // نسخة نص الموافقة الذي وافق عليها
+  ip          String?
+  grantedAt   DateTime @default(now())
+  revokedAt   DateTime?
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cvs         CvSubmission[]
+  @@index([userId, kind])
+}
+
+model CvSubmission {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @db.Uuid
+  consentId    String   @db.Uuid // موافقة إلزامية مرتبطة
+  storageKey   String   // خاص — لا يكشف إلا برابط موقع بعد فحص الصلاحية
+  originalName String
+  mime         String
+  sizeBytes    Int
+  status       String   @default("active") // active | deleted
+  deletedAt    DateTime?
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  consent      ConsentRecord @relation(fields: [consentId], references: [id])
+  @@index([userId, status])
+}
+
+/* ── التسجيل والمدفوعات — طلب تسجيل → حجز مقعد → طلب → فاتورة → دفعة → تسجيل.
+   وضع اختبار فقط حتى قرار المالك بالمزود؛ رجوع المتصفح ليس دليل دفع ── */
+
+model EnrollmentRequest {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @db.Uuid
+  cohortId   String   @db.Uuid
+  pathwayId  String?
+  status     String   @default("pending") // pending | seat_held | rejected | converted | cancelled
+  note       String?
+  decidedBy  String?  @db.Uuid
+  decidedAt  DateTime?
+  orderId    String?  @db.Uuid
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cohort     Cohort   @relation(fields: [cohortId], references: [id])
+  @@unique([userId, cohortId])
+  @@index([cohortId, status])
+}
+
+model SubscriptionPlan {
+  id             String   @id @default(uuid()) @db.Uuid
+  code           String   @unique // monthly | yearly ...
+  nameAr         String
+  descriptionAr  String?
+  price          Decimal  @db.Decimal(10, 2)
+  currency       String   @default("JOD")
+  intervalMonths Int      @default(1)
+  features       Json     @default("[]")
+  active         Boolean  @default(true)
+  subscriptions  Subscription[]
+}
+
+model Subscription {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  planId    String   @db.Uuid
+  status    String   @default("active") // active | cancelled | expired
+  startedAt DateTime @default(now())
+  endsAt    DateTime?
+  orderId   String?  @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan      SubscriptionPlan @relation(fields: [planId], references: [id])
+  @@index([userId, status])
+}
+
+model Coupon {
+  id         String   @id @default(uuid()) @db.Uuid
+  code       String   @unique
+  percentOff Int?     // 1-100
+  amountOff  Decimal? @db.Decimal(10, 2)
+  currency   String?  // لازم مع amountOff
+  maxUses    Int?
+  usedCount  Int      @default(0)
+  expiresAt  DateTime?
+  active     Boolean  @default(true)
+  orders     Order[]
+}
+
+model Order {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @db.Uuid
+  status     String   @default("pending_payment") // pending_payment | paid | cancelled | partially_refunded | refunded
+  subtotal   Decimal  @db.Decimal(10, 2)
+  discount   Decimal  @default(0) @db.Decimal(10, 2)
+  total      Decimal  @db.Decimal(10, 2)
+  currency   String   @default("JOD")
+  couponId   String?  @db.Uuid
+  paidAt     DateTime?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coupon     Coupon?  @relation(fields: [couponId], references: [id])
+  items      OrderItem[]
+  invoice    Invoice?
+  @@index([userId, status])
+}
+
+model OrderItem {
+  id        String  @id @default(uuid()) @db.Uuid
+  orderId   String  @db.Uuid
+  kind      String  // course | cohort | pathway | subscription
+  refId     String  // معرف الدورة/الشعبة/المسار/الخطة
+  titleAr   String  // لقطة وقت الشراء
+  unitPrice Decimal @db.Decimal(10, 2)
+  quantity  Int     @default(1)
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model Invoice {
+  id        String   @id @default(uuid()) @db.Uuid
+  number    String   @unique // WJ-INV-YYYY-#####
+  orderId   String   @unique @db.Uuid
+  amount    Decimal  @db.Decimal(10, 2)
+  currency  String   @default("JOD")
+  status    String   @default("issued") // issued | paid | void
+  issuedAt  DateTime @default(now())
+  paidAt    DateTime?
+  order     Order    @relation(fields: [orderId], references: [id])
+  payments  Payment[]
+}
+
+model Payment {
+  id             String   @id @default(uuid()) @db.Uuid
+  invoiceId      String   @db.Uuid
+  provider       String   // test | manual — لا مزود نهائي دون قرار المالك
+  amount         Decimal  @db.Decimal(10, 2)
+  currency       String   @default("JOD")
+  status         String   @default("pending") // pending | succeeded | failed | partially_refunded | refunded
+  providerRef    String?  // مرجع المزود — لا بيانات بطاقات أبدا
+  idempotencyKey String   @unique // يمنع تسجيل الدفعة مرتين
+  methodNote     String?  // «تحويل بنكي»، «كاش»... للدفع اليدوي
+  recordedBy     String?  @db.Uuid // من سجل الدفعة اليدوية
+  createdAt      DateTime @default(now())
+  succeededAt    DateTime?
+  invoice        Invoice  @relation(fields: [invoiceId], references: [id])
+  refunds        Refund[]
+  @@index([invoiceId, status])
+}
+
+model PaymentWebhookEvent {
+  id          String   @id @default(uuid()) @db.Uuid
+  provider    String
+  eventId     String   // معرف الحدث عند المزود
+  payload     Json
+  processedAt DateTime?
+  createdAt   DateTime @default(now())
+  @@unique([provider, eventId]) // idempotency — الحدث المكرر يُتجاهل
+}
+
+model Refund {
+  id          String   @id @default(uuid()) @db.Uuid
+  paymentId   String   @db.Uuid
+  amount      Decimal  @db.Decimal(10, 2)
+  reason      String
+  status      String   @default("pending") // pending | processed | rejected
+  requestedBy String?  @db.Uuid
+  approvedBy  String?  @db.Uuid // صلاحية مالية مستقلة
+  processedAt DateTime?
+  createdAt   DateTime @default(now())
+  payment     Payment  @relation(fields: [paymentId], references: [id])
+}
+
+/* ── الإشعارات — داخل المنصة الآن؛ البريد وWhatsApp عند توفر المزود.
+   لا إرسال حقيقي في التطوير؛ النجاح والفشل وإعادة المحاولة مسجلة ── */
+
+model NotificationTemplate {
+  id      String @id @default(uuid()) @db.Uuid
+  key     String // enrollment.confirmed | certificate.issued ...
+  channel String // in_app | email | whatsapp | sms
+  titleAr String
+  bodyAr  String // متغيرات {{name}} {{course}} ...
+  active  Boolean @default(true)
+  @@unique([key, channel])
+}
+
+model Notification {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  channel     String   @default("in_app")
+  templateKey String?
+  title       String
+  body        String
+  data        Json?
+  status      String   @default("queued") // queued | sent | failed | read
+  attempts    Int      @default(0)
+  lastError   String?
+  queuedAt    DateTime @default(now())
+  sentAt      DateTime?
+  readAt      DateTime?
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, status, queuedAt])
+}
+
+/* ── الدعم — تذاكر برسائل وتعيين وسجل حالات؛ دور support يرى الحد الأدنى ── */
+
+model SupportTicket {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @db.Uuid
+  subject    String
+  category   String   @default("other") // technical | billing | learning | other
+  priority   String   @default("normal") // low | normal | high | urgent
+  status     String   @default("open") // open | pending | resolved | closed | reopened
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  closedAt   DateTime?
+  user       User     @relation("TicketOwner", fields: [userId], references: [id])
+  messages   SupportMessage[]
+  assignments TicketAssignment[]
+  statusHistory TicketStatusHistory[]
+  @@index([status, priority, updatedAt])
+}
+
+model SupportMessage {
+  id        String   @id @default(uuid()) @db.Uuid
+  ticketId  String   @db.Uuid
+  authorId  String?  @db.Uuid
+  body      String
+  internal  Boolean  @default(false) // داخلية لا تظهر لمقدم التذكرة
+  createdAt DateTime @default(now())
+  ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  @@index([ticketId, createdAt])
+}
+
+model TicketAssignment {
+  id           String   @id @default(uuid()) @db.Uuid
+  ticketId     String   @db.Uuid
+  agentId      String   @db.Uuid
+  assignedBy   String?  @db.Uuid
+  assignedAt   DateTime @default(now())
+  unassignedAt DateTime?
+  ticket       SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  @@index([agentId, unassignedAt])
+}
+
+model TicketStatusHistory {
+  id         String   @id @default(uuid()) @db.Uuid
+  ticketId   String   @db.Uuid
+  fromStatus String?
+  toStatus   String
+  changedBy  String?  @db.Uuid
+  note       String?
+  createdAt  DateTime @default(now())
+  ticket     SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  @@index([ticketId, createdAt])
+}
+
+/* ── الإعدادات — القيم الحساسة (مفاتيح) تبقى في البيئة ولا تُخزن هنا ── */
+
+model SystemSetting {
+  key       String   @id
+  value     Json
+  updatedBy String?  @db.Uuid
+  updatedAt DateTime @updatedAt
+}
+
+model IntegrationSetting {
+  provider  String   @id // zoom | payment | email | whatsapp | sms
+  enabled   Boolean  @default(false)
+  config    Json     @default("{}") // إعدادات غير سرية فقط — المفاتيح في env
+  updatedBy String?  @db.Uuid
+  updatedAt DateTime @updatedAt
 }

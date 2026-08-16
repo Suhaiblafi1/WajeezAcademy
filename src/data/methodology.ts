@@ -21,6 +21,11 @@ export interface MethodologyReference {
 
 const all = (registry as unknown as { references: MethodologyReference[] }).references
 
+/** تثبيت سجل المراجع القادم من API — المحتويات تُستبدل في مكانها */
+export function installMethodologyRegistry(next: MethodologyReference[]): void {
+  all.splice(0, all.length, ...next)
+}
+
 /** المراجع الظاهرة للعميل: مطبقة + دليل حقيقي + ظهور عام */
 export function publicReferences(): MethodologyReference[] {
   return all.filter(

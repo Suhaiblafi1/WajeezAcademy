@@ -7,6 +7,7 @@ import CourseModal from '@/components/CourseModal'
 import SiteShell from '@/components/SiteShell'
 import SeoHead from '@/components/SeoHead'
 import { track } from '@/services/analytics'
+import { usePublishedContent } from '@/services/public-content'
 
 /* ───────────────── تصنيف المسار من عائلته ───────────────── */
 const PW_CATEGORY: Record<string, string> = {
@@ -24,6 +25,7 @@ type Sort = 'featured' | 'shortest' | 'longest' | 'name'
    بحث + تصفية بالمجال والمستوى + ترتيب، وكل الفلاتر محفوظة في
    عنوان الصفحة لتصبح النتيجة رابطا قابلا للمشاركة */
 export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
+  usePublishedContent()
   const [params, setParams] = useSearchParams()
   const [modalCourse, setModalCourse] = useState<Course | null>(null)
 
