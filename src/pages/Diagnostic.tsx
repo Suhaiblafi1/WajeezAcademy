@@ -47,7 +47,6 @@ import { loadSession, saveLastResult, loadLastResultSafe } from "@/application/d
 import { sessionContributingReferences } from "@/data/methodology";
 import {
   courseById,
-  courseFullById,
   pathwayCourses,
   pathwayDelivery,
   courses,
@@ -661,115 +660,6 @@ export default function Diagnostic() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  /* بطاقة النتيجة المصممة — نافذة مستقلة ببطاقة أنيقة جاهزة للطباعة أو الحفظ ملفا */
-  const openResultCard = () => {
-    if (!result || !topPathway) return;
-    const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    const compositeView = (result.resultJson.composite as CompositeView | null) ?? null;
-    const name = compositeView ? compositeView.name_ar : topPathway.name;
-    let ids: string[];
-    let giftId: string | null = null;
-    if (compositeView) {
-      ids = [...compositeView.courses].sort((a, b) => a.sequence - b.sequence).map((c) => c.courseId);
-    } else {
-      ids = pathwayCourses[topPathway.id] ?? [];
-      try {
-        /* يحمل التخصيص المحفوظ إن وجد — البطاقة تعكس مساره كما عدّله */
-        const custom = JSON.parse(sessionStorage.getItem("wajeez_custom") ?? "null") as
-          | { pathwayId?: string; chosenIds?: string[]; giftId?: string | null }
-          | null;
-        if (custom?.pathwayId === topPathway.id && Array.isArray(custom.chosenIds) && custom.chosenIds.length > 0) {
-          ids = [...custom.chosenIds];
-          giftId = custom.giftId ?? null;
-          if (giftId) ids.push(giftId);
-        }
-      } catch {
-        /* تخصيص غير صالح — نعرض التشكيلة الأساسية */
-      }
-    }
-    const confBand = (result.resultJson.confidence as { band?: string } | undefined)?.band;
-    const stabilityLabel = confBand === "strong" ? "مرتفع" : confBand === "good" ? "متوسط" : "يحتاج إلى معلومات إضافية";
-    const courseRows = ids
-      .map((id, i) => {
-        const c = courseFullById(id);
-        if (!c) return "";
-        const isGift = giftId === id;
-        return `<li class="course">
-          <span class="num${isGift ? " gift-num" : ""}">${isGift ? "🎁" : i + 1}</span>
-          <span class="course-body">
-            <span class="course-title">${esc(c.title)}${isGift ? ' <span class="gift-badge">هدية مجانية</span>' : ""}</span>
-            ${c.shortPromise ? `<span class="course-promise">${esc(c.shortPromise)}</span>` : ""}
-          </span>
-          <span class="course-weeks">${esc(weeksLabel(Math.max(1, Math.ceil(c.totalHours / 7))))}</span>
-        </li>`;
-      })
-      .join("");
-    const skills = topPathway.coreSkills.map((s) => `<span class="skill">${esc(s)}</span>`).join("");
-    const dateStr = new Date().toLocaleDateString("ar-JO", { year: "numeric", month: "long", day: "numeric" });
-    const html = `<!doctype html>
-<html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>نتيجة مؤشر وجيز — ${esc(name)}</title>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Tahoma, "Segoe UI", Arial, sans-serif; background: #eef4f5; padding: 32px 16px; color: #12343b; }
-  .card { max-width: 640px; margin: 0 auto; background: #fff; border-radius: 20px; overflow: hidden;
-          border: 1px solid #d8e6e8; border-top: 6px solid #38a7b4; box-shadow: 0 12px 40px rgba(13,40,45,.08); }
-  .head { padding: 24px 28px 18px; border-bottom: 1px solid #e6eff0; }
-  .brand { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #5b7a80; font-weight: bold; }
-  .brand b { color: #0d2b30; font-size: 14px; }
-  h1 { font-size: 24px; line-height: 1.5; margin-top: 14px; color: #0d2b30; }
-  .reason { margin-top: 8px; font-size: 13px; line-height: 1.9; color: #4a646a; }
-  .meta { display: flex; flex-wrap: wrap; gap: 8px; padding: 14px 28px; background: #f4fafa; border-bottom: 1px solid #e6eff0; }
-  .chip { font-size: 11px; font-weight: bold; color: #247b84; background: #e3f2f4; border-radius: 999px; padding: 5px 12px; }
-  .courses { list-style: none; padding: 18px 28px; }
-  .course { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; border-bottom: 1px dashed #e0ebeb; }
-  .course:last-child { border-bottom: 0; }
-  .num { flex: none; width: 26px; height: 26px; border-radius: 50%; background: #e3f2f4; color: #247b84;
-         font-size: 12px; font-weight: bold; display: grid; place-items: center; }
-  .gift-num { background: #fdf0cd; }
-  .course-body { flex: 1; }
-  .course-title { font-size: 13px; font-weight: bold; color: #14363c; }
-  .course-promise { display: block; font-size: 11px; color: #6a8389; margin-top: 3px; line-height: 1.7; }
-  .course-weeks { flex: none; font-size: 11px; color: #8aa3a8; }
-  .gift-badge { background: #fabc05; color: #0d0d0d; font-size: 9px; border-radius: 999px; padding: 2px 8px; margin-right: 6px; }
-  .skills { padding: 0 28px 18px; }
-  .skills p { font-size: 11px; font-weight: bold; color: #5b7a80; margin-bottom: 8px; }
-  .skill { display: inline-block; font-size: 11px; font-weight: bold; color: #247b84; border: 1px solid #bcdfe3;
-           border-radius: 999px; padding: 4px 10px; margin: 0 0 6px 6px; }
-  .foot { padding: 14px 28px 20px; border-top: 1px solid #e6eff0; font-size: 10px; color: #8aa3a8; line-height: 1.9; }
-  @media print { body { background: #fff; padding: 0; } .card { box-shadow: none; border-radius: 0; } }
-</style></head>
-<body>
-  <div class="card">
-    <div class="head">
-      <div class="brand"><b>أكاديمي وجيز</b><span>بطاقة نتيجة مؤشر وجيز · ${esc(dateStr)}</span></div>
-      <h1>${esc(name)}</h1>
-      ${result.reasons[0] ? `<p class="reason">${esc(result.reasons[0])}</p>` : ""}
-    </div>
-    <div class="meta">
-      <span class="chip">${compositeView ? "خطة مركبة مخصصة" : "مسار موصى به"}</span>
-      <span class="chip">${esc(weeksLabel(topPathway.durationWeeks))}</span>
-      <span class="chip">${esc(topPathway.weeklyHours)} أسبوعيا</span>
-      <span class="chip">ثبات التوصية: ${esc(stabilityLabel)}</span>
-    </div>
-    <ol class="courses">${courseRows}</ol>
-    <div class="skills"><p>المهارات المحورية التي سيبنيها هذا المسار:</p>${skills}</div>
-    <div class="foot">
-      هذه البطاقة ملخص لتوصية تشخيص مؤشر وجيز المبنية على إجاباتك — تشخيص تعليمي مهني، ليس تقييما نفسيا أو طبيا، ولا وعدا بوظيفة أو دخل.
-      <br>أكاديمي وجيز · wajeez.com
-    </div>
-  </div>
-</body></html>`;
-    const win = window.open("", "_blank", "width=760,height=900");
-    if (!win) {
-      window.print();
-      return;
-    }
-    win.document.write(html);
-    win.document.close();
-    win.focus();
-    window.setTimeout(() => win.print(), 450);
-  };
-
   const qText = question ? resolve(question.text, answers) : "";
   const qHint = question ? resolve(question.hint, answers) : undefined;
   const qOptions: DiagOption[] = question ? (resolve(question.options, answers) ?? []) : [];
@@ -804,7 +694,7 @@ export default function Diagnostic() {
             <span className="text-[#6EC7D1]"> تختصر عليك شهورا من التشتت</span>
           </h1>
           <p className="mx-auto mt-5 max-w-xl leading-loose text-white/60">
-            حديث قصير عن يومك وهدفك وما يعيقك — كل إجابة تشكّل السؤال التالي، وتنتهي بمسار واحد واضح تخصّصه كما تشاء.
+            حديث قصير عن يومك وهدفك — كل إجابة تشكّل سؤالك التالي، وتنتهي بمسارك الواضح.
           </p>
 
           <div className="mx-auto mt-7 flex max-w-full items-center justify-center gap-1.5 whitespace-nowrap sm:gap-2">
@@ -1223,15 +1113,38 @@ export default function Diagnostic() {
       {/* ─── Result ─── */}
       {stage === "result" && result && topPathway && (
         <ResultErrorBoundary onReset={restart}>
+        {result.resultJson.kind === "guardrail_stop" ? (
+          /* توقف حوكمي (رفض الموافقة أو قاصر) — شاشة هادئة بلا توصية ولا تشتيت */
+          (() => {
+            const guardMsg = result.reasons[0] ?? "";
+            const isMinor = guardMsg.includes("قاصر");
+            return (
+          <section className="story-fade mx-auto max-w-xl px-5 py-20 text-center md:py-28">
+            <p className="text-lg font-black leading-relaxed">
+              {isMinor ? "هذه الجلسة تُكمل مع ولي الأمر" : "احترمنا اختيارك — توقف التشخيص هنا بلا أي توصية."}
+            </p>
+            <p className="mt-3 text-sm leading-loose text-white/55">
+              {isMinor
+                ? "لأن المتعلم قاصر، يجب أن يجلس ولي أمره معه ويكمل الإجابات بنفسه — ثم تظهر التوصية كاملة."
+                : "لم نحفظ توصية ولم نرشّح مسارا. إن غيّرت رأيك فالبداية الجديدة تستغرق دقائق."}
+            </p>
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+              <Button size="lg" className="h-12 rounded-full bg-[#FABC05] px-8 font-black text-[#0D0D0D] hover:bg-[#FABC05]/90" onClick={restart}>
+                ابدأ من جديد
+              </Button>
+              <Button size="lg" variant="outline" className="h-12 rounded-full border-white/15 px-8 font-bold text-white/70" asChild>
+                <Link to="/">العودة للرئيسية</Link>
+              </Button>
+            </div>
+          </section>
+            );
+          })()
+        ) : (
         <section className="story-fade mx-auto max-w-3xl px-5 py-12 md:py-16">
           {(() => {
             const compositeView = (result.resultJson.composite as CompositeView | null) ?? null;
-            const confBand = (result.resultJson.confidence as { band?: string } | undefined)?.band;
-            const stabilityLabel =
-              confBand === "strong" ? "مرتفع" : confBand === "good" ? "متوسط" : "يحتاج إلى معلومات إضافية";
             const deepeningDone = Boolean(result.resultJson.deepening);
-            const isGuardrail = result.resultJson.kind === "guardrail_stop";
-            const deepeningOffered = !deepeningDone && canDeepen && !isGuardrail;
+            const deepeningOffered = !deepeningDone && canDeepen;
             return (
           <div className="text-center">
             <div className="flex flex-wrap items-center justify-center gap-2">
@@ -1240,20 +1153,7 @@ export default function Diagnostic() {
                 {compositeView ? "خطة مركبة مخصصة" : "مسارك المقترح"}
               </Badge>
             </div>
-            <h1 className="mt-4 text-3xl font-black leading-snug md:text-4xl">
-              {compositeView ? compositeView.name_ar : topPathway.name}
-            </h1>
-            {/* جملة سبب واحدة — أوضح دليل على التوصية */}
-            {result.reasons[0] && (
-              <p className="mx-auto mt-4 max-w-xl text-sm leading-loose text-white/65">{result.reasons[0]}</p>
-            )}
-            {/* ثبات التوصية كنص لا نسبة — بلا ذكر للفجوات هنا */}
-            <div className="mx-auto mt-5 flex w-fit max-w-full flex-wrap items-center justify-center gap-2">
-              <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1 text-xs font-bold text-white/70">
-                <Gauge className="h-3.5 w-3.5 text-[#6EC7D1]" />
-                ثبات التوصية: {stabilityLabel}
-              </span>
-            </div>
+            {/* اسم المسار يظهر في بطاقة التوصية أدناه — لا تكرار هنا */}
             {/* جولة التدقيق — خطوة اختيارية واضحة، وخطتك تظهر أسفل مباشرة بلا زر انتقال */}
             {deepeningOffered && (
               <div className="mt-7 print:hidden">
@@ -1278,13 +1178,6 @@ export default function Diagnostic() {
                 صورتك مكتملة بما يكفي — لا أسئلة إضافية نافعة، توصيتك جاهزة بثقة.
               </p>
             )}
-            <button
-              onClick={openResultCard}
-              className="mx-auto mt-4 flex items-center gap-2 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-white/60 transition hover:border-[#6EC7D1]/50 hover:text-[#6EC7D1] print:hidden"
-            >
-              <FileText className="h-3.5 w-3.5" />
-              حمّل نتيجتك بطاقة مصممة
-            </button>
           </div>
             );
           })()}
@@ -1461,12 +1354,12 @@ export default function Diagnostic() {
             </div>
           )}
 
-          {/* Why this recommendation — ثلاث نقاط قصيرة + توسعة بالتفصيل */}
-          <div className="mt-8 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
-            <h3 className="flex items-center gap-2 text-lg font-black">
+          {/* Why this recommendation — أكورديون مغلق افتراضيا ليبقى المسح البصري خفيفا */}
+          <details className="mt-8 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
+            <summary className="flex cursor-pointer items-center gap-2 text-lg font-black">
               <Sparkles className="h-5 w-5 text-[#FABC05]" />
               لماذا هذا المسار؟
-            </h3>
+            </summary>
             <ul className="mt-4 space-y-3">
               {result.reasons.slice(0, 3).map((r) => (
                 <li key={r} className="flex items-start gap-3 text-sm leading-relaxed text-white/70">
@@ -1542,7 +1435,7 @@ export default function Diagnostic() {
                 })()}
               </div>
             </details>
-          </div>
+          </details>
 
           {/* تقاطع الرصيد السابق مع دورات التوصية — لا يدفع ثمن ما يعرفه */}
           {result.priorOverlap.length > 0 && (
@@ -1921,6 +1814,7 @@ export default function Diagnostic() {
             هذا تشخيص تعليمي مهني: ليس تقييما نفسيا أو طبيا، ولا وعدا بوظيفة أو دخل.
           </p>
         </section>
+        )}
         </ResultErrorBoundary>
       )}
     </div>

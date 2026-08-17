@@ -11,6 +11,10 @@ import Contact from './pages/Contact'
 import Auth from './pages/Auth'
 import NotFound from './pages/NotFound'
 
+/* مبدل أدوار الديمو — يُحمَّل كقطعة منفصلة ولا يُجلب ولا يظهر إلا في بناء الديمو */
+const DemoRoleSwitcher = lazy(() => import('./components/DemoRoleSwitcher'))
+const IS_DEMO_BUILD = import.meta.env.VITE_DEMO_MODE === 'true'
+
 /* محرك التشخيص وصفحة المسار ثقيلان — يُحمَّلان عند الطلب */
 const Methodology = lazy(() => import('./pages/Methodology'))
 const Diagnostic = lazy(() => import('./pages/Diagnostic'))
@@ -23,6 +27,7 @@ const CourseView = lazy(() => import('./pages/student/CourseView'))
 const Project = lazy(() => import('./pages/student/Project'))
 const Certificates = lazy(() => import('./pages/student/Certificates'))
 const MyLearning = lazy(() => import('./pages/student/MyLearning'))
+const StudentAccount = lazy(() => import('./pages/student/Account'))
 const AdvisorDashboard = lazy(() => import('./pages/advisor/AdvisorDashboard'))
 const AdvisorReviews = lazy(() => import('./pages/advisor/Reviews'))
 const StudentCard = lazy(() => import('./pages/advisor/StudentCard'))
@@ -102,6 +107,7 @@ export default function App() {
           <Route path="/student/project" element={<Project />} />
           <Route path="/student/certificates" element={<Certificates />} />
           <Route path="/student/learning" element={<MyLearning />} />
+          <Route path="/student/account" element={<StudentAccount />} />
           <Route path="/advisor" element={<AdvisorDashboard />} />
           <Route path="/advisor/reviews" element={<AdvisorReviews />} />
           <Route path="/advisor/student/:id" element={<StudentCard />} />
@@ -124,6 +130,11 @@ export default function App() {
         </Routes>
         </Suspense>
       </main>
+      {IS_DEMO_BUILD && (
+        <Suspense fallback={null}>
+          <DemoRoleSwitcher />
+        </Suspense>
+      )}
     </>
   )
 }

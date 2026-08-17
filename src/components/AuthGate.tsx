@@ -240,7 +240,7 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
         <div className="border-b border-white/5 px-8 pb-6 pt-8 text-center">
           <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="mx-auto h-12 w-12 object-contain" />
           <h2 className="mt-4 text-2xl font-black text-white">
-            {mode === "signup" ? "ابدأ رحلتك مع وجيز" : "أهلا بعودتك"}
+            {mode === "signup" ? "ابدأ رحلتك مع أكاديمية وجيز" : "أهلا بعودتك"}
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-white/55">
             {message ?? "حساب واحد يحفظ تشخيصك ومسارك وشهاداتك"}

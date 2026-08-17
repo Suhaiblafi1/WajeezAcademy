@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router";
-import { GraduationCap, LayoutDashboard, Route as RouteIcon, Trophy, Award, Lock, Eye, LogOut, Bell, CheckCheck } from "lucide-react";
+import { GraduationCap, LayoutDashboard, Route as RouteIcon, Trophy, Award, Lock, Eye, LogOut, Bell, CheckCheck, UserCircle } from "lucide-react";
 import { canAccessPortal, enablePreview, getEnrollment, isOwnerUnlocked, unlockOwner } from "@/services/access";
 import { signOut } from "@/services/auth";
 import { loadPortal, readUserName, savePortal, type PortalNotification } from "@/data/student";
@@ -68,6 +68,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
     { to: "/student/pathway", label: "مساري", icon: RouteIcon },
     { to: "/student/project", label: "مشروع التخرج", icon: Trophy },
     { to: "/student/certificates", label: "شهاداتي", icon: Award },
+    { to: "/student/account", label: "حسابي", icon: UserCircle },
   ];
 
   return (
@@ -154,7 +155,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
         {children}
       </main>
       {/* شريط تنقل سفلي للجوال — التبويبات الأربعة كاملة بالنص في متناول الإبهام */}
-      <nav aria-label="تنقل المنصة" className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-white/10 bg-[#0D0D0D]/95 pb-[max(env(safe-area-inset-bottom),0.25rem)] backdrop-blur-xl sm:hidden">
+      <nav aria-label="تنقل المنصة" className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-white/10 bg-[#0D0D0D]/95 pb-[max(env(safe-area-inset-bottom),0.25rem)] backdrop-blur-xl sm:hidden">
         {tabs.map((t) => (
           <NavLink
             key={t.to}

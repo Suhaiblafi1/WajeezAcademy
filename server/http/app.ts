@@ -24,6 +24,8 @@ import { registerOperationsRoutes } from './routes/operations.routes'
 import { registerSupportRoutes } from './routes/support.routes'
 import { registerNotificationRoutes } from './routes/notifications.routes'
 import { registerReportRoutes } from './routes/reports.routes'
+import { registerProfileRoutes } from './routes/profile.routes'
+import { registerDemoRoutes } from './routes/demo.routes'
 
 export async function buildApp(prisma: PrismaClient) {
   const app = Fastify({ logger: false })
@@ -32,6 +34,7 @@ export async function buildApp(prisma: PrismaClient) {
   await app.register(cors, {
     origin: process.env.WEB_ORIGIN?.split(',') ?? ['http://localhost:7100'],
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   })
   await app.register(cookie)
   /* تحديد معدل الطلبات — سقف عام لكل IP (يُسترخى في بيئة الاختبار الآلية فقط)،
@@ -71,6 +74,9 @@ export async function buildApp(prisma: PrismaClient) {
   registerSupportRoutes(app, prisma)
   registerNotificationRoutes(app, prisma)
   registerReportRoutes(app, prisma)
+  registerProfileRoutes(app, prisma)
+  /* مسارات الديمو: /status يخبر الواجهة بالوضع، و/switch-role يرفض 404 ما لم DEMO_MODE=true */
+  registerDemoRoutes(app, auth)
 
   return app
 }

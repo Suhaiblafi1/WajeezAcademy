@@ -104,8 +104,11 @@ note('الجلسة لم تُوقف بقيد حماية (إجابات بالغة)
 await d.screenshot({ path: `${OUT}/result-desktop.png`, fullPage: true })
 
 if (resultVisible && !guardrailHit) {
+  /* زر بطاقة الطباعة حُذف عمدا بطلب المالك (دفعة تبسيط النتيجة) — نتحقق من غيابه ومن إغلاق الأكورديونات */
   const cardBtn = await d.getByRole('button', { name: 'حمّل نتيجتك بطاقة مصممة' }).isVisible().catch(() => false)
-  note('زر «حمّل نتيجتك بطاقة مصممة» موجود', cardBtn)
+  note('زر بطاقة الطباعة القديم أزيل من النتيجة', !cardBtn)
+  const whyOpen = await d.locator('details:has-text("لماذا هذا المسار؟")').first().evaluate((el) => el.open).catch(() => null)
+  note('أكورديون «لماذا هذا المسار؟» مغلق افتراضيا', whyOpen === false)
   const deepenBtn = d.getByRole('button', { name: 'لديك دقيقة أخرى لنتأكد أكثر؟' })
   const canDeepen = await deepenBtn.isVisible().catch(() => false)
   const deepenNote = await d.getByText('صورتك مكتملة بما يكفي').first().isVisible().catch(() => false)

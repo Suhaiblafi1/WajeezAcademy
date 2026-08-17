@@ -33,13 +33,15 @@ const main = async () => {
   }
 
   /* المهارات اليتيمة: لا سؤال يقيسها ولا دورة تغطيها.
-     تقريرية لا مانعة — المنهجية تتعمد إبقاء مهارات «فجوة غير متوفرة تجاريا» ظاهرة */
+     تقريرية لا مانعة. ملاحظة تصحيحية: هذه المهارات «ميتة» فعليا —
+     لا مسار يطلبها أيضا (انظر npm run audit:skill-coverage)، فلا تظهر
+     في أي توصية. مصنفة مرشحة حذف/دمج وقرارها مؤجل وموثق. */
   const measuredBy = new Set((await prisma.questionSkillLink.findMany({ select: { skillId: true } })).map((l) => l.skillId))
   const coveredBy = new Set((await prisma.courseSkillLink.findMany({ select: { skillId: true } })).map((l) => l.skillId))
   const skills = await prisma.skill.findMany({ where: { status: 'published' }, select: { id: true, slug: true } })
   const orphans = skills.filter((s) => !measuredBy.has(s.id) && !coveredBy.has(s.id))
   if (orphans.length > 0) {
-    console.log(`ℹ مهارات فجوة متعمدة (تظهر كفجوة في التوصية ولا دورة لها بعد): ${orphans.length} — مثل ${orphans.slice(0, 3).map((s) => s.slug).join('، ')}`)
+    console.log(`ℹ مهارات ميتة (لا قياس ولا تغطية ولا مسار يطلبها — لا تظهر في التوصيات): ${orphans.length} — مثل ${orphans.slice(0, 3).map((s) => s.slug).join('، ')}`)
   }
 
   console.log(`\n${failures === 0 ? '✅ التغطية مكتملة' : '✗ فشل'} — مسارات مغطاة: ${[...profiles].length}/${pathways.length}، قوالب بإشارات: ${templates.length}، مهارات يتيمة: ${orphans.length}`)

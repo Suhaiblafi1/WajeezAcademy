@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
 import {
   ArrowRight,
   CalendarClock,
@@ -13,7 +13,6 @@ import {
   CreditCard,
   User,
   UserCheck,
-  TrendingUp,
   FileText,
   MonitorPlay,
   Headphones,
@@ -174,10 +173,10 @@ function StripeCheckout({
 export default function PathwayPage() {
   usePublishedContent();
   const { id } = useParams();
+  const navigate = useNavigate();
   const pathway = pathwayById(id ?? "");
   const [user, setUser] = useState<string | null>(readUserName);
   const [checkout, setCheckout] = useState<{ title: string; amount: number; kind: "pathway" | "course" | "courses"; courseId?: string; courseIds?: string[] } | null>(null);
-  const [purchased, setPurchased] = useState<{ kind: "pathway" | "course" | "courses"; courseId?: string } | null>(null);
   const [pickedIds, setPickedIds] = useState<string[]>([]);
   const fmt = usePriceFormatter();
 
@@ -314,6 +313,14 @@ export default function PathwayPage() {
             </p>
           </div>
 
+          {/* «ماذا ستحقق من خلال خطتك؟» — رحلة الدورات بأكورديون، بلا قائمة مكررة فوقها */}
+          <CourseJourney
+            courseIds={pathwayCoursesList.map((c) => c.id)}
+            delivery={pathwayDelivery(pathway.id)}
+            headingLevel="h2"
+            giftId={custom?.giftId ?? null}
+          />
+
           {/* مقاعد التخصصات التدريبية — الأسماء تُعلن بعد اعتماد الشعبة */}
           <div className="story-fade mt-8 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4">
             <h2 className="flex items-center gap-2 text-sm font-black">
@@ -366,7 +373,7 @@ export default function PathwayPage() {
 
           {/* تقريره الشخصي — مطوي افتراضيا في تبويب صغير */}
           {report && (
-            <details className="story-fade group mt-8 rounded-2xl border border-[#38A7B4]/35 bg-gradient-to-b from-[#12343B]/60 to-transparent">
+            <details className="story-fade group mt-6 rounded-2xl border border-[#38A7B4]/35 bg-gradient-to-b from-[#12343B]/60 to-transparent">
               <summary className="flex cursor-pointer list-none items-center gap-2 px-5 py-3 text-sm font-black text-[#6EC7D1] [&::-webkit-details-marker]:hidden">
                 <FileText className="h-4 w-4" />
                 تقريرك الشخصي — ما فهمناه عنك
@@ -391,86 +398,11 @@ export default function PathwayPage() {
             </details>
           )}
 
-          {/* «ماذا ستحقق من خلال خطتك؟» — رحلة الدورات بأكورديون، بلا قائمة مكررة فوقها */}
-          <CourseJourney
-            courseIds={pathwayCoursesList.map((c) => c.id)}
-            delivery={pathwayDelivery(pathway.id)}
-            headingLevel="h2"
-            giftId={custom?.giftId ?? null}
-          />
-
-          {/* ما ستحصل عليه مع المسار — من عروض أكاديمية وجيز */}
-          <div className="story-fade mt-10 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
-            <h2 className="flex items-center gap-2 text-xl font-black">
-              <Sparkles className="h-5 w-5 text-[#FABC05]" />
-              مع المسار لا تأخذ دورات فقط — تأخذ منظومة كاملة
-            </h2>
-            <div className="mt-5 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-              {[
-                { icon: MonitorPlay, t: "دورات مسجلة + جلسات مباشرة", d: "وحدات فيديو وجلسة حية مع المدرب ومهمة تطبيقية لكل دورة" },
-                { icon: Headphones, t: "ملخصات كتب وجيز الصوتية", d: "اسمع ملخصات الكتب المرتبطة بمسارك — ثم اختبر نفسك فيها" },
-                { icon: ClipboardCheck, t: "واجبات تُراجع بشريا", d: "مدربك يقرأ واجبك ويعطيك تغذية راجعة عملية — لا تصحيحا آليا" },
-                { icon: FolderKanban, t: "مشروع تخرج حقيقي", d: "تبني مخرجا على واقعك وتقدمه للمراجعة قبل الاعتماد" },
-                { icon: BadgeCheck, t: "شهادة موثقة بشروط إنجاز", d: "مرتبطة بالحضور والاختبار والمشروع — لا شهادة مشاهدة" },
-                { icon: BarChart3, t: "خريطة مهارات قبل وبعد", d: "ترى مستواك 0–5 في كل مهارة قبل المسار وبعده" },
-                { icon: RouteIcon, t: "خطة تقدم شخصية", d: "خطوة تالية واضحة بعد المسار — ماذا تتعلم بعده ولماذا" },
-                { icon: UserCheck, t: "مستشار نجاح يرافقك", d: "متابعة أسبوعية ورسالة مباشرة عند أي تعثر" },
-                { icon: Briefcase, t: "منظومة ما بعد الإتمام", d: "لوحة وظائف وتوصيات مهنية وبرنامج سفراء وجيز" },
-              ].map((b) => (
-                <div key={b.t} className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3.5">
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#38A7B4]/15">
-                    <b.icon className="h-4 w-4 text-[#6EC7D1]" />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-sm font-black leading-relaxed">{b.t}</p>
-                    <p className="mt-1 text-xs leading-relaxed text-white/50">{b.d}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* نجاح الدفع */}
-          {purchased && (
-            <div className="story-fade mt-10 rounded-3xl border border-[#38A7B4]/50 bg-[#38A7B4]/10 p-6 text-center md:p-8">
-              <CheckCircle2 className="mx-auto h-12 w-12 text-[#6EC7D1]" />
-              <h3 className="mt-4 text-2xl font-black">تم الدفع بنجاح — مبارك!</h3>
-              <p className="mx-auto mt-3 max-w-md text-sm leading-loose text-white/65">
-                ستصلك الآن رسالة تأكيد على بريدك الإلكتروني — ومنصة الطالب الخاصة بك فُتحت لك للتو:
-                دوراتك وواجباتك وجلساتك ومستشارك بانتظارك.
-              </p>
-              <Link
-                to="/student"
-                className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#38A7B4] px-8 py-3.5 font-black text-[#08272B] transition hover:bg-[#6EC7D1]"
-              >
-                ادخل منصة الطالب الآن
-              </Link>
-              {purchased.kind !== "pathway" && (
-                <div className="mx-auto mt-6 max-w-lg rounded-2xl border border-[#FABC05]/40 bg-[#FABC05]/10 p-5">
-                  <p className="flex items-center justify-center gap-2 font-black text-[#FABC05]">
-                    <TrendingUp className="h-5 w-5" />
-                    خطوتك التالية الأذكى: أكمل المسار كاملا
-                  </p>
-                  <p className="mt-2 text-sm leading-relaxed text-white/70">
-                    اشتريت {purchased.kind === "courses" ? "دورات مختارة" : "دورة"} — ممتاز. لكن الدورات المتفرقة خطوات، والمسار رحلة مكتملة.
-                    أكمل «{pathway.name}» كاملا بـ{fmt(pathwayTotal)} وسنخصم لك ما دفعته للتو —
-                    فتصبح مشترياتك الأولى عمليا مجانية.
-                  </p>
-                  <Button
-                    onClick={() => setCheckout({ title: `إكمال مسار «${pathway.name}» كاملا`, amount: pathwayTotal, kind: "pathway" })}
-                    className="mt-4 rounded-full bg-[#FABC05] px-8 font-black text-[#0D0D0D] hover:bg-[#FABC05]/90"
-                  >
-                    أكمل المسار بـ{fmt(pathwayTotal)}
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* مقارنة الشراء: دورة واحدة أم المسار كاملا */}
-          {!purchased && (
-            <div className="story-fade mt-10 overflow-hidden rounded-3xl border border-[#FABC05]/40 bg-gradient-to-b from-[#2A2108]/60 to-transparent p-6 md:p-8">
-              <h3 className="text-xl font-black text-[#FABC05]">اشترِ بالطريقة التي تناسبك</h3>
+          {/* مقارنة الشراء: دورة واحدة أم المسار كاملا — تصميم هادئ يريح القرار */}
+          {(
+            <div id="buy" className="story-fade mt-10 scroll-mt-24 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
+              <h3 className="text-xl font-black">اشترِ بالطريقة التي تناسبك</h3>
+              <p className="mt-2 text-xs leading-relaxed text-white/50">خياران واضحان بلا ضغط — قارن بهدوء، والقرار لك.</p>
               <div className="mt-6 grid gap-5 md:grid-cols-2">
                 {/* دورة أو أكثر — اختيار حر */}
                 <div className="flex flex-col rounded-2xl border border-white/15 bg-black/30 p-5">
@@ -550,13 +482,13 @@ export default function PathwayPage() {
                   </Button>
                 </div>
                 {/* المسار كاملا */}
-                <div className="relative flex flex-col overflow-hidden rounded-2xl border border-[#FABC05]/60 bg-[#FABC05]/5 p-5">
-                  <span className="absolute left-3 top-3 rounded-full bg-[#FABC05] px-2.5 py-0.5 text-[10px] font-black text-[#0D0D0D]">الأذكى ماليا</span>
+                <div className="relative flex flex-col rounded-2xl border border-[#FABC05]/30 bg-white/[0.03] p-5">
+                  <span className="absolute left-3 top-3 rounded-full bg-[#FABC05]/15 px-2.5 py-0.5 text-[10px] font-black text-[#FABC05]">الأوفر</span>
                   <p className="font-black text-sm">المسار كاملا</p>
-                  <p className="mt-1 text-xs text-white/50">كل الدورات + التشخيص الكامل + المنظومة التسع أعلاه</p>
+                  <p className="mt-1 text-xs text-white/50">كل الدورات + التشخيص الكامل + المنظومة التسع أدناه</p>
                   <div className="mt-4 flex items-end gap-2">
-                    <span className="text-3xl font-black text-white">{fmt(pathwayTotal)}</span>
-                    {savingPct > 0 && <span className="mb-1 text-sm text-white/45 line-through">{fmt(separateCost)}</span>}
+                    <span className="text-2xl font-black text-white">{fmt(pathwayTotal)}</span>
+                    {savingPct > 0 && <span className="mb-0.5 text-sm text-white/45 line-through">{fmt(separateCost)}</span>}
                   </div>
                   {savingPct > 0 && <p className="mt-1 text-xs text-[#6EC7D1]">بدل {fmt(separateCost)} لو اشتريت الدورات منفردة — توفير {savingPct}%</p>}
                   <p className="mt-1.5 flex items-center gap-1.5 text-xs text-[#FABC05]">
@@ -574,6 +506,47 @@ export default function PathwayPage() {
               <p className="mt-4 text-center text-[11px] text-white/40">دفع آمنا عبر Stripe — يصلك تأكيد فوري على بريدك وتُفتح منصة الطالب الخاصة بك</p>
             </div>
           )}
+
+          {/* ما ستحصل عليه مع المسار — من عروض أكاديمية وجيز */}
+          <div className="story-fade mt-10 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
+            <h2 className="flex items-center gap-2 text-xl font-black">
+              <Sparkles className="h-5 w-5 text-[#FABC05]" />
+              مع المسار لا تأخذ دورات فقط — تأخذ منظومة كاملة
+            </h2>
+            <div className="mt-5 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+              {[
+                { icon: MonitorPlay, t: "دورات مسجلة + جلسات مباشرة", d: "وحدات فيديو وجلسة حية مع المدرب ومهمة تطبيقية لكل دورة" },
+                { icon: Headphones, t: "ملخصات كتب وجيز الصوتية", d: "اسمع ملخصات الكتب المرتبطة بمسارك — ثم اختبر نفسك فيها" },
+                { icon: ClipboardCheck, t: "واجبات تُراجع بشريا", d: "مدربك يقرأ واجبك ويعطيك تغذية راجعة عملية — لا تصحيحا آليا" },
+                { icon: FolderKanban, t: "مشروع تخرج حقيقي", d: "تبني مخرجا على واقعك وتقدمه للمراجعة قبل الاعتماد" },
+                { icon: BadgeCheck, t: "شهادة موثقة بشروط إنجاز", d: "مرتبطة بالحضور والاختبار والمشروع — لا شهادة مشاهدة" },
+                { icon: BarChart3, t: "خريطة مهارات قبل وبعد", d: "ترى مستواك 0–5 في كل مهارة قبل المسار وبعده" },
+                { icon: RouteIcon, t: "خطة تقدم شخصية", d: "خطوة تالية واضحة بعد المسار — ماذا تتعلم بعده ولماذا" },
+                { icon: UserCheck, t: "مستشار نجاح يرافقك", d: "متابعة أسبوعية ورسالة مباشرة عند أي تعثر" },
+                { icon: Briefcase, t: "منظومة ما بعد الإتمام", d: "لوحة وظائف وتوصيات مهنية وبرنامج سفراء وجيز" },
+              ].map((b) => (
+                <div key={b.t} className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3.5">
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#38A7B4]/15">
+                    <b.icon className="h-4 w-4 text-[#6EC7D1]" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-black leading-relaxed">{b.t}</p>
+                    <p className="mt-1 text-xs leading-relaxed text-white/50">{b.d}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* CTA ختامي — يعيد إلى قسم الدفع في الأعلى */}
+          <div className="story-fade mt-8 text-center">
+            <a
+              href="#buy"
+              className="inline-flex items-center gap-2 rounded-full bg-[#FABC05] px-10 py-4 text-lg font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90"
+            >
+              ابدأ الآن لنسختك القادمة
+            </a>
+          </div>
 
           {/* مستشارك على واتساب */}
           <div className="story-fade mt-10 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
@@ -621,9 +594,9 @@ export default function PathwayPage() {
               amount: checkout.amount,
             });
             track("payment_completed", { kind: checkout.kind, courses: checkout.kind === "pathway" ? courseIds.length : (checkout.courseIds?.length ?? 1) });
-            setPurchased({ kind: checkout.kind, courseId: checkout.courseId });
             setCheckout(null);
-            window.scrollTo({ top: 0, behavior: "smooth" });
+            /* انتهت عملية الشراء — ينتقل مباشرة إلى تجربته التعليمية في منصة الطالب */
+            navigate("/student");
           }}
         />
       )}

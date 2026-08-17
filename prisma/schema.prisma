@@ -1342,7 +1342,23 @@ model LearnerProfile {
   timezone           String?
   diagnosticSnapshot Json?    // نتيجة التشخيص المرفقة بالحساب — لا تُعدل بعد الاعتماد
   attachedAt         DateTime? // وقت ربط التشخيص بالحساب
+  // ── الملف الشخصي الكامل — اختيارية كلها، يملؤها المتعلم ويعدلها من حسابه ──
+  avatarUrl          String?  // صورة شخصية (رابط تخزين داخلي)
+  phone              String?
+  country            String?
+  city               String?
+  birthDate          DateTime? // اختياري — لأغراض الشهادات والفرص العمرية فقط
+  gender             String?   // اختياري تماما — male | female
+  education          String?   // المؤهل العلمي
+  university         String?   // الجامعة / المؤسسة التعليمية
+  major              String?   // التخصص
+  jobTitle           String?   // الوظيفة الحالية
+  company            String?
+  experienceYears    String?   // نطاق سنوات الخبرة (مثل 4-7)
+  careerGoal         String?   // الهدف المهني — يختلف عن هدف التعلم goalAr
+  interests          Json?     // string[] اهتماماته
   createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
   user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 

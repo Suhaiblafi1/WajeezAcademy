@@ -39,7 +39,9 @@
     "test:e2e": "vitest run --no-file-parallelism server/tests",
     "test:integration": "npm run test:e2e",
     "test:diagnostic-regression": "tsx scripts/test-diagnostic-regression.ts",
-    "test": "npm run test:diagnostic && npm run test:scenarios"
+    "test": "npm run test:diagnostic && npm run test:scenarios",
+    "audit:skill-coverage": "tsx scripts/with-db.ts tsx scripts/audit-skill-coverage-matrix.ts",
+    "seed:demo": "tsx scripts/with-db.ts tsx server/db/seed-demo.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.2",

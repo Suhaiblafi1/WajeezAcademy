@@ -284,29 +284,29 @@ export default function JoinTrainer() {
         description="درّب في أكاديمية وجيز — عبّئ طلب الانضمام الأولي وسيراجعه فريقنا الأكاديمي."
         path="/join-trainer"
       />
-      <div className="mx-auto max-w-2xl">
+      <div className="mx-auto max-w-3xl">
         <span className="kicker">انضم إلى نخبة المدربين</span>
         <h1 className="h-section mt-4">درّب ما تتقنه — وأثرّ في مسارات حقيقية</h1>
-        <p className="mt-3 text-sm leading-8 text-white/60">
+        <p className="mt-4 max-w-2xl text-base leading-8 text-white/65">
           مدربو وجيز لا يلقون دروسا مسجلة فحسب — يراجعون واجبات، ويرافقون طلابا، ويقيمون مشاريع تخرج.
           الطلب يمر بمرحلتين: هذا الطلب الأولي، ثم ملف مهني يُفتح للمرشحين فقط.
         </p>
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-3">
+        <div className="mt-8 grid gap-4 sm:grid-cols-3">
           {[
             { icon: Compass, text: "مسارات مبنية بمنهجية موثقة لا بمزاج" },
             { icon: Users, text: "طلاب جادون وصلوا عبر تشخيص" },
             { icon: Mic2, text: "مقابلة ودرس تجريبي قبل الاعتماد" },
           ].map((f) => (
-            <div key={f.text} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+            <div key={f.text} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
               <f.icon className="h-5 w-5 text-[#6EC7D1]" />
-              <p className="mt-2 text-xs font-bold leading-6 text-white/85">{f.text}</p>
+              <p className="mt-3 text-xs font-bold leading-6 text-white/85">{f.text}</p>
             </div>
           ))}
         </div>
 
-        <form onSubmit={submit} className="mt-8 space-y-4 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
-          <div className="grid gap-4 sm:grid-cols-2">
+        <form onSubmit={submit} className="mt-10 space-y-6 rounded-3xl border border-white/10 bg-white/[0.03] p-7 md:p-10">
+          <div className="grid gap-5 sm:grid-cols-2">
             <div>
               <label htmlFor="jt-name" className="mb-1.5 block text-xs font-bold text-white/60">الاسم الكامل *</label>
               <input id="jt-name" name="name" autoComplete="name" required value={form.fullName} onChange={set("fullName")} className={inputCls} />
@@ -348,8 +348,8 @@ export default function JoinTrainer() {
             </div>
           </div>
 
-          <fieldset>
-            <legend className="mb-1.5 text-xs font-bold text-white/60">تخصصاتك التدريبية * — اختر كل ما تتقنه فعلا</legend>
+          <fieldset className="border-t border-white/5 pt-7">
+            <legend className="mb-3 text-xs font-bold text-white/60">تخصصاتك التدريبية * — اختر كل ما تتقنه فعلا</legend>
             <div className="flex flex-wrap gap-2">
               {TRAINING_SPECIALIZATIONS.map((s) => (
                 <button
@@ -367,7 +367,7 @@ export default function JoinTrainer() {
             </div>
           </fieldset>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-5 border-t border-white/5 pt-7 sm:grid-cols-2">
             <div>
               <label htmlFor="jt-years" className="mb-1.5 block text-xs font-bold text-white/60">سنوات الخبرة المهنية في المجال *</label>
               <select id="jt-years" required value={form.domainYears} onChange={set("domainYears")} className={`${inputCls} [&>option]:bg-[#121B1D]`}>
@@ -385,47 +385,49 @@ export default function JoinTrainer() {
           </div>
           <p className="-mt-2 text-[11px] text-white/40">إتقان المجال شيء والقدرة على تدريبه شيء آخر — نقرؤهما منفصلين.</p>
 
-          <div>
-            <label htmlFor="jt-bio" className="mb-1.5 block text-xs font-bold text-white/60">نبذة مختصرة عنك</label>
-            <textarea id="jt-bio" rows={2} value={form.bio} onChange={set("bio")} className={inputCls} />
-          </div>
-          <div>
-            <label htmlFor="jt-links" className="mb-1.5 block text-xs font-bold text-white/60">رابط لينكدإن أو ملف أعمال</label>
-            <input id="jt-links" name="links" dir="ltr" placeholder="https://linkedin.com/in/..." value={form.linkedinUrl} onChange={set("linkedinUrl")} className={`${inputCls} text-left`} />
-          </div>
-
-          {/* حضور رقمي واعتماد — تساعد المراجعة الأكاديمية على تقييم المتقدم */}
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-5 border-t border-white/5 pt-7">
             <div>
-              <label htmlFor="jt-youtube" className="mb-1.5 block text-xs font-bold text-white/60">قناة يوتيوب أو فيديو تدريبي لك</label>
-              <input id="jt-youtube" dir="ltr" placeholder="https://youtube.com/@..." value={form.youtubeUrl} onChange={set("youtubeUrl")} className={`${inputCls} text-left`} />
+              <label htmlFor="jt-bio" className="mb-1.5 block text-xs font-bold text-white/60">نبذة مختصرة عنك</label>
+              <textarea id="jt-bio" rows={2} value={form.bio} onChange={set("bio")} className={inputCls} />
             </div>
             <div>
-              <label htmlFor="jt-instagram" className="mb-1.5 block text-xs font-bold text-white/60">حساب إنستغرام المهني</label>
-              <input id="jt-instagram" dir="ltr" placeholder="https://instagram.com/..." value={form.instagramUrl} onChange={set("instagramUrl")} className={`${inputCls} text-left`} />
+              <label htmlFor="jt-links" className="mb-1.5 block text-xs font-bold text-white/60">رابط لينكدإن أو ملف أعمال</label>
+              <input id="jt-links" name="links" dir="ltr" placeholder="https://linkedin.com/in/..." value={form.linkedinUrl} onChange={set("linkedinUrl")} className={`${inputCls} text-left`} />
             </div>
-          </div>
 
-          <div className="rounded-xl border border-white/10 bg-black/20 p-3">
-            <label className="flex cursor-pointer items-start gap-2.5">
-              <input
-                type="checkbox" checked={form.hasAccreditation}
-                onChange={(e) => setForm({ ...form, hasAccreditation: e.target.checked, accreditationDetails: e.target.checked ? form.accreditationDetails : "" })}
-                className="mt-0.5 h-4 w-4 accent-[#38A7B4]"
-              />
-              <span className="text-xs leading-6 text-white/60">
-                لدي اعتماد أو ترخيص رسمي من جهة أو هيئة تدريب معترف بها
-              </span>
-            </label>
-            {form.hasAccreditation && (
-              <div className="mt-3">
-                <label htmlFor="jt-accred" className="mb-1.5 block text-xs font-bold text-white/60">اسم الجهة وتفاصيل الاعتماد</label>
-                <input id="jt-accred" placeholder="مثال: اعتماد هيئة تقويم التعليم والتدريب — رقم ..." value={form.accreditationDetails} onChange={set("accreditationDetails")} className={inputCls} />
+            {/* حضور رقمي واعتماد — تساعد المراجعة الأكاديمية على تقييم المتقدم */}
+            <div className="grid gap-5 sm:grid-cols-2">
+              <div>
+                <label htmlFor="jt-youtube" className="mb-1.5 block text-xs font-bold text-white/60">قناة يوتيوب أو فيديو تدريبي لك</label>
+                <input id="jt-youtube" dir="ltr" placeholder="https://youtube.com/@..." value={form.youtubeUrl} onChange={set("youtubeUrl")} className={`${inputCls} text-left`} />
               </div>
-            )}
+              <div>
+                <label htmlFor="jt-instagram" className="mb-1.5 block text-xs font-bold text-white/60">حساب إنستغرام المهني</label>
+                <input id="jt-instagram" dir="ltr" placeholder="https://instagram.com/..." value={form.instagramUrl} onChange={set("instagramUrl")} className={`${inputCls} text-left`} />
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+              <label className="flex cursor-pointer items-start gap-2.5">
+                <input
+                  type="checkbox" checked={form.hasAccreditation}
+                  onChange={(e) => setForm({ ...form, hasAccreditation: e.target.checked, accreditationDetails: e.target.checked ? form.accreditationDetails : "" })}
+                  className="mt-0.5 h-4 w-4 accent-[#38A7B4]"
+                />
+                <span className="text-xs leading-6 text-white/60">
+                  لدي اعتماد أو ترخيص رسمي من جهة أو هيئة تدريب معترف بها
+                </span>
+              </label>
+              {form.hasAccreditation && (
+                <div className="mt-3">
+                  <label htmlFor="jt-accred" className="mb-1.5 block text-xs font-bold text-white/60">اسم الجهة وتفاصيل الاعتماد</label>
+                  <input id="jt-accred" placeholder="مثال: اعتماد هيئة تقويم التعليم والتدريب — رقم ..." value={form.accreditationDetails} onChange={set("accreditationDetails")} className={inputCls} />
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-5 border-t border-white/5 pt-7 sm:grid-cols-2">
             <div>
               <label htmlFor="jt-target-countries" className="mb-1.5 block text-xs font-bold text-white/60">الدول التي تستهدفها بتدريبك</label>
               <MultiPick id="jt-target-countries" label="اختر من القائمة" options={[ALL_ARAB, ...ARAB_COUNTRIES]} selected={targetCountries} onChange={setTargetCountries} />
@@ -436,7 +438,7 @@ export default function JoinTrainer() {
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-5 sm:grid-cols-2">
             <fieldset>
               <legend className="mb-1.5 text-xs font-bold text-white/60">لغات التدريب *</legend>
               <div className="flex flex-wrap gap-2">
@@ -464,7 +466,7 @@ export default function JoinTrainer() {
             </div>
           </div>
 
-          <div>
+          <div className="border-t border-white/5 pt-7">
             <label htmlFor="jt-why" className="mb-1.5 block text-xs font-bold text-white/60">لماذا تريد الانضمام إلى وجيز تحديدا؟ *</label>
             <textarea id="jt-why" rows={3} required value={form.motivation} onChange={set("motivation")} className={inputCls} />
           </div>
@@ -492,10 +494,12 @@ export default function JoinTrainer() {
           </button>
         </form>
 
-        {/* متابعة طلب سابق */}
-        <div className="mt-8 rounded-3xl border border-white/10 bg-white/[0.02] p-6">
-          <h2 className="flex items-center gap-2 text-sm font-black"><Search className="h-4 w-4 text-[#6EC7D1]" /> قدّمت سابقا؟ تابع حالة طلبك</h2>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        {/* متابعة طلب سابق — قسم ثانوي مطوي ليبقى التركيز على الطلب الجديد */}
+        <details className="mt-10 rounded-2xl border border-white/10 bg-white/[0.02] px-6 py-5">
+          <summary className="flex cursor-pointer items-center gap-2 text-sm font-black">
+            <Search className="h-4 w-4 text-[#6EC7D1]" /> قدّمت سابقا؟ تابع حالة طلبك
+          </summary>
+          <div className="mt-5 grid gap-3 border-t border-white/5 pt-5 sm:grid-cols-2">
             <input dir="ltr" placeholder="WJ-TR-2026-00001" aria-label="الرقم المرجعي" value={lookup.reference}
               onChange={(e) => setLookup({ ...lookup, reference: e.target.value })} className={`${inputCls} text-left font-mono`} />
             <input dir="ltr" type="email" placeholder="بريدك المستخدم في الطلب" aria-label="البريد" value={lookup.email}
@@ -509,7 +513,7 @@ export default function JoinTrainer() {
           </button>
           {lookupResult && <p className="mt-3 rounded-xl border border-[#38A7B4]/30 bg-[#38A7B4]/5 p-3 text-xs font-bold text-[#6EC7D1]">{lookupResult}</p>}
           {lookupError && <p className="mt-3 text-xs text-red-300" role="alert">{lookupError}</p>}
-        </div>
+        </details>
       </div>
     </SiteShell>
   );

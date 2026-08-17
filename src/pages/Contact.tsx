@@ -72,25 +72,25 @@ export default function Contact() {
         {/* بيانات التواصل */}
         <div className="lg:col-span-2">
           <h1 className="text-3xl font-black md:text-4xl">تفضّل بالكلام</h1>
-          <p className="mt-4 leading-8 text-white/60">
+          <p className="mt-4 text-base leading-8 text-white/65">
             سؤال عن مسار؟ استفسار مؤسسي؟ شراكة تدريبية؟ فريقنا يقرأ كل رسالة بنفسه ويرد خلال يوم عمل واحد.
           </p>
-          <div className="mt-6 space-y-2">
-            <div className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5">
+          <div className="mt-7 space-y-3">
+            <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
               <Mail className="h-4 w-4 shrink-0 text-[#6EC7D1]" />
-              <a href={`mailto:${CONTACT.email}`} dir="ltr" className="text-xs font-bold text-[#6EC7D1] underline-offset-4 hover:underline">
+              <a href={`mailto:${CONTACT.email}`} dir="ltr" className="text-sm font-bold text-[#6EC7D1] underline-offset-4 hover:underline">
                 {CONTACT.email}
               </a>
-              <span className="mr-auto text-[10px] text-white/40">نرد خلال يوم عمل</span>
+              <span className="mr-auto text-xs text-white/45">نرد خلال يوم عمل</span>
             </div>
-            <div className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5">
+            <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
               <MapPin className="h-4 w-4 shrink-0 text-[#6EC7D1]" />
-              <p className="text-xs text-white/70">{CONTACT.address}</p>
+              <p className="text-sm text-white/75">{CONTACT.address}</p>
             </div>
-            <div className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5">
-              <Building2 className="h-4 w-4 shrink-0 text-[#FABC05]" />
-              <p className="text-[11px] leading-5 text-white/55">
-                <span className="font-bold text-white/75">للشركات والجهات الحكومية: </span>
+            <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
+              <Building2 className="mt-1 h-4 w-4 shrink-0 text-[#FABC05]" />
+              <p className="text-xs leading-6 text-white/60">
+                <span className="font-bold text-white/80">للشركات والجهات الحكومية: </span>
                 اختر «عرض مؤسسي» في النموذج — أو تصفح{' '}
                 <Link to="/for-business" className="font-semibold text-[#6EC7D1] underline-offset-4 hover:underline">حلول الشركات</Link>
                 {' '}و{' '}
@@ -98,7 +98,7 @@ export default function Contact() {
               </p>
             </div>
           </div>
-          <p className="mt-4 rounded-xl border border-white/5 bg-white/[0.02] px-3.5 py-2.5 text-[11px] leading-5 text-white/45">
+          <p className="mt-5 rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3 text-xs leading-6 text-white/50">
             إن كان سؤالك «أي مسار يناسبني؟» — فأصدق إجابة يعطيها لك{' '}
             <Link to="/diagnostic" className="font-semibold text-[#6EC7D1] underline-offset-4 hover:underline">التشخيص الذكي</Link>
             {' '}في دقائق، مجانا ودون التزام.
@@ -152,7 +152,7 @@ export default function Contact() {
               <label htmlFor="ct-consent" className="mt-4 flex cursor-pointer items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.03] p-3">
                 <input id="ct-consent" name="consent" type="checkbox" required checked={consent}
                   onChange={(e) => setConsent(e.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-[#38A7B4]" />
-                <span className="text-[11px] leading-relaxed text-white/55">
+                <span className="text-xs leading-relaxed text-white/60">
                   أوافق على معالجة بياناتي للرد على طلبي وفق{' '}
                   <Link to="/p/privacy" className="font-bold text-white/75 underline underline-offset-4 hover:text-[#6EC7D1]">سياسة الخصوصية</Link>
                 </span>

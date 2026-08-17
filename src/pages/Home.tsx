@@ -210,7 +210,7 @@ function Hero() {
           <SectionLabel>منصة تفهمك قبل أن تعلّمك</SectionLabel>
         </div>
         <h1 className="reveal is-visible mx-auto mt-6 max-w-3xl">
-          <span className="block text-xl font-semibold leading-relaxed text-foreground/80 md:text-2xl">
+          <span className="block text-2xl font-semibold leading-relaxed text-foreground/80 md:text-3xl">
             المسار الصحيح لا يبدأ باختيار دورة.
           </span>
           <span className="mt-3 block bg-gradient-to-l from-[#6EC7D1] via-[#38A7B4] to-[#FABC05] bg-clip-text text-4xl font-bold leading-[1.25] text-transparent md:text-6xl md:leading-[1.2]">
@@ -243,7 +243,7 @@ function Hero() {
           </a>
         </div>
         <p className="reveal is-visible mt-5 text-xs text-muted-foreground">
-          دقيقة واحدة مع مؤشر وجيز · بلا تسجيل · ثم تشخيص كامل يفهمك بلا تقييم ذاتي ولا سؤال مكرر
+          تشخيص متكامل يفهمك — بلا تقييم ذاتي ولا سؤال مكرر
         </p>
       </div>
     </section>
@@ -724,7 +724,7 @@ function Bestsellers() {
   const railPathways = shownPathways.slice(1)
 
   return (
-    <section id="bestsellers" className="py-20 md:py-24">
+    <section id="bestsellers" className="pb-20 pt-24 md:pb-24 md:pt-28">
       <div className="mx-auto max-w-6xl px-5">
         <div className="reveal flex flex-wrap items-end justify-between gap-4">
           <div>
