@@ -29,6 +29,9 @@ export interface BankQuestion {
   required_level: RequiredLevel
   weight: number
   active: boolean
+  /** V2 فقط: معرفات الخيارات الأصلية الموازية لـ options_ar بعد فلترة الشخصية —
+      يحفظ هوية الخيار (o1..on) حين تُحذف خيارات لا تناسب مرحلة المتعلم */
+  active_option_ids?: string[]
 }
 
 export interface SkillEntry {

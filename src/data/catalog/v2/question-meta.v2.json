@@ -1,0 +1,5042 @@
+{
+  "version": "2.0.0",
+  "generated_by": "scripts/build-v2-overlays.mjs",
+  "questions": {
+    "QB-M0-001": {
+      "layer": "institutional",
+      "phase": "core",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "safety",
+      "measures": [
+        "decision_owner"
+      ]
+    },
+    "QB-M0-002": {
+      "layer": "institutional",
+      "phase": "core",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "safety",
+      "measures": [
+        "age_band",
+        "minor_rules"
+      ]
+    },
+    "QB-M0-003": {
+      "layer": "institutional",
+      "phase": "core",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "safety",
+      "measures": [
+        "country",
+        "regional_context"
+      ]
+    },
+    "QB-M0-004": {
+      "layer": "institutional",
+      "phase": "core",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "safety",
+      "measures": [
+        "language"
+      ]
+    },
+    "QB-M0-005": {
+      "layer": "institutional",
+      "phase": "core",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "safety",
+      "measures": [
+        "save_preference"
+      ]
+    },
+    "QB-M0-006": {
+      "layer": "institutional",
+      "phase": "core",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "safety",
+      "measures": [
+        "diagnostic_consent"
+      ]
+    },
+    "QB-M0-007": {
+      "layer": "institutional",
+      "phase": "core",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "safety",
+      "measures": [
+        "marketing_consent",
+        "unavailable_skill_notify"
+      ]
+    },
+    "QB-M0-008": {
+      "layer": "institutional",
+      "phase": "core",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "safety",
+      "measures": [
+        "minor_flag"
+      ]
+    },
+    "QB-M0-009": {
+      "layer": "institutional",
+      "phase": "core",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "safety",
+      "measures": [
+        "payer_type",
+        "budget_context"
+      ]
+    },
+    "QB-M0-010": {
+      "layer": "institutional",
+      "phase": "core",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "safety",
+      "measures": [
+        "privacy_comfort"
+      ]
+    },
+    "QB-M1-001": {
+      "layer": "core",
+      "phase": "core",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "fact",
+      "measures": [
+        "persona_type"
+      ]
+    },
+    "QB-M1-002": {
+      "layer": "core",
+      "phase": "core",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "fact",
+      "measures": [
+        "education_state"
+      ]
+    },
+    "QB-M1-003": {
+      "layer": "core",
+      "phase": "core",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [
+        "school_student"
+      ],
+      "domains": [],
+      "decision_impact": "fact",
+      "measures": [
+        "employment_state"
+      ],
+      "reason_ar": "طالب المدرسة لا يُسأل عن وضعه العملي — سؤال غير مناسب للمرحلة (استبعاد صارم)."
+    },
+    "QB-M1-004": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "experience_years"
+      ]
+    },
+    "QB-M1-005": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "fact",
+      "measures": [
+        "current_domain"
+      ]
+    },
+    "QB-M1-006": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "current_responsibility"
+      ]
+    },
+    "QB-M1-007": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "fact",
+      "measures": [
+        "current_pain"
+      ]
+    },
+    "QB-M1-008": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "access_readiness"
+      ]
+    },
+    "QB-M1-009": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "completion_history"
+      ]
+    },
+    "QB-M1-010": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "completion_pattern"
+      ]
+    },
+    "QB-M1-011": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "fact",
+      "measures": [
+        "evidence_strength"
+      ]
+    },
+    "QB-M1-012": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "life_constraints"
+      ]
+    },
+    "QB-M2-001": {
+      "layer": "core",
+      "phase": "core",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "fact",
+      "measures": [
+        "primary_goal"
+      ]
+    },
+    "QB-M2-002": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "dream_statement"
+      ]
+    },
+    "QB-M2-003": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "success_metric"
+      ]
+    },
+    "QB-M2-004": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "target_date"
+      ]
+    },
+    "QB-M2-005": {
+      "layer": "core",
+      "phase": "core",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "fact",
+      "measures": [
+        "goal_clarity"
+      ]
+    },
+    "QB-M2-006": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "motivation_driver"
+      ]
+    },
+    "QB-M2-007": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "secondary_goals"
+      ]
+    },
+    "QB-M2-008": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "anti_goals"
+      ]
+    },
+    "QB-M2-009": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "value_priorities"
+      ]
+    },
+    "QB-M2-010": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "fact",
+      "measures": [
+        "breadth_depth_preference"
+      ]
+    },
+    "QB-M2-011": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "risk_tolerance"
+      ]
+    },
+    "QB-M2-012": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "role_model",
+        "aspirational_role"
+      ]
+    },
+    "QB-M2-013": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "transformation_marker"
+      ]
+    },
+    "QB-M2-014": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "scope_type"
+      ]
+    },
+    "QB-M2-015": {
+      "layer": "core",
+      "phase": "core",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "fact",
+      "measures": [
+        "application_readiness"
+      ],
+      "reason_ar": "الاستعداد للتطبيق يدخل تقييم الدافعية منذ النواة."
+    },
+    "QB-M2-016": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "unavailable_skill_preference"
+      ]
+    },
+    "QB-M3A-001": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "student_stage"
+      ]
+    },
+    "QB-M3A-002": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "major_domain"
+      ]
+    },
+    "QB-M3A-003": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee"
+      ],
+      "excluded_personas": [],
+      "domains": [
+        "career_direction",
+        "employment_readiness"
+      ],
+      "decision_impact": "fact",
+      "measures": [
+        "first_job_clarity"
+      ]
+    },
+    "QB-M3A-004": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee"
+      ],
+      "excluded_personas": [],
+      "domains": [
+        "employment_readiness"
+      ],
+      "decision_impact": "fact",
+      "measures": [
+        "career_assets"
+      ]
+    },
+    "QB-M3A-005": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "fact",
+      "measures": [
+        "portfolio_evidence"
+      ]
+    },
+    "QB-M3A-006": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee"
+      ],
+      "excluded_personas": [],
+      "domains": [
+        "employment_readiness"
+      ],
+      "decision_impact": "fact",
+      "measures": [
+        "interview_confidence"
+      ]
+    },
+    "QB-M3A-007": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee"
+      ],
+      "excluded_personas": [],
+      "domains": [
+        "career_direction",
+        "employment_readiness"
+      ],
+      "decision_impact": "fact",
+      "measures": [
+        "practical_exposure"
+      ]
+    },
+    "QB-M3A-008": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "english_gap"
+      ]
+    },
+    "QB-M3A-009": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "job_skill_awareness"
+      ]
+    },
+    "QB-M3A-010": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "major_goal_fit"
+      ]
+    },
+    "QB-M3A-011": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "first_opportunity_gap"
+      ]
+    },
+    "QB-M3A-012": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "social_pressure"
+      ]
+    },
+    "QB-M3B-001": {
+      "layer": "core",
+      "phase": "core",
+      "allowed_personas": [
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager"
+      ],
+      "excluded_personas": [],
+      "domains": [
+        "gov_services"
+      ],
+      "decision_impact": "fact",
+      "measures": [
+        "sector"
+      ]
+    },
+    "QB-M3B-002": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "job_family"
+      ]
+    },
+    "QB-M3B-003": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager"
+      ],
+      "excluded_personas": [],
+      "domains": [
+        "communication_influence"
+      ],
+      "decision_impact": "fact",
+      "measures": [
+        "public_facing"
+      ]
+    },
+    "QB-M3B-004": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "performance_driver"
+      ]
+    },
+    "QB-M3B-005": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "employee_goal"
+      ]
+    },
+    "QB-M3B-006": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "feedback_signal"
+      ]
+    },
+    "QB-M3B-007": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "work_obstacle"
+      ]
+    },
+    "QB-M3B-008": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "work_digital_level"
+      ]
+    },
+    "QB-M3B-009": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "business_writing"
+      ]
+    },
+    "QB-M3B-010": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "fact",
+      "measures": [
+        "stakeholder_management"
+      ]
+    },
+    "QB-M3B-011": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager"
+      ],
+      "excluded_personas": [],
+      "domains": [
+        "ai_productivity",
+        "communication_influence",
+        "data_decision",
+        "finance_mgmt",
+        "gov_services",
+        "learning_design",
+        "marketing_growth",
+        "operations",
+        "people_leadership",
+        "sales"
+      ],
+      "decision_impact": "fact",
+      "measures": [
+        "function_specialization"
+      ]
+    },
+    "QB-M3B-012": {
+      "layer": "core",
+      "phase": "core",
+      "allowed_personas": [
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager"
+      ],
+      "excluded_personas": [],
+      "domains": [
+        "people_leadership"
+      ],
+      "decision_impact": "fact",
+      "measures": [
+        "leadership_context"
+      ]
+    },
+    "QB-M3B-013": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "fact",
+      "measures": [
+        "process_improvement"
+      ]
+    },
+    "QB-M3B-014": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "fact",
+      "measures": [
+        "economic_financial_need"
+      ]
+    },
+    "QB-M3B-015": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "fact",
+      "measures": [
+        "ai_work_readiness"
+      ]
+    },
+    "QB-M3B-016": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "focus_energy_constraint"
+      ]
+    },
+    "QB-M3C-001": {
+      "layer": "core",
+      "phase": "core",
+      "allowed_personas": [
+        "founder_idea",
+        "founder_operating",
+        "freelancer"
+      ],
+      "excluded_personas": [],
+      "domains": [
+        "entrepreneurship"
+      ],
+      "decision_impact": "fact",
+      "measures": [
+        "business_stage"
+      ]
+    },
+    "QB-M3C-002": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "founder_idea",
+        "founder_operating",
+        "freelancer"
+      ],
+      "excluded_personas": [],
+      "domains": [
+        "entrepreneurship"
+      ],
+      "decision_impact": "fact",
+      "measures": [
+        "offer_clarity"
+      ]
+    },
+    "QB-M3C-003": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "founder_idea",
+        "founder_operating",
+        "freelancer"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "business_bottleneck"
+      ]
+    },
+    "QB-M3C-004": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "founder_idea",
+        "founder_operating",
+        "freelancer"
+      ],
+      "excluded_personas": [],
+      "domains": [
+        "entrepreneurship",
+        "marketing_growth",
+        "sales"
+      ],
+      "decision_impact": "fact",
+      "measures": [
+        "revenue_signal"
+      ]
+    },
+    "QB-M3C-005": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "founder_idea",
+        "founder_operating",
+        "freelancer"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "pricing_confidence"
+      ]
+    },
+    "QB-M3C-006": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "founder_idea",
+        "founder_operating",
+        "freelancer"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "acquisition_channel"
+      ]
+    },
+    "QB-M3C-007": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "founder_idea",
+        "founder_operating",
+        "freelancer"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "fact",
+      "measures": [
+        "customer_discovery"
+      ]
+    },
+    "QB-M3C-008": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "founder_idea",
+        "founder_operating",
+        "freelancer"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "fact",
+      "measures": [
+        "sales_negotiation"
+      ]
+    },
+    "QB-M3C-009": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "founder_idea",
+        "founder_operating",
+        "freelancer"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "fact",
+      "measures": [
+        "business_finance"
+      ]
+    },
+    "QB-M3C-010": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "founder_idea",
+        "founder_operating",
+        "freelancer"
+      ],
+      "excluded_personas": [],
+      "domains": [
+        "entrepreneurship",
+        "operations"
+      ],
+      "decision_impact": "fact",
+      "measures": [
+        "operations_maturity"
+      ]
+    },
+    "QB-M3C-011": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "founder_idea",
+        "founder_operating",
+        "freelancer"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "fact",
+      "measures": [
+        "team_context"
+      ]
+    },
+    "QB-M3C-012": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "founder_idea",
+        "founder_operating",
+        "freelancer"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "business_ai_digital"
+      ]
+    },
+    "QB-M3C-013": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "founder_idea",
+        "founder_operating",
+        "freelancer"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "legal_accounting_gap"
+      ]
+    },
+    "QB-M3C-014": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "founder_idea",
+        "founder_operating",
+        "freelancer"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "quick_business_win"
+      ]
+    },
+    "QB-M3D-001": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "parent_guardian",
+        "personal_development"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "family_goal_flag"
+      ]
+    },
+    "QB-M3D-002": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "parent_guardian",
+        "personal_development"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "family_priority"
+      ]
+    },
+    "QB-M3D-003": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "parent_guardian"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "child_age_band"
+      ]
+    },
+    "QB-M3D-004": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "parent_guardian"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "child_development_goals"
+      ]
+    },
+    "QB-M3D-005": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "parent_guardian",
+        "personal_development"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "personal_rhythm"
+      ]
+    },
+    "QB-M3D-006": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "parent_guardian",
+        "personal_development"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "digital_distraction"
+      ]
+    },
+    "QB-M3D-007": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "parent_guardian",
+        "personal_development"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "wellbeing_interest"
+      ]
+    },
+    "QB-M3D-008": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "parent_guardian",
+        "personal_development"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "family_content_format"
+      ]
+    },
+    "QB-M3D-009": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "parent_guardian"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "family_beneficiary"
+      ]
+    },
+    "QB-M3D-010": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "parent_guardian"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "family_success_marker"
+      ]
+    },
+    "QB-M3E-001": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "unsure_explorer",
+        "personal_development",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "uncertainty_reason"
+      ]
+    },
+    "QB-M3E-002": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "unsure_explorer",
+        "personal_development",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "interest_shortlist"
+      ]
+    },
+    "QB-M3E-003": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "unsure_explorer",
+        "personal_development",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "excluded_domains"
+      ]
+    },
+    "QB-M3E-004": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "unsure_explorer",
+        "personal_development",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "exploration_evidence"
+      ]
+    },
+    "QB-M3E-005": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "unsure_explorer"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "minimum_stability_need"
+      ]
+    },
+    "QB-M3E-006": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "unsure_explorer",
+        "personal_development",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "transferable_skills"
+      ]
+    },
+    "QB-M3E-007": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "unsure_explorer",
+        "personal_development",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "commitment_fear"
+      ]
+    },
+    "QB-M3E-008": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "unsure_explorer",
+        "personal_development",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "experiment_readiness"
+      ]
+    },
+    "QB-M3E-009": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "unsure_explorer",
+        "personal_development",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "decision_deadline"
+      ]
+    },
+    "QB-M3E-010": {
+      "layer": "retire_candidate",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "unsure_explorer",
+        "personal_development",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "none",
+      "measures": [
+        "support_network"
+      ]
+    },
+    "QB-M4-001": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "analytical_thinking"
+      ]
+    },
+    "QB-M4-002": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "creative_thinking"
+      ]
+    },
+    "QB-M4-003": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "ai_literacy"
+      ]
+    },
+    "QB-M4-004": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "ai_applied_use"
+      ]
+    },
+    "QB-M4-005": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "digital_literacy"
+      ]
+    },
+    "QB-M4-006": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "data_literacy"
+      ]
+    },
+    "QB-M4-007": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "cyber_safety"
+      ]
+    },
+    "QB-M4-008": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "digital_content"
+      ]
+    },
+    "QB-M4-009": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "english"
+      ]
+    },
+    "QB-M4-010": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "arabic_business_writing"
+      ]
+    },
+    "QB-M4-011": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "public_speaking"
+      ]
+    },
+    "QB-M4-012": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "communication_persuasion"
+      ]
+    },
+    "QB-M4-013": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "negotiation"
+      ]
+    },
+    "QB-M4-014": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "financial_literacy"
+      ]
+    },
+    "QB-M4-015": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "economics_basics"
+      ]
+    },
+    "QB-M4-016": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "digital_marketing"
+      ]
+    },
+    "QB-M4-017": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "sales"
+      ]
+    },
+    "QB-M4-018": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "project_management"
+      ]
+    },
+    "QB-M4-019": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "leadership_influence"
+      ]
+    },
+    "QB-M4-020": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "emotional_intelligence"
+      ]
+    },
+    "QB-M4-021": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "problem_solving"
+      ]
+    },
+    "QB-M4-022": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "research_learning"
+      ]
+    },
+    "QB-M4-023": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "learning_agility"
+      ]
+    },
+    "QB-M4-024": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "time_energy_management"
+      ]
+    },
+    "QB-M4-025": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "focus_management"
+      ]
+    },
+    "QB-M4-026": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "entrepreneurship_basics"
+      ]
+    },
+    "QB-M5-001": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "separation",
+      "measures": [
+        "riasec_realistic",
+        "interest_vector"
+      ]
+    },
+    "QB-M5-002": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "separation",
+      "measures": [
+        "riasec_realistic",
+        "interest_vector"
+      ]
+    },
+    "QB-M5-003": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "separation",
+      "measures": [
+        "riasec_realistic",
+        "interest_vector"
+      ]
+    },
+    "QB-M5-004": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "separation",
+      "measures": [
+        "riasec_investigative",
+        "interest_vector"
+      ]
+    },
+    "QB-M5-005": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "separation",
+      "measures": [
+        "riasec_investigative",
+        "interest_vector"
+      ]
+    },
+    "QB-M5-006": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "separation",
+      "measures": [
+        "riasec_investigative",
+        "interest_vector"
+      ]
+    },
+    "QB-M5-007": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "separation",
+      "measures": [
+        "riasec_artistic",
+        "interest_vector"
+      ]
+    },
+    "QB-M5-008": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "separation",
+      "measures": [
+        "riasec_artistic",
+        "interest_vector"
+      ]
+    },
+    "QB-M5-009": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "separation",
+      "measures": [
+        "riasec_artistic",
+        "interest_vector"
+      ]
+    },
+    "QB-M5-010": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "separation",
+      "measures": [
+        "riasec_social",
+        "interest_vector"
+      ]
+    },
+    "QB-M5-011": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "separation",
+      "measures": [
+        "riasec_social",
+        "interest_vector"
+      ]
+    },
+    "QB-M5-012": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "separation",
+      "measures": [
+        "riasec_social",
+        "interest_vector"
+      ]
+    },
+    "QB-M5-013": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "separation",
+      "measures": [
+        "riasec_enterprising",
+        "interest_vector"
+      ]
+    },
+    "QB-M5-014": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "separation",
+      "measures": [
+        "riasec_enterprising",
+        "interest_vector"
+      ]
+    },
+    "QB-M5-015": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "separation",
+      "measures": [
+        "riasec_enterprising",
+        "interest_vector"
+      ]
+    },
+    "QB-M5-016": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "separation",
+      "measures": [
+        "riasec_conventional",
+        "interest_vector"
+      ]
+    },
+    "QB-M5-017": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "separation",
+      "measures": [
+        "riasec_conventional",
+        "interest_vector"
+      ]
+    },
+    "QB-M5-018": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "separation",
+      "measures": [
+        "riasec_conventional",
+        "interest_vector"
+      ]
+    },
+    "QB-M6-001": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "personalization",
+      "measures": [
+        "self_discipline_positive",
+        "work_style_vector"
+      ]
+    },
+    "QB-M6-002": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "personalization",
+      "measures": [
+        "self_discipline_reverse",
+        "work_style_vector"
+      ]
+    },
+    "QB-M6-003": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "personalization",
+      "measures": [
+        "structure_need",
+        "work_style_vector"
+      ]
+    },
+    "QB-M6-004": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "personalization",
+      "measures": [
+        "attention_to_detail",
+        "work_style_vector"
+      ]
+    },
+    "QB-M6-005": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "personalization",
+      "measures": [
+        "openness_learning",
+        "work_style_vector"
+      ]
+    },
+    "QB-M6-006": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "personalization",
+      "measures": [
+        "openness_reverse",
+        "work_style_vector"
+      ]
+    },
+    "QB-M6-007": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "personalization",
+      "measures": [
+        "stress_regulation",
+        "work_style_vector"
+      ]
+    },
+    "QB-M6-008": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "personalization",
+      "measures": [
+        "learning_vulnerability_reverse",
+        "work_style_vector"
+      ]
+    },
+    "QB-M6-009": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "personalization",
+      "measures": [
+        "social_energy",
+        "work_style_vector"
+      ]
+    },
+    "QB-M6-010": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "personalization",
+      "measures": [
+        "solo_learning_pref",
+        "work_style_vector"
+      ]
+    },
+    "QB-M6-011": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "personalization",
+      "measures": [
+        "feedback_seeking",
+        "work_style_vector"
+      ]
+    },
+    "QB-M6-012": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "personalization",
+      "measures": [
+        "growth_response",
+        "work_style_vector"
+      ]
+    },
+    "QB-M6-013": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "personalization",
+      "measures": [
+        "accountability_need",
+        "work_style_vector"
+      ]
+    },
+    "QB-M6-014": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "personalization",
+      "measures": [
+        "application_style",
+        "work_style_vector"
+      ]
+    },
+    "QB-M7-001": {
+      "layer": "core",
+      "phase": "core",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "fact",
+      "measures": [
+        "weekly_load"
+      ]
+    },
+    "QB-M7-002": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "fact",
+      "measures": [
+        "learning_format"
+      ]
+    },
+    "QB-M7-003": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "fact",
+      "measures": [
+        "cohort_preference"
+      ]
+    },
+    "QB-M7-004": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "fact",
+      "measures": [
+        "content_language"
+      ]
+    },
+    "QB-M7-005": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "fact",
+      "measures": [
+        "budget_profile"
+      ]
+    },
+    "QB-M7-006": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "personalization",
+      "measures": [
+        "mentor_need"
+      ]
+    },
+    "QB-M7-007": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "personalization",
+      "measures": [
+        "homework_acceptance"
+      ]
+    },
+    "QB-M7-008": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "personalization",
+      "measures": [
+        "schedule_window"
+      ]
+    },
+    "QB-M7-009": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "personalization",
+      "measures": [
+        "certificate_importance"
+      ]
+    },
+    "QB-M7-010": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "personalization",
+      "measures": [
+        "accessibility_need"
+      ]
+    },
+    "QB-M7-011": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "personalization",
+      "measures": [
+        "learning_device"
+      ]
+    },
+    "QB-M7-012": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "personalization",
+      "measures": [
+        "completion_support"
+      ]
+    },
+    "QB-M8-001": {
+      "layer": "verification",
+      "phase": "confirmation",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "verification",
+      "measures": [
+        "time_goal_conflict_resolution"
+      ]
+    },
+    "QB-M8-002": {
+      "layer": "verification",
+      "phase": "confirmation",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "verification",
+      "measures": [
+        "overclaim_evidence_check"
+      ]
+    },
+    "QB-M8-003": {
+      "layer": "verification",
+      "phase": "confirmation",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "verification",
+      "measures": [
+        "goal_path_conflict"
+      ]
+    },
+    "QB-M8-004": {
+      "layer": "verification",
+      "phase": "confirmation",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "verification",
+      "measures": [
+        "advisor_preference"
+      ]
+    },
+    "QB-M8-005": {
+      "layer": "verification",
+      "phase": "confirmation",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "verification",
+      "measures": [
+        "answer_uncertainty_note"
+      ]
+    },
+    "QB-M8-006": {
+      "layer": "verification",
+      "phase": "confirmation",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "verification",
+      "measures": [
+        "tie_breaker"
+      ]
+    },
+    "QB-M8-007": {
+      "layer": "verification",
+      "phase": "confirmation",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [
+        "school_student"
+      ],
+      "domains": [],
+      "decision_impact": "verification",
+      "measures": [
+        "exclude_sensitive_info"
+      ]
+    },
+    "QB-M8-008": {
+      "layer": "verification",
+      "phase": "confirmation",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "verification",
+      "measures": [
+        "depth_choice"
+      ]
+    },
+    "QB-M8-009": {
+      "layer": "verification",
+      "phase": "confirmation",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "verification",
+      "measures": [
+        "recommendation_face_validity"
+      ]
+    },
+    "QB-M8-010": {
+      "layer": "verification",
+      "phase": "confirmation",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "verification",
+      "measures": [
+        "rejection_reason"
+      ]
+    },
+    "QB-M9-001": {
+      "layer": "institutional",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "b2b_sponsor",
+        "b2g_sponsor"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "fact",
+      "measures": [
+        "org_context"
+      ]
+    },
+    "QB-M9-002": {
+      "layer": "institutional",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "b2b_sponsor",
+        "b2g_sponsor"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "fact",
+      "measures": [
+        "organization_sector"
+      ]
+    },
+    "QB-M9-003": {
+      "layer": "institutional",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "b2b_sponsor",
+        "b2g_sponsor"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "fact",
+      "measures": [
+        "target_job_family"
+      ]
+    },
+    "QB-M9-004": {
+      "layer": "institutional",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "b2b_sponsor",
+        "b2g_sponsor"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "fact",
+      "measures": [
+        "job_level"
+      ]
+    },
+    "QB-M9-005": {
+      "layer": "institutional",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "b2b_sponsor",
+        "b2g_sponsor"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "fact",
+      "measures": [
+        "strategic_priority"
+      ]
+    },
+    "QB-M9-006": {
+      "layer": "institutional",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "b2b_sponsor",
+        "b2g_sponsor"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "fact",
+      "measures": [
+        "org_kpi"
+      ]
+    },
+    "QB-M9-007": {
+      "layer": "institutional",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "b2b_sponsor",
+        "b2g_sponsor"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "fact",
+      "measures": [
+        "management_hypothesis"
+      ]
+    },
+    "QB-M9-008": {
+      "layer": "institutional",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "b2b_sponsor",
+        "b2g_sponsor"
+      ],
+      "excluded_personas": [
+        "school_student"
+      ],
+      "domains": [],
+      "decision_impact": "fact",
+      "measures": [
+        "org_sensitivity"
+      ]
+    },
+    "QB-M9-009": {
+      "layer": "institutional",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "b2b_sponsor",
+        "b2g_sponsor"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "fact",
+      "measures": [
+        "cohort_size"
+      ]
+    },
+    "QB-M9-010": {
+      "layer": "institutional",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "b2b_sponsor",
+        "b2g_sponsor"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "fact",
+      "measures": [
+        "manager_involvement"
+      ]
+    },
+    "QB-M9-011": {
+      "layer": "institutional",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "b2b_sponsor",
+        "b2g_sponsor"
+      ],
+      "excluded_personas": [
+        "school_student"
+      ],
+      "domains": [],
+      "decision_impact": "fact",
+      "measures": [
+        "data_sharing_policy"
+      ]
+    },
+    "QB-M9-012": {
+      "layer": "institutional",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "b2b_sponsor",
+        "b2g_sponsor"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "fact",
+      "measures": [
+        "previous_training"
+      ]
+    }
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "seed": 20260816,
+  "sessions": 10000,
+  "questions": {
+    "avg": 10.06,
+    "median": 10,
+    "max": 14
+  },
+  "advisorReferralRate": 0.2521,
+  "pathwayDistribution": {
+    "PW-FND-003": 0.3219,
+    "PW-STU-003": 0.2225,
+    "PW-BIZ-001": 0.0671,
+    "PW-STU-002": 0.0352,
+    "PW-EMP-005": 0.0341,
+    "PW-HR-001": 0.0329,
+    "PW-FIN-001": 0.0219,
+    "PW-GOV-002": 0.0123
+  },
+  "pathwayTop3Distribution": {
+    "PW-FND-003": 0.3391,
+    "PW-AUT-001": 0.3196,
+    "PW-BIZ-001": 0.2643,
+    "PW-STU-003": 0.2577,
+    "PW-NEG-001": 0.0889,
+    "PW-STU-002": 0.0876,
+    "PW-HR-001": 0.067,
+    "PW-CYB-001": 0.0666,
+    "PW-EMP-005": 0.0341,
+    "PW-COM-001": 0.0229,
+    "PW-FIN-001": 0.0219,
+    "PW-MKT-001": 0.0136,
+    "PW-GOV-002": 0.0123,
+    "PW-SAL-001": 0.0083
+  },
+  "domainDistribution": {
+    "ai_productivity": 0.3191,
+    "career_direction": 0.2776,
+    "entrepreneurship": 0.1274,
+    "employment_readiness": 0.1114,
+    "communication_influence": 0.0777,
+    "family_parenting": 0.0649,
+    "marketing_growth": 0.0219
+  },
+  "outputKindDistribution": {
+    "best_current_match": 0.8334,
+    "exploratory_direction": 0.1666
+  },
+  "invariants": {
+    "invalidPersonaQuestions": 0,
+    "unmeasuredSkillInfluence": 0,
+    "duplicateQuestions": 0
+  },
+  "sampleViolations": []
+}

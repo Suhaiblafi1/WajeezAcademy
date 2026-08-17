@@ -3,6 +3,7 @@
 
 import { optionIdAt, questionById } from '../../domain/diagnostic/catalog'
 import { createEngine, type DiagnosticEngine } from '../../domain/diagnostic/engine'
+import { createEngineV2, type DiagnosticEngineV2 } from '../../domain/diagnostic/v2'
 import { scorePathways } from '../../domain/diagnostic/pathway-score'
 import { loadMirrorAnswers, mirrorAnswersToFacts } from '../../domain/diagnostic/teaser-bridge'
 import type { BankQuestion, Recommendation } from '../../domain/diagnostic/types'
@@ -16,6 +17,10 @@ import {
 } from './session-repository'
 import type { DiagResult } from '../../data/diagnostic'
 
+/** إصدار محرك التشخيص — V2 (نظام القرار) هو الافتراضي؛ V1 يبقى خلف العلم للمقارنة والتدقيق */
+export const DIAGNOSTIC_ENGINE_VERSION: 'v1' | 'v2' =
+  (import.meta.env?.VITE_DIAGNOSTIC_ENGINE_VERSION as string | undefined) === 'v1' ? 'v1' : 'v2'
+
 function toDiagQuestion(q: BankQuestion): DiagQuestion {
   const type: DiagQuestion['type'] =
     q.answer_type === 'multi_choice' || q.answer_type === 'rank_top3'
@@ -23,6 +28,8 @@ function toDiagQuestion(q: BankQuestion): DiagQuestion {
       : q.answer_type === 'short_text' || q.answer_type === 'single_choice_or_text'
         ? 'text'
         : 'single'
+  /* V2 قد يفلتر خيارات السؤال حسب شخصية المتعلم — active_option_ids تحفظ هوية الخيار الأصلية */
+  const activeIds = q.active_option_ids
   return {
     id: q.question_id,
     module: q.module_id,
@@ -30,7 +37,7 @@ function toDiagQuestion(q: BankQuestion): DiagQuestion {
     text: q.text_ar,
     source: undefined,
     type,
-    options: q.options_ar.length > 0 ? q.options_ar.map((o, i) => ({ label: o, value: o, optionId: optionIdAt(q, i) })) : undefined,
+    options: q.options_ar.length > 0 ? q.options_ar.map((o, i) => ({ label: o, value: o, optionId: activeIds?.[i] ?? optionIdAt(q, i) })) : undefined,
     maxSelect: q.answer_type === 'rank_top3' ? 3 : undefined,
     measures: [],
     weight: q.weight ?? 1,
@@ -47,12 +54,13 @@ export interface NextStep {
 }
 
 export class AssessmentSession {
-  private engine: DiagnosticEngine
+  private engine: DiagnosticEngine | DiagnosticEngineV2
   private repo: DiagnosticSessionRepository
   private sessionRecord: StoredSession | null = null
 
   constructor(sessionId?: string, repo?: DiagnosticSessionRepository) {
-    this.engine = createEngine(sessionId)
+    this.engine =
+      DIAGNOSTIC_ENGINE_VERSION === 'v2' ? createEngineV2(sessionId) : createEngine(sessionId)
     this.repo = repo ?? createSessionRepository()
     /* بذر حقائق «مؤشر وجيز» إن وُجدت — المتعلم لا يُسأل مرتين عما أجاب عنه في الصفحة الرئيسية */
     const mirror = typeof window !== 'undefined' ? loadMirrorAnswers(window.localStorage) : null
