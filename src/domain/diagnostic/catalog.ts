@@ -9,6 +9,8 @@ import skillsJson from '../../data/catalog/skills.v1.ar.json'
 import coreCatalogJson from '../../data/catalog/core-catalog.v2.json'
 import templatesJson from '../../data/catalog/composite-templates.v1.json'
 import optionEffectsJson from '../../data/overlays/option-effects.v2.json'
+import optionEffectsV21Json from '../../data/overlays/option-effects.v2_1.json'
+import b2cQuestionsV21Json from '../../data/catalog/v2_1/questions-b2c.v2_1.ar.json'
 import pathwayProfilesJson from '../../data/overlays/pathway-profiles.v1.json'
 import type {
   BankQuestion,
@@ -101,7 +103,14 @@ export let trainerProfiles: TrainerProfile[] = []
 export let activeCatalogLabel = 'bundled'
 
 function install(payload: CatalogSnapshotPayload, label: string): void {
-  const questions = payload.questions.questions.filter((q) => q.active !== false)
+  /* أسئلة V2.1 تعيش في حزمة موثقة مرافقة للمحرك: تُطبق إعادة الصياغة على البنك
+     ثم تُلحق أسئلة القرار الجديدة — مع أي لقطة خادم أيضًا حتى لا تختفي QC */
+  const v21 = b2cQuestionsV21Json as unknown as { questions: BankQuestion[]; overrides: BankQuestion[] }
+  const overrideById = new Map(v21.overrides.map((o) => [o.question_id, o]))
+  const base = payload.questions.questions
+    .filter((q) => q.active !== false)
+    .map((q) => overrideById.get(q.question_id) ?? q)
+  const questions = [...base, ...v21.questions.filter((q) => !base.some((b) => b.question_id === q.question_id))]
   questionBank = questions
   questionById = new Map(questions.map((q) => [q.question_id, q]))
   skillsCatalog = [...payload.skills.skills, ...(payload.coreCatalog.skill_extensions ?? [])]
@@ -110,7 +119,10 @@ function install(payload: CatalogSnapshotPayload, label: string): void {
   catalogCourses = payload.coreCatalog.courses
   courseById = new Map(catalogCourses.map((c) => [c.course_id, c]))
   compositeTemplates = payload.templates.templates
-  optionEffects = payload.optionEffects.option_effects
+  optionEffects = {
+    ...payload.optionEffects.option_effects,
+    ...(optionEffectsV21Json as unknown as OptionEffectsFile).option_effects,
+  }
   keywordClassifiers = payload.optionEffects.keyword_classifiers
   pathwayProfiles = payload.pathwayProfiles.profiles
   trainerProfiles = [] // لا مدربين موثقين بعد — مطابقة المدرب ترجع unassigned دائما

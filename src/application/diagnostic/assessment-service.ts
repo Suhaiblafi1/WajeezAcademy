@@ -4,6 +4,7 @@
 import { optionIdAt, questionById } from '../../domain/diagnostic/catalog'
 import { createEngine, type DiagnosticEngine } from '../../domain/diagnostic/engine'
 import { createEngineV2, type DiagnosticEngineV2 } from '../../domain/diagnostic/v2'
+import { createEngineV21, type DiagnosticEngineV21 } from '../../domain/diagnostic/v2_1'
 import { scorePathways } from '../../domain/diagnostic/pathway-score'
 import { loadMirrorAnswers, mirrorAnswersToFacts } from '../../domain/diagnostic/teaser-bridge'
 import type { BankQuestion, Recommendation } from '../../domain/diagnostic/types'
@@ -17,9 +18,14 @@ import {
 } from './session-repository'
 import type { DiagResult } from '../../data/diagnostic'
 
-/** إصدار محرك التشخيص — V2 (نظام القرار) هو الافتراضي؛ V1 يبقى خلف العلم للمقارنة والتدقيق */
-export const DIAGNOSTIC_ENGINE_VERSION: 'v1' | 'v2' =
-  (import.meta.env?.VITE_DIAGNOSTIC_ENGINE_VERSION as string | undefined) === 'v1' ? 'v1' : 'v2'
+/** إصدار محرك التشخيص — V2.1 (بنية أسئلة B2C النهائية) هو الافتراضي؛
+    V2 وV1 يبقيان خلف العلم للتراجع والمقارنة: VITE_DIAGNOSTIC_ENGINE_VERSION=v1|v2 */
+export const DIAGNOSTIC_ENGINE_VERSION: 'v1' | 'v2' | 'v2_1' =
+  (import.meta.env?.VITE_DIAGNOSTIC_ENGINE_VERSION as string | undefined) === 'v1'
+    ? 'v1'
+    : (import.meta.env?.VITE_DIAGNOSTIC_ENGINE_VERSION as string | undefined) === 'v2'
+      ? 'v2'
+      : 'v2_1'
 
 function toDiagQuestion(q: BankQuestion): DiagQuestion {
   const type: DiagQuestion['type'] =
@@ -54,13 +60,17 @@ export interface NextStep {
 }
 
 export class AssessmentSession {
-  private engine: DiagnosticEngine | DiagnosticEngineV2
+  private engine: DiagnosticEngine | DiagnosticEngineV2 | DiagnosticEngineV21
   private repo: DiagnosticSessionRepository
   private sessionRecord: StoredSession | null = null
 
   constructor(sessionId?: string, repo?: DiagnosticSessionRepository) {
     this.engine =
-      DIAGNOSTIC_ENGINE_VERSION === 'v2' ? createEngineV2(sessionId) : createEngine(sessionId)
+      DIAGNOSTIC_ENGINE_VERSION === 'v2_1'
+        ? createEngineV21(sessionId)
+        : DIAGNOSTIC_ENGINE_VERSION === 'v2'
+          ? createEngineV2(sessionId)
+          : createEngine(sessionId)
     this.repo = repo ?? createSessionRepository()
     /* بذر حقائق «مؤشر وجيز» إن وُجدت — المتعلم لا يُسأل مرتين عما أجاب عنه في الصفحة الرئيسية */
     const mirror = typeof window !== 'undefined' ? loadMirrorAnswers(window.localStorage) : null

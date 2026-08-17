@@ -45,7 +45,9 @@
     "test:diagnostic-regression": "tsx scripts/test-diagnostic-regression.ts",
     "test": "npm run test:diagnostic && npm run test:scenarios",
     "audit:skill-coverage": "tsx scripts/with-db.ts tsx scripts/audit-skill-coverage-matrix.ts",
-    "seed:demo": "tsx scripts/with-db.ts tsx server/db/seed-demo.ts"
+    "seed:demo": "tsx scripts/with-db.ts tsx server/db/seed-demo.ts",
+    "build:v2_1-overlays": "tsx scripts/build-v2_1-overlays.ts",
+    "simulate:v2_1-journeys": "tsx scripts/v2_1/sim-journeys.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.2",

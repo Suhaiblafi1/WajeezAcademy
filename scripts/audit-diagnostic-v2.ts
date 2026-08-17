@@ -9,6 +9,7 @@ import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { launchPathways, pathwayProfiles, pathwaySkills, questionBank } from '../src/domain/diagnostic/catalog'
 import { domainsV2, pathwayDomainsV2, questionMetaV2, skillLayersV2 } from '../src/domain/diagnostic/v2/data'
+import { questionPlanV21 } from '../src/domain/diagnostic/v2_1/data'
 import { CORE_SEQUENCE } from '../src/domain/diagnostic/v2/select'
 import type { PersonaKey } from '../src/domain/diagnostic/v2/types'
 
@@ -27,16 +28,18 @@ const warn = (msg: string) => {
 
 console.log('═══ تدقيق منظومة التشخيص V2 ═══\n')
 
-/* ١) تغطية الميتا: كل سؤال نشط له ميتا V2 */
+/* ١) تغطية الميتا: كل سؤال نشط له ميتا V2 أو خطة V2.1 */
 console.log('١) تغطية ميتا الأسئلة')
 const active = questionBank.filter((q) => q.active !== false)
-const noMeta = active.filter((q) => !questionMetaV2[q.question_id])
-if (noMeta.length === 0) ok(`كل الأسئلة النشطة (${active.length}) لها ميتا V2`)
+const noMeta = active.filter((q) => !questionMetaV2[q.question_id] && !questionPlanV21[q.question_id])
+if (noMeta.length === 0) ok(`كل الأسئلة النشطة (${active.length}) لها ميتا V2 أو خطة V2.1`)
 else fail(`${noMeta.length} سؤال بلا ميتا: ${noMeta.map((q) => q.question_id).join(', ')}`)
 
-/* ٢) أهلية الشخصيات: كل سؤال غير ميت يصل لشخصية واحدة على الأقل */
+/* ٢) أهلية الشخصيات: كل سؤال غير ميت يصل لشخصية واحدة على الأقل —
+   أسئلة خطة V2.1 أهليتها بالمرحلة المهنية (موثقة في الخطة) لا بشخصيات V2 */
 console.log('\n٢) الأسئلة اليتيمة (لا تصل أي شخصية)')
 const orphans = active.filter((q) => {
+  if (questionPlanV21[q.question_id]) return false
   const m = questionMetaV2[q.question_id]
   if (!m || m.layer === 'retire_candidate') return false
   if (m.allowed_personas === 'all') return false

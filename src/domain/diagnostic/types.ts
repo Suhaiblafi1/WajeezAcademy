@@ -162,7 +162,7 @@ export interface UtilityScore {
 
 export interface DecisionTraceEntry {
   step: number
-  kind: 'question_selected' | 'answer_reduced' | 'candidates_scored' | 'stop_evaluated' | 'recommendation' | 'template_selected' | 'template_layer' | 'trainer_match' | 'contradiction' | 'guardrail' | 'facts_seeded' | 'deepening_started' | 'deepening_completed'
+  kind: 'question_selected' | 'answer_reduced' | 'candidates_scored' | 'stop_evaluated' | 'recommendation' | 'template_selected' | 'template_layer' | 'trainer_match' | 'contradiction' | 'guardrail' | 'facts_seeded' | 'deepening_started' | 'deepening_completed' | 'consent_ui_ack'
   summary_ar: string
   data?: Record<string, unknown>
 }

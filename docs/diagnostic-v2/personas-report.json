@@ -2,15 +2,14 @@
   "summary": {
     "sessions": 525,
     "questions": {
-      "avg": 9.92,
+      "avg": 9.59,
       "min": 8,
       "max": 14
     },
     "pathwayDistribution": {
       "PW-FND-003": 140,
+      "PW-BIZ-001": 98,
       "PW-STU-003": 91,
-      "PW-BIZ-001": 63,
-      "PW-FIN-001": 35,
       "PW-HR-001": 28,
       "PW-EMP-005": 21,
       "PW-STU-002": 14,
@@ -18,16 +17,15 @@
     },
     "domainDistribution": {
       "ai_productivity": 140,
+      "entrepreneurship": 119,
       "career_direction": 112,
-      "entrepreneurship": 84,
       "employment_readiness": 63,
       "communication_influence": 56,
-      "marketing_growth": 35,
       "family_parenting": 35
     },
     "outputKindDistribution": {
-      "best_current_match": 431,
-      "exploratory_direction": 94
+      "best_current_match": 448,
+      "exploratory_direction": 77
     },
     "kindDistribution": {
       "single_pathway": 399,
@@ -8101,7 +8099,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7652777776277777,
+      "confidenceOverall": 0.7674999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -8189,7 +8187,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7652777776277777,
+      "confidenceOverall": 0.7674999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -8277,7 +8275,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7652777776277777,
+      "confidenceOverall": 0.7674999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -8365,7 +8363,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7652777776277777,
+      "confidenceOverall": 0.7674999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -8453,7 +8451,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7652777776277777,
+      "confidenceOverall": 0.7674999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -8541,7 +8539,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7652777776277777,
+      "confidenceOverall": 0.7674999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -8629,7 +8627,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7652777776277777,
+      "confidenceOverall": 0.7674999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -21913,12 +21911,12 @@
         },
         {
           "questionId": "QB-M2-015",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         },
         {
           "questionId": "QB-M7-001",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         }
       ],
@@ -21928,7 +21926,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7724999998500001,
+      "confidenceOverall": 0.7749999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -21996,12 +21994,12 @@
         },
         {
           "questionId": "QB-M2-015",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         },
         {
           "questionId": "QB-M7-001",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         }
       ],
@@ -22011,7 +22009,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7724999998500001,
+      "confidenceOverall": 0.7749999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -22079,12 +22077,12 @@
         },
         {
           "questionId": "QB-M2-015",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         },
         {
           "questionId": "QB-M7-001",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         }
       ],
@@ -22094,7 +22092,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7724999998500001,
+      "confidenceOverall": 0.7749999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -22162,12 +22160,12 @@
         },
         {
           "questionId": "QB-M2-015",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         },
         {
           "questionId": "QB-M7-001",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         }
       ],
@@ -22177,7 +22175,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7724999998500001,
+      "confidenceOverall": 0.7749999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -22245,12 +22243,12 @@
         },
         {
           "questionId": "QB-M2-015",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         },
         {
           "questionId": "QB-M7-001",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         }
       ],
@@ -22260,7 +22258,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7724999998500001,
+      "confidenceOverall": 0.7749999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -22328,12 +22326,12 @@
         },
         {
           "questionId": "QB-M2-015",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         },
         {
           "questionId": "QB-M7-001",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         }
       ],
@@ -22343,7 +22341,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7724999998500001,
+      "confidenceOverall": 0.7749999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -22411,12 +22409,12 @@
         },
         {
           "questionId": "QB-M2-015",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         },
         {
           "questionId": "QB-M7-001",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         }
       ],
@@ -22426,7 +22424,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7724999998500001,
+      "confidenceOverall": 0.7749999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -22501,69 +22499,40 @@
           "questionId": "QB-M7-001",
           "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-002",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-004",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-016",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-013",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-010",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
         }
       ],
-      "answersCount": 13,
-      "stopReason_ar": "لم يعد هناك سؤال يغيّر النتيجة جوهريًا.",
+      "answersCount": 8,
+      "stopReason_ar": "اكتملت الأدلة: مجال واضح وفارق مريح وثقة قوية ولا سؤال يغيّر النتيجة.",
       "kind": "single_pathway",
-      "topPathwayId": "PW-FIN-001",
+      "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.601749999925,
-      "domainTop": "marketing_growth",
+      "confidenceOverall": 0.7224999998500001,
+      "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
-        "PW-FIN-001",
-        "PW-MKT-001",
-        "PW-NEG-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
-        "financial_statements",
-        "accounting_basics",
-        "economic_literacy",
-        "financial_decision_making",
-        "cost_analysis",
+        "customer_discovery",
+        "market_research",
+        "active_listening",
+        "research_literacy",
+        "value_proposition",
+        "business_model",
+        "design_thinking",
+        "ux_basics",
         "unit_economics",
-        "pricing_strategy",
-        "business_finance",
-        "budgeting_forecasting",
-        "variance_analysis",
-        "scenario_planning",
-        "goal_setting_okrs",
-        "working_capital",
-        "cashflow_forecasting",
         "cashflow_management",
-        "risk_management",
-        "investment_appraisal",
-        "financial_dashboarding",
-        "decision_making",
-        "data_storytelling"
+        "operations_basics",
+        "pricing_strategy",
+        "sales_fundamentals",
+        "negotiation_commercial",
+        "customer_communication",
+        "sales_pipeline",
+        "growth_experimentation",
+        "accountability"
       ],
       "invalidPersonaQuestions": [],
       "unmeasuredInfluence": [],
@@ -22613,69 +22582,40 @@
           "questionId": "QB-M7-001",
           "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-002",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-004",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-016",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-013",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-010",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
         }
       ],
-      "answersCount": 13,
-      "stopReason_ar": "لم يعد هناك سؤال يغيّر النتيجة جوهريًا.",
+      "answersCount": 8,
+      "stopReason_ar": "اكتملت الأدلة: مجال واضح وفارق مريح وثقة قوية ولا سؤال يغيّر النتيجة.",
       "kind": "single_pathway",
-      "topPathwayId": "PW-FIN-001",
+      "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.6020789472934212,
-      "domainTop": "marketing_growth",
+      "confidenceOverall": 0.7224999998500001,
+      "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
-        "PW-FIN-001",
-        "PW-NEG-001",
-        "PW-SAL-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
-        "financial_statements",
-        "accounting_basics",
-        "economic_literacy",
-        "financial_decision_making",
-        "cost_analysis",
+        "customer_discovery",
+        "market_research",
+        "active_listening",
+        "research_literacy",
+        "value_proposition",
+        "business_model",
+        "design_thinking",
+        "ux_basics",
         "unit_economics",
-        "pricing_strategy",
-        "business_finance",
-        "budgeting_forecasting",
-        "variance_analysis",
-        "scenario_planning",
-        "goal_setting_okrs",
-        "working_capital",
-        "cashflow_forecasting",
         "cashflow_management",
-        "risk_management",
-        "investment_appraisal",
-        "financial_dashboarding",
-        "decision_making",
-        "data_storytelling"
+        "operations_basics",
+        "pricing_strategy",
+        "sales_fundamentals",
+        "negotiation_commercial",
+        "customer_communication",
+        "sales_pipeline",
+        "growth_experimentation",
+        "accountability"
       ],
       "invalidPersonaQuestions": [],
       "unmeasuredInfluence": [],
@@ -22725,69 +22665,40 @@
           "questionId": "QB-M7-001",
           "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-002",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-004",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-016",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-013",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-010",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
         }
       ],
-      "answersCount": 13,
-      "stopReason_ar": "لم يعد هناك سؤال يغيّر النتيجة جوهريًا.",
+      "answersCount": 8,
+      "stopReason_ar": "اكتملت الأدلة: مجال واضح وفارق مريح وثقة قوية ولا سؤال يغيّر النتيجة.",
       "kind": "single_pathway",
-      "topPathwayId": "PW-FIN-001",
+      "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
-      "outputKind": "exploratory_direction",
-      "confidenceOverall": 0.5996666665916668,
-      "domainTop": "marketing_growth",
+      "outputKind": "best_current_match",
+      "confidenceOverall": 0.7224999998500001,
+      "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
-        "PW-FIN-001",
-        "PW-MKT-001",
-        "PW-NEG-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
-        "financial_statements",
-        "accounting_basics",
-        "economic_literacy",
-        "financial_decision_making",
-        "cost_analysis",
+        "customer_discovery",
+        "market_research",
+        "active_listening",
+        "research_literacy",
+        "value_proposition",
+        "business_model",
+        "design_thinking",
+        "ux_basics",
         "unit_economics",
-        "pricing_strategy",
-        "business_finance",
-        "budgeting_forecasting",
-        "variance_analysis",
-        "scenario_planning",
-        "goal_setting_okrs",
-        "working_capital",
-        "cashflow_forecasting",
         "cashflow_management",
-        "risk_management",
-        "investment_appraisal",
-        "financial_dashboarding",
-        "decision_making",
-        "data_storytelling"
+        "operations_basics",
+        "pricing_strategy",
+        "sales_fundamentals",
+        "negotiation_commercial",
+        "customer_communication",
+        "sales_pipeline",
+        "growth_experimentation",
+        "accountability"
       ],
       "invalidPersonaQuestions": [],
       "unmeasuredInfluence": [],
@@ -22837,69 +22748,40 @@
           "questionId": "QB-M7-001",
           "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-002",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-004",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-016",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-013",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-010",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
         }
       ],
-      "answersCount": 13,
-      "stopReason_ar": "لم يعد هناك سؤال يغيّر النتيجة جوهريًا.",
+      "answersCount": 8,
+      "stopReason_ar": "اكتملت الأدلة: مجال واضح وفارق مريح وثقة قوية ولا سؤال يغيّر النتيجة.",
       "kind": "single_pathway",
-      "topPathwayId": "PW-FIN-001",
+      "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
-      "outputKind": "exploratory_direction",
-      "confidenceOverall": 0.5999852940426471,
-      "domainTop": "marketing_growth",
+      "outputKind": "best_current_match",
+      "confidenceOverall": 0.7224999998500001,
+      "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
-        "PW-FIN-001",
-        "PW-MKT-001",
-        "PW-NEG-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
-        "financial_statements",
-        "accounting_basics",
-        "economic_literacy",
-        "financial_decision_making",
-        "cost_analysis",
+        "customer_discovery",
+        "market_research",
+        "active_listening",
+        "research_literacy",
+        "value_proposition",
+        "business_model",
+        "design_thinking",
+        "ux_basics",
         "unit_economics",
-        "pricing_strategy",
-        "business_finance",
-        "budgeting_forecasting",
-        "variance_analysis",
-        "scenario_planning",
-        "goal_setting_okrs",
-        "working_capital",
-        "cashflow_forecasting",
         "cashflow_management",
-        "risk_management",
-        "investment_appraisal",
-        "financial_dashboarding",
-        "decision_making",
-        "data_storytelling"
+        "operations_basics",
+        "pricing_strategy",
+        "sales_fundamentals",
+        "negotiation_commercial",
+        "customer_communication",
+        "sales_pipeline",
+        "growth_experimentation",
+        "accountability"
       ],
       "invalidPersonaQuestions": [],
       "unmeasuredInfluence": [],
@@ -22949,69 +22831,40 @@
           "questionId": "QB-M7-001",
           "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-002",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-004",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-016",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-013",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-010",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
         }
       ],
-      "answersCount": 13,
-      "stopReason_ar": "لم يعد هناك سؤال يغيّر النتيجة جوهريًا.",
+      "answersCount": 8,
+      "stopReason_ar": "اكتملت الأدلة: مجال واضح وفارق مريح وثقة قوية ولا سؤال يغيّر النتيجة.",
       "kind": "single_pathway",
-      "topPathwayId": "PW-FIN-001",
+      "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.6020789472934212,
-      "domainTop": "marketing_growth",
+      "confidenceOverall": 0.7224999998500001,
+      "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
-        "PW-FIN-001",
-        "PW-NEG-001",
-        "PW-SAL-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
-        "financial_statements",
-        "accounting_basics",
-        "economic_literacy",
-        "financial_decision_making",
-        "cost_analysis",
+        "customer_discovery",
+        "market_research",
+        "active_listening",
+        "research_literacy",
+        "value_proposition",
+        "business_model",
+        "design_thinking",
+        "ux_basics",
         "unit_economics",
-        "pricing_strategy",
-        "business_finance",
-        "budgeting_forecasting",
-        "variance_analysis",
-        "scenario_planning",
-        "goal_setting_okrs",
-        "working_capital",
-        "cashflow_forecasting",
         "cashflow_management",
-        "risk_management",
-        "investment_appraisal",
-        "financial_dashboarding",
-        "decision_making",
-        "data_storytelling"
+        "operations_basics",
+        "pricing_strategy",
+        "sales_fundamentals",
+        "negotiation_commercial",
+        "customer_communication",
+        "sales_pipeline",
+        "growth_experimentation",
+        "accountability"
       ],
       "invalidPersonaQuestions": [],
       "unmeasuredInfluence": [],
@@ -23061,69 +22914,40 @@
           "questionId": "QB-M7-001",
           "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-002",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-004",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-016",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-013",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-010",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
         }
       ],
-      "answersCount": 13,
-      "stopReason_ar": "لم يعد هناك سؤال يغيّر النتيجة جوهريًا.",
+      "answersCount": 8,
+      "stopReason_ar": "اكتملت الأدلة: مجال واضح وفارق مريح وثقة قوية ولا سؤال يغيّر النتيجة.",
       "kind": "single_pathway",
-      "topPathwayId": "PW-FIN-001",
+      "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
-      "outputKind": "exploratory_direction",
-      "confidenceOverall": 0.5996666665916668,
-      "domainTop": "marketing_growth",
+      "outputKind": "best_current_match",
+      "confidenceOverall": 0.7224999998500001,
+      "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
-        "PW-FIN-001",
-        "PW-MKT-001",
-        "PW-NEG-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
-        "financial_statements",
-        "accounting_basics",
-        "economic_literacy",
-        "financial_decision_making",
-        "cost_analysis",
+        "customer_discovery",
+        "market_research",
+        "active_listening",
+        "research_literacy",
+        "value_proposition",
+        "business_model",
+        "design_thinking",
+        "ux_basics",
         "unit_economics",
-        "pricing_strategy",
-        "business_finance",
-        "budgeting_forecasting",
-        "variance_analysis",
-        "scenario_planning",
-        "goal_setting_okrs",
-        "working_capital",
-        "cashflow_forecasting",
         "cashflow_management",
-        "risk_management",
-        "investment_appraisal",
-        "financial_dashboarding",
-        "decision_making",
-        "data_storytelling"
+        "operations_basics",
+        "pricing_strategy",
+        "sales_fundamentals",
+        "negotiation_commercial",
+        "customer_communication",
+        "sales_pipeline",
+        "growth_experimentation",
+        "accountability"
       ],
       "invalidPersonaQuestions": [],
       "unmeasuredInfluence": [],
@@ -23173,69 +22997,40 @@
           "questionId": "QB-M7-001",
           "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-002",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-004",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-016",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-013",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-010",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
         }
       ],
-      "answersCount": 13,
-      "stopReason_ar": "لم يعد هناك سؤال يغيّر النتيجة جوهريًا.",
+      "answersCount": 8,
+      "stopReason_ar": "اكتملت الأدلة: مجال واضح وفارق مريح وثقة قوية ولا سؤال يغيّر النتيجة.",
       "kind": "single_pathway",
-      "topPathwayId": "PW-FIN-001",
+      "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.601749999925,
-      "domainTop": "marketing_growth",
+      "confidenceOverall": 0.7224999998500001,
+      "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
-        "PW-FIN-001",
-        "PW-MKT-001",
-        "PW-NEG-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
-        "financial_statements",
-        "accounting_basics",
-        "economic_literacy",
-        "financial_decision_making",
-        "cost_analysis",
+        "customer_discovery",
+        "market_research",
+        "active_listening",
+        "research_literacy",
+        "value_proposition",
+        "business_model",
+        "design_thinking",
+        "ux_basics",
         "unit_economics",
-        "pricing_strategy",
-        "business_finance",
-        "budgeting_forecasting",
-        "variance_analysis",
-        "scenario_planning",
-        "goal_setting_okrs",
-        "working_capital",
-        "cashflow_forecasting",
         "cashflow_management",
-        "risk_management",
-        "investment_appraisal",
-        "financial_dashboarding",
-        "decision_making",
-        "data_storytelling"
+        "operations_basics",
+        "pricing_strategy",
+        "sales_fundamentals",
+        "negotiation_commercial",
+        "customer_communication",
+        "sales_pipeline",
+        "growth_experimentation",
+        "accountability"
       ],
       "invalidPersonaQuestions": [],
       "unmeasuredInfluence": [],
@@ -23278,12 +23073,12 @@
         },
         {
           "questionId": "QB-M2-015",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         },
         {
           "questionId": "QB-M7-001",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         }
       ],
@@ -23293,7 +23088,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.65999999985,
+      "confidenceOverall": 0.6624999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -23361,12 +23156,12 @@
         },
         {
           "questionId": "QB-M2-015",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         },
         {
           "questionId": "QB-M7-001",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         }
       ],
@@ -23376,7 +23171,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.65999999985,
+      "confidenceOverall": 0.6624999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -23444,12 +23239,12 @@
         },
         {
           "questionId": "QB-M2-015",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         },
         {
           "questionId": "QB-M7-001",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         }
       ],
@@ -23459,7 +23254,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.65999999985,
+      "confidenceOverall": 0.6624999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -23527,12 +23322,12 @@
         },
         {
           "questionId": "QB-M2-015",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         },
         {
           "questionId": "QB-M7-001",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         }
       ],
@@ -23542,7 +23337,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.65999999985,
+      "confidenceOverall": 0.6624999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -23610,12 +23405,12 @@
         },
         {
           "questionId": "QB-M2-015",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         },
         {
           "questionId": "QB-M7-001",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         }
       ],
@@ -23625,7 +23420,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.65999999985,
+      "confidenceOverall": 0.6624999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -23693,12 +23488,12 @@
         },
         {
           "questionId": "QB-M2-015",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         },
         {
           "questionId": "QB-M7-001",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         }
       ],
@@ -23708,7 +23503,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.65999999985,
+      "confidenceOverall": 0.6624999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -23776,12 +23571,12 @@
         },
         {
           "questionId": "QB-M2-015",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         },
         {
           "questionId": "QB-M7-001",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         }
       ],
@@ -23791,7 +23586,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.65999999985,
+      "confidenceOverall": 0.6624999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -23859,12 +23654,12 @@
         },
         {
           "questionId": "QB-M2-015",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         },
         {
           "questionId": "QB-M7-001",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         }
       ],
@@ -23874,7 +23669,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7724999998500001,
+      "confidenceOverall": 0.7749999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -23942,12 +23737,12 @@
         },
         {
           "questionId": "QB-M2-015",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         },
         {
           "questionId": "QB-M7-001",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         }
       ],
@@ -23957,7 +23752,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7724999998500001,
+      "confidenceOverall": 0.7749999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -24025,12 +23820,12 @@
         },
         {
           "questionId": "QB-M2-015",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         },
         {
           "questionId": "QB-M7-001",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         }
       ],
@@ -24040,7 +23835,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7724999998500001,
+      "confidenceOverall": 0.7749999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -24108,12 +23903,12 @@
         },
         {
           "questionId": "QB-M2-015",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         },
         {
           "questionId": "QB-M7-001",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         }
       ],
@@ -24123,7 +23918,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7724999998500001,
+      "confidenceOverall": 0.7749999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -24191,12 +23986,12 @@
         },
         {
           "questionId": "QB-M2-015",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         },
         {
           "questionId": "QB-M7-001",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         }
       ],
@@ -24206,7 +24001,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7724999998500001,
+      "confidenceOverall": 0.7749999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -24274,12 +24069,12 @@
         },
         {
           "questionId": "QB-M2-015",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         },
         {
           "questionId": "QB-M7-001",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         }
       ],
@@ -24289,7 +24084,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7724999998500001,
+      "confidenceOverall": 0.7749999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -24357,12 +24152,12 @@
         },
         {
           "questionId": "QB-M2-015",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         },
         {
           "questionId": "QB-M7-001",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         }
       ],
@@ -24372,7 +24167,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7724999998500001,
+      "confidenceOverall": 0.7749999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -24440,12 +24235,12 @@
         },
         {
           "questionId": "QB-M2-015",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         },
         {
           "questionId": "QB-M7-001",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         }
       ],
@@ -24455,7 +24250,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7199999998500001,
+      "confidenceOverall": 0.7224999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -24523,12 +24318,12 @@
         },
         {
           "questionId": "QB-M2-015",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         },
         {
           "questionId": "QB-M7-001",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         }
       ],
@@ -24538,7 +24333,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7199999998500001,
+      "confidenceOverall": 0.7224999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -24606,12 +24401,12 @@
         },
         {
           "questionId": "QB-M2-015",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         },
         {
           "questionId": "QB-M7-001",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         }
       ],
@@ -24621,7 +24416,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7199999998500001,
+      "confidenceOverall": 0.7224999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -24689,12 +24484,12 @@
         },
         {
           "questionId": "QB-M2-015",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         },
         {
           "questionId": "QB-M7-001",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         }
       ],
@@ -24704,7 +24499,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7199999998500001,
+      "confidenceOverall": 0.7224999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -24772,12 +24567,12 @@
         },
         {
           "questionId": "QB-M2-015",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         },
         {
           "questionId": "QB-M7-001",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         }
       ],
@@ -24787,7 +24582,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7199999998500001,
+      "confidenceOverall": 0.7224999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -24855,12 +24650,12 @@
         },
         {
           "questionId": "QB-M2-015",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         },
         {
           "questionId": "QB-M7-001",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         }
       ],
@@ -24870,7 +24665,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7199999998500001,
+      "confidenceOverall": 0.7224999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -24938,12 +24733,12 @@
         },
         {
           "questionId": "QB-M2-015",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         },
         {
           "questionId": "QB-M7-001",
-          "personaAtAsk": "founder_idea",
+          "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
         }
       ],
@@ -24953,7 +24748,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7199999998500001,
+      "confidenceOverall": 0.7224999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -25036,7 +24831,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7199999998500001,
+      "confidenceOverall": 0.7224999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -25119,7 +24914,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7199999998500001,
+      "confidenceOverall": 0.7224999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -25202,7 +24997,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7199999998500001,
+      "confidenceOverall": 0.7224999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -25285,7 +25080,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7199999998500001,
+      "confidenceOverall": 0.7224999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -25368,7 +25163,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7199999998500001,
+      "confidenceOverall": 0.7224999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -25451,7 +25246,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7199999998500001,
+      "confidenceOverall": 0.7224999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -25534,7 +25329,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7199999998500001,
+      "confidenceOverall": 0.7224999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -25609,69 +25404,40 @@
           "questionId": "QB-M7-001",
           "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-002",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-004",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-016",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-013",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-010",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
         }
       ],
-      "answersCount": 13,
-      "stopReason_ar": "لم يعد هناك سؤال يغيّر النتيجة جوهريًا.",
+      "answersCount": 8,
+      "stopReason_ar": "اكتملت الأدلة: مجال واضح وفارق مريح وثقة قوية ولا سؤال يغيّر النتيجة.",
       "kind": "single_pathway",
-      "topPathwayId": "PW-FIN-001",
+      "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
-      "outputKind": "exploratory_direction",
-      "confidenceOverall": 0.5417499999250002,
-      "domainTop": "marketing_growth",
+      "outputKind": "best_current_match",
+      "confidenceOverall": 0.6624999998500001,
+      "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
-        "PW-FIN-001",
-        "PW-MKT-001",
-        "PW-NEG-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
-        "financial_statements",
-        "accounting_basics",
-        "economic_literacy",
-        "financial_decision_making",
-        "cost_analysis",
+        "customer_discovery",
+        "market_research",
+        "active_listening",
+        "research_literacy",
+        "value_proposition",
+        "business_model",
+        "design_thinking",
+        "ux_basics",
         "unit_economics",
-        "pricing_strategy",
-        "business_finance",
-        "budgeting_forecasting",
-        "variance_analysis",
-        "scenario_planning",
-        "goal_setting_okrs",
-        "working_capital",
-        "cashflow_forecasting",
         "cashflow_management",
-        "risk_management",
-        "investment_appraisal",
-        "financial_dashboarding",
-        "decision_making",
-        "data_storytelling"
+        "operations_basics",
+        "pricing_strategy",
+        "sales_fundamentals",
+        "negotiation_commercial",
+        "customer_communication",
+        "sales_pipeline",
+        "growth_experimentation",
+        "accountability"
       ],
       "invalidPersonaQuestions": [],
       "unmeasuredInfluence": [],
@@ -25721,69 +25487,40 @@
           "questionId": "QB-M7-001",
           "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-002",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-004",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-016",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-013",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-010",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
         }
       ],
-      "answersCount": 13,
-      "stopReason_ar": "لم يعد هناك سؤال يغيّر النتيجة جوهريًا.",
+      "answersCount": 8,
+      "stopReason_ar": "اكتملت الأدلة: مجال واضح وفارق مريح وثقة قوية ولا سؤال يغيّر النتيجة.",
       "kind": "single_pathway",
-      "topPathwayId": "PW-FIN-001",
+      "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
-      "outputKind": "exploratory_direction",
-      "confidenceOverall": 0.5420789472934211,
-      "domainTop": "marketing_growth",
+      "outputKind": "best_current_match",
+      "confidenceOverall": 0.6624999998500001,
+      "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
-        "PW-FIN-001",
-        "PW-NEG-001",
-        "PW-SAL-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
-        "financial_statements",
-        "accounting_basics",
-        "economic_literacy",
-        "financial_decision_making",
-        "cost_analysis",
+        "customer_discovery",
+        "market_research",
+        "active_listening",
+        "research_literacy",
+        "value_proposition",
+        "business_model",
+        "design_thinking",
+        "ux_basics",
         "unit_economics",
-        "pricing_strategy",
-        "business_finance",
-        "budgeting_forecasting",
-        "variance_analysis",
-        "scenario_planning",
-        "goal_setting_okrs",
-        "working_capital",
-        "cashflow_forecasting",
         "cashflow_management",
-        "risk_management",
-        "investment_appraisal",
-        "financial_dashboarding",
-        "decision_making",
-        "data_storytelling"
+        "operations_basics",
+        "pricing_strategy",
+        "sales_fundamentals",
+        "negotiation_commercial",
+        "customer_communication",
+        "sales_pipeline",
+        "growth_experimentation",
+        "accountability"
       ],
       "invalidPersonaQuestions": [],
       "unmeasuredInfluence": [],
@@ -25833,69 +25570,40 @@
           "questionId": "QB-M7-001",
           "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-002",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-004",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-016",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-013",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-010",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
         }
       ],
-      "answersCount": 13,
-      "stopReason_ar": "لم يعد هناك سؤال يغيّر النتيجة جوهريًا.",
+      "answersCount": 8,
+      "stopReason_ar": "اكتملت الأدلة: مجال واضح وفارق مريح وثقة قوية ولا سؤال يغيّر النتيجة.",
       "kind": "single_pathway",
-      "topPathwayId": "PW-FIN-001",
+      "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
-      "outputKind": "exploratory_direction",
-      "confidenceOverall": 0.5396666665916667,
-      "domainTop": "marketing_growth",
+      "outputKind": "best_current_match",
+      "confidenceOverall": 0.6624999998500001,
+      "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
-        "PW-FIN-001",
-        "PW-MKT-001",
-        "PW-NEG-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
-        "financial_statements",
-        "accounting_basics",
-        "economic_literacy",
-        "financial_decision_making",
-        "cost_analysis",
+        "customer_discovery",
+        "market_research",
+        "active_listening",
+        "research_literacy",
+        "value_proposition",
+        "business_model",
+        "design_thinking",
+        "ux_basics",
         "unit_economics",
-        "pricing_strategy",
-        "business_finance",
-        "budgeting_forecasting",
-        "variance_analysis",
-        "scenario_planning",
-        "goal_setting_okrs",
-        "working_capital",
-        "cashflow_forecasting",
         "cashflow_management",
-        "risk_management",
-        "investment_appraisal",
-        "financial_dashboarding",
-        "decision_making",
-        "data_storytelling"
+        "operations_basics",
+        "pricing_strategy",
+        "sales_fundamentals",
+        "negotiation_commercial",
+        "customer_communication",
+        "sales_pipeline",
+        "growth_experimentation",
+        "accountability"
       ],
       "invalidPersonaQuestions": [],
       "unmeasuredInfluence": [],
@@ -25945,69 +25653,40 @@
           "questionId": "QB-M7-001",
           "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-002",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-004",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-016",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-013",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-010",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
         }
       ],
-      "answersCount": 13,
-      "stopReason_ar": "لم يعد هناك سؤال يغيّر النتيجة جوهريًا.",
+      "answersCount": 8,
+      "stopReason_ar": "اكتملت الأدلة: مجال واضح وفارق مريح وثقة قوية ولا سؤال يغيّر النتيجة.",
       "kind": "single_pathway",
-      "topPathwayId": "PW-FIN-001",
+      "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
-      "outputKind": "exploratory_direction",
-      "confidenceOverall": 0.5364558822779413,
-      "domainTop": "marketing_growth",
+      "outputKind": "best_current_match",
+      "confidenceOverall": 0.6624999998500001,
+      "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
-        "PW-FIN-001",
-        "PW-MKT-001",
-        "PW-NEG-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
-        "financial_statements",
-        "accounting_basics",
-        "economic_literacy",
-        "financial_decision_making",
-        "cost_analysis",
+        "customer_discovery",
+        "market_research",
+        "active_listening",
+        "research_literacy",
+        "value_proposition",
+        "business_model",
+        "design_thinking",
+        "ux_basics",
         "unit_economics",
-        "pricing_strategy",
-        "business_finance",
-        "budgeting_forecasting",
-        "variance_analysis",
-        "scenario_planning",
-        "goal_setting_okrs",
-        "working_capital",
-        "cashflow_forecasting",
         "cashflow_management",
-        "risk_management",
-        "investment_appraisal",
-        "financial_dashboarding",
-        "decision_making",
-        "data_storytelling"
+        "operations_basics",
+        "pricing_strategy",
+        "sales_fundamentals",
+        "negotiation_commercial",
+        "customer_communication",
+        "sales_pipeline",
+        "growth_experimentation",
+        "accountability"
       ],
       "invalidPersonaQuestions": [],
       "unmeasuredInfluence": [],
@@ -26057,69 +25736,40 @@
           "questionId": "QB-M7-001",
           "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-002",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-004",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-016",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-013",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-010",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
         }
       ],
-      "answersCount": 13,
-      "stopReason_ar": "لم يعد هناك سؤال يغيّر النتيجة جوهريًا.",
+      "answersCount": 8,
+      "stopReason_ar": "اكتملت الأدلة: مجال واضح وفارق مريح وثقة قوية ولا سؤال يغيّر النتيجة.",
       "kind": "single_pathway",
-      "topPathwayId": "PW-FIN-001",
+      "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
-      "outputKind": "exploratory_direction",
-      "confidenceOverall": 0.5420789472934211,
-      "domainTop": "marketing_growth",
+      "outputKind": "best_current_match",
+      "confidenceOverall": 0.6624999998500001,
+      "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
-        "PW-FIN-001",
-        "PW-NEG-001",
-        "PW-SAL-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
-        "financial_statements",
-        "accounting_basics",
-        "economic_literacy",
-        "financial_decision_making",
-        "cost_analysis",
+        "customer_discovery",
+        "market_research",
+        "active_listening",
+        "research_literacy",
+        "value_proposition",
+        "business_model",
+        "design_thinking",
+        "ux_basics",
         "unit_economics",
-        "pricing_strategy",
-        "business_finance",
-        "budgeting_forecasting",
-        "variance_analysis",
-        "scenario_planning",
-        "goal_setting_okrs",
-        "working_capital",
-        "cashflow_forecasting",
         "cashflow_management",
-        "risk_management",
-        "investment_appraisal",
-        "financial_dashboarding",
-        "decision_making",
-        "data_storytelling"
+        "operations_basics",
+        "pricing_strategy",
+        "sales_fundamentals",
+        "negotiation_commercial",
+        "customer_communication",
+        "sales_pipeline",
+        "growth_experimentation",
+        "accountability"
       ],
       "invalidPersonaQuestions": [],
       "unmeasuredInfluence": [],
@@ -26169,69 +25819,40 @@
           "questionId": "QB-M7-001",
           "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-002",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-004",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-016",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-013",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-010",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
         }
       ],
-      "answersCount": 13,
-      "stopReason_ar": "لم يعد هناك سؤال يغيّر النتيجة جوهريًا.",
+      "answersCount": 8,
+      "stopReason_ar": "اكتملت الأدلة: مجال واضح وفارق مريح وثقة قوية ولا سؤال يغيّر النتيجة.",
       "kind": "single_pathway",
-      "topPathwayId": "PW-FIN-001",
+      "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
-      "outputKind": "exploratory_direction",
-      "confidenceOverall": 0.5396666665916667,
-      "domainTop": "marketing_growth",
+      "outputKind": "best_current_match",
+      "confidenceOverall": 0.6624999998500001,
+      "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
-        "PW-FIN-001",
-        "PW-MKT-001",
-        "PW-NEG-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
-        "financial_statements",
-        "accounting_basics",
-        "economic_literacy",
-        "financial_decision_making",
-        "cost_analysis",
+        "customer_discovery",
+        "market_research",
+        "active_listening",
+        "research_literacy",
+        "value_proposition",
+        "business_model",
+        "design_thinking",
+        "ux_basics",
         "unit_economics",
-        "pricing_strategy",
-        "business_finance",
-        "budgeting_forecasting",
-        "variance_analysis",
-        "scenario_planning",
-        "goal_setting_okrs",
-        "working_capital",
-        "cashflow_forecasting",
         "cashflow_management",
-        "risk_management",
-        "investment_appraisal",
-        "financial_dashboarding",
-        "decision_making",
-        "data_storytelling"
+        "operations_basics",
+        "pricing_strategy",
+        "sales_fundamentals",
+        "negotiation_commercial",
+        "customer_communication",
+        "sales_pipeline",
+        "growth_experimentation",
+        "accountability"
       ],
       "invalidPersonaQuestions": [],
       "unmeasuredInfluence": [],
@@ -26281,69 +25902,40 @@
           "questionId": "QB-M7-001",
           "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-002",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-004",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-016",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-013",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-010",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
         }
       ],
-      "answersCount": 13,
-      "stopReason_ar": "لم يعد هناك سؤال يغيّر النتيجة جوهريًا.",
+      "answersCount": 8,
+      "stopReason_ar": "اكتملت الأدلة: مجال واضح وفارق مريح وثقة قوية ولا سؤال يغيّر النتيجة.",
       "kind": "single_pathway",
-      "topPathwayId": "PW-FIN-001",
+      "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
-      "outputKind": "exploratory_direction",
-      "confidenceOverall": 0.5417499999250002,
-      "domainTop": "marketing_growth",
+      "outputKind": "best_current_match",
+      "confidenceOverall": 0.6624999998500001,
+      "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
-        "PW-FIN-001",
-        "PW-MKT-001",
-        "PW-NEG-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
-        "financial_statements",
-        "accounting_basics",
-        "economic_literacy",
-        "financial_decision_making",
-        "cost_analysis",
+        "customer_discovery",
+        "market_research",
+        "active_listening",
+        "research_literacy",
+        "value_proposition",
+        "business_model",
+        "design_thinking",
+        "ux_basics",
         "unit_economics",
-        "pricing_strategy",
-        "business_finance",
-        "budgeting_forecasting",
-        "variance_analysis",
-        "scenario_planning",
-        "goal_setting_okrs",
-        "working_capital",
-        "cashflow_forecasting",
         "cashflow_management",
-        "risk_management",
-        "investment_appraisal",
-        "financial_dashboarding",
-        "decision_making",
-        "data_storytelling"
+        "operations_basics",
+        "pricing_strategy",
+        "sales_fundamentals",
+        "negotiation_commercial",
+        "customer_communication",
+        "sales_pipeline",
+        "growth_experimentation",
+        "accountability"
       ],
       "invalidPersonaQuestions": [],
       "unmeasuredInfluence": [],
@@ -26393,69 +25985,40 @@
           "questionId": "QB-M7-001",
           "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-002",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-004",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-016",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-013",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-010",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
         }
       ],
-      "answersCount": 13,
-      "stopReason_ar": "لم يعد هناك سؤال يغيّر النتيجة جوهريًا.",
+      "answersCount": 8,
+      "stopReason_ar": "اكتملت الأدلة: مجال واضح وفارق مريح وثقة قوية ولا سؤال يغيّر النتيجة.",
       "kind": "single_pathway",
-      "topPathwayId": "PW-FIN-001",
+      "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.6542499999250002,
-      "domainTop": "marketing_growth",
+      "confidenceOverall": 0.7749999998500001,
+      "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
-        "PW-FIN-001",
-        "PW-MKT-001",
-        "PW-NEG-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
-        "financial_statements",
-        "accounting_basics",
-        "economic_literacy",
-        "financial_decision_making",
-        "cost_analysis",
+        "customer_discovery",
+        "market_research",
+        "active_listening",
+        "research_literacy",
+        "value_proposition",
+        "business_model",
+        "design_thinking",
+        "ux_basics",
         "unit_economics",
-        "pricing_strategy",
-        "business_finance",
-        "budgeting_forecasting",
-        "variance_analysis",
-        "scenario_planning",
-        "goal_setting_okrs",
-        "working_capital",
-        "cashflow_forecasting",
         "cashflow_management",
-        "risk_management",
-        "investment_appraisal",
-        "financial_dashboarding",
-        "decision_making",
-        "data_storytelling"
+        "operations_basics",
+        "pricing_strategy",
+        "sales_fundamentals",
+        "negotiation_commercial",
+        "customer_communication",
+        "sales_pipeline",
+        "growth_experimentation",
+        "accountability"
       ],
       "invalidPersonaQuestions": [],
       "unmeasuredInfluence": [],
@@ -26505,69 +26068,40 @@
           "questionId": "QB-M7-001",
           "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-002",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-004",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-016",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-013",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-010",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
         }
       ],
-      "answersCount": 13,
-      "stopReason_ar": "لم يعد هناك سؤال يغيّر النتيجة جوهريًا.",
+      "answersCount": 8,
+      "stopReason_ar": "اكتملت الأدلة: مجال واضح وفارق مريح وثقة قوية ولا سؤال يغيّر النتيجة.",
       "kind": "single_pathway",
-      "topPathwayId": "PW-FIN-001",
+      "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.6545789472934211,
-      "domainTop": "marketing_growth",
+      "confidenceOverall": 0.7749999998500001,
+      "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
-        "PW-FIN-001",
-        "PW-NEG-001",
-        "PW-SAL-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
-        "financial_statements",
-        "accounting_basics",
-        "economic_literacy",
-        "financial_decision_making",
-        "cost_analysis",
+        "customer_discovery",
+        "market_research",
+        "active_listening",
+        "research_literacy",
+        "value_proposition",
+        "business_model",
+        "design_thinking",
+        "ux_basics",
         "unit_economics",
-        "pricing_strategy",
-        "business_finance",
-        "budgeting_forecasting",
-        "variance_analysis",
-        "scenario_planning",
-        "goal_setting_okrs",
-        "working_capital",
-        "cashflow_forecasting",
         "cashflow_management",
-        "risk_management",
-        "investment_appraisal",
-        "financial_dashboarding",
-        "decision_making",
-        "data_storytelling"
+        "operations_basics",
+        "pricing_strategy",
+        "sales_fundamentals",
+        "negotiation_commercial",
+        "customer_communication",
+        "sales_pipeline",
+        "growth_experimentation",
+        "accountability"
       ],
       "invalidPersonaQuestions": [],
       "unmeasuredInfluence": [],
@@ -26617,69 +26151,40 @@
           "questionId": "QB-M7-001",
           "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-002",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-004",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-016",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-013",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-010",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
         }
       ],
-      "answersCount": 13,
-      "stopReason_ar": "لم يعد هناك سؤال يغيّر النتيجة جوهريًا.",
+      "answersCount": 8,
+      "stopReason_ar": "اكتملت الأدلة: مجال واضح وفارق مريح وثقة قوية ولا سؤال يغيّر النتيجة.",
       "kind": "single_pathway",
-      "topPathwayId": "PW-FIN-001",
+      "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.6521666665916668,
-      "domainTop": "marketing_growth",
+      "confidenceOverall": 0.7749999998500001,
+      "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
-        "PW-FIN-001",
-        "PW-MKT-001",
-        "PW-NEG-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
-        "financial_statements",
-        "accounting_basics",
-        "economic_literacy",
-        "financial_decision_making",
-        "cost_analysis",
+        "customer_discovery",
+        "market_research",
+        "active_listening",
+        "research_literacy",
+        "value_proposition",
+        "business_model",
+        "design_thinking",
+        "ux_basics",
         "unit_economics",
-        "pricing_strategy",
-        "business_finance",
-        "budgeting_forecasting",
-        "variance_analysis",
-        "scenario_planning",
-        "goal_setting_okrs",
-        "working_capital",
-        "cashflow_forecasting",
         "cashflow_management",
-        "risk_management",
-        "investment_appraisal",
-        "financial_dashboarding",
-        "decision_making",
-        "data_storytelling"
+        "operations_basics",
+        "pricing_strategy",
+        "sales_fundamentals",
+        "negotiation_commercial",
+        "customer_communication",
+        "sales_pipeline",
+        "growth_experimentation",
+        "accountability"
       ],
       "invalidPersonaQuestions": [],
       "unmeasuredInfluence": [],
@@ -26729,69 +26234,40 @@
           "questionId": "QB-M7-001",
           "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-002",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-004",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-016",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-013",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-010",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
         }
       ],
-      "answersCount": 13,
-      "stopReason_ar": "لم يعد هناك سؤال يغيّر النتيجة جوهريًا.",
+      "answersCount": 8,
+      "stopReason_ar": "اكتملت الأدلة: مجال واضح وفارق مريح وثقة قوية ولا سؤال يغيّر النتيجة.",
       "kind": "single_pathway",
-      "topPathwayId": "PW-FIN-001",
+      "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.6542499999250002,
-      "domainTop": "marketing_growth",
+      "confidenceOverall": 0.7749999998500001,
+      "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
-        "PW-FIN-001",
-        "PW-MKT-001",
-        "PW-NEG-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
-        "financial_statements",
-        "accounting_basics",
-        "economic_literacy",
-        "financial_decision_making",
-        "cost_analysis",
+        "customer_discovery",
+        "market_research",
+        "active_listening",
+        "research_literacy",
+        "value_proposition",
+        "business_model",
+        "design_thinking",
+        "ux_basics",
         "unit_economics",
-        "pricing_strategy",
-        "business_finance",
-        "budgeting_forecasting",
-        "variance_analysis",
-        "scenario_planning",
-        "goal_setting_okrs",
-        "working_capital",
-        "cashflow_forecasting",
         "cashflow_management",
-        "risk_management",
-        "investment_appraisal",
-        "financial_dashboarding",
-        "decision_making",
-        "data_storytelling"
+        "operations_basics",
+        "pricing_strategy",
+        "sales_fundamentals",
+        "negotiation_commercial",
+        "customer_communication",
+        "sales_pipeline",
+        "growth_experimentation",
+        "accountability"
       ],
       "invalidPersonaQuestions": [],
       "unmeasuredInfluence": [],
@@ -26841,69 +26317,40 @@
           "questionId": "QB-M7-001",
           "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-002",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-004",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-016",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-013",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-010",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
         }
       ],
-      "answersCount": 13,
-      "stopReason_ar": "لم يعد هناك سؤال يغيّر النتيجة جوهريًا.",
+      "answersCount": 8,
+      "stopReason_ar": "اكتملت الأدلة: مجال واضح وفارق مريح وثقة قوية ولا سؤال يغيّر النتيجة.",
       "kind": "single_pathway",
-      "topPathwayId": "PW-FIN-001",
+      "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.6545789472934211,
-      "domainTop": "marketing_growth",
+      "confidenceOverall": 0.7749999998500001,
+      "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
-        "PW-FIN-001",
-        "PW-NEG-001",
-        "PW-SAL-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
-        "financial_statements",
-        "accounting_basics",
-        "economic_literacy",
-        "financial_decision_making",
-        "cost_analysis",
+        "customer_discovery",
+        "market_research",
+        "active_listening",
+        "research_literacy",
+        "value_proposition",
+        "business_model",
+        "design_thinking",
+        "ux_basics",
         "unit_economics",
-        "pricing_strategy",
-        "business_finance",
-        "budgeting_forecasting",
-        "variance_analysis",
-        "scenario_planning",
-        "goal_setting_okrs",
-        "working_capital",
-        "cashflow_forecasting",
         "cashflow_management",
-        "risk_management",
-        "investment_appraisal",
-        "financial_dashboarding",
-        "decision_making",
-        "data_storytelling"
+        "operations_basics",
+        "pricing_strategy",
+        "sales_fundamentals",
+        "negotiation_commercial",
+        "customer_communication",
+        "sales_pipeline",
+        "growth_experimentation",
+        "accountability"
       ],
       "invalidPersonaQuestions": [],
       "unmeasuredInfluence": [],
@@ -26953,69 +26400,40 @@
           "questionId": "QB-M7-001",
           "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-002",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-004",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-016",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-013",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-010",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
         }
       ],
-      "answersCount": 13,
-      "stopReason_ar": "لم يعد هناك سؤال يغيّر النتيجة جوهريًا.",
+      "answersCount": 8,
+      "stopReason_ar": "اكتملت الأدلة: مجال واضح وفارق مريح وثقة قوية ولا سؤال يغيّر النتيجة.",
       "kind": "single_pathway",
-      "topPathwayId": "PW-FIN-001",
+      "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.6521666665916668,
-      "domainTop": "marketing_growth",
+      "confidenceOverall": 0.7749999998500001,
+      "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
-        "PW-FIN-001",
-        "PW-MKT-001",
-        "PW-NEG-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
-        "financial_statements",
-        "accounting_basics",
-        "economic_literacy",
-        "financial_decision_making",
-        "cost_analysis",
+        "customer_discovery",
+        "market_research",
+        "active_listening",
+        "research_literacy",
+        "value_proposition",
+        "business_model",
+        "design_thinking",
+        "ux_basics",
         "unit_economics",
-        "pricing_strategy",
-        "business_finance",
-        "budgeting_forecasting",
-        "variance_analysis",
-        "scenario_planning",
-        "goal_setting_okrs",
-        "working_capital",
-        "cashflow_forecasting",
         "cashflow_management",
-        "risk_management",
-        "investment_appraisal",
-        "financial_dashboarding",
-        "decision_making",
-        "data_storytelling"
+        "operations_basics",
+        "pricing_strategy",
+        "sales_fundamentals",
+        "negotiation_commercial",
+        "customer_communication",
+        "sales_pipeline",
+        "growth_experimentation",
+        "accountability"
       ],
       "invalidPersonaQuestions": [],
       "unmeasuredInfluence": [],
@@ -27065,69 +26483,40 @@
           "questionId": "QB-M7-001",
           "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-002",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-004",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-016",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-013",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-010",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
         }
       ],
-      "answersCount": 13,
-      "stopReason_ar": "لم يعد هناك سؤال يغيّر النتيجة جوهريًا.",
+      "answersCount": 8,
+      "stopReason_ar": "اكتملت الأدلة: مجال واضح وفارق مريح وثقة قوية ولا سؤال يغيّر النتيجة.",
       "kind": "single_pathway",
-      "topPathwayId": "PW-FIN-001",
+      "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.6542499999250002,
-      "domainTop": "marketing_growth",
+      "confidenceOverall": 0.7749999998500001,
+      "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
-        "PW-FIN-001",
-        "PW-MKT-001",
-        "PW-NEG-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
-        "financial_statements",
-        "accounting_basics",
-        "economic_literacy",
-        "financial_decision_making",
-        "cost_analysis",
+        "customer_discovery",
+        "market_research",
+        "active_listening",
+        "research_literacy",
+        "value_proposition",
+        "business_model",
+        "design_thinking",
+        "ux_basics",
         "unit_economics",
-        "pricing_strategy",
-        "business_finance",
-        "budgeting_forecasting",
-        "variance_analysis",
-        "scenario_planning",
-        "goal_setting_okrs",
-        "working_capital",
-        "cashflow_forecasting",
         "cashflow_management",
-        "risk_management",
-        "investment_appraisal",
-        "financial_dashboarding",
-        "decision_making",
-        "data_storytelling"
+        "operations_basics",
+        "pricing_strategy",
+        "sales_fundamentals",
+        "negotiation_commercial",
+        "customer_communication",
+        "sales_pipeline",
+        "growth_experimentation",
+        "accountability"
       ],
       "invalidPersonaQuestions": [],
       "unmeasuredInfluence": [],
@@ -27185,7 +26574,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7199999998500001,
+      "confidenceOverall": 0.7224999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -27268,7 +26657,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7199999998500001,
+      "confidenceOverall": 0.7224999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -27351,7 +26740,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7199999998500001,
+      "confidenceOverall": 0.7224999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -27434,7 +26823,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7199999998500001,
+      "confidenceOverall": 0.7224999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -27517,7 +26906,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7199999998500001,
+      "confidenceOverall": 0.7224999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -27600,7 +26989,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7199999998500001,
+      "confidenceOverall": 0.7224999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -27683,7 +27072,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7199999998500001,
+      "confidenceOverall": 0.7224999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -27758,69 +27147,40 @@
           "questionId": "QB-M7-001",
           "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-002",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-004",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-016",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-013",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-010",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
         }
       ],
-      "answersCount": 13,
-      "stopReason_ar": "لم يعد هناك سؤال يغيّر النتيجة جوهريًا.",
+      "answersCount": 8,
+      "stopReason_ar": "اكتملت الأدلة: مجال واضح وفارق مريح وثقة قوية ولا سؤال يغيّر النتيجة.",
       "kind": "single_pathway",
-      "topPathwayId": "PW-FIN-001",
+      "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
-      "outputKind": "exploratory_direction",
-      "confidenceOverall": 0.5417499999250002,
-      "domainTop": "marketing_growth",
+      "outputKind": "best_current_match",
+      "confidenceOverall": 0.6624999998500001,
+      "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
-        "PW-FIN-001",
-        "PW-MKT-001",
-        "PW-NEG-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
-        "financial_statements",
-        "accounting_basics",
-        "economic_literacy",
-        "financial_decision_making",
-        "cost_analysis",
+        "customer_discovery",
+        "market_research",
+        "active_listening",
+        "research_literacy",
+        "value_proposition",
+        "business_model",
+        "design_thinking",
+        "ux_basics",
         "unit_economics",
-        "pricing_strategy",
-        "business_finance",
-        "budgeting_forecasting",
-        "variance_analysis",
-        "scenario_planning",
-        "goal_setting_okrs",
-        "working_capital",
-        "cashflow_forecasting",
         "cashflow_management",
-        "risk_management",
-        "investment_appraisal",
-        "financial_dashboarding",
-        "decision_making",
-        "data_storytelling"
+        "operations_basics",
+        "pricing_strategy",
+        "sales_fundamentals",
+        "negotiation_commercial",
+        "customer_communication",
+        "sales_pipeline",
+        "growth_experimentation",
+        "accountability"
       ],
       "invalidPersonaQuestions": [],
       "unmeasuredInfluence": [],
@@ -27870,69 +27230,40 @@
           "questionId": "QB-M7-001",
           "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-002",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-004",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-016",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-013",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-010",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
         }
       ],
-      "answersCount": 13,
-      "stopReason_ar": "لم يعد هناك سؤال يغيّر النتيجة جوهريًا.",
+      "answersCount": 8,
+      "stopReason_ar": "اكتملت الأدلة: مجال واضح وفارق مريح وثقة قوية ولا سؤال يغيّر النتيجة.",
       "kind": "single_pathway",
-      "topPathwayId": "PW-FIN-001",
+      "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
-      "outputKind": "exploratory_direction",
-      "confidenceOverall": 0.5420789472934211,
-      "domainTop": "marketing_growth",
+      "outputKind": "best_current_match",
+      "confidenceOverall": 0.6624999998500001,
+      "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
-        "PW-FIN-001",
-        "PW-NEG-001",
-        "PW-SAL-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
-        "financial_statements",
-        "accounting_basics",
-        "economic_literacy",
-        "financial_decision_making",
-        "cost_analysis",
+        "customer_discovery",
+        "market_research",
+        "active_listening",
+        "research_literacy",
+        "value_proposition",
+        "business_model",
+        "design_thinking",
+        "ux_basics",
         "unit_economics",
-        "pricing_strategy",
-        "business_finance",
-        "budgeting_forecasting",
-        "variance_analysis",
-        "scenario_planning",
-        "goal_setting_okrs",
-        "working_capital",
-        "cashflow_forecasting",
         "cashflow_management",
-        "risk_management",
-        "investment_appraisal",
-        "financial_dashboarding",
-        "decision_making",
-        "data_storytelling"
+        "operations_basics",
+        "pricing_strategy",
+        "sales_fundamentals",
+        "negotiation_commercial",
+        "customer_communication",
+        "sales_pipeline",
+        "growth_experimentation",
+        "accountability"
       ],
       "invalidPersonaQuestions": [],
       "unmeasuredInfluence": [],
@@ -27982,69 +27313,40 @@
           "questionId": "QB-M7-001",
           "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-002",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-004",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-016",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-013",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-010",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
         }
       ],
-      "answersCount": 13,
-      "stopReason_ar": "لم يعد هناك سؤال يغيّر النتيجة جوهريًا.",
+      "answersCount": 8,
+      "stopReason_ar": "اكتملت الأدلة: مجال واضح وفارق مريح وثقة قوية ولا سؤال يغيّر النتيجة.",
       "kind": "single_pathway",
-      "topPathwayId": "PW-FIN-001",
+      "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
-      "outputKind": "exploratory_direction",
-      "confidenceOverall": 0.5396666665916667,
-      "domainTop": "marketing_growth",
+      "outputKind": "best_current_match",
+      "confidenceOverall": 0.6624999998500001,
+      "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
-        "PW-FIN-001",
-        "PW-MKT-001",
-        "PW-NEG-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
-        "financial_statements",
-        "accounting_basics",
-        "economic_literacy",
-        "financial_decision_making",
-        "cost_analysis",
+        "customer_discovery",
+        "market_research",
+        "active_listening",
+        "research_literacy",
+        "value_proposition",
+        "business_model",
+        "design_thinking",
+        "ux_basics",
         "unit_economics",
-        "pricing_strategy",
-        "business_finance",
-        "budgeting_forecasting",
-        "variance_analysis",
-        "scenario_planning",
-        "goal_setting_okrs",
-        "working_capital",
-        "cashflow_forecasting",
         "cashflow_management",
-        "risk_management",
-        "investment_appraisal",
-        "financial_dashboarding",
-        "decision_making",
-        "data_storytelling"
+        "operations_basics",
+        "pricing_strategy",
+        "sales_fundamentals",
+        "negotiation_commercial",
+        "customer_communication",
+        "sales_pipeline",
+        "growth_experimentation",
+        "accountability"
       ],
       "invalidPersonaQuestions": [],
       "unmeasuredInfluence": [],
@@ -28094,69 +27396,40 @@
           "questionId": "QB-M7-001",
           "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-002",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-004",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-016",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-013",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-010",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
         }
       ],
-      "answersCount": 13,
-      "stopReason_ar": "لم يعد هناك سؤال يغيّر النتيجة جوهريًا.",
+      "answersCount": 8,
+      "stopReason_ar": "اكتملت الأدلة: مجال واضح وفارق مريح وثقة قوية ولا سؤال يغيّر النتيجة.",
       "kind": "single_pathway",
-      "topPathwayId": "PW-FIN-001",
+      "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
-      "outputKind": "exploratory_direction",
-      "confidenceOverall": 0.5364558822779413,
-      "domainTop": "marketing_growth",
+      "outputKind": "best_current_match",
+      "confidenceOverall": 0.6624999998500001,
+      "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
-        "PW-FIN-001",
-        "PW-MKT-001",
-        "PW-NEG-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
-        "financial_statements",
-        "accounting_basics",
-        "economic_literacy",
-        "financial_decision_making",
-        "cost_analysis",
+        "customer_discovery",
+        "market_research",
+        "active_listening",
+        "research_literacy",
+        "value_proposition",
+        "business_model",
+        "design_thinking",
+        "ux_basics",
         "unit_economics",
-        "pricing_strategy",
-        "business_finance",
-        "budgeting_forecasting",
-        "variance_analysis",
-        "scenario_planning",
-        "goal_setting_okrs",
-        "working_capital",
-        "cashflow_forecasting",
         "cashflow_management",
-        "risk_management",
-        "investment_appraisal",
-        "financial_dashboarding",
-        "decision_making",
-        "data_storytelling"
+        "operations_basics",
+        "pricing_strategy",
+        "sales_fundamentals",
+        "negotiation_commercial",
+        "customer_communication",
+        "sales_pipeline",
+        "growth_experimentation",
+        "accountability"
       ],
       "invalidPersonaQuestions": [],
       "unmeasuredInfluence": [],
@@ -28206,69 +27479,40 @@
           "questionId": "QB-M7-001",
           "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-002",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-004",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-016",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-013",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-010",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
         }
       ],
-      "answersCount": 13,
-      "stopReason_ar": "لم يعد هناك سؤال يغيّر النتيجة جوهريًا.",
+      "answersCount": 8,
+      "stopReason_ar": "اكتملت الأدلة: مجال واضح وفارق مريح وثقة قوية ولا سؤال يغيّر النتيجة.",
       "kind": "single_pathway",
-      "topPathwayId": "PW-FIN-001",
+      "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
-      "outputKind": "exploratory_direction",
-      "confidenceOverall": 0.5420789472934211,
-      "domainTop": "marketing_growth",
+      "outputKind": "best_current_match",
+      "confidenceOverall": 0.6624999998500001,
+      "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
-        "PW-FIN-001",
-        "PW-NEG-001",
-        "PW-SAL-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
-        "financial_statements",
-        "accounting_basics",
-        "economic_literacy",
-        "financial_decision_making",
-        "cost_analysis",
+        "customer_discovery",
+        "market_research",
+        "active_listening",
+        "research_literacy",
+        "value_proposition",
+        "business_model",
+        "design_thinking",
+        "ux_basics",
         "unit_economics",
-        "pricing_strategy",
-        "business_finance",
-        "budgeting_forecasting",
-        "variance_analysis",
-        "scenario_planning",
-        "goal_setting_okrs",
-        "working_capital",
-        "cashflow_forecasting",
         "cashflow_management",
-        "risk_management",
-        "investment_appraisal",
-        "financial_dashboarding",
-        "decision_making",
-        "data_storytelling"
+        "operations_basics",
+        "pricing_strategy",
+        "sales_fundamentals",
+        "negotiation_commercial",
+        "customer_communication",
+        "sales_pipeline",
+        "growth_experimentation",
+        "accountability"
       ],
       "invalidPersonaQuestions": [],
       "unmeasuredInfluence": [],
@@ -28318,69 +27562,40 @@
           "questionId": "QB-M7-001",
           "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-002",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-004",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-016",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-013",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-010",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
         }
       ],
-      "answersCount": 13,
-      "stopReason_ar": "لم يعد هناك سؤال يغيّر النتيجة جوهريًا.",
+      "answersCount": 8,
+      "stopReason_ar": "اكتملت الأدلة: مجال واضح وفارق مريح وثقة قوية ولا سؤال يغيّر النتيجة.",
       "kind": "single_pathway",
-      "topPathwayId": "PW-FIN-001",
+      "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
-      "outputKind": "exploratory_direction",
-      "confidenceOverall": 0.5396666665916667,
-      "domainTop": "marketing_growth",
+      "outputKind": "best_current_match",
+      "confidenceOverall": 0.6624999998500001,
+      "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
-        "PW-FIN-001",
-        "PW-MKT-001",
-        "PW-NEG-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
-        "financial_statements",
-        "accounting_basics",
-        "economic_literacy",
-        "financial_decision_making",
-        "cost_analysis",
+        "customer_discovery",
+        "market_research",
+        "active_listening",
+        "research_literacy",
+        "value_proposition",
+        "business_model",
+        "design_thinking",
+        "ux_basics",
         "unit_economics",
-        "pricing_strategy",
-        "business_finance",
-        "budgeting_forecasting",
-        "variance_analysis",
-        "scenario_planning",
-        "goal_setting_okrs",
-        "working_capital",
-        "cashflow_forecasting",
         "cashflow_management",
-        "risk_management",
-        "investment_appraisal",
-        "financial_dashboarding",
-        "decision_making",
-        "data_storytelling"
+        "operations_basics",
+        "pricing_strategy",
+        "sales_fundamentals",
+        "negotiation_commercial",
+        "customer_communication",
+        "sales_pipeline",
+        "growth_experimentation",
+        "accountability"
       ],
       "invalidPersonaQuestions": [],
       "unmeasuredInfluence": [],
@@ -28430,69 +27645,40 @@
           "questionId": "QB-M7-001",
           "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-002",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-004",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-016",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-013",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-010",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
         }
       ],
-      "answersCount": 13,
-      "stopReason_ar": "لم يعد هناك سؤال يغيّر النتيجة جوهريًا.",
+      "answersCount": 8,
+      "stopReason_ar": "اكتملت الأدلة: مجال واضح وفارق مريح وثقة قوية ولا سؤال يغيّر النتيجة.",
       "kind": "single_pathway",
-      "topPathwayId": "PW-FIN-001",
+      "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
-      "outputKind": "exploratory_direction",
-      "confidenceOverall": 0.5417499999250002,
-      "domainTop": "marketing_growth",
+      "outputKind": "best_current_match",
+      "confidenceOverall": 0.6624999998500001,
+      "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
-        "PW-FIN-001",
-        "PW-MKT-001",
-        "PW-NEG-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
-        "financial_statements",
-        "accounting_basics",
-        "economic_literacy",
-        "financial_decision_making",
-        "cost_analysis",
+        "customer_discovery",
+        "market_research",
+        "active_listening",
+        "research_literacy",
+        "value_proposition",
+        "business_model",
+        "design_thinking",
+        "ux_basics",
         "unit_economics",
-        "pricing_strategy",
-        "business_finance",
-        "budgeting_forecasting",
-        "variance_analysis",
-        "scenario_planning",
-        "goal_setting_okrs",
-        "working_capital",
-        "cashflow_forecasting",
         "cashflow_management",
-        "risk_management",
-        "investment_appraisal",
-        "financial_dashboarding",
-        "decision_making",
-        "data_storytelling"
+        "operations_basics",
+        "pricing_strategy",
+        "sales_fundamentals",
+        "negotiation_commercial",
+        "customer_communication",
+        "sales_pipeline",
+        "growth_experimentation",
+        "accountability"
       ],
       "invalidPersonaQuestions": [],
       "unmeasuredInfluence": [],
@@ -28550,7 +27736,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7724999998500001,
+      "confidenceOverall": 0.7749999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -28633,7 +27819,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7724999998500001,
+      "confidenceOverall": 0.7749999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -28716,7 +27902,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7724999998500001,
+      "confidenceOverall": 0.7749999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -28799,7 +27985,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7724999998500001,
+      "confidenceOverall": 0.7749999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -28882,7 +28068,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7724999998500001,
+      "confidenceOverall": 0.7749999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -28965,7 +28151,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7724999998500001,
+      "confidenceOverall": 0.7749999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -29048,7 +28234,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7724999998500001,
+      "confidenceOverall": 0.7749999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -29136,7 +28322,7 @@
       "topPathwayId": "PW-FND-003",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7038235293367647,
+      "confidenceOverall": 0.7063235293367647,
       "domainTop": "ai_productivity",
       "measuredSkillCoverage": 0.058823529411764705,
       "gapSkillSlugs": [],
@@ -29224,7 +28410,7 @@
       "topPathwayId": "PW-FND-003",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7038235293367647,
+      "confidenceOverall": 0.7063235293367647,
       "domainTop": "ai_productivity",
       "measuredSkillCoverage": 0.058823529411764705,
       "gapSkillSlugs": [],
@@ -29312,7 +28498,7 @@
       "topPathwayId": "PW-FND-003",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7038235293367647,
+      "confidenceOverall": 0.7063235293367647,
       "domainTop": "ai_productivity",
       "measuredSkillCoverage": 0.058823529411764705,
       "gapSkillSlugs": [],
@@ -29400,7 +28586,7 @@
       "topPathwayId": "PW-FND-003",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7038235293367647,
+      "confidenceOverall": 0.7063235293367647,
       "domainTop": "ai_productivity",
       "measuredSkillCoverage": 0.058823529411764705,
       "gapSkillSlugs": [],
@@ -29488,7 +28674,7 @@
       "topPathwayId": "PW-FND-003",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7038235293367647,
+      "confidenceOverall": 0.7063235293367647,
       "domainTop": "ai_productivity",
       "measuredSkillCoverage": 0.058823529411764705,
       "gapSkillSlugs": [],
@@ -29576,7 +28762,7 @@
       "topPathwayId": "PW-FND-003",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7038235293367647,
+      "confidenceOverall": 0.7063235293367647,
       "domainTop": "ai_productivity",
       "measuredSkillCoverage": 0.058823529411764705,
       "gapSkillSlugs": [],
@@ -29664,7 +28850,7 @@
       "topPathwayId": "PW-FND-003",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7038235293367647,
+      "confidenceOverall": 0.7063235293367647,
       "domainTop": "ai_productivity",
       "measuredSkillCoverage": 0.058823529411764705,
       "gapSkillSlugs": [],
@@ -29747,7 +28933,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.65999999985,
+      "confidenceOverall": 0.6624999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -29830,7 +29016,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.65999999985,
+      "confidenceOverall": 0.6624999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -29913,7 +29099,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.65999999985,
+      "confidenceOverall": 0.6624999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -29996,7 +29182,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.65999999985,
+      "confidenceOverall": 0.6624999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -30079,7 +29265,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.65999999985,
+      "confidenceOverall": 0.6624999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -30162,7 +29348,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.65999999985,
+      "confidenceOverall": 0.6624999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -30245,7 +29431,7 @@
       "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.65999999985,
+      "confidenceOverall": 0.6624999998500001,
       "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -30328,7 +29514,7 @@
       "topPathwayId": null,
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.6724999998500001,
+      "confidenceOverall": 0.67499999985,
       "domainTop": "career_direction",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -30390,7 +29576,7 @@
       "topPathwayId": null,
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.6724999998500001,
+      "confidenceOverall": 0.67499999985,
       "domainTop": "career_direction",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -30452,7 +29638,7 @@
       "topPathwayId": null,
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.6724999998500001,
+      "confidenceOverall": 0.67499999985,
       "domainTop": "career_direction",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -30514,7 +29700,7 @@
       "topPathwayId": null,
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.6724999998500001,
+      "confidenceOverall": 0.67499999985,
       "domainTop": "career_direction",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -30576,7 +29762,7 @@
       "topPathwayId": null,
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.6724999998500001,
+      "confidenceOverall": 0.67499999985,
       "domainTop": "career_direction",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -30638,7 +29824,7 @@
       "topPathwayId": null,
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.6724999998500001,
+      "confidenceOverall": 0.67499999985,
       "domainTop": "career_direction",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -30700,7 +29886,7 @@
       "topPathwayId": null,
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.6724999998500001,
+      "confidenceOverall": 0.67499999985,
       "domainTop": "career_direction",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -30767,7 +29953,7 @@
       "topPathwayId": "PW-FND-003",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7038235293367647,
+      "confidenceOverall": 0.7063235293367647,
       "domainTop": "ai_productivity",
       "measuredSkillCoverage": 0.058823529411764705,
       "gapSkillSlugs": [],
@@ -30855,7 +30041,7 @@
       "topPathwayId": "PW-FND-003",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7038235293367647,
+      "confidenceOverall": 0.7063235293367647,
       "domainTop": "ai_productivity",
       "measuredSkillCoverage": 0.058823529411764705,
       "gapSkillSlugs": [],
@@ -30943,7 +30129,7 @@
       "topPathwayId": "PW-FND-003",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7038235293367647,
+      "confidenceOverall": 0.7063235293367647,
       "domainTop": "ai_productivity",
       "measuredSkillCoverage": 0.058823529411764705,
       "gapSkillSlugs": [],
@@ -31031,7 +30217,7 @@
       "topPathwayId": "PW-FND-003",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7038235293367647,
+      "confidenceOverall": 0.7063235293367647,
       "domainTop": "ai_productivity",
       "measuredSkillCoverage": 0.058823529411764705,
       "gapSkillSlugs": [],
@@ -31119,7 +30305,7 @@
       "topPathwayId": "PW-FND-003",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7038235293367647,
+      "confidenceOverall": 0.7063235293367647,
       "domainTop": "ai_productivity",
       "measuredSkillCoverage": 0.058823529411764705,
       "gapSkillSlugs": [],
@@ -31207,7 +30393,7 @@
       "topPathwayId": "PW-FND-003",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7038235293367647,
+      "confidenceOverall": 0.7063235293367647,
       "domainTop": "ai_productivity",
       "measuredSkillCoverage": 0.058823529411764705,
       "gapSkillSlugs": [],
@@ -31295,7 +30481,7 @@
       "topPathwayId": "PW-FND-003",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7038235293367647,
+      "confidenceOverall": 0.7063235293367647,
       "domainTop": "ai_productivity",
       "measuredSkillCoverage": 0.058823529411764705,
       "gapSkillSlugs": [],
@@ -31398,7 +30584,7 @@
       "topPathwayId": "PW-HR-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.6545789472934211,
+      "confidenceOverall": 0.6565789472934211,
       "domainTop": "communication_influence",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -31505,7 +30691,7 @@
       "topPathwayId": "PW-HR-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.652385964837281,
+      "confidenceOverall": 0.654385964837281,
       "domainTop": "communication_influence",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -31612,7 +30798,7 @@
       "topPathwayId": "PW-HR-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.6545789472934211,
+      "confidenceOverall": 0.6565789472934211,
       "domainTop": "communication_influence",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -31719,7 +30905,7 @@
       "topPathwayId": "PW-HR-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.6545789472934211,
+      "confidenceOverall": 0.6565789472934211,
       "domainTop": "communication_influence",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -31826,7 +31012,7 @@
       "topPathwayId": "PW-HR-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.652385964837281,
+      "confidenceOverall": 0.654385964837281,
       "domainTop": "communication_influence",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -31933,7 +31119,7 @@
       "topPathwayId": "PW-HR-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.6545789472934211,
+      "confidenceOverall": 0.6565789472934211,
       "domainTop": "communication_influence",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -32040,7 +31226,7 @@
       "topPathwayId": "PW-HR-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.6545789472934211,
+      "confidenceOverall": 0.6565789472934211,
       "domainTop": "communication_influence",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -32132,14 +31318,14 @@
       "topPathwayId": "PW-FND-003",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7038235293367647,
+      "confidenceOverall": 0.7063235293367647,
       "domainTop": "ai_productivity",
       "measuredSkillCoverage": 0.058823529411764705,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
         "PW-FND-003",
         "PW-AUT-001",
-        "PW-COM-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
         "ai_use_cases_mapping",
@@ -32220,14 +31406,14 @@
       "topPathwayId": "PW-FND-003",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7038235293367647,
+      "confidenceOverall": 0.7063235293367647,
       "domainTop": "ai_productivity",
       "measuredSkillCoverage": 0.058823529411764705,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
         "PW-FND-003",
         "PW-AUT-001",
-        "PW-COM-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
         "ai_use_cases_mapping",
@@ -32308,14 +31494,14 @@
       "topPathwayId": "PW-FND-003",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7038235293367647,
+      "confidenceOverall": 0.7063235293367647,
       "domainTop": "ai_productivity",
       "measuredSkillCoverage": 0.058823529411764705,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
         "PW-FND-003",
         "PW-AUT-001",
-        "PW-COM-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
         "ai_use_cases_mapping",
@@ -32396,14 +31582,14 @@
       "topPathwayId": "PW-FND-003",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7007612455997405,
+      "confidenceOverall": 0.7032612455997405,
       "domainTop": "ai_productivity",
       "measuredSkillCoverage": 0.058823529411764705,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
         "PW-FND-003",
         "PW-AUT-001",
-        "PW-COM-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
         "ai_use_cases_mapping",
@@ -32484,14 +31670,14 @@
       "topPathwayId": "PW-FND-003",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7038235293367647,
+      "confidenceOverall": 0.7063235293367647,
       "domainTop": "ai_productivity",
       "measuredSkillCoverage": 0.058823529411764705,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
         "PW-FND-003",
         "PW-AUT-001",
-        "PW-COM-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
         "ai_use_cases_mapping",
@@ -32572,14 +31758,14 @@
       "topPathwayId": "PW-FND-003",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7038235293367647,
+      "confidenceOverall": 0.7063235293367647,
       "domainTop": "ai_productivity",
       "measuredSkillCoverage": 0.058823529411764705,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
         "PW-FND-003",
         "PW-AUT-001",
-        "PW-COM-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
         "ai_use_cases_mapping",
@@ -32660,14 +31846,14 @@
       "topPathwayId": "PW-FND-003",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.7038235293367647,
+      "confidenceOverall": 0.7063235293367647,
       "domainTop": "ai_productivity",
       "measuredSkillCoverage": 0.058823529411764705,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
         "PW-FND-003",
         "PW-AUT-001",
-        "PW-COM-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
         "ai_use_cases_mapping",
@@ -32753,14 +31939,14 @@
       "topPathwayId": "PW-FND-003",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.643391964553989,
+      "confidenceOverall": 0.6456141867762111,
       "domainTop": "ai_productivity",
       "measuredSkillCoverage": 0.058823529411764705,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
         "PW-FND-003",
         "PW-AUT-001",
-        "PW-COM-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
         "ai_use_cases_mapping",
@@ -32846,14 +32032,14 @@
       "topPathwayId": "PW-FND-003",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.643391964553989,
+      "confidenceOverall": 0.6456141867762111,
       "domainTop": "ai_productivity",
       "measuredSkillCoverage": 0.058823529411764705,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
         "PW-FND-003",
         "PW-AUT-001",
-        "PW-COM-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
         "ai_use_cases_mapping",
@@ -32939,14 +32125,14 @@
       "topPathwayId": "PW-FND-003",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.643391964553989,
+      "confidenceOverall": 0.6456141867762111,
       "domainTop": "ai_productivity",
       "measuredSkillCoverage": 0.058823529411764705,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
         "PW-FND-003",
         "PW-AUT-001",
-        "PW-COM-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
         "ai_use_cases_mapping",
@@ -33032,14 +32218,14 @@
       "topPathwayId": "PW-FND-003",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.6375096116128125,
+      "confidenceOverall": 0.6397318338350346,
       "domainTop": "ai_productivity",
       "measuredSkillCoverage": 0.058823529411764705,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
         "PW-FND-003",
         "PW-AUT-001",
-        "PW-COM-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
         "ai_use_cases_mapping",
@@ -33125,14 +32311,14 @@
       "topPathwayId": "PW-FND-003",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.643391964553989,
+      "confidenceOverall": 0.6456141867762111,
       "domainTop": "ai_productivity",
       "measuredSkillCoverage": 0.058823529411764705,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
         "PW-FND-003",
         "PW-AUT-001",
-        "PW-COM-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
         "ai_use_cases_mapping",
@@ -33218,14 +32404,14 @@
       "topPathwayId": "PW-FND-003",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.643391964553989,
+      "confidenceOverall": 0.6456141867762111,
       "domainTop": "ai_productivity",
       "measuredSkillCoverage": 0.058823529411764705,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
         "PW-FND-003",
         "PW-AUT-001",
-        "PW-COM-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
         "ai_use_cases_mapping",
@@ -33311,14 +32497,14 @@
       "topPathwayId": "PW-FND-003",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.643391964553989,
+      "confidenceOverall": 0.6456141867762111,
       "domainTop": "ai_productivity",
       "measuredSkillCoverage": 0.058823529411764705,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
         "PW-FND-003",
         "PW-AUT-001",
-        "PW-COM-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
         "ai_use_cases_mapping",
@@ -33386,69 +32572,40 @@
           "questionId": "QB-M7-001",
           "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-002",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-004",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-016",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-013",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-010",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
         }
       ],
-      "answersCount": 13,
-      "stopReason_ar": "لم يعد هناك سؤال يغيّر النتيجة جوهريًا.",
+      "answersCount": 8,
+      "stopReason_ar": "اكتملت الأدلة: مجال واضح وفارق مريح وثقة قوية ولا سؤال يغيّر النتيجة.",
       "kind": "single_pathway",
-      "topPathwayId": "PW-FIN-001",
+      "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.6542499999250002,
-      "domainTop": "marketing_growth",
+      "confidenceOverall": 0.7749999998500001,
+      "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
-        "PW-FIN-001",
-        "PW-MKT-001",
-        "PW-NEG-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
-        "financial_statements",
-        "accounting_basics",
-        "economic_literacy",
-        "financial_decision_making",
-        "cost_analysis",
+        "customer_discovery",
+        "market_research",
+        "active_listening",
+        "research_literacy",
+        "value_proposition",
+        "business_model",
+        "design_thinking",
+        "ux_basics",
         "unit_economics",
-        "pricing_strategy",
-        "business_finance",
-        "budgeting_forecasting",
-        "variance_analysis",
-        "scenario_planning",
-        "goal_setting_okrs",
-        "working_capital",
-        "cashflow_forecasting",
         "cashflow_management",
-        "risk_management",
-        "investment_appraisal",
-        "financial_dashboarding",
-        "decision_making",
-        "data_storytelling"
+        "operations_basics",
+        "pricing_strategy",
+        "sales_fundamentals",
+        "negotiation_commercial",
+        "customer_communication",
+        "sales_pipeline",
+        "growth_experimentation",
+        "accountability"
       ],
       "invalidPersonaQuestions": [],
       "unmeasuredInfluence": [],
@@ -33498,69 +32655,40 @@
           "questionId": "QB-M7-001",
           "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-002",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-004",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-016",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-013",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-010",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
         }
       ],
-      "answersCount": 13,
-      "stopReason_ar": "لم يعد هناك سؤال يغيّر النتيجة جوهريًا.",
+      "answersCount": 8,
+      "stopReason_ar": "اكتملت الأدلة: مجال واضح وفارق مريح وثقة قوية ولا سؤال يغيّر النتيجة.",
       "kind": "single_pathway",
-      "topPathwayId": "PW-FIN-001",
+      "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.6545789472934211,
-      "domainTop": "marketing_growth",
+      "confidenceOverall": 0.7749999998500001,
+      "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
-        "PW-FIN-001",
-        "PW-NEG-001",
-        "PW-SAL-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
-        "financial_statements",
-        "accounting_basics",
-        "economic_literacy",
-        "financial_decision_making",
-        "cost_analysis",
+        "customer_discovery",
+        "market_research",
+        "active_listening",
+        "research_literacy",
+        "value_proposition",
+        "business_model",
+        "design_thinking",
+        "ux_basics",
         "unit_economics",
-        "pricing_strategy",
-        "business_finance",
-        "budgeting_forecasting",
-        "variance_analysis",
-        "scenario_planning",
-        "goal_setting_okrs",
-        "working_capital",
-        "cashflow_forecasting",
         "cashflow_management",
-        "risk_management",
-        "investment_appraisal",
-        "financial_dashboarding",
-        "decision_making",
-        "data_storytelling"
+        "operations_basics",
+        "pricing_strategy",
+        "sales_fundamentals",
+        "negotiation_commercial",
+        "customer_communication",
+        "sales_pipeline",
+        "growth_experimentation",
+        "accountability"
       ],
       "invalidPersonaQuestions": [],
       "unmeasuredInfluence": [],
@@ -33610,69 +32738,40 @@
           "questionId": "QB-M7-001",
           "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-002",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-004",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-016",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-013",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-010",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
         }
       ],
-      "answersCount": 13,
-      "stopReason_ar": "لم يعد هناك سؤال يغيّر النتيجة جوهريًا.",
+      "answersCount": 8,
+      "stopReason_ar": "اكتملت الأدلة: مجال واضح وفارق مريح وثقة قوية ولا سؤال يغيّر النتيجة.",
       "kind": "single_pathway",
-      "topPathwayId": "PW-FIN-001",
+      "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.6521666665916668,
-      "domainTop": "marketing_growth",
+      "confidenceOverall": 0.7749999998500001,
+      "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
-        "PW-FIN-001",
-        "PW-MKT-001",
-        "PW-NEG-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
-        "financial_statements",
-        "accounting_basics",
-        "economic_literacy",
-        "financial_decision_making",
-        "cost_analysis",
+        "customer_discovery",
+        "market_research",
+        "active_listening",
+        "research_literacy",
+        "value_proposition",
+        "business_model",
+        "design_thinking",
+        "ux_basics",
         "unit_economics",
-        "pricing_strategy",
-        "business_finance",
-        "budgeting_forecasting",
-        "variance_analysis",
-        "scenario_planning",
-        "goal_setting_okrs",
-        "working_capital",
-        "cashflow_forecasting",
         "cashflow_management",
-        "risk_management",
-        "investment_appraisal",
-        "financial_dashboarding",
-        "decision_making",
-        "data_storytelling"
+        "operations_basics",
+        "pricing_strategy",
+        "sales_fundamentals",
+        "negotiation_commercial",
+        "customer_communication",
+        "sales_pipeline",
+        "growth_experimentation",
+        "accountability"
       ],
       "invalidPersonaQuestions": [],
       "unmeasuredInfluence": [],
@@ -33722,69 +32821,40 @@
           "questionId": "QB-M7-001",
           "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-002",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-004",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-016",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-013",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-010",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
         }
       ],
-      "answersCount": 13,
-      "stopReason_ar": "لم يعد هناك سؤال يغيّر النتيجة جوهريًا.",
+      "answersCount": 8,
+      "stopReason_ar": "اكتملت الأدلة: مجال واضح وفارق مريح وثقة قوية ولا سؤال يغيّر النتيجة.",
       "kind": "single_pathway",
-      "topPathwayId": "PW-FIN-001",
+      "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.6542499999250002,
-      "domainTop": "marketing_growth",
+      "confidenceOverall": 0.7749999998500001,
+      "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
-        "PW-FIN-001",
-        "PW-MKT-001",
-        "PW-NEG-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
-        "financial_statements",
-        "accounting_basics",
-        "economic_literacy",
-        "financial_decision_making",
-        "cost_analysis",
+        "customer_discovery",
+        "market_research",
+        "active_listening",
+        "research_literacy",
+        "value_proposition",
+        "business_model",
+        "design_thinking",
+        "ux_basics",
         "unit_economics",
-        "pricing_strategy",
-        "business_finance",
-        "budgeting_forecasting",
-        "variance_analysis",
-        "scenario_planning",
-        "goal_setting_okrs",
-        "working_capital",
-        "cashflow_forecasting",
         "cashflow_management",
-        "risk_management",
-        "investment_appraisal",
-        "financial_dashboarding",
-        "decision_making",
-        "data_storytelling"
+        "operations_basics",
+        "pricing_strategy",
+        "sales_fundamentals",
+        "negotiation_commercial",
+        "customer_communication",
+        "sales_pipeline",
+        "growth_experimentation",
+        "accountability"
       ],
       "invalidPersonaQuestions": [],
       "unmeasuredInfluence": [],
@@ -33834,69 +32904,40 @@
           "questionId": "QB-M7-001",
           "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-002",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-004",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-016",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-013",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-010",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
         }
       ],
-      "answersCount": 13,
-      "stopReason_ar": "لم يعد هناك سؤال يغيّر النتيجة جوهريًا.",
+      "answersCount": 8,
+      "stopReason_ar": "اكتملت الأدلة: مجال واضح وفارق مريح وثقة قوية ولا سؤال يغيّر النتيجة.",
       "kind": "single_pathway",
-      "topPathwayId": "PW-FIN-001",
+      "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.6545789472934211,
-      "domainTop": "marketing_growth",
+      "confidenceOverall": 0.7749999998500001,
+      "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
-        "PW-FIN-001",
-        "PW-NEG-001",
-        "PW-SAL-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
-        "financial_statements",
-        "accounting_basics",
-        "economic_literacy",
-        "financial_decision_making",
-        "cost_analysis",
+        "customer_discovery",
+        "market_research",
+        "active_listening",
+        "research_literacy",
+        "value_proposition",
+        "business_model",
+        "design_thinking",
+        "ux_basics",
         "unit_economics",
-        "pricing_strategy",
-        "business_finance",
-        "budgeting_forecasting",
-        "variance_analysis",
-        "scenario_planning",
-        "goal_setting_okrs",
-        "working_capital",
-        "cashflow_forecasting",
         "cashflow_management",
-        "risk_management",
-        "investment_appraisal",
-        "financial_dashboarding",
-        "decision_making",
-        "data_storytelling"
+        "operations_basics",
+        "pricing_strategy",
+        "sales_fundamentals",
+        "negotiation_commercial",
+        "customer_communication",
+        "sales_pipeline",
+        "growth_experimentation",
+        "accountability"
       ],
       "invalidPersonaQuestions": [],
       "unmeasuredInfluence": [],
@@ -33946,69 +32987,40 @@
           "questionId": "QB-M7-001",
           "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-002",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-004",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-016",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-013",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-010",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
         }
       ],
-      "answersCount": 13,
-      "stopReason_ar": "لم يعد هناك سؤال يغيّر النتيجة جوهريًا.",
+      "answersCount": 8,
+      "stopReason_ar": "اكتملت الأدلة: مجال واضح وفارق مريح وثقة قوية ولا سؤال يغيّر النتيجة.",
       "kind": "single_pathway",
-      "topPathwayId": "PW-FIN-001",
+      "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.6521666665916668,
-      "domainTop": "marketing_growth",
+      "confidenceOverall": 0.7749999998500001,
+      "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
-        "PW-FIN-001",
-        "PW-MKT-001",
-        "PW-NEG-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
-        "financial_statements",
-        "accounting_basics",
-        "economic_literacy",
-        "financial_decision_making",
-        "cost_analysis",
+        "customer_discovery",
+        "market_research",
+        "active_listening",
+        "research_literacy",
+        "value_proposition",
+        "business_model",
+        "design_thinking",
+        "ux_basics",
         "unit_economics",
-        "pricing_strategy",
-        "business_finance",
-        "budgeting_forecasting",
-        "variance_analysis",
-        "scenario_planning",
-        "goal_setting_okrs",
-        "working_capital",
-        "cashflow_forecasting",
         "cashflow_management",
-        "risk_management",
-        "investment_appraisal",
-        "financial_dashboarding",
-        "decision_making",
-        "data_storytelling"
+        "operations_basics",
+        "pricing_strategy",
+        "sales_fundamentals",
+        "negotiation_commercial",
+        "customer_communication",
+        "sales_pipeline",
+        "growth_experimentation",
+        "accountability"
       ],
       "invalidPersonaQuestions": [],
       "unmeasuredInfluence": [],
@@ -34058,69 +33070,40 @@
           "questionId": "QB-M7-001",
           "personaAtAsk": "founder_operating",
           "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-002",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M3C-004",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-016",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-013",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
-        },
-        {
-          "questionId": "QB-M4-010",
-          "personaAtAsk": "founder_operating",
-          "eligibleForPersona": true
         }
       ],
-      "answersCount": 13,
-      "stopReason_ar": "لم يعد هناك سؤال يغيّر النتيجة جوهريًا.",
+      "answersCount": 8,
+      "stopReason_ar": "اكتملت الأدلة: مجال واضح وفارق مريح وثقة قوية ولا سؤال يغيّر النتيجة.",
       "kind": "single_pathway",
-      "topPathwayId": "PW-FIN-001",
+      "topPathwayId": "PW-BIZ-001",
       "compositeTemplateId": null,
       "outputKind": "best_current_match",
-      "confidenceOverall": 0.6542499999250002,
-      "domainTop": "marketing_growth",
+      "confidenceOverall": 0.7749999998500001,
+      "domainTop": "entrepreneurship",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
       "top3PathwayIds": [
-        "PW-FIN-001",
-        "PW-MKT-001",
-        "PW-NEG-001"
+        "PW-BIZ-001"
       ],
       "unknownSkillSlugs": [
-        "financial_statements",
-        "accounting_basics",
-        "economic_literacy",
-        "financial_decision_making",
-        "cost_analysis",
+        "customer_discovery",
+        "market_research",
+        "active_listening",
+        "research_literacy",
+        "value_proposition",
+        "business_model",
+        "design_thinking",
+        "ux_basics",
         "unit_economics",
-        "pricing_strategy",
-        "business_finance",
-        "budgeting_forecasting",
-        "variance_analysis",
-        "scenario_planning",
-        "goal_setting_okrs",
-        "working_capital",
-        "cashflow_forecasting",
         "cashflow_management",
-        "risk_management",
-        "investment_appraisal",
-        "financial_dashboarding",
-        "decision_making",
-        "data_storytelling"
+        "operations_basics",
+        "pricing_strategy",
+        "sales_fundamentals",
+        "negotiation_commercial",
+        "customer_communication",
+        "sales_pipeline",
+        "growth_experimentation",
+        "accountability"
       ],
       "invalidPersonaQuestions": [],
       "unmeasuredInfluence": [],
@@ -34188,7 +33171,7 @@
       "topPathwayId": null,
       "compositeTemplateId": null,
       "outputKind": "exploratory_direction",
-      "confidenceOverall": 0.5515909089409091,
+      "confidenceOverall": 0.553409090759091,
       "domainTop": "career_direction",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -34260,7 +33243,7 @@
       "topPathwayId": null,
       "compositeTemplateId": null,
       "outputKind": "exploratory_direction",
-      "confidenceOverall": 0.5515909089409091,
+      "confidenceOverall": 0.553409090759091,
       "domainTop": "career_direction",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -34332,7 +33315,7 @@
       "topPathwayId": null,
       "compositeTemplateId": null,
       "outputKind": "exploratory_direction",
-      "confidenceOverall": 0.5515909089409091,
+      "confidenceOverall": 0.553409090759091,
       "domainTop": "career_direction",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -34404,7 +33387,7 @@
       "topPathwayId": null,
       "compositeTemplateId": null,
       "outputKind": "exploratory_direction",
-      "confidenceOverall": 0.5515909089409091,
+      "confidenceOverall": 0.553409090759091,
       "domainTop": "career_direction",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -34476,7 +33459,7 @@
       "topPathwayId": null,
       "compositeTemplateId": null,
       "outputKind": "exploratory_direction",
-      "confidenceOverall": 0.5515909089409091,
+      "confidenceOverall": 0.553409090759091,
       "domainTop": "career_direction",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -34548,7 +33531,7 @@
       "topPathwayId": null,
       "compositeTemplateId": null,
       "outputKind": "exploratory_direction",
-      "confidenceOverall": 0.5515909089409091,
+      "confidenceOverall": 0.553409090759091,
       "domainTop": "career_direction",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
@@ -34620,7 +33603,7 @@
       "topPathwayId": null,
       "compositeTemplateId": null,
       "outputKind": "exploratory_direction",
-      "confidenceOverall": 0.5515909089409091,
+      "confidenceOverall": 0.553409090759091,
       "domainTop": "career_direction",
       "measuredSkillCoverage": 0,
       "gapSkillSlugs": [],
