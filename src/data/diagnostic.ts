@@ -76,7 +76,8 @@ export interface GapDetail {
 }
 
 export interface DiagResult {
-  top: Pathway
+  /** المسار الأعلى — null عندما لا كيان مفروضًا (اتجاه استكشافي / إحالة مستشار بلا مرشح) */
+  top: Pathway | null
   faster: Pathway | null
   cheaper: { p: Pathway; price: number } | null
   confidence: number

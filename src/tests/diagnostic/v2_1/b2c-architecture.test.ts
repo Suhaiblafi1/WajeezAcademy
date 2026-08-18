@@ -111,6 +111,24 @@ describe('بنية أسئلة B2C — معايير النجاح', () => {
     expect(asked).not.toContain('QB-M1-010')
   })
 
+  it('التوفيق النهائي: كل سؤال له final_status واحدة والمجموع = 198', () => {
+    const counts: Record<string, number> = {}
+    for (const [id, p] of Object.entries(questionPlanV21)) {
+      expect(p.final_status, `سؤال بلا حالة نهائية: ${id}`).toBeDefined()
+      /* الاشتقاق حتمي من (surface, phase, action) — لا تناقض بين الحالة والسطح */
+      if (p.surface === 'b2c') expect(['active_b2c', 'deep_only']).toContain(p.final_status)
+      if (p.surface === 'post_recommendation') expect(p.final_status).toBe('post_recommendation')
+      if (p.surface === 'b2b_b2g') expect(p.final_status).toBe('institutional')
+      if (p.surface === 'ui_ack') expect(p.final_status).toBe('out_of_scope')
+      if (p.surface === 'retired_b2c') expect(['retired', 'out_of_scope']).toContain(p.final_status)
+      counts[p.final_status] = (counts[p.final_status] ?? 0) + 1
+    }
+    expect(Object.keys(questionPlanV21).length).toBe(198)
+    expect(Object.values(counts).reduce((a, b) => a + b, 0)).toBe(198)
+    /* الأرقام المرجعية الموثقة — أي تغيير يتطلب تحديثًا مقصودًا لهذا الاختبار */
+    expect(counts).toEqual({ active_b2c: 75, deep_only: 11, post_recommendation: 25, institutional: 14, retired: 58, out_of_scope: 15 })
+  })
+
   it('كل سؤال نشط في B2C له أثر قراري موثق في الخطة', () => {
     for (const stage of ALL_STAGES) {
       const { asked } = runJourney({ stage })

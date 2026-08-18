@@ -146,7 +146,7 @@ const stagePersona: Record<CareerStage, Record<string, string>> = {
   trainer_ld: { persona_type: 'trainer' },
   other_unsure: { persona_branch: 'unsure' },
 }
-const effects: Record<string, Record<string, Record<string, string>>> = {
+const effects: Record<string, Record<string, Record<string, string | string[]>>> = {
   [Q.STAGE]: Object.fromEntries(
     stageCodes.map((s, i) => [`o${i + 1}`, { career_stage: s, ...stagePersona[s] }]),
   ),
@@ -232,6 +232,21 @@ effects['QB-M3C-001'] = {
   o6: { business_stage: 'established' },
 }
 
+/* سؤال الميول المختصرة (نشط في V2.1) كان بلا تأثيرات — إجابته لم تغيّر شيئًا.
+   الآن كل ميل يفتح مجالًا: interest_domains تغذي قائمة المجالات المختصرة للمستكشف (البند 10).
+   القيم مصفوفات لتتجمع عبر الخيارات المتعددة (putFact يلحق القيم اللاحقة بالمصفوفة). */
+effects['QB-M3E-002'] = {
+  o1: { interest_domains: ['ai_productivity', 'data_decision', 'cyber_risk'] },
+  o2: { interest_domains: ['entrepreneurship', 'operations', 'project_management'] },
+  o3: { interest_domains: ['marketing_growth', 'sales'] },
+  o4: { interest_domains: ['learning_design'] },
+  o5: { interest_domains: ['communication_influence', 'marketing_growth'] },
+  o6: { interest_domains: ['people_leadership'] },
+  o7: { interest_domains: ['gov_services'] },
+  o8: { interest_domains: ['finance_mgmt'] },
+  /* o9 «لا أعرف» — بلا أثر مقصود: غياب الميل معلومة صادقة لا إشارة */
+}
+
 out('src/data/catalog/v2_1/questions-b2c.v2_1.ar.json', {
   metadata: {
     version: '2.1.0',
@@ -245,6 +260,22 @@ out('src/data/overlays/option-effects.v2_1.json', { version: '2.1.0', option_eff
 
 /* ═══ ٤) خطة الأسئلة — سطح وطبقة وفعل لكل سؤال ═══ */
 type Action = 'keep' | 'rewrite' | 'replaced' | 'move_post' | 'retire' | 'out_of_scope'
+/* الحالة النهائية — كل سؤال يُحسب مرة واحدة فقط، والمجموع = 198 دائمًا.
+   الاشتقاق حتمي من (surface, phase, action) — لا حالة تُكتب يدويًا:
+   active_b2c = سطح B2C ويُطرح في التدفق الأساسي/التكيفي
+   deep_only = سطح B2C لكنه لا يُطرح إلا في جولة التأكيد الاختيارية
+   post_recommendation = تخصيص ما بعد التوصية — لا أثر على المسار
+   institutional = مسار المؤسسات B2B/B2G المستقل
+   retired = متقاعد من B2C (تقاعد أو استبدال بسؤال QC)
+   out_of_scope = خارج نطاق التشخيص كليًا (أسري/لغة/ميزانية/إقرارات واجهة) */
+export type FinalStatus = 'active_b2c' | 'deep_only' | 'post_recommendation' | 'institutional' | 'retired' | 'out_of_scope'
+function finalStatusOf(surface: QuestionSurface, phase: PlanEntry['phase'], action: Action): FinalStatus {
+  if (surface === 'b2c') return phase === 'confirmation' ? 'deep_only' : 'active_b2c'
+  if (surface === 'post_recommendation') return 'post_recommendation'
+  if (surface === 'b2b_b2g') return 'institutional'
+  if (surface === 'ui_ack') return 'out_of_scope'
+  return action === 'out_of_scope' ? 'out_of_scope' : 'retired'
+}
 interface PlanEntry {
   surface: QuestionSurface
   layer21: QuestionLayerV21 | null
@@ -256,6 +287,7 @@ interface PlanEntry {
   why_ar: string
   replaced_by?: string
   measures: string[]
+  final_status?: FinalStatus
 }
 
 const EMPLOYED: CareerStage[] = ['early_career', 'experienced', 'manager', 'senior_manager', 'trainer_ld']
@@ -425,6 +457,12 @@ const newPlan: Record<string, PlanEntry> = {
 }
 Object.assign(plan, newPlan)
 
+/* ختم الحالة النهائية على كل سؤال — اشتقاق حتمي واحد، كل سؤال يُحسب مرة واحدة */
+for (const [id, p] of Object.entries(plan)) {
+  p.final_status = finalStatusOf(p.surface, p.phase, p.action)
+  void id
+}
+
 /* أثر المرشحين — للبطاقات */
 const impactMap: Record<string, { standard: string[]; composite: string[] }> = {}
 for (const [id, p] of Object.entries(plan)) {
@@ -450,6 +488,14 @@ const ACTION_AR: Record<string, string> = {
 const SURFACE_AR: Record<string, string> = {
   b2c: 'تشخيص B2C', b2b_b2g: 'مسار المؤسسات', ui_ack: 'إقرار واجهة', post_recommendation: 'ما بعد التوصية', retired_b2c: 'متقاعد من B2C',
 }
+const FINAL_STATUS_AR: Record<FinalStatus, string> = {
+  active_b2c: 'نشط في تشخيص B2C',
+  deep_only: 'جولة التأكيد فقط',
+  post_recommendation: 'ما بعد التوصية',
+  institutional: 'مسار المؤسسات (B2B/B2G)',
+  retired: 'متقاعد',
+  out_of_scope: 'خارج النطاق',
+}
 
 const allQuestions = [...bank, ...newQuestions]
 const cards: string[] = []
@@ -465,6 +511,7 @@ for (const q of allQuestions) {
       `### ${q.question_id} — ${SURFACE_AR[p.surface]} / ${ACTION_AR[p.action]}`,
       ``,
       `- **النص الحالي**: ${q.text_ar}`,
+      `- **الحالة النهائية**: \`${p.final_status}\` — ${FINAL_STATUS_AR[p.final_status!]}`,
       rewritten ? `- **النص المقترح (V2.1)**: ${rewritten.text_ar}` : null,
       repl ? `- **الخليفة**: ${p.replaced_by} — «${repl.text_ar}»` : null,
       `- **الطبقة الحالية (V2)**: ${q.module_id} · **الطبقة الجديدة**: ${p.layer21 ? LAYER_AR[p.layer21] : '—'}`,
@@ -485,13 +532,37 @@ const counts = { keep: 0, rewrite: 0, replaced: 0, move_post: 0, retire: 0, out_
 for (const p of Object.values(plan)) counts[p.action]++
 const b2cActive = Object.entries(plan).filter(([, p]) => p.surface === 'b2c').length
 
+/* ── التوفيق النهائي (Reconciliation) — كل سؤال في حالة واحدة، المجموع = عدد البطاقات ── */
+const finalCounts: Record<FinalStatus, number> = { active_b2c: 0, deep_only: 0, post_recommendation: 0, institutional: 0, retired: 0, out_of_scope: 0 }
+for (const p of Object.values(plan)) finalCounts[p.final_status!]++
+const finalTotal = Object.values(finalCounts).reduce((a, b) => a + b, 0)
+if (finalTotal !== allQuestions.length) {
+  throw new Error(`فشل التوفيق: مجموع الحالات النهائية ${finalTotal} ≠ عدد البطاقات ${allQuestions.length}`)
+}
+const familyOutCount = Object.values(plan).filter((p) => p.surface === 'retired_b2c' && p.action === 'out_of_scope').length
+const uiAckCount = Object.values(plan).filter((p) => p.surface === 'ui_ack').length
+
 const md = `# بطاقات قرار الأسئلة — V2.1
 
 > كل سؤال في البنك (192) + أسئلة القرار الستة الجديدة = **${allQuestions.length} بطاقة**.
 > القاعدة الصارمة: سؤال B2C نشط لا تكتمل جملته «هذا السؤال موجود لأن إجابة أ مقابل ب تغيّر ___» يصبح مرشح تقاعد تلقائيًا.
 > مولّد من \`scripts/build-v2_1-overlays.ts\` — لا يُحرر يدويًا. المصدر: question-plan.v2_1.json.
 
-## ملخص القرارات
+## التوفيق النهائي — كل Question ID محسوب مرة واحدة فقط
+
+الحالة النهائية (\`final_status\`) مشتقة حتميًا من (السطح، المرحلة، الفعل) — لا تُكتب يدويًا، والمجموع يجب أن يساوي ${allQuestions.length} دائمًا:
+
+| الحالة النهائية | التعريف | العدد |
+|---|---|---|
+| \`active_b2c\` | يُطرح في التدفق الأساسي أو التكيفي | ${finalCounts.active_b2c} |
+| \`deep_only\` | سطح B2C لكنه لا يُطرح إلا في جولة التأكيد الاختيارية | ${finalCounts.deep_only} |
+| \`post_recommendation\` | تخصيص ما بعد التوصية — لا أثر على اختيار المسار | ${finalCounts.post_recommendation} |
+| \`institutional\` | مسار المؤسسات المستقل (B2B/B2G) — خارج رحلة المتعلم | ${finalCounts.institutional} |
+| \`retired\` | متقاعد من B2C (تقاعد ${counts.retire} + مستبدَل بسؤال QC جديد ${counts.replaced}) | ${finalCounts.retired} |
+| \`out_of_scope\` | خارج نطاق التشخيص كليًا (وحدة أسرية ${familyOutCount} + إقرارات واجهة ${uiAckCount}) | ${finalCounts.out_of_scope} |
+| **المجموع** | | **${finalTotal}** ✓ |
+
+## ملخص القرارات التحريرية (الفعل — قبل الحالة النهائية)
 
 | القرار | العدد |
 |---|---|
@@ -501,7 +572,7 @@ const md = `# بطاقات قرار الأسئلة — V2.1
 | نقل لما بعد التوصية | ${counts.move_post} |
 | تقاعد | ${counts.retire} |
 | خارج النطاق (B2B/أسري) | ${counts.out_of_scope} |
-| **أسئلة B2C النشطة** | **${b2cActive}** |
+| **أسئلة سطحها B2C (نشطة + تأكيد فقط)** | **${b2cActive}** |
 
 ${retiredNoReason.length ? `## أسئلة سقطت بقاعدة الجملة الحاسمة\n\n${retiredNoReason.map((id) => `- ${id}`).join('\n')}\n` : ''}
 ---

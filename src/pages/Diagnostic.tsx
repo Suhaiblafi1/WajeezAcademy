@@ -1111,7 +1111,7 @@ export default function Diagnostic() {
       )}
 
       {/* ─── Result ─── */}
-      {stage === "result" && result && topPathway && (
+      {stage === "result" && result && (
         <ResultErrorBoundary onReset={restart}>
         {result.resultJson.kind === "guardrail_stop" ? (
           /* توقف حوكمي (رفض الموافقة أو قاصر) — شاشة هادئة بلا توصية ولا تشتيت */
@@ -1137,6 +1137,85 @@ export default function Diagnostic() {
               </Button>
             </div>
           </section>
+            );
+          })()
+        ) : !topPathway ? (
+          /* اتجاه استكشافي / إحالة مستشار بلا مسار مفروض — بطاقة هادئة موجِّهة، لا صفحة فارغة أبدًا */
+          (() => {
+            const exploration = (result.resultJson.exploration as {
+              domain_shortlist?: { id: string; label_ar: string }[]
+              evidence_suggestions_ar?: string[]
+            } | null) ?? null;
+            const isExploratory = result.resultJson.kind === "exploratory_direction";
+            return (
+              <section className="story-fade mx-auto max-w-xl px-5 py-20 text-center md:py-24">
+                <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[#38A7B4]/15">
+                  <Compass className="h-7 w-7 text-[#6EC7D1]" />
+                </span>
+                <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+                  <Badge className="border border-[#38A7B4]/40 bg-[#38A7B4]/10 text-[#6EC7D1]">اكتمل التشخيص</Badge>
+                  <Badge className="bg-[#38A7B4] font-black text-[#08272B]">
+                    {isExploratory ? "اتجاه استكشافي" : "مراجعة مستشار"}
+                  </Badge>
+                </div>
+                <h2 className="mt-5 text-2xl font-black leading-snug md:text-3xl">
+                  {isExploratory ? "اتجاهك ما زال يتشكّل — ونرفض أن نخمّن عليك" : "حالتك تستحق مستشارًا بشريًا قبل الترشيح"}
+                </h2>
+                <div className="mx-auto mt-4 max-w-md space-y-2 text-sm leading-loose text-white/60">
+                  {result.reasons.slice(0, 3).map((r) => (
+                    <p key={r}>{r}</p>
+                  ))}
+                </div>
+
+                {isExploratory && (exploration?.domain_shortlist?.length ?? 0) > 0 && (
+                  <div className="mt-7">
+                    <p className="text-xs font-bold text-white/45">المجالات الأقرب لك من إجاباتك الآن:</p>
+                    <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+                      {exploration!.domain_shortlist!.map((d) => (
+                        <span key={d.id} className="rounded-full border border-[#38A7B4]/40 bg-[#38A7B4]/10 px-4 py-1.5 text-xs font-bold text-[#6EC7D1]">
+                          {d.label_ar}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {isExploratory && (exploration?.evidence_suggestions_ar?.length ?? 0) > 0 && (
+                  <div className="mx-auto mt-7 max-w-md rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-right">
+                    <p className="text-xs font-black text-white/70">ما الذي يرفع دقة تشخيصك المرة القادمة؟</p>
+                    <ul className="mt-3 space-y-2">
+                      {exploration!.evidence_suggestions_ar!.slice(0, 4).map((s) => (
+                        <li key={s} className="flex items-start gap-2 text-xs leading-relaxed text-white/60">
+                          <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#6EC7D1]" />
+                          {s}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
+                  <Button
+                    size="lg"
+                    className="h-12 rounded-full bg-[#FABC05] px-8 font-black text-[#0D0D0D] hover:bg-[#FABC05]/90"
+                    onClick={restart}
+                  >
+                    <RefreshCcw className="ml-2 h-4 w-4" />
+                    ابدأ التشخيص من جديد
+                  </Button>
+                  <AdvisorContact
+                    label="تحدث مع مستشار مهني"
+                    text={
+                      isExploratory
+                        ? "مرحبا، أكملت مؤشر وجيز وكانت نتيجتي «اتجاه استكشافي» — أريد مستشارا يساعدني على حسم اتجاهي."
+                        : "مرحبا، أكملت مؤشر وجيز وأحالني التشخيص لمستشار — أريد مراجعة حالتي."
+                    }
+                  />
+                </div>
+                <p className="mt-4 text-[11px] leading-relaxed text-white/40">
+                  هذا تشخيص تعليمي مهني: ليس تقييما نفسيا أو طبيا. لا نرشّح مسارا بلا دليل كافٍ — هذه مسؤولية لا ضعف.
+                </p>
+              </section>
             );
           })()
         ) : (

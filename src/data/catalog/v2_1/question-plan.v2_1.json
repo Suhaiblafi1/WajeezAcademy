@@ -14,7 +14,8 @@
       "impact_ar": "خارج B2C — في مسار المؤسسات يغيّر لغة الرحلة كلها.",
       "measures": [
         "decision_owner"
-      ]
+      ],
+      "final_status": "institutional"
     },
     "QB-M0-002": {
       "surface": "ui_ack",
@@ -28,7 +29,8 @@
       "measures": [
         "age_band",
         "minor_rules"
-      ]
+      ],
+      "final_status": "out_of_scope"
     },
     "QB-M0-003": {
       "surface": "post_recommendation",
@@ -42,7 +44,8 @@
       "measures": [
         "country",
         "regional_context"
-      ]
+      ],
+      "final_status": "post_recommendation"
     },
     "QB-M0-004": {
       "surface": "retired_b2c",
@@ -55,7 +58,8 @@
       "impact_ar": "لا أثر — محذوف من B2C.",
       "measures": [
         "language"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M0-005": {
       "surface": "ui_ack",
@@ -68,7 +72,8 @@
       "impact_ar": "لا أثر قراري.",
       "measures": [
         "save_preference"
-      ]
+      ],
+      "final_status": "out_of_scope"
     },
     "QB-M0-006": {
       "surface": "ui_ack",
@@ -81,7 +86,8 @@
       "impact_ar": "لا تغيّر التوصية — إجراء قانوني فقط.",
       "measures": [
         "diagnostic_consent"
-      ]
+      ],
+      "final_status": "out_of_scope"
     },
     "QB-M0-007": {
       "surface": "ui_ack",
@@ -95,7 +101,8 @@
       "measures": [
         "marketing_consent",
         "unavailable_skill_notify"
-      ]
+      ],
+      "final_status": "out_of_scope"
     },
     "QB-M0-008": {
       "surface": "ui_ack",
@@ -108,7 +115,8 @@
       "impact_ar": "لا أثر قراري في B2C.",
       "measures": [
         "minor_flag"
-      ]
+      ],
+      "final_status": "out_of_scope"
     },
     "QB-M0-009": {
       "surface": "b2b_b2g",
@@ -122,7 +130,8 @@
       "measures": [
         "payer_type",
         "budget_context"
-      ]
+      ],
+      "final_status": "institutional"
     },
     "QB-M0-010": {
       "surface": "retired_b2c",
@@ -135,7 +144,8 @@
       "impact_ar": "لا أثر — محذوف.",
       "measures": [
         "privacy_comfort"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M1-001": {
       "surface": "retired_b2c",
@@ -149,7 +159,8 @@
       "measures": [
         "persona_type"
       ],
-      "replaced_by": "QC-S1-001"
+      "replaced_by": "QC-S1-001",
+      "final_status": "retired"
     },
     "QB-M1-002": {
       "surface": "retired_b2c",
@@ -163,7 +174,8 @@
       "measures": [
         "education_state"
       ],
-      "replaced_by": "QC-S1-001"
+      "replaced_by": "QC-S1-001",
+      "final_status": "retired"
     },
     "QB-M1-003": {
       "surface": "retired_b2c",
@@ -177,7 +189,8 @@
       "measures": [
         "employment_state"
       ],
-      "replaced_by": "QC-S1-002"
+      "replaced_by": "QC-S1-002",
+      "final_status": "retired"
     },
     "QB-M1-004": {
       "surface": "retired_b2c",
@@ -190,7 +203,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "experience_years"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M1-005": {
       "surface": "retired_b2c",
@@ -203,7 +217,8 @@
       "why_ar": "نص حر بلا consequence حتمي — سؤال الاحتياج QC-N3-001 يكتشف المجال بخيارات مؤثرة موثقة.",
       "measures": [
         "current_domain"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M1-006": {
       "surface": "retired_b2c",
@@ -216,7 +231,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "current_responsibility"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M1-007": {
       "surface": "retired_b2c",
@@ -229,7 +245,8 @@
       "why_ar": "نص حر بلا consequence حتمي — سؤال الاحتياج QC-N3-001 يغطي الإشارة بخيارات مؤثرة.",
       "measures": [
         "current_pain"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M1-008": {
       "surface": "retired_b2c",
@@ -242,7 +259,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "access_readiness"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M1-009": {
       "surface": "retired_b2c",
@@ -255,7 +273,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "completion_history"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M1-010": {
       "surface": "retired_b2c",
@@ -268,7 +287,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "completion_pattern"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M1-011": {
       "surface": "b2c",
@@ -281,7 +301,8 @@
       "why_ar": "وجود دليل مهاري (مشروع/شهادة) يرفع جودة الأدلة ويغيّر درجة الثقة.",
       "measures": [
         "evidence_strength"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M1-012": {
       "surface": "retired_b2c",
@@ -294,7 +315,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "life_constraints"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M2-001": {
       "surface": "retired_b2c",
@@ -308,7 +330,8 @@
       "measures": [
         "primary_goal"
       ],
-      "replaced_by": "QC-G2-001"
+      "replaced_by": "QC-G2-001",
+      "final_status": "retired"
     },
     "QB-M2-002": {
       "surface": "retired_b2c",
@@ -321,7 +344,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "dream_statement"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M2-003": {
       "surface": "retired_b2c",
@@ -334,7 +358,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "success_metric"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M2-004": {
       "surface": "retired_b2c",
@@ -347,7 +372,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "target_date"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M2-005": {
       "surface": "b2c",
@@ -360,7 +386,8 @@
       "why_ar": "وضوح الهدف يقرر: انتقال سريع للأدلة أم استكشاف أعمق — ويدخل الثقة.",
       "measures": [
         "goal_clarity"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M2-006": {
       "surface": "retired_b2c",
@@ -373,7 +400,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "motivation_driver"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M2-007": {
       "surface": "retired_b2c",
@@ -386,7 +414,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "secondary_goals"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M2-008": {
       "surface": "retired_b2c",
@@ -399,7 +428,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "anti_goals"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M2-009": {
       "surface": "retired_b2c",
@@ -412,7 +442,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "value_priorities"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M2-010": {
       "surface": "retired_b2c",
@@ -426,7 +457,8 @@
       "measures": [
         "breadth_depth_preference"
       ],
-      "replaced_by": "QC-C8-001"
+      "replaced_by": "QC-C8-001",
+      "final_status": "retired"
     },
     "QB-M2-011": {
       "surface": "retired_b2c",
@@ -439,7 +471,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "risk_tolerance"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M2-012": {
       "surface": "retired_b2c",
@@ -453,7 +486,8 @@
       "measures": [
         "role_model",
         "aspirational_role"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M2-013": {
       "surface": "retired_b2c",
@@ -466,7 +500,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "transformation_marker"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M2-014": {
       "surface": "retired_b2c",
@@ -479,7 +514,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "scope_type"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M2-015": {
       "surface": "b2c",
@@ -492,7 +528,8 @@
       "why_ar": "الاستعداد للتطبيق العملي يضبط طبيعة الخطة (مشاريع مقابل محتوى نظري).",
       "measures": [
         "application_readiness"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M2-016": {
       "surface": "post_recommendation",
@@ -505,7 +542,8 @@
       "why_ar": "تفضيل التعامل مع مهارة غير متوفرة يُعرض بعد التوصية لا قبلها.",
       "measures": [
         "unavailable_skill_preference"
-      ]
+      ],
+      "final_status": "post_recommendation"
     },
     "QB-M3A-001": {
       "surface": "retired_b2c",
@@ -518,7 +556,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "student_stage"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M3A-002": {
       "surface": "retired_b2c",
@@ -531,7 +570,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "major_domain"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M3A-003": {
       "surface": "b2c",
@@ -548,7 +588,8 @@
       "why_ar": "وضوح تصور أول وظيفة يفصل «جاهزية توظيف» عن «استكشاف اتجاه».",
       "measures": [
         "first_job_clarity"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M3A-004": {
       "surface": "b2c",
@@ -565,7 +606,8 @@
       "why_ar": "وجود سيرة/ملف أصول مهنية دليل مباشر على جاهزية التوظيف.",
       "measures": [
         "career_assets"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M3A-005": {
       "surface": "b2c",
@@ -583,7 +625,8 @@
       "why_ar": "ملف الأعمال دليل مهارة قابل للعرض — يدعم أهداف بناء الهوية المهنية.",
       "measures": [
         "portfolio_evidence"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M3A-006": {
       "surface": "b2c",
@@ -600,7 +643,8 @@
       "why_ar": "الثقة بالمقابلات بصياغة دليلية تقيس فجوة جاهزية حقيقية.",
       "measures": [
         "interview_confidence"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M3A-007": {
       "surface": "b2c",
@@ -617,7 +661,8 @@
       "why_ar": "التعرض العملي (تدريب/تطوع) دليل خبرة يفرّق بين مسارين متقاربين.",
       "measures": [
         "practical_exposure"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M3A-008": {
       "surface": "retired_b2c",
@@ -630,7 +675,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "english_gap"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M3A-009": {
       "surface": "retired_b2c",
@@ -643,7 +689,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "job_skill_awareness"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M3A-010": {
       "surface": "retired_b2c",
@@ -656,7 +703,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "major_goal_fit"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M3A-011": {
       "surface": "retired_b2c",
@@ -669,7 +717,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "first_opportunity_gap"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M3A-012": {
       "surface": "retired_b2c",
@@ -682,7 +731,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "social_pressure"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M3B-001": {
       "surface": "b2c",
@@ -701,7 +751,8 @@
       "why_ar": "القطاع (عام/خاص) يفلتر مسارات حكومية بأكملها — استبعاد صارم.",
       "measures": [
         "sector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M3B-002": {
       "surface": "retired_b2c",
@@ -714,7 +765,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "job_family"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M3B-003": {
       "surface": "b2c",
@@ -735,7 +787,8 @@
       "why_ar": "الاحتكاك بالجمهور يفصل مسارات التواصل/المبيعات عن الداخلية.",
       "measures": [
         "public_facing"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M3B-004": {
       "surface": "retired_b2c",
@@ -748,7 +801,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "performance_driver"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M3B-005": {
       "surface": "retired_b2c",
@@ -761,7 +815,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "employee_goal"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M3B-006": {
       "surface": "retired_b2c",
@@ -774,7 +829,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "feedback_signal"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M3B-007": {
       "surface": "retired_b2c",
@@ -787,7 +843,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "work_obstacle"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M3B-008": {
       "surface": "retired_b2c",
@@ -800,7 +857,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "work_digital_level"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M3B-009": {
       "surface": "retired_b2c",
@@ -813,7 +871,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "business_writing"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M3B-010": {
       "surface": "b2c",
@@ -832,7 +891,8 @@
       "why_ar": "إدارة أصحاب المصلحة مهارة دالة على جاهزية القيادة والمشاريع.",
       "measures": [
         "stakeholder_management"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M3B-011": {
       "surface": "b2c",
@@ -851,7 +911,8 @@
       "why_ar": "التخصص الوظيفي (مشتريات/مالية/تسويق…) يربط المجال بالوظيفة الفعلية.",
       "measures": [
         "function_specialization"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M3B-012": {
       "surface": "b2c",
@@ -868,7 +929,8 @@
       "why_ar": "القيادة الفعلية (غير المعلنة في المرحلة) تفصل مسار الموظف عن المدير.",
       "measures": [
         "leadership_context"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M3B-013": {
       "surface": "b2c",
@@ -887,7 +949,8 @@
       "why_ar": "تحسين الإجراءات مهارة دالة لمسارات العمليات.",
       "measures": [
         "process_improvement"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M3B-014": {
       "surface": "b2c",
@@ -906,7 +969,8 @@
       "why_ar": "الحاجة للفهم المالي/الاقتصادي دليل داعم لمجال المالية.",
       "measures": [
         "economic_financial_need"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M3B-015": {
       "surface": "b2c",
@@ -919,7 +983,8 @@
       "why_ar": "الجاهزية لتعلم AI دليل داعم لمجال الذكاء الاصطناعي.",
       "measures": [
         "ai_work_readiness"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M3B-016": {
       "surface": "retired_b2c",
@@ -932,7 +997,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "focus_energy_constraint"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M3C-001": {
       "surface": "b2c",
@@ -945,7 +1011,8 @@
       "why_ar": "مرحلة المشروع تحسم «إطلاق أم نمو» — حاسمة لهدف المشروع.",
       "measures": [
         "business_stage"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M3C-002": {
       "surface": "b2c",
@@ -961,7 +1028,8 @@
       "why_ar": "وضوح العرض دليل نضج يفصل مسارات الإطلاق عن النمو.",
       "measures": [
         "offer_clarity"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M3C-003": {
       "surface": "retired_b2c",
@@ -974,7 +1042,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "business_bottleneck"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M3C-004": {
       "surface": "b2c",
@@ -990,7 +1059,8 @@
       "why_ar": "وجود عملاء/مبيعات دليل مرحلة قاطع.",
       "measures": [
         "revenue_signal"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M3C-005": {
       "surface": "retired_b2c",
@@ -1003,7 +1073,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "pricing_confidence"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M3C-006": {
       "surface": "retired_b2c",
@@ -1016,7 +1087,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "acquisition_channel"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M3C-007": {
       "surface": "b2c",
@@ -1032,7 +1104,8 @@
       "why_ar": "التحدث مع العملاء دليل ممارسة يفصل عن الريادة النظرية.",
       "measures": [
         "customer_discovery"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M3C-008": {
       "surface": "b2c",
@@ -1048,7 +1121,8 @@
       "why_ar": "إغلاق البيع مهارة دالة للمسارات التجارية.",
       "measures": [
         "sales_negotiation"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M3C-009": {
       "surface": "b2c",
@@ -1064,7 +1138,8 @@
       "why_ar": "معرفة الأرقام دليل على النضج المالي للمشروع.",
       "measures": [
         "business_finance"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M3C-010": {
       "surface": "b2c",
@@ -1080,7 +1155,8 @@
       "why_ar": "انتظام العمليات دليل نضج تشغيلي.",
       "measures": [
         "operations_maturity"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M3C-011": {
       "surface": "b2c",
@@ -1096,7 +1172,8 @@
       "why_ar": "العمل منفردًا أم مع فريق يفصل مسارات القيادة عن الإتقان الفردي.",
       "measures": [
         "team_context"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M3C-012": {
       "surface": "retired_b2c",
@@ -1109,7 +1186,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "business_ai_digital"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M3C-013": {
       "surface": "retired_b2c",
@@ -1122,7 +1200,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "legal_accounting_gap"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M3C-014": {
       "surface": "retired_b2c",
@@ -1135,7 +1214,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "quick_business_win"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M3D-001": {
       "surface": "retired_b2c",
@@ -1148,7 +1228,8 @@
       "impact_ar": "الوحدة الأسرية خارج نطاق أكاديمية B2C — الأبوة ليست شخصية تعليمية هنا.",
       "measures": [
         "family_goal_flag"
-      ]
+      ],
+      "final_status": "out_of_scope"
     },
     "QB-M3D-002": {
       "surface": "retired_b2c",
@@ -1161,7 +1242,8 @@
       "impact_ar": "الوحدة الأسرية خارج نطاق أكاديمية B2C — الأبوة ليست شخصية تعليمية هنا.",
       "measures": [
         "family_priority"
-      ]
+      ],
+      "final_status": "out_of_scope"
     },
     "QB-M3D-003": {
       "surface": "retired_b2c",
@@ -1174,7 +1256,8 @@
       "impact_ar": "الوحدة الأسرية خارج نطاق أكاديمية B2C — الأبوة ليست شخصية تعليمية هنا.",
       "measures": [
         "child_age_band"
-      ]
+      ],
+      "final_status": "out_of_scope"
     },
     "QB-M3D-004": {
       "surface": "retired_b2c",
@@ -1187,7 +1270,8 @@
       "impact_ar": "الوحدة الأسرية خارج نطاق أكاديمية B2C — الأبوة ليست شخصية تعليمية هنا.",
       "measures": [
         "child_development_goals"
-      ]
+      ],
+      "final_status": "out_of_scope"
     },
     "QB-M3D-005": {
       "surface": "retired_b2c",
@@ -1200,7 +1284,8 @@
       "impact_ar": "الوحدة الأسرية خارج نطاق أكاديمية B2C — الأبوة ليست شخصية تعليمية هنا.",
       "measures": [
         "personal_rhythm"
-      ]
+      ],
+      "final_status": "out_of_scope"
     },
     "QB-M3D-006": {
       "surface": "retired_b2c",
@@ -1213,7 +1298,8 @@
       "impact_ar": "الوحدة الأسرية خارج نطاق أكاديمية B2C — الأبوة ليست شخصية تعليمية هنا.",
       "measures": [
         "digital_distraction"
-      ]
+      ],
+      "final_status": "out_of_scope"
     },
     "QB-M3D-007": {
       "surface": "retired_b2c",
@@ -1226,7 +1312,8 @@
       "impact_ar": "الوحدة الأسرية خارج نطاق أكاديمية B2C — الأبوة ليست شخصية تعليمية هنا.",
       "measures": [
         "wellbeing_interest"
-      ]
+      ],
+      "final_status": "out_of_scope"
     },
     "QB-M3D-008": {
       "surface": "retired_b2c",
@@ -1239,7 +1326,8 @@
       "impact_ar": "الوحدة الأسرية خارج نطاق أكاديمية B2C — الأبوة ليست شخصية تعليمية هنا.",
       "measures": [
         "family_content_format"
-      ]
+      ],
+      "final_status": "out_of_scope"
     },
     "QB-M3D-009": {
       "surface": "retired_b2c",
@@ -1252,7 +1340,8 @@
       "impact_ar": "الوحدة الأسرية خارج نطاق أكاديمية B2C — الأبوة ليست شخصية تعليمية هنا.",
       "measures": [
         "family_beneficiary"
-      ]
+      ],
+      "final_status": "out_of_scope"
     },
     "QB-M3D-010": {
       "surface": "retired_b2c",
@@ -1265,7 +1354,8 @@
       "impact_ar": "الوحدة الأسرية خارج نطاق أكاديمية B2C — الأبوة ليست شخصية تعليمية هنا.",
       "measures": [
         "family_success_marker"
-      ]
+      ],
+      "final_status": "out_of_scope"
     },
     "QB-M3E-001": {
       "surface": "retired_b2c",
@@ -1278,7 +1368,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "uncertainty_reason"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M3E-002": {
       "surface": "b2c",
@@ -1291,7 +1382,8 @@
       "why_ar": "قائمة الميول المختصرة تكتشف المجال عندما يكون الهدف والاحتياج غير محسومين.",
       "measures": [
         "interest_shortlist"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M3E-003": {
       "surface": "retired_b2c",
@@ -1304,7 +1396,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "excluded_domains"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M3E-004": {
       "surface": "b2c",
@@ -1317,7 +1410,8 @@
       "why_ar": "التجربة العملية السابقة دليل يفصل الاستكشاف الجاد عن الفضول.",
       "measures": [
         "exploration_evidence"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M3E-005": {
       "surface": "retired_b2c",
@@ -1330,7 +1424,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "minimum_stability_need"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M3E-006": {
       "surface": "retired_b2c",
@@ -1343,7 +1438,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "transferable_skills"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M3E-007": {
       "surface": "retired_b2c",
@@ -1356,7 +1452,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "commitment_fear"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M3E-008": {
       "surface": "retired_b2c",
@@ -1369,7 +1466,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "experiment_readiness"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M3E-009": {
       "surface": "retired_b2c",
@@ -1382,7 +1480,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "decision_deadline"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M3E-010": {
       "surface": "retired_b2c",
@@ -1395,7 +1494,8 @@
       "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
       "measures": [
         "support_network"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M4-001": {
       "surface": "b2c",
@@ -1409,7 +1509,8 @@
       "measures": [
         "analytical_thinking",
         "skill_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M4-002": {
       "surface": "b2c",
@@ -1423,7 +1524,8 @@
       "measures": [
         "creative_thinking",
         "skill_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M4-003": {
       "surface": "b2c",
@@ -1437,7 +1539,8 @@
       "measures": [
         "ai_literacy",
         "skill_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M4-004": {
       "surface": "b2c",
@@ -1451,7 +1554,8 @@
       "measures": [
         "ai_applied_use",
         "skill_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M4-005": {
       "surface": "b2c",
@@ -1465,7 +1569,8 @@
       "measures": [
         "digital_literacy",
         "skill_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M4-006": {
       "surface": "b2c",
@@ -1479,7 +1584,8 @@
       "measures": [
         "data_literacy",
         "skill_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M4-007": {
       "surface": "b2c",
@@ -1493,7 +1599,8 @@
       "measures": [
         "cyber_safety",
         "skill_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M4-008": {
       "surface": "b2c",
@@ -1507,7 +1614,8 @@
       "measures": [
         "digital_content",
         "skill_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M4-009": {
       "surface": "b2c",
@@ -1521,7 +1629,8 @@
       "measures": [
         "english",
         "skill_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M4-010": {
       "surface": "b2c",
@@ -1535,7 +1644,8 @@
       "measures": [
         "arabic_business_writing",
         "skill_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M4-011": {
       "surface": "b2c",
@@ -1549,7 +1659,8 @@
       "measures": [
         "public_speaking",
         "skill_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M4-012": {
       "surface": "b2c",
@@ -1563,7 +1674,8 @@
       "measures": [
         "communication_persuasion",
         "skill_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M4-013": {
       "surface": "b2c",
@@ -1577,7 +1689,8 @@
       "measures": [
         "negotiation",
         "skill_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M4-014": {
       "surface": "b2c",
@@ -1591,7 +1704,8 @@
       "measures": [
         "financial_literacy",
         "skill_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M4-015": {
       "surface": "b2c",
@@ -1605,7 +1719,8 @@
       "measures": [
         "economics_basics",
         "skill_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M4-016": {
       "surface": "b2c",
@@ -1619,7 +1734,8 @@
       "measures": [
         "digital_marketing",
         "skill_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M4-017": {
       "surface": "b2c",
@@ -1633,7 +1749,8 @@
       "measures": [
         "sales",
         "skill_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M4-018": {
       "surface": "b2c",
@@ -1647,7 +1764,8 @@
       "measures": [
         "project_management",
         "skill_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M4-019": {
       "surface": "b2c",
@@ -1661,7 +1779,8 @@
       "measures": [
         "leadership_influence",
         "skill_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M4-020": {
       "surface": "b2c",
@@ -1675,7 +1794,8 @@
       "measures": [
         "emotional_intelligence",
         "skill_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M4-021": {
       "surface": "b2c",
@@ -1689,7 +1809,8 @@
       "measures": [
         "problem_solving",
         "skill_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M4-022": {
       "surface": "b2c",
@@ -1703,7 +1824,8 @@
       "measures": [
         "research_learning",
         "skill_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M4-023": {
       "surface": "b2c",
@@ -1717,7 +1839,8 @@
       "measures": [
         "learning_agility",
         "skill_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M4-024": {
       "surface": "b2c",
@@ -1731,7 +1854,8 @@
       "measures": [
         "time_energy_management",
         "skill_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M4-025": {
       "surface": "b2c",
@@ -1745,7 +1869,8 @@
       "measures": [
         "focus_management",
         "skill_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M4-026": {
       "surface": "b2c",
@@ -1759,7 +1884,8 @@
       "measures": [
         "entrepreneurship_basics",
         "skill_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M5-001": {
       "surface": "b2c",
@@ -1773,7 +1899,8 @@
       "measures": [
         "riasec_realistic",
         "interest_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M5-002": {
       "surface": "b2c",
@@ -1787,7 +1914,8 @@
       "measures": [
         "riasec_realistic",
         "interest_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M5-003": {
       "surface": "b2c",
@@ -1801,7 +1929,8 @@
       "measures": [
         "riasec_realistic",
         "interest_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M5-004": {
       "surface": "b2c",
@@ -1815,7 +1944,8 @@
       "measures": [
         "riasec_investigative",
         "interest_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M5-005": {
       "surface": "b2c",
@@ -1829,7 +1959,8 @@
       "measures": [
         "riasec_investigative",
         "interest_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M5-006": {
       "surface": "b2c",
@@ -1843,7 +1974,8 @@
       "measures": [
         "riasec_investigative",
         "interest_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M5-007": {
       "surface": "b2c",
@@ -1857,7 +1989,8 @@
       "measures": [
         "riasec_artistic",
         "interest_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M5-008": {
       "surface": "b2c",
@@ -1871,7 +2004,8 @@
       "measures": [
         "riasec_artistic",
         "interest_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M5-009": {
       "surface": "b2c",
@@ -1885,7 +2019,8 @@
       "measures": [
         "riasec_artistic",
         "interest_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M5-010": {
       "surface": "b2c",
@@ -1899,7 +2034,8 @@
       "measures": [
         "riasec_social",
         "interest_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M5-011": {
       "surface": "b2c",
@@ -1913,7 +2049,8 @@
       "measures": [
         "riasec_social",
         "interest_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M5-012": {
       "surface": "b2c",
@@ -1927,7 +2064,8 @@
       "measures": [
         "riasec_social",
         "interest_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M5-013": {
       "surface": "b2c",
@@ -1941,7 +2079,8 @@
       "measures": [
         "riasec_enterprising",
         "interest_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M5-014": {
       "surface": "b2c",
@@ -1955,7 +2094,8 @@
       "measures": [
         "riasec_enterprising",
         "interest_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M5-015": {
       "surface": "b2c",
@@ -1969,7 +2109,8 @@
       "measures": [
         "riasec_enterprising",
         "interest_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M5-016": {
       "surface": "b2c",
@@ -1983,7 +2124,8 @@
       "measures": [
         "riasec_conventional",
         "interest_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M5-017": {
       "surface": "b2c",
@@ -1997,7 +2139,8 @@
       "measures": [
         "riasec_conventional",
         "interest_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M5-018": {
       "surface": "b2c",
@@ -2011,7 +2154,8 @@
       "measures": [
         "riasec_conventional",
         "interest_vector"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M6-001": {
       "surface": "post_recommendation",
@@ -2025,7 +2169,8 @@
       "measures": [
         "self_discipline_positive",
         "work_style_vector"
-      ]
+      ],
+      "final_status": "post_recommendation"
     },
     "QB-M6-002": {
       "surface": "post_recommendation",
@@ -2039,7 +2184,8 @@
       "measures": [
         "self_discipline_reverse",
         "work_style_vector"
-      ]
+      ],
+      "final_status": "post_recommendation"
     },
     "QB-M6-003": {
       "surface": "post_recommendation",
@@ -2053,7 +2199,8 @@
       "measures": [
         "structure_need",
         "work_style_vector"
-      ]
+      ],
+      "final_status": "post_recommendation"
     },
     "QB-M6-004": {
       "surface": "post_recommendation",
@@ -2067,7 +2214,8 @@
       "measures": [
         "attention_to_detail",
         "work_style_vector"
-      ]
+      ],
+      "final_status": "post_recommendation"
     },
     "QB-M6-005": {
       "surface": "post_recommendation",
@@ -2081,7 +2229,8 @@
       "measures": [
         "openness_learning",
         "work_style_vector"
-      ]
+      ],
+      "final_status": "post_recommendation"
     },
     "QB-M6-006": {
       "surface": "post_recommendation",
@@ -2095,7 +2244,8 @@
       "measures": [
         "openness_reverse",
         "work_style_vector"
-      ]
+      ],
+      "final_status": "post_recommendation"
     },
     "QB-M6-007": {
       "surface": "post_recommendation",
@@ -2109,7 +2259,8 @@
       "measures": [
         "stress_regulation",
         "work_style_vector"
-      ]
+      ],
+      "final_status": "post_recommendation"
     },
     "QB-M6-008": {
       "surface": "post_recommendation",
@@ -2123,7 +2274,8 @@
       "measures": [
         "learning_vulnerability_reverse",
         "work_style_vector"
-      ]
+      ],
+      "final_status": "post_recommendation"
     },
     "QB-M6-009": {
       "surface": "post_recommendation",
@@ -2137,7 +2289,8 @@
       "measures": [
         "social_energy",
         "work_style_vector"
-      ]
+      ],
+      "final_status": "post_recommendation"
     },
     "QB-M6-010": {
       "surface": "post_recommendation",
@@ -2151,7 +2304,8 @@
       "measures": [
         "solo_learning_pref",
         "work_style_vector"
-      ]
+      ],
+      "final_status": "post_recommendation"
     },
     "QB-M6-011": {
       "surface": "post_recommendation",
@@ -2165,7 +2319,8 @@
       "measures": [
         "feedback_seeking",
         "work_style_vector"
-      ]
+      ],
+      "final_status": "post_recommendation"
     },
     "QB-M6-012": {
       "surface": "post_recommendation",
@@ -2179,7 +2334,8 @@
       "measures": [
         "growth_response",
         "work_style_vector"
-      ]
+      ],
+      "final_status": "post_recommendation"
     },
     "QB-M6-013": {
       "surface": "post_recommendation",
@@ -2193,7 +2349,8 @@
       "measures": [
         "accountability_need",
         "work_style_vector"
-      ]
+      ],
+      "final_status": "post_recommendation"
     },
     "QB-M6-014": {
       "surface": "post_recommendation",
@@ -2207,7 +2364,8 @@
       "measures": [
         "application_style",
         "work_style_vector"
-      ]
+      ],
+      "final_status": "post_recommendation"
     },
     "QB-M7-001": {
       "surface": "retired_b2c",
@@ -2221,7 +2379,8 @@
       "measures": [
         "weekly_load"
       ],
-      "replaced_by": "QC-F7-001"
+      "replaced_by": "QC-F7-001",
+      "final_status": "retired"
     },
     "QB-M7-002": {
       "surface": "post_recommendation",
@@ -2234,7 +2393,8 @@
       "why_ar": "صيغة التعلم قيد منتج (Cohort) — لا تغيّر ماذا يتعلم.",
       "measures": [
         "learning_format"
-      ]
+      ],
+      "final_status": "post_recommendation"
     },
     "QB-M7-003": {
       "surface": "post_recommendation",
@@ -2247,7 +2407,8 @@
       "why_ar": "تفضيل الدفعة قيد منتج — يُستخدم في العرض لا في التوصية.",
       "measures": [
         "cohort_preference"
-      ]
+      ],
+      "final_status": "post_recommendation"
     },
     "QB-M7-004": {
       "surface": "retired_b2c",
@@ -2260,7 +2421,8 @@
       "why_ar": "لغة المحتوى — الأكاديمية عربية حاليًا.",
       "measures": [
         "content_language"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M7-005": {
       "surface": "retired_b2c",
@@ -2273,7 +2435,8 @@
       "why_ar": "الميزانية ليست إشارة ملاءمة أكاديمية — تعالج في العرض/الدفع.",
       "measures": [
         "budget_profile"
-      ]
+      ],
+      "final_status": "retired"
     },
     "QB-M7-006": {
       "surface": "post_recommendation",
@@ -2286,7 +2449,8 @@
       "why_ar": "الحاجة لمدرب تخصيص متابعة بعد التوصية.",
       "measures": [
         "mentor_need"
-      ]
+      ],
+      "final_status": "post_recommendation"
     },
     "QB-M7-007": {
       "surface": "post_recommendation",
@@ -2299,7 +2463,8 @@
       "why_ar": "قبول الواجبات يخصّص الخطة بعد التوصية.",
       "measures": [
         "homework_acceptance"
-      ]
+      ],
+      "final_status": "post_recommendation"
     },
     "QB-M7-008": {
       "surface": "post_recommendation",
@@ -2312,7 +2477,8 @@
       "why_ar": "وقت التعلم المفضل جدولة لاحقة.",
       "measures": [
         "schedule_window"
-      ]
+      ],
+      "final_status": "post_recommendation"
     },
     "QB-M7-009": {
       "surface": "post_recommendation",
@@ -2325,7 +2491,8 @@
       "why_ar": "أهمية الشهادة عرض لاحق.",
       "measures": [
         "certificate_importance"
-      ]
+      ],
+      "final_status": "post_recommendation"
     },
     "QB-M7-010": {
       "surface": "post_recommendation",
@@ -2338,7 +2505,8 @@
       "why_ar": "احتياج الوصول يخصص التجربة — لا يغيّر المسار.",
       "measures": [
         "accessibility_need"
-      ]
+      ],
+      "final_status": "post_recommendation"
     },
     "QB-M7-011": {
       "surface": "post_recommendation",
@@ -2351,7 +2519,8 @@
       "why_ar": "الجهاز تخصيص تجربة.",
       "measures": [
         "learning_device"
-      ]
+      ],
+      "final_status": "post_recommendation"
     },
     "QB-M7-012": {
       "surface": "post_recommendation",
@@ -2364,7 +2533,8 @@
       "why_ar": "عوامل الإكمال متابعة بعد التوصية.",
       "measures": [
         "completion_support"
-      ]
+      ],
+      "final_status": "post_recommendation"
     },
     "QB-M8-001": {
       "surface": "b2c",
@@ -2377,7 +2547,8 @@
       "impact_ar": "يفتح عند goal urgency > high وweekly_load منخفض.",
       "measures": [
         "time_goal_conflict_resolution"
-      ]
+      ],
+      "final_status": "deep_only"
     },
     "QB-M8-002": {
       "surface": "b2c",
@@ -2390,7 +2561,8 @@
       "impact_ar": "يفتح عند ارتفاع غير مدعوم في skill_vector.",
       "measures": [
         "overclaim_evidence_check"
-      ]
+      ],
+      "final_status": "deep_only"
     },
     "QB-M8-003": {
       "surface": "b2c",
@@ -2403,7 +2575,8 @@
       "impact_ar": "يفرق بين ready وexploration.",
       "measures": [
         "goal_path_conflict"
-      ]
+      ],
+      "final_status": "deep_only"
     },
     "QB-M8-004": {
       "surface": "b2c",
@@ -2416,7 +2589,8 @@
       "impact_ar": "يفتح advisor عند طلب المستخدم.",
       "measures": [
         "advisor_preference"
-      ]
+      ],
+      "final_status": "deep_only"
     },
     "QB-M8-005": {
       "surface": "b2c",
@@ -2429,7 +2603,8 @@
       "impact_ar": "يسجل ملاحظة للمستشار أو المحرك.",
       "measures": [
         "answer_uncertainty_note"
-      ]
+      ],
+      "final_status": "deep_only"
     },
     "QB-M8-006": {
       "surface": "b2c",
@@ -2442,7 +2617,8 @@
       "impact_ar": "يفصل بين أفضل مسارين عند تقارب PathwayFit.",
       "measures": [
         "tie_breaker"
-      ]
+      ],
+      "final_status": "deep_only"
     },
     "QB-M8-007": {
       "surface": "b2c",
@@ -2455,7 +2631,8 @@
       "impact_ar": "يحترم الخصوصية ويعيد الحساب.",
       "measures": [
         "exclude_sensitive_info"
-      ]
+      ],
+      "final_status": "deep_only"
     },
     "QB-M8-008": {
       "surface": "b2c",
@@ -2468,7 +2645,8 @@
       "impact_ar": "يضبط quick/deep mode.",
       "measures": [
         "depth_choice"
-      ]
+      ],
+      "final_status": "deep_only"
     },
     "QB-M8-009": {
       "surface": "b2c",
@@ -2481,7 +2659,8 @@
       "impact_ar": "يولد feedback ويحسن القواعد.",
       "measures": [
         "recommendation_face_validity"
-      ]
+      ],
+      "final_status": "deep_only"
     },
     "QB-M8-010": {
       "surface": "b2c",
@@ -2494,7 +2673,8 @@
       "impact_ar": "يرسل إشارة لتحسين المسارات أو المحتوى.",
       "measures": [
         "rejection_reason"
-      ]
+      ],
+      "final_status": "deep_only"
     },
     "QB-M9-001": {
       "surface": "b2b_b2g",
@@ -2507,7 +2687,8 @@
       "impact_ar": "أسئلة مؤسسية — تعيش في مسار B2B/B2G المستقل.",
       "measures": [
         "org_context"
-      ]
+      ],
+      "final_status": "institutional"
     },
     "QB-M9-002": {
       "surface": "b2b_b2g",
@@ -2520,7 +2701,8 @@
       "impact_ar": "أسئلة مؤسسية — تعيش في مسار B2B/B2G المستقل.",
       "measures": [
         "organization_sector"
-      ]
+      ],
+      "final_status": "institutional"
     },
     "QB-M9-003": {
       "surface": "b2b_b2g",
@@ -2533,7 +2715,8 @@
       "impact_ar": "أسئلة مؤسسية — تعيش في مسار B2B/B2G المستقل.",
       "measures": [
         "target_job_family"
-      ]
+      ],
+      "final_status": "institutional"
     },
     "QB-M9-004": {
       "surface": "b2b_b2g",
@@ -2546,7 +2729,8 @@
       "impact_ar": "أسئلة مؤسسية — تعيش في مسار B2B/B2G المستقل.",
       "measures": [
         "job_level"
-      ]
+      ],
+      "final_status": "institutional"
     },
     "QB-M9-005": {
       "surface": "b2b_b2g",
@@ -2559,7 +2743,8 @@
       "impact_ar": "أسئلة مؤسسية — تعيش في مسار B2B/B2G المستقل.",
       "measures": [
         "strategic_priority"
-      ]
+      ],
+      "final_status": "institutional"
     },
     "QB-M9-006": {
       "surface": "b2b_b2g",
@@ -2572,7 +2757,8 @@
       "impact_ar": "أسئلة مؤسسية — تعيش في مسار B2B/B2G المستقل.",
       "measures": [
         "org_kpi"
-      ]
+      ],
+      "final_status": "institutional"
     },
     "QB-M9-007": {
       "surface": "b2b_b2g",
@@ -2585,7 +2771,8 @@
       "impact_ar": "أسئلة مؤسسية — تعيش في مسار B2B/B2G المستقل.",
       "measures": [
         "management_hypothesis"
-      ]
+      ],
+      "final_status": "institutional"
     },
     "QB-M9-008": {
       "surface": "b2b_b2g",
@@ -2598,7 +2785,8 @@
       "impact_ar": "أسئلة مؤسسية — تعيش في مسار B2B/B2G المستقل.",
       "measures": [
         "org_sensitivity"
-      ]
+      ],
+      "final_status": "institutional"
     },
     "QB-M9-009": {
       "surface": "b2b_b2g",
@@ -2611,7 +2799,8 @@
       "impact_ar": "أسئلة مؤسسية — تعيش في مسار B2B/B2G المستقل.",
       "measures": [
         "cohort_size"
-      ]
+      ],
+      "final_status": "institutional"
     },
     "QB-M9-010": {
       "surface": "b2b_b2g",
@@ -2624,7 +2813,8 @@
       "impact_ar": "أسئلة مؤسسية — تعيش في مسار B2B/B2G المستقل.",
       "measures": [
         "manager_involvement"
-      ]
+      ],
+      "final_status": "institutional"
     },
     "QB-M9-011": {
       "surface": "b2b_b2g",
@@ -2637,7 +2827,8 @@
       "impact_ar": "أسئلة مؤسسية — تعيش في مسار B2B/B2G المستقل.",
       "measures": [
         "data_sharing_policy"
-      ]
+      ],
+      "final_status": "institutional"
     },
     "QB-M9-012": {
       "surface": "b2b_b2g",
@@ -2650,7 +2841,8 @@
       "impact_ar": "أسئلة مؤسسية — تعيش في مسار B2B/B2G المستقل.",
       "measures": [
         "previous_training"
-      ]
+      ],
+      "final_status": "institutional"
     },
     "QC-S1-001": {
       "surface": "b2c",
@@ -2663,7 +2855,8 @@
       "why_ar": "أول حقيقة حاسمة — كل جلسة تبدأ هنا.",
       "measures": [
         "career_stage"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QC-S1-002": {
       "surface": "b2c",
@@ -2676,7 +2869,8 @@
       "why_ar": "حالة العمل منفصلة عن المرحلة — تُسأل عند الحاجة فقط.",
       "measures": [
         "employment_state"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QC-G2-001": {
       "surface": "b2c",
@@ -2689,7 +2883,8 @@
       "why_ar": "الهدف قبل المجال قبل المسار.",
       "measures": [
         "primary_goal"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QC-N3-001": {
       "surface": "b2c",
@@ -2721,7 +2916,8 @@
       "why_ar": "الاحتياج الحقيقي لا اسم المسار.",
       "measures": [
         "need_id"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QC-F7-001": {
       "surface": "b2c",
@@ -2734,7 +2930,8 @@
       "why_ar": "إشارة جدوى حقيقية.",
       "measures": [
         "weekly_load"
-      ]
+      ],
+      "final_status": "active_b2c"
     },
     "QC-C8-001": {
       "surface": "b2c",
@@ -2747,7 +2944,8 @@
       "why_ar": "لا يُسأل إلا عند غموض فعلي.",
       "measures": [
         "mastery_portfolio_pref"
-      ]
+      ],
+      "final_status": "deep_only"
     }
   }
 }

@@ -225,6 +225,54 @@
       "o6": {
         "business_stage": "established"
       }
+    },
+    "QB-M3E-002": {
+      "o1": {
+        "interest_domains": [
+          "ai_productivity",
+          "data_decision",
+          "cyber_risk"
+        ]
+      },
+      "o2": {
+        "interest_domains": [
+          "entrepreneurship",
+          "operations",
+          "project_management"
+        ]
+      },
+      "o3": {
+        "interest_domains": [
+          "marketing_growth",
+          "sales"
+        ]
+      },
+      "o4": {
+        "interest_domains": [
+          "learning_design"
+        ]
+      },
+      "o5": {
+        "interest_domains": [
+          "communication_influence",
+          "marketing_growth"
+        ]
+      },
+      "o6": {
+        "interest_domains": [
+          "people_leadership"
+        ]
+      },
+      "o7": {
+        "interest_domains": [
+          "gov_services"
+        ]
+      },
+      "o8": {
+        "interest_domains": [
+          "finance_mgmt"
+        ]
+      }
     }
   }
 }

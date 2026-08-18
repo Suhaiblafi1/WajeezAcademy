@@ -47,7 +47,10 @@
     "audit:skill-coverage": "tsx scripts/with-db.ts tsx scripts/audit-skill-coverage-matrix.ts",
     "seed:demo": "tsx scripts/with-db.ts tsx server/db/seed-demo.ts",
     "build:v2_1-overlays": "tsx scripts/build-v2_1-overlays.ts",
-    "simulate:v2_1-journeys": "tsx scripts/v2_1/sim-journeys.ts"
+    "simulate:v2_1-journeys": "tsx scripts/v2_1/sim-journeys.ts",
+    "audit:recommendation-universe": "tsx scripts/v2_1/audit-universe.ts",
+    "simulate:v2_1-reachability": "tsx scripts/v2_1/golden-suite.ts --montecarlo",
+    "report:v2_1-docs": "tsx scripts/v2_1/report-docs.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.2",

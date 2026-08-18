@@ -11,17 +11,18 @@
    - القوالب المركبة في فضاء التوصية من البداية — لا تفوز لمجرد احتوائها دورات أكثر.
    حتمي بالكامل: نفس الإجابات → نفس السؤال التالي والنتيجة. */
 
-import { launchPathways, optionIdAt, questionById } from '../catalog'
+import { compositeTemplates, launchPathways, optionIdAt, questionById } from '../catalog'
 import { detectContradictions } from '../contradictions'
 import { buildChangeMakers } from '../explanation'
 import { applyDerivedRules, decisionCriticalMissing, reduceAnswer } from '../facts'
 import { matchTrainer } from '../instructor-match'
-import { scoreTemplates, selectTemplate, templatesActive } from '../composite'
+import { buildCoursePlan } from '../composite'
 import type { TriggerContext } from '../triggers'
-import { DISCLAIMER_AR } from '../config'
+import { DISCLAIMER_AR, WEEKLY_LOAD_ORDER } from '../config'
 import type {
   Answer,
   BankQuestion,
+  CompositeSelection,
   Contradiction,
   DeepeningComparison,
   DeepeningPlanItem,
@@ -29,6 +30,7 @@ import type {
   DiagnosticState,
   NextQuestionResult,
   PathwayCandidate,
+  PlanVariant,
   Recommendation,
 } from '../types'
 import { computeConfidenceV2 } from '../v2/confidence'
@@ -36,8 +38,7 @@ import { DOMAIN_CONFIDENCE_MIN } from '../v2/domains'
 import { buildExplanation } from '../v2/explain'
 import { buildAdvisorHandoff } from '../v2/handoff'
 import { buildSkillStates, personalizationNotes } from '../v2/skills'
-import { scoreEligiblePathways } from '../v2/score'
-import { assessPathwayEligibility } from '../v2/eligibility'
+import { domainLabelAr, goalDomainsV2, functionDomainsV2 } from '../v2/data'
 import type {
   ConfidenceV2,
   DecisionContext,
@@ -48,6 +49,7 @@ import type {
   V2Candidate,
 } from '../v2/types'
 import { planOf } from './data'
+import { competeEntities, decisiveSkills, appliedHandoffFilter, type CompetitionResult, type EntityCandidate } from './compete'
 import {
   goalByCode,
   needByCode,
@@ -58,7 +60,6 @@ import {
   STAGE_NEEDS_EMPLOYMENT_QUESTION,
   type CareerStage,
 } from './maps'
-import { goalDomainsV2, functionDomainsV2 } from '../v2/data'
 
 export const CONFIRMATION_MIN_QUESTIONS = 2
 export const CONFIRMATION_MAX_QUESTIONS = 6
@@ -77,6 +78,7 @@ export const V21_STOP = {
 /* أوزان أدلة المجال في V2.1 — الاحتياج هو المحرك، الهدف إسهامه أضعف متعمد (Goal ≠ Domain) */
 const W_NEED = 1.2
 const W_GOAL = 0.8
+const W_INTEREST = 0.55
 const W_FUNCTION = 0.35
 const W_SECTOR_GOV = 0.3
 const DOMAIN_CONTEST_MARGIN = 0.15
@@ -98,8 +100,10 @@ export function assessDomainsV21(facts: DiagnosticState['facts']): DomainAssessm
   const goalCode = facts['goal_code_v21']?.value as string | undefined
   const goalDef = goalCode ? goalByCode(goalCode) : undefined
   const legacyGoal = facts['primary_goal']?.value as string | undefined
-  /* مجالات الهدف الصريحة في V2.1، وإلا جدول V2 للرمز القديم */
-  const goalDomains = goalDef && goalDef.domains.length > 0 ? goalDef.domains : legacyGoal ? (goalDomainsV2[legacyGoal] ?? []) : []
+  /* تعريف V2.1 مرجع عند وجوده — حتى لو كانت مجالاته فارغة عمدًا (مثل «غير متأكد»
+     أو «ترقية»): Goal ≠ Domain، والاحتياج هو محرك اكتشاف المجال. جدول V2 القديم
+     يُستخدم فقط لجلسات لم تسجّل goal_code_v21 (ترحيل) */
+  const goalDomains = goalDef ? goalDef.domains : legacyGoal ? (goalDomainsV2[legacyGoal] ?? []) : []
   if (goalDomains.length > 0) {
     const w = W_GOAL / goalDomains.length
     goalDomains.forEach((d) => add(d, w))
@@ -114,6 +118,14 @@ export function assessDomainsV21(facts: DiagnosticState['facts']): DomainAssessm
   }
   if (facts['sector']?.value === 'public') add('gov_services', W_SECTOR_GOV)
 
+  /* ميول المستكشف (QB-M3E-002) — تغذي قائمة المجالات المختصرة بوزن أدنى من الهدف.
+     تُسأل فقط عندما يكون الهدف/الاحتياج غير محسومين، فلا تلوث المستخدم المحسوم */
+  const interests = facts['interest_domains']?.value
+  const interestList = Array.isArray(interests) ? (interests as string[]) : typeof interests === 'string' ? [interests] : []
+  for (const d of interestList) add(d as DomainId, W_INTEREST)
+
+  const hasSignal = Boolean(need || legacyGoal || interestList.length > 0)
+
   const ranked = (Object.entries(scores) as [DomainId, number][])
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
     .map(([id]) => id)
@@ -121,7 +133,6 @@ export function assessDomainsV21(facts: DiagnosticState['facts']): DomainAssessm
   const topScore = top ? scores[top]! : 0
   const second = ranked[1] ?? null
   const secondScore = second ? scores[second]! : 0
-  const hasSignal = Boolean(need || legacyGoal)
   const confidence = !hasSignal || topScore === 0 ? 0 : topScore / (topScore + secondScore + 1e-9)
   const contested: [DomainId, DomainId] | null =
     top && second && topScore - secondScore < DOMAIN_CONTEST_MARGIN && secondScore > 0 ? [top, second] : null
@@ -262,12 +273,21 @@ export function scoreAdaptiveQuestionV21(
   contradictions: Contradiction[],
   ctx: DecisionContext,
   candidates: V2Candidate[],
+  decisive?: Map<string, number>,
+  criticalFacts?: Set<string>,
 ): AdaptiveScoreV21 {
   const plan = planOf(q.question_id)!
   const measures = q.measures.filter((m) => m !== 'skill_vector' && m !== 'interest_vector' && m !== 'work_style_vector')
 
-  /* ١) سياق حاسم مفقود (قطاع/قيادة/مرحلة مشروع…) */
-  const missingContext = measures.some((m) => CONTEXT_FACTS.includes(m) && facts[m] === undefined) ? 1 : 0
+  /* ١) سياق حاسم مفقود: القائمة الثابتة + الحقائق المطلوبة لمرشحي الصدارة الحاليين
+     (بما فيهم المتحدي المركب) — إصلاح أسلاك موثق: حقيقة يتطلبها متصدر ولا تُنتجها
+     أي إجابة مُعطاة بعد يجب أن ترفع أولوية سؤالها، وإلا تعمل بوابة تغطية الأدلة
+     في فحص الفوز ضد مرشح لم تُتح له فرصة جمع دليله أصلًا. */
+  const missingContext = measures.some(
+    (m) => (CONTEXT_FACTS.includes(m) || criticalFacts?.has(m)) && facts[m] === undefined,
+  )
+    ? 1
+    : 0
 
   /* ٢) غموض المجال — سؤال يخدم مجالًا متنازعًا عليه */
   const domainUncertainty =
@@ -277,25 +297,27 @@ export function scoreAdaptiveQuestionV21(
       ? 1
       : 0
 
-  /* ٣) فصل المتصدرين بدليل مهارة — السؤال يقيس مهارة متطلبة ومجهولة لأحد المتصدرين */
-  const top2 = candidates.slice(0, 2)
-  const separatorSkills = new Set(top2.flatMap((c) => c.unknownSkillSlugs))
-  const margin = top2.length >= 2 ? top2[0].total - top2[1].total : 1
+  /* ٣) فصل المرشحين بدليل مهارة — الأولوية لقيمة الفصل (decisive_unmeasured_skills)،
+        لا لامتلاك المتصدر المهارة: كسر الدائرية موثق في البند 11.
+        الفارق الضيق يعطي القيمة كاملة، والواسع نصفها (الفصل ما زال ممكنًا لكنه أقل إلحاحًا) */
+  const margin = candidates.length >= 2 ? candidates[0].total - candidates[1].total : 1
   const skillSlug = q.measures[0]
+  const sepVal = decisive?.get(skillSlug) ?? 0
   const evidenceSeparation =
-    margin < 0.12 && plan.layer21 === 'evidence_skill' && separatorSkills.has(skillSlug) ? 1 : 0
+    plan.layer21 === 'evidence_skill' && sepVal > 0 ? (margin < 0.15 ? sepVal : sepVal * 0.5) : 0
 
-  /* ٤) تغطية دليل — مهارة متطلبة للمتصدر ولم تُقس (يرفع الثقة ويفتح strong_match) */
+  /* ٤) تغطية دليل — مهارة متطلبة للمتصدر ولم تُقس لكنها لا تفرّق بين المرشحين */
   const top1Unknown = candidates[0] ? new Set(candidates[0].unknownSkillSlugs) : new Set<string>()
-  const evidenceCoverage = plan.layer21 === 'evidence_skill' && top1Unknown.has(skillSlug) ? 1 : 0
+  const evidenceCoverage = plan.layer21 === 'evidence_skill' && sepVal === 0 && top1Unknown.has(skillSlug) ? 1 : 0
 
   /* ٥) تناقض قائم */
   const contradiction = contradictions.some((c) => !c.resolved && c.factKeys.some((fk) => q.measures.includes(fk))) ? 1 : 0
 
-  /* ٦) استكشاف الميول — فقط عندما الهدف/الاحتياج غير محسومين */
+  /* ٦) استكشاف الميول — فقط عندما الهدف/الاحتياج غير محسومين.
+     M5 (RIASEC) + QB-M3E-002 (قائمة الميول → مجالات) + QB-M3E-004 (دليل التجربة) */
+  const unsureNow = facts['primary_goal']?.value === 'explore' || facts['need_id']?.value === 'need_unsure'
   const exploratory =
-    (facts['primary_goal']?.value === 'explore' || facts['need_id']?.value === 'need_unsure') &&
-    q.module_id === 'M5'
+    unsureNow && (q.module_id === 'M5' || q.measures.includes('interest_shortlist') || q.measures.includes('exploration_evidence'))
       ? 1
       : 0
 
@@ -342,8 +364,10 @@ export function rankAdaptiveQuestionsV21(
   contradictions: Contradiction[],
   ctx: DecisionContext,
   candidates: V2Candidate[],
+  decisive?: Map<string, number>,
+  criticalFacts?: Set<string>,
 ): AdaptiveScoreV21[] {
-  const scored = questions.map((q) => scoreAdaptiveQuestionV21(q, facts, contradictions, ctx, candidates))
+  const scored = questions.map((q) => scoreAdaptiveQuestionV21(q, facts, contradictions, ctx, candidates, decisive, criticalFacts))
   scored.sort((a, b) => b.utility - a.utility || a.questionId.localeCompare(b.questionId))
   return scored
 }
@@ -439,23 +463,45 @@ export class DiagnosticEngineV21 {
     }
   }
 
-  private eligibilityAndCandidates(ctx: DecisionContext): { eligibility: PathwayEligibility[]; candidates: V2Candidate[] } {
-    const eligibility = assessPathwayEligibility(this.state.facts, ctx)
-    const eligibleIds = eligibility.filter((e) => e.eligible).map((e) => e.pathwayId)
-    if (eligibleIds.length === 0) return { eligibility, candidates: [] }
-    return { eligibility, candidates: scoreEligiblePathways(this.state.facts, ctx, eligibleIds) }
+  /** المنافسة الموحدة — المصدر الوحيد للأهلية والترتيب لكل الكيانات (قياسي + مركب) */
+  private eligibilityAndCandidates(ctx: DecisionContext): { eligibility: PathwayEligibility[]; candidates: V2Candidate[]; comp: CompetitionResult } {
+    const comp = competeEntities(this.state.facts, ctx)
+    const eligibility: PathwayEligibility[] = comp.eligibility.map((e) => ({
+      pathwayId: e.entityId,
+      eligible: e.eligible,
+      excludedReasons_ar: e.excludedReasons_ar,
+    }))
+    return { eligibility, candidates: comp.candidates.map(toV2Candidate), comp }
   }
 
-  /** غموض قياسي/مركب فعلي — شرط سؤال الإتقان/المنظومة */
-  private compositeAmbiguity(candidates: V2Candidate[]): boolean {
+  /** مهارات الفصل غير المقيسة بين مرشحي الصدارة — قيمة الفصل لا التعزيز (البند 11) */
+  private decisiveMap(comp: CompetitionResult, ctx: DecisionContext): Map<string, number> {
+    return new Map(decisiveSkills(comp.candidates, ctx.skillStates).filter((d) => !d.measured).map((d) => [d.slug, d.separationValue]))
+  }
+
+  /** الحقائق المطلوبة (غير الاختيارية) لمرشحي الصدارة — تُطعم مكوّن «السياق الحاسم»
+     حتى تُسأل الأسئلة المنتِجة لها قبل فحص فوز المركب (بوابة تغطية الأدلة) */
+  private criticalFactsOf(comp: CompetitionResult): Set<string> {
+    const out = new Set<string>()
+    for (const c of comp.candidates.slice(0, 3)) {
+      for (const rf of c.entity.required_facts) {
+        if (rf.importance !== 'optional') out.add(rf.fact_key)
+      }
+    }
+    return out
+  }
+
+  /** لقطة منافسة كاملة للتدقيق والاختبارات والمحاكاة — للقراءة فقط، حتمية من الحالة الحالية */
+  competeSnapshot(): CompetitionResult {
+    return this.eligibilityAndCandidates(this.decisionContext()).comp
+  }
+
+  /** غموض قياسي/مركب فعلي — شرط سؤال الإتقان/المنظومة: مركب مؤهل قريب من أفضل قياسي */
+  private compositeAmbiguity(comp: CompetitionResult): boolean {
     if (this.state.facts['mastery_portfolio_pref'] !== undefined) return false
-    const legacy = candidates.map(toLegacyCandidate)
-    if (!templatesActive(legacy)) return false
-    const scores = scoreTemplates(this.state.facts, legacy).filter((s) => s.hardFilter === null || s.hardFilter.action === 'advisor_handoff')
-    if (scores.length === 0) return false
-    const topTemplateFit = scores[0].fit
-    const topPathwayTotal = candidates[0]?.total ?? 0
-    return Math.abs(topTemplateFit - topPathwayTotal) < 0.15
+    const { bestStandard, bestComposite } = comp
+    if (!bestStandard || !bestComposite) return false
+    return Math.abs(bestComposite.fit - bestStandard.fit) < 0.15
   }
 
   /* ─── السؤال التالي ─── */
@@ -502,11 +548,13 @@ export class DiagnosticEngineV21 {
     }
 
     /* ٢) التوجيه التكيفي */
-    const { candidates } = this.eligibilityAndCandidates(ctx)
+    const { candidates, comp } = this.eligibilityAndCandidates(ctx)
     const confidence = computeConfidenceV2(this.state.facts, this.state.contradictions, ctx, candidates)
-    const compositeAmbiguous = this.compositeAmbiguity(candidates)
+    const compositeAmbiguous = this.compositeAmbiguity(comp)
     const trigCtx = this.triggerContext(confidence.overall)
     trigCtx.topTwoMargin = candidates.length >= 2 ? candidates[0].total - candidates[1].total : null
+    const decisive = this.decisiveMap(comp, ctx)
+    const criticalFacts = this.criticalFactsOf(comp)
 
     const eligible = [...questionById.values()].filter((q) => {
       if (!isQuestionEligibleV21(q, { ...trigCtx, askedIds, phase: 'adaptive', stage, compositeAmbiguous })) return false
@@ -516,7 +564,7 @@ export class DiagnosticEngineV21 {
       if (q.module_id === 'M5') return this.state.interestVector[q.measures[0]] === undefined
       return measures.some((m) => this.state.facts[m] === undefined)
     })
-    const ranked = rankAdaptiveQuestionsV21(eligible, this.state.facts, this.state.contradictions, ctx, candidates)
+    const ranked = rankAdaptiveQuestionsV21(eligible, this.state.facts, this.state.contradictions, ctx, candidates, decisive, criticalFacts)
     const best = ranked[0]
     const hasDecisionQuestion = ranked.some(
       (r) => r.components.missingContext > 0 || r.components.domainUncertainty > 0 || r.components.evidenceSeparation > 0 || r.components.contradiction > 0,
@@ -678,14 +726,21 @@ export class DiagnosticEngineV21 {
 
   private snapshot(): DeepeningSnapshot {
     const ctx = this.decisionContext()
-    const { candidates } = this.eligibilityAndCandidates(ctx)
+    const { candidates, comp } = this.eligibilityAndCandidates(ctx)
     const confidence = computeConfidenceV2(this.state.facts, this.state.contradictions, ctx, candidates)
-    const top = candidates[0]
+    /* الفائز الفعلي: مركب مستوفٍ للشروط، وإلا أفضل قياسي — نفس قاعدة recommend() */
+    const winner = comp.compositeVictory?.passes && comp.bestComposite ? comp.bestComposite : comp.bestStandard
     const legacy = toLegacyConfidence(confidence)
     return {
-      kind: top ? 'single_pathway' : 'advisor_referral',
-      topId: top?.pathwayId ?? null,
-      topLabel_ar: top ? (launchPathways.find((p) => p.id === top.pathwayId)?.title ?? top.pathwayId) : 'إحالة لمستشار',
+      kind: comp.exploration.exploratory
+        ? 'exploratory_direction'
+        : winner
+          ? winner.entity.entity_type === 'composite'
+            ? 'composite_template'
+            : 'single_pathway'
+          : 'advisor_referral',
+      topId: winner?.entity.entity_id ?? null,
+      topLabel_ar: winner?.entity.title_ar ?? (comp.exploration.exploratory ? 'اتجاه استكشافي' : 'إحالة لمستشار'),
       confidenceTotal: confidence.overall,
       confidenceBand: legacy.band,
       confidenceBand_ar: confidence.outputKind_ar,
@@ -695,16 +750,18 @@ export class DiagnosticEngineV21 {
   startDeepening(): { reason_ar: string; plan: DeepeningPlanItem[]; before: DeepeningSnapshot } | null {
     if (this.confirmation.started || this.state.guardrailStop) return null
     const ctx = this.decisionContext()
-    const { candidates } = this.eligibilityAndCandidates(ctx)
+    const { candidates, comp } = this.eligibilityAndCandidates(ctx)
     const top = candidates[0]
     const confidence = computeConfidenceV2(this.state.facts, this.state.contradictions, ctx, candidates)
     const margin = candidates.length >= 2 ? candidates[0].total - candidates[1].total : 1
+    const decisive = this.decisiveMap(comp, ctx)
 
     /* مشغلات موثقة — لا جولة بلا سبب */
     const triggers: string[] = []
     if (margin < 0.08 && candidates.length >= 2) triggers.push('top_two_ambiguity')
-    if (this.compositeAmbiguity(candidates)) triggers.push('standard_vs_composite_ambiguity')
-    if ((top?.unknownSkillSlugs.length ?? 0) > 0) triggers.push('missing_decisive_evidence')
+    if (this.compositeAmbiguity(comp)) triggers.push('standard_vs_composite_ambiguity')
+    if (decisive.size > 0) triggers.push('missing_decisive_evidence')
+    else if ((top?.unknownSkillSlugs.length ?? 0) > 0) triggers.push('missing_decisive_evidence')
     if (this.state.contradictions.some((c) => !c.resolved)) triggers.push('contradiction')
     if (ctx.domains.confidence < DOMAIN_CONFIDENCE_MIN) triggers.push('low_domain_confidence')
     if (confidence.overall < V21_STOP.minOverallConfidence) triggers.push('low_recommendation_confidence')
@@ -718,14 +775,14 @@ export class DiagnosticEngineV21 {
         askedIds,
         phase: 'confirmation',
         stage: this.stage(),
-        compositeAmbiguous: this.compositeAmbiguity(candidates),
+        compositeAmbiguous: this.compositeAmbiguity(comp),
       })) return false
       if (q.answer_type === 'skill_level_5') return this.state.skillVector[q.measures[0]] === undefined
       const measures = q.measures.filter((m) => m !== 'skill_vector' && m !== 'interest_vector')
       if (q.module_id === 'M5') return this.state.interestVector[q.measures[0]] === undefined
       return measures.some((m) => this.state.facts[m] === undefined)
     })
-    const ranked = rankAdaptiveQuestionsV21(pool, this.state.facts, this.state.contradictions, ctx, candidates)
+    const ranked = rankAdaptiveQuestionsV21(pool, this.state.facts, this.state.contradictions, ctx, candidates, decisive, this.criticalFactsOf(comp))
 
     const plan: DeepeningPlanItem[] = []
     for (const r of ranked) {
@@ -733,10 +790,15 @@ export class DiagnosticEngineV21 {
       const q = questionById.get(r.questionId)!
       const targets: string[] = []
       const reasons: string[] = []
-      const skillHit = top?.unknownSkillSlugs.includes(q.measures[0])
+      const decisiveHit = decisive.has(q.measures[0])
+      const skillHit = decisiveHit || top?.unknownSkillSlugs.includes(q.measures[0])
       if (skillHit) {
         targets.push('weak_skill')
-        reasons.push('يقيس مهارة متطلبة للمسار المرشح بسؤال مباشر بدل تركها مجهولة')
+        reasons.push(
+          decisiveHit
+            ? 'يقيس مهارة تفصل بين المرشحين المتصدرين — إجابتها قد تعيد ترتيب التوصية كلها'
+            : 'يقيس مهارة متطلبة للمسار المرشح بسؤال مباشر بدل تركها مجهولة',
+        )
       }
       if (r.components.contradiction > 0) {
         targets.push('contradiction')
@@ -847,7 +909,7 @@ export class DiagnosticEngineV21 {
   /* ─── التوصية النهائية ─── */
   recommend(): RecommendationV21 {
     const ctx = this.decisionContext()
-    const { eligibility, candidates } = this.eligibilityAndCandidates(ctx)
+    const { eligibility, candidates, comp } = this.eligibilityAndCandidates(ctx)
     const confidence = computeConfidenceV2(this.state.facts, this.state.contradictions, ctx, candidates)
 
     if (this.state.guardrailStop) {
@@ -866,17 +928,61 @@ export class DiagnosticEngineV21 {
       }
     }
 
-    if (candidates.length === 0) {
+    /* ١) الاستكشاف — مستكشف غير محسوم والأدلة دون حد الفرض: اتجاه استكشافي لا كيان مفروض (البند 10).
+       لا PW-STU-003 ولا أي مسار افتراضي — مَن لا دليل لديه لا تُفرض عليه نتيجة. */
+    if (comp.exploration.exploratory) {
+      const shortlist = comp.exploration.domainShortlist.map((id) => ({ id, label_ar: domainLabelAr(id) }))
+      const evidenceSuggestions = [
+        ...(shortlist[0]
+          ? [`خطوة عملية: جرّب مهمة صغيرة في «${shortlist[0].label_ar}» — ساعات معدودة تكشف الميل الحقيقي أكثر من أي سؤال.`]
+          : []),
+        ...(shortlist[1] ? [`قارنها بمهمة من «${shortlist[1].label_ar}»: أيهما تستمر فيه بلا ملل؟ إجابتك تفتح التشخيص من جديد بصورة أوضح.`] : []),
+        'إن أردت حسمًا أسرع: جلسة واحدة مع مستشار مهني تختصر أسابيع من التخمين.',
+      ]
+      const handoff = buildAdvisorHandoff(this.state.facts, this.state.contradictions, ctx, candidates, eligibility, confidence, new Set(this.state.askedQuestionIds))
+      const explorationExplanation = buildExplanation(this.state.facts, ctx, candidates, eligibility, confidence, {
+        catalogGap_ar: null,
+        personalizationNotes_ar: [],
+      })
+      this.traceEntry('recommendation', 'اتجاه استكشافي — هدف/احتياج غير محسوم والأدلة دون حد فرض كيان.', {
+        domainShortlist: shortlist.map((s) => s.id),
+        internalTop: comp.candidates.slice(0, 3).map((c) => c.entity.entity_id),
+      })
+      return {
+        kind: 'exploratory_direction',
+        primaryPathway: null,
+        alternatives: [],
+        composite: null,
+        confidence: toLegacyConfidence(confidence),
+        reasons_ar: comp.exploration.reasons_ar,
+        unavailable_skills: [],
+        change_makers_ar: [],
+        trainer: { status: 'unassigned', note_ar: 'لا مطابقة مدرب قبل حسم الاتجاه.' },
+        disclaimer_ar: DISCLAIMER_AR,
+        trace: this.state.trace,
+        exploration: {
+          domain_shortlist: shortlist,
+          evidence_suggestions_ar: evidenceSuggestions,
+          internal_top_candidates: comp.candidates
+            .slice(0, 3)
+            .map((c) => ({ entity_id: c.entity.entity_id, entity_type: c.entity.entity_type, fit: c.netFit })),
+        },
+        v2: { explanation: explorationExplanation, confidence, eligibility, advisorHandoff: handoff, versions: engineVersions() },
+      }
+    }
+
+    /* ٢) فجوة كتالوج أو لا مرشحين — إحالة مسؤولة موثقة بدل «أقرب مسار» (البند 15) */
+    if (candidates.length === 0 || comp.catalogGap) {
       const topDomain = ctx.domains.top
       const gapNote = topDomain
-        ? `مجالك الظاهر («${topDomain}») لا يغطيه كتالوج المسارات الحالي — سجّلناه فجوة موثقة، ونحيلك لمستشار يرسم لك بداية مخصصة.`
+        ? `مجالك الظاهر («${domainLabelAr(topDomain)}») لا يغطيه كتالوج المسارات الحالي بملاءمة كافية — سجّلناه فجوة موثقة، ونحيلك لمستشار يرسم لك بداية مخصصة.`
         : 'الأدلة المجمعة لا تكفي لترشيح مسار مسؤول — مستشار يكمل الصورة معك.'
       const handoff = buildAdvisorHandoff(this.state.facts, this.state.contradictions, ctx, candidates, eligibility, confidence, new Set(this.state.askedQuestionIds))
       const explanation = buildExplanation(this.state.facts, ctx, candidates, eligibility, confidence, {
         catalogGap_ar: topDomain ? gapNote : null,
         personalizationNotes_ar: [],
       })
-      this.traceEntry('recommendation', 'إحالة لمستشار — لا مسارات أهلية (فجوة كتالوج أو أدلة ناقصة).', { catalogGap: topDomain ?? null })
+      this.traceEntry('recommendation', 'إحالة لمستشار — فجوة كتالوج موثقة أو أدلة ناقصة.', { catalogGap: comp.catalogGap, topDomain: topDomain ?? null })
       return {
         kind: 'advisor_referral',
         primaryPathway: null,
@@ -893,25 +999,94 @@ export class DiagnosticEngineV21 {
       }
     }
 
-    const primary = candidates[0]
-    const alternatives = candidates.slice(1, 3)
-    const legacyCandidates: PathwayCandidate[] = candidates.map(toLegacyCandidate)
-
-    /* القوالب المركبة في فضاء التوصية من البداية — ليست Fallback،
-       لكنها لا تفوز لمجرد احتوائها دورات أكثر: fit يُقاس على الإشارات لا العدد */
-    const layerActive = templatesActive(legacyCandidates)
-    const templateScores = layerActive ? scoreTemplates(this.state.facts, legacyCandidates) : []
-    this.traceEntry(
-      'template_layer',
-      layerActive ? 'طبقة القوالب مفعّلة: الحاجة تمتد لمجالين فعلًا.' : 'طبقة القوالب غير مفعّلة.',
-      { active: layerActive, candidates: templateScores.slice(0, 4).map((s) => ({ templateId: s.template.template_id, fit: s.fit, factCoverage: s.factCoverage, hardFilter: s.hardFilter })) },
-    )
+    /* ٣) المركب كيان منافس أولًا — يفوز فقط بقيمة إضافية مثبتة فوق أفضل قياسي (البنود 3-5) */
     const masteryFact = this.state.facts['verified_mastery']
     const verifiedMastered =
       masteryFact && masteryFact.evidenceQuality >= 0.8 && Array.isArray(masteryFact.value) ? (masteryFact.value as string[]) : []
     /* اختيار المستخدم الصريح «إتقان واحد» يُطفئ المركب — قراره موثق لا مخترع */
     const masteryPref = this.state.facts['mastery_portfolio_pref']?.value
-    const composite = masteryPref === 'master_one' ? null : selectTemplate(this.state.facts, legacyCandidates, verifiedMastered)
+
+    let composite: CompositeSelection | null = null
+    if (comp.compositeVictory?.passes && comp.bestComposite && masteryPref !== 'master_one') {
+      const winner = comp.bestComposite
+      const tpl = compositeTemplates.find((t) => t.template_id === winner.entity.entity_id)
+      if (tpl) {
+        const variant = planVariantV21(this.state.facts, winner.fit)
+        const plan = buildCoursePlan(tpl, variant, verifiedMastered)
+        const secondComposite = comp.candidates.find(
+          (c) => c.entity.entity_type === 'composite' && c.entity.entity_id !== tpl.template_id,
+        )
+        const handoffFilter = appliedHandoffFilter(winner.entity, this.state.facts)
+        composite = {
+          templateId: tpl.template_id,
+          nameAr: tpl.name_ar,
+          fit: winner.netFit,
+          variant,
+          courses: plan.items,
+          removedCourses: plan.removed,
+          requiredHoursOverflow: plan.requiredOverflow,
+          missingRequiredFacts: winner.entity.required_facts
+            .filter((rf) => rf.importance !== 'optional' && this.state.facts[rf.fact_key] === undefined)
+            .map((rf) => rf.fact_key),
+          /* المركب يشرح نفسه: لماذا فاز وما قيمته الإضافية فوق أفضل مسار منفرد (البند 14) */
+          rationale_ar: comp.compositeVictory.reasons_ar,
+          representedPathwayIds: tpl.plan?.represented_pathway_ids ?? [],
+          capstone_ar: tpl.transformation?.capstone_ar,
+          success_metric_ar: tpl.transformation?.success_metric_ar,
+          nearestAlternative: secondComposite
+            ? {
+                templateId: secondComposite.entity.entity_id,
+                nameAr: secondComposite.entity.title_ar,
+                fit: secondComposite.netFit,
+                whyNot_ar: 'الخطة المختارة غطت مجالات حاجتك بقيمة إضافية أعلى بعد تكلفة التعقيد.',
+              }
+            : undefined,
+          advisorHandoff: handoffFilter ?? undefined,
+        }
+        this.traceEntry(
+          'template_layer',
+          'فازت خطة مركبة: حاجة متعددة المجالات + قيمة إضافية فوق أفضل قياسي بعد تكلفة التعقيد.',
+          {
+            templateId: tpl.template_id,
+            fit: winner.fit,
+            burden: winner.burden,
+            netFit: winner.netFit,
+            victory: {
+              multiDomainNeed: comp.compositeVictory.multiDomainNeed,
+              coversGap: comp.compositeVictory.coversGapBeyondBestStandard,
+              threshold: comp.compositeVictory.thresholdUsed,
+              factCoverage: comp.compositeVictory.factCoverage,
+            },
+          },
+        )
+      }
+    } else if (!comp.compositeVictory?.passes && comp.topComposite) {
+      /* توثيق دائم لقرار المنافسة — حتى عند خسارة المركب: لماذا لم يفز؟ (البند 14 وقابلية التدقيق) */
+      const lossReasons = comp.compositeVictory
+        ? comp.compositeVictory.reasons_ar
+        : ['لا حاجة متعددة المجالات مُثبتة تبرر خطة مركبة، أو أفضل مسار قياسي يغطي مجالات حاجتك كاملة.']
+      this.traceEntry('template_layer', 'خطة مركبة مؤهلة لكنها لم تستوفِ شروط الفوز — الأبسط الكافي يتقدم.', {
+        templateId: comp.topComposite.entity.entity_id,
+        fit: comp.topComposite.fit,
+        burden: comp.topComposite.burden,
+        netFit: comp.topComposite.netFit,
+        victory: comp.compositeVictory
+          ? {
+              passes: comp.compositeVictory.passes,
+              multiDomainNeed: comp.compositeVictory.multiDomainNeed,
+              coversGap: comp.compositeVictory.coversGapBeyondBestStandard,
+              exceedsThreshold: comp.compositeVictory.exceedsThreshold,
+              threshold: comp.compositeVictory.thresholdUsed,
+              factCoverage: comp.compositeVictory.factCoverage,
+            }
+          : null,
+        reasons_ar: lossReasons,
+      })
+    }
+
+    const standardCandidates = comp.candidates.filter((c) => c.entity.entity_type === 'standard')
+    const primary = standardCandidates[0] ?? null
+    const alternatives = standardCandidates.slice(1, 3)
 
     const unavailable: { skill: string; note_ar: string }[] = []
     const coveredSlugs = new Set(candidates.flatMap((c) => c.gapSkillSlugs.concat(c.masteredSkillSlugs)))
@@ -929,9 +1104,16 @@ export class DiagnosticEngineV21 {
 
     const kind: Recommendation['kind'] = needsAdvisor ? 'advisor_referral' : composite ? 'composite_template' : 'single_pathway'
 
-    const trainer = matchTrainer(primary.pathwayId, this.state.facts, primary.gapSkillSlugs)
+    const trainer = primary
+      ? matchTrainer(primary.entity.entity_id, this.state.facts, primary.skills.gapSkillSlugs)
+      : { status: 'unassigned' as const, note_ar: 'لا مسار أساسي — تُرسم البداية مع مستشار.' }
     const personalization = personalizationNotes(ctx.skillStates, ctx.domains.ranked.length > 0 ? [ctx.domains.ranked[0]] : [])
-    const explanation = buildExplanation(this.state.facts, ctx, candidates, eligibility, confidence, {
+    /* الشرح يُبنى على الفائز الفعلي أولًا — مركبًا كان أو قياسيًا — حتى لا يصف كيانًا غير المعروض */
+    const winnerCandidate = composite && comp.bestComposite ? comp.bestComposite : primary
+    const explanationCandidates = winnerCandidate
+      ? [toV2Candidate(winnerCandidate), ...candidates.filter((c) => c.pathwayId !== winnerCandidate.entity.entity_id)]
+      : candidates
+    const explanation = buildExplanation(this.state.facts, ctx, explanationCandidates, eligibility, confidence, {
       catalogGap_ar: null,
       personalizationNotes_ar: personalization,
     })
@@ -939,21 +1121,26 @@ export class DiagnosticEngineV21 {
       ? buildAdvisorHandoff(this.state.facts, this.state.contradictions, ctx, candidates, eligibility, confidence, new Set(this.state.askedQuestionIds))
       : undefined
 
-    this.traceEntry('candidates_scored', `أفضل المرشحين الأهلية: ${candidates.slice(0, 3).map((c) => c.pathwayId).join(' ← ')}`, {
-      top5: candidates.slice(0, 5).map((c) => ({ pathwayId: c.pathwayId, total: c.total, measuredSkillCoverage: c.measuredSkillCoverage })),
-      excluded: eligibility.filter((e) => !e.eligible).map((e) => ({ pathwayId: e.pathwayId, reasons: e.excludedReasons_ar })),
+    this.traceEntry('candidates_scored', `أفضل الكيانات الأهلية: ${comp.candidates.slice(0, 3).map((c) => c.entity.entity_id).join(' ← ')}`, {
+      top5: comp.candidates.slice(0, 5).map((c) => ({
+        entityId: c.entity.entity_id,
+        type: c.entity.entity_type,
+        netFit: c.netFit,
+        measuredSkillCoverage: c.skills.measuredCoverage,
+      })),
+      excluded: eligibility.filter((e) => !e.eligible).map((e) => ({ entityId: e.pathwayId, reasons: e.excludedReasons_ar })),
     })
 
     const partial = {
       kind,
-      primaryPathway: toLegacyCandidate(primary),
-      alternatives: alternatives.map(toLegacyCandidate),
+      primaryPathway: primary ? toLegacyCandidate(toV2Candidate(primary)) : null,
+      alternatives: alternatives.map((c) => toLegacyCandidate(toV2Candidate(c))),
       composite,
       confidence: toLegacyConfidence(confidence),
       reasons_ar: [
         ...explanation.understood_facts_ar.slice(0, 2),
         explanation.domain_reason_ar,
-        ...explanation.pathway_reasons_ar.slice(0, 2),
+        ...(composite && comp.compositeVictory ? comp.compositeVictory.reasons_ar.slice(-1) : explanation.pathway_reasons_ar.slice(0, 2)),
         ...(composite?.requiredHoursOverflow ? ['مجموع ساعات الخطة يتجاوز 80 ساعة — تُراجَع مع مستشار.'] : []),
         ...(composite?.advisorHandoff ? [composite.advisorHandoff.rationale_ar] : []),
       ],
@@ -968,17 +1155,41 @@ export class DiagnosticEngineV21 {
       v2: { explanation, confidence, eligibility, ...(handoff ? { advisorHandoff: handoff } : {}), versions: engineVersions() },
     }
     this.traceEntry('recommendation', `توصية V2.1: ${kind} — ${confidence.outputKind_ar} (${(confidence.overall * 100).toFixed(0)}٪)`, {
-      top: primary.pathwayId,
+      top: composite?.templateId ?? primary?.entity.entity_id ?? null,
       outputKind: confidence.outputKind,
       strongBlockers: confidence.strongBlockers_ar,
-      measuredSkillCoverage: primary.measuredSkillCoverage,
-      unknownSkills: primary.unknownSkillSlugs.length,
+      measuredSkillCoverage: primary?.skills.measuredCoverage ?? 0,
+      unknownSkills: primary?.skills.unknownSkillSlugs.length ?? 0,
     })
     return recommendation
   }
 }
 
 /* ─── محوّلات شكل V1 (جسور توافق — لا منطق فيها) ─── */
+
+/** كيان المنافسة الموحدة → شكل مرشح V2 (للثقة والشرح والجسور) — pathwayId يحمل معرف الكيان أيًا كان نوعه */
+function toV2Candidate(c: EntityCandidate): V2Candidate {
+  return {
+    pathwayId: c.entity.entity_id,
+    total: c.netFit,
+    measuredSkillCoverage: c.skills.measuredCoverage,
+    gapSkillSlugs: c.skills.gapSkillSlugs,
+    masteredSkillSlugs: c.skills.masteredSkillSlugs,
+    unknownSkillSlugs: c.skills.unknownSkillSlugs,
+    reasons_ar: c.reasons_ar,
+    breakdown: c.breakdown,
+  }
+}
+
+/** نسخة الخطة المركبة — نفس قاعدة V2 الموثقة: عبء أسبوعي خفيف أو دليل دون 0.8 → starter */
+function planVariantV21(facts: DiagnosticState['facts'], fit: number): PlanVariant {
+  const load = facts['weekly_load']?.value as string | undefined
+  const order = load ? (WEEKLY_LOAD_ORDER[load] ?? 2) : 2
+  if (order <= 2 || fit < 0.8) return 'starter'
+  if (order === 3) return 'full'
+  return 'extended'
+}
+
 function toLegacyCandidate(c: V2Candidate): PathwayCandidate {
   return {
     pathwayId: c.pathwayId,

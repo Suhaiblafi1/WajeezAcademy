@@ -275,7 +275,7 @@ export interface TrainerMatch {
 }
 
 export interface Recommendation {
-  kind: 'single_pathway' | 'composite_template' | 'advisor_referral' | 'guardrail_stop'
+  kind: 'single_pathway' | 'composite_template' | 'advisor_referral' | 'guardrail_stop' | 'exploratory_direction'
   primaryPathway: PathwayCandidate | null
   alternatives: PathwayCandidate[]
   composite: CompositeSelection | null
@@ -286,6 +286,14 @@ export interface Recommendation {
   trainer: TrainerMatch
   disclaimer_ar: string
   trace: DecisionTraceEntry[]
+  /** مخرج الاستكشاف (البند 10): حاضر فقط عندما kind = exploratory_direction — لا كيان نهائي مفروض */
+  exploration?: {
+    /** قائمة مجالات مختصرة من إشارات المستخدم نفسه */
+    domain_shortlist: { id: string; label_ar: string }[]
+    evidence_suggestions_ar: string[]
+    /** مرشحون داخليون للتدقيق فقط — لا يُعرضون كنتيجة */
+    internal_top_candidates: { entity_id: string; entity_type: string; fit: number }[]
+  } | null
 }
 
 export interface DiagnosticState {

@@ -9,6 +9,8 @@ export interface QuestionPlanV21 {
   layer21: QuestionLayerV21 | null
   phase: 'core' | 'adaptive' | 'confirmation' | 'none'
   action: 'keep' | 'rewrite' | 'replaced' | 'move_post' | 'retire' | 'out_of_scope'
+  /** الحالة النهائية — كل سؤال محسوب مرة واحدة، مشتقة حتميًا من (surface, phase, action) */
+  final_status: 'active_b2c' | 'deep_only' | 'post_recommendation' | 'institutional' | 'retired' | 'out_of_scope'
   stages: CareerStage[] | 'all'
   domains: DomainId[]
   impact_ar: string

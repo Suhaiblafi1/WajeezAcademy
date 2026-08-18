@@ -28,7 +28,9 @@ const isStrArray = (v: unknown): v is string[] => Array.isArray(v) && v.every((x
 /** يتحقق أن القيمة تصلح نتيجة عرض كاملة وفق المخطط الحالي */
 function validateShape(r: unknown): r is DiagResult {
   if (!isObj(r)) return false
-  if (!isObj(r.top) || typeof r.top.id !== 'string' || typeof r.top.name !== 'string') return false
+  /* top قد يكون null عمدًا (اتجاه استكشافي / إحالة مستشار بلا مرشح) —
+     referencesAlive يفرض وجوده لنتائج المسار والخطة المركبة */
+  if (r.top !== null && (!isObj(r.top) || typeof r.top.id !== 'string' || typeof r.top.name !== 'string')) return false
   if (typeof r.confidence !== 'number' || typeof r.confidenceBand !== 'string') return false
   if (!isStrArray(r.reasons) || !isStrArray(r.gaps) || !isStrArray(r.changeMakers)) return false
   if (!Array.isArray(r.gapDetails)) return false
@@ -43,9 +45,9 @@ function referencesAlive(r: DiagResult): boolean {
     const comp = r.resultJson.composite
     if (!isObj(comp) || typeof comp.template_id !== 'string' || !VALID_TEMPLATE_IDS.has(comp.template_id)) return false
   }
-  /* نتيجة الإحالة للمستشار قد تكون بلا مسار أول — المسار حينها غير إلزامي */
-  if (kind === 'advisor_referral' || kind === 'guardrail_stop') return true
-  return VALID_PATHWAY_IDS.has(r.top.id)
+  /* نتائج بلا مسار مفروض — المسار حينها غير إلزامي */
+  if (kind === 'advisor_referral' || kind === 'guardrail_stop' || kind === 'exploratory_direction') return true
+  return r.top !== null && VALID_PATHWAY_IDS.has(r.top.id)
 }
 
 /** يملأ الحقول الاختيارية الناقصة بقيم آمنة — ترحيل لا يخترع محتوى */

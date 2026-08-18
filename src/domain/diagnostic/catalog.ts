@@ -22,7 +22,8 @@ import type {
 } from './types'
 
 interface OptionEffectsFile {
-  option_effects: Record<string, Record<string, Record<string, string>>>
+  /* قيمة التأثير نص أو قائمة نصوص (مثل interest_domains متعددة المجالات) */
+  option_effects: Record<string, Record<string, Record<string, string | string[]>>>
   keyword_classifiers: Record<
     string,
     { fact_key: string; rules: { code: string; any: string[] }[] }

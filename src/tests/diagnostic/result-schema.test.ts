@@ -39,7 +39,7 @@ describe('مخطط النتيجة المحفوظة وترحيلها', () => {
     const raw = wrapResultForStorage(validResult())
     const read = readStoredResult(raw)
     expect(read.status).toBe('ok')
-    if (read.status === 'ok') expect(read.result.top.id).toBe(pathways[0].id)
+    if (read.status === 'ok') expect(read.result.top?.id).toBe(pathways[0].id)
   })
 
   it('الغلاف يحمل schema_version الحالي', () => {
@@ -74,7 +74,7 @@ describe('مخطط النتيجة المحفوظة وترحيلها', () => {
 
   it('نتيجة قديمة بمسار لم يعد في الكتالوج تُحذف بأمان', () => {
     const stale = validResult()
-    stale.top = { ...stale.top, id: 'PW-OLD-45-ERA' }
+    stale.top = { ...stale.top!, id: 'PW-OLD-45-ERA' }
     const read = readStoredResult(JSON.stringify(stale))
     expect(read.status).toBe('discarded')
   })
