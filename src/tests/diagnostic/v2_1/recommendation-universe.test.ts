@@ -2,14 +2,16 @@
    كل احتياج يفتح مساره · قياسي يفوز عند الكفاية · مركب بلا قيمة إضافية يخسر ·
    مركب غير مجدٍ زمنيًا لا يفوز · مركب يفوز عند حاجة متعددة المجالات مُثبتة ·
    غير المتأكد بلا دليل → استكشاف بلا فرض · المهارة المجهولة صفر أثر ·
-   الخمسة needs_revision لا ينافسون أبدًا · ٣١ كيانًا نشطًا · حتمية كاملة.
+   حارس الحالة يمنع غير المعتمد أبدًا · ٣٦ كيانًا نشطًا (المرحلة 4: أُصلحت الخمسة
+   المجمدة وأصبحت معتمدة وقابلة للوصول) · حتمية كاملة.
    كل التوقعات مثبتة من نتائج محققة فعلية عبر جسر الرحلات، لا من تخمين. */
 
 import { describe, expect, it } from 'vitest'
 import { createEngineV21, type RecommendationV21 } from '../../../domain/diagnostic/v2_1'
 import { Q, type CareerStage } from '../../../domain/diagnostic/v2_1/maps'
-import { recommendationUniverse } from '../../../domain/diagnostic/v2_1/universe'
-import { assessEntitySkills, type CompetitionResult } from '../../../domain/diagnostic/v2_1/compete'
+import { recommendationUniverse, type RecommendationEntity } from '../../../domain/diagnostic/v2_1/universe'
+import { assessEntityEligibility, assessEntitySkills, type CompetitionResult } from '../../../domain/diagnostic/v2_1/compete'
+import type { DecisionContext } from '../../../domain/diagnostic/v2/types'
 
 /* ─── محاكاة جلسة بإجابات نصية مدروسة (نفس نمط جسر الفحص المتحقق) ─── */
 interface Journey {
@@ -72,7 +74,7 @@ function runJourney(name: string, script: Journey): {
   return { asked, rec: engine.recommend(), comp: engine.competeSnapshot() }
 }
 
-const NEEDS_REVISION = [
+const FORMERLY_FROZEN = [
   'TPL-FIRST-JOB-001',
   'TPL-CX-001',
   'TPL-DIGITAL-TRAINER-001',
@@ -81,35 +83,35 @@ const NEEDS_REVISION = [
 ]
 
 describe('فضاء التوصيات الموحد V2.1 — معايير القبول (البند 19)', () => {
-  it('الفضاء النشط = 31 كيانًا (20 قياسيًا + 11 مركبًا) والخمسة قيد المراجعة خارج المنافسة', () => {
+  it('الفضاء النشط = 36 كيانًا (20 قياسيًا + 16 مركبًا) — الخمسة المجمدة سابقًا أُصلحت واعتُمدت (المرحلة 4)', () => {
     const universe = recommendationUniverse()
-    expect(universe.active.length).toBe(31)
+    expect(universe.active.length).toBe(36)
     expect(universe.active.filter((e) => e.entity_type === 'standard').length).toBe(20)
-    expect(universe.active.filter((e) => e.entity_type === 'composite').length).toBe(11)
-    for (const id of NEEDS_REVISION) {
+    expect(universe.active.filter((e) => e.entity_type === 'composite').length).toBe(16)
+    for (const id of FORMERLY_FROZEN) {
       const e = universe.byId.get(id)
       expect(e, `كيان مفقود: ${id}`).toBeDefined()
-      expect(e!.status).toBe('needs_revision')
-      expect(universe.active.find((a) => a.entity_id === id), `${id} تسلل إلى الفضاء النشط`).toBeUndefined()
+      expect(e!.status, `${id} لم يعد معتمدًا`).toBe('approved_active')
+      expect(universe.active.find((a) => a.entity_id === id), `${id} غائب عن الفضاء النشط`).toBeDefined()
+    }
+    // لا كيان قيد المراجعة حاليًا — وإن ظهر مستقبلًا يجب ألا يتسلل إلى النشط
+    const notApproved = [...universe.byId.values()].filter((e) => e.status !== 'approved_active')
+    for (const e of notApproved) {
+      expect(universe.active.find((a) => a.entity_id === e.entity_id), `${e.entity_id} غير معتمد لكنه نشط`).toBeUndefined()
     }
   })
 
-  it('الكيانات needs_revision غير مؤهلة في أي رحلة — بحجة الحالة لا بمصادفة السياق', () => {
-    /* رحلة مؤسس متعدد المجالات — أكثر سياق قد يجذب القوالب المؤسسية */
-    const { comp } = runJourney('مراجعة-حتمية', {
-      stage: 'founder',
-      employment: 'لدي مشروعي الخاص',
-      goal: 'تنمية مشروعي القائم وزيادة إيراداته',
-      need: 'بناء مشروعي من الصفر',
-      time: '٥–٧ ساعات',
-      mastery: 'أن أبني مجموعة مهارات مترابطة لتحقيق هدف',
-    })
-    for (const id of NEEDS_REVISION) {
-      const e = comp.eligibility.find((x) => x.entityId === id)
-      expect(e, `${id} غائب عن سجل الأهلية`).toBeDefined()
-      expect(e!.eligible, `${id} صار مؤهلًا!`).toBe(false)
-      expect(e!.excludedReasons_ar.join(' ')).toContain('لا ينافس حتى تكتمل مراجعته')
-    }
+  it('حارس الحالة: أي كيان غير معتمد يُستبعد بحجة الحالة لا بمصادفة السياق', () => {
+    /* حارس ثابت على مستوى الوحدة: نستنسخ كيانًا نشطًا بحالة needs_revision
+       ونتأكد أن الأهلية تُرفض بسبب الحالة مهما كان السياق */
+    const universe = recommendationUniverse()
+    const active = universe.active[0]!
+    const stubCtx = { persona: { key: 'employee_private' } } as unknown as DecisionContext
+    const cloned: RecommendationEntity = { ...active, status: 'needs_revision' }
+    const verdict = assessEntityEligibility(cloned, {}, stubCtx)
+    expect(verdict.eligible).toBe(false)
+    expect(verdict.stage_ar).toBe('الحالة')
+    expect(verdict.excludedReasons_ar.join(' ')).toContain('لا ينافس حتى تكتمل مراجعته')
   })
 
   it('need_data يفتح PW-EMP-004: مؤهل في رحلة موظف يريد تحليل البيانات', () => {
@@ -177,9 +179,14 @@ describe('فضاء التوصيات الموحد V2.1 — معايير القب�
       mastery: 'أن أبني مجموعة مهارات مترابطة لتحقيق هدف',
       interest: 'أعمال',
     })
-    expect(rec.kind).toBe('composite_template')
+    /* المرحلة 4 (عدالة الدليل): مهارتا القالب الحاسمتان (التفاوض، الكتابة
+       التجارية) لا يقيسهما أي سؤال في بنك V2.1، والسباق حي (هامش < 0.15) —
+       فيفوز القالب ويُرفق، لكن يُوسم لمراجعة مستشار بدل فوز صامت بلا قياس */
+    expect(rec.kind).toBe('advisor_referral')
     expect(rec.composite, 'فوز مركب بلا خطة مرفقة').not.toBeNull()
     expect(rec.composite!.templateId).toBe('TPL-FREELANCE-001')
+    const reasons = JSON.stringify(rec)
+    expect(reasons).toContain('مهارة حاسمة')
   })
 
   it('غير المتأكد بلا دليل → اتجاه استكشافي بلا مسار مفروض ولا مركب', () => {

@@ -178,11 +178,11 @@ _توليد آلي عبر \`npm run report:v2_1-docs\` — ${golden.generated_at
 
   const md = `# مصفوفة القابلية للوصول — Reachability Matrix V2.1
 
-**Golden Suite**: بحث شامل عن توليفة إشارات منتِجة (مرحلة × هدف × احتياج × وظيفة × تفضيل إتقان — حتى 600 توليفة لكل كيان) تجعل الكيان يفوز. الفائز بحالته canonical = reachable؛ من لا تفوز له أي توليفة = needs_academic_review موثقًا بأفضل محاولة وهامشها.
+**Golden Suite**: بحث شامل عن توليفة إشارات منتِجة (هدف × مرحلة × احتياج × وظيفة × تفضيل إتقان × استعداد × مستوى مهارة — بتخليل هدف-خارجي واتساق شخصية المستقل/المؤسس، حتى 6000 توليفة لكل كيان) تجعل الكيان يفوز. الفائز بحالته canonical = reachable؛ من لا تفوز له أي توليفة = needs_academic_review موثقًا بأفضل محاولة وهامشها.
 
 ## النتيجة الإجمالية
 
-- **${golden.reachable}/${golden.universe_active} كيانًا reachable** (${reachable.filter(([, g]) => g.type === 'standard').length}/20 قياسيًا + ${reachable.filter(([, g]) => g.type === 'composite').length}/11 مركبًا نشطًا).
+- **${golden.reachable}/${golden.universe_active} كيانًا reachable** (${reachable.filter(([, g]) => g.type === 'standard').length}/20 قياسيًا + ${reachable.filter(([, g]) => g.type === 'composite').length}/16 مركبًا نشطًا).
 - **variants حتمية**: ${golden.variants.total} جلسة — أنواع نتائج غير صالحة: ${golden.variants.invalid_kind} · فائز خارج الفضاء النشط: ${golden.variants.alien_winner} · إعادات تحقق حتمية: ${golden.variants.determinism_checked} بلا أي إخفاق.
 - **Monte Carlo ${mc.sessions.toLocaleString('en-US')} جلسة (بذرة ${mc.seed})**: single_pathway ${mc.kind.single_pathway ?? 0} · composite_template ${mc.kind.composite_template ?? 0} · exploratory_direction ${mc.kind.exploratory_direction ?? 0} · advisor_referral ${mc.kind.advisor_referral ?? 0} · متوسط الأسئلة ${mc.avgQuestions} · أخطاء ${mc.errors} · فائزون خارج الفضاء ${mc.alienWinners} · عينة حتمية ${mc.determinismProbe.sample} جلسة: ${mc.determinismProbe.mismatches === 0 ? 'مطابقة تامة' : `${mc.determinismProbe.mismatches} اختلافًا!`}.
 - **لا هيمنة مفرطة**: أعلى فائز \`${topWinner?.[0] ?? '—'}\` بحصة ${topShare}٪ من الجلسات العشوائية.

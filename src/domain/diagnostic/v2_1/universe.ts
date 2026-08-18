@@ -19,7 +19,7 @@ import {
 } from '../catalog'
 import { WEEKLY_LOAD_ORDER } from '../config'
 import type { FactBag } from '../types'
-import { pathwayDomainsV2 } from '../v2/data'
+import { pathwayDomainsV2, layersOfSkill, functionDomainsV2 } from '../v2/data'
 import type { DomainId } from '../v2/types'
 import { GOALS_V21, NEEDS_V21, type CareerStage } from './maps'
 import { planOf } from './data'
@@ -83,6 +83,9 @@ export interface RecommendationEntity {
   unproducible_facts: string[]
   /** مهارات الكيان القابلة للقياس بأسئلة M4 النشطة — أدوات الفصل بين المرشحين */
   diagnostic_skills: string[]
+  /** أدوار المهارات (البند 8): حاسمة = قابلة للقياس وتفصل بين المرشحين — تُقاس قبل التوصية القوية؛
+     مساندة = نشطة غير قابلة للقياس بأسئلة اليوم؛ نواتج تعلم = تُدرَّس ولا تُقاس */
+  skill_roles: { decisive: string[]; supporting: string[]; learning_outcome: string[] }
   /** كل مهارات الكيان (من الدورات المركزية) */
   skill_slugs: string[]
   /** المسارات الممثلة: [self] للقياسي، represented_pathway_ids للمركب */
@@ -131,17 +134,24 @@ export function b2cProducibleFacts(): Set<string> {
   }
   /* حقائق محورية تُشتق داخل المحرك (قواعد facts.ts + أسئلة القرار) */
   for (const k of ['persona_type', 'primary_goal', 'goal_code_v21', 'need_id', 'career_stage', 'employment_state', 'goal_clarity']) out.add(k)
+  /* حقائق مشتقة بقواعد موثقة (facts.ts applyDerivedRules) — V2.1 المرحلة 4:
+     education_state ← career_stage ؛ current_pain ← need_customer_experience */
+  out.add('education_state')
+  out.add('current_pain')
   return out
 }
 
-/** المهارات القابلة للقياس بأسئلة نشطة (M4 بمقياس الدليل وما يماثلها) */
+/** المهارات القابلة للقياس بأسئلة نشطة (M4 بمقياس الدليل وما يماثلها) — مخزنة مؤقتًا: ثابتة خلال الجلسة */
+let measurableCache: Set<string> | null = null
 export function measurableSkills(): Set<string> {
+  if (measurableCache) return measurableCache
   const out = new Set<string>()
   for (const [qid, q] of questionById) {
     const plan = planOf(qid)
     if (!plan || plan.surface !== 'b2c') continue
     if (q.answer_type === 'skill_level_5' && q.measures[0]) out.add(q.measures[0])
   }
+  measurableCache = out
   return out
 }
 
@@ -154,6 +164,25 @@ export function skillsOfCourses(courseIds: string[]): string[] {
     for (const s of c.skill_slugs) seen.add(s)
   }
   return [...seen].sort()
+}
+
+/** أدوار مهارات كيان (البند 8) — حاسمة/مساندة/نواتج تعلم، حتمية من الكتالوج */
+function skillRolesOf(skills: string[]): { decisive: string[]; supporting: string[]; learning_outcome: string[] } {
+  const measurable = measurableSkills()
+  const decisive: string[] = []
+  const supporting: string[] = []
+  const learning: string[] = []
+  for (const s of skills) {
+    const meta = layersOfSkill(s)
+    const active = meta === undefined || meta.active
+    if (!active) {
+      learning.push(s)
+      continue
+    }
+    if (measurable.has(s)) decisive.push(s)
+    else supporting.push(s)
+  }
+  return { decisive, supporting, learning_outcome: learning }
 }
 
 function hoursOfCourses(courseIds: string[]): number {
@@ -176,6 +205,23 @@ function needsCovering(domains: DomainId[]): string[] {
   if (domains.length === 0) return []
   const set = new Set(domains)
   return NEEDS_V21.filter((n) => n.domains.some((d) => set.has(d))).map((n) => n.code)
+}
+
+/* خريطة احتياجات مخصصة — V2.1 المرحلة 4 (موثقة، قرار أكاديمي لا يدوي):
+   مساران يتقاسمان مجالًا واحدًا يستقبلان بالتقاطع نفسَ الاحتياجات فيتعادلان رياضيًا
+   رغم اختلافهما الأكاديمي. هنا يُعلن لكل مسار الاحتياج الذي صُمم له فعلًا:
+   - العمليات: process/workflow/efficiency داخلية ← need_operations
+   - سلسلة الإمداد: موردون/مشتريات/مخزون/لوجستيات ← need_supply
+   - المبيعات الاستشارية ← need_sales ؛ التفاوض وإغلاق الصفقات ← need_negotiation
+   - المدير الجديد (أول 90 يومًا) ← need_leadership ؛ التواصل والعرض ← need_communication
+   من ليس هنا يبقى على التقاطع المجالي العام. */
+export const NEED_OVERRIDES: Record<string, string[]> = {
+  'PW-OPS-001': ['need_operations'],
+  'PW-SCM-001': ['need_supply'],
+  'PW-SAL-001': ['need_sales'],
+  'PW-NEG-001': ['need_negotiation'],
+  'PW-COM-001': ['need_communication'],
+  'PW-EMP-005': ['need_leadership'],
 }
 
 /* ─── بناء كيان قياسي ─── */
@@ -216,7 +262,7 @@ function buildStandardEntity(pathwayId: string): RecommendationEntity {
     career_stages: stages,
     goals,
     reachable_goals: goals.filter((g) => REACHABLE_LEGACY_GOALS.has(g)),
-    needs: needsCovering(domains),
+    needs: NEED_OVERRIDES[pathwayId] ?? needsCovering(domains),
     domains,
     extended_domains: domains,
     functions: profile?.functions ?? [],
@@ -236,6 +282,7 @@ function buildStandardEntity(pathwayId: string): RecommendationEntity {
     ],
     unproducible_facts: [],
     diagnostic_skills: [],
+    skill_roles: skillRolesOf(skills),
     skill_slugs: skills,
     pathway_requirements: [pathwayId],
     learning_outcomes: skills,
@@ -416,7 +463,13 @@ function buildCompositeEntity(tpl: CompositeTemplate, audit: CompositeAudit): Re
     needs: audit.metrics.needs_entry,
     domains: audit.metrics.core_domains,
     extended_domains: audit.metrics.extended_domains,
-    functions: [],
+    /* وظائف المركب = اتحاد وظائف مساراته الممثلة — إنصاف مُفاضلة الوظيفة:
+       مسار قياسي كان يأخذ مكافأة التطابق بينما المركب الأجدر بها يقف بلا قائمة (المرحلة 4) */
+    functions: [
+      ...new Set(
+        (tpl.plan?.represented_pathway_ids ?? []).flatMap((pid) => pathwayProfiles[pid]?.functions ?? []),
+      ),
+    ].sort(),
     sectors: [],
     business_stages: [],
     leadership_context: [],
@@ -433,6 +486,7 @@ function buildCompositeEntity(tpl: CompositeTemplate, audit: CompositeAudit): Re
     required_facts: tpl.diagnostic?.required_facts ?? [],
     unproducible_facts: audit.metrics.unproducible_required_facts,
     diagnostic_skills: skills.filter((s) => measurable.has(s)),
+    skill_roles: skillRolesOf(skills),
     skill_slugs: skills,
     pathway_requirements: tpl.plan?.represented_pathway_ids ?? [],
     learning_outcomes: skills,
@@ -489,6 +543,7 @@ export function recommendationUniverse(): RecommendationUniverse {
 /** إعادة البناء عند استبدال لقطة الكتالوج */
 export function resetUniverseCache() {
   cached = null
+  measurableCache = null
 }
 
 /* ─── أدوات مساندة للمحرك ─── */
@@ -501,5 +556,18 @@ export function activeDomainsOf(facts: FactBag, domains: { scores: Partial<Recor
     (Object.entries(domains.scores) as [DomainId, number][]).filter(([, s]) => s >= minScore).map(([d]) => d),
   )
   for (const d of interestList) out.add(d as DomainId)
+  return [...out]
+}
+
+/** مجالات بوابة تعدد الحاجة للمركب — V2.1 المرحلة 4 (موثق):
+   القوة الموزونة (≥0.25) + التصريح المباشر. وظيفة ثنائية المجال يقسمها وزن W_FUNCTION
+   إلى 0.175 لكل مجال فيسقطان تحت العتبة — رغم أن المستخدم صرّح بالوظيفة صراحة.
+   التصريح المباشر (وظيفة/ميول) دليل سياق لا ضجيج: يُقرأ في بوابة «حاجة متعددة المجالات»
+   دون أن يدخل في أوزان مكوّن المجال بالتسجيل (لا يضخم ملاءمة أحد). */
+export function gateDomainsOf(facts: FactBag, domains: { scores: Partial<Record<DomainId, number>> }): DomainId[] {
+  const out = new Set<DomainId>(activeDomainsOf(facts, domains))
+  const fn = facts['function_specialization']?.value
+  const fnList = Array.isArray(fn) ? (fn as string[]) : typeof fn === 'string' ? [fn] : []
+  for (const f of fnList) for (const d of functionDomainsV2[f] ?? []) out.add(d)
   return [...out]
 }

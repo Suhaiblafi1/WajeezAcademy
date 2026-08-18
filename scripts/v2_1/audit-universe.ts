@@ -1,6 +1,6 @@
 /* تدقيق فضاء التوصيات الموحد V2.1 — بوابة سلامة بنيوية:
-   31 كيانًا نشطًا (20+11) · مراجع الدورات حية · لا نسخ مضمنة (مراجع فقط) ·
-   needs_revision خارج النشط · مهارات تشخيصية قابلة للقياس · جدوى صالحة ·
+   36 كيانًا نشطًا (20+16) بعد إصلاحات المرحلة 4 · مراجع الدورات حية · لا نسخ مضمنة ·
+   لا حقيقة مطلوبة غير قابلة للإنتاج · مهارات تشخيصية قابلة للقياس · جدوى صالحة ·
    مركب حقيقي متعدد المجالات · الدورة كيان مركزي واحد.
    الاستخدام: npm run audit:recommendation-universe */
 
@@ -11,13 +11,13 @@ import { measurableSkills } from '../../src/domain/diagnostic/v2_1/universe'
 const failures: string[] = []
 const u = recommendationUniverse()
 
-/* ١) الأعداد */
-if (u.active.length !== 31) failures.push(`الفضاء النشط ${u.active.length} ≠ 31`)
+/* ١) الأعداد — بعد المرحلة 4: كل القوالب الـ16 نشطة (الخمسة المجمدة أُصلحت بنيويًا) */
+if (u.active.length !== 36) failures.push(`الفضاء النشط ${u.active.length} ≠ 36`)
 const standards = u.active.filter((e) => e.entity_type === 'standard')
 const composites = u.active.filter((e) => e.entity_type === 'composite')
 if (standards.length !== 20) failures.push(`القياسية ${standards.length} ≠ 20`)
-if (composites.length !== 11) failures.push(`المركبة النشطة ${composites.length} ≠ 11`)
-if (u.entities.length !== 36) failures.push(`إجمالي الكيانات ${u.entities.length} ≠ 36 (31 نشط + 5 قيد المراجعة)`)
+if (composites.length !== 16) failures.push(`المركبة النشطة ${composites.length} ≠ 16`)
+if (u.entities.length !== 36) failures.push(`إجمالي الكيانات ${u.entities.length} ≠ 36`)
 
 /* ٢) تفرد المعرفات */
 const ids = u.entities.map((e) => e.entity_id)
@@ -33,13 +33,18 @@ for (const e of u.entities) {
   }
 }
 
-/* ٤) الخمسة قيد المراجعة خارج الفضاء النشط */
-const NEEDS_REVISION = ['TPL-FIRST-JOB-001', 'TPL-CX-001', 'TPL-DIGITAL-TRAINER-001', 'TPL-CYBER-MANAGER-001', 'TPL-STRATEGY-001']
-for (const id of NEEDS_REVISION) {
+/* ٤) الخمسة المُصلحة في المرحلة 4 — نشطة وبلا حقائق مطلوبة غير قابلة للإنتاج.
+   تصنيف إصلاحها الموثق: FIRST-JOB (education_state مشتقة من career_stage) ·
+   CX (current_pain منتَجة من need_customer_experience) · TRAINER (current_domain → mapping) ·
+   CYBER + STRATEGY (حقائق مؤسسية محظورة في B2C → سياق تنفيذ اختياري لا أهلية) */
+const REPAIRED = ['TPL-FIRST-JOB-001', 'TPL-CX-001', 'TPL-DIGITAL-TRAINER-001', 'TPL-CYBER-MANAGER-001', 'TPL-STRATEGY-001']
+for (const id of REPAIRED) {
   const e = u.byId.get(id)
   if (!e) failures.push(`${id}: مفقود من الفضاء الكلي`)
-  else if (e.status !== 'needs_revision') failures.push(`${id}: حالته ${e.status} ≠ needs_revision`)
-  if (u.active.some((a) => a.entity_id === id)) failures.push(`${id}: تسلل إلى النشط`)
+  else {
+    if (e.status !== 'approved_active') failures.push(`${id}: حالته ${e.status} ≠ approved_active بعد الإصلاح`)
+    if (e.unproducible_facts.length > 0) failures.push(`${id}: ما زالت تحمل حقائق غير قابلة للإنتاج: ${e.unproducible_facts.join('، ')}`)
+  }
 }
 
 /* ٥) المهارات التشخيصية قابلة للقياس فعلًا */

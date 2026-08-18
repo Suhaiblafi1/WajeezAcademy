@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-08-18T00:03:33.775Z",
-  "universe_active": 31,
-  "reachable": 27,
+  "generated_at": "2026-08-18T17:31:58.453Z",
+  "universe_active": 36,
+  "reachable": 36,
   "golden": {
     "PW-STU-003": {
       "type": "standard",
@@ -9,13 +9,13 @@
       "positive": {
         "winner": "PW-STU-003",
         "kind": "single_pathway",
-        "confidence": 0.66,
+        "confidence": 0.71,
         "won": true,
         "askedCount": 8,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.93,
-        "winnerNetFit": 0.93,
+        "entityNetFit": 0.98,
+        "winnerNetFit": 0.98,
         "recipe": {
           "stage": "طالب جامعي",
           "goal": "تحديد المجال الأنسب لي",
@@ -26,13 +26,13 @@
       "near_miss": {
         "winner": "PW-STU-003",
         "kind": "single_pathway",
-        "confidence": 0.66,
+        "confidence": 0.71,
         "won": true,
         "askedCount": 8,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.93,
-        "winnerNetFit": 0.93,
+        "entityNetFit": 0.98,
+        "winnerNetFit": 0.98,
         "recipe": {
           "stage": "طالب جامعي",
           "goal": "تحديد المجال الأنسب لي",
@@ -42,16 +42,16 @@
       },
       "negative": {
         "winner": "PW-STU-002",
-        "kind": "advisor_referral",
-        "confidence": 0.62,
+        "kind": "single_pathway",
+        "confidence": 0.67,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 13,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
         ],
         "entityNetFit": null,
-        "winnerNetFit": 0.752,
+        "winnerNetFit": 0.792,
         "recipe": {
           "stage": "طالب جامعي",
           "goal": "الحصول على أول وظيفة",
@@ -67,13 +67,13 @@
       "positive": {
         "winner": "PW-STU-002",
         "kind": "single_pathway",
-        "confidence": 0.65,
+        "confidence": 0.67,
         "won": true,
-        "askedCount": 12,
+        "askedCount": 13,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.765,
-        "winnerNetFit": 0.765,
+        "entityNetFit": 0.798,
+        "winnerNetFit": 0.798,
         "recipe": {
           "stage": "طالب جامعي",
           "goal": "الحصول على أول وظيفة",
@@ -84,13 +84,13 @@
       "near_miss": {
         "winner": "PW-STU-002",
         "kind": "single_pathway",
-        "confidence": 0.65,
+        "confidence": 0.67,
         "won": true,
-        "askedCount": 12,
+        "askedCount": 13,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.759,
-        "winnerNetFit": 0.759,
+        "entityNetFit": 0.795,
+        "winnerNetFit": 0.795,
         "recipe": {
           "stage": "طالب جامعي",
           "goal": "الحصول على أول وظيفة",
@@ -101,7 +101,7 @@
       "negative": {
         "winner": "PW-STU-003",
         "kind": "single_pathway",
-        "confidence": 0.66,
+        "confidence": 0.71,
         "won": false,
         "askedCount": 8,
         "eligible": false,
@@ -109,7 +109,7 @@
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
         ],
         "entityNetFit": null,
-        "winnerNetFit": 0.93,
+        "winnerNetFit": 0.98,
         "recipe": {
           "stage": "طالب جامعي",
           "goal": "تحديد المجال الأنسب لي",
@@ -121,37 +121,37 @@
     },
     "PW-FND-003": {
       "type": "standard",
-      "tried": 9,
+      "tried": 1,
       "positive": {
         "winner": "PW-FND-003",
-        "kind": "single_pathway",
-        "confidence": 0.69,
+        "kind": "advisor_referral",
+        "confidence": 0.61,
         "won": true,
         "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.95,
-        "winnerNetFit": 0.95,
+        "entityNetFit": 0.98,
+        "winnerNetFit": 0.98,
         "recipe": {
           "stage": "موظف في بداية مساري المهني",
-          "goal": "تطوير مهارة محددة أعرفها",
+          "goal": "استخدام الذكاء الاصطناعي بفعالية أكبر",
           "need": "الذكاء الاصطناعي وتطبيقاته العملية",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق"
         }
       },
       "near_miss": {
         "winner": "PW-FND-003",
-        "kind": "single_pathway",
-        "confidence": 0.69,
+        "kind": "advisor_referral",
+        "confidence": 0.61,
         "won": true,
         "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.95,
-        "winnerNetFit": 0.95,
+        "entityNetFit": 0.98,
+        "winnerNetFit": 0.98,
         "recipe": {
           "stage": "موظف في بداية مساري المهني",
-          "goal": "تطوير مهارة محددة أعرفها",
+          "goal": "استخدام الذكاء الاصطناعي بفعالية أكبر",
           "need": "الذكاء الاصطناعي وتطبيقاته العملية",
           "mastery": "غير متأكد"
         }
@@ -159,7 +159,7 @@
       "negative": {
         "winner": null,
         "kind": "advisor_referral",
-        "confidence": 0.64,
+        "confidence": 0.7,
         "won": false,
         "askedCount": 13,
         "eligible": false,
@@ -183,13 +183,13 @@
       "positive": {
         "winner": "PW-EMP-004",
         "kind": "single_pathway",
-        "confidence": 0.67,
+        "confidence": 0.65,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 10,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.886,
-        "winnerNetFit": 0.886,
+        "entityNetFit": 0.902,
+        "winnerNetFit": 0.902,
         "recipe": {
           "stage": "موظف في بداية مساري المهني",
           "goal": "بناء مهارات عملية يطلبها سوق العمل",
@@ -200,13 +200,13 @@
       "near_miss": {
         "winner": "PW-EMP-004",
         "kind": "single_pathway",
-        "confidence": 0.67,
+        "confidence": 0.65,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 10,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.879,
-        "winnerNetFit": 0.879,
+        "entityNetFit": 0.902,
+        "winnerNetFit": 0.902,
         "recipe": {
           "stage": "موظف في بداية مساري المهني",
           "goal": "بناء مهارات عملية يطلبها سوق العمل",
@@ -217,7 +217,7 @@
       "negative": {
         "winner": null,
         "kind": "advisor_referral",
-        "confidence": 0.64,
+        "confidence": 0.7,
         "won": false,
         "askedCount": 13,
         "eligible": false,
@@ -243,11 +243,11 @@
         "kind": "single_pathway",
         "confidence": 0.65,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 10,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.895,
-        "winnerNetFit": 0.895,
+        "entityNetFit": 0.902,
+        "winnerNetFit": 0.902,
         "recipe": {
           "stage": "موظف في بداية مساري المهني",
           "goal": "بناء مهارات عملية يطلبها سوق العمل",
@@ -260,11 +260,11 @@
         "kind": "single_pathway",
         "confidence": 0.65,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 10,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.891,
-        "winnerNetFit": 0.891,
+        "entityNetFit": 0.902,
+        "winnerNetFit": 0.902,
         "recipe": {
           "stage": "موظف في بداية مساري المهني",
           "goal": "بناء مهارات عملية يطلبها سوق العمل",
@@ -275,7 +275,7 @@
       "negative": {
         "winner": null,
         "kind": "advisor_referral",
-        "confidence": 0.64,
+        "confidence": 0.7,
         "won": false,
         "askedCount": 13,
         "eligible": false,
@@ -299,13 +299,13 @@
       "positive": {
         "winner": "PW-EMP-005",
         "kind": "single_pathway",
-        "confidence": 0.6,
+        "confidence": 0.62,
         "won": true,
         "askedCount": 12,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.95,
-        "winnerNetFit": 0.95,
+        "entityNetFit": 0.98,
+        "winnerNetFit": 0.98,
         "recipe": {
           "stage": "مدير / قائد فريق",
           "goal": "الاستعداد لدور قيادي",
@@ -316,13 +316,13 @@
       "near_miss": {
         "winner": "PW-EMP-005",
         "kind": "single_pathway",
-        "confidence": 0.6,
+        "confidence": 0.62,
         "won": true,
         "askedCount": 12,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.95,
-        "winnerNetFit": 0.95,
+        "entityNetFit": 0.98,
+        "winnerNetFit": 0.98,
         "recipe": {
           "stage": "مدير / قائد فريق",
           "goal": "الاستعداد لدور قيادي",
@@ -333,7 +333,7 @@
       "negative": {
         "winner": "PW-EMP-004",
         "kind": "single_pathway",
-        "confidence": 0.56,
+        "confidence": 0.54,
         "won": false,
         "askedCount": 14,
         "eligible": false,
@@ -359,11 +359,11 @@
         "kind": "single_pathway",
         "confidence": 0.68,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 10,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.864,
-        "winnerNetFit": 0.864,
+        "entityNetFit": 0.894,
+        "winnerNetFit": 0.894,
         "recipe": {
           "stage": "موظف في بداية مساري المهني",
           "goal": "بناء مهارات عملية يطلبها سوق العمل",
@@ -375,11 +375,11 @@
         "kind": "single_pathway",
         "confidence": 0.68,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 10,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.864,
-        "winnerNetFit": 0.864,
+        "entityNetFit": 0.894,
+        "winnerNetFit": 0.894,
         "recipe": {
           "stage": "موظف في بداية مساري المهني",
           "goal": "بناء مهارات عملية يطلبها سوق العمل",
@@ -389,7 +389,7 @@
       "negative": {
         "winner": null,
         "kind": "advisor_referral",
-        "confidence": 0.64,
+        "confidence": 0.7,
         "won": false,
         "askedCount": 13,
         "eligible": false,
@@ -414,15 +414,16 @@
       "positive": {
         "winner": "PW-BIZ-001",
         "kind": "single_pathway",
-        "confidence": 0.64,
+        "confidence": 0.66,
         "won": true,
         "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.751,
-        "winnerNetFit": 0.751,
+        "entityNetFit": 0.781,
+        "winnerNetFit": 0.781,
         "recipe": {
           "stage": "مؤسس / صاحب عمل",
+          "goal": "تنمية مشروعي القائم وزيادة إيراداته",
           "need": "بناء مشروعي من الصفر",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق"
         }
@@ -430,15 +431,16 @@
       "near_miss": {
         "winner": "PW-BIZ-001",
         "kind": "single_pathway",
-        "confidence": 0.64,
+        "confidence": 0.66,
         "won": true,
         "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.751,
-        "winnerNetFit": 0.751,
+        "entityNetFit": 0.781,
+        "winnerNetFit": 0.781,
         "recipe": {
           "stage": "مؤسس / صاحب عمل",
+          "goal": "تنمية مشروعي القائم وزيادة إيراداته",
           "need": "بناء مشروعي من الصفر",
           "mastery": "غير متأكد"
         }
@@ -466,7 +468,7 @@
     },
     "PW-AUT-001": {
       "type": "standard",
-      "tried": 1,
+      "tried": 3,
       "positive": {
         "winner": "PW-AUT-001",
         "kind": "single_pathway",
@@ -475,12 +477,13 @@
         "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.95,
-        "winnerNetFit": 0.95,
+        "entityNetFit": 0.98,
+        "winnerNetFit": 0.98,
         "recipe": {
           "stage": "موظف في بداية مساري المهني",
           "goal": "استخدام الذكاء الاصطناعي بفعالية أكبر",
           "need": "الذكاء الاصطناعي وتطبيقاته العملية",
+          "fn": "تحول رقمي",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق"
         }
       },
@@ -492,19 +495,20 @@
         "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.95,
-        "winnerNetFit": 0.95,
+        "entityNetFit": 0.98,
+        "winnerNetFit": 0.98,
         "recipe": {
           "stage": "موظف في بداية مساري المهني",
           "goal": "استخدام الذكاء الاصطناعي بفعالية أكبر",
           "need": "الذكاء الاصطناعي وتطبيقاته العملية",
+          "fn": "تحول رقمي",
           "mastery": "غير متأكد"
         }
       },
       "negative": {
         "winner": null,
         "kind": "advisor_referral",
-        "confidence": 0.64,
+        "confidence": 0.7,
         "won": false,
         "askedCount": 13,
         "eligible": false,
@@ -528,13 +532,13 @@
       "positive": {
         "winner": "PW-MKT-001",
         "kind": "single_pathway",
-        "confidence": 0.59,
+        "confidence": 0.63,
         "won": true,
         "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.89,
-        "winnerNetFit": 0.89,
+        "entityNetFit": 0.926,
+        "winnerNetFit": 0.926,
         "recipe": {
           "stage": "موظف في بداية مساري المهني",
           "goal": "بناء ملف أعمال يثبت قدراتي",
@@ -545,13 +549,13 @@
       "near_miss": {
         "winner": "PW-MKT-001",
         "kind": "single_pathway",
-        "confidence": 0.59,
+        "confidence": 0.63,
         "won": true,
         "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.887,
-        "winnerNetFit": 0.887,
+        "entityNetFit": 0.923,
+        "winnerNetFit": 0.923,
         "recipe": {
           "stage": "موظف في بداية مساري المهني",
           "goal": "بناء ملف أعمال يثبت قدراتي",
@@ -562,7 +566,7 @@
       "negative": {
         "winner": null,
         "kind": "advisor_referral",
-        "confidence": 0.64,
+        "confidence": 0.7,
         "won": false,
         "askedCount": 13,
         "eligible": false,
@@ -582,19 +586,19 @@
     },
     "PW-SAL-001": {
       "type": "standard",
-      "tried": 68,
+      "tried": 9,
       "positive": {
-        "winner": "TPL-FREELANCE-001",
-        "kind": "composite_template",
-        "confidence": 0.59,
-        "won": false,
+        "winner": "PW-SAL-001",
+        "kind": "single_pathway",
+        "confidence": 0.56,
+        "won": true,
         "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.703,
-        "winnerNetFit": 0.645,
+        "entityNetFit": 0.75,
+        "winnerNetFit": 0.75,
         "recipe": {
-          "stage": "مستقل — أعمل لحسابي",
+          "stage": "موظف ذو خبرة",
           "need": "المبيعات والتعامل مع العملاء",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق"
         }
@@ -602,23 +606,23 @@
       "near_miss": {
         "winner": "PW-SAL-001",
         "kind": "single_pathway",
-        "confidence": 0.59,
+        "confidence": 0.56,
         "won": true,
         "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.703,
-        "winnerNetFit": 0.703,
+        "entityNetFit": 0.747,
+        "winnerNetFit": 0.747,
         "recipe": {
-          "stage": "مستقل — أعمل لحسابي",
+          "stage": "موظف ذو خبرة",
           "need": "المبيعات والتعامل مع العملاء",
           "mastery": "غير متأكد"
         }
       },
       "negative": {
-        "winner": "TPL-PERSONAL-BRAND-001",
-        "kind": "composite_template",
-        "confidence": 0.56,
+        "winner": "PW-EMP-004",
+        "kind": "single_pathway",
+        "confidence": 0.57,
         "won": false,
         "askedCount": 14,
         "eligible": false,
@@ -626,57 +630,59 @@
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
         ],
         "entityNetFit": null,
-        "winnerNetFit": 0.636,
+        "winnerNetFit": 0.731,
         "recipe": {
-          "stage": "مستقل — أعمل لحسابي",
-          "goal": "بناء ملف أعمال يثبت قدراتي",
+          "stage": "موظف ذو خبرة",
+          "goal": "بدء مشروع أو مصدر دخل مستقل",
           "need": "تحليل البيانات واتخاذ القرار",
           "mastery": "غير متأكد"
         }
       },
-      "verdict": "needs_academic_review"
+      "verdict": "reachable"
     },
     "PW-HR-001": {
       "type": "standard",
-      "tried": 37,
+      "tried": 21,
       "positive": {
         "winner": "PW-HR-001",
         "kind": "single_pathway",
-        "confidence": 0.59,
+        "confidence": 0.62,
         "won": true,
         "askedCount": 12,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.95,
-        "winnerNetFit": 0.95,
+        "entityNetFit": 1.01,
+        "winnerNetFit": 1.01,
         "recipe": {
           "stage": "مدير / قائد فريق",
           "goal": "الاستعداد لدور قيادي",
-          "need": "تصميم التعلم والتدريب",
+          "need": "القيادة وإدارة الفرق",
+          "fn": "موارد بشرية",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق"
         }
       },
       "near_miss": {
         "winner": "PW-HR-001",
         "kind": "single_pathway",
-        "confidence": 0.59,
+        "confidence": 0.62,
         "won": true,
         "askedCount": 12,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.95,
-        "winnerNetFit": 0.95,
+        "entityNetFit": 1.01,
+        "winnerNetFit": 1.01,
         "recipe": {
           "stage": "مدير / قائد فريق",
           "goal": "الاستعداد لدور قيادي",
-          "need": "تصميم التعلم والتدريب",
+          "need": "القيادة وإدارة الفرق",
+          "fn": "موارد بشرية",
           "mastery": "غير متأكد"
         }
       },
       "negative": {
         "winner": "PW-EMP-004",
         "kind": "single_pathway",
-        "confidence": 0.56,
+        "confidence": 0.54,
         "won": false,
         "askedCount": 14,
         "eligible": false,
@@ -700,13 +706,13 @@
       "positive": {
         "winner": "PW-FIN-001",
         "kind": "single_pathway",
-        "confidence": 0.56,
+        "confidence": 0.57,
         "won": true,
         "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.723,
-        "winnerNetFit": 0.723,
+        "entityNetFit": 0.753,
+        "winnerNetFit": 0.753,
         "recipe": {
           "stage": "مدير / قائد فريق",
           "need": "المالية وفهم الأرقام",
@@ -716,13 +722,13 @@
       "near_miss": {
         "winner": "PW-FIN-001",
         "kind": "single_pathway",
-        "confidence": 0.56,
+        "confidence": 0.57,
         "won": true,
         "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.723,
-        "winnerNetFit": 0.723,
+        "entityNetFit": 0.753,
+        "winnerNetFit": 0.753,
         "recipe": {
           "stage": "مدير / قائد فريق",
           "need": "المالية وفهم الأرقام",
@@ -732,7 +738,7 @@
       "negative": {
         "winner": "PW-EMP-004",
         "kind": "single_pathway",
-        "confidence": 0.56,
+        "confidence": 0.54,
         "won": false,
         "askedCount": 14,
         "eligible": false,
@@ -758,7 +764,7 @@
         "kind": "single_pathway",
         "confidence": 0.57,
         "won": true,
-        "askedCount": 13,
+        "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.896,
@@ -775,7 +781,7 @@
         "kind": "single_pathway",
         "confidence": 0.57,
         "won": true,
-        "askedCount": 13,
+        "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.893,
@@ -790,7 +796,7 @@
       "negative": {
         "winner": null,
         "kind": "advisor_referral",
-        "confidence": 0.64,
+        "confidence": 0.7,
         "won": false,
         "askedCount": 13,
         "eligible": false,
@@ -810,43 +816,45 @@
     },
     "PW-OPS-001": {
       "type": "standard",
-      "tried": 66,
+      "tried": 5,
       "positive": {
-        "winner": "PW-SCM-001",
+        "winner": "PW-OPS-001",
         "kind": "single_pathway",
-        "confidence": 0.54,
-        "won": false,
+        "confidence": 0.57,
+        "won": true,
         "askedCount": 13,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.736,
-        "winnerNetFit": 0.74,
+        "entityNetFit": 0.796,
+        "winnerNetFit": 0.796,
         "recipe": {
           "stage": "موظف في بداية مساري المهني",
           "need": "العمليات وتحسين الإجراءات",
+          "fn": "عمليات",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق"
         }
       },
       "near_miss": {
-        "winner": "PW-SCM-001",
+        "winner": "PW-OPS-001",
         "kind": "single_pathway",
-        "confidence": 0.54,
-        "won": false,
+        "confidence": 0.57,
+        "won": true,
         "askedCount": 13,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.733,
-        "winnerNetFit": 0.74,
+        "entityNetFit": 0.793,
+        "winnerNetFit": 0.793,
         "recipe": {
           "stage": "موظف في بداية مساري المهني",
           "need": "العمليات وتحسين الإجراءات",
+          "fn": "عمليات",
           "mastery": "غير متأكد"
         }
       },
       "negative": {
         "winner": null,
         "kind": "advisor_referral",
-        "confidence": 0.64,
+        "confidence": 0.7,
         "won": false,
         "askedCount": 13,
         "eligible": false,
@@ -862,7 +870,7 @@
           "mastery": "غير متأكد"
         }
       },
-      "verdict": "needs_academic_review"
+      "verdict": "reachable"
     },
     "PW-CYB-001": {
       "type": "standard",
@@ -887,7 +895,7 @@
       "near_miss": {
         "winner": "PW-CYB-001",
         "kind": "single_pathway",
-        "confidence": 0.57,
+        "confidence": 0.58,
         "won": true,
         "askedCount": 12,
         "eligible": true,
@@ -904,7 +912,7 @@
       "negative": {
         "winner": "PW-EMP-004",
         "kind": "single_pathway",
-        "confidence": 0.56,
+        "confidence": 0.54,
         "won": false,
         "askedCount": 14,
         "eligible": false,
@@ -924,55 +932,57 @@
     },
     "PW-SCM-001": {
       "type": "standard",
-      "tried": 1,
+      "tried": 9,
       "positive": {
         "winner": "PW-SCM-001",
         "kind": "single_pathway",
-        "confidence": 0.54,
+        "confidence": 0.56,
         "won": true,
-        "askedCount": 13,
+        "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.74,
-        "winnerNetFit": 0.74,
+        "entityNetFit": 0.8,
+        "winnerNetFit": 0.8,
         "recipe": {
-          "stage": "موظف في بداية مساري المهني",
-          "need": "العمليات وتحسين الإجراءات",
+          "stage": "موظف ذو خبرة",
+          "need": "سلسلة الإمداد والمشتريات",
+          "fn": "مشتريات/عطاءات",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق"
         }
       },
       "near_miss": {
         "winner": "PW-SCM-001",
         "kind": "single_pathway",
-        "confidence": 0.54,
+        "confidence": 0.56,
         "won": true,
-        "askedCount": 13,
+        "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.74,
-        "winnerNetFit": 0.74,
+        "entityNetFit": 0.8,
+        "winnerNetFit": 0.8,
         "recipe": {
-          "stage": "موظف في بداية مساري المهني",
-          "need": "العمليات وتحسين الإجراءات",
+          "stage": "موظف ذو خبرة",
+          "need": "سلسلة الإمداد والمشتريات",
+          "fn": "مشتريات/عطاءات",
           "mastery": "غير متأكد"
         }
       },
       "negative": {
-        "winner": null,
-        "kind": "advisor_referral",
-        "confidence": 0.64,
+        "winner": "PW-EMP-004",
+        "kind": "single_pathway",
+        "confidence": 0.57,
         "won": false,
-        "askedCount": 13,
+        "askedCount": 14,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
         ],
         "entityNetFit": null,
-        "winnerNetFit": null,
+        "winnerNetFit": 0.731,
         "recipe": {
-          "stage": "موظف في بداية مساري المهني",
-          "goal": "بناء مهارات عملية يطلبها سوق العمل",
-          "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
+          "stage": "موظف ذو خبرة",
+          "goal": "بدء مشروع أو مصدر دخل مستقل",
+          "need": "تحليل البيانات واتخاذ القرار",
           "mastery": "غير متأكد"
         }
       },
@@ -984,13 +994,13 @@
       "positive": {
         "winner": "PW-COM-001",
         "kind": "single_pathway",
-        "confidence": 0.69,
+        "confidence": 0.68,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 10,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.913,
-        "winnerNetFit": 0.913,
+        "entityNetFit": 0.95,
+        "winnerNetFit": 0.95,
         "recipe": {
           "stage": "موظف في بداية مساري المهني",
           "goal": "بناء ملف أعمال يثبت قدراتي",
@@ -1001,13 +1011,13 @@
       "near_miss": {
         "winner": "PW-COM-001",
         "kind": "single_pathway",
-        "confidence": 0.69,
+        "confidence": 0.68,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 10,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.91,
-        "winnerNetFit": 0.91,
+        "entityNetFit": 0.95,
+        "winnerNetFit": 0.95,
         "recipe": {
           "stage": "موظف في بداية مساري المهني",
           "goal": "بناء ملف أعمال يثبت قدراتي",
@@ -1018,7 +1028,7 @@
       "negative": {
         "winner": null,
         "kind": "advisor_referral",
-        "confidence": 0.64,
+        "confidence": 0.7,
         "won": false,
         "askedCount": 13,
         "eligible": false,
@@ -1038,45 +1048,45 @@
     },
     "PW-NEG-001": {
       "type": "standard",
-      "tried": 7,
+      "tried": 1,
       "positive": {
         "winner": "PW-NEG-001",
         "kind": "single_pathway",
-        "confidence": 0.57,
+        "confidence": 0.58,
         "won": true,
-        "askedCount": 12,
+        "askedCount": 13,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.895,
-        "winnerNetFit": 0.895,
+        "entityNetFit": 0.929,
+        "winnerNetFit": 0.929,
         "recipe": {
           "stage": "مدير / قائد فريق",
           "goal": "الاستعداد لدور قيادي",
-          "need": "المبيعات والتعامل مع العملاء",
+          "need": "التفاوض وإغلاق الصفقات",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق"
         }
       },
       "near_miss": {
         "winner": "PW-NEG-001",
         "kind": "single_pathway",
-        "confidence": 0.57,
+        "confidence": 0.58,
         "won": true,
-        "askedCount": 12,
+        "askedCount": 13,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.892,
-        "winnerNetFit": 0.892,
+        "entityNetFit": 0.926,
+        "winnerNetFit": 0.926,
         "recipe": {
           "stage": "مدير / قائد فريق",
           "goal": "الاستعداد لدور قيادي",
-          "need": "المبيعات والتعامل مع العملاء",
+          "need": "التفاوض وإغلاق الصفقات",
           "mastery": "غير متأكد"
         }
       },
       "negative": {
         "winner": "PW-EMP-004",
         "kind": "single_pathway",
-        "confidence": 0.56,
+        "confidence": 0.54,
         "won": false,
         "askedCount": 14,
         "eligible": false,
@@ -1100,13 +1110,13 @@
       "positive": {
         "winner": "PW-LND-001",
         "kind": "single_pathway",
-        "confidence": 0.65,
+        "confidence": 0.64,
         "won": true,
-        "askedCount": 10,
+        "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.95,
-        "winnerNetFit": 0.95,
+        "entityNetFit": 0.93,
+        "winnerNetFit": 0.93,
         "recipe": {
           "stage": "مدرب / معلم / مختص تعلم وتطوير",
           "goal": "تصميم تدريب أو برامج تعليمية",
@@ -1117,13 +1127,13 @@
       "near_miss": {
         "winner": "PW-LND-001",
         "kind": "single_pathway",
-        "confidence": 0.65,
+        "confidence": 0.64,
         "won": true,
-        "askedCount": 10,
+        "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.95,
-        "winnerNetFit": 0.95,
+        "entityNetFit": 0.93,
+        "winnerNetFit": 0.93,
         "recipe": {
           "stage": "مدرب / معلم / مختص تعلم وتطوير",
           "goal": "تصميم تدريب أو برامج تعليمية",
@@ -1154,17 +1164,17 @@
     },
     "TPL-VENTURE-001": {
       "type": "composite",
-      "tried": 21,
+      "tried": 81,
       "positive": {
         "winner": "TPL-VENTURE-001",
-        "kind": "advisor_referral",
-        "confidence": 0.55,
+        "kind": "composite_template",
+        "confidence": 0.57,
         "won": true,
         "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.859,
-        "winnerNetFit": 0.859,
+        "entityNetFit": 0.999,
+        "winnerNetFit": 0.999,
         "recipe": {
           "stage": "مستقل — أعمل لحسابي",
           "goal": "بدء مشروع أو مصدر دخل مستقل",
@@ -1174,14 +1184,14 @@
       },
       "near_miss": {
         "winner": "TPL-VENTURE-001",
-        "kind": "advisor_referral",
-        "confidence": 0.55,
+        "kind": "composite_template",
+        "confidence": 0.57,
         "won": true,
         "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.859,
-        "winnerNetFit": 0.859,
+        "entityNetFit": 0.999,
+        "winnerNetFit": 0.999,
         "recipe": {
           "stage": "مستقل — أعمل لحسابي",
           "goal": "بدء مشروع أو مصدر دخل مستقل",
@@ -1192,7 +1202,7 @@
       "negative": {
         "winner": "TPL-PERSONAL-BRAND-001",
         "kind": "composite_template",
-        "confidence": 0.56,
+        "confidence": 0.55,
         "won": false,
         "askedCount": 14,
         "eligible": false,
@@ -1200,7 +1210,7 @@
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
         ],
         "entityNetFit": null,
-        "winnerNetFit": 0.636,
+        "winnerNetFit": 0.596,
         "recipe": {
           "stage": "مستقل — أعمل لحسابي",
           "goal": "بناء ملف أعمال يثبت قدراتي",
@@ -1212,17 +1222,17 @@
     },
     "TPL-ECOM-001": {
       "type": "composite",
-      "tried": 193,
+      "tried": 433,
       "positive": {
         "winner": "TPL-ECOM-001",
         "kind": "composite_template",
-        "confidence": 0.59,
+        "confidence": 0.58,
         "won": true,
         "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.819,
-        "winnerNetFit": 0.819,
+        "entityNetFit": 0.868,
+        "winnerNetFit": 0.868,
         "recipe": {
           "stage": "مستقل — أعمل لحسابي",
           "goal": "زيادة دخلي وعملائي في العمل الحر",
@@ -1233,13 +1243,13 @@
       "near_miss": {
         "winner": "TPL-ECOM-001",
         "kind": "composite_template",
-        "confidence": 0.59,
+        "confidence": 0.58,
         "won": true,
         "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.816,
-        "winnerNetFit": 0.816,
+        "entityNetFit": 0.865,
+        "winnerNetFit": 0.865,
         "recipe": {
           "stage": "مستقل — أعمل لحسابي",
           "goal": "زيادة دخلي وعملائي في العمل الحر",
@@ -1250,7 +1260,7 @@
       "negative": {
         "winner": "TPL-PERSONAL-BRAND-001",
         "kind": "composite_template",
-        "confidence": 0.58,
+        "confidence": 0.55,
         "won": false,
         "askedCount": 14,
         "eligible": false,
@@ -1258,7 +1268,7 @@
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
         ],
         "entityNetFit": null,
-        "winnerNetFit": 0.636,
+        "winnerNetFit": 0.596,
         "recipe": {
           "stage": "مستقل — أعمل لحسابي",
           "goal": "بناء ملف أعمال يثبت قدراتي",
@@ -1274,13 +1284,13 @@
       "positive": {
         "winner": "TPL-FREELANCE-001",
         "kind": "composite_template",
-        "confidence": 0.55,
+        "confidence": 0.58,
         "won": true,
         "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.85,
-        "winnerNetFit": 0.85,
+        "entityNetFit": 0.963,
+        "winnerNetFit": 0.963,
         "recipe": {
           "stage": "مستقل — أعمل لحسابي",
           "goal": "بدء مشروع أو مصدر دخل مستقل",
@@ -1291,13 +1301,13 @@
       "near_miss": {
         "winner": "TPL-FREELANCE-001",
         "kind": "composite_template",
-        "confidence": 0.55,
+        "confidence": 0.57,
         "won": true,
         "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.85,
-        "winnerNetFit": 0.85,
+        "entityNetFit": 0.96,
+        "winnerNetFit": 0.96,
         "recipe": {
           "stage": "مستقل — أعمل لحسابي",
           "goal": "بدء مشروع أو مصدر دخل مستقل",
@@ -1308,7 +1318,7 @@
       "negative": {
         "winner": null,
         "kind": "advisor_referral",
-        "confidence": 0.57,
+        "confidence": 0.58,
         "won": false,
         "askedCount": 13,
         "eligible": false,
@@ -1328,45 +1338,45 @@
     },
     "TPL-PERSONAL-BRAND-001": {
       "type": "composite",
-      "tried": 1,
+      "tried": 25,
       "positive": {
         "winner": "TPL-PERSONAL-BRAND-001",
         "kind": "composite_template",
-        "confidence": 0.6,
+        "confidence": 0.59,
         "won": true,
-        "askedCount": 12,
+        "askedCount": 13,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.711,
-        "winnerNetFit": 0.711,
+        "entityNetFit": 0.704,
+        "winnerNetFit": 0.704,
         "recipe": {
           "stage": "طالب جامعي",
           "goal": "بناء ملف أعمال يثبت قدراتي",
-          "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
+          "need": "التواصل والعرض والتأثير",
           "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف"
         }
       },
       "near_miss": {
         "winner": "TPL-PERSONAL-BRAND-001",
         "kind": "composite_template",
-        "confidence": 0.6,
+        "confidence": 0.59,
         "won": true,
-        "askedCount": 12,
+        "askedCount": 13,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.706,
-        "winnerNetFit": 0.706,
+        "entityNetFit": 0.701,
+        "winnerNetFit": 0.701,
         "recipe": {
           "stage": "طالب جامعي",
           "goal": "بناء ملف أعمال يثبت قدراتي",
-          "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
+          "need": "التواصل والعرض والتأثير",
           "mastery": "غير متأكد"
         }
       },
       "negative": {
         "winner": "PW-STU-003",
         "kind": "single_pathway",
-        "confidence": 0.66,
+        "confidence": 0.71,
         "won": false,
         "askedCount": 8,
         "eligible": false,
@@ -1374,7 +1384,7 @@
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
         ],
         "entityNetFit": null,
-        "winnerNetFit": 0.93,
+        "winnerNetFit": 0.98,
         "recipe": {
           "stage": "طالب جامعي",
           "goal": "تحديد المجال الأنسب لي",
@@ -1384,40 +1394,40 @@
       },
       "verdict": "reachable"
     },
-    "TPL-NEW-MANAGER-001": {
+    "TPL-FIRST-JOB-001": {
       "type": "composite",
-      "tried": 156,
+      "tried": 193,
       "positive": {
-        "winner": "PW-HR-001",
-        "kind": "single_pathway",
-        "confidence": 0.67,
-        "won": false,
-        "askedCount": 11,
+        "winner": "TPL-FIRST-JOB-001",
+        "kind": "advisor_referral",
+        "confidence": 0.56,
+        "won": true,
+        "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.891,
-        "winnerNetFit": 0.771,
+        "entityNetFit": 0.408,
+        "winnerNetFit": 0.408,
         "recipe": {
-          "stage": "مدير / قائد فريق",
-          "goal": "التقدم أو الترقية في عملي",
-          "need": "تصميم التعلم والتدريب",
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "الانتقال إلى مجال جديد",
+          "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
           "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف"
         }
       },
       "near_miss": {
-        "winner": "PW-HR-001",
-        "kind": "single_pathway",
-        "confidence": 0.67,
-        "won": false,
-        "askedCount": 11,
+        "winner": "TPL-FIRST-JOB-001",
+        "kind": "advisor_referral",
+        "confidence": 0.56,
+        "won": true,
+        "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.891,
-        "winnerNetFit": 0.771,
+        "entityNetFit": 0.408,
+        "winnerNetFit": 0.408,
         "recipe": {
-          "stage": "مدير / قائد فريق",
-          "goal": "التقدم أو الترقية في عملي",
-          "need": "تصميم التعلم والتدريب",
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "الانتقال إلى مجال جديد",
+          "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
           "mastery": "غير متأكد"
         }
       },
@@ -1432,55 +1442,57 @@
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
         ],
         "entityNetFit": null,
-        "winnerNetFit": 0.701,
+        "winnerNetFit": 0.731,
         "recipe": {
-          "stage": "مدير / قائد فريق",
+          "stage": "موظف في بداية مساري المهني",
           "goal": "بدء مشروع أو مصدر دخل مستقل",
           "need": "تحليل البيانات واتخاذ القرار",
           "mastery": "غير متأكد"
         }
       },
-      "verdict": "needs_academic_review"
+      "verdict": "reachable"
     },
-    "TPL-B2B-001": {
+    "TPL-NEW-MANAGER-001": {
       "type": "composite",
-      "tried": 88,
+      "tried": 177,
       "positive": {
-        "winner": "TPL-FREELANCE-001",
+        "winner": "TPL-NEW-MANAGER-001",
         "kind": "composite_template",
-        "confidence": 0.55,
-        "won": false,
-        "askedCount": 14,
+        "confidence": 0.6,
+        "won": true,
+        "askedCount": 12,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.837,
-        "winnerNetFit": 0.859,
+        "entityNetFit": 0.991,
+        "winnerNetFit": 0.991,
         "recipe": {
-          "stage": "مؤسس / صاحب عمل",
-          "goal": "تنمية مشروعي القائم وزيادة إيراداته",
-          "need": "المبيعات والتعامل مع العملاء",
+          "stage": "موظف ذو خبرة",
+          "goal": "الاستعداد لدور قيادي",
+          "need": "القيادة وإدارة الفرق",
+          "fn": "موارد بشرية",
           "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف"
         }
       },
       "near_miss": {
-        "winner": "TPL-FREELANCE-001",
+        "winner": "TPL-NEW-MANAGER-001",
         "kind": "composite_template",
-        "confidence": 0.55,
-        "won": false,
-        "askedCount": 14,
+        "confidence": 0.6,
+        "won": true,
+        "askedCount": 12,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.834,
-        "winnerNetFit": 0.854,
+        "entityNetFit": 0.991,
+        "winnerNetFit": 0.991,
         "recipe": {
-          "stage": "مؤسس / صاحب عمل",
-          "goal": "تنمية مشروعي القائم وزيادة إيراداته",
-          "need": "المبيعات والتعامل مع العملاء",
+          "stage": "موظف ذو خبرة",
+          "goal": "الاستعداد لدور قيادي",
+          "need": "القيادة وإدارة الفرق",
+          "fn": "موارد بشرية",
           "mastery": "غير متأكد"
         }
       },
       "negative": {
-        "winner": "PW-AUT-001",
+        "winner": "PW-EMP-004",
         "kind": "single_pathway",
         "confidence": 0.56,
         "won": false,
@@ -1490,15 +1502,133 @@
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
         ],
         "entityNetFit": null,
-        "winnerNetFit": 0.878,
+        "winnerNetFit": 0.731,
         "recipe": {
-          "stage": "مؤسس / صاحب عمل",
-          "goal": "استخدام الذكاء الاصطناعي بفعالية أكبر",
+          "stage": "موظف ذو خبرة",
+          "goal": "بدء مشروع أو مصدر دخل مستقل",
           "need": "تحليل البيانات واتخاذ القرار",
           "mastery": "غير متأكد"
         }
       },
-      "verdict": "needs_academic_review"
+      "verdict": "reachable"
+    },
+    "TPL-B2B-001": {
+      "type": "composite",
+      "tried": 9,
+      "positive": {
+        "winner": "TPL-B2B-001",
+        "kind": "composite_template",
+        "confidence": 0.61,
+        "won": true,
+        "askedCount": 14,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.81,
+        "winnerNetFit": 0.81,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "تطوير مهارة محددة أعرفها",
+          "need": "المبيعات والتعامل مع العملاء",
+          "fn": "مبيعات",
+          "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف"
+        }
+      },
+      "near_miss": {
+        "winner": "TPL-B2B-001",
+        "kind": "composite_template",
+        "confidence": 0.61,
+        "won": true,
+        "askedCount": 14,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.807,
+        "winnerNetFit": 0.807,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "تطوير مهارة محددة أعرفها",
+          "need": "المبيعات والتعامل مع العملاء",
+          "fn": "مبيعات",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": null,
+        "kind": "advisor_referral",
+        "confidence": 0.7,
+        "won": false,
+        "askedCount": 13,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": null,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "بناء مهارات عملية يطلبها سوق العمل",
+          "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "TPL-CX-001": {
+      "type": "composite",
+      "tried": 1,
+      "positive": {
+        "winner": "TPL-CX-001",
+        "kind": "composite_template",
+        "confidence": 0.58,
+        "won": true,
+        "askedCount": 14,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.829,
+        "winnerNetFit": 0.829,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "تطوير مهارة محددة أعرفها",
+          "need": "العمليات وتحسين الإجراءات",
+          "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف"
+        }
+      },
+      "near_miss": {
+        "winner": "TPL-CX-001",
+        "kind": "composite_template",
+        "confidence": 0.58,
+        "won": true,
+        "askedCount": 14,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.829,
+        "winnerNetFit": 0.829,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "تطوير مهارة محددة أعرفها",
+          "need": "العمليات وتحسين الإجراءات",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": null,
+        "kind": "advisor_referral",
+        "confidence": 0.7,
+        "won": false,
+        "askedCount": 13,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": null,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "بناء مهارات عملية يطلبها سوق العمل",
+          "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
     },
     "TPL-DIGITAL-TRANSFORM-001": {
       "type": "composite",
@@ -1506,13 +1636,13 @@
       "positive": {
         "winner": "TPL-DIGITAL-TRANSFORM-001",
         "kind": "composite_template",
-        "confidence": 0.55,
+        "confidence": 0.6,
         "won": true,
         "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.86,
-        "winnerNetFit": 0.86,
+        "entityNetFit": 0.942,
+        "winnerNetFit": 0.942,
         "recipe": {
           "stage": "مدير / قائد فريق",
           "goal": "استخدام الذكاء الاصطناعي بفعالية أكبر",
@@ -1523,13 +1653,13 @@
       "near_miss": {
         "winner": "TPL-DIGITAL-TRANSFORM-001",
         "kind": "composite_template",
-        "confidence": 0.55,
+        "confidence": 0.6,
         "won": true,
         "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.857,
-        "winnerNetFit": 0.857,
+        "entityNetFit": 0.939,
+        "winnerNetFit": 0.939,
         "recipe": {
           "stage": "مدير / قائد فريق",
           "goal": "استخدام الذكاء الاصطناعي بفعالية أكبر",
@@ -1540,7 +1670,7 @@
       "negative": {
         "winner": "PW-EMP-004",
         "kind": "single_pathway",
-        "confidence": 0.56,
+        "confidence": 0.55,
         "won": false,
         "askedCount": 14,
         "eligible": false,
@@ -1560,19 +1690,20 @@
     },
     "TPL-PRODUCT-001": {
       "type": "composite",
-      "tried": 5,
+      "tried": 1,
       "positive": {
         "winner": "TPL-PRODUCT-001",
         "kind": "composite_template",
-        "confidence": 0.55,
+        "confidence": 0.58,
         "won": true,
         "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.726,
-        "winnerNetFit": 0.726,
+        "entityNetFit": 0.774,
+        "winnerNetFit": 0.774,
         "recipe": {
-          "stage": "موظف ذو خبرة",
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "بدء مشروع أو مصدر دخل مستقل",
           "need": "إدارة المنتج وتجربة المستخدم",
           "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف"
         }
@@ -1580,23 +1711,142 @@
       "near_miss": {
         "winner": "TPL-PRODUCT-001",
         "kind": "composite_template",
-        "confidence": 0.54,
+        "confidence": 0.58,
         "won": true,
         "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.723,
-        "winnerNetFit": 0.723,
+        "entityNetFit": 0.771,
+        "winnerNetFit": 0.771,
         "recipe": {
-          "stage": "موظف ذو خبرة",
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "بدء مشروع أو مصدر دخل مستقل",
           "need": "إدارة المنتج وتجربة المستخدم",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": null,
+        "kind": "advisor_referral",
+        "confidence": 0.7,
+        "won": false,
+        "askedCount": 13,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": null,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "بناء مهارات عملية يطلبها سوق العمل",
+          "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "TPL-FIN-DATA-001": {
+      "type": "composite",
+      "tried": 9,
+      "positive": {
+        "winner": "TPL-FIN-DATA-001",
+        "kind": "composite_template",
+        "confidence": 0.59,
+        "won": true,
+        "askedCount": 13,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.79,
+        "winnerNetFit": 0.79,
+        "recipe": {
+          "stage": "مدير / قائد فريق",
+          "goal": "تطوير مهارة محددة أعرفها",
+          "need": "تحليل البيانات واتخاذ القرار",
+          "fn": "مالية/موازنة",
+          "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف"
+        }
+      },
+      "near_miss": {
+        "winner": "TPL-FIN-DATA-001",
+        "kind": "composite_template",
+        "confidence": 0.57,
+        "won": true,
+        "askedCount": 13,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.79,
+        "winnerNetFit": 0.79,
+        "recipe": {
+          "stage": "مدير / قائد فريق",
+          "goal": "تطوير مهارة محددة أعرفها",
+          "need": "تحليل البيانات واتخاذ القرار",
+          "fn": "مالية/موازنة",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": "PW-EMP-003",
+        "kind": "single_pathway",
+        "confidence": 0.57,
+        "won": false,
+        "askedCount": 14,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": 0.743,
+        "recipe": {
+          "stage": "مدير / قائد فريق",
+          "goal": "بدء مشروع أو مصدر دخل مستقل",
+          "need": "إدارة المشاريع",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "TPL-CYBER-MANAGER-001": {
+      "type": "composite",
+      "tried": 17,
+      "positive": {
+        "winner": "TPL-CYBER-MANAGER-001",
+        "kind": "composite_template",
+        "confidence": 0.63,
+        "won": true,
+        "askedCount": 12,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.877,
+        "winnerNetFit": 0.877,
+        "recipe": {
+          "stage": "مدير / قائد فريق",
+          "goal": "تطوير مهارة محددة أعرفها",
+          "need": "الأمن السيبراني وحماية البيانات",
+          "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف"
+        }
+      },
+      "near_miss": {
+        "winner": "TPL-CYBER-MANAGER-001",
+        "kind": "composite_template",
+        "confidence": 0.63,
+        "won": true,
+        "askedCount": 12,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.877,
+        "winnerNetFit": 0.877,
+        "recipe": {
+          "stage": "مدير / قائد فريق",
+          "goal": "تطوير مهارة محددة أعرفها",
+          "need": "الأمن السيبراني وحماية البيانات",
           "mastery": "غير متأكد"
         }
       },
       "negative": {
         "winner": "PW-EMP-004",
         "kind": "single_pathway",
-        "confidence": 0.56,
+        "confidence": 0.55,
         "won": false,
         "askedCount": 14,
         "eligible": false,
@@ -1606,67 +1856,9 @@
         "entityNetFit": null,
         "winnerNetFit": 0.701,
         "recipe": {
-          "stage": "موظف ذو خبرة",
-          "goal": "الانتقال إلى مجال جديد",
-          "need": "تحليل البيانات واتخاذ القرار",
-          "mastery": "غير متأكد"
-        }
-      },
-      "verdict": "reachable"
-    },
-    "TPL-FIN-DATA-001": {
-      "type": "composite",
-      "tried": 3,
-      "positive": {
-        "winner": "TPL-FIN-DATA-001",
-        "kind": "composite_template",
-        "confidence": 0.56,
-        "won": true,
-        "askedCount": 14,
-        "eligible": true,
-        "excludedReasons_ar": [],
-        "entityNetFit": 0.688,
-        "winnerNetFit": 0.688,
-        "recipe": {
-          "stage": "مدير / قائد فريق",
-          "need": "تحليل البيانات واتخاذ القرار",
-          "fn": "مالية/موازنة",
-          "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف"
-        }
-      },
-      "near_miss": {
-        "winner": "TPL-FIN-DATA-001",
-        "kind": "composite_template",
-        "confidence": 0.56,
-        "won": true,
-        "askedCount": 14,
-        "eligible": true,
-        "excludedReasons_ar": [],
-        "entityNetFit": 0.688,
-        "winnerNetFit": 0.688,
-        "recipe": {
-          "stage": "مدير / قائد فريق",
-          "need": "تحليل البيانات واتخاذ القرار",
-          "fn": "مالية/موازنة",
-          "mastery": "غير متأكد"
-        }
-      },
-      "negative": {
-        "winner": "PW-EMP-003",
-        "kind": "single_pathway",
-        "confidence": 0.58,
-        "won": false,
-        "askedCount": 14,
-        "eligible": false,
-        "excludedReasons_ar": [
-          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
-        ],
-        "entityNetFit": null,
-        "winnerNetFit": 0.713,
-        "recipe": {
           "stage": "مدير / قائد فريق",
           "goal": "بدء مشروع أو مصدر دخل مستقل",
-          "need": "إدارة المشاريع",
+          "need": "تحليل البيانات واتخاذ القرار",
           "mastery": "غير متأكد"
         }
       },
@@ -1674,19 +1866,20 @@
     },
     "TPL-SUPPLY-001": {
       "type": "composite",
-      "tried": 59,
+      "tried": 9,
       "positive": {
         "winner": "TPL-SUPPLY-001",
         "kind": "composite_template",
-        "confidence": 0.56,
+        "confidence": 0.61,
         "won": true,
         "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.688,
-        "winnerNetFit": 0.688,
+        "entityNetFit": 0.794,
+        "winnerNetFit": 0.794,
         "recipe": {
-          "stage": "مدير / قائد فريق",
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "تطوير مهارة محددة أعرفها",
           "need": "تحليل البيانات واتخاذ القرار",
           "fn": "مشتريات/عطاءات",
           "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف"
@@ -1695,35 +1888,94 @@
       "near_miss": {
         "winner": "TPL-SUPPLY-001",
         "kind": "composite_template",
-        "confidence": 0.56,
+        "confidence": 0.61,
         "won": true,
         "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.688,
-        "winnerNetFit": 0.688,
+        "entityNetFit": 0.794,
+        "winnerNetFit": 0.794,
         "recipe": {
-          "stage": "مدير / قائد فريق",
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "تطوير مهارة محددة أعرفها",
           "need": "تحليل البيانات واتخاذ القرار",
           "fn": "مشتريات/عطاءات",
           "mastery": "غير متأكد"
         }
       },
       "negative": {
-        "winner": "PW-EMP-003",
-        "kind": "single_pathway",
-        "confidence": 0.58,
+        "winner": null,
+        "kind": "advisor_referral",
+        "confidence": 0.7,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 13,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
         ],
         "entityNetFit": null,
-        "winnerNetFit": 0.713,
+        "winnerNetFit": null,
         "recipe": {
-          "stage": "مدير / قائد فريق",
-          "goal": "بدء مشروع أو مصدر دخل مستقل",
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "بناء مهارات عملية يطلبها سوق العمل",
+          "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "TPL-DIGITAL-TRAINER-001": {
+      "type": "composite",
+      "tried": 1,
+      "positive": {
+        "winner": "TPL-DIGITAL-TRAINER-001",
+        "kind": "advisor_referral",
+        "confidence": 0.63,
+        "won": true,
+        "askedCount": 14,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 1.011,
+        "winnerNetFit": 1.011,
+        "recipe": {
+          "stage": "مدرب / معلم / مختص تعلم وتطوير",
+          "goal": "تصميم تدريب أو برامج تعليمية",
+          "need": "الذكاء الاصطناعي وتطبيقاته العملية",
+          "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف"
+        }
+      },
+      "near_miss": {
+        "winner": "TPL-DIGITAL-TRAINER-001",
+        "kind": "advisor_referral",
+        "confidence": 0.63,
+        "won": true,
+        "askedCount": 14,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 1.011,
+        "winnerNetFit": 1.011,
+        "recipe": {
+          "stage": "مدرب / معلم / مختص تعلم وتطوير",
+          "goal": "تصميم تدريب أو برامج تعليمية",
+          "need": "الذكاء الاصطناعي وتطبيقاته العملية",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": null,
+        "kind": "advisor_referral",
+        "confidence": 0.5,
+        "won": false,
+        "askedCount": 12,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": null,
+        "recipe": {
+          "stage": "مدرب / معلم / مختص تعلم وتطوير",
+          "goal": "الانتقال إلى مجال جديد",
           "need": "إدارة المشاريع",
           "mastery": "غير متأكد"
         }
@@ -1732,45 +1984,107 @@
     },
     "TPL-SMART-OPS-001": {
       "type": "composite",
-      "tried": 3,
+      "tried": 825,
       "positive": {
         "winner": "TPL-SMART-OPS-001",
         "kind": "composite_template",
-        "confidence": 0.53,
+        "confidence": 0.59,
         "won": true,
         "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.685,
-        "winnerNetFit": 0.685,
+        "entityNetFit": 0.785,
+        "winnerNetFit": 0.785,
         "recipe": {
           "stage": "موظف في بداية مساري المهني",
-          "need": "الذكاء الاصطناعي وتطبيقاته العملية",
-          "fn": "مشتريات/عطاءات",
+          "goal": "تطوير مهارة محددة أعرفها",
+          "need": "العمليات وتحسين الإجراءات",
+          "fn": "تحول رقمي",
           "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف"
         }
       },
       "near_miss": {
         "winner": "TPL-SMART-OPS-001",
         "kind": "composite_template",
-        "confidence": 0.53,
+        "confidence": 0.6,
         "won": true,
         "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.682,
-        "winnerNetFit": 0.682,
+        "entityNetFit": 0.782,
+        "winnerNetFit": 0.782,
         "recipe": {
           "stage": "موظف في بداية مساري المهني",
-          "need": "الذكاء الاصطناعي وتطبيقاته العملية",
-          "fn": "مشتريات/عطاءات",
+          "goal": "تطوير مهارة محددة أعرفها",
+          "need": "العمليات وتحسين الإجراءات",
+          "fn": "تحول رقمي",
           "mastery": "غير متأكد"
         }
       },
       "negative": {
         "winner": null,
         "kind": "advisor_referral",
-        "confidence": 0.64,
+        "confidence": 0.7,
+        "won": false,
+        "askedCount": 13,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": null,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "بناء مهارات عملية يطلبها سوق العمل",
+          "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "TPL-STRATEGY-001": {
+      "type": "composite",
+      "tried": 153,
+      "positive": {
+        "winner": "TPL-STRATEGY-001",
+        "kind": "composite_template",
+        "confidence": 0.6,
+        "won": true,
+        "askedCount": 14,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.793,
+        "winnerNetFit": 0.793,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "تطوير مهارة محددة أعرفها",
+          "need": "إدارة المشاريع",
+          "fn": "موارد بشرية",
+          "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف"
+        }
+      },
+      "near_miss": {
+        "winner": "TPL-STRATEGY-001",
+        "kind": "composite_template",
+        "confidence": 0.6,
+        "won": true,
+        "askedCount": 14,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.79,
+        "winnerNetFit": 0.79,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "تطوير مهارة محددة أعرفها",
+          "need": "إدارة المشاريع",
+          "fn": "موارد بشرية",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": null,
+        "kind": "advisor_referral",
+        "confidence": 0.7,
         "won": false,
         "askedCount": 13,
         "eligible": false,
@@ -1790,16 +2104,16 @@
     }
   },
   "variants": {
-    "total": 930,
+    "total": 1080,
     "invalid_kind": 0,
     "alien_winner": 0,
-    "determinism_checked": 103,
+    "determinism_checked": 120,
     "determinism_failures": 0,
     "determinism_log": [],
     "kind_distribution": {
-      "single_pathway": 606,
-      "advisor_referral": 54,
-      "composite_template": 270
+      "single_pathway": 590,
+      "advisor_referral": 150,
+      "composite_template": 340
     },
     "winner_distribution": {
       "PW-STU-003": 30,
@@ -1807,30 +2121,37 @@
       "PW-FND-003": 30,
       "PW-EMP-004": 30,
       "PW-EMP-003": 30,
-      "PW-EMP-005": 30,
+      "PW-EMP-005": 34,
       "PW-GOV-002": 30,
       "PW-BIZ-001": 30,
       "PW-AUT-001": 30,
       "PW-MKT-001": 30,
-      "TPL-FREELANCE-001": 72,
-      "PW-SAL-001": 18,
-      "PW-HR-001": 60,
+      "PW-SAL-001": 42,
+      "PW-HR-001": 30,
       "PW-FIN-001": 30,
       "PW-PRD-001": 30,
-      "PW-OPS-001": 12,
-      "PW-SCM-001": 48,
+      "PW-OPS-001": 34,
       "PW-CYB-001": 30,
+      "PW-SCM-001": 30,
       "PW-COM-001": 30,
       "PW-NEG-001": 30,
       "PW-LND-001": 30,
       "TPL-VENTURE-001": 30,
       "TPL-ECOM-001": 30,
+      "TPL-FREELANCE-001": 30,
       "TPL-PERSONAL-BRAND-001": 30,
+      "TPL-FIRST-JOB-001": 30,
+      "TPL-NEW-MANAGER-001": 26,
+      "TPL-B2B-001": 18,
+      "TPL-CX-001": 30,
       "TPL-DIGITAL-TRANSFORM-001": 30,
       "TPL-PRODUCT-001": 30,
       "TPL-FIN-DATA-001": 30,
+      "TPL-CYBER-MANAGER-001": 30,
       "TPL-SUPPLY-001": 30,
-      "TPL-SMART-OPS-001": 30
+      "TPL-DIGITAL-TRAINER-001": 30,
+      "TPL-SMART-OPS-001": 26,
+      "TPL-STRATEGY-001": 30
     }
   }
 }

@@ -104,6 +104,30 @@ function measuresTopTwoSeparator(q: BankQuestion, candidates: PathwayCandidate[]
   return q.measures.some((m) => decisive.includes(m)) ? 1 : 0.3
 }
 
+/* أولوية فصل أكاديمية بين الأسئلة متعادلة المنفعة (موثق — V2.1 المرحلة 4):
+   الحقائق البنيوية (التخصص الوظيفي/القطاع/الهدف/الشخصية) تميز بين المسارات مباشرة،
+   وتقدَّم على حقائق السياق، التي تقدَّم على الإشارات المعدِّلة (مثل التعامل مع الجمهور)
+   لأن الإشارة المعدِّلة إذا طُرحت أولًا وسّعت الفارق وأطفأت بقية الفواصل قبل جمع دليلها */
+const SEPARATOR_FACT_PRIORITY: Record<string, number> = {
+  function_specialization: 3,
+  sector: 3,
+  primary_goal: 3,
+  persona_type: 3,
+  leadership_context: 2,
+  team_context: 2,
+  business_stage: 2,
+  offer_clarity: 2,
+  revenue_signal: 2,
+  goal_clarity: 2,
+  weekly_load: 2,
+  public_facing: 1,
+  application_readiness: 1,
+}
+
+function separatorPriority(q: BankQuestion): number {
+  return Math.max(0, ...q.measures.map((m) => SEPARATOR_FACT_PRIORITY[m] ?? 0))
+}
+
 export function questionUtility(
   q: BankQuestion,
   facts: FactBag,
@@ -117,7 +141,11 @@ export function questionUtility(
   const contradictionResolution = measuresContradiction(q, contradictions)
   const requiredCoverage = measuresMissingCore(q, facts, extraRequiredFacts)
   const riskReduction = q.sensitivity_level !== 'low' && q.trigger_condition !== 'always' ? 0.6 : 0.2
-  const answerCost = COST_BY_TYPE[q.answer_type] ?? 0.4
+  /* السؤال الفاصل الحي لا تُخصم كلفة صيغته دون كلفة الاختيار المفرد (موثق — V2.1 المرحلة 4):
+     عند تقارب المرشحين (< 8٪) جمع الدليل الفاصل أعلى قيمة من فرق كلفة الصيغة،
+     وإلا أُقصيت أسئلة بنيوية متعددة الخيارات (كالتخصص الوظيفي) بسبب الصيغة لا القيمة */
+  const rawCost = COST_BY_TYPE[q.answer_type] ?? 0.4
+  const answerCost = tieBreakPower === 1 ? Math.min(rawCost, COST_BY_TYPE.single_choice) : rawCost
   const sensitivity = SENSITIVITY_SCORE[q.sensitivity_level] ?? 0.5
   const redundancy = q.measures.every((m) => facts[m] !== undefined) ? 1 : 0
 
@@ -146,7 +174,7 @@ export function questionUtility(
   }
 }
 
-/** يرتب الأسئلة الأهلية بالمنفعة؛ التعادل يحسم بمعرف السؤال أبجديا (حتمية) */
+/** يرتب الأسئلة الأهلية بالمنفعة؛ التعادل يحسم بأولوية الفصل الأكاديمية ثم بمعرف السؤال أبجديا (حتمية) */
 export function rankQuestions(
   questions: BankQuestion[],
   facts: FactBag,
@@ -157,7 +185,10 @@ export function rankQuestions(
   const scored = questions.map((q) => ({
     questionId: q.question_id,
     utility: questionUtility(q, facts, contradictions, candidates, extraRequiredFacts),
+    sepPriority: separatorPriority(q),
   }))
-  scored.sort((a, b) => b.utility.total - a.utility.total || a.questionId.localeCompare(b.questionId))
+  scored.sort(
+    (a, b) => b.utility.total - a.utility.total || b.sepPriority - a.sepPriority || a.questionId.localeCompare(b.questionId),
+  )
   return scored
 }

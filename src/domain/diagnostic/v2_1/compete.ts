@@ -16,12 +16,13 @@ import type { FactBag } from '../types'
 import { DOMAIN_CONFIDENCE_MIN } from '../v2/domains'
 import { basePersonaCode } from '../v2/personas'
 import { TARGET_LEVEL } from '../v2/skills'
-import { layersOfSkill } from '../v2/data'
+import { layersOfSkill, functionDomainsV2 } from '../v2/data'
 import type { DecisionContext, DomainId, SkillState } from '../v2/types'
 import type { CareerStage } from './maps'
 import {
   REACHABLE_LEGACY_GOALS,
   activeDomainsOf,
+  gateDomainsOf,
   recommendationUniverse,
   type RecommendationEntity,
 } from './universe'
@@ -119,6 +120,13 @@ function evalCondition(op: string, fact: { value: unknown } | undefined, values:
       return Array.isArray(v) && v.includes(values[0])
     case 'contains_any':
       return Array.isArray(v) && values.some((x) => (v as (string | number)[]).includes(x))
+    /* عوامل عددية — إشارات القوالب على المهارات المقيسة (lte/gte/between) */
+    case 'lte':
+      return typeof v === 'number' && v <= Number(values[0])
+    case 'gte':
+      return typeof v === 'number' && v >= Number(values[0])
+    case 'between':
+      return typeof v === 'number' && v >= Number(values[0]) && v <= Number(values[1])
     default:
       return false
   }
@@ -216,6 +224,8 @@ export interface EntityCandidate {
   /** fit − burden — أساس المقارنة النهائية */
   netFit: number
   skills: EntitySkillAssessment
+  /** دليل إشارات القالب (مركب فقط) — موثق للتدقيق */
+  signals?: SignalEvidence
   reasons_ar: string[]
   breakdown: {
     persona: number
@@ -298,6 +308,93 @@ function scoreMotivationComponent(facts: FactBag): { score: number; reason?: str
   return { score: 0.5 }
 }
 
+/* ─── مُفاضلات الأدلة المعلنة — V2.1 المرحلة 4 (موثقة، لا ضبط يدوي لنتيجة بعينها) ─── */
+
+/* ١) مطابقة الاحتياج المعلن مباشرة: الكيان يعلن قائمة احتياجاته (needs) من بيانات الكتالوج،
+   والمستخدم يعلن need_id صراحة — المطابقة دليل حقيقي يفصل توأمين مجاليين (عمليات/إمداد، مبيعات/تفاوض).
+   الوزن صغير متعمد: يحسم التقارب ولا يقلب فجوة حقيقية. */
+export const NEED_DIRECT_BONUS = 0.03
+
+/* ٢) محاذاة الوظيفة للمسارات القياسية: بروفايل المسار يعلن وظائفه (functions) —
+   تطابق function_specialization المقيسة يؤيد، وتناقضها ينفي. محايد عند غياب الدليل. */
+export const FUNCTION_ALIGN_WEIGHT = 0.03
+
+/* ٢ب) محاذاة السياق القيادي: بروفايل المسار يعلن leadership_fit (مثل «مدير جديد») —
+   يفصل «مديرًا يقود فريقه أول مرة» عن «متخصص مواهب» عند تقاسم المجال نفسه. */
+export const LEADERSHIP_ALIGN_WEIGHT = 0.03
+
+/* ٣) دليل إشارات القالب المركب: إشاراته الموجبة/السالبة المعلنة في الكتالوج (وضوح العرض،
+   إشارة الإيراد، السياق القيادي…) بقيت بيانات ميتة لا تدخل التسجيل — فهيمن قالب على آخر
+   رغم إشاراته السالبة. هنا تُوزن الإشارات (عدا persona_type/primary_goal — لهما مكوناهما)
+   وتعدّل ملاءمة المركب بمقدار ±نصف الوزن. المهارة المقيسة تُقرأ من skillStates لا الحقائق. */
+export const SIGNAL_EVIDENCE_WEIGHT = 0.08
+
+/** قيمة حقيقة أو مهارة مقيسة لغرض تقييم الإشارة — الحقائق أولًا ثم مخزن المهارات */
+function signalFactOf(key: string, facts: FactBag, skillStates: Map<string, SkillState>): { value: unknown } | undefined {
+  const f = facts[key]
+  if (f !== undefined) return f
+  const st = skillStates.get(key)
+  if (st?.state === 'measured' && st.level !== undefined) return { value: st.level }
+  return undefined
+}
+
+export interface SignalEvidence {
+  adjustment: number
+  matchedPositive: string[]
+  matchedNegative: string[]
+  totalPositive: number
+  totalNegative: number
+}
+
+export function compositeSignalEvidence(
+  entity: RecommendationEntity,
+  facts: FactBag,
+  skillStates: Map<string, SkillState>,
+): SignalEvidence {
+  const pos = entity.positive_signals.filter((s) => s.fact_key !== 'persona_type' && s.fact_key !== 'primary_goal')
+  const neg = entity.negative_signals
+  /* المجهول لا يعاقب ولا يكافأ (نفس فلسفة المهارات): النسبة تُحسب على الإشارات
+     المعروفة فقط — حقيقة لم تُجمع بعد ليست دليل نفي. بلا هذا يُدان كل مركب
+     بإشارات لم تُتح جلسة الأسئلة فرصة قياسها أصلًا */
+  let posHit = 0
+  let posKnown = 0
+  const matchedPositive: string[] = []
+  for (const s of pos) {
+    const w = s.weight || 1
+    const fact = signalFactOf(s.fact_key, facts, skillStates)
+    if (fact === undefined) continue
+    posKnown += w
+    if (evalCondition(s.operator, fact, s.values)) {
+      posHit += w
+      matchedPositive.push(s.fact_key)
+    }
+  }
+  let negHit = 0
+  let negKnown = 0
+  const matchedNegative: string[] = []
+  for (const s of neg) {
+    const w = s.weight || 1
+    const fact = signalFactOf(s.fact_key, facts, skillStates)
+    if (fact === undefined) continue
+    negKnown += w
+    if (evalCondition(s.operator, fact, s.values)) {
+      negHit += w
+      matchedNegative.push(s.fact_key)
+    }
+  }
+  const posRatio = posKnown > 0 ? posHit / posKnown : 0.5
+  const negRatio = negKnown > 0 ? negHit / negKnown : 0
+  /* السالبة المطابقة تخصم بثلاثة أرباع وزنها — إشارة نفي واحدة قوية تكفي لكبح قالب */
+  const evidence = Math.min(1, Math.max(0, posRatio - 0.75 * negRatio))
+  return {
+    adjustment: Math.round(SIGNAL_EVIDENCE_WEIGHT * (evidence - 0.5) * 1000) / 1000,
+    matchedPositive,
+    matchedNegative,
+    totalPositive: pos.length,
+    totalNegative: neg.length,
+  }
+}
+
 /** تكلفة تعقيد المركب — من حجم الخطة لا من محتواها (البند 5) */
 export function compositeBurden(entity: RecommendationEntity): number {
   if (entity.entity_type !== 'composite') return 0
@@ -323,7 +420,7 @@ export function scoreEntity(entity: RecommendationEntity, facts: FactBag, ctx: D
   const redistributed = (W.skillGap - skillWeight) / 2
   const skillComponent = skills.gapScore ?? 0
 
-  const fit =
+  let fit =
     persona.score * (W.persona + redistributed) +
     goal.score * (W.goal + redistributed) +
     domain.score * W.domain +
@@ -331,18 +428,65 @@ export function scoreEntity(entity: RecommendationEntity, facts: FactBag, ctx: D
     feasibility.score * W.feasibility +
     motivation.score * W.motivation
 
-  const burden = compositeBurden(entity)
   const reasons_ar = [persona.reason, goal.reason, domain.reason, feasibility.reason, motivation.reason].filter(
     (r): r is string => Boolean(r),
   )
+
+  /* مُفاضلة الاحتياج المعلن (المرحلة 4): need_id المستخدم ضمن احتياجات الكيان المعلنة */
+  const needId = facts['need_id']?.value
+  const needDirect = typeof needId === 'string' && entity.needs.includes(needId)
+  if (needDirect) {
+    fit += NEED_DIRECT_BONUS
+    reasons_ar.push('احتياجك المعلن هو بالضبط ما صُمم لهذا الكيان — ليس مجرد تقاطع مجال.')
+  }
+
+  /* مُفاضلة محاذاة الوظيفة: تطابق/تناقض function_specialization مع وظائف الكيان المعلنة
+     (للقياسي من بروفايله، وللمركب اتحاد وظائف مساراته الممثلة).
+     التناقض يُحسب بمستوى المجال لا الرمز: وظيفة من نفس أسرة مجالات الكيان (مشتريات ⊂ عمليات)
+     ليست تناقضًا — محايدة؛ التناقض الحقيقي = وظيفة خارج مجالات الكيان كلها */
+  const fnFact = facts['function_specialization']?.value
+  const fnList = Array.isArray(fnFact) ? (fnFact as string[]) : typeof fnFact === 'string' ? [fnFact] : []
+  if (entity.functions.length > 0 && fnList.length > 0) {
+    if (fnList.some((f) => entity.functions.includes(f))) {
+      fit += FUNCTION_ALIGN_WEIGHT
+      reasons_ar.push('وظيفتك الحالية من الوظائف التي صُمم لها هذا الكيان.')
+    } else {
+      const fnDomains = fnList.flatMap((f) => functionDomainsV2[f] ?? [])
+      const sameFamily = fnDomains.some((d) => entity.domains.includes(d) || entity.extended_domains.includes(d))
+      if (!sameFamily) fit -= FUNCTION_ALIGN_WEIGHT
+    }
+  }
+
+  /* مُفاضلة السياق القيادي (قياسي فقط): leadership_fit المعلن مقابل leadership_context المقيس */
+  const leadCtx = facts['leadership_context']?.value
+  if (entity.entity_type === 'standard' && entity.leadership_context.length > 0 && typeof leadCtx === 'string') {
+    if (entity.leadership_context.includes(leadCtx)) {
+      fit += LEADERSHIP_ALIGN_WEIGHT
+      reasons_ar.push('سياقك القيادي الحالي هو ما صُمم لهذا المسار بالضبط.')
+    } else {
+      fit -= LEADERSHIP_ALIGN_WEIGHT
+    }
+  }
+
+  /* مُفاضلة دليل الإشارات (مركب فقط): إشارات القالب الموجبة والسالبة تُوزن فتدخل الملاءمة */
+  let signals: SignalEvidence | undefined
+  if (entity.entity_type === 'composite') {
+    signals = compositeSignalEvidence(entity, facts, ctx.skillStates)
+    fit += signals.adjustment
+  }
+
+  fit = Math.round(fit * 1000) / 1000
   if (skills.gapSkillSlugs.length > 0) reasons_ar.push(`لديك فجوة مقيسة في ${skills.gapSkillSlugs.length} من مهاراته الأساسية.`)
+
+  const burden = compositeBurden(entity)
 
   return {
     entity,
-    fit: Math.round(fit * 1000) / 1000,
+    fit,
     burden,
     netFit: Math.round((fit - burden) * 1000) / 1000,
     skills,
+    signals,
     reasons_ar,
     breakdown: {
       persona: persona.score,
@@ -386,8 +530,9 @@ export function compositeVictoryCheck(
   const missing = producibleRequired.filter((rf) => !isCovered(rf.fact_key))
   const factCoverage = producibleRequired.length === 0 ? 1 : 1 - missing.length / producibleRequired.length
 
-  /* ١) حاجة متعددة المجالات حقيقية — مجالان نشطان من مجالاته الجوهرية على الأقل */
-  const activeDomains = activeDomainsOf(facts, ctx.domains)
+  /* ١) حاجة متعددة المجالات حقيقية — مجالان نشطان من مجالاته الجوهرية على الأقل.
+     تُقرأ المجالات بمستوى البوابة (قوة موزونة + تصريح وظيفة/ميول مباشر) لا بعتبة التسجيل */
+  const activeDomains = gateDomainsOf(facts, ctx.domains)
   const coveredByComposite = entity.domains.filter((d) => activeDomains.includes(d))
   const multiDomainNeed = coveredByComposite.length >= 2
 
@@ -518,8 +663,9 @@ export function competeEntities(facts: FactBag, ctx: DecisionContext): Competiti
   const topComposite = compositeCandidates[0] ?? null
 
   /* المتحدي المركب الشرعي: يجتاز البوابتين البنيويتين أولًا — حاجة متعددة المجالات مُثبتة
-     + يغطي مجالًا نشطًا يتركه أفضل قياسي (البند 4). لا يكفي أن يكون الأعلى صافًا */
-  const activeDomains = activeDomainsOf(facts, ctx.domains)
+     + يغطي مجالًا نشطًا يتركه أفضل قياسي (البند 4). لا يكفي أن يكون الأعلى صافًا.
+     المجالات بمستوى البوابة: قوة موزونة + تصريح وظيفة مباشر (المرحلة 4) */
+  const activeDomains = gateDomainsOf(facts, ctx.domains)
   const bestStandardDomains = bestStandard?.entity.domains ?? []
   const bestComposite =
     compositeCandidates.find((c) => {

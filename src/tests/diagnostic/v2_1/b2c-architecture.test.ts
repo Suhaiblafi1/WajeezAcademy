@@ -125,8 +125,10 @@ describe('بنية أسئلة B2C — معايير النجاح', () => {
     }
     expect(Object.keys(questionPlanV21).length).toBe(198)
     expect(Object.values(counts).reduce((a, b) => a + b, 0)).toBe(198)
-    /* الأرقام المرجعية الموثقة — أي تغيير يتطلب تحديثًا مقصودًا لهذا الاختبار */
-    expect(counts).toEqual({ active_b2c: 75, deep_only: 11, post_recommendation: 25, institutional: 14, retired: 58, out_of_scope: 15 })
+    /* الأرقام المرجعية الموثقة — أي تغيير يتطلب تحديثًا مقصودًا لهذا الاختبار.
+       المرحلة 4: نُقلت أسئلة المهارات الأربع المقاسة غير المغطاة
+       (QB-M4-002/005/023/025) إلى ما بعد التوصية بقرار أكاديمي موثق */
+    expect(counts).toEqual({ active_b2c: 71, deep_only: 11, post_recommendation: 29, institutional: 14, retired: 58, out_of_scope: 15 })
   })
 
   it('كل سؤال نشط في B2C له أثر قراري موثق في الخطة', () => {

@@ -185,6 +185,29 @@ export function applyDerivedRules(facts: FactBag) {
   if (g('persona_type') === 'founder' && g('employment_state') === 'self_employed') {
     facts.persona_type = { ...facts.persona_type, value: 'freelancer' }
   }
+  /* اشتقاق education_state من المرحلة المهنية — V2.1 المرحلة 4 (موثق):
+     Career Stage يميز طالبًا جامعيًا من خريج حديث، فلا حاجة لسؤال تعليم مستقل.
+     المطلوب الحقيقي لقالب «أول وظيفة» هو جاهزية أول وظيفة لا الشهادة بذاتها. */
+  const cs = g('career_stage')
+  if (facts['education_state'] === undefined && (cs === 'university_student' || cs === 'fresh_graduate')) {
+    const src = facts['career_stage']
+    facts['education_state'] = {
+      value: cs === 'university_student' ? 'enrolled' : 'graduated',
+      sourceQuestionId: src?.sourceQuestionId ?? 'derived',
+      evidenceQuality: src?.evidenceQuality ?? 0.8,
+    }
+  }
+  /* اشتقاق current_pain من الاحتياج المعلن — V2.1 المرحلة 4 (موثق):
+     اختيار «تجربة العميل / المستفيد وجودة الخدمة» في سؤال الاحتياج ينتج حقيقة ألم
+     قابلة للاستخدام بمفردات إشارات القالب (complaints/service) — بدل سؤال «ما ألمك؟» نصي عام */
+  if (facts['current_pain'] === undefined && g('need_id') === 'need_customer_experience') {
+    const src = facts['need_id']
+    facts['current_pain'] = {
+      value: ['complaints', 'service'],
+      sourceQuestionId: src?.sourceQuestionId ?? 'derived',
+      evidenceQuality: src?.evidenceQuality ?? 0.8,
+    }
+  }
 }
 
 /**

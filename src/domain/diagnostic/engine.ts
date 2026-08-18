@@ -180,12 +180,23 @@ export class DiagnosticEngine {
     const boostSkillSlugs = new Set(
       candidates.slice(0, 3).flatMap((c) => pathwaySkills(c.pathwayId).map((s) => s.slug)),
     )
-    // عند تفعيل طبقة القوالب: حقائقها المطلوبة تصبح ذات أولوية تغطية
-    const templateFacts = templatesActive(candidates)
-      ? [...new Set(scoreTemplates(this.state.facts, candidates).slice(0, 2).flatMap((s) =>
+    // عند تفعيل طبقة القوالب: حقائق القوالب المنافسة فعلًا فقط تصبح ذات أولوية تغطية.
+    // قالب ملاءمته دون أرضية القبول (60٪ من حد الفوز 0.72) لا يستطيع الفوز أصلًا،
+    // فتوجيه ميزانية الأسئلة بحقائقه يزيح الأسئلة الفاصلة بين المسارات بلا مبرر (موثق — المرحلة 4)
+    const tplScores = templatesActive(candidates) ? scoreTemplates(this.state.facts, candidates) : []
+    const topTplFit = tplScores[0]?.fit ?? 0
+    const contestedTemplates = tplScores.filter(
+      (s) =>
+        s.fit >= TEMPLATE_THRESHOLDS.minimum_template_fit * 0.6 &&
+        topTplFit - s.fit < TEMPLATE_THRESHOLDS.top_two_margin,
+    )
+    const templateFacts = [
+      ...new Set(
+        contestedTemplates.slice(0, 2).flatMap((s) =>
           s.template.diagnostic.required_facts.map((rf) => rf.fact_key),
-        ))]
-      : []
+        ),
+      ),
+    ]
     // الحقائق الحاسمة للقرار (مثل حالة العمل لخريج يطلب «وظيفة أو ترقية») أولوية تغطية أيضا
     const criticalMissing = decisionCriticalMissing(this.state.facts)
     const extraRequiredFacts = [...new Set([...templateFacts, ...criticalMissing])]

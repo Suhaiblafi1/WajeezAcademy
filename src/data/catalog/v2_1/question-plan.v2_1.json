@@ -1513,19 +1513,19 @@
       "final_status": "active_b2c"
     },
     "QB-M4-002": {
-      "surface": "b2c",
+      "surface": "post_recommendation",
       "layer21": "evidence_skill",
       "phase": "adaptive",
-      "action": "rewrite",
+      "action": "move_post",
       "stages": "all",
       "domains": [],
-      "impact_ar": "يقيس مهارة «creative_thinking» بمقياس الدليل — تغيّر الفجوة المقيسة والثقة لكل مسار يتطلبها.",
-      "why_ar": "سؤال دليل مهاري — يُطرح فقط عندما تكون المهارة متطلبة لمرشح متصدر وقادرة على تغيير الترتيب.",
+      "impact_ar": "لا أثر على المسار — تُقاس بعده لتخصيص المتابعة.",
+      "why_ar": "creative_thinking مهارة مقاسة غير مغطاة — لا كيان يعلنها حاسمة أو داعمة، فقياسها قبل التوصية مقعد بلا أثر.",
       "measures": [
         "creative_thinking",
         "skill_vector"
       ],
-      "final_status": "active_b2c"
+      "final_status": "post_recommendation"
     },
     "QB-M4-003": {
       "surface": "b2c",
@@ -1558,19 +1558,19 @@
       "final_status": "active_b2c"
     },
     "QB-M4-005": {
-      "surface": "b2c",
+      "surface": "post_recommendation",
       "layer21": "evidence_skill",
       "phase": "adaptive",
-      "action": "rewrite",
+      "action": "move_post",
       "stages": "all",
       "domains": [],
-      "impact_ar": "يقيس مهارة «digital_literacy» بمقياس الدليل — تغيّر الفجوة المقيسة والثقة لكل مسار يتطلبها.",
-      "why_ar": "سؤال دليل مهاري — يُطرح فقط عندما تكون المهارة متطلبة لمرشح متصدر وقادرة على تغيير الترتيب.",
+      "impact_ar": "لا أثر على المسار — تُقاس بعده لتخصيص المتابعة.",
+      "why_ar": "digital_literacy مهارة مقاسة غير مغطاة — لا كيان يعلنها حاسمة أو داعمة، فقياسها قبل التوصية مقعد بلا أثر.",
       "measures": [
         "digital_literacy",
         "skill_vector"
       ],
-      "final_status": "active_b2c"
+      "final_status": "post_recommendation"
     },
     "QB-M4-006": {
       "surface": "b2c",
@@ -1828,19 +1828,19 @@
       "final_status": "active_b2c"
     },
     "QB-M4-023": {
-      "surface": "b2c",
+      "surface": "post_recommendation",
       "layer21": "evidence_skill",
       "phase": "adaptive",
-      "action": "rewrite",
+      "action": "move_post",
       "stages": "all",
       "domains": [],
-      "impact_ar": "يقيس مهارة «learning_agility» بمقياس الدليل — تغيّر الفجوة المقيسة والثقة لكل مسار يتطلبها.",
-      "why_ar": "سؤال دليل مهاري — يُطرح فقط عندما تكون المهارة متطلبة لمرشح متصدر وقادرة على تغيير الترتيب.",
+      "impact_ar": "لا أثر على المسار — تُقاس بعده لتخصيص المتابعة.",
+      "why_ar": "learning_agility مهارة مقاسة غير مغطاة — لا كيان يعلنها حاسمة أو داعمة، فقياسها قبل التوصية مقعد بلا أثر.",
       "measures": [
         "learning_agility",
         "skill_vector"
       ],
-      "final_status": "active_b2c"
+      "final_status": "post_recommendation"
     },
     "QB-M4-024": {
       "surface": "b2c",
@@ -1858,19 +1858,19 @@
       "final_status": "active_b2c"
     },
     "QB-M4-025": {
-      "surface": "b2c",
+      "surface": "post_recommendation",
       "layer21": "evidence_skill",
       "phase": "adaptive",
-      "action": "rewrite",
+      "action": "move_post",
       "stages": "all",
       "domains": [],
-      "impact_ar": "يقيس مهارة «focus_management» بمقياس الدليل — تغيّر الفجوة المقيسة والثقة لكل مسار يتطلبها.",
-      "why_ar": "سؤال دليل مهاري — يُطرح فقط عندما تكون المهارة متطلبة لمرشح متصدر وقادرة على تغيير الترتيب.",
+      "impact_ar": "لا أثر على المسار — تُقاس بعده لتخصيص المتابعة.",
+      "why_ar": "focus_management مهارة مقاسة غير مغطاة — لا كيان يعلنها حاسمة أو داعمة، فقياسها قبل التوصية مقعد بلا أثر.",
       "measures": [
         "focus_management",
         "skill_vector"
       ],
-      "final_status": "active_b2c"
+      "final_status": "post_recommendation"
     },
     "QB-M4-026": {
       "surface": "b2c",
@@ -2900,6 +2900,7 @@
         "people_leadership",
         "communication_influence",
         "ai_productivity",
+        "operations",
         "operations",
         "sales",
         "marketing_growth",

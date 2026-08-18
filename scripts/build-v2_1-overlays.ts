@@ -369,6 +369,14 @@ const overrides: Record<string, Partial<PlanEntry>> = {
   'QB-M7-010': { surface: 'post_recommendation', action: 'move_post', why_ar: 'احتياج الوصول يخصص التجربة — لا يغيّر المسار.', impact_ar: 'لا أثر على المسار.' },
   'QB-M7-011': { surface: 'post_recommendation', action: 'move_post', why_ar: 'الجهاز تخصيص تجربة.', impact_ar: 'لا أثر على المسار.' },
   'QB-M7-012': { surface: 'post_recommendation', action: 'move_post', why_ar: 'عوامل الإكمال متابعة بعد التوصية.', impact_ar: 'لا أثر على المسار.' },
+  /* المرحلة 4 — قرار أكاديمي موثق: المهارات الأربع المقاسة غير المغطاة.
+     لا مسار ولا قالب يعلنها حاسمة أو داعمة (diagnostic_skills)، فسؤالها في
+     التدفق الأساسي يستهلك مقعدًا بلا أثر على الترتيب — تُنقل لما بعد التوصية
+     حيث تخصّص خطة المتابعة لا اختيار المسار (مصفوفة القرار الأكاديمي). */
+  'QB-M4-002': { surface: 'post_recommendation', action: 'move_post', why_ar: 'creative_thinking مهارة مقاسة غير مغطاة — لا كيان يعلنها حاسمة أو داعمة، فقياسها قبل التوصية مقعد بلا أثر.', impact_ar: 'لا أثر على المسار — تُقاس بعده لتخصيص المتابعة.' },
+  'QB-M4-005': { surface: 'post_recommendation', action: 'move_post', why_ar: 'digital_literacy مهارة مقاسة غير مغطاة — لا كيان يعلنها حاسمة أو داعمة، فقياسها قبل التوصية مقعد بلا أثر.', impact_ar: 'لا أثر على المسار — تُقاس بعده لتخصيص المتابعة.' },
+  'QB-M4-023': { surface: 'post_recommendation', action: 'move_post', why_ar: 'learning_agility مهارة مقاسة غير مغطاة — لا كيان يعلنها حاسمة أو داعمة، فقياسها قبل التوصية مقعد بلا أثر.', impact_ar: 'لا أثر على المسار — تُقاس بعده لتخصيص المتابعة.' },
+  'QB-M4-025': { surface: 'post_recommendation', action: 'move_post', why_ar: 'focus_management مهارة مقاسة غير مغطاة — لا كيان يعلنها حاسمة أو داعمة، فقياسها قبل التوصية مقعد بلا أثر.', impact_ar: 'لا أثر على المسار — تُقاس بعده لتخصيص المتابعة.' },
 }
 
 /* قاعدة «الجملة الحاسمة»: لا سبب واضح = مرشح تقاعد */

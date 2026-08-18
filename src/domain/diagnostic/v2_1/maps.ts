@@ -132,6 +132,9 @@ export const NEEDS_V21: NeedDefV21[] = [
   { code: 'need_communication', label_ar: 'التواصل والعرض والتأثير', stages: 'all', domains: ['communication_influence'] },
   { code: 'need_ai', label_ar: 'الذكاء الاصطناعي وتطبيقاته العملية', stages: 'all', domains: ['ai_productivity'] },
   { code: 'need_operations', label_ar: 'العمليات وتحسين الإجراءات', stages: [...EMPLOYED_LIKE, 'founder'], domains: ['operations'] },
+  /* مدخل قالب تجربة العميل (TPL-CX-001): الاحتياج ينتج حقيقة current_pain القابلة للاستخدام
+     عبر قاعدة اشتقاق موثقة (facts.ts) — لا سؤال «ما ألمك؟» نصي عام */
+  { code: 'need_customer_experience', label_ar: 'تجربة العميل / المستفيد وجودة الخدمة', stages: [...EMPLOYED_LIKE, 'founder'], domains: ['operations'] },
   { code: 'need_sales', label_ar: 'المبيعات والتعامل مع العملاء', stages: [...EMPLOYED_LIKE, 'founder', 'freelancer'], domains: ['sales'] },
   { code: 'need_marketing', label_ar: 'التسويق والنمو', stages: ['early_career', 'experienced', 'manager', 'founder', 'freelancer', 'other_unsure'], domains: ['marketing_growth'] },
   { code: 'need_negotiation', label_ar: 'التفاوض وإغلاق الصفقات', stages: ['experienced', 'manager', 'senior_manager', 'founder', 'freelancer'], domains: ['sales', 'communication_influence'] },

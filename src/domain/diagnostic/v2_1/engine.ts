@@ -49,6 +49,7 @@ import type {
   V2Candidate,
 } from '../v2/types'
 import { planOf } from './data'
+import { recommendationUniverse } from './universe'
 import { competeEntities, decisiveSkills, appliedHandoffFilter, type CompetitionResult, type EntityCandidate } from './compete'
 import {
   goalByCode,
@@ -275,17 +276,40 @@ export function scoreAdaptiveQuestionV21(
   candidates: V2Candidate[],
   decisive?: Map<string, number>,
   criticalFacts?: Set<string>,
+  lateEvidence = false,
 ): AdaptiveScoreV21 {
   const plan = planOf(q.question_id)!
   const measures = q.measures.filter((m) => m !== 'skill_vector' && m !== 'interest_vector' && m !== 'work_style_vector')
+  const margin = candidates.length >= 2 ? candidates[0].total - candidates[1].total : 1
 
   /* ١) سياق حاسم مفقود: القائمة الثابتة + الحقائق المطلوبة لمرشحي الصدارة الحاليين
      (بما فيهم المتحدي المركب) — إصلاح أسلاك موثق: حقيقة يتطلبها متصدر ولا تُنتجها
      أي إجابة مُعطاة بعد يجب أن ترفع أولوية سؤالها، وإلا تعمل بوابة تغطية الأدلة
-     في فحص الفوز ضد مرشح لم تُتح له فرصة جمع دليله أصلًا. */
-  const missingContext = measures.some(
-    (m) => (CONTEXT_FACTS.includes(m) || criticalFacts?.has(m)) && facts[m] === undefined,
-  )
+     في فحص الفوز ضد مرشح لم تُتح له فرصة جمع دليله أصلًا.
+     المرحلة 4 (أسئلة المهارات للفصل لا للتعزيز): سؤال قياس مهارة لا يأخذ دفعة
+     «الحقيقة الحاسمة» في سباق مريح الهامش إلا إذا كانت المهارة حقيقة مطلوبة
+     لمتحدٍّ مركب من الصدارة — فوز المركب يتوقف بنيويًا على تغطيتها (بوابة 0.8)،
+     فقياسها هنا فصلٌ مشروع لا تعزيز لمتصدر قياسي مرتاح. */
+  const isSkillQuestion = plan.layer21 === 'evidence_skill'
+  const compositeCriticalFacts = new Set<string>()
+  if (isSkillQuestion && criticalFacts && margin >= 0.15) {
+    for (const c of candidates.slice(0, 3)) {
+      /* المتحدي المركب الحي فقط — ضمن هامش الفصل من المتصدر. مركب بعيد في
+         سباق مريح لا يبرر استهلاك مقعد لجمع دليله (تعزيز مقنّع) */
+      if (candidates[0] && candidates[0].total - c.total >= 0.15) continue
+      const ent = recommendationUniverse().byId.get(c.pathwayId)
+      if (ent?.entity_type === 'composite') {
+        for (const rf of ent.required_facts) if (rf.importance !== 'optional') compositeCriticalFacts.add(rf.fact_key)
+      }
+    }
+  }
+  const missingContext = measures.some((m) => {
+    if (facts[m] !== undefined) return false
+    if (CONTEXT_FACTS.includes(m)) return true
+    if (!criticalFacts?.has(m)) return false
+    if (!isSkillQuestion) return true
+    return margin < 0.15 || compositeCriticalFacts.has(m)
+  })
     ? 1
     : 0
 
@@ -299,16 +323,38 @@ export function scoreAdaptiveQuestionV21(
 
   /* ٣) فصل المرشحين بدليل مهارة — الأولوية لقيمة الفصل (decisive_unmeasured_skills)،
         لا لامتلاك المتصدر المهارة: كسر الدائرية موثق في البند 11.
-        الفارق الضيق يعطي القيمة كاملة، والواسع نصفها (الفصل ما زال ممكنًا لكنه أقل إلحاحًا) */
-  const margin = candidates.length >= 2 ? candidates[0].total - candidates[1].total : 1
+        المرحلة 4: الفصل يُحسب في السباق الحي فقط (هامش < 0.15) — في سباق مريح
+        لا يمكن لدليل مهارة أن يقلب النتيجة، فقياسها هناك تعزيز لا فصل */
   const skillSlug = q.measures[0]
   const sepVal = decisive?.get(skillSlug) ?? 0
-  const evidenceSeparation =
-    plan.layer21 === 'evidence_skill' && sepVal > 0 ? (margin < 0.15 ? sepVal : sepVal * 0.5) : 0
+  const evidenceSeparation = plan.layer21 === 'evidence_skill' && sepVal > 0 && margin < 0.15 ? sepVal : 0
 
-  /* ٤) تغطية دليل — مهارة متطلبة للمتصدر ولم تُقس لكنها لا تفرّق بين المرشحين */
+  /* ٤) تغطية دليل — مهارة متطلبة للمتصدر ولم تُقس لكنها لا تفرّق بين المرشحين.
+        المرحلة 4: سباق مريح الهامش لا يحتاج تغطية إضافية للمتصدر (تعزيز مقنّع) —
+        تُحسب في السباق الحي فقط أسوة بالمكوّنين ٣ و٤ب */
   const top1Unknown = candidates[0] ? new Set(candidates[0].unknownSkillSlugs) : new Set<string>()
-  const evidenceCoverage = plan.layer21 === 'evidence_skill' && sepVal === 0 && top1Unknown.has(skillSlug) ? 1 : 0
+  const evidenceCoverage =
+    plan.layer21 === 'evidence_skill' && sepVal === 0 && top1Unknown.has(skillSlug) && margin < 0.15 ? 1 : 0
+
+  /* ٤ب) حد الدليل الأدنى المتمايز (موثق — المرحلة 4): في الجولات المتأخرة فقط
+     (lateEvidence = بعد بلوغ targetMin + 2) وفي سباق حي فقط (هامش < 0.15):
+     مهارات المتصدر الحاسمة كلها مجهولة والفارق ضيق بما يمكن معه لدليل المهارة
+     أن يقلب النتيجة، فيرتفع سؤال قياس إحداها فوق الروتين ويبقى دون الحقائق
+     المطلوبة (missingContext). سباق مريح الهامش لا يعتمد على المهارات أصلًا
+     فلا تُستهلك ميزانيته (البند: أسئلة المهارات للفصل لا للتعزيز) */
+  const topEntity = candidates[0] ? recommendationUniverse().byId.get(candidates[0].pathwayId) : undefined
+  const topDecisive = topEntity?.skill_roles.decisive ?? []
+  const unsureExplore = facts['primary_goal']?.value === 'explore' || facts['need_id']?.value === 'need_unsure'
+  const minimumEvidence =
+    lateEvidence &&
+    margin < 0.15 &&
+    plan.layer21 === 'evidence_skill' &&
+    !unsureExplore &&
+    topDecisive.length > 0 &&
+    topDecisive.every((s) => top1Unknown.has(s)) &&
+    topDecisive.includes(skillSlug)
+      ? 1
+      : 0
 
   /* ٥) تناقض قائم */
   const contradiction = contradictions.some((c) => !c.resolved && c.factKeys.some((fk) => q.measures.includes(fk))) ? 1 : 0
@@ -330,6 +376,7 @@ export function scoreAdaptiveQuestionV21(
     missingContext * 1.0 +
     domainUncertainty * 0.9 +
     evidenceSeparation * 0.9 +
+    minimumEvidence * 0.85 + // متأخر فقط (lateEvidence) — دون الحقائق المطلوبة (1.0) وفوق الروتين، بلا أولوية مطلقة
     contradiction * 0.65 +
     exploratory * 0.6 +
     evidenceCoverage * 0.35 +
@@ -343,6 +390,7 @@ export function scoreAdaptiveQuestionV21(
     ['يكمل سياقًا حاسمًا للقرار', missingContext],
     ['يفصل غموض المجال', domainUncertainty * 0.9],
     ['يفصل بين المرشحين المتصدرين بدليل مهارة', evidenceSeparation * 0.9],
+    ['يقيس مهارة حاسمة للمتصدر قبل أي اكتفاء', minimumEvidence * 0.8],
     ['يحسم تناقضًا قائمًا', contradiction * 0.65],
     ['يستكشف ميولك لأن الهدف غير محسوم', exploratory * 0.6],
     ['يقيس مهارة يتطلبها المرشح المتصدر', evidenceCoverage * 0.35],
@@ -354,7 +402,7 @@ export function scoreAdaptiveQuestionV21(
     questionId: q.question_id,
     utility,
     reason_ar,
-    components: { missingContext, domainUncertainty, evidenceSeparation, contradiction, exploratory, evidenceCoverage, cost, sensitivity, redundancy },
+    components: { missingContext, domainUncertainty, evidenceSeparation, minimumEvidence, contradiction, exploratory, evidenceCoverage, cost, sensitivity, redundancy },
   }
 }
 
@@ -366,8 +414,9 @@ export function rankAdaptiveQuestionsV21(
   candidates: V2Candidate[],
   decisive?: Map<string, number>,
   criticalFacts?: Set<string>,
+  lateEvidence = false,
 ): AdaptiveScoreV21[] {
-  const scored = questions.map((q) => scoreAdaptiveQuestionV21(q, facts, contradictions, ctx, candidates, decisive, criticalFacts))
+  const scored = questions.map((q) => scoreAdaptiveQuestionV21(q, facts, contradictions, ctx, candidates, decisive, criticalFacts, lateEvidence))
   scored.sort((a, b) => b.utility - a.utility || a.questionId.localeCompare(b.questionId))
   return scored
 }
@@ -504,6 +553,34 @@ export class DiagnosticEngineV21 {
     return Math.abs(bestComposite.fit - bestStandard.fit) < 0.15
   }
 
+  /* سؤال حد الدليل الأدنى: في سباق حي فقط (هامش أول اثنين < 0.15) — هنا يمكن
+     لدليل المهارة أن يقلب النتيجة فعلًا. يجمع المهارات الحاسمة المجهولة كليًا
+     لدى مرشحي الصدارة الثلاثة في مجموعة أهداف واحدة، ثم يختار أعلى سؤال مرتّب
+     يقيس أيًّا منها. سباق مريح الهامش لا يعتمد على المهارات فلا يُقاس لأجله شيء */
+  private minimumEvidenceQuestion(
+    comp: CompetitionResult,
+    ranked: AdaptiveScoreV21[],
+    due: boolean,
+  ): AdaptiveScoreV21 | null {
+    if (!due) return null
+    const margin = comp.candidates.length >= 2 ? comp.candidates[0].netFit - comp.candidates[1].netFit : 1
+    if (margin >= 0.15) return null
+    const targets = new Set<string>()
+    for (const cand of comp.candidates.slice(0, 3)) {
+      const decisiveSlugs = cand.entity.skill_roles.decisive
+      if (decisiveSlugs.length === 0) continue
+      if (!decisiveSlugs.every((s) => cand.skills.unknownSkillSlugs.includes(s))) continue
+      for (const s of decisiveSlugs) targets.add(s)
+    }
+    if (targets.size === 0) return null
+    return (
+      ranked.find((r) => {
+        const q = questionById.get(r.questionId)
+        return q?.answer_type === 'skill_level_5' && targets.has(q.measures[0])
+      }) ?? null
+    )
+  }
+
   /* ─── السؤال التالي ─── */
   nextQuestion(): NextQuestionResult {
     const askedCount = this.state.askedQuestionIds.length
@@ -564,7 +641,7 @@ export class DiagnosticEngineV21 {
       if (q.module_id === 'M5') return this.state.interestVector[q.measures[0]] === undefined
       return measures.some((m) => this.state.facts[m] === undefined)
     })
-    const ranked = rankAdaptiveQuestionsV21(eligible, this.state.facts, this.state.contradictions, ctx, candidates, decisive, criticalFacts)
+    const ranked = rankAdaptiveQuestionsV21(eligible, this.state.facts, this.state.contradictions, ctx, candidates, decisive, criticalFacts, askedCount >= V21_STOP.targetMin + 2)
     const best = ranked[0]
     const hasDecisionQuestion = ranked.some(
       (r) => r.components.missingContext > 0 || r.components.domainUncertainty > 0 || r.components.evidenceSeparation > 0 || r.components.contradiction > 0,
@@ -572,6 +649,52 @@ export class DiagnosticEngineV21 {
     const hasDomainSeparator = ranked.some((r) => r.components.domainUncertainty > 0)
 
     const stop = this.evaluateStop(askedCount, ctx, candidates, confidence, hasDecisionQuestion, hasDomainSeparator)
+
+    /* عدالة الدليل عند التوقف (موثق — المرحلة 4):
+       ١) متحدٍّ مركب حي (ضمن 0.15 من أفضل قياسي) تنقصه حقيقة مطلوبة منتَجة —
+          لا توقف قبل منحه فرصة جمع دليله، وإلا حُسم السباق لصالح من اكتمل دليله
+          لا لصالح الأجدر (انزياح TPL-STRATEGY الموثق).
+       ٢) حد الدليل الأدنى — مرشحو الصدارة بلا أي مهارة حاسمة مقاسة:
+          يُسأل سؤال دليل واحد بدل إنهاء صامت */
+    if (stop.shouldStop && askedCount < V21_STOP.hardCap) {
+      const challenger = comp.bestComposite ?? comp.topComposite
+      const bestStd = comp.bestStandard
+      if (challenger && bestStd && bestStd.netFit - challenger.netFit < 0.15) {
+        const missingKeys = challenger.entity.required_facts
+          .filter((rf) => rf.importance !== 'optional')
+          .map((rf) => rf.fact_key)
+          .filter((k) => this.state.facts[k] === undefined && ctx.skillStates.get(k)?.state !== 'measured')
+        const challengerQ =
+          missingKeys.length > 0
+            ? ranked.find((r) => {
+                const q = questionById.get(r.questionId)
+                return q !== undefined && q.measures.some((m) => missingKeys.includes(m))
+              })
+            : undefined
+        if (challengerQ) {
+          const question = questionById.get(challengerQ.questionId)!
+          this.traceEntry('question_selected', `عدالة الدليل — ${question.question_id}: ${question.text_ar}`, {
+            winner: question.question_id,
+            winnerReason_ar: 'خطة مركبة منافسة تنقصها حقيقة مطلوبة — تُمنح فرصة الدليل قبل الاكتفاء.',
+            utility: challengerQ.utility,
+            utilityComponents: challengerQ.components,
+          })
+          return { question, utility: null, stop: { shouldStop: false, reason_ar: 'نمنح الخطة المركبة المنافسة فرصة إكمال دليلها.', askedCount } }
+        }
+      }
+      const rescue = this.minimumEvidenceQuestion(comp, ranked, true)
+      if (rescue) {
+        const question = questionById.get(rescue.questionId)!
+        this.traceEntry('question_selected', `حد الدليل الأدنى — ${question.question_id}: ${question.text_ar}`, {
+          winner: question.question_id,
+          winnerReason_ar: 'مهارة حاسمة للمرشح المتصدر ما زالت مجهولة — لا توصية بلا أي دليل مهاري مقاس.',
+          utility: rescue.utility,
+          utilityComponents: rescue.components,
+        })
+        return { question, utility: null, stop: { shouldStop: false, reason_ar: 'نقيس مهارة حاسمة للمتصدر قبل الاكتفاء.', askedCount } }
+      }
+    }
+
     if (stop.shouldStop || !best) {
       const finalStop = stop.shouldStop ? stop : { shouldStop: true, reason_ar: 'لا سؤال ذا منفعة حقيقية متبقٍ — الصورة اكتملت.', askedCount }
       this.traceEntry('stop_evaluated', finalStop.reason_ar, { askedCount })
@@ -1096,11 +1219,25 @@ export class DiagnosticEngineV21 {
       }
     }
 
+    /* حارس صمت الدليل (موثق — المرحلة 4): في سباق حي (هامش < 0.15) فائز مهاراته
+       الحاسمة كلها مجهولة يعني أن دليلًا كان يمكن أن يقلب النتيجة لم يُجمع —
+       لا يُقدَّم توصيةً صامتة بل يُوسم بمراجعة مستشار مع سبب صريح.
+       أما السباق المريح ففوزه مبني على هدف/مجال/سياق لا على مهارات مجهولة */
+    const winnerForEvidence = composite && comp.bestComposite ? comp.bestComposite : primary
+    const winnerDecisive = winnerForEvidence?.entity.skill_roles.decisive ?? []
+    const raceMargin = comp.candidates.length >= 2 ? comp.candidates[0].netFit - comp.candidates[1].netFit : 1
+    const silentOnDecisive =
+      winnerForEvidence !== null &&
+      raceMargin < 0.15 &&
+      winnerDecisive.length > 0 &&
+      winnerDecisive.every((s) => winnerForEvidence.skills.unknownSkillSlugs.includes(s))
+
     const needsAdvisor =
       confidence.outputKind === 'advisor_review' ||
       this.state.contradictions.some((c) => !c.resolved && c.severity === 'high') ||
       composite?.requiredHoursOverflow === true ||
-      composite?.advisorHandoff !== undefined
+      composite?.advisorHandoff !== undefined ||
+      silentOnDecisive
 
     const kind: Recommendation['kind'] = needsAdvisor ? 'advisor_referral' : composite ? 'composite_template' : 'single_pathway'
 
@@ -1143,6 +1280,9 @@ export class DiagnosticEngineV21 {
         ...(composite && comp.compositeVictory ? comp.compositeVictory.reasons_ar.slice(-1) : explanation.pathway_reasons_ar.slice(0, 2)),
         ...(composite?.requiredHoursOverflow ? ['مجموع ساعات الخطة يتجاوز 80 ساعة — تُراجَع مع مستشار.'] : []),
         ...(composite?.advisorHandoff ? [composite.advisorHandoff.rationale_ar] : []),
+        ...(silentOnDecisive
+          ? ['مهارة حاسمة للمسار المرشح بقيت بلا قياس ضمن ميزانية الأسئلة — تُراجَع النتيجة مع مستشار قبل الاعتماد.']
+          : []),
       ],
       unavailable_skills: unavailable,
       trainer,

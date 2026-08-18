@@ -136,13 +136,30 @@ function timeFor(e: RecommendationEntity): string {
 
 function* combosFor(e: RecommendationEntity): Generator<Journey> {
   const stages = e.career_stages.length > 0 ? e.career_stages : ALL_STAGES
-  for (const stage of stages) {
+  /* بناء قوائم كل مرحلة أولًا */
+  const perStage = stages.map((stage) => {
     const ok = (s: CareerStage[] | 'all') => s === 'all' || s.includes(stage)
     const goals = GOALS_V21.filter((g) => ok(g.stages) && e.reachable_goals.includes(g.legacy_goal))
-    /* أهداف بتقاطع مجالات أولًا، ثم بقية الأهداف، ثم بلا هدف محدد (خيار أول مفلتر) */
+    /* المرحلة 4: كيان يدخل من الاحتياج/المجال قد يفوز لمستخدم هدفه مختلف —
+       نجرّب أيضًا أهدافًا مجالاتها تتقاطع مع مجالات الكيان وإن لم تكن في قائمته */
+    const crossGoals = GOALS_V21.filter(
+      (g) => ok(g.stages) && !e.reachable_goals.includes(g.legacy_goal) && g.domains.some((d) => e.domains.includes(d)),
+    )
+    /* المرحلة 4 (STRATEGY): قالب يدخل من الاحتياج/المجال قد يفوز لمستخدم هدفه
+       محايد مجاليًا (لا مجالات له فيُحرم المسار القياسي من إشارة هدفه) — نجرّب
+       الأهداف المحايدة بعد المتقاطعة وإن لم تتقاطع مع مجالات الكيان */
+    const neutralGoals =
+      e.entity_type === 'composite'
+        ? GOALS_V21.filter(
+            (g) => ok(g.stages) && !e.reachable_goals.includes(g.legacy_goal) && g.domains.length === 0 && g.legacy_goal !== 'explore',
+          )
+        : []
+    /* أهداف بتقاطع مجالات أولًا، ثم المحايدة (للقوالب)، ثم بقية الأهداف، ثم بلا هدف محدد */
     const goalList: (string | undefined)[] = [
       ...goals.filter((g) => g.domains.some((d) => e.domains.includes(d))).map((g) => g.label_ar),
       ...goals.filter((g) => !g.domains.some((d) => e.domains.includes(d))).map((g) => g.label_ar),
+      ...crossGoals.map((g) => g.label_ar),
+      ...neutralGoals.map((g) => g.label_ar),
       undefined,
     ]
     const needs = NEEDS_V21.filter((n) => ok(n.stages) && e.needs.includes(n.code))
@@ -152,22 +169,45 @@ function* combosFor(e: RecommendationEntity): Generator<Journey> {
       ...needs.filter((n) => !(n.domains.length > 0 && n.domains.every((d) => e.domains.includes(d)))).map((n) => n.label_ar),
       undefined,
     ]
-    /* وظيفة بمجالات داخل مجالات الكيان (تُستخدم فقط إن سُئلت) */
-    const fnChoices: (string | undefined)[] = [
-      undefined,
-      ...FN_OPTIONS.filter((f) => f.domains.some((d) => e.domains.includes(d))).map((f) => f.label),
-    ]
-    const masteries = e.entity_type === 'composite' ? [MASTERY_SET, MASTERY_UNSURE] : [MASTERY_ONE, MASTERY_UNSURE]
-    for (const goal of goalList)
-      for (const need of needList)
-        for (const fn of fnChoices)
-          for (const mastery of masteries) {
-            const answers: Record<string, string> = {}
-            if (e.entity_id === 'PW-GOV-002') answers['QB-M3B-001'] = 'حكومي'
-            if (fn) answers[FN_Q] = fn
-            yield { stage, goal, need, time: timeFor(e), mastery, answers, skillLevel: 2 }
-          }
-  }
+    return { stage, goalList, needList }
+  })
+  /* تخلّل هدف-خارجي: الهدف الأول لكل المراحل، ثم الثاني... — وصفة قالب قد تتطلب
+     مرحلة متأخرة في القائمة (ECOM يفوز لمستقل لا لمؤسس) فلا يستنزف سقف البحث */
+  const stageGoalPairs: { stage: CareerStage; goal?: string; needList: (string | undefined)[] }[] = []
+  const maxGoals = Math.max(...perStage.map((p) => p.goalList.length))
+  for (let gi = 0; gi < maxGoals; gi++)
+    for (const p of perStage)
+      if (gi < p.goalList.length) stageGoalPairs.push({ stage: p.stage, goal: p.goalList[gi], needList: p.needList })
+  /* وظيفة بمجالات داخل مجالات الكيان (تُستخدم فقط إن سُئلت) */
+  const fnChoices: (string | undefined)[] = [
+    undefined,
+    ...FN_OPTIONS.filter((f) => f.domains.some((d) => e.domains.includes(d))).map((f) => f.label),
+  ]
+  const masteries = e.entity_type === 'composite' ? [MASTERY_SET, MASTERY_UNSURE] : [MASTERY_ONE, MASTERY_UNSURE]
+  /* القوالب تشترط استعدادًا تطبيقيًا مرتفعًا في إشاراتها المعلنة — البحث يجرّب
+     مستخدمًا جادًا فعلًا (readiness=high) وإلا حُكم على القالب بإجابة افتراضية لا شخصية حقيقية */
+  const readinessChoices: (string | undefined)[] = e.entity_type === 'composite' ? ['عالية', undefined] : [undefined]
+  /* المرحلة 4: بعد تفعيل حد الدليل الأدنى تدخل أسئلة المهارات الرحلة فعلًا،
+     فيُجرَّب المستخدم المتقدم (4) لا المتدني (2) فقط — قالب يفترض أهلية مكوّناته
+     يفوز لمستخدم يتقن بعضها وينقصه التركيب، لا لمن ينقصه كل شيء */
+  const skillLevels = e.entity_type === 'composite' ? [2, 4] : [2]
+  for (const { stage, goal, needList } of stageGoalPairs)
+    for (const need of needList)
+      for (const fn of fnChoices)
+        for (const mastery of masteries)
+          for (const readiness of readinessChoices)
+            for (const skillLevel of skillLevels) {
+              const answers: Record<string, string> = {}
+              /* كيان يضم مجال الخدمات الحكومية يُجرَّب بقطاع عام (CX يدخل من gov_services + operations) */
+              if (e.entity_id === 'PW-GOV-002' || e.domains.includes('gov_services')) answers['QB-M3B-001'] = 'حكومي'
+              if (fn) answers[FN_Q] = fn
+              if (readiness) answers['QB-M2-015'] = readiness
+              /* اتساق الشخصية: مستقل/مؤسس لا «يعمل لدى جهة» — التناقض يبدّل persona_type
+                 ويحرم قوالب ريادة الأعمال من إشاراتها (ECOM فُقدت بهذا السبب) */
+              const employment =
+                stage === 'freelancer' ? 'أعمل لحسابي (عمل حر)' : stage === 'founder' ? 'لدي مشروعي الخاص' : undefined
+              yield { stage, goal, need, time: timeFor(e), mastery, answers, skillLevel, employment }
+            }
 }
 
 interface CaseResult {
@@ -204,7 +244,7 @@ function toCaseResult(e: RecommendationEntity, out: RunOutcome, j?: Journey): Ca
   }
 }
 
-const MAX_COMBOS = 600
+const MAX_COMBOS = 6000
 
 /** بحث شامل: أول توليفة تفوز = canonical. وإلا أفضل محاولة (أصغر هامش خسارة) */
 function findCanonical(e: RecommendationEntity): { journey: Journey; result: CaseResult; tried: number; won: boolean } {
@@ -374,6 +414,20 @@ interface McStats {
   alienWinners: number
   errors: number
   determinismProbe: { sample: number; mismatches: number }
+  /* تغطية الدليل المهاري للفائز (البند: Skill Evidence Coverage) —
+     المهارة المجهولة لا تُحتسب دليلًا؛ التوصية الصامتة بلا أي مهارة حاسمة مقاسة
+     ممنوعة (يجب 0)؛ الموسومة بمراجعة مستشار تُعدّ معلنة لا صامتة */
+  skillEvidence: {
+    sessionsWithWinner: number
+    zeroSkillEvidence: number
+    decisiveSessions: number
+    decisiveNoneMeasuredSilent: number
+    decisiveNoneMeasuredAdvisorFlagged: number
+    with1PlusDecisive: number
+    with2PlusDecisive: number
+    avgDecisiveCoverage: number
+    avgMeasuredCoverage: number
+  }
 }
 
 function monteCarloRun(seed: number, sessions: number, offset = 0): { stats: McStats; fingerprints: string[] } {
@@ -389,9 +443,22 @@ function monteCarloRun(seed: number, sessions: number, offset = 0): { stats: McS
     alienWinners: 0,
     errors: 0,
     determinismProbe: { sample: 0, mismatches: 0 },
+    skillEvidence: {
+      sessionsWithWinner: 0,
+      zeroSkillEvidence: 0,
+      decisiveSessions: 0,
+      decisiveNoneMeasuredSilent: 0,
+      decisiveNoneMeasuredAdvisorFlagged: 0,
+      with1PlusDecisive: 0,
+      with2PlusDecisive: 0,
+      avgDecisiveCoverage: 0,
+      avgMeasuredCoverage: 0,
+    },
   }
   const fingerprints: string[] = []
   let totalQuestions = 0
+  let sumDecisiveCoverage = 0
+  let sumMeasuredCoverage = 0
   for (let i = 0; i < sessions; i++) {
     try {
       const stage = pick(rng, ALL_STAGES)
@@ -418,6 +485,30 @@ function monteCarloRun(seed: number, sessions: number, offset = 0): { stats: McS
       if (out.rec.kind === 'exploratory_direction') stats.exploratoryRate++
       if (out.rec.kind === 'advisor_referral') stats.advisorRate++
       totalQuestions += out.asked.length
+      /* تغطية الدليل المهاري للكيان الفائز — «الاعتماد على حاسمة مجهولة» يُحسب
+         في السباقات الحية فقط (هامش أول اثنين < 0.15): هناك كان يمكن للدليل أن
+         يقلب النتيجة. السباق المريح فوزه مبني على هدف/مجال/سياق لا على مهارات */
+      const wCand = winner ? out.comp.candidates.find((c) => c.entity.entity_id === winner) : undefined
+      if (wCand) {
+        const se = stats.skillEvidence
+        se.sessionsWithWinner++
+        if (wCand.skills.measuredCoverage === 0) se.zeroSkillEvidence++
+        sumMeasuredCoverage += wCand.skills.measuredCoverage
+        const decisive = wCand.entity.skill_roles.decisive
+        const liveMargin = out.comp.candidates.length >= 2 ? out.comp.candidates[0].netFit - out.comp.candidates[1].netFit : 1
+        if (decisive.length > 0 && liveMargin < 0.15) {
+          const unknownSet = new Set(wCand.skills.unknownSkillSlugs)
+          const measuredDecisive = decisive.filter((s) => !unknownSet.has(s)).length
+          se.decisiveSessions++
+          sumDecisiveCoverage += measuredDecisive / decisive.length
+          if (measuredDecisive === 0) {
+            if (out.rec.kind === 'advisor_referral') se.decisiveNoneMeasuredAdvisorFlagged++
+            else se.decisiveNoneMeasuredSilent++
+          }
+          if (measuredDecisive >= 1) se.with1PlusDecisive++
+          if (measuredDecisive >= 2) se.with2PlusDecisive++
+        }
+      }
       if (i < 200) fingerprints.push(JSON.stringify([out.asked, winner, out.rec.kind, Math.round(out.rec.confidence.total * 1000)]))
     } catch (err) {
       stats.errors++
@@ -427,6 +518,9 @@ function monteCarloRun(seed: number, sessions: number, offset = 0): { stats: McS
   stats.avgQuestions = Math.round((totalQuestions / sessions) * 100) / 100
   stats.exploratoryRate = Math.round((stats.exploratoryRate / sessions) * 10000) / 10000
   stats.advisorRate = Math.round((stats.advisorRate / sessions) * 10000) / 10000
+  const se = stats.skillEvidence
+  se.avgDecisiveCoverage = se.decisiveSessions > 0 ? Math.round((sumDecisiveCoverage / se.decisiveSessions) * 10000) / 10000 : 1
+  se.avgMeasuredCoverage = se.sessionsWithWinner > 0 ? Math.round((sumMeasuredCoverage / se.sessionsWithWinner) * 10000) / 10000 : 1
   return { stats, fingerprints }
 }
 
@@ -477,9 +571,14 @@ if (process.argv.includes('--montecarlo')) {
     `متوسط الأسئلة: ${main.stats.avgQuestions} · استكشاف: ${main.stats.exploratoryRate * 100}٪ · مستشار: ${main.stats.advisorRate * 100}٪`,
   )
   console.log(`فائزون خارج الفضاء: ${main.stats.alienWinners} · أخطاء: ${main.stats.errors} · حتمية MC (200): ${mismatches === 0 ? 'مطابقة تامة' : mismatches + ' اختلافًا!'}`)
+  const se = main.stats.skillEvidence
+  console.log(
+    `الدليل المهاري: صفر دليل ${se.zeroSkillEvidence}/${se.sessionsWithWinner} · حاسمة بلا قياس — صامتة ${se.decisiveNoneMeasuredSilent} · موسومة بمستشار ${se.decisiveNoneMeasuredAdvisorFlagged}/${se.decisiveSessions}` +
+      ` · ≥1 حاسمة ${se.with1PlusDecisive} · ≥2 حاسمتين ${se.with2PlusDecisive} · متوسط تغطية الحاسمة ${se.avgDecisiveCoverage * 100}٪ · متوسط التغطية ${se.avgMeasuredCoverage * 100}٪`,
+  )
   console.log(`المدة: ${((Date.now() - t0) / 1000).toFixed(1)}ث`)
   console.log(`كتب: docs/diagnostic-v2_1/montecarlo-v2_1.json`)
-  if (mismatches > 0 || main.stats.errors > 0 || main.stats.alienWinners > 0) {
+  if (mismatches > 0 || main.stats.errors > 0 || main.stats.alienWinners > 0 || se.decisiveNoneMeasuredSilent > 0) {
     console.error('\nفشلت بوابة Monte Carlo')
     process.exit(1)
   }
