@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
+import { CohortOps, LearningSettings } from "./CohortOps";
 
 const STATUS_META: Record<string, { label: string; cls: string }> = {
   draft: { label: "مسودة", cls: "border-white/20 text-white/50" },
@@ -202,7 +203,7 @@ export default function AdminCohorts() {
                     </p>
                   </div>
                   <span className={`rounded-full border px-3 py-1 text-[11px] font-bold ${meta.cls}`}>{meta.label}</span>
-                  <ChevronDown className={`h-4 w-4 text-white/40 transition ${isOpen ? "rotate-180" : ""}`} />
+                  <ChevronDown className={`h-4 w-4 text-white/50 transition ${isOpen ? "rotate-180" : ""}`} />
                 </button>
 
                 {isOpen && (
@@ -319,9 +320,12 @@ export default function AdminCohorts() {
                         <Lock className="h-3.5 w-3.5" /> لا يمكن فتحها قبل استيفاء الشروط أعلاه
                       </p>
                     )}
-                    <p className="flex items-center gap-1.5 text-[10px] text-white/35">
+                    <p className="flex items-center gap-1.5 text-[10px] text-white/50">
                       <Users className="h-3 w-3" /> المسجلون الفعليون: {c.enrolled} — السعة {c.capacity ?? "غير محددة"}
                     </p>
+
+                    {/* عمليات متقدمة: مدرب، تعديل، مواد، تقييمات، شهادات، نشر عام */}
+                    <CohortOps cohort={c} onDone={(msg) => { setFlash(msg); void load(); }} />
                   </div>
                 )}
               </div>
@@ -329,6 +333,13 @@ export default function AdminCohorts() {
           })}
         </div>
       )}
+
+      {/* روبرك وقواعد الإكمال */}
+      <LearningSettings
+        courses={courses.map((c) => ({ id: c.id, title: c.title }))}
+        cohorts={rows.map((c) => ({ id: c.id, title: c.title }))}
+        onDone={(msg) => setFlash(msg)}
+      />
     </AdminLayout>
   );
 }
@@ -341,7 +352,7 @@ function ZoomAttach({ cohortId, sessionsCount, value, onChange, busy, onSubmit }
   busy: boolean; onSubmit: () => void;
 }) {
   void cohortId;
-  if (!sessionsCount) return <p className="text-[11px] text-white/35">أضف جلسة أولا ثم اربطها باجتماع.</p>;
+  if (!sessionsCount) return <p className="text-[11px] text-white/50">أضف جلسة أولا ثم اربطها باجتماع.</p>;
   return (
     <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
       <input placeholder="معرف الجلسة (UUID)" dir="ltr" value={value.sessionId} onChange={(e) => onChange({ ...value, sessionId: e.target.value })}

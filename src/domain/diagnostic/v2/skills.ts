@@ -4,7 +4,7 @@
    ممنوع: Skill Gap قوي مع أغلب مهارات غير مقاسة. */
 
 import { pathwaySkills } from '../catalog'
-import { layersOfSkill } from './data'
+import { layersOfSkill, isDiagnosticSkillActive } from './data'
 import type { SkillState } from './types'
 
 export const TARGET_LEVEL = 4
@@ -40,9 +40,8 @@ export function assessPathwaySkills(
   skillStates: Map<string, SkillState>,
 ): PathwaySkillAssessment {
   const required = pathwaySkills(pathwayId).filter((s) => {
-    /* مهارة موقفة أكاديميًا (غير نشطة) لا تُحسب متطلبًا حتى تُحسم مراجعتها */
-    const meta = layersOfSkill(s.slug)
-    return meta === undefined || meta.active
+    /* مهارة موقفة أكاديميًا (غير نشطة تشخيصيًا) لا تُحسب متطلبًا حتى تُحسم مراجعتها */
+    return isDiagnosticSkillActive(layersOfSkill(s.slug))
   })
   const measured: PathwaySkillAssessment['measured'] = []
   const unknown: PathwaySkillAssessment['unknown'] = []

@@ -537,11 +537,27 @@ export function isOverdue(iso?: string): boolean {
   if (!iso) return false;
   return new Date(iso) < new Date();
 }
-export function fmtDT(iso?: string): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  const date = d.toISOString().slice(0, 10);
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mm = String(d.getMinutes()).padStart(2, "0");
-  return `${date} · ${hh}:${mm}`;
+
+/* تنسيق موحد: القريب نسبي والبعيد تاريخ كامل — مصدره src/utils/format.ts */
+export { fmtWhen } from "@/utils/format";
+export { fmtWhen as fmtDT } from "@/utils/format";
+
+/* ── «جديد منذ آخر زيارة» لكل حالة — يخزن محليا وقت آخر فتح لملف الحالة ── */
+const SEEN_KEY = "wajeez_case_seen";
+
+function readSeenMap(): Record<string, string> {
+  try { return JSON.parse(localStorage.getItem(SEEN_KEY) ?? "{}") as Record<string, string>; } catch { return {}; }
+}
+/** وقت آخر زيارة قبل الحالية — null إن لم تُفتح الحالة من قبل */
+export function caseSeenAt(caseId: string): string | null {
+  return readSeenMap()[caseId] ?? null;
+}
+/** يُستدعى عند مغادرة ملف الحالة — ما بعد هذا الوقت يُوسم «جديد» في الزيارة القادمة */
+export function markCaseSeen(caseId: string) {
+  const map = readSeenMap();
+  map[caseId] = isoDT(0, new Date().getHours());
+  localStorage.setItem(SEEN_KEY, JSON.stringify(map));
+}
+export function isNewSince(at: string, seenAt: string | null): boolean {
+  return seenAt !== null && at > seenAt;
 }

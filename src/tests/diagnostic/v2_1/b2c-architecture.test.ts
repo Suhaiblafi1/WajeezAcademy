@@ -131,8 +131,11 @@ describe('بنية أسئلة B2C — معايير النجاح', () => {
        إغلاق منطق V2.1: نُقلت تسعة أسئلة مهارية أخرى (QB-M4-009/014/015/019/
        020/021/022/024/026) — مهاراتها غير معلَنة حاسمة ولا داعمة ولا مخرج
        تعلم لأي كيان نشط، ولم تُسأل قط في 12 ألف جلسة محاكاة — إلى ما بعد
-       التوصية: قياسها قبل النتيجة مقعد بلا أثر قراري */
-    expect(counts).toEqual({ active_b2c: 62, deep_only: 11, post_recommendation: 38, institutional: 14, retired: 58, out_of_scope: 15 })
+       التوصية: قياسها قبل النتيجة مقعد بلا أثر قراري.
+       حوكمة 2026-08-19: QB-M4-002 (creative_thinking) → retired_b2c — فحص
+       الكود أثبت عدم وجود أي فعل تخصيص مبرمج يستهلك قياسها؛ لا تُسأل لمجرد
+       جمع البيانات (post_recommendation 38→37 · retired 58→59) */
+    expect(counts).toEqual({ active_b2c: 62, deep_only: 11, post_recommendation: 37, institutional: 14, retired: 59, out_of_scope: 15 })
   })
 
   it('كل سؤال نشط في B2C له أثر قراري موثق في الخطة', () => {

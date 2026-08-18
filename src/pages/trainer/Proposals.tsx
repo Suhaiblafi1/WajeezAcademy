@@ -176,9 +176,9 @@ export default function TrainerProposals() {
             <article key={r.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="font-black">{r.course.versions[0]?.titleAr ?? r.courseId} <span className="text-[10px] text-white/35" dir="ltr">{r.courseId}</span></p>
+                  <p className="font-black">{r.course.versions[0]?.titleAr ?? r.courseId} <span className="text-[10px] text-white/50" dir="ltr">{r.courseId}</span></p>
                   <p className="mt-1 text-xs text-white/55">{r.reason}</p>
-                  <p className="mt-1 text-[11px] text-white/40">
+                  <p className="mt-1 text-[11px] text-white/50">
                     {r.items.map((i) => CHANGE_TYPE_LABELS[i.changeType] ?? i.changeType).join(" · ")} — نطاق: {r.scope === "cohort" ? "شعبة" : "الكتالوج"}
                   </p>
                   {r.reviewerComment && (

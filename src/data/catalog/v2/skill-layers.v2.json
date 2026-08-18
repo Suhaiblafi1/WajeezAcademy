@@ -8,6 +8,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-SAL-001"
@@ -19,6 +21,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-BIZ-001",
@@ -32,6 +36,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-FIN-001"
@@ -43,6 +49,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-BIZ-001",
@@ -61,6 +69,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-AUT-001"
@@ -72,6 +82,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-NEG-001"
@@ -83,6 +95,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-FND-003"
@@ -94,6 +108,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-AUT-001"
@@ -105,6 +121,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-FND-003"
@@ -116,6 +134,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-FND-003"
@@ -127,6 +147,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-FND-003"
@@ -136,8 +158,10 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "ai_for_research": {
       "layers": [
@@ -145,6 +169,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-AUT-001",
@@ -157,6 +183,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-FND-003"
@@ -168,6 +196,8 @@
         "pathway_requirement"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
       "pathway_ids": [
         "PW-FND-003"
@@ -180,6 +210,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-AUT-001",
@@ -192,6 +224,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-AUT-001",
@@ -205,6 +239,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-FND-003"
@@ -216,6 +252,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-FND-003"
@@ -225,8 +263,10 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "analytical_thinking": {
       "layers": [
@@ -234,6 +274,8 @@
         "pathway_requirement"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
       "pathway_ids": [
         "PW-EMP-004",
@@ -247,6 +289,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-AUT-001"
@@ -258,6 +302,8 @@
         "pathway_requirement"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
       "pathway_ids": [
         "PW-SAL-001",
@@ -271,6 +317,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-LND-001"
@@ -282,6 +330,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-LND-001"
@@ -293,6 +343,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-COM-001"
@@ -304,6 +356,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-AUT-001"
@@ -315,6 +369,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-PRD-001"
@@ -326,6 +382,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-LND-001"
@@ -335,8 +393,10 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "batna_zopa": {
       "layers": [
@@ -344,6 +404,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-NEG-001"
@@ -355,6 +417,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-MKT-001"
@@ -366,6 +430,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-COM-001",
@@ -380,6 +446,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-FIN-001"
@@ -391,6 +459,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-CYB-001"
@@ -402,6 +472,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-FIN-001"
@@ -411,8 +483,10 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "business_model": {
       "layers": [
@@ -420,6 +494,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-BIZ-001",
@@ -432,6 +508,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-MKT-001"
@@ -443,6 +521,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-STU-002",
@@ -453,8 +533,10 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "cashflow_forecasting": {
       "layers": [
@@ -462,6 +544,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-FIN-001"
@@ -473,6 +557,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-BIZ-001",
@@ -485,6 +571,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-AUT-001",
@@ -498,22 +586,28 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "child_financial_literacy": {
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "child_learning_support": {
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "citizen_experience": {
       "layers": [
@@ -521,6 +615,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-GOV-002"
@@ -532,6 +628,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-COM-001",
@@ -547,8 +645,10 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "cloud_security_basics": {
       "layers": [
@@ -556,6 +656,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-CYB-001"
@@ -567,6 +669,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-EMP-005"
@@ -578,6 +682,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-HR-001"
@@ -587,8 +693,10 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "complaint_handling": {
       "layers": [
@@ -596,6 +704,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-GOV-002"
@@ -607,6 +717,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-OPS-001"
@@ -618,6 +730,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-NEG-001"
@@ -629,6 +743,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-EMP-003",
@@ -643,6 +759,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-SAL-001"
@@ -652,8 +770,10 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "content_marketing": {
       "layers": [
@@ -661,6 +781,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-MKT-001"
@@ -672,6 +794,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-OPS-001"
@@ -683,6 +807,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-FIN-001"
@@ -692,17 +818,19 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "creative_thinking": {
       "layers": [
-        "diagnostic",
-        "personalization_signal"
+        "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "إشارة تخصيص: توثق ضمن «ما قيس» وتوجّه ترتيب الأنشطة داخل الخطة — لا تغيّر اختيار المسار.",
-      "measured_by": "QB-M4-002"
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_personalization_signal",
+      "decision_role_ar": "موقوفة بقرار أكاديمي (2026-08-19): فحص الكود أثبت عدم وجود أي فعل تخصيص مبرمج يستهلك قياسها — تُستأنف حين يوجد استخدام حقيقي."
     },
     "crisis_management": {
       "layers": [
@@ -710,6 +838,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-CYB-001"
@@ -721,6 +851,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-FND-003",
@@ -734,6 +866,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-MKT-001",
@@ -744,15 +878,19 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "curiosity": {
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "customer_communication": {
       "layers": [
@@ -760,6 +898,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-BIZ-001",
@@ -774,6 +914,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-BIZ-001",
@@ -786,6 +928,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-MKT-001"
@@ -797,6 +941,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-MKT-001"
@@ -808,6 +954,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-SAL-001"
@@ -819,6 +967,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-STU-002"
@@ -830,6 +980,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-CYB-001"
@@ -841,6 +993,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-CYB-001"
@@ -852,6 +1006,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-EMP-004",
@@ -862,8 +1018,10 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "data_analysis_basics": {
       "layers": [
@@ -871,6 +1029,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-EMP-004",
@@ -885,6 +1045,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-EMP-004"
@@ -896,6 +1058,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-EMP-004"
@@ -907,6 +1071,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-AUT-001",
@@ -919,6 +1085,8 @@
         "pathway_requirement"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
       "pathway_ids": [
         "PW-EMP-004"
@@ -931,6 +1099,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-CYB-001"
@@ -942,6 +1112,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-EMP-004",
@@ -954,6 +1126,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-COM-001",
@@ -964,8 +1138,10 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "decision_governance": {
       "layers": [
@@ -973,6 +1149,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-CYB-001",
@@ -987,6 +1165,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-EMP-004",
@@ -1000,6 +1180,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-COM-001"
@@ -1011,6 +1193,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-EMP-005"
@@ -1022,6 +1206,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-LND-001"
@@ -1033,6 +1219,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-SCM-001"
@@ -1044,6 +1232,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-BIZ-001",
@@ -1058,6 +1248,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-EMP-004",
@@ -1070,6 +1262,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-MKT-001"
@@ -1079,15 +1273,19 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "digital_government": {
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "digital_learning_design": {
       "layers": [
@@ -1095,6 +1293,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-LND-001"
@@ -1106,6 +1306,8 @@
         "personalization_signal"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "إشارة جاهزية رقمية: عند انخفاضها مع مسار رقمي تُضاف ملاحظة تمهيد رقمي في الخطة — لا تغيّر اختيار المسار.",
       "measured_by": "QB-M4-005"
     },
@@ -1115,6 +1317,8 @@
         "pathway_requirement"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
       "pathway_ids": [
         "PW-MKT-001"
@@ -1125,22 +1329,28 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "digital_wellbeing": {
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "distraction_reduction": {
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "document_design": {
       "layers": [
@@ -1148,6 +1358,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-LND-001"
@@ -1157,8 +1369,10 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "economic_literacy": {
       "layers": [
@@ -1166,6 +1380,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-FIN-001"
@@ -1175,8 +1391,10 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "emotional_regulation_learning": {
       "layers": [
@@ -1184,6 +1402,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-GOV-002",
@@ -1194,15 +1414,19 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "english_for_work": {
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "ethical_influence": {
       "layers": [
@@ -1210,6 +1434,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-NEG-001"
@@ -1221,6 +1447,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-COM-001",
@@ -1236,6 +1464,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-COM-001"
@@ -1247,6 +1477,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-COM-001"
@@ -1258,6 +1490,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-GOV-002",
@@ -1271,6 +1505,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-LND-001"
@@ -1280,29 +1516,37 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "family_financial_literacy": {
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "family_goal_setting": {
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "family_reading_culture": {
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "feedback_giving": {
       "layers": [
@@ -1310,6 +1554,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-EMP-005",
@@ -1323,6 +1569,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-STU-002"
@@ -1334,6 +1582,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-FIN-001"
@@ -1345,6 +1595,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-AUT-001",
@@ -1355,8 +1607,10 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "financial_statements": {
       "layers": [
@@ -1364,6 +1618,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-FIN-001"
@@ -1375,6 +1631,8 @@
         "personalization_signal"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "إشارة تخصيص: توجّه توزيع العبء الأسبوعي داخل الخطة — لا تغيّر اختيار المسار.",
       "measured_by": "QB-M4-025"
     },
@@ -1384,6 +1642,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-GOV-002"
@@ -1395,6 +1655,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-MKT-001"
@@ -1406,6 +1668,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-STU-003"
@@ -1417,6 +1681,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-EMP-004",
@@ -1429,22 +1695,29 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "government_correspondence": {
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "government_data_governance": {
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "merged",
+      "merged_into": "SK-DATA-014",
+      "decision_role_ar": "مدموجة في SK-DATA-014 بقرار أكاديمي موثق (2026-08-19) — مرجع تاريخي فقط، لا تدخل التشخيص."
     },
     "growth_experimentation": {
       "layers": [
@@ -1452,6 +1725,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-BIZ-001",
@@ -1462,15 +1737,19 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "healthy_boundaries": {
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "hr_privacy_ethics": {
       "layers": [
@@ -1478,6 +1757,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-HR-001"
@@ -1489,6 +1770,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-FND-003"
@@ -1500,6 +1783,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-AUT-001"
@@ -1511,6 +1796,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-SAL-001"
@@ -1522,6 +1809,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-CYB-001"
@@ -1533,6 +1822,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-CYB-001"
@@ -1544,6 +1835,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-EMP-005"
@@ -1555,6 +1848,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-FND-003",
@@ -1565,15 +1860,19 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "innovation_methods": {
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "instructional_material_design": {
       "layers": [
@@ -1581,6 +1880,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-LND-001"
@@ -1592,6 +1893,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-STU-003"
@@ -1603,6 +1906,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-STU-002"
@@ -1614,6 +1919,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-SCM-001"
@@ -1625,6 +1932,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-FIN-001"
@@ -1634,8 +1943,10 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "job_analysis": {
       "layers": [
@@ -1643,6 +1954,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-HR-001"
@@ -1654,6 +1967,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-STU-002"
@@ -1665,6 +1980,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-AUT-001"
@@ -1676,6 +1993,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-EMP-003"
@@ -1687,6 +2006,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-EMP-004",
@@ -1703,6 +2024,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-OPS-001"
@@ -1714,6 +2037,8 @@
         "personalization_signal"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "إشارة تخصيص: توجّه وتيرة الخطة المقترحة — لا تغيّر اختيار المسار.",
       "measured_by": "QB-M4-023"
     },
@@ -1723,6 +2048,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-LND-001"
@@ -1734,6 +2061,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-LND-001"
@@ -1745,6 +2074,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-HR-001"
@@ -1756,6 +2087,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-LND-001"
@@ -1767,6 +2100,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-HR-001"
@@ -1778,6 +2113,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-LND-001",
@@ -1790,8 +2127,10 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "lifecycle_marketing": {
       "layers": [
@@ -1799,6 +2138,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-MKT-001"
@@ -1810,6 +2151,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-STU-002"
@@ -1821,6 +2164,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-BIZ-001",
@@ -1837,6 +2182,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-MKT-001"
@@ -1846,8 +2193,10 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "mediation_basics": {
       "layers": [
@@ -1855,6 +2204,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-NEG-001"
@@ -1866,6 +2217,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-EMP-003",
@@ -1878,6 +2231,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-EMP-003"
@@ -1887,22 +2242,28 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "mental_models": {
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "mentorship_use": {
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "message_design": {
       "layers": [
@@ -1910,6 +2271,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-COM-001"
@@ -1919,8 +2282,10 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "motivation_design": {
       "layers": [
@@ -1928,6 +2293,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-EMP-005"
@@ -1937,8 +2304,10 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "multiparty_negotiation": {
       "layers": [
@@ -1946,6 +2315,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-NEG-001"
@@ -1957,6 +2328,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-PRD-001"
@@ -1968,6 +2341,8 @@
         "pathway_requirement"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
       "pathway_ids": [
         "PW-NEG-001"
@@ -1980,6 +2355,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-BIZ-001",
@@ -1993,6 +2370,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-NEG-001"
@@ -2004,6 +2383,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-STU-002",
@@ -2016,6 +2397,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-AUT-001"
@@ -2025,15 +2408,19 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "online_meetings": {
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "operational_kpis": {
       "layers": [
@@ -2041,6 +2428,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-OPS-001"
@@ -2052,6 +2441,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-AUT-001",
@@ -2066,6 +2457,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-HR-001"
@@ -2075,8 +2468,10 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "pdca": {
       "layers": [
@@ -2084,6 +2479,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-OPS-001"
@@ -2093,8 +2490,10 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "people_analytics": {
       "layers": [
@@ -2102,6 +2501,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-HR-001"
@@ -2113,6 +2514,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-HR-001"
@@ -2124,6 +2527,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-EMP-005",
@@ -2136,6 +2541,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-STU-002"
@@ -2145,8 +2552,10 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "persuasion": {
       "layers": [
@@ -2154,6 +2563,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-COM-001",
@@ -2164,15 +2575,19 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "policy_literacy": {
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "portfolio_building": {
       "layers": [
@@ -2180,6 +2595,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-STU-002"
@@ -2189,15 +2606,19 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "positive_discipline": {
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "presentation_delivery": {
       "layers": [
@@ -2205,6 +2626,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-COM-001",
@@ -2218,6 +2641,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-COM-001",
@@ -2230,6 +2655,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-BIZ-001",
@@ -2242,6 +2669,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-EMP-003",
@@ -2258,6 +2687,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-AUT-001",
@@ -2271,6 +2702,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-AUT-001",
@@ -2284,6 +2717,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-AUT-001",
@@ -2296,6 +2731,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-PRD-001"
@@ -2307,6 +2744,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-PRD-001"
@@ -2318,6 +2757,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-PRD-001"
@@ -2329,6 +2770,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-PRD-001"
@@ -2340,6 +2783,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-PRD-001"
@@ -2351,6 +2796,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-PRD-001"
@@ -2362,6 +2809,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-HR-001"
@@ -2373,6 +2822,8 @@
         "pathway_requirement"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
       "pathway_ids": [
         "PW-EMP-003",
@@ -2387,6 +2838,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-FND-003"
@@ -2398,6 +2851,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-FND-003"
@@ -2409,6 +2864,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-SAL-001"
@@ -2420,6 +2877,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-SAL-001"
@@ -2431,6 +2890,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-PRD-001"
@@ -2440,29 +2901,37 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "public_ethics": {
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "public_finance_basics": {
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "public_procurement": {
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "public_reporting": {
       "layers": [
@@ -2470,6 +2939,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-EMP-003"
@@ -2479,15 +2950,19 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "public_service_mindset": {
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "public_speaking": {
       "layers": [
@@ -2495,6 +2970,8 @@
         "pathway_requirement"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
       "pathway_ids": [
         "PW-COM-001"
@@ -2507,6 +2984,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-COM-001"
@@ -2516,15 +2995,19 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "recovery_planning": {
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "reflection": {
       "layers": [
@@ -2532,6 +3015,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-EMP-003",
@@ -2544,6 +3029,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-CYB-001",
@@ -2554,15 +3041,19 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "report_writing": {
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "research_literacy": {
       "layers": [
@@ -2570,6 +3061,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-BIZ-001",
@@ -2584,6 +3077,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-AUT-001",
@@ -2598,15 +3093,19 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "role_modeling": {
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "root_cause_analysis": {
       "layers": [
@@ -2614,6 +3113,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-OPS-001"
@@ -2625,6 +3126,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-LND-001"
@@ -2634,8 +3137,10 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "sales_fundamentals": {
       "layers": [
@@ -2643,6 +3148,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-BIZ-001",
@@ -2655,6 +3162,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-BIZ-001",
@@ -2665,8 +3174,10 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "scenario_planning": {
       "layers": [
@@ -2674,6 +3185,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-FIN-001",
@@ -2688,6 +3201,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-CYB-001"
@@ -2699,6 +3214,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-HR-001"
@@ -2708,8 +3225,10 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "self_leadership": {
       "layers": [
@@ -2717,6 +3236,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-EMP-005",
@@ -2727,8 +3248,10 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "service_design_government": {
       "layers": [
@@ -2736,6 +3259,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-GOV-002"
@@ -2745,8 +3270,10 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "social_engineering_awareness": {
       "layers": [
@@ -2754,6 +3281,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-CYB-001"
@@ -2763,8 +3292,10 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "speaking_anxiety_management": {
       "layers": [
@@ -2772,6 +3303,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-COM-001"
@@ -2783,6 +3316,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-EMP-004"
@@ -2794,6 +3329,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-GOV-002"
@@ -2805,6 +3342,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-EMP-003",
@@ -2819,6 +3358,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-OPS-001"
@@ -2830,6 +3371,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-EMP-004",
@@ -2842,6 +3385,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-COM-001",
@@ -2854,6 +3399,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-COM-001",
@@ -2866,6 +3413,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-SCM-001"
@@ -2877,6 +3426,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-HR-001",
@@ -2887,8 +3438,10 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "structured_interviewing": {
       "layers": [
@@ -2896,6 +3449,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-HR-001"
@@ -2905,8 +3460,10 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "supplier_evaluation": {
       "layers": [
@@ -2914,6 +3471,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-SCM-001"
@@ -2925,6 +3484,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-SCM-001"
@@ -2936,6 +3497,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-SCM-001"
@@ -2947,6 +3510,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-SCM-001"
@@ -2958,6 +3523,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-SCM-001"
@@ -2969,6 +3536,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-GOV-002"
@@ -2980,6 +3549,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-CYB-001",
@@ -2993,6 +3564,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-HR-001"
@@ -3002,8 +3575,10 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "team_leadership": {
       "layers": [
@@ -3011,6 +3586,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-EMP-005"
@@ -3020,8 +3597,10 @@
       "layers": [
         "learning_outcome"
       ],
-      "active": true,
-      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
     "time_management": {
       "layers": [
@@ -3029,6 +3608,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-EMP-003",
@@ -3041,6 +3622,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-LND-001"
@@ -3052,6 +3635,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-BIZ-001",
@@ -3064,6 +3649,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-PRD-001"
@@ -3075,6 +3662,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-BIZ-001",
@@ -3088,6 +3677,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-NEG-001"
@@ -3099,6 +3690,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-BIZ-001",
@@ -3112,6 +3705,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-FIN-001"
@@ -3123,6 +3718,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-EMP-003",
@@ -3135,6 +3732,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-COM-001",
@@ -3147,6 +3746,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-SCM-001"
@@ -3158,6 +3759,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-AUT-001"
@@ -3169,6 +3772,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-HR-001"
@@ -3180,6 +3785,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-FIN-001"
@@ -3191,6 +3798,8 @@
         "learning_outcome"
       ],
       "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-STU-002"

@@ -1,146 +1,122 @@
-import { useMemo, useState } from "react";
-import { Link } from "react-router";
-import {
-  BadgeCheck, CheckCircle2, CreditCard, ReceiptText, RefreshCcw,
-} from "lucide-react";
+/* فواتيري — API حقيقي: طلباتي وفواتيري ودفعاتي واسترداداتي في مكان واحد.
+   الدفع الاختباري عبر المزود التجريبي — idempotent بمفتاح ثابت لكل طلب، لا مال حقيقي. */
+import { useCallback, useEffect, useState } from "react";
+import { CreditCard, Loader2, ReceiptText, RefreshCw, RotateCcw } from "lucide-react";
 import PortalLayout from "./PortalLayout";
-import { toast } from "@/components/Toast";
-import { loadOrders, payOrderTest, newIdempotencyKey, type DemoOrder } from "@/data/billing";
+import { apiGet, apiPost, ApiError } from "@/services/api";
+import { fmtWhen } from "@/utils/format";
 
-const ORDER_STATUS: Record<DemoOrder["status"], { label: string; cls: string }> = {
-  paid: { label: "مدفوع", cls: "bg-[#38A7B4]/15 text-[#6EC7D1]" },
-  pending: { label: "بانتظار الدفع", cls: "bg-[#FABC05]/15 text-[#FABC05]" },
-  refunded: { label: "مسترد", cls: "bg-white/10 text-white/50" },
-};
-const INVOICE_STATUS: Record<string, { label: string; cls: string }> = {
-  paid: { label: "مسددة", cls: "bg-[#38A7B4]/15 text-[#6EC7D1]" },
-  open: { label: "مفتوحة", cls: "bg-[#FABC05]/15 text-[#FABC05]" },
-  void: { label: "ملغاة", cls: "bg-white/10 text-white/50" },
-};
+interface Payment { id: string; amount: string; status: string; method: string | null; refunds: { id: string; status: string; amount: string }[] }
+interface Invoice { id: string; total: string; currency: string; status: string; issuedAt: string; payments: Payment[] }
+interface Order {
+  id: string; status: string; total: string; currency: string; createdAt: string;
+  items: { id: string; titleAr?: string | null; title?: string | null; price?: string | null }[];
+  invoice: Invoice | null;
+}
 
-/** فواتيري وطلباتي ودفعاتي — GET /api/learner/orders + دفع اختباري idempotent */
+const ORDER_STATUS: Record<string, string> = { pending: "بانتظار الدفع", paid: "مدفوع", cancelled: "ملغي", refunded: "مسترد" };
+const INV_STATUS: Record<string, string> = { issued: "صادرة", paid: "مدفوعة", partially_refunded: "مستردة جزئيا", refunded: "مستردة كليا", void: "ملغاة" };
+
 export default function Billing() {
-  const [tick, setTick] = useState(0);
-  const [paying, setPaying] = useState<string | null>(null);
-  /* مفتاح idempotency لكل طلب — يُنشأ مرة ويُعاد استخدامه عند إعادة النقر، تماما كعقد الخادم */
-  const [keys, setKeys] = useState<Record<string, string>>({});
-  const orders = useMemo(() => loadOrders(), [tick]);
+  const [rows, setRows] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [flash, setFlash] = useState("");
+  const [busy, setBusy] = useState<string | null>(null);
 
-  const pay = (orderId: string) => {
-    const key = keys[orderId] ?? newIdempotencyKey();
-    setKeys((k) => ({ ...k, [orderId]: key }));
-    setPaying(orderId);
-    /* محاكاة زمن المزود التجريبي */
-    window.setTimeout(() => {
-      const res = payOrderTest(orderId, key);
-      setPaying(null);
-      if (!res) return;
-      toast(
-        res.alreadyProcessed
-          ? "نفس مفتاح العملية — أعاد الخادم النتيجة نفسها دون خصم مكرر (idempotent)."
-          : "تم الدفع الاختباري بنجاح — سُددت الفاتورة وفُتح ما يرتبط بها تلقائيا. لا مال حقيقي.",
-        res.alreadyProcessed ? "info" : "success"
-      );
-      setTick((t) => t + 1);
-    }, 900);
+  const load = useCallback(async () => {
+    setLoading(true); setError(null);
+    try { setRows(await apiGet<Order[]>("/api/learner/orders")); }
+    catch (e) { setError(e instanceof ApiError ? e.message : "تعذر تحميل الفواتير"); }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { void load(); }, [load]);
+
+  const payTest = async (order: Order) => {
+    if (busy) return;
+    setBusy(order.id); setFlash("");
+    try {
+      /* مفتاح idempotency ثابت لكل طلب — إعادة النقر لا تدفع مرتين */
+      await apiPost(`/api/learner/orders/${order.id}/pay-test`, { idempotencyKey: `pay-${order.id}` });
+      setFlash("تم الدفع الاختباري — فُتح وصولك وتحدثت الفاتورة");
+      await load();
+    } catch (e) { setFlash(e instanceof ApiError ? e.message : "فشل الدفع"); }
+    finally { setBusy(null); }
   };
 
-  const totals = useMemo(() => {
-    const paid = orders.reduce((sum, o) => sum + o.invoice.payments.filter((p) => p.status === "success").reduce((s, p) => s + p.amount, 0), 0);
-    const due = orders.filter((o) => o.invoice.status === "open").reduce((s, o) => s + o.invoice.amount, 0);
-    return { paid, due };
-  }, [orders]);
-
   return (
-    <PortalLayout title="طلباتي وفواتيري">
-      <p className="mb-5 max-w-2xl rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-xs leading-6 text-white/55">
-        كل عملية شراء لها رقم مرجعي وفاتورة وسجل دفعات — كما يعيدها GET /api/learner/orders.
-        الدفع هنا اختباري عبر المزود التجريبي: idempotent بمفتاح عملية، ولا يحرك مالا حقيقيا.
-      </p>
+    <PortalLayout title="فواتيري وطلباتي">
+      {flash && <p className="mb-4 rounded-xl border border-[#38A7B4]/40 bg-[#38A7B4]/10 px-4 py-3 text-sm font-bold text-[#6EC7D1]" role="status">{flash}</p>}
+      {error && <p className="mb-4 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-200">{error}</p>}
 
-      {/* ملخص */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-          <p className="flex items-center gap-2 text-xs text-white/50"><ReceiptText className="h-4 w-4" /> عدد الطلبات</p>
-          <p className="mt-2 text-3xl font-black">{orders.length}</p>
+      {loading ? (
+        <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-[#38A7B4]" /></div>
+      ) : rows.length === 0 ? (
+        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
+          <ReceiptText className="h-12 w-12 text-white/20" />
+          <h2 className="mt-4 text-xl font-black">لا طلبات بعد</h2>
+          <p className="mt-2 max-w-md text-sm leading-7 text-white/55">
+            عند موافقة العمليات على طلب تسجيلك تُنشأ فاتورة هنا — والدفع يفتح وصولك للمنصة تلقائيا.
+          </p>
         </div>
-        <div className="rounded-2xl border border-[#38A7B4]/30 bg-[#38A7B4]/5 p-5">
-          <p className="flex items-center gap-2 text-xs text-[#6EC7D1]"><BadgeCheck className="h-4 w-4" /> إجمالي ما دفعته</p>
-          <p className="mt-2 text-3xl font-black text-[#6EC7D1]">{totals.paid}<span className="text-sm text-white/50"> ر.س</span></p>
-        </div>
-        <div className="rounded-2xl border border-[#FABC05]/30 bg-[#FABC05]/5 p-5">
-          <p className="flex items-center gap-2 text-xs text-[#FABC05]"><CreditCard className="h-4 w-4" /> مستحق الآن</p>
-          <p className="mt-2 text-3xl font-black text-[#FABC05]">{totals.due}<span className="text-sm text-white/50"> ر.س</span></p>
-        </div>
-      </div>
-
-      {/* الطلبات */}
-      <div className="mt-6 space-y-4">
-        {orders.map((o) => (
-          <section key={o.id} className="rounded-3xl border border-white/10 bg-white/[0.02] p-6">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="font-black">{o.itemName}</p>
-                <p className="mt-1 text-[11px] text-white/50">
-                  طلب {o.ref} · {o.kind === "pathway" ? "مسار كامل" : "دورة"} · {o.createdAt}
-                </p>
-              </div>
-              <span className={`rounded-full px-3 py-1 text-xs font-black ${ORDER_STATUS[o.status].cls}`}>
-                {ORDER_STATUS[o.status].label}
-              </span>
-            </div>
-
-            {/* الفاتورة */}
-            <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-4">
-              <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
-                <p className="text-white/70">
-                  فاتورة <span className="font-bold text-white" dir="ltr">{o.invoice.number}</span> · أُصدرت {o.invoice.issuedAt}
-                </p>
-                <p className="flex items-center gap-2">
-                  <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-black ${INVOICE_STATUS[o.invoice.status].cls}`}>
-                    {INVOICE_STATUS[o.invoice.status].label}
+      ) : (
+        <div className="space-y-4">
+          {rows.map((o) => (
+            <article key={o.id} className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="font-black">{o.items.map((i) => i.titleAr ?? i.title ?? "عنصر").join(" · ") || "طلب"}</p>
+                  <p className="mt-1 text-xs text-white/50">{fmtWhen(o.createdAt)} · <span dir="ltr" className="font-mono text-[10px]">{o.id.slice(0, 8)}…</span></p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-black">{o.total} <span className="text-xs font-normal text-white/50">{o.currency}</span></span>
+                  <span className={`rounded-full border px-3 py-1 text-[11px] font-bold ${o.status === "paid" ? "border-emerald-400/30 text-emerald-300" : "border-[#FABC05]/40 text-[#FABC05]"}`}>
+                    {ORDER_STATUS[o.status] ?? o.status}
                   </span>
-                  <span className="text-base font-black">{o.invoice.amount} {o.invoice.currency}</span>
-                </p>
+                </div>
               </div>
 
-              {/* الدفعات */}
-              {o.invoice.payments.length > 0 && (
-                <div className="mt-3 space-y-1.5 border-t border-white/10 pt-3">
-                  {o.invoice.payments.map((p) => (
-                    <p key={p.id} className="flex items-center gap-2 text-[11px] text-white/55">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-[#38A7B4]" />
-                      دفعة {p.amount} {o.invoice.currency} · {p.method} · {p.at}
-                      <span className="text-white/25" dir="ltr">· key: {p.idempotencyKey.slice(0, 18)}…</span>
-                    </p>
-                  ))}
-                </div>
+              {o.status === "pending" && (
+                <button disabled={busy === o.id} onClick={() => void payTest(o)}
+                  className="mt-4 flex cursor-pointer items-center gap-2 rounded-full bg-[#FABC05] px-6 py-2.5 text-xs font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90 disabled:opacity-40">
+                  {busy === o.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CreditCard className="h-3.5 w-3.5" />}
+                  ادفع الآن (مزود اختباري — لا مال حقيقي)
+                </button>
               )}
 
-              {/* دفع اختباري للفواتير المفتوحة */}
-              {o.invoice.status === "open" && (
-                <div className="mt-4 flex flex-wrap items-center gap-3">
-                  <button
-                    onClick={() => pay(o.id)}
-                    disabled={paying === o.id}
-                    className="flex cursor-pointer items-center gap-2 rounded-full bg-[#FABC05] px-6 py-2.5 text-sm font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {paying === o.id ? <RefreshCcw className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
-                    {paying === o.id ? "جار الدفع عبر المزود التجريبي…" : "ادفع اختباريا — لا مال حقيقي"}
-                  </button>
-                  <p className="text-[10px] leading-5 text-white/50">
-                    مفتاح العملية ثابت لهذه الجلسة — إعادة النقر لا تخصم مرة ثانية (idempotent).
+              {o.invoice && (
+                <div className="mt-4 rounded-2xl border border-white/8 bg-black/20 p-4">
+                  <p className="flex items-center justify-between text-xs font-bold text-white/60">
+                    <span>الفاتورة — {INV_STATUS[o.invoice.status] ?? o.invoice.status}</span>
+                    <span>{o.invoice.total} {o.invoice.currency}</span>
                   </p>
+                  {o.invoice.payments.length > 0 && (
+                    <ul className="mt-2 space-y-1.5">
+                      {o.invoice.payments.map((p) => (
+                        <li key={p.id} className="flex flex-wrap items-center gap-2 text-[11px] text-white/55">
+                          <CreditCard className="h-3 w-3 text-white/30" />
+                          دفعة {p.amount} {o.invoice!.currency} — {p.status === "succeeded" ? "ناجحة" : p.status}
+                          {p.method && <span className="text-white/40">({p.method})</span>}
+                          {p.refunds.map((r) => (
+                            <span key={r.id} className="flex items-center gap-1 rounded-full border border-[#FABC05]/30 px-2 py-0.5 text-[10px] text-[#FABC05]">
+                              <RotateCcw className="h-2.5 w-2.5" /> استرداد {r.amount} — {r.status}
+                            </span>
+                          ))}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               )}
-            </div>
-          </section>
-        ))}
-      </div>
+            </article>
+          ))}
+        </div>
+      )}
 
-      <p className="mt-6 text-center text-xs leading-6 text-white/45">
-        لطلب استرداد أو مراجعة فاتورة: <Link to="/contact" className="font-bold text-[#6EC7D1] underline-offset-4 hover:underline">صفحة التواصل</Link> — اختر «طلب استرداد» وسيُعالج بسبب موثق.
-      </p>
+      <button onClick={() => void load()} className="mt-6 flex cursor-pointer items-center gap-1.5 text-xs text-white/50 hover:text-white">
+        <RefreshCw className="h-3.5 w-3.5" /> تحديث
+      </button>
     </PortalLayout>
   );
 }

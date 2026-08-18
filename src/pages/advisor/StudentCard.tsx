@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
 import {
   AlertTriangle, ArrowRight, CalendarClock, CalendarPlus, CheckCircle2, FileText,
@@ -7,11 +7,13 @@ import {
 import AdvisorLayout from "./AdvisorLayout";
 import { advisorIdentity } from "./advisor-identity";
 import { toast } from "@/components/Toast";
+import { fmtWhen } from "@/utils/format";
 import {
   loadAdvisorStudents, riskScore, riskLevel, nextBestAction,
   studentPathwayName, studentCourseCount, currentCourseName, logAudit, RISK_RULES,
   caseForStudent, setCaseStatus, setCaseNextAction, addCaseTask, completeCaseTask,
   addCaseFollowUp, completeCaseFollowUp, addCaseContact, addCaseNote, viewCaseCv,
+  caseSeenAt, markCaseSeen, isNewSince,
   CASE_STATUSES, CASE_STATUS_META, CHANNEL_LABEL, isOverdue, fmtDT,
   type CaseStatus, type ContactChannel,
 } from "@/data/advisor";
@@ -33,6 +35,10 @@ export default function StudentCard() {
   const [swapCourse, setSwapCourse] = useState("");
   const [tab, setTab] = useState<"overview" | "case">("overview");
   const [tick, setTick] = useState(0);
+  const [confirmEnd, setConfirmEnd] = useState<CaseStatus | null>(null);
+  /* «جديد منذ آخر زيارة» — التقط وقت آخر زيارة قبل هذه، وحدّثه عند المغادرة */
+  const [seenAt] = useState<string | null>(() => (id ? caseSeenAt(id) : null));
+  useEffect(() => () => { if (id) markCaseSeen(id); }, [id]);
   void tick;
 
   /* نماذج ملف الحالة */
@@ -79,8 +85,17 @@ export default function StudentCard() {
     logAudit(myName, audit, s.id);
     setTick((t) => t + 1);
   };
-  const changeStatus = (to: CaseStatus) =>
-    kase && act(() => setCaseStatus(kase.id, to, myName), `غيّر حالة الحالة إلى «${CASE_STATUS_META[to].label}»`);
+  /* حالات الإنهاء (مغلقة/غير مهتم) تحتاج نقرة تأكيد ثانية — قرار إنهاء لا يحدث بزر عابر */
+  const changeStatus = (to: CaseStatus) => {
+    if (!kase) return;
+    const isEnding = to === "closed" || to === "not_interested";
+    if (isEnding && confirmEnd !== to) {
+      setConfirmEnd(to);
+      return;
+    }
+    setConfirmEnd(null);
+    act(() => setCaseStatus(kase.id, to, myName), `غيّر حالة الحالة إلى «${CASE_STATUS_META[to].label}»`);
+  };
   const saveNextAction = () => {
     if (!kase) return;
     const text = (naText ?? kase.nextAction ?? "").trim();
@@ -242,7 +257,7 @@ export default function StudentCard() {
                   </span>
                   <div className="pt-1">
                     <p className="text-sm leading-6 text-white/80">{e.text}</p>
-                    <p className="text-[10px] text-white/55">{e.at}</p>
+                    <p className="text-[10px] text-white/55">{fmtWhen(e.at)}</p>
                   </div>
                 </div>
               ))}
@@ -294,19 +309,27 @@ export default function StudentCard() {
               {CASE_STATUSES.map((st) => {
                 const meta = CASE_STATUS_META[st];
                 const active = kase.status === st;
+                const confirming = confirmEnd === st;
                 return (
                   <button
                     key={st}
                     onClick={() => changeStatus(st)}
                     disabled={active}
                     className={`cursor-pointer rounded-full border px-3.5 py-1.5 text-xs font-bold transition disabled:cursor-default ${
-                      active ? "border-[#FABC05] bg-[#FABC05] text-[#0D0D0D]" : `${meta.cls} hover:border-white/40`
+                      active
+                        ? "border-[#FABC05] bg-[#FABC05] text-[#0D0D0D]"
+                        : confirming
+                          ? "border-red-500 bg-red-500 text-white"
+                          : `${meta.cls} hover:border-white/40`
                     }`}
                   >
-                    {meta.label}
+                    {confirming ? `تأكيد: ${meta.label}؟` : meta.label}
                   </button>
                 );
               })}
+              {confirmEnd && (
+                <span className="self-center text-[10px] text-red-300">إنهاء الحالة قرار مؤثر — اضغط «تأكيد» مجددا للمتابعة</span>
+              )}
             </div>
             {/* الإجراء التالي وموعد المتابعة — POST /:id/next-action */}
             <div className="mt-4 flex flex-wrap items-end gap-2 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
@@ -342,7 +365,12 @@ export default function StudentCard() {
             <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
               <p className="flex items-center gap-2 text-sm font-black"><ListChecks className="h-4 w-4 text-[#FABC05]" /> مهام الحالة</p>
               <div className="mt-3 space-y-2">
-                {kase.tasks.length === 0 && <p className="py-2 text-center text-[11px] text-white/50">لا مهام بعد</p>}
+                {kase.tasks.length === 0 && (
+                  <div className="rounded-xl border border-dashed border-white/15 px-3 py-4 text-center">
+                    <p className="text-[11px] font-bold text-white/55">لا مهام على هذه الحالة بعد</p>
+                    <p className="mt-1 text-[10px] leading-5 text-white/50">المهمة بوعد واضح: اكتب ما ستفعله لهذا العميل وحدد موعد استحقاقه في الحقلين أدناه — سيظهران في لوحتك.</p>
+                  </div>
+                )}
                 {kase.tasks.map((t) => (
                   <div key={t.id} className={`flex items-start gap-2 rounded-xl border px-3 py-2 text-xs ${
                     t.done ? "border-white/5 text-white/50 line-through" : isOverdue(t.dueAt) ? "border-red-500/40 bg-red-500/5 text-white/85" : "border-white/10 text-white/80"
@@ -394,7 +422,12 @@ export default function StudentCard() {
             <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
               <p className="flex items-center gap-2 text-sm font-black"><CalendarClock className="h-4 w-4 text-[#38A7B4]" /> المتابعات المجدولة</p>
               <div className="mt-3 space-y-2">
-                {kase.followUps.length === 0 && <p className="py-2 text-center text-[11px] text-white/50">لا متابعات بعد</p>}
+                {kase.followUps.length === 0 && (
+                  <div className="rounded-xl border border-dashed border-white/15 px-3 py-4 text-center">
+                    <p className="text-[11px] font-bold text-white/55">لا متابعات مجدولة</p>
+                    <p className="mt-1 text-[10px] leading-5 text-white/50">المتابعة المجدولة هي ما يمنع نسيان العميل — حدد موعدا وقناة أدناه وستنعكس على موعد متابعة الحالة ولوحتك.</p>
+                  </div>
+                )}
                 {kase.followUps.map((f) => (
                   <div key={f.id} className={`rounded-xl border px-3 py-2 text-xs ${f.doneAt ? "border-white/5 text-white/50" : "border-white/10 text-white/80"}`}>
                     <div className="flex items-center justify-between gap-2">
@@ -470,11 +503,19 @@ export default function StudentCard() {
               <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
                 <p className="flex items-center gap-2 text-sm font-black"><MessageSquarePlus className="h-4 w-4 text-[#38A7B4]" /> سجل التواصل</p>
                 <div className="mt-3 max-h-44 space-y-2 overflow-y-auto">
-                  {kase.contacts.length === 0 && <p className="py-2 text-center text-[11px] text-white/50">لا تواصل مسجل — أول تواصل ينقل الحالة تلقائيا</p>}
+                  {kase.contacts.length === 0 && (
+                    <div className="rounded-xl border border-dashed border-white/15 px-3 py-4 text-center">
+                      <p className="text-[11px] font-bold text-white/55">لا تواصل مسجل بعد</p>
+                      <p className="mt-1 text-[10px] leading-5 text-white/50">سجّل أول تواصل من الأسفل — سينقل الحالة تلقائيا إلى «تم التواصل» كما يفعل الخادم.</p>
+                    </div>
+                  )}
                   {kase.contacts.map((c) => (
                     <div key={c.id} className="rounded-xl border border-white/10 px-3 py-2 text-xs">
                       <p className="flex items-center justify-between font-bold text-white/80">
-                        <span>{CHANNEL_LABEL[c.channel]} · {c.direction === "out" ? "صادر" : "وارد"}</span>
+                        <span className="flex items-center gap-2">
+                          {CHANNEL_LABEL[c.channel]} · {c.direction === "out" ? "صادر" : "وارد"}
+                          {isNewSince(c.at, seenAt) && <span className="rounded-full bg-[#FABC05]/20 px-1.5 py-0.5 text-[9px] font-black text-[#FABC05]">جديد</span>}
+                        </span>
                         <span className="text-[10px] font-normal text-white/50">{fmtDT(c.at)}</span>
                       </p>
                       <p className="mt-1 leading-5 text-white/55">{c.summary}</p>
@@ -525,10 +566,18 @@ export default function StudentCard() {
                   <span className="mr-auto rounded-full bg-[#FABC05]/15 px-2 py-0.5 text-[10px] font-bold text-[#FABC05]">لا تظهر للعميل</span>
                 </p>
                 <div className="mt-3 max-h-36 space-y-2 overflow-y-auto">
-                  {kase.notes.length === 0 && <p className="py-2 text-center text-[11px] text-white/50">لا ملاحظات بعد</p>}
+                  {kase.notes.length === 0 && (
+                    <div className="rounded-xl border border-dashed border-[#FABC05]/20 px-3 py-4 text-center">
+                      <p className="text-[11px] font-bold text-white/55">لا ملاحظات داخلية</p>
+                      <p className="mt-1 text-[10px] leading-5 text-white/50">دون هنا ما لا يجب أن يراه العميل — حساسية، اتفاق شفهي، خطة تعامل. تبقى داخلية دائما.</p>
+                    </div>
+                  )}
                   {kase.notes.map((n) => (
                     <div key={n.id} className="rounded-xl border border-[#FABC05]/20 bg-[#FABC05]/5 px-3 py-2 text-xs">
-                      <p className="leading-5 text-white/75">{n.body}</p>
+                      <p className="flex items-start justify-between gap-2 leading-5 text-white/75">
+                        {n.body}
+                        {isNewSince(n.at, seenAt) && <span className="mt-0.5 shrink-0 rounded-full bg-[#FABC05]/20 px-1.5 py-0.5 text-[9px] font-black text-[#FABC05]">جديد</span>}
+                      </p>
                       <p className="mt-1 text-[10px] text-white/50">{n.by} · {fmtDT(n.at)}</p>
                     </div>
                   ))}

@@ -4,6 +4,7 @@ import {
 } from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import { toast } from "@/components/Toast";
+import { fmtWhen } from "@/utils/format";
 import {
   listMyCvs, uploadCv, deleteCv, cvKindLabel, CV_ACCEPT, CV_MAX_LABEL,
 } from "@/data/cv";
@@ -93,9 +94,19 @@ export default function MyCv() {
       {/* سيري الفعالة */}
       <section className="mt-6 space-y-3">
         {cvs.length === 0 && (
-          <p className="rounded-3xl border border-dashed border-white/15 py-10 text-center text-sm text-white/50">
-            لا سير فعالة — ارفع أول سيرة ليتعرف مستشارك على خلفيتك المهنية.
-          </p>
+          <div className="rounded-3xl border border-dashed border-white/15 py-10 text-center">
+            <FileText className="mx-auto h-8 w-8 text-white/50" />
+            <p className="mt-3 text-sm font-bold text-white/60">لا سير فعالة بعد</p>
+            <p className="mx-auto mt-1 max-w-sm text-xs leading-6 text-white/50">
+              سيرتك تساعد مستشارك على فهم خلفيتك المهنية قبل أول جلسة — وتُسجل كل مشاهدة لها في السجل.
+            </p>
+            <button
+              onClick={() => fileRef.current?.click()}
+              className="mt-4 cursor-pointer rounded-full bg-[#38A7B4] px-6 py-2.5 text-sm font-black text-[#08272B] transition hover:bg-[#6EC7D1]"
+            >
+              ارفع أول سيرة
+            </button>
+          </div>
         )}
         {cvs.map((c) => (
           <div key={c.id} className="flex flex-wrap items-center gap-4 rounded-3xl border border-white/10 bg-white/[0.02] p-5">
@@ -105,7 +116,7 @@ export default function MyCv() {
             <div className="min-w-0 flex-1">
               <p className="truncate font-black">{c.originalName}</p>
               <p className="mt-0.5 text-[11px] text-white/50">
-                {cvKindLabel(c.mime)} · {c.sizeKb} كيلوبايت · رُفعت {c.uploadedAt.slice(0, 10)}
+                {cvKindLabel(c.mime)} · {c.sizeKb} كيلوبايت · رُفعت {fmtWhen(c.uploadedAt)}
               </p>
             </div>
             <span className="flex items-center gap-1.5 rounded-full bg-[#38A7B4]/15 px-3 py-1 text-[10px] font-black text-[#6EC7D1]">

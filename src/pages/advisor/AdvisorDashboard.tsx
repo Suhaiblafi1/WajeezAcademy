@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import {
   AlertTriangle, CalendarClock, CheckCircle2, ChevronLeft, ClipboardList,
-  Clock3, ListChecks, TrendingUp, UserPlus, Users,
+  Clock3, ListChecks, Search, TrendingUp, UserPlus, Users,
 } from "lucide-react";
 import AdvisorLayout from "./AdvisorLayout";
 import { advisorIdentity } from "./advisor-identity";
@@ -29,6 +29,7 @@ export default function AdvisorDashboard() {
   const reviews = useMemo(() => loadPathReviews(), []);
   const [tick, setTick] = useState(0);
   const [filter, setFilter] = useState<"all" | RiskLevel>("all");
+  const [query, setQuery] = useState("");
   const me = advisorIdentity();
   void tick;
 
@@ -58,8 +59,13 @@ export default function AdvisorDashboard() {
       students
         .map((s) => ({ s, score: riskScore(s.signals), level: riskLevel(riskScore(s.signals)) }))
         .sort((a, b) => b.score - a.score)
-        .filter((x) => filter === "all" || x.level === filter),
-    [students, filter]
+        .filter((x) => filter === "all" || x.level === filter)
+        .filter((x) => {
+          const q = query.trim();
+          if (!q) return true;
+          return x.s.name.includes(q) || x.s.role.includes(q) || studentPathwayName(x.s).includes(q);
+        }),
+    [students, filter, query]
   );
 
   const counts = useMemo(() => {
@@ -183,8 +189,18 @@ export default function AdvisorDashboard() {
         </section>
       )}
 
-      {/* فلاتر */}
+      {/* فلاتر + بحث */}
       <div className="mt-6 flex flex-wrap items-center gap-2">
+        <div className="relative">
+          <Search className="absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/50" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="ابحث باسم الطالب أو دوره أو مساره…"
+            aria-label="بحث في طلبتي"
+            className="w-64 rounded-full border border-white/10 bg-white/[0.03] py-1.5 pr-9 pl-3 text-xs text-white placeholder:text-white/50 focus:border-[#FABC05] focus:outline-none"
+          />
+        </div>
         {(["all", "red", "yellow", "green"] as const).map((f) => (
           <button
             key={f}

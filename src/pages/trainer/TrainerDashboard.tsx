@@ -10,7 +10,7 @@ const STATUS_LABEL: Record<CohortStatus, { label: string; cls: string }> = {
   full: { label: "ممتلئة", cls: "border-[#FABC05]/40 text-[#FABC05]" },
   running: { label: "جارية", cls: "border-[#38A7B4]/60 text-[#6EC7D1]" },
   postponed: { label: "مؤجلة", cls: "border-white/20 text-white/50" },
-  done: { label: "منتهية", cls: "border-white/10 text-white/40" },
+  done: { label: "منتهية", cls: "border-white/10 text-white/50" },
 };
 
 export default function TrainerDashboard() {
@@ -71,11 +71,11 @@ export default function TrainerDashboard() {
                 {t.done
                   ? <CheckCircle2 className="h-4.5 w-4.5 shrink-0 text-[#38A7B4]" />
                   : <Circle className="h-4.5 w-4.5 shrink-0 text-white/25" />}
-                <span className={`text-sm ${t.done ? "text-white/40 line-through" : "font-bold text-white/85"}`}>{t.label}</span>
+                <span className={`text-sm ${t.done ? "text-white/50 line-through" : "font-bold text-white/85"}`}>{t.label}</span>
               </button>
             ))}
           </div>
-          <p className="mt-3 text-[10px] leading-5 text-white/40">
+          <p className="mt-3 text-[10px] leading-5 text-white/50">
             إكمال مهام التهيئة شرط قبل ظهور ملفك للعامة وقبول إسنادات جديدة.
           </p>
         </section>
@@ -102,15 +102,15 @@ export default function TrainerDashboard() {
                 <div className="flex items-center gap-4 text-center text-xs">
                   <div>
                     <p className="font-black text-white/85">{enrolled}/{c.capacity}</p>
-                    <p className="text-[10px] text-white/40">مقاعد</p>
+                    <p className="text-[10px] text-white/50">مقاعد</p>
                   </div>
                   <div>
                     <p className="font-black text-white/85">{avgAttendance}%</p>
-                    <p className="text-[10px] text-white/40">حضور</p>
+                    <p className="text-[10px] text-white/50">حضور</p>
                   </div>
                   <div>
                     <p className="font-black text-white/85">{submittedPct}%</p>
-                    <p className="text-[10px] text-white/40">تسليم</p>
+                    <p className="text-[10px] text-white/50">تسليم</p>
                   </div>
                 </div>
                 <span className={`rounded-full border px-3 py-1 text-[11px] font-bold ${meta.cls}`}>{meta.label}</span>

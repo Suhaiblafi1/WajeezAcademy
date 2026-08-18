@@ -12,6 +12,24 @@
 
 import { writeFileSync } from 'node:fs'
 import { getPrisma, disconnectPrisma } from '../server/db/client'
+import questionPlanJson from '../src/data/catalog/v2_1/question-plan.v2_1.json'
+import skillLayersJson from '../src/data/catalog/v2/skill-layers.v2.json'
+
+/* حوكمة 2026-08-19: القياس «الحي» = سؤال فعال في قاعدة البيانات **و** سطحه في
+   خطة V2.1 حي (b2c / post_recommendation). سؤال متقاعد في الخطة لا يُحسب قياسًا
+   حيًا ولو بقي منشورًا في البنك. والمهارة المحكومة (academic_status ≠ approved_active)
+   لا تُصنَّف «ميتة» ولا تُفشل فحص القياس — قرارها موثق سلفًا. */
+const plan = (questionPlanJson as unknown as { plan: Record<string, { surface: string }> }).plan
+const layers = (skillLayersJson as unknown as { skills: Record<string, { academic_status?: string }> }).skills
+const LIVE_SURFACES = new Set(['b2c', 'post_recommendation'])
+const liveQuestion = (qid: string) => {
+  const p = plan[qid]
+  return p !== undefined && LIVE_SURFACES.has(p.surface)
+}
+const governanceOf = (slug: string) => {
+  const st = layers[slug]?.academic_status
+  return st && st !== 'approved_active' ? st : null
+}
 
 let failures = 0
 const fail = (msg: string) => { failures++; console.error(`✗ ${msg}`) }
@@ -40,12 +58,13 @@ const main = async () => {
   }
 
   const rows: Row[] = skills.map((s) => {
-    const measuredBy = s.questionLinks.map((l) => ({ q: l.question.id, w: l.weight, active: l.question.active && l.question.status === 'published' }))
+    const measuredBy = s.questionLinks.map((l) => ({ q: l.question.id, w: l.weight, active: l.question.active && l.question.status === 'published' && liveQuestion(l.question.id) }))
     const coveredBy = s.courseLinks.map((l) => ({ c: l.courseId, level: l.targetLevel, w: l.weight }))
     const requiredBy = s.pathwayReqs.map((r) => ({ p: r.pathwayId, level: r.requiredLevel, priority: r.priority }))
     const measured = measuredBy.some((m) => m.active)
     const covered = coveredBy.length > 0
     const required = requiredBy.length > 0
+    const governed = governanceOf(s.slug)
     let kind: Row['kind']
     let note = ''
     if (measured && covered) kind = 'سليمة'
@@ -53,11 +72,13 @@ const main = async () => {
     else if (measured && !covered) { kind = 'مقاسة بلا تغطية'; note = 'يقيسها التشخيص ولا دورة تغطيها — راجع الجدوى' }
     else if (required) { kind = 'فجوة متعمدة'; note = 'تظهر للطالب كمهارة لا نغطيها بعد — صدق مقصود' }
     else { kind = 'ميتة'; note = 'لا قياس ولا تغطية ولا مسار — مرشحة حذف أو دمج' }
+    if (governed) note = `محكومة أكاديميًا (${governed}) — قرار 2026-08-19 موثق في مصفوفة القرار الأكاديمي؛ التفعيل صريح فقط`
     return { id: s.id, slug: s.slug, nameAr: s.nameAr, family: s.familyId ?? '—', measuredBy, coveredBy, requiredBy, kind, note }
   })
 
-  /* فحوص مانعة */
+  /* فحوص مانعة — المهارات المحكومة أكاديميًا مستثناة: إيقاف قياسها قرار موثق لا خلل */
   for (const r of rows) {
+    if (governanceOf(r.slug)) continue
     const activeQs = r.measuredBy.filter((m) => m.active)
     if (r.measuredBy.length > 0 && activeQs.length === 0)
       fail(`${r.id} (${r.nameAr}): مرتبطة بأسئلة لكنها كلها غير فعالة — عديمة القياس فعليا`)
@@ -70,7 +91,7 @@ const main = async () => {
   const questionMap = new Map<string, string[]>()
   for (const s of skills) {
     for (const l of s.questionLinks) {
-      if (!(l.question.active && l.question.status === 'published')) continue
+      if (!(l.question.active && l.question.status === 'published' && liveQuestion(l.question.id))) continue
       const arr = questionMap.get(l.question.id) ?? []
       arr.push(s.id)
       questionMap.set(l.question.id, arr)
@@ -95,7 +116,7 @@ const main = async () => {
   for (const s of skills) {
     const fam = s.familyId ?? '—'
     const set = familyQuestions.get(fam) ?? new Set<string>()
-    for (const l of s.questionLinks) if (l.question.active && l.question.status === 'published') set.add(l.question.id)
+    for (const l of s.questionLinks) if (l.question.active && l.question.status === 'published' && liveQuestion(l.question.id)) set.add(l.question.id)
     familyQuestions.set(fam, set)
   }
   const adaptiveCandidates = [...familyQuestions.entries()]
@@ -110,7 +131,8 @@ const main = async () => {
     مخرجات: rows.filter((r) => r.kind === 'مخرج تعلم').length,
     مقاسة_بلا_تغطية: rows.filter((r) => r.kind === 'مقاسة بلا تغطية').length,
     فجوات_متعمدة: rows.filter((r) => r.kind === 'فجوة متعمدة').length,
-    ميتة: rows.filter((r) => r.kind === 'ميتة').length,
+    ميتة: rows.filter((r) => r.kind === 'ميتة' && !governanceOf(r.slug)).length,
+    محكومة: rows.filter((r) => governanceOf(r.slug) !== null).length,
   }
 
   /* ── تقرير Markdown ── */
@@ -124,6 +146,7 @@ const main = async () => {
   md.push(`- مقاسة بلا تغطية دوراتية (تحتاج قرارا): **${counts.مقاسة_بلا_تغطية}**`)
   md.push(`- فجوات متعمدة (تظهر «لا نغطيها بعد»): **${counts.فجوات_متعمدة}**`)
   md.push(`- ميتة (مرشحة حذف/دمج — قرار مؤجل): **${counts.ميتة}**`)
+  md.push(`- محكومة أكاديميًا (قرار 2026-08-19 — future_catalog_skill/merged/future_personalization_signal): **${counts.محكومة}**`)
   md.push('')
   md.push('## سلسلة القياس', '')
   md.push('Question → Signal → Skill → Skill Score → Track Fit → Recommendation', '')
@@ -158,7 +181,7 @@ const main = async () => {
   writeFileSync('docs/SKILL_COVERAGE_MATRIX_AR.md', md.join('\n'))
   writeFileSync('docs/skill-coverage-matrix.json', JSON.stringify({ generatedAt: new Date().toISOString(), counts, rows, adaptiveCandidates, duplicateQuestions }, null, 2))
 
-  console.log(`📊 مهارات منشورة: ${counts.total} | سليمة ${counts.سليمة} | مخرجات ${counts.مخرجات} | مقاسة بلا تغطية ${counts.مقاسة_بلا_تغطية} | فجوات متعمدة ${counts.فجوات_متعمدة} | ميتة ${counts.ميتة}`)
+  console.log(`📊 مهارات منشورة: ${counts.total} | سليمة ${counts.سليمة} | مخرجات ${counts.مخرجات} | مقاسة بلا تغطية ${counts.مقاسة_بلا_تغطية} | فجوات متعمدة ${counts.فجوات_متعمدة} | ميتة ${counts.ميتة} | محكومة ${counts.محكومة}`)
   console.log(`📄 docs/SKILL_COVERAGE_MATRIX_AR.md + docs/skill-coverage-matrix.json`)
   console.log(failures === 0 ? '✅ مصفوفة التغطية سليمة — لا مشاكل مانعة' : `✗ مشاكل مانعة: ${failures}`)
 

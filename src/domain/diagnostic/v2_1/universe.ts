@@ -19,7 +19,7 @@ import {
 } from '../catalog'
 import { WEEKLY_LOAD_ORDER } from '../config'
 import type { FactBag } from '../types'
-import { pathwayDomainsV2, layersOfSkill, functionDomainsV2 } from '../v2/data'
+import { pathwayDomainsV2, layersOfSkill, isDiagnosticSkillActive, functionDomainsV2 } from '../v2/data'
 import type { DomainId } from '../v2/types'
 import { GOALS_V21, NEEDS_V21, type CareerStage } from './maps'
 import { planOf } from './data'
@@ -174,8 +174,7 @@ function skillRolesOf(skills: string[]): { decisive: string[]; supporting: strin
   const learning: string[] = []
   for (const s of skills) {
     const meta = layersOfSkill(s)
-    const active = meta === undefined || meta.active
-    if (!active) {
+    if (!isDiagnosticSkillActive(meta)) {
       learning.push(s)
       continue
     }

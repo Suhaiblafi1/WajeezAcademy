@@ -1,0 +1,370 @@
+/* عمليات إدارة المدربين المتقدمة — مقابلات ونتائجها، تقييم الديمو، مراجع مهنية،
+   عقود وتوقيع، تأهيل وإسناد ونشر عام وإيقاف، ومراجعة اقتراحات تعديل الدورات.
+   كلها API حقيقي من admin-trainer.routes. */
+import { useCallback, useEffect, useState } from "react";
+import {
+  BadgeCheck, Briefcase, CalendarCheck, CheckCircle2, ChevronDown, FileSignature,
+  Globe, Loader2, ShieldOff, Star, UserCheck, XCircle,
+} from "lucide-react";
+import { apiGet, apiPost, ApiError } from "@/services/api";
+
+const inputCls = "w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none";
+const selectCls = `${inputCls} [&>option]:bg-[#121B1D]`;
+
+const RUBRIC_AXES: { key: string; label: string }[] = [
+  { key: "domain_expertise", label: "خبرة المجال" },
+  { key: "evidence_of_expertise", label: "أدلة الخبرة" },
+  { key: "explanation_facilitation", label: "الشرح والتيسير" },
+  { key: "demo_quality", label: "جودة الديمو" },
+  { key: "activity_assessment_design", label: "تصميم الأنشطة والتقييمات" },
+  { key: "feedback_skill", label: "التغذية الراجعة" },
+  { key: "digital_training", label: "التدريب الرقمي" },
+  { key: "values_fit", label: "التوافق مع قيم وجيز" },
+  { key: "availability", label: "التوفر" },
+];
+
+const CR_STATUS_AR: Record<string, string> = {
+  submitted: "مُقدم", in_review: "قيد المراجعة", changes_requested: "مطلوب تعديل",
+  approved_for_cohort: "معتمد للشعبة", approved_for_catalog: "معتمد للكتالوج",
+  published: "منشور", rejected: "مرفوض", withdrawn: "مسحوب", scheduled: "مجدول للنشر",
+};
+
+function Card({ icon: Icon, title, children, defaultOpen = false }: {
+  icon: typeof Star; title: string; children: React.ReactNode; defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
+      <button onClick={() => setOpen(!open)} className="flex w-full cursor-pointer items-center justify-between text-sm font-black">
+        <span className="flex items-center gap-2"><Icon className="h-4 w-4 text-[#6EC7D1]" /> {title}</span>
+        <ChevronDown className={`h-4 w-4 text-white/40 transition ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && <div className="mt-4">{children}</div>}
+    </article>
+  );
+}
+
+function RubricInput({ scores, onChange }: { scores: Record<string, number>; onChange: (s: Record<string, number>) => void }) {
+  return (
+    <div className="space-y-2">
+      {RUBRIC_AXES.map((x) => (
+        <div key={x.key} className="flex items-center justify-between gap-2">
+          <span className="text-[11px] text-white/60">{x.label}</span>
+          <div className="flex gap-1" role="radiogroup" aria-label={x.label}>
+            {[1, 2, 3, 4, 5].map((v) => (
+              <button key={v} type="button" onClick={() => onChange({ ...scores, [x.key]: v })}
+                aria-pressed={scores[x.key] === v}
+                className={`grid h-6 w-6 cursor-pointer place-items-center rounded-md border text-[10px] font-bold transition ${
+                  scores[x.key] === v ? "border-[#FABC05] bg-[#FABC05] text-[#0D0D0D]" : "border-white/15 text-white/50 hover:border-white/40"
+                }`}>
+                {v}
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** بطاقات التفاصيل المتقدمة لطلب مدرب — تُركب داخل صفحة التفاصيل */
+export function TrainerDetailOps({ app, onAction }: {
+  app: {
+    id: string; status: string;
+    interviews: { id: string; scheduledAt: string; outcome: string | null }[];
+    profile: { id: string; userId: string | null } | null;
+  };
+  onAction: (fn: () => Promise<unknown>, doneMsg: string) => Promise<void>;
+}) {
+  const [interviewForm, setInterviewForm] = useState({ scheduledAt: "", mode: "remote", notes: "" });
+  const [demoScores, setDemoScores] = useState<Record<string, number>>({});
+  const [demoDecision, setDemoDecision] = useState("pass");
+  const [demoNotes, setDemoNotes] = useState("");
+  const [refForm, setRefForm] = useState({ name: "", relation: "", contact: "", note: "" });
+  const [verifyId, setVerifyId] = useState("");
+  const [contractForm, setContractForm] = useState({ title: "", terms: "" });
+  const [lastContractId, setLastContractId] = useState("");
+  const [qualForm, setQualForm] = useState({ courseId: "", note: "" });
+  const [assignOps, setAssignOps] = useState({ courseId: "", cohortId: "" });
+  const [suspendNote, setSuspendNote] = useState("");
+  const [courses, setCourses] = useState<{ id: string; title: string }[]>([]);
+
+  useEffect(() => {
+    apiGet<{ id: string; title: string }[]>("/api/admin/catalog/courses").then(setCourses).catch(() => setCourses([]));
+  }, []);
+
+  const demoComplete = RUBRIC_AXES.every((x) => demoScores[x.key] >= 1);
+
+  return (
+    <>
+      {/* المقابلات */}
+      <Card icon={CalendarCheck} title={`المقابلات (${app.interviews.length})`}>
+        <div className="space-y-3">
+          {app.interviews.map((iv) => (
+            <div key={iv.id} className="rounded-xl border border-white/10 bg-black/20 p-3 text-xs">
+              <p className="font-bold">{new Date(iv.scheduledAt).toLocaleString("ar")} — {iv.outcome ?? "بلا نتيجة"}</p>
+              {!iv.outcome && (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {([["passed", "ناجح"], ["hold", "تعليق"], ["failed", "راسب"]] as const).map(([o, label]) => (
+                    <button key={o} onClick={() => void onAction(
+                      () => apiPost(`/api/admin/trainer-interviews/${iv.id}/outcome`, { outcome: o }),
+                      "سُجلت نتيجة المقابلة",
+                    )} className="cursor-pointer rounded-full border border-white/15 px-3 py-1 text-[10px] font-bold text-white/60 hover:border-[#38A7B4]/50 hover:text-[#6EC7D1]">
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+          <div className="grid gap-2 sm:grid-cols-3">
+            <input type="datetime-local" value={interviewForm.scheduledAt}
+              onChange={(e) => setInterviewForm({ ...interviewForm, scheduledAt: e.target.value })} className={inputCls} />
+            <select value={interviewForm.mode} onChange={(e) => setInterviewForm({ ...interviewForm, mode: e.target.value })} className={selectCls}>
+              <option value="remote">عن بعد</option>
+              <option value="in_person">حضوري</option>
+            </select>
+            <input value={interviewForm.notes} onChange={(e) => setInterviewForm({ ...interviewForm, notes: e.target.value })}
+              placeholder="ملاحظات (اختياري)" className={inputCls} />
+          </div>
+          <button disabled={!interviewForm.scheduledAt}
+            onClick={() => void onAction(
+              () => apiPost(`/api/admin/trainer-applications/${app.id}/interviews`, {
+                scheduledAt: new Date(interviewForm.scheduledAt), mode: interviewForm.mode, notes: interviewForm.notes || undefined,
+              }),
+              "جُدولت المقابلة وانتقل الطلب",
+            )}
+            className="cursor-pointer rounded-full bg-[#38A7B4] px-4 py-1.5 text-xs font-black text-[#08272B] hover:bg-[#6EC7D1] disabled:opacity-40">
+            جدولة مقابلة
+          </button>
+        </div>
+      </Card>
+
+      {/* تقييم الديمو */}
+      <Card icon={Star} title="تقييم الدرس التجريبي (Demo)">
+        <RubricInput scores={demoScores} onChange={setDemoScores} />
+        <div className="mt-3 flex flex-wrap gap-2">
+          {([["pass", "يجتاز"], ["retry", "يعيد"], ["fail", "لا يجتاز"]] as const).map(([d, label]) => (
+            <button key={d} type="button" onClick={() => setDemoDecision(d)}
+              className={`cursor-pointer rounded-full border px-3 py-1 text-[11px] font-bold transition ${demoDecision === d ? "border-[#FABC05] bg-[#FABC05]/10 text-[#FABC05]" : "border-white/15 text-white/55"}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <textarea value={demoNotes} onChange={(e) => setDemoNotes(e.target.value)} rows={2} placeholder="ملاحظات التقييم…" className={`${inputCls} mt-3`} />
+        <button disabled={!demoComplete}
+          onClick={() => void onAction(
+            () => apiPost(`/api/admin/trainer-applications/${app.id}/demo-evaluations`, {
+              scores: demoScores, decision: demoDecision, notes: demoNotes || undefined,
+            }),
+            "سُجل تقييم الديمو",
+          )}
+          className="mt-3 cursor-pointer rounded-full bg-[#38A7B4] px-4 py-1.5 text-xs font-black text-[#08272B] hover:bg-[#6EC7D1] disabled:opacity-40">
+          سجّل تقييم الديمو
+        </button>
+      </Card>
+
+      {/* المراجع المهنية */}
+      <Card icon={UserCheck} title="المراجع المهنية">
+        <div className="grid gap-2 sm:grid-cols-2">
+          <input value={refForm.name} onChange={(e) => setRefForm({ ...refForm, name: e.target.value })} placeholder="اسم المرجع" className={inputCls} />
+          <input value={refForm.relation} onChange={(e) => setRefForm({ ...refForm, relation: e.target.value })} placeholder="العلاقة (مدير سابق…)" className={inputCls} />
+          <input value={refForm.contact} onChange={(e) => setRefForm({ ...refForm, contact: e.target.value })} placeholder="وسيلة التواصل" className={inputCls} />
+          <input value={refForm.note} onChange={(e) => setRefForm({ ...refForm, note: e.target.value })} placeholder="ملاحظة" className={inputCls} />
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <button disabled={refForm.name.trim().length < 2}
+            onClick={() => void onAction(
+              () => apiPost(`/api/admin/trainer-applications/${app.id}/references`, {
+                name: refForm.name, relation: refForm.relation || undefined,
+                contact: refForm.contact || undefined, note: refForm.note || undefined,
+              }),
+              "أُضيف المرجع",
+            )}
+            className="cursor-pointer rounded-full bg-[#38A7B4] px-4 py-1.5 text-xs font-black text-[#08272B] hover:bg-[#6EC7D1] disabled:opacity-40">
+            أضف مرجعا
+          </button>
+          <input value={verifyId} onChange={(e) => setVerifyId(e.target.value)} placeholder="معرف مرجع للتوثيق (UUID)" dir="ltr" className={`${inputCls} max-w-56 font-mono`} />
+          <button disabled={!verifyId.trim()}
+            onClick={() => void onAction(() => apiPost(`/api/admin/trainer-references/${verifyId.trim()}/verify`), "وُثق المرجع")}
+            className="cursor-pointer rounded-full border border-emerald-400/40 px-4 py-1.5 text-xs font-bold text-emerald-300 disabled:opacity-40">
+            توثيق
+          </button>
+        </div>
+      </Card>
+
+      {/* العقد */}
+      <Card icon={FileSignature} title="العقد والتوقيع">
+        <div className="flex flex-wrap gap-2">
+          <input value={contractForm.title} onChange={(e) => setContractForm({ ...contractForm, title: e.target.value })}
+            placeholder="عنوان العقد — عقد تدريب 2026" className={`${inputCls} flex-1`} />
+          <button disabled={contractForm.title.trim().length < 3}
+            onClick={() => void onAction(async () => {
+              const c = await apiPost<{ id: string }>(`/api/admin/trainer-applications/${app.id}/contracts`, { title: contractForm.title });
+              setLastContractId(c.id);
+            }, "أُنشئ العقد وأُرسل — الطلب في contract_pending")}
+            className="cursor-pointer rounded-full bg-[#38A7B4] px-4 py-1.5 text-xs font-black text-[#08272B] hover:bg-[#6EC7D1] disabled:opacity-40">
+            أنشئ وأرسل
+          </button>
+        </div>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <input value={lastContractId} onChange={(e) => setLastContractId(e.target.value)} placeholder="معرف العقد (UUID)" dir="ltr" className={`${inputCls} flex-1 font-mono`} />
+          <button disabled={!lastContractId.trim()}
+            onClick={() => void onAction(() => apiPost(`/api/admin/trainer-contracts/${lastContractId.trim()}/sign`), "سُجل التوقيع — الطلب في التهيئة")}
+            className="cursor-pointer rounded-full border border-emerald-400/40 px-4 py-1.5 text-xs font-bold text-emerald-300 disabled:opacity-40">
+            سجّل التوقيع
+          </button>
+        </div>
+      </Card>
+
+      {/* عمليات الملف: تأهيل، إسناد، نشر عام، إيقاف */}
+      {app.profile && (
+        <Card icon={Briefcase} title="ملف المدرب — تأهيل وإسناد ونشر وإيقاف" defaultOpen={app.status === "active" || app.status === "onboarding"}>
+          <div className="space-y-3">
+            <div className="flex flex-wrap gap-2">
+              <select value={qualForm.courseId} onChange={(e) => setQualForm({ ...qualForm, courseId: e.target.value })} className={`${selectCls} flex-1`}>
+                <option value="">دورة للتأهيل…</option>
+                {courses.map((c) => <option key={c.id} value={c.id}>{c.title} ({c.id})</option>)}
+              </select>
+              <input value={qualForm.note} onChange={(e) => setQualForm({ ...qualForm, note: e.target.value })} placeholder="ملاحظة" className={inputCls} />
+              <button disabled={!qualForm.courseId}
+                onClick={() => void onAction(
+                  () => apiPost(`/api/admin/trainers/${app.profile!.id}/qualifications`, { courseId: qualForm.courseId, note: qualForm.note || undefined }),
+                  "أُهل المدرب للدورة",
+                )}
+                className="cursor-pointer rounded-full bg-[#38A7B4] px-4 py-1.5 text-xs font-black text-[#08272B] hover:bg-[#6EC7D1] disabled:opacity-40">
+                تأهيل
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <select value={assignOps.courseId} onChange={(e) => setAssignOps({ ...assignOps, courseId: e.target.value })} className={`${selectCls} flex-1`}>
+                <option value="">دورة للإسناد…</option>
+                {courses.map((c) => <option key={c.id} value={c.id}>{c.title} ({c.id})</option>)}
+              </select>
+              <input value={assignOps.cohortId} onChange={(e) => setAssignOps({ ...assignOps, cohortId: e.target.value })}
+                placeholder="معرف شعبة (اختياري)" dir="ltr" className={`${inputCls} font-mono`} />
+              <button disabled={!assignOps.courseId}
+                onClick={() => void onAction(
+                  () => apiPost(`/api/admin/trainers/${app.profile!.id}/assignments`, { courseId: assignOps.courseId, cohortId: assignOps.cohortId || undefined }),
+                  "أُسند المدرب — يتطلب تأهيلا قائما",
+                )}
+                className="cursor-pointer rounded-full border border-[#38A7B4]/50 px-4 py-1.5 text-xs font-bold text-[#6EC7D1] disabled:opacity-40">
+                إسناد
+              </button>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 border-t border-white/8 pt-3">
+              <button onClick={() => void onAction(
+                () => apiPost(`/api/admin/trainers/${app.profile!.id}/publish-approval`),
+                "اعتُمد الظهور العام — الملف موثق وظاهر",
+              )} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-[#FABC05]/40 px-4 py-1.5 text-xs font-bold text-[#FABC05] hover:bg-[#FABC05]/10">
+                <Globe className="h-3.5 w-3.5" /> موافقة الظهور العام
+              </button>
+              <input value={suspendNote} onChange={(e) => setSuspendNote(e.target.value)} placeholder="سبب الإيقاف" className={`${inputCls} max-w-48`} />
+              <button onClick={() => void onAction(
+                () => apiPost(`/api/admin/trainers/${app.profile!.id}/suspend`, { note: suspendNote || undefined }),
+                "أُوقف المدرب — أُبطلت جلساته وأُخفي فورا",
+              )} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-red-500/40 px-4 py-1.5 text-xs font-bold text-red-400 hover:bg-red-500/10">
+                <ShieldOff className="h-3.5 w-3.5" /> إيقاف المدرب
+              </button>
+            </div>
+          </div>
+        </Card>
+      )}
+    </>
+  );
+}
+
+interface TrainerChangeRequest {
+  id: string; status: string; reason: string; scope: string; createdAt: string;
+  course?: { id: string } | null; courseId?: string;
+  items?: { changeType: string; note?: string | null }[];
+}
+
+/** لوحة مراجعة اقتراحات تعديل الدورات من المدربين — maker-checker */
+export function TrainerChangeRequests() {
+  const [rows, setRows] = useState<TrainerChangeRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [msg, setMsg] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [comment, setComment] = useState<Record<string, string>>({});
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try { setRows(await apiGet<TrainerChangeRequest[]>("/api/admin/trainer-change-requests")); }
+    catch (e) { setMsg(e instanceof ApiError ? e.message : "تعذر تحميل الاقتراحات"); }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { void load(); }, [load]);
+
+  const act = async (fn: () => Promise<unknown>, doneMsg: string) => {
+    if (busy) return;
+    setBusy(true); setMsg("");
+    try { await fn(); setMsg(doneMsg); await load(); }
+    catch (e) { setMsg(e instanceof ApiError ? e.message : "فشل الإجراء"); }
+    finally { setBusy(false); }
+  };
+
+  if (loading) return <div className="grid place-items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-white/30" /></div>;
+
+  return (
+    <div className="space-y-3">
+      {msg && <p className="rounded-xl border border-white/10 bg-white/[0.04] p-3 text-xs font-bold text-white/80" role="status">{msg}</p>}
+      {rows.length === 0 && (
+        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center">
+          <CheckCircle2 className="h-10 w-10 text-white/20" />
+          <p className="mt-3 text-sm text-white/50">لا اقتراحات من المدربين بعد — تصل من بوابة المدرب ← «اقتراحاتي».</p>
+        </div>
+      )}
+      {rows.map((r) => (
+        <div key={r.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-black">
+                دورة <span dir="ltr" className="font-mono text-xs">{r.courseId ?? r.course?.id ?? "—"}</span>
+                <span className="mr-2 text-[11px] font-bold text-white/50">نطاق: {r.scope === "cohort" ? "شعبة" : "كتالوج"}</span>
+              </p>
+              <p className="mt-1 text-xs leading-6 text-white/60">{r.reason}</p>
+              <p className="mt-1 text-[10px] text-white/40">
+                {new Date(r.createdAt).toLocaleString("ar")} · {r.items?.length ?? 0} بند تعديل
+              </p>
+            </div>
+            <span className="rounded-full border border-[#38A7B4]/40 px-3 py-1 text-[11px] font-bold text-[#6EC7D1]">
+              {CR_STATUS_AR[r.status] ?? r.status}
+            </span>
+          </div>
+          {(r.status === "submitted" || r.status === "in_review") && (
+            <div className="mt-3 space-y-2 border-t border-white/8 pt-3">
+              <input value={comment[r.id] ?? ""} onChange={(e) => setComment({ ...comment, [r.id]: e.target.value })}
+                placeholder="تعليق المراجع (اختياري)" className={inputCls} />
+              <div className="flex flex-wrap gap-2">
+                <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/decision`, { action: "approve_for_cohort", comment: comment[r.id] || undefined }), "اعتُمد للشعبة")}
+                  className="flex cursor-pointer items-center gap-1 rounded-full border border-emerald-400/40 px-3 py-1.5 text-xs font-bold text-emerald-300 disabled:opacity-40">
+                  <BadgeCheck className="h-3.5 w-3.5" /> اعتماد للشعبة
+                </button>
+                <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/decision`, { action: "approve_for_catalog", comment: comment[r.id] || undefined }), "اعتُمد للكتالوج")}
+                  className="flex cursor-pointer items-center gap-1 rounded-full border border-emerald-400/40 px-3 py-1.5 text-xs font-bold text-emerald-300 disabled:opacity-40">
+                  <BadgeCheck className="h-3.5 w-3.5" /> اعتماد للكتالوج
+                </button>
+                <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/decision`, { action: "request_changes", comment: comment[r.id] || "راجع التفاصيل" }), "طُلب تعديل")}
+                  className="flex cursor-pointer items-center gap-1 rounded-full border border-amber-400/40 px-3 py-1.5 text-xs font-bold text-amber-300 disabled:opacity-40">
+                  <XCircle className="h-3.5 w-3.5" /> طلب تعديل
+                </button>
+                <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/decision`, { action: "reject", comment: comment[r.id] || "مرفوض" }), "رُفض الاقتراح")}
+                  className="flex cursor-pointer items-center gap-1 rounded-full border border-red-500/40 px-3 py-1.5 text-xs font-bold text-red-400 disabled:opacity-40">
+                  <XCircle className="h-3.5 w-3.5" /> رفض
+                </button>
+              </div>
+            </div>
+          )}
+          {(r.status === "approved_for_cohort" || r.status === "approved_for_catalog" || r.status === "scheduled") && (
+            <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/publish`), "نُشر الاقتراح في نطاقه")}
+              className="mt-3 flex cursor-pointer items-center gap-1.5 rounded-full bg-[#FABC05] px-4 py-1.5 text-xs font-black text-[#0D0D0D] disabled:opacity-40">
+              <Globe className="h-3.5 w-3.5" /> نشر في النطاق
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}

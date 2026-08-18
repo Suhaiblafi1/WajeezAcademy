@@ -16,7 +16,7 @@
 import { describe, expect, it } from 'vitest'
 import { createEngineV21, type RecommendationV21 } from '../../../domain/diagnostic/v2_1'
 import { Q, type CareerStage } from '../../../domain/diagnostic/v2_1/maps'
-import { recommendationUniverse } from '../../../domain/diagnostic/v2_1/universe'
+import { recommendationUniverse, measurableSkills } from '../../../domain/diagnostic/v2_1/universe'
 import { compositeVictoryCheck, type CompetitionResult } from '../../../domain/diagnostic/v2_1/compete'
 import { questionPlanV21 } from '../../../domain/diagnostic/v2_1/data'
 
@@ -109,7 +109,10 @@ function runJourneyTraced(name: string, script: Journey): {
   return { asked, trace, rec: engine.recommend(), comp: engine.competeSnapshot(), engine }
 }
 
-const MOVED_FOUR = ['QB-M4-002', 'QB-M4-005', 'QB-M4-023', 'QB-M4-025']
+/* قرار 2026-08-19: الثلاث ذات الفعل التخصيصي المبرمج تبقى post_recommendation؛
+   QB-M4-002 (creative_thinking) أُوقف كليًا — لا مستهلك مبرمج لقياسه (retired_b2c). */
+const MOVED_THREE = ['QB-M4-005', 'QB-M4-023', 'QB-M4-025']
+const RETIRED_NO_ACTION = 'QB-M4-002'
 
 /* رحلات متنوعة تغطي شخصيات مختلفة — تُستخدم في اختبارات الخصائص */
 const PROPERTY_JOURNEYS: [string, Journey][] = [
@@ -121,13 +124,23 @@ const PROPERTY_JOURNEYS: [string, Journey][] = [
 ]
 
 describe('Regression المرحلة 4 — عدالة الدليل المهاري', () => {
-  it('١) المهارات الأربع المنقولة: final_status = post_recommendation ولا تُسأل في أي رحلة', () => {
-    for (const id of MOVED_FOUR) {
+  it('١) المهارات الثلاث المنقولة: final_status = post_recommendation ولا تُسأل في أي رحلة', () => {
+    for (const id of MOVED_THREE) {
       expect(questionPlanV21[id]?.final_status, `${id} لم تُنقل`).toBe('post_recommendation')
     }
     for (const [name, j] of PROPERTY_JOURNEYS) {
       const { asked } = runJourneyTraced(name, j)
-      for (const id of MOVED_FOUR) expect(asked, `${id} سُئلت في رحلة ${name}`).not.toContain(id)
+      for (const id of MOVED_THREE) expect(asked, `${id} سُئلت في رحلة ${name}`).not.toContain(id)
+    }
+  })
+
+  it('١ب) QB-M4-002 موقوفة كليًا: متقاعدة ولا تُسأل في أي رحلة ولا تدخل القابلية للقياس', () => {
+    expect(questionPlanV21[RETIRED_NO_ACTION]?.final_status).toBe('retired')
+    expect(questionPlanV21[RETIRED_NO_ACTION]?.surface).toBe('retired_b2c')
+    expect(measurableSkills().has('creative_thinking')).toBe(false)
+    for (const [name, j] of PROPERTY_JOURNEYS) {
+      const { asked } = runJourneyTraced(name, j)
+      expect(asked, `${RETIRED_NO_ACTION} سُئلت في رحلة ${name}`).not.toContain(RETIRED_NO_ACTION)
     }
   })
 

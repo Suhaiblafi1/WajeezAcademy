@@ -1,151 +1,149 @@
-import { useMemo, useState } from "react";
-import { Bell, CheckCircle2, RefreshCw, Save } from "lucide-react";
+/* إدارة الإشعارات — API حقيقي: قوالب (upsert بمتغيرات {{key}})، سجل الإرسال
+   بترشيح الحالة، وإعادة محاولة الفاشل (حد ثلاث محاولات من الخادم). */
+import { useCallback, useEffect, useState } from "react";
+import { Bell, CheckCircle2, Loader2, RefreshCw, Save, Send, ServerOff } from "lucide-react";
 import AdminLayout from "./AdminLayout";
-import {
-  loadNotificationLog, loadTemplates, retryNotification, upsertTemplate,
-  type NotificationTemplate,
-} from "@/data/admin-extras";
+import { apiGet, apiPost, ApiError } from "@/services/api";
 
-const LOG_CLS = {
-  sent: "bg-emerald-500/15 text-emerald-300",
-  failed: "bg-red-500/15 text-red-300",
-  queued: "bg-[#FABC05]/15 text-[#FABC05]",
-} as const;
-const LOG_LABEL = { sent: "أُرسل", failed: "فشل", queued: "بالطابور" } as const;
+const inputCls = "rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none";
 
-/** الإشعارات — قوالب بمتغيرات {{key}} وسجل إرسال وإعادة محاولة بحد ثلاث (يوافق notifications.routes) */
-export default function AdminNotifications() {
-  const [tick, setTick] = useState(0);
-  const [note, setNote] = useState<string | null>(null);
-  const state = useMemo(() => { void tick; return { templates: loadTemplates(), log: loadNotificationLog() }; }, [tick]);
-  const [editId, setEditId] = useState<string | null>(null);
-  const [draft, setDraft] = useState<NotificationTemplate | null>(null);
-  const [logFilter, setLogFilter] = useState<"all" | "sent" | "failed" | "queued">("all");
+const CHANNEL_AR: Record<string, string> = { in_app: "داخلي", email: "بريد", sms: "رسالة نصية", whatsapp: "واتساب" };
+const LOG_STATUS_AR: Record<string, string> = { queued: "بالطابور", sent: "أُرسل", delivered: "سُلم", read: "قُرئ", failed: "فشل" };
 
-  const bump = (msg: string) => { setNote(msg); setTick(tick + 1); };
+interface Template { id: string; key: string; channel: string; titleAr: string; bodyAr: string; active: boolean }
+interface LogRow {
+  id: string; channel: string; status: string; titleRendered?: string | null; lastError: string | null;
+  attempts: number; queuedAt: string; user: { displayName: string; email: string };
+}
 
-  const startEdit = (t: NotificationTemplate) => { setEditId(t.id); setDraft({ ...t }); };
-  const startNew = () => {
-    const id = `NT-${Date.now()}`;
-    setEditId(id);
-    setDraft({ id, name: "", channel: "بريد", body: "", updatedAt: "" });
+export default function Notifications() {
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [log, setLog] = useState<LogRow[]>([]);
+  const [logFilter, setLogFilter] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [offline, setOffline] = useState<string | null>(null);
+  const [flash, setFlash] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [form, setForm] = useState({ key: "", channel: "in_app", titleAr: "", bodyAr: "", active: true });
+
+  const load = useCallback(async () => {
+    setLoading(true); setOffline(null);
+    try {
+      const [t, l] = await Promise.all([
+        apiGet<Template[]>("/api/admin/notification-templates"),
+        apiGet<LogRow[]>(`/api/admin/notifications-log${logFilter ? `?status=${logFilter}` : ""}`),
+      ]);
+      setTemplates(t); setLog(l);
+    } catch (e) { setOffline(e instanceof ApiError ? e.message : "الخادم غير متصل"); }
+    finally { setLoading(false); }
+  }, [logFilter]);
+
+  useEffect(() => { void load(); }, [load]);
+
+  const act = async (fn: () => Promise<unknown>, doneMsg: string) => {
+    if (busy) return;
+    setBusy(true); setFlash("");
+    try { await fn(); setFlash(doneMsg); await load(); }
+    catch (e) { setFlash(e instanceof ApiError ? e.message : "فشل الإجراء"); }
+    finally { setBusy(false); }
   };
-  const saveDraft = () => {
-    if (!draft?.name.trim() || !draft.body.trim()) return;
-    upsertTemplate({ ...draft, name: draft.name.trim(), updatedAt: new Date().toISOString().slice(0, 10) });
-    setEditId(null); setDraft(null);
-    bump("حُفظ القالب — إنشاء أو تحديث بمتغيرات {{key}} كما يعالجها الخادم عند الإرسال.");
-  };
 
-  const retry = (id: string) => {
-    const ok = retryNotification(id);
-    bump(ok ? `أُعيدت محاولة ${id} ونجح الإرسال.` : `تجاوز ${id} حد المحاولات الثلاث — يتطلب مراجعة يدوية كما يفرض الخادم.`);
-  };
-
-  const shownLog = logFilter === "all" ? state.log : state.log.filter((e) => e.status === logFilter);
+  if (offline) {
+    return (
+      <AdminLayout title="الإشعارات">
+        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
+          <ServerOff className="h-12 w-12 text-white/20" />
+          <p className="mt-4 max-w-md text-sm text-white/55">{offline}</p>
+          <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-white/70 hover:border-white/40">
+            <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
+          </button>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
-    <AdminLayout title="الإشعارات — القوالب وسجل الإرسال">
-      {note && (
-        <p className="mb-5 flex items-center gap-2 rounded-2xl border border-[#38A7B4]/40 bg-[#38A7B4]/10 px-4 py-3 text-sm font-bold text-[#6EC7D1]">
-          <CheckCircle2 className="h-4 w-4 shrink-0" /> {note}
-        </p>
-      )}
+    <AdminLayout title="الإشعارات — القوالب والسجل">
+      {flash && <p className="mb-4 flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] p-3 text-xs font-bold text-[#6EC7D1]" role="status"><CheckCircle2 className="h-4 w-4" /> {flash}</p>}
 
-      {/* القوالب */}
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="flex items-center gap-2 text-lg font-black"><Bell className="h-5 w-5 text-[#FABC05]" /> قوالب الإشعارات</h2>
-        <button onClick={startNew}
-          className="cursor-pointer rounded-full bg-[#FABC05] px-4 py-2 text-xs font-black text-[#0D0D0D] hover:bg-[#FABC05]/90">
-          قالب جديد
-        </button>
-      </div>
-      <div className="space-y-4">
-        {state.templates.map((t) => (
-          <div key={t.id} className="rounded-3xl border border-white/10 bg-white/[0.02] p-5">
-            {editId === t.id && draft ? (
-              <div className="space-y-3">
-                <input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="اسم القالب"
-                  className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm font-bold text-white focus:border-[#38A7B4] focus:outline-none" />
-                <textarea value={draft.body} onChange={(e) => setDraft({ ...draft, body: e.target.value })} rows={3} placeholder="نص الرسالة — استخدم {{name}} و{{cohort}}…"
-                  className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-[#38A7B4] focus:outline-none" />
-                <div className="flex gap-2">
-                  <button onClick={saveDraft}
-                    className="flex cursor-pointer items-center gap-1.5 rounded-full bg-[#38A7B4] px-4 py-2 text-xs font-black text-[#08272B] hover:bg-[#6EC7D1]">
-                    <Save className="h-3.5 w-3.5" /> احفظ
-                  </button>
-                  <button onClick={() => { setEditId(null); setDraft(null); }}
-                    className="cursor-pointer rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-white/55 hover:text-white">إلغاء</button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-wrap items-start gap-4">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="font-black">{t.name}</p>
-                    <span className="rounded-full bg-white/[0.06] px-2.5 py-0.5 text-[10px] font-bold text-white/50">{t.channel}</span>
+      <div className="grid gap-5 lg:grid-cols-2">
+        {/* قالب جديد / تحديث */}
+        <section className="rounded-3xl border border-white/10 bg-white/[0.02] p-5">
+          <h3 className="flex items-center gap-2 text-sm font-black"><Bell className="h-4 w-4 text-[#FABC05]" /> قالب جديد أو تحديث — متغيرات {"{{key}}"}</h3>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <input value={form.key} onChange={(e) => setForm({ ...form, key: e.target.value })} placeholder="المفتاح — enrollment.approved" dir="ltr" className={`${inputCls} font-mono`} />
+            <select value={form.channel} onChange={(e) => setForm({ ...form, channel: e.target.value })} className={`${inputCls} [&>option]:bg-[#121B1D]`}>
+              {Object.entries(CHANNEL_AR).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
+            <input value={form.titleAr} onChange={(e) => setForm({ ...form, titleAr: e.target.value })} placeholder="العنوان" className={`${inputCls} sm:col-span-2`} />
+            <textarea value={form.bodyAr} onChange={(e) => setForm({ ...form, bodyAr: e.target.value })} rows={3} placeholder="النص — مرحبا {{name}}…" className={`${inputCls} sm:col-span-2`} />
+          </div>
+          <label className="mt-2 flex cursor-pointer items-center gap-1.5 text-[11px] text-white/60">
+            <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} className="accent-[#38A7B4]" />
+            قالب فعال
+          </label>
+          <button disabled={busy || form.key.length < 2 || !form.titleAr || !form.bodyAr}
+            onClick={() => act(async () => {
+              await apiPost("/api/admin/notification-templates", form);
+              setForm({ key: "", channel: "in_app", titleAr: "", bodyAr: "", active: true });
+            }, "حُفظ القالب (upsert بالمفتاح والقناة)")}
+            className="mt-3 flex cursor-pointer items-center gap-1.5 rounded-full bg-[#FABC05] px-5 py-2 text-xs font-black text-[#0D0D0D] disabled:opacity-40">
+            <Save className="h-3.5 w-3.5" /> حفظ القالب
+          </button>
+
+          <ul className="mt-4 space-y-2">
+            {templates.map((t) => (
+              <li key={t.id} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs">
+                <p className="flex items-center gap-2 font-bold">
+                  <span dir="ltr" className="font-mono text-white/50">{t.key}</span>
+                  <span className="rounded-full border border-[#38A7B4]/40 px-2 py-0.5 text-[10px] text-[#6EC7D1]">{CHANNEL_AR[t.channel] ?? t.channel}</span>
+                  {!t.active && <span className="rounded-full border border-red-500/40 px-2 py-0.5 text-[10px] text-red-400">معطل</span>}
+                </p>
+                <p className="mt-1 text-white/65">{t.titleAr}</p>
+                <p className="mt-0.5 line-clamp-1 text-white/40">{t.bodyAr}</p>
+              </li>
+            ))}
+            {templates.length === 0 && !loading && <p className="text-xs text-white/45">لا قوالب بعد.</p>}
+          </ul>
+        </section>
+
+        {/* سجل الإرسال */}
+        <section className="rounded-3xl border border-white/10 bg-white/[0.02] p-5">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="flex items-center gap-2 text-sm font-black"><Send className="h-4 w-4 text-[#FABC05]" /> سجل الإرسال</h3>
+            <select value={logFilter} onChange={(e) => setLogFilter(e.target.value)} aria-label="رشّح بالحالة"
+              className={`${inputCls} [&>option]:bg-[#121B1D]`}>
+              <option value="">كل الحالات</option>
+              {Object.entries(LOG_STATUS_AR).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
+          </div>
+          {loading ? (
+            <div className="grid place-items-center py-12"><Loader2 className="h-6 w-6 animate-spin text-white/30" /></div>
+          ) : (
+            <ul className="mt-3 max-h-[32rem] space-y-2 overflow-y-auto">
+              {log.map((n) => (
+                <li key={n.id} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-bold">{n.user.displayName} <span className="font-normal text-white/40">{CHANNEL_AR[n.channel] ?? n.channel}</span></p>
+                    <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${n.status === "failed" ? "border-red-500/40 text-red-400" : "border-emerald-400/30 text-emerald-300"}`}>
+                      {LOG_STATUS_AR[n.status] ?? n.status}
+                    </span>
                   </div>
-                  <p className="mt-1.5 text-sm leading-6 text-white/65">{t.body}</p>
-                  <p className="mt-1 text-[10px] text-white/55">آخر تحديث: {t.updatedAt}</p>
-                </div>
-                <button onClick={() => startEdit(t)}
-                  className="cursor-pointer rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-white/55 transition hover:border-[#38A7B4]/50 hover:text-[#6EC7D1]">
-                  عدّل
-                </button>
-              </div>
-            )}
-          </div>
-        ))}
-        {editId && draft && !state.templates.some((t) => t.id === editId) && (
-          <div className="rounded-3xl border border-[#FABC05]/30 bg-[#FABC05]/[0.04] p-5">
-            <div className="space-y-3">
-              <input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="اسم القالب الجديد"
-                className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm font-bold text-white placeholder:text-white/30 focus:border-[#38A7B4] focus:outline-none" />
-              <textarea value={draft.body} onChange={(e) => setDraft({ ...draft, body: e.target.value })} rows={3} placeholder="نص الرسالة — استخدم {{name}} و{{cohort}}…"
-                className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-[#38A7B4] focus:outline-none" />
-              <div className="flex gap-2">
-                <button onClick={saveDraft}
-                  className="flex cursor-pointer items-center gap-1.5 rounded-full bg-[#38A7B4] px-4 py-2 text-xs font-black text-[#08272B] hover:bg-[#6EC7D1]">
-                  <Save className="h-3.5 w-3.5" /> احفظ القالب
-                </button>
-                <button onClick={() => { setEditId(null); setDraft(null); }}
-                  className="cursor-pointer rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-white/55 hover:text-white">إلغاء</button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* سجل الإرسال */}
-      <div className="mt-10 mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-black">سجل الإرسال</h2>
-        <div className="flex gap-1.5">
-          {(["all", "sent", "failed", "queued"] as const).map((s) => (
-            <button key={s} onClick={() => setLogFilter(s)}
-              className={`cursor-pointer rounded-full px-3.5 py-1.5 text-xs font-bold transition ${
-                logFilter === s ? "bg-[#FABC05] text-[#0D0D0D]" : "bg-white/[0.04] text-white/50 hover:text-white"
-              }`}>
-              {s === "all" ? "الكل" : LOG_LABEL[s]}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="space-y-3">
-        {shownLog.map((e) => (
-          <div key={e.id} className="flex flex-wrap items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-4">
-            <span className={`rounded-full px-3 py-1 text-[11px] font-bold ${LOG_CLS[e.status]}`}>{LOG_LABEL[e.status]}</span>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold">{e.template}</p>
-              <p className="mt-0.5 text-[11px] text-white/45">إلى <span dir="ltr">{e.to}</span> · {e.at} · المحاولات: {e.attempts} / 3</p>
-            </div>
-            {e.status === "failed" && (
-              <button onClick={() => retry(e.id)}
-                className="flex cursor-pointer items-center gap-1.5 rounded-full border border-[#38A7B4]/40 px-4 py-2 text-xs font-black text-[#6EC7D1] transition hover:bg-[#38A7B4]/10">
-                <RefreshCw className="h-3.5 w-3.5" /> أعد المحاولة
-              </button>
-            )}
-          </div>
-        ))}
+                  {n.lastError && <p className="mt-1 text-[10px] text-red-300">{n.lastError}</p>}
+                  <p className="mt-1 text-[10px] text-white/40">{n.attempts} محاولة · {new Date(n.queuedAt).toLocaleString("ar")}</p>
+                  {n.status === "failed" && (
+                    <button disabled={busy}
+                      onClick={() => act(() => apiPost(`/api/admin/notifications/${n.id}/retry`), "أُعيدت المحاولة")}
+                      className="mt-2 flex cursor-pointer items-center gap-1 rounded-full border border-[#FABC05]/40 px-3 py-1 text-[10px] font-bold text-[#FABC05] disabled:opacity-40">
+                      <RefreshCw className="h-3 w-3" /> إعادة المحاولة
+                    </button>
+                  )}
+                </li>
+              ))}
+              {log.length === 0 && <p className="text-xs text-white/45">السجل فارغ بهذه الحالة.</p>}
+            </ul>
+          )}
+        </section>
       </div>
     </AdminLayout>
   );

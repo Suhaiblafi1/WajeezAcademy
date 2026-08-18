@@ -194,17 +194,87 @@ for (const p of core.launch_pathways) {
     }
   }
 }
-/* أدوار موثقة للمهارات الأربع المقاسة غير المغطاة بمسار */
+/* أدوار موثقة للمهارات الثلاث المقاسة غير المغطاة بمسار — لكل منها فعل تخصيص مبرمج فعلي
+   في personalizationNotes (src/domain/diagnostic/v2/skills.ts). creative_thinking أُوقفت
+   2026-08-19: لا فعل تخصيص مبرمج لها — أصبحت future_personalization_signal في ACADEMIC_GOVERNANCE. */
 const UNCOVERED_ROLES = {
   digital_literacy: 'إشارة جاهزية رقمية: عند انخفاضها مع مسار رقمي تُضاف ملاحظة تمهيد رقمي في الخطة — لا تغيّر اختيار المسار.',
-  creative_thinking: 'إشارة تخصيص: توثق ضمن «ما قيس» وتوجّه ترتيب الأنشطة داخل الخطة — لا تغيّر اختيار المسار.',
   learning_agility: 'إشارة تخصيص: توجّه وتيرة الخطة المقترحة — لا تغيّر اختيار المسار.',
   focus_management: 'إشارة تخصيص: توجّه توزيع العبء الأسبوعي داخل الخطة — لا تغيّر اختيار المسار.',
+}
+
+/* ─── الحوكمة الأكاديمية (قرار المالك 2026-08-19) ───
+   قاعدة صارمة: مهارة محكومة هنا لا تدخل التشخيص ولا الفجوة ولا التفسير ولا دليل
+   التوصية، حتى لو رُبطت مستقبلا بمسار أو دورة أو سؤال — التفعيل يكون فقط بإزالة
+   قيدها هنا بسبب موثق (Academic Activation صريحة). دلالات الحقول:
+   - active في هذا الملف = مشاركة في منطق التشخيص فقط (لا وجودها في القاموس).
+   - academic_status يحمل سبب الإيقاف صراحة.
+   - القاموس الأم (skills.v1.ar.json) يبقى المصدر الوحيد لوجود المهارة تصنيفيا. */
+const FUTURE_CATALOG_REASON = 'مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح.'
+const ACADEMIC_GOVERNANCE = {
+  /* 75 مهارة — future_catalog_skill: صفر قياس/تغطية/متطلب (مؤكد من الكتالوج الحي) */
+  ...Object.fromEntries([
+  'ai_for_learning', 'competitive_analysis', 'social_media_strategy', 'ecommerce_basics',
+  'legal_basics_business', 'career_transition', 'salary_negotiation', 'mentorship_use',
+  'sensemaking', 'curiosity', 'innovation_methods', 'mental_models',
+  'ambiguity_tolerance', 'english_for_work', 'report_writing', 'cross_cultural_communication',
+  'media_literacy', 'dashboard_reading', 'business_intelligence', 'information_search',
+  'digital_file_management', 'cloud_collaboration', 'online_meetings', 'digital_productivity',
+  'basic_design_literacy', 'digital_wellbeing', 'remote_work_tools', 'parent_child_communication',
+  'positive_discipline', 'child_learning_support', 'child_financial_literacy', 'child_digital_safety',
+  'family_reading_culture', 'family_goal_setting', 'teen_confidence_support', 'family_dialogue',
+  'role_modeling', 'personal_budgeting', 'saving_habits', 'debt_management',
+  'emergency_fund', 'investment_basics', 'risk_return', 'financial_goal_setting',
+  'consumer_awareness', 'tax_basics', 'public_economics_basics', 'family_financial_literacy',
+  'public_service_mindset', 'government_correspondence', 'policy_literacy', 'public_finance_basics',
+  'public_procurement', 'digital_government', 'public_sector_project_management', 'public_ethics',
+  'policy_evaluation', 'government_ai_readiness', 'self_directed_learning', 'reading_strategies',
+  'note_taking', 'summarization', 'memory_spaced_repetition', 'course_completion',
+  'portfolio_learning', 'peer_learning', 'energy_management', 'habit_building',
+  'distraction_reduction', 'stress_resilience_nonclinical', 'sleep_routine_awareness', 'mindful_technology_use',
+  'motivation_systems', 'healthy_boundaries', 'recovery_planning',
+  ].map((slug) => [slug, { academic_status: 'future_catalog_skill', reason_ar: FUTURE_CATALOG_REASON }])),
+  /* مقاسة بلا فعل تخصيص مبرمج — لا تُسأل لمجرد جمع البيانات (قرار 2026-08-19) */
+  creative_thinking: {
+    academic_status: 'future_personalization_signal',
+    expected_measured: true, // QB-M4-002 يبقى في البنك لكنه متقاعد في خطة V2.1 — القياس غير الحي متوقع ولا يستدعي تحذيرا
+    reason_ar: 'موقوفة بقرار أكاديمي (2026-08-19): فحص الكود أثبت عدم وجود أي فعل تخصيص مبرمج يستهلك قياسها — تُستأنف حين يوجد استخدام حقيقي.',
+  },
 }
 const skillLayers = {}
 for (const s of allSkills) {
   const isMeasured = measured.has(s.slug)
   const inPathways = pathwaySkill.has(s.slug)
+
+  /* دمج موثق: السجل المدموج لا يدخل التشخيص — مرجع تاريخي فقط */
+  if (s.merged_into) {
+    skillLayers[s.slug] = {
+      layers: ['learning_outcome'],
+      active: false,
+      diagnostic_active: false,
+      academic_status: 'merged',
+      merged_into: s.merged_into,
+      decision_role_ar: `مدموجة في ${s.merged_into} بقرار أكاديمي موثق (${s.merge_date}) — مرجع تاريخي فقط، لا تدخل التشخيص.`,
+    }
+    continue
+  }
+
+  /* حوكمة أكاديمية صريحة: تسبق أي اشتقاق — الربط المستقبلي لا يفعّلها تلقائيًا */
+  const gov = ACADEMIC_GOVERNANCE[s.slug]
+  if (gov) {
+    if (inPathways || (isMeasured && !gov.expected_measured)) {
+      console.warn(`⚠️  ACADEMIC ACTIVATION NEEDED: ${s.slug} محكومة (${gov.academic_status}) لكنها اكتسبت قياسًا أو ربطًا — أزِل قيدها بسبب موثق أو فك الربط.`)
+    }
+    skillLayers[s.slug] = {
+      layers: ['learning_outcome'],
+      active: false,
+      diagnostic_active: false,
+      academic_status: gov.academic_status,
+      decision_role_ar: gov.reason_ar,
+    }
+    continue
+  }
+
   const layers = []
   let decision_role_ar
   if (isMeasured && inPathways) {
@@ -223,6 +293,8 @@ for (const s of allSkills) {
   skillLayers[s.slug] = {
     layers,
     active: s.active !== false,
+    diagnostic_active: s.active !== false,
+    academic_status: 'approved_active',
     decision_role_ar,
     ...(inPathways ? { pathway_ids: [...pathwaySkill.get(s.slug)].sort() } : {}),
     ...(isMeasured ? { measured_by: bank.find((q) => q.module_id === 'M4' && (q.measures ?? []).includes(s.slug))?.question_id } : {}),

@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
+import { TrainerDetailOps, TrainerChangeRequests } from "./TrainerOps";
 
 const STATUS_LABELS: Record<string, string> = {
   email_verification_pending: "بانتظار تحقق البريد",
@@ -69,6 +70,7 @@ export default function TrainerApplications() {
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState("");
+  const [mode, setMode] = useState<"apps" | "changes">("apps");
 
   const load = useCallback(async () => {
     setLoading(true); setOffline(null);
@@ -151,7 +153,7 @@ export default function TrainerApplications() {
                       return emp ? ` · ${emp}` : "";
                     })()}
                   </p>
-                  <p className="mt-1 text-[11px] text-white/40" dir="ltr">{a.email}</p>
+                  <p className="mt-1 text-[11px] text-white/50" dir="ltr">{a.email}</p>
                 </div>
                 <span className="rounded-full border border-[#38A7B4]/40 px-3 py-1 text-[11px] font-bold text-[#6EC7D1]">
                   {STATUS_LABELS[a.status] ?? a.status}
@@ -160,7 +162,7 @@ export default function TrainerApplications() {
               {a.bio && <p className="mt-4 text-xs leading-6 text-white/65">{a.bio}</p>}
               {a.motivation && (
                 <p className="mt-3 rounded-xl border border-white/5 bg-black/20 p-3 text-xs leading-6 text-white/65">
-                  <span className="font-bold text-white/40">لماذا وجيز؟ </span>{a.motivation}
+                  <span className="font-bold text-white/50">لماذا وجيز؟ </span>{a.motivation}
                 </p>
               )}
               {a.linkedinUrl && <p className="mt-2 text-[11px] text-[#6EC7D1]" dir="ltr">{a.linkedinUrl}</p>}
@@ -176,20 +178,20 @@ export default function TrainerApplications() {
                   <div className="mt-4 space-y-2.5 rounded-xl border border-white/5 bg-black/20 p-3 text-xs leading-6 text-white/65">
                     {(yt || ig) && (
                       <p>
-                        <span className="font-bold text-white/40">الحضور الرقمي: </span>
+                        <span className="font-bold text-white/50">الحضور الرقمي: </span>
                         {yt && <span dir="ltr" className="text-[#6EC7D1]">{yt}</span>}
                         {yt && ig && ' · '}
                         {ig && <span dir="ltr" className="text-[#6EC7D1]">{ig}</span>}
                       </p>
                     )}
                     {accred && (
-                      <p><span className="font-bold text-white/40">اعتماد رسمي: </span>{accredDetails || 'نعم — بلا تفاصيل مذكورة'}</p>
+                      <p><span className="font-bold text-white/50">اعتماد رسمي: </span>{accredDetails || 'نعم — بلا تفاصيل مذكورة'}</p>
                     )}
                     {!!tCountries.length && (
-                      <p><span className="font-bold text-white/40">الدول المستهدفة: </span>{tCountries.join('، ')}</p>
+                      <p><span className="font-bold text-white/50">الدول المستهدفة: </span>{tCountries.join('، ')}</p>
                     )}
                     {!!tAudiences.length && (
-                      <p><span className="font-bold text-white/40">الفئات المستهدفة: </span>{tAudiences.join('، ')}</p>
+                      <p><span className="font-bold text-white/50">الفئات المستهدفة: </span>{tAudiences.join('، ')}</p>
                     )}
                   </div>
                 )
@@ -231,6 +233,9 @@ export default function TrainerApplications() {
                 ))}
               </ol>
             </article>
+
+            {/* عمليات متقدمة: مقابلات، ديمو، مراجع، عقود، تأهيل وإسناد وإيقاف */}
+            <TrainerDetailOps app={a} onAction={act} />
           </div>
 
           {/* عمود القرارات والروبرك */}
@@ -269,7 +274,7 @@ export default function TrainerApplications() {
               >
                 <Star className="h-3.5 w-3.5" /> سجّل التقييم
               </button>
-              <p className="mt-2 text-center text-[10px] text-white/35">{a.reviews.length} تقييم مسجل</p>
+              <p className="mt-2 text-center text-[10px] text-white/50">{a.reviews.length} تقييم مسجل</p>
             </article>
 
             <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
@@ -325,20 +330,33 @@ export default function TrainerApplications() {
   return (
     <AdminLayout title="طلبات انضمام المدربين">
       <div className="mb-5 flex flex-wrap items-center gap-2">
-        <select
-          value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="رشّح بالحالة"
-          className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white [&>option]:bg-[#121B1D]"
-        >
-          <option value="">كل الحالات</option>
-          {Object.entries(STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-        </select>
-        <button onClick={() => void load()} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-white/60 hover:border-white/40">
-          <RefreshCw className="h-3.5 w-3.5" /> تحديث
-        </button>
+        <div className="flex rounded-full border border-white/15 p-1">
+          {([["apps", "الطلبات"], ["changes", "اقتراحات تعديل الدورات"]] as const).map(([k, label]) => (
+            <button key={k} onClick={() => setMode(k)}
+              className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-black transition ${mode === k ? "bg-[#FABC05] text-[#0D0D0D]" : "text-white/60 hover:text-white"}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+        {mode === "apps" && (
+          <>
+            <select
+              value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="رشّح بالحالة"
+              className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white [&>option]:bg-[#121B1D]"
+            >
+              <option value="">كل الحالات</option>
+              {Object.entries(STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
+            <button onClick={() => void load()} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-white/60 hover:border-white/40">
+              <RefreshCw className="h-3.5 w-3.5" /> تحديث
+            </button>
+          </>
+        )}
         {flash && <span className="text-xs font-bold text-[#6EC7D1]" role="status">{flash}</span>}
       </div>
 
-      {loading ? (
+      {mode === "changes" && <TrainerChangeRequests />}
+      {mode === "apps" && (loading ? (
         <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-white/30" /></div>
       ) : apps.length === 0 ? (
         <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
@@ -356,11 +374,11 @@ export default function TrainerApplications() {
               className="flex w-full cursor-pointer flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-right transition hover:border-[#38A7B4]/40"
             >
               <div>
-                <p className="font-black">{a.fullName} <span className="mr-2 font-mono text-[10px] text-white/35" dir="ltr">{a.reference}</span></p>
+                <p className="font-black">{a.fullName} <span className="mr-2 font-mono text-[10px] text-white/50" dir="ltr">{a.reference}</span></p>
                 <p className="mt-1 text-xs text-white/50">
                   {a.specialties.join(" · ") || "—"} · خبرة مجال {a.domainYears ?? "—"} · {a.jobTitle ?? "—"}
                 </p>
-                <p className="mt-1 text-[11px] text-white/40">
+                <p className="mt-1 text-[11px] text-white/50">
                   {a.emailVerified ? "بريد متحقق ✓" : "بريد غير متحقق"} · {a.documentsCount} وثيقة · {a.reviewsCount} تقييم · {a.interviewsCount} مقابلة
                   {a.phase2Done ? " · أكمل المرحلة الثانية" : ""}
                 </p>
@@ -371,7 +389,7 @@ export default function TrainerApplications() {
             </button>
           ))}
         </div>
-      )}
+      ))}
     </AdminLayout>
   );
 }

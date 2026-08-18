@@ -90,7 +90,7 @@ export default function Project() {
         {/* شروط الفتح */}
         <div className="mt-5 grid gap-2 sm:grid-cols-2">
           {conditions.map((c) => (
-            <p key={c.label} className={`flex items-center gap-2 text-xs ${c.met ? "text-[#6EC7D1]" : "text-white/40"}`}>
+            <p key={c.label} className={`flex items-center gap-2 text-xs ${c.met ? "text-[#6EC7D1]" : "text-white/50"}`}>
               {c.met ? <CheckCircle2 className="h-3.5 w-3.5" /> : <CircleDashed className="h-3.5 w-3.5" />}
               {c.label}
             </p>

@@ -87,7 +87,7 @@ export default function PublishingBoard() {
               {busy === "create" || busy === "publish" ? "ينشر…" : "أنشئ وانشر"}
             </button>
           </div>
-          <p className="mt-2 text-[11px] text-white/40">النشر ذري: يرفض عند أي نقص ولا ينشر شيئًا جزئيًا.</p>
+          <p className="mt-2 text-[11px] text-white/50">النشر ذري: يرفض عند أي نقص ولا ينشر شيئًا جزئيًا.</p>
         </section>
       </div>
 
@@ -98,7 +98,7 @@ export default function PublishingBoard() {
             <div key={v.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
               <div>
                 <p className="font-bold text-sm" dir="ltr">{v.label}</p>
-                <p className="mt-0.5 text-[11px] text-white/40" dir="ltr">{v.snapshots[0]?.payloadHash.slice(0, 12)}… · {v.events.map((e) => e.action).join(", ") || "—"}</p>
+                <p className="mt-0.5 text-[11px] text-white/50" dir="ltr">{v.snapshots[0]?.payloadHash.slice(0, 12)}… · {v.events.map((e) => e.action).join(", ") || "—"}</p>
               </div>
               <div className="flex items-center gap-2">
                 <span className={`rounded-full border px-2 py-0.5 text-[11px] font-bold ${v.status === "published" ? "border-emerald-400/30 text-emerald-300" : "border-white/15 text-white/60"}`}>
@@ -125,7 +125,7 @@ export default function PublishingBoard() {
           </button>
         </div>
         <div className="mt-4 space-y-2">
-          {runs.length === 0 && <p className="text-sm text-white/40">لا تشغيلات بعد.</p>}
+          {runs.length === 0 && <p className="text-sm text-white/50">لا تشغيلات بعد.</p>}
           {runs.map((r) => (
             <div key={r.id} className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
               <p className="text-xs text-white/55">{new Date(r.createdAt).toLocaleString("ar")}</p>

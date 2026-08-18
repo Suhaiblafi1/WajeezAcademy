@@ -1,132 +1,221 @@
-import { useMemo, useState } from "react";
-import { BadgePercent, CheckCircle2, CreditCard, FileText, RotateCcw, Wallet } from "lucide-react";
-import AdminLayout from "./AdminLayout";
-import { adminIdentity } from "./admin-identity";
+/* المالية — API حقيقي: طلبات التسجيل (موافقة بكوبون/رفض)، فواتير ودفعات يدوية
+   واستردادات، كوبونات، خطط اشتراك. */
+import { useCallback, useEffect, useState } from "react";
 import {
-  addCoupon, addPlan, loadCoupons, loadEnrollmentRequests, loadInvoices, loadPlans, loadRefunds,
-  updateEnrollmentRequest, updateRefund,
-} from "@/data/admin-extras";
+  BadgePercent, CheckCircle2, CreditCard, FileText, Loader2, RefreshCw,
+  RotateCcw, ServerOff, Wallet, XCircle,
+} from "lucide-react";
+import AdminLayout from "./AdminLayout";
+import { apiGet, apiPost, ApiError } from "@/services/api";
 
-type Tab = "requests" | "invoices" | "refunds" | "coupons" | "plans";
+const inputCls = "rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none";
 
-const TABS: { key: Tab; label: string; icon: typeof Wallet }[] = [
-  { key: "requests", label: "طلبات التسجيل", icon: FileText },
-  { key: "invoices", label: "الفواتير والدفعات", icon: CreditCard },
-  { key: "refunds", label: "الاستردادات", icon: RotateCcw },
-  { key: "coupons", label: "الكوبونات", icon: BadgePercent },
-  { key: "plans", label: "خطط الاشتراك", icon: Wallet },
-];
+interface EnrollReq {
+  id: string; status: string; note: string | null; createdAt: string;
+  user: { displayName: string; email: string };
+  cohort: { id: string; title: string; price: string | null; course: { versions: { titleAr: string }[] } };
+}
+interface Invoice {
+  id: string; status: string; total: string; currency: string; issuedAt: string;
+  order: { user: { displayName: string; email: string }; items: { title?: string; titleAr?: string }[] };
+  payments: { id: string; amount: string; status: string; method?: string | null; refunds: { id: string }[] }[];
+}
+interface Refund { id: string; status: string; amount: string; reason: string; createdAt: string; payment: { id: string; invoice: { id: string } } }
+interface Coupon { id: string; code: string; percentOff: number | null; amountOff: string | null; currency: string; maxUses: number | null; usedCount?: number; active: boolean; expiresAt: string | null }
 
-/** المالية والتجارة — طلبات وفواتير ودفعات واستردادات وكوبونات وخطط (يوافق operations.routes) */
-export default function AdminFinance() {
-  const me = adminIdentity();
+const ER_STATUS: Record<string, string> = { pending: "بانتظار المراجعة", seat_held: "مقعد محجوز", approved: "موافق عليه", rejected: "مرفوض", expired: "منتهي" };
+const INV_STATUS: Record<string, string> = { issued: "صادرة", paid: "مدفوعة", partially_refunded: "مستردة جزئيا", refunded: "مستردة", void: "ملغاة" };
+const RF_STATUS: Record<string, string> = { requested: "مطلوب", approved: "منفذ", rejected: "مرفوض" };
+
+type Tab = "requests" | "invoices" | "refunds" | "coupons";
+
+export default function Finance() {
   const [tab, setTab] = useState<Tab>("requests");
-  const [tick, setTick] = useState(0);
-  const [note, setNote] = useState<string | null>(null);
-  const state = useMemo(() => {
-    void tick;
-    return {
-      requests: loadEnrollmentRequests(), invoices: loadInvoices(), refunds: loadRefunds(),
-      coupons: loadCoupons(), plans: loadPlans(),
-    };
-  }, [tick]);
-  const [couponCode, setCouponCode] = useState("");
-  const [couponPercent, setCouponPercent] = useState("10");
-  const [planName, setPlanName] = useState("");
-  const [planPrice, setPlanPrice] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [offline, setOffline] = useState<string | null>(null);
+  const [flash, setFlash] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [requests, setRequests] = useState<EnrollReq[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [refunds, setRefunds] = useState<Refund[]>([]);
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [couponForm, setCouponForm] = useState({ code: "", percentOff: "", amountOff: "", maxUses: "", expiresAt: "" });
+  const [planForm, setPlanForm] = useState({ code: "", nameAr: "", price: "", intervalMonths: "1", features: "" });
+  const [couponFor, setCouponFor] = useState<Record<string, string>>({});
+  const [payForm, setPayForm] = useState<Record<string, string>>({});
+  const [refundForm, setRefundForm] = useState<Record<string, { amount: string; reason: string }>>({});
 
-  const bump = (msg: string) => { setNote(msg); setTick(tick + 1); };
+  const load = useCallback(async () => {
+    setLoading(true); setOffline(null);
+    try {
+      const [er, inv, rf, cp] = await Promise.all([
+        apiGet<EnrollReq[]>("/api/admin/enrollment-requests"),
+        apiGet<Invoice[]>("/api/admin/invoices"),
+        apiGet<Refund[]>("/api/admin/refunds"),
+        apiGet<Coupon[]>("/api/admin/coupons"),
+      ]);
+      setRequests(er); setInvoices(inv); setRefunds(rf); setCoupons(cp);
+    } catch (e) { setOffline(e instanceof ApiError ? e.message : "الخادم غير متصل"); }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { void load(); }, [load]);
+
+  const act = async (fn: () => Promise<unknown>, doneMsg: string) => {
+    if (busy) return;
+    setBusy(true); setFlash("");
+    try { await fn(); setFlash(doneMsg); await load(); }
+    catch (e) { setFlash(e instanceof ApiError ? e.message : "فشل الإجراء"); }
+    finally { setBusy(false); }
+  };
+
+  if (offline) {
+    return (
+      <AdminLayout title="المالية">
+        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
+          <ServerOff className="h-12 w-12 text-white/20" />
+          <p className="mt-4 max-w-md text-sm text-white/55">{offline}</p>
+          <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-white/70 hover:border-white/40">
+            <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
+          </button>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  const tabs: [Tab, string, number][] = [
+    ["requests", "طلبات التسجيل", requests.filter((r) => r.status === "pending").length],
+    ["invoices", "الفواتير", invoices.length],
+    ["refunds", "الاستردادات", refunds.filter((r) => r.status === "requested").length],
+    ["coupons", "الكوبونات والخطط", coupons.length],
+  ];
 
   return (
-    <AdminLayout title="المالية والتجارة">
-      <div className="mb-6 flex flex-wrap gap-1.5 rounded-full border border-white/10 bg-white/[0.03] p-1">
-        {TABS.map((t) => (
-          <button key={t.key} onClick={() => { setTab(t.key); setNote(null); }}
-            className={`flex cursor-pointer items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold transition ${
-              tab === t.key ? "bg-[#FABC05] text-[#0D0D0D]" : "text-white/55 hover:text-white"
-            }`}>
-            <t.icon className="h-3.5 w-3.5" /> {t.label}
-          </button>
-        ))}
+    <AdminLayout title="المالية — طلبات وفواتير واستردادات وكوبونات">
+      <div className="mb-5 flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap rounded-full border border-white/15 p-1">
+          {tabs.map(([k, label, n]) => (
+            <button key={k} onClick={() => setTab(k)}
+              className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-black transition ${tab === k ? "bg-[#FABC05] text-[#0D0D0D]" : "text-white/60 hover:text-white"}`}>
+              {label} {n > 0 && <span className="mr-1 opacity-70">({n})</span>}
+            </button>
+          ))}
+        </div>
+        <button onClick={() => void load()} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-white/60 hover:border-white/40">
+          <RefreshCw className="h-3.5 w-3.5" /> تحديث
+        </button>
+        {flash && <span className="text-xs font-bold text-[#6EC7D1]" role="status">{flash}</span>}
       </div>
 
-      {note && (
-        <p className="mb-5 flex items-center gap-2 rounded-2xl border border-[#38A7B4]/40 bg-[#38A7B4]/10 px-4 py-3 text-sm font-bold text-[#6EC7D1]">
-          <CheckCircle2 className="h-4 w-4 shrink-0" /> {note}
-        </p>
-      )}
+      {loading && <div className="grid place-items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-white/30" /></div>}
 
-      {tab === "requests" && (
-        <div className="space-y-4">
-          {state.requests.map((r) => (
-            <div key={r.id} className="flex flex-wrap items-center gap-4 rounded-3xl border border-white/10 bg-white/[0.02] p-5">
-              <div className="min-w-0 flex-1">
-                <p className="font-black">{r.student}</p>
-                <p className="mt-0.5 text-xs text-white/50">{r.cohort} · {r.at}</p>
-                <p className="mt-1 text-sm font-bold text-[#FABC05]">{r.amount.toLocaleString()}$</p>
-              </div>
-              {r.status === "pending" ? (
-                <div className="flex gap-2">
-                  <button onClick={() => { updateEnrollmentRequest(r.id, "approved"); bump(`اعتُمد ${r.id}: حُجز المقعد وأُنشئ الطلب والفاتورة — بكوبون اختياري كما في الخادم.`); }}
-                    className="cursor-pointer rounded-full bg-[#38A7B4] px-4 py-2 text-xs font-black text-[#08272B] hover:bg-[#6EC7D1]">موافقة — احجز المقعد</button>
-                  <button onClick={() => { updateEnrollmentRequest(r.id, "rejected"); bump(`رُفض ${r.id} — الرفض عند الخادم يتطلب سببا مفهوما يظهر للمتعلم.`); }}
-                    className="cursor-pointer rounded-full border border-red-500/40 px-4 py-2 text-xs font-black text-red-400 hover:bg-red-500/10">رفض بسبب</button>
+      {/* طلبات التسجيل */}
+      {!loading && tab === "requests" && (
+        <div className="space-y-3">
+          {requests.length === 0 && <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-white/45">لا طلبات تسجيل.</p>}
+          {requests.map((r) => (
+            <div key={r.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="font-black">{r.user.displayName} <span className="text-[11px] font-normal text-white/40" dir="ltr">{r.user.email}</span></p>
+                  <p className="mt-1 text-xs text-white/55">
+                    {r.cohort.course.versions[0]?.titleAr ?? "—"} · {r.cohort.title} · {r.cohort.price ? `${r.cohort.price} د.أ` : "بلا سعر"}
+                  </p>
+                  {r.note && <p className="mt-1 text-[11px] text-white/45">ملاحظة المتعلم: {r.note}</p>}
                 </div>
-              ) : (
-                <span className={`rounded-full px-3 py-1 text-[11px] font-bold ${r.status === "approved" ? "bg-[#38A7B4]/15 text-[#6EC7D1]" : "bg-red-500/15 text-red-400"}`}>
-                  {r.status === "approved" ? "اعتُمد" : "رُفض"}
-                </span>
-              )}
-            </div>
-          ))}
-          {state.requests.length === 0 && <p className="rounded-2xl border border-dashed border-white/10 p-6 text-center text-sm text-white/40">لا طلبات تسجيل معلقة</p>}
-        </div>
-      )}
-
-      {tab === "invoices" && (
-        <div className="space-y-4">
-          {state.invoices.map((inv) => (
-            <div key={inv.id} className="flex flex-wrap items-center gap-4 rounded-3xl border border-white/10 bg-white/[0.02] p-5">
-              <div className="min-w-0 flex-1">
-                <p className="font-black" dir="ltr">{inv.id}</p>
-                <p className="mt-0.5 text-xs text-white/50">{inv.student} · {inv.item}</p>
-                <p className="mt-1 text-sm text-white/70">
-                  القيمة <span className="font-bold text-[#FABC05]">{inv.amount.toLocaleString()}$</span> · المحصّل {inv.paid.toLocaleString()}$
-                </p>
+                <span className="rounded-full border border-[#38A7B4]/40 px-3 py-1 text-[11px] font-bold text-[#6EC7D1]">{ER_STATUS[r.status] ?? r.status}</span>
               </div>
-              {inv.status === "open" ? (
-                <button onClick={() => bump(`سُجلت دفعة يدوية على ${inv.id} باسم ${me?.name} — التحويل/الكاش يتطلب تطابق قيمة الفاتورة ويُوثق في سجل المراجعة.`)}
-                  className="cursor-pointer rounded-full bg-[#38A7B4] px-4 py-2 text-xs font-black text-[#08272B] hover:bg-[#6EC7D1]">سجّل دفعة يدوية</button>
-              ) : (
-                <span className={`rounded-full px-3 py-1 text-[11px] font-bold ${inv.status === "paid" ? "bg-emerald-500/15 text-emerald-300" : "bg-purple-500/15 text-purple-300"}`}>
-                  {inv.status === "paid" ? "مسددة" : "مستردة"}
-                </span>
+              {r.status === "pending" && (
+                <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/8 pt-3">
+                  <input value={couponFor[r.id] ?? ""} onChange={(e) => setCouponFor({ ...couponFor, [r.id]: e.target.value })}
+                    placeholder="كوبون (اختياري)" dir="ltr" className={`${inputCls} w-32 font-mono`} />
+                  <button disabled={busy}
+                    onClick={() => act(() => apiPost(`/api/admin/enrollment-requests/${r.id}/approve`, { couponCode: couponFor[r.id] || undefined }), "وُوفق: حُجز المقعد وأُنشئت الفاتورة")}
+                    className="flex cursor-pointer items-center gap-1.5 rounded-full bg-[#38A7B4] px-4 py-1.5 text-xs font-black text-[#08272B] hover:bg-[#6EC7D1] disabled:opacity-40">
+                    <CheckCircle2 className="h-3.5 w-3.5" /> موافقة وحجز مقعد
+                  </button>
+                  <button disabled={busy}
+                    onClick={() => {
+                      const reason = window.prompt("سبب الرفض (5+ أحرف):");
+                      if (reason && reason.length >= 5) void act(() => apiPost(`/api/admin/enrollment-requests/${r.id}/reject`, { reason }), "رُفض الطلب");
+                    }}
+                    className="flex cursor-pointer items-center gap-1.5 rounded-full border border-red-500/40 px-4 py-1.5 text-xs font-bold text-red-400 hover:bg-red-500/10 disabled:opacity-40">
+                    <XCircle className="h-3.5 w-3.5" /> رفض
+                  </button>
+                </div>
               )}
             </div>
           ))}
         </div>
       )}
 
-      {tab === "refunds" && (
-        <div className="space-y-4">
-          {state.refunds.map((r) => (
-            <div key={r.id} className="rounded-3xl border border-white/10 bg-white/[0.02] p-5">
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="min-w-0 flex-1">
-                  <p className="font-black">{r.student} — <span className="text-[#FABC05]">{r.amount.toLocaleString()}$</span></p>
-                  <p className="mt-1 text-sm leading-6 text-white/65">السبب الموثق: {r.reason}</p>
+      {/* الفواتير */}
+      {!loading && tab === "invoices" && (
+        <div className="space-y-3">
+          {invoices.length === 0 && <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-white/45">لا فواتير.</p>}
+          {invoices.map((inv) => (
+            <div key={inv.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="font-black">{inv.total} {inv.currency} <span className="mr-2 font-mono text-[10px] font-normal text-white/40" dir="ltr">{inv.id.slice(0, 8)}…</span></p>
+                  <p className="mt-1 text-xs text-white/55">{inv.order.user.displayName} · {new Date(inv.issuedAt).toLocaleDateString("ar")}</p>
                 </div>
-                {r.status === "pending" ? (
-                  <div className="flex gap-2">
-                    <button onClick={() => { updateRefund(r.id, "executed"); bump(`نُفذ الاسترداد ${r.id} — حُدّثت الدفعة والطلب معا كما يفعل الخادم ذرّيا.`); }}
-                      className="cursor-pointer rounded-full bg-[#38A7B4] px-4 py-2 text-xs font-black text-[#08272B] hover:bg-[#6EC7D1]">نفّذ الاسترداد</button>
-                    <button onClick={() => { updateRefund(r.id, "rejected"); bump(`رُفض الاسترداد ${r.id} بسبب موثق.`); }}
-                      className="cursor-pointer rounded-full border border-red-500/40 px-4 py-2 text-xs font-black text-red-400 hover:bg-red-500/10">ارفض</button>
-                  </div>
-                ) : (
-                  <span className={`rounded-full px-3 py-1 text-[11px] font-bold ${r.status === "executed" ? "bg-purple-500/15 text-purple-300" : "bg-red-500/15 text-red-400"}`}>
-                    {r.status === "executed" ? "نُفذ" : "رُفض"}
-                  </span>
+                <span className="rounded-full border border-[#38A7B4]/40 px-3 py-1 text-[11px] font-bold text-[#6EC7D1]">{INV_STATUS[inv.status] ?? inv.status}</span>
+              </div>
+              {inv.status === "issued" && (
+                <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/8 pt-3">
+                  <input value={payForm[inv.id] ?? ""} onChange={(e) => setPayForm({ ...payForm, [inv.id]: e.target.value })}
+                    placeholder="طريقة الدفع — تحويل بنكي / كاش" className={`${inputCls} flex-1`} />
+                  <button disabled={busy || (payForm[inv.id] ?? "").length < 3}
+                    onClick={() => act(() => apiPost(`/api/admin/invoices/${inv.id}/manual-payment`, { methodNote: payForm[inv.id] }), "سُجلت الدفعة اليدوية الموثقة")}
+                    className="flex cursor-pointer items-center gap-1.5 rounded-full bg-[#38A7B4] px-4 py-1.5 text-xs font-black text-[#08272B] hover:bg-[#6EC7D1] disabled:opacity-40">
+                    <CreditCard className="h-3.5 w-3.5" /> تسجيل دفعة يدوية
+                  </button>
+                </div>
+              )}
+              {inv.payments.filter((p) => p.status === "succeeded").map((p) => (
+                <div key={p.id} className="mt-2 flex flex-wrap items-center gap-2 rounded-xl border border-white/8 bg-black/20 p-3 text-xs">
+                  <span className="font-bold text-emerald-300">دفعة ناجحة {p.amount} {inv.currency}</span>
+                  <span className="text-white/40">{p.refunds.length} استرداد</span>
+                  <input value={refundForm[p.id]?.amount ?? ""} onChange={(e) => setRefundForm({ ...refundForm, [p.id]: { ...refundForm[p.id], amount: e.target.value, reason: refundForm[p.id]?.reason ?? "" } })}
+                    placeholder="مبلغ" type="number" className={`${inputCls} w-24`} />
+                  <input value={refundForm[p.id]?.reason ?? ""} onChange={(e) => setRefundForm({ ...refundForm, [p.id]: { ...refundForm[p.id], reason: e.target.value, amount: refundForm[p.id]?.amount ?? "" } })}
+                    placeholder="سبب موثق (5+ أحرف)" className={`${inputCls} flex-1`} />
+                  <button disabled={busy || (refundForm[p.id]?.reason ?? "").length < 5 || !Number(refundForm[p.id]?.amount)}
+                    onClick={() => act(() => apiPost(`/api/admin/payments/${p.id}/refund`, { amount: Number(refundForm[p.id].amount), reason: refundForm[p.id].reason }), "قُدم طلب الاسترداد")}
+                    className="flex cursor-pointer items-center gap-1 rounded-full border border-[#FABC05]/40 px-3 py-1 text-[10px] font-bold text-[#FABC05] disabled:opacity-40">
+                    <RotateCcw className="h-3 w-3" /> طلب استرداد
+                  </button>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* الاستردادات */}
+      {!loading && tab === "refunds" && (
+        <div className="space-y-3">
+          {refunds.length === 0 && <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-white/45">لا طلبات استرداد.</p>}
+          {refunds.map((rf) => (
+            <div key={rf.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+              <div>
+                <p className="font-black">{rf.amount} <span className="text-xs font-normal text-white/50">— {rf.reason}</span></p>
+                <p className="mt-1 text-[11px] text-white/45">{new Date(rf.createdAt).toLocaleString("ar")}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="rounded-full border border-[#38A7B4]/40 px-3 py-1 text-[11px] font-bold text-[#6EC7D1]">{RF_STATUS[rf.status] ?? rf.status}</span>
+                {rf.status === "requested" && (
+                  <>
+                    <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/refunds/${rf.id}/process`, { approve: true }), "نُفذ الاسترداد وحُدثت الدفعة والطلب")}
+                      className="cursor-pointer rounded-full bg-emerald-500/20 border border-emerald-400/40 px-4 py-1.5 text-xs font-bold text-emerald-300 disabled:opacity-40">
+                      تنفيذ
+                    </button>
+                    <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/refunds/${rf.id}/process`, { approve: false, note: "مرفوض من المالية" }), "رُفض الاسترداد")}
+                      className="cursor-pointer rounded-full border border-red-500/40 px-4 py-1.5 text-xs font-bold text-red-400 disabled:opacity-40">
+                      رفض
+                    </button>
+                  </>
                 )}
               </div>
             </div>
@@ -134,76 +223,68 @@ export default function AdminFinance() {
         </div>
       )}
 
-      {tab === "coupons" && (
-        <div>
-          <div className="mb-5 flex flex-wrap items-end gap-3 rounded-3xl border border-white/10 bg-white/[0.02] p-5">
-            <label className="text-xs font-bold text-white/60">
-              رمز الكوبون
-              <input value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())} dir="ltr" placeholder="SUMMER25"
-                className="mt-1 block w-44 rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none" />
-            </label>
-            <label className="text-xs font-bold text-white/60">
-              نسبة الخصم %
-              <input value={couponPercent} onChange={(e) => setCouponPercent(e.target.value)} dir="ltr" type="number" min="1" max="90"
-                className="mt-1 block w-24 rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm text-white focus:border-[#38A7B4] focus:outline-none" />
-            </label>
-            <button
-              onClick={() => {
-                const percent = Number(couponPercent);
-                if (!couponCode.trim() || !percent) return;
-                addCoupon({ code: couponCode.trim(), percent, active: true });
-                setCouponCode("");
-                bump("أُنشئ الكوبون — يطبق عند موافقة طلب التسجيل كخيار كما في الخادم.");
-              }}
-              className="cursor-pointer rounded-full bg-[#FABC05] px-5 py-2.5 text-xs font-black text-[#0D0D0D] hover:bg-[#FABC05]/90">أنشئ الكوبون</button>
+      {/* الكوبونات والخطط */}
+      {!loading && tab === "coupons" && (
+        <div className="grid gap-5 lg:grid-cols-2">
+          <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-5">
+            <h3 className="flex items-center gap-2 text-sm font-black"><BadgePercent className="h-4 w-4 text-[#FABC05]" /> كوبون جديد</h3>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <input value={couponForm.code} onChange={(e) => setCouponForm({ ...couponForm, code: e.target.value.toUpperCase() })} placeholder="الرمز — WAJEEZ20" dir="ltr" className={`${inputCls} font-mono`} />
+              <input type="number" min={1} max={100} value={couponForm.percentOff} onChange={(e) => setCouponForm({ ...couponForm, percentOff: e.target.value })} placeholder="خصم %" className={inputCls} />
+              <input type="number" min={0.5} value={couponForm.amountOff} onChange={(e) => setCouponForm({ ...couponForm, amountOff: e.target.value })} placeholder="أو مبلغ ثابت (د.أ)" className={inputCls} />
+              <input type="number" min={1} value={couponForm.maxUses} onChange={(e) => setCouponForm({ ...couponForm, maxUses: e.target.value })} placeholder="أقصى استخدام" className={inputCls} />
+              <input type="date" value={couponForm.expiresAt} onChange={(e) => setCouponForm({ ...couponForm, expiresAt: e.target.value })} className={inputCls} />
+            </div>
+            <button disabled={busy || couponForm.code.length < 3 || (!couponForm.percentOff && !couponForm.amountOff)}
+              onClick={() => act(async () => {
+                await apiPost("/api/admin/coupons", {
+                  code: couponForm.code,
+                  percentOff: couponForm.percentOff ? Number(couponForm.percentOff) : undefined,
+                  amountOff: couponForm.amountOff ? Number(couponForm.amountOff) : undefined,
+                  maxUses: couponForm.maxUses ? Number(couponForm.maxUses) : undefined,
+                  expiresAt: couponForm.expiresAt ? new Date(couponForm.expiresAt) : undefined,
+                });
+                setCouponForm({ code: "", percentOff: "", amountOff: "", maxUses: "", expiresAt: "" });
+              }, "أُنشئ الكوبون")}
+              className="mt-3 cursor-pointer rounded-full bg-[#FABC05] px-5 py-2 text-xs font-black text-[#0D0D0D] disabled:opacity-40">
+              أنشئ الكوبون
+            </button>
+            <ul className="mt-4 space-y-2">
+              {coupons.map((c) => (
+                <li key={c.id} className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs">
+                  <span className="font-mono font-bold text-[#FABC05]" dir="ltr">{c.code}</span>
+                  <span className="text-white/60">{c.percentOff ? `${c.percentOff}%` : `${c.amountOff} ${c.currency}`}</span>
+                  <span className="text-white/40">{c.usedCount ?? 0}/{c.maxUses ?? "∞"}</span>
+                  {!c.active && <span className="rounded-full border border-red-500/40 px-2 py-0.5 text-[10px] text-red-400">معطل</span>}
+                </li>
+              ))}
+            </ul>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {state.coupons.map((c) => (
-              <div key={c.code} className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-4">
-                <span className="font-black tracking-wider" dir="ltr">{c.code}</span>
-                <span className="text-sm text-white/60">خصم {c.percent}%</span>
-                <span className={`rounded-full px-3 py-1 text-[11px] font-bold ${c.active ? "bg-emerald-500/15 text-emerald-300" : "bg-white/10 text-white/40"}`}>
-                  {c.active ? "فعال" : "موقوف"}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
-      {tab === "plans" && (
-        <div>
-          <div className="mb-5 flex flex-wrap items-end gap-3 rounded-3xl border border-white/10 bg-white/[0.02] p-5">
-            <label className="text-xs font-bold text-white/60">
-              اسم الخطة
-              <input value={planName} onChange={(e) => setPlanName(e.target.value)} placeholder="اشتراك الفرق"
-                className="mt-1 block w-52 rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none" />
-            </label>
-            <label className="text-xs font-bold text-white/60">
-              السعر $
-              <input value={planPrice} onChange={(e) => setPlanPrice(e.target.value)} dir="ltr" type="number" min="1"
-                className="mt-1 block w-28 rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm text-white focus:border-[#38A7B4] focus:outline-none" />
-            </label>
-            <button
-              onClick={() => {
-                const price = Number(planPrice);
-                if (!planName.trim() || !price) return;
-                addPlan({ id: `P${Date.now()}`, name: planName.trim(), price, interval: "شهري", active: true });
-                setPlanName(""); setPlanPrice("");
-                bump("أُنشئت خطة الاشتراك — الفعالة منها تظهر للعامة عبر مسارها العام.");
-              }}
-              className="cursor-pointer rounded-full bg-[#FABC05] px-5 py-2.5 text-xs font-black text-[#0D0D0D] hover:bg-[#FABC05]/90">أنشئ الخطة</button>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {state.plans.map((p) => (
-              <div key={p.id} className="rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-4">
-                <p className="font-black">{p.name}</p>
-                <p className="mt-1 text-sm text-white/60">{p.price.toLocaleString()}$ / {p.interval}</p>
-                <span className={`mt-2 inline-block rounded-full px-3 py-1 text-[11px] font-bold ${p.active ? "bg-emerald-500/15 text-emerald-300" : "bg-white/10 text-white/40"}`}>
-                  {p.active ? "فعالة" : "موقوفة"}
-                </span>
-              </div>
-            ))}
+          <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-5">
+            <h3 className="flex items-center gap-2 text-sm font-black"><Wallet className="h-4 w-4 text-[#FABC05]" /> خطة اشتراك جديدة</h3>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <input value={planForm.code} onChange={(e) => setPlanForm({ ...planForm, code: e.target.value })} placeholder="الرمز — monthly" dir="ltr" className={`${inputCls} font-mono`} />
+              <input value={planForm.nameAr} onChange={(e) => setPlanForm({ ...planForm, nameAr: e.target.value })} placeholder="اسم الخطة" className={inputCls} />
+              <input type="number" min={0} value={planForm.price} onChange={(e) => setPlanForm({ ...planForm, price: e.target.value })} placeholder="السعر (د.أ)" className={inputCls} />
+              <input type="number" min={1} value={planForm.intervalMonths} onChange={(e) => setPlanForm({ ...planForm, intervalMonths: e.target.value })} placeholder="كل كم شهر" className={inputCls} />
+              <input value={planForm.features} onChange={(e) => setPlanForm({ ...planForm, features: e.target.value })} placeholder="مزايا مفصولة بفاصلة" className={`${inputCls} sm:col-span-2`} />
+            </div>
+            <button disabled={busy || planForm.code.length < 2 || planForm.nameAr.length < 3 || !planForm.price}
+              onClick={() => act(async () => {
+                await apiPost("/api/admin/subscription-plans", {
+                  code: planForm.code, nameAr: planForm.nameAr, price: Number(planForm.price),
+                  intervalMonths: Number(planForm.intervalMonths) || 1,
+                  features: planForm.features ? planForm.features.split(/[،,]/).map((f) => f.trim()).filter(Boolean) : undefined,
+                });
+                setPlanForm({ code: "", nameAr: "", price: "", intervalMonths: "1", features: "" });
+              }, "أُنشئت الخطة وأصبحت عامة فورا")}
+              className="mt-3 cursor-pointer rounded-full bg-[#FABC05] px-5 py-2 text-xs font-black text-[#0D0D0D] disabled:opacity-40">
+              أنشئ الخطة
+            </button>
+            <p className="mt-3 flex items-center gap-1.5 text-[10px] text-white/40">
+              <FileText className="h-3 w-3" /> الخطط الفعالة تظهر للعامة عبر /api/public/subscription-plans
+            </p>
           </div>
         </div>
       )}

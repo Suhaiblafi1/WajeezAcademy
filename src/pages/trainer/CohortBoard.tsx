@@ -176,7 +176,7 @@ export default function CohortBoard() {
                               {c.title} · دورك: {role === "lead" ? "مدرب رئيس" : "مساعد"} · {c.enrollments.length} متعلما · {c.sessions.length} جلسة
                             </p>
                           </div>
-                          <ChevronDown className={`h-4 w-4 text-white/40 transition ${isOpen ? "rotate-180" : ""}`} />
+                          <ChevronDown className={`h-4 w-4 text-white/50 transition ${isOpen ? "rotate-180" : ""}`} />
                         </button>
 
                         {isOpen && (
@@ -185,7 +185,7 @@ export default function CohortBoard() {
                             <div>
                               <h3 className="mb-3 flex items-center gap-2 text-sm font-black text-white/70"><CalendarDays className="h-4 w-4 text-[#6EC7D1]" /> الجلسات والحضور</h3>
                               {c.sessions.length === 0 ? (
-                                <p className="text-xs text-white/40">لا جلسات مجدولة — الإدارة تضيف الجدول.</p>
+                                <p className="text-xs text-white/50">لا جلسات مجدولة — الإدارة تضيف الجدول.</p>
                               ) : (
                                 <div className="space-y-3">
                                   {c.sessions.map((s) => (
@@ -227,7 +227,7 @@ export default function CohortBoard() {
                                                     className={`cursor-pointer rounded-full border px-2.5 py-1 text-[10px] font-bold transition disabled:opacity-40 ${
                                                       current === opt.value
                                                         ? "border-[#38A7B4] bg-[#38A7B4]/15 text-[#6EC7D1]"
-                                                        : "border-white/12 text-white/40 hover:border-white/30 hover:text-white/70"
+                                                        : "border-white/12 text-white/50 hover:border-white/30 hover:text-white/70"
                                                     }`}>
                                                     {opt.label}
                                                   </button>
@@ -237,7 +237,7 @@ export default function CohortBoard() {
                                           );
                                         })}
                                         {c.enrollments.filter((e) => e.status !== "waitlisted").length === 0 && (
-                                          <p className="text-[11px] text-white/35">لا متعلمين مسجلين بعد.</p>
+                                          <p className="text-[11px] text-white/50">لا متعلمين مسجلين بعد.</p>
                                         )}
                                       </div>
                                     </div>

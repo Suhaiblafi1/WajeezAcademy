@@ -168,7 +168,7 @@ export default function MyLearning() {
                     <span className="rounded-full border border-white/15 px-3 py-1 text-[11px] font-bold text-white/60">
                       {ENROLL_STATUS[r.status] ?? r.status}
                     </span>
-                    <ChevronDown className={`h-4 w-4 text-white/40 transition ${isOpen ? "rotate-180" : ""}`} />
+                    <ChevronDown className={`h-4 w-4 text-white/50 transition ${isOpen ? "rotate-180" : ""}`} />
                   </button>
 
                   {isOpen && (
@@ -210,7 +210,7 @@ function LearnerCohortDetail({ detail, answers, setAnswers, busy, onSubmit }: {
       <section>
         <h3 className="mb-3 flex items-center gap-2 text-sm font-black text-white/70"><CalendarDays className="h-4 w-4 text-[#6EC7D1]" /> الجلسات</h3>
         {detail.cohort.sessions.length === 0 ? (
-          <p className="text-xs text-white/40">لم تُجدول جلسات بعد.</p>
+          <p className="text-xs text-white/50">لم تُجدول جلسات بعد.</p>
         ) : (
           <div className="space-y-2">
             {detail.cohort.sessions.map((s) => {

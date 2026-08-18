@@ -176,8 +176,30 @@ export default function StudentAccount() {
   if (mode === "loading") {
     return (
       <PortalLayout title="حسابي">
-        <div className="flex items-center justify-center py-24 text-white/50">
-          <Loader2 className="h-6 w-6 animate-spin" />
+        {/* هيكل تحميل بنفس شكل البطاقات — أهدأ للعين من السبينر */}
+        <div aria-busy="true" aria-label="جاري تحميل ملفك" className="animate-pulse space-y-6">
+          <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
+            <div className="flex items-center gap-4">
+              <div className="h-16 w-16 rounded-2xl bg-white/10" />
+              <div className="flex-1 space-y-2">
+                <div className="h-5 w-40 rounded-lg bg-white/10" />
+                <div className="h-3 w-56 rounded-full bg-white/5" />
+              </div>
+            </div>
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <div className="h-12 rounded-xl bg-white/5" />
+              <div className="h-12 rounded-xl bg-white/5" />
+            </div>
+          </div>
+          <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
+            <div className="h-4 w-32 rounded-full bg-white/10" />
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              <div className="h-12 rounded-xl bg-white/5" />
+              <div className="h-12 rounded-xl bg-white/5" />
+              <div className="h-12 rounded-xl bg-white/5" />
+              <div className="h-12 rounded-xl bg-white/5" />
+            </div>
+          </div>
         </div>
       </PortalLayout>
     );

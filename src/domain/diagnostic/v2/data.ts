@@ -14,7 +14,17 @@ interface SkillLayersFile {
   version: string
   skills: Record<
     string,
-    { layers: SkillLayer[]; active: boolean; decision_role_ar: string; pathway_ids?: string[]; measured_by?: string }
+    {
+      layers: SkillLayer[]
+      /* active = مشاركة في منطق التشخيص فقط (لا الوجود التصنيفي — ذاك في القاموس الأم) */
+      active: boolean
+      diagnostic_active?: boolean
+      academic_status?: 'approved_active' | 'future_catalog_skill' | 'future_personalization_signal' | 'merged' | 'pending_review'
+      merged_into?: string
+      decision_role_ar: string
+      pathway_ids?: string[]
+      measured_by?: string
+    }
   >
 }
 interface PathwayDomainsFile {
@@ -48,4 +58,11 @@ export function domainsOfPathway(pathwayId: string): DomainId[] {
 /** طبقات مهارة — undefined إن لم تُوثق (يُسجل في التدقيق) */
 export function layersOfSkill(slug: string) {
   return skillLayersV2[slug]
+}
+
+/** هل تشارك المهارة في منطق التشخيص؟ — القاعدة الوحيدة المسموح بها في كل المجال.
+   غير موثقة = نشطة (سلوك قديم محفوظ)؛ academic_status محكومة = غير نشطة مهما كان الربط. */
+export function isDiagnosticSkillActive(meta: ReturnType<typeof layersOfSkill>): boolean {
+  if (meta === undefined) return true
+  return meta.active && meta.diagnostic_active !== false
 }

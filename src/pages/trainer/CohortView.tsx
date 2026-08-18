@@ -97,7 +97,7 @@ export default function CohortView() {
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
           <p className="text-xs text-white/50">السعة</p>
-          <p className="mt-2 text-3xl font-black">{enrolled}<span className="text-sm text-white/40">/{cohort.capacity}</span></p>
+          <p className="mt-2 text-3xl font-black">{enrolled}<span className="text-sm text-white/50">/{cohort.capacity}</span></p>
         </div>
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
           <p className="text-xs text-white/50">متوسط الحضور</p>
@@ -128,7 +128,7 @@ export default function CohortView() {
                   </span>
                   <div>
                     <p className="text-sm font-bold">{st.name}</p>
-                    <p className="text-[10px] text-white/40">حضور {st.attendancePct}% · {st.submitted ? `سلّم${st.lastGrade ? ` — ${st.lastGrade}` : ""}` : "لم يسلم بعد"}</p>
+                    <p className="text-[10px] text-white/50">حضور {st.attendancePct}% · {st.submitted ? `سلّم${st.lastGrade ? ` — ${st.lastGrade}` : ""}` : "لم يسلم بعد"}</p>
                   </div>
                 </div>
                 {st.atRisk ? (
@@ -214,7 +214,7 @@ export default function CohortView() {
                         <span className={`rounded-full bg-white/5 px-2.5 py-1 text-[10px] font-bold ${REC_LABEL[s.recording].cls}`}>
                           {REC_LABEL[s.recording].label}
                         </span>
-                        {s.recordingFile && <span className="text-[10px] text-white/35" dir="ltr">{s.recordingFile}</span>}
+                        {s.recordingFile && <span className="text-[10px] text-white/50" dir="ltr">{s.recordingFile}</span>}
                         {s.recording === "uploaded" && (
                           <button
                             onClick={() => { requestRecordingPublish(meName, cohort.id, s.id); setNote("طُلب نشر التسجيل — لا يُنشر قبل استكمال موافقة الخصوصية."); setTick(tick + 1); }}
@@ -227,7 +227,7 @@ export default function CohortView() {
                     )}
                   </div>
 
-                  {s.notes && <p className="mt-2 text-[10px] leading-5 text-white/40">ملاحظاتك: {s.notes}</p>}
+                  {s.notes && <p className="mt-2 text-[10px] leading-5 text-white/50">ملاحظاتك: {s.notes}</p>}
                 </div>
               );
             })}
@@ -274,7 +274,7 @@ export default function CohortView() {
                           className={`cursor-pointer rounded-full px-3.5 py-1 text-[11px] font-bold transition ${
                             v === opt
                               ? opt === "present" ? "bg-[#38A7B4] text-[#08272B]" : "bg-red-500/80 text-white"
-                              : "bg-white/[0.05] text-white/40 hover:text-white/70"
+                              : "bg-white/[0.05] text-white/50 hover:text-white/70"
                           }`}
                         >
                           {opt === "present" ? "حاضر" : "غائب"}

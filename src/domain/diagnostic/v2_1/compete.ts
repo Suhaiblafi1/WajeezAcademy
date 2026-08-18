@@ -16,7 +16,7 @@ import type { FactBag } from '../types'
 import { DOMAIN_CONFIDENCE_MIN } from '../v2/domains'
 import { basePersonaCode } from '../v2/personas'
 import { TARGET_LEVEL } from '../v2/skills'
-import { layersOfSkill, functionDomainsV2 } from '../v2/data'
+import { layersOfSkill, isDiagnosticSkillActive, functionDomainsV2 } from '../v2/data'
 import type { DecisionContext, DomainId, SkillState } from '../v2/types'
 import type { CareerStage } from './maps'
 import {
@@ -70,7 +70,7 @@ export interface EntitySkillAssessment {
 export function assessEntitySkills(entity: RecommendationEntity, skillStates: Map<string, SkillState>): EntitySkillAssessment {
   const required = entity.skill_slugs.filter((slug) => {
     const meta = layersOfSkill(slug)
-    return meta === undefined || meta.active
+    return isDiagnosticSkillActive(meta)
   })
   const measured: number[] = []
   const gap: string[] = []

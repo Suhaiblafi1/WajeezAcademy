@@ -1,7 +1,7 @@
 /* تدقيق فضاء التوصيات الموحد V2.1 — بوابة سلامة بنيوية:
-   36 كيانًا نشطًا (20+16) بعد إصلاحات المرحلة 4 · مراجع الدورات حية · لا نسخ مضمنة ·
+   36 كيانًا إجمالًا، النشط 35 (SMART-OPS موسوم needs_revision موثق) · مراجع الدورات حية · لا نسخ مضمنة ·
    لا حقيقة مطلوبة غير قابلة للإنتاج · مهارات تشخيصية قابلة للقياس · جدوى صالحة ·
-   مركب حقيقي متعدد المجالات · الدورة كيان مركزي واحد.
+   مركب حقيقي متعدد المجالات · الدورة كيان مركزي واحد · بوابة الحوكمة الأكاديمية.
    الاستخدام: npm run audit:recommendation-universe */
 
 import { recommendationUniverse } from '../../src/domain/diagnostic/v2_1/universe'
@@ -11,13 +11,21 @@ import { measurableSkills } from '../../src/domain/diagnostic/v2_1/universe'
 const failures: string[] = []
 const u = recommendationUniverse()
 
-/* ١) الأعداد — بعد المرحلة 4: كل القوالب الـ16 نشطة (الخمسة المجمدة أُصلحت بنيويًا) */
-if (u.active.length !== 36) failures.push(`الفضاء النشط ${u.active.length} ≠ 36`)
+/* ١) الأعداد — 36 كيانًا إجمالًا؛ النشط 35 (20 قياسية + 15 مركبة) لأن TPL-SMART-OPS-001
+   موسوم needs_revision بقرار أكاديمي موثق (ACADEMIC_REVIEW_OVERRIDES في universe.ts):
+   لا يفوز من أي شخصية بشرية طبيعية — 3520 توليفة جناح ذهبي + 12 شخصية مصممة. */
+if (u.active.length !== 35) failures.push(`الفضاء النشط ${u.active.length} ≠ 35`)
 const standards = u.active.filter((e) => e.entity_type === 'standard')
 const composites = u.active.filter((e) => e.entity_type === 'composite')
 if (standards.length !== 20) failures.push(`القياسية ${standards.length} ≠ 20`)
-if (composites.length !== 16) failures.push(`المركبة النشطة ${composites.length} ≠ 16`)
+if (composites.length !== 15) failures.push(`المركبة النشطة ${composites.length} ≠ 15`)
 if (u.entities.length !== 36) failures.push(`إجمالي الكيانات ${u.entities.length} ≠ 36`)
+/* الوسم الموثق حاضر ومسبب — إزالته تتطلب إثبات وصول إنتاجي جديد */
+const smartOps = u.byId.get('TPL-SMART-OPS-001')
+if (!smartOps) failures.push('TPL-SMART-OPS-001: مفقود من الفضاء الكلي')
+else if (smartOps.status !== 'needs_revision' || smartOps.status_reasons_ar.length === 0) {
+  failures.push('TPL-SMART-OPS-001: فقد وسم needs_revision الموثق — إن عاد نشطًا فبإثبات وصول جديد موثق')
+}
 
 /* ٢) تفرد المعرفات */
 const ids = u.entities.map((e) => e.entity_id)
@@ -76,6 +84,37 @@ for (const e of u.entities) {
   }
 }
 const shared = [...courseUsage.entries()].filter(([, users]) => users.length > 1)
+
+/* ٩) بوابة الحوكمة الأكاديمية (قرار 2026-08-19): مهارة محكومة
+   (future_catalog_skill / future_personalization_signal / merged / pending_review)
+   لا تظهر أبدًا حاسمة أو داعمة أو دليل توصية في أي كيان نشط،
+   ولا يقيسها سؤال حي (b2c / post_recommendation). التفعيل = إزالة القيد من
+   ACADEMIC_GOVERNANCE في build-v2-overlays.mjs بسبب موثق — لا طريق آخر. */
+import { layersOfSkill, isDiagnosticSkillActive } from '../../src/domain/diagnostic/v2/data'
+import questionPlanJson from '../../src/data/catalog/v2_1/question-plan.v2_1.json'
+import bankJson from '../../src/data/catalog/questions.v1.ar.json'
+
+const plan = (questionPlanJson as unknown as { plan: Record<string, { surface: string }> }).plan
+const bank = (bankJson as unknown as { questions: { question_id: string; measures?: string[] }[] }).questions
+
+for (const e of u.entities) {
+  for (const s of [...e.diagnostic_skills, ...e.skill_slugs]) {
+    const meta = layersOfSkill(s)
+    if (meta && !isDiagnosticSkillActive(meta)) {
+      failures.push(`${e.entity_id}: مهارة محكومة أكاديميًا (${meta.academic_status}) في أدوار الكيان: ${s} — تحتاج تفعيلًا أكاديميًا صريحًا`)
+    }
+  }
+}
+for (const q of bank) {
+  const p = plan[q.question_id]
+  if (!p || (p.surface !== 'b2c' && p.surface !== 'post_recommendation')) continue
+  for (const m of q.measures ?? []) {
+    const meta = layersOfSkill(m)
+    if (meta && !isDiagnosticSkillActive(meta)) {
+      failures.push(`${q.question_id}: سؤال حي (${p.surface}) يقيس مهارة محكومة (${meta.academic_status}): ${m}`)
+    }
+  }
+}
 
 /* ملخص */
 console.log('═══ تدقيق فضاء التوصيات الموحد ═══')
