@@ -1,0 +1,971 @@
+{
+  "version": "2.1.0",
+  "journeys": [
+    {
+      "persona": "طالب جامعي",
+      "stage": "university_student",
+      "questionsCount": 8,
+      "steps": [
+        {
+          "questionId": "QC-S1-001",
+          "question_ar": "أي وصف يقترب أكثر من وضعك الحالي؟",
+          "why_now_ar": "المرحلة المهنية أول حقيقة — تفلتر الأهداف والاحتياجات والأسئلة كلها.",
+          "answer_ar": "طالب جامعي",
+          "what_changed": [
+            "+career_stage",
+            "+persona_type"
+          ]
+        },
+        {
+          "questionId": "QC-S1-002",
+          "question_ar": "وماذا عن وضعك العملي الآن؟",
+          "why_now_ar": "حالة العمل منفصلة عن المرحلة — تفصل «أول وظيفة» عن «ترقية».",
+          "answer_ar": "لا أعمل حاليًا",
+          "what_changed": [
+            "+employment_state"
+          ]
+        },
+        {
+          "questionId": "QC-G2-001",
+          "question_ar": "ما الذي تريد تحقيقه؟",
+          "why_now_ar": "ماذا تريد؟ — الهدف يحدد فضاء المشكلة بخيارات تناسب مرحلتك.",
+          "answer_ar": "الحصول على أول وظيفة",
+          "what_changed": [
+            "+primary_goal",
+            "+goal_code_v21"
+          ]
+        },
+        {
+          "questionId": "QC-N3-001",
+          "question_ar": "أي جانب لو تحسّن لديك سيصنع أكبر فرق الآن؟",
+          "why_now_ar": "أين المشكلة الفعلية؟ — الاحتياج يكتشف المجال قبل أي مسار.",
+          "answer_ar": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
+          "what_changed": [
+            "+need_id"
+          ]
+        },
+        {
+          "questionId": "QB-M2-005",
+          "question_ar": "ما مدى وضوح هدفك الآن؟",
+          "why_now_ar": "وضوح هدفك يقرر: انتقال سريع للأدلة أم استكشاف أعمق.",
+          "answer_ar": "غير واضح",
+          "what_changed": [
+            "+goal_clarity"
+          ]
+        },
+        {
+          "questionId": "QC-F7-001",
+          "question_ar": "كم ساعة واقعية تستطيع تخصيصها أسبوعيًا للتعلم؟",
+          "why_now_ar": "وقتك الأسبوعي الواقعي يحدد جدوى الخطة وطولها — لا يحدد المجال.",
+          "answer_ar": "أقل من ساعتين أسبوعيًا",
+          "what_changed": [
+            "+weekly_load"
+          ]
+        },
+        {
+          "questionId": "QB-M4-010",
+          "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في الكتابة العربية المهنية؟",
+          "why_now_ar": "فاز أساسًا بسبب: يقيس مهارة يتطلبها المرشح المتصدر.",
+          "answer_ar": "أعرف أساسياتها نظريًا",
+          "what_changed": [
+            "+skill:arabic_business_writing"
+          ]
+        },
+        {
+          "questionId": "QB-M4-018",
+          "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في إدارة المشاريع والمهام والمواعيد.؟",
+          "why_now_ar": "فاز أساسًا بسبب: يقيس مهارة يتطلبها المرشح المتصدر.",
+          "answer_ar": "أعرف أساسياتها نظريًا",
+          "what_changed": [
+            "+skill:project_management"
+          ]
+        }
+      ],
+      "result": {
+        "kind": "single_pathway",
+        "topPathwayId": "PW-STU-002",
+        "compositeTemplateId": null,
+        "confidence": 0.6782894736092107,
+        "outputKind_ar": "أفضل تطابق حالي"
+      },
+      "deterministic": true
+    },
+    {
+      "persona": "خريج حديث + باحث عن عمل",
+      "stage": "fresh_graduate",
+      "questionsCount": 10,
+      "steps": [
+        {
+          "questionId": "QC-S1-001",
+          "question_ar": "أي وصف يقترب أكثر من وضعك الحالي؟",
+          "why_now_ar": "المرحلة المهنية أول حقيقة — تفلتر الأهداف والاحتياجات والأسئلة كلها.",
+          "answer_ar": "خريج حديث",
+          "what_changed": [
+            "+career_stage",
+            "+persona_type"
+          ]
+        },
+        {
+          "questionId": "QC-S1-002",
+          "question_ar": "وماذا عن وضعك العملي الآن؟",
+          "why_now_ar": "حالة العمل منفصلة عن المرحلة — تفصل «أول وظيفة» عن «ترقية».",
+          "answer_ar": "أبحث عن عمل",
+          "what_changed": [
+            "+employment_state"
+          ]
+        },
+        {
+          "questionId": "QC-G2-001",
+          "question_ar": "ما الذي تريد تحقيقه؟",
+          "why_now_ar": "ماذا تريد؟ — الهدف يحدد فضاء المشكلة بخيارات تناسب مرحلتك.",
+          "answer_ar": "الحصول على أول وظيفة",
+          "what_changed": [
+            "+primary_goal",
+            "+goal_code_v21"
+          ]
+        },
+        {
+          "questionId": "QC-N3-001",
+          "question_ar": "أي جانب لو تحسّن لديك سيصنع أكبر فرق الآن؟",
+          "why_now_ar": "أين المشكلة الفعلية؟ — الاحتياج يكتشف المجال قبل أي مسار.",
+          "answer_ar": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
+          "what_changed": [
+            "+need_id"
+          ]
+        },
+        {
+          "questionId": "QB-M2-005",
+          "question_ar": "ما مدى وضوح هدفك الآن؟",
+          "why_now_ar": "وضوح هدفك يقرر: انتقال سريع للأدلة أم استكشاف أعمق.",
+          "answer_ar": "غير واضح",
+          "what_changed": [
+            "+goal_clarity"
+          ]
+        },
+        {
+          "questionId": "QC-F7-001",
+          "question_ar": "كم ساعة واقعية تستطيع تخصيصها أسبوعيًا للتعلم؟",
+          "why_now_ar": "وقتك الأسبوعي الواقعي يحدد جدوى الخطة وطولها — لا يحدد المجال.",
+          "answer_ar": "أقل من ساعتين أسبوعيًا",
+          "what_changed": [
+            "+weekly_load"
+          ]
+        },
+        {
+          "questionId": "QB-M4-010",
+          "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في الكتابة العربية المهنية؟",
+          "why_now_ar": "فاز أساسًا بسبب: يقيس مهارة يتطلبها المرشح المتصدر.",
+          "answer_ar": "أعرف أساسياتها نظريًا",
+          "what_changed": [
+            "+skill:arabic_business_writing"
+          ]
+        },
+        {
+          "questionId": "QB-M4-018",
+          "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في إدارة المشاريع والمهام والمواعيد.؟",
+          "why_now_ar": "فاز أساسًا بسبب: يقيس مهارة يتطلبها المرشح المتصدر.",
+          "answer_ar": "أعرف أساسياتها نظريًا",
+          "what_changed": [
+            "+skill:project_management"
+          ]
+        },
+        {
+          "questionId": "QB-M1-011",
+          "question_ar": "هل لديك دليل حالي على مهاراتك: مشروع، شهادة، ملف أعمال، أو نتيجة عملية؟",
+          "why_now_ar": "يكمل الصورة العامة.",
+          "answer_ar": "لا يوجد دليل",
+          "what_changed": [
+            "+evidence_strength"
+          ]
+        },
+        {
+          "questionId": "QB-M2-015",
+          "question_ar": "ما مدى استعدادك لتطبيق عملي ومهام خارج مشاهدة المحتوى؟",
+          "why_now_ar": "يكمل الصورة العامة.",
+          "answer_ar": "منخفضة جدا",
+          "what_changed": [
+            "+application_readiness"
+          ]
+        }
+      ],
+      "result": {
+        "kind": "single_pathway",
+        "topPathwayId": "PW-STU-002",
+        "compositeTemplateId": null,
+        "confidence": 0.6454179565813467,
+        "outputKind_ar": "أفضل تطابق حالي"
+      },
+      "deterministic": true
+    },
+    {
+      "persona": "موظف مبتدئ",
+      "stage": "early_career",
+      "questionsCount": 10,
+      "steps": [
+        {
+          "questionId": "QC-S1-001",
+          "question_ar": "أي وصف يقترب أكثر من وضعك الحالي؟",
+          "why_now_ar": "المرحلة المهنية أول حقيقة — تفلتر الأهداف والاحتياجات والأسئلة كلها.",
+          "answer_ar": "موظف في بداية مساري المهني",
+          "what_changed": [
+            "+career_stage",
+            "+persona_type"
+          ]
+        },
+        {
+          "questionId": "QC-S1-002",
+          "question_ar": "وماذا عن وضعك العملي الآن؟",
+          "why_now_ar": "حالة العمل منفصلة عن المرحلة — تفصل «أول وظيفة» عن «ترقية».",
+          "answer_ar": "أعمل لدى جهة",
+          "what_changed": [
+            "+employment_state"
+          ]
+        },
+        {
+          "questionId": "QC-G2-001",
+          "question_ar": "ما الذي تريد تحقيقه؟",
+          "why_now_ar": "ماذا تريد؟ — الهدف يحدد فضاء المشكلة بخيارات تناسب مرحلتك.",
+          "answer_ar": "تحسين أدائي في عملي الحالي",
+          "what_changed": [
+            "+primary_goal",
+            "+goal_code_v21"
+          ]
+        },
+        {
+          "questionId": "QC-N3-001",
+          "question_ar": "أي جانب لو تحسّن لديك سيصنع أكبر فرق الآن؟",
+          "why_now_ar": "أين المشكلة الفعلية؟ — الاحتياج يكتشف المجال قبل أي مسار.",
+          "answer_ar": "الذكاء الاصطناعي وتطبيقاته العملية",
+          "what_changed": [
+            "+need_id"
+          ]
+        },
+        {
+          "questionId": "QB-M2-005",
+          "question_ar": "ما مدى وضوح هدفك الآن؟",
+          "why_now_ar": "وضوح هدفك يقرر: انتقال سريع للأدلة أم استكشاف أعمق.",
+          "answer_ar": "غير واضح",
+          "what_changed": [
+            "+goal_clarity"
+          ]
+        },
+        {
+          "questionId": "QB-M3B-001",
+          "question_ar": "هل تعمل في قطاع خاص أم حكومي أم غير ذلك؟",
+          "why_now_ar": "القطاع (عام/خاص) يفلتر مسارات حكومية بأكملها.",
+          "answer_ar": "خاص",
+          "what_changed": [
+            "+sector"
+          ]
+        },
+        {
+          "questionId": "QC-F7-001",
+          "question_ar": "كم ساعة واقعية تستطيع تخصيصها أسبوعيًا للتعلم؟",
+          "why_now_ar": "وقتك الأسبوعي الواقعي يحدد جدوى الخطة وطولها — لا يحدد المجال.",
+          "answer_ar": "أقل من ساعتين أسبوعيًا",
+          "what_changed": [
+            "+weekly_load"
+          ]
+        },
+        {
+          "questionId": "QB-M3B-003",
+          "question_ar": "هل تتعامل مباشرة مع الجمهور أو العملاء؟",
+          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "answer_ar": "نعم",
+          "what_changed": [
+            "+public_facing"
+          ]
+        },
+        {
+          "questionId": "QB-M3B-012",
+          "question_ar": "هل تدير أشخاصا أو مشاريع أو اجتماعات؟",
+          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "answer_ar": "نعم",
+          "what_changed": [
+            "+leadership_context"
+          ]
+        },
+        {
+          "questionId": "QB-M3B-011",
+          "question_ar": "هل تتعامل مع مشتريات، عطاءات، مالية، موازنة، أو موارد بشرية؟",
+          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "answer_ar": "خدمة جمهور",
+          "what_changed": [
+            "+function_specialization"
+          ]
+        }
+      ],
+      "result": {
+        "kind": "single_pathway",
+        "topPathwayId": "PW-EMP-005",
+        "compositeTemplateId": null,
+        "confidence": 0.6667647058120405,
+        "outputKind_ar": "أفضل تطابق حالي"
+      },
+      "deterministic": true
+    },
+    {
+      "persona": "موظف خبير",
+      "stage": "experienced",
+      "questionsCount": 10,
+      "steps": [
+        {
+          "questionId": "QC-S1-001",
+          "question_ar": "أي وصف يقترب أكثر من وضعك الحالي؟",
+          "why_now_ar": "المرحلة المهنية أول حقيقة — تفلتر الأهداف والاحتياجات والأسئلة كلها.",
+          "answer_ar": "موظف ذو خبرة",
+          "what_changed": [
+            "+career_stage",
+            "+persona_type"
+          ]
+        },
+        {
+          "questionId": "QC-S1-002",
+          "question_ar": "وماذا عن وضعك العملي الآن؟",
+          "why_now_ar": "حالة العمل منفصلة عن المرحلة — تفصل «أول وظيفة» عن «ترقية».",
+          "answer_ar": "أعمل لدى جهة",
+          "what_changed": [
+            "+employment_state"
+          ]
+        },
+        {
+          "questionId": "QC-G2-001",
+          "question_ar": "ما الذي تريد تحقيقه؟",
+          "why_now_ar": "ماذا تريد؟ — الهدف يحدد فضاء المشكلة بخيارات تناسب مرحلتك.",
+          "answer_ar": "التقدم أو الترقية في عملي",
+          "what_changed": [
+            "+primary_goal",
+            "+goal_code_v21"
+          ]
+        },
+        {
+          "questionId": "QC-N3-001",
+          "question_ar": "أي جانب لو تحسّن لديك سيصنع أكبر فرق الآن؟",
+          "why_now_ar": "أين المشكلة الفعلية؟ — الاحتياج يكتشف المجال قبل أي مسار.",
+          "answer_ar": "إدارة المشاريع",
+          "what_changed": [
+            "+need_id"
+          ]
+        },
+        {
+          "questionId": "QB-M2-005",
+          "question_ar": "ما مدى وضوح هدفك الآن؟",
+          "why_now_ar": "وضوح هدفك يقرر: انتقال سريع للأدلة أم استكشاف أعمق.",
+          "answer_ar": "غير واضح",
+          "what_changed": [
+            "+goal_clarity"
+          ]
+        },
+        {
+          "questionId": "QB-M3B-001",
+          "question_ar": "هل تعمل في قطاع خاص أم حكومي أم غير ذلك؟",
+          "why_now_ar": "القطاع (عام/خاص) يفلتر مسارات حكومية بأكملها.",
+          "answer_ar": "خاص",
+          "what_changed": [
+            "+sector"
+          ]
+        },
+        {
+          "questionId": "QC-F7-001",
+          "question_ar": "كم ساعة واقعية تستطيع تخصيصها أسبوعيًا للتعلم؟",
+          "why_now_ar": "وقتك الأسبوعي الواقعي يحدد جدوى الخطة وطولها — لا يحدد المجال.",
+          "answer_ar": "أقل من ساعتين أسبوعيًا",
+          "what_changed": [
+            "+weekly_load"
+          ]
+        },
+        {
+          "questionId": "QB-M3B-003",
+          "question_ar": "هل تتعامل مباشرة مع الجمهور أو العملاء؟",
+          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "answer_ar": "نعم",
+          "what_changed": [
+            "+public_facing"
+          ]
+        },
+        {
+          "questionId": "QB-M3B-012",
+          "question_ar": "هل تدير أشخاصا أو مشاريع أو اجتماعات؟",
+          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "answer_ar": "نعم",
+          "what_changed": [
+            "+leadership_context"
+          ]
+        },
+        {
+          "questionId": "QB-M3B-011",
+          "question_ar": "هل تتعامل مع مشتريات، عطاءات، مالية، موازنة، أو موارد بشرية؟",
+          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "answer_ar": "خدمة جمهور",
+          "what_changed": [
+            "+function_specialization"
+          ]
+        }
+      ],
+      "result": {
+        "kind": "single_pathway",
+        "topPathwayId": "PW-EMP-003",
+        "compositeTemplateId": null,
+        "confidence": 0.6549999999296876,
+        "outputKind_ar": "أفضل تطابق حالي"
+      },
+      "deterministic": true
+    },
+    {
+      "persona": "مدير",
+      "stage": "manager",
+      "questionsCount": 12,
+      "steps": [
+        {
+          "questionId": "QC-S1-001",
+          "question_ar": "أي وصف يقترب أكثر من وضعك الحالي؟",
+          "why_now_ar": "المرحلة المهنية أول حقيقة — تفلتر الأهداف والاحتياجات والأسئلة كلها.",
+          "answer_ar": "مدير / قائد فريق",
+          "what_changed": [
+            "+career_stage",
+            "+persona_type"
+          ]
+        },
+        {
+          "questionId": "QC-S1-002",
+          "question_ar": "وماذا عن وضعك العملي الآن؟",
+          "why_now_ar": "حالة العمل منفصلة عن المرحلة — تفصل «أول وظيفة» عن «ترقية».",
+          "answer_ar": "أعمل لدى جهة",
+          "what_changed": [
+            "+employment_state"
+          ]
+        },
+        {
+          "questionId": "QC-G2-001",
+          "question_ar": "ما الذي تريد تحقيقه؟",
+          "why_now_ar": "ماذا تريد؟ — الهدف يحدد فضاء المشكلة بخيارات تناسب مرحلتك.",
+          "answer_ar": "الاستعداد لدور قيادي",
+          "what_changed": [
+            "+primary_goal",
+            "+goal_code_v21"
+          ]
+        },
+        {
+          "questionId": "QC-N3-001",
+          "question_ar": "أي جانب لو تحسّن لديك سيصنع أكبر فرق الآن؟",
+          "why_now_ar": "أين المشكلة الفعلية؟ — الاحتياج يكتشف المجال قبل أي مسار.",
+          "answer_ar": "القيادة وإدارة الفرق",
+          "what_changed": [
+            "+need_id"
+          ]
+        },
+        {
+          "questionId": "QB-M2-005",
+          "question_ar": "ما مدى وضوح هدفك الآن؟",
+          "why_now_ar": "وضوح هدفك يقرر: انتقال سريع للأدلة أم استكشاف أعمق.",
+          "answer_ar": "غير واضح",
+          "what_changed": [
+            "+goal_clarity"
+          ]
+        },
+        {
+          "questionId": "QB-M3B-001",
+          "question_ar": "هل تعمل في قطاع خاص أم حكومي أم غير ذلك؟",
+          "why_now_ar": "القطاع (عام/خاص) يفلتر مسارات حكومية بأكملها.",
+          "answer_ar": "خاص",
+          "what_changed": [
+            "+sector"
+          ]
+        },
+        {
+          "questionId": "QC-F7-001",
+          "question_ar": "كم ساعة واقعية تستطيع تخصيصها أسبوعيًا للتعلم؟",
+          "why_now_ar": "وقتك الأسبوعي الواقعي يحدد جدوى الخطة وطولها — لا يحدد المجال.",
+          "answer_ar": "أقل من ساعتين أسبوعيًا",
+          "what_changed": [
+            "+weekly_load"
+          ]
+        },
+        {
+          "questionId": "QB-M3B-010",
+          "question_ar": "ما مدى قوتك في إدارة أصحاب المصلحة المختلفين؟",
+          "why_now_ar": "فاز أساسًا بسبب: يفصل بين المرشحين المتصدرين بدليل مهارة.",
+          "answer_ar": "لا أعرفها",
+          "what_changed": [
+            "+stakeholder_management"
+          ]
+        },
+        {
+          "questionId": "QB-M3B-003",
+          "question_ar": "هل تتعامل مباشرة مع الجمهور أو العملاء؟",
+          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "answer_ar": "نعم",
+          "what_changed": [
+            "+public_facing"
+          ]
+        },
+        {
+          "questionId": "QB-M3B-011",
+          "question_ar": "هل تتعامل مع مشتريات، عطاءات، مالية، موازنة، أو موارد بشرية؟",
+          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "answer_ar": "خدمة جمهور",
+          "what_changed": [
+            "+function_specialization"
+          ]
+        },
+        {
+          "questionId": "QB-M1-011",
+          "question_ar": "هل لديك دليل حالي على مهاراتك: مشروع، شهادة، ملف أعمال، أو نتيجة عملية؟",
+          "why_now_ar": "يكمل الصورة العامة.",
+          "answer_ar": "لا يوجد دليل",
+          "what_changed": [
+            "+evidence_strength"
+          ]
+        },
+        {
+          "questionId": "QB-M2-015",
+          "question_ar": "ما مدى استعدادك لتطبيق عملي ومهام خارج مشاهدة المحتوى؟",
+          "why_now_ar": "يكمل الصورة العامة.",
+          "answer_ar": "منخفضة جدا",
+          "what_changed": [
+            "+application_readiness"
+          ]
+        }
+      ],
+      "result": {
+        "kind": "single_pathway",
+        "topPathwayId": "PW-EMP-005",
+        "compositeTemplateId": null,
+        "confidence": 0.5968596058479134,
+        "outputKind_ar": "اتجاه استكشافي"
+      },
+      "deterministic": true
+    },
+    {
+      "persona": "مؤسس",
+      "stage": "founder",
+      "questionsCount": 10,
+      "steps": [
+        {
+          "questionId": "QC-S1-001",
+          "question_ar": "أي وصف يقترب أكثر من وضعك الحالي؟",
+          "why_now_ar": "المرحلة المهنية أول حقيقة — تفلتر الأهداف والاحتياجات والأسئلة كلها.",
+          "answer_ar": "مؤسس / صاحب عمل",
+          "what_changed": [
+            "+career_stage",
+            "+persona_type",
+            "+employment_state"
+          ]
+        },
+        {
+          "questionId": "QC-G2-001",
+          "question_ar": "ما الذي تريد تحقيقه؟",
+          "why_now_ar": "ماذا تريد؟ — الهدف يحدد فضاء المشكلة بخيارات تناسب مرحلتك.",
+          "answer_ar": "تنمية مشروعي القائم وزيادة إيراداته",
+          "what_changed": [
+            "+primary_goal",
+            "+goal_code_v21"
+          ]
+        },
+        {
+          "questionId": "QC-N3-001",
+          "question_ar": "أي جانب لو تحسّن لديك سيصنع أكبر فرق الآن؟",
+          "why_now_ar": "أين المشكلة الفعلية؟ — الاحتياج يكتشف المجال قبل أي مسار.",
+          "answer_ar": "التسويق والنمو",
+          "what_changed": [
+            "+need_id"
+          ]
+        },
+        {
+          "questionId": "QB-M2-005",
+          "question_ar": "ما مدى وضوح هدفك الآن؟",
+          "why_now_ar": "وضوح هدفك يقرر: انتقال سريع للأدلة أم استكشاف أعمق.",
+          "answer_ar": "غير واضح",
+          "what_changed": [
+            "+goal_clarity"
+          ]
+        },
+        {
+          "questionId": "QB-M3C-001",
+          "question_ar": "في أي مرحلة مشروعك أو عملك الحر الآن؟",
+          "why_now_ar": "مرحلة مشروعك تحسم «إطلاق أم نمو» — جوهري للمسار.",
+          "answer_ar": "فكرة — لم أبدأ التنفيذ",
+          "what_changed": [
+            "+business_stage"
+          ]
+        },
+        {
+          "questionId": "QC-F7-001",
+          "question_ar": "كم ساعة واقعية تستطيع تخصيصها أسبوعيًا للتعلم؟",
+          "why_now_ar": "وقتك الأسبوعي الواقعي يحدد جدوى الخطة وطولها — لا يحدد المجال.",
+          "answer_ar": "أقل من ساعتين أسبوعيًا",
+          "what_changed": [
+            "+weekly_load"
+          ]
+        },
+        {
+          "questionId": "QB-M3B-003",
+          "question_ar": "هل تتعامل مباشرة مع الجمهور أو العملاء؟",
+          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "answer_ar": "نعم",
+          "what_changed": [
+            "+public_facing"
+          ]
+        },
+        {
+          "questionId": "QB-M3C-002",
+          "question_ar": "هل عرضك أو منتجك واضح لمن يشتريه؟",
+          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "answer_ar": "غير واضح",
+          "what_changed": [
+            "+offer_clarity"
+          ]
+        },
+        {
+          "questionId": "QB-M3C-011",
+          "question_ar": "هل تعمل وحدك أم مع فريق؟",
+          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "what_changed": []
+        },
+        {
+          "questionId": "QB-M3C-004",
+          "question_ar": "هل لديك عملاء حاليون أو مبيعات متكررة؟",
+          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "answer_ar": "نعم",
+          "what_changed": [
+            "+revenue_signal"
+          ]
+        }
+      ],
+      "result": {
+        "kind": "single_pathway",
+        "topPathwayId": "PW-MKT-001",
+        "compositeTemplateId": null,
+        "confidence": 0.6524999999550001,
+        "outputKind_ar": "أفضل تطابق حالي"
+      },
+      "deterministic": true
+    },
+    {
+      "persona": "مستقل",
+      "stage": "freelancer",
+      "questionsCount": 10,
+      "steps": [
+        {
+          "questionId": "QC-S1-001",
+          "question_ar": "أي وصف يقترب أكثر من وضعك الحالي؟",
+          "why_now_ar": "المرحلة المهنية أول حقيقة — تفلتر الأهداف والاحتياجات والأسئلة كلها.",
+          "answer_ar": "مستقل — أعمل لحسابي",
+          "what_changed": [
+            "+career_stage",
+            "+persona_type",
+            "+employment_state"
+          ]
+        },
+        {
+          "questionId": "QC-G2-001",
+          "question_ar": "ما الذي تريد تحقيقه؟",
+          "why_now_ar": "ماذا تريد؟ — الهدف يحدد فضاء المشكلة بخيارات تناسب مرحلتك.",
+          "answer_ar": "زيادة دخلي وعملائي في العمل الحر",
+          "what_changed": [
+            "+primary_goal",
+            "+goal_code_v21"
+          ]
+        },
+        {
+          "questionId": "QC-N3-001",
+          "question_ar": "أي جانب لو تحسّن لديك سيصنع أكبر فرق الآن؟",
+          "why_now_ar": "أين المشكلة الفعلية؟ — الاحتياج يكتشف المجال قبل أي مسار.",
+          "answer_ar": "المبيعات والتعامل مع العملاء",
+          "what_changed": [
+            "+need_id"
+          ]
+        },
+        {
+          "questionId": "QB-M2-005",
+          "question_ar": "ما مدى وضوح هدفك الآن؟",
+          "why_now_ar": "وضوح هدفك يقرر: انتقال سريع للأدلة أم استكشاف أعمق.",
+          "answer_ar": "غير واضح",
+          "what_changed": [
+            "+goal_clarity"
+          ]
+        },
+        {
+          "questionId": "QB-M3C-001",
+          "question_ar": "في أي مرحلة مشروعك أو عملك الحر الآن؟",
+          "why_now_ar": "مرحلة مشروعك تحسم «إطلاق أم نمو» — جوهري للمسار.",
+          "answer_ar": "فكرة — لم أبدأ التنفيذ",
+          "what_changed": [
+            "+business_stage"
+          ]
+        },
+        {
+          "questionId": "QC-F7-001",
+          "question_ar": "كم ساعة واقعية تستطيع تخصيصها أسبوعيًا للتعلم؟",
+          "why_now_ar": "وقتك الأسبوعي الواقعي يحدد جدوى الخطة وطولها — لا يحدد المجال.",
+          "answer_ar": "أقل من ساعتين أسبوعيًا",
+          "what_changed": [
+            "+weekly_load"
+          ]
+        },
+        {
+          "questionId": "QB-M3B-003",
+          "question_ar": "هل تتعامل مباشرة مع الجمهور أو العملاء؟",
+          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "answer_ar": "نعم",
+          "what_changed": [
+            "+public_facing"
+          ]
+        },
+        {
+          "questionId": "QB-M3C-002",
+          "question_ar": "هل عرضك أو منتجك واضح لمن يشتريه؟",
+          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "answer_ar": "غير واضح",
+          "what_changed": [
+            "+offer_clarity"
+          ]
+        },
+        {
+          "questionId": "QB-M3C-011",
+          "question_ar": "هل تعمل وحدك أم مع فريق؟",
+          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "what_changed": []
+        },
+        {
+          "questionId": "QB-M3C-004",
+          "question_ar": "هل لديك عملاء حاليون أو مبيعات متكررة؟",
+          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "answer_ar": "نعم",
+          "what_changed": [
+            "+revenue_signal"
+          ]
+        }
+      ],
+      "result": {
+        "kind": "single_pathway",
+        "topPathwayId": "PW-SAL-001",
+        "compositeTemplateId": null,
+        "confidence": 0.6549999999296876,
+        "outputKind_ar": "أفضل تطابق حالي"
+      },
+      "deterministic": true
+    },
+    {
+      "persona": "مدرب / مختص تعلم وتطوير",
+      "stage": "trainer_ld",
+      "questionsCount": 10,
+      "steps": [
+        {
+          "questionId": "QC-S1-001",
+          "question_ar": "أي وصف يقترب أكثر من وضعك الحالي؟",
+          "why_now_ar": "المرحلة المهنية أول حقيقة — تفلتر الأهداف والاحتياجات والأسئلة كلها.",
+          "answer_ar": "مدرب / معلم / مختص تعلم وتطوير",
+          "what_changed": [
+            "+career_stage",
+            "+persona_type"
+          ]
+        },
+        {
+          "questionId": "QC-S1-002",
+          "question_ar": "وماذا عن وضعك العملي الآن؟",
+          "why_now_ar": "حالة العمل منفصلة عن المرحلة — تفصل «أول وظيفة» عن «ترقية».",
+          "answer_ar": "أعمل لدى جهة",
+          "what_changed": [
+            "+employment_state"
+          ]
+        },
+        {
+          "questionId": "QC-G2-001",
+          "question_ar": "ما الذي تريد تحقيقه؟",
+          "why_now_ar": "ماذا تريد؟ — الهدف يحدد فضاء المشكلة بخيارات تناسب مرحلتك.",
+          "answer_ar": "تصميم تدريب أو برامج تعليمية",
+          "what_changed": [
+            "+primary_goal",
+            "+goal_code_v21"
+          ]
+        },
+        {
+          "questionId": "QC-N3-001",
+          "question_ar": "أي جانب لو تحسّن لديك سيصنع أكبر فرق الآن؟",
+          "why_now_ar": "أين المشكلة الفعلية؟ — الاحتياج يكتشف المجال قبل أي مسار.",
+          "answer_ar": "تصميم التعلم والتدريب",
+          "what_changed": [
+            "+need_id"
+          ]
+        },
+        {
+          "questionId": "QB-M2-005",
+          "question_ar": "ما مدى وضوح هدفك الآن؟",
+          "why_now_ar": "وضوح هدفك يقرر: انتقال سريع للأدلة أم استكشاف أعمق.",
+          "answer_ar": "غير واضح",
+          "what_changed": [
+            "+goal_clarity"
+          ]
+        },
+        {
+          "questionId": "QB-M3B-001",
+          "question_ar": "هل تعمل في قطاع خاص أم حكومي أم غير ذلك؟",
+          "why_now_ar": "القطاع (عام/خاص) يفلتر مسارات حكومية بأكملها.",
+          "answer_ar": "خاص",
+          "what_changed": [
+            "+sector"
+          ]
+        },
+        {
+          "questionId": "QC-F7-001",
+          "question_ar": "كم ساعة واقعية تستطيع تخصيصها أسبوعيًا للتعلم؟",
+          "why_now_ar": "وقتك الأسبوعي الواقعي يحدد جدوى الخطة وطولها — لا يحدد المجال.",
+          "answer_ar": "أقل من ساعتين أسبوعيًا",
+          "what_changed": [
+            "+weekly_load"
+          ]
+        },
+        {
+          "questionId": "QB-M3B-003",
+          "question_ar": "هل تتعامل مباشرة مع الجمهور أو العملاء؟",
+          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "answer_ar": "نعم",
+          "what_changed": [
+            "+public_facing"
+          ]
+        },
+        {
+          "questionId": "QB-M3B-012",
+          "question_ar": "هل تدير أشخاصا أو مشاريع أو اجتماعات؟",
+          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "answer_ar": "نعم",
+          "what_changed": [
+            "+leadership_context"
+          ]
+        },
+        {
+          "questionId": "QB-M3B-011",
+          "question_ar": "هل تتعامل مع مشتريات، عطاءات، مالية، موازنة، أو موارد بشرية؟",
+          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "answer_ar": "خدمة جمهور",
+          "what_changed": [
+            "+function_specialization"
+          ]
+        }
+      ],
+      "result": {
+        "kind": "single_pathway",
+        "topPathwayId": "PW-LND-001",
+        "compositeTemplateId": null,
+        "confidence": 0.650431034419342,
+        "outputKind_ar": "أفضل تطابق حالي"
+      },
+      "deterministic": true
+    },
+    {
+      "persona": "غير محسوم",
+      "stage": "other_unsure",
+      "questionsCount": 12,
+      "steps": [
+        {
+          "questionId": "QC-S1-001",
+          "question_ar": "أي وصف يقترب أكثر من وضعك الحالي؟",
+          "why_now_ar": "المرحلة المهنية أول حقيقة — تفلتر الأهداف والاحتياجات والأسئلة كلها.",
+          "answer_ar": "غير ذلك / غير متأكد",
+          "what_changed": [
+            "+career_stage",
+            "+persona_branch"
+          ]
+        },
+        {
+          "questionId": "QC-S1-002",
+          "question_ar": "وماذا عن وضعك العملي الآن؟",
+          "why_now_ar": "حالة العمل منفصلة عن المرحلة — تفصل «أول وظيفة» عن «ترقية».",
+          "answer_ar": "لا أعمل حاليًا",
+          "what_changed": [
+            "+employment_state"
+          ]
+        },
+        {
+          "questionId": "QC-G2-001",
+          "question_ar": "ما الذي تريد تحقيقه؟",
+          "why_now_ar": "ماذا تريد؟ — الهدف يحدد فضاء المشكلة بخيارات تناسب مرحلتك.",
+          "answer_ar": "غير متأكد — أريد أن يساعدني التشخيص",
+          "what_changed": [
+            "+primary_goal",
+            "+goal_code_v21",
+            "+goal_clarity"
+          ]
+        },
+        {
+          "questionId": "QC-N3-001",
+          "question_ar": "أي جانب لو تحسّن لديك سيصنع أكبر فرق الآن؟",
+          "why_now_ar": "أين المشكلة الفعلية؟ — الاحتياج يكتشف المجال قبل أي مسار.",
+          "answer_ar": "غير متأكد — أريد اقتراحًا مبنيًا على إجاباتي",
+          "what_changed": [
+            "+need_id"
+          ]
+        },
+        {
+          "questionId": "QC-F7-001",
+          "question_ar": "كم ساعة واقعية تستطيع تخصيصها أسبوعيًا للتعلم؟",
+          "why_now_ar": "وقتك الأسبوعي الواقعي يحدد جدوى الخطة وطولها — لا يحدد المجال.",
+          "answer_ar": "أقل من ساعتين أسبوعيًا",
+          "what_changed": [
+            "+weekly_load"
+          ]
+        },
+        {
+          "questionId": "QB-M5-001",
+          "question_ar": "أستمتع بالأعمال التي تتضمن أدوات، أجهزة، أو نتائج ملموسة.",
+          "why_now_ar": "فاز أساسًا بسبب: يستكشف ميولك لأن الهدف غير محسوم.",
+          "answer_ar": "ينطبق أحيانا",
+          "what_changed": []
+        },
+        {
+          "questionId": "QB-M5-004",
+          "question_ar": "أستمتع بتحليل معلومات معقدة للوصول إلى تفسير.",
+          "why_now_ar": "فاز أساسًا بسبب: يستكشف ميولك لأن الهدف غير محسوم.",
+          "answer_ar": "ينطبق أحيانا",
+          "what_changed": []
+        },
+        {
+          "questionId": "QB-M5-007",
+          "question_ar": "أحب صناعة محتوى أو تصميم أو سرد قصة بطريقة مختلفة.",
+          "why_now_ar": "فاز أساسًا بسبب: يستكشف ميولك لأن الهدف غير محسوم.",
+          "answer_ar": "ينطبق أحيانا",
+          "what_changed": []
+        },
+        {
+          "questionId": "QB-M5-010",
+          "question_ar": "أستمتع بمساعدة الآخرين على الفهم أو النمو.",
+          "why_now_ar": "فاز أساسًا بسبب: يستكشف ميولك لأن الهدف غير محسوم.",
+          "answer_ar": "ينطبق أحيانا",
+          "what_changed": []
+        },
+        {
+          "questionId": "QB-M5-013",
+          "question_ar": "أحب قيادة مبادرة وإقناع الآخرين بها.",
+          "why_now_ar": "فاز أساسًا بسبب: يستكشف ميولك لأن الهدف غير محسوم.",
+          "answer_ar": "ينطبق أحيانا",
+          "what_changed": []
+        },
+        {
+          "questionId": "QB-M5-016",
+          "question_ar": "أحب تنظيم المعلومات والملفات والخطوات بدقة.",
+          "why_now_ar": "فاز أساسًا بسبب: يستكشف ميولك لأن الهدف غير محسوم.",
+          "answer_ar": "ينطبق أحيانا",
+          "what_changed": []
+        },
+        {
+          "questionId": "QB-M1-011",
+          "question_ar": "هل لديك دليل حالي على مهاراتك: مشروع، شهادة، ملف أعمال، أو نتيجة عملية؟",
+          "why_now_ar": "يكمل الصورة العامة.",
+          "answer_ar": "لا يوجد دليل",
+          "what_changed": [
+            "+evidence_strength"
+          ]
+        }
+      ],
+      "result": {
+        "kind": "single_pathway",
+        "topPathwayId": "PW-STU-003",
+        "compositeTemplateId": null,
+        "confidence": 0.5521078429497549,
+        "outputKind_ar": "اتجاه استكشافي"
+      },
+      "deterministic": true
+    }
+  ]
+}

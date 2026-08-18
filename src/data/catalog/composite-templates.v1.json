@@ -774,6 +774,17 @@
             ],
             "weight": 0.09,
             "rationale_ar": "الوقت يسمح بالنسخة الكاملة."
+          },
+          {
+            "fact_key": "team_context",
+            "operator": "in",
+            "values": [
+              "small_team",
+              "multi_team",
+              "cross_functional"
+            ],
+            "weight": 0.08,
+            "rationale_ar": "وجود فريق أو شركاء حول المشروع يرجح مسار إطلاق مشروع قابل للنمو."
           }
         ],
         "negative_signals": [
@@ -885,6 +896,15 @@
             "question_ar": "هل تتحدث مع العملاء لفهم مشاكلهم قبل بناء الحل؟",
             "interpretation_if_positive_ar": "الحاجة الأساسية لإثبات العميل ترجح المؤسس/المشروع.",
             "interpretation_if_negative_ar": "وجود بحث مستخدم متين ودور منتج رسمي يرجح قالب مدير المنتج."
+          },
+          {
+            "against_template_ids": [
+              "TPL-FREELANCE-001"
+            ],
+            "question_id": "QB-M3C-011",
+            "question_ar": "هل تعمل وحدك أم مع فريق؟",
+            "interpretation_if_positive_ar": "العمل مع فريق أو نية التوظيف يرجحان قالب إطلاق المشروع.",
+            "interpretation_if_negative_ar": "العمل المنفرد دون نية توسعة يرجح قالب العمل الحر."
           }
         ],
         "thresholds": {
@@ -1007,7 +1027,7 @@
           "sequence": 4,
           "course_type": "required",
           "course_id": "C-SAL-102",
-          "course_title_ar": "توليد العملاء وإدارة Pipeline",
+          "course_title_ar": "توليد العملاء المحتملين وإدارة خط المبيعات",
           "pathway_id": "PW-SAL-001",
           "pathway_title_ar": "المبيعات الاستشارية وتطوير الأعمال: من الاستهداف إلى اتفاق قابل للتنفيذ",
           "hours": 8,
@@ -1504,7 +1524,7 @@
           "sequence": 5,
           "course_type": "required",
           "course_id": "C-NEG-101",
-          "course_title_ar": "التحضير: المصالح وBATNA وZOPA",
+          "course_title_ar": "التحضير للتفاوض: تحليل المصالح والبدائل ومنطقة الاتفاق",
           "pathway_id": "PW-NEG-001",
           "pathway_title_ar": "التفاوض والتأثير الأخلاقي: من التحضير إلى اتفاق مستدام",
           "hours": 8,
@@ -1835,6 +1855,15 @@
             "question_ar": "هل تعمل وحدك أم مع فريق؟",
             "interpretation_if_positive_ar": "العمل منفردًا وحزمة خدمة شخصية يرجح المستقل.",
             "interpretation_if_negative_ar": "فريق مبيعات وعقود حسابات يرجح نمو B2B."
+          },
+          {
+            "against_template_ids": [
+              "TPL-VENTURE-001"
+            ],
+            "question_id": "QB-M3C-011",
+            "question_ar": "هل تعمل وحدك أم مع فريق؟",
+            "interpretation_if_positive_ar": "العمل المنفرد دون نية توسعة يرجح قالب العمل الحر.",
+            "interpretation_if_negative_ar": "وجود فريق أو نية بنائه يرجحان قالب إطلاق المشروع."
           }
         ],
         "thresholds": {
@@ -1992,7 +2021,7 @@
           "sequence": 1,
           "course_type": "conditional",
           "course_id": "C-JOB-103",
-          "course_title_ar": "مشروع إثبات مهارة",
+          "course_title_ar": "إثبات المهارة بمشروع: قطعة عمل تقنع صاحب القرار",
           "pathway_id": "PW-STU-002",
           "pathway_title_ar": "الاستعداد لأول فرصة مهنية",
           "hours": 8,
@@ -2418,7 +2447,7 @@
           "sequence": 4,
           "course_type": "required",
           "course_id": "C-JOB-103",
-          "course_title_ar": "مشروع إثبات مهارة",
+          "course_title_ar": "إثبات المهارة بمشروع: قطعة عمل تقنع صاحب القرار",
           "pathway_id": "PW-STU-002",
           "pathway_title_ar": "الاستعداد لأول فرصة مهنية",
           "hours": 8,
@@ -3346,7 +3375,7 @@
           "sequence": 3,
           "course_type": "required",
           "course_id": "C-SAL-102",
-          "course_title_ar": "توليد العملاء وإدارة Pipeline",
+          "course_title_ar": "توليد العملاء المحتملين وإدارة خط المبيعات",
           "pathway_id": "PW-SAL-001",
           "pathway_title_ar": "المبيعات الاستشارية وتطوير الأعمال: من الاستهداف إلى اتفاق قابل للتنفيذ",
           "hours": 8,
@@ -3392,7 +3421,7 @@
           "sequence": 1,
           "course_type": "conditional",
           "course_id": "C-NEG-101",
-          "course_title_ar": "التحضير: المصالح وBATNA وZOPA",
+          "course_title_ar": "التحضير للتفاوض: تحليل المصالح والبدائل ومنطقة الاتفاق",
           "pathway_id": "PW-NEG-001",
           "pathway_title_ar": "التفاوض والتأثير الأخلاقي: من التحضير إلى اتفاق مستدام",
           "hours": 8,
@@ -3486,7 +3515,7 @@
             "question_ids": [
               "QB-M3C-002"
             ],
-            "importance": "required",
+            "importance": "optional",
             "minimum_confidence": 0.65
           },
           {
@@ -3494,7 +3523,7 @@
             "question_ids": [
               "QB-M3C-004"
             ],
-            "importance": "required",
+            "importance": "optional",
             "minimum_confidence": 0.65
           },
           {
@@ -3834,7 +3863,7 @@
           "sequence": 4,
           "course_type": "required",
           "course_id": "C-SVC-104",
-          "course_title_ar": "قياس جودة الخدمة",
+          "course_title_ar": "قياس جودة الخدمة وتحويله إلى تحسين",
           "pathway_id": "PW-GOV-002",
           "pathway_title_ar": "تجربة المستفيد ومعالجة الشكاوى",
           "hours": 8,
@@ -4247,7 +4276,7 @@
           "sequence": 2,
           "course_type": "required",
           "course_id": "C-PM-104",
-          "course_title_ar": "المخاطر والتغيير ومتابعة التنفيذ",
+          "course_title_ar": "إبقاء المشروع على مساره: إدارة المخاطر والتغيير والمتابعة",
           "pathway_id": "PW-EMP-003",
           "pathway_title_ar": "إدارة المشاريع العملية: من التكليف إلى الإغلاق",
           "hours": 8,
@@ -4785,7 +4814,7 @@
           "sequence": 4,
           "course_type": "required",
           "course_id": "C-PRD-104",
-          "course_title_ar": "Roadmap والعمل مع فريق المنتج",
+          "course_title_ar": "خارطة طريق المنتج وقيادة التنفيذ مع الفريق",
           "pathway_id": "PW-PRD-001",
           "pathway_title_ar": "إدارة المنتج الرقمي: من مشكلة مستخدم إلى إطلاق قابل للقياس",
           "hours": 8,
@@ -5324,7 +5353,7 @@
           "sequence": 2,
           "course_type": "conditional",
           "course_id": "C-DAT-105",
-          "course_title_ar": "مشروع قرار بالبيانات",
+          "course_title_ar": "قرار مبني على البيانات: من السؤال إلى التوصية",
           "pathway_id": "PW-EMP-004",
           "pathway_title_ar": "تحليل البيانات لاتخاذ القرار",
           "hours": 12,
@@ -5785,7 +5814,7 @@
           "sequence": 1,
           "course_type": "conditional",
           "course_id": "C-PM-104",
-          "course_title_ar": "المخاطر والتغيير ومتابعة التنفيذ",
+          "course_title_ar": "إبقاء المشروع على مساره: إدارة المخاطر والتغيير والمتابعة",
           "pathway_id": "PW-EMP-003",
           "pathway_title_ar": "إدارة المشاريع العملية: من التكليف إلى الإغلاق",
           "hours": 8,
@@ -5896,7 +5925,7 @@
             "question_ids": [
               "QB-M9-008"
             ],
-            "importance": "required",
+            "importance": "optional",
             "minimum_confidence": 0.65
           },
           {
@@ -5904,7 +5933,7 @@
             "question_ids": [
               "QB-M9-011"
             ],
-            "importance": "required",
+            "importance": "optional",
             "minimum_confidence": 0.65
           },
           {
@@ -6260,7 +6289,7 @@
           "sequence": 1,
           "course_type": "conditional",
           "course_id": "C-NEG-101",
-          "course_title_ar": "التحضير: المصالح وBATNA وZOPA",
+          "course_title_ar": "التحضير للتفاوض: تحليل المصالح والبدائل ومنطقة الاتفاق",
           "pathway_id": "PW-NEG-001",
           "pathway_title_ar": "التفاوض والتأثير الأخلاقي: من التحضير إلى اتفاق مستدام",
           "hours": 8,
@@ -6818,14 +6847,6 @@
             "minimum_confidence": 0.65
           },
           {
-            "fact_key": "current_domain",
-            "question_ids": [
-              "QB-M1-005"
-            ],
-            "importance": "required",
-            "minimum_confidence": 0.65
-          },
-          {
             "fact_key": "public_speaking",
             "question_ids": [
               "QB-M4-011"
@@ -6888,15 +6909,6 @@
             "rationale_ar": "الدور ملائم."
           },
           {
-            "fact_key": "current_domain",
-            "operator": "exists",
-            "values": [
-              true
-            ],
-            "weight": 0.08,
-            "rationale_ar": "يوجد موضوع يمكن تحويله إلى تعلم."
-          },
-          {
             "fact_key": "digital_content",
             "operator": "lte",
             "values": [
@@ -6955,15 +6967,6 @@
           }
         ],
         "negative_signals": [
-          {
-            "fact_key": "current_domain",
-            "operator": "not_exists",
-            "values": [
-              true
-            ],
-            "weight": 0.18,
-            "rationale_ar": "لا يوجد موضوع/خبرة لتحويلها."
-          },
           {
             "fact_key": "application_readiness",
             "operator": "eq",
@@ -7155,7 +7158,7 @@
           "sequence": 2,
           "course_type": "required",
           "course_id": "C-OPS-102",
-          "course_title_ar": "Lean والهدر والتدفق",
+          "course_title_ar": "تقليص الهدر وتحسين التدفق بمنهجية Lean",
           "pathway_id": "PW-OPS-001",
           "pathway_title_ar": "التميز التشغيلي: من خريطة العملية إلى أثر قابل للقياس",
           "hours": 8,
@@ -7247,7 +7250,7 @@
           "sequence": 3,
           "course_type": "conditional",
           "course_id": "C-PM-104",
-          "course_title_ar": "المخاطر والتغيير ومتابعة التنفيذ",
+          "course_title_ar": "إبقاء المشروع على مساره: إدارة المخاطر والتغيير والمتابعة",
           "pathway_id": "PW-EMP-003",
           "pathway_title_ar": "إدارة المشاريع العملية: من التكليف إلى الإغلاق",
           "hours": 8,
@@ -7578,7 +7581,7 @@
         {
           "sequence": 2,
           "course_id": "C-OPS-102",
-          "course_title_ar": "Lean والهدر والتدفق",
+          "course_title_ar": "تقليص الهدر وتحسين التدفق بمنهجية Lean",
           "pathway_id": "PW-OPS-001",
           "pathway_title_ar": "التميز التشغيلي: من خريطة العملية إلى أثر قابل للقياس",
           "hours": 8
@@ -7642,7 +7645,7 @@
           "sequence": 2,
           "course_type": "required",
           "course_id": "C-PM-102",
-          "course_title_ar": "النطاق والجدول والموارد",
+          "course_title_ar": "بناء خطة مشروع قابلة للتنفيذ: النطاق والجدول والموارد",
           "pathway_id": "PW-EMP-003",
           "pathway_title_ar": "إدارة المشاريع العملية: من التكليف إلى الإغلاق",
           "hours": 8,
@@ -7664,7 +7667,7 @@
           "sequence": 4,
           "course_type": "required",
           "course_id": "C-PM-104",
-          "course_title_ar": "المخاطر والتغيير ومتابعة التنفيذ",
+          "course_title_ar": "إبقاء المشروع على مساره: إدارة المخاطر والتغيير والمتابعة",
           "pathway_id": "PW-EMP-003",
           "pathway_title_ar": "إدارة المشاريع العملية: من التكليف إلى الإغلاق",
           "hours": 8,
@@ -7834,7 +7837,7 @@
             "question_ids": [
               "QB-M9-005"
             ],
-            "importance": "required",
+            "importance": "optional",
             "minimum_confidence": 0.65
           },
           {
@@ -7842,7 +7845,7 @@
             "question_ids": [
               "QB-M9-006"
             ],
-            "importance": "required",
+            "importance": "optional",
             "minimum_confidence": 0.65
           },
           {
@@ -8081,7 +8084,7 @@
         {
           "sequence": 2,
           "course_id": "C-PM-102",
-          "course_title_ar": "النطاق والجدول والموارد",
+          "course_title_ar": "بناء خطة مشروع قابلة للتنفيذ: النطاق والجدول والموارد",
           "pathway_id": "PW-EMP-003",
           "pathway_title_ar": "إدارة المشاريع العملية: من التكليف إلى الإغلاق",
           "hours": 8
@@ -9139,5 +9142,6 @@
       "No course is repeated across required, conditional, and bridge buckets",
       "No required template plan exceeds 80 hours"
     ]
-  }
+  },
+  "version": "1.1.3"
 }

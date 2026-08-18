@@ -78,7 +78,7 @@ export default function StudentDashboard() {
             </svg>
             <span className="absolute inset-0 flex flex-col items-center justify-center">
               <span className="text-xl font-black text-[#6EC7D1]">{pct}%</span>
-              <span className="text-[9px] text-white/40">من رحلتك</span>
+              <span className="text-[9px] text-white/50">من رحلتك</span>
             </span>
           </div>
         </div>
@@ -134,7 +134,7 @@ export default function StudentDashboard() {
             <div className="flex items-center gap-2 text-sm font-bold text-white/70">
               <CalendarDays className="h-4 w-4 text-[#FABC05]" /> جدولي — الجلسات القادمة
             </div>
-            <span className="text-[11px] text-white/40">بتوقيت الرياض (GMT+3)</span>
+            <span className="text-[11px] text-white/50">بتوقيت الرياض (GMT+3)</span>
           </div>
           <div className="mt-4 space-y-2.5">
             {sessions.map((s) => (
@@ -169,7 +169,7 @@ export default function StudentDashboard() {
           </div>
           <div className="mt-4 space-y-2.5">
             {state.notifications.slice(0, 4).map((n) => (
-              <p key={n.id} className={`rounded-xl border px-3 py-2.5 text-xs leading-6 ${n.read ? "border-white/5 text-white/40" : "border-[#38A7B4]/25 bg-[#38A7B4]/5 text-white/75"}`}>
+              <p key={n.id} className={`rounded-xl border px-3 py-2.5 text-xs leading-6 ${n.read ? "border-white/5 text-white/50" : "border-[#38A7B4]/25 bg-[#38A7B4]/5 text-white/75"}`}>
                 {n.text}
               </p>
             ))}

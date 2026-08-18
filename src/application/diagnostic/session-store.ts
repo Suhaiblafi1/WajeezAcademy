@@ -1,6 +1,9 @@
 /* مستودع الجلسات المحلي — تجريبي (demo-only) على جهاز المستخدم.
    عند الانتقال للخادم يُستبدل بـ API دون تغيير واجهة الخدمة. */
 
+import type { DiagResult } from '../../data/diagnostic'
+import { readStoredResult, wrapResultForStorage, type StoredResultRead } from './result-schema'
+
 const PROGRESS_KEY = 'wajeez_diag_v2_progress'
 const RESULT_KEY = 'wajeez_diag_v2_result'
 const LEGACY_ANSWERS_KEY = 'wajeez_diag_answers'
@@ -8,7 +11,7 @@ const LEGACY_TOP_KEY = 'wajeez_diag_top'
 const LEGACY_JSON_KEY = 'wajeez_result_json'
 
 export interface SavedSession {
-  answers: { questionId: string; value: string | string[] }[]
+  answers: { questionId: string; value: string | string[]; optionIds?: string[] }[]
   savedAt: string
 }
 
@@ -59,22 +62,39 @@ export function saveResult(resultJson: Record<string, unknown>, legacyAnswers: R
 
 const LAST_RESULT_KEY = 'wajeez_diag_v2_last_full'
 
-/** يحفظ نتيجة العرض كاملة (تسلسلية) لتستعيدها الصفحة دون إعادة حساب */
+/** يحفظ نتيجة العرض كاملة مغلفة بإصدار المخطط — لتستعيدها الصفحة بأمان */
 export function saveLastResult(result: unknown) {
   try {
-    localStorage.setItem(LAST_RESULT_KEY, JSON.stringify(result))
+    localStorage.setItem(LAST_RESULT_KEY, wrapResultForStorage(result as DiagResult))
   } catch {
     /* لا شيء */
   }
 }
 
-export function loadLastResult<T>(): T | null {
+/** يقرأ النتيجة المحفوظة مع تحقق المخطط والترحيل — يحذف الفاسد بأمان */
+export function loadLastResultSafe(): StoredResultRead {
+  let raw: string | null = null
   try {
-    const raw = localStorage.getItem(LAST_RESULT_KEY)
-    return raw ? (JSON.parse(raw) as T) : null
+    raw = localStorage.getItem(LAST_RESULT_KEY)
   } catch {
-    return null
+    return { status: 'none' }
   }
+  const read = readStoredResult(raw)
+  if (read.status === 'discarded') {
+    /* نتيجة لم يمكن ترحيلها — حذف آمن حتى لا تتعطل الصفحة عند كل زيارة */
+    try {
+      localStorage.removeItem(LAST_RESULT_KEY)
+    } catch {
+      /* لا شيء */
+    }
+  }
+  return read
+}
+
+/** توافق خلفي للاستدعاءات القديمة — يعيد النتيجة أو null */
+export function loadLastResult<T>(): T | null {
+  const read = loadLastResultSafe()
+  return read.status === 'ok' || read.status === 'migrated' ? (read.result as T) : null
 }
 
 export function clearAllSessionData() {
@@ -86,6 +106,9 @@ export function clearAllSessionData() {
       store.removeItem(PROGRESS_KEY)
       store.removeItem(RESULT_KEY)
       store.removeItem(LAST_RESULT_KEY)
+      /* مفاتيح التخصيص والخطة المركبة — تُمسح مع الجلسة حتى لا تتسرب لنتيجة جديدة */
+      store.removeItem('wajeez_custom')
+      store.removeItem('wajeez_diag_composite')
     } catch {
       /* لا شيء */
     }

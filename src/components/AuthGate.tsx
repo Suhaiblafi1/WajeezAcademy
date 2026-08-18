@@ -6,6 +6,7 @@ import {
   lockedMinutes,
   requestPasswordReset,
   resendVerification,
+  resetPassword,
   signIn,
   signUp,
 } from "@/services/auth";
@@ -53,7 +54,7 @@ const STRENGTH_META = [
   { label: "قوية", color: "#34A853" },
 ];
 
-type View = "auth" | "reset" | "verify";
+type View = "auth" | "reset" | "verify" | "resetConfirm";
 
 const FIELD_CLS =
   "h-12 w-full rounded-2xl border border-white/15 bg-white/[0.04] pr-11 pl-11 text-left text-sm text-white placeholder:text-white/30 focus:border-[#38A7B4] focus:outline-none";
@@ -72,6 +73,7 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   const [resent, setResent] = useState(false);
+  const [resetToken, setResetToken] = useState("");
 
   const emailValid = EMAIL_RE.test(email.trim());
   const passValid = pass.length >= 8;
@@ -82,7 +84,7 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
   const strength = strengthOf(pass);
   const locked = lockedMinutes();
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy) return;
     if (locked > 0) {
@@ -106,11 +108,9 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
     setBusy(true);
     setErr("");
     track("account_started", { mode });
-    // محاكاة زمن الخادم — تُستبدل بنداء API حقيقي عند الربط
-    window.setTimeout(() => {
+    try {
       const result =
-        mode === "signup" ? signUp(name, email, pass) : signIn(email, pass);
-      setBusy(false);
+        mode === "signup" ? await signUp(name, email, pass) : await signIn(email, pass);
       if (!result.ok) {
         track("account_failed");
         setErr(result.error);
@@ -123,21 +123,53 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
       } else {
         onDone();
       }
-    }, 700);
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const submitReset = (e: React.FormEvent) => {
+  const submitReset = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy || !emailValid) return;
     setBusy(true);
-    window.setTimeout(() => {
-      setBusy(false);
+    try {
+      // رسالة الخادم آمنة ولا تكشف وجود الحساب
+      const { message, devToken } = await requestPasswordReset(email);
       setErr("");
+      if (devToken) {
+        // وضع التطوير: الخادم يعيد الرمز مباشرة بدل البريد — نكمل التعيين فورا
+        setResetToken(devToken);
+        setView("resetConfirm");
+        return;
+      }
       setView("auth");
       setMode("login");
-      // رسالة آمنة لا تكشف وجود الحساب
-      setNotice(requestPasswordReset(email));
-    }, 700);
+      setNotice(message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const submitResetConfirm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (busy || !resetToken.trim() || !passValid || confirm !== pass) return;
+    setBusy(true);
+    setErr("");
+    try {
+      const { ok, message } = await resetPassword(resetToken, pass);
+      if (!ok) {
+        setErr(message);
+        return;
+      }
+      setPass("");
+      setConfirm("");
+      setResetToken("");
+      setNotice("عُيّنت كلمة المرور — سجّل الدخول من جديد");
+      setView("auth");
+      setMode("login");
+    } finally {
+      setBusy(false);
+    }
   };
 
   const [notice, setNotice] = useState("");
@@ -227,6 +259,112 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
             >
               عودة لتسجيل الدخول
             </button>
+            <button
+              type="button"
+              onClick={() => { setView("resetConfirm"); setErr(""); }}
+              className="mt-2 w-full text-center text-xs text-white/45 transition hover:text-[#6EC7D1]"
+            >
+              وصلك الرمز؟ أدخله مباشرة لتعيين كلمة المرور
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── شاشة: تعيين كلمة مرور جديدة برمز الاستعادة ── */
+  if (view === "resetConfirm") {
+    return (
+      <div className="mx-auto max-w-md">
+        <div className="overflow-hidden rounded-3xl border border-[#38A7B4]/25 bg-gradient-to-b from-[#12262A] to-[#0D0D0D] shadow-[0_24px_80px_-24px_rgba(56,167,180,0.35)]">
+          <div className="border-b border-white/5 px-8 pb-6 pt-8 text-center">
+            <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="mx-auto h-12 w-12 object-contain" />
+            <h2 className="mt-4 text-2xl font-black text-white">تعيين كلمة مرور جديدة</h2>
+            <p className="mt-2 text-sm leading-relaxed text-white/55">
+              أدخل رمز الاستعادة وكلمة المرور الجديدة — تُبطل الجلسات القديمة تلقائيا
+            </p>
+          </div>
+          <form onSubmit={submitResetConfirm} noValidate className="space-y-4 px-8 py-6">
+            <div>
+              <label htmlFor="reset-token" className={LABEL_CLS}>رمز الاستعادة</label>
+              <div className="relative">
+                <ShieldCheck className="absolute right-3.5 top-3.5 h-4 w-4 text-white/55" />
+                <input
+                  id="reset-token"
+                  name="reset-token"
+                  dir="ltr"
+                  type="text"
+                  required
+                  value={resetToken}
+                  onChange={(e) => setResetToken(e.target.value)}
+                  placeholder="الرمز من رسالة البريد"
+                  autoComplete="one-time-code"
+                  className={FIELD_CLS}
+                />
+              </div>
+            </div>
+            <div>
+              <label htmlFor="reset-pass" className={LABEL_CLS}>كلمة المرور الجديدة</label>
+              <div className="relative">
+                <Lock className="absolute right-3.5 top-3.5 h-4 w-4 text-white/55" />
+                <input
+                  id="reset-pass"
+                  name="new-password"
+                  dir="ltr"
+                  type="password"
+                  required
+                  minLength={8}
+                  value={pass}
+                  onChange={(e) => setPass(e.target.value)}
+                  placeholder="٨ أحرف على الأقل"
+                  autoComplete="new-password"
+                  className={FIELD_CLS}
+                />
+              </div>
+              {pass.length > 0 && !passValid && (
+                <p className="mt-1.5 text-[11px] font-semibold text-red-300">كلمة المرور ٨ أحرف على الأقل</p>
+              )}
+            </div>
+            <div>
+              <label htmlFor="reset-confirm" className={LABEL_CLS}>تأكيد كلمة المرور</label>
+              <div className="relative">
+                <Lock className="absolute right-3.5 top-3.5 h-4 w-4 text-white/55" />
+                <input
+                  id="reset-confirm"
+                  name="new-password-confirm"
+                  dir="ltr"
+                  type="password"
+                  required
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)}
+                  placeholder="أعد كتابتها للتأكيد"
+                  autoComplete="new-password"
+                  className={FIELD_CLS}
+                />
+              </div>
+              {confirm.length > 0 && confirm !== pass && (
+                <p className="mt-1.5 text-[11px] font-semibold text-red-300">لا تطابق كلمة المرور — أعد كتابتها</p>
+              )}
+            </div>
+            {err && (
+              <p role="alert" className="rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-2.5 text-center text-xs font-semibold leading-relaxed text-red-300">
+                {err}
+              </p>
+            )}
+            <button
+              type="submit"
+              disabled={busy || !resetToken.trim() || !passValid || confirm !== pass}
+              className="h-12 w-full rounded-2xl bg-[#FABC05] text-sm font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {busy ? "جارٍ التعيين…" : "عيّن كلمة المرور الجديدة"}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setView("reset"); setErr(""); }}
+              className="w-full text-center text-xs text-white/45 transition hover:text-[#6EC7D1]"
+            >
+              عودة — اطلب رمزا جديدا
+            </button>
           </form>
         </div>
       </div>
@@ -240,7 +378,7 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
         <div className="border-b border-white/5 px-8 pb-6 pt-8 text-center">
           <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="mx-auto h-12 w-12 object-contain" />
           <h2 className="mt-4 text-2xl font-black text-white">
-            {mode === "signup" ? "ابدأ رحلتك مع وجيز" : "أهلا بعودتك"}
+            {mode === "signup" ? "ابدأ رحلتك مع أكاديمية وجيز" : "أهلا بعودتك"}
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-white/55">
             {message ?? "حساب واحد يحفظ تشخيصك ومسارك وشهاداتك"}

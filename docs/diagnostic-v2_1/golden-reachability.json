@@ -1,0 +1,2093 @@
+{
+  "generated_at": "2026-08-18T22:25:53.890Z",
+  "universe_active": 35,
+  "reachable": 35,
+  "golden": {
+    "PW-STU-003": {
+      "type": "standard",
+      "tried": 1,
+      "positive": {
+        "winner": "PW-STU-003",
+        "kind": "single_pathway",
+        "confidence": 0.84,
+        "won": true,
+        "askedCount": 8,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.96,
+        "winnerNetFit": 0.96,
+        "recipe": {
+          "stage": "طالب جامعي",
+          "goal": "تحديد المجال الأنسب لي",
+          "need": "تحديد اتجاهي المهني أصلًا",
+          "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق"
+        }
+      },
+      "near_miss": {
+        "winner": "PW-STU-003",
+        "kind": "single_pathway",
+        "confidence": 0.84,
+        "won": true,
+        "askedCount": 8,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.96,
+        "winnerNetFit": 0.96,
+        "recipe": {
+          "stage": "طالب جامعي",
+          "goal": "تحديد المجال الأنسب لي",
+          "need": "تحديد اتجاهي المهني أصلًا",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": "PW-STU-002",
+        "kind": "advisor_referral",
+        "confidence": 0.65,
+        "won": false,
+        "askedCount": 14,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": 0.782,
+        "recipe": {
+          "stage": "طالب جامعي",
+          "goal": "الحصول على أول وظيفة",
+          "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "PW-STU-002": {
+      "type": "standard",
+      "tried": 1,
+      "positive": {
+        "winner": "PW-STU-002",
+        "kind": "single_pathway",
+        "confidence": 0.68,
+        "won": true,
+        "askedCount": 10,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.795,
+        "winnerNetFit": 0.795,
+        "recipe": {
+          "stage": "طالب جامعي",
+          "goal": "الحصول على أول وظيفة",
+          "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
+          "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق"
+        }
+      },
+      "near_miss": {
+        "winner": "PW-STU-002",
+        "kind": "single_pathway",
+        "confidence": 0.68,
+        "won": true,
+        "askedCount": 10,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.789,
+        "winnerNetFit": 0.789,
+        "recipe": {
+          "stage": "طالب جامعي",
+          "goal": "الحصول على أول وظيفة",
+          "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": "PW-STU-003",
+        "kind": "single_pathway",
+        "confidence": 0.84,
+        "won": false,
+        "askedCount": 8,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": 0.96,
+        "recipe": {
+          "stage": "طالب جامعي",
+          "goal": "تحديد المجال الأنسب لي",
+          "need": "تحديد اتجاهي المهني أصلًا",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "PW-FND-003": {
+      "type": "standard",
+      "tried": 1,
+      "positive": {
+        "winner": "PW-FND-003",
+        "kind": "single_pathway",
+        "confidence": 0.62,
+        "won": true,
+        "askedCount": 13,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.953,
+        "winnerNetFit": 0.953,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "استخدام الذكاء الاصطناعي بفعالية أكبر",
+          "need": "الذكاء الاصطناعي وتطبيقاته العملية",
+          "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق"
+        }
+      },
+      "near_miss": {
+        "winner": "PW-FND-003",
+        "kind": "single_pathway",
+        "confidence": 0.62,
+        "won": true,
+        "askedCount": 13,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.949,
+        "winnerNetFit": 0.949,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "استخدام الذكاء الاصطناعي بفعالية أكبر",
+          "need": "الذكاء الاصطناعي وتطبيقاته العملية",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": null,
+        "kind": "advisor_referral",
+        "confidence": 0.82,
+        "won": false,
+        "askedCount": 10,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": null,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "بناء مهارات عملية يطلبها سوق العمل",
+          "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "PW-EMP-004": {
+      "type": "standard",
+      "tried": 1,
+      "positive": {
+        "winner": "PW-EMP-004",
+        "kind": "single_pathway",
+        "confidence": 0.77,
+        "won": true,
+        "askedCount": 8,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.902,
+        "winnerNetFit": 0.902,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "بناء مهارات عملية يطلبها سوق العمل",
+          "need": "تحليل البيانات واتخاذ القرار",
+          "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق"
+        }
+      },
+      "near_miss": {
+        "winner": "PW-EMP-004",
+        "kind": "single_pathway",
+        "confidence": 0.77,
+        "won": true,
+        "askedCount": 8,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.902,
+        "winnerNetFit": 0.902,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "بناء مهارات عملية يطلبها سوق العمل",
+          "need": "تحليل البيانات واتخاذ القرار",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": null,
+        "kind": "advisor_referral",
+        "confidence": 0.82,
+        "won": false,
+        "askedCount": 10,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": null,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "بناء مهارات عملية يطلبها سوق العمل",
+          "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "PW-EMP-003": {
+      "type": "standard",
+      "tried": 1,
+      "positive": {
+        "winner": "PW-EMP-003",
+        "kind": "single_pathway",
+        "confidence": 0.77,
+        "won": true,
+        "askedCount": 8,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.902,
+        "winnerNetFit": 0.902,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "بناء مهارات عملية يطلبها سوق العمل",
+          "need": "إدارة المشاريع",
+          "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق"
+        }
+      },
+      "near_miss": {
+        "winner": "PW-EMP-003",
+        "kind": "single_pathway",
+        "confidence": 0.77,
+        "won": true,
+        "askedCount": 8,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.902,
+        "winnerNetFit": 0.902,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "بناء مهارات عملية يطلبها سوق العمل",
+          "need": "إدارة المشاريع",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": null,
+        "kind": "advisor_referral",
+        "confidence": 0.82,
+        "won": false,
+        "askedCount": 10,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": null,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "بناء مهارات عملية يطلبها سوق العمل",
+          "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "PW-EMP-005": {
+      "type": "standard",
+      "tried": 1,
+      "positive": {
+        "winner": "PW-EMP-005",
+        "kind": "single_pathway",
+        "confidence": 0.62,
+        "won": true,
+        "askedCount": 12,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.96,
+        "winnerNetFit": 0.96,
+        "recipe": {
+          "stage": "مدير / قائد فريق",
+          "goal": "الاستعداد لدور قيادي",
+          "need": "القيادة وإدارة الفرق",
+          "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق"
+        }
+      },
+      "near_miss": {
+        "winner": "PW-EMP-005",
+        "kind": "single_pathway",
+        "confidence": 0.62,
+        "won": true,
+        "askedCount": 12,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.96,
+        "winnerNetFit": 0.96,
+        "recipe": {
+          "stage": "مدير / قائد فريق",
+          "goal": "الاستعداد لدور قيادي",
+          "need": "القيادة وإدارة الفرق",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": "PW-EMP-004",
+        "kind": "single_pathway",
+        "confidence": 0.54,
+        "won": false,
+        "askedCount": 14,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": 0.681,
+        "recipe": {
+          "stage": "مدير / قائد فريق",
+          "goal": "بدء مشروع أو مصدر دخل مستقل",
+          "need": "تحليل البيانات واتخاذ القرار",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "PW-GOV-002": {
+      "type": "standard",
+      "tried": 1,
+      "positive": {
+        "winner": "PW-GOV-002",
+        "kind": "single_pathway",
+        "confidence": 0.8,
+        "won": true,
+        "askedCount": 10,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.874,
+        "winnerNetFit": 0.874,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "بناء مهارات عملية يطلبها سوق العمل",
+          "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق"
+        }
+      },
+      "near_miss": {
+        "winner": "PW-GOV-002",
+        "kind": "single_pathway",
+        "confidence": 0.8,
+        "won": true,
+        "askedCount": 10,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.874,
+        "winnerNetFit": 0.874,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "بناء مهارات عملية يطلبها سوق العمل",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": null,
+        "kind": "advisor_referral",
+        "confidence": 0.82,
+        "won": false,
+        "askedCount": 10,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك.",
+          "هذا المسار مخصص للقطاع الحكومي."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": null,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "بناء مهارات عملية يطلبها سوق العمل",
+          "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "PW-BIZ-001": {
+      "type": "standard",
+      "tried": 1,
+      "positive": {
+        "winner": "PW-BIZ-001",
+        "kind": "single_pathway",
+        "confidence": 0.65,
+        "won": true,
+        "askedCount": 14,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.781,
+        "winnerNetFit": 0.781,
+        "recipe": {
+          "stage": "مؤسس / صاحب عمل",
+          "goal": "تنمية مشروعي القائم وزيادة إيراداته",
+          "need": "بناء مشروعي من الصفر",
+          "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق"
+        }
+      },
+      "near_miss": {
+        "winner": "PW-BIZ-001",
+        "kind": "single_pathway",
+        "confidence": 0.65,
+        "won": true,
+        "askedCount": 14,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.781,
+        "winnerNetFit": 0.781,
+        "recipe": {
+          "stage": "مؤسس / صاحب عمل",
+          "goal": "تنمية مشروعي القائم وزيادة إيراداته",
+          "need": "بناء مشروعي من الصفر",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": "PW-AUT-001",
+        "kind": "single_pathway",
+        "confidence": 0.56,
+        "won": false,
+        "askedCount": 12,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": 0.878,
+        "recipe": {
+          "stage": "مؤسس / صاحب عمل",
+          "goal": "استخدام الذكاء الاصطناعي بفعالية أكبر",
+          "need": "تحليل البيانات واتخاذ القرار",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "PW-AUT-001": {
+      "type": "standard",
+      "tried": 3,
+      "positive": {
+        "winner": "PW-AUT-001",
+        "kind": "single_pathway",
+        "confidence": 0.6,
+        "won": true,
+        "askedCount": 12,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.96,
+        "winnerNetFit": 0.96,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "استخدام الذكاء الاصطناعي بفعالية أكبر",
+          "need": "الذكاء الاصطناعي وتطبيقاته العملية",
+          "fn": "تحول رقمي",
+          "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق"
+        }
+      },
+      "near_miss": {
+        "winner": "PW-AUT-001",
+        "kind": "single_pathway",
+        "confidence": 0.6,
+        "won": true,
+        "askedCount": 12,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.98,
+        "winnerNetFit": 0.98,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "استخدام الذكاء الاصطناعي بفعالية أكبر",
+          "need": "الذكاء الاصطناعي وتطبيقاته العملية",
+          "fn": "تحول رقمي",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": null,
+        "kind": "advisor_referral",
+        "confidence": 0.82,
+        "won": false,
+        "askedCount": 10,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": null,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "بناء مهارات عملية يطلبها سوق العمل",
+          "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "PW-MKT-001": {
+      "type": "standard",
+      "tried": 1,
+      "positive": {
+        "winner": "PW-MKT-001",
+        "kind": "single_pathway",
+        "confidence": 0.64,
+        "won": true,
+        "askedCount": 14,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.906,
+        "winnerNetFit": 0.906,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "بناء ملف أعمال يثبت قدراتي",
+          "need": "التسويق والنمو",
+          "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق"
+        }
+      },
+      "near_miss": {
+        "winner": "PW-MKT-001",
+        "kind": "single_pathway",
+        "confidence": 0.64,
+        "won": true,
+        "askedCount": 14,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.903,
+        "winnerNetFit": 0.903,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "بناء ملف أعمال يثبت قدراتي",
+          "need": "التسويق والنمو",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": null,
+        "kind": "advisor_referral",
+        "confidence": 0.82,
+        "won": false,
+        "askedCount": 10,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": null,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "بناء مهارات عملية يطلبها سوق العمل",
+          "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "PW-SAL-001": {
+      "type": "standard",
+      "tried": 3,
+      "positive": {
+        "winner": "PW-SAL-001",
+        "kind": "single_pathway",
+        "confidence": 0.57,
+        "won": true,
+        "askedCount": 14,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.76,
+        "winnerNetFit": 0.76,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "need": "المبيعات والتعامل مع العملاء",
+          "fn": "مبيعات",
+          "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق"
+        }
+      },
+      "near_miss": {
+        "winner": "PW-SAL-001",
+        "kind": "single_pathway",
+        "confidence": 0.57,
+        "won": true,
+        "askedCount": 14,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.757,
+        "winnerNetFit": 0.757,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "need": "المبيعات والتعامل مع العملاء",
+          "fn": "مبيعات",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": null,
+        "kind": "advisor_referral",
+        "confidence": 0.82,
+        "won": false,
+        "askedCount": 10,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": null,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "بناء مهارات عملية يطلبها سوق العمل",
+          "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "PW-HR-001": {
+      "type": "standard",
+      "tried": 21,
+      "positive": {
+        "winner": "PW-HR-001",
+        "kind": "single_pathway",
+        "confidence": 0.62,
+        "won": true,
+        "askedCount": 12,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.99,
+        "winnerNetFit": 0.99,
+        "recipe": {
+          "stage": "مدير / قائد فريق",
+          "goal": "الاستعداد لدور قيادي",
+          "need": "القيادة وإدارة الفرق",
+          "fn": "موارد بشرية",
+          "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق"
+        }
+      },
+      "near_miss": {
+        "winner": "PW-HR-001",
+        "kind": "single_pathway",
+        "confidence": 0.62,
+        "won": true,
+        "askedCount": 12,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.99,
+        "winnerNetFit": 0.99,
+        "recipe": {
+          "stage": "مدير / قائد فريق",
+          "goal": "الاستعداد لدور قيادي",
+          "need": "القيادة وإدارة الفرق",
+          "fn": "موارد بشرية",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": "PW-EMP-004",
+        "kind": "single_pathway",
+        "confidence": 0.54,
+        "won": false,
+        "askedCount": 14,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": 0.681,
+        "recipe": {
+          "stage": "مدير / قائد فريق",
+          "goal": "بدء مشروع أو مصدر دخل مستقل",
+          "need": "تحليل البيانات واتخاذ القرار",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "PW-FIN-001": {
+      "type": "standard",
+      "tried": 1,
+      "positive": {
+        "winner": "PW-FIN-001",
+        "kind": "single_pathway",
+        "confidence": 0.57,
+        "won": true,
+        "askedCount": 12,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.723,
+        "winnerNetFit": 0.723,
+        "recipe": {
+          "stage": "مدير / قائد فريق",
+          "need": "المالية وفهم الأرقام",
+          "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق"
+        }
+      },
+      "near_miss": {
+        "winner": "PW-FIN-001",
+        "kind": "single_pathway",
+        "confidence": 0.57,
+        "won": true,
+        "askedCount": 12,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.723,
+        "winnerNetFit": 0.723,
+        "recipe": {
+          "stage": "مدير / قائد فريق",
+          "need": "المالية وفهم الأرقام",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": "PW-EMP-004",
+        "kind": "single_pathway",
+        "confidence": 0.54,
+        "won": false,
+        "askedCount": 14,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": 0.681,
+        "recipe": {
+          "stage": "مدير / قائد فريق",
+          "goal": "بدء مشروع أو مصدر دخل مستقل",
+          "need": "تحليل البيانات واتخاذ القرار",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "PW-PRD-001": {
+      "type": "standard",
+      "tried": 1,
+      "positive": {
+        "winner": "PW-PRD-001",
+        "kind": "single_pathway",
+        "confidence": 0.57,
+        "won": true,
+        "askedCount": 12,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.876,
+        "winnerNetFit": 0.876,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "استخدام الذكاء الاصطناعي بفعالية أكبر",
+          "need": "إدارة المنتج وتجربة المستخدم",
+          "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق"
+        }
+      },
+      "near_miss": {
+        "winner": "PW-PRD-001",
+        "kind": "single_pathway",
+        "confidence": 0.57,
+        "won": true,
+        "askedCount": 12,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.873,
+        "winnerNetFit": 0.873,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "استخدام الذكاء الاصطناعي بفعالية أكبر",
+          "need": "إدارة المنتج وتجربة المستخدم",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": null,
+        "kind": "advisor_referral",
+        "confidence": 0.82,
+        "won": false,
+        "askedCount": 10,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": null,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "بناء مهارات عملية يطلبها سوق العمل",
+          "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "PW-OPS-001": {
+      "type": "standard",
+      "tried": 1,
+      "positive": {
+        "winner": "PW-OPS-001",
+        "kind": "single_pathway",
+        "confidence": 0.6,
+        "won": true,
+        "askedCount": 14,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.776,
+        "winnerNetFit": 0.776,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "need": "العمليات وتحسين الإجراءات",
+          "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق"
+        }
+      },
+      "near_miss": {
+        "winner": "PW-OPS-001",
+        "kind": "single_pathway",
+        "confidence": 0.6,
+        "won": true,
+        "askedCount": 14,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.773,
+        "winnerNetFit": 0.773,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "need": "العمليات وتحسين الإجراءات",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": null,
+        "kind": "advisor_referral",
+        "confidence": 0.82,
+        "won": false,
+        "askedCount": 10,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": null,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "بناء مهارات عملية يطلبها سوق العمل",
+          "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "PW-CYB-001": {
+      "type": "standard",
+      "tried": 1,
+      "positive": {
+        "winner": "PW-CYB-001",
+        "kind": "single_pathway",
+        "confidence": 0.57,
+        "won": true,
+        "askedCount": 13,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.882,
+        "winnerNetFit": 0.882,
+        "recipe": {
+          "stage": "مدير / قائد فريق",
+          "goal": "استخدام الذكاء الاصطناعي بفعالية أكبر",
+          "need": "الأمن السيبراني وحماية البيانات",
+          "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق"
+        }
+      },
+      "near_miss": {
+        "winner": "PW-CYB-001",
+        "kind": "single_pathway",
+        "confidence": 0.58,
+        "won": true,
+        "askedCount": 13,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.882,
+        "winnerNetFit": 0.882,
+        "recipe": {
+          "stage": "مدير / قائد فريق",
+          "goal": "استخدام الذكاء الاصطناعي بفعالية أكبر",
+          "need": "الأمن السيبراني وحماية البيانات",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": "PW-EMP-004",
+        "kind": "single_pathway",
+        "confidence": 0.54,
+        "won": false,
+        "askedCount": 14,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": 0.681,
+        "recipe": {
+          "stage": "مدير / قائد فريق",
+          "goal": "بدء مشروع أو مصدر دخل مستقل",
+          "need": "تحليل البيانات واتخاذ القرار",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "PW-SCM-001": {
+      "type": "standard",
+      "tried": 9,
+      "positive": {
+        "winner": "PW-SCM-001",
+        "kind": "single_pathway",
+        "confidence": 0.57,
+        "won": true,
+        "askedCount": 14,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.78,
+        "winnerNetFit": 0.78,
+        "recipe": {
+          "stage": "موظف ذو خبرة",
+          "need": "سلسلة الإمداد والمشتريات",
+          "fn": "مشتريات/عطاءات",
+          "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق"
+        }
+      },
+      "near_miss": {
+        "winner": "PW-SCM-001",
+        "kind": "single_pathway",
+        "confidence": 0.57,
+        "won": true,
+        "askedCount": 14,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.78,
+        "winnerNetFit": 0.78,
+        "recipe": {
+          "stage": "موظف ذو خبرة",
+          "need": "سلسلة الإمداد والمشتريات",
+          "fn": "مشتريات/عطاءات",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": "PW-EMP-004",
+        "kind": "single_pathway",
+        "confidence": 0.55,
+        "won": false,
+        "askedCount": 14,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": 0.711,
+        "recipe": {
+          "stage": "موظف ذو خبرة",
+          "goal": "بدء مشروع أو مصدر دخل مستقل",
+          "need": "تحليل البيانات واتخاذ القرار",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "PW-COM-001": {
+      "type": "standard",
+      "tried": 1,
+      "positive": {
+        "winner": "PW-COM-001",
+        "kind": "single_pathway",
+        "confidence": 0.81,
+        "won": true,
+        "askedCount": 10,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.93,
+        "winnerNetFit": 0.93,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "بناء ملف أعمال يثبت قدراتي",
+          "need": "التواصل والعرض والتأثير",
+          "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق"
+        }
+      },
+      "near_miss": {
+        "winner": "PW-COM-001",
+        "kind": "single_pathway",
+        "confidence": 0.81,
+        "won": true,
+        "askedCount": 10,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.93,
+        "winnerNetFit": 0.93,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "بناء ملف أعمال يثبت قدراتي",
+          "need": "التواصل والعرض والتأثير",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": null,
+        "kind": "advisor_referral",
+        "confidence": 0.82,
+        "won": false,
+        "askedCount": 10,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": null,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "بناء مهارات عملية يطلبها سوق العمل",
+          "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "PW-NEG-001": {
+      "type": "standard",
+      "tried": 1,
+      "positive": {
+        "winner": "PW-NEG-001",
+        "kind": "single_pathway",
+        "confidence": 0.58,
+        "won": true,
+        "askedCount": 12,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.929,
+        "winnerNetFit": 0.929,
+        "recipe": {
+          "stage": "مدير / قائد فريق",
+          "goal": "الاستعداد لدور قيادي",
+          "need": "التفاوض وإغلاق الصفقات",
+          "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق"
+        }
+      },
+      "near_miss": {
+        "winner": "PW-NEG-001",
+        "kind": "single_pathway",
+        "confidence": 0.58,
+        "won": true,
+        "askedCount": 12,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.926,
+        "winnerNetFit": 0.926,
+        "recipe": {
+          "stage": "مدير / قائد فريق",
+          "goal": "الاستعداد لدور قيادي",
+          "need": "التفاوض وإغلاق الصفقات",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": "PW-EMP-004",
+        "kind": "single_pathway",
+        "confidence": 0.54,
+        "won": false,
+        "askedCount": 14,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": 0.681,
+        "recipe": {
+          "stage": "مدير / قائد فريق",
+          "goal": "بدء مشروع أو مصدر دخل مستقل",
+          "need": "تحليل البيانات واتخاذ القرار",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "PW-LND-001": {
+      "type": "standard",
+      "tried": 1,
+      "positive": {
+        "winner": "PW-LND-001",
+        "kind": "single_pathway",
+        "confidence": 0.65,
+        "won": true,
+        "askedCount": 12,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.93,
+        "winnerNetFit": 0.93,
+        "recipe": {
+          "stage": "مدرب / معلم / مختص تعلم وتطوير",
+          "goal": "تصميم تدريب أو برامج تعليمية",
+          "need": "تصميم التعلم والتدريب",
+          "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق"
+        }
+      },
+      "near_miss": {
+        "winner": "PW-LND-001",
+        "kind": "single_pathway",
+        "confidence": 0.65,
+        "won": true,
+        "askedCount": 12,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.93,
+        "winnerNetFit": 0.93,
+        "recipe": {
+          "stage": "مدرب / معلم / مختص تعلم وتطوير",
+          "goal": "تصميم تدريب أو برامج تعليمية",
+          "need": "تصميم التعلم والتدريب",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": null,
+        "kind": "advisor_referral",
+        "confidence": 0.5,
+        "won": false,
+        "askedCount": 12,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": null,
+        "recipe": {
+          "stage": "مدرب / معلم / مختص تعلم وتطوير",
+          "goal": "الانتقال إلى مجال جديد",
+          "need": "إدارة المشاريع",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "TPL-VENTURE-001": {
+      "type": "composite",
+      "tried": 81,
+      "positive": {
+        "winner": "TPL-VENTURE-001",
+        "kind": "composite_template",
+        "confidence": 0.58,
+        "won": true,
+        "askedCount": 14,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.999,
+        "winnerNetFit": 0.999,
+        "recipe": {
+          "stage": "مستقل — أعمل لحسابي",
+          "goal": "بدء مشروع أو مصدر دخل مستقل",
+          "need": "المبيعات والتعامل مع العملاء",
+          "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف"
+        }
+      },
+      "near_miss": {
+        "winner": "TPL-VENTURE-001",
+        "kind": "composite_template",
+        "confidence": 0.58,
+        "won": true,
+        "askedCount": 14,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.999,
+        "winnerNetFit": 0.999,
+        "recipe": {
+          "stage": "مستقل — أعمل لحسابي",
+          "goal": "بدء مشروع أو مصدر دخل مستقل",
+          "need": "المبيعات والتعامل مع العملاء",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": null,
+        "kind": "advisor_referral",
+        "confidence": 0.55,
+        "won": false,
+        "askedCount": 14,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": null,
+        "recipe": {
+          "stage": "مستقل — أعمل لحسابي",
+          "goal": "بناء ملف أعمال يثبت قدراتي",
+          "need": "تحليل البيانات واتخاذ القرار",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "TPL-ECOM-001": {
+      "type": "composite",
+      "tried": 433,
+      "positive": {
+        "winner": "TPL-ECOM-001",
+        "kind": "composite_template",
+        "confidence": 0.58,
+        "won": true,
+        "askedCount": 14,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.915,
+        "winnerNetFit": 0.915,
+        "recipe": {
+          "stage": "مستقل — أعمل لحسابي",
+          "goal": "زيادة دخلي وعملائي في العمل الحر",
+          "need": "تحليل البيانات واتخاذ القرار",
+          "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف"
+        }
+      },
+      "near_miss": {
+        "winner": "TPL-ECOM-001",
+        "kind": "composite_template",
+        "confidence": 0.58,
+        "won": true,
+        "askedCount": 14,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.912,
+        "winnerNetFit": 0.912,
+        "recipe": {
+          "stage": "مستقل — أعمل لحسابي",
+          "goal": "زيادة دخلي وعملائي في العمل الحر",
+          "need": "تحليل البيانات واتخاذ القرار",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": "TPL-PERSONAL-BRAND-001",
+        "kind": "composite_template",
+        "confidence": 0.58,
+        "won": false,
+        "askedCount": 14,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": 0.568,
+        "recipe": {
+          "stage": "مستقل — أعمل لحسابي",
+          "goal": "بناء ملف أعمال يثبت قدراتي",
+          "need": "إدارة المشاريع",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "TPL-FREELANCE-001": {
+      "type": "composite",
+      "tried": 1,
+      "positive": {
+        "winner": "TPL-FREELANCE-001",
+        "kind": "composite_template",
+        "confidence": 0.58,
+        "won": true,
+        "askedCount": 14,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.957,
+        "winnerNetFit": 0.957,
+        "recipe": {
+          "stage": "مستقل — أعمل لحسابي",
+          "goal": "بدء مشروع أو مصدر دخل مستقل",
+          "need": "التواصل والعرض والتأثير",
+          "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف"
+        }
+      },
+      "near_miss": {
+        "winner": "TPL-FREELANCE-001",
+        "kind": "composite_template",
+        "confidence": 0.57,
+        "won": true,
+        "askedCount": 14,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.952,
+        "winnerNetFit": 0.952,
+        "recipe": {
+          "stage": "مستقل — أعمل لحسابي",
+          "goal": "بدء مشروع أو مصدر دخل مستقل",
+          "need": "التواصل والعرض والتأثير",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": null,
+        "kind": "advisor_referral",
+        "confidence": 0.57,
+        "won": false,
+        "askedCount": 11,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": null,
+        "recipe": {
+          "stage": "مستقل — أعمل لحسابي",
+          "goal": "الانتقال إلى مجال جديد",
+          "need": "تحليل البيانات واتخاذ القرار",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "TPL-PERSONAL-BRAND-001": {
+      "type": "composite",
+      "tried": 1,
+      "positive": {
+        "winner": "TPL-PERSONAL-BRAND-001",
+        "kind": "composite_template",
+        "confidence": 0.62,
+        "won": true,
+        "askedCount": 13,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.775,
+        "winnerNetFit": 0.775,
+        "recipe": {
+          "stage": "طالب جامعي",
+          "goal": "بناء ملف أعمال يثبت قدراتي",
+          "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
+          "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف"
+        }
+      },
+      "near_miss": {
+        "winner": "TPL-PERSONAL-BRAND-001",
+        "kind": "composite_template",
+        "confidence": 0.62,
+        "won": true,
+        "askedCount": 13,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.77,
+        "winnerNetFit": 0.77,
+        "recipe": {
+          "stage": "طالب جامعي",
+          "goal": "بناء ملف أعمال يثبت قدراتي",
+          "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": "PW-STU-003",
+        "kind": "single_pathway",
+        "confidence": 0.84,
+        "won": false,
+        "askedCount": 8,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": 0.96,
+        "recipe": {
+          "stage": "طالب جامعي",
+          "goal": "تحديد المجال الأنسب لي",
+          "need": "تحديد اتجاهي المهني أصلًا",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "TPL-FIRST-JOB-001": {
+      "type": "composite",
+      "tried": 9,
+      "positive": {
+        "winner": "TPL-FIRST-JOB-001",
+        "kind": "composite_template",
+        "confidence": 0.57,
+        "won": true,
+        "askedCount": 13,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.764,
+        "winnerNetFit": 0.764,
+        "recipe": {
+          "stage": "طالب جامعي",
+          "goal": "الحصول على أول وظيفة",
+          "need": "تحديد اتجاهي المهني أصلًا",
+          "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف"
+        }
+      },
+      "near_miss": {
+        "winner": "PW-STU-003",
+        "kind": "single_pathway",
+        "confidence": 0.57,
+        "won": false,
+        "askedCount": 13,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.758,
+        "winnerNetFit": 0.803,
+        "recipe": {
+          "stage": "طالب جامعي",
+          "goal": "الحصول على أول وظيفة",
+          "need": "تحديد اتجاهي المهني أصلًا",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": "PW-FND-003",
+        "kind": "single_pathway",
+        "confidence": 0.6,
+        "won": false,
+        "askedCount": 10,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": 0.858,
+        "recipe": {
+          "stage": "طالب جامعي",
+          "goal": "استخدام الذكاء الاصطناعي بفعالية أكبر",
+          "need": "إدارة المشاريع",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "TPL-NEW-MANAGER-001": {
+      "type": "composite",
+      "tried": 177,
+      "positive": {
+        "winner": "TPL-NEW-MANAGER-001",
+        "kind": "composite_template",
+        "confidence": 0.6,
+        "won": true,
+        "askedCount": 12,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 1.041,
+        "winnerNetFit": 1.041,
+        "recipe": {
+          "stage": "موظف ذو خبرة",
+          "goal": "الاستعداد لدور قيادي",
+          "need": "القيادة وإدارة الفرق",
+          "fn": "موارد بشرية",
+          "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف"
+        }
+      },
+      "near_miss": {
+        "winner": "TPL-NEW-MANAGER-001",
+        "kind": "composite_template",
+        "confidence": 0.6,
+        "won": true,
+        "askedCount": 12,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 1.041,
+        "winnerNetFit": 1.041,
+        "recipe": {
+          "stage": "موظف ذو خبرة",
+          "goal": "الاستعداد لدور قيادي",
+          "need": "القيادة وإدارة الفرق",
+          "fn": "موارد بشرية",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": "PW-EMP-004",
+        "kind": "single_pathway",
+        "confidence": 0.56,
+        "won": false,
+        "askedCount": 14,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": 0.731,
+        "recipe": {
+          "stage": "موظف ذو خبرة",
+          "goal": "بدء مشروع أو مصدر دخل مستقل",
+          "need": "تحليل البيانات واتخاذ القرار",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "TPL-B2B-001": {
+      "type": "composite",
+      "tried": 25,
+      "positive": {
+        "winner": "TPL-B2B-001",
+        "kind": "composite_template",
+        "confidence": 0.61,
+        "won": true,
+        "askedCount": 14,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.86,
+        "winnerNetFit": 0.86,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "تطوير مهارة محددة أعرفها",
+          "need": "التسويق والنمو",
+          "fn": "مبيعات",
+          "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف"
+        }
+      },
+      "near_miss": {
+        "winner": "TPL-B2B-001",
+        "kind": "composite_template",
+        "confidence": 0.61,
+        "won": true,
+        "askedCount": 14,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.857,
+        "winnerNetFit": 0.857,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "تطوير مهارة محددة أعرفها",
+          "need": "التسويق والنمو",
+          "fn": "مبيعات",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": null,
+        "kind": "advisor_referral",
+        "confidence": 0.82,
+        "won": false,
+        "askedCount": 10,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": null,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "بناء مهارات عملية يطلبها سوق العمل",
+          "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "TPL-CX-001": {
+      "type": "composite",
+      "tried": 1,
+      "positive": {
+        "winner": "TPL-CX-001",
+        "kind": "composite_template",
+        "confidence": 0.58,
+        "won": true,
+        "askedCount": 14,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.849,
+        "winnerNetFit": 0.849,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "تطوير مهارة محددة أعرفها",
+          "need": "العمليات وتحسين الإجراءات",
+          "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف"
+        }
+      },
+      "near_miss": {
+        "winner": "TPL-CX-001",
+        "kind": "composite_template",
+        "confidence": 0.59,
+        "won": true,
+        "askedCount": 14,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.849,
+        "winnerNetFit": 0.849,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "تطوير مهارة محددة أعرفها",
+          "need": "العمليات وتحسين الإجراءات",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": null,
+        "kind": "advisor_referral",
+        "confidence": 0.82,
+        "won": false,
+        "askedCount": 10,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": null,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "بناء مهارات عملية يطلبها سوق العمل",
+          "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "TPL-DIGITAL-TRANSFORM-001": {
+      "type": "composite",
+      "tried": 1,
+      "positive": {
+        "winner": "TPL-DIGITAL-TRANSFORM-001",
+        "kind": "composite_template",
+        "confidence": 0.6,
+        "won": true,
+        "askedCount": 14,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.995,
+        "winnerNetFit": 0.995,
+        "recipe": {
+          "stage": "مدير / قائد فريق",
+          "goal": "استخدام الذكاء الاصطناعي بفعالية أكبر",
+          "need": "إدارة المشاريع",
+          "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف"
+        }
+      },
+      "near_miss": {
+        "winner": "TPL-DIGITAL-TRANSFORM-001",
+        "kind": "composite_template",
+        "confidence": 0.6,
+        "won": true,
+        "askedCount": 14,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.992,
+        "winnerNetFit": 0.992,
+        "recipe": {
+          "stage": "مدير / قائد فريق",
+          "goal": "استخدام الذكاء الاصطناعي بفعالية أكبر",
+          "need": "إدارة المشاريع",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": "PW-EMP-004",
+        "kind": "single_pathway",
+        "confidence": 0.55,
+        "won": false,
+        "askedCount": 14,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": 0.681,
+        "recipe": {
+          "stage": "مدير / قائد فريق",
+          "goal": "بدء مشروع أو مصدر دخل مستقل",
+          "need": "تحليل البيانات واتخاذ القرار",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "TPL-PRODUCT-001": {
+      "type": "composite",
+      "tried": 1,
+      "positive": {
+        "winner": "TPL-PRODUCT-001",
+        "kind": "composite_template",
+        "confidence": 0.56,
+        "won": true,
+        "askedCount": 14,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.846,
+        "winnerNetFit": 0.846,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "بدء مشروع أو مصدر دخل مستقل",
+          "need": "إدارة المنتج وتجربة المستخدم",
+          "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف"
+        }
+      },
+      "near_miss": {
+        "winner": "TPL-PRODUCT-001",
+        "kind": "composite_template",
+        "confidence": 0.56,
+        "won": true,
+        "askedCount": 14,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.843,
+        "winnerNetFit": 0.843,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "بدء مشروع أو مصدر دخل مستقل",
+          "need": "إدارة المنتج وتجربة المستخدم",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": null,
+        "kind": "advisor_referral",
+        "confidence": 0.82,
+        "won": false,
+        "askedCount": 10,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك.",
+          "القالب يتطلب وصولًا لمستخدمين أو بيانات سلوك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": null,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "بناء مهارات عملية يطلبها سوق العمل",
+          "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "TPL-FIN-DATA-001": {
+      "type": "composite",
+      "tried": 9,
+      "positive": {
+        "winner": "TPL-FIN-DATA-001",
+        "kind": "composite_template",
+        "confidence": 0.59,
+        "won": true,
+        "askedCount": 13,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.846,
+        "winnerNetFit": 0.846,
+        "recipe": {
+          "stage": "مدير / قائد فريق",
+          "goal": "تطوير مهارة محددة أعرفها",
+          "need": "تحليل البيانات واتخاذ القرار",
+          "fn": "مالية/موازنة",
+          "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف"
+        }
+      },
+      "near_miss": {
+        "winner": "TPL-FIN-DATA-001",
+        "kind": "composite_template",
+        "confidence": 0.58,
+        "won": true,
+        "askedCount": 13,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.846,
+        "winnerNetFit": 0.846,
+        "recipe": {
+          "stage": "مدير / قائد فريق",
+          "goal": "تطوير مهارة محددة أعرفها",
+          "need": "تحليل البيانات واتخاذ القرار",
+          "fn": "مالية/موازنة",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": "PW-EMP-003",
+        "kind": "single_pathway",
+        "confidence": 0.55,
+        "won": false,
+        "askedCount": 14,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": 0.693,
+        "recipe": {
+          "stage": "مدير / قائد فريق",
+          "goal": "بدء مشروع أو مصدر دخل مستقل",
+          "need": "إدارة المشاريع",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "TPL-CYBER-MANAGER-001": {
+      "type": "composite",
+      "tried": 17,
+      "positive": {
+        "winner": "TPL-CYBER-MANAGER-001",
+        "kind": "composite_template",
+        "confidence": 0.63,
+        "won": true,
+        "askedCount": 12,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.877,
+        "winnerNetFit": 0.877,
+        "recipe": {
+          "stage": "مدير / قائد فريق",
+          "goal": "تطوير مهارة محددة أعرفها",
+          "need": "الأمن السيبراني وحماية البيانات",
+          "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف"
+        }
+      },
+      "near_miss": {
+        "winner": "TPL-CYBER-MANAGER-001",
+        "kind": "composite_template",
+        "confidence": 0.63,
+        "won": true,
+        "askedCount": 12,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.877,
+        "winnerNetFit": 0.877,
+        "recipe": {
+          "stage": "مدير / قائد فريق",
+          "goal": "تطوير مهارة محددة أعرفها",
+          "need": "الأمن السيبراني وحماية البيانات",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": "PW-EMP-004",
+        "kind": "single_pathway",
+        "confidence": 0.55,
+        "won": false,
+        "askedCount": 14,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": 0.681,
+        "recipe": {
+          "stage": "مدير / قائد فريق",
+          "goal": "بدء مشروع أو مصدر دخل مستقل",
+          "need": "تحليل البيانات واتخاذ القرار",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "TPL-SUPPLY-001": {
+      "type": "composite",
+      "tried": 9,
+      "positive": {
+        "winner": "TPL-SUPPLY-001",
+        "kind": "composite_template",
+        "confidence": 0.6,
+        "won": true,
+        "askedCount": 14,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.849,
+        "winnerNetFit": 0.849,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "تطوير مهارة محددة أعرفها",
+          "need": "تحليل البيانات واتخاذ القرار",
+          "fn": "مشتريات/عطاءات",
+          "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف"
+        }
+      },
+      "near_miss": {
+        "winner": "TPL-SUPPLY-001",
+        "kind": "composite_template",
+        "confidence": 0.6,
+        "won": true,
+        "askedCount": 14,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.849,
+        "winnerNetFit": 0.849,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "تطوير مهارة محددة أعرفها",
+          "need": "تحليل البيانات واتخاذ القرار",
+          "fn": "مشتريات/عطاءات",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": null,
+        "kind": "advisor_referral",
+        "confidence": 0.82,
+        "won": false,
+        "askedCount": 10,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": null,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "بناء مهارات عملية يطلبها سوق العمل",
+          "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "TPL-DIGITAL-TRAINER-001": {
+      "type": "composite",
+      "tried": 1,
+      "positive": {
+        "winner": "TPL-DIGITAL-TRAINER-001",
+        "kind": "composite_template",
+        "confidence": 0.63,
+        "won": true,
+        "askedCount": 12,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 1.011,
+        "winnerNetFit": 1.011,
+        "recipe": {
+          "stage": "مدرب / معلم / مختص تعلم وتطوير",
+          "goal": "تصميم تدريب أو برامج تعليمية",
+          "need": "الذكاء الاصطناعي وتطبيقاته العملية",
+          "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف"
+        }
+      },
+      "near_miss": {
+        "winner": "TPL-DIGITAL-TRAINER-001",
+        "kind": "composite_template",
+        "confidence": 0.63,
+        "won": true,
+        "askedCount": 12,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 1.011,
+        "winnerNetFit": 1.011,
+        "recipe": {
+          "stage": "مدرب / معلم / مختص تعلم وتطوير",
+          "goal": "تصميم تدريب أو برامج تعليمية",
+          "need": "الذكاء الاصطناعي وتطبيقاته العملية",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": null,
+        "kind": "advisor_referral",
+        "confidence": 0.5,
+        "won": false,
+        "askedCount": 12,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": null,
+        "recipe": {
+          "stage": "مدرب / معلم / مختص تعلم وتطوير",
+          "goal": "الانتقال إلى مجال جديد",
+          "need": "إدارة المشاريع",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    },
+    "TPL-STRATEGY-001": {
+      "type": "composite",
+      "tried": 153,
+      "positive": {
+        "winner": "TPL-STRATEGY-001",
+        "kind": "composite_template",
+        "confidence": 0.61,
+        "won": true,
+        "askedCount": 14,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.848,
+        "winnerNetFit": 0.848,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "تطوير مهارة محددة أعرفها",
+          "need": "إدارة المشاريع",
+          "fn": "موارد بشرية",
+          "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف"
+        }
+      },
+      "near_miss": {
+        "winner": "TPL-STRATEGY-001",
+        "kind": "composite_template",
+        "confidence": 0.62,
+        "won": true,
+        "askedCount": 14,
+        "eligible": true,
+        "excludedReasons_ar": [],
+        "entityNetFit": 0.845,
+        "winnerNetFit": 0.845,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "تطوير مهارة محددة أعرفها",
+          "need": "إدارة المشاريع",
+          "fn": "موارد بشرية",
+          "mastery": "غير متأكد"
+        }
+      },
+      "negative": {
+        "winner": null,
+        "kind": "advisor_referral",
+        "confidence": 0.82,
+        "won": false,
+        "askedCount": 10,
+        "eligible": false,
+        "excludedReasons_ar": [
+          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
+        ],
+        "entityNetFit": null,
+        "winnerNetFit": null,
+        "recipe": {
+          "stage": "موظف في بداية مساري المهني",
+          "goal": "بناء مهارات عملية يطلبها سوق العمل",
+          "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
+          "mastery": "غير متأكد"
+        }
+      },
+      "verdict": "reachable"
+    }
+  },
+  "variants": {
+    "total": 1050,
+    "invalid_kind": 0,
+    "alien_winner": 0,
+    "determinism_checked": 116,
+    "determinism_failures": 0,
+    "determinism_log": [],
+    "kind_distribution": {
+      "single_pathway": 734,
+      "advisor_referral": 46,
+      "composite_template": 270
+    },
+    "winner_distribution": {
+      "PW-STU-003": 60,
+      "PW-STU-002": 60,
+      "PW-FND-003": 30,
+      "PW-EMP-004": 30,
+      "PW-EMP-003": 30,
+      "PW-EMP-005": 48,
+      "PW-GOV-002": 30,
+      "PW-BIZ-001": 30,
+      "PW-AUT-001": 30,
+      "PW-MKT-001": 42,
+      "PW-SAL-001": 30,
+      "PW-HR-001": 30,
+      "PW-FIN-001": 30,
+      "PW-PRD-001": 60,
+      "PW-OPS-001": 60,
+      "PW-CYB-001": 30,
+      "PW-SCM-001": 30,
+      "PW-COM-001": 30,
+      "PW-NEG-001": 30,
+      "PW-LND-001": 30,
+      "TPL-VENTURE-001": 30,
+      "TPL-ECOM-001": 30,
+      "TPL-FREELANCE-001": 30,
+      "TPL-NEW-MANAGER-001": 12,
+      "TPL-B2B-001": 18,
+      "TPL-DIGITAL-TRANSFORM-001": 30,
+      "TPL-FIN-DATA-001": 30,
+      "TPL-CYBER-MANAGER-001": 30,
+      "TPL-SUPPLY-001": 30,
+      "TPL-DIGITAL-TRAINER-001": 30,
+      "TPL-STRATEGY-001": 30
+    }
+  }
+}

@@ -1,11 +1,12 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-  CheckCircle2, ChevronDown, ChevronUp, FileText, History, Lock, RotateCcw, X,
+  CheckCircle2, ChevronDown, ChevronUp, FileText, History, Lock, RotateCcw, X, XCircle,
 } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import { trainerIdentity } from "./trainer-identity";
+import { fmtWhen } from "@/utils/format";
 import {
-  loadSubmissions, gradeSubmission, closeGrading, requestGradeChange,
+  loadSubmissions, gradeSubmission, closeGrading, requestGradeChange, rejectSubmission,
   loadGradeAudit, ASSIGNMENT_RUBRIC, type Submission, type SubmissionStatus,
 } from "@/data/trainer";
 
@@ -13,6 +14,7 @@ const STATUS_LABEL: Record<SubmissionStatus, { label: string; cls: string }> = {
   pending: { label: "بانتظار التقييم", cls: "bg-[#FABC05]/15 text-[#FABC05]" },
   approved: { label: "معتمد", cls: "bg-[#38A7B4]/15 text-[#6EC7D1]" },
   revision: { label: "طُلب تعديل", cls: "bg-orange-500/15 text-orange-300" },
+  rejected: { label: "مرفوض بسبب موثق", cls: "bg-red-500/15 text-red-300" },
   closed: { label: "مغلق نهائيا", cls: "bg-white/10 text-white/45" },
 };
 
@@ -28,6 +30,7 @@ export default function GradingQueue() {
   const [rubric, setRubric] = useState<Record<string, number>>({});
   const [feedback, setFeedback] = useState("");
   const [editGrade, setEditGrade] = useState<{ id: string; value: string; reason: string } | null>(null);
+  const [rejecting, setRejecting] = useState<{ id: string; reason: string } | null>(null);
 
   const shown = subs.filter((s) =>
     filter === "all" ? true : filter === "pending" ? s.status === "pending" : s.status !== "pending"
@@ -47,6 +50,24 @@ export default function GradingQueue() {
 
   const totalOf = (r: Record<string, number>) =>
     ASSIGNMENT_RUBRIC.reduce((sum, cr) => sum + Math.min(r[cr.key] ?? 0, cr.weight), 0);
+
+  /* اختصارات لوحة المفاتيح أثناء مراجعة تسليم مفتوح:
+     G/غ اعتماد · R/ر طلب تعديل · Esc إغلاق — لا تعمل داخل حقول الكتابة */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement;
+      if (["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName) || el.isContentEditable) return;
+      if (!openId) return;
+      const sub = subs.find((x) => x.id === openId);
+      if (!sub || (sub.status !== "pending" && sub.status !== "revision")) return;
+      const k = e.key.toLowerCase();
+      if (k === "g" || e.key === "غ") { if (feedback.trim()) grade(openId, "approved"); }
+      else if (k === "r" || e.key === "ر") { if (feedback.trim()) grade(openId, "revision"); }
+      else if (e.key === "Escape") setOpenId(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
 
   return (
     <TrainerLayout title="طابور التقييم — الواجبات المسلمة">
@@ -80,11 +101,11 @@ export default function GradingQueue() {
                 <FileText className="h-5 w-5 shrink-0 text-[#6EC7D1]" />
                 <div className="min-w-0 flex-1">
                   <p className="font-black">{s.studentName} — {s.assignmentTitle}</p>
-                  <p className="mt-0.5 text-xs text-white/50">{s.courseName} · {s.fileName} · سُلم {s.at}</p>
+                  <p className="mt-0.5 text-xs text-white/50">{s.courseName} · {s.fileName} · سُلم {fmtWhen(s.at)}</p>
                 </div>
                 {s.grade !== undefined && <span className="text-lg font-black text-[#6EC7D1]">{s.grade}</span>}
                 <span className={`rounded-full px-3 py-1 text-[11px] font-bold ${meta.cls}`}>{meta.label}</span>
-                {open ? <ChevronUp className="h-4 w-4 text-white/40" /> : <ChevronDown className="h-4 w-4 text-white/40" />}
+                {open ? <ChevronUp className="h-4 w-4 text-white/50" /> : <ChevronDown className="h-4 w-4 text-white/50" />}
               </button>
 
               {open && (
@@ -93,7 +114,7 @@ export default function GradingQueue() {
                   <div className="grid gap-3 sm:grid-cols-3">
                     {ASSIGNMENT_RUBRIC.map((cr) => (
                       <div key={cr.key} className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                        <p className="text-xs font-bold text-white/70">{cr.label} <span className="text-white/40">({cr.weight})</span></p>
+                        <p className="text-xs font-bold text-white/70">{cr.label} <span className="text-white/50">({cr.weight})</span></p>
                         <input
                           type="range" min={0} max={cr.weight}
                           value={rubric[cr.key] ?? 0}
@@ -117,23 +138,39 @@ export default function GradingQueue() {
                     className="mt-3 w-full rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:border-[#38A7B4] focus:outline-none disabled:opacity-50"
                   />
                   <div className="mt-4 flex flex-wrap items-center gap-3">
-                    {s.status !== "closed" && (
+                    {(s.status === "pending" || s.status === "revision") && (
                       <>
                         <button
                           onClick={() => grade(s.id, "approved")}
                           disabled={!feedback.trim()}
+                          title="اختصار: G"
                           className="flex cursor-pointer items-center gap-2 rounded-full bg-[#38A7B4] px-5 py-2.5 text-sm font-black text-[#08272B] transition hover:bg-[#6EC7D1] disabled:cursor-not-allowed disabled:opacity-40"
                         >
                           <CheckCircle2 className="h-4 w-4" /> اعتماد بالدرجة
+                          <kbd className="rounded-md bg-black/25 px-1.5 py-0.5 text-[9px] font-black">G</kbd>
                         </button>
                         <button
                           onClick={() => grade(s.id, "revision")}
                           disabled={!feedback.trim()}
+                          title="اختصار: R"
                           className="flex cursor-pointer items-center gap-2 rounded-full border border-orange-400/50 px-5 py-2.5 text-sm font-black text-orange-300 transition hover:bg-orange-500/10 disabled:cursor-not-allowed disabled:opacity-40"
                         >
                           <RotateCcw className="h-4 w-4" /> طلب تعديل
+                          <kbd className="rounded-md bg-black/25 px-1.5 py-0.5 text-[9px] font-black">R</kbd>
                         </button>
+                        <button
+                          onClick={() => setRejecting({ id: s.id, reason: "" })}
+                          className="flex cursor-pointer items-center gap-2 rounded-full border border-red-500/50 px-5 py-2.5 text-sm font-black text-red-300 transition hover:bg-red-500/10"
+                        >
+                          <XCircle className="h-4 w-4" /> رفض بسبب
+                        </button>
+                        <span className="text-[10px] text-white/50">اختصارات: G اعتماد · R طلب تعديل · Esc إغلاق — تتطلب ملاحظات مكتوبة</span>
                       </>
+                    )}
+                    {s.status === "rejected" && s.rejectReason && (
+                      <p className="w-full rounded-xl border border-red-500/25 bg-red-500/5 px-4 py-2.5 text-xs leading-6 text-red-200">
+                        سبب الرفض الموثق: {s.rejectReason}
+                      </p>
                     )}
                     {s.status === "approved" && (
                       <>
@@ -158,7 +195,7 @@ export default function GradingQueue() {
                     <p className="flex items-center gap-2 text-[11px] font-bold text-white/50"><History className="h-3.5 w-3.5" /> سجل هذا التسليم</p>
                     {s.history.map((h, i) => (
                       <p key={i} className="mt-1.5 text-[11px] text-white/45">
-                        {h.action} — {h.by} · {h.at.slice(0, 10)}
+                        {h.action} — {h.by} · {fmtWhen(h.at)}
                       </p>
                     ))}
                   </div>
@@ -176,7 +213,7 @@ export default function GradingQueue() {
           <div className="mt-3 space-y-2">
             {audit.map((a, i) => (
               <p key={i} className="rounded-xl border border-white/5 bg-black/20 px-4 py-2.5 text-xs leading-6 text-white/60">
-                عدّلت درجة {a.submissionId} من {a.oldGrade} إلى {a.newGrade} — السبب: «{a.reason}» · {a.at.slice(0, 10)}
+                عدّلت درجة {a.submissionId} من {a.oldGrade} إلى {a.newGrade} — السبب: «{a.reason}» · {fmtWhen(a.at)}
               </p>
             ))}
           </div>
@@ -221,6 +258,42 @@ export default function GradingQueue() {
               className="mt-5 w-full cursor-pointer rounded-full bg-[#FABC05] py-3 font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90 disabled:cursor-not-allowed disabled:opacity-40"
             >
               سجّل التعديل موثقا
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* نافذة رفض التسليم بسبب موثق */}
+      {rejecting && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-5 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#151515] p-6">
+            <div className="flex items-center justify-between">
+              <h3 className="font-black">رفض التسليم</h3>
+              <button onClick={() => setRejecting(null)} className="cursor-pointer text-white/50 hover:text-white" aria-label="إغلاق"><X className="h-5 w-5" /></button>
+            </div>
+            <p className="mt-2 text-xs leading-6 text-white/55">
+              الرفض قرار نهائي على هذا التسليم — يتطلب سببا مفهوما يظهر للطالب ويُسجل في سجل المراجعة، كما يفرض الخادم.
+            </p>
+            <label className="mt-4 block text-xs font-bold text-white/60">سبب الرفض (إلزامي)</label>
+            <textarea
+              value={rejecting.reason}
+              onChange={(e) => setRejecting({ ...rejecting, reason: e.target.value })}
+              rows={3}
+              placeholder="مثال: التسليم لا يتوافق مع موضوع الواجب المطلوب — راجع وصف المهمة"
+              className="mt-1.5 w-full rounded-xl border border-white/15 bg-black/30 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-red-400 focus:outline-none"
+            />
+            <button
+              onClick={() => {
+                if (rejectSubmission(meName, rejecting.id, rejecting.reason)) {
+                  setRejecting(null);
+                  setOpenId(null);
+                  setTick(tick + 1);
+                }
+              }}
+              disabled={!rejecting.reason.trim()}
+              className="mt-5 w-full cursor-pointer rounded-full bg-red-500 py-3 font-black text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              سجّل الرفض موثقا
             </button>
           </div>
         </div>

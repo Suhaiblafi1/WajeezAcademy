@@ -6,6 +6,7 @@ import type { ConfidenceBreakdown, PathwayCandidate, Recommendation } from './ty
 const GOAL_AR: Record<string, string> = {
   first_job: 'الحصول على أول وظيفة',
   promotion: 'ترقية أو تطور وظيفي',
+  employment_advancement: 'تطورك الوظيفي أو ترقيتك',
   business_launch: 'إطلاق مشروع',
   first_customer: 'الوصول لأول عميل',
   revenue_growth: 'نمو الإيرادات',
@@ -65,7 +66,7 @@ export function buildReasons(
     )
   }
   if (p?.after) reasons.push(`النتيجة المتوقعة: ${p.after}`)
-  reasons.push(`درجة الثقة ${(confidence.total * 100).toFixed(0)}٪ (${confidence.band_ar}) — مبنية على تغطية الحقائق واتساق إجاباتك وفصل المرشحين.`)
+  reasons.push(`قوة أدلة التوصية ${(confidence.total * 100).toFixed(0)}٪ (${confidence.band_ar}) — مبنية على تغطية الحقائق واتساق إجاباتك وفصل المرشحين.`)
   return reasons
 }
 

@@ -72,13 +72,13 @@ export default function MyPathway() {
                 {gate.status === "completed" ? <CheckCircle2 className="h-5 w-5" /> : i + 1}
               </span>
               <div className="min-w-0 flex-1">
-                <p className={`font-black ${gate.status === "locked" ? "text-white/40" : ""}`}>{c.name}</p>
+                <p className={`font-black ${gate.status === "locked" ? "text-white/50" : ""}`}>{c.name}</p>
                 <p className="mt-0.5 text-xs text-white/45">
                   {c.weeks} {c.weeks === 1 ? "أسبوع" : "أسابيع"} · المدرب: {trainer.name} · {c.skill}
                 </p>
                 {/* قاعدة الفتح — US-05 */}
                 {gate.status === "locked" && (
-                  <p className="mt-1.5 flex items-center gap-1.5 text-[11px] text-white/40">
+                  <p className="mt-1.5 flex items-center gap-1.5 text-[11px] text-white/50">
                     <Lock className="h-3 w-3" /> {gate.lockReason}
                   </p>
                 )}
@@ -135,7 +135,7 @@ export default function MyPathway() {
         </div>
         <div className="mt-4 grid gap-2 sm:grid-cols-2">
           {conditions.map((c) => (
-            <p key={c.label} className={`flex items-center gap-2 text-xs ${c.met ? "text-[#6EC7D1]" : "text-white/40"}`}>
+            <p key={c.label} className={`flex items-center gap-2 text-xs ${c.met ? "text-[#6EC7D1]" : "text-white/50"}`}>
               {c.met ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
               {c.label}
             </p>

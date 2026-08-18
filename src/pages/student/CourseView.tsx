@@ -118,6 +118,15 @@ export default function CourseView() {
     }, 12000);
   };
 
+  /* إعادة التسليم — بعد طلب المدرب فقط (حالة revision)، كما في POST /api/learner/assessments/:id/resubmit */
+  const resubmitAssignment = (fileName: string) => {
+    update((s) => {
+      const cp = s.courses[course.id];
+      cp.assignment = { status: "under_review", fileName };
+      s.notifications.unshift({ id: `n-${Date.now()}`, text: `استلمنا نسختك المعدلة من واجب «${course.name}» — يعيد ${trainer.name} مراجعتها.`, kind: "grade", read: false });
+    });
+  };
+
   return (
     <PortalLayout title={course.name}>
       {/* نظرة عامة */}
@@ -146,7 +155,7 @@ export default function CourseView() {
           <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
             <div className="flex items-center justify-between">
               <h3 className="flex items-center gap-2 font-black"><Video className="h-4 w-4 text-[#6EC7D1]" /> {lesson.title}</h3>
-              <span className="text-[11px] text-white/40">{lesson.minutes} د · {lesson.kind === "video" ? "فيديو" : "نشاط تطبيقي"}</span>
+              <span className="text-[11px] text-white/50">{lesson.minutes} د · {lesson.kind === "video" ? "فيديو" : "نشاط تطبيقي"}</span>
             </div>
             <p className="mt-1.5 text-xs leading-6 text-white/50">
               {lesson.kind === "activity"
@@ -178,7 +187,7 @@ export default function CourseView() {
                       {p >= 90 ? <CheckCircle2 className="h-4 w-4 text-[#38A7B4]" /> : <span className="grid h-4 w-4 place-items-center rounded-full border border-white/25 text-[9px]">{i + 1}</span>}
                       {l.title}
                     </span>
-                    <span className="text-[11px] text-white/40">{p}%</span>
+                    <span className="text-[11px] text-white/50">{p}%</span>
                   </button>
                 );
               })}
@@ -204,7 +213,7 @@ export default function CourseView() {
           <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
             <div className="flex items-center justify-between">
               <h3 className="flex items-center gap-2 font-black"><HelpCircle className="h-4 w-4 text-[#FABC05]" /> اختبار الدورة</h3>
-              <span className="text-[11px] text-white/40">نجاح من {QUIZ_PASS}% · {QUIZ_MAX_ATTEMPTS} محاولات</span>
+              <span className="text-[11px] text-white/50">نجاح من {QUIZ_PASS}% · {QUIZ_MAX_ATTEMPTS} محاولات</span>
             </div>
             {progress.quiz.passed ? (
               <p className="mt-4 flex items-center gap-2 rounded-xl border border-[#38A7B4]/40 bg-[#38A7B4]/10 px-4 py-3 text-sm font-bold text-[#6EC7D1]">
@@ -285,9 +294,20 @@ export default function CourseView() {
             <p className="mt-2 text-sm leading-7 text-white/55">
               طبّق ما تعلمته على حالة من واقعك، وارفع ملفك (PDF/عرض/صورة). المعيار: وضوح المشكلة، تطبيق المنهجية، جودة المخرج.
             </p>
+            <input
+              ref={fileRef}
+              type="file"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (!f) return;
+                if (progress.assignment.status === "revision") resubmitAssignment(f.name);
+                else submitAssignment(f.name);
+                e.target.value = "";
+              }}
+            />
             {progress.assignment.status === "none" ? (
               <div className="mt-4">
-                <input ref={fileRef} type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) submitAssignment(f.name); }} />
                 <button
                   onClick={() => fileRef.current?.click()}
                   className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-white/15 py-8 text-sm font-bold text-white/60 transition hover:border-[#38A7B4]/60 hover:text-[#6EC7D1]"
@@ -310,6 +330,19 @@ export default function CourseView() {
                   <div className="rounded-xl border border-[#38A7B4]/25 bg-[#38A7B4]/5 p-4">
                     <p className="text-xs font-bold text-[#6EC7D1]">ملاحظات {trainer.name}:</p>
                     <p className="mt-1.5 text-sm leading-7 text-white/70">{progress.assignment.feedback}</p>
+                  </div>
+                )}
+                {progress.assignment.status === "revision" && (
+                  <div className="rounded-xl border border-[#FABC05]/30 bg-[#FABC05]/5 p-4">
+                    <p className="text-xs leading-6 text-[#FABC05]">
+                      طلب مدربك إعادة التسليم — زر إعادة الرفع لا يظهر إلا بعد طلبه، تماما كما يفرضه الخادم.
+                    </p>
+                    <button
+                      onClick={() => fileRef.current?.click()}
+                      className="mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[#FABC05]/40 py-5 text-sm font-bold text-[#FABC05] transition hover:bg-[#FABC05]/10"
+                    >
+                      <Upload className="h-4 w-4" /> ارفع النسخة المعدلة
+                    </button>
                   </div>
                 )}
               </div>
@@ -374,7 +407,7 @@ export default function CourseView() {
                 </div>
               ))}
             </div>
-            <p className="mt-3 text-[11px] text-white/40">
+            <p className="mt-3 text-[11px] text-white/50">
               الحضور: {progress.attendance === "present" ? <span className="font-bold text-[#6EC7D1]">حاضر ✓</span> : "لم يُسجل بعد"}
             </p>
           </section>

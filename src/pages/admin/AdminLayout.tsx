@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link, NavLink } from "react-router";
-import { BookMarked, CalendarCog, Crown, ShieldAlert, LayoutDashboard, UserPlus } from "lucide-react";
+import { BookMarked, CalendarCog, Crown, FlaskConical, GitBranch, Layers, ShieldAlert, LayoutDashboard, UserPlus, Users, BarChart3, LifeBuoy, Wallet, Bell } from "lucide-react";
 import { ADMIN_IDENTITIES, ADMIN_IDENTITY_KEY, adminIdentity } from "./admin-identity";
+import PrototypeBanner from "@/components/PrototypeBanner";
 
 /** إطار لوحة الإدارة والعمليات */
 export default function AdminLayout({ children, title }: { children: React.ReactNode; title: string }) {
@@ -27,7 +28,8 @@ export default function AdminLayout({ children, title }: { children: React.React
             </button>
           ))}
         </div>
-        <Link to="/" className="mt-6 text-xs text-white/40 hover:text-white/70">العودة للموقع العام</Link>
+        <p className="mt-4 text-[11px] font-bold text-[#FABC05]/70">نسخة تجريبية — البيانات المعروضة محلية وليست تشغيلية</p>
+        <Link to="/" className="mt-6 text-xs text-white/50 hover:text-white/70">العودة للموقع العام</Link>
       </div>
     );
   }
@@ -38,24 +40,33 @@ export default function AdminLayout({ children, title }: { children: React.React
     { to: "/admin/exceptions", label: "الاستثناءات", icon: ShieldAlert },
     { to: "/admin/content", label: "المحتوى", icon: BookMarked },
     { to: "/admin/trainers", label: "طلبات المدربين", icon: UserPlus },
+    { to: "/admin/catalog", label: "الكتالوج", icon: Layers },
+    { to: "/admin/publishing", label: "النشر", icon: GitBranch },
+    { to: "/admin/quality", label: "جودة التشخيص", icon: FlaskConical },
+    { to: "/admin/users", label: "المستخدمون", icon: Users },
+    { to: "/admin/reports", label: "التقارير", icon: BarChart3 },
+    { to: "/admin/support", label: "الدعم", icon: LifeBuoy },
+    { to: "/admin/finance", label: "المالية", icon: Wallet },
+    { to: "/admin/notifications", label: "الإشعارات", icon: Bell },
   ];
 
   return (
     <div dir="rtl" className="min-h-screen bg-[#0D0D0D] text-white">
+      <PrototypeBanner />
       <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0D0D0D]/90 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
+        <div className="mx-auto flex min-h-16 max-w-7xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-5 py-2">
           <Link to="/" className="flex items-center gap-2">
             <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 object-contain" />
             <span className="hidden font-black sm:block">وجيز — الإدارة والعمليات</span>
           </Link>
-          <nav className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1">
+          <nav className="flex flex-wrap items-center justify-center gap-1 rounded-3xl border border-white/10 bg-white/[0.03] p-1">
             {tabs.map((t) => (
               <NavLink
                 key={t.to}
                 to={t.to}
                 end={t.end}
                 className={({ isActive }) =>
-                  `flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition sm:px-4 ${
+                  `flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition ${
                     isActive ? "bg-[#FABC05] text-[#0D0D0D]" : "text-white/60 hover:text-white"
                   }`
                 }

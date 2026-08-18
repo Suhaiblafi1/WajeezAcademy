@@ -1,0 +1,65 @@
+{
+  "sessions": 10000,
+  "seed": 20260818,
+  "kind": {
+    "single_pathway": 7148,
+    "advisor_referral": 1245,
+    "composite_template": 658,
+    "exploratory_direction": 949
+  },
+  "confidenceBands": {
+    "preliminary": 5778,
+    "good": 4222
+  },
+  "winners": {
+    "PW-MKT-001": 397,
+    "PW-FND-003": 1123,
+    "PW-COM-001": 437,
+    "PW-AUT-001": 567,
+    "PW-EMP-003": 257,
+    "PW-STU-002": 571,
+    "PW-NEG-001": 350,
+    "PW-BIZ-001": 549,
+    "TPL-DIGITAL-TRANSFORM-001": 111,
+    "PW-LND-001": 498,
+    "PW-OPS-001": 336,
+    "TPL-VENTURE-001": 25,
+    "PW-EMP-005": 409,
+    "PW-CYB-001": 127,
+    "PW-FIN-001": 222,
+    "TPL-DIGITAL-TRAINER-001": 63,
+    "PW-STU-003": 763,
+    "TPL-PERSONAL-BRAND-001": 143,
+    "PW-PRD-001": 220,
+    "PW-SCM-001": 46,
+    "PW-EMP-004": 165,
+    "PW-GOV-002": 106,
+    "PW-SAL-001": 134,
+    "TPL-CX-001": 139,
+    "TPL-CYBER-MANAGER-001": 107,
+    "PW-HR-001": 140,
+    "TPL-FREELANCE-001": 75,
+    "TPL-FIRST-JOB-001": 34,
+    "TPL-ECOM-001": 20
+  },
+  "avgQuestions": 11.77,
+  "exploratoryRate": 0.0949,
+  "advisorRate": 0.1245,
+  "alienWinners": 0,
+  "errors": 0,
+  "determinismProbe": {
+    "sample": 200,
+    "mismatches": 0
+  },
+  "skillEvidence": {
+    "sessionsWithWinner": 8134,
+    "zeroSkillEvidence": 4879,
+    "decisiveSessions": 3157,
+    "decisiveNoneMeasuredSilent": 0,
+    "decisiveNoneMeasuredAdvisorFlagged": 5,
+    "with1PlusDecisive": 3152,
+    "with2PlusDecisive": 687,
+    "avgDecisiveCoverage": 0.994,
+    "avgMeasuredCoverage": 0.0255
+  }
+}

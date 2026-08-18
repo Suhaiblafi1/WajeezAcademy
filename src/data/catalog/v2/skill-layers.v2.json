@@ -1,0 +1,3809 @@
+{
+  "version": "2.0.0",
+  "generated_by": "scripts/build-v2-overlays.mjs",
+  "skills": {
+    "account_management": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-SAL-001"
+      ]
+    },
+    "accountability": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-BIZ-001",
+        "PW-SAL-001",
+        "PW-STU-002"
+      ]
+    },
+    "accounting_basics": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-FIN-001"
+      ]
+    },
+    "active_listening": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-BIZ-001",
+        "PW-COM-001",
+        "PW-EMP-005",
+        "PW-GOV-002",
+        "PW-NEG-001",
+        "PW-SAL-001",
+        "PW-STU-002",
+        "PW-STU-003"
+      ]
+    },
+    "agent_design": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-AUT-001"
+      ]
+    },
+    "agreement_design": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-NEG-001"
+      ]
+    },
+    "ai_adoption_change": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-FND-003"
+      ]
+    },
+    "ai_automation": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-AUT-001"
+      ]
+    },
+    "ai_data_privacy": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-FND-003"
+      ]
+    },
+    "ai_ethics": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-FND-003"
+      ]
+    },
+    "ai_fact_checking": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-FND-003"
+      ]
+    },
+    "ai_for_learning": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "ai_for_research": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-AUT-001",
+        "PW-FND-003"
+      ]
+    },
+    "ai_for_writing": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-FND-003"
+      ]
+    },
+    "ai_literacy": {
+      "layers": [
+        "diagnostic",
+        "pathway_requirement"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
+      "pathway_ids": [
+        "PW-FND-003"
+      ],
+      "measured_by": "QB-M4-003"
+    },
+    "ai_output_evaluation": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-AUT-001",
+        "PW-FND-003"
+      ]
+    },
+    "ai_risk_management": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-AUT-001",
+        "PW-FND-003",
+        "PW-HR-001"
+      ]
+    },
+    "ai_use_cases_mapping": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-FND-003"
+      ]
+    },
+    "ai_workflow_design": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-FND-003"
+      ]
+    },
+    "ambiguity_tolerance": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "analytical_thinking": {
+      "layers": [
+        "diagnostic",
+        "pathway_requirement"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
+      "pathway_ids": [
+        "PW-EMP-004",
+        "PW-OPS-001"
+      ],
+      "measured_by": "QB-M4-001"
+    },
+    "api_integration_basics": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-AUT-001"
+      ]
+    },
+    "arabic_business_writing": {
+      "layers": [
+        "diagnostic",
+        "pathway_requirement"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
+      "pathway_ids": [
+        "PW-SAL-001",
+        "PW-STU-002"
+      ],
+      "measured_by": "QB-M4-010"
+    },
+    "assessment_design": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-LND-001"
+      ]
+    },
+    "assessment_literacy": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-LND-001"
+      ]
+    },
+    "audience_analysis": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-COM-001"
+      ]
+    },
+    "automation_opportunity_analysis": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-AUT-001"
+      ]
+    },
+    "backlog_management": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-PRD-001"
+      ]
+    },
+    "backward_design": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-LND-001"
+      ]
+    },
+    "basic_design_literacy": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "batna_zopa": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-NEG-001"
+      ]
+    },
+    "brand_strategy": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-MKT-001"
+      ]
+    },
+    "briefing_skills": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-COM-001",
+        "PW-CYB-001",
+        "PW-EMP-003",
+        "PW-EMP-004"
+      ]
+    },
+    "budgeting_forecasting": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-FIN-001"
+      ]
+    },
+    "business_continuity": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-CYB-001"
+      ]
+    },
+    "business_finance": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-FIN-001"
+      ]
+    },
+    "business_intelligence": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "business_model": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-BIZ-001",
+        "PW-EMP-003"
+      ]
+    },
+    "campaign_measurement": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-MKT-001"
+      ]
+    },
+    "career_planning": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-STU-002",
+        "PW-STU-003"
+      ]
+    },
+    "career_transition": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "cashflow_forecasting": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-FIN-001"
+      ]
+    },
+    "cashflow_management": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-BIZ-001",
+        "PW-FIN-001"
+      ]
+    },
+    "change_management": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-AUT-001",
+        "PW-EMP-003",
+        "PW-EMP-005",
+        "PW-OPS-001",
+        "PW-SCM-001"
+      ]
+    },
+    "child_digital_safety": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "child_financial_literacy": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "child_learning_support": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "citizen_experience": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-GOV-002"
+      ]
+    },
+    "clear_expression": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-COM-001",
+        "PW-CYB-001",
+        "PW-EMP-003",
+        "PW-FND-003",
+        "PW-GOV-002",
+        "PW-SAL-001",
+        "PW-STU-002"
+      ]
+    },
+    "cloud_collaboration": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "cloud_security_basics": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-CYB-001"
+      ]
+    },
+    "coaching": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-EMP-005"
+      ]
+    },
+    "competency_frameworks": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-HR-001"
+      ]
+    },
+    "competitive_analysis": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "complaint_handling": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-GOV-002"
+      ]
+    },
+    "complex_problem_solving": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-OPS-001"
+      ]
+    },
+    "concession_strategy": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-NEG-001"
+      ]
+    },
+    "conflict_resolution": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-EMP-003",
+        "PW-EMP-005",
+        "PW-GOV-002",
+        "PW-NEG-001"
+      ]
+    },
+    "consultative_selling": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-SAL-001"
+      ]
+    },
+    "consumer_awareness": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "content_marketing": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-MKT-001"
+      ]
+    },
+    "continuous_improvement": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-OPS-001"
+      ]
+    },
+    "cost_analysis": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-FIN-001"
+      ]
+    },
+    "course_completion": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "creative_thinking": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_personalization_signal",
+      "decision_role_ar": "موقوفة بقرار أكاديمي (2026-08-19): فحص الكود أثبت عدم وجود أي فعل تخصيص مبرمج يستهلك قياسها — تُستأنف حين يوجد استخدام حقيقي."
+    },
+    "crisis_management": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-CYB-001"
+      ]
+    },
+    "critical_thinking": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-FND-003",
+        "PW-NEG-001",
+        "PW-OPS-001"
+      ]
+    },
+    "crm_basics": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-MKT-001",
+        "PW-SAL-001"
+      ]
+    },
+    "cross_cultural_communication": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "curiosity": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "customer_communication": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-BIZ-001",
+        "PW-GOV-002",
+        "PW-MKT-001",
+        "PW-SAL-001"
+      ]
+    },
+    "customer_discovery": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-BIZ-001",
+        "PW-PRD-001"
+      ]
+    },
+    "customer_journey_marketing": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-MKT-001"
+      ]
+    },
+    "customer_segmentation": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-MKT-001"
+      ]
+    },
+    "customer_success": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-SAL-001"
+      ]
+    },
+    "cv_writing": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-STU-002"
+      ]
+    },
+    "cyber_risk_assessment": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-CYB-001"
+      ]
+    },
+    "cybersecurity_basics": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-CYB-001"
+      ]
+    },
+    "dashboard_design": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-EMP-004",
+        "PW-OPS-001"
+      ]
+    },
+    "dashboard_reading": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "data_analysis_basics": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-EMP-004",
+        "PW-GOV-002",
+        "PW-HR-001",
+        "PW-SCM-001"
+      ]
+    },
+    "data_cleaning": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-EMP-004"
+      ]
+    },
+    "data_collection": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-EMP-004"
+      ]
+    },
+    "data_governance": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-AUT-001",
+        "PW-CYB-001"
+      ]
+    },
+    "data_literacy": {
+      "layers": [
+        "diagnostic",
+        "pathway_requirement"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
+      "pathway_ids": [
+        "PW-EMP-004"
+      ],
+      "measured_by": "QB-M4-006"
+    },
+    "data_protection_controls": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-CYB-001"
+      ]
+    },
+    "data_storytelling": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-EMP-004",
+        "PW-FIN-001"
+      ]
+    },
+    "data_visualization": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-COM-001",
+        "PW-EMP-004"
+      ]
+    },
+    "debt_management": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "decision_governance": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-CYB-001",
+        "PW-EMP-003",
+        "PW-NEG-001",
+        "PW-OPS-001"
+      ]
+    },
+    "decision_making": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-EMP-004",
+        "PW-FIN-001",
+        "PW-STU-003"
+      ]
+    },
+    "decision_under_pressure": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-COM-001"
+      ]
+    },
+    "delegation": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-EMP-005"
+      ]
+    },
+    "deliberate_practice": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-LND-001"
+      ]
+    },
+    "demand_forecasting": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-SCM-001"
+      ]
+    },
+    "design_thinking": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-BIZ-001",
+        "PW-LND-001",
+        "PW-PRD-001",
+        "PW-STU-003"
+      ]
+    },
+    "digital_accessibility": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-EMP-004",
+        "PW-LND-001"
+      ]
+    },
+    "digital_content_creation": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-MKT-001"
+      ]
+    },
+    "digital_file_management": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "digital_government": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "digital_learning_design": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-LND-001"
+      ]
+    },
+    "digital_literacy": {
+      "layers": [
+        "diagnostic",
+        "personalization_signal"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "إشارة جاهزية رقمية: عند انخفاضها مع مسار رقمي تُضاف ملاحظة تمهيد رقمي في الخطة — لا تغيّر اختيار المسار.",
+      "measured_by": "QB-M4-005"
+    },
+    "digital_marketing": {
+      "layers": [
+        "diagnostic",
+        "pathway_requirement"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
+      "pathway_ids": [
+        "PW-MKT-001"
+      ],
+      "measured_by": "QB-M4-016"
+    },
+    "digital_productivity": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "digital_wellbeing": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "distraction_reduction": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "document_design": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-LND-001"
+      ]
+    },
+    "ecommerce_basics": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "economic_literacy": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-FIN-001"
+      ]
+    },
+    "emergency_fund": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "emotional_regulation_learning": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-GOV-002",
+        "PW-NEG-001"
+      ]
+    },
+    "energy_management": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "english_for_work": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "ethical_influence": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-NEG-001"
+      ]
+    },
+    "ethical_reasoning": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-COM-001",
+        "PW-EMP-004",
+        "PW-EMP-005",
+        "PW-HR-001",
+        "PW-NEG-001"
+      ]
+    },
+    "executive_presentation": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-COM-001"
+      ]
+    },
+    "executive_summary": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-COM-001"
+      ]
+    },
+    "experiment_design": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-GOV-002",
+        "PW-MKT-001",
+        "PW-PRD-001"
+      ]
+    },
+    "facilitation": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-LND-001"
+      ]
+    },
+    "family_dialogue": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "family_financial_literacy": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "family_goal_setting": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "family_reading_culture": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "feedback_giving": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-EMP-005",
+        "PW-HR-001",
+        "PW-NEG-001"
+      ]
+    },
+    "feedback_receiving": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-STU-002"
+      ]
+    },
+    "financial_dashboarding": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-FIN-001"
+      ]
+    },
+    "financial_decision_making": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-AUT-001",
+        "PW-FIN-001"
+      ]
+    },
+    "financial_goal_setting": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "financial_statements": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-FIN-001"
+      ]
+    },
+    "focus_management": {
+      "layers": [
+        "diagnostic",
+        "personalization_signal"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "إشارة تخصيص: توجّه توزيع العبء الأسبوعي داخل الخطة — لا تغيّر اختيار المسار.",
+      "measured_by": "QB-M4-025"
+    },
+    "frontline_service": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-GOV-002"
+      ]
+    },
+    "funnel_design": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-MKT-001"
+      ]
+    },
+    "goal_consistency": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-STU-003"
+      ]
+    },
+    "goal_setting_okrs": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-EMP-004",
+        "PW-EMP-005",
+        "PW-FIN-001",
+        "PW-HR-001"
+      ]
+    },
+    "government_ai_readiness": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "government_correspondence": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "government_data_governance": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "merged",
+      "merged_into": "SK-DATA-014",
+      "decision_role_ar": "مدموجة في SK-DATA-014 بقرار أكاديمي موثق (2026-08-19) — مرجع تاريخي فقط، لا تدخل التشخيص."
+    },
+    "growth_experimentation": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-BIZ-001",
+        "PW-MKT-001"
+      ]
+    },
+    "habit_building": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "healthy_boundaries": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "hr_privacy_ethics": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-HR-001"
+      ]
+    },
+    "human_ai_collaboration": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-FND-003"
+      ]
+    },
+    "human_in_loop_controls": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-AUT-001"
+      ]
+    },
+    "ideal_customer_profile": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-SAL-001"
+      ]
+    },
+    "identity_access_management": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-CYB-001"
+      ]
+    },
+    "incident_response": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-CYB-001"
+      ]
+    },
+    "inclusive_leadership": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-EMP-005"
+      ]
+    },
+    "information_evaluation": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-FND-003",
+        "PW-STU-003"
+      ]
+    },
+    "information_search": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "innovation_methods": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "instructional_material_design": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-LND-001"
+      ]
+    },
+    "internship_readiness": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-STU-003"
+      ]
+    },
+    "interview_skills": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-STU-002"
+      ]
+    },
+    "inventory_management": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-SCM-001"
+      ]
+    },
+    "investment_appraisal": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-FIN-001"
+      ]
+    },
+    "investment_basics": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "job_analysis": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-HR-001"
+      ]
+    },
+    "job_search_strategy": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-STU-002"
+      ]
+    },
+    "knowledge_base_design": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-AUT-001"
+      ]
+    },
+    "knowledge_management": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-EMP-003"
+      ]
+    },
+    "kpi_design": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-EMP-004",
+        "PW-GOV-002",
+        "PW-MKT-001",
+        "PW-OPS-001",
+        "PW-PRD-001",
+        "PW-SCM-001"
+      ]
+    },
+    "lean_waste_analysis": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-OPS-001"
+      ]
+    },
+    "learning_agility": {
+      "layers": [
+        "diagnostic",
+        "personalization_signal"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "إشارة تخصيص: توجّه وتيرة الخطة المقترحة — لا تغيّر اختيار المسار.",
+      "measured_by": "QB-M4-023"
+    },
+    "learning_evaluation": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-LND-001"
+      ]
+    },
+    "learning_experience_design": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-LND-001"
+      ]
+    },
+    "learning_needs_analysis": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-HR-001"
+      ]
+    },
+    "learning_outcomes_design": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-LND-001"
+      ]
+    },
+    "learning_plan": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-HR-001"
+      ]
+    },
+    "learning_transfer": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-LND-001",
+        "PW-OPS-001",
+        "PW-STU-002",
+        "PW-STU-003"
+      ]
+    },
+    "legal_basics_business": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "lifecycle_marketing": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-MKT-001"
+      ]
+    },
+    "linkedin_profile": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-STU-002"
+      ]
+    },
+    "market_research": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-BIZ-001",
+        "PW-MKT-001",
+        "PW-PRD-001",
+        "PW-SAL-001",
+        "PW-STU-002",
+        "PW-STU-003"
+      ]
+    },
+    "marketing_strategy": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-MKT-001"
+      ]
+    },
+    "media_literacy": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "mediation_basics": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-NEG-001"
+      ]
+    },
+    "meeting_cadence": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-EMP-003",
+        "PW-EMP-005"
+      ]
+    },
+    "meeting_facilitation": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-EMP-003"
+      ]
+    },
+    "memory_spaced_repetition": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "mental_models": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "mentorship_use": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "message_design": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-COM-001"
+      ]
+    },
+    "mindful_technology_use": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "motivation_design": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-EMP-005"
+      ]
+    },
+    "motivation_systems": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "multiparty_negotiation": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-NEG-001"
+      ]
+    },
+    "mvp_design": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-PRD-001"
+      ]
+    },
+    "negotiation": {
+      "layers": [
+        "diagnostic",
+        "pathway_requirement"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
+      "pathway_ids": [
+        "PW-NEG-001"
+      ],
+      "measured_by": "QB-M4-013"
+    },
+    "negotiation_commercial": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-BIZ-001",
+        "PW-SAL-001",
+        "PW-SCM-001"
+      ]
+    },
+    "negotiation_preparation": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-NEG-001"
+      ]
+    },
+    "networking": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-STU-002",
+        "PW-STU-003"
+      ]
+    },
+    "no_code_tools": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-AUT-001"
+      ]
+    },
+    "note_taking": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "online_meetings": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "operational_kpis": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-OPS-001"
+      ]
+    },
+    "operations_basics": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-AUT-001",
+        "PW-BIZ-001",
+        "PW-OPS-001",
+        "PW-SCM-001"
+      ]
+    },
+    "organizational_culture": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-HR-001"
+      ]
+    },
+    "parent_child_communication": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "pdca": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-OPS-001"
+      ]
+    },
+    "peer_learning": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "people_analytics": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-HR-001"
+      ]
+    },
+    "performance_cycle_design": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-HR-001"
+      ]
+    },
+    "performance_management": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-EMP-005",
+        "PW-HR-001"
+      ]
+    },
+    "personal_branding": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-STU-002"
+      ]
+    },
+    "personal_budgeting": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "persuasion": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-COM-001",
+        "PW-NEG-001"
+      ]
+    },
+    "policy_evaluation": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "policy_literacy": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "portfolio_building": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-STU-002"
+      ]
+    },
+    "portfolio_learning": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "positive_discipline": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "presentation_delivery": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-COM-001",
+        "PW-LND-001",
+        "PW-SAL-001"
+      ]
+    },
+    "presentation_tools": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-COM-001",
+        "PW-LND-001"
+      ]
+    },
+    "pricing_strategy": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-BIZ-001",
+        "PW-FIN-001"
+      ]
+    },
+    "prioritization": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-EMP-003",
+        "PW-LND-001",
+        "PW-OPS-001",
+        "PW-PRD-001",
+        "PW-SAL-001",
+        "PW-SCM-001"
+      ]
+    },
+    "privacy_management": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-AUT-001",
+        "PW-CYB-001",
+        "PW-MKT-001"
+      ]
+    },
+    "process_design": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-AUT-001",
+        "PW-GOV-002",
+        "PW-OPS-001"
+      ]
+    },
+    "process_mapping": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-AUT-001",
+        "PW-OPS-001"
+      ]
+    },
+    "product_discovery": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-PRD-001"
+      ]
+    },
+    "product_launch": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-PRD-001"
+      ]
+    },
+    "product_management": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-PRD-001"
+      ]
+    },
+    "product_metrics": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-PRD-001"
+      ]
+    },
+    "product_roadmapping": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-PRD-001"
+      ]
+    },
+    "product_strategy": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-PRD-001"
+      ]
+    },
+    "professional_ethics": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-HR-001"
+      ]
+    },
+    "project_management": {
+      "layers": [
+        "diagnostic",
+        "pathway_requirement"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
+      "pathway_ids": [
+        "PW-EMP-003",
+        "PW-PRD-001",
+        "PW-STU-002"
+      ],
+      "measured_by": "QB-M4-018"
+    },
+    "prompt_iteration": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-FND-003"
+      ]
+    },
+    "prompting_basics": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-FND-003"
+      ]
+    },
+    "proposal_design": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-SAL-001"
+      ]
+    },
+    "prospecting": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-SAL-001"
+      ]
+    },
+    "prototyping": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-PRD-001"
+      ]
+    },
+    "public_economics_basics": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "public_ethics": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "public_finance_basics": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "public_procurement": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "public_reporting": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-EMP-003"
+      ]
+    },
+    "public_sector_project_management": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "public_service_mindset": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "public_speaking": {
+      "layers": [
+        "diagnostic",
+        "pathway_requirement"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
+      "pathway_ids": [
+        "PW-COM-001"
+      ],
+      "measured_by": "QB-M4-011"
+    },
+    "q_and_a_management": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-COM-001"
+      ]
+    },
+    "reading_strategies": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "recovery_planning": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "reflection": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-EMP-003",
+        "PW-STU-003"
+      ]
+    },
+    "regulatory_compliance": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-CYB-001",
+        "PW-GOV-002"
+      ]
+    },
+    "remote_work_tools": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "report_writing": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "research_literacy": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-BIZ-001",
+        "PW-LND-001",
+        "PW-OPS-001",
+        "PW-STU-003"
+      ]
+    },
+    "risk_management": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-AUT-001",
+        "PW-CYB-001",
+        "PW-EMP-003",
+        "PW-EMP-005",
+        "PW-FIN-001",
+        "PW-SCM-001"
+      ]
+    },
+    "risk_return": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "role_modeling": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "root_cause_analysis": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-OPS-001"
+      ]
+    },
+    "rubric_design": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-LND-001"
+      ]
+    },
+    "salary_negotiation": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "sales_fundamentals": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-BIZ-001",
+        "PW-SAL-001"
+      ]
+    },
+    "sales_pipeline": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-BIZ-001",
+        "PW-SAL-001"
+      ]
+    },
+    "saving_habits": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "scenario_planning": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-FIN-001",
+        "PW-NEG-001",
+        "PW-SCM-001",
+        "PW-STU-003"
+      ]
+    },
+    "security_governance": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-CYB-001"
+      ]
+    },
+    "selection_design": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-HR-001"
+      ]
+    },
+    "self_directed_learning": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "self_leadership": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-EMP-005",
+        "PW-STU-003"
+      ]
+    },
+    "sensemaking": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "service_design_government": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-GOV-002"
+      ]
+    },
+    "sleep_routine_awareness": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "social_engineering_awareness": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-CYB-001"
+      ]
+    },
+    "social_media_strategy": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "speaking_anxiety_management": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-COM-001"
+      ]
+    },
+    "spreadsheets_basics": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-EMP-004"
+      ]
+    },
+    "stakeholder_coordination_gov": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-GOV-002"
+      ]
+    },
+    "stakeholder_management": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-EMP-003",
+        "PW-EMP-005",
+        "PW-NEG-001",
+        "PW-PRD-001"
+      ]
+    },
+    "standard_work": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-OPS-001"
+      ]
+    },
+    "statistical_thinking": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-EMP-004",
+        "PW-SCM-001"
+      ]
+    },
+    "storytelling": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-COM-001",
+        "PW-MKT-001"
+      ]
+    },
+    "strategic_communication": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-COM-001",
+        "PW-EMP-005"
+      ]
+    },
+    "strategic_sourcing": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-SCM-001"
+      ]
+    },
+    "strategic_thinking": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-HR-001",
+        "PW-PRD-001"
+      ]
+    },
+    "stress_resilience_nonclinical": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "structured_interviewing": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-HR-001"
+      ]
+    },
+    "summarization": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "supplier_evaluation": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-SCM-001"
+      ]
+    },
+    "supply_chain_mapping": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-SCM-001"
+      ]
+    },
+    "supply_chain_metrics": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-SCM-001"
+      ]
+    },
+    "supply_chain_risk": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-SCM-001"
+      ]
+    },
+    "supply_planning": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-SCM-001"
+      ]
+    },
+    "survey_design": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-GOV-002"
+      ]
+    },
+    "systems_thinking": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-CYB-001",
+        "PW-OPS-001",
+        "PW-SCM-001"
+      ]
+    },
+    "talent_development": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-HR-001"
+      ]
+    },
+    "tax_basics": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "team_leadership": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-EMP-005"
+      ]
+    },
+    "teen_confidence_support": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": false,
+      "diagnostic_active": false,
+      "academic_status": "future_catalog_skill",
+      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "time_management": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-EMP-003",
+        "PW-STU-002"
+      ]
+    },
+    "training_needs_analysis": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-LND-001"
+      ]
+    },
+    "unit_economics": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-BIZ-001",
+        "PW-FIN-001"
+      ]
+    },
+    "user_research": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-PRD-001"
+      ]
+    },
+    "ux_basics": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-BIZ-001",
+        "PW-MKT-001",
+        "PW-PRD-001"
+      ]
+    },
+    "value_creation_negotiation": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-NEG-001"
+      ]
+    },
+    "value_proposition": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-BIZ-001",
+        "PW-MKT-001",
+        "PW-SAL-001"
+      ]
+    },
+    "variance_analysis": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-FIN-001"
+      ]
+    },
+    "vendor_management": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-EMP-003",
+        "PW-SCM-001"
+      ]
+    },
+    "voice_and_presence": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-COM-001",
+        "PW-STU-002"
+      ]
+    },
+    "warehouse_basics": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-SCM-001"
+      ]
+    },
+    "workflow_automation": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-AUT-001"
+      ]
+    },
+    "workforce_planning": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-HR-001"
+      ]
+    },
+    "working_capital": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-FIN-001"
+      ]
+    },
+    "workplace_professionalism": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-STU-002"
+      ]
+    }
+  }
+}

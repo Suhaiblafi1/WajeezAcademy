@@ -1,11 +1,19 @@
-/* كتالوج الدورات — محوّل يقرأ من core-catalog.v2.json (مئة دورة ضمن عشرين مسارا) */
+/* كتالوج الدورات — محوّل يقرأ من مصدر الكتالوج الجوهري (core-catalog-source)
+   الافتراضي: الحزمة المضمنة الموثقة (مئة دورة ضمن عشرين مسارا)؛ وعند توفر
+   خادم API تُستبدل المحتويات باللقطة المنشورة عبر المحوّل نفسه. */
 
-import coreCatalog from './catalog/core-catalog.v2.json'
+import {
+  getCoreCatalogRaw,
+  onCoreCatalogInstalled,
+  type CoreCatalogModule,
+  type CoreCatalogRaw,
+} from './core-catalog-source'
 import { pathwayCategory } from './pathways'
 
 export interface Course {
   id: string
   name: string
+  legacyName?: string
   pathwayId: string
   pathwayName: string
   category: string
@@ -13,40 +21,97 @@ export interface Course {
   skill: string
 }
 
-interface RawCourse {
-  course_id: string
-  pathway_id: string
-  sequence: number
-  title_ar: string
-  subtitle_ar?: string
-  total_hours: number
-  skill_names_ar: string[]
-}
-interface RawPathway {
+/* تفاصيل الدورة الكاملة لعرض الرحلة التعليمية — مشتقة من الكتالوج الموثق */
+export interface CourseFull {
   id: string
   title: string
-  course_ids: string[]
+  legacyTitle?: string
+  shortPromise: string
+  description: string
+  targetAudience: string
+  prerequisites: string
+  level: string
+  totalHours: number
+  learningObjectives: string[]
+  learningOutcomes: string[]
+  modules: { id: string; title: string; outcome: string; activity: string; artifact: string; hours: number }[]
+  practicalProject: string
+  relatedSkills: string[]
+  referenceIds: string[]
 }
 
-const raw = coreCatalog as unknown as { launch_pathways: RawPathway[]; courses: RawCourse[] }
+/* فهارس مشتقة تُبنى من المصدر الفعال وتُعاد تعبئتها عند تثبيت لقطة API */
+let pathwayTitle = new Map<string, string>()
+let modulesByCourse = new Map<string, CoreCatalogModule[]>()
 
-const pathwayTitle = new Map(raw.launch_pathways.map((p) => [p.id, p.title]))
+function rebuildIndexes(raw: CoreCatalogRaw): void {
+  pathwayTitle = new Map(raw.launch_pathways.map((p) => [p.id, p.title]))
+  const grouped = new Map<string, CoreCatalogModule[]>()
+  for (const m of raw.modules) {
+    const list = grouped.get(m.course_id) ?? []
+    list.push(m)
+    grouped.set(m.course_id, list)
+  }
+  for (const list of grouped.values()) list.sort((a, b) => a.sequence - b.sequence)
+  modulesByCourse = grouped
+}
 
-export const courses: Course[] = raw.courses.map((c) => ({
-  id: c.course_id,
-  name: c.title_ar,
-  pathwayId: c.pathway_id,
-  pathwayName: pathwayTitle.get(c.pathway_id) ?? '',
-  category: pathwayCategory(c.pathway_id),
-  weeks: Math.max(1, Math.ceil(c.total_hours / 7)),
-  skill: c.skill_names_ar[0] ?? '',
-}))
+rebuildIndexes(getCoreCatalogRaw())
+
+function buildCourses(raw: CoreCatalogRaw): Course[] {
+  return raw.courses.map((c) => ({
+    id: c.course_id,
+    name: c.title_ar,
+    legacyName: c.legacy_title_ar,
+    pathwayId: c.pathway_id,
+    pathwayName: pathwayTitle.get(c.pathway_id) ?? '',
+    category: pathwayCategory(c.pathway_id),
+    weeks: Math.max(1, Math.ceil(c.total_hours / 7)),
+    skill: c.skill_names_ar[0] ?? '',
+  }))
+}
+
+export const courses: Course[] = buildCourses(getCoreCatalogRaw())
+
+/** تفاصيل الدورة الكاملة بمعرفها — للرحلة التعليمية والأكورديون */
+export function courseFullById(id: string): CourseFull | null {
+  const c = getCoreCatalogRaw().courses.find((x) => x.course_id === id)
+  if (!c) return null
+  return {
+    id: c.course_id,
+    title: c.title_ar,
+    legacyTitle: c.legacy_title_ar,
+    shortPromise: c.short_promise_ar ?? c.subtitle_ar ?? '',
+    description: c.description_ar ?? '',
+    targetAudience: c.target_audience_ar ?? '',
+    prerequisites: c.prerequisites_ar ?? '',
+    level: c.level_ar ?? '',
+    totalHours: c.total_hours,
+    learningObjectives: c.learning_objectives_ar ?? [],
+    learningOutcomes: c.learning_outcomes_ar ?? [],
+    modules: (modulesByCourse.get(id) ?? []).map((m) => ({
+      id: m.module_id,
+      title: m.title_ar,
+      outcome: m.module_outcome_ar,
+      activity: m.practice_activity_ar,
+      artifact: m.evidence_artifact_ar,
+      hours: m.expected_hours,
+    })),
+    practicalProject: c.summative_assessment_ar ?? '',
+    relatedSkills: c.skill_names_ar,
+    referenceIds: c.source_codes ?? [],
+  }
+}
 
 export const courseById = (id: string) => courses.find((c) => c.id === id)
 
 export const pathwayCourses: Record<string, string[]> = Object.fromEntries(
-  raw.launch_pathways.map((p) => [p.id, p.course_ids]),
+  getCoreCatalogRaw().launch_pathways.map((p) => [p.id, p.course_ids]),
 )
+
+/** طريقة تقديم المسار من الكتالوج الموثق — تُعرض ضمن تفاصيل دورات الرحلة */
+export const pathwayDelivery = (pathwayId: string): string | undefined =>
+  getCoreCatalogRaw().launch_pathways.find((p) => p.id === pathwayId)?.delivery
 
 /* مختارات وجيز من الدورات — منتقاة تحريريا، الدورة الثانية من كل مسار مختار */
 function pickCourse(pathwayId: string, index: number): string | null {
@@ -67,9 +132,23 @@ const bestsellerPicks: { pathway: string; index: number; note: string }[] = [
   { pathway: 'PW-EMP-005', index: 0, note: 'خطة جاهزة' },
   { pathway: 'PW-LND-001', index: 1, note: 'للتأثير' },
 ]
-export const bestsellerCourses: { id: string; note: string }[] = bestsellerPicks.flatMap((p) => {
-  const id = pickCourse(p.pathway, p.index)
-  return id ? [{ id, note: p.note }] : []
+function buildBestsellerCourses(): { id: string; note: string }[] {
+  return bestsellerPicks.flatMap((p) => {
+    const id = pickCourse(p.pathway, p.index)
+    return id ? [{ id, note: p.note }] : []
+  })
+}
+export const bestsellerCourses: { id: string; note: string }[] = buildBestsellerCourses()
+
+/* عند تثبيت لقطة API المنشورة: إعادة بناء الفهارس وإعادة ملء المصفوفات
+   والسجلات المصدَّرة في مكانها — المراجع تبقى صالحة والمشتركون يعيدون الرسم */
+onCoreCatalogInstalled(() => {
+  const raw = getCoreCatalogRaw()
+  rebuildIndexes(raw)
+  courses.splice(0, courses.length, ...buildCourses(raw))
+  for (const k of Object.keys(pathwayCourses)) delete pathwayCourses[k]
+  Object.assign(pathwayCourses, Object.fromEntries(raw.launch_pathways.map((p) => [p.id, p.course_ids])))
+  bestsellerCourses.splice(0, bestsellerCourses.length, ...buildBestsellerCourses())
 })
 
 export const courseCategories = ['الكل', 'أساسيات', 'طلاب ومهنة', 'موظفون', 'حكومي', 'أعمال', 'تخصصات وظيفية', 'قيادة']
@@ -102,85 +181,88 @@ export function coursePriceOf(c: Course): number {
   return Math.min(180, base + premium)
 }
 
-/* ─────────── مدربو المسارات — تشكيلة توضيحية بانتظار قائمة موثقة ─────────── */
+/* ─────────── مدربو المسارات — لا أسماء غير معتمدة ───────────
+   نزاهة تسويقية: لا يُعرض اسم مدرب إلا بعد اعتماد الشعبة وحصوله على
+   public_visibility. حتى ذلك الحين يظهر التخصص التدريبي + العبارة الموحدة. */
+export const TRAINER_PENDING_AR = 'يُعلن المدرب بعد اعتماد الشعبة'
 export interface Trainer {
   name: string
   role: string
 }
 export const TRAINER_POOLS: Record<string, Trainer[]> = {
   FND: [
-    { name: 'أ. ريم القحطاني', role: 'مدربة التعلم الذاتي وبناء العادات' },
-    { name: 'أ. محمد الشهري', role: 'مدرب الكفاءة الرقمية' },
-    { name: 'د. نورة السبيعي', role: 'مدربة تطبيقات الذكاء الاصطناعي' },
+    { name: TRAINER_PENDING_AR, role: 'مدربة التعلم الذاتي وبناء العادات' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب الكفاءة الرقمية' },
+    { name: TRAINER_PENDING_AR, role: 'مدربة تطبيقات الذكاء الاصطناعي' },
   ],
   STU: [
-    { name: 'أ. ريم القحطاني', role: 'مدربة الجاهزية المهنية' },
-    { name: 'أ. عبدالله المطيري', role: 'مدرب التخطيط المهني للطلاب' },
+    { name: TRAINER_PENDING_AR, role: 'مدربة الجاهزية المهنية' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب التخطيط المهني للطلاب' },
   ],
   EMP: [
-    { name: 'د. فيصل العتيبي', role: 'مدرب تطوير الموظفين' },
-    { name: 'أ. سارة الدوسري', role: 'مدربة الكتابة والعروض المهنية' },
-    { name: 'م. خالد العنزي', role: 'مدرب إدارة المشاريع والبيانات' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب تطوير الموظفين' },
+    { name: TRAINER_PENDING_AR, role: 'مدربة الكتابة والعروض المهنية' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب إدارة المشاريع والبيانات' },
   ],
   COM: [
-    { name: 'أ. سارة الدوسري', role: 'مدربة العروض والخطابة' },
-    { name: 'د. منيرة الزهراني', role: 'مدربة الحوار والإقناع' },
+    { name: TRAINER_PENDING_AR, role: 'مدربة العروض والخطابة' },
+    { name: TRAINER_PENDING_AR, role: 'مدربة الحوار والإقناع' },
   ],
   NEG: [
-    { name: 'د. فيصل العتيبي', role: 'مدرب التفاوض' },
-    { name: 'م. سلطان الدوسري', role: 'مدرب إدارة النزاعات' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب التفاوض' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب إدارة النزاعات' },
   ],
   GOV: [
-    { name: 'م. سلطان الدوسري', role: 'مدرب التطوير الحكومي' },
-    { name: 'أ. هند العمري', role: 'مدربة خدمة الجمهور والمراسلات' },
-    { name: 'د. بدر القحطاني', role: 'مدرب المشتريات والمالية العامة' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب التطوير الحكومي' },
+    { name: TRAINER_PENDING_AR, role: 'مدربة خدمة الجمهور والمراسلات' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب المشتريات والمالية العامة' },
   ],
   BIZ: [
-    { name: 'م. لينا الحربي', role: 'مدربة ريادة الأعمال' },
-    { name: 'أ. فهد الغامدي', role: 'مدرب التسويق والمبيعات' },
+    { name: TRAINER_PENDING_AR, role: 'مدربة ريادة الأعمال' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب التسويق والمبيعات' },
   ],
   AUT: [
-    { name: 'د. نورة السبيعي', role: 'مدربة الذكاء الاصطناعي التطبيقي' },
-    { name: 'أ. محمد الشهري', role: 'مدرب الأتمتة والإنتاجية' },
+    { name: TRAINER_PENDING_AR, role: 'مدربة الذكاء الاصطناعي التطبيقي' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب الأتمتة والإنتاجية' },
   ],
   MKT: [
-    { name: 'أ. فهد الغامدي', role: 'مدرب التسويق الرقمي' },
-    { name: 'م. لينا الحربي', role: 'مدربة النمو' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب التسويق الرقمي' },
+    { name: TRAINER_PENDING_AR, role: 'مدربة النمو' },
   ],
   SAL: [
-    { name: 'أ. فهد الغامدي', role: 'مدرب المبيعات الاستشارية' },
-    { name: 'د. فيصل العتيبي', role: 'مدرب تطوير الأعمال' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب المبيعات الاستشارية' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب تطوير الأعمال' },
   ],
   HR: [
-    { name: 'د. منيرة الزهراني', role: 'مدربة الموارد البشرية' },
-    { name: 'أ. هند العمري', role: 'مدربة تجربة الموظف' },
+    { name: TRAINER_PENDING_AR, role: 'مدربة الموارد البشرية' },
+    { name: TRAINER_PENDING_AR, role: 'مدربة تجربة الموظف' },
   ],
   FIN: [
-    { name: 'د. بدر القحطاني', role: 'مدرب المالية للمديرين' },
-    { name: 'م. خالد العنزي', role: 'مدرب التحليل المالي' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب المالية للمديرين' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب التحليل المالي' },
   ],
   PRD: [
-    { name: 'م. خالد العنزي', role: 'مدرب إدارة المنتج' },
-    { name: 'د. نورة السبيعي', role: 'مدربة تجربة المستخدم' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب إدارة المنتج' },
+    { name: TRAINER_PENDING_AR, role: 'مدربة تجربة المستخدم' },
   ],
   OPS: [
-    { name: 'م. سلطان الدوسري', role: 'مدرب التميز التشغيلي' },
-    { name: 'م. خالد العنزي', role: 'مدرب تحسين العمليات' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب التميز التشغيلي' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب تحسين العمليات' },
   ],
   CYB: [
-    { name: 'م. خالد العنزي', role: 'مدرب إدارة المخاطر السيبرانية' },
-    { name: 'أ. محمد الشهري', role: 'مدرب الأمن الرقمي' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب إدارة المخاطر السيبرانية' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب الأمن الرقمي' },
   ],
   SCM: [
-    { name: 'د. بدر القحطاني', role: 'مدرب المشتريات وسلاسل الإمداد' },
-    { name: 'م. سلطان الدوسري', role: 'مدرب العمليات' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب المشتريات وسلاسل الإمداد' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب العمليات' },
   ],
   LND: [
-    { name: 'م. سلطان الدوسري', role: 'مدرب القيادة' },
-    { name: 'د. منيرة الزهراني', role: 'مدربة الحوار والتغذية الراجعة' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب القيادة' },
+    { name: TRAINER_PENDING_AR, role: 'مدربة الحوار والتغذية الراجعة' },
   ],
 }
-/** مدربو مسار معين — 2–3 مدربين مشاركين (تشكيلة توضيحية؛ يُؤكَّد التعيين بعد اعتماد الشعبة) */
+/** مدربو مسار معين — مقاعد التخصصات التدريبية المشاركة (2–3)؛ الاسم يُعلن بعد اعتماد الشعبة */
 export function pathwayTrainers(pathwayId: string): Trainer[] {
   const family = pathwayId.split('-')[1] ?? 'FND'
   const pool = TRAINER_POOLS[family] ?? TRAINER_POOLS.FND

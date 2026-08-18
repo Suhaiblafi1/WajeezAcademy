@@ -21,9 +21,9 @@ describe('الحتمية', () => {
     expect(new Set(askedOrder).size).toBe(askedOrder.length)
   })
 
-  it('يتوقف ضمن الحدود: 8 أسئلة على الأقل ولا يتجاوز 18 في الوضع السريع', () => {
+  it('يتوقف ضمن الحدود: 8 أسئلة على الأقل ولا يتجاوز 14 أبدا في الوضع السريع', () => {
     const { askedOrder } = runSession(GOV_EMPLOYEE)
     expect(askedOrder.length).toBeGreaterThanOrEqual(8)
-    expect(askedOrder.length).toBeLessThanOrEqual(18)
+    expect(askedOrder.length).toBeLessThanOrEqual(14)
   })
 })

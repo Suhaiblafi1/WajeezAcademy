@@ -3727,6 +3727,15 @@
       "sensitivity_level": "low",
       "version": "1.0",
       "active": true,
+      "merged_aliases": [
+        {
+          "skill_id": "SK-GOV-010",
+          "slug": "government_data_governance",
+          "context_ar": "السياق الحكومي: بيانات عامة بشفافية وحماية وجودة — نفس الكفاءة الجوهرية في قطاع حكومي.",
+          "merged_at": "2026-08-19",
+          "reason_ar": "تدقيق دلالي أثبت تطابق الكفاءة الجوهرية؛ الفرق سياقي فقط ولا يبرر مهارة مستقلة."
+        }
+      ],
       "safety_note_ar": "تستخدم لتوجيه التعلم والتطوير المهني فقط."
     },
     {
@@ -8392,7 +8401,10 @@
       "availability_policy": "available_or_gap_tracked",
       "sensitivity_level": "low",
       "version": "1.0",
-      "active": true,
+      "active": false,
+      "merged_into": "SK-DATA-014",
+      "merge_date": "2026-08-19",
+      "merge_reason_ar": "دمج أكاديمي موثق: الكفاءة الجوهرية مطابقة لحوكمة البيانات (SK-DATA-014) — جودة وحماية وصلاحيات واستخدام مسؤول — والفرق هو السياق الحكومي فقط، وSK-DATA-014 يشمل الحكومة أصلًا في persona_scope وpathway_tags. السياق الحكومي محفوظ كبيانات وصفية في merged_aliases للهدف.",
       "safety_note_ar": "تستخدم لتوجيه التعلم والتطوير المهني فقط."
     },
     {

@@ -39,7 +39,7 @@ export default function ContentWorkflow() {
                   <BookMarked className="h-5 w-5" />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="font-black">{c.title} <span className="text-xs text-white/40">({c.version})</span></p>
+                  <p className="font-black">{c.title} <span className="text-xs text-white/50">({c.version})</span></p>
                   <p className="mt-0.5 text-xs text-white/50">
                     المالك: {c.owner} · {c.skillsCount} مهارات مربوطة · آخر تحديث {c.updatedAt}
                   </p>

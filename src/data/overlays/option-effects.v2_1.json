@@ -1,0 +1,281 @@
+{
+  "version": "2.1.0",
+  "option_effects": {
+    "QC-S1-001": {
+      "o1": {
+        "career_stage": "university_student",
+        "persona_type": "student"
+      },
+      "o2": {
+        "career_stage": "fresh_graduate",
+        "persona_type": "early_career"
+      },
+      "o3": {
+        "career_stage": "early_career",
+        "persona_type": "employee"
+      },
+      "o4": {
+        "career_stage": "experienced",
+        "persona_type": "employee"
+      },
+      "o5": {
+        "career_stage": "manager",
+        "persona_type": "manager"
+      },
+      "o6": {
+        "career_stage": "senior_manager",
+        "persona_type": "manager"
+      },
+      "o7": {
+        "career_stage": "founder",
+        "persona_type": "founder",
+        "employment_state": "business_owner"
+      },
+      "o8": {
+        "career_stage": "freelancer",
+        "persona_type": "freelancer",
+        "employment_state": "self_employed"
+      },
+      "o9": {
+        "career_stage": "trainer_ld",
+        "persona_type": "trainer"
+      },
+      "o10": {
+        "career_stage": "other_unsure",
+        "persona_branch": "unsure"
+      }
+    },
+    "QC-S1-002": {
+      "o1": {
+        "employment_state": "not_working"
+      },
+      "o2": {
+        "employment_state": "job_seeking"
+      },
+      "o3": {
+        "employment_state": "employed"
+      },
+      "o4": {
+        "employment_state": "self_employed"
+      },
+      "o5": {
+        "employment_state": "business_owner"
+      }
+    },
+    "QC-G2-001": {
+      "o1": {
+        "primary_goal": "first_job",
+        "goal_code_v21": "first_job"
+      },
+      "o2": {
+        "primary_goal": "career_direction",
+        "goal_code_v21": "choose_field"
+      },
+      "o3": {
+        "primary_goal": "employment_advancement",
+        "goal_code_v21": "practical_skills"
+      },
+      "o4": {
+        "primary_goal": "personal_brand",
+        "goal_code_v21": "build_portfolio"
+      },
+      "o5": {
+        "primary_goal": "business_launch",
+        "goal_code_v21": "start_business"
+      },
+      "o6": {
+        "primary_goal": "personal_growth",
+        "goal_code_v21": "specific_skill"
+      },
+      "o7": {
+        "primary_goal": "promotion",
+        "goal_code_v21": "promotion"
+      },
+      "o8": {
+        "primary_goal": "employment_advancement",
+        "goal_code_v21": "improve_performance"
+      },
+      "o9": {
+        "primary_goal": "career_direction",
+        "goal_code_v21": "career_change"
+      },
+      "o10": {
+        "primary_goal": "lead_team",
+        "goal_code_v21": "leadership_prep"
+      },
+      "o11": {
+        "primary_goal": "digital_transformation",
+        "goal_code_v21": "ai_better"
+      },
+      "o12": {
+        "primary_goal": "revenue_growth",
+        "goal_code_v21": "grow_business"
+      },
+      "o13": {
+        "primary_goal": "revenue_growth",
+        "goal_code_v21": "grow_freelance"
+      },
+      "o14": {
+        "primary_goal": "design_training",
+        "goal_code_v21": "design_training"
+      },
+      "o15": {
+        "primary_goal": "explore",
+        "goal_code_v21": "unsure_goal",
+        "goal_clarity": "low"
+      }
+    },
+    "QC-N3-001": {
+      "o1": {
+        "need_id": "need_employability"
+      },
+      "o2": {
+        "need_id": "need_direction"
+      },
+      "o3": {
+        "need_id": "need_data"
+      },
+      "o4": {
+        "need_id": "need_projects"
+      },
+      "o5": {
+        "need_id": "need_leadership"
+      },
+      "o6": {
+        "need_id": "need_communication"
+      },
+      "o7": {
+        "need_id": "need_ai"
+      },
+      "o8": {
+        "need_id": "need_operations"
+      },
+      "o9": {
+        "need_id": "need_customer_experience"
+      },
+      "o10": {
+        "need_id": "need_sales"
+      },
+      "o11": {
+        "need_id": "need_marketing"
+      },
+      "o12": {
+        "need_id": "need_negotiation"
+      },
+      "o13": {
+        "need_id": "need_product"
+      },
+      "o14": {
+        "need_id": "need_cyber"
+      },
+      "o15": {
+        "need_id": "need_supply"
+      },
+      "o16": {
+        "need_id": "need_finance"
+      },
+      "o17": {
+        "need_id": "need_learning_design"
+      },
+      "o18": {
+        "need_id": "need_business"
+      },
+      "o19": {
+        "need_id": "need_unsure"
+      }
+    },
+    "QC-F7-001": {
+      "o1": {
+        "weekly_load": "lt_3"
+      },
+      "o2": {
+        "weekly_load": "3_4"
+      },
+      "o3": {
+        "weekly_load": "5_6"
+      },
+      "o4": {
+        "weekly_load": "7_plus"
+      }
+    },
+    "QC-C8-001": {
+      "o1": {
+        "mastery_portfolio_pref": "master_one"
+      },
+      "o2": {
+        "mastery_portfolio_pref": "skill_set"
+      },
+      "o3": {
+        "mastery_portfolio_pref": "unsure"
+      }
+    },
+    "QB-M3C-001": {
+      "o1": {
+        "business_stage": "idea"
+      },
+      "o2": {
+        "business_stage": "validation"
+      },
+      "o3": {
+        "business_stage": "pre_revenue"
+      },
+      "o4": {
+        "business_stage": "early_revenue"
+      },
+      "o5": {
+        "business_stage": "growing"
+      },
+      "o6": {
+        "business_stage": "established"
+      }
+    },
+    "QB-M3E-002": {
+      "o1": {
+        "interest_domains": [
+          "ai_productivity",
+          "data_decision",
+          "cyber_risk"
+        ]
+      },
+      "o2": {
+        "interest_domains": [
+          "entrepreneurship",
+          "operations",
+          "project_management"
+        ]
+      },
+      "o3": {
+        "interest_domains": [
+          "marketing_growth",
+          "sales"
+        ]
+      },
+      "o4": {
+        "interest_domains": [
+          "learning_design"
+        ]
+      },
+      "o5": {
+        "interest_domains": [
+          "communication_influence",
+          "marketing_growth"
+        ]
+      },
+      "o6": {
+        "interest_domains": [
+          "people_leadership"
+        ]
+      },
+      "o7": {
+        "interest_domains": [
+          "gov_services"
+        ]
+      },
+      "o8": {
+        "interest_domains": [
+          "finance_mgmt"
+        ]
+      }
+    }
+  }
+}

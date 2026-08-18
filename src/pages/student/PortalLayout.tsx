@@ -1,11 +1,16 @@
 import { useEffect, useState } from "react";
-import { Link, NavLink, useNavigate } from "react-router";
-import { GraduationCap, LayoutDashboard, Route as RouteIcon, Trophy, Award, Lock, Eye, LogOut, Bell, CheckCheck } from "lucide-react";
+import { Link, NavLink, useLocation, useNavigate } from "react-router";
+import { GraduationCap, LayoutDashboard, Route as RouteIcon, Trophy, Award, Lock, Eye, LogOut, Bell, CheckCheck, UserCircle, ReceiptText, FileText, MoreHorizontal, X, LifeBuoy, CalendarDays } from "lucide-react";
 import { canAccessPortal, enablePreview, getEnrollment, isOwnerUnlocked, unlockOwner } from "@/services/access";
 import { signOut } from "@/services/auth";
+import { apiGet, apiPost } from "@/services/api";
 import { loadPortal, readUserName, savePortal, type PortalNotification } from "@/data/student";
 import { pathways } from "@/data/pathways";
 import { pathwayCourses } from "@/data/courses";
+import PrototypeBanner from "@/components/PrototypeBanner";
+import EcosystemNote from "@/components/EcosystemNote";
+
+interface RealNotif { id: string; title: string; body: string; status: string; sentAt: string | null; queuedAt: string }
 
 /** إطار بوابة الطالب: شريط علوي + تنقل + إشعارات + حارس الوصول (دفع سابق أو معاينة تجريبية) */
 export default function PortalLayout({ children, title }: { children: React.ReactNode; title: string }) {
@@ -13,6 +18,8 @@ export default function PortalLayout({ children, title }: { children: React.Reac
   const previewOwner = new URLSearchParams(window.location.search).get("preview") === "owner";
   const [allowed, setAllowed] = useState<boolean>(() => canAccessPortal() || previewOwner);
   const [bellOpen, setBellOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const { pathname } = useLocation();
   const navigate = useNavigate();
   const user = readUserName();
   const enrollment = getEnrollment();
@@ -20,18 +27,49 @@ export default function PortalLayout({ children, title }: { children: React.Reac
   const [notifs, setNotifs] = useState<PortalNotification[]>(() =>
     pathwayId ? loadPortal(pathwayId).notifications.slice(0, 6) : []
   );
+  /* إشعارات الخادم الحقيقية — عند توفر جلسة تحل محل المحلية */
+  const [realNotifs, setRealNotifs] = useState<RealNotif[] | null>(null);
 
   useEffect(() => {
     if (previewOwner) unlockOwner();
   }, [previewOwner]);
 
-  const unreadCount = notifs.filter((n) => !n.read).length;
+  useEffect(() => {
+    apiGet<RealNotif[]>("/api/learner/notifications").then((rows) => setRealNotifs(rows.slice(0, 6))).catch(() => setRealNotifs(null));
+  }, []);
+
+  /* عداد الخادم الرسمي للشارة — يُفضَّل على الحساب المحلي من القائمة المقتطعة */
+  const [serverUnread, setServerUnread] = useState<number | null>(null);
+  useEffect(() => {
+    apiGet<{ unread: number }>("/api/learner/notifications/unread-count")
+      .then((r) => setServerUnread(r.unread))
+      .catch(() => setServerUnread(null));
+  }, []);
+
+  const unreadCount = serverUnread ?? (realNotifs
+    ? realNotifs.filter((n) => n.status !== "read").length
+    : notifs.filter((n) => !n.read).length);
+
   const markAllRead = () => {
+    if (realNotifs) {
+      const unread = realNotifs.filter((n) => n.status !== "read");
+      setRealNotifs(realNotifs.map((n) => ({ ...n, status: "read" })));
+      setServerUnread(0);
+      void Promise.allSettled(unread.map((n) => apiPost(`/api/learner/notifications/${n.id}/read`)));
+      return;
+    }
     if (!pathwayId) return;
     const s = loadPortal(pathwayId);
     s.notifications = s.notifications.map((n) => ({ ...n, read: true }));
     savePortal(s);
     setNotifs(s.notifications.slice(0, 6));
+  };
+
+  const markOneRead = (id: string) => {
+    if (!realNotifs) return;
+    setRealNotifs(realNotifs.map((n) => (n.id === id ? { ...n, status: "read" } : n)));
+    setServerUnread((c) => (c != null && c > 0 ? c - 1 : c));
+    void apiPost(`/api/learner/notifications/${id}/read`).catch(() => undefined);
   };
 
   if (!allowed) {
@@ -52,12 +90,14 @@ export default function PortalLayout({ children, title }: { children: React.Reac
           {isOwnerUnlocked() && (
             <button
               onClick={() => { enablePreview(); setAllowed(true); }}
-              className="flex cursor-pointer items-center gap-1.5 rounded-full border border-dashed border-white/20 px-4 py-2 text-xs text-white/40 hover:border-[#6EC7D1]/50 hover:text-[#6EC7D1]"
+              className="flex cursor-pointer items-center gap-1.5 rounded-full border border-dashed border-white/20 px-4 py-2 text-xs text-white/50 hover:border-[#6EC7D1]/50 hover:text-[#6EC7D1]"
             >
               <Eye className="h-3.5 w-3.5" /> معاينة تجريبية (للمالك)
             </button>
           )}
         </div>
+        {/* تعريف المنظومة عند مدخل البوابة — سطر ثقة ثانوي لا ينافس الرسالة */}
+        <EcosystemNote className="mt-10" />
       </div>
     );
   }
@@ -67,10 +107,21 @@ export default function PortalLayout({ children, title }: { children: React.Reac
     { to: "/student/pathway", label: "مساري", icon: RouteIcon },
     { to: "/student/project", label: "مشروع التخرج", icon: Trophy },
     { to: "/student/certificates", label: "شهاداتي", icon: Award },
+    { to: "/student/billing", label: "فواتيري", icon: ReceiptText },
+    { to: "/student/cv", label: "سيرتي", icon: FileText },
+    { to: "/student/account", label: "حسابي", icon: UserCircle },
+    { to: "/student/notifications", label: "إشعاراتي", icon: Bell },
+    { to: "/student/support", label: "الدعم", icon: LifeBuoy },
+    { to: "/student/cohorts", label: "الشعب المفتوحة", icon: CalendarDays },
   ];
+  /* جوال: أربعة تبويبات أساسية ثابتة + «المزيد» يفتح الباقي — لا تمرير أفقي يُخفي الصفحات */
+  const mainTabs = [tabs[0], tabs[1], tabs[2], tabs[6]];
+  const moreTabs = [tabs[3], tabs[4], tabs[5], tabs[7], tabs[8], tabs[9]];
+  const moreActive = moreTabs.some((t) => pathname.startsWith(t.to));
 
   return (
     <div dir="rtl" className="min-h-screen bg-[#0D0D0D] text-white">
+      <PrototypeBanner />
       <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0D0D0D]/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
           <Link to="/" className="flex items-center gap-2">
@@ -118,10 +169,25 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                       </button>
                     </div>
                     <div className="max-h-72 space-y-1.5 overflow-y-auto">
-                      {notifs.length === 0 && <p className="px-2 py-6 text-center text-[11px] text-white/55">لا إشعارات بعد</p>}
-                      {notifs.map((n) => (
-                        <p key={n.id} className={`rounded-xl border px-3 py-2 text-[11px] leading-5 ${n.read ? "border-white/5 text-white/40" : "border-[#38A7B4]/25 bg-[#38A7B4]/5 text-white/75"}`}>{n.text}</p>
-                      ))}
+                      {realNotifs ? (
+                        <>
+                          {realNotifs.length === 0 && <p className="px-2 py-6 text-center text-[11px] text-white/55">لا إشعارات بعد</p>}
+                          {realNotifs.map((n) => (
+                            <button key={n.id} onClick={() => markOneRead(n.id)}
+                              className={`block w-full cursor-pointer rounded-xl border px-3 py-2 text-right text-[11px] leading-5 ${n.status === "read" ? "border-white/5 text-white/50" : "border-[#38A7B4]/25 bg-[#38A7B4]/5 text-white/75"}`}>
+                              <span className="block font-bold">{n.title}</span>
+                              {n.body}
+                            </button>
+                          ))}
+                        </>
+                      ) : (
+                        <>
+                          {notifs.length === 0 && <p className="px-2 py-6 text-center text-[11px] text-white/55">لا إشعارات بعد</p>}
+                          {notifs.map((n) => (
+                            <p key={n.id} className={`rounded-xl border px-3 py-2 text-[11px] leading-5 ${n.read ? "border-white/5 text-white/50" : "border-[#38A7B4]/25 bg-[#38A7B4]/5 text-white/75"}`}>{n.text}</p>
+                          ))}
+                        </>
+                      )}
                     </div>
                   </div>
                 </>
@@ -130,7 +196,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
             <GraduationCap className="h-4 w-4 text-[#6EC7D1]" />
             <span className="max-w-[110px] truncate">{user}</span>
             <button
-              onClick={() => { signOut(); navigate("/"); }}
+              onClick={() => { void signOut(); navigate("/"); }}
               aria-label="تسجيل الخروج"
               title="تسجيل الخروج"
               className="grid h-8 w-8 place-items-center rounded-full border border-white/10 text-white/45 transition hover:border-red-400/50 hover:text-red-300"
@@ -151,16 +217,18 @@ export default function PortalLayout({ children, title }: { children: React.Reac
         </div>
         {children}
       </main>
-      {/* شريط تنقل سفلي للجوال — التبويبات الأربعة كاملة بالنص في متناول الإبهام */}
-      <nav aria-label="تنقل المنصة" className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-white/10 bg-[#0D0D0D]/95 pb-[max(env(safe-area-inset-bottom),0.25rem)] backdrop-blur-xl sm:hidden">
-        {tabs.map((t) => (
+      {/* تعريف المنظومة — تذييل ثقة خفيف داخل البوابة (يظهر مرة واحدة أسفل المحتوى) */}
+      <EcosystemNote className="mx-auto max-w-6xl px-5 pb-24 sm:pb-6" />
+      {/* شريط تنقل سفلي للجوال — أربعة أساسية + «المزيد» بقائمة منبثقة */}
+      <nav aria-label="تنقل المنصة" className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-white/10 bg-[#0D0D0D]/95 pb-[max(env(safe-area-inset-bottom),0.25rem)] backdrop-blur-xl sm:hidden">
+        {mainTabs.map((t) => (
           <NavLink
             key={t.to}
             to={t.to}
             end={t.end as boolean | undefined}
             className={({ isActive }) =>
               `flex flex-col items-center gap-1 py-2.5 text-[10px] font-bold transition ${
-                isActive ? "text-[#6EC7D1]" : "text-white/45"
+                isActive ? "text-[#6EC7D1]" : "text-white/50"
               }`
             }
           >
@@ -168,7 +236,47 @@ export default function PortalLayout({ children, title }: { children: React.Reac
             {t.label}
           </NavLink>
         ))}
+        <button
+          onClick={() => setMoreOpen(true)}
+          aria-label="المزيد من الصفحات"
+          className={`flex cursor-pointer flex-col items-center gap-1 py-2.5 text-[10px] font-bold transition ${
+            moreActive ? "text-[#6EC7D1]" : "text-white/50"
+          }`}
+        >
+          <MoreHorizontal className="h-5 w-5" />
+          المزيد
+        </button>
       </nav>
+
+      {/* قائمة «المزيد» — شهاداتي وفواتيري وسيرتي */}
+      {moreOpen && (
+        <>
+          <button aria-label="إغلاق القائمة" onClick={() => setMoreOpen(false)} className="fixed inset-0 z-50 cursor-default bg-black/60 backdrop-blur-sm sm:hidden" />
+          <div dir="rtl" className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl border-t border-white/10 bg-[#141414] p-5 pb-[max(env(safe-area-inset-bottom),1rem)] sm:hidden">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-sm font-black">صفحات أخرى</p>
+              <button onClick={() => setMoreOpen(false)} aria-label="إغلاق" className="cursor-pointer text-white/50 hover:text-white"><X className="h-5 w-5" /></button>
+            </div>
+            <div className="space-y-1.5">
+              {moreTabs.map((t) => (
+                <NavLink
+                  key={t.to}
+                  to={t.to}
+                  onClick={() => setMoreOpen(false)}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-bold transition ${
+                      isActive ? "border-[#38A7B4]/50 bg-[#38A7B4]/10 text-[#6EC7D1]" : "border-white/10 text-white/70 hover:border-white/25"
+                    }`
+                  }
+                >
+                  <t.icon className="h-4 w-4" />
+                  {t.label}
+                </NavLink>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -7,6 +7,7 @@ import CourseModal from '@/components/CourseModal'
 import SiteShell from '@/components/SiteShell'
 import SeoHead from '@/components/SeoHead'
 import { track } from '@/services/analytics'
+import { usePublishedContent } from '@/services/public-content'
 
 /* ───────────────── تصنيف المسار من عائلته ───────────────── */
 const PW_CATEGORY: Record<string, string> = {
@@ -24,17 +25,24 @@ type Sort = 'featured' | 'shortest' | 'longest' | 'name'
    بحث + تصفية بالمجال والمستوى + ترتيب، وكل الفلاتر محفوظة في
    عنوان الصفحة لتصبح النتيجة رابطا قابلا للمشاركة */
 export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
+  usePublishedContent()
   const [params, setParams] = useSearchParams()
   const [modalCourse, setModalCourse] = useState<Course | null>(null)
 
   const q = params.get('q') ?? ''
-  const cat = params.get('cat') ?? 'الكل'
+  const cat = params.get('cat') ?? 'أساسيات'
   const level = params.get('level') ?? 'الكل'
   const sort = (params.get('sort') ?? 'featured') as Sort
 
   const patch = (key: string, value: string) => {
     const next = new URLSearchParams(params)
-    if (value && value !== 'الكل' && !(key === 'sort' && value === 'featured')) next.set(key, value)
+    /* القيمة الافتراضية تحذف من العنوان: أساسيات للمجال، الكل للمستوى، featured للترتيب */
+    const isDefault =
+      (key === 'cat' && value === 'أساسيات') ||
+      (key === 'level' && value === 'الكل') ||
+      (key === 'sort' && value === 'featured') ||
+      (key === 'q' && !value)
+    if (!isDefault && value) next.set(key, value)
     else next.delete(key)
     setParams(next, { replace: true })
   }

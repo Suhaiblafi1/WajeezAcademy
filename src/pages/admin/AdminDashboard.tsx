@@ -79,12 +79,12 @@ export default function AdminDashboard() {
           <p className="flex items-center gap-2 text-sm font-black text-white/75">
             <TrendingUp className="h-4 w-4 text-[#6EC7D1]" /> ربحية المسارات — مرتبة بالهامش
           </p>
-          <span className="text-[11px] text-white/40">الفترة: هذا الربع · العملة: دولار</span>
+          <span className="text-[11px] text-white/50">الفترة: هذا الربع · العملة: دولار</span>
         </div>
         <div className="scrollbar-hide mt-4 overflow-x-auto">
           <table className="w-full min-w-[760px] text-right text-xs">
             <thead>
-              <tr className="border-b border-white/10 text-white/40">
+              <tr className="border-b border-white/10 text-white/50">
                 <th className="pb-3 pr-2 font-medium">المسار</th>
                 <th className="pb-3 font-medium">تسجيلات</th>
                 <th className="pb-3 font-medium">إجمالي</th>

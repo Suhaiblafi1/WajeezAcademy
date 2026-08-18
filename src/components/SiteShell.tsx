@@ -1,6 +1,7 @@
 import { Link } from 'react-router'
 import { ArrowRight } from 'lucide-react'
 import { CONTACT } from '@/data/stories'
+import { ECOSYSTEM_NOTE } from '@/data/siteContent'
 
 /* قالب الصفحات العامة الداخلية: ترويسة عودة + محتوى + تذييل موحد */
 export default function SiteShell({ children }: { children: React.ReactNode }) {
@@ -26,7 +27,7 @@ export default function SiteShell({ children }: { children: React.ReactNode }) {
       </header>
       <div className="mx-auto max-w-6xl px-5 py-12 md:py-16">{children}</div>
       <footer className="border-t border-white/5 py-8 text-center text-xs leading-6 text-white/55">
-        <div>© 2026 أكاديمي وجيز — من مجموعة wajeez.com</div>
+        <div>© 2026 {ECOSYSTEM_NOTE}</div>
         <div className="mt-1">
           {CONTACT.email} ·{' '}
           {CONTACT.locations.map((loc, i) => (
@@ -39,6 +40,11 @@ export default function SiteShell({ children }: { children: React.ReactNode }) {
               )}
             </span>
           ))}
+        </div>
+        <div className="mt-2">
+          <Link to="/methodology" className="font-semibold text-white/50 transition hover:text-teal-light">
+            منهجية وجيز
+          </Link>
         </div>
       </footer>
     </div>

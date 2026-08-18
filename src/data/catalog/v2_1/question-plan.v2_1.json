@@ -1,0 +1,2952 @@
+{
+  "version": "2.1.0",
+  "doc_ar": "خطة كل سؤال في V2.1: السطح، الطبقة الست، الفعل، المراحل المؤهلة، الأثر القراري. مولّدة — لا تُحرر يدويًا.",
+  "generated_by": "scripts/build-v2_1-overlays.ts",
+  "plan": {
+    "QB-M0-001": {
+      "surface": "b2b_b2g",
+      "layer21": null,
+      "phase": "none",
+      "action": "out_of_scope",
+      "stages": [],
+      "why_ar": "صاحب القرار المؤسسي — مسار B2B/B2G فقط. في B2C المتعلم هو صاحب القرار دائمًا.",
+      "domains": [],
+      "impact_ar": "خارج B2C — في مسار المؤسسات يغيّر لغة الرحلة كلها.",
+      "measures": [
+        "decision_owner"
+      ],
+      "final_status": "institutional"
+    },
+    "QB-M0-002": {
+      "surface": "ui_ack",
+      "layer21": null,
+      "phase": "none",
+      "action": "move_post",
+      "stages": [],
+      "why_ar": "العمر لم يعد مطلوبًا: المرحلة المهنية صريحة، وأمان القاصرين يُعالج بإقرار الواجهة.",
+      "domains": [],
+      "impact_ar": "لا أثر قراري في B2C.",
+      "measures": [
+        "age_band",
+        "minor_rules"
+      ],
+      "final_status": "out_of_scope"
+    },
+    "QB-M0-003": {
+      "surface": "post_recommendation",
+      "layer21": null,
+      "phase": "none",
+      "action": "move_post",
+      "stages": [],
+      "why_ar": "الدولة تخصيص عرض/تسعير لاحقًا — لا تغيّر التوصية التعليمية.",
+      "domains": [],
+      "impact_ar": "لا أثر على المسار.",
+      "measures": [
+        "country",
+        "regional_context"
+      ],
+      "final_status": "post_recommendation"
+    },
+    "QB-M0-004": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "why_ar": "الأكاديمية عربية حاليًا — سؤال اللغة غير قابل للاستخدام منتجيًا.",
+      "domains": [],
+      "impact_ar": "لا أثر — محذوف من B2C.",
+      "measures": [
+        "language"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M0-005": {
+      "surface": "ui_ack",
+      "layer21": null,
+      "phase": "none",
+      "action": "move_post",
+      "stages": [],
+      "why_ar": "الحفظ ميزة واجهة قائمة — ليس سؤالًا تشخيصيًا.",
+      "domains": [],
+      "impact_ar": "لا أثر قراري.",
+      "measures": [
+        "save_preference"
+      ],
+      "final_status": "out_of_scope"
+    },
+    "QB-M0-006": {
+      "surface": "ui_ack",
+      "layer21": null,
+      "phase": "none",
+      "action": "move_post",
+      "stages": [],
+      "why_ar": "الموافقة إقرار واجهة قبل البدء (موجودة في صفحة التشخيص) — لا تُحسب سؤالًا ولا تدخل الثقة.",
+      "domains": [],
+      "impact_ar": "لا تغيّر التوصية — إجراء قانوني فقط.",
+      "measures": [
+        "diagnostic_consent"
+      ],
+      "final_status": "out_of_scope"
+    },
+    "QB-M0-007": {
+      "surface": "ui_ack",
+      "layer21": null,
+      "phase": "none",
+      "action": "move_post",
+      "stages": [],
+      "why_ar": "الموافقة التسويقية قانونية مستقلة — تُدار بالواجهة عند الحاجة.",
+      "domains": [],
+      "impact_ar": "لا أثر قراري.",
+      "measures": [
+        "marketing_consent",
+        "unavailable_skill_notify"
+      ],
+      "final_status": "out_of_scope"
+    },
+    "QB-M0-008": {
+      "surface": "ui_ack",
+      "layer21": null,
+      "phase": "none",
+      "action": "move_post",
+      "stages": [],
+      "why_ar": "سن 18+ يُذكر في إقرار الواجهة؛ لا سؤال قاصر داخل المحرك.",
+      "domains": [],
+      "impact_ar": "لا أثر قراري في B2C.",
+      "measures": [
+        "minor_flag"
+      ],
+      "final_status": "out_of_scope"
+    },
+    "QB-M0-009": {
+      "surface": "b2b_b2g",
+      "layer21": null,
+      "phase": "none",
+      "action": "out_of_scope",
+      "stages": [],
+      "why_ar": "الجهة الدافعة سؤال مبيعات/عروض — يعالج في Checkout لا في التشخيص التعليمي.",
+      "domains": [],
+      "impact_ar": "خارج B2C.",
+      "measures": [
+        "payer_type",
+        "budget_context"
+      ],
+      "final_status": "institutional"
+    },
+    "QB-M0-010": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "why_ar": "الارتياح للخصوصية لا يستطيع المنتج استخدام إجابته.",
+      "domains": [],
+      "impact_ar": "لا أثر — محذوف.",
+      "measures": [
+        "privacy_comfort"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M1-001": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "replaced",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "خليفته يحدد المرحلة ويفلتر كل ما بعدها.",
+      "why_ar": "استُبدل بسؤال المرحلة المهنية الدقيق (10 أوصاف) — الفصل بين المرحلة وحالة العمل.",
+      "measures": [
+        "persona_type"
+      ],
+      "replaced_by": "QC-S1-001",
+      "final_status": "retired"
+    },
+    "QB-M1-002": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "replaced",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "لا أثر مستقل بعد الدمج.",
+      "why_ar": "المرحلة التعليمية اندمجت في سؤال المرحلة المهنية — لا حاجة لسؤالين.",
+      "measures": [
+        "education_state"
+      ],
+      "replaced_by": "QC-S1-001",
+      "final_status": "retired"
+    },
+    "QB-M1-003": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "replaced",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "خليفته يفصل أول وظيفة عن ترقية.",
+      "why_ar": "استُبدل بسؤال حالة العمل المنفصل (5 حالات) — يُسأل فقط عندما لا تحسمه المرحلة.",
+      "measures": [
+        "employment_state"
+      ],
+      "replaced_by": "QC-S1-002",
+      "final_status": "retired"
+    },
+    "QB-M1-004": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يضبط عمق المسار والمهام التطبيقية.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "experience_years"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M1-005": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "لا أثر قابل للحسم — محذوف من B2C.",
+      "why_ar": "نص حر بلا consequence حتمي — سؤال الاحتياج QC-N3-001 يكتشف المجال بخيارات مؤثرة موثقة.",
+      "measures": [
+        "current_domain"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M1-006": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يفسر القيود والزمن والطاقة.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "current_responsibility"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M1-007": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "لا أثر قابل للحسم — محذوف من B2C.",
+      "why_ar": "نص حر بلا consequence حتمي — سؤال الاحتياج QC-N3-001 يغطي الإشارة بخيارات مؤثرة.",
+      "measures": [
+        "current_pain"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M1-008": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يكشف قيود الوصول وبدائل الصيغة.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "access_readiness"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M1-009": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يدخل في احتمال الإكمال.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "completion_history"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M1-010": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يفتح أسئلة الدافع والدعم عند الحاجة.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "completion_pattern"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M1-011": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "«لدي ملف أعمال» مقابل «لا دليل» يغيّر قوة التوصية وربما جولة التأكيد.",
+      "why_ar": "وجود دليل مهاري (مشروع/شهادة) يرفع جودة الأدلة ويغيّر درجة الثقة.",
+      "measures": [
+        "evidence_strength"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M1-012": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يضبط طول المسار والعبء الأسبوعي.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "life_constraints"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M2-001": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "replaced",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "خليفته يحدد فضاء المشكلة.",
+      "why_ar": "استُبدل بسؤال هدف تُفلتر خياراته حسب المرحلة المهنية — لا هدف واحد للجميع.",
+      "measures": [
+        "primary_goal"
+      ],
+      "replaced_by": "QC-G2-001",
+      "final_status": "retired"
+    },
+    "QB-M2-002": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يدخل في تفسير التوصية وربط المسار بالحلم.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "dream_statement"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M2-003": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يحدد معيار التوصية والقياس.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "success_metric"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M2-004": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يضبط كثافة المسار وجدول التعلم.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "target_date"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M2-005": {
+      "surface": "b2c",
+      "layer21": "goal_need",
+      "phase": "core",
+      "action": "keep",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "«واضح تمامًا» مقابل «غامض» يغيّر مسار الجلسة والثقة النهائية.",
+      "why_ar": "وضوح الهدف يقرر: انتقال سريع للأدلة أم استكشاف أعمق — ويدخل الثقة.",
+      "measures": [
+        "goal_clarity"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M2-006": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يميز الدافع العميق عن الاهتمام اللحظي.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "motivation_driver"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M2-007": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يسمح بمسارات داعمة دون تشتيت.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "secondary_goals"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M2-008": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يمنع توصيات غير مناسبة.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "anti_goals"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M2-009": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يضبط PathwayFit والبدائل.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "value_priorities"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M2-010": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "replaced",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "خليفته يفصل بين مسار واحد وخطة مركبة.",
+      "why_ar": "«توسع أفقي/تعمق عمودي» مصطلح داخلي — استُبدل بسؤال إتقان مقابل منظومة بلغة المستخدم، ولا يُسأل إلا عند غموض قياسي/مركب.",
+      "measures": [
+        "breadth_depth_preference"
+      ],
+      "replaced_by": "QC-C8-001",
+      "final_status": "retired"
+    },
+    "QB-M2-011": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يفرق بين مسارات آمنة وتجريبية.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "risk_tolerance"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M2-012": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يساعد في ربط المسار بالمهن والمهارات.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "role_model",
+        "aspirational_role"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M2-013": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "ينتج لغة تقرير شخصية وقوية.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "transformation_marker"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M2-014": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يفرق بين single_course وpathway.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "scope_type"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M2-015": {
+      "surface": "b2c",
+      "layer21": "feasibility",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "«جاهز للتطبيق» مقابل «أفضل النظرية» يغيّر مكون الخطة لا المسار.",
+      "why_ar": "الاستعداد للتطبيق العملي يضبط طبيعة الخطة (مشاريع مقابل محتوى نظري).",
+      "measures": [
+        "application_readiness"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M2-016": {
+      "surface": "post_recommendation",
+      "layer21": null,
+      "phase": "none",
+      "action": "move_post",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "لا أثر على اختيار المسار.",
+      "why_ar": "تفضيل التعامل مع مهارة غير متوفرة يُعرض بعد التوصية لا قبلها.",
+      "measures": [
+        "unavailable_skill_preference"
+      ],
+      "final_status": "post_recommendation"
+    },
+    "QB-M3A-001": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يضبط أسئلة الوظيفة الأولى.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "student_stage"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M3A-002": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يربط المسار بالمهن المحتملة.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "major_domain"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M3A-003": {
+      "surface": "b2c",
+      "layer21": "goal_need",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": [
+        "university_student",
+        "fresh_graduate",
+        "early_career"
+      ],
+      "domains": [],
+      "impact_ar": "يغيّر المجال المتصدر لطالب/خريج.",
+      "why_ar": "وضوح تصور أول وظيفة يفصل «جاهزية توظيف» عن «استكشاف اتجاه».",
+      "measures": [
+        "first_job_clarity"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M3A-004": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": [
+        "university_student",
+        "fresh_graduate",
+        "early_career"
+      ],
+      "domains": [],
+      "impact_ar": "يفصل مسارات الجاهزية عن بناء الأساس.",
+      "why_ar": "وجود سيرة/ملف أصول مهنية دليل مباشر على جاهزية التوظيف.",
+      "measures": [
+        "career_assets"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M3A-005": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": [
+        "university_student",
+        "fresh_graduate",
+        "early_career",
+        "freelancer"
+      ],
+      "domains": [],
+      "impact_ar": "يغيّر قوة الأدلة وترتيب مسارات العلامة الشخصية.",
+      "why_ar": "ملف الأعمال دليل مهارة قابل للعرض — يدعم أهداف بناء الهوية المهنية.",
+      "measures": [
+        "portfolio_evidence"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M3A-006": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": [
+        "university_student",
+        "fresh_graduate",
+        "early_career"
+      ],
+      "domains": [],
+      "impact_ar": "تغيّر فجوة المهارات المقيسة لمسارات التوظيف.",
+      "why_ar": "الثقة بالمقابلات بصياغة دليلية تقيس فجوة جاهزية حقيقية.",
+      "measures": [
+        "interview_confidence"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M3A-007": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": [
+        "university_student",
+        "fresh_graduate",
+        "early_career"
+      ],
+      "domains": [],
+      "impact_ar": "يرفع جودة الأدلة وقد يحسم الترتيب.",
+      "why_ar": "التعرض العملي (تدريب/تطوع) دليل خبرة يفرّق بين مسارين متقاربين.",
+      "measures": [
+        "practical_exposure"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M3A-008": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يوصي بمسار لغة عند الحاجة.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "english_gap"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M3A-009": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يفتح توصيف مهني O*NET/ESCO لاحقا.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "job_skill_awareness"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M3A-010": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يفتح مسار جسر أو تغيير مسار.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "major_goal_fit"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M3A-011": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يوجه النواة الأولى للمسار.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "first_opportunity_gap"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M3A-012": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يفتح مستشار عند تعارض شديد.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "social_pressure"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M3B-001": {
+      "surface": "b2c",
+      "layer21": "domain_differentiation",
+      "phase": "core",
+      "action": "keep",
+      "stages": [
+        "early_career",
+        "experienced",
+        "manager",
+        "senior_manager",
+        "trainer_ld"
+      ],
+      "domains": [],
+      "impact_ar": "«حكومي» مقابل «خاص» يفتح/يغلق مسارات حكومية ومجال الخدمات الحكومية.",
+      "why_ar": "القطاع (عام/خاص) يفلتر مسارات حكومية بأكملها — استبعاد صارم.",
+      "measures": [
+        "sector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M3B-002": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يربط التشخيص بمسارات وظيفية جاهزة.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "job_family"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M3B-003": {
+      "surface": "b2c",
+      "layer21": "domain_differentiation",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": [
+        "early_career",
+        "experienced",
+        "manager",
+        "senior_manager",
+        "trainer_ld",
+        "founder",
+        "freelancer"
+      ],
+      "domains": [],
+      "impact_ar": "يغيّر أهلية مسارات الاحتكاك الخارجي.",
+      "why_ar": "الاحتكاك بالجمهور يفصل مسارات التواصل/المبيعات عن الداخلية.",
+      "measures": [
+        "public_facing"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M3B-004": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يربط التعلم بمؤشر أداء حقيقي.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "performance_driver"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M3B-005": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يضبط مسار الموظف.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "employee_goal"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M3B-006": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يكشف فجوات سلوكية أو تقنية.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "feedback_signal"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M3B-007": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يوجه مسار حل المشكلات أو التواصل أو الأدوات.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "work_obstacle"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M3B-008": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يوصي بمهارات رقمية أو تحول رقمي.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "work_digital_level"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M3B-009": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يوصي بكتابة مهنية وبلاغة.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "business_writing"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M3B-010": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": [
+        "early_career",
+        "experienced",
+        "manager",
+        "senior_manager",
+        "trainer_ld"
+      ],
+      "domains": [],
+      "impact_ar": "تقيس مهارة متطلبة لمسارات القيادة — تغيّر الفجوة المقيسة.",
+      "why_ar": "إدارة أصحاب المصلحة مهارة دالة على جاهزية القيادة والمشاريع.",
+      "measures": [
+        "stakeholder_management"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M3B-011": {
+      "surface": "b2c",
+      "layer21": "domain_differentiation",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": [
+        "early_career",
+        "experienced",
+        "manager",
+        "senior_manager",
+        "trainer_ld"
+      ],
+      "domains": [],
+      "impact_ar": "كل وظيفة ترفع مجالها — تغيّر ترتيب المسارات.",
+      "why_ar": "التخصص الوظيفي (مشتريات/مالية/تسويق…) يربط المجال بالوظيفة الفعلية.",
+      "measures": [
+        "function_specialization"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M3B-012": {
+      "surface": "b2c",
+      "layer21": "domain_differentiation",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": [
+        "early_career",
+        "experienced",
+        "trainer_ld"
+      ],
+      "domains": [],
+      "impact_ar": "«أدير أشخاصًا» يفتح مسارات القيادة ويغيّر الأهلية.",
+      "why_ar": "القيادة الفعلية (غير المعلنة في المرحلة) تفصل مسار الموظف عن المدير.",
+      "measures": [
+        "leadership_context"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M3B-013": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": [
+        "early_career",
+        "experienced",
+        "manager",
+        "senior_manager",
+        "trainer_ld"
+      ],
+      "domains": [],
+      "impact_ar": "تغيّر الفجوة المقيسة لمسارات العمليات.",
+      "why_ar": "تحسين الإجراءات مهارة دالة لمسارات العمليات.",
+      "measures": [
+        "process_improvement"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M3B-014": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": [
+        "early_career",
+        "experienced",
+        "manager",
+        "senior_manager",
+        "trainer_ld"
+      ],
+      "domains": [],
+      "impact_ar": "يرفع مجال المالية عند التقارب.",
+      "why_ar": "الحاجة للفهم المالي/الاقتصادي دليل داعم لمجال المالية.",
+      "measures": [
+        "economic_financial_need"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M3B-015": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "يرفع مجال AI عند التقارب.",
+      "why_ar": "الجاهزية لتعلم AI دليل داعم لمجال الذكاء الاصطناعي.",
+      "measures": [
+        "ai_work_readiness"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M3B-016": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يضبط العبء والدعم دون تشخيص صحي.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "focus_energy_constraint"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M3C-001": {
+      "surface": "b2c",
+      "layer21": "domain_differentiation",
+      "phase": "core",
+      "action": "rewrite",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "«فكرة» مقابل «مشروع قائم» يغيّر الهدف المحسوم والمسار.",
+      "why_ar": "مرحلة المشروع تحسم «إطلاق أم نمو» — حاسمة لهدف المشروع.",
+      "measures": [
+        "business_stage"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M3C-002": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": [
+        "founder",
+        "freelancer"
+      ],
+      "domains": [],
+      "impact_ar": "يغيّر الترتيب بين مسارات الريادة.",
+      "why_ar": "وضوح العرض دليل نضج يفصل مسارات الإطلاق عن النمو.",
+      "measures": [
+        "offer_clarity"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M3C-003": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يوجه النواة الأولى للمسار.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "business_bottleneck"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M3C-004": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": [
+        "founder",
+        "freelancer"
+      ],
+      "domains": [],
+      "impact_ar": "يحسم مرحلة المشروع والمسار.",
+      "why_ar": "وجود عملاء/مبيعات دليل مرحلة قاطع.",
+      "measures": [
+        "revenue_signal"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M3C-005": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يوصي بتسعير ونموذج أعمال.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "pricing_confidence"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M3C-006": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يوجه تسويق ومبيعات.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "acquisition_channel"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M3C-007": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": [
+        "founder",
+        "freelancer"
+      ],
+      "domains": [],
+      "impact_ar": "يقيس مهارة اكتشاف العميل — تغيّر الفجوة.",
+      "why_ar": "التحدث مع العملاء دليل ممارسة يفصل عن الريادة النظرية.",
+      "measures": [
+        "customer_discovery"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M3C-008": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": [
+        "founder",
+        "freelancer"
+      ],
+      "domains": [],
+      "impact_ar": "تغيّر الفجوة المقيسة لمسارات المبيعات/النمو.",
+      "why_ar": "إغلاق البيع مهارة دالة للمسارات التجارية.",
+      "measures": [
+        "sales_negotiation"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M3C-009": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": [
+        "founder",
+        "freelancer"
+      ],
+      "domains": [],
+      "impact_ar": "تغيّر فجوة المالية لمسارات الريادة.",
+      "why_ar": "معرفة الأرقام دليل على النضج المالي للمشروع.",
+      "measures": [
+        "business_finance"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M3C-010": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": [
+        "founder",
+        "freelancer"
+      ],
+      "domains": [],
+      "impact_ar": "تغيّر فجوة العمليات لمسارات الريادة.",
+      "why_ar": "انتظام العمليات دليل نضج تشغيلي.",
+      "measures": [
+        "operations_maturity"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M3C-011": {
+      "surface": "b2c",
+      "layer21": "domain_differentiation",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": [
+        "founder",
+        "freelancer"
+      ],
+      "domains": [],
+      "impact_ar": "يغيّر أهلية مسارات قيادة الفرق للمؤسسين.",
+      "why_ar": "العمل منفردًا أم مع فريق يفصل مسارات القيادة عن الإتقان الفردي.",
+      "measures": [
+        "team_context"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M3C-012": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يفتح أتمتة وAI عملي.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "business_ai_digital"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M3C-013": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يسجل مهارات غير متوفرة أو إحالة محتوى.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "legal_accounting_gap"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M3C-014": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يرشح مسارا قصيرا أو دورة مفردة.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "quick_business_win"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M3D-001": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "out_of_scope",
+      "stages": [],
+      "why_ar": "الوحدة الأسرية خارج نطاق أكاديمية B2C — الأبوة ليست شخصية تعليمية هنا.",
+      "domains": [],
+      "impact_ar": "الوحدة الأسرية خارج نطاق أكاديمية B2C — الأبوة ليست شخصية تعليمية هنا.",
+      "measures": [
+        "family_goal_flag"
+      ],
+      "final_status": "out_of_scope"
+    },
+    "QB-M3D-002": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "out_of_scope",
+      "stages": [],
+      "why_ar": "الوحدة الأسرية خارج نطاق أكاديمية B2C — الأبوة ليست شخصية تعليمية هنا.",
+      "domains": [],
+      "impact_ar": "الوحدة الأسرية خارج نطاق أكاديمية B2C — الأبوة ليست شخصية تعليمية هنا.",
+      "measures": [
+        "family_priority"
+      ],
+      "final_status": "out_of_scope"
+    },
+    "QB-M3D-003": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "out_of_scope",
+      "stages": [],
+      "why_ar": "الوحدة الأسرية خارج نطاق أكاديمية B2C — الأبوة ليست شخصية تعليمية هنا.",
+      "domains": [],
+      "impact_ar": "الوحدة الأسرية خارج نطاق أكاديمية B2C — الأبوة ليست شخصية تعليمية هنا.",
+      "measures": [
+        "child_age_band"
+      ],
+      "final_status": "out_of_scope"
+    },
+    "QB-M3D-004": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "out_of_scope",
+      "stages": [],
+      "why_ar": "الوحدة الأسرية خارج نطاق أكاديمية B2C — الأبوة ليست شخصية تعليمية هنا.",
+      "domains": [],
+      "impact_ar": "الوحدة الأسرية خارج نطاق أكاديمية B2C — الأبوة ليست شخصية تعليمية هنا.",
+      "measures": [
+        "child_development_goals"
+      ],
+      "final_status": "out_of_scope"
+    },
+    "QB-M3D-005": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "out_of_scope",
+      "stages": [],
+      "why_ar": "الوحدة الأسرية خارج نطاق أكاديمية B2C — الأبوة ليست شخصية تعليمية هنا.",
+      "domains": [],
+      "impact_ar": "الوحدة الأسرية خارج نطاق أكاديمية B2C — الأبوة ليست شخصية تعليمية هنا.",
+      "measures": [
+        "personal_rhythm"
+      ],
+      "final_status": "out_of_scope"
+    },
+    "QB-M3D-006": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "out_of_scope",
+      "stages": [],
+      "why_ar": "الوحدة الأسرية خارج نطاق أكاديمية B2C — الأبوة ليست شخصية تعليمية هنا.",
+      "domains": [],
+      "impact_ar": "الوحدة الأسرية خارج نطاق أكاديمية B2C — الأبوة ليست شخصية تعليمية هنا.",
+      "measures": [
+        "digital_distraction"
+      ],
+      "final_status": "out_of_scope"
+    },
+    "QB-M3D-007": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "out_of_scope",
+      "stages": [],
+      "why_ar": "الوحدة الأسرية خارج نطاق أكاديمية B2C — الأبوة ليست شخصية تعليمية هنا.",
+      "domains": [],
+      "impact_ar": "الوحدة الأسرية خارج نطاق أكاديمية B2C — الأبوة ليست شخصية تعليمية هنا.",
+      "measures": [
+        "wellbeing_interest"
+      ],
+      "final_status": "out_of_scope"
+    },
+    "QB-M3D-008": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "out_of_scope",
+      "stages": [],
+      "why_ar": "الوحدة الأسرية خارج نطاق أكاديمية B2C — الأبوة ليست شخصية تعليمية هنا.",
+      "domains": [],
+      "impact_ar": "الوحدة الأسرية خارج نطاق أكاديمية B2C — الأبوة ليست شخصية تعليمية هنا.",
+      "measures": [
+        "family_content_format"
+      ],
+      "final_status": "out_of_scope"
+    },
+    "QB-M3D-009": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "out_of_scope",
+      "stages": [],
+      "why_ar": "الوحدة الأسرية خارج نطاق أكاديمية B2C — الأبوة ليست شخصية تعليمية هنا.",
+      "domains": [],
+      "impact_ar": "الوحدة الأسرية خارج نطاق أكاديمية B2C — الأبوة ليست شخصية تعليمية هنا.",
+      "measures": [
+        "family_beneficiary"
+      ],
+      "final_status": "out_of_scope"
+    },
+    "QB-M3D-010": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "out_of_scope",
+      "stages": [],
+      "why_ar": "الوحدة الأسرية خارج نطاق أكاديمية B2C — الأبوة ليست شخصية تعليمية هنا.",
+      "domains": [],
+      "impact_ar": "الوحدة الأسرية خارج نطاق أكاديمية B2C — الأبوة ليست شخصية تعليمية هنا.",
+      "measures": [
+        "family_success_marker"
+      ],
+      "final_status": "out_of_scope"
+    },
+    "QB-M3E-001": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يفرق بين غموض ميول، نقص معلومات، أو خوف.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "uncertainty_reason"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M3E-002": {
+      "surface": "b2c",
+      "layer21": "domain_differentiation",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "تفتح مجالات لم تظهر من الهدف — تغيّر المرشحين.",
+      "why_ar": "قائمة الميول المختصرة تكتشف المجال عندما يكون الهدف والاحتياج غير محسومين.",
+      "measures": [
+        "interest_shortlist"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M3E-003": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يمنع توصيات مزعجة.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "excluded_domains"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M3E-004": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "تغيّر نوع المخرج (استكشافي مقابل تطابق).",
+      "why_ar": "التجربة العملية السابقة دليل يفصل الاستكشاف الجاد عن الفضول.",
+      "measures": [
+        "exploration_evidence"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M3E-005": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يضبط مخاطرة الانتقال.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "minimum_stability_need"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M3E-006": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يبني جسرا من الحالي إلى الجديد.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "transferable_skills"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M3E-007": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يفتح مستشار أو مسار تجربة.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "commitment_fear"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M3E-008": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يدعم قرار exploration.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "experiment_readiness"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M3E-009": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يضبط سرعة التشخيص.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "decision_deadline"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M3E-010": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "يفتح جلسة مستشار عند ضعف الدعم.",
+      "why_ar": "لم يُستعرض صراحة في V2.1 — سؤال بلا أثر قراري موثق يصبح مرشح تقاعد.",
+      "measures": [
+        "support_network"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M4-001": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "rewrite",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "يقيس مهارة «analytical_thinking» بمقياس الدليل — تغيّر الفجوة المقيسة والثقة لكل مسار يتطلبها.",
+      "why_ar": "سؤال دليل مهاري — يُطرح فقط عندما تكون المهارة متطلبة لمرشح متصدر وقادرة على تغيير الترتيب.",
+      "measures": [
+        "analytical_thinking",
+        "skill_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M4-002": {
+      "surface": "retired_b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "retire",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "محذوف من B2C حتى يوجد فعل تخصيص حقيقي موثق.",
+      "why_ar": "creative_thinking بلا فعل تخصيص مبرمج (لا مستهلك في personalizationNotes ولا غيره) — القياس لجمع البيانات فقط.",
+      "measures": [
+        "creative_thinking",
+        "skill_vector"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M4-003": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "rewrite",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "يقيس مهارة «ai_literacy» بمقياس الدليل — تغيّر الفجوة المقيسة والثقة لكل مسار يتطلبها.",
+      "why_ar": "سؤال دليل مهاري — يُطرح فقط عندما تكون المهارة متطلبة لمرشح متصدر وقادرة على تغيير الترتيب.",
+      "measures": [
+        "ai_literacy",
+        "skill_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M4-004": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "rewrite",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "يقيس مهارة «ai_applied_use» بمقياس الدليل — تغيّر الفجوة المقيسة والثقة لكل مسار يتطلبها.",
+      "why_ar": "سؤال دليل مهاري — يُطرح فقط عندما تكون المهارة متطلبة لمرشح متصدر وقادرة على تغيير الترتيب.",
+      "measures": [
+        "ai_applied_use",
+        "skill_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M4-005": {
+      "surface": "post_recommendation",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "move_post",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "لا أثر على المسار — تُقاس بعده لتخصيص المتابعة.",
+      "why_ar": "digital_literacy مهارة مقاسة غير مغطاة — لا كيان يعلنها حاسمة أو داعمة، فقياسها قبل التوصية مقعد بلا أثر.",
+      "measures": [
+        "digital_literacy",
+        "skill_vector"
+      ],
+      "final_status": "post_recommendation"
+    },
+    "QB-M4-006": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "rewrite",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "يقيس مهارة «data_literacy» بمقياس الدليل — تغيّر الفجوة المقيسة والثقة لكل مسار يتطلبها.",
+      "why_ar": "سؤال دليل مهاري — يُطرح فقط عندما تكون المهارة متطلبة لمرشح متصدر وقادرة على تغيير الترتيب.",
+      "measures": [
+        "data_literacy",
+        "skill_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M4-007": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "rewrite",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "يقيس مهارة «cyber_safety» بمقياس الدليل — تغيّر الفجوة المقيسة والثقة لكل مسار يتطلبها.",
+      "why_ar": "سؤال دليل مهاري — يُطرح فقط عندما تكون المهارة متطلبة لمرشح متصدر وقادرة على تغيير الترتيب.",
+      "measures": [
+        "cyber_safety",
+        "skill_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M4-008": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "rewrite",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "يقيس مهارة «digital_content» بمقياس الدليل — تغيّر الفجوة المقيسة والثقة لكل مسار يتطلبها.",
+      "why_ar": "سؤال دليل مهاري — يُطرح فقط عندما تكون المهارة متطلبة لمرشح متصدر وقادرة على تغيير الترتيب.",
+      "measures": [
+        "digital_content",
+        "skill_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M4-009": {
+      "surface": "post_recommendation",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "move_post",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "لا أثر على المسار — تُقاس بعده لتخصيص المتابعة.",
+      "why_ar": "english مهارة مقاسة غير معلَنة حاسمة ولا داعمة ولا مخرج تعلم لأي كيان نشط (فحص إغلاق منطق V2.1 — 2000+10000 جلسة بلا سؤال واحد) — قياسها قبل التوصية مقعد بلا أثر.",
+      "measures": [
+        "english",
+        "skill_vector"
+      ],
+      "final_status": "post_recommendation"
+    },
+    "QB-M4-010": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "rewrite",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "يقيس مهارة «arabic_business_writing» بمقياس الدليل — تغيّر الفجوة المقيسة والثقة لكل مسار يتطلبها.",
+      "why_ar": "سؤال دليل مهاري — يُطرح فقط عندما تكون المهارة متطلبة لمرشح متصدر وقادرة على تغيير الترتيب.",
+      "measures": [
+        "arabic_business_writing",
+        "skill_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M4-011": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "rewrite",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "يقيس مهارة «public_speaking» بمقياس الدليل — تغيّر الفجوة المقيسة والثقة لكل مسار يتطلبها.",
+      "why_ar": "سؤال دليل مهاري — يُطرح فقط عندما تكون المهارة متطلبة لمرشح متصدر وقادرة على تغيير الترتيب.",
+      "measures": [
+        "public_speaking",
+        "skill_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M4-012": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "rewrite",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "يقيس مهارة «communication_persuasion» بمقياس الدليل — تغيّر الفجوة المقيسة والثقة لكل مسار يتطلبها.",
+      "why_ar": "سؤال دليل مهاري — يُطرح فقط عندما تكون المهارة متطلبة لمرشح متصدر وقادرة على تغيير الترتيب.",
+      "measures": [
+        "communication_persuasion",
+        "skill_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M4-013": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "rewrite",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "يقيس مهارة «negotiation» بمقياس الدليل — تغيّر الفجوة المقيسة والثقة لكل مسار يتطلبها.",
+      "why_ar": "سؤال دليل مهاري — يُطرح فقط عندما تكون المهارة متطلبة لمرشح متصدر وقادرة على تغيير الترتيب.",
+      "measures": [
+        "negotiation",
+        "skill_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M4-014": {
+      "surface": "post_recommendation",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "move_post",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "لا أثر على المسار — تُقاس بعده لتخصيص المتابعة.",
+      "why_ar": "financial_literacy مهارة مقاسة غير معلَنة حاسمة ولا داعمة ولا مخرج تعلم لأي كيان نشط (فحص إغلاق منطق V2.1 — 2000+10000 جلسة بلا سؤال واحد) — قياسها قبل التوصية مقعد بلا أثر.",
+      "measures": [
+        "financial_literacy",
+        "skill_vector"
+      ],
+      "final_status": "post_recommendation"
+    },
+    "QB-M4-015": {
+      "surface": "post_recommendation",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "move_post",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "لا أثر على المسار — تُقاس بعده لتخصيص المتابعة.",
+      "why_ar": "economics_basics مهارة مقاسة غير معلَنة حاسمة ولا داعمة ولا مخرج تعلم لأي كيان نشط (فحص إغلاق منطق V2.1 — 2000+10000 جلسة بلا سؤال واحد) — قياسها قبل التوصية مقعد بلا أثر.",
+      "measures": [
+        "economics_basics",
+        "skill_vector"
+      ],
+      "final_status": "post_recommendation"
+    },
+    "QB-M4-016": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "rewrite",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "يقيس مهارة «digital_marketing» بمقياس الدليل — تغيّر الفجوة المقيسة والثقة لكل مسار يتطلبها.",
+      "why_ar": "سؤال دليل مهاري — يُطرح فقط عندما تكون المهارة متطلبة لمرشح متصدر وقادرة على تغيير الترتيب.",
+      "measures": [
+        "digital_marketing",
+        "skill_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M4-017": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "rewrite",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "يقيس مهارة «sales» بمقياس الدليل — تغيّر الفجوة المقيسة والثقة لكل مسار يتطلبها.",
+      "why_ar": "سؤال دليل مهاري — يُطرح فقط عندما تكون المهارة متطلبة لمرشح متصدر وقادرة على تغيير الترتيب.",
+      "measures": [
+        "sales",
+        "skill_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M4-018": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "rewrite",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "يقيس مهارة «project_management» بمقياس الدليل — تغيّر الفجوة المقيسة والثقة لكل مسار يتطلبها.",
+      "why_ar": "سؤال دليل مهاري — يُطرح فقط عندما تكون المهارة متطلبة لمرشح متصدر وقادرة على تغيير الترتيب.",
+      "measures": [
+        "project_management",
+        "skill_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M4-019": {
+      "surface": "post_recommendation",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "move_post",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "لا أثر على المسار — تُقاس بعده لتخصيص المتابعة.",
+      "why_ar": "leadership_influence مهارة مقاسة غير معلَنة حاسمة ولا داعمة ولا مخرج تعلم لأي كيان نشط (فحص إغلاق منطق V2.1 — 2000+10000 جلسة بلا سؤال واحد) — قياسها قبل التوصية مقعد بلا أثر.",
+      "measures": [
+        "leadership_influence",
+        "skill_vector"
+      ],
+      "final_status": "post_recommendation"
+    },
+    "QB-M4-020": {
+      "surface": "post_recommendation",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "move_post",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "لا أثر على المسار — تُقاس بعده لتخصيص المتابعة.",
+      "why_ar": "emotional_intelligence مهارة مقاسة غير معلَنة حاسمة ولا داعمة ولا مخرج تعلم لأي كيان نشط (فحص إغلاق منطق V2.1 — 2000+10000 جلسة بلا سؤال واحد) — قياسها قبل التوصية مقعد بلا أثر.",
+      "measures": [
+        "emotional_intelligence",
+        "skill_vector"
+      ],
+      "final_status": "post_recommendation"
+    },
+    "QB-M4-021": {
+      "surface": "post_recommendation",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "move_post",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "لا أثر على المسار — تُقاس بعده لتخصيص المتابعة.",
+      "why_ar": "problem_solving مهارة مقاسة غير معلَنة حاسمة ولا داعمة ولا مخرج تعلم لأي كيان نشط (فحص إغلاق منطق V2.1 — 2000+10000 جلسة بلا سؤال واحد) — قياسها قبل التوصية مقعد بلا أثر.",
+      "measures": [
+        "problem_solving",
+        "skill_vector"
+      ],
+      "final_status": "post_recommendation"
+    },
+    "QB-M4-022": {
+      "surface": "post_recommendation",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "move_post",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "لا أثر على المسار — تُقاس بعده لتخصيص المتابعة.",
+      "why_ar": "research_learning مهارة مقاسة غير معلَنة حاسمة ولا داعمة ولا مخرج تعلم لأي كيان نشط (فحص إغلاق منطق V2.1 — 2000+10000 جلسة بلا سؤال واحد) — قياسها قبل التوصية مقعد بلا أثر.",
+      "measures": [
+        "research_learning",
+        "skill_vector"
+      ],
+      "final_status": "post_recommendation"
+    },
+    "QB-M4-023": {
+      "surface": "post_recommendation",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "move_post",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "لا أثر على المسار — تُقاس بعده لتخصيص المتابعة.",
+      "why_ar": "learning_agility مهارة مقاسة غير مغطاة — لا كيان يعلنها حاسمة أو داعمة، فقياسها قبل التوصية مقعد بلا أثر.",
+      "measures": [
+        "learning_agility",
+        "skill_vector"
+      ],
+      "final_status": "post_recommendation"
+    },
+    "QB-M4-024": {
+      "surface": "post_recommendation",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "move_post",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "لا أثر على المسار — تُقاس بعده لتخصيص المتابعة.",
+      "why_ar": "time_energy_management مهارة مقاسة غير معلَنة حاسمة ولا داعمة ولا مخرج تعلم لأي كيان نشط (فحص إغلاق منطق V2.1 — 2000+10000 جلسة بلا سؤال واحد) — قياسها قبل التوصية مقعد بلا أثر.",
+      "measures": [
+        "time_energy_management",
+        "skill_vector"
+      ],
+      "final_status": "post_recommendation"
+    },
+    "QB-M4-025": {
+      "surface": "post_recommendation",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "move_post",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "لا أثر على المسار — تُقاس بعده لتخصيص المتابعة.",
+      "why_ar": "focus_management مهارة مقاسة غير مغطاة — لا كيان يعلنها حاسمة أو داعمة، فقياسها قبل التوصية مقعد بلا أثر.",
+      "measures": [
+        "focus_management",
+        "skill_vector"
+      ],
+      "final_status": "post_recommendation"
+    },
+    "QB-M4-026": {
+      "surface": "post_recommendation",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "move_post",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "لا أثر على المسار — تُقاس بعده لتخصيص المتابعة.",
+      "why_ar": "entrepreneurship_basics مهارة مقاسة غير معلَنة حاسمة ولا داعمة ولا مخرج تعلم لأي كيان نشط (فحص إغلاق منطق V2.1 — 2000+10000 جلسة بلا سؤال واحد) — قياسها قبل التوصية مقعد بلا أثر.",
+      "measures": [
+        "entrepreneurship_basics",
+        "skill_vector"
+      ],
+      "final_status": "post_recommendation"
+    },
+    "QB-M5-001": {
+      "surface": "b2c",
+      "layer21": "domain_differentiation",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": "all",
+      "why_ar": "ميول RIASEC تُستخدم فقط عند غموض الهدف/الاحتياج لفصل المجالات.",
+      "domains": [],
+      "impact_ar": "يرفع أو يخفض ملاءمة المسارات المهنية حسب نمط الميل.",
+      "measures": [
+        "riasec_realistic",
+        "interest_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M5-002": {
+      "surface": "b2c",
+      "layer21": "domain_differentiation",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": "all",
+      "why_ar": "ميول RIASEC تُستخدم فقط عند غموض الهدف/الاحتياج لفصل المجالات.",
+      "domains": [],
+      "impact_ar": "يرفع أو يخفض ملاءمة المسارات المهنية حسب نمط الميل.",
+      "measures": [
+        "riasec_realistic",
+        "interest_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M5-003": {
+      "surface": "b2c",
+      "layer21": "domain_differentiation",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": "all",
+      "why_ar": "ميول RIASEC تُستخدم فقط عند غموض الهدف/الاحتياج لفصل المجالات.",
+      "domains": [],
+      "impact_ar": "يرفع أو يخفض ملاءمة المسارات المهنية حسب نمط الميل.",
+      "measures": [
+        "riasec_realistic",
+        "interest_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M5-004": {
+      "surface": "b2c",
+      "layer21": "domain_differentiation",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": "all",
+      "why_ar": "ميول RIASEC تُستخدم فقط عند غموض الهدف/الاحتياج لفصل المجالات.",
+      "domains": [],
+      "impact_ar": "يرفع أو يخفض ملاءمة المسارات المهنية حسب نمط الميل.",
+      "measures": [
+        "riasec_investigative",
+        "interest_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M5-005": {
+      "surface": "b2c",
+      "layer21": "domain_differentiation",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": "all",
+      "why_ar": "ميول RIASEC تُستخدم فقط عند غموض الهدف/الاحتياج لفصل المجالات.",
+      "domains": [],
+      "impact_ar": "يرفع أو يخفض ملاءمة المسارات المهنية حسب نمط الميل.",
+      "measures": [
+        "riasec_investigative",
+        "interest_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M5-006": {
+      "surface": "b2c",
+      "layer21": "domain_differentiation",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": "all",
+      "why_ar": "ميول RIASEC تُستخدم فقط عند غموض الهدف/الاحتياج لفصل المجالات.",
+      "domains": [],
+      "impact_ar": "يرفع أو يخفض ملاءمة المسارات المهنية حسب نمط الميل.",
+      "measures": [
+        "riasec_investigative",
+        "interest_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M5-007": {
+      "surface": "b2c",
+      "layer21": "domain_differentiation",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": "all",
+      "why_ar": "ميول RIASEC تُستخدم فقط عند غموض الهدف/الاحتياج لفصل المجالات.",
+      "domains": [],
+      "impact_ar": "يرفع أو يخفض ملاءمة المسارات المهنية حسب نمط الميل.",
+      "measures": [
+        "riasec_artistic",
+        "interest_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M5-008": {
+      "surface": "b2c",
+      "layer21": "domain_differentiation",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": "all",
+      "why_ar": "ميول RIASEC تُستخدم فقط عند غموض الهدف/الاحتياج لفصل المجالات.",
+      "domains": [],
+      "impact_ar": "يرفع أو يخفض ملاءمة المسارات المهنية حسب نمط الميل.",
+      "measures": [
+        "riasec_artistic",
+        "interest_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M5-009": {
+      "surface": "b2c",
+      "layer21": "domain_differentiation",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": "all",
+      "why_ar": "ميول RIASEC تُستخدم فقط عند غموض الهدف/الاحتياج لفصل المجالات.",
+      "domains": [],
+      "impact_ar": "يرفع أو يخفض ملاءمة المسارات المهنية حسب نمط الميل.",
+      "measures": [
+        "riasec_artistic",
+        "interest_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M5-010": {
+      "surface": "b2c",
+      "layer21": "domain_differentiation",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": "all",
+      "why_ar": "ميول RIASEC تُستخدم فقط عند غموض الهدف/الاحتياج لفصل المجالات.",
+      "domains": [],
+      "impact_ar": "يرفع أو يخفض ملاءمة المسارات المهنية حسب نمط الميل.",
+      "measures": [
+        "riasec_social",
+        "interest_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M5-011": {
+      "surface": "b2c",
+      "layer21": "domain_differentiation",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": "all",
+      "why_ar": "ميول RIASEC تُستخدم فقط عند غموض الهدف/الاحتياج لفصل المجالات.",
+      "domains": [],
+      "impact_ar": "يرفع أو يخفض ملاءمة المسارات المهنية حسب نمط الميل.",
+      "measures": [
+        "riasec_social",
+        "interest_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M5-012": {
+      "surface": "b2c",
+      "layer21": "domain_differentiation",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": "all",
+      "why_ar": "ميول RIASEC تُستخدم فقط عند غموض الهدف/الاحتياج لفصل المجالات.",
+      "domains": [],
+      "impact_ar": "يرفع أو يخفض ملاءمة المسارات المهنية حسب نمط الميل.",
+      "measures": [
+        "riasec_social",
+        "interest_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M5-013": {
+      "surface": "b2c",
+      "layer21": "domain_differentiation",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": "all",
+      "why_ar": "ميول RIASEC تُستخدم فقط عند غموض الهدف/الاحتياج لفصل المجالات.",
+      "domains": [],
+      "impact_ar": "يرفع أو يخفض ملاءمة المسارات المهنية حسب نمط الميل.",
+      "measures": [
+        "riasec_enterprising",
+        "interest_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M5-014": {
+      "surface": "b2c",
+      "layer21": "domain_differentiation",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": "all",
+      "why_ar": "ميول RIASEC تُستخدم فقط عند غموض الهدف/الاحتياج لفصل المجالات.",
+      "domains": [],
+      "impact_ar": "يرفع أو يخفض ملاءمة المسارات المهنية حسب نمط الميل.",
+      "measures": [
+        "riasec_enterprising",
+        "interest_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M5-015": {
+      "surface": "b2c",
+      "layer21": "domain_differentiation",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": "all",
+      "why_ar": "ميول RIASEC تُستخدم فقط عند غموض الهدف/الاحتياج لفصل المجالات.",
+      "domains": [],
+      "impact_ar": "يرفع أو يخفض ملاءمة المسارات المهنية حسب نمط الميل.",
+      "measures": [
+        "riasec_enterprising",
+        "interest_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M5-016": {
+      "surface": "b2c",
+      "layer21": "domain_differentiation",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": "all",
+      "why_ar": "ميول RIASEC تُستخدم فقط عند غموض الهدف/الاحتياج لفصل المجالات.",
+      "domains": [],
+      "impact_ar": "يرفع أو يخفض ملاءمة المسارات المهنية حسب نمط الميل.",
+      "measures": [
+        "riasec_conventional",
+        "interest_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M5-017": {
+      "surface": "b2c",
+      "layer21": "domain_differentiation",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": "all",
+      "why_ar": "ميول RIASEC تُستخدم فقط عند غموض الهدف/الاحتياج لفصل المجالات.",
+      "domains": [],
+      "impact_ar": "يرفع أو يخفض ملاءمة المسارات المهنية حسب نمط الميل.",
+      "measures": [
+        "riasec_conventional",
+        "interest_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M5-018": {
+      "surface": "b2c",
+      "layer21": "domain_differentiation",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": "all",
+      "why_ar": "ميول RIASEC تُستخدم فقط عند غموض الهدف/الاحتياج لفصل المجالات.",
+      "domains": [],
+      "impact_ar": "يرفع أو يخفض ملاءمة المسارات المهنية حسب نمط الميل.",
+      "measures": [
+        "riasec_conventional",
+        "interest_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M6-001": {
+      "surface": "post_recommendation",
+      "layer21": null,
+      "phase": "none",
+      "action": "move_post",
+      "stages": [],
+      "why_ar": "أسلوب العمل يخصّص المتابعة والالتزام بعد التوصية — لا يحدد ماذا يتعلم الشخص.",
+      "domains": [],
+      "impact_ar": "أسلوب العمل يخصّص المتابعة والالتزام بعد التوصية — لا يحدد ماذا يتعلم الشخص.",
+      "measures": [
+        "self_discipline_positive",
+        "work_style_vector"
+      ],
+      "final_status": "post_recommendation"
+    },
+    "QB-M6-002": {
+      "surface": "post_recommendation",
+      "layer21": null,
+      "phase": "none",
+      "action": "move_post",
+      "stages": [],
+      "why_ar": "أسلوب العمل يخصّص المتابعة والالتزام بعد التوصية — لا يحدد ماذا يتعلم الشخص.",
+      "domains": [],
+      "impact_ar": "أسلوب العمل يخصّص المتابعة والالتزام بعد التوصية — لا يحدد ماذا يتعلم الشخص.",
+      "measures": [
+        "self_discipline_reverse",
+        "work_style_vector"
+      ],
+      "final_status": "post_recommendation"
+    },
+    "QB-M6-003": {
+      "surface": "post_recommendation",
+      "layer21": null,
+      "phase": "none",
+      "action": "move_post",
+      "stages": [],
+      "why_ar": "أسلوب العمل يخصّص المتابعة والالتزام بعد التوصية — لا يحدد ماذا يتعلم الشخص.",
+      "domains": [],
+      "impact_ar": "أسلوب العمل يخصّص المتابعة والالتزام بعد التوصية — لا يحدد ماذا يتعلم الشخص.",
+      "measures": [
+        "structure_need",
+        "work_style_vector"
+      ],
+      "final_status": "post_recommendation"
+    },
+    "QB-M6-004": {
+      "surface": "post_recommendation",
+      "layer21": null,
+      "phase": "none",
+      "action": "move_post",
+      "stages": [],
+      "why_ar": "أسلوب العمل يخصّص المتابعة والالتزام بعد التوصية — لا يحدد ماذا يتعلم الشخص.",
+      "domains": [],
+      "impact_ar": "أسلوب العمل يخصّص المتابعة والالتزام بعد التوصية — لا يحدد ماذا يتعلم الشخص.",
+      "measures": [
+        "attention_to_detail",
+        "work_style_vector"
+      ],
+      "final_status": "post_recommendation"
+    },
+    "QB-M6-005": {
+      "surface": "post_recommendation",
+      "layer21": null,
+      "phase": "none",
+      "action": "move_post",
+      "stages": [],
+      "why_ar": "أسلوب العمل يخصّص المتابعة والالتزام بعد التوصية — لا يحدد ماذا يتعلم الشخص.",
+      "domains": [],
+      "impact_ar": "أسلوب العمل يخصّص المتابعة والالتزام بعد التوصية — لا يحدد ماذا يتعلم الشخص.",
+      "measures": [
+        "openness_learning",
+        "work_style_vector"
+      ],
+      "final_status": "post_recommendation"
+    },
+    "QB-M6-006": {
+      "surface": "post_recommendation",
+      "layer21": null,
+      "phase": "none",
+      "action": "move_post",
+      "stages": [],
+      "why_ar": "أسلوب العمل يخصّص المتابعة والالتزام بعد التوصية — لا يحدد ماذا يتعلم الشخص.",
+      "domains": [],
+      "impact_ar": "أسلوب العمل يخصّص المتابعة والالتزام بعد التوصية — لا يحدد ماذا يتعلم الشخص.",
+      "measures": [
+        "openness_reverse",
+        "work_style_vector"
+      ],
+      "final_status": "post_recommendation"
+    },
+    "QB-M6-007": {
+      "surface": "post_recommendation",
+      "layer21": null,
+      "phase": "none",
+      "action": "move_post",
+      "stages": [],
+      "why_ar": "أسلوب العمل يخصّص المتابعة والالتزام بعد التوصية — لا يحدد ماذا يتعلم الشخص.",
+      "domains": [],
+      "impact_ar": "أسلوب العمل يخصّص المتابعة والالتزام بعد التوصية — لا يحدد ماذا يتعلم الشخص.",
+      "measures": [
+        "stress_regulation",
+        "work_style_vector"
+      ],
+      "final_status": "post_recommendation"
+    },
+    "QB-M6-008": {
+      "surface": "post_recommendation",
+      "layer21": null,
+      "phase": "none",
+      "action": "move_post",
+      "stages": [],
+      "why_ar": "أسلوب العمل يخصّص المتابعة والالتزام بعد التوصية — لا يحدد ماذا يتعلم الشخص.",
+      "domains": [],
+      "impact_ar": "أسلوب العمل يخصّص المتابعة والالتزام بعد التوصية — لا يحدد ماذا يتعلم الشخص.",
+      "measures": [
+        "learning_vulnerability_reverse",
+        "work_style_vector"
+      ],
+      "final_status": "post_recommendation"
+    },
+    "QB-M6-009": {
+      "surface": "post_recommendation",
+      "layer21": null,
+      "phase": "none",
+      "action": "move_post",
+      "stages": [],
+      "why_ar": "أسلوب العمل يخصّص المتابعة والالتزام بعد التوصية — لا يحدد ماذا يتعلم الشخص.",
+      "domains": [],
+      "impact_ar": "أسلوب العمل يخصّص المتابعة والالتزام بعد التوصية — لا يحدد ماذا يتعلم الشخص.",
+      "measures": [
+        "social_energy",
+        "work_style_vector"
+      ],
+      "final_status": "post_recommendation"
+    },
+    "QB-M6-010": {
+      "surface": "post_recommendation",
+      "layer21": null,
+      "phase": "none",
+      "action": "move_post",
+      "stages": [],
+      "why_ar": "أسلوب العمل يخصّص المتابعة والالتزام بعد التوصية — لا يحدد ماذا يتعلم الشخص.",
+      "domains": [],
+      "impact_ar": "أسلوب العمل يخصّص المتابعة والالتزام بعد التوصية — لا يحدد ماذا يتعلم الشخص.",
+      "measures": [
+        "solo_learning_pref",
+        "work_style_vector"
+      ],
+      "final_status": "post_recommendation"
+    },
+    "QB-M6-011": {
+      "surface": "post_recommendation",
+      "layer21": null,
+      "phase": "none",
+      "action": "move_post",
+      "stages": [],
+      "why_ar": "أسلوب العمل يخصّص المتابعة والالتزام بعد التوصية — لا يحدد ماذا يتعلم الشخص.",
+      "domains": [],
+      "impact_ar": "أسلوب العمل يخصّص المتابعة والالتزام بعد التوصية — لا يحدد ماذا يتعلم الشخص.",
+      "measures": [
+        "feedback_seeking",
+        "work_style_vector"
+      ],
+      "final_status": "post_recommendation"
+    },
+    "QB-M6-012": {
+      "surface": "post_recommendation",
+      "layer21": null,
+      "phase": "none",
+      "action": "move_post",
+      "stages": [],
+      "why_ar": "أسلوب العمل يخصّص المتابعة والالتزام بعد التوصية — لا يحدد ماذا يتعلم الشخص.",
+      "domains": [],
+      "impact_ar": "أسلوب العمل يخصّص المتابعة والالتزام بعد التوصية — لا يحدد ماذا يتعلم الشخص.",
+      "measures": [
+        "growth_response",
+        "work_style_vector"
+      ],
+      "final_status": "post_recommendation"
+    },
+    "QB-M6-013": {
+      "surface": "post_recommendation",
+      "layer21": null,
+      "phase": "none",
+      "action": "move_post",
+      "stages": [],
+      "why_ar": "أسلوب العمل يخصّص المتابعة والالتزام بعد التوصية — لا يحدد ماذا يتعلم الشخص.",
+      "domains": [],
+      "impact_ar": "أسلوب العمل يخصّص المتابعة والالتزام بعد التوصية — لا يحدد ماذا يتعلم الشخص.",
+      "measures": [
+        "accountability_need",
+        "work_style_vector"
+      ],
+      "final_status": "post_recommendation"
+    },
+    "QB-M6-014": {
+      "surface": "post_recommendation",
+      "layer21": null,
+      "phase": "none",
+      "action": "move_post",
+      "stages": [],
+      "why_ar": "أسلوب العمل يخصّص المتابعة والالتزام بعد التوصية — لا يحدد ماذا يتعلم الشخص.",
+      "domains": [],
+      "impact_ar": "أسلوب العمل يخصّص المتابعة والالتزام بعد التوصية — لا يحدد ماذا يتعلم الشخص.",
+      "measures": [
+        "application_style",
+        "work_style_vector"
+      ],
+      "final_status": "post_recommendation"
+    },
+    "QB-M7-001": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "replaced",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "خليفته يحدد الجدوى فقط.",
+      "why_ar": "استُبدل بسؤال الوقت الجديد (4 فئات واضحة) — القديم كرّر «7+» مرتين.",
+      "measures": [
+        "weekly_load"
+      ],
+      "replaced_by": "QC-F7-001",
+      "final_status": "retired"
+    },
+    "QB-M7-002": {
+      "surface": "post_recommendation",
+      "layer21": null,
+      "phase": "none",
+      "action": "move_post",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "لا أثر على المسار.",
+      "why_ar": "صيغة التعلم قيد منتج (Cohort) — لا تغيّر ماذا يتعلم.",
+      "measures": [
+        "learning_format"
+      ],
+      "final_status": "post_recommendation"
+    },
+    "QB-M7-003": {
+      "surface": "post_recommendation",
+      "layer21": null,
+      "phase": "none",
+      "action": "move_post",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "لا أثر على المسار.",
+      "why_ar": "تفضيل الدفعة قيد منتج — يُستخدم في العرض لا في التوصية.",
+      "measures": [
+        "cohort_preference"
+      ],
+      "final_status": "post_recommendation"
+    },
+    "QB-M7-004": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "محذوف من B2C.",
+      "why_ar": "لغة المحتوى — الأكاديمية عربية حاليًا.",
+      "measures": [
+        "content_language"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M7-005": {
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "محذوف من B2C.",
+      "why_ar": "الميزانية ليست إشارة ملاءمة أكاديمية — تعالج في العرض/الدفع.",
+      "measures": [
+        "budget_profile"
+      ],
+      "final_status": "retired"
+    },
+    "QB-M7-006": {
+      "surface": "post_recommendation",
+      "layer21": null,
+      "phase": "none",
+      "action": "move_post",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "لا أثر على المسار.",
+      "why_ar": "الحاجة لمدرب تخصيص متابعة بعد التوصية.",
+      "measures": [
+        "mentor_need"
+      ],
+      "final_status": "post_recommendation"
+    },
+    "QB-M7-007": {
+      "surface": "post_recommendation",
+      "layer21": null,
+      "phase": "none",
+      "action": "move_post",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "لا أثر على المسار.",
+      "why_ar": "قبول الواجبات يخصّص الخطة بعد التوصية.",
+      "measures": [
+        "homework_acceptance"
+      ],
+      "final_status": "post_recommendation"
+    },
+    "QB-M7-008": {
+      "surface": "post_recommendation",
+      "layer21": null,
+      "phase": "none",
+      "action": "move_post",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "لا أثر على المسار.",
+      "why_ar": "وقت التعلم المفضل جدولة لاحقة.",
+      "measures": [
+        "schedule_window"
+      ],
+      "final_status": "post_recommendation"
+    },
+    "QB-M7-009": {
+      "surface": "post_recommendation",
+      "layer21": null,
+      "phase": "none",
+      "action": "move_post",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "لا أثر على المسار.",
+      "why_ar": "أهمية الشهادة عرض لاحق.",
+      "measures": [
+        "certificate_importance"
+      ],
+      "final_status": "post_recommendation"
+    },
+    "QB-M7-010": {
+      "surface": "post_recommendation",
+      "layer21": null,
+      "phase": "none",
+      "action": "move_post",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "لا أثر على المسار.",
+      "why_ar": "احتياج الوصول يخصص التجربة — لا يغيّر المسار.",
+      "measures": [
+        "accessibility_need"
+      ],
+      "final_status": "post_recommendation"
+    },
+    "QB-M7-011": {
+      "surface": "post_recommendation",
+      "layer21": null,
+      "phase": "none",
+      "action": "move_post",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "لا أثر على المسار.",
+      "why_ar": "الجهاز تخصيص تجربة.",
+      "measures": [
+        "learning_device"
+      ],
+      "final_status": "post_recommendation"
+    },
+    "QB-M7-012": {
+      "surface": "post_recommendation",
+      "layer21": null,
+      "phase": "none",
+      "action": "move_post",
+      "stages": [],
+      "domains": [],
+      "impact_ar": "لا أثر على المسار.",
+      "why_ar": "عوامل الإكمال متابعة بعد التوصية.",
+      "measures": [
+        "completion_support"
+      ],
+      "final_status": "post_recommendation"
+    },
+    "QB-M8-001": {
+      "surface": "b2c",
+      "layer21": "confirmation_deep",
+      "phase": "confirmation",
+      "action": "keep",
+      "stages": "all",
+      "why_ar": "أسئلة تحقق وتعميق — تُدار من جولة التأكيد المشروطة.",
+      "domains": [],
+      "impact_ar": "يفتح عند goal urgency > high وweekly_load منخفض.",
+      "measures": [
+        "time_goal_conflict_resolution"
+      ],
+      "final_status": "deep_only"
+    },
+    "QB-M8-002": {
+      "surface": "b2c",
+      "layer21": "confirmation_deep",
+      "phase": "confirmation",
+      "action": "keep",
+      "stages": "all",
+      "why_ar": "أسئلة تحقق وتعميق — تُدار من جولة التأكيد المشروطة.",
+      "domains": [],
+      "impact_ar": "يفتح عند ارتفاع غير مدعوم في skill_vector.",
+      "measures": [
+        "overclaim_evidence_check"
+      ],
+      "final_status": "deep_only"
+    },
+    "QB-M8-003": {
+      "surface": "b2c",
+      "layer21": "confirmation_deep",
+      "phase": "confirmation",
+      "action": "keep",
+      "stages": "all",
+      "why_ar": "أسئلة تحقق وتعميق — تُدار من جولة التأكيد المشروطة.",
+      "domains": [],
+      "impact_ar": "يفرق بين ready وexploration.",
+      "measures": [
+        "goal_path_conflict"
+      ],
+      "final_status": "deep_only"
+    },
+    "QB-M8-004": {
+      "surface": "b2c",
+      "layer21": "confirmation_deep",
+      "phase": "confirmation",
+      "action": "keep",
+      "stages": "all",
+      "why_ar": "أسئلة تحقق وتعميق — تُدار من جولة التأكيد المشروطة.",
+      "domains": [],
+      "impact_ar": "يفتح advisor عند طلب المستخدم.",
+      "measures": [
+        "advisor_preference"
+      ],
+      "final_status": "deep_only"
+    },
+    "QB-M8-005": {
+      "surface": "b2c",
+      "layer21": "confirmation_deep",
+      "phase": "confirmation",
+      "action": "keep",
+      "stages": "all",
+      "why_ar": "أسئلة تحقق وتعميق — تُدار من جولة التأكيد المشروطة.",
+      "domains": [],
+      "impact_ar": "يسجل ملاحظة للمستشار أو المحرك.",
+      "measures": [
+        "answer_uncertainty_note"
+      ],
+      "final_status": "deep_only"
+    },
+    "QB-M8-006": {
+      "surface": "b2c",
+      "layer21": "confirmation_deep",
+      "phase": "confirmation",
+      "action": "keep",
+      "stages": "all",
+      "why_ar": "أسئلة تحقق وتعميق — تُدار من جولة التأكيد المشروطة.",
+      "domains": [],
+      "impact_ar": "يفصل بين أفضل مسارين عند تقارب PathwayFit.",
+      "measures": [
+        "tie_breaker"
+      ],
+      "final_status": "deep_only"
+    },
+    "QB-M8-007": {
+      "surface": "b2c",
+      "layer21": "confirmation_deep",
+      "phase": "confirmation",
+      "action": "keep",
+      "stages": "all",
+      "why_ar": "أسئلة تحقق وتعميق — تُدار من جولة التأكيد المشروطة.",
+      "domains": [],
+      "impact_ar": "يحترم الخصوصية ويعيد الحساب.",
+      "measures": [
+        "exclude_sensitive_info"
+      ],
+      "final_status": "deep_only"
+    },
+    "QB-M8-008": {
+      "surface": "b2c",
+      "layer21": "confirmation_deep",
+      "phase": "confirmation",
+      "action": "keep",
+      "stages": "all",
+      "why_ar": "أسئلة تحقق وتعميق — تُدار من جولة التأكيد المشروطة.",
+      "domains": [],
+      "impact_ar": "يضبط quick/deep mode.",
+      "measures": [
+        "depth_choice"
+      ],
+      "final_status": "deep_only"
+    },
+    "QB-M8-009": {
+      "surface": "b2c",
+      "layer21": "confirmation_deep",
+      "phase": "confirmation",
+      "action": "keep",
+      "stages": "all",
+      "why_ar": "أسئلة تحقق وتعميق — تُدار من جولة التأكيد المشروطة.",
+      "domains": [],
+      "impact_ar": "يولد feedback ويحسن القواعد.",
+      "measures": [
+        "recommendation_face_validity"
+      ],
+      "final_status": "deep_only"
+    },
+    "QB-M8-010": {
+      "surface": "b2c",
+      "layer21": "confirmation_deep",
+      "phase": "confirmation",
+      "action": "keep",
+      "stages": "all",
+      "why_ar": "أسئلة تحقق وتعميق — تُدار من جولة التأكيد المشروطة.",
+      "domains": [],
+      "impact_ar": "يرسل إشارة لتحسين المسارات أو المحتوى.",
+      "measures": [
+        "rejection_reason"
+      ],
+      "final_status": "deep_only"
+    },
+    "QB-M9-001": {
+      "surface": "b2b_b2g",
+      "layer21": null,
+      "phase": "none",
+      "action": "out_of_scope",
+      "stages": [],
+      "why_ar": "أسئلة مؤسسية — تعيش في مسار B2B/B2G المستقل.",
+      "domains": [],
+      "impact_ar": "أسئلة مؤسسية — تعيش في مسار B2B/B2G المستقل.",
+      "measures": [
+        "org_context"
+      ],
+      "final_status": "institutional"
+    },
+    "QB-M9-002": {
+      "surface": "b2b_b2g",
+      "layer21": null,
+      "phase": "none",
+      "action": "out_of_scope",
+      "stages": [],
+      "why_ar": "أسئلة مؤسسية — تعيش في مسار B2B/B2G المستقل.",
+      "domains": [],
+      "impact_ar": "أسئلة مؤسسية — تعيش في مسار B2B/B2G المستقل.",
+      "measures": [
+        "organization_sector"
+      ],
+      "final_status": "institutional"
+    },
+    "QB-M9-003": {
+      "surface": "b2b_b2g",
+      "layer21": null,
+      "phase": "none",
+      "action": "out_of_scope",
+      "stages": [],
+      "why_ar": "أسئلة مؤسسية — تعيش في مسار B2B/B2G المستقل.",
+      "domains": [],
+      "impact_ar": "أسئلة مؤسسية — تعيش في مسار B2B/B2G المستقل.",
+      "measures": [
+        "target_job_family"
+      ],
+      "final_status": "institutional"
+    },
+    "QB-M9-004": {
+      "surface": "b2b_b2g",
+      "layer21": null,
+      "phase": "none",
+      "action": "out_of_scope",
+      "stages": [],
+      "why_ar": "أسئلة مؤسسية — تعيش في مسار B2B/B2G المستقل.",
+      "domains": [],
+      "impact_ar": "أسئلة مؤسسية — تعيش في مسار B2B/B2G المستقل.",
+      "measures": [
+        "job_level"
+      ],
+      "final_status": "institutional"
+    },
+    "QB-M9-005": {
+      "surface": "b2b_b2g",
+      "layer21": null,
+      "phase": "none",
+      "action": "out_of_scope",
+      "stages": [],
+      "why_ar": "أسئلة مؤسسية — تعيش في مسار B2B/B2G المستقل.",
+      "domains": [],
+      "impact_ar": "أسئلة مؤسسية — تعيش في مسار B2B/B2G المستقل.",
+      "measures": [
+        "strategic_priority"
+      ],
+      "final_status": "institutional"
+    },
+    "QB-M9-006": {
+      "surface": "b2b_b2g",
+      "layer21": null,
+      "phase": "none",
+      "action": "out_of_scope",
+      "stages": [],
+      "why_ar": "أسئلة مؤسسية — تعيش في مسار B2B/B2G المستقل.",
+      "domains": [],
+      "impact_ar": "أسئلة مؤسسية — تعيش في مسار B2B/B2G المستقل.",
+      "measures": [
+        "org_kpi"
+      ],
+      "final_status": "institutional"
+    },
+    "QB-M9-007": {
+      "surface": "b2b_b2g",
+      "layer21": null,
+      "phase": "none",
+      "action": "out_of_scope",
+      "stages": [],
+      "why_ar": "أسئلة مؤسسية — تعيش في مسار B2B/B2G المستقل.",
+      "domains": [],
+      "impact_ar": "أسئلة مؤسسية — تعيش في مسار B2B/B2G المستقل.",
+      "measures": [
+        "management_hypothesis"
+      ],
+      "final_status": "institutional"
+    },
+    "QB-M9-008": {
+      "surface": "b2b_b2g",
+      "layer21": null,
+      "phase": "none",
+      "action": "out_of_scope",
+      "stages": [],
+      "why_ar": "أسئلة مؤسسية — تعيش في مسار B2B/B2G المستقل.",
+      "domains": [],
+      "impact_ar": "أسئلة مؤسسية — تعيش في مسار B2B/B2G المستقل.",
+      "measures": [
+        "org_sensitivity"
+      ],
+      "final_status": "institutional"
+    },
+    "QB-M9-009": {
+      "surface": "b2b_b2g",
+      "layer21": null,
+      "phase": "none",
+      "action": "out_of_scope",
+      "stages": [],
+      "why_ar": "أسئلة مؤسسية — تعيش في مسار B2B/B2G المستقل.",
+      "domains": [],
+      "impact_ar": "أسئلة مؤسسية — تعيش في مسار B2B/B2G المستقل.",
+      "measures": [
+        "cohort_size"
+      ],
+      "final_status": "institutional"
+    },
+    "QB-M9-010": {
+      "surface": "b2b_b2g",
+      "layer21": null,
+      "phase": "none",
+      "action": "out_of_scope",
+      "stages": [],
+      "why_ar": "أسئلة مؤسسية — تعيش في مسار B2B/B2G المستقل.",
+      "domains": [],
+      "impact_ar": "أسئلة مؤسسية — تعيش في مسار B2B/B2G المستقل.",
+      "measures": [
+        "manager_involvement"
+      ],
+      "final_status": "institutional"
+    },
+    "QB-M9-011": {
+      "surface": "b2b_b2g",
+      "layer21": null,
+      "phase": "none",
+      "action": "out_of_scope",
+      "stages": [],
+      "why_ar": "أسئلة مؤسسية — تعيش في مسار B2B/B2G المستقل.",
+      "domains": [],
+      "impact_ar": "أسئلة مؤسسية — تعيش في مسار B2B/B2G المستقل.",
+      "measures": [
+        "data_sharing_policy"
+      ],
+      "final_status": "institutional"
+    },
+    "QB-M9-012": {
+      "surface": "b2b_b2g",
+      "layer21": null,
+      "phase": "none",
+      "action": "out_of_scope",
+      "stages": [],
+      "why_ar": "أسئلة مؤسسية — تعيش في مسار B2B/B2G المستقل.",
+      "domains": [],
+      "impact_ar": "أسئلة مؤسسية — تعيش في مسار B2B/B2G المستقل.",
+      "measures": [
+        "previous_training"
+      ],
+      "final_status": "institutional"
+    },
+    "QC-S1-001": {
+      "surface": "b2c",
+      "layer21": "orientation",
+      "phase": "core",
+      "action": "keep",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "يحدد المرحلة المهنية ويفلتر الأهداف والاحتياجات والأهلية.",
+      "why_ar": "أول حقيقة حاسمة — كل جلسة تبدأ هنا.",
+      "measures": [
+        "career_stage"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QC-S1-002": {
+      "surface": "b2c",
+      "layer21": "orientation",
+      "phase": "core",
+      "action": "keep",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "يفصل أول وظيفة عن ترقية ويضبط واقعية التوصية.",
+      "why_ar": "حالة العمل منفصلة عن المرحلة — تُسأل عند الحاجة فقط.",
+      "measures": [
+        "employment_state"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QC-G2-001": {
+      "surface": "b2c",
+      "layer21": "goal_need",
+      "phase": "core",
+      "action": "keep",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "يحدد فضاء المشكلة بخيارات مفلترة حسب المرحلة.",
+      "why_ar": "الهدف قبل المجال قبل المسار.",
+      "measures": [
+        "primary_goal"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QC-N3-001": {
+      "surface": "b2c",
+      "layer21": "goal_need",
+      "phase": "core",
+      "action": "keep",
+      "stages": "all",
+      "domains": [
+        "employment_readiness",
+        "career_direction",
+        "data_decision",
+        "project_management",
+        "people_leadership",
+        "communication_influence",
+        "ai_productivity",
+        "operations",
+        "operations",
+        "sales",
+        "marketing_growth",
+        "sales",
+        "communication_influence",
+        "product_mgmt",
+        "cyber_risk",
+        "operations",
+        "finance_mgmt",
+        "learning_design",
+        "entrepreneurship"
+      ],
+      "impact_ar": "يكتشف المجال — محرك التمييز الرئيس بين المسارات والقوالب.",
+      "why_ar": "الاحتياج الحقيقي لا اسم المسار.",
+      "measures": [
+        "need_id"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QC-F7-001": {
+      "surface": "b2c",
+      "layer21": "feasibility",
+      "phase": "core",
+      "action": "keep",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "يحدد الجدوى وطول الخطة فقط.",
+      "why_ar": "إشارة جدوى حقيقية.",
+      "measures": [
+        "weekly_load"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QC-C8-001": {
+      "surface": "b2c",
+      "layer21": "confirmation_deep",
+      "phase": "confirmation",
+      "action": "keep",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "يفصل قياسيًا عن مركبًا عند الغموض.",
+      "why_ar": "لا يُسأل إلا عند غموض فعلي.",
+      "measures": [
+        "mastery_portfolio_pref"
+      ],
+      "final_status": "deep_only"
+    }
+  }
+}

@@ -1,141 +1,374 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
-  AlertTriangle, CheckCircle2, CircleX, GitMerge, Lock, Play, UserPlus, XCircle,
+  CalendarPlus, CheckCircle2, ChevronDown, Loader2, Lock, Play, RefreshCw,
+  ServerOff, UserPlus, Users, Video, XCircle,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
-import {
-  loadAdminCohorts, cohortReadyToOpen, openCohort, autoCloseAtCapacity,
-  resolveUnderMinimum, type AdminCohortStatus,
-} from "@/data/admin";
+import { apiGet, apiPost, ApiError } from "@/services/api";
+import { CohortOps, LearningSettings } from "./CohortOps";
 
-const STATUS_META: Record<AdminCohortStatus, { label: string; cls: string }> = {
+const STATUS_META: Record<string, { label: string; cls: string }> = {
   draft: { label: "مسودة", cls: "border-white/20 text-white/50" },
-  open: { label: "مفتوحة", cls: "border-[#38A7B4]/50 text-[#6EC7D1]" },
-  full: { label: "ممتلئة — أُغلقت آليا", cls: "border-[#FABC05]/50 text-[#FABC05]" },
-  running: { label: "جارية", cls: "border-[#38A7B4]/60 text-[#6EC7D1]" },
-  postponed: { label: "مؤجلة", cls: "border-white/20 text-white/50" },
-  cancelled: { label: "ملغاة/مدمجة", cls: "border-red-500/40 text-red-400" },
+  open: { label: "مفتوحة للتسجيل", cls: "border-[#38A7B4]/50 text-[#6EC7D1]" },
+  full: { label: "ممتلئة", cls: "border-[#FABC05]/50 text-[#FABC05]" },
+  active: { label: "جارية", cls: "border-[#38A7B4]/60 text-[#6EC7D1]" },
+  completed: { label: "مكتملة", cls: "border-white/20 text-white/60" },
+  cancelled: { label: "ملغاة", cls: "border-red-500/40 text-red-400" },
 };
 
-const CHECK_LABELS = [
-  ["trainer", "مدرب معتمد"], ["schedule", "جدول منشور"], ["capacity", "سعة محددة"],
-  ["content", "محتوى معتمد"], ["contract", "عقد مالي موقع"],
-] as const;
+interface CohortRow {
+  id: string; title: string; status: string; courseId: string; courseTitle: string;
+  startsAt: string | null; endsAt: string | null; daysOfWeek: string[]; startTime: string | null;
+  timezone: string | null; capacity: number | null; enrolled: number;
+  price: string | null; currency: string; language: string; deliveryMode: string;
+  registrationOpen: boolean; financialReady: boolean; sessionsCount: number;
+  trainers: { profileId: string; name: string; role: string }[];
+}
 
-/** عمليات الشعب — US-10: لا تفتح دون مدرب وجدول ومحتوى وعقد؛ تُغلق آليا عند السعة */
+interface CourseOption { id: string; status: string; title: string }
+interface Checklist { ready: boolean; missing: string[] }
+
+/** عمليات الشعب — API حقيقي: إنشاء، شروط الفتح الستة، جلسات، Zoom يدوي، تسجيل بسعة محروسة */
 export default function AdminCohorts() {
-  const [tick, setTick] = useState(0);
-  const cohorts = useMemo(() => { void tick; return loadAdminCohorts(); }, [tick]); // tick عداد إبطال مقصود بعد كل كتابة
-  const [notice, setNotice] = useState<string | null>(null);
+  const [rows, setRows] = useState<CohortRow[]>([]);
+  const [courses, setCourses] = useState<CourseOption[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [offline, setOffline] = useState<string | null>(null);
+  const [flash, setFlash] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [checklist, setChecklist] = useState<Record<string, Checklist>>({});
 
-  const tryOpen = (id: string) => {
-    const res = openCohort(id);
-    setNotice(res.ok ? "فُتحت الشعبة — كل الشروط مستوفاة." : res.reason ?? "تعذر الفتح");
-    setTick(tick + 1);
-  };
-  const enrollOne = (id: string) => {
-    // محاكاة تسجيل طالب جديد — قد يغلق الشعبة آليا عند بلوغ السعة
-    const list = loadAdminCohorts();
-    const c = list.find((x) => x.id === id);
-    if (c && c.enrolled < c.capacity) {
-      c.enrolled += 1;
-      localStorage.setItem("wajeez_admin_cohorts", JSON.stringify(list));
-      const closed = autoCloseAtCapacity(id);
-      setNotice(closed ? "بلغت الشعبة سعتها — أُغلقت تلقائيا وفتحت قائمة الانتظار." : `سُجل طالب جديد (${c.enrolled}/${c.capacity})`);
-      setTick(tick + 1);
+  /* نماذج */
+  const [createForm, setCreateForm] = useState({ courseId: "", title: "", capacity: "20", price: "", days: "", startTime: "18:00" });
+  const [sessionForm, setSessionForm] = useState({ title: "", date: "", time: "18:00", hours: "2" });
+  const [zoomForm, setZoomForm] = useState<Record<string, { sessionId: string; joinUrl: string; meetingId: string; passcode: string }>>({});
+  const [enrollUserId, setEnrollUserId] = useState("");
+  const [createOpen, setCreateOpen] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true); setOffline(null);
+    try {
+      const [cohortRows, courseRows] = await Promise.all([
+        apiGet<CohortRow[]>("/api/admin/cohorts"),
+        apiGet<CourseOption[]>("/api/admin/catalog/courses"),
+      ]);
+      setRows(cohortRows);
+      setCourses(courseRows.filter((c) => c.status === "published"));
+    } catch (err) {
+      setOffline(err instanceof ApiError ? err.message : "الخادم غير متصل — شغّل واجهة API أولا");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { void load(); }, [load]);
+
+  const act = async (fn: () => Promise<unknown>, doneMsg: string) => {
+    if (busy) return;
+    setBusy(true); setFlash("");
+    try {
+      await fn();
+      setFlash(doneMsg);
+      await load();
+      if (expanded) await loadChecklist(expanded);
+    } catch (err) {
+      setFlash(err instanceof ApiError ? err.message : "تعذر تنفيذ الإجراء");
+    } finally {
+      setBusy(false);
     }
   };
 
+  const loadChecklist = async (id: string) => {
+    try {
+      const check = await apiGet<Checklist>(`/api/admin/cohorts/${id}/open-checklist`);
+      setChecklist((prev) => ({ ...prev, [id]: check }));
+    } catch { /* الفحص اختياري العرض */ }
+  };
+
+  const toggle = (id: string) => {
+    const next = expanded === id ? null : id;
+    setExpanded(next);
+    if (next) void loadChecklist(next);
+  };
+
+  const createCohort = () => act(async () => {
+    await apiPost("/api/admin/cohorts", {
+      courseId: createForm.courseId,
+      title: createForm.title,
+      capacity: createForm.capacity ? Number(createForm.capacity) : undefined,
+      price: createForm.price ? Number(createForm.price) : undefined,
+      daysOfWeek: createForm.days ? createForm.days.split(/[،,]/).map((d) => d.trim()).filter(Boolean) : undefined,
+      startTime: createForm.startTime || undefined,
+    });
+    setCreateForm({ courseId: "", title: "", capacity: "20", price: "", days: "", startTime: "18:00" });
+    setCreateOpen(false);
+  }, "أُنشئت الشعبة كمسودة — أكمل شروط الفتح الستة");
+
+  if (offline) {
+    return (
+      <AdminLayout title="عمليات الشعب">
+        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
+          <ServerOff className="h-12 w-12 text-white/20" />
+          <h2 className="mt-4 text-xl font-black">لا يمكن الوصول للبيانات</h2>
+          <p className="mt-2 max-w-md text-sm leading-7 text-white/55">{offline}</p>
+          <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-white/70 hover:border-white/40">
+            <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
+          </button>
+        </div>
+      </AdminLayout>
+    );
+  }
+
   return (
-    <AdminLayout title="عمليات الشعب — الفتح والإغلاق والسعة">
-      {notice && (
+    <AdminLayout title="عمليات الشعب — الفتح المشروط والجلسات والتسجيل">
+      {flash && (
         <p className="mb-5 flex items-center gap-2 rounded-2xl border border-[#38A7B4]/40 bg-[#38A7B4]/10 px-4 py-3 text-sm font-bold text-[#6EC7D1]">
-          <CheckCircle2 className="h-4 w-4 shrink-0" /> {notice}
+          <CheckCircle2 className="h-4 w-4 shrink-0" /> {flash}
         </p>
       )}
 
-      <div className="space-y-4">
-        {cohorts.map((c) => {
-          const meta = STATUS_META[c.status];
-          const check = cohortReadyToOpen(c);
-          const underMin = c.enrolled < c.minSeats && (c.status === "open" || c.status === "draft");
-          return (
-            <div key={c.id} className="rounded-3xl border border-white/10 bg-white/[0.02] p-5">
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="min-w-0 flex-1">
-                  <p className="font-black">{c.courseName}</p>
-                  <p className="mt-0.5 text-xs text-white/50">
-                    {c.pathwayName} · {c.trainer} · تبدأ {c.startDate} · {c.enrolled}/{c.capacity} مقعدا (الحد الأدنى {c.minSeats})
-                  </p>
-                </div>
-                <span className={`rounded-full border px-3 py-1 text-[11px] font-bold ${meta.cls}`}>{meta.label}</span>
-                {c.status === "draft" && (
-                  <button
-                    onClick={() => tryOpen(c.id)}
-                    className="flex cursor-pointer items-center gap-1.5 rounded-full bg-[#38A7B4] px-4 py-2 text-xs font-black text-[#08272B] transition hover:bg-[#6EC7D1]"
-                  >
-                    <Play className="h-3.5 w-3.5" /> افتح الشعبة
-                  </button>
-                )}
-                {c.status === "open" && (
-                  <button
-                    onClick={() => enrollOne(c.id)}
-                    className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/20 px-4 py-2 text-xs font-bold text-white/70 transition hover:border-[#38A7B4]/60 hover:text-[#6EC7D1]"
-                  >
-                    <UserPlus className="h-3.5 w-3.5" /> سجّل طالبا (محاكاة)
-                  </button>
-                )}
-              </div>
-
-              {/* قائمة تحقق الفتح — US-10 */}
-              <div className="mt-4 flex flex-wrap gap-2">
-                {CHECK_LABELS.map(([key, label]) => (
-                  <span
-                    key={key}
-                    className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-[10px] font-bold ${
-                      c.checklist[key] ? "border-[#38A7B4]/30 text-[#6EC7D1]" : "border-red-500/40 text-red-400"
-                    }`}
-                  >
-                    {c.checklist[key] ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
-                    {label}
-                  </span>
-                ))}
-              </div>
-              {!check.ready && c.status === "draft" && (
-                <p className="mt-2.5 flex items-center gap-1.5 text-[11px] text-red-300">
-                  <Lock className="h-3.5 w-3.5" /> لا يمكن فتحها — ينقص: {check.missing.join("، ")}
-                </p>
-              )}
-
-              {/* دون الحد الأدنى — دمج/تأجيل/تشغيل استثنائي */}
-              {underMin && (
-                <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl border border-[#FABC05]/25 bg-[#FABC05]/5 px-4 py-3">
-                  <p className="flex items-center gap-1.5 text-[11px] font-bold text-[#FABC05]">
-                    <AlertTriangle className="h-3.5 w-3.5" /> دون الحد الأدنى ({c.enrolled}/{c.minSeats}) — قرارك:
-                  </p>
-                  <button onClick={() => { resolveUnderMinimum(c.id, "merge"); setTick(tick + 1); setNotice("دُمجت الشعبة مع الشعبة الأقرب موعدا — أُشعر الطلاب."); }}
-                    className="flex cursor-pointer items-center gap-1 rounded-full border border-white/20 px-3 py-1 text-[10px] font-bold text-white/70 hover:border-white/40">
-                    <GitMerge className="h-3 w-3" /> دمج
-                  </button>
-                  <button onClick={() => { resolveUnderMinimum(c.id, "postpone"); setTick(tick + 1); setNotice("أُجلت الشعبة — أُشعر الطلاب بالموعد الجديد وسبب التأجيل."); }}
-                    className="cursor-pointer rounded-full border border-white/20 px-3 py-1 text-[10px] font-bold text-white/70 hover:border-white/40">
-                    تأجيل
-                  </button>
-                  <button onClick={() => { resolveUnderMinimum(c.id, "exceptional_run"); setTick(tick + 1); setNotice("اعتُمد التشغيل الاستثنائي — سُجل القرار وسببه."); }}
-                    className="cursor-pointer rounded-full border border-[#FABC05]/40 px-3 py-1 text-[10px] font-bold text-[#FABC05] hover:bg-[#FABC05]/10">
-                    تشغيل استثنائي
-                  </button>
-                </div>
-              )}
-              {c.status === "cancelled" && (
-                <p className="mt-3 flex items-center gap-1.5 text-[11px] text-red-300">
-                  <CircleX className="h-3.5 w-3.5" /> أُلغيت/دُمجت — عُرض على الطلاب النقل أو الاسترداد وفق السياسة.
-                </p>
-              )}
+      {/* إنشاء شعبة */}
+      <div className="mb-6 rounded-3xl border border-white/10 bg-white/[0.02] p-5">
+        <button onClick={() => setCreateOpen(!createOpen)} className="flex w-full cursor-pointer items-center justify-between text-sm font-black">
+          <span>شعبة جديدة</span>
+          <ChevronDown className={`h-4 w-4 transition ${createOpen ? "rotate-180" : ""}`} />
+        </button>
+        {createOpen && (
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <label className="text-xs text-white/50">
+              الدورة (المنشورة فقط)
+              <select value={createForm.courseId} onChange={(e) => setCreateForm({ ...createForm, courseId: e.target.value })}
+                className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white focus:border-[#38A7B4] focus:outline-none">
+                <option value="">اختر دورة…</option>
+                {courses.map((c) => <option key={c.id} value={c.id}>{c.title} ({c.id})</option>)}
+              </select>
+            </label>
+            <label className="text-xs text-white/50">
+              عنوان الشعبة
+              <input value={createForm.title} onChange={(e) => setCreateForm({ ...createForm, title: e.target.value })}
+                placeholder="شعبة أكتوبر 2026 — مسائية"
+                className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none" />
+            </label>
+            <label className="text-xs text-white/50">
+              السعة
+              <input value={createForm.capacity} onChange={(e) => setCreateForm({ ...createForm, capacity: e.target.value })} type="number" min={1}
+                className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white focus:border-[#38A7B4] focus:outline-none" />
+            </label>
+            <label className="text-xs text-white/50">
+              السعر (دينار أردني)
+              <input value={createForm.price} onChange={(e) => setCreateForm({ ...createForm, price: e.target.value })} type="number" min={0}
+                className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white focus:border-[#38A7B4] focus:outline-none" />
+            </label>
+            <label className="text-xs text-white/50">
+              أيام الأسبوع (افصل بفاصلة)
+              <input value={createForm.days} onChange={(e) => setCreateForm({ ...createForm, days: e.target.value })}
+                placeholder="الأحد، الثلاثاء"
+                className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none" />
+            </label>
+            <label className="text-xs text-white/50">
+              وقت البدء
+              <input value={createForm.startTime} onChange={(e) => setCreateForm({ ...createForm, startTime: e.target.value })} type="time"
+                className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white focus:border-[#38A7B4] focus:outline-none" />
+            </label>
+            <div className="flex items-end">
+              <button disabled={busy || !createForm.courseId || createForm.title.length < 3} onClick={createCohort}
+                className="flex cursor-pointer items-center gap-2 rounded-full bg-[#38A7B4] px-6 py-2.5 text-xs font-black text-[#08272B] transition hover:bg-[#6EC7D1] disabled:opacity-40">
+                {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null} أنشئ المسودة
+              </button>
             </div>
-          );
-        })}
+          </div>
+        )}
       </div>
+
+      {loading ? (
+        <div className="grid place-items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-[#38A7B4]" /></div>
+      ) : rows.length === 0 ? (
+        <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-white/45">لا شعب بعد — أنشئ أول شعبة من الأعلى.</p>
+      ) : (
+        <div className="space-y-4">
+          {rows.map((c) => {
+            const meta = STATUS_META[c.status] ?? STATUS_META.draft;
+            const check = checklist[c.id];
+            const isOpen = expanded === c.id;
+            return (
+              <div key={c.id} className="rounded-3xl border border-white/10 bg-white/[0.02] p-5">
+                <button onClick={() => toggle(c.id)} className="flex w-full cursor-pointer flex-wrap items-center gap-4 text-right">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-black">{c.title}</p>
+                    <p className="mt-0.5 text-xs text-white/50">
+                      {c.courseTitle} · {c.trainers.length ? c.trainers.map((t) => t.name).join("، ") : "بلا مدرب"}
+                      {" · "}{c.enrolled}/{c.capacity ?? "—"} مقعدا · {c.sessionsCount} جلسة
+                      {c.price ? ` · ${c.price} ${c.currency}` : ""}
+                    </p>
+                  </div>
+                  <span className={`rounded-full border px-3 py-1 text-[11px] font-bold ${meta.cls}`}>{meta.label}</span>
+                  <ChevronDown className={`h-4 w-4 text-white/50 transition ${isOpen ? "rotate-180" : ""}`} />
+                </button>
+
+                {isOpen && (
+                  <div className="mt-5 space-y-5 border-t border-white/8 pt-5">
+                    {/* شروط الفتح الستة */}
+                    <div>
+                      <p className="mb-2 text-xs font-black text-white/60">شروط الفتح</p>
+                      {check ? (
+                        check.ready ? (
+                          <p className="flex items-center gap-1.5 text-xs font-bold text-[#6EC7D1]"><CheckCircle2 className="h-3.5 w-3.5" /> كل الشروط مستوفاة</p>
+                        ) : (
+                          <div className="flex flex-wrap gap-2">
+                            {check.missing.map((m) => (
+                              <span key={m} className="flex items-center gap-1.5 rounded-full border border-red-500/40 px-3 py-1 text-[10px] font-bold text-red-400">
+                                <XCircle className="h-3 w-3" /> {m}
+                              </span>
+                            ))}
+                          </div>
+                        )
+                      ) : <Loader2 className="h-4 w-4 animate-spin text-white/30" />}
+                    </div>
+
+                    {/* إجراءات الحالة */}
+                    <div className="flex flex-wrap gap-2">
+                      {c.status === "draft" && (
+                        <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/cohorts/${c.id}/open`), "فُتحت الشعبة — التسجيل متاح الآن")}
+                          className="flex cursor-pointer items-center gap-1.5 rounded-full bg-[#38A7B4] px-4 py-2 text-xs font-black text-[#08272B] transition hover:bg-[#6EC7D1] disabled:opacity-40">
+                          <Play className="h-3.5 w-3.5" /> افتح الشعبة
+                        </button>
+                      )}
+                      {["open", "full"].includes(c.status) && (
+                        <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/cohorts/${c.id}/transition`, { to: "active" }), "الشعبة جارية الآن")}
+                          className="cursor-pointer rounded-full border border-[#38A7B4]/50 px-4 py-2 text-xs font-bold text-[#6EC7D1] transition hover:bg-[#38A7B4]/10">
+                          ابدأ التقديم
+                        </button>
+                      )}
+                      {c.status === "active" && (
+                        <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/cohorts/${c.id}/transition`, { to: "completed" }), "اكتملت الشعبة")}
+                          className="cursor-pointer rounded-full border border-white/20 px-4 py-2 text-xs font-bold text-white/70 transition hover:border-white/40">
+                          اختتم الشعبة
+                        </button>
+                      )}
+                      {!["completed", "cancelled"].includes(c.status) && (
+                        <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/cohorts/${c.id}/transition`, { to: "cancelled", note: "إلغاء من لوحة الإدارة" }), "أُلغيت الشعبة")}
+                          className="cursor-pointer rounded-full border border-red-500/40 px-4 py-2 text-xs font-bold text-red-400 transition hover:bg-red-500/10">
+                          إلغاء
+                        </button>
+                      )}
+                    </div>
+
+                    {/* إضافة جلسة */}
+                    {!["completed", "cancelled"].includes(c.status) && (
+                      <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
+                        <p className="mb-3 flex items-center gap-1.5 text-xs font-black text-white/60"><CalendarPlus className="h-3.5 w-3.5" /> جلسة جديدة</p>
+                        <div className="grid gap-2 sm:grid-cols-5">
+                          <input placeholder="عنوان الجلسة" value={sessionForm.title} onChange={(e) => setSessionForm({ ...sessionForm, title: e.target.value })}
+                            className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none sm:col-span-2" />
+                          <input type="date" value={sessionForm.date} onChange={(e) => setSessionForm({ ...sessionForm, date: e.target.value })}
+                            className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white focus:border-[#38A7B4] focus:outline-none" />
+                          <input type="time" value={sessionForm.time} onChange={(e) => setSessionForm({ ...sessionForm, time: e.target.value })}
+                            className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white focus:border-[#38A7B4] focus:outline-none" />
+                          <button disabled={busy || sessionForm.title.length < 2 || !sessionForm.date}
+                            onClick={() => act(async () => {
+                              const startsAt = new Date(`${sessionForm.date}T${sessionForm.time}:00`);
+                              const endsAt = new Date(startsAt.getTime() + Number(sessionForm.hours || 2) * 3600_000);
+                              await apiPost(`/api/admin/cohorts/${c.id}/sessions`, { title: sessionForm.title, startsAt, endsAt });
+                              setSessionForm({ title: "", date: "", time: "18:00", hours: "2" });
+                            }, "أُضيفت الجلسة — وفُحص تعارض المدربين")}
+                            className="cursor-pointer rounded-xl bg-white/10 px-4 py-2 text-xs font-black text-white transition hover:bg-white/15 disabled:opacity-40">
+                            أضف
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ربط Zoom يدوي لجلسة */}
+                    <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
+                      <p className="mb-3 flex items-center gap-1.5 text-xs font-black text-white/60"><Video className="h-3.5 w-3.5" /> ربط اجتماع Zoom يدوي</p>
+                      <ZoomAttach cohortId={c.id} sessionsCount={c.sessionsCount}
+                        value={zoomForm[c.id] ?? { sessionId: "", joinUrl: "", meetingId: "", passcode: "" }}
+                        onChange={(v) => setZoomForm((prev) => ({ ...prev, [c.id]: v }))}
+                        busy={busy}
+                        onSubmit={() => act(async () => {
+                          const z = zoomForm[c.id];
+                          await apiPost(`/api/admin/sessions/${z.sessionId}/zoom`, {
+                            joinUrl: z.joinUrl, meetingId: z.meetingId || undefined, passcode: z.passcode || undefined,
+                          });
+                          setZoomForm((prev) => ({ ...prev, [c.id]: { sessionId: "", joinUrl: "", meetingId: "", passcode: "" } }));
+                        }, "رُبط اجتماع Zoom بالجلسة")} />
+                    </div>
+
+                    {/* تسجيل متعلم */}
+                    {["open", "full", "active"].includes(c.status) && c.registrationOpen && (
+                      <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
+                        <p className="mb-3 flex items-center gap-1.5 text-xs font-black text-white/60"><UserPlus className="h-3.5 w-3.5" /> تسجيل متعلم — الفائض يتحول لقائمة انتظار آليا</p>
+                        <div className="flex gap-2">
+                          <input placeholder="معرف المستخدم (UUID)" dir="ltr" value={enrollUserId} onChange={(e) => setEnrollUserId(e.target.value)}
+                            className="flex-1 rounded-xl border border-white/15 bg-black/30 px-3 py-2 font-mono text-xs text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none" />
+                          <button disabled={busy || !enrollUserId.trim()}
+                            onClick={() => act(async () => {
+                              const res = await apiPost<{ status: string }>(`/api/admin/cohorts/${c.id}/enrollments`, { userId: enrollUserId.trim() });
+                              setEnrollUserId("");
+                              setFlash(res.status === "waitlisted" ? "الشعبة ممتلئة — أُدرج المتعلم في قائمة الانتظار" : "سُجل المتعلم بنجاح");
+                            }, "")}
+                            className="cursor-pointer rounded-xl bg-white/10 px-4 py-2 text-xs font-black text-white transition hover:bg-white/15 disabled:opacity-40">
+                            سجّل
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {c.status === "draft" && check && !check.ready && (
+                      <p className="flex items-center gap-1.5 text-[11px] text-red-300">
+                        <Lock className="h-3.5 w-3.5" /> لا يمكن فتحها قبل استيفاء الشروط أعلاه
+                      </p>
+                    )}
+                    <p className="flex items-center gap-1.5 text-[10px] text-white/50">
+                      <Users className="h-3 w-3" /> المسجلون الفعليون: {c.enrolled} — السعة {c.capacity ?? "غير محددة"}
+                    </p>
+
+                    {/* عمليات متقدمة: مدرب، تعديل، مواد، تقييمات، شهادات، نشر عام */}
+                    <CohortOps cohort={c} onDone={(msg) => { setFlash(msg); void load(); }} />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* روبرك وقواعد الإكمال */}
+      <LearningSettings
+        courses={courses.map((c) => ({ id: c.id, title: c.title }))}
+        cohorts={rows.map((c) => ({ id: c.id, title: c.title }))}
+        onDone={(msg) => setFlash(msg)}
+      />
     </AdminLayout>
+  );
+}
+
+/** نموذج ربط Zoom — يحتاج معرف الجلسة من قاعدة البيانات (يظهر في استجابة إضافة الجلسة أو من المدرب) */
+function ZoomAttach({ cohortId, sessionsCount, value, onChange, busy, onSubmit }: {
+  cohortId: string; sessionsCount: number;
+  value: { sessionId: string; joinUrl: string; meetingId: string; passcode: string };
+  onChange: (v: { sessionId: string; joinUrl: string; meetingId: string; passcode: string }) => void;
+  busy: boolean; onSubmit: () => void;
+}) {
+  void cohortId;
+  if (!sessionsCount) return <p className="text-[11px] text-white/50">أضف جلسة أولا ثم اربطها باجتماع.</p>;
+  return (
+    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+      <input placeholder="معرف الجلسة (UUID)" dir="ltr" value={value.sessionId} onChange={(e) => onChange({ ...value, sessionId: e.target.value })}
+        className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 font-mono text-xs text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none" />
+      <input placeholder="رابط الانضمام https://…" dir="ltr" value={value.joinUrl} onChange={(e) => onChange({ ...value, joinUrl: e.target.value })}
+        className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 font-mono text-xs text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none lg:col-span-2" />
+      <input placeholder="معرف الاجتماع (اختياري)" dir="ltr" value={value.meetingId} onChange={(e) => onChange({ ...value, meetingId: e.target.value })}
+        className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 font-mono text-xs text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none" />
+      <div className="flex gap-2">
+        <input placeholder="رمز المرور" dir="ltr" value={value.passcode} onChange={(e) => onChange({ ...value, passcode: e.target.value })}
+          className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 font-mono text-xs text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none" />
+        <button disabled={busy || !value.sessionId.trim() || !/^https:\/\/.+/.test(value.joinUrl)} onClick={onSubmit}
+          className="shrink-0 cursor-pointer rounded-xl bg-white/10 px-4 py-2 text-xs font-black text-white transition hover:bg-white/15 disabled:opacity-40">
+          اربط
+        </button>
+      </div>
+    </div>
   );
 }

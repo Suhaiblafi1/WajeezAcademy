@@ -49,17 +49,17 @@ export default function CourseModal({
           </div>
         </div>
 
-        {/* المدرب */}
+        {/* المدرب — الاسم يُعلن بعد اعتماد الشعبة؛ يظهر التخصص التدريبي فقط */}
         <div className="mt-4 flex items-center gap-3 rounded-2xl border border-[#38A7B4]/25 bg-[#38A7B4]/5 p-4">
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#38A7B4] to-[#247B84] text-base font-black text-[#08272B]">
-            {d.trainer.name.replace(/^(أ\.|د\.|م\.)\s*/, "").charAt(0)}
+            <User className="h-5 w-5" />
           </span>
           <div>
             <p className="flex items-center gap-1.5 text-[11px] text-white/45">
               <User className="h-3 w-3" /> مدرب الدورة
             </p>
-            <p className="text-sm font-black">{d.trainer.name}</p>
-            <p className="text-xs text-[#6EC7D1]">{d.trainer.role}</p>
+            <p className="text-sm font-black">{d.trainer.role}</p>
+            <p className="text-xs text-[#6EC7D1]">{d.trainer.name}</p>
           </div>
         </div>
 
@@ -84,6 +84,14 @@ export default function CourseModal({
             <Target className="h-4 w-4" /> المخرج العملي
           </span>
           {d.outcome}
+        </p>
+
+        {/* منهجية تصميم الدورة — سطر واحد صادق */}
+        <p className="mt-4 text-[11px] leading-6 text-white/45">
+          صُممت مخرجات هذه الدورة انطلاقًا مما يجب أن تتمكن من إنجازه عمليًا بعد إتمامها.{" "}
+          <a href="/methodology" className="font-bold text-[#6EC7D1] transition hover:text-white">
+            كيف نصمم دورات وجيز؟
+          </a>
         </p>
 
         {/* السعر والشراء */}

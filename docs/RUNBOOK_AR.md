@@ -1,0 +1,132 @@
+# دليل التشغيل والتدقيق الشامل — أكاديمي وجيز
+
+آخر تحقق كامل: 2026-08-17 — كل الأرقام أدناه نتائج أوامر أُجريت فعلا على هذا المستودع.
+
+---
+
+## 1) المعمارية
+
+| الطبقة | التقنية | الموضع |
+|---|---|---|
+| الواجهة | React + Vite + Tailwind (RTL كامل) | `src/` |
+| الخادم | Fastify + zod + OpenAPI على `/docs` | `server/` |
+| قاعدة البيانات | PostgreSQL حقيقي عبر Prisma 7 (محول pg) | `prisma/` |
+| التخزين الخاص | ملفات موقعة الروابط في `storage/private/` (خارج Git دائما) | `server/services/storage.service.ts` |
+
+قاعدة التطوير مدمجة (`embedded-postgres`) على المنفذ 5433 وبياناتها في `.pgdata/` — لا تحتاج Docker. في الإنتاج عيّن `DATABASE_URL` ولا يُستخدم المدمج إطلاقا.
+
+---
+
+## 2) تشغيل الموقع (الواجهة)
+
+```bash
+npm install
+npm run dev        # واجهة التطوير على المنفذ 3000 مع بروكسي /api → 7101
+```
+
+للمعاينة الإنتاجية: `npm run build && npm run preview` (المنفذ 4173).
+
+## 3) تشغيل واجهة البرمجة (API)
+
+```bash
+npm run api:dev    # خادم Fastify على 127.0.0.1:7101 — يشغّل القاعدة المدمجة ويبذر الصلاحيات تلقائيا
+```
+
+فحص الحياة: `curl http://localhost:7101/api/health` — التوثيق التفاعلي: `http://localhost:7101/docs`.
+
+## 4) قاعدة البيانات
+
+- كل أوامر القاعدة تمر عبر الغلاف `scripts/with-db.ts` الذي يشغّل PostgreSQL المدمج ويمرر `DATABASE_URL` تلقائيا.
+- لا تشغّل أوامر prisma مباشرة بلا الغلاف في التطوير.
+
+## 5) الترحيلات (migrations)
+
+```bash
+npm run db:migrate   # تطوير: إنشاء/تطبيق ترحيلات
+npm run db:deploy    # إنتاج/اختبار: تطبيق فقط
+npm run db:generate  # توليد عميل Prisma
+```
+
+11 ترحيلا حاليا (من `20260815232238_init` حتى `20260816233000_trainer_public_stats`) — تحققنا من تطبيقها كلها من الصفر على قاعدة جديدة: 122 جدولا عاما، صفر أخطاء.
+
+## 6) الاستيراد (الكتالوج)
+
+```bash
+npm run catalog:import
+```
+
+مستورد حتمي وidempotent: شغّله مرتين ولا يتكرر أي سجل (مُثبت بعدّ 5123 صفا في 32 جدولا بعد كل تشغيل — تطابق تام وبصمة لقطة واحدة). النتيجة: 20 مسارا · 16 قالبا مركبا · 100 دورة · 400 وحدة · 305 مهارات · 192 سؤالا (783 خيارا) · 7 مراجع · 1094 علاقة · 36 ملفا تشخيصيا.
+
+## 7) التخزين
+
+- وثائق المتقدمين وملفات الطلاب في `storage/private/` — خارج Git عبر `.gitignore`.
+- الروابط الموقعة: `storage.service.ts` يوقّع روابط مؤقتة؛ في الإنتاج عيّن `STORAGE_SECRET` وإلا وُلّد سر محلي في `storage/private/.secret`.
+- يمنع منعا باتا وضع أي ملف خاص داخل `public/` — مفحوص: لا يوجد إلا favicon والشعارات وrobots وsitemap.
+
+## 8) الحسابات التجريبية
+
+لا توجد حسابات مبذورة في التطوير عمدا (نزاهة البيانات). لإنشاء حساب إداري محلي:
+
+```bash
+# عبر الاختبارات أو سكربت: auth.register ثم auth.setRoles(userId, ['academic_manager'])
+```
+
+الأدوار التسعة المعرفة: `super_admin · academic_manager · diagnostic_manager · operations_manager · advisor · trainer · finance · support · learner` — مصفوفة الصلاحيات في `server/auth/permissions.ts`، ومطابقتها للبذر مثبتة باختبار `server/tests/rbac/roles-matrix.test.ts`.
+
+## 9) الاختبارات
+
+| الأمر | يغطي |
+|---|---|
+| `npm test` | محرك التشخيص (111 اختبارا) + محاكاة 12 شخصية حتمية |
+| `npm run test:e2e` | كل اختبارات الخادم (13 ملفا — 115 اختبارا) |
+| `npm run test:integration` | اسم بديل لـ e2e |
+| `npm run test:catalog` / `test:catalog-publishing` | الكتالوج والنشر والتراجع |
+| `npm run test:trainer-*` / `test:permissions` | انضمام المدربين وسير التعديلات والصلاحيات |
+| `npm run test:cohorts` / `test:learning` | الشعب والواجبات والحضور والشهادات |
+| `npm run test:advisors` / `test:commerce` / `test:notifications` / `test:support` / `test:reports` | المستشارون والدفع والإشعارات والدعم والتقارير |
+| `npm run audit:diagnostic` + `audit:methodology` + `audit:catalog*` + `audit:diagnostic-*` | 6 تدقيقات بيانات — كلها تخرج 0 وتنهي العملية نظيفة |
+| `node scripts/verify-ui.mjs` | فحص بصري بـ Playwright: 31 فحصا (جوال 390px + سطح مكتب 1440px، لا تمرير أفقي، لا أخطاء console) — يتطلب `npm i --no-save playwright` وخادمي المعاينة والـAPI |
+
+## 10) النشر
+
+المتغيرات المطلوبة في الإنتاج:
+
+| المتغير | الغرض |
+|---|---|
+| `DATABASE_URL` | قاعدة PostgreSQL المُدارة (إلزامي — يلغي المدمج) |
+| `WEB_ORIGIN` | أصل الواجهة لـ CORS (افتراضيا localhost:7100) |
+| `NODE_ENV=production` | يفعّل كوكي secure ويخفي رموز الاستعادة من الردود |
+| `STORAGE_SECRET` | سر توقيع الروابط الموقعة |
+| `API_PORT` | منفذ الخادم (افتراضيا 7101) |
+
+الحماية المفعّلة: تحديد معدل عام 300 طلب/دقيقة لكل IP، و10/5د للدخول والتسجيل، و5/15د لاستعادة كلمة المرور، وقفل دخول 15 دقيقة بعد 5 إخفاقات (مثبت باختبار `auth-throttle.test.ts`)، ورسائل خطأ لا تكشف وجود الحساب.
+
+تفاصيل النطاق وSEO في `docs/DEPLOYMENT.md`.
+
+## 11) النسخ الاحتياطي والاستعادة
+
+**الخطة للإنتاج:** لقطة `pg_dump` يومية من القاعدة المُدارة + نسخ `storage/private/` — احتفاظ 30 يوما، واختبار استعادة شهري على قاعدة منفصلة.
+
+**الإثبات المحلي المنفذ فعلا (2026-08-17):** سكربت `scripts/tmp/backup-restore.ts` صدّر 121 جدولا (5114 صفا) من قاعدة التطوير إلى JSON، وأنشأ قاعدة `wajeez_restore` منفصلة، وطبّق الترحيلات، وأعاد الحقن مع تعليق قيود المفاتيح مؤقتا داخل الجلسة — النتيجة: مطابقة تامة جدولا بجدول (`BACKUP_RESTORE_OK`).
+
+## 12) تفعيل Zoom
+
+الآن: `ManualZoomProvider` — الإدارة تدخل رابط الاجتماع ومعرفه ورمز مروره يدويا، ولا يظهر رمز المرور للمتعلم إلا قبل الموعد بنافذة محددة. للتكامل الآلي لاحقا: `ZOOM_ACCOUNT_ID` + `ZOOM_CLIENT_ID` + `ZOOM_CLIENT_SECRET` + `ZOOM_WEBHOOK_SECRET` ثم تبديل المزود في `server/services/zoom/provider.ts`.
+
+## 13) تفعيل الدفع
+
+الآن: `TestPaymentProvider` (ينجح فورا ويعلّم مرجعه TEST-) + تسجيل دفع يدوي بصلاحية `finance.payment.record`. للإنتاج: اختر المزود (HyperPay/Moyasar/Stripe) ونفّذ واجهة `PaymentProvider` — القاعدة الثابتة: لا بطاقات تُخزن أبدا، ورجوع المتصفح ليس دليل دفع، النجاح فقط عبر webhook موقَّع يُتحقق منه بتوقيع HMAC.
+
+## 14) تفعيل البريد والرسائل
+
+الآن: إشعارات داخل المنصة فعالة. القنوات الخارجية (email/whatsapp/sms) مسجّلة كـ `UnwiredExternalProvider` وتنتظر مزودا — تُربط في `server/services/notification.service.ts` عند توفر مفاتيح المزود (SendGrid/Resend للبريد، مزود WhatsApp Business للرسائل).
+
+---
+
+## قائمة الخدمات التي تحتاج مفاتيح قبل الإطلاق العام
+
+1. مزود دفع حقيقي + سر webhook.
+2. مفاتيح Zoom الأربعة (أو الاستمرار اليدوي).
+3. مزود بريد + مزود WhatsApp.
+4. `STORAGE_SECRET` و`DATABASE_URL` إنتاجيان.
+5. مراجعة قانونية لشروط الاستخدام وسياسة الخصوصية (صفحاتهما موجودة).

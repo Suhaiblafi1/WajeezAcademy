@@ -1,0 +1,187 @@
+/* اختبار E2E لسير اقتراحات تعديل الدورات من المدرب:
+   تأهيل → اقتراح تعديل محور → لا يُنشر مباشرة → طلب تعديل → اعتماد → نشر بالنطاق →
+   حماية الحقول المحظورة → maker-checker → عدم اقتراح غير المؤهل → خطة شعبة منفصلة. */
+
+import { beforeAll, describe, expect, it } from 'vitest'
+import type { PrismaClient } from '@prisma/client'
+import { setupTestDb, testPrisma } from '../helpers/db'
+import { AuthService } from '../../services/auth.service'
+import { TrainerReviewService, RUBRIC_CRITERIA } from '../../services/trainer-review.service'
+import { TrainerChangeService } from '../../services/trainer-change.service'
+
+let prisma: PrismaClient
+let auth: AuthService
+let review: TrainerReviewService
+let changes: TrainerChangeService
+let managerId: string
+let trainerUserId = ''
+let profileId = ''
+const COURSE = 'C-BIZ-101'
+
+const scores = () => Object.fromEntries(RUBRIC_CRITERIA.map((k) => [k, 5])) as Record<string, number>
+
+/** طريق مختصر لمدرب معتمد ونشط — عبر الدورة الرسمية نفسها */
+async function makeActiveTrainer(email: string, name: string) {
+  const apps = new (await import('../../services/trainer-application.service')).TrainerApplicationService(prisma)
+  const p1 = await apps.submitPhase1({
+    fullName: name, email, specialties: ['إدارة المشاريع والعمليات'],
+    domainYears: '8-12', trainingYears: 'formal_teaching',
+    trainingLanguages: ['العربية'], deliveryMode: 'remote',
+    motivation: 'مدرب اختبار سير التعديلات', privacyConsent: true,
+  })
+  const v = await apps.verifyEmail(p1.reference, p1.verificationTokenForDelivery)
+  const app = await prisma.trainerApplication.findUnique({ where: { reference: p1.reference } })
+  void v
+  await review.decide(app!.id, managerId, 'move_to_review')
+  await review.decide(app!.id, managerId, 'shortlist')
+  await review.scheduleInterview(app!.id, managerId, { scheduledAt: new Date() })
+  await review.decide(app!.id, managerId, 'request_demo')
+  await review.recordDemoEvaluation(app!.id, managerId, scores(), 'pass')
+  await review.decide(app!.id, managerId, 'academic_review')
+  await review.decide(app!.id, managerId, 'conditionally_approve')
+  const contract = await review.createContract(app!.id, managerId, { title: 'عقد اختبار' })
+  await review.signContract(contract.id, managerId)
+  const inv = await review.createInvitation(app!.id, managerId)
+  const acc = await review.consumeInvitation(inv.tokenForDelivery, 'Trainer#12345')
+  const profile = await prisma.trainerProfile.findUnique({ where: { applicationId: app!.id } })
+  return { userId: acc.userId, profileId: profile!.id }
+}
+
+beforeAll(async () => {
+  await setupTestDb()
+  prisma = await testPrisma()
+  auth = new AuthService(prisma)
+  review = new TrainerReviewService(prisma)
+  changes = new TrainerChangeService(prisma)
+  const m = await auth.register('change-manager@test.local', 'Manager#12345', 'مدير أكاديمي')
+  managerId = m.userId
+  await auth.setRoles(managerId, ['academic_manager'])
+  const t = await makeActiveTrainer('change-trainer@test.local', 'مدرب التعديلات')
+  trainerUserId = t.userId
+  profileId = t.profileId
+}, 240_000)
+
+describe('سير اقتراحات التعديل', () => {
+  it('1) غير المؤهل لا يقترح — وبعد التأهيل يقترح', async () => {
+    await expect(changes.submit(trainerUserId, {
+      courseId: COURSE, scope: 'catalog', reason: 'تحسين عنوان محور قائم',
+      items: [{ changeType: 'module_title_edit', targetKey: `${COURSE}-M1`, afterValue: { titleAr: 'عنوان أفضل' } }],
+    })).rejects.toMatchObject({ code: 'not_qualified' })
+
+    await review.qualifyForCourse(profileId, COURSE, managerId)
+  })
+
+  it('2) الحقول المحظورة مرفوضة — السعر وقواعد التشخيص والمهارات والنشر', async () => {
+    await expect(changes.submit(trainerUserId, {
+      courseId: COURSE, scope: 'catalog', reason: 'محاولة تعديل سعر',
+      items: [{ changeType: 'module_title_edit', targetKey: `${COURSE}-M1`, afterValue: { titleAr: 'x', priceUsd: 99 } }],
+    })).rejects.toMatchObject({ code: 'forbidden_field' })
+  })
+
+  let requestId = ''
+  let baseVersion = 0
+  let firstModuleId = ''
+
+  it('3) اقتراح تعديل محور يُسجل ولا يغير المنشور', async () => {
+    const course = await prisma.course.findUnique({
+      where: { id: COURSE },
+      include: { modules: { include: { versions: { orderBy: { version: 'desc' }, take: 1 } } } },
+    })
+    baseVersion = course!.currentVersion
+    firstModuleId = course!.modules
+      .sort((a, b) => (a.versions[0]?.sequence ?? 0) - (b.versions[0]?.sequence ?? 0))[0].id
+
+    const req = await changes.submit(trainerUserId, {
+      courseId: COURSE, scope: 'catalog', reason: 'عنوان المحور الحالي غامض للمتعلمين الجدد',
+      evidence: 'ملاحظات من شعبتين سابقتين',
+      items: [{
+        changeType: 'module_title_edit', targetKey: firstModuleId,
+        beforeValue: { titleAr: 'العنوان القديم' }, afterValue: { titleAr: 'أساسيات العمليات — مدخل عملي' },
+      }],
+    })
+    requestId = req.id
+    expect(req.status).toBe('submitted')
+
+    /* المنشور لم يتغير */
+    const after = await prisma.course.findUnique({ where: { id: COURSE } })
+    expect(after!.currentVersion).toBe(baseVersion)
+  })
+
+  it('4) المدرب لا يعتمد اقتراحه بنفسه (maker-checker)', async () => {
+    await expect(changes.decide(requestId, trainerUserId, 'approve_for_catalog'))
+      .rejects.toMatchObject({ code: 'maker_checker' })
+  })
+
+  it('5) المسؤول يطلب تعديلا ثم يعتمد للكتالوج', async () => {
+    const r1 = await changes.decide(requestId, managerId, 'request_changes', 'وضّح عنوان الوحدة أكثر')
+    expect(r1.status).toBe('changes_requested')
+    const r2 = await changes.decide(requestId, managerId, 'approve_for_catalog', 'معتمد كإصدار جديد')
+    expect(r2.status).toBe('approved_for_catalog')
+  })
+
+  it('6) النشر ينشئ إصدارا جديدا بالعنوان المعدل ويبقي الإصدار السابق', async () => {
+    await changes.publish(requestId, managerId)
+    const course = await prisma.course.findUnique({
+      where: { id: COURSE },
+      include: {
+        versions: { orderBy: { version: 'desc' } },
+        modules: { where: { id: firstModuleId }, include: { versions: { orderBy: { version: 'desc' }, take: 1 } } },
+      },
+    })
+    expect(course!.currentVersion).toBe(baseVersion + 1)
+    expect(course!.versions.length).toBeGreaterThanOrEqual(2)
+    expect(course!.modules[0].versions[0].titleAr).toBe('أساسيات العمليات — مدخل عملي')
+    const done = await prisma.trainerChangeRequest.findUnique({ where: { id: requestId } })
+    expect(done!.status).toBe('published')
+  })
+
+  it('7) اقتراح نطاق شعبة يُنشر كخطة تنفيذ دون تغيير الكتالوج', async () => {
+    const cohort = await review.createCohort(managerId, { courseId: COURSE, title: 'شعبة سبتمبر 2026' })
+    const req = await changes.submit(trainerUserId, {
+      courseId: COURSE, scope: 'cohort', cohortId: cohort.id,
+      reason: 'أمثلة محلية أنسب لهذه الشعبة تحديدا',
+      items: [{ changeType: 'examples_update', targetKey: firstModuleId, afterValue: { text: 'مثال: شركة أردنية ناشئة' } }],
+    })
+    await changes.decide(req.id, managerId, 'approve_for_cohort', 'معتمد لهذه الشعبة فقط')
+    await changes.publish(req.id, managerId)
+
+    const plan = await prisma.cohortDeliveryPlan.findFirst({ where: { cohortId: cohort.id, status: 'published' } })
+    expect(plan).toBeTruthy()
+    expect(plan!.sourceChangeRequestId).toBe(req.id)
+
+    /* الكتالوج لم يتغير بهذا النشر */
+    const course = await prisma.course.findUnique({ where: { id: COURSE } })
+    expect(course!.currentVersion).toBe(baseVersion + 1)
+  })
+
+  it('8) الاعتماد بنطاق غير مطابق مرفوض، والرفض بلا سبب مرفوض', async () => {
+    const req = await changes.submit(trainerUserId, {
+      courseId: COURSE, scope: 'catalog', reason: 'اقتراح آخر للتحقق من القواعد',
+      items: [{ changeType: 'duration_propose', afterValue: { totalHours: 12 } }],
+    })
+    await expect(changes.decide(req.id, managerId, 'approve_for_cohort')).rejects.toMatchObject({ code: 'scope_mismatch' })
+    await expect(changes.decide(req.id, managerId, 'reject')).rejects.toMatchObject({ code: 'no_reason' })
+    await changes.decide(req.id, managerId, 'reject', 'لا حاجة حاليا')
+    const r = await prisma.trainerChangeRequest.findUnique({ where: { id: req.id } })
+    expect(r!.status).toBe('rejected')
+  })
+
+  it('9) الاقتراح المسحوب لا يُبت فيه', async () => {
+    const req = await changes.submit(trainerUserId, {
+      courseId: COURSE, scope: 'catalog', reason: 'اقتراح سيسحبه صاحبه بنفسه',
+      items: [{ changeType: 'activity_add', targetKey: firstModuleId, afterValue: { text: 'نشاط إضافي' } }],
+    })
+    await changes.withdraw(trainerUserId, req.id)
+    await expect(changes.decide(req.id, managerId, 'approve_for_catalog', 'متأخر')).rejects.toMatchObject({ code: 'bad_state' })
+  })
+
+  it('10) كل قرارات الاقتراحات موثقة في سجل التدقيق', async () => {
+    const audits = await prisma.auditEvent.findMany({
+      where: { entityType: 'trainer_change_request', entityId: requestId },
+    })
+    const actions = audits.map((a) => a.action)
+    expect(actions).toContain('trainer.change.submit')
+    expect(actions).toContain('trainer.change.decide')
+    expect(actions).toContain('trainer.change.publish')
+  })
+})

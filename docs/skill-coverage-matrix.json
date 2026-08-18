@@ -1,0 +1,6924 @@
+{
+  "generatedAt": "2026-08-18T22:25:32.202Z",
+  "counts": {
+    "total": 229,
+    "سليمة": 11,
+    "مخرجات": 214,
+    "مقاسة_بلا_تغطية": 3,
+    "فجوات_متعمدة": 0,
+    "ميتة": 0,
+    "محكومة": 1
+  },
+  "rows": [
+    {
+      "id": "SK-AI-001",
+      "slug": "ai_literacy",
+      "nameAr": "الثقافة العامة في الذكاء الاصطناعي",
+      "family": "AI",
+      "measuredBy": [
+        {
+          "q": "QB-M4-003",
+          "w": 1,
+          "active": true
+        }
+      ],
+      "coveredBy": [
+        {
+          "c": "C-AI-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-FND-003",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "سليمة",
+      "note": ""
+    },
+    {
+      "id": "SK-AI-002",
+      "slug": "prompting_basics",
+      "nameAr": "أساسيات التوجيه وكتابة الطلبات",
+      "family": "AI",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-AI-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-FND-003",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-AI-003",
+      "slug": "prompt_iteration",
+      "nameAr": "تحسين الطلبات بالتكرار",
+      "family": "AI",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-AI-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-FND-003",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-AI-004",
+      "slug": "ai_output_evaluation",
+      "nameAr": "تقييم مخرجات الذكاء الاصطناعي",
+      "family": "AI",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-AI-102",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-AI-103",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-AUT-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-FND-003",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-AUT-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-AI-005",
+      "slug": "ai_fact_checking",
+      "nameAr": "التحقق من حقائق مخرجات AI",
+      "family": "AI",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-AI-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-FND-003",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-AI-006",
+      "slug": "ai_workflow_design",
+      "nameAr": "تصميم سير عمل مدعوم بالذكاء الاصطناعي",
+      "family": "AI",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-AI-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-AI-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-FND-003",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-AI-007",
+      "slug": "ai_automation",
+      "nameAr": "أتمتة مهام بالذكاء الاصطناعي",
+      "family": "AI",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-AUT-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-AUT-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-AI-008",
+      "slug": "ai_for_research",
+      "nameAr": "استخدام AI في البحث والتلخيص",
+      "family": "AI",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-AI-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-AUT-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-FND-003",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-AUT-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-AI-009",
+      "slug": "ai_for_writing",
+      "nameAr": "استخدام AI في الكتابة والتحرير",
+      "family": "AI",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-AI-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-FND-003",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-AI-011",
+      "slug": "ai_ethics",
+      "nameAr": "أخلاقيات الذكاء الاصطناعي",
+      "family": "AI",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-AI-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-FND-003",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-AI-012",
+      "slug": "ai_data_privacy",
+      "nameAr": "خصوصية البيانات مع AI",
+      "family": "AI",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-AI-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-FND-003",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-AI-013",
+      "slug": "ai_use_cases_mapping",
+      "nameAr": "تحديد حالات استخدام AI",
+      "family": "AI",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-AI-101",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-AI-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-FND-003",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-AI-014",
+      "slug": "human_ai_collaboration",
+      "nameAr": "التعاون بين الإنسان والذكاء الاصطناعي",
+      "family": "AI",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-AI-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-FND-003",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-AI-015",
+      "slug": "ai_risk_management",
+      "nameAr": "إدارة مخاطر AI",
+      "family": "AI",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-AI-105",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-AUT-105",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-HR-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-FND-003",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-AUT-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-HR-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-AI-016",
+      "slug": "ai_adoption_change",
+      "nameAr": "تبني AI داخل الفريق",
+      "family": "AI",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-AI-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-FND-003",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-BIZ-001",
+      "slug": "business_model",
+      "nameAr": "نموذج العمل",
+      "family": "BIZ",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-PM-101",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-BIZ-102",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-BIZ-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-EMP-003",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-BIZ-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-BIZ-002",
+      "slug": "value_proposition",
+      "nameAr": "عرض القيمة",
+      "family": "BIZ",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-BIZ-102",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-MKT-101",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-SAL-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-BIZ-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-MKT-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-SAL-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-BIZ-003",
+      "slug": "customer_discovery",
+      "nameAr": "اكتشاف العملاء",
+      "family": "BIZ",
+      "measuredBy": [
+        {
+          "q": "QB-M3C-007",
+          "w": 1,
+          "active": true
+        }
+      ],
+      "coveredBy": [
+        {
+          "c": "C-BIZ-101",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-PRD-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-BIZ-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-PRD-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "سليمة",
+      "note": ""
+    },
+    {
+      "id": "SK-BIZ-004",
+      "slug": "market_research",
+      "nameAr": "بحث السوق",
+      "family": "BIZ",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-CAR-102",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-JOB-101",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-BIZ-101",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-MKT-101",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-SAL-101",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-PRD-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-STU-003",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-STU-002",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-BIZ-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-MKT-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-SAL-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-PRD-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-BIZ-006",
+      "slug": "pricing_strategy",
+      "nameAr": "استراتيجية التسعير",
+      "family": "BIZ",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-BIZ-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-FINM-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-BIZ-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-FIN-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-BIZ-007",
+      "slug": "sales_fundamentals",
+      "nameAr": "أساسيات المبيعات",
+      "family": "BIZ",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-BIZ-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-SAL-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-BIZ-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-SAL-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-BIZ-008",
+      "slug": "sales_pipeline",
+      "nameAr": "إدارة خط المبيعات",
+      "family": "BIZ",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-BIZ-105",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-SAL-102",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-SAL-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-BIZ-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-SAL-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-BIZ-009",
+      "slug": "negotiation_commercial",
+      "nameAr": "التفاوض التجاري",
+      "family": "BIZ",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-BIZ-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-SAL-105",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-SCM-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-BIZ-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-SAL-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-SCM-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-BIZ-010",
+      "slug": "digital_marketing",
+      "nameAr": "التسويق الرقمي",
+      "family": "BIZ",
+      "measuredBy": [
+        {
+          "q": "QB-M4-016",
+          "w": 1,
+          "active": true
+        }
+      ],
+      "coveredBy": [
+        {
+          "c": "C-MKT-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-MKT-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "سليمة",
+      "note": ""
+    },
+    {
+      "id": "SK-BIZ-011",
+      "slug": "content_marketing",
+      "nameAr": "تسويق المحتوى",
+      "family": "BIZ",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-MKT-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-MKT-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-BIZ-012",
+      "slug": "brand_strategy",
+      "nameAr": "استراتيجية العلامة",
+      "family": "BIZ",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-MKT-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-MKT-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-BIZ-014",
+      "slug": "customer_success",
+      "nameAr": "نجاح العملاء",
+      "family": "BIZ",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-SAL-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-SAL-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-BIZ-015",
+      "slug": "operations_basics",
+      "nameAr": "أساسيات العمليات",
+      "family": "BIZ",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-BIZ-103",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-AUT-101",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-OPS-101",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-SCM-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-BIZ-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-AUT-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-OPS-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-SCM-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-BIZ-016",
+      "slug": "process_design",
+      "nameAr": "تصميم الإجراءات",
+      "family": "BIZ",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-SVC-105",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-AUT-103",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-OPS-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-GOV-002",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-AUT-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-OPS-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-BIZ-017",
+      "slug": "project_management",
+      "nameAr": "إدارة المشاريع",
+      "family": "BIZ",
+      "measuredBy": [
+        {
+          "q": "QB-M4-018",
+          "w": 1,
+          "active": true
+        }
+      ],
+      "coveredBy": [
+        {
+          "c": "C-JOB-103",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-PM-101",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-PM-102",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-PM-105",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-PRD-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-STU-002",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-EMP-003",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-PRD-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "سليمة",
+      "note": ""
+    },
+    {
+      "id": "SK-BIZ-018",
+      "slug": "product_management",
+      "nameAr": "إدارة المنتج",
+      "family": "BIZ",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-PRD-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-PRD-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-BIZ-019",
+      "slug": "ux_basics",
+      "nameAr": "أساسيات تجربة المستخدم",
+      "family": "BIZ",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-BIZ-102",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-MKT-102",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-PRD-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-BIZ-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-MKT-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-PRD-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-BIZ-021",
+      "slug": "crm_basics",
+      "nameAr": "أساسيات CRM",
+      "family": "BIZ",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-MKT-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-SAL-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-MKT-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-SAL-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-BIZ-022",
+      "slug": "business_finance",
+      "nameAr": "مالية المشروع",
+      "family": "BIZ",
+      "measuredBy": [
+        {
+          "q": "QB-M3C-009",
+          "w": 1,
+          "active": true
+        }
+      ],
+      "coveredBy": [
+        {
+          "c": "C-FINM-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-FIN-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "سليمة",
+      "note": ""
+    },
+    {
+      "id": "SK-BIZ-023",
+      "slug": "cashflow_management",
+      "nameAr": "إدارة التدفق النقدي",
+      "family": "BIZ",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-BIZ-103",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-BIZ-105",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-FINM-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-BIZ-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-FIN-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-BIZ-025",
+      "slug": "vendor_management",
+      "nameAr": "إدارة الموردين",
+      "family": "BIZ",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-PM-102",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-SCM-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-EMP-003",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-SCM-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-BIZ-026",
+      "slug": "growth_experimentation",
+      "nameAr": "تجارب النمو",
+      "family": "BIZ",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-BIZ-105",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-MKT-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-BIZ-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-MKT-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-CAREER-001",
+      "slug": "career_planning",
+      "nameAr": "تخطيط المسار المهني",
+      "family": "CAREER",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-CAR-101",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-CAR-102",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-CAR-105",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-CAR-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-JOB-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-STU-003",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-STU-002",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-CAREER-002",
+      "slug": "cv_writing",
+      "nameAr": "كتابة السيرة الذاتية",
+      "family": "CAREER",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-JOB-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-STU-002",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-CAREER-003",
+      "slug": "linkedin_profile",
+      "nameAr": "بناء ملف LinkedIn",
+      "family": "CAREER",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-JOB-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-STU-002",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-CAREER-004",
+      "slug": "portfolio_building",
+      "nameAr": "بناء ملف الأعمال",
+      "family": "CAREER",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-JOB-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-STU-002",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-CAREER-005",
+      "slug": "interview_skills",
+      "nameAr": "مهارات المقابلات",
+      "family": "CAREER",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-JOB-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-STU-002",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-CAREER-006",
+      "slug": "job_search_strategy",
+      "nameAr": "استراتيجية البحث عن عمل",
+      "family": "CAREER",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-JOB-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-STU-002",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-CAREER-007",
+      "slug": "networking",
+      "nameAr": "بناء العلاقات المهنية",
+      "family": "CAREER",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-CAR-105",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-JOB-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-STU-003",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-STU-002",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-CAREER-008",
+      "slug": "personal_branding",
+      "nameAr": "العلامة المهنية الشخصية",
+      "family": "CAREER",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-JOB-101",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-JOB-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-STU-002",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-CAREER-009",
+      "slug": "workplace_professionalism",
+      "nameAr": "الاحتراف في بيئة العمل",
+      "family": "CAREER",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-JOB-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-STU-002",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-CAREER-011",
+      "slug": "internship_readiness",
+      "nameAr": "الجاهزية للتدريب العملي",
+      "family": "CAREER",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-CAR-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-STU-003",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-CAREER-013",
+      "slug": "professional_ethics",
+      "nameAr": "الأخلاقيات المهنية",
+      "family": "CAREER",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-HR-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-HR-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-COG-001",
+      "slug": "analytical_thinking",
+      "nameAr": "التفكير التحليلي",
+      "family": "COG",
+      "measuredBy": [
+        {
+          "q": "QB-M4-001",
+          "w": 1,
+          "active": true
+        }
+      ],
+      "coveredBy": [
+        {
+          "c": "C-DAT-101",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-OPS-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-EMP-004",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-OPS-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "سليمة",
+      "note": ""
+    },
+    {
+      "id": "SK-COG-002",
+      "slug": "critical_thinking",
+      "nameAr": "التفكير النقدي",
+      "family": "COG",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-AI-103",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-OPS-103",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-NEG-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-FND-003",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-OPS-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-NEG-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-COG-003",
+      "slug": "creative_thinking",
+      "nameAr": "التفكير الإبداعي",
+      "family": "COG",
+      "measuredBy": [
+        {
+          "q": "QB-M4-002",
+          "w": 1,
+          "active": false
+        }
+      ],
+      "coveredBy": [],
+      "requiredBy": [],
+      "kind": "ميتة",
+      "note": "محكومة أكاديميًا (future_personalization_signal) — قرار 2026-08-19 موثق في مصفوفة القرار الأكاديمي؛ التفعيل صريح فقط"
+    },
+    {
+      "id": "SK-COG-004",
+      "slug": "systems_thinking",
+      "nameAr": "التفكير المنظومي",
+      "family": "COG",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-OPS-101",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-CYB-101",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-SCM-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-OPS-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-CYB-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-SCM-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-COG-005",
+      "slug": "complex_problem_solving",
+      "nameAr": "حل المشكلات المعقدة",
+      "family": "COG",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-OPS-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-OPS-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-COG-006",
+      "slug": "decision_making",
+      "nameAr": "اتخاذ القرار",
+      "family": "COG",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-CAR-101",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-CAR-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-DAT-101",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-DAT-105",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-FINM-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-STU-003",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-EMP-004",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-FIN-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-COG-007",
+      "slug": "strategic_thinking",
+      "nameAr": "التفكير الاستراتيجي",
+      "family": "COG",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-HR-101",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-PRD-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-HR-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-PRD-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-COG-009",
+      "slug": "learning_agility",
+      "nameAr": "مرونة التعلم",
+      "family": "COG",
+      "measuredBy": [
+        {
+          "q": "QB-M4-023",
+          "w": 1,
+          "active": true
+        }
+      ],
+      "coveredBy": [],
+      "requiredBy": [],
+      "kind": "مقاسة بلا تغطية",
+      "note": "يقيسها التشخيص ولا دورة تغطيها — راجع الجدوى"
+    },
+    {
+      "id": "SK-COG-011",
+      "slug": "research_literacy",
+      "nameAr": "مهارة البحث والتحقق",
+      "family": "COG",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-CAR-102",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-CAR-105",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-BIZ-101",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-OPS-103",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-LND-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-STU-003",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-BIZ-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-OPS-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-LND-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-COG-012",
+      "slug": "scenario_planning",
+      "nameAr": "تخطيط السيناريوهات",
+      "family": "COG",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-CAR-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-FINM-103",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-SCM-102",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-NEG-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-STU-003",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-FIN-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-SCM-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-NEG-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-COG-013",
+      "slug": "design_thinking",
+      "nameAr": "التفكير التصميمي",
+      "family": "COG",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-CAR-103",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-BIZ-102",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-PRD-103",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-LND-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-STU-003",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-BIZ-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-PRD-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-LND-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-COG-015",
+      "slug": "prioritization",
+      "nameAr": "ترتيب الأولويات",
+      "family": "COG",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-PM-102",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-SAL-101",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-PRD-103",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-OPS-102",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-SCM-103",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-LND-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-EMP-003",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-SAL-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-PRD-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-OPS-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-SCM-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-LND-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-COG-017",
+      "slug": "ethical_reasoning",
+      "nameAr": "التفكير الأخلاقي",
+      "family": "COG",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-DAT-103",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-MGR-101",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-HR-102",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-COMX-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-NEG-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-EMP-004",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-EMP-005",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-HR-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-COM-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-NEG-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-COM-001",
+      "slug": "active_listening",
+      "nameAr": "الإصغاء الفعال",
+      "family": "COM",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-CAR-105",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-JOB-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-MGR-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-SVC-101",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-SVC-102",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-BIZ-101",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-SAL-103",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-COMX-105",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-NEG-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-STU-003",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-STU-002",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-EMP-005",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-GOV-002",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-BIZ-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-SAL-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-COM-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-NEG-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-COM-002",
+      "slug": "clear_expression",
+      "nameAr": "التعبير الواضح",
+      "family": "COM",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-JOB-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-AI-102",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-PM-101",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-SVC-102",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-SAL-103",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-CYB-102",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-COMX-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-STU-002",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-FND-003",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-EMP-003",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-GOV-002",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-SAL-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-CYB-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-COM-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-COM-003",
+      "slug": "arabic_business_writing",
+      "nameAr": "الكتابة العربية المهنية",
+      "family": "COM",
+      "measuredBy": [
+        {
+          "q": "QB-M4-010",
+          "w": 1,
+          "active": true
+        }
+      ],
+      "coveredBy": [
+        {
+          "c": "C-JOB-102",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-SAL-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-STU-002",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-SAL-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "سليمة",
+      "note": ""
+    },
+    {
+      "id": "SK-COM-006",
+      "slug": "executive_summary",
+      "nameAr": "كتابة الملخص التنفيذي",
+      "family": "COM",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-COMX-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-COM-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-COM-007",
+      "slug": "presentation_delivery",
+      "nameAr": "الإلقاء والعرض",
+      "family": "COM",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-SAL-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-COMX-103",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-LND-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-SAL-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-COM-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-LND-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-COM-008",
+      "slug": "public_speaking",
+      "nameAr": "الخطابة والتحدث العام",
+      "family": "COM",
+      "measuredBy": [
+        {
+          "q": "QB-M4-011",
+          "w": 1,
+          "active": true
+        }
+      ],
+      "coveredBy": [
+        {
+          "c": "C-COMX-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-COM-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "سليمة",
+      "note": ""
+    },
+    {
+      "id": "SK-COM-009",
+      "slug": "storytelling",
+      "nameAr": "السرد القصصي",
+      "family": "COM",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-MKT-103",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-COMX-102",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-COMX-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-MKT-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-COM-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-COM-010",
+      "slug": "persuasion",
+      "nameAr": "الإقناع",
+      "family": "COM",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-COMX-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-NEG-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-COM-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-NEG-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-COM-011",
+      "slug": "negotiation",
+      "nameAr": "التفاوض",
+      "family": "COM",
+      "measuredBy": [
+        {
+          "q": "QB-M4-013",
+          "w": 1,
+          "active": true
+        }
+      ],
+      "coveredBy": [
+        {
+          "c": "C-NEG-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-NEG-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "سليمة",
+      "note": ""
+    },
+    {
+      "id": "SK-COM-012",
+      "slug": "conflict_resolution",
+      "nameAr": "حل النزاعات",
+      "family": "COM",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-PM-103",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-MGR-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-SVC-103",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-NEG-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-EMP-003",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-EMP-005",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-GOV-002",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-NEG-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-COM-013",
+      "slug": "feedback_giving",
+      "nameAr": "إعطاء الملاحظات",
+      "family": "COM",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-MGR-103",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-MGR-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-HR-103",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-NEG-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-EMP-005",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-HR-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-NEG-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-COM-014",
+      "slug": "feedback_receiving",
+      "nameAr": "استقبال الملاحظات",
+      "family": "COM",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-JOB-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-STU-002",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-COM-015",
+      "slug": "meeting_facilitation",
+      "nameAr": "إدارة الاجتماعات",
+      "family": "COM",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-PM-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-EMP-003",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-COM-016",
+      "slug": "customer_communication",
+      "nameAr": "التواصل مع العملاء أو الجمهور",
+      "family": "COM",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-SVC-101",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-SVC-102",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-BIZ-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-MKT-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-SAL-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-GOV-002",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-BIZ-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-MKT-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-SAL-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-COM-019",
+      "slug": "voice_and_presence",
+      "nameAr": "الحضور والصوت",
+      "family": "COM",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-JOB-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-COMX-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-STU-002",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-COM-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-COM-020",
+      "slug": "briefing_skills",
+      "nameAr": "مهارة الإيجاز والإحاطة",
+      "family": "COM",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-DAT-105",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-PM-103",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-CYB-105",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-COMX-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-EMP-004",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-EMP-003",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-CYB-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-COM-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-DATA-001",
+      "slug": "data_literacy",
+      "nameAr": "الثقافة البيانية",
+      "family": "DATA",
+      "measuredBy": [
+        {
+          "q": "QB-M4-006",
+          "w": 1,
+          "active": true
+        }
+      ],
+      "coveredBy": [
+        {
+          "c": "C-DAT-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-EMP-004",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "سليمة",
+      "note": ""
+    },
+    {
+      "id": "SK-DATA-002",
+      "slug": "data_collection",
+      "nameAr": "جمع البيانات",
+      "family": "DATA",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-DAT-101",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-DAT-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-EMP-004",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-DATA-003",
+      "slug": "data_cleaning",
+      "nameAr": "تنظيف البيانات",
+      "family": "DATA",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-DAT-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-EMP-004",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-DATA-004",
+      "slug": "data_analysis_basics",
+      "nameAr": "أساسيات تحليل البيانات",
+      "family": "DATA",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-DAT-102",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-DAT-105",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-SVC-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-HR-105",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-SCM-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-EMP-004",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-GOV-002",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-HR-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-SCM-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-DATA-006",
+      "slug": "dashboard_design",
+      "nameAr": "تصميم لوحات المؤشرات",
+      "family": "DATA",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-DAT-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-OPS-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-EMP-004",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-OPS-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-DATA-007",
+      "slug": "kpi_design",
+      "nameAr": "تصميم مؤشرات الأداء",
+      "family": "DATA",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-DAT-103",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-SVC-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-MKT-105",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-PRD-105",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-OPS-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-SCM-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-EMP-004",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-GOV-002",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-MKT-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-PRD-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-OPS-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-SCM-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-DATA-008",
+      "slug": "survey_design",
+      "nameAr": "تصميم الاستبيانات",
+      "family": "DATA",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-SVC-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-GOV-002",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-DATA-009",
+      "slug": "experiment_design",
+      "nameAr": "تصميم التجارب",
+      "family": "DATA",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-SVC-105",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-MKT-105",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-PRD-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-GOV-002",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-MKT-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-PRD-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-DATA-010",
+      "slug": "statistical_thinking",
+      "nameAr": "التفكير الإحصائي الأساسي",
+      "family": "DATA",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-DAT-102",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-SCM-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-EMP-004",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-SCM-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-DATA-011",
+      "slug": "data_visualization",
+      "nameAr": "تصور البيانات",
+      "family": "DATA",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-DAT-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-COMX-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-EMP-004",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-COM-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-DATA-013",
+      "slug": "data_storytelling",
+      "nameAr": "سرد القصة بالبيانات",
+      "family": "DATA",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-DAT-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-DAT-105",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-FINM-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-EMP-004",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-FIN-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-DATA-014",
+      "slug": "data_governance",
+      "nameAr": "حوكمة البيانات",
+      "family": "DATA",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-AUT-102",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-AUT-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-CYB-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-AUT-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-CYB-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-DIG-001",
+      "slug": "digital_literacy",
+      "nameAr": "الثقافة الرقمية العامة",
+      "family": "DIG",
+      "measuredBy": [
+        {
+          "q": "QB-M4-005",
+          "w": 1,
+          "active": true
+        }
+      ],
+      "coveredBy": [],
+      "requiredBy": [],
+      "kind": "مقاسة بلا تغطية",
+      "note": "يقيسها التشخيص ولا دورة تغطيها — راجع الجدوى"
+    },
+    {
+      "id": "SK-DIG-003",
+      "slug": "information_evaluation",
+      "nameAr": "تقييم موثوقية المعلومات",
+      "family": "DIG",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-CAR-102",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-AI-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-STU-003",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-FND-003",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-DIG-008",
+      "slug": "spreadsheets_basics",
+      "nameAr": "أساسيات الجداول الإلكترونية",
+      "family": "DIG",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-DAT-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-EMP-004",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-DIG-009",
+      "slug": "document_design",
+      "nameAr": "تصميم المستندات المهنية",
+      "family": "DIG",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-LND-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-LND-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-DIG-010",
+      "slug": "presentation_tools",
+      "nameAr": "أدوات العروض التقديمية",
+      "family": "DIG",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-COMX-102",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-LND-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-COM-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-LND-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-DIG-011",
+      "slug": "digital_content_creation",
+      "nameAr": "إنشاء المحتوى الرقمي",
+      "family": "DIG",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-MKT-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-MKT-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-DIG-013",
+      "slug": "cybersecurity_basics",
+      "nameAr": "أساسيات الأمن السيبراني",
+      "family": "DIG",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-CYB-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-CYB-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-DIG-014",
+      "slug": "privacy_management",
+      "nameAr": "إدارة الخصوصية الرقمية",
+      "family": "DIG",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-AUT-102",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-MKT-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-CYB-102",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-CYB-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-AUT-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-MKT-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-CYB-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-DIG-017",
+      "slug": "no_code_tools",
+      "nameAr": "أدوات No-code",
+      "family": "DIG",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-AUT-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-AUT-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-DIG-018",
+      "slug": "digital_accessibility",
+      "nameAr": "إتاحة المحتوى الرقمي",
+      "family": "DIG",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-DAT-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-LND-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-EMP-004",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-LND-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-FIN-010",
+      "slug": "accounting_basics",
+      "nameAr": "أساسيات المحاسبة",
+      "family": "FIN",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-FINM-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-FIN-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-FIN-011",
+      "slug": "financial_statements",
+      "nameAr": "قراءة القوائم المالية",
+      "family": "FIN",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-FINM-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-FIN-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-FIN-012",
+      "slug": "unit_economics",
+      "nameAr": "اقتصاديات الوحدة",
+      "family": "FIN",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-BIZ-103",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-FINM-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-BIZ-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-FIN-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-FIN-013",
+      "slug": "economic_literacy",
+      "nameAr": "الثقافة الاقتصادية",
+      "family": "FIN",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-FINM-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-FIN-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-FIN-015",
+      "slug": "financial_decision_making",
+      "nameAr": "اتخاذ القرار المالي",
+      "family": "FIN",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-AUT-101",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-FINM-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-AUT-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-FIN-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-GOV-002",
+      "slug": "citizen_experience",
+      "nameAr": "تجربة المواطن أو المراجع",
+      "family": "GOV",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-SVC-101",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-SVC-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-GOV-002",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-GOV-007",
+      "slug": "regulatory_compliance",
+      "nameAr": "الامتثال والتنظيم",
+      "family": "GOV",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-SVC-103",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-CYB-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-GOV-002",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-CYB-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-GOV-008",
+      "slug": "service_design_government",
+      "nameAr": "تصميم الخدمات الحكومية",
+      "family": "GOV",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-SVC-101",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-SVC-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-GOV-002",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-GOV-012",
+      "slug": "stakeholder_coordination_gov",
+      "nameAr": "التنسيق بين الجهات",
+      "family": "GOV",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-SVC-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-GOV-002",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-GOV-014",
+      "slug": "complaint_handling",
+      "nameAr": "التعامل مع الشكاوى",
+      "family": "GOV",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-SVC-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-GOV-002",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-GOV-015",
+      "slug": "frontline_service",
+      "nameAr": "خدمة الجمهور في الصف الأمامي",
+      "family": "GOV",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-SVC-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-GOV-002",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-GOV-017",
+      "slug": "public_reporting",
+      "nameAr": "التقارير الحكومية",
+      "family": "GOV",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-PM-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-EMP-003",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-LEAD-001",
+      "slug": "self_leadership",
+      "nameAr": "قيادة الذات",
+      "family": "LEAD",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-CAR-101",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-MGR-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-STU-003",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-EMP-005",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-LEAD-002",
+      "slug": "team_leadership",
+      "nameAr": "قيادة الفريق",
+      "family": "LEAD",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-MGR-101",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-MGR-102",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-MGR-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-EMP-005",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-LEAD-003",
+      "slug": "delegation",
+      "nameAr": "التفويض",
+      "family": "LEAD",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-MGR-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-EMP-005",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-LEAD-004",
+      "slug": "coaching",
+      "nameAr": "التدريب والتوجيه",
+      "family": "LEAD",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-MGR-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-EMP-005",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-LEAD-005",
+      "slug": "performance_management",
+      "nameAr": "إدارة الأداء",
+      "family": "LEAD",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-MGR-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-HR-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-EMP-005",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-HR-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-LEAD-006",
+      "slug": "goal_setting_okrs",
+      "nameAr": "تحديد الأهداف وOKRs",
+      "family": "LEAD",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-DAT-103",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-MGR-102",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-HR-103",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-FINM-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-EMP-004",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-EMP-005",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-HR-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-FIN-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-LEAD-007",
+      "slug": "change_management",
+      "nameAr": "إدارة التغيير",
+      "family": "LEAD",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-PM-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-MGR-105",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-AUT-105",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-OPS-105",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-SCM-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-EMP-003",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-EMP-005",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-AUT-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-OPS-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-SCM-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-LEAD-008",
+      "slug": "stakeholder_management",
+      "nameAr": "إدارة أصحاب المصلحة",
+      "family": "LEAD",
+      "measuredBy": [
+        {
+          "q": "QB-M3B-010",
+          "w": 1,
+          "active": true
+        }
+      ],
+      "coveredBy": [
+        {
+          "c": "C-PM-101",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-PM-103",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-MGR-105",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-PRD-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-NEG-103",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-NEG-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-EMP-003",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-EMP-005",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-PRD-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-NEG-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "سليمة",
+      "note": ""
+    },
+    {
+      "id": "SK-LEAD-009",
+      "slug": "decision_governance",
+      "nameAr": "حوكمة القرار",
+      "family": "LEAD",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-PM-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-OPS-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-CYB-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-NEG-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-EMP-003",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-OPS-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-CYB-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-NEG-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-LEAD-010",
+      "slug": "risk_management",
+      "nameAr": "إدارة المخاطر",
+      "family": "LEAD",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-PM-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-MGR-103",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-AUT-103",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-FINM-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-CYB-101",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-CYB-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-SCM-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-EMP-003",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-EMP-005",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-AUT-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-FIN-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-CYB-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-SCM-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-LEAD-011",
+      "slug": "crisis_management",
+      "nameAr": "إدارة الأزمات",
+      "family": "LEAD",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-CYB-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-CYB-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-LEAD-012",
+      "slug": "organizational_culture",
+      "nameAr": "بناء الثقافة المؤسسية",
+      "family": "LEAD",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-HR-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-HR-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-LEAD-013",
+      "slug": "motivation_design",
+      "nameAr": "تصميم الدافعية",
+      "family": "LEAD",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-MGR-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-EMP-005",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-LEAD-014",
+      "slug": "talent_development",
+      "nameAr": "تطوير المواهب",
+      "family": "LEAD",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-HR-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-HR-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-LEAD-015",
+      "slug": "meeting_cadence",
+      "nameAr": "إيقاع الاجتماعات والمتابعة",
+      "family": "LEAD",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-PM-104",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-MGR-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-EMP-003",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-EMP-005",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-LEAD-016",
+      "slug": "strategic_communication",
+      "nameAr": "التواصل القيادي الاستراتيجي",
+      "family": "LEAD",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-MGR-105",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-COMX-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-EMP-005",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-COM-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-LEAD-017",
+      "slug": "decision_under_pressure",
+      "nameAr": "القرار تحت الضغط",
+      "family": "LEAD",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-COMX-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-COM-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-LEAD-018",
+      "slug": "inclusive_leadership",
+      "nameAr": "القيادة الشاملة",
+      "family": "LEAD",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-MGR-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-EMP-005",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-LEARN-001",
+      "slug": "learning_plan",
+      "nameAr": "بناء خطة تعلم",
+      "family": "LEARN",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-HR-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-HR-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-LEARN-007",
+      "slug": "deliberate_practice",
+      "nameAr": "الممارسة المتعمدة",
+      "family": "LEARN",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-LND-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-LND-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-LEARN-008",
+      "slug": "learning_transfer",
+      "nameAr": "نقل التعلم إلى التطبيق",
+      "family": "LEARN",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-CAR-103",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-JOB-103",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-OPS-105",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-LND-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-STU-003",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-STU-002",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-OPS-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-LND-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-LEARN-009",
+      "slug": "reflection",
+      "nameAr": "التأمل والمراجعة الذاتية",
+      "family": "LEARN",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-CAR-101",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-CAR-103",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-PM-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-STU-003",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-EMP-003",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-LEARN-010",
+      "slug": "knowledge_management",
+      "nameAr": "إدارة المعرفة الشخصية",
+      "family": "LEARN",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-PM-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-EMP-003",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-LEARN-014",
+      "slug": "assessment_literacy",
+      "nameAr": "فهم التقييمات",
+      "family": "LEARN",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-LND-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-LND-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-WELL-001",
+      "slug": "focus_management",
+      "nameAr": "إدارة التركيز",
+      "family": "WELL",
+      "measuredBy": [
+        {
+          "q": "QB-M4-025",
+          "w": 1,
+          "active": true
+        }
+      ],
+      "coveredBy": [],
+      "requiredBy": [],
+      "kind": "مقاسة بلا تغطية",
+      "note": "يقيسها التشخيص ولا دورة تغطيها — راجع الجدوى"
+    },
+    {
+      "id": "SK-WELL-002",
+      "slug": "time_management",
+      "nameAr": "إدارة الوقت",
+      "family": "WELL",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-JOB-105",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-PM-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-STU-002",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-EMP-003",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-WELL-009",
+      "slug": "goal_consistency",
+      "nameAr": "ثبات الهدف",
+      "family": "WELL",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-CAR-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-STU-003",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-WELL-011",
+      "slug": "accountability",
+      "nameAr": "المساءلة الذاتية والخارجية",
+      "family": "WELL",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-JOB-105",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-BIZ-105",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-SAL-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-STU-002",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-BIZ-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-SAL-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-WELL-012",
+      "slug": "emotional_regulation_learning",
+      "nameAr": "تنظيم الانفعال أثناء التعلم",
+      "family": "WELL",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-SVC-103",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-NEG-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-GOV-002",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-NEG-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-AUT-001",
+      "slug": "process_mapping",
+      "nameAr": "رسم العمليات وتحليل التدفق",
+      "family": "AUT",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-AUT-101",
+          "level": 3,
+          "w": 1
+        },
+        {
+          "c": "C-OPS-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-AUT-001",
+          "level": 3,
+          "priority": "medium"
+        },
+        {
+          "p": "PW-OPS-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-AUT-002",
+      "slug": "automation_opportunity_analysis",
+      "nameAr": "تحليل فرص الأتمتة وجدواها",
+      "family": "AUT",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-AUT-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-AUT-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-AUT-003",
+      "slug": "api_integration_basics",
+      "nameAr": "أساسيات التكامل وواجهات API",
+      "family": "AUT",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-AUT-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-AUT-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-AUT-004",
+      "slug": "workflow_automation",
+      "nameAr": "تصميم سير العمل الآلي",
+      "family": "AUT",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-AUT-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-AUT-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-AUT-005",
+      "slug": "knowledge_base_design",
+      "nameAr": "تصميم قواعد المعرفة",
+      "family": "AUT",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-AUT-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-AUT-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-AUT-006",
+      "slug": "agent_design",
+      "nameAr": "تصميم وكلاء الذكاء الاصطناعي",
+      "family": "AUT",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-AUT-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-AUT-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-AUT-007",
+      "slug": "human_in_loop_controls",
+      "nameAr": "ضوابط الإشراف البشري",
+      "family": "AUT",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-AUT-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-AUT-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-COM-001",
+      "slug": "message_design",
+      "nameAr": "تصميم الرسالة",
+      "family": "COMX",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-COMX-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-COM-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-COM-002",
+      "slug": "audience_analysis",
+      "nameAr": "تحليل الجمهور",
+      "family": "COMX",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-COMX-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-COM-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-COM-003",
+      "slug": "executive_presentation",
+      "nameAr": "تصميم العرض التنفيذي",
+      "family": "COMX",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-COMX-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-COM-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-COM-004",
+      "slug": "speaking_anxiety_management",
+      "nameAr": "إدارة رهبة الإلقاء",
+      "family": "COMX",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-COMX-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-COM-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-COM-005",
+      "slug": "q_and_a_management",
+      "nameAr": "إدارة الأسئلة والأجوبة",
+      "family": "COMX",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-COMX-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-COM-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-CYB-001",
+      "slug": "cyber_risk_assessment",
+      "nameAr": "تقييم المخاطر السيبرانية",
+      "family": "CYB",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-CYB-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-CYB-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-CYB-002",
+      "slug": "identity_access_management",
+      "nameAr": "إدارة الهوية والوصول",
+      "family": "CYB",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-CYB-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-CYB-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-CYB-003",
+      "slug": "social_engineering_awareness",
+      "nameAr": "مقاومة التصيد والهندسة الاجتماعية",
+      "family": "CYB",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-CYB-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-CYB-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-CYB-004",
+      "slug": "data_protection_controls",
+      "nameAr": "ضوابط حماية البيانات",
+      "family": "CYB",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-CYB-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-CYB-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-CYB-005",
+      "slug": "cloud_security_basics",
+      "nameAr": "أساسيات أمن السحابة",
+      "family": "CYB",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-CYB-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-CYB-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-CYB-006",
+      "slug": "security_governance",
+      "nameAr": "حوكمة الأمن السيبراني",
+      "family": "CYB",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-CYB-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-CYB-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-CYB-007",
+      "slug": "incident_response",
+      "nameAr": "الاستجابة للحوادث السيبرانية",
+      "family": "CYB",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-CYB-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-CYB-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-CYB-008",
+      "slug": "business_continuity",
+      "nameAr": "استمرارية الأعمال والتعافي",
+      "family": "CYB",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-CYB-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-CYB-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-FIN-001",
+      "slug": "cost_analysis",
+      "nameAr": "تحليل التكاليف والهوامش",
+      "family": "FINX",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-FINM-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-FIN-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-FIN-002",
+      "slug": "budgeting_forecasting",
+      "nameAr": "الموازنة والتنبؤ المالي",
+      "family": "FINX",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-FINM-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-FIN-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-FIN-003",
+      "slug": "variance_analysis",
+      "nameAr": "تحليل الانحرافات",
+      "family": "FINX",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-FINM-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-FIN-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-FIN-004",
+      "slug": "working_capital",
+      "nameAr": "إدارة رأس المال العامل",
+      "family": "FINX",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-FINM-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-FIN-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-FIN-005",
+      "slug": "cashflow_forecasting",
+      "nameAr": "التنبؤ بالتدفقات النقدية",
+      "family": "FINX",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-FINM-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-FIN-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-FIN-006",
+      "slug": "investment_appraisal",
+      "nameAr": "تقييم القرارات الاستثمارية",
+      "family": "FINX",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-FINM-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-FIN-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-FIN-007",
+      "slug": "financial_dashboarding",
+      "nameAr": "تصميم لوحات القرار المالي",
+      "family": "FINX",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-FINM-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-FIN-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-HR-001",
+      "slug": "workforce_planning",
+      "nameAr": "تخطيط القوى العاملة",
+      "family": "HR",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-HR-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-HR-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-HR-002",
+      "slug": "job_analysis",
+      "nameAr": "تحليل وتصميم الوظائف",
+      "family": "HR",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-HR-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-HR-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-HR-003",
+      "slug": "competency_frameworks",
+      "nameAr": "بناء أطر الجدارات",
+      "family": "HR",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-HR-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-HR-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-HR-004",
+      "slug": "structured_interviewing",
+      "nameAr": "المقابلات المنظمة",
+      "family": "HR",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-HR-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-HR-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-HR-005",
+      "slug": "selection_design",
+      "nameAr": "تصميم قرارات الاختيار",
+      "family": "HR",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-HR-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-HR-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-HR-006",
+      "slug": "performance_cycle_design",
+      "nameAr": "تصميم دورة إدارة الأداء",
+      "family": "HR",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-HR-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-HR-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-HR-007",
+      "slug": "learning_needs_analysis",
+      "nameAr": "تحليل احتياجات التعلم",
+      "family": "HR",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-HR-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-HR-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-HR-008",
+      "slug": "people_analytics",
+      "nameAr": "تحليلات الموارد البشرية",
+      "family": "HR",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-HR-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-HR-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-HR-009",
+      "slug": "hr_privacy_ethics",
+      "nameAr": "أخلاقيات وخصوصية بيانات الموظفين",
+      "family": "HR",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-HR-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-HR-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-LND-001",
+      "slug": "training_needs_analysis",
+      "nameAr": "تحليل الحاجة التدريبية",
+      "family": "LND",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-LND-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-LND-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-LND-002",
+      "slug": "learning_outcomes_design",
+      "nameAr": "تصميم نواتج التعلم",
+      "family": "LND",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-LND-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-LND-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-LND-003",
+      "slug": "backward_design",
+      "nameAr": "التصميم التعليمي العكسي",
+      "family": "LND",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-LND-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-LND-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-LND-004",
+      "slug": "learning_experience_design",
+      "nameAr": "تصميم تجربة التعلم",
+      "family": "LND",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-LND-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-LND-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-LND-005",
+      "slug": "assessment_design",
+      "nameAr": "تصميم التقييم",
+      "family": "LND",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-LND-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-LND-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-LND-006",
+      "slug": "rubric_design",
+      "nameAr": "تصميم سلالم التقدير",
+      "family": "LND",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-LND-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-LND-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-LND-007",
+      "slug": "instructional_material_design",
+      "nameAr": "تصميم المواد التعليمية",
+      "family": "LND",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-LND-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-LND-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-LND-008",
+      "slug": "facilitation",
+      "nameAr": "تيسير التعلم",
+      "family": "LND",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-LND-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-LND-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-LND-009",
+      "slug": "digital_learning_design",
+      "nameAr": "تصميم التعلم الرقمي",
+      "family": "LND",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-LND-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-LND-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-LND-010",
+      "slug": "learning_evaluation",
+      "nameAr": "تقييم أثر التعلم",
+      "family": "LND",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-LND-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-LND-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-MKT-001",
+      "slug": "marketing_strategy",
+      "nameAr": "استراتيجية التسويق",
+      "family": "MKT",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-MKT-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-MKT-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-MKT-002",
+      "slug": "customer_segmentation",
+      "nameAr": "تقسيم العملاء",
+      "family": "MKT",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-MKT-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-MKT-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-MKT-003",
+      "slug": "customer_journey_marketing",
+      "nameAr": "تصميم رحلة العميل التسويقية",
+      "family": "MKT",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-MKT-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-MKT-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-MKT-004",
+      "slug": "funnel_design",
+      "nameAr": "تصميم قمع التحويل",
+      "family": "MKT",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-MKT-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-MKT-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-MKT-005",
+      "slug": "lifecycle_marketing",
+      "nameAr": "التسويق عبر دورة حياة العميل",
+      "family": "MKT",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-MKT-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-MKT-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-MKT-006",
+      "slug": "campaign_measurement",
+      "nameAr": "قياس الحملات التسويقية",
+      "family": "MKT",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-MKT-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-MKT-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-NEG-001",
+      "slug": "negotiation_preparation",
+      "nameAr": "التحضير المنهجي للتفاوض",
+      "family": "NEG",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-NEG-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-NEG-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-NEG-002",
+      "slug": "batna_zopa",
+      "nameAr": "تحليل BATNA وZOPA",
+      "family": "NEG",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-NEG-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-NEG-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-NEG-003",
+      "slug": "value_creation_negotiation",
+      "nameAr": "خلق القيمة في التفاوض",
+      "family": "NEG",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-NEG-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-NEG-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-NEG-004",
+      "slug": "concession_strategy",
+      "nameAr": "إدارة التنازلات",
+      "family": "NEG",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-NEG-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-NEG-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-NEG-005",
+      "slug": "ethical_influence",
+      "nameAr": "التأثير الأخلاقي",
+      "family": "NEG",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-NEG-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-NEG-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-NEG-006",
+      "slug": "mediation_basics",
+      "nameAr": "أساسيات الوساطة",
+      "family": "NEG",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-NEG-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-NEG-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-NEG-007",
+      "slug": "multiparty_negotiation",
+      "nameAr": "التفاوض متعدد الأطراف",
+      "family": "NEG",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-NEG-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-NEG-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-NEG-008",
+      "slug": "agreement_design",
+      "nameAr": "تصميم الاتفاقات القابلة للتنفيذ",
+      "family": "NEG",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-NEG-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-NEG-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-OPS-001",
+      "slug": "lean_waste_analysis",
+      "nameAr": "تحليل الهدر وفق Lean",
+      "family": "OPS",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-OPS-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-OPS-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-OPS-002",
+      "slug": "standard_work",
+      "nameAr": "تصميم العمل المعياري",
+      "family": "OPS",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-OPS-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-OPS-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-OPS-003",
+      "slug": "root_cause_analysis",
+      "nameAr": "تحليل السبب الجذري",
+      "family": "OPS",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-OPS-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-OPS-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-OPS-004",
+      "slug": "operational_kpis",
+      "nameAr": "مؤشرات الأداء التشغيلي",
+      "family": "OPS",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-OPS-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-OPS-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-OPS-005",
+      "slug": "continuous_improvement",
+      "nameAr": "إدارة التحسين المستمر",
+      "family": "OPS",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-OPS-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-OPS-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-OPS-006",
+      "slug": "pdca",
+      "nameAr": "تجارب التحسين وفق PDCA",
+      "family": "OPS",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-OPS-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-OPS-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-PRD-001",
+      "slug": "product_strategy",
+      "nameAr": "استراتيجية المنتج",
+      "family": "PRD",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-PRD-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-PRD-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-PRD-002",
+      "slug": "product_discovery",
+      "nameAr": "اكتشاف المنتج",
+      "family": "PRD",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-PRD-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-PRD-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-PRD-003",
+      "slug": "user_research",
+      "nameAr": "بحث المستخدم",
+      "family": "PRD",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-PRD-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-PRD-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-PRD-004",
+      "slug": "prototyping",
+      "nameAr": "بناء النماذج الأولية",
+      "family": "PRD",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-PRD-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-PRD-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-PRD-005",
+      "slug": "mvp_design",
+      "nameAr": "تصميم المنتج الأولي القابل للاختبار",
+      "family": "PRD",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-PRD-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-PRD-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-PRD-006",
+      "slug": "product_roadmapping",
+      "nameAr": "بناء خريطة طريق المنتج",
+      "family": "PRD",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-PRD-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-PRD-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-PRD-007",
+      "slug": "backlog_management",
+      "nameAr": "إدارة قائمة عمل المنتج",
+      "family": "PRD",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-PRD-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-PRD-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-PRD-008",
+      "slug": "product_metrics",
+      "nameAr": "مؤشرات المنتج",
+      "family": "PRD",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-PRD-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-PRD-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-PRD-009",
+      "slug": "product_launch",
+      "nameAr": "إطلاق المنتج والتعلم من السوق",
+      "family": "PRD",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-PRD-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-PRD-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-SAL-001",
+      "slug": "ideal_customer_profile",
+      "nameAr": "بناء ملف العميل المثالي",
+      "family": "SAL",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-SAL-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-SAL-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-SAL-002",
+      "slug": "prospecting",
+      "nameAr": "توليد العملاء المحتملين",
+      "family": "SAL",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-SAL-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-SAL-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-SAL-003",
+      "slug": "consultative_selling",
+      "nameAr": "البيع الاستشاري",
+      "family": "SAL",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-SAL-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-SAL-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-SAL-004",
+      "slug": "proposal_design",
+      "nameAr": "تصميم العروض التجارية",
+      "family": "SAL",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-SAL-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-SAL-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-SAL-005",
+      "slug": "account_management",
+      "nameAr": "إدارة الحسابات وتنميتها",
+      "family": "SAL",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-SAL-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-SAL-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-SCM-001",
+      "slug": "supply_chain_mapping",
+      "nameAr": "رسم سلسلة الإمداد",
+      "family": "SCM",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-SCM-101",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-SCM-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-SCM-002",
+      "slug": "demand_forecasting",
+      "nameAr": "التنبؤ بالطلب",
+      "family": "SCM",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-SCM-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-SCM-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-SCM-003",
+      "slug": "supply_planning",
+      "nameAr": "تخطيط التوريد",
+      "family": "SCM",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-SCM-102",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-SCM-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-SCM-004",
+      "slug": "inventory_management",
+      "nameAr": "إدارة المخزون",
+      "family": "SCM",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-SCM-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-SCM-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-SCM-005",
+      "slug": "warehouse_basics",
+      "nameAr": "أساسيات عمليات المستودعات",
+      "family": "SCM",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-SCM-103",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-SCM-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-SCM-006",
+      "slug": "strategic_sourcing",
+      "nameAr": "التوريد الاستراتيجي",
+      "family": "SCM",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-SCM-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-SCM-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-SCM-007",
+      "slug": "supplier_evaluation",
+      "nameAr": "تقييم الموردين",
+      "family": "SCM",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-SCM-104",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-SCM-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-SCM-008",
+      "slug": "supply_chain_risk",
+      "nameAr": "إدارة مخاطر سلسلة الإمداد",
+      "family": "SCM",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-SCM-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-SCM-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    },
+    {
+      "id": "SK-X-SCM-009",
+      "slug": "supply_chain_metrics",
+      "nameAr": "مؤشرات سلسلة الإمداد",
+      "family": "SCM",
+      "measuredBy": [],
+      "coveredBy": [
+        {
+          "c": "C-SCM-105",
+          "level": 3,
+          "w": 1
+        }
+      ],
+      "requiredBy": [
+        {
+          "p": "PW-SCM-001",
+          "level": 3,
+          "priority": "medium"
+        }
+      ],
+      "kind": "مخرج تعلم",
+      "note": "تبنيها الدورات — لا يلزم قياسها في التشخيص الأولي"
+    }
+  ],
+  "adaptiveCandidates": [
+    {
+      "family": "BIZ",
+      "questionCount": 4
+    },
+    {
+      "family": "COM",
+      "questionCount": 3
+    }
+  ],
+  "duplicateQuestions": []
+}

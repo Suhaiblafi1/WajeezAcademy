@@ -1,12 +1,17 @@
-/* محمّل الكتالوج — يقرأ ملفات JSON الأصلية والتراكيب ويقدمها بأنواع محكمة */
+/* محمّل الكتالوج — يقرأ لقطة catalog_version المنشورة الفعالة وقت التشغيل.
+   الافتراضي (تطوير/اختبارات/انقطاع API): الحزمة المضمنة من ملفات JSON الموثقة.
+   installCatalogSnapshot() يستبدل كل البنى دفعة واحدة — روابط ES الحية تجعل
+   كل مستورد يرى اللقطة الجديدة دون إعادة بناء، والمحرك لا يقرأ arrays ثابتة
+   وقت build عندما تتوفر لقطة منشورة من الخادم. */
 
 import questionsJson from '../../data/catalog/questions.v1.ar.json'
 import skillsJson from '../../data/catalog/skills.v1.ar.json'
 import coreCatalogJson from '../../data/catalog/core-catalog.v2.json'
 import templatesJson from '../../data/catalog/composite-templates.v1.json'
-import optionEffectsJson from '../../data/overlays/option-effects.v1.json'
+import optionEffectsJson from '../../data/overlays/option-effects.v2.json'
+import optionEffectsV21Json from '../../data/overlays/option-effects.v2_1.json'
+import b2cQuestionsV21Json from '../../data/catalog/v2_1/questions-b2c.v2_1.ar.json'
 import pathwayProfilesJson from '../../data/overlays/pathway-profiles.v1.json'
-import trainerProfilesJson from '../../data/overlays/trainer-profiles.v1.json'
 import type {
   BankQuestion,
   CatalogCourse,
@@ -17,7 +22,8 @@ import type {
 } from './types'
 
 interface OptionEffectsFile {
-  option_effects: Record<string, Record<string, Record<string, string>>>
+  /* قيمة التأثير نص أو قائمة نصوص (مثل interest_domains متعددة المجالات) */
+  option_effects: Record<string, Record<string, Record<string, string | string[]>>>
   keyword_classifiers: Record<
     string,
     { fact_key: string; rules: { code: string; any: string[] }[] }
@@ -40,6 +46,21 @@ export interface CompositeTemplate {
     required_facts: { fact_key: string; question_ids: string[]; importance: string; minimum_confidence: number }[]
     positive_signals: { fact_key: string; operator: string; values: (string | number)[]; weight: number; rationale_ar?: string }[]
     negative_signals?: { fact_key: string; operator: string; values: (string | number)[]; weight: number; rationale_ar?: string }[]
+    /** مرشحات صارمة من ملف القوالب — exclude/recommend_bridge يستبعدان القالب، advisor_handoff يوجّه للمستشار */
+    hard_filters?: {
+      filter_id: string
+      condition: { fact_key: string; operator: string; values: (string | number)[] }
+      action: 'exclude' | 'recommend_bridge' | 'advisor_handoff'
+      rationale_ar?: string
+    }[]
+    /** أسئلة فاصلة موثقة تُطرح عند تقارب قالبين — لا حسم بالترتيب الأبجدي */
+    differentiators?: {
+      against_template_ids: string[]
+      question_id: string
+      question_ar?: string
+      interpretation_if_positive_ar?: string
+      interpretation_if_negative_ar?: string
+    }[]
   }
   plan?: {
     starter_course_count?: number
@@ -53,30 +74,104 @@ export interface CompositeTemplate {
   status?: string
 }
 
-const qFile = questionsJson as unknown as { questions: BankQuestion[] }
-const sFile = skillsJson as unknown as { skills: SkillEntry[] }
-const cFile = coreCatalogJson as unknown as {
-  launch_pathways: CatalogPathway[]
-  courses: CatalogCourse[]
-  skill_extensions?: SkillEntry[]
+/** شكل لقطة الكتالوج المنشورة كما يقدمها API (وكما يخزنها CatalogSnapshot) */
+export interface CatalogSnapshotPayload {
+  questions: { questions: BankQuestion[] }
+  skills: { skills: SkillEntry[] }
+  coreCatalog: {
+    launch_pathways: CatalogPathway[]
+    courses: CatalogCourse[]
+    skill_extensions?: SkillEntry[]
+  }
+  templates: { templates: CompositeTemplate[] }
+  optionEffects: OptionEffectsFile
+  pathwayProfiles: { profiles: Record<string, PathwayProfile> }
 }
-const tFile = templatesJson as unknown as { templates: CompositeTemplate[] }
-const oeFile = optionEffectsJson as unknown as OptionEffectsFile
-const ppFile = pathwayProfilesJson as unknown as { profiles: Record<string, PathwayProfile> }
-const trFile = trainerProfilesJson as unknown as { profiles: TrainerProfile[] }
 
-export const questionBank: BankQuestion[] = qFile.questions.filter((q) => q.active !== false)
-export const questionById = new Map(questionBank.map((q) => [q.question_id, q]))
-export const skillsCatalog: SkillEntry[] = [...sFile.skills, ...(cFile.skill_extensions ?? [])]
-export const skillSlugs = new Set(skillsCatalog.map((s) => s.slug))
-export const launchPathways: CatalogPathway[] = cFile.launch_pathways
-export const catalogCourses: CatalogCourse[] = cFile.courses
-export const courseById = new Map(catalogCourses.map((c) => [c.course_id, c]))
-export const compositeTemplates: CompositeTemplate[] = tFile.templates
-export const optionEffects = oeFile.option_effects
-export const keywordClassifiers = oeFile.keyword_classifiers
-export const pathwayProfiles: Record<string, PathwayProfile> = ppFile.profiles
-export const trainerProfiles: TrainerProfile[] = trFile.profiles
+export let questionBank: BankQuestion[] = []
+export let questionById = new Map<string, BankQuestion>()
+export let skillsCatalog: SkillEntry[] = []
+export let skillSlugs = new Set<string>()
+export let launchPathways: CatalogPathway[] = []
+export let catalogCourses: CatalogCourse[] = []
+export let courseById = new Map<string, CatalogCourse>()
+export let compositeTemplates: CompositeTemplate[] = []
+export let optionEffects: OptionEffectsFile['option_effects'] = {}
+export let keywordClassifiers: OptionEffectsFile['keyword_classifiers'] = {}
+export let pathwayProfiles: Record<string, PathwayProfile> = {}
+export let trainerProfiles: TrainerProfile[] = []
+/** إصدار الكتالوج الفعال حاليا — «bundled» يعني الحزمة المضمنة (لا لقطة خادم) */
+export let activeCatalogLabel = 'bundled'
+
+function install(payload: CatalogSnapshotPayload, label: string): void {
+  /* أسئلة V2.1 تعيش في حزمة موثقة مرافقة للمحرك: تُطبق إعادة الصياغة على البنك
+     ثم تُلحق أسئلة القرار الجديدة — مع أي لقطة خادم أيضًا حتى لا تختفي QC */
+  const v21 = b2cQuestionsV21Json as unknown as { questions: BankQuestion[]; overrides: BankQuestion[] }
+  const overrideById = new Map(v21.overrides.map((o) => [o.question_id, o]))
+  const base = payload.questions.questions
+    .filter((q) => q.active !== false)
+    .map((q) => overrideById.get(q.question_id) ?? q)
+  const questions = [...base, ...v21.questions.filter((q) => !base.some((b) => b.question_id === q.question_id))]
+  questionBank = questions
+  questionById = new Map(questions.map((q) => [q.question_id, q]))
+  skillsCatalog = [...payload.skills.skills, ...(payload.coreCatalog.skill_extensions ?? [])]
+  skillSlugs = new Set(skillsCatalog.map((s) => s.slug))
+  launchPathways = payload.coreCatalog.launch_pathways
+  catalogCourses = payload.coreCatalog.courses
+  courseById = new Map(catalogCourses.map((c) => [c.course_id, c]))
+  compositeTemplates = payload.templates.templates
+  optionEffects = {
+    ...payload.optionEffects.option_effects,
+    ...(optionEffectsV21Json as unknown as OptionEffectsFile).option_effects,
+  }
+  keywordClassifiers = payload.optionEffects.keyword_classifiers
+  pathwayProfiles = payload.pathwayProfiles.profiles
+  trainerProfiles = [] // لا مدربين موثقين بعد — مطابقة المدرب ترجع unassigned دائما
+  activeCatalogLabel = label
+}
+
+/** تثبيت لقطة منشورة من الخادم — العملية ذرية: إما تُقبل اللقطة كاملة أو يبقى الحال */
+export function installCatalogSnapshot(payload: CatalogSnapshotPayload, label: string): void {
+  /* تحقق بنيوي قبل القبول — لقطة ناقصة لا تُثبَّت أبدا */
+  if (!payload?.questions?.questions?.length) throw new Error('لقطة كتالوج بلا أسئلة')
+  if (!payload?.coreCatalog?.launch_pathways?.length) throw new Error('لقطة كتالوج بلا مسارات')
+  if (!payload?.coreCatalog?.courses?.length) throw new Error('لقطة كتالوج بلا دورات')
+  if (!payload?.templates?.templates) throw new Error('لقطة كتالوج بلا قوالب')
+  install(payload, label)
+}
+
+/* التهيئة الافتراضية من الحزمة المضمنة — نفس مسار التحقق */
+install(
+  {
+    questions: questionsJson as unknown as { questions: BankQuestion[] },
+    skills: skillsJson as unknown as { skills: SkillEntry[] },
+    coreCatalog: coreCatalogJson as unknown as CatalogSnapshotPayload['coreCatalog'],
+    templates: templatesJson as unknown as { templates: CompositeTemplate[] },
+    optionEffects: optionEffectsJson as unknown as OptionEffectsFile,
+    pathwayProfiles: pathwayProfilesJson as unknown as { profiles: Record<string, PathwayProfile> },
+  },
+  'bundled',
+)
+
+/** معرف خيار ثابت من ترتيبه (1-based) — النص العربي قابل للتعديل دون تغيير النتيجة */
+export function optionIdAt(question: BankQuestion, index: number): string {
+  if (index < 0 || index >= question.options_ar.length) {
+    throw new RangeError(`ترتيب خيار خارج النطاق في ${question.question_id}: ${index}`)
+  }
+  return `o${index + 1}`
+}
+
+/** ترتيب الخيار (0-based) من معرفه الثابت؛ -1 إن لم يطابق النمط */
+export function optionIndexOfId(optionId: string): number {
+  const m = /^o(\d+)$/.exec(optionId)
+  return m ? Number(m[1]) - 1 : -1
+}
+
+/** تحويل نص خيار قديم إلى معرفه الثابت — جسر ترحيل الجلسات المحلية القديمة */
+export function optionIdFromText(question: BankQuestion, text: string): string | null {
+  const idx = question.options_ar.indexOf(text)
+  return idx >= 0 ? optionIdAt(question, idx) : null
+}
 
 export function pathwaySkills(pathwayId: string): { slug: string; nameAr: string }[] {
   const p = launchPathways.find((x) => x.id === pathwayId)

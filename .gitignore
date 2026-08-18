@@ -2,3 +2,16 @@ node_modules/
 dist/
 *.log
 .DS_Store
+
+# لقطات الفحص المحلية
+verification/
+
+# سكربتات الفحص المؤقتة — لا تدخل Git
+scripts/tmp/
+
+# أسرار البيئة وبيانات PostgreSQL المدمج المحلية
+.env
+.pgdata/
+
+# تخزين وثائق المتقدمين الخاص — لا يدخل Git أبدا
+storage/private/

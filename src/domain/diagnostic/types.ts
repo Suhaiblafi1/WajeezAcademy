@@ -29,6 +29,9 @@ export interface BankQuestion {
   required_level: RequiredLevel
   weight: number
   active: boolean
+  /** V2 فقط: معرفات الخيارات الأصلية الموازية لـ options_ar بعد فلترة الشخصية —
+      يحفظ هوية الخيار (o1..on) حين تُحذف خيارات لا تناسب مرحلة المتعلم */
+  active_option_ids?: string[]
 }
 
 export interface SkillEntry {
@@ -95,7 +98,9 @@ export type FactBag = Record<string, FactValue>
 
 export interface Answer {
   questionId: string
-  /** نص الخيار المختار، أو قائمة للخيارات المتعددة/الترتيب، أو النص الحر */
+  /** معرفات الخيارات الثابتة (o1..on) — أساس القرار. النص العربي لعرض وتدقيق فقط */
+  optionIds?: string[]
+  /** نص الخيار المختار (خام، للعرض والتدقيق)، أو قائمة للخيارات المتعددة/الترتيب، أو النص الحر */
   value: string | string[]
 }
 
@@ -157,9 +162,44 @@ export interface UtilityScore {
 
 export interface DecisionTraceEntry {
   step: number
-  kind: 'question_selected' | 'answer_reduced' | 'candidates_scored' | 'stop_evaluated' | 'recommendation' | 'template_selected' | 'contradiction' | 'guardrail'
+  kind: 'question_selected' | 'answer_reduced' | 'candidates_scored' | 'stop_evaluated' | 'recommendation' | 'template_selected' | 'template_layer' | 'trainer_match' | 'contradiction' | 'guardrail' | 'facts_seeded' | 'deepening_started' | 'deepening_completed' | 'consent_ui_ack'
   summary_ar: string
   data?: Record<string, unknown>
+}
+
+/* ─────────── جولة تدقيق الخطة (التشخيص الإضافي الاختياري) ─────────── */
+
+/** لقطة التوصية قبل/بعد التدقيق — للمقارنة الموثقة */
+export interface DeepeningSnapshot {
+  kind: Recommendation['kind']
+  /** معرف المسار الأول أو القالب المركب */
+  topId: string | null
+  topLabel_ar: string
+  confidenceTotal: number
+  confidenceBand: ConfidenceBreakdown['band']
+  confidenceBand_ar: string
+}
+
+/** سؤال مخطط في جولة التدقيق — مع سبب اختياره وأثر إجابته */
+export interface DeepeningPlanItem {
+  questionId: string
+  /** مناطق عدم اليقين التي يعالجها: tie | weak_skill | missing_constraint | goal_unclear | contradiction | coverage */
+  targets: string[]
+  /** لماذا اختير هذا السؤال وكيف ستؤثر إجابته في التوصية */
+  reason_ar: string
+}
+
+/** نتيجة المقارنة قبل/بعد التدقيق */
+export interface DeepeningComparison {
+  before: DeepeningSnapshot
+  after: DeepeningSnapshot
+  /** هل تغيرت التوصية نفسها (نوعها أو هويتها)؟ */
+  changed: boolean
+  /** «دعمت إجاباتك الإضافية التوصية الحالية.» أو «ظهرت معلومات إضافية جعلت هذا الاختيار أكثر ملاءمة.» */
+  note_ar: string
+  /** أسباب التغيير أو عدمه بلغة المتعلم */
+  reasons_ar: string[]
+  answeredCount: number
 }
 
 export interface StopDecision {
@@ -185,8 +225,20 @@ export interface CompositeSelection {
   fit: number
   variant: PlanVariant
   courses: CoursePlanItem[]
+  /** دورات أُزيلت بدليل إتقان موثق — مع سبب كل إزالة */
+  removedCourses: { courseId: string; titleAr: string; reason_ar: string }[]
+  /** الدورات المطلوبة وحدها تتجاوز 80 ساعة — تُحال لمستشار ولا تُصدر آليا */
+  requiredHoursOverflow: boolean
   missingRequiredFacts: string[]
   rationale_ar: string[]
+  /** المسارات الأساسية التي استُمدت منها الخطة */
+  representedPathwayIds: string[]
+  capstone_ar?: string
+  success_metric_ar?: string
+  /** أقرب قالب بديل ولماذا لم يُختر */
+  nearestAlternative?: { templateId: string; nameAr: string; fit: number; whyNot_ar: string }
+  /** مرشح صارم من نوع advisor_handoff انطبق على القالب الفائز — التوصية تُحال لمستشار */
+  advisorHandoff?: { filterId: string; rationale_ar: string }
 }
 
 export interface TrainerProfile {
@@ -198,7 +250,20 @@ export interface TrainerProfile {
   languages: string[]
   availability_weekly_hours: number
   quality_score: number
+  /** التوثيق — شروط إلزامية للترشيح، لا يُرشَّح مدرب غير موثق أبدا */
+  verified: boolean
   verified_source?: string
+  /** تاريخ التوثيق ISO — صلاحيته 12 شهرا ثم يجب التجديد */
+  verified_at?: string
+  /** حالة العقد — «active» شرط للترشيح */
+  contract_status?: 'active' | 'suspended' | 'ended'
+  /** السعة — لا يُرشَّح من بلغ سقف متعلميه */
+  capacity_active_learners?: number
+  capacity_max_learners?: number
+  /** المستويات التي يدرّسها (مبتدئ/متوسط/متقدم...) */
+  levels?: string[]
+  /** النوافذ الأسبوعية المتاحة — لفحص تعارض المواعيد */
+  weekly_schedule?: { day: string; start: string; end: string }[]
 }
 
 export interface TrainerMatch {
@@ -210,7 +275,7 @@ export interface TrainerMatch {
 }
 
 export interface Recommendation {
-  kind: 'single_pathway' | 'composite_template' | 'advisor_referral' | 'guardrail_stop'
+  kind: 'single_pathway' | 'composite_template' | 'advisor_referral' | 'guardrail_stop' | 'exploratory_direction'
   primaryPathway: PathwayCandidate | null
   alternatives: PathwayCandidate[]
   composite: CompositeSelection | null
@@ -221,6 +286,14 @@ export interface Recommendation {
   trainer: TrainerMatch
   disclaimer_ar: string
   trace: DecisionTraceEntry[]
+  /** مخرج الاستكشاف (البند 10): حاضر فقط عندما kind = exploratory_direction — لا كيان نهائي مفروض */
+  exploration?: {
+    /** قائمة مجالات مختصرة من إشارات المستخدم نفسه */
+    domain_shortlist: { id: string; label_ar: string }[]
+    evidence_suggestions_ar: string[]
+    /** مرشحون داخليون للتدقيق فقط — لا يُعرضون كنتيجة */
+    internal_top_candidates: { entity_id: string; entity_type: string; fit: number }[]
+  } | null
 }
 
 export interface DiagnosticState {

@@ -1,0 +1,403 @@
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router";
+import {
+  Award, BookOpen, CheckCircle2, FileText, Loader2, Lock,
+  Mail, MessageCircle, Route as RouteIcon, Save, User, X,
+} from "lucide-react";
+import PortalLayout from "./PortalLayout";
+import { apiGet, apiPatch, ApiError } from "@/services/api";
+import { isPreview } from "@/services/access";
+import { readSession } from "@/services/auth";
+
+/* ─────────── صفحة «حسابي» — الملف الشخصي الكامل للطالب ───────────
+   وضعان صادقان:
+   - خادم حقيقي: جلسة API فعّالة → قراءة وحفظ في قاعدة البيانات.
+   - معاينة محلية: بلا جلسة خادم → حفظ محلي موسوم حتى يُربط الحساب. */
+
+const LOCAL_KEY = "wajeez_profile";
+
+const ARAB_COUNTRIES = [
+  "الأردن", "السعودية", "الإمارات", "مصر", "الكويت", "قطر", "عُمان", "البحرين",
+  "العراق", "فلسطين", "لبنان", "سوريا", "ليبيا", "تونس", "الجزائر", "المغرب", "السودان", "اليمن", "موريتانيا", "أخرى",
+];
+const EDUCATION_LEVELS = ["ثانوي", "دبلوم", "بكالوريوس", "ماجستير", "دكتوراه", "أخرى"];
+const EXPERIENCE_RANGES = ["1-3", "4-7", "8-12", "12+"];
+const LANGUAGES = ["العربية", "English", "الاثنان"];
+
+interface ProfileForm {
+  displayName: string;
+  avatarUrl: string;
+  phone: string;
+  country: string;
+  city: string;
+  birthDate: string; // yyyy-mm-dd
+  gender: "" | "male" | "female";
+  preferredLanguage: string;
+  education: string;
+  university: string;
+  major: string;
+  jobTitle: string;
+  company: string;
+  experienceYears: string;
+  careerGoal: string;
+  goalAr: string;
+  interests: string[];
+}
+
+const EMPTY: ProfileForm = {
+  displayName: "", avatarUrl: "", phone: "", country: "", city: "",
+  birthDate: "", gender: "", preferredLanguage: "", education: "",
+  university: "", major: "", jobTitle: "", company: "",
+  experienceYears: "", careerGoal: "", goalAr: "", interests: [],
+};
+
+interface ServerProfile {
+  user: { email: string; displayName: string; createdAt: string };
+  profile: Partial<Record<keyof ProfileForm, unknown>> & { interests?: unknown; birthDate?: string | null };
+}
+
+const inputCls =
+  "w-full rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:border-[#38A7B4] focus:outline-none";
+const labelCls = "mb-1.5 block text-xs font-bold text-white/60";
+
+function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <div>
+      {/* label يلف الحقل — ارتباط ضمني صحيح لقارئ الشاشة وأدوات الفحص */}
+      <label className="block">
+        <span className={labelCls}>{label}</span>
+        {children}
+      </label>
+      {hint && <p className="mt-1 text-[11px] text-white/50">{hint}</p>}
+    </div>
+  );
+}
+
+export default function StudentAccount() {
+  const localSession = readSession();
+  const [mode, setMode] = useState<"loading" | "server" | "local">("loading");
+  const [email, setEmail] = useState(localSession?.email ?? "");
+  const [form, setForm] = useState<ProfileForm>(EMPTY);
+  const [interestDraft, setInterestDraft] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [savedMsg, setSavedMsg] = useState("");
+  const [err, setErr] = useState("");
+
+  /* تحميل الملف: من الخادم عند وجود جلسة حقيقية، وإلا من المخزن المحلي الموسوم */
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const data = await apiGet<ServerProfile>("/api/learner/profile");
+        if (!alive) return;
+        setEmail(data.user.email);
+        setForm({
+          ...EMPTY,
+          displayName: data.user.displayName ?? "",
+          avatarUrl: (data.profile.avatarUrl as string) ?? "",
+          phone: (data.profile.phone as string) ?? "",
+          country: (data.profile.country as string) ?? "",
+          city: (data.profile.city as string) ?? "",
+          birthDate: data.profile.birthDate ? String(data.profile.birthDate).slice(0, 10) : "",
+          gender: (data.profile.gender as ProfileForm["gender"]) ?? "",
+          preferredLanguage: (data.profile.preferredLanguage as string) ?? "",
+          education: (data.profile.education as string) ?? "",
+          university: (data.profile.university as string) ?? "",
+          major: (data.profile.major as string) ?? "",
+          jobTitle: (data.profile.jobTitle as string) ?? "",
+          company: (data.profile.company as string) ?? "",
+          experienceYears: (data.profile.experienceYears as string) ?? "",
+          careerGoal: (data.profile.careerGoal as string) ?? "",
+          goalAr: (data.profile.goalAr as string) ?? "",
+          interests: Array.isArray(data.profile.interests) ? (data.profile.interests as string[]) : [],
+        });
+        setMode("server");
+      } catch (e) {
+        if (!alive) return;
+        /* بلا جلسة خادم — نقرأ النسخة المحلية إن وجدت */
+        try {
+          const raw = localStorage.getItem(LOCAL_KEY);
+          if (raw) setForm({ ...EMPTY, ...(JSON.parse(raw) as Partial<ProfileForm>) });
+        } catch { /* تجاهل */ }
+        if (!form.displayName && localSession?.name) {
+          setForm((f) => ({ ...f, displayName: f.displayName || localSession.name }));
+        }
+        setMode("local");
+        if (!(e instanceof ApiError && e.status === 401)) setErr("تعذر الوصول للخادم — سنعمل محليا مؤقتا");
+      }
+    })();
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const set = <K extends keyof ProfileForm>(k: K, v: ProfileForm[K]) => setForm((f) => ({ ...f, [k]: v }));
+
+  const addInterest = () => {
+    const v = interestDraft.trim();
+    if (!v || form.interests.includes(v) || form.interests.length >= 12) return;
+    set("interests", [...form.interests, v]);
+    setInterestDraft("");
+  };
+
+  const canSave = useMemo(() => form.displayName.trim().length >= 2, [form.displayName]);
+
+  const save = async () => {
+    if (!canSave || busy) return;
+    setBusy(true); setErr(""); setSavedMsg("");
+    const payload = {
+      ...form,
+      birthDate: form.birthDate ? new Date(`${form.birthDate}T00:00:00.000Z`).toISOString() : null,
+      gender: form.gender || null,
+      interests: form.interests,
+      /* الحقول الفارغة تُرسل null لتمسح القيمة القديمة بوعي */
+      avatarUrl: form.avatarUrl || null, phone: form.phone || null,
+      country: form.country || null, city: form.city || null,
+      preferredLanguage: form.preferredLanguage || null,
+      education: form.education || null, university: form.university || null, major: form.major || null,
+      jobTitle: form.jobTitle || null, company: form.company || null,
+      experienceYears: form.experienceYears || null,
+      careerGoal: form.careerGoal || null, goalAr: form.goalAr || null,
+    };
+    try {
+      if (mode === "server") {
+        await apiPatch("/api/learner/profile", payload);
+        setSavedMsg("حُفظت بياناتك في حسابك — تبقى معك على أي جهاز");
+      } else {
+        localStorage.setItem(LOCAL_KEY, JSON.stringify(form));
+        setSavedMsg("حُفظت محليا في هذه المعاينة — ستُنقل لحسابك الحقيقي عند الربط");
+      }
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : "تعذر الحفظ — حاول مجددا");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (mode === "loading") {
+    return (
+      <PortalLayout title="حسابي">
+        {/* هيكل تحميل بنفس شكل البطاقات — أهدأ للعين من السبينر */}
+        <div aria-busy="true" aria-label="جاري تحميل ملفك" className="animate-pulse space-y-6">
+          <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
+            <div className="flex items-center gap-4">
+              <div className="h-16 w-16 rounded-2xl bg-white/10" />
+              <div className="flex-1 space-y-2">
+                <div className="h-5 w-40 rounded-lg bg-white/10" />
+                <div className="h-3 w-56 rounded-full bg-white/5" />
+              </div>
+            </div>
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <div className="h-12 rounded-xl bg-white/5" />
+              <div className="h-12 rounded-xl bg-white/5" />
+            </div>
+          </div>
+          <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
+            <div className="h-4 w-32 rounded-full bg-white/10" />
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              <div className="h-12 rounded-xl bg-white/5" />
+              <div className="h-12 rounded-xl bg-white/5" />
+              <div className="h-12 rounded-xl bg-white/5" />
+              <div className="h-12 rounded-xl bg-white/5" />
+            </div>
+          </div>
+        </div>
+      </PortalLayout>
+    );
+  }
+
+  return (
+    <PortalLayout title="حسابي وملفي الشخصي">
+      {mode === "local" && (
+        <p className="mb-5 rounded-xl border border-dashed border-[#FABC05]/40 bg-[#FABC05]/5 px-4 py-2 text-center text-xs text-[#FABC05]">
+          {isPreview() ? "وضع المعاينة — الحفظ هنا محلي على هذا الجهاز حتى يربط حسابك بالخادم." : "جلسة الخادم غير فعالة — الحفظ محلي مؤقتا."}
+        </p>
+      )}
+
+      {/* بطاقة الهوية */}
+      <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
+        <div className="flex flex-wrap items-center gap-4">
+          {form.avatarUrl ? (
+            <img src={form.avatarUrl} alt="صورتك الشخصية" className="h-16 w-16 rounded-2xl border border-white/10 object-cover" />
+          ) : (
+            <span className="grid h-16 w-16 place-items-center rounded-2xl bg-gradient-to-br from-[#38A7B4] to-[#247B84] text-2xl font-black text-white">
+              {(form.displayName || "م").charAt(0)}
+            </span>
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-lg font-black">{form.displayName || "—"}</p>
+            <p className="mt-0.5 flex items-center gap-1.5 text-xs text-white/50" dir="ltr">
+              <Mail className="h-3.5 w-3.5" /> {email || "—"}
+            </p>
+          </div>
+          {mode === "server" && (
+            <span className="flex items-center gap-1.5 rounded-full border border-[#38A7B4]/40 bg-[#38A7B4]/10 px-3 py-1 text-[11px] font-bold text-[#6EC7D1]">
+              <CheckCircle2 className="h-3.5 w-3.5" /> محفوظ في قاعدة البيانات
+            </span>
+          )}
+        </div>
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <Field label="الاسم الكامل *">
+            <input value={form.displayName} onChange={(e) => set("displayName", e.target.value)} className={inputCls} autoComplete="name" />
+          </Field>
+          <Field label="رابط الصورة الشخصية" hint="اختياري — رابط صورة مباشر يظهر في حسابك وشهاداتك">
+            <input dir="ltr" value={form.avatarUrl} onChange={(e) => set("avatarUrl", e.target.value)} placeholder="https://…" className={`${inputCls} text-left`} />
+          </Field>
+        </div>
+      </section>
+
+      {/* المعلومات الشخصية */}
+      <section className="mt-6 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
+        <h2 className="flex items-center gap-2 text-base font-black"><User className="h-4 w-4 text-[#6EC7D1]" /> معلومات شخصية</h2>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          <Field label="رقم الهاتف (واتساب)">
+            <input dir="ltr" type="tel" autoComplete="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="+962…" className={`${inputCls} text-left`} />
+          </Field>
+          <Field label="الدولة">
+            <select value={form.country} onChange={(e) => set("country", e.target.value)} className={`${inputCls} [&>option]:bg-[#121B1D]`}>
+              <option value="">اختر دولتك</option>
+              {ARAB_COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </Field>
+          <Field label="المدينة">
+            <input value={form.city} onChange={(e) => set("city", e.target.value)} className={inputCls} />
+          </Field>
+          <Field label="تاريخ الميلاد" hint="اختياري — يستخدم لشهاداتك والفرص العمرية فقط">
+            <input type="date" dir="ltr" value={form.birthDate} onChange={(e) => set("birthDate", e.target.value)} className={`${inputCls} text-left`} />
+          </Field>
+          <Field label="الجنس" hint="اختياري تماما">
+            <select value={form.gender} onChange={(e) => set("gender", e.target.value as ProfileForm["gender"])} className={`${inputCls} [&>option]:bg-[#121B1D]`}>
+              <option value="">أفضّل عدم الذكر</option>
+              <option value="male">ذكر</option>
+              <option value="female">أنثى</option>
+            </select>
+          </Field>
+          <Field label="اللغة المفضلة للتعلم">
+            <select value={form.preferredLanguage} onChange={(e) => set("preferredLanguage", e.target.value)} className={`${inputCls} [&>option]:bg-[#121B1D]`}>
+              <option value="">اختر</option>
+              {LANGUAGES.map((l) => <option key={l} value={l}>{l}</option>)}
+            </select>
+          </Field>
+        </div>
+      </section>
+
+      {/* التعليم */}
+      <section className="mt-6 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
+        <h2 className="flex items-center gap-2 text-base font-black"><BookOpen className="h-4 w-4 text-[#6EC7D1]" /> التعليم</h2>
+        <div className="mt-5 grid gap-4 sm:grid-cols-3">
+          <Field label="المؤهل العلمي">
+            <select value={form.education} onChange={(e) => set("education", e.target.value)} className={`${inputCls} [&>option]:bg-[#121B1D]`}>
+              <option value="">اختر</option>
+              {EDUCATION_LEVELS.map((l) => <option key={l} value={l}>{l}</option>)}
+            </select>
+          </Field>
+          <Field label="الجامعة / المؤسسة التعليمية">
+            <input value={form.university} onChange={(e) => set("university", e.target.value)} className={inputCls} />
+          </Field>
+          <Field label="التخصص">
+            <input value={form.major} onChange={(e) => set("major", e.target.value)} className={inputCls} />
+          </Field>
+        </div>
+      </section>
+
+      {/* الحياة المهنية */}
+      <section className="mt-6 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
+        <h2 className="flex items-center gap-2 text-base font-black"><RouteIcon className="h-4 w-4 text-[#6EC7D1]" /> حياتك المهنية وهدفك</h2>
+        <div className="mt-5 grid gap-4 sm:grid-cols-3">
+          <Field label="الوظيفة الحالية">
+            <input value={form.jobTitle} onChange={(e) => set("jobTitle", e.target.value)} className={inputCls} />
+          </Field>
+          <Field label="الشركة / الجهة">
+            <input value={form.company} onChange={(e) => set("company", e.target.value)} className={inputCls} />
+          </Field>
+          <Field label="سنوات الخبرة">
+            <select value={form.experienceYears} onChange={(e) => set("experienceYears", e.target.value)} className={`${inputCls} [&>option]:bg-[#121B1D]`}>
+              <option value="">اختر النطاق</option>
+              {EXPERIENCE_RANGES.map((r) => <option key={r} value={r}>{r === "12+" ? "أكثر من ١٢ سنة" : `${r} سنوات`}</option>)}
+            </select>
+          </Field>
+        </div>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <Field label="هدفك المهني">
+            <textarea rows={2} value={form.careerGoal} onChange={(e) => set("careerGoal", e.target.value)} placeholder="مثال: أن أقود فريق تسويق خلال سنتين" className={`${inputCls} resize-none`} />
+          </Field>
+          <Field label="هدفك التعلمي" hint="ما الذي تريد أن تتقنه في هذه المرحلة؟">
+            <textarea rows={2} value={form.goalAr} onChange={(e) => set("goalAr", e.target.value)} className={`${inputCls} resize-none`} />
+          </Field>
+        </div>
+        <div className="mt-4">
+          <label className="block">
+            <span className={labelCls}>اهتماماتك</span>
+            <span className="flex gap-2">
+              <input
+                value={interestDraft}
+                onChange={(e) => setInterestDraft(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addInterest(); } }}
+                placeholder="اكتب اهتماما ثم Enter — حتى 12"
+                className={inputCls}
+              />
+              <button type="button" onClick={addInterest} className="shrink-0 cursor-pointer rounded-xl border border-[#38A7B4]/50 px-4 text-xs font-bold text-[#6EC7D1] hover:bg-[#38A7B4]/10">
+                أضف
+              </button>
+            </span>
+          </label>
+          {form.interests.length > 0 && (
+            <div className="mt-2.5 flex flex-wrap gap-1.5">
+              {form.interests.map((i) => (
+                <span key={i} className="inline-flex items-center gap-1.5 rounded-full border border-[#38A7B4]/40 bg-[#38A7B4]/10 px-2.5 py-1 text-[11px] font-bold text-[#6EC7D1]">
+                  {i}
+                  <button type="button" aria-label={`أزل ${i}`} onClick={() => set("interests", form.interests.filter((x) => x !== i))} className="cursor-pointer text-white/50 hover:text-white">
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* حفظ */}
+      <div className="mt-6 flex flex-col items-center gap-3">
+        {err && <p role="alert" className="rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-2.5 text-xs font-semibold text-red-300">{err}</p>}
+        {savedMsg && <p role="status" className="rounded-xl border border-[#38A7B4]/40 bg-[#38A7B4]/10 px-4 py-2.5 text-xs font-bold text-[#6EC7D1]">{savedMsg}</p>}
+        <button
+          onClick={save} disabled={!canSave || busy}
+          className="flex h-12 cursor-pointer items-center gap-2 rounded-full bg-[#FABC05] px-10 font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+          احفظ ملفي
+        </button>
+      </div>
+
+      {/* روابط بقية أقسام الملف */}
+      <section className="mt-8 rounded-3xl border border-white/10 bg-white/[0.02] p-6 md:p-8">
+        <h2 className="flex items-center gap-2 text-base font-black"><FileText className="h-4 w-4 text-[#6EC7D1]" /> بقية ملفك — في مكانها الطبيعي</h2>
+        <div className="mt-5 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+          {[
+            { to: "/student", icon: RouteIcon, t: "مساراتي وتقدمي", d: "مسارك النشط ونسبة إنجازه" },
+            { to: "/student/learning", icon: BookOpen, t: "دوراتي وجلساتي", d: "الدورات المسجلة ومواعيدها" },
+            { to: "/student/certificates", icon: Award, t: "شهاداتي", d: "شهادات الإتمام الموثقة وروابط التحقق" },
+            { to: "/student/billing", icon: FileText, t: "فواتيري وطلباتي", d: "أرقام مرجعية وسجل دفعات ودفع اختباري" },
+            { to: "/student/cv", icon: FileText, t: "سيرتي الذاتية", d: "رفع بموافقة صريحة وحذف موثق" },
+            { to: "/diagnostic", icon: MessageCircle, t: "نتائج تشخيصي", d: "آخر نتيجة محفوظة وتقريرك الشخصي" },
+          ].map((x) => (
+            <Link key={x.t} to={x.to} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 transition hover:border-[#38A7B4]/50">
+              <x.icon className="h-4 w-4 text-[#6EC7D1]" />
+              <p className="mt-2 text-sm font-black">{x.t}</p>
+              <p className="mt-1 text-[11px] leading-relaxed text-white/45">{x.d}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* بيانات الفوترة والطلبات */}
+      <section className="mt-6 rounded-3xl border border-white/10 bg-white/[0.02] p-6 md:p-8">
+        <h2 className="flex items-center gap-2 text-base font-black"><Lock className="h-4 w-4 text-[#6EC7D1]" /> الفوترة والطلبات</h2>
+        <p className="mt-2 text-sm leading-7 text-white/55">
+          فواتيرك وطلباتك ودفعاتك — بأرقامها المرجعية وسجل مدفوعاتها — في صفحة{" "}
+          <Link to="/student/billing" className="font-bold text-[#6EC7D1] underline-offset-4 hover:underline">فواتيري</Link>.
+          لأي طلب استرداد أو مراجعة فاتورة: <Link to="/contact" className="font-bold text-[#6EC7D1] underline-offset-4 hover:underline">صفحة التواصل</Link> — اختر «طلب استرداد».
+        </p>
+      </section>
+    </PortalLayout>
+  );
+}

@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Link, NavLink } from "react-router";
-import { GraduationCap, ClipboardCheck, Users, Wallet } from "lucide-react";
+import { GraduationCap, ClipboardCheck, GitPullRequest, Users, Wallet } from "lucide-react";
 import { TRAINER_IDENTITIES } from "@/data/trainer";
 import { TRAINER_IDENTITY_KEY, trainerIdentity } from "./trainer-identity";
+import PrototypeBanner from "@/components/PrototypeBanner";
 
 /** إطار بوابة المدرب: هوية المدرب + تنقل + حدوده معلنة */
 export default function TrainerLayout({ children, title }: { children: React.ReactNode; title: string }) {
@@ -28,7 +29,8 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
             </button>
           ))}
         </div>
-        <Link to="/" className="mt-6 text-xs text-white/40 hover:text-white/70">العودة للموقع العام</Link>
+        <p className="mt-4 text-[11px] font-bold text-[#FABC05]/70">نسخة تجريبية — البيانات المعروضة محلية وليست تشغيلية</p>
+        <Link to="/" className="mt-6 text-xs text-white/50 hover:text-white/70">العودة للموقع العام</Link>
       </div>
     );
   }
@@ -36,11 +38,13 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
   const tabs = [
     { to: "/trainer", label: "شعبي", icon: Users, end: true },
     { to: "/trainer/grading", label: "طابور التقييم", icon: ClipboardCheck },
+    { to: "/trainer/proposals", label: "اقتراحاتي", icon: GitPullRequest },
     { to: "/trainer/earnings", label: "مستحقاتي", icon: Wallet },
   ];
 
   return (
     <div dir="rtl" className="min-h-screen bg-[#0D0D0D] text-white">
+      <PrototypeBanner />
       <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0D0D0D]/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
           <Link to="/" className="flex items-center gap-2">

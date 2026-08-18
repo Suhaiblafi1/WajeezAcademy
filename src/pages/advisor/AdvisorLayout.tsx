@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, NavLink } from "react-router";
 import { ClipboardList, Headset, LayoutDashboard, Users } from "lucide-react";
 import { ADVISOR_IDENTITIES, ADVISOR_IDENTITY_KEY, advisorIdentity } from "./advisor-identity";
+import PrototypeBanner from "@/components/PrototypeBanner";
 
 /** إطار بوابة المستشار: اختيار هوية المستشار + تنقل */
 export default function AdvisorLayout({ children, title }: { children: React.ReactNode; title: string }) {
@@ -27,18 +28,21 @@ export default function AdvisorLayout({ children, title }: { children: React.Rea
             </button>
           ))}
         </div>
-        <Link to="/" className="mt-6 text-xs text-white/40 hover:text-white/70">العودة للموقع العام</Link>
+        <p className="mt-4 text-[11px] font-bold text-[#FABC05]/70">نسخة تجريبية — البيانات المعروضة محلية وليست تشغيلية</p>
+        <Link to="/" className="mt-6 text-xs text-white/50 hover:text-white/70">العودة للموقع العام</Link>
       </div>
     );
   }
 
   const tabs = [
     { to: "/advisor", label: "طلبةي", icon: Users, end: true },
+    { to: "/advisor/cases", label: "حالاتي (حقيقي)", icon: Headset },
     { to: "/advisor/reviews", label: "طلبات المراجعة", icon: ClipboardList },
   ];
 
   return (
     <div dir="rtl" className="min-h-screen bg-[#0D0D0D] text-white">
+      <PrototypeBanner />
       <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0D0D0D]/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
           <Link to="/" className="flex items-center gap-2">

@@ -241,3 +241,323 @@ export function logAudit(advisor: string, action: string, studentId: string) {
   const entry: AuditEntry = { at: new Date().toISOString(), advisor, action, studentId };
   localStorage.setItem(AUDIT_KEY, JSON.stringify([entry, ...loadAudit()].slice(0, 50)));
 }
+
+/* ═══════════════ ملفات الحالات — محاكاة مسارات operations.routes.ts ═══════════════
+   تطابق سلوك الخادم: ثماني حالات موثقة، مهام بمواعيد استحقاق، متابعات بنتائج،
+   تواصل (أول تواصل ينقل الحالة تلقائيا)، ملاحظات داخلية، سيرة بسجل مشاهدة، وإسناد. */
+
+export type CaseStatus =
+  | "new" | "contacted" | "needs_review" | "follow_up"
+  | "recommended" | "enrolled" | "not_interested" | "closed";
+
+export const CASE_STATUS_META: Record<CaseStatus, { label: string; cls: string }> = {
+  new:            { label: "جديدة",        cls: "border-white/20 text-white/70" },
+  contacted:      { label: "تم التواصل",   cls: "border-[#38A7B4]/50 text-[#6EC7D1]" },
+  needs_review:   { label: "تحتاج مراجعة", cls: "border-[#FABC05]/50 text-[#FABC05]" },
+  follow_up:      { label: "قيد المتابعة", cls: "border-[#38A7B4]/50 text-[#6EC7D1]" },
+  recommended:    { label: "أوصي بمسار",   cls: "border-[#FABC05]/50 text-[#FABC05]" },
+  enrolled:       { label: "مسجّل",        cls: "border-[#38A7B4]/50 text-[#6EC7D1]" },
+  not_interested: { label: "غير مهتم",     cls: "border-white/15 text-white/40" },
+  closed:         { label: "مغلقة",        cls: "border-white/15 text-white/40" },
+};
+export const CASE_STATUSES = Object.keys(CASE_STATUS_META) as CaseStatus[];
+
+export type ContactChannel = "whatsapp" | "email" | "phone" | "in_app";
+export const CHANNEL_LABEL: Record<ContactChannel, string> = {
+  whatsapp: "واتساب", email: "بريد", phone: "اتصال", in_app: "داخل المنصة",
+};
+
+export interface CaseTask { id: string; title: string; dueAt?: string; done: boolean; doneAt?: string; }
+export interface CaseFollowUp {
+  id: string; scheduledAt: string; channel?: ContactChannel; note?: string;
+  doneAt?: string; outcome?: string;
+}
+export interface CaseContact { id: string; at: string; channel: ContactChannel; direction: "out" | "in"; summary: string; by: string; }
+export interface CaseNote { id: string; at: string; body: string; by: string; }
+export interface StatusChange { at: string; from: CaseStatus; to: CaseStatus; by: string; note?: string; }
+export interface CvView { at: string; by: string; }
+
+export interface AdvisorCase {
+  id: string;
+  studentId?: string;       // ربط بسجل AdvisorStudent إن وجد
+  studentName: string;
+  status: CaseStatus;
+  nextAction?: string;
+  nextFollowUpAt?: string;
+  tasks: CaseTask[];
+  followUps: CaseFollowUp[];
+  contacts: CaseContact[];
+  notes: CaseNote[];        // داخلية — لا تظهر للعميل
+  history: StatusChange[];
+  cv?: { fileName: string; sizeKb: number; uploadedAt: string; views: CvView[] };
+  assignedTo?: string;      // اسم المستشار — الحالات بلا مستشار تُسند من لوحة الإدارة
+}
+
+const CASES_KEY = "wajeez_advisor_cases";
+let caseSeq = 100;
+const cid = () => `c-${Date.now().toString(36)}-${caseSeq++}`;
+
+function isoDT(dayOffset: number, hour = 10): string {
+  const d = new Date();
+  d.setDate(d.getDate() + dayOffset);
+  d.setHours(hour, 0, 0, 0);
+  return d.toISOString().slice(0, 16); // YYYY-MM-DDTHH:MM
+}
+
+function seedCases(): AdvisorCase[] {
+  return [
+    {
+      id: "case-real", studentId: "st-real", studentName: readUserName(), status: "enrolled",
+      nextAction: "رسالة ترحيب بعد أول جلسة مباشرة", nextFollowUpAt: isoDT(4, 12),
+      tasks: [{ id: "t-real-1", title: "التأكد من اكتمال ملفه الشخصي", dueAt: isoDT(2), done: false }],
+      followUps: [], contacts: [], notes: [], history: [
+        { at: isoDT(-1, 9), from: "new", to: "contacted", by: "أ. ريم القحطاني", note: "أول تواصل بعد الدفع" },
+        { at: isoDT(0, 11), from: "contacted", to: "enrolled", by: "أ. ريم القحطاني" },
+      ],
+      assignedTo: "أ. ريم القحطاني",
+    },
+    {
+      id: "case-1", studentId: "st-1", studentName: "عبدالعزيز الحربي", status: "enrolled",
+      nextAction: "تهنئته على إتمام الدورة الثالثة", nextFollowUpAt: isoDT(3),
+      tasks: [], followUps: [], contacts: [
+        { id: "ct-1", at: isoDT(-6, 13), channel: "whatsapp", direction: "out", summary: "رحّب به وشرح خطة المسار", by: "أ. ريم القحطاني" },
+      ],
+      notes: [{ id: "n-1", at: isoDT(-6, 14), body: "متجاوب ومنظم — يفضل التواصل بعد السادسة مساء", by: "أ. ريم القحطاني" }],
+      history: [{ at: isoDT(-20, 10), from: "recommended", to: "enrolled", by: "أ. ريم القحطاني" }],
+      cv: { fileName: "abdulaziz-cv.pdf", sizeKb: 184, uploadedAt: isoDT(-18), views: [
+        { at: isoDT(-6, 13), by: "أ. ريم القحطاني" },
+      ] },
+      assignedTo: "أ. ريم القحطاني",
+    },
+    {
+      id: "case-2", studentId: "st-2", studentName: "منيرة القحطاني", status: "follow_up",
+      nextAction: "جلسة صوتية لسماع ظرفها وإعادة جدولة واجبها", nextFollowUpAt: isoDT(1, 17),
+      tasks: [
+        { id: "t-2-1", title: "إعادة جدولة واجب «تحليل القوائم» بعد موافقة المدرب", dueAt: isoDT(1), done: false },
+        { id: "t-2-2", title: "مراجعة نتيجة اختبار الدورة الأولى معها", dueAt: isoDT(-2), done: false },
+      ],
+      followUps: [
+        { id: "f-2-1", scheduledAt: isoDT(1, 17), channel: "phone", note: "اتفقت على اتصال بعد الدوام" },
+        { id: "f-2-0", scheduledAt: isoDT(-12, 12), channel: "whatsapp", doneAt: isoDT(-12, 12), outcome: "ردت: ضغط عمل مؤقت" },
+      ],
+      contacts: [
+        { id: "ct-2", at: isoDT(-12, 12), channel: "whatsapp", direction: "in", summary: "أجابت رسالة التفقد: ضغط عمل مؤقت", by: "أ. ريم القحطاني" },
+      ],
+      notes: [{ id: "n-2", at: isoDT(-11, 9), body: "لا تضغط عليها هذا الأسبوع — حساسية من مطالبات الدفع السابقة لدى جهة أخرى", by: "أ. ريم القحطاني" }],
+      history: [{ at: isoDT(-12, 12), from: "enrolled", to: "follow_up", by: "أ. ريم القحطاني", note: "إشارات مخاطرة نشطة" }],
+      assignedTo: "أ. ريم القحطاني",
+    },
+    {
+      id: "case-3", studentId: "st-3", studentName: "فيصل الدوسري", status: "needs_review",
+      nextAction: "مراجعة خطة تعويض الغياب قبل جلسة الخميس", nextFollowUpAt: isoDT(2, 11),
+      tasks: [{ id: "t-3-1", title: "التنسيق مع المدرب لجلسة تعويضية", dueAt: isoDT(0, 16), done: false }],
+      followUps: [], contacts: [], notes: [], history: [
+        { at: isoDT(-3, 18), from: "enrolled", to: "needs_review", by: "د. فيصل العتيبي", note: "غياب + رسوب متتاليان" },
+      ],
+      assignedTo: "د. فيصل العتيبي",
+    },
+    {
+      id: "case-4", studentId: "st-4", studentName: "ريم العتيبي", status: "follow_up",
+      nextAction: "التحقق من انتهاء اختباراتها الجامعية قبل إنهاء الإيقاف", nextFollowUpAt: isoDT(12),
+      tasks: [], followUps: [
+        { id: "f-4-1", scheduledAt: isoDT(12, 10), channel: "whatsapp", note: "موعد المراجعة المتفق عليه في مكالمة الإيقاف" },
+      ],
+      contacts: [
+        { id: "ct-4", at: isoDT(-16, 15), channel: "phone", direction: "out", summary: "مكالمة: اتفاق على إيقاف مؤقت ومراجعة بعد أسبوعين", by: "د. فيصل العتيبي" },
+      ],
+      notes: [], history: [{ at: isoDT(-15, 9), from: "enrolled", to: "follow_up", by: "د. فيصل العتيبي", note: "إيقاف معتمد" }],
+      assignedTo: "د. فيصل العتيبي",
+    },
+    {
+      id: "case-5", studentId: "st-5", studentName: "تركي الشمري", status: "contacted",
+      nextAction: "عرض تقسيط بديل قبل إيقاف الوصول", nextFollowUpAt: isoDT(0, 19),
+      tasks: [
+        { id: "t-5-1", title: "التأكد من رد المالية على طلب التقسيط", dueAt: isoDT(0, 14), done: false },
+      ],
+      followUps: [
+        { id: "f-5-1", scheduledAt: isoDT(0, 19), channel: "whatsapp" },
+      ],
+      contacts: [
+        { id: "ct-5", at: isoDT(-6, 20), channel: "whatsapp", direction: "out", summary: "أخبرته بتعثر الدفعة الثانية وطلبت وقتا مناسبا للحوار", by: "م. سلطان الدوسري" },
+      ],
+      notes: [{ id: "n-5", at: isoDT(-5, 10), body: "حساس تجاه المطالبات المباشرة — ابدأ بالحلول لا بالتنبيه", by: "م. سلطان الدوسري" }],
+      history: [{ at: isoDT(-6, 20), from: "new", to: "contacted", by: "م. سلطان الدوسري", note: "أول تواصل — نُقلت تلقائيا" }],
+      assignedTo: "م. سلطان الدوسري",
+    },
+    {
+      id: "case-6", studentId: "st-6", studentName: "جواهر السبيعي", status: "closed",
+      nextAction: "لا إجراء — أُغلقت بعد التخرج وطلب القصة", nextFollowUpAt: undefined,
+      tasks: [{ id: "t-6-1", title: "إرسال استبيان الخريجين", done: true, doneAt: isoDT(-1, 10) }],
+      followUps: [
+        { id: "f-6-1", scheduledAt: isoDT(-2, 13), channel: "whatsapp", doneAt: isoDT(-2, 13), outcome: "وافقت على مشاركة قصتها" },
+      ],
+      contacts: [], notes: [], history: [
+        { at: isoDT(-2, 14), from: "enrolled", to: "closed", by: "م. لينا الحربي", note: "تخرجت — صدرت الشهادة" },
+      ],
+      cv: { fileName: "jawaher-ux-portfolio.pdf", sizeKb: 2410, uploadedAt: isoDT(-30), views: [] },
+      assignedTo: "م. لينا الحربي",
+    },
+    /* حالات بلا مستشار — تظهر للإسناد كما في GET /api/admin/advisor-cases/unassigned */
+    {
+      id: "case-u1", studentName: "نورة العنزي", status: "new",
+      nextAction: undefined, nextFollowUpAt: undefined,
+      tasks: [], followUps: [], contacts: [], notes: [], history: [],
+      cv: { fileName: "noura-cv.pdf", sizeKb: 96, uploadedAt: isoDT(-1), views: [] },
+    },
+    {
+      id: "case-u2", studentName: "ماجد القرني", status: "new",
+      tasks: [], followUps: [], contacts: [], notes: [], history: [],
+    },
+  ];
+}
+
+export function loadCases(): AdvisorCase[] {
+  try {
+    const raw = localStorage.getItem(CASES_KEY);
+    if (raw) return JSON.parse(raw) as AdvisorCase[];
+  } catch { /* ignore */ }
+  const seeded = seedCases();
+  localStorage.setItem(CASES_KEY, JSON.stringify(seeded));
+  return seeded;
+}
+
+function saveCases(cases: AdvisorCase[]) {
+  localStorage.setItem(CASES_KEY, JSON.stringify(cases));
+}
+
+export function caseForStudent(studentId: string): AdvisorCase | undefined {
+  return loadCases().find((c) => c.studentId === studentId);
+}
+
+export function unassignedCases(): AdvisorCase[] {
+  return loadCases().filter((c) => !c.assignedTo && !["closed", "enrolled", "not_interested"].includes(c.status));
+}
+
+/** تغيير الحالة — ثماني حالات موثقة، كل انتقال محفوظ بمن ومتى ولماذا */
+export function setCaseStatus(caseId: string, to: CaseStatus, by: string, note?: string): AdvisorCase[] {
+  const cases = loadCases().map((c) => {
+    if (c.id !== caseId || c.status === to) return c;
+    return {
+      ...c, status: to,
+      history: [{ at: isoDT(0, new Date().getHours()), from: c.status, to, by, note }, ...c.history],
+    };
+  });
+  saveCases(cases);
+  return cases;
+}
+
+/** الإجراء التالي وموعد المتابعة القادم — POST /api/advisor/cases/:id/next-action */
+export function setCaseNextAction(caseId: string, nextAction: string, nextFollowUpAt?: string): AdvisorCase[] {
+  const cases = loadCases().map((c) => (c.id === caseId ? { ...c, nextAction, nextFollowUpAt } : c));
+  saveCases(cases);
+  return cases;
+}
+
+export function addCaseTask(caseId: string, title: string, dueAt?: string): AdvisorCase[] {
+  const cases = loadCases().map((c) =>
+    c.id === caseId ? { ...c, tasks: [...c.tasks, { id: cid(), title, dueAt, done: false }] } : c);
+  saveCases(cases);
+  return cases;
+}
+
+export function completeCaseTask(caseId: string, taskId: string): AdvisorCase[] {
+  const cases = loadCases().map((c) =>
+    c.id === caseId
+      ? { ...c, tasks: c.tasks.map((t) => (t.id === taskId ? { ...t, done: true, doneAt: isoDT(0, new Date().getHours()) } : t)) }
+      : c);
+  saveCases(cases);
+  return cases;
+}
+
+/** جدولة متابعة — تنعكس على موعد متابعة الحالة */
+export function addCaseFollowUp(caseId: string, scheduledAt: string, channel?: ContactChannel, note?: string): AdvisorCase[] {
+  const cases = loadCases().map((c) =>
+    c.id === caseId
+      ? { ...c, followUps: [{ id: cid(), scheduledAt, channel, note }, ...c.followUps], nextFollowUpAt: scheduledAt }
+      : c);
+  saveCases(cases);
+  return cases;
+}
+
+export function completeCaseFollowUp(caseId: string, followUpId: string, outcome: string, note?: string): AdvisorCase[] {
+  const cases = loadCases().map((c) =>
+    c.id === caseId
+      ? { ...c, followUps: c.followUps.map((f) => (f.id === followUpId ? { ...f, doneAt: isoDT(0, new Date().getHours()), outcome, note: note ?? f.note } : f)) }
+      : c);
+  saveCases(cases);
+  return cases;
+}
+
+/** تسجيل تواصل — أول تواصل ينقل الحالة من new إلى contacted تلقائيا كما في الخادم */
+export function addCaseContact(caseId: string, channel: ContactChannel, direction: "out" | "in", summary: string, by: string): AdvisorCase[] {
+  const cases = loadCases().map((c) => {
+    if (c.id !== caseId) return c;
+    const contact: CaseContact = { id: cid(), at: isoDT(0, new Date().getHours()), channel, direction, summary, by };
+    const autoContacted = c.status === "new";
+    return {
+      ...c,
+      contacts: [contact, ...c.contacts],
+      status: autoContacted ? "contacted" : c.status,
+      history: autoContacted
+        ? [{ at: contact.at, from: "new" as CaseStatus, to: "contacted" as CaseStatus, by, note: "أول تواصل — نُقلت تلقائيا" }, ...c.history]
+        : c.history,
+    };
+  });
+  saveCases(cases);
+  return cases;
+}
+
+/** ملاحظة داخلية — لا تظهر للعميل أبدا */
+export function addCaseNote(caseId: string, body: string, by: string): AdvisorCase[] {
+  const cases = loadCases().map((c) =>
+    c.id === caseId ? { ...c, notes: [{ id: cid(), at: isoDT(0, new Date().getHours()), body, by }, ...c.notes] } : c);
+  saveCases(cases);
+  return cases;
+}
+
+/** فتح رابط قراءة السيرة — كل مشاهدة مسجلة كما في GET /api/cv/:id/read-url */
+export function viewCaseCv(caseId: string, by: string): AdvisorCase[] {
+  const cases = loadCases().map((c) =>
+    c.id === caseId && c.cv
+      ? { ...c, cv: { ...c.cv, views: [{ at: isoDT(0, new Date().getHours()), by }, ...c.cv.views] } }
+      : c);
+  saveCases(cases);
+  return cases;
+}
+
+/** إسناد حالة — POST /api/admin/advisor-cases/:id/assign */
+export function assignCase(caseId: string, advisorName: string): AdvisorCase[] {
+  const cases = loadCases().map((c) => (c.id === caseId ? { ...c, assignedTo: advisorName } : c));
+  saveCases(cases);
+  return cases;
+}
+
+/* ── مساعدات العرض ── */
+export function isOverdue(iso?: string): boolean {
+  if (!iso) return false;
+  return new Date(iso) < new Date();
+}
+
+/* تنسيق موحد: القريب نسبي والبعيد تاريخ كامل — مصدره src/utils/format.ts */
+export { fmtWhen } from "@/utils/format";
+export { fmtWhen as fmtDT } from "@/utils/format";
+
+/* ── «جديد منذ آخر زيارة» لكل حالة — يخزن محليا وقت آخر فتح لملف الحالة ── */
+const SEEN_KEY = "wajeez_case_seen";
+
+function readSeenMap(): Record<string, string> {
+  try { return JSON.parse(localStorage.getItem(SEEN_KEY) ?? "{}") as Record<string, string>; } catch { return {}; }
+}
+/** وقت آخر زيارة قبل الحالية — null إن لم تُفتح الحالة من قبل */
+export function caseSeenAt(caseId: string): string | null {
+  return readSeenMap()[caseId] ?? null;
+}
+/** يُستدعى عند مغادرة ملف الحالة — ما بعد هذا الوقت يُوسم «جديد» في الزيارة القادمة */
+export function markCaseSeen(caseId: string) {
+  const map = readSeenMap();
+  map[caseId] = isoDT(0, new Date().getHours());
+  localStorage.setItem(SEEN_KEY, JSON.stringify(map));
+}
+export function isNewSince(at: string, seenAt: string | null): boolean {
+  return seenAt !== null && at > seenAt;
+}

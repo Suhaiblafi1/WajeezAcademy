@@ -29,7 +29,7 @@ export default function Reviews() {
               <div>
                 <p className="font-black">{r.studentName}</p>
                 <p className="mt-1 max-w-xl text-xs leading-6 text-white/55">{r.reason}</p>
-                <p className="mt-1.5 text-[11px] text-white/40">
+                <p className="mt-1.5 text-[11px] text-white/50">
                   المقترح آليا: «{pathwayById(r.suggestedPathId)?.name ?? "—"}» · ثقة {r.confidence}% · {r.at}
                 </p>
               </div>

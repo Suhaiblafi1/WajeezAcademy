@@ -1,7 +1,13 @@
-/* خريطة مسارات وجيز — محوّل يقرأ من core-catalog.v2.json (عشرون مسار إطلاق)
+/* خريطة مسارات وجيز — محوّل يقرأ من مصدر الكتالوج الجوهري (core-catalog-source)
+   الافتراضي: الحزمة المضمنة الموثقة (عشرون مسار إطلاق)؛ وعند توفر خادم API
+   تُستبدل المحتويات باللقطة المنشورة من قاعدة البيانات عبر المحوّل نفسه.
    مصدر الحقيقة الوحيد للمسارات؛ لا تُستخدم خريطة الـ45 القديمة ككتالوج حي. */
 
-import coreCatalog from './catalog/core-catalog.v2.json'
+import {
+  getCoreCatalogRaw,
+  onCoreCatalogInstalled,
+  type CoreCatalogRaw,
+} from './core-catalog-source'
 
 export interface Pathway {
   id: string
@@ -16,27 +22,6 @@ export interface Pathway {
   price: number
   badge?: string
 }
-
-interface RawCourse {
-  course_id: string
-  pathway_id: string
-  title_ar: string
-  total_hours: number
-  skill_names_ar: string[]
-}
-interface RawPathway {
-  id: string
-  title: string
-  audience: string
-  after: string
-  capstone: string
-  duration_weeks: number
-  weekly_hours: string
-  level: string
-  course_ids: string[]
-}
-
-const raw = coreCatalog as unknown as { launch_pathways: RawPathway[]; courses: RawCourse[] }
 
 function sectorOf(id: string): Pathway['sector'] {
   const fam = id.split('-')[1]
@@ -74,7 +59,7 @@ export function pathwayCategory(id: string): string {
   }
 }
 
-function skillsOf(courseIds: string[]): string[] {
+function skillsOf(raw: CoreCatalogRaw, courseIds: string[]): string[] {
   const seen: string[] = []
   for (const cid of courseIds) {
     const c = raw.courses.find((x) => x.course_id === cid)
@@ -85,18 +70,28 @@ function skillsOf(courseIds: string[]): string[] {
   return seen.slice(0, 5)
 }
 
-export const pathways: Pathway[] = raw.launch_pathways.map((p) => ({
-  id: p.id,
-  name: p.title,
-  sector: sectorOf(p.id),
-  level: levelOf(p.level),
-  durationWeeks: p.duration_weeks,
-  weeklyHours: `${p.weekly_hours} ساعات`,
-  coreSkills: skillsOf(p.course_ids),
-  transformation: p.after,
-  output: p.capstone,
-  price: 600,
-}))
+function buildPathways(raw: CoreCatalogRaw): Pathway[] {
+  return raw.launch_pathways.map((p) => ({
+    id: p.id,
+    name: p.title,
+    sector: sectorOf(p.id),
+    level: levelOf(p.level),
+    durationWeeks: p.duration_weeks,
+    weeklyHours: `${p.weekly_hours} ساعات`,
+    coreSkills: skillsOf(raw, p.course_ids),
+    transformation: p.after,
+    output: p.capstone,
+    price: 600,
+  }))
+}
+
+export const pathways: Pathway[] = buildPathways(getCoreCatalogRaw())
+
+/* عند تثبيت لقطة API المنشورة: إعادة ملء المصفوفة نفسها في مكانها —
+   المراجع المصدَّرة تبقى صالحة، والمشتركون يعيدون الرسم */
+onCoreCatalogInstalled(() => {
+  pathways.splice(0, pathways.length, ...buildPathways(getCoreCatalogRaw()))
+})
 
 export const pathwayById = (id: string) => pathways.find((p) => p.id === id)
 

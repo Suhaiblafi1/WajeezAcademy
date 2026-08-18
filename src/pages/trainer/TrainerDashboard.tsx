@@ -1,23 +1,26 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router";
-import { AlertTriangle, ChevronLeft, ClipboardCheck, Users, Video } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronLeft, Circle, ClipboardCheck, ListChecks, Users, Video } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import { trainerIdentity } from "./trainer-identity";
-import { loadCohorts, loadSubmissions, type CohortStatus } from "@/data/trainer";
+import { loadCohorts, loadSubmissions, loadOnboardingTasks, toggleOnboardingTask, type CohortStatus } from "@/data/trainer";
 
 const STATUS_LABEL: Record<CohortStatus, { label: string; cls: string }> = {
   open: { label: "مفتوحة للتسجيل", cls: "border-[#38A7B4]/40 text-[#6EC7D1]" },
   full: { label: "ممتلئة", cls: "border-[#FABC05]/40 text-[#FABC05]" },
   running: { label: "جارية", cls: "border-[#38A7B4]/60 text-[#6EC7D1]" },
   postponed: { label: "مؤجلة", cls: "border-white/20 text-white/50" },
-  done: { label: "منتهية", cls: "border-white/10 text-white/40" },
+  done: { label: "منتهية", cls: "border-white/10 text-white/50" },
 };
 
 export default function TrainerDashboard() {
   const me = trainerIdentity();
   const meName = me?.name ?? ""; // الإطار يعرض بوابة الهوية عند غيابها — لا نكسر الصفحة
+  const [tick, setTick] = useState(0);
   const cohorts = useMemo(() => loadCohorts(meName), [meName]);
   const subs = useMemo(() => loadSubmissions(meName), [meName]);
+  const tasks = useMemo(() => { void tick; return loadOnboardingTasks(meName); }, [meName, tick]); // tick عداد إبطال مقصود بعد كل كتابة
+  const tasksDone = tasks.filter((t) => t.done).length;
   const pending = subs.filter((s) => s.status === "pending").length;
   const totalStudents = cohorts.reduce((sum, c) => sum + c.students.length, 0);
   const atRisk = cohorts.reduce((sum, c) => sum + c.students.filter((s) => s.atRisk).length, 0);
@@ -48,6 +51,36 @@ export default function TrainerDashboard() {
         </div>
       </div>
 
+      {/* مهام التهيئة — من ملف المدرب عند الخادم: تأهيله وإسناداته ومهام التهيئة */}
+      {tasksDone < tasks.length && (
+        <section className="mt-6 rounded-3xl border border-[#38A7B4]/25 bg-[#38A7B4]/[0.05] p-6">
+          <div className="flex items-center justify-between">
+            <p className="flex items-center gap-2 text-sm font-black"><ListChecks className="h-4 w-4 text-[#6EC7D1]" /> مهام تهيئتك كمدرب</p>
+            <span className="text-xs font-bold text-[#6EC7D1]">{tasksDone} / {tasks.length}</span>
+          </div>
+          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
+            <div className="h-full rounded-full bg-[#38A7B4] transition-all" style={{ width: `${(tasksDone / tasks.length) * 100}%` }} />
+          </div>
+          <div className="mt-4 space-y-2">
+            {tasks.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => { toggleOnboardingTask(meName, t.id); setTick(tick + 1); }}
+                className="flex w-full cursor-pointer items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-right transition hover:border-[#38A7B4]/40"
+              >
+                {t.done
+                  ? <CheckCircle2 className="h-4.5 w-4.5 shrink-0 text-[#38A7B4]" />
+                  : <Circle className="h-4.5 w-4.5 shrink-0 text-white/25" />}
+                <span className={`text-sm ${t.done ? "text-white/50 line-through" : "font-bold text-white/85"}`}>{t.label}</span>
+              </button>
+            ))}
+          </div>
+          <p className="mt-3 text-[10px] leading-5 text-white/50">
+            إكمال مهام التهيئة شرط قبل ظهور ملفك للعامة وقبول إسنادات جديدة.
+          </p>
+        </section>
+      )}
+
       {/* الشعب المسندة */}
       <div className="mt-6 space-y-3">
         {cohorts.map((c) => {
@@ -69,15 +102,15 @@ export default function TrainerDashboard() {
                 <div className="flex items-center gap-4 text-center text-xs">
                   <div>
                     <p className="font-black text-white/85">{enrolled}/{c.capacity}</p>
-                    <p className="text-[10px] text-white/40">مقاعد</p>
+                    <p className="text-[10px] text-white/50">مقاعد</p>
                   </div>
                   <div>
                     <p className="font-black text-white/85">{avgAttendance}%</p>
-                    <p className="text-[10px] text-white/40">حضور</p>
+                    <p className="text-[10px] text-white/50">حضور</p>
                   </div>
                   <div>
                     <p className="font-black text-white/85">{submittedPct}%</p>
-                    <p className="text-[10px] text-white/40">تسليم</p>
+                    <p className="text-[10px] text-white/50">تسليم</p>
                   </div>
                 </div>
                 <span className={`rounded-full border px-3 py-1 text-[11px] font-bold ${meta.cls}`}>{meta.label}</span>

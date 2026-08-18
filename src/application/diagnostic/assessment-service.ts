@@ -1,14 +1,31 @@
 /* خدمة التقييم — طبقة التطبيق بين المحرك والواجهة.
    الواجهة لا تلمس domain مباشرة؛ كل شيء يمر من هنا. */
 
-import { questionById } from '../../domain/diagnostic/catalog'
+import { optionIdAt, questionById } from '../../domain/diagnostic/catalog'
 import { createEngine, type DiagnosticEngine } from '../../domain/diagnostic/engine'
+import { createEngineV2, type DiagnosticEngineV2 } from '../../domain/diagnostic/v2'
+import { createEngineV21, type DiagnosticEngineV21 } from '../../domain/diagnostic/v2_1'
 import { scorePathways } from '../../domain/diagnostic/pathway-score'
+import { loadMirrorAnswers, mirrorAnswersToFacts } from '../../domain/diagnostic/teaser-bridge'
 import type { BankQuestion, Recommendation } from '../../domain/diagnostic/types'
 import type { DiagQuestion } from '../../data/diagnostic'
 import { factsToLegacyAnswers, recommendationToDiagResult } from './view-model'
 import { clearSession, loadSession, saveResult, saveSession } from './session-store'
+import {
+  createSessionRepository,
+  type DiagnosticSessionRepository,
+  type StoredSession,
+} from './session-repository'
 import type { DiagResult } from '../../data/diagnostic'
+
+/** إصدار محرك التشخيص — V2.1 (بنية أسئلة B2C النهائية) هو الافتراضي؛
+    V2 وV1 يبقيان خلف العلم للتراجع والمقارنة: VITE_DIAGNOSTIC_ENGINE_VERSION=v1|v2 */
+export const DIAGNOSTIC_ENGINE_VERSION: 'v1' | 'v2' | 'v2_1' =
+  (import.meta.env?.VITE_DIAGNOSTIC_ENGINE_VERSION as string | undefined) === 'v1'
+    ? 'v1'
+    : (import.meta.env?.VITE_DIAGNOSTIC_ENGINE_VERSION as string | undefined) === 'v2'
+      ? 'v2'
+      : 'v2_1'
 
 function toDiagQuestion(q: BankQuestion): DiagQuestion {
   const type: DiagQuestion['type'] =
@@ -17,6 +34,8 @@ function toDiagQuestion(q: BankQuestion): DiagQuestion {
       : q.answer_type === 'short_text' || q.answer_type === 'single_choice_or_text'
         ? 'text'
         : 'single'
+  /* V2 قد يفلتر خيارات السؤال حسب شخصية المتعلم — active_option_ids تحفظ هوية الخيار الأصلية */
+  const activeIds = q.active_option_ids
   return {
     id: q.question_id,
     module: q.module_id,
@@ -24,7 +43,7 @@ function toDiagQuestion(q: BankQuestion): DiagQuestion {
     text: q.text_ar,
     source: undefined,
     type,
-    options: q.options_ar.length > 0 ? q.options_ar.map((o) => ({ label: o, value: o })) : undefined,
+    options: q.options_ar.length > 0 ? q.options_ar.map((o, i) => ({ label: o, value: o, optionId: activeIds?.[i] ?? optionIdAt(q, i) })) : undefined,
     maxSelect: q.answer_type === 'rank_top3' ? 3 : undefined,
     measures: [],
     weight: q.weight ?? 1,
@@ -36,13 +55,54 @@ export interface NextStep {
   question: DiagQuestion | null
   askedCount: number
   stopReasonAr: string | null
+  /** حالة جولة تدقيق الخطة إن كانت جارية — رقم السؤال، سقف الجولة، وسبب اختيار السؤال */
+  deepening?: { index: number; total: number; reasonAr: string | null } | null
 }
 
 export class AssessmentSession {
-  private engine: DiagnosticEngine
+  private engine: DiagnosticEngine | DiagnosticEngineV2 | DiagnosticEngineV21
+  private repo: DiagnosticSessionRepository
+  private sessionRecord: StoredSession | null = null
 
-  constructor(sessionId?: string) {
-    this.engine = createEngine(sessionId)
+  constructor(sessionId?: string, repo?: DiagnosticSessionRepository) {
+    this.engine =
+      DIAGNOSTIC_ENGINE_VERSION === 'v2_1'
+        ? createEngineV21(sessionId)
+        : DIAGNOSTIC_ENGINE_VERSION === 'v2'
+          ? createEngineV2(sessionId)
+          : createEngine(sessionId)
+    this.repo = repo ?? createSessionRepository()
+    /* بذر حقائق «مؤشر وجيز» إن وُجدت — المتعلم لا يُسأل مرتين عما أجاب عنه في الصفحة الرئيسية */
+    const mirror = typeof window !== 'undefined' ? loadMirrorAnswers(window.localStorage) : null
+    if (mirror) this.engine.seedFacts(mirrorAnswersToFacts(mirror), 'مؤشر وجيز التمهيدي')
+  }
+
+  /** إنشاء سجل الجلسة في المستودع كسوليا — أول عملية حفظ تُنشئه */
+  private ensureRepoSession(): Promise<StoredSession> {
+    if (this.sessionRecord) return Promise.resolve(this.sessionRecord)
+    return this.repo.createSession().then((s) => {
+      this.sessionRecord = s
+      return s
+    })
+  }
+
+  /** حفظ غير حاجز — فشل المستودع لا يوقف التشخيص، والتخزين المحلي التقليدي يبقى خط رجعة */
+  private persistQuietly(op: (s: StoredSession) => Promise<void>) {
+    this.ensureRepoSession()
+      .then((s) => op(s))
+      .catch(() => {
+        /* الحفظ التجريبي المحلي قد يفشل (خصوصية صارمة) — لا نعطّل رحلة المتعلم */
+      })
+  }
+
+  /** معرف جلسة المستودع إن أُنشئ — للتدقيق */
+  get repositorySessionId(): string | null {
+    return this.sessionRecord?.sessionId ?? null
+  }
+
+  /** موافقة تسويقية منفصلة — تُستدعى فقط بفعل صريح من المستخدم */
+  setMarketingConsent(consent: boolean) {
+    this.persistQuietly((s) => this.repo.setMarketingConsent(s.sessionId, consent))
   }
 
   /** يستأنف جلسة محفوظة محليا إن وجدت */
@@ -50,7 +110,7 @@ export class AssessmentSession {
     const saved = loadSession()
     if (!saved) return null
     const session = new AssessmentSession()
-    for (const a of saved.answers) session.engine.answer({ questionId: a.questionId, value: a.value })
+    for (const a of saved.answers) session.engine.answer({ questionId: a.questionId, value: a.value, optionIds: a.optionIds })
     return session
   }
 
@@ -58,30 +118,34 @@ export class AssessmentSession {
     return this.engine.getState().askedQuestionIds.length
   }
 
-  get answersSnapshot(): { questionId: string; value: string | string[] }[] {
-    return this.engine.getState().answers.map((a) => ({ questionId: a.questionId, value: a.value }))
+  get answersSnapshot(): { questionId: string; value: string | string[]; optionIds?: string[] }[] {
+    return this.engine.getState().answers.map((a) => ({ questionId: a.questionId, value: a.value, optionIds: a.optionIds }))
   }
 
   next(): NextStep {
     const r = this.engine.nextQuestion()
+    const ds = this.engine.deepeningStatus()
     return {
       question: r.question ? toDiagQuestion(r.question) : null,
       askedCount: this.askedCount,
       stopReasonAr: r.stop.shouldStop ? r.stop.reason_ar : null,
+      deepening: ds ? { index: ds.index, total: ds.total, reasonAr: ds.currentReason_ar } : null,
     }
   }
 
-  /** يسجل إجابة ويحفظ تلقائيا، ثم يعيد الخطوة التالية */
-  submit(questionId: string, value: string | string[]): NextStep {
-    this.engine.answer({ questionId, value })
+  /** يسجل إجابة ويحفظ تلقائيا، ثم يعيد الخطوة التالية — optionIds أساس القرار والنص للعرض */
+  submit(questionId: string, value: string | string[], optionIds?: string[]): NextStep {
+    this.engine.answer({ questionId, value, optionIds })
     saveSession({ answers: this.answersSnapshot, savedAt: new Date().toISOString() })
+    this.persistQuietly((s) => this.repo.saveAnswer(s.sessionId, { questionId, value, optionIds }))
     return this.next()
   }
 
   /** تعديل إجابة سابقة — يعيد بناء الحالة كاملة */
-  revise(questionId: string, value: string | string[]): NextStep {
-    this.engine.reviseAnswer({ questionId, value })
+  revise(questionId: string, value: string | string[], optionIds?: string[]): NextStep {
+    this.engine.reviseAnswer({ questionId, value, optionIds })
     saveSession({ answers: this.answersSnapshot, savedAt: new Date().toISOString() })
+    this.persistQuietly((s) => this.repo.reviseAnswer(s.sessionId, { questionId, value, optionIds }))
     return this.next()
   }
 
@@ -94,14 +158,47 @@ export class AssessmentSession {
       state.skillVector,
       state.facts as unknown as Record<string, { value: unknown }>,
       state.factsRaw,
+      state.interestVector,
     )
+    result.resultJson.session_id = state.sessionId
     const legacyAnswers = factsToLegacyAnswers(
       recommendation,
       state.facts as unknown as Record<string, { value: unknown }>,
       state.factsRaw,
     )
     saveResult(result.resultJson, legacyAnswers, result.top?.id ?? null)
+    this.persistQuietly((s) => this.repo.saveDecision(s.sessionId, result.resultJson))
     return { result, recommendation }
+  }
+
+  /** يفتح جولة تدقيق الخطة — يعيد null إن كانت مفتوحة سلفا أو لا أسئلة نافعة متبقية */
+  startDeepening(): { step: NextStep; reasonAr: string } | null {
+    const opened = this.engine.startDeepening()
+    if (!opened) return null
+    return { step: this.next(), reasonAr: opened.reason_ar }
+  }
+
+  /** يختم جولة التدقيق ويعيد توليد النتيجة مع مقارنة قبل/بعد موثقة */
+  finishDeepening(): { result: DiagResult; recommendation: Recommendation; comparison: unknown } {
+    const { recommendation, comparison } = this.engine.finishDeepening()
+    const state = this.engine.getState()
+    const result = recommendationToDiagResult(
+      recommendation,
+      state.skillVector,
+      state.facts as unknown as Record<string, { value: unknown }>,
+      state.factsRaw,
+      state.interestVector,
+      comparison,
+    )
+    result.resultJson.session_id = state.sessionId
+    const legacyAnswers = factsToLegacyAnswers(
+      recommendation,
+      state.facts as unknown as Record<string, { value: unknown }>,
+      state.factsRaw,
+    )
+    saveResult(result.resultJson, legacyAnswers, result.top?.id ?? null)
+    this.persistQuietly((s) => this.repo.saveDecision(s.sessionId, result.resultJson))
+    return { result, recommendation, comparison }
   }
 
   /** حالة الفهم الحية للواجهة — أبعاد مألوفة + ترتيب أولي للمسارات */
@@ -139,6 +236,7 @@ export class AssessmentSession {
   }
 
   abandon() {
+    this.persistQuietly((s) => this.repo.abandonSession(s.sessionId))
     clearSession()
   }
 }
@@ -152,3 +250,5 @@ export function diagQuestionById(id: string): DiagQuestion | null {
   const q = questionById.get(id)
   return q ? toDiagQuestion(q) : null
 }
+
+export type { DeepeningComparison } from '../../domain/diagnostic/types'

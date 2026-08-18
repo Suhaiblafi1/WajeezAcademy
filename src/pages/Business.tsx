@@ -61,37 +61,49 @@ export default function Business({ kind }: { kind: 'business' | 'government' }) 
         <p className="mt-4 text-lg leading-9 text-white/65">{c.intro}</p>
       </div>
 
-      <div className="mt-10 grid gap-4 md:grid-cols-2">
-        {c.points.map((p) => (
-          <div key={p} className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#38A7B4]" />
-            <p className="text-sm leading-7 text-white/75">{p}</p>
-          </div>
-        ))}
-      </div>
+      {/* التفاصيل والقصة داخل قسمين قابلين للفتح — الصفحة تبقى خفيفة والقرار واضحا */}
+      <div className="mt-10 space-y-3">
+        <details className="rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-5">
+          <summary className="flex cursor-pointer items-center justify-between gap-3 text-base font-black">
+            كيف نعمل مع جهتك؟
+            <span className="text-xs font-bold text-[#6EC7D1]">أربع نقاط</span>
+          </summary>
+          <ul className="mt-5 space-y-3.5 border-t border-white/5 pt-5">
+            {c.points.map((p) => (
+              <li key={p} className="flex items-start gap-3">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#38A7B4]" />
+                <p className="text-sm leading-7 text-white/75">{p}</p>
+              </li>
+            ))}
+          </ul>
+        </details>
 
-      {/* قصة مرتبطة من الواقع */}
-      <figure className="mt-12 overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03]">
-        <div className="border-b border-white/5 p-7 md:p-9">
-          <Quote className="h-7 w-7 text-[#38A7B4]/50" />
-          <blockquote className="mt-4 text-lg leading-9 text-white/90">
-            {story.before} {story.turn}
-          </blockquote>
-        </div>
-        <figcaption className="p-7 md:px-9">
-          <p className="text-sm leading-8 text-white/75">
-            <span className="font-bold text-[#FABC05]">النتيجة: </span>
-            {story.result}
-          </p>
-          <div className="mt-4 text-xs text-white/50">
-            {story.name} — {story.role} · المسار: {story.pathway} · المدرب: {story.trainer}
-          </div>
-          <Link to="/stories" className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-[#6EC7D1] underline-offset-4 hover:underline">
-            اقرأ القصة كاملة في صفحة القصص
-            <ArrowLeft className="h-3.5 w-3.5" />
-          </Link>
-        </figcaption>
-      </figure>
+        <details className="rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-5">
+          <summary className="flex cursor-pointer items-center justify-between gap-3 text-base font-black">
+            قصة من الواقع
+            <span className="text-xs font-bold text-[#6EC7D1]">اقرأها</span>
+          </summary>
+          <figure className="mt-5 border-t border-white/5 pt-5">
+            <Quote className="h-6 w-6 text-[#38A7B4]/50" />
+            <blockquote className="mt-3 text-base leading-8 text-white/85">
+              {story.before} {story.turn}
+            </blockquote>
+            <figcaption className="mt-4">
+              <p className="text-sm leading-8 text-white/75">
+                <span className="font-bold text-[#FABC05]">النتيجة: </span>
+                {story.result}
+              </p>
+              <div className="mt-3 text-xs text-white/50">
+                {story.name} — {story.role} · المسار: {story.pathway} · المدرب: {story.trainer}
+              </div>
+              <Link to="/stories" className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-[#6EC7D1] underline-offset-4 hover:underline">
+                اقرأ القصة كاملة في صفحة القصص
+                <ArrowLeft className="h-3.5 w-3.5" />
+              </Link>
+            </figcaption>
+          </figure>
+        </details>
+      </div>
 
       <div className="mt-12 rounded-3xl border border-[#38A7B4]/25 bg-[#38A7B4]/5 p-8 text-center md:p-10">
         <p className="text-xl font-black">أخبرنا عن فريقك — نرد بعرض مخصص خلال يوم عمل</p>

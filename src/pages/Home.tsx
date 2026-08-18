@@ -12,9 +12,11 @@ import { bestsellerCourses, courseById, courseCategories, pathwayTrainers, weeks
 import { faqs } from '@/data/siteContent'
 import { CONTACT } from '@/data/stories'
 import { track } from '@/services/analytics'
+import { usePublishedContent } from '@/services/public-content'
 import SeoHead from '@/components/SeoHead'
 import CourseModal from '@/components/CourseModal'
 import Modal from '@/components/Modal'
+import EcosystemNote from '@/components/EcosystemNote'
 import '../App.css'
 
 /* ───────────────────────── scroll reveal hook ───────────────────────── */
@@ -63,13 +65,6 @@ const mirrorQuestions = [
     options: ['لا أعرف من أين أبدأ', 'الخيارات كثيرة وتشتتني', 'أخاف أدفع ثمن شيء لا يناسبني', 'ظروفي لا تسمح الآن'],
   },
 ]
-/* جواب المانع الأخير يقود رسالة المؤشر — هنا تُشرح قيمة الخدمة بلغة حالته هو */
-const mirrorPitch: Record<string, string> = {
-  'لا أعرف من أين أبدأ': 'لهذا بالضبط وُجد التشخيص: يبدأ منك أنت — هدفك وقصتك وظروفك — لا من قائمة دورات نفرضها عليك.',
-  'الخيارات كثيرة وتشتتني': 'التشخيص يحسم التشتت: مسار واحد مفسَّر بدرجة ثقة، بدل أربعين قائمة تتنافس على انتباهك.',
-  'أخاف أدفع ثمن شيء لا يناسبني': 'خوفك في محله — ولهذا التشخيص مجاني والتوصية مفسَّرة: لن تدفع ريالا قبل أن تفهم لماذا هذا المسار لك تحديدا.',
-  'ظروفي لا تسمح الآن': 'المسارات عندنا تُبنى على ظروفك أنت: موعدك المستهدف ولغتك وصيغة تعلمك — لا على حياة شخص مثالي لا وجود له.',
-}
 
 /* ───────────────────────── small components ───────────────────────── */
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -216,17 +211,21 @@ function Hero() {
           <SectionLabel>منصة تفهمك قبل أن تعلّمك</SectionLabel>
         </div>
         <h1 className="reveal is-visible mx-auto mt-6 max-w-3xl">
-          <span className="block text-xl font-semibold leading-relaxed text-foreground/80 md:text-2xl">
+          <span className="block text-2xl font-semibold leading-relaxed text-foreground/80 md:text-3xl">
             المسار الصحيح لا يبدأ باختيار دورة.
           </span>
           <span className="mt-3 block bg-gradient-to-l from-[#6EC7D1] via-[#38A7B4] to-[#FABC05] bg-clip-text text-4xl font-bold leading-[1.25] text-transparent md:text-6xl md:leading-[1.2]">
             يبدأ بفهم هدفك.
           </span>
         </h1>
-        <p className="reveal is-visible mx-auto mt-6 max-w-xl text-base leading-8 text-muted-foreground md:text-lg">
-          تشخيص ذكي يسألك غالبا 8–14 سؤالا بتوقف تكيفي — يتوقف حين تكتمل الصورة،
-          يفهم هدفك وواقعك ووقتك، ثم يوصي بمسار واحد واضح — <span className="text-foreground">ويشرح لك لماذا.</span>
-        </p>
+        <div className="reveal is-visible mx-auto mt-6 flex max-w-xl flex-wrap items-center justify-center gap-2">
+          {['نقرأ هدفك', 'وقتك المتاح', 'فجواتك الأقرب'].map((chip) => (
+            <span key={chip} className="inline-flex items-center gap-1.5 rounded-full border border-teal/25 bg-[#38A7B4]/[0.07] px-3 py-1 text-xs text-teal-light/85">
+              <Sparkles className="h-3 w-3" />
+              {chip}
+            </span>
+          ))}
+        </div>
         <div className="reveal is-visible mt-9 flex flex-col items-center justify-center">
           <a
             href="#diagnostic"
@@ -245,14 +244,8 @@ function Hero() {
           </a>
         </div>
         <p className="reveal is-visible mt-5 text-xs text-muted-foreground">
-          دقيقة واحدة مع مؤشر وجيز · بلا تسجيل · ثم تشخيص كامل يفهمك بلا تقييم ذاتي ولا سؤال مكرر
+          تشخيص متكامل يفهمك — بلا تقييم ذاتي ولا سؤال مكرر
         </p>
-        {/* سطر إثبات رشيق يجسر الانتقال إلى المؤشر بدل الفراغ */}
-        <div className="reveal is-visible mt-7 flex flex-wrap items-center justify-center gap-2 text-[11px] font-semibold text-white/55">
-          {['نقرأ هدفك', 'وقتك المتاح', 'فجوتك الأقرب'].map((chip) => (
-            <span key={chip} className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1">{chip}</span>
-          ))}
-        </div>
       </div>
     </section>
   )
@@ -299,17 +292,12 @@ function DiagnosticTeaser() {
     setPicked(null)
     localStorage.removeItem('wajeez_mirror')
   }
-  const blocker = answers['m5']
-  const pitch = blocker ? mirrorPitch[blocker] : null
-  const answeredLabels = mirrorQuestions
-    .map((q) => (q.options.includes(answers[q.id]) ? answers[q.id] : null))
-    .filter(Boolean) as string[]
 
   /* صورة أولية صادقة مشتقة من إجابات المؤشر نفسها — بلا أرقام ولا ادعاءات */
   const mirrorInsights: Record<string, string> = {
-    'نعم — أعرفها بالضبط': 'تعرف فجوتك بالاسم — نصف الطريق قطعتَه، والباقي خطة تنفيذ لا بحث.',
-    'لدي تخمين لا أكثر': 'عندك تخمين عن فجوتك — التشخيص الكامل يحوّله إلى يقين موثّق.',
-    'بصراحة؟ لا أعرف': 'لم تُسمِّ فجوتك بعد — وهذا أول ما يكشفه لك التشخيص الكامل.',
+    'نعم — أعرفها بالضبط': 'تعرف فجواتك بالاسم — نصف الطريق قطعتَه، والباقي خطة تنفيذ لا بحث.',
+    'لدي تخمين لا أكثر': 'عندك تخمين عن فجواتك — التشخيص الكامل يحوّله إلى يقين موثّق.',
+    'بصراحة؟ لا أعرف': 'لم تُسمِّ فجواتك بعد — وهذا أول ما يكشفه لك التشخيص الكامل.',
     'أكملت معظمها': 'عادتك في الإكمال قوية — تحتاج فقط ما يستحق إكماله.',
     'بعضها فقط': 'تُكمل بعض ما تبدأ — الفرق عندنا مرافقة بشرية تحميك من التوقف الصامت.',
     'أبدأ بحماس وأتوقف — قصتي المعتادة': 'قصة التوقف المتكرر لا تُحل بإرادة أقوى — بل بمسار مرافَق يعرف متى تتعثر.',
@@ -323,18 +311,17 @@ function DiagnosticTeaser() {
     .filter(Boolean) as string[]).slice(0, 2)
 
   return (
-    <section id="diagnostic" className="relative pb-20 pt-4 md:pb-24 md:pt-6">
+    <section id="diagnostic" className="relative py-20 md:py-24">
       <div className="mx-auto max-w-4xl px-5">
         <div className="reveal text-center">
           <SectionLabel>مؤشر وجيز — دقيقة واحدة</SectionLabel>
           <h2 className="mt-5 text-3xl font-bold md:text-4xl">لا تشترِ دورة عشوائيا… اكتشف ما تحتاج تعلّمه أولا</h2>
           <p className="mx-auto mt-4 max-w-lg text-muted-foreground leading-8">
-            بدلا من شراء دورات عشوائية — أجب عن أسئلة تتكيف مع احتياجك،
-            وسنحدد لك المهارات التي تحتاجها والدورات المناسبة وترتيب دراستها للوصول إلى هدفك.
+            خمسة أسئلة صادقة تكشف لك: ما الذي تحتاج تعلّمه فعلا — وبأي ترتيب.
           </p>
         </div>
 
-        <div className="reveal mt-10 overflow-hidden rounded-3xl border border-white/10 bg-card shadow-[0_20px_80px_-30px_rgba(56,167,180,0.25)]">
+        <div className="reveal mt-10 overflow-hidden rounded-[2rem] border border-white/[0.08] bg-card/90 shadow-[0_24px_90px_-40px_rgba(56,167,180,0.35)] backdrop-blur-sm">
           {/* مؤشر التقدم */}
           <div
             className="flex gap-2 px-8 pt-7"
@@ -405,25 +392,13 @@ function DiagnosticTeaser() {
               </div>
             ) : (
               <div className="story-fade text-center">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#38A7B4]/15">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#38A7B4]/12 ring-1 ring-teal/25">
                   <BrainCircuit className="h-8 w-8 text-teal" />
                 </div>
-                <h3 className="mt-5 text-2xl font-bold leading-relaxed">رأيتَ ما نراه؟ أنت لست وحدك في هذا.</h3>
-                <div className="mx-auto mt-4 flex max-w-lg flex-wrap justify-center gap-2">
-                  {answeredLabels.map((l) => (
-                    <span key={l} className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-muted-foreground">
-                      {l}
-                    </span>
-                  ))}
-                </div>
-                {pitch && (
-                  <p className="mx-auto mt-5 max-w-md rounded-2xl border border-teal/30 bg-[#38A7B4]/10 p-5 leading-8 text-teal-light">
-                    {pitch}
-                  </p>
-                )}
+                <h3 className="mt-5 text-2xl font-bold leading-relaxed">سمعناك — صورتك بدأت تتضح.</h3>
                 {/* مكافأة فورية: صورة أولية مشتقة من إجاباته هو — تجعل الانتقال للتشخيص الكامل مكافأة لا التزاما */}
                 {insights.length > 0 && (
-                  <div className="mx-auto mt-4 max-w-md rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+                  <div className="mx-auto mt-5 max-w-md rounded-2xl border border-white/[0.08] bg-white/[0.04] p-5">
                     <p className="flex items-center justify-center gap-1.5 text-sm font-bold text-white/85">
                       <Sparkles className="h-4 w-4 text-teal-light" />
                       صورتك الأولية — من إجاباتك أنت
@@ -438,11 +413,7 @@ function DiagnosticTeaser() {
                     </ul>
                   </div>
                 )}
-                <p className="mx-auto mt-4 max-w-md leading-8 text-muted-foreground">
-                  المؤشر أدت وظيفتها. الآن يبدأ العمل الحقيقي: تشخيص كامل يفهم قصتك ويستنتج مستواك
-                  من مواقفك الحقيقية — ثم يرسم لك مسارا مفسّرا تستطيع تخصيصه.
-                </p>
-                <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
                   <Link to="/diagnostic" className="btn-teal px-8 py-4">
                     ابدأ التشخيص الكامل
                     <ArrowLeft className="h-4 w-4" />
@@ -456,7 +427,7 @@ function DiagnosticTeaser() {
           </div>
         </div>
         <p className="reveal mt-4 text-center text-xs text-muted-foreground">
-          مبني على مراجع علمية موثوقة: RIASEC للميول المهنية · O*NET وESCO للمهارات · DigComp للجاهزية الرقمية
+          نسترشد بأطر مهنية وتعليمية معروفة: RIASEC للميول المهنية · O*NET وESCO للمهارات · DigComp للجاهزية الرقمية
         </p>
       </div>
     </section>
@@ -504,6 +475,7 @@ function HowItWorks() {
   )
 }
 
+/* ───────────────── منهجية وجيز — ثقة علمية بلا استعراض شعارات ───────────────── */
 /* ───────────────── visual band ───────────────── */
 function ImageBand() {
   return (
@@ -518,8 +490,8 @@ function ImageBand() {
       <div className="absolute inset-0 flex items-end">
         <div className="mx-auto w-full max-w-6xl px-5 pb-10">
           <p className="reveal max-w-xl text-2xl font-bold leading-relaxed md:text-3xl">
-            غيرك يشاهد الدروس وينساها —
-            <span className="text-teal-light"> أنت ستنجز عملا يتحدث عنك.</span>
+            لا نقيس تعلمك بما شاهدت —
+            <span className="text-teal-light"> بل بما أنجزت وأثبتّ.</span>
           </p>
           <p className="reveal mt-3 max-w-md text-sm leading-7 text-white/70">
             مدرب يراجع عملك بيده، ومشروع تخرج يدخل ملفك المهني من أول يوم.
@@ -539,13 +511,13 @@ function Stories() {
       <div className="pointer-events-none absolute left-1/3 top-0 h-[400px] w-[400px] rounded-full bg-[#38A7B4]/8 blur-[130px]" />
       <div className="mx-auto max-w-6xl px-5">
         <div className="reveal text-center">
-          <SectionLabel>رحلات تعلم من واقع متعلمينا</SectionLabel>
-          <h2 className="mt-5 text-3xl font-bold md:text-4xl">مسارات مشى فيها غيرك قبلك</h2>
+          <SectionLabel>نماذج توضيحية لرحلات التعلم</SectionLabel>
+          <h2 className="mt-5 text-3xl font-bold md:text-4xl">هكذا تُبنى الرحلة عندنا</h2>
           <p className="mx-auto mt-4 max-w-xl leading-8 text-muted-foreground">
-            كل قصة بدأت بتشخيص، ومرّت بمسار ومدرب، وانتهت بمخرج يمكنك أن تراه — اختر قصة واقرأها كاملة.
+            كل رحلة تبدأ بتشخيص، وتمر بمسار ومدرب، وتنتهي بمخرج يمكنك أن تراه — اختر نموذجا واقرأه كاملا.
           </p>
           <p className="mx-auto mt-3 max-w-md text-xs leading-6 text-muted-foreground/80">
-            نعرض الأسماء الأولى والأحرف فقط حفاظا على خصوصية أصحاب القصص.
+            نماذج توضيحية مركبة من أنماط شائعة — ليست شهادات لأشخاص حقيقيين.
           </p>
         </div>
       </div>
@@ -611,7 +583,7 @@ function Stories() {
         >
           <Compass className="h-7 w-7 text-teal" />
           <p className="mt-3 text-sm font-bold leading-relaxed">وقصتك التالية؟</p>
-          <p className="mt-1.5 text-xs leading-6 text-muted-foreground">تبدأ بخمس دقائق من التشخيص</p>
+          <p className="mt-1.5 text-xs leading-6 text-muted-foreground">تبدأ بثلاث دقائق من التشخيص</p>
           <span className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-teal-light">
             ابدأ الآن
             <ArrowLeft className="h-3.5 w-3.5" />
@@ -642,9 +614,10 @@ function Stories() {
                 >
                   <X className="h-5 w-5" />
                 </button>
-                <div className="absolute bottom-4 right-6 flex items-center gap-3">
+                <div className="absolute bottom-4 right-6 flex flex-wrap items-center gap-3">
                   <span className="tag-teal rounded-full px-4 py-1.5 text-sm font-bold">{open.tag}</span>
                   <span className="text-sm text-white/80">{open.name} — {open.role}</span>
+                  <span className="rounded-full border border-[#FABC05]/50 bg-black/40 px-3 py-1 text-[11px] font-bold text-[#FABC05]">نموذج توضيحي</span>
                 </div>
               </div>
 
@@ -752,12 +725,12 @@ function Bestsellers() {
   const railPathways = shownPathways.slice(1)
 
   return (
-    <section id="bestsellers" className="py-20 md:py-24">
+    <section id="bestsellers" className="pb-20 pt-24 md:pb-24 md:pt-28">
       <div className="mx-auto max-w-6xl px-5">
         <div className="reveal flex flex-wrap items-end justify-between gap-4">
           <div>
             <SectionLabel>مختارات وجيز</SectionLabel>
-            <h2 className="mt-4 text-3xl font-bold md:text-4xl">مسارات ودورات منتقاة بعناية</h2>
+            <h2 className="mt-4 text-3xl font-bold md:text-4xl">مسارات ودورات من اختيارنا</h2>
             <p className="mt-3 max-w-lg leading-8 text-muted-foreground">
               لا تريد البدء بالتشخيص؟ اختر مجالك أولا — ثم مسارا كاملا، أو دورة واحدة إن كنت تعرف ما تريد بالضبط.
             </p>
@@ -1026,6 +999,50 @@ function Faq() {
               </div>
             </div>
           ))}
+
+          {/* سؤال المنهجية — مميز بإطار تركوازي وزر يقود لصفحة المنهجية */}
+          {(() => {
+            const i = faqs.length
+            return (
+              <div className="reveal overflow-hidden rounded-2xl border-2 border-teal/50 bg-gradient-to-l from-[#12343B]/50 to-card transition hover:border-teal/70" style={{ transitionDelay: `${i * 60}ms` }}>
+                <button
+                  onClick={() => setOpen(open === i ? null : i)}
+                  aria-expanded={open === i}
+                  aria-controls={`faq-answer-${i}`}
+                  id={`faq-question-${i}`}
+                  className="flex w-full items-center justify-between gap-4 px-6 py-5 text-right font-semibold"
+                >
+                  <span className="flex items-center gap-2.5">
+                    <Sparkles className="h-4.5 w-4.5 shrink-0 text-teal-light" aria-hidden="true" />
+                    كيف تبنون توصيتكم — هل هي تخمين؟
+                  </span>
+                  <ChevronDown aria-hidden="true" className={`h-5 w-5 shrink-0 text-teal-light transition-transform duration-300 ${open === i ? 'rotate-180' : ''}`} />
+                </button>
+                <div
+                  id={`faq-answer-${i}`}
+                  role="region"
+                  aria-labelledby={`faq-question-${i}`}
+                  className={`grid transition-all duration-300 ${open === i ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
+                >
+                  <div className="overflow-hidden">
+                    <div className="px-6 pb-6">
+                      <p className="leading-8 text-muted-foreground">
+                        توصية مبنية على منهجية، لا على التخمين: يحلل مؤشر وجيز ميولك وأهدافك وفجوات مهاراتك بأطر مهنية معروفة
+                        (RIASEC وO*NET وESCO وDigComp)، وكل استنتاج مرتبط بإجابة قدّمتها — بلا صناديق سوداء، وبدرجة ثقة معلنة.
+                      </p>
+                      <Link
+                        to="/methodology"
+                        className="mt-5 inline-flex items-center gap-2 rounded-full border border-teal/50 bg-teal/15 px-6 py-2.5 text-sm font-bold text-teal-light transition hover:bg-teal/25"
+                      >
+                        اكتشف كيف نبني توصيتك
+                        <ArrowLeft className="h-4 w-4" />
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
         </div>
       </div>
     </section>
@@ -1045,7 +1062,7 @@ function FinalCta() {
           <span className="text-teal-light">أكثر من دورة عشوائية.</span>
         </h2>
         <p className="reveal mx-auto mt-6 max-w-md leading-8 text-muted-foreground">
-          امنحنا خمس دقائق من الصدق، نمنحك خريطة طريق كاملة.
+          امنحنا ثلاث دقائق من الوضوح، نمنحك خريطة طريق كاملة.
         </p>
         <div className="reveal mt-9">
           <a
@@ -1109,6 +1126,7 @@ const footerCols: { title: string; icon: typeof GraduationCap; links: { label: s
     icon: User,
     links: [
       { label: 'من نحن', to: '/p/about' },
+      { label: 'منهجية وجيز', to: '/methodology' },
       { label: 'شركاؤنا', to: '#partners' },
       { label: 'انضم كمدرب', to: '/join-trainer' },
     ],
@@ -1284,6 +1302,7 @@ function AdvisorStrip() {
    ← مخرجات التعلم ← مسارات ودورات مميزة ← قصص حقيقية ← شريط مستشار ← أسئلة ← دعوة أخيرة + زر مستشار عائم */
 export default function Home() {
   useReveal()
+  usePublishedContent()
   const topRef = useRef<HTMLDivElement>(null)
   return (
     <div ref={topRef} dir="rtl" className="min-h-screen bg-background text-foreground">
@@ -1295,6 +1314,8 @@ export default function Home() {
       <Nav />
       <div>
         <Hero />
+        {/* تعريف المنظومة — مرة واحدة أسفل الـHero مباشرة، ثانوي بصريا ولا ينافسه */}
+        <EcosystemNote className="mt-1 pb-7 md:pb-9" />
         <DiagnosticTeaser />
         <HowItWorks />
         <Partners />

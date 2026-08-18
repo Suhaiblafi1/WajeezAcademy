@@ -1,0 +1,149 @@
+import { Link } from "react-router";
+import { Compass, Target, Route, GraduationCap, MessageSquareText, AlertTriangle, ExternalLink, ArrowLeft } from "lucide-react";
+import SiteShell from "@/components/SiteShell";
+import SeoHead from "@/components/SeoHead";
+import { usePublishedContent } from "@/services/public-content";
+import { publicReferences } from "@/data/methodology";
+import { pathways } from "@/data/pathways";
+
+/* «منهجية وجيز» — المراجع المهنية والتعليمية التي استرشدت بها الأكاديمية.
+   لا تُعرض هنا مراجع هندسية أو قانونية (تصميم الواجهة، حماية الملفات...) —
+   تلك التزامات داخلية، وهذه الصفحة رسالة مهنية للعميل. */
+
+const DISCLAIMER_METHODOLOGY_AR =
+  "المراجع المذكورة أطر مهنية وتعليمية استرشدت بها أكاديمية وجيز في تطوير منهجيتها. ولا يعني ذكرها وجود شراكة أو اعتماد أو تأييد رسمي من الجهات الناشرة.";
+
+function RefCard({ id }: { id: string }) {
+  const ref = publicReferences().find((r) => r.id === id);
+  if (!ref) return null;
+  return (
+    <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="text-sm font-black text-white/90">{ref.name_ar}</p>
+        <span className="text-[11px] text-white/40" dir="ltr">
+          {ref.name_en}
+        </span>
+      </div>
+      <p className="mt-1 text-xs text-white/45">الجهة الناشرة: {ref.organization}</p>
+      <div className="mt-3 space-y-2 text-xs leading-6">
+        <p className="text-white/65">
+          <span className="font-bold text-[#6EC7D1]">كيف تستخدمه وجيز: </span>
+          {ref.purpose_ar}
+        </p>
+        <p className="text-white/65">
+          <span className="font-bold text-[#FABC05]">فائدته لك: </span>
+          {ref.customer_benefit_ar}
+        </p>
+        <p className="text-white/50">
+          <span className="font-bold text-white/65">حدود استخدامه: </span>
+          {ref.limitations_ar}
+        </p>
+      </div>
+      <a
+        href={ref.source_url}
+        target="_blank"
+        rel="noreferrer"
+        className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-[#6EC7D1] transition hover:text-white"
+      >
+        المصدر الأصلي
+        <ExternalLink className="h-3 w-3" />
+      </a>
+    </div>
+  );
+}
+
+const SECTIONS: { icon: typeof Compass; q: string; a: string; refs: string[] }[] = [
+  {
+    icon: Compass,
+    q: "كيف نفهم ميولك؟",
+    a: "بأسئلة ميول مهنية مبنية على نموذج RIASEC ومقياس O*NET Interest Profiler — ستة أبعاد (قيادية، اجتماعية، تحليلية، إبداعية، تنظيمية، عملية) تُقرأ مع هدفك وواقعك، لا منفردة.",
+    refs: ["REF-RIASEC-ONET-IP"],
+  },
+  {
+    icon: Target,
+    q: "كيف نحدد فجوات مهاراتك؟",
+    a: "نصنّف المهارات بالرجوع إلى نموذج المحتوى O*NET والتصنيف الأوروبي ESCO، وللكفاءة الرقمية إطار DigComp 2.2 — فتُقاس فجواتك بمعايير مهنية موحدة لا بانطباع عابر.",
+    refs: ["REF-ONET-CM", "REF-ESCO", "REF-DIGCOMP"],
+  },
+  {
+    icon: Route,
+    q: "كيف نربط مهاراتك بالمسار؟",
+    a: "بهندسة التصميم المتمحور حول الدليل (ECD): كل استنتاج عنك مرتبط بإجابة قدّمتها، وكل توصية تحمل أثر قرار يمكنك مراجعته — لا صناديق سوداء.",
+    refs: ["REF-ECD"],
+  },
+  {
+    icon: GraduationCap,
+    q: "كيف نصمم أهداف الدورات ومخرجاتها؟",
+    a: "بالتصميم العكسي (Backward Design): نبدأ مما يجب أن تتمكن من إنجازه عمليا، ثم نبني التقييم والأنشطة والمحتوى. وتُصاغ المخرجات وفق تصنيف بلوم بأفعال أداء قابلة للملاحظة والقياس.",
+    refs: ["REF-BACKWARD-DESIGN", "REF-BLOOM"],
+  },
+  {
+    icon: MessageSquareText,
+    q: "ماذا تستطيع توصيتنا أن تخبرك؟",
+    a: "تخبرك بأنسب مسار أو خطة مركبة لحالتك، وبفجواتك المهارية ذات الأولوية، وبمستوى ثبات التوصية وسببها، وبما قد يغيّر النتيجة — كل ذلك مفسَّرا وقابلا للمراجعة والتخصيص.",
+    refs: [],
+  },
+  {
+    icon: AlertTriangle,
+    q: "ما حدود التشخيص؟",
+    a: "التشخيص تعليمي مهني: ليس تقييما نفسيا أو طبيا، ولا وعدا بوظيفة أو دخل. جودة التوصية بجودة إجاباتك، وعند التناقض أو انخفاض الثقة نحيلك لمستشار بشري قبل أي قرار.",
+    refs: [],
+  },
+];
+
+export default function Methodology() {
+  usePublishedContent();
+  const refs = publicReferences();
+  return (
+    <SiteShell>
+      <SeoHead
+        title="منهجية وجيز"
+        description="المراجع المهنية والتعليمية التي استرشدت بها أكاديمية وجيز في فهم ميولك وتحديد فجواتك وربطك بالمسار الأنسب."
+        path="/methodology"
+      />
+      <div className="mx-auto max-w-3xl">
+        <p className="text-xs font-bold tracking-wide text-[#6EC7D1]">منهجية وجيز</p>
+        <h1 className="mt-3 text-3xl font-black leading-snug md:text-4xl">
+          توصية مبنية على منهجية،
+          <span className="text-[#6EC7D1]"> لا على التخمين</span>
+        </h1>
+        <p className="mt-4 max-w-xl leading-loose text-white/60">
+          يحلل مؤشر وجيز ميولك وأهدافك وفجوات مهاراتك، ثم يربطها بما تحتاج إلى تعلمه ضمن مسار ذي مخرجات واضحة —
+          بالاستفادة من {refs.length} أطر مهنية وتعليمية معروفة، نعرضها هنا بشفافية كاملة: كيف نستخدمها، وما فائدتها لك، وما حدودها.
+        </p>
+
+        <div className="mt-10 space-y-8">
+          {SECTIONS.map((s) => (
+            <section key={s.q} className="rounded-3xl border border-white/10 bg-white/[0.02] p-6 md:p-8">
+              <h2 className="flex items-center gap-2.5 text-lg font-black">
+                <s.icon className="h-5 w-5 text-[#FABC05]" />
+                {s.q}
+              </h2>
+              <p className="mt-3 text-sm leading-loose text-white/65">{s.a}</p>
+              {s.refs.map((id) => (
+                <RefCard key={id} id={id} />
+              ))}
+            </section>
+          ))}
+        </div>
+
+        <p className="mt-10 rounded-2xl border border-[#FABC05]/30 bg-[#FABC05]/5 p-5 text-xs leading-loose text-white/60">
+          {DISCLAIMER_METHODOLOGY_AR} الأسماء تُذكر نصيا فقط دون شعارات، التزاما بتراخيص الجهات الناشرة.
+        </p>
+
+        <div className="mt-10 text-center">
+          <Link
+            to="/diagnostic"
+            className="inline-flex h-12 items-center gap-2 rounded-full bg-[#FABC05] px-8 font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90"
+          >
+            جرّب المنهجية على نفسك — ابدأ التشخيص
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+          <p className="mt-3 text-xs text-white/40">
+            {pathways.length} مسارا في الكتالوج، كلها مبنية بهذه المنهجية.
+          </p>
+        </div>
+      </div>
+    </SiteShell>
+  );
+}
