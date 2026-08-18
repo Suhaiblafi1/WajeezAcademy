@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import {
   ArrowRight,
   ArrowLeft,
@@ -30,6 +30,7 @@ import { track } from "@/services/analytics";
 import { ensurePublishedSnapshot } from "@/services/catalog-snapshot";
 import { ensurePublishedContent } from "@/services/public-content";
 import SeoHead from "@/components/SeoHead";
+import EcosystemNote from "@/components/EcosystemNote";
 import { Badge } from "@/components/ui/badge";
 import AuthGate from "@/components/AuthGate";
 import CourseJourney, { type CourseSuggestion } from "@/components/CourseJourney";
@@ -1892,6 +1893,9 @@ export default function Diagnostic() {
             القرار النهائي دائمًا بيدك، ومستشارونا موجودون عند الحاجة.
             هذا تشخيص تعليمي مهني: ليس تقييما نفسيا أو طبيا، ولا وعدا بوظيفة أو دخل.
           </p>
+
+          {/* تعريف المنظومة — سطر ثقة ختامي بعد إخلاء المسؤولية، ثانوي بصريا */}
+          <EcosystemNote className="mt-4 print:hidden" />
         </section>
         )}
         </ResultErrorBoundary>

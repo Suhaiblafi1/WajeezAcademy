@@ -36,6 +36,7 @@ import { useCurrency, usePriceFormatter, CURRENCIES, setCurrency, type CurrencyC
 import { track } from "@/services/analytics";
 import { usePublishedContent } from "@/services/public-content";
 import SeoHead from "@/components/SeoHead";
+import EcosystemNote from "@/components/EcosystemNote";
 
 /* اسم المستخدم — يدعم الصيغتين: JSON الجديدة والنص القديم، ويحترم انتهاء الجلسة */
 function readUserName(): string | null {
@@ -577,6 +578,9 @@ export default function PathwayPage() {
           </p>
         </main>
       )}
+
+      {/* تعريف المنظومة — سطر ثقة ختامي يظهر للزائر والمسجّل معا */}
+      <EcosystemNote className="mx-auto max-w-5xl px-5 pb-8" />
 
       {/* نافذة الدفع */}
       {checkout && (

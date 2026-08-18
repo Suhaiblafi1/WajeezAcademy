@@ -7,6 +7,7 @@ import { loadPortal, readUserName, savePortal, type PortalNotification } from "@
 import { pathways } from "@/data/pathways";
 import { pathwayCourses } from "@/data/courses";
 import PrototypeBanner from "@/components/PrototypeBanner";
+import EcosystemNote from "@/components/EcosystemNote";
 
 /** إطار بوابة الطالب: شريط علوي + تنقل + إشعارات + حارس الوصول (دفع سابق أو معاينة تجريبية) */
 export default function PortalLayout({ children, title }: { children: React.ReactNode; title: string }) {
@@ -61,6 +62,8 @@ export default function PortalLayout({ children, title }: { children: React.Reac
             </button>
           )}
         </div>
+        {/* تعريف المنظومة عند مدخل البوابة — سطر ثقة ثانوي لا ينافس الرسالة */}
+        <EcosystemNote className="mt-10" />
       </div>
     );
   }
@@ -162,6 +165,8 @@ export default function PortalLayout({ children, title }: { children: React.Reac
         </div>
         {children}
       </main>
+      {/* تعريف المنظومة — تذييل ثقة خفيف داخل البوابة (يظهر مرة واحدة أسفل المحتوى) */}
+      <EcosystemNote className="mx-auto max-w-6xl px-5 pb-24 sm:pb-6" />
       {/* شريط تنقل سفلي للجوال — أربعة أساسية + «المزيد» بقائمة منبثقة */}
       <nav aria-label="تنقل المنصة" className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-white/10 bg-[#0D0D0D]/95 pb-[max(env(safe-area-inset-bottom),0.25rem)] backdrop-blur-xl sm:hidden">
         {mainTabs.map((t) => (

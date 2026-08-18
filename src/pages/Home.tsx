@@ -16,6 +16,7 @@ import { usePublishedContent } from '@/services/public-content'
 import SeoHead from '@/components/SeoHead'
 import CourseModal from '@/components/CourseModal'
 import Modal from '@/components/Modal'
+import EcosystemNote from '@/components/EcosystemNote'
 import '../App.css'
 
 /* ───────────────────────── scroll reveal hook ───────────────────────── */
@@ -1313,6 +1314,8 @@ export default function Home() {
       <Nav />
       <div>
         <Hero />
+        {/* تعريف المنظومة — مرة واحدة أسفل الـHero مباشرة، ثانوي بصريا ولا ينافسه */}
+        <EcosystemNote className="mt-1 pb-7 md:pb-9" />
         <DiagnosticTeaser />
         <HowItWorks />
         <Partners />
