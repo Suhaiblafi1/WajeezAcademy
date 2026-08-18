@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router";
-import { GraduationCap, LayoutDashboard, Route as RouteIcon, Trophy, Award, Lock, Eye, LogOut, Bell, CheckCheck, UserCircle, ReceiptText, FileText, MoreHorizontal, X } from "lucide-react";
+import { GraduationCap, LayoutDashboard, Route as RouteIcon, Trophy, Award, Lock, Eye, LogOut, Bell, CheckCheck, UserCircle, ReceiptText, FileText, MoreHorizontal, X, LifeBuoy, CalendarDays } from "lucide-react";
 import { canAccessPortal, enablePreview, getEnrollment, isOwnerUnlocked, unlockOwner } from "@/services/access";
 import { signOut } from "@/services/auth";
+import { apiGet, apiPost } from "@/services/api";
 import { loadPortal, readUserName, savePortal, type PortalNotification } from "@/data/student";
 import { pathways } from "@/data/pathways";
 import { pathwayCourses } from "@/data/courses";
 import PrototypeBanner from "@/components/PrototypeBanner";
 import EcosystemNote from "@/components/EcosystemNote";
+
+interface RealNotif { id: string; title: string; body: string; status: string; sentAt: string | null; queuedAt: string }
 
 /** إطار بوابة الطالب: شريط علوي + تنقل + إشعارات + حارس الوصول (دفع سابق أو معاينة تجريبية) */
 export default function PortalLayout({ children, title }: { children: React.ReactNode; title: string }) {
@@ -24,18 +27,49 @@ export default function PortalLayout({ children, title }: { children: React.Reac
   const [notifs, setNotifs] = useState<PortalNotification[]>(() =>
     pathwayId ? loadPortal(pathwayId).notifications.slice(0, 6) : []
   );
+  /* إشعارات الخادم الحقيقية — عند توفر جلسة تحل محل المحلية */
+  const [realNotifs, setRealNotifs] = useState<RealNotif[] | null>(null);
 
   useEffect(() => {
     if (previewOwner) unlockOwner();
   }, [previewOwner]);
 
-  const unreadCount = notifs.filter((n) => !n.read).length;
+  useEffect(() => {
+    apiGet<RealNotif[]>("/api/learner/notifications").then((rows) => setRealNotifs(rows.slice(0, 6))).catch(() => setRealNotifs(null));
+  }, []);
+
+  /* عداد الخادم الرسمي للشارة — يُفضَّل على الحساب المحلي من القائمة المقتطعة */
+  const [serverUnread, setServerUnread] = useState<number | null>(null);
+  useEffect(() => {
+    apiGet<{ unread: number }>("/api/learner/notifications/unread-count")
+      .then((r) => setServerUnread(r.unread))
+      .catch(() => setServerUnread(null));
+  }, []);
+
+  const unreadCount = serverUnread ?? (realNotifs
+    ? realNotifs.filter((n) => n.status !== "read").length
+    : notifs.filter((n) => !n.read).length);
+
   const markAllRead = () => {
+    if (realNotifs) {
+      const unread = realNotifs.filter((n) => n.status !== "read");
+      setRealNotifs(realNotifs.map((n) => ({ ...n, status: "read" })));
+      setServerUnread(0);
+      void Promise.allSettled(unread.map((n) => apiPost(`/api/learner/notifications/${n.id}/read`)));
+      return;
+    }
     if (!pathwayId) return;
     const s = loadPortal(pathwayId);
     s.notifications = s.notifications.map((n) => ({ ...n, read: true }));
     savePortal(s);
     setNotifs(s.notifications.slice(0, 6));
+  };
+
+  const markOneRead = (id: string) => {
+    if (!realNotifs) return;
+    setRealNotifs(realNotifs.map((n) => (n.id === id ? { ...n, status: "read" } : n)));
+    setServerUnread((c) => (c != null && c > 0 ? c - 1 : c));
+    void apiPost(`/api/learner/notifications/${id}/read`).catch(() => undefined);
   };
 
   if (!allowed) {
@@ -76,10 +110,13 @@ export default function PortalLayout({ children, title }: { children: React.Reac
     { to: "/student/billing", label: "فواتيري", icon: ReceiptText },
     { to: "/student/cv", label: "سيرتي", icon: FileText },
     { to: "/student/account", label: "حسابي", icon: UserCircle },
+    { to: "/student/notifications", label: "إشعاراتي", icon: Bell },
+    { to: "/student/support", label: "الدعم", icon: LifeBuoy },
+    { to: "/student/cohorts", label: "الشعب المفتوحة", icon: CalendarDays },
   ];
   /* جوال: أربعة تبويبات أساسية ثابتة + «المزيد» يفتح الباقي — لا تمرير أفقي يُخفي الصفحات */
   const mainTabs = [tabs[0], tabs[1], tabs[2], tabs[6]];
-  const moreTabs = [tabs[3], tabs[4], tabs[5]];
+  const moreTabs = [tabs[3], tabs[4], tabs[5], tabs[7], tabs[8], tabs[9]];
   const moreActive = moreTabs.some((t) => pathname.startsWith(t.to));
 
   return (
@@ -132,10 +169,25 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                       </button>
                     </div>
                     <div className="max-h-72 space-y-1.5 overflow-y-auto">
-                      {notifs.length === 0 && <p className="px-2 py-6 text-center text-[11px] text-white/55">لا إشعارات بعد</p>}
-                      {notifs.map((n) => (
-                        <p key={n.id} className={`rounded-xl border px-3 py-2 text-[11px] leading-5 ${n.read ? "border-white/5 text-white/50" : "border-[#38A7B4]/25 bg-[#38A7B4]/5 text-white/75"}`}>{n.text}</p>
-                      ))}
+                      {realNotifs ? (
+                        <>
+                          {realNotifs.length === 0 && <p className="px-2 py-6 text-center text-[11px] text-white/55">لا إشعارات بعد</p>}
+                          {realNotifs.map((n) => (
+                            <button key={n.id} onClick={() => markOneRead(n.id)}
+                              className={`block w-full cursor-pointer rounded-xl border px-3 py-2 text-right text-[11px] leading-5 ${n.status === "read" ? "border-white/5 text-white/50" : "border-[#38A7B4]/25 bg-[#38A7B4]/5 text-white/75"}`}>
+                              <span className="block font-bold">{n.title}</span>
+                              {n.body}
+                            </button>
+                          ))}
+                        </>
+                      ) : (
+                        <>
+                          {notifs.length === 0 && <p className="px-2 py-6 text-center text-[11px] text-white/55">لا إشعارات بعد</p>}
+                          {notifs.map((n) => (
+                            <p key={n.id} className={`rounded-xl border px-3 py-2 text-[11px] leading-5 ${n.read ? "border-white/5 text-white/50" : "border-[#38A7B4]/25 bg-[#38A7B4]/5 text-white/75"}`}>{n.text}</p>
+                          ))}
+                        </>
+                      )}
                     </div>
                   </div>
                 </>

@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { track } from "@/services/analytics";
+import { apiPost } from "@/services/api";
 import { ensurePublishedSnapshot } from "@/services/catalog-snapshot";
 import { ensurePublishedContent } from "@/services/public-content";
 import SeoHead from "@/components/SeoHead";
@@ -274,7 +275,7 @@ function CompositePlan({ composite }: { composite: CompositeView }) {
   return (
     <div className="mt-10 overflow-hidden rounded-3xl border border-[#FABC05]/40 bg-gradient-to-b from-[#1A1A1A] to-[#0D0D0D]">
       <div className="border-b border-white/10 bg-[#FABC05]/10 px-6 py-3">
-        <span className="text-sm font-black text-[#FABC05]">{composite.label_ar}</span>
+        <span className="text-sm font-black text-[#FABC05]">التوصية الأولى · {composite.label_ar}</span>
         <span className="mr-2 text-xs text-white/50">
           خطة مبنية لحالتك من أكثر من مجال — وليست مسارا جاهزا من الكتالوج
         </span>
@@ -367,6 +368,7 @@ function CompositePlan({ composite }: { composite: CompositeView }) {
 
 /* ─────────── الصفحة ─────────── */
 export default function Diagnostic() {
+  const navigate = useNavigate();
   const [stage, setStage] = useState<Stage>("intro");
   const [answers, setAnswers] = useState<DiagAnswers>({});
   const [asked, setAsked] = useState<string[]>([]);
@@ -527,12 +529,42 @@ export default function Diagnostic() {
     setStage("result");
   };
 
+  /* اعتماد خطة مركبة: نحفظ دوراتها كنسخة مخصصة على مسارها المضيف، ونمرر هويتها لصفحة المسار —
+     لا تدفق دفع جديدا: صفحة المسار نفسها تعرض الدورات المختارة وتسعّرها كما تفعل مع أي تخصيص */
+  const adoptComposite = () => {
+    const c = (result?.resultJson.composite as CompositeView | null) ?? null;
+    if (!c || !topPathway) return;
+    const hostId = c.represented_pathway_ids.includes(topPathway.id)
+      ? topPathway.id
+      : (c.represented_pathway_ids[0] ?? topPathway.id);
+    const ids = [...c.courses].sort((a, b) => a.sequence - b.sequence).map((x) => x.courseId);
+    try {
+      const custom = JSON.stringify({ pathwayId: hostId, chosenIds: ids, giftId: null });
+      const compositeCtx = JSON.stringify({ template_id: c.template_id, name_ar: c.name_ar });
+      sessionStorage.setItem("wajeez_custom", custom);
+      sessionStorage.setItem("wajeez_diag_composite", compositeCtx);
+      sessionStorage.setItem("wajeez_diag_top", hostId);
+      localStorage.setItem("wajeez_diag_top", hostId);
+    } catch {
+      /* مساحة ممتلئة أو خصوصية صارمة — نتابع والصفحة تسقط على شكلها الافتراضي */
+    }
+    track("composite_adopted", { template: c.template_id, host: hostId });
+    navigate(`/pathways/${hostId}`);
+  };
+
+  /* إرفاق النتيجة بحساب المستخدم أفضل جهد — ينشئ الخادم ملف متعلم وحالة مستشار دون حجب النتيجة */
+  const attachToAccount = (res: DiagResult) => {
+    if (!localStorage.getItem("wajeez_user")) return; // ضيف — النتيجة تبقى على جهازه فقط
+    void apiPost("/api/learner/diagnostic-attach", { snapshot: res as unknown as Record<string, unknown> }).catch(() => undefined);
+  };
+
   const finish = () => {
     const session = sessionRef.current;
     if (!session) return;
     track("diagnostic_completed", { questions: session.askedCount });
     const { result: res } = session.finish();
     saveLastResult(res);
+    attachToAccount(res);
     setSavedProgress(null);
     setResult(res);
     setTopPathway(res.top);
@@ -568,6 +600,7 @@ export default function Diagnostic() {
     setDeepStep(null);
     setCanDeepen(false);
     saveLastResult(res);
+    attachToAccount(res);
     setResult(res);
     setTopPathway(res.top);
     track("deepening_completed", { changed: cmp.changed, answered: cmp.answeredCount });
@@ -1314,7 +1347,8 @@ export default function Diagnostic() {
             );
           })()}
 
-          {/* Top pathway card */}
+          {/* بطاقة التوصية الأولى للمسار القياسي — تظهر فقط عندما لا تفوز خطة مركبة */}
+          {((result.resultJson.composite as CompositeView | null) ?? null) === null && (
           <div className="mt-10 overflow-hidden rounded-3xl border border-[#38A7B4]/40 bg-gradient-to-b from-[#12343B] to-[#0D0D0D]">
             <div className="border-b border-white/10 bg-[#38A7B4]/10 px-6 py-3 text-sm font-bold text-[#6EC7D1]">
               التوصية الأولى
@@ -1395,11 +1429,30 @@ export default function Diagnostic() {
               </div>
             </div>
           </div>
-
-          {/* الخطة المركبة المخصصة — عندما تمتد حاجتك إلى مجالين */}
-          {((result.resultJson.composite as CompositeView | null) ?? null) && (
-            <CompositePlan composite={result.resultJson.composite as CompositeView} />
           )}
+
+          {/* عند فوز خطة مركبة: هي بطاقة التوصية الأولى — والمسار القياسي مرجع ثانوي صغير */}
+          {(() => {
+            const compositeView = (result.resultJson.composite as CompositeView | null) ?? null;
+            if (!compositeView) return null;
+            return (
+              <>
+                <CompositePlan composite={compositeView} />
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4">
+                  <p className="text-xs leading-relaxed text-white/60">
+                    <span className="font-bold text-white/80">أقوى مسار مفرد ضمن خطتك: «{topPathway.name}»</span>
+                    {" "}— استُمدت منه دورات أساسية في تركيبتك، وهو مرجعك إن أردت التركيز على مجال واحد فقط.
+                  </p>
+                  <Link
+                    to={`/pathways/${topPathway.id}`}
+                    className="shrink-0 text-xs font-bold text-[#6EC7D1] hover:underline"
+                  >
+                    استعرض المسار المفرد
+                  </Link>
+                </div>
+              </>
+            );
+          })()}
 
           {/* «ماذا ستحقق من خلال خطتك؟» — رحلة الدورات، والتخصيص داخلها للمسارات الأساسية */}
           {(() => {
@@ -1416,14 +1469,27 @@ export default function Diagnostic() {
           })()}
 
           {/* الاعتماد أسفل الخطة مباشرة — بعد أن يخصصها كما يشاء */}
-          {authed && (
+          {authed && (() => {
+            const compositeView = (result.resultJson.composite as CompositeView | null) ?? null;
+            return (
             <div className="mt-6 flex flex-col items-center gap-3">
-              <Button size="lg" className="h-14 rounded-full bg-[#FABC05] px-12 text-lg font-black text-[#0D0D0D] hover:bg-[#FABC05]/90" asChild>
-                <Link to={`/pathways/${topPathway.id}`}>
-                  اعتمد مساري «{topPathway.name}»
-                  <ArrowLeft className="mr-2 h-5 w-5" />
-                </Link>
-              </Button>
+              {compositeView ? (
+                <Button
+                  size="lg"
+                  onClick={adoptComposite}
+                  className="h-auto min-h-14 max-w-full whitespace-normal rounded-full bg-[#FABC05] px-8 py-3 text-center text-base font-black leading-snug text-[#0D0D0D] hover:bg-[#FABC05]/90 md:text-lg"
+                >
+                  اعتمد خطتي «{compositeView.name_ar}»
+                  <ArrowLeft className="mr-2 h-5 w-5 shrink-0" />
+                </Button>
+              ) : (
+                <Button size="lg" className="h-auto min-h-14 max-w-full whitespace-normal rounded-full bg-[#FABC05] px-8 py-3 text-center text-base font-black leading-snug text-[#0D0D0D] hover:bg-[#FABC05]/90 md:text-lg" asChild>
+                  <Link to={`/pathways/${topPathway.id}`}>
+                    اعتمد مساري «{topPathway.name}»
+                    <ArrowLeft className="mr-2 h-5 w-5 shrink-0" />
+                  </Link>
+                </Button>
+              )}
               <button
                 onClick={restart}
                 className="flex items-center gap-1.5 text-xs font-semibold text-white/45 transition hover:text-white"
@@ -1432,13 +1498,14 @@ export default function Diagnostic() {
                 لا يشبهني؟ أعد التشخيص من جديد
               </button>
             </div>
-          )}
+            );
+          })()}
 
           {/* Why this recommendation — أكورديون مغلق افتراضيا ليبقى المسح البصري خفيفا */}
           <details className="mt-8 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
             <summary className="flex cursor-pointer items-center gap-2 text-lg font-black">
               <Sparkles className="h-5 w-5 text-[#FABC05]" />
-              لماذا هذا المسار؟
+              {((result.resultJson.composite as CompositeView | null) ?? null) ? "لماذا هذه الخطة؟" : "لماذا هذا المسار؟"}
             </summary>
             <ul className="mt-4 space-y-3">
               {result.reasons.slice(0, 3).map((r) => (

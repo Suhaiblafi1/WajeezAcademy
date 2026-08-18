@@ -28,6 +28,7 @@ export type AnalyticsEvent =
   | 'contact_submitted'
   | 'deepening_started'
   | 'deepening_completed'
+  | 'composite_adopted'
 
 /** سمات وصفية غير شخصية فقط: أرقام أسئلة، مجالات، أنواع شراء */
 type Meta = Record<string, string | number | boolean>

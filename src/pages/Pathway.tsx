@@ -194,6 +194,15 @@ export default function PathwayPage() {
     } catch { return null; }
   }, [pathway?.id]);
 
+  /* سياق الخطة المركبة — حاضر فقط عندما اعتمد المستخدم خطة مركبة من نتيجته، ومقترن بتخصيص مطابق لهذا المسار */
+  const compositeCtx = useMemo(() => {
+    if (!custom) return null;
+    try {
+      const c = JSON.parse(sessionStorage.getItem("wajeez_diag_composite") ?? "null");
+      return c && typeof c.name_ar === "string" ? c as { template_id: string; name_ar: string } : null;
+    } catch { return null; }
+  }, [custom]);
+
   const courseIds = custom?.chosenIds ?? (pathway ? pathwayCourses[pathway.id] ?? [] : []);
   const pathwayCoursesList = courseIds.map((cid) => courseById(cid)!).filter(Boolean);
   const separateCost = pathwayCoursesList.reduce((s, c) => s + coursePriceOf(c), 0);
@@ -290,7 +299,8 @@ export default function PathwayPage() {
             <div className="flex flex-wrap items-center gap-2">
               <Badge className="bg-[#FABC05] font-black text-[#0D0D0D]">{pathway.badge ?? "مسار مرشح لك"}</Badge>
               <Badge variant="outline" className="border-white/20 text-white/70">{pathway.level}</Badge>
-              {custom && <Badge className="border border-[#6EC7D1]/50 bg-[#38A7B4]/15 text-[#6EC7D1]">نسختك المخصصة</Badge>}
+              {custom && !compositeCtx && <Badge className="border border-[#6EC7D1]/50 bg-[#38A7B4]/15 text-[#6EC7D1]">نسختك المخصصة</Badge>}
+              {compositeCtx && <Badge className="border border-[#FABC05]/60 bg-[#FABC05]/15 text-[#FABC05]">خطة مركبة مخصصة</Badge>}
             </div>
             <h1 className="mt-4 text-3xl font-black leading-snug md:text-4xl">{pathway.name}</h1>
             <p className="mt-4 max-w-2xl leading-loose text-white/65">{pathway.transformation}</p>
@@ -313,6 +323,16 @@ export default function PathwayPage() {
               </span>
             </p>
           </div>
+
+          {/* شارة الخطة المركبة — تسبق رحلة الدورات لتفسير لماذا تختلف القائمة عن كتالوج المسار */}
+          {compositeCtx && (
+            <div className="story-fade mt-6 rounded-2xl border border-[#FABC05]/40 bg-[#FABC05]/[0.06] px-5 py-4">
+              <p className="text-sm font-black text-[#FABC05]">خطتك المركبة: «{compositeCtx.name_ar}»</p>
+              <p className="mt-1 text-xs leading-relaxed text-white/60">
+                الدورات أدناه هي تركيبتك كما ركّبها تشخيصك من أكثر من مجال — تُدار وتُتابع عبر مسار «{pathway.name}» المضيف.
+              </p>
+            </div>
+          )}
 
           {/* «ماذا ستحقق من خلال خطتك؟» — رحلة الدورات بأكورديون، بلا قائمة مكررة فوقها */}
           <CourseJourney
