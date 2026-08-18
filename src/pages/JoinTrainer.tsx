@@ -152,6 +152,9 @@ export default function JoinTrainer() {
   const [lookup, setLookup] = useState({ reference: "", email: "" });
   const [lookupResult, setLookupResult] = useState<string | null>(null);
   const [lookupError, setLookupError] = useState("");
+  const [resent, setResent] = useState(false);
+  const [withdrawForm, setWithdrawForm] = useState({ candidateToken: "", reason: "" });
+  const [withdrawMsg, setWithdrawMsg] = useState("");
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm({ ...form, [k]: e.target.value });
@@ -209,6 +212,33 @@ export default function JoinTrainer() {
     }
   };
 
+  const resendVerify = async () => {
+    if (resent) return;
+    try {
+      const res = await apiPost<{ ok: boolean; devVerificationToken?: string }>(
+        "/api/v1/trainer-applications/resend-verification", { email: form.email.trim().toLowerCase() }
+      );
+      if (res.devVerificationToken) setVerifyTokenInput(res.devVerificationToken);
+      setResent(true);
+    } catch {
+      setVerifyError("تعذرت إعادة الإرسال — حاول بعد قليل");
+    }
+  };
+
+  const withdrawApplication = async () => {
+    setWithdrawMsg("");
+    try {
+      await apiPost(`/api/v1/trainer-applications/${encodeURIComponent(lookup.reference.trim())}/withdraw`, {
+        candidateToken: withdrawForm.candidateToken.trim(),
+        reason: withdrawForm.reason.trim() || undefined,
+      });
+      setWithdrawMsg("سُحب طلبك — شكرا لاهتمامك، وتبقى أهلا بك متى ما عدت");
+      setLookupResult(null);
+    } catch (err) {
+      setWithdrawMsg(err instanceof ApiError ? err.message : "تعذر السحب — تحقق من رمز المرشح");
+    }
+  };
+
   const checkStatus = async () => {
     setLookupError(""); setLookupResult(null);
     try {
@@ -260,6 +290,12 @@ export default function JoinTrainer() {
                 </button>
               </div>
               {verifyError && <p className="mt-2 text-xs text-red-300" role="alert">{verifyError}</p>}
+              <button
+                type="button" onClick={resendVerify} disabled={resent}
+                className="mt-3 cursor-pointer text-xs font-bold text-[#6EC7D1] underline decoration-dotted underline-offset-4 transition hover:text-[#38A7B4] disabled:cursor-default disabled:text-white/40 disabled:no-underline"
+              >
+                {resent ? "أُعيد الإرسال — راجع بريدك مجددا" : "لم يصلك الرمز؟ أعد الإرسال"}
+              </button>
             </div>
           ) : (
             <p className="mt-4 text-sm leading-8 text-white/60">
@@ -513,6 +549,34 @@ export default function JoinTrainer() {
           </button>
           {lookupResult && <p className="mt-3 rounded-xl border border-[#38A7B4]/30 bg-[#38A7B4]/5 p-3 text-xs font-bold text-[#6EC7D1]">{lookupResult}</p>}
           {lookupError && <p className="mt-3 text-xs text-red-300" role="alert">{lookupError}</p>}
+
+          {/* سحب الطلب — قرار نهائي من المرشح نفسه برمز الترشيح الذي وصله بريديا */}
+          <div className="mt-5 border-t border-white/5 pt-5">
+            <p className="text-xs font-bold text-white/55">غيّرت رأيك؟ يمكنك سحب طلبك نهائيا من هنا.</p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <input
+                dir="ltr" placeholder="رمز المرشح (candidate token)" aria-label="رمز المرشح"
+                value={withdrawForm.candidateToken}
+                onChange={(e) => setWithdrawForm({ ...withdrawForm, candidateToken: e.target.value })}
+                className={`${inputCls} text-left font-mono`}
+              />
+              <input
+                placeholder="سبب الانسحاب (اختياري)" aria-label="سبب الانسحاب"
+                value={withdrawForm.reason}
+                onChange={(e) => setWithdrawForm({ ...withdrawForm, reason: e.target.value })}
+                className={inputCls}
+              />
+            </div>
+            <button
+              onClick={withdrawApplication}
+              disabled={!lookup.reference.trim() || !withdrawForm.candidateToken.trim()}
+              className="mt-3 cursor-pointer rounded-full border border-red-400/40 px-5 py-2 text-xs font-bold text-red-300 transition hover:bg-red-400/10 disabled:opacity-40"
+            >
+              اسحب طلبي نهائيا
+            </button>
+            {withdrawMsg && <p className="mt-3 rounded-xl border border-white/10 bg-white/[0.04] p-3 text-xs font-bold text-white/75">{withdrawMsg}</p>}
+            <p className="mt-2 text-[11px] text-white/35">السحب نهائي لهذه النسخة من الطلب — يمكنك التقديم من جديد متى شئت.</p>
+          </div>
         </details>
       </div>
     </SiteShell>

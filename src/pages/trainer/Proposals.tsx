@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { GitPullRequest, Loader2, Plus, ServerOff, Undo2 } from "lucide-react";
+import { BookOpen, GitPullRequest, Loader2, Plus, ServerOff, Undo2, X } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 
@@ -26,6 +26,27 @@ interface ChangeRequest {
 
 interface Qualification { courseId: string; title: string; currentVersion: number }
 
+interface Blueprint {
+  id: string;
+  versions: {
+    titleAr: string; totalHours: number; weeklyHours: number | null; levelAr: string | null;
+    descriptionAr: string | null; version: number;
+    objectives: { sequence: number; textAr: string }[];
+    outcomes: { sequence: number; textAr: string }[];
+    project: { descriptionAr: string } | null;
+    assessments: { kind: string; specAr: string | null }[];
+  }[];
+  modules: {
+    id: string;
+    versions: { sequence: number; titleAr: string; hours: number; outcomeAr: string | null }[];
+  }[];
+  skillLinks: { skillId: string; targetLevel: number; weight: number }[];
+}
+
+const ASSESSMENT_KIND_LABELS: Record<string, string> = {
+  summative: "ختامي", formative: "تكويني", project_review: "مراجعة مشروع",
+};
+
 /** اقتراحات تعديل الدورات — المدرب يقترح فقط على دورة مؤهل لها، ولا يُطبَّق شيء قبل اعتماد الإدارة */
 export default function TrainerProposals() {
   const [mine, setMine] = useState<ChangeRequest[]>([]);
@@ -36,6 +57,31 @@ export default function TrainerProposals() {
   const [form, setForm] = useState({ courseId: "", reason: "", changeType: "module_title_edit", targetKey: "", newValue: "" });
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState("");
+  const [bp, setBp] = useState<Blueprint | null>(null);
+  const [bpErr, setBpErr] = useState("");
+  const [bpBusy, setBpBusy] = useState("");
+
+  const viewBlueprint = async (courseId: string) => {
+    if (bpBusy) return;
+    setBpBusy(courseId);
+    setBpErr("");
+    try {
+      const res = await apiGet<Blueprint | { error: { code: string; message_ar: string } }>(
+        `/api/trainer/courses/${courseId}/blueprint`
+      );
+      if ("error" in res && res.error) {
+        setBp(null);
+        setBpErr(res.error.message_ar ?? "لا يمكنك عرض هذا المخطط");
+        return;
+      }
+      setBp(res as Blueprint);
+    } catch (err) {
+      setBp(null);
+      setBpErr(err instanceof ApiError ? err.message : "تعذر تحميل المخطط");
+    } finally {
+      setBpBusy("");
+    }
+  };
 
   const load = useCallback(async () => {
     setLoading(true); setOffline(null);
@@ -160,6 +206,117 @@ export default function TrainerProposals() {
             {busy ? "جاري الإرسال…" : "أرسل للمراجعة"}
           </button>
         </form>
+      )}
+
+      {quals.length > 0 && (
+        <section className="mb-6 rounded-3xl border border-white/10 bg-white/[0.02] p-5">
+          <h2 className="mb-3 text-sm font-black text-white/80">مخططات دوراتك المؤهلة — اطلع على البنية قبل أن تقترح</h2>
+          <div className="flex flex-wrap gap-2">
+            {quals.map((q) => (
+              <button key={q.courseId} onClick={() => void viewBlueprint(q.courseId)} disabled={bpBusy === q.courseId}
+                className="flex cursor-pointer items-center gap-1.5 rounded-full border border-[#38A7B4]/40 px-4 py-2 text-xs font-bold text-[#6EC7D1] transition hover:bg-[#38A7B4]/10 disabled:opacity-50">
+                {bpBusy === q.courseId ? <Loader2 className="h-3 w-3 animate-spin" /> : <BookOpen className="h-3 w-3" />}
+                {q.title} — المخطط
+              </button>
+            ))}
+          </div>
+          {bpErr && <p role="alert" className="mt-3 rounded-xl border border-red-400/30 bg-red-400/10 p-3 text-xs font-semibold text-red-300">{bpErr}</p>}
+        </section>
+      )}
+
+      {bp && bp.versions[0] && (
+        <section className="mb-6 rounded-3xl border border-[#38A7B4]/25 bg-[#38A7B4]/[0.04] p-6">
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-black text-white">{bp.versions[0].titleAr}</h2>
+              <p className="mt-1 text-xs text-white/55">
+                <span dir="ltr">{bp.id}</span> · {bp.versions[0].totalHours} ساعة
+                {bp.versions[0].weeklyHours ? ` (${bp.versions[0].weeklyHours} أسبوعيا)` : ""}
+                {bp.versions[0].levelAr ? ` · المستوى: ${bp.versions[0].levelAr}` : ""} · إصدار {bp.versions[0].version}
+              </p>
+            </div>
+            <button onClick={() => setBp(null)} aria-label="إغلاق المخطط"
+              className="cursor-pointer rounded-full border border-white/15 p-2 text-white/50 transition hover:text-white">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          {bp.versions[0].descriptionAr && <p className="mb-4 text-xs leading-6 text-white/65">{bp.versions[0].descriptionAr}</p>}
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            {bp.versions[0].objectives.length > 0 && (
+              <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                <h3 className="mb-2 text-xs font-black text-[#6EC7D1]">الأهداف التعليمية</h3>
+                <ol className="list-decimal space-y-1 pr-4 text-xs leading-6 text-white/70">
+                  {[...bp.versions[0].objectives].sort((a, b) => a.sequence - b.sequence).map((o, i) => <li key={i}>{o.textAr}</li>)}
+                </ol>
+              </div>
+            )}
+            {bp.versions[0].outcomes.length > 0 && (
+              <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                <h3 className="mb-2 text-xs font-black text-[#6EC7D1]">المخرجات</h3>
+                <ol className="list-decimal space-y-1 pr-4 text-xs leading-6 text-white/70">
+                  {[...bp.versions[0].outcomes].sort((a, b) => a.sequence - b.sequence).map((o, i) => <li key={i}>{o.textAr}</li>)}
+                </ol>
+              </div>
+            )}
+          </div>
+
+          {bp.modules.length > 0 && (
+            <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-4">
+              <h3 className="mb-2 text-xs font-black text-[#6EC7D1]">المحاور</h3>
+              <div className="space-y-2">
+                {[...bp.modules]
+                  .sort((a, b) => (a.versions[0]?.sequence ?? 0) - (b.versions[0]?.sequence ?? 0))
+                  .map((m) => m.versions[0] && (
+                    <div key={m.id} className="flex items-start justify-between gap-3 rounded-xl bg-white/[0.03] px-3 py-2">
+                      <div>
+                        <p className="text-xs font-bold text-white/85">{m.versions[0].sequence}. {m.versions[0].titleAr}</p>
+                        {m.versions[0].outcomeAr && <p className="mt-0.5 text-[11px] text-white/50">{m.versions[0].outcomeAr}</p>}
+                      </div>
+                      <span className="shrink-0 text-[11px] text-white/45">{m.versions[0].hours} س · <span dir="ltr">{m.id}</span></span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {bp.versions[0].project && (
+            <div className="mt-4 rounded-2xl border border-[#FABC05]/25 bg-[#FABC05]/5 p-4">
+              <h3 className="mb-1 text-xs font-black text-[#FABC05]">المشروع التطبيقي</h3>
+              <p className="text-xs leading-6 text-white/70">{bp.versions[0].project.descriptionAr}</p>
+            </div>
+          )}
+
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+            {bp.versions[0].assessments.length > 0 && (
+              <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                <h3 className="mb-2 text-xs font-black text-[#6EC7D1]">التقييمات</h3>
+                <ul className="space-y-1.5 text-xs leading-6 text-white/70">
+                  {bp.versions[0].assessments.map((a, i) => (
+                    <li key={i} className="flex gap-2">
+                      <span className="shrink-0 rounded-full border border-white/15 px-2 py-0.5 text-[10px] text-white/55">
+                        {ASSESSMENT_KIND_LABELS[a.kind] ?? a.kind}
+                      </span>
+                      <span>{a.specAr ?? "—"}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {bp.skillLinks.length > 0 && (
+              <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                <h3 className="mb-2 text-xs font-black text-[#6EC7D1]">المهارات المستهدفة</h3>
+                <div className="flex flex-wrap gap-1.5">
+                  {bp.skillLinks.map((s) => (
+                    <span key={s.skillId} className="rounded-full border border-white/15 bg-white/[0.04] px-2.5 py-1 text-[10px] text-white/70">
+                      <span dir="ltr">{s.skillId}</span> · مستوى {s.targetLevel}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
       )}
 
       {loading ? (

@@ -1,6 +1,8 @@
-import { ChevronDown, Clock3, Target, ListChecks, FolderKanban, Award, RefreshCcw, X, Gift, Plus } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ChevronDown, Clock3, Target, ListChecks, FolderKanban, Award, RefreshCcw, X, Gift, Plus, UserRound } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { courseFullById, weeksLabel, MIN_PATHWAY_COURSES, MAX_PATHWAY_COURSES } from "@/data/courses";
+import { apiGet } from "@/services/api";
 
 /** مقترح استبدال/إضافة/هدية — يحسبه المحرك من مجال المسار وفجوات المتعلم */
 export interface CourseSuggestion {
@@ -118,6 +120,7 @@ export default function CourseJourney({
                         {s}
                       </span>
                     ))}
+                    <CourseTrainer courseId={c.id} />
                   </div>
                   {reasons?.[c.id] && (
                     <p className="mt-2 text-[11px] leading-relaxed text-white/45">
@@ -342,5 +345,40 @@ export default function CourseJourney({
         </div>
       )}
     </div>
+  );
+}
+
+/* شارة مدرب الدورة المعلن — من الخادم؛ تختفي بهدوء عند غياب الشبكة أو الخادم */
+function CourseTrainer({ courseId }: { courseId: string }) {
+  const [label, setLabel] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    apiGet<{ announced: boolean; messageAr?: string; trainers: { id: string; name: string; headline: string | null }[] }>(
+      `/api/courses/${encodeURIComponent(courseId)}/trainer`,
+    )
+      .then((res) => {
+        if (cancelled) return;
+        if (res.announced && res.trainers.length > 0) {
+          const names = res.trainers.map((t) => t.name).join("، ");
+          setLabel(`المدرب: ${names}`);
+        } else {
+          setLabel(res.messageAr ?? "يُعلن المدرب عند اعتماد الشعبة");
+        }
+      })
+      .catch(() => {
+        /* بلا خادم — لا شارة */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [courseId]);
+
+  if (!label) return null;
+  return (
+    <span className="flex items-center gap-1 rounded-full border border-[#FABC05]/30 bg-[#FABC05]/[0.07] px-2.5 py-0.5 text-[11px] font-semibold text-[#FABC05]/90">
+      <UserRound className="h-3 w-3" />
+      {label}
+    </span>
   );
 }

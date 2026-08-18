@@ -20,6 +20,8 @@ type ChangeRequest = {
 type PathwayRow = { id: string; status: string; title: string; courseCount: number };
 type CourseRow = { id: string; status: string; title: string; hours: number; skillCount: number; pathways: string[] };
 type SkillRow = { id: string; status: string; slug: string; nameAr: string; familyId: string | null };
+type QuestionRow = { id: string; status: string; active: boolean; module: string; text: string; optionCount: number };
+type TemplateRow = { id: string; status: string; name: string; courseCount: number };
 
 const STATUS_AR: Record<string, string> = {
   draft: "مسودة", approved: "معتمد", published: "منشور", in_review: "قيد المراجعة",
@@ -45,9 +47,11 @@ export default function CatalogAdmin() {
   const [pathways, setPathways] = useState<PathwayRow[]>([]);
   const [courses, setCourses] = useState<CourseRow[]>([]);
   const [skills, setSkills] = useState<SkillRow[]>([]);
+  const [questions, setQuestions] = useState<QuestionRow[]>([]);
+  const [templates, setTemplates] = useState<TemplateRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [browse, setBrowse] = useState<"pathways" | "courses" | "skills" | null>(null);
+  const [browse, setBrowse] = useState<"pathways" | "courses" | "skills" | "questions" | "templates" | null>(null);
 
   const [skillForm, setSkillForm] = useState({ id: "", slug: "", nameAr: "", familyId: "" });
   const [pwForm, setPwForm] = useState({
@@ -64,14 +68,17 @@ export default function CatalogAdmin() {
 
   const refresh = useCallback(async () => {
     try {
-      const [ov, crList, pw, co, sk] = await Promise.all([
+      const [ov, crList, pw, co, sk, qs, tp] = await Promise.all([
         apiGet<Overview>("/api/admin/catalog/overview"),
         apiGet<ChangeRequest[]>("/api/admin/catalog/change-requests"),
         apiGet<PathwayRow[]>("/api/admin/catalog/pathways"),
         apiGet<CourseRow[]>("/api/admin/catalog/courses"),
         apiGet<SkillRow[]>("/api/admin/catalog/skills"),
+        apiGet<QuestionRow[]>("/api/admin/catalog/questions"),
+        apiGet<TemplateRow[]>("/api/admin/catalog/templates"),
       ]);
       setOverview(ov); setCrs(crList); setPathways(pw); setCourses(co); setSkills(sk);
+      setQuestions(qs); setTemplates(tp);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "تعذر الاتصال بخادم API — شغّله بـ npm run api:dev");
     }
@@ -178,7 +185,7 @@ export default function CatalogAdmin() {
       <section className="mt-8">
         <h2 className="flex items-center gap-2 text-lg font-black"><Layers className="h-5 w-5 text-[#FABC05]" /> الكيانات الحالية</h2>
         <div className="mt-3 flex flex-wrap gap-2">
-          {([["pathways", `المسارات (${pathways.length})`], ["courses", `الدورات (${courses.length})`], ["skills", `المهارات (${skills.length})`]] as const).map(([k, label]) => (
+          {([["pathways", `المسارات (${pathways.length})`], ["courses", `الدورات (${courses.length})`], ["skills", `المهارات (${skills.length})`], ["questions", `بنك الأسئلة (${questions.length})`], ["templates", `قوالب التوصية (${templates.length})`]] as const).map(([k, label]) => (
             <button key={k} onClick={() => setBrowse(browse === k ? null : k)}
               className={`cursor-pointer rounded-full border px-4 py-1.5 text-xs font-bold transition ${browse === k ? "border-[#FABC05] bg-[#FABC05]/10 text-[#FABC05]" : "border-white/15 text-white/60 hover:border-white/40"}`}>
               {label}
@@ -221,6 +228,32 @@ export default function CatalogAdmin() {
               </li>
             ))}
             {skills.length === 0 && <p className="text-sm text-white/45">لا مهارات بعد.</p>}
+          </ul>
+        )}
+        {browse === "questions" && (
+          <ul className="mt-3 space-y-2">
+            {questions.map((q) => (
+              <li key={q.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-2.5 text-sm">
+                <span className="font-mono text-[11px] text-white/40" dir="ltr">{q.id}</span>
+                <span className="min-w-0 flex-1 font-bold">{q.text || "—"}</span>
+                <span className="text-[11px] text-white/50">{q.module} · {q.optionCount} خيار{!q.active && " · موقوف"}</span>
+                <span className="mr-auto"><Pill v={q.status} /></span>
+              </li>
+            ))}
+            {questions.length === 0 && <p className="text-sm text-white/45">لا أسئلة بعد.</p>}
+          </ul>
+        )}
+        {browse === "templates" && (
+          <ul className="mt-3 space-y-2">
+            {templates.map((t) => (
+              <li key={t.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-2.5 text-sm">
+                <span className="font-mono text-[11px] text-white/40" dir="ltr">{t.id}</span>
+                <span className="font-bold">{t.name || "—"}</span>
+                <span className="text-[11px] text-white/50">{t.courseCount} دورة مركبة</span>
+                <span className="mr-auto"><Pill v={t.status} /></span>
+              </li>
+            ))}
+            {templates.length === 0 && <p className="text-sm text-white/45">لا قوالب بعد.</p>}
           </ul>
         )}
       </section>

@@ -50,6 +50,8 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
   const [dropForm, setDropForm] = useState({ enrollmentId: "", note: "" });
   const [certId, setCertId] = useState("");
   const [revokeForm, setRevokeForm] = useState({ certificateId: "", reason: "" });
+  const [recForm, setRecForm] = useState({ sessionId: "", title: "", moduleId: "", mime: "video/mp4", sizeBytes: "", durationSec: "" });
+  const [contentForm, setContentForm] = useState({ kind: "material", id: "", status: "archived" });
 
   useEffect(() => {
     apiGet<{ id: string; name: string }[]>("/api/trainers/public").then(setTrainers).catch(() => setTrainers([]));
@@ -258,6 +260,53 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
               إلغاء شهادة
             </button>
           </div>
+        </div>
+      </MiniCard>
+
+      {/* تسجيلات الجلسات وأرشفة المحتوى */}
+      <MiniCard icon={BookOpen} title="تسجيلات الجلسات وأرشفة المحتوى — ملفات خاصة موقعة">
+        <p className="mb-2 text-[10px] font-bold text-white/45">تسجيل تسجيل جلسة (يرتبط بالجلسة ووحدة اختيارية):</p>
+        <div className="grid gap-2 sm:grid-cols-3">
+          <input value={recForm.sessionId} onChange={(e) => setRecForm({ ...recForm, sessionId: e.target.value })}
+            placeholder="معرف الجلسة (UUID)" dir="ltr" className={`${inputCls} font-mono`} />
+          <input value={recForm.title} onChange={(e) => setRecForm({ ...recForm, title: e.target.value })} placeholder="عنوان التسجيل" className={inputCls} />
+          <input value={recForm.moduleId} onChange={(e) => setRecForm({ ...recForm, moduleId: e.target.value })}
+            placeholder="معرف الوحدة (اختياري)" dir="ltr" className={`${inputCls} font-mono`} />
+          <input value={recForm.mime} onChange={(e) => setRecForm({ ...recForm, mime: e.target.value })} placeholder="MIME" dir="ltr" className={inputCls} />
+          <input type="number" min={1} value={recForm.sizeBytes} onChange={(e) => setRecForm({ ...recForm, sizeBytes: e.target.value })} placeholder="الحجم (بايت)" dir="ltr" className={inputCls} />
+          <input type="number" min={1} value={recForm.durationSec} onChange={(e) => setRecForm({ ...recForm, durationSec: e.target.value })} placeholder="المدة (ثانية، اختياري)" dir="ltr" className={inputCls} />
+        </div>
+        <button disabled={busy || !recForm.sessionId.trim() || recForm.title.length < 2 || !recForm.sizeBytes}
+          onClick={() => act(async () => {
+            await apiPost(`/api/admin/sessions/${recForm.sessionId.trim()}/recordings`, {
+              title: recForm.title, mime: recForm.mime, sizeBytes: Number(recForm.sizeBytes),
+              moduleId: recForm.moduleId.trim() || undefined,
+              durationSec: recForm.durationSec ? Number(recForm.durationSec) : undefined,
+            });
+            setRecForm({ sessionId: "", title: "", moduleId: "", mime: "video/mp4", sizeBytes: "", durationSec: "" });
+          }, "سُجل التسجيل وأُنشئ رابط رفعه الموقع")}
+          className="mt-2 cursor-pointer rounded-xl bg-white/10 px-4 py-2 text-xs font-black text-white hover:bg-white/15 disabled:opacity-40">
+          سجّل التسجيل
+        </button>
+
+        <p className="mt-4 mb-2 border-t border-white/8 pt-3 text-[10px] font-bold text-white/45">أرشفة أو تعطيل مادة/تسجيل (لا حذف — أثر قانوني يبقى):</p>
+        <div className="flex flex-wrap gap-2">
+          <select value={contentForm.kind} onChange={(e) => setContentForm({ ...contentForm, kind: e.target.value })} className={selectCls}>
+            <option value="material">مادة</option>
+            <option value="recording">تسجيل</option>
+          </select>
+          <input value={contentForm.id} onChange={(e) => setContentForm({ ...contentForm, id: e.target.value })}
+            placeholder="معرف المحتوى (UUID)" dir="ltr" className={`${inputCls} flex-1 font-mono`} />
+          <select value={contentForm.status} onChange={(e) => setContentForm({ ...contentForm, status: e.target.value })} className={selectCls}>
+            <option value="active">نشط</option>
+            <option value="archived">مؤرشف</option>
+            <option value="disabled">معطل</option>
+          </select>
+          <button disabled={busy || !contentForm.id.trim()}
+            onClick={() => act(() => apiPost(`/api/admin/content/${contentForm.kind}/${contentForm.id.trim()}/status`, { status: contentForm.status }), "حُدثت حالة المحتوى")}
+            className="cursor-pointer rounded-xl bg-white/10 px-4 py-2 text-xs font-black text-white hover:bg-white/15 disabled:opacity-40">
+            طبّق الحالة
+          </button>
         </div>
       </MiniCard>
 

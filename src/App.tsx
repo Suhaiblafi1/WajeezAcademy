@@ -32,8 +32,12 @@ const MyLearning = lazy(() => import('./pages/student/MyLearning'))
 const StudentAccount = lazy(() => import('./pages/student/Account'))
 const StudentBilling = lazy(() => import('./pages/student/Billing'))
 const StudentCv = lazy(() => import('./pages/student/MyCv'))
+const StudentNotifications = lazy(() => import('./pages/student/Notifications'))
+const StudentSupport = lazy(() => import('./pages/student/Support'))
+const StudentOpenCohorts = lazy(() => import('./pages/student/OpenCohorts'))
 const AdvisorDashboard = lazy(() => import('./pages/advisor/AdvisorDashboard'))
 const AdvisorReviews = lazy(() => import('./pages/advisor/Reviews'))
+const AdvisorCases = lazy(() => import('./pages/advisor/Cases'))
 const StudentCard = lazy(() => import('./pages/advisor/StudentCard'))
 const TrainerDashboard = lazy(() => import('./pages/trainer/TrainerDashboard'))
 const GradingQueue = lazy(() => import('./pages/trainer/GradingQueue'))
@@ -119,11 +123,15 @@ export default function App() {
           <Route path="/student/account" element={<StudentAccount />} />
           <Route path="/student/billing" element={<StudentBilling />} />
           <Route path="/student/cv" element={<StudentCv />} />
+          <Route path="/student/notifications" element={<StudentNotifications />} />
+          <Route path="/student/support" element={<StudentSupport />} />
+          <Route path="/student/cohorts" element={<StudentOpenCohorts />} />
           {/* دعوة المدرب مسار عام برمز دعوة — خارج حارس الأدوار عمدا */}
           <Route path="/trainer/accept-invite" element={<TrainerAcceptInvite />} />
           {/* بوابات الفريق — حارس يتحقق من الجلسة والدور عند الخادم */}
           <Route element={<RequireRole allow={ADVISOR_ROLES} />}>
             <Route path="/advisor" element={<AdvisorDashboard />} />
+            <Route path="/advisor/cases" element={<AdvisorCases />} />
             <Route path="/advisor/reviews" element={<AdvisorReviews />} />
             <Route path="/advisor/student/:id" element={<StudentCard />} />
           </Route>

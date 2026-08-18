@@ -40,7 +40,7 @@ interface EnrollmentDetail extends EnrollmentRow {
     materials: { id: string; title: string; kind: string; externalUrl: string | null; readUrl: string | null }[];
     assessments: {
       id: string; title: string; type: string; dueAt: string | null; maxScore: number;
-      items: { id: string; prompt: string }[];
+      items: { id: string; prompt: string; kind?: string; maxScore?: number }[];
     }[];
   };
   attendance: { sessionId: string; status: string }[];
@@ -103,6 +103,23 @@ export default function MyLearning() {
       }
     } catch (err) {
       setFlash(err instanceof ApiError ? err.message : "تعذر التسليم");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  /* تسليم اختبار بالبنود — محاولة رسمية تُقيّم في الخادم */
+  const submitQuiz = async (assessmentId: string, responses: { itemId: string; answer: string }[]) => {
+    if (busy || responses.length === 0) return;
+    setBusy(assessmentId); setFlash("");
+    try {
+      await apiPost(`/api/learner/assessments/${assessmentId}/attempts`, { responses });
+      setFlash("سُلمت إجاباتك — ستُقيّم وتظهر درجتك هنا");
+      if (openId) {
+        setDetail(await apiGet<EnrollmentDetail>(`/api/learner/enrollments/${openId}`));
+      }
+    } catch (err) {
+      setFlash(err instanceof ApiError ? err.message : "تعذر تسليم الاختبار");
     } finally {
       setBusy(null);
     }
@@ -182,6 +199,7 @@ export default function MyLearning() {
                           setAnswers={setAnswers}
                           busy={busy}
                           onSubmit={submit}
+                          onSubmitQuiz={submitQuiz}
                         />
                       )}
                     </div>
@@ -196,12 +214,13 @@ export default function MyLearning() {
   );
 }
 
-function LearnerCohortDetail({ detail, answers, setAnswers, busy, onSubmit }: {
+function LearnerCohortDetail({ detail, answers, setAnswers, busy, onSubmit, onSubmitQuiz }: {
   detail: EnrollmentDetail;
   answers: Record<string, string>;
   setAnswers: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   busy: string | null;
   onSubmit: (assessmentId: string, isResubmit: boolean) => void;
+  onSubmitQuiz: (assessmentId: string, responses: { itemId: string; answer: string }[]) => void;
 }) {
   const fmtDate = (iso: string) => new Date(iso).toLocaleString("ar-JO", { dateStyle: "medium", timeStyle: "short" });
   return (
@@ -304,6 +323,13 @@ function LearnerCohortDetail({ detail, answers, setAnswers, busy, onSubmit }: {
                   {mine?.feedback.map((f, i) => (
                     <p key={i} className="mt-2 rounded-xl bg-[#38A7B4]/8 px-3 py-2 text-[11px] leading-6 text-white/65">{f.body}</p>
                   ))}
+                  {canSubmit && a.type === "quiz" && a.items.length > 0 && (
+                    <QuizAttemptForm
+                      items={a.items}
+                      busy={busy === a.id}
+                      onSubmit={(responses) => onSubmitQuiz(a.id, responses)}
+                    />
+                  )}
                   {canSubmit && a.type !== "quiz" && (
                     <div className="mt-3">
                       <textarea
@@ -349,6 +375,43 @@ function LearnerCohortDetail({ detail, answers, setAnswers, busy, onSubmit }: {
           </div>
         </section>
       )}
+    </div>
+  );
+}
+
+/** نموذج اختبار بالبنود — إجابة نصية لكل بند، تُرسل كمحاولة واحدة */
+function QuizAttemptForm({ items, busy, onSubmit }: {
+  items: { id: string; prompt: string; kind?: string; maxScore?: number }[];
+  busy: boolean;
+  onSubmit: (responses: { itemId: string; answer: string }[]) => void;
+}) {
+  const [resp, setResp] = useState<Record<string, string>>({});
+  const answered = items.filter((i) => (resp[i.id] ?? "").trim()).length;
+  return (
+    <div className="mt-3 space-y-3">
+      {items.map((it, idx) => (
+        <div key={it.id}>
+          <p className="mb-1 text-xs font-bold text-white/75">
+            {idx + 1}. {it.prompt}
+            {it.maxScore ? <span className="mr-2 text-[10px] font-normal text-white/50">({it.maxScore} درجات)</span> : null}
+          </p>
+          <textarea
+            rows={2}
+            value={resp[it.id] ?? ""}
+            onChange={(e) => setResp((prev) => ({ ...prev, [it.id]: e.target.value }))}
+            placeholder="إجابتك…"
+            className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none"
+          />
+        </div>
+      ))}
+      <button
+        disabled={busy || answered < items.length}
+        onClick={() => onSubmit(items.map((i) => ({ itemId: i.id, answer: (resp[i.id] ?? "").trim() })))}
+        className="flex cursor-pointer items-center gap-1.5 rounded-full bg-[#FABC05] px-5 py-2 text-xs font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90 disabled:opacity-40"
+      >
+        {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+        سلّم الاختبار ({answered}/{items.length})
+      </button>
     </div>
   );
 }

@@ -36,6 +36,7 @@ export default function AdvisorLayout({ children, title }: { children: React.Rea
 
   const tabs = [
     { to: "/advisor", label: "طلبةي", icon: Users, end: true },
+    { to: "/advisor/cases", label: "حالاتي (حقيقي)", icon: Headset },
     { to: "/advisor/reviews", label: "طلبات المراجعة", icon: ClipboardList },
   ];
 

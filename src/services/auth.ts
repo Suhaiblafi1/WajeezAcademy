@@ -202,14 +202,22 @@ export async function signOut(): Promise<void> {
 }
 
 /** طلب استعادة كلمة المرور — رسالة الخادم آمنة ولا تكشف وجود الحساب */
-export async function requestPasswordReset(email: string): Promise<string> {
+export async function requestPasswordReset(email: string): Promise<{ message: string; devToken?: string }> {
   try {
-    const { message } = await apiPost<{ message: string }>("/api/auth/password/forgot", {
+    return await apiPost<{ message: string; devToken?: string }>("/api/auth/password/forgot", {
       email: email.trim().toLowerCase(),
     });
-    return message;
   } catch (e) {
-    return e instanceof ApiError ? e.message : NETWORK_FAIL;
+    return { message: e instanceof ApiError ? e.message : NETWORK_FAIL };
+  }
+}
+
+/** تعيين كلمة مرور جديدة برمز الاستعادة — يبطل الخادم كل الجلسات */
+export async function resetPassword(token: string, newPassword: string): Promise<{ ok: boolean; message: string }> {
+  try {
+    return await apiPost<{ ok: boolean; message: string }>("/api/auth/password/reset", { token: token.trim(), newPassword });
+  } catch (e) {
+    return { ok: false, message: e instanceof ApiError ? e.message : NETWORK_FAIL };
   }
 }
 
