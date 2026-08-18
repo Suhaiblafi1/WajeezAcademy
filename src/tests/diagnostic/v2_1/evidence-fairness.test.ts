@@ -3,7 +3,7 @@
    ١) المهارات الأربع المقاسة غير المغطاة خارج التدفق الأساسي (post_recommendation)
    ٢) أسئلة ما بعد التوصية لا تستهلك ميزانية الأسئلة
    ٣) سؤال المهارة للفصل لا للتعزيز — لا يُسأل عند هامش مريح أبدًا
-   ٤) سباق حي + حاسمة بلا سؤال يقيسها → وسم مستشار مع خطة مرفقة (لا صمت)
+   ٤) سباق حي بحاسمة مجهولة: دليل أدنى مقاس + لا Strong مضلل + لا صمت في الشرح
    ٥) سباق مريح + حاسمة غير مقيسة → بلا وسم (لا إفراط إحالة)
    ٦) المهارة المقيسة بسؤال M4 تُحتسب حقيقة مغطاة في بوابة التغطية
    ٧) بوابة التغطية تفشل تحت الحد برسالة مفهومة
@@ -160,21 +160,50 @@ describe('Regression المرحلة 4 — عدالة الدليل المهاري
     expect(skillQuestionsChecked, 'الرحلات لم تُنتج أي سؤال مهارة — الاختبار بلا دليل').toBeGreaterThan(0)
   })
 
-  it('٤) سباق حي + حاسمة بلا سؤال يقيسها → وسم مستشار مع خطة مرفقة وسبب مفصَّل', () => {
-    const { rec } = runJourneyTraced('مستقل-موسوم', {
+  it('٤) سباق حي بحاسمة مجهولة: دليل أدنى مقاس + لا Strong مضلل + لا صمت في الشرح', () => {
+    /* إغلاق منطق V2.1 — تصحيح فرضية موثق: الفحص الشامل أثبت أن كل مهارة حاسمة
+       في الفضاء النشط قابلة للقياس بسؤال نشط (لا توجد حاسمة «غير قابلة للإنتاج»
+       أصلًا — تحصينها اختبار ثبات في recommendation-universe). لذلك عقد «لا صمت»
+       يُقفل بثلاثة أقفال قابلة للتحقق لا بوسم مستشار مستحيل البيانات:
+       ١) حد الدليل الأدنى يقيس حاسمة واحدة على الأقل للمتصدر قبل الاكتفاء
+       ٢) المهارة المجهولة (negotiation) لا تدخل الفجوات ولا الشرح ولا النتيجة
+       ٣) الثقة تبقى دون «قوية» ما دام السباق حيًا بدليل ناقص */
+    const { asked, rec, comp } = runJourneyTraced('مستقل-موسوم', {
       stage: 'freelancer',
       employment: 'أعمل لحسابي (عمل حر)',
       goal: 'بدء مشروع أو مصدر دخل مستقل',
-      need: 'التفاوض وإغلاق الصفقات',
+      need: 'التواصل والعرض والتأثير',
       time: '٥–٧ ساعات',
       mastery: 'أن أبني مجموعة مهارات مترابطة لتحقيق هدف',
       interest: 'أعمال',
     })
-    expect(rec.kind).toBe('advisor_referral')
-    expect(rec.composite, 'الخطة المركبة يجب أن تبقى مرفقة رغم الوسم').not.toBeNull()
+    expect(asked, 'حد الدليل الأدنى لم يقس أي حاسمة للمتصدر').toContain('QB-M4-010')
+    expect(rec.kind).toBe('composite_template')
     expect(rec.composite!.templateId).toBe('TPL-FREELANCE-001')
-    expect(JSON.stringify(rec.reasons_ar)).toContain('مهارة حاسمة')
+    const winner = comp.candidates[0]
+    expect(winner.skills.gapSkillSlugs, 'مهارة مجهولة احتُسبت فجوة').not.toContain('negotiation')
+    expect(JSON.stringify(rec.reasons_ar), 'مهارة مجهولة تسللت إلى الشرح').not.toContain('negotiation')
+    expect(rec.confidence.band, 'ثقة قوية مضللة رغم سباق حي بحاسمة مجهولة').not.toBe('strong')
     expect(rec.confidence.total).toBeGreaterThan(0)
+  })
+
+  it('٤ب) معايرة الثقة: دليل مكتمل وهدف واضح وهامش مسؤول → «قوية» فعلًا (موجب Strong)', () => {
+    /* إغلاق منطق V2.1 — معايرة النطاق الأعلى: كان «تطابق قوي» مستحيلًا في 10
+       آلاف جلسة (مانع المهارات يناقض قرار التوقف نفسه). بعد المعايرة تُقفل
+       هذه الوصفة نطاقًا موجبًا: خريج هدفه واضح جدًا وفوز PW-STU-002 بهامش
+       مسؤول (0.084 ≥ 0.08) وبلا موانع → قوية (0.797 ≥ 0.78). النظير السالب
+       مقفل في اختبار ٤: سباق حي بحاسمة مجهولة لا يبلغ «قوية» أبدًا */
+    const { rec } = runJourneyTraced('خريج-قوي', {
+      stage: 'fresh_graduate',
+      employment: 'لا أعمل حاليًا',
+      goal: 'الحصول على أول وظيفة',
+      need: 'الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال',
+      mastery: 'أن أتقن مهارة أو تخصصًا واحدًا بعمق',
+      answers: { 'QB-M2-005': 'واضح جدا' },
+      skillLevel: 4,
+    })
+    expect(rec.primaryPathway?.pathwayId).toBe('PW-STU-002')
+    expect(rec.confidence.band).toBe('strong')
   })
 
   it('٥) سباق مريح + حاسمة غير مقيسة → فوز نظيف بلا وسم مستشار (لا إفراط إحالة)', () => {
@@ -258,10 +287,10 @@ describe('Regression المرحلة 4 — عدالة الدليل المهاري
     expect(rec.composite?.templateId).toBe('TPL-ECOM-001')
   })
 
-  it('١٠) لا فائز خارج الفضاء النشط الـ36 في أي رحلة', () => {
+  it('١٠) لا فائز خارج الفضاء النشط الـ35 في أي رحلة (SMART-OPS موسوم needs_revision — إغلاق منطق V2.1)', () => {
     const universe = recommendationUniverse()
     const activeIds = new Set(universe.active.map((e) => e.entity_id))
-    expect(activeIds.size).toBe(36)
+    expect(activeIds.size).toBe(35)
     for (const [name, j] of PROPERTY_JOURNEYS) {
       const { rec } = runJourneyTraced(name, j)
       const winner = rec.composite?.templateId ?? rec.primaryPathway?.pathwayId ?? null

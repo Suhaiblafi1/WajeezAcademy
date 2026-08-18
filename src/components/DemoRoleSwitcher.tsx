@@ -27,10 +27,19 @@ export default function DemoRoleSwitcher() {
 
   useEffect(() => {
     let alive = true
-    apiGet<{ enabled: boolean }>('/api/demo/status')
-      .then((r) => { if (alive) setEnabled(r.enabled) })
-      .catch(() => { if (alive) setEnabled(false) })
-    return () => { alive = false }
+    let timer: ReturnType<typeof setTimeout>
+    /* الخادم يقلع مع vite وقد يحتاج ثواني (PostgreSQL المدمج) — نعيد المحاولة قبل الاستسلام */
+    const check = async (attemptsLeft: number) => {
+      try {
+        const r = await apiGet<{ enabled: boolean }>('/api/demo/status')
+        if (alive) setEnabled(r.enabled)
+      } catch {
+        if (alive && attemptsLeft > 0) timer = setTimeout(() => void check(attemptsLeft - 1), 2500)
+        else if (alive) setEnabled(false)
+      }
+    }
+    void check(8)
+    return () => { alive = false; clearTimeout(timer) }
   }, [])
 
   if (!enabled) return null

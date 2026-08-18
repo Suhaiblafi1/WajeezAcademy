@@ -19,7 +19,11 @@ export interface CohortStudent {
 }
 export interface CohortSession {
   id: string; title: string; date: string; time: string;
-  recording: "none" | "pending_review" | "published";
+  /* سلسلة التسجيل كما في الخادم: لا شيء → رُفع ملف → بانتظار موافقة النشر → منشور */
+  recording: "none" | "uploaded" | "pending_review" | "published";
+  recordingFile?: string; // اسم الملف المرفوع برابط الرفع الموقع
+  /* حضور كل طالب على حدة — «تسجيل حضور متعلم في جلسة يعيد حساب تقدمه» */
+  attendance?: Record<string, "present" | "absent">;
   attendanceMarked: boolean; notes?: string;
 }
 export interface Cohort {
@@ -27,18 +31,21 @@ export interface Cohort {
   trainerName: string; capacity: number; status: CohortStatus; startDate: string;
   students: CohortStudent[]; sessions: CohortSession[];
 }
-export type SubmissionStatus = "pending" | "approved" | "revision" | "closed";
+export type SubmissionStatus = "pending" | "approved" | "revision" | "rejected" | "closed";
 export interface Submission {
   id: string; studentName: string; cohortId: string; courseName: string;
   assignmentTitle: string; fileName: string; at: string;
   status: SubmissionStatus; grade?: number;
   rubric?: Record<string, number>; feedback?: string;
+  rejectReason?: string; // الرفض يتطلب سببا مفهوما — كما يفرض الخادم
   history: { at: string; action: string; by: string }[];
 }
 export interface Earning {
   id: string; kind: "fixed" | "per_session" | "percent"; label: string;
   amount: number; status: "accrued" | "approved" | "paid"; source: string;
 }
+/* مهام تهيئة المدرب — من ملفه عند الخادم: تأهيله وإسناداته ومهام التهيئة */
+export interface OnboardingTask { id: string; label: string; done: boolean; }
 
 /* هويات المدربين — من نفس مجمع مدربي الكتالوج */
 export const TRAINER_IDENTITIES: TrainerIdentity[] = [
@@ -241,25 +248,95 @@ export function requestGradeChange(trainerName: string, id: string, newGrade: nu
   return true;
 }
 
-/* نشر تسجيل جلسة — 15.2: لا يُنشر قبل استكمال الموافقة والخصوصية */
+/* رفع تسجيل جلسة — ملف خاص برابط رفع موقع (يوافق learning-portal.routes) */
+export function uploadSessionRecording(_trainerName: string, cohortId: string, sessionId: string, fileName: string): boolean {
+  const all = loadAllCohorts();
+  const co = all.find((c) => c.id === cohortId);
+  const se = co?.sessions.find((s) => s.id === sessionId);
+  if (!co || !se || se.recording !== "none") return false;
+  se.recording = "uploaded";
+  se.recordingFile = fileName;
+  localStorage.setItem(COHORTS_KEY, JSON.stringify(all));
+  return true;
+}
+
+/* نشر تسجيل جلسة — 15.2: لا يُنشر قبل رفعه ثم استكمال الموافقة والخصوصية */
 export function requestRecordingPublish(_trainerName: string, cohortId: string, sessionId: string): "requested" | "already" {
   const all = loadAllCohorts();
   const co = all.find((c) => c.id === cohortId);
   const se = co?.sessions.find((s) => s.id === sessionId);
   if (!co || !se) return "already";
-  if (se.recording === "none") { se.recording = "pending_review"; }
+  if (se.recording === "uploaded") { se.recording = "pending_review"; }
   else return "already";
   localStorage.setItem(COHORTS_KEY, JSON.stringify(all));
   return "requested";
 }
 
-/* رصد حضور جلسة */
-export function markAttendance(_trainerName: string, cohortId: string, sessionId: string): void {
+/* رصد حضور طالب في جلسة — يعيد حساب نسبة حضوره فورا كما يفعل الخادم */
+export function setStudentAttendance(cohortId: string, sessionId: string, studentId: string, status: "present" | "absent"): void {
+  const all = loadAllCohorts();
+  const co = all.find((c) => c.id === cohortId);
+  const se = co?.sessions.find((s) => s.id === sessionId);
+  if (!co || !se) return;
+  se.attendance = { ...(se.attendance ?? {}), [studentId]: status };
+  /* إعادة حساب التقدم: نسبة الحضور = الجلسات المحضورة ÷ الجلسات المرصودة له */
+  const student = co.students.find((s) => s.id === studentId);
+  if (student) {
+    let present = 0, marked = 0;
+    for (const sess of co.sessions) {
+      const rec = sess.attendance?.[studentId];
+      if (rec) { marked++; if (rec === "present") present++; }
+    }
+    if (marked > 0) student.attendancePct = Math.round((present / marked) * 100);
+  }
+  localStorage.setItem(COHORTS_KEY, JSON.stringify(all));
+}
+
+/* إقفال رصد الجلسة بعد اكتمال كشفها */
+export function finalizeAttendance(_trainerName: string, cohortId: string, sessionId: string): void {
   const all = loadAllCohorts();
   const co = all.find((c) => c.id === cohortId);
   const se = co?.sessions.find((s) => s.id === sessionId);
   if (se) se.attendanceMarked = true;
   localStorage.setItem(COHORTS_KEY, JSON.stringify(all));
+}
+
+/* رفض تسليم بسبب موثق — يقابله reject في مراجعة التسليمات عند الخادم */
+export function rejectSubmission(trainerName: string, id: string, reason: string): boolean {
+  if (!reason.trim()) return false;
+  const mine = loadSubmissions(trainerName);
+  const idx = mine.findIndex((s) => s.id === id);
+  if (idx === -1) return false;
+  mine[idx] = {
+    ...mine[idx], status: "rejected", rejectReason: reason.trim(),
+    history: [...mine[idx].history, { at: new Date().toISOString(), action: "رفض التسليم بسبب موثق", by: trainerName }],
+  };
+  saveSubmissions(trainerName, mine);
+  return true;
+}
+
+/* مهام تهيئة المدرب */
+const ONBOARD_KEY = "wajeez_trainer_onboarding";
+const ONBOARD_SEED: Omit<OnboardingTask, "done">[] = [
+  { id: "contract", label: "توقيع العقد الإلكتروني" },
+  { id: "profile", label: "إكمال الملف المهني والصورة المعتمدة" },
+  { id: "orientation", label: "حضور الجلسة التعريفية للمدربين" },
+  { id: "blueprint", label: "مراجعة المخطط الأساسي (Blueprint) لدورتك" },
+  { id: "zoom", label: "تفعيل حساب Zoom وربطه بالمنصة" },
+];
+export function loadOnboardingTasks(_trainerName: string): OnboardingTask[] {
+  void _trainerName; // التهيئة محلية مشتركة في الديمو — عند الربط تُقرأ من ملف المدرب نفسه
+  try {
+    const raw = localStorage.getItem(ONBOARD_KEY);
+    if (raw) return JSON.parse(raw) as OnboardingTask[];
+  } catch { /* ignore */ }
+  const seeded = ONBOARD_SEED.map((t, i) => ({ ...t, done: i === 0 })); // العقد موقع في الديمو
+  localStorage.setItem(ONBOARD_KEY, JSON.stringify(seeded));
+  return seeded;
+}
+export function toggleOnboardingTask(_trainerName: string, taskId: string): void {
+  const tasks = loadOnboardingTasks(_trainerName).map((t) => (t.id === taskId ? { ...t, done: !t.done } : t));
+  localStorage.setItem(ONBOARD_KEY, JSON.stringify(tasks));
 }
 
 /* المستحقات — 15.1: تقديرية ومعتمدة ومدفوعة دون كشف ربحية كاملة */

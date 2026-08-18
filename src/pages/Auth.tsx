@@ -5,6 +5,7 @@ import AuthGate from '@/components/AuthGate'
 import SiteShell from '@/components/SiteShell'
 import SeoHead from '@/components/SeoHead'
 import { enablePreview, isOwnerUnlocked, unlockOwner } from '@/services/access'
+import { homePathForRoles, readRoles } from '@/services/auth'
 
 /* بوابات الفريق الداخلية — للمالك أثناء الاطلاع على المنصة.
    تُفتح مرة واحدة عبر ?preview=owner وتُزال من الواجهة العامة عند الربط الحقيقي */
@@ -41,7 +42,8 @@ export default function Auth() {
         noindex
       />
       <div className="py-6">
-        <AuthGate onDone={() => navigate('/student')} />
+        {/* بعد الدخول: كل دور إلى بوابته — مدير النظام للإدارة، المدرب لبوابته، وهكذا */}
+        <AuthGate onDone={() => navigate(homePathForRoles(readRoles()))} />
       </div>
 
       {/* بوابات الفريق الداخلية — تظهر للمالك بعد فتحها عبر ?preview=owner */}

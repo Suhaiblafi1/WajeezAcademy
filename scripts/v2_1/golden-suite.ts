@@ -82,6 +82,7 @@ interface RunOutcome {
   asked: string[]
   rec: RecommendationV21
   comp: CompetitionResult
+  trace?: { kind: string; summary_ar: string }[]
 }
 
 function runJourney(name: string, script: Journey): RunOutcome {
@@ -118,7 +119,7 @@ function runJourney(name: string, script: Journey): RunOutcome {
       .filter((k) => facts[k] !== undefined)
       .map((k) => [k, facts[k].value]),
   )
-  return { asked, rec: engine.recommend(), comp: engine.competeSnapshot() }
+  return { asked, rec: engine.recommend(), comp: engine.competeSnapshot(), trace: engine.getState().trace.map((t) => ({ kind: t.kind, summary_ar: t.summary_ar })) }
 }
 
 /** الفائز الفعلي — يُقرأ الكيان المرفق حتى لو وُسم التوصية بمراجعة مستشار */
@@ -407,6 +408,9 @@ interface McStats {
   sessions: number
   seed: number
   kind: Record<string, number>
+  /* توزيع نطاقات الثقة (البند: Confidence Calibration) — معايرة إغلاق منطق V2.1:
+     لا «قوية» إلا بدليل مكتمل، ولا تضخيم في السباقات الحية الناقصة */
+  confidenceBands: Record<string, number>
   winners: Record<string, number>
   avgQuestions: number
   exploratoryRate: number
@@ -436,6 +440,7 @@ function monteCarloRun(seed: number, sessions: number, offset = 0): { stats: McS
     sessions,
     seed: seed + offset,
     kind: {},
+    confidenceBands: {},
     winners: {},
     avgQuestions: 0,
     exploratoryRate: 0,
@@ -478,6 +483,8 @@ function monteCarloRun(seed: number, sessions: number, offset = 0): { stats: McS
       const out = runJourney(`mc-${seed + offset}-${i}`, script)
       const winner = winnerOf(out.rec)
       stats.kind[out.rec.kind] = (stats.kind[out.rec.kind] ?? 0) + 1
+      const band = out.rec.confidence.band
+      stats.confidenceBands[band] = (stats.confidenceBands[band] ?? 0) + 1
       if (winner) {
         stats.winners[winner] = (stats.winners[winner] ?? 0) + 1
         if (!activeIds.has(winner)) stats.alienWinners++
@@ -503,7 +510,16 @@ function monteCarloRun(seed: number, sessions: number, offset = 0): { stats: McS
           sumDecisiveCoverage += measuredDecisive / decisive.length
           if (measuredDecisive === 0) {
             if (out.rec.kind === 'advisor_referral') se.decisiveNoneMeasuredAdvisorFlagged++
-            else se.decisiveNoneMeasuredSilent++
+            else {
+              se.decisiveNoneMeasuredSilent++
+              if (process.argv.includes('--debug-silent')) {
+                console.error(`صامتة #${se.decisiveNoneMeasuredSilent}: winner=${winner} margin=${liveMargin.toFixed(3)} asked=${out.asked.length} kind=${out.rec.kind}`)
+                console.error(`  decisive=${decisive.join(',')} unknown=${wCand.skills.unknownSkillSlugs.filter((s) => decisive.includes(s)).join(',')}`)
+                console.error(`  asked: ${out.asked.join(' ')}`)
+                console.error(`  facts: ${JSON.stringify(lastFacts)}`)
+                console.error(`  trace: ${(out.trace ?? []).map((t) => t.summary_ar.split('—')[0].split(':')[0].trim()).join(' | ')}`)
+              }
+            }
           }
           if (measuredDecisive >= 1) se.with1PlusDecisive++
           if (measuredDecisive >= 2) se.with2PlusDecisive++
@@ -567,6 +583,7 @@ if (process.argv.includes('--montecarlo')) {
   writeFileSync(join(outDir, 'montecarlo-v2_1.json'), JSON.stringify(main.stats, null, 2))
   console.log(`kind:`, main.stats.kind)
   console.log(`أعلى 10 فائزين:`, Object.entries(main.stats.winners).sort((a, b) => b[1] - a[1]).slice(0, 10))
+  console.log(`نطاقات الثقة:`, main.stats.confidenceBands)
   console.log(
     `متوسط الأسئلة: ${main.stats.avgQuestions} · استكشاف: ${main.stats.exploratoryRate * 100}٪ · مستشار: ${main.stats.advisorRate * 100}٪`,
   )

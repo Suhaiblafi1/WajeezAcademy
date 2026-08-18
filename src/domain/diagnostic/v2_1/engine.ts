@@ -49,7 +49,7 @@ import type {
   V2Candidate,
 } from '../v2/types'
 import { planOf } from './data'
-import { recommendationUniverse } from './universe'
+import { recommendationUniverse, gateDomainsOf } from './universe'
 import { competeEntities, decisiveSkills, appliedHandoffFilter, type CompetitionResult, type EntityCandidate } from './compete'
 import {
   goalByCode,
@@ -282,10 +282,11 @@ export function scoreAdaptiveQuestionV21(
   const measures = q.measures.filter((m) => m !== 'skill_vector' && m !== 'interest_vector' && m !== 'work_style_vector')
   const margin = candidates.length >= 2 ? candidates[0].total - candidates[1].total : 1
 
-  /* ١) سياق حاسم مفقود: القائمة الثابتة + الحقائق المطلوبة لمرشحي الصدارة الحاليين
-     (بما فيهم المتحدي المركب) — إصلاح أسلاك موثق: حقيقة يتطلبها متصدر ولا تُنتجها
-     أي إجابة مُعطاة بعد يجب أن ترفع أولوية سؤالها، وإلا تعمل بوابة تغطية الأدلة
-     في فحص الفوز ضد مرشح لم تُتح له فرصة جمع دليله أصلًا.
+  /* ١) سياق حاسم مفقود: حقائق القرار للمجموعة المعقولة (criticalFactsOf: مطلوبة +
+     إشارات + استبعادات + محاذاة وظيفة/قطاع/قيادة) — إصلاح أسلاك موثق: حقيقة يتوقف
+     عليها فوز مرشح معقول ولا تُنتجها أي إجابة مُعطاة بعد يجب أن ترفع أولوية
+     سؤالها، وإلا تعمل بوابة تغطية الأدلة في فحص الفوز ضد مرشح لم تُتح له فرصة
+     جمع دليله أصلًا.
      المرحلة 4 (أسئلة المهارات للفصل لا للتعزيز): سؤال قياس مهارة لا يأخذ دفعة
      «الحقيقة الحاسمة» في سباق مريح الهامش إلا إذا كانت المهارة حقيقة مطلوبة
      لمتحدٍّ مركب من الصدارة — فوز المركب يتوقف بنيويًا على تغطيتها (بوابة 0.8)،
@@ -303,15 +304,26 @@ export function scoreAdaptiveQuestionV21(
       }
     }
   }
+  /* الطبقة الأولى — حقيقة مطلوبة (غير اختيارية) لأحد مرشحي الصدارة الحاليين:
+     أولوية قصوى، لأن فحص الفوز ضد مرشح لم تُتح له فرصة جمع دليله حسمٌ غير عادل */
   const missingContext = measures.some((m) => {
     if (facts[m] !== undefined) return false
-    if (CONTEXT_FACTS.includes(m)) return true
     if (!criticalFacts?.has(m)) return false
     if (!isSkillQuestion) return true
     return margin < 0.15 || compositeCriticalFacts.has(m)
   })
     ? 1
     : 0
+  /* الطبقة الثانية — سياق عام من القائمة الثابتة لا يتطلبه أي مرشح من الصدارة:
+     مفيد لكنه دون أدلة الفصل والحقائق المطلوبة. موثق (إغلاق منطق V2.1): رحلة
+     «موظف بداية + هدف ذكاء اصطناعي» بلغت السقف الصلب 14 وأسئلة M3B الروتينية
+     تأكل المقاعد بوزن 1.0 بينما ظلت ai_literacy الحاسمة للمتصدر بلا قياس رغم
+     هامش 0.000 — فوقعت النتيجة تحت حارس الصمت. السياق العام لا يمنح وزن الحقيقة
+     المطلوبة بعد الآن، فيتقدم عليه فصل المهارات (0.9) وحد الدليل الأدنى (0.85) */
+  const genericContext =
+    missingContext === 0 && measures.some((m) => facts[m] === undefined && CONTEXT_FACTS.includes(m) && !criticalFacts?.has(m))
+      ? 1
+      : 0
 
   /* ٢) غموض المجال — سؤال يخدم مجالًا متنازعًا عليه */
   const domainUncertainty =
@@ -338,10 +350,13 @@ export function scoreAdaptiveQuestionV21(
 
   /* ٤ب) حد الدليل الأدنى المتمايز (موثق — المرحلة 4): في الجولات المتأخرة فقط
      (lateEvidence = بعد بلوغ targetMin + 2) وفي سباق حي فقط (هامش < 0.15):
-     مهارات المتصدر الحاسمة كلها مجهولة والفارق ضيق بما يمكن معه لدليل المهارة
-     أن يقلب النتيجة، فيرتفع سؤال قياس إحداها فوق الروتين ويبقى دون الحقائق
+     مهارة حاسمة للمتصدر ما زالت مجهولة والفارق ضيق بما يمكن معه لدليل المهارة
+     أن يقلب النتيجة، فيرتفع سؤال قياسها فوق الروتين ويبقى دون الحقائق
      المطلوبة (missingContext). سباق مريح الهامش لا يعتمد على المهارات أصلًا
-     فلا تُستهلك ميزانيته (البند: أسئلة المهارات للفصل لا للتعزيز) */
+     فلا تُستهلك ميزانيته (البند: أسئلة المهارات للفصل لا للتعزيز).
+     إغلاق منطق V2.1: بوابة «كل الحاسمات مجهولة» كانت تسكت متى قيست حاسمة
+     واحدة — فبقيت negotiation بلا قياس في رحلة FREELANCE رغم ضيق الهامش
+     ووجود QB-M4-013. الصيغة: السؤال يقيس حاسمة مجهولة للمتصدر — يكفي */
   const topEntity = candidates[0] ? recommendationUniverse().byId.get(candidates[0].pathwayId) : undefined
   const topDecisive = topEntity?.skill_roles.decisive ?? []
   const unsureExplore = facts['primary_goal']?.value === 'explore' || facts['need_id']?.value === 'need_unsure'
@@ -351,8 +366,8 @@ export function scoreAdaptiveQuestionV21(
     plan.layer21 === 'evidence_skill' &&
     !unsureExplore &&
     topDecisive.length > 0 &&
-    topDecisive.every((s) => top1Unknown.has(s)) &&
-    topDecisive.includes(skillSlug)
+    topDecisive.includes(skillSlug) &&
+    top1Unknown.has(skillSlug)
       ? 1
       : 0
 
@@ -379,7 +394,12 @@ export function scoreAdaptiveQuestionV21(
     minimumEvidence * 0.85 + // متأخر فقط (lateEvidence) — دون الحقائق المطلوبة (1.0) وفوق الروتين، بلا أولوية مطلقة
     contradiction * 0.65 +
     exploratory * 0.6 +
-    evidenceCoverage * 0.35 +
+    genericContext * 0.5 + // سياق عام لا تتطلبه الصدارة — فوق الروتين ودون أدلة الفصل
+    /* إغلاق منطق V2.1: رُفعت تغطية الدليل من 0.35 إلى 0.55 لتسبق السياق العام —
+       رحلة FREELANCE انتهت بnegotiation مجهولة رغم سباق 0.008 لأن أسئلة سياق
+       عامة (0.5) تقدمت على قياس حاسمة المتصدر (0.35). في سباق حي، قياس حاسمة
+       المتصدر أثمن قراريًا من أي سياق عام، ويبقى دون الحقائق الحاسمة (1.0) */
+    evidenceCoverage * 0.55 +
     (measures.some((m) => facts[m] === undefined) || q.answer_type === 'skill_level_5' ? 0.25 : 0) +
     cost * -0.12 +
     sensitivity * -0.1 +
@@ -393,7 +413,8 @@ export function scoreAdaptiveQuestionV21(
     ['يقيس مهارة حاسمة للمتصدر قبل أي اكتفاء', minimumEvidence * 0.8],
     ['يحسم تناقضًا قائمًا', contradiction * 0.65],
     ['يستكشف ميولك لأن الهدف غير محسوم', exploratory * 0.6],
-    ['يقيس مهارة يتطلبها المرشح المتصدر', evidenceCoverage * 0.35],
+    ['يستكمل سياقك العام', genericContext * 0.5],
+    ['يقيس مهارة يتطلبها المرشح المتصدر', evidenceCoverage * 0.55],
   ]
   const top = reasons.sort((a, b) => b[1] - a[1])[0]
   const reason_ar = top && top[1] > 0 ? `فاز أساسًا بسبب: ${top[0]}.` : 'يكمل الصورة العامة.'
@@ -402,7 +423,7 @@ export function scoreAdaptiveQuestionV21(
     questionId: q.question_id,
     utility,
     reason_ar,
-    components: { missingContext, domainUncertainty, evidenceSeparation, minimumEvidence, contradiction, exploratory, evidenceCoverage, cost, sensitivity, redundancy },
+    components: { missingContext, genericContext, domainUncertainty, evidenceSeparation, minimumEvidence, contradiction, exploratory, evidenceCoverage, cost, sensitivity, redundancy },
   }
 }
 
@@ -528,14 +549,45 @@ export class DiagnosticEngineV21 {
     return new Map(decisiveSkills(comp.candidates, ctx.skillStates).filter((d) => !d.measured).map((d) => [d.slug, d.separationValue]))
   }
 
-  /** الحقائق المطلوبة (غير الاختيارية) لمرشحي الصدارة — تُطعم مكوّن «السياق الحاسم»
-     حتى تُسأل الأسئلة المنتِجة لها قبل فحص فوز المركب (بوابة تغطية الأدلة) */
-  private criticalFactsOf(comp: CompetitionResult): Set<string> {
+  /** حقائق القرار للمجموعة المعقولة — المصدر الوحيد لوزن «السياق الحاسم».
+     المعقول = أول 3 أو ضمن 0.20 من المتصدر. لكل مرشح معقول نجمع كل حقيقة
+     تغيّر فوزه فعلًا: المطلوبة غير الاختيارية، إشاراته الموجبة والسالبة،
+     شروط استبعاده، وحقول المحاذاة (وظيفة/قطاع/مرحلة عمل/سياق قيادي) عندما
+     يعلن قوائم لها. موثق (إغلاق منطق V2.1): قصر الحرج على «مطلوبة أول 3»
+     حرم مركبًا معقولًا من سؤال الوظيفة الذي يفتح بوابة تعدد المجالات،
+     فخسر TPL-STRATEGY/TPL-B2B بلا دليل؛ وفي المقابل منح القائمة الثابتة
+     وزن 1.0 لكل سياق أكل مقاعد قياس ai_literacy الحاسمة (رحلة FND-003).
+     القاعدة: لا وزن كاملًا إلا لحقيقة يرتبط بها فوز مرشح معقول فعلًا */
+  private criticalFactsOf(comp: CompetitionResult, ctx: DecisionContext): Set<string> {
     const out = new Set<string>()
-    for (const c of comp.candidates.slice(0, 3)) {
+    const top = comp.candidates[0]?.netFit ?? 0
+    const activeDomains = gateDomainsOf(this.state.facts, ctx.domains)
+    const plausible = comp.candidates.filter((c, i) => i < 3 || top - c.netFit < 0.2)
+    for (const c of plausible) {
+      /* مركب لا يستطيع الفوز بنيويًا في هذه الجلسة — مجالاته المغطاة من حاجة
+         المستخدم أقل من اثنين وهو ليس في سباق الفوز المباشر: حقائقه المطلوبة
+         وإشاراته لا تُمنح وزن القرار الآن (موثق: TPL-DIGITAL-TRANSFORM ظل
+         معقولًا بحساب المسافة في رحلة موظف AI مبكر، فأكلت حقائقه الثمانية
+         المقاعد حتى السقف الصلب رغم استحالة اجتيازه بوابة تعدد المجالات).
+         نُبقي فقط «فاتح البوابة»: سؤال الوظيفة إن كان يعلن وظائف — إجابته
+         قد تصرّح بمجال ثانٍ يعيده إلى المنافسة، فيعود عندها بكامل حقائقه */
+      if (c.entity.entity_type === 'composite') {
+        const covered = c.entity.domains.filter((d) => activeDomains.includes(d))
+        const nearLeader = top - c.netFit < 0.05
+        if (covered.length < 2 && !nearLeader) {
+          if (c.entity.functions.length > 0) out.add('function_specialization')
+          continue
+        }
+      }
       for (const rf of c.entity.required_facts) {
         if (rf.importance !== 'optional') out.add(rf.fact_key)
       }
+      for (const s of [...(c.entity.positive_signals ?? []), ...(c.entity.negative_signals ?? [])]) out.add(s.fact_key)
+      for (const h of c.entity.hard_exclusions ?? []) out.add(h.condition.fact_key)
+      if (c.entity.functions.length > 0) out.add('function_specialization')
+      if (c.entity.sectors.length > 0) out.add('sector')
+      if (c.entity.business_stages.length > 0) out.add('business_stage')
+      if (c.entity.leadership_context.length > 0) out.add('leadership_context')
     }
     return out
   }
@@ -566,11 +618,23 @@ export class DiagnosticEngineV21 {
     const margin = comp.candidates.length >= 2 ? comp.candidates[0].netFit - comp.candidates[1].netFit : 1
     if (margin >= 0.15) return null
     const targets = new Set<string>()
-    for (const cand of comp.candidates.slice(0, 3)) {
+    /* إغلاق منطق V2.1: الصدارة الثلاثة ضيقة جدًا — الفائز النهائي في الجلسات
+       الصامتة الثماني كان رابعًا وقت الإنقاذ (هامش 0.099)، فقِيست حاسمات من
+       سبقوه ثم قفز هو للصدارة بلا دليل. المجموعة العادلة: كل مرشح ضمن هامش
+       حي (0.15) من المتصدر هو فائز محتمل، وحاسمته المجهولة هدف مشروع —
+       بسقف ستة مرشحين حتى لا تذوب الأولوية */
+    const topNet = comp.candidates[0]?.netFit ?? 0
+    const plausible = comp.candidates.filter((c, i) => i < 6 && topNet - c.netFit < 0.15)
+    for (const cand of plausible) {
       const decisiveSlugs = cand.entity.skill_roles.decisive
       if (decisiveSlugs.length === 0) continue
-      if (!decisiveSlugs.every((s) => cand.skills.unknownSkillSlugs.includes(s))) continue
-      for (const s of decisiveSlugs) targets.add(s)
+      /* إغلاق منطق V2.1: بوابة «every مجهولة» كانت تتخطى مرشحًا قيست إحدى
+         حاسمتيه وبقيت الأخرى بلا قياس رغم وجود سؤال نشط يقيسها — فانتهت رحلة
+         FREELANCE بnegotiation مجهولة في سباق 0.008 رغم أن QB-M4-013 متاح.
+         الصيغة المُحكَّمة: أي مهارة حاسمة مجهولة قابلة للقياس تدخل الأهداف —
+         قياسها أرخص وأصدق من إحالة مستشار كان يمكن الاستغناء عنها */
+      const unknownDecisive = decisiveSlugs.filter((s) => cand.skills.unknownSkillSlugs.includes(s))
+      for (const s of unknownDecisive) targets.add(s)
     }
     if (targets.size === 0) return null
     return (
@@ -631,7 +695,7 @@ export class DiagnosticEngineV21 {
     const trigCtx = this.triggerContext(confidence.overall)
     trigCtx.topTwoMargin = candidates.length >= 2 ? candidates[0].total - candidates[1].total : null
     const decisive = this.decisiveMap(comp, ctx)
-    const criticalFacts = this.criticalFactsOf(comp)
+    const criticalFacts = this.criticalFactsOf(comp, ctx)
 
     const eligible = [...questionById.values()].filter((q) => {
       if (!isQuestionEligibleV21(q, { ...trigCtx, askedIds, phase: 'adaptive', stage, compositeAmbiguous })) return false
@@ -656,10 +720,45 @@ export class DiagnosticEngineV21 {
           لا لصالح الأجدر (انزياح TPL-STRATEGY الموثق).
        ٢) حد الدليل الأدنى — مرشحو الصدارة بلا أي مهارة حاسمة مقاسة:
           يُسأل سؤال دليل واحد بدل إنهاء صامت */
-    if (stop.shouldStop && askedCount < V21_STOP.hardCap) {
-      const challenger = comp.bestComposite ?? comp.topComposite
+    /* الإنقاذ يعمل عند التوقف وعند اقتراب السقف الصلب (آخر مقعدين) — موثق:
+       رحلات وصلت 14/14 وأفضل مركب منافس ناقصه سؤال واحد منتَج بينما ذهبت
+       المقاعد الأخيرة لأسئلة أقل قيمة قرارية (حالة TPL-SMART-OPS) */
+    if ((stop.shouldStop || askedCount >= V21_STOP.hardCap - 2) && askedCount < V21_STOP.hardCap) {
       const bestStd = comp.bestStandard
-      if (challenger && bestStd && bestStd.netFit - challenger.netFit < 0.15) {
+      /* إغلاق منطق V2.1: أرضية الدليل تسبق عدالة المتحدين في السباق الحي —
+         8 جلسات مونت كارلو (20260818/10k) بلغت السقف وفائزوها (PW-NEG/PW-MKT)
+         بحاسمتهم مجهولة: كان الفائز النهائي ثانيًا/ثالثًا وقت الإنقاذ، فالتهمت
+         حقائق المتحدين (QB-M4-011 لصالح مركب) مقاعد قياس حاسمته (QB-M4-013/016).
+         الحد الأدنى يجمع حاسمات الصدارة الثلاثة المجهولة كلها، فيقيس دليلًا
+         يخدم الفائز المحتمل أيًّا كان — أسبق من فرصة متحدٍّ إضافية */
+      const floorFirst = this.minimumEvidenceQuestion(comp, ranked, true)
+      if (floorFirst) {
+        const question = questionById.get(floorFirst.questionId)!
+        this.traceEntry('question_selected', `أرضية الدليل — ${question.question_id}: ${question.text_ar}`, {
+          winner: question.question_id,
+          winnerReason_ar: 'مهارة حاسمة لأحد مرشحي الصدارة ما زالت مجهولة في سباق حي — قياسها يسبق منح المتحدين فرصًا إضافية.',
+          utility: floorFirst.utility,
+          utilityComponents: floorFirst.components,
+        })
+        return { question, utility: null, stop: { shouldStop: false, reason_ar: 'نقيس مهارة حاسمة للصدارة قبل الاكتفاء.', askedCount } }
+      }
+      /* كل مركب منافس شرعي (ضمن 0.15 من أفضل قياسي ويجتاز البوابتين البنيويتين)
+         يستحق فرصة إكمال دليله قبل الاكتفاء — لا الأعلى صافًا فقط. موثق (إغلاق
+         منطق V2.1): TPL-SMART-OPS كان متقدمًا على أفضل قياسي بصافيه لكنه ثالث
+         الترتيب، فلم يشمله إنقاذ «المتحدي الأعلى» وتوقفت الجلسة بتغطية 0.5 —
+         حُسم السباق لصالح من اكتمل دليله لا لصالح الأجدر */
+      const activeDoms = gateDomainsOf(this.state.facts, ctx.domains)
+      const bestStdDoms = bestStd?.entity.domains ?? []
+      const challengers = bestStd
+        ? comp.candidates.filter((c) => {
+            if (c.entity.entity_type !== 'composite') return false
+            if (bestStd.netFit - c.netFit >= 0.15) return false
+            const covered = c.entity.domains.filter((d) => activeDoms.includes(d))
+            return covered.length >= 2 && covered.some((d) => !bestStdDoms.includes(d))
+          })
+        : []
+      let fairnessAsked = false
+      for (const challenger of challengers) {
         const missingKeys = challenger.entity.required_facts
           .filter((rf) => rf.importance !== 'optional')
           .map((rf) => rf.fact_key)
@@ -675,23 +774,26 @@ export class DiagnosticEngineV21 {
           const question = questionById.get(challengerQ.questionId)!
           this.traceEntry('question_selected', `عدالة الدليل — ${question.question_id}: ${question.text_ar}`, {
             winner: question.question_id,
-            winnerReason_ar: 'خطة مركبة منافسة تنقصها حقيقة مطلوبة — تُمنح فرصة الدليل قبل الاكتفاء.',
+            winnerReason_ar: `خطة مركبة منافسة (${challenger.entity.entity_id}) تنقصها حقيقة مطلوبة — تُمنح فرصة الدليل قبل الاكتفاء.`,
             utility: challengerQ.utility,
             utilityComponents: challengerQ.components,
           })
+          fairnessAsked = true
           return { question, utility: null, stop: { shouldStop: false, reason_ar: 'نمنح الخطة المركبة المنافسة فرصة إكمال دليلها.', askedCount } }
         }
       }
-      const rescue = this.minimumEvidenceQuestion(comp, ranked, true)
-      if (rescue) {
-        const question = questionById.get(rescue.questionId)!
-        this.traceEntry('question_selected', `حد الدليل الأدنى — ${question.question_id}: ${question.text_ar}`, {
-          winner: question.question_id,
-          winnerReason_ar: 'مهارة حاسمة للمرشح المتصدر ما زالت مجهولة — لا توصية بلا أي دليل مهاري مقاس.',
-          utility: rescue.utility,
-          utilityComponents: rescue.components,
-        })
-        return { question, utility: null, stop: { shouldStop: false, reason_ar: 'نقيس مهارة حاسمة للمتصدر قبل الاكتفاء.', askedCount } }
+      if (!fairnessAsked) {
+        const rescue = this.minimumEvidenceQuestion(comp, ranked, true)
+        if (rescue) {
+          const question = questionById.get(rescue.questionId)!
+          this.traceEntry('question_selected', `حد الدليل الأدنى — ${question.question_id}: ${question.text_ar}`, {
+            winner: question.question_id,
+            winnerReason_ar: 'مهارة حاسمة للمرشح المتصدر ما زالت مجهولة — لا توصية بلا أي دليل مهاري مقاس.',
+            utility: rescue.utility,
+            utilityComponents: rescue.components,
+          })
+          return { question, utility: null, stop: { shouldStop: false, reason_ar: 'نقيس مهارة حاسمة للمتصدر قبل الاكتفاء.', askedCount } }
+        }
       }
     }
 
@@ -905,7 +1007,7 @@ export class DiagnosticEngineV21 {
       if (q.module_id === 'M5') return this.state.interestVector[q.measures[0]] === undefined
       return measures.some((m) => this.state.facts[m] === undefined)
     })
-    const ranked = rankAdaptiveQuestionsV21(pool, this.state.facts, this.state.contradictions, ctx, candidates, decisive, this.criticalFactsOf(comp))
+    const ranked = rankAdaptiveQuestionsV21(pool, this.state.facts, this.state.contradictions, ctx, candidates, decisive, this.criticalFactsOf(comp, ctx))
 
     const plan: DeepeningPlanItem[] = []
     for (const r of ranked) {
@@ -1219,18 +1321,28 @@ export class DiagnosticEngineV21 {
       }
     }
 
-    /* حارس صمت الدليل (موثق — المرحلة 4): في سباق حي (هامش < 0.15) فائز مهاراته
-       الحاسمة كلها مجهولة يعني أن دليلًا كان يمكن أن يقلب النتيجة لم يُجمع —
-       لا يُقدَّم توصيةً صامتة بل يُوسم بمراجعة مستشار مع سبب صريح.
-       أما السباق المريح ففوزه مبني على هدف/مجال/سياق لا على مهارات مجهولة */
+    /* حارس صمت الدليل (موثق — المرحلة 4، ومُحكَّم مرتين في إغلاق منطق V2.1):
+       في سباق حي (هامش < 0.15) فائزٌ بلا أي مهارة حاسمة مقاسة يعني أن دليلًا
+       كان يمكن أن يقلب النتيجة لم يُجمع — لا توصية صامتة بل وسم مستشار مع سبب
+       صريح وخطة مرفقة. التحكيم الثاني: الفحص الشامل أثبت أن كل حاسمة في الفضاء
+       النشط قابلة للقياس بسؤال نشط، فشرط «غير قابلة للإنتاج» وحده لا يكفي —
+       5 جلسات مونت كارلو (20260818/10k) قفز فائزها (PW-NEG/PW-MKT) للصدارة بعد
+       استنفاد مقاعد الإنقاذ على حاسمات منافسيه، فبقيت حاسمته مجهولة رغم أنها
+       قابلة للقياس. المعيار العادل: صفر حاسمات مقاسة في سباق حي = وسم، بغض
+       النظر عن سبب بقائها مجهولة. فائز قيست إحدى حاسمتيه (رحلة FREELANCE)
+       يملك دليلًا مهاريًا ولا يُوسم. أما السباق المريح ففوزه مبني على
+       هدف/مجال/سياق لا على مهارات مجهولة */
     const winnerForEvidence = composite && comp.bestComposite ? comp.bestComposite : primary
     const winnerDecisive = winnerForEvidence?.entity.skill_roles.decisive ?? []
     const raceMargin = comp.candidates.length >= 2 ? comp.candidates[0].netFit - comp.candidates[1].netFit : 1
+    const measuredDecisiveCount = winnerForEvidence
+      ? winnerDecisive.filter((s) => !winnerForEvidence.skills.unknownSkillSlugs.includes(s)).length
+      : 0
     const silentOnDecisive =
       winnerForEvidence !== null &&
       raceMargin < 0.15 &&
       winnerDecisive.length > 0 &&
-      winnerDecisive.every((s) => winnerForEvidence.skills.unknownSkillSlugs.includes(s))
+      measuredDecisiveCount === 0
 
     const needsAdvisor =
       confidence.outputKind === 'advisor_review' ||

@@ -430,6 +430,15 @@ export function auditComposite(tpl: CompositeTemplate, producible: Set<string>):
 }
 
 /* ─── بناء كيان مركب ─── */
+/* قرارات مراجعة أكاديمية موثقة (إغلاق منطق V2.1 — البند 1): كيان اجتاز البوابات
+   الآلية لكن إثبات «الوصول الإنتاجي» (الجناح الذهبي + شخصيات بشرية مصممة) أظهر
+   أنه لا يفوز من أي حالة بشرية طبيعية — يُعلَّم needs_revision بسبب موثق حتى
+   تُراجع صياغته، بدل وصول مصطنع يبقيه في الفضاء */
+const ACADEMIC_REVIEW_OVERRIDES: Record<string, string> = {
+  'TPL-SMART-OPS-001':
+    'لا يفوز من أي شخصية بشرية طبيعية: PW-OPS-001 يهيمن على حاجته الأحادية (الأبسط الكافي)، وTPL-SUPPLY/CX/DIGITAL-TRANSFORM تهيمن على متعددة المجالات؛ وتميّزه يعتمد إشارة operations_maturity المقصورة سؤالها على مؤسس/مستقل بينما جمهوره الطبيعي موظفون ومديرو عمليات. الدليل: 3520 توليفة جناح ذهبي + 12 شخصية مصممة (موظف/خبير/مدير/مؤسس/مستقل × عمليات × تحول رقمي) — أقصى صافٍ بلغه 0.731 مقابل فائز 0.824. يحتاج إعادة تعريف تميّزه أو إتاحة سؤال نضج العمليات لكل المراحل.',
+}
+
 function buildCompositeEntity(tpl: CompositeTemplate, audit: CompositeAudit): RecommendationEntity {
   const reqIds = (tpl.required_courses ?? []).map((c) => c.course_id)
   const condIds = (tpl.conditional_courses ?? []).map((c) => c.course_id)
@@ -442,13 +451,14 @@ function buildCompositeEntity(tpl: CompositeTemplate, audit: CompositeAudit): Re
   const goals = tpl.diagnostic?.primary_goal_codes ?? []
   const measurable = measurableSkills()
   const skills = skillsOfCourses(reqIds)
+  const reviewOverride = ACADEMIC_REVIEW_OVERRIDES[tpl.template_id]
 
   return {
     entity_id: tpl.template_id,
     entity_type: 'composite',
     title_ar: tpl.name_ar,
-    status: audit.status,
-    status_reasons_ar: audit.reasons_ar,
+    status: reviewOverride ? 'needs_revision' : audit.status,
+    status_reasons_ar: reviewOverride ? [reviewOverride, ...audit.reasons_ar] : audit.reasons_ar,
     transformation: {
       before_ar: tpl.transformation?.before_ar ?? '',
       after_ar: tpl.transformation?.after_ar ?? '',

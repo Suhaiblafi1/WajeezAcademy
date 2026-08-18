@@ -46,22 +46,43 @@ export function computeConfidenceV2(
   const values = Object.values(facts)
   const evidenceQuality = values.length === 0 ? 0 : values.reduce((s, v) => s + v.evidenceQuality, 0) / values.length
 
-  const overall =
+  /* معايرة إغلاق منطق V2.1: في سباق مريح (separation = 1) لا يمكن لدليل مهارة
+     أن يقلب النتيجة، فلا تُقاس المهارات عمدًا — احتساب تغطيتها صفرًا في المجموع
+     جعل «تطابق قوي» مستحيلًا في 10 آلاف جلسة (حتى مع blocker معاير). العلاج
+     المطابق للعقيدة: وزن التغطية يُستثنى من المقام في السباق المريح ويُعاد
+     التطبيع — لا مكافأة ولا عقوبة على مكوّن غير قراري هناك */
+  const skillWeightApplicable = separation < 1
+  const raw =
     persona * WEIGHTS.persona +
     goal * WEIGHTS.goal +
     domain * WEIGHTS.domain +
-    skillEvidenceCoverage * WEIGHTS.skillEvidenceCoverage +
+    (skillWeightApplicable ? skillEvidenceCoverage * WEIGHTS.skillEvidenceCoverage : 0) +
     trackFit * WEIGHTS.trackFit +
     separation * WEIGHTS.separation +
     consistency * WEIGHTS.consistency +
     evidenceQuality * WEIGHTS.evidenceQuality
+  const weightSum = skillWeightApplicable ? 1 : 1 - WEIGHTS.skillEvidenceCoverage
+  const overall = raw / weightSum
 
-  /* التوصية القوية مشروطة بكل مكون واضح — نسجل مانعاتها صراحة */
+  /* التوصية القوية مشروطة بكل مكون واضح — نسجل مانعاتها صراحة.
+     معايرة إغلاق منطق V2.1: مانع الدليل المهاري كان يطلق في السباقات المريحة
+     أيضًا — حيث لا تُقاس المهارات عمدًا لأنها لا تقلب النتيجة (عقيدة «المهارة
+     للفصل لا للتعزيز») — فاستحال «تطابق قوي» في 10 آلاف جلسة محاكاة كاملة.
+     المعايرة: المانع يعمل في السباق الحي فقط (separation < 1 أي هامش < 0.15)
+     حيث يمكن لمهارة مجهولة أن تقلب الفائز؛ السباق المريح فوزه مبني على
+     هدف/مجال/سياق، وحجب «قوية» عنه يعاقب المحرك على انضباطه لا على نقصه */
   const blockers: string[] = []
   if (ctx.persona.key === 'unknown' || persona < 0.6) blockers.push('لم تتضح شخصيتك التعليمية بما يكفي.')
   if (facts['primary_goal'] === undefined || goal < 0.5) blockers.push('هدفك ما زال غير واضح بما يكفي.')
   if (domain < DOMAIN_CONFIDENCE_MIN) blockers.push('المجال الأنسب لم يُحسم بعد بين أكثر من اتجاه.')
-  if (skillEvidenceCoverage < 0.5) blockers.push('أغلب مهارات المسار المتصدر لم تُقس بدليل مباشر.')
+  /* معايرة إغلاق منطق V2.1 (المرحلة الثانية): المانع كان يعمل حيث separation < 1
+     (هامش < 0.15) — لكن المحرك نفسه يعلن عند هامش ≥ 0.08 أن «الأسئلة المتبقية
+     تخصيصية لا تغيّر النتيجة» ويتوقف. حجب «قوية» هناك يناقض قرار التوقف نفسه
+     ويجعل النطاق الأعلى زخرفة لا تظهر أبدًا (صفر من 10 آلاف جلسة). الحد
+     المتماسك: المانع يعمل فقط حيث يصر المحرك على المزيد من الدليل
+     (هامش < 0.08 أي separation < 0.533) — هناك يمكن لمهارة مجهولة أن تقلب
+     الفائز فعلًا */
+  if (skillEvidenceCoverage < 0.5 && separation < 0.08 / 0.15) blockers.push('أغلب مهارات المسار المتصدر لم تُقس بدليل مباشر.')
   if (separation < 0.5) blockers.push('الفارق بين أول مرشحين ضيق.')
   if (highSev > 0) blockers.push('يوجد تناقض جوهري غير محسوم بين إجاباتك.')
 

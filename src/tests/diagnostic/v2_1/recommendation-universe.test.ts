@@ -9,7 +9,7 @@
 import { describe, expect, it } from 'vitest'
 import { createEngineV21, type RecommendationV21 } from '../../../domain/diagnostic/v2_1'
 import { Q, type CareerStage } from '../../../domain/diagnostic/v2_1/maps'
-import { recommendationUniverse, type RecommendationEntity } from '../../../domain/diagnostic/v2_1/universe'
+import { recommendationUniverse, measurableSkills, type RecommendationEntity } from '../../../domain/diagnostic/v2_1/universe'
 import { assessEntityEligibility, assessEntitySkills, type CompetitionResult } from '../../../domain/diagnostic/v2_1/compete'
 import type { DecisionContext } from '../../../domain/diagnostic/v2/types'
 
@@ -83,18 +83,23 @@ const FORMERLY_FROZEN = [
 ]
 
 describe('فضاء التوصيات الموحد V2.1 — معايير القبول (البند 19)', () => {
-  it('الفضاء النشط = 36 كيانًا (20 قياسيًا + 16 مركبًا) — الخمسة المجمدة سابقًا أُصلحت واعتُمدت (المرحلة 4)', () => {
+  it('الفضاء النشط = 35 كيانًا (20 قياسيًا + 15 مركبًا) — TPL-SMART-OPS-001 موسوم needs_revision بقرار أكاديمي موثق (إغلاق منطق V2.1)', () => {
     const universe = recommendationUniverse()
-    expect(universe.active.length).toBe(36)
+    expect(universe.active.length).toBe(35)
     expect(universe.active.filter((e) => e.entity_type === 'standard').length).toBe(20)
-    expect(universe.active.filter((e) => e.entity_type === 'composite').length).toBe(16)
+    expect(universe.active.filter((e) => e.entity_type === 'composite').length).toBe(15)
+    /* القرار الموثق: SMART-OPS لا يفوز من أي شخصية بشرية طبيعية (3520 توليفة +
+       12 شخصية مصممة) — PW-OPS يهيمن أحاديًا وSUPPLY/CX/DT تهيمن مركبًا */
+    const sops = universe.byId.get('TPL-SMART-OPS-001')
+    expect(sops?.status).toBe('needs_revision')
+    expect(sops?.status_reasons_ar.join(' ')).toContain('شخصية بشرية طبيعية')
     for (const id of FORMERLY_FROZEN) {
       const e = universe.byId.get(id)
       expect(e, `كيان مفقود: ${id}`).toBeDefined()
       expect(e!.status, `${id} لم يعد معتمدًا`).toBe('approved_active')
       expect(universe.active.find((a) => a.entity_id === id), `${id} غائب عن الفضاء النشط`).toBeDefined()
     }
-    // لا كيان قيد المراجعة حاليًا — وإن ظهر مستقبلًا يجب ألا يتسلل إلى النشط
+    // أي كيان غير معتمد (كـ SMART-OPS) يجب ألا يتسلل إلى النشط
     const notApproved = [...universe.byId.values()].filter((e) => e.status !== 'approved_active')
     for (const e of notApproved) {
       expect(universe.active.find((a) => a.entity_id === e.entity_id), `${e.entity_id} غير معتمد لكنه نشط`).toBeUndefined()
@@ -147,8 +152,10 @@ describe('فضاء التوصيات الموحد V2.1 — معايير القب�
       answers: { 'QB-M3B-012': 'لا', 'QB-M3B-003': 'لا', 'QB-M3B-001': 'خاص' },
     })
     expect(rec.composite ?? null).toBeNull()
-    /* لا مركب يجتاز البوابتين البنيويتين في حاجة أحادية — المتحدي الشرعي غير موجود */
-    expect(comp.bestComposite).toBeNull()
+    /* الأحادي لا تفوز فيه خطة مركبة أبدًا — وجود متحدٍّ شرعي (bestComposite) جائز
+       عندما يصرّح المستخدم بوظيفة تضيف مجالًا ثانيًا (إغلاق منطق V2.1: سؤال
+       الوظيفة أصبح حقيقة قرارية)، لكن فحص الفوز يظل حارس القيمة الإضافية */
+    expect(comp.compositeVictory?.passes ?? false).toBe(false)
   })
 
   it('مركب غير مجدٍ زمنيًا لا يفوز: مؤسس بأقل من ٣ ساعات يستبعد الخطط الثقيلة بالجدوى', () => {
@@ -179,12 +186,16 @@ describe('فضاء التوصيات الموحد V2.1 — معايير القب�
       mastery: 'أن أبني مجموعة مهارات مترابطة لتحقيق هدف',
       interest: 'أعمال',
     })
-    /* المرحلة 4 (عدالة الدليل): مهارتا القالب الحاسمتان (التفاوض، الكتابة
-       التجارية) لا يقيسهما أي سؤال في بنك V2.1، والسباق حي (هامش < 0.15) —
-       فيفوز القالب ويُرفق، لكن يُوسم لمراجعة مستشار بدل فوز صامت بلا قياس */
+    /* المرحلة 4 (عدالة الدليل): مهارتا FREELANCE الحاسمتان (التفاوض، الكتابة
+       التجارية) لا يقيسهما أي سؤال في بنك V2.1، والسباق حي — فيفوز القالب
+       ويُرفق موسومًا لمراجعة مستشار بدل فوز صامت بلا قياس.
+       إغلاق منطق V2.1: عدالة الدليل متعددة المتحدين منحت VENTURE فرصة إكمال
+       أدلته فأصبح الفائز المرفق (ملاءمته الخام دون FREELANCE بـ0.006 ويفوز
+       بتكلفة التعقيد)، ومهارة التفاوض غير المقيسة لدى FREELANCE (هامش 0.003)
+       تُبقي الوسم صحيحًا — السباق غير محسوم دليليًا فعلًا */
     expect(rec.kind).toBe('advisor_referral')
     expect(rec.composite, 'فوز مركب بلا خطة مرفقة').not.toBeNull()
-    expect(rec.composite!.templateId).toBe('TPL-FREELANCE-001')
+    expect(rec.composite!.templateId).toBe('TPL-VENTURE-001')
     const reasons = JSON.stringify(rec)
     expect(reasons).toContain('مهارة حاسمة')
   })
@@ -238,5 +249,20 @@ describe('فضاء التوصيات الموحد V2.1 — معايير القب�
     expect(a.rec.composite?.templateId ?? null).toEqual(b.rec.composite?.templateId ?? null)
     expect(a.rec.primaryPathway?.pathwayId ?? null).toEqual(b.rec.primaryPathway?.pathwayId ?? null)
     expect(a.rec.confidence.total).toEqual(b.rec.confidence.total)
+  })
+})
+
+describe('ثبات قابلية قياس الحاسمات — إغلاق منطق V2.1', () => {
+  it('كل مهارة حاسمة في الفضاء النشط يقيسها سؤال skill_level_5 نشط (لا حاسمة غير قابلة للإنتاج)', () => {
+    /* حارس الصمت في المحرك (وسم مستشار عند حاسمة مجهولة غير قابلة للقياس في
+       سباق حي) دفاعي ما دام هذا الثبات قائمًا. إن أضيفت يومًا مهارة حاسمة بلا
+       سؤال نشط يقيسها، يفشل هذا الاختبار ويفرض القرار: أضف سؤالًا أو أعد
+       تصنيف المهارة — لا صمتًا ولا اكتشافًا بالمصادفة */
+    const measurable = measurableSkills()
+    for (const e of recommendationUniverse().active) {
+      for (const s of e.skill_roles.decisive) {
+        expect(measurable.has(s), `${e.entity_id}: حاسمة بلا سؤال نشط يقيسها: ${s}`).toBe(true)
+      }
+    }
   })
 })

@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react";
 import {
-  CheckCircle2, ChevronDown, ChevronUp, FileText, History, Lock, RotateCcw, X,
+  CheckCircle2, ChevronDown, ChevronUp, FileText, History, Lock, RotateCcw, X, XCircle,
 } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import { trainerIdentity } from "./trainer-identity";
 import {
-  loadSubmissions, gradeSubmission, closeGrading, requestGradeChange,
+  loadSubmissions, gradeSubmission, closeGrading, requestGradeChange, rejectSubmission,
   loadGradeAudit, ASSIGNMENT_RUBRIC, type Submission, type SubmissionStatus,
 } from "@/data/trainer";
 
@@ -13,6 +13,7 @@ const STATUS_LABEL: Record<SubmissionStatus, { label: string; cls: string }> = {
   pending: { label: "بانتظار التقييم", cls: "bg-[#FABC05]/15 text-[#FABC05]" },
   approved: { label: "معتمد", cls: "bg-[#38A7B4]/15 text-[#6EC7D1]" },
   revision: { label: "طُلب تعديل", cls: "bg-orange-500/15 text-orange-300" },
+  rejected: { label: "مرفوض بسبب موثق", cls: "bg-red-500/15 text-red-300" },
   closed: { label: "مغلق نهائيا", cls: "bg-white/10 text-white/45" },
 };
 
@@ -28,6 +29,7 @@ export default function GradingQueue() {
   const [rubric, setRubric] = useState<Record<string, number>>({});
   const [feedback, setFeedback] = useState("");
   const [editGrade, setEditGrade] = useState<{ id: string; value: string; reason: string } | null>(null);
+  const [rejecting, setRejecting] = useState<{ id: string; reason: string } | null>(null);
 
   const shown = subs.filter((s) =>
     filter === "all" ? true : filter === "pending" ? s.status === "pending" : s.status !== "pending"
@@ -117,7 +119,7 @@ export default function GradingQueue() {
                     className="mt-3 w-full rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:border-[#38A7B4] focus:outline-none disabled:opacity-50"
                   />
                   <div className="mt-4 flex flex-wrap items-center gap-3">
-                    {s.status !== "closed" && (
+                    {(s.status === "pending" || s.status === "revision") && (
                       <>
                         <button
                           onClick={() => grade(s.id, "approved")}
@@ -133,7 +135,18 @@ export default function GradingQueue() {
                         >
                           <RotateCcw className="h-4 w-4" /> طلب تعديل
                         </button>
+                        <button
+                          onClick={() => setRejecting({ id: s.id, reason: "" })}
+                          className="flex cursor-pointer items-center gap-2 rounded-full border border-red-500/50 px-5 py-2.5 text-sm font-black text-red-300 transition hover:bg-red-500/10"
+                        >
+                          <XCircle className="h-4 w-4" /> رفض بسبب
+                        </button>
                       </>
+                    )}
+                    {s.status === "rejected" && s.rejectReason && (
+                      <p className="w-full rounded-xl border border-red-500/25 bg-red-500/5 px-4 py-2.5 text-xs leading-6 text-red-200">
+                        سبب الرفض الموثق: {s.rejectReason}
+                      </p>
                     )}
                     {s.status === "approved" && (
                       <>
@@ -221,6 +234,42 @@ export default function GradingQueue() {
               className="mt-5 w-full cursor-pointer rounded-full bg-[#FABC05] py-3 font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90 disabled:cursor-not-allowed disabled:opacity-40"
             >
               سجّل التعديل موثقا
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* نافذة رفض التسليم بسبب موثق */}
+      {rejecting && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-5 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#151515] p-6">
+            <div className="flex items-center justify-between">
+              <h3 className="font-black">رفض التسليم</h3>
+              <button onClick={() => setRejecting(null)} className="cursor-pointer text-white/50 hover:text-white" aria-label="إغلاق"><X className="h-5 w-5" /></button>
+            </div>
+            <p className="mt-2 text-xs leading-6 text-white/55">
+              الرفض قرار نهائي على هذا التسليم — يتطلب سببا مفهوما يظهر للطالب ويُسجل في سجل المراجعة، كما يفرض الخادم.
+            </p>
+            <label className="mt-4 block text-xs font-bold text-white/60">سبب الرفض (إلزامي)</label>
+            <textarea
+              value={rejecting.reason}
+              onChange={(e) => setRejecting({ ...rejecting, reason: e.target.value })}
+              rows={3}
+              placeholder="مثال: التسليم لا يتوافق مع موضوع الواجب المطلوب — راجع وصف المهمة"
+              className="mt-1.5 w-full rounded-xl border border-white/15 bg-black/30 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-red-400 focus:outline-none"
+            />
+            <button
+              onClick={() => {
+                if (rejectSubmission(meName, rejecting.id, rejecting.reason)) {
+                  setRejecting(null);
+                  setOpenId(null);
+                  setTick(tick + 1);
+                }
+              }}
+              disabled={!rejecting.reason.trim()}
+              className="mt-5 w-full cursor-pointer rounded-full bg-red-500 py-3 font-black text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              سجّل الرفض موثقا
             </button>
           </div>
         </div>

@@ -1,67 +1,86 @@
-/* ─────────── خدمة المصادقة (واجهة تجريبية جاهزة للربط) ───────────
-   اليوم: مخزن محلي يحاكي الخادم. عند النقل إلى Replit تُستبدل دوال
-   signUp/signIn/resetPassword بنداءات API حقيقية دون تغيير الواجهة.
-   مبادئ ثابتة حتى في النسخة التجريبية:
-   - خطأ الدخول عام ولا يكشف وجود الحساب.
-   - قفل مؤقت بعد خمس محاولات فاشلة.
-   - جلسة بمدة انتهاء، وتسجيل خروج يمسحها كاملة.
-   - كلمات المرور هنا بصيغة مبسطة للعرض فقط — في الإنتاج تُجزّأ في الخادم. */
+/* ─────────── خدمة المصادقة — مربوطة بخادم API الحقيقي ───────────
+   الجلسة الحقيقية كوكي httpOnly يصدرها الخادم (POST /api/auth/login).
+   نحتفظ محليا بنسخة عرض خفيفة (الاسم/البريد/الأدوار/الانتهاء) في localStorage
+   لغرض واحد: إظهار اسم المستخدم وتوجيهه لبوابته دون انتظار — وهي ليست دليل
+   دخول؛ كل مسار محمي يتحقق من الكوكي عند الخادم.
+   مبادئ ثابتة:
+   - خطأ الدخول عام ولا يكشف وجود الحساب (رسالة الخادم نفسها عامة).
+   - القفل بعد المحاولات الفاشلة يفرضه الخادم (15 دقيقة) + تلميح محلي.
+   - تسجيل الخروج يبطل الجلسة عند الخادم ثم يمسح النسخة المحلية. */
+
+import { ApiError, apiGet, apiPost } from "./api";
 
 export const OAUTH_READY = false; // أزرار قوقل ولينكدإن مخفية حتى يكتمل ربط OAuth الحقيقي
 
 const USER_KEY = "wajeez_user";
-const ACCOUNTS_KEY = "wajeez_accounts";
 const LOCK_KEY = "wajeez_auth_lock";
-const SESSION_DAYS = 7;
-const MAX_FAILS = 5;
-const LOCK_MINUTES = 10;
 
 export interface Session {
   name: string;
   email: string;
+  roles: string[];
   at: number;
   exp: number;
 }
 
-interface Account {
-  name: string;
+/** هوية الجلسة كما يعيدها الخادم */
+interface ServerUser {
+  userId: string;
   email: string;
-  pass: string;
-  verified: boolean;
+  displayName: string;
+  roles: string[];
+  permissions: string[];
 }
 
-function readAccounts(): Account[] {
-  try {
-    return JSON.parse(localStorage.getItem(ACCOUNTS_KEY) ?? "[]") as Account[];
-  } catch {
-    return [];
+/* ─────────── التوجيه حسب الدور — كل دور إلى بوابته ─────────── */
+
+const ROLE_HOME: Record<string, string> = {
+  super_admin: "/admin",
+  academic_manager: "/admin",
+  diagnostic_manager: "/admin",
+  operations_manager: "/admin",
+  finance: "/admin",
+  support: "/admin",
+  advisor: "/advisor",
+  trainer: "/trainer",
+};
+
+/** مسار البوابة الأنسب لأقوى دور يحمله المستخدم — الافتراضي بوابة المتعلم.
+   الأولوية بترتيب ROLE_HOME: أدوار الإدارة أولا، ثم المستشار، ثم المدرب */
+export function homePathForRoles(roles: string[]): string {
+  for (const role of Object.keys(ROLE_HOME)) {
+    if (roles.includes(role)) return ROLE_HOME[role];
   }
+  return "/student";
 }
 
-function writeAccounts(list: Account[]): void {
-  localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(list));
-}
+/* ─────────── نسخة العرض المحلية (للعرض فقط — ليست دليل دخول) ─────────── */
 
-/* ─────────── الجلسة ─────────── */
+function writeSession(name: string, email: string, roles: string[], expiresAt?: string): void {
+  const exp = expiresAt ? Date.parse(expiresAt) : Date.now() + 30 * 864e5;
+  const s: Session = { name, email, roles, at: Date.now(), exp };
+  localStorage.setItem(USER_KEY, JSON.stringify(s));
+}
 
 export function readSession(): Session | null {
   const raw = localStorage.getItem(USER_KEY);
   if (!raw) return null;
   try {
     const s = JSON.parse(raw) as Partial<Session>;
-    if (typeof s.exp === "number") {
-      if (Date.now() > s.exp) {
-        signOut();
-        return null;
-      }
-      return { name: s.name ?? "متعلم وجيز", email: s.email ?? "", at: s.at ?? 0, exp: s.exp };
+    if (typeof s.exp === "number" && Date.now() > s.exp) {
+      localStorage.removeItem(USER_KEY);
+      return null;
     }
-    // صيغة قديمة بلا انتهاء — نمنحها جلسة جديدة المدة
-    const legacy = { name: s.name ?? String(raw), email: s.email ?? "", at: Date.now(), exp: Date.now() + SESSION_DAYS * 864e5 };
-    localStorage.setItem(USER_KEY, JSON.stringify(legacy));
-    return legacy;
+    return {
+      name: s.name ?? "متعلم وجيز",
+      email: s.email ?? "",
+      roles: Array.isArray(s.roles) ? s.roles : [],
+      at: s.at ?? 0,
+      exp: s.exp ?? 0,
+    };
   } catch {
-    return { name: raw, email: "", at: Date.now(), exp: Date.now() + SESSION_DAYS * 864e5 };
+    localStorage.removeItem(USER_KEY);
+    return null;
   }
 }
 
@@ -69,21 +88,35 @@ export function readUserName(): string | null {
   return readSession()?.name ?? null;
 }
 
-function writeSession(name: string, email: string): void {
-  const s: Session = { name, email, at: Date.now(), exp: Date.now() + SESSION_DAYS * 864e5 };
-  localStorage.setItem(USER_KEY, JSON.stringify(s));
+/** أدوار نسخة العرض — لاختيار وجهة التنقل بعد الدخول */
+export function readRoles(): string[] {
+  return readSession()?.roles ?? [];
 }
 
-export function signOut(): void {
-  localStorage.removeItem(USER_KEY);
+/** يزامن نسخة العرض مع الخادم — يعيد null إن لا جلسة حية */
+export async function refreshSession(): Promise<Session | null> {
+  try {
+    const { user } = await apiGet<{ user: ServerUser | null }>("/api/auth/me");
+    if (!user) {
+      localStorage.removeItem(USER_KEY);
+      return null;
+    }
+    writeSession(user.displayName, user.email, user.roles);
+    return readSession();
+  } catch {
+    return readSession(); // انقطاع شبكة — نبقي آخر نسخة معروفة
+  }
 }
 
-/* ─────────── قفل المحاولات ─────────── */
+/* ─────────── قفل المحاولات (تلميح محلي — القفل الحقيقي عند الخادم) ─────────── */
 
 interface LockState {
   fails: number;
   until: number;
 }
+
+const MAX_FAILS = 5;
+const LOCK_MINUTES = 10;
 
 function readLock(): LockState {
   try {
@@ -115,51 +148,72 @@ function clearFails(): void {
 
 export type AuthResult = { ok: true } | { ok: false; error: string };
 
-export function signUp(name: string, email: string, pass: string): AuthResult {
-  const accounts = readAccounts();
-  const norm = email.trim().toLowerCase();
-  if (accounts.some((a) => a.email === norm)) {
-    return { ok: false, error: "لديك حساب بهذا البريد بالفعل — انتقل لتبويب «دخول»" };
-  }
-  accounts.push({ name: name.trim(), email: norm, pass, verified: false });
-  writeAccounts(accounts);
-  writeSession(name.trim(), norm);
-  clearFails();
-  return { ok: true };
+const NETWORK_FAIL = "تعذر الاتصال بالخادم — تأكد أن خادم API يعمل ثم حاول مجددا";
+
+function toMessage(e: unknown): string {
+  if (e instanceof ApiError) return e.message; // رسالة الخادم العربية جاهزة وآمنة
+  return NETWORK_FAIL;
 }
 
-export function signIn(email: string, pass: string): AuthResult {
+/** إنشاء حساب متعلم ثم دخوله مباشرة — الدور الافتراضي learner (لا تصعيد ذاتي) */
+export async function signUp(name: string, email: string, pass: string): Promise<AuthResult> {
+  try {
+    await apiPost("/api/auth/register", {
+      email: email.trim().toLowerCase(),
+      password: pass,
+      displayName: name.trim(),
+    });
+  } catch (e) {
+    if (e instanceof ApiError && e.code === "email_taken") {
+      return { ok: false, error: "لديك حساب بهذا البريد بالفعل — انتقل لتبويب «دخول»" };
+    }
+    return { ok: false, error: toMessage(e) };
+  }
+  // ندخل المستخدم فورا ليحفظ تشخيصه ومساره دون خطوة إضافية
+  const login = await signIn(email, pass);
+  return login;
+}
+
+export async function signIn(email: string, pass: string): Promise<AuthResult> {
   if (lockedMinutes() > 0) {
     return { ok: false, error: `محاولات كثيرة — انتظر ${lockedMinutes()} دقائق ثم حاول مجددا` };
   }
-  const norm = email.trim().toLowerCase();
-  const acc = readAccounts().find((a) => a.email === norm);
-  if (!acc || acc.pass !== pass) {
-    recordFail();
-    // رسالة عامة لا تكشف هل البريد مسجل أم لا
-    return { ok: false, error: "بيانات الدخول غير صحيحة — تأكد من البريد وكلمة المرور" };
+  try {
+    const { user, expiresAt } = await apiPost<{ user: ServerUser; expiresAt: string }>(
+      "/api/auth/login",
+      { email: email.trim().toLowerCase(), password: pass },
+    );
+    writeSession(user.displayName, user.email, user.roles, expiresAt);
+    clearFails();
+    return { ok: true };
+  } catch (e) {
+    if (e instanceof ApiError && (e.status === 401 || e.status === 429)) recordFail();
+    return { ok: false, error: toMessage(e) };
   }
-  writeSession(acc.name, acc.email);
-  clearFails();
-  return { ok: true };
 }
 
-/** طلب استعادة كلمة المرور — ينجح ظاهريا دائما حتى لا يكشف وجود الحساب */
-export function requestPasswordReset(email: string): string {
-  void email;
-  return "إن كان هذا البريد مسجلا لدينا فستصله رسالة استعادة خلال دقائق";
+export async function signOut(): Promise<void> {
+  try {
+    await apiPost("/api/auth/logout");
+  } catch {
+    // حتى لو تعذر النداء نمسح نسخة العرض — الكوكي منتهي الصلاحية عند الخادم
+  }
+  localStorage.removeItem(USER_KEY);
 }
 
-/** إعادة إرسال رسالة التحقق — تجريبية، تعيد تأكيد الإرسال فقط */
+/** طلب استعادة كلمة المرور — رسالة الخادم آمنة ولا تكشف وجود الحساب */
+export async function requestPasswordReset(email: string): Promise<string> {
+  try {
+    const { message } = await apiPost<{ message: string }>("/api/auth/password/forgot", {
+      email: email.trim().toLowerCase(),
+    });
+    return message;
+  } catch (e) {
+    return e instanceof ApiError ? e.message : NETWORK_FAIL;
+  }
+}
+
+/** إعادة إرسال رسالة التحقق — لا قناة بريد بعد في مرحلة التأسيس */
 export function resendVerification(email: string): void {
   void email; // في الإنتاج: POST /auth/resend-verification
-}
-
-export function markVerified(email: string): void {
-  const accounts = readAccounts();
-  const acc = accounts.find((a) => a.email === email.trim().toLowerCase());
-  if (acc) {
-    acc.verified = true;
-    writeAccounts(accounts);
-  }
 }

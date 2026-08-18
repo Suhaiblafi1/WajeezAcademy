@@ -10,6 +10,8 @@ import Business from './pages/Business'
 import Contact from './pages/Contact'
 import Auth from './pages/Auth'
 import NotFound from './pages/NotFound'
+import RequireRole, { ADMIN_ROLES, ADVISOR_ROLES, TRAINER_ROLES } from './components/RequireRole'
+import ToastHost from './components/Toast'
 
 /* مبدل أدوار الديمو — يُحمَّل كقطعة منفصلة ولا يُجلب ولا يظهر إلا في بناء الديمو */
 const DemoRoleSwitcher = lazy(() => import('./components/DemoRoleSwitcher'))
@@ -28,6 +30,8 @@ const Project = lazy(() => import('./pages/student/Project'))
 const Certificates = lazy(() => import('./pages/student/Certificates'))
 const MyLearning = lazy(() => import('./pages/student/MyLearning'))
 const StudentAccount = lazy(() => import('./pages/student/Account'))
+const StudentBilling = lazy(() => import('./pages/student/Billing'))
+const StudentCv = lazy(() => import('./pages/student/MyCv'))
 const AdvisorDashboard = lazy(() => import('./pages/advisor/AdvisorDashboard'))
 const AdvisorReviews = lazy(() => import('./pages/advisor/Reviews'))
 const StudentCard = lazy(() => import('./pages/advisor/StudentCard'))
@@ -48,6 +52,11 @@ const ContentWorkflow = lazy(() => import('./pages/admin/ContentWorkflow'))
 const CatalogAdmin = lazy(() => import('./pages/admin/CatalogAdmin'))
 const PublishingBoard = lazy(() => import('./pages/admin/PublishingBoard'))
 const DiagnosticQuality = lazy(() => import('./pages/admin/DiagnosticQuality'))
+const AdminUsers = lazy(() => import('./pages/admin/Users'))
+const AdminReports = lazy(() => import('./pages/admin/Reports'))
+const AdminSupport = lazy(() => import('./pages/admin/Support'))
+const AdminFinance = lazy(() => import('./pages/admin/Finance'))
+const AdminNotifications = lazy(() => import('./pages/admin/Notifications'))
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -108,28 +117,44 @@ export default function App() {
           <Route path="/student/certificates" element={<Certificates />} />
           <Route path="/student/learning" element={<MyLearning />} />
           <Route path="/student/account" element={<StudentAccount />} />
-          <Route path="/advisor" element={<AdvisorDashboard />} />
-          <Route path="/advisor/reviews" element={<AdvisorReviews />} />
-          <Route path="/advisor/student/:id" element={<StudentCard />} />
-          <Route path="/trainer" element={<TrainerDashboard />} />
-          <Route path="/trainer/grading" element={<GradingQueue />} />
-          <Route path="/trainer/cohort/:id" element={<CohortView />} />
-          <Route path="/trainer/earnings" element={<Earnings />} />
-          <Route path="/trainer/proposals" element={<TrainerProposals />} />
-          <Route path="/trainer/board" element={<CohortBoard />} />
+          <Route path="/student/billing" element={<StudentBilling />} />
+          <Route path="/student/cv" element={<StudentCv />} />
+          {/* دعوة المدرب مسار عام برمز دعوة — خارج حارس الأدوار عمدا */}
           <Route path="/trainer/accept-invite" element={<TrainerAcceptInvite />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/cohorts" element={<AdminCohorts />} />
-          <Route path="/admin/exceptions" element={<Exceptions />} />
-          <Route path="/admin/content" element={<ContentWorkflow />} />
-          <Route path="/admin/trainers" element={<AdminTrainerApps />} />
-          <Route path="/admin/catalog" element={<CatalogAdmin />} />
-          <Route path="/admin/publishing" element={<PublishingBoard />} />
-          <Route path="/admin/quality" element={<DiagnosticQuality />} />
+          {/* بوابات الفريق — حارس يتحقق من الجلسة والدور عند الخادم */}
+          <Route element={<RequireRole allow={ADVISOR_ROLES} />}>
+            <Route path="/advisor" element={<AdvisorDashboard />} />
+            <Route path="/advisor/reviews" element={<AdvisorReviews />} />
+            <Route path="/advisor/student/:id" element={<StudentCard />} />
+          </Route>
+          <Route element={<RequireRole allow={TRAINER_ROLES} />}>
+            <Route path="/trainer" element={<TrainerDashboard />} />
+            <Route path="/trainer/grading" element={<GradingQueue />} />
+            <Route path="/trainer/cohort/:id" element={<CohortView />} />
+            <Route path="/trainer/earnings" element={<Earnings />} />
+            <Route path="/trainer/proposals" element={<TrainerProposals />} />
+            <Route path="/trainer/board" element={<CohortBoard />} />
+          </Route>
+          <Route element={<RequireRole allow={ADMIN_ROLES} />}>
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/cohorts" element={<AdminCohorts />} />
+            <Route path="/admin/exceptions" element={<Exceptions />} />
+            <Route path="/admin/content" element={<ContentWorkflow />} />
+            <Route path="/admin/trainers" element={<AdminTrainerApps />} />
+            <Route path="/admin/catalog" element={<CatalogAdmin />} />
+            <Route path="/admin/publishing" element={<PublishingBoard />} />
+            <Route path="/admin/quality" element={<DiagnosticQuality />} />
+            <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/reports" element={<AdminReports />} />
+            <Route path="/admin/support" element={<AdminSupport />} />
+            <Route path="/admin/finance" element={<AdminFinance />} />
+            <Route path="/admin/notifications" element={<AdminNotifications />} />
+          </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
         </Suspense>
       </main>
+      <ToastHost />
       {IS_DEMO_BUILD && (
         <Suspense fallback={null}>
           <DemoRoleSwitcher />

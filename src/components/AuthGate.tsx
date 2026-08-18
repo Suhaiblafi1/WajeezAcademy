@@ -82,7 +82,7 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
   const strength = strengthOf(pass);
   const locked = lockedMinutes();
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy) return;
     if (locked > 0) {
@@ -106,11 +106,9 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
     setBusy(true);
     setErr("");
     track("account_started", { mode });
-    // محاكاة زمن الخادم — تُستبدل بنداء API حقيقي عند الربط
-    window.setTimeout(() => {
+    try {
       const result =
-        mode === "signup" ? signUp(name, email, pass) : signIn(email, pass);
-      setBusy(false);
+        mode === "signup" ? await signUp(name, email, pass) : await signIn(email, pass);
       if (!result.ok) {
         track("account_failed");
         setErr(result.error);
@@ -123,21 +121,25 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
       } else {
         onDone();
       }
-    }, 700);
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const submitReset = (e: React.FormEvent) => {
+  const submitReset = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy || !emailValid) return;
     setBusy(true);
-    window.setTimeout(() => {
-      setBusy(false);
+    try {
+      // رسالة الخادم آمنة ولا تكشف وجود الحساب
+      const msg = await requestPasswordReset(email);
       setErr("");
       setView("auth");
       setMode("login");
-      // رسالة آمنة لا تكشف وجود الحساب
-      setNotice(requestPasswordReset(email));
-    }, 700);
+      setNotice(msg);
+    } finally {
+      setBusy(false);
+    }
   };
 
   const [notice, setNotice] = useState("");

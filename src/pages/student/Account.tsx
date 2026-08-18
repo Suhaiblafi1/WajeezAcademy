@@ -68,7 +68,7 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
         <span className={labelCls}>{label}</span>
         {children}
       </label>
-      {hint && <p className="mt-1 text-[11px] text-white/35">{hint}</p>}
+      {hint && <p className="mt-1 text-[11px] text-white/50">{hint}</p>}
     </div>
   );
 }
@@ -354,9 +354,9 @@ export default function StudentAccount() {
             { to: "/student", icon: RouteIcon, t: "مساراتي وتقدمي", d: "مسارك النشط ونسبة إنجازه" },
             { to: "/student/learning", icon: BookOpen, t: "دوراتي وجلساتي", d: "الدورات المسجلة ومواعيدها" },
             { to: "/student/certificates", icon: Award, t: "شهاداتي", d: "شهادات الإتمام الموثقة وروابط التحقق" },
-            { to: "/student", icon: MessageCircle, t: "مستشاري ومدربيّ", d: "بطاقة المستشار في لوحتك — تواصل مباشر" },
-            { to: "/diagnostic", icon: FileText, t: "نتائج تشخيصي", d: "آخر نتيجة محفوظة وتقريرك الشخصي" },
-            { to: "/student/project", icon: CheckCircle2, t: "مشروع تخرجي", d: "المخرج العملي وحالة اعتماده" },
+            { to: "/student/billing", icon: FileText, t: "فواتيري وطلباتي", d: "أرقام مرجعية وسجل دفعات ودفع اختباري" },
+            { to: "/student/cv", icon: FileText, t: "سيرتي الذاتية", d: "رفع بموافقة صريحة وحذف موثق" },
+            { to: "/diagnostic", icon: MessageCircle, t: "نتائج تشخيصي", d: "آخر نتيجة محفوظة وتقريرك الشخصي" },
           ].map((x) => (
             <Link key={x.t} to={x.to} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 transition hover:border-[#38A7B4]/50">
               <x.icon className="h-4 w-4 text-[#6EC7D1]" />
@@ -371,7 +371,8 @@ export default function StudentAccount() {
       <section className="mt-6 rounded-3xl border border-white/10 bg-white/[0.02] p-6 md:p-8">
         <h2 className="flex items-center gap-2 text-base font-black"><Lock className="h-4 w-4 text-[#6EC7D1]" /> الفوترة والطلبات</h2>
         <p className="mt-2 text-sm leading-7 text-white/55">
-          فواتيرك وطلباتك محفوظة برقم مرجعي لكل عملية شراء، وتظهر تفاصيلها في لوحتك أعلى الصفحة.
+          فواتيرك وطلباتك ودفعاتك — بأرقامها المرجعية وسجل مدفوعاتها — في صفحة{" "}
+          <Link to="/student/billing" className="font-bold text-[#6EC7D1] underline-offset-4 hover:underline">فواتيري</Link>.
           لأي طلب استرداد أو مراجعة فاتورة: <Link to="/contact" className="font-bold text-[#6EC7D1] underline-offset-4 hover:underline">صفحة التواصل</Link> — اختر «طلب استرداد».
         </p>
       </section>
