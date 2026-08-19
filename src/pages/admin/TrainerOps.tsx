@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   BadgeCheck, Banknote, Briefcase, CalendarCheck, CheckCircle2, ChevronDown, FileSignature,
-  Globe, Loader2, ShieldOff, Star, UserCheck, XCircle,
+  Globe, Loader2, Settings2, ShieldOff, Star, UserCheck, XCircle, Zap,
 } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 
@@ -389,10 +389,30 @@ interface PayoutRow {
 }
 interface ProfileOpt { id: string; fullName: string; reference: string }
 
+const RULE_TYPE_AR: Record<string, string> = {
+  per_seat: "لكل متعلم", fixed_per_cohort: "ثابت لكل شعبة", revenue_share: "نسبة من الإيراد",
+};
+
+interface RuleRow {
+  id: string; profileId: string; type: string; rate: string | number; currency: string;
+  effectiveFrom: string; effectiveTo?: string | null;
+  profile: { application?: { fullName: string } | null };
+}
+interface CohortOpt { id: string; title: string; courseTitle: string; endsAt?: string | null }
+interface CohortPreview {
+  cohort: { id: string; title: string; status: string; courseTitle: string };
+  profile: { id: string; fullName: string };
+  rule: { type: string; rate: number; currency: string };
+  items: { description: string; amount: number; sourceRef?: string }[];
+  total: number;
+}
+
 /** إدارة كشوف مستحقات المدربين — إنشاء واعتماد وصرف وإلغاء، كلها API حقيقي */
 export function TrainerPayouts() {
   const [rows, setRows] = useState<PayoutRow[]>([]);
   const [profiles, setProfiles] = useState<ProfileOpt[]>([]);
+  const [rules, setRules] = useState<RuleRow[]>([]);
+  const [completedCohorts, setCompletedCohorts] = useState<CohortOpt[]>([]);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
@@ -403,15 +423,22 @@ export function TrainerPayouts() {
   const [items, setItems] = useState<{ description: string; amount: string; sourceRef: string }[]>([
     { description: "", amount: "", sourceRef: "" },
   ]);
+  /* قواعد الأتعاب والتوليد */
+  const [ruleForm, setRuleForm] = useState({ profileId: "", type: "per_seat", rate: "" });
+  const [genCohortId, setGenCohortId] = useState("");
+  const [preview, setPreview] = useState<CohortPreview | null>(null);
+  const [batchResult, setBatchResult] = useState<{ generated: { title: string; total: number }[]; skipped: { title: string; reason: string }[] } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [p, profs] = await Promise.all([
+      const [p, profs, r, cohorts] = await Promise.all([
         apiGet<PayoutRow[]>(`/api/admin/trainer-payouts${filter ? `?status=${filter}` : ""}`),
         apiGet<ProfileOpt[]>("/api/admin/trainer-profiles"),
+        apiGet<RuleRow[]>("/api/admin/trainer-compensation-rules"),
+        apiGet<CohortOpt[]>("/api/admin/cohorts?status=completed"),
       ]);
-      setRows(p); setProfiles(profs);
+      setRows(p); setProfiles(profs); setRules(r); setCompletedCohorts(cohorts);
     } catch (e) { setMsg(e instanceof ApiError ? e.message : "تعذر تحميل الكشوف"); }
     finally { setLoading(false); }
   }, [filter]);
@@ -425,6 +452,31 @@ export function TrainerPayouts() {
     catch (e) { setMsg(e instanceof ApiError ? e.message : "فشل الإجراء"); }
     finally { setBusy(false); }
   };
+
+  const saveRule = () => act(async () => {
+    await apiPost("/api/admin/trainer-compensation-rules", {
+      profileId: ruleForm.profileId, type: ruleForm.type, rate: Number(ruleForm.rate),
+    });
+    setRuleForm({ ...ruleForm, rate: "" });
+  }, "حُفظت القاعدة — صارت سارية من الآن");
+
+  const doPreview = async () => {
+    setBusy(true); setMsg(""); setPreview(null); setBatchResult(null);
+    try { setPreview(await apiGet<CohortPreview>(`/api/admin/trainer-payouts/preview-cohort/${genCohortId}`)); }
+    catch (e) { setMsg(e instanceof ApiError ? e.message : "تعذرت المعاينة"); }
+    finally { setBusy(false); }
+  };
+
+  const doGenerate = () => act(async () => {
+    await apiPost("/api/admin/trainer-payouts/generate", { cohortId: genCohortId });
+    setPreview(null); setGenCohortId("");
+  }, "وُلّد الكشف — بانتظار الاعتماد");
+
+  const doBatch = () => act(async () => {
+    const res = await apiPost<{ generated: { title: string; total: number }[]; skipped: { title: string; reason: string }[] }>(
+      "/api/admin/trainer-payouts/generate", { batch: true });
+    setBatchResult(res); setPreview(null);
+  }, "اكتمل التوليد الدفعي");
 
   const create = () => act(async () => {
     await apiPost("/api/admin/trainer-payouts", {
@@ -452,10 +504,96 @@ export function TrainerPayouts() {
         </select>
         <button onClick={() => setShowCreate(!showCreate)}
           className="flex cursor-pointer items-center gap-1.5 rounded-full bg-[#FABC05] px-4 py-2 text-xs font-black text-[#0D0D0D]">
-          <Banknote className="h-3.5 w-3.5" /> كشف جديد
+          <Banknote className="h-3.5 w-3.5" /> كشف يدوي جديد
         </button>
         {msg && <span className="text-xs font-bold text-[#6EC7D1]" role="status">{msg}</span>}
       </div>
+
+      {/* قاعدة الأتعاب — تحدد كيف تُحسب مستحقات كل مدرب تلقائياً */}
+      <Card icon={Settings2} title="قواعد الأتعاب — كيف يُحسب أجر كل مدرب">
+        <div className="space-y-3">
+          <div className="flex flex-wrap gap-2">
+            <select value={ruleForm.profileId} onChange={(e) => setRuleForm({ ...ruleForm, profileId: e.target.value })} className={`${selectCls} flex-1`}>
+              <option value="">اختر المدرب…</option>
+              {profiles.map((p) => <option key={p.id} value={p.id}>{p.fullName} — {p.reference}</option>)}
+            </select>
+            <select value={ruleForm.type} onChange={(e) => setRuleForm({ ...ruleForm, type: e.target.value })} className={`${selectCls} w-44`}>
+              {Object.entries(RULE_TYPE_AR).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
+            <input value={ruleForm.rate} onChange={(e) => setRuleForm({ ...ruleForm, rate: e.target.value })}
+              placeholder={ruleForm.type === "revenue_share" ? "النسبة ٪" : "المبلغ JOD"} dir="ltr" inputMode="decimal"
+              className={`${inputCls} w-28 font-mono`} />
+            <button disabled={busy || !ruleForm.profileId || !(Number(ruleForm.rate) > 0)} onClick={saveRule}
+              className="cursor-pointer rounded-full bg-[#FABC05] px-4 py-1.5 text-xs font-black text-[#0D0D0D] disabled:opacity-40">
+              حفظ القاعدة
+            </button>
+          </div>
+          {ruleForm.profileId && (() => {
+            const active = rules.find((r) => r.profileId === ruleForm.profileId && !r.effectiveTo);
+            return (
+              <p className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-[11px] text-white/60">
+                {active
+                  ? <>القاعدة السارية حالياً: <b className="text-white">{RULE_TYPE_AR[active.type]}</b> بمعدل <b dir="ltr" className="font-mono text-white">{Number(active.rate)}</b> {active.currency} — حفظ قاعدة جديدة يغلقها تلقائياً دون مسح تاريخها.</>
+                  : "لا قاعدة سارية لهذا المدرب بعد — بدونها لن يُولَّد أي كشف تلقائي لشعبه."}
+              </p>
+            );
+          })()}
+        </div>
+      </Card>
+
+      {/* التوليد التلقائي من الشعب المكتملة */}
+      <Card icon={Zap} title="توليد تلقائي من شعبة مكتملة">
+        <div className="space-y-3">
+          <div className="flex flex-wrap gap-2">
+            <select value={genCohortId} onChange={(e) => { setGenCohortId(e.target.value); setPreview(null); }} className={`${selectCls} flex-1`}>
+              <option value="">اختر شعبة مكتملة…</option>
+              {completedCohorts.map((c) => <option key={c.id} value={c.id}>{c.title} — {c.courseTitle}</option>)}
+            </select>
+            <button disabled={busy || !genCohortId} onClick={() => void doPreview()}
+              className="cursor-pointer rounded-full border border-[#38A7B4]/40 px-4 py-1.5 text-xs font-bold text-[#6EC7D1] disabled:opacity-40">
+              معاينة الحساب
+            </button>
+            <button disabled={busy} onClick={doBatch}
+              className="cursor-pointer rounded-full border border-[#FABC05]/40 px-4 py-1.5 text-xs font-bold text-[#FABC05] disabled:opacity-40">
+              توليد كل المكتملة دفعة واحدة
+            </button>
+          </div>
+          {preview && (
+            <div className="space-y-2 rounded-2xl border border-[#38A7B4]/25 bg-[#38A7B4]/5 p-4">
+              <p className="text-xs font-black">
+                {preview.profile.fullName} · قاعدة «{RULE_TYPE_AR[preview.rule.type]}» بمعدل <span dir="ltr" className="font-mono">{preview.rule.rate}</span> {preview.rule.currency}
+              </p>
+              <ul className="space-y-1">
+                {preview.items.map((i, idx) => (
+                  <li key={idx} className="flex items-center justify-between gap-3 text-xs text-white/70">
+                    <span>{i.description}</span>
+                    <span dir="ltr" className="font-mono font-bold">{i.amount.toLocaleString("en-US", { maximumFractionDigits: 2 })}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-2">
+                <p className="text-sm font-black">الإجمالي: <span dir="ltr" className="font-mono">{preview.total.toLocaleString("en-US", { maximumFractionDigits: 2 })}</span> {preview.rule.currency}</p>
+                <button disabled={busy || preview.total <= 0} onClick={doGenerate}
+                  className="cursor-pointer rounded-full bg-emerald-500 px-4 py-1.5 text-xs font-black text-white disabled:opacity-40">
+                  توليد الكشف — بانتظار الاعتماد
+                </button>
+              </div>
+            </div>
+          )}
+          {batchResult && (
+            <div className="space-y-1 rounded-2xl border border-white/10 bg-black/20 p-4 text-[11px] leading-6">
+              <p className="font-black text-emerald-300">وُلّد {batchResult.generated.length} كشفاً</p>
+              {batchResult.skipped.map((s, i) => (
+                <p key={i} className="text-white/50">تُركت «{s.title}»: {s.reason}</p>
+              ))}
+            </div>
+          )}
+          <p className="text-[10px] leading-5 text-white/40">
+            اكتمال أي شعبة يولّد كشف مدربها تلقائياً إن كانت له قاعدة سارية — هذه الأدوات للتوليد اليدوي عند الحاجة،
+            وكلها تمنع التكرار: شعبة واحدة لا تُولّد كشفين لنفس المدرب أبداً.
+          </p>
+        </div>
+      </Card>
 
       {showCreate && (
         <div className="space-y-3 rounded-3xl border border-[#FABC05]/25 bg-[#FABC05]/5 p-5">

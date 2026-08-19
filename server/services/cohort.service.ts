@@ -5,6 +5,7 @@
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
+import { EarningsService } from './earnings.service'
 import { newStorageKey, signKey, SIGNED_URL_TTL_MS, MAX_UPLOAD_BYTES } from './storage.service'
 
 const COHORT_TRANSITIONS: Record<string, string[]> = {
@@ -185,6 +186,19 @@ export class CohortService {
     }
     await this.prisma.cohort.update({ where: { id: cohortId }, data: { status: to } })
     await recordAudit(this.prisma, { actorId, action: 'cohort.status', entityType: 'cohort', entityId: cohortId, meta: { from: cohort.status, to, note } })
+
+    /* اكتمال الشعبة يولّد كشف مستحقات مدربها تلقائياً إن كانت له قاعدة أتعاب سارية.
+       عدم وجود قاعدة أو تكرار التوليد لا يعيقان إكمال الشعبة — يُرصدان في سجل التدقيق فقط */
+    if (to === 'completed') {
+      try {
+        await new EarningsService(this.prisma).generateForCohort(actorId, cohortId)
+      } catch (e) {
+        await recordAudit(this.prisma, {
+          actorId, action: 'trainer_payout.generate_skipped', entityType: 'cohort', entityId: cohortId,
+          meta: { reason: e instanceof AuthError ? e.message : 'خطأ غير متوقع' },
+        })
+      }
+    }
   }
 
   /* ── الجلسات وZoom اليدوي ── */

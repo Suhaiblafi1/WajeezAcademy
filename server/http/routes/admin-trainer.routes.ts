@@ -282,4 +282,52 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     const { reason } = z.object({ reason: z.string().min(5).max(500) }).parse(req.body)
     return earnings.cancel(id, req.auth!.userId, reason)
   })
+
+  /* ── قواعد الأتعاب والتوليد التلقائي من الشعب المكتملة ── */
+
+  app.get('/api/admin/trainer-compensation-rules', {
+    preHandler: requirePermission('trainer.compensation.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'قواعد أتعاب المدربين — كلها أو لمدرب محدد' },
+  }, async (req) => {
+    const { profileId } = z.object({ profileId: z.string().uuid().optional() }).parse(req.query)
+    return earnings.listRules(profileId)
+  })
+
+  app.post('/api/admin/trainer-compensation-rules', {
+    preHandler: requirePermission('trainer.compensation.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'تعيين قاعدة أتعاب — تُغلق السارية الحالية تلقائياً' },
+  }, async (req, reply) => {
+    const body = z.object({
+      profileId: z.string().uuid(),
+      type: z.enum(['per_seat', 'fixed_per_cohort', 'revenue_share']),
+      rate: z.number().positive(),
+      currency: z.string().length(3).optional(),
+      effectiveFrom: z.coerce.date().optional(),
+    }).parse(req.body)
+    const rule = await earnings.setRule(req.auth!.userId, body)
+    return reply.status(201).send(rule)
+  })
+
+  app.get('/api/admin/trainer-payouts/preview-cohort/:cohortId', {
+    preHandler: requirePermission('trainer.compensation.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'معاينة محسوبة لمستحقات شعبة — قبل التوليد، دون إنشاء شيء' },
+  }, async (req) => {
+    const { cohortId } = z.object({ cohortId: z.string().uuid() }).parse(req.params)
+    return earnings.computeCohort(cohortId)
+  })
+
+  app.post('/api/admin/trainer-payouts/generate', {
+    preHandler: requirePermission('trainer.compensation.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'توليد كشف من شعبة مكتملة — مفرد أو دفعي لكل المكتملة' },
+  }, async (req, reply) => {
+    const body = z.object({
+      cohortId: z.string().uuid().optional(),
+      period: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/).optional(),
+      batch: z.boolean().optional(),
+    }).parse(req.body ?? {})
+    if (body.batch) return earnings.generateBatch(req.auth!.userId, body.period)
+    if (!body.cohortId) throw Object.assign(new Error('حدد cohortId أو batch=true'), { statusCode: 400 })
+    const payout = await earnings.generateForCohort(req.auth!.userId, body.cohortId, body.period)
+    return reply.status(201).send(payout)
+  })
 }
