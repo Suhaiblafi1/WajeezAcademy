@@ -15,9 +15,19 @@ const CHANNEL_LABELS: Record<string, string> = { whatsapp: "واتساب", email
 interface CaseRow {
   id: string; status: string; nextAction: string | null; nextFollowUpAt: string | null;
   createdAt: string; updatedAt: string; diagnosticSnapshot: unknown;
-  lead: { fullName: string; email: string; phone: string | null; source: string };
+  lead: { fullName: string; email: string; phone: string | null; source: string } | null;
   client: { displayName: string; email: string } | null;
   followUps: { id: string; scheduledAt: string; channel: string; note: string | null }[];
+}
+
+/* طرف الحالة — عميل محتمل (lead) أو حساب مسجل (client)؛ كلاهما قد يغيب */
+function partyOf(c: { lead: CaseRow["lead"]; client: CaseRow["client"] }) {
+  return {
+    name: c.lead?.fullName ?? c.client?.displayName ?? "عميل بلا اسم",
+    email: c.lead?.email ?? c.client?.email ?? "",
+    phone: c.lead?.phone ?? null,
+    source: c.lead?.source ?? null,
+  };
 }
 
 interface CaseDetail extends CaseRow {
@@ -109,7 +119,7 @@ export default function AdvisorCases() {
   /* ══ عرض ملف الحالة ══ */
   if (detail) {
     return (
-      <AdvisorLayout title={`ملف الحالة — ${detail.lead.fullName}`}>
+      <AdvisorLayout title={`ملف الحالة — ${partyOf(detail).name}`}>
         <button onClick={() => setDetail(null)} className="mb-4 flex cursor-pointer items-center gap-1 text-xs text-white/55 hover:text-white">
           <ChevronLeft className="h-4 w-4" /> عودة للقائمة
         </button>
@@ -119,10 +129,10 @@ export default function AdvisorCases() {
           {/* العميل والتشخيص */}
           <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
             <h2 className="mb-3 flex items-center gap-2 text-sm font-black text-[#6EC7D1]"><UserRound className="h-4 w-4" /> العميل</h2>
-            <p className="font-black">{detail.lead.fullName}</p>
-            <p className="mt-1 text-xs text-white/55" dir="ltr">{detail.lead.email}</p>
-            {detail.lead.phone && <p className="text-xs text-white/55" dir="ltr">{detail.lead.phone}</p>}
-            <p className="mt-2 text-[11px] text-white/50">المصدر: {detail.lead.source === "diagnostic" ? "التشخيص الذكي" : detail.lead.source}</p>
+            <p className="font-black">{partyOf(detail).name}</p>
+            {partyOf(detail).email && <p className="mt-1 text-xs text-white/55" dir="ltr">{partyOf(detail).email}</p>}
+            {partyOf(detail).phone && <p className="text-xs text-white/55" dir="ltr">{partyOf(detail).phone}</p>}
+            <p className="mt-2 text-[11px] text-white/50">المصدر: {partyOf(detail).source === "diagnostic" ? "التشخيص الذكي" : partyOf(detail).source ?? "حساب مسجل"}</p>
             <p className="mt-3 rounded-xl bg-white/[0.04] p-3 text-xs leading-6 text-white/70">
               {snapshotSummary(detail.client?.learnerProfile?.diagnosticSnapshot ?? detail.diagnosticSnapshot)}
             </p>
@@ -283,7 +293,7 @@ export default function AdvisorCases() {
               className="block w-full cursor-pointer rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-right transition hover:border-[#38A7B4]/50">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="font-black">{c.lead.fullName} <span className="text-[11px] font-normal text-white/50" dir="ltr">{c.lead.email}</span></p>
+                  <p className="font-black">{partyOf(c).name} <span className="text-[11px] font-normal text-white/50" dir="ltr">{partyOf(c).email}</span></p>
                   <p className="mt-1 text-xs text-white/55">{snapshotSummary(c.diagnosticSnapshot)}</p>
                   {c.nextAction && <p className="mt-1 text-[11px] text-[#FABC05]">التالي: {c.nextAction}{c.nextFollowUpAt ? ` — ${fmt(c.nextFollowUpAt)}` : ""}</p>}
                 </div>

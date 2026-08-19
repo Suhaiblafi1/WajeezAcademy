@@ -1,0 +1,775 @@
+{
+  "pages": [
+    {
+      "url": "/",
+      "tag": "public",
+      "mobile": false,
+      "ms": 3237,
+      "title": "مسارك يبدأ من فهمك — أكاديمي وجيز",
+      "preview": "تجاوز إلى المحتوى الرئيسي | أكاديمية وجيز | مؤشر وجيز | المسارات | الدورات | قصص المتعلمين"
+    },
+    {
+      "url": "/methodology",
+      "tag": "public",
+      "mobile": false,
+      "ms": 1848,
+      "title": "منهجية وجيز — أكاديمي وجيز",
+      "preview": "تجاوز إلى المحتوى الرئيسي | الرئيسية | المسارات | الدورات | القصص | المدربون | تواصل | ابدأ ال"
+    },
+    {
+      "url": "/diagnostic",
+      "tag": "public",
+      "mobile": false,
+      "ms": 1561,
+      "title": "التشخيص الذكي — أكاديمي وجيز",
+      "preview": "تجاوز إلى المحتوى الرئيسي | العودة للرئيسية | أكاديمي وجيز | مؤشر وجيز الكامل | ثلاث دقا"
+    },
+    {
+      "url": "/pathways",
+      "tag": "public",
+      "mobile": false,
+      "ms": 1553,
+      "title": "كل المسارات — أكاديمي وجيز",
+      "preview": "تجاوز إلى المحتوى الرئيسي | الرئيسية | المسارات | الدورات | القصص | المدربون | تواصل | ابدأ ال"
+    },
+    {
+      "url": "/courses",
+      "tag": "public",
+      "mobile": false,
+      "ms": 1520,
+      "title": "كل الدورات — أكاديمي وجيز",
+      "preview": "تجاوز إلى المحتوى الرئيسي | الرئيسية | المسارات | الدورات | القصص | المدربون | تواصل | ابدأ ال"
+    },
+    {
+      "url": "/stories",
+      "tag": "public",
+      "mobile": false,
+      "ms": 1650,
+      "title": "نماذج رحلات التعلم — أكاديمي وجيز",
+      "preview": "تجاوز إلى المحتوى الرئيسي | الرئيسية | المسارات | الدورات | القصص | المدربون | تواصل | ابدأ ال"
+    },
+    {
+      "url": "/trainers",
+      "tag": "public",
+      "mobile": false,
+      "ms": 1515,
+      "title": "الفريق التدريبي — أكاديمي وجيز",
+      "preview": "تجاوز إلى المحتوى الرئيسي | الرئيسية | المسارات | الدورات | القصص | المدربون | تواصل | ابدأ ال"
+    },
+    {
+      "url": "/join-trainer",
+      "tag": "public",
+      "mobile": false,
+      "ms": 1568,
+      "title": "انضم مدربا — أكاديمي وجيز",
+      "preview": "تجاوز إلى المحتوى الرئيسي | الرئيسية | المسارات | الدورات | القصص | المدربون | تواصل | ابدأ ال"
+    },
+    {
+      "url": "/for-business",
+      "tag": "public",
+      "mobile": false,
+      "ms": 1449,
+      "title": "حلول الشركات — أكاديمي وجيز",
+      "preview": "تجاوز إلى المحتوى الرئيسي | الرئيسية | المسارات | الدورات | القصص | المدربون | تواصل | ابدأ ال"
+    },
+    {
+      "url": "/for-government",
+      "tag": "public",
+      "mobile": false,
+      "ms": 1442,
+      "title": "حلول الجهات الحكومية — أكاديمي وجيز",
+      "preview": "تجاوز إلى المحتوى الرئيسي | الرئيسية | المسارات | الدورات | القصص | المدربون | تواصل | ابدأ ال"
+    },
+    {
+      "url": "/contact",
+      "tag": "public",
+      "mobile": false,
+      "ms": 1448,
+      "title": "تواصل معنا — أكاديمي وجيز",
+      "preview": "تجاوز إلى المحتوى الرئيسي | الرئيسية | المسارات | الدورات | القصص | المدربون | تواصل | ابدأ ال"
+    },
+    {
+      "url": "/auth",
+      "tag": "public",
+      "mobile": false,
+      "ms": 1472,
+      "title": "الدخول أو إنشاء حساب — أكاديمي وجيز",
+      "preview": "تجاوز إلى المحتوى الرئيسي | الرئيسية | المسارات | الدورات | القصص | المدربون | تواصل | ابدأ ال"
+    },
+    {
+      "url": "/p/privacy",
+      "tag": "public",
+      "mobile": false,
+      "ms": 1470,
+      "title": "سياسة الخصوصية — أكاديمي وجيز",
+      "preview": "تجاوز إلى المحتوى الرئيسي | الرئيسية | أكاديمي وجيز | سياسة الخصوصية |  | إجاباتك في التشخ"
+    },
+    {
+      "url": "/",
+      "tag": "public",
+      "mobile": true,
+      "ms": 3123,
+      "preview": "تجاوز إلى المحتوى الرئيسي | أكاديمية وجيز | منصة تفهمك قبل أن تعلّمك | المسار الصحيح ل"
+    },
+    {
+      "url": "/diagnostic",
+      "tag": "public",
+      "mobile": true,
+      "ms": 1606,
+      "preview": "تجاوز إلى المحتوى الرئيسي | العودة للرئيسية | أكاديمي وجيز | مؤشر وجيز الكامل | ثلاث دقا"
+    },
+    {
+      "url": "/pathways",
+      "tag": "public",
+      "mobile": true,
+      "ms": 1528,
+      "preview": "تجاوز إلى المحتوى الرئيسي | الرئيسية | ابدأ التشخيص | كتالوج المسارات | كل المسارات — بل"
+    },
+    {
+      "url": "/auth",
+      "tag": "public",
+      "mobile": true,
+      "ms": 1477,
+      "preview": "تجاوز إلى المحتوى الرئيسي | الرئيسية | ابدأ التشخيص | ابدأ رحلتك مع أكاديمية وجيز |  | حسا"
+    },
+    {
+      "url": "/join-trainer",
+      "tag": "public",
+      "mobile": true,
+      "ms": 1502,
+      "preview": "تجاوز إلى المحتوى الرئيسي | الرئيسية | ابدأ التشخيص | انضم إلى نخبة المدربين | درّب ما ت"
+    },
+    {
+      "url": "/api/auth/login",
+      "tag": "student-LOGIN",
+      "ms": 0,
+      "status": 200
+    },
+    {
+      "url": "/student",
+      "tag": "student",
+      "mobile": false,
+      "ms": 2562,
+      "title": "أكاديمي وجيز — مسارك يبدأ من فهمك",
+      "preview": "تجاوز إلى المحتوى الرئيسي | منصة الطالب تُفتح بعد أول دفع ناجح |  | وفق سياسة وجيز: حد"
+    },
+    {
+      "url": "/student/learning",
+      "tag": "student",
+      "mobile": false,
+      "ms": 1830,
+      "title": "أكاديمي وجيز — مسارك يبدأ من فهمك",
+      "preview": "تجاوز إلى المحتوى الرئيسي | أكاديمي وجيز |  | تعلّمي |  | مشروع إنتاجية مسؤول بالذكاء الاص"
+    },
+    {
+      "url": "/student/pathway",
+      "tag": "student",
+      "mobile": false,
+      "ms": 1777,
+      "title": "أكاديمي وجيز — مسارك يبدأ من فهمك",
+      "preview": "تجاوز إلى المحتوى الرئيسي | منصة الطالب تُفتح بعد أول دفع ناجح |  | وفق سياسة وجيز: حد"
+    },
+    {
+      "url": "/student/notifications",
+      "tag": "student",
+      "mobile": false,
+      "ms": 1783,
+      "title": "أكاديمي وجيز — مسارك يبدأ من فهمك",
+      "preview": "تجاوز إلى المحتوى الرئيسي | منصة الطالب تُفتح بعد أول دفع ناجح |  | وفق سياسة وجيز: حد"
+    },
+    {
+      "url": "/student/support",
+      "tag": "student",
+      "mobile": false,
+      "ms": 1784,
+      "title": "أكاديمي وجيز — مسارك يبدأ من فهمك",
+      "preview": "تجاوز إلى المحتوى الرئيسي | منصة الطالب تُفتح بعد أول دفع ناجح |  | وفق سياسة وجيز: حد"
+    },
+    {
+      "url": "/student/cohorts",
+      "tag": "student",
+      "mobile": false,
+      "ms": 1818,
+      "title": "أكاديمي وجيز — مسارك يبدأ من فهمك",
+      "preview": "تجاوز إلى المحتوى الرئيسي | منصة الطالب تُفتح بعد أول دفع ناجح |  | وفق سياسة وجيز: حد"
+    },
+    {
+      "url": "/student/billing",
+      "tag": "student",
+      "mobile": false,
+      "ms": 1785,
+      "title": "أكاديمي وجيز — مسارك يبدأ من فهمك",
+      "preview": "تجاوز إلى المحتوى الرئيسي | منصة الطالب تُفتح بعد أول دفع ناجح |  | وفق سياسة وجيز: حد"
+    },
+    {
+      "url": "/student/cv",
+      "tag": "student",
+      "mobile": false,
+      "ms": 1777,
+      "title": "أكاديمي وجيز — مسارك يبدأ من فهمك",
+      "preview": "تجاوز إلى المحتوى الرئيسي | منصة الطالب تُفتح بعد أول دفع ناجح |  | وفق سياسة وجيز: حد"
+    },
+    {
+      "url": "/student/certificates",
+      "tag": "student",
+      "mobile": false,
+      "ms": 1782,
+      "title": "أكاديمي وجيز — مسارك يبدأ من فهمك",
+      "preview": "تجاوز إلى المحتوى الرئيسي | منصة الطالب تُفتح بعد أول دفع ناجح |  | وفق سياسة وجيز: حد"
+    },
+    {
+      "url": "/api/auth/login",
+      "tag": "trainer-LOGIN",
+      "ms": 0,
+      "status": 200
+    },
+    {
+      "url": "/trainer",
+      "tag": "trainer",
+      "mobile": false,
+      "ms": 2749,
+      "title": "أكاديمي وجيز — مسارك يبدأ من فهمك",
+      "preview": "تجاوز إلى المحتوى الرئيسي | بوابة المدرب — من أنت؟ |  | يرى المدرب شعبه وطلابه وتسليما"
+    },
+    {
+      "url": "/trainer/grading",
+      "tag": "trainer",
+      "mobile": false,
+      "ms": 1803,
+      "title": "أكاديمي وجيز — مسارك يبدأ من فهمك",
+      "preview": "تجاوز إلى المحتوى الرئيسي | بوابة المدرب — من أنت؟ |  | يرى المدرب شعبه وطلابه وتسليما"
+    },
+    {
+      "url": "/trainer/earnings",
+      "tag": "trainer",
+      "mobile": false,
+      "ms": 1787,
+      "title": "أكاديمي وجيز — مسارك يبدأ من فهمك",
+      "preview": "تجاوز إلى المحتوى الرئيسي | بوابة المدرب — من أنت؟ |  | يرى المدرب شعبه وطلابه وتسليما"
+    },
+    {
+      "url": "/trainer/proposals",
+      "tag": "trainer",
+      "mobile": false,
+      "ms": 1848,
+      "title": "أكاديمي وجيز — مسارك يبدأ من فهمك",
+      "preview": "تجاوز إلى المحتوى الرئيسي | بوابة المدرب — من أنت؟ |  | يرى المدرب شعبه وطلابه وتسليما"
+    },
+    {
+      "url": "/trainer/board",
+      "tag": "trainer",
+      "mobile": false,
+      "ms": 1882,
+      "title": "أكاديمي وجيز — مسارك يبدأ من فهمك",
+      "preview": "تجاوز إلى المحتوى الرئيسي | أكاديمي وجيز |  | قمرة الشعبة |  | شعبي |  | اختيار العملية وجدوى "
+    },
+    {
+      "url": "/api/auth/login",
+      "tag": "advisor-LOGIN",
+      "ms": 0,
+      "status": 200
+    },
+    {
+      "url": "/advisor",
+      "tag": "advisor",
+      "mobile": false,
+      "ms": 2752,
+      "title": "أكاديمي وجيز — مسارك يبدأ من فهمك",
+      "preview": "تجاوز إلى المحتوى الرئيسي | بوابة المستشار — من أنت؟ |  | يرى كل مستشار الطلبة والعملا"
+    },
+    {
+      "url": "/advisor/cases",
+      "tag": "advisor",
+      "mobile": false,
+      "ms": 1822,
+      "title": "أكاديمي وجيز — مسارك يبدأ من فهمك",
+      "preview": ""
+    },
+    {
+      "url": "/advisor/reviews",
+      "tag": "advisor",
+      "mobile": false,
+      "ms": 1782,
+      "title": "أكاديمي وجيز — مسارك يبدأ من فهمك",
+      "preview": "تجاوز إلى المحتوى الرئيسي | بوابة المستشار — من أنت؟ |  | يرى كل مستشار الطلبة والعملا"
+    },
+    {
+      "url": "/api/auth/login",
+      "tag": "admin-LOGIN",
+      "ms": 0,
+      "status": 200
+    },
+    {
+      "url": "/admin",
+      "tag": "admin",
+      "mobile": false,
+      "ms": 3098,
+      "title": "أكاديمي وجيز — مسارك يبدأ من فهمك",
+      "preview": "تجاوز إلى المحتوى الرئيسي | لوحة الإدارة والعمليات — من أنت؟ |  | صلاحيات منفصلة: العم"
+    },
+    {
+      "url": "/admin/cohorts",
+      "tag": "admin",
+      "mobile": false,
+      "ms": 1869,
+      "title": "أكاديمي وجيز — مسارك يبدأ من فهمك",
+      "preview": "تجاوز إلى المحتوى الرئيسي | لوحة الإدارة والعمليات — من أنت؟ |  | صلاحيات منفصلة: العم"
+    },
+    {
+      "url": "/admin/catalog",
+      "tag": "admin",
+      "mobile": false,
+      "ms": 1897,
+      "title": "أكاديمي وجيز — مسارك يبدأ من فهمك",
+      "preview": "تجاوز إلى المحتوى الرئيسي | لوحة الإدارة والعمليات — من أنت؟ |  | صلاحيات منفصلة: العم"
+    },
+    {
+      "url": "/admin/quality",
+      "tag": "admin",
+      "mobile": false,
+      "ms": 1798,
+      "title": "أكاديمي وجيز — مسارك يبدأ من فهمك",
+      "preview": "تجاوز إلى المحتوى الرئيسي | لوحة الإدارة والعمليات — من أنت؟ |  | صلاحيات منفصلة: العم"
+    },
+    {
+      "url": "/admin/users",
+      "tag": "admin",
+      "mobile": false,
+      "ms": 1794,
+      "title": "أكاديمي وجيز — مسارك يبدأ من فهمك",
+      "preview": "تجاوز إلى المحتوى الرئيسي | لوحة الإدارة والعمليات — من أنت؟ |  | صلاحيات منفصلة: العم"
+    },
+    {
+      "url": "/admin/finance",
+      "tag": "admin",
+      "mobile": false,
+      "ms": 1839,
+      "title": "أكاديمي وجيز — مسارك يبدأ من فهمك",
+      "preview": "تجاوز إلى المحتوى الرئيسي | لوحة الإدارة والعمليات — من أنت؟ |  | صلاحيات منفصلة: العم"
+    },
+    {
+      "url": "/admin/reports",
+      "tag": "admin",
+      "mobile": false,
+      "ms": 1790,
+      "title": "أكاديمي وجيز — مسارك يبدأ من فهمك",
+      "preview": "تجاوز إلى المحتوى الرئيسي | لوحة الإدارة والعمليات — من أنت؟ |  | صلاحيات منفصلة: العم"
+    },
+    {
+      "url": "/admin/support",
+      "tag": "admin",
+      "mobile": false,
+      "ms": 1812,
+      "title": "أكاديمي وجيز — مسارك يبدأ من فهمك",
+      "preview": "تجاوز إلى المحتوى الرئيسي | لوحة الإدارة والعمليات — من أنت؟ |  | صلاحيات منفصلة: العم"
+    },
+    {
+      "url": "/admin/notifications",
+      "tag": "admin",
+      "mobile": false,
+      "ms": 1801,
+      "title": "أكاديمي وجيز — مسارك يبدأ من فهمك",
+      "preview": "تجاوز إلى المحتوى الرئيسي | لوحة الإدارة والعمليات — من أنت؟ |  | صلاحيات منفصلة: العم"
+    },
+    {
+      "url": "/admin/trainers",
+      "tag": "admin",
+      "mobile": false,
+      "ms": 1814,
+      "title": "أكاديمي وجيز — مسارك يبدأ من فهمك",
+      "preview": "تجاوز إلى المحتوى الرئيسي | لوحة الإدارة والعمليات — من أنت؟ |  | صلاحيات منفصلة: العم"
+    },
+    {
+      "url": "/admin/publishing",
+      "tag": "admin",
+      "mobile": false,
+      "ms": 1817,
+      "title": "أكاديمي وجيز — مسارك يبدأ من فهمك",
+      "preview": "تجاوز إلى المحتوى الرئيسي | لوحة الإدارة والعمليات — من أنت؟ |  | صلاحيات منفصلة: العم"
+    },
+    {
+      "url": "/admin/content",
+      "tag": "admin",
+      "mobile": false,
+      "ms": 1793,
+      "title": "أكاديمي وجيز — مسارك يبدأ من فهمك",
+      "preview": "تجاوز إلى المحتوى الرئيسي | لوحة الإدارة والعمليات — من أنت؟ |  | صلاحيات منفصلة: العم"
+    },
+    {
+      "url": "/admin/exceptions",
+      "tag": "admin",
+      "mobile": false,
+      "ms": 1815,
+      "title": "أكاديمي وجيز — مسارك يبدأ من فهمك",
+      "preview": "تجاوز إلى المحتوى الرئيسي | لوحة الإدارة والعمليات — من أنت؟ |  | صلاحيات منفصلة: العم"
+    }
+  ],
+  "consoleErrors": [
+    {
+      "url": "/advisor/cases",
+      "tag": "advisor",
+      "errs": [
+        "PAGEERROR: TypeError: Cannot read properties of null (reading 'fullName')"
+      ]
+    },
+    {
+      "url": "/admin/quality",
+      "tag": "admin",
+      "errs": [
+        "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+      ]
+    },
+    {
+      "url": "/admin/users",
+      "tag": "admin",
+      "errs": [
+        "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+        "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+      ]
+    },
+    {
+      "url": "/admin/publishing",
+      "tag": "admin",
+      "errs": [
+        "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+        "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+      ]
+    },
+    {
+      "url": "/admin/exceptions",
+      "tag": "admin",
+      "errs": [
+        "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+        "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+      ]
+    }
+  ],
+  "pageErrors": [],
+  "failedRequests": [
+    {
+      "url": "/admin/quality",
+      "tag": "admin",
+      "fails": [
+        "HTTP 403 http://localhost:7100/api/admin/quality/regression-runs"
+      ]
+    },
+    {
+      "url": "/admin/users",
+      "tag": "admin",
+      "fails": [
+        "HTTP 403 http://localhost:7100/api/admin/users",
+        "HTTP 403 http://localhost:7100/api/admin/users"
+      ]
+    },
+    {
+      "url": "/admin/publishing",
+      "tag": "admin",
+      "fails": [
+        "HTTP 403 http://localhost:7100/api/admin/quality/regression-runs",
+        "HTTP 403 http://localhost:7100/api/admin/quality/regression-runs"
+      ]
+    },
+    {
+      "url": "/admin/exceptions",
+      "tag": "admin",
+      "fails": [
+        "HTTP 403 http://localhost:7100/api/admin/users",
+        "HTTP 403 http://localhost:7100/api/admin/users"
+      ]
+    }
+  ],
+  "a11y": [
+    {
+      "url": "/auth",
+      "tag": "public",
+      "lang": "ar",
+      "dir": "rtl",
+      "title": "الدخول أو إنشاء حساب — أكاديمي وجيز",
+      "h1": 0,
+      "imgsNoAlt": 0,
+      "buttonsNoName": 0
+    },
+    {
+      "url": "/auth",
+      "tag": "public",
+      "lang": "ar",
+      "dir": "rtl",
+      "title": "الدخول أو إنشاء حساب — أكاديمي وجيز",
+      "h1": 0,
+      "imgsNoAlt": 0,
+      "buttonsNoName": 0
+    },
+    {
+      "url": "/student/learning",
+      "tag": "student",
+      "lang": "ar",
+      "dir": "rtl",
+      "title": "أكاديمي وجيز — مسارك يبدأ من فهمك",
+      "h1": 0,
+      "imgsNoAlt": 0,
+      "buttonsNoName": 0
+    },
+    {
+      "url": "/trainer/board",
+      "tag": "trainer",
+      "lang": "ar",
+      "dir": "rtl",
+      "title": "أكاديمي وجيز — مسارك يبدأ من فهمك",
+      "h1": 0,
+      "imgsNoAlt": 0,
+      "buttonsNoName": 0
+    },
+    {
+      "url": "/advisor/cases",
+      "tag": "advisor",
+      "lang": "ar",
+      "dir": "rtl",
+      "title": "أكاديمي وجيز — مسارك يبدأ من فهمك",
+      "h1": 0,
+      "imgsNoAlt": 0,
+      "buttonsNoName": 0
+    }
+  ],
+  "perf": [
+    {
+      "url": "/",
+      "tag": "public",
+      "ms": 3237
+    },
+    {
+      "url": "/methodology",
+      "tag": "public",
+      "ms": 1848
+    },
+    {
+      "url": "/diagnostic",
+      "tag": "public",
+      "ms": 1561
+    },
+    {
+      "url": "/pathways",
+      "tag": "public",
+      "ms": 1553
+    },
+    {
+      "url": "/courses",
+      "tag": "public",
+      "ms": 1520
+    },
+    {
+      "url": "/stories",
+      "tag": "public",
+      "ms": 1650
+    },
+    {
+      "url": "/trainers",
+      "tag": "public",
+      "ms": 1515
+    },
+    {
+      "url": "/join-trainer",
+      "tag": "public",
+      "ms": 1568
+    },
+    {
+      "url": "/for-business",
+      "tag": "public",
+      "ms": 1449
+    },
+    {
+      "url": "/for-government",
+      "tag": "public",
+      "ms": 1442
+    },
+    {
+      "url": "/contact",
+      "tag": "public",
+      "ms": 1448
+    },
+    {
+      "url": "/auth",
+      "tag": "public",
+      "ms": 1472
+    },
+    {
+      "url": "/p/privacy",
+      "tag": "public",
+      "ms": 1470
+    },
+    {
+      "url": "/",
+      "tag": "public",
+      "ms": 3123
+    },
+    {
+      "url": "/diagnostic",
+      "tag": "public",
+      "ms": 1606
+    },
+    {
+      "url": "/pathways",
+      "tag": "public",
+      "ms": 1528
+    },
+    {
+      "url": "/auth",
+      "tag": "public",
+      "ms": 1477
+    },
+    {
+      "url": "/join-trainer",
+      "tag": "public",
+      "ms": 1502
+    },
+    {
+      "url": "/student",
+      "tag": "student",
+      "ms": 2562
+    },
+    {
+      "url": "/student/learning",
+      "tag": "student",
+      "ms": 1830
+    },
+    {
+      "url": "/student/pathway",
+      "tag": "student",
+      "ms": 1777
+    },
+    {
+      "url": "/student/notifications",
+      "tag": "student",
+      "ms": 1783
+    },
+    {
+      "url": "/student/support",
+      "tag": "student",
+      "ms": 1784
+    },
+    {
+      "url": "/student/cohorts",
+      "tag": "student",
+      "ms": 1818
+    },
+    {
+      "url": "/student/billing",
+      "tag": "student",
+      "ms": 1785
+    },
+    {
+      "url": "/student/cv",
+      "tag": "student",
+      "ms": 1777
+    },
+    {
+      "url": "/student/certificates",
+      "tag": "student",
+      "ms": 1782
+    },
+    {
+      "url": "/trainer",
+      "tag": "trainer",
+      "ms": 2749
+    },
+    {
+      "url": "/trainer/grading",
+      "tag": "trainer",
+      "ms": 1803
+    },
+    {
+      "url": "/trainer/earnings",
+      "tag": "trainer",
+      "ms": 1787
+    },
+    {
+      "url": "/trainer/proposals",
+      "tag": "trainer",
+      "ms": 1848
+    },
+    {
+      "url": "/trainer/board",
+      "tag": "trainer",
+      "ms": 1882
+    },
+    {
+      "url": "/advisor",
+      "tag": "advisor",
+      "ms": 2752
+    },
+    {
+      "url": "/advisor/cases",
+      "tag": "advisor",
+      "ms": 1822
+    },
+    {
+      "url": "/advisor/reviews",
+      "tag": "advisor",
+      "ms": 1782
+    },
+    {
+      "url": "/admin",
+      "tag": "admin",
+      "ms": 3098
+    },
+    {
+      "url": "/admin/cohorts",
+      "tag": "admin",
+      "ms": 1869
+    },
+    {
+      "url": "/admin/catalog",
+      "tag": "admin",
+      "ms": 1897
+    },
+    {
+      "url": "/admin/quality",
+      "tag": "admin",
+      "ms": 1798
+    },
+    {
+      "url": "/admin/users",
+      "tag": "admin",
+      "ms": 1794
+    },
+    {
+      "url": "/admin/finance",
+      "tag": "admin",
+      "ms": 1839
+    },
+    {
+      "url": "/admin/reports",
+      "tag": "admin",
+      "ms": 1790
+    },
+    {
+      "url": "/admin/support",
+      "tag": "admin",
+      "ms": 1812
+    },
+    {
+      "url": "/admin/notifications",
+      "tag": "admin",
+      "ms": 1801
+    },
+    {
+      "url": "/admin/trainers",
+      "tag": "admin",
+      "ms": 1814
+    },
+    {
+      "url": "/admin/publishing",
+      "tag": "admin",
+      "ms": 1817
+    },
+    {
+      "url": "/admin/content",
+      "tag": "admin",
+      "ms": 1793
+    },
+    {
+      "url": "/admin/exceptions",
+      "tag": "admin",
+      "ms": 1815
+    }
+  ]
+}
