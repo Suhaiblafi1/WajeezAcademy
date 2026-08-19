@@ -6,7 +6,7 @@ import {
 import AdminLayout from "./AdminLayout";
 import FlowSteps from "@/components/FlowSteps";
 import { apiGet, apiPost, ApiError } from "@/services/api";
-import { TrainerDetailOps, TrainerChangeRequests } from "./TrainerOps";
+import { TrainerDetailOps, TrainerChangeRequests, TrainerPayouts } from "./TrainerOps";
 
 const STATUS_LABELS: Record<string, string> = {
   email_verification_pending: "بانتظار تحقق البريد",
@@ -71,7 +71,7 @@ export default function TrainerApplications() {
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState("");
-  const [mode, setMode] = useState<"apps" | "changes">("apps");
+  const [mode, setMode] = useState<"apps" | "changes" | "payouts">("apps");
 
   const load = useCallback(async () => {
     setLoading(true); setOffline(null);
@@ -339,7 +339,7 @@ export default function TrainerApplications() {
       ]} />
       <div className="mb-5 flex flex-wrap items-center gap-2">
         <div className="flex rounded-full border border-white/15 p-1">
-          {([["apps", "الطلبات"], ["changes", "اقتراحات تعديل الدورات"]] as const).map(([k, label]) => (
+          {([["apps", "الطلبات"], ["changes", "اقتراحات تعديل الدورات"], ["payouts", "مستحقات المدربين"]] as const).map(([k, label]) => (
             <button key={k} onClick={() => setMode(k)}
               className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-black transition ${mode === k ? "bg-[#FABC05] text-[#0D0D0D]" : "text-white/60 hover:text-white"}`}>
               {label}
@@ -364,6 +364,7 @@ export default function TrainerApplications() {
       </div>
 
       {mode === "changes" && <TrainerChangeRequests />}
+      {mode === "payouts" && <TrainerPayouts />}
       {mode === "apps" && (loading ? (
         <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-white/30" /></div>
       ) : apps.length === 0 ? (

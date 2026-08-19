@@ -6,11 +6,18 @@ import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { TrainerChangeService } from '../../services/trainer-change.service'
 import { TrainerReviewService } from '../../services/trainer-review.service'
+import { EarningsService } from '../../services/earnings.service'
 import { requirePermission } from '../auth-plugin'
 
 export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const changes = new TrainerChangeService(prisma)
   const review = new TrainerReviewService(prisma)
+  const earnings = new EarningsService(prisma)
+
+  app.get('/api/trainer/earnings', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'كشوف مستحقاتي وبنودها وملخصها — للمدرب نفسه فقط' },
+  }, async (req) => earnings.listForTrainer(req.auth!.userId))
 
   app.get('/api/trainer/me', {
     preHandler: requirePermission('trainer.portal'),

@@ -6,6 +6,7 @@ import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { TrainerReviewService, RUBRIC_CRITERIA } from '../../services/trainer-review.service'
 import { TrainerChangeService } from '../../services/trainer-change.service'
+import { EarningsService } from '../../services/earnings.service'
 import { requirePermission } from '../auth-plugin'
 
 const rubricSchema = z.object(
@@ -221,5 +222,64 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     await changes.publish(id, req.auth!.userId)
     return { ok: true }
+  })
+
+  /* ── مستحقات المدربين (كشوف الصرف) ── */
+  const earnings = new EarningsService(prisma)
+
+  app.get('/api/admin/trainer-profiles', {
+    preHandler: requirePermission('trainer.compensation.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'ملفات المدربين النشطين — لنماذج الإنشاء' },
+  }, async () => earnings.listProfiles())
+
+  app.get('/api/admin/trainer-payouts', {
+    preHandler: requirePermission('trainer.compensation.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'كل كشوف المستحقات مع أسماء المدربين — فلتر حالة اختياري' },
+  }, async (req) => {
+    const { status } = z.object({ status: z.string().optional() }).parse(req.query)
+    return earnings.listAll(status)
+  })
+
+  app.post('/api/admin/trainer-payouts', {
+    preHandler: requirePermission('trainer.compensation.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'إنشاء كشف مستحقات ببنوده — يولد بحالة «بانتظار الاعتماد»' },
+  }, async (req, reply) => {
+    const body = z.object({
+      profileId: z.string().uuid(),
+      period: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'صيغة الفترة مثل 2026-08'),
+      currency: z.string().length(3).optional(),
+      items: z.array(z.object({
+        description: z.string().min(3).max(300),
+        amount: z.number().positive(),
+        sourceRef: z.string().max(120).optional(),
+      })).min(1).max(50),
+    }).parse(req.body)
+    const payout = await earnings.create(req.auth!.userId, body)
+    return reply.status(201).send(payout)
+  })
+
+  app.post('/api/admin/trainer-payouts/:id/approve', {
+    preHandler: requirePermission('trainer.compensation.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'اعتماد كشف — من «بانتظار الاعتماد» إلى «معتمد»' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return earnings.approve(id, req.auth!.userId)
+  })
+
+  app.post('/api/admin/trainer-payouts/:id/pay', {
+    preHandler: requirePermission('trainer.compensation.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'تأكيد صرف كشف معتمد — يسجل وقت الصرف' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return earnings.markPaid(id, req.auth!.userId)
+  })
+
+  app.post('/api/admin/trainer-payouts/:id/cancel', {
+    preHandler: requirePermission('trainer.compensation.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'إلغاء كشف لم يُصرف — بسبب موثق' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const { reason } = z.object({ reason: z.string().min(5).max(500) }).parse(req.body)
+    return earnings.cancel(id, req.auth!.userId, reason)
   })
 }

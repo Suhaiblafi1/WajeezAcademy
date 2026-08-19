@@ -3,7 +3,7 @@
    كلها API حقيقي من admin-trainer.routes. */
 import { useCallback, useEffect, useState } from "react";
 import {
-  BadgeCheck, Briefcase, CalendarCheck, CheckCircle2, ChevronDown, FileSignature,
+  BadgeCheck, Banknote, Briefcase, CalendarCheck, CheckCircle2, ChevronDown, FileSignature,
   Globe, Loader2, ShieldOff, Star, UserCheck, XCircle,
 } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
@@ -362,6 +362,197 @@ export function TrainerChangeRequests() {
               className="mt-3 flex cursor-pointer items-center gap-1.5 rounded-full bg-[#FABC05] px-4 py-1.5 text-xs font-black text-[#0D0D0D] disabled:opacity-40">
               <Globe className="h-3.5 w-3.5" /> نشر في النطاق
             </button>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ── مستحقات المدربين — كشوف الصرف: إنشاء ← اعتماد ← صرف، أو إلغاء بسبب ── */
+
+const PAYOUT_STATUS_AR: Record<string, string> = {
+  pending: "بانتظار الاعتماد", approved: "معتمد", paid: "مدفوع", cancelled: "ملغى",
+};
+const PAYOUT_STATUS_CLS: Record<string, string> = {
+  pending: "border-[#FABC05]/40 text-[#FABC05]",
+  approved: "border-[#38A7B4]/40 text-[#6EC7D1]",
+  paid: "border-emerald-400/40 text-emerald-300",
+  cancelled: "border-white/20 text-white/40",
+};
+
+interface PayoutRow {
+  id: string; period: string; status: string; total: string | number; currency: string;
+  paidAt?: string | null; createdAt: string;
+  items: { id: string; description: string; amount: string | number; sourceRef?: string | null }[];
+  profile: { application?: { fullName: string; reference: string } | null };
+}
+interface ProfileOpt { id: string; fullName: string; reference: string }
+
+/** إدارة كشوف مستحقات المدربين — إنشاء واعتماد وصرف وإلغاء، كلها API حقيقي */
+export function TrainerPayouts() {
+  const [rows, setRows] = useState<PayoutRow[]>([]);
+  const [profiles, setProfiles] = useState<ProfileOpt[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [msg, setMsg] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [filter, setFilter] = useState("");
+  const [showCreate, setShowCreate] = useState(false);
+  const [cancelReason, setCancelReason] = useState<Record<string, string>>({});
+  const [form, setForm] = useState({ profileId: "", period: "" });
+  const [items, setItems] = useState<{ description: string; amount: string; sourceRef: string }[]>([
+    { description: "", amount: "", sourceRef: "" },
+  ]);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [p, profs] = await Promise.all([
+        apiGet<PayoutRow[]>(`/api/admin/trainer-payouts${filter ? `?status=${filter}` : ""}`),
+        apiGet<ProfileOpt[]>("/api/admin/trainer-profiles"),
+      ]);
+      setRows(p); setProfiles(profs);
+    } catch (e) { setMsg(e instanceof ApiError ? e.message : "تعذر تحميل الكشوف"); }
+    finally { setLoading(false); }
+  }, [filter]);
+
+  useEffect(() => { void load(); }, [load]);
+
+  const act = async (fn: () => Promise<unknown>, doneMsg: string) => {
+    if (busy) return;
+    setBusy(true); setMsg("");
+    try { await fn(); setMsg(doneMsg); await load(); }
+    catch (e) { setMsg(e instanceof ApiError ? e.message : "فشل الإجراء"); }
+    finally { setBusy(false); }
+  };
+
+  const create = () => act(async () => {
+    await apiPost("/api/admin/trainer-payouts", {
+      profileId: form.profileId,
+      period: form.period,
+      items: items.map((i) => ({
+        description: i.description, amount: Number(i.amount), sourceRef: i.sourceRef || undefined,
+      })),
+    });
+    setShowCreate(false);
+    setForm({ profileId: "", period: "" });
+    setItems([{ description: "", amount: "", sourceRef: "" }]);
+  }, "أُنشئ الكشف — بانتظار الاعتماد");
+
+  const fmt = (n: string | number) => Number(n).toLocaleString("en-US", { maximumFractionDigits: 2 });
+
+  if (loading) return <div className="grid place-items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-white/30" /></div>;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <select value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="رشّح بالحالة" className={selectCls}>
+          <option value="">كل الحالات</option>
+          {Object.entries(PAYOUT_STATUS_AR).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+        </select>
+        <button onClick={() => setShowCreate(!showCreate)}
+          className="flex cursor-pointer items-center gap-1.5 rounded-full bg-[#FABC05] px-4 py-2 text-xs font-black text-[#0D0D0D]">
+          <Banknote className="h-3.5 w-3.5" /> كشف جديد
+        </button>
+        {msg && <span className="text-xs font-bold text-[#6EC7D1]" role="status">{msg}</span>}
+      </div>
+
+      {showCreate && (
+        <div className="space-y-3 rounded-3xl border border-[#FABC05]/25 bg-[#FABC05]/5 p-5">
+          <p className="text-sm font-black">كشف مستحقات جديد <span className="text-[11px] font-bold text-white/50">— يولد بحالة «بانتظار الاعتماد»</span></p>
+          <div className="flex flex-wrap gap-2">
+            <select value={form.profileId} onChange={(e) => setForm({ ...form, profileId: e.target.value })} className={`${selectCls} flex-1`}>
+              <option value="">اختر المدرب…</option>
+              {profiles.map((p) => <option key={p.id} value={p.id}>{p.fullName} — {p.reference}</option>)}
+            </select>
+            <input value={form.period} onChange={(e) => setForm({ ...form, period: e.target.value })}
+              placeholder="الفترة — 2026-08" dir="ltr" className={`${inputCls} w-32 font-mono`} />
+          </div>
+          {items.map((it, idx) => (
+            <div key={idx} className="flex flex-wrap items-center gap-2">
+              <input value={it.description} placeholder="وصف البند — تدريب شعبة القيادة"
+                onChange={(e) => setItems(items.map((x, i) => i === idx ? { ...x, description: e.target.value } : x))}
+                className={`${inputCls} flex-1`} />
+              <input value={it.amount} placeholder="المبلغ" dir="ltr" inputMode="decimal"
+                onChange={(e) => setItems(items.map((x, i) => i === idx ? { ...x, amount: e.target.value } : x))}
+                className={`${inputCls} w-24 font-mono`} />
+              <input value={it.sourceRef} placeholder="مرجع (اختياري)" dir="ltr"
+                onChange={(e) => setItems(items.map((x, i) => i === idx ? { ...x, sourceRef: e.target.value } : x))}
+                className={`${inputCls} w-32 font-mono`} />
+              {items.length > 1 && (
+                <button onClick={() => setItems(items.filter((_, i) => i !== idx))}
+                  className="cursor-pointer text-white/40 hover:text-red-400" aria-label="حذف البند">
+                  <XCircle className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          ))}
+          <div className="flex flex-wrap items-center gap-2">
+            <button onClick={() => setItems([...items, { description: "", amount: "", sourceRef: "" }])}
+              className="cursor-pointer rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-bold text-white/60 hover:border-white/40">
+              + بند آخر
+            </button>
+            <button disabled={busy || !form.profileId || !/^\d{4}-(0[1-9]|1[0-2])$/.test(form.period) || items.some((i) => i.description.trim().length < 3 || !(Number(i.amount) > 0))}
+              onClick={create}
+              className="cursor-pointer rounded-full bg-[#FABC05] px-5 py-1.5 text-xs font-black text-[#0D0D0D] disabled:opacity-40">
+              إنشاء الكشف
+            </button>
+          </div>
+        </div>
+      )}
+
+      {rows.length === 0 && (
+        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center">
+          <Banknote className="h-10 w-10 text-white/20" />
+          <p className="mt-3 text-sm text-white/50">لا كشوف بهذه الحالة — أنشئ أول كشف من زر «كشف جديد».</p>
+        </div>
+      )}
+
+      {rows.map((p) => (
+        <div key={p.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-black">
+                {p.profile.application?.fullName ?? "مدرب"} <span dir="ltr" className="font-mono text-[10px] text-white/40">{p.profile.application?.reference}</span>
+                <span className="mr-2 text-[11px] font-bold text-white/50">فترة <span dir="ltr" className="font-mono">{p.period}</span></span>
+              </p>
+              <p className="mt-1 text-xl font-black">{fmt(p.total)} <span className="text-xs font-bold text-white/50">{p.currency}</span></p>
+              {p.paidAt && <p className="mt-0.5 text-[10px] text-white/40">صُرف {new Date(p.paidAt).toLocaleString("ar")}</p>}
+            </div>
+            <span className={`rounded-full border px-3 py-1 text-[11px] font-bold ${PAYOUT_STATUS_CLS[p.status] ?? ""}`}>
+              {PAYOUT_STATUS_AR[p.status] ?? p.status}
+            </span>
+          </div>
+          <ul className="mt-3 space-y-1 border-t border-white/8 pt-3">
+            {p.items.map((i) => (
+              <li key={i.id} className="flex items-center justify-between gap-3 text-xs text-white/60">
+                <span>{i.description}{i.sourceRef ? <span dir="ltr" className="mr-2 font-mono text-[10px] text-white/35">{i.sourceRef}</span> : null}</span>
+                <span dir="ltr" className="font-mono font-bold text-white/80">{fmt(i.amount)}</span>
+              </li>
+            ))}
+          </ul>
+          {(p.status === "pending" || p.status === "approved") && (
+            <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/8 pt-3">
+              {p.status === "pending" && (
+                <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-payouts/${p.id}/approve`), "اعتُمد الكشف")}
+                  className="flex cursor-pointer items-center gap-1 rounded-full border border-emerald-400/40 px-3 py-1.5 text-xs font-bold text-emerald-300 disabled:opacity-40">
+                  <BadgeCheck className="h-3.5 w-3.5" /> اعتماد
+                </button>
+              )}
+              {p.status === "approved" && (
+                <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-payouts/${p.id}/pay`), "سُجل الصرف")}
+                  className="flex cursor-pointer items-center gap-1 rounded-full bg-emerald-500 px-3 py-1.5 text-xs font-black text-white disabled:opacity-40">
+                  <CheckCircle2 className="h-3.5 w-3.5" /> تأكيد الصرف
+                </button>
+              )}
+              <input value={cancelReason[p.id] ?? ""} onChange={(e) => setCancelReason({ ...cancelReason, [p.id]: e.target.value })}
+                placeholder="سبب الإلغاء…" className={`${inputCls} max-w-48`} />
+              <button disabled={busy || (cancelReason[p.id] ?? "").trim().length < 5}
+                onClick={() => act(() => apiPost(`/api/admin/trainer-payouts/${p.id}/cancel`, { reason: cancelReason[p.id] }), "أُلغي الكشف")}
+                className="flex cursor-pointer items-center gap-1 rounded-full border border-red-500/40 px-3 py-1.5 text-xs font-bold text-red-400 disabled:opacity-40">
+                <XCircle className="h-3.5 w-3.5" /> إلغاء
+              </button>
+            </div>
           )}
         </div>
       ))}
