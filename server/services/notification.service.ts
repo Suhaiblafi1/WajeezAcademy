@@ -48,6 +48,20 @@ export async function safeNotify(prisma: PrismaClient, payload: NotificationPayl
   } catch { /* الإشعار رفاهية — السجلات التشغيلية هي مصدر الحقيقة */ }
 }
 
+/** إشعار كل المستخدمين الفعالين الحاملين لأدوار معينة — لأحداث تهم الإدارة (طلب مدرب، تذكرة دعم) */
+export async function notifyRole(
+  prisma: PrismaClient, roleIds: string[], payload: Omit<NotificationPayload, 'userId'>,
+): Promise<void> {
+  try {
+    const holders = await prisma.userRole.findMany({
+      where: { roleId: { in: roleIds }, user: { status: 'active' } },
+      select: { userId: true },
+    })
+    const unique = [...new Set(holders.map((h) => h.userId))]
+    for (const userId of unique) await safeNotify(prisma, { ...payload, userId })
+  } catch { /* لا يعيق الحدث الأصلي */ }
+}
+
 export class NotificationService {
   private prisma: PrismaClient
   constructor(prisma: PrismaClient) {

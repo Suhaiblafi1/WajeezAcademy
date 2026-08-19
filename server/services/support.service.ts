@@ -4,6 +4,7 @@
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
+import { notifyRole } from './notification.service'
 
 const TICKET_STATUSES = ['open', 'pending', 'resolved', 'closed', 'reopened'] as const
 const TICKET_TRANSITIONS: Record<string, string[]> = {
@@ -34,6 +35,14 @@ export class SupportService {
       return t
     })
     await recordAudit(this.prisma, { actorId: userId, action: 'support.ticket.create', entityType: 'support_ticket', entityId: ticket.id })
+    /* تذكرة جديدة تُشعِر فريق الدعم فوراً — لا تنتظر من يفتح الشاشة صدفة */
+    await notifyRole(this.prisma, ['super_admin', 'support'], {
+      channel: 'in_app',
+      title: 'تذكرة دعم جديدة',
+      body: `فُتحت تذكرة «${input.subject}» (${input.category ?? 'other'}) — بانتظار من يلتقطها في «تذاكر الدعم».`,
+      templateKey: 'admin.support_ticket',
+      data: { ticketId: ticket.id },
+    })
     return ticket
   }
 

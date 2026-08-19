@@ -7,6 +7,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import type { PrismaClient, Prisma } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
+import { notifyRole } from './notification.service'
 import { newStorageKey, signKey, SIGNED_URL_TTL_MS, MAX_UPLOAD_BYTES } from './storage.service'
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex')
@@ -165,6 +166,14 @@ export class TrainerApplicationService {
         action: 'trainer.application.verify_email', entityType: 'trainer_application', entityId: app.id,
         meta: { reference },
       })
+    })
+    /* الطلب اكتمل تحققه وصار «مقدماً» — أشعر لجنة الاستقبال فوراً */
+    await notifyRole(this.prisma, ['super_admin', 'academic_manager', 'operations_manager'], {
+      channel: 'in_app',
+      title: 'طلب انضمام مدرب جديد',
+      body: `قدّم ${app.fullName} طلب انضمام (${reference}) وتحقق من بريده — بانتظار الفرز الأولي في «طلبات المدربين».`,
+      templateKey: 'admin.trainer_application',
+      data: { applicationId: app.id, reference },
     })
     return { candidateToken, status: 'submitted' }
   }
