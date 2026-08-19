@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router";
 import { GraduationCap, LayoutDashboard, Route as RouteIcon, Trophy, Award, Lock, Eye, LogOut, Bell, CheckCheck, UserCircle, ReceiptText, FileText, MoreHorizontal, X, LifeBuoy, CalendarDays, BookOpen, ChevronDown } from "lucide-react";
 import { canAccessPortal, enablePreview, getEnrollment, isOwnerUnlocked, unlockOwner } from "@/services/access";
 import { signOut } from "@/services/auth";
 import { apiGet, apiPost } from "@/services/api";
 import { useRealSession } from "@/services/session";
+import { useAutoRefresh } from "@/services/useAutoRefresh";
 import { loadPortal, readUserName, savePortal, type PortalNotification } from "@/data/student";
 import { pathways } from "@/data/pathways";
 import { pathwayCourses } from "@/data/courses";
@@ -49,13 +50,15 @@ export default function PortalLayout({ children, title }: { children: React.Reac
     apiGet<RealNotif[]>("/api/learner/notifications").then((rows) => setRealNotifs(rows.slice(0, 6))).catch(() => setRealNotifs(null));
   }, []);
 
-  /* عداد الخادم الرسمي للشارة — يُفضَّل على الحساب المحلي من القائمة المقتطعة */
+  /* عداد الخادم الرسمي للشارة — يُفضَّل على الحساب المحلي، ويُحدَّث كل دقيقة */
   const [serverUnread, setServerUnread] = useState<number | null>(null);
-  useEffect(() => {
+  const refreshUnread = useCallback(() => {
     apiGet<{ unread: number }>("/api/learner/notifications/unread-count")
       .then((r) => setServerUnread(r.unread))
       .catch(() => setServerUnread(null));
   }, []);
+  useEffect(() => { refreshUnread(); }, [refreshUnread]);
+  useAutoRefresh(refreshUnread, 60_000);
 
   const unreadCount = serverUnread ?? (realNotifs
     ? realNotifs.filter((n) => n.status !== "read").length

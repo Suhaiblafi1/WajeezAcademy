@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
 import {
   Banknote, CalendarCog, ClipboardList, LifeBuoy, Loader2,
@@ -7,6 +7,7 @@ import {
 import AdminLayout from "./AdminLayout";
 import { apiGet } from "@/services/api";
 import { useRealSession } from "@/services/session";
+import { useAutoRefresh } from "@/services/useAutoRefresh";
 
 /* اللوحة العليا — نظرة تنفيذية من مصادر الخادم الحقيقية فقط.
    كل بطاقة تتحمل غياب الصلاحية (403) فتختفي بهدوء بدل كسر الصفحة. */
@@ -34,53 +35,59 @@ export default function AdminDashboard() {
   const { user } = useRealSession();
   const [cards, setCards] = useState<Card[] | null>(null);
   const [failed, setFailed] = useState(false);
+  const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
 
-  useEffect(() => {
-    let alive = true;
+  /* الجلب — silent=true للتحديث الخلفي: لا وميض سبينر ولا إخفاء للبطاقات القائمة */
+  const load = useCallback(async (silent = false) => {
     const safe = <T,>(p: Promise<T>) => p.then((v) => v).catch(() => null);
-    (async () => {
-      const [reqs, invoices, refunds, cohorts, tickets, users] = await Promise.all([
-        safe(apiGet<EnrollReq[]>("/api/admin/enrollment-requests")),
-        safe(apiGet<Invoice[]>("/api/admin/invoices")),
-        safe(apiGet<Refund[]>("/api/admin/refunds")),
-        safe(apiGet<CohortRow[]>("/api/admin/cohorts")),
-        safe(apiGet<TicketRow[]>("/api/admin/support/tickets")),
-        safe(apiGet<UserRow[]>("/api/admin/users")),
-      ]);
-      if (!alive) return;
-      if (!reqs && !invoices && !cohorts) { setFailed(true); return; }
+    const [reqs, invoices, refunds, cohorts, tickets, users] = await Promise.all([
+      safe(apiGet<EnrollReq[]>("/api/admin/enrollment-requests")),
+      safe(apiGet<Invoice[]>("/api/admin/invoices")),
+      safe(apiGet<Refund[]>("/api/admin/refunds")),
+      safe(apiGet<CohortRow[]>("/api/admin/cohorts")),
+      safe(apiGet<TicketRow[]>("/api/admin/support/tickets")),
+      safe(apiGet<UserRow[]>("/api/admin/users")),
+    ]);
+    if (!reqs && !invoices && !cohorts) {
+      if (!silent) setFailed(true); // تحديث خلفي فاشل يُبقي الأرقام القائمة
+      return;
+    }
 
-      const out: Card[] = [];
-      if (reqs) {
-        const n = reqs.filter((r) => r.status === "pending").length;
-        out.push({ to: "/admin/finance", label: "طلبات تسجيل تنتظر المراجعة", value: String(n), hint: "راجعها ووافق أو اعتذر", icon: ClipboardList, tone: n > 0 ? "gold" : "plain" });
-      }
-      if (invoices) {
-        const paid = invoices.filter((i) => i.status === "paid");
-        const byCur = new Map<string, number>();
-        for (const i of paid) byCur.set(i.currency, (byCur.get(i.currency) ?? 0) + (Number(String(i.total).replace(/[^\d.-]/g, "")) || 0));
-        const top = [...byCur.entries()].sort((a, b) => b[1] - a[1])[0];
-        out.push({ to: "/admin/finance", label: "إيراد محصّل (فواتير مدفوعة)", value: top ? `${Math.round(top[1]).toLocaleString("ar-SA")} ${top[0]}` : "0", hint: `${paid.length} فاتورة مدفوعة`, icon: Banknote, tone: "teal" });
-      }
-      if (refunds) {
-        const n = refunds.filter((r) => r.status === "requested").length;
-        out.push({ to: "/admin/finance", label: "استردادات بانتظار التنفيذ", value: String(n), hint: n > 0 ? "تحتاج قرارك اليوم" : "لا شيء معلق", icon: RotateCcw, tone: n > 0 ? "red" : "plain" });
-      }
-      if (cohorts) {
-        const n = cohorts.filter((c) => c.status === "open" || c.status === "running" || c.status === "full").length;
-        out.push({ to: "/admin/cohorts", label: "شعب نشطة الآن", value: String(n), hint: `من أصل ${cohorts.length} شعبة`, icon: CalendarCog, tone: "plain" });
-      }
-      if (tickets) {
-        const n = tickets.filter((t) => ["open", "in_progress", "reopened"].includes(t.status)).length;
-        out.push({ to: "/admin/support", label: "تذاكر دعم تحتاج معالجة", value: String(n), hint: n > 0 ? "عملاء ينتظرون رداً" : "صندوق الدعم نظيف", icon: LifeBuoy, tone: n > 0 ? "gold" : "plain" });
-      }
-      if (users) {
-        out.push({ to: "/admin/users", label: "مستخدمو المنصة", value: String(users.length), hint: "إدارة الأدوار والصلاحيات", icon: Users, tone: "plain" });
-      }
-      setCards(out);
-    })();
-    return () => { alive = false; };
+    const out: Card[] = [];
+    if (reqs) {
+      const n = reqs.filter((r) => r.status === "pending").length;
+      out.push({ to: "/admin/finance", label: "طلبات تسجيل تنتظر المراجعة", value: String(n), hint: "راجعها ووافق أو اعتذر", icon: ClipboardList, tone: n > 0 ? "gold" : "plain" });
+    }
+    if (invoices) {
+      const paid = invoices.filter((i) => i.status === "paid");
+      const byCur = new Map<string, number>();
+      for (const i of paid) byCur.set(i.currency, (byCur.get(i.currency) ?? 0) + (Number(String(i.total).replace(/[^\d.-]/g, "")) || 0));
+      const top = [...byCur.entries()].sort((a, b) => b[1] - a[1])[0];
+      out.push({ to: "/admin/finance", label: "إيراد محصّل (فواتير مدفوعة)", value: top ? `${Math.round(top[1]).toLocaleString("ar-SA")} ${top[0]}` : "0", hint: `${paid.length} فاتورة مدفوعة`, icon: Banknote, tone: "teal" });
+    }
+    if (refunds) {
+      const n = refunds.filter((r) => r.status === "requested").length;
+      out.push({ to: "/admin/finance", label: "استردادات بانتظار التنفيذ", value: String(n), hint: n > 0 ? "تحتاج قرارك اليوم" : "لا شيء معلق", icon: RotateCcw, tone: n > 0 ? "red" : "plain" });
+    }
+    if (cohorts) {
+      const n = cohorts.filter((c) => c.status === "open" || c.status === "running" || c.status === "full").length;
+      out.push({ to: "/admin/cohorts", label: "شعب نشطة الآن", value: String(n), hint: `من أصل ${cohorts.length} شعبة`, icon: CalendarCog, tone: "plain" });
+    }
+    if (tickets) {
+      const n = tickets.filter((t) => ["open", "in_progress", "reopened"].includes(t.status)).length;
+      out.push({ to: "/admin/support", label: "تذاكر دعم تحتاج معالجة", value: String(n), hint: n > 0 ? "عملاء ينتظرون رداً" : "صندوق الدعم نظيف", icon: LifeBuoy, tone: n > 0 ? "gold" : "plain" });
+    }
+    if (users) {
+      out.push({ to: "/admin/users", label: "مستخدمو المنصة", value: String(users.length), hint: "إدارة الأدوار والصلاحيات", icon: Users, tone: "plain" });
+    }
+    setFailed(false);
+    setCards(out);
+    setUpdatedAt(new Date());
   }, []);
+
+  useEffect(() => { void load(); }, [load]);
+  /* نبضة كل 45 ثانية طالما التبويب ظاهر — الأرقام حية دون تحديث يدوي */
+  useAutoRefresh(() => void load(true), 45_000);
 
   const firstName = (user?.displayName ?? "").split(" ")[0] || "بك";
   const hour = new Date().getHours();
@@ -134,7 +141,9 @@ export default function AdminDashboard() {
       )}
 
       <p className="mt-8 text-center text-[11px] text-white/35">
-        كل الأرقام هنا حية من قاعدة البيانات — التقارير التفصيلية والتصدير في شاشة «التقارير».
+        كل الأرقام هنا حية من قاعدة البيانات وتُحدَّث تلقائيا كل 45 ثانية
+        {updatedAt && ` — آخر تحديث ${updatedAt.toLocaleTimeString("ar-JO", { hour: "2-digit", minute: "2-digit" })}`}.
+        التقارير التفصيلية والتصدير في شاشة «التقارير».
       </p>
     </AdminLayout>
   );
