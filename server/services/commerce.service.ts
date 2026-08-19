@@ -9,6 +9,7 @@ import { recordAudit } from './audit'
 import { EnrollmentService } from './enrollment.service'
 import { safeNotify } from './notification.service'
 import { getPaymentProvider, verifyPaymentWebhook } from './payments/provider'
+import { getPaymentConfig } from './integrations.service'
 
 const num = (d: Prisma.Decimal | number | null | undefined) => Number(d ?? 0)
 
@@ -155,10 +156,13 @@ export class CommerceService {
     const existing = await this.prisma.payment.findUnique({ where: { idempotencyKey } })
     if (existing) return existing // idempotent — نفس المفتاح يعيد نفس الدفعة
 
-    const provider = getPaymentProvider()
+    const config = await getPaymentConfig(this.prisma)
+    const provider = getPaymentProvider(config)
+    const appUrl = process.env.APP_URL ?? 'http://localhost:7100'
     const charge = await provider.createCharge({
       invoiceNumber: order.invoice.number, amount: num(order.total),
       currency: order.currency, descriptionAr: `طلب وجيز ${order.id}`,
+      callbackUrl: `${appUrl}/student/billing`,
     })
 
     const payment = await this.prisma.payment.create({
@@ -168,12 +172,14 @@ export class CommerceService {
         succeededAt: charge.status === 'succeeded' ? new Date() : null,
       },
     })
+    /* مزود مستضاف: الدفعة pending ولا تسوية إلا بـ webhook موقَّت — رجوع المتصفح ليس دليلا */
     if (charge.status === 'succeeded') await this.settleOrder(orderId, null)
     await recordAudit(this.prisma, {
-      actorId: userId, action: 'payment.test_charge', entityType: 'payment', entityId: payment.id,
-      meta: { orderId, providerRef: charge.providerRef },
+      actorId: userId, action: 'payment.charge', entityType: 'payment', entityId: payment.id,
+      meta: { orderId, provider: provider.name, providerRef: charge.providerRef, mode: charge.redirectUrl ? 'hosted' : 'instant' },
     })
-    return payment
+    /* redirectUrl يصل الواجهة لتحويل المتعلم لصفحة الدفع المستضافة */
+    return Object.assign(payment, charge.redirectUrl ? { redirectUrl: charge.redirectUrl } : {})
   }
 
   /** دفعة يدوية — صلاحية مالية مستقلة (تحويل بنكي/كاش) */
@@ -202,10 +208,11 @@ export class CommerceService {
 
   /** webhook مزود الدفع — موقَّت وidempotent؛ الحدث المكرر يُتجاهل بصمت */
   async handleWebhook(provider: string, rawBody: string, signature: string) {
-    if (!verifyPaymentWebhook(rawBody, signature)) {
+    const config = await getPaymentConfig(this.prisma)
+    if (!verifyPaymentWebhook(rawBody, signature, config.webhookSecret)) {
       throw new AuthError('bad_signature', 'توقيع الحدث غير صالح', 401)
     }
-    const payload = JSON.parse(rawBody) as { eventId?: string; invoiceNumber?: string; status?: string; providerRef?: string }
+    const payload = normalizeWebhookPayload(provider, JSON.parse(rawBody))
     if (!payload.eventId) throw new AuthError('bad_payload', 'الحدث بلا معرف')
 
     const seen = await this.prisma.paymentWebhookEvent.findUnique({
@@ -215,8 +222,13 @@ export class CommerceService {
 
     await this.prisma.paymentWebhookEvent.create({ data: { provider, eventId: payload.eventId, payload: payload as object } })
 
-    if (payload.status === 'succeeded' && payload.invoiceNumber) {
-      const invoice = await this.prisma.invoice.findUnique({ where: { number: payload.invoiceNumber } })
+    /* نجاح موقَّت: نجد الفاتورة برقمها، أو بالدفعة المعلقة التي تحمل مرجع المزود (فاتورة Moyasar المستضافة) */
+    if (payload.status === 'succeeded') {
+      const invoice = payload.invoiceNumber
+        ? await this.prisma.invoice.findUnique({ where: { number: payload.invoiceNumber } })
+        : (await this.prisma.payment.findFirst({
+            where: { provider, providerRef: payload.providerRef ?? '', status: 'pending' }, include: { invoice: true },
+          }))?.invoice ?? null
       if (invoice && invoice.status !== 'paid') {
         await this.prisma.payment.create({
           data: {
@@ -364,5 +376,37 @@ export class CommerceService {
       include: { payment: { include: { invoice: true } } },
       orderBy: { createdAt: 'desc' },
     })
+  }
+}
+
+/* تطبيع حمولات webhook إلى عقد واحد: { eventId, invoiceNumber?, status, providerRef? }.
+   العقد العام صريح؛ Moyasar يرسل كائن الدفعة (id + status=paid + metadata.invoiceNumber)؛
+   Stripe يرسل حدثا (type=checkout.session.completed + data.object.metadata.invoiceNumber). */
+function normalizeWebhookPayload(provider: string, raw: unknown): { eventId?: string; invoiceNumber?: string; status?: string; providerRef?: string } {
+  const p = (raw ?? {}) as Record<string, unknown>
+  if (provider === 'moyasar') {
+    const meta = (p.metadata ?? {}) as Record<string, unknown>
+    return {
+      eventId: String(p.id ?? p.eventId ?? ''), providerRef: String(p.id ?? p.providerRef ?? ''),
+      status: p.status === 'paid' ? 'succeeded' : (p.status as string | undefined),
+      invoiceNumber: (meta.invoiceNumber ?? p.invoiceNumber) as string | undefined,
+    }
+  }
+  if (provider === 'stripe') {
+    const obj = (((p.data ?? {}) as Record<string, unknown>).object ?? {}) as Record<string, unknown>
+    const meta = (obj.metadata ?? {}) as Record<string, unknown>
+    const hasStripeShape = p.type !== undefined || p.data !== undefined
+    return {
+      eventId: String(p.id ?? p.eventId ?? ''), providerRef: String(obj.id ?? p.providerRef ?? ''),
+      status: hasStripeShape ? (p.type === 'checkout.session.completed' ? 'succeeded' : String(p.type ?? '')) : (p.status as string | undefined),
+      invoiceNumber: (meta.invoiceNumber ?? p.invoiceNumber) as string | undefined,
+    }
+  }
+  /* العقد العام — جسور مخصصة ومزودون آخرون */
+  return {
+    eventId: p.eventId as string | undefined,
+    invoiceNumber: p.invoiceNumber as string | undefined,
+    status: p.status as string | undefined,
+    providerRef: p.providerRef as string | undefined,
   }
 }

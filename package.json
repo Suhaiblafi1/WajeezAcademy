@@ -68,6 +68,7 @@
     "exceljs": "^4.4.0",
     "fastify": "^5.12.0",
     "lucide-react": "^0.562.0",
+    "nodemailer": "^9.0.5",
     "pg": "^8.23.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
@@ -78,6 +79,7 @@
   "devDependencies": {
     "@eslint/js": "^9.39.1",
     "@types/node": "^24.13.3",
+    "@types/nodemailer": "^8.0.1",
     "@types/pg": "^8.21.0",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",

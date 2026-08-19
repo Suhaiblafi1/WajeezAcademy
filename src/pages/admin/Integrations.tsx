@@ -1,0 +1,258 @@
+/* شاشة التكاملات — مزود الدفع والبريد من مكان واحد بصلاحية settings.manage.
+   القراءة مقنَّعة (آخر 4 خانات)، الحفظ يتجاهل القناع ولا يمسح السر المخزن،
+   وفحصا الاتصال حيان يضربان خادم المزود/البريد فعلا. متغيرات البيئة تغلب كل شيء. */
+
+import { useCallback, useEffect, useState } from "react";
+import { CreditCard, Loader2, Mail, PlugZap, RefreshCw, Send, ServerOff, ShieldCheck } from "lucide-react";
+import AdminLayout from "./AdminLayout";
+import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
+
+const inputCls = "rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white focus:border-[#38A7B4] focus:outline-none";
+const labelCls = "block text-[10px] font-bold text-white/50";
+
+interface IntegrationsView {
+  payment: {
+    enabled: boolean; driver: "test" | "manual" | "moyasar" | "stripe"; envSourced: boolean;
+    publishableKey: string; secretKey: string; webhookSecret: string; hasSecret: boolean; hasWebhookSecret: boolean;
+  };
+  email: {
+    enabled: boolean; envSourced: boolean; host: string; port: number; secure: boolean;
+    user: string; pass: string; fromName: string; fromEmail: string; hasPass: boolean;
+  };
+}
+
+const DRIVER_AR: Record<string, string> = {
+  test: "اختباري — نجاح فوري بلا مال حقيقي",
+  manual: "يدوي — تحويل بنكي/كاش تسجله المالية",
+  moyasar: "Moyasar — صفحة دفع مستضافة (مدى/البطاقات)",
+  stripe: "Stripe — صفحة Checkout مستضافة",
+};
+
+export default function Integrations() {
+  const [view, setView] = useState<IntegrationsView | null>(null);
+  const [offline, setOffline] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [flash, setFlash] = useState("");
+
+  const [payForm, setPayForm] = useState({ enabled: false, driver: "test", publishableKey: "", secretKey: "", webhookSecret: "" });
+  const [mailForm, setMailForm] = useState({ enabled: false, host: "", port: 465, secure: true, user: "", pass: "", fromName: "", fromEmail: "" });
+  const [testTo, setTestTo] = useState("");
+
+  const load = useCallback(async () => {
+    setLoading(true); setOffline(null);
+    try {
+      const v = await apiGet<IntegrationsView>("/api/admin/integrations");
+      setView(v);
+      setPayForm({
+        enabled: v.payment.enabled, driver: v.payment.driver,
+        publishableKey: v.payment.publishableKey, secretKey: v.payment.secretKey, webhookSecret: v.payment.webhookSecret,
+      });
+      setMailForm({
+        enabled: v.email.enabled, host: v.email.host, port: v.email.port, secure: v.email.secure,
+        user: v.email.user, pass: v.email.pass, fromName: v.email.fromName, fromEmail: v.email.fromEmail,
+      });
+    } catch (e) { setOffline(e instanceof ApiError ? e.message : "الخادم غير متصل"); }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { void load(); }, [load]);
+
+  const act = async (fn: () => Promise<unknown>, doneMsg: string) => {
+    if (busy) return;
+    setBusy(true); setFlash("");
+    try { await fn(); setFlash(doneMsg); await load(); }
+    catch (e) { setFlash(e instanceof ApiError ? e.message : "فشل الإجراء"); }
+    finally { setBusy(false); }
+  };
+
+  const testPayment = async () => {
+    setBusy(true); setFlash("");
+    try {
+      const r = await apiPost<{ ok: boolean; message: string }>("/api/admin/integrations/payment/test");
+      setFlash(r.message);
+    } catch (e) { setFlash(e instanceof ApiError ? e.message : "فشل الفحص"); }
+    finally { setBusy(false); }
+  };
+
+  const testEmail = async () => {
+    if (!testTo.includes("@")) { setFlash("أدخل بريداً صحيحاً للاختبار"); return; }
+    setBusy(true); setFlash("");
+    try {
+      const r = await apiPost<{ ok: boolean; message: string }>("/api/admin/integrations/email/test", { to: testTo });
+      setFlash(r.message ?? (r.ok ? "أُرسل" : "فشل"));
+    } catch (e) { setFlash(e instanceof ApiError ? e.message : "فشل الإرسال التجريبي"); }
+    finally { setBusy(false); }
+  };
+
+  if (offline) {
+    return (
+      <AdminLayout title="التكاملات">
+        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
+          <ServerOff className="h-12 w-12 text-white/20" />
+          <p className="mt-4 max-w-md text-sm text-white/55">{offline}</p>
+          <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-white/70 hover:border-white/40">
+            <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
+          </button>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  const webhookUrl = `${window.location.origin.replace("7100", "7101")}/api/webhooks/payments/${payForm.driver}`;
+
+  return (
+    <AdminLayout title="التكاملات — الدفع والبريد">
+      {flash && <p role="status" className="mb-4 rounded-xl border border-[#38A7B4]/30 bg-[#38A7B4]/10 px-4 py-3 text-sm font-bold text-[#6EC7D1]">{flash}</p>}
+
+      {loading || !view ? (
+        <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-white/30" /></div>
+      ) : (
+        <div className="grid gap-5 lg:grid-cols-2">
+          {/* ════ مزود الدفع ════ */}
+          <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+            <p className="flex items-center gap-2 text-sm font-black"><CreditCard className="h-4 w-4 text-[#FABC05]" /> مزود الدفع</p>
+            <p className="mt-1 text-[11px] leading-5 text-white/50">
+              المزودان الحقيقيان يعملان بصفحات دفع مستضافة لديهم — لا بيانات بطاقات تمر بخوادمنا أبداً،
+              والتسوية تتم عبر webhook موقَّت فقط.
+            </p>
+            {view.payment.envSourced && (
+              <p className="mt-3 rounded-xl border border-[#FABC05]/30 bg-[#FABC05]/5 px-3 py-2 text-[11px] font-bold text-[#FABC05]">
+                هذا التكامل يُدار من متغيرات البيئة (PAYMENT_DRIVER…) — الحفظ هنا لن يؤثر حتى تُزال متغيرات البيئة.
+              </p>
+            )}
+            <div className="mt-4 space-y-3">
+              <div>
+                <label className={labelCls}>المزود الفعال</label>
+                <select value={payForm.driver} onChange={(e) => setPayForm({ ...payForm, driver: e.target.value as typeof payForm.driver })} className={`${inputCls} mt-1 w-full`}>
+                  {Object.entries(DRIVER_AR).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                </select>
+              </div>
+              {(payForm.driver === "moyasar" || payForm.driver === "stripe") && (
+                <>
+                  <div>
+                    <label className={labelCls}>المفتاح العلني (Publishable)</label>
+                    <input dir="ltr" value={payForm.publishableKey} onChange={(e) => setPayForm({ ...payForm, publishableKey: e.target.value })}
+                      placeholder={view.payment.publishableKey || "pk_live_… / pk_test_…"} className={`${inputCls} mt-1 w-full font-mono`} />
+                  </div>
+                  <div>
+                    <label className={labelCls}>المفتاح السري (Secret) — يُخزَّن ولا يُعرض كاملاً أبداً</label>
+                    <input dir="ltr" type="password" value={payForm.secretKey} onChange={(e) => setPayForm({ ...payForm, secretKey: e.target.value })}
+                      placeholder={view.payment.hasSecret ? view.payment.secretKey : "sk_live_… / sk_test_…"} className={`${inputCls} mt-1 w-full font-mono`} />
+                  </div>
+                  <div>
+                    <label className={labelCls}>سر التوقيع للـ webhook</label>
+                    <input dir="ltr" type="password" value={payForm.webhookSecret} onChange={(e) => setPayForm({ ...payForm, webhookSecret: e.target.value })}
+                      placeholder={view.payment.hasWebhookSecret ? view.payment.webhookSecret : "whsec_… أو رمز مشترك"} className={`${inputCls} mt-1 w-full font-mono`} />
+                  </div>
+                  <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-[10px] leading-5 text-white/50">
+                    <p className="font-bold text-white/70">عنوان الـ webhook — سجّله في لوحة المزود:</p>
+                    <p dir="ltr" className="mt-0.5 select-all font-mono text-[#6EC7D1]">{webhookUrl}</p>
+                    <p className="mt-1">Moyasar: سجّل «سر التوقيع» نفسه رمزاً مشتركاً في لوحتهم. Stripe: أرسل التوقيع بترويسة <span dir="ltr" className="font-mono">x-payment-signature: hmac=&lt;sig&gt;</span> عبر جسر، أو استخدم الرمز المشترك.</p>
+                  </div>
+                </>
+              )}
+              <label className="flex cursor-pointer items-center gap-2 text-xs font-bold text-white/70">
+                <input type="checkbox" checked={payForm.enabled} onChange={(e) => setPayForm({ ...payForm, enabled: e.target.checked })} className="accent-[#FABC05]" />
+                تفعيل هذا المزود — غير المفعّل يعني: المزود الاختباري يعمل
+              </label>
+              <div className="flex flex-wrap gap-2">
+                <button disabled={busy} onClick={() => act(() => apiPut("/api/admin/integrations/payment", payForm), "حُفظت إعدادات الدفع")}
+                  className="cursor-pointer rounded-full bg-[#FABC05] px-5 py-2 text-xs font-black text-[#0D0D0D] disabled:opacity-40">
+                  حفظ إعدادات الدفع
+                </button>
+                <button disabled={busy} onClick={() => void testPayment()}
+                  className="flex cursor-pointer items-center gap-1.5 rounded-full border border-[#38A7B4]/40 px-4 py-2 text-xs font-bold text-[#6EC7D1] disabled:opacity-40">
+                  <PlugZap className="h-3.5 w-3.5" /> فحص الاتصال الحي
+                </button>
+              </div>
+            </div>
+          </section>
+
+          {/* ════ البريد ════ */}
+          <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+            <p className="flex items-center gap-2 text-sm font-black"><Mail className="h-4 w-4 text-[#38A7B4]" /> خادم البريد (SMTP)</p>
+            <p className="mt-1 text-[11px] leading-5 text-white/50">
+              فور التفعيل تصبح قناة email في الإشعارات حقيقية — قبول التسجيل والفواتير والشهادات تصل بريداً.
+              غير المفعّلة تسجَّل «فشل: لا مزود» وتُعاد المحاولة تلقائياً.
+            </p>
+            {view.email.envSourced && (
+              <p className="mt-3 rounded-xl border border-[#FABC05]/30 bg-[#FABC05]/5 px-3 py-2 text-[11px] font-bold text-[#FABC05]">
+                هذا التكامل يُدار من متغيرات البيئة (SMTP_HOST…) — الحفظ هنا لن يؤثر حتى تُزال متغيرات البيئة.
+              </p>
+            )}
+            <div className="mt-4 space-y-3">
+              <div className="grid grid-cols-3 gap-2">
+                <div className="col-span-2">
+                  <label className={labelCls}>المضيف</label>
+                  <input dir="ltr" value={mailForm.host} onChange={(e) => setMailForm({ ...mailForm, host: e.target.value })}
+                    placeholder="smtp.resend.com" className={`${inputCls} mt-1 w-full font-mono`} />
+                </div>
+                <div>
+                  <label className={labelCls}>المنفذ</label>
+                  <input dir="ltr" inputMode="numeric" value={mailForm.port} onChange={(e) => setMailForm({ ...mailForm, port: Number(e.target.value) || 465 })}
+                    className={`${inputCls} mt-1 w-full font-mono`} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className={labelCls}>المستخدم</label>
+                  <input dir="ltr" value={mailForm.user} onChange={(e) => setMailForm({ ...mailForm, user: e.target.value })}
+                    placeholder="apikey أو بريد الحساب" className={`${inputCls} mt-1 w-full font-mono`} />
+                </div>
+                <div>
+                  <label className={labelCls}>كلمة المرور — تُخزَّن ولا تُعرض كاملة</label>
+                  <input dir="ltr" type="password" value={mailForm.pass} onChange={(e) => setMailForm({ ...mailForm, pass: e.target.value })}
+                    placeholder={view.email.hasPass ? view.email.pass : "••••"} className={`${inputCls} mt-1 w-full font-mono`} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className={labelCls}>اسم المرسل</label>
+                  <input value={mailForm.fromName} onChange={(e) => setMailForm({ ...mailForm, fromName: e.target.value })}
+                    placeholder="أكاديمية وجيز" className={`${inputCls} mt-1 w-full`} />
+                </div>
+                <div>
+                  <label className={labelCls}>بريد المرسل</label>
+                  <input dir="ltr" value={mailForm.fromEmail} onChange={(e) => setMailForm({ ...mailForm, fromEmail: e.target.value })}
+                    placeholder="no-reply@wajeez.sa" className={`${inputCls} mt-1 w-full font-mono`} />
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-4">
+                <label className="flex cursor-pointer items-center gap-2 text-xs font-bold text-white/70">
+                  <input type="checkbox" checked={mailForm.secure} onChange={(e) => setMailForm({ ...mailForm, secure: e.target.checked })} className="accent-[#FABC05]" />
+                  اتصال آمن TLS (المنفذ 465 عادة)
+                </label>
+                <label className="flex cursor-pointer items-center gap-2 text-xs font-bold text-white/70">
+                  <input type="checkbox" checked={mailForm.enabled} onChange={(e) => setMailForm({ ...mailForm, enabled: e.target.checked })} className="accent-[#FABC05]" />
+                  تفعيل قناة البريد
+                </label>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button disabled={busy} onClick={() => act(() => apiPut("/api/admin/integrations/email", mailForm), "حُفظت إعدادات البريد")}
+                  className="cursor-pointer rounded-full bg-[#FABC05] px-5 py-2 text-xs font-black text-[#0D0D0D] disabled:opacity-40">
+                  حفظ إعدادات البريد
+                </button>
+                <div className="flex flex-1 items-center gap-2">
+                  <input dir="ltr" value={testTo} onChange={(e) => setTestTo(e.target.value)} placeholder="بريد الاختبار…"
+                    className={`${inputCls} min-w-0 flex-1 font-mono`} />
+                  <button disabled={busy} onClick={() => void testEmail()}
+                    className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-[#38A7B4]/40 px-4 py-2 text-xs font-bold text-[#6EC7D1] disabled:opacity-40">
+                    <Send className="h-3.5 w-3.5" /> إرسال تجريبي
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* قاعدة الأمان */}
+          <p className="flex items-start gap-2 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 text-[11px] leading-6 text-white/55 lg:col-span-2">
+            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#38A7B4]" />
+            قواعد ثابتة: الأسرار تُكتب ولا تُقرأ (آخر 4 خانات فقط للعرض)، ومتغيرات البيئة تغلب الشاشة دائماً لبيئات الإنتاج،
+            وكل حفظ وفحص موثق في سجل الأثر — ولا تسوية مالية إلا عبر webhook موقَّت أو تسجيل يدوي بصلاحية.
+          </p>
+        </div>
+      )}
+    </AdminLayout>
+  );
+}

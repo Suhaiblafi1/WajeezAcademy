@@ -5,6 +5,8 @@
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
+import { getEmailConfig, type EmailConfig } from './integrations.service'
+import { sendEmail } from './mail'
 
 export interface NotificationPayload {
   userId: string
@@ -39,6 +41,20 @@ export class UnwiredExternalProvider implements NotificationProvider {
   }
 }
 
+/** مزود البريد الحقيقي — SMTP عبر إعدادات التكامل؛ يُرسل لبريد المستخدم المسجل */
+export class SmtpEmailProvider implements NotificationProvider {
+  readonly channel = 'email'
+  private config: EmailConfig
+  private toEmail: string
+  constructor(config: EmailConfig, toEmail: string) {
+    this.config = config
+    this.toEmail = toEmail
+  }
+  async send(payload: NotificationPayload): Promise<{ ok: boolean; error?: string }> {
+    return sendEmail(this.config, { to: this.toEmail, subject: payload.title, text: payload.body })
+  }
+}
+
 const MAX_ATTEMPTS = 3
 
 /** إشعار غير معيق — فشله لا يوقف أي مسار تشغيلي (قبول/دفع/شهادة/مالية) */
@@ -68,8 +84,16 @@ export class NotificationService {
     this.prisma = prisma
   }
 
-  private providerFor(channel: string): NotificationProvider {
+  /* اختيار المزود بالقناة — البريد يقرأ إعدادات التكامل ويحتاج بريد المستخدم */
+  private async providerFor(channel: string, userId: string): Promise<NotificationProvider> {
     if (channel === 'in_app') return new InAppProvider()
+    if (channel === 'email') {
+      const config = await getEmailConfig(this.prisma)
+      if (config.enabled && config.host) {
+        const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { email: true } })
+        if (user?.email) return new SmtpEmailProvider(config, user.email)
+      }
+    }
     return new UnwiredExternalProvider(channel as 'email' | 'whatsapp' | 'sms')
   }
 
@@ -99,7 +123,7 @@ export class NotificationService {
     if (n.status === 'sent' || n.status === 'read') return n
     if (n.attempts >= MAX_ATTEMPTS) return n
 
-    const provider = this.providerFor(n.channel)
+    const provider = await this.providerFor(n.channel, n.userId)
     const result = await provider.send(n as NotificationPayload)
     const updated = await this.prisma.notification.update({
       where: { id: notificationId },

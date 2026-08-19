@@ -59,6 +59,7 @@ const DiagnosticQuality = lazy(() => import('./pages/admin/DiagnosticQuality'))
 const AdminUsers = lazy(() => import('./pages/admin/Users'))
 const AdminReports = lazy(() => import('./pages/admin/Reports'))
 const AdminSupport = lazy(() => import('./pages/admin/Support'))
+const AdminIntegrations = lazy(() => import('./pages/admin/Integrations'))
 const AdminFinance = lazy(() => import('./pages/admin/Finance'))
 const AdminNotifications = lazy(() => import('./pages/admin/Notifications'))
 
@@ -157,6 +158,7 @@ export default function App() {
             <Route path="/admin/support" element={<AdminSupport />} />
             <Route path="/admin/finance" element={<AdminFinance />} />
             <Route path="/admin/notifications" element={<AdminNotifications />} />
+            <Route path="/admin/integrations" element={<AdminIntegrations />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

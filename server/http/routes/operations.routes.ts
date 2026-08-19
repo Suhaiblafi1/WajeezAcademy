@@ -297,8 +297,10 @@ export function registerOperationsRoutes(app: FastifyInstance, prisma: PrismaCli
     schema: { tags: ['webhooks'], summary: 'أحداث مزود الدفع — توقيع إلزامي والحدث المكرر يُتجاهل' },
   }, async (req) => {
     const { provider } = z.object({ provider: z.string().max(30) }).parse(req.params)
-    const signature = String(req.headers['x-payment-signature'] ?? '')
-    /* العقد: التوقيع على التمثيل المتسلسل compact للحمولة — الالتقاط الخام يُضاف مع المزود الحقيقي */
+    /* التوقيع: ترويسة x-payment-signature بصيغة hmac=… للعقد العام/Stripe،
+       أو حقل secret_token داخل الجسم لأسلوب Moyasar */
+    const bodyToken = (req.body as Record<string, unknown> | null)?.secret_token
+    const signature = String(req.headers['x-payment-signature'] ?? bodyToken ?? '')
     const rawBody = JSON.stringify(req.body)
     return commerce.handleWebhook(provider, rawBody, signature)
   })

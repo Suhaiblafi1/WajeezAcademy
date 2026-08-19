@@ -1,7 +1,8 @@
 /* فواتيري — API حقيقي: طلباتي وفواتيري ودفعاتي واسترداداتي في مكان واحد.
-   الدفع الاختباري عبر المزود التجريبي — idempotent بمفتاح ثابت لكل طلب، لا مال حقيقي. */
+   زر الدفع يتبع المزود الفعال: اختباري = نجاح فوري بلا مال؛ حقيقي = تحويل
+   لصفحة دفع مستضافة عند المزود، والتسوية تصل عبر webhook موقَّت لا برجوع المتصفح. */
 import { useCallback, useEffect, useState } from "react";
-import { CreditCard, Loader2, ReceiptText, RefreshCw, RotateCcw } from "lucide-react";
+import { CreditCard, Loader2, ReceiptText, RefreshCw, RotateCcw, ShieldCheck } from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { fmtWhen } from "@/utils/format";
@@ -13,12 +14,20 @@ interface Order {
   items: { id: string; titleAr?: string | null; title?: string | null; price?: string | null }[];
   invoice: Invoice | null;
 }
+interface PaymentProviderInfo { driver: "test" | "manual" | "moyasar" | "stripe" }
 
 const ORDER_STATUS: Record<string, string> = { pending: "بانتظار الدفع", paid: "مدفوع", cancelled: "ملغي", refunded: "مسترد" };
 const INV_STATUS: Record<string, string> = { issued: "صادرة", paid: "مدفوعة", partially_refunded: "مستردة جزئيا", refunded: "مستردة كليا", void: "ملغاة" };
+const PAY_LABEL: Record<string, string> = {
+  test: "ادفع الآن (مزود اختباري — لا مال حقيقي)",
+  moyasar: "ادفع الآن — صفحة دفع آمنة (مدى/البطاقات)",
+  stripe: "ادفع الآن — صفحة دفع آمنة (Stripe)",
+  manual: "الدفع يدوي — حوّل بنكياً ثم أكّد مع المالية",
+};
 
 export default function Billing() {
   const [rows, setRows] = useState<Order[]>([]);
+  const [provider, setProvider] = useState<PaymentProviderInfo>({ driver: "test" });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [flash, setFlash] = useState("");
@@ -32,14 +41,19 @@ export default function Billing() {
   }, []);
 
   useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    apiGet<PaymentProviderInfo>("/api/learner/payment-provider").then(setProvider).catch(() => undefined);
+  }, []);
 
-  const payTest = async (order: Order) => {
+  const pay = async (order: Order) => {
     if (busy) return;
     setBusy(order.id); setFlash("");
     try {
       /* مفتاح idempotency ثابت لكل طلب — إعادة النقر لا تدفع مرتين */
-      await apiPost(`/api/learner/orders/${order.id}/pay-test`, { idempotencyKey: `pay-${order.id}` });
-      setFlash("تم الدفع الاختباري — فُتح وصولك وتحدثت الفاتورة");
+      const res = await apiPost<{ redirectUrl?: string }>(`/api/learner/orders/${order.id}/pay-test`, { idempotencyKey: `pay-${order.id}` });
+      /* مزود مستضاف: نحوّل المتعلم لصفحة الدفع عند المزود — التسوية تصل بـ webhook */
+      if (res.redirectUrl) { window.location.assign(res.redirectUrl); return; }
+      setFlash(provider.driver === "test" ? "تم الدفع الاختباري — فُتح وصولك وتحدثت الفاتورة" : "سُجل الدفع — فُتح وصولك");
       await load();
     } catch (e) { setFlash(e instanceof ApiError ? e.message : "فشل الدفع"); }
     finally { setBusy(null); }
@@ -77,12 +91,25 @@ export default function Billing() {
                 </div>
               </div>
 
-              {o.status === "pending" && (
-                <button disabled={busy === o.id} onClick={() => void payTest(o)}
-                  className="mt-4 flex cursor-pointer items-center gap-2 rounded-full bg-[#FABC05] px-6 py-2.5 text-xs font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90 disabled:opacity-40">
-                  {busy === o.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CreditCard className="h-3.5 w-3.5" />}
-                  ادفع الآن (مزود اختباري — لا مال حقيقي)
-                </button>
+              {o.status === "pending" && provider.driver !== "manual" && (
+                <div className="mt-4">
+                  <button disabled={busy === o.id} onClick={() => void pay(o)}
+                    className="flex cursor-pointer items-center gap-2 rounded-full bg-[#FABC05] px-6 py-2.5 text-xs font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90 disabled:opacity-40">
+                    {busy === o.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CreditCard className="h-3.5 w-3.5" />}
+                    {PAY_LABEL[provider.driver] ?? PAY_LABEL.test}
+                  </button>
+                  {provider.driver !== "test" && (
+                    <p className="mt-2 flex items-center gap-1.5 text-[10px] text-white/45">
+                      <ShieldCheck className="h-3 w-3 text-[#38A7B4]" />
+                      تُحوَّل لصفحة دفع مستضافة عند المزود — لا تمر بيانات بطاقتك بخوادمنا، ويُفتح وصولك فور تأكيد المزود.
+                    </p>
+                  )}
+                </div>
+              )}
+              {o.status === "pending" && provider.driver === "manual" && (
+                <p className="mt-4 rounded-xl border border-[#FABC05]/30 bg-[#FABC05]/5 px-4 py-2.5 text-xs font-bold text-[#FABC05]">
+                  {PAY_LABEL.manual}
+                </p>
               )}
 
               {o.invoice && (
@@ -96,7 +123,7 @@ export default function Billing() {
                       {o.invoice.payments.map((p) => (
                         <li key={p.id} className="flex flex-wrap items-center gap-2 text-[11px] text-white/55">
                           <CreditCard className="h-3 w-3 text-white/30" />
-                          دفعة {p.amount} {o.invoice!.currency} — {p.status === "succeeded" ? "ناجحة" : p.status}
+                          دفعة {p.amount} {o.invoice!.currency} — {p.status === "succeeded" ? "ناجحة" : p.status === "pending" ? "بانتظار تأكيد المزود" : p.status}
                           {p.method && <span className="text-white/40">({p.method})</span>}
                           {p.refunds.map((r) => (
                             <span key={r.id} className="flex items-center gap-1 rounded-full border border-[#FABC05]/30 px-2 py-0.5 text-[10px] text-[#FABC05]">

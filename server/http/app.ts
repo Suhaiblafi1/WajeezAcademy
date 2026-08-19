@@ -26,6 +26,7 @@ import { registerNotificationRoutes } from './routes/notifications.routes'
 import { registerReportRoutes } from './routes/reports.routes'
 import { registerProfileRoutes } from './routes/profile.routes'
 import { registerSearchRoutes } from './routes/search.routes'
+import { registerIntegrationRoutes } from './routes/integrations.routes'
 import { registerDemoRoutes } from './routes/demo.routes'
 
 export async function buildApp(prisma: PrismaClient) {
@@ -77,6 +78,7 @@ export async function buildApp(prisma: PrismaClient) {
   registerReportRoutes(app, prisma)
   registerProfileRoutes(app, prisma)
   registerSearchRoutes(app, prisma)
+  registerIntegrationRoutes(app, prisma)
   /* مسارات الديمو: /status يخبر الواجهة بالوضع، و/switch-role يرفض 404 ما لم DEMO_MODE=true */
   registerDemoRoutes(app, auth)
 
