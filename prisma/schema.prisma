@@ -911,6 +911,9 @@ model TrainerCompensationRule {
   type           String         // per_seat | fixed_per_cohort | revenue_share
   rate           Decimal        @db.Decimal(10, 2)
   currency       String         @default("JOD")
+  minSeats       Int            @default(0) // حد أدنى للمقاعد المحتسبة في per_seat — يُدفع حتى لو قلّ العدد الفعلي
+  courseId       String?        // نطاق اختياري: قاعدة خاصة بدورة
+  cohortId       String?        @db.Uuid // نطاق اختياري: قاعدة خاصة بشعبة — الأعلى أولوية
   effectiveFrom  DateTime       @default(now())
   effectiveTo    DateTime?
   createdBy      String?        @db.Uuid

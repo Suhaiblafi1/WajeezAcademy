@@ -7,6 +7,7 @@
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
+import { NotificationService } from './notification.service'
 
 const PERIOD_RE = /^\d{4}-(0[1-9]|1[0-2])$/ // «2026-08»
 
@@ -100,7 +101,22 @@ export class EarningsService {
       actorId, action: 'trainer_payout.create', entityType: 'TrainerPayout', entityId: payout.id,
       meta: { profileId: input.profileId, period: input.period, total, itemsCount: input.items.length },
     })
+    await this.notifyTrainer(input.profileId, 'كشف مستحقات جديد بانتظار الاعتماد',
+      `أُنشئ كشف مستحقاتك عن فترة ${input.period} بإجمالي ${total} ${payout.currency} — سيُراجع ويُعتمد من الإدارة المالية، ويصلك إشعار عند كل خطوة.`,
+      { payoutId: payout.id, period: input.period, total })
     return payout
+  }
+
+  /* إشعار داخل المنصة للمدرب عند أحداث مستحقاته — فشل الإشعار لا يعيق الحركة المالية أبداً */
+  private async notifyTrainer(profileId: string, title: string, body: string, data: Record<string, unknown>) {
+    try {
+      const profile = await this.prisma.trainerProfile.findUnique({ where: { id: profileId } })
+      if (!profile?.userId) return
+      await new NotificationService(this.prisma).notify({
+        userId: profile.userId, channel: 'in_app', title, body,
+        templateKey: 'trainer_payout', data,
+      })
+    } catch { /* الكشف نفسه هو مصدر الحقيقة — الإشعار رفاهية لا يوقف مساراً مالياً */ }
   }
 
   private async transition(
@@ -121,6 +137,25 @@ export class EarningsService {
       actorId, action, entityType: 'TrainerPayout', entityId: id,
       reason, meta: { from: payout.status, to, period: payout.period, total: Number(payout.total) },
     })
+    const NOTICES: Record<string, { title: string; body: string }> = {
+      approved: {
+        title: 'اعتُمد كشف مستحقاتك',
+        body: `اعتُمد كشف فترة ${payout.period} بإجمالي ${Number(payout.total)} ${payout.currency} — الخطوة التالية الصرف، وسيصلك تأكيد فور إتمامه.`,
+      },
+      paid: {
+        title: 'صُرفت مستحقاتك ✓',
+        body: `صُرف كشف فترة ${payout.period} بإجمالي ${Number(payout.total)} ${payout.currency}. التفاصيل كلها في بوابتك — «مستحقاتي».`,
+      },
+      cancelled: {
+        title: 'أُلغي كشف مستحقات',
+        body: `أُلغي كشف فترة ${payout.period}. السبب: ${reason ?? '—'}. لأي استفسار تواصل مع منسقك.`,
+      },
+    }
+    const notice = NOTICES[to]
+    if (notice) {
+      await this.notifyTrainer(payout.profileId, notice.title, notice.body,
+        { payoutId: id, period: payout.period, total: Number(payout.total), status: to })
+    }
     return updated
   }
 
@@ -147,21 +182,33 @@ export class EarningsService {
     })
   }
 
-  /* القاعدة السارية لمدرب الآن — الأحدث سرياناً */
-  async activeRule(profileId: string, at = new Date()) {
-    return this.prisma.trainerCompensationRule.findFirst({
-      where: {
-        profileId,
-        effectiveFrom: { lte: at },
-        OR: [{ effectiveTo: null }, { effectiveTo: { gt: at } }],
-      },
-      orderBy: { effectiveFrom: 'desc' },
-    })
+  /* القاعدة السارية لمدرب الآن — بدقة النطاق: شعبة محددة ← دورة محددة ← عامة، والأحدث سرياناً */
+  async activeRule(profileId: string, scope: { cohortId?: string; courseId?: string } = {}, at = new Date()) {
+    const latest = (extra: Record<string, unknown>) =>
+      this.prisma.trainerCompensationRule.findFirst({
+        where: {
+          profileId, ...extra,
+          effectiveFrom: { lte: at },
+          OR: [{ effectiveTo: null }, { effectiveTo: { gt: at } }],
+        },
+        orderBy: { effectiveFrom: 'desc' },
+      })
+    if (scope.cohortId) {
+      const r = await latest({ cohortId: scope.cohortId })
+      if (r) return r
+    }
+    if (scope.courseId) {
+      const r = await latest({ courseId: scope.courseId, cohortId: null })
+      if (r) return r
+    }
+    return latest({ courseId: null, cohortId: null })
   }
 
-  /* تعيين قاعدة جديدة — تُغلق القاعدة المفتوحة الحالية تلقائياً (لا تعديل صامت للتاريخ) */
+  /* تعيين قاعدة جديدة — تُغلق القاعدة المفتوحة بنفس النطاق تلقائياً (لا تعديل صامت للتاريخ).
+     المتغيرات كلها بيد الإدارة: النوع والمعدل والحد الأدنى للمقاعد ونطاق شعبة/دورة اختياري */
   async setRule(actorId: string, input: {
     profileId: string; type: string; rate: number; currency?: string; effectiveFrom?: Date
+    minSeats?: number; courseId?: string; cohortId?: string
   }) {
     if (!['per_seat', 'fixed_per_cohort', 'revenue_share'].includes(input.type)) {
       throw new AuthError('bad_type', 'نوع القاعدة يجب أن يكون per_seat أو fixed_per_cohort أو revenue_share', 400)
@@ -170,25 +217,36 @@ export class EarningsService {
     if (input.type === 'revenue_share' && input.rate > 100) {
       throw new AuthError('bad_rate', 'نسبة الإيراد لا تتجاوز 100', 400)
     }
+    const minSeats = input.minSeats ?? 0
+    if (minSeats < 0) throw new AuthError('bad_min_seats', 'الحد الأدنى للمقاعد لا يكون سالباً', 400)
     const profile = await this.prisma.trainerProfile.findUnique({ where: { id: input.profileId } })
     if (!profile) throw new AuthError('unknown_profile', 'ملف المدرب غير موجود', 404)
+    if (input.cohortId) {
+      const cohort = await this.prisma.cohort.findUnique({ where: { id: input.cohortId } })
+      if (!cohort) throw new AuthError('unknown_cohort', 'الشعبة المحددة للنطاق غير موجودة', 404)
+    }
+    if (input.courseId) {
+      const course = await this.prisma.course.findUnique({ where: { id: input.courseId } })
+      if (!course) throw new AuthError('unknown_course', 'الدورة المحددة للنطاق غير موجودة', 404)
+    }
 
     const now = new Date()
     const effectiveFrom = input.effectiveFrom ?? now
+    const scope = { courseId: input.courseId ?? null, cohortId: input.cohortId ?? null }
     const rule = await this.prisma.$transaction(async (tx) => {
       await tx.trainerCompensationRule.updateMany({
-        where: { profileId: input.profileId, effectiveTo: null },
+        where: { profileId: input.profileId, effectiveTo: null, ...scope },
         data: { effectiveTo: effectiveFrom },
       })
       const created = await tx.trainerCompensationRule.create({
         data: {
           profileId: input.profileId, type: input.type, rate: input.rate,
-          currency: input.currency ?? 'JOD', effectiveFrom, createdBy: actorId,
+          currency: input.currency ?? 'JOD', minSeats, ...scope, effectiveFrom, createdBy: actorId,
         },
       })
       await recordAudit(tx, {
         actorId, action: 'trainer_compensation.set_rule', entityType: 'TrainerCompensationRule', entityId: created.id,
-        meta: { profileId: input.profileId, type: input.type, rate: input.rate, effectiveFrom },
+        meta: { profileId: input.profileId, type: input.type, rate: input.rate, minSeats, ...scope, effectiveFrom },
       })
       return created
     })
@@ -217,18 +275,23 @@ export class EarningsService {
 
     const profileId = await this.cohortLeadTrainer(cohortId)
     if (!profileId) throw new AuthError('no_trainer', 'لا مدرب مسنداً لهذه الشعبة', 409)
-    const rule = await this.activeRule(profileId)
+    /* القاعدة الأدق نطاقاً تفوز: شعبة ← دورة ← عامة */
+    const rule = await this.activeRule(profileId, { cohortId, courseId: cohort.courseId })
     if (!rule) throw new AuthError('no_rule', 'لا قاعدة أتعاب سارية لهذا المدرب — عيّن قاعدة أولاً', 409)
 
     const courseTitle = cohort.course.versions[0]?.titleAr ?? cohort.title
     const items: { description: string; amount: number; sourceRef?: string }[] = []
 
     if (rule.type === 'per_seat') {
-      const seats = await this.prisma.enrollment.count({
+      const actual = await this.prisma.enrollment.count({
         where: { cohortId, status: { in: ['enrolled', 'completed'] } },
       })
+      /* الحد الأدنى للمقاعد: يُحاسب المدرب عليه حتى لو قلّ العدد الفعلي — من إعداد الإدارة */
+      const seats = Math.max(actual, rule.minSeats)
+      const minNote = rule.minSeats > 0 && actual < rule.minSeats
+        ? ` (فعلي ${actual} — طُبق الحد الأدنى ${rule.minSeats})` : ''
       items.push({
-        description: `تدريب «${courseTitle}» — ${seats} متعلماً × ${Number(rule.rate)} ${rule.currency}`,
+        description: `تدريب «${courseTitle}» — ${seats} متعلماً × ${Number(rule.rate)} ${rule.currency}${minNote}`,
         amount: seats * Number(rule.rate),
         sourceRef: `cohort:${cohortId}`,
       })
@@ -259,7 +322,10 @@ export class EarningsService {
     return {
       cohort: { id: cohort.id, title: cohort.title, status: cohort.status, courseTitle },
       profile: { id: profileId, fullName: profile?.application.fullName ?? '—' },
-      rule: { type: rule.type, rate: Number(rule.rate), currency: rule.currency },
+      rule: {
+        type: rule.type, rate: Number(rule.rate), currency: rule.currency, minSeats: rule.minSeats,
+        scope: rule.cohortId ? 'cohort' : rule.courseId ? 'course' : 'general',
+      },
       items, total,
     }
   }
@@ -296,6 +362,9 @@ export class EarningsService {
       actorId, action: 'trainer_payout.generate', entityType: 'TrainerPayout', entityId: payout.id,
       meta: { cohortId, period: finalPeriod, total: computed.total, rule: computed.rule },
     })
+    await this.notifyTrainer(computed.profile.id, 'وُلّد كشف مستحقاتك تلقائياً',
+      `اكتملت شعبة «${computed.cohort.title}» وحُسبت مستحقاتك عنها: ${computed.total} ${payout.currency} لفترة ${finalPeriod} — بانتظار اعتماد الإدارة المالية.`,
+      { payoutId: payout.id, cohortId, period: finalPeriod, total: computed.total })
     return payout
   }
 

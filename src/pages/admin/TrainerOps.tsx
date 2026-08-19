@@ -395,14 +395,15 @@ const RULE_TYPE_AR: Record<string, string> = {
 
 interface RuleRow {
   id: string; profileId: string; type: string; rate: string | number; currency: string;
+  minSeats: number; courseId?: string | null; cohortId?: string | null;
   effectiveFrom: string; effectiveTo?: string | null;
   profile: { application?: { fullName: string } | null };
 }
-interface CohortOpt { id: string; title: string; courseTitle: string; endsAt?: string | null }
+interface CohortOpt { id: string; title: string; courseTitle: string; status: string; endsAt?: string | null }
 interface CohortPreview {
   cohort: { id: string; title: string; status: string; courseTitle: string };
   profile: { id: string; fullName: string };
-  rule: { type: string; rate: number; currency: string };
+  rule: { type: string; rate: number; currency: string; minSeats: number; scope: string };
   items: { description: string; amount: number; sourceRef?: string }[];
   total: number;
 }
@@ -412,7 +413,7 @@ export function TrainerPayouts() {
   const [rows, setRows] = useState<PayoutRow[]>([]);
   const [profiles, setProfiles] = useState<ProfileOpt[]>([]);
   const [rules, setRules] = useState<RuleRow[]>([]);
-  const [completedCohorts, setCompletedCohorts] = useState<CohortOpt[]>([]);
+  const [allCohorts, setAllCohorts] = useState<CohortOpt[]>([]);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
@@ -424,7 +425,7 @@ export function TrainerPayouts() {
     { description: "", amount: "", sourceRef: "" },
   ]);
   /* قواعد الأتعاب والتوليد */
-  const [ruleForm, setRuleForm] = useState({ profileId: "", type: "per_seat", rate: "" });
+  const [ruleForm, setRuleForm] = useState({ profileId: "", type: "per_seat", rate: "", minSeats: "", cohortId: "" });
   const [genCohortId, setGenCohortId] = useState("");
   const [preview, setPreview] = useState<CohortPreview | null>(null);
   const [batchResult, setBatchResult] = useState<{ generated: { title: string; total: number }[]; skipped: { title: string; reason: string }[] } | null>(null);
@@ -436,9 +437,9 @@ export function TrainerPayouts() {
         apiGet<PayoutRow[]>(`/api/admin/trainer-payouts${filter ? `?status=${filter}` : ""}`),
         apiGet<ProfileOpt[]>("/api/admin/trainer-profiles"),
         apiGet<RuleRow[]>("/api/admin/trainer-compensation-rules"),
-        apiGet<CohortOpt[]>("/api/admin/cohorts?status=completed"),
+        apiGet<CohortOpt[]>("/api/admin/cohorts"),
       ]);
-      setRows(p); setProfiles(profs); setRules(r); setCompletedCohorts(cohorts);
+      setRows(p); setProfiles(profs); setRules(r); setAllCohorts(cohorts);
     } catch (e) { setMsg(e instanceof ApiError ? e.message : "تعذر تحميل الكشوف"); }
     finally { setLoading(false); }
   }, [filter]);
@@ -456,8 +457,10 @@ export function TrainerPayouts() {
   const saveRule = () => act(async () => {
     await apiPost("/api/admin/trainer-compensation-rules", {
       profileId: ruleForm.profileId, type: ruleForm.type, rate: Number(ruleForm.rate),
+      minSeats: ruleForm.type === "per_seat" && ruleForm.minSeats !== "" ? Number(ruleForm.minSeats) : undefined,
+      cohortId: ruleForm.cohortId || undefined,
     });
-    setRuleForm({ ...ruleForm, rate: "" });
+    setRuleForm({ ...ruleForm, rate: "", minSeats: "", cohortId: "" });
   }, "حُفظت القاعدة — صارت سارية من الآن");
 
   const doPreview = async () => {
@@ -523,21 +526,39 @@ export function TrainerPayouts() {
             <input value={ruleForm.rate} onChange={(e) => setRuleForm({ ...ruleForm, rate: e.target.value })}
               placeholder={ruleForm.type === "revenue_share" ? "النسبة ٪" : "المبلغ JOD"} dir="ltr" inputMode="decimal"
               className={`${inputCls} w-28 font-mono`} />
+            {ruleForm.type === "per_seat" && (
+              <input value={ruleForm.minSeats} onChange={(e) => setRuleForm({ ...ruleForm, minSeats: e.target.value })}
+                placeholder="حد أدنى للمقاعد" dir="ltr" inputMode="numeric" title="يُحاسب المدرب على هذا العدد حتى لو قلّ التسجيل الفعلي"
+                className={`${inputCls} w-32 font-mono`} />
+            )}
+            <select value={ruleForm.cohortId} onChange={(e) => setRuleForm({ ...ruleForm, cohortId: e.target.value })}
+              title="اتركها «عامة» لتسري على كل الشعب، أو خصصها لشعبة واحدة" className={`${selectCls} w-48`}>
+              <option value="">عامة — كل الشعب</option>
+              {allCohorts.map((c) => <option key={c.id} value={c.id}>خاصة: {c.title}</option>)}
+            </select>
             <button disabled={busy || !ruleForm.profileId || !(Number(ruleForm.rate) > 0)} onClick={saveRule}
               className="cursor-pointer rounded-full bg-[#FABC05] px-4 py-1.5 text-xs font-black text-[#0D0D0D] disabled:opacity-40">
               حفظ القاعدة
             </button>
           </div>
           {ruleForm.profileId && (() => {
-            const active = rules.find((r) => r.profileId === ruleForm.profileId && !r.effectiveTo);
+            const active = rules.find((r) => r.profileId === ruleForm.profileId && !r.effectiveTo
+              && !r.cohortId && !r.courseId && !ruleForm.cohortId)
+              ?? rules.find((r) => r.profileId === ruleForm.profileId && !r.effectiveTo && r.cohortId === ruleForm.cohortId && ruleForm.cohortId);
             return (
               <p className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-[11px] text-white/60">
                 {active
-                  ? <>القاعدة السارية حالياً: <b className="text-white">{RULE_TYPE_AR[active.type]}</b> بمعدل <b dir="ltr" className="font-mono text-white">{Number(active.rate)}</b> {active.currency} — حفظ قاعدة جديدة يغلقها تلقائياً دون مسح تاريخها.</>
-                  : "لا قاعدة سارية لهذا المدرب بعد — بدونها لن يُولَّد أي كشف تلقائي لشعبه."}
+                  ? <>القاعدة السارية{active.cohortId ? " لهذه الشعبة" : " (العامة)"}: <b className="text-white">{RULE_TYPE_AR[active.type]}</b> بمعدل <b dir="ltr" className="font-mono text-white">{Number(active.rate)}</b> {active.currency}
+                      {active.type === "per_seat" && active.minSeats > 0 ? <> · حد أدنى <b className="text-white">{active.minSeats}</b> مقاعد</> : null}
+                      {" "}— حفظ قاعدة جديدة بنفس النطاق يغلقها تلقائياً دون مسح تاريخها.</>
+                  : "لا قاعدة سارية بهذا النطاق بعد — بدونها لن يُولَّد أي كشف تلقائي."}
               </p>
             );
           })()}
+          <p className="text-[10px] leading-5 text-white/40">
+            قاعدة الشعبة المخصصة تغلب العامة عند الحساب. الحد الأدنى للمقاعد يعني: يُدفع للمدرب عن هذا العدد حتى لو سجّل أقل —
+            مثال: معدل 40 وحد أدنى 5، سجّل 3 ← يُحتسب 5 × 40.
+          </p>
         </div>
       </Card>
 
@@ -547,7 +568,7 @@ export function TrainerPayouts() {
           <div className="flex flex-wrap gap-2">
             <select value={genCohortId} onChange={(e) => { setGenCohortId(e.target.value); setPreview(null); }} className={`${selectCls} flex-1`}>
               <option value="">اختر شعبة مكتملة…</option>
-              {completedCohorts.map((c) => <option key={c.id} value={c.id}>{c.title} — {c.courseTitle}</option>)}
+              {allCohorts.filter((c) => c.status === "completed").map((c) => <option key={c.id} value={c.id}>{c.title} — {c.courseTitle}</option>)}
             </select>
             <button disabled={busy || !genCohortId} onClick={() => void doPreview()}
               className="cursor-pointer rounded-full border border-[#38A7B4]/40 px-4 py-1.5 text-xs font-bold text-[#6EC7D1] disabled:opacity-40">
@@ -561,7 +582,9 @@ export function TrainerPayouts() {
           {preview && (
             <div className="space-y-2 rounded-2xl border border-[#38A7B4]/25 bg-[#38A7B4]/5 p-4">
               <p className="text-xs font-black">
-                {preview.profile.fullName} · قاعدة «{RULE_TYPE_AR[preview.rule.type]}» بمعدل <span dir="ltr" className="font-mono">{preview.rule.rate}</span> {preview.rule.currency}
+                {preview.profile.fullName} · قاعدة «{RULE_TYPE_AR[preview.rule.type]}»
+                {preview.rule.scope !== "general" ? " (مخصصة لهذه الشعبة/الدورة)" : ""} بمعدل <span dir="ltr" className="font-mono">{preview.rule.rate}</span> {preview.rule.currency}
+                {preview.rule.type === "per_seat" && preview.rule.minSeats > 0 ? ` · حد أدنى ${preview.rule.minSeats} مقاعد` : ""}
               </p>
               <ul className="space-y-1">
                 {preview.items.map((i, idx) => (
