@@ -59,7 +59,32 @@ function RealAdvisorHome({ name }: { name: string }) {
 
   return (
     <div>
-      <p className="mb-6 text-sm text-white/60">أهلاً {name} — لديك {open.length} حالة مفتوحة{fresh > 0 ? ` منها ${fresh} جديدة لم تُلامس بعد` : ""}.</p>
+      <p className="mb-6 text-sm text-white/60">أهلاً {name} — {rows.length > 0 ? `لديك ${open.length} حالة مفتوحة${fresh > 0 ? ` منها ${fresh} جديدة لم تُلامس بعد` : ""}.` : "لم تُسند إليك حالات بعد."}</p>
+
+      {/* بطاقة إرشاد المستشار الجديد — بوابة بلا حالات تشرح دورة العمل بدل صفحة أصفار */}
+      {rows.length === 0 && (
+        <section className="mb-8 rounded-3xl border border-[#38A7B4]/30 bg-[#38A7B4]/[0.06] p-6">
+          <p className="flex items-center gap-2 text-sm font-black"><Users className="h-4 w-4 text-[#6EC7D1]" /> بوابتك جاهزة — هذه دورة عملك اليومية</p>
+          <div className="mt-4 grid gap-3 text-xs leading-6 text-white/70 sm:grid-cols-3">
+            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+              <p className="font-black text-[#6EC7D1]">١ · حالة جديدة</p>
+              <p className="mt-1">كل تشخيص مكتمل يتحول لحالة تُسند إليك — تظهر هنا فوراً مع بيانات العميل.</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+              <p className="font-black text-[#6EC7D1]">٢ · أول تواصل</p>
+              <p className="mt-1">تفتح الحالة من «حالاتي»، تسجّل تواصلك الأول وملاحظاتك في ملفها الموثق.</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+              <p className="font-black text-[#6EC7D1]">٣ · المتابعة والتوصية</p>
+              <p className="mt-1">تجدول المتابعة التالية وتوصي بالمسار المناسب — وتظهر أقرب مواعيدك في هذه اللوحة.</p>
+            </div>
+          </div>
+          <p className="mt-4 text-[11px] text-white/50">
+            حتى تصلك أول حالة يمكنك استعراض سير العمل من{" "}
+            <Link to="/advisor/cases" className="font-bold text-[#6EC7D1] underline decoration-dotted underline-offset-4 hover:text-white">«حالاتي»</Link>.
+          </p>
+        </section>
+      )}
 
       <div className="mb-8 flex flex-wrap items-center gap-2 rounded-2xl border border-dashed border-white/15 bg-white/[0.02] px-4 py-3 text-[11px] text-white/55">
         <span className="font-black text-white/75">من أين أبدأ؟</span>

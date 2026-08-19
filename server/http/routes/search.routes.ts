@@ -5,7 +5,7 @@
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
-import { requireAuth } from '../auth-plugin'
+import { requireAuth, requirePermission } from '../auth-plugin'
 
 export function registerSearchRoutes(app: FastifyInstance, prisma: PrismaClient) {
   app.get('/api/admin/search', {
@@ -74,6 +74,76 @@ export function registerSearchRoutes(app: FastifyInstance, prisma: PrismaClient)
         payouts: payouts.map((p) => ({
           id: p.id, title: `${p.profile.application?.fullName ?? 'مدرب'} — ${p.period}`,
           sub: `كشف · ${p.status} · ${Number(p.total)} ${p.currency}`, to: '/admin/trainers',
+        })),
+      },
+    }
+  })
+
+  /* بحث المدرب (Ctrl+K) — شعبي وطلابي فقط: لا يرى المدرب شيئا خارج إسناداته */
+  app.get('/api/trainer/search', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'بحث المدرب — شعبه وطلابه المسندون فقط' },
+  }, async (req) => {
+    const { q } = z.object({ q: z.string().min(1).max(80) }).parse(req.query)
+    const like = { contains: q, mode: 'insensitive' as const }
+    const profile = await prisma.trainerProfile.findUnique({ where: { userId: req.auth!.userId } })
+    if (!profile) return { q, groups: { cohorts: [], students: [] } }
+    const myCohortIds = (await prisma.cohortTrainer.findMany({
+      where: { profileId: profile.id }, select: { cohortId: true },
+    })).map((c) => c.cohortId)
+
+    const [cohorts, students] = await Promise.all([
+      prisma.cohort.findMany({
+        where: { id: { in: myCohortIds }, title: like },
+        select: { id: true, title: true, status: true }, take: 5,
+      }),
+      prisma.enrollment.findMany({
+        where: { cohortId: { in: myCohortIds }, user: { OR: [{ displayName: like }, { email: like }] } },
+        select: { id: true, status: true, user: { select: { displayName: true } }, cohort: { select: { title: true } } },
+        take: 5,
+      }),
+    ])
+
+    return {
+      q,
+      groups: {
+        cohorts: cohorts.map((c) => ({
+          id: c.id, title: c.title, sub: `شعبة · ${c.status}`, to: '/trainer/board',
+        })),
+        students: students.map((e) => ({
+          id: e.id, title: e.user.displayName, sub: `${e.cohort.title} · ${e.status}`, to: '/trainer/board',
+        })),
+      },
+    }
+  })
+
+  /* بحث المستشار (Ctrl+K) — حالاته المسندة فقط: البحث لا يتجاوز نطاق الإسناد */
+  app.get('/api/advisor/search', {
+    preHandler: requirePermission('advisor.cases.view'),
+    schema: { tags: ['advisor-portal'], summary: 'بحث المستشار — حالاته المسندة فقط' },
+  }, async (req) => {
+    const { q } = z.object({ q: z.string().min(1).max(80) }).parse(req.query)
+    const like = { contains: q, mode: 'insensitive' as const }
+    const cases = await prisma.advisorCase.findMany({
+      where: {
+        assignments: { some: { advisorId: req.auth!.userId, unassignedAt: null } },
+        OR: [{ lead: { fullName: like } }, { client: { displayName: like } }, { client: { email: like } }],
+      },
+      select: {
+        id: true, status: true, nextAction: true,
+        lead: { select: { fullName: true } }, client: { select: { displayName: true } },
+      },
+      take: 8,
+    })
+
+    return {
+      q,
+      groups: {
+        cases: cases.map((c) => ({
+          id: c.id,
+          title: c.lead?.fullName ?? c.client?.displayName ?? 'عميل بلا اسم',
+          sub: `حالة · ${c.status}${c.nextAction ? ` · ${c.nextAction}` : ''}`,
+          to: '/advisor/cases',
         })),
       },
     }

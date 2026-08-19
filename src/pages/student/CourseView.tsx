@@ -5,6 +5,7 @@ import {
   HelpCircle, Lock, MessageSquare, Send, Upload, Video, XCircle,
 } from "lucide-react";
 import PortalLayout from "./PortalLayout";
+import SimulationNote from "@/components/SimulationNote";
 import VideoPlayer from "@/components/VideoPlayer";
 import BookSummaryCard from "@/components/BookSummaryCard";
 import { getEnrollment } from "@/services/access";
@@ -129,6 +130,7 @@ export default function CourseView() {
 
   return (
     <PortalLayout title={course.name}>
+      <SimulationNote what="محتوى الدورة" />
       {/* نظرة عامة */}
       <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
         <div className="flex flex-wrap items-center justify-between gap-4">

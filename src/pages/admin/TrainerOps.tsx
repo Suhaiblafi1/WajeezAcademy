@@ -418,6 +418,8 @@ export function TrainerPayouts() {
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [filter, setFilter] = useState("");
+  /* الكشوف الملغاة الصفرية ضجيج بصري — تُخفى افتراضيا وتظهر عند الطلب */
+  const [showCancelledZero, setShowCancelledZero] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [cancelReason, setCancelReason] = useState<Record<string, string>>({});
   const [form, setForm] = useState({ profileId: "", period: "" });
@@ -505,6 +507,10 @@ export function TrainerPayouts() {
           <option value="">كل الحالات</option>
           {Object.entries(PAYOUT_STATUS_AR).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
+        <label className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 text-[11px] font-bold text-white/55 transition hover:border-white/30">
+          <input type="checkbox" checked={showCancelledZero} onChange={(e) => setShowCancelledZero(e.target.checked)} className="accent-[#FABC05]" />
+          إظهار الملغاة الصفرية
+        </label>
         <button onClick={() => setShowCreate(!showCreate)}
           className="flex cursor-pointer items-center gap-1.5 rounded-full bg-[#FABC05] px-4 py-2 text-xs font-black text-[#0D0D0D]">
           <Banknote className="h-3.5 w-3.5" /> كشف يدوي جديد
@@ -662,14 +668,23 @@ export function TrainerPayouts() {
         </div>
       )}
 
-      {rows.length === 0 && (
-        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center">
-          <Banknote className="h-10 w-10 text-white/20" />
-          <p className="mt-3 text-sm text-white/50">لا كشوف بهذه الحالة — أنشئ أول كشف من زر «كشف جديد».</p>
-        </div>
-      )}
-
-      {rows.map((p) => (
+      {(() => {
+        const visibleRows = showCancelledZero ? rows : rows.filter((p) => !(p.status === "cancelled" && Number(p.total) === 0));
+        const hiddenCount = rows.length - visibleRows.length;
+        return (
+          <>
+            {hiddenCount > 0 && (
+              <p className="text-[10px] text-white/40">
+                {hiddenCount} {hiddenCount === 1 ? "كشف ملغى صفري مخفي" : "كشوف ملغاة صفرية مخفية"} — فعّل «إظهار الملغاة الصفرية» لعرضها.
+              </p>
+            )}
+            {visibleRows.length === 0 && (
+              <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center">
+                <Banknote className="h-10 w-10 text-white/20" />
+                <p className="mt-3 text-sm text-white/50">لا كشوف بهذه الحالة — أنشئ أول كشف من زر «كشف جديد».</p>
+              </div>
+            )}
+            {visibleRows.map((p) => (
         <div key={p.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -716,7 +731,10 @@ export function TrainerPayouts() {
             </div>
           )}
         </div>
-      ))}
+            ))}
+          </>
+        );
+      })()}
     </div>
   );
 }

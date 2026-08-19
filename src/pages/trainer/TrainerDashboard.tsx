@@ -57,7 +57,32 @@ function RealTrainerHome({ name }: { name: string }) {
 
   return (
     <div>
-      <p className="mb-6 text-sm text-white/60">أهلاً {name} — {cohorts.length > 0 ? `لديك ${cohorts.length} ${cohorts.length === 1 ? "شعبة" : "شعب"} و${students} طالباً.` : "لم تُسند إليك شعب بعد — ستظهر هنا فور إسنادها."}</p>
+      <p className="mb-6 text-sm text-white/60">أهلاً {name} — {cohorts.length > 0 ? `لديك ${cohorts.length} ${cohorts.length === 1 ? "شعبة" : "شعب"} و${students} طالباً.` : "لم تُسند إليك شعب بعد."}</p>
+
+      {/* بطاقة إرشاد المدرب الجديد — بوابة بلا شعب تشرح ما يحدث تاليا بدل أن تكتفي بأصفار */}
+      {cohorts.length === 0 && (
+        <section className="mb-8 rounded-3xl border border-[#38A7B4]/30 bg-[#38A7B4]/[0.06] p-6">
+          <p className="flex items-center gap-2 text-sm font-black"><GraduationCap className="h-4 w-4 text-[#6EC7D1]" /> بوابتك جاهزة — هذا ما يحدث تالياً</p>
+          <div className="mt-4 grid gap-3 text-xs leading-6 text-white/70 sm:grid-cols-3">
+            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+              <p className="font-black text-[#6EC7D1]">١ · الإسناد</p>
+              <p className="mt-1">الإدارة تسند إليك شعبة من شاشة «الشعب» — يصلك إشعار فور الإسناد.</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+              <p className="font-black text-[#6EC7D1]">٢ · الظهور التلقائي</p>
+              <p className="mt-1">تظهر شعبتك وجلساتها وطلابها هنا وفي شاشة «شعبي» دون أي إجراء منك.</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+              <p className="font-black text-[#6EC7D1]">٣ · بدء العمل</p>
+              <p className="mt-1">تسجّل الحضور وتقيّم التسليمات وتدير الجلسات — كلها من «شعبي».</p>
+            </div>
+          </div>
+          <p className="mt-4 text-[11px] text-white/50">
+            حتى يصلك أول إسناد يمكنك مراجعة المحتوى واقتراح تحسينات عليه من{" "}
+            <Link to="/trainer/proposals" className="font-bold text-[#6EC7D1] underline decoration-dotted underline-offset-4 hover:text-white">«اقتراحاتي»</Link>.
+          </p>
+        </section>
+      )}
 
       <div className="mb-8 flex flex-wrap items-center gap-2 rounded-2xl border border-dashed border-white/15 bg-white/[0.02] px-4 py-3 text-[11px] text-white/55">
         <span className="font-black text-white/75">من أين أبدأ؟</span>

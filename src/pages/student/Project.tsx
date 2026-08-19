@@ -5,6 +5,7 @@ import {
   Mic, Send, Trophy, Upload,
 } from "lucide-react";
 import PortalLayout from "./PortalLayout";
+import SimulationNote from "@/components/SimulationNote";
 import { getEnrollment } from "@/services/access";
 import { pathwayById, pathways } from "@/data/pathways";
 import { pathwayCourses } from "@/data/courses";
@@ -73,6 +74,7 @@ export default function Project() {
 
   return (
     <PortalLayout title="مشروع التخرج">
+      <SimulationNote what="حالة المشروع" />
       {/* حالة المشروع */}
       <section className={`rounded-3xl border p-6 ${locked ? "border-white/10 bg-white/[0.02]" : "border-[#FABC05]/30 bg-gradient-to-b from-[#2A2108]/40 to-transparent"}`}>
         <div className="flex flex-wrap items-center justify-between gap-4">

@@ -8,6 +8,7 @@ import {
 import AdminLayout from "./AdminLayout";
 import FlowSteps from "@/components/FlowSteps";
 import { apiGet, apiPost, ApiError } from "@/services/api";
+import { useAutoRefresh } from "@/services/useAutoRefresh";
 
 const inputCls = "rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none";
 
@@ -46,8 +47,8 @@ export default function Finance() {
   const [payForm, setPayForm] = useState<Record<string, string>>({});
   const [refundForm, setRefundForm] = useState<Record<string, { amount: string; reason: string }>>({});
 
-  const load = useCallback(async () => {
-    setLoading(true); setOffline(null);
+  const load = useCallback(async (silent = false) => {
+    if (!silent) { setLoading(true); setOffline(null); }
     try {
       const [er, inv, rf, cp] = await Promise.all([
         apiGet<EnrollReq[]>("/api/admin/enrollment-requests"),
@@ -56,11 +57,14 @@ export default function Finance() {
         apiGet<Coupon[]>("/api/admin/coupons"),
       ]);
       setRequests(er); setInvoices(inv); setRefunds(rf); setCoupons(cp);
-    } catch (e) { setOffline(e instanceof ApiError ? e.message : "الخادم غير متصل"); }
-    finally { setLoading(false); }
+    } catch (e) { if (!silent) setOffline(e instanceof ApiError ? e.message : "الخادم غير متصل"); }
+    finally { if (!silent) setLoading(false); }
   }, []);
 
   useEffect(() => { void load(); }, [load]);
+  /* نبض صامت كل دقيقة — طلبات التسجيل والفواتير تتحدث دون تحديث يدوي */
+  const silentReload = useCallback(() => { void load(true); }, [load]);
+  useAutoRefresh(silentReload, 60_000);
 
   const act = async (fn: () => Promise<unknown>, doneMsg: string) => {
     if (busy) return;

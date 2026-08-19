@@ -20,6 +20,7 @@ const STATUS_META: Record<CourseStatus, { label: string; cls: string; icon: type
 };
 
 import AdvisorContact from "@/components/AdvisorContact";
+import SimulationNote from "@/components/SimulationNote";
 
 export default function MyPathway() {
   const enrollment = getEnrollment();
@@ -33,6 +34,7 @@ export default function MyPathway() {
 
   return (
     <PortalLayout title={`مساري — ${pathway?.name}`}>
+      <SimulationNote what="تفاصيل المسار" />
       {/* ترويسة المسار */}
       <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
         <div className="flex flex-wrap items-center justify-between gap-4">

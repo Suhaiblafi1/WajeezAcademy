@@ -5,6 +5,7 @@ import { ADVISOR_IDENTITIES, ADVISOR_IDENTITY_KEY, advisorIdentity } from "./adv
 import NotificationBell from "@/components/NotificationBell";
 import ThemeToggle from "@/components/ThemeToggle";
 import PrototypeBanner from "@/components/PrototypeBanner";
+import PortalSearchPalette from "@/components/PortalSearchPalette";
 import { useRealSession } from "@/services/session";
 
 /** إطار بوابة المستشار: اختيار هوية المستشار + تنقل.
@@ -84,6 +85,17 @@ export default function AdvisorLayout({ children, title }: { children: React.Rea
             ))}
           </nav>
           <div className="flex items-center gap-3">
+            {/* بحث سريع Ctrl+K — لجلسة المستشار الحقيقية فقط: مقيد بحالاته المسندة */}
+            {realAdvisor && (
+              <button
+                onClick={() => window.dispatchEvent(new Event("wajeez:open-search"))}
+                aria-label="بحث سريع — Ctrl+K"
+                title="بحث سريع — Ctrl+K"
+                className="hidden cursor-pointer items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 text-[10px] font-bold text-white/45 transition hover:border-[#6EC7D1]/50 hover:text-[#6EC7D1] md:flex"
+              >
+                بحث… <kbd className="rounded border border-white/15 px-1.5 text-[9px]">Ctrl K</kbd>
+              </button>
+            )}
             <NotificationBell />
             <ThemeToggle />
             <button
@@ -101,6 +113,7 @@ export default function AdvisorLayout({ children, title }: { children: React.Rea
         <h1 className="mb-6 text-2xl font-black">{title}</h1>
         {children}
       </main>
+      {realAdvisor && <PortalSearchPalette kind="advisor" />}
     </div>
   );
 }

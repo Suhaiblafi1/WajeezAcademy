@@ -25,6 +25,23 @@ const dayRange = (f: ReportFilter) => ({
 })
 const hasRange = (f: ReportFilter) => f.from || f.to
 
+/* عناوين الأعمدة بالعربية — تُعرض في الجدول وتُصدَّر في CSV/XLSX بدل مفاتيح قاعدة البيانات الخام */
+const COLUMN_AR: Record<string, string> = {
+  day: 'اليوم', diagnostics: 'نتائج التشخيص',
+  entity: 'العنصر', status: 'الحالة', count: 'العدد',
+  recommendation: 'التوصية', learners: 'المتعلمون',
+  advisor: 'المستشار', activeCases: 'حالات نشطة', enrolled: 'سجّلوا', followUpsDone: 'متابعات منجزة',
+  trainer: 'المدرب', cohort: 'الشعبة', sessionsDone: 'جلسات منجزة', submissionsReviewed: 'تسليمات مراجعة', avgScorePct: 'متوسط الدرجة ٪',
+  monthCurrency: 'الشهر والعملة', revenue: 'الإيراد',
+  kind: 'النوع', provider: 'المزود', total: 'الإجمالي',
+  session: 'الجلسة', bucket: 'الفئة',
+  course: 'الدورة', capacity: 'السعة',
+  month: 'الشهر', issued: 'مصدرة', revoked: 'ملغاة',
+  minutes: 'الدقائق', mb: 'الحجم (م.ب)',
+  priority: 'الأولوية', category: 'التصنيف',
+}
+const colAr = (k: string) => COLUMN_AR[k] ?? k
+
 export class ReportsService {
   private prisma: PrismaClient
   constructor(prisma: PrismaClient) {
@@ -292,7 +309,11 @@ export class ReportsService {
   async run(key: string, filter: ReportFilter = {}) {
     const def = this.defs().find((d) => d.key === key)
     if (!def) throw new Error(`unknown_report: ${key}`)
-    return { key: def.key, titleAr: def.titleAr, methodAr: def.methodAr, rows: await def.run(filter) }
+    const rows = await def.run(filter)
+    /* خريطة عناوين الأعمدة العربية — الواجهة تعرضها والتصدير يعتمدها */
+    const columnsAr: Record<string, string> = {}
+    if (rows.length) for (const k of Object.keys(rows[0])) columnsAr[k] = colAr(k)
+    return { key: def.key, titleAr: def.titleAr, methodAr: def.methodAr, rows, columnsAr }
   }
 
   /* ── التصدير ── */
@@ -301,7 +322,7 @@ export class ReportsService {
     if (!rows.length) return ''
     const headers = Object.keys(rows[0])
     const esc = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`
-    const lines = [headers.map(esc).join(','), ...rows.map((r) => headers.map((h) => esc(r[h])).join(','))]
+    const lines = [headers.map((h) => esc(colAr(h))).join(','), ...rows.map((r) => headers.map((h) => esc(r[h])).join(','))]
     return '﻿' + lines.join('\n') // BOM ليفتح Excel العربية سليمة
   }
 
@@ -309,7 +330,7 @@ export class ReportsService {
     const wb = new ExcelJS.Workbook()
     const ws = wb.addWorksheet(titleAr.slice(0, 28), { views: [{ rightToLeft: true }] })
     if (rows.length) {
-      ws.columns = Object.keys(rows[0]).map((k) => ({ header: k, key: k, width: 24 }))
+      ws.columns = Object.keys(rows[0]).map((k) => ({ header: colAr(k), key: k, width: 24 }))
       for (const r of rows) ws.addRow(r)
       ws.getRow(1).font = { bold: true }
     }

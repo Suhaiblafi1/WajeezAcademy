@@ -7,6 +7,7 @@ import {
 import AdminLayout from "./AdminLayout";
 import FlowSteps from "@/components/FlowSteps";
 import { apiGet, apiPost, ApiError } from "@/services/api";
+import { useAutoRefresh } from "@/services/useAutoRefresh";
 
 const STATUS_AR: Record<string, string> = {
   open: "مفتوحة", in_progress: "قيد المعالجة", waiting_customer: "بانتظار العميل",
@@ -39,14 +40,17 @@ export default function Support() {
   const [internal, setInternal] = useState(false);
   const [agentId, setAgentId] = useState("");
 
-  const load = useCallback(async () => {
-    setLoading(true); setOffline(null);
+  const load = useCallback(async (silent = false) => {
+    if (!silent) { setLoading(true); setOffline(null); }
     try { setRows(await apiGet<TicketRow[]>(`/api/admin/support/tickets${statusFilter ? `?status=${statusFilter}` : ""}`)); }
-    catch (e) { setOffline(e instanceof ApiError ? e.message : "الخادم غير متصل"); }
-    finally { setLoading(false); }
+    catch (e) { if (!silent) setOffline(e instanceof ApiError ? e.message : "الخادم غير متصل"); }
+    finally { if (!silent) setLoading(false); }
   }, [statusFilter]);
 
   useEffect(() => { void load(); }, [load]);
+  /* نبض صامت كل دقيقة — تذاكر جديدة تظهر دون تحديث يدوي، وانقطاع عابر لا يقلب الصفحة */
+  const silentReload = useCallback(() => { void load(true); }, [load]);
+  useAutoRefresh(silentReload, 60_000);
 
   const openDetail = async (id: string) => {
     try { setDetail(await apiGet<TicketDetail>(`/api/admin/support/tickets/${id}`)); setReply(""); setInternal(false); }

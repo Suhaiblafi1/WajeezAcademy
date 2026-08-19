@@ -8,7 +8,7 @@ import { apiGet, ApiError } from "@/services/api";
 const inputCls = "rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white focus:border-[#38A7B4] focus:outline-none";
 
 interface ReportDef { key: string; titleAr: string; methodAr: string }
-interface ReportResult { key: string; titleAr: string; methodAr: string; rows: Record<string, unknown>[] }
+interface ReportResult { key: string; titleAr: string; methodAr: string; rows: Record<string, unknown>[]; columnsAr?: Record<string, string> }
 
 export default function Reports() {
   const [defs, setDefs] = useState<ReportDef[]>([]);
@@ -147,7 +147,7 @@ export default function Reports() {
                   <div className="mt-3 overflow-x-auto">
                     <table className="w-full text-right text-xs">
                       <thead>
-                        <tr>{columns.map((c) => <th key={c} className="border-b border-white/10 px-3 py-2 font-bold text-white/50">{c}</th>)}</tr>
+                        <tr>{columns.map((c) => <th key={c} className="border-b border-white/10 px-3 py-2 font-bold text-white/50">{result.columnsAr?.[c] ?? c}</th>)}</tr>
                       </thead>
                       <tbody>
                         {result.rows.slice(0, 200).map((r, i) => (

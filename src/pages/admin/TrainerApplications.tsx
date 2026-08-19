@@ -6,6 +6,7 @@ import {
 import AdminLayout from "./AdminLayout";
 import FlowSteps from "@/components/FlowSteps";
 import { apiGet, apiPost, ApiError } from "@/services/api";
+import { useAutoRefresh } from "@/services/useAutoRefresh";
 import { TrainerDetailOps, TrainerChangeRequests, TrainerPayouts } from "./TrainerOps";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -73,19 +74,22 @@ export default function TrainerApplications() {
   const [flash, setFlash] = useState("");
   const [mode, setMode] = useState<"apps" | "changes" | "payouts">("apps");
 
-  const load = useCallback(async () => {
-    setLoading(true); setOffline(null);
+  const load = useCallback(async (silent = false) => {
+    if (!silent) { setLoading(true); setOffline(null); }
     try {
       const rows = await apiGet<AppRow[]>(`/api/admin/trainer-applications${filter ? `?status=${filter}` : ""}`);
       setApps(rows);
     } catch (err) {
-      setOffline(err instanceof ApiError ? err.message : "الخادم غير متصل — شغّل واجهة API أولا");
+      if (!silent) setOffline(err instanceof ApiError ? err.message : "الخادم غير متصل — شغّل واجهة API أولا");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [filter]);
 
   useEffect(() => { void load(); }, [load]);
+  /* نبض صامت كل دقيقة — طلبات الترشح الجديدة تظهر دون تحديث يدوي */
+  const silentReload = useCallback(() => { void load(true); }, [load]);
+  useAutoRefresh(silentReload, 60_000);
 
   const openDetail = async (id: string) => {
     try {
