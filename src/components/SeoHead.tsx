@@ -10,7 +10,7 @@ interface Props {
   noindex?: boolean
 }
 
-const SITE = 'أكاديمي وجيز'
+const SITE = 'أكاديمية وجيز'
 const ORIGIN = 'https://academy.wajeez.com' // يُحدَّث للنطاق النهائي عند النشر (انظر docs/DEPLOYMENT.md)
 
 function upsertMeta(attr: 'name' | 'property', key: string, content: string) {

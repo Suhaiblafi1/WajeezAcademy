@@ -61,7 +61,7 @@ export default function Verify() {
   return (
     <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-[#0D0D0D] px-5 py-16 text-white">
       <Link to="/" className="flex items-center gap-2 text-white/60 transition hover:text-white">
-        <ArrowRight className="h-4 w-4" /> أكاديمي وجيز
+        <ArrowRight className="h-4 w-4" /> أكاديمية وجيز
       </Link>
       <div className="mt-8 w-full max-w-md rounded-3xl border border-white/10 bg-white/[0.03] p-8">
         <h1 className="text-center text-2xl font-black">التحقق من شهادة</h1>

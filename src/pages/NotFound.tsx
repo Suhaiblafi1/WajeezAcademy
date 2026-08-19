@@ -7,7 +7,7 @@ import SeoHead from '@/components/SeoHead'
 export default function NotFound() {
   return (
     <SiteShell>
-      <SeoHead title="الصفحة غير موجودة" description="الصفحة التي تبحث عنها غير موجودة في أكاديمي وجيز." noindex />
+      <SeoHead title="الصفحة غير موجودة" description="الصفحة التي تبحث عنها غير موجودة في أكاديمية وجيز." noindex />
       <div className="flex flex-col items-center py-20 text-center">
         <span className="grid h-16 w-16 place-items-center rounded-3xl bg-[#38A7B4]/15">
           <Compass className="h-8 w-8 text-[#6EC7D1]" />

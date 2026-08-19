@@ -714,7 +714,7 @@ export default function Diagnostic() {
           </Link>
           <div className="flex items-center gap-2">
             <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 object-contain" />
-            <span className="font-black">أكاديمي وجيز</span>
+            <span className="font-black">أكاديمية وجيز</span>
           </div>
         </div>
       </header>

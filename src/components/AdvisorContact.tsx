@@ -17,7 +17,7 @@ export default function AdvisorContact({
   const hasWhatsApp = Boolean(CONTACT.whatsapp)
   const href = hasWhatsApp
     ? `https://wa.me/${CONTACT.whatsapp}?text=${encodeURIComponent(text)}`
-    : `mailto:${CONTACT.email}?subject=${encodeURIComponent('أكاديمي وجيز — مراسلة مستشار')}&body=${encodeURIComponent(text)}`
+    : `mailto:${CONTACT.email}?subject=${encodeURIComponent('أكاديمية وجيز — مراسلة مستشار')}&body=${encodeURIComponent(text)}`
   return (
     <a
       href={href}

@@ -1088,7 +1088,7 @@ function Partners() {
           <SectionLabel>شركاؤنا</SectionLabel>
           <h2 className="mt-4 text-2xl font-bold md:text-3xl">تحدث عنا الإعلام — وشركاء نجاح نفخر بهم</h2>
           <p className="mx-auto mt-3 max-w-lg text-sm leading-7 text-muted-foreground">
-              أكاديمي وجيز امتداد لمنصة وجيز التي غطتها كبرى الوسائل الإعلامية.
+              أكاديمية وجيز امتداد لمنصة وجيز التي غطتها كبرى الوسائل الإعلامية.
           </p>
         </div>
         <div className="reveal mt-10 flex flex-wrap items-center justify-center gap-10 md:gap-16">
@@ -1207,7 +1207,7 @@ function Footer() {
           ))}
         </div>
         <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-white/5 pt-6 text-xs text-muted-foreground md:flex-row">
-          <div>© 2026 أكاديمي وجيز — جميع الحقوق محفوظة</div>
+          <div>© 2026 أكاديمية وجيز — جميع الحقوق محفوظة</div>
           <div className="flex items-center gap-2">
             <Clock className="h-3.5 w-3.5" />
             صُنع بعناية — الفهم قبل البيع
@@ -1242,12 +1242,12 @@ function MobileCtaBar() {
 }
 
 /* ───────────────── المستشار المهني — قناة إنسانية هادئة لا تزاحم المؤشر ───────────────── */
-const ADVISOR_MSG = 'مرحبا، زرت أكاديمي وجيز وأريد حديثا قصيرا مع مستشار مهني قبل أن أبدأ تشخيصي.'
+const ADVISOR_MSG = 'مرحبا، زرت أكاديمية وجيز وأريد حديثا قصيرا مع مستشار مهني قبل أن أبدأ تشخيصي.'
 
 function advisorHref() {
   return CONTACT.whatsapp
     ? `https://wa.me/${CONTACT.whatsapp}?text=${encodeURIComponent(ADVISOR_MSG)}`
-    : `mailto:${CONTACT.email}?subject=${encodeURIComponent('أكاديمي وجيز — حديث مع مستشار')}&body=${encodeURIComponent(ADVISOR_MSG)}`
+    : `mailto:${CONTACT.email}?subject=${encodeURIComponent('أكاديمية وجيز — حديث مع مستشار')}&body=${encodeURIComponent(ADVISOR_MSG)}`
 }
 
 /* شارة قناة عصرية — نقطة حية متدرجة لا شعار أخضر تقليدي */
@@ -1308,7 +1308,7 @@ export default function Home() {
     <div ref={topRef} dir="rtl" className="min-h-screen bg-background text-foreground">
       <SeoHead
         title="مسارك يبدأ من فهمك"
-        description="أكاديمي وجيز — تشخيص تعليمي ذكي يفهم هدفك وواقعك، ثم يرسم لك مسارا واحدا مفسّرا بمدربين حقيقيين ومخرج عملي يثبت جاهزيتك."
+        description="أكاديمية وجيز — تشخيص تعليمي ذكي يفهم هدفك وواقعك، ثم يرسم لك مسارا واحدا مفسّرا بمدربين حقيقيين ومخرج عملي يثبت جاهزيتك."
         path="/"
       />
       <Nav />

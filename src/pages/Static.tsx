@@ -15,13 +15,13 @@ function Shell({ children }: { children: React.ReactNode }) {
           </Link>
           <div className="flex items-center gap-2">
             <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 object-contain" />
-            <span className="font-black">أكاديمي وجيز</span>
+            <span className="font-black">أكاديمية وجيز</span>
           </div>
         </div>
       </header>
       <main className="mx-auto max-w-3xl px-5 py-12 md:py-16">{children}</main>
       <footer className="border-t border-white/5 py-8 text-center text-xs text-white/55">
-        © 2026 أكاديمي وجيز — من مجموعة wajeez.com
+        © 2026 أكاديمية وجيز — من مجموعة wajeez.com
       </footer>
     </div>
   );

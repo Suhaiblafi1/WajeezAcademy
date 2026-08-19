@@ -265,7 +265,7 @@ export default function PathwayPage() {
     <div dir="rtl" className="min-h-screen bg-[#0D0D0D] text-white">
       <SeoHead
         title={pathway.name}
-        description={`${pathway.transformation} — مسار ${pathway.level} من ${weeksLabel(pathway.durationWeeks)} في أكاديمي وجيز.`}
+        description={`${pathway.transformation} — مسار ${pathway.level} من ${weeksLabel(pathway.durationWeeks)} في أكاديمية وجيز.`}
         path={`/pathways/${pathway.id}`}
       />
       {/* Top bar */}
@@ -277,7 +277,7 @@ export default function PathwayPage() {
           </Link>
           <div className="flex items-center gap-2">
             <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 object-contain" />
-            <span className="font-black">أكاديمي وجيز</span>
+            <span className="font-black">أكاديمية وجيز</span>
           </div>
           {user && (
             <span className="flex items-center gap-1.5 text-xs text-white/50">

@@ -69,7 +69,7 @@ export default function StudentCard() {
   const nba = nextBestAction(s);
   const courses = studentCourseCount(s);
   const ids = pathwayCourses[s.pathwayId] ?? [];
-  const advisorMsg = `مرحبا ${s.name.split(" ")[0]}، معك ${me?.name ?? "مستشارك"} من أكاديمي وجيز — أتابع تقدمك في مسارك وأردت الاطمئنان عليك.`;
+  const advisorMsg = `مرحبا ${s.name.split(" ")[0]}، معك ${me?.name ?? "مستشارك"} من أكاديمية وجيز — أتابع تقدمك في مسارك وأردت الاطمئنان عليك.`;
   const kase = caseForStudent(s.id);
   const myName = me?.name ?? "مستشار";
 

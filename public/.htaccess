@@ -1,4 +1,4 @@
-# أكاديمي وجيز — إعداد Apache/GoDaddy (cPanel)
+# أكاديمية وجيز — إعداد Apache/GoDaddy (cPanel)
 # يُرفع مع ملفات dist/ إلى public_html
 
 # 1) توجيه SPA: كل المسارات الداخلية تعود إلى index.html
