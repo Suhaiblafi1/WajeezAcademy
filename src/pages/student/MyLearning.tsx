@@ -132,7 +132,7 @@ export default function MyLearning() {
           <Link to="/" className="flex items-center gap-2 text-white/60 transition hover:text-white">
             <ArrowRight className="h-4 w-4" /> أكاديمية وجيز
           </Link>
-          <p className="flex items-center gap-2 text-sm font-black"><GraduationCap className="h-4 w-4 text-[#6EC7D1]" /> تعلّمي</p>
+          <h1 className="flex items-center gap-2 text-sm font-black"><GraduationCap className="h-4 w-4 text-[#6EC7D1]" /> تعلّمي</h1>
         </div>
       </header>
 

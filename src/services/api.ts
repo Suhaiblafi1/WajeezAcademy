@@ -31,3 +31,10 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 export const apiGet = <T>(path: string) => request<T>("GET", path);
 export const apiPost = <T>(path: string, body?: unknown) => request<T>("POST", path, body);
 export const apiPatch = <T>(path: string, body?: unknown) => request<T>("PATCH", path, body);
+
+/** رسالة موحدة لرفض الصلاحية — توضح المطلوب وطريق الديمو بدل رسالة عامة مبهمة */
+export function permissionMessage(e: unknown, fallback: string): string {
+  if (e instanceof ApiError && e.status === 403)
+    return "هذه الصفحة تتطلب صلاحية «مدير النظام». في الديمو: سجّل الخروج ثم ادخل بحساب superadmin.demo@wajeez.local لعرضها.";
+  return e instanceof ApiError ? e.message : fallback;
+}

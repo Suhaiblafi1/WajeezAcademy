@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { CheckCircle2, Loader2, RefreshCw, ServerOff, ShieldOff, Users as UsersIcon } from "lucide-react";
 import AdminLayout from "./AdminLayout";
-import { apiGet, apiPost, ApiError } from "@/services/api";
+import { apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
 
 const ROLE_NAMES_AR: Record<string, string> = {
   super_admin: "مدير النظام الأعلى", academic_manager: "المدير الأكاديمي",
@@ -29,7 +29,7 @@ export default function Users() {
   const load = useCallback(async () => {
     setLoading(true); setOffline(null);
     try { setRows(await apiGet<UserRow[]>("/api/admin/users")); }
-    catch (e) { setOffline(e instanceof ApiError ? e.message : "الخادم غير متصل"); }
+    catch (e) { setOffline(permissionMessage(e, "الخادم غير متصل")); }
     finally { setLoading(false); }
   }, []);
 

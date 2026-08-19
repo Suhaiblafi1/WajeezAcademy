@@ -86,4 +86,15 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        /* فصل نواة React في حزمة مستقلة — تُخزَّن مؤقتا طويلا في المتصفح
+           وتُحمَّل بالتوازي، فيخف زمن أول ظهور للصفحة */
+        manualChunks: {
+          "vendor-react": ["react", "react-dom", "react-router"],
+        },
+      },
+    },
+  },
 });

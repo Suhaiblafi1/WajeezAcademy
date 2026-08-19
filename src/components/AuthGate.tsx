@@ -377,9 +377,9 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
       <div className="overflow-hidden rounded-3xl border border-[#38A7B4]/25 bg-gradient-to-b from-[#12262A] to-[#0D0D0D] shadow-[0_24px_80px_-24px_rgba(56,167,180,0.35)]">
         <div className="border-b border-white/5 px-8 pb-6 pt-8 text-center">
           <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="mx-auto h-12 w-12 object-contain" />
-          <h2 className="mt-4 text-2xl font-black text-white">
+          <h1 className="mt-4 text-2xl font-black text-white">
             {mode === "signup" ? "ابدأ رحلتك مع أكاديمية وجيز" : "أهلا بعودتك"}
-          </h2>
+          </h1>
           <p className="mt-2 text-sm leading-relaxed text-white/55">
             {message ?? "حساب واحد يحفظ تشخيصك ومسارك وشهاداتك"}
           </p>

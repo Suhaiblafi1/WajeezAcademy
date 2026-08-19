@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { CheckCircle2, Loader2, RefreshCw, ServerOff, ShieldAlert, UserPlus } from "lucide-react";
 import AdminLayout from "./AdminLayout";
-import { apiGet, apiPost, ApiError } from "@/services/api";
+import { apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
 
 const CASE_STATUS_AR: Record<string, string> = {
   new: "جديدة", contacted: "تم التواصل", qualified: "مؤهلة", follow_up: "متابعة",
@@ -30,7 +30,7 @@ export default function Exceptions() {
   const load = useCallback(async () => {
     setLoading(true); setOffline(null);
     try { setRows(await apiGet<UnassignedCase[]>("/api/admin/advisor-cases/unassigned")); }
-    catch (e) { setOffline(e instanceof ApiError ? e.message : "الخادم غير متصل"); }
+    catch (e) { setOffline(permissionMessage(e, "الخادم غير متصل")); }
     /* قائمة المستشارين اختيارية — تتطلب صلاحية المستخدمين */
     try {
       const users = await apiGet<UserRow[]>("/api/admin/users");

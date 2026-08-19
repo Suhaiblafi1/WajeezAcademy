@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Activity, ArrowUpCircle, History, PlayCircle, Rocket, ShieldCheck, Undo2 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
-import { apiGet, apiPost, ApiError } from "@/services/api";
+import { apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
 
 type Version = {
   id: string; label: string; status: string; createdAt: string; publishedAt: string | null
@@ -28,7 +28,7 @@ export default function PublishingBoard() {
       setVersions(await apiGet<Version[]>("/api/admin/publishing/versions"));
       setRuns(await apiGet<RegressionRun[]>("/api/admin/quality/regression-runs"));
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "تعذر الاتصال بخادم API — شغّله بـ npm run api:dev");
+      setError(permissionMessage(e, "تعذر الاتصال بخادم API — شغّله بـ npm run api:dev"));
     }
   }, []);
 
