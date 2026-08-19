@@ -125,6 +125,7 @@ export default function AdvisorDashboard() {
                   onClick={() => doneTask(t.kase.id, t.taskId, t.title)}
                   className="grid h-6 w-6 shrink-0 cursor-pointer place-items-center rounded-full border border-white/25 text-transparent transition hover:border-[#38A7B4] hover:text-[#6EC7D1]"
                   title="إنجاز المهمة"
+                  aria-label={`إنجاز مهمة: ${t.title}`}
                 >
                   <CheckCircle2 className="h-4 w-4" />
                 </button>
