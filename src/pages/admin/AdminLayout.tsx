@@ -3,6 +3,7 @@ import { Link, NavLink, useLocation, useNavigate } from "react-router";
 import { BookMarked, CalendarCog, Crown, FlaskConical, GitBranch, Layers, ShieldAlert, LayoutDashboard, UserPlus, Users, BarChart3, LifeBuoy, Wallet, Bell } from "lucide-react";
 import { ADMIN_IDENTITIES, ADMIN_IDENTITY_KEY, adminIdentity } from "./admin-identity";
 import NotificationBell from "@/components/NotificationBell";
+import SearchPalette from "@/components/SearchPalette";
 import PrototypeBanner from "@/components/PrototypeBanner";
 import { useRealSession } from "@/services/session";
 
@@ -99,6 +100,7 @@ export default function AdminLayout({ children, title }: { children: React.React
 
   return (
     <div dir="rtl" className="min-h-screen bg-[#0D0D0D] text-white">
+      <SearchPalette />
       <PrototypeBanner hidden={realAdmin} />
       <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0D0D0D]/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5">
@@ -118,6 +120,14 @@ export default function AdminLayout({ children, title }: { children: React.React
             ))}
           </select>
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => window.dispatchEvent(new Event("wajeez:open-search"))}
+              aria-label="بحث سريع — Ctrl+K"
+              title="بحث سريع — Ctrl+K"
+              className="hidden cursor-pointer items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[11px] font-bold text-white/45 transition hover:border-white/30 hover:text-white sm:flex"
+            >
+              بحث… <kbd className="rounded border border-white/15 px-1.5 text-[9px]">Ctrl K</kbd>
+            </button>
             <NotificationBell />
             <button
               onClick={() => { localStorage.removeItem(ADMIN_IDENTITY_KEY); setMe(null); }}
