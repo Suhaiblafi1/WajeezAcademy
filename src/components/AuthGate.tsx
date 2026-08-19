@@ -62,7 +62,7 @@ const LABEL_CLS = "mb-1.5 block text-xs font-bold text-white/60";
 
 /** بوابة الدخول والتسجيل — نموذج حقيقي، تحقق آمن، ورسائل عربية لا تكشف شيئا */
 export default function AuthGate({ onDone, message }: { onDone: () => void; message?: string }) {
-  const [mode, setMode] = useState<"login" | "signup">("signup");
+  const [mode, setMode] = useState<"login" | "signup">("login");
   const [view, setView] = useState<View>("auth");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -388,7 +388,7 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
         <div className="px-8 py-6">
           {/* تبويب الوضع */}
           <div className="mb-6 grid grid-cols-2 rounded-full border border-white/10 bg-white/[0.04] p-1" role="tablist">
-            {(["signup", "login"] as const).map((m) => (
+            {(["login", "signup"] as const).map((m) => (
               <button
                 key={m}
                 role="tab"
