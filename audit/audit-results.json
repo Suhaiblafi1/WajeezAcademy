@@ -1,0 +1,298 @@
+[
+  {
+    "role": "admin",
+    "path": "/admin",
+    "title": "الرئيسية — نظرة عامة",
+    "consoleErrs": [],
+    "failedReqs": [],
+    "artifacts": [],
+    "overflowX": false
+  },
+  {
+    "role": "admin",
+    "path": "/admin/catalog",
+    "title": "إدارة الكتالوج الأكاديمي",
+    "consoleErrs": [],
+    "failedReqs": [],
+    "artifacts": [
+      "حالة إنجليزية خام: «ورات ⏎  ⏎ 100 منشور ⏎  ⏎ المهارات ⏎  ⏎ 229 منشور ⏎ 76 pending_academic_review ⏎  ⏎ القوالب ⏎  ⏎ 16 منشور ⏎  ⏎ الأسئلة ⏎  ⏎ 192 منش»"
+    ],
+    "overflowX": false
+  },
+  {
+    "role": "admin",
+    "path": "/admin/publishing",
+    "title": "النشر المحكوم وجودة التشخيص",
+    "consoleErrs": [],
+    "failedReqs": [],
+    "artifacts": [],
+    "overflowX": false
+  },
+  {
+    "role": "admin",
+    "path": "/admin/cohorts",
+    "title": "عمليات الشعب — الفتح المشروط والجلسات والتسجيل",
+    "consoleErrs": [],
+    "failedReqs": [],
+    "artifacts": [],
+    "overflowX": false
+  },
+  {
+    "role": "admin",
+    "path": "/admin/content",
+    "title": "المحتوى الأكاديمي — سير المراجعة والإصدارات",
+    "consoleErrs": [],
+    "failedReqs": [],
+    "artifacts": [],
+    "overflowX": false
+  },
+  {
+    "role": "admin",
+    "path": "/admin/quality",
+    "title": "جودة التشخيص والمحاكي",
+    "consoleErrs": [],
+    "failedReqs": [],
+    "artifacts": [],
+    "overflowX": false
+  },
+  {
+    "role": "admin",
+    "path": "/admin/users",
+    "title": "المستخدمون والأدوار",
+    "consoleErrs": [],
+    "failedReqs": [],
+    "artifacts": [],
+    "overflowX": false
+  },
+  {
+    "role": "admin",
+    "path": "/admin/trainers",
+    "title": "طلبات انضمام المدربين",
+    "consoleErrs": [],
+    "failedReqs": [],
+    "artifacts": [],
+    "overflowX": false
+  },
+  {
+    "role": "admin",
+    "path": "/admin/exceptions",
+    "title": "الاستثناءات — حالات بلا مستشار",
+    "consoleErrs": [],
+    "failedReqs": [],
+    "artifacts": [],
+    "overflowX": false
+  },
+  {
+    "role": "admin",
+    "path": "/admin/finance",
+    "title": "المالية — طلبات وفواتير واستردادات وكوبونات",
+    "consoleErrs": [],
+    "failedReqs": [],
+    "artifacts": [],
+    "overflowX": false
+  },
+  {
+    "role": "admin",
+    "path": "/admin/reports",
+    "title": "التقارير التشغيلية — 16 تقريرا بطريقة حساب معلنة",
+    "consoleErrs": [],
+    "failedReqs": [],
+    "artifacts": [
+      "حالة إنجليزية خام: «ملة والشهر — المصدر: Invoice حيث status=paid ⏎  ⏎ الدفعات والاسترداد ⏎  ⏎ الدفعات بالمزود والحالة، والاستردا»"
+    ],
+    "overflowX": false
+  },
+  {
+    "role": "admin",
+    "path": "/admin/support",
+    "title": "الدعم الفني — التذاكر",
+    "consoleErrs": [],
+    "failedReqs": [],
+    "artifacts": [],
+    "overflowX": false
+  },
+  {
+    "role": "admin",
+    "path": "/admin/notifications",
+    "title": "الإشعارات — القوالب والسجل",
+    "consoleErrs": [],
+    "failedReqs": [],
+    "artifacts": [],
+    "overflowX": false
+  },
+  {
+    "role": "student",
+    "path": "/student",
+    "title": "صباح الخير يا ليان",
+    "consoleErrs": [],
+    "failedReqs": [],
+    "artifacts": [],
+    "overflowX": false
+  },
+  {
+    "role": "student",
+    "path": "/student/learning",
+    "title": "تعلّمي",
+    "consoleErrs": [],
+    "failedReqs": [],
+    "artifacts": [],
+    "overflowX": false
+  },
+  {
+    "role": "student",
+    "path": "/student/pathway",
+    "title": "مساري — استكشاف الاتجاه المهني واتخاذ قرار أول",
+    "consoleErrs": [],
+    "failedReqs": [],
+    "artifacts": [],
+    "overflowX": false
+  },
+  {
+    "role": "student",
+    "path": "/student/project",
+    "title": "مشروع التخرج",
+    "consoleErrs": [],
+    "failedReqs": [],
+    "artifacts": [],
+    "overflowX": false
+  },
+  {
+    "role": "student",
+    "path": "/student/cohorts",
+    "title": "الشعب المفتوحة للتسجيل",
+    "consoleErrs": [],
+    "failedReqs": [],
+    "artifacts": [
+      "حالة إنجليزية خام: « ⏎ الأيام: ⏎ الأحد، الأربعاء — 18:00 ⏎ النمط: ⏎ remote ⏎ المدرب: ⏎ رامي العبداللات — مدرب ديمو ⏎  ⏎ 250 JOD ⏎  ⏎ 19 مقعد»"
+    ],
+    "overflowX": false
+  },
+  {
+    "role": "student",
+    "path": "/student/certificates",
+    "title": "شهاداتي",
+    "consoleErrs": [],
+    "failedReqs": [],
+    "artifacts": [],
+    "overflowX": false
+  },
+  {
+    "role": "student",
+    "path": "/student/billing",
+    "title": "فواتيري وطلباتي",
+    "consoleErrs": [],
+    "failedReqs": [],
+    "artifacts": [],
+    "overflowX": false
+  },
+  {
+    "role": "student",
+    "path": "/student/cv",
+    "title": "سيرتي الذاتية",
+    "consoleErrs": [],
+    "failedReqs": [],
+    "artifacts": [],
+    "overflowX": false
+  },
+  {
+    "role": "student",
+    "path": "/student/account",
+    "title": "حسابي وملفي الشخصي",
+    "consoleErrs": [],
+    "failedReqs": [],
+    "artifacts": [],
+    "overflowX": false
+  },
+  {
+    "role": "student",
+    "path": "/student/notifications",
+    "title": "إشعاراتي",
+    "consoleErrs": [],
+    "failedReqs": [],
+    "artifacts": [],
+    "overflowX": false
+  },
+  {
+    "role": "student",
+    "path": "/student/support",
+    "title": "الدعم الفني",
+    "consoleErrs": [],
+    "failedReqs": [],
+    "artifacts": [],
+    "overflowX": false
+  },
+  {
+    "role": "trainer",
+    "path": "/trainer",
+    "title": "شعبي — ملخص اليوم",
+    "consoleErrs": [],
+    "failedReqs": [],
+    "artifacts": [],
+    "overflowX": false
+  },
+  {
+    "role": "trainer",
+    "path": "/trainer/grading",
+    "title": "طابور التقييم",
+    "consoleErrs": [],
+    "failedReqs": [],
+    "artifacts": [],
+    "overflowX": false
+  },
+  {
+    "role": "trainer",
+    "path": "/trainer/earnings",
+    "title": "مستحقاتي — كشف مبسط وشفاف",
+    "consoleErrs": [],
+    "failedReqs": [],
+    "artifacts": [
+      "UUID ظاهر: «دوى الأتمتة» — 1 متعلماً × 30 JODcohort:21131f95-18ab-48c6-8ff5-e4a754d08402 ⏎ 30 JOD ⏎  ⏎ كشف فترة 2026-0»"
+    ],
+    "overflowX": false
+  },
+  {
+    "role": "trainer",
+    "path": "/trainer/proposals",
+    "title": "اقتراحات تعديل دوراتي",
+    "consoleErrs": [],
+    "failedReqs": [],
+    "artifacts": [],
+    "overflowX": false
+  },
+  {
+    "role": "trainer",
+    "path": "/trainer/board",
+    "title": "شعبي",
+    "consoleErrs": [],
+    "failedReqs": [],
+    "artifacts": [],
+    "overflowX": false
+  },
+  {
+    "role": "advisor",
+    "path": "/advisor",
+    "title": "حالاتي — ملخص اليوم",
+    "consoleErrs": [],
+    "failedReqs": [],
+    "artifacts": [],
+    "overflowX": false
+  },
+  {
+    "role": "advisor",
+    "path": "/advisor/cases",
+    "title": "حالاتي — عملاء التشخيص المسندون إليّ",
+    "consoleErrs": [],
+    "failedReqs": [],
+    "artifacts": [],
+    "overflowX": false
+  },
+  {
+    "role": "advisor",
+    "path": "/advisor/reviews",
+    "title": "طلبات مراجعة المسار",
+    "consoleErrs": [],
+    "failedReqs": [],
+    "artifacts": [],
+    "overflowX": false
+  }
+]

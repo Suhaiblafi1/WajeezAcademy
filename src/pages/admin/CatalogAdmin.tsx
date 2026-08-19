@@ -26,6 +26,7 @@ type TemplateRow = { id: string; status: string; name: string; courseCount: numb
 const STATUS_AR: Record<string, string> = {
   draft: "مسودة", approved: "معتمد", published: "منشور", in_review: "قيد المراجعة",
   changes_requested: "مطلوب تعديل", rejected: "مرفوض", applied: "مطبق", superseded: "تجاوزه إصدار أحدث",
+  pending_academic_review: "بانتظار مراجعة أكاديمية",
 };
 
 const ENTITY_AR: Record<string, string> = {

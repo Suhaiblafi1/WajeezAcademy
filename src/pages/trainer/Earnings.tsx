@@ -103,7 +103,7 @@ function RealEarningsView() {
               <ul className="mt-3 space-y-1.5 border-t border-white/8 pt-3">
                 {p.items.map((i) => (
                   <li key={i.id} className="flex items-center justify-between gap-3 text-xs text-white/60">
-                    <span>{i.description}{i.sourceRef ? <span dir="ltr" className="mr-2 font-mono text-[10px] text-white/35">{i.sourceRef}</span> : null}</span>
+                    <span>{i.description}</span>
                     <span dir="ltr" className="font-mono font-bold text-white/80">{fmt(i.amount)} {p.currency}</span>
                   </li>
                 ))}

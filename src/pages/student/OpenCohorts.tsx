@@ -12,7 +12,7 @@ interface OpenCohort {
 }
 
 const STATUS_LABELS: Record<string, string> = { open: "مفتوحة", full: "مكتملة العدد", active: "جارية" };
-const DELIVERY_LABELS: Record<string, string> = { online: "عن بعد", in_person: "حضوري", hybrid: "هجين" };
+const DELIVERY_LABELS: Record<string, string> = { online: "عن بعد", remote: "عن بعد", in_person: "حضوري", onsite: "حضوري", hybrid: "هجين" };
 
 function fmtDate(d: string | null) {
   if (!d) return "يُعلن قريبا";
