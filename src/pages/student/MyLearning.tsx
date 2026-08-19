@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
 import {
-  ArrowRight, Award, BookOpen, CalendarDays, CheckCircle2, ChevronDown, FileText,
-  GraduationCap, Loader2, PlayCircle, RefreshCw, Send, ServerOff, Video,
+  Award, BookOpen, CalendarDays, CheckCircle2, ChevronDown, FileText,
+  Loader2, PlayCircle, RefreshCw, Send, ServerOff, Video,
 } from "lucide-react";
+import PortalLayout from "./PortalLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 
 const ENROLL_STATUS: Record<string, string> = {
@@ -69,7 +70,11 @@ export default function MyLearning() {
     try {
       setRows(await apiGet<EnrollmentRow[]>("/api/learner/my-learning"));
     } catch (err) {
-      setOffline(err instanceof ApiError ? err.message : "الخادم غير متصل — هذه الصفحة تتطلب جلسة متعلم حقيقية");
+      setOffline(
+        err instanceof ApiError && err.status === 401
+          ? "سجّل دخولك بحسابك الحقيقي لتصل إلى شعبك وجلساتك وواجباتك هنا."
+          : err instanceof ApiError ? err.message : "الخادم غير متصل — أعد المحاولة بعد قليل"
+      );
     } finally {
       setLoading(false);
     }
@@ -126,17 +131,8 @@ export default function MyLearning() {
   };
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#0D0D0D] text-white">
-      <header className="border-b border-white/8 px-5 py-4">
-        <div className="mx-auto flex max-w-4xl items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 text-white/60 transition hover:text-white">
-            <ArrowRight className="h-4 w-4" /> أكاديمية وجيز
-          </Link>
-          <h1 className="flex items-center gap-2 text-sm font-black"><GraduationCap className="h-4 w-4 text-[#6EC7D1]" /> تعلّمي</h1>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-4xl px-5 py-8">
+    <PortalLayout title="تعلّمي">
+      <div className="mx-auto max-w-4xl">
         {flash && (
           <p className="mb-5 flex items-center gap-2 rounded-2xl border border-[#38A7B4]/40 bg-[#38A7B4]/10 px-4 py-3 text-sm font-bold text-[#6EC7D1]">
             <CheckCircle2 className="h-4 w-4 shrink-0" /> {flash}
@@ -209,8 +205,8 @@ export default function MyLearning() {
             })}
           </div>
         )}
-      </main>
-    </div>
+      </div>
+    </PortalLayout>
   );
 }
 
