@@ -1,17 +1,109 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import {
   AlertTriangle, CalendarClock, CheckCircle2, ChevronLeft, ClipboardList,
-  Clock3, ListChecks, Search, TrendingUp, UserPlus, Users,
+  Clock3, ListChecks, Loader2, Search, ServerOff, TrendingUp, UserPlus, Users,
 } from "lucide-react";
 import AdvisorLayout from "./AdvisorLayout";
 import { advisorIdentity } from "./advisor-identity";
+import { apiGet } from "@/services/api";
+import { useRealSession } from "@/services/session";
 import {
   loadAdvisorStudents, loadPathReviews, riskScore, riskLevel,
   nextBestAction, studentPathwayName, loadCases, unassignedCases,
   completeCaseTask, assignCase, logAudit, isOverdue, fmtDT,
   type RiskLevel, type AdvisorCase,
 } from "@/data/advisor";
+
+/* ── الصفحة الحقيقية للمستشار المسجّل — كلها من الخادم، بلا بيانات استعراض ── */
+
+interface RealCase {
+  id: string; status: string; nextAction: string | null; nextFollowUpAt: string | null;
+  lead: { fullName: string } | null; client: { displayName: string } | null;
+}
+const CASE_STATUS: Record<string, string> = {
+  new: "جديدة", contacted: "تم التواصل", needs_review: "تحتاج مراجعة", follow_up: "متابعة",
+  recommended: "أوصينا بمسار", enrolled: "سجّل", not_interested: "غير مهتم", closed: "مغلقة",
+};
+
+function RealAdvisorHome({ name }: { name: string }) {
+  const [rows, setRows] = useState<RealCase[] | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    apiGet<RealCase[]>("/api/advisor/cases")
+      .then(setRows)
+      .catch(() => setFailed(true));
+  }, []);
+
+  if (failed)
+    return (
+      <div className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] py-16 text-white/50">
+        <ServerOff className="h-5 w-5" /> تعذر جلب حالاتك — تأكد أن الخادم يعمل ثم حدّث الصفحة.
+      </div>
+    );
+  if (!rows)
+    return (
+      <div className="flex items-center justify-center gap-2 py-16 text-white/50">
+        <Loader2 className="h-5 w-5 animate-spin" /> أحضر حالاتك…
+      </div>
+    );
+
+  const open = rows.filter((c) => !["closed", "enrolled", "not_interested"].includes(c.status));
+  const needReview = rows.filter((c) => c.status === "needs_review").length;
+  const fresh = rows.filter((c) => c.status === "new").length;
+  const upcoming = rows
+    .filter((c) => c.nextFollowUpAt)
+    .sort((a, b) => (a.nextFollowUpAt ?? "").localeCompare(b.nextFollowUpAt ?? ""))
+    .slice(0, 5);
+
+  return (
+    <div>
+      <p className="mb-6 text-sm text-white/60">أهلاً {name} — لديك {open.length} حالة مفتوحة{fresh > 0 ? ` منها ${fresh} جديدة لم تُلامس بعد` : ""}.</p>
+
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <Link to="/advisor/cases" className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-white/30">
+          <p className="flex items-center gap-2 text-xs text-white/50"><Users className="h-4 w-4" /> حالاتي المفتوحة</p>
+          <p className="mt-2 text-3xl font-black">{open.length}</p>
+        </Link>
+        <Link to="/advisor/cases" className={`rounded-2xl border p-5 transition hover:border-white/30 ${fresh > 0 ? "border-[#FABC05]/40 bg-[#FABC05]/5" : "border-white/10 bg-white/[0.03]"}`}>
+          <p className="flex items-center gap-2 text-xs text-[#FABC05]"><UserPlus className="h-4 w-4" /> جديدة بانتظار أول تواصل</p>
+          <p className="mt-2 text-3xl font-black text-[#FABC05]">{fresh}</p>
+        </Link>
+        <Link to="/advisor/cases" className={`rounded-2xl border p-5 transition hover:border-white/30 ${needReview > 0 ? "border-red-500/40 bg-red-500/5" : "border-white/10 bg-white/[0.03]"}`}>
+          <p className="flex items-center gap-2 text-xs text-red-300"><AlertTriangle className="h-4 w-4" /> تحتاج مراجعة</p>
+          <p className="mt-2 text-3xl font-black text-red-400">{needReview}</p>
+        </Link>
+        <div className="rounded-2xl border border-[#38A7B4]/30 bg-[#38A7B4]/5 p-5">
+          <p className="flex items-center gap-2 text-xs text-[#6EC7D1]"><CheckCircle2 className="h-4 w-4" /> سجّلوا أو أُغلقوا</p>
+          <p className="mt-2 text-3xl font-black text-[#6EC7D1]">{rows.length - open.length}</p>
+        </div>
+      </div>
+
+      <section className="mt-6 rounded-3xl border border-white/10 bg-white/[0.02] p-5">
+        <p className="flex items-center gap-2 text-sm font-black">
+          <CalendarClock className="h-4 w-4 text-[#38A7B4]" /> أقرب متابعاتك
+        </p>
+        <div className="mt-3 space-y-2">
+          {upcoming.length === 0 && <p className="py-3 text-center text-xs text-white/50">لا متابعات مجدولة — جدولها من ملف الحالة</p>}
+          {upcoming.map((c) => (
+            <Link key={c.id} to="/advisor/cases" className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-2.5 text-xs transition hover:border-white/30">
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-bold text-white/85">{c.lead?.fullName ?? c.client?.displayName ?? "عميل بلا اسم"}</p>
+                <p className="mt-0.5 truncate text-[10px] text-white/50">{c.nextAction ?? CASE_STATUS[c.status] ?? c.status}</p>
+              </div>
+              <span className="shrink-0 text-[10px] font-bold text-white/50">{fmtDT(c.nextFollowUpAt ?? undefined)}</span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <p className="mt-6 text-center text-[11px] text-white/35">
+        كل حالاتك وإجراءاتها في شاشة «حالاتي» — هذه الصفحة ملخص حي فقط.
+      </p>
+    </div>
+  );
+}
 
 const LEVEL_META: Record<RiskLevel, { label: string; dot: string; ring: string; text: string }> = {
   green: { label: "مطمئن", dot: "bg-[#38A7B4]", ring: "border-[#38A7B4]/30", text: "text-[#6EC7D1]" },
@@ -86,6 +178,16 @@ export default function AdvisorDashboard() {
     setTick((t) => t + 1);
   };
 
+  /* جلسة مستشار حقيقية (ولم يختر هوية استعراض محلية) → الملخص الحي من الخادم */
+  const { user: sessionUser, checked } = useRealSession();
+  if (checked && !me && sessionUser?.permissions.includes("advisor.cases.view")) {
+    return (
+      <AdvisorLayout title="حالاتي — ملخص اليوم">
+        <RealAdvisorHome name={sessionUser.displayName} />
+      </AdvisorLayout>
+    );
+  }
+
   return (
     <AdvisorLayout title="طلبةي — مرتبون بأولوية التدخل">
       {/* إحصاءات */}
@@ -113,7 +215,7 @@ export default function AdvisorDashboard() {
         <section className="rounded-3xl border border-white/10 bg-white/[0.02] p-5">
           <p className="flex items-center gap-2 text-sm font-black">
             <ListChecks className="h-4 w-4 text-[#FABC05]" /> مهامي المستحقة
-            <span className="mr-auto text-[10px] font-normal text-white/50">موعد استحقاق لكل مهمة — كما يفعل الخادم</span>
+            <span className="mr-auto text-[10px] font-normal text-white/50">لكل مهمة موعد استحقاق واضح</span>
           </p>
           <div className="mt-3 space-y-2">
             {dueTasks.length === 0 && <p className="py-3 text-center text-xs text-white/50">لا مهام معلقة عليك — أحسنت</p>}
@@ -214,7 +316,7 @@ export default function AdvisorDashboard() {
           </button>
         ))}
         <span className="mr-auto flex items-center gap-1.5 text-[11px] text-white/55">
-          <Clock3 className="h-3.5 w-3.5" /> المخاطرة حُسبت اليوم بقواعد الملحق ب — قابلة للشرح، وليست عقوبة آلية
+          <Clock3 className="h-3.5 w-3.5" /> مؤشر الانتباه يُحدَّث يومياً بقواعد موثقة وقابلة للشرح — وليس عقوبة آلية
         </span>
       </div>
 

@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Banknote, CheckCircle2, Clock3, ShieldCheck } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import { trainerIdentity } from "./trainer-identity";
+import { useRealSession } from "@/services/session";
 import { loadEarnings, EARNING_STATUS_LABEL, EARNING_KIND_LABEL, type Earning } from "@/data/trainer";
 
 const STATUS_META: Record<Earning["status"], { icon: typeof Clock3; cls: string }> = {
@@ -20,6 +21,22 @@ export default function Earnings() {
     approved: earnings.filter((e) => e.status === "approved").reduce((s, e) => s + e.amount, 0),
     paid: earnings.filter((e) => e.status === "paid").reduce((s, e) => s + e.amount, 0),
   }), [earnings]);
+
+  /* مدرب حقيقي: لا نظهر أرقاماً تقديرية وهمية — كشف المستحقات الذاتي لم يُربط بالخادم بعد */
+  const { user: sessionUser, checked } = useRealSession();
+  if (checked && !me && sessionUser?.permissions.includes("trainer.portal")) {
+    return (
+      <TrainerLayout title="مستحقاتي">
+        <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-10 text-center">
+          <Banknote className="mx-auto h-10 w-10 text-[#FABC05]" />
+          <h2 className="mt-4 text-lg font-black">كشف المستحقات الذاتي قيد التفعيل</h2>
+          <p className="mx-auto mt-2 max-w-md text-sm leading-7 text-white/55">
+            مستحقاتك تُراجع وتُصرف حالياً من الإدارة المالية مباشرة، وستظهر هنا تلقائياً فور اكتمال الربط — لن تحتاج أي إجراء منك.
+          </p>
+        </div>
+      </TrainerLayout>
+    );
+  }
 
   return (
     <TrainerLayout title="مستحقاتي — كشف مبسط وشفاف">

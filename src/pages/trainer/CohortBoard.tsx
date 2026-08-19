@@ -132,7 +132,7 @@ export default function CohortBoard() {
           <Link to="/" className="flex items-center gap-2 text-white/60 transition hover:text-white">
             <ArrowRight className="h-4 w-4" /> أكاديمية وجيز
           </Link>
-          <h1 className="flex items-center gap-2 text-sm font-black"><GraduationCap className="h-4 w-4 text-[#6EC7D1]" /> قمرة الشعبة</h1>
+          <h1 className="flex items-center gap-2 text-sm font-black"><GraduationCap className="h-4 w-4 text-[#6EC7D1]" /> شعبي</h1>
         </div>
       </header>
 

@@ -4,7 +4,8 @@
 
 import { FlaskConical } from "lucide-react";
 
-export default function PrototypeBanner() {
+export default function PrototypeBanner({ hidden = false }: { hidden?: boolean }) {
+  if (hidden) return null;
   return (
     <div
       role="status"

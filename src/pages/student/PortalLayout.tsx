@@ -4,6 +4,7 @@ import { GraduationCap, LayoutDashboard, Route as RouteIcon, Trophy, Award, Lock
 import { canAccessPortal, enablePreview, getEnrollment, isOwnerUnlocked, unlockOwner } from "@/services/access";
 import { signOut } from "@/services/auth";
 import { apiGet, apiPost } from "@/services/api";
+import { useRealSession } from "@/services/session";
 import { loadPortal, readUserName, savePortal, type PortalNotification } from "@/data/student";
 import { pathways } from "@/data/pathways";
 import { pathwayCourses } from "@/data/courses";
@@ -21,6 +22,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
   const [moreOpen, setMoreOpen] = useState(false);
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const { user: sessionUser } = useRealSession();
   const user = readUserName();
   const enrollment = getEnrollment();
   const pathwayId = enrollment?.pathwayId ?? pathways.find((p) => (pathwayCourses[p.id] ?? []).length >= 4)?.id ?? "";
@@ -130,7 +132,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
 
   return (
     <div dir="rtl" className="min-h-screen bg-[#0D0D0D] text-white">
-      <PrototypeBanner />
+      <PrototypeBanner hidden={!!sessionUser} />
       <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0D0D0D]/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
           <Link to="/" className="flex items-center gap-2">

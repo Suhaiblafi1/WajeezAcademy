@@ -67,7 +67,7 @@ export default function AdminLayout({ children, title }: { children: React.React
 
   return (
     <div dir="rtl" className="min-h-screen bg-[#0D0D0D] text-white">
-      <PrototypeBanner />
+      <PrototypeBanner hidden={realAdmin} />
       <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0D0D0D]/90 backdrop-blur">
         <div className="mx-auto flex min-h-16 max-w-7xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-5 py-2">
           <Link to="/" className="flex items-center gap-2">

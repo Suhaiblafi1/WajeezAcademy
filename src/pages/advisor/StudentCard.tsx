@@ -506,7 +506,7 @@ export default function StudentCard() {
                   {kase.contacts.length === 0 && (
                     <div className="rounded-xl border border-dashed border-white/15 px-3 py-4 text-center">
                       <p className="text-[11px] font-bold text-white/55">لا تواصل مسجل بعد</p>
-                      <p className="mt-1 text-[10px] leading-5 text-white/50">سجّل أول تواصل من الأسفل — سينقل الحالة تلقائيا إلى «تم التواصل» كما يفعل الخادم.</p>
+                      <p className="mt-1 text-[10px] leading-5 text-white/50">سجّل أول تواصل من الأسفل — ستنتقل الحالة تلقائياً إلى «تم التواصل».</p>
                     </div>
                   )}
                   {kase.contacts.map((c) => (

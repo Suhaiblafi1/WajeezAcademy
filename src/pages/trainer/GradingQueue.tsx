@@ -1,14 +1,22 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router";
 import {
-  CheckCircle2, ChevronDown, ChevronUp, FileText, History, Lock, RotateCcw, X, XCircle,
+  CheckCircle2, ChevronDown, ChevronUp, FileText, History, Loader2, Lock, RotateCcw, X, XCircle,
 } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import { trainerIdentity } from "./trainer-identity";
 import { fmtWhen } from "@/utils/format";
+import { apiGet } from "@/services/api";
+import { useRealSession } from "@/services/session";
 import {
   loadSubmissions, gradeSubmission, closeGrading, requestGradeChange, rejectSubmission,
   loadGradeAudit, ASSIGNMENT_RUBRIC, type Submission, type SubmissionStatus,
 } from "@/data/trainer";
+
+interface RealQueueItem {
+  id: string; status: string; submittedAt: string;
+  assessment: { title: string; cohort: { title: string } };
+}
 
 const STATUS_LABEL: Record<SubmissionStatus, { label: string; cls: string }> = {
   pending: { label: "بانتظار التقييم", cls: "bg-[#FABC05]/15 text-[#FABC05]" },
@@ -19,7 +27,7 @@ const STATUS_LABEL: Record<SubmissionStatus, { label: string; cls: string }> = {
 };
 
 /** طابور تقييم الواجبات — US-09: قائمة submissions + rubric + filters + feedback + audit */
-export default function GradingQueue() {
+function LocalGradingQueue() {
   const me = trainerIdentity();
   const meName = me?.name ?? ""; // الإطار يعرض بوابة الهوية عند غيابها
   const [tick, setTick] = useState(0);
@@ -300,4 +308,52 @@ export default function GradingQueue() {
       )}
     </TrainerLayout>
   );
+}
+
+/* ── الطابور الحقيقي للمدرب المسجّل — من الخادم، والتقييم من شاشة «شعبي» ── */
+function RealGradingQueue() {
+  const [realQueue, setRealQueue] = useState<RealQueueItem[] | null>(null);
+  useEffect(() => {
+    apiGet<RealQueueItem[]>("/api/trainer/grading-queue").then(setRealQueue).catch(() => setRealQueue([]));
+  }, []);
+  const actionable = (realQueue ?? []).filter((q) => q.status === "submitted" || q.status === "under_review");
+  return (
+    <TrainerLayout title="طابور التقييم">
+      {realQueue === null ? (
+        <div className="flex items-center justify-center gap-2 py-16 text-white/50">
+          <Loader2 className="h-5 w-5 animate-spin" /> أحضر الطابور…
+        </div>
+      ) : actionable.length === 0 ? (
+        <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-10 text-center">
+          <CheckCircle2 className="mx-auto h-10 w-10 text-[#6EC7D1]" />
+          <h2 className="mt-4 text-lg font-black">الطابور نظيف — لا تسليمات بانتظارك</h2>
+          <p className="mt-2 text-sm text-white/55">كل ما وصلك قيّمته. أحسنت.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <p className="text-sm text-white/60">لديك {actionable.length} {actionable.length === 1 ? "تسليم يحتاج" : "تسليمات تحتاج"} تقييمك:</p>
+          {actionable.map((q) => (
+            <Link key={q.id} to="/trainer/board" className="flex items-center gap-3 rounded-2xl border border-[#FABC05]/30 bg-[#FABC05]/5 px-5 py-4 text-sm transition hover:border-[#FABC05]/60">
+              <FileText className="h-4 w-4 shrink-0 text-[#FABC05]" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-bold text-white/85">{q.assessment.title}</p>
+                <p className="mt-0.5 text-[11px] text-white/50">
+                  {q.assessment.cohort.title} · أُرسل {new Date(q.submittedAt).toLocaleString("ar-SA", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                </p>
+              </div>
+              <span className="shrink-0 rounded-full bg-[#FABC05] px-3 py-1 text-[11px] font-black text-[#0D0D0D]">قيّمه من «شعبي»</span>
+            </Link>
+          ))}
+        </div>
+      )}
+    </TrainerLayout>
+  );
+}
+
+/** الغلاف: جلسة مدرب حقيقية بلا هوية استعراض → الطابور الحقيقي؛ وإلا النسخة المحلية */
+export default function GradingQueue() {
+  const me = trainerIdentity();
+  const { user, checked } = useRealSession();
+  if (checked && !me && user?.permissions.includes("trainer.portal")) return <RealGradingQueue />;
+  return <LocalGradingQueue />;
 }

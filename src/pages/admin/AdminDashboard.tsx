@@ -1,125 +1,122 @@
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import {
-  AlertTriangle, ArrowLeft, Banknote, BookOpenCheck, CalendarCog,
-  GraduationCap, ShieldAlert, TrendingUp, Users,
+  Banknote, CalendarCog, ClipboardList, LifeBuoy, Loader2,
+  RotateCcw, ServerOff, Users,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
-import { execKpis, pathwayProfitability, loadExceptions } from "@/data/admin";
+import { apiGet } from "@/services/api";
+import { useRealSession } from "@/services/session";
 
-/** اللوحة العليا للإدارة — 16.1 + ربحية المسارات US-12 بتعريفات 21.4 الثابتة */
+/* اللوحة العليا — نظرة تنفيذية من مصادر الخادم الحقيقية فقط.
+   كل بطاقة تتحمل غياب الصلاحية (403) فتختفي بهدوء بدل كسر الصفحة. */
+
+interface EnrollReq { id: string; status: string }
+interface Invoice { id: string; status: string; total: string; currency: string }
+interface Refund { id: string; status: string; amount: string }
+interface CohortRow { id: string; status: string }
+interface TicketRow { id: string; status: string }
+interface UserRow { id: string }
+
+interface Card {
+  to: string; label: string; value: string; hint: string;
+  icon: typeof Banknote; tone: "gold" | "teal" | "red" | "plain";
+}
+
+const TONE: Record<Card["tone"], string> = {
+  gold: "border-[#FABC05]/30 bg-[#FABC05]/5 text-[#FABC05]",
+  teal: "border-[#38A7B4]/30 bg-[#38A7B4]/5 text-[#6EC7D1]",
+  red: "border-red-500/30 bg-red-500/5 text-red-400",
+  plain: "border-white/10 bg-white/[0.03] text-white",
+};
+
 export default function AdminDashboard() {
-  const kpis = useMemo(() => execKpis(), []);
-  const profit = useMemo(() => pathwayProfitability(), []);
-  const exceptions = useMemo(() => loadExceptions(), []);
-  const pendingExceptions = exceptions.filter((e) => e.status === "pending").length;
-  const completionRate = Math.round((kpis.completed / Math.max(1, kpis.enrolled)) * 100);
+  const { user } = useRealSession();
+  const [cards, setCards] = useState<Card[] | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    const safe = <T,>(p: Promise<T>) => p.then((v) => v).catch(() => null);
+    (async () => {
+      const [reqs, invoices, refunds, cohorts, tickets, users] = await Promise.all([
+        safe(apiGet<EnrollReq[]>("/api/admin/enrollment-requests")),
+        safe(apiGet<Invoice[]>("/api/admin/invoices")),
+        safe(apiGet<Refund[]>("/api/admin/refunds")),
+        safe(apiGet<CohortRow[]>("/api/admin/cohorts")),
+        safe(apiGet<TicketRow[]>("/api/admin/support/tickets")),
+        safe(apiGet<UserRow[]>("/api/admin/users")),
+      ]);
+      if (!alive) return;
+      if (!reqs && !invoices && !cohorts) { setFailed(true); return; }
+
+      const out: Card[] = [];
+      if (reqs) {
+        const n = reqs.filter((r) => r.status === "pending").length;
+        out.push({ to: "/admin/finance", label: "طلبات تسجيل تنتظر المراجعة", value: String(n), hint: "راجعها ووافق أو اعتذر", icon: ClipboardList, tone: n > 0 ? "gold" : "plain" });
+      }
+      if (invoices) {
+        const paid = invoices.filter((i) => i.status === "paid");
+        const byCur = new Map<string, number>();
+        for (const i of paid) byCur.set(i.currency, (byCur.get(i.currency) ?? 0) + (Number(String(i.total).replace(/[^\d.-]/g, "")) || 0));
+        const top = [...byCur.entries()].sort((a, b) => b[1] - a[1])[0];
+        out.push({ to: "/admin/finance", label: "إيراد محصّل (فواتير مدفوعة)", value: top ? `${Math.round(top[1]).toLocaleString("ar-SA")} ${top[0]}` : "0", hint: `${paid.length} فاتورة مدفوعة`, icon: Banknote, tone: "teal" });
+      }
+      if (refunds) {
+        const n = refunds.filter((r) => r.status === "requested").length;
+        out.push({ to: "/admin/finance", label: "استردادات بانتظار التنفيذ", value: String(n), hint: n > 0 ? "تحتاج قرارك اليوم" : "لا شيء معلق", icon: RotateCcw, tone: n > 0 ? "red" : "plain" });
+      }
+      if (cohorts) {
+        const n = cohorts.filter((c) => c.status === "open" || c.status === "running" || c.status === "full").length;
+        out.push({ to: "/admin/cohorts", label: "شعب نشطة الآن", value: String(n), hint: `من أصل ${cohorts.length} شعبة`, icon: CalendarCog, tone: "plain" });
+      }
+      if (tickets) {
+        const n = tickets.filter((t) => ["open", "in_progress", "reopened"].includes(t.status)).length;
+        out.push({ to: "/admin/support", label: "تذاكر دعم تحتاج معالجة", value: String(n), hint: n > 0 ? "عملاء ينتظرون رداً" : "صندوق الدعم نظيف", icon: LifeBuoy, tone: n > 0 ? "gold" : "plain" });
+      }
+      if (users) {
+        out.push({ to: "/admin/users", label: "مستخدمو المنصة", value: String(users.length), hint: "إدارة الأدوار والصلاحيات", icon: Users, tone: "plain" });
+      }
+      setCards(out);
+    })();
+    return () => { alive = false; };
+  }, []);
+
+  const firstName = (user?.displayName ?? "").split(" ")[0] || "بك";
+  const hour = new Date().getHours();
+  const greet = hour < 12 ? "صباح الخير" : hour < 17 ? "طاب يومك" : "مساء الخير";
 
   return (
-    <AdminLayout title="اللوحة العليا — نظرة تنفيذية">
-      {/* الإيراد بتعريفات ثابتة */}
-      <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
-        <p className="flex items-center gap-2 text-sm font-black text-white/75">
-          <Banknote className="h-4 w-4 text-[#FABC05]" /> الإيراد هذا الربع — بالتعريفات المثبتة (21.4)
-        </p>
-        <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4">
-          {[
-            { label: "إجمالي (Gross)", value: kpis.gross, cls: "text-white" },
-            { label: "خصومات", value: kpis.discounts, cls: "text-[#FABC05]" },
-            { label: "مستردات", value: kpis.refunds, cls: "text-red-400" },
-            { label: "صافي (Net)", value: kpis.net, cls: "text-[#6EC7D1]" },
-          ].map((x) => (
-            <div key={x.label} className="rounded-2xl border border-white/10 bg-black/20 p-4 text-center">
-              <p className={`text-2xl font-black ${x.cls}`}>{x.value.toLocaleString()}$</p>
-              <p className="mt-1 text-[11px] text-white/45">{x.label}</p>
-            </div>
+    <AdminLayout title="الرئيسية — نظرة عامة">
+      <p className="mb-6 text-sm text-white/60">{greet} يا {firstName} — هذا ما يحتاج انتباهك اليوم:</p>
+
+      {cards === null && !failed && (
+        <div className="flex items-center justify-center gap-2 py-16 text-white/50">
+          <Loader2 className="h-5 w-5 animate-spin" /> أجمع لك الصورة من المصادر الحية…
+        </div>
+      )}
+
+      {failed && (
+        <div className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] py-16 text-white/50">
+          <ServerOff className="h-5 w-5" /> تعذر الوصول للخادم — تأكد أنه يعمل ثم حدّث الصفحة.
+        </div>
+      )}
+
+      {cards && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {cards.map((c) => (
+            <Link key={c.label} to={c.to} className={`rounded-3xl border p-6 transition hover:scale-[1.01] hover:border-white/30 ${TONE[c.tone]}`}>
+              <p className="flex items-center gap-2 text-xs font-bold opacity-80"><c.icon className="h-4 w-4" /> {c.label}</p>
+              <p className="mt-3 text-4xl font-black">{c.value}</p>
+              <p className="mt-2 text-[11px] text-white/45">{c.hint}</p>
+            </Link>
           ))}
         </div>
-      </section>
+      )}
 
-      {/* قمع التعلم — Enrolled ≠ Started ≠ Active (21.4) */}
-      <div className="mt-5 grid gap-4 md:grid-cols-4">
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-          <p className="flex items-center gap-2 text-xs text-white/50"><Users className="h-4 w-4" /> مسجلون</p>
-          <p className="mt-2 text-3xl font-black">{kpis.enrolled}</p>
-        </div>
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-          <p className="flex items-center gap-2 text-xs text-white/50"><BookOpenCheck className="h-4 w-4" /> بدأوا فعلا</p>
-          <p className="mt-2 text-3xl font-black">{kpis.started}</p>
-        </div>
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-          <p className="flex items-center gap-2 text-xs text-white/50"><TrendingUp className="h-4 w-4" /> نشطون الآن</p>
-          <p className="mt-2 text-3xl font-black">{kpis.active}</p>
-        </div>
-        <div className="rounded-2xl border border-[#38A7B4]/30 bg-[#38A7B4]/5 p-5">
-          <p className="flex items-center gap-2 text-xs text-[#6EC7D1]"><GraduationCap className="h-4 w-4" /> إتمام المسارات</p>
-          <p className="mt-2 text-3xl font-black text-[#6EC7D1]">{completionRate}%</p>
-        </div>
-      </div>
-
-      {/* تنبيهات تشغيلية */}
-      <div className="mt-5 grid gap-4 md:grid-cols-3">
-        <Link to="/admin/exceptions" className="rounded-2xl border border-red-500/30 bg-red-500/5 p-5 transition hover:border-red-500/60">
-          <p className="flex items-center gap-2 text-xs text-red-300"><ShieldAlert className="h-4 w-4" /> استثناءات معلقة</p>
-          <p className="mt-2 text-3xl font-black text-red-400">{pendingExceptions}</p>
-        </Link>
-        <div className="rounded-2xl border border-[#FABC05]/30 bg-[#FABC05]/5 p-5">
-          <p className="flex items-center gap-2 text-xs text-[#FABC05]"><AlertTriangle className="h-4 w-4" /> طلبة معرضون للتعثر</p>
-          <p className="mt-2 text-3xl font-black text-[#FABC05]">{kpis.atRisk}</p>
-        </div>
-        <Link to="/admin/cohorts" className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-[#38A7B4]/50">
-          <p className="flex items-center gap-2 text-xs text-white/50"><CalendarCog className="h-4 w-4" /> شعب مفتوحة الآن</p>
-          <p className="mt-2 text-3xl font-black">{kpis.openCohorts}</p>
-        </Link>
-      </div>
-
-      {/* ربحية المسارات — US-12 */}
-      <section className="mt-8 rounded-3xl border border-white/10 bg-white/[0.03] p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="flex items-center gap-2 text-sm font-black text-white/75">
-            <TrendingUp className="h-4 w-4 text-[#6EC7D1]" /> ربحية المسارات — مرتبة بالهامش
-          </p>
-          <span className="text-[11px] text-white/50">الفترة: هذا الربع · العملة: دولار</span>
-        </div>
-        <div className="scrollbar-hide mt-4 overflow-x-auto">
-          <table className="w-full min-w-[760px] text-right text-xs">
-            <thead>
-              <tr className="border-b border-white/10 text-white/50">
-                <th className="pb-3 pr-2 font-medium">المسار</th>
-                <th className="pb-3 font-medium">تسجيلات</th>
-                <th className="pb-3 font-medium">إجمالي</th>
-                <th className="pb-3 font-medium">خصومات</th>
-                <th className="pb-3 font-medium">مسترد</th>
-                <th className="pb-3 font-medium">صافي</th>
-                <th className="pb-3 font-medium">تكلفة مباشرة</th>
-                <th className="pb-3 font-medium">الهامش</th>
-              </tr>
-            </thead>
-            <tbody>
-              {profit.map((p) => (
-                <tr key={p.id} className="border-b border-white/5 transition hover:bg-white/[0.02]">
-                  <td className="max-w-[220px] py-3 pr-2 font-bold text-white/85">{p.name}</td>
-                  <td className="py-3">{p.enrollments}</td>
-                  <td className="py-3">{p.gross.toLocaleString()}$</td>
-                  <td className="py-3 text-[#FABC05]">-{p.discounts.toLocaleString()}$</td>
-                  <td className="py-3 text-red-400">-{p.refunds.toLocaleString()}$</td>
-                  <td className="py-3 font-bold">{p.net.toLocaleString()}$</td>
-                  <td className="py-3 text-white/60">-{p.directCost.toLocaleString()}$</td>
-                  <td className="py-3">
-                    <span className={`font-black ${p.marginPct >= 65 ? "text-[#6EC7D1]" : p.marginPct >= 55 ? "text-[#FABC05]" : "text-red-400"}`}>
-                      {p.margin.toLocaleString()}$ ({p.marginPct}%)
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <p className="mt-4 flex items-center gap-1.5 text-[10px] text-white/55">
-          <ArrowLeft className="h-3 w-3" />
-          التعريفات: الصافي = الإجمالي − الخصومات − المستردات · الهامش = الصافي − التكلفة المباشرة (أجور مدربين ومحتوى) — لا تكاليف عامة هنا.
-        </p>
-      </section>
+      <p className="mt-8 text-center text-[11px] text-white/35">
+        كل الأرقام هنا حية من قاعدة البيانات — التقارير التفصيلية والتصدير في شاشة «التقارير».
+      </p>
     </AdminLayout>
   );
 }
