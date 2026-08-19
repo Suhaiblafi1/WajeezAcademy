@@ -3,6 +3,7 @@ import { Link, NavLink } from "react-router";
 import { GraduationCap, ClipboardCheck, GitPullRequest, Users, Wallet } from "lucide-react";
 import { TRAINER_IDENTITIES } from "@/data/trainer";
 import { TRAINER_IDENTITY_KEY, trainerIdentity } from "./trainer-identity";
+import NotificationBell from "@/components/NotificationBell";
 import PrototypeBanner from "@/components/PrototypeBanner";
 import { useRealSession } from "@/services/session";
 
@@ -83,13 +84,16 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
               </NavLink>
             ))}
           </nav>
-          <button
-            onClick={() => { localStorage.removeItem(TRAINER_IDENTITY_KEY); setMe(null); }}
-            className="cursor-pointer text-xs text-white/55 hover:text-white"
-            title={realTrainer && !me ? "حسابك الحقيقي" : "تبديل المدرب"}
-          >
-            {effectiveMe.name}
-          </button>
+          <div className="flex items-center gap-3">
+            <NotificationBell />
+            <button
+              onClick={() => { localStorage.removeItem(TRAINER_IDENTITY_KEY); setMe(null); }}
+              className="cursor-pointer text-xs text-white/55 hover:text-white"
+              title={realTrainer && !me ? "حسابك الحقيقي" : "تبديل المدرب"}
+            >
+              {effectiveMe.name}
+            </button>
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-5 py-8">
