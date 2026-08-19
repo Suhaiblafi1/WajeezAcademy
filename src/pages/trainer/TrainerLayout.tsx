@@ -4,12 +4,27 @@ import { GraduationCap, ClipboardCheck, GitPullRequest, Users, Wallet } from "lu
 import { TRAINER_IDENTITIES } from "@/data/trainer";
 import { TRAINER_IDENTITY_KEY, trainerIdentity } from "./trainer-identity";
 import PrototypeBanner from "@/components/PrototypeBanner";
+import { useRealSession } from "@/services/session";
 
-/** إطار بوابة المدرب: هوية المدرب + تنقل + حدوده معلنة */
+/** إطار بوابة المدرب: هوية المدرب + تنقل + حدوده معلنة.
+   من سجّل دخوله بحساب مدرب حقيقي يتجاوز شاشة اختيار الهوية التجريبية تلقائيا. */
 export default function TrainerLayout({ children, title }: { children: React.ReactNode; title: string }) {
   const [me, setMe] = useState(trainerIdentity);
+  const { user, checked } = useRealSession();
+  const realTrainer = user?.permissions.includes("trainer.portal") ?? false;
+  const effectiveMe = me ?? (realTrainer && user
+    ? { id: user.userId, name: user.displayName, role: "مدرب — حساب حقيقي" }
+    : null);
 
-  if (!me) {
+  if (!effectiveMe && !checked) {
+    return (
+      <div dir="rtl" className="grid min-h-screen place-items-center bg-[#0D0D0D] text-white">
+        <GraduationCap className="h-10 w-10 animate-pulse text-[#6EC7D1]" />
+      </div>
+    );
+  }
+
+  if (!effectiveMe) {
     return (
       <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-[#0D0D0D] px-5 text-white">
         <GraduationCap className="h-12 w-12 text-[#6EC7D1]" />
@@ -71,9 +86,9 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
           <button
             onClick={() => { localStorage.removeItem(TRAINER_IDENTITY_KEY); setMe(null); }}
             className="cursor-pointer text-xs text-white/55 hover:text-white"
-            title="تبديل المدرب"
+            title={realTrainer && !me ? "حسابك الحقيقي" : "تبديل المدرب"}
           >
-            {me.name}
+            {effectiveMe.name}
           </button>
         </div>
       </header>

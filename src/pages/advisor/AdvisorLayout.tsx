@@ -3,12 +3,27 @@ import { Link, NavLink } from "react-router";
 import { ClipboardList, Headset, LayoutDashboard, Users } from "lucide-react";
 import { ADVISOR_IDENTITIES, ADVISOR_IDENTITY_KEY, advisorIdentity } from "./advisor-identity";
 import PrototypeBanner from "@/components/PrototypeBanner";
+import { useRealSession } from "@/services/session";
 
-/** إطار بوابة المستشار: اختيار هوية المستشار + تنقل */
+/** إطار بوابة المستشار: اختيار هوية المستشار + تنقل.
+   من سجّل دخوله بحساب مستشار حقيقي يتجاوز شاشة اختيار الهوية التجريبية تلقائيا. */
 export default function AdvisorLayout({ children, title }: { children: React.ReactNode; title: string }) {
   const [me, setMe] = useState(advisorIdentity);
+  const { user, checked } = useRealSession();
+  const realAdvisor = user?.permissions.includes("advisor.cases.view") ?? false;
+  const effectiveMe = me ?? (realAdvisor && user
+    ? { id: user.userId, name: user.displayName, title: "مستشار — حساب حقيقي" }
+    : null);
 
-  if (!me) {
+  if (!effectiveMe && !checked) {
+    return (
+      <div dir="rtl" className="grid min-h-screen place-items-center bg-[#0D0D0D] text-white">
+        <Headset className="h-10 w-10 animate-pulse text-[#38A7B4]" />
+      </div>
+    );
+  }
+
+  if (!effectiveMe) {
     return (
       <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-[#0D0D0D] px-5 text-white">
         <Headset className="h-12 w-12 text-[#38A7B4]" />
@@ -69,10 +84,10 @@ export default function AdvisorLayout({ children, title }: { children: React.Rea
           <button
             onClick={() => { localStorage.removeItem(ADVISOR_IDENTITY_KEY); setMe(null); }}
             className="flex cursor-pointer items-center gap-2 text-xs text-white/55 hover:text-white"
-            title="تبديل المستشار"
+            title={realAdvisor && !me ? "حسابك الحقيقي" : "تبديل المستشار"}
           >
             <LayoutDashboard className="h-4 w-4 text-[#FABC05]" />
-            <span className="max-w-[110px] truncate">{me.name}</span>
+            <span className="max-w-[110px] truncate">{effectiveMe.name}</span>
           </button>
         </div>
       </header>

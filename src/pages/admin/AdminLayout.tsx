@@ -3,12 +3,27 @@ import { Link, NavLink } from "react-router";
 import { BookMarked, CalendarCog, Crown, FlaskConical, GitBranch, Layers, ShieldAlert, LayoutDashboard, UserPlus, Users, BarChart3, LifeBuoy, Wallet, Bell } from "lucide-react";
 import { ADMIN_IDENTITIES, ADMIN_IDENTITY_KEY, adminIdentity } from "./admin-identity";
 import PrototypeBanner from "@/components/PrototypeBanner";
+import { useRealSession } from "@/services/session";
 
-/** إطار لوحة الإدارة والعمليات */
+/** إطار لوحة الإدارة والعمليات.
+   من سجّل دخوله بحساب إداري حقيقي يتجاوز شاشة اختيار الهوية التجريبية تلقائيا. */
 export default function AdminLayout({ children, title }: { children: React.ReactNode; title: string }) {
   const [me, setMe] = useState(adminIdentity);
+  const { user, checked } = useRealSession();
+  const realAdmin = user?.permissions.some((p) => p.startsWith("admin.") || p.startsWith("catalog.")) ?? false;
+  const effectiveMe = me ?? (realAdmin && user
+    ? { id: user.userId, name: user.displayName, title: "إدارة — حساب حقيقي" }
+    : null);
 
-  if (!me) {
+  if (!effectiveMe && !checked) {
+    return (
+      <div dir="rtl" className="grid min-h-screen place-items-center bg-[#0D0D0D] text-white">
+        <Crown className="h-10 w-10 animate-pulse text-[#FABC05]" />
+      </div>
+    );
+  }
+
+  if (!effectiveMe) {
     return (
       <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-[#0D0D0D] px-5 text-white">
         <Crown className="h-12 w-12 text-[#FABC05]" />
@@ -79,9 +94,9 @@ export default function AdminLayout({ children, title }: { children: React.React
           <button
             onClick={() => { localStorage.removeItem(ADMIN_IDENTITY_KEY); setMe(null); }}
             className="cursor-pointer text-xs text-white/55 hover:text-white"
-            title="تبديل الهوية"
+            title={realAdmin && !me ? "حسابك الحقيقي" : "تبديل الهوية"}
           >
-            {me.name}
+            {effectiveMe.name}
           </button>
         </div>
       </header>

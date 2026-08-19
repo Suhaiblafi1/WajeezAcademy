@@ -34,6 +34,15 @@ export default function PortalLayout({ children, title }: { children: React.Reac
     if (previewOwner) unlockOwner();
   }, [previewOwner]);
 
+  /* استحقاق الخادم الحقيقي — حساب بتسجيلات فعلية (دفع ناجح) يفتح المنصة
+     دون الحاجة لعلم المعاينة المحلي */
+  useEffect(() => {
+    if (allowed) return;
+    apiGet<unknown[]>("/api/learner/my-learning")
+      .then((rows) => { if (rows.length > 0) setAllowed(true); })
+      .catch(() => undefined);
+  }, [allowed]);
+
   useEffect(() => {
     apiGet<RealNotif[]>("/api/learner/notifications").then((rows) => setRealNotifs(rows.slice(0, 6))).catch(() => setRealNotifs(null));
   }, []);
