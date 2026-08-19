@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, NavLink } from "react-router";
 import { ClipboardList, Headset, LayoutDashboard, Users } from "lucide-react";
 import { ADVISOR_IDENTITIES, ADVISOR_IDENTITY_KEY, advisorIdentity } from "./advisor-identity";
+import NotificationBell from "@/components/NotificationBell";
 import PrototypeBanner from "@/components/PrototypeBanner";
 import { useRealSession } from "@/services/session";
 
@@ -81,14 +82,17 @@ export default function AdvisorLayout({ children, title }: { children: React.Rea
               </NavLink>
             ))}
           </nav>
-          <button
-            onClick={() => { localStorage.removeItem(ADVISOR_IDENTITY_KEY); setMe(null); }}
-            className="flex cursor-pointer items-center gap-2 text-xs text-white/55 hover:text-white"
-            title={realAdvisor && !me ? "حسابك الحقيقي" : "تبديل المستشار"}
-          >
-            <LayoutDashboard className="h-4 w-4 text-[#FABC05]" />
-            <span className="max-w-[110px] truncate">{effectiveMe.name}</span>
-          </button>
+          <div className="flex items-center gap-3">
+            <NotificationBell />
+            <button
+              onClick={() => { localStorage.removeItem(ADVISOR_IDENTITY_KEY); setMe(null); }}
+              className="flex cursor-pointer items-center gap-2 text-xs text-white/55 hover:text-white"
+              title={realAdvisor && !me ? "حسابك الحقيقي" : "تبديل المستشار"}
+            >
+              <LayoutDashboard className="h-4 w-4 text-[#FABC05]" />
+              <span className="max-w-[110px] truncate">{effectiveMe.name}</span>
+            </button>
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-5 py-8">

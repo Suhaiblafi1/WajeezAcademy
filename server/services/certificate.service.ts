@@ -5,6 +5,7 @@
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
+import { safeNotify } from './notification.service'
 import { ProgressService } from './progress.service'
 
 export class CertificateService {
@@ -47,6 +48,13 @@ export class CertificateService {
     await recordAudit(this.prisma, {
       actorId, action: 'certificate.issue', entityType: 'certificate', entityId: cert.id,
       meta: { number, enrollmentId, courseId: e.cohort.courseId },
+    })
+    await safeNotify(this.prisma, {
+      userId: e.userId, channel: 'in_app',
+      title: 'صدرت شهادتك 🎓',
+      body: `مبروك الإتمام — شهادتك برقم ${number} جاهزة في «شهاداتي»، وتحققها العام متاح لأي جهة تشاركها الرقم.`,
+      templateKey: 'certificate.issued',
+      data: { certificateId: cert.id, number },
     })
     return cert
   }

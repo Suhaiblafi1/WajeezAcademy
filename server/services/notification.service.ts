@@ -41,6 +41,13 @@ export class UnwiredExternalProvider implements NotificationProvider {
 
 const MAX_ATTEMPTS = 3
 
+/** إشعار غير معيق — فشله لا يوقف أي مسار تشغيلي (قبول/دفع/شهادة/مالية) */
+export async function safeNotify(prisma: PrismaClient, payload: NotificationPayload): Promise<void> {
+  try {
+    await new NotificationService(prisma).notify(payload)
+  } catch { /* الإشعار رفاهية — السجلات التشغيلية هي مصدر الحقيقة */ }
+}
+
 export class NotificationService {
   private prisma: PrismaClient
   constructor(prisma: PrismaClient) {

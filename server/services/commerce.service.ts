@@ -7,6 +7,7 @@ import type { PrismaClient, Prisma } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { EnrollmentService } from './enrollment.service'
+import { safeNotify } from './notification.service'
 import { getPaymentProvider, verifyPaymentWebhook } from './payments/provider'
 
 const num = (d: Prisma.Decimal | number | null | undefined) => Number(d ?? 0)
@@ -110,6 +111,13 @@ export class CommerceService {
       actorId, action: 'enrollment_request.approve', entityType: 'enrollment_request', entityId: requestId,
       meta: { orderId: order.id, total, discount },
     })
+    await safeNotify(this.prisma, {
+      userId: req.userId, channel: 'in_app',
+      title: 'قُبِل طلب تسجيلك — بقي الدفع',
+      body: `حُجز مقعدك في «${title} — ${req.cohort.title}». أتمم الدفع (${total} ${req.cohort.currency}) من صفحة الفواتير ليتحول حجزك إلى تسجيل فعلي.`,
+      templateKey: 'enrollment.approved',
+      data: { requestId, orderId: order.id, total },
+    })
     return order
   }
 
@@ -121,6 +129,13 @@ export class CommerceService {
       where: { id: requestId }, data: { status: 'rejected', note: reason, decidedBy: actorId, decidedAt: new Date() },
     })
     await recordAudit(this.prisma, { actorId, action: 'enrollment_request.reject', entityType: 'enrollment_request', entityId: requestId, reason })
+    await safeNotify(this.prisma, {
+      userId: req.userId, channel: 'in_app',
+      title: 'اعتذرنا عن طلب التسجيل',
+      body: `لم يُقبل طلب تسجيلك هذه المرة. السبب: ${reason}. شعباً جديدة تُفتتح دورياً — تابع صفحة الشعب المفتوحة.`,
+      templateKey: 'enrollment.rejected',
+      data: { requestId },
+    })
     return updated
   }
 
@@ -236,6 +251,17 @@ export class CommerceService {
         if (!(err instanceof AuthError && err.code === 'already_enrolled')) throw err
       }
       await this.prisma.enrollmentRequest.update({ where: { id: req.id }, data: { status: 'converted' } })
+    }
+    /* إشعار تأكيد الدفع — يصل الطالب سواء حُوّل طلبه أم دفع لغير شعبة */
+    const order = await this.prisma.order.findUnique({ where: { id: orderId }, include: { items: true } })
+    if (order) {
+      await safeNotify(this.prisma, {
+        userId: order.userId, channel: 'in_app',
+        title: 'تأكد دفعك ✓ — أهلاً بك',
+        body: `استلمنا دفعتك (${num(order.total)} ${order.currency}) عن «${order.items[0]?.titleAr ?? 'طلبك'}». ${req ? 'مقعدك صار تسجيلاً فعلياً — شعبتك تظهر في «تعلّمي».' : 'تفاصيل طلبك في «الفواتير».'}`,
+        templateKey: 'payment.succeeded',
+        data: { orderId, total: num(order.total) },
+      })
     }
   }
 
