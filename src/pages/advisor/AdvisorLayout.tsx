@@ -3,6 +3,7 @@ import { Link, NavLink } from "react-router";
 import { ClipboardList, Headset, LayoutDashboard, Users } from "lucide-react";
 import { ADVISOR_IDENTITIES, ADVISOR_IDENTITY_KEY, advisorIdentity } from "./advisor-identity";
 import NotificationBell from "@/components/NotificationBell";
+import ThemeToggle from "@/components/ThemeToggle";
 import PrototypeBanner from "@/components/PrototypeBanner";
 import { useRealSession } from "@/services/session";
 
@@ -84,6 +85,7 @@ export default function AdvisorLayout({ children, title }: { children: React.Rea
           </nav>
           <div className="flex items-center gap-3">
             <NotificationBell />
+            <ThemeToggle />
             <button
               onClick={() => { localStorage.removeItem(ADVISOR_IDENTITY_KEY); setMe(null); }}
               className="flex cursor-pointer items-center gap-2 text-xs text-white/55 hover:text-white"

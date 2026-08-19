@@ -3,6 +3,7 @@ import { Link, NavLink, useLocation, useNavigate } from "react-router";
 import { BookMarked, CalendarCog, Crown, FlaskConical, GitBranch, Layers, ShieldAlert, LayoutDashboard, UserPlus, Users, BarChart3, LifeBuoy, Wallet, Bell } from "lucide-react";
 import { ADMIN_IDENTITIES, ADMIN_IDENTITY_KEY, adminIdentity } from "./admin-identity";
 import NotificationBell from "@/components/NotificationBell";
+import ThemeToggle from "@/components/ThemeToggle";
 import SearchPalette from "@/components/SearchPalette";
 import PrototypeBanner from "@/components/PrototypeBanner";
 import { useRealSession } from "@/services/session";
@@ -129,6 +130,7 @@ export default function AdminLayout({ children, title }: { children: React.React
               بحث… <kbd className="rounded border border-white/15 px-1.5 text-[9px]">Ctrl K</kbd>
             </button>
             <NotificationBell />
+            <ThemeToggle />
             <button
               onClick={() => { localStorage.removeItem(ADMIN_IDENTITY_KEY); setMe(null); }}
               className="cursor-pointer text-xs text-white/55 hover:text-white"

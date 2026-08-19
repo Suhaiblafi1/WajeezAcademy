@@ -10,6 +10,7 @@ import { loadPortal, readUserName, savePortal, type PortalNotification } from "@
 import { pathways } from "@/data/pathways";
 import { pathwayCourses } from "@/data/courses";
 import PrototypeBanner from "@/components/PrototypeBanner";
+import ThemeToggle from "@/components/ThemeToggle";
 import EcosystemNote from "@/components/EcosystemNote";
 
 interface RealNotif { id: string; title: string; body: string; status: string; sentAt: string | null; queuedAt: string }
@@ -258,6 +259,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
               )}
             </div>
             <GraduationCap className="h-4 w-4 text-[#6EC7D1]" />
+            <ThemeToggle />
             <span className="max-w-[110px] truncate">{user}</span>
             <button
               onClick={() => { void signOut(); navigate("/"); }}

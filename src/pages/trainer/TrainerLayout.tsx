@@ -4,6 +4,7 @@ import { GraduationCap, ClipboardCheck, GitPullRequest, Users, Wallet } from "lu
 import { TRAINER_IDENTITIES } from "@/data/trainer";
 import { TRAINER_IDENTITY_KEY, trainerIdentity } from "./trainer-identity";
 import NotificationBell from "@/components/NotificationBell";
+import ThemeToggle from "@/components/ThemeToggle";
 import PrototypeBanner from "@/components/PrototypeBanner";
 import { useRealSession } from "@/services/session";
 
@@ -86,6 +87,7 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
           </nav>
           <div className="flex items-center gap-3">
             <NotificationBell />
+            <ThemeToggle />
             <button
               onClick={() => { localStorage.removeItem(TRAINER_IDENTITY_KEY); setMe(null); }}
               className="cursor-pointer text-xs text-white/55 hover:text-white"

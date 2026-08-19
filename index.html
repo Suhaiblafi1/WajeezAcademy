@@ -4,6 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0D0D0D" />
+    <script>
+      /* المظهر المحفوظ قبل أول رسم — بلا وميض */
+      try { if (localStorage.getItem("wajeez_theme") === "light") document.documentElement.dataset.theme = "light"; } catch (e) {}
+    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
     <!-- الهوية والوصف الافتراضيان — كل صفحة تحدّثهما عبر SeoHead -->
