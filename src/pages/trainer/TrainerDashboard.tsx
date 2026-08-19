@@ -59,6 +59,23 @@ function RealTrainerHome({ name }: { name: string }) {
     <div>
       <p className="mb-6 text-sm text-white/60">أهلاً {name} — {cohorts.length > 0 ? `لديك ${cohorts.length} ${cohorts.length === 1 ? "شعبة" : "شعب"} و${students} طالباً.` : "لم تُسند إليك شعب بعد — ستظهر هنا فور إسنادها."}</p>
 
+      <div className="mb-8 flex flex-wrap items-center gap-2 rounded-2xl border border-dashed border-white/15 bg-white/[0.02] px-4 py-3 text-[11px] text-white/55">
+        <span className="font-black text-white/75">من أين أبدأ؟</span>
+        {[
+          { n: "١", label: "افتح شعبتك", to: "/trainer/board" },
+          { n: "٢", label: "سجّل حضور الجلسة", to: "/trainer/board" },
+          { n: "٣", label: "قيّم التسليمات", to: "/trainer/grading" },
+        ].map((s, i) => (
+          <span key={s.n} className="flex items-center gap-2">
+            {i > 0 && <span className="text-white/20">←</span>}
+            <Link to={s.to} className="flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1 font-bold transition hover:border-[#FABC05]/60 hover:text-[#FABC05]">
+              <span className="grid h-4 w-4 place-items-center rounded-full bg-[#FABC05]/15 text-[10px] text-[#FABC05]">{s.n}</span>
+              {s.label}
+            </Link>
+          </span>
+        ))}
+      </div>
+
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <Link to="/trainer/board" className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-white/30">
           <p className="flex items-center gap-2 text-xs text-white/50"><GraduationCap className="h-4 w-4" /> شعبي</p>

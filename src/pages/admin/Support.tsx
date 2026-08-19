@@ -5,6 +5,7 @@ import {
   CheckCircle2, ChevronRight, EyeOff, LifeBuoy, Loader2, RefreshCw, Send, ServerOff, UserPlus,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
+import FlowSteps from "@/components/FlowSteps";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 
 const STATUS_AR: Record<string, string> = {
@@ -190,6 +191,12 @@ export default function Support() {
   /* ── القائمة ── */
   return (
     <AdminLayout title="الدعم الفني — التذاكر">
+      <FlowSteps steps={[
+        { label: "تذكرة مفتوحة", actor: "العميل" },
+        { label: "قيد المعالجة", actor: "أنت هنا" },
+        { label: "بانتظار العميل", actor: "العميل يرد" },
+        { label: "محلولة ثم مغلقة", actor: "أنت — ويُبلَّغ العميل" },
+      ]} />
       <div className="mb-5 flex flex-wrap items-center gap-2">
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} aria-label="رشّح بالحالة"
           className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white [&>option]:bg-[#121B1D]">

@@ -61,6 +61,19 @@ function RealAdvisorHome({ name }: { name: string }) {
     <div>
       <p className="mb-6 text-sm text-white/60">أهلاً {name} — لديك {open.length} حالة مفتوحة{fresh > 0 ? ` منها ${fresh} جديدة لم تُلامس بعد` : ""}.</p>
 
+      <div className="mb-8 flex flex-wrap items-center gap-2 rounded-2xl border border-dashed border-white/15 bg-white/[0.02] px-4 py-3 text-[11px] text-white/55">
+        <span className="font-black text-white/75">من أين أبدأ؟</span>
+        {["افتح الحالات الجديدة أولاً", "سجّل أول تواصل", "جدول المتابعة التالية"].map((s, i) => (
+          <span key={s} className="flex items-center gap-2">
+            {i > 0 && <span className="text-white/20">←</span>}
+            <Link to="/advisor/cases" className="flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1 font-bold transition hover:border-[#FABC05]/60 hover:text-[#FABC05]">
+              <span className="grid h-4 w-4 place-items-center rounded-full bg-[#FABC05]/15 text-[10px] text-[#FABC05]">{["١", "٢", "٣"][i]}</span>
+              {s}
+            </Link>
+          </span>
+        ))}
+      </div>
+
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <Link to="/advisor/cases" className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-white/30">
           <p className="flex items-center gap-2 text-xs text-white/50"><Users className="h-4 w-4" /> حالاتي المفتوحة</p>

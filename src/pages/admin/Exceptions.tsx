@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { CheckCircle2, Loader2, RefreshCw, ServerOff, ShieldAlert, UserPlus } from "lucide-react";
 import AdminLayout from "./AdminLayout";
+import FlowSteps from "@/components/FlowSteps";
 import { apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
 
 const CASE_STATUS_AR: Record<string, string> = {
@@ -69,6 +70,11 @@ export default function Exceptions() {
 
   return (
     <AdminLayout title="الاستثناءات — حالات بلا مستشار">
+      <FlowSteps steps={[
+        { label: "حالة تصل بلا مستشار", actor: "النظام يرصدها" },
+        { label: "مراجعة وإسناد", actor: "أنت هنا" },
+        { label: "المستشار يستلمها", actor: "تظهر في بوابته فوراً" },
+      ]} />
       <div className="mb-5 flex items-center gap-3">
         <button onClick={() => void load()} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-white/60 hover:border-white/40">
           <RefreshCw className="h-3.5 w-3.5" /> تحديث

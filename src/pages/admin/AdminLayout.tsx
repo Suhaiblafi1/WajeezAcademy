@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, NavLink } from "react-router";
+import { Link, NavLink, useLocation, useNavigate } from "react-router";
 import { BookMarked, CalendarCog, Crown, FlaskConical, GitBranch, Layers, ShieldAlert, LayoutDashboard, UserPlus, Users, BarChart3, LifeBuoy, Wallet, Bell } from "lucide-react";
 import { ADMIN_IDENTITIES, ADMIN_IDENTITY_KEY, adminIdentity } from "./admin-identity";
 import PrototypeBanner from "@/components/PrototypeBanner";
@@ -10,6 +10,8 @@ import { useRealSession } from "@/services/session";
 export default function AdminLayout({ children, title }: { children: React.ReactNode; title: string }) {
   const [me, setMe] = useState(adminIdentity);
   const { user, checked } = useRealSession();
+  const location = useLocation();
+  const navigate = useNavigate();
   const realAdmin = user?.permissions.some((p) => p.startsWith("admin.") || p.startsWith("catalog.")) ?? false;
   const effectiveMe = me ?? (realAdmin && user
     ? { id: user.userId, name: user.displayName, title: "إدارة — حساب حقيقي" }
@@ -49,48 +51,71 @@ export default function AdminLayout({ children, title }: { children: React.React
     );
   }
 
-  const tabs = [
-    { to: "/admin", label: "اللوحة العليا", icon: LayoutDashboard, end: true },
-    { to: "/admin/cohorts", label: "الشعب", icon: CalendarCog },
-    { to: "/admin/exceptions", label: "الاستثناءات", icon: ShieldAlert },
-    { to: "/admin/content", label: "المحتوى", icon: BookMarked },
-    { to: "/admin/trainers", label: "طلبات المدربين", icon: UserPlus },
-    { to: "/admin/catalog", label: "الكتالوج", icon: Layers },
-    { to: "/admin/publishing", label: "النشر", icon: GitBranch },
-    { to: "/admin/quality", label: "جودة التشخيص", icon: FlaskConical },
-    { to: "/admin/users", label: "المستخدمون", icon: Users },
-    { to: "/admin/reports", label: "التقارير", icon: BarChart3 },
-    { to: "/admin/support", label: "الدعم", icon: LifeBuoy },
-    { to: "/admin/finance", label: "المالية", icon: Wallet },
-    { to: "/admin/notifications", label: "الإشعارات", icon: Bell },
+  /* الأقسام الخمسة — كل قسم يجيب سؤالاً واحداً: ماذا نعلّم؟ من معنا؟ كيف المال؟ كيف عملاؤنا؟ */
+  const sections: { title: string; items: { to: string; label: string; icon: typeof LayoutDashboard; end?: boolean }[] }[] = [
+    {
+      title: "نظرة عامة",
+      items: [{ to: "/admin", label: "الرئيسية", icon: LayoutDashboard, end: true }],
+    },
+    {
+      title: "التعليم والمحتوى",
+      items: [
+        { to: "/admin/catalog", label: "الكتالوج", icon: Layers },
+        { to: "/admin/publishing", label: "النشر والإصدارات", icon: GitBranch },
+        { to: "/admin/cohorts", label: "الشعب", icon: CalendarCog },
+        { to: "/admin/content", label: "سير المحتوى", icon: BookMarked },
+        { to: "/admin/quality", label: "جودة التشخيص", icon: FlaskConical },
+      ],
+    },
+    {
+      title: "الأشخاص",
+      items: [
+        { to: "/admin/users", label: "المستخدمون والأدوار", icon: Users },
+        { to: "/admin/trainers", label: "طلبات المدربين", icon: UserPlus },
+        { to: "/admin/exceptions", label: "الاستثناءات", icon: ShieldAlert },
+      ],
+    },
+    {
+      title: "المالية",
+      items: [
+        { to: "/admin/finance", label: "الطلبات والفواتير", icon: Wallet },
+        { to: "/admin/reports", label: "التقارير والتصدير", icon: BarChart3 },
+      ],
+    },
+    {
+      title: "العملاء",
+      items: [
+        { to: "/admin/support", label: "تذاكر الدعم", icon: LifeBuoy },
+        { to: "/admin/notifications", label: "الإشعارات", icon: Bell },
+      ],
+    },
   ];
+
+  const linkCls = (isActive: boolean) =>
+    `flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-bold transition ${
+      isActive ? "bg-[#FABC05] text-[#0D0D0D]" : "text-white/60 hover:bg-white/[0.04] hover:text-white"
+    }`;
 
   return (
     <div dir="rtl" className="min-h-screen bg-[#0D0D0D] text-white">
       <PrototypeBanner hidden={realAdmin} />
       <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0D0D0D]/90 backdrop-blur">
-        <div className="mx-auto flex min-h-16 max-w-7xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-5 py-2">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5">
           <Link to="/" className="flex items-center gap-2">
             <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 object-contain" />
             <span className="hidden font-black sm:block">وجيز — الإدارة والعمليات</span>
           </Link>
-          <nav className="flex flex-wrap items-center justify-center gap-1 rounded-3xl border border-white/10 bg-white/[0.03] p-1">
-            {tabs.map((t) => (
-              <NavLink
-                key={t.to}
-                to={t.to}
-                end={t.end}
-                className={({ isActive }) =>
-                  `flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition ${
-                    isActive ? "bg-[#FABC05] text-[#0D0D0D]" : "text-white/60 hover:text-white"
-                  }`
-                }
-              >
-                <t.icon className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">{t.label}</span>
-              </NavLink>
+          {/* جوال: قائمة منسدلة بسيطة بكل الشاشات */}
+          <select
+            aria-label="التنقل بين شاشات الإدارة"
+            className="rounded-xl border border-white/15 bg-[#0D0D0D] px-3 py-2 text-xs font-bold text-white lg:hidden"
+            value={location.pathname}
+            onChange={(e) => navigate(e.target.value)}
+          >
+            {sections.flatMap((s) => s.items).map((t) => (
+              <option key={t.to} value={t.to}>{t.label}</option>
             ))}
-          </nav>
+          </select>
           <button
             onClick={() => { localStorage.removeItem(ADMIN_IDENTITY_KEY); setMe(null); }}
             className="cursor-pointer text-xs text-white/55 hover:text-white"
@@ -100,10 +125,30 @@ export default function AdminLayout({ children, title }: { children: React.React
           </button>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-5 py-8">
-        <h1 className="mb-6 text-2xl font-black">{title}</h1>
-        {children}
-      </main>
+
+      <div className="mx-auto flex max-w-7xl items-start gap-6 px-5">
+        {/* الشريط الجانبي — شاشات كبيرة */}
+        <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-60 shrink-0 overflow-y-auto border-l border-white/10 py-8 pl-5 lg:block">
+          {sections.map((s) => (
+            <div key={s.title} className="mb-7">
+              <p className="mb-2 px-3 text-[10px] font-black tracking-wide text-white/35">{s.title}</p>
+              <nav className="space-y-1">
+                {s.items.map((t) => (
+                  <NavLink key={t.to} to={t.to} end={t.end} className={({ isActive }) => linkCls(isActive)}>
+                    <t.icon className="h-4 w-4 shrink-0" />
+                    {t.label}
+                  </NavLink>
+                ))}
+              </nav>
+            </div>
+          ))}
+        </aside>
+
+        <main className="min-w-0 flex-1 py-8">
+          <h1 className="mb-6 text-2xl font-black">{title}</h1>
+          {children}
+        </main>
+      </div>
     </div>
   );
 }

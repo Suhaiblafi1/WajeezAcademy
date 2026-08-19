@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Activity, ArrowUpCircle, History, PlayCircle, Rocket, ShieldCheck, Undo2 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
+import FlowSteps from "@/components/FlowSteps";
 import { apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
 
 type Version = {
@@ -42,6 +43,12 @@ export default function PublishingBoard() {
 
   return (
     <AdminLayout title="النشر المحكوم وجودة التشخيص">
+      <FlowSteps steps={[
+        { label: "مسودة محتوى", actor: "فريق المحتوى / مدرب" },
+        { label: "مراجعة", actor: "مراجع الكتالوج" },
+        { label: "اعتماد", actor: "معتمد الكتالوج" },
+        { label: "نشر للطلاب", actor: "من هذه الشاشة" },
+      ]} />
       {error && <p className="mb-4 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-200">{error}</p>}
 
       <div className="grid gap-4 lg:grid-cols-3">

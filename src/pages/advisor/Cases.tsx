@@ -4,6 +4,7 @@ import {
   PhoneCall, Send, ServerOff, StickyNote, UserRound,
 } from "lucide-react";
 import AdvisorLayout from "./AdvisorLayout";
+import FlowSteps from "@/components/FlowSteps";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -263,6 +264,13 @@ export default function AdvisorCases() {
   /* ══ قائمة الحالات ══ */
   return (
     <AdvisorLayout title="حالاتي — عملاء التشخيص المسندون إليّ">
+      <FlowSteps steps={[
+        { label: "حالة جديدة", actor: "تُسند إليك" },
+        { label: "أول تواصل", actor: "أنت هنا" },
+        { label: "متابعة ومراجعة", actor: "أنت" },
+        { label: "توصية بمسار", actor: "أنت" },
+        { label: "تسجيل أو إغلاق", actor: "العميل يقرر" },
+      ]} />
       <div className="mb-5 flex flex-wrap items-center gap-2">
         <button onClick={() => setStatusFilter("")}
           className={`cursor-pointer rounded-full border px-3 py-1.5 text-xs font-bold transition ${!statusFilter ? "border-[#FABC05] bg-[#FABC05]/10 text-[#FABC05]" : "border-white/15 text-white/55 hover:text-white"}`}>

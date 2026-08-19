@@ -90,6 +90,25 @@ export default function AdminDashboard() {
     <AdminLayout title="الرئيسية — نظرة عامة">
       <p className="mb-6 text-sm text-white/60">{greet} يا {firstName} — هذا ما يحتاج انتباهك اليوم:</p>
 
+      {/* من أين أبدأ؟ — التسلسل التشغيلي الصحيح: محتوى ← نشر ← شعبة ← تسجيلات */}
+      <div className="mb-8 flex flex-wrap items-center gap-2 rounded-2xl border border-dashed border-white/15 bg-white/[0.02] px-4 py-3 text-[11px] text-white/55">
+        <span className="font-black text-white/75">من أين أبدأ؟</span>
+        {[
+          { n: "١", label: "أضف دورة", to: "/admin/catalog" },
+          { n: "٢", label: "انشرها", to: "/admin/publishing" },
+          { n: "٣", label: "أنشئ شعبة وعيّن مدربها", to: "/admin/cohorts" },
+          { n: "٤", label: "راجع طلبات التسجيل", to: "/admin/finance" },
+        ].map((s, i) => (
+          <span key={s.n} className="flex items-center gap-2">
+            {i > 0 && <span className="text-white/20">←</span>}
+            <Link to={s.to} className="flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1 font-bold transition hover:border-[#FABC05]/60 hover:text-[#FABC05]">
+              <span className="grid h-4 w-4 place-items-center rounded-full bg-[#FABC05]/15 text-[10px] text-[#FABC05]">{s.n}</span>
+              {s.label}
+            </Link>
+          </span>
+        ))}
+      </div>
+
       {cards === null && !failed && (
         <div className="flex items-center justify-center gap-2 py-16 text-white/50">
           <Loader2 className="h-5 w-5 animate-spin" /> أجمع لك الصورة من المصادر الحية…

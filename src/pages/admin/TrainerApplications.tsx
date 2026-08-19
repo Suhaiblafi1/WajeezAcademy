@@ -4,6 +4,7 @@ import {
   Loader2, MailCheck, RefreshCw, ServerOff, Star, UserPlus, XCircle,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
+import FlowSteps from "@/components/FlowSteps";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { TrainerDetailOps, TrainerChangeRequests } from "./TrainerOps";
 
@@ -329,6 +330,13 @@ export default function TrainerApplications() {
   /* ── القائمة ── */
   return (
     <AdminLayout title="طلبات انضمام المدربين">
+      <FlowSteps steps={[
+        { label: "تقديم الطلب", actor: "المدرب" },
+        { label: "فرز أولي", actor: "أنت هنا" },
+        { label: "مقابلة", actor: "اللجنة الأكاديمية" },
+        { label: "درس تجريبي وتقييمه", actor: "اللجنة الأكاديمية" },
+        { label: "اعتماد أو اعتذار", actor: "أنت — ويُبلَّغ تلقائياً" },
+      ]} />
       <div className="mb-5 flex flex-wrap items-center gap-2">
         <div className="flex rounded-full border border-white/15 p-1">
           {([["apps", "الطلبات"], ["changes", "اقتراحات تعديل الدورات"]] as const).map(([k, label]) => (

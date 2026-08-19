@@ -6,6 +6,7 @@ import {
   RotateCcw, ServerOff, Wallet, XCircle,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
+import FlowSteps from "@/components/FlowSteps";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 
 const inputCls = "rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none";
@@ -23,7 +24,7 @@ interface Invoice {
 interface Refund { id: string; status: string; amount: string; reason: string; createdAt: string; payment: { id: string; invoice: { id: string } } }
 interface Coupon { id: string; code: string; percentOff: number | null; amountOff: string | null; currency: string; maxUses: number | null; usedCount?: number; active: boolean; expiresAt: string | null }
 
-const ER_STATUS: Record<string, string> = { pending: "بانتظار المراجعة", seat_held: "مقعد محجوز", approved: "موافق عليه", rejected: "مرفوض", expired: "منتهي" };
+const ER_STATUS: Record<string, string> = { pending: "بانتظار المراجعة", seat_held: "مقعد محجوز", approved: "موافق عليه", converted: "تحوّل إلى تسجيل ✓", rejected: "مرفوض", expired: "منتهي" };
 const INV_STATUS: Record<string, string> = { issued: "صادرة", paid: "مدفوعة", partially_refunded: "مستردة جزئيا", refunded: "مستردة", void: "ملغاة" };
 const RF_STATUS: Record<string, string> = { requested: "مطلوب", approved: "منفذ", rejected: "مرفوض" };
 
@@ -92,6 +93,13 @@ export default function Finance() {
 
   return (
     <AdminLayout title="المالية — طلبات وفواتير واستردادات وكوبونات">
+      <FlowSteps steps={[
+        { label: "طلب تسجيل", actor: "الطالب" },
+        { label: "مراجعة وموافقة أو اعتذار", actor: "أنت هنا" },
+        { label: "فاتورة تُصدر", actor: "النظام تلقائياً" },
+        { label: "الدفع يُسجَّل", actor: "أنت أو بوابة الدفع" },
+        { label: "المنصة تُفتح للطالب", actor: "تلقائي فور الدفع" },
+      ]} />
       <div className="mb-5 flex flex-wrap items-center gap-2">
         <div className="flex flex-wrap rounded-full border border-white/15 p-1">
           {tabs.map(([k, label, n]) => (
