@@ -1,12 +1,11 @@
 import { Suspense, lazy, useEffect } from 'react'
-import { Routes, Route, useLocation } from 'react-router'
+import { Routes, Route, Navigate, useLocation } from 'react-router'
 import Home from './pages/Home'
 import Verify from './pages/Verify'
 import StaticPage from './pages/Static'
 import Catalog from './pages/Catalog'
 import StoriesPage from './pages/Stories'
 import Trainers from './pages/Trainers'
-import Business from './pages/Business'
 import Contact from './pages/Contact'
 import Auth from './pages/Auth'
 import NotFound from './pages/NotFound'
@@ -107,8 +106,9 @@ export default function App() {
           <Route path="/trainers" element={<Trainers />} />
           <Route path="/join-trainer" element={<JoinTrainer />} />
           <Route path="/join-trainer/complete" element={<JoinTrainerComplete />} />
-          <Route path="/for-business" element={<Business kind="business" />} />
-          <Route path="/for-government" element={<Business kind="government" />} />
+          {/* صفحات الجهات أُدمجت في التواصل الموحد — الروابط القديمة تعمل وتُعبّئ نوع الجهة مسبقا */}
+          <Route path="/for-business" element={<Navigate to="/contact?type=company" replace />} />
+          <Route path="/for-government" element={<Navigate to="/contact?type=gov" replace />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/p/contact" element={<Contact />} />
           <Route path="/auth" element={<Auth />} />
