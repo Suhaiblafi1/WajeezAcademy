@@ -1,15 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router";
 import {
-  ArrowLeft, ArrowRight, Award, BookOpen, CheckCircle2, ClipboardList, FileUp,
+  ArrowLeft, ArrowRight, Award, CheckCircle2, ClipboardList, FileUp,
   HelpCircle, Lock, MessageSquare, Send, Upload, Video, XCircle,
 } from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import SimulationNote from "@/components/SimulationNote";
 import VideoPlayer from "@/components/VideoPlayer";
-import BookSummaryCard from "@/components/BookSummaryCard";
+import CourseResources from "@/components/CourseResources";
 import { getEnrollment } from "@/services/access";
-import { wajeezBooks, type BookSummary } from "@/services/wajeezBooks";
 import { zoom, type ZoomJoinInfo } from "@/services/zoom";
 import { pathways, pathwayById } from "@/data/pathways";
 import { courseById, courseDetails, courseTrainer, pathwayCourses } from "@/data/courses";
@@ -30,7 +29,6 @@ export default function CourseView() {
   const pathway = pathwayById(pathwayId);
 
   const [state, setState] = useState<PortalState>(() => loadPortal(pathwayId));
-  const [books, setBooks] = useState<BookSummary[]>([]);
   const [zoomInfo, setZoomInfo] = useState<Record<string, ZoomJoinInfo>>({});
   const [activeLesson, setActiveLesson] = useState(0);
   const [quizOn, setQuizOn] = useState(false);
@@ -47,11 +45,6 @@ export default function CourseView() {
   const sessions = useMemo(() => (course ? courseSessions(course, new Date(state.startedAt)) : []), [course, state.startedAt]);
   const details = course ? courseDetails(course) : null;
   const trainer = course ? courseTrainer(course) : null;
-
-  useEffect(() => {
-    if (!course) return;
-    wajeezBooks.getBooksForCourse(course.id).then(setBooks).catch(() => setBooks([]));
-  }, [course]);
 
   const update = (fn: (s: PortalState) => void) => {
     setState((prev) => {
@@ -414,24 +407,15 @@ export default function CourseView() {
             </p>
           </section>
 
-          {/* كتب وجيز */}
-          <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
-            <h3 className="flex items-center gap-2 text-sm font-black"><BookOpen className="h-4 w-4 text-[#6EC7D1]" /> ملخصات كتب وجيز لهذه الدورة</h3>
-            <p className="mt-1.5 text-[11px] leading-5 text-white/45">اسمع الملخص كاملا ثم اجتز اختباره القصير — يُوثق في ملف مهاراتك.</p>
-            <div className="mt-4 space-y-4">
-              {books.map((b) => (
-                <BookSummaryCard
-                  key={b.id}
-                  book={b}
-                  saved={progress.bookQuiz[b.id]}
-                  onPass={(score) => update((s) => {
-                    s.courses[course.id].bookQuiz[b.id] = { passed: true, score };
-                    s.notifications.unshift({ id: `n-${Date.now()}`, text: `أُضيف ملخص «${b.title}» لملفك بدرجة ${score}%`, kind: "content", read: false });
-                  })}
-                />
-              ))}
-            </div>
-          </section>
+          {/* مصادر الدورة — تبويبات تُشتق من البيانات المتاحة فقط، بلا أنواع فارغة */}
+          <CourseResources
+            courseId={course.id}
+            savedQuiz={progress.bookQuiz}
+            onQuizPass={(book, score) => update((s) => {
+              s.courses[course.id].bookQuiz[book.id] = { passed: true, score };
+              s.notifications.unshift({ id: `n-${Date.now()}`, text: `أُضيف ملخص «${book.title}» لملفك بدرجة ${score}%`, kind: "content", read: false });
+            })}
+          />
 
           {/* شهادة الدورة */}
           <section className="rounded-3xl border border-[#FABC05]/25 bg-[#FABC05]/5 p-6">
