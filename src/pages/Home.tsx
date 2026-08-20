@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import {
   Sparkles, Compass, Route, BadgeCheck, BrainCircuit, Target,
@@ -7,8 +7,8 @@ import {
   CheckCircle2, Play, Flame, ChevronLeft, ChevronRight, BookOpen,
   Users, Mail, MessageCircle, Headset, MapPin
 } from 'lucide-react'
-import { bestsellers, pathwayById } from '@/data/pathways'
-import { bestsellerCourses, courseById, courseCategories, pathwayTrainers, weeksLabel, type Course } from '@/data/courses'
+import { bestsellers, pathwayById, pathwayCategory } from '@/data/pathways'
+import { bestsellerCourses, courseById, pathwayTrainers, weeksLabel, type Course } from '@/data/courses'
 import { faqs } from '@/data/siteContent'
 import { CONTACT } from '@/data/stories'
 import { track } from '@/services/analytics'
@@ -118,8 +118,7 @@ function Nav() {
     { label: 'مؤشر وجيز', href: '#diagnostic' },
     { label: 'المسارات', href: '/pathways', route: true },
     { label: 'الدورات', href: '/courses', route: true },
-    { label: 'قصص المتعلمين', href: '/stories', route: true },
-    { label: 'الأسئلة', href: '#faq' },
+    { label: 'منهجية وجيز', href: '/methodology', route: true },
   ]
   const renderLink = (l: (typeof links)[number], className: string, onClick?: () => void) =>
     l.route ? (
@@ -245,9 +244,6 @@ function Hero() {
             <span className="underline-offset-4 hover:underline">أو شاهد رحلات من سبقوك أولا</span>
           </a>
         </div>
-        <p className="reveal is-visible mt-5 text-xs text-muted-foreground">
-          تشخيص متكامل يفهمك — بلا تقييم ذاتي ولا سؤال مكرر
-        </p>
       </div>
     </section>
   )
@@ -398,23 +394,15 @@ function DiagnosticTeaser() {
                   <BrainCircuit className="h-8 w-8 text-teal" />
                 </div>
                 <h3 className="mt-5 text-2xl font-bold leading-relaxed">سمعناك — صورتك بدأت تتضح.</h3>
-                {/* مكافأة فورية: صورة أولية مشتقة من إجاباته هو — تجعل الانتقال للتشخيص الكامل مكافأة لا التزاما */}
+                {/* قراءة واحدة عميقة مشتقة من إجاباته — سطر واحد يختصر، لا صندوق يشتت */}
                 {insights.length > 0 && (
-                  <div className="mx-auto mt-5 max-w-md rounded-2xl border border-white/[0.08] bg-white/[0.04] p-5">
-                    <p className="flex items-center justify-center gap-1.5 text-sm font-bold text-white/85">
-                      <Sparkles className="h-4 w-4 text-teal-light" />
-                      صورتك الأولية — من إجاباتك أنت
-                    </p>
-                    <ul className="mt-3 space-y-2 text-right">
-                      {insights.map((line) => (
-                        <li key={line} className="flex items-start gap-2 text-xs leading-6 text-muted-foreground">
-                          <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#6EC7D1]" />
-                          {line}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                  <p className="mx-auto mt-4 max-w-md text-base font-bold leading-8 text-teal-light md:text-lg">
+                    «{insights[0]}»
+                  </p>
                 )}
+                <p className="mx-auto mt-3 max-w-sm text-xs leading-6 text-muted-foreground">
+                  هذه إشارة أولية فقط — التشخيص الكامل يحوّلها إلى مسار مفسّر بمخرج عملي وموعد واضح.
+                </p>
                 <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
                   <Link to="/diagnostic" className="btn-teal px-8 py-4">
                     ابدأ التشخيص الكامل
@@ -692,15 +680,63 @@ function Stories() {
   )
 }
 
-/* ───────────────── bestsellers: pathways + courses with category filter ───────────────── */
-const PW_CATEGORY: Record<string, string> = {
-  FND: 'أساسيات', STU: 'طلاب ومهنة', CAREER: 'طلاب ومهنة', EMP: 'موظفون',
-  GOV: 'حكومي', BIZ: 'أعمال', FREE: 'أعمال', LEAD: 'قيادة', FAM: 'أسرة ورفاه', WELL: 'أسرة ورفاه',
+/* ───────────────── bestsellers: pathways + courses with category filter ─────────────────
+   التصنيف من الدالة المركزية pathwayCategory فقط — كانت خريطة محلية مكررة هنا
+   تتضارب معها (COM تُحسب «أساسيات» خطأً، و«تخصصات وظيفية» تظهر بلا مسارات).
+   قاعدة: لا زر مجال بلا عناصر — القوائم تُشتق من البيانات الفعلية مع عدادات. */
+
+function CategoryFilter({
+  counts, active, onChange, label,
+}: {
+  counts: [string, number][] // مرتبة تنازليا حسب العدد — بلا «الكل»
+  active: string
+  onChange: (c: string) => void
+  label: string
+}) {
+  const [more, setMore] = useState(false)
+  const TOP = 5
+  const total = counts.reduce((s, [, n]) => s + n, 0)
+  const main = counts.slice(0, TOP)
+  const rest = counts.slice(TOP)
+  const activeInRest = rest.some(([c]) => c === active)
+  const shown: [string, number][] = [['الكل', total], ...main, ...(more || activeInRest ? rest : [])]
+
+  return (
+    <div className="mt-6 flex flex-wrap items-center gap-2" role="group" aria-label={label}>
+      {shown.map(([c, n]) => (
+        <button
+          key={c}
+          onClick={() => onChange(c)}
+          aria-pressed={active === c}
+          className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-semibold transition ${
+            active === c
+              ? 'border-teal bg-[#247B84] text-white shadow-[0_0_24px_-6px_#38A7B4]'
+              : 'border-white/10 bg-white/[0.03] text-muted-foreground hover:border-teal/40 hover:text-teal-light'
+          }`}
+        >
+          {c}
+          <span className={`rounded-full px-1.5 text-[10px] font-black tabular-nums ${active === c ? 'bg-white/15' : 'bg-white/[0.06] text-white/45'}`}>
+            {n}
+          </span>
+        </button>
+      ))}
+      {rest.length > 0 && (
+        <button
+          onClick={() => setMore((m) => !m)}
+          aria-expanded={more || activeInRest}
+          className="inline-flex items-center gap-1 rounded-full border border-dashed border-white/15 px-4 py-2 text-sm font-semibold text-muted-foreground transition hover:border-teal/40 hover:text-teal-light"
+        >
+          {more || activeInRest ? 'أقل' : `المزيد (${rest.length})`}
+          <ChevronDown className={`h-3.5 w-3.5 transition-transform ${more || activeInRest ? 'rotate-180' : ''}`} />
+        </button>
+      )}
+    </div>
+  )
 }
-const pwCategory = (id: string) => PW_CATEGORY[id.split('-')[1]] ?? 'أساسيات'
 
 function Bestsellers() {
-  const [cat, setCat] = useState('الكل')
+  const [pwCat, setPwCat] = useState('الكل')
+  const [crCat, setCrCat] = useState('الكل')
   const [modalCourse, setModalCourse] = useState<Course | null>(null)
   const navigate = useNavigate()
   const pwRailRef = useRef<HTMLDivElement>(null)
@@ -714,14 +750,28 @@ function Bestsellers() {
     if (e.key === 'ArrowRight') { e.preventDefault(); scroll(ref, 'prev') }
   }
 
+  const allPathways = useMemo(
+    () => bestsellers.map((b) => ({ ...b, p: pathwayById(b.id)! })).filter((b) => b.p),
+    [],
+  )
+  const allCourses = useMemo(
+    () => bestsellerCourses.map((b) => ({ ...b, c: courseById(b.id)! })).filter((b) => b.c),
+    [],
+  )
+  const countBy = (items: string[]) => {
+    const m = new Map<string, number>()
+    for (const c of items) m.set(c, (m.get(c) ?? 0) + 1)
+    return [...m.entries()].sort((a, b) => b[1] - a[1])
+  }
+  const pwCounts = useMemo(() => countBy(allPathways.map((b) => pathwayCategory(b.p.id))), [allPathways])
+  const crCounts = useMemo(() => countBy(allCourses.map((b) => b.c.category)), [allCourses])
+
   /* الرئيسية تعرض نخبة فقط — 6 مسارات و4 دورات كحد أقصى، والكتالوج الكامل في صفحته */
-  const shownPathways = bestsellers
-    .map((b) => ({ ...b, p: pathwayById(b.id)! }))
-    .filter((b) => b.p && (cat === 'الكل' || pwCategory(b.p.id) === cat))
+  const shownPathways = allPathways
+    .filter((b) => pwCat === 'الكل' || pathwayCategory(b.p.id) === pwCat)
     .slice(0, 6)
-  const shownCourses = bestsellerCourses
-    .map((b) => ({ ...b, c: courseById(b.id)! }))
-    .filter((b) => b.c && (cat === 'الكل' || b.c.category === cat))
+  const shownCourses = allCourses
+    .filter((b) => crCat === 'الكل' || b.c.category === crCat)
     .slice(0, 4)
   const spotlight = shownPathways[0]
   const railPathways = shownPathways.slice(1)
@@ -749,22 +799,9 @@ function Bestsellers() {
           </div>
         </div>
 
-        {/* فلاتر المجالات — أزرار تبديل تعلن حالتها لقارئ الشاشة */}
-        <div className="reveal mt-8 flex flex-wrap gap-2" role="group" aria-label="تصفية المسارات حسب المجال">
-          {courseCategories.map((c) => (
-            <button
-              key={c}
-              onClick={() => setCat(c)}
-              aria-pressed={cat === c}
-              className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
-                cat === c
-                  ? 'border-teal bg-[#247B84] text-white shadow-[0_0_24px_-6px_#38A7B4]'
-                  : 'border-white/10 bg-white/[0.03] text-muted-foreground hover:border-teal/40 hover:text-teal-light'
-              }`}
-            >
-              {c}
-            </button>
-          ))}
+        {/* فلتر المسارات — أهم 5 مجالات بعدادات حقيقية، والباقي ينسدل بـ«المزيد» */}
+        <div className="reveal mt-2">
+          <CategoryFilter counts={pwCounts} active={pwCat} onChange={setPwCat} label="تصفية المسارات حسب المجال" />
         </div>
       </div>
 
@@ -831,7 +868,7 @@ function Bestsellers() {
                 <Flame className="h-3.5 w-3.5" />
                 {note}
               </span>
-              <span className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-muted-foreground">{pwCategory(id)}</span>
+              <span className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-muted-foreground">{pathwayCategory(id)}</span>
             </div>
             <h3 className="mt-4 text-lg font-bold leading-relaxed">{p.name}</h3>
             <div className="mt-2 text-xs leading-6 text-muted-foreground">
@@ -892,6 +929,10 @@ function Bestsellers() {
               <ChevronLeft className="h-4 w-4" />
             </button>
           </div>
+        </div>
+        {/* فلتر الدورات — حسب المجال، بعدادات من بيانات الدورات نفسها */}
+        <div className="reveal">
+          <CategoryFilter counts={crCounts} active={crCat} onChange={setCrCat} label="تصفية الدورات حسب المجال" />
         </div>
       </div>
       <p className="sr-only" aria-live="polite">
@@ -1138,8 +1179,8 @@ const footerCols: { title: string; icon: typeof GraduationCap; links: { label: s
     icon: Building2,
     links: [
       { label: 'للأفراد', to: '/pathways' },
-      { label: 'للشركات', to: '/for-business' },
-      { label: 'للجهات الحكومية', to: '/for-government' },
+      { label: 'للشركات', to: '/contact?type=company' },
+      { label: 'للجهات الحكومية', to: '/contact?type=gov' },
       { label: 'طلب عرض مؤسسي', to: '/contact' },
     ],
   },
@@ -1300,8 +1341,9 @@ function AdvisorStrip() {
 }
 
 /* ───────────────── page ─────────────────
-   الترتيب المعتمد: بطل واضح ← مؤشر وجيز ← كيف تعمل الرحلة ← شركاء (دليل ثقة مبكر)
-   ← مخرجات التعلم ← مسارات ودورات مميزة ← قصص حقيقية ← شريط مستشار ← أسئلة ← دعوة أخيرة + زر مستشار عائم */
+   الترتيب المعتمد: بطل واضح ← مؤشر وجيز ← كيف تعمل الرحلة ← أرقام وجيز مهارات الموثقة
+   ← شركاء/إعلام ← مخرجات التعلم ← مسارات ودورات مميزة ← مؤسسات المنظومة ← قصص حقيقية
+   ← شريط مستشار ← أسئلة ← دعوة أخيرة + زر مستشار عائم */
 export default function Home() {
   useReveal()
   usePublishedContent()
@@ -1318,15 +1360,15 @@ export default function Home() {
         <Hero />
         {/* تعريف المنظومة — مرة واحدة أسفل الـHero مباشرة، ثانوي بصريا ولا ينافسه */}
         <EcosystemNote className="mt-1 pb-7 md:pb-9" />
-        {/* شريط الثقة — أرقام وجيز مهارات الموثقة فقط (مصدر مركزي: data/trustMetrics) */}
-        <TrustMetricsBar />
         <DiagnosticTeaser />
         <HowItWorks />
-        {/* إثبات مؤسسي — مؤسسات منظومة وجيز/وجيز مهارات الموثقة (مصدر مركزي: data/ecosystemOrganizations) */}
-        <EcosystemOrgStrip />
+        {/* شريط الثقة — أرقام وجيز مهارات الموثقة فقط، بعد شرح الرحلة (مصدر مركزي: data/trustMetrics) */}
+        <TrustMetricsBar />
         <Partners />
         <ImageBand />
         <Bestsellers />
+        {/* إثبات مؤسسي — بعد المسارات والدورات مباشرة (مصدر مركزي: data/ecosystemOrganizations) */}
+        <EcosystemOrgStrip />
         <Stories />
         <AdvisorStrip />
         <Faq />
