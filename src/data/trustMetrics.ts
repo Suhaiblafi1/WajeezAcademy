@@ -95,7 +95,7 @@ export const wajeezSkillsStats: TrustMetric[] = [
     source_context: '«موثوق من الشركات — 94% من عملائنا يجددون اشتراكاتهم سنويًا» — بلوك الإحصاءات في صفحة الأعمال',
     last_verified_at: VERIFIED,
     approved_for_display: true,
-    selected_for_home: true,
+    selected_for_home: false, // موثق لكنه خارج العرض — أزاله المالك من شريط الرئيسية 2026-08-20
   },
 
   /* ══ موثقة في المصدر لكنها خارج الاختيار (سقف الخمسة / أولوية الوضوح) ══ */

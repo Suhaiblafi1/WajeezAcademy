@@ -1,4 +1,13 @@
+import { Building2, Users, BookOpen, Route } from 'lucide-react'
 import { homeTrustMetrics } from '@/data/trustMetrics'
+
+/* أيقونة معبّرة لكل مقياس — الربط بالمفتاح هنا لا في ملف البيانات (يبقى قابلا للتسلسل) */
+const METRIC_ICON: Record<string, typeof Building2> = {
+  organizations: Building2,
+  employees: Users,
+  book_summaries: BookOpen,
+  career_tracks: Route,
+}
 
 /* شريط الثقة الرقمي — أرقام «وجيز مهارات» الموثقة فقط.
    - يقرأ من المصدر المركزي trustMetrics حصراً (wajeez_skills + approved + selected).
@@ -20,20 +29,23 @@ export default function TrustMetricsBar() {
           </p>
         </div>
 
-        <dl className="reveal mt-8 grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-5 md:gap-x-6">
-          {metrics.map((m, i) => (
-            <div
-              key={m.key}
-              className={`flex flex-col items-center text-center ${i === metrics.length - 1 && metrics.length % 2 === 1 ? 'col-span-2 md:col-span-1' : ''}`}
-            >
-              <dt className="order-2 mt-2 text-[11px] leading-snug text-muted-foreground md:text-xs">
-                {m.label_ar}
-              </dt>
-              <dd className="order-1 text-4xl font-black tabular-nums tracking-tight text-teal-light md:text-[2.75rem]">
-                {m.display_value}
-              </dd>
-            </div>
-          ))}
+        <dl className="reveal mt-8 grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4 md:gap-x-6">
+          {metrics.map((m) => {
+            const Icon = METRIC_ICON[m.key] ?? Building2
+            return (
+              <div key={m.key} className="flex flex-col items-center text-center">
+                <span className="order-1 grid h-12 w-12 place-items-center rounded-2xl border border-teal/25 bg-[#38A7B4]/10">
+                  <Icon className="h-5 w-5 text-teal-light" />
+                </span>
+                <dd className="order-2 mt-3 text-4xl font-black tabular-nums tracking-tight text-teal-light md:text-[2.75rem]">
+                  {m.display_value}
+                </dd>
+                <dt className="order-3 mt-2 text-[11px] leading-snug text-muted-foreground md:text-xs">
+                  {m.label_ar}
+                </dt>
+              </div>
+            )
+          })}
         </dl>
       </div>
     </section>
