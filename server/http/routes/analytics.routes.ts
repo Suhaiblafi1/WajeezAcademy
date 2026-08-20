@@ -39,17 +39,19 @@ const ALLOWED_EVENTS = new Set([
   'composite_adopted',
 ])
 
-/* رموز قصيرة فقط: معرفات وقيم مصنفة — أي نص حر (مسافات/عربية/طول) مرفوض */
-const CODE_RE = /^[\w.:-]{1,64}$/
+/* المفاتيح وanonId: رموز لاتينية قصيرة — قيم meta: رموز مصنفة بلا مسافات
+   (لاتينية أو عربية؛ المسافة هي علامة النص الحر، والجمل مرفوضة دائما) */
+const KEY_RE = /^[\w.:-]{1,64}$/
+const VALUE_RE = /^\S{1,64}$/u
 
-const metaValue = z.union([z.number().finite(), z.boolean(), z.string().regex(CODE_RE)])
+const metaValue = z.union([z.number().finite(), z.boolean(), z.string().regex(VALUE_RE)])
 const eventsBody = z.object({
   event: z.string().max(64).refine((v) => ALLOWED_EVENTS.has(v), { message: 'حدث غير معروف' }),
   meta: z
-    .record(z.string().regex(CODE_RE), metaValue)
+    .record(z.string().regex(KEY_RE), metaValue)
     .refine((m) => Object.keys(m).length <= 12, { message: 'سمات كثيرة' })
     .optional(),
-  anonId: z.string().regex(CODE_RE).optional(),
+  anonId: z.string().regex(KEY_RE).optional(),
 })
 
 const feedbackBody = z.object({

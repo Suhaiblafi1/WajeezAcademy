@@ -60,6 +60,12 @@ describe('POST /api/events', () => {
       payload: { event: 'gate_viewed', meta: { note: 'x'.repeat(200) } },
     })
     expect(longText.statusCode).toBe(422)
+    /* رمز مصنف عربي بلا مسافات مقبول — المسافة هي علامة النص الحر لا اللغة */
+    const arabicCode = await app.inject({
+      method: 'POST', url: '/api/events',
+      payload: { event: 'pathway_viewed', meta: { sector: 'تسويق' }, anonId: 'anon-ar-1' },
+    })
+    expect(arabicCode.statusCode).toBe(200)
   })
 })
 

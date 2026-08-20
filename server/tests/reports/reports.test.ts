@@ -1,5 +1,5 @@
 /* اختبار E2E للتقارير:
-   16 تقريرا بطريقة حساب معلنة لكل مؤشر → تشغيل بفلاتر → مفتاح مجهول يرفض →
+   17 تقريرا بطريقة حساب معلنة لكل مؤشر → تشغيل بفلاتر → مفتاح مجهول يرفض →
    تصدير CSV بعلامة BOM وXLSX سليم → بوابة الصلاحيات عبر HTTP:
    المتعلم ممنوع من العرض والتصدير، المدير يصل لكليهما. */
 
@@ -34,9 +34,9 @@ beforeAll(async () => {
 }, 240_000)
 
 describe('التقارير التشغيلية', () => {
-  it('1) ستة عشر تقريرا — كل مؤشر له طريقة حساب معلنة', () => {
+  it('1) سبعة عشر تقريرا — كل مؤشر له طريقة حساب معلنة', () => {
     const list = reports.listReports()
-    expect(list.length).toBe(16)
+    expect(list.length).toBe(17)
     for (const r of list) {
       expect(r.key).toBeTruthy()
       expect(r.titleAr).toBeTruthy()
@@ -89,7 +89,7 @@ describe('صلاحيات التقارير عبر HTTP', () => {
   it('8) المدير يعرض الفهرس ويشغل تقريرا ويصدّره', async () => {
     const list = await app.inject({ method: 'GET', url: '/api/admin/reports', headers: { cookie: adminCookie } })
     expect(list.statusCode).toBe(200)
-    expect(list.json().length).toBe(16)
+    expect(list.json().length).toBe(17)
     const run = await app.inject({ method: 'GET', url: '/api/admin/reports/enrollments', headers: { cookie: adminCookie } })
     expect(run.statusCode).toBe(200)
     const csv = await app.inject({ method: 'GET', url: '/api/admin/reports/enrollments/export?format=csv', headers: { cookie: adminCookie } })
