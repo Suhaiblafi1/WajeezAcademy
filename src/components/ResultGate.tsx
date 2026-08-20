@@ -1,48 +1,51 @@
-/* بوابة النتيجة النصفية — ما يراه الضيف بعد إكمال التشخيص:
-   ملخص مجاني من خمسة عناصر يثبت أن التشخيص يعمل، ثم جدار تسجيل
-   فوق هيكل زخرفي مضبّب (skeleton بلا أي نص حقيقي).
-   قاعدة حاسمة: النتيجة الكاملة لا تُركَّب في DOM أصلا قبل التسجيل —
-   الضباب هنا فوق مستطيلات رمادية زخرفية، لا فوق محتوى مخفي. */
+/* بوابة النتيجة — التصميم المعتمد «حدّ الظهور وبطاقة التسجيل»:
+   الصفحة الأم تعرض مقروءا كل شيء حتى نهاية بطاقة «ماذا ستحصل عليه فعليا؟»،
+   وكل ما بعد الحدّ يُغلَّف بهذا المكوّن: المحتوى الحقيقي يبقى في مكانه ويُغطّى
+   بضباب blur(8px) + opacity .4 بلا أي نص شارح خلفه — الضباب بلا معالم،
+   والمستخدم يعرف ما ينتظره من بطاقة التسجيل لا من خلفها.
+   بطاقة التسجيل تطفو موسّطة فوق الضباب وتلتصق أثناء التمرير داخل المنطقة
+   المضبّبة، وهي المكان الوحيد الذي يُكتب فيه ما ينتظر المستخدم.
+   بعد التسجيل: الضباب يزول blur(8px)→blur(0) على ٤٠٠ms، والبطاقة تتلاشى على
+   ٣٠٠ms — نفس الصفحة، بلا انتقال ولا إعادة تحميل ولا قفزة تخطيط، وموضع
+   التمرير كما هو. المحتوى المضبّب aria-hidden + inert، وقبل التسجيل لا يُطبع. */
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link } from "react-router";
-import { CheckCircle2, Loader2, Lock } from "lucide-react";
+import { Loader2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { signIn, signUp } from "@/services/auth";
 import { track } from "@/services/analytics";
 
 interface ResultGateProps {
-  composite: boolean;
-  name: string;
-  reasonLine: string;
-  confidencePct: number; // 0–100
-  durationLabel: string; // «١٢ أسبوعا» أو «٤٠ ساعة» للخطط المركبة
-  durationKind: "weeks" | "hours";
-  coursesCount: number;
-  answeredCount: number | null;
+  revealed: boolean; // موثق أو انكشف للتو — الضباب يزول والبطاقة تتلاشى
   onDone: () => void;
+  children: ReactNode; // كل محتوى النتيجة الواقع بعد حدّ الظهور
 }
 
-/* نسخة تجريبية من حروف عربية للأرقام — تُعرض كما يتوقعها المستخدم */
-const arNum = (n: number) => n.toLocaleString("ar-EG", { maximumFractionDigits: 0 });
+/* البنود الستة داخل بطاقة التسجيل — وهي كل ما يُكتب عمّا ينتظر المستخدم */
+const UNLOCKS: { lead: string; rest: string }[] = [
+  { lead: "ماذا ستحقق فعليا", rest: "من أين تبدأ وإلى أين تصل، ومشروعك الختامي ومقياس نجاحه" },
+  { lead: "تفاصيل دوراتك", rest: "ترتيبها وساعاتها ومخرَج كل دورة" },
+  { lead: "من سيرافقك", rest: "مدربك ومواصفته المهنية" },
+  { lead: "🎁 هدية وجيز", rest: "اختر دورة إضافية مجانية تُضاف لمسارك، نقترح عليك الأقرب لهدفك" },
+  { lead: "لماذا هذا المسار", rest: "كيف بُنيت التوصية، والبدائل ولماذا لم تُرشَّح لك" },
+  { lead: "تخصيص مسارك بيدك", rest: "عدّله، واحفظه، وعُد إليه من أي جهاز" },
+];
 
-export default function ResultGate({
-  composite,
-  name,
-  reasonLine,
-  confidencePct,
-  durationLabel,
-  durationKind,
-  coursesCount,
-  answeredCount,
-  onDone,
-}: ResultGateProps) {
+export default function ResultGate({ revealed, onDone, children }: ResultGateProps) {
   const [mode, setMode] = useState<"signup" | "login">("signup");
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  /* البطاقة تتلاشى ٣٠٠ms ثم تُرفع من الشجرة فلا تحجب شيئا مما انكشف تحتها */
+  const [cardGone, setCardGone] = useState(false);
+
+  useEffect(() => {
+    if (!revealed) return;
+    const t = window.setTimeout(() => setCardGone(true), 320);
+    return () => window.clearTimeout(t);
+  }, [revealed]);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -68,83 +71,37 @@ export default function ResultGate({
     "w-full rounded-xl border border-white/15 bg-black/40 px-4 py-3 text-sm text-white placeholder:text-white/35 focus:border-[#FABC05] focus:outline-none";
 
   return (
-    <div>
-      {/* ─── الملخص المجاني: خمسة عناصر ولا شيء غيرها ─── */}
-      <div className="text-center">
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          <Badge className="border border-[#38A7B4]/40 bg-[#38A7B4]/10 text-[#6EC7D1]">
-            اكتمل التشخيص{answeredCount ? ` — أجبت على ${arNum(answeredCount)} سؤالا` : ""}
-          </Badge>
-          <Badge className={`font-black ${composite ? "bg-[#FABC05] text-[#0D0D0D]" : "bg-[#38A7B4] text-[#08272B]"}`}>
-            {composite ? "خطة مركبة مخصصة" : "مسارك المقترح"}
-          </Badge>
-        </div>
-        <h2 className="mt-5 text-3xl font-black leading-snug md:text-4xl">{name}</h2>
-        <p className="mx-auto mt-4 max-w-xl leading-loose text-white/70">{reasonLine}</p>
-        <dl className="mx-auto mt-8 grid max-w-lg grid-cols-3 gap-3">
-          {[
-            { label: "مستوى الثقة", value: `${arNum(confidencePct)}٪` },
-            { label: durationKind === "weeks" ? "مدة المسار" : "حجم الخطة", value: durationLabel },
-            { label: "عدد الدورات", value: arNum(coursesCount) },
-          ].map((s) => (
-            <div key={s.label} className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-4">
-              <dt className="text-[11px] font-bold text-white/55">{s.label}</dt>
-              <dd className="mt-1.5 text-xl font-black text-[#6EC7D1]">{s.value}</dd>
-            </div>
-          ))}
-        </dl>
-      </div>
-
-      {/* ─── الجدار: تلاشٍ ثم هيكل زخرفي مضبّب تحمله بطاقة التسجيل ─── */}
-      <div className="print:hidden">
-        <div aria-hidden="true" className="h-[120px] bg-gradient-to-b from-transparent to-[#0D0D0D]" />
-        <div className="relative">
-          {/* الهيكل الزخرفي: مستطيلات رمادية بلا نص — لا يقرؤه قارئ الشاشة ولا يصله Tab */}
-          <div aria-hidden="true" inert className="pointer-events-none absolute inset-0 select-none overflow-hidden">
-            <div className="absolute inset-0 opacity-50 blur-[8px]">
-              <div className="mx-auto max-w-2xl space-y-4 px-6 pt-8">
-                <div className="h-28 rounded-3xl bg-white/[0.07]" />
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="h-16 rounded-2xl bg-white/[0.06]" />
-                  <div className="h-16 rounded-2xl bg-white/[0.06]" />
-                  <div className="h-16 rounded-2xl bg-white/[0.06]" />
-                </div>
-                <div className="h-44 rounded-3xl bg-white/[0.05]" />
-                <div className="h-3 w-2/3 rounded-full bg-white/[0.06]" />
-                <div className="h-3 w-1/2 rounded-full bg-white/[0.06]" />
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="h-20 rounded-2xl bg-white/[0.05]" />
-                  <div className="h-20 rounded-2xl bg-white/[0.05]" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* بطاقة التسجيل — أول ما يصله Tab بعد الملخص المجاني */}
-          <div className="relative z-10 mx-auto max-w-md px-4 py-6 md:py-10">
-            <div className="rounded-3xl border border-[#FABC05]/40 bg-[#0D0D0D]/90 p-6 shadow-2xl shadow-black/60 backdrop-blur md:p-8">
+    <div className="relative">
+      {/* بطاقة التسجيل — موسّطة فوق المنطقة المضبّبة، تلتصق أثناء التمرير داخلها
+          فلا يمرّ المستخدم بضباب بلا دعوة. نصها كله مقروء بتباين كامل — لا ضباب عليها إطلاقا */}
+      {!cardGone && (
+        <div className="sticky top-20 z-10 h-0 overflow-visible print:hidden md:top-24">
+          <div className="px-4">
+            <div
+              className={`mx-auto max-h-[calc(100dvh-6rem)] max-w-md overflow-y-auto rounded-3xl border border-[#FABC05]/50 bg-[#0D0D0D]/95 p-6 shadow-2xl shadow-black/70 backdrop-blur-md motion-safe:transition-opacity motion-safe:duration-300 ${
+                revealed ? "pointer-events-none opacity-0" : ""
+              }`}
+            >
               <span className="mx-auto grid h-11 w-11 place-items-center rounded-2xl bg-[#FABC05]/15">
                 <Lock className="h-5 w-5 text-[#FABC05]" />
               </span>
-              <h3 className="mt-4 text-center text-xl font-black leading-snug">
-                سجّل حسابك المجاني لترى نتيجتك كاملة
-                <span className="mt-1 block text-base font-bold text-white/80">
-                  وتخصّص مسارك بيدك، دورة بدورة.
-                </span>
+              <h3 className="mt-4 text-center text-xl font-black leading-snug text-white">
+                سجّل الآن لتعرف المزيد
               </h3>
+              <p className="mt-2 text-center text-sm leading-relaxed text-white/75">
+                نتيجتك جاهزة — والتسجيل يكشف بقيتها في نفس الصفحة.
+              </p>
 
-              <p className="mt-5 text-sm font-black text-[#FABC05]">ما يفتحه لك الحساب:</p>
-              <ul className="mt-2.5 space-y-2">
-                {[
-                  "التفسير الكامل لتوصيتك وقوة أدلتها",
-                  "البدائل المناسبة — ولماذا لم تُرشَّح لك",
-                  "خطة الدورات دورة بدورة، تعدّلها كما تشاء",
-                  "حفظ نتيجتك والعودة إليها من أي جهاز",
-                  "اعتماد مسارك ومتابعة تقدمك",
-                ].map((f) => (
-                  <li key={f} className="flex items-start gap-2.5 text-sm leading-relaxed text-white/80">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#6EC7D1]" />
-                    {f}
+              <p className="mt-5 text-sm font-black text-[#FABC05]">سيُفتح لك فورا:</p>
+              <ul className="mt-2.5 space-y-2.5">
+                {UNLOCKS.map((u) => (
+                  <li key={u.lead} className="flex items-start gap-2.5 text-sm leading-relaxed">
+                    <span aria-hidden="true" className="mt-1 shrink-0 text-[10px] text-[#FABC05]">◆</span>
+                    <span className="text-white/75">
+                      <span className="font-bold text-white">{u.lead}</span>
+                      {" — "}
+                      {u.rest}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -211,6 +168,20 @@ export default function ResultGate({
             </div>
           </div>
         </div>
+      )}
+
+      {/* كل ما بعد حدّ الظهور — محتوى حقيقي في مكانه، يغطّيه قبل التسجيل ضباب
+          بلا معالم: لا يقرؤه قارئ الشاشة ولا يصله Tab ولا يُطبع ولا يُحدد */}
+      <div
+        aria-hidden={revealed ? undefined : true}
+        inert={revealed ? undefined : true}
+        className={
+          revealed
+            ? "opacity-100 blur-[0px] motion-safe:transition-[filter,opacity] motion-safe:duration-[400ms]"
+            : "pointer-events-none select-none opacity-40 blur-[8px] print:hidden"
+        }
+      >
+        {children}
       </div>
     </div>
   );

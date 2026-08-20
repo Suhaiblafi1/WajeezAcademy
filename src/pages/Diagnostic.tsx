@@ -389,8 +389,10 @@ export default function Diagnostic() {
   const discardedResultNotice = storedInitial.status === "discarded" ? storedInitial.reason_ar : null;
   /* جلسة المحرك الحتمي — مصدر الأسئلة والنتيجة الوحيد */
   const sessionRef = useRef<AssessmentSession | null>(null);
-  /* الضيف أولا: يكمل التشخيص كاملا ويرى ملخصه الأولي، والحساب يُطلب فقط لفتح التفاصيل والحفظ */
+  /* الضيف أولا: يكمل التشخيص كاملا ويرى نتيجته حتى حدّ الظهور، والحساب يُطلب فقط لكشف الباقي والحفظ */
   const [authed, setAuthed] = useState(() => Boolean(localStorage.getItem("wajeez_user")));
+  /* انكشف للتو من بوابة النتيجة — نجمّد كل ما فوق حدّ الظهور كما هو حتى لا يقفز التخطيط لحظة الكشف */
+  const [justRevealed, setJustRevealed] = useState(false);
   const [offline, setOffline] = useState(() => !navigator.onLine);
   const [savedFlash, setSavedFlash] = useState(false);
   /* جولة تدقيق الخطة: حالة السؤال المعروض وسبب فتح الجولة */
@@ -571,10 +573,11 @@ export default function Diagnostic() {
     void apiPost("/api/learner/diagnostic-attach", { snapshot: res as unknown as Record<string, unknown> }).catch(() => undefined);
   };
 
-  /* نجاح التسجيل من جدار النتيجة: نفس الصفحة تنكشف كاملة بلا انتقال،
-     ونتيجة الضيف المحلية تُدمج بالحساب الجديد — لا إعادة تشخيص ولا فقد */
+  /* نجاح التسجيل من بوابة النتيجة: نفس الصفحة ينكشف فيها الضباب بلا انتقال ولا
+     قفزة تخطيط، ونتيجة الضيف المحلية تُدمج بالحساب الجديد — لا إعادة تشخيص ولا فقد */
   const revealResult = () => {
     setAuthed(true);
+    setJustRevealed(true);
     if (result) attachToAccount(result);
   };
 
@@ -1254,30 +1257,10 @@ export default function Diagnostic() {
           })()
         ) : (
         <section className="story-fade mx-auto max-w-3xl px-5 py-12 md:py-16">
-          {/* الضيف: ملخص مجاني من خمسة عناصر + جدار تسجيل فوق هيكل زخرفي —
-              النتيجة الكاملة لا تُركَّب في DOM إطلاقا قبل التسجيل */}
-          {!authed && (
-            <ResultGate
-              composite={Boolean((result.resultJson.composite as CompositeView | null))}
-              name={((result.resultJson.composite as CompositeView | null)?.name_ar) ?? topPathway.name}
-              reasonLine={result.reasons[0] ?? ""}
-              confidencePct={Math.round(result.confidence * 100)}
-              durationLabel={(() => {
-                const c = result.resultJson.composite as CompositeView | null;
-                return c ? `${c.courses.reduce((s, x) => s + x.hours, 0)} ساعة تعليمية` : weeksLabel(topPathway.durationWeeks);
-              })()}
-              durationKind={(result.resultJson.composite as CompositeView | null) ? "hours" : "weeks"}
-              coursesCount={(() => {
-                const c = result.resultJson.composite as CompositeView | null;
-                return c ? c.courses.length : (pathwayCourses[topPathway.id] ?? []).length;
-              })()}
-              answeredCount={asked.length > 0 ? asked.length : (typeof result.resultJson.answered_count === "number" ? result.resultJson.answered_count : null)}
-              onDone={revealResult}
-            />
-          )}
-          {/* الموثق: النتيجة الكاملة — تُركَّب هنا فقط، بعد التسجيل أو لمن دخل أصلا */}
-          {authed && (
-          <>
+          {/* حدّ الظهور المعتمد: الجميع — ضيفا كان أو موثقا — يرى مقروءا كل شيء
+              حتى نهاية بطاقة «ماذا ستحصل عليه فعليا؟» بلا أي تغيير ولا ضباب.
+              وكل ما بعدها يبقى في مكانه داخل بوابة النتيجة: ضباب بلا معالم للضيف
+              تطفو فوقه بطاقة التسجيل، ويزول في نفس الصفحة بعد التسجيل بلا قفزة تخطيط */}
           {(() => {
             const compositeView = (result.resultJson.composite as CompositeView | null) ?? null;
             const deepeningDone = Boolean(result.resultJson.deepening);
@@ -1291,8 +1274,9 @@ export default function Diagnostic() {
               </Badge>
             </div>
             {/* اسم المسار يظهر في بطاقة التوصية أدناه — لا تكرار هنا */}
-            {/* جولة التدقيق — خطوة اختيارية واضحة، وخطتك تظهر أسفل مباشرة بلا زر انتقال */}
-            {deepeningOffered && (
+            {/* جولة التدقيق — للموثق المستقر فقط: تُخفى عن الضيف، وعن من انكشف للتو
+                حتى لا يظهر عنصر جديد فوق حدّ الظهور فيقفز ما تحته لحظة الكشف */}
+            {authed && !justRevealed && deepeningOffered && (
               <div className="mt-7 print:hidden">
                 <Button
                   size="lg"
@@ -1478,6 +1462,9 @@ export default function Diagnostic() {
             );
           })()}
 
+          {/* ─── حدّ الظهور: ينتهي المقروء عند آخر عنصر في بطاقة «ماذا ستحصل عليه فعليا؟»
+              وكل ما بعده داخل البوابة — محتوى حقيقي في مكانه تحت الضباب للضيف ─── */}
+          <ResultGate revealed={authed} onDone={revealResult}>
           {/* «ماذا ستحقق من خلال خطتك؟» — رحلة الدورات، والتخصيص داخلها للمسارات الأساسية */}
           {(() => {
             const compositeView = (result.resultJson.composite as CompositeView | null) ?? null;
@@ -1492,8 +1479,8 @@ export default function Diagnostic() {
             return <CourseJourney courseIds={ids} reasons={reasons} delivery={pathwayDelivery(topPathway.id)} />;
           })()}
 
-          {/* الاعتماد أسفل الخطة مباشرة — بعد أن يخصصها كما يشاء */}
-          {authed && (() => {
+          {/* الاعتماد أسفل الخطة مباشرة — يظهر للضيف مضبّبا في مكانه، ويعمل فور انكشافه بالتسجيل */}
+          {(() => {
             const compositeView = (result.resultJson.composite as CompositeView | null) ?? null;
             return (
             <div className="mt-6 flex flex-col items-center gap-3">
@@ -1941,13 +1928,12 @@ export default function Diagnostic() {
           {/* تعريف المنظومة — سطر ثقة ختامي بعد إخلاء المسؤولية، ثانوي بصريا */}
           <EcosystemNote className="mt-4 print:hidden" />
 
-          {/* بطاقة الرأي — أسفل النتيجة الكاملة، للمسجلين فقط */}
+          {/* بطاقة الرأي — أسفل النتيجة، داخل البوابة: مضبّبة للضيف وتعمل بعد التسجيل */}
           <ResultFeedback
             sessionId={(result.resultJson.session_id as string | undefined) ?? `result-${topPathway.id}`}
             pathwayId={topPathway.id}
           />
-          </>
-          )}
+          </ResultGate>
         </section>
         )}
         </ResultErrorBoundary>
