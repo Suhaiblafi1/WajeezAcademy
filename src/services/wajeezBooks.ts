@@ -71,6 +71,21 @@ const HttpAdapter: WajeezBooksAdapter = {
 
 export const wajeezBooks: WajeezBooksAdapter = MockAdapter;
 
+/* عناوين ملخصات موجودة فعليا في بيانات المنتج — تُستخدم كأمثلة تسويقية
+   في صفحة المسار دون نسخ الأسماء يدويا في أكثر من موضع. */
+export function exampleSummaryTitles(count = 3): string[] {
+  const all = Object.values(POOL).flat();
+  const seen = new Set<string>();
+  const titles: string[] = [];
+  for (const b of all) {
+    if (seen.has(b.title)) continue;
+    seen.add(b.title);
+    titles.push(b.title);
+    if (titles.length >= count) break;
+  }
+  return titles;
+}
+
 /* ── اختبار الملخص الصوتي ──
    أسئلة قصيرة مشتقة من عنوان الملخص تتحقق من الاستماع والفهم،
    وتغذي درجة الملخص في ملف الطالب. عند الربط الفعلي تأتي الأسئلة

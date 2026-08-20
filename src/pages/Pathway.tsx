@@ -27,6 +27,7 @@ import { Badge } from "@/components/ui/badge";
 import AuthGate from "@/components/AuthGate";
 import AdvisorContact from "@/components/AdvisorContact";
 import CourseJourney from "@/components/CourseJourney";
+import PathwayResources from "@/components/PathwayResources";
 import Modal from "@/components/Modal";
 import { pathwayById } from "@/data/pathways";
 import { courseById, pathwayCourses, pathwayDelivery, coursePriceOf, pathwayPriceFor, pathwayTrainers, courseTrainer, weeksLabel } from "@/data/courses";
@@ -341,6 +342,9 @@ export default function PathwayPage() {
             headingLevel="h2"
             giftId={custom?.giftId ?? null}
           />
+
+          {/* أنواع المصادر المرافقة للرحلة — بلا تكاملات جديدة ولا أمثلة مخترعة */}
+          <PathwayResources />
 
           {/* مقاعد التخصصات التدريبية — الأسماء تُعلن بعد اعتماد الشعبة */}
           <div className="story-fade mt-8 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4">
