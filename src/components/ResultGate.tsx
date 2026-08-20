@@ -11,7 +11,7 @@
 
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link } from "react-router";
-import { Loader2, Lock } from "lucide-react";
+import { BookOpen, Gift, Loader2, Lock, SlidersHorizontal, Sparkles, Target, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signIn, signUp } from "@/services/auth";
 import { track } from "@/services/analytics";
@@ -22,14 +22,14 @@ interface ResultGateProps {
   children: ReactNode; // كل محتوى النتيجة الواقع بعد حدّ الظهور
 }
 
-/* البنود الستة داخل بطاقة التسجيل — وهي كل ما يُكتب عمّا ينتظر المستخدم */
-const UNLOCKS: { lead: string; rest: string }[] = [
-  { lead: "ماذا ستحقق فعليا", rest: "من أين تبدأ وإلى أين تصل، ومشروعك الختامي ومقياس نجاحه" },
-  { lead: "تفاصيل دوراتك", rest: "ترتيبها وساعاتها ومخرَج كل دورة" },
-  { lead: "من سيرافقك", rest: "مدربك ومواصفته المهنية" },
-  { lead: "🎁 هدية وجيز", rest: "اختر دورة إضافية مجانية تُضاف لمسارك، نقترح عليك الأقرب لهدفك" },
-  { lead: "لماذا هذا المسار", rest: "كيف بُنيت التوصية، والبدائل ولماذا لم تُرشَّح لك" },
-  { lead: "تخصيص مسارك بيدك", rest: "عدّله، واحفظه، وعُد إليه من أي جهاز" },
+/* البنود الستة داخل بطاقة التسجيل — الوعود نفسها بأقصر صياغة، أيقونة وسطر واحد */
+const UNLOCKS: { icon: typeof Target; label: string }[] = [
+  { icon: Target, label: "ماذا ستحقق فعليا" },
+  { icon: BookOpen, label: "تفاصيل دوراتك" },
+  { icon: UserCheck, label: "من سيرافقك" },
+  { icon: Gift, label: "هدية مجانية تختارها" },
+  { icon: Sparkles, label: "لماذا هذا المسار" },
+  { icon: SlidersHorizontal, label: "تخصيص مسارك وحفظه" },
 ];
 
 export default function ResultGate({ revealed, onDone, children }: ResultGateProps) {
@@ -68,7 +68,7 @@ export default function ResultGate({ revealed, onDone, children }: ResultGatePro
   };
 
   const inputCls =
-    "w-full rounded-xl border border-white/15 bg-black/40 px-4 py-3 text-sm text-white placeholder:text-white/35 focus:border-[#FABC05] focus:outline-none";
+    "w-full rounded-xl border border-white/15 bg-black/40 px-4 py-2.5 text-sm text-white placeholder:text-white/35 focus:border-[#FABC05] focus:outline-none";
 
   return (
     <div className="relative">
@@ -78,35 +78,35 @@ export default function ResultGate({ revealed, onDone, children }: ResultGatePro
         <div className="sticky top-20 z-10 h-0 overflow-visible print:hidden md:top-24">
           <div className="px-4">
             <div
-              className={`mx-auto max-h-[calc(100dvh-6rem)] max-w-md overflow-y-auto rounded-3xl border border-[#FABC05]/50 bg-[#0D0D0D]/95 p-6 shadow-2xl shadow-black/70 backdrop-blur-md motion-safe:transition-opacity motion-safe:duration-300 ${
+              className={`relative mx-auto max-h-[calc(100dvh-6rem)] max-w-md overflow-y-auto rounded-3xl border border-[#FABC05]/35 bg-[#101012]/95 p-5 shadow-[0_24px_70px_-18px_rgba(0,0,0,0.85)] ring-1 ring-white/5 backdrop-blur-xl motion-safe:transition-opacity motion-safe:duration-300 md:p-6 ${
                 revealed ? "pointer-events-none opacity-0" : ""
               }`}
             >
-              <span className="mx-auto grid h-11 w-11 place-items-center rounded-2xl bg-[#FABC05]/15">
-                <Lock className="h-5 w-5 text-[#FABC05]" />
-              </span>
-              <h3 className="mt-4 text-center text-xl font-black leading-snug text-white">
-                سجّل الآن لتعرف المزيد
-              </h3>
-              <p className="mt-2 text-center text-sm leading-relaxed text-white/75">
+              {/* توهج علوي خفيف بلون العلامة — لمسة عمق بلا تشويش */}
+              <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-[#FABC05]/[0.08] to-transparent" />
+
+              <div className="relative flex items-center justify-center gap-2">
+                <span className="grid h-7 w-7 place-items-center rounded-lg bg-[#FABC05]/15">
+                  <Lock className="h-3.5 w-3.5 text-[#FABC05]" />
+                </span>
+                <h3 className="text-lg font-black leading-snug text-white">
+                  سجّل الآن لتعرف المزيد
+                </h3>
+              </div>
+              <p className="relative mt-1.5 text-center text-xs leading-relaxed text-white/65">
                 نتيجتك جاهزة — والتسجيل يكشف بقيتها في نفس الصفحة.
               </p>
 
-              <p className="mt-5 text-sm font-black text-[#FABC05]">سيُفتح لك فورا:</p>
-              <ul className="mt-2.5 space-y-2.5">
+              <ul className="relative mt-4 grid grid-cols-2 gap-x-3 gap-y-2 border-y border-white/[0.07] py-3.5">
                 {UNLOCKS.map((u) => (
-                  <li key={u.lead} className="flex items-start gap-2.5 text-sm leading-relaxed">
-                    <span aria-hidden="true" className="mt-1 shrink-0 text-[10px] text-[#FABC05]">◆</span>
-                    <span className="text-white/75">
-                      <span className="font-bold text-white">{u.lead}</span>
-                      {" — "}
-                      {u.rest}
-                    </span>
+                  <li key={u.label} className="flex items-center gap-1.5 text-xs font-bold text-white/80">
+                    <u.icon className="h-3.5 w-3.5 shrink-0 text-[#6EC7D1]" />
+                    {u.label}
                   </li>
                 ))}
               </ul>
 
-              <form onSubmit={submit} className="mt-6 space-y-3">
+              <form onSubmit={submit} className="relative mt-4 space-y-2.5">
                 <label className="sr-only" htmlFor="gate-email">بريدك الإلكتروني</label>
                 <input
                   id="gate-email"
@@ -139,7 +139,7 @@ export default function ResultGate({ revealed, onDone, children }: ResultGatePro
                 <Button
                   type="submit"
                   disabled={busy}
-                  className="h-12 w-full rounded-full bg-[#FABC05] text-base font-black text-[#0D0D0D] hover:bg-[#FABC05]/90 disabled:opacity-50"
+                  className="h-11 w-full rounded-full bg-[#FABC05] text-[15px] font-black text-[#0D0D0D] hover:bg-[#FABC05]/90 disabled:opacity-50"
                 >
                   {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : mode === "signup" ? "أنشئ حسابي المجاني" : "دخول"}
                 </Button>
@@ -149,7 +149,7 @@ export default function ResultGate({ revealed, onDone, children }: ResultGatePro
                     setMode(mode === "signup" ? "login" : "signup");
                     setError("");
                   }}
-                  className="h-11 w-full rounded-full border border-white/20 text-sm font-bold text-white/75 transition hover:border-[#6EC7D1]/60 hover:text-white"
+                  className="h-10 w-full rounded-full border border-white/20 text-[13px] font-bold text-white/70 transition hover:border-[#6EC7D1]/60 hover:text-white"
                 >
                   {mode === "signup" ? "لدي حساب — دخول" : "حساب جديد — إنشاء مجاني"}
                 </button>
@@ -162,7 +162,7 @@ export default function ResultGate({ revealed, onDone, children }: ResultGatePro
                 )}
               </form>
 
-              <p className="mt-4 text-center text-xs leading-relaxed text-white/70">
+              <p className="relative mt-3 text-center text-[11px] leading-relaxed text-white/55">
                 ثانية واحدة — بريدك فقط. ولن يصلك شيء لم تطلبه.
               </p>
             </div>
