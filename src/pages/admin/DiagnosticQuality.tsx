@@ -16,6 +16,14 @@ type ImpactRun = {
   id: string; changeRef: string; createdAt: string
   summary: { changedCount: number; totalPersonas: number; changed: { name: string }[] }
 };
+/* ملخص آراء المتعلمين في نتائجهم — من بطاقة الرأي أسفل النتيجة الكاملة */
+type FeedbackSummary = {
+  total: number;
+  verdicts: { yes: number; somewhat: number; no: number };
+  recent: { id: string; verdict: string; note: string | null; pathwayId: string | null; createdAt: string }[];
+};
+
+const VERDICT_AR: Record<string, string> = { yes: "نعم", somewhat: "إلى حد ما", no: "لا" };
 
 const KIND_AR: Record<string, string> = {
   pathway: "مسار", composite: "خطة مركبة", advisor: "إحالة لمستشار",
@@ -25,12 +33,14 @@ const KIND_AR: Record<string, string> = {
 export default function DiagnosticQuality() {
   const [runs, setRuns] = useState<RegressionRun[]>([]);
   const [impacts, setImpacts] = useState<ImpactRun[]>([]);
+  const [feedback, setFeedback] = useState<FeedbackSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     try {
       setRuns(await apiGet<RegressionRun[]>("/api/admin/quality/regression-runs"));
       setImpacts(await apiGet<ImpactRun[]>("/api/admin/quality/impact-runs"));
+      setFeedback(await apiGet<FeedbackSummary>("/api/admin/quality/feedback"));
     } catch (e) {
       /* 403 تعني أن الدور الحالي ليس مدير التشخيص/النظام — رسالة مفهومة لا «عطل» */
       if (e instanceof ApiError && e.status === 403) {
@@ -120,6 +130,48 @@ export default function DiagnosticQuality() {
             </div>
           ))}
         </div>
+      </section>
+
+      <section className="mt-8">
+        <h2 className="text-lg font-black">آراء المتعلمين في نتائجهم</h2>
+        <p className="mt-1 text-xs text-white/50">بطاقة «هل تصف هذه النتيجة وضعك؟» أسفل النتيجة الكاملة — مربوطة بجلسة التشخيص والمسار.</p>
+        {!feedback || feedback.total === 0 ? (
+          <p className="mt-3 text-sm text-white/50">لا آراء بعد — تصل هنا فور إرسال أول متعلم رأيه.</p>
+        ) : (
+          <>
+            <div className="mt-4 grid gap-3 sm:grid-cols-4">
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center">
+                <p className="text-2xl font-black">{feedback.total}</p>
+                <p className="mt-1 text-[11px] text-white/55">إجمالي الآراء</p>
+              </div>
+              <div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/5 p-4 text-center">
+                <p className="text-2xl font-black text-emerald-300">{feedback.verdicts.yes}</p>
+                <p className="mt-1 text-[11px] text-white/55">نعم — تصف وضعهم</p>
+              </div>
+              <div className="rounded-2xl border border-[#FABC05]/30 bg-[#FABC05]/5 p-4 text-center">
+                <p className="text-2xl font-black text-[#FABC05]">{feedback.verdicts.somewhat}</p>
+                <p className="mt-1 text-[11px] text-white/55">إلى حد ما</p>
+              </div>
+              <div className="rounded-2xl border border-red-400/30 bg-red-400/5 p-4 text-center">
+                <p className="text-2xl font-black text-red-300">{feedback.verdicts.no}</p>
+                <p className="mt-1 text-[11px] text-white/55">لا</p>
+              </div>
+            </div>
+            <div className="mt-4 space-y-2">
+              {feedback.recent.filter((r) => r.note).map((r) => (
+                <div key={r.id} className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="rounded-full border border-[#38A7B4]/40 bg-[#38A7B4]/10 px-2.5 py-0.5 text-[11px] font-bold text-[#6EC7D1]">
+                      {VERDICT_AR[r.verdict] ?? r.verdict}
+                    </span>
+                    <p className="text-[11px] text-white/45" dir="ltr">{r.pathwayId ?? "—"} · {new Date(r.createdAt).toLocaleString("ar")}</p>
+                  </div>
+                  <p className="mt-2 text-xs leading-relaxed text-white/70">{r.note}</p>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </section>
 
       <button onClick={() => void refresh()} className="mt-6 flex cursor-pointer items-center gap-1.5 text-xs text-white/50 hover:text-white">

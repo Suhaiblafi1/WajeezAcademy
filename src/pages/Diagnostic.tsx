@@ -22,7 +22,6 @@ import {
   Wallet,
   Lightbulb,
   History,
-  Lock,
   FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -33,7 +32,8 @@ import { ensurePublishedContent } from "@/services/public-content";
 import SeoHead from "@/components/SeoHead";
 import EcosystemNote from "@/components/EcosystemNote";
 import { Badge } from "@/components/ui/badge";
-import AuthGate from "@/components/AuthGate";
+import ResultGate from "@/components/ResultGate";
+import ResultFeedback from "@/components/ResultFeedback";
 import CourseJourney, { type CourseSuggestion } from "@/components/CourseJourney";
 import CvUpload from "@/components/CvUpload";
 import { ResultErrorBoundary } from "@/components/ResultErrorBoundary";
@@ -61,7 +61,7 @@ import AdvisorContact from "@/components/AdvisorContact";
 import { pathways, type Pathway } from "@/data/pathways";
 
 type DiagAnswers = Record<string, string>;
-type Stage = "intro" | "gate" | "questions" | "computing" | "result";
+type Stage = "intro" | "questions" | "computing" | "result";
 
 const resolve = <T,>(v: T | ((a: DiagAnswers) => T) | undefined, a: DiagAnswers): T | undefined =>
   typeof v === "function" ? (v as (a: DiagAnswers) => T)(a) : v;
@@ -414,6 +414,19 @@ export default function Diagnostic() {
     },
     []
   );
+
+  /* أحداث بوابة النتيجة: الضيف يرى النصف والجدار، والموثق يرى الكاملة —
+     يُطلق result_full_viewed أيضا لحظة انكشاف الصفحة بعد التسجيل من الجدار */
+  useEffect(() => {
+    if (stage !== "result" || !result || !topPathway) return;
+    if (result.resultJson.kind === "guardrail_stop") return;
+    if (authed) {
+      track("result_full_viewed", { confidence: Math.round(result.confidence * 100) });
+    } else {
+      track("result_teaser_viewed", { confidence: Math.round(result.confidence * 100) });
+      track("gate_viewed");
+    }
+  }, [stage, result, topPathway, authed]);
   useEffect(() => {
     if (stage !== "questions") return;
     const warn = (e: BeforeUnloadEvent) => {
@@ -452,7 +465,7 @@ export default function Diagnostic() {
     return s;
   }, [history, currentStageIdx]);
 
-  // يبدأ فورا كضيف — الحساب يُطلب لاحقا عند حفظ النتيجة وتخصيصها
+  // يبدأ مجانا بلا حساب — الحساب يُطلب عند النتيجة لفتح تفاصيلها الكاملة
   const begin = () => {
     void start();
   };
@@ -558,11 +571,19 @@ export default function Diagnostic() {
     void apiPost("/api/learner/diagnostic-attach", { snapshot: res as unknown as Record<string, unknown> }).catch(() => undefined);
   };
 
+  /* نجاح التسجيل من جدار النتيجة: نفس الصفحة تنكشف كاملة بلا انتقال،
+     ونتيجة الضيف المحلية تُدمج بالحساب الجديد — لا إعادة تشخيص ولا فقد */
+  const revealResult = () => {
+    setAuthed(true);
+    if (result) attachToAccount(result);
+  };
+
   const finish = () => {
     const session = sessionRef.current;
     if (!session) return;
     track("diagnostic_completed", { questions: session.askedCount });
     const { result: res } = session.finish();
+    res.resultJson.answered_count = session.askedCount; // عداد شارة «اكتمل التشخيص» في الملخص المجاني — يُحفظ مع النتيجة
     saveLastResult(res);
     attachToAccount(res);
     setSavedProgress(null);
@@ -599,6 +620,7 @@ export default function Diagnostic() {
     inDeepeningRef.current = false;
     setDeepStep(null);
     setCanDeepen(false);
+    res.resultJson.answered_count = session.askedCount;
     saveLastResult(res);
     attachToAccount(res);
     setResult(res);
@@ -752,7 +774,7 @@ export default function Diagnostic() {
             ابدأ الحديث
             <ArrowLeft className="mr-2 h-5 w-5" />
           </Button>
-          <p className="mt-4 text-xs text-white/40">ابدأ فورا كضيف — الحساب يُطلب فقط عند حفظ نتيجتك وتخصيصها · بالمتابعة أنت توافق على استخدام إجاباتك لبناء التوصية · التشخيص مصمم للبالغين، وإن كنت دون ١٨ عاما أكمله مع ولي أمرك</p>
+          <p className="mt-4 text-xs text-white/40">ابدأ مجانا — ترى مسارك المقترح فورا، وحسابك المجاني يفتح نتيجتك كاملة · بالمتابعة أنت توافق على استخدام إجاباتك لبناء التوصية · التشخيص مصمم للبالغين، وإن كنت دون ١٨ عاما أكمله مع ولي أمرك</p>
 
           {/* بطاقة الاستئناف — تشخيص غير مكتمل ينتظر صاحبه */}
           {savedProgress && (
@@ -818,28 +840,6 @@ export default function Diagnostic() {
             و<span className="font-bold text-[#6EC7D1]">O*NET وESCO</span> لخرائط المهارات،
             و<span className="font-bold text-[#6EC7D1]">DigComp</span> للجاهزية الرقمية — وتُعرض عليك تفاصيلها في صفحة المنهجية.
           </p>
-        </section>
-      )}
-
-      {/* ─── بوابة التسجيل — بعد النتيجة: لحفظها وفتح تفاصيلها ─── */}
-      {stage === "gate" && (
-        <section className="story-fade mx-auto max-w-3xl px-5 py-16">
-          <AuthGate
-            message="نتيجتك جاهزة — أنشئ حسابك المجاني لتحفظها وتفتح تفاصيلها الكاملة"
-            onDone={() => {
-              setAuthed(true);
-              setStage("result");
-            }}
-          />
-          <p className="mt-6 text-center text-xs text-white/40">
-            يفتح لك الحساب: التفسير الكامل للتوصية · البدائل المناسبة · تخصيص المسار دورة بدورة · اعتماده ومتابعته
-          </p>
-          <button
-            onClick={() => setStage("result")}
-            className="mx-auto mt-4 block text-xs text-white/45 underline-offset-4 transition hover:text-[#6EC7D1] hover:underline"
-          >
-            عودة لملخص نتيجتي
-          </button>
         </section>
       )}
 
@@ -1254,6 +1254,30 @@ export default function Diagnostic() {
           })()
         ) : (
         <section className="story-fade mx-auto max-w-3xl px-5 py-12 md:py-16">
+          {/* الضيف: ملخص مجاني من خمسة عناصر + جدار تسجيل فوق هيكل زخرفي —
+              النتيجة الكاملة لا تُركَّب في DOM إطلاقا قبل التسجيل */}
+          {!authed && (
+            <ResultGate
+              composite={Boolean((result.resultJson.composite as CompositeView | null))}
+              name={((result.resultJson.composite as CompositeView | null)?.name_ar) ?? topPathway.name}
+              reasonLine={result.reasons[0] ?? ""}
+              confidencePct={Math.round(result.confidence * 100)}
+              durationLabel={(() => {
+                const c = result.resultJson.composite as CompositeView | null;
+                return c ? `${c.courses.reduce((s, x) => s + x.hours, 0)} ساعة تعليمية` : weeksLabel(topPathway.durationWeeks);
+              })()}
+              durationKind={(result.resultJson.composite as CompositeView | null) ? "hours" : "weeks"}
+              coursesCount={(() => {
+                const c = result.resultJson.composite as CompositeView | null;
+                return c ? c.courses.length : (pathwayCourses[topPathway.id] ?? []).length;
+              })()}
+              answeredCount={asked.length > 0 ? asked.length : (typeof result.resultJson.answered_count === "number" ? result.resultJson.answered_count : null)}
+              onDone={revealResult}
+            />
+          )}
+          {/* الموثق: النتيجة الكاملة — تُركَّب هنا فقط، بعد التسجيل أو لمن دخل أصلا */}
+          {authed && (
+          <>
           {(() => {
             const compositeView = (result.resultJson.composite as CompositeView | null) ?? null;
             const deepeningDone = Boolean(result.resultJson.deepening);
@@ -1774,11 +1798,7 @@ export default function Diagnostic() {
             </div>
           )}
 
-          {/* ما تبقى يتطلب حسابا مجانيا: اعتماد المسار وبدائله وتخصيصه */}
-          {authed ? (
-            <>
-          {/* الاعتماد أصبح أسفل رحلة الدورات مباشرة؛ هنا البدائل فقط */}
-
+          {/* البدائل في ميزان واحد — ضمن النتيجة الكاملة للموثق */}
           {/* مقارنة الخيارات الثلاثة — الأساسي والأسرع والأوفر في ميزان واحد */}
           {(result.faster || result.cheaper) && (
             <div className="card-soft mt-8">
@@ -1867,49 +1887,6 @@ export default function Diagnostic() {
             </div>
           )}
 
-            </>
-          ) : (
-            /* بطاقة الضيف — رأى الملخص الأولي، والتفاصيل الكاملة بانتظار حساب يحفظها */
-            <div className="mt-10 overflow-hidden rounded-3xl border border-[#38A7B4]/40 bg-gradient-to-b from-[#12343B] to-[#0D0D0D] p-6 text-center md:p-10">
-              <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[#38A7B4]/15">
-                <Lock className="h-7 w-7 text-[#6EC7D1]" />
-              </span>
-              <h3 className="mt-5 text-xl font-black md:text-2xl">نتيجتك كاملة بين يديك — بقي حفظها واعتمادها</h3>
-              <p className="mx-auto mt-3 max-w-md text-sm leading-loose text-white/60">
-                رأيت مسارك الموصى به وخطته التعليمية وتفسير التوصية كاملة. أنشئ حسابك المجاني لتحفظ نتيجتك وتفتح:
-              </p>
-              <div className="mx-auto mt-6 grid max-w-lg gap-2.5 text-right sm:grid-cols-2">
-                {[
-                  "البدائل المناسبة: أسرع وأوفر — بدّل بثقة",
-                  "رحلة المسار خطوة بخطوة حتى المخرج النهائي",
-                  "تخصيص المسار: احذف وأضف دورات كما تشاء",
-                  "اعتماد المسار وفتح صفحته وتقريرك الشخصي",
-                ].map((f) => (
-                  <p key={f} className="flex items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-xs font-semibold leading-relaxed text-white/75">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#6EC7D1]" />
-                    {f}
-                  </p>
-                ))}
-              </div>
-              <Button
-                size="lg"
-                onClick={() => setStage("gate")}
-                className="mt-8 h-14 rounded-full bg-[#38A7B4] px-10 text-lg font-black text-[#08272B] hover:bg-[#38A7B4]/90"
-              >
-                احفظ نتيجتي وافتح التفاصيل
-                <ArrowLeft className="mr-2 h-5 w-5" />
-              </Button>
-              <p className="mt-3 text-[11px] text-white/40">حساب مجاني بالبريد فقط — نتيجتك محفوظة على جهازك ولن تضيع</p>
-              <button
-                onClick={restart}
-                className="mx-auto mt-4 flex items-center gap-1.5 text-xs font-semibold text-white/45 transition hover:text-white"
-              >
-                <RefreshCcw className="h-3.5 w-3.5" />
-                لا يشبهني؟ أعد التشخيص من جديد
-              </button>
-            </div>
-          )}
-
           {/* شرح قوة الأدلة — أسفل التوصية كاملة لمن يريد التعمق بعد أن رأى كل شيء */}
           <details className="mx-auto mt-10 max-w-md rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-right text-xs leading-relaxed text-white/55 print:hidden">
             <summary className="cursor-pointer text-center font-bold text-white/70">كيف حسبنا قوة أدلة التوصية؟</summary>
@@ -1963,6 +1940,14 @@ export default function Diagnostic() {
 
           {/* تعريف المنظومة — سطر ثقة ختامي بعد إخلاء المسؤولية، ثانوي بصريا */}
           <EcosystemNote className="mt-4 print:hidden" />
+
+          {/* بطاقة الرأي — أسفل النتيجة الكاملة، للمسجلين فقط */}
+          <ResultFeedback
+            sessionId={(result.resultJson.session_id as string | undefined) ?? `result-${topPathway.id}`}
+            pathwayId={topPathway.id}
+          />
+          </>
+          )}
         </section>
         )}
         </ResultErrorBoundary>
