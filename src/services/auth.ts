@@ -201,6 +201,12 @@ export async function signOut(): Promise<void> {
   localStorage.removeItem(USER_KEY);
 }
 
+/** مسح نسخة العرض المحلية دون نداء خادم — تُستخدم بعد logout-all / deactivate
+   اللذين أبطلا الجلسات عند الخادم أصلا */
+export function clearLocalSession(): void {
+  localStorage.removeItem(USER_KEY);
+}
+
 /** طلب استعادة كلمة المرور — رسالة الخادم آمنة ولا تكشف وجود الحساب */
 export async function requestPasswordReset(email: string): Promise<{ message: string; devToken?: string }> {
   try {

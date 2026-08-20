@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import {
-  Award, BookOpen, CheckCircle2, FileText, Loader2, Lock,
-  Mail, MessageCircle, Route as RouteIcon, Save, User, X,
+  Award, BookOpen, CheckCircle2, FileText, Loader2, Lock, LogOut,
+  Mail, MessageCircle, Route as RouteIcon, Save, ShieldAlert, User, X,
 } from "lucide-react";
 import PortalLayout from "./PortalLayout";
-import { apiGet, apiPatch, ApiError } from "@/services/api";
+import { apiGet, apiPatch, apiPost, ApiError } from "@/services/api";
 import { isPreview } from "@/services/access";
-import { readSession } from "@/services/auth";
+import { clearLocalSession, readSession } from "@/services/auth";
 
 /* ─────────── صفحة «حسابي» — الملف الشخصي الكامل للطالب ───────────
    وضعان صادقان:
@@ -170,6 +170,41 @@ export default function StudentAccount() {
       setErr(e instanceof ApiError ? e.message : "تعذر الحفظ — حاول مجددا");
     } finally {
       setBusy(false);
+    }
+  };
+
+  /* ── الأمان والجلسات — تظهر فقط مع جلسة خادم حقيقية ── */
+  const [secBusy, setSecBusy] = useState<"" | "logoutAll" | "deactivate">("");
+  const [secMsg, setSecMsg] = useState("");
+  const [secErr, setSecErr] = useState("");
+  const [confirmingDeactivate, setConfirmingDeactivate] = useState(false);
+
+  const logoutAll = async () => {
+    if (secBusy) return;
+    setSecBusy("logoutAll"); setSecErr(""); setSecMsg("");
+    try {
+      const { revoked } = await apiPost<{ ok: boolean; revoked: number }>("/api/auth/logout-all");
+      clearLocalSession();
+      setSecMsg(`أُنهيت ${revoked} جلسة — نحوّلك لتسجيل الدخول من جديد`);
+      window.setTimeout(() => window.location.assign("/auth"), 1600);
+    } catch (e) {
+      setSecErr(e instanceof ApiError ? e.message : "تعذر إنهاء الجلسات — حاول مجددا");
+      setSecBusy("");
+    }
+  };
+
+  const deactivate = async () => {
+    if (secBusy) return;
+    setSecBusy("deactivate"); setSecErr(""); setSecMsg("");
+    try {
+      await apiPost("/api/auth/deactivate");
+      clearLocalSession();
+      setSecMsg("عُطّل حسابك — بياناتك محفوظة، وإعادة التفعيل عبر التواصل معنا");
+      window.setTimeout(() => window.location.assign("/"), 2000);
+    } catch (e) {
+      setSecErr(e instanceof ApiError ? e.message : "تعذر تعطيل الحساب — حاول مجددا");
+      setSecBusy("");
+      setConfirmingDeactivate(false);
     }
   };
 
@@ -398,6 +433,68 @@ export default function StudentAccount() {
           لأي طلب استرداد أو مراجعة فاتورة: <Link to="/contact" className="font-bold text-[#6EC7D1] underline-offset-4 hover:underline">صفحة التواصل</Link> — اختر «طلب استرداد».
         </p>
       </section>
+
+      {/* الأمان والجلسات — إجراءات حقيقية على الخادم، تظهر فقط مع جلسة فعالة */}
+      {mode === "server" && (
+        <section className="mt-6 rounded-3xl border border-white/10 bg-white/[0.02] p-6 md:p-8">
+          <h2 className="flex items-center gap-2 text-base font-black"><ShieldAlert className="h-4 w-4 text-[#6EC7D1]" /> الأمان والجلسات</h2>
+
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold">الخروج من كل الأجهزة</p>
+              <p className="mt-1 text-xs leading-6 text-white/50">
+                سجّلت دخولك على جهاز آخر؟ أنهِ كل الجلسات دفعة واحدة — ستحتاج الدخول من جديد على هذا الجهاز أيضا.
+              </p>
+            </div>
+            <button
+              type="button" onClick={logoutAll} disabled={!!secBusy}
+              className="flex shrink-0 cursor-pointer items-center gap-2 rounded-full border border-white/20 px-5 py-2.5 text-xs font-bold text-white/80 transition hover:border-[#38A7B4]/60 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {secBusy === "logoutAll" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LogOut className="h-3.5 w-3.5" />}
+              إنهاء كل الجلسات
+            </button>
+          </div>
+
+          <div className="mt-5 rounded-2xl border border-red-400/30 bg-red-400/5 p-5">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-red-300">تعطيل الحساب</p>
+                <p className="mt-1 text-xs leading-6 text-white/50">
+                  يوقف حسابك فورا ويبطل جلساتك — بياناتك وتقدمك محفوظة، وإعادة التفعيل عبر التواصل معنا.
+                </p>
+              </div>
+              {!confirmingDeactivate ? (
+                <button
+                  type="button" onClick={() => setConfirmingDeactivate(true)} disabled={!!secBusy}
+                  className="shrink-0 cursor-pointer rounded-full border border-red-400/40 px-5 py-2.5 text-xs font-bold text-red-300 transition hover:bg-red-400/10 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  تعطيل حسابي
+                </button>
+              ) : (
+                <div className="flex shrink-0 items-center gap-2">
+                  <span className="text-[11px] font-bold text-red-300">متأكد؟ الإجراء فوري</span>
+                  <button
+                    type="button" onClick={deactivate} disabled={!!secBusy}
+                    className="flex cursor-pointer items-center gap-1.5 rounded-full bg-red-500 px-4 py-2 text-xs font-black text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {secBusy === "deactivate" && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                    نعم، عطّل حسابي
+                  </button>
+                  <button
+                    type="button" onClick={() => setConfirmingDeactivate(false)} disabled={!!secBusy}
+                    className="cursor-pointer rounded-full border border-white/20 px-4 py-2 text-xs font-bold text-white/70 transition hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    تراجع
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {secErr && <p role="alert" className="mt-4 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-2.5 text-xs font-semibold text-red-300">{secErr}</p>}
+          {secMsg && <p role="status" className="mt-4 rounded-xl border border-[#38A7B4]/40 bg-[#38A7B4]/10 px-4 py-2.5 text-xs font-bold text-[#6EC7D1]">{secMsg}</p>}
+        </section>
+      )}
     </PortalLayout>
   );
 }
