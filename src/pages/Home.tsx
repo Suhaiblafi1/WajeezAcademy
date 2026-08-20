@@ -18,6 +18,7 @@ import CourseModal from '@/components/CourseModal'
 import Modal from '@/components/Modal'
 import EcosystemNote from '@/components/EcosystemNote'
 import TrustMetricsBar from '@/components/TrustMetricsBar'
+import EcosystemOrgStrip from '@/components/EcosystemOrgStrip'
 import '../App.css'
 
 /* ───────────────────────── scroll reveal hook ───────────────────────── */
@@ -1321,6 +1322,8 @@ export default function Home() {
         <TrustMetricsBar />
         <DiagnosticTeaser />
         <HowItWorks />
+        {/* إثبات مؤسسي — مؤسسات منظومة وجيز/وجيز مهارات الموثقة (مصدر مركزي: data/ecosystemOrganizations) */}
+        <EcosystemOrgStrip />
         <Partners />
         <ImageBand />
         <Bestsellers />
