@@ -1735,3 +1735,30 @@ model IntegrationSetting {
   updatedBy String?  @db.Uuid
   updatedAt DateTime @updatedAt
 }
+
+/* ═══════════ تحليلات الرحلة وبطاقة رأي التشخيص ═══════════
+   أحداث بلا أي نص حر (التحقق في طبقة المسارات): أرقام ورموز فقط.
+   anonId يميز الجهاز قبل التسجيل، ويُربط بالحساب عبر أول حدث بعده. */
+
+model AnalyticsEvent {
+  id        String   @id @default(uuid()) @db.Uuid
+  event     String
+  meta      Json?
+  anonId    String?
+  userId    String?  @db.Uuid
+  createdAt DateTime @default(now())
+  @@index([event, createdAt])
+  @@index([anonId])
+}
+
+model DiagnosticFeedback {
+  id        String   @id @default(uuid()) @db.Uuid
+  sessionId String // معرف جلسة التشخيص من نتيجة المحرك — ليس مفتاحا أجنبيا
+  pathwayId String?
+  verdict   String // yes | somewhat | no
+  note      String?
+  userId    String?  @db.Uuid
+  createdAt DateTime @default(now())
+  @@index([sessionId])
+  @@index([createdAt])
+}

@@ -39,6 +39,7 @@ const COLUMN_AR: Record<string, string> = {
   month: 'الشهر', issued: 'مصدرة', revoked: 'ملغاة',
   minutes: 'الدقائق', mb: 'الحجم (م.ب)',
   priority: 'الأولوية', category: 'التصنيف',
+  stage: 'المرحلة', users: 'أجهزة فريدة', events: 'الأحداث',
 }
 const colAr = (k: string) => COLUMN_AR[k] ?? k
 
@@ -51,6 +52,34 @@ export class ReportsService {
   private defs(): ReportDefinition[] {
     const p = this.prisma
     return [
+      {
+        key: 'diagnostic-funnel', titleAr: 'قمع التشخيص وجدار التسجيل',
+        methodAr: 'أجهزة فريدة (anonId) عند كل مرحلة من جدول AnalyticsEvent: بدأ ← أكمل ← رأى نصف النتيجة ← رأى الجدار ← أنشأ حسابا من الجدار — نسبة التحويل = أنشأ حسابا ÷ رأى الجدار',
+        run: async (f) => {
+          const rows = await p.analyticsEvent.findMany({
+            where: hasRange(f) ? { createdAt: dayRange(f) } : {},
+            select: { event: true, anonId: true, meta: true },
+          })
+          const devices = (name: string, via?: string) =>
+            new Set(
+              rows
+                .filter((r) => r.event === name)
+                .filter((r) => !via || (r.meta as Record<string, unknown> | null)?.via === via)
+                .map((r) => r.anonId ?? 'جهاز مجهول')
+            ).size
+          const gate = devices('gate_viewed')
+          const created = devices('account_created', 'result_gate')
+          const pct = gate > 0 ? Math.round((created / gate) * 100) : 0
+          return [
+            { stage: 'بدأ التشخيص', users: devices('diagnostic_started') },
+            { stage: 'أكمل التشخيص', users: devices('diagnostic_completed') },
+            { stage: 'رأى نصف النتيجة', users: devices('result_teaser_viewed') },
+            { stage: 'رأى جدار التسجيل', users: gate },
+            { stage: 'أنشأ حسابا من الجدار', users: created },
+            { stage: 'نسبة التحويل عند الجدار', users: `${pct}٪` },
+          ]
+        },
+      },
       {
         key: 'diagnostic', titleAr: 'التشخيص',
         methodAr: 'عدد نتائج التشخيص المرفقة بالحسابات مجمعة باليوم — المصدر: ملفات المتعلمين (attachedAt)',
