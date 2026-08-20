@@ -17,6 +17,7 @@ import SeoHead from '@/components/SeoHead'
 import CourseModal from '@/components/CourseModal'
 import Modal from '@/components/Modal'
 import EcosystemNote from '@/components/EcosystemNote'
+import TrustMetricsBar from '@/components/TrustMetricsBar'
 import '../App.css'
 
 /* ───────────────────────── scroll reveal hook ───────────────────────── */
@@ -1316,6 +1317,8 @@ export default function Home() {
         <Hero />
         {/* تعريف المنظومة — مرة واحدة أسفل الـHero مباشرة، ثانوي بصريا ولا ينافسه */}
         <EcosystemNote className="mt-1 pb-7 md:pb-9" />
+        {/* شريط الثقة — أرقام وجيز مهارات الموثقة فقط (مصدر مركزي: data/trustMetrics) */}
+        <TrustMetricsBar />
         <DiagnosticTeaser />
         <HowItWorks />
         <Partners />
