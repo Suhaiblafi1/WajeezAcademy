@@ -379,6 +379,64 @@ async function seedDemoRetrievalCards(prisma: PrismaClient): Promise<'written' |
   return 'written'
 }
 
+/* البند ط-٥: جلسات الشعب الديمو وحضورها. كانت شعب الديمو بلا جلسة واحدة، فكان
+   «جدولي» فارغا و«زخمك» بلا أثر حضور و«إيقاع شعبتك» بلا مقام — أي أن ثلاث
+   شاشات تعرض فراغا لا يمثّل المنصة. الجلسات مربوطة بوحدات الدورة بترتيبها،
+   والماضية منتهية بحضور مسجَّل، والقادمة مجدولة. */
+async function seedDemoSessions(prisma: PrismaClient): Promise<'written' | 'skipped'> {
+  const student = await prisma.user.findUnique({ where: { email: 'student.demo@wajeez.local' } })
+  const trainerUser = await prisma.user.findUnique({ where: { email: 'trainer.demo@wajeez.local' } })
+  if (!student) return 'skipped'
+  const enrollments = await prisma.enrollment.findMany({
+    where: { userId: student.id }, include: { cohort: true },
+  })
+  if (enrollments.length === 0) return 'skipped'
+
+  const now = Date.now()
+  let wrote = false
+  for (const e of enrollments) {
+    const existing = await prisma.cohortSession.count({ where: { cohortId: e.cohortId } })
+    if (existing > 0) continue
+    const modules = await prisma.courseModule.findMany({
+      where: { courseId: e.cohort.courseId }, orderBy: { id: 'asc' }, take: 6,
+    })
+    if (modules.length === 0) continue
+
+    /* المكتملة: كل جلساتها ماضية ومنتهية. النشطة: نصفها ماض ونصفها قادم */
+    const done = e.status === 'completed' ? modules.length : Math.ceil(modules.length / 2)
+    for (const [i, m] of modules.entries()) {
+      const past = i < done
+      /* أسبوع بين الجلسة والأخرى، والماضية تنتهي قبل اليوم */
+      const offsetDays = past ? -((done - i) * 7) : (i - done + 1) * 7
+      const startsAt = new Date(now + offsetDays * 86400_000)
+      const session = await prisma.cohortSession.create({
+        data: {
+          cohortId: e.cohortId,
+          moduleId: m.id,
+          title: `الجلسة ${i + 1} — بيانات ديمو`,
+          startsAt,
+          endsAt: new Date(startsAt.getTime() + 2 * 3600_000),
+          timezone: 'Asia/Amman',
+          status: past ? 'done' : 'scheduled',
+        },
+      })
+      if (!past) continue
+      /* الحضور: حاضر في الأغلب ومتأخر في واحدة — بيانات لا تجمّل نفسها */
+      await prisma.attendance.create({
+        data: {
+          sessionId: session.id,
+          enrollmentId: e.id,
+          status: i === 1 ? 'late' : 'present',
+          markedBy: trainerUser?.id ?? null,
+          note: 'حضور ديمو',
+        },
+      })
+      wrote = true
+    }
+  }
+  return wrote ? 'written' : 'skipped'
+}
+
 export async function seedDemo(prisma: PrismaClient): Promise<{ users: number; richData: 'created' | 'existing' }> {
   await seedRbac(prisma)
 
@@ -393,6 +451,7 @@ export async function seedDemo(prisma: PrismaClient): Promise<{ users: number; r
   await seedDemoSkillVector(prisma)
   await seedDemoRemeasure(prisma)
   await seedDemoRetrievalCards(prisma)
+  await seedDemoSessions(prisma)
 
   /* إن كان الطالب الديمو مسجلا في شعبة فالبيانات الغنية موجودة — لا تكرار */
   const alreadyRich = await prisma.enrollment.findFirst({ where: { userId: student.id } })
@@ -682,6 +741,7 @@ export async function seedDemo(prisma: PrismaClient): Promise<{ users: number; r
   await seedDemoSkillVector(prisma)
   await seedDemoRemeasure(prisma)
   await seedDemoRetrievalCards(prisma)
+  await seedDemoSessions(prisma)
 
   void superadmin // الحساب يُنشأ ضمن ensureUser أعلاه — لا بيانات إضافية له
   return { users: DEMO_ACCOUNTS.length, richData: 'created' }

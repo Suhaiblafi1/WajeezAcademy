@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import {
-  ArrowLeft, Award, Bell, BookOpen, CalendarDays, CheckCircle2, Clock3,
+  Activity, ArrowLeft, Award, Bell, BookOpen, CalendarDays, CheckCircle2, Clock3,
   Lightbulb, Loader2, MessageCircle, Send, Sparkles, Target, TrendingUp, Video, LifeBuoy,
 } from "lucide-react";
 import PortalLayout from "./PortalLayout";
@@ -15,6 +15,10 @@ import { usePublishedContent } from "@/services/public-content";
 import { getEnrollment, isPreview } from "@/services/access";
 import { useRealSession } from "@/services/session";
 import { apiGet } from "@/services/api";
+import {
+  KIND_LABEL_AR, NO_STREAK_NOTE, buildMomentum, momentumFactsFrom, sinceLabelAr,
+  type EvidenceKind, type Momentum,
+} from "@/application/student/momentum";
 import { pathwayById } from "@/data/pathways";
 import { courseById, pathwayCourses } from "@/data/courses";
 import {
@@ -55,7 +59,11 @@ interface EnrollmentDetail {
     sessions: RealSessionItem[];
     assessments: { id: string; title: string; type: string; dueAt: string | null }[];
   };
-  submissions: { assessmentId: string; status: string }[];
+  /* حقول مؤشر الزخم (ط-٥) — كلها موجودة في الردّ أصلا، ولا نقطة نهاية جديدة */
+  attendance?: { sessionId: string; status: string; createdAt?: string }[];
+  moduleProgress?: { moduleId: string; status: string; completedAt: string | null }[];
+  certificates?: { status: string; issuedAt: string }[];
+  submissions: { assessmentId: string; status: string; submittedAt?: string; assessment?: { title?: string } | null }[];
 }
 interface RealNotif { id: string; title: string; body: string; status: string; sentAt: string | null; queuedAt: string }
 
@@ -88,11 +96,63 @@ export default function StudentDashboard() {
   return <SimulatedDashboard />;
 }
 
+/* مؤشر زخم صادق (ط-٥) — آثارك المسجَّلة بتواريخها. لا سلسلة ولا نقاط ولا ترتيب.
+   القاعدة معلنة للمتعلم في ذيل البطاقة لا في تعليق كود. */
+function MomentumCard({ m, className = "" }: { m: Momentum; className?: string }) {
+  const kinds = (Object.keys(m.counted) as EvidenceKind[]).filter((k) => m.counted[k] > 0);
+  return (
+    <section className={`rounded-3xl border border-white/10 bg-white/[0.03] p-6 ${className}`.trim()}>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h3 className="flex items-center gap-2 text-sm font-bold text-white/70">
+          <Activity className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> زخمك
+        </h3>
+        <p className="text-[11px] text-white/45">آخر {m.windowDays} يوما</p>
+      </div>
+
+      <p className="mt-3 text-sm font-black">
+        {m.last ? m.last.labelAr : "لا أثر مسجَّل بعد"}
+      </p>
+      <p className="mt-1 text-xs text-white/55">
+        {m.last ? `${KIND_LABEL_AR[m.last.kind]} · ${sinceLabelAr(m.daysSince)}` : "يبدأ الزخم بأول حضور أو تسليم أو وحدة مُقرّة"}
+      </p>
+
+      {m.countedTotal > 0 ? (
+        <ul className="mt-4 flex flex-wrap gap-2">
+          {kinds.map((k) => (
+            <li key={k} className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-[11px] text-white/70">
+              <span className="tabular-nums font-bold text-teal-light-ink">{m.counted[k]}</span> {KIND_LABEL_AR[k]}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-4 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 text-[11px] leading-6 text-white/60">
+          لا أثر مسجَّل في آخر {m.windowDays} يوما. وهذا ما تقوله السجلات — لا حكم فيه ولا عدّاد ينكسر.
+        </p>
+      )}
+
+      {m.cohortPace && m.cohortPace.total > 0 && (
+        <p className="mt-4 border-t border-white/8 pt-3 text-[11px] leading-6 text-white/60">
+          إيقاع شعبتك: انتهت{" "}
+          <span className="font-bold tabular-nums text-white/85">{m.cohortPace.done}</span> من{" "}
+          <span className="tabular-nums">{m.cohortPace.total}</span> جلسة
+          <span className="text-white/55"> — جدول وضعته الشعبة، لا هدفا وضعناه لك.</span>
+        </p>
+      )}
+
+      {/* ‎/55 لا ‎/40: الأخيرة تقيس 3.83:1 على سطح البطاقة — والقاعدة المعلنة
+          أولى النصوص بأن تُقرأ */}
+      <p className="mt-3 text-[10px] leading-5 text-white/55">{NO_STREAK_NOTE}</p>
+    </section>
+  );
+}
+
 /* ═══════════ الوضع الحقيقي — شعب وجلسات وواجبات وإشعارات الخادم ═══════════ */
 function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] }) {
   const [details, setDetails] = useState<EnrollmentDetail[] | null>(null);
   const [notifs, setNotifs] = useState<RealNotif[]>([]);
   const [certCount, setCertCount] = useState(0);
+  /* آثار ط-٥ من نقاط نهاية قائمة: بطاقات الاسترجاع والقياس البعديّ */
+  const [extra, setExtra] = useState<{ retrievalCards: { lastAnswerAt: string | null }[]; remeasures: { measuredAt: string; courseId: string }[]; at: string } | null>(null);
 
   useEffect(() => {
     let on = true;
@@ -100,8 +160,27 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
       .then((ds) => { if (on) setDetails(ds.filter((d): d is EnrollmentDetail => d !== null)); });
     apiGet<RealNotif[]>("/api/learner/notifications").then((n) => on && setNotifs(n.slice(0, 4))).catch(() => undefined);
     apiGet<unknown[]>("/api/learner/certificates").then((c) => on && setCertCount(c.length)).catch(() => undefined);
+    void (async () => {
+      const safe = async <T,>(pr: Promise<T>): Promise<T | null> => pr.then((v) => v).catch(() => null);
+      const [ret, grw] = await Promise.all([
+        safe(apiGet<{ cards: { lastAnswerAt: string | null }[] }>("/api/learner/retrieval")),
+        safe(apiGet<{ records: { measuredAt: string; courseId: string }[] }>("/api/learner/skill-growth")),
+      ]);
+      if (!on) return;
+      /* لحظة القراءة تُحفظ مع البيانات: «قبل كم» يُحسب على وقت الجلب لا على كل رسم */
+      setExtra({ retrievalCards: ret?.cards ?? [], remeasures: grw?.records ?? [], at: new Date().toISOString() });
+    })();
     return () => { on = false; };
   }, [rows]);
+
+  const momentum = useMemo<Momentum | null>(() => {
+    if (!details) return null;
+    const facts = momentumFactsFrom(details, {
+      retrievalCards: extra?.retrievalCards ?? [],
+      remeasures: extra?.remeasures ?? [],
+    });
+    return buildMomentum(facts, extra ? new Date(extra.at) : new Date());
+  }, [details, extra]);
 
   const fmtWhen = (iso: string) => new Date(iso).toLocaleString("ar-JO", { weekday: "long", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
@@ -192,6 +271,9 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
 
       {/* خريطة المسار (ط-٢) — تجيب «أين أنا من رحلتي؟» بدل عدّ الشعب وحده */}
       {map && map.totalCount > 0 && <PathwayMap map={map} className="mt-6" />}
+
+      {/* مؤشر الزخم (ط-٥) — بعد «أين أنا» وقبل «ماذا الآن»: ما فعلته فعلا */}
+      {momentum && <MomentumCard m={momentum} className="mt-6" />}
 
       <div className="mt-6 grid gap-5 lg:grid-cols-3">
         {/* التالي الآن — حقيقي */}

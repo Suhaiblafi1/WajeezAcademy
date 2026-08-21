@@ -206,7 +206,8 @@ function GrowthPanel({ summary }: { summary: GrowthSummary }) {
         <div key={c.courseId} className="mt-5 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
           <p className="flex flex-wrap items-baseline justify-between gap-2 text-xs">
             <span className="font-bold text-white/85">{c.courseTitleAr ?? c.courseId}</span>
-            <span className="text-white/45">قِيس في {fmtWhen(c.measuredAt)}</span>
+            {/* ‎/55 لا ‎/45: الأخيرة تقيس 4.45:1 على سطح البطاقة فتسقط دون 4.5 */}
+            <span className="text-white/55">قِيس في {fmtWhen(c.measuredAt)}</span>
           </p>
           <ul className="mt-2">
             {c.skills.map((g) => (
