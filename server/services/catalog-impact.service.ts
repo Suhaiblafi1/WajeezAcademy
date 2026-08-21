@@ -11,6 +11,7 @@
    الاقتراحات، واستعلام لكل واحدة يجعل فتحها أبطأ من قراءتها. */
 
 import type { PrismaClient } from '@prisma/client'
+import type { PlanHoursImpact } from '../../src/application/catalog/hours-policy'
 
 export interface BlastRadiusEntity {
   id: string
@@ -139,4 +140,65 @@ export function blastRadiusSentenceAr(r: CourseBlastRadius): string {
   if (r.cohorts.live > 0) parts.push(countAr(r.cohorts.live, COHORT_FORMS))
   if (r.learners > 0) parts.push(countAr(r.learners, LEARNER_FORMS))
   return `هذه الدورة يستخدمها ${parts.join(' · ')} — التعديل سيصل إليها جميعا.`
+}
+
+/* ══════════ أثر ساعات دورة على الخطط المركبة (البند ب-٥) ══════════ */
+
+/**
+ * يحسب ساعات كل خطة مركبة تضمّ الدورة، قبل الاقتراح وبعده.
+ * القراءة من القاعدة لا من الحزمة المضمنة: الخطط تتغيّر بالنشر، والحساب على
+ * ما هو منشور الآن لا على ما كان وقت البناء.
+ */
+export async function planHoursImpactOf(
+  prisma: PrismaClient,
+  courseId: string,
+  proposedHours: number,
+): Promise<PlanHoursImpact[]> {
+  const links = await prisma.templateCourse.findMany({
+    where: { courseId },
+    select: { templateId: true },
+  })
+  const templateIds = [...new Set(links.map((l) => l.templateId))]
+  if (templateIds.length === 0) return []
+
+  const [allLinks, templates, courseVersions] = await Promise.all([
+    prisma.templateCourse.findMany({
+      where: { templateId: { in: templateIds } },
+      select: { templateId: true, courseId: true },
+    }),
+    prisma.compositeTemplate.findMany({
+      where: { id: { in: templateIds } },
+      include: { versions: { orderBy: { version: 'desc' }, take: 1 } },
+    }),
+    prisma.courseVersion.findMany({
+      orderBy: { version: 'desc' },
+      select: { courseId: true, totalHours: true, version: true },
+    }),
+  ])
+
+  /* أحدث إصدار لكل دورة — الترتيب تنازلي فأول ظهور هو الأحدث */
+  const hoursByCourse = new Map<string, number>()
+  for (const v of courseVersions) if (!hoursByCourse.has(v.courseId)) hoursByCourse.set(v.courseId, v.totalHours)
+  const nameById = new Map(templates.map((t) => [t.id, t.versions[0]?.nameAr ?? t.id]))
+
+  const out: PlanHoursImpact[] = []
+  for (const tid of templateIds) {
+    /* الدورة قد تظهر في أكثر من قائمة داخل الخطة — تُحتسب مرة */
+    const courseIds = [...new Set(allLinks.filter((l) => l.templateId === tid).map((l) => l.courseId))]
+    let before = 0
+    let after = 0
+    for (const cid of courseIds) {
+      const h = hoursByCourse.get(cid) ?? 0
+      before += h
+      after += cid === courseId ? proposedHours : h
+    }
+    out.push({
+      templateId: tid,
+      templateNameAr: nameById.get(tid) ?? tid,
+      beforeHours: before,
+      afterHours: after,
+      deltaHours: after - before,
+    })
+  }
+  return out.sort((a, b) => b.deltaHours - a.deltaHours || a.templateId.localeCompare(b.templateId))
 }

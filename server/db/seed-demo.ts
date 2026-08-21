@@ -446,6 +446,18 @@ async function seedDemoChangeRequest(prisma: PrismaClient): Promise<'written' | 
   if (!trainerUser) return 'skipped'
   const profile = await prisma.trainerProfile.findUnique({ where: { userId: trainerUser.id } })
   if (!profile) return 'skipped'
+  /* البند هـ-١: الاقتراح بنطاق الكتالوج يستوجب منحا أو سجلا — فنمنح المدرب
+     الديمو الصلاحية صراحة، وإلا كانت بيانات الديمو مخالفة لقاعدة تفرضها
+     الخدمة على كل مدرب حقيقي.
+     ⚠ قبل حراسة «اقتراح موجود»: المنح شرط قائم بذاته لا تابع لإنشاء الاقتراح. */
+  if (!profile.catalogScopeGrantedAt) {
+    const admin = await prisma.user.findUnique({ where: { email: 'admin.demo@wajeez.local' } })
+    await prisma.trainerProfile.update({
+      where: { id: profile.id },
+      data: { catalogScopeGrantedAt: new Date(), catalogScopeGrantedBy: admin?.id ?? null },
+    })
+  }
+
   const existing = await prisma.trainerChangeRequest.count({ where: { profileId: profile.id } })
   if (existing > 0) return 'skipped'
 
@@ -454,6 +466,7 @@ async function seedDemoChangeRequest(prisma: PrismaClient): Promise<'written' | 
     include: { versions: { orderBy: { version: 'desc' }, take: 1 } },
   })
   if (!course) return 'skipped'
+
   const firstModule = await prisma.courseModule.findFirst({ where: { courseId: course.id }, orderBy: { id: 'asc' } })
   if (!firstModule) return 'skipped'
 

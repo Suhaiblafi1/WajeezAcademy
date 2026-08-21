@@ -818,6 +818,10 @@ model TrainerProfile {
   publishApprovedAt  DateTime?
   suspendedAt        DateTime?
   suspendedBy        String?   @db.Uuid
+  /* نطاق الكتالوج صلاحية تُمنح بعد سجل مثبت (البند هـ-١) — والافتراضي نطاق
+     الشعبة: المدرب يجرّب ويبدع فيه بلا مخاطرة على أحد. */
+  catalogScopeGrantedAt DateTime?
+  catalogScopeGrantedBy String?  @db.Uuid
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
   application        TrainerApplication       @relation(fields: [applicationId], references: [id])

@@ -204,6 +204,15 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     return changes.listForReview(status)
   })
 
+  app.post('/api/admin/trainers/:profileId/catalog-scope', {
+    preHandler: requirePermission('trainer.change.review'),
+    schema: { tags: ['admin-trainers'], summary: 'منح أو سحب نطاق الكتالوج لمدرب — قرار مسجَّل بتاريخه ومانحه (هـ-١)' },
+  }, async (req) => {
+    const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
+    const body = z.object({ grant: z.boolean() }).parse(req.body)
+    return changes.grantCatalogScope(profileId, req.auth!.userId, body.grant)
+  })
+
   app.get('/api/admin/catalog/courses/:courseId/blast-radius', {
     preHandler: requirePermission('trainer.change.review'),
     schema: { tags: ['admin-trainers'], summary: 'دائرة أثر دورة — المسارات والقوالب والشعب والمتعلمون الذين يصلهم التعديل' },
@@ -241,6 +250,14 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return changes.impactChecked(id)
+  })
+
+  app.get('/api/admin/trainer-change-requests/:id/hours-impact', {
+    preHandler: requirePermission('trainer.change.review'),
+    schema: { tags: ['admin-trainers'], summary: 'أثر ساعات الاقتراح — الحدّ النسبي وكل خطة مركبة تضمّ الدورة (ب-٥)' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return changes.hoursImpact(id)
   })
 
   app.post('/api/admin/trainer-change-requests/:id/publish', {

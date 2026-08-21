@@ -8,7 +8,9 @@
 import type { PrismaClient, Prisma } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
-import { blastRadiusSentenceAr, courseBlastRadius } from './catalog-impact.service'
+import { blastRadiusSentenceAr, courseBlastRadius, planHoursImpactOf } from './catalog-impact.service'
+import { checkHoursProposal, planHoursWarnings } from '../../src/application/catalog/hours-policy'
+import { catalogScopeGate } from '../../src/application/catalog/scope-policy'
 
 export const CHANGE_TYPES = [
   'module_title_edit', 'module_add', 'module_reorder', 'explanation_improve',
@@ -98,6 +100,21 @@ export class TrainerChangeService {
           throw new AuthError('forbidden_field', `لا يجوز للمدرب تعديل «${k}» — السعر وقواعد التشخيص والمهارات الأساسية والنشر والمخرجات الإلزامية والمسارات محفوظة للإدارة`, 403)
         }
       }
+    }
+
+    /* البند ب-٥: ساعات الاقتراح تُفحص عند التقديم لا عند التطبيق — المقترِح
+       يعرف الحدّ قبل أن ينتظر مراجعة، والمعتمِد لا يرى اقتراحا مستحيلا. */
+    const hours = await this.projectedHours(input.courseId, input.items)
+    if (hours) {
+      const check = checkHoursProposal(hours.base, hours.proposed, input.reason)
+      if (!check.ok) throw new AuthError('bad_hours', check.errorsAr.join(' · '), 400)
+    }
+
+    /* البند هـ-١: نطاق الكتالوج صلاحية تُمنح بعد سجل مثبت لا حقٌّ يُفترض.
+       نطاق الشعبة مفتوح للجميع — وهو الافتراضي في الشاشة والرسالة هنا. */
+    if (input.scope === 'catalog') {
+      const gate = await this.catalogScopeFor(profile.id)
+      if (!gate.allowed) throw new AuthError('scope_not_granted', gate.reasonAr, 403)
     }
 
     if (input.scope === 'cohort') {
@@ -228,6 +245,101 @@ export class TrainerChangeService {
   /* ─────────── النشر في النطاق المعتمد ─────────── */
 
   /** نشر اقتراح معتمد — كتالوج: إصدار جديد للدورة؛ شعبة: خطة تنفيذ للشعبة */
+
+  /**
+   * ساعات الدورة كما ستصير بعد تطبيق بنود الاقتراح (البند ب-٥).
+   * نفس منطق التطبيق في publishToCatalog — مصدر واحد للحساب فلا يتباعد
+   * ما يُفحَص عند التقديم عمّا يُكتب عند النشر.
+   */
+  private async projectedHours(
+    courseId: string,
+    items: { changeType: string; afterValue?: unknown }[],
+  ): Promise<{ base: number; proposed: number } | null> {
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+      include: { versions: { orderBy: { version: 'desc' }, take: 1 } },
+    })
+    const base = course?.versions[0]?.totalHours
+    if (typeof base !== 'number') return null
+    let proposed = base
+    for (const item of items) {
+      const after = (item.afterValue ?? {}) as Record<string, unknown>
+      if (item.changeType === 'module_add') proposed += typeof after.hours === 'number' ? after.hours : 2
+      else if (item.changeType === 'duration_propose' && typeof after.totalHours === 'number' && after.totalHours > 0) {
+        proposed = after.totalHours
+      }
+    }
+    return { base, proposed }
+  }
+
+  /**
+   * أثر ساعات الاقتراح للمعتمِد (البند ب-٥): الحدّ النسبي وأثره على كل خطة
+   * مركبة تضمّ الدورة، بالأرقام قبل الاعتماد.
+   */
+  async hoursImpact(requestId: string) {
+    const req = await this.prisma.trainerChangeRequest.findUnique({
+      where: { id: requestId }, include: { items: true },
+    })
+    if (!req) throw new AuthError('not_found', 'الاقتراح غير موجود', 404)
+    const hours = await this.projectedHours(req.courseId, req.items)
+    if (!hours) return { applicable: false, warningsAr: [], plans: [], base: null, proposed: null }
+    const check = checkHoursProposal(hours.base, hours.proposed, req.reason)
+    const plans = hours.proposed === hours.base
+      ? []
+      : await planHoursImpactOf(this.prisma, req.courseId, hours.proposed)
+    return {
+      applicable: true,
+      base: hours.base,
+      proposed: hours.proposed,
+      deltaHours: check.deltaHours,
+      warningsAr: [...check.warningsAr, ...planHoursWarnings(plans)],
+      plans,
+    }
+  }
+
+
+  /** أهلية نطاق الكتالوج لمدرب — سجل مكتسب أو منح صريح (البند هـ-١) */
+  async catalogScopeFor(profileId: string) {
+    const [profile, published] = await Promise.all([
+      this.prisma.trainerProfile.findUnique({
+        where: { id: profileId },
+        select: { catalogScopeGrantedAt: true },
+      }),
+      this.prisma.trainerChangeRequest.count({
+        where: { profileId, scope: 'cohort', status: 'published' },
+      }),
+    ])
+    return catalogScopeGate({
+      grantedAt: profile?.catalogScopeGrantedAt?.toISOString() ?? null,
+      publishedCohortProposals: published,
+    })
+  }
+
+  /** أهلية النطاق لحساب مستخدم — لتُعرض في بوابة المدرب قبل أن يكتب اقتراحا */
+  async myCatalogScope(userId: string) {
+    const profile = await this.profileForUser(userId)
+    return this.catalogScopeFor(profile.id)
+  }
+
+  /** منح نطاق الكتالوج صراحة — قرار إدارة مسجَّل بتاريخه ومانحه */
+  async grantCatalogScope(profileId: string, actorId: string, grant: boolean) {
+    const profile = await this.prisma.trainerProfile.findUnique({ where: { id: profileId } })
+    if (!profile) throw new AuthError('not_found', 'ملف المدرب غير موجود', 404)
+    const updated = await this.prisma.trainerProfile.update({
+      where: { id: profileId },
+      data: grant
+        ? { catalogScopeGrantedAt: new Date(), catalogScopeGrantedBy: actorId }
+        : { catalogScopeGrantedAt: null, catalogScopeGrantedBy: null },
+    })
+    await recordAudit(this.prisma, {
+      actorId,
+      action: grant ? 'trainer.scope.grant' : 'trainer.scope.revoke',
+      entityType: 'trainer_profile', entityId: profileId,
+      meta: { scope: 'catalog' },
+    })
+    return { profileId, grantedAt: updated.catalogScopeGrantedAt?.toISOString() ?? null }
+  }
+
   /** مرجع تحليل الأثر لاقتراح — يربط الفحص بالاقتراح فلا يُقبل فحص قديم */
   static impactRef(requestId: string): string {
     return `trainer-change:${requestId}`

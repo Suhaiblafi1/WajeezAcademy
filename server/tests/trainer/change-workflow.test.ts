@@ -1,6 +1,10 @@
 /* اختبار E2E لسير اقتراحات تعديل الدورات من المدرب:
    تأهيل → اقتراح تعديل محور → لا يُنشر مباشرة → طلب تعديل → اعتماد → نشر بالنطاق →
-   حماية الحقول المحظورة → maker-checker → عدم اقتراح غير المؤهل → خطة شعبة منفصلة. */
+   حماية الحقول المحظورة → maker-checker → عدم اقتراح غير المؤهل → خطة شعبة منفصلة.
+
+   ⚠ البند هـ-١: نطاق الكتالوج صار صلاحية تُمنح لا حقا يُفترض. فمدرب الاختبار
+   يُمنح الصلاحية صراحة في الإعداد — كما يفعل مدير أكاديمي حقيقي — ويبقى
+   اختبار البوابة نفسها على مدرب بلا منح. */
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -59,7 +63,38 @@ beforeAll(async () => {
   const t = await makeActiveTrainer('change-trainer@test.local', 'مدرب التعديلات')
   trainerUserId = t.userId
   profileId = t.profileId
+  /* هـ-١: منح صريح لنطاق الكتالوج — بدونه تُرفض كل اقتراحات هذا الملف بحق */
+  await changes.grantCatalogScope(profileId, managerId, true)
 }, 240_000)
+
+describe('هـ-١ نطاق الشعبة هو الافتراضي', () => {
+  it('مدرب بلا منح ولا سجل: نطاق الكتالوج مرفوض، ونطاق الشعبة مفتوح', async () => {
+    const other = await makeActiveTrainer('scope-trainer@test.local', 'مدرب بلا منح')
+    await prisma.trainerCourseQualification.upsert({
+      where: { profileId_courseId: { profileId: other.profileId, courseId: COURSE } },
+      update: { status: 'qualified' },
+      create: { profileId: other.profileId, courseId: COURSE, status: 'qualified', qualifiedBy: managerId },
+    })
+    const gate = await changes.catalogScopeFor(other.profileId)
+    expect(gate.allowed).toBe(false)
+    expect(gate.basis).toBe('none')
+
+    await expect(changes.submit(other.userId, {
+      courseId: COURSE, scope: 'catalog', reason: 'محاولة اقتراح بنطاق الكتالوج بلا صلاحية',
+      items: [{ changeType: 'module_title_edit', targetKey: `${COURSE}-M1`, afterValue: { titleAr: 'عنوان' } }],
+    })).rejects.toThrow(/سجل مثبت|منح صريح/)
+  })
+
+  it('المنح الصريح يفتح النطاق، وسحبه يغلقه', async () => {
+    const granted = await changes.grantCatalogScope(profileId, managerId, true)
+    expect(granted.grantedAt).not.toBeNull()
+    expect((await changes.catalogScopeFor(profileId)).basis).toBe('granted')
+    await changes.grantCatalogScope(profileId, managerId, false)
+    expect((await changes.catalogScopeFor(profileId)).allowed).toBe(false)
+    /* نعيد المنح: بقية الملف يعتمد عليه */
+    await changes.grantCatalogScope(profileId, managerId, true)
+  })
+})
 
 describe('سير اقتراحات التعديل', () => {
   it('1) غير المؤهل لا يقترح — وبعد التأهيل يقترح', async () => {
@@ -119,7 +154,16 @@ describe('سير اقتراحات التعديل', () => {
     expect(r2.status).toBe('approved_for_catalog')
   })
 
+  it('ب-٢) النشر بنطاق الكتالوج مرفوض قبل فحص الأثر التشخيصي', async () => {
+    await expect(changes.publish(requestId, managerId)).rejects.toThrow(/فحص أثره التشخيصي/)
+    expect((await changes.impactChecked(requestId)).checked).toBe(false)
+  })
+
   it('6) النشر ينشئ إصدارا جديدا بالعنوان المعدل ويبقي الإصدار السابق', async () => {
+    /* ب-٢: الفحص شرط النشر بنطاق الكتالوج — كما يفعل المعتمِد في الشاشة */
+    const { analyzeImpact } = await import('../../services/impact.service')
+    await analyzeImpact(prisma, TrainerChangeService.impactRef(requestId), managerId)
+    expect((await changes.impactChecked(requestId)).checked).toBe(true)
     await changes.publish(requestId, managerId)
     const course = await prisma.course.findUnique({
       where: { id: COURSE },

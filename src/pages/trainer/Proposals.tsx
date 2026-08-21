@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { BookOpen, GitPullRequest, Loader2, Plus, ServerOff, Undo2, X } from "lucide-react";
+import { BookOpen, GitPullRequest, Loader2, Lock, Plus, ServerOff, Undo2, X } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 
@@ -25,6 +25,27 @@ interface ChangeRequest {
 }
 
 interface Qualification { courseId: string; title: string; currentVersion: number }
+
+interface ScopeGate { allowed: boolean; basis: 'earned' | 'granted' | 'none'; reasonAr: string }
+interface MyCohort { role: string; cohort: { id: string; title: string; courseId: string; status: string } }
+
+/* البند هـ-٣: دليل المدرب في مكانه لا في صفحة مساعدة. ثلاثة أسطر تجيب ثلاثة
+   أسئلة يسألها كل مدرب جديد: ما أغيّره بحرية · ما يحتاج مراجعة · ما لا أستطيع
+   لمسه ولماذا. السياق في مكانه يمنع أسئلة كثيرة ويمنع اقتراحا مرفوضا سلفا. */
+const GUIDE = [
+  {
+    titleAr: 'ما تغيّره بحرية في شعبتك',
+    bodyAr: 'الأمثلة والشروح والأنشطة والواجبات وترتيب المحاور وعناوينها — نطاق الشعبة يُطبَّق على شعبتك وحدها بعد الاعتماد، ولا يمسّ متعلما في شعبة غيرك.',
+  },
+  {
+    titleAr: 'ما يحتاج مراجعة أوسع',
+    bodyAr: 'نطاق الكتالوج يصل إلى كل مسار وقالب وشعبة تستخدم الدورة، فيُراجَع مع دائرة أثره وفحص أثره التشخيصي قبل النشر.',
+  },
+  {
+    titleAr: 'ما لا تستطيع لمسه ولماذا',
+    bodyAr: 'السعر والمهارات الأساسية وقواعد التشخيص والمخرجات الإلزامية وربط المسارات. المهارات مدخلات محرك الترشيح: تغييرها يغيّر ترشيح كل من يخوض التشخيص، لا محتوى دورتك وحدها.',
+  },
+] as const
 
 interface Blueprint {
   id: string;
@@ -54,7 +75,11 @@ export default function TrainerProposals() {
   const [offline, setOffline] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ courseId: "", reason: "", changeType: "module_title_edit", targetKey: "", newValue: "" });
+  const [form, setForm] = useState({
+    courseId: "", reason: "", changeType: "module_title_edit", targetKey: "", newValue: "",
+    /* البند هـ-١: الافتراضي نطاق الشعبة — يجرّب المدرب فيه بلا مخاطرة على أحد */
+    scope: "cohort" as "cohort" | "catalog", cohortId: "",
+  });
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState("");
   const [bp, setBp] = useState<Blueprint | null>(null);
@@ -100,13 +125,34 @@ export default function TrainerProposals() {
 
   useEffect(() => { void load(); }, [load]);
 
+  /* البند هـ-١: النطاق يُقرأ قبل الكتابة — لا يُفاجأ المدرب برفض بعد أن كتب */
+  const [scopeGate, setScopeGate] = useState<ScopeGate | null>(null);
+  const [cohorts, setCohorts] = useState<MyCohort[]>([]);
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      const safe = async <T,>(pr: Promise<T>): Promise<T | null> => pr.then((v) => v).catch(() => null);
+      const [g, c] = await Promise.all([
+        safe(apiGet<ScopeGate>("/api/trainer/catalog-scope")),
+        safe(apiGet<MyCohort[]>("/api/trainer/my-cohorts")),
+      ]);
+      if (!alive) return;
+      setScopeGate(g);
+      setCohorts(c ?? []);
+    })();
+    return () => { alive = false; };
+  }, []);
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy || !form.courseId || form.reason.trim().length < 10) return;
     setBusy(true); setFlash("");
     try {
       await apiPost("/api/trainer/change-requests", {
-        courseId: form.courseId, scope: "catalog", reason: form.reason,
+        courseId: form.courseId,
+        scope: form.scope,
+        cohortId: form.scope === "cohort" ? form.cohortId : undefined,
+        reason: form.reason,
         items: [{
           changeType: form.changeType,
           targetKey: form.targetKey || undefined,
@@ -117,7 +163,7 @@ export default function TrainerProposals() {
       });
       setFlash("أُرسل اقتراحك للمراجعة الأكاديمية — لن يُطبَّق قبل الاعتماد");
       setShowForm(false);
-      setForm({ courseId: "", reason: "", changeType: "module_title_edit", targetKey: "", newValue: "" });
+      setForm({ courseId: "", reason: "", changeType: "module_title_edit", targetKey: "", newValue: "", scope: "cohort", cohortId: "" });
       await load();
     } catch (err) {
       setFlash(err instanceof ApiError ? err.message : "تعذر إرسال الاقتراح");
@@ -149,10 +195,26 @@ export default function TrainerProposals() {
 
   return (
     <TrainerLayout title="اقتراحات تعديل دوراتي">
+      {/* البند هـ-٣: الدليل في مكانه — ثلاثة أسطر قبل أول اقتراح */}
+      <div className="mb-5 grid gap-3 sm:grid-cols-3">
+        {GUIDE.map((g, i) => (
+          <div key={g.titleAr} className={`rounded-2xl border p-4 ${
+            i === 0 ? "border-teal/30 bg-teal-ink/[0.06]" : i === 1 ? "border-gold/30 bg-gold/[0.06]" : "border-white/12 bg-white/[0.03]"
+          }`}>
+            <p className="flex items-center gap-1.5 text-xs font-black">
+              {i === 0 ? <BookOpen className="h-3.5 w-3.5 text-teal-light-ink" aria-hidden="true" />
+                : i === 1 ? <GitPullRequest className="h-3.5 w-3.5 text-gold-ink" aria-hidden="true" />
+                : <Lock className="h-3.5 w-3.5 text-white/50" aria-hidden="true" />}
+              {g.titleAr}
+            </p>
+            <p className="mt-1.5 text-[11px] leading-6 text-white/65">{g.bodyAr}</p>
+          </div>
+        ))}
+      </div>
+
       <div className="mb-5 flex items-center justify-between">
-        <p className="text-xs leading-6 text-white/50">
-          تقترح هنا على الدورات المؤهل لها فقط. كل اقتراح يمر بمراجعة أكاديمية — لا تعديل مباشرا على المنشور،
-          والسعر وقواعد التشخيص والمهارات الأساسية والمخرجات الإلزامية ليست ضمن صلاحية المدرب.
+        <p className="text-xs leading-6 text-white/55">
+          تقترح هنا على الدورات المؤهل لها فقط. كل اقتراح يمرّ بمراجعة أكاديمية — لا تعديل مباشرا على المنشور.
         </p>
         <button
           onClick={() => setShowForm(!showForm)}
@@ -166,6 +228,34 @@ export default function TrainerProposals() {
 
       {showForm && (
         <form onSubmit={submit} className="mb-6 space-y-4 rounded-3xl border border-teal/25 bg-teal/[0.04] p-6">
+          {/* البند هـ-١: النطاق أول اختيار — والافتراضي شعبتك */}
+          <fieldset>
+            <legend className="mb-1.5 text-xs font-bold text-white/60">نطاق الاقتراح *</legend>
+            <div className="flex flex-wrap gap-2">
+              <label className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-2xl border px-4 text-xs ${
+                form.scope === "cohort" ? "border-teal bg-teal-ink/15 font-bold" : "border-white/12 text-white/65"
+              }`}>
+                <input type="radio" name="tp-scope" checked={form.scope === "cohort"}
+                  onChange={() => setForm({ ...form, scope: "cohort" })} className="h-4 w-4 accent-teal" />
+                شعبتي — يُطبَّق على شعبتك وحدها
+              </label>
+              <label className={`flex min-h-11 items-center gap-2 rounded-2xl border px-4 text-xs ${
+                scopeGate?.allowed === false ? "cursor-not-allowed border-white/10 text-white/35"
+                  : form.scope === "catalog" ? "cursor-pointer border-gold bg-gold/15 font-bold" : "cursor-pointer border-white/12 text-white/65"
+              }`}>
+                <input type="radio" name="tp-scope" disabled={scopeGate?.allowed === false}
+                  checked={form.scope === "catalog"}
+                  onChange={() => setForm({ ...form, scope: "catalog", cohortId: "" })} className="h-4 w-4 accent-teal" />
+                الكتالوج — يصل كل مسار وقالب وشعبة
+              </label>
+            </div>
+            {scopeGate && (
+              <p className={`mt-2 text-[11px] leading-6 ${scopeGate.allowed ? "text-white/55" : "text-gold-ink"}`}>
+                {scopeGate.reasonAr}
+              </p>
+            )}
+          </fieldset>
+
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label htmlFor="tp-course" className="mb-1.5 block text-xs font-bold text-white/60">الدورة * — من دوراتك المؤهلة</label>
@@ -183,6 +273,24 @@ export default function TrainerProposals() {
               </select>
             </div>
           </div>
+          {form.scope === "cohort" && (
+            <div>
+              <label htmlFor="tp-cohort" className="mb-1.5 block text-xs font-bold text-white/60">الشعبة * — من شعبك التي تدرّبها</label>
+              <select id="tp-cohort" required value={form.cohortId} onChange={(e) => setForm({ ...form, cohortId: e.target.value })}
+                className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white [&>option]:bg-surface">
+                <option value="" disabled>اختر الشعبة</option>
+                {cohorts
+                  .filter((c) => !form.courseId || c.cohort.courseId === form.courseId)
+                  .map((c) => <option key={c.cohort.id} value={c.cohort.id}>{c.cohort.title}</option>)}
+              </select>
+              {cohorts.filter((c) => !form.courseId || c.cohort.courseId === form.courseId).length === 0 && (
+                <p className="mt-1.5 text-[11px] text-gold-ink">
+                  لا شعبة لك في هذه الدورة — اختر دورة تدرّبها، أو اقترح بنطاق الكتالوج إن كان مفتوحا لك.
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label htmlFor="tp-target" className="mb-1.5 block text-xs font-bold text-white/60">المحور المستهدف (معرفه) — اختياري</label>

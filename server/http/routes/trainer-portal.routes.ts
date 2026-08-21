@@ -94,6 +94,11 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
     return reply.status(201).send(request)
   })
 
+  app.get('/api/trainer/catalog-scope', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'أهليتي لنطاق الكتالوج — تُقرأ قبل كتابة اقتراح (هـ-١)' },
+  }, async (req) => changes.myCatalogScope(req.auth!.userId))
+
   app.get('/api/trainer/change-requests', {
     preHandler: requirePermission('trainer.portal'),
     schema: { tags: ['trainer-portal'], summary: 'اقتراحاتي وحالاتها وتعليقات المراجعين' },
