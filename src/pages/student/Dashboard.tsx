@@ -26,6 +26,7 @@ import {
   readUserName, courseGate,
 } from "@/data/student";
 import AdvisorContact from "@/components/AdvisorContact";
+import EmptyState from "@/components/EmptyState";
 
 /* مستشارو المجالات — نفس منطق صفحة المسار العامة (وضع المحاكاة) */
 const ADVISORS: Record<string, { name: string; title: string }> = {
@@ -335,9 +336,23 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
             {details === null ? (
               <div className="grid place-items-center py-8"><Loader2 className="h-6 w-6 animate-spin text-teal-ink" /></div>
             ) : upcoming.length === 0 ? (
-              <p className="rounded-2xl border border-white/8 bg-black/20 px-4 py-6 text-center text-xs text-white/50">
-                لا جلسات مجدولة قادمة — عند جدولة شعبتك تظهر هنا مع رابط الانضمام.
-              </p>
+              /* ط-٤ · الإجراءات من حالة هذه الصفحة نفسها: واجبٌ معلَّق يُقترح لأنه
+                 موجود، والشعب المفتوحة دعوةٌ للتصفّح لا زعمٌ بوجود شعبة. */
+              <EmptyState
+                icon={CalendarDays}
+                titleAr="لا جلسات مجدولة قادمة"
+                reasonAr="عند جدولة شعبتك تظهر الجلسة هنا مع رابط الانضمام. وحتى ذلك الحين وقتك ليس فراغا:"
+                actions={[
+                  ...(pendingAssessments[0]
+                    ? [{ to: "/student/learning", labelAr: `سلّم «${pendingAssessments[0].title}»`, hintAr: pendingAssessments[0].dueAt ? `يستحق ${new Date(pendingAssessments[0].dueAt).toLocaleDateString("ar-JO")}` : "بانتظار تسليمك" }]
+                    : []),
+                  ...(rows[0]
+                    ? [{ to: "/student/learning", labelAr: `تابع «${rows[0].cohort.course.versions[0]?.titleAr ?? rows[0].cohort.title}»`, hintAr: "الوحدات والمواد" }]
+                    : []),
+                  { to: "/student/review", labelAr: "راجع ما تعلّمته", hintAr: "بطاقات الاسترجاع" },
+                  { to: "/student/cohorts", labelAr: "تصفّح الشعب المفتوحة", hintAr: "للتسجيل في دورة أخرى" },
+                ]}
+              />
             ) : (
               upcoming.map((s) => (
                 <div key={s.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">

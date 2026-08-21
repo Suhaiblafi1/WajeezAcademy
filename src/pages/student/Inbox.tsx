@@ -12,6 +12,8 @@ import { apiGet, apiPost } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import { fmtWhen } from "@/utils/format";
 import { buildInbox, KIND_LABEL_AR, type InboxItem, type InboxKind } from "@/application/student/inbox";
+import EmptyState from "@/components/EmptyState";
+import { countAr } from "@/application/text/count-ar";
 
 const ICON: Record<InboxKind, typeof Bell> = {
   notification: Bell,
@@ -27,6 +29,8 @@ const FILTERS: { key: InboxKind | "all"; labelAr: string }[] = [
   { key: "review_note", labelAr: "ملاحظات التسليم" },
   { key: "support_reply", labelAr: "ردود الدعم" },
 ];
+
+const MSG_FORMS = { one: "رسالة", two: "رسالتان", few: "رسائل", many: "رسالة" };
 
 export default function Inbox() {
   const { user } = useRealSession();
@@ -109,14 +113,27 @@ export default function Inbox() {
       {items === null ? (
         <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" aria-label="جارٍ التحميل" /></div>
       ) : shown.length === 0 ? (
-        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] px-6 py-20 text-center">
-          <InboxIcon className="h-12 w-12 text-white/20" aria-hidden="true" />
-          <p className="mt-4 max-w-md text-sm leading-7 text-white/60">
-            {filter === "all"
-              ? "صندوقك فارغ — قرارات التسجيل والجلسات وتعليقات مدربك وردود الدعم تصل هنا كلها في مكان واحد."
-              : "لا شيء في هذا التصنيف بعد."}
-          </p>
-        </div>
+        /* ط-٤ · فراغُ مرشّح ليس فراغَ صندوق: الأول يُحلّ بإزالة المرشّح لا ببداية
+           جديدة. وحين يكون الصندوق نفسه فارغا فالتوجيه إلى ما يُنشئ الرسائل. */
+        filter === "all" ? (
+          <EmptyState
+            icon={InboxIcon}
+            titleAr="صندوقك فارغ"
+            reasonAr="قرارات التسجيل والجلسات وتعليقات مدربك وردود الدعم تصل هنا كلها في مكان واحد — ولم يصل شيء بعد."
+            actions={[
+              { to: "/student/cohorts", labelAr: "تصفّح الشعب المفتوحة", hintAr: "أول قرار تسجيل يصلك هنا" },
+              { to: "/student/support", labelAr: "افتح تذكرة دعم", hintAr: "إن كان لديك سؤال" },
+            ]}
+          />
+        ) : (
+          <EmptyState
+            icon={InboxIcon}
+            tone="filter"
+            titleAr="لا شيء في هذا التصنيف"
+            reasonAr={`صندوقك ليس فارغا — فيه ${countAr(items.length, MSG_FORMS)}، لكن لا شيء منها في هذا التصنيف.`}
+            actions={[{ onClick: () => setFilter("all"), labelAr: "اعرض كل الرسائل", hintAr: "إزالة المرشّح" }]}
+          />
+        )
       ) : (
         <ul className="space-y-2">
           {shown.map((i) => {

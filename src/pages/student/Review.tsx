@@ -10,8 +10,7 @@
    - لا استرجاع قبل موعده: من أراد التقديم فقد ألغى الفائدة، والخادم يرفضه. */
 
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router";
-import { ArrowLeft, BookOpen, CalendarClock, CheckCircle2, Layers, Loader2, RefreshCw, Target } from "lucide-react";
+import { BookOpen, CalendarClock, CheckCircle2, Layers, Loader2, RefreshCw, Target } from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import CheckQuestion from "@/components/CheckQuestion";
 import { apiGet, apiPost } from "@/services/api";
@@ -23,6 +22,7 @@ import {
   buildRetrievalSummary, buildReviewQueue, dueCards,
   type RetrievalCard, type ReviewItem,
 } from "@/application/student/retrieval-schedule";
+import EmptyState from "@/components/EmptyState";
 
 const HONESTY_NOTE =
   "الاسترجاع لا يرفع مستوى مهارتك ولا يخفضه — مستواك يأتي من القياس في مؤشر وجيز ومن إعادة القياس بعد الدورة. " +
@@ -175,24 +175,30 @@ export default function Review() {
       </section>
 
       {queue.length === 0 ? (
-        <div className="mt-6 grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] px-6 py-16 text-center">
-          <Layers className="h-12 w-12 text-white/20" aria-hidden="true" />
-          <h2 className="mt-4 text-xl font-black">
-            {summary && summary.total === 0 ? "لا بطاقات بعد" : "لا شيء مستحق الآن"}
-          </h2>
-          <p className="mt-2 max-w-md text-sm leading-7 text-white/60">
-            {summary && summary.total === 0
-              ? "تُفتح بطاقات المراجعة من تمرين الاسترجاع في نهاية كل وحدة — أنهِ وحدة ثم اطلب جدولة عودتها."
-              : "التباعد نفسه هو الفائدة، فلا نقدّم موعدا. عد في الموعد المذكور أعلاه."}
-          </p>
-          <Link
-            to="/student/learning"
-            className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-full bg-gold px-6 text-sm font-black text-on-gold transition hover:bg-gold/90"
-          >
-            اذهب إلى دوراتي
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          </Link>
-        </div>
+        /* ط-٤ · حالتان لا واحدة: «لا بطاقات بعد» تحتاج بداية، و«لا شيء مستحق»
+           إنجازٌ يُطمئن — فلا تُعرض بنبرة نقص ولا تُدعى لعمل لا فائدة فيه الآن.
+           التباعد نفسه هو الفائدة، فلا نقترح مراجعة قبل موعدها. */
+        summary && summary.total === 0 ? (
+          <EmptyState
+            className="mt-6"
+            icon={Layers}
+            titleAr="لا بطاقات بعد"
+            reasonAr="تُفتح بطاقات المراجعة من تمرين الاسترجاع في نهاية كل وحدة — أنهِ وحدة ثم اطلب جدولة عودتها."
+            actions={[
+              { to: "/student/learning", labelAr: "أنهِ وحدة من دوراتي", hintAr: "أول بطاقة تُفتح بعدها" },
+              { to: "/student/pathway", labelAr: "اعرف الوحدة التالية", hintAr: "موضعك من المسار" },
+            ]}
+          />
+        ) : (
+          <EmptyState
+            className="mt-6"
+            icon={Layers}
+            tone="done"
+            titleAr="لا شيء مستحق الآن"
+            reasonAr="راجعتَ كل ما حلّ موعده. التباعد نفسه هو الفائدة، فلا نقدّم موعدا — عد في الموعد المذكور أعلاه."
+            actions={[{ to: "/student/learning", labelAr: "تابع دوراتي", hintAr: "وحدة جديدة تفتح بطاقات جديدة" }]}
+          />
+        )
       ) : (
         <>
           <ul className="mt-6 flex flex-col gap-4">

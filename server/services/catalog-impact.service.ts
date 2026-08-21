@@ -12,6 +12,7 @@
 
 import type { PrismaClient } from '@prisma/client'
 import type { PlanHoursImpact } from '../../src/application/catalog/hours-policy'
+import { countAr } from '../../src/application/text/count-ar'
 
 export interface BlastRadiusEntity {
   id: string
@@ -115,14 +116,9 @@ export async function courseBlastRadius(
   return out
 }
 
-/* صيغة العدد في العربية: ١ مفرد · ٢ مثنى · ٣–١٠ جمع · ١١+ مفرد منصوب.
-   «1 مسارا» و«3 قالبا» خطأ يقرؤه المراجع في كل سطر — والعدد هنا يُقرأ لا يُحسب. */
-export function countAr(n: number, forms: { one: string; two: string; few: string; many: string }): string {
-  if (n === 1) return `${n} ${forms.one}`
-  if (n === 2) return `${n} ${forms.two}`
-  if (n >= 3 && n <= 10) return `${n} ${forms.few}`
-  return `${n} ${forms.many}`
-}
+/* صيغة العدد انتقلت إلى الطبقة المشتركة (src/application/text) لتستخدمها
+   الواجهة أيضا (إد-١). تُصدَّر من هنا كما كانت فلا ينكسر مستورد قائم. */
+export { countAr } from '../../src/application/text/count-ar'
 
 const PATHWAY_FORMS = { one: 'مسار', two: 'مساران', few: 'مسارات', many: 'مسارا' }
 const TEMPLATE_FORMS = { one: 'قالب مركّب', two: 'قالبان مركّبان', few: 'قوالب مركّبة', many: 'قالبا مركّبا' }

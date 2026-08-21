@@ -9,6 +9,7 @@ import { Award, BadgeCheck, Loader2, RefreshCw, Ruler, ShieldOff } from "lucide-
 import PortalLayout from "./PortalLayout";
 import { apiGet, ApiError } from "@/services/api";
 import { buildGrowthSummary, type CourseGrowth, type RemeasureRecord } from "@/application/student/skill-growth";
+import EmptyState from "@/components/EmptyState";
 
 interface Cert {
   id: string; number: string; learnerName: string; courseId: string; courseVersion: number;
@@ -76,13 +77,16 @@ export default function Certificates() {
       {loading ? (
         <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" /></div>
       ) : rows.length === 0 ? (
-        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
-          <Award className="h-12 w-12 text-white/20" />
-          <h2 className="mt-4 text-xl font-black">لا شهادات بعد</h2>
-          <p className="mt-2 max-w-md text-sm leading-7 text-white/55">
-            تُصدر الشهادة بعد تحقق قواعد الإكمال على شعبتك — تظهر هنا فور إصدارها برقم تحقق عام.
-          </p>
-        </div>
+        /* ط-٤ · الشهادة نتيجةُ إكمال لا زرٌّ يُضغط — فالتوجيه إلى ما يُقرّبها فعلا */
+        <EmptyState
+          icon={Award}
+          titleAr="لا شهادات بعد"
+          reasonAr="تُصدر الشهادة بعد تحقق قواعد الإكمال على شعبتك — حضورا وتسليمات — وتظهر هنا فور إصدارها برقم تحقق عام. ما يُقرّبها:"
+          actions={[
+            { to: "/student/learning", labelAr: "أكمل وحدات شعبتك", hintAr: "الحضور والتسليمات" },
+            { to: "/student/pathway", labelAr: "اعرف موضعك من المسار", hintAr: "ما بقي وما تمّ" },
+          ]}
+        />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {rows.map((c) => (
