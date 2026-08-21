@@ -5,6 +5,7 @@ import {
   Loader2, PlayCircle, RefreshCw, Send, ServerOff, Video,
 } from "lucide-react";
 import PortalLayout from "./PortalLayout";
+import SubmissionFeedback from "@/components/SubmissionFeedback";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 
 const ENROLL_STATUS: Record<string, string> = {
@@ -42,12 +43,18 @@ interface EnrollmentDetail extends EnrollmentRow {
     assessments: {
       id: string; title: string; type: string; dueAt: string | null; maxScore: number;
       items: { id: string; prompt: string; kind?: string; maxScore?: number }[];
+      /* الروبرك يصل من الخادم أصلا ولم يكن يُقرأ — عليه يقوم تفصيل الدرجة (ص-٢) */
+      rubric?: { id: string; title: string; criteria: { id: string; title: string; maxScore: number; sequence: number }[] } | null;
     }[];
   };
   attendance: { sessionId: string; status: string }[];
   submissions: {
     id: string; assessmentId: string; status: string; reviewNote: string | null; submittedAt: string;
-    grades: { score: string; maxScore: string }[];
+    grades: {
+      score: string; maxScore: string;
+      rubricScores?: { criterionId: string; score: number }[] | null;
+      history?: { oldScore: string | null; newScore: string | null; createdAt?: string }[] | null;
+    }[];
     feedback: { body: string; createdAt: string }[];
   }[];
   certificates: { id: string; number: string; status: string }[];
@@ -313,12 +320,10 @@ function LearnerCohortDetail({ detail, answers, setAnswers, busy, onSubmit, onSu
                       </span>
                     )}
                   </div>
-                  {mine?.reviewNote && ["resubmit_requested", "rejected"].includes(mine.status) && (
-                    <p className="mt-2 rounded-xl bg-red-500/10 px-3 py-2 text-[11px] leading-6 text-red-200/80">ملاحظة المدرب: {mine.reviewNote}</p>
+                  {/* ص-٢: الحكم كاملا — تفصيل الروبرك وملاحظة المراجعة في كل الحالات وتعليقات معنونة */}
+                  {mine && (
+                    <SubmissionFeedback submission={mine} criteria={a.rubric?.criteria} className="mt-3" />
                   )}
-                  {mine?.feedback.map((f, i) => (
-                    <p key={i} className="mt-2 rounded-xl bg-teal/8 px-3 py-2 text-[11px] leading-6 text-white/65">{f.body}</p>
-                  ))}
                   {canSubmit && a.type === "quiz" && a.items.length > 0 && (
                     <QuizAttemptForm
                       items={a.items}

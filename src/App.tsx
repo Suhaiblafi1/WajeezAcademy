@@ -33,6 +33,7 @@ const StudentAccount = lazy(() => import('./pages/student/Account'))
 const StudentBilling = lazy(() => import('./pages/student/Billing'))
 const StudentCv = lazy(() => import('./pages/student/MyCv'))
 const StudentNotifications = lazy(() => import('./pages/student/Notifications'))
+const StudentInbox = lazy(() => import('./pages/student/Inbox'))
 const StudentSupport = lazy(() => import('./pages/student/Support'))
 const StudentOpenCohorts = lazy(() => import('./pages/student/OpenCohorts'))
 const AdvisorDashboard = lazy(() => import('./pages/advisor/AdvisorDashboard'))
@@ -127,6 +128,7 @@ export default function App() {
           <Route path="/student/billing" element={<StudentBilling />} />
           <Route path="/student/cv" element={<StudentCv />} />
           <Route path="/student/notifications" element={<StudentNotifications />} />
+          <Route path="/student/inbox" element={<StudentInbox />} />
           <Route path="/student/support" element={<StudentSupport />} />
           <Route path="/student/cohorts" element={<StudentOpenCohorts />} />
           {/* دعوة المدرب مسار عام برمز دعوة — خارج حارس الأدوار عمدا */}

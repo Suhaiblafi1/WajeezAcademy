@@ -1,0 +1,150 @@
+/* صندوقي (البند ص-١) — صندوق تواصل موحّد يجمع ما يخصّ المتعلم في مكان واحد:
+   الإشعارات · تعليقات مدربه على تسليماته · ملاحظات المراجعة · ردود الدعم.
+
+   من نقاط نهاية قائمة فقط. والقراءة تبقى للإشعارات وحدها — ولا نصطنع «مقروء»
+   لما لا يملك حالة قراءة في القاعدة. */
+
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router";
+import { Bell, CheckCheck, Inbox as InboxIcon, LifeBuoy, Loader2, MessageSquare, RefreshCw, ScrollText } from "lucide-react";
+import PortalLayout from "./PortalLayout";
+import { apiGet, apiPost } from "@/services/api";
+import { useRealSession } from "@/services/session";
+import { fmtWhen } from "@/utils/format";
+import { buildInbox, KIND_LABEL_AR, type InboxItem, type InboxKind } from "@/application/student/inbox";
+
+const ICON: Record<InboxKind, typeof Bell> = {
+  notification: Bell,
+  trainer_feedback: MessageSquare,
+  review_note: ScrollText,
+  support_reply: LifeBuoy,
+};
+
+const FILTERS: { key: InboxKind | "all"; labelAr: string }[] = [
+  { key: "all", labelAr: "الكل" },
+  { key: "notification", labelAr: "إشعارات" },
+  { key: "trainer_feedback", labelAr: "تعليقات مدربك" },
+  { key: "review_note", labelAr: "ملاحظات التسليم" },
+  { key: "support_reply", labelAr: "ردود الدعم" },
+];
+
+export default function Inbox() {
+  const { user } = useRealSession();
+  const [items, setItems] = useState<InboxItem[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [filter, setFilter] = useState<InboxKind | "all">("all");
+
+  /* عدّاد تحديث يدوي — بديل عن useCallback لا يستطيع المُصرِّف الحفاظ عليه،
+     وكل ضبط حالة يقع بعد await فلا setState متزامن داخل الأثر. */
+  const [reload, setReload] = useState(0);
+
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      const safe = async <T,>(pr: Promise<T>): Promise<T | null> => pr.then((v) => v).catch(() => null);
+      const [notifs, tickets, enrollList] = await Promise.all([
+        safe(apiGet<unknown>("/api/learner/notifications")),
+        safe(apiGet<unknown>("/api/learner/support/tickets")),
+        safe(apiGet<{ id: string }[]>("/api/learner/my-learning")),
+      ]);
+      /* تفاصيل كل تسجيل تحمل التسليمات وتعليقاتها — تُجلب بالتوازي */
+      const details = await Promise.all(
+        (Array.isArray(enrollList) ? enrollList : []).map((e) => safe(apiGet<unknown>(`/api/learner/enrollments/${e.id}`))),
+      );
+      if (!alive) return;
+      const anyOk = notifs !== null || tickets !== null || enrollList !== null;
+      setError(anyOk ? null : "تعذر الوصول للخادم — حدّث الصفحة");
+      setItems(buildInbox(notifs, tickets, details.filter(Boolean), user?.userId ?? null));
+    })();
+    return () => { alive = false; };
+  }, [user?.userId, reload]);
+
+  const shown = useMemo(
+    () => (items ?? []).filter((i) => filter === "all" || i.kind === filter),
+    [items, filter],
+  );
+  const unread = (items ?? []).filter((i) => i.unread);
+
+  const markAll = async () => {
+    setItems((prev) => (prev ?? []).map((i) => ({ ...i, unread: false })));
+    await Promise.allSettled(
+      unread.map((i) => apiPost(`/api/learner/notifications/${i.id.replace(/^n:/, "")}/read`)),
+    );
+  };
+
+  return (
+    <PortalLayout title="صندوقي">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <button onClick={() => { setItems(null); setReload((n) => n + 1); }} className="flex min-h-11 cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 text-xs font-bold text-white/70 hover:border-white/40">
+          <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" /> تحديث
+        </button>
+        {unread.length > 0 && (
+          <button onClick={() => void markAll()} className="flex min-h-11 cursor-pointer items-center gap-1.5 rounded-full border border-teal/40 px-4 text-xs font-bold text-teal-light-ink hover:bg-teal-ink/10">
+            <CheckCheck className="h-3.5 w-3.5" aria-hidden="true" /> تعليم الإشعارات كمقروءة ({unread.length})
+          </button>
+        )}
+      </div>
+
+      <div className="mb-4 flex flex-wrap gap-1.5">
+        {FILTERS.map((f) => {
+          const n = f.key === "all" ? (items ?? []).length : (items ?? []).filter((i) => i.kind === f.key).length;
+          return (
+            <button
+              key={f.key}
+              onClick={() => setFilter(f.key)}
+              aria-pressed={filter === f.key}
+              className={`min-h-11 cursor-pointer rounded-full border px-3.5 text-xs font-bold transition ${
+                filter === f.key ? "border-teal bg-teal-ink/10 text-teal-light-ink" : "border-white/10 text-white/60 hover:border-white/30"
+              }`}
+            >
+              {f.labelAr}
+              <span className="ms-1.5 tabular-nums text-white/55">{n}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {error && <p className="mb-4 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-200">{error}</p>}
+
+      {items === null ? (
+        <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" aria-label="جارٍ التحميل" /></div>
+      ) : shown.length === 0 ? (
+        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] px-6 py-20 text-center">
+          <InboxIcon className="h-12 w-12 text-white/20" aria-hidden="true" />
+          <p className="mt-4 max-w-md text-sm leading-7 text-white/60">
+            {filter === "all"
+              ? "صندوقك فارغ — قرارات التسجيل والجلسات وتعليقات مدربك وردود الدعم تصل هنا كلها في مكان واحد."
+              : "لا شيء في هذا التصنيف بعد."}
+          </p>
+        </div>
+      ) : (
+        <ul className="space-y-2">
+          {shown.map((i) => {
+            const Icon = ICON[i.kind];
+            return (
+              <li key={i.id}>
+                <Link
+                  to={i.href}
+                  className={`block rounded-2xl border p-4 transition ${
+                    i.unread ? "border-teal/25 bg-teal-ink/[0.06] hover:border-teal/50" : "border-white/8 bg-white/[0.02] hover:border-white/25"
+                  }`}
+                >
+                  <p className="flex flex-wrap items-center gap-2 text-sm font-black">
+                    {i.unread && <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full bg-gold" />}
+                    <Icon className="h-3.5 w-3.5 shrink-0 text-teal-light-ink" aria-hidden="true" />
+                    {i.titleAr}
+                    <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-bold text-white/60">
+                      {KIND_LABEL_AR[i.kind]}
+                    </span>
+                  </p>
+                  <p className="mt-1.5 whitespace-pre-line text-xs leading-6 text-white/75">{i.bodyAr}</p>
+                  <p className="mt-1.5 text-[10px] text-white/55">{fmtWhen(i.at)}</p>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </PortalLayout>
+  );
+}

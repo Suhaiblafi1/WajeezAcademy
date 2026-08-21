@@ -119,6 +119,88 @@ async function seedLessonBody(prisma: PrismaClient, courseId: string): Promise<'
   return 'written'
 }
 
+/* البند ص-٢: تسليم مقيَّم بروبرك وتعليق مدرب وتعديل درجة موثَّق.
+   مستقلّة ومُستدعاة قبل حراسة «البيانات الغنية موجودة» فتُطبَّق على قاعدة
+   قائمة. بلا هذه البيانات لا يظهر «من أين جاءت درجتك» ولا التعليق المعنون،
+   فتبقى الميزة شيفرة بلا شاهد. */
+async function seedGradedSubmission(prisma: PrismaClient): Promise<'written' | 'skipped'> {
+  const student = await prisma.user.findUnique({ where: { email: 'student.demo@wajeez.local' } })
+  const trainer = await prisma.user.findUnique({ where: { email: 'trainer.demo@wajeez.local' } })
+  const admin = await prisma.user.findUnique({ where: { email: 'admin.demo@wajeez.local' } })
+  if (!student || !trainer || !admin) return 'skipped'
+  const enrollment = await prisma.enrollment.findFirst({
+    where: { userId: student.id, status: 'enrolled' },
+    orderBy: { createdAt: 'asc' },
+  })
+  if (!enrollment) return 'skipped'
+  const already = await prisma.cohortAssessment.findFirst({
+    where: { cohortId: enrollment.cohortId, title: { contains: 'خريطة عملية' } },
+  })
+  if (already) return 'skipped'
+  const now = Date.now()
+
+  const rubric = await prisma.gradingRubric.create({
+    data: {
+      title: 'روبرك خريطة العملية — ديمو',
+      createdBy: admin.id,
+      criteria: {
+        create: [
+          { sequence: 1, title: 'وضوح المشكلة وحدودها', maxScore: 10 },
+          { sequence: 2, title: 'دقة رسم الخطوات', maxScore: 10 },
+          { sequence: 3, title: 'تحديد أضعف حلقة بدليل', maxScore: 10 },
+        ],
+      },
+    },
+    include: { criteria: { orderBy: { sequence: 'asc' } } },
+  })
+  const assessment = await prisma.cohortAssessment.create({
+    data: {
+      cohortId: enrollment.cohortId,
+      title: 'خريطة عملية قابلة للأتمتة',
+      type: 'assignment',
+      maxScore: 30,
+      passScore: 18,
+      dueAt: new Date(now - 3 * 86400_000),
+      rubricId: rubric.id,
+      status: 'published',
+      createdBy: trainer.id,
+    },
+  })
+  const submission = await prisma.assignmentSubmission.create({
+    data: {
+      assessmentId: assessment.id,
+      enrollmentId: enrollment.id,
+      textAnswer: 'رسمت عملية «مطابقة الفواتير» في سبع خطوات، وأضعف حلقة هي الإدخال اليدوي لأرقام الفواتير.',
+      status: 'accepted',
+      reviewNote: 'خريطة واضحة وتحديدك لأضعف حلقة مسنود بأمثلة. انتبه أن الخطوة الرابعة تحتاج قاعدة قرار صريحة قبل أتمتتها.',
+      submittedAt: new Date(now - 2 * 86400_000),
+      reviewedAt: new Date(now - 86400_000),
+      reviewedBy: trainer.id,
+    },
+  })
+  const grade = await prisma.grade.create({
+    data: {
+      submissionId: submission.id,
+      score: 25,
+      maxScore: 30,
+      rubricScores: rubric.criteria.map((c, i) => ({ criterionId: c.id, score: [9, 8, 8][i] ?? 8 })),
+      gradedBy: trainer.id,
+    },
+  })
+  /* تعديل درجة موثّق — يظهر للمتعلم «عُدِّلت من ٢٢ إلى ٢٥» */
+  await prisma.gradeHistory.create({
+    data: { gradeId: grade.id, oldScore: 22, newScore: 25, reason: 'أُعيد النظر في معيار وضوح المشكلة بعد توضيح المتعلم', changedBy: trainer.id },
+  })
+  await prisma.trainerFeedback.create({
+    data: {
+      submissionId: submission.id,
+      authorId: trainer.id,
+      body: 'أفضل ما في تسليمك أنك بدأت بالعملية لا بالأداة. للخطوة القادمة: اكتب قاعدة القرار للخطوة الرابعة صراحة — «إن كان المبلغ أقل من كذا فوجّهه تلقائيا» — ثم قدّر الوقت الموفَّر أسبوعيا.',
+    },
+  })
+  return 'written'
+}
+
 export async function seedDemo(prisma: PrismaClient): Promise<{ users: number; richData: 'created' | 'existing' }> {
   await seedRbac(prisma)
 
@@ -128,6 +210,7 @@ export async function seedDemo(prisma: PrismaClient): Promise<{ users: number; r
 
   /* متن الدرس يُبذر أولا: قابل للتطبيق على قاعدة قائمة، وحراسته الخاصة تمنع التكرار */
   await seedLessonBody(prisma, 'C-AUT-101')
+  await seedGradedSubmission(prisma)
 
   /* إن كان الطالب الديمو مسجلا في شعبة فالبيانات الغنية موجودة — لا تكرار */
   const alreadyRich = await prisma.enrollment.findFirst({ where: { userId: student.id } })

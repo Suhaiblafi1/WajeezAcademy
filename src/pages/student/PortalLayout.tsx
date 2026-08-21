@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router";
-import { GraduationCap, LayoutDashboard, Route as RouteIcon, Trophy, Award, Lock, Eye, LogOut, Bell, CheckCheck, UserCircle, ReceiptText, FileText, MoreHorizontal, X, LifeBuoy, CalendarDays, BookOpen, ChevronDown, Target } from "lucide-react";
+import { GraduationCap, LayoutDashboard, Route as RouteIcon, Trophy, Award, Lock, Eye, LogOut, Bell, CheckCheck, UserCircle, ReceiptText, FileText, MoreHorizontal, X, LifeBuoy, CalendarDays, BookOpen, ChevronDown, Target, Inbox } from "lucide-react";
 import { canAccessPortal, enablePreview, getEnrollment, isOwnerUnlocked, unlockOwner } from "@/services/access";
 import { signOut } from "@/services/auth";
 import { apiGet, apiPost } from "@/services/api";
@@ -137,7 +137,8 @@ export default function PortalLayout({ children, title }: { children: React.Reac
     { to: "/student/billing", label: "فواتيري", icon: ReceiptText },
     { to: "/student/cv", label: "سيرتي", icon: FileText },
     { to: "/student/account", label: "حسابي", icon: UserCircle },
-    { to: "/student/notifications", label: "إشعاراتي", icon: Bell },
+    /* ص-١: صندوق موحّد يجمع الإشعارات وتعليقات المدرب وردود الدعم */
+    { to: "/student/inbox", label: "صندوقي", icon: Inbox },
     { to: "/student/support", label: "الدعم", icon: LifeBuoy },
   ];
   /* سطح المكتب: خمسة أساسية + «المزيد» منسدلة — لا شريط مكتظ يضغط التبويبات */
