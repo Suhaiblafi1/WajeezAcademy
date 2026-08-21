@@ -10,6 +10,7 @@ import SimulationNote from "@/components/SimulationNote";
 import VideoPlayer from "@/components/VideoPlayer";
 import LessonBody from "@/components/LessonBody";
 import ModuleCheck from "@/components/ModuleCheck";
+import DecisionScenario from "@/components/DecisionScenario";
 import ModuleVideo from "@/components/ModuleVideo";
 import CourseResources from "@/components/CourseResources";
 import { getEnrollment } from "@/services/access";
@@ -194,6 +195,9 @@ function CourseViewBody() {
                   <ModuleVideo raw={lesson.video} checksRaw={lesson.checks} moduleId={lesson.id} className="mb-6" />
                 )}
                 <LessonBody body={lesson.body} />
+                {/* ح-٥: سيناريو القرار بعد المتن وقبل الاسترجاع — يُطبَّق ما قُرئ
+                    على موقف مهني، ثم يُسترجَع. التطبيق قبل التثبيت. */}
+                {lesson.scenario && <DecisionScenario raw={lesson.scenario} moduleId={lesson.id} className="mt-6" />}
                 {/* ح-٣: الاسترجاع بعد القراءة مباشرة — لا كواجب منفصل */}
                 {lesson.checks && <ModuleCheck raw={lesson.checks} moduleId={lesson.id} className="mt-6" />}
                 <button

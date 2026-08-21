@@ -53,6 +53,7 @@ export interface CoreCatalogModule {
   module_checks_ar?: string
   /** فيديو الوحدة وفصوله (ح-٢) — رابط ثم أسطر «د:ث عنوان»؛ غائب حين لا فيديو */
   module_video_ar?: string
+  module_scenario_ar?: string
 }
 
 export interface CoreCatalogRaw {

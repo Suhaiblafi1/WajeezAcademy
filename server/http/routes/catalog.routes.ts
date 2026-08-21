@@ -9,6 +9,7 @@ import { validateChecks } from '../../../src/application/content/module-checks'
 /* شرائح المهارات المعروفة — تُمرَّر للمدقّق فيُرفض «م: slug» غير موجود (ح-٤) */
 import { skillSlugs } from '../../../src/domain/diagnostic/catalog'
 import { validateVideo } from '../../../src/application/content/module-video'
+import { validateScenario } from '../../../src/application/content/scenario'
 import { requirePermission } from '../auth-plugin'
 
 export function registerCatalogRoutes(app: FastifyInstance, prisma: PrismaClient) {
@@ -87,6 +88,13 @@ export function registerCatalogRoutes(app: FastifyInstance, prisma: PrismaClient
           if (!v || !v.trim()) return
           const r = validateVideo(v)
           if (!r.ok) ctx.addIssue({ code: 'custom', message: `فيديو الوحدة غير مقبول: ${r.errorsAr.join(' · ')}` })
+        }),
+        /* سيناريو القرار المتفرّع (ح-٥) — يُتحقَّق مساره كاملا هنا: عقدة غير
+           موجودة أو مصيدة تدور بلا نهاية تُرفض عند الحفظ لا تُكتشف بمتعلم عالق */
+        scenarioAr: z.string().max(30_000).optional().superRefine((v, ctx) => {
+          if (!v || !v.trim()) return
+          const r = validateScenario(v)
+          if (!r.ok) ctx.addIssue({ code: 'custom', message: `سيناريو القرار غير مقبول: ${r.errorsAr.join(' · ')}` })
         }),
         hours: z.number().int().min(1),
       })).min(1),

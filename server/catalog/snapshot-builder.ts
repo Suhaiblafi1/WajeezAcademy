@@ -103,6 +103,7 @@ export async function buildSnapshotFromDb(
       ...(v.bodyAr ? { module_body_ar: v.bodyAr } : {}),
       ...(v.checksAr ? { module_checks_ar: v.checksAr } : {}),
       ...(v.videoAr ? { module_video_ar: v.videoAr } : {}),
+      ...(v.scenarioAr ? { module_scenario_ar: v.scenarioAr } : {}),
     }]
   })
 

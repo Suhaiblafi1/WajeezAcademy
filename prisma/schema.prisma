@@ -39,6 +39,7 @@ model User {
   advisorAssignments AdvisorAssignment[] @relation("CaseAdvisor")
   skillRemeasures SkillRemeasure[] @relation("SkillRemeasureUser")
   retrievalCards RetrievalCard[] @relation("RetrievalCardUser")
+  scenarioRuns ScenarioRun[] @relation("ScenarioRunUser")
 }
 
 model Role {
@@ -285,6 +286,10 @@ model CourseModuleVersion {
   /* الفيديو وفصوله (البند ح-٢) — رابط مستضاف + فصول معنونة بطوابع زمنية.
      لا مشغّل نبنيه: نستضيف ونربط، والقيمة في الفصول ونقاط التفتيش. */
   videoAr    String?
+  /* سيناريو القرار المتفرّع (البند ح-٥) — موقف مهني وعقد قرار وآثار وتأمل،
+     بصيغة «موقف/عقدة/نص/> خيار/أثر/إلى/تأمل». يُخزَّن على الإصدار كسائر
+     المحتوى فيمرّ بنفس الحاكمية ويُقارَن نصّا في السجل. */
+  scenarioAr String?
   hours      Int
   status     String   @default("published")
   createdAt  DateTime @default(now())
@@ -1350,6 +1355,23 @@ model RetrievalCard {
   user         User     @relation("RetrievalCardUser", fields: [userId], references: [id], onDelete: Cascade)
   @@unique([userId, moduleId, checkIndex])
   @@index([userId, dueAt])
+}
+
+/* جولة سيناريو قرار (البند ح-٥) — مسار قرارات متعلم واحد وتأمله في نهايتها.
+   ⚠ ليست تقييما: لا درجة ولا وزن، ولا تكتب في متجه المهارات. القيمة في أن
+   المتعلم يتخذ القرار ويرى أثره ثم يكتب تأمله — والسجل ليقرأ قراره بعد حين
+   ويجرّب غيره. ولذلك تُسمح جولات متعددة: إعادة القرار هي الفائدة لا الغش. */
+model ScenarioRun {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @db.Uuid
+  moduleId     String
+  /* [{node: عنوان العقدة, optionIndex: ترتيب الخيار}] بالترتيب */
+  path         Json
+  reflectionAr String?
+  startedAt    DateTime @default(now())
+  endedAt      DateTime?
+  user         User     @relation("ScenarioRunUser", fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, moduleId, startedAt])
 }
 
 model Certificate {

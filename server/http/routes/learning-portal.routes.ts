@@ -13,6 +13,7 @@ import { ProgressService } from '../../services/progress.service'
 import { CertificateService } from '../../services/certificate.service'
 import { SkillGrowthService } from '../../services/skill-growth.service'
 import { RetrievalService } from '../../services/retrieval.service'
+import { ScenarioService } from '../../services/scenario.service'
 import { AuthError } from '../../services/auth.service'
 import { requirePermission } from '../auth-plugin'
 
@@ -58,6 +59,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
   const certificates = new CertificateService(prisma)
   const skillGrowth = new SkillGrowthService(prisma)
   const retrieval = new RetrievalService(prisma)
+  const scenarios = new ScenarioService(prisma)
 
   /* ══════════ بوابة المتعلم ══════════ */
 
@@ -179,6 +181,42 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
       correct: z.boolean(),
     }).parse(req.body)
     return retrieval.answer(req.auth!.userId, body.moduleId, body.checkIndex, body.correct)
+  })
+
+  /* ── سيناريو القرار المتفرّع (ح-٥) ── */
+
+  app.get('/api/learner/scenarios/:moduleId/runs', {
+    preHandler: requirePermission('learner.portal'),
+    schema: { tags: ['learner-portal'], summary: 'جولاتي في سيناريو وحدة — مساري السابق وتأملي' },
+  }, async (req) => {
+    const { moduleId } = z.object({ moduleId: z.string().min(3).max(80) }).parse(req.params)
+    return { runs: await scenarios.myRuns(req.auth!.userId, moduleId) }
+  })
+
+  app.post('/api/learner/scenarios/:moduleId/runs', {
+    preHandler: requirePermission('learner.portal'),
+    schema: { tags: ['learner-portal'], summary: 'حفظ جولة مكتملة — المسار يُتحقَّق على السيناريو المنشور' },
+  }, async (req, reply) => {
+    const { moduleId } = z.object({ moduleId: z.string().min(3).max(80) }).parse(req.params)
+    const body = z.object({
+      path: z.array(z.object({
+        node: z.string().min(1).max(200),
+        optionIndex: z.number().int().min(0).max(9),
+      })).min(1).max(24),
+      reflectionAr: z.string().max(4_000).optional(),
+    }).parse(req.body)
+    return reply.status(201).send(
+      await scenarios.saveRun(req.auth!.userId, moduleId, body.path, body.reflectionAr ?? null),
+    )
+  })
+
+  app.post('/api/learner/scenario-runs/:id/reflection', {
+    preHandler: requirePermission('learner.portal'),
+    schema: { tags: ['learner-portal'], summary: 'كتابة التأمل على جولة محفوظة' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({ reflectionAr: z.string().max(4_000) }).parse(req.body)
+    return scenarios.setReflection(req.auth!.userId, id, body.reflectionAr)
   })
 
   app.get('/api/learner/certificates', {

@@ -63,6 +63,8 @@ export interface Lesson {
   checks?: string | null;
   /** فيديو الوحدة الخام (ح-٢) — null حين لا فيديو */
   video?: string | null;
+  /** سيناريو القرار الخام (ح-٥) — null حين لا سيناريو لهذه الوحدة */
+  scenario?: string | null;
 }
 export interface QuizQuestion { q: string; options: string[]; correct: number; explain: string; }
 
@@ -82,6 +84,7 @@ export function courseLessons(c: Course): Lesson[] {
       body: m.body,
       checks: m.checks,
       video: m.video,
+      scenario: m.scenario,
     }));
   }
   const d = courseDetails(c);

@@ -43,6 +43,7 @@ interface ModuleShape {
   checksAr?: string | null
   /** فيديو الوحدة (ح-٢) — يُنقل مع النسخة */
   videoAr?: string | null
+  scenarioAr?: string | null
   hours: number
 }
 
@@ -283,6 +284,7 @@ export class TrainerChangeService {
         outcomeAr: m.versions[0]?.outcomeAr, activityAr: m.versions[0]?.activityAr,
         artifactAr: m.versions[0]?.artifactAr, bodyAr: m.versions[0]?.bodyAr,
         checksAr: m.versions[0]?.checksAr, videoAr: m.versions[0]?.videoAr,
+        scenarioAr: m.versions[0]?.scenarioAr,
         hours: m.versions[0]?.hours ?? 1,
       }))
       .sort((a, b) => a.sequence - b.sequence)
@@ -371,9 +373,9 @@ export class TrainerChangeService {
           data: {
             moduleId: m.id, version: newVersion, sequence: m.sequence, titleAr: m.titleAr,
             outcomeAr: m.outcomeAr, activityAr: m.activityAr, artifactAr: m.artifactAr,
-            /* المتن والتمرين يُنقلان مع النسخة — بلا هذين السطرين يُمحى درس
-               الوحدة وتمرينها عند أول تعديل معتمد */
-            bodyAr: m.bodyAr, checksAr: m.checksAr, videoAr: m.videoAr,
+            /* كل محتوى الوحدة يُنقل مع النسخة — بلا هذا السطر يُمحى درس الوحدة
+               وتمرينها وفيديوها وسيناريوها عند أول تعديل معتمد */
+            bodyAr: m.bodyAr, checksAr: m.checksAr, videoAr: m.videoAr, scenarioAr: m.scenarioAr,
             hours: m.hours, status: 'approved',
           },
         })

@@ -63,7 +63,7 @@ export default function CatalogAdmin() {
     id: "", pathwayId: "", sequence: "1", titleAr: "", shortPromiseAr: "", levelAr: "",
     totalHours: "", skillIds: [] as string[],
   });
-  const [modules, setModules] = useState([{ titleAr: "", outcomeAr: "", activityAr: "", artifactAr: "", bodyAr: "", checksAr: "", videoAr: "", hours: "" }]);
+  const [modules, setModules] = useState([{ titleAr: "", outcomeAr: "", activityAr: "", artifactAr: "", bodyAr: "", checksAr: "", videoAr: "", scenarioAr: "", hours: "" }]);
   const [crForm, setCrForm] = useState({ entityType: "course", entityId: "", payload: '{\n  "titleAr": "الاسم الجديد"\n}' });
   const [openForm, setOpenForm] = useState<"skill" | "course" | "pathway" | "cr" | null>(null);
 
@@ -113,11 +113,12 @@ export default function CatalogAdmin() {
         bodyAr: m.bodyAr.trim() || undefined,
         checksAr: m.checksAr.trim() || undefined,
         videoAr: m.videoAr.trim() || undefined,
+        scenarioAr: m.scenarioAr.trim() || undefined,
         hours: Number(m.hours) || 1,
       })),
     });
     setCourseForm({ id: "", pathwayId: "", sequence: "1", titleAr: "", shortPromiseAr: "", levelAr: "", totalHours: "", skillIds: [] });
-    setModules([{ titleAr: "", outcomeAr: "", activityAr: "", artifactAr: "", bodyAr: "", checksAr: "", videoAr: "", hours: "" }]);
+    setModules([{ titleAr: "", outcomeAr: "", activityAr: "", artifactAr: "", bodyAr: "", checksAr: "", videoAr: "", scenarioAr: "", hours: "" }]);
     setOpenForm(null);
   }, "أُنشئت الدورة كمسودة مرتبطة بالمسار والمهارات — أكمل سير الاعتماد ثم النشر");
 
@@ -347,11 +348,24 @@ export default function CatalogAdmin() {
                   <p className="mt-1 text-[10px] leading-5 text-white/50">
                     السطر الأول رابط YouTube أو Vimeo عبر https — لا مضيف آخر. ثم سطر لكل فصل بصيغة «د:ث عنوان الفصل».
                   </p>
+                  {/* البند ح-٥: سيناريو القرار المتفرّع */}
+                  <textarea
+                    value={m.scenarioAr}
+                    onChange={(e) => setModules(modules.map((x, j) => (j === i ? { ...x, scenarioAr: e.target.value } : x)))}
+                    rows={8}
+                    placeholder={"سيناريو قرار (اختياري)\nموقف: وصف الموقف المهني\n\nعقدة: البداية\nنص: ما أول ما تفعله؟\n> خيار: نص الخيار\n  أثر: ما ترتب عليه\n  إلى: عنوان العقدة التالية\n\nعقدة: عنوان العقدة التالية\nنص: النتيجة\nتأمل: سؤال التأمل"}
+                    className={`${inputCls} mt-2 w-full font-mono leading-7`}
+                  />
+                  <p className="mt-1 text-[10px] leading-5 text-white/50">
+                    كل عقدة غير نهائية تحتاج خيارين على الأقل، و«إلى:» لا تشير إلا إلى عقدة موجودة،
+                    والعقدة النهائية (بلا خيارات) تحتاج «تأمل:». يُتحقَّق المسار كاملا عند الحفظ:
+                    عقدة لا تُبلَغ أو مسار يدور بلا نهاية يُرفض.
+                  </p>
                 </div>
               ))}
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-3">
-              <button type="button" onClick={() => setModules([...modules, { titleAr: "", outcomeAr: "", activityAr: "", artifactAr: "", bodyAr: "", checksAr: "", videoAr: "", hours: "" }])}
+              <button type="button" onClick={() => setModules([...modules, { titleAr: "", outcomeAr: "", activityAr: "", artifactAr: "", bodyAr: "", checksAr: "", videoAr: "", scenarioAr: "", hours: "" }])}
                 className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-1.5 text-xs font-bold text-white/60 hover:border-white/40">
                 <Plus className="h-3.5 w-3.5" /> وحدة إضافية
               </button>
