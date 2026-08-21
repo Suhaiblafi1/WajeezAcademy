@@ -2,12 +2,13 @@ import { useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router";
 import {
   ArrowLeft, ArrowRight, Award, CheckCircle2, ClipboardList, FileUp,
-  HelpCircle, Lock, MessageSquare, Send, Upload, Video, XCircle, Loader2} from "lucide-react";
+  HelpCircle, Lock, MessageSquare, Send, Upload, Video, XCircle, Loader2, BookOpen} from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import { hasShowcaseCatalog, showcasePathwayId } from "@/data/showcase";
 import { usePublishedContent } from "@/services/public-content";
 import SimulationNote from "@/components/SimulationNote";
 import VideoPlayer from "@/components/VideoPlayer";
+import LessonBody from "@/components/LessonBody";
 import CourseResources from "@/components/CourseResources";
 import { getEnrollment } from "@/services/access";
 import { zoom, type ZoomJoinInfo } from "@/services/zoom";
@@ -165,23 +166,51 @@ function CourseViewBody() {
           {/* الدرس الحالي */}
           <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
             <div className="flex items-center justify-between">
-              <h3 className="flex items-center gap-2 font-black"><Video className="h-4 w-4 text-teal-light-ink" /> {lesson.title}</h3>
-              <span className="text-[11px] text-white/50">{lesson.minutes} د · {lesson.kind === "video" ? "فيديو" : "نشاط تطبيقي"}</span>
+              <h3 className="flex items-center gap-2 font-black">
+                {lesson.body ? <BookOpen className="h-4 w-4 text-teal-light-ink" /> : <Video className="h-4 w-4 text-teal-light-ink" />}
+                {lesson.title}
+              </h3>
+              <span className="text-[11px] text-white/50">
+                {lesson.hours ? `${lesson.hours} ساعة` : `${lesson.minutes} د`}
+                {" · "}
+                {lesson.body ? "درس نصي" : lesson.kind === "video" ? "فيديو" : "نشاط تطبيقي"}
+              </span>
             </div>
-            <p className="mt-1.5 text-xs leading-6 text-white/50">
-              {lesson.kind === "activity"
-                ? `نشاط تطبيقي: طبّق «${lesson.title}» على حالة من واقعك ووثّق النتيجة — سترفقها في واجب الدورة.`
-                : `درس مرئي يشرح «${lesson.title}» خطوة بخطوة مع أمثلة من واقع العمل.`}
-            </p>
-            <div className="mt-4">
-              <VideoPlayer
-                key={lesson.id}
-                lessonId={lesson.id}
-                minutes={lesson.minutes}
-                initialPct={lessonPct}
-                onProgress={(pct) => update((s) => { s.courses[course.id].lessons[lesson.id] = { pct }; })}
-              />
-            </div>
+            {!lesson.body && (
+              <p className="mt-1.5 text-xs leading-6 text-white/50">
+                {lesson.kind === "activity"
+                  ? `نشاط تطبيقي: طبّق «${lesson.title}» على حالة من واقعك ووثّق النتيجة — سترفقها في واجب الدورة.`
+                  : `درس مرئي يشرح «${lesson.title}» خطوة بخطوة مع أمثلة من واقع العمل.`}
+              </p>
+            )}
+            {/* البند ح-١: متن الدرس من الكتالوج المنشور. لا مشغّل ولا تقدم آلي —
+                القراءة يعلنها المتعلم بنفسه، فلا نزعم قياس ما لا نقيسه. */}
+            {lesson.body ? (
+              <div className="mt-4">
+                <LessonBody body={lesson.body} />
+                <button
+                  onClick={() => update((s) => { s.courses[course.id].lessons[lesson.id] = { pct: lessonPct >= 100 ? 0 : 100 }; })}
+                  className={`mt-5 flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-full text-sm font-black transition ${
+                    lessonPct >= 100
+                      ? "border border-teal/50 bg-teal-ink/10 text-teal-light-ink"
+                      : "bg-teal text-on-teal hover:bg-teal-light"
+                  }`}
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                  {lessonPct >= 100 ? "أنهيت هذا الدرس — تراجع؟" : "أنهيت قراءة الدرس"}
+                </button>
+              </div>
+            ) : (
+              <div className="mt-4">
+                <VideoPlayer
+                  key={lesson.id}
+                  lessonId={lesson.id}
+                  minutes={lesson.minutes}
+                  initialPct={lessonPct}
+                  onProgress={(pct) => update((s) => { s.courses[course.id].lessons[lesson.id] = { pct }; })}
+                />
+              </div>
+            )}
             {/* قائمة الدروس */}
             <div className="mt-4 space-y-1.5">
               {lessons.map((l, i) => {
@@ -402,19 +431,19 @@ function CourseViewBody() {
                       href={zoomInfo[s.id].joinUrl}
                       target="_blank" rel="noreferrer"
                       onClick={() => update((st) => { st.courses[course.id].attendance = "present"; })}
-                      className="mt-3 block rounded-full bg-[#2D8CFF] py-2 text-center text-xs font-black text-white transition hover:bg-[#2D8CFF]/85"
+                      className="mt-3 block rounded-full bg-[#2D8CFF] py-2 text-center text-xs font-black text-on-bright transition hover:bg-[#2D8CFF]/85"
                     >
                       انضم عبر Zoom — {zoomInfo[s.id].meetingId}
                     </a>
                   ) : (
                     <button
                       onClick={() => zoom.getJoinInfo(s.id).then((info) => setZoomInfo({ ...zoomInfo, [s.id]: info }))}
-                      className="mt-3 w-full cursor-pointer rounded-full border border-[#2D8CFF]/50 py-2 text-xs font-bold text-[#2D8CFF] transition hover:bg-[#2D8CFF]/10"
+                      className="mt-3 w-full cursor-pointer rounded-full border border-[#2D8CFF]/50 py-2 text-xs font-bold text-zoom-ink transition hover:bg-[#2D8CFF]/10"
                     >
                       أظهر رابط الانضمام
                     </button>
                   )}
-                  <p className="mt-2 text-[10px] text-white/30">الانضمام يُسجل حضورك تلقائيا · التسجيل يُنشر بعد المراجعة</p>
+                  <p className="mt-2 text-[10px] text-white/55">الانضمام يُسجل حضورك تلقائيا · التسجيل يُنشر بعد المراجعة</p>
                 </div>
               ))}
             </div>

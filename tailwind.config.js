@@ -24,6 +24,7 @@ module.exports = {
         "on-teal": "rgb(var(--on-teal) / <alpha-value>)",
         "on-gold": "rgb(var(--on-gold) / <alpha-value>)",
         "on-bright": "rgb(var(--on-bright) / <alpha-value>)",
+        "zoom-ink": "rgb(var(--zoom-ink) / <alpha-value>)",
         /* سلّم المخططات الترتيبي (إد-٢) */
         "ramp-1": "rgb(var(--ramp-1) / <alpha-value>)",
         "ramp-2": "rgb(var(--ramp-2) / <alpha-value>)",

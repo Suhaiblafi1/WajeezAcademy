@@ -112,7 +112,7 @@ export default function NotificationBell() {
                   {n.title}
                 </p>
                 <p className="mt-1 text-[11px] leading-5 text-white/55">{n.body}</p>
-                <p className="mt-1 text-[9px] text-white/30">
+                <p className="mt-1 text-[9px] text-white/55">
                   {new Date(n.sentAt ?? n.createdAt).toLocaleString("ar")}
                 </p>
               </button>

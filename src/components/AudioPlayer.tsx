@@ -79,7 +79,7 @@ export default function AudioPlayer({
         </div>
       </div>
       <div className="mt-2 flex items-center justify-between">
-        <p className="text-[10px] text-white/30">معاينة تجريبية — يُشغَّل صوت الملخص الحقيقي هنا عند الربط</p>
+        <p className="text-[10px] text-white/55">معاينة تجريبية — يُشغَّل صوت الملخص الحقيقي هنا عند الربط</p>
         <div className="flex items-center gap-1.5">
           {[1, 1.5, 2].map((s) => (
             <button

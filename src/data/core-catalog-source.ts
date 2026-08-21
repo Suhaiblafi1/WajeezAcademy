@@ -47,6 +47,8 @@ export interface CoreCatalogModule {
   practice_activity_ar: string
   evidence_artifact_ar: string
   expected_hours: number
+  /** متن الدرس (ح-١) — Markdown مقيّد؛ غائب حين لا درس */
+  module_body_ar?: string
 }
 
 export interface CoreCatalogRaw {

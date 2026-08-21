@@ -63,7 +63,7 @@ export default function CatalogAdmin() {
     id: "", pathwayId: "", sequence: "1", titleAr: "", shortPromiseAr: "", levelAr: "",
     totalHours: "", skillIds: [] as string[],
   });
-  const [modules, setModules] = useState([{ titleAr: "", outcomeAr: "", activityAr: "", artifactAr: "", hours: "" }]);
+  const [modules, setModules] = useState([{ titleAr: "", outcomeAr: "", activityAr: "", artifactAr: "", bodyAr: "", hours: "" }]);
   const [crForm, setCrForm] = useState({ entityType: "course", entityId: "", payload: '{\n  "titleAr": "الاسم الجديد"\n}' });
   const [openForm, setOpenForm] = useState<"skill" | "course" | "pathway" | "cr" | null>(null);
 
@@ -110,11 +110,12 @@ export default function CatalogAdmin() {
         outcomeAr: m.outcomeAr.trim() || undefined,
         activityAr: m.activityAr.trim() || undefined,
         artifactAr: m.artifactAr.trim() || undefined,
+        bodyAr: m.bodyAr.trim() || undefined,
         hours: Number(m.hours) || 1,
       })),
     });
     setCourseForm({ id: "", pathwayId: "", sequence: "1", titleAr: "", shortPromiseAr: "", levelAr: "", totalHours: "", skillIds: [] });
-    setModules([{ titleAr: "", outcomeAr: "", activityAr: "", artifactAr: "", hours: "" }]);
+    setModules([{ titleAr: "", outcomeAr: "", activityAr: "", artifactAr: "", bodyAr: "", hours: "" }]);
     setOpenForm(null);
   }, "أُنشئت الدورة كمسودة مرتبطة بالمسار والمهارات — أكمل سير الاعتماد ثم النشر");
 
@@ -309,11 +310,22 @@ export default function CatalogAdmin() {
                     <input value={m.activityAr} onChange={(e) => setModules(modules.map((x, j) => (j === i ? { ...x, activityAr: e.target.value } : x)))} placeholder="النشاط (اختياري)" className={inputCls} />
                     <input value={m.artifactAr} onChange={(e) => setModules(modules.map((x, j) => (j === i ? { ...x, artifactAr: e.target.value } : x)))} placeholder="الأثر/التسليمة (اختياري)" className={inputCls} />
                   </div>
+                  {/* البند ح-١: متن الدرس — Markdown مقيّد يقرؤه المتعلم داخل المنصة */}
+                  <textarea
+                    value={m.bodyAr}
+                    onChange={(e) => setModules(modules.map((x, j) => (j === i ? { ...x, bodyAr: e.target.value } : x)))}
+                    rows={6}
+                    placeholder="متن الدرس (اختياري) — # عنوان · - قائمة · > اقتباس · **عريض** · [نص](رابط) · ```كود```"
+                    className={`${inputCls} mt-2 w-full font-mono leading-7`}
+                  />
+                  <p className="mt-1 text-[10px] leading-5 text-white/50">
+                    ما يُكتب هنا يظهر للمتعلم درسا داخل الدورة. يمرّ بنفس حاكمية النسخ والاعتماد والنشر — ولا يُعدَّل على إصدار منشور بأثر رجعي.
+                  </p>
                 </div>
               ))}
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-3">
-              <button type="button" onClick={() => setModules([...modules, { titleAr: "", outcomeAr: "", activityAr: "", artifactAr: "", hours: "" }])}
+              <button type="button" onClick={() => setModules([...modules, { titleAr: "", outcomeAr: "", activityAr: "", artifactAr: "", bodyAr: "", hours: "" }])}
                 className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-1.5 text-xs font-bold text-white/60 hover:border-white/40">
                 <Plus className="h-3.5 w-3.5" /> وحدة إضافية
               </button>

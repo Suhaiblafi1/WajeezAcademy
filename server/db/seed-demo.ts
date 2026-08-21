@@ -35,12 +35,57 @@ async function ensureUser(prisma: PrismaClient, email: string, name: string, rol
   return user
 }
 
+/* متن درس ديمو (البند ح-١) — يعرض الصيغة كاملة: عناوين وقائمة مرقّمة
+   ونقطية واقتباس وفاصل، بعربية سليمة لا نص حشو. */
+const DEMO_LESSON_AR = [
+  '# ما هي العملية القابلة للأتمتة؟',
+  '',
+  'ليست كل مهمة متكررة تصلح للأتمتة. المهمة المرشَّحة تجتمع فيها أربع صفات — وغياب واحدة منها يكفي لتأجيلها.',
+  '',
+  '## الصفات الأربع',
+  '',
+  '1. **متكررة بوتيرة معروفة** — يوميا أو أسبوعيا، لا مرة في السنة.',
+  '2. **مدخلاتها منظّمة** — نموذج أو جدول أو رسالة بصيغة ثابتة، لا نصّ حرّ يختلف كل مرة.',
+  '3. **قرارها محسوم بقاعدة** — «إن تجاوز المبلغ كذا فوجّهه لكذا»، لا «حسب تقدير المسؤول».',
+  '4. **خطؤها مكلف أو مملّ** — فالأتمتة تشتري لك دقة أو وقتا، وإن لم تشترِ أيّهما فلا داعي لها.',
+  '',
+  '> القاعدة العملية: إن لم تستطع كتابة المهمة خطوات مرقّمة يفهمها زميل جديد، فلا تستطيع أتمتتها بعد.',
+  '',
+  '## تمرين قبل الجلسة',
+  '',
+  '- اكتب ثلاث مهام تكررها في أسبوعك.',
+  '- ضع بجانب كل واحدة الصفات التي تحققها من الأربع.',
+  '- احتفظ بالتي تحقق ثلاثا على الأقل — ستكون حالتك العملية في هذه الدورة.',
+  '',
+  '---',
+  '',
+  'في الجلسة القادمة نرسم عمليتك المختارة على ورقة واحدة، ثم نحدّد أضعف حلقة فيها.',
+].join('\n')
+
+/* البند ح-١: متن درس ديمو على أول وحدة من دورة معلومة.
+   مستقلّة ومُستدعاة قبل حراسة «البيانات الغنية موجودة»، فتُطبَّق على قاعدة
+   قائمة أيضا. ولا تلمس متنا مكتوبا — الحراسة !bodyAr. */
+async function seedLessonBody(prisma: PrismaClient, courseId: string): Promise<'written' | 'skipped'> {
+  const firstModule = await prisma.courseModule.findFirst({ where: { courseId }, orderBy: { id: 'asc' } })
+  if (!firstModule) return 'skipped'
+  const currentVersion = await prisma.courseModuleVersion.findFirst({
+    where: { moduleId: firstModule.id },
+    orderBy: { version: 'desc' },
+  })
+  if (!currentVersion || currentVersion.bodyAr) return 'skipped'
+  await prisma.courseModuleVersion.update({ where: { id: currentVersion.id }, data: { bodyAr: DEMO_LESSON_AR } })
+  return 'written'
+}
+
 export async function seedDemo(prisma: PrismaClient): Promise<{ users: number; richData: 'created' | 'existing' }> {
   await seedRbac(prisma)
 
   const [student, consultant, trainer, admin, superadmin] = await Promise.all(
     DEMO_ACCOUNTS.map((a) => ensureUser(prisma, a.email, a.name, [...a.roles])),
   )
+
+  /* متن الدرس يُبذر أولا: قابل للتطبيق على قاعدة قائمة، وحراسته الخاصة تمنع التكرار */
+  await seedLessonBody(prisma, 'C-AUT-101')
 
   /* إن كان الطالب الديمو مسجلا في شعبة فالبيانات الغنية موجودة — لا تكرار */
   const alreadyRich = await prisma.enrollment.findFirst({ where: { userId: student.id } })
@@ -193,6 +238,7 @@ export async function seedDemo(prisma: PrismaClient): Promise<{ users: number; r
   })
 
   const modulesActive = await prisma.courseModule.findMany({ where: { courseId: courseActive.id }, orderBy: { id: 'asc' } })
+
   const progressStates = ['completed', 'completed', 'in_progress', 'not_started'] as const
   for (const [i, m] of modulesActive.entries()) {
     const st = progressStates[Math.min(i, progressStates.length - 1)]

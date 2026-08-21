@@ -103,7 +103,7 @@ export class CatalogAdminService {
   async createCourse(input: {
     id: string; pathwayId: string; sequence: number; titleAr: string; shortPromiseAr?: string
     levelAr?: string; totalHours: number; skillIds: string[]
-    modules: { sequence: number; titleAr: string; outcomeAr?: string; activityAr?: string; artifactAr?: string; hours: number }[]
+    modules: { sequence: number; titleAr: string; outcomeAr?: string; activityAr?: string; artifactAr?: string; bodyAr?: string; hours: number }[]
   }, actorId?: string) {
     if (!/^C-[A-Z0-9-]+$/.test(input.id)) throw new AuthError('invalid_id', 'معرف الدورة بصيغة C-XXX-000')
     if (await this.prisma.course.findUnique({ where: { id: input.id } })) {
@@ -132,7 +132,8 @@ export class CatalogAdminService {
             versions: {
               create: [{
                 version: 1, sequence: m.sequence, titleAr: m.titleAr, outcomeAr: m.outcomeAr,
-                activityAr: m.activityAr, artifactAr: m.artifactAr, hours: m.hours, status: 'draft',
+                activityAr: m.activityAr, artifactAr: m.artifactAr, bodyAr: m.bodyAr ?? null,
+                hours: m.hours, status: 'draft',
               }],
             },
           })),

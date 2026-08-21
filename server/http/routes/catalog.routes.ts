@@ -64,6 +64,8 @@ export function registerCatalogRoutes(app: FastifyInstance, prisma: PrismaClient
       modules: z.array(z.object({
         sequence: z.number().int().min(1), titleAr: z.string().min(3),
         outcomeAr: z.string().optional(), activityAr: z.string().optional(), artifactAr: z.string().optional(),
+        /* متن الدرس (ح-١) — Markdown مقيّد، بحدّ أعلى يمنع حمولة غير معقولة */
+        bodyAr: z.string().max(40_000).optional(),
         hours: z.number().int().min(1),
       })).min(1),
     }).parse(req.body)

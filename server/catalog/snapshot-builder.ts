@@ -99,6 +99,8 @@ export async function buildSnapshotFromDb(
       module_id: m.id, course_id: m.courseId, sequence: v.sequence, title_ar: v.titleAr,
       module_outcome_ar: v.outcomeAr ?? '', practice_activity_ar: v.activityAr ?? '',
       evidence_artifact_ar: v.artifactAr ?? '', expected_hours: v.hours,
+      /* متن الدرس (ح-١) — يُحذف الحقل حين لا متن، فلا تنتفخ اللقطة بسلاسل فارغة */
+      ...(v.bodyAr ? { module_body_ar: v.bodyAr } : {}),
     }]
   })
 

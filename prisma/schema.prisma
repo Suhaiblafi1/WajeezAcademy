@@ -273,6 +273,10 @@ model CourseModuleVersion {
   outcomeAr  String?
   activityAr String?
   artifactAr String?
+  /* متن الدرس (البند ح-١) — Markdown مقيّد: عناوين وقوائم واقتباسات وكود
+     وروابط وصور. يُخزَّن على الإصدار لا على الوحدة، فيمرّ بنفس حاكمية
+     النسخ والاعتماد والنشر ولا يُعدَّل بأثر رجعي على إصدار منشور. */
+  bodyAr     String?
   hours      Int
   status     String   @default("published")
   createdAt  DateTime @default(now())

@@ -163,7 +163,7 @@ export default function CourseResources({
       </div>
 
       {activeType === "summary" && (
-        <p className="mt-3 text-[11px] text-white/40">
+        <p className="mt-3 text-[11px] text-white/55">
           اسمع الملخص كاملا ثم اجتز اختباره القصير — يُوثق في ملف مهاراتك.
         </p>
       )}

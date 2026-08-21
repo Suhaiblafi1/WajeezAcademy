@@ -164,13 +164,13 @@ export default function CohortView() {
                   <p className="text-sm font-bold">{s.title}</p>
                   <p className="mt-1 text-[11px] text-white/45">{s.date} · {s.time}</p>
                   {zoomLinks[s.id] ? (
-                    <a href={zoomLinks[s.id]} target="_blank" rel="noreferrer" className="mt-2 block rounded-full bg-[#2D8CFF] py-1.5 text-center text-[11px] font-black text-white">
+                    <a href={zoomLinks[s.id]} target="_blank" rel="noreferrer" className="mt-2 block rounded-full bg-[#2D8CFF] py-1.5 text-center text-[11px] font-black text-on-bright">
                       افتح غرفة Zoom
                     </a>
                   ) : (
                     <button
                       onClick={() => zoom.getJoinInfo(s.id).then((i) => setZoomLinks({ ...zoomLinks, [s.id]: i.joinUrl }))}
-                      className="mt-2 w-full cursor-pointer rounded-full border border-[#2D8CFF]/50 py-1.5 text-[11px] font-bold text-[#2D8CFF] hover:bg-[#2D8CFF]/10"
+                      className="mt-2 w-full cursor-pointer rounded-full border border-[#2D8CFF]/50 py-1.5 text-[11px] font-bold text-zoom-ink hover:bg-[#2D8CFF]/10"
                     >
                       رابط Zoom للجلسة
                     </button>

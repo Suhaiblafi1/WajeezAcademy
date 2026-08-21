@@ -419,7 +419,7 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
                   <Linkedin className="h-5 w-5" />
                   المتابعة بحساب لينكدإن
                 </button>
-                <p className="flex items-center justify-center gap-1.5 text-[11px] text-white/40">
+                <p className="flex items-center justify-center gap-1.5 text-[11px] text-white/55">
                   <ShieldCheck className="h-3.5 w-3.5 text-teal-ink" />
                   لن ننشر شيئا باسمك أبدا — حسابك لحفظ مسارك ونتيجتك فقط
                 </p>
@@ -507,7 +507,7 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
                 />
               </div>
               {mode === "signup" && (
-                <p className="mt-1.5 text-[11px] text-white/40">
+                <p className="mt-1.5 text-[11px] text-white/55">
                   ٨ أحرف فأكثر — ويُفضّل رقم أو رمز (! @ #) لتقويتها
                 </p>
               )}

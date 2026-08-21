@@ -5,7 +5,7 @@
  * load/save بنداءات API — الأنواع والحالات مطابقة للوثيقة (القسم ٩–١٣).
  */
 
-import { courseById, courseDetails, courseTrainer, pathwayCourses, type Course } from "./courses";
+import { courseById, courseDetails, courseFullById, courseTrainer, pathwayCourses, type Course } from "./courses";
 import { pathwayById } from "./pathways";
 
 /* ─────────── الأنواع ─────────── */
@@ -50,10 +50,34 @@ export interface PortalState {
 }
 
 /* ─────────── هيكل الدورة التعليمي (مشتق deterministic من بيانات الكتالوج) ─────────── */
-export interface Lesson { id: string; title: string; minutes: number; kind: "video" | "reading" | "activity"; }
+export interface Lesson {
+  id: string;
+  title: string;
+  minutes: number;
+  kind: "video" | "reading" | "activity";
+  /** متن الدرس من الكتالوج (ح-١) — null حين لا درس مكتوب لهذه الوحدة */
+  body?: string | null;
+  /** ساعات الوحدة من الكتالوج — تُعرض بدل دقائق مقدَّرة حين تتوفر */
+  hours?: number;
+}
 export interface QuizQuestion { q: string; options: string[]; correct: number; explain: string; }
 
 export function courseLessons(c: Course): Lesson[] {
+  /* البند ح-١: وحدات الكتالوج هي الدروس الحقيقية — عنوانها وساعاتها ومتنها
+     من قاعدة البيانات عبر اللقطة المنشورة. لا نصطنع دروسا مادامت موجودة.
+     والسقوط على المحاور المقدَّرة يبقى لدورة بلا وحدات في الكتالوج. */
+  const full = courseFullById(c.id);
+  if (full && full.modules.length > 0) {
+    return full.modules.map((m) => ({
+      id: m.id,
+      title: m.title,
+      /* الساعات حقيقية؛ الدقائق مشتقة منها لعرض المشغّل حين لا متن مكتوب */
+      minutes: Math.max(5, m.hours * 20),
+      hours: m.hours,
+      kind: m.body ? "reading" : m.activity ? "activity" : "video",
+      body: m.body,
+    }));
+  }
   const d = courseDetails(c);
   return d.topics.map((t, i) => ({
     id: `${c.id}-L${i + 1}`,

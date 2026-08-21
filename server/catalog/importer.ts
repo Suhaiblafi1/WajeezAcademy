@@ -63,6 +63,8 @@ interface RawCourse {
 interface RawModule {
   module_id: string; course_id: string; sequence: number; title_ar: string
   module_outcome_ar?: string; practice_activity_ar?: string; evidence_artifact_ar?: string
+  /** متن الدرس (ح-١) — اختياري في المصدر */
+  module_body_ar?: string
   expected_hours: number
 }
 interface RawTemplateCourseRef {
@@ -247,7 +249,8 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
       create: {
         moduleId: m.module_id, version: 1, sequence: toInt(m.sequence) ?? 1, titleAr: m.title_ar,
         outcomeAr: m.module_outcome_ar ?? null, activityAr: m.practice_activity_ar ?? null,
-        artifactAr: m.evidence_artifact_ar ?? null, hours: toInt(m.expected_hours) ?? 0, status: 'published',
+        artifactAr: m.evidence_artifact_ar ?? null, bodyAr: m.module_body_ar ?? null,
+        hours: toInt(m.expected_hours) ?? 0, status: 'published',
       },
     })
   }
