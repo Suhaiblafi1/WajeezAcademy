@@ -41,7 +41,7 @@ export class ResultErrorBoundary extends Component<Props, State> {
               this.setState({ hasError: false });
               this.props.onReset();
             }}
-            className="h-12 rounded-full bg-[#FABC05] px-8 font-black text-[#0D0D0D] hover:bg-[#FABC05]/90"
+            className="h-12 rounded-full bg-gold px-8 font-black text-on-gold hover:bg-gold/90"
           >
             <RotateCcw className="ml-2 h-4 w-4" />
             أعد التشخيص من جديد

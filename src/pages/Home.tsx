@@ -71,7 +71,7 @@ const mirrorQuestions = [
 /* ───────────────────────── small components ───────────────────────── */
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="inline-flex items-center gap-2 rounded-full border border-teal/30 bg-[#38A7B4]/10 px-4 py-1.5 text-sm text-teal-light">
+    <div className="inline-flex items-center gap-2 rounded-full border border-teal/30 bg-teal/10 px-4 py-1.5 text-sm text-teal-light-ink">
       <Sparkles className="h-3.5 w-3.5" />
       {children}
     </div>
@@ -127,27 +127,27 @@ function Nav() {
       <a key={l.href} href={l.href} onClick={onClick} className={className}>{l.label}</a>
     )
   return (
-    <header className="fixed inset-x-0 top-0 z-50 border-b border-white/5 bg-[#0D0D0D]/80 backdrop-blur-xl">
+    <header className="fixed inset-x-0 top-0 z-50 border-b border-white/5 bg-ground/80 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
         <a href="#top" className="flex items-center gap-2.5">
           <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-8 w-8 object-contain md:h-10 md:w-10" />
-          <span className="text-base font-black leading-none md:text-lg"><span className="hidden min-[370px]:inline">أكاديمية </span><span className="text-teal-light">وجيز</span></span>
+          <span className="text-base font-black leading-none md:text-lg"><span className="hidden min-[370px]:inline">أكاديمية </span><span className="text-teal-light-ink">وجيز</span></span>
         </a>
         <nav className="hidden items-center gap-7 text-sm text-muted-foreground md:flex">
           {links.map((l) =>
-            renderLink(l, 'transition hover:text-teal-light')
+            renderLink(l, 'transition hover:text-teal-light-ink')
           )}
         </nav>
         <div className="flex items-center gap-3">
           {userName ? (
-            <Link to="/student" className="hidden items-center gap-2 rounded-xl border border-teal/40 bg-[#38A7B4]/10 px-4 py-2 text-sm font-semibold text-teal-light transition hover:bg-[#38A7B4]/20 md:inline-flex">
+            <Link to="/student" className="hidden items-center gap-2 rounded-xl border border-teal/40 bg-teal/10 px-4 py-2 text-sm font-semibold text-teal-light-ink transition hover:bg-teal/20 md:inline-flex">
               <User className="h-4 w-4" />
               {userName}
             </Link>
           ) : (
             <Link
               to="/auth"
-              className="hidden items-center gap-2 rounded-xl border border-white/15 px-4 py-2 text-sm font-semibold text-muted-foreground transition hover:border-teal/50 hover:text-teal-light md:inline-flex"
+              className="hidden items-center gap-2 rounded-xl border border-white/15 px-4 py-2 text-sm font-semibold text-muted-foreground transition hover:border-teal/50 hover:text-teal-light-ink md:inline-flex"
             >
               <User className="h-4 w-4" />
               دخول
@@ -161,7 +161,7 @@ function Nav() {
           </a>
           <button
             ref={menuBtnRef}
-            className="md:hidden text-foreground"
+            className="md:hidden grid h-11 w-11 place-items-center text-foreground"
             onClick={() => setOpen(!open)}
             aria-label={open ? 'إغلاق قائمة التنقل' : 'فتح قائمة التنقل'}
             aria-expanded={open}
@@ -172,12 +172,12 @@ function Nav() {
         </div>
       </div>
       {open && (
-        <nav id="mobile-menu" ref={mobileNavRef} aria-label="قائمة التنقل الرئيسية" className="border-t border-white/5 bg-[#0D0D0D] px-5 py-4 md:hidden">
+        <nav id="mobile-menu" ref={mobileNavRef} aria-label="قائمة التنقل الرئيسية" className="border-t border-white/5 bg-ground px-5 py-4 md:hidden">
           {links.map((l) =>
-            renderLink(l, 'block py-2.5 text-muted-foreground hover:text-teal-light', () => setOpen(false))
+            renderLink(l, 'block py-2.5 text-muted-foreground hover:text-teal-light-ink', () => setOpen(false))
           )}
           {userName ? (
-            <Link to="/student" onClick={() => setOpen(false)} className="mt-2 flex items-center justify-center gap-2 rounded-xl border border-teal/40 px-5 py-3 font-semibold text-teal-light">
+            <Link to="/student" onClick={() => setOpen(false)} className="mt-2 flex items-center justify-center gap-2 rounded-xl border border-teal/40 px-5 py-3 font-semibold text-teal-light-ink">
               <User className="h-4 w-4" /> {userName}
             </Link>
           ) : (
@@ -204,8 +204,8 @@ function Hero() {
   return (
     <section id="top" className="relative overflow-hidden pt-28 pb-6 md:pt-36 md:pb-8">
       {/* ambient glows */}
-      <div className="pointer-events-none absolute -top-40 right-1/4 h-[480px] w-[480px] rounded-full bg-[#38A7B4]/15 blur-[140px] animate-pulse-glow" />
-      <div className="pointer-events-none absolute top-40 left-0 h-[380px] w-[380px] rounded-full bg-[#247B84]/20 blur-[120px] animate-pulse-glow" style={{ animationDelay: '2s' }} />
+      <div className="pointer-events-none absolute -top-40 right-1/4 h-[480px] w-[480px] rounded-full bg-teal/15 blur-[140px] animate-pulse-glow" />
+      <div className="pointer-events-none absolute top-40 left-0 h-[380px] w-[380px] rounded-full bg-teal-deep/20 blur-[120px] animate-pulse-glow" style={{ animationDelay: '2s' }} />
 
       <div className="relative mx-auto max-w-6xl px-5 text-center">
         <div className="reveal is-visible">
@@ -215,13 +215,13 @@ function Hero() {
           <span className="block text-2xl font-semibold leading-relaxed text-foreground/80 md:text-3xl">
             المسار الصحيح لا يبدأ باختيار دورة.
           </span>
-          <span className="mt-3 block bg-gradient-to-l from-[#6EC7D1] via-[#38A7B4] to-[#FABC05] bg-clip-text text-4xl font-bold leading-[1.25] text-transparent md:text-6xl md:leading-[1.2]">
+          <span className="mt-3 block bg-gradient-to-l from-teal-light-ink via-teal-ink to-gold-ink bg-clip-text text-4xl font-bold leading-[1.25] text-transparent md:text-6xl md:leading-[1.2]">
             يبدأ بفهم هدفك.
           </span>
         </h1>
         <div className="reveal is-visible mx-auto mt-6 flex max-w-xl flex-wrap items-center justify-center gap-2">
           {['نقرأ هدفك', 'وقتك المتاح', 'فجواتك الأقرب'].map((chip) => (
-            <span key={chip} className="inline-flex items-center gap-1.5 rounded-full border border-teal/25 bg-[#38A7B4]/[0.07] px-3 py-1 text-xs text-teal-light/85">
+            <span key={chip} className="inline-flex items-center gap-1.5 rounded-full border border-teal/25 bg-teal/[0.07] px-3 py-1 text-xs text-teal-light-ink">
               <Sparkles className="h-3 w-3" />
               {chip}
             </span>
@@ -238,7 +238,7 @@ function Hero() {
           </a>
           <a
             href="#stories"
-            className="mt-5 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition hover:text-teal-light"
+            className="mt-5 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition hover:text-teal-light-ink"
           >
             <Play className="h-3.5 w-3.5" />
             <span className="underline-offset-4 hover:underline">أو شاهد رحلات من سبقوك أولا</span>
@@ -330,7 +330,7 @@ function DiagnosticTeaser() {
             aria-valuenow={Math.min(step, mirrorQuestions.length)}
           >
             {mirrorQuestions.map((_, i) => (
-              <div key={i} className={`h-1.5 flex-1 rounded-full transition-colors duration-500 ${i < step ? 'bg-teal' : i === step ? 'bg-[#6EC7D1]/60' : 'bg-white/10'}`} />
+              <div key={i} className={`h-1.5 flex-1 rounded-full transition-colors duration-500 ${i < step ? 'bg-teal' : i === step ? 'bg-teal-light/60' : 'bg-white/10'}`} />
             ))}
           </div>
 
@@ -343,13 +343,13 @@ function DiagnosticTeaser() {
             {!done ? (
               <div className="story-fade">
                 <div className="flex items-center justify-between">
-                  <div className="text-sm text-teal-light">سؤال {step + 1} من {mirrorQuestions.length}</div>
+                  <div className="text-sm text-teal-light-ink">سؤال {step + 1} من {mirrorQuestions.length}</div>
                   <div className="flex items-center gap-4 text-xs">
                     {step > 0 && (
                       <button
                         onClick={back}
                         disabled={Boolean(picked)}
-                        className="inline-flex items-center gap-1 text-muted-foreground transition hover:text-teal-light disabled:opacity-40"
+                        className="inline-flex items-center gap-1 text-muted-foreground transition hover:text-teal-light-ink disabled:opacity-40"
                       >
                         <ChevronRight className="h-3.5 w-3.5" />
                         السؤال السابق
@@ -357,7 +357,7 @@ function DiagnosticTeaser() {
                     )}
                     <button
                       onClick={reset}
-                      className="text-muted-foreground/70 transition hover:text-teal-light"
+                      className="text-muted-foreground transition hover:text-teal-light-ink"
                     >
                       إعادة البدء
                     </button>
@@ -374,12 +374,12 @@ function DiagnosticTeaser() {
                         aria-pressed={selected}
                         className={`group flex items-center justify-between rounded-2xl border px-5 py-4 text-right font-medium transition ${
                           selected
-                            ? 'border-teal bg-[#38A7B4]/20 text-teal-light'
-                            : 'border-white/10 bg-white/[0.03] hover:border-teal/50 hover:bg-[#38A7B4]/10 hover:text-teal-light'
+                            ? 'border-teal bg-teal/20 text-teal-light-ink'
+                            : 'border-white/10 bg-white/[0.03] hover:border-teal/50 hover:bg-teal/10 hover:text-teal-light-ink'
                         }`}
                       >
                         <span className="flex items-center gap-2.5">
-                          {selected && <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-light" />}
+                          {selected && <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-light-ink" />}
                           {opt}
                         </span>
                         {!selected && <ArrowLeft className="h-4 w-4 opacity-0 transition group-hover:opacity-100" />}
@@ -390,13 +390,13 @@ function DiagnosticTeaser() {
               </div>
             ) : (
               <div className="story-fade text-center">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#38A7B4]/12 ring-1 ring-teal/25">
-                  <BrainCircuit className="h-8 w-8 text-teal" />
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-teal/12 ring-1 ring-teal/25">
+                  <BrainCircuit className="h-8 w-8 text-teal-ink" />
                 </div>
                 <h3 className="mt-5 text-2xl font-bold leading-relaxed">سمعناك — صورتك بدأت تتضح.</h3>
                 {/* قراءة واحدة عميقة مشتقة من إجاباته — سطر واحد يختصر، لا صندوق يشتت */}
                 {insights.length > 0 && (
-                  <p className="mx-auto mt-4 max-w-md text-base font-bold leading-8 text-teal-light md:text-lg">
+                  <p className="mx-auto mt-4 max-w-md text-base font-bold leading-8 text-teal-light-ink md:text-lg">
                     «{insights[0]}»
                   </p>
                 )}
@@ -408,7 +408,7 @@ function DiagnosticTeaser() {
                     ابدأ التشخيص الكامل
                     <ArrowLeft className="h-4 w-4" />
                   </Link>
-                  <button onClick={reset} className="text-sm text-muted-foreground underline-offset-4 hover:text-teal-light hover:underline">
+                  <button onClick={reset} className="text-sm text-muted-foreground underline-offset-4 hover:text-teal-light-ink hover:underline">
                     أعد المؤشر من جديد
                   </button>
                 </div>
@@ -446,12 +446,12 @@ function HowItWorks() {
           <div className="grid gap-3 md:grid-cols-4">
             {steps.map((s, i) => (
               <div key={s.title} className="reveal group relative flex items-start gap-3.5 rounded-2xl border border-white/10 bg-card px-4 py-4 transition hover:border-teal/40">
-                <div className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#38A7B4]/12 text-teal transition group-hover:scale-105">
+                <div className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal/12 text-teal-ink transition group-hover:scale-105">
                   <s.icon className="h-5 w-5" />
                 </div>
                 <div>
                   <h3 className="flex items-center gap-2 text-sm font-bold">
-                    <span className="text-[11px] font-black text-teal/50">{i + 1}</span>
+                    <span className="text-[11px] font-black text-teal-ink">{i + 1}</span>
                     {s.title}
                   </h3>
                   <p className="mt-1 text-xs leading-6 text-muted-foreground">{s.text}</p>
@@ -481,7 +481,7 @@ function ImageBand() {
         <div className="mx-auto w-full max-w-6xl px-5 pb-10">
           <p className="reveal max-w-xl text-2xl font-bold leading-relaxed md:text-3xl">
             لا نقيس تعلمك بما شاهدت —
-            <span className="text-teal-light"> بل بما أنجزت وأثبتّ.</span>
+            <span className="text-teal-light-ink"> بل بما أنجزت وأثبتّ.</span>
           </p>
           <p className="reveal mt-3 max-w-md text-sm leading-7 text-white/70">
             مدرب يراجع عملك بيده، ومشروع تخرج يدخل ملفك المهني من أول يوم.
@@ -498,7 +498,7 @@ function Stories() {
 
   return (
     <section id="stories" className="relative py-20 md:py-24">
-      <div className="pointer-events-none absolute left-1/3 top-0 h-[400px] w-[400px] rounded-full bg-[#38A7B4]/8 blur-[130px]" />
+      <div className="pointer-events-none absolute left-1/3 top-0 h-[400px] w-[400px] rounded-full bg-teal/8 blur-[130px]" />
       <div className="mx-auto max-w-6xl px-5">
         <div className="reveal text-center">
           <SectionLabel>نماذج توضيحية لرحلات التعلم</SectionLabel>
@@ -506,7 +506,7 @@ function Stories() {
           <p className="mx-auto mt-4 max-w-xl leading-8 text-muted-foreground">
             كل رحلة تبدأ بتشخيص، وتمر بمسار ومدرب، وتنتهي بمخرج يمكنك أن تراه — اختر نموذجا واقرأه كاملا.
           </p>
-          <p className="mx-auto mt-3 max-w-md text-xs leading-6 text-muted-foreground/80">
+          <p className="mx-auto mt-3 max-w-md text-xs leading-6 text-muted-foreground">
             نماذج توضيحية مركبة من أنماط شائعة — ليست شهادات لأشخاص حقيقيين.
           </p>
         </div>
@@ -541,7 +541,7 @@ function Stories() {
                 />
               ) : (
                 <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_60%_20%,rgba(56,167,180,0.35),transparent_65%)]">
-                  <span className="grid h-16 w-16 place-items-center rounded-full border border-teal/30 bg-[#12343B] text-2xl font-black text-teal-light">
+                  <span className="grid h-16 w-16 place-items-center rounded-full border border-teal/30 bg-surface-teal text-2xl font-black text-teal-light-ink">
                     {s.name.slice(0, 1)}
                   </span>
                 </div>
@@ -555,10 +555,10 @@ function Stories() {
               </p>
               <p className="mt-2 line-clamp-2 text-xs leading-6 text-muted-foreground">{s.before}</p>
               <p className="mt-2 line-clamp-2 text-xs leading-6 text-foreground/85">
-                <span className="font-bold text-amber-brand">النتيجة: </span>
+                <span className="font-bold text-gold-ink">النتيجة: </span>
                 {s.result}
               </p>
-              <span className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-teal-light">
+              <span className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-teal-light-ink">
                 اقرأ القصة كاملة
                 <ArrowLeft className="h-3.5 w-3.5 transition group-hover:-translate-x-1" />
               </span>
@@ -569,12 +569,12 @@ function Stories() {
         {/* بطاقة ختامية تعيد للتشخيص */}
         <Link
           to="/diagnostic"
-          className="flex w-[240px] shrink-0 snap-start flex-col items-center justify-center rounded-3xl border border-dashed border-teal/30 bg-[#38A7B4]/5 p-6 text-center transition hover:border-teal/60 hover:bg-[#38A7B4]/10"
+          className="flex w-[240px] shrink-0 snap-start flex-col items-center justify-center rounded-3xl border border-dashed border-teal/30 bg-teal/5 p-6 text-center transition hover:border-teal/60 hover:bg-teal/10"
         >
-          <Compass className="h-7 w-7 text-teal" />
+          <Compass className="h-7 w-7 text-teal-ink" />
           <p className="mt-3 text-sm font-bold leading-relaxed">وقصتك التالية؟</p>
           <p className="mt-1.5 text-xs leading-6 text-muted-foreground">تبدأ بثلاث دقائق من التشخيص</p>
-          <span className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-teal-light">
+          <span className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-teal-light-ink">
             ابدأ الآن
             <ArrowLeft className="h-3.5 w-3.5" />
           </span>
@@ -591,7 +591,7 @@ function Stories() {
                   <img src={open.img} alt={`مشهد من قصة ${open.name}`} loading="lazy" width="1200" height="600" className="h-full w-full object-cover object-top" />
                 ) : (
                   <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_60%_20%,rgba(56,167,180,0.35),transparent_65%)]">
-                    <span className="grid h-20 w-20 place-items-center rounded-full border border-teal/30 bg-[#12343B] text-3xl font-black text-teal-light">
+                    <span className="grid h-20 w-20 place-items-center rounded-full border border-teal/30 bg-surface-teal text-3xl font-black text-teal-light-ink">
                       {open.name.slice(0, 1)}
                     </span>
                   </div>
@@ -607,13 +607,13 @@ function Stories() {
                 <div className="absolute bottom-4 right-6 flex flex-wrap items-center gap-3">
                   <span className="tag-teal rounded-full px-4 py-1.5 text-sm font-bold">{open.tag}</span>
                   <span className="text-sm text-white/80">{open.name} — {open.role}</span>
-                  <span className="rounded-full border border-[#FABC05]/50 bg-black/40 px-3 py-1 text-[11px] font-bold text-[#FABC05]">نموذج توضيحي</span>
+                  <span className="rounded-full border border-gold/50 bg-black/40 px-3 py-1 text-[11px] font-bold text-gold-ink">نموذج توضيحي</span>
                 </div>
               </div>
 
               {/* الحكاية */}
               <div className="border-b border-white/5 p-8 md:p-10">
-                <Quote className="h-8 w-8 text-teal/50" />
+                <Quote className="h-8 w-8 text-teal-ink/50" />
                 <p className="mt-5 text-lg leading-9 text-foreground/90 md:text-xl md:leading-10">
                   {open.before} {open.turn}
                 </p>
@@ -622,24 +622,24 @@ function Stories() {
               {/* تفاصيل المسار */}
               <div className="grid gap-px bg-white/5 md:grid-cols-3">
                 <div className="bg-card p-6">
-                  <div className="flex items-center gap-2 text-xs text-teal-light"><Route className="h-4 w-4" /> المسار الذي {open.gender === 'f' ? 'سلكته' : 'سلكه'}</div>
+                  <div className="flex items-center gap-2 text-xs text-teal-light-ink"><Route className="h-4 w-4" /> المسار الذي {open.gender === 'f' ? 'سلكته' : 'سلكه'}</div>
                   <div className="mt-2 font-bold leading-7">{open.pathway}</div>
                   <div className="mt-1 text-xs text-muted-foreground">{open.duration}</div>
                 </div>
                 <div className="bg-card p-6">
-                  <div className="flex items-center gap-2 text-xs text-teal-light"><User className="h-4 w-4" /> المدرب</div>
+                  <div className="flex items-center gap-2 text-xs text-teal-light-ink"><User className="h-4 w-4" /> المدرب</div>
                   <div className="mt-2 font-bold">{open.trainer}</div>
                   <div className="mt-1 text-xs text-muted-foreground">{open.gender === 'f' ? 'رافقها' : 'رافقه'} في التقييم والمتابعة طوال المسار</div>
                 </div>
                 <div className="bg-card p-6">
-                  <div className="flex items-center gap-2 text-xs text-teal-light"><FileCheck className="h-4 w-4" /> المخرج العملي</div>
+                  <div className="flex items-center gap-2 text-xs text-teal-light-ink"><FileCheck className="h-4 w-4" /> المخرج العملي</div>
                   <div className="mt-2 font-bold leading-7">{open.output}</div>
                 </div>
               </div>
 
               {/* دورات القصة ومخرجاتها */}
               <div className="border-t border-white/5 p-8 md:px-10">
-                <div className="flex items-center gap-2 text-xs text-teal-light">
+                <div className="flex items-center gap-2 text-xs text-teal-light-ink">
                   <BookOpen className="h-4 w-4" /> الدورات التي {open.gender === 'f' ? 'أخذتها' : 'أخذها'} {open.name} — وماذا خرج{open.gender === 'f' ? 'ت' : ''} من كل واحدة
                 </div>
                 <div className="mt-4 grid gap-3 md:grid-cols-3">
@@ -647,7 +647,7 @@ function Stories() {
                     <div key={c.name} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                       <p className="text-sm font-bold leading-relaxed">{c.name}</p>
                       <p className="mt-2 flex items-start gap-1.5 text-xs leading-6 text-muted-foreground">
-                        <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-teal" />
+                        <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-teal-ink" />
                         {c.output}
                       </p>
                     </div>
@@ -656,11 +656,11 @@ function Stories() {
               </div>
 
               {/* النهاية */}
-              <div className="border-t border-white/5 bg-gradient-to-l from-[#38A7B4]/10 to-transparent p-8 md:px-10">
+              <div className="border-t border-white/5 bg-gradient-to-l from-teal/10 to-transparent p-8 md:px-10">
                 <div className="flex items-start gap-3">
-                  <Award className="mt-1 h-6 w-6 shrink-0 text-amber-brand" />
+                  <Award className="mt-1 h-6 w-6 shrink-0 text-gold-ink" />
                   <div>
-                    <div className="text-sm font-semibold text-amber-brand">وكيف انتهت القصة؟</div>
+                    <div className="text-sm font-semibold text-gold-ink">وكيف انتهت القصة؟</div>
                     <p className="mt-2 leading-8 text-foreground/90">{open.result}</p>
                     <div className="mt-4 text-xs text-muted-foreground">— {open.name}، {open.role}</div>
                   </div>
@@ -668,7 +668,7 @@ function Stories() {
               </div>
 
               <div className="border-t border-white/5 p-6 text-center">
-                <Link to="/diagnostic" className="inline-flex items-center gap-2 font-semibold text-teal-light transition hover:text-teal">
+                <Link to="/diagnostic" className="inline-flex items-center gap-2 font-semibold text-teal-light-ink transition hover:text-teal-ink">
                   قصتك التالية تبدأ من تشخيصك
                   <ArrowLeft className="h-4 w-4" />
                 </Link>
@@ -710,12 +710,12 @@ function CategoryFilter({
           aria-pressed={active === c}
           className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-semibold transition ${
             active === c
-              ? 'border-teal bg-[#247B84] text-white shadow-[0_0_24px_-6px_#38A7B4]'
-              : 'border-white/10 bg-white/[0.03] text-muted-foreground hover:border-teal/40 hover:text-teal-light'
+              ? 'border-teal bg-teal-deep text-white shadow-[0_0_24px_-6px_#38A7B4]'
+              : 'border-white/10 bg-white/[0.03] text-muted-foreground hover:border-teal/40 hover:text-teal-light-ink'
           }`}
         >
           {c}
-          <span className={`rounded-full px-1.5 text-[10px] font-black tabular-nums ${active === c ? 'bg-white/15' : 'bg-white/[0.06] text-white/45'}`}>
+          <span className={`rounded-full px-1.5 text-[10px] font-black tabular-nums ${active === c ? 'bg-black/25' : 'bg-white/[0.06] text-white/45'}`}>
             {n}
           </span>
         </button>
@@ -724,7 +724,7 @@ function CategoryFilter({
         <button
           onClick={() => setMore((m) => !m)}
           aria-expanded={more || activeInRest}
-          className="inline-flex items-center gap-1 rounded-full border border-dashed border-white/15 px-4 py-2 text-sm font-semibold text-muted-foreground transition hover:border-teal/40 hover:text-teal-light"
+          className="inline-flex items-center gap-1 rounded-full border border-dashed border-white/15 px-4 py-2 text-sm font-semibold text-muted-foreground transition hover:border-teal/40 hover:text-teal-light-ink"
         >
           {more || activeInRest ? 'أقل' : `المزيد (${rest.length})`}
           <ChevronDown className={`h-3.5 w-3.5 transition-transform ${more || activeInRest ? 'rotate-180' : ''}`} />
@@ -789,11 +789,11 @@ function Bestsellers() {
           </div>
           <div className="flex items-center gap-2">
             <button onClick={() => scroll(pwRailRef, 'prev')} aria-label="السابق"
-              className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/5 transition hover:border-teal/50 hover:text-teal-light">
+              className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/5 transition hover:border-teal/50 hover:text-teal-light-ink">
               <ChevronRight className="h-5 w-5" />
             </button>
             <button onClick={() => scroll(pwRailRef, 'next')} aria-label="التالي"
-              className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/5 transition hover:border-teal/50 hover:text-teal-light">
+              className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/5 transition hover:border-teal/50 hover:text-teal-light-ink">
               <ChevronLeft className="h-5 w-5" />
             </button>
           </div>
@@ -810,11 +810,11 @@ function Bestsellers() {
         <div className="mx-auto max-w-6xl px-5">
           <Link
             to={`/pathways/${spotlight.id}`}
-            className="reveal group mt-8 grid overflow-hidden rounded-3xl border border-teal/30 bg-gradient-to-l from-[#12343B] to-card transition hover:border-teal/60 hover:shadow-[0_30px_80px_-40px_rgba(56,167,180,0.5)] md:grid-cols-5"
+            className="reveal group mt-8 grid overflow-hidden rounded-3xl border border-teal/30 bg-gradient-to-l from-surface-teal to-card transition hover:border-teal/60 hover:shadow-[0_30px_80px_-40px_rgba(56,167,180,0.5)] md:grid-cols-5"
           >
             <div className="relative flex min-h-[104px] items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_70%_30%,rgba(56,167,180,0.4),transparent_65%)] md:col-span-2 md:min-h-[190px]">
-              <Route className="h-10 w-10 text-teal-light/70 md:h-16 md:w-16" />
-              <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-[#FABC05] px-2.5 py-1 text-[10px] font-black text-[#0D0D0D] md:right-5 md:top-5 md:gap-1.5 md:px-3.5 md:py-1.5 md:text-xs">
+              <Route className="h-10 w-10 text-teal-light-ink/70 md:h-16 md:w-16" />
+              <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-gold px-2.5 py-1 text-[10px] font-black text-on-gold md:right-5 md:top-5 md:gap-1.5 md:px-3.5 md:py-1.5 md:text-xs">
                 <Flame className="h-3.5 w-3.5" />
                 {spotlight.note}
               </span>
@@ -831,11 +831,11 @@ function Bestsellers() {
                 <span>{spotlight.p.weeklyHours}</span>
                 <span className="text-white/20">•</span>
                 <span className="flex items-center gap-1.5">
-                  <Users className="h-3.5 w-3.5 text-teal" />
+                  <Users className="h-3.5 w-3.5 text-teal-ink" />
                   {pathwayTrainers(spotlight.id).map((t) => t.name).join('، ')}
                 </span>
               </div>
-              <span className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#247B84] px-6 py-2.5 text-sm font-bold text-white transition group-hover:bg-[#1E666E]">
+              <span className="mt-6 inline-flex items-center gap-2 rounded-full bg-teal-deep px-6 py-2.5 text-sm font-bold text-white transition group-hover:bg-teal-darker">
                 افتح المسار
                 <ArrowLeft className="h-4 w-4 transition group-hover:-translate-x-1" />
               </span>
@@ -864,7 +864,7 @@ function Bestsellers() {
             className="group flex w-[280px] shrink-0 snap-start flex-col rounded-3xl border border-white/10 bg-card p-6 transition-all duration-200 hover:-translate-y-1 hover:border-teal/50 hover:shadow-[0_20px_60px_-30px_rgba(56,167,180,0.4)]"
           >
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#38A7B4]/10 px-3 py-1 text-xs font-bold text-teal-light">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-teal/10 px-3 py-1 text-xs font-bold text-teal-light-ink">
                 <Flame className="h-3.5 w-3.5" />
                 {note}
               </span>
@@ -875,13 +875,13 @@ function Bestsellers() {
               {p.level} · {weeksLabel(p.durationWeeks)} · {p.weeklyHours}
             </div>
             <div className="mt-3 flex items-center gap-1.5 text-[11px] leading-5 text-muted-foreground">
-              <Users className="h-3.5 w-3.5 shrink-0 text-teal" />
+              <Users className="h-3.5 w-3.5 shrink-0 text-teal-ink" />
               {pathwayTrainers(id).map((t) => t.name).join('، ')}
             </div>
             <div className="mt-auto pt-5">
               <Link
                 to={`/pathways/${id}`}
-                className="block rounded-xl border border-teal/40 py-2.5 text-center text-sm font-semibold text-teal-light transition group-hover:bg-[#247B84] group-hover:text-white"
+                className="block rounded-xl border border-teal/40 py-2.5 text-center text-sm font-semibold text-teal-light-ink transition group-hover:bg-teal-deep group-hover:text-white"
               >
                 تفاصيل المسار
               </Link>
@@ -892,14 +892,14 @@ function Bestsellers() {
         {/* بطاقة ختامية تعيد للتشخيص */}
         <Link
           to="/diagnostic"
-          className="flex w-[280px] shrink-0 snap-start flex-col items-center justify-center rounded-3xl border border-dashed border-teal/30 bg-[#38A7B4]/5 p-6 text-center transition hover:border-teal/60 hover:bg-[#38A7B4]/10"
+          className="flex w-[280px] shrink-0 snap-start flex-col items-center justify-center rounded-3xl border border-dashed border-teal/30 bg-teal/5 p-6 text-center transition hover:border-teal/60 hover:bg-teal/10"
         >
-          <Compass className="h-8 w-8 text-teal" />
+          <Compass className="h-8 w-8 text-teal-ink" />
           <p className="mt-4 font-bold leading-relaxed">لم تجد ما يناسبك؟</p>
           <p className="mt-2 text-sm leading-7 text-muted-foreground">
             التشخيص يطابقك مع مساراتنا المصممة — ويشرح لك لماذا.
           </p>
-          <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-teal-light">
+          <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-teal-light-ink">
             ابدأ التشخيص
             <ArrowLeft className="h-4 w-4" />
           </span>
@@ -912,7 +912,7 @@ function Bestsellers() {
         <div className="reveal flex flex-wrap items-end justify-between gap-4">
           <div>
             <h3 className="flex items-center gap-2 text-2xl font-bold">
-              <BookOpen className="h-6 w-6 text-amber-brand" />
+              <BookOpen className="h-6 w-6 text-gold-ink" />
               دورات مختارة بعناية
             </h3>
             <p className="mt-2 max-w-lg text-sm leading-7 text-muted-foreground">
@@ -921,11 +921,11 @@ function Bestsellers() {
           </div>
           <div className="flex items-center gap-2">
             <button onClick={() => scroll(crRailRef, 'prev')} aria-label="السابق في الدورات"
-              className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/5 transition hover:border-teal/50 hover:text-teal-light">
+              className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/5 transition hover:border-teal/50 hover:text-teal-light-ink">
               <ChevronRight className="h-4 w-4" />
             </button>
             <button onClick={() => scroll(crRailRef, 'next')} aria-label="التالي في الدورات"
-              className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/5 transition hover:border-teal/50 hover:text-teal-light">
+              className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/5 transition hover:border-teal/50 hover:text-teal-light-ink">
               <ChevronLeft className="h-4 w-4" />
             </button>
           </div>
@@ -954,7 +954,7 @@ function Bestsellers() {
             className="group flex w-[270px] shrink-0 snap-start flex-col rounded-2xl border border-white/10 bg-card p-5 transition-all duration-200 hover:-translate-y-1 hover:border-teal/50 hover:shadow-[0_20px_60px_-30px_rgba(56,167,180,0.4)]"
           >
             <div className="flex items-center gap-2">
-              <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[#38A7B4]/10 px-3 py-1 text-[11px] font-bold text-teal-light">
+              <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-teal/10 px-3 py-1 text-[11px] font-bold text-teal-light-ink">
                 <Flame className="h-3 w-3" />
                 {note}
               </span>
@@ -963,12 +963,12 @@ function Bestsellers() {
             <h4 className="mt-3 font-bold leading-relaxed">{c.name}</h4>
             <p className="mt-1 text-xs text-muted-foreground">من مسار «{c.pathwayName}» · {c.weeks} {c.weeks === 1 ? 'أسبوع' : 'أسابيع'}</p>
             {c.skill && (
-              <span className="mt-3 w-fit rounded-full border border-teal/25 bg-[#38A7B4]/10 px-2.5 py-1 text-[11px] text-teal-light">
+              <span className="mt-3 w-fit rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-[11px] text-teal-light-ink">
                 {c.skill}
               </span>
             )}
             <div className="mt-auto pt-4">
-              <button onClick={() => { track('course_viewed', { category: c.category }); setModalCourse(c) }} className="w-full cursor-pointer rounded-lg border border-white/15 py-2 text-xs font-semibold transition group-hover:border-teal/50 group-hover:text-teal-light">
+              <button onClick={() => { track('course_viewed', { category: c.category }); setModalCourse(c) }} className="w-full cursor-pointer rounded-lg border border-white/15 py-2 text-xs font-semibold transition group-hover:border-teal/50 group-hover:text-teal-light-ink">
                 تفاصيل الدورة
               </button>
             </div>
@@ -981,14 +981,14 @@ function Bestsellers() {
       <div className="mx-auto mt-10 flex max-w-6xl flex-wrap items-center justify-center gap-3 px-5">
         <Link
           to="/pathways"
-          className="inline-flex items-center gap-2 rounded-2xl border border-teal/40 px-6 py-3 text-sm font-bold text-teal-light transition hover:bg-[#247B84] hover:text-white"
+          className="inline-flex items-center gap-2 rounded-2xl border border-teal/40 px-6 py-3 text-sm font-bold text-teal-light-ink transition hover:bg-teal-deep hover:text-white"
         >
           تصفح كل المسارات
           <ArrowLeft className="h-4 w-4" />
         </Link>
         <Link
           to="/courses"
-          className="inline-flex items-center gap-2 rounded-2xl border border-white/15 px-6 py-3 text-sm font-bold text-muted-foreground transition hover:border-amber-brand/50 hover:text-amber-brand"
+          className="inline-flex items-center gap-2 rounded-2xl border border-white/15 px-6 py-3 text-sm font-bold text-muted-foreground transition hover:border-gold/50 hover:text-gold-ink"
         >
           تصفح كل الدورات
           <ArrowLeft className="h-4 w-4" />
@@ -1028,7 +1028,7 @@ function Faq() {
                 className="flex w-full items-center justify-between gap-4 px-6 py-5 text-right font-semibold"
               >
                 {f.q}
-                <ChevronDown aria-hidden="true" className={`h-5 w-5 shrink-0 text-teal-light transition-transform duration-300 ${open === i ? 'rotate-180' : ''}`} />
+                <ChevronDown aria-hidden="true" className={`h-5 w-5 shrink-0 text-teal-light-ink transition-transform duration-300 ${open === i ? 'rotate-180' : ''}`} />
               </button>
               <div
                 id={`faq-answer-${i}`}
@@ -1047,7 +1047,7 @@ function Faq() {
           {(() => {
             const i = faqs.length
             return (
-              <div className="reveal overflow-hidden rounded-2xl border-2 border-teal/50 bg-gradient-to-l from-[#12343B]/50 to-card transition hover:border-teal/70" style={{ transitionDelay: `${i * 60}ms` }}>
+              <div className="reveal overflow-hidden rounded-2xl border-2 border-teal/50 bg-gradient-to-l from-surface-teal/50 to-card transition hover:border-teal/70" style={{ transitionDelay: `${i * 60}ms` }}>
                 <button
                   onClick={() => setOpen(open === i ? null : i)}
                   aria-expanded={open === i}
@@ -1056,10 +1056,10 @@ function Faq() {
                   className="flex w-full items-center justify-between gap-4 px-6 py-5 text-right font-semibold"
                 >
                   <span className="flex items-center gap-2.5">
-                    <Sparkles className="h-4.5 w-4.5 shrink-0 text-teal-light" aria-hidden="true" />
+                    <Sparkles className="h-4.5 w-4.5 shrink-0 text-teal-light-ink" aria-hidden="true" />
                     كيف تبنون توصيتكم — هل هي تخمين؟
                   </span>
-                  <ChevronDown aria-hidden="true" className={`h-5 w-5 shrink-0 text-teal-light transition-transform duration-300 ${open === i ? 'rotate-180' : ''}`} />
+                  <ChevronDown aria-hidden="true" className={`h-5 w-5 shrink-0 text-teal-light-ink transition-transform duration-300 ${open === i ? 'rotate-180' : ''}`} />
                 </button>
                 <div
                   id={`faq-answer-${i}`}
@@ -1075,7 +1075,7 @@ function Faq() {
                       </p>
                       <Link
                         to="/methodology"
-                        className="mt-5 inline-flex items-center gap-2 rounded-full border border-teal/50 bg-teal/15 px-6 py-2.5 text-sm font-bold text-teal-light transition hover:bg-teal/25"
+                        className="mt-5 inline-flex items-center gap-2 rounded-full border border-teal/50 bg-teal/15 px-6 py-2.5 text-sm font-bold text-teal-light-ink transition hover:bg-teal/25"
                       >
                         اكتشف كيف نبني توصيتك
                         <ArrowLeft className="h-4 w-4" />
@@ -1096,13 +1096,13 @@ function Faq() {
 function FinalCta() {
   return (
     <section id="cta" className="relative overflow-hidden py-24 md:py-28">
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-[#38A7B4]/10 to-transparent" />
-      <div className="pointer-events-none absolute right-1/2 top-1/2 h-[420px] w-[420px] -translate-y-1/2 translate-x-1/2 rounded-full bg-[#38A7B4]/20 blur-[140px] animate-pulse-glow" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-teal/10 to-transparent" />
+      <div className="pointer-events-none absolute right-1/2 top-1/2 h-[420px] w-[420px] -translate-y-1/2 translate-x-1/2 rounded-full bg-teal/20 blur-[140px] animate-pulse-glow" />
       <div className="relative mx-auto max-w-3xl px-5 text-center">
         <h2 className="reveal text-3xl font-bold leading-snug md:text-5xl md:leading-tight">
           نسختك القادمة تستحق
           <br />
-          <span className="text-teal-light">أكثر من دورة عشوائية.</span>
+          <span className="text-teal-light-ink">أكثر من دورة عشوائية.</span>
         </h2>
         <p className="reveal mx-auto mt-6 max-w-md leading-8 text-muted-foreground">
           امنحنا ثلاث دقائق من الوضوح، نمنحك خريطة طريق كاملة.
@@ -1199,27 +1199,27 @@ const footerCols: { title: string; icon: typeof GraduationCap; links: { label: s
 
 function Footer() {
   return (
-    <footer className="border-t border-white/5 bg-[#0A0A0A]">
+    <footer className="border-t border-white/5 bg-ground">
       <div className="mx-auto max-w-6xl px-5 py-12">
         <div className="grid gap-8 md:grid-cols-5">
           <div className="md:col-span-1">
             <div className="flex items-center gap-2.5">
               <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 object-contain" />
-              <div className="font-bold">وجيز <span className="text-teal-light">أكاديمي</span></div>
+              <div className="font-bold">وجيز <span className="text-teal-light-ink">أكاديمي</span></div>
             </div>
             <p className="mt-3 text-sm leading-7 text-muted-foreground">
               منصة تفهم الإنسان قبل أن تقترح ما يتعلمه — من مجموعة وجيز wajeez.com
             </p>
             <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
-              <Mail className="h-4 w-4 text-teal" />
+              <Mail className="h-4 w-4 text-teal-ink" />
               <span dir="ltr">{CONTACT.email}</span>
             </div>
             <div className="mt-3 space-y-1.5">
               {CONTACT.locations.map((loc) => (
                 <div key={loc.label} className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <MapPin className="h-3.5 w-3.5 shrink-0 text-teal" />
+                  <MapPin className="h-3.5 w-3.5 shrink-0 text-teal-ink" />
                   {loc.href ? (
-                    <a href={loc.href} target="_blank" rel="noreferrer" className="transition hover:text-teal-light">
+                    <a href={loc.href} target="_blank" rel="noreferrer" className="transition hover:text-teal-light-ink">
                       {loc.label}{loc.address ? ` — ${loc.address}` : ''}
                     </a>
                   ) : (
@@ -1232,16 +1232,16 @@ function Footer() {
           {footerCols.map((col) => (
             <div key={col.title}>
               <div className="mb-3 flex items-center gap-2 font-bold">
-                <col.icon className="h-4 w-4 text-teal" />
+                <col.icon className="h-4 w-4 text-teal-ink" />
                 {col.title}
               </div>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 {col.links.map((l) => (
                   <li key={l.label}>
                     {l.to.startsWith('#') ? (
-                      <a href={l.to} className="transition hover:text-teal-light">{l.label}</a>
+                      <a href={l.to} className="transition hover:text-teal-light-ink">{l.label}</a>
                     ) : (
-                      <Link to={l.to} className="transition hover:text-teal-light">{l.label}</Link>
+                      <Link to={l.to} className="transition hover:text-teal-light-ink">{l.label}</Link>
                     )}
                   </li>
                 ))}
@@ -1274,7 +1274,7 @@ function MobileCtaBar() {
   return (
     <div
       aria-hidden={!visible}
-      className={`fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[#0D0D0D]/90 px-5 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-3 backdrop-blur-xl transition-transform duration-300 md:hidden ${visible ? 'translate-y-0' : 'translate-y-full'}`}
+      className={`fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-ground/90 px-5 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-3 backdrop-blur-xl transition-transform duration-300 md:hidden ${visible ? 'translate-y-0' : 'translate-y-full'}`}
     >
       <a href="#diagnostic" className="btn-teal w-full py-3.5">
         مؤشر وجيز — دقيقة واحدة
@@ -1309,9 +1309,9 @@ function AdvisorStrip() {
   const isWhatsApp = Boolean(CONTACT.whatsapp)
   return (
     <section className="mx-auto max-w-6xl px-5 pb-4">
-      <div className="reveal flex flex-col items-center justify-between gap-5 rounded-3xl border border-teal/20 bg-gradient-to-l from-[#12343B]/80 to-card px-6 py-6 md:flex-row md:px-8">
+      <div className="reveal flex flex-col items-center justify-between gap-5 rounded-3xl border border-teal/20 bg-gradient-to-l from-surface-teal/80 to-card px-6 py-6 md:flex-row md:px-8">
         <div className="flex items-center gap-4 text-center md:text-right">
-          <span className="relative hidden h-12 w-12 shrink-0 place-items-center rounded-2xl bg-teal/12 text-teal md:grid">
+          <span className="relative hidden h-12 w-12 shrink-0 place-items-center rounded-2xl bg-teal/12 text-teal-ink md:grid">
             <Headset className="h-6 w-6" />
             <span className="absolute -left-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-emerald-300 ring-2 ring-card" />
           </span>
@@ -1325,7 +1325,7 @@ function AdvisorStrip() {
             href={advisorHref()}
             target={isWhatsApp ? '_blank' : undefined}
             rel={isWhatsApp ? 'noreferrer' : undefined}
-            className="inline-flex items-center gap-2 rounded-full border border-teal/40 bg-teal/10 px-6 py-2.5 text-sm font-bold text-teal-light transition hover:bg-teal/20"
+            className="inline-flex items-center gap-2 rounded-full border border-teal/40 bg-teal/10 px-6 py-2.5 text-sm font-bold text-teal-light-ink transition hover:bg-teal/20"
           >
             <MessageCircle className="h-4 w-4" />
             احجز حديثك

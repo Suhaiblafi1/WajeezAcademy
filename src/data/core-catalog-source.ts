@@ -3,7 +3,6 @@
    المحولات في pathways.ts وcourses.ts تعمل على هذا المصدر الوحيد أيًا كان:
    لا نسخة ثانية متعارضة داخل المكونات. */
 
-import bundled from './catalog/core-catalog.v2.json'
 
 export interface CoreCatalogPathway {
   id: string
@@ -56,7 +55,12 @@ export interface CoreCatalogRaw {
   modules: CoreCatalogModule[]
 }
 
-let active: CoreCatalogRaw = bundled as unknown as CoreCatalogRaw
+/* البند ع-١: الحزمة المضمنة كانت تُستورد ثابتا فتهبط في حزمة الدخول
+   (720 كيلوبايت من JSON على كل زائر قبل أول بكسل) رغم أنها نسخة احتياطية
+   فقط — المصدر الأساسي هو لقطة API المنشورة. صارت تُحمَّل كسولا عند فشل
+   الجلب وحده، والمحولات تعيد ملء مصفوفاتها عبر onCoreCatalogInstalled. */
+const EMPTY: CoreCatalogRaw = { launch_pathways: [], courses: [], modules: [] }
+let active: CoreCatalogRaw = EMPTY
 let version = 0
 const listeners = new Set<() => void>()
 
@@ -81,4 +85,26 @@ export function installCoreCatalogRaw(next: CoreCatalogRaw): void {
   active = next
   version += 1
   for (const cb of listeners) cb()
+}
+
+/** الاحتياطي المضمن — يُحمَّل كسولا عند تعذّر جلب اللقطة المنشورة فقط */
+let fallbackInflight: Promise<void> | null = null
+export function loadBundledCoreCatalog(): Promise<void> {
+  if (fallbackInflight) return fallbackInflight
+  fallbackInflight = import('./catalog/core-catalog.v2.json')
+    .then((m) => {
+      const raw = (m.default ?? m) as unknown as CoreCatalogRaw
+      if (Array.isArray(raw?.launch_pathways) && raw.launch_pathways.length > 0) {
+        installCoreCatalogRaw(raw)
+      }
+    })
+    .catch(() => {
+      /* لا احتياطي متاح — الصفحات تعرض حالة الفراغ الموجِّهة */
+    })
+  return fallbackInflight
+}
+
+/** هل توجد بيانات كتالوج فعالة؟ — للصفحات كي تعرض حالة تحميل لا صفرا مضلّلا */
+export function hasCoreCatalog(): boolean {
+  return active.launch_pathways.length > 0
 }

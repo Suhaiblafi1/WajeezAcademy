@@ -16,7 +16,7 @@ interface Ticket {
   messages: { id: string; authorId: string; body: string; internal: boolean; createdAt: string }[];
 }
 
-const inputCls = "w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none";
+const inputCls = "w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white placeholder:text-white/25 focus:border-teal focus:outline-none";
 
 export default function StudentSupport() {
   const [rows, setRows] = useState<Ticket[]>([]);
@@ -50,20 +50,20 @@ export default function StudentSupport() {
 
   return (
     <PortalLayout title="الدعم الفني">
-      {flash && <p className="mb-4 flex items-center gap-2 rounded-xl border border-[#38A7B4]/40 bg-[#38A7B4]/10 px-4 py-3 text-sm font-bold text-[#6EC7D1]" role="status"><CheckCircle2 className="h-4 w-4" /> {flash}</p>}
+      {flash && <p className="mb-4 flex items-center gap-2 rounded-xl border border-teal/40 bg-teal/10 px-4 py-3 text-sm font-bold text-teal-light-ink" role="status"><CheckCircle2 className="h-4 w-4" /> {flash}</p>}
       {error && <p className="mb-4 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-200">{error}</p>}
 
       {/* فتح تذكرة */}
       <div className="mb-6 rounded-3xl border border-white/10 bg-white/[0.02] p-5">
         <button onClick={() => setCreateOpen(!createOpen)} className="flex w-full cursor-pointer items-center justify-between text-sm font-black">
-          <span className="flex items-center gap-2"><Plus className="h-4 w-4 text-[#38A7B4]" /> تذكرة جديدة</span>
+          <span className="flex items-center gap-2"><Plus className="h-4 w-4 text-teal-ink" /> تذكرة جديدة</span>
           <ChevronRight className={`h-4 w-4 transition ${createOpen ? "rotate-90" : ""}`} />
         </button>
         {createOpen && (
           <div className="mt-4 space-y-3">
             <div className="grid gap-3 sm:grid-cols-2">
               <input value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} placeholder="الموضوع" className={inputCls} />
-              <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className={`${inputCls} [&>option]:bg-[#121B1D]`}>
+              <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className={`${inputCls} [&>option]:bg-surface`}>
                 <option value="billing">الفواتير والدفع</option>
                 <option value="learning">المحتوى والجلسات</option>
                 <option value="technical">مشكلة تقنية</option>
@@ -77,7 +77,7 @@ export default function StudentSupport() {
                 setForm({ subject: "", category: "other", body: "" });
                 setCreateOpen(false);
               }, "فُتحت التذكرة — يرد عليك فريق الدعم هنا")}
-              className="cursor-pointer rounded-full bg-[#38A7B4] px-6 py-2.5 text-xs font-black text-[#08272B] transition hover:bg-[#6EC7D1] disabled:opacity-40">
+              className="cursor-pointer rounded-full bg-teal px-6 py-2.5 text-xs font-black text-on-teal transition hover:bg-teal-light disabled:opacity-40">
               إرسال التذكرة
             </button>
           </div>
@@ -85,7 +85,7 @@ export default function StudentSupport() {
       </div>
 
       {loading ? (
-        <div className="grid place-items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-[#38A7B4]" /></div>
+        <div className="grid place-items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" /></div>
       ) : rows.length === 0 ? (
         <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center">
           <LifeBuoy className="h-12 w-12 text-white/20" />
@@ -100,7 +100,7 @@ export default function StudentSupport() {
                   <p className="font-black">{t.subject}</p>
                   <p className="mt-1 text-xs text-white/50">{t.messages.length} رسالة · آخر تحديث {fmtWhen(t.updatedAt)}</p>
                 </div>
-                <span className={`rounded-full border px-3 py-1 text-[11px] font-bold ${t.status === "resolved" || t.status === "closed" ? "border-white/15 text-white/50" : "border-[#38A7B4]/40 text-[#6EC7D1]"}`}>
+                <span className={`rounded-full border px-3 py-1 text-[11px] font-bold ${t.status === "resolved" || t.status === "closed" ? "border-white/15 text-white/50" : "border-teal/40 text-teal-light-ink"}`}>
                   {STATUS_AR[t.status] ?? t.status}
                 </span>
               </button>
@@ -120,7 +120,7 @@ export default function StudentSupport() {
                       <input value={reply} onChange={(e) => setReply(e.target.value)} placeholder="اكتب ردا…" className={`${inputCls} flex-1`} />
                       <button disabled={busy || !reply.trim()}
                         onClick={() => act(async () => { await apiPost(`/api/learner/support/tickets/${t.id}/reply`, { body: reply }); setReply(""); }, "أُرسل ردك")}
-                        className="flex cursor-pointer items-center gap-1.5 rounded-xl bg-[#38A7B4] px-4 py-2 text-xs font-black text-[#08272B] disabled:opacity-40">
+                        className="flex cursor-pointer items-center gap-1.5 rounded-xl bg-teal px-4 py-2 text-xs font-black text-on-teal disabled:opacity-40">
                         <Send className="h-3.5 w-3.5" />
                       </button>
                     </div>
@@ -131,7 +131,7 @@ export default function StudentSupport() {
                         const note = window.prompt("لماذا تعيد فتح التذكرة؟ (3+ أحرف)");
                         if (note && note.length >= 3) void act(() => apiPost(`/api/learner/support/tickets/${t.id}/reopen`, { note }), "أُعيد فتح التذكرة");
                       }}
-                      className="mt-3 cursor-pointer rounded-full border border-[#FABC05]/40 px-4 py-1.5 text-xs font-bold text-[#FABC05] hover:bg-[#FABC05]/10 disabled:opacity-40">
+                      className="mt-3 cursor-pointer rounded-full border border-gold/40 px-4 py-1.5 text-xs font-bold text-gold-ink hover:bg-gold/10 disabled:opacity-40">
                       إعادة فتح التذكرة
                     </button>
                   )}

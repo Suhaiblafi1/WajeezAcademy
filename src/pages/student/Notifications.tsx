@@ -42,7 +42,7 @@ export default function Notifications() {
           <RefreshCw className="h-3.5 w-3.5" /> تحديث
         </button>
         {rows.some((n) => n.status !== "read") && (
-          <button onClick={() => void markAll()} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-[#38A7B4]/40 px-4 py-2 text-xs font-bold text-[#6EC7D1] hover:bg-[#38A7B4]/10">
+          <button onClick={() => void markAll()} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-teal/40 px-4 py-2 text-xs font-bold text-teal-light-ink hover:bg-teal/10">
             <CheckCheck className="h-3.5 w-3.5" /> تعليم الكل كمقروء
           </button>
         )}
@@ -51,7 +51,7 @@ export default function Notifications() {
       {error && <p className="mb-4 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-200">{error}</p>}
 
       {loading ? (
-        <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-[#38A7B4]" /></div>
+        <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" /></div>
       ) : rows.length === 0 ? (
         <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
           <Bell className="h-12 w-12 text-white/20" />
@@ -62,10 +62,10 @@ export default function Notifications() {
           {rows.map((n) => (
             <button key={n.id} onClick={() => void markRead(n)}
               className={`w-full cursor-pointer rounded-2xl border p-4 text-right transition ${
-                n.status === "read" ? "border-white/5 bg-white/[0.01] text-white/50" : "border-[#38A7B4]/25 bg-[#38A7B4]/5 hover:border-[#38A7B4]/50"
+                n.status === "read" ? "border-white/5 bg-white/[0.01] text-white/50" : "border-teal/25 bg-teal/5 hover:border-teal/50"
               }`}>
               <p className="flex items-center gap-2 text-sm font-black">
-                {n.status !== "read" && <span className="h-2 w-2 shrink-0 rounded-full bg-[#FABC05]" />}
+                {n.status !== "read" && <span className="h-2 w-2 shrink-0 rounded-full bg-gold" />}
                 {n.title}
               </p>
               <p className="mt-1 text-xs leading-6">{n.body}</p>

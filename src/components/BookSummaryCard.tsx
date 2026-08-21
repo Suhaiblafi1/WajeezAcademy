@@ -25,10 +25,10 @@ export default function BookSummaryCard({
 
   if (saved?.passed) {
     return (
-      <div className="rounded-2xl border border-[#38A7B4]/30 bg-[#38A7B4]/5 p-4">
+      <div className="rounded-2xl border border-teal/30 bg-teal/5 p-4">
         <p className="text-sm font-bold">{book.title}</p>
         <p className="mt-1 text-[11px] text-white/45">{book.author} · استماع {book.minutes} دقيقة</p>
-        <p className="mt-3 flex items-center gap-2 rounded-xl border border-[#38A7B4]/40 bg-[#38A7B4]/10 px-3 py-2 text-xs font-bold text-[#6EC7D1]">
+        <p className="mt-3 flex items-center gap-2 rounded-xl border border-teal/40 bg-teal/10 px-3 py-2 text-xs font-bold text-teal-light-ink">
           <CheckCircle2 className="h-4 w-4" /> اجتزت اختبار الملخص بدرجة {saved.score}%
         </p>
       </div>
@@ -58,7 +58,7 @@ export default function BookSummaryCard({
           <p className="text-sm font-bold">{book.title}</p>
           <p className="mt-1 text-[11px] text-white/45">{book.author} · استماع {book.minutes} دقيقة · {questions.length} أسئلة</p>
         </div>
-        <BookOpen className="h-4 w-4 shrink-0 text-[#6EC7D1]" />
+        <BookOpen className="h-4 w-4 shrink-0 text-teal-light-ink" />
       </div>
 
       {!quizOn ? (
@@ -69,7 +69,7 @@ export default function BookSummaryCard({
           <button
             onClick={() => setQuizOn(true)}
             disabled={!listened}
-            className="mt-3 w-full cursor-pointer rounded-full bg-[#38A7B4] py-2 text-xs font-black text-[#08272B] transition hover:bg-[#6EC7D1] disabled:cursor-not-allowed disabled:opacity-40"
+            className="mt-3 w-full cursor-pointer rounded-full bg-teal py-2 text-xs font-black text-on-teal transition hover:bg-teal-light disabled:cursor-not-allowed disabled:opacity-40"
           >
             {listened ? "ابدأ اختبار الملخص" : `أكمل الاستماع لتفتح الأسئلة (${listenPct}%)`}
           </button>
@@ -90,9 +90,9 @@ export default function BookSummaryCard({
                       disabled={revealed}
                       onClick={() => setAnswers({ ...answers, [i]: j })}
                       className={`cursor-pointer rounded-lg border px-2.5 py-1.5 text-right text-[11px] transition disabled:cursor-default ${
-                        revealed && isCorrect ? "border-[#38A7B4] bg-[#38A7B4]/15 text-[#6EC7D1]"
+                        revealed && isCorrect ? "border-teal bg-teal/15 text-teal-light-ink"
                         : revealed && chosen && !isCorrect ? "border-red-500/60 bg-red-500/10 text-red-300"
-                        : chosen ? "border-[#38A7B4]/60 bg-[#38A7B4]/10" : "border-white/10 hover:border-white/25"
+                        : chosen ? "border-teal/60 bg-teal/10" : "border-white/10 hover:border-white/25"
                       }`}
                     >
                       {op}
@@ -107,12 +107,12 @@ export default function BookSummaryCard({
             <button
               onClick={submit}
               disabled={Object.keys(answers).length < questions.length}
-              className="w-full cursor-pointer rounded-full bg-[#FABC05] py-2.5 text-xs font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90 disabled:cursor-not-allowed disabled:opacity-40"
+              className="w-full cursor-pointer rounded-full bg-gold py-2.5 text-xs font-black text-on-gold transition hover:bg-gold/90 disabled:cursor-not-allowed disabled:opacity-40"
             >
               سلّم إجابات الملخص
             </button>
           ) : result.passed ? (
-            <p className="flex items-center justify-center gap-2 rounded-xl border border-[#38A7B4]/50 bg-[#38A7B4]/10 py-2.5 text-xs font-black text-[#6EC7D1]">
+            <p className="flex items-center justify-center gap-2 rounded-xl border border-teal/50 bg-teal/10 py-2.5 text-xs font-black text-teal-light-ink">
               <CheckCircle2 className="h-4 w-4" /> {result.score}% — أُضيف الملخص لملفك
             </p>
           ) : (

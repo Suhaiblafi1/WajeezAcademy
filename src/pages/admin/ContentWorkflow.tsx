@@ -6,9 +6,9 @@ import { loadContent, advanceContent, CONTENT_STAGE_LABEL, type ContentStage } f
 const STAGES: ContentStage[] = ["draft", "academic_review", "qa", "published", "retired"];
 const STAGE_CLS: Record<ContentStage, string> = {
   draft: "bg-white/10 text-white/50",
-  academic_review: "bg-[#FABC05]/15 text-[#FABC05]",
+  academic_review: "bg-gold/15 text-gold-ink",
   qa: "bg-purple-500/15 text-purple-300",
-  published: "bg-[#38A7B4]/15 text-[#6EC7D1]",
+  published: "bg-teal/15 text-teal-light-ink",
   retired: "bg-white/5 text-white/30",
 };
 
@@ -35,7 +35,7 @@ export default function ContentWorkflow() {
           return (
             <div key={c.id} className="rounded-3xl border border-white/10 bg-white/[0.02] p-5">
               <div className="flex flex-wrap items-center gap-4">
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#38A7B4]/10 text-[#6EC7D1]">
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-teal/10 text-teal-light-ink">
                   <BookMarked className="h-5 w-5" />
                 </span>
                 <div className="min-w-0 flex-1">
@@ -50,7 +50,7 @@ export default function ContentWorkflow() {
                 {c.stage !== "retired" && (
                   <button
                     onClick={() => { advanceContent(c.id); setTick(tick + 1); }}
-                    className="flex cursor-pointer items-center gap-1.5 rounded-full border border-[#38A7B4]/40 px-4 py-2 text-xs font-bold text-[#6EC7D1] transition hover:bg-[#38A7B4]/10"
+                    className="flex cursor-pointer items-center gap-1.5 rounded-full border border-teal/40 px-4 py-2 text-xs font-bold text-teal-light-ink transition hover:bg-teal/10"
                   >
                     <CheckCircle2 className="h-3.5 w-3.5" />
                     {c.stage === "published" ? "أرشف" : "انقل للمرحلة التالية"}
@@ -62,7 +62,7 @@ export default function ContentWorkflow() {
                 {STAGES.map((s, i) => (
                   <span
                     key={s}
-                    className={`h-1.5 flex-1 rounded-full ${i <= stageIdx ? "bg-[#38A7B4]" : "bg-white/10"}`}
+                    className={`h-1.5 flex-1 rounded-full ${i <= stageIdx ? "bg-teal" : "bg-white/10"}`}
                   />
                 ))}
               </div>

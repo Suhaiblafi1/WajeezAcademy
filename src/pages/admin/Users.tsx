@@ -66,7 +66,7 @@ export default function Users() {
         <button onClick={() => void load()} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-white/60 hover:border-white/40">
           <RefreshCw className="h-3.5 w-3.5" /> تحديث
         </button>
-        {flash && <span className="flex items-center gap-1.5 text-xs font-bold text-[#6EC7D1]" role="status"><CheckCircle2 className="h-3.5 w-3.5" /> {flash}</span>}
+        {flash && <span className="flex items-center gap-1.5 text-xs font-bold text-teal-light-ink" role="status"><CheckCircle2 className="h-3.5 w-3.5" /> {flash}</span>}
       </div>
 
       {loading ? (
@@ -85,7 +85,7 @@ export default function Users() {
                   <p className="font-black">{u.displayName || "—"} <span className="mr-2 text-[11px] font-normal text-white/40" dir="ltr">{u.email}</span></p>
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
                     {u.roles.map((r) => (
-                      <span key={r.id} className="rounded-full border border-[#38A7B4]/40 px-2.5 py-0.5 text-[10px] font-bold text-[#6EC7D1]">{r.nameAr}</span>
+                      <span key={r.id} className="rounded-full border border-teal/40 px-2.5 py-0.5 text-[10px] font-bold text-teal-light-ink">{r.nameAr}</span>
                     ))}
                     <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${u.status === "active" ? "border-emerald-400/30 text-emerald-300" : "border-red-500/40 text-red-400"}`}>
                       {u.status === "active" ? "نشط" : u.status}
@@ -113,14 +113,14 @@ export default function Users() {
                     {ALL_ROLES.map((r) => (
                       <button key={r} type="button"
                         onClick={() => setRolePick(rolePick.includes(r) ? rolePick.filter((x) => x !== r) : [...rolePick, r])}
-                        className={`cursor-pointer rounded-full border px-3 py-1 text-[11px] font-bold transition ${rolePick.includes(r) ? "border-[#FABC05] bg-[#FABC05]/10 text-[#FABC05]" : "border-white/15 text-white/55 hover:border-white/40"}`}>
+                        className={`cursor-pointer rounded-full border px-3 py-1 text-[11px] font-bold transition ${rolePick.includes(r) ? "border-gold bg-gold/10 text-gold-ink" : "border-white/15 text-white/55 hover:border-white/40"}`}>
                         {ROLE_NAMES_AR[r]}
                       </button>
                     ))}
                   </div>
                   <button disabled={busy || rolePick.length === 0}
                     onClick={() => act(() => apiPost(`/api/admin/users/${u.id}/roles`, { roleIds: rolePick }), "حُدثت الأدوار")}
-                    className="mt-3 cursor-pointer rounded-full bg-[#FABC05] px-5 py-1.5 text-xs font-black text-[#0D0D0D] disabled:opacity-40">
+                    className="mt-3 cursor-pointer rounded-full bg-gold px-5 py-1.5 text-xs font-black text-on-gold disabled:opacity-40">
                     احفظ الأدوار
                   </button>
                 </div>

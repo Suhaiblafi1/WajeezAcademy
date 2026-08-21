@@ -79,7 +79,7 @@ export default function Exceptions() {
         <button onClick={() => void load()} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-white/60 hover:border-white/40">
           <RefreshCw className="h-3.5 w-3.5" /> تحديث
         </button>
-        {flash && <span className="flex items-center gap-1.5 text-xs font-bold text-[#6EC7D1]" role="status"><CheckCircle2 className="h-3.5 w-3.5" /> {flash}</span>}
+        {flash && <span className="flex items-center gap-1.5 text-xs font-bold text-teal-light-ink" role="status"><CheckCircle2 className="h-3.5 w-3.5" /> {flash}</span>}
       </div>
 
       {loading ? (
@@ -104,17 +104,17 @@ export default function Exceptions() {
               <div className="flex flex-wrap items-center gap-2">
                 {advisors.length > 0 ? (
                   <select value={pick[c.id] ?? ""} onChange={(e) => setPick({ ...pick, [c.id]: e.target.value })}
-                    className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white [&>option]:bg-[#121B1D]">
+                    className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white [&>option]:bg-surface">
                     <option value="">اختر مستشارا…</option>
                     {advisors.map((a) => <option key={a.id} value={a.id}>{a.displayName} ({a.email})</option>)}
                   </select>
                 ) : (
                   <input value={pick[c.id] ?? ""} onChange={(e) => setPick({ ...pick, [c.id]: e.target.value })}
                     placeholder="معرف المستشار (UUID)" dir="ltr"
-                    className="w-56 rounded-xl border border-white/15 bg-black/30 px-3 py-2 font-mono text-xs text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none" />
+                    className="w-56 rounded-xl border border-white/15 bg-black/30 px-3 py-2 font-mono text-xs text-white placeholder:text-white/25 focus:border-teal focus:outline-none" />
                 )}
                 <button disabled={busy || !(pick[c.id] ?? "").trim()} onClick={() => void assign(c.id)}
-                  className="flex cursor-pointer items-center gap-1.5 rounded-full bg-[#38A7B4] px-4 py-2 text-xs font-black text-[#08272B] transition hover:bg-[#6EC7D1] disabled:opacity-40">
+                  className="flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-4 py-2 text-xs font-black text-on-teal transition hover:bg-teal-light disabled:opacity-40">
                   <UserPlus className="h-3.5 w-3.5" /> إسناد
                 </button>
               </div>

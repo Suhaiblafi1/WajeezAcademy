@@ -84,8 +84,8 @@ export default function CvUpload({
 
   if (saved) {
     return (
-      <div className="rounded-2xl border border-[#38A7B4]/40 bg-[#38A7B4]/[0.07] p-4">
-        <p className="flex items-start gap-2.5 text-sm font-bold leading-relaxed text-[#6EC7D1]">
+      <div className="rounded-2xl border border-teal/40 bg-teal/[0.07] p-4">
+        <p className="flex items-start gap-2.5 text-sm font-bold leading-relaxed text-teal-light-ink">
           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
           تم استلام سيرتك، وسيتمكن المستشار من مراجعتها عند التواصل معك.
         </p>
@@ -116,13 +116,13 @@ export default function CvUpload({
       />
       <button
         onClick={() => inputRef.current?.click()}
-        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/20 bg-white/[0.03] px-4 py-4 text-sm font-bold text-white/70 transition hover:border-[#6EC7D1]/60 hover:text-[#6EC7D1]"
+        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/20 bg-white/[0.03] px-4 py-4 text-sm font-bold text-white/70 transition hover:border-teal-light/60 hover:text-teal-light-ink"
       >
         <FileUp className="h-4 w-4" />
         {file ? file.name : "اختر ملف سيرتك — PDF أو DOC أو DOCX (حتى 5MB)"}
       </button>
       {error && (
-        <p role="alert" className="mt-2 text-xs font-semibold leading-relaxed text-[#FABC05]">
+        <p role="alert" className="mt-2 text-xs font-semibold leading-relaxed text-gold-ink">
           {error}
         </p>
       )}
@@ -133,14 +133,14 @@ export default function CvUpload({
               type="checkbox"
               checked={consent}
               onChange={(e) => setConsent(e.target.checked)}
-              className="mt-0.5 h-4 w-4 shrink-0 accent-[#38A7B4]"
+              className="mt-0.5 h-4 w-4 shrink-0 accent-teal"
             />
             {CV_CONSENT_TEXT_AR}
           </label>
           <Button
             onClick={send}
             disabled={!consent || busy}
-            className="mt-3 h-10 w-full rounded-full bg-[#38A7B4] font-black text-[#08272B] hover:bg-[#38A7B4]/90 disabled:opacity-40"
+            className="mt-3 h-10 w-full rounded-full bg-teal font-black text-on-teal hover:bg-teal/90 disabled:opacity-40"
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileUp className="ml-2 h-4 w-4" />}
             إرسال السيرة للمستشار

@@ -49,7 +49,7 @@ export default function AudioPlayer({
             if (playing && pct > lastSaved.current) { lastSaved.current = pct; onProgress(pct); }
             setPlaying(!playing);
           }}
-          className="grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-full bg-[#38A7B4] text-[#08272B] shadow-[0_0_25px_-5px_#38A7B4] transition hover:scale-105"
+          className="grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-full bg-teal text-on-teal shadow-[0_0_25px_-5px_#38A7B4] transition hover:scale-105"
           aria-label={playing ? "إيقاف الاستماع" : "استمع للملخص"}
         >
           {playing ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 -translate-x-0.5" />}
@@ -57,8 +57,8 @@ export default function AudioPlayer({
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between text-[11px] text-white/50">
             <span className="flex items-center gap-1.5">
-              <Headphones className="h-3.5 w-3.5 text-[#6EC7D1]" />
-              {pct >= 90 ? <span className="font-bold text-[#6EC7D1]">اكتمل الاستماع ✓</span> : `استماع ${pct}%`}
+              <Headphones className="h-3.5 w-3.5 text-teal-light-ink" />
+              {pct >= 90 ? <span className="font-bold text-teal-light-ink">اكتمل الاستماع ✓</span> : `استماع ${pct}%`}
             </span>
             <span>{fmt(sec)} / {fmt(totalSec)}</span>
           </div>
@@ -73,7 +73,7 @@ export default function AudioPlayer({
               const p = Math.round((v / totalSec) * 100);
               if (p > lastSaved.current) { lastSaved.current = p; onProgress(p); }
             }}
-            className="mt-1.5 w-full accent-[#38A7B4]"
+            className="mt-1.5 w-full accent-teal"
             aria-label="شريط تقدم الاستماع"
           />
         </div>
@@ -85,7 +85,7 @@ export default function AudioPlayer({
             <button
               key={s}
               onClick={() => setSpeed(s)}
-              className={`cursor-pointer rounded-lg border px-2 py-0.5 text-[11px] transition ${speed === s ? "border-[#38A7B4] text-[#6EC7D1]" : "border-white/10 text-white/45 hover:border-white/30"}`}
+              className={`cursor-pointer rounded-lg border px-2 py-0.5 text-[11px] transition ${speed === s ? "border-teal text-teal-light-ink" : "border-white/10 text-white/45 hover:border-white/30"}`}
             >
               {s}×
             </button>

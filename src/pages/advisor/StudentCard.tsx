@@ -59,7 +59,7 @@ export default function StudentCard() {
   if (!s) {
     return (
       <AdvisorLayout title="طالب غير موجود">
-        <Link to="/advisor" className="flex items-center gap-2 text-[#6EC7D1]"><ArrowRight className="h-4 w-4" /> عودة لطلبةي</Link>
+        <Link to="/advisor" className="flex items-center gap-2 text-teal-light-ink"><ArrowRight className="h-4 w-4" /> عودة لطلبةي</Link>
       </AdvisorLayout>
     );
   }
@@ -155,7 +155,7 @@ export default function StudentCard() {
             key={t.key}
             onClick={() => setTab(t.key)}
             className={`cursor-pointer rounded-full px-5 py-2 text-sm font-bold transition ${
-              tab === t.key ? "bg-[#38A7B4] text-[#08272B]" : "text-white/60 hover:text-white"
+              tab === t.key ? "bg-teal text-on-teal" : "text-white/60 hover:text-white"
             }`}
           >
             {t.label}
@@ -169,7 +169,7 @@ export default function StudentCard() {
         <section className="space-y-5">
           <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
             <div className="flex items-center gap-3">
-              <span className="grid h-14 w-14 place-items-center rounded-full bg-gradient-to-br from-[#38A7B4] to-[#247B84] text-xl font-black">
+              <span className="grid h-14 w-14 place-items-center rounded-full bg-gradient-to-br from-teal to-teal-deep text-xl font-black">
                 {s.name.charAt(0)}
               </span>
               <div>
@@ -185,13 +185,13 @@ export default function StudentCard() {
               <p><span className="text-white/50">التقدم: </span>{courses.done} من {courses.total} دورات ({s.progressPct}%)</p>
             </div>
             <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
-              <div className="h-full rounded-full bg-[#38A7B4]" style={{ width: `${Math.max(2, s.progressPct)}%` }} />
+              <div className="h-full rounded-full bg-teal" style={{ width: `${Math.max(2, s.progressPct)}%` }} />
             </div>
           </div>
 
           {/* الإجراء الأفضل التالي */}
-          <div className="rounded-3xl border border-[#FABC05]/30 bg-[#FABC05]/5 p-6">
-            <p className="text-xs font-bold text-[#FABC05]">الإجراء الأفضل التالي</p>
+          <div className="rounded-3xl border border-gold/30 bg-gold/5 p-6">
+            <p className="text-xs font-bold text-gold-ink">الإجراء الأفضل التالي</p>
             <p className="mt-2 font-black leading-7">{nba.action}</p>
             <p className="mt-1.5 text-xs leading-6 text-white/55">{nba.why}</p>
             {nba.channel === "whatsapp" && (
@@ -202,7 +202,7 @@ export default function StudentCard() {
               />
             )}
             {nba.channel === "booking" && (
-              <button className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-[#FABC05]/50 py-2.5 text-sm font-black text-[#FABC05] hover:bg-[#FABC05]/10">
+              <button className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-gold/50 py-2.5 text-sm font-black text-gold-ink hover:bg-gold/10">
                 <CalendarPlus className="h-4 w-4" /> احجز جلسة له
               </button>
             )}
@@ -215,11 +215,11 @@ export default function StudentCard() {
           <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
             <div className="flex items-center justify-between">
               <p className="flex items-center gap-2 text-sm font-black">
-                <ShieldAlert className={`h-4 w-4 ${level === "red" ? "text-red-400" : level === "yellow" ? "text-[#FABC05]" : "text-[#38A7B4]"}`} />
+                <ShieldAlert className={`h-4 w-4 ${level === "red" ? "text-red-400" : level === "yellow" ? "text-gold-ink" : "text-teal-ink"}`} />
                 سجل المخاطرة — {score} نقطة
               </p>
               <span className={`rounded-full px-3 py-1 text-[11px] font-black ${
-                level === "red" ? "bg-red-500/15 text-red-400" : level === "yellow" ? "bg-[#FABC05]/15 text-[#FABC05]" : "bg-[#38A7B4]/15 text-[#6EC7D1]"
+                level === "red" ? "bg-red-500/15 text-red-400" : level === "yellow" ? "bg-gold/15 text-gold-ink" : "bg-teal/15 text-teal-light-ink"
               }`}>
                 {level === "red" ? "أحمر 50+" : level === "yellow" ? "أصفر 25–49" : "أخضر 0–24"}
               </span>
@@ -252,7 +252,7 @@ export default function StudentCard() {
               {s.timeline.map((e, i) => (
                 <div key={i} className="relative flex gap-4 pb-5 pr-2">
                   {i < s.timeline.length - 1 && <span className="absolute right-[13px] top-6 h-full w-px bg-white/10" />}
-                  <span className="z-10 grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/10 bg-[#151515] text-sm">
+                  <span className="z-10 grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/10 bg-surface text-sm">
                     {KIND_ICON[e.kind] ?? "•"}
                   </span>
                   <div className="pt-1">
@@ -268,12 +268,12 @@ export default function StudentCard() {
           <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="flex items-center gap-2 text-sm font-black"><GitBranch className="h-4 w-4 text-[#FABC05]" /> تغيير المسار أو الدورة</p>
+                <p className="flex items-center gap-2 text-sm font-black"><GitBranch className="h-4 w-4 text-gold-ink" /> تغيير المسار أو الدورة</p>
                 <p className="mt-1 text-[11px] text-white/45">يفتح سير موافقة موثقا — لا يعدل البيانات مباشرة بلا أثر (14.2).</p>
               </div>
               <button
                 onClick={() => setWorkflow(true)}
-                className="cursor-pointer rounded-full border border-[#FABC05]/50 px-5 py-2.5 text-sm font-black text-[#FABC05] transition hover:bg-[#FABC05]/10"
+                className="cursor-pointer rounded-full border border-gold/50 px-5 py-2.5 text-sm font-black text-gold-ink transition hover:bg-gold/10"
               >
                 اطلب تغييرا
               </button>
@@ -291,15 +291,15 @@ export default function StudentCard() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-sm font-black">ملف الحالة التشغيلي — الحالات الثماني الموثقة</p>
               <div className="flex items-center gap-3 text-[11px] text-white/50">
-                <span>مسندة إلى: <span className="font-bold text-[#6EC7D1]">{kase.assignedTo ?? "بلا مستشار"}</span></span>
+                <span>مسندة إلى: <span className="font-bold text-teal-light-ink">{kase.assignedTo ?? "بلا مستشار"}</span></span>
                 {kase.cv && (
                   <button
                     onClick={openCv}
-                    className="flex cursor-pointer items-center gap-1.5 rounded-full border border-[#38A7B4]/50 px-3 py-1.5 font-bold text-[#6EC7D1] transition hover:bg-[#38A7B4]/10"
+                    className="flex cursor-pointer items-center gap-1.5 rounded-full border border-teal/50 px-3 py-1.5 font-bold text-teal-light-ink transition hover:bg-teal/10"
                     title={`${kase.cv.fileName} · ${kase.cv.sizeKb}KB — كل مشاهدة مسجلة`}
                   >
                     <FileText className="h-3.5 w-3.5" /> السيرة الذاتية
-                    {kase.cv.views.length > 0 && <span className="rounded-full bg-[#38A7B4]/20 px-1.5">{kase.cv.views.length}</span>}
+                    {kase.cv.views.length > 0 && <span className="rounded-full bg-teal/20 px-1.5">{kase.cv.views.length}</span>}
                   </button>
                 )}
               </div>
@@ -317,7 +317,7 @@ export default function StudentCard() {
                     disabled={active}
                     className={`cursor-pointer rounded-full border px-3.5 py-1.5 text-xs font-bold transition disabled:cursor-default ${
                       active
-                        ? "border-[#FABC05] bg-[#FABC05] text-[#0D0D0D]"
+                        ? "border-gold bg-gold text-on-gold"
                         : confirming
                           ? "border-red-500 bg-red-500 text-white"
                           : `${meta.cls} hover:border-white/40`
@@ -339,7 +339,7 @@ export default function StudentCard() {
                   value={naText ?? kase.nextAction ?? ""}
                   onChange={(e) => setNaText(e.target.value)}
                   placeholder="ما الخطوة القادمة مع هذا العميل؟"
-                  className="mt-1 w-full rounded-xl border border-white/15 bg-[#0D0D0D] px-3 py-2 text-xs text-white focus:border-[#FABC05] focus:outline-none"
+                  className="mt-1 w-full rounded-xl border border-white/15 bg-ground px-3 py-2 text-xs text-white focus:border-gold focus:outline-none"
                 />
               </div>
               <div>
@@ -348,12 +348,12 @@ export default function StudentCard() {
                   type="datetime-local"
                   value={naWhen ?? kase.nextFollowUpAt ?? ""}
                   onChange={(e) => setNaWhen(e.target.value)}
-                  className="mt-1 block cursor-pointer rounded-xl border border-white/15 bg-[#0D0D0D] px-3 py-2 text-xs text-white [color-scheme:dark] focus:border-[#FABC05] focus:outline-none"
+                  className="mt-1 block cursor-pointer rounded-xl border border-white/15 bg-ground px-3 py-2 text-xs text-white [color-scheme:dark] focus:border-gold focus:outline-none"
                 />
               </div>
               <button
                 onClick={saveNextAction}
-                className="cursor-pointer rounded-full bg-[#38A7B4] px-5 py-2 text-xs font-black text-[#08272B] transition hover:bg-[#6EC7D1]"
+                className="cursor-pointer rounded-full bg-teal px-5 py-2 text-xs font-black text-on-teal transition hover:bg-teal-light"
               >
                 حفظ
               </button>
@@ -363,7 +363,7 @@ export default function StudentCard() {
           <div className="grid gap-5 lg:grid-cols-3">
             {/* المهام — POST /:id/tasks + POST /tasks/:taskId/complete */}
             <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
-              <p className="flex items-center gap-2 text-sm font-black"><ListChecks className="h-4 w-4 text-[#FABC05]" /> مهام الحالة</p>
+              <p className="flex items-center gap-2 text-sm font-black"><ListChecks className="h-4 w-4 text-gold-ink" /> مهام الحالة</p>
               <div className="mt-3 space-y-2">
                 {kase.tasks.length === 0 && (
                   <div className="rounded-xl border border-dashed border-white/15 px-3 py-4 text-center">
@@ -378,7 +378,7 @@ export default function StudentCard() {
                     {!t.done && (
                       <button
                         onClick={() => act(() => completeCaseTask(kase.id, t.id), `أنجز مهمة: «${t.title}»`)}
-                        className="mt-0.5 shrink-0 cursor-pointer text-white/30 transition hover:text-[#6EC7D1]"
+                        className="mt-0.5 shrink-0 cursor-pointer text-white/30 transition hover:text-teal-light-ink"
                         title="إنجاز"
                       >
                         <CheckCircle2 className="h-4 w-4" />
@@ -398,19 +398,19 @@ export default function StudentCard() {
                   value={taskTitle}
                   onChange={(e) => setTaskTitle(e.target.value)}
                   placeholder="مهمة جديدة على الحالة…"
-                  className="w-full rounded-xl border border-white/15 bg-[#0D0D0D] px-3 py-2 text-xs text-white focus:border-[#FABC05] focus:outline-none"
+                  className="w-full rounded-xl border border-white/15 bg-ground px-3 py-2 text-xs text-white focus:border-gold focus:outline-none"
                 />
                 <div className="flex gap-2">
                   <input
                     type="datetime-local"
                     value={taskDue}
                     onChange={(e) => setTaskDue(e.target.value)}
-                    className="min-w-0 flex-1 cursor-pointer rounded-xl border border-white/15 bg-[#0D0D0D] px-3 py-2 text-xs text-white [color-scheme:dark] focus:border-[#FABC05] focus:outline-none"
+                    className="min-w-0 flex-1 cursor-pointer rounded-xl border border-white/15 bg-ground px-3 py-2 text-xs text-white [color-scheme:dark] focus:border-gold focus:outline-none"
                   />
                   <button
                     onClick={submitTask}
                     disabled={taskTitle.trim().length < 3}
-                    className="cursor-pointer rounded-full bg-[#FABC05] px-4 text-xs font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90 disabled:opacity-40"
+                    className="cursor-pointer rounded-full bg-gold px-4 text-xs font-black text-on-gold transition hover:bg-gold/90 disabled:opacity-40"
                   >
                     أضف
                   </button>
@@ -420,7 +420,7 @@ export default function StudentCard() {
 
             {/* المتابعات — POST /:id/follow-ups + POST /follow-ups/:id/complete */}
             <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
-              <p className="flex items-center gap-2 text-sm font-black"><CalendarClock className="h-4 w-4 text-[#38A7B4]" /> المتابعات المجدولة</p>
+              <p className="flex items-center gap-2 text-sm font-black"><CalendarClock className="h-4 w-4 text-teal-ink" /> المتابعات المجدولة</p>
               <div className="mt-3 space-y-2">
                 {kase.followUps.length === 0 && (
                   <div className="rounded-xl border border-dashed border-white/15 px-3 py-4 text-center">
@@ -435,26 +435,26 @@ export default function StudentCard() {
                       {!f.doneAt && (
                         <button
                           onClick={() => { setFuDoneId(fuDoneId === f.id ? null : f.id); setFuOutcome(""); }}
-                          className="shrink-0 cursor-pointer rounded-full border border-[#38A7B4]/50 px-2.5 py-1 text-[10px] font-bold text-[#6EC7D1] hover:bg-[#38A7B4]/10"
+                          className="shrink-0 cursor-pointer rounded-full border border-teal/50 px-2.5 py-1 text-[10px] font-bold text-teal-light-ink hover:bg-teal/10"
                         >
                           إنجاز بنتيجة
                         </button>
                       )}
                     </div>
                     {f.note && <p className="mt-1 text-[11px] leading-5 text-white/50">{f.note}</p>}
-                    {f.doneAt && <p className="mt-1 text-[11px] text-[#6EC7D1]">النتيجة: {f.outcome}</p>}
+                    {f.doneAt && <p className="mt-1 text-[11px] text-teal-light-ink">النتيجة: {f.outcome}</p>}
                     {fuDoneId === f.id && (
                       <div className="mt-2 flex gap-2">
                         <input
                           value={fuOutcome}
                           onChange={(e) => setFuOutcome(e.target.value)}
                           placeholder="نتيجة المتابعة…"
-                          className="min-w-0 flex-1 rounded-xl border border-white/15 bg-[#0D0D0D] px-3 py-1.5 text-xs text-white focus:border-[#38A7B4] focus:outline-none"
+                          className="min-w-0 flex-1 rounded-xl border border-white/15 bg-ground px-3 py-1.5 text-xs text-white focus:border-teal focus:outline-none"
                         />
                         <button
                           onClick={() => submitFollowUpDone(f.id)}
                           disabled={fuOutcome.trim().length < 2}
-                          className="cursor-pointer rounded-full bg-[#38A7B4] px-3 text-[10px] font-black text-[#08272B] disabled:opacity-40"
+                          className="cursor-pointer rounded-full bg-teal px-3 text-[10px] font-black text-on-teal disabled:opacity-40"
                         >
                           سجّل
                         </button>
@@ -469,12 +469,12 @@ export default function StudentCard() {
                     type="datetime-local"
                     value={fuWhen}
                     onChange={(e) => setFuWhen(e.target.value)}
-                    className="min-w-0 flex-1 cursor-pointer rounded-xl border border-white/15 bg-[#0D0D0D] px-3 py-2 text-xs text-white [color-scheme:dark] focus:border-[#38A7B4] focus:outline-none"
+                    className="min-w-0 flex-1 cursor-pointer rounded-xl border border-white/15 bg-ground px-3 py-2 text-xs text-white [color-scheme:dark] focus:border-teal focus:outline-none"
                   />
                   <select
                     value={fuChannel}
                     onChange={(e) => setFuChannel(e.target.value as ContactChannel)}
-                    className="cursor-pointer rounded-xl border border-white/15 bg-[#0D0D0D] px-2 py-2 text-xs text-white focus:border-[#38A7B4] focus:outline-none"
+                    className="cursor-pointer rounded-xl border border-white/15 bg-ground px-2 py-2 text-xs text-white focus:border-teal focus:outline-none"
                   >
                     {(Object.keys(CHANNEL_LABEL) as ContactChannel[]).filter((c) => c !== "in_app").map((c) => (
                       <option key={c} value={c}>{CHANNEL_LABEL[c]}</option>
@@ -485,12 +485,12 @@ export default function StudentCard() {
                   value={fuNote}
                   onChange={(e) => setFuNote(e.target.value)}
                   placeholder="ملاحظة الموعد (اختياري)…"
-                  className="w-full rounded-xl border border-white/15 bg-[#0D0D0D] px-3 py-2 text-xs text-white focus:border-[#38A7B4] focus:outline-none"
+                  className="w-full rounded-xl border border-white/15 bg-ground px-3 py-2 text-xs text-white focus:border-teal focus:outline-none"
                 />
                 <button
                   onClick={submitFollowUp}
                   disabled={!fuWhen}
-                  className="w-full cursor-pointer rounded-full border border-[#38A7B4]/50 py-2 text-xs font-black text-[#6EC7D1] transition hover:bg-[#38A7B4]/10 disabled:opacity-40"
+                  className="w-full cursor-pointer rounded-full border border-teal/50 py-2 text-xs font-black text-teal-light-ink transition hover:bg-teal/10 disabled:opacity-40"
                 >
                   جدولة متابعة — تنعكس على موعد متابعة الحالة
                 </button>
@@ -501,7 +501,7 @@ export default function StudentCard() {
             <div className="space-y-5">
               {/* تسجيل تواصل — POST /:id/contact */}
               <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
-                <p className="flex items-center gap-2 text-sm font-black"><MessageSquarePlus className="h-4 w-4 text-[#38A7B4]" /> سجل التواصل</p>
+                <p className="flex items-center gap-2 text-sm font-black"><MessageSquarePlus className="h-4 w-4 text-teal-ink" /> سجل التواصل</p>
                 <div className="mt-3 max-h-44 space-y-2 overflow-y-auto">
                   {kase.contacts.length === 0 && (
                     <div className="rounded-xl border border-dashed border-white/15 px-3 py-4 text-center">
@@ -514,7 +514,7 @@ export default function StudentCard() {
                       <p className="flex items-center justify-between font-bold text-white/80">
                         <span className="flex items-center gap-2">
                           {CHANNEL_LABEL[c.channel]} · {c.direction === "out" ? "صادر" : "وارد"}
-                          {isNewSince(c.at, seenAt) && <span className="rounded-full bg-[#FABC05]/20 px-1.5 py-0.5 text-[9px] font-black text-[#FABC05]">جديد</span>}
+                          {isNewSince(c.at, seenAt) && <span className="rounded-full bg-gold/20 px-1.5 py-0.5 text-[9px] font-black text-gold-ink">جديد</span>}
                         </span>
                         <span className="text-[10px] font-normal text-white/50">{fmtDT(c.at)}</span>
                       </p>
@@ -528,7 +528,7 @@ export default function StudentCard() {
                     <select
                       value={ctChannel}
                       onChange={(e) => setCtChannel(e.target.value as ContactChannel)}
-                      className="flex-1 cursor-pointer rounded-xl border border-white/15 bg-[#0D0D0D] px-2 py-2 text-xs text-white focus:border-[#38A7B4] focus:outline-none"
+                      className="flex-1 cursor-pointer rounded-xl border border-white/15 bg-ground px-2 py-2 text-xs text-white focus:border-teal focus:outline-none"
                     >
                       {(Object.keys(CHANNEL_LABEL) as ContactChannel[]).map((c) => (
                         <option key={c} value={c}>{CHANNEL_LABEL[c]}</option>
@@ -537,7 +537,7 @@ export default function StudentCard() {
                     <select
                       value={ctDir}
                       onChange={(e) => setCtDir(e.target.value as "out" | "in")}
-                      className="cursor-pointer rounded-xl border border-white/15 bg-[#0D0D0D] px-2 py-2 text-xs text-white focus:border-[#38A7B4] focus:outline-none"
+                      className="cursor-pointer rounded-xl border border-white/15 bg-ground px-2 py-2 text-xs text-white focus:border-teal focus:outline-none"
                     >
                       <option value="out">صادر</option>
                       <option value="in">وارد</option>
@@ -547,12 +547,12 @@ export default function StudentCard() {
                     value={ctSummary}
                     onChange={(e) => setCtSummary(e.target.value)}
                     placeholder="ملخص التواصل…"
-                    className="w-full rounded-xl border border-white/15 bg-[#0D0D0D] px-3 py-2 text-xs text-white focus:border-[#38A7B4] focus:outline-none"
+                    className="w-full rounded-xl border border-white/15 bg-ground px-3 py-2 text-xs text-white focus:border-teal focus:outline-none"
                   />
                   <button
                     onClick={submitContact}
                     disabled={ctSummary.trim().length < 3}
-                    className="w-full cursor-pointer rounded-full bg-[#38A7B4] py-2 text-xs font-black text-[#08272B] transition hover:bg-[#6EC7D1] disabled:opacity-40"
+                    className="w-full cursor-pointer rounded-full bg-teal py-2 text-xs font-black text-on-teal transition hover:bg-teal-light disabled:opacity-40"
                   >
                     تسجيل تواصل
                   </button>
@@ -562,21 +562,21 @@ export default function StudentCard() {
               {/* ملاحظات داخلية — POST /:id/notes */}
               <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
                 <p className="flex items-center gap-2 text-sm font-black">
-                  <StickyNote className="h-4 w-4 text-[#FABC05]" /> ملاحظات داخلية
-                  <span className="mr-auto rounded-full bg-[#FABC05]/15 px-2 py-0.5 text-[10px] font-bold text-[#FABC05]">لا تظهر للعميل</span>
+                  <StickyNote className="h-4 w-4 text-gold-ink" /> ملاحظات داخلية
+                  <span className="mr-auto rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-bold text-gold-ink">لا تظهر للعميل</span>
                 </p>
                 <div className="mt-3 max-h-36 space-y-2 overflow-y-auto">
                   {kase.notes.length === 0 && (
-                    <div className="rounded-xl border border-dashed border-[#FABC05]/20 px-3 py-4 text-center">
+                    <div className="rounded-xl border border-dashed border-gold/20 px-3 py-4 text-center">
                       <p className="text-[11px] font-bold text-white/55">لا ملاحظات داخلية</p>
                       <p className="mt-1 text-[10px] leading-5 text-white/50">دون هنا ما لا يجب أن يراه العميل — حساسية، اتفاق شفهي، خطة تعامل. تبقى داخلية دائما.</p>
                     </div>
                   )}
                   {kase.notes.map((n) => (
-                    <div key={n.id} className="rounded-xl border border-[#FABC05]/20 bg-[#FABC05]/5 px-3 py-2 text-xs">
+                    <div key={n.id} className="rounded-xl border border-gold/20 bg-gold/5 px-3 py-2 text-xs">
                       <p className="flex items-start justify-between gap-2 leading-5 text-white/75">
                         {n.body}
-                        {isNewSince(n.at, seenAt) && <span className="mt-0.5 shrink-0 rounded-full bg-[#FABC05]/20 px-1.5 py-0.5 text-[9px] font-black text-[#FABC05]">جديد</span>}
+                        {isNewSince(n.at, seenAt) && <span className="mt-0.5 shrink-0 rounded-full bg-gold/20 px-1.5 py-0.5 text-[9px] font-black text-gold-ink">جديد</span>}
                       </p>
                       <p className="mt-1 text-[10px] text-white/50">{n.by} · {fmtDT(n.at)}</p>
                     </div>
@@ -587,12 +587,12 @@ export default function StudentCard() {
                     value={noteBody}
                     onChange={(e) => setNoteBody(e.target.value)}
                     placeholder="ملاحظة داخلية جديدة…"
-                    className="min-w-0 flex-1 rounded-xl border border-white/15 bg-[#0D0D0D] px-3 py-2 text-xs text-white focus:border-[#FABC05] focus:outline-none"
+                    className="min-w-0 flex-1 rounded-xl border border-white/15 bg-ground px-3 py-2 text-xs text-white focus:border-gold focus:outline-none"
                   />
                   <button
                     onClick={submitNote}
                     disabled={noteBody.trim().length < 3}
-                    className="cursor-pointer rounded-full bg-[#FABC05] px-4 text-xs font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90 disabled:opacity-40"
+                    className="cursor-pointer rounded-full bg-gold px-4 text-xs font-black text-on-gold transition hover:bg-gold/90 disabled:opacity-40"
                   >
                     أضف
                   </button>
@@ -620,7 +620,7 @@ export default function StudentCard() {
       {/* نافذة سير الموافقة */}
       {workflow && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-5 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#151515] p-6">
+          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-surface p-6">
             <div className="flex items-center justify-between">
               <h3 className="font-black">طلب تغيير دورة — {s.name}</h3>
               <button onClick={() => setWorkflow(false)} className="cursor-pointer text-white/50 hover:text-white" aria-label="إغلاق"><X className="h-5 w-5" /></button>
@@ -632,7 +632,7 @@ export default function StudentCard() {
             <select
               value={swapCourse}
               onChange={(e) => setSwapCourse(e.target.value)}
-              className="mt-1.5 w-full cursor-pointer rounded-xl border border-white/15 bg-[#0D0D0D] px-3 py-2.5 text-sm text-white focus:border-[#FABC05] focus:outline-none"
+              className="mt-1.5 w-full cursor-pointer rounded-xl border border-white/15 bg-ground px-3 py-2.5 text-sm text-white focus:border-gold focus:outline-none"
             >
               <option value="">— اختر من بدائل المسار —</option>
               {ids.map((cid) => {
@@ -643,7 +643,7 @@ export default function StudentCard() {
             <button
               onClick={submitWorkflow}
               disabled={!swapCourse}
-              className="mt-5 w-full cursor-pointer rounded-full bg-[#FABC05] py-3 font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90 disabled:cursor-not-allowed disabled:opacity-40"
+              className="mt-5 w-full cursor-pointer rounded-full bg-gold py-3 font-black text-on-gold transition hover:bg-gold/90 disabled:cursor-not-allowed disabled:opacity-40"
             >
               أرسل لسير الموافقات
             </button>

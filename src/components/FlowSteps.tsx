@@ -17,13 +17,13 @@ export default function FlowSteps({
             <div
               className={`rounded-xl px-3 py-1.5 text-center ${
                 current === i
-                  ? "border border-[#FABC05]/60 bg-[#FABC05]/10"
+                  ? "border border-gold/60 bg-gold/10"
                   : i < (current ?? -1)
-                    ? "border border-[#38A7B4]/30 bg-[#38A7B4]/5 opacity-70"
+                    ? "border border-teal/30 bg-teal/5 opacity-70"
                     : "border border-white/10 bg-black/20"
               }`}
             >
-              <p className={`text-[11px] font-black ${current === i ? "text-[#FABC05]" : "text-white/80"}`}>{s.label}</p>
+              <p className={`text-[11px] font-black ${current === i ? "text-gold-ink" : "text-white/80"}`}>{s.label}</p>
               <p className="mt-0.5 text-[9px] text-white/40">{s.actor}</p>
             </div>
             {i < steps.length - 1 && <ChevronLeft className="h-3.5 w-3.5 shrink-0 text-white/25" />}

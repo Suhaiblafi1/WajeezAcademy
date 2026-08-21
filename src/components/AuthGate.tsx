@@ -57,7 +57,7 @@ const STRENGTH_META = [
 type View = "auth" | "reset" | "verify" | "resetConfirm";
 
 const FIELD_CLS =
-  "h-12 w-full rounded-2xl border border-white/15 bg-white/[0.04] pr-11 pl-11 text-left text-sm text-white placeholder:text-white/30 focus:border-[#38A7B4] focus:outline-none";
+  "h-12 w-full rounded-2xl border border-white/15 bg-white/[0.04] pr-11 pl-11 text-left text-sm text-white placeholder:text-white/30 focus:border-teal focus:outline-none";
 const LABEL_CLS = "mb-1.5 block text-xs font-bold text-white/60";
 
 /** بوابة الدخول والتسجيل — نموذج حقيقي، تحقق آمن، ورسائل عربية لا تكشف شيئا */
@@ -178,9 +178,9 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
   if (view === "verify") {
     return (
       <div className="mx-auto max-w-md">
-        <div className="overflow-hidden rounded-3xl border border-[#38A7B4]/25 bg-gradient-to-b from-[#12262A] to-[#0D0D0D] px-8 py-10 text-center shadow-[0_24px_80px_-24px_rgba(56,167,180,0.35)]">
-          <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[#38A7B4]/15">
-            <Mail className="h-7 w-7 text-[#6EC7D1]" />
+        <div className="overflow-hidden rounded-3xl border border-teal/25 bg-gradient-to-b from-surface to-ground px-8 py-10 text-center shadow-[0_24px_80px_-24px_rgba(56,167,180,0.35)]">
+          <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-teal/15">
+            <Mail className="h-7 w-7 text-teal-light-ink" />
           </span>
           <h2 className="mt-5 text-2xl font-black text-white">تم إنشاء حسابك — بقي تأكيد بريدك</h2>
           <p className="mt-3 text-sm leading-relaxed text-white/55">
@@ -194,13 +194,13 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
                 setResent(true);
               }}
               disabled={resent}
-              className="h-11 w-full rounded-2xl border border-white/15 text-sm font-bold text-white/70 transition hover:border-[#38A7B4]/50 hover:text-[#6EC7D1] disabled:opacity-50"
+              className="h-11 w-full rounded-2xl border border-white/15 text-sm font-bold text-white/70 transition hover:border-teal/50 hover:text-teal-light-ink disabled:opacity-50"
             >
               {resent ? "أُعيد إرسال الرسالة — تفقد بريدك" : "لم تصلك؟ أعد إرسال رسالة التحقق"}
             </button>
             <button
               onClick={onDone}
-              className="h-12 w-full rounded-2xl bg-[#FABC05] text-sm font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90"
+              className="h-12 w-full rounded-2xl bg-gold text-sm font-black text-on-gold transition hover:bg-gold/90"
             >
               متابعة — سأؤكد بريدي لاحقا
             </button>
@@ -217,7 +217,7 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
   if (view === "reset") {
     return (
       <div className="mx-auto max-w-md">
-        <div className="overflow-hidden rounded-3xl border border-[#38A7B4]/25 bg-gradient-to-b from-[#12262A] to-[#0D0D0D] shadow-[0_24px_80px_-24px_rgba(56,167,180,0.35)]">
+        <div className="overflow-hidden rounded-3xl border border-teal/25 bg-gradient-to-b from-surface to-ground shadow-[0_24px_80px_-24px_rgba(56,167,180,0.35)]">
           <div className="border-b border-white/5 px-8 pb-6 pt-8 text-center">
             <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="mx-auto h-12 w-12 object-contain" />
             <h2 className="mt-4 text-2xl font-black text-white">استعادة كلمة المرور</h2>
@@ -248,21 +248,21 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
             <button
               type="submit"
               disabled={busy || !emailValid}
-              className="mt-4 h-12 w-full rounded-2xl bg-[#FABC05] text-sm font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90 disabled:cursor-not-allowed disabled:opacity-40"
+              className="mt-4 h-12 w-full rounded-2xl bg-gold text-sm font-black text-on-gold transition hover:bg-gold/90 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {busy ? "جارٍ الإرسال…" : "أرسل رابط الاستعادة"}
             </button>
             <button
               type="button"
               onClick={() => { setView("auth"); setErr(""); }}
-              className="mt-3 w-full text-center text-xs text-white/45 transition hover:text-[#6EC7D1]"
+              className="mt-3 w-full text-center text-xs text-white/45 transition hover:text-teal-light-ink"
             >
               عودة لتسجيل الدخول
             </button>
             <button
               type="button"
               onClick={() => { setView("resetConfirm"); setErr(""); }}
-              className="mt-2 w-full text-center text-xs text-white/45 transition hover:text-[#6EC7D1]"
+              className="mt-2 w-full text-center text-xs text-white/45 transition hover:text-teal-light-ink"
             >
               وصلك الرمز؟ أدخله مباشرة لتعيين كلمة المرور
             </button>
@@ -276,7 +276,7 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
   if (view === "resetConfirm") {
     return (
       <div className="mx-auto max-w-md">
-        <div className="overflow-hidden rounded-3xl border border-[#38A7B4]/25 bg-gradient-to-b from-[#12262A] to-[#0D0D0D] shadow-[0_24px_80px_-24px_rgba(56,167,180,0.35)]">
+        <div className="overflow-hidden rounded-3xl border border-teal/25 bg-gradient-to-b from-surface to-ground shadow-[0_24px_80px_-24px_rgba(56,167,180,0.35)]">
           <div className="border-b border-white/5 px-8 pb-6 pt-8 text-center">
             <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="mx-auto h-12 w-12 object-contain" />
             <h2 className="mt-4 text-2xl font-black text-white">تعيين كلمة مرور جديدة</h2>
@@ -354,14 +354,14 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
             <button
               type="submit"
               disabled={busy || !resetToken.trim() || !passValid || confirm !== pass}
-              className="h-12 w-full rounded-2xl bg-[#FABC05] text-sm font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90 disabled:cursor-not-allowed disabled:opacity-40"
+              className="h-12 w-full rounded-2xl bg-gold text-sm font-black text-on-gold transition hover:bg-gold/90 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {busy ? "جارٍ التعيين…" : "عيّن كلمة المرور الجديدة"}
             </button>
             <button
               type="button"
               onClick={() => { setView("reset"); setErr(""); }}
-              className="w-full text-center text-xs text-white/45 transition hover:text-[#6EC7D1]"
+              className="w-full text-center text-xs text-white/45 transition hover:text-teal-light-ink"
             >
               عودة — اطلب رمزا جديدا
             </button>
@@ -374,7 +374,7 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
   /* ── الشاشة الرئيسية: دخول / حساب جديد ── */
   return (
     <div className="mx-auto max-w-md">
-      <div className="overflow-hidden rounded-3xl border border-[#38A7B4]/25 bg-gradient-to-b from-[#12262A] to-[#0D0D0D] shadow-[0_24px_80px_-24px_rgba(56,167,180,0.35)]">
+      <div className="overflow-hidden rounded-3xl border border-teal/25 bg-gradient-to-b from-surface to-ground shadow-[0_24px_80px_-24px_rgba(56,167,180,0.35)]">
         <div className="border-b border-white/5 px-8 pb-6 pt-8 text-center">
           <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="mx-auto h-12 w-12 object-contain" />
           <h1 className="mt-4 text-2xl font-black text-white">
@@ -399,7 +399,7 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
                   setNotice("");
                 }}
                 className={`rounded-full py-2 text-sm font-bold transition ${
-                  mode === m ? "bg-[#38A7B4] text-[#08272B]" : "text-white/55 hover:text-white"
+                  mode === m ? "bg-teal text-on-teal" : "text-white/55 hover:text-white"
                 }`}
               >
                 {m === "signup" ? "حساب جديد" : "دخول"}
@@ -420,7 +420,7 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
                   المتابعة بحساب لينكدإن
                 </button>
                 <p className="flex items-center justify-center gap-1.5 text-[11px] text-white/40">
-                  <ShieldCheck className="h-3.5 w-3.5 text-[#38A7B4]" />
+                  <ShieldCheck className="h-3.5 w-3.5 text-teal-ink" />
                   لن ننشر شيئا باسمك أبدا — حسابك لحفظ مسارك ونتيجتك فقط
                 </p>
               </div>
@@ -564,7 +564,7 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
                 <button
                   type="button"
                   onClick={() => { setView("reset"); setErr(""); setNotice(""); }}
-                  className="text-xs text-white/45 transition hover:text-[#6EC7D1]"
+                  className="text-xs text-white/45 transition hover:text-teal-light-ink"
                 >
                   نسيت كلمة المرور؟
                 </button>
@@ -580,15 +580,15 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
                   required
                   checked={agreed}
                   onChange={(e) => setAgreed(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 shrink-0 accent-[#38A7B4]"
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-teal"
                 />
                 <span className="text-[11px] leading-relaxed text-white/55">
                   أوافق على{" "}
-                  <Link to="/p/terms" className="font-bold text-white/75 underline underline-offset-4 hover:text-[#6EC7D1]">
+                  <Link to="/p/terms" className="font-bold text-white/75 underline underline-offset-4 hover:text-teal-light-ink">
                     شروط الاستخدام
                   </Link>{" "}
                   و
-                  <Link to="/p/privacy" className="font-bold text-white/75 underline underline-offset-4 hover:text-[#6EC7D1]">
+                  <Link to="/p/privacy" className="font-bold text-white/75 underline underline-offset-4 hover:text-teal-light-ink">
                     سياسة الخصوصية
                   </Link>
                 </span>
@@ -596,7 +596,7 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
             )}
 
             {notice && (
-              <p className="rounded-xl border border-[#38A7B4]/30 bg-[#38A7B4]/10 px-4 py-2.5 text-center text-xs font-semibold leading-relaxed text-[#6EC7D1]">
+              <p className="rounded-xl border border-teal/30 bg-teal/10 px-4 py-2.5 text-center text-xs font-semibold leading-relaxed text-teal-light-ink">
                 {notice}
               </p>
             )}
@@ -609,7 +609,7 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
             <button
               type="submit"
               disabled={busy || !formValid}
-              className="h-12 w-full rounded-2xl bg-[#FABC05] text-sm font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90 disabled:cursor-not-allowed disabled:opacity-40"
+              className="h-12 w-full rounded-2xl bg-gold text-sm font-black text-on-gold transition hover:bg-gold/90 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {busy ? "لحظات…" : mode === "signup" ? "أنشئ حسابي وابدأ" : "ادخل إلى حسابي"}
             </button>

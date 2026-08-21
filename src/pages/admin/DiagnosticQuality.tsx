@@ -73,7 +73,7 @@ export default function DiagnosticQuality() {
 
       <section>
         <h2 className="flex items-center gap-2 text-lg font-black">
-          <FlaskConical className="h-5 w-5 text-[#FABC05]" /> أحدث تشغيل ارتداد
+          <FlaskConical className="h-5 w-5 text-gold-ink" /> أحدث تشغيل ارتداد
           {latest && <span className={`text-sm ${latest.passed ? "text-emerald-300" : "text-red-300"}`}>{latest.passed ? "— متطابق تماما" : "— فيه انحراف"}</span>}
         </h2>
         {counts && (
@@ -148,8 +148,8 @@ export default function DiagnosticQuality() {
                 <p className="text-2xl font-black text-emerald-300">{feedback.verdicts.yes}</p>
                 <p className="mt-1 text-[11px] text-white/55">نعم — تصف وضعهم</p>
               </div>
-              <div className="rounded-2xl border border-[#FABC05]/30 bg-[#FABC05]/5 p-4 text-center">
-                <p className="text-2xl font-black text-[#FABC05]">{feedback.verdicts.somewhat}</p>
+              <div className="rounded-2xl border border-gold/30 bg-gold/5 p-4 text-center">
+                <p className="text-2xl font-black text-gold-ink">{feedback.verdicts.somewhat}</p>
                 <p className="mt-1 text-[11px] text-white/55">إلى حد ما</p>
               </div>
               <div className="rounded-2xl border border-red-400/30 bg-red-400/5 p-4 text-center">
@@ -161,7 +161,7 @@ export default function DiagnosticQuality() {
               {feedback.recent.filter((r) => r.note).map((r) => (
                 <div key={r.id} className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="rounded-full border border-[#38A7B4]/40 bg-[#38A7B4]/10 px-2.5 py-0.5 text-[11px] font-bold text-[#6EC7D1]">
+                    <span className="rounded-full border border-teal/40 bg-teal/10 px-2.5 py-0.5 text-[11px] font-bold text-teal-light-ink">
                       {VERDICT_AR[r.verdict] ?? r.verdict}
                     </span>
                     <p className="text-[11px] text-white/45" dir="ltr">{r.pathwayId ?? "—"} · {new Date(r.createdAt).toLocaleString("ar")}</p>

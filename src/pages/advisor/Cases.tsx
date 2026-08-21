@@ -42,7 +42,7 @@ interface CaseDetail extends CaseRow {
   contactEvents: { id: string; channel: string; direction: string; summary: string; createdAt: string }[];
 }
 
-const INPUT = "w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none";
+const INPUT = "w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/25 focus:border-teal focus:outline-none";
 const LBL = "mb-1 block text-[11px] font-bold text-white/60";
 
 function fmt(d: string | null) {
@@ -129,7 +129,7 @@ export default function AdvisorCases() {
         <div className="grid gap-5 lg:grid-cols-3">
           {/* العميل والتشخيص */}
           <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-            <h2 className="mb-3 flex items-center gap-2 text-sm font-black text-[#6EC7D1]"><UserRound className="h-4 w-4" /> العميل</h2>
+            <h2 className="mb-3 flex items-center gap-2 text-sm font-black text-teal-light-ink"><UserRound className="h-4 w-4" /> العميل</h2>
             <p className="font-black">{partyOf(detail).name}</p>
             {partyOf(detail).email && <p className="mt-1 text-xs text-white/55" dir="ltr">{partyOf(detail).email}</p>}
             {partyOf(detail).phone && <p className="text-xs text-white/55" dir="ltr">{partyOf(detail).phone}</p>}
@@ -149,13 +149,13 @@ export default function AdvisorCases() {
 
           {/* الحالة والإجراء التالي */}
           <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-            <h2 className="mb-3 flex items-center gap-2 text-sm font-black text-[#6EC7D1]"><CalendarClock className="h-4 w-4" /> الحالة والإجراء</h2>
+            <h2 className="mb-3 flex items-center gap-2 text-sm font-black text-teal-light-ink"><CalendarClock className="h-4 w-4" /> الحالة والإجراء</h2>
             <div className="mb-3 flex flex-wrap gap-1.5">
               {Object.entries(STATUS_LABELS).map(([k, v]) => (
                 <button key={k} disabled={detail.status === k}
                   onClick={() => void act(() => apiPost(`/api/advisor/cases/${detail.id}/status`, { status: k }), `انتقلت الحالة إلى «${v}»`)}
                   className={`cursor-pointer rounded-full border px-3 py-1 text-[11px] font-bold transition disabled:cursor-default ${
-                    detail.status === k ? "border-[#FABC05] bg-[#FABC05]/10 text-[#FABC05]" : "border-white/15 text-white/55 hover:border-[#38A7B4]/50 hover:text-white"
+                    detail.status === k ? "border-gold bg-gold/10 text-gold-ink" : "border-white/15 text-white/55 hover:border-teal/50 hover:text-white"
                   }`}>
                   {v}
                 </button>
@@ -170,7 +170,7 @@ export default function AdvisorCases() {
 
           {/* تسجيل تواصل */}
           <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-            <h2 className="mb-3 flex items-center gap-2 text-sm font-black text-[#6EC7D1]"><PhoneCall className="h-4 w-4" /> سجل التواصل</h2>
+            <h2 className="mb-3 flex items-center gap-2 text-sm font-black text-teal-light-ink"><PhoneCall className="h-4 w-4" /> سجل التواصل</h2>
             <ContactForm onSubmit={(channel, summary) => void act(
               () => apiPost(`/api/advisor/cases/${detail.id}/contact`, { channel, summary }),
               "سُجل التواصل"
@@ -189,7 +189,7 @@ export default function AdvisorCases() {
 
           {/* المتابعات */}
           <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-            <h2 className="mb-3 flex items-center gap-2 text-sm font-black text-[#6EC7D1]"><CalendarClock className="h-4 w-4" /> المتابعات</h2>
+            <h2 className="mb-3 flex items-center gap-2 text-sm font-black text-teal-light-ink"><CalendarClock className="h-4 w-4" /> المتابعات</h2>
             <FollowUpForm onSubmit={(scheduledAt, channel, note) => void act(
               () => apiPost(`/api/advisor/cases/${detail.id}/follow-ups`, { scheduledAt, channel, ...(note ? { note } : {}) }),
               "جُدولت المتابعة"
@@ -218,7 +218,7 @@ export default function AdvisorCases() {
 
           {/* المهام */}
           <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-            <h2 className="mb-3 flex items-center gap-2 text-sm font-black text-[#6EC7D1]"><ClipboardList className="h-4 w-4" /> المهام</h2>
+            <h2 className="mb-3 flex items-center gap-2 text-sm font-black text-teal-light-ink"><ClipboardList className="h-4 w-4" /> المهام</h2>
             <TaskForm onSubmit={(title, dueAt) => void act(
               () => apiPost(`/api/advisor/cases/${detail.id}/tasks`, { title, ...(dueAt ? { dueAt } : {}) }),
               "أُضيفت المهمة"
@@ -244,7 +244,7 @@ export default function AdvisorCases() {
 
           {/* الملاحظات الداخلية */}
           <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-            <h2 className="mb-3 flex items-center gap-2 text-sm font-black text-[#6EC7D1]"><StickyNote className="h-4 w-4" /> ملاحظات داخلية — لا يراها العميل</h2>
+            <h2 className="mb-3 flex items-center gap-2 text-sm font-black text-teal-light-ink"><StickyNote className="h-4 w-4" /> ملاحظات داخلية — لا يراها العميل</h2>
             <NoteForm onSubmit={(body) => void act(() => apiPost(`/api/advisor/cases/${detail.id}/notes`, { body }), "حُفظت الملاحظة")} />
             <ul className="mt-3 max-h-48 space-y-2 overflow-auto">
               {detail.notes.map((n) => (
@@ -273,12 +273,12 @@ export default function AdvisorCases() {
       ]} />
       <div className="mb-5 flex flex-wrap items-center gap-2">
         <button onClick={() => setStatusFilter("")}
-          className={`cursor-pointer rounded-full border px-3 py-1.5 text-xs font-bold transition ${!statusFilter ? "border-[#FABC05] bg-[#FABC05]/10 text-[#FABC05]" : "border-white/15 text-white/55 hover:text-white"}`}>
+          className={`cursor-pointer rounded-full border px-3 py-1.5 text-xs font-bold transition ${!statusFilter ? "border-gold bg-gold/10 text-gold-ink" : "border-white/15 text-white/55 hover:text-white"}`}>
           الكل
         </button>
         {Object.entries(STATUS_LABELS).map(([k, v]) => (
           <button key={k} onClick={() => setStatusFilter(k)}
-            className={`cursor-pointer rounded-full border px-3 py-1.5 text-xs font-bold transition ${statusFilter === k ? "border-[#FABC05] bg-[#FABC05]/10 text-[#FABC05]" : "border-white/15 text-white/55 hover:text-white"}`}>
+            className={`cursor-pointer rounded-full border px-3 py-1.5 text-xs font-bold transition ${statusFilter === k ? "border-gold bg-gold/10 text-gold-ink" : "border-white/15 text-white/55 hover:text-white"}`}>
             {v}
           </button>
         ))}
@@ -298,16 +298,16 @@ export default function AdvisorCases() {
         <div className="space-y-3">
           {cases.map((c) => (
             <button key={c.id} onClick={() => void openCase(c.id)}
-              className="block w-full cursor-pointer rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-right transition hover:border-[#38A7B4]/50">
+              className="block w-full cursor-pointer rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-right transition hover:border-teal/50">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="font-black">{partyOf(c).name} <span className="text-[11px] font-normal text-white/50" dir="ltr">{partyOf(c).email}</span></p>
                   <p className="mt-1 text-xs text-white/55">{snapshotSummary(c.diagnosticSnapshot)}</p>
-                  {c.nextAction && <p className="mt-1 text-[11px] text-[#FABC05]">التالي: {c.nextAction}{c.nextFollowUpAt ? ` — ${fmt(c.nextFollowUpAt)}` : ""}</p>}
+                  {c.nextAction && <p className="mt-1 text-[11px] text-gold-ink">التالي: {c.nextAction}{c.nextFollowUpAt ? ` — ${fmt(c.nextFollowUpAt)}` : ""}</p>}
                 </div>
                 <div className="flex items-center gap-2">
                   {c.followUps[0] && (
-                    <span className="rounded-full border border-[#38A7B4]/40 px-3 py-1 text-[10px] font-bold text-[#6EC7D1]">
+                    <span className="rounded-full border border-teal/40 px-3 py-1 text-[10px] font-bold text-teal-light-ink">
                       متابعة {fmt(c.followUps[0].scheduledAt)}
                     </span>
                   )}
@@ -339,7 +339,7 @@ function NextActionForm({ current, currentAt, onSubmit }: {
       <label className={`${LBL} mt-2`}>موعد المتابعة القادم (اختياري)</label>
       <input type="datetime-local" value={at} onChange={(e) => setAt(e.target.value)} className={INPUT} dir="ltr" />
       <button type="submit" disabled={text.trim().length < 3}
-        className="mt-2 flex cursor-pointer items-center gap-1.5 rounded-full bg-[#38A7B4] px-4 py-1.5 text-[11px] font-black text-[#08272B] transition hover:bg-[#38A7B4]/90 disabled:opacity-40">
+        className="mt-2 flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-4 py-1.5 text-[11px] font-black text-on-teal transition hover:bg-teal/90 disabled:opacity-40">
         <Send className="h-3 w-3" /> حفظ الإجراء
       </button>
     </form>
@@ -353,13 +353,13 @@ function ContactForm({ onSubmit }: { onSubmit: (channel: string, summary: string
     <form onSubmit={(e) => { e.preventDefault(); if (summary.trim().length >= 3) { onSubmit(channel, summary.trim()); setSummary(""); } }}>
       <div className="flex gap-2">
         <select value={channel} onChange={(e) => setChannel(e.target.value)}
-          className="rounded-xl border border-white/15 bg-black/30 px-2 py-2 text-xs text-white [&>option]:bg-[#121B1D]">
+          className="rounded-xl border border-white/15 bg-black/30 px-2 py-2 text-xs text-white [&>option]:bg-surface">
           {Object.entries(CHANNEL_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
         <input value={summary} onChange={(e) => setSummary(e.target.value)} placeholder="ملخص التواصل…" className={INPUT} />
       </div>
       <button type="submit" disabled={summary.trim().length < 3}
-        className="mt-2 flex cursor-pointer items-center gap-1.5 rounded-full bg-[#38A7B4] px-4 py-1.5 text-[11px] font-black text-[#08272B] transition hover:bg-[#38A7B4]/90 disabled:opacity-40">
+        className="mt-2 flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-4 py-1.5 text-[11px] font-black text-on-teal transition hover:bg-teal/90 disabled:opacity-40">
         <MessageSquarePlus className="h-3 w-3" /> تسجيل
       </button>
     </form>
@@ -375,13 +375,13 @@ function FollowUpForm({ onSubmit }: { onSubmit: (scheduledAt: string, channel: s
       <div className="flex flex-wrap gap-2">
         <input type="datetime-local" required value={at} onChange={(e) => setAt(e.target.value)} className={INPUT} dir="ltr" />
         <select value={channel} onChange={(e) => setChannel(e.target.value)}
-          className="rounded-xl border border-white/15 bg-black/30 px-2 py-2 text-xs text-white [&>option]:bg-[#121B1D]">
+          className="rounded-xl border border-white/15 bg-black/30 px-2 py-2 text-xs text-white [&>option]:bg-surface">
           {Object.entries(CHANNEL_LABELS).filter(([k]) => k !== "in_app").map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
         <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="ملاحظة (اختياري)" className={INPUT} />
       </div>
       <button type="submit" disabled={!at}
-        className="mt-2 flex cursor-pointer items-center gap-1.5 rounded-full bg-[#38A7B4] px-4 py-1.5 text-[11px] font-black text-[#08272B] transition hover:bg-[#38A7B4]/90 disabled:opacity-40">
+        className="mt-2 flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-4 py-1.5 text-[11px] font-black text-on-teal transition hover:bg-teal/90 disabled:opacity-40">
         <CalendarClock className="h-3 w-3" /> جدولة
       </button>
     </form>
@@ -396,7 +396,7 @@ function TaskForm({ onSubmit }: { onSubmit: (title: string, dueAt: string) => vo
       <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="عنوان المهمة…" className={INPUT} />
       <input type="datetime-local" value={due} onChange={(e) => setDue(e.target.value)} className={`${INPUT} mt-2`} dir="ltr" />
       <button type="submit" disabled={title.trim().length < 3}
-        className="mt-2 flex cursor-pointer items-center gap-1.5 rounded-full bg-[#38A7B4] px-4 py-1.5 text-[11px] font-black text-[#08272B] transition hover:bg-[#38A7B4]/90 disabled:opacity-40">
+        className="mt-2 flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-4 py-1.5 text-[11px] font-black text-on-teal transition hover:bg-teal/90 disabled:opacity-40">
         <ClipboardList className="h-3 w-3" /> إضافة مهمة
       </button>
     </form>
@@ -409,7 +409,7 @@ function NoteForm({ onSubmit }: { onSubmit: (body: string) => void }) {
     <form onSubmit={(e) => { e.preventDefault(); if (body.trim().length >= 3) { onSubmit(body.trim()); setBody(""); } }}>
       <textarea rows={2} value={body} onChange={(e) => setBody(e.target.value)} placeholder="ملاحظة داخلية…" className={INPUT} />
       <button type="submit" disabled={body.trim().length < 3}
-        className="mt-2 flex cursor-pointer items-center gap-1.5 rounded-full bg-[#38A7B4] px-4 py-1.5 text-[11px] font-black text-[#08272B] transition hover:bg-[#38A7B4]/90 disabled:opacity-40">
+        className="mt-2 flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-4 py-1.5 text-[11px] font-black text-on-teal transition hover:bg-teal/90 disabled:opacity-40">
         <StickyNote className="h-3 w-3" /> حفظ الملاحظة
       </button>
     </form>

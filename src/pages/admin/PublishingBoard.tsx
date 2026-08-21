@@ -53,9 +53,9 @@ export default function PublishingBoard() {
 
       <div className="grid gap-4 lg:grid-cols-3">
         <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-          <h2 className="flex items-center gap-2 font-black"><ShieldCheck className="h-5 w-5 text-[#FABC05]" /> 1 · التحقق البنيوي</h2>
+          <h2 className="flex items-center gap-2 font-black"><ShieldCheck className="h-5 w-5 text-gold-ink" /> 1 · التحقق البنيوي</h2>
           <button disabled={busy !== null} onClick={() => act("validate", async () => setValidation(await apiPost<Validation>("/api/admin/publishing/validate")))}
-            className="mt-4 w-full cursor-pointer rounded-full border border-white/15 px-4 py-2 text-sm font-bold hover:border-[#FABC05]/60 disabled:opacity-40">
+            className="mt-4 w-full cursor-pointer rounded-full border border-white/15 px-4 py-2 text-sm font-bold hover:border-gold/60 disabled:opacity-40">
             {busy === "validate" ? "يفحص…" : "فحص الكيانات المعتمدة"}
           </button>
           {validation && (
@@ -68,9 +68,9 @@ export default function PublishingBoard() {
         </section>
 
         <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-          <h2 className="flex items-center gap-2 font-black"><Activity className="h-5 w-5 text-[#FABC05]" /> 2 · تحليل الأثر</h2>
+          <h2 className="flex items-center gap-2 font-black"><Activity className="h-5 w-5 text-gold-ink" /> 2 · تحليل الأثر</h2>
           <button disabled={busy !== null} onClick={() => act("impact", async () => setImpact(await apiPost<Impact>("/api/admin/publishing/impact", { changeRef: "تحليل من لوحة النشر" })))}
-            className="mt-4 w-full cursor-pointer rounded-full border border-white/15 px-4 py-2 text-sm font-bold hover:border-[#FABC05]/60 disabled:opacity-40">
+            className="mt-4 w-full cursor-pointer rounded-full border border-white/15 px-4 py-2 text-sm font-bold hover:border-gold/60 disabled:opacity-40">
             {busy === "impact" ? "يحاكي 12 شخصية…" : "محاكاة قبل/بعد (12 شخصية)"}
           </button>
           {impact && (
@@ -82,15 +82,15 @@ export default function PublishingBoard() {
         </section>
 
         <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-          <h2 className="flex items-center gap-2 font-black"><Rocket className="h-5 w-5 text-[#FABC05]" /> 3 · نشر إصدار</h2>
+          <h2 className="flex items-center gap-2 font-black"><Rocket className="h-5 w-5 text-gold-ink" /> 3 · نشر إصدار</h2>
           <div className="mt-4 flex gap-2">
             <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="2026.08.16-01" dir="ltr"
-              className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm outline-none focus:border-[#FABC05]/60" />
+              className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm outline-none focus:border-gold/60" />
             <button disabled={busy !== null || !label.trim()} onClick={() => act("create", async () => {
               const v = await apiPost<Version>("/api/admin/publishing/versions", { label: label.trim() });
               setLabel("");
               await act("publish", () => apiPost(`/api/admin/publishing/versions/${v.id}/publish`));
-            })} className="cursor-pointer rounded-full bg-[#FABC05] px-4 py-2 text-sm font-black text-[#0D0D0D] disabled:opacity-40">
+            })} className="cursor-pointer rounded-full bg-gold px-4 py-2 text-sm font-black text-on-gold disabled:opacity-40">
               {busy === "create" || busy === "publish" ? "ينشر…" : "أنشئ وانشر"}
             </button>
           </div>
@@ -99,7 +99,7 @@ export default function PublishingBoard() {
       </div>
 
       <section className="mt-8">
-        <h2 className="flex items-center gap-2 text-lg font-black"><History className="h-5 w-5 text-[#FABC05]" /> الإصدارات</h2>
+        <h2 className="flex items-center gap-2 text-lg font-black"><History className="h-5 w-5 text-gold-ink" /> الإصدارات</h2>
         <div className="mt-4 space-y-2">
           {versions.map((v) => (
             <div key={v.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
@@ -125,9 +125,9 @@ export default function PublishingBoard() {
 
       <section className="mt-8">
         <div className="flex items-center justify-between">
-          <h2 className="flex items-center gap-2 text-lg font-black"><PlayCircle className="h-5 w-5 text-[#FABC05]" /> اختبار الارتداد</h2>
+          <h2 className="flex items-center gap-2 text-lg font-black"><PlayCircle className="h-5 w-5 text-gold-ink" /> اختبار الارتداد</h2>
           <button disabled={busy !== null} onClick={() => act("sim", () => apiPost("/api/admin/quality/simulate"))}
-            className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold hover:border-[#FABC05]/60 disabled:opacity-40">
+            className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold hover:border-gold/60 disabled:opacity-40">
             <ArrowUpCircle className="h-4 w-4" /> {busy === "sim" ? "يحاكي…" : "تشغيل الآن (منشور مقابل مضمن)"}
           </button>
         </div>

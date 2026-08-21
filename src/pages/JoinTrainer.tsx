@@ -72,7 +72,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const inputCls =
-  "w-full rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:border-[#38A7B4] focus:outline-none";
+  "w-full rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:border-teal focus:outline-none";
 
 /** قائمة منسدلة متعددة الاختيار — مربع صح بجانب كل خيار، والمختار يظهر وسمًا صغيرًا قابلا للإزالة */
 function MultiPick({ id, label, options, selected, onChange }: {
@@ -89,17 +89,17 @@ function MultiPick({ id, label, options, selected, onChange }: {
         className={`${inputCls} flex cursor-pointer items-center justify-between text-right ${selected.length ? "text-white" : "text-white/40"}`}
       >
         <span>{label}</span>
-        <ChevronDown aria-hidden="true" className={`h-4 w-4 shrink-0 text-[#6EC7D1] transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+        <ChevronDown aria-hidden="true" className={`h-4 w-4 shrink-0 text-teal-light-ink transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
       </button>
       {open && (
         <div role="listbox" aria-labelledby={id} aria-multiselectable="true"
-          className="absolute z-20 mt-1.5 max-h-56 w-full overflow-y-auto rounded-xl border border-white/15 bg-[#121B1D] p-1.5 shadow-xl shadow-black/40">
+          className="absolute z-20 mt-1.5 max-h-56 w-full overflow-y-auto rounded-xl border border-white/15 bg-surface p-1.5 shadow-xl shadow-black/40">
           {options.map((o) => {
             const checked = selected.includes(o);
             return (
               <label key={o} role="option" aria-selected={checked}
-                className={`flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-bold transition hover:bg-white/5 ${checked ? "text-[#6EC7D1]" : "text-white/70"}`}>
-                <input type="checkbox" checked={checked} onChange={() => toggleValue(o)} className="h-3.5 w-3.5 shrink-0 accent-[#38A7B4]" />
+                className={`flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-bold transition hover:bg-white/5 ${checked ? "text-teal-light-ink" : "text-white/70"}`}>
+                <input type="checkbox" checked={checked} onChange={() => toggleValue(o)} className="h-3.5 w-3.5 shrink-0 accent-teal" />
                 {o}
               </label>
             );
@@ -109,7 +109,7 @@ function MultiPick({ id, label, options, selected, onChange }: {
       {selected.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1.5">
           {selected.map((s) => (
-            <span key={s} className="inline-flex items-center gap-1.5 rounded-full border border-[#38A7B4]/40 bg-[#38A7B4]/10 px-2.5 py-1 text-[11px] font-bold text-[#6EC7D1]">
+            <span key={s} className="inline-flex items-center gap-1.5 rounded-full border border-teal/40 bg-teal/10 px-2.5 py-1 text-[11px] font-bold text-teal-light-ink">
               {s}
               <button type="button" onClick={() => toggleValue(s)} aria-label={`أزل ${s}`} className="cursor-pointer text-white/50 transition hover:text-white">×</button>
             </span>
@@ -257,13 +257,13 @@ export default function JoinTrainer() {
       <SiteShell>
         <SeoHead title="طلبك وصل" description="طلب انضمام مدرب في أكاديمية وجيز" path="/join-trainer" />
         <div className="mx-auto max-w-lg py-14 text-center">
-          <span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-[#38A7B4]/15">
-            {verified ? <CheckCircle2 className="h-8 w-8 text-[#6EC7D1]" /> : <MailCheck className="h-8 w-8 text-[#6EC7D1]" />}
+          <span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-teal/15">
+            {verified ? <CheckCircle2 className="h-8 w-8 text-teal-light-ink" /> : <MailCheck className="h-8 w-8 text-teal-light-ink" />}
           </span>
           <h1 className="mt-6 text-2xl font-black">{verified ? "بريدك متحقق — طلبك قيد المراجعة" : "طلبك محفوظ — بقيت خطوة التحقق"}</h1>
-          <p className="mt-4 rounded-2xl border border-[#FABC05]/30 bg-[#FABC05]/5 p-4">
+          <p className="mt-4 rounded-2xl border border-gold/30 bg-gold/5 p-4">
             <span className="text-xs text-white/50">رقمك المرجعي — احفظه لمتابعة طلبك</span>
-            <span className="mt-1 block font-mono text-xl font-black tracking-wide text-[#FABC05]" dir="ltr">{result.reference}</span>
+            <span className="mt-1 block font-mono text-xl font-black tracking-wide text-gold-ink" dir="ltr">{result.reference}</span>
           </p>
 
           {!verified ? (
@@ -284,7 +284,7 @@ export default function JoinTrainer() {
                 />
                 <button
                   onClick={verify} disabled={verifyBusy || verifyTokenInput.trim().length < 10}
-                  className="shrink-0 cursor-pointer rounded-xl bg-[#38A7B4] px-5 text-sm font-black text-[#08272B] transition hover:bg-[#38A7B4]/90 disabled:opacity-40"
+                  className="shrink-0 cursor-pointer rounded-xl bg-teal px-5 text-sm font-black text-on-teal transition hover:bg-teal/90 disabled:opacity-40"
                 >
                   {verifyBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : "تحقق"}
                 </button>
@@ -292,7 +292,7 @@ export default function JoinTrainer() {
               {verifyError && <p className="mt-2 text-xs text-red-300" role="alert">{verifyError}</p>}
               <button
                 type="button" onClick={resendVerify} disabled={resent}
-                className="mt-3 cursor-pointer text-xs font-bold text-[#6EC7D1] underline decoration-dotted underline-offset-4 transition hover:text-[#38A7B4] disabled:cursor-default disabled:text-white/40 disabled:no-underline"
+                className="mt-3 cursor-pointer text-xs font-bold text-teal-light-ink underline decoration-dotted underline-offset-4 transition hover:text-teal-ink disabled:cursor-default disabled:text-white/40 disabled:no-underline"
               >
                 {resent ? "أُعيد الإرسال — راجع بريدك مجددا" : "لم يصلك الرمز؟ أعد الإرسال"}
               </button>
@@ -304,7 +304,7 @@ export default function JoinTrainer() {
             </p>
           )}
           <div>
-            <Link to="/" className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-[#6EC7D1] transition hover:text-[#38A7B4]">
+            <Link to="/" className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-teal-light-ink transition hover:text-teal-ink">
               العودة للرئيسية <ArrowLeft className="h-4 w-4" />
             </Link>
           </div>
@@ -335,7 +335,7 @@ export default function JoinTrainer() {
             { icon: Mic2, text: "مقابلة ودرس تجريبي قبل الاعتماد" },
           ].map((f) => (
             <div key={f.text} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-              <f.icon className="h-5 w-5 text-[#6EC7D1]" />
+              <f.icon className="h-5 w-5 text-teal-light-ink" />
               <p className="mt-3 text-xs font-bold leading-6 text-white/85">{f.text}</p>
             </div>
           ))}
@@ -354,7 +354,7 @@ export default function JoinTrainer() {
             <div className="flex gap-2">
               <div className="w-24 shrink-0">
                 <label htmlFor="jt-cc" className="mb-1.5 block text-xs font-bold text-white/60">الرمز</label>
-                <select id="jt-cc" value={form.phoneCountryCode} onChange={set("phoneCountryCode")} className={`${inputCls} [&>option]:bg-[#121B1D]`} dir="ltr">
+                <select id="jt-cc" value={form.phoneCountryCode} onChange={set("phoneCountryCode")} className={`${inputCls} [&>option]:bg-surface`} dir="ltr">
                   {COUNTRY_CODES.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
@@ -365,7 +365,7 @@ export default function JoinTrainer() {
             </div>
             <div>
               <label htmlFor="jt-country" className="mb-1.5 block text-xs font-bold text-white/60">دولة الإقامة</label>
-              <select id="jt-country" value={form.country} onChange={set("country")} className={`${inputCls} [&>option]:bg-[#121B1D]`}>
+              <select id="jt-country" value={form.country} onChange={set("country")} className={`${inputCls} [&>option]:bg-surface`}>
                 <option value="" disabled>اختر دولتك</option>
                 {ARAB_COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
                 <option value="أخرى">أخرى</option>
@@ -373,7 +373,7 @@ export default function JoinTrainer() {
             </div>
             <div>
               <label htmlFor="jt-employment" className="mb-1.5 block text-xs font-bold text-white/60">حالتك المهنية الحالية *</label>
-              <select id="jt-employment" required value={form.employmentStatus} onChange={set("employmentStatus")} className={`${inputCls} [&>option]:bg-[#121B1D]`}>
+              <select id="jt-employment" required value={form.employmentStatus} onChange={set("employmentStatus")} className={`${inputCls} [&>option]:bg-surface`}>
                 <option value="" disabled>اختر الأقرب لواقعك</option>
                 {EMPLOYMENT_STATUS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
               </select>
@@ -393,7 +393,7 @@ export default function JoinTrainer() {
                   aria-pressed={specialties.includes(s)}
                   className={`cursor-pointer rounded-full border px-3.5 py-1.5 text-xs font-bold transition ${
                     specialties.includes(s)
-                      ? "border-[#38A7B4] bg-[#38A7B4]/15 text-[#6EC7D1]"
+                      ? "border-teal bg-teal/15 text-teal-light-ink"
                       : "border-white/15 text-white/55 hover:border-white/35"
                   }`}
                 >
@@ -406,14 +406,14 @@ export default function JoinTrainer() {
           <div className="grid gap-5 border-t border-white/5 pt-7 sm:grid-cols-2">
             <div>
               <label htmlFor="jt-years" className="mb-1.5 block text-xs font-bold text-white/60">سنوات الخبرة المهنية في المجال *</label>
-              <select id="jt-years" required value={form.domainYears} onChange={set("domainYears")} className={`${inputCls} [&>option]:bg-[#121B1D]`}>
+              <select id="jt-years" required value={form.domainYears} onChange={set("domainYears")} className={`${inputCls} [&>option]:bg-surface`}>
                 <option value="" disabled>اختر نطاق الخبرة</option>
                 {DOMAIN_YEARS.map((y) => <option key={y.value} value={y.value}>{y.label}</option>)}
               </select>
             </div>
             <div>
               <label htmlFor="jt-training" className="mb-1.5 block text-xs font-bold text-white/60">سنوات/نوع خبرة التدريب تحديدا *</label>
-              <select id="jt-training" required value={form.trainingYears} onChange={set("trainingYears")} className={`${inputCls} [&>option]:bg-[#121B1D]`}>
+              <select id="jt-training" required value={form.trainingYears} onChange={set("trainingYears")} className={`${inputCls} [&>option]:bg-surface`}>
                 <option value="" disabled>اختر الأقرب لواقعك</option>
                 {TRAINING_YEARS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
@@ -448,7 +448,7 @@ export default function JoinTrainer() {
                 <input
                   type="checkbox" checked={form.hasAccreditation}
                   onChange={(e) => setForm({ ...form, hasAccreditation: e.target.checked, accreditationDetails: e.target.checked ? form.accreditationDetails : "" })}
-                  className="mt-0.5 h-4 w-4 accent-[#38A7B4]"
+                  className="mt-0.5 h-4 w-4 accent-teal"
                 />
                 <span className="text-xs leading-6 text-white/60">
                   لدي اعتماد أو ترخيص رسمي من جهة أو هيئة تدريب معترف بها
@@ -483,7 +483,7 @@ export default function JoinTrainer() {
                     type="button" key={l} onClick={() => toggle(languages, l, setLanguages)}
                     aria-pressed={languages.includes(l)}
                     className={`cursor-pointer rounded-full border px-3.5 py-1.5 text-xs font-bold transition ${
-                      languages.includes(l) ? "border-[#38A7B4] bg-[#38A7B4]/15 text-[#6EC7D1]" : "border-white/15 text-white/55 hover:border-white/35"
+                      languages.includes(l) ? "border-teal bg-teal/15 text-teal-light-ink" : "border-white/15 text-white/55 hover:border-white/35"
                     }`}
                   >
                     {l}
@@ -493,7 +493,7 @@ export default function JoinTrainer() {
             </fieldset>
             <div>
               <label htmlFor="jt-mode" className="mb-1.5 block text-xs font-bold text-white/60">نمط التدريب *</label>
-              <select id="jt-mode" required value={form.deliveryMode} onChange={set("deliveryMode")} className={`${inputCls} [&>option]:bg-[#121B1D]`}>
+              <select id="jt-mode" required value={form.deliveryMode} onChange={set("deliveryMode")} className={`${inputCls} [&>option]:bg-surface`}>
                 <option value="" disabled>اختر</option>
                 <option value="remote">عن بعد</option>
                 <option value="in_person">حضوري</option>
@@ -511,11 +511,11 @@ export default function JoinTrainer() {
             <input
               type="checkbox" checked={form.privacyConsent}
               onChange={(e) => setForm({ ...form, privacyConsent: e.target.checked })}
-              className="mt-0.5 h-4 w-4 accent-[#38A7B4]"
+              className="mt-0.5 h-4 w-4 accent-teal"
             />
             <span className="text-xs leading-6 text-white/60">
               أوافق على أن تُستخدم بياناتي لإدارة طلب الانضمام والتواصل بشأنه فقط، وفق{" "}
-              <Link to="/p/privacy" className="text-[#6EC7D1] underline">سياسة الخصوصية</Link>. *
+              <Link to="/p/privacy" className="text-teal-light-ink underline">سياسة الخصوصية</Link>. *
             </span>
           </label>
 
@@ -523,7 +523,7 @@ export default function JoinTrainer() {
 
           <button
             type="submit" disabled={!valid || busy}
-            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-[#FABC05] py-3.5 font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-gold py-3.5 font-black text-on-gold transition hover:bg-gold/90 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             {busy ? "جاري الإرسال…" : "أرسل طلب الانضمام"}
@@ -533,7 +533,7 @@ export default function JoinTrainer() {
         {/* متابعة طلب سابق — قسم ثانوي مطوي ليبقى التركيز على الطلب الجديد */}
         <details className="mt-10 rounded-2xl border border-white/10 bg-white/[0.02] px-6 py-5">
           <summary className="flex cursor-pointer items-center gap-2 text-sm font-black">
-            <Search className="h-4 w-4 text-[#6EC7D1]" /> قدّمت سابقا؟ تابع حالة طلبك
+            <Search className="h-4 w-4 text-teal-light-ink" /> قدّمت سابقا؟ تابع حالة طلبك
           </summary>
           <div className="mt-5 grid gap-3 border-t border-white/5 pt-5 sm:grid-cols-2">
             <input dir="ltr" placeholder="WJ-TR-2026-00001" aria-label="الرقم المرجعي" value={lookup.reference}
@@ -543,11 +543,11 @@ export default function JoinTrainer() {
           </div>
           <button
             onClick={checkStatus} disabled={!lookup.reference.trim() || !lookup.email.trim()}
-            className="mt-3 cursor-pointer rounded-full border border-[#38A7B4]/50 px-5 py-2 text-xs font-bold text-[#6EC7D1] transition hover:bg-[#38A7B4]/10 disabled:opacity-40"
+            className="mt-3 cursor-pointer rounded-full border border-teal/50 px-5 py-2 text-xs font-bold text-teal-light-ink transition hover:bg-teal/10 disabled:opacity-40"
           >
             اعرض الحالة
           </button>
-          {lookupResult && <p className="mt-3 rounded-xl border border-[#38A7B4]/30 bg-[#38A7B4]/5 p-3 text-xs font-bold text-[#6EC7D1]">{lookupResult}</p>}
+          {lookupResult && <p className="mt-3 rounded-xl border border-teal/30 bg-teal/5 p-3 text-xs font-bold text-teal-light-ink">{lookupResult}</p>}
           {lookupError && <p className="mt-3 text-xs text-red-300" role="alert">{lookupError}</p>}
 
           {/* سحب الطلب — قرار نهائي من المرشح نفسه برمز الترشيح الذي وصله بريديا */}

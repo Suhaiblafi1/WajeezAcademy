@@ -14,8 +14,8 @@ import { zoom } from "@/services/zoom";
 
 const REC_LABEL: Record<string, { label: string; cls: string }> = {
   uploaded: { label: "رُفع — بانتظار طلب النشر", cls: "text-white/70" },
-  pending_review: { label: "بانتظار موافقة النشر (خصوصية)", cls: "text-[#FABC05]" },
-  published: { label: "منشور للشعبة", cls: "text-[#6EC7D1]" },
+  pending_review: { label: "بانتظار موافقة النشر (خصوصية)", cls: "text-gold-ink" },
+  published: { label: "منشور للشعبة", cls: "text-teal-light-ink" },
 };
 
 export default function CohortView() {
@@ -35,7 +35,7 @@ export default function CohortView() {
   if (!cohort) {
     return (
       <TrainerLayout title="شعبة غير موجودة">
-        <Link to="/trainer" className="flex items-center gap-2 text-[#6EC7D1]"><ArrowRight className="h-4 w-4" /> عودة لشعبي</Link>
+        <Link to="/trainer" className="flex items-center gap-2 text-teal-light-ink"><ArrowRight className="h-4 w-4" /> عودة لشعبي</Link>
       </TrainerLayout>
     );
   }
@@ -88,7 +88,7 @@ export default function CohortView() {
       </Link>
 
       {note && (
-        <p className="mb-5 flex items-center gap-2 rounded-2xl border border-[#38A7B4]/40 bg-[#38A7B4]/10 px-4 py-3 text-sm font-bold text-[#6EC7D1]">
+        <p className="mb-5 flex items-center gap-2 rounded-2xl border border-teal/40 bg-teal/10 px-4 py-3 text-sm font-bold text-teal-light-ink">
           <CheckCircle2 className="h-4 w-4 shrink-0" /> {note}
         </p>
       )}
@@ -123,7 +123,7 @@ export default function CohortView() {
                 st.atRisk ? "border-red-500/30 bg-red-500/5" : "border-white/10 bg-black/20"
               }`}>
                 <div className="flex items-center gap-3">
-                  <span className="grid h-9 w-9 place-items-center rounded-full bg-[#38A7B4]/15 text-sm font-black text-[#6EC7D1]">
+                  <span className="grid h-9 w-9 place-items-center rounded-full bg-teal/15 text-sm font-black text-teal-light-ink">
                     {st.name.charAt(0)}
                   </span>
                   <div>
@@ -136,7 +136,7 @@ export default function CohortView() {
                     <AlertTriangle className="h-3 w-3" /> معرض للتعثر — أبلغ المستشار
                   </span>
                 ) : (
-                  <CheckCircle2 className="h-4 w-4 text-[#38A7B4]/60" />
+                  <CheckCircle2 className="h-4 w-4 text-teal-ink/60" />
                 )}
               </div>
             ))}
@@ -151,7 +151,7 @@ export default function CohortView() {
 
         {/* الجلسات */}
         <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
-          <p className="flex items-center gap-2 text-sm font-black"><Video className="h-4 w-4 text-[#FABC05]" /> إدارة الجلسات</p>
+          <p className="flex items-center gap-2 text-sm font-black"><Video className="h-4 w-4 text-gold-ink" /> إدارة الجلسات</p>
           <input
             ref={fileRef} type="file" accept="video/*" className="hidden"
             onChange={(e) => onRecordingPicked(e.target.files?.[0] ?? null)}
@@ -181,13 +181,13 @@ export default function CohortView() {
                     {!s.attendanceMarked ? (
                       <button
                         onClick={() => openRoster(s.id)}
-                        className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-2.5 py-1 text-[10px] font-bold text-white/60 hover:border-[#38A7B4]/60 hover:text-[#6EC7D1]"
+                        className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-2.5 py-1 text-[10px] font-bold text-white/60 hover:border-teal/60 hover:text-teal-light-ink"
                       >
                         <UserCheck className="h-3 w-3" /> رصد حضور الجلسة ({enrolled} طالبا)
                       </button>
                     ) : (
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="rounded-full bg-[#38A7B4]/15 px-2.5 py-1 text-[10px] font-bold text-[#6EC7D1]">
+                        <span className="rounded-full bg-teal/15 px-2.5 py-1 text-[10px] font-bold text-teal-light-ink">
                           مرصود ✓ — حاضر {presentCount} · غائب {enrolled - presentCount}
                         </span>
                         <button
@@ -205,7 +205,7 @@ export default function CohortView() {
                     {s.recording === "none" ? (
                       <button
                         onClick={() => pickRecording(s.id)}
-                        className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-2.5 py-1 text-[10px] font-bold text-white/60 hover:border-[#FABC05]/60 hover:text-[#FABC05]"
+                        className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-2.5 py-1 text-[10px] font-bold text-white/60 hover:border-gold/60 hover:text-gold-ink"
                       >
                         <Upload className="h-3 w-3" /> ارفع تسجيل الجلسة
                       </button>
@@ -218,7 +218,7 @@ export default function CohortView() {
                         {s.recording === "uploaded" && (
                           <button
                             onClick={() => { requestRecordingPublish(meName, cohort.id, s.id); setNote("طُلب نشر التسجيل — لا يُنشر قبل استكمال موافقة الخصوصية."); setTick(tick + 1); }}
-                            className="cursor-pointer rounded-full border border-[#FABC05]/50 px-2.5 py-1 text-[10px] font-bold text-[#FABC05] hover:bg-[#FABC05]/10"
+                            className="cursor-pointer rounded-full border border-gold/50 px-2.5 py-1 text-[10px] font-bold text-gold-ink hover:bg-gold/10"
                           >
                             اطلب نشر التسجيل
                           </button>
@@ -237,7 +237,7 @@ export default function CohortView() {
           <button
             onClick={() => setReportSent(true)}
             disabled={reportSent}
-            className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-[#38A7B4]/40 py-2.5 text-sm font-bold text-[#6EC7D1] transition hover:bg-[#38A7B4]/10 disabled:cursor-default disabled:opacity-60"
+            className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-teal/40 py-2.5 text-sm font-bold text-teal-light-ink transition hover:bg-teal/10 disabled:cursor-default disabled:opacity-60"
           >
             {reportSent ? <CheckCircle2 className="h-4 w-4" /> : <FileBarChart className="h-4 w-4" />}
             {reportSent ? "أُرسل تقرير الشعبة للمنسق ✓" : "أرسل تقرير الشعبة"}
@@ -245,14 +245,14 @@ export default function CohortView() {
         </section>
       </div>
 
-      <Link to="/trainer/grading" className="mt-6 flex items-center justify-center gap-2 rounded-3xl border border-[#FABC05]/30 bg-[#FABC05]/5 p-5 text-sm font-black text-[#FABC05] transition hover:border-[#FABC05]/60">
+      <Link to="/trainer/grading" className="mt-6 flex items-center justify-center gap-2 rounded-3xl border border-gold/30 bg-gold/5 p-5 text-sm font-black text-gold-ink transition hover:border-gold/60">
         <ClipboardCheck className="h-4 w-4" /> انتقل لطابور تقييم واجبات هذه الشعبة وغيرها
       </Link>
 
       {/* نافذة كشف الحضور */}
       {roster && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-5 backdrop-blur-sm">
-          <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-white/10 bg-[#151515] p-6">
+          <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-white/10 bg-surface p-6">
             <div className="flex items-center justify-between">
               <h3 className="font-black">كشف حضور الجلسة</h3>
               <button onClick={() => setRoster(null)} className="cursor-pointer text-white/50 hover:text-white" aria-label="إغلاق"><X className="h-5 w-5" /></button>
@@ -273,7 +273,7 @@ export default function CohortView() {
                           onClick={() => setRoster({ ...roster, draft: { ...roster.draft, [st.id]: opt } })}
                           className={`cursor-pointer rounded-full px-3.5 py-1 text-[11px] font-bold transition ${
                             v === opt
-                              ? opt === "present" ? "bg-[#38A7B4] text-[#08272B]" : "bg-red-500/80 text-white"
+                              ? opt === "present" ? "bg-teal text-on-teal" : "bg-red-500/80 text-white"
                               : "bg-white/[0.05] text-white/50 hover:text-white/70"
                           }`}
                         >
@@ -287,7 +287,7 @@ export default function CohortView() {
             </div>
             <button
               onClick={saveRoster}
-              className="mt-5 w-full cursor-pointer rounded-full bg-[#FABC05] py-3 font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90"
+              className="mt-5 w-full cursor-pointer rounded-full bg-gold py-3 font-black text-on-gold transition hover:bg-gold/90"
             >
               احفظ الرصد وأعد حساب التقدم
             </button>

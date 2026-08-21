@@ -43,16 +43,16 @@ export default function ResultFeedback({ sessionId, pathwayId }: { sessionId: st
   };
 
   return (
-    <section className="mt-10 rounded-3xl border border-[#38A7B4]/40 bg-[#38A7B4]/[0.05] p-6 text-center md:p-8 print:hidden">
-      <span className="mx-auto grid h-11 w-11 place-items-center rounded-2xl bg-[#38A7B4]/15">
-        <MessageSquareHeart className="h-5 w-5 text-[#6EC7D1]" />
+    <section className="mt-10 rounded-3xl border border-teal/40 bg-teal/[0.05] p-6 text-center md:p-8 print:hidden">
+      <span className="mx-auto grid h-11 w-11 place-items-center rounded-2xl bg-teal/15">
+        <MessageSquareHeart className="h-5 w-5 text-teal-light-ink" />
       </span>
       <h3 className="mt-4 text-lg font-black leading-snug">
         نحن في نسخة تجريبية — ورأيك يصنع النسخة التالية
       </h3>
 
       {done ? (
-        <p className="mt-4 text-sm font-black text-[#6EC7D1]">وصلنا رأيك — شكرا لك.</p>
+        <p className="mt-4 text-sm font-black text-teal-light-ink">وصلنا رأيك — شكرا لك.</p>
       ) : (
         <>
           <p className="mt-4 text-sm font-bold text-white/75">هل تصف هذه النتيجة وضعك؟</p>
@@ -65,8 +65,8 @@ export default function ResultFeedback({ sessionId, pathwayId }: { sessionId: st
                 aria-pressed={verdict === v.id}
                 className={`rounded-full border px-6 py-2.5 text-sm font-black transition ${
                   verdict === v.id
-                    ? "border-[#FABC05] bg-[#FABC05] text-[#0D0D0D]"
-                    : "border-white/20 text-white/70 hover:border-[#6EC7D1]/60 hover:text-white"
+                    ? "border-gold bg-gold text-on-gold"
+                    : "border-white/20 text-white/70 hover:border-teal-light/60 hover:text-white"
                 }`}
               >
                 {v.label}
@@ -83,7 +83,7 @@ export default function ResultFeedback({ sessionId, pathwayId }: { sessionId: st
             onChange={(e) => setNote(e.target.value)}
             maxLength={500}
             rows={3}
-            className="mt-2 w-full resize-none rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:border-[#38A7B4] focus:outline-none"
+            className="mt-2 w-full resize-none rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:border-teal focus:outline-none"
             placeholder="اكتب باختصار — ٥٠٠ حرف كحد أقصى"
           />
 
@@ -96,7 +96,7 @@ export default function ResultFeedback({ sessionId, pathwayId }: { sessionId: st
           <Button
             onClick={submit}
             disabled={!verdict || busy}
-            className="mt-4 h-11 rounded-full bg-[#38A7B4] px-8 font-black text-[#08272B] hover:bg-[#38A7B4]/90 disabled:opacity-40"
+            className="mt-4 h-11 rounded-full bg-teal px-8 font-black text-on-teal hover:bg-teal/90 disabled:opacity-40"
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="ml-2 h-4 w-4" />}
             أرسل رأيي

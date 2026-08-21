@@ -8,6 +8,7 @@ import {
   getCatalogVersion,
   installCoreCatalogRaw,
   onCoreCatalogInstalled,
+  loadBundledCoreCatalog,
   type CoreCatalogRaw,
 } from "@/data/core-catalog-source";
 import {
@@ -32,30 +33,40 @@ async function fetchJson(path: string): Promise<unknown | null> {
   }
 }
 
-/** يجلب الكتالوج الجوهري والمنهجية من API ويثبتهما — مرة واحدة لكل جلسة */
+/** يجلب الكتالوج الجوهري والمنهجية من API ويثبتهما — مرة واحدة لكل جلسة.
+   عند تعذّر الجلب أو نقص البيانات: يُحضر الاحتياطي المضمن كسولا (البند ع-١)
+   فلا يهبط الكتالوج في حزمة الدخول ولا يفقد الموقع محتواه عند انقطاع API. */
 export function ensurePublishedContent(): Promise<void> {
   if (inflight) return inflight;
   inflight = (async () => {
-    const [catalog, methodology] = await Promise.all([
-      fetchJson("/api/public/core-catalog"),
-      fetchJson("/api/public/methodology"),
-    ]);
-    const c = catalog as Partial<CoreCatalogRaw> | null;
-    if (c && Array.isArray(c.launch_pathways) && Array.isArray(c.courses) && Array.isArray(c.modules)) {
-      installCoreCatalogRaw(c as CoreCatalogRaw);
+    let installed = false;
+    try {
+      const [catalog, methodology] = await Promise.all([
+        fetchJson("/api/public/core-catalog"),
+        fetchJson("/api/public/methodology"),
+      ]);
+      const c = catalog as Partial<CoreCatalogRaw> | null;
+      if (c && Array.isArray(c.launch_pathways) && Array.isArray(c.courses) && Array.isArray(c.modules)) {
+        installCoreCatalogRaw(c as CoreCatalogRaw);
+        installed = true;
+      }
+      const m = methodology as { references?: MethodologyReference[] } | null;
+      if (m && Array.isArray(m.references)) {
+        installMethodologyRegistry(m.references);
+      }
+    } catch {
+      /* انقطاع شبكة أو خادم — الاحتياطي أدناه */
     }
-    const m = methodology as { references?: MethodologyReference[] } | null;
-    if (m && Array.isArray(m.references)) {
-      installMethodologyRegistry(m.references);
-    }
+    if (!installed) await loadBundledCoreCatalog();
   })();
   return inflight;
 }
 
 /** خطاف الصفحات العامة: يبدأ الجلب ويعيد الرسم عند تثبيت اللقطة المنشورة */
-export function usePublishedContent(): void {
-  useSyncExternalStore(onCoreCatalogInstalled, getCatalogVersion);
+export function usePublishedContent(): number {
+  const version = useSyncExternalStore(onCoreCatalogInstalled, getCatalogVersion);
   useEffect(() => {
     void ensurePublishedContent();
   }, []);
+  return version;
 }

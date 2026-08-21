@@ -7,7 +7,7 @@ import { CreditCard, Loader2, Mail, PlugZap, RefreshCw, Send, ServerOff, ShieldC
 import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 
-const inputCls = "rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white focus:border-[#38A7B4] focus:outline-none";
+const inputCls = "rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white focus:border-teal focus:outline-none";
 const labelCls = "block text-[10px] font-bold text-white/50";
 
 interface IntegrationsView {
@@ -103,7 +103,7 @@ export default function Integrations() {
 
   return (
     <AdminLayout title="التكاملات — الدفع والبريد">
-      {flash && <p role="status" className="mb-4 rounded-xl border border-[#38A7B4]/30 bg-[#38A7B4]/10 px-4 py-3 text-sm font-bold text-[#6EC7D1]">{flash}</p>}
+      {flash && <p role="status" className="mb-4 rounded-xl border border-teal/30 bg-teal/10 px-4 py-3 text-sm font-bold text-teal-light-ink">{flash}</p>}
 
       {loading || !view ? (
         <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-white/30" /></div>
@@ -111,13 +111,13 @@ export default function Integrations() {
         <div className="grid gap-5 lg:grid-cols-2">
           {/* ════ مزود الدفع ════ */}
           <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
-            <p className="flex items-center gap-2 text-sm font-black"><CreditCard className="h-4 w-4 text-[#FABC05]" /> مزود الدفع</p>
+            <p className="flex items-center gap-2 text-sm font-black"><CreditCard className="h-4 w-4 text-gold-ink" /> مزود الدفع</p>
             <p className="mt-1 text-[11px] leading-5 text-white/50">
               المزودان الحقيقيان يعملان بصفحات دفع مستضافة لديهم — لا بيانات بطاقات تمر بخوادمنا أبداً،
               والتسوية تتم عبر webhook موقَّت فقط.
             </p>
             {view.payment.envSourced && (
-              <p className="mt-3 rounded-xl border border-[#FABC05]/30 bg-[#FABC05]/5 px-3 py-2 text-[11px] font-bold text-[#FABC05]">
+              <p className="mt-3 rounded-xl border border-gold/30 bg-gold/5 px-3 py-2 text-[11px] font-bold text-gold-ink">
                 هذا التكامل يُدار من متغيرات البيئة (PAYMENT_DRIVER…) — الحفظ هنا لن يؤثر حتى تُزال متغيرات البيئة.
               </p>
             )}
@@ -147,22 +147,22 @@ export default function Integrations() {
                   </div>
                   <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-[10px] leading-5 text-white/50">
                     <p className="font-bold text-white/70">عنوان الـ webhook — سجّله في لوحة المزود:</p>
-                    <p dir="ltr" className="mt-0.5 select-all font-mono text-[#6EC7D1]">{webhookUrl}</p>
+                    <p dir="ltr" className="mt-0.5 select-all font-mono text-teal-light-ink">{webhookUrl}</p>
                     <p className="mt-1">Moyasar: سجّل «سر التوقيع» نفسه رمزاً مشتركاً في لوحتهم. Stripe: أرسل التوقيع بترويسة <span dir="ltr" className="font-mono">x-payment-signature: hmac=&lt;sig&gt;</span> عبر جسر، أو استخدم الرمز المشترك.</p>
                   </div>
                 </>
               )}
               <label className="flex cursor-pointer items-center gap-2 text-xs font-bold text-white/70">
-                <input type="checkbox" checked={payForm.enabled} onChange={(e) => setPayForm({ ...payForm, enabled: e.target.checked })} className="accent-[#FABC05]" />
+                <input type="checkbox" checked={payForm.enabled} onChange={(e) => setPayForm({ ...payForm, enabled: e.target.checked })} className="accent-gold" />
                 تفعيل هذا المزود — غير المفعّل يعني: المزود الاختباري يعمل
               </label>
               <div className="flex flex-wrap gap-2">
                 <button disabled={busy} onClick={() => act(() => apiPut("/api/admin/integrations/payment", payForm), "حُفظت إعدادات الدفع")}
-                  className="cursor-pointer rounded-full bg-[#FABC05] px-5 py-2 text-xs font-black text-[#0D0D0D] disabled:opacity-40">
+                  className="cursor-pointer rounded-full bg-gold px-5 py-2 text-xs font-black text-on-gold disabled:opacity-40">
                   حفظ إعدادات الدفع
                 </button>
                 <button disabled={busy} onClick={() => void testPayment()}
-                  className="flex cursor-pointer items-center gap-1.5 rounded-full border border-[#38A7B4]/40 px-4 py-2 text-xs font-bold text-[#6EC7D1] disabled:opacity-40">
+                  className="flex cursor-pointer items-center gap-1.5 rounded-full border border-teal/40 px-4 py-2 text-xs font-bold text-teal-light-ink disabled:opacity-40">
                   <PlugZap className="h-3.5 w-3.5" /> فحص الاتصال الحي
                 </button>
               </div>
@@ -171,13 +171,13 @@ export default function Integrations() {
 
           {/* ════ البريد ════ */}
           <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
-            <p className="flex items-center gap-2 text-sm font-black"><Mail className="h-4 w-4 text-[#38A7B4]" /> خادم البريد (SMTP)</p>
+            <p className="flex items-center gap-2 text-sm font-black"><Mail className="h-4 w-4 text-teal-ink" /> خادم البريد (SMTP)</p>
             <p className="mt-1 text-[11px] leading-5 text-white/50">
               فور التفعيل تصبح قناة email في الإشعارات حقيقية — قبول التسجيل والفواتير والشهادات تصل بريداً.
               غير المفعّلة تسجَّل «فشل: لا مزود» وتُعاد المحاولة تلقائياً.
             </p>
             {view.email.envSourced && (
-              <p className="mt-3 rounded-xl border border-[#FABC05]/30 bg-[#FABC05]/5 px-3 py-2 text-[11px] font-bold text-[#FABC05]">
+              <p className="mt-3 rounded-xl border border-gold/30 bg-gold/5 px-3 py-2 text-[11px] font-bold text-gold-ink">
                 هذا التكامل يُدار من متغيرات البيئة (SMTP_HOST…) — الحفظ هنا لن يؤثر حتى تُزال متغيرات البيئة.
               </p>
             )}
@@ -220,24 +220,24 @@ export default function Integrations() {
               </div>
               <div className="flex flex-wrap items-center gap-4">
                 <label className="flex cursor-pointer items-center gap-2 text-xs font-bold text-white/70">
-                  <input type="checkbox" checked={mailForm.secure} onChange={(e) => setMailForm({ ...mailForm, secure: e.target.checked })} className="accent-[#FABC05]" />
+                  <input type="checkbox" checked={mailForm.secure} onChange={(e) => setMailForm({ ...mailForm, secure: e.target.checked })} className="accent-gold" />
                   اتصال آمن TLS (المنفذ 465 عادة)
                 </label>
                 <label className="flex cursor-pointer items-center gap-2 text-xs font-bold text-white/70">
-                  <input type="checkbox" checked={mailForm.enabled} onChange={(e) => setMailForm({ ...mailForm, enabled: e.target.checked })} className="accent-[#FABC05]" />
+                  <input type="checkbox" checked={mailForm.enabled} onChange={(e) => setMailForm({ ...mailForm, enabled: e.target.checked })} className="accent-gold" />
                   تفعيل قناة البريد
                 </label>
               </div>
               <div className="flex flex-wrap gap-2">
                 <button disabled={busy} onClick={() => act(() => apiPut("/api/admin/integrations/email", mailForm), "حُفظت إعدادات البريد")}
-                  className="cursor-pointer rounded-full bg-[#FABC05] px-5 py-2 text-xs font-black text-[#0D0D0D] disabled:opacity-40">
+                  className="cursor-pointer rounded-full bg-gold px-5 py-2 text-xs font-black text-on-gold disabled:opacity-40">
                   حفظ إعدادات البريد
                 </button>
                 <div className="flex flex-1 items-center gap-2">
                   <input dir="ltr" value={testTo} onChange={(e) => setTestTo(e.target.value)} placeholder="بريد الاختبار…"
                     className={`${inputCls} min-w-0 flex-1 font-mono`} />
                   <button disabled={busy} onClick={() => void testEmail()}
-                    className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-[#38A7B4]/40 px-4 py-2 text-xs font-bold text-[#6EC7D1] disabled:opacity-40">
+                    className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-teal/40 px-4 py-2 text-xs font-bold text-teal-light-ink disabled:opacity-40">
                     <Send className="h-3.5 w-3.5" /> إرسال تجريبي
                   </button>
                 </div>
@@ -247,7 +247,7 @@ export default function Integrations() {
 
           {/* قاعدة الأمان */}
           <p className="flex items-start gap-2 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 text-[11px] leading-6 text-white/55 lg:col-span-2">
-            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#38A7B4]" />
+            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-teal-ink" />
             قواعد ثابتة: الأسرار تُكتب ولا تُقرأ (آخر 4 خانات فقط للعرض)، ومتغيرات البيئة تغلب الشاشة دائماً لبيئات الإنتاج،
             وكل حفظ وفحص موثق في سجل الأثر — ولا تسوية مالية إلا عبر webhook موقَّت أو تسجيل يدوي بصلاحية.
           </p>

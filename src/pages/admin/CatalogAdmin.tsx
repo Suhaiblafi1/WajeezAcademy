@@ -39,8 +39,8 @@ function Pill({ v }: { v: string }) {
   return <span className={`rounded-full border px-2 py-0.5 text-[11px] font-bold ${color}`}>{STATUS_AR[v] ?? v}</span>;
 }
 
-const inputCls = "w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/25 outline-none focus:border-[#FABC05]/60";
-const selectCls = `${inputCls} [&>option]:bg-[#121B1D]`;
+const inputCls = "w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/25 outline-none focus:border-gold/60";
+const selectCls = `${inputCls} [&>option]:bg-surface`;
 
 export default function CatalogAdmin() {
   const [overview, setOverview] = useState<Overview | null>(null);
@@ -152,8 +152,8 @@ export default function CatalogAdmin() {
 
   const FormHead = ({ id, icon: Icon, title, hint }: { id: typeof openForm & string; icon: typeof FilePlus2; title: string; hint: string }) => (
     <button onClick={() => setOpenForm(openForm === id ? null : id)}
-      className="flex w-full cursor-pointer items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-right transition hover:border-[#FABC05]/40">
-      <span className="flex items-center gap-2 text-lg font-black"><Icon className="h-5 w-5 text-[#FABC05]" /> {title}</span>
+      className="flex w-full cursor-pointer items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-right transition hover:border-gold/40">
+      <span className="flex items-center gap-2 text-lg font-black"><Icon className="h-5 w-5 text-gold-ink" /> {title}</span>
       <span className="flex items-center gap-3">
         <span className="hidden text-[11px] text-white/50 sm:inline">{hint}</span>
         <ChevronDown className={`h-4 w-4 text-white/50 transition ${openForm === id ? "rotate-180" : ""}`} />
@@ -184,11 +184,11 @@ export default function CatalogAdmin() {
 
       {/* استعراض الكيانات */}
       <section className="mt-8">
-        <h2 className="flex items-center gap-2 text-lg font-black"><Layers className="h-5 w-5 text-[#FABC05]" /> الكيانات الحالية</h2>
+        <h2 className="flex items-center gap-2 text-lg font-black"><Layers className="h-5 w-5 text-gold-ink" /> الكيانات الحالية</h2>
         <div className="mt-3 flex flex-wrap gap-2">
           {([["pathways", `المسارات (${pathways.length})`], ["courses", `الدورات (${courses.length})`], ["skills", `المهارات (${skills.length})`], ["questions", `بنك الأسئلة (${questions.length})`], ["templates", `قوالب التوصية (${templates.length})`]] as const).map(([k, label]) => (
             <button key={k} onClick={() => setBrowse(browse === k ? null : k)}
-              className={`cursor-pointer rounded-full border px-4 py-1.5 text-xs font-bold transition ${browse === k ? "border-[#FABC05] bg-[#FABC05]/10 text-[#FABC05]" : "border-white/15 text-white/60 hover:border-white/40"}`}>
+              className={`cursor-pointer rounded-full border px-4 py-1.5 text-xs font-bold transition ${browse === k ? "border-gold bg-gold/10 text-gold-ink" : "border-white/15 text-white/60 hover:border-white/40"}`}>
               {label}
             </button>
           ))}
@@ -265,7 +265,7 @@ export default function CatalogAdmin() {
 
         <FormHead id="course" icon={BookMarked} title="دورة جديدة (مسودة)" hint="تُربط بمسار ومهارات وتُبنى من وحدات" />
         {openForm === "course" && (
-          <div className="rounded-2xl border border-[#FABC05]/20 bg-white/[0.02] p-5">
+          <div className="rounded-2xl border border-gold/20 bg-white/[0.02] p-5">
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <input value={courseForm.id} onChange={(e) => setCourseForm({ ...courseForm, id: e.target.value })} placeholder="المعرف — CRS-XXX-000" dir="ltr" className={inputCls} />
               <select value={courseForm.pathwayId} onChange={(e) => setCourseForm({ ...courseForm, pathwayId: e.target.value })} className={selectCls}>
@@ -283,7 +283,7 @@ export default function CatalogAdmin() {
             <div className="flex flex-wrap gap-2">
               {skills.map((s) => (
                 <button key={s.id} type="button" onClick={() => setCourseForm({ ...courseForm, skillIds: toggleId(courseForm.skillIds, s.id) })}
-                  className={`cursor-pointer rounded-full border px-3 py-1 text-[11px] font-bold transition ${courseForm.skillIds.includes(s.id) ? "border-[#38A7B4] bg-[#38A7B4]/15 text-[#6EC7D1]" : "border-white/15 text-white/55 hover:border-white/40"}`}>
+                  className={`cursor-pointer rounded-full border px-3 py-1 text-[11px] font-bold transition ${courseForm.skillIds.includes(s.id) ? "border-teal bg-teal/15 text-teal-light-ink" : "border-white/15 text-white/55 hover:border-white/40"}`}>
                   {s.nameAr}
                 </button>
               ))}
@@ -318,7 +318,7 @@ export default function CatalogAdmin() {
                 <Plus className="h-3.5 w-3.5" /> وحدة إضافية
               </button>
               <button disabled={busy || !courseValid} onClick={submitCourse}
-                className="flex cursor-pointer items-center gap-2 rounded-full bg-[#FABC05] px-6 py-2 text-sm font-black text-[#0D0D0D] disabled:opacity-40">
+                className="flex cursor-pointer items-center gap-2 rounded-full bg-gold px-6 py-2 text-sm font-black text-on-gold disabled:opacity-40">
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null} إنشاء المسودة
               </button>
             </div>
@@ -327,7 +327,7 @@ export default function CatalogAdmin() {
 
         <FormHead id="pathway" icon={Route} title="مسار جديد (مسودة)" hint="يربط دورات موجودة في رحلة واحدة" />
         {openForm === "pathway" && (
-          <div className="rounded-2xl border border-[#FABC05]/20 bg-white/[0.02] p-5">
+          <div className="rounded-2xl border border-gold/20 bg-white/[0.02] p-5">
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <input value={pwForm.id} onChange={(e) => setPwForm({ ...pwForm, id: e.target.value })} placeholder="المعرف — PW-XXX" dir="ltr" className={inputCls} />
               <input value={pwForm.title} onChange={(e) => setPwForm({ ...pwForm, title: e.target.value })} placeholder="اسم المسار" className={inputCls} />
@@ -344,7 +344,7 @@ export default function CatalogAdmin() {
             <div className="flex flex-wrap gap-2">
               {courses.map((c) => (
                 <button key={c.id} type="button" onClick={() => setPwForm({ ...pwForm, courseIds: toggleId(pwForm.courseIds, c.id) })}
-                  className={`cursor-pointer rounded-full border px-3 py-1 text-[11px] font-bold transition ${pwForm.courseIds.includes(c.id) ? "border-[#38A7B4] bg-[#38A7B4]/15 text-[#6EC7D1]" : "border-white/15 text-white/55 hover:border-white/40"}`}>
+                  className={`cursor-pointer rounded-full border px-3 py-1 text-[11px] font-bold transition ${pwForm.courseIds.includes(c.id) ? "border-teal bg-teal/15 text-teal-light-ink" : "border-white/15 text-white/55 hover:border-white/40"}`}>
                   {pwForm.courseIds.includes(c.id) && <span className="ml-1">{pwForm.courseIds.indexOf(c.id) + 1}.</span>}
                   {c.title} <span className="font-mono text-white/40" dir="ltr">({c.id})</span>
                 </button>
@@ -352,7 +352,7 @@ export default function CatalogAdmin() {
               {courses.length === 0 && <span className="text-[11px] text-white/45">أنشئ دورات أولا من نموذج الدورة.</span>}
             </div>
             <button disabled={busy || !pathwayValid} onClick={submitPathway}
-              className="mt-4 flex cursor-pointer items-center gap-2 rounded-full bg-[#FABC05] px-6 py-2 text-sm font-black text-[#0D0D0D] disabled:opacity-40">
+              className="mt-4 flex cursor-pointer items-center gap-2 rounded-full bg-gold px-6 py-2 text-sm font-black text-on-gold disabled:opacity-40">
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null} إنشاء المسودة
             </button>
           </div>
@@ -360,7 +360,7 @@ export default function CatalogAdmin() {
 
         <FormHead id="skill" icon={FilePlus2} title="مهارة جديدة (مسودة)" hint="وحدة قياس المحرك التشخيصي" />
         {openForm === "skill" && (
-          <div className="rounded-2xl border border-[#FABC05]/20 bg-white/[0.02] p-5">
+          <div className="rounded-2xl border border-gold/20 bg-white/[0.02] p-5">
             <div className="grid gap-3 sm:grid-cols-4">
               {([["id", "SK-X-XXX-000"], ["slug", "skill_slug"], ["nameAr", "الاسم العربي"], ["familyId", "رمز العائلة (COG…)"]] as const).map(([k, ph]) => (
                 <input key={k} value={skillForm[k]} onChange={(e) => setSkillForm({ ...skillForm, [k]: e.target.value })}
@@ -372,7 +372,7 @@ export default function CatalogAdmin() {
                 await apiPost("/api/admin/catalog/skills", { ...skillForm, familyId: skillForm.familyId || undefined });
                 setSkillForm({ id: "", slug: "", nameAr: "", familyId: "" });
               }, "أُنشئت المهارة كمسودة")}
-              className="mt-4 cursor-pointer rounded-full bg-[#FABC05] px-5 py-2 text-sm font-black text-[#0D0D0D] disabled:opacity-40">
+              className="mt-4 cursor-pointer rounded-full bg-gold px-5 py-2 text-sm font-black text-on-gold disabled:opacity-40">
               إنشاء المسودة
             </button>
           </div>
@@ -380,7 +380,7 @@ export default function CatalogAdmin() {
 
         <FormHead id="cr" icon={GitPullRequest} title="طلب تعديل على كيان موجود" hint="المسميات والأهداف والروابط — لا يطبق قبل اعتماد مراجع آخر" />
         {openForm === "cr" && (
-          <div className="rounded-2xl border border-[#FABC05]/20 bg-white/[0.02] p-5">
+          <div className="rounded-2xl border border-gold/20 bg-white/[0.02] p-5">
             <div className="grid gap-3 sm:grid-cols-2">
               <select value={crForm.entityType} onChange={(e) => setCrForm({ ...crForm, entityType: e.target.value })} className={selectCls}>
                 {Object.entries(ENTITY_AR).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
@@ -394,7 +394,7 @@ export default function CatalogAdmin() {
               أمثلة حقول: titleAr للاسم، objectives للأهداف، skillIds لربط المهارات — تُدمج في إصدار جديد بعد الاعتماد والنشر.
             </p>
             <button disabled={busy || !crForm.entityId.trim()} onClick={submitChangeRequest}
-              className="mt-3 cursor-pointer rounded-full bg-[#FABC05] px-6 py-2 text-sm font-black text-[#0D0D0D] disabled:opacity-40">
+              className="mt-3 cursor-pointer rounded-full bg-gold px-6 py-2 text-sm font-black text-on-gold disabled:opacity-40">
               تقديم الطلب
             </button>
           </div>
@@ -403,7 +403,7 @@ export default function CatalogAdmin() {
 
       {/* طلبات التغيير */}
       <section className="mt-8">
-        <h2 className="flex items-center gap-2 text-lg font-black"><GitPullRequest className="h-5 w-5 text-[#FABC05]" /> طلبات التغيير</h2>
+        <h2 className="flex items-center gap-2 text-lg font-black"><GitPullRequest className="h-5 w-5 text-gold-ink" /> طلبات التغيير</h2>
         <div className="mt-4 space-y-3">
           {crs.length === 0 && <p className="text-sm text-white/50">لا طلبات بعد.</p>}
           {crs.map((cr) => (

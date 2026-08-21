@@ -58,7 +58,7 @@ export default function CourseJourney({
   return (
     <div className="card-soft mt-8" id="learning-plan">
       <Heading className="h-card flex items-center gap-2">
-        <Target className="h-5 w-5 text-[#FABC05]" />
+        <Target className="h-5 w-5 text-gold-ink" />
         ماذا ستحقق من خلال خطتك؟
       </Heading>
       <p className="mt-2 text-xs leading-relaxed text-white/50">
@@ -76,14 +76,14 @@ export default function CourseJourney({
             {i < list.length - 1 && (
               <span aria-hidden className="absolute right-[15px] top-10 h-[calc(100%-32px)] w-px bg-white/10" />
             )}
-            <Collapsible className={`rounded-2xl border transition-colors data-[state=open]:border-[#38A7B4]/40 data-[state=open]:bg-[#38A7B4]/[0.05] ${
-              isGift ? "border-[#FABC05]/40 bg-[#FABC05]/[0.05]" : "border-white/10 bg-white/[0.03]"
+            <Collapsible className={`rounded-2xl border transition-colors data-[state=open]:border-teal/40 data-[state=open]:bg-teal/[0.05] ${
+              isGift ? "border-gold/40 bg-gold/[0.05]" : "border-white/10 bg-white/[0.03]"
             }`}>
               <div className="flex items-start gap-3 p-4">
                 <span className={`z-10 grid h-8 w-8 shrink-0 place-items-center rounded-full border text-xs font-black ${
                   isGift
-                    ? "border-[#FABC05]/60 bg-[#FABC05] text-[#0D0D0D]"
-                    : "border-[#38A7B4]/50 bg-[#0D0D0D] text-[#6EC7D1]"
+                    ? "border-gold/60 bg-gold text-on-gold"
+                    : "border-teal/50 bg-ground text-teal-light-ink"
                 }`}>
                   {isGift ? <Gift className="h-3.5 w-3.5" /> : i + 1}
                 </span>
@@ -96,12 +96,12 @@ export default function CourseJourney({
                       <span className="text-sm font-black leading-snug text-white/90">
                         {c.title}
                         {isGift && (
-                          <span className="mr-2 rounded-full bg-[#FABC05] px-2 py-0.5 align-middle text-[10px] font-black text-[#0D0D0D]">
+                          <span className="mr-2 rounded-full bg-gold px-2 py-0.5 align-middle text-[10px] font-black text-on-gold">
                             هدية مجانية
                           </span>
                         )}
                       </span>
-                      <ChevronDown className="h-4 w-4 shrink-0 text-white/40 transition-transform duration-300 group-data-[state=open]:rotate-180 group-data-[state=open]:text-[#6EC7D1]" />
+                      <ChevronDown className="h-4 w-4 shrink-0 text-white/40 transition-transform duration-300 group-data-[state=open]:rotate-180 group-data-[state=open]:text-teal-light-ink" />
                     </span>
                     {c.shortPromise && (
                       <span className="mt-1 block text-xs leading-relaxed text-white/55">{c.shortPromise}</span>
@@ -109,13 +109,13 @@ export default function CourseJourney({
                   </CollapsibleTrigger>
                   <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
                     <span className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-[11px] font-semibold text-white/60">
-                      <Clock3 className="h-3 w-3 text-[#6EC7D1]" />
+                      <Clock3 className="h-3 w-3 text-teal-light-ink" />
                       {weeksLabel(Math.max(1, Math.ceil(c.totalHours / 7)))}
                     </span>
                     {c.relatedSkills.slice(0, 3).map((s) => (
                       <span
                         key={s}
-                        className="rounded-full border border-[#38A7B4]/30 bg-[#38A7B4]/[0.08] px-2.5 py-0.5 text-[11px] font-semibold text-[#6EC7D1]"
+                        className="rounded-full border border-teal/30 bg-teal/[0.08] px-2.5 py-0.5 text-[11px] font-semibold text-teal-light-ink"
                       >
                         {s}
                       </span>
@@ -124,13 +124,13 @@ export default function CourseJourney({
                   </div>
                   {reasons?.[c.id] && (
                     <p className="mt-2 text-[11px] leading-relaxed text-white/45">
-                      <span className="font-bold text-[#FABC05]/80">لماذا هي في خطتك: </span>
+                      <span className="font-bold text-gold-ink/80">لماذا هي في خطتك: </span>
                       {reasons[c.id]}
                     </p>
                   )}
                   {c.practicalProject && (
                     <p className="mt-2 flex items-start gap-1.5 text-[11px] leading-relaxed text-white/50">
-                      <FolderKanban className="mt-0.5 h-3 w-3 shrink-0 text-[#FABC05]" />
+                      <FolderKanban className="mt-0.5 h-3 w-3 shrink-0 text-gold-ink" />
                       <span>
                         <span className="font-bold text-white/65">مخرجها العملي: </span>
                         {c.practicalProject}
@@ -145,8 +145,8 @@ export default function CourseJourney({
                         onClick={() => edit.onSwapToggle(swapOpen ? null : c.id)}
                         className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-bold transition ${
                           swapOpen
-                            ? "border-[#6EC7D1] bg-[#38A7B4]/20 text-[#6EC7D1]"
-                            : "border-[#38A7B4]/40 text-[#6EC7D1] hover:bg-[#38A7B4]/15"
+                            ? "border-teal-light bg-teal/20 text-teal-light-ink"
+                            : "border-teal/40 text-teal-light-ink hover:bg-teal/15"
                         }`}
                       >
                         <RefreshCcw className="h-3 w-3" />
@@ -167,7 +167,7 @@ export default function CourseJourney({
                     <div className="mt-3">
                       <button
                         onClick={() => edit.onGiftToggle(c.id)}
-                        className="flex items-center gap-1 rounded-full border border-[#FABC05]/40 px-2.5 py-1 text-[11px] font-bold text-[#FABC05] transition hover:bg-[#FABC05]/10"
+                        className="flex items-center gap-1 rounded-full border border-gold/40 px-2.5 py-1 text-[11px] font-bold text-gold-ink transition hover:bg-gold/10"
                       >
                         <X className="h-3 w-3" />
                         إلغاء الهدية
@@ -177,8 +177,8 @@ export default function CourseJourney({
 
                   {/* بدائل الاستبدال — تظهر تحت الدورة نفسها، والاختيار يحل مكانها فورا بكل تفاصيله */}
                   {edit && swapOpen && (
-                    <div className="mt-3 rounded-xl border border-[#38A7B4]/30 bg-[#38A7B4]/[0.06] p-3">
-                      <p className="mb-2 text-[11px] font-bold text-[#6EC7D1]">
+                    <div className="mt-3 rounded-xl border border-teal/30 bg-teal/[0.06] p-3">
+                      <p className="mb-2 text-[11px] font-bold text-teal-light-ink">
                         بدائل مقترحة لك خصيصا — تحل مكان «{c.title}» فورا بكل تفاصيلها:
                       </p>
                       <div className="grid gap-1.5">
@@ -186,7 +186,7 @@ export default function CourseJourney({
                           <button
                             key={p.id}
                             onClick={() => edit.onSwapPick(c.id, p.id)}
-                            className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-right transition hover:border-[#6EC7D1]/50 hover:bg-white/[0.07]"
+                            className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-right transition hover:border-teal-light/50 hover:bg-white/[0.07]"
                           >
                             <span className="block text-xs font-bold text-white/85">{p.name}</span>
                             <span className="mt-0.5 block text-[10px] text-white/45">{p.note}</span>
@@ -203,19 +203,19 @@ export default function CourseJourney({
                   {c.description && <p className="text-white/60">{c.description}</p>}
                   {c.targetAudience && (
                     <p className="text-white/55">
-                      <span className="font-bold text-[#6EC7D1]">لمن صُممت؟ </span>
+                      <span className="font-bold text-teal-light-ink">لمن صُممت؟ </span>
                       {c.targetAudience}
                     </p>
                   )}
                   {c.learningObjectives.length > 0 && (
                     <div>
-                      <p className="mb-1.5 flex items-center gap-1.5 font-bold text-[#6EC7D1]">
+                      <p className="mb-1.5 flex items-center gap-1.5 font-bold text-teal-light-ink">
                         <ListChecks className="h-3.5 w-3.5" /> أهداف الدورة
                       </p>
                       <ul className="grid gap-1">
                         {c.learningObjectives.map((o) => (
                           <li key={o} className="flex items-start gap-2 text-white/60">
-                            <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#38A7B4]" />
+                            <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-teal" />
                             {o}
                           </li>
                         ))}
@@ -224,13 +224,13 @@ export default function CourseJourney({
                   )}
                   {c.learningOutcomes.length > 0 && (
                     <div>
-                      <p className="mb-1.5 flex items-center gap-1.5 font-bold text-[#FABC05]">
+                      <p className="mb-1.5 flex items-center gap-1.5 font-bold text-gold-ink">
                         <Target className="h-3.5 w-3.5" /> ماذا ستتمكن من فعله بعدها؟
                       </p>
                       <ul className="grid gap-1">
                         {c.learningOutcomes.map((o) => (
                           <li key={o} className="flex items-start gap-2 text-white/60">
-                            <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#FABC05]" />
+                            <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-gold" />
                             {o}
                           </li>
                         ))}
@@ -285,11 +285,11 @@ export default function CourseJourney({
 
         {/* ختام الرحلة */}
         <li className="relative flex items-start gap-3 pt-1">
-          <span className="z-10 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#FABC05] text-xs font-black text-[#0D0D0D]">
+          <span className="z-10 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gold text-xs font-black text-on-gold">
             <Award className="h-4 w-4" />
           </span>
           <div className="pt-1">
-            <p className="text-sm font-black text-[#FABC05]">شهادة إتمام + تقرير إنجازك الشخصي</p>
+            <p className="text-sm font-black text-gold-ink">شهادة إتمام + تقرير إنجازك الشخصي</p>
             <p className="mt-1 text-xs leading-relaxed text-white/50">
               تُعرض في ملفك ويشاركها أصحاب العمل عبر رابط تحقق — ومعها شهادات توصية من مدربيك المحترفين،
               ومن الجهات التي طُبّقت لديها مشاريعك إن وُجدت.
@@ -302,8 +302,8 @@ export default function CourseJourney({
       {edit && (
         <div className="mt-5 space-y-3 border-t border-white/10 pt-5">
           {!edit.giftId && edit.pool.length > 0 && (
-            <div className="rounded-2xl border border-[#FABC05]/40 bg-[#FABC05]/5 p-4">
-              <p className="flex items-center gap-2 text-sm font-black text-[#FABC05]">
+            <div className="rounded-2xl border border-gold/40 bg-gold/5 p-4">
+              <p className="flex items-center gap-2 text-sm font-black text-gold-ink">
                 <Gift className="h-4 w-4" />
                 هدية وجيز: اختر دورة إضافية مجانية فوق دورات مسارك
               </p>
@@ -312,7 +312,7 @@ export default function CourseJourney({
                   <button
                     key={p.id}
                     onClick={() => edit.onGiftToggle(p.id)}
-                    className="rounded-full border border-white/15 px-3 py-1.5 text-xs font-semibold text-white/60 transition hover:border-[#FABC05]/60 hover:text-[#FABC05]"
+                    className="rounded-full border border-white/15 px-3 py-1.5 text-xs font-semibold text-white/60 transition hover:border-gold/60 hover:text-gold-ink"
                   >
                     {p.name}
                   </button>
@@ -330,7 +330,7 @@ export default function CourseJourney({
                   <button
                     key={p.id}
                     onClick={() => edit.onAdd(p.id)}
-                    className="flex items-center gap-1 rounded-full border border-dashed border-white/15 px-3 py-1.5 text-xs font-semibold text-white/60 transition hover:border-[#6EC7D1]/60 hover:text-[#6EC7D1]"
+                    className="flex items-center gap-1 rounded-full border border-dashed border-white/15 px-3 py-1.5 text-xs font-semibold text-white/60 transition hover:border-teal-light/60 hover:text-teal-light-ink"
                   >
                     <Plus className="h-3 w-3" />
                     {p.name}
@@ -340,7 +340,7 @@ export default function CourseJourney({
             </div>
           )}
           {edit.minReached && (
-            <p className="text-[11px] text-[#FABC05]/80">وصلت للحد الأدنى — {MIN_PATHWAY_COURSES} دورات هي نواة المسار.</p>
+            <p className="text-[11px] text-gold-ink/80">وصلت للحد الأدنى — {MIN_PATHWAY_COURSES} دورات هي نواة المسار.</p>
           )}
         </div>
       )}
@@ -376,7 +376,7 @@ function CourseTrainer({ courseId }: { courseId: string }) {
 
   if (!label) return null;
   return (
-    <span className="flex items-center gap-1 rounded-full border border-[#FABC05]/30 bg-[#FABC05]/[0.07] px-2.5 py-0.5 text-[11px] font-semibold text-[#FABC05]/90">
+    <span className="flex items-center gap-1 rounded-full border border-gold/30 bg-gold/[0.07] px-2.5 py-0.5 text-[11px] font-semibold text-gold-ink/90">
       <UserRound className="h-3 w-3" />
       {label}
     </span>

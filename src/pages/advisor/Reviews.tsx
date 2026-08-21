@@ -24,7 +24,7 @@ export default function Reviews() {
       </p>
       <div className="space-y-3">
         {reviews.map((r) => (
-          <div key={r.id} className={`rounded-3xl border p-5 ${r.status === "pending" ? "border-[#FABC05]/30 bg-[#FABC05]/5" : "border-white/10 bg-white/[0.02]"}`}>
+          <div key={r.id} className={`rounded-3xl border p-5 ${r.status === "pending" ? "border-gold/30 bg-gold/5" : "border-white/10 bg-white/[0.02]"}`}>
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <p className="font-black">{r.studentName}</p>
@@ -37,19 +37,19 @@ export default function Reviews() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => act(r.id, "approved")}
-                    className="flex cursor-pointer items-center gap-1.5 rounded-full bg-[#38A7B4] px-4 py-2 text-xs font-black text-[#08272B] transition hover:bg-[#6EC7D1]"
+                    className="flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-4 py-2 text-xs font-black text-on-teal transition hover:bg-teal-light"
                   >
                     <CheckCircle2 className="h-3.5 w-3.5" /> اعتماد المقترح
                   </button>
                   <button
                     onClick={() => act(r.id, "custom")}
-                    className="flex cursor-pointer items-center gap-1.5 rounded-full border border-[#FABC05]/50 px-4 py-2 text-xs font-black text-[#FABC05] transition hover:bg-[#FABC05]/10"
+                    className="flex cursor-pointer items-center gap-1.5 rounded-full border border-gold/50 px-4 py-2 text-xs font-black text-gold-ink transition hover:bg-gold/10"
                   >
                     <GitBranch className="h-3.5 w-3.5" /> نسخة مخصصة
                   </button>
                 </div>
               ) : (
-                <span className="flex items-center gap-1.5 rounded-full bg-[#38A7B4]/15 px-3 py-1.5 text-xs font-bold text-[#6EC7D1]">
+                <span className="flex items-center gap-1.5 rounded-full bg-teal/15 px-3 py-1.5 text-xs font-bold text-teal-light-ink">
                   <UserCheck className="h-3.5 w-3.5" />
                   {r.status === "approved" ? "اعتُمد المقترح" : "بُنيت نسخة مخصصة"} — موثق في السجل
                 </span>

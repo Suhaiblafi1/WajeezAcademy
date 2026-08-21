@@ -59,7 +59,7 @@ export default function CourseView() {
   if (!course || !progress || !gate || !details || !trainer) {
     return (
       <PortalLayout title="دورة غير موجودة">
-        <Link to="/student/pathway" className="flex items-center gap-2 text-[#6EC7D1]"><ArrowRight className="h-4 w-4" /> عودة لمساري</Link>
+        <Link to="/student/pathway" className="flex items-center gap-2 text-teal-light-ink"><ArrowRight className="h-4 w-4" /> عودة لمساري</Link>
       </PortalLayout>
     );
   }
@@ -71,7 +71,7 @@ export default function CourseView() {
           <Lock className="h-12 w-12 text-white/25" />
           <h2 className="mt-4 text-xl font-black">هذه الدورة مقفلة</h2>
           <p className="mt-2 max-w-md text-sm leading-7 text-white/55">{gate.lockReason}</p>
-          <Link to="/student/pathway" className="mt-6 rounded-full bg-[#38A7B4] px-6 py-3 font-black text-[#08272B] hover:bg-[#6EC7D1]">
+          <Link to="/student/pathway" className="mt-6 rounded-full bg-teal px-6 py-3 font-black text-on-teal hover:bg-teal-light">
             عودة لخريطة مساري
           </Link>
         </div>
@@ -128,7 +128,7 @@ export default function CourseView() {
       <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="text-xs text-[#6EC7D1]">من مسار «{pathway?.name}»</p>
+            <p className="text-xs text-teal-light-ink">من مسار «{pathway?.name}»</p>
             <p className="mt-2 max-w-2xl text-sm leading-7 text-white/60">{details.outcome}</p>
           </div>
           <div className="text-left text-xs text-white/50">
@@ -137,7 +137,7 @@ export default function CourseView() {
           </div>
         </div>
         {complete && (
-          <p className="mt-4 flex items-center gap-2 rounded-xl border border-[#38A7B4]/40 bg-[#38A7B4]/10 px-4 py-2.5 text-sm font-bold text-[#6EC7D1]">
+          <p className="mt-4 flex items-center gap-2 rounded-xl border border-teal/40 bg-teal/10 px-4 py-2.5 text-sm font-bold text-teal-light-ink">
             <CheckCircle2 className="h-4 w-4" /> أُكملت هذه الدورة — شهادتها في صفحة شهاداتي
           </p>
         )}
@@ -149,7 +149,7 @@ export default function CourseView() {
           {/* الدرس الحالي */}
           <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
             <div className="flex items-center justify-between">
-              <h3 className="flex items-center gap-2 font-black"><Video className="h-4 w-4 text-[#6EC7D1]" /> {lesson.title}</h3>
+              <h3 className="flex items-center gap-2 font-black"><Video className="h-4 w-4 text-teal-light-ink" /> {lesson.title}</h3>
               <span className="text-[11px] text-white/50">{lesson.minutes} د · {lesson.kind === "video" ? "فيديو" : "نشاط تطبيقي"}</span>
             </div>
             <p className="mt-1.5 text-xs leading-6 text-white/50">
@@ -175,11 +175,11 @@ export default function CourseView() {
                     key={l.id}
                     onClick={() => setActiveLesson(i)}
                     className={`flex w-full cursor-pointer items-center justify-between rounded-xl border px-4 py-2.5 text-right text-sm transition ${
-                      i === activeLesson ? "border-[#38A7B4]/50 bg-[#38A7B4]/10" : "border-white/10 hover:border-white/25"
+                      i === activeLesson ? "border-teal/50 bg-teal/10" : "border-white/10 hover:border-white/25"
                     }`}
                   >
                     <span className="flex items-center gap-2.5">
-                      {p >= 90 ? <CheckCircle2 className="h-4 w-4 text-[#38A7B4]" /> : <span className="grid h-4 w-4 place-items-center rounded-full border border-white/25 text-[9px]">{i + 1}</span>}
+                      {p >= 90 ? <CheckCircle2 className="h-4 w-4 text-teal-ink" /> : <span className="grid h-4 w-4 place-items-center rounded-full border border-white/25 text-[9px]">{i + 1}</span>}
                       {l.title}
                     </span>
                     <span className="text-[11px] text-white/50">{p}%</span>
@@ -191,14 +191,14 @@ export default function CourseView() {
             {lessonPct >= 90 && activeLesson < lessons.length - 1 && (
               <button
                 onClick={() => setActiveLesson(activeLesson + 1)}
-                className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-[#38A7B4] py-3 text-sm font-black text-[#08272B] transition hover:bg-[#6EC7D1]"
+                className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-teal py-3 text-sm font-black text-on-teal transition hover:bg-teal-light"
               >
                 الدرس التالي: {lessons[activeLesson + 1].title}
                 <ArrowLeft className="h-4 w-4" />
               </button>
             )}
             {lessonPct >= 90 && activeLesson === lessons.length - 1 && !progress.quiz.passed && (
-              <p className="mt-4 flex items-center justify-center gap-2 rounded-full border border-[#FABC05]/40 bg-[#FABC05]/5 py-3 text-sm font-bold text-[#FABC05]">
+              <p className="mt-4 flex items-center justify-center gap-2 rounded-full border border-gold/40 bg-gold/5 py-3 text-sm font-bold text-gold-ink">
                 <CheckCircle2 className="h-4 w-4" /> أنهيت كل الدروس — اختبار الدورة بانتظارك بالأسفل
               </p>
             )}
@@ -207,11 +207,11 @@ export default function CourseView() {
           {/* الاختبار النهائي */}
           <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
             <div className="flex items-center justify-between">
-              <h3 className="flex items-center gap-2 font-black"><HelpCircle className="h-4 w-4 text-[#FABC05]" /> اختبار الدورة</h3>
+              <h3 className="flex items-center gap-2 font-black"><HelpCircle className="h-4 w-4 text-gold-ink" /> اختبار الدورة</h3>
               <span className="text-[11px] text-white/50">نجاح من {QUIZ_PASS}% · {QUIZ_MAX_ATTEMPTS} محاولات</span>
             </div>
             {progress.quiz.passed ? (
-              <p className="mt-4 flex items-center gap-2 rounded-xl border border-[#38A7B4]/40 bg-[#38A7B4]/10 px-4 py-3 text-sm font-bold text-[#6EC7D1]">
+              <p className="mt-4 flex items-center gap-2 rounded-xl border border-teal/40 bg-teal/10 px-4 py-3 text-sm font-bold text-teal-light-ink">
                 <CheckCircle2 className="h-4 w-4" /> اجتزت الاختبار بأفضل درجة {progress.quiz.best}%
               </p>
             ) : !quizOn ? (
@@ -224,7 +224,7 @@ export default function CourseView() {
                 <button
                   onClick={() => { setQuizOn(true); setQuizAnswers({}); setQuizResult(null); }}
                   disabled={progress.quiz.attempts >= QUIZ_MAX_ATTEMPTS}
-                  className="cursor-pointer rounded-full bg-[#FABC05] px-5 py-2.5 text-sm font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="cursor-pointer rounded-full bg-gold px-5 py-2.5 text-sm font-black text-on-gold transition hover:bg-gold/90 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {progress.quiz.attempts > 0 ? "أعد المحاولة" : "ابدأ الاختبار"}
                 </button>
@@ -245,9 +245,9 @@ export default function CourseView() {
                             disabled={revealed}
                             onClick={() => setQuizAnswers({ ...quizAnswers, [i]: j })}
                             className={`cursor-pointer rounded-lg border px-3 py-2 text-right text-xs transition disabled:cursor-default ${
-                              revealed && isCorrect ? "border-[#38A7B4] bg-[#38A7B4]/15 text-[#6EC7D1]"
+                              revealed && isCorrect ? "border-teal bg-teal/15 text-teal-light-ink"
                               : revealed && chosen && !isCorrect ? "border-red-500/60 bg-red-500/10 text-red-300"
-                              : chosen ? "border-[#38A7B4]/60 bg-[#38A7B4]/10" : "border-white/10 hover:border-white/25"
+                              : chosen ? "border-teal/60 bg-teal/10" : "border-white/10 hover:border-white/25"
                             }`}
                           >
                             {op}
@@ -262,14 +262,14 @@ export default function CourseView() {
                   <button
                     onClick={submitQuiz}
                     disabled={Object.keys(quizAnswers).length < quiz.length}
-                    className="w-full cursor-pointer rounded-full bg-[#FABC05] py-3 font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="w-full cursor-pointer rounded-full bg-gold py-3 font-black text-on-gold transition hover:bg-gold/90 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     سلّم الإجابات
                   </button>
                 ) : (
-                  <div className={`rounded-2xl border p-4 text-center ${quizResult.passed ? "border-[#38A7B4]/50 bg-[#38A7B4]/10" : "border-red-500/40 bg-red-500/10"}`}>
+                  <div className={`rounded-2xl border p-4 text-center ${quizResult.passed ? "border-teal/50 bg-teal/10" : "border-red-500/40 bg-red-500/10"}`}>
                     <p className="flex items-center justify-center gap-2 text-lg font-black">
-                      {quizResult.passed ? <CheckCircle2 className="h-5 w-5 text-[#38A7B4]" /> : <XCircle className="h-5 w-5 text-red-400" />}
+                      {quizResult.passed ? <CheckCircle2 className="h-5 w-5 text-teal-ink" /> : <XCircle className="h-5 w-5 text-red-400" />}
                       {quizResult.score}% — {quizResult.passed ? "ناجح! أحسنت" : "لم تبلغ درجة النجاح بعد"}
                     </p>
                     {!quizResult.passed && (
@@ -285,7 +285,7 @@ export default function CourseView() {
 
           {/* الواجب العملي */}
           <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
-            <h3 className="flex items-center gap-2 font-black"><ClipboardList className="h-4 w-4 text-[#6EC7D1]" /> التطبيق العملي — يُراجعه مدربك بشريا</h3>
+            <h3 className="flex items-center gap-2 font-black"><ClipboardList className="h-4 w-4 text-teal-light-ink" /> التطبيق العملي — يُراجعه مدربك بشريا</h3>
             <p className="mt-2 text-sm leading-7 text-white/55">
               طبّق ما تعلمته على حالة من واقعك، وارفع ملفك (PDF/عرض/صورة). المعيار: وضوح المشكلة، تطبيق المنهجية، جودة المخرج.
             </p>
@@ -305,7 +305,7 @@ export default function CourseView() {
               <div className="mt-4">
                 <button
                   onClick={() => fileRef.current?.click()}
-                  className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-white/15 py-8 text-sm font-bold text-white/60 transition hover:border-[#38A7B4]/60 hover:text-[#6EC7D1]"
+                  className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-white/15 py-8 text-sm font-bold text-white/60 transition hover:border-teal/60 hover:text-teal-light-ink"
                 >
                   <Upload className="h-5 w-5" /> ارفع واجبك هنا
                 </button>
@@ -313,28 +313,28 @@ export default function CourseView() {
             ) : (
               <div className="mt-4 space-y-3">
                 <p className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm">
-                  <FileUp className="h-4 w-4 text-[#6EC7D1]" />
+                  <FileUp className="h-4 w-4 text-teal-light-ink" />
                   {progress.assignment.fileName}
                   <span className={`mr-auto rounded-full px-2.5 py-0.5 text-[10px] font-black ${
-                    progress.assignment.status === "approved" ? "bg-[#38A7B4]/20 text-[#6EC7D1]" : "bg-[#FABC05]/15 text-[#FABC05]"
+                    progress.assignment.status === "approved" ? "bg-teal/20 text-teal-light-ink" : "bg-gold/15 text-gold-ink"
                   }`}>
                     {progress.assignment.status === "approved" ? `معتمد — ${progress.assignment.grade}%` : progress.assignment.status === "revision" ? "يحتاج تعديلا" : "قيد المراجعة"}
                   </span>
                 </p>
                 {progress.assignment.feedback && (
-                  <div className="rounded-xl border border-[#38A7B4]/25 bg-[#38A7B4]/5 p-4">
-                    <p className="text-xs font-bold text-[#6EC7D1]">ملاحظات {trainer.name}:</p>
+                  <div className="rounded-xl border border-teal/25 bg-teal/5 p-4">
+                    <p className="text-xs font-bold text-teal-light-ink">ملاحظات {trainer.name}:</p>
                     <p className="mt-1.5 text-sm leading-7 text-white/70">{progress.assignment.feedback}</p>
                   </div>
                 )}
                 {progress.assignment.status === "revision" && (
-                  <div className="rounded-xl border border-[#FABC05]/30 bg-[#FABC05]/5 p-4">
-                    <p className="text-xs leading-6 text-[#FABC05]">
+                  <div className="rounded-xl border border-gold/30 bg-gold/5 p-4">
+                    <p className="text-xs leading-6 text-gold-ink">
                       طلب مدربك إعادة التسليم — زر إعادة الرفع لا يظهر إلا بعد طلبه، تماما كما يفرضه الخادم.
                     </p>
                     <button
                       onClick={() => fileRef.current?.click()}
-                      className="mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[#FABC05]/40 py-5 text-sm font-bold text-[#FABC05] transition hover:bg-[#FABC05]/10"
+                      className="mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-gold/40 py-5 text-sm font-bold text-gold-ink transition hover:bg-gold/10"
                     >
                       <Upload className="h-4 w-4" /> ارفع النسخة المعدلة
                     </button>
@@ -346,18 +346,18 @@ export default function CourseView() {
 
           {/* أسئلة للمدرب */}
           <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
-            <h3 className="flex items-center gap-2 font-black"><MessageSquare className="h-4 w-4 text-[#6EC7D1]" /> اسأل مدربك</h3>
+            <h3 className="flex items-center gap-2 font-black"><MessageSquare className="h-4 w-4 text-teal-light-ink" /> اسأل مدربك</h3>
             <p className="mt-1.5 text-xs text-white/45">سؤالك مرتبط بهذه الدورة ويصل {trainer.name} مباشرة — وقت الاستجابة المستهدف 24 ساعة.</p>
             <div className="mt-3 flex gap-2">
               <input
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
                 placeholder="اكتب سؤالك هنا…"
-                className="flex-1 rounded-xl border border-white/15 bg-black/30 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-[#38A7B4] focus:outline-none"
+                className="flex-1 rounded-xl border border-white/15 bg-black/30 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-teal focus:outline-none"
               />
               <button
                 onClick={() => { if (question.trim()) { setAsked([question.trim(), ...asked]); setQuestion(""); } }}
-                className="cursor-pointer rounded-xl bg-[#38A7B4] px-4 text-[#08272B] transition hover:bg-[#6EC7D1]"
+                className="cursor-pointer rounded-xl bg-teal px-4 text-on-teal transition hover:bg-teal-light"
                 aria-label="إرسال"
               >
                 <Send className="h-4 w-4" />
@@ -375,7 +375,7 @@ export default function CourseView() {
         <div className="space-y-5">
           {/* الجلسات المباشرة — زووم */}
           <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
-            <h3 className="flex items-center gap-2 text-sm font-black"><Video className="h-4 w-4 text-[#FABC05]" /> الجلسات المباشرة (Zoom)</h3>
+            <h3 className="flex items-center gap-2 text-sm font-black"><Video className="h-4 w-4 text-gold-ink" /> الجلسات المباشرة (Zoom)</h3>
             <div className="mt-4 space-y-3">
               {sessions.map((s) => (
                 <div key={s.id} className="rounded-2xl border border-white/10 bg-black/20 p-4">
@@ -403,7 +403,7 @@ export default function CourseView() {
               ))}
             </div>
             <p className="mt-3 text-[11px] text-white/50">
-              الحضور: {progress.attendance === "present" ? <span className="font-bold text-[#6EC7D1]">حاضر ✓</span> : "لم يُسجل بعد"}
+              الحضور: {progress.attendance === "present" ? <span className="font-bold text-teal-light-ink">حاضر ✓</span> : "لم يُسجل بعد"}
             </p>
           </section>
 
@@ -418,13 +418,13 @@ export default function CourseView() {
           />
 
           {/* شهادة الدورة */}
-          <section className="rounded-3xl border border-[#FABC05]/25 bg-[#FABC05]/5 p-6">
-            <h3 className="flex items-center gap-2 text-sm font-black text-[#FABC05]"><Award className="h-4 w-4" /> شهادة الدورة</h3>
+          <section className="rounded-3xl border border-gold/25 bg-gold/5 p-6">
+            <h3 className="flex items-center gap-2 text-sm font-black text-gold-ink"><Award className="h-4 w-4" /> شهادة الدورة</h3>
             {complete ? (
               <Link
                 to="/student/certificates"
                 onClick={() => issueCertificate(readUserName(), course.name, "course")}
-                className="mt-3 block rounded-full bg-[#FABC05] py-2.5 text-center text-sm font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90"
+                className="mt-3 block rounded-full bg-gold py-2.5 text-center text-sm font-black text-on-gold transition hover:bg-gold/90"
               >
                 شهادتك جاهزة — اعرضها
               </Link>

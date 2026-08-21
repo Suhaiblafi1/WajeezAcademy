@@ -7,7 +7,7 @@ import { apiPost, ApiError } from "@/services/api";
 import { courses } from "@/data/courses";
 
 const inputCls =
-  "w-full rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:border-[#38A7B4] focus:outline-none";
+  "w-full rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:border-teal focus:outline-none";
 
 const DOC_KINDS = [
   { kind: "cv", label: "السيرة الذاتية" },
@@ -98,11 +98,11 @@ export default function JoinTrainerComplete() {
       <SiteShell>
         <SeoHead title="الاستكمال المهني" description="المرحلة الثانية من طلب انضمام المدرب" path="/join-trainer/complete" />
         <div className="mx-auto max-w-lg py-16 text-center">
-          <ShieldCheck className="mx-auto h-12 w-12 text-[#6EC7D1]" />
+          <ShieldCheck className="mx-auto h-12 w-12 text-teal-light-ink" />
           <h1 className="mt-5 text-2xl font-black">هذه الصفحة للمرشحين فقط</h1>
           <p className="mt-3 text-sm leading-8 text-white/60">
             تُفتح المرحلة الثانية برابط خاص يصلك بعد اختصار طلبك. لم يصلك؟ راجع حالة طلبك من{" "}
-            <Link to="/join-trainer" className="text-[#6EC7D1] underline">صفحة الانضمام</Link>.
+            <Link to="/join-trainer" className="text-teal-light-ink underline">صفحة الانضمام</Link>.
           </p>
         </div>
       </SiteShell>
@@ -114,8 +114,8 @@ export default function JoinTrainerComplete() {
       <SiteShell>
         <SeoHead title="اكتمل ملفك" description="اكتمل الملف المهني للمرشح" path="/join-trainer/complete" />
         <div className="mx-auto max-w-lg py-16 text-center">
-          <span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-[#38A7B4]/15">
-            <CheckCircle2 className="h-8 w-8 text-[#6EC7D1]" />
+          <span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-teal/15">
+            <CheckCircle2 className="h-8 w-8 text-teal-light-ink" />
           </span>
           <h1 className="mt-6 text-2xl font-black">ملفك المهني اكتمل</h1>
           <p className="mt-3 text-sm leading-8 text-white/60">
@@ -148,7 +148,7 @@ export default function JoinTrainerComplete() {
                   key={d.kind}
                   className={`flex cursor-pointer items-center gap-3 rounded-2xl border p-4 transition ${
                     uploads[d.kind]?.status === "done"
-                      ? "border-[#38A7B4]/50 bg-[#38A7B4]/10"
+                      ? "border-teal/50 bg-teal/10"
                       : "border-white/10 bg-black/20 hover:border-white/25"
                   }`}
                 >
@@ -158,9 +158,9 @@ export default function JoinTrainerComplete() {
                     onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadFile(d.kind, f); }}
                   />
                   {uploads[d.kind]?.status === "done"
-                    ? <CheckCircle2 className="h-5 w-5 shrink-0 text-[#6EC7D1]" />
+                    ? <CheckCircle2 className="h-5 w-5 shrink-0 text-teal-light-ink" />
                     : uploads[d.kind]?.status === "uploading" || uploads[d.kind]?.status === "registering"
-                      ? <Loader2 className="h-5 w-5 shrink-0 animate-spin text-[#FABC05]" />
+                      ? <Loader2 className="h-5 w-5 shrink-0 animate-spin text-gold-ink" />
                       : <FileUp className="h-5 w-5 shrink-0 text-white/40" />}
                   <span className="text-xs">
                     <b className="block text-white/85">{d.label}{d.kind === "cv" ? " *" : ""}</b>
@@ -191,7 +191,7 @@ export default function JoinTrainerComplete() {
               ))}
               {prevCourses.length < 3 && (
                 <button type="button" onClick={() => setPrevCourses([...prevCourses, { title: "", org: "", year: "", learnersCount: "" }])}
-                  className="cursor-pointer text-xs font-bold text-[#6EC7D1] hover:text-[#38A7B4]">
+                  className="cursor-pointer text-xs font-bold text-teal-light-ink hover:text-teal-ink">
                   + أضف دورة أخرى
                 </button>
               )}
@@ -226,7 +226,7 @@ export default function JoinTrainerComplete() {
                   aria-pressed={teachable.includes(c.id)}
                   className={`cursor-pointer rounded-full border px-3 py-1.5 text-[11px] font-bold transition ${
                     teachable.includes(c.id)
-                      ? "border-[#38A7B4] bg-[#38A7B4]/15 text-[#6EC7D1]"
+                      ? "border-teal bg-teal/15 text-teal-light-ink"
                       : "border-white/15 text-white/55 hover:border-white/35"
                   }`}
                 >
@@ -245,7 +245,7 @@ export default function JoinTrainerComplete() {
                   type="button" key={d} onClick={() => setDays(days.includes(d) ? days.filter((x) => x !== d) : [...days, d])}
                   aria-pressed={days.includes(d)}
                   className={`cursor-pointer rounded-full border px-3.5 py-1.5 text-xs font-bold transition ${
-                    days.includes(d) ? "border-[#38A7B4] bg-[#38A7B4]/15 text-[#6EC7D1]" : "border-white/15 text-white/55 hover:border-white/35"
+                    days.includes(d) ? "border-teal bg-teal/15 text-teal-light-ink" : "border-white/15 text-white/55 hover:border-white/35"
                   }`}
                 >
                   {d}
@@ -265,7 +265,7 @@ export default function JoinTrainerComplete() {
           </fieldset>
 
           <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-white/10 bg-black/20 p-3">
-            <input type="checkbox" checked={demoConsent} onChange={(e) => setDemoConsent(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[#38A7B4]" />
+            <input type="checkbox" checked={demoConsent} onChange={(e) => setDemoConsent(e.target.checked)} className="mt-0.5 h-4 w-4 accent-teal" />
             <span className="text-xs leading-6 text-white/60">
               أوافق على تقديم درس تجريبي (Demo) قصير أمام اللجنة الأكاديمية كجزء من التقييم. *
             </span>
@@ -275,7 +275,7 @@ export default function JoinTrainerComplete() {
 
           <button
             type="submit" disabled={!valid || busy}
-            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-[#FABC05] py-3.5 font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-gold py-3.5 font-black text-on-gold transition hover:bg-gold/90 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
             {busy ? "جاري الحفظ…" : "أكمل ملفي المهني"}

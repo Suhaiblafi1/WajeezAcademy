@@ -30,6 +30,7 @@ import CourseJourney from "@/components/CourseJourney";
 import PathwayResources from "@/components/PathwayResources";
 import Modal from "@/components/Modal";
 import { pathwayById } from "@/data/pathways";
+import { hasCoreCatalog } from "@/data/core-catalog-source";
 import { courseById, pathwayCourses, pathwayDelivery, coursePriceOf, pathwayPriceFor, pathwayTrainers, courseTrainer, weeksLabel } from "@/data/courses";
 import { GOAL_LABELS, GAP_LABELS, OBSTACLE_TO_GAP } from "@/data/diagnostic";
 import { grantEnrollment } from "@/services/access";
@@ -107,10 +108,10 @@ function StripeCheckout({
   };
   return (
     <Modal onClose={onClose} label={`إتمام الدفع: ${title}`} panelClassName="w-full max-w-md">
-      <div className="story-fade rounded-3xl border border-white/10 bg-[#121B1D] p-7">
+      <div className="story-fade rounded-3xl border border-white/10 bg-surface p-7">
         <div className="flex items-center justify-between">
           <h3 className="flex items-center gap-2 text-lg font-black">
-            <CreditCard className="h-5 w-5 text-[#6EC7D1]" />
+            <CreditCard className="h-5 w-5 text-teal-light-ink" />
             دفع آمن عبر Stripe
           </h3>
           <button onClick={onClose} aria-label="إغلاق نافذة الدفع" className="grid h-11 w-11 place-items-center rounded-full text-white/40 transition hover:bg-white/5 hover:text-white">✕</button>
@@ -119,7 +120,7 @@ function StripeCheckout({
         <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
           <div className="flex items-baseline justify-between">
             <span className="text-sm text-white/60">الإجمالي</span>
-            <span className="text-3xl font-black text-[#FABC05]">{fmt(amount)}</span>
+            <span className="text-3xl font-black text-gold-ink">{fmt(amount)}</span>
           </div>
           {cur.code !== "USD" && (
             <p className="mt-1 text-left text-[11px] text-white/40">يعادل {amount}$ — التحويل بسعر ثابت للعرض</p>
@@ -131,7 +132,7 @@ function StripeCheckout({
               aria-label="عملة الدفع"
               value={cur.code}
               onChange={(e) => setCurrency(e.target.value as CurrencyCode)}
-              className="cursor-pointer rounded-lg border border-white/15 bg-transparent px-2 py-1.5 text-xs font-bold text-white/80 outline-none [&>option]:bg-[#121B1D]"
+              className="cursor-pointer rounded-lg border border-white/15 bg-transparent px-2 py-1.5 text-xs font-bold text-white/80 outline-none [&>option]:bg-surface"
             >
               {(Object.keys(CURRENCIES) as CurrencyCode[]).map((code) => (
                 <option key={code} value={code}>{CURRENCIES[code].label} ({CURRENCIES[code].symbol})</option>
@@ -146,13 +147,13 @@ function StripeCheckout({
             placeholder="4242 4242 4242 4242"
             maxLength={19}
             dir="ltr"
-            className="w-full rounded-xl border border-white/15 bg-white/[0.04] px-4 py-3 text-left text-sm placeholder:text-white/30 focus:border-[#6EC7D1] focus:outline-none"
+            className="w-full rounded-xl border border-white/15 bg-white/[0.04] px-4 py-3 text-left text-sm placeholder:text-white/30 focus:border-teal-light focus:outline-none"
           />
           <div className="grid grid-cols-2 gap-3">
             <input placeholder="MM / YY" dir="ltr" maxLength={7}
-              className="rounded-xl border border-white/15 bg-white/[0.04] px-4 py-3 text-left text-sm placeholder:text-white/30 focus:border-[#6EC7D1] focus:outline-none" />
+              className="rounded-xl border border-white/15 bg-white/[0.04] px-4 py-3 text-left text-sm placeholder:text-white/30 focus:border-teal-light focus:outline-none" />
             <input placeholder="CVC" dir="ltr" maxLength={4}
-              className="rounded-xl border border-white/15 bg-white/[0.04] px-4 py-3 text-left text-sm placeholder:text-white/30 focus:border-[#6EC7D1] focus:outline-none" />
+              className="rounded-xl border border-white/15 bg-white/[0.04] px-4 py-3 text-left text-sm placeholder:text-white/30 focus:border-teal-light focus:outline-none" />
           </div>
         </div>
         <Button
@@ -243,10 +244,19 @@ export default function PathwayPage() {
   }, []);
 
   if (!pathway) {
+    /* البند ع-١: الكتالوج يصل بعد أول رسم، فـ«غير موجود» قبل وصوله خطأ —
+       نعرض حالة تحميل حتى يثبت الكتالوج، ثم نحكم بالغياب. */
+    if (!hasCoreCatalog()) {
+      return (
+        <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-ground text-white/60">
+          <p className="text-sm">يُحضر المسار…</p>
+        </div>
+      );
+    }
     return (
-      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-[#0D0D0D] text-white">
+      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-ground text-white">
         <p className="text-xl font-bold">هذا المسار غير موجود</p>
-        <Link to="/" className="mt-4 text-[#6EC7D1] underline">العودة للرئيسية</Link>
+        <Link to="/" className="mt-4 text-teal-light-ink underline">العودة للرئيسية</Link>
       </div>
     );
   }
@@ -263,14 +273,14 @@ export default function PathwayPage() {
   const totalWeeks = pathwayCoursesList.reduce((s, c) => s + c.weeks, 0);
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#0D0D0D] text-white">
+    <div dir="rtl" className="min-h-screen bg-ground text-white">
       <SeoHead
         title={pathway.name}
         description={`${pathway.transformation} — مسار ${pathway.level} من ${weeksLabel(pathway.durationWeeks)} في أكاديمية وجيز.`}
         path={`/pathways/${pathway.id}`}
       />
       {/* Top bar */}
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0D0D0D]/85 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-ground/85 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-5">
           <Link to="/" className="flex items-center gap-2 text-white/70 hover:text-white">
             <ArrowRight className="h-5 w-5" />
@@ -298,26 +308,26 @@ export default function PathwayPage() {
           {/* ترويسة المسار */}
           <div className="story-fade">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge className="bg-[#FABC05] font-black text-[#0D0D0D]">{pathway.badge ?? "مسار مرشح لك"}</Badge>
+              <Badge className="bg-gold font-black text-on-gold">{pathway.badge ?? "مسار مرشح لك"}</Badge>
               <Badge variant="outline" className="border-white/20 text-white/70">{pathway.level}</Badge>
-              {custom && !compositeCtx && <Badge className="border border-[#6EC7D1]/50 bg-[#38A7B4]/15 text-[#6EC7D1]">نسختك المخصصة</Badge>}
-              {compositeCtx && <Badge className="border border-[#FABC05]/60 bg-[#FABC05]/15 text-[#FABC05]">خطة مركبة مخصصة</Badge>}
+              {custom && !compositeCtx && <Badge className="border border-teal-light/50 bg-teal/15 text-teal-light-ink">نسختك المخصصة</Badge>}
+              {compositeCtx && <Badge className="border border-gold/60 bg-gold/15 text-gold-ink">خطة مركبة مخصصة</Badge>}
             </div>
             <h1 className="mt-4 text-3xl font-black leading-snug md:text-4xl">{pathway.name}</h1>
             <p className="mt-4 max-w-2xl leading-loose text-white/65">{pathway.transformation}</p>
 
             <div className="mt-5 flex flex-wrap items-center gap-2">
               <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1.5 text-xs font-bold text-white/70">
-                <CalendarClock className="h-3.5 w-3.5 text-[#6EC7D1]" />
+                <CalendarClock className="h-3.5 w-3.5 text-teal-light-ink" />
                 {custom ? `${weeksLabel(totalWeeks)} (مخصصة)` : weeksLabel(pathway.durationWeeks)}
               </span>
               <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1.5 text-xs font-bold text-white/70">
-                <Clock3 className="h-3.5 w-3.5 text-[#6EC7D1]" />
+                <Clock3 className="h-3.5 w-3.5 text-teal-light-ink" />
                 {pathway.weeklyHours} أسبوعيا
               </span>
             </div>
             <p className="mt-3 flex max-w-2xl items-start gap-2 text-sm leading-relaxed text-white/60">
-              <RouteIcon className="mt-0.5 h-4 w-4 shrink-0 text-[#FABC05]" />
+              <RouteIcon className="mt-0.5 h-4 w-4 shrink-0 text-gold-ink" />
               <span>
                 <span className="font-bold text-white/80">المخرج العملي: </span>
                 {pathway.output}
@@ -327,8 +337,8 @@ export default function PathwayPage() {
 
           {/* شارة الخطة المركبة — تسبق رحلة الدورات لتفسير لماذا تختلف القائمة عن كتالوج المسار */}
           {compositeCtx && (
-            <div className="story-fade mt-6 rounded-2xl border border-[#FABC05]/40 bg-[#FABC05]/[0.06] px-5 py-4">
-              <p className="text-sm font-black text-[#FABC05]">خطتك المركبة: «{compositeCtx.name_ar}»</p>
+            <div className="story-fade mt-6 rounded-2xl border border-gold/40 bg-gold/[0.06] px-5 py-4">
+              <p className="text-sm font-black text-gold-ink">خطتك المركبة: «{compositeCtx.name_ar}»</p>
               <p className="mt-1 text-xs leading-relaxed text-white/60">
                 الدورات أدناه هي تركيبتك كما ركّبها تشخيصك من أكثر من مجال — تُدار وتُتابع عبر مسار «{pathway.name}» المضيف.
               </p>
@@ -349,15 +359,15 @@ export default function PathwayPage() {
           {/* مقاعد التخصصات التدريبية — الأسماء تُعلن بعد اعتماد الشعبة */}
           <div className="story-fade mt-8 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4">
             <h2 className="flex items-center gap-2 text-sm font-black">
-              <User className="h-4 w-4 text-[#6EC7D1]" />
+              <User className="h-4 w-4 text-teal-light-ink" />
               الفريق التدريبي لهذا المسار
             </h2>
             <div className="mt-3 flex flex-wrap gap-2">
               {pathwayTrainers(pathway.id).map((t) => (
                 <span key={t.role} className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1.5 text-xs">
-                  <User className="h-3.5 w-3.5 shrink-0 text-[#6EC7D1]" />
+                  <User className="h-3.5 w-3.5 shrink-0 text-teal-light-ink" />
                   <span className="font-bold text-white/85">{t.role}</span>
-                  <span className="text-[#6EC7D1]">{t.name}</span>
+                  <span className="text-teal-light-ink">{t.name}</span>
                 </span>
               ))}
             </div>
@@ -368,27 +378,27 @@ export default function PathwayPage() {
 
           {/* التشخيص: دعوة للزائر الجديد — وشارة اعتماد لمن جاء من تشخيصه */}
           {!report && (
-            <div className="story-fade mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-dashed border-[#38A7B4]/40 bg-[#38A7B4]/5 px-6 py-4">
+            <div className="story-fade mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-dashed border-teal/40 bg-teal/5 px-6 py-4">
               <p className="text-sm leading-relaxed text-white/70">
-                <span className="font-black text-[#6EC7D1]">لست متأكدا أن هذا مسارك الأنسب؟ </span>
+                <span className="font-black text-teal-light-ink">لست متأكدا أن هذا مسارك الأنسب؟ </span>
                 ثلاث دقائق مع مؤشر وجيز تطابقك مع مساراتنا المصممة وتشرح لك السبب.
               </p>
-              <Button variant="outline" className="border-[#38A7B4]/60 text-[#6EC7D1] hover:bg-[#38A7B4]/15" asChild>
+              <Button variant="outline" className="border-teal/60 text-teal-light-ink hover:bg-teal/15" asChild>
                 <Link to="/diagnostic">ابدأ بمؤشر وجيز</Link>
               </Button>
             </div>
           )}
           {report && (
-            <div className="story-fade mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#38A7B4]/40 bg-[#38A7B4]/[0.06] px-5 py-3">
+            <div className="story-fade mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-teal/40 bg-teal/[0.06] px-5 py-3">
               <p className="flex items-center gap-2 text-xs font-bold leading-relaxed text-white/75">
-                <CheckCircle2 className="h-4 w-4 shrink-0 text-[#6EC7D1]" />
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-light-ink" />
                 {diagTopId === pathway.id
                   ? "هذا المسار اعتمده تشخيصك — بُني على إجاباتك أنت."
                   : "تستعرض مسارا مختلفا عن الذي اعتمده تشخيصك."}
               </p>
               <Link
                 to="/diagnostic"
-                className="flex items-center gap-1.5 rounded-full border border-[#38A7B4]/50 px-4 py-1.5 text-xs font-bold text-[#6EC7D1] transition hover:bg-[#38A7B4]/15"
+                className="flex items-center gap-1.5 rounded-full border border-teal/50 px-4 py-1.5 text-xs font-bold text-teal-light-ink transition hover:bg-teal/15"
               >
                 <ArrowRight className="h-3.5 w-3.5" />
                 عد لنتيجتك لإعادة التخصيص
@@ -398,8 +408,8 @@ export default function PathwayPage() {
 
           {/* تقريره الشخصي — مطوي افتراضيا في تبويب صغير */}
           {report && (
-            <details className="story-fade group mt-6 rounded-2xl border border-[#38A7B4]/35 bg-gradient-to-b from-[#12343B]/60 to-transparent">
-              <summary className="flex cursor-pointer list-none items-center gap-2 px-5 py-3 text-sm font-black text-[#6EC7D1] [&::-webkit-details-marker]:hidden">
+            <details className="story-fade group mt-6 rounded-2xl border border-teal/35 bg-gradient-to-b from-surface-teal/60 to-transparent">
+              <summary className="flex cursor-pointer list-none items-center gap-2 px-5 py-3 text-sm font-black text-teal-light-ink [&::-webkit-details-marker]:hidden">
                 <FileText className="h-4 w-4" />
                 تقريرك الشخصي — ما فهمناه عنك
                 <span className="mr-auto text-[10px] font-semibold text-white/40 transition group-open:rotate-180">▾</span>
@@ -408,14 +418,14 @@ export default function PathwayPage() {
                 <div className="space-y-3">
                   {report.lines.map((l) => (
                     <p key={l} className="flex items-start gap-3 text-sm leading-loose text-white/75">
-                      <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-[#38A7B4]" />
+                      <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-teal-ink" />
                       {l}
                     </p>
                   ))}
                 </div>
                 {report.notes && (
                   <p className="mt-4 rounded-xl border border-white/10 bg-white/[0.04] p-4 text-sm leading-relaxed text-white/60">
-                    <span className="font-bold text-[#6EC7D1]">كلمتك التي كتبتها بنفسك: </span>«{report.notes}»
+                    <span className="font-bold text-teal-light-ink">كلمتك التي كتبتها بنفسك: </span>«{report.notes}»
                   </p>
                 )}
                 <p className="mt-4 text-xs text-white/40">هذا التقرير مبني على إجاباتك في التشخيص — وسيطوره مستشارك معك في أول جلسة.</p>
@@ -443,14 +453,14 @@ export default function PathwayPage() {
                           aria-pressed={on}
                           className={`flex w-full items-center justify-between gap-3 rounded-xl border px-4 py-3 text-right transition ${
                             on
-                              ? "border-[#38A7B4] bg-[#38A7B4]/15"
-                              : "border-white/10 bg-white/[0.03] hover:border-[#38A7B4]/50"
+                              ? "border-teal bg-teal/15"
+                              : "border-white/10 bg-white/[0.03] hover:border-teal/50"
                           }`}
                         >
                           <span className="flex items-center gap-3">
                             <span
                               className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border transition ${
-                                on ? "border-[#38A7B4] bg-[#38A7B4] text-[#08272B]" : "border-white/25 text-transparent"
+                                on ? "border-teal bg-teal text-on-teal" : "border-white/25 text-transparent"
                               }`}
                             >
                               <CheckCircle2 className="h-3.5 w-3.5" />
@@ -478,7 +488,7 @@ export default function PathwayPage() {
                     </div>
                   )}
                   {picked.length > 0 && pickedTotal >= pathwayTotal && (
-                    <p className="mt-2 rounded-xl border border-[#FABC05]/40 bg-[#FABC05]/10 px-4 py-2.5 text-[11px] font-semibold leading-relaxed text-[#FABC05]">
+                    <p className="mt-2 rounded-xl border border-gold/40 bg-gold/10 px-4 py-2.5 text-[11px] font-semibold leading-relaxed text-gold-ink">
                       انتبه — مجموع مختاراتك {fmt(pickedTotal)} {pickedTotal > pathwayTotal ? "تجاوز" : "ساوى"} سعر المسار كاملا {fmt(pathwayTotal)}!
                       المسار الكامل أوفر لك ويشمل التشخيص والمتابعة ودورة إضافية هدية.
                     </p>
@@ -497,7 +507,7 @@ export default function PathwayPage() {
                     }
                     disabled={picked.length === 0}
                     variant="outline"
-                    className="mt-4 h-11 rounded-full border-[#38A7B4]/60 bg-transparent font-black text-[#6EC7D1] hover:bg-[#38A7B4]/10 hover:text-[#6EC7D1] disabled:opacity-40"
+                    className="mt-4 h-11 rounded-full border-teal/60 bg-transparent font-black text-teal-light-ink hover:bg-teal/10 hover:text-teal-light-ink disabled:opacity-40"
                   >
                     {picked.length === 0
                       ? "اختر دورة واحدة على الأقل"
@@ -507,21 +517,21 @@ export default function PathwayPage() {
                   </Button>
                 </div>
                 {/* المسار كاملا */}
-                <div className="relative flex flex-col rounded-2xl border border-[#FABC05]/30 bg-white/[0.03] p-5">
-                  <span className="absolute left-3 top-3 rounded-full bg-[#FABC05]/15 px-2.5 py-0.5 text-[10px] font-black text-[#FABC05]">الأوفر</span>
+                <div className="relative flex flex-col rounded-2xl border border-gold/30 bg-white/[0.03] p-5">
+                  <span className="absolute left-3 top-3 rounded-full bg-gold/15 px-2.5 py-0.5 text-[10px] font-black text-gold-ink">الأوفر</span>
                   <p className="font-black text-sm">المسار كاملا</p>
                   <p className="mt-1 text-xs text-white/50">كل الدورات + التشخيص الكامل + المنظومة التسع أدناه</p>
                   <div className="mt-4 flex items-end gap-2">
                     <span className="text-2xl font-black text-white">{fmt(pathwayTotal)}</span>
                     {savingPct > 0 && <span className="mb-0.5 text-sm text-white/45 line-through">{fmt(separateCost)}</span>}
                   </div>
-                  {savingPct > 0 && <p className="mt-1 text-xs text-[#6EC7D1]">بدل {fmt(separateCost)} لو اشتريت الدورات منفردة — توفير {savingPct}%</p>}
-                  <p className="mt-1.5 flex items-center gap-1.5 text-xs text-[#FABC05]">
+                  {savingPct > 0 && <p className="mt-1 text-xs text-teal-light-ink">بدل {fmt(separateCost)} لو اشتريت الدورات منفردة — توفير {savingPct}%</p>}
+                  <p className="mt-1.5 flex items-center gap-1.5 text-xs text-gold-ink">
                     <Gift className="h-3.5 w-3.5" /> + دورة إضافية مجانية من اختيارك هدية
                   </p>
                   <Button
                     onClick={() => setCheckout({ title: `مسار «${pathway.name}» كاملا (${pathwayCoursesList.length} دورات + هدية)`, amount: pathwayTotal, kind: "pathway" })}
-                    className="mt-4 h-11 rounded-full bg-[#FABC05] font-black text-[#0D0D0D] hover:bg-[#FABC05]/90"
+                    className="mt-4 h-11 rounded-full bg-gold font-black text-on-gold hover:bg-gold/90"
                   >
                     <CreditCard className="ml-2 h-4 w-4" />
                     ادفع عبر Stripe
@@ -535,7 +545,7 @@ export default function PathwayPage() {
           {/* ما ستحصل عليه مع المسار — من عروض أكاديمية وجيز */}
           <div className="story-fade mt-10 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
             <h2 className="flex items-center gap-2 text-xl font-black">
-              <Sparkles className="h-5 w-5 text-[#FABC05]" />
+              <Sparkles className="h-5 w-5 text-gold-ink" />
               مع المسار لا تأخذ دورات فقط — تأخذ منظومة كاملة
             </h2>
             <div className="mt-5 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
@@ -551,8 +561,8 @@ export default function PathwayPage() {
                 { icon: Briefcase, t: "منظومة ما بعد الإتمام", d: "لوحة وظائف وتوصيات مهنية وبرنامج سفراء وجيز" },
               ].map((b) => (
                 <div key={b.t} className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3.5">
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#38A7B4]/15">
-                    <b.icon className="h-4 w-4 text-[#6EC7D1]" />
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-teal/15">
+                    <b.icon className="h-4 w-4 text-teal-light-ink" />
                   </span>
                   <div className="min-w-0">
                     <p className="text-sm font-black leading-relaxed">{b.t}</p>
@@ -567,7 +577,7 @@ export default function PathwayPage() {
           <div className="story-fade mt-8 text-center">
             <a
               href="#buy"
-              className="inline-flex items-center gap-2 rounded-full bg-[#FABC05] px-10 py-4 text-lg font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90"
+              className="inline-flex items-center gap-2 rounded-full bg-gold px-10 py-4 text-lg font-black text-on-gold transition hover:bg-gold/90"
             >
               ابدأ الآن لنسختك القادمة
             </a>
@@ -576,12 +586,12 @@ export default function PathwayPage() {
           {/* مستشارك على واتساب */}
           <div className="story-fade mt-10 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
             <div className="flex flex-wrap items-center gap-5">
-              <div className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#38A7B4] to-[#247B84] text-xl font-black text-white">
+              <div className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-gradient-to-br from-teal to-teal-deep text-xl font-black text-white">
                 {advisor.name.replace(/^(أ\.|د\.|م\.)\s*/, "").charAt(0)}
               </div>
               <div className="flex-1">
                 <p className="font-black">{advisor.name}</p>
-                <p className="mt-0.5 text-sm text-[#6EC7D1]">{advisor.title} — مستشارك المخصص لهذا المسار</p>
+                <p className="mt-0.5 text-sm text-teal-light-ink">{advisor.title} — مستشارك المخصص لهذا المسار</p>
                 <p className="mt-2 text-sm leading-relaxed text-white/55">
                   متردد قبل الدفع؟ راسل مستشارك مباشرة — قرأ تشخيصك وسيجيبك بنفسه، لا رد آلي.
                 </p>

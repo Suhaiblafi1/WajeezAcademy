@@ -95,10 +95,10 @@ export default function OpenCohorts() {
             <article key={c.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-[11px] text-[#6EC7D1]">{c.courseTitle} <span dir="ltr" className="text-white/50">({c.courseId})</span></p>
+                  <p className="text-[11px] text-teal-light-ink">{c.courseTitle} <span dir="ltr" className="text-white/50">({c.courseId})</span></p>
                   <h2 className="mt-1 font-black">{c.title}</h2>
                 </div>
-                <span className="shrink-0 rounded-full border border-[#38A7B4]/40 px-3 py-1 text-[10px] font-bold text-[#6EC7D1]">
+                <span className="shrink-0 rounded-full border border-teal/40 px-3 py-1 text-[10px] font-bold text-teal-light-ink">
                   {STATUS_LABELS[c.status] ?? c.status}
                 </span>
               </div>
@@ -114,7 +114,7 @@ export default function OpenCohorts() {
               </dl>
 
               <div className="mt-4 flex items-center justify-between gap-3">
-                <p className="text-sm font-black text-[#FABC05]">
+                <p className="text-sm font-black text-gold-ink">
                   {c.price != null ? `${c.price} ${c.currency === "USD" ? "$" : (c.currency ?? "")}` : "السعر عند الموافقة"}
                 </p>
                 <p className="flex items-center gap-1 text-[11px] text-white/50">
@@ -131,10 +131,10 @@ export default function OpenCohorts() {
                 <div className="mt-3 space-y-2">
                   <textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)}
                     placeholder="ملاحظة للإدارة (اختياري) — مثال: أحتاج موعدا مسائيا"
-                    className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none" />
+                    className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/25 focus:border-teal focus:outline-none" />
                   <div className="flex gap-2">
                     <button onClick={() => void requestSeat(c.id)} disabled={busy || c.seatsLeft === 0}
-                      className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-full bg-[#FABC05] px-4 py-2 text-xs font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90 disabled:opacity-40">
+                      className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-full bg-gold px-4 py-2 text-xs font-black text-on-gold transition hover:bg-gold/90 disabled:opacity-40">
                       <Send className="h-3.5 w-3.5" /> {busy ? "جارٍ الإرسال…" : "تأكيد الطلب"}
                     </button>
                     <button onClick={() => { setNoteFor(null); setNote(""); }}
@@ -145,7 +145,7 @@ export default function OpenCohorts() {
                 </div>
               ) : (
                 <button onClick={() => setNoteFor(c.id)} disabled={c.seatsLeft === 0}
-                  className="mt-3 w-full cursor-pointer rounded-full bg-[#38A7B4] px-4 py-2.5 text-xs font-black text-[#08272B] transition hover:bg-[#38A7B4]/90 disabled:cursor-not-allowed disabled:opacity-40">
+                  className="mt-3 w-full cursor-pointer rounded-full bg-teal px-4 py-2.5 text-xs font-black text-on-teal transition hover:bg-teal/90 disabled:cursor-not-allowed disabled:opacity-40">
                   {c.seatsLeft === 0 ? "اكتمل العدد" : "اطلب مقعدا في هذه الشعبة"}
                 </button>
               )}

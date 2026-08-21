@@ -49,8 +49,8 @@ export default function Auth() {
       {/* بوابات الفريق الداخلية — تظهر للمالك بعد فتحها عبر ?preview=owner */}
       {owner && (
         <div className="mx-auto mt-12 max-w-2xl">
-          <div className="rounded-3xl border border-dashed border-[#FABC05]/30 bg-[#FABC05]/[0.04] p-6">
-            <div className="flex items-center gap-2 text-sm font-bold text-[#FABC05]">
+          <div className="rounded-3xl border border-dashed border-gold/30 bg-gold/[0.04] p-6">
+            <div className="flex items-center gap-2 text-sm font-bold text-gold-ink">
               <ShieldCheck className="h-4 w-4" />
               بوابات الفريق الداخلية — وضع اطلاع المالك
             </div>
@@ -62,9 +62,9 @@ export default function Auth() {
                 <button
                   key={g.to}
                   onClick={() => enterGateway(g.to)}
-                  className="group flex cursor-pointer items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-right transition hover:border-[#FABC05]/40"
+                  className="group flex cursor-pointer items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-right transition hover:border-gold/40"
                 >
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#FABC05]/10 text-[#FABC05]">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gold/10 text-gold-ink">
                     <g.icon className="h-5 w-5" />
                   </span>
                   <span>
@@ -76,7 +76,7 @@ export default function Auth() {
             </div>
           </div>
           <p className="mt-4 text-center text-xs text-white/55">
-            <Link to="/" className="underline-offset-4 transition hover:text-[#6EC7D1] hover:underline">
+            <Link to="/" className="underline-offset-4 transition hover:text-teal-light-ink hover:underline">
               عودة للرئيسية
             </Link>
           </p>

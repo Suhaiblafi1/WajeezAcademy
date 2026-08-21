@@ -57,7 +57,7 @@ interface ServerProfile {
 }
 
 const inputCls =
-  "w-full rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:border-[#38A7B4] focus:outline-none";
+  "w-full rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:border-teal focus:outline-none";
 const labelCls = "mb-1.5 block text-xs font-bold text-white/60";
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
@@ -243,7 +243,7 @@ export default function StudentAccount() {
   return (
     <PortalLayout title="حسابي وملفي الشخصي">
       {mode === "local" && (
-        <p className="mb-5 rounded-xl border border-dashed border-[#FABC05]/40 bg-[#FABC05]/5 px-4 py-2 text-center text-xs text-[#FABC05]">
+        <p className="mb-5 rounded-xl border border-dashed border-gold/40 bg-gold/5 px-4 py-2 text-center text-xs text-gold-ink">
           {isPreview() ? "وضع المعاينة — الحفظ هنا محلي على هذا الجهاز حتى يربط حسابك بالخادم." : "جلسة الخادم غير فعالة — الحفظ محلي مؤقتا."}
         </p>
       )}
@@ -254,7 +254,7 @@ export default function StudentAccount() {
           {form.avatarUrl ? (
             <img src={form.avatarUrl} alt="صورتك الشخصية" className="h-16 w-16 rounded-2xl border border-white/10 object-cover" />
           ) : (
-            <span className="grid h-16 w-16 place-items-center rounded-2xl bg-gradient-to-br from-[#38A7B4] to-[#247B84] text-2xl font-black text-white">
+            <span className="grid h-16 w-16 place-items-center rounded-2xl bg-gradient-to-br from-teal to-teal-deep text-2xl font-black text-white">
               {(form.displayName || "م").charAt(0)}
             </span>
           )}
@@ -265,7 +265,7 @@ export default function StudentAccount() {
             </p>
           </div>
           {mode === "server" && (
-            <span className="flex items-center gap-1.5 rounded-full border border-[#38A7B4]/40 bg-[#38A7B4]/10 px-3 py-1 text-[11px] font-bold text-[#6EC7D1]">
+            <span className="flex items-center gap-1.5 rounded-full border border-teal/40 bg-teal/10 px-3 py-1 text-[11px] font-bold text-teal-light-ink">
               <CheckCircle2 className="h-3.5 w-3.5" /> محفوظ في قاعدة البيانات
             </span>
           )}
@@ -282,13 +282,13 @@ export default function StudentAccount() {
 
       {/* المعلومات الشخصية */}
       <section className="mt-6 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
-        <h2 className="flex items-center gap-2 text-base font-black"><User className="h-4 w-4 text-[#6EC7D1]" /> معلومات شخصية</h2>
+        <h2 className="flex items-center gap-2 text-base font-black"><User className="h-4 w-4 text-teal-light-ink" /> معلومات شخصية</h2>
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <Field label="رقم الهاتف (واتساب)">
             <input dir="ltr" type="tel" autoComplete="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="+962…" className={`${inputCls} text-left`} />
           </Field>
           <Field label="الدولة">
-            <select value={form.country} onChange={(e) => set("country", e.target.value)} className={`${inputCls} [&>option]:bg-[#121B1D]`}>
+            <select value={form.country} onChange={(e) => set("country", e.target.value)} className={`${inputCls} [&>option]:bg-surface`}>
               <option value="">اختر دولتك</option>
               {ARAB_COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
@@ -300,14 +300,14 @@ export default function StudentAccount() {
             <input type="date" dir="ltr" value={form.birthDate} onChange={(e) => set("birthDate", e.target.value)} className={`${inputCls} text-left`} />
           </Field>
           <Field label="الجنس" hint="اختياري تماما">
-            <select value={form.gender} onChange={(e) => set("gender", e.target.value as ProfileForm["gender"])} className={`${inputCls} [&>option]:bg-[#121B1D]`}>
+            <select value={form.gender} onChange={(e) => set("gender", e.target.value as ProfileForm["gender"])} className={`${inputCls} [&>option]:bg-surface`}>
               <option value="">أفضّل عدم الذكر</option>
               <option value="male">ذكر</option>
               <option value="female">أنثى</option>
             </select>
           </Field>
           <Field label="اللغة المفضلة للتعلم">
-            <select value={form.preferredLanguage} onChange={(e) => set("preferredLanguage", e.target.value)} className={`${inputCls} [&>option]:bg-[#121B1D]`}>
+            <select value={form.preferredLanguage} onChange={(e) => set("preferredLanguage", e.target.value)} className={`${inputCls} [&>option]:bg-surface`}>
               <option value="">اختر</option>
               {LANGUAGES.map((l) => <option key={l} value={l}>{l}</option>)}
             </select>
@@ -317,10 +317,10 @@ export default function StudentAccount() {
 
       {/* التعليم */}
       <section className="mt-6 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
-        <h2 className="flex items-center gap-2 text-base font-black"><BookOpen className="h-4 w-4 text-[#6EC7D1]" /> التعليم</h2>
+        <h2 className="flex items-center gap-2 text-base font-black"><BookOpen className="h-4 w-4 text-teal-light-ink" /> التعليم</h2>
         <div className="mt-5 grid gap-4 sm:grid-cols-3">
           <Field label="المؤهل العلمي">
-            <select value={form.education} onChange={(e) => set("education", e.target.value)} className={`${inputCls} [&>option]:bg-[#121B1D]`}>
+            <select value={form.education} onChange={(e) => set("education", e.target.value)} className={`${inputCls} [&>option]:bg-surface`}>
               <option value="">اختر</option>
               {EDUCATION_LEVELS.map((l) => <option key={l} value={l}>{l}</option>)}
             </select>
@@ -336,7 +336,7 @@ export default function StudentAccount() {
 
       {/* الحياة المهنية */}
       <section className="mt-6 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
-        <h2 className="flex items-center gap-2 text-base font-black"><RouteIcon className="h-4 w-4 text-[#6EC7D1]" /> حياتك المهنية وهدفك</h2>
+        <h2 className="flex items-center gap-2 text-base font-black"><RouteIcon className="h-4 w-4 text-teal-light-ink" /> حياتك المهنية وهدفك</h2>
         <div className="mt-5 grid gap-4 sm:grid-cols-3">
           <Field label="الوظيفة الحالية">
             <input value={form.jobTitle} onChange={(e) => set("jobTitle", e.target.value)} className={inputCls} />
@@ -345,7 +345,7 @@ export default function StudentAccount() {
             <input value={form.company} onChange={(e) => set("company", e.target.value)} className={inputCls} />
           </Field>
           <Field label="سنوات الخبرة">
-            <select value={form.experienceYears} onChange={(e) => set("experienceYears", e.target.value)} className={`${inputCls} [&>option]:bg-[#121B1D]`}>
+            <select value={form.experienceYears} onChange={(e) => set("experienceYears", e.target.value)} className={`${inputCls} [&>option]:bg-surface`}>
               <option value="">اختر النطاق</option>
               {EXPERIENCE_RANGES.map((r) => <option key={r} value={r}>{r === "12+" ? "أكثر من ١٢ سنة" : `${r} سنوات`}</option>)}
             </select>
@@ -370,7 +370,7 @@ export default function StudentAccount() {
                 placeholder="اكتب اهتماما ثم Enter — حتى 12"
                 className={inputCls}
               />
-              <button type="button" onClick={addInterest} className="shrink-0 cursor-pointer rounded-xl border border-[#38A7B4]/50 px-4 text-xs font-bold text-[#6EC7D1] hover:bg-[#38A7B4]/10">
+              <button type="button" onClick={addInterest} className="shrink-0 cursor-pointer rounded-xl border border-teal/50 px-4 text-xs font-bold text-teal-light-ink hover:bg-teal/10">
                 أضف
               </button>
             </span>
@@ -378,7 +378,7 @@ export default function StudentAccount() {
           {form.interests.length > 0 && (
             <div className="mt-2.5 flex flex-wrap gap-1.5">
               {form.interests.map((i) => (
-                <span key={i} className="inline-flex items-center gap-1.5 rounded-full border border-[#38A7B4]/40 bg-[#38A7B4]/10 px-2.5 py-1 text-[11px] font-bold text-[#6EC7D1]">
+                <span key={i} className="inline-flex items-center gap-1.5 rounded-full border border-teal/40 bg-teal/10 px-2.5 py-1 text-[11px] font-bold text-teal-light-ink">
                   {i}
                   <button type="button" aria-label={`أزل ${i}`} onClick={() => set("interests", form.interests.filter((x) => x !== i))} className="cursor-pointer text-white/50 hover:text-white">
                     <X className="h-3 w-3" />
@@ -393,10 +393,10 @@ export default function StudentAccount() {
       {/* حفظ */}
       <div className="mt-6 flex flex-col items-center gap-3">
         {err && <p role="alert" className="rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-2.5 text-xs font-semibold text-red-300">{err}</p>}
-        {savedMsg && <p role="status" className="rounded-xl border border-[#38A7B4]/40 bg-[#38A7B4]/10 px-4 py-2.5 text-xs font-bold text-[#6EC7D1]">{savedMsg}</p>}
+        {savedMsg && <p role="status" className="rounded-xl border border-teal/40 bg-teal/10 px-4 py-2.5 text-xs font-bold text-teal-light-ink">{savedMsg}</p>}
         <button
           onClick={save} disabled={!canSave || busy}
-          className="flex h-12 cursor-pointer items-center gap-2 rounded-full bg-[#FABC05] px-10 font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90 disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex h-12 cursor-pointer items-center gap-2 rounded-full bg-gold px-10 font-black text-on-gold transition hover:bg-gold/90 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           احفظ ملفي
@@ -405,7 +405,7 @@ export default function StudentAccount() {
 
       {/* روابط بقية أقسام الملف */}
       <section className="mt-8 rounded-3xl border border-white/10 bg-white/[0.02] p-6 md:p-8">
-        <h2 className="flex items-center gap-2 text-base font-black"><FileText className="h-4 w-4 text-[#6EC7D1]" /> بقية ملفك — في مكانها الطبيعي</h2>
+        <h2 className="flex items-center gap-2 text-base font-black"><FileText className="h-4 w-4 text-teal-light-ink" /> بقية ملفك — في مكانها الطبيعي</h2>
         <div className="mt-5 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
           {[
             { to: "/student", icon: RouteIcon, t: "مساراتي وتقدمي", d: "مسارك النشط ونسبة إنجازه" },
@@ -415,8 +415,8 @@ export default function StudentAccount() {
             { to: "/student/cv", icon: FileText, t: "سيرتي الذاتية", d: "رفع بموافقة صريحة وحذف موثق" },
             { to: "/diagnostic", icon: MessageCircle, t: "نتائج تشخيصي", d: "آخر نتيجة محفوظة وتقريرك الشخصي" },
           ].map((x) => (
-            <Link key={x.t} to={x.to} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 transition hover:border-[#38A7B4]/50">
-              <x.icon className="h-4 w-4 text-[#6EC7D1]" />
+            <Link key={x.t} to={x.to} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 transition hover:border-teal/50">
+              <x.icon className="h-4 w-4 text-teal-light-ink" />
               <p className="mt-2 text-sm font-black">{x.t}</p>
               <p className="mt-1 text-[11px] leading-relaxed text-white/45">{x.d}</p>
             </Link>
@@ -426,18 +426,18 @@ export default function StudentAccount() {
 
       {/* بيانات الفوترة والطلبات */}
       <section className="mt-6 rounded-3xl border border-white/10 bg-white/[0.02] p-6 md:p-8">
-        <h2 className="flex items-center gap-2 text-base font-black"><Lock className="h-4 w-4 text-[#6EC7D1]" /> الفوترة والطلبات</h2>
+        <h2 className="flex items-center gap-2 text-base font-black"><Lock className="h-4 w-4 text-teal-light-ink" /> الفوترة والطلبات</h2>
         <p className="mt-2 text-sm leading-7 text-white/55">
           فواتيرك وطلباتك ودفعاتك — بأرقامها المرجعية وسجل مدفوعاتها — في صفحة{" "}
-          <Link to="/student/billing" className="font-bold text-[#6EC7D1] underline-offset-4 hover:underline">فواتيري</Link>.
-          لأي طلب استرداد أو مراجعة فاتورة: <Link to="/contact" className="font-bold text-[#6EC7D1] underline-offset-4 hover:underline">صفحة التواصل</Link> — اختر «طلب استرداد».
+          <Link to="/student/billing" className="font-bold text-teal-light-ink underline-offset-4 hover:underline">فواتيري</Link>.
+          لأي طلب استرداد أو مراجعة فاتورة: <Link to="/contact" className="font-bold text-teal-light-ink underline-offset-4 hover:underline">صفحة التواصل</Link> — اختر «طلب استرداد».
         </p>
       </section>
 
       {/* الأمان والجلسات — إجراءات حقيقية على الخادم، تظهر فقط مع جلسة فعالة */}
       {mode === "server" && (
         <section className="mt-6 rounded-3xl border border-white/10 bg-white/[0.02] p-6 md:p-8">
-          <h2 className="flex items-center gap-2 text-base font-black"><ShieldAlert className="h-4 w-4 text-[#6EC7D1]" /> الأمان والجلسات</h2>
+          <h2 className="flex items-center gap-2 text-base font-black"><ShieldAlert className="h-4 w-4 text-teal-light-ink" /> الأمان والجلسات</h2>
 
           <div className="mt-5 flex flex-wrap items-center justify-between gap-4">
             <div className="min-w-0 flex-1">
@@ -448,7 +448,7 @@ export default function StudentAccount() {
             </div>
             <button
               type="button" onClick={logoutAll} disabled={!!secBusy}
-              className="flex shrink-0 cursor-pointer items-center gap-2 rounded-full border border-white/20 px-5 py-2.5 text-xs font-bold text-white/80 transition hover:border-[#38A7B4]/60 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex shrink-0 cursor-pointer items-center gap-2 rounded-full border border-white/20 px-5 py-2.5 text-xs font-bold text-white/80 transition hover:border-teal/60 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
             >
               {secBusy === "logoutAll" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LogOut className="h-3.5 w-3.5" />}
               إنهاء كل الجلسات
@@ -492,7 +492,7 @@ export default function StudentAccount() {
           </div>
 
           {secErr && <p role="alert" className="mt-4 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-2.5 text-xs font-semibold text-red-300">{secErr}</p>}
-          {secMsg && <p role="status" className="mt-4 rounded-xl border border-[#38A7B4]/40 bg-[#38A7B4]/10 px-4 py-2.5 text-xs font-bold text-[#6EC7D1]">{secMsg}</p>}
+          {secMsg && <p role="status" className="mt-4 rounded-xl border border-teal/40 bg-teal/10 px-4 py-2.5 text-xs font-bold text-teal-light-ink">{secMsg}</p>}
         </section>
       )}
     </PortalLayout>

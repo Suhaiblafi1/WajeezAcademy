@@ -49,7 +49,7 @@ const ENTITY_NOTE: Partial<Record<EntityId, string>> = {
 }
 
 const FIELD =
-  'w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder:text-white/30 outline-none transition focus:border-[#38A7B4]'
+  'w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder:text-white/30 outline-none transition focus:border-teal'
 const LABEL = 'mb-1.5 block text-xs font-bold text-white/60'
 
 export default function Contact() {
@@ -128,18 +128,18 @@ export default function Contact() {
           </p>
           <div className="mt-7 space-y-3">
             <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
-              <Mail className="h-4 w-4 shrink-0 text-[#6EC7D1]" />
-              <a href={`mailto:${CONTACT.email}`} dir="ltr" className="text-sm font-bold text-[#6EC7D1] underline-offset-4 hover:underline">
+              <Mail className="h-4 w-4 shrink-0 text-teal-light-ink" />
+              <a href={`mailto:${CONTACT.email}`} dir="ltr" className="text-sm font-bold text-teal-light-ink underline-offset-4 hover:underline">
                 {CONTACT.email}
               </a>
               <span className="mr-auto text-xs text-white/45">نرد خلال يوم عمل</span>
             </div>
             <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
-              <MapPin className="h-4 w-4 shrink-0 text-[#6EC7D1]" />
+              <MapPin className="h-4 w-4 shrink-0 text-teal-light-ink" />
               <p className="text-sm text-white/75">{CONTACT.address}</p>
             </div>
             <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
-              <Building2 className="mt-1 h-4 w-4 shrink-0 text-[#FABC05]" />
+              <Building2 className="mt-1 h-4 w-4 shrink-0 text-gold-ink" />
               <p className="text-xs leading-6 text-white/60">
                 <span className="font-bold text-white/80">تتواصل باسم جهة؟ </span>
                 حدد نوعها في النموذج — يظهر لك ما يهم جهتك فورا، ويصل طلبك لفريق الحلول المؤسسية مباشرة.
@@ -148,7 +148,7 @@ export default function Contact() {
           </div>
           <p className="mt-5 rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3 text-xs leading-6 text-white/50">
             إن كان سؤالك «أي مسار يناسبني؟» — فأصدق إجابة يعطيها لك{' '}
-            <Link to="/diagnostic" className="font-semibold text-[#6EC7D1] underline-offset-4 hover:underline">التشخيص الذكي</Link>
+            <Link to="/diagnostic" className="font-semibold text-teal-light-ink underline-offset-4 hover:underline">التشخيص الذكي</Link>
             {' '}في دقائق، مجانا ودون التزام.
           </p>
         </div>
@@ -156,16 +156,16 @@ export default function Contact() {
         {/* النموذج */}
         <div className="lg:col-span-3">
           {ref ? (
-            <div className="flex h-full flex-col items-center justify-center rounded-3xl border border-[#38A7B4]/30 bg-[#38A7B4]/5 p-10 text-center">
-              <span className="grid h-14 w-14 place-items-center rounded-2xl bg-[#38A7B4]/15">
-                <CheckCircle2 className="h-7 w-7 text-[#6EC7D1]" />
+            <div className="flex h-full flex-col items-center justify-center rounded-3xl border border-teal/30 bg-teal/5 p-10 text-center">
+              <span className="grid h-14 w-14 place-items-center rounded-2xl bg-teal/15">
+                <CheckCircle2 className="h-7 w-7 text-teal-light-ink" />
               </span>
               <h2 className="mt-5 text-2xl font-black">وصلت رسالتك</h2>
               <p className="mt-3 max-w-sm text-sm leading-7 text-white/60">
-                رقمك المرجعي <span dir="ltr" className="font-bold text-[#6EC7D1]">{ref}</span> — احتفظ به لأي متابعة.
+                رقمك المرجعي <span dir="ltr" className="font-bold text-teal-light-ink">{ref}</span> — احتفظ به لأي متابعة.
                 سيرد عليك فريقنا خلال يوم عمل واحد.
               </p>
-              <Link to="/" className="mt-6 text-sm font-semibold text-[#6EC7D1] underline-offset-4 hover:underline">
+              <Link to="/" className="mt-6 text-sm font-semibold text-teal-light-ink underline-offset-4 hover:underline">
                 عودة للرئيسية
               </Link>
             </div>
@@ -183,7 +183,7 @@ export default function Contact() {
                       onClick={() => setEntity(e.id)}
                       className={`cursor-pointer rounded-full border px-4 py-2 text-xs font-bold transition ${
                         entity === e.id
-                          ? 'border-[#38A7B4] bg-[#38A7B4]/15 text-[#6EC7D1]'
+                          ? 'border-teal bg-teal/15 text-teal-light-ink'
                           : 'border-white/10 text-white/55 hover:border-white/25'
                       }`}
                     >
@@ -195,16 +195,16 @@ export default function Contact() {
 
               {/* مخطط الأثر للجهات — يظهر فقط عندما تكون الجهة مؤسسية */}
               {institutional && (
-                <div className="mt-5 rounded-2xl border border-[#38A7B4]/25 bg-[#38A7B4]/[0.05] p-5">
-                  <p className="text-xs font-black text-[#6EC7D1]">كيف يظهر الأثر عند جهتك؟</p>
+                <div className="mt-5 rounded-2xl border border-teal/25 bg-teal/[0.05] p-5">
+                  <p className="text-xs font-black text-teal-light-ink">كيف يظهر الأثر عند جهتك؟</p>
                   <ol className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
                     {IMPACT_STEPS.map((s, i) => (
                       <li key={s.t} className="relative rounded-xl border border-white/10 bg-black/20 p-3">
-                        <span className="grid h-8 w-8 place-items-center rounded-lg bg-[#38A7B4]/15">
-                          <s.icon className="h-4 w-4 text-[#6EC7D1]" />
+                        <span className="grid h-8 w-8 place-items-center rounded-lg bg-teal/15">
+                          <s.icon className="h-4 w-4 text-teal-light-ink" />
                         </span>
                         <p className="mt-2 text-[11px] font-black leading-snug">
-                          <span className="text-[#FABC05]">{i + 1}. </span>{s.t}
+                          <span className="text-gold-ink">{i + 1}. </span>{s.t}
                         </p>
                         <p className="mt-1 text-[10px] leading-4 text-white/50">{s.d}</p>
                       </li>
@@ -242,7 +242,7 @@ export default function Contact() {
               <div className="mt-4">
                 <label htmlFor="ct-topic" className={LABEL}>نوع الطلب</label>
                 <select id="ct-topic" name="topic" value={topic} onChange={(e) => setTopic(e.target.value)}
-                  className={`${FIELD} cursor-pointer [&>option]:bg-[#121B1D]`}>
+                  className={`${FIELD} cursor-pointer [&>option]:bg-surface`}>
                   {TOPICS.map((t) => <option key={t} value={t}>{t}</option>)}
                 </select>
               </div>
@@ -255,10 +255,10 @@ export default function Contact() {
               </div>
               <label htmlFor="ct-consent" className="mt-4 flex cursor-pointer items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.03] p-3">
                 <input id="ct-consent" name="consent" type="checkbox" required checked={consent}
-                  onChange={(e) => setConsent(e.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-[#38A7B4]" />
+                  onChange={(e) => setConsent(e.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-teal" />
                 <span className="text-xs leading-relaxed text-white/60">
                   أوافق على معالجة بياناتي للرد على طلبي وفق{' '}
-                  <Link to="/p/privacy" className="font-bold text-white/75 underline underline-offset-4 hover:text-[#6EC7D1]">سياسة الخصوصية</Link>
+                  <Link to="/p/privacy" className="font-bold text-white/75 underline underline-offset-4 hover:text-teal-light-ink">سياسة الخصوصية</Link>
                 </span>
               </label>
               {err && (
@@ -267,7 +267,7 @@ export default function Contact() {
                 </p>
               )}
               <button type="submit" disabled={busy || !valid}
-                className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#FABC05] text-sm font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90 disabled:cursor-not-allowed disabled:opacity-40">
+                className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gold text-sm font-black text-on-gold transition hover:bg-gold/90 disabled:cursor-not-allowed disabled:opacity-40">
                 <Send className="h-4 w-4" />
                 {busy ? 'جارٍ الإرسال…' : 'أرسل رسالتك'}
               </button>
@@ -277,7 +277,7 @@ export default function Contact() {
       </div>
 
       {/* تهدئة للمتردد — التشخيص يجيب عن سؤال المسار دون رسالة */}
-      <div className="mt-10 flex items-center justify-center gap-2 text-xs text-white/40">
+      <div className="mt-10 flex items-center justify-center gap-2 text-xs text-white/55">
         <Compass className="h-3.5 w-3.5" />
         سؤالك «أي مسار يناسبني؟» — التشخيص الذكي يجيب عنه في دقائق دون أن ترسل شيئا
       </div>

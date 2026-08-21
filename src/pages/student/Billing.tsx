@@ -61,11 +61,11 @@ export default function Billing() {
 
   return (
     <PortalLayout title="فواتيري وطلباتي">
-      {flash && <p className="mb-4 rounded-xl border border-[#38A7B4]/40 bg-[#38A7B4]/10 px-4 py-3 text-sm font-bold text-[#6EC7D1]" role="status">{flash}</p>}
+      {flash && <p className="mb-4 rounded-xl border border-teal/40 bg-teal/10 px-4 py-3 text-sm font-bold text-teal-light-ink" role="status">{flash}</p>}
       {error && <p className="mb-4 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-200">{error}</p>}
 
       {loading ? (
-        <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-[#38A7B4]" /></div>
+        <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" /></div>
       ) : rows.length === 0 ? (
         <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
           <ReceiptText className="h-12 w-12 text-white/20" />
@@ -85,7 +85,7 @@ export default function Billing() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-lg font-black">{o.total} <span className="text-xs font-normal text-white/50">{o.currency}</span></span>
-                  <span className={`rounded-full border px-3 py-1 text-[11px] font-bold ${o.status === "paid" ? "border-emerald-400/30 text-emerald-300" : "border-[#FABC05]/40 text-[#FABC05]"}`}>
+                  <span className={`rounded-full border px-3 py-1 text-[11px] font-bold ${o.status === "paid" ? "border-emerald-400/30 text-emerald-300" : "border-gold/40 text-gold-ink"}`}>
                     {ORDER_STATUS[o.status] ?? o.status}
                   </span>
                 </div>
@@ -94,20 +94,20 @@ export default function Billing() {
               {o.status === "pending" && provider.driver !== "manual" && (
                 <div className="mt-4">
                   <button disabled={busy === o.id} onClick={() => void pay(o)}
-                    className="flex cursor-pointer items-center gap-2 rounded-full bg-[#FABC05] px-6 py-2.5 text-xs font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90 disabled:opacity-40">
+                    className="flex cursor-pointer items-center gap-2 rounded-full bg-gold px-6 py-2.5 text-xs font-black text-on-gold transition hover:bg-gold/90 disabled:opacity-40">
                     {busy === o.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CreditCard className="h-3.5 w-3.5" />}
                     {PAY_LABEL[provider.driver] ?? PAY_LABEL.test}
                   </button>
                   {provider.driver !== "test" && (
                     <p className="mt-2 flex items-center gap-1.5 text-[10px] text-white/45">
-                      <ShieldCheck className="h-3 w-3 text-[#38A7B4]" />
+                      <ShieldCheck className="h-3 w-3 text-teal-ink" />
                       تُحوَّل لصفحة دفع مستضافة عند المزود — لا تمر بيانات بطاقتك بخوادمنا، ويُفتح وصولك فور تأكيد المزود.
                     </p>
                   )}
                 </div>
               )}
               {o.status === "pending" && provider.driver === "manual" && (
-                <p className="mt-4 rounded-xl border border-[#FABC05]/30 bg-[#FABC05]/5 px-4 py-2.5 text-xs font-bold text-[#FABC05]">
+                <p className="mt-4 rounded-xl border border-gold/30 bg-gold/5 px-4 py-2.5 text-xs font-bold text-gold-ink">
                   {PAY_LABEL.manual}
                 </p>
               )}
@@ -126,7 +126,7 @@ export default function Billing() {
                           دفعة {p.amount} {o.invoice!.currency} — {p.status === "succeeded" ? "ناجحة" : p.status === "pending" ? "بانتظار تأكيد المزود" : p.status}
                           {p.method && <span className="text-white/40">({p.method})</span>}
                           {p.refunds.map((r) => (
-                            <span key={r.id} className="flex items-center gap-1 rounded-full border border-[#FABC05]/30 px-2 py-0.5 text-[10px] text-[#FABC05]">
+                            <span key={r.id} className="flex items-center gap-1 rounded-full border border-gold/30 px-2 py-0.5 text-[10px] text-gold-ink">
                               <RotateCcw className="h-2.5 w-2.5" /> استرداد {r.amount} — {r.status}
                             </span>
                           ))}

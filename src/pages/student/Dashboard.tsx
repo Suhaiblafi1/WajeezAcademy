@@ -70,7 +70,7 @@ export default function StudentDashboard() {
   if (sessionUser && rows === null) {
     return (
       <PortalLayout title={`${greeting()} يا ${sessionUser.displayName.split(" ")[0]}`}>
-        <div className="grid place-items-center py-24"><Loader2 className="h-8 w-8 animate-spin text-[#38A7B4]" /></div>
+        <div className="grid place-items-center py-24"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" /></div>
       </PortalLayout>
     );
   }
@@ -160,32 +160,32 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
               />
             </svg>
             <span className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-xl font-black text-[#6EC7D1]">{pct}%</span>
+              <span className="text-xl font-black text-teal-light-ink">{pct}%</span>
               <span className="text-[9px] text-white/50">من شعبك</span>
             </span>
           </div>
         </div>
         <div className="mt-4 h-3 overflow-hidden rounded-full bg-white/10">
-          <div className="h-full rounded-full bg-gradient-to-l from-[#38A7B4] to-[#6EC7D1] transition-all" style={{ width: `${Math.max(3, pct)}%` }} />
+          <div className="h-full rounded-full bg-gradient-to-l from-teal to-teal-light transition-all" style={{ width: `${Math.max(3, pct)}%` }} />
         </div>
       </section>
 
       <div className="mt-6 grid gap-5 lg:grid-cols-3">
         {/* التالي الآن — حقيقي */}
-        <section className="rounded-3xl border border-[#38A7B4]/40 bg-gradient-to-b from-[#38A7B4]/10 to-transparent p-6 lg:col-span-2">
-          <div className="flex items-center gap-2 text-sm font-bold text-[#6EC7D1]">
+        <section className="rounded-3xl border border-teal/40 bg-gradient-to-b from-teal/10 to-transparent p-6 lg:col-span-2">
+          <div className="flex items-center gap-2 text-sm font-bold text-teal-light-ink">
             <Target className="h-4 w-4" /> التالي الآن
           </div>
           <h3 className="mt-3 text-2xl font-black leading-snug">{next.label}</h3>
           <p className="mt-2 text-sm leading-7 text-white/60">{next.detail}</p>
           {next.external ? (
             <a href={next.href} target="_blank" rel="noreferrer"
-              className="mt-5 inline-flex items-center gap-2 rounded-full bg-[#38A7B4] px-6 py-3 font-black text-[#08272B] transition hover:bg-[#6EC7D1]">
+              className="mt-5 inline-flex items-center gap-2 rounded-full bg-teal px-6 py-3 font-black text-on-teal transition hover:bg-teal-light">
               {next.cta} <Video className="h-4 w-4" />
             </a>
           ) : (
             <Link to={next.href}
-              className="mt-5 inline-flex items-center gap-2 rounded-full bg-[#38A7B4] px-6 py-3 font-black text-[#08272B] transition hover:bg-[#6EC7D1]">
+              className="mt-5 inline-flex items-center gap-2 rounded-full bg-teal px-6 py-3 font-black text-on-teal transition hover:bg-teal-light">
               {next.cta} <ArrowLeft className="h-4 w-4" />
             </Link>
           )}
@@ -195,9 +195,9 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
         <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-bold text-white/70">
-              <BookOpen className="h-4 w-4 text-[#6EC7D1]" /> شعبي
+              <BookOpen className="h-4 w-4 text-teal-light-ink" /> شعبي
             </div>
-            <Link to="/student/learning" className="text-[11px] font-bold text-[#6EC7D1] hover:text-white">الكل ←</Link>
+            <Link to="/student/learning" className="text-[11px] font-bold text-teal-light-ink hover:text-white">الكل ←</Link>
           </div>
           <div className="mt-4 space-y-3">
             {rows.slice(0, 3).map((r) => (
@@ -208,7 +208,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
                 </p>
                 {r.courseProgress && (
                   <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/10">
-                    <div className="h-full rounded-full bg-[#38A7B4]" style={{ width: `${r.courseProgress.percent}%` }} />
+                    <div className="h-full rounded-full bg-teal" style={{ width: `${r.courseProgress.percent}%` }} />
                   </div>
                 )}
               </div>
@@ -222,13 +222,13 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
         <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 lg:col-span-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-bold text-white/70">
-              <CalendarDays className="h-4 w-4 text-[#FABC05]" /> جدولي — الجلسات القادمة
+              <CalendarDays className="h-4 w-4 text-gold-ink" /> جدولي — الجلسات القادمة
             </div>
-            <Link to="/student/learning" className="text-[11px] font-bold text-[#6EC7D1] hover:text-white">تعلّمي ←</Link>
+            <Link to="/student/learning" className="text-[11px] font-bold text-teal-light-ink hover:text-white">تعلّمي ←</Link>
           </div>
           <div className="mt-4 space-y-2.5">
             {details === null ? (
-              <div className="grid place-items-center py-8"><Loader2 className="h-6 w-6 animate-spin text-[#38A7B4]" /></div>
+              <div className="grid place-items-center py-8"><Loader2 className="h-6 w-6 animate-spin text-teal-ink" /></div>
             ) : upcoming.length === 0 ? (
               <p className="rounded-2xl border border-white/8 bg-black/20 px-4 py-6 text-center text-xs text-white/50">
                 لا جلسات مجدولة قادمة — عند جدولة شعبتك تظهر هنا مع رابط الانضمام.
@@ -237,7 +237,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
               upcoming.map((s) => (
                 <div key={s.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
                   <div className="flex items-center gap-3">
-                    <span className="grid h-9 w-9 place-items-center rounded-xl bg-[#FABC05]/15 text-[#FABC05]">
+                    <span className="grid h-9 w-9 place-items-center rounded-xl bg-gold/15 text-gold-ink">
                       <Video className="h-4 w-4" />
                     </span>
                     <div>
@@ -247,12 +247,12 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
                   </div>
                   {s.zoom ? (
                     <a href={s.zoom.learnerUrl ?? s.zoom.joinUrl} target="_blank" rel="noreferrer"
-                      className="rounded-full border border-[#38A7B4]/40 px-4 py-1.5 text-xs font-bold text-[#6EC7D1] transition hover:bg-[#38A7B4] hover:text-[#08272B]">
+                      className="rounded-full border border-teal/40 px-4 py-1.5 text-xs font-bold text-teal-light-ink transition hover:bg-teal hover:text-on-teal">
                       انضم الآن
                     </a>
                   ) : (
                     <Link to="/student/learning"
-                      className="rounded-full border border-[#38A7B4]/40 px-4 py-1.5 text-xs font-bold text-[#6EC7D1] transition hover:bg-[#38A7B4] hover:text-[#08272B]">
+                      className="rounded-full border border-teal/40 px-4 py-1.5 text-xs font-bold text-teal-light-ink transition hover:bg-teal hover:text-on-teal">
                       التفاصيل
                     </Link>
                   )}
@@ -265,14 +265,14 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
           {pendingAssessments.length > 0 && (
             <div className="mt-5 border-t border-white/8 pt-4">
               <div className="flex items-center gap-2 text-sm font-bold text-white/70">
-                <Send className="h-4 w-4 text-[#6EC7D1]" /> بانتظار تسليمك ({pendingAssessments.length})
+                <Send className="h-4 w-4 text-teal-light-ink" /> بانتظار تسليمك ({pendingAssessments.length})
               </div>
               <div className="mt-3 space-y-2">
                 {pendingAssessments.slice(0, 3).map((a) => (
                   <Link key={a.id} to="/student/learning"
-                    className="flex items-center justify-between gap-3 rounded-2xl border border-[#FABC05]/25 bg-[#FABC05]/5 px-4 py-2.5 transition hover:border-[#FABC05]/50">
+                    className="flex items-center justify-between gap-3 rounded-2xl border border-gold/25 bg-gold/5 px-4 py-2.5 transition hover:border-gold/50">
                     <span className="text-xs font-bold text-white/85">{a.title} <span className="font-normal text-white/45">· {a.cohortTitle}</span></span>
-                    {a.dueAt && <span className="shrink-0 text-[10px] text-[#FABC05]">يستحق {new Date(a.dueAt).toLocaleDateString("ar-JO")}</span>}
+                    {a.dueAt && <span className="shrink-0 text-[10px] text-gold-ink">يستحق {new Date(a.dueAt).toLocaleDateString("ar-JO")}</span>}
                   </Link>
                 ))}
               </div>
@@ -284,34 +284,34 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
         <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-bold text-white/70">
-              <Bell className="h-4 w-4 text-[#FABC05]" /> الإشعارات
+              <Bell className="h-4 w-4 text-gold-ink" /> الإشعارات
             </div>
-            {unread > 0 && <span className="rounded-full bg-[#FABC05] px-2 py-0.5 text-[10px] font-black text-[#0D0D0D]">{unread} جديد</span>}
+            {unread > 0 && <span className="rounded-full bg-gold px-2 py-0.5 text-[10px] font-black text-on-gold">{unread} جديد</span>}
           </div>
           <div className="mt-4 space-y-2.5">
             {notifs.length === 0 && <p className="rounded-xl border border-white/5 px-3 py-6 text-center text-xs text-white/45">لا إشعارات بعد</p>}
             {notifs.map((n) => (
-              <p key={n.id} className={`rounded-xl border px-3 py-2.5 text-xs leading-6 ${n.status === "read" ? "border-white/5 text-white/50" : "border-[#38A7B4]/25 bg-[#38A7B4]/5 text-white/75"}`}>
+              <p key={n.id} className={`rounded-xl border px-3 py-2.5 text-xs leading-6 ${n.status === "read" ? "border-white/5 text-white/50" : "border-teal/25 bg-teal/5 text-white/75"}`}>
                 <span className="block font-bold">{n.title}</span>
                 {n.body}
               </p>
             ))}
           </div>
-          <Link to="/student/notifications" className="mt-3 block text-center text-[11px] font-bold text-[#6EC7D1] hover:text-white">كل الإشعارات ←</Link>
+          <Link to="/student/notifications" className="mt-3 block text-center text-[11px] font-bold text-teal-light-ink hover:text-white">كل الإشعارات ←</Link>
         </section>
       </div>
 
       {/* روابط سريعة */}
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
-        <Link to="/student/cohorts" className="block rounded-3xl border border-[#38A7B4]/30 bg-[#38A7B4]/5 p-5 transition hover:border-[#38A7B4]/60">
-          <div className="flex items-center gap-2 text-sm font-bold text-[#6EC7D1]">
+        <Link to="/student/cohorts" className="block rounded-3xl border border-teal/30 bg-teal/5 p-5 transition hover:border-teal/60">
+          <div className="flex items-center gap-2 text-sm font-bold text-teal-light-ink">
             <CalendarDays className="h-4 w-4" /> الشعب المفتوحة
           </div>
           <p className="mt-2 text-xs leading-6 text-white/55">تصفح الشعب القادمة واطلب التسجيل فيما يناسبك</p>
         </Link>
         <Link to="/student/certificates" className="block rounded-3xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-white/30">
           <div className="flex items-center gap-2 text-sm font-bold text-white/70">
-            <Award className="h-4 w-4 text-[#FABC05]" /> شهاداتي {certCount > 0 && <span className="rounded-full bg-[#FABC05]/15 px-2 py-0.5 text-[10px] text-[#FABC05]">{certCount}</span>}
+            <Award className="h-4 w-4 text-gold-ink" /> شهاداتي {certCount > 0 && <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[10px] text-gold-ink">{certCount}</span>}
           </div>
           <p className="mt-2 text-xs leading-6 text-white/55">أرقام تحقق عامة تُشاركها مع أي جهة</p>
         </Link>
@@ -327,7 +327,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
         <Sparkles className="h-3.5 w-3.5" />
         <Clock3 className="h-3.5 w-3.5" />
         تقدمك يُحفظ في الخادم تلقائيا — أكمل من أي جهاز
-        <CheckCircle2 className="h-3.5 w-3.5 text-[#38A7B4]" />
+        <CheckCircle2 className="h-3.5 w-3.5 text-teal-ink" />
       </p>
     </PortalLayout>
   );
@@ -337,14 +337,14 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
 function EmptyRealDashboard({ name }: { name: string }) {
   return (
     <PortalLayout title={`${greeting()} يا ${name.split(" ")[0]}`}>
-      <section className="grid place-items-center rounded-3xl border border-[#38A7B4]/30 bg-gradient-to-b from-[#38A7B4]/10 to-transparent py-16 text-center">
-        <BookOpen className="h-12 w-12 text-[#6EC7D1]" />
+      <section className="grid place-items-center rounded-3xl border border-teal/30 bg-gradient-to-b from-teal/10 to-transparent py-16 text-center">
+        <BookOpen className="h-12 w-12 text-teal-light-ink" />
         <h2 className="mt-5 text-2xl font-black">حسابك جاهز — بقيت أول شعبة</h2>
         <p className="mt-3 max-w-md text-sm leading-7 text-white/60">
           تصفح الشعب المفتوحة واطلب التسجيل؛ عند موافقة العمليات تصلك فاتورتك، وبالدفع تُفتح شعبتك هنا تلقائيا.
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-          <Link to="/student/cohorts" className="rounded-full bg-[#38A7B4] px-6 py-3 font-black text-[#08272B] transition hover:bg-[#6EC7D1]">
+          <Link to="/student/cohorts" className="rounded-full bg-teal px-6 py-3 font-black text-on-teal transition hover:bg-teal-light">
             تصفح الشعب المفتوحة
           </Link>
           <Link to="/catalog" className="rounded-full border border-white/15 px-6 py-3 font-bold text-white/80 hover:border-white/40">
@@ -385,7 +385,7 @@ function SimulatedDashboard() {
   return (
     <PortalLayout title={`${greeting()} يا ${user.split(" ")[0]}`}>
       {isPreview() && (
-        <p className="mb-5 rounded-xl border border-dashed border-[#FABC05]/40 bg-[#FABC05]/5 px-4 py-2 text-center text-xs text-[#FABC05]">
+        <p className="mb-5 rounded-xl border border-dashed border-gold/40 bg-gold/5 px-4 py-2 text-center text-xs text-gold-ink">
           وضع المعاينة التجريبية — بيانات محاكاة لمسار «{pathway?.name}»
         </p>
       )}
@@ -411,27 +411,27 @@ function SimulatedDashboard() {
               />
             </svg>
             <span className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-xl font-black text-[#6EC7D1]">{pct}%</span>
+              <span className="text-xl font-black text-teal-light-ink">{pct}%</span>
               <span className="text-[9px] text-white/50">من رحلتك</span>
             </span>
           </div>
         </div>
         <div className="mt-4 h-3 overflow-hidden rounded-full bg-white/10">
-          <div className="h-full rounded-full bg-gradient-to-l from-[#38A7B4] to-[#6EC7D1] transition-all" style={{ width: `${Math.max(3, pct)}%` }} />
+          <div className="h-full rounded-full bg-gradient-to-l from-teal to-teal-light transition-all" style={{ width: `${Math.max(3, pct)}%` }} />
         </div>
       </section>
 
       <div className="mt-6 grid gap-5 lg:grid-cols-3">
         {/* التالي الآن — إجراء واحد (US-04) */}
-        <section className="rounded-3xl border border-[#38A7B4]/40 bg-gradient-to-b from-[#38A7B4]/10 to-transparent p-6 lg:col-span-2">
-          <div className="flex items-center gap-2 text-sm font-bold text-[#6EC7D1]">
+        <section className="rounded-3xl border border-teal/40 bg-gradient-to-b from-teal/10 to-transparent p-6 lg:col-span-2">
+          <div className="flex items-center gap-2 text-sm font-bold text-teal-light-ink">
             <Target className="h-4 w-4" /> التالي الآن
           </div>
           <h3 className="mt-3 text-2xl font-black leading-snug">{next.label}</h3>
           <p className="mt-2 text-sm leading-7 text-white/60">{next.detail}</p>
           <Link
             to={next.courseId ? `/student/course/${next.courseId}` : "/student/project"}
-            className="mt-5 inline-flex items-center gap-2 rounded-full bg-[#38A7B4] px-6 py-3 font-black text-[#08272B] transition hover:bg-[#6EC7D1]"
+            className="mt-5 inline-flex items-center gap-2 rounded-full bg-teal px-6 py-3 font-black text-on-teal transition hover:bg-teal-light"
           >
             {next.cta}
             <ArrowLeft className="h-4 w-4" />
@@ -444,12 +444,12 @@ function SimulatedDashboard() {
             <MessageCircle className="h-4 w-4 text-[#25D366]" /> مستشارك
           </div>
           <div className="mt-4 flex items-center gap-3">
-            <span className="grid h-12 w-12 place-items-center rounded-full bg-gradient-to-br from-[#38A7B4] to-[#247B84] text-lg font-black">
+            <span className="grid h-12 w-12 place-items-center rounded-full bg-gradient-to-br from-teal to-teal-deep text-lg font-black">
               {advisor.name.replace(/^(أ\.|د\.|م\.)\s*/, "").charAt(0)}
             </span>
             <div>
               <p className="font-black">{advisor.name}</p>
-              <p className="text-xs text-[#6EC7D1]">{advisor.title}</p>
+              <p className="text-xs text-teal-light-ink">{advisor.title}</p>
             </div>
           </div>
           <p className="mt-3 text-xs leading-6 text-white/50">آخر ملاحظة: «بداية موفقة — ركز على إنهاء دروس الدورة الأولى هذا الأسبوع.»</p>
@@ -466,7 +466,7 @@ function SimulatedDashboard() {
         <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 lg:col-span-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-bold text-white/70">
-              <CalendarDays className="h-4 w-4 text-[#FABC05]" /> جدولي — الجلسات القادمة
+              <CalendarDays className="h-4 w-4 text-gold-ink" /> جدولي — الجلسات القادمة
             </div>
             <span className="text-[11px] text-white/50">بتوقيت الرياض (GMT+3)</span>
           </div>
@@ -474,7 +474,7 @@ function SimulatedDashboard() {
             {sessions.map((s) => (
               <div key={s.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
                 <div className="flex items-center gap-3">
-                  <span className={`grid h-9 w-9 place-items-center rounded-xl ${s.type === "live" ? "bg-[#FABC05]/15 text-[#FABC05]" : "bg-[#38A7B4]/15 text-[#6EC7D1]"}`}>
+                  <span className={`grid h-9 w-9 place-items-center rounded-xl ${s.type === "live" ? "bg-gold/15 text-gold-ink" : "bg-teal/15 text-teal-light-ink"}`}>
                     <Video className="h-4 w-4" />
                   </span>
                   <div>
@@ -484,7 +484,7 @@ function SimulatedDashboard() {
                 </div>
                 <Link
                   to={`/student/course/${s.courseId}`}
-                  className="rounded-full border border-[#38A7B4]/40 px-4 py-1.5 text-xs font-bold text-[#6EC7D1] transition hover:bg-[#38A7B4] hover:text-[#08272B]"
+                  className="rounded-full border border-teal/40 px-4 py-1.5 text-xs font-bold text-teal-light-ink transition hover:bg-teal hover:text-on-teal"
                 >
                   التفاصيل والانضمام
                 </Link>
@@ -497,13 +497,13 @@ function SimulatedDashboard() {
         <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-bold text-white/70">
-              <Bell className="h-4 w-4 text-[#FABC05]" /> الإشعارات
+              <Bell className="h-4 w-4 text-gold-ink" /> الإشعارات
             </div>
-            {unread > 0 && <span className="rounded-full bg-[#FABC05] px-2 py-0.5 text-[10px] font-black text-[#0D0D0D]">{unread} جديد</span>}
+            {unread > 0 && <span className="rounded-full bg-gold px-2 py-0.5 text-[10px] font-black text-on-gold">{unread} جديد</span>}
           </div>
           <div className="mt-4 space-y-2.5">
             {state.notifications.slice(0, 4).map((n) => (
-              <p key={n.id} className={`rounded-xl border px-3 py-2.5 text-xs leading-6 ${n.read ? "border-white/5 text-white/50" : "border-[#38A7B4]/25 bg-[#38A7B4]/5 text-white/75"}`}>
+              <p key={n.id} className={`rounded-xl border px-3 py-2.5 text-xs leading-6 ${n.read ? "border-white/5 text-white/50" : "border-teal/25 bg-teal/5 text-white/75"}`}>
                 {n.text}
               </p>
             ))}
@@ -515,7 +515,7 @@ function SimulatedDashboard() {
         {/* مهاراتي: الحالي مقابل المستهدف */}
         <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 lg:col-span-2">
           <div className="flex items-center gap-2 text-sm font-bold text-white/70">
-            <TrendingUp className="h-4 w-4 text-[#6EC7D1]" /> مهاراتي — الحالي مقابل المستهدف (0–5)
+            <TrendingUp className="h-4 w-4 text-teal-light-ink" /> مهاراتي — الحالي مقابل المستهدف (0–5)
           </div>
           <div className="mt-4 space-y-3">
             {skills.map((s) => (
@@ -529,7 +529,7 @@ function SimulatedDashboard() {
                     <span
                       key={lvl}
                       className={`h-2 flex-1 rounded-full ${
-                        lvl <= s.current ? "bg-[#38A7B4]" : lvl <= s.target ? "bg-white/10" : "bg-white/5"
+                        lvl <= s.current ? "bg-teal" : lvl <= s.target ? "bg-white/10" : "bg-white/5"
                       }`}
                     />
                   ))}
@@ -544,7 +544,7 @@ function SimulatedDashboard() {
         <section className="space-y-5">
           <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
             <div className="flex items-center gap-2 text-sm font-bold text-white/70">
-              <Lightbulb className="h-4 w-4 text-[#FABC05]" /> توصيات لك — ولماذا
+              <Lightbulb className="h-4 w-4 text-gold-ink" /> توصيات لك — ولماذا
             </div>
             <div className="mt-4 space-y-3 text-xs leading-6">
               <div className="rounded-xl border border-white/10 bg-black/20 p-3">
@@ -557,8 +557,8 @@ function SimulatedDashboard() {
               </div>
             </div>
           </div>
-          <Link to="/student/pathway" className="block rounded-3xl border border-[#38A7B4]/30 bg-[#38A7B4]/5 p-5 transition hover:border-[#38A7B4]/60">
-            <div className="flex items-center gap-2 text-sm font-bold text-[#6EC7D1]">
+          <Link to="/student/pathway" className="block rounded-3xl border border-teal/30 bg-teal/5 p-5 transition hover:border-teal/60">
+            <div className="flex items-center gap-2 text-sm font-bold text-teal-light-ink">
               <BookOpen className="h-4 w-4" /> خريطة مساري الكاملة
             </div>
             <p className="mt-2 text-xs leading-6 text-white/55">الدورات وحالاتها وقواعد الفتح ومشروع التخرج</p>
@@ -576,7 +576,7 @@ function SimulatedDashboard() {
         <Sparkles className="h-3.5 w-3.5" />
         <Clock3 className="h-3.5 w-3.5" />
         تقدمك يُحفظ تلقائيا — أكمل من أي جهاز بعد الدخول
-        <CheckCircle2 className="h-3.5 w-3.5 text-[#38A7B4]" />
+        <CheckCircle2 className="h-3.5 w-3.5 text-teal-ink" />
       </p>
     </PortalLayout>
   );

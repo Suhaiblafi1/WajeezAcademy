@@ -9,9 +9,9 @@ import { CohortOps, LearningSettings } from "./CohortOps";
 
 const STATUS_META: Record<string, { label: string; cls: string }> = {
   draft: { label: "مسودة", cls: "border-white/20 text-white/50" },
-  open: { label: "مفتوحة للتسجيل", cls: "border-[#38A7B4]/50 text-[#6EC7D1]" },
-  full: { label: "ممتلئة", cls: "border-[#FABC05]/50 text-[#FABC05]" },
-  active: { label: "جارية", cls: "border-[#38A7B4]/60 text-[#6EC7D1]" },
+  open: { label: "مفتوحة للتسجيل", cls: "border-teal/50 text-teal-light-ink" },
+  full: { label: "ممتلئة", cls: "border-gold/50 text-gold-ink" },
+  active: { label: "جارية", cls: "border-teal/60 text-teal-light-ink" },
   completed: { label: "مكتملة", cls: "border-white/20 text-white/60" },
   cancelled: { label: "ملغاة", cls: "border-red-500/40 text-red-400" },
 };
@@ -123,7 +123,7 @@ export default function AdminCohorts() {
   return (
     <AdminLayout title="عمليات الشعب — الفتح المشروط والجلسات والتسجيل">
       {flash && (
-        <p className="mb-5 flex items-center gap-2 rounded-2xl border border-[#38A7B4]/40 bg-[#38A7B4]/10 px-4 py-3 text-sm font-bold text-[#6EC7D1]">
+        <p className="mb-5 flex items-center gap-2 rounded-2xl border border-teal/40 bg-teal/10 px-4 py-3 text-sm font-bold text-teal-light-ink">
           <CheckCircle2 className="h-4 w-4 shrink-0" /> {flash}
         </p>
       )}
@@ -139,7 +139,7 @@ export default function AdminCohorts() {
             <label className="text-xs text-white/50">
               الدورة (المنشورة فقط)
               <select value={createForm.courseId} onChange={(e) => setCreateForm({ ...createForm, courseId: e.target.value })}
-                className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white focus:border-[#38A7B4] focus:outline-none">
+                className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white focus:border-teal focus:outline-none">
                 <option value="">اختر دورة…</option>
                 {courses.map((c) => <option key={c.id} value={c.id}>{c.title} ({c.id})</option>)}
               </select>
@@ -148,32 +148,32 @@ export default function AdminCohorts() {
               عنوان الشعبة
               <input value={createForm.title} onChange={(e) => setCreateForm({ ...createForm, title: e.target.value })}
                 placeholder="شعبة أكتوبر 2026 — مسائية"
-                className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none" />
+                className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white placeholder:text-white/25 focus:border-teal focus:outline-none" />
             </label>
             <label className="text-xs text-white/50">
               السعة
               <input value={createForm.capacity} onChange={(e) => setCreateForm({ ...createForm, capacity: e.target.value })} type="number" min={1}
-                className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white focus:border-[#38A7B4] focus:outline-none" />
+                className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white focus:border-teal focus:outline-none" />
             </label>
             <label className="text-xs text-white/50">
               السعر (دينار أردني)
               <input value={createForm.price} onChange={(e) => setCreateForm({ ...createForm, price: e.target.value })} type="number" min={0}
-                className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white focus:border-[#38A7B4] focus:outline-none" />
+                className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white focus:border-teal focus:outline-none" />
             </label>
             <label className="text-xs text-white/50">
               أيام الأسبوع (افصل بفاصلة)
               <input value={createForm.days} onChange={(e) => setCreateForm({ ...createForm, days: e.target.value })}
                 placeholder="الأحد، الثلاثاء"
-                className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none" />
+                className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white placeholder:text-white/25 focus:border-teal focus:outline-none" />
             </label>
             <label className="text-xs text-white/50">
               وقت البدء
               <input value={createForm.startTime} onChange={(e) => setCreateForm({ ...createForm, startTime: e.target.value })} type="time"
-                className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white focus:border-[#38A7B4] focus:outline-none" />
+                className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white focus:border-teal focus:outline-none" />
             </label>
             <div className="flex items-end">
               <button disabled={busy || !createForm.courseId || createForm.title.length < 3} onClick={createCohort}
-                className="flex cursor-pointer items-center gap-2 rounded-full bg-[#38A7B4] px-6 py-2.5 text-xs font-black text-[#08272B] transition hover:bg-[#6EC7D1] disabled:opacity-40">
+                className="flex cursor-pointer items-center gap-2 rounded-full bg-teal px-6 py-2.5 text-xs font-black text-on-teal transition hover:bg-teal-light disabled:opacity-40">
                 {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null} أنشئ المسودة
               </button>
             </div>
@@ -182,7 +182,7 @@ export default function AdminCohorts() {
       </div>
 
       {loading ? (
-        <div className="grid place-items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-[#38A7B4]" /></div>
+        <div className="grid place-items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" /></div>
       ) : rows.length === 0 ? (
         <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-white/45">لا شعب بعد — أنشئ أول شعبة من الأعلى.</p>
       ) : (
@@ -213,7 +213,7 @@ export default function AdminCohorts() {
                       <p className="mb-2 text-xs font-black text-white/60">شروط الفتح</p>
                       {check ? (
                         check.ready ? (
-                          <p className="flex items-center gap-1.5 text-xs font-bold text-[#6EC7D1]"><CheckCircle2 className="h-3.5 w-3.5" /> كل الشروط مستوفاة</p>
+                          <p className="flex items-center gap-1.5 text-xs font-bold text-teal-light-ink"><CheckCircle2 className="h-3.5 w-3.5" /> كل الشروط مستوفاة</p>
                         ) : (
                           <div className="flex flex-wrap gap-2">
                             {check.missing.map((m) => (
@@ -230,13 +230,13 @@ export default function AdminCohorts() {
                     <div className="flex flex-wrap gap-2">
                       {c.status === "draft" && (
                         <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/cohorts/${c.id}/open`), "فُتحت الشعبة — التسجيل متاح الآن")}
-                          className="flex cursor-pointer items-center gap-1.5 rounded-full bg-[#38A7B4] px-4 py-2 text-xs font-black text-[#08272B] transition hover:bg-[#6EC7D1] disabled:opacity-40">
+                          className="flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-4 py-2 text-xs font-black text-on-teal transition hover:bg-teal-light disabled:opacity-40">
                           <Play className="h-3.5 w-3.5" /> افتح الشعبة
                         </button>
                       )}
                       {["open", "full"].includes(c.status) && (
                         <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/cohorts/${c.id}/transition`, { to: "active" }), "الشعبة جارية الآن")}
-                          className="cursor-pointer rounded-full border border-[#38A7B4]/50 px-4 py-2 text-xs font-bold text-[#6EC7D1] transition hover:bg-[#38A7B4]/10">
+                          className="cursor-pointer rounded-full border border-teal/50 px-4 py-2 text-xs font-bold text-teal-light-ink transition hover:bg-teal/10">
                           ابدأ التقديم
                         </button>
                       )}
@@ -260,11 +260,11 @@ export default function AdminCohorts() {
                         <p className="mb-3 flex items-center gap-1.5 text-xs font-black text-white/60"><CalendarPlus className="h-3.5 w-3.5" /> جلسة جديدة</p>
                         <div className="grid gap-2 sm:grid-cols-5">
                           <input placeholder="عنوان الجلسة" value={sessionForm.title} onChange={(e) => setSessionForm({ ...sessionForm, title: e.target.value })}
-                            className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none sm:col-span-2" />
+                            className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/25 focus:border-teal focus:outline-none sm:col-span-2" />
                           <input type="date" value={sessionForm.date} onChange={(e) => setSessionForm({ ...sessionForm, date: e.target.value })}
-                            className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white focus:border-[#38A7B4] focus:outline-none" />
+                            className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white focus:border-teal focus:outline-none" />
                           <input type="time" value={sessionForm.time} onChange={(e) => setSessionForm({ ...sessionForm, time: e.target.value })}
-                            className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white focus:border-[#38A7B4] focus:outline-none" />
+                            className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white focus:border-teal focus:outline-none" />
                           <button disabled={busy || sessionForm.title.length < 2 || !sessionForm.date}
                             onClick={() => act(async () => {
                               const startsAt = new Date(`${sessionForm.date}T${sessionForm.time}:00`);
@@ -301,7 +301,7 @@ export default function AdminCohorts() {
                         <p className="mb-3 flex items-center gap-1.5 text-xs font-black text-white/60"><UserPlus className="h-3.5 w-3.5" /> تسجيل متعلم — الفائض يتحول لقائمة انتظار آليا</p>
                         <div className="flex gap-2">
                           <input placeholder="معرف المستخدم (UUID)" dir="ltr" value={enrollUserId} onChange={(e) => setEnrollUserId(e.target.value)}
-                            className="flex-1 rounded-xl border border-white/15 bg-black/30 px-3 py-2 font-mono text-xs text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none" />
+                            className="flex-1 rounded-xl border border-white/15 bg-black/30 px-3 py-2 font-mono text-xs text-white placeholder:text-white/25 focus:border-teal focus:outline-none" />
                           <button disabled={busy || !enrollUserId.trim()}
                             onClick={() => act(async () => {
                               const res = await apiPost<{ status: string }>(`/api/admin/cohorts/${c.id}/enrollments`, { userId: enrollUserId.trim() });
@@ -356,14 +356,14 @@ function ZoomAttach({ cohortId, sessionsCount, value, onChange, busy, onSubmit }
   return (
     <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
       <input placeholder="معرف الجلسة (UUID)" dir="ltr" value={value.sessionId} onChange={(e) => onChange({ ...value, sessionId: e.target.value })}
-        className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 font-mono text-xs text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none" />
+        className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 font-mono text-xs text-white placeholder:text-white/25 focus:border-teal focus:outline-none" />
       <input placeholder="رابط الانضمام https://…" dir="ltr" value={value.joinUrl} onChange={(e) => onChange({ ...value, joinUrl: e.target.value })}
-        className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 font-mono text-xs text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none lg:col-span-2" />
+        className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 font-mono text-xs text-white placeholder:text-white/25 focus:border-teal focus:outline-none lg:col-span-2" />
       <input placeholder="معرف الاجتماع (اختياري)" dir="ltr" value={value.meetingId} onChange={(e) => onChange({ ...value, meetingId: e.target.value })}
-        className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 font-mono text-xs text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none" />
+        className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 font-mono text-xs text-white placeholder:text-white/25 focus:border-teal focus:outline-none" />
       <div className="flex gap-2">
         <input placeholder="رمز المرور" dir="ltr" value={value.passcode} onChange={(e) => onChange({ ...value, passcode: e.target.value })}
-          className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 font-mono text-xs text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none" />
+          className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 font-mono text-xs text-white placeholder:text-white/25 focus:border-teal focus:outline-none" />
         <button disabled={busy || !value.sessionId.trim() || !/^https:\/\/.+/.test(value.joinUrl)} onClick={onSubmit}
           className="shrink-0 cursor-pointer rounded-xl bg-white/10 px-4 py-2 text-xs font-black text-white transition hover:bg-white/15 disabled:opacity-40">
           اربط

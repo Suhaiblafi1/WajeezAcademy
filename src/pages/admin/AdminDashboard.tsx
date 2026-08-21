@@ -7,6 +7,7 @@ import {
 import AdminLayout from "./AdminLayout";
 import { apiGet } from "@/services/api";
 import { useRealSession } from "@/services/session";
+import DiagnosticFunnel from "@/components/DiagnosticFunnel";
 import { useAutoRefresh } from "@/services/useAutoRefresh";
 
 /* اللوحة العليا — نظرة تنفيذية من مصادر الخادم الحقيقية فقط.
@@ -25,8 +26,8 @@ interface Card {
 }
 
 const TONE: Record<Card["tone"], string> = {
-  gold: "border-[#FABC05]/30 bg-[#FABC05]/5 text-[#FABC05]",
-  teal: "border-[#38A7B4]/30 bg-[#38A7B4]/5 text-[#6EC7D1]",
+  gold: "border-gold/30 bg-gold/5 text-gold-ink",
+  teal: "border-teal/30 bg-teal/5 text-teal-light-ink",
   red: "border-red-500/30 bg-red-500/5 text-red-400",
   plain: "border-white/10 bg-white/[0.03] text-white",
 };
@@ -108,8 +109,8 @@ export default function AdminDashboard() {
         ].map((s, i) => (
           <span key={s.n} className="flex items-center gap-2">
             {i > 0 && <span className="text-white/20">←</span>}
-            <Link to={s.to} className="flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1 font-bold transition hover:border-[#FABC05]/60 hover:text-[#FABC05]">
-              <span className="grid h-4 w-4 place-items-center rounded-full bg-[#FABC05]/15 text-[10px] text-[#FABC05]">{s.n}</span>
+            <Link to={s.to} className="flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1 font-bold transition hover:border-gold/60 hover:text-gold-ink">
+              <span className="grid h-4 w-4 place-items-center rounded-full bg-gold/15 text-[10px] text-gold-ink">{s.n}</span>
               {s.label}
             </Link>
           </span>
@@ -127,6 +128,8 @@ export default function AdminDashboard() {
           <ServerOff className="h-5 w-5" /> تعذر الوصول للخادم — تأكد أنه يعمل ثم حدّث الصفحة.
         </div>
       )}
+
+      <DiagnosticFunnel />
 
       {cards && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

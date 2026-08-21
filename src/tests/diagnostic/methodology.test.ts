@@ -6,8 +6,8 @@ import {
   courseDesignReferences,
   publicReferences,
   referenceBadges,
-  sessionContributingReferences,
 } from '../../data/methodology'
+import { sessionContributingReferences } from '../../data/methodology-session'
 import { skillsCatalog } from '../../domain/diagnostic/catalog'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../../..')

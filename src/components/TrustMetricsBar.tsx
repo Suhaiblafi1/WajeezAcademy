@@ -23,7 +23,7 @@ export default function TrustMetricsBar() {
     <section aria-label="وجيز مهارات بالأرقام" className="border-y border-white/5 bg-white/[0.02] py-10 md:py-12">
       <div className="mx-auto max-w-6xl px-5">
         <div className="reveal text-center">
-          <h2 className="text-sm font-bold text-teal-light md:text-base">وجيز مهارات بالأرقام</h2>
+          <h2 className="text-sm font-bold text-teal-light-ink md:text-base">وجيز مهارات بالأرقام</h2>
           <p className="mx-auto mt-2 max-w-xl text-[11px] leading-relaxed text-muted-foreground">
             أرقام موثقة من تجربة وجيز مهارات مع المؤسسات والمتعلمين — إحدى حلول منظومة وجيز.
           </p>
@@ -34,10 +34,10 @@ export default function TrustMetricsBar() {
             const Icon = METRIC_ICON[m.key] ?? Building2
             return (
               <div key={m.key} className="flex flex-col items-center text-center">
-                <span className="order-1 grid h-12 w-12 place-items-center rounded-2xl border border-teal/25 bg-[#38A7B4]/10">
-                  <Icon className="h-5 w-5 text-teal-light" />
+                <span className="order-1 grid h-12 w-12 place-items-center rounded-2xl border border-teal/25 bg-teal/10">
+                  <Icon className="h-5 w-5 text-teal-light-ink" />
                 </span>
-                <dd className="order-2 mt-3 text-4xl font-black tabular-nums tracking-tight text-teal-light md:text-[2.75rem]">
+                <dd className="order-2 mt-3 text-4xl font-black tabular-nums tracking-tight text-teal-light-ink md:text-[2.75rem]">
                   {m.display_value}
                 </dd>
                 <dt className="order-3 mt-2 text-[11px] leading-snug text-muted-foreground md:text-xs">

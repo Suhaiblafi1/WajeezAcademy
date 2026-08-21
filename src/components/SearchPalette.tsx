@@ -86,10 +86,10 @@ export default function SearchPalette() {
   let rowIndex = -1;
   return (
     <div className="fixed inset-0 z-[90] flex items-start justify-center bg-black/70 px-4 pt-24 backdrop-blur-sm" onClick={() => setOpen(false)}>
-      <div dir="rtl" className="w-full max-w-xl overflow-hidden rounded-3xl border border-white/15 bg-[#121B1D] shadow-2xl"
+      <div dir="rtl" className="w-full max-w-xl overflow-hidden rounded-3xl border border-white/15 bg-surface shadow-2xl"
         onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-3 border-b border-white/10 px-5 py-4">
-          <Search className="h-4 w-4 shrink-0 text-[#6EC7D1]" />
+          <Search className="h-4 w-4 shrink-0 text-teal-light-ink" />
           <input
             ref={inputRef}
             value={q}
@@ -128,14 +128,14 @@ export default function SearchPalette() {
                       onClick={() => go(h)}
                       onMouseEnter={() => setCursor(idx)}
                       className={`flex w-full cursor-pointer items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-right transition ${
-                        cursor === idx ? "bg-[#38A7B4]/15" : "hover:bg-white/[0.04]"
+                        cursor === idx ? "bg-teal/15" : "hover:bg-white/[0.04]"
                       }`}
                     >
                       <span className="min-w-0">
                         <span className="block truncate text-xs font-black text-white/90">{h.title}</span>
                         <span className="block truncate text-[10px] text-white/40">{h.sub}</span>
                       </span>
-                      <span className="shrink-0 text-[9px] font-bold text-[#6EC7D1]">Enter ↵</span>
+                      <span className="shrink-0 text-[9px] font-bold text-teal-light-ink">Enter ↵</span>
                     </button>
                   );
                 })}

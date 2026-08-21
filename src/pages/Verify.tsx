@@ -59,7 +59,7 @@ export default function Verify() {
   }, [number]);
 
   return (
-    <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-[#0D0D0D] px-5 py-16 text-white">
+    <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-ground px-5 py-16 text-white">
       <Link to="/" className="flex items-center gap-2 text-white/60 transition hover:text-white">
         <ArrowRight className="h-4 w-4" /> أكاديمية وجيز
       </Link>
@@ -78,12 +78,12 @@ export default function Verify() {
             placeholder="WJ-CERT-2026-…"
             dir="ltr"
             aria-label="رقم الشهادة"
-            className="flex-1 rounded-xl border border-white/15 bg-black/30 px-4 py-3 font-mono text-sm text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none"
+            className="flex-1 rounded-xl border border-white/15 bg-black/30 px-4 py-3 font-mono text-sm text-white placeholder:text-white/25 focus:border-teal focus:outline-none"
           />
           <button
             type="submit"
             disabled={state.kind === "loading"}
-            className="cursor-pointer rounded-xl bg-[#38A7B4] px-5 text-[#08272B] transition hover:bg-[#6EC7D1] disabled:opacity-50"
+            className="cursor-pointer rounded-xl bg-teal px-5 text-on-teal transition hover:bg-teal-light disabled:opacity-50"
             aria-label="تحقق"
           >
             {state.kind === "loading" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
@@ -91,9 +91,9 @@ export default function Verify() {
         </form>
 
         {state.kind === "found" && state.cert.status === "active" && (
-          <div className="mt-6 rounded-2xl border border-[#38A7B4]/40 bg-[#38A7B4]/10 p-5 text-center">
-            <BadgeCheck className="mx-auto h-10 w-10 text-[#38A7B4]" />
-            <p className="mt-3 font-black text-[#6EC7D1]">شهادة صحيحة ومعتمدة</p>
+          <div className="mt-6 rounded-2xl border border-teal/40 bg-teal/10 p-5 text-center">
+            <BadgeCheck className="mx-auto h-10 w-10 text-teal-ink" />
+            <p className="mt-3 font-black text-teal-light-ink">شهادة صحيحة ومعتمدة</p>
             <div className="mt-3 space-y-1 text-sm text-white/75">
               <p className="font-bold">{state.cert.learnerName}</p>
               <p>{state.cert.courseTitle}</p>

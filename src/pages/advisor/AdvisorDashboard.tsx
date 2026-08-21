@@ -63,25 +63,25 @@ function RealAdvisorHome({ name }: { name: string }) {
 
       {/* بطاقة إرشاد المستشار الجديد — بوابة بلا حالات تشرح دورة العمل بدل صفحة أصفار */}
       {rows.length === 0 && (
-        <section className="mb-8 rounded-3xl border border-[#38A7B4]/30 bg-[#38A7B4]/[0.06] p-6">
-          <p className="flex items-center gap-2 text-sm font-black"><Users className="h-4 w-4 text-[#6EC7D1]" /> بوابتك جاهزة — هذه دورة عملك اليومية</p>
+        <section className="mb-8 rounded-3xl border border-teal/30 bg-teal/[0.06] p-6">
+          <p className="flex items-center gap-2 text-sm font-black"><Users className="h-4 w-4 text-teal-light-ink" /> بوابتك جاهزة — هذه دورة عملك اليومية</p>
           <div className="mt-4 grid gap-3 text-xs leading-6 text-white/70 sm:grid-cols-3">
             <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-              <p className="font-black text-[#6EC7D1]">١ · حالة جديدة</p>
+              <p className="font-black text-teal-light-ink">١ · حالة جديدة</p>
               <p className="mt-1">كل تشخيص مكتمل يتحول لحالة تُسند إليك — تظهر هنا فوراً مع بيانات العميل.</p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-              <p className="font-black text-[#6EC7D1]">٢ · أول تواصل</p>
+              <p className="font-black text-teal-light-ink">٢ · أول تواصل</p>
               <p className="mt-1">تفتح الحالة من «حالاتي»، تسجّل تواصلك الأول وملاحظاتك في ملفها الموثق.</p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-              <p className="font-black text-[#6EC7D1]">٣ · المتابعة والتوصية</p>
+              <p className="font-black text-teal-light-ink">٣ · المتابعة والتوصية</p>
               <p className="mt-1">تجدول المتابعة التالية وتوصي بالمسار المناسب — وتظهر أقرب مواعيدك في هذه اللوحة.</p>
             </div>
           </div>
           <p className="mt-4 text-[11px] text-white/50">
             حتى تصلك أول حالة يمكنك استعراض سير العمل من{" "}
-            <Link to="/advisor/cases" className="font-bold text-[#6EC7D1] underline decoration-dotted underline-offset-4 hover:text-white">«حالاتي»</Link>.
+            <Link to="/advisor/cases" className="font-bold text-teal-light-ink underline decoration-dotted underline-offset-4 hover:text-white">«حالاتي»</Link>.
           </p>
         </section>
       )}
@@ -91,8 +91,8 @@ function RealAdvisorHome({ name }: { name: string }) {
         {["افتح الحالات الجديدة أولاً", "سجّل أول تواصل", "جدول المتابعة التالية"].map((s, i) => (
           <span key={s} className="flex items-center gap-2">
             {i > 0 && <span className="text-white/20">←</span>}
-            <Link to="/advisor/cases" className="flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1 font-bold transition hover:border-[#FABC05]/60 hover:text-[#FABC05]">
-              <span className="grid h-4 w-4 place-items-center rounded-full bg-[#FABC05]/15 text-[10px] text-[#FABC05]">{["١", "٢", "٣"][i]}</span>
+            <Link to="/advisor/cases" className="flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1 font-bold transition hover:border-gold/60 hover:text-gold-ink">
+              <span className="grid h-4 w-4 place-items-center rounded-full bg-gold/15 text-[10px] text-gold-ink">{["١", "٢", "٣"][i]}</span>
               {s}
             </Link>
           </span>
@@ -104,23 +104,23 @@ function RealAdvisorHome({ name }: { name: string }) {
           <p className="flex items-center gap-2 text-xs text-white/50"><Users className="h-4 w-4" /> حالاتي المفتوحة</p>
           <p className="mt-2 text-3xl font-black">{open.length}</p>
         </Link>
-        <Link to="/advisor/cases" className={`rounded-2xl border p-5 transition hover:border-white/30 ${fresh > 0 ? "border-[#FABC05]/40 bg-[#FABC05]/5" : "border-white/10 bg-white/[0.03]"}`}>
-          <p className="flex items-center gap-2 text-xs text-[#FABC05]"><UserPlus className="h-4 w-4" /> جديدة بانتظار أول تواصل</p>
-          <p className="mt-2 text-3xl font-black text-[#FABC05]">{fresh}</p>
+        <Link to="/advisor/cases" className={`rounded-2xl border p-5 transition hover:border-white/30 ${fresh > 0 ? "border-gold/40 bg-gold/5" : "border-white/10 bg-white/[0.03]"}`}>
+          <p className="flex items-center gap-2 text-xs text-gold-ink"><UserPlus className="h-4 w-4" /> جديدة بانتظار أول تواصل</p>
+          <p className="mt-2 text-3xl font-black text-gold-ink">{fresh}</p>
         </Link>
         <Link to="/advisor/cases" className={`rounded-2xl border p-5 transition hover:border-white/30 ${needReview > 0 ? "border-red-500/40 bg-red-500/5" : "border-white/10 bg-white/[0.03]"}`}>
           <p className="flex items-center gap-2 text-xs text-red-300"><AlertTriangle className="h-4 w-4" /> تحتاج مراجعة</p>
           <p className="mt-2 text-3xl font-black text-red-400">{needReview}</p>
         </Link>
-        <div className="rounded-2xl border border-[#38A7B4]/30 bg-[#38A7B4]/5 p-5">
-          <p className="flex items-center gap-2 text-xs text-[#6EC7D1]"><CheckCircle2 className="h-4 w-4" /> سجّلوا أو أُغلقوا</p>
-          <p className="mt-2 text-3xl font-black text-[#6EC7D1]">{rows.length - open.length}</p>
+        <div className="rounded-2xl border border-teal/30 bg-teal/5 p-5">
+          <p className="flex items-center gap-2 text-xs text-teal-light-ink"><CheckCircle2 className="h-4 w-4" /> سجّلوا أو أُغلقوا</p>
+          <p className="mt-2 text-3xl font-black text-teal-light-ink">{rows.length - open.length}</p>
         </div>
       </div>
 
       <section className="mt-6 rounded-3xl border border-white/10 bg-white/[0.02] p-5">
         <p className="flex items-center gap-2 text-sm font-black">
-          <CalendarClock className="h-4 w-4 text-[#38A7B4]" /> أقرب متابعاتك
+          <CalendarClock className="h-4 w-4 text-teal-ink" /> أقرب متابعاتك
         </p>
         <div className="mt-3 space-y-2">
           {upcoming.length === 0 && <p className="py-3 text-center text-xs text-white/50">لا متابعات مجدولة — جدولها من ملف الحالة</p>}
@@ -144,8 +144,8 @@ function RealAdvisorHome({ name }: { name: string }) {
 }
 
 const LEVEL_META: Record<RiskLevel, { label: string; dot: string; ring: string; text: string }> = {
-  green: { label: "مطمئن", dot: "bg-[#38A7B4]", ring: "border-[#38A7B4]/30", text: "text-[#6EC7D1]" },
-  yellow: { label: "يحتاج انتباها", dot: "bg-[#FABC05]", ring: "border-[#FABC05]/40", text: "text-[#FABC05]" },
+  green: { label: "مطمئن", dot: "bg-teal", ring: "border-teal/30", text: "text-teal-light-ink" },
+  yellow: { label: "يحتاج انتباها", dot: "bg-gold", ring: "border-gold/40", text: "text-gold-ink" },
   red: { label: "خطر تعثر", dot: "bg-red-500", ring: "border-red-500/50", text: "text-red-400" },
 };
 
@@ -238,11 +238,11 @@ export default function AdvisorDashboard() {
           <p className="flex items-center gap-2 text-xs text-red-300"><AlertTriangle className="h-4 w-4" /> خطر مرتفع</p>
           <p className="mt-2 text-3xl font-black text-red-400">{counts.red}</p>
         </div>
-        <div className="rounded-2xl border border-[#FABC05]/30 bg-[#FABC05]/5 p-5">
-          <p className="flex items-center gap-2 text-xs text-[#FABC05]"><TrendingUp className="h-4 w-4" /> يحتاجون انتباها</p>
-          <p className="mt-2 text-3xl font-black text-[#FABC05]">{counts.yellow}</p>
+        <div className="rounded-2xl border border-gold/30 bg-gold/5 p-5">
+          <p className="flex items-center gap-2 text-xs text-gold-ink"><TrendingUp className="h-4 w-4" /> يحتاجون انتباها</p>
+          <p className="mt-2 text-3xl font-black text-gold-ink">{counts.yellow}</p>
         </div>
-        <Link to="/advisor/reviews" className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-[#38A7B4]/50">
+        <Link to="/advisor/reviews" className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-teal/50">
           <p className="flex items-center gap-2 text-xs text-white/50"><ClipboardList className="h-4 w-4" /> طلبات مراجعة معلقة</p>
           <p className="mt-2 text-3xl font-black">{counts.pendingReviews}</p>
         </Link>
@@ -252,7 +252,7 @@ export default function AdvisorDashboard() {
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <section className="rounded-3xl border border-white/10 bg-white/[0.02] p-5">
           <p className="flex items-center gap-2 text-sm font-black">
-            <ListChecks className="h-4 w-4 text-[#FABC05]" /> مهامي المستحقة
+            <ListChecks className="h-4 w-4 text-gold-ink" /> مهامي المستحقة
             <span className="mr-auto text-[10px] font-normal text-white/50">لكل مهمة موعد استحقاق واضح</span>
           </p>
           <div className="mt-3 space-y-2">
@@ -263,7 +263,7 @@ export default function AdvisorDashboard() {
               }`}>
                 <button
                   onClick={() => doneTask(t.kase.id, t.taskId, t.title)}
-                  className="grid h-6 w-6 shrink-0 cursor-pointer place-items-center rounded-full border border-white/25 text-transparent transition hover:border-[#38A7B4] hover:text-[#6EC7D1]"
+                  className="grid h-6 w-6 shrink-0 cursor-pointer place-items-center rounded-full border border-white/25 text-transparent transition hover:border-teal hover:text-teal-light-ink"
                   title="إنجاز المهمة"
                   aria-label={`إنجاز مهمة: ${t.title}`}
                 >
@@ -283,7 +283,7 @@ export default function AdvisorDashboard() {
 
         <section className="rounded-3xl border border-white/10 bg-white/[0.02] p-5">
           <p className="flex items-center gap-2 text-sm font-black">
-            <CalendarClock className="h-4 w-4 text-[#38A7B4]" /> أقرب متابعاتي
+            <CalendarClock className="h-4 w-4 text-teal-ink" /> أقرب متابعاتي
           </p>
           <div className="mt-3 space-y-2">
             {nextFollowUps.length === 0 && <p className="py-3 text-center text-xs text-white/50">لا متابعات مجدولة — جدولها من ملف الحالة</p>}
@@ -292,13 +292,13 @@ export default function AdvisorDashboard() {
               const overdue = isOverdue(c.nextFollowUpAt);
               return (
                 <Link key={c.id} to={link} className={`flex items-center gap-3 rounded-2xl border px-4 py-2.5 text-xs transition hover:border-white/30 ${
-                  overdue ? "border-[#FABC05]/40 bg-[#FABC05]/5" : "border-white/10 bg-white/[0.02]"
+                  overdue ? "border-gold/40 bg-gold/5" : "border-white/10 bg-white/[0.02]"
                 }`}>
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-bold text-white/85">{c.studentName}</p>
                     <p className="mt-0.5 truncate text-[10px] text-white/50">{c.nextAction ?? "متابعة مجدولة"}</p>
                   </div>
-                  <span className={`shrink-0 text-[10px] font-bold ${overdue ? "text-[#FABC05]" : "text-white/50"}`}>
+                  <span className={`shrink-0 text-[10px] font-bold ${overdue ? "text-gold-ink" : "text-white/50"}`}>
                     {overdue ? "فات موعدها · " : ""}{fmtDT(c.nextFollowUpAt)}
                   </span>
                 </Link>
@@ -310,17 +310,17 @@ export default function AdvisorDashboard() {
 
       {/* حالات بلا مستشار — GET /api/admin/advisor-cases/unassigned */}
       {unassigned.length > 0 && (
-        <section className="mt-4 rounded-3xl border border-[#FABC05]/30 bg-[#FABC05]/5 p-5">
-          <p className="flex items-center gap-2 text-sm font-black text-[#FABC05]">
+        <section className="mt-4 rounded-3xl border border-gold/30 bg-gold/5 p-5">
+          <p className="flex items-center gap-2 text-sm font-black text-gold-ink">
             <UserPlus className="h-4 w-4" /> {unassigned.length} {unassigned.length === 1 ? "حالة بلا مستشار" : "حالات بلا مستشار"} — تنتظر الإسناد
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             {unassigned.map((c) => (
-              <div key={c.id} className="flex items-center gap-2 rounded-full border border-[#FABC05]/30 bg-[#0D0D0D]/60 py-1.5 pr-4 pl-1.5 text-xs">
+              <div key={c.id} className="flex items-center gap-2 rounded-full border border-gold/30 bg-ground/60 py-1.5 pr-4 pl-1.5 text-xs">
                 <span className="font-bold text-white/80">{c.studentName}</span>
                 <button
                   onClick={() => claimCase(c)}
-                  className="cursor-pointer rounded-full bg-[#FABC05] px-3 py-1 text-[10px] font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/85"
+                  className="cursor-pointer rounded-full bg-gold px-3 py-1 text-[10px] font-black text-on-gold transition hover:bg-gold/85"
                 >
                   أسنِدها لي
                 </button>
@@ -339,7 +339,7 @@ export default function AdvisorDashboard() {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="ابحث باسم الطالب أو دوره أو مساره…"
             aria-label="بحث في طلبتي"
-            className="w-64 rounded-full border border-white/10 bg-white/[0.03] py-1.5 pr-9 pl-3 text-xs text-white placeholder:text-white/50 focus:border-[#FABC05] focus:outline-none"
+            className="w-64 rounded-full border border-white/10 bg-white/[0.03] py-1.5 pr-9 pl-3 text-xs text-white placeholder:text-white/50 focus:border-gold focus:outline-none"
           />
         </div>
         {(["all", "red", "yellow", "green"] as const).map((f) => (
@@ -347,7 +347,7 @@ export default function AdvisorDashboard() {
             key={f}
             onClick={() => setFilter(f)}
             className={`cursor-pointer rounded-full border px-4 py-1.5 text-xs font-bold transition ${
-              filter === f ? "border-[#FABC05] bg-[#FABC05] text-[#0D0D0D]" : "border-white/10 text-white/55 hover:border-white/30"
+              filter === f ? "border-gold bg-gold text-on-gold" : "border-white/10 text-white/55 hover:border-white/30"
             }`}
           >
             {f === "all" ? "الكل" : LEVEL_META[f].label}
@@ -382,7 +382,7 @@ export default function AdvisorDashboard() {
                 <div className="min-w-0 flex-1">
                   <p className="font-black">
                     {s.name}
-                    {s.isRealUser && <span className="mr-2 rounded-full bg-[#38A7B4]/15 px-2 py-0.5 text-[10px] font-bold text-[#6EC7D1]">مستخدم هذا الجهاز</span>}
+                    {s.isRealUser && <span className="mr-2 rounded-full bg-teal/15 px-2 py-0.5 text-[10px] font-bold text-teal-light-ink">مستخدم هذا الجهاز</span>}
                   </p>
                   <p className="mt-0.5 text-xs text-white/50">{s.role} · مسار «{studentPathwayName(s)}» · ثقة التوصية {s.confidence}%</p>
                   {activeSignals.length > 0 && (

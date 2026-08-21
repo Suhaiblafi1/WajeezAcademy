@@ -15,13 +15,13 @@ export default function EcosystemOrgStrip() {
     <section aria-label="مؤسسات وثقت بمنظومة وجيز" className="py-12 md:py-14">
       <div className="mx-auto max-w-6xl px-5">
         <div className="reveal text-center">
-          <h2 className="text-sm font-bold text-teal-light md:text-base">مؤسسات وثقت بمنظومة وجيز</h2>
+          <h2 className="text-sm font-bold text-teal-light-ink md:text-base">مؤسسات وثقت بمنظومة وجيز</h2>
           <p className="mx-auto mt-2 max-w-xl text-[11px] leading-relaxed text-muted-foreground">
             خبرة مؤسسية تراكمت عبر حلول منظومة وجيز — منها وجيز مهارات — في تطوير فرق العمل وبناء ثقافة التعلّم.
           </p>
         </div>
 
-        <div className="reveal mt-8 rounded-2xl border border-white/5 bg-[#0D0D0D] px-6 py-8 md:px-10">
+        <div className="reveal mt-8 rounded-2xl border border-white/5 bg-ground px-6 py-8 md:px-10">
           <ul className="flex flex-wrap items-center justify-center gap-x-10 gap-y-7 md:gap-x-14">
             {orgs.map((o) => (
               <li key={o.name} className="flex items-center">

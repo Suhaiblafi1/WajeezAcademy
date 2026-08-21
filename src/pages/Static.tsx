@@ -6,8 +6,8 @@ import SeoHead from "@/components/SeoHead";
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div dir="rtl" className="min-h-screen bg-[#0D0D0D] text-white">
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0D0D0D]/85 backdrop-blur">
+    <div dir="rtl" className="min-h-screen bg-ground text-white">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-ground/85 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-3xl items-center justify-between px-5">
           <Link to="/" className="flex items-center gap-2 text-white/70 transition hover:text-white">
             <ArrowRight className="h-5 w-5" />
@@ -46,7 +46,7 @@ function StaticContent({ slug }: { slug: string }) {
         {page.sections.map((s, i) => (
           <section key={i} className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
             {s.heading && (
-              <h2 className="flex items-center gap-2 text-xl font-black text-[#6EC7D1]">
+              <h2 className="flex items-center gap-2 text-xl font-black text-teal-light-ink">
                 <CheckCircle2 className="h-5 w-5" />
                 {s.heading}
               </h2>
@@ -58,7 +58,7 @@ function StaticContent({ slug }: { slug: string }) {
               <ul className="mt-4 space-y-3">
                 {s.bullets.map((b, j) => (
                   <li key={j} className="flex items-start gap-3 leading-relaxed text-white/70">
-                    <span className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#FABC05]" />
+                    <span className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gold" />
                     {b}
                   </li>
                 ))}
@@ -67,18 +67,18 @@ function StaticContent({ slug }: { slug: string }) {
           </section>
         ))}
       </div>
-      <div className="mt-8 rounded-3xl border border-[#38A7B4]/40 bg-[#38A7B4]/10 p-6 text-center md:p-8">
+      <div className="mt-8 rounded-3xl border border-teal/40 bg-teal/10 p-6 text-center md:p-8">
         <h2 className="text-xl font-black">لم تجد إجابتك؟</h2>
         <p className="mt-2 text-sm text-white/60">فريقنا يقرأ كل رسالة بنفسه ويرد خلال يوم عمل واحد.</p>
         <Link
           to="/contact"
-          className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-[#247B84] px-6 py-3 font-bold text-white transition hover:bg-[#1E666E]"
+          className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-teal-deep px-6 py-3 font-bold text-white transition hover:bg-teal-darker"
         >
           صفحة التواصل
         </Link>
       </div>
       <div className="mt-10 text-center">
-        <Link to="/diagnostic" className="inline-flex items-center gap-2 rounded-2xl bg-[#38A7B4] px-8 py-4 font-black text-[#0D0D0D] transition hover:bg-[#6EC7D1]">
+        <Link to="/diagnostic" className="inline-flex items-center gap-2 rounded-2xl bg-teal px-8 py-4 font-black text-on-gold transition hover:bg-teal-light">
           ابدأ التشخيص الذكي مجانا
         </Link>
       </div>
@@ -102,7 +102,7 @@ function FaqPage() {
               className="flex w-full items-center justify-between gap-4 px-6 py-5 text-right font-bold"
             >
               {f.q}
-              <ChevronDown className={`h-5 w-5 shrink-0 text-[#6EC7D1] transition-transform duration-300 ${open === i ? "rotate-180" : ""}`} />
+              <ChevronDown className={`h-5 w-5 shrink-0 text-teal-light-ink transition-transform duration-300 ${open === i ? "rotate-180" : ""}`} />
             </button>
             <div className={`grid transition-all duration-300 ${open === i ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
               <div className="overflow-hidden">
@@ -113,7 +113,7 @@ function FaqPage() {
         ))}
       </div>
       <div className="mt-10 text-center">
-        <Link to="/contact" className="text-sm font-bold text-[#6EC7D1] underline-offset-4 hover:underline">
+        <Link to="/contact" className="text-sm font-bold text-teal-light-ink underline-offset-4 hover:underline">
           لم تجد سؤالك؟ راسلنا مباشرة
         </Link>
       </div>

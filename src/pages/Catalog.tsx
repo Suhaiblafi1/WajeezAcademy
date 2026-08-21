@@ -16,8 +16,9 @@ const PW_CATEGORY: Record<string, string> = {
 }
 const pwCategory = (id: string) => PW_CATEGORY[id.split('-')[1]] ?? 'أساسيات'
 const LEVELS = ['الكل', 'أساسي', 'متوسط', 'متقدم'] as const
-const bestsellerIds = new Set(bestsellers.map((b) => b.id))
-const bestsellerCourseIds = new Set(bestsellerCourses.map((b) => b.id))
+/* البند ع-١: كانت هذه المجموعتان تُحسبان في نطاق الوحدة — لقطة وقت الاستيراد.
+   بعد جعل الكتالوج المضمن كسولا صارت البيانات تصل لاحقا، فلا بد أن تُحسبا
+   داخل المكوّن مرتبطتين برقم نسخة الكتالوج وإلا بقيتا فارغتين للأبد. */
 
 type Sort = 'featured' | 'shortest' | 'longest' | 'name'
 
@@ -25,7 +26,9 @@ type Sort = 'featured' | 'shortest' | 'longest' | 'name'
    بحث + تصفية بالمجال والمستوى + ترتيب، وكل الفلاتر محفوظة في
    عنوان الصفحة لتصبح النتيجة رابطا قابلا للمشاركة */
 export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
-  usePublishedContent()
+  const catalogVersion = usePublishedContent()
+  const bestsellerIds = useMemo(() => new Set(bestsellers.map((b) => b.id)), [catalogVersion])
+  const bestsellerCourseIds = useMemo(() => new Set(bestsellerCourses.map((b) => b.id)), [catalogVersion])
   const [params, setParams] = useSearchParams()
   const [modalCourse, setModalCourse] = useState<Course | null>(null)
 
@@ -59,7 +62,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
     else if (sort === 'name') list = [...list].sort((a, b) => a.name.localeCompare(b.name, 'ar'))
     else list = [...list].sort((a, b) => Number(bestsellerIds.has(b.id)) - Number(bestsellerIds.has(a.id)))
     return list
-  }, [q, cat, level, sort])
+  }, [q, cat, level, sort, bestsellerIds, catalogVersion])
 
   const shownCourses = useMemo(() => {
     let list = courses.filter(
@@ -72,7 +75,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
     else if (sort === 'name') list = [...list].sort((a, b) => a.name.localeCompare(b.name, 'ar'))
     else list = [...list].sort((a, b) => Number(bestsellerCourseIds.has(b.id)) - Number(bestsellerCourseIds.has(a.id)))
     return list
-  }, [q, cat, sort])
+  }, [q, cat, sort, bestsellerCourseIds, catalogVersion])
 
   const isPathways = kind === 'pathways'
   const count = isPathways ? shownPathways.length : shownCourses.length
@@ -91,7 +94,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
 
       {/* الترويسة */}
       <div className="text-center">
-        <div className="inline-flex items-center gap-2 rounded-full border border-[#38A7B4]/30 bg-[#38A7B4]/10 px-4 py-1.5 text-sm text-[#6EC7D1]">
+        <div className="inline-flex items-center gap-2 rounded-full border border-teal/30 bg-teal/10 px-4 py-1.5 text-sm text-teal-light-ink">
           {isPathways ? <Route className="h-3.5 w-3.5" /> : <BookOpen className="h-3.5 w-3.5" />}
           {isPathways ? 'كتالوج المسارات' : 'كتالوج الدورات'}
         </div>
@@ -107,7 +110,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
 
       {/* شريط البحث والترتيب */}
       <div className="mt-10 flex flex-col gap-3 md:flex-row md:items-center">
-        <label className="flex flex-1 items-center gap-2.5 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 transition focus-within:border-[#38A7B4]/60">
+        <label className="flex flex-1 items-center gap-2.5 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 transition focus-within:border-teal/60">
           <Search className="h-4.5 w-4.5 shrink-0 text-white/40" />
           <span className="sr-only">{isPathways ? 'ابحث في المسارات' : 'ابحث في الدورات'}</span>
           <input
@@ -125,7 +128,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
             aria-label="ترتيب النتائج"
             value={sort}
             onChange={(e) => patch('sort', e.target.value)}
-            className="cursor-pointer bg-transparent text-sm font-semibold outline-none [&>option]:bg-[#121B1D]"
+            className="cursor-pointer bg-transparent text-sm font-semibold outline-none [&>option]:bg-surface"
           >
             <option value="featured">المختارة أولا</option>
             <option value="shortest">الأقصر زمنا</option>
@@ -144,8 +147,8 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
             aria-pressed={cat === c}
             className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
               cat === c
-                ? 'border-[#38A7B4] bg-[#247B84] text-white'
-                : 'border-white/10 bg-white/[0.03] text-white/60 hover:border-[#38A7B4]/40 hover:text-[#6EC7D1]'
+                ? 'border-teal bg-teal-deep text-white'
+                : 'border-white/10 bg-white/[0.03] text-white/60 hover:border-teal/40 hover:text-teal-light-ink'
             }`}
           >
             {c}
@@ -161,8 +164,8 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
               aria-pressed={level === l}
               className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition ${
                 level === l
-                  ? 'border-[#FABC05]/60 bg-[#FABC05]/10 text-[#FABC05]'
-                  : 'border-white/10 text-white/50 hover:border-[#FABC05]/40 hover:text-[#FABC05]'
+                  ? 'border-gold/60 bg-gold/10 text-gold-ink'
+                  : 'border-white/10 text-white/50 hover:border-gold/40 hover:text-gold-ink'
               }`}
             >
               {l}
@@ -186,11 +189,11 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
           {shownPathways.map((p) => (
             <article
               key={p.id}
-              className="group flex flex-col rounded-3xl border border-white/10 bg-white/[0.03] p-6 transition hover:border-[#38A7B4]/40 hover:shadow-[0_20px_60px_-30px_rgba(56,167,180,0.4)]"
+              className="group flex flex-col rounded-3xl border border-white/10 bg-white/[0.03] p-6 transition hover:border-teal/40 hover:shadow-[0_20px_60px_-30px_rgba(56,167,180,0.4)]"
             >
               <div className="flex items-center gap-2">
                 {bestsellerIds.has(p.id) && (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FABC05]/10 px-3 py-1 text-[11px] font-bold text-[#FABC05]">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-gold/10 px-3 py-1 text-[11px] font-bold text-gold-ink">
                     <Flame className="h-3 w-3" />
                     من مختارات وجيز
                   </span>
@@ -204,14 +207,14 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
                 {weeksLabel(p.durationWeeks)} · {p.weeklyHours} أسبوعيا
               </div>
               <div className="mt-2 flex items-center gap-1.5 text-[11px] leading-5 text-white/45">
-                <Users className="h-3.5 w-3.5 shrink-0 text-[#38A7B4]" />
+                <Users className="h-3.5 w-3.5 shrink-0 text-teal-ink" />
                 {pathwayTrainers(p.id).map((t) => t.name).join('، ')}
               </div>
               <div className="mt-auto pt-5">
                 <Link
                   to={`/pathways/${p.id}`}
                   onClick={() => track('pathway_viewed', { from: 'catalog' })}
-                  className="block rounded-xl border border-[#38A7B4]/40 py-2.5 text-center text-sm font-semibold text-[#6EC7D1] transition group-hover:bg-[#247B84] group-hover:text-white"
+                  className="block rounded-xl border border-teal/40 py-2.5 text-center text-sm font-semibold text-teal-light-ink transition group-hover:bg-teal-deep group-hover:text-white"
                 >
                   تفاصيل المسار
                 </Link>
@@ -224,11 +227,11 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
           {shownCourses.map((c) => (
             <article
               key={c.id}
-              className="group flex flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-[#FABC05]/40"
+              className="group flex flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-gold/40"
             >
               <div className="flex items-center gap-2">
                 {bestsellerCourseIds.has(c.id) && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[#FABC05]/10 px-2.5 py-1 text-[10px] font-bold text-[#FABC05]">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2.5 py-1 text-[10px] font-bold text-gold-ink">
                     <Flame className="h-3 w-3" />
                     مختارة
                   </span>
@@ -239,13 +242,13 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
               <p className="mt-1 text-xs text-white/50">
                 من مسار «{c.pathwayName}» · {c.weeks} {c.weeks === 1 ? 'أسبوع' : 'أسابيع'}
               </p>
-              <span className="mt-3 w-fit rounded-full border border-[#38A7B4]/25 bg-[#38A7B4]/10 px-2.5 py-1 text-[11px] text-[#6EC7D1]">
+              <span className="mt-3 w-fit rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-[11px] text-teal-light-ink">
                 {c.skill}
               </span>
               <div className="mt-auto pt-4">
                 <button
                   onClick={() => { track('course_viewed', { from: 'catalog', category: c.category }); setModalCourse(c) }}
-                  className="w-full cursor-pointer rounded-lg border border-white/15 py-2 text-xs font-semibold transition group-hover:border-[#38A7B4]/50 group-hover:text-[#6EC7D1]"
+                  className="w-full cursor-pointer rounded-lg border border-white/15 py-2 text-xs font-semibold transition group-hover:border-teal/50 group-hover:text-teal-light-ink"
                 >
                   تفاصيل الدورة
                 </button>
@@ -256,12 +259,12 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
       )}
 
       {/* دعوة للتشخيص */}
-      <div className="mt-14 rounded-3xl border border-[#38A7B4]/25 bg-[#38A7B4]/5 p-8 text-center">
+      <div className="mt-14 rounded-3xl border border-teal/25 bg-teal/5 p-8 text-center">
         <p className="text-lg font-bold">لم تجد ما يناسبك بالضبط؟</p>
         <p className="mx-auto mt-2 max-w-md text-sm leading-7 text-white/55">
           التشخيص يطابقك مع مساراتنا المصممة — أو يركّب لك مسارا مخصصا من عدة مسارات — ويشرح لك لماذا.
         </p>
-        <Link to="/diagnostic" className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-[#247B84] px-8 py-3.5 font-bold text-white transition hover:bg-[#1E666E]">
+        <Link to="/diagnostic" className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-teal-deep px-8 py-3.5 font-bold text-white transition hover:bg-teal-darker">
           ابدأ التشخيص مجانا
           <ArrowLeft className="h-4 w-4" />
         </Link>

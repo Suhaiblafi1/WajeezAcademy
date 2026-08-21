@@ -90,22 +90,22 @@ export default function PortalLayout({ children, title }: { children: React.Reac
   /* بوابة القفل لا تظهر قبل اكتمال فحص الجلسة — زائر الديمو يراها فورا، وصاحب الحساب لا يراها أبدا */
   if (!allowed && !sessionChecked) {
     return (
-      <div dir="rtl" className="grid min-h-screen place-items-center bg-[#0D0D0D] text-white">
-        <span className="h-8 w-8 animate-spin rounded-full border-2 border-white/15 border-t-[#38A7B4]" aria-label="يُحمَّل" />
+      <div dir="rtl" className="grid min-h-screen place-items-center bg-ground text-white">
+        <span className="h-8 w-8 animate-spin rounded-full border-2 border-white/15 border-t-teal" aria-label="يُحمَّل" />
       </div>
     );
   }
 
   if (!allowed) {
     return (
-      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-[#0D0D0D] px-5 text-white">
-        <Lock className="h-12 w-12 text-[#FABC05]" />
+      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-ground px-5 text-white">
+        <Lock className="h-12 w-12 text-gold-ink" />
         <h1 className="mt-5 text-2xl font-black">منصة الطالب تُفتح بعد أول دفع ناجح</h1>
         <p className="mt-3 max-w-md text-center text-sm leading-7 text-white/60">
           وفق سياسة وجيز: حدث دفع واحد ينشئ تسجيلا واحدا، يرسل فاتورتك، ويفتح وصولك تلقائيا دون تدخل يدوي.
         </p>
         <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
-          <Link to="/diagnostic" className="rounded-full bg-[#38A7B4] px-6 py-3 font-bold text-[#0D0D0D] hover:bg-[#6EC7D1]">
+          <Link to="/diagnostic" className="rounded-full bg-teal px-6 py-3 font-bold text-on-gold hover:bg-teal-light">
             ابدأ بالتشخيص
           </Link>
           <Link to="/" className="rounded-full border border-white/15 px-6 py-3 font-bold text-white/80 hover:border-white/40">
@@ -114,7 +114,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
           {isOwnerUnlocked() && (
             <button
               onClick={() => { enablePreview(); setAllowed(true); }}
-              className="flex cursor-pointer items-center gap-1.5 rounded-full border border-dashed border-white/20 px-4 py-2 text-xs text-white/50 hover:border-[#6EC7D1]/50 hover:text-[#6EC7D1]"
+              className="flex cursor-pointer items-center gap-1.5 rounded-full border border-dashed border-white/20 px-4 py-2 text-xs text-white/50 hover:border-teal-light/50 hover:text-teal-light-ink"
             >
               <Eye className="h-3.5 w-3.5" /> معاينة تجريبية (للمالك)
             </button>
@@ -149,9 +149,9 @@ export default function PortalLayout({ children, title }: { children: React.Reac
   const moreActive = moreTabs.some((t) => pathname.startsWith(t.to));
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#0D0D0D] text-white">
+    <div dir="rtl" className="min-h-screen bg-ground text-white">
       <PrototypeBanner hidden={!!sessionUser} />
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0D0D0D]/90 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-ground/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
           <Link to="/" className="flex items-center gap-2">
             <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 object-contain" />
@@ -165,7 +165,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                 end={t.end as boolean | undefined}
                 className={({ isActive }) =>
                   `flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition lg:px-4 ${
-                    isActive ? "bg-[#38A7B4] text-[#08272B]" : "text-white/60 hover:text-white"
+                    isActive ? "bg-teal text-on-teal" : "text-white/60 hover:text-white"
                   }`
                 }
               >
@@ -179,7 +179,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                 onClick={() => setDeskMoreOpen((v) => !v)}
                 aria-label="المزيد من الصفحات"
                 className={`flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition lg:px-4 ${
-                  deskMoreActive ? "bg-[#38A7B4] text-[#08272B]" : "text-white/60 hover:text-white"
+                  deskMoreActive ? "bg-teal text-on-teal" : "text-white/60 hover:text-white"
                 }`}
               >
                 <MoreHorizontal className="h-3.5 w-3.5" />
@@ -189,7 +189,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
               {deskMoreOpen && (
                 <>
                   <button aria-label="إغلاق القائمة" onClick={() => setDeskMoreOpen(false)} className="fixed inset-0 z-40 cursor-default" />
-                  <div className="absolute left-0 top-10 z-50 w-56 rounded-2xl border border-white/10 bg-[#141414] p-2 shadow-2xl">
+                  <div className="absolute left-0 top-10 z-50 w-56 rounded-2xl border border-white/10 bg-surface p-2 shadow-2xl">
                     {deskOverflow.map((t) => (
                       <NavLink
                         key={t.to}
@@ -197,7 +197,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                         onClick={() => setDeskMoreOpen(false)}
                         className={({ isActive }) =>
                           `flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs font-bold transition ${
-                            isActive ? "bg-[#38A7B4]/15 text-[#6EC7D1]" : "text-white/60 hover:bg-white/[0.04] hover:text-white"
+                            isActive ? "bg-teal/15 text-teal-light-ink" : "text-white/60 hover:bg-white/[0.04] hover:text-white"
                           }`
                         }
                       >
@@ -216,20 +216,20 @@ export default function PortalLayout({ children, title }: { children: React.Reac
               <button
                 onClick={() => setBellOpen((v) => !v)}
                 aria-label="الإشعارات"
-                className="relative grid h-8 w-8 cursor-pointer place-items-center rounded-full border border-white/10 text-white/45 transition hover:border-[#6EC7D1]/50 hover:text-[#6EC7D1]"
+                className="relative grid h-11 w-11 cursor-pointer place-items-center rounded-full border border-white/10 text-white/45 transition hover:border-teal-light/50 hover:text-teal-light-ink"
               >
                 <Bell className="h-3.5 w-3.5" />
                 {unreadCount > 0 && (
-                  <span className="absolute -left-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-[#FABC05] px-1 text-[9px] font-black text-[#0D0D0D]">{unreadCount}</span>
+                  <span className="absolute -left-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-gold px-1 text-[9px] font-black text-on-gold">{unreadCount}</span>
                 )}
               </button>
               {bellOpen && (
                 <>
                   <button aria-label="إغلاق الإشعارات" onClick={() => setBellOpen(false)} className="fixed inset-0 z-40 cursor-default" />
-                  <div className="absolute left-0 top-10 z-50 w-80 max-w-[85vw] rounded-2xl border border-white/10 bg-[#141414] p-3 shadow-2xl">
+                  <div className="absolute left-0 top-10 z-50 w-80 max-w-[85vw] rounded-2xl border border-white/10 bg-surface p-3 shadow-2xl">
                     <div className="flex items-center justify-between px-1 pb-2">
                       <p className="text-xs font-black text-white/80">الإشعارات</p>
-                      <button onClick={markAllRead} className="flex cursor-pointer items-center gap-1 text-[10px] font-bold text-[#6EC7D1] transition hover:text-white">
+                      <button onClick={markAllRead} className="flex cursor-pointer items-center gap-1 text-[10px] font-bold text-teal-light-ink transition hover:text-white">
                         <CheckCheck className="h-3 w-3" /> تعليم الكل كمقروء
                       </button>
                     </div>
@@ -239,7 +239,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                           {realNotifs.length === 0 && <p className="px-2 py-6 text-center text-[11px] text-white/55">لا إشعارات بعد</p>}
                           {realNotifs.map((n) => (
                             <button key={n.id} onClick={() => markOneRead(n.id)}
-                              className={`block w-full cursor-pointer rounded-xl border px-3 py-2 text-right text-[11px] leading-5 ${n.status === "read" ? "border-white/5 text-white/50" : "border-[#38A7B4]/25 bg-[#38A7B4]/5 text-white/75"}`}>
+                              className={`block w-full cursor-pointer rounded-xl border px-3 py-2 text-right text-[11px] leading-5 ${n.status === "read" ? "border-white/5 text-white/50" : "border-teal/25 bg-teal/5 text-white/75"}`}>
                               <span className="block font-bold">{n.title}</span>
                               {n.body}
                             </button>
@@ -249,7 +249,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                         <>
                           {notifs.length === 0 && <p className="px-2 py-6 text-center text-[11px] text-white/55">لا إشعارات بعد</p>}
                           {notifs.map((n) => (
-                            <p key={n.id} className={`rounded-xl border px-3 py-2 text-[11px] leading-5 ${n.read ? "border-white/5 text-white/50" : "border-[#38A7B4]/25 bg-[#38A7B4]/5 text-white/75"}`}>{n.text}</p>
+                            <p key={n.id} className={`rounded-xl border px-3 py-2 text-[11px] leading-5 ${n.read ? "border-white/5 text-white/50" : "border-teal/25 bg-teal/5 text-white/75"}`}>{n.text}</p>
                           ))}
                         </>
                       )}
@@ -258,14 +258,14 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                 </>
               )}
             </div>
-            <GraduationCap className="h-4 w-4 text-[#6EC7D1]" />
+            <GraduationCap className="h-4 w-4 text-teal-light-ink" />
             <ThemeToggle />
             <span className="max-w-[110px] truncate">{user}</span>
             <button
               onClick={() => { void signOut(); navigate("/"); }}
               aria-label="تسجيل الخروج"
               title="تسجيل الخروج"
-              className="grid h-8 w-8 place-items-center rounded-full border border-white/10 text-white/45 transition hover:border-red-400/50 hover:text-red-300"
+              className="grid h-11 w-11 place-items-center rounded-full border border-white/10 text-white/45 transition hover:border-red-400/50 hover:text-red-300"
             >
               <LogOut className="h-3.5 w-3.5" />
             </button>
@@ -286,7 +286,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
       {/* تعريف المنظومة — تذييل ثقة خفيف داخل البوابة (يظهر مرة واحدة أسفل المحتوى) */}
       <EcosystemNote className="mx-auto max-w-6xl px-5 pb-24 md:pb-6" />
       {/* شريط تنقل سفلي للجوال — أربعة أساسية + «المزيد» بقائمة منبثقة */}
-      <nav aria-label="تنقل المنصة" className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-white/10 bg-[#0D0D0D]/95 pb-[max(env(safe-area-inset-bottom),0.25rem)] backdrop-blur-xl md:hidden">
+      <nav aria-label="تنقل المنصة" className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-white/10 bg-ground/95 pb-[max(env(safe-area-inset-bottom),0.25rem)] backdrop-blur-xl md:hidden">
         {mainTabs.map((t) => (
           <NavLink
             key={t.to}
@@ -294,7 +294,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
             end={t.end as boolean | undefined}
             className={({ isActive }) =>
               `flex flex-col items-center gap-1 py-2.5 text-[10px] font-bold transition ${
-                isActive ? "text-[#6EC7D1]" : "text-white/50"
+                isActive ? "text-teal-light-ink" : "text-white/50"
               }`
             }
           >
@@ -306,7 +306,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
           onClick={() => setMoreOpen(true)}
           aria-label="المزيد من الصفحات"
           className={`flex cursor-pointer flex-col items-center gap-1 py-2.5 text-[10px] font-bold transition ${
-            moreActive ? "text-[#6EC7D1]" : "text-white/50"
+            moreActive ? "text-teal-light-ink" : "text-white/50"
           }`}
         >
           <MoreHorizontal className="h-5 w-5" />
@@ -318,7 +318,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
       {moreOpen && (
         <>
           <button aria-label="إغلاق القائمة" onClick={() => setMoreOpen(false)} className="fixed inset-0 z-50 cursor-default bg-black/60 backdrop-blur-sm md:hidden" />
-          <div dir="rtl" className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl border-t border-white/10 bg-[#141414] p-5 pb-[max(env(safe-area-inset-bottom),1rem)] md:hidden">
+          <div dir="rtl" className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl border-t border-white/10 bg-surface p-5 pb-[max(env(safe-area-inset-bottom),1rem)] md:hidden">
             <div className="mb-3 flex items-center justify-between">
               <p className="text-sm font-black">صفحات أخرى</p>
               <button onClick={() => setMoreOpen(false)} aria-label="إغلاق" className="cursor-pointer text-white/50 hover:text-white"><X className="h-5 w-5" /></button>
@@ -331,7 +331,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                   onClick={() => setMoreOpen(false)}
                   className={({ isActive }) =>
                     `flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-bold transition ${
-                      isActive ? "border-[#38A7B4]/50 bg-[#38A7B4]/10 text-[#6EC7D1]" : "border-white/10 text-white/70 hover:border-white/25"
+                      isActive ? "border-teal/50 bg-teal/10 text-teal-light-ink" : "border-white/10 text-white/70 hover:border-white/25"
                     }`
                   }
                 >

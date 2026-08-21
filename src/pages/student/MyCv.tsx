@@ -59,7 +59,7 @@ export default function MyCv() {
 
       {/* رفع جديد */}
       <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
-        <h2 className="flex items-center gap-2 text-sm font-black"><Upload className="h-4 w-4 text-[#38A7B4]" /> رفع سيرة جديدة</h2>
+        <h2 className="flex items-center gap-2 text-sm font-black"><Upload className="h-4 w-4 text-teal-ink" /> رفع سيرة جديدة</h2>
         <input
           ref={fileRef}
           type="file"
@@ -73,19 +73,19 @@ export default function MyCv() {
         />
         <button
           onClick={() => fileRef.current?.click()}
-          className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-white/15 py-8 text-sm font-bold text-white/60 transition hover:border-[#38A7B4]/60 hover:text-[#6EC7D1]"
+          className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-white/15 py-8 text-sm font-bold text-white/60 transition hover:border-teal/60 hover:text-teal-light-ink"
         >
           <FileText className="h-5 w-5" /> اختر ملف سيرتك — PDF أو Word حتى {CV_MAX_LABEL}
         </button>
-        <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-2xl border border-[#FABC05]/30 bg-[#FABC05]/5 p-4">
+        <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-2xl border border-gold/30 bg-gold/5 p-4">
           <input
             type="checkbox"
             checked={consent}
             onChange={(e) => setConsent(e.target.checked)}
-            className="mt-1 h-4 w-4 shrink-0 cursor-pointer accent-[#FABC05]"
+            className="mt-1 h-4 w-4 shrink-0 cursor-pointer accent-gold"
           />
           <span className="text-xs leading-6 text-white/70">
-            <span className="font-black text-[#FABC05]">موافقة صريحة (إلزامية):</span> أوافق على أن يرى مستشاري المسند وإدارة العمليات سيرتي الذاتية لغرض الإرشاد المهني فقط، وأعلم أن كل مشاهدة تُسجل وأنني أستطيع حذفها في أي وقت.
+            <span className="font-black text-gold-ink">موافقة صريحة (إلزامية):</span> أوافق على أن يرى مستشاري المسند وإدارة العمليات سيرتي الذاتية لغرض الإرشاد المهني فقط، وأعلم أن كل مشاهدة تُسجل وأنني أستطيع حذفها في أي وقت.
           </span>
         </label>
         {!consent && (
@@ -104,7 +104,7 @@ export default function MyCv() {
             </p>
             <button
               onClick={() => fileRef.current?.click()}
-              className="mt-4 cursor-pointer rounded-full bg-[#38A7B4] px-6 py-2.5 text-sm font-black text-[#08272B] transition hover:bg-[#6EC7D1]"
+              className="mt-4 cursor-pointer rounded-full bg-teal px-6 py-2.5 text-sm font-black text-on-teal transition hover:bg-teal-light"
             >
               ارفع أول سيرة
             </button>
@@ -112,7 +112,7 @@ export default function MyCv() {
         )}
         {cvs.map((c) => (
           <div key={c.id} className="flex flex-wrap items-center gap-4 rounded-3xl border border-white/10 bg-white/[0.02] p-5">
-            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#38A7B4]/15 text-[#6EC7D1]">
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-teal/15 text-teal-light-ink">
               <FileText className="h-5 w-5" />
             </span>
             <div className="min-w-0 flex-1">
@@ -121,7 +121,7 @@ export default function MyCv() {
                 {cvKindLabel(c.mime)} · {c.sizeKb} كيلوبايت · رُفعت {fmtWhen(c.uploadedAt)}
               </p>
             </div>
-            <span className="flex items-center gap-1.5 rounded-full bg-[#38A7B4]/15 px-3 py-1 text-[10px] font-black text-[#6EC7D1]">
+            <span className="flex items-center gap-1.5 rounded-full bg-teal/15 px-3 py-1 text-[10px] font-black text-teal-light-ink">
               <ShieldCheck className="h-3 w-3" /> فعالة
             </span>
             <span className="flex items-center gap-1.5 text-[10px] text-white/50">
@@ -140,7 +140,7 @@ export default function MyCv() {
       {/* نافذة الحذف الموثق */}
       {delId && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-5 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#151515] p-6">
+          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-surface p-6">
             <div className="flex items-center justify-between">
               <h3 className="font-black">حذف السيرة — حذف منطقي بسبب موثق</h3>
               <button onClick={() => setDelId(null)} className="cursor-pointer text-white/50 hover:text-white" aria-label="إغلاق"><X className="h-5 w-5" /></button>
@@ -154,12 +154,12 @@ export default function MyCv() {
               value={delReason}
               onChange={(e) => setDelReason(e.target.value)}
               placeholder="مثال: رفعت نسخة أحدث وأريد إزالة القديمة"
-              className="mt-1.5 w-full resize-none rounded-xl border border-white/15 bg-[#0D0D0D] px-3 py-2.5 text-sm text-white focus:border-red-400 focus:outline-none"
+              className="mt-1.5 w-full resize-none rounded-xl border border-white/15 bg-ground px-3 py-2.5 text-sm text-white focus:border-red-400 focus:outline-none"
             />
             <button
               onClick={confirmDelete}
               disabled={delReason.trim().length < 5}
-              className="mt-4 w-full cursor-pointer rounded-full bg-red-400 py-3 font-black text-[#0D0D0D] transition hover:bg-red-300 disabled:cursor-not-allowed disabled:opacity-40"
+              className="mt-4 w-full cursor-pointer rounded-full bg-red-400 py-3 font-black text-on-gold transition hover:bg-red-300 disabled:cursor-not-allowed disabled:opacity-40"
             >
               تأكيد الحذف الموثق
             </button>

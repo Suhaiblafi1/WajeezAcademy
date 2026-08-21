@@ -46,7 +46,7 @@ import {
 import { AssessmentSession, createAssessment, diagQuestionById } from "@/application/diagnostic/assessment-service";
 import type { DeepeningComparison } from "@/application/diagnostic/assessment-service";
 import { loadSession, saveLastResult, loadLastResultSafe } from "@/application/diagnostic/session-store";
-import { sessionContributingReferences } from "@/data/methodology";
+import { sessionContributingReferences } from "@/data/methodology-session";
 import {
   courseById,
   pathwayCourses,
@@ -231,7 +231,7 @@ function PlanCourses({
           </p>
           <div className="mt-2.5 flex flex-wrap gap-1.5">
             {skills.map((s) => (
-              <span key={s} className="rounded-full border border-[#38A7B4]/40 bg-[#38A7B4]/10 px-2.5 py-0.5 text-[11px] font-semibold text-[#6EC7D1]">
+              <span key={s} className="rounded-full border border-teal/40 bg-teal/10 px-2.5 py-0.5 text-[11px] font-semibold text-teal-light-ink">
                 {s}
               </span>
             ))}
@@ -273,9 +273,9 @@ function CompositePlan({ composite }: { composite: CompositeView }) {
     .map((id) => pathways.find((p) => p.id === id))
     .filter((p): p is Pathway => Boolean(p));
   return (
-    <div className="mt-10 overflow-hidden rounded-3xl border border-[#FABC05]/40 bg-gradient-to-b from-[#1A1A1A] to-[#0D0D0D]">
-      <div className="border-b border-white/10 bg-[#FABC05]/10 px-6 py-3">
-        <span className="text-sm font-black text-[#FABC05]">التوصية الأولى · {composite.label_ar}</span>
+    <div className="mt-10 overflow-hidden rounded-3xl border border-gold/40 bg-gradient-to-b from-surface to-ground">
+      <div className="border-b border-white/10 bg-gold/10 px-6 py-3">
+        <span className="text-sm font-black text-gold-ink">التوصية الأولى · {composite.label_ar}</span>
         <span className="mr-2 text-xs text-white/50">
           خطة مبنية لحالتك من أكثر من مجال — وليست مسارا جاهزا من الكتالوج
         </span>
@@ -294,7 +294,7 @@ function CompositePlan({ composite }: { composite: CompositeView }) {
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           <div className="rounded-xl bg-white/[0.05] p-4">
             <p className="text-sm text-white/50">نسخة خطتك</p>
-            <p className="font-black text-[#FABC05]">{variant.label}</p>
+            <p className="font-black text-gold-ink">{variant.label}</p>
             <p className="mt-1 text-[11px] leading-5 text-white/45">{variant.hint}</p>
           </div>
           <div className="rounded-xl bg-white/[0.05] p-4">
@@ -309,7 +309,7 @@ function CompositePlan({ composite }: { composite: CompositeView }) {
           <ul className="mt-5 space-y-2">
             {composite.rationale_ar.slice(0, 4).map((r) => (
               <li key={r} className="flex items-start gap-2.5 text-sm leading-relaxed text-white/70">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#FABC05]" />
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-gold-ink" />
                 {r}
               </li>
             ))}
@@ -320,8 +320,8 @@ function CompositePlan({ composite }: { composite: CompositeView }) {
 
         {/* دورات أُزيلت بدليل إتقان موثق */}
         {composite.removed_courses.length > 0 && (
-          <div className="mt-5 rounded-2xl border border-[#38A7B4]/30 bg-[#38A7B4]/[0.06] p-4">
-            <p className="text-sm font-black text-[#6EC7D1]">أزلناها لأنك تتقنها — لا تدفع ثمن ما تعرفه:</p>
+          <div className="mt-5 rounded-2xl border border-teal/30 bg-teal/[0.06] p-4">
+            <p className="text-sm font-black text-teal-light-ink">أزلناها لأنك تتقنها — لا تدفع ثمن ما تعرفه:</p>
             <ul className="mt-2 space-y-1.5">
               {composite.removed_courses.map((r) => (
                 <li key={r.courseId} className="text-xs leading-relaxed text-white/60">
@@ -337,7 +337,7 @@ function CompositePlan({ composite }: { composite: CompositeView }) {
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             {composite.capstone_ar && (
               <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
-                <p className="flex items-center gap-2 text-xs font-black text-[#FABC05]">
+                <p className="flex items-center gap-2 text-xs font-black text-gold-ink">
                   <FileText className="h-4 w-4" /> مشروع إثبات الجاهزية
                 </p>
                 <p className="mt-2 text-xs leading-6 text-white/65">{composite.capstone_ar}</p>
@@ -345,7 +345,7 @@ function CompositePlan({ composite }: { composite: CompositeView }) {
             )}
             {composite.success_metric_ar && (
               <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
-                <p className="flex items-center gap-2 text-xs font-black text-[#6EC7D1]">
+                <p className="flex items-center gap-2 text-xs font-black text-teal-light-ink">
                   <Gauge className="h-4 w-4" /> كيف تعرف أنك نجحت؟
                 </p>
                 <p className="mt-2 text-xs leading-6 text-white/65">{composite.success_metric_ar}</p>
@@ -423,9 +423,9 @@ export default function Diagnostic() {
     if (stage !== "result" || !result || !topPathway) return;
     if (result.resultJson.kind === "guardrail_stop") return;
     if (authed) {
-      track("result_full_viewed", { confidence: Math.round(result.confidence * 100) });
+      track("result_full_viewed", { confidence: Math.round(result.confidence) });
     } else {
-      track("result_teaser_viewed", { confidence: Math.round(result.confidence * 100) });
+      track("result_teaser_viewed", { confidence: Math.round(result.confidence) });
       track("gate_viewed");
     }
   }, [stage, result, topPathway, authed]);
@@ -592,7 +592,7 @@ export default function Diagnostic() {
     setSavedProgress(null);
     setResult(res);
     setTopPathway(res.top);
-    track("recommendation_viewed", { confidence: res.confidence });
+    track("recommendation_viewed", { confidence: Math.round(res.confidence) });
     setCanDeepen(true);
     setStage("result");
     window.scrollTo(0, 0);
@@ -724,14 +724,14 @@ export default function Diagnostic() {
   const qOptions: DiagOption[] = question ? (resolve(question.options, answers) ?? []) : [];
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#0D0D0D] text-white">
+    <div dir="rtl" className="min-h-screen bg-ground text-white">
       <SeoHead
         title="التشخيص الذكي"
         description="تشخيص تعليمي تكيفي يفهم هدفك وواقعك، ويوصي بمسار واحد مفسّر بدرجة ثقة — مجاني ودون حساب."
         path="/diagnostic"
       />
       {/* Top bar */}
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0D0D0D]/85 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-ground/85 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-5">
           <Link to="/" className="flex items-center gap-2 text-white/70 hover:text-white">
             <ArrowRight className="h-5 w-5" />
@@ -747,23 +747,23 @@ export default function Diagnostic() {
       {/* ─── Intro ─── */}
       {stage === "intro" && (
         <section className="story-fade mx-auto max-w-3xl px-5 py-16 text-center md:py-24">
-          <Badge className="border border-[#FABC05]/40 bg-[#FABC05]/10 text-[#FABC05]">مؤشر وجيز الكامل</Badge>
+          <Badge className="border border-gold/40 bg-gold/10 text-gold-ink">مؤشر وجيز الكامل</Badge>
           <h1 className="mt-5 text-3xl font-black leading-snug md:text-5xl">
             ثلاث دقائق من الوضوح
-            <span className="text-[#6EC7D1]"> تختصر عليك شهورا من التشتت</span>
+            <span className="text-teal-light-ink"> تختصر عليك شهورا من التشتت</span>
           </h1>
           <p className="mx-auto mt-5 max-w-xl leading-loose text-white/60">
             حديث قصير عن يومك وهدفك — كل إجابة تشكّل سؤالك التالي، وتنتهي بمسارك الواضح.
           </p>
 
-          <div className="mx-auto mt-7 flex max-w-full items-center justify-center gap-1.5 whitespace-nowrap sm:gap-2">
+          <div className="mx-auto mt-7 flex max-w-full flex-wrap items-center justify-center gap-1.5 sm:gap-2 sm:flex-nowrap sm:whitespace-nowrap">
             {[
               { icon: Compass, text: "توصية مفسَّرة، ليست حظًا" },
               { icon: Clock3, text: "١–٣ دقائق فقط" },
               { icon: ShieldCheck, text: "تشخيص تعليمي — لا نفسي ولا طبي" },
             ].map((f) => (
               <span key={f.text} className="inline-flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-[10px] font-bold text-white/65 sm:px-3.5 sm:text-[11px]">
-                <f.icon className="h-3 w-3 shrink-0 text-[#6EC7D1] sm:h-3.5 sm:w-3.5" />
+                <f.icon className="h-3 w-3 shrink-0 text-teal-light-ink sm:h-3.5 sm:w-3.5" />
                 {f.text}
               </span>
             ))}
@@ -772,17 +772,17 @@ export default function Diagnostic() {
           <Button
             size="lg"
             onClick={begin}
-            className="mt-10 h-14 rounded-full bg-[#FABC05] px-10 text-lg font-black text-[#0D0D0D] hover:bg-[#FABC05]/90"
+            className="mt-10 h-14 rounded-full bg-gold px-10 text-lg font-black text-on-gold hover:bg-gold/90"
           >
             ابدأ الحديث
             <ArrowLeft className="mr-2 h-5 w-5" />
           </Button>
-          <p className="mt-4 text-xs text-white/40">ابدأ مجانا — ترى مسارك المقترح فورا، وحسابك المجاني يفتح نتيجتك كاملة · بالمتابعة أنت توافق على استخدام إجاباتك لبناء التوصية · التشخيص مصمم للبالغين، وإن كنت دون ١٨ عاما أكمله مع ولي أمرك</p>
+          <p className="mt-4 text-xs text-white/55">ابدأ مجانا — ترى مسارك المقترح فورا، وحسابك المجاني يفتح نتيجتك كاملة · بالمتابعة أنت توافق على استخدام إجاباتك لبناء التوصية · التشخيص مصمم للبالغين، وإن كنت دون ١٨ عاما أكمله مع ولي أمرك</p>
 
           {/* بطاقة الاستئناف — تشخيص غير مكتمل ينتظر صاحبه */}
           {savedProgress && (
-            <div className="mx-auto mt-8 max-w-xl rounded-2xl border border-[#38A7B4]/40 bg-[#38A7B4]/10 p-5">
-              <p className="flex items-center justify-center gap-2 text-sm font-bold text-[#6EC7D1]">
+            <div className="mx-auto mt-8 max-w-xl rounded-2xl border border-teal/40 bg-teal/10 p-5">
+              <p className="flex items-center justify-center gap-2 text-sm font-bold text-teal-light-ink">
                 <History className="h-4 w-4" />
                 لديك تشخيص غير مكتمل — أجبت على {savedProgress.asked.length} من الأسئلة
               </p>
@@ -790,7 +790,7 @@ export default function Diagnostic() {
               <div className="mt-4 flex flex-wrap justify-center gap-3">
                 <Button
                   onClick={resume}
-                  className="rounded-full bg-[#38A7B4] px-6 font-black text-[#08272B] hover:bg-[#38A7B4]/90"
+                  className="rounded-full bg-teal px-6 font-black text-on-teal hover:bg-teal/90"
                 >
                   أكمل من حيث توقفت
                   <ArrowLeft className="mr-2 h-4 w-4" />
@@ -808,8 +808,8 @@ export default function Diagnostic() {
 
           {/* نتيجة قديمة لم يمكن ترحيلها — حُذفت بأمان ونطلب إعادة التشخيص بوضوح */}
           {!savedProgress && !savedDone && discardedResultNotice && (
-            <div className="mx-auto mt-8 max-w-xl rounded-2xl border border-[#FABC05]/40 bg-[#FABC05]/[0.07] p-5">
-              <p className="flex items-center justify-center gap-2 text-sm font-bold text-[#FABC05]">
+            <div className="mx-auto mt-8 max-w-xl rounded-2xl border border-gold/40 bg-gold/[0.07] p-5">
+              <p className="flex items-center justify-center gap-2 text-sm font-bold text-gold-ink">
                 <History className="h-4 w-4" />
                 نتيجتك السابقة لم تعد صالحة
               </p>
@@ -819,8 +819,8 @@ export default function Diagnostic() {
 
           {/* نتيجة مكتملة محفوظة — لا نطلب المؤشر مرتين */}
           {!savedProgress && savedDone && (
-            <div className="mx-auto mt-8 max-w-xl rounded-2xl border border-[#38A7B4]/40 bg-[#38A7B4]/10 p-5">
-              <p className="flex items-center justify-center gap-2 text-sm font-bold text-[#6EC7D1]">
+            <div className="mx-auto mt-8 max-w-xl rounded-2xl border border-teal/40 bg-teal/10 p-5">
+              <p className="flex items-center justify-center gap-2 text-sm font-bold text-teal-light-ink">
                 <History className="h-4 w-4" />
                 لديك نتيجة مؤشر محفوظة على جهازك
               </p>
@@ -828,7 +828,7 @@ export default function Diagnostic() {
               <div className="mt-4 flex flex-wrap justify-center gap-3">
                 <Button
                   onClick={showSavedResult}
-                  className="rounded-full bg-[#38A7B4] px-6 font-black text-[#08272B] hover:bg-[#38A7B4]/90"
+                  className="rounded-full bg-teal px-6 font-black text-on-teal hover:bg-teal/90"
                 >
                   اعرض نتيجتي المحفوظة
                   <ArrowLeft className="mr-2 h-4 w-4" />
@@ -839,9 +839,9 @@ export default function Diagnostic() {
 
           {/* المرجعية العلمية — آخر الشاشة: تطمين هادئ لمن يريد، لا حاجز أمام البدء */}
           <p className="mx-auto mt-10 max-w-lg rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4 text-xs leading-relaxed text-white/50">
-            نسترشد في بناء أسئلتنا بأطر مهنية وتعليمية معروفة: <span className="font-bold text-[#6EC7D1]">RIASEC</span> للميول المهنية،
-            و<span className="font-bold text-[#6EC7D1]">O*NET وESCO</span> لخرائط المهارات،
-            و<span className="font-bold text-[#6EC7D1]">DigComp</span> للجاهزية الرقمية — وتُعرض عليك تفاصيلها في صفحة المنهجية.
+            نسترشد في بناء أسئلتنا بأطر مهنية وتعليمية معروفة: <span className="font-bold text-teal-light-ink">RIASEC</span> للميول المهنية،
+            و<span className="font-bold text-teal-light-ink">O*NET وESCO</span> لخرائط المهارات،
+            و<span className="font-bold text-teal-light-ink">DigComp</span> للجاهزية الرقمية — وتُعرض عليك تفاصيلها في صفحة المنهجية.
           </p>
         </section>
       )}
@@ -850,15 +850,15 @@ export default function Diagnostic() {
       {stage === "questions" && question && (
         <section className="story-fade mx-auto max-w-2xl px-5 py-12 md:py-16">
           {offline && (
-            <div role="status" className="mb-5 rounded-2xl border border-[#FABC05]/40 bg-[#FABC05]/10 px-5 py-3 text-center text-xs font-bold text-[#FABC05]">
+            <div role="status" className="mb-5 rounded-2xl border border-gold/40 bg-gold/10 px-5 py-3 text-center text-xs font-bold text-gold-ink">
               انقطع الاتصال بالشبكة — لا تقلق: تشخيصك يعمل على جهازك وإجاباتك محفوظة، أكمل بثقة
             </div>
           )}
           {/* شريط جولة التدقيق — يحل محل شريط المراحل أثناء «دقّق خطتك أكثر» */}
           {deepStep ? (
-            <div className="mb-6 rounded-2xl border border-[#38A7B4]/40 bg-[#38A7B4]/[0.07] p-4">
+            <div className="mb-6 rounded-2xl border border-teal/40 bg-teal/[0.07] p-4">
               <div className="flex items-center justify-between gap-3">
-                <p className="flex items-center gap-2 text-sm font-black text-[#6EC7D1]">
+                <p className="flex items-center gap-2 text-sm font-black text-teal-light-ink">
                   <Wand2 className="h-4 w-4" />
                   جولة تدقيق خطتك — أسئلة أعمق لزيادة وضوح التوصية
                 </p>
@@ -868,7 +868,7 @@ export default function Diagnostic() {
               </div>
               <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
                 <div
-                  className="h-full rounded-full bg-[#38A7B4] transition-all duration-500"
+                  className="h-full rounded-full bg-teal transition-all duration-500"
                   style={{ width: `${(deepStep.index / deepStep.total) * 100}%` }}
                 />
               </div>
@@ -889,9 +889,9 @@ export default function Diagnostic() {
                     <span
                       className={`grid h-7 w-7 place-items-center rounded-full border text-[11px] font-black transition ${
                         active
-                          ? "border-[#FABC05] bg-[#FABC05] text-[#0D0D0D]"
+                          ? "border-gold bg-gold text-on-gold"
                           : done
-                            ? "border-[#38A7B4] bg-[#38A7B4]/20 text-[#6EC7D1]"
+                            ? "border-teal bg-teal/20 text-teal-light-ink"
                             : "border-white/15 text-white/55"
                       }`}
                     >
@@ -899,7 +899,7 @@ export default function Diagnostic() {
                     </span>
                     <span
                       className={`text-center text-[10px] font-bold leading-tight md:text-[11px] ${
-                        active ? "text-[#FABC05]" : done ? "text-[#6EC7D1]" : "text-white/55"
+                        active ? "text-gold-ink" : done ? "text-teal-light-ink" : "text-white/55"
                       }`}
                     >
                       {s.label}
@@ -912,11 +912,11 @@ export default function Diagnostic() {
               <span>
                 سؤال {asked.length + 1} من ~{estimatedTotal}
               </span>
-              <span className="text-[#6EC7D1]">{question.moduleLabel}</span>
+              <span className="text-teal-light-ink">{question.moduleLabel}</span>
             </div>
             <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
               <div
-                className="h-full rounded-full bg-gradient-to-l from-[#38A7B4] to-[#FABC05] transition-all duration-500"
+                className="h-full rounded-full bg-gradient-to-l from-teal to-gold transition-all duration-500"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -928,13 +928,13 @@ export default function Diagnostic() {
           {understoodDims.length > 0 && (
             <div className="mb-6 flex flex-wrap items-center gap-2">
               <span className="flex items-center gap-1.5 text-xs font-bold text-white/45">
-                <BrainCircuit className="h-3.5 w-3.5 text-[#38A7B4]" />
+                <BrainCircuit className="h-3.5 w-3.5 text-teal-ink" />
                 يفهم الآن:
               </span>
               {understoodDims.map((d) => (
                 <span
                   key={d}
-                  className="rounded-full border border-[#38A7B4]/30 bg-[#38A7B4]/10 px-2.5 py-0.5 text-[11px] font-semibold text-[#6EC7D1]"
+                  className="rounded-full border border-teal/30 bg-teal/10 px-2.5 py-0.5 text-[11px] font-semibold text-teal-light-ink"
                 >
                   {DIM_LABELS[d]}
                 </span>
@@ -946,21 +946,21 @@ export default function Diagnostic() {
 
           <div key={question.id} className="story-fade">
             {(question.level === "deep" || question.level === "conditional") && (
-              <p className="mb-4 w-fit rounded-full border border-[#FABC05]/40 bg-[#FABC05]/10 px-3 py-1 text-xs font-bold text-[#FABC05]">
+              <p className="mb-4 w-fit rounded-full border border-gold/40 bg-gold/10 px-3 py-1 text-xs font-bold text-gold-ink">
                 سؤال تعميق — بناءً على إجاباتك تحديدا
               </p>
             )}
             <h2 className="text-2xl font-black leading-snug md:text-3xl">{qText}</h2>
             {deepStep?.reasonAr && (
-              <p className="mt-3 w-fit rounded-xl border border-[#38A7B4]/30 bg-[#38A7B4]/[0.06] px-3.5 py-2 text-[11px] leading-relaxed text-white/55">
-                <span className="font-bold text-[#6EC7D1]">لماذا هذا السؤال؟ </span>
+              <p className="mt-3 w-fit rounded-xl border border-teal/30 bg-teal/[0.06] px-3.5 py-2 text-[11px] leading-relaxed text-white/55">
+                <span className="font-bold text-teal-light-ink">لماذا هذا السؤال؟ </span>
                 {deepStep.reasonAr}
               </p>
             )}
             {qHint && <p className="mt-3 text-sm leading-relaxed text-white/50">{qHint}</p>}
             {question.source && (
               <p className="mt-4 w-fit rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1.5 text-[11px] leading-relaxed text-white/45">
-                <span className="font-bold text-[#6EC7D1]">المصدر العلمي: </span>
+                <span className="font-bold text-teal-light-ink">المصدر العلمي: </span>
                 {question.source}
               </p>
             )}
@@ -975,8 +975,8 @@ export default function Diagnostic() {
                       onClick={() => answer(question.id, opt.value, opt.optionId ? [opt.optionId] : undefined)}
                       className={`rounded-2xl border p-5 text-right transition-all ${
                         selected
-                          ? "border-[#6EC7D1] bg-[#38A7B4]/15"
-                          : "border-white/10 bg-white/[0.03] hover:border-[#6EC7D1]/60 hover:bg-white/[0.06]"
+                          ? "border-teal-light bg-teal/15"
+                          : "border-white/10 bg-white/[0.03] hover:border-teal-light/60 hover:bg-white/[0.06]"
                       }`}
                     >
                       <span className="text-base font-bold">{opt.label}</span>
@@ -993,7 +993,7 @@ export default function Diagnostic() {
                   onChange={(e) => setTextDraft(e.target.value)}
                   rows={4}
                   placeholder="اكتب بحرية… مثال: أعمل بنظام الورديات ووقتي متقطع، وأحلم أن أفتتح مشروعا صغيرا بعد سنتين"
-                  className="w-full rounded-2xl border border-white/15 bg-white/[0.04] p-5 text-base leading-relaxed text-white placeholder:text-white/30 focus:border-[#6EC7D1] focus:outline-none"
+                  className="w-full rounded-2xl border border-white/15 bg-white/[0.04] p-5 text-base leading-relaxed text-white placeholder:text-white/30 focus:border-teal-light focus:outline-none"
                 />
                 <div className="mt-5 flex items-center justify-between">
                   <button
@@ -1005,7 +1005,7 @@ export default function Diagnostic() {
                   <Button
                     onClick={() => answer(question.id, textDraft.trim())}
                     disabled={textDraft.trim().length === 0}
-                    className="rounded-full bg-[#FABC05] px-8 font-black text-[#0D0D0D] hover:bg-[#FABC05]/90"
+                    className="rounded-full bg-gold px-8 font-black text-on-gold hover:bg-gold/90"
                   >
                     متابعة
                     <ArrowLeft className="mr-2 h-4 w-4" />
@@ -1030,8 +1030,8 @@ export default function Diagnostic() {
                               aria-label={`${item.label}: مستوى ${n}`}
                               className={`h-10 flex-1 rounded-xl border text-sm font-black transition ${
                                 active
-                                  ? "border-[#38A7B4] bg-[#38A7B4]/25 text-[#6EC7D1]"
-                                  : "border-white/10 bg-white/[0.03] text-white/55 hover:border-[#6EC7D1]/50"
+                                  ? "border-teal bg-teal/25 text-teal-light-ink"
+                                  : "border-white/10 bg-white/[0.03] text-white/55 hover:border-teal-light/50"
                               }`}
                             >
                               {n}
@@ -1059,7 +1059,7 @@ export default function Diagnostic() {
                       )
                     }
                     disabled={Object.keys(ratingsDraft).length < question.items.length}
-                    className="rounded-full bg-[#FABC05] px-8 font-black text-[#0D0D0D] hover:bg-[#FABC05]/90"
+                    className="rounded-full bg-gold px-8 font-black text-on-gold hover:bg-gold/90"
                   >
                     متابعة
                     <ArrowLeft className="mr-2 h-4 w-4" />
@@ -1082,13 +1082,13 @@ export default function Diagnostic() {
                         disabled={disabled}
                         className={`rounded-2xl border p-4 text-right transition-all ${
                           selected
-                            ? "border-[#FABC05] bg-[#FABC05]/15"
-                            : "border-white/10 bg-white/[0.03] hover:border-[#FABC05]/60 disabled:opacity-40"
+                            ? "border-gold bg-gold/15"
+                            : "border-white/10 bg-white/[0.03] hover:border-gold/60 disabled:opacity-40"
                         }`}
                       >
                         <span className="flex items-center justify-between text-sm font-bold">
                           {opt.label}
-                          {selected && <CheckCircle2 className="h-4 w-4 shrink-0 text-[#FABC05]" />}
+                          {selected && <CheckCircle2 className="h-4 w-4 shrink-0 text-gold-ink" />}
                         </span>
                       </button>
                     );
@@ -1101,7 +1101,7 @@ export default function Diagnostic() {
                   <Button
                     onClick={() => submitMulti(question)}
                     disabled={multiDraft.length === 0}
-                    className="rounded-full bg-[#FABC05] px-8 font-black text-[#0D0D0D] hover:bg-[#FABC05]/90"
+                    className="rounded-full bg-gold px-8 font-black text-on-gold hover:bg-gold/90"
                   >
                     متابعة
                     <ArrowLeft className="mr-2 h-4 w-4" />
@@ -1125,7 +1125,7 @@ export default function Diagnostic() {
                   window.setTimeout(() => setSavedFlash(false), 2200);
                 }}
                 className={`flex items-center gap-2 text-sm font-semibold transition ${
-                  savedFlash ? "text-[#6EC7D1]" : "text-white/50 hover:text-white"
+                  savedFlash ? "text-teal-light-ink" : "text-white/50 hover:text-white"
                 }`}
               >
                 {savedFlash ? (
@@ -1138,7 +1138,7 @@ export default function Diagnostic() {
                 )}
               </button>
               {answers[question.id] && question.type === "single" && (
-                <span className="flex items-center gap-1.5 text-xs text-[#6EC7D1]">
+                <span className="flex items-center gap-1.5 text-xs text-teal-light-ink">
                   <CheckCircle2 className="h-4 w-4" /> تمت الإجابة
                 </span>
               )}
@@ -1166,7 +1166,7 @@ export default function Diagnostic() {
                 : "لم نحفظ توصية ولم نرشّح مسارا. إن غيّرت رأيك فالبداية الجديدة تستغرق دقائق."}
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-              <Button size="lg" className="h-12 rounded-full bg-[#FABC05] px-8 font-black text-[#0D0D0D] hover:bg-[#FABC05]/90" onClick={restart}>
+              <Button size="lg" className="h-12 rounded-full bg-gold px-8 font-black text-on-gold hover:bg-gold/90" onClick={restart}>
                 ابدأ من جديد
               </Button>
               <Button size="lg" variant="outline" className="h-12 rounded-full border-white/15 px-8 font-bold text-white/70" asChild>
@@ -1186,12 +1186,12 @@ export default function Diagnostic() {
             const isExploratory = result.resultJson.kind === "exploratory_direction";
             return (
               <section className="story-fade mx-auto max-w-xl px-5 py-20 text-center md:py-24">
-                <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[#38A7B4]/15">
-                  <Compass className="h-7 w-7 text-[#6EC7D1]" />
+                <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-teal/15">
+                  <Compass className="h-7 w-7 text-teal-light-ink" />
                 </span>
                 <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-                  <Badge className="border border-[#38A7B4]/40 bg-[#38A7B4]/10 text-[#6EC7D1]">اكتمل التشخيص</Badge>
-                  <Badge className="bg-[#38A7B4] font-black text-[#08272B]">
+                  <Badge className="border border-teal/40 bg-teal/10 text-teal-light-ink">اكتمل التشخيص</Badge>
+                  <Badge className="bg-teal font-black text-on-teal">
                     {isExploratory ? "اتجاه استكشافي" : "مراجعة مستشار"}
                   </Badge>
                 </div>
@@ -1209,7 +1209,7 @@ export default function Diagnostic() {
                     <p className="text-xs font-bold text-white/45">المجالات الأقرب لك من إجاباتك الآن:</p>
                     <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
                       {exploration!.domain_shortlist!.map((d) => (
-                        <span key={d.id} className="rounded-full border border-[#38A7B4]/40 bg-[#38A7B4]/10 px-4 py-1.5 text-xs font-bold text-[#6EC7D1]">
+                        <span key={d.id} className="rounded-full border border-teal/40 bg-teal/10 px-4 py-1.5 text-xs font-bold text-teal-light-ink">
                           {d.label_ar}
                         </span>
                       ))}
@@ -1223,7 +1223,7 @@ export default function Diagnostic() {
                     <ul className="mt-3 space-y-2">
                       {exploration!.evidence_suggestions_ar!.slice(0, 4).map((s) => (
                         <li key={s} className="flex items-start gap-2 text-xs leading-relaxed text-white/60">
-                          <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#6EC7D1]" />
+                          <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-teal-light-ink" />
                           {s}
                         </li>
                       ))}
@@ -1234,7 +1234,7 @@ export default function Diagnostic() {
                 <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
                   <Button
                     size="lg"
-                    className="h-12 rounded-full bg-[#FABC05] px-8 font-black text-[#0D0D0D] hover:bg-[#FABC05]/90"
+                    className="h-12 rounded-full bg-gold px-8 font-black text-on-gold hover:bg-gold/90"
                     onClick={restart}
                   >
                     <RefreshCcw className="ml-2 h-4 w-4" />
@@ -1268,8 +1268,8 @@ export default function Diagnostic() {
             return (
           <div className="text-center">
             <div className="flex flex-wrap items-center justify-center gap-2">
-              <Badge className="border border-[#38A7B4]/40 bg-[#38A7B4]/10 text-[#6EC7D1]">اكتمل التشخيص</Badge>
-              <Badge className={`font-black ${compositeView ? "bg-[#FABC05] text-[#0D0D0D]" : "bg-[#38A7B4] text-[#08272B]"}`}>
+              <Badge className="border border-teal/40 bg-teal/10 text-teal-light-ink">اكتمل التشخيص</Badge>
+              <Badge className={`font-black ${compositeView ? "bg-gold text-on-gold" : "bg-teal text-on-teal"}`}>
                 {compositeView ? "خطة مركبة مخصصة" : "مسارك المقترح"}
               </Badge>
             </div>
@@ -1282,7 +1282,7 @@ export default function Diagnostic() {
                   size="lg"
                   variant="outline"
                   onClick={startDeepeningRound}
-                  className="h-12 rounded-full border-[#38A7B4]/50 px-8 font-black text-[#6EC7D1] hover:bg-[#38A7B4]/15"
+                  className="h-12 rounded-full border-teal/50 px-8 font-black text-teal-light-ink hover:bg-teal/15"
                 >
                   <Wand2 className="ml-2 h-4 w-4" />
                   لديك دقيقة أخرى لنتأكد أكثر؟
@@ -1295,7 +1295,7 @@ export default function Diagnostic() {
               </div>
             )}
             {deepUnavailable && (
-              <p className="mt-2 text-[11px] font-bold text-[#6EC7D1] print:hidden">
+              <p className="mt-2 text-[11px] font-bold text-teal-light-ink print:hidden">
                 صورتك مكتملة بما يكفي — لا أسئلة إضافية نافعة، توصيتك جاهزة بثقة.
               </p>
             )}
@@ -1310,10 +1310,10 @@ export default function Diagnostic() {
             if (!cmp.changed) {
               /* النتيجة نفسها — سطر طمأنة واحد يكفي، بلا صندوق مقارنة مكرر */
               return (
-                <div className="mt-8 flex items-start gap-3 rounded-2xl border border-[#38A7B4]/40 bg-[#38A7B4]/[0.05] px-5 py-4 text-right">
-                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#6EC7D1]" />
+                <div className="mt-8 flex items-start gap-3 rounded-2xl border border-teal/40 bg-teal/[0.05] px-5 py-4 text-right">
+                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-teal-light-ink" />
                   <div>
-                    <p className="text-sm font-black text-[#6EC7D1]">اطمئن — بقي مسارك هو نفسه بعد التدقيق</p>
+                    <p className="text-sm font-black text-teal-light-ink">اطمئن — بقي مسارك هو نفسه بعد التدقيق</p>
                     <p className="mt-1 text-xs leading-relaxed text-white/60">
                       {cmp.note_ar} وإن حسّنا دورة داخل مسارك أو اقترحنا إضافة تناسبك فستجدها في خطتك أدناه —
                       ويمكنك تخصيصها بنفسك: استبدالا أو حذفا أو هدية مجانية.
@@ -1323,12 +1323,12 @@ export default function Diagnostic() {
               );
             }
             return (
-              <div className={`mt-8 rounded-3xl border p-6 md:p-8 ${cmp.changed ? "border-[#FABC05]/50 bg-[#FABC05]/[0.06]" : "border-[#38A7B4]/40 bg-[#38A7B4]/[0.05]"}`}>
+              <div className={`mt-8 rounded-3xl border p-6 md:p-8 ${cmp.changed ? "border-gold/50 bg-gold/[0.06]" : "border-teal/40 bg-teal/[0.05]"}`}>
                 <h3 className="flex items-center gap-2 text-lg font-black">
-                  <Wand2 className={`h-5 w-5 ${cmp.changed ? "text-[#FABC05]" : "text-[#6EC7D1]"}`} />
+                  <Wand2 className={`h-5 w-5 ${cmp.changed ? "text-gold-ink" : "text-teal-light-ink"}`} />
                   نتيجة تدقيق خطتك
                 </h3>
-                <p className={`mt-3 text-sm font-bold leading-relaxed ${cmp.changed ? "text-[#FABC05]" : "text-[#6EC7D1]"}`}>
+                <p className={`mt-3 text-sm font-bold leading-relaxed ${cmp.changed ? "text-gold-ink" : "text-teal-light-ink"}`}>
                   {cmp.note_ar}
                 </p>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -1337,8 +1337,8 @@ export default function Diagnostic() {
                     <p className="mt-1.5 text-sm font-black leading-snug text-white/85">{cmp.before.topLabel_ar}</p>
                     <p className="mt-1 text-xs text-white/55">مستوى الثبات: {cmp.before.confidenceBand_ar}</p>
                   </div>
-                  <div className="rounded-xl border border-[#38A7B4]/30 bg-[#38A7B4]/[0.07] p-4">
-                    <p className="text-[11px] font-bold text-[#6EC7D1]">بعد التدقيق</p>
+                  <div className="rounded-xl border border-teal/30 bg-teal/[0.07] p-4">
+                    <p className="text-[11px] font-bold text-teal-light-ink">بعد التدقيق</p>
                     <p className="mt-1.5 text-sm font-black leading-snug">{cmp.after.topLabel_ar}</p>
                     <p className="mt-1 text-xs text-white/65">مستوى الثبات: {cmp.after.confidenceBand_ar}</p>
                   </div>
@@ -1346,7 +1346,7 @@ export default function Diagnostic() {
                 <ul className="mt-4 space-y-1.5">
                   {cmp.reasons_ar.map((r) => (
                     <li key={r} className="flex items-start gap-2 text-xs leading-relaxed text-white/60">
-                      <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-[#6EC7D1]" />
+                      <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-teal-light" />
                       {r}
                     </li>
                   ))}
@@ -1357,13 +1357,13 @@ export default function Diagnostic() {
 
           {/* بطاقة التوصية الأولى للمسار القياسي — تظهر فقط عندما لا تفوز خطة مركبة */}
           {((result.resultJson.composite as CompositeView | null) ?? null) === null && (
-          <div className="mt-10 overflow-hidden rounded-3xl border border-[#38A7B4]/40 bg-gradient-to-b from-[#12343B] to-[#0D0D0D]">
-            <div className="border-b border-white/10 bg-[#38A7B4]/10 px-6 py-3 text-sm font-bold text-[#6EC7D1]">
+          <div className="mt-10 overflow-hidden rounded-3xl border border-teal/40 bg-gradient-to-b from-surface-teal to-ground">
+            <div className="border-b border-white/10 bg-teal/10 px-6 py-3 text-sm font-bold text-teal-light-ink">
               التوصية الأولى
             </div>
             <div className="p-6 md:p-8">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge className="bg-[#FABC05] font-black text-[#0D0D0D]">{topPathway.badge ?? topPathway.sector}</Badge>
+                <Badge className="bg-gold font-black text-on-gold">{topPathway.badge ?? topPathway.sector}</Badge>
                 <Badge variant="outline" className="border-white/20 text-white/70">{topPathway.sector}</Badge>
                 <Badge variant="outline" className="border-white/20 text-white/70">{topPathway.level}</Badge>
               </div>
@@ -1373,24 +1373,24 @@ export default function Diagnostic() {
               {/* المدة والوقت والمستوى — شارات صغيرة لا تنافس اسم المسار */}
               <div className="mt-5 flex flex-wrap items-center gap-2">
                 <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-bold text-white/70">
-                  <BookOpen className="h-3.5 w-3.5 text-[#6EC7D1]" />
+                  <BookOpen className="h-3.5 w-3.5 text-teal-light-ink" />
                   {(pathwayCourses[topPathway.id] ?? []).length} دورات
                 </span>
                 <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-bold text-white/70">
-                  <CalendarClock className="h-3.5 w-3.5 text-[#6EC7D1]" />
+                  <CalendarClock className="h-3.5 w-3.5 text-teal-light-ink" />
                   {weeksLabel(topPathway.durationWeeks)}
                 </span>
                 <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-bold text-white/70">
-                  <Clock3 className="h-3.5 w-3.5 text-[#6EC7D1]" />
+                  <Clock3 className="h-3.5 w-3.5 text-teal-light-ink" />
                   {topPathway.weeklyHours} أسبوعيا
                 </span>
                 <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-bold text-white/70">
-                  <Gauge className="h-3.5 w-3.5 text-[#6EC7D1]" />
+                  <Gauge className="h-3.5 w-3.5 text-teal-light-ink" />
                   مستوى {topPathway.level}
                 </span>
               </div>
               <p className="mt-3 flex items-start gap-2 text-sm leading-relaxed text-white/60">
-                <RouteIcon className="mt-0.5 h-4 w-4 shrink-0 text-[#FABC05]" />
+                <RouteIcon className="mt-0.5 h-4 w-4 shrink-0 text-gold-ink" />
                 <span>
                   <span className="font-bold text-white/80">المخرج العملي: </span>
                   {topPathway.output}
@@ -1401,7 +1401,7 @@ export default function Diagnostic() {
                 <p className="mb-2 text-sm font-bold text-white/60">المهارات المحورية التي ستبنيها:</p>
                 <div className="flex flex-wrap gap-2">
                   {topPathway.coreSkills.map((s) => (
-                    <span key={s} className="rounded-full border border-[#38A7B4]/40 bg-[#38A7B4]/10 px-3 py-1 text-xs font-semibold text-[#6EC7D1]">
+                    <span key={s} className="rounded-full border border-teal/40 bg-teal/10 px-3 py-1 text-xs font-semibold text-teal-light-ink">
                       {s}
                     </span>
                   ))}
@@ -1409,7 +1409,7 @@ export default function Diagnostic() {
               </div>
 
               <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-                <p className="text-sm font-black text-[#6EC7D1]">ماذا ستحصل عليه فعليا؟</p>
+                <p className="text-sm font-black text-teal-light-ink">ماذا ستحصل عليه فعليا؟</p>
                 <p className="mt-1.5 text-xs leading-6 text-white/55">
                   لا تحصل على قائمة دورات فقط؛ تحصل على ترتيب تعلم، ومتابعة، ومراجعة، ومخرجا تطبيقيا يثبت أنك تقدمت.
                 </p>
@@ -1425,7 +1425,7 @@ export default function Diagnostic() {
                     { icon: Gift, label: "دورة إضافية مجانية", hint: "هدية فوق مسارك" },
                   ].map((f) => (
                     <div key={f.label} className="rounded-xl border border-white/[0.07] bg-white/[0.03] p-3">
-                      <f.icon className="h-4 w-4 text-[#6EC7D1]" />
+                      <f.icon className="h-4 w-4 text-teal-light-ink" />
                       <p className="mt-1.5 text-xs font-bold leading-5">{f.label}</p>
                       <p className="mt-0.5 text-[11px] leading-5 text-white/45">{f.hint}</p>
                     </div>
@@ -1453,7 +1453,7 @@ export default function Diagnostic() {
                   </p>
                   <Link
                     to={`/pathways/${topPathway.id}`}
-                    className="shrink-0 text-xs font-bold text-[#6EC7D1] hover:underline"
+                    className="shrink-0 text-xs font-bold text-teal-light-ink hover:underline"
                   >
                     استعرض المسار المفرد
                   </Link>
@@ -1488,13 +1488,13 @@ export default function Diagnostic() {
                 <Button
                   size="lg"
                   onClick={adoptComposite}
-                  className="h-auto min-h-14 max-w-full whitespace-normal rounded-full bg-[#FABC05] px-8 py-3 text-center text-base font-black leading-snug text-[#0D0D0D] hover:bg-[#FABC05]/90 md:text-lg"
+                  className="h-auto min-h-14 max-w-full whitespace-normal rounded-full bg-gold px-8 py-3 text-center text-base font-black leading-snug text-on-gold hover:bg-gold/90 md:text-lg"
                 >
                   اعتمد خطتي «{compositeView.name_ar}»
                   <ArrowLeft className="mr-2 h-5 w-5 shrink-0" />
                 </Button>
               ) : (
-                <Button size="lg" className="h-auto min-h-14 max-w-full whitespace-normal rounded-full bg-[#FABC05] px-8 py-3 text-center text-base font-black leading-snug text-[#0D0D0D] hover:bg-[#FABC05]/90 md:text-lg" asChild>
+                <Button size="lg" className="h-auto min-h-14 max-w-full whitespace-normal rounded-full bg-gold px-8 py-3 text-center text-base font-black leading-snug text-on-gold hover:bg-gold/90 md:text-lg" asChild>
                   <Link to={`/pathways/${topPathway.id}`}>
                     اعتمد مساري «{topPathway.name}»
                     <ArrowLeft className="mr-2 h-5 w-5 shrink-0" />
@@ -1515,19 +1515,19 @@ export default function Diagnostic() {
           {/* Why this recommendation — أكورديون مغلق افتراضيا ليبقى المسح البصري خفيفا */}
           <details className="mt-8 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
             <summary className="flex cursor-pointer items-center gap-2 text-lg font-black">
-              <Sparkles className="h-5 w-5 text-[#FABC05]" />
+              <Sparkles className="h-5 w-5 text-gold-ink" />
               {((result.resultJson.composite as CompositeView | null) ?? null) ? "لماذا هذه الخطة؟" : "لماذا هذا المسار؟"}
             </summary>
             <ul className="mt-4 space-y-3">
               {result.reasons.slice(0, 3).map((r) => (
                 <li key={r} className="flex items-start gap-3 text-sm leading-relaxed text-white/70">
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#38A7B4]" />
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-teal-ink" />
                   {r}
                 </li>
               ))}
             </ul>
             <details className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 print:hidden">
-              <summary className="cursor-pointer text-sm font-bold text-[#6EC7D1]">
+              <summary className="cursor-pointer text-sm font-bold text-teal-light-ink">
                 اعرف سبب التوصية بالتفصيل
               </summary>
               <div className="mt-3">
@@ -1535,7 +1535,7 @@ export default function Diagnostic() {
                   <ul className="space-y-2.5">
                     {result.reasons.slice(3).map((r) => (
                       <li key={r} className="flex items-start gap-3 text-sm leading-relaxed text-white/60">
-                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#38A7B4]/70" />
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-teal-ink/70" />
                         {r}
                       </li>
                     ))}
@@ -1543,13 +1543,13 @@ export default function Diagnostic() {
                 )}
                 {answers["notes"] && (
                   <p className="mt-4 rounded-xl border border-white/10 bg-white/[0.04] p-4 text-sm leading-relaxed text-white/60">
-                    <span className="font-bold text-[#6EC7D1]">وكلمتك محفوظة: </span>«{answers["notes"]}» —
+                    <span className="font-bold text-teal-light-ink">وكلمتك محفوظة: </span>«{answers["notes"]}» —
                     سيقرأها مستشارك قبل أول جلسة لتكون خطتك أدق.
                   </p>
                 )}
                 {answers["emp_moment"] && (
                   <p className="mt-3 rounded-xl border border-white/10 bg-white/[0.04] p-4 text-sm leading-relaxed text-white/60">
-                    <span className="font-bold text-[#6EC7D1]">وقصتك وصلت: </span>«{answers["emp_moment"]}» —
+                    <span className="font-bold text-teal-light-ink">وقصتك وصلت: </span>«{answers["emp_moment"]}» —
                     سيقرأها مدربك قبل أول لقاء ليعرف من أين يبدأ معك.
                   </p>
                 )}
@@ -1578,7 +1578,7 @@ export default function Diagnostic() {
                             <span className="w-36 shrink-0 text-white/60">{p.label}</span>
                             <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
                               <span
-                                className="block h-full rounded-full bg-[#FABC05]"
+                                className="block h-full rounded-full bg-gold"
                                 style={{ width: `${Math.max(0, Math.min(100, Math.floor(p.value * 100)))}%` }}
                               />
                             </span>
@@ -1597,8 +1597,8 @@ export default function Diagnostic() {
 
           {/* تقاطع الرصيد السابق مع دورات التوصية — لا يدفع ثمن ما يعرفه */}
           {result.priorOverlap.length > 0 && (
-            <div className="mt-8 rounded-3xl border border-[#FABC05]/40 bg-[#FABC05]/5 p-6 md:p-8">
-              <h3 className="flex items-center gap-2 text-lg font-black text-[#FABC05]">
+            <div className="mt-8 rounded-3xl border border-gold/40 bg-gold/5 p-6 md:p-8">
+              <h3 className="flex items-center gap-2 text-lg font-black text-gold-ink">
                 <BookOpen className="h-5 w-5" />
                 انتبه — رصيدك السابق يتقاطع مع هذا المسار
               </h3>
@@ -1614,7 +1614,7 @@ export default function Diagnostic() {
           {result.gapDetails.length > 0 && (
             <details className="mt-8 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
               <summary className="flex cursor-pointer items-center gap-2 text-lg font-black">
-                <Gauge className="h-5 w-5 text-[#6EC7D1]" />
+                <Gauge className="h-5 w-5 text-teal-light-ink" />
                 خريطة فجواتك — مهارة بمهارة
               </summary>
               <div className="mt-4 overflow-x-auto">
@@ -1638,14 +1638,14 @@ export default function Diagnostic() {
                           <span
                             className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
                               g.priority === "عالية"
-                                ? "bg-[#FABC05]/15 text-[#FABC05]"
+                                ? "bg-gold/15 text-gold-ink"
                                 : "bg-white/10 text-white/60"
                             }`}
                           >
                             {g.priority}
                           </span>
                         </td>
-                        <td className="py-3 text-xs leading-relaxed text-[#6EC7D1]">
+                        <td className="py-3 text-xs leading-relaxed text-teal-light-ink">
                           {g.coveredBy.length > 0 ? g.coveredBy.join("، ") : "—"}
                         </td>
                       </tr>
@@ -1658,8 +1658,8 @@ export default function Diagnostic() {
 
           {/* مهارات مهمة غير متوفرة حاليا — صدق كامل */}
           {result.unavailableSkills.length > 0 && (
-            <div className="mt-8 rounded-3xl border border-[#FABC05]/40 bg-[#FABC05]/5 p-6 md:p-8">
-              <h3 className="flex items-center gap-2 text-lg font-black text-[#FABC05]">
+            <div className="mt-8 rounded-3xl border border-gold/40 bg-gold/5 p-6 md:p-8">
+              <h3 className="flex items-center gap-2 text-lg font-black text-gold-ink">
                 <BellRing className="h-5 w-5" />
                 مهارات تحتاجها ولا نغطيها بعد — ولن نخفي ذلك عنك
               </h3>
@@ -1667,7 +1667,7 @@ export default function Diagnostic() {
                 فجواتك في {result.unavailableSkills.join(" و")} مهمة لهدفك، لكن كتالوجنا الحالي لا يغطيها بعد.
                 نفضل أن تعرف الحقيقة كاملة على أن نبيعك مسارا ناقصا.
               </p>
-              <Button variant="outline" className="mt-4 border-[#FABC05]/60 text-[#FABC05] hover:bg-[#FABC05]/10" asChild>
+              <Button variant="outline" className="mt-4 border-gold/60 text-gold-ink hover:bg-gold/10" asChild>
                 <a
                   href={`mailto:care@wajeez.com?subject=${encodeURIComponent("أشعرني عند توفر: " + result.unavailableSkills.join("، "))}`}
                 >
@@ -1680,7 +1680,7 @@ export default function Diagnostic() {
           {/* هل هناك معلومات لم نعرفها بعد؟ — قسم مختصر قابل للتوسعة بثلاثة إجراءات */}
           <details className="mt-8 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8 print:hidden">
             <summary className="flex cursor-pointer items-center gap-2 text-lg font-black">
-              <Lightbulb className="h-5 w-5 text-[#6EC7D1]" />
+              <Lightbulb className="h-5 w-5 text-teal-light-ink" />
               هل هناك معلومات لم نعرفها بعد؟
             </summary>
             <p className="mt-3 text-sm leading-relaxed text-white/60">
@@ -1689,7 +1689,7 @@ export default function Diagnostic() {
             <ul className="mt-4 space-y-2.5">
               {result.changeMakers.map((c) => (
                 <li key={c} className="flex items-start gap-3 text-xs leading-relaxed text-white/55">
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#6EC7D1]" />
+                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-teal-light" />
                   {c}
                 </li>
               ))}
@@ -1698,7 +1698,7 @@ export default function Diagnostic() {
               {!result.resultJson.deepening && canDeepen && result.resultJson.kind !== "guardrail_stop" && (
                 <button
                   onClick={startDeepeningRound}
-                  className="flex items-center justify-center gap-2 rounded-2xl border border-[#38A7B4]/50 bg-[#38A7B4]/[0.08] px-4 py-3 text-xs font-bold text-[#6EC7D1] transition hover:bg-[#38A7B4]/15"
+                  className="flex items-center justify-center gap-2 rounded-2xl border border-teal/50 bg-teal/[0.08] px-4 py-3 text-xs font-bold text-teal-light-ink transition hover:bg-teal/15"
                 >
                   <Wand2 className="h-4 w-4" />
                   أجب عن أسئلة إضافية
@@ -1707,7 +1707,7 @@ export default function Diagnostic() {
               <AdvisorContact
                 text={`مرحبا، أكملت مؤشر وجيز ورُشّح لي مسار «${topPathway.name}»، وأود أن أضيف معلومة قد تغيّر نتيجتي.`}
                 label="تواصل مع المستشار"
-                className="flex items-center justify-center gap-2 rounded-2xl border border-[#38A7B4]/50 bg-[#38A7B4]/[0.08] px-4 py-3 text-xs font-bold text-[#6EC7D1] transition hover:bg-[#38A7B4]/15"
+                className="flex items-center justify-center gap-2 rounded-2xl border border-teal/50 bg-teal/[0.08] px-4 py-3 text-xs font-bold text-teal-light-ink transition hover:bg-teal/15"
               />
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-center text-xs font-bold text-white/60 sm:col-span-1">
                 أرسل سيرتك للمستشار ↓
@@ -1736,7 +1736,7 @@ export default function Diagnostic() {
             return (
               <details className="mt-8 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8 print:hidden">
                 <summary className="flex cursor-pointer items-center gap-2 text-lg font-black">
-                  <BookOpen className="h-5 w-5 text-[#6EC7D1]" />
+                  <BookOpen className="h-5 w-5 text-teal-light-ink" />
                   كيف بُنيت توصيتك؟
                 </summary>
                 <p className="mt-3 text-sm leading-relaxed text-white/60">
@@ -1747,7 +1747,7 @@ export default function Diagnostic() {
                 <ul className="mt-4 space-y-2.5">
                   {refs.map((r) => (
                     <li key={r.id} className="flex items-start gap-3 text-sm leading-relaxed text-white/65">
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#38A7B4]" />
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-teal-ink" />
                       <span>
                         <span className="font-bold text-white/85">{r.name_ar}</span> — {r.purpose_ar}
                       </span>
@@ -1756,7 +1756,7 @@ export default function Diagnostic() {
                 </ul>
                 <Link
                   to="/methodology"
-                  className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-[#6EC7D1] transition hover:text-white"
+                  className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-teal-light-ink transition hover:text-white"
                 >
                   اكتشف كيف نبني توصيتك — منهجية وجيز
                   <ArrowLeft className="h-4 w-4" />
@@ -1767,8 +1767,8 @@ export default function Diagnostic() {
 
           {/* Advisor flag */}
           {result.needsAdvisor && (
-            <div className="mt-8 rounded-3xl border border-[#FABC05]/40 bg-[#FABC05]/5 p-6 md:p-8">
-              <h3 className="flex items-center gap-2 text-lg font-black text-[#FABC05]">
+            <div className="mt-8 rounded-3xl border border-gold/40 bg-gold/5 p-6 md:p-8">
+              <h3 className="flex items-center gap-2 text-lg font-black text-gold-ink">
                 <UserCheck className="h-5 w-5" />
                 حالتك تستحق جلسة مع مستشار بشري
               </h3>
@@ -1780,7 +1780,7 @@ export default function Diagnostic() {
               <AdvisorContact
                 text={`مرحبا، أكملت مؤشر وجيز وأخبرني أن حالتي تستحق جلسة مع مستشار بشري — أريد حجز الجلسة التعريفية.`}
                 label="احجز جلسة مستشار عبر واتساب"
-                className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#FABC05]/60 px-5 py-2.5 text-sm font-bold text-[#FABC05] transition hover:bg-[#FABC05]/10"
+                className="mt-4 inline-flex items-center gap-2 rounded-full border border-gold/60 px-5 py-2.5 text-sm font-bold text-gold-ink transition hover:bg-gold/10"
               />
             </div>
           )}
@@ -1796,7 +1796,7 @@ export default function Diagnostic() {
               </p>
               <div className="mt-6 grid gap-4 md:grid-cols-3">
                 {/* الأساسي */}
-                <div className="flex flex-col rounded-2xl border border-[#38A7B4]/50 bg-[#38A7B4]/10 p-5">
+                <div className="flex flex-col rounded-2xl border border-teal/50 bg-teal/10 p-5">
                   <span className="kicker">توصيتك الحالية</span>
                   <h4 className="mt-3 text-sm font-black leading-snug">{topPathway.name}</h4>
                   <dl className="mt-3 space-y-1.5 text-xs text-white/55">
@@ -1809,7 +1809,7 @@ export default function Diagnostic() {
                       <dd className="font-bold text-white/85">{topPathway.weeklyHours}</dd>
                     </div>
                   </dl>
-                  <span className="mt-4 flex items-center gap-1.5 text-xs font-bold text-[#6EC7D1]">
+                  <span className="mt-4 flex items-center gap-1.5 text-xs font-bold text-teal-light-ink">
                     <CheckCircle2 className="h-4 w-4" />
                     هذا خيارك المعروض أعلاه
                   </span>
@@ -1835,7 +1835,7 @@ export default function Diagnostic() {
                       variant="outline"
                       size="sm"
                       onClick={() => swapTop(result.faster!, "faster")}
-                      className="mt-4 w-fit border-[#38A7B4]/50 text-[#6EC7D1] hover:bg-[#38A7B4]/15"
+                      className="mt-4 w-fit border-teal/50 text-teal-light-ink hover:bg-teal/15"
                     >
                       <RefreshCcw className="ml-2 h-3.5 w-3.5" />
                       اجعله توصيتي الأولى
@@ -1863,7 +1863,7 @@ export default function Diagnostic() {
                       variant="outline"
                       size="sm"
                       onClick={() => swapTop(result.cheaper!.p, "cheaper")}
-                      className="mt-4 w-fit border-[#38A7B4]/50 text-[#6EC7D1] hover:bg-[#38A7B4]/15"
+                      className="mt-4 w-fit border-teal/50 text-teal-light-ink hover:bg-teal/15"
                     >
                       <RefreshCcw className="ml-2 h-3.5 w-3.5" />
                       اجعله توصيتي الأولى
@@ -1905,7 +1905,7 @@ export default function Diagnostic() {
                       <span className="w-32 shrink-0 text-white/60">{p.label}</span>
                       <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
                         <span
-                          className="block h-full rounded-full bg-[#38A7B4]"
+                          className="block h-full rounded-full bg-teal"
                           style={{ width: `${Math.max(0, Math.min(100, Math.floor(p.value * 100)))}%` }}
                         />
                       </span>

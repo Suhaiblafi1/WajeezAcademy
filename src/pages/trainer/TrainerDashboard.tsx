@@ -61,25 +61,25 @@ function RealTrainerHome({ name }: { name: string }) {
 
       {/* بطاقة إرشاد المدرب الجديد — بوابة بلا شعب تشرح ما يحدث تاليا بدل أن تكتفي بأصفار */}
       {cohorts.length === 0 && (
-        <section className="mb-8 rounded-3xl border border-[#38A7B4]/30 bg-[#38A7B4]/[0.06] p-6">
-          <p className="flex items-center gap-2 text-sm font-black"><GraduationCap className="h-4 w-4 text-[#6EC7D1]" /> بوابتك جاهزة — هذا ما يحدث تالياً</p>
+        <section className="mb-8 rounded-3xl border border-teal/30 bg-teal/[0.06] p-6">
+          <p className="flex items-center gap-2 text-sm font-black"><GraduationCap className="h-4 w-4 text-teal-light-ink" /> بوابتك جاهزة — هذا ما يحدث تالياً</p>
           <div className="mt-4 grid gap-3 text-xs leading-6 text-white/70 sm:grid-cols-3">
             <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-              <p className="font-black text-[#6EC7D1]">١ · الإسناد</p>
+              <p className="font-black text-teal-light-ink">١ · الإسناد</p>
               <p className="mt-1">الإدارة تسند إليك شعبة من شاشة «الشعب» — يصلك إشعار فور الإسناد.</p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-              <p className="font-black text-[#6EC7D1]">٢ · الظهور التلقائي</p>
+              <p className="font-black text-teal-light-ink">٢ · الظهور التلقائي</p>
               <p className="mt-1">تظهر شعبتك وجلساتها وطلابها هنا وفي شاشة «شعبي» دون أي إجراء منك.</p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-              <p className="font-black text-[#6EC7D1]">٣ · بدء العمل</p>
+              <p className="font-black text-teal-light-ink">٣ · بدء العمل</p>
               <p className="mt-1">تسجّل الحضور وتقيّم التسليمات وتدير الجلسات — كلها من «شعبي».</p>
             </div>
           </div>
           <p className="mt-4 text-[11px] text-white/50">
             حتى يصلك أول إسناد يمكنك مراجعة المحتوى واقتراح تحسينات عليه من{" "}
-            <Link to="/trainer/proposals" className="font-bold text-[#6EC7D1] underline decoration-dotted underline-offset-4 hover:text-white">«اقتراحاتي»</Link>.
+            <Link to="/trainer/proposals" className="font-bold text-teal-light-ink underline decoration-dotted underline-offset-4 hover:text-white">«اقتراحاتي»</Link>.
           </p>
         </section>
       )}
@@ -93,8 +93,8 @@ function RealTrainerHome({ name }: { name: string }) {
         ].map((s, i) => (
           <span key={s.n} className="flex items-center gap-2">
             {i > 0 && <span className="text-white/20">←</span>}
-            <Link to={s.to} className="flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1 font-bold transition hover:border-[#FABC05]/60 hover:text-[#FABC05]">
-              <span className="grid h-4 w-4 place-items-center rounded-full bg-[#FABC05]/15 text-[10px] text-[#FABC05]">{s.n}</span>
+            <Link to={s.to} className="flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1 font-bold transition hover:border-gold/60 hover:text-gold-ink">
+              <span className="grid h-4 w-4 place-items-center rounded-full bg-gold/15 text-[10px] text-gold-ink">{s.n}</span>
               {s.label}
             </Link>
           </span>
@@ -110,18 +110,18 @@ function RealTrainerHome({ name }: { name: string }) {
           <p className="flex items-center gap-2 text-xs text-white/50"><Users className="h-4 w-4" /> طلابي</p>
           <p className="mt-2 text-3xl font-black">{students}</p>
         </div>
-        <Link to="/trainer/board" className={`rounded-2xl border p-5 transition hover:border-white/30 ${awaiting > 0 ? "border-[#FABC05]/40 bg-[#FABC05]/5" : "border-white/10 bg-white/[0.03]"}`}>
-          <p className="flex items-center gap-2 text-xs text-[#FABC05]"><ClipboardCheck className="h-4 w-4" /> تسليمات بانتظار تقييمي</p>
-          <p className="mt-2 text-3xl font-black text-[#FABC05]">{awaiting}</p>
+        <Link to="/trainer/board" className={`rounded-2xl border p-5 transition hover:border-white/30 ${awaiting > 0 ? "border-gold/40 bg-gold/5" : "border-white/10 bg-white/[0.03]"}`}>
+          <p className="flex items-center gap-2 text-xs text-gold-ink"><ClipboardCheck className="h-4 w-4" /> تسليمات بانتظار تقييمي</p>
+          <p className="mt-2 text-3xl font-black text-gold-ink">{awaiting}</p>
         </Link>
-        <Link to="/trainer/proposals" className="rounded-2xl border border-[#38A7B4]/30 bg-[#38A7B4]/5 p-5 transition hover:border-[#38A7B4]/60">
-          <p className="flex items-center gap-2 text-xs text-[#6EC7D1]"><GitPullRequest className="h-4 w-4" /> اقتراحاتي على المحتوى</p>
-          <p className="mt-2 text-3xl font-black text-[#6EC7D1]">↗</p>
+        <Link to="/trainer/proposals" className="rounded-2xl border border-teal/30 bg-teal/5 p-5 transition hover:border-teal/60">
+          <p className="flex items-center gap-2 text-xs text-teal-light-ink"><GitPullRequest className="h-4 w-4" /> اقتراحاتي على المحتوى</p>
+          <p className="mt-2 text-3xl font-black text-teal-light-ink">↗</p>
         </Link>
       </div>
 
       <section className="mt-6 rounded-3xl border border-white/10 bg-white/[0.02] p-5">
-        <p className="flex items-center gap-2 text-sm font-black"><Video className="h-4 w-4 text-[#38A7B4]" /> جلساتي القادمة</p>
+        <p className="flex items-center gap-2 text-sm font-black"><Video className="h-4 w-4 text-teal-ink" /> جلساتي القادمة</p>
         <div className="mt-3 space-y-2">
           {upcoming.length === 0 && <p className="py-3 text-center text-xs text-white/50">لا جلسات قادمة مجدولة</p>}
           {upcoming.map((s) => (
@@ -146,9 +146,9 @@ function RealTrainerHome({ name }: { name: string }) {
 }
 
 const STATUS_LABEL: Record<CohortStatus, { label: string; cls: string }> = {
-  open: { label: "مفتوحة للتسجيل", cls: "border-[#38A7B4]/40 text-[#6EC7D1]" },
-  full: { label: "ممتلئة", cls: "border-[#FABC05]/40 text-[#FABC05]" },
-  running: { label: "جارية", cls: "border-[#38A7B4]/60 text-[#6EC7D1]" },
+  open: { label: "مفتوحة للتسجيل", cls: "border-teal/40 text-teal-light-ink" },
+  full: { label: "ممتلئة", cls: "border-gold/40 text-gold-ink" },
+  running: { label: "جارية", cls: "border-teal/60 text-teal-light-ink" },
   postponed: { label: "مؤجلة", cls: "border-white/20 text-white/50" },
   done: { label: "منتهية", cls: "border-white/10 text-white/50" },
 };
@@ -187,9 +187,9 @@ export default function TrainerDashboard() {
           <p className="flex items-center gap-2 text-xs text-white/50"><Users className="h-4 w-4" /> طلابي</p>
           <p className="mt-2 text-3xl font-black">{totalStudents}</p>
         </div>
-        <Link to="/trainer/grading" className="rounded-2xl border border-[#FABC05]/30 bg-[#FABC05]/5 p-5 transition hover:border-[#FABC05]/60">
-          <p className="flex items-center gap-2 text-xs text-[#FABC05]"><ClipboardCheck className="h-4 w-4" /> تسليمات بانتظار تقييمي</p>
-          <p className="mt-2 text-3xl font-black text-[#FABC05]">{pending}</p>
+        <Link to="/trainer/grading" className="rounded-2xl border border-gold/30 bg-gold/5 p-5 transition hover:border-gold/60">
+          <p className="flex items-center gap-2 text-xs text-gold-ink"><ClipboardCheck className="h-4 w-4" /> تسليمات بانتظار تقييمي</p>
+          <p className="mt-2 text-3xl font-black text-gold-ink">{pending}</p>
         </Link>
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
           <p className="flex items-center gap-2 text-xs text-white/50"><Video className="h-4 w-4" /> جلسات قادمة</p>
@@ -203,23 +203,23 @@ export default function TrainerDashboard() {
 
       {/* مهام التهيئة — من ملف المدرب عند الخادم: تأهيله وإسناداته ومهام التهيئة */}
       {tasksDone < tasks.length && (
-        <section className="mt-6 rounded-3xl border border-[#38A7B4]/25 bg-[#38A7B4]/[0.05] p-6">
+        <section className="mt-6 rounded-3xl border border-teal/25 bg-teal/[0.05] p-6">
           <div className="flex items-center justify-between">
-            <p className="flex items-center gap-2 text-sm font-black"><ListChecks className="h-4 w-4 text-[#6EC7D1]" /> مهام تهيئتك كمدرب</p>
-            <span className="text-xs font-bold text-[#6EC7D1]">{tasksDone} / {tasks.length}</span>
+            <p className="flex items-center gap-2 text-sm font-black"><ListChecks className="h-4 w-4 text-teal-light-ink" /> مهام تهيئتك كمدرب</p>
+            <span className="text-xs font-bold text-teal-light-ink">{tasksDone} / {tasks.length}</span>
           </div>
           <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
-            <div className="h-full rounded-full bg-[#38A7B4] transition-all" style={{ width: `${(tasksDone / tasks.length) * 100}%` }} />
+            <div className="h-full rounded-full bg-teal transition-all" style={{ width: `${(tasksDone / tasks.length) * 100}%` }} />
           </div>
           <div className="mt-4 space-y-2">
             {tasks.map((t) => (
               <button
                 key={t.id}
                 onClick={() => { toggleOnboardingTask(meName, t.id); setTick(tick + 1); }}
-                className="flex w-full cursor-pointer items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-right transition hover:border-[#38A7B4]/40"
+                className="flex w-full cursor-pointer items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-right transition hover:border-teal/40"
               >
                 {t.done
-                  ? <CheckCircle2 className="h-4.5 w-4.5 shrink-0 text-[#38A7B4]" />
+                  ? <CheckCircle2 className="h-4.5 w-4.5 shrink-0 text-teal-ink" />
                   : <Circle className="h-4.5 w-4.5 shrink-0 text-white/25" />}
                 <span className={`text-sm ${t.done ? "text-white/50 line-through" : "font-bold text-white/85"}`}>{t.label}</span>
               </button>
@@ -242,7 +242,7 @@ export default function TrainerDashboard() {
             <Link
               key={c.id}
               to={`/trainer/cohort/${c.id}`}
-              className="block rounded-3xl border border-white/10 bg-white/[0.02] p-5 transition hover:border-[#38A7B4]/50"
+              className="block rounded-3xl border border-white/10 bg-white/[0.02] p-5 transition hover:border-teal/50"
             >
               <div className="flex flex-wrap items-center gap-4">
                 <div className="min-w-0 flex-1">
@@ -274,7 +274,7 @@ export default function TrainerDashboard() {
       {/* الجلسات القادمة */}
       {upcoming.length > 0 && (
         <section className="mt-8 rounded-3xl border border-white/10 bg-white/[0.03] p-6">
-          <p className="flex items-center gap-2 text-sm font-black"><Video className="h-4 w-4 text-[#FABC05]" /> أقرب جلساتي</p>
+          <p className="flex items-center gap-2 text-sm font-black"><Video className="h-4 w-4 text-gold-ink" /> أقرب جلساتي</p>
           <div className="mt-4 space-y-2.5">
             {upcoming.map((s) => (
               <div key={s.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
@@ -282,7 +282,7 @@ export default function TrainerDashboard() {
                   <p className="text-sm font-bold">{s.title} — {s.cohort.courseName}</p>
                   <p className="text-[11px] text-white/45">{s.date} · {s.time} · {s.cohort.students.length} طالبا</p>
                 </div>
-                <Link to={`/trainer/cohort/${s.cohort.id}`} className="rounded-full border border-[#38A7B4]/40 px-4 py-1.5 text-xs font-bold text-[#6EC7D1] transition hover:bg-[#38A7B4] hover:text-[#08272B]">
+                <Link to={`/trainer/cohort/${s.cohort.id}`} className="rounded-full border border-teal/40 px-4 py-1.5 text-xs font-bold text-teal-light-ink transition hover:bg-teal hover:text-on-teal">
                   إدارة الجلسة
                 </Link>
               </div>

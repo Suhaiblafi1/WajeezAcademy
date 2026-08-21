@@ -13,7 +13,8 @@
           "answer_ar": "طالب جامعي",
           "what_changed": [
             "+career_stage",
-            "+persona_type"
+            "+persona_type",
+            "+education_state"
           ]
         },
         {
@@ -63,21 +64,21 @@
           ]
         },
         {
-          "questionId": "QB-M4-010",
-          "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في الكتابة العربية المهنية؟",
-          "why_now_ar": "فاز أساسًا بسبب: يقيس مهارة يتطلبها المرشح المتصدر.",
-          "answer_ar": "أعرف أساسياتها نظريًا",
+          "questionId": "QB-M1-011",
+          "question_ar": "هل لديك دليل حالي على مهاراتك: مشروع، شهادة، ملف أعمال، أو نتيجة عملية؟",
+          "why_now_ar": "يكمل الصورة العامة.",
+          "answer_ar": "لا يوجد دليل",
           "what_changed": [
-            "+skill:arabic_business_writing"
+            "+evidence_strength"
           ]
         },
         {
-          "questionId": "QB-M4-018",
-          "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في إدارة المشاريع والمهام والمواعيد.؟",
-          "why_now_ar": "فاز أساسًا بسبب: يقيس مهارة يتطلبها المرشح المتصدر.",
-          "answer_ar": "أعرف أساسياتها نظريًا",
+          "questionId": "QB-M2-015",
+          "question_ar": "ما مدى استعدادك لتطبيق عملي ومهام خارج مشاهدة المحتوى؟",
+          "why_now_ar": "يكمل الصورة العامة.",
+          "answer_ar": "منخفضة جدا",
           "what_changed": [
-            "+skill:project_management"
+            "+application_readiness"
           ]
         }
       ],
@@ -85,7 +86,7 @@
         "kind": "single_pathway",
         "topPathwayId": "PW-STU-002",
         "compositeTemplateId": null,
-        "confidence": 0.6782894736092107,
+        "confidence": 0.6624999999250001,
         "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true
@@ -102,7 +103,8 @@
           "answer_ar": "خريج حديث",
           "what_changed": [
             "+career_stage",
-            "+persona_type"
+            "+persona_type",
+            "+education_state"
           ]
         },
         {
@@ -152,24 +154,6 @@
           ]
         },
         {
-          "questionId": "QB-M4-010",
-          "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في الكتابة العربية المهنية؟",
-          "why_now_ar": "فاز أساسًا بسبب: يقيس مهارة يتطلبها المرشح المتصدر.",
-          "answer_ar": "أعرف أساسياتها نظريًا",
-          "what_changed": [
-            "+skill:arabic_business_writing"
-          ]
-        },
-        {
-          "questionId": "QB-M4-018",
-          "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في إدارة المشاريع والمهام والمواعيد.؟",
-          "why_now_ar": "فاز أساسًا بسبب: يقيس مهارة يتطلبها المرشح المتصدر.",
-          "answer_ar": "أعرف أساسياتها نظريًا",
-          "what_changed": [
-            "+skill:project_management"
-          ]
-        },
-        {
           "questionId": "QB-M1-011",
           "question_ar": "هل لديك دليل حالي على مهاراتك: مشروع، شهادة، ملف أعمال، أو نتيجة عملية؟",
           "why_now_ar": "يكمل الصورة العامة.",
@@ -186,13 +170,31 @@
           "what_changed": [
             "+application_readiness"
           ]
+        },
+        {
+          "questionId": "QB-M3A-003",
+          "question_ar": "هل لديك تصور واضح لأول وظيفة تريدها؟",
+          "why_now_ar": "يكمل الصورة العامة.",
+          "answer_ar": "غير واضح",
+          "what_changed": [
+            "+first_job_clarity"
+          ]
+        },
+        {
+          "questionId": "QB-M3A-004",
+          "question_ar": "هل لديك سيرة ذاتية أو LinkedIn أو ملف تعريفي جاهز؟",
+          "why_now_ar": "يكمل الصورة العامة.",
+          "answer_ar": "نعم",
+          "what_changed": [
+            "+career_assets"
+          ]
         }
       ],
       "result": {
         "kind": "single_pathway",
         "topPathwayId": "PW-STU-002",
         "compositeTemplateId": null,
-        "confidence": 0.6454179565813467,
+        "confidence": 0.6484999999250001,
         "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true
@@ -200,7 +202,7 @@
     {
       "persona": "موظف مبتدئ",
       "stage": "early_career",
-      "questionsCount": 10,
+      "questionsCount": 12,
       "steps": [
         {
           "questionId": "QC-S1-001",
@@ -268,9 +270,28 @@
           ]
         },
         {
+          "questionId": "QB-M3B-011",
+          "question_ar": "هل تتعامل مع مشتريات، عطاءات، مالية، موازنة، أو موارد بشرية؟",
+          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "answer_ar": "خدمة جمهور",
+          "what_changed": [
+            "+function_specialization",
+            "+current_domain"
+          ]
+        },
+        {
+          "questionId": "QB-M4-003",
+          "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في أساسيات الذكاء الاصطناعي؟",
+          "why_now_ar": "فاز أساسًا بسبب: يفصل بين المرشحين المتصدرين بدليل مهارة.",
+          "answer_ar": "شاركت في مهمة أو مشروع استخدمها",
+          "what_changed": [
+            "+skill:ai_literacy"
+          ]
+        },
+        {
           "questionId": "QB-M3B-003",
           "question_ar": "هل تتعامل مباشرة مع الجمهور أو العملاء؟",
-          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "why_now_ar": "فاز أساسًا بسبب: يستكمل سياقك العام.",
           "answer_ar": "نعم",
           "what_changed": [
             "+public_facing"
@@ -279,27 +300,27 @@
         {
           "questionId": "QB-M3B-012",
           "question_ar": "هل تدير أشخاصا أو مشاريع أو اجتماعات؟",
-          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "why_now_ar": "فاز أساسًا بسبب: يستكمل سياقك العام.",
           "answer_ar": "نعم",
           "what_changed": [
             "+leadership_context"
           ]
         },
         {
-          "questionId": "QB-M3B-011",
-          "question_ar": "هل تتعامل مع مشتريات، عطاءات، مالية، موازنة، أو موارد بشرية؟",
-          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
-          "answer_ar": "خدمة جمهور",
+          "questionId": "QB-M1-011",
+          "question_ar": "هل لديك دليل حالي على مهاراتك: مشروع، شهادة، ملف أعمال، أو نتيجة عملية؟",
+          "why_now_ar": "يكمل الصورة العامة.",
+          "answer_ar": "لا يوجد دليل",
           "what_changed": [
-            "+function_specialization"
+            "+evidence_strength"
           ]
         }
       ],
       "result": {
         "kind": "single_pathway",
-        "topPathwayId": "PW-EMP-005",
+        "topPathwayId": "PW-FND-003",
         "compositeTemplateId": null,
-        "confidence": 0.6667647058120405,
+        "confidence": 0.6050953653236884,
         "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true
@@ -375,9 +396,19 @@
           ]
         },
         {
+          "questionId": "QB-M3B-011",
+          "question_ar": "هل تتعامل مع مشتريات، عطاءات، مالية، موازنة، أو موارد بشرية؟",
+          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "answer_ar": "خدمة جمهور",
+          "what_changed": [
+            "+function_specialization",
+            "+current_domain"
+          ]
+        },
+        {
           "questionId": "QB-M3B-003",
           "question_ar": "هل تتعامل مباشرة مع الجمهور أو العملاء؟",
-          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "why_now_ar": "فاز أساسًا بسبب: يستكمل سياقك العام.",
           "answer_ar": "نعم",
           "what_changed": [
             "+public_facing"
@@ -386,19 +417,10 @@
         {
           "questionId": "QB-M3B-012",
           "question_ar": "هل تدير أشخاصا أو مشاريع أو اجتماعات؟",
-          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "why_now_ar": "فاز أساسًا بسبب: يستكمل سياقك العام.",
           "answer_ar": "نعم",
           "what_changed": [
             "+leadership_context"
-          ]
-        },
-        {
-          "questionId": "QB-M3B-011",
-          "question_ar": "هل تتعامل مع مشتريات، عطاءات، مالية، موازنة، أو موارد بشرية؟",
-          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
-          "answer_ar": "خدمة جمهور",
-          "what_changed": [
-            "+function_specialization"
           ]
         }
       ],
@@ -406,7 +428,7 @@
         "kind": "single_pathway",
         "topPathwayId": "PW-EMP-003",
         "compositeTemplateId": null,
-        "confidence": 0.6549999999296876,
+        "confidence": 0.6434090908138843,
         "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true
@@ -482,6 +504,16 @@
           ]
         },
         {
+          "questionId": "QB-M3B-011",
+          "question_ar": "هل تتعامل مع مشتريات، عطاءات، مالية، موازنة، أو موارد بشرية؟",
+          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "answer_ar": "خدمة جمهور",
+          "what_changed": [
+            "+function_specialization",
+            "+current_domain"
+          ]
+        },
+        {
           "questionId": "QB-M3B-010",
           "question_ar": "ما مدى قوتك في إدارة أصحاب المصلحة المختلفين؟",
           "why_now_ar": "فاز أساسًا بسبب: يفصل بين المرشحين المتصدرين بدليل مهارة.",
@@ -493,19 +525,10 @@
         {
           "questionId": "QB-M3B-003",
           "question_ar": "هل تتعامل مباشرة مع الجمهور أو العملاء؟",
-          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "why_now_ar": "فاز أساسًا بسبب: يستكمل سياقك العام.",
           "answer_ar": "نعم",
           "what_changed": [
             "+public_facing"
-          ]
-        },
-        {
-          "questionId": "QB-M3B-011",
-          "question_ar": "هل تتعامل مع مشتريات، عطاءات، مالية، موازنة، أو موارد بشرية؟",
-          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
-          "answer_ar": "خدمة جمهور",
-          "what_changed": [
-            "+function_specialization"
           ]
         },
         {
@@ -531,15 +554,15 @@
         "kind": "single_pathway",
         "topPathwayId": "PW-EMP-005",
         "compositeTemplateId": null,
-        "confidence": 0.5968596058479134,
-        "outputKind_ar": "اتجاه استكشافي"
+        "confidence": 0.6170977010860087,
+        "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true
     },
     {
       "persona": "مؤسس",
       "stage": "founder",
-      "questionsCount": 10,
+      "questionsCount": 8,
       "steps": [
         {
           "questionId": "QC-S1-001",
@@ -601,7 +624,7 @@
         {
           "questionId": "QB-M3B-003",
           "question_ar": "هل تتعامل مباشرة مع الجمهور أو العملاء؟",
-          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "why_now_ar": "فاز أساسًا بسبب: يستكمل سياقك العام.",
           "answer_ar": "نعم",
           "what_changed": [
             "+public_facing"
@@ -610,25 +633,10 @@
         {
           "questionId": "QB-M3C-002",
           "question_ar": "هل عرضك أو منتجك واضح لمن يشتريه؟",
-          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "why_now_ar": "فاز أساسًا بسبب: يستكمل سياقك العام.",
           "answer_ar": "غير واضح",
           "what_changed": [
             "+offer_clarity"
-          ]
-        },
-        {
-          "questionId": "QB-M3C-011",
-          "question_ar": "هل تعمل وحدك أم مع فريق؟",
-          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
-          "what_changed": []
-        },
-        {
-          "questionId": "QB-M3C-004",
-          "question_ar": "هل لديك عملاء حاليون أو مبيعات متكررة؟",
-          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
-          "answer_ar": "نعم",
-          "what_changed": [
-            "+revenue_signal"
           ]
         }
       ],
@@ -636,7 +644,7 @@
         "kind": "single_pathway",
         "topPathwayId": "PW-MKT-001",
         "compositeTemplateId": null,
-        "confidence": 0.6524999999550001,
+        "confidence": 0.7676470587705884,
         "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true
@@ -644,7 +652,7 @@
     {
       "persona": "مستقل",
       "stage": "freelancer",
-      "questionsCount": 10,
+      "questionsCount": 12,
       "steps": [
         {
           "questionId": "QC-S1-001",
@@ -704,9 +712,36 @@
           ]
         },
         {
+          "questionId": "QB-M4-010",
+          "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في الكتابة العربية المهنية؟",
+          "why_now_ar": "فاز أساسًا بسبب: يفصل بين المرشحين المتصدرين بدليل مهارة.",
+          "answer_ar": "شاركت في مهمة أو مشروع استخدمها",
+          "what_changed": [
+            "+skill:arabic_business_writing"
+          ]
+        },
+        {
+          "questionId": "QB-M4-016",
+          "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في التسويق الرقمي؟",
+          "why_now_ar": "فاز أساسًا بسبب: يفصل بين المرشحين المتصدرين بدليل مهارة.",
+          "answer_ar": "شاركت في مهمة أو مشروع استخدمها",
+          "what_changed": [
+            "+skill:digital_marketing"
+          ]
+        },
+        {
+          "questionId": "QB-M3C-007",
+          "question_ar": "هل تتحدث مع العملاء لفهم مشاكلهم قبل بناء الحل؟",
+          "why_now_ar": "فاز أساسًا بسبب: يفصل بين المرشحين المتصدرين بدليل مهارة.",
+          "answer_ar": "لا ينطبق أبدا",
+          "what_changed": [
+            "+customer_discovery"
+          ]
+        },
+        {
           "questionId": "QB-M3B-003",
           "question_ar": "هل تتعامل مباشرة مع الجمهور أو العملاء؟",
-          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "why_now_ar": "فاز أساسًا بسبب: يستكمل سياقك العام.",
           "answer_ar": "نعم",
           "what_changed": [
             "+public_facing"
@@ -715,7 +750,7 @@
         {
           "questionId": "QB-M3C-002",
           "question_ar": "هل عرضك أو منتجك واضح لمن يشتريه؟",
-          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "why_now_ar": "فاز أساسًا بسبب: يستكمل سياقك العام.",
           "answer_ar": "غير واضح",
           "what_changed": [
             "+offer_clarity"
@@ -724,24 +759,15 @@
         {
           "questionId": "QB-M3C-011",
           "question_ar": "هل تعمل وحدك أم مع فريق؟",
-          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "why_now_ar": "فاز أساسًا بسبب: يستكمل سياقك العام.",
           "what_changed": []
-        },
-        {
-          "questionId": "QB-M3C-004",
-          "question_ar": "هل لديك عملاء حاليون أو مبيعات متكررة؟",
-          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
-          "answer_ar": "نعم",
-          "what_changed": [
-            "+revenue_signal"
-          ]
         }
       ],
       "result": {
         "kind": "single_pathway",
         "topPathwayId": "PW-SAL-001",
         "compositeTemplateId": null,
-        "confidence": 0.6549999999296876,
+        "confidence": 0.6342280701051262,
         "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true
@@ -749,7 +775,7 @@
     {
       "persona": "مدرب / مختص تعلم وتطوير",
       "stage": "trainer_ld",
-      "questionsCount": 10,
+      "questionsCount": 8,
       "steps": [
         {
           "questionId": "QC-S1-001",
@@ -817,30 +843,13 @@
           ]
         },
         {
-          "questionId": "QB-M3B-003",
-          "question_ar": "هل تتعامل مباشرة مع الجمهور أو العملاء؟",
-          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
-          "answer_ar": "نعم",
-          "what_changed": [
-            "+public_facing"
-          ]
-        },
-        {
-          "questionId": "QB-M3B-012",
-          "question_ar": "هل تدير أشخاصا أو مشاريع أو اجتماعات؟",
-          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
-          "answer_ar": "نعم",
-          "what_changed": [
-            "+leadership_context"
-          ]
-        },
-        {
           "questionId": "QB-M3B-011",
           "question_ar": "هل تتعامل مع مشتريات، عطاءات، مالية، موازنة، أو موارد بشرية؟",
           "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
           "answer_ar": "خدمة جمهور",
           "what_changed": [
-            "+function_specialization"
+            "+function_specialization",
+            "+current_domain"
           ]
         }
       ],
@@ -907,6 +916,15 @@
           ]
         },
         {
+          "questionId": "QB-M3E-004",
+          "question_ar": "هل جرّبت عمليا أي مسار قبل الحكم عليه؟",
+          "why_now_ar": "فاز أساسًا بسبب: يستكشف ميولك لأن الهدف غير محسوم.",
+          "answer_ar": "لا يوجد دليل",
+          "what_changed": [
+            "+exploration_evidence"
+          ]
+        },
+        {
           "questionId": "QB-M5-001",
           "question_ar": "أستمتع بالأعمال التي تتضمن أدوات، أجهزة، أو نتائج ملموسة.",
           "why_now_ar": "فاز أساسًا بسبب: يستكشف ميولك لأن الهدف غير محسوم.",
@@ -947,22 +965,13 @@
           "why_now_ar": "فاز أساسًا بسبب: يستكشف ميولك لأن الهدف غير محسوم.",
           "answer_ar": "ينطبق أحيانا",
           "what_changed": []
-        },
-        {
-          "questionId": "QB-M1-011",
-          "question_ar": "هل لديك دليل حالي على مهاراتك: مشروع، شهادة، ملف أعمال، أو نتيجة عملية؟",
-          "why_now_ar": "يكمل الصورة العامة.",
-          "answer_ar": "لا يوجد دليل",
-          "what_changed": [
-            "+evidence_strength"
-          ]
         }
       ],
       "result": {
-        "kind": "single_pathway",
-        "topPathwayId": "PW-STU-003",
+        "kind": "exploratory_direction",
+        "topPathwayId": null,
         "compositeTemplateId": null,
-        "confidence": 0.5521078429497549,
+        "confidence": 0.5215109573241061,
         "outputKind_ar": "اتجاه استكشافي"
       },
       "deterministic": true

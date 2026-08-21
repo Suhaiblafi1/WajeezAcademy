@@ -156,7 +156,7 @@ export default function TrainerProposals() {
         </p>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full bg-[#38A7B4] px-4 py-2 text-xs font-black text-[#08272B] transition hover:bg-[#38A7B4]/90"
+          className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full bg-teal px-4 py-2 text-xs font-black text-on-teal transition hover:bg-teal/90"
         >
           <Plus className="h-3.5 w-3.5" /> اقتراح جديد
         </button>
@@ -165,12 +165,12 @@ export default function TrainerProposals() {
       {flash && <p className="mb-4 rounded-xl border border-white/10 bg-white/[0.04] p-3 text-xs font-bold text-white/80" role="status">{flash}</p>}
 
       {showForm && (
-        <form onSubmit={submit} className="mb-6 space-y-4 rounded-3xl border border-[#38A7B4]/25 bg-[#38A7B4]/[0.04] p-6">
+        <form onSubmit={submit} className="mb-6 space-y-4 rounded-3xl border border-teal/25 bg-teal/[0.04] p-6">
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label htmlFor="tp-course" className="mb-1.5 block text-xs font-bold text-white/60">الدورة * — من دوراتك المؤهلة</label>
               <select id="tp-course" required value={form.courseId} onChange={(e) => setForm({ ...form, courseId: e.target.value })}
-                className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white [&>option]:bg-[#121B1D]">
+                className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white [&>option]:bg-surface">
                 <option value="" disabled>اختر الدورة</option>
                 {quals.map((q) => <option key={q.courseId} value={q.courseId}>{q.title} ({q.courseId})</option>)}
               </select>
@@ -178,7 +178,7 @@ export default function TrainerProposals() {
             <div>
               <label htmlFor="tp-type" className="mb-1.5 block text-xs font-bold text-white/60">نوع التعديل *</label>
               <select id="tp-type" value={form.changeType} onChange={(e) => setForm({ ...form, changeType: e.target.value })}
-                className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white [&>option]:bg-[#121B1D]">
+                className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white [&>option]:bg-surface">
                 {Object.entries(CHANGE_TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
             </div>
@@ -187,22 +187,22 @@ export default function TrainerProposals() {
             <div>
               <label htmlFor="tp-target" className="mb-1.5 block text-xs font-bold text-white/60">المحور المستهدف (معرفه) — اختياري</label>
               <input id="tp-target" dir="ltr" placeholder="C-BIZ-101-M2" value={form.targetKey} onChange={(e) => setForm({ ...form, targetKey: e.target.value })}
-                className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-left font-mono text-sm text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none" />
+                className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-left font-mono text-sm text-white placeholder:text-white/25 focus:border-teal focus:outline-none" />
             </div>
             <div>
               <label htmlFor="tp-value" className="mb-1.5 block text-xs font-bold text-white/60">القيمة المقترحة *</label>
               <input id="tp-value" required value={form.newValue} onChange={(e) => setForm({ ...form, newValue: e.target.value })}
                 placeholder="العنوان الجديد أو النص أو الساعات"
-                className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none" />
+                className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white placeholder:text-white/25 focus:border-teal focus:outline-none" />
             </div>
           </div>
           <div>
             <label htmlFor="tp-reason" className="mb-1.5 block text-xs font-bold text-white/60">سبب التعديل * — لماذا يخدم المتعلم؟</label>
             <textarea id="tp-reason" required rows={2} value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })}
-              className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none" />
+              className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white placeholder:text-white/25 focus:border-teal focus:outline-none" />
           </div>
           <button type="submit" disabled={busy || form.reason.trim().length < 10 || !form.courseId || !form.newValue.trim()}
-            className="cursor-pointer rounded-full bg-[#FABC05] px-6 py-2.5 text-xs font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90 disabled:opacity-40">
+            className="cursor-pointer rounded-full bg-gold px-6 py-2.5 text-xs font-black text-on-gold transition hover:bg-gold/90 disabled:opacity-40">
             {busy ? "جاري الإرسال…" : "أرسل للمراجعة"}
           </button>
         </form>
@@ -214,7 +214,7 @@ export default function TrainerProposals() {
           <div className="flex flex-wrap gap-2">
             {quals.map((q) => (
               <button key={q.courseId} onClick={() => void viewBlueprint(q.courseId)} disabled={bpBusy === q.courseId}
-                className="flex cursor-pointer items-center gap-1.5 rounded-full border border-[#38A7B4]/40 px-4 py-2 text-xs font-bold text-[#6EC7D1] transition hover:bg-[#38A7B4]/10 disabled:opacity-50">
+                className="flex cursor-pointer items-center gap-1.5 rounded-full border border-teal/40 px-4 py-2 text-xs font-bold text-teal-light-ink transition hover:bg-teal/10 disabled:opacity-50">
                 {bpBusy === q.courseId ? <Loader2 className="h-3 w-3 animate-spin" /> : <BookOpen className="h-3 w-3" />}
                 {q.title} — المخطط
               </button>
@@ -225,7 +225,7 @@ export default function TrainerProposals() {
       )}
 
       {bp && bp.versions[0] && (
-        <section className="mb-6 rounded-3xl border border-[#38A7B4]/25 bg-[#38A7B4]/[0.04] p-6">
+        <section className="mb-6 rounded-3xl border border-teal/25 bg-teal/[0.04] p-6">
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
               <h2 className="text-lg font-black text-white">{bp.versions[0].titleAr}</h2>
@@ -245,7 +245,7 @@ export default function TrainerProposals() {
           <div className="grid gap-4 lg:grid-cols-2">
             {bp.versions[0].objectives.length > 0 && (
               <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                <h3 className="mb-2 text-xs font-black text-[#6EC7D1]">الأهداف التعليمية</h3>
+                <h3 className="mb-2 text-xs font-black text-teal-light-ink">الأهداف التعليمية</h3>
                 <ol className="list-decimal space-y-1 pr-4 text-xs leading-6 text-white/70">
                   {[...bp.versions[0].objectives].sort((a, b) => a.sequence - b.sequence).map((o, i) => <li key={i}>{o.textAr}</li>)}
                 </ol>
@@ -253,7 +253,7 @@ export default function TrainerProposals() {
             )}
             {bp.versions[0].outcomes.length > 0 && (
               <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                <h3 className="mb-2 text-xs font-black text-[#6EC7D1]">المخرجات</h3>
+                <h3 className="mb-2 text-xs font-black text-teal-light-ink">المخرجات</h3>
                 <ol className="list-decimal space-y-1 pr-4 text-xs leading-6 text-white/70">
                   {[...bp.versions[0].outcomes].sort((a, b) => a.sequence - b.sequence).map((o, i) => <li key={i}>{o.textAr}</li>)}
                 </ol>
@@ -263,7 +263,7 @@ export default function TrainerProposals() {
 
           {bp.modules.length > 0 && (
             <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-4">
-              <h3 className="mb-2 text-xs font-black text-[#6EC7D1]">المحاور</h3>
+              <h3 className="mb-2 text-xs font-black text-teal-light-ink">المحاور</h3>
               <div className="space-y-2">
                 {[...bp.modules]
                   .sort((a, b) => (a.versions[0]?.sequence ?? 0) - (b.versions[0]?.sequence ?? 0))
@@ -281,8 +281,8 @@ export default function TrainerProposals() {
           )}
 
           {bp.versions[0].project && (
-            <div className="mt-4 rounded-2xl border border-[#FABC05]/25 bg-[#FABC05]/5 p-4">
-              <h3 className="mb-1 text-xs font-black text-[#FABC05]">المشروع التطبيقي</h3>
+            <div className="mt-4 rounded-2xl border border-gold/25 bg-gold/5 p-4">
+              <h3 className="mb-1 text-xs font-black text-gold-ink">المشروع التطبيقي</h3>
               <p className="text-xs leading-6 text-white/70">{bp.versions[0].project.descriptionAr}</p>
             </div>
           )}
@@ -290,7 +290,7 @@ export default function TrainerProposals() {
           <div className="mt-4 grid gap-4 lg:grid-cols-2">
             {bp.versions[0].assessments.length > 0 && (
               <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                <h3 className="mb-2 text-xs font-black text-[#6EC7D1]">التقييمات</h3>
+                <h3 className="mb-2 text-xs font-black text-teal-light-ink">التقييمات</h3>
                 <ul className="space-y-1.5 text-xs leading-6 text-white/70">
                   {bp.versions[0].assessments.map((a, i) => (
                     <li key={i} className="flex gap-2">
@@ -305,7 +305,7 @@ export default function TrainerProposals() {
             )}
             {bp.skillLinks.length > 0 && (
               <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                <h3 className="mb-2 text-xs font-black text-[#6EC7D1]">المهارات المستهدفة</h3>
+                <h3 className="mb-2 text-xs font-black text-teal-light-ink">المهارات المستهدفة</h3>
                 <div className="flex flex-wrap gap-1.5">
                   {bp.skillLinks.map((s) => (
                     <span key={s.skillId} className="rounded-full border border-white/15 bg-white/[0.04] px-2.5 py-1 text-[10px] text-white/70">
@@ -339,11 +339,11 @@ export default function TrainerProposals() {
                     {r.items.map((i) => CHANGE_TYPE_LABELS[i.changeType] ?? i.changeType).join(" · ")} — نطاق: {r.scope === "cohort" ? "شعبة" : "الكتالوج"}
                   </p>
                   {r.reviewerComment && (
-                    <p className="mt-2 rounded-lg border border-[#FABC05]/25 bg-[#FABC05]/5 p-2 text-[11px] text-[#FABC05]">تعليق المراجع: {r.reviewerComment}</p>
+                    <p className="mt-2 rounded-lg border border-gold/25 bg-gold/5 p-2 text-[11px] text-gold-ink">تعليق المراجع: {r.reviewerComment}</p>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="rounded-full border border-[#38A7B4]/40 px-3 py-1 text-[11px] font-bold text-[#6EC7D1]">
+                  <span className="rounded-full border border-teal/40 px-3 py-1 text-[11px] font-bold text-teal-light-ink">
                     {STATUS_LABELS[r.status] ?? r.status}
                   </span>
                   {["draft", "submitted", "under_review", "changes_requested"].includes(r.status) && (

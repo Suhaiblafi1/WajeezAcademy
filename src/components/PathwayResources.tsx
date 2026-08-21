@@ -53,7 +53,7 @@ export default function PathwayResources() {
   return (
     <section aria-label="المعرفة التي سترافق مسارك" className="story-fade mt-8 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
       <h2 className="flex items-center gap-2 text-xl font-black">
-        <BookOpen className="h-5 w-5 text-[#6EC7D1]" />
+        <BookOpen className="h-5 w-5 text-teal-light-ink" />
         المعرفة التي سترافق مسارك
       </h2>
       <p className="mt-3 max-w-2xl text-sm leading-loose text-white/65">
@@ -63,14 +63,14 @@ export default function PathwayResources() {
       <div className="mt-5 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
         {types.map((t) => (
           <div key={t.title} className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3.5">
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#38A7B4]/15">
-              <t.icon className="h-4 w-4 text-[#6EC7D1]" />
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-teal/15">
+              <t.icon className="h-4 w-4 text-teal-light-ink" />
             </span>
             <div className="min-w-0">
               <p className="text-sm font-black leading-relaxed">{t.title}</p>
               <p className="mt-1 text-xs leading-relaxed text-white/50">{t.why}</p>
               {t.examples && t.examples.length > 0 && (
-                <p className="mt-1.5 text-[11px] leading-relaxed text-[#6EC7D1]/80">
+                <p className="mt-1.5 text-[11px] leading-relaxed text-teal-light-ink/80">
                   منها فعليا: {t.examples.join("، ")}
                 </p>
               )}

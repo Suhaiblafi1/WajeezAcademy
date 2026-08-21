@@ -5,7 +5,7 @@ import { BarChart3, Download, Loader2, Play, RefreshCw, ServerOff } from "lucide
 import AdminLayout from "./AdminLayout";
 import { apiGet, ApiError } from "@/services/api";
 
-const inputCls = "rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white focus:border-[#38A7B4] focus:outline-none";
+const inputCls = "rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white focus:border-teal focus:outline-none";
 
 interface ReportDef { key: string; titleAr: string; methodAr: string }
 interface ReportResult { key: string; titleAr: string; methodAr: string; rows: Record<string, unknown>[]; columnsAr?: Record<string, string> }
@@ -96,9 +96,9 @@ export default function Reports() {
           <div className="space-y-2">
             {defs.map((d) => (
               <button key={d.key} onClick={() => { setSelected(d.key); setResult(null); }}
-                className={`w-full cursor-pointer rounded-2xl border p-4 text-right transition ${selected === d.key ? "border-[#FABC05]/50 bg-[#FABC05]/5" : "border-white/10 bg-white/[0.03] hover:border-white/25"}`}>
+                className={`w-full cursor-pointer rounded-2xl border p-4 text-right transition ${selected === d.key ? "border-gold/50 bg-gold/5" : "border-white/10 bg-white/[0.03] hover:border-white/25"}`}>
                 <p className="flex items-center gap-2 text-sm font-black">
-                  <BarChart3 className={`h-4 w-4 ${selected === d.key ? "text-[#FABC05]" : "text-white/40"}`} /> {d.titleAr}
+                  <BarChart3 className={`h-4 w-4 ${selected === d.key ? "text-gold-ink" : "text-white/40"}`} /> {d.titleAr}
                 </p>
                 <p className="mt-1 text-[11px] leading-5 text-white/50">{d.methodAr}</p>
               </button>
@@ -124,7 +124,7 @@ export default function Reports() {
               </div>
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <button onClick={() => void run()} disabled={running || !selected}
-                  className="flex cursor-pointer items-center gap-1.5 rounded-full bg-[#FABC05] px-5 py-2 text-xs font-black text-[#0D0D0D] disabled:opacity-40">
+                  className="flex cursor-pointer items-center gap-1.5 rounded-full bg-gold px-5 py-2 text-xs font-black text-on-gold disabled:opacity-40">
                   {running ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />} شغّل التقرير
                 </button>
                 <button onClick={() => void download("csv")} disabled={!selected}

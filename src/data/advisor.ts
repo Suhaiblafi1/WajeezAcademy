@@ -252,11 +252,11 @@ export type CaseStatus =
 
 export const CASE_STATUS_META: Record<CaseStatus, { label: string; cls: string }> = {
   new:            { label: "جديدة",        cls: "border-white/20 text-white/70" },
-  contacted:      { label: "تم التواصل",   cls: "border-[#38A7B4]/50 text-[#6EC7D1]" },
-  needs_review:   { label: "تحتاج مراجعة", cls: "border-[#FABC05]/50 text-[#FABC05]" },
-  follow_up:      { label: "قيد المتابعة", cls: "border-[#38A7B4]/50 text-[#6EC7D1]" },
-  recommended:    { label: "أوصي بمسار",   cls: "border-[#FABC05]/50 text-[#FABC05]" },
-  enrolled:       { label: "مسجّل",        cls: "border-[#38A7B4]/50 text-[#6EC7D1]" },
+  contacted:      { label: "تم التواصل",   cls: "border-teal/50 text-teal-light-ink" },
+  needs_review:   { label: "تحتاج مراجعة", cls: "border-gold/50 text-gold-ink" },
+  follow_up:      { label: "قيد المتابعة", cls: "border-teal/50 text-teal-light-ink" },
+  recommended:    { label: "أوصي بمسار",   cls: "border-gold/50 text-gold-ink" },
+  enrolled:       { label: "مسجّل",        cls: "border-teal/50 text-teal-light-ink" },
   not_interested: { label: "غير مهتم",     cls: "border-white/15 text-white/40" },
   closed:         { label: "مغلقة",        cls: "border-white/15 text-white/40" },
 };

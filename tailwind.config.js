@@ -5,6 +5,24 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        /* توكنات الهوية (البند و-١) — bg-teal و text-teal-ink/70 وغيرها.
+           تعبئة/حد: teal · teal-light · teal-deep · gold (ثابتة)
+           نص: teal-ink · teal-light-ink · gold-ink (تنقلب على الفاتح)
+           حبر فوق التعبئات الساطعة: on-teal · on-gold (ثابتة)
+           «gold» لا «amber»: الأخير يظلّ مقياس amber-300/400 المستعمل. */
+        teal: "rgb(var(--teal) / <alpha-value>)",
+        "teal-light": "rgb(var(--teal-light) / <alpha-value>)",
+        "teal-deep": "rgb(var(--teal-deep) / <alpha-value>)",
+        "teal-darker": "rgb(var(--teal-darker) / <alpha-value>)",
+        gold: "rgb(var(--gold) / <alpha-value>)",
+        "teal-ink": "rgb(var(--teal-ink) / <alpha-value>)",
+        "teal-light-ink": "rgb(var(--teal-light-ink) / <alpha-value>)",
+        "gold-ink": "rgb(var(--gold-ink) / <alpha-value>)",
+        ground: "rgb(var(--ground) / <alpha-value>)",
+        surface: "rgb(var(--surface) / <alpha-value>)",
+        "surface-teal": "rgb(var(--surface-teal) / <alpha-value>)",
+        "on-teal": "rgb(var(--on-teal) / <alpha-value>)",
+        "on-gold": "rgb(var(--on-gold) / <alpha-value>)",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

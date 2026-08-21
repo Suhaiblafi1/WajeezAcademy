@@ -6,7 +6,7 @@ import SeoHead from "@/components/SeoHead";
 import { apiPost, ApiError } from "@/services/api";
 
 const inputCls =
-  "w-full rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:border-[#38A7B4] focus:outline-none";
+  "w-full rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:border-teal focus:outline-none";
 
 /** قبول دعوة المدرب — إنشاء الحساب عبر الرمز الآمن الذي أرسلته الإدارة بعد الاعتماد والعقد */
 export default function TrainerAcceptInvite() {
@@ -39,15 +39,15 @@ export default function TrainerAcceptInvite() {
     <SiteShell>
       <SeoHead title="تفعيل حساب المدرب" description="إنشاء حساب المدرب عبر الدعوة الآمنة" path="/trainer/accept-invite" />
       <div className="mx-auto max-w-md py-14">
-        <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[#38A7B4]/15">
-          <KeyRound className="h-7 w-7 text-[#6EC7D1]" />
+        <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-teal/15">
+          <KeyRound className="h-7 w-7 text-teal-light-ink" />
         </span>
         {done ? (
           <div className="mt-6 text-center">
-            <CheckCircle2 className="mx-auto h-10 w-10 text-[#6EC7D1]" />
+            <CheckCircle2 className="mx-auto h-10 w-10 text-teal-light-ink" />
             <h1 className="mt-4 text-2xl font-black">حسابك جاهز — أهلا بك مدربا في وجيز</h1>
             <p className="mt-3 text-sm leading-8 text-white/60">سجّل الدخول الآن لتجد بوابتك ومهام تهيئتك.</p>
-            <Link to="/auth" className="mt-6 inline-block rounded-full bg-[#FABC05] px-7 py-3 font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90">
+            <Link to="/auth" className="mt-6 inline-block rounded-full bg-gold px-7 py-3 font-black text-on-gold transition hover:bg-gold/90">
               تسجيل الدخول
             </Link>
           </div>
@@ -76,13 +76,13 @@ export default function TrainerAcceptInvite() {
                 {confirm && password !== confirm && <p className="mt-1.5 text-[11px] text-red-300">كلمتا المرور غير متطابقتين</p>}
               </div>
               <label className="flex cursor-pointer items-center gap-2 text-xs text-white/55">
-                <input type="checkbox" checked={showPw} onChange={(e) => setShowPw(e.target.checked)} className="h-4 w-4 accent-[#38A7B4]" />
+                <input type="checkbox" checked={showPw} onChange={(e) => setShowPw(e.target.checked)} className="h-4 w-4 accent-teal" />
                 إظهار كلمة المرور
               </label>
               {error && <p className="rounded-xl border border-red-400/30 bg-red-400/10 p-3 text-xs text-red-200" role="alert">{error}</p>}
               <button
                 type="submit" disabled={!valid || busy}
-                className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-[#FABC05] py-3.5 font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90 disabled:opacity-40"
+                className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-gold py-3.5 font-black text-on-gold transition hover:bg-gold/90 disabled:opacity-40"
               >
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
                 فعّل حسابي

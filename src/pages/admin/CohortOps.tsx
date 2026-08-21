@@ -8,8 +8,8 @@ import {
 } from "lucide-react";
 import { apiGet, apiPatch, apiPost, ApiError } from "@/services/api";
 
-const inputCls = "w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none";
-const selectCls = `${inputCls} [&>option]:bg-[#121B1D]`;
+const inputCls = "w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/25 focus:border-teal focus:outline-none";
+const selectCls = `${inputCls} [&>option]:bg-surface`;
 
 interface CohortLite {
   id: string; title: string; status: string; courseId: string; daysOfWeek: string[];
@@ -67,7 +67,7 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
 
   return (
     <div className="space-y-3">
-      {localMsg && <p className="text-[11px] font-bold text-[#6EC7D1]" role="status">{localMsg}</p>}
+      {localMsg && <p className="text-[11px] font-bold text-teal-light-ink" role="status">{localMsg}</p>}
 
       {/* تعيين مدرب */}
       <MiniCard icon={UserPlus} title="تعيين مدرب — يتطلب تأهيلا قائما ويفحص تعارض الجدول">
@@ -109,11 +109,11 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
             <input type="number" min={0} value={editForm.price} onChange={(e) => setEditForm({ ...editForm, price: e.target.value })} placeholder="السعر (د.أ)" className={inputCls} />
             <div className="flex items-center gap-4 text-[11px] text-white/60">
               <label className="flex cursor-pointer items-center gap-1.5">
-                <input type="checkbox" checked={editForm.registrationOpen} onChange={(e) => setEditForm({ ...editForm, registrationOpen: e.target.checked })} className="accent-[#38A7B4]" />
+                <input type="checkbox" checked={editForm.registrationOpen} onChange={(e) => setEditForm({ ...editForm, registrationOpen: e.target.checked })} className="accent-teal" />
                 التسجيل مفتوح
               </label>
               <label className="flex cursor-pointer items-center gap-1.5">
-                <input type="checkbox" checked={editForm.financialReady} onChange={(e) => setEditForm({ ...editForm, financialReady: e.target.checked })} className="accent-[#38A7B4]" />
+                <input type="checkbox" checked={editForm.financialReady} onChange={(e) => setEditForm({ ...editForm, financialReady: e.target.checked })} className="accent-teal" />
                 جاهزة ماليا
               </label>
             </div>
@@ -246,7 +246,7 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
               placeholder="معرف التسجيل لإصدار شهادة (UUID)" dir="ltr" className={`${inputCls} flex-1 font-mono`} />
             <button disabled={busy || !certId.trim()}
               onClick={() => act(() => apiPost(`/api/admin/enrollments/${certId.trim()}/certificate`), "أُصدرت الشهادة — أو رُفضت بقائمة القواعد غير المحققة")}
-              className="flex cursor-pointer items-center gap-1 rounded-xl border border-[#FABC05]/40 px-4 py-2 text-xs font-bold text-[#FABC05] hover:bg-[#FABC05]/10 disabled:opacity-40">
+              className="flex cursor-pointer items-center gap-1 rounded-xl border border-gold/40 px-4 py-2 text-xs font-bold text-gold-ink hover:bg-gold/10 disabled:opacity-40">
               <BadgeCheck className="h-3.5 w-3.5" /> إصدار شهادة
             </button>
           </div>
@@ -314,7 +314,7 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
       {cohort.status === "open" && (
         <button disabled={busy}
           onClick={() => act(() => apiPost(`/api/admin/cohorts/${cohort.id}/publish`), "نُشرت الشعبة — إسنادات المدربين ظاهرة للعامة")}
-          className="flex cursor-pointer items-center gap-1.5 rounded-full border border-[#FABC05]/40 px-4 py-2 text-xs font-bold text-[#FABC05] transition hover:bg-[#FABC05]/10 disabled:opacity-40">
+          className="flex cursor-pointer items-center gap-1.5 rounded-full border border-gold/40 px-4 py-2 text-xs font-bold text-gold-ink transition hover:bg-gold/10 disabled:opacity-40">
           <Globe className="h-3.5 w-3.5" /> نشر عام لإسنادات المدربين
         </button>
       )}
@@ -346,7 +346,7 @@ export function LearningSettings({ courses, cohorts, onDone }: {
   return (
     <section className="mt-8 grid gap-4 lg:grid-cols-2">
       <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-5">
-        <h3 className="flex items-center gap-2 text-sm font-black"><CalendarPlus className="h-4 w-4 text-[#38A7B4]" /> روبرك تقييم جديد — قابل لإعادة الاستخدام</h3>
+        <h3 className="flex items-center gap-2 text-sm font-black"><CalendarPlus className="h-4 w-4 text-teal-ink" /> روبرك تقييم جديد — قابل لإعادة الاستخدام</h3>
         <input value={rubricTitle} onChange={(e) => setRubricTitle(e.target.value)} placeholder="عنوان الروبرك" className={`${inputCls} mt-3`} />
         <div className="mt-2 space-y-2">
           {criteria.map((c, i) => (
@@ -376,14 +376,14 @@ export function LearningSettings({ courses, cohorts, onDone }: {
               });
               setRubricTitle(""); setCriteria([{ title: "", maxScore: "10" }]);
             }, "أُنشئ الروبرك")}
-            className="cursor-pointer rounded-full bg-[#38A7B4] px-4 py-1.5 text-xs font-black text-[#08272B] hover:bg-[#6EC7D1] disabled:opacity-40">
+            className="cursor-pointer rounded-full bg-teal px-4 py-1.5 text-xs font-black text-on-teal hover:bg-teal-light disabled:opacity-40">
             أنشئ الروبرك
           </button>
         </div>
       </div>
 
       <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-5">
-        <h3 className="flex items-center gap-2 text-sm font-black"><BadgeCheck className="h-4 w-4 text-[#38A7B4]" /> قاعدة إكمال — لدورة عامة أو لشعبة محددة</h3>
+        <h3 className="flex items-center gap-2 text-sm font-black"><BadgeCheck className="h-4 w-4 text-teal-ink" /> قاعدة إكمال — لدورة عامة أو لشعبة محددة</h3>
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
           <select value={ruleForm.courseId} onChange={(e) => setRuleForm({ ...ruleForm, courseId: e.target.value })} className={selectCls}>
             <option value="">الدورة…</option>
@@ -404,7 +404,7 @@ export function LearningSettings({ courses, cohorts, onDone }: {
             placeholder="العتبة" className={inputCls} />
         </div>
         <label className="mt-2 flex cursor-pointer items-center gap-1.5 text-[11px] text-white/60">
-          <input type="checkbox" checked={ruleForm.required} onChange={(e) => setRuleForm({ ...ruleForm, required: e.target.checked })} className="accent-[#38A7B4]" />
+          <input type="checkbox" checked={ruleForm.required} onChange={(e) => setRuleForm({ ...ruleForm, required: e.target.checked })} className="accent-teal" />
           قاعدة إلزامية للشهادة
         </label>
         <button disabled={busy || !ruleForm.courseId || Number(ruleForm.threshold) < 1}
@@ -412,11 +412,11 @@ export function LearningSettings({ courses, cohorts, onDone }: {
             courseId: ruleForm.courseId, cohortId: ruleForm.cohortId || undefined,
             type: ruleForm.type, threshold: Number(ruleForm.threshold), required: ruleForm.required,
           }), "حُفظت قاعدة الإكمال")}
-          className="mt-3 cursor-pointer rounded-full bg-[#38A7B4] px-4 py-1.5 text-xs font-black text-[#08272B] hover:bg-[#6EC7D1] disabled:opacity-40">
+          className="mt-3 cursor-pointer rounded-full bg-teal px-4 py-1.5 text-xs font-black text-on-teal hover:bg-teal-light disabled:opacity-40">
           احفظ القاعدة
         </button>
       </div>
-      {msg && <p className="text-xs font-bold text-[#6EC7D1] lg:col-span-2" role="status">{msg}</p>}
+      {msg && <p className="text-xs font-bold text-teal-light-ink lg:col-span-2" role="status">{msg}</p>}
     </section>
   );
 }

@@ -29,8 +29,8 @@ const TYPE_META: Record<CourseResourceType, { label: string; icon: typeof BookOp
 const TYPE_ORDER: CourseResourceType[] = ["summary", "book", "podcast", "video", "tool", "template"];
 
 const NECESSITY_META: Record<ResourceNecessity, { label: string; className: string }> = {
-  required: { label: "إلزامي", className: "border-[#FABC05]/50 bg-[#FABC05]/10 text-[#FABC05]" },
-  recommended: { label: "موصى به", className: "border-[#38A7B4]/50 bg-[#38A7B4]/10 text-[#6EC7D1]" },
+  required: { label: "إلزامي", className: "border-gold/50 bg-gold/10 text-gold-ink" },
+  recommended: { label: "موصى به", className: "border-teal/50 bg-teal/10 text-teal-light-ink" },
   optional: { label: "اختياري", className: "border-white/15 bg-white/[0.04] text-white/50" },
 };
 
@@ -48,11 +48,11 @@ function GenericResourceCard({ resource }: { resource: CourseResource }) {
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-white/45">
         <span className="flex items-center gap-1">
-          <meta.icon className="h-3 w-3 text-[#6EC7D1]" /> {meta.label}
+          <meta.icon className="h-3 w-3 text-teal-light-ink" /> {meta.label}
         </span>
         {resource.estimatedMinutes !== undefined && (
           <span className="flex items-center gap-1">
-            <Clock3 className="h-3 w-3 text-[#6EC7D1]" /> {resource.estimatedMinutes} دقيقة
+            <Clock3 className="h-3 w-3 text-teal-light-ink" /> {resource.estimatedMinutes} دقيقة
           </span>
         )}
       </div>
@@ -67,7 +67,7 @@ function GenericResourceCard({ resource }: { resource: CourseResource }) {
         </p>
       )}
       {resource.actionLabel && (
-        <p className="mt-2.5 text-[11px] font-bold text-[#6EC7D1]">{resource.actionLabel}</p>
+        <p className="mt-2.5 text-[11px] font-bold text-teal-light-ink">{resource.actionLabel}</p>
       )}
     </div>
   );
@@ -112,7 +112,7 @@ export default function CourseResources({
   return (
     <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
       <h3 className="flex items-center gap-2 text-sm font-black">
-        <BookOpen className="h-4 w-4 text-[#6EC7D1]" /> مصادر هذه الدورة
+        <BookOpen className="h-4 w-4 text-teal-light-ink" /> مصادر هذه الدورة
       </h3>
       <p className="mt-1.5 text-[11px] leading-5 text-white/45">
         مصادر مختارة ترافق وحدات الدورة — تُعمّق الفهم وتقرّب التطبيق.
@@ -136,7 +136,7 @@ export default function CourseResources({
                 onClick={() => setActiveType(t)}
                 className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-bold transition ${
                   active
-                    ? "border-[#38A7B4]/60 bg-[#38A7B4]/15 text-[#6EC7D1]"
+                    ? "border-teal/60 bg-teal/15 text-teal-light-ink"
                     : "border-white/10 text-white/55 hover:border-white/25"
                 }`}
               >

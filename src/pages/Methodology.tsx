@@ -20,18 +20,18 @@ function RefCard({ id }: { id: string }) {
     <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
       <div className="flex flex-wrap items-center gap-2">
         <p className="text-sm font-black text-white/90">{ref.name_ar}</p>
-        <span className="text-[11px] text-white/40" dir="ltr">
+        <span className="text-[11px] text-white/55" dir="ltr">
           {ref.name_en}
         </span>
       </div>
-      <p className="mt-1 text-xs text-white/45">الجهة الناشرة: {ref.organization}</p>
+      <p className="mt-1 text-xs text-white/55">الجهة الناشرة: {ref.organization}</p>
       <div className="mt-3 space-y-2 text-xs leading-6">
         <p className="text-white/65">
-          <span className="font-bold text-[#6EC7D1]">كيف تستخدمه وجيز: </span>
+          <span className="font-bold text-teal-light-ink">كيف تستخدمه وجيز: </span>
           {ref.purpose_ar}
         </p>
         <p className="text-white/65">
-          <span className="font-bold text-[#FABC05]">فائدته لك: </span>
+          <span className="font-bold text-gold-ink">فائدته لك: </span>
           {ref.customer_benefit_ar}
         </p>
         <p className="text-white/50">
@@ -43,7 +43,7 @@ function RefCard({ id }: { id: string }) {
         href={ref.source_url}
         target="_blank"
         rel="noreferrer"
-        className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-[#6EC7D1] transition hover:text-white"
+        className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-teal-light-ink transition hover:text-white"
       >
         المصدر الأصلي
         <ExternalLink className="h-3 w-3" />
@@ -102,10 +102,10 @@ export default function Methodology() {
         path="/methodology"
       />
       <div className="mx-auto max-w-3xl">
-        <p className="text-xs font-bold tracking-wide text-[#6EC7D1]">منهجية وجيز</p>
+        <p className="text-xs font-bold tracking-wide text-teal-light-ink">منهجية وجيز</p>
         <h1 className="mt-3 text-3xl font-black leading-snug md:text-4xl">
           توصية مبنية على منهجية،
-          <span className="text-[#6EC7D1]"> لا على التخمين</span>
+          <span className="text-teal-light-ink"> لا على التخمين</span>
         </h1>
         <p className="mt-4 max-w-xl leading-loose text-white/60">
           يحلل مؤشر وجيز ميولك وأهدافك وفجوات مهاراتك، ثم يربطها بما تحتاج إلى تعلمه ضمن مسار ذي مخرجات واضحة —
@@ -116,7 +116,7 @@ export default function Methodology() {
           {SECTIONS.map((s) => (
             <section key={s.q} className="rounded-3xl border border-white/10 bg-white/[0.02] p-6 md:p-8">
               <h2 className="flex items-center gap-2.5 text-lg font-black">
-                <s.icon className="h-5 w-5 text-[#FABC05]" />
+                <s.icon className="h-5 w-5 text-gold-ink" />
                 {s.q}
               </h2>
               <p className="mt-3 text-sm leading-loose text-white/65">{s.a}</p>
@@ -127,19 +127,19 @@ export default function Methodology() {
           ))}
         </div>
 
-        <p className="mt-10 rounded-2xl border border-[#FABC05]/30 bg-[#FABC05]/5 p-5 text-xs leading-loose text-white/60">
+        <p className="mt-10 rounded-2xl border border-gold/30 bg-gold/5 p-5 text-xs leading-loose text-white/60">
           {DISCLAIMER_METHODOLOGY_AR} الأسماء تُذكر نصيا فقط دون شعارات، التزاما بتراخيص الجهات الناشرة.
         </p>
 
         <div className="mt-10 text-center">
           <Link
             to="/diagnostic"
-            className="inline-flex h-12 items-center gap-2 rounded-full bg-[#FABC05] px-8 font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90"
+            className="inline-flex h-12 items-center gap-2 rounded-full bg-gold px-8 font-black text-on-gold transition hover:bg-gold/90"
           >
             جرّب المنهجية على نفسك — ابدأ التشخيص
             <ArrowLeft className="h-4 w-4" />
           </Link>
-          <p className="mt-3 text-xs text-white/40">
+          <p className="mt-3 text-xs text-white/55">
             {pathways.length} مسارا في الكتالوج، كلها مبنية بهذه المنهجية.
           </p>
         </div>

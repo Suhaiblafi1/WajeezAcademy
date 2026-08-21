@@ -116,13 +116,21 @@ describe('دورة النشر الكاملة', () => {
     expect(impact.totalPersonas).toBe(12)
 
     const before = await prisma.catalogVersion.findFirst({ where: { status: 'published' } })
+    /* الأعداد المتوقعة تُشتق من المنشور فعلا + كيان واحد لكل نوع أنشأه الاختبار.
+       أرقام ثابتة كانت تكسر الاختبار عند أي تغيير مشروع في الكتالوج: SK-GOV-010
+       مؤرشفة فالمنشور 304 لا 305، فكان التوقع 306 خاطئا بواحد. */
+    const publishedBefore = {
+      pathways: await prisma.pathway.count({ where: { status: 'published' } }),
+      courses: await prisma.course.count({ where: { status: 'published' } }),
+      skills: await prisma.skill.count({ where: { status: 'published' } }),
+    }
     const v = await pub.createDraftVersion(`e2e-pub-${Date.now()}`, makerId)
     const result = await pub.publish(v.id, checkerId)
 
     expect(result.version.status).toBe('published')
-    expect(result.counts.pathways).toBe(21)
-    expect(result.counts.courses).toBe(101)
-    expect(result.counts.skills).toBe(306)
+    expect(result.counts.pathways).toBe(publishedBefore.pathways + 1)
+    expect(result.counts.courses).toBe(publishedBefore.courses + 1)
+    expect(result.counts.skills).toBe(publishedBefore.skills + 1)
 
     /* الإصدار السابق superseded */
     const old = await prisma.catalogVersion.findUnique({ where: { id: before!.id } })

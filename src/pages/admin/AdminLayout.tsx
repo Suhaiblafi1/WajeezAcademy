@@ -22,16 +22,16 @@ export default function AdminLayout({ children, title }: { children: React.React
 
   if (!effectiveMe && !checked) {
     return (
-      <div dir="rtl" className="grid min-h-screen place-items-center bg-[#0D0D0D] text-white">
-        <Crown className="h-10 w-10 animate-pulse text-[#FABC05]" />
+      <div dir="rtl" className="grid min-h-screen place-items-center bg-ground text-white">
+        <Crown className="h-10 w-10 animate-pulse text-gold-ink" />
       </div>
     );
   }
 
   if (!effectiveMe) {
     return (
-      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-[#0D0D0D] px-5 text-white">
-        <Crown className="h-12 w-12 text-[#FABC05]" />
+      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-ground px-5 text-white">
+        <Crown className="h-12 w-12 text-gold-ink" />
         <h1 className="mt-5 text-2xl font-black">لوحة الإدارة والعمليات — من أنت؟</h1>
         <p className="mt-2 max-w-md text-center text-sm leading-7 text-white/55">
           صلاحيات منفصلة: العمليات ترى الشعب والحالات، المالية ترى المبالغ لا إجابات الاختبارات — RBAC كامل.
@@ -41,14 +41,14 @@ export default function AdminLayout({ children, title }: { children: React.React
             <button
               key={a.id}
               onClick={() => { localStorage.setItem(ADMIN_IDENTITY_KEY, JSON.stringify(a)); setMe(a); }}
-              className="cursor-pointer rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-right transition hover:border-[#FABC05]/50"
+              className="cursor-pointer rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-right transition hover:border-gold/50"
             >
               <p className="font-black">{a.name}</p>
-              <p className="mt-0.5 text-xs text-[#FABC05]">{a.title}</p>
+              <p className="mt-0.5 text-xs text-gold-ink">{a.title}</p>
             </button>
           ))}
         </div>
-        <p className="mt-4 text-[11px] font-bold text-[#FABC05]/70">نسخة تجريبية — البيانات المعروضة محلية وليست تشغيلية</p>
+        <p className="mt-4 text-[11px] font-bold text-gold-ink/70">نسخة تجريبية — البيانات المعروضة محلية وليست تشغيلية</p>
         <Link to="/" className="mt-6 text-xs text-white/50 hover:text-white/70">العودة للموقع العام</Link>
       </div>
     );
@@ -102,14 +102,14 @@ export default function AdminLayout({ children, title }: { children: React.React
 
   const linkCls = (isActive: boolean) =>
     `flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-bold transition ${
-      isActive ? "bg-[#FABC05] text-[#0D0D0D]" : "text-white/60 hover:bg-white/[0.04] hover:text-white"
+      isActive ? "bg-gold text-on-gold" : "text-white/60 hover:bg-white/[0.04] hover:text-white"
     }`;
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#0D0D0D] text-white">
+    <div dir="rtl" className="min-h-screen bg-ground text-white">
       <SearchPalette />
       <PrototypeBanner hidden={realAdmin} />
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0D0D0D]/90 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-ground/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5">
           <Link to="/" className="flex items-center gap-2">
             <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 object-contain" />
@@ -118,7 +118,7 @@ export default function AdminLayout({ children, title }: { children: React.React
           {/* جوال: قائمة منسدلة بسيطة بكل الشاشات */}
           <select
             aria-label="التنقل بين شاشات الإدارة"
-            className="rounded-xl border border-white/15 bg-[#0D0D0D] px-3 py-2 text-xs font-bold text-white lg:hidden"
+            className="rounded-xl border border-white/15 bg-ground px-3 py-2 text-xs font-bold text-white lg:hidden"
             value={location.pathname}
             onChange={(e) => navigate(e.target.value)}
           >

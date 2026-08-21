@@ -81,6 +81,10 @@ export default defineConfig({
       },
     },
   },
+  test: {
+    /* البند ع-١: الكتالوج المضمن كسول في الإنتاج — تثبّته الاختبارات صراحة */
+    setupFiles: ['./src/tests/setup-catalog.ts'],
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

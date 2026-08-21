@@ -57,7 +57,7 @@ export default function VideoPlayer({
             if (playing && pct > lastSaved.current) { lastSaved.current = pct; onProgress(pct); }
             setPlaying(!playing);
           }}
-          className="grid h-16 w-16 cursor-pointer place-items-center rounded-full bg-[#38A7B4]/90 text-[#08272B] shadow-[0_0_40px_-5px_#38A7B4] transition hover:scale-105"
+          className="grid h-16 w-16 cursor-pointer place-items-center rounded-full bg-teal/90 text-on-teal shadow-[0_0_40px_-5px_#38A7B4] transition hover:scale-105"
           aria-label={playing ? "إيقاف" : "تشغيل"}
         >
           {playing ? <Pause className="h-7 w-7" /> : <Play className="h-7 w-7 -translate-x-0.5" />}
@@ -66,7 +66,7 @@ export default function VideoPlayer({
           معاينة تجريبية — يُعرض الفيديو الحقيقي هنا عند الربط
         </span>
         {pct >= 90 && (
-          <span className="absolute left-3 top-3 rounded-full bg-[#38A7B4] px-3 py-1 text-xs font-black text-[#08272B]">مكتمل ✓</span>
+          <span className="absolute left-3 top-3 rounded-full bg-teal px-3 py-1 text-xs font-black text-on-teal">مكتمل ✓</span>
         )}
       </div>
       {/* شريط التحكم */}
@@ -82,7 +82,7 @@ export default function VideoPlayer({
             const p = Math.round((v / totalSec) * 100);
             if (p > lastSaved.current) { lastSaved.current = p; onProgress(p); }
           }}
-          className="w-full accent-[#38A7B4]"
+          className="w-full accent-teal"
           aria-label="شريط التقدم"
         />
         <div className="flex items-center justify-between text-xs text-white/55">
@@ -98,7 +98,7 @@ export default function VideoPlayer({
               <button
                 key={s}
                 onClick={() => setSpeed(s)}
-                className={`cursor-pointer rounded-lg border px-2 py-1 ${speed === s ? "border-[#38A7B4] text-[#6EC7D1]" : "border-white/10 hover:border-white/30"}`}
+                className={`cursor-pointer rounded-lg border px-2 py-1 ${speed === s ? "border-teal text-teal-light-ink" : "border-white/10 hover:border-white/30"}`}
               >
                 {s}×
               </button>

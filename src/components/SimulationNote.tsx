@@ -11,7 +11,7 @@ export default function SimulationNote({ what }: { what: string }) {
   return (
     <p
       role="note"
-      className="mb-5 flex items-start gap-2 rounded-2xl border border-[#38A7B4]/25 bg-[#38A7B4]/[0.06] px-4 py-3 text-xs leading-6 text-[#6EC7D1]"
+      className="mb-5 flex items-start gap-2 rounded-2xl border border-teal/25 bg-teal/[0.06] px-4 py-3 text-xs leading-6 text-teal-light-ink"
     >
       <Info className="mt-0.5 h-4 w-4 shrink-0" />
       <span>

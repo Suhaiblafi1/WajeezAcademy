@@ -12,9 +12,9 @@ const ENROLL_STATUS: Record<string, string> = {
 };
 const SUBMISSION_STATUS: Record<string, { label: string; cls: string }> = {
   submitted: { label: "بانتظار المراجعة", cls: "border-white/20 text-white/60" },
-  under_review: { label: "قيد مراجعة المدرب", cls: "border-[#FABC05]/50 text-[#FABC05]" },
+  under_review: { label: "قيد مراجعة المدرب", cls: "border-gold/50 text-gold-ink" },
   resubmit_requested: { label: "مطلوب إعادة التسليم", cls: "border-red-500/40 text-red-400" },
-  accepted: { label: "مقبول", cls: "border-[#38A7B4]/50 text-[#6EC7D1]" },
+  accepted: { label: "مقبول", cls: "border-teal/50 text-teal-light-ink" },
   rejected: { label: "مرفوض", cls: "border-red-500/40 text-red-400" },
 };
 const ASSESSMENT_TYPE: Record<string, string> = { assignment: "واجب", quiz: "اختبار", project: "مشروع" };
@@ -134,7 +134,7 @@ export default function MyLearning() {
     <PortalLayout title="تعلّمي">
       <div className="mx-auto max-w-4xl">
         {flash && (
-          <p className="mb-5 flex items-center gap-2 rounded-2xl border border-[#38A7B4]/40 bg-[#38A7B4]/10 px-4 py-3 text-sm font-bold text-[#6EC7D1]">
+          <p className="mb-5 flex items-center gap-2 rounded-2xl border border-teal/40 bg-teal/10 px-4 py-3 text-sm font-bold text-teal-light-ink">
             <CheckCircle2 className="h-4 w-4 shrink-0" /> {flash}
           </p>
         )}
@@ -149,7 +149,7 @@ export default function MyLearning() {
             </button>
           </div>
         ) : loading ? (
-          <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-[#38A7B4]" /></div>
+          <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" /></div>
         ) : rows.length === 0 ? (
           <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
             <BookOpen className="h-12 w-12 text-white/20" />
@@ -173,7 +173,7 @@ export default function MyLearning() {
                     {r.courseProgress && (
                       <div className="w-28">
                         <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
-                          <div className="h-full rounded-full bg-[#38A7B4]" style={{ width: `${r.courseProgress.percent}%` }} />
+                          <div className="h-full rounded-full bg-teal" style={{ width: `${r.courseProgress.percent}%` }} />
                         </div>
                         <p className="mt-1 text-center text-[10px] text-white/45">{r.courseProgress.percent}٪ مكتمل</p>
                       </div>
@@ -187,7 +187,7 @@ export default function MyLearning() {
                   {isOpen && (
                     <div className="border-t border-white/8 p-5">
                       {detailLoading || !detail ? (
-                        <div className="grid place-items-center py-8"><Loader2 className="h-6 w-6 animate-spin text-[#38A7B4]" /></div>
+                        <div className="grid place-items-center py-8"><Loader2 className="h-6 w-6 animate-spin text-teal-ink" /></div>
                       ) : (
                         <LearnerCohortDetail
                           detail={detail}
@@ -223,7 +223,7 @@ function LearnerCohortDetail({ detail, answers, setAnswers, busy, onSubmit, onSu
     <div className="space-y-6">
       {/* الجلسات */}
       <section>
-        <h3 className="mb-3 flex items-center gap-2 text-sm font-black text-white/70"><CalendarDays className="h-4 w-4 text-[#6EC7D1]" /> الجلسات</h3>
+        <h3 className="mb-3 flex items-center gap-2 text-sm font-black text-white/70"><CalendarDays className="h-4 w-4 text-teal-light-ink" /> الجلسات</h3>
         {detail.cohort.sessions.length === 0 ? (
           <p className="text-xs text-white/50">لم تُجدول جلسات بعد.</p>
         ) : (
@@ -244,7 +244,7 @@ function LearnerCohortDetail({ detail, answers, setAnswers, busy, onSubmit, onSu
                     )}
                     {s.zoom && (
                       <a href={s.zoom.learnerUrl ?? s.zoom.joinUrl} target="_blank" rel="noreferrer"
-                        className="flex items-center gap-1.5 rounded-full bg-[#38A7B4] px-4 py-1.5 text-[11px] font-black text-[#08272B] transition hover:bg-[#6EC7D1]">
+                        className="flex items-center gap-1.5 rounded-full bg-teal px-4 py-1.5 text-[11px] font-black text-on-teal transition hover:bg-teal-light">
                         <Video className="h-3 w-3" /> ادخل الجلسة
                       </a>
                     )}
@@ -256,7 +256,7 @@ function LearnerCohortDetail({ detail, answers, setAnswers, busy, onSubmit, onSu
                     <div className="mt-3 flex flex-wrap gap-2 border-t border-white/8 pt-3">
                       {s.recordings.map((rec) => (
                         <a key={rec.id} href={rec.readUrl ?? "#"} target="_blank" rel="noreferrer"
-                          className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1 text-[10px] font-bold text-white/65 transition hover:border-[#38A7B4]/50 hover:text-[#6EC7D1]">
+                          className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1 text-[10px] font-bold text-white/65 transition hover:border-teal/50 hover:text-teal-light-ink">
                           <PlayCircle className="h-3 w-3" /> {rec.title}
                           {rec.durationSec ? ` · ${Math.round(rec.durationSec / 60)} د` : ""}
                         </a>
@@ -273,11 +273,11 @@ function LearnerCohortDetail({ detail, answers, setAnswers, busy, onSubmit, onSu
       {/* المواد */}
       {detail.cohort.materials.length > 0 && (
         <section>
-          <h3 className="mb-3 flex items-center gap-2 text-sm font-black text-white/70"><FileText className="h-4 w-4 text-[#6EC7D1]" /> المواد</h3>
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-black text-white/70"><FileText className="h-4 w-4 text-teal-light-ink" /> المواد</h3>
           <div className="flex flex-wrap gap-2">
             {detail.cohort.materials.map((m) => (
               <a key={m.id} href={m.readUrl ?? m.externalUrl ?? "#"} target="_blank" rel="noreferrer"
-                className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-bold text-white/65 transition hover:border-[#38A7B4]/50 hover:text-[#6EC7D1]">
+                className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-bold text-white/65 transition hover:border-teal/50 hover:text-teal-light-ink">
                 <FileText className="h-3 w-3" /> {m.title}
               </a>
             ))}
@@ -288,7 +288,7 @@ function LearnerCohortDetail({ detail, answers, setAnswers, busy, onSubmit, onSu
       {/* الواجبات والتقييمات */}
       {detail.cohort.assessments.length > 0 && (
         <section>
-          <h3 className="mb-3 flex items-center gap-2 text-sm font-black text-white/70"><Send className="h-4 w-4 text-[#6EC7D1]" /> الواجبات والتقييمات</h3>
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-black text-white/70"><Send className="h-4 w-4 text-teal-light-ink" /> الواجبات والتقييمات</h3>
           <div className="space-y-3">
             {detail.cohort.assessments.map((a) => {
               const mine = detail.submissions
@@ -308,7 +308,7 @@ function LearnerCohortDetail({ detail, answers, setAnswers, busy, onSubmit, onSu
                     </div>
                     {meta && <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${meta.cls}`}>{meta.label}</span>}
                     {mine?.grades[0] && (
-                      <span className="rounded-full bg-[#38A7B4]/15 px-2.5 py-0.5 text-[10px] font-black text-[#6EC7D1]">
+                      <span className="rounded-full bg-teal/15 px-2.5 py-0.5 text-[10px] font-black text-teal-light-ink">
                         {Number(mine.grades[0].score)}/{Number(mine.grades[0].maxScore)}
                       </span>
                     )}
@@ -317,7 +317,7 @@ function LearnerCohortDetail({ detail, answers, setAnswers, busy, onSubmit, onSu
                     <p className="mt-2 rounded-xl bg-red-500/10 px-3 py-2 text-[11px] leading-6 text-red-200/80">ملاحظة المدرب: {mine.reviewNote}</p>
                   )}
                   {mine?.feedback.map((f, i) => (
-                    <p key={i} className="mt-2 rounded-xl bg-[#38A7B4]/8 px-3 py-2 text-[11px] leading-6 text-white/65">{f.body}</p>
+                    <p key={i} className="mt-2 rounded-xl bg-teal/8 px-3 py-2 text-[11px] leading-6 text-white/65">{f.body}</p>
                   ))}
                   {canSubmit && a.type === "quiz" && a.items.length > 0 && (
                     <QuizAttemptForm
@@ -333,12 +333,12 @@ function LearnerCohortDetail({ detail, answers, setAnswers, busy, onSubmit, onSu
                         onChange={(e) => setAnswers((prev) => ({ ...prev, [a.id]: e.target.value }))}
                         placeholder={mine?.status === "resubmit_requested" ? "أعد التسليم بعد معالجة الملاحظات…" : "اكتب إجابتك هنا…"}
                         rows={3}
-                        className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none"
+                        className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white placeholder:text-white/25 focus:border-teal focus:outline-none"
                       />
                       <button
                         disabled={busy === a.id || !(answers[a.id] ?? "").trim()}
                         onClick={() => onSubmit(a.id, mine?.status === "resubmit_requested")}
-                        className="mt-2 flex cursor-pointer items-center gap-1.5 rounded-full bg-[#38A7B4] px-5 py-2 text-xs font-black text-[#08272B] transition hover:bg-[#6EC7D1] disabled:opacity-40"
+                        className="mt-2 flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-5 py-2 text-xs font-black text-on-teal transition hover:bg-teal-light disabled:opacity-40"
                       >
                         {busy === a.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
                         {mine?.status === "resubmit_requested" ? "أعد التسليم" : "سلّم الواجب"}
@@ -355,15 +355,15 @@ function LearnerCohortDetail({ detail, answers, setAnswers, busy, onSubmit, onSu
       {/* الشهادات */}
       {detail.certificates.length > 0 && (
         <section>
-          <h3 className="mb-3 flex items-center gap-2 text-sm font-black text-white/70"><Award className="h-4 w-4 text-[#FABC05]" /> الشهادات</h3>
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-black text-white/70"><Award className="h-4 w-4 text-gold-ink" /> الشهادات</h3>
           <div className="space-y-2">
             {detail.certificates.map((c) => (
-              <div key={c.id} className="flex flex-wrap items-center gap-3 rounded-2xl border border-[#FABC05]/25 bg-[#FABC05]/5 p-4">
+              <div key={c.id} className="flex flex-wrap items-center gap-3 rounded-2xl border border-gold/25 bg-gold/5 p-4">
                 <p className="min-w-0 flex-1 font-mono text-xs text-white/70" dir="ltr">{c.number}</p>
-                <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${c.status === "active" ? "border-[#38A7B4]/50 text-[#6EC7D1]" : "border-red-500/40 text-red-400"}`}>
+                <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${c.status === "active" ? "border-teal/50 text-teal-light-ink" : "border-red-500/40 text-red-400"}`}>
                   {c.status === "active" ? "فعالة" : "ملغاة"}
                 </span>
-                <Link to={`/verify/${c.number}`} className="text-[11px] font-bold text-[#6EC7D1] underline underline-offset-4">
+                <Link to={`/verify/${c.number}`} className="text-[11px] font-bold text-teal-light-ink underline underline-offset-4">
                   صفحة التحقق العامة
                 </Link>
               </div>
@@ -396,14 +396,14 @@ function QuizAttemptForm({ items, busy, onSubmit }: {
             value={resp[it.id] ?? ""}
             onChange={(e) => setResp((prev) => ({ ...prev, [it.id]: e.target.value }))}
             placeholder="إجابتك…"
-            className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none"
+            className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/25 focus:border-teal focus:outline-none"
           />
         </div>
       ))}
       <button
         disabled={busy || answered < items.length}
         onClick={() => onSubmit(items.map((i) => ({ itemId: i.id, answer: (resp[i.id] ?? "").trim() })))}
-        className="flex cursor-pointer items-center gap-1.5 rounded-full bg-[#FABC05] px-5 py-2 text-xs font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90 disabled:opacity-40"
+        className="flex cursor-pointer items-center gap-1.5 rounded-full bg-gold px-5 py-2 text-xs font-black text-on-gold transition hover:bg-gold/90 disabled:opacity-40"
       >
         {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
         سلّم الاختبار ({answered}/{items.length})

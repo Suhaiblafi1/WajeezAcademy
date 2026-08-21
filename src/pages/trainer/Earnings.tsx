@@ -7,14 +7,14 @@ import { apiGet, ApiError } from "@/services/api";
 import { loadEarnings, EARNING_STATUS_LABEL, EARNING_KIND_LABEL, type Earning } from "@/data/trainer";
 
 const STATUS_META: Record<Earning["status"], { icon: typeof Clock3; cls: string }> = {
-  accrued: { icon: Clock3, cls: "bg-[#FABC05]/15 text-[#FABC05]" },
-  approved: { icon: ShieldCheck, cls: "bg-[#38A7B4]/15 text-[#6EC7D1]" },
+  accrued: { icon: Clock3, cls: "bg-gold/15 text-gold-ink" },
+  approved: { icon: ShieldCheck, cls: "bg-teal/15 text-teal-light-ink" },
   paid: { icon: CheckCircle2, cls: "bg-white/10 text-white/50" },
 };
 
 const PAYOUT_STATUS: Record<string, { label: string; cls: string; icon: typeof Clock3 }> = {
-  pending: { label: "بانتظار الاعتماد", cls: "border-[#FABC05]/40 text-[#FABC05]", icon: Clock3 },
-  approved: { label: "معتمد — قيد الصرف", cls: "border-[#38A7B4]/40 text-[#6EC7D1]", icon: ShieldCheck },
+  pending: { label: "بانتظار الاعتماد", cls: "border-gold/40 text-gold-ink", icon: Clock3 },
+  approved: { label: "معتمد — قيد الصرف", cls: "border-teal/40 text-teal-light-ink", icon: ShieldCheck },
   paid: { label: "مدفوع", cls: "border-emerald-400/40 text-emerald-300", icon: CheckCircle2 },
   cancelled: { label: "ملغى", cls: "border-white/20 text-white/40", icon: XCircle },
 };
@@ -61,13 +61,13 @@ function RealEarningsView() {
   return (
     <TrainerLayout title="مستحقاتي — كشف مبسط وشفاف">
       <div className="grid grid-cols-3 gap-4">
-        <div className="rounded-2xl border border-[#FABC05]/30 bg-[#FABC05]/5 p-5">
-          <p className="text-xs text-[#FABC05]">بانتظار الاعتماد</p>
-          <p className="mt-2 text-2xl font-black text-[#FABC05]">{fmt(summary.pending)} <span className="text-xs">{summary.currency}</span></p>
+        <div className="rounded-2xl border border-gold/30 bg-gold/5 p-5">
+          <p className="text-xs text-gold-ink">بانتظار الاعتماد</p>
+          <p className="mt-2 text-2xl font-black text-gold-ink">{fmt(summary.pending)} <span className="text-xs">{summary.currency}</span></p>
         </div>
-        <div className="rounded-2xl border border-[#38A7B4]/30 bg-[#38A7B4]/5 p-5">
-          <p className="text-xs text-[#6EC7D1]">معتمدة للصرف</p>
-          <p className="mt-2 text-2xl font-black text-[#6EC7D1]">{fmt(summary.approved)} <span className="text-xs">{summary.currency}</span></p>
+        <div className="rounded-2xl border border-teal/30 bg-teal/5 p-5">
+          <p className="text-xs text-teal-light-ink">معتمدة للصرف</p>
+          <p className="mt-2 text-2xl font-black text-teal-light-ink">{fmt(summary.approved)} <span className="text-xs">{summary.currency}</span></p>
         </div>
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
           <p className="text-xs text-white/50">مدفوعة</p>
@@ -147,13 +147,13 @@ function DemoEarningsView() {
   return (
     <TrainerLayout title="مستحقاتي — كشف مبسط وشفاف">
       <div className="grid grid-cols-3 gap-4">
-        <div className="rounded-2xl border border-[#FABC05]/30 bg-[#FABC05]/5 p-5">
-          <p className="text-xs text-[#FABC05]">قيد التراكم</p>
-          <p className="mt-2 text-2xl font-black text-[#FABC05]">{totals.accrued.toLocaleString()}$</p>
+        <div className="rounded-2xl border border-gold/30 bg-gold/5 p-5">
+          <p className="text-xs text-gold-ink">قيد التراكم</p>
+          <p className="mt-2 text-2xl font-black text-gold-ink">{totals.accrued.toLocaleString()}$</p>
         </div>
-        <div className="rounded-2xl border border-[#38A7B4]/30 bg-[#38A7B4]/5 p-5">
-          <p className="text-xs text-[#6EC7D1]">معتمدة للدفع</p>
-          <p className="mt-2 text-2xl font-black text-[#6EC7D1]">{totals.approved.toLocaleString()}$</p>
+        <div className="rounded-2xl border border-teal/30 bg-teal/5 p-5">
+          <p className="text-xs text-teal-light-ink">معتمدة للدفع</p>
+          <p className="mt-2 text-2xl font-black text-teal-light-ink">{totals.approved.toLocaleString()}$</p>
         </div>
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
           <p className="text-xs text-white/50">مدفوعة</p>

@@ -8,8 +8,8 @@ import {
 } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 
-const inputCls = "w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none";
-const selectCls = `${inputCls} [&>option]:bg-[#121B1D]`;
+const inputCls = "w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/25 focus:border-teal focus:outline-none";
+const selectCls = `${inputCls} [&>option]:bg-surface`;
 
 const RUBRIC_AXES: { key: string; label: string }[] = [
   { key: "domain_expertise", label: "خبرة المجال" },
@@ -36,7 +36,7 @@ function Card({ icon: Icon, title, children, defaultOpen = false }: {
   return (
     <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
       <button onClick={() => setOpen(!open)} className="flex w-full cursor-pointer items-center justify-between text-sm font-black">
-        <span className="flex items-center gap-2"><Icon className="h-4 w-4 text-[#6EC7D1]" /> {title}</span>
+        <span className="flex items-center gap-2"><Icon className="h-4 w-4 text-teal-light-ink" /> {title}</span>
         <ChevronDown className={`h-4 w-4 text-white/40 transition ${open ? "rotate-180" : ""}`} />
       </button>
       {open && <div className="mt-4">{children}</div>}
@@ -55,7 +55,7 @@ function RubricInput({ scores, onChange }: { scores: Record<string, number>; onC
               <button key={v} type="button" onClick={() => onChange({ ...scores, [x.key]: v })}
                 aria-pressed={scores[x.key] === v}
                 className={`grid h-6 w-6 cursor-pointer place-items-center rounded-md border text-[10px] font-bold transition ${
-                  scores[x.key] === v ? "border-[#FABC05] bg-[#FABC05] text-[#0D0D0D]" : "border-white/15 text-white/50 hover:border-white/40"
+                  scores[x.key] === v ? "border-gold bg-gold text-on-gold" : "border-white/15 text-white/50 hover:border-white/40"
                 }`}>
                 {v}
               </button>
@@ -109,7 +109,7 @@ export function TrainerDetailOps({ app, onAction }: {
                     <button key={o} onClick={() => void onAction(
                       () => apiPost(`/api/admin/trainer-interviews/${iv.id}/outcome`, { outcome: o }),
                       "سُجلت نتيجة المقابلة",
-                    )} className="cursor-pointer rounded-full border border-white/15 px-3 py-1 text-[10px] font-bold text-white/60 hover:border-[#38A7B4]/50 hover:text-[#6EC7D1]">
+                    )} className="cursor-pointer rounded-full border border-white/15 px-3 py-1 text-[10px] font-bold text-white/60 hover:border-teal/50 hover:text-teal-light-ink">
                       {label}
                     </button>
                   ))}
@@ -134,7 +134,7 @@ export function TrainerDetailOps({ app, onAction }: {
               }),
               "جُدولت المقابلة وانتقل الطلب",
             )}
-            className="cursor-pointer rounded-full bg-[#38A7B4] px-4 py-1.5 text-xs font-black text-[#08272B] hover:bg-[#6EC7D1] disabled:opacity-40">
+            className="cursor-pointer rounded-full bg-teal px-4 py-1.5 text-xs font-black text-on-teal hover:bg-teal-light disabled:opacity-40">
             جدولة مقابلة
           </button>
         </div>
@@ -146,7 +146,7 @@ export function TrainerDetailOps({ app, onAction }: {
         <div className="mt-3 flex flex-wrap gap-2">
           {([["pass", "يجتاز"], ["retry", "يعيد"], ["fail", "لا يجتاز"]] as const).map(([d, label]) => (
             <button key={d} type="button" onClick={() => setDemoDecision(d)}
-              className={`cursor-pointer rounded-full border px-3 py-1 text-[11px] font-bold transition ${demoDecision === d ? "border-[#FABC05] bg-[#FABC05]/10 text-[#FABC05]" : "border-white/15 text-white/55"}`}>
+              className={`cursor-pointer rounded-full border px-3 py-1 text-[11px] font-bold transition ${demoDecision === d ? "border-gold bg-gold/10 text-gold-ink" : "border-white/15 text-white/55"}`}>
               {label}
             </button>
           ))}
@@ -159,7 +159,7 @@ export function TrainerDetailOps({ app, onAction }: {
             }),
             "سُجل تقييم الديمو",
           )}
-          className="mt-3 cursor-pointer rounded-full bg-[#38A7B4] px-4 py-1.5 text-xs font-black text-[#08272B] hover:bg-[#6EC7D1] disabled:opacity-40">
+          className="mt-3 cursor-pointer rounded-full bg-teal px-4 py-1.5 text-xs font-black text-on-teal hover:bg-teal-light disabled:opacity-40">
           سجّل تقييم الديمو
         </button>
       </Card>
@@ -181,7 +181,7 @@ export function TrainerDetailOps({ app, onAction }: {
               }),
               "أُضيف المرجع",
             )}
-            className="cursor-pointer rounded-full bg-[#38A7B4] px-4 py-1.5 text-xs font-black text-[#08272B] hover:bg-[#6EC7D1] disabled:opacity-40">
+            className="cursor-pointer rounded-full bg-teal px-4 py-1.5 text-xs font-black text-on-teal hover:bg-teal-light disabled:opacity-40">
             أضف مرجعا
           </button>
           <input value={verifyId} onChange={(e) => setVerifyId(e.target.value)} placeholder="معرف مرجع للتوثيق (UUID)" dir="ltr" className={`${inputCls} max-w-56 font-mono`} />
@@ -203,7 +203,7 @@ export function TrainerDetailOps({ app, onAction }: {
               const c = await apiPost<{ id: string }>(`/api/admin/trainer-applications/${app.id}/contracts`, { title: contractForm.title });
               setLastContractId(c.id);
             }, "أُنشئ العقد وأُرسل — الطلب في contract_pending")}
-            className="cursor-pointer rounded-full bg-[#38A7B4] px-4 py-1.5 text-xs font-black text-[#08272B] hover:bg-[#6EC7D1] disabled:opacity-40">
+            className="cursor-pointer rounded-full bg-teal px-4 py-1.5 text-xs font-black text-on-teal hover:bg-teal-light disabled:opacity-40">
             أنشئ وأرسل
           </button>
         </div>
@@ -232,7 +232,7 @@ export function TrainerDetailOps({ app, onAction }: {
                   () => apiPost(`/api/admin/trainers/${app.profile!.id}/qualifications`, { courseId: qualForm.courseId, note: qualForm.note || undefined }),
                   "أُهل المدرب للدورة",
                 )}
-                className="cursor-pointer rounded-full bg-[#38A7B4] px-4 py-1.5 text-xs font-black text-[#08272B] hover:bg-[#6EC7D1] disabled:opacity-40">
+                className="cursor-pointer rounded-full bg-teal px-4 py-1.5 text-xs font-black text-on-teal hover:bg-teal-light disabled:opacity-40">
                 تأهيل
               </button>
             </div>
@@ -248,7 +248,7 @@ export function TrainerDetailOps({ app, onAction }: {
                   () => apiPost(`/api/admin/trainers/${app.profile!.id}/assignments`, { courseId: assignOps.courseId, cohortId: assignOps.cohortId || undefined }),
                   "أُسند المدرب — يتطلب تأهيلا قائما",
                 )}
-                className="cursor-pointer rounded-full border border-[#38A7B4]/50 px-4 py-1.5 text-xs font-bold text-[#6EC7D1] disabled:opacity-40">
+                className="cursor-pointer rounded-full border border-teal/50 px-4 py-1.5 text-xs font-bold text-teal-light-ink disabled:opacity-40">
                 إسناد
               </button>
             </div>
@@ -256,7 +256,7 @@ export function TrainerDetailOps({ app, onAction }: {
               <button onClick={() => void onAction(
                 () => apiPost(`/api/admin/trainers/${app.profile!.id}/publish-approval`),
                 "اعتُمد الظهور العام — الملف موثق وظاهر",
-              )} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-[#FABC05]/40 px-4 py-1.5 text-xs font-bold text-[#FABC05] hover:bg-[#FABC05]/10">
+              )} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-gold/40 px-4 py-1.5 text-xs font-bold text-gold-ink hover:bg-gold/10">
                 <Globe className="h-3.5 w-3.5" /> موافقة الظهور العام
               </button>
               <input value={suspendNote} onChange={(e) => setSuspendNote(e.target.value)} placeholder="سبب الإيقاف" className={`${inputCls} max-w-48`} />
@@ -329,7 +329,7 @@ export function TrainerChangeRequests() {
                 {new Date(r.createdAt).toLocaleString("ar")} · {r.items?.length ?? 0} بند تعديل
               </p>
             </div>
-            <span className="rounded-full border border-[#38A7B4]/40 px-3 py-1 text-[11px] font-bold text-[#6EC7D1]">
+            <span className="rounded-full border border-teal/40 px-3 py-1 text-[11px] font-bold text-teal-light-ink">
               {CR_STATUS_AR[r.status] ?? r.status}
             </span>
           </div>
@@ -359,7 +359,7 @@ export function TrainerChangeRequests() {
           )}
           {(r.status === "approved_for_cohort" || r.status === "approved_for_catalog" || r.status === "scheduled") && (
             <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/publish`), "نُشر الاقتراح في نطاقه")}
-              className="mt-3 flex cursor-pointer items-center gap-1.5 rounded-full bg-[#FABC05] px-4 py-1.5 text-xs font-black text-[#0D0D0D] disabled:opacity-40">
+              className="mt-3 flex cursor-pointer items-center gap-1.5 rounded-full bg-gold px-4 py-1.5 text-xs font-black text-on-gold disabled:opacity-40">
               <Globe className="h-3.5 w-3.5" /> نشر في النطاق
             </button>
           )}
@@ -375,8 +375,8 @@ const PAYOUT_STATUS_AR: Record<string, string> = {
   pending: "بانتظار الاعتماد", approved: "معتمد", paid: "مدفوع", cancelled: "ملغى",
 };
 const PAYOUT_STATUS_CLS: Record<string, string> = {
-  pending: "border-[#FABC05]/40 text-[#FABC05]",
-  approved: "border-[#38A7B4]/40 text-[#6EC7D1]",
+  pending: "border-gold/40 text-gold-ink",
+  approved: "border-teal/40 text-teal-light-ink",
   paid: "border-emerald-400/40 text-emerald-300",
   cancelled: "border-white/20 text-white/40",
 };
@@ -508,14 +508,14 @@ export function TrainerPayouts() {
           {Object.entries(PAYOUT_STATUS_AR).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
         <label className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 text-[11px] font-bold text-white/55 transition hover:border-white/30">
-          <input type="checkbox" checked={showCancelledZero} onChange={(e) => setShowCancelledZero(e.target.checked)} className="accent-[#FABC05]" />
+          <input type="checkbox" checked={showCancelledZero} onChange={(e) => setShowCancelledZero(e.target.checked)} className="accent-gold" />
           إظهار الملغاة الصفرية
         </label>
         <button onClick={() => setShowCreate(!showCreate)}
-          className="flex cursor-pointer items-center gap-1.5 rounded-full bg-[#FABC05] px-4 py-2 text-xs font-black text-[#0D0D0D]">
+          className="flex cursor-pointer items-center gap-1.5 rounded-full bg-gold px-4 py-2 text-xs font-black text-on-gold">
           <Banknote className="h-3.5 w-3.5" /> كشف يدوي جديد
         </button>
-        {msg && <span className="text-xs font-bold text-[#6EC7D1]" role="status">{msg}</span>}
+        {msg && <span className="text-xs font-bold text-teal-light-ink" role="status">{msg}</span>}
       </div>
 
       {/* قاعدة الأتعاب — تحدد كيف تُحسب مستحقات كل مدرب تلقائياً */}
@@ -543,7 +543,7 @@ export function TrainerPayouts() {
               {allCohorts.map((c) => <option key={c.id} value={c.id}>خاصة: {c.title}</option>)}
             </select>
             <button disabled={busy || !ruleForm.profileId || !(Number(ruleForm.rate) > 0)} onClick={saveRule}
-              className="cursor-pointer rounded-full bg-[#FABC05] px-4 py-1.5 text-xs font-black text-[#0D0D0D] disabled:opacity-40">
+              className="cursor-pointer rounded-full bg-gold px-4 py-1.5 text-xs font-black text-on-gold disabled:opacity-40">
               حفظ القاعدة
             </button>
           </div>
@@ -577,16 +577,16 @@ export function TrainerPayouts() {
               {allCohorts.filter((c) => c.status === "completed").map((c) => <option key={c.id} value={c.id}>{c.title} — {c.courseTitle}</option>)}
             </select>
             <button disabled={busy || !genCohortId} onClick={() => void doPreview()}
-              className="cursor-pointer rounded-full border border-[#38A7B4]/40 px-4 py-1.5 text-xs font-bold text-[#6EC7D1] disabled:opacity-40">
+              className="cursor-pointer rounded-full border border-teal/40 px-4 py-1.5 text-xs font-bold text-teal-light-ink disabled:opacity-40">
               معاينة الحساب
             </button>
             <button disabled={busy} onClick={doBatch}
-              className="cursor-pointer rounded-full border border-[#FABC05]/40 px-4 py-1.5 text-xs font-bold text-[#FABC05] disabled:opacity-40">
+              className="cursor-pointer rounded-full border border-gold/40 px-4 py-1.5 text-xs font-bold text-gold-ink disabled:opacity-40">
               توليد كل المكتملة دفعة واحدة
             </button>
           </div>
           {preview && (
-            <div className="space-y-2 rounded-2xl border border-[#38A7B4]/25 bg-[#38A7B4]/5 p-4">
+            <div className="space-y-2 rounded-2xl border border-teal/25 bg-teal/5 p-4">
               <p className="text-xs font-black">
                 {preview.profile.fullName} · قاعدة «{RULE_TYPE_AR[preview.rule.type]}»
                 {preview.rule.scope !== "general" ? " (مخصصة لهذه الشعبة/الدورة)" : ""} بمعدل <span dir="ltr" className="font-mono">{preview.rule.rate}</span> {preview.rule.currency}
@@ -625,7 +625,7 @@ export function TrainerPayouts() {
       </Card>
 
       {showCreate && (
-        <div className="space-y-3 rounded-3xl border border-[#FABC05]/25 bg-[#FABC05]/5 p-5">
+        <div className="space-y-3 rounded-3xl border border-gold/25 bg-gold/5 p-5">
           <p className="text-sm font-black">كشف مستحقات جديد <span className="text-[11px] font-bold text-white/50">— يولد بحالة «بانتظار الاعتماد»</span></p>
           <div className="flex flex-wrap gap-2">
             <select value={form.profileId} onChange={(e) => setForm({ ...form, profileId: e.target.value })} className={`${selectCls} flex-1`}>
@@ -661,7 +661,7 @@ export function TrainerPayouts() {
             </button>
             <button disabled={busy || !form.profileId || !/^\d{4}-(0[1-9]|1[0-2])$/.test(form.period) || items.some((i) => i.description.trim().length < 3 || !(Number(i.amount) > 0))}
               onClick={create}
-              className="cursor-pointer rounded-full bg-[#FABC05] px-5 py-1.5 text-xs font-black text-[#0D0D0D] disabled:opacity-40">
+              className="cursor-pointer rounded-full bg-gold px-5 py-1.5 text-xs font-black text-on-gold disabled:opacity-40">
               إنشاء الكشف
             </button>
           </div>

@@ -138,7 +138,7 @@ export default function TrainerApplications() {
     const rubricComplete = RUBRIC_AXES.every((x) => scores[x.key] >= 1);
     return (
       <AdminLayout title={`الطلب ${a.reference}`}>
-        <button onClick={() => setSelected(null)} className="mb-4 flex cursor-pointer items-center gap-1.5 text-xs font-bold text-[#6EC7D1] hover:text-[#38A7B4]">
+        <button onClick={() => setSelected(null)} className="mb-4 flex cursor-pointer items-center gap-1.5 text-xs font-bold text-teal-light-ink hover:text-teal-ink">
           <ChevronLeft className="h-4 w-4" /> كل الطلبات
         </button>
 
@@ -160,7 +160,7 @@ export default function TrainerApplications() {
                   </p>
                   <p className="mt-1 text-[11px] text-white/50" dir="ltr">{a.email}</p>
                 </div>
-                <span className="rounded-full border border-[#38A7B4]/40 px-3 py-1 text-[11px] font-bold text-[#6EC7D1]">
+                <span className="rounded-full border border-teal/40 px-3 py-1 text-[11px] font-bold text-teal-light-ink">
                   {STATUS_LABELS[a.status] ?? a.status}
                 </span>
               </div>
@@ -170,7 +170,7 @@ export default function TrainerApplications() {
                   <span className="font-bold text-white/50">لماذا وجيز؟ </span>{a.motivation}
                 </p>
               )}
-              {a.linkedinUrl && <p className="mt-2 text-[11px] text-[#6EC7D1]" dir="ltr">{a.linkedinUrl}</p>}
+              {a.linkedinUrl && <p className="mt-2 text-[11px] text-teal-light-ink" dir="ltr">{a.linkedinUrl}</p>}
               {(() => {
                 const yt = a.youtubeUrl as string | null | undefined
                 const ig = a.instagramUrl as string | null | undefined
@@ -184,9 +184,9 @@ export default function TrainerApplications() {
                     {(yt || ig) && (
                       <p>
                         <span className="font-bold text-white/50">الحضور الرقمي: </span>
-                        {yt && <span dir="ltr" className="text-[#6EC7D1]">{yt}</span>}
+                        {yt && <span dir="ltr" className="text-teal-light-ink">{yt}</span>}
                         {yt && ig && ' · '}
-                        {ig && <span dir="ltr" className="text-[#6EC7D1]">{ig}</span>}
+                        {ig && <span dir="ltr" className="text-teal-light-ink">{ig}</span>}
                       </p>
                     )}
                     {accred && (
@@ -205,7 +205,7 @@ export default function TrainerApplications() {
 
             {/* الوثائق الخاصة */}
             <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
-              <h4 className="flex items-center gap-2 text-sm font-black"><FileText className="h-4 w-4 text-[#6EC7D1]" /> الوثائق — روابط موقعة تنتهي خلال دقائق</h4>
+              <h4 className="flex items-center gap-2 text-sm font-black"><FileText className="h-4 w-4 text-teal-light-ink" /> الوثائق — روابط موقعة تنتهي خلال دقائق</h4>
               {a.documents.length === 0 ? (
                 <p className="mt-3 text-xs text-white/45">لم يرفع المرشح وثائق بعد.</p>
               ) : (
@@ -213,8 +213,8 @@ export default function TrainerApplications() {
                   {a.documents.map((d) => (
                     <li key={d.id}>
                       <a href={a.documentUrls[d.storageKey]} target="_blank" rel="noreferrer"
-                        className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/20 p-3 text-xs text-white/75 transition hover:border-[#38A7B4]/40">
-                        <FileText className="h-4 w-4 text-[#6EC7D1]" />
+                        className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/20 p-3 text-xs text-white/75 transition hover:border-teal/40">
+                        <FileText className="h-4 w-4 text-teal-light-ink" />
                         <span className="font-bold">{d.kind}</span>
                         <span dir="ltr" className="text-white/45">{d.originalName}</span>
                       </a>
@@ -226,11 +226,11 @@ export default function TrainerApplications() {
 
             {/* سجل الحالات */}
             <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
-              <h4 className="flex items-center gap-2 text-sm font-black"><ClipboardList className="h-4 w-4 text-[#6EC7D1]" /> سجل الحالة</h4>
+              <h4 className="flex items-center gap-2 text-sm font-black"><ClipboardList className="h-4 w-4 text-teal-light-ink" /> سجل الحالة</h4>
               <ol className="mt-3 space-y-2">
                 {a.statusHistory.map((h, i) => (
                   <li key={i} className="flex items-center gap-2 text-[11px] text-white/55">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#38A7B4]" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-teal" />
                     <b className="text-white/80">{STATUS_LABELS[h.toStatus] ?? h.toStatus}</b>
                     {h.note && <span>— {h.note}</span>}
                     <span className="mr-auto text-white/30">{new Date(h.createdAt).toLocaleString("ar")}</span>
@@ -257,7 +257,7 @@ export default function TrainerApplications() {
                           key={v} type="button" onClick={() => setScores({ ...scores, [x.key]: v })}
                           aria-pressed={scores[x.key] === v}
                           className={`grid h-7 w-7 cursor-pointer place-items-center rounded-lg border text-[11px] font-bold transition ${
-                            scores[x.key] === v ? "border-[#FABC05] bg-[#FABC05] text-[#0D0D0D]" : "border-white/15 text-white/50 hover:border-white/40"
+                            scores[x.key] === v ? "border-gold bg-gold text-on-gold" : "border-white/15 text-white/50 hover:border-white/40"
                           }`}
                         >
                           {v}
@@ -270,12 +270,12 @@ export default function TrainerApplications() {
               <textarea
                 value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="ملاحظة المراجع…"
                 aria-label="ملاحظة المراجع"
-                className="mt-3 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/30 focus:border-[#38A7B4] focus:outline-none"
+                className="mt-3 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/30 focus:border-teal focus:outline-none"
               />
               <button
                 disabled={!rubricComplete || busy}
                 onClick={() => void act(() => apiPost(`/api/admin/trainer-applications/${a.id}/reviews`, { scores, overallNote: note || undefined }), "سُجل التقييم")}
-                className="mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-[#38A7B4] py-2.5 text-xs font-black text-[#08272B] transition hover:bg-[#38A7B4]/90 disabled:opacity-40"
+                className="mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-teal py-2.5 text-xs font-black text-on-teal transition hover:bg-teal/90 disabled:opacity-40"
               >
                 <Star className="h-3.5 w-3.5" /> سجّل التقييم
               </button>
@@ -294,8 +294,8 @@ export default function TrainerApplications() {
                       "نُفذ القرار وسُجل في الأثر",
                     )}
                     className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-full py-2.5 text-xs font-black transition disabled:opacity-40 ${
-                      d.tone === "main" ? "bg-[#FABC05] text-[#0D0D0D] hover:bg-[#FABC05]/90"
-                        : d.tone === "warn" ? "border border-[#FABC05]/50 text-[#FABC05] hover:bg-[#FABC05]/10"
+                      d.tone === "main" ? "bg-gold text-on-gold hover:bg-gold/90"
+                        : d.tone === "warn" ? "border border-gold/50 text-gold-ink hover:bg-gold/10"
                         : "border border-white/15 text-white/55 hover:border-red-400/40 hover:text-red-300"
                     }`}
                   >
@@ -314,13 +314,13 @@ export default function TrainerApplications() {
                       setFlash(`دعوة أُنشئت (تطوير): /trainer/accept-invite?token=${r.devInvitationToken}`);
                     }
                   }, "أُرسلت الدعوة الآمنة")}
-                  className="mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-[#38A7B4]/50 py-2.5 text-xs font-black text-[#6EC7D1] transition hover:bg-[#38A7B4]/10 disabled:opacity-40"
+                  className="mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-teal/50 py-2.5 text-xs font-black text-teal-light-ink transition hover:bg-teal/10 disabled:opacity-40"
                 >
                   <KeyRound className="h-3.5 w-3.5" /> أرسل دعوة إنشاء الحساب
                 </button>
               )}
               {a.profile?.userId && (
-                <p className="mt-3 flex items-center justify-center gap-1.5 text-[11px] font-bold text-[#6EC7D1]">
+                <p className="mt-3 flex items-center justify-center gap-1.5 text-[11px] font-bold text-teal-light-ink">
                   <MailCheck className="h-3.5 w-3.5" /> الحساب مُنشأ ومرتبط بالملف
                 </p>
               )}
@@ -345,7 +345,7 @@ export default function TrainerApplications() {
         <div className="flex rounded-full border border-white/15 p-1">
           {([["apps", "الطلبات"], ["changes", "اقتراحات تعديل الدورات"], ["payouts", "مستحقات المدربين"]] as const).map(([k, label]) => (
             <button key={k} onClick={() => setMode(k)}
-              className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-black transition ${mode === k ? "bg-[#FABC05] text-[#0D0D0D]" : "text-white/60 hover:text-white"}`}>
+              className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-black transition ${mode === k ? "bg-gold text-on-gold" : "text-white/60 hover:text-white"}`}>
               {label}
             </button>
           ))}
@@ -354,7 +354,7 @@ export default function TrainerApplications() {
           <>
             <select
               value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="رشّح بالحالة"
-              className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white [&>option]:bg-[#121B1D]"
+              className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white [&>option]:bg-surface"
             >
               <option value="">كل الحالات</option>
               {Object.entries(STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
@@ -364,7 +364,7 @@ export default function TrainerApplications() {
             </button>
           </>
         )}
-        {flash && <span className="text-xs font-bold text-[#6EC7D1]" role="status">{flash}</span>}
+        {flash && <span className="text-xs font-bold text-teal-light-ink" role="status">{flash}</span>}
       </div>
 
       {mode === "changes" && <TrainerChangeRequests />}
@@ -384,7 +384,7 @@ export default function TrainerApplications() {
           {apps.map((a) => (
             <button
               key={a.id} onClick={() => void openDetail(a.id)}
-              className="flex w-full cursor-pointer flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-right transition hover:border-[#38A7B4]/40"
+              className="flex w-full cursor-pointer flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-right transition hover:border-teal/40"
             >
               <div>
                 <p className="font-black">{a.fullName} <span className="mr-2 font-mono text-[10px] text-white/50" dir="ltr">{a.reference}</span></p>
@@ -396,7 +396,7 @@ export default function TrainerApplications() {
                   {a.phase2Done ? " · أكمل المرحلة الثانية" : ""}
                 </p>
               </div>
-              <span className="rounded-full border border-[#38A7B4]/40 px-3 py-1 text-[11px] font-bold text-[#6EC7D1]">
+              <span className="rounded-full border border-teal/40 px-3 py-1 text-[11px] font-bold text-teal-light-ink">
                 {STATUS_LABELS[a.status] ?? a.status}
               </span>
             </button>

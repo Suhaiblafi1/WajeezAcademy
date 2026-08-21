@@ -5,7 +5,7 @@ import { Bell, CheckCircle2, Loader2, RefreshCw, Save, Send, ServerOff } from "l
 import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 
-const inputCls = "rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none";
+const inputCls = "rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/25 focus:border-teal focus:outline-none";
 
 const CHANNEL_AR: Record<string, string> = { in_app: "داخلي", email: "بريد", sms: "رسالة نصية", whatsapp: "واتساب" };
 const LOG_STATUS_AR: Record<string, string> = { queued: "بالطابور", sent: "أُرسل", delivered: "سُلم", read: "قُرئ", failed: "فشل" };
@@ -64,22 +64,22 @@ export default function Notifications() {
 
   return (
     <AdminLayout title="الإشعارات — القوالب والسجل">
-      {flash && <p className="mb-4 flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] p-3 text-xs font-bold text-[#6EC7D1]" role="status"><CheckCircle2 className="h-4 w-4" /> {flash}</p>}
+      {flash && <p className="mb-4 flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] p-3 text-xs font-bold text-teal-light-ink" role="status"><CheckCircle2 className="h-4 w-4" /> {flash}</p>}
 
       <div className="grid gap-5 lg:grid-cols-2">
         {/* قالب جديد / تحديث */}
         <section className="rounded-3xl border border-white/10 bg-white/[0.02] p-5">
-          <h3 className="flex items-center gap-2 text-sm font-black"><Bell className="h-4 w-4 text-[#FABC05]" /> قالب جديد أو تحديث — متغيرات {"{{key}}"}</h3>
+          <h3 className="flex items-center gap-2 text-sm font-black"><Bell className="h-4 w-4 text-gold-ink" /> قالب جديد أو تحديث — متغيرات {"{{key}}"}</h3>
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
             <input value={form.key} onChange={(e) => setForm({ ...form, key: e.target.value })} placeholder="المفتاح — enrollment.approved" dir="ltr" className={`${inputCls} font-mono`} />
-            <select value={form.channel} onChange={(e) => setForm({ ...form, channel: e.target.value })} className={`${inputCls} [&>option]:bg-[#121B1D]`}>
+            <select value={form.channel} onChange={(e) => setForm({ ...form, channel: e.target.value })} className={`${inputCls} [&>option]:bg-surface`}>
               {Object.entries(CHANNEL_AR).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
             <input value={form.titleAr} onChange={(e) => setForm({ ...form, titleAr: e.target.value })} placeholder="العنوان" className={`${inputCls} sm:col-span-2`} />
             <textarea value={form.bodyAr} onChange={(e) => setForm({ ...form, bodyAr: e.target.value })} rows={3} placeholder="النص — مرحبا {{name}}…" className={`${inputCls} sm:col-span-2`} />
           </div>
           <label className="mt-2 flex cursor-pointer items-center gap-1.5 text-[11px] text-white/60">
-            <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} className="accent-[#38A7B4]" />
+            <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} className="accent-teal" />
             قالب فعال
           </label>
           <button disabled={busy || form.key.length < 2 || !form.titleAr || !form.bodyAr}
@@ -87,7 +87,7 @@ export default function Notifications() {
               await apiPost("/api/admin/notification-templates", form);
               setForm({ key: "", channel: "in_app", titleAr: "", bodyAr: "", active: true });
             }, "حُفظ القالب (upsert بالمفتاح والقناة)")}
-            className="mt-3 flex cursor-pointer items-center gap-1.5 rounded-full bg-[#FABC05] px-5 py-2 text-xs font-black text-[#0D0D0D] disabled:opacity-40">
+            className="mt-3 flex cursor-pointer items-center gap-1.5 rounded-full bg-gold px-5 py-2 text-xs font-black text-on-gold disabled:opacity-40">
             <Save className="h-3.5 w-3.5" /> حفظ القالب
           </button>
 
@@ -96,7 +96,7 @@ export default function Notifications() {
               <li key={t.id} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs">
                 <p className="flex items-center gap-2 font-bold">
                   <span dir="ltr" className="font-mono text-white/50">{t.key}</span>
-                  <span className="rounded-full border border-[#38A7B4]/40 px-2 py-0.5 text-[10px] text-[#6EC7D1]">{CHANNEL_AR[t.channel] ?? t.channel}</span>
+                  <span className="rounded-full border border-teal/40 px-2 py-0.5 text-[10px] text-teal-light-ink">{CHANNEL_AR[t.channel] ?? t.channel}</span>
                   {!t.active && <span className="rounded-full border border-red-500/40 px-2 py-0.5 text-[10px] text-red-400">معطل</span>}
                 </p>
                 <p className="mt-1 text-white/65">{t.titleAr}</p>
@@ -110,9 +110,9 @@ export default function Notifications() {
         {/* سجل الإرسال */}
         <section className="rounded-3xl border border-white/10 bg-white/[0.02] p-5">
           <div className="flex items-center justify-between gap-2">
-            <h3 className="flex items-center gap-2 text-sm font-black"><Send className="h-4 w-4 text-[#FABC05]" /> سجل الإرسال</h3>
+            <h3 className="flex items-center gap-2 text-sm font-black"><Send className="h-4 w-4 text-gold-ink" /> سجل الإرسال</h3>
             <select value={logFilter} onChange={(e) => setLogFilter(e.target.value)} aria-label="رشّح بالحالة"
-              className={`${inputCls} [&>option]:bg-[#121B1D]`}>
+              className={`${inputCls} [&>option]:bg-surface`}>
               <option value="">كل الحالات</option>
               {Object.entries(LOG_STATUS_AR).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
@@ -134,7 +134,7 @@ export default function Notifications() {
                   {n.status === "failed" && (
                     <button disabled={busy}
                       onClick={() => act(() => apiPost(`/api/admin/notifications/${n.id}/retry`), "أُعيدت المحاولة")}
-                      className="mt-2 flex cursor-pointer items-center gap-1 rounded-full border border-[#FABC05]/40 px-3 py-1 text-[10px] font-bold text-[#FABC05] disabled:opacity-40">
+                      className="mt-2 flex cursor-pointer items-center gap-1 rounded-full border border-gold/40 px-3 py-1 text-[10px] font-bold text-gold-ink disabled:opacity-40">
                       <RefreshCw className="h-3 w-3" /> إعادة المحاولة
                     </button>
                   )}
