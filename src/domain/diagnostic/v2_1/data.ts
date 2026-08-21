@@ -22,7 +22,14 @@ export interface QuestionPlanV21 {
 const file = planJson as unknown as { version: string; plan: Record<string, QuestionPlanV21> }
 
 export const QUESTION_PLAN_VERSION = file.version
-export const questionPlanV21: Record<string, QuestionPlanV21> = file.plan
+/* ج-٢: الخطة من اللقطة المنشورة إن حملتها، وإلا الملف المضمن. `let` مقصودة —
+   سؤالٌ بلا مدخل في الخطة غير مرئي للمحرك، فالخطة يجب أن تتبع ما هو منشور. */
+export let questionPlanV21: Record<string, QuestionPlanV21> = file.plan
+
+/** تثبيت خطة الأسئلة من لقطة منشورة؛ null يرجّع الملف المضمن */
+export function installQuestionPlan(plan: Record<string, unknown> | null): void {
+  questionPlanV21 = (plan as Record<string, QuestionPlanV21> | null) ?? file.plan
+}
 
 export function planOf(questionId: string): QuestionPlanV21 | undefined {
   return questionPlanV21[questionId]

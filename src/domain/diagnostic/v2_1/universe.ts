@@ -12,6 +12,7 @@ import {
   compositeTemplates,
   courseById,
   launchPathways,
+  onCatalogInstalled,
   optionEffects,
   pathwayProfiles,
   questionById,
@@ -647,6 +648,11 @@ export function resetUniverseCache() {
   cached = null
   measurableCache = null
 }
+
+/* التسجيل التلقائي (ج-٢): قبله كانت هذه الدالة موثقة بلا منادٍ، فلقطةٌ تُثبَّت
+   تترك الفضاء والمهارات المقيسة محسوبين على اللقطة السابقة. الاتجاه محفوظ —
+   هذا الملف يستورد catalog لا العكس. */
+onCatalogInstalled(resetUniverseCache)
 
 /* ─── أدوات مساندة للمحرك ─── */
 

@@ -47,6 +47,8 @@ interface RawSkill {
   family_ar?: string; family_id?: string; definition_ar?: string
   mastery_indicators_ar?: unknown; evidence_examples_ar?: unknown
   source_frameworks?: unknown; related_question_measures?: string[]; active?: boolean
+  /* ج-٢: قرار الدمج — تحتاجه طبقات المهارات المولّدة وقت النشر */
+  merged_into?: string; merge_date?: string
 }
 interface RawPathway {
   id: string; title: string; short_title?: string; audience?: string; not_for?: string
@@ -127,9 +129,17 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
   for (const s of skills) {
     await prisma.skill.upsert({
       where: { id: s.skill_id },
-      update: { familyId: s.family_id ?? null },
+      /* التحديث يحمل قرار الدمج والتفعيل: قاعدة قائمة قبل ج-٢ تُصحَّح بإعادة
+         الاستيراد بلا حذف — وبلا ذلك تبقى المهارة المدموجة «نشطة» في الطبقات. */
+      update: {
+        familyId: s.family_id ?? null,
+        active: s.active !== false,
+        mergedInto: s.merged_into ?? null,
+        mergeDate: s.merge_date ?? null,
+      },
       create: {
         id: s.skill_id, slug: s.slug, nameAr: s.name_ar, definitionAr: s.definition_ar ?? null,
+        active: s.active !== false, mergedInto: s.merged_into ?? null, mergeDate: s.merge_date ?? null,
         familyId: s.family_id ?? null,
         domain: s.family_ar ?? s.family_id ?? null,
         source: Array.isArray(s.source_frameworks) ? (s.source_frameworks as string[]).join('، ') : null,

@@ -39,8 +39,24 @@ const qm = questionMetaJson as unknown as QuestionMetaFile
 const sl = skillLayersJson as unknown as SkillLayersFile
 const pd = pathwayDomainsJson as unknown as PathwayDomainsFile
 
-export const questionMetaV2: Record<string, QuestionMetaV2> = qm.questions
-export const skillLayersV2: SkillLayersFile['skills'] = sl.skills
+/* التراكبات المولّدة (ج-٢) — الملف المضمن افتراضٌ، واللقطة المنشورة تتقدم عليه.
+   `let` مقصودة كما في ج-١: روابط ES الحية تُري كل مستورد التراكب المثبَّت بلا
+   إعادة بناء. وهذا ما يجعل سؤالا يُضاف بعد النشر مرئيا للمحرك. */
+export let questionMetaV2: Record<string, QuestionMetaV2> = qm.questions
+export let skillLayersV2: SkillLayersFile['skills'] = sl.skills
+
+/** تثبيت ميتا الأسئلة من لقطة منشورة؛ null يرجّع الملف المضمن */
+export function installQuestionMeta(map: Record<string, unknown> | null): void {
+  questionMetaV2 = (map as Record<string, QuestionMetaV2> | null) ?? qm.questions
+}
+
+/** تثبيت طبقات المهارات من لقطة منشورة؛ null يرجّع الملف المضمن.
+    ⚠ لا تُسقَط مهارة من هذه الخريطة: isDiagnosticSkillActive تعتبر «غير الموثقة
+    نشطة»، فمهارةٌ مدموجة أو محكومة تغيب عن الخريطة تصبح نشطة تشخيصيا —
+    انحدارٌ صامت. لذلك يولّدها باني اللقطة من كل صفوف المهارات لا المنشورة وحدها. */
+export function installSkillLayers(map: Record<string, unknown> | null): void {
+  skillLayersV2 = (map as SkillLayersFile['skills'] | null) ?? sl.skills
+}
 export const domainsV2 = pd.domains
 /* خرائط مجالات المسارات — ملف المصدر هو الافتراضي، واللقطة المنشورة تتقدم عليه (ج-١).
    `let` مقصودة: روابط ES الحية تجعل كل مستورد يرى الخريطة المثبَّتة بلا إعادة بناء —

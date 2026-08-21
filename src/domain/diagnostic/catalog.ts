@@ -12,7 +12,8 @@ import optionEffectsJson from '../../data/overlays/option-effects.v2.json'
 import optionEffectsV21Json from '../../data/overlays/option-effects.v2_1.json'
 import b2cQuestionsV21Json from '../../data/catalog/v2_1/questions-b2c.v2_1.ar.json'
 import pathwayProfilesJson from '../../data/overlays/pathway-profiles.v1.json'
-import { installPathwayDomains } from './v2/data'
+import { installPathwayDomains, installQuestionMeta, installSkillLayers } from './v2/data'
+import { installQuestionPlan } from './v2_1/data'
 import type {
   BankQuestion,
   CatalogCourse,
@@ -90,6 +91,13 @@ export interface CatalogSnapshotPayload {
   /** مجالات المسارات (ج-١) — اختيارية: اللقطات المنشورة قبل هذا البند لا تحملها،
       وحينها يبقى ملف pathway-domains.v2.json المضمن هو المصدر. */
   pathwayDomains?: { pathway_domains: Record<string, string[]> }
+  /** التراكبات المولّدة (ج-٢) — اختيارية للسبب نفسه. تُولَّد وقت بناء اللقطة من
+      الصفوف المنشورة، فسؤال يُضاف بعد النشر يدخلها ويصبح مرئيا للمحرك. */
+  overlays?: {
+    questionMeta?: { questions: Record<string, unknown> }
+    skillLayers?: { skills: Record<string, unknown> }
+    questionPlan?: { plan: Record<string, unknown> }
+  }
 }
 
 export let questionBank: BankQuestion[] = []
@@ -132,8 +140,33 @@ function install(payload: CatalogSnapshotPayload, label: string): void {
   pathwayProfiles = payload.pathwayProfiles.profiles
   /* مجالات المسارات من اللقطة إن حملتها — وإلا الملف المضمن (لقطة أقدم من ج-١) */
   installPathwayDomains(payload.pathwayDomains?.pathway_domains ?? null)
+  /* التراكبات المولّدة (ج-٢) — كلٌّ مستقل: لقطة تحمل بعضها تُثبِّت ما تحمله
+     ويبقى الباقي من الملف المضمن، بلا خلط بين مصدرين لتراكب واحد. */
+  installQuestionMeta(payload.overlays?.questionMeta?.questions ?? null)
+  installSkillLayers(payload.overlays?.skillLayers?.skills ?? null)
+  installQuestionPlan(payload.overlays?.questionPlan?.plan ?? null)
   trainerProfiles = [] // لا مدربين موثقين بعد — مطابقة المدرب ترجع unassigned دائما
   activeCatalogLabel = label
+  for (const fn of installListeners) fn()
+}
+
+/* ─── مستمعو التثبيت ───
+   الحاجة: كيانات المحرك مخزَّنة في ذاكرات مؤقتة على مستوى الوحدة
+   (resetUniverseCache في v2_1/universe). universe يستورد هذا الملف، فاستيراده
+   من هنا يصنع حلقة — والسجل يقلب الاتجاه بلا حلقة: universe يسجّل نفسه.
+
+   عيبٌ قائم كُشف في ج-٢: `resetUniverseCache` كان موجودا وموثقا بـ«إعادة البناء
+   عند استبدال لقطة الكتالوج» **ولا يناديه أحد**. فأي لقطة تُثبَّت كانت تترك
+   فضاء التوصية وقائمة المهارات المقيسة على حساب اللقطة السابقة.
+
+   المستمعون يُنادون **بعد** استبدال الحالة كاملة: عندها الحالة متسقة، ومستمع
+   يرمي يجب أن يُسمَع لا أن يُكتم. */
+const installListeners = new Set<() => void>()
+
+/** تسجيل عمل يجري بعد كل تثبيت لقطة (أو الحزمة المضمنة). يعيد دالة إلغاء. */
+export function onCatalogInstalled(fn: () => void): () => void {
+  installListeners.add(fn)
+  return () => installListeners.delete(fn)
 }
 
 /** تثبيت لقطة منشورة من الخادم — العملية ذرية: إما تُقبل اللقطة كاملة أو يبقى الحال */

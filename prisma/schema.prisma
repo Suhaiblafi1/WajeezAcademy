@@ -367,6 +367,11 @@ model Skill {
   source          String? // مصدر التصنيف
   masteryScale    Json?
   evidenceExamples Json?
+  /* ج-٢: حقول تحتاجها طبقات المهارات المولّدة وقت النشر. كانت تعيش في
+     skills.v1.ar.json وحده، فتوليد الطبقات من اللقطة كان يصنّف المدموجة نشطة. */
+  active          Boolean @default(true)
+  mergedInto      String? // معرف المهارة التي دُمجت فيها — لا تدخل التشخيص بعدها
+  mergeDate       String? // تاريخ قرار الدمج كما في المصدر الموثق
   status          String  @default("published")
   currentVersion  Int     @default(1)
   createdAt       DateTime @default(now())

@@ -8,13 +8,20 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { PrismaClient } from '@prisma/client'
+import { buildQuestionMeta } from '../../src/application/catalog/overlays/question-meta'
+import { buildSkillLayers } from '../../src/application/catalog/overlays/skill-layers'
+import { buildQuestionPlan } from '../../src/application/catalog/overlays/question-plan'
+import type { OverlaySource } from '../../src/application/catalog/overlays/source'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 
 export interface BuiltSnapshot {
   payload: Record<string, unknown>
   hash: string
-  counts: { pathways: number; courses: number; modules: number; skills: number; questions: number; templates: number; pathwayDomains: number }
+  counts: {
+    pathways: number; courses: number; modules: number; skills: number; questions: number
+    templates: number; pathwayDomains: number; overlayQuestions: number; overlaySkills: number
+  }
 }
 
 /** يبني لقطة من صفوف المنشور — ومع extraStatuses يشمل حالات إضافية (مثل «approved» للقطات المرشحة قبل النشر) */
@@ -216,6 +223,39 @@ export async function buildSnapshotFromDb(
   const pathwayDomainMap: Record<string, string[]> = {}
   for (const r of domainRows) (pathwayDomainMap[r.pathwayId] ??= []).push(r.domainId)
 
+  /* التراكبات المولّدة (ج-٢) — من الصفوف لا من ملفات وقت البناء، فسؤال يُضاف
+     بعد النشر يصبح مرئيا للمحرك: تدخله ميتا الأسئلة وخطة V2.1، ومهارتُه تدخل
+     طبقات المهارات مقيسةً.
+
+     ⚠ المهارات هنا **فوق المنشور**: كل الصفوف بما فيها المؤرشفة والمدموجة.
+     السبب أن isDiagnosticSkillActive تعتبر «المهارة غير الموثقة نشطة» — فإسقاط
+     مهارة مدموجة من الطبقات يجعلها نشطة تشخيصيا، وهذا انحدار صامت. وحمولة
+     `skills` تبقى المنشورة وحدها لأنها قاموس المستخدم لا مُدخل المولّد. */
+  const allSkillRows = await prisma.skill.findMany({ orderBy: { id: 'asc' } })
+  const overlaySkill = (r: typeof allSkillRows[number]) => ({
+    skill_id: r.id, slug: r.slug,
+    ...(r.active === false ? { active: false } : {}),
+    ...(r.mergedInto ? { merged_into: r.mergedInto } : {}),
+    ...(r.mergeDate ? { merge_date: r.mergeDate } : {}),
+  })
+  const overlaySource: OverlaySource = {
+    questions: questionRows,
+    skills: allSkillRows.filter((r) => !r.id.startsWith('SK-X-')).map(overlaySkill),
+    skillExtensions: allSkillRows.filter((r) => r.id.startsWith('SK-X-')).map(overlaySkill),
+    pathways: pathwayRows.map((p) => ({ id: p.id, course_ids: p.course_ids })),
+    courses: courseRows.map((c) => ({ course_id: c.course_id, skill_slugs: c.skill_slugs })),
+    templates: templateRows.map((t) => ({
+      template_id: t.template_id,
+      plan: t.plan as OverlaySource['templates'][number]['plan'],
+      diagnostic: t.diagnostic as OverlaySource['templates'][number]['diagnostic'],
+    })),
+  }
+  const sortKeys = <T,>(o: Record<string, T>): Record<string, T> =>
+    Object.fromEntries(Object.keys(o).sort().map((k) => [k, o[k]]))
+  const questionMeta = sortKeys(buildQuestionMeta(overlaySource))
+  const skillLayers = sortKeys(buildSkillLayers(overlaySource).skills)
+  const questionPlan = sortKeys(buildQuestionPlan(overlaySource).plan)
+
   /* مصنفات الكلمات — وثيقة تراكب لم تُنمذج بعد؛ تُقرأ من مصدرها الموثق */
   const optionEffectsOverlay = JSON.parse(readFileSync(join(root, 'src/data/overlays/option-effects.v2.json'), 'utf8'))
 
@@ -235,6 +275,11 @@ export async function buildSnapshotFromDb(
     },
     pathwayProfiles: { profiles: profileMap },
     pathwayDomains: { pathway_domains: pathwayDomainMap },
+    overlays: {
+      questionMeta: { version: '2.0.0', questions: questionMeta },
+      skillLayers: { version: '2.0.0', skills: skillLayers },
+      questionPlan: { version: '2.1.0', plan: questionPlan },
+    },
   }
   const hash = createHash('sha256').update(JSON.stringify(payload)).digest('hex')
   return {
@@ -244,6 +289,8 @@ export async function buildSnapshotFromDb(
       pathways: pathwayRows.length, courses: courseRows.length, modules: moduleRows.length,
       skills: skills.length, questions: questionRows.length, templates: templateRows.length,
       pathwayDomains: domainRows.length,
+      overlayQuestions: Object.keys(questionPlan).length,
+      overlaySkills: Object.keys(skillLayers).length,
     },
   }
 }
