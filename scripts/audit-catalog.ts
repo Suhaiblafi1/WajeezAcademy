@@ -1,9 +1,25 @@
-/* تدقيق سلامة كتالوج قاعدة البيانات — يفشل عند:
-   مرجع مفقود (دورة/مهارة/وحدة)، مسار بلا دورات، دورة بلا وحدات أو بلا مهارات،
-   سؤال منشور بلا خيارات، قالب بلا دورات، تضمين نسخة داخل مسار (محال علائقيا)،
-   إصدار منشور بلا لقطة. */
+/* تدقيق سلامة الكتالوج — وضعان (البند د-٢):
+   الافتراضي: القاعدة **بعد** الاستيراد — مرجع مفقود (دورة/مهارة/وحدة)، مسار بلا
+   دورات، دورة بلا وحدات أو بلا مهارات، سؤال منشور بلا خيارات، قالب بلا دورات،
+   إصدار منشور بلا لقطة.
+   `--source`: ملفات JSON **قبل** الاستيراد، بلا قاعدة بيانات ولا خادم. مفيد في
+   CI وعلى جهاز بلا قاعدة، ويجيب السؤال الصحيح قبل الكتابة لا بعدها.
+
+   الاستعمال: npm run audit:catalog        (القاعدة)
+              npm run audit:catalog -- --source   (الملفات) */
 
 import { getPrisma, disconnectPrisma } from '../server/db/client'
+import { assertCatalogSourceValid } from '../server/catalog/validate-source'
+
+/* وضع المصدر أولا: لا يفتح قاعدة ولا ينتظرها */
+if (process.argv.includes('--source')) {
+  try {
+    assertCatalogSourceValid({ verbose: true })
+    process.exit(0)
+  } catch {
+    process.exit(1)
+  }
+}
 
 let failures = 0
 const check = (cond: boolean, msg: string) => {

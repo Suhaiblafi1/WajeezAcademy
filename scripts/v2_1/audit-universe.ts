@@ -1,25 +1,77 @@
-/* تدقيق فضاء التوصيات الموحد V2.1 — بوابة سلامة بنيوية:
-   36 كيانًا إجمالًا، النشط 35 (SMART-OPS موسوم needs_revision موثق) · مراجع الدورات حية · لا نسخ مضمنة ·
-   لا حقيقة مطلوبة غير قابلة للإنتاج · مهارات تشخيصية قابلة للقياس · جدوى صالحة ·
-   مركب حقيقي متعدد المجالات · الدورة كيان مركزي واحد · بوابة الحوكمة الأكاديمية.
+/* تدقيق فضاء التوصيات الموحد V2.1 — بوابة سلامة بنيوية بالخصائص لا بالأعداد
+   (البند د-١): كل كيان نشط له جمهور ومجال · مراجع الدورات حية · لا نسخ مضمنة ·
+   لا حقيقة مطلوبة غير قابلة للإنتاج · مهارات تشخيصية قابلة للقياس · مهارة مسجَّلة ·
+   جدوى صالحة · مركب حقيقي متعدد المجالات · الدورة كيان مركزي واحد · حوكمة أكاديمية.
+
+   الأعداد تُعرض ولا تُفشل: تدقيقٌ يفشل عند كل إضافة مشروعة يُعتاد تجاهله فيموت.
    الاستخدام: npm run audit:recommendation-universe */
 
 import { recommendationUniverse } from '../../src/domain/diagnostic/v2_1/universe'
-import { courseById } from '../../src/domain/diagnostic/catalog'
+import { courseById, skillSlugs } from '../../src/domain/diagnostic/catalog'
 import { measurableSkills } from '../../src/domain/diagnostic/v2_1/universe'
 
 const failures: string[] = []
+/* ثغرات معروفة تُعرض ولا تُفشل — انظر KNOWN_AUDIENCE_GAPS */
+const audienceGaps: string[] = []
 const u = recommendationUniverse()
 
-/* ١) الأعداد — 36 كيانًا إجمالًا؛ النشط 35 (20 قياسية + 15 مركبة) لأن TPL-SMART-OPS-001
-   موسوم needs_revision بقرار أكاديمي موثق (ACADEMIC_REVIEW_OVERRIDES في universe.ts):
-   لا يفوز من أي شخصية بشرية طبيعية — 3520 توليفة جناح ذهبي + 12 شخصية مصممة. */
-if (u.active.length !== 35) failures.push(`الفضاء النشط ${u.active.length} ≠ 35`)
+/* ١) خصائص لا أعداد (البند د-١)
+   ⚠ كان هذا القسم يقارن بـ35 و36 و20 و15. أي إضافة مشروعة للكتالوج — مسار جديد
+   أو قالب جديد — كانت تُفشل التدقيق. والنتيجة الحتمية: الفريق يعتاد تجاهله أو
+   يرفع الرقم بلا تفكير، وعندها يموت التدقيق. فاستُبدلت الأعداد بخصائص لا تتغيّر
+   مهما نما الكتالوج، وبقيت الأعداد **معلومة تُعرض** لا شرطا يُفشل. */
 const standards = u.active.filter((e) => e.entity_type === 'standard')
 const composites = u.active.filter((e) => e.entity_type === 'composite')
-if (standards.length !== 20) failures.push(`القياسية ${standards.length} ≠ 20`)
-if (composites.length !== 15) failures.push(`المركبة النشطة ${composites.length} ≠ 15`)
-if (u.entities.length !== 36) failures.push(`إجمالي الكيانات ${u.entities.length} ≠ 36`)
+
+/* لا فضاء فارغ ولا نوعٌ غائب — الحدّ الأدنى الذي بدونه لا معنى للتدقيق نفسه */
+if (u.entities.length === 0) failures.push('الفضاء الكلي فارغ')
+if (standards.length === 0) failures.push('لا كيان قياسي نشط واحد')
+if (composites.length === 0) failures.push('لا كيان مركب نشط واحد')
+if (u.active.length > u.entities.length) failures.push('النشط أكثر من الكلي — حساب معطوب')
+
+/* خصائص كل كيان نشط: جمهور محدد ومجال واحد على الأقل.
+   الكيان بلا جمهور ينافس كل مستخدم بلا قيد («الجوكر»)، وبلا مجال لا يدخل من
+   احتياج المستخدم. وهاتان هما العلّتان التي كان العدد الثابت يخفيهما. */
+/* ثغرة جمهور معروفة تنتظر قرارا أكاديميا — تُبلَّغ ولا تُفشل، وكل ثغرة جديدة
+   تُفشل. القائمة تسمّي الكيان وسببه وما يحلّه، على نفس نمط ACADEMIC_REVIEW_OVERRIDES:
+   حاجزٌ يفشل دائما على حالة قائمة يُعتاد تجاهله، وحاجزٌ بلا استثناء موثق يُعطَّل.
+   ⚠ إضافة سطر هنا قرار أكاديمي لا حلٌّ تقني: يُحلّ بتحديد المراحل المهنية في
+   composite-templates (نصّ persona موجود: «باحث عن ترقية، خبير، قائد، متحدث،
+   أو مستقل») ثم إزالة السطر. */
+const KNOWN_AUDIENCE_GAPS: Record<string, string> = {
+  'TPL-PERSONAL-BRAND-001':
+    'جمهوره موصوف نصّا في persona ولا مراحل مهنية مهيكلة — فينافس كل مرحلة. ' +
+    'يُحلّ بتحديد career_stages من نصّه ثم إزالة هذا السطر.',
+}
+
+for (const e of u.active) {
+  const personaGate = e.hard_exclusions.find((h) => h.id === 'persona_mismatch')
+  const audienceDefined =
+    (personaGate?.condition.values ?? []).length > 0 || e.career_stages.length > 0
+  if (!audienceDefined) {
+    const known = KNOWN_AUDIENCE_GAPS[e.entity_id]
+    if (known) audienceGaps.push(`${e.entity_id}: ${known}`)
+    else failures.push(`${e.entity_id}: كيان نشط بلا جمهور محدد — ينافس كل مستخدم بلا قيد`)
+  }
+  if (e.domains.length === 0) failures.push(`${e.entity_id}: كيان نشط بلا مجال — لا يدخل من احتياج المستخدم`)
+}
+/* استثناء صار بلا محل: يُزال من القائمة لا يُترك يخفي عودة العلّة */
+for (const id of Object.keys(KNOWN_AUDIENCE_GAPS)) {
+  const e = u.byId.get(id)
+  if (!e) { failures.push(`ثغرة جمهور معروفة لكيان غير موجود: ${id} — أزل السطر من KNOWN_AUDIENCE_GAPS`); continue }
+  const gate = e.hard_exclusions.find((h) => h.id === 'persona_mismatch')
+  if ((gate?.condition.values ?? []).length > 0 || e.career_stages.length > 0) {
+    failures.push(`${id}: صار له جمهور محدد — أزل السطر من KNOWN_AUDIENCE_GAPS`)
+  }
+}
+
+/* كل مهارة يستعملها كيان مسجَّلة في أحد المصدرين — الخطأ الإملائي يمرّ بلا هذا */
+for (const e of u.entities) {
+  for (const s of e.skill_slugs) {
+    if (!skillSlugs.has(s)) failures.push(`${e.entity_id}: مهارة غير مسجَّلة في أي مصدر: ${s}`)
+  }
+}
+
 /* الوسم الموثق حاضر ومسبب — إزالته تتطلب إثبات وصول إنتاجي جديد */
 const smartOps = u.byId.get('TPL-SMART-OPS-001')
 if (!smartOps) failures.push('TPL-SMART-OPS-001: مفقود من الفضاء الكلي')
@@ -116,11 +168,24 @@ for (const q of bank) {
   }
 }
 
-/* ملخص */
+/* ملخص — الأعداد معلومة تُعرض لا شرط يُفشل (د-١) */
 console.log('═══ تدقيق فضاء التوصيات الموحد ═══')
 console.log(`كيانات نشطة: ${u.active.length} (قياسية ${standards.length} + مركبة ${composites.length}) · إجمالي: ${u.entities.length}`)
+const noMeasurable = u.active.filter((e) => e.skill_slugs.filter((s) => measurable.has(s)).length === 0)
+if (noMeasurable.length > 0) {
+  console.warn(
+    `⚠ ${noMeasurable.length} كيانا نشطا بلا مهارة مقيسة واحدة — وزن المهارات لا يفرّقها عن منافسيها: ` +
+    noMeasurable.map((e) => e.entity_id).join(' · '),
+  )
+  console.warn('  يُعرض ولا يُفشل: العلاج إضافة أسئلة قياس (ب-٤) لا إسقاط كيانات.')
+}
 console.log(`دورات مركزية مستخدمة: ${courseUsage.size} · مشتركة بين كيانات (بمرجع واحد لا نسخة): ${shared.length}`)
 console.log(`أكثر الدورات مشاركة:`, [...courseUsage.entries()].sort((a, b) => b[1].length - a[1].length).slice(0, 5).map(([c, us]) => `${c} ← ${us.length} كيانات`).join(' · '))
+
+if (audienceGaps.length > 0) {
+  console.warn('\n⚠ ثغرات جمهور معروفة تنتظر قرارا أكاديميا:')
+  for (const g of audienceGaps) console.warn('  · ' + g)
+}
 
 if (failures.length > 0) {
   console.error('\nفشل التدقيق:')
