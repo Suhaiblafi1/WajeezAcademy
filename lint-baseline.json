@@ -1,0 +1,9 @@
+{
+  "errors": {
+    "react-hooks/purity": 1,
+    "react-hooks/set-state-in-effect": 5
+  },
+  "warnings": {
+    "react-hooks/exhaustive-deps": 7
+  }
+}

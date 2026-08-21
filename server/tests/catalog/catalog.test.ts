@@ -32,7 +32,10 @@ describe('استيراد الكتالوج', () => {
     expect(await prisma.compositeTemplate.count()).toBe(templates.templates.length)
   })
 
-  it('idempotent — التشغيل الثاني لا يغير شيئا', async () => {
+  /* ⚠ مهلة صريحة: هذا الاختبار يعيد استيراد الكتالوج كاملا (٤٠٠ وحدة و٣٠٠ مهارة)
+     فيتجاوز مهلة vitest الافتراضية (٥ ثوان). كان يفشل بالمهلة لا بالمنطق —
+     وفشلٌ زائف في CI أسوأ من لا CI، لأنه يعلّم القارئ تجاهل الأحمر. */
+  it('idempotent — التشغيل الثاني لا يغير شيئا', { timeout: 120_000 }, async () => {
     const before = {
       p: await prisma.pathway.count(), c: await prisma.course.count(), q: await prisma.question.count(),
       v: await prisma.catalogVersion.count(), s: await prisma.catalogSnapshot.count(),

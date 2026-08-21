@@ -1,0 +1,95 @@
+# تكامل مستمر لأكاديمية وجيز (البند ب-٣).
+#
+# لماذا هذا الملف موجود: كان في المستودع ٣٧٠ اختبارا وخط أساس تشخيصي ملتزم،
+# ولا شيء يشغّلهما تلقائيا. شبكةُ أمان تعتمد على أن يتذكّرها إنسان ليست شبكة.
+#
+# وظيفتان بقصد:
+#   fast   — بلا قاعدة بيانات: أنواع · دين تلويم · اختبارات المتصفح · خط أساس
+#            المحرك · بناء. تعطي جوابا في دقائق فتُقرأ فعلا.
+#   server — بقاعدة PostgreSQL مدمجة: اختبارات الخادم بالتسلسل، لأنها تعيد بناء
+#            قاعدة الاختبار في كل ملف فتتصادم لو تُشغّل متوازية.
+
+name: CI
+
+on:
+  push:
+    branches: [main, 'claude/**']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # لا حاجة لمتصفحات Playwright في CI — التقاط الشاشات يدوي
+  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+
+jobs:
+  fast:
+    name: أنواع · تلويم · اختبارات · خط الأساس · بناء
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: تثبيت الاعتماديات
+        run: npm ci
+
+      - name: توليد عميل Prisma
+        # الأنواع في server/ تعتمد عليه — ولا يحتاج قاعدة بيانات
+        run: npx prisma generate
+
+      - name: فحص الأنواع — تطبيق المتصفح
+        # ⚠ tsconfig.json ملف حلّ بمراجع فقط: فحصه لا يفحص شيئا.
+        #    لهذا يُشار إلى الملفين صراحة.
+        run: npx tsc --noEmit -p tsconfig.app.json
+
+      - name: فحص الأنواع — الخادم والسكربتات
+        run: npx tsc --noEmit -p tsconfig.node.json
+
+      - name: بوابة دين التلويم
+        # تفشل عند دين جديد لا عند الدين القائم — التفصيل في السكربت
+        run: npx tsx scripts/lint-baseline.ts
+
+      - name: اختبارات المتصفح والمحرك
+        run: npx vitest run src/tests
+
+      - name: بوابة التحقق المصدرية للكتالوج
+        # ترفض قبل أي كتابة: مهارة بخطأ إملائي · مسار بلا جمهور · دورة وهمية
+        run: npx tsx scripts/validate-catalog-source.ts
+
+      - name: خط أساس رحلات التشخيص
+        # يفشل إن خالف التشغيل الحيّ الملف الملتزم بلا تحديثه في الطلب نفسه
+        run: npx tsx scripts/v2_1/sim-journeys.ts --check
+
+      - name: بناء الإنتاج
+        run: npm run build
+
+  server:
+    name: اختبارات الخادم بقاعدة حقيقية
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: تثبيت الاعتماديات
+        run: npm ci
+
+      - name: توليد عميل Prisma
+        run: npx prisma generate
+
+      - name: اختبارات الخادم
+        # test:e2e يحمل --no-file-parallelism أصلا: كل ملف يعيد بناء قاعدة
+        # الاختبار، فالتوازي يجعلها تتصادم. مصدر واحد للأمر لا اثنان.
+        run: npm run test:e2e

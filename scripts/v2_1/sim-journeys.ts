@@ -1,8 +1,14 @@
 /* محاكاة رحلات V2.1 التسع المطلوبة — لكل رحلة: سؤال → لماذا الآن → إجابة → ما الذي تغيّر.
    حتمي: كل شخصية تُشغّل مرتين ويجب تطابق الأسئلة والنتيجة.
-   الناتج: docs/diagnostic-v2_1/journeys.v2_1.json + ملخص console. */
+   الناتج: docs/diagnostic-v2_1/journeys.v2_1.json + ملخص console.
 
-import { mkdirSync, writeFileSync } from 'node:fs'
+   وضعان (البند ب-٣):
+   - بلا وسائط: يحسب الرحلات ويكتب خط الأساس. هذا ما يُشغَّل عند تغيير مقصود.
+   - `--check`: يحسب ولا يكتب، ويقارن بخط الأساس الملتزم. أي فرق يعني أن سلوك
+     المحرك تغيّر — إما تغيير مقصود يلزمه تحديث الملف في الطلب نفسه، أو انحدار
+     صامت. وهذا ما يُشغَّل في CI: خط أساس لا يُقارن به شيءٌ آليا ليس خط أساس. */
+
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { createEngineV21 } from '../../src/domain/diagnostic/v2_1'
 import { Q, type CareerStage } from '../../src/domain/diagnostic/v2_1/maps'
 
@@ -104,8 +110,63 @@ const journeys = PERSONAS.map((p) => {
   return { ...a, deterministic: det }
 })
 
-mkdirSync('docs/diagnostic-v2_1', { recursive: true })
-writeFileSync('docs/diagnostic-v2_1/journeys.v2_1.json', JSON.stringify({ version: '2.1.0', journeys }, null, 2) + '\n', 'utf8')
+const BASELINE_PATH = 'docs/diagnostic-v2_1/journeys.v2_1.json'
+const CHECK = process.argv.includes('--check')
+const payload = { version: '2.1.0', journeys }
+const serialized = JSON.stringify(payload, null, 2) + '\n'
+
+if (CHECK) {
+  if (!existsSync(BASELINE_PATH)) {
+    console.error(`❌ لا خط أساس في ${BASELINE_PATH} — شغّل الأمر بلا --check والتزم الناتج.`)
+    process.exit(1)
+  }
+  const committed = readFileSync(BASELINE_PATH, 'utf8')
+  if (committed !== serialized) {
+    console.error('❌ التشغيل الحيّ يخالف خط الأساس الملتزم.\n')
+    reportDrift(committed, payload)
+    console.error(
+      '\nإن كان التغيير مقصودا: شغّل «npm run simulate:v2_1-journeys» والتزم\n' +
+      `${BASELINE_PATH} في الطلب نفسه. وإن لم يكن مقصودا فهذا انحدار في المحرك.`,
+    )
+    process.exit(1)
+  }
+  console.log(`✅ التشغيل الحيّ يطابق خط الأساس (${journeys.length} رحلة).`)
+} else {
+  mkdirSync('docs/diagnostic-v2_1', { recursive: true })
+  writeFileSync(BASELINE_PATH, serialized, 'utf8')
+}
+
+/** يطبع أول اختلاف لكل رحلة — لا diff كامل يغرق القارئ */
+function reportDrift(committedRaw: string, live: { journeys: typeof journeys }) {
+  let old: { journeys?: typeof journeys }
+  try {
+    old = JSON.parse(committedRaw) as { journeys?: typeof journeys }
+  } catch {
+    console.error('  خط الأساس الملتزم ليس JSON صالحا.')
+    return
+  }
+  const oldByPersona = new Map((old.journeys ?? []).map((j) => [j.persona, j]))
+  for (const now of live.journeys) {
+    const was = oldByPersona.get(now.persona)
+    if (!was) { console.error(`  + رحلة جديدة: ${now.persona}`); continue }
+    if (was.questionsCount !== now.questionsCount) {
+      console.error(`  ~ ${now.persona}: عدد الأسئلة ${was.questionsCount} ← ${now.questionsCount}`)
+    }
+    if (JSON.stringify(was.result) !== JSON.stringify(now.result)) {
+      console.error(`  ~ ${now.persona}: النتيجة ${was.result.topPathwayId ?? was.result.compositeTemplateId} ← ${now.result.topPathwayId ?? now.result.compositeTemplateId} · الثقة ${(was.result.confidence * 100).toFixed(0)}٪ ← ${(now.result.confidence * 100).toFixed(0)}٪`)
+    }
+    const wasIds = JSON.stringify(was.steps.map((s) => s.questionId))
+    const nowIds = JSON.stringify(now.steps.map((s) => s.questionId))
+    if (wasIds !== nowIds) console.error(`  ~ ${now.persona}: تسلسل الأسئلة تغيّر`)
+    else {
+      const changedStep = now.steps.findIndex((s, i) => JSON.stringify(s) !== JSON.stringify(was.steps[i]))
+      if (changedStep >= 0) console.error(`  ~ ${now.persona}: نصّ الخطوة ${changedStep + 1} (${now.steps[changedStep].questionId}) تغيّر`)
+    }
+  }
+  for (const was of old.journeys ?? []) {
+    if (!live.journeys.some((j) => j.persona === was.persona)) console.error(`  − رحلة اختفت: ${was.persona}`)
+  }
+}
 
 console.log('الشخصية | أسئلة | النوع | المسار/القالب | الثقة | المخرج | حتمي')
 for (const j of journeys) {
