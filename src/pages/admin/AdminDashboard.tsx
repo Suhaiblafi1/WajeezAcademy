@@ -8,6 +8,7 @@ import AdminLayout from "./AdminLayout";
 import { apiGet } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import DiagnosticFunnel from "@/components/DiagnosticFunnel";
+import AdminCharts from "@/components/AdminCharts";
 import { useAutoRefresh } from "@/services/useAutoRefresh";
 
 /* اللوحة العليا — نظرة تنفيذية من مصادر الخادم الحقيقية فقط.
@@ -130,6 +131,8 @@ export default function AdminDashboard() {
       )}
 
       <DiagnosticFunnel />
+      {/* إد-٢ · مخططات من تقارير موجودة — بلا استعلام جديد */}
+      <AdminCharts className="mt-6" />
 
       {cards && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -143,7 +146,7 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      <p className="mt-8 text-center text-[11px] text-white/35">
+      <p className="mt-8 text-center text-[11px] text-white/55">
         كل الأرقام هنا حية من قاعدة البيانات وتُحدَّث تلقائيا كل 45 ثانية
         {updatedAt && ` — آخر تحديث ${updatedAt.toLocaleTimeString("ar-JO", { hour: "2-digit", minute: "2-digit" })}`}.
         التقارير التفصيلية والتصدير في شاشة «التقارير».

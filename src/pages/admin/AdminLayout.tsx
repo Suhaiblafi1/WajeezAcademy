@@ -153,7 +153,7 @@ export default function AdminLayout({ children, title }: { children: React.React
         <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-60 shrink-0 overflow-y-auto border-l border-white/10 py-8 pl-5 lg:block">
           {sections.map((s) => (
             <div key={s.title} className="mb-7">
-              <p className="mb-2 px-3 text-[10px] font-black tracking-wide text-white/35">{s.title}</p>
+              <p className="mb-2 px-3 text-[10px] font-black tracking-wide text-white/55">{s.title}</p>
               <nav className="space-y-1">
                 {s.items.map((t) => (
                   <NavLink key={t.to} to={t.to} end={t.end} className={({ isActive }) => linkCls(isActive)}>

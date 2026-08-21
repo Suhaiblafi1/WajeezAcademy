@@ -23,6 +23,12 @@ module.exports = {
         "surface-teal": "rgb(var(--surface-teal) / <alpha-value>)",
         "on-teal": "rgb(var(--on-teal) / <alpha-value>)",
         "on-gold": "rgb(var(--on-gold) / <alpha-value>)",
+        /* سلّم المخططات الترتيبي (إد-٢) */
+        "ramp-1": "rgb(var(--ramp-1) / <alpha-value>)",
+        "ramp-2": "rgb(var(--ramp-2) / <alpha-value>)",
+        "ramp-3": "rgb(var(--ramp-3) / <alpha-value>)",
+        "ramp-4": "rgb(var(--ramp-4) / <alpha-value>)",
+        "ramp-5": "rgb(var(--ramp-5) / <alpha-value>)",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
