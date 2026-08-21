@@ -9,6 +9,7 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { PrismaClient } from '@prisma/client'
+import { assertCatalogSourceValid } from './validate-source'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const readJson = (p: string) => JSON.parse(readFileSync(join(root, p), 'utf8'))
@@ -97,6 +98,11 @@ interface RawReference {
 export const IMPORT_VERSION_LABEL = 'catalog-v2.0-import'
 
 export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> {
+  /* البند أ-١: البوابة أول شيء وقبل أي كتابة. موضعها هنا لا في السكربت وحده
+     حتى لا يوجد مسار استيراد يتخطّاها — لا من CLI ولا من اختبار ولا من الإدارة.
+     ترمي عند العطل، فلا نصف كتالوج في القاعدة. */
+  assertCatalogSourceValid()
+
   const core = readJson('src/data/catalog/core-catalog.v2.json')
   const templatesFile = readJson('src/data/catalog/composite-templates.v1.json')
   const skillsFile = readJson('src/data/catalog/skills.v1.ar.json')
