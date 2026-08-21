@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import {
-  Lock, PlayCircle, CheckCircle2, AlertTriangle, Trophy, RefreshCcw,
+  Lock, PlayCircle, CheckCircle2, AlertTriangle, Trophy, RefreshCcw, Loader2,
   BookOpen, ChevronLeft, MessageCircle,
 } from "lucide-react";
 import PortalLayout from "./PortalLayout";
+import PathwayMap from "@/components/PathwayMap";
+import { usePublishedContent } from "@/services/public-content";
+import { buildPathwayMap, type EnrollmentFact } from "@/application/student/pathway-map";
 import { getEnrollment } from "@/services/access";
 import { pathwayById, pathways } from "@/data/pathways";
 import { courseById, pathwayCourses, courseTrainer, coursePriceOf } from "@/data/courses";
@@ -22,13 +25,52 @@ const STATUS_META: Record<CourseStatus, { label: string; cls: string; icon: type
 import AdvisorContact from "@/components/AdvisorContact";
 import SimulationNote from "@/components/SimulationNote";
 
+/* ⚠ الكتالوج يُثبَّت كسولا (ع-١): قبل تثبيته تكون pathways فارغة، وكان
+   `pathways[0].id` يرمي TypeError فتظهر الصفحة سوداء فارغة. فنبوّب الجسم
+   خلف حالة تحميل، ونعيد تركيبه بمفتاح نسخة الكتالوج حتى لا تبقى حالة
+   المحاكاة مبنيّة على مسار خاطئ اختير قبل وصول البيانات. */
 export default function MyPathway() {
+  const catalogVersion = usePublishedContent();
+  if (pathways.length === 0) {
+    return (
+      <PortalLayout title="مساري">
+        <div className="grid place-items-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-teal-ink" aria-label="جارٍ تحميل الكتالوج" />
+        </div>
+      </PortalLayout>
+    );
+  }
+  return <MyPathwayBody key={catalogVersion} />;
+}
+
+function MyPathwayBody() {
   const enrollment = getEnrollment();
   const pathwayId = enrollment?.pathwayId ?? pathways.find((p) => (pathwayCourses[p.id] ?? []).length >= 4)?.id ?? pathways[0].id;
   const pathway = pathwayById(pathwayId);
   const [state] = useState(() => loadPortal(pathwayId));
   const ids = pathwayCourses[pathwayId] ?? [];
   const conditions = projectConditions(pathwayId, state);
+  /* وقائع التقدم من حالة المحاكاة المحلية — نفس المكوّن يخدم البيانات الحقيقية في اللوحة */
+  /* بلا useMemo: مُصرِّف React يتولى التذكير، وتذكير يدوي لا يستطيع الحفاظ عليه
+     يُسقط تحسين المكوّن كله. والحساب رخيص — خمس دورات لا أكثر. */
+  const map = (() => {
+    const facts: EnrollmentFact[] = ids.map((id) => {
+      const c = courseById(id);
+      const gate = courseGate(pathwayId, id, state);
+      const pct = c ? coursePercent(c, state.courses[id] ?? { lessons: {}, quiz: { attempts: 0, best: 0, passed: false }, assignment: { status: "none" }, attendance: null, bookQuiz: {} }) : 0;
+      /* المحاكاة لا تعرف «تسجيلا» بل بوابة فتح — فنمرّر enrolled بحسب انفتاحها،
+         ونمرّر تسميتها الخاصة («مقفلة»/«متاحة — ابدأ») كي لا تختلف الخريطة عن القائمة أسفلها */
+      const open = gate.status !== "locked";
+      return {
+        courseId: id,
+        enrolled: open && (pct > 0 || gate.status === "completed" || gate.status === "in_progress"),
+        percent: open ? pct : null,
+        completed: gate.status === "completed",
+        labelAr: STATUS_META[gate.status].label,
+      };
+    });
+    return buildPathwayMap(pathwayId, facts);
+  })();
   const metCount = conditions.filter((c) => c.met).length;
   const reviewMsg = `مرحبا، أنا طالب مسار «${pathway?.name}» وأريد مراجعة مساري (تبديل/إضافة دورة).`;
 
@@ -55,7 +97,10 @@ export default function MyPathway() {
         </p>
       </section>
 
-      {/* خريطة الدورات */}
+      {/* خريطة المسار البصرية (ط-٢) — «أين أنا؟» قبل تفاصيل كل دورة */}
+      {map && <PathwayMap map={map} courseLinkBase="/student/course" className="mt-6" />}
+
+      {/* تفاصيل الدورات */}
       <section className="mt-6 space-y-3">
         {ids.map((id, i) => {
           const c = courseById(id);
@@ -100,7 +145,7 @@ export default function MyPathway() {
                     افتح الدورة <ChevronLeft className="h-3.5 w-3.5" />
                   </Link>
                 ) : (
-                  <span className="text-[11px] text-white/30">{gate.unlockHint}</span>
+                  <span className="text-[11px] text-white/55">{gate.unlockHint}</span>
                 )}
               </div>
             </div>

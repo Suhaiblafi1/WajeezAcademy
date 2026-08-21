@@ -6,6 +6,11 @@ import {
 } from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import SkillMeter from "@/components/SkillMeter";
+import PathwayMap from "@/components/PathwayMap";
+import { buildPathwayMap, enrollmentFactsFromApi } from "@/application/student/pathway-map";
+import { pathwayIdFromSnapshot } from "@/application/student/skills-profile";
+import { loadLastResultSafe } from "@/application/diagnostic/session-store";
+import { usePublishedContent } from "@/services/public-content";
 import { getEnrollment, isPreview } from "@/services/access";
 import { useRealSession } from "@/services/session";
 import { apiGet } from "@/services/api";
@@ -31,10 +36,12 @@ interface RealEnrollment {
   id: string; status: string; createdAt: string;
   cohort: {
     id: string; title: string;
-    course: { versions: { titleAr: string }[] };
+    /* معرّف الدورة من الكتالوج (C-…) — يربط التسجيل بترتيب المسار في ط-٢ */
+    course: { id: string; versions: { titleAr: string }[] };
     trainers: { profile: { application: { fullName: string } } }[];
   };
   courseProgress: { percent: number } | null;
+  certificates?: unknown[];
 }
 interface RealSessionItem {
   id: string; title: string; startsAt: string; endsAt: string | null; status: string;
@@ -138,6 +145,17 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
 
   const unread = notifs.filter((n) => n.status !== "read").length;
 
+  /* خريطة المسار (ط-٢) من التسجيلات الحقيقية — المسار من لقطة التشخيص أو الاستحقاق.
+     الكتالوج كسول (ع-١) فنربط الحساب بنسخته حتى تصل عناوين الدورات وترتيبها. */
+  const catalogVersion = usePublishedContent();
+  const map = useMemo(() => {
+    void catalogVersion;
+    const local = loadLastResultSafe();
+    const snap = local.status === "ok" || local.status === "migrated" ? local.result : null;
+    const pathwayId = pathwayIdFromSnapshot(snap) ?? getEnrollment()?.pathwayId ?? null;
+    return buildPathwayMap(pathwayId, enrollmentFactsFromApi(rows));
+  }, [rows, catalogVersion]);
+
   return (
     <PortalLayout title={`${greeting()} يا ${name.split(" ")[0]}`}>
       {/* شريط التقدم العام الحقيقي */}
@@ -170,6 +188,9 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
           <div className="h-full rounded-full bg-gradient-to-l from-teal to-teal-light transition-all" style={{ width: `${Math.max(3, pct)}%` }} />
         </div>
       </section>
+
+      {/* خريطة المسار (ط-٢) — تجيب «أين أنا من رحلتي؟» بدل عدّ الشعب وحده */}
+      {map && map.totalCount > 0 && <PathwayMap map={map} className="mt-6" />}
 
       <div className="mt-6 grid gap-5 lg:grid-cols-3">
         {/* التالي الآن — حقيقي */}
