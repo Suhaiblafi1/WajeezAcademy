@@ -18,6 +18,8 @@ import templatesJson from '../../src/data/catalog/composite-templates.v1.json'
 import profilesJson from '../../src/data/overlays/pathway-profiles.v1.json'
 import domainsJson from '../../src/data/catalog/v2/pathway-domains.v2.json'
 import layersJson from '../../src/data/catalog/v2/skill-layers.v2.json'
+import { measurementDocDrift } from '../../src/application/catalog/skill-measurement'
+import { measurableSkills } from '../../src/domain/diagnostic/v2_1/universe'
 
 /** حدود ساعات الدورة — المنشور اليوم ٨–١٢، والمدى يترك مجالا للتأليف */
 export const COURSE_HOURS_MIN = 1
@@ -46,6 +48,11 @@ export interface ValidationResult {
     skills: number
     measurableSkills: number
     pathwaysWithoutMeasurableSkill: string[]
+    /* البند ب-٤: تباعد التوثيق عن المحرك — measured_by مقابل ما يُسأل فعلا */
+    undocumentedMeasured: string[]
+    staleMeasuredDoc: string[]
+    /* أسئلة قياس تقيس مفاتيح ليست مهارات مسجَّلة */
+    measuredNotRegistered: string[]
   }
 }
 
@@ -162,13 +169,18 @@ export function validateCatalogSource(): ValidationResult {
 
   /* ٧ — قابلية القياس: مسار بلا مهارة واحدة مقيسة يجعل وزن المهارات (٢٥٪) بلا أثر.
      تحذير لا خطأ: الكتالوج المنشور اليوم لا يجتازه، وإفشال الاستيراد عليه يعطّل
-     المنصة بلا أن يصلح شيئا. يُبلَّغ بالأرقام والأسماء ليُعالَج بقرار لا بمفاجأة. */
+     المنصة بلا أن يصلح شيئا. يُبلَّغ بالأرقام والأسماء ليُعالَج بقرار لا بمفاجأة.
+
+     ⚠ المصدر هو المحرك لا التوثيق: `measurableSkills()` تُشتق من بنك الأسئلة
+     وخطة سطح B2C — أي ما يُسأل حقا. قياس هذا الرقم من حقل `measured_by` كان
+     يعطي رقما ثالثا مختلفا عمّا يراه المؤلّف وعمّا يحسبه auditStandard. */
   const isActive = (slug: string) => {
     const m = layers[slug]
     if (m === undefined) return true
     return m.active !== false && m.diagnostic_active !== false
   }
-  const isMeasured = (slug: string) => Boolean(layers[slug]?.measured_by)
+  const engineMeasured = measurableSkills()
+  const isMeasured = (slug: string) => engineMeasured.has(slug)
   const byId = new Map(core.courses.map((c) => [c.course_id, c]))
   const pathwaysWithoutMeasurableSkill: string[] = []
   for (const p of core.launch_pathways) {
@@ -177,7 +189,7 @@ export function validateCatalogSource(): ValidationResult {
     const measurable = [...slugs].filter((s) => isActive(s) && isMeasured(s))
     if (measurable.length === 0) pathwaysWithoutMeasurableSkill.push(p.id)
   }
-  const measurableSkills = Object.keys(layers).filter((s) => isActive(s) && isMeasured(s)).length
+  const measurableCount = [...knownSlugs].filter((s) => isActive(s) && isMeasured(s)).length
   if (pathwaysWithoutMeasurableSkill.length > 0) {
     warningsAr.push(
       `${pathwaysWithoutMeasurableSkill.length} من ${core.launch_pathways.length} مسارا بلا مهارة مقيسة واحدة — ` +
@@ -185,8 +197,37 @@ export function validateCatalogSource(): ValidationResult {
       pathwaysWithoutMeasurableSkill.join(' · '),
     )
     warningsAr.push(
-      `المقيس من المهارات ${measurableSkills} من ${Object.keys(layers).length} — ` +
+      `المقيس من المهارات ${measurableCount} من ${knownSlugs.size} — ` +
       'كل مهارة مسجَّلة بلا سؤال يقيسها تدخل المقام ولا تُقاس أبدا (البند ب-٤).',
+    )
+  }
+
+  /* ٩ — سؤال قياس يقيس مفتاحا ليس مهارة مسجَّلة: إجابته تسقط في متجه المهارات
+     تحت مفتاح لا تطلبه دورة ولا يحتاجه مسار — أي أن المتعلم يُسأل ولا يُحتسب
+     جوابه أبدا. تحذير لا خطأ: العلاج قرار تأليف (تسجيل المهارة أو تحويل
+     السؤال إلى مهارة موجودة) لا إسقاط استيراد. */
+  const measuredNotRegistered = [...engineMeasured].filter((s) => !knownSlugs.has(s)).sort()
+  if (measuredNotRegistered.length > 0) {
+    warningsAr.push(
+      `${measuredNotRegistered.length} سؤال قياس ذاتي يقيس مفتاحا ليس مهارة مسجَّلة: ` +
+      `${measuredNotRegistered.join(' · ')} — يُسأل المتعلم ولا يدخل جوابه أي ترشيح.`,
+    )
+  }
+
+  /* ٨ — تباعد التوثيق عن المحرك (ب-٤): `measured_by` في skill-layers توثيقٌ،
+     والمحرك يقيس ما يسأله بنك الأسئلة فعلا. من يقرأ التوثيق وحده يخطئ في
+     الاتجاهين. تحذير لا خطأ: صيانة بيانات لا عطل يمنع الاستيراد. */
+  const drift = measurementDocDrift()
+  if (drift.undocumented.length > 0) {
+    warningsAr.push(
+      `${drift.undocumented.length} مهارة يقيسها المحرك بلا توثيق measured_by في ${F.layers}: ` +
+      `${drift.undocumented.join(' · ')} — من يقرأ التوثيق يظنها غير مقيسة.`,
+    )
+  }
+  if (drift.staleDoc.length > 0) {
+    warningsAr.push(
+      `${drift.staleDoc.length} مهارة موثَّقة بـmeasured_by ولا يقيسها المحرك: ` +
+      `${drift.staleDoc.join(' · ')} — سؤالها خارج سطح B2C، فالتوثيق يَعِد بقياس لا يحدث.`,
     )
   }
 
@@ -198,8 +239,11 @@ export function validateCatalogSource(): ValidationResult {
       pathways: core.launch_pathways.length,
       templates: templates.length,
       skills: knownSlugs.size,
-      measurableSkills,
+      measurableSkills: measurableCount,
       pathwaysWithoutMeasurableSkill,
+      undocumentedMeasured: drift.undocumented,
+      staleMeasuredDoc: drift.staleDoc,
+      measuredNotRegistered,
     },
   }
 }

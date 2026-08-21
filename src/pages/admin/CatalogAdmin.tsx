@@ -7,6 +7,8 @@ import {
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
+import SkillPicker from "@/components/SkillPicker";
+import type { SkillMeasureState } from "@/application/catalog/skill-measurement";
 import { toast } from "@/components/Toast";
 
 type Overview = {
@@ -19,7 +21,11 @@ type ChangeRequest = {
 };
 type PathwayRow = { id: string; status: string; title: string; courseCount: number };
 type CourseRow = { id: string; status: string; title: string; hours: number; skillCount: number; pathways: string[] };
-type SkillRow = { id: string; status: string; slug: string; nameAr: string; familyId: string | null };
+type SkillRow = {
+  id: string; status: string; slug: string; nameAr: string; familyId: string | null;
+  /* ب-٤: حالة القياس من الخادم — تُحسب من المحرك لا من عمود في القاعدة */
+  measureState?: SkillMeasureState; measuredBy?: string | null; measureNoteAr?: string;
+};
 type QuestionRow = { id: string; status: string; active: boolean; module: string; text: string; optionCount: number };
 type TemplateRow = { id: string; status: string; name: string; courseCount: number };
 
@@ -94,6 +100,17 @@ export default function CatalogAdmin() {
   };
 
   const toggleId = (list: string[], id: string) => (list.includes(id) ? list.filter((x) => x !== id) : [...list, id]);
+
+  /* ب-٤: طلب مهارة غير موجودة يمرّ بالمراجعة (maker-checker) لا يُنشأ صامتا —
+     فلا يحشر المؤلّف مهارة قريبة خاطئة لأن الصحيحة غير موجودة. */
+  const requestSkill = async (input: { slug: string; nameAr: string; reasonAr: string }) => {
+    await apiPost("/api/admin/catalog/change-requests", {
+      entityType: "skill",
+      entityId: input.slug,
+      payload: { kind: "skill_request", slug: input.slug, nameAr: input.nameAr, reasonAr: input.reasonAr },
+    });
+    toast("قُدّم طلب المهارة للمراجعة");
+  };
 
   const submitCourse = () => act(async () => {
     await apiPost("/api/admin/catalog/courses", {
@@ -179,7 +196,7 @@ export default function CatalogAdmin() {
                 {Object.entries(bag).map(([s, n]) => (
                   <span key={s} className="text-[11px] text-white/75">{n} <Pill v={s} /></span>
                 ))}
-                {Object.keys(bag).length === 0 && <span className="text-[11px] text-white/40">لا شيء بعد</span>}
+                {Object.keys(bag).length === 0 && <span className="text-[11px] text-white/55">لا شيء بعد</span>}
               </div>
             </div>
           ))}
@@ -201,7 +218,7 @@ export default function CatalogAdmin() {
           <ul className="mt-3 space-y-2">
             {pathways.map((p) => (
               <li key={p.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-2.5 text-sm">
-                <span className="font-mono text-[11px] text-white/40" dir="ltr">{p.id}</span>
+                <span className="font-mono text-[11px] text-white/55" dir="ltr">{p.id}</span>
                 <span className="font-bold">{p.title}</span>
                 <span className="text-[11px] text-white/50">{p.courseCount} دورة</span>
                 <span className="mr-auto"><Pill v={p.status} /></span>
@@ -214,7 +231,7 @@ export default function CatalogAdmin() {
           <ul className="mt-3 space-y-2">
             {courses.map((c) => (
               <li key={c.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-2.5 text-sm">
-                <span className="font-mono text-[11px] text-white/40" dir="ltr">{c.id}</span>
+                <span className="font-mono text-[11px] text-white/55" dir="ltr">{c.id}</span>
                 <span className="font-bold">{c.title}</span>
                 <span className="text-[11px] text-white/50">{c.hours} ساعة · {c.skillCount} مهارة · {c.pathways.join("، ") || "بلا مسار"}</span>
                 <span className="mr-auto"><Pill v={c.status} /></span>
@@ -224,22 +241,38 @@ export default function CatalogAdmin() {
           </ul>
         )}
         {browse === "skills" && (
-          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-            {skills.map((s) => (
-              <li key={s.id} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-2.5 text-sm">
-                <span className="font-mono text-[11px] text-white/40" dir="ltr">{s.id}</span>
-                <span className="font-bold">{s.nameAr}</span>
-                <span className="mr-auto"><Pill v={s.status} /></span>
-              </li>
-            ))}
-            {skills.length === 0 && <p className="text-sm text-white/45">لا مهارات بعد.</p>}
-          </ul>
+          <>
+            {/* ب-٤: الحصيلة أولا — «كم مهارة تُقاس فعلا» هو السؤال الذي يخفيه جدول من ٣٠٥ صفوف */}
+            <p className="mt-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-[11px] leading-6 text-white/70">
+              {skills.filter((s) => s.measureState === "measured").length} مقيسة ·{" "}
+              {skills.filter((s) => s.measureState === "registered_unmeasured").length} مسجَّلة بلا سؤال ·{" "}
+              {skills.filter((s) => s.measureState === "inactive").length} موقوفة تشخيصيا · من {skills.length}
+              <span className="text-white/45"> — غير المقيسة تدخل مقام تغطية القياس ولا تُقاس أبدا.</span>
+            </p>
+            <ul className="mt-2 grid gap-2 sm:grid-cols-2">
+              {skills.map((s) => (
+                <li key={s.id} className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-2.5">
+                  <div className="flex items-center gap-3 text-sm">
+                    <span className="font-mono text-[11px] text-white/55" dir="ltr">{s.id}</span>
+                    <span className="min-w-0 flex-1 truncate font-bold">{s.nameAr}</span>
+                    <Pill v={s.status} />
+                  </div>
+                  {s.measureNoteAr && (
+                    <p className={`mt-1 text-[10px] ${s.measureState === "measured" ? "text-teal-light-ink" : "text-white/50"}`}>
+                      {s.measureNoteAr}
+                    </p>
+                  )}
+                </li>
+              ))}
+              {skills.length === 0 && <p className="text-sm text-white/45">لا مهارات بعد.</p>}
+            </ul>
+          </>
         )}
         {browse === "questions" && (
           <ul className="mt-3 space-y-2">
             {questions.map((q) => (
               <li key={q.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-2.5 text-sm">
-                <span className="font-mono text-[11px] text-white/40" dir="ltr">{q.id}</span>
+                <span className="font-mono text-[11px] text-white/55" dir="ltr">{q.id}</span>
                 <span className="min-w-0 flex-1 font-bold">{q.text || "—"}</span>
                 <span className="text-[11px] text-white/50">{q.module} · {q.optionCount} خيار{!q.active && " · موقوف"}</span>
                 <span className="mr-auto"><Pill v={q.status} /></span>
@@ -252,7 +285,7 @@ export default function CatalogAdmin() {
           <ul className="mt-3 space-y-2">
             {templates.map((t) => (
               <li key={t.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-2.5 text-sm">
-                <span className="font-mono text-[11px] text-white/40" dir="ltr">{t.id}</span>
+                <span className="font-mono text-[11px] text-white/55" dir="ltr">{t.id}</span>
                 <span className="font-bold">{t.name || "—"}</span>
                 <span className="text-[11px] text-white/50">{t.courseCount} دورة مركبة</span>
                 <span className="mr-auto"><Pill v={t.status} /></span>
@@ -283,16 +316,14 @@ export default function CatalogAdmin() {
               <input value={courseForm.levelAr} onChange={(e) => setCourseForm({ ...courseForm, levelAr: e.target.value })} placeholder="المستوى (اختياري)" className={inputCls} />
             </div>
 
-            <p className="mt-4 mb-2 text-xs font-black text-white/60">المهارات المرتبطة ({courseForm.skillIds.length})</p>
-            <div className="flex flex-wrap gap-2">
-              {skills.map((s) => (
-                <button key={s.id} type="button" onClick={() => setCourseForm({ ...courseForm, skillIds: toggleId(courseForm.skillIds, s.id) })}
-                  className={`cursor-pointer rounded-full border px-3 py-1 text-[11px] font-bold transition ${courseForm.skillIds.includes(s.id) ? "border-teal bg-teal/15 text-teal-light-ink" : "border-white/15 text-white/55 hover:border-white/40"}`}>
-                  {s.nameAr}
-                </button>
-              ))}
-              {skills.length === 0 && <span className="text-[11px] text-white/45">أنشئ مهارات أولا من نموذج المهارة.</span>}
-            </div>
+            {/* البند ب-٤: منتقٍ ببحث وحالة قياس وتحذيرات حيّة — بديل رقائق ٣٠٥ مهارة الصامتة */}
+            <SkillPicker
+              className="mt-4"
+              skills={skills}
+              selectedIds={courseForm.skillIds}
+              onToggle={(id) => setCourseForm({ ...courseForm, skillIds: toggleId(courseForm.skillIds, id) })}
+              onRequestSkill={requestSkill}
+            />
 
             <p className="mt-4 mb-2 text-xs font-black text-white/60">الوحدات ({modules.length})</p>
             <div className="space-y-3">
@@ -398,7 +429,7 @@ export default function CatalogAdmin() {
                 <button key={c.id} type="button" onClick={() => setPwForm({ ...pwForm, courseIds: toggleId(pwForm.courseIds, c.id) })}
                   className={`cursor-pointer rounded-full border px-3 py-1 text-[11px] font-bold transition ${pwForm.courseIds.includes(c.id) ? "border-teal bg-teal/15 text-teal-light-ink" : "border-white/15 text-white/55 hover:border-white/40"}`}>
                   {pwForm.courseIds.includes(c.id) && <span className="ml-1">{pwForm.courseIds.indexOf(c.id) + 1}.</span>}
-                  {c.title} <span className="font-mono text-white/40" dir="ltr">({c.id})</span>
+                  {c.title} <span className="font-mono text-white/55" dir="ltr">({c.id})</span>
                 </button>
               ))}
               {courses.length === 0 && <span className="text-[11px] text-white/45">أنشئ دورات أولا من نموذج الدورة.</span>}

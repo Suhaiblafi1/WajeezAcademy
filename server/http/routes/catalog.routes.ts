@@ -100,7 +100,8 @@ export function registerCatalogRoutes(app: FastifyInstance, prisma: PrismaClient
       })).min(1),
     }).parse(req.body)
     const course = await admin.createCourse(body, req.auth!.userId)
-    return reply.status(201).send({ id: course.id, status: course.status })
+    /* ب-٤: تقييم القياس يعود مع الردّ ليُعرض للمؤلّف فورا */
+    return reply.status(201).send({ id: course.id, status: course.status, skillAssessment: course.skillAssessment })
   })
 
   app.post('/api/admin/catalog/pathways', {

@@ -4,6 +4,7 @@
 
 import type { Prisma, PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
+import { assessSkillSelection, skillStateOf } from '../../src/application/catalog/skill-measurement'
 
 export class CatalogAdminService {
   private prisma: PrismaClient
@@ -55,9 +56,23 @@ export class CatalogAdminService {
     }))
   }
 
+  /**
+   * كل المهارات وحالة قياسها (البند ب-٤).
+   * الحالة تُحسب من المحرك نفسه (بنك الأسئلة وخطة سطح B2C) لا من عمود في
+   * القاعدة — فما يراه المؤلّف هو ما يحدث في جلسة التشخيص فعلا.
+   */
   async listSkills() {
     const rows = await this.prisma.skill.findMany({ orderBy: { id: 'asc' } })
-    return rows.map((s) => ({ id: s.id, status: s.status, slug: s.slug, nameAr: s.nameAr, familyId: s.familyId }))
+    return rows.map((s) => {
+      const st = skillStateOf(s.slug, s.nameAr)
+      return {
+        id: s.id, status: s.status, slug: s.slug, nameAr: s.nameAr, familyId: s.familyId,
+        measureState: st.state,
+        measuredBy: st.measuredBy,
+        decisionRoleAr: st.decisionRoleAr,
+        measureNoteAr: st.noteAr,
+      }
+    })
   }
 
   async listTemplates() {
@@ -115,7 +130,11 @@ export class CatalogAdminService {
     if (skills.length !== input.skillIds.length) throw new AuthError('unknown_skill', 'مهارة واحدة أو أكثر غير موجودة')
     if (input.modules.length === 0) throw new AuthError('no_modules', 'الدورة بلا وحدات غير مقبولة')
 
-    return this.prisma.course.create({
+    /* البند ب-٤: تقييم جودة القياس يُحسب ويُعاد مع الردّ — لا يمنع الحفظ.
+       المؤلّف يرى أثر اختياره لحظة الحفظ لا بعد أسبوع في ترشيح باهت. */
+    const skillAssessment = assessSkillSelection(skills.map((sk) => sk.slug))
+
+    const created = await this.prisma.course.create({
       data: {
         id: input.id, status: 'draft', createdBy: actorId,
         versions: {
@@ -141,6 +160,7 @@ export class CatalogAdminService {
         },
       },
     })
+    return { ...created, skillAssessment }
   }
 
   /** إنشاء مسار كمسودة مرتبط بدورات موجودة */
