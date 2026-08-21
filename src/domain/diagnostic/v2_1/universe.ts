@@ -223,9 +223,102 @@ export const NEED_OVERRIDES: Record<string, string[]> = {
   'PW-EMP-005': ['need_leadership'],
 }
 
+/* ─── تدقيق المسار القياسي (البند أ-٣) ─── */
+
+export interface StandardAudit {
+  pathway_id: string
+  title_ar: string
+  status: EntityStatus
+  reasons_ar: string[]
+  metrics: {
+    courses: number
+    missing_courses: string[]
+    domains: number
+    personas: number
+    goals: number
+    skills: number
+    measurable_skills: number
+  }
+}
+
+/**
+ * يدقّق مسارا قياسيا قبل أن يدخل المنافسة — نظير `auditComposite` للمركبات.
+ *
+ * المشكلة التي يحلّها: `buildStandardEntity` كان يكتب `approved_active` نصا
+ * ثابتا. المركب يُدقَّق والقياسي لا يُدقَّق إطلاقا — فمسارٌ بلا جمهور محدد
+ * ينافس كل مستخدم بلا قيد («الجوكر»)، ومسارٌ بمراجع دورات مفقودة يرشَّح ثم
+ * لا يجد المتعلم فيه ما وُعد به.
+ *
+ * ⚠ حدّ مقصود بين ما يحجب وما يُبلَّغ:
+ * - العيب البنيوي يحجب (بلا جمهور · بلا مجال · بلا دورات · مراجع مفقودة)،
+ *   لأن الكيان غير المعتمد لا يدخل المنافسة أصلا (assessEntityEligibility).
+ * - وضعف القياس (بلا مهارة مقيسة واحدة) **يُبلَّغ ولا يحجب**. عشرة من عشرين
+ *   مسارا في الكتالوج المنشور اليوم بلا مهارة مقيسة، وحجبها يمحو نصف
+ *   الترشيحات — إصلاحُه إضافةُ أسئلة قياس (البند ب-٤) لا إسقاط المسارات.
+ *   فيبقى السبب مكتوبا في status_reasons_ar يقرؤه المشرف ويُحصيه التدقيق.
+ */
+export function auditStandard(pathwayId: string): StandardAudit {
+  const p = launchPathways.find((x) => x.id === pathwayId)
+  const profile = pathwayProfiles[pathwayId]
+  const domains = pathwayDomainsV2[pathwayId] ?? []
+  const courseIds = p?.course_ids ?? []
+  const missing = courseIds.filter((cid) => !courseById.has(cid))
+  const skills = skillsOfCourses(courseIds)
+  const measurable = measurableSkills()
+  const measurableCount = skills.filter((sl) => measurable.has(sl) && isDiagnosticSkillActive(layersOfSkill(sl))).length
+  const personas = profile?.personas ?? []
+  const goals = profile?.goals ?? []
+
+  const reasons_ar: string[] = []
+  let status: EntityStatus = 'approved_active'
+
+  if (!p) {
+    status = 'needs_revision'
+    reasons_ar.push('المسار غير موجود في الكتالوج الفعال.')
+  } else if (courseIds.length === 0) {
+    status = 'needs_revision'
+    reasons_ar.push('بلا دورات — لا محتوى يُرشَّح.')
+  } else if (missing.length > 0) {
+    status = 'needs_revision'
+    reasons_ar.push(`مراجع دورات مفقودة: ${missing.join('، ')}.`)
+  } else if (personas.length === 0) {
+    status = 'needs_academic_review'
+    reasons_ar.push('بلا جمهور محدد — سينافس كل المستخدمين بلا قيد.')
+  } else if (goals.length === 0) {
+    status = 'needs_academic_review'
+    reasons_ar.push('بلا أهداف محددة — سيطابق كل هدف بلا قيد.')
+  } else if (domains.length === 0) {
+    status = 'needs_academic_review'
+    reasons_ar.push('بلا مجال — لا يدخل من احتياج المستخدم.')
+  }
+
+  /* يُبلَّغ ولا يحجب — انظر التعليق أعلاه */
+  if (measurableCount === 0) {
+    reasons_ar.push('لا يملك أداة فصل عن منافسيه: بلا مهارة مقيسة واحدة، فوزن المهارات لا يفرّقه عن غيره.')
+  }
+
+  return {
+    pathway_id: pathwayId,
+    title_ar: p?.title ?? pathwayId,
+    status,
+    reasons_ar,
+    metrics: {
+      courses: courseIds.length,
+      missing_courses: missing,
+      domains: domains.length,
+      personas: personas.length,
+      goals: goals.length,
+      skills: skills.length,
+      measurable_skills: measurableCount,
+    },
+  }
+}
+
 /* ─── بناء كيان قياسي ─── */
 function buildStandardEntity(pathwayId: string): RecommendationEntity {
   const p = launchPathways.find((x) => x.id === pathwayId)!
+  /* البند أ-٣: الحالة من التدقيق لا نصّا ثابتا */
+  const audit = auditStandard(pathwayId)
   const profile = pathwayProfiles[pathwayId]
   const domains = [...(pathwayDomainsV2[pathwayId] ?? [])].sort()
   const stages = [...new Set((profile?.personas ?? []).flatMap((b) => PERSONA_BASE_TO_STAGES[b] ?? []))] as CareerStage[]
@@ -253,8 +346,8 @@ function buildStandardEntity(pathwayId: string): RecommendationEntity {
     entity_id: pathwayId,
     entity_type: 'standard',
     title_ar: p.title,
-    status: 'approved_active',
-    status_reasons_ar: [],
+    status: audit.status,
+    status_reasons_ar: audit.reasons_ar,
     transformation: { before_ar: p.before, after_ar: p.after, capstone_ar: p.capstone },
     best_for: p.audience,
     not_for: p.not_for ?? '',
