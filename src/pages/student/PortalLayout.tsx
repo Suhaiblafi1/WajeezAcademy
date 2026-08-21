@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router";
-import { GraduationCap, LayoutDashboard, Route as RouteIcon, Trophy, Award, Lock, Eye, LogOut, Bell, CheckCheck, UserCircle, ReceiptText, FileText, MoreHorizontal, X, LifeBuoy, CalendarDays, BookOpen, ChevronDown } from "lucide-react";
+import { GraduationCap, LayoutDashboard, Route as RouteIcon, Trophy, Award, Lock, Eye, LogOut, Bell, CheckCheck, UserCircle, ReceiptText, FileText, MoreHorizontal, X, LifeBuoy, CalendarDays, BookOpen, ChevronDown, Target } from "lucide-react";
 import { canAccessPortal, enablePreview, getEnrollment, isOwnerUnlocked, unlockOwner } from "@/services/access";
 import { signOut } from "@/services/auth";
 import { apiGet, apiPost } from "@/services/api";
@@ -130,6 +130,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
     { to: "/student", label: "لوحتي", icon: LayoutDashboard, end: true },
     { to: "/student/learning", label: "تعلّمي", icon: BookOpen },
     { to: "/student/pathway", label: "مساري", icon: RouteIcon },
+    { to: "/student/skills", label: "مهاراتي", icon: Target },
     { to: "/student/project", label: "مشروع التخرج", icon: Trophy },
     { to: "/student/cohorts", label: "الشعب المفتوحة", icon: CalendarDays },
     { to: "/student/certificates", label: "شهاداتي", icon: Award },
@@ -143,9 +144,12 @@ export default function PortalLayout({ children, title }: { children: React.Reac
   const deskPrimary = tabs.slice(0, 5);
   const deskOverflow = tabs.slice(5);
   const deskMoreActive = deskOverflow.some((t) => pathname.startsWith(t.to));
-  /* جوال: أربعة تبويبات أساسية ثابتة + «المزيد» يفتح الباقي — لا تمرير أفقي يُخفي الصفحات */
-  const mainTabs = [tabs[0], tabs[1], tabs[2], tabs[8]];
-  const moreTabs = [tabs[3], tabs[4], tabs[5], tabs[6], tabs[7], tabs[9], tabs[10]];
+  /* جوال: أربعة تبويبات أساسية ثابتة + «المزيد» يفتح الباقي — لا تمرير أفقي يُخفي الصفحات.
+     «مهاراتي» تأخذ الخانة الرابعة و«حسابي» تنزل للمزيد: الأولى شاشة قيمة يومية والثانية إعدادات. */
+  /* المراجع بالمسار لا بالفهرس: إدراج تبويب جديد لا يعيد ترتيب شريط الجوال */
+  const MOBILE_MAIN = ["/student", "/student/learning", "/student/pathway", "/student/skills"];
+  const mainTabs = MOBILE_MAIN.map((to) => tabs.find((t) => t.to === to)!).filter(Boolean);
+  const moreTabs = tabs.filter((t) => !MOBILE_MAIN.includes(t.to));
   const moreActive = moreTabs.some((t) => pathname.startsWith(t.to));
 
   return (

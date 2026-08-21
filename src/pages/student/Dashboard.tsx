@@ -5,6 +5,7 @@ import {
   Lightbulb, Loader2, MessageCircle, Send, Sparkles, Target, TrendingUp, Video, LifeBuoy,
 } from "lucide-react";
 import PortalLayout from "./PortalLayout";
+import SkillMeter from "@/components/SkillMeter";
 import { getEnrollment, isPreview } from "@/services/access";
 import { useRealSession } from "@/services/session";
 import { apiGet } from "@/services/api";
@@ -151,9 +152,9 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
           </div>
           <div className="relative h-24 w-24 shrink-0">
             <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90" aria-hidden="true">
-              <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="9" />
+              <circle cx="50" cy="50" r="42" fill="none" stroke="rgb(var(--teal-ink) / 0.15)" strokeWidth="9" />
               <circle
-                cx="50" cy="50" r="42" fill="none" stroke="#38A7B4" strokeWidth="9" strokeLinecap="round"
+                cx="50" cy="50" r="42" fill="none" stroke="rgb(var(--teal-ink))" strokeWidth="9" strokeLinecap="round"
                 strokeDasharray={2 * Math.PI * 42}
                 strokeDashoffset={2 * Math.PI * 42 * (1 - pct / 100)}
                 className="transition-all duration-700"
@@ -302,7 +303,13 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
       </div>
 
       {/* روابط سريعة */}
-      <div className="mt-6 grid gap-4 sm:grid-cols-3">
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Link to="/student/skills" className="block rounded-3xl border border-teal/30 bg-teal/5 p-5 transition hover:border-teal/60">
+          <div className="flex items-center gap-2 text-sm font-bold text-teal-light-ink">
+            <TrendingUp className="h-4 w-4" /> ملف مهاراتي
+          </div>
+          <p className="mt-2 text-xs leading-6 text-white/55">ما قِيس لك فعلا: فجواتك وما تُتقنه وما لم يُقس بعد</p>
+        </Link>
         <Link to="/student/cohorts" className="block rounded-3xl border border-teal/30 bg-teal/5 p-5 transition hover:border-teal/60">
           <div className="flex items-center gap-2 text-sm font-bold text-teal-light-ink">
             <CalendarDays className="h-4 w-4" /> الشعب المفتوحة
@@ -402,9 +409,9 @@ function SimulatedDashboard() {
           </div>
           <div className="relative h-24 w-24 shrink-0">
             <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90" aria-hidden="true">
-              <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="9" />
+              <circle cx="50" cy="50" r="42" fill="none" stroke="rgb(var(--teal-ink) / 0.15)" strokeWidth="9" />
               <circle
-                cx="50" cy="50" r="42" fill="none" stroke="#38A7B4" strokeWidth="9" strokeLinecap="round"
+                cx="50" cy="50" r="42" fill="none" stroke="rgb(var(--teal-ink))" strokeWidth="9" strokeLinecap="round"
                 strokeDasharray={2 * Math.PI * 42}
                 strokeDashoffset={2 * Math.PI * 42 * (1 - pct / 100)}
                 className="transition-all duration-700"
@@ -516,6 +523,9 @@ function SimulatedDashboard() {
         <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 lg:col-span-2">
           <div className="flex items-center gap-2 text-sm font-bold text-white/70">
             <TrendingUp className="h-4 w-4 text-teal-light-ink" /> مهاراتي — الحالي مقابل المستهدف (0–5)
+            <Link to="/student/skills" className="ms-auto text-[11px] font-bold text-teal-light-ink hover:text-white">
+              ملفي المقيس ←
+            </Link>
           </div>
           <div className="mt-4 space-y-3">
             {skills.map((s) => (
@@ -524,16 +534,7 @@ function SimulatedDashboard() {
                   <span className="font-bold">{s.name}</span>
                   <span className="text-white/45">{s.current} / {s.target}</span>
                 </div>
-                <div className="mt-1.5 flex gap-1">
-                  {[1, 2, 3, 4, 5].map((lvl) => (
-                    <span
-                      key={lvl}
-                      className={`h-2 flex-1 rounded-full ${
-                        lvl <= s.current ? "bg-teal" : lvl <= s.target ? "bg-white/10" : "bg-white/5"
-                      }`}
-                    />
-                  ))}
-                </div>
+                <SkillMeter level={s.current} className="mt-1.5" />
                 <p className="mt-1 text-[10px] text-white/55">{s.evidence}</p>
               </div>
             ))}

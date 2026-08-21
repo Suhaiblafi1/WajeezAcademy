@@ -8,10 +8,14 @@ import templatesJson from '../../data/catalog/composite-templates.v1.json'
 
 export const RESULT_SCHEMA_VERSION = 2
 
-const VALID_PATHWAY_IDS = new Set(pathways.map((p) => p.id))
-const VALID_TEMPLATE_IDS = new Set(
-  (templatesJson as { templates: { template_id: string }[] }).templates.map((t) => t.template_id),
-)
+/* ⚠ تُحسب عند كل نداء لا مرة واحدة عند تحميل الوحدة.
+   السبب (انحدار كشفه البند ط-١ بعد ع-١): الكتالوج صار يُثبَّت كسولا، فمصفوفة
+   pathways تكون فارغة لحظة تحميل هذه الوحدة. لقطة عند التحميل كانت تجعل
+   referencesAlive ترفض كل نتيجة محفوظة، وreadStoredResult تعيد discarded،
+   فتُحذف نتيجة المتعلم من جهازه بلا سبب. القراءة الحيّة تمنع ذلك. */
+const validPathwayIds = () => new Set(pathways.map((p) => p.id))
+const validTemplateIds = () =>
+  new Set((templatesJson as { templates: { template_id: string }[] }).templates.map((t) => t.template_id))
 
 export type StoredResultRead =
   | { status: 'ok'; result: DiagResult }
@@ -43,11 +47,11 @@ function referencesAlive(r: DiagResult): boolean {
   const kind = r.resultJson.kind
   if (kind === 'composite_template') {
     const comp = r.resultJson.composite
-    if (!isObj(comp) || typeof comp.template_id !== 'string' || !VALID_TEMPLATE_IDS.has(comp.template_id)) return false
+    if (!isObj(comp) || typeof comp.template_id !== 'string' || !validTemplateIds().has(comp.template_id)) return false
   }
   /* نتائج بلا مسار مفروض — المسار حينها غير إلزامي */
   if (kind === 'advisor_referral' || kind === 'guardrail_stop' || kind === 'exploratory_direction') return true
-  return r.top !== null && VALID_PATHWAY_IDS.has(r.top.id)
+  return r.top !== null && validPathwayIds().has(r.top.id)
 }
 
 /** يملأ الحقول الاختيارية الناقصة بقيم آمنة — ترحيل لا يخترع محتوى */

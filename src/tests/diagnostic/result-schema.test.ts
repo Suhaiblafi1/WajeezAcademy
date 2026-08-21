@@ -34,6 +34,25 @@ const validCompositeResult = (): DiagResult => ({
   },
 })
 
+describe('صلاحية المراجع تُقرأ حيّة لا لقطة (انحدار ع-١)', () => {
+  /* الكتالوج يُثبَّت كسولا في الإنتاج، فمصفوفة pathways تكون فارغة لحظة تحميل
+     وحدة المخطط. لو أخذت الوحدة لقطة عند التحميل لرفضت كل نتيجة محفوظة
+     وحذفتها من جهاز المتعلم. هذا الاختبار يثبت أن القراءة حيّة.
+     ملاحظة: setupFiles يثبّت الكتالوج قبل الاختبارات، فنحاكي الحالة بإفراغ
+     المصفوفة نفسها ثم إعادتها — وهي المصفوفة التي يعاد ملؤها في مكانها فعلا. */
+  it('نتيجة تُرفض والكتالوج فارغ، وتُقبل بعد تثبيته — بنفس النص المحفوظ', () => {
+    const raw = wrapResultForStorage(validResult())
+    const backup = pathways.slice()
+    try {
+      pathways.splice(0, pathways.length)
+      expect(readStoredResult(raw).status).toBe('discarded')
+    } finally {
+      pathways.splice(0, pathways.length, ...backup)
+    }
+    expect(readStoredResult(raw).status).toBe('ok')
+  })
+})
+
 describe('مخطط النتيجة المحفوظة وترحيلها', () => {
   it('نتيجة v2 مغلفة سليمة تقرأ كما هي', () => {
     const raw = wrapResultForStorage(validResult())

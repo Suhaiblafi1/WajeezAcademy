@@ -24,6 +24,7 @@ const PathwayPage = lazy(() => import('./pages/Pathway'))
 /* البوابات الداخلية تُحمَّل عند الطلب فقط — لا تبطئ الصفحات العامة */
 const StudentDashboard = lazy(() => import('./pages/student/Dashboard'))
 const MyPathway = lazy(() => import('./pages/student/MyPathway'))
+const MySkills = lazy(() => import('./pages/student/MySkills'))
 const CourseView = lazy(() => import('./pages/student/CourseView'))
 const Project = lazy(() => import('./pages/student/Project'))
 const Certificates = lazy(() => import('./pages/student/Certificates'))
@@ -117,6 +118,7 @@ export default function App() {
           <Route path="/p/:slug" element={<StaticPage />} />
           <Route path="/student" element={<StudentDashboard />} />
           <Route path="/student/pathway" element={<MyPathway />} />
+          <Route path="/student/skills" element={<MySkills />} />
           <Route path="/student/course/:courseId" element={<CourseView />} />
           <Route path="/student/project" element={<Project />} />
           <Route path="/student/certificates" element={<Certificates />} />

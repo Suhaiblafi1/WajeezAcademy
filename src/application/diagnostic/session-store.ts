@@ -2,6 +2,7 @@
    عند الانتقال للخادم يُستبدل بـ API دون تغيير واجهة الخدمة. */
 
 import type { DiagResult } from '../../data/diagnostic'
+import { hasCoreCatalog } from '../../data/core-catalog-source'
 import { readStoredResult, wrapResultForStorage, type StoredResultRead } from './result-schema'
 
 const PROGRESS_KEY = 'wajeez_diag_v2_progress'
@@ -80,8 +81,10 @@ export function loadLastResultSafe(): StoredResultRead {
     return { status: 'none' }
   }
   const read = readStoredResult(raw)
-  if (read.status === 'discarded') {
-    /* نتيجة لم يمكن ترحيلها — حذف آمن حتى لا تتعطل الصفحة عند كل زيارة */
+  if (read.status === 'discarded' && hasCoreCatalog()) {
+    /* نتيجة لم يمكن ترحيلها — حذف آمن حتى لا تتعطل الصفحة عند كل زيارة.
+       ⚠ الحذف مشروط بتحميل الكتالوج (البند ع-١): قبل تثبيته لا تُعرف المسارات
+       الصالحة، فيبدو كل شيء «غير صالح». الحذف حينها يمحو نتيجة سليمة بلا سبب. */
     try {
       localStorage.removeItem(LAST_RESULT_KEY)
     } catch {
