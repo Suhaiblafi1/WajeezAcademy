@@ -25,6 +25,7 @@ describe('تمرين الاسترجاع — التحليل (ح-٣)', () => {
       options: ['انتظام المدخلات', 'تكرارها اليومي', 'حسم القرار'],
       correctIndex: 1,
       explainAr: 'التكرار وحده لا يكفي.',
+      chapterIndex: null,
     })
   })
 
@@ -84,6 +85,21 @@ describe('تمرين الاسترجاع — التحليل (ح-٣)', () => {
 
   it('CRLF لا يفسد التحليل', () => {
     expect(parseChecks('س: سؤال\r\n- أ\r\n+ ب').checks).toHaveLength(1)
+  })
+
+
+  it('«ف: N» يربط السؤال بفصل فيديو فيصير نقطة تفتيش (ح-٢)', () => {
+    const { checks, errorsAr } = parseChecks('س: سؤال\nف: 2\n- أ\n+ ب')
+    expect(errorsAr).toEqual([])
+    expect(checks[0].chapterIndex).toBe(2)
+  })
+
+  it('سؤال بلا «ف:» يبقى سؤال وحدة لا نقطة تفتيش', () => {
+    expect(parseChecks('س: سؤال\n- أ\n+ ب').checks[0].chapterIndex).toBeNull()
+  })
+
+  it('ربط بفصل قبل أي سؤال: خطأ مقروء', () => {
+    expect(parseChecks('ف: 1').errorsAr.join(' ')).toContain('ربط بفصل قبل أي سؤال')
   })
 
   it('التحقق عند الحفظ: يقبل الصالح ويرفض ما لا يُفهم وما لا سؤال فيه', () => {

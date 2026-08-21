@@ -6,6 +6,7 @@ import type { PrismaClient } from '@prisma/client'
 import { getActiveSnapshot } from '../../catalog/snapshot-builder'
 import { CatalogAdminService } from '../../services/catalog-admin.service'
 import { validateChecks } from '../../../src/application/content/module-checks'
+import { validateVideo } from '../../../src/application/content/module-video'
 import { requirePermission } from '../auth-plugin'
 
 export function registerCatalogRoutes(app: FastifyInstance, prisma: PrismaClient) {
@@ -78,6 +79,12 @@ export function registerCatalogRoutes(app: FastifyInstance, prisma: PrismaClient
               message: `تمرين الاسترجاع غير مفهوم: ${r.errorsAr.join(' · ')}`,
             })
           }
+        }),
+        /* فيديو الوحدة (ح-٢) — المضيف بقائمة بيضاء والفصول بصيغة «د:ث عنوان» */
+        videoAr: z.string().max(4_000).optional().superRefine((v, ctx) => {
+          if (!v || !v.trim()) return
+          const r = validateVideo(v)
+          if (!r.ok) ctx.addIssue({ code: 'custom', message: `فيديو الوحدة غير مقبول: ${r.errorsAr.join(' · ')}` })
         }),
         hours: z.number().int().min(1),
       })).min(1),

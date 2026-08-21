@@ -67,6 +67,8 @@ interface RawModule {
   module_body_ar?: string
   /** تمرين الاسترجاع (ح-٣) — اختياري في المصدر */
   module_checks_ar?: string
+  /** فيديو الوحدة وفصوله (ح-٢) — اختياري في المصدر */
+  module_video_ar?: string
   expected_hours: number
 }
 interface RawTemplateCourseRef {
@@ -252,7 +254,7 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
         moduleId: m.module_id, version: 1, sequence: toInt(m.sequence) ?? 1, titleAr: m.title_ar,
         outcomeAr: m.module_outcome_ar ?? null, activityAr: m.practice_activity_ar ?? null,
         artifactAr: m.evidence_artifact_ar ?? null, bodyAr: m.module_body_ar ?? null,
-        checksAr: m.module_checks_ar ?? null,
+        checksAr: m.module_checks_ar ?? null, videoAr: m.module_video_ar ?? null,
         hours: toInt(m.expected_hours) ?? 0, status: 'published',
       },
     })

@@ -280,6 +280,9 @@ model CourseModuleVersion {
   /* تمرين الاسترجاع (البند ح-٣) — بصيغة نصّية «س:/-/+/ش:» تُخزَّن كما يُخزَّن
      المتن، فتُقارَن في سجل الإصدارات نصّا وتمرّ بنفس الحاكمية. */
   checksAr   String?
+  /* الفيديو وفصوله (البند ح-٢) — رابط مستضاف + فصول معنونة بطوابع زمنية.
+     لا مشغّل نبنيه: نستضيف ونربط، والقيمة في الفصول ونقاط التفتيش. */
+  videoAr    String?
   hours      Int
   status     String   @default("published")
   createdAt  DateTime @default(now())

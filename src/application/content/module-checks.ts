@@ -19,6 +19,8 @@ export interface ModuleCheck {
   options: string[]
   correctIndex: number
   explainAr: string | null
+  /** نقطة تفتيش بعد فصل فيديو (ح-٢) — رقم الفصل بدءا من ١، وnull لسؤال الوحدة */
+  chapterIndex: number | null
 }
 
 export interface ParseResult {
@@ -39,7 +41,7 @@ export function parseChecks(raw: string | null | undefined): ParseResult {
   if (!raw || !raw.trim()) return { checks, errorsAr }
 
   const lines = raw.replace(/\r\n?/g, '\n').split('\n')
-  let cur: { promptAr: string; options: string[]; correct: number[]; explainAr: string | null } | null = null
+  let cur: { promptAr: string; options: string[]; correct: number[]; explainAr: string | null; chapterIndex: number | null } | null = null
   const close = () => {
     if (!cur) return
     const at = `السؤال «${cur.promptAr.slice(0, 30)}»`
@@ -47,7 +49,7 @@ export function parseChecks(raw: string | null | undefined): ParseResult {
     else if (cur.options.length > MAX_OPTIONS) errorsAr.push(`${at}: أكثر من ${MAX_OPTIONS} خيارات`)
     else if (cur.correct.length === 0) errorsAr.push(`${at}: لا جواب صحيح — ضع + قبل الصحيح`)
     else if (cur.correct.length > 1) errorsAr.push(`${at}: أكثر من جواب صحيح — واحد فقط`)
-    else checks.push({ promptAr: cur.promptAr, options: cur.options, correctIndex: cur.correct[0], explainAr: cur.explainAr })
+    else checks.push({ promptAr: cur.promptAr, options: cur.options, correctIndex: cur.correct[0], explainAr: cur.explainAr, chapterIndex: cur.chapterIndex })
     cur = null
   }
 
@@ -57,13 +59,20 @@ export function parseChecks(raw: string | null | undefined): ParseResult {
     const q = /^س\s*[:：]\s*(.+)$/.exec(t)
     if (q) {
       close()
-      cur = { promptAr: q[1].trim(), options: [], correct: [], explainAr: null }
+      cur = { promptAr: q[1].trim(), options: [], correct: [], explainAr: null, chapterIndex: null }
       continue
     }
     const ex = /^ش\s*[:：]\s*(.+)$/.exec(t)
     if (ex) {
       if (cur) cur.explainAr = ex[1].trim()
       else errorsAr.push('شرح قبل أي سؤال — ابدأ بـ«س:»')
+      continue
+    }
+    /* «ف: N» يربط السؤال بفصل فيديو فيصير نقطة تفتيش بعده (ح-٢) */
+    const ch = /^ف\s*[:：]\s*(\d{1,2})$/.exec(t)
+    if (ch) {
+      if (cur) cur.chapterIndex = Number(ch[1])
+      else errorsAr.push('ربط بفصل قبل أي سؤال — ابدأ بـ«س:»')
       continue
     }
     const opt = /^([+\-*])\s+(.+)$/.exec(t)
@@ -73,7 +82,7 @@ export function parseChecks(raw: string | null | undefined): ParseResult {
       cur.options.push(opt[2].trim())
       continue
     }
-    errorsAr.push(`سطر غير مفهوم: «${t.slice(0, 40)}» — تبدأ الأسطر بـ«س:» أو «-» أو «+» أو «ش:»`)
+    errorsAr.push(`سطر غير مفهوم: «${t.slice(0, 40)}» — تبدأ الأسطر بـ«س:» أو «-» أو «+» أو «ش:» أو «ف:»`)
   }
   close()
 

@@ -81,6 +81,21 @@ const DEMO_CHECKS_AR = [
   '- إذا كان عدد خطواتها كبيرا',
   '+ إذا كان خطؤها غير مكلف ولا مملّ',
   'ش: الأتمتة تشتري دقة أو وقتا. فإن لم تشترِ أيّهما فالعائد صفر وإن توفّرت بقية الشروط.',
+  '',
+  'س: بأي شيء يبدأ تحليل الأتمتة؟',
+  'ف: 1',
+  '+ بالعملية نفسها',
+  '- باختيار الأداة',
+  '- بميزانية المشروع',
+  'ش: الأداة تأتي بعد فهم العملية — والعكس يُنتج أتمتة لعملية مكسورة.',
+].join('\n')
+
+/* فيديو ديمو بفصول (ح-٢) — رابط عام معروف، والقيمة في الفصول لا في المحتوى */
+const DEMO_VIDEO_AR = [
+  'https://www.youtube.com/watch?v=aircAruvnKk',
+  '0:00 لماذا نبدأ بالعملية لا بالأداة',
+  '2:30 الصفات الأربع بالتفصيل',
+  '7:10 تمرين على حالتك',
 ].join('\n')
 
 /* البند ح-١: متن درس ديمو على أول وحدة من دورة معلومة.
@@ -95,9 +110,10 @@ async function seedLessonBody(prisma: PrismaClient, courseId: string): Promise<'
   })
   if (!currentVersion) return 'skipped'
   /* حراسة مستقلة لكل حقل: وجود المتن لا يمنع بذر التمرين ولا العكس */
-  const data: { bodyAr?: string; checksAr?: string } = {}
+  const data: { bodyAr?: string; checksAr?: string; videoAr?: string } = {}
   if (!currentVersion.bodyAr) data.bodyAr = DEMO_LESSON_AR
   if (!currentVersion.checksAr) data.checksAr = DEMO_CHECKS_AR
+  if (!currentVersion.videoAr) data.videoAr = DEMO_VIDEO_AR
   if (Object.keys(data).length === 0) return 'skipped'
   await prisma.courseModuleVersion.update({ where: { id: currentVersion.id }, data })
   return 'written'

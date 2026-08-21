@@ -10,6 +10,7 @@ import SimulationNote from "@/components/SimulationNote";
 import VideoPlayer from "@/components/VideoPlayer";
 import LessonBody from "@/components/LessonBody";
 import ModuleCheck from "@/components/ModuleCheck";
+import ModuleVideo from "@/components/ModuleVideo";
 import CourseResources from "@/components/CourseResources";
 import { getEnrollment } from "@/services/access";
 import { zoom, type ZoomJoinInfo } from "@/services/zoom";
@@ -188,6 +189,10 @@ function CourseViewBody() {
                 القراءة يعلنها المتعلم بنفسه، فلا نزعم قياس ما لا نقيسه. */}
             {lesson.body ? (
               <div className="mt-4">
+                {/* ح-٢: الفيديو بفصوله ونقاط تفتيشه — قبل المتن، فالمشاهدة تسبق القراءة */}
+                {lesson.video && (
+                  <ModuleVideo raw={lesson.video} checksRaw={lesson.checks} moduleId={lesson.id} className="mb-6" />
+                )}
                 <LessonBody body={lesson.body} />
                 {/* ح-٣: الاسترجاع بعد القراءة مباشرة — لا كواجب منفصل */}
                 {lesson.checks && <ModuleCheck raw={lesson.checks} moduleId={lesson.id} className="mt-6" />}

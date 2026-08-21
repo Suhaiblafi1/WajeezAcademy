@@ -63,7 +63,7 @@ export default function CatalogAdmin() {
     id: "", pathwayId: "", sequence: "1", titleAr: "", shortPromiseAr: "", levelAr: "",
     totalHours: "", skillIds: [] as string[],
   });
-  const [modules, setModules] = useState([{ titleAr: "", outcomeAr: "", activityAr: "", artifactAr: "", bodyAr: "", checksAr: "", hours: "" }]);
+  const [modules, setModules] = useState([{ titleAr: "", outcomeAr: "", activityAr: "", artifactAr: "", bodyAr: "", checksAr: "", videoAr: "", hours: "" }]);
   const [crForm, setCrForm] = useState({ entityType: "course", entityId: "", payload: '{\n  "titleAr": "الاسم الجديد"\n}' });
   const [openForm, setOpenForm] = useState<"skill" | "course" | "pathway" | "cr" | null>(null);
 
@@ -112,11 +112,12 @@ export default function CatalogAdmin() {
         artifactAr: m.artifactAr.trim() || undefined,
         bodyAr: m.bodyAr.trim() || undefined,
         checksAr: m.checksAr.trim() || undefined,
+        videoAr: m.videoAr.trim() || undefined,
         hours: Number(m.hours) || 1,
       })),
     });
     setCourseForm({ id: "", pathwayId: "", sequence: "1", titleAr: "", shortPromiseAr: "", levelAr: "", totalHours: "", skillIds: [] });
-    setModules([{ titleAr: "", outcomeAr: "", activityAr: "", artifactAr: "", bodyAr: "", checksAr: "", hours: "" }]);
+    setModules([{ titleAr: "", outcomeAr: "", activityAr: "", artifactAr: "", bodyAr: "", checksAr: "", videoAr: "", hours: "" }]);
     setOpenForm(null);
   }, "أُنشئت الدورة كمسودة مرتبطة بالمسار والمهارات — أكمل سير الاعتماد ثم النشر");
 
@@ -332,12 +333,25 @@ export default function CatalogAdmin() {
                   />
                   <p className="mt-1 text-[10px] leading-5 text-white/50">
                     ثلاثة أسئلة كافية. علامة <span dir="ltr" className="font-mono">+</span> قبل الجواب الصحيح — واحد فقط لكل سؤال، والصيغة تُتحقَّق عند الحفظ.
+                    ولربط سؤال بفصل فيديو أضف سطر <span dir="ltr" className="font-mono">ف: 2</span> داخله فيصير نقطة تفتيش بعد الفصل الثاني.
+                  </p>
+                  {/* البند ح-٢: فيديو الوحدة وفصوله */}
+                  <textarea
+                    value={m.videoAr}
+                    onChange={(e) => setModules(modules.map((x, j) => (j === i ? { ...x, videoAr: e.target.value } : x)))}
+                    rows={4}
+                    placeholder={"فيديو الوحدة (اختياري)\nhttps://www.youtube.com/watch?v=…\n0:00 عنوان الفصل الأول\n2:30 عنوان الفصل الثاني"}
+                    dir="ltr"
+                    className={`${inputCls} mt-2 w-full font-mono leading-7`}
+                  />
+                  <p className="mt-1 text-[10px] leading-5 text-white/50">
+                    السطر الأول رابط YouTube أو Vimeo عبر https — لا مضيف آخر. ثم سطر لكل فصل بصيغة «د:ث عنوان الفصل».
                   </p>
                 </div>
               ))}
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-3">
-              <button type="button" onClick={() => setModules([...modules, { titleAr: "", outcomeAr: "", activityAr: "", artifactAr: "", bodyAr: "", checksAr: "", hours: "" }])}
+              <button type="button" onClick={() => setModules([...modules, { titleAr: "", outcomeAr: "", activityAr: "", artifactAr: "", bodyAr: "", checksAr: "", videoAr: "", hours: "" }])}
                 className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-1.5 text-xs font-bold text-white/60 hover:border-white/40">
                 <Plus className="h-3.5 w-3.5" /> وحدة إضافية
               </button>

@@ -12,6 +12,8 @@
 export type AnalyticsEvent =
   /* ح-٣: إجابة على تمرين استرجاع — رقم الوحدة والسؤال وصوابه، بلا نص حرّ */
   | 'module_check_answered'
+  /* ح-٢: فتح فصل فيديو — رقم الوحدة والفصل */
+  | 'module_video_chapter_opened'
   | 'hero_cta_clicked'
   | 'mirror_started'
   | 'mirror_completed'

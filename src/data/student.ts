@@ -61,6 +61,8 @@ export interface Lesson {
   hours?: number;
   /** تمرين الاسترجاع الخام (ح-٣) — null حين لا تمرين لهذه الوحدة */
   checks?: string | null;
+  /** فيديو الوحدة الخام (ح-٢) — null حين لا فيديو */
+  video?: string | null;
 }
 export interface QuizQuestion { q: string; options: string[]; correct: number; explain: string; }
 
@@ -79,6 +81,7 @@ export function courseLessons(c: Course): Lesson[] {
       kind: m.body ? "reading" : m.activity ? "activity" : "video",
       body: m.body,
       checks: m.checks,
+      video: m.video,
     }));
   }
   const d = courseDetails(c);

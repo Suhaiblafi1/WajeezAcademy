@@ -51,6 +51,8 @@ export interface CoreCatalogModule {
   module_body_ar?: string
   /** تمرين الاسترجاع (ح-٣) — صيغة «س:/-/+/ش:»؛ غائب حين لا تمرين */
   module_checks_ar?: string
+  /** فيديو الوحدة وفصوله (ح-٢) — رابط ثم أسطر «د:ث عنوان»؛ غائب حين لا فيديو */
+  module_video_ar?: string
 }
 
 export interface CoreCatalogRaw {

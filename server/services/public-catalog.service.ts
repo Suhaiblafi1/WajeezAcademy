@@ -199,6 +199,7 @@ export class PublicCatalogService {
             /* متن الدرس (ح-١) — يُحذف الحقل حين لا متن، فلا تنتفخ الحمولة العامة */
             ...(v?.bodyAr ? { module_body_ar: v.bodyAr } : {}),
             ...(v?.checksAr ? { module_checks_ar: v.checksAr } : {}),
+            ...(v?.videoAr ? { module_video_ar: v.videoAr } : {}),
           }
         }),
       ),
