@@ -8,6 +8,7 @@
 import bcrypt from 'bcryptjs'
 import type { PrismaClient } from '@prisma/client'
 import { seedRbac } from '../auth/rbac-seed'
+import { parseChecks } from '../../src/application/content/module-checks'
 
 export const DEMO_PASSWORD = 'Wajeez-Demo-2026'
 
@@ -65,18 +66,21 @@ const DEMO_LESSON_AR = [
 /* تمرين استرجاع ديمو (ح-٣) — ثلاثة أسئلة على درس الوحدة نفسه */
 const DEMO_CHECKS_AR = [
   'س: أي صفة لا تكفي وحدها لترشيح مهمة للأتمتة؟',
+  'م: automation_opportunity_analysis',
   '+ تكرارها اليومي',
   '- انتظام مدخلاتها',
   '- حسم قرارها بقاعدة',
   'ش: التكرار شرط لا يكفي. مهمة متكررة بمدخلات غير منظّمة أو بقرار تقديري تفشل أتمتتها.',
   '',
   'س: ما علامة أن قرار المهمة «محسوم بقاعدة»؟',
+  'م: process_mapping',
   '- أن يتخذه المسؤول سريعا',
   '+ أن تُكتب شروطه: إن كان كذا فافعل كذا',
   '- أن يكون القرار صحيحا غالبا',
   'ش: القاعدة تُكتب شروطا صريحة. «غالبا صحيح» تقدير لا قاعدة، ولا تصلح للأتمتة.',
   '',
   'س: متى تُؤجَّل أتمتة مهمة تحقق الصفات الأربع؟',
+  'م: financial_decision_making',
   '- إذا كانت أسبوعية لا يومية',
   '- إذا كان عدد خطواتها كبيرا',
   '+ إذا كان خطؤها غير مكلف ولا مملّ',
@@ -84,6 +88,7 @@ const DEMO_CHECKS_AR = [
   '',
   'س: بأي شيء يبدأ تحليل الأتمتة؟',
   'ف: 1',
+  'م: operations_basics',
   '+ بالعملية نفسها',
   '- باختيار الأداة',
   '- بميزانية المشروع',
@@ -112,7 +117,10 @@ async function seedLessonBody(prisma: PrismaClient, courseId: string): Promise<'
   /* حراسة مستقلة لكل حقل: وجود المتن لا يمنع بذر التمرين ولا العكس */
   const data: { bodyAr?: string; checksAr?: string; videoAr?: string } = {}
   if (!currentVersion.bodyAr) data.bodyAr = DEMO_LESSON_AR
-  if (!currentVersion.checksAr) data.checksAr = DEMO_CHECKS_AR
+  /* ⚠ يُعاد كتابة تمرين الديمو إن كان بلا ربط مهارات (ح-٤): محتوى الديمو
+     مُولَّد لا مُؤلَّف، فتحديثه على قاعدة تطوير قائمة مقصود. لا يمسّ إنتاجا:
+     هذه الدالة لا تُشغَّل إلا في بذر الديمو. */
+  if (!currentVersion.checksAr || !currentVersion.checksAr.includes('م:')) data.checksAr = DEMO_CHECKS_AR
   if (!currentVersion.videoAr) data.videoAr = DEMO_VIDEO_AR
   if (Object.keys(data).length === 0) return 'skipped'
   await prisma.courseModuleVersion.update({ where: { id: currentVersion.id }, data })
@@ -284,6 +292,48 @@ async function seedDemoRemeasure(prisma: PrismaClient): Promise<'written' | 'ski
   return 'written'
 }
 
+/* البند ح-٤: بطاقات استرجاع متباعد للطالب الديمو — بعضها استحق وبعضها لم يحن،
+   وواحدة في قمة السلّم وأخرى عادت لأوله بعد خطأ. بلا هذه البيانات تبقى صفحة
+   المراجعة فارغة فلا يُرى السلوك. المواعيد نسبية للحظة البذر فتبقى واقعية. */
+async function seedDemoRetrievalCards(prisma: PrismaClient): Promise<'written' | 'skipped'> {
+  const student = await prisma.user.findUnique({ where: { email: 'student.demo@wajeez.local' } })
+  if (!student) return 'skipped'
+  const moduleId = 'C-AUT-101-M1'
+  const existing = await prisma.retrievalCard.count({ where: { userId: student.id, moduleId } })
+  if (existing > 0) return 'skipped'
+
+  const version = await prisma.courseModuleVersion.findFirst({ where: { moduleId }, orderBy: { version: 'desc' } })
+  if (!version) return 'skipped'
+  const { checks } = parseChecks(version.checksAr)
+  if (checks.length === 0) return 'skipped'
+
+  const now = Date.now()
+  /* خطوة · إزاحة الموعد بالأيام (سالب = استحق) · صواب سابق · أخطاء */
+  const plan: [number, number, boolean | null, number][] = [
+    [1, -2, true, 0],
+    [0, -1, false, 1],
+    [4, 40, true, 0],
+    [2, -0.04, true, 1],
+  ]
+  const data = checks.slice(0, plan.length).map((c, i) => {
+    const [step, offsetDays, lastCorrect, wrongCount] = plan[i]
+    return {
+      userId: student.id,
+      moduleId,
+      checkIndex: i,
+      skillSlug: c.skillSlug,
+      step,
+      dueAt: new Date(now + offsetDays * 86400_000),
+      lastAnswerAt: new Date(now - 3 * 86400_000),
+      lastCorrect,
+      correctCount: lastCorrect === true ? step + 1 : step,
+      wrongCount,
+    }
+  })
+  await prisma.retrievalCard.createMany({ data, skipDuplicates: true })
+  return 'written'
+}
+
 export async function seedDemo(prisma: PrismaClient): Promise<{ users: number; richData: 'created' | 'existing' }> {
   await seedRbac(prisma)
 
@@ -297,6 +347,7 @@ export async function seedDemo(prisma: PrismaClient): Promise<{ users: number; r
   /* متجه القياس ثم القياس البعديّ — بهذا الترتيب: الفرق يحتاج مرجعا قبليّا */
   await seedDemoSkillVector(prisma)
   await seedDemoRemeasure(prisma)
+  await seedDemoRetrievalCards(prisma)
 
   /* إن كان الطالب الديمو مسجلا في شعبة فالبيانات الغنية موجودة — لا تكرار */
   const alreadyRich = await prisma.enrollment.findFirst({ where: { userId: student.id } })
@@ -585,6 +636,7 @@ export async function seedDemo(prisma: PrismaClient): Promise<{ users: number; r
      كلتاهما idempotent فلا يتكرر شيء. */
   await seedDemoSkillVector(prisma)
   await seedDemoRemeasure(prisma)
+  await seedDemoRetrievalCards(prisma)
 
   void superadmin // الحساب يُنشأ ضمن ensureUser أعلاه — لا بيانات إضافية له
   return { users: DEMO_ACCOUNTS.length, richData: 'created' }

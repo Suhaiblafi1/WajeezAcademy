@@ -38,6 +38,7 @@ model User {
   advisorCases AdvisorCase[] @relation("CaseClient")
   advisorAssignments AdvisorAssignment[] @relation("CaseAdvisor")
   skillRemeasures SkillRemeasure[] @relation("SkillRemeasureUser")
+  retrievalCards RetrievalCard[] @relation("RetrievalCardUser")
 }
 
 model Role {
@@ -1327,6 +1328,28 @@ model SkillRemeasure {
   enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
   @@unique([enrollmentId, skillSlug])
   @@index([userId, measuredAt])
+}
+
+/* بطاقة استرجاع متباعد (البند ح-٤) — سؤال بعينه في وحدة بعينها لمتعلم بعينه.
+   step موضعه في سلّم التباعد (١ · ٣ · ٧ · ٢١ · ٦٠ يوما)، والصحيح يتقدم خطوة
+   والخطأ يعيد إلى أوله. ⚠ لا يكتب هذا الجدول في متجه المهارات ولا يقربه:
+   الاسترجاع دليل تذكّر، والمستوى يأتي من القياس (مؤشر وجيز والقياس البعديّ). */
+model RetrievalCard {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @db.Uuid
+  moduleId     String
+  checkIndex   Int      // ترتيب السؤال في تمرين الوحدة، بدءا من صفر
+  skillSlug    String?  // ربط «م: slug» إن وُجد
+  step         Int      @default(0)
+  dueAt        DateTime
+  lastAnswerAt DateTime?
+  lastCorrect  Boolean?
+  correctCount Int      @default(0)
+  wrongCount   Int      @default(0)
+  createdAt    DateTime @default(now())
+  user         User     @relation("RetrievalCardUser", fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, moduleId, checkIndex])
+  @@index([userId, dueAt])
 }
 
 model Certificate {

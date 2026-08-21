@@ -12,6 +12,7 @@ import { AssessmentService } from '../../services/assessment.service'
 import { ProgressService } from '../../services/progress.service'
 import { CertificateService } from '../../services/certificate.service'
 import { SkillGrowthService } from '../../services/skill-growth.service'
+import { RetrievalService } from '../../services/retrieval.service'
 import { AuthError } from '../../services/auth.service'
 import { requirePermission } from '../auth-plugin'
 
@@ -56,6 +57,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
   const progress = new ProgressService(prisma)
   const certificates = new CertificateService(prisma)
   const skillGrowth = new SkillGrowthService(prisma)
+  const retrieval = new RetrievalService(prisma)
 
   /* ══════════ بوابة المتعلم ══════════ */
 
@@ -150,6 +152,33 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
       skillGrowth.pendingInvites(req.auth!.userId),
     ])
     return { ...growth, invites }
+  })
+
+  /* ── الاسترجاع المتباعد (ح-٤) ── */
+
+  app.get('/api/learner/retrieval', {
+    preHandler: requirePermission('learner.portal'),
+    schema: { tags: ['learner-portal'], summary: 'بطاقات الاسترجاع — البيانات خاما، والاشتقاق في العميل بوحدة نقية' },
+  }, async (req) => ({ cards: await retrieval.myCards(req.auth!.userId) }))
+
+  app.post('/api/learner/retrieval/modules/:moduleId', {
+    preHandler: requirePermission('learner.portal'),
+    schema: { tags: ['learner-portal'], summary: 'فتح بطاقات وحدة بعد إتمام تمرينها — لا يُعاد جدولة الموجود' },
+  }, async (req, reply) => {
+    const { moduleId } = z.object({ moduleId: z.string().min(3).max(80) }).parse(req.params)
+    return reply.status(201).send(await retrieval.openCards(req.auth!.userId, moduleId))
+  })
+
+  app.post('/api/learner/retrieval/answer', {
+    preHandler: requirePermission('learner.portal'),
+    schema: { tags: ['learner-portal'], summary: 'تسجيل نتيجة استرجاع — الصحيح يتقدم خطوة والخطأ يعيد إلى أول السلّم' },
+  }, async (req) => {
+    const body = z.object({
+      moduleId: z.string().min(3).max(80),
+      checkIndex: z.number().int().min(0).max(20),
+      correct: z.boolean(),
+    }).parse(req.body)
+    return retrieval.answer(req.auth!.userId, body.moduleId, body.checkIndex, body.correct)
   })
 
   app.get('/api/learner/certificates', {

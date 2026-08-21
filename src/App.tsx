@@ -26,6 +26,7 @@ const StudentDashboard = lazy(() => import('./pages/student/Dashboard'))
 const MyPathway = lazy(() => import('./pages/student/MyPathway'))
 const MySkills = lazy(() => import('./pages/student/MySkills'))
 const Remeasure = lazy(() => import('./pages/student/Remeasure'))
+const Review = lazy(() => import('./pages/student/Review'))
 const CourseView = lazy(() => import('./pages/student/CourseView'))
 const Project = lazy(() => import('./pages/student/Project'))
 const Certificates = lazy(() => import('./pages/student/Certificates'))
@@ -122,6 +123,7 @@ export default function App() {
           <Route path="/student/pathway" element={<MyPathway />} />
           <Route path="/student/skills" element={<MySkills />} />
           <Route path="/student/remeasure/:enrollmentId" element={<Remeasure />} />
+          <Route path="/student/review" element={<Review />} />
           <Route path="/student/course/:courseId" element={<CourseView />} />
           <Route path="/student/project" element={<Project />} />
           <Route path="/student/certificates" element={<Certificates />} />

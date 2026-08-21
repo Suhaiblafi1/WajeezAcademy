@@ -12,6 +12,7 @@
      ش: التكرار وحده لا يكفي — لا بد من انتظام المدخلات وحسم القرار بقاعدة.
 
    `+` تسبق الجواب الصحيح (واحد لا أكثر) · `ش:` الشرح (اختياري) ·
+   `ف: N` يربطه بفصل فيديو (ح-٢) · `م: slug` يربطه بمهارة من الكتالوج (ح-٤) ·
    الأسئلة يفصلها سطر فارغ أو سؤال جديد. */
 
 export interface ModuleCheck {
@@ -21,6 +22,9 @@ export interface ModuleCheck {
   explainAr: string | null
   /** نقطة تفتيش بعد فصل فيديو (ح-٢) — رقم الفصل بدءا من ١، وnull لسؤال الوحدة */
   chapterIndex: number | null
+  /** شريحة المهارة التي يقيسها السؤال (ح-٤) — null فتُعرض البطاقة بعنوان الوحدة.
+      ربطها لا يرفع مستوى المهارة ولا يخفضه: الاسترجاع دليل تذكّر لا قياس. */
+  skillSlug: string | null
 }
 
 export interface ParseResult {
@@ -41,7 +45,7 @@ export function parseChecks(raw: string | null | undefined): ParseResult {
   if (!raw || !raw.trim()) return { checks, errorsAr }
 
   const lines = raw.replace(/\r\n?/g, '\n').split('\n')
-  let cur: { promptAr: string; options: string[]; correct: number[]; explainAr: string | null; chapterIndex: number | null } | null = null
+  let cur: { promptAr: string; options: string[]; correct: number[]; explainAr: string | null; chapterIndex: number | null; skillSlug: string | null } | null = null
   const close = () => {
     if (!cur) return
     const at = `السؤال «${cur.promptAr.slice(0, 30)}»`
@@ -49,7 +53,7 @@ export function parseChecks(raw: string | null | undefined): ParseResult {
     else if (cur.options.length > MAX_OPTIONS) errorsAr.push(`${at}: أكثر من ${MAX_OPTIONS} خيارات`)
     else if (cur.correct.length === 0) errorsAr.push(`${at}: لا جواب صحيح — ضع + قبل الصحيح`)
     else if (cur.correct.length > 1) errorsAr.push(`${at}: أكثر من جواب صحيح — واحد فقط`)
-    else checks.push({ promptAr: cur.promptAr, options: cur.options, correctIndex: cur.correct[0], explainAr: cur.explainAr, chapterIndex: cur.chapterIndex })
+    else checks.push({ promptAr: cur.promptAr, options: cur.options, correctIndex: cur.correct[0], explainAr: cur.explainAr, chapterIndex: cur.chapterIndex, skillSlug: cur.skillSlug })
     cur = null
   }
 
@@ -59,7 +63,7 @@ export function parseChecks(raw: string | null | undefined): ParseResult {
     const q = /^س\s*[:：]\s*(.+)$/.exec(t)
     if (q) {
       close()
-      cur = { promptAr: q[1].trim(), options: [], correct: [], explainAr: null, chapterIndex: null }
+      cur = { promptAr: q[1].trim(), options: [], correct: [], explainAr: null, chapterIndex: null, skillSlug: null }
       continue
     }
     const ex = /^ش\s*[:：]\s*(.+)$/.exec(t)
@@ -75,6 +79,13 @@ export function parseChecks(raw: string | null | undefined): ParseResult {
       else errorsAr.push('ربط بفصل قبل أي سؤال — ابدأ بـ«س:»')
       continue
     }
+    /* «م: slug» يربط السؤال بمهارة مصنّفة، فتصير بطاقة الاسترجاع بطاقة مهارة (ح-٤) */
+    const sk = /^م\s*[:：]\s*([a-z0-9_]{2,80})$/.exec(t)
+    if (sk) {
+      if (cur) cur.skillSlug = sk[1]
+      else errorsAr.push('ربط بمهارة قبل أي سؤال — ابدأ بـ«س:»')
+      continue
+    }
     const opt = /^([+\-*])\s+(.+)$/.exec(t)
     if (opt) {
       if (!cur) { errorsAr.push('خيار قبل أي سؤال — ابدأ بـ«س:»'); continue }
@@ -82,7 +93,7 @@ export function parseChecks(raw: string | null | undefined): ParseResult {
       cur.options.push(opt[2].trim())
       continue
     }
-    errorsAr.push(`سطر غير مفهوم: «${t.slice(0, 40)}» — تبدأ الأسطر بـ«س:» أو «-» أو «+» أو «ش:» أو «ف:»`)
+    errorsAr.push(`سطر غير مفهوم: «${t.slice(0, 40)}» — تبدأ الأسطر بـ«س:» أو «-» أو «+» أو «ش:» أو «ف:» أو «م:»`)
   }
   close()
 
@@ -93,9 +104,23 @@ export function parseChecks(raw: string | null | undefined): ParseResult {
   return { checks, errorsAr }
 }
 
-/** صيغة صالحة بلا أخطاء وبسؤال واحد على الأقل — تُستعمل عند الحفظ */
-export function validateChecks(raw: string | null | undefined): { ok: true } | { ok: false; errorsAr: string[] } {
+/**
+ * صيغة صالحة بلا أخطاء وبسؤال واحد على الأقل — تُستعمل عند الحفظ.
+ * @param knownSlugs شرائح المهارات المعروفة؛ إن مُرِّرت رُفض ربطٌ بمهارة غير موجودة.
+ *   تُمرَّر من حدود الكتابة لا تُستورد هنا، فتبقى هذه الوحدة نقية بلا كتالوج.
+ */
+export function validateChecks(
+  raw: string | null | undefined,
+  knownSlugs?: ReadonlySet<string>,
+): { ok: true } | { ok: false; errorsAr: string[] } {
   const { checks, errorsAr } = parseChecks(raw)
+  if (knownSlugs) {
+    for (const c of checks) {
+      if (c.skillSlug && !knownSlugs.has(c.skillSlug)) {
+        errorsAr.push(`مهارة غير معروفة في «م: ${c.skillSlug}» — اختر شريحة من كتالوج المهارات`)
+      }
+    }
+  }
   if (errorsAr.length > 0) return { ok: false, errorsAr }
   if (checks.length === 0) return { ok: false, errorsAr: ['لا سؤال مفهوم — الصيغة: «س: نص» ثم خيارات بـ- و+'] }
   return { ok: true }

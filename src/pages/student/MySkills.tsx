@@ -11,7 +11,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import {
-  Target, CheckCircle2, HelpCircle, Compass, Sparkles, ArrowLeft, Loader2, BookOpen, TrendingUp, Ruler,
+  Target, CheckCircle2, HelpCircle, Compass, Sparkles, ArrowLeft, Loader2, BookOpen, TrendingUp, Ruler, Layers,
 } from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import SkillMeter from "@/components/SkillMeter";
@@ -28,6 +28,9 @@ import {
   buildGrowthSummary, growthBySlug, mergeMeasured,
   type GrowthSummary, type RemeasureRecord,
 } from "@/application/student/skill-growth";
+import {
+  buildRetrievalSummary, type RetrievalCard,
+} from "@/application/student/retrieval-schedule";
 import SkillDelta from "@/components/SkillDelta";
 import { fmtWhen } from "@/utils/format";
 
@@ -222,6 +225,28 @@ function GrowthPanel({ summary }: { summary: GrowthSummary }) {
   );
 }
 
+/** شريط المراجعة المستحقة (ح-٤) — سطر واحد لا لوحة: البطاقات مربوطة بمهارات،
+    فمكان التذكير بها هو ملف المهارات. ولا يظهر السطر بلا استحقاق. */
+function DueReviewStrip({ due }: { due: number }) {
+  if (due <= 0) return null;
+  return (
+    <Link
+      to="/student/review"
+      className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-teal/30 bg-teal-ink/[0.07] px-5 py-4 transition hover:border-teal/60"
+    >
+      <span className="flex items-center gap-2 text-sm font-bold">
+        <Layers className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
+        <span className="tabular-nums text-teal-light-ink">{due}</span>
+        بطاقة استرجاع استحقّت اليوم
+      </span>
+      <span className="flex items-center gap-1.5 text-xs font-bold text-teal-light-ink">
+        اذهب إلى مراجعتي
+        <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+      </span>
+    </Link>
+  );
+}
+
 /** دعوة القياس البعديّ — لدورات أتمّها المتعلم ولم يُقس نموه فيها بعد */
 function GrowthInvites({ invites }: { invites: GrowthPayload["invites"] }) {
   if (invites.length === 0) return null;
@@ -257,6 +282,7 @@ export default function MySkills() {
   const catalogVersion = usePublishedContent();
   const [server, setServer] = useState<{ done: boolean; snapshot: unknown }>({ done: false, snapshot: null });
   const [growth, setGrowth] = useState<GrowthPayload>({ records: [], nameBySlug: {}, invites: [] });
+  const [dueReview, setDueReview] = useState(0);
 
   /* لقطة الخادم تعبر الأجهزة — نطلبها مرة، ونتابع بلا حجب لو تعذّرت.
      والقياس البعديّ (ح-٧) يُجلب معها بالتوازي: فشله لا يحجب ملف المهارات. */
@@ -264,9 +290,10 @@ export default function MySkills() {
     let alive = true;
     void (async () => {
       const safe = async <T,>(pr: Promise<T>): Promise<T | null> => pr.then((v) => v).catch(() => null);
-      const [prof, grw] = await Promise.all([
+      const [prof, grw, ret] = await Promise.all([
         safe(apiGet<{ profile?: { diagnosticSnapshot?: unknown } }>("/api/learner/profile")),
         safe(apiGet<GrowthPayload>("/api/learner/skill-growth")),
+        safe(apiGet<{ cards: RetrievalCard[] }>("/api/learner/retrieval")),
       ]);
       if (!alive) return;
       setServer({ done: true, snapshot: prof?.profile?.diagnosticSnapshot ?? null });
@@ -275,6 +302,8 @@ export default function MySkills() {
         nameBySlug: grw?.nameBySlug ?? {},
         invites: grw?.invites ?? [],
       });
+      /* الاستحقاق يُحسب على لحظة الجلب لا على ساعة كل رسم */
+      setDueReview(buildRetrievalSummary(ret?.cards ?? [], new Date()).due);
     })();
     return () => {
       alive = false;
@@ -337,6 +366,7 @@ export default function MySkills() {
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           </Link>
         </div>
+        <DueReviewStrip due={dueReview} />
         <GrowthInvites invites={growth.invites} />
         <GrowthPanel summary={summary} />
       </PortalLayout>
@@ -347,6 +377,7 @@ export default function MySkills() {
     <PortalLayout title="ملف مهاراتي">
       <SimulationNote what="تقدّم الدورات المرتبط بالمهارات" />
       <Hero p={profile} />
+      <DueReviewStrip due={dueReview} />
       <GrowthInvites invites={growth.invites} />
       <GrowthPanel summary={summary} />
 

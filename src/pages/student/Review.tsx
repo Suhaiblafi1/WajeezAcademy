@@ -1,0 +1,232 @@
+/* مراجعتي (البند ح-٤) — الاسترجاع المتباعد: بطاقة سؤال تعود بعد يوم، ثم ثلاثة،
+   ثم أسبوع، ثم ثلاثة أسابيع، ثم شهرين. الجمع بين الاسترجاع والتباعد هو ما
+   يسنده الدليل، لا أحدهما وحده.
+
+   ما ليس في هذه الشاشة بقصد:
+   - لا نقاط ولا سلسلة أيام ولا لوحة صدارة. البحث يجد أثر التلعيب الإجمالي
+     صغيرا وبعض حلقاته ترفع التسرب — فالمؤشر الوحيد هو «ما استُحق اليوم».
+   - لا يرفع الاسترجاع مستوى مهارة ولا يخفضه: المستوى من القياس (مؤشر وجيز
+     والقياس البعديّ ح-٧). ويُقال ذلك للمتعلم صراحة لا في الكود وحده.
+   - لا استرجاع قبل موعده: من أراد التقديم فقد ألغى الفائدة، والخادم يرفضه. */
+
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router";
+import { ArrowLeft, BookOpen, CalendarClock, CheckCircle2, Layers, Loader2, RefreshCw, Target } from "lucide-react";
+import PortalLayout from "./PortalLayout";
+import CheckQuestion from "@/components/CheckQuestion";
+import { apiGet, apiPost } from "@/services/api";
+import { fmtWhen } from "@/utils/format";
+import { usePublishedContent } from "@/services/public-content";
+import { buildCheckTextIndex } from "@/data/module-checks-index";
+import { skillNameOf } from "@/data/skill-names";
+import {
+  buildRetrievalSummary, buildReviewQueue, dueCards,
+  type RetrievalCard, type ReviewItem,
+} from "@/application/student/retrieval-schedule";
+
+const HONESTY_NOTE =
+  "الاسترجاع لا يرفع مستوى مهارتك ولا يخفضه — مستواك يأتي من القياس في مؤشر وجيز ومن إعادة القياس بعد الدورة. " +
+  "هذه البطاقات لتثبيت ما تعلمته، لا لتقييمك.";
+
+/** بطاقة واحدة: السؤال ثم التصحيح ثم موعد العودة */
+function ReviewCard({
+  item, chosen, onPick, saved,
+}: {
+  item: ReviewItem;
+  chosen: number | undefined;
+  onPick: (oi: number) => void;
+  saved: { step: number; dueAt: string } | null;
+}) {
+  const correct = chosen !== undefined && chosen === item.correctIndex;
+  return (
+    <li className="rounded-3xl border border-white/10 bg-white/[0.03] p-5 sm:p-6">
+      <div className="mb-3 flex flex-wrap items-center gap-2 text-[11px] text-white/50">
+        {item.skillNameAr && (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-teal/40 px-2.5 py-0.5 font-bold text-teal-light-ink">
+            <Target className="h-3 w-3" aria-hidden="true" />
+            {item.skillNameAr}
+          </span>
+        )}
+        <span className="inline-flex items-center gap-1.5">
+          <BookOpen className="h-3 w-3" aria-hidden="true" />
+          {[item.courseTitleAr, item.moduleTitleAr].filter(Boolean).join(" · ")}
+        </span>
+      </div>
+
+      <CheckQuestion
+        check={{
+          promptAr: item.promptAr,
+          options: item.options,
+          correctIndex: item.correctIndex,
+          explainAr: item.explainAr,
+          chapterIndex: null,
+          skillSlug: item.skillSlug,
+        }}
+        index={null}
+        chosen={chosen}
+        onPick={onPick}
+      />
+
+      <p className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/8 pt-3 text-[11px] text-white/55">
+        <CalendarClock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+        {saved ? (
+          <>تعود هذه البطاقة في {fmtWhen(saved.dueAt)}.</>
+        ) : chosen === undefined ? (
+          <>تعود بعد {item.nextIfCorrectAr} لو استرجعتها، وبعد {item.nextIfWrongAr} لو لم تسترجعها.</>
+        ) : (
+          <>{correct ? `استرجعتها — تعود بعد ${item.nextIfCorrectAr}.` : `لم تسترجعها — تعود بعد ${item.nextIfWrongAr}.`}</>
+        )}
+      </p>
+    </li>
+  );
+}
+
+export default function Review() {
+  const catalogVersion = usePublishedContent();
+  /* اللقطة تحمل بطاقاتها ولحظة قراءتها معا: الاستحقاق يُحسب على لحظة الجلب لا
+     على ساعة كل رسم، فلا تتحرك القائمة تحت يد المتعلم وهو يجيب. */
+  const [snap, setSnap] = useState<{ cards: RetrievalCard[]; at: string } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [reload, setReload] = useState(0);
+  const [picked, setPicked] = useState<Record<string, number>>({});
+  const [saved, setSaved] = useState<Record<string, { step: number; dueAt: string }>>({});
+
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      const r = await apiGet<{ cards: RetrievalCard[] }>("/api/learner/retrieval").catch(
+        (e: unknown) => (e instanceof Error ? e.message : "تعذر تحميل بطاقات المراجعة"),
+      );
+      if (!alive) return;
+      const at = new Date().toISOString();
+      if (typeof r === "string") { setError(r); setSnap({ cards: [], at }); }
+      else { setError(null); setSnap({ cards: r.cards, at }); }
+    })();
+    return () => { alive = false; };
+  }, [reload]);
+
+  const { queue, summary } = useMemo(() => {
+    /* الكتالوج كسول (ع-١): الفهرس يُبنى بعد تثبيته لا قبله */
+    void catalogVersion;
+    if (!snap) return { queue: [] as ReviewItem[], summary: null };
+    const now = new Date(snap.at);
+    const text = buildCheckTextIndex();
+    const names: Record<string, string> = {};
+    for (const c of snap.cards) if (c.skillSlug) names[c.skillSlug] = skillNameOf(c.skillSlug);
+    return {
+      queue: buildReviewQueue(dueCards(snap.cards, now), text, names),
+      summary: buildRetrievalSummary(snap.cards, now),
+    };
+  }, [snap, catalogVersion]);
+
+  const answer = async (item: ReviewItem, optionIndex: number) => {
+    const key = `${item.moduleId}#${item.checkIndex}`;
+    if (picked[key] !== undefined) return;
+    setPicked((p) => ({ ...p, [key]: optionIndex }));
+    const res = await apiPost<{ step: number; dueAt: string }>("/api/learner/retrieval/answer", {
+      moduleId: item.moduleId,
+      checkIndex: item.checkIndex,
+      correct: optionIndex === item.correctIndex,
+    }).catch(() => null);
+    if (res) setSaved((s) => ({ ...s, [key]: { step: res.step, dueAt: res.dueAt } }));
+  };
+
+  if (snap === null) {
+    return (
+      <PortalLayout title="مراجعتي">
+        <div className="grid place-items-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-teal-ink" aria-label="جارٍ التحميل" />
+        </div>
+      </PortalLayout>
+    );
+  }
+
+  const answeredAll = queue.length > 0 && queue.every((i) => picked[`${i.moduleId}#${i.checkIndex}`] !== undefined);
+
+  return (
+    <PortalLayout title="مراجعتي">
+      {error && (
+        <p className="mb-4 rounded-2xl border border-red-500/30 bg-red-500/10 px-5 py-4 text-sm text-red-200">{error}</p>
+      )}
+
+      <section className="rounded-3xl border border-teal/30 bg-teal-ink/[0.07] p-6">
+        <div className="flex flex-wrap items-end justify-between gap-6">
+          <div>
+            <p className="text-xs text-white/60">بطاقات استحقّت الاسترجاع اليوم</p>
+            <p className="mt-1 text-5xl font-black leading-none text-teal-light-ink tabular-nums">{summary?.due ?? 0}</p>
+            {summary && summary.due === 0 && summary.nextDueAt && (
+              <p className="mt-2 text-xs text-white/55">التالية في {fmtWhen(summary.nextDueAt)}</p>
+            )}
+          </div>
+          <dl className="grid grid-cols-3 gap-5 text-center">
+            {[
+              { k: "كل بطاقاتك", v: summary?.total ?? 0 },
+              { k: "ثابتة الاسترجاع", v: summary?.settled ?? 0 },
+              { k: "عادت لأول السلّم", v: summary?.restarted ?? 0 },
+            ].map((t) => (
+              <div key={t.k}>
+                <dd className="text-2xl font-black tabular-nums">{t.v}</dd>
+                <dt className="mt-0.5 text-[11px] text-white/55">{t.k}</dt>
+              </div>
+            ))}
+          </dl>
+        </div>
+        <p className="mt-4 text-[11px] leading-relaxed text-white/55">{HONESTY_NOTE}</p>
+      </section>
+
+      {queue.length === 0 ? (
+        <div className="mt-6 grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] px-6 py-16 text-center">
+          <Layers className="h-12 w-12 text-white/20" aria-hidden="true" />
+          <h2 className="mt-4 text-xl font-black">
+            {summary && summary.total === 0 ? "لا بطاقات بعد" : "لا شيء مستحق الآن"}
+          </h2>
+          <p className="mt-2 max-w-md text-sm leading-7 text-white/60">
+            {summary && summary.total === 0
+              ? "تُفتح بطاقات المراجعة من تمرين الاسترجاع في نهاية كل وحدة — أنهِ وحدة ثم اطلب جدولة عودتها."
+              : "التباعد نفسه هو الفائدة، فلا نقدّم موعدا. عد في الموعد المذكور أعلاه."}
+          </p>
+          <Link
+            to="/student/learning"
+            className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-full bg-gold px-6 text-sm font-black text-on-gold transition hover:bg-gold/90"
+          >
+            اذهب إلى دوراتي
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          </Link>
+        </div>
+      ) : (
+        <>
+          <ul className="mt-6 flex flex-col gap-4">
+            {queue.map((item) => {
+              const key = `${item.moduleId}#${item.checkIndex}`;
+              return (
+                <ReviewCard
+                  key={key}
+                  item={item}
+                  chosen={picked[key]}
+                  onPick={(oi) => void answer(item, oi)}
+                  saved={saved[key] ?? null}
+                />
+              );
+            })}
+          </ul>
+          {answeredAll && (
+            <div className="mt-6 flex flex-wrap items-center gap-3 rounded-3xl border border-teal/30 bg-teal-ink/[0.07] p-5">
+              <CheckCircle2 className="h-5 w-5 shrink-0 text-teal-light-ink" aria-hidden="true" />
+              <p className="min-w-0 flex-1 text-sm font-bold">
+                أنهيت مستحقّ اليوم. كل بطاقة جُدولت لموعدها المذكور تحتها.
+              </p>
+              <button
+                type="button"
+                onClick={() => { setPicked({}); setSaved({}); setSnap(null); setReload((n) => n + 1); }}
+                className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 text-xs font-bold transition hover:border-teal/60 hover:text-teal-light-ink"
+              >
+                <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
+                حدّث القائمة
+              </button>
+            </div>
+          )}
+        </>
+      )}
+    </PortalLayout>
+  );
+}

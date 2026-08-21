@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router";
-import { GraduationCap, LayoutDashboard, Route as RouteIcon, Trophy, Award, Lock, Eye, LogOut, Bell, CheckCheck, UserCircle, ReceiptText, FileText, MoreHorizontal, X, LifeBuoy, CalendarDays, BookOpen, ChevronDown, Target, Inbox } from "lucide-react";
+import { GraduationCap, LayoutDashboard, Route as RouteIcon, Trophy, Award, Lock, Eye, LogOut, Bell, CheckCheck, UserCircle, ReceiptText, FileText, MoreHorizontal, X, LifeBuoy, CalendarDays, BookOpen, ChevronDown, Target, Inbox, Layers } from "lucide-react";
 import { canAccessPortal, enablePreview, getEnrollment, isOwnerUnlocked, unlockOwner } from "@/services/access";
 import { signOut } from "@/services/auth";
 import { apiGet, apiPost } from "@/services/api";
@@ -131,6 +131,8 @@ export default function PortalLayout({ children, title }: { children: React.Reac
     { to: "/student/learning", label: "تعلّمي", icon: BookOpen },
     { to: "/student/pathway", label: "مساري", icon: RouteIcon },
     { to: "/student/skills", label: "مهاراتي", icon: Target },
+    /* ح-٤: المراجعة عادة يومية، فمكانها في الأساسية لا في «المزيد» */
+    { to: "/student/review", label: "مراجعتي", icon: Layers },
     { to: "/student/project", label: "مشروع التخرج", icon: Trophy },
     { to: "/student/cohorts", label: "الشعب المفتوحة", icon: CalendarDays },
     { to: "/student/certificates", label: "شهاداتي", icon: Award },

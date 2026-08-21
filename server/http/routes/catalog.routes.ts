@@ -6,6 +6,8 @@ import type { PrismaClient } from '@prisma/client'
 import { getActiveSnapshot } from '../../catalog/snapshot-builder'
 import { CatalogAdminService } from '../../services/catalog-admin.service'
 import { validateChecks } from '../../../src/application/content/module-checks'
+/* شرائح المهارات المعروفة — تُمرَّر للمدقّق فيُرفض «م: slug» غير موجود (ح-٤) */
+import { skillSlugs } from '../../../src/domain/diagnostic/catalog'
 import { validateVideo } from '../../../src/application/content/module-video'
 import { requirePermission } from '../auth-plugin'
 
@@ -72,7 +74,7 @@ export function registerCatalogRoutes(app: FastifyInstance, prisma: PrismaClient
            تمرين لا يُفهم يُرفض عند الحفظ بخطأ عربي مقروء، فلا يصل للمتعلم صامتا */
         checksAr: z.string().max(8_000).optional().superRefine((v, ctx) => {
           if (!v || !v.trim()) return
-          const r = validateChecks(v)
+          const r = validateChecks(v, skillSlugs)
           if (!r.ok) {
             ctx.addIssue({
               code: 'custom',
