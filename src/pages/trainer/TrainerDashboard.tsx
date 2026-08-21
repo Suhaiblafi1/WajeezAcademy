@@ -4,18 +4,38 @@ import { AlertTriangle, CheckCircle2, ChevronLeft, Circle, ClipboardCheck, GitPu
 import TrainerLayout from "./TrainerLayout";
 import { trainerIdentity } from "./trainer-identity";
 import { apiGet } from "@/services/api";
+import TrainerWorkQueue from "@/components/TrainerWorkQueue";
+import AtRiskList from "@/components/AtRiskList";
+import { buildWorkQueue } from "@/application/trainer/work-queue";
+import { findAtRisk } from "@/application/trainer/at-risk";
 import { useRealSession } from "@/services/session";
 import { loadCohorts, loadSubmissions, loadOnboardingTasks, toggleOnboardingTask, type CohortStatus } from "@/data/trainer";
 
 /* ── الصفحة الحقيقية للمدرب المسجّل — من الخادم مباشرة، بلا بيانات استعراض ── */
 
+/* النوع يطابق ما يعيده /api/trainer/my-cohorts فعلا — كان ناقصا الحضور
+   والتقدم والتقييمات وروابط الجلسة، وهي ما يبنى عليه ف-١ وف-٢. */
 interface RealCohort {
   role: string;
   cohort: {
     id: string; title: string; status: string;
     course: { versions: { titleAr: string }[] };
-    sessions: { id: string; title: string; startsAt: string; status: string }[];
-    enrollments: { id: string; status: string; user: { displayName: string } }[];
+    sessions: {
+      id: string; title: string; startsAt: string; endsAt: string | null; status: string;
+      zoom: { joinUrl: string; learnerUrl: string | null } | null;
+      recordings: { id: string }[];
+      /* لا حضور على الجلسة: الخادم يعيده داخل كل تسجيل */
+    }[];
+    enrollments: {
+      id: string; status: string;
+      user: { displayName: string; email: string };
+      courseProgress: { percent: number } | null;
+      attendance: { sessionId: string; status: string }[];
+    }[];
+    assessments: {
+      id: string; title: string; type: string; dueAt: string | null; status: string;
+      submissions: { enrollmentId: string; status: string }[];
+    }[];
   };
 }
 interface RealQueueItem { id: string; status: string }
@@ -24,6 +44,13 @@ function RealTrainerHome({ name }: { name: string }) {
   const [cohorts, setCohorts] = useState<RealCohort[] | null>(null);
   const [queue, setQueue] = useState<RealQueueItem[] | null>(null);
   const [failed, setFailed] = useState(false);
+  /* نبضة كل دقيقة: «جلستك الآن» تتغيّر مع الوقت بلا إعادة تحميل.
+     القيمة في حالة لا في الرسم — Date.now() في الرسم غير نقي. */
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(t);
+  }, []);
 
   useEffect(() => {
     Promise.all([
@@ -47,11 +74,15 @@ function RealTrainerHome({ name }: { name: string }) {
       </div>
     );
 
+  /* ف-١ وف-٢: كلاهما من نفس الردّين — بلا نقطة نهاية جديدة */
+  const work = buildWorkQueue(cohorts, queue.filter((q) => q.status === "submitted" || q.status === "under_review").length, now);
+  const atRisk = findAtRisk(cohorts, now);
+
   const students = cohorts.reduce((n, c) => n + c.cohort.enrollments.length, 0);
   const awaiting = queue.filter((q) => q.status === "submitted" || q.status === "under_review").length;
-  const now = new Date().toISOString();
+  const nowIso = new Date(now).toISOString();
   const upcoming = cohorts
-    .flatMap((c) => c.cohort.sessions.filter((s) => s.startsAt > now && s.status !== "done").map((s) => ({ ...s, cohortTitle: c.cohort.title })))
+    .flatMap((c) => c.cohort.sessions.filter((s) => s.startsAt > nowIso && s.status !== "done").map((s) => ({ ...s, cohortTitle: c.cohort.title })))
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt))
     .slice(0, 4);
 
@@ -92,7 +123,7 @@ function RealTrainerHome({ name }: { name: string }) {
           { n: "٣", label: "قيّم التسليمات", to: "/trainer/grading" },
         ].map((s, i) => (
           <span key={s.n} className="flex items-center gap-2">
-            {i > 0 && <span className="text-white/20">←</span>}
+            {i > 0 && <span aria-hidden="true" className="text-white/20">←</span>}
             <Link to={s.to} className="flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1 font-bold transition hover:border-gold/60 hover:text-gold-ink">
               <span className="grid h-4 w-4 place-items-center rounded-full bg-gold/15 text-[10px] text-gold-ink">{s.n}</span>
               {s.label}
@@ -100,6 +131,9 @@ function RealTrainerHome({ name }: { name: string }) {
           </span>
         ))}
       </div>
+
+      {/* ف-١ · طابور العمل — أول ما يراه المدرب صار قابلا للتنفيذ لا مجرد أرقام */}
+      {cohorts.length > 0 && <TrainerWorkQueue items={work} className="mb-6" />}
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <Link to="/trainer/board" className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-white/30">
@@ -120,6 +154,9 @@ function RealTrainerHome({ name }: { name: string }) {
         </Link>
       </div>
 
+      {/* ف-٢ · من يحتاج تدخلك — أهم معلومة عند المدرب ولم تكن معروضة */}
+      {cohorts.length > 0 && <AtRiskList learners={atRisk} className="mt-6" />}
+
       <section className="mt-6 rounded-3xl border border-white/10 bg-white/[0.02] p-5">
         <p className="flex items-center gap-2 text-sm font-black"><Video className="h-4 w-4 text-teal-ink" /> جلساتي القادمة</p>
         <div className="mt-3 space-y-2">
@@ -138,8 +175,8 @@ function RealTrainerHome({ name }: { name: string }) {
         </div>
       </section>
 
-      <p className="mt-6 text-center text-[11px] text-white/35">
-        الحضور والتقييم والتسجيلات تُدار من شاشة «شعبي» — هذه الصفحة ملخص حي فقط.
+      <p className="mt-6 text-center text-[11px] text-white/55">
+        كل بند أعلاه يقودك إلى مكان تنفيذه — والتفاصيل الكاملة لكل شعبة في شاشة «شعبي».
       </p>
     </div>
   );

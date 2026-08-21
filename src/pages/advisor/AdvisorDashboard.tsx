@@ -90,7 +90,7 @@ function RealAdvisorHome({ name }: { name: string }) {
         <span className="font-black text-white/75">من أين أبدأ؟</span>
         {["افتح الحالات الجديدة أولاً", "سجّل أول تواصل", "جدول المتابعة التالية"].map((s, i) => (
           <span key={s} className="flex items-center gap-2">
-            {i > 0 && <span className="text-white/20">←</span>}
+            {i > 0 && <span aria-hidden="true" className="text-white/20">←</span>}
             <Link to="/advisor/cases" className="flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1 font-bold transition hover:border-gold/60 hover:text-gold-ink">
               <span className="grid h-4 w-4 place-items-center rounded-full bg-gold/15 text-[10px] text-gold-ink">{["١", "٢", "٣"][i]}</span>
               {s}

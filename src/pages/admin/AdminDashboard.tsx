@@ -108,7 +108,7 @@ export default function AdminDashboard() {
           { n: "٤", label: "راجع طلبات التسجيل", to: "/admin/finance" },
         ].map((s, i) => (
           <span key={s.n} className="flex items-center gap-2">
-            {i > 0 && <span className="text-white/20">←</span>}
+            {i > 0 && <span aria-hidden="true" className="text-white/20">←</span>}
             <Link to={s.to} className="flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1 font-bold transition hover:border-gold/60 hover:text-gold-ink">
               <span className="grid h-4 w-4 place-items-center rounded-full bg-gold/15 text-[10px] text-gold-ink">{s.n}</span>
               {s.label}
