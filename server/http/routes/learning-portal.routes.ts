@@ -11,6 +11,7 @@ import { EnrollmentService } from '../../services/enrollment.service'
 import { AssessmentService } from '../../services/assessment.service'
 import { ProgressService } from '../../services/progress.service'
 import { CertificateService } from '../../services/certificate.service'
+import { SkillGrowthService } from '../../services/skill-growth.service'
 import { AuthError } from '../../services/auth.service'
 import { requirePermission } from '../auth-plugin'
 
@@ -54,6 +55,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
   const assessments = new AssessmentService(prisma)
   const progress = new ProgressService(prisma)
   const certificates = new CertificateService(prisma)
+  const skillGrowth = new SkillGrowthService(prisma)
 
   /* ══════════ بوابة المتعلم ══════════ */
 
@@ -115,6 +117,39 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
       responses: z.array(z.object({ itemId: z.string().uuid(), answer: z.unknown() })).min(1),
     }).parse(req.body)
     return reply.status(201).send(await assessments.submitAttempt(req.auth!.userId, id, body.responses))
+  })
+
+  /* ── القياس البعديّ للمهارة بعد إتمام الدورة (ح-٧) ── */
+
+  app.get('/api/learner/enrollments/:id/skill-remeasure', {
+    preHandler: requirePermission('learner.portal'),
+    schema: { tags: ['learner-portal'], summary: 'أهلية القياس البعديّ واستمارته — مهارات الدورة ومستوياتي قبلها' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return skillGrowth.eligibility(req.auth!.userId, id)
+  })
+
+  app.post('/api/learner/enrollments/:id/skill-remeasure', {
+    preHandler: requirePermission('learner.submit'),
+    schema: { tags: ['learner-portal'], summary: 'تسجيل القياس البعديّ — مرة واحدة، بعد إتمام حقيقي، على مهارات الدورة فقط' },
+  }, async (req, reply) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      /* السلّم يُتحقق في الوحدة النقية المشتركة، فلا يتباعد حدّ الخادم عن حدّ الشاشة */
+      levels: z.record(z.string().min(1).max(120), z.number()).refine((r) => Object.keys(r).length > 0, 'لا إجابات في القياس'),
+    }).parse(req.body)
+    return reply.status(201).send(await skillGrowth.submit(req.auth!.userId, id, body.levels))
+  })
+
+  app.get('/api/learner/skill-growth', {
+    preHandler: requirePermission('learner.portal'),
+    schema: { tags: ['learner-portal'], summary: 'نموي المقيس — سجلات القياس البعديّ ودعوات القياس المستحقة' },
+  }, async (req) => {
+    const [growth, invites] = await Promise.all([
+      skillGrowth.myGrowth(req.auth!.userId),
+      skillGrowth.pendingInvites(req.auth!.userId),
+    ])
+    return { ...growth, invites }
   })
 
   app.get('/api/learner/certificates', {

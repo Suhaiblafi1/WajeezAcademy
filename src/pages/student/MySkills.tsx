@@ -11,7 +11,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import {
-  Target, CheckCircle2, HelpCircle, Compass, Sparkles, ArrowLeft, Loader2, BookOpen, TrendingUp,
+  Target, CheckCircle2, HelpCircle, Compass, Sparkles, ArrowLeft, Loader2, BookOpen, TrendingUp, Ruler,
 } from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import SkillMeter from "@/components/SkillMeter";
@@ -24,6 +24,12 @@ import {
   buildSkillsProfile, levelLabelAr, pathwayIdFromSnapshot, skillVectorFromSnapshot,
   type MeasuredSkill, type SkillsProfile, type UnmeasuredSkill,
 } from "@/application/student/skills-profile";
+import {
+  buildGrowthSummary, growthBySlug, mergeMeasured,
+  type GrowthSummary, type RemeasureRecord,
+} from "@/application/student/skill-growth";
+import SkillDelta from "@/components/SkillDelta";
+import { fmtWhen } from "@/utils/format";
 
 const TARGET_NOTE = "المستهدف: ٤ من ٥ — «جيد عمليا»";
 
@@ -41,11 +47,22 @@ function MeasuredRow({ s, showDelta }: { s: MeasuredSkill; showDelta: boolean })
         )}
       </div>
       <SkillMeter level={s.level} />
-      <p className="flex items-center gap-2 text-xs tabular-nums text-white/70">
+      <p className="flex flex-wrap items-center gap-2 text-xs tabular-nums text-white/70">
         <span>{levelLabelAr(s.level)}</span>
+        {/* شارة النمو (ح-٧): تُعرض لمن أُعيد قياسه فقط، ولا تُصطنع لغيره */}
+        {s.growth && s.growth.delta !== null && s.growth.delta !== 0 && (
+          <span
+            className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${
+              s.growth.delta > 0 ? "border-teal/50 text-teal-light-ink" : "border-white/25 text-white/75"
+            }`}
+            title={s.growth.courseTitleAr ? `قياس بعديّ بعد «${s.growth.courseTitleAr}»` : "قياس بعديّ"}
+          >
+            كنت {s.growth.beforeLevel} صرت {s.level}
+          </span>
+        )}
         {showDelta && s.toTarget > 0 && (
           <span className="rounded-full border border-gold/40 px-2 py-0.5 text-[10px] font-bold text-gold-ink">
-            يحتاج +{s.toTarget}
+            يحتاج <span dir="ltr">+{s.toTarget}</span>
           </span>
         )}
       </p>
@@ -148,20 +165,117 @@ function Unmeasured({ rows }: { rows: UnmeasuredSkill[] }) {
   );
 }
 
+interface GrowthPayload {
+  records: RemeasureRecord[];
+  nameBySlug: Record<string, string>;
+  invites: { enrollmentId: string; courseId: string; cohortTitle: string }[];
+}
+
+/** نموك المقيس (ح-٧) — الفرق بين ما قِيس قبل الدورة وما قِيس بعدها */
+function GrowthPanel({ summary }: { summary: GrowthSummary }) {
+  if (!summary.hasData) return null;
+  return (
+    <section className="mt-6 rounded-3xl border border-teal/30 bg-teal-ink/[0.07] p-5 sm:p-6">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="flex items-center gap-2 text-sm font-black">
+          <Ruler className="h-4 w-4 text-teal-light-ink" aria-hidden="true" />
+          نموك المقيس بعد الدورات
+        </h2>
+        <p className="text-[11px] text-white/50">قياس بالسلّم نفسه قبل الدورة وبعدها — لا وصف</p>
+      </div>
+
+      <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[
+          { k: "مهارة ارتفعت", v: String(summary.improved), ltr: false },
+          { k: "بلغت المستهدف", v: String(summary.crossedTarget), ltr: false },
+          /* dir=ltr على الرقم المُوقَّع: بلا ذلك يُعرض «+4» بصورة «4+» */
+          { k: "مجموع الدرجات", v: `${summary.netPoints > 0 ? "+" : ""}${summary.netPoints}`, ltr: true },
+          { k: "تراجعت", v: String(summary.declined), ltr: false },
+        ].map((t) => (
+          <div key={t.k} className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+            <dd className="text-2xl font-black tabular-nums" dir={t.ltr ? "ltr" : undefined}>{t.v}</dd>
+            <dt className="mt-0.5 text-[11px] text-white/55">{t.k}</dt>
+          </div>
+        ))}
+      </dl>
+
+      {summary.courses.map((c) => (
+        <div key={c.courseId} className="mt-5 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+          <p className="flex flex-wrap items-baseline justify-between gap-2 text-xs">
+            <span className="font-bold text-white/85">{c.courseTitleAr ?? c.courseId}</span>
+            <span className="text-white/45">قِيس في {fmtWhen(c.measuredAt)}</span>
+          </p>
+          <ul className="mt-2">
+            {c.skills.map((g) => (
+              <SkillDelta key={g.slug} g={g} />
+            ))}
+          </ul>
+        </div>
+      ))}
+
+      {summary.firstMeasured > 0 && (
+        <p className="mt-4 text-[11px] leading-relaxed text-white/50">
+          {summary.firstMeasured} مهارة قِيست أول مرة بعد الدورة — بلا مرجع قبليّ، فلا تدخل حساب الفرق.
+        </p>
+      )}
+    </section>
+  );
+}
+
+/** دعوة القياس البعديّ — لدورات أتمّها المتعلم ولم يُقس نموه فيها بعد */
+function GrowthInvites({ invites }: { invites: GrowthPayload["invites"] }) {
+  if (invites.length === 0) return null;
+  return (
+    <section className="mt-6 rounded-3xl border border-gold/30 bg-gold/[0.06] p-5 sm:p-6">
+      <h2 className="flex items-center gap-2 text-sm font-black">
+        <Ruler className="h-4 w-4 text-gold-ink" aria-hidden="true" />
+        أتممت دورة — قِس نموك فيها
+        <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[11px] tabular-nums text-gold-ink">{invites.length}</span>
+      </h2>
+      <p className="mt-2 text-xs leading-6 text-white/65">
+        قِيست مهاراتك قبل الدورة. أعد القياس الآن بالسلّم نفسه ليُحفظ الفرق — مرة واحدة لكل دورة.
+      </p>
+      <ul className="mt-3 flex flex-col gap-2">
+        {invites.map((i) => (
+          <li key={i.enrollmentId} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+            <span className="min-w-0 truncate text-xs font-bold text-white/85">{i.cohortTitle}</span>
+            <Link
+              to={`/student/remeasure/${i.enrollmentId}`}
+              className="inline-flex min-h-11 items-center gap-2 rounded-full bg-gold px-5 text-xs font-black text-on-gold transition hover:bg-gold/90"
+            >
+              ابدأ القياس
+              <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 export default function MySkills() {
   const catalogVersion = usePublishedContent();
   const [server, setServer] = useState<{ done: boolean; snapshot: unknown }>({ done: false, snapshot: null });
+  const [growth, setGrowth] = useState<GrowthPayload>({ records: [], nameBySlug: {}, invites: [] });
 
-  /* لقطة الخادم تعبر الأجهزة — نطلبها مرة، ونتابع بلا حجب لو تعذّرت */
+  /* لقطة الخادم تعبر الأجهزة — نطلبها مرة، ونتابع بلا حجب لو تعذّرت.
+     والقياس البعديّ (ح-٧) يُجلب معها بالتوازي: فشله لا يحجب ملف المهارات. */
   useEffect(() => {
     let alive = true;
-    void apiGet<{ profile?: { diagnosticSnapshot?: unknown } }>("/api/learner/profile")
-      .then((r) => {
-        if (alive) setServer({ done: true, snapshot: r.profile?.diagnosticSnapshot ?? null });
-      })
-      .catch(() => {
-        if (alive) setServer({ done: true, snapshot: null });
+    void (async () => {
+      const safe = async <T,>(pr: Promise<T>): Promise<T | null> => pr.then((v) => v).catch(() => null);
+      const [prof, grw] = await Promise.all([
+        safe(apiGet<{ profile?: { diagnosticSnapshot?: unknown } }>("/api/learner/profile")),
+        safe(apiGet<GrowthPayload>("/api/learner/skill-growth")),
+      ]);
+      if (!alive) return;
+      setServer({ done: true, snapshot: prof?.profile?.diagnosticSnapshot ?? null });
+      setGrowth({
+        records: grw?.records ?? [],
+        nameBySlug: grw?.nameBySlug ?? {},
+        invites: grw?.invites ?? [],
       });
+    })();
     return () => {
       alive = false;
     };
@@ -179,14 +293,21 @@ export default function MySkills() {
       : (localSnap ?? server.snapshot);
   }, [server, catalogVersion]);
 
+  const summary = useMemo(
+    () => buildGrowthSummary(growth.records, growth.nameBySlug),
+    [growth],
+  );
+
   const profile = useMemo(() => {
     /* الكتالوج يُحمَّل كسولا (ع-١): تغيّر نسخته يعيد الحساب بعد وصول المهارات والدورات */
     void catalogVersion;
     if (snapshot === undefined) return null;
-    const vector = skillVectorFromSnapshot(snapshot);
+    /* القياس البعديّ أحدث من التشخيص فيغلب في العرض — ولا تُعاد كتابة اللقطة نفسها:
+       تلك سجل تاريخي، وهذا ما عليه المتعلم الآن. */
+    const vector = mergeMeasured(skillVectorFromSnapshot(snapshot), growth.records);
     const pathwayId = pathwayIdFromSnapshot(snapshot) ?? getEnrollment()?.pathwayId ?? null;
-    return buildSkillsProfile(vector, pathwayId);
-  }, [snapshot, catalogVersion]);
+    return buildSkillsProfile(vector, pathwayId, growthBySlug(summary));
+  }, [snapshot, catalogVersion, growth.records, summary]);
 
   if (profile === null) {
     return (
@@ -216,6 +337,8 @@ export default function MySkills() {
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           </Link>
         </div>
+        <GrowthInvites invites={growth.invites} />
+        <GrowthPanel summary={summary} />
       </PortalLayout>
     );
   }
@@ -224,6 +347,8 @@ export default function MySkills() {
     <PortalLayout title="ملف مهاراتي">
       <SimulationNote what="تقدّم الدورات المرتبط بالمهارات" />
       <Hero p={profile} />
+      <GrowthInvites invites={growth.invites} />
+      <GrowthPanel summary={summary} />
 
       <Section
         icon={Target}

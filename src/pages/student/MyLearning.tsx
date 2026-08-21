@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
 import {
-  Award, BookOpen, CalendarDays, CheckCircle2, ChevronDown, FileText,
-  Loader2, PlayCircle, RefreshCw, Send, ServerOff, Video,
+  ArrowLeft, Award, BookOpen, CalendarDays, CheckCircle2, ChevronDown, FileText,
+  Loader2, PlayCircle, RefreshCw, Ruler, Send, ServerOff, Video,
 } from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import SubmissionFeedback from "@/components/SubmissionFeedback";
@@ -353,6 +353,30 @@ function LearnerCohortDetail({ detail, answers, setAnswers, busy, onSubmit, onSu
                 </div>
               );
             })}
+          </div>
+        </section>
+      )}
+
+      {/* قياس النمو بعد الإتمام (ح-٧) — يظهر لمن أتمّ الدورة فقط، وصفحته تحسم الأهلية نهائيا */}
+      {(detail.status === "completed" || detail.certificates.some((c) => c.status === "active")) && (
+        <section>
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-teal/30 bg-teal-ink/[0.07] p-4">
+            <div className="min-w-0">
+              <h3 className="flex items-center gap-2 text-sm font-black">
+                <Ruler className="h-4 w-4 text-teal-light-ink" aria-hidden="true" />
+                قِس نموك في مهارات هذه الدورة
+              </h3>
+              <p className="mt-1 text-[11px] leading-6 text-white/60">
+                بالسلّم نفسه الذي قاسك قبلها — فيظهر الفرق مقيسا. مرة واحدة لكل دورة.
+              </p>
+            </div>
+            <Link
+              to={`/student/remeasure/${detail.id}`}
+              className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full bg-gold px-5 text-xs font-black text-on-gold transition hover:bg-gold/90"
+            >
+              افتح القياس
+              <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+            </Link>
           </div>
         </section>
       )}

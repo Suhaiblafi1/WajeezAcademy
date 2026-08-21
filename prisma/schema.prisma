@@ -37,6 +37,7 @@ model User {
   supportTickets SupportTicket[] @relation("TicketOwner")
   advisorCases AdvisorCase[] @relation("CaseClient")
   advisorAssignments AdvisorAssignment[] @relation("CaseAdvisor")
+  skillRemeasures SkillRemeasure[] @relation("SkillRemeasureUser")
 }
 
 model Role {
@@ -1122,6 +1123,7 @@ model Enrollment {
   moduleProgress ModuleProgress[]
   courseProgress CourseProgress?
   certificates Certificate[]
+  skillRemeasures SkillRemeasure[]
   @@unique([cohortId, userId])
   @@index([userId, status])
 }
@@ -1306,6 +1308,25 @@ model CompletionRule {
   createdAt DateTime @default(now())
   cohort    Cohort?  @relation(fields: [cohortId], references: [id], onDelete: Cascade)
   @@index([courseId])
+}
+
+/* القياس البعديّ للمهارة بعد إتمام الدورة (البند ح-٧).
+   beforeLevel لقطة وقت القياس لا اشتقاق لاحق: لو أعاد المتعلم التشخيص بعد سنة
+   لا يتغير فرقٌ سُجّل قبلها. والقيد الفريد يجعل القياس مرة واحدة لكل تسجيل،
+   فالفرق سجلٌ لا مقبض يُحرَّك حتى يُرضي صاحبه. */
+model SkillRemeasure {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @db.Uuid
+  enrollmentId String   @db.Uuid
+  courseId     String
+  skillSlug    String
+  beforeLevel  Int?     // ١..٥ — null يعني أن المؤشر لم يقس هذه المهارة قبل الدورة
+  afterLevel   Int      // ١..٥
+  measuredAt   DateTime @default(now())
+  user         User     @relation("SkillRemeasureUser", fields: [userId], references: [id], onDelete: Cascade)
+  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  @@unique([enrollmentId, skillSlug])
+  @@index([userId, measuredAt])
 }
 
 model Certificate {

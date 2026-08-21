@@ -1,17 +1,56 @@
-/* شهاداتي — API حقيقي: شهادات المتعلم بأرقام التحقق وحالاتها، ورابط التحقق العام */
+/* شهاداتي — API حقيقي: شهادات المتعلم بأرقام التحقق وحالاتها، ورابط التحقق العام.
+
+   ومع كل شهادة نموها المقيس (البند ح-٧): الشهادة وحدها تقول «حضر وأكمل»، والفرق
+   المقيس يقول «كان هنا وصار هنا». فمن قِيس نموه نعرضه بأرقامه، ومن لم يُقس نعرض
+   دعوة للقياس — ولا نلفّق رقما لتزيين ورقة. */
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
-import { Award, BadgeCheck, Loader2, RefreshCw, ShieldOff } from "lucide-react";
+import { Award, BadgeCheck, Loader2, RefreshCw, Ruler, ShieldOff } from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import { apiGet, ApiError } from "@/services/api";
+import { buildGrowthSummary, type CourseGrowth, type RemeasureRecord } from "@/application/student/skill-growth";
 
 interface Cert {
   id: string; number: string; learnerName: string; courseId: string; courseVersion: number;
+  enrollmentId: string;
   issuedAt: string; status: string; revocation: { reason: string; createdAt?: string } | null;
+}
+
+/** شريط النمو المقيس تحت الشهادة — أرقام محفوظة أو دعوة للقياس، لا شيء بينهما */
+function GrowthStrip({ growth, enrollmentId }: { growth: CourseGrowth | null; enrollmentId: string }) {
+  if (!growth) {
+    return (
+      <Link
+        to={`/student/remeasure/${enrollmentId}`}
+        className="mt-3 flex items-center gap-2 rounded-2xl border border-teal/25 bg-teal-ink/[0.06] px-3 py-2 text-[11px] font-bold text-teal-light-ink transition hover:border-teal/50"
+      >
+        <Ruler className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+        قِس نموك في مهارات هذه الدورة ليصير مع الشهادة دليل مقيس
+      </Link>
+    );
+  }
+  return (
+    <div className="mt-3 rounded-2xl border border-teal/25 bg-teal-ink/[0.06] px-3 py-2">
+      <p className="flex items-center gap-2 text-[11px] font-bold text-teal-light-ink">
+        <Ruler className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+        نمو مقيس بعد هذه الدورة
+      </p>
+      <p className="mt-1 text-[11px] leading-6 tabular-nums text-white/70">
+        ارتفعت {growth.improved} مهارة · بلغت المستهدف {growth.crossedTarget} · مجموع الدرجات{" "}
+        {/* dir=ltr على الرقم المُوقَّع فلا يُقرأ «+4» بصورة «4+» */}
+        <span dir="ltr">{growth.netPoints > 0 ? `+${growth.netPoints}` : growth.netPoints}</span>
+        {growth.declined > 0 ? ` · تراجعت ${growth.declined}` : ""}
+      </p>
+      <Link to="/student/skills" className="mt-1 inline-block text-[11px] font-bold text-teal-light-ink underline underline-offset-4">
+        التفصيل في ملف مهاراتي
+      </Link>
+    </div>
+  );
 }
 
 export default function Certificates() {
   const [rows, setRows] = useState<Cert[]>([]);
+  const [growthByCourse, setGrowthByCourse] = useState<Record<string, CourseGrowth>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -20,6 +59,12 @@ export default function Certificates() {
     try { setRows(await apiGet<Cert[]>("/api/learner/certificates")); }
     catch (e) { setError(e instanceof ApiError ? e.message : "تعذر تحميل الشهادات"); }
     finally { setLoading(false); }
+    /* النمو رفاهية على الشهادة: فشل جلبه لا يمنع عرضها ولا يُظهر خطأ */
+    try {
+      const g = await apiGet<{ records: RemeasureRecord[]; nameBySlug: Record<string, string> }>("/api/learner/skill-growth");
+      const summary = buildGrowthSummary(g.records, g.nameBySlug);
+      setGrowthByCourse(Object.fromEntries(summary.courses.map((c) => [c.courseId, c])));
+    } catch { setGrowthByCourse({}); }
   }, []);
 
   useEffect(() => { void load(); }, [load]);
@@ -63,6 +108,9 @@ export default function Certificates() {
                   </Link>
                 )}
               </div>
+              {c.status !== "revoked" && (
+                <GrowthStrip growth={growthByCourse[c.courseId] ?? null} enrollmentId={c.enrollmentId} />
+              )}
             </article>
           ))}
         </div>

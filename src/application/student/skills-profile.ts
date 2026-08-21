@@ -30,6 +30,14 @@ export interface CoveringCourse {
   sequence: number
 }
 
+export interface SkillGrowthBadge {
+  /** المستوى قبل الدورة كما كان مقيسا — null إن لم يكن مقيسا قبلها */
+  beforeLevel: number | null
+  /** الفرق — null بلا قياس قبليّ */
+  delta: number | null
+  courseTitleAr: string | null
+}
+
 export interface MeasuredSkill {
   slug: string
   nameAr: string
@@ -38,6 +46,8 @@ export interface MeasuredSkill {
   /** كم درجة تفصله عن المستهدف — صفر لمن بلغه */
   toTarget: number
   coveredBy: CoveringCourse[]
+  /** أثر قياس بعديّ بعد إتمام دورة (ح-٧) — غائب لمن لم يُعد قياسه */
+  growth?: SkillGrowthBadge
 }
 
 export interface UnmeasuredSkill {
@@ -110,8 +120,13 @@ function byUrgency(a: MeasuredSkill, b: MeasuredSkill): number {
  * يبني ملف المهارات من متجه القياس ومسار التوصية.
  * @param skillVector ما قِيس فعلا — المفتاح شريحة المهارة والقيمة ١..٥
  * @param pathwayId مسار التوصية أو التسجيل — بدونه لا تُحسب تغطية ولا فجوات مسار
+ * @param growth شارات القياس البعديّ بالشريحة (ح-٧) — اختيارية، ولا تغيّر تصنيفا ولا تغطية
  */
-export function buildSkillsProfile(skillVector: Record<string, number>, pathwayId: string | null): SkillsProfile {
+export function buildSkillsProfile(
+  skillVector: Record<string, number>,
+  pathwayId: string | null,
+  growth?: Map<string, SkillGrowthBadge>,
+): SkillsProfile {
   const measuredEntries = Object.entries(skillVector).filter(([, level]) => Number.isFinite(level) && level >= 1)
   if (measuredEntries.length === 0 && !pathwayId) return EMPTY
 
@@ -122,14 +137,20 @@ export function buildSkillsProfile(skillVector: Record<string, number>, pathwayI
   const namesFromPathway = new Map<string, string>((assessment?.required ?? []).map((s) => [s.slug, s.nameAr]))
   const requiredSlugs = new Set((assessment?.required ?? []).map((s) => s.slug))
 
-  const toRow = (slug: string, level: number): MeasuredSkill => ({
-    slug,
-    nameAr: nameOf(slug, namesFromPathway),
-    level,
-    band: bandOf(level),
-    toTarget: Math.max(0, TARGET_LEVEL - level),
-    coveredBy: coveringCourses(slug, courseIds),
-  })
+  const toRow = (slug: string, level: number): MeasuredSkill => {
+    const row: MeasuredSkill = {
+      slug,
+      nameAr: nameOf(slug, namesFromPathway),
+      level,
+      band: bandOf(level),
+      toTarget: Math.max(0, TARGET_LEVEL - level),
+      coveredBy: coveringCourses(slug, courseIds),
+    }
+    /* الشارة تُضاف ولا تُصطنع: ما لم يُعد قياسه يبقى بلا حقل growth أصلا */
+    const badge = growth?.get(slug)
+    if (badge) row.growth = badge
+    return row
+  }
 
   const gap: MeasuredSkill[] = []
   const onTrack: MeasuredSkill[] = []

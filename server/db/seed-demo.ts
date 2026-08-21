@@ -201,6 +201,89 @@ async function seedGradedSubmission(prisma: PrismaClient): Promise<'written' | '
   return 'written'
 }
 
+/* البند ط-١/ح-٧: متجه القياس في لقطة التشخيص الديمو.
+   لقطة الديمو كانت بلا skill_vector، فكان ملف المهارات فارغا والنمو بلا مرجع
+   قبليّ. نكتب مستويات ما قبل الدورة على مهارات حقيقية من القاعدة — منخفضة
+   قصدا حتى يظهر أثر التعلم. مستقلّة ومُستدعاة قبل حراسة البيانات الغنية. */
+async function seedDemoSkillVector(prisma: PrismaClient): Promise<'written' | 'skipped'> {
+  const student = await prisma.user.findUnique({ where: { email: 'student.demo@wajeez.local' } })
+  if (!student) return 'skipped'
+  const profile = await prisma.learnerProfile.findUnique({ where: { userId: student.id } })
+  if (!profile?.diagnosticSnapshot) return 'skipped'
+  const snapshot = profile.diagnosticSnapshot as Record<string, unknown>
+  if (snapshot.skill_vector) return 'skipped'
+
+  /* مهارات الدورة المكتملة أولا (ليكون للنمو مرجع)، ثم متطلبات المسار */
+  const courseLinks = await prisma.courseSkillLink.findMany({
+    where: { courseId: 'C-AI-105' }, include: { skill: { select: { slug: true } } },
+    orderBy: [{ weight: 'desc' }, { skillId: 'asc' }],
+  })
+  const pathwayReqs = await prisma.pathwaySkillRequirement.findMany({
+    where: { pathwayId: 'PW-AUT-001' }, include: { skill: { select: { slug: true } } },
+    take: 10, orderBy: { skillId: 'asc' },
+  })
+  const slugs = [...new Set([...courseLinks.map((l) => l.skill.slug), ...pathwayReqs.map((r) => r.skill.slug)])]
+  if (slugs.length === 0) return 'skipped'
+
+  /* مستويات ثابتة لا عشوائية: ١..٣ بالتناوب — بيانات ديمو تُعاد بنفس النتيجة */
+  const skill_vector = Object.fromEntries(slugs.map((slug, i) => [slug, (i % 3) + 1]))
+  await prisma.learnerProfile.update({
+    where: { userId: student.id },
+    data: { diagnosticSnapshot: { ...snapshot, skill_vector } },
+  })
+  return 'written'
+}
+
+/* البند ح-٧: قياس بعديّ محفوظ على التسجيل المكتمل، ليظهر النمو بأرقامه في ملف
+   المهارات وعلى الشهادة. بلا هذه البيانات تبقى الميزة شيفرة بلا شاهد.
+   الفرق مبذور واقعيا: أغلب المهارات ترتفع، وواحدة تثبت، وواحدة تتراجع —
+   لأن مؤشرا لا ينزل ليس قياسا. */
+async function seedDemoRemeasure(prisma: PrismaClient): Promise<'written' | 'skipped'> {
+  const student = await prisma.user.findUnique({ where: { email: 'student.demo@wajeez.local' } })
+  if (!student) return 'skipped'
+  const enrollment = await prisma.enrollment.findFirst({
+    where: { userId: student.id, status: 'completed' }, include: { cohort: { select: { courseId: true } } },
+  })
+  if (!enrollment) return 'skipped'
+  const existing = await prisma.skillRemeasure.count({ where: { enrollmentId: enrollment.id } })
+  if (existing > 0) return 'skipped'
+
+  const profile = await prisma.learnerProfile.findUnique({ where: { userId: student.id } })
+  const snapshot = (profile?.diagnosticSnapshot ?? {}) as { skill_vector?: Record<string, number> }
+  const baseline = snapshot.skill_vector ?? {}
+  const links = await prisma.courseSkillLink.findMany({
+    where: { courseId: enrollment.cohort.courseId },
+    include: { skill: { select: { slug: true } } },
+    orderBy: [{ weight: 'desc' }, { skillId: 'asc' }],
+  })
+  if (links.length === 0) return 'skipped'
+
+  /* نمط ثابت: +2 · +1 · بلا تغيّر ثم يتكرر — يُقصّ على السلّم ١..٥ */
+  const gains = [2, 1, 0]
+  const measuredAt = new Date(Date.now() - 9 * 86400_000)
+  const data = links.map((l, i) => {
+    const before = baseline[l.skill.slug] ?? null
+    return {
+      userId: student.id,
+      enrollmentId: enrollment.id,
+      courseId: enrollment.cohort.courseId,
+      skillSlug: l.skill.slug,
+      beforeLevel: before,
+      afterLevel: Math.min(5, Math.max(1, (before ?? 2) + gains[i % gains.length])),
+      measuredAt,
+    }
+  })
+  /* تراجع واحد مبذور على أعلى مستوى قبليّ — لأن مؤشرا لا ينزل ليس قياسا،
+     ولأن الطرح على مستوى ١ يُقصّ فلا يظهر تراجع أصلا */
+  let top = -1
+  for (const [i, r] of data.entries()) {
+    if ((r.beforeLevel ?? 0) >= 2 && (top < 0 || (r.beforeLevel ?? 0) > (data[top].beforeLevel ?? 0))) top = i
+  }
+  if (top >= 0) data[top].afterLevel = (data[top].beforeLevel ?? 2) - 1
+  await prisma.skillRemeasure.createMany({ data, skipDuplicates: true })
+  return 'written'
+}
+
 export async function seedDemo(prisma: PrismaClient): Promise<{ users: number; richData: 'created' | 'existing' }> {
   await seedRbac(prisma)
 
@@ -211,6 +294,9 @@ export async function seedDemo(prisma: PrismaClient): Promise<{ users: number; r
   /* متن الدرس يُبذر أولا: قابل للتطبيق على قاعدة قائمة، وحراسته الخاصة تمنع التكرار */
   await seedLessonBody(prisma, 'C-AUT-101')
   await seedGradedSubmission(prisma)
+  /* متجه القياس ثم القياس البعديّ — بهذا الترتيب: الفرق يحتاج مرجعا قبليّا */
+  await seedDemoSkillVector(prisma)
+  await seedDemoRemeasure(prisma)
 
   /* إن كان الطالب الديمو مسجلا في شعبة فالبيانات الغنية موجودة — لا تكرار */
   const alreadyRich = await prisma.enrollment.findFirst({ where: { userId: student.id } })
@@ -493,6 +579,12 @@ export async function seedDemo(prisma: PrismaClient): Promise<{ users: number; r
       data: { caseId: kase.id, title: 'مراجعة تقدم الوحدة الثالثة — مهمة ديمو', dueAt: new Date(now + 5 * 86400_000), createdBy: consultant.id },
     })
   }
+
+  /* ⚠ تُستدعى ثانيا: النداء الأول (قبل حراسة البيانات الغنية) يخدم القاعدة
+     القائمة، وهذا يخدم القاعدة الجديدة حيث لم يكن التسجيل المكتمل قد أُنشئ بعد.
+     كلتاهما idempotent فلا يتكرر شيء. */
+  await seedDemoSkillVector(prisma)
+  await seedDemoRemeasure(prisma)
 
   void superadmin // الحساب يُنشأ ضمن ensureUser أعلاه — لا بيانات إضافية له
   return { users: DEMO_ACCOUNTS.length, richData: 'created' }
