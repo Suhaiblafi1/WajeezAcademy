@@ -109,8 +109,16 @@ describe('دورة النشر الكاملة', () => {
   })
 
   it('4) التحقق + تحليل الأثر ثم النشر الذري', async () => {
+    /* ج-١: مسار بلا مجال لا يُنشر — لا يدخل مطابقة احتياج المستخدم فينشر مخفيا.
+       الحاجز يُثبت هنا داخل الدورة الحقيقية، ثم يُفتح بالباب المخصص لا بكتابة خام. */
+    const beforeDomain = await pub.validateDrafts()
+    expect(beforeDomain.ok).toBe(false)
+    expect(beforeDomain.errors.join('|')).toContain(`pathway PW-${S}-001: بلا مجال`)
+    await expect(admin.setPathwayDomains(`PW-${S}-001`, ['not_a_domain'])).rejects.toThrow(AuthError)
+    await admin.setPathwayDomains(`PW-${S}-001`, ['career_direction'])
+
     const validation = await pub.validateDrafts()
-    expect(validation.ok).toBe(true)
+    expect(validation.ok, validation.errors.join(' | ')).toBe(true)
 
     const impact = await analyzeImpact(prisma, 'E2E: مسار اختبار النشر', makerId)
     expect(impact.totalPersonas).toBe(12)

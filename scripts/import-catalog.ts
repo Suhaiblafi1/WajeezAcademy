@@ -21,7 +21,7 @@ const s = await importCatalog(prisma)
 console.log('   ── تقرير الاستيراد ──')
 console.log(`   ${s.pathways} مسارا · ${s.templates} قالبا · ${s.courses} دورة · ${s.modules} وحدة`)
 console.log(`   ${s.skills} مهارة · ${s.questions} سؤالا (${s.options} خيارا) · ${s.references} مراجع`)
-console.log(`   ${s.links} علاقة مرجعية · ${s.diagnosticProfiles} ملفا تشخيصيا`)
+console.log(`   ${s.links} علاقة مرجعية · ${s.diagnosticProfiles} ملفا تشخيصيا · ${s.pathwayDomains} ربط مجال`)
 console.log(`   إصدار الكتالوج: ${s.catalogVersionId} ${s.catalogVersionCreated ? '(أُنشئ ونُشر الآن)' : '(موجود — لم يتكرر)'}`)
 console.log(`   بصمة اللقطة: ${s.snapshotHash.slice(0, 16)}…`)
 

@@ -149,6 +149,20 @@ model Pathway {
   versions        PathwayVersion[]
   courses         PathwayCourse[]
   skillRequirements PathwaySkillRequirement[]
+  domains         PathwayDomain[]
+}
+
+/* مجالات المسار (ج-١) — كانت تُستورد وقت البناء من pathway-domains.v2.json فقط،
+   فأي مسار يُضاف بعد النشر يبقى بلا مجال ولا يدخل مطابقة احتياج المستخدم.
+   صارت صفوفا تُنشر داخل اللقطة كبقية الكتالوج. */
+model PathwayDomain {
+  pathwayId  String
+  domainId   String // career_direction | ai_productivity | … من domains في المصدر الموثق
+  orderIndex Int      @default(0) // الترتيب المصدري محفوظ — أول مجال هو الأقرب
+  createdAt  DateTime @default(now())
+  pathway    Pathway  @relation(fields: [pathwayId], references: [id], onDelete: Cascade)
+  @@id([pathwayId, domainId])
+  @@index([domainId])
 }
 
 model PathwayVersion {

@@ -5,6 +5,7 @@
 import type { Prisma, PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { assessSkillSelection, skillStateOf } from '../../src/application/catalog/skill-measurement'
+import { domainsV2 } from '../../src/domain/diagnostic/v2/data'
 
 export class CatalogAdminService {
   private prisma: PrismaClient
@@ -168,6 +169,8 @@ export class CatalogAdminService {
     id: string; title: string; shortTitle?: string; audience?: string; beforeText?: string
     afterText?: string; durationWeeks?: number; weeklyHours?: string; level?: string
     capstone?: string; courseIds: string[]
+    /** مجالات المسار (ج-١) — بلا مجال لا يجتاز المسار حاجز النشر ولا يدخل مطابقة الاحتياج */
+    domainIds?: string[]
   }, actorId?: string) {
     if (!/^PW-[A-Z0-9-]+$/.test(input.id)) throw new AuthError('invalid_id', 'معرف المسار بصيغة PW-XXX-000')
     if (await this.prisma.pathway.findUnique({ where: { id: input.id } })) {
@@ -187,8 +190,36 @@ export class CatalogAdminService {
           },
         },
         courses: { create: input.courseIds.map((courseId, i) => ({ courseId, sequence: i + 1 })) },
+        domains: { create: this.checkedDomains(input.domainIds ?? []).map((domainId, i) => ({ domainId, orderIndex: i })) },
       },
     })
+  }
+
+  /** ربط المسار بمجالاته — الاستبدال كامل، والترتيب هو ترتيب المُدخل (الأول الأقرب).
+      بابٌ في الحاجز: بلا هذه العملية يبقى أي مسار يُنشأ بعد النشر عاجزا عن النشر (ج-١). */
+  async setPathwayDomains(pathwayId: string, domainIds: string[]) {
+    if (!(await this.prisma.pathway.findUnique({ where: { id: pathwayId } }))) {
+      throw new AuthError('not_found', 'المسار غير موجود', 404)
+    }
+    const ids = this.checkedDomains(domainIds)
+    await this.prisma.$transaction([
+      this.prisma.pathwayDomain.deleteMany({ where: { pathwayId } }),
+      this.prisma.pathwayDomain.createMany({
+        data: ids.map((domainId, i) => ({ pathwayId, domainId, orderIndex: i })),
+      }),
+    ])
+    return { pathwayId, domainIds: ids }
+  }
+
+  /** معرفات مجالات معروفة بلا تكرار — المجهول يُرفض لا يُحذف صامتا:
+      معرف غير موجود في التصنيف يطابق لا شيء، فيصير المسار كأنه بلا مجال. */
+  private checkedDomains(domainIds: string[]): string[] {
+    const known = new Set(domainsV2.map((d) => d.id))
+    const unknown = domainIds.filter((d) => !known.has(d as never))
+    if (unknown.length > 0) {
+      throw new AuthError('unknown_domain', `معرف مجال غير معروف: ${unknown.join('، ')}`)
+    }
+    return [...new Set(domainIds)]
   }
 
   /** تقديم طلب تغيير (maker) — لا يُطبَّق شيء قبل الاعتماد */

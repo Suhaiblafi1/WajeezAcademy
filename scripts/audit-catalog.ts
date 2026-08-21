@@ -49,10 +49,13 @@ const main = async () => {
   }
 
   /* اكتمال بنيوي للمنشور */
-  const publishedPathways = await prisma.pathway.findMany({ where: { status: 'published' }, include: { courses: true, versions: true } })
+  const publishedPathways = await prisma.pathway.findMany({ where: { status: 'published' }, include: { courses: true, versions: true, domains: true } })
   for (const p of publishedPathways) {
     check(p.courses.length > 0, `مسار منشور بلا دورات: ${p.id}`)
     check(p.versions.length > 0, `مسار منشور بلا إصدار محتوى: ${p.id}`)
+    /* ج-١: شبكة أمان على القاعدة الحيّة — حاجز النشر يمنع الجديد، وهذا يكشف
+       صفوفا سبقت الحاجز أو أُدخلت خارج الخدمة. بلا مجال = منشور لا يُوصى به. */
+    check(p.domains.length > 0, `مسار منشور بلا مجال: ${p.id} — لا يدخل مطابقة المجالات`)
   }
   const publishedCourses = await prisma.course.findMany({ where: { status: 'published' }, include: { modules: true, skillLinks: true, versions: true } })
   for (const c of publishedCourses) {

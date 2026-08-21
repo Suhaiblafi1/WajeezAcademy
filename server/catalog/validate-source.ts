@@ -114,10 +114,25 @@ export function validateCatalogSource(): ValidationResult {
     }
   }
 
-  /* ٣ — لكل مسار مجال واحد على الأقل */
+  /* ٣ — لكل مسار مجال واحد على الأقل، وكل معرف مجال معروف في التصنيف.
+     معرف مجهول لا يرمي خطأ في المحرك — يطابق لا شيء بصمت، فيصبح المسار كأنه بلا مجال (ج-١). */
+  const knownDomainIds = new Set(
+    (domainsJson as unknown as { domains: { id: string }[] }).domains.map((d) => d.id),
+  )
   for (const p of core.launch_pathways) {
-    if ((pathwayDomains[p.id] ?? []).length === 0) {
+    const ids = pathwayDomains[p.id] ?? []
+    if (ids.length === 0) {
       errorsAr.push(`${F.domains}: المسار ${p.id} بلا مجال — لا يدخل مطابقة المجالات إطلاقا`)
+    }
+    for (const d of ids) {
+      if (!knownDomainIds.has(d)) {
+        errorsAr.push(`${F.domains} · ${p.id}: معرف مجال مجهول «${d}» — يطابق لا شيء بصمت`)
+      }
+    }
+  }
+  for (const pid of Object.keys(pathwayDomains)) {
+    if (!core.launch_pathways.some((p) => p.id === pid)) {
+      errorsAr.push(`${F.domains}: مجالات لمسار غير موجود «${pid}» — صف معلّق يُنشر بلا صاحب`)
     }
   }
 

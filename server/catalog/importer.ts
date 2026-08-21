@@ -35,6 +35,7 @@ export interface ImportStats {
   references: number
   links: number
   diagnosticProfiles: number
+  pathwayDomains: number
   catalogVersionId: string
   catalogVersionCreated: boolean
   snapshotHash: string
@@ -110,6 +111,7 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
   const refsFile = readJson('src/data/methodology-references.v1.json')
   const optionEffects = readJson('src/data/overlays/option-effects.v2.json')
   const pathwayProfiles = readJson('src/data/overlays/pathway-profiles.v1.json')
+  const domainsFile = readJson('src/data/catalog/v2/pathway-domains.v2.json')
 
   const pathways = core.launch_pathways as RawPathway[]
   const courses = core.courses as RawCourse[]
@@ -405,6 +407,23 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
     diagnosticProfiles++
   }
 
+  /* 8ب) مجالات المسارات (ج-١) — صفوف تُنشر داخل اللقطة، لا استيراد وقت بناء الواجهة.
+     الحذف قبل الإنشاء لكل مسار: إن قُلّصت قائمة مجالاته في المصدر لا يبقى صف قديم. */
+  let pathwayDomains = 0
+  const domainMap = (domainsFile.pathway_domains ?? {}) as Record<string, string[]>
+  for (const p of pathways) {
+    const ids = domainMap[p.id] ?? []
+    await prisma.pathwayDomain.deleteMany({ where: { pathwayId: p.id, domainId: { notIn: ids.length > 0 ? ids : ['__none__'] } } })
+    for (const [i, domainId] of ids.entries()) {
+      await prisma.pathwayDomain.upsert({
+        where: { pathwayId_domainId: { pathwayId: p.id, domainId } },
+        update: { orderIndex: i },
+        create: { pathwayId: p.id, domainId, orderIndex: i },
+      })
+      pathwayDomains++
+    }
+  }
+
   /* 9) إصدارات التقييم والتوصية الأولى */
   await prisma.scoringConfigVersion.upsert({
     where: { version: 1 },
@@ -428,6 +447,7 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
       templates: templatesFile,
       optionEffects,
       pathwayProfiles,
+      pathwayDomains: { pathway_domains: domainMap },
     }
     const hash = createHash('sha256').update(JSON.stringify(snapshotPayload)).digest('hex')
     catalogVersion = await prisma.catalogVersion.create({
@@ -446,6 +466,7 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
     skills: skills.length, questions: questions.length,
     options: questions.reduce((n, q) => n + q.options_ar.length, 0),
     templates: templates.length, references: references.length, links, diagnosticProfiles,
+    pathwayDomains,
     catalogVersionId: catalogVersion.id, catalogVersionCreated: created,
     snapshotHash: snapshot?.payloadHash ?? '',
   }

@@ -12,6 +12,7 @@ import optionEffectsJson from '../../data/overlays/option-effects.v2.json'
 import optionEffectsV21Json from '../../data/overlays/option-effects.v2_1.json'
 import b2cQuestionsV21Json from '../../data/catalog/v2_1/questions-b2c.v2_1.ar.json'
 import pathwayProfilesJson from '../../data/overlays/pathway-profiles.v1.json'
+import { installPathwayDomains } from './v2/data'
 import type {
   BankQuestion,
   CatalogCourse,
@@ -86,6 +87,9 @@ export interface CatalogSnapshotPayload {
   templates: { templates: CompositeTemplate[] }
   optionEffects: OptionEffectsFile
   pathwayProfiles: { profiles: Record<string, PathwayProfile> }
+  /** مجالات المسارات (ج-١) — اختيارية: اللقطات المنشورة قبل هذا البند لا تحملها،
+      وحينها يبقى ملف pathway-domains.v2.json المضمن هو المصدر. */
+  pathwayDomains?: { pathway_domains: Record<string, string[]> }
 }
 
 export let questionBank: BankQuestion[] = []
@@ -126,6 +130,8 @@ function install(payload: CatalogSnapshotPayload, label: string): void {
   }
   keywordClassifiers = payload.optionEffects.keyword_classifiers
   pathwayProfiles = payload.pathwayProfiles.profiles
+  /* مجالات المسارات من اللقطة إن حملتها — وإلا الملف المضمن (لقطة أقدم من ج-١) */
+  installPathwayDomains(payload.pathwayDomains?.pathway_domains ?? null)
   trainerProfiles = [] // لا مدربين موثقين بعد — مطابقة المدرب ترجع unassigned دائما
   activeCatalogLabel = label
 }

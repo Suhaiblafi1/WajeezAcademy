@@ -10,6 +10,7 @@ import { apiGet, apiPost, ApiError } from "@/services/api";
 import SkillPicker from "@/components/SkillPicker";
 import type { SkillMeasureState } from "@/application/catalog/skill-measurement";
 import { toast } from "@/components/Toast";
+import { domainsV2 } from "@/domain/diagnostic/v2/data";
 
 type Overview = {
   pathways: Record<string, number>; courses: Record<string, number>; skills: Record<string, number>
@@ -64,6 +65,7 @@ export default function CatalogAdmin() {
   const [pwForm, setPwForm] = useState({
     id: "", title: "", shortTitle: "", audience: "", beforeText: "", afterText: "",
     durationWeeks: "", weeklyHours: "", level: "", capstone: "", courseIds: [] as string[],
+    domainIds: [] as string[],
   });
   const [courseForm, setCourseForm] = useState({
     id: "", pathwayId: "", sequence: "1", titleAr: "", shortPromiseAr: "", levelAr: "",
@@ -151,8 +153,9 @@ export default function CatalogAdmin() {
       level: pwForm.level.trim() || undefined,
       capstone: pwForm.capstone.trim() || undefined,
       courseIds: pwForm.courseIds,
+      domainIds: pwForm.domainIds,
     });
-    setPwForm({ id: "", title: "", shortTitle: "", audience: "", beforeText: "", afterText: "", durationWeeks: "", weeklyHours: "", level: "", capstone: "", courseIds: [] });
+    setPwForm({ id: "", title: "", shortTitle: "", audience: "", beforeText: "", afterText: "", durationWeeks: "", weeklyHours: "", level: "", capstone: "", courseIds: [], domainIds: [] });
     setOpenForm(null);
   }, "أُنشئ المسار كمسودة مرتبطا بدوراته");
 
@@ -169,7 +172,10 @@ export default function CatalogAdmin() {
 
   const courseValid = courseForm.id.trim().length >= 3 && courseForm.pathwayId && courseForm.titleAr.trim().length >= 3
     && Number(courseForm.totalHours) >= 1 && modules.every((m) => m.titleAr.trim().length >= 3);
-  const pathwayValid = pwForm.id.trim().length >= 2 && pwForm.title.trim().length >= 3 && pwForm.courseIds.length >= 1;
+  /* ج-١: مجال واحد على الأقل شرطُ نشر — فهو شرط النموذج أيضا، كي لا يُنشأ مسار
+     يُعتمد ثم يُرفض نشره بعد أسبوعين من العمل عليه. */
+  const pathwayValid = pwForm.id.trim().length >= 2 && pwForm.title.trim().length >= 3
+    && pwForm.courseIds.length >= 1 && pwForm.domainIds.length >= 1;
 
   const FormHead = ({ id, icon: Icon, title, hint }: { id: typeof openForm & string; icon: typeof FilePlus2; title: string; hint: string }) => (
     <button onClick={() => setOpenForm(openForm === id ? null : id)}
@@ -434,6 +440,26 @@ export default function CatalogAdmin() {
               ))}
               {courses.length === 0 && <span className="text-[11px] text-white/45">أنشئ دورات أولا من نموذج الدورة.</span>}
             </div>
+
+            {/* ج-١: مجالات المسار — بلا مجال لا يدخل المسار مطابقة احتياج المستخدم
+                ولا يجتاز حاجز النشر. الأول هو الأقرب. */}
+            <p className="mt-5 mb-1 text-xs font-black text-white/60">مجالات المسار ({pwForm.domainIds.length}) — مطلوب مجال واحد على الأقل</p>
+            <p className="mb-2 text-[11px] leading-6 text-white/60">
+              المجال هو الباب الذي يدخل منه المسار إلى التوصية: يُطابَق بهدف المتعلم ووظيفته.
+              بلا مجال يُنشر المسار ولا يُوصى به أبدا — لذلك لا يجتاز حاجز النشر.
+              {pwForm.domainIds.length > 1 && " الأول في اختيارك هو الأقرب."}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {domainsV2.map((d) => (
+                <button key={d.id} type="button" title={d.desc_ar}
+                  onClick={() => setPwForm({ ...pwForm, domainIds: toggleId(pwForm.domainIds, d.id) })}
+                  className={`cursor-pointer rounded-full border px-3 py-1 text-[11px] font-bold transition ${pwForm.domainIds.includes(d.id) ? "border-gold bg-gold/15 text-gold-ink" : "border-white/15 text-white/55 hover:border-white/40"}`}>
+                  {pwForm.domainIds.includes(d.id) && <span className="ml-1">{pwForm.domainIds.indexOf(d.id) + 1}.</span>}
+                  {d.name_ar}
+                </button>
+              ))}
+            </div>
+
             <button disabled={busy || !pathwayValid} onClick={submitPathway}
               className="mt-4 flex cursor-pointer items-center gap-2 rounded-full bg-gold px-6 py-2 text-sm font-black text-on-gold disabled:opacity-40">
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null} إنشاء المسودة

@@ -66,6 +66,17 @@ export class PublishingService {
       }
     }
 
+    /* المسارات المعتمدة: مجال واحد على الأقل (ج-١).
+       بلا مجال لا يدخل المسار مطابقة احتياج المستخدم أبدا — يُنشر ولا يُوصى به.
+       الحاجز هنا وقت النشر لا في أهلية التوصية: لا يُخرج منشورا قائما، ويمنع
+       دخول محتوى جديد بلا مجال. المصدر الملفي مغطى ببوابة validate-source. */
+    for (const p of approved.pathways) {
+      const domains = await this.prisma.pathwayDomain.count({ where: { pathwayId: p.id } })
+      if (domains === 0) {
+        errors.push(`pathway ${p.id}: بلا مجال — لن يدخل مطابقة المجالات، اربطه بمجال قبل النشر`)
+      }
+    }
+
     /* الدورات المعتمدة: وحدة واحدة على الأقل، ومهاراتها موجودة */
     for (const c of approved.courses) {
       const modules = await this.prisma.courseModule.count({ where: { courseId: c.id, status: { in: ['approved', 'published'] } } })

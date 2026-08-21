@@ -14,7 +14,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 export interface BuiltSnapshot {
   payload: Record<string, unknown>
   hash: string
-  counts: { pathways: number; courses: number; modules: number; skills: number; questions: number; templates: number }
+  counts: { pathways: number; courses: number; modules: number; skills: number; questions: number; templates: number; pathwayDomains: number }
 }
 
 /** يبني لقطة من صفوف المنشور — ومع extraStatuses يشمل حالات إضافية (مثل «approved» للقطات المرشحة قبل النشر) */
@@ -206,6 +206,16 @@ export async function buildSnapshotFromDb(
     }
   }
 
+  /* مجالات المسارات (ج-١) — من الصفوف المنشورة لا من ملف وقت البناء.
+     الترتيب المصدري محفوظ بـ orderIndex، والمسارات مرتبة بمعرفاتها فتبقى اللقطة
+     ثابتة البايتات لنفس البيانات (شرط استقرار التجزئة). */
+  const domainRows = await prisma.pathwayDomain.findMany({
+    where: { pathwayId: { in: pathwayRows.map((p) => p.id) } },
+    orderBy: [{ pathwayId: 'asc' }, { orderIndex: 'asc' }],
+  })
+  const pathwayDomainMap: Record<string, string[]> = {}
+  for (const r of domainRows) (pathwayDomainMap[r.pathwayId] ??= []).push(r.domainId)
+
   /* مصنفات الكلمات — وثيقة تراكب لم تُنمذج بعد؛ تُقرأ من مصدرها الموثق */
   const optionEffectsOverlay = JSON.parse(readFileSync(join(root, 'src/data/overlays/option-effects.v2.json'), 'utf8'))
 
@@ -224,6 +234,7 @@ export async function buildSnapshotFromDb(
       keyword_classifiers: optionEffectsOverlay.keyword_classifiers ?? {},
     },
     pathwayProfiles: { profiles: profileMap },
+    pathwayDomains: { pathway_domains: pathwayDomainMap },
   }
   const hash = createHash('sha256').update(JSON.stringify(payload)).digest('hex')
   return {
@@ -232,6 +243,7 @@ export async function buildSnapshotFromDb(
     counts: {
       pathways: pathwayRows.length, courses: courseRows.length, modules: moduleRows.length,
       skills: skills.length, questions: questionRows.length, templates: templateRows.length,
+      pathwayDomains: domainRows.length,
     },
   }
 }

@@ -113,9 +113,20 @@ export function registerCatalogRoutes(app: FastifyInstance, prisma: PrismaClient
       beforeText: z.string().optional(), afterText: z.string().optional(),
       durationWeeks: z.number().int().optional(), weeklyHours: z.string().optional(), level: z.string().optional(),
       capstone: z.string().optional(), courseIds: z.array(z.string()).min(1),
+      /* ج-١: المجالات جزء من إنشاء المسار — بلا مجال لا يجتاز حاجز النشر */
+      domainIds: z.array(z.string()).optional(),
     }).parse(req.body)
     const pathway = await admin.createPathway(body, req.auth!.userId)
     return reply.status(201).send({ id: pathway.id, status: pathway.status })
+  })
+
+  app.put('/api/admin/catalog/pathways/:id/domains', {
+    preHandler: requirePermission('catalog.pathway.create'),
+    schema: { tags: ['admin-catalog'], summary: 'ربط المسار بمجالاته — استبدال كامل، الأول هو الأقرب (ج-١)' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string() }).parse(req.params)
+    const { domainIds } = z.object({ domainIds: z.array(z.string()) }).parse(req.body)
+    return admin.setPathwayDomains(id, domainIds)
   })
 
   /* طلبات التغيير — maker-checker */
