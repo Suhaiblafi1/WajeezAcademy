@@ -2,9 +2,10 @@ import { useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router";
 import {
   ArrowLeft, ArrowRight, Award, CheckCircle2, ClipboardList, FileUp,
-  HelpCircle, Lock, MessageSquare, Send, Upload, Video, XCircle,
-} from "lucide-react";
+  HelpCircle, Lock, MessageSquare, Send, Upload, Video, XCircle, Loader2} from "lucide-react";
 import PortalLayout from "./PortalLayout";
+import { hasShowcaseCatalog, showcasePathwayId } from "@/data/showcase";
+import { usePublishedContent } from "@/services/public-content";
 import SimulationNote from "@/components/SimulationNote";
 import VideoPlayer from "@/components/VideoPlayer";
 import CourseResources from "@/components/CourseResources";
@@ -18,14 +19,29 @@ import {
   issueCertificate, readUserName, type PortalState,
 } from "@/data/student";
 
+/* ⚠ الكتالوج كسول (ع-١): الجسم خلف حالة تحميل، ويُعاد تركيبه بمفتاح نسخته. */
 export default function CourseView() {
+  const catalogVersion = usePublishedContent();
+  if (!hasShowcaseCatalog()) {
+    return (
+      <PortalLayout title="الدورة">
+        <div className="grid place-items-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-teal-ink" aria-label="جارٍ تحميل الكتالوج" />
+        </div>
+      </PortalLayout>
+    );
+  }
+  return <CourseViewBody key={catalogVersion} />;
+}
+
+function CourseViewBody() {
   const { courseId } = useParams();
   const course = courseById(courseId ?? "");
   const enrollment = getEnrollment();
   const pathwayId = enrollment?.pathwayId
     ?? pathways.find((p) => (pathwayCourses[p.id] ?? []).includes(courseId ?? ""))?.id
     ?? course?.pathwayId
-    ?? pathways[0].id;
+    ?? showcasePathwayId()!;
   const pathway = pathwayById(pathwayId);
 
   const [state, setState] = useState<PortalState>(() => loadPortal(pathwayId));

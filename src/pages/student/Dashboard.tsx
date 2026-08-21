@@ -5,6 +5,7 @@ import {
   Lightbulb, Loader2, MessageCircle, Send, Sparkles, Target, TrendingUp, Video, LifeBuoy,
 } from "lucide-react";
 import PortalLayout from "./PortalLayout";
+import { hasShowcaseCatalog, showcasePathwayId } from "@/data/showcase";
 import SkillMeter from "@/components/SkillMeter";
 import PathwayMap from "@/components/PathwayMap";
 import { buildPathwayMap, enrollmentFactsFromApi } from "@/application/student/pathway-map";
@@ -14,7 +15,7 @@ import { usePublishedContent } from "@/services/public-content";
 import { getEnrollment, isPreview } from "@/services/access";
 import { useRealSession } from "@/services/session";
 import { apiGet } from "@/services/api";
-import { pathwayById, pathways } from "@/data/pathways";
+import { pathwayById } from "@/data/pathways";
 import { courseById, pathwayCourses } from "@/data/courses";
 import {
   loadPortal, nextAction, pathwayPercent, pathwaySkills, courseSessions,
@@ -385,10 +386,25 @@ function EmptyRealDashboard({ name }: { name: string }) {
 }
 
 /* ═══════════ وضع المحاكاة — تجربة الديمو للزائر دون حساب حقيقي ═══════════ */
+/* ⚠ الكتالوج كسول (ع-١): الجسم خلف حالة تحميل، ويُعاد تركيبه بمفتاح نسخته. */
 function SimulatedDashboard() {
+  const catalogVersion = usePublishedContent();
+  if (!hasShowcaseCatalog()) {
+    return (
+      <PortalLayout title="لوحتي">
+        <div className="grid place-items-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-teal-ink" aria-label="جارٍ تحميل الكتالوج" />
+        </div>
+      </PortalLayout>
+    );
+  }
+  return <SimulatedDashboardBody key={catalogVersion} />;
+}
+
+function SimulatedDashboardBody() {
   const enrollment = getEnrollment();
   // في وضع المعاينة نعرض أول مسار غني بالدورات
-  const pathwayId = enrollment?.pathwayId ?? pathways.find((p) => (pathwayCourses[p.id] ?? []).length >= 4)?.id ?? pathways[0].id;
+  const pathwayId = enrollment?.pathwayId ?? showcasePathwayId()!;
   const pathway = pathwayById(pathwayId);
   const state = useMemo(() => loadPortal(pathwayId), [pathwayId]);
   const pct = pathwayPercent(pathwayId, state);

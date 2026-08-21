@@ -102,7 +102,9 @@ function mkSessions(cohortId: string, startDate: string, live: boolean): CohortS
 function seedCohorts(): Cohort[] {
   const pick = (family: string, idx: number) => {
     const pw = pathways.filter((p) => p.id.includes(`-${family}-`));
-    const pathway = pw[idx % Math.max(1, pw.length)] ?? pathways[0];
+    /* الكتالوج كسول (ع-١): قبل تثبيته لا مسار — نعيد لا شيء بدل قراءة pathways[0] العارية */
+    const pathway = pw[idx % Math.max(1, pw.length)] ?? pathways[0] ?? null;
+    if (!pathway) return { c: null, pathway: null };
     const cid = (pathwayCourses[pathway.id] ?? [])[idx % 2];
     const c = cid ? courseById(cid) : null;
     return { c, pathway };
@@ -111,7 +113,7 @@ function seedCohorts(): Cohort[] {
   TRAINER_IDENTITIES.forEach((t, ti) => {
     for (let k = 0; k < 2; k++) {
       const { c, pathway } = pick(t.family, ti + k);
-      if (!c) continue;
+      if (!c || !pathway) continue;
       const id = `COH-${t.family}-${ti}${k}`;
       const enrolled = 10 + ((ti + k) % 3) * 2;
       cohorts.push({

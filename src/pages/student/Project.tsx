@@ -2,13 +2,13 @@ import { useState } from "react";
 import { Link } from "react-router";
 import {
   CheckCircle2, CircleDashed, FileText, Film, Link2, Lock,
-  Mic, Send, Trophy, Upload,
-} from "lucide-react";
+  Mic, Send, Trophy, Upload, Loader2} from "lucide-react";
 import PortalLayout from "./PortalLayout";
+import { hasShowcaseCatalog, showcasePathwayId } from "@/data/showcase";
+import { usePublishedContent } from "@/services/public-content";
 import SimulationNote from "@/components/SimulationNote";
 import { getEnrollment } from "@/services/access";
-import { pathwayById, pathways } from "@/data/pathways";
-import { pathwayCourses } from "@/data/courses";
+import { pathwayById } from "@/data/pathways";
 import {
   loadPortal, savePortal, projectConditions, PROJECT_RUBRIC,
   issueCertificate, readUserName, type PortalState, type ProjectStatus,
@@ -32,9 +32,25 @@ const KINDS = [
   { key: "link", label: "رابط (GitHub/Figma/موقع)", icon: Link2 },
 ] as const;
 
+/* ⚠ الكتالوج كسول (ع-١): الجسم خلف حالة تحميل، ويُعاد تركيبه بمفتاح نسخة
+   الكتالوج حتى لا تبقى حالة المحاكاة مبنيّة على مسار اختير قبل وصول البيانات. */
 export default function Project() {
+  const catalogVersion = usePublishedContent();
+  if (!hasShowcaseCatalog()) {
+    return (
+      <PortalLayout title="مشروع التخرج">
+        <div className="grid place-items-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-teal-ink" aria-label="جارٍ تحميل الكتالوج" />
+        </div>
+      </PortalLayout>
+    );
+  }
+  return <ProjectBody key={catalogVersion} />;
+}
+
+function ProjectBody() {
   const enrollment = getEnrollment();
-  const pathwayId = enrollment?.pathwayId ?? pathways.find((p) => (pathwayCourses[p.id] ?? []).length >= 4)?.id ?? pathways[0].id;
+  const pathwayId = enrollment?.pathwayId ?? showcasePathwayId()!;
   const pathway = pathwayById(pathwayId);
   const [state, setState] = useState<PortalState>(() => loadPortal(pathwayId));
   const [kind, setKind] = useState<"file" | "video" | "audio" | "link">("file");
