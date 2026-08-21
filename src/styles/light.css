@@ -71,6 +71,8 @@ html[data-theme="light"] .placeholder\:text-white\/30::placeholder { color: rgba
 html[data-theme="light"] .placeholder\:text-white\/40::placeholder { color: rgba(22, 33, 31, 0.4); }
 
 /* ── حالات: درجات لوحة Tailmind الفاتحة صُممت للداكن ← أعمق على الفاتح ── */
+/* ‏text-red-200 لافتة الخطأ في ١٧ شاشة — كانت 1.2:1 على خلفيتها الوردية */
+html[data-theme="light"] .text-red-200 { color: #B91C1C; }
 html[data-theme="light"] .text-red-300 { color: #B91C1C; }
 html[data-theme="light"] .text-red-400 { color: #DC2626; }
 html[data-theme="light"] .text-red-200\/80 { color: rgba(185, 28, 28, 0.85); }

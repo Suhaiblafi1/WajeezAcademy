@@ -198,7 +198,7 @@ export default function StudentCard() {
               <AdvisorContact
                 text={advisorMsg}
                 label="راسله"
-                className="mt-4 flex items-center justify-center gap-2 rounded-full bg-[#25D366] py-2.5 text-sm font-black text-white hover:bg-[#25D366]/85"
+                className="mt-4 flex items-center justify-center gap-2 rounded-full bg-[#25D366] py-2.5 text-sm font-black text-on-bright hover:bg-[#25D366]/85"
               />
             )}
             {nba.channel === "booking" && (

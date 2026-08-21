@@ -596,7 +596,7 @@ export default function PathwayPage() {
                   متردد قبل الدفع؟ راسل مستشارك مباشرة — قرأ تشخيصك وسيجيبك بنفسه، لا رد آلي.
                 </p>
               </div>
-              <Button asChild className="h-12 rounded-full bg-[#25D366] px-6 font-black text-white hover:bg-[#25D366]/85">
+              <Button asChild className="h-12 rounded-full bg-[#25D366] px-6 font-black text-on-bright hover:bg-[#25D366]/85">
                 <AdvisorContact
                   text={advisorMsg}
                   label="كلم مستشارك"
