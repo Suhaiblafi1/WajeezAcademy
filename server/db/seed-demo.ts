@@ -437,6 +437,57 @@ async function seedDemoSessions(prisma: PrismaClient): Promise<'written' | 'skip
   return wrote ? 'written' : 'skipped'
 }
 
+/* البند ب-١/ب-٢: اقتراح تعديل من المدرب الديمو بانتظار المراجعة. كانت شاشة
+   المراجعة فارغة دائما، فلا تُرى دائرة الأثر ولا فحص الأثر التشخيصي — وميزةٌ
+   لا تُرى في الديمو لا يعلم أحد أنها موجودة. النطاق «كتالوج» بقصد: هو النطاق
+   الذي يستوجب رؤية الدائرة والفحص. */
+async function seedDemoChangeRequest(prisma: PrismaClient): Promise<'written' | 'skipped'> {
+  const trainerUser = await prisma.user.findUnique({ where: { email: 'trainer.demo@wajeez.local' } })
+  if (!trainerUser) return 'skipped'
+  const profile = await prisma.trainerProfile.findUnique({ where: { userId: trainerUser.id } })
+  if (!profile) return 'skipped'
+  const existing = await prisma.trainerChangeRequest.count({ where: { profileId: profile.id } })
+  if (existing > 0) return 'skipped'
+
+  const course = await prisma.course.findUnique({
+    where: { id: 'C-AUT-101' },
+    include: { versions: { orderBy: { version: 'desc' }, take: 1 } },
+  })
+  if (!course) return 'skipped'
+  const firstModule = await prisma.courseModule.findFirst({ where: { courseId: course.id }, orderBy: { id: 'asc' } })
+  if (!firstModule) return 'skipped'
+
+  await prisma.trainerChangeRequest.create({
+    data: {
+      profileId: profile.id,
+      courseId: course.id,
+      baseCourseVersion: course.currentVersion,
+      scope: 'catalog',
+      status: 'submitted',
+      reason: 'عنوان الوحدة الأولى لا يقول للمتعلم ما سيخرج به — اقتراح ديمو لعرض دائرة الأثر.',
+      evidence: 'ثلاث دفعات سألوا السؤال نفسه في الجلسة الأولى. بيانات تجريبية.',
+      items: {
+        create: [
+          {
+            changeType: 'module_title_edit',
+            targetKey: firstModule.id,
+            beforeValue: { titleAr: 'العملية الحالية ونقطة الألم' },
+            afterValue: { titleAr: 'ارسم عمليتك وحدّد نقطة الألم' },
+            note: 'صيغة الأمر تقول للمتعلم ما يفعله — ملاحظة ديمو.',
+          },
+          {
+            changeType: 'examples_update',
+            targetKey: firstModule.id,
+            afterValue: { examplesAr: 'مثال من شركة توزيع أردنية بدل المثال العام' },
+            note: 'أمثلة من السياق المحلي — ملاحظة ديمو.',
+          },
+        ],
+      },
+    },
+  })
+  return 'written'
+}
+
 export async function seedDemo(prisma: PrismaClient): Promise<{ users: number; richData: 'created' | 'existing' }> {
   await seedRbac(prisma)
 
@@ -452,6 +503,7 @@ export async function seedDemo(prisma: PrismaClient): Promise<{ users: number; r
   await seedDemoRemeasure(prisma)
   await seedDemoRetrievalCards(prisma)
   await seedDemoSessions(prisma)
+  await seedDemoChangeRequest(prisma)
 
   /* إن كان الطالب الديمو مسجلا في شعبة فالبيانات الغنية موجودة — لا تكرار */
   const alreadyRich = await prisma.enrollment.findFirst({ where: { userId: student.id } })
@@ -742,6 +794,7 @@ export async function seedDemo(prisma: PrismaClient): Promise<{ users: number; r
   await seedDemoRemeasure(prisma)
   await seedDemoRetrievalCards(prisma)
   await seedDemoSessions(prisma)
+  await seedDemoChangeRequest(prisma)
 
   void superadmin // الحساب يُنشأ ضمن ensureUser أعلاه — لا بيانات إضافية له
   return { users: DEMO_ACCOUNTS.length, richData: 'created' }

@@ -8,6 +8,8 @@ import { TrainerReviewService, RUBRIC_CRITERIA } from '../../services/trainer-re
 import { TrainerChangeService } from '../../services/trainer-change.service'
 import { EarningsService } from '../../services/earnings.service'
 import { requirePermission } from '../auth-plugin'
+import { blastRadiusSentenceAr, courseBlastRadius } from '../../services/catalog-impact.service'
+import { analyzeImpact } from '../../services/impact.service'
 
 const rubricSchema = z.object(
   Object.fromEntries(RUBRIC_CRITERIA.map((k) => [k, z.number().int().min(1).max(5)])),
@@ -202,6 +204,16 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     return changes.listForReview(status)
   })
 
+  app.get('/api/admin/catalog/courses/:courseId/blast-radius', {
+    preHandler: requirePermission('trainer.change.review'),
+    schema: { tags: ['admin-trainers'], summary: 'دائرة أثر دورة — المسارات والقوالب والشعب والمتعلمون الذين يصلهم التعديل' },
+  }, async (req) => {
+    const { courseId } = z.object({ courseId: z.string().min(3).max(80) }).parse(req.params)
+    const radii = await courseBlastRadius(prisma, [courseId])
+    const radius = radii.get(courseId)!
+    return { ...radius, sentenceAr: blastRadiusSentenceAr(radius) }
+  })
+
   app.post('/api/admin/trainer-change-requests/:id/decision', {
     preHandler: requirePermission('trainer.change.review'),
     schema: { tags: ['admin-trainers'], summary: 'قرار مراجعة اقتراح — maker-checker مطبق' },
@@ -213,6 +225,22 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
       scheduledPublishAt: z.coerce.date().optional(),
     }).parse(req.body)
     return changes.decide(id, req.auth!.userId, body.action, body.comment, body.scheduledPublishAt)
+  })
+
+  app.post('/api/admin/trainer-change-requests/:id/impact', {
+    preHandler: requirePermission('trainer.change.review'),
+    schema: { tags: ['admin-trainers'], summary: 'فحص الأثر التشخيصي — يشغّل ١٢ شخصية على المنشور مقابل المنشور+المعتمد ويقارن المسار والثقة والأسئلة' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return analyzeImpact(prisma, TrainerChangeService.impactRef(id), req.auth!.userId)
+  })
+
+  app.get('/api/admin/trainer-change-requests/:id/impact', {
+    preHandler: requirePermission('trainer.change.review'),
+    schema: { tags: ['admin-trainers'], summary: 'هل فُحص الأثر بعد الاعتماد؟ — شرط النشر بنطاق الكتالوج' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return changes.impactChecked(id)
   })
 
   app.post('/api/admin/trainer-change-requests/:id/publish', {

@@ -3,8 +3,8 @@
    كلها API حقيقي من admin-trainer.routes. */
 import { useCallback, useEffect, useState } from "react";
 import {
-  BadgeCheck, Banknote, Briefcase, CalendarCheck, CheckCircle2, ChevronDown, FileSignature,
-  Globe, Loader2, Settings2, ShieldOff, Star, UserCheck, XCircle, Zap,
+  Activity, AlertTriangle, BadgeCheck, Banknote, Briefcase, CalendarCheck, CheckCircle2, ChevronDown, FileSignature,
+  Globe, Info, Loader2, Settings2, ShieldOff, Star, UserCheck, XCircle, Zap,
 } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 
@@ -274,10 +274,54 @@ export function TrainerDetailOps({ app, onAction }: {
   );
 }
 
+interface BlastRadius {
+  pathways: { id: string; titleAr: string; roleAr: string }[];
+  templates: { id: string; titleAr: string; roleAr: string }[];
+  entityCount: number;
+  cohorts: { total: number; live: number };
+  learners: number;
+}
 interface TrainerChangeRequest {
   id: string; status: string; reason: string; scope: string; createdAt: string;
   course?: { id: string } | null; courseId?: string;
   items?: { changeType: string; note?: string | null }[];
+  /* البند ب-١: من يصله التعديل — يأتي مع القائمة لا بنداء إضافي */
+  blastRadius?: BlastRadius | null;
+  blastRadiusSentenceAr?: string | null;
+}
+
+/* البند ب-١: دائرة الأثر فوق كل اقتراح. تُعرض قبل أزرار القرار لا بعدها —
+   المعتمِد يقرأ من يصله التعديل ثم يقرر، لا يقرر ثم يكتشف. */
+function BlastRadiusStrip({ r }: { r: TrainerChangeRequest }) {
+  const b = r.blastRadius;
+  if (!b) return null;
+  const wide = b.entityCount > 0 || b.learners > 0;
+  const entities = [...b.pathways, ...b.templates];
+  return (
+    <div className={`mt-3 rounded-2xl border px-4 py-3 ${wide ? "border-gold/35 bg-gold/[0.07]" : "border-white/10 bg-white/[0.02]"}`}>
+      <p className="flex items-start gap-2 text-[11px] font-bold leading-6">
+        {wide
+          ? <AlertTriangle className="mt-1 h-3.5 w-3.5 shrink-0 text-gold-ink" aria-hidden="true" />
+          : <Info className="mt-1 h-3.5 w-3.5 shrink-0 text-white/45" aria-hidden="true" />}
+        <span className={wide ? "text-white/85" : "text-white/60"}>{r.blastRadiusSentenceAr}</span>
+      </p>
+      {entities.length > 0 && (
+        <ul className="mt-2 flex flex-wrap gap-1.5">
+          {entities.map((e) => (
+            <li key={e.id} className="rounded-full border border-white/12 bg-black/20 px-2.5 py-0.5 text-[10px] text-white/70">
+              <span dir="ltr" className="font-mono">{e.id}</span>
+              <span className="text-white/60"> · {e.roleAr}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {b.cohorts.total > b.cohorts.live && (
+        <p className="mt-1.5 text-[10px] text-white/50">
+          ومن {b.cohorts.total} شعبة، {b.cohorts.total - b.cohorts.live} غير حيّة (مسودة أو منتهية) — لا يتأثر بها متعلم الآن.
+        </p>
+      )}
+    </div>
+  );
 }
 
 /** لوحة مراجعة اقتراحات تعديل الدورات من المدربين — maker-checker */
@@ -325,7 +369,7 @@ export function TrainerChangeRequests() {
                 <span className="mr-2 text-[11px] font-bold text-white/50">نطاق: {r.scope === "cohort" ? "شعبة" : "كتالوج"}</span>
               </p>
               <p className="mt-1 text-xs leading-6 text-white/60">{r.reason}</p>
-              <p className="mt-1 text-[10px] text-white/40">
+              <p className="mt-1 text-[10px] text-white/55">
                 {new Date(r.createdAt).toLocaleString("ar")} · {r.items?.length ?? 0} بند تعديل
               </p>
             </div>
@@ -333,6 +377,7 @@ export function TrainerChangeRequests() {
               {CR_STATUS_AR[r.status] ?? r.status}
             </span>
           </div>
+          <BlastRadiusStrip r={r} />
           {(r.status === "submitted" || r.status === "in_review") && (
             <div className="mt-3 space-y-2 border-t border-white/8 pt-3">
               <input value={comment[r.id] ?? ""} onChange={(e) => setComment({ ...comment, [r.id]: e.target.value })}
@@ -358,13 +403,120 @@ export function TrainerChangeRequests() {
             </div>
           )}
           {(r.status === "approved_for_cohort" || r.status === "approved_for_catalog" || r.status === "scheduled") && (
-            <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/publish`), "نُشر الاقتراح في نطاقه")}
-              className="mt-3 flex cursor-pointer items-center gap-1.5 rounded-full bg-gold px-4 py-1.5 text-xs font-black text-on-gold disabled:opacity-40">
-              <Globe className="h-3.5 w-3.5" /> نشر في النطاق
-            </button>
+            <ImpactGate
+              requestId={r.id}
+              needsImpact={r.scope === "catalog"}
+              busy={busy}
+              onPublish={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/publish`), "نُشر الاقتراح في نطاقه")}
+            />
           )}
         </div>
       ))}
+    </div>
+  );
+}
+
+
+interface ImpactVerdict {
+  verdictAr: string;
+  touchesDiagnostic: boolean;
+  changedWinners: { name: string; beforeTop: string | null; afterTop: string | null }[];
+  changedConfidence: { name: string; before: number; after: number; delta: number }[];
+  changedQuestions: { name: string; removed: string[]; added: string[]; reordered: boolean }[];
+  totalPersonas: number;
+}
+
+/* البند ب-٢: لا يُنشر تغيير بنطاق الكتالوج قبل أن يرى المعتمِد أثره التشخيصي.
+   الحاجز في الخادم أيضا (publish يرفض بلا فحص) — والشاشة تشرحه لا تحرسه وحدها.
+   نطاق الشعبة معفى: لا يمس الكتالوج ولا التشخيص. */
+function ImpactGate({
+  requestId, needsImpact, busy, onPublish,
+}: {
+  requestId: string;
+  needsImpact: boolean;
+  busy: boolean;
+  onPublish: () => void;
+}) {
+  const [checked, setChecked] = useState<boolean | null>(needsImpact ? null : true);
+  const [verdict, setVerdict] = useState<ImpactVerdict | null>(null);
+  const [running, setRunning] = useState(false);
+
+  useEffect(() => {
+    if (!needsImpact) return;
+    let alive = true;
+    void (async () => {
+      const r = await apiGet<{ checked: boolean }>(`/api/admin/trainer-change-requests/${requestId}/impact`).catch(() => null);
+      if (alive) setChecked(r?.checked ?? false);
+    })();
+    return () => { alive = false; };
+  }, [requestId, needsImpact]);
+
+  const run = async () => {
+    setRunning(true);
+    const r = await apiPost<ImpactVerdict>(`/api/admin/trainer-change-requests/${requestId}/impact`).catch(() => null);
+    setRunning(false);
+    if (r) { setVerdict(r); setChecked(true); }
+  };
+
+  return (
+    <div className="mt-3 border-t border-white/8 pt-3">
+      {needsImpact && (
+        <>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              disabled={running}
+              onClick={() => void run()}
+              className="flex min-h-11 cursor-pointer items-center gap-1.5 rounded-full border border-teal/45 px-4 text-xs font-bold text-teal-light-ink transition hover:bg-teal/10 disabled:opacity-40"
+            >
+              {running ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Activity className="h-3.5 w-3.5" />}
+              {running ? "يشغّل ١٢ شخصية…" : "افحص الأثر التشخيصي"}
+            </button>
+            {checked === false && !verdict && (
+              <span className="text-[11px] font-bold text-gold-ink">لم يُفحص بعد — النشر بنطاق الكتالوج موقوف حتى الفحص.</span>
+            )}
+            {checked === true && !verdict && (
+              <span className="text-[11px] text-white/60">فُحص الأثر بعد الاعتماد — يمكن النشر.</span>
+            )}
+          </div>
+
+          {verdict && (
+            <div className={`mt-2 rounded-2xl border px-4 py-3 text-[11px] leading-6 ${
+              verdict.touchesDiagnostic ? "border-gold/35 bg-gold/[0.07]" : "border-teal/30 bg-teal-ink/[0.06]"
+            }`}>
+              <p className="font-bold text-white/85">{verdict.verdictAr}</p>
+              {verdict.changedWinners.map((w) => (
+                <p key={`w-${w.name}`} className="mt-1 text-white/70">
+                  · {w.name}: الترشيح <span dir="ltr" className="font-mono">{w.beforeTop ?? "—"}</span> ← <span dir="ltr" className="font-mono">{w.afterTop ?? "—"}</span>
+                </p>
+              ))}
+              {verdict.changedConfidence.map((c) => (
+                <p key={`c-${c.name}`} className="mt-1 tabular-nums text-white/70">
+                  · {c.name}: الثقة {(c.before * 100).toFixed(1)}٪ ← {(c.after * 100).toFixed(1)}٪
+                </p>
+              ))}
+              {verdict.changedQuestions.map((q) => (
+                <p key={`q-${q.name}`} className="mt-1 text-white/70">
+                  · {q.name}: {q.removed.length > 0 && <>اختفى <span dir="ltr" className="font-mono">{q.removed.join(", ")}</span> </>}
+                  {q.added.length > 0 && <>ظهر <span dir="ltr" className="font-mono">{q.added.join(", ")}</span> </>}
+                  {q.reordered && <>ترتيب الأسئلة تغيّر</>}
+                </p>
+              ))}
+              <p className="mt-2 text-[10px] text-white/55">
+                الفحص يقارن اللقطة المنشورة بالمنشور + كل ما اعتُمد ولم يُنشر — لا هذا الاقتراح وحده.
+              </p>
+            </div>
+          )}
+        </>
+      )}
+
+      <button
+        disabled={busy || (needsImpact && checked !== true)}
+        onClick={onPublish}
+        className="mt-2 flex min-h-11 cursor-pointer items-center gap-1.5 rounded-full bg-gold px-4 text-xs font-black text-on-gold disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        <Globe className="h-3.5 w-3.5" /> نشر في النطاق
+      </button>
     </div>
   );
 }

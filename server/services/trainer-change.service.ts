@@ -8,6 +8,7 @@
 import type { PrismaClient, Prisma } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
+import { blastRadiusSentenceAr, courseBlastRadius } from './catalog-impact.service'
 
 export const CHANGE_TYPES = [
   'module_title_edit', 'module_add', 'module_reorder', 'explanation_improve',
@@ -148,8 +149,14 @@ export class TrainerChangeService {
 
   /* ─────────── مراجعة المسؤول الأكاديمي (checker) ─────────── */
 
+  /**
+   * اقتراحات المراجعة، ومع كل اقتراح **دائرة أثر دورته** (البند ب-١):
+   * أي مسار وأي قالب وأي شعبة وكم متعلم يصلهم التعديل. بلا هذا يعتمد المراجع
+   * تغييرا على دورة تستخدمها سبعة كيانات وهو لا يعلم.
+   * الدوائر تُجمَع باستعلامات موحَّدة لا لكل اقتراح — الشاشة تعرض عشرات.
+   */
   async listForReview(status?: string) {
-    return this.prisma.trainerChangeRequest.findMany({
+    const rows = await this.prisma.trainerChangeRequest.findMany({
       where: status ? { status } : undefined,
       orderBy: { createdAt: 'desc' },
       include: {
@@ -158,6 +165,15 @@ export class TrainerChangeService {
         course: { include: { versions: { orderBy: { version: 'desc' }, take: 1 } } },
         cohort: true,
       },
+    })
+    const radii = await courseBlastRadius(this.prisma, rows.map((r) => r.courseId))
+    return rows.map((r) => {
+      const radius = radii.get(r.courseId) ?? null
+      return {
+        ...r,
+        blastRadius: radius,
+        blastRadiusSentenceAr: radius ? blastRadiusSentenceAr(radius) : null,
+      }
     })
   }
 
@@ -212,6 +228,28 @@ export class TrainerChangeService {
   /* ─────────── النشر في النطاق المعتمد ─────────── */
 
   /** نشر اقتراح معتمد — كتالوج: إصدار جديد للدورة؛ شعبة: خطة تنفيذ للشعبة */
+  /** مرجع تحليل الأثر لاقتراح — يربط الفحص بالاقتراح فلا يُقبل فحص قديم */
+  static impactRef(requestId: string): string {
+    return `trainer-change:${requestId}`
+  }
+
+  /**
+   * هل فُحص الأثر التشخيصي لهذا الاقتراح بعد اعتماده؟ (البند ب-٢)
+   * الفحص قبل الاعتماد لا يُحتسب: المعتمَد قد تغيّر بعده.
+   */
+  async impactChecked(requestId: string): Promise<{ checked: boolean; runId: string | null; at: string | null }> {
+    const req = await this.prisma.trainerChangeRequest.findUnique({ where: { id: requestId } })
+    if (!req) throw new AuthError('not_found', 'الاقتراح غير موجود', 404)
+    const run = await this.prisma.impactAnalysisRun.findFirst({
+      where: {
+        changeRef: TrainerChangeService.impactRef(requestId),
+        ...(req.reviewedAt ? { createdAt: { gte: req.reviewedAt } } : {}),
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+    return { checked: Boolean(run), runId: run?.id ?? null, at: run?.createdAt.toISOString() ?? null }
+  }
+
   async publish(requestId: string, actorId: string) {
     const req = await this.prisma.trainerChangeRequest.findUnique({
       where: { id: requestId }, include: { items: true, course: true },
@@ -219,6 +257,20 @@ export class TrainerChangeService {
     if (!req) throw new AuthError('not_found', 'الاقتراح غير موجود', 404)
     if (!['approved_for_cohort', 'approved_for_catalog'].includes(req.status)) {
       throw new AuthError('bad_state', 'الاقتراح غير معتمد للنشر', 409)
+    }
+
+    /* البند ب-٢: لا يُنشر تغيير بنطاق كتالوج قبل عرض فحص الأثر على المعتمِد.
+       نطاق الشعبة معفى: لا يمس الكتالوج ولا التشخيص، والتجربة فيه هي الغرض.
+       ⚠ الشرط أن الفحص أُجري **بعد** الاعتماد — فحصٌ سابق قد لا يشمل المعتمَد. */
+    if (req.scope === 'catalog') {
+      const impact = await this.impactChecked(requestId)
+      if (!impact.checked) {
+        throw new AuthError(
+          'impact_not_checked',
+          'لا يُنشر تغيير بنطاق الكتالوج قبل فحص أثره التشخيصي — شغّل «افحص الأثر التشخيصي» ثم انشر',
+          409,
+        )
+      }
     }
 
     if (req.status === 'approved_for_cohort') {

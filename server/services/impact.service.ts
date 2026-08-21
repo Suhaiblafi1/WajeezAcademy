@@ -1,6 +1,11 @@
 /* خدمة تحليل الأثر — تشغّل الشخصيات الاثنتي عشرة على اللقطة المنشورة الحالية
    وعلى اللقطة المرشحة (المنشور + المعتمد)، وتقارن التوصيات حتميا.
-   تعتمد على محرك التشخيص نفسه — لا محاكاة تقريبية. */
+   تعتمد على محرك التشخيص نفسه — لا محاكاة تقريبية.
+
+   البند ب-٢ أضاف الطبقة الناقصة: **مقارنة تسلسل الأسئلة** لا النتائج وحدها.
+   تعديلٌ يغيّر ما يُسأل ثم يهبط على المسار نفسه كان يُقرأ «لا أثر» — وهو أثر
+   في تجربة كل من يخوض التشخيص. فصار الحكم على ثلاثة أوجه: المسار، والثقة،
+   والأسئلة. ومن غيّر السؤال وحده يعرف الآن أنه غيّره. */
 
 import type { PrismaClient } from '@prisma/client'
 import { buildSnapshotFromDb } from '../catalog/snapshot-builder'
@@ -15,6 +20,24 @@ export interface PersonaOutcome {
   top: string | null
   tpl: string | null
   conf: number
+  /** تسلسل معرّفات الأسئلة كما سُئلت — الوجه الثالث للأثر (ب-٢) */
+  asked: string[]
+}
+
+/** فرق أسئلة شخصية واحدة — ما اختفى وما ظهر وما تغيّر ترتيبه */
+export interface QuestionDrift {
+  name: string
+  removed: string[]
+  added: string[]
+  /** الأسئلة نفسها بترتيب مختلف — تغيّر في تجربة الحوار لا في محتواه */
+  reordered: boolean
+}
+
+export interface ConfidenceDrift {
+  name: string
+  before: number
+  after: number
+  delta: number
 }
 
 export interface ImpactSummary {
@@ -23,6 +46,65 @@ export interface ImpactSummary {
   changed: { name: string; before: PersonaOutcome; after: PersonaOutcome }[]
   changedCount: number
   totalPersonas: number
+  /* ── ب-٢ ── */
+  /** حكم عربي واحد يُقرأ قبل التفصيل */
+  verdictAr: string
+  /** true إن تغيّر شيء في أي وجه من الأوجه الثلاثة */
+  touchesDiagnostic: boolean
+  changedQuestions: QuestionDrift[]
+  changedConfidence: ConfidenceDrift[]
+  /** من تغيّر مساره أو قالبه — أثقل أنواع الأثر */
+  changedWinners: { name: string; beforeTop: string | null; afterTop: string | null }[]
+}
+
+
+/* ── ب-٢: أوجه الأثر الثلاثة — دالة نقية تُختبَر بلا تشغيل محرك ──
+   المسار وحده لا يكفي حكما: تعديلٌ يغيّر ما يُسأل ثم يهبط على المسار نفسه كان
+   يُقرأ «لا أثر»، وهو أثر في تجربة كل من يخوض التشخيص. */
+export function diffOutcomes(
+  before: PersonaOutcome[],
+  after: PersonaOutcome[],
+): Pick<ImpactSummary, 'verdictAr' | 'touchesDiagnostic' | 'changedQuestions' | 'changedConfidence' | 'changedWinners'> {
+  const changedQuestions: QuestionDrift[] = []
+  const changedConfidence: ConfidenceDrift[] = []
+  const changedWinners: ImpactSummary['changedWinners'] = []
+  const byName = new Map(after.map((a) => [a.name, a]))
+
+  for (const b of before) {
+    /* شخصية ناقصة في «بعد» لا تُحتسب فرقا مختلقا — الغياب ليس تغيّرا */
+    const a = byName.get(b.name)
+    if (!a) continue
+    const wasSet = new Set(b.asked)
+    const nowSet = new Set(a.asked)
+    const removed = b.asked.filter((q) => !nowSet.has(q))
+    const added = a.asked.filter((q) => !wasSet.has(q))
+    /* الترتيب يُقاس حين لا اختفاء ولا ظهور: بقاء الأسئلة نفسها بترتيب آخر
+       أثرٌ في الحوار وإن لم يتغيّر محتواه */
+    const reordered =
+      removed.length === 0 && added.length === 0 && b.asked.join('>') !== a.asked.join('>')
+    if (removed.length > 0 || added.length > 0 || reordered) {
+      changedQuestions.push({ name: b.name, removed, added, reordered })
+    }
+    if (Math.abs(a.conf - b.conf) >= 1e-9) {
+      changedConfidence.push({ name: b.name, before: b.conf, after: a.conf, delta: a.conf - b.conf })
+    }
+    if (b.top !== a.top || b.tpl !== a.tpl || b.kind !== a.kind) {
+      changedWinners.push({ name: b.name, beforeTop: b.top ?? b.tpl, afterTop: a.top ?? a.tpl })
+    }
+  }
+
+  const touchesDiagnostic =
+    changedWinners.length > 0 || changedConfidence.length > 0 || changedQuestions.length > 0
+  const verdictAr = !touchesDiagnostic
+    ? 'لا يمس التشخيص — لا مسار تغيّر ولا ثقة ولا سؤال في الشخصيات الاثنتي عشرة.'
+    : [
+        'يغيّر التشخيص:',
+        changedWinners.length > 0 ? `${changedWinners.length} شخصية تغيّر ترشيحها` : null,
+        changedConfidence.length > 0 ? `${changedConfidence.length} تغيّرت ثقتها` : null,
+        changedQuestions.length > 0 ? `${changedQuestions.length} تغيّرت أسئلتها` : null,
+      ].filter(Boolean).join(' · ')
+
+  return { verdictAr, touchesDiagnostic, changedQuestions, changedConfidence, changedWinners }
 }
 
 /** يشغّل كل الشخصيات على الحالة الحالية للمحرك ويعيد النتائج */
@@ -36,6 +118,7 @@ function runCohort(): PersonaOutcome[] {
       top: r.recommendation.primaryPathway?.pathwayId ?? null,
       tpl: r.recommendation.composite?.templateId ?? null,
       conf: r.recommendation.confidence.total,
+      asked: r.askedOrder,
     }
   })
 }
@@ -61,7 +144,10 @@ export async function analyzeImpact(prisma: PrismaClient, changeRef: string, act
     .map((b, i) => ({ name: b.name, before: b, after: after[i] }))
     .filter((x) => !same(x.before, x.after))
 
-  const summary: ImpactSummary = { before, after, changed, changedCount: changed.length, totalPersonas: before.length }
+  const summary: ImpactSummary = {
+    before, after, changed, changedCount: changed.length, totalPersonas: before.length,
+    ...diffOutcomes(before, after),
+  }
   const run = await prisma.impactAnalysisRun.create({
     data: { changeRef, summary: summary as unknown as object, createdBy: actorId },
   })
