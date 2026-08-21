@@ -109,13 +109,27 @@ describe('دورة النشر الكاملة', () => {
   })
 
   it('4) التحقق + تحليل الأثر ثم النشر الذري', async () => {
-    /* ج-١: مسار بلا مجال لا يُنشر — لا يدخل مطابقة احتياج المستخدم فينشر مخفيا.
-       الحاجز يُثبت هنا داخل الدورة الحقيقية، ثم يُفتح بالباب المخصص لا بكتابة خام. */
-    const beforeDomain = await pub.validateDrafts()
-    expect(beforeDomain.ok).toBe(false)
-    expect(beforeDomain.errors.join('|')).toContain(`pathway PW-${S}-001: بلا مجال`)
+    /* ج-١ · ج-٣: مسار ناقص لا يُنشر — بلا مجال لا يدخل مطابقة احتياج المستخدم،
+       وبلا جمهور يطابق الجميع، وبلا جمهور مكتوب لا يعرف المتعلم لمن المسار.
+       الحاجز يُثبت هنا داخل الدورة الحقيقية، ثم يُفتح بالأبواب المخصصة لا بكتابة خام.
+       والرسائل هي نصوص خطوات الجاهزية نفسها — تعريفٌ واحد لا نسختان. */
+    const incomplete = await pub.validateDrafts()
+    expect(incomplete.ok).toBe(false)
+    const joined = incomplete.errors.join(' | ')
+    expect(joined).toContain(`pathway PW-${S}-001 · المجال: بلا مجال`)
+    expect(joined).toContain(`pathway PW-${S}-001 · الجمهور والهدف`)
+    expect(joined).toContain(`pathway PW-${S}-001 · بيانات المسار`)
+
     await expect(admin.setPathwayDomains(`PW-${S}-001`, ['not_a_domain'])).rejects.toThrow(AuthError)
     await admin.setPathwayDomains(`PW-${S}-001`, ['career_direction'])
+    await expect(admin.setPathwayProfile(`PW-${S}-001`, { personas: ['not_a_persona'], goals: ['career_direction'] }))
+      .rejects.toThrow(AuthError)
+    await admin.setPathwayProfile(`PW-${S}-001`, { personas: ['student'], goals: ['career_direction'] })
+    /* الجمهور المكتوب: حقل نصّي على إصدار المحتوى لا على الملف التشخيصي */
+    await prisma.pathwayVersion.updateMany({
+      where: { pathwayId: `PW-${S}-001` },
+      data: { audience: 'طالب جامعي يريد تحديد مجاله قبل التخرج' },
+    })
 
     const validation = await pub.validateDrafts()
     expect(validation.ok, validation.errors.join(' | ')).toBe(true)

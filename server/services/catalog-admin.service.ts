@@ -6,6 +6,25 @@ import type { Prisma, PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { assessSkillSelection, skillStateOf } from '../../src/application/catalog/skill-measurement'
 import { domainsV2 } from '../../src/domain/diagnostic/v2/data'
+import { PERSONA_BASE_TO_STAGES, REACHABLE_LEGACY_GOALS } from '../../src/domain/diagnostic/v2_1/universe'
+import { GOALS_V21 } from '../../src/domain/diagnostic/v2_1/maps'
+
+export interface ReadinessStep {
+  key: 'basics' | 'courses' | 'profile' | 'domains' | 'impact'
+  labelAr: string
+  ok: boolean
+  /** سبب يُقرأ كما هو: ماذا ينقص وما أثر نقصه */
+  reasonAr: string
+}
+
+export interface PathwayReadiness {
+  pathwayId: string
+  steps: ReadinessStep[]
+  ok: boolean
+}
+
+/** مرجع فحص الأثر لمسار — ثابت كي يجد المعالج فحصه ولا يخلطه بغيره */
+export const PATHWAY_IMPACT_REF = (pathwayId: string) => `pathway:${pathwayId}`
 
 export class CatalogAdminService {
   private prisma: PrismaClient
@@ -171,6 +190,11 @@ export class CatalogAdminService {
     capstone?: string; courseIds: string[]
     /** مجالات المسار (ج-١) — بلا مجال لا يجتاز المسار حاجز النشر ولا يدخل مطابقة الاحتياج */
     domainIds?: string[]
+    /** الجمهور والهدف (ج-٣) — الفراغ يجعل المسار يطابق الجميع */
+    personas?: string[]
+    goals?: string[]
+    minWeeklyLoad?: string
+    notesAr?: string
   }, actorId?: string) {
     if (!/^PW-[A-Z0-9-]+$/.test(input.id)) throw new AuthError('invalid_id', 'معرف المسار بصيغة PW-XXX-000')
     if (await this.prisma.pathway.findUnique({ where: { id: input.id } })) {
@@ -178,7 +202,7 @@ export class CatalogAdminService {
     }
     const courses = await this.prisma.course.findMany({ where: { id: { in: input.courseIds } } })
     if (courses.length !== input.courseIds.length) throw new AuthError('unknown_course', 'دورة واحدة أو أكثر غير موجودة')
-    return this.prisma.pathway.create({
+    const created = await this.prisma.pathway.create({
       data: {
         id: input.id, status: 'draft', createdBy: actorId,
         versions: {
@@ -193,6 +217,73 @@ export class CatalogAdminService {
         domains: { create: this.checkedDomains(input.domainIds ?? []).map((domainId, i) => ({ domainId, orderIndex: i })) },
       },
     })
+    /* الملف التشخيصي في نفس العملية حين يُرسَل — كي لا يوجد مسار أُنشئ بجمهور
+       ثم ضاع جمهوره لأن المؤلّف أغلق الشاشة قبل نداء ثان. */
+    if (input.personas?.length || input.goals?.length) {
+      await this.setPathwayProfile(created.id, {
+        personas: input.personas ?? [], goals: input.goals ?? [],
+        minWeeklyLoad: input.minWeeklyLoad, notesAr: input.notesAr,
+      })
+    }
+    return created
+  }
+
+  /** ملف المسار التشخيصي (ج-٣) — الشخصيات والأهداف: بلا واحدة منهما لا يُطابق
+      المسار أحدا فلا يُوصى به أبدا. الاستبدال كامل كالمجالات. */
+  async setPathwayProfile(pathwayId: string, input: {
+    personas: string[]; goals: string[]; minWeeklyLoad?: string; notesAr?: string
+    sectors?: string[]; functions?: string[]
+  }) {
+    if (!(await this.prisma.pathway.findUnique({ where: { id: pathwayId } }))) {
+      throw new AuthError('not_found', 'المسار غير موجود', 404)
+    }
+    const personas = this.checkedKeys(input.personas, new Set(Object.keys(PERSONA_BASE_TO_STAGES)), 'شخصية')
+    const goals = this.checkedKeys(input.goals, await this.knownGoals(), 'هدف')
+    const profile = {
+      personas, goals,
+      sectors: input.sectors ?? [],
+      functions: input.functions ?? [],
+      ...(input.minWeeklyLoad ? { min_weekly_load: input.minWeeklyLoad } : {}),
+      ...(input.notesAr ? { notes_ar: input.notesAr } : {}),
+    }
+    await this.prisma.diagnosticProfile.upsert({
+      where: { entityType_entityId: { entityType: 'pathway', entityId: pathwayId } },
+      update: {
+        profile, audience: personas, goals,
+        timeConstraints: input.minWeeklyLoad ? { min_weekly_load: input.minWeeklyLoad } : undefined,
+        rationales: input.notesAr ? { notes_ar: input.notesAr } : undefined,
+        readinessStatus: 'diagnostic_ready',
+      },
+      create: {
+        entityType: 'pathway', entityId: pathwayId, profile, audience: personas, goals,
+        timeConstraints: input.minWeeklyLoad ? { min_weekly_load: input.minWeeklyLoad } : undefined,
+        rationales: input.notesAr ? { notes_ar: input.notesAr } : undefined,
+        readinessStatus: 'diagnostic_ready',
+      },
+    })
+    /* الأهداف غير القابلة للوصول تُبلَّغ ولا تُرفض: المسار يبقى قابلا للترشيح
+       بإشارات أخرى (مجال · مهارة · مرحلة)، لكن المؤلّف يستحق أن يعرف أن هذا
+       الهدف بعينه لا يُنتجه تدفق B2C الحالي. */
+    const unreachable = goals.filter((g) => !REACHABLE_LEGACY_GOALS.has(g))
+    return { pathwayId, personas, goals, unreachableGoals: unreachable }
+  }
+
+  /** مفردات الأهداف المقبولة: ما يستطيع تدفق B2C إنتاجه (GOALS_V21) + ما تستعمله
+      ملفات المسارات القائمة فعلا. هكذا يُرفض الخطأ الإملائي ولا يُرفض رمزٌ قديم
+      مشروع — ورمزٌ لا يُنتجه شيء يطابق لا شيء، فقبوله بلا تنبيه خطأ صامت. */
+  private async knownGoals(): Promise<Set<string>> {
+    const rows = await this.prisma.diagnosticProfile.findMany({
+      where: { entityType: 'pathway' }, select: { goals: true },
+    })
+    const used = rows.flatMap((r) => (Array.isArray(r.goals) ? (r.goals as string[]) : []))
+    return new Set([...REACHABLE_LEGACY_GOALS, ...GOALS_V21.map((g) => g.legacy_goal), ...used])
+  }
+
+  /** مفاتيح معروفة بلا تكرار — المجهول يُرفض لا يُحذف صامتا */
+  private checkedKeys(keys: string[], known: Set<string>, kindAr: string): string[] {
+    const unknown = keys.filter((k) => !known.has(k))
+    if (unknown.length > 0) throw new AuthError('unknown_key', `مفتاح ${kindAr} غير معروف: ${unknown.join('، ')}`)
+    return [...new Set(keys)]
   }
 
   /** ربط المسار بمجالاته — الاستبدال كامل، والترتيب هو ترتيب المُدخل (الأول الأقرب).
@@ -220,6 +311,100 @@ export class CatalogAdminService {
       throw new AuthError('unknown_domain', `معرف مجال غير معروف: ${unknown.join('، ')}`)
     }
     return [...new Set(domainIds)]
+  }
+
+  /* ═══ ج-٣ · جاهزية المسار — تعريفٌ واحد ═══
+     إضافة مسار تتطلب خمسة مواضع، ونقصُ واحدٍ ينتج «جوكرا»: كيانا ينافس الجميع
+     أو لا يُوصى به أبدا. الخطوات الخمس هنا هي **نفسها** التي يعرضها المعالج
+     ونفسها التي يفحصها حاجز النشر — لأن تعريفين للجاهزية يتباعدان دائما، وقد
+     حدث ذلك فعلا في هذا المشروع (ثلاثة أرقام لمفهوم القياس الواحد، البند ب-٤). */
+
+  async pathwayReadiness(pathwayId: string): Promise<PathwayReadiness> {
+    const pathway = await this.prisma.pathway.findUnique({
+      where: { id: pathwayId },
+      include: { versions: { orderBy: { version: 'desc' }, take: 1 }, courses: true, domains: true },
+    })
+    if (!pathway) throw new AuthError('not_found', 'المسار غير موجود', 404)
+    const v = pathway.versions[0]
+    const steps: ReadinessStep[] = []
+
+    /* ١) البيانات: عنوان وجمهور وتحوّل قبل/بعد — بلا التحوّل لا يعرف المتعلم ما يشتريه */
+    const missingBasics = [
+      !v?.title?.trim() && 'العنوان',
+      !v?.audience?.trim() && 'الجمهور المستهدف',
+      !v?.beforeText?.trim() && 'الحال قبل المسار',
+      !v?.afterText?.trim() && 'الحال بعد المسار',
+    ].filter((x): x is string => typeof x === 'string')
+    steps.push({
+      key: 'basics', labelAr: 'بيانات المسار', ok: missingBasics.length === 0,
+      reasonAr: missingBasics.length === 0
+        ? 'العنوان والجمهور والتحوّل قبل/بعد مكتملة.'
+        : `ناقص: ${missingBasics.join(' · ')} — بلا التحوّل لا يعرف المتعلم ما يشتريه.`,
+    })
+
+    /* ٢) الدورات: واحدة على الأقل وكلها موجودة وجاهزة للنشر */
+    const courseIds = pathway.courses.map((c) => c.courseId)
+    const courses = courseIds.length > 0
+      ? await this.prisma.course.findMany({ where: { id: { in: courseIds } }, select: { id: true, status: true } })
+      : []
+    const missingCourses = courseIds.filter((id) => !courses.some((c) => c.id === id))
+    const notReady = courses.filter((c) => !['published', 'approved', 'draft'].includes(c.status)).map((c) => c.id)
+    steps.push({
+      key: 'courses', labelAr: 'الدورات', ok: courseIds.length > 0 && missingCourses.length === 0 && notReady.length === 0,
+      reasonAr: courseIds.length === 0
+        ? 'بلا دورة واحدة — المسار وعدٌ بلا محتوى.'
+        : missingCourses.length > 0 ? `مراجع دورات مفقودة: ${missingCourses.join('، ')}`
+        : notReady.length > 0 ? `دورات بحالة غير صالحة: ${notReady.join('، ')}`
+        : `${courseIds.length} دورة مرتبطة.`,
+    })
+
+    /* ٣) الجمهور والهدف — إلزامي: الفراغ يجعل المسار يطابق كل شخصية وكل هدف */
+    const prof = await this.prisma.diagnosticProfile.findUnique({
+      where: { entityType_entityId: { entityType: 'pathway', entityId: pathwayId } },
+    })
+    const personas = (prof?.audience as string[] | null) ?? []
+    const goals = (prof?.goals as string[] | null) ?? []
+    steps.push({
+      key: 'profile', labelAr: 'الجمهور والهدف', ok: personas.length > 0 && goals.length > 0,
+      reasonAr: personas.length === 0 && goals.length === 0
+        ? 'بلا شخصيات ولا أهداف — الفراغ يجعل المسار يطابق الجميع، فينافس كل مستخدم بلا قيد.'
+        : personas.length === 0 ? 'بلا شخصيات — يطابق كل شخصية.'
+        : goals.length === 0 ? 'بلا أهداف — يطابق كل هدف.'
+        : `${personas.length} شخصية و${goals.length} هدف.`,
+    })
+
+    /* ٤) المجال — إلزامي: بلا مجال لا يدخل مطابقة احتياج المستخدم (ج-١) */
+    steps.push({
+      key: 'domains', labelAr: 'المجال', ok: pathway.domains.length > 0,
+      reasonAr: pathway.domains.length > 0
+        ? `${pathway.domains.length} مجال: ${pathway.domains.map((d) => d.domainId).join('، ')}`
+        : 'بلا مجال — لا يدخل مطابقة المجالات إطلاقا، فيُنشر ولا يُوصى به.',
+    })
+
+    /* ٥) فحص الأثر — بعد آخر تعديل على المسار، لا فحصٌ قديم لحالة أخرى */
+    const lastImpact = await this.prisma.impactAnalysisRun.findFirst({
+      where: { changeRef: PATHWAY_IMPACT_REF(pathwayId) },
+      orderBy: { createdAt: 'desc' },
+    })
+    /* «آخر تعديل» = أحدث ما يمسّ ما سيُنشر: بيانات المسار أو إصداره أو ملفه
+       التشخيصي أو مجالاته. تعديل الجمهور أو المجال يجب أن يُبطل فحصا سابقا
+       لأنه يغيّر التوصية فعلا — وأخذ updatedAt للمسار وحده كان يمرّره. */
+    const editedAt = new Date(Math.max(
+      pathway.updatedAt.getTime(),
+      v?.createdAt.getTime() ?? 0,
+      prof?.updatedAt.getTime() ?? 0,
+      ...pathway.domains.map((d) => d.createdAt.getTime()),
+    ))
+    const fresh = !!lastImpact && lastImpact.createdAt >= editedAt
+    steps.push({
+      key: 'impact', labelAr: 'فحص الأثر التشخيصي', ok: fresh,
+      reasonAr: !lastImpact
+        ? 'لم يُفحص أثره على الشخصيات الاثنتي عشرة بعد.'
+        : fresh ? `فُحص بعد آخر تعديل (${lastImpact.createdAt.toISOString().slice(0, 16).replace('T', ' ')}).`
+        : 'الفحص أقدم من آخر تعديل — أعِد الفحص كي يصف ما ستنشره فعلا.',
+    })
+
+    return { pathwayId, steps, ok: steps.every((s2) => s2.ok) }
   }
 
   /** تقديم طلب تغيير (maker) — لا يُطبَّق شيء قبل الاعتماد */

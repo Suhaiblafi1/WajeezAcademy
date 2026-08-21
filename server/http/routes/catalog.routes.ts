@@ -115,9 +115,48 @@ export function registerCatalogRoutes(app: FastifyInstance, prisma: PrismaClient
       capstone: z.string().optional(), courseIds: z.array(z.string()).min(1),
       /* ج-١: المجالات جزء من إنشاء المسار — بلا مجال لا يجتاز حاجز النشر */
       domainIds: z.array(z.string()).optional(),
+      /* ج-٣: الجمهور والهدف في نفس العملية — بلا فقدان بين ندائين */
+      personas: z.array(z.string()).optional(),
+      goals: z.array(z.string()).optional(),
+      minWeeklyLoad: z.string().optional(),
+      notesAr: z.string().max(500).optional(),
     }).parse(req.body)
     const pathway = await admin.createPathway(body, req.auth!.userId)
     return reply.status(201).send({ id: pathway.id, status: pathway.status })
+  })
+
+  app.put('/api/admin/catalog/pathways/:id/profile', {
+    preHandler: requirePermission('catalog.pathway.create'),
+    schema: { tags: ['admin-catalog'], summary: 'الجمهور والهدف للمسار — استبدال كامل (ج-٣)' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string() }).parse(req.params)
+    const body = z.object({
+      personas: z.array(z.string()),
+      goals: z.array(z.string()),
+      minWeeklyLoad: z.string().optional(),
+      notesAr: z.string().max(500).optional(),
+      sectors: z.array(z.string()).optional(),
+      functions: z.array(z.string()).optional(),
+    }).parse(req.body)
+    return admin.setPathwayProfile(id, body)
+  })
+
+  app.get('/api/admin/catalog/pathways/:id/readiness', {
+    preHandler: requirePermission('catalog.view'),
+    schema: { tags: ['admin-catalog'], summary: 'جاهزية المسار بخطواتها الخمس — نفس تعريف حاجز النشر (ج-٣)' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string() }).parse(req.params)
+    return admin.pathwayReadiness(id)
+  })
+
+  app.post('/api/admin/catalog/pathways/:id/impact', {
+    preHandler: requirePermission('catalog.impact.view'),
+    schema: { tags: ['admin-catalog'], summary: 'فحص أثر المسار على الشخصيات الاثنتي عشرة (ج-٣ · ب-٢)' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string() }).parse(req.params)
+    const { analyzeImpact } = await import('../../services/impact.service')
+    const { PATHWAY_IMPACT_REF } = await import('../../services/catalog-admin.service')
+    return analyzeImpact(prisma, PATHWAY_IMPACT_REF(id), req.auth!.userId)
   })
 
   app.put('/api/admin/catalog/pathways/:id/domains', {

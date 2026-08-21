@@ -10,7 +10,7 @@ import { apiGet, apiPost, ApiError } from "@/services/api";
 import SkillPicker from "@/components/SkillPicker";
 import type { SkillMeasureState } from "@/application/catalog/skill-measurement";
 import { toast } from "@/components/Toast";
-import { domainsV2 } from "@/domain/diagnostic/v2/data";
+import PathwayWizard from "@/components/PathwayWizard";
 
 type Overview = {
   pathways: Record<string, number>; courses: Record<string, number>; skills: Record<string, number>
@@ -62,11 +62,6 @@ export default function CatalogAdmin() {
   const [browse, setBrowse] = useState<"pathways" | "courses" | "skills" | "questions" | "templates" | null>(null);
 
   const [skillForm, setSkillForm] = useState({ id: "", slug: "", nameAr: "", familyId: "" });
-  const [pwForm, setPwForm] = useState({
-    id: "", title: "", shortTitle: "", audience: "", beforeText: "", afterText: "",
-    durationWeeks: "", weeklyHours: "", level: "", capstone: "", courseIds: [] as string[],
-    domainIds: [] as string[],
-  });
   const [courseForm, setCourseForm] = useState({
     id: "", pathwayId: "", sequence: "1", titleAr: "", shortPromiseAr: "", levelAr: "",
     totalHours: "", skillIds: [] as string[],
@@ -141,24 +136,6 @@ export default function CatalogAdmin() {
     setOpenForm(null);
   }, "أُنشئت الدورة كمسودة مرتبطة بالمسار والمهارات — أكمل سير الاعتماد ثم النشر");
 
-  const submitPathway = () => act(async () => {
-    await apiPost("/api/admin/catalog/pathways", {
-      id: pwForm.id.trim(), title: pwForm.title.trim(),
-      shortTitle: pwForm.shortTitle.trim() || undefined,
-      audience: pwForm.audience.trim() || undefined,
-      beforeText: pwForm.beforeText.trim() || undefined,
-      afterText: pwForm.afterText.trim() || undefined,
-      durationWeeks: pwForm.durationWeeks ? Number(pwForm.durationWeeks) : undefined,
-      weeklyHours: pwForm.weeklyHours.trim() || undefined,
-      level: pwForm.level.trim() || undefined,
-      capstone: pwForm.capstone.trim() || undefined,
-      courseIds: pwForm.courseIds,
-      domainIds: pwForm.domainIds,
-    });
-    setPwForm({ id: "", title: "", shortTitle: "", audience: "", beforeText: "", afterText: "", durationWeeks: "", weeklyHours: "", level: "", capstone: "", courseIds: [], domainIds: [] });
-    setOpenForm(null);
-  }, "أُنشئ المسار كمسودة مرتبطا بدوراته");
-
   const submitChangeRequest = () => act(async () => {
     let payload: Record<string, unknown>;
     try { payload = JSON.parse(crForm.payload) as Record<string, unknown>; }
@@ -172,10 +149,6 @@ export default function CatalogAdmin() {
 
   const courseValid = courseForm.id.trim().length >= 3 && courseForm.pathwayId && courseForm.titleAr.trim().length >= 3
     && Number(courseForm.totalHours) >= 1 && modules.every((m) => m.titleAr.trim().length >= 3);
-  /* ج-١: مجال واحد على الأقل شرطُ نشر — فهو شرط النموذج أيضا، كي لا يُنشأ مسار
-     يُعتمد ثم يُرفض نشره بعد أسبوعين من العمل عليه. */
-  const pathwayValid = pwForm.id.trim().length >= 2 && pwForm.title.trim().length >= 3
-    && pwForm.courseIds.length >= 1 && pwForm.domainIds.length >= 1;
 
   const FormHead = ({ id, icon: Icon, title, hint }: { id: typeof openForm & string; icon: typeof FilePlus2; title: string; hint: string }) => (
     <button onClick={() => setOpenForm(openForm === id ? null : id)}
@@ -416,55 +389,12 @@ export default function CatalogAdmin() {
 
         <FormHead id="pathway" icon={Route} title="مسار جديد (مسودة)" hint="يربط دورات موجودة في رحلة واحدة" />
         {openForm === "pathway" && (
-          <div className="rounded-2xl border border-gold/20 bg-white/[0.02] p-5">
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <input value={pwForm.id} onChange={(e) => setPwForm({ ...pwForm, id: e.target.value })} placeholder="المعرف — PW-XXX" dir="ltr" className={inputCls} />
-              <input value={pwForm.title} onChange={(e) => setPwForm({ ...pwForm, title: e.target.value })} placeholder="اسم المسار" className={inputCls} />
-              <input value={pwForm.shortTitle} onChange={(e) => setPwForm({ ...pwForm, shortTitle: e.target.value })} placeholder="اسم مختصر (اختياري)" className={inputCls} />
-              <input value={pwForm.audience} onChange={(e) => setPwForm({ ...pwForm, audience: e.target.value })} placeholder="الجمهور المستهدف" className={inputCls} />
-              <input value={pwForm.durationWeeks} onChange={(e) => setPwForm({ ...pwForm, durationWeeks: e.target.value })} type="number" min={1} placeholder="المدة بالأسابيع" className={inputCls} />
-              <input value={pwForm.weeklyHours} onChange={(e) => setPwForm({ ...pwForm, weeklyHours: e.target.value })} placeholder="الساعات الأسبوعية — ٤-٦" className={inputCls} />
-              <input value={pwForm.level} onChange={(e) => setPwForm({ ...pwForm, level: e.target.value })} placeholder="المستوى" className={inputCls} />
-              <input value={pwForm.beforeText} onChange={(e) => setPwForm({ ...pwForm, beforeText: e.target.value })} placeholder="قبل المسار (اختياري)" className={inputCls} />
-              <input value={pwForm.afterText} onChange={(e) => setPwForm({ ...pwForm, afterText: e.target.value })} placeholder="بعد المسار (اختياري)" className={inputCls} />
-              <input value={pwForm.capstone} onChange={(e) => setPwForm({ ...pwForm, capstone: e.target.value })} placeholder="المشروع الختامي (اختياري)" className={`${inputCls} sm:col-span-2 lg:col-span-3`} />
-            </div>
-            <p className="mt-4 mb-2 text-xs font-black text-white/60">دورات المسار ({pwForm.courseIds.length}) — بالترتيب الذي تختاره به</p>
-            <div className="flex flex-wrap gap-2">
-              {courses.map((c) => (
-                <button key={c.id} type="button" onClick={() => setPwForm({ ...pwForm, courseIds: toggleId(pwForm.courseIds, c.id) })}
-                  className={`cursor-pointer rounded-full border px-3 py-1 text-[11px] font-bold transition ${pwForm.courseIds.includes(c.id) ? "border-teal bg-teal/15 text-teal-light-ink" : "border-white/15 text-white/55 hover:border-white/40"}`}>
-                  {pwForm.courseIds.includes(c.id) && <span className="ml-1">{pwForm.courseIds.indexOf(c.id) + 1}.</span>}
-                  {c.title} <span className="font-mono text-white/55" dir="ltr">({c.id})</span>
-                </button>
-              ))}
-              {courses.length === 0 && <span className="text-[11px] text-white/45">أنشئ دورات أولا من نموذج الدورة.</span>}
-            </div>
-
-            {/* ج-١: مجالات المسار — بلا مجال لا يدخل المسار مطابقة احتياج المستخدم
-                ولا يجتاز حاجز النشر. الأول هو الأقرب. */}
-            <p className="mt-5 mb-1 text-xs font-black text-white/60">مجالات المسار ({pwForm.domainIds.length}) — مطلوب مجال واحد على الأقل</p>
-            <p className="mb-2 text-[11px] leading-6 text-white/60">
-              المجال هو الباب الذي يدخل منه المسار إلى التوصية: يُطابَق بهدف المتعلم ووظيفته.
-              بلا مجال يُنشر المسار ولا يُوصى به أبدا — لذلك لا يجتاز حاجز النشر.
-              {pwForm.domainIds.length > 1 && " الأول في اختيارك هو الأقرب."}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {domainsV2.map((d) => (
-                <button key={d.id} type="button" title={d.desc_ar}
-                  onClick={() => setPwForm({ ...pwForm, domainIds: toggleId(pwForm.domainIds, d.id) })}
-                  className={`cursor-pointer rounded-full border px-3 py-1 text-[11px] font-bold transition ${pwForm.domainIds.includes(d.id) ? "border-gold bg-gold/15 text-gold-ink" : "border-white/15 text-white/55 hover:border-white/40"}`}>
-                  {pwForm.domainIds.includes(d.id) && <span className="ml-1">{pwForm.domainIds.indexOf(d.id) + 1}.</span>}
-                  {d.name_ar}
-                </button>
-              ))}
-            </div>
-
-            <button disabled={busy || !pathwayValid} onClick={submitPathway}
-              className="mt-4 flex cursor-pointer items-center gap-2 rounded-full bg-gold px-6 py-2 text-sm font-black text-on-gold disabled:opacity-40">
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null} إنشاء المسودة
-            </button>
-          </div>
+          /* ج-٣: معالج بخمس خطوات بدل نموذج مسطّح — النموذج المسطّح كان يقبل
+             مسارا بلا جمهور أو بلا مجال، والنقص لا يظهر إلا في تدقيق لاحق. */
+          <PathwayWizard
+            courses={courses.map((c) => ({ id: c.id, title: c.title }))}
+            onDone={() => { setOpenForm(null); void refresh(); }}
+          />
         )}
 
         <FormHead id="skill" icon={FilePlus2} title="مهارة جديدة (مسودة)" hint="وحدة قياس المحرك التشخيصي" />

@@ -46,6 +46,7 @@ export class PublishingService {
   async validateDrafts(): Promise<{ ok: boolean; errors: string[] }> {
     const errors: string[] = []
     const approved = await this.approvedEntities()
+    const admin = new CatalogAdminService(this.prisma)
 
     /* كل كيان معتمد يجب أن يغطيه طلب تغيير معتمد */
     for (const [type, rows] of Object.entries({ pathway: approved.pathways, course: approved.courses, skill: approved.skills, question: approved.questions, template: approved.templates })) {
@@ -66,14 +67,16 @@ export class PublishingService {
       }
     }
 
-    /* المسارات المعتمدة: مجال واحد على الأقل (ج-١).
-       بلا مجال لا يدخل المسار مطابقة احتياج المستخدم أبدا — يُنشر ولا يُوصى به.
-       الحاجز هنا وقت النشر لا في أهلية التوصية: لا يُخرج منشورا قائما، ويمنع
-       دخول محتوى جديد بلا مجال. المصدر الملفي مغطى ببوابة validate-source. */
+    /* جاهزية المسار (ج-١ · ج-٣) — **نفس التعريف** الذي يعرضه معالج إضافة المسار،
+       لا نسخة ثانية منه: تعريفان للجاهزية يتباعدان دائما. يُستثنى «فحص الأثر»
+       لأن هذه الشاشة تشغّله بنفسها في خطوة مستقلة قبل النشر.
+       والحاجز وقت النشر لا في أهلية التوصية: لا يُخرج منشورا قائما، ويمنع دخول
+       محتوى جديد أعمى. المصدر الملفي مغطى ببوابة validate-source. */
     for (const p of approved.pathways) {
-      const domains = await this.prisma.pathwayDomain.count({ where: { pathwayId: p.id } })
-      if (domains === 0) {
-        errors.push(`pathway ${p.id}: بلا مجال — لن يدخل مطابقة المجالات، اربطه بمجال قبل النشر`)
+      const readiness = await admin.pathwayReadiness(p.id)
+      for (const step of readiness.steps) {
+        if (step.key === 'impact' || step.ok) continue
+        errors.push(`pathway ${p.id} · ${step.labelAr}: ${step.reasonAr}`)
       }
     }
 
