@@ -10,6 +10,8 @@
    وnavigator.sendBeacon عند مغادرة الصفحة حتى لا تضيع الأحداث الأخيرة.
 */
 export type AnalyticsEvent =
+  /* ح-٣: إجابة على تمرين استرجاع — رقم الوحدة والسؤال وصوابه، بلا نص حرّ */
+  | 'module_check_answered'
   | 'hero_cta_clicked'
   | 'mirror_started'
   | 'mirror_completed'

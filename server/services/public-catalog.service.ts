@@ -198,6 +198,7 @@ export class PublicCatalogService {
             expected_hours: v?.hours ?? 0,
             /* متن الدرس (ح-١) — يُحذف الحقل حين لا متن، فلا تنتفخ الحمولة العامة */
             ...(v?.bodyAr ? { module_body_ar: v.bodyAr } : {}),
+            ...(v?.checksAr ? { module_checks_ar: v.checksAr } : {}),
           }
         }),
       ),

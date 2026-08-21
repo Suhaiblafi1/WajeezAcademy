@@ -5,6 +5,7 @@ import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { getActiveSnapshot } from '../../catalog/snapshot-builder'
 import { CatalogAdminService } from '../../services/catalog-admin.service'
+import { validateChecks } from '../../../src/application/content/module-checks'
 import { requirePermission } from '../auth-plugin'
 
 export function registerCatalogRoutes(app: FastifyInstance, prisma: PrismaClient) {
@@ -66,6 +67,18 @@ export function registerCatalogRoutes(app: FastifyInstance, prisma: PrismaClient
         outcomeAr: z.string().optional(), activityAr: z.string().optional(), artifactAr: z.string().optional(),
         /* متن الدرس (ح-١) — Markdown مقيّد، بحدّ أعلى يمنع حمولة غير معقولة */
         bodyAr: z.string().max(40_000).optional(),
+        /* تمرين الاسترجاع (ح-٣) — يُتحقَّق من صيغته هنا لا عند العرض:
+           تمرين لا يُفهم يُرفض عند الحفظ بخطأ عربي مقروء، فلا يصل للمتعلم صامتا */
+        checksAr: z.string().max(8_000).optional().superRefine((v, ctx) => {
+          if (!v || !v.trim()) return
+          const r = validateChecks(v)
+          if (!r.ok) {
+            ctx.addIssue({
+              code: 'custom',
+              message: `تمرين الاسترجاع غير مفهوم: ${r.errorsAr.join(' · ')}`,
+            })
+          }
+        }),
         hours: z.number().int().min(1),
       })).min(1),
     }).parse(req.body)

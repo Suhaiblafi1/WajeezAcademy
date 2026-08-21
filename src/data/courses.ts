@@ -34,7 +34,7 @@ export interface CourseFull {
   totalHours: number
   learningObjectives: string[]
   learningOutcomes: string[]
-  modules: { id: string; title: string; outcome: string; activity: string; artifact: string; hours: number; body: string | null }[]
+  modules: { id: string; title: string; outcome: string; activity: string; artifact: string; hours: number; body: string | null; checks: string | null }[]
   practicalProject: string
   relatedSkills: string[]
   referenceIds: string[]
@@ -98,6 +98,8 @@ export function courseFullById(id: string): CourseFull | null {
       hours: m.expected_hours,
       /* متن الدرس (ح-١) — null صريح حين لا درس، فلا يُقرأ الفراغ نصا فارغا */
       body: m.module_body_ar?.trim() ? m.module_body_ar : null,
+      /* تمرين الاسترجاع (ح-٣) — نصّه الخام؛ يُحلَّل عند العرض */
+      checks: m.module_checks_ar?.trim() ? m.module_checks_ar : null,
     })),
     practicalProject: c.summative_assessment_ar ?? '',
     relatedSkills: c.skill_names_ar,

@@ -9,6 +9,7 @@ import { usePublishedContent } from "@/services/public-content";
 import SimulationNote from "@/components/SimulationNote";
 import VideoPlayer from "@/components/VideoPlayer";
 import LessonBody from "@/components/LessonBody";
+import ModuleCheck from "@/components/ModuleCheck";
 import CourseResources from "@/components/CourseResources";
 import { getEnrollment } from "@/services/access";
 import { zoom, type ZoomJoinInfo } from "@/services/zoom";
@@ -188,6 +189,8 @@ function CourseViewBody() {
             {lesson.body ? (
               <div className="mt-4">
                 <LessonBody body={lesson.body} />
+                {/* ح-٣: الاسترجاع بعد القراءة مباشرة — لا كواجب منفصل */}
+                {lesson.checks && <ModuleCheck raw={lesson.checks} moduleId={lesson.id} className="mt-6" />}
                 <button
                   onClick={() => update((s) => { s.courses[course.id].lessons[lesson.id] = { pct: lessonPct >= 100 ? 0 : 100 }; })}
                   className={`mt-5 flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-full text-sm font-black transition ${

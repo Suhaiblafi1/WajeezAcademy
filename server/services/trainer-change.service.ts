@@ -39,6 +39,8 @@ interface ModuleShape {
   artifactAr?: string | null
   /** متن الدرس (ح-١) — يُنقل مع النسخة */
   bodyAr?: string | null
+  /** تمرين الاسترجاع (ح-٣) — يُنقل مع النسخة */
+  checksAr?: string | null
   hours: number
 }
 
@@ -278,6 +280,7 @@ export class TrainerChangeService {
         titleAr: m.versions[0]?.titleAr ?? '',
         outcomeAr: m.versions[0]?.outcomeAr, activityAr: m.versions[0]?.activityAr,
         artifactAr: m.versions[0]?.artifactAr, bodyAr: m.versions[0]?.bodyAr,
+        checksAr: m.versions[0]?.checksAr,
         hours: m.versions[0]?.hours ?? 1,
       }))
       .sort((a, b) => a.sequence - b.sequence)
@@ -366,8 +369,9 @@ export class TrainerChangeService {
           data: {
             moduleId: m.id, version: newVersion, sequence: m.sequence, titleAr: m.titleAr,
             outcomeAr: m.outcomeAr, activityAr: m.activityAr, artifactAr: m.artifactAr,
-            /* المتن يُنقل مع النسخة — بلا هذا السطر يُمحى درس الوحدة عند أول تعديل معتمد */
-            bodyAr: m.bodyAr,
+            /* المتن والتمرين يُنقلان مع النسخة — بلا هذين السطرين يُمحى درس
+               الوحدة وتمرينها عند أول تعديل معتمد */
+            bodyAr: m.bodyAr, checksAr: m.checksAr,
             hours: m.hours, status: 'approved',
           },
         })

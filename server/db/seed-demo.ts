@@ -62,6 +62,27 @@ const DEMO_LESSON_AR = [
   'في الجلسة القادمة نرسم عمليتك المختارة على ورقة واحدة، ثم نحدّد أضعف حلقة فيها.',
 ].join('\n')
 
+/* تمرين استرجاع ديمو (ح-٣) — ثلاثة أسئلة على درس الوحدة نفسه */
+const DEMO_CHECKS_AR = [
+  'س: أي صفة لا تكفي وحدها لترشيح مهمة للأتمتة؟',
+  '+ تكرارها اليومي',
+  '- انتظام مدخلاتها',
+  '- حسم قرارها بقاعدة',
+  'ش: التكرار شرط لا يكفي. مهمة متكررة بمدخلات غير منظّمة أو بقرار تقديري تفشل أتمتتها.',
+  '',
+  'س: ما علامة أن قرار المهمة «محسوم بقاعدة»؟',
+  '- أن يتخذه المسؤول سريعا',
+  '+ أن تُكتب شروطه: إن كان كذا فافعل كذا',
+  '- أن يكون القرار صحيحا غالبا',
+  'ش: القاعدة تُكتب شروطا صريحة. «غالبا صحيح» تقدير لا قاعدة، ولا تصلح للأتمتة.',
+  '',
+  'س: متى تُؤجَّل أتمتة مهمة تحقق الصفات الأربع؟',
+  '- إذا كانت أسبوعية لا يومية',
+  '- إذا كان عدد خطواتها كبيرا',
+  '+ إذا كان خطؤها غير مكلف ولا مملّ',
+  'ش: الأتمتة تشتري دقة أو وقتا. فإن لم تشترِ أيّهما فالعائد صفر وإن توفّرت بقية الشروط.',
+].join('\n')
+
 /* البند ح-١: متن درس ديمو على أول وحدة من دورة معلومة.
    مستقلّة ومُستدعاة قبل حراسة «البيانات الغنية موجودة»، فتُطبَّق على قاعدة
    قائمة أيضا. ولا تلمس متنا مكتوبا — الحراسة !bodyAr. */
@@ -72,8 +93,13 @@ async function seedLessonBody(prisma: PrismaClient, courseId: string): Promise<'
     where: { moduleId: firstModule.id },
     orderBy: { version: 'desc' },
   })
-  if (!currentVersion || currentVersion.bodyAr) return 'skipped'
-  await prisma.courseModuleVersion.update({ where: { id: currentVersion.id }, data: { bodyAr: DEMO_LESSON_AR } })
+  if (!currentVersion) return 'skipped'
+  /* حراسة مستقلة لكل حقل: وجود المتن لا يمنع بذر التمرين ولا العكس */
+  const data: { bodyAr?: string; checksAr?: string } = {}
+  if (!currentVersion.bodyAr) data.bodyAr = DEMO_LESSON_AR
+  if (!currentVersion.checksAr) data.checksAr = DEMO_CHECKS_AR
+  if (Object.keys(data).length === 0) return 'skipped'
+  await prisma.courseModuleVersion.update({ where: { id: currentVersion.id }, data })
   return 'written'
 }
 

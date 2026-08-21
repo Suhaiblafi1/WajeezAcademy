@@ -63,7 +63,7 @@ export default function CatalogAdmin() {
     id: "", pathwayId: "", sequence: "1", titleAr: "", shortPromiseAr: "", levelAr: "",
     totalHours: "", skillIds: [] as string[],
   });
-  const [modules, setModules] = useState([{ titleAr: "", outcomeAr: "", activityAr: "", artifactAr: "", bodyAr: "", hours: "" }]);
+  const [modules, setModules] = useState([{ titleAr: "", outcomeAr: "", activityAr: "", artifactAr: "", bodyAr: "", checksAr: "", hours: "" }]);
   const [crForm, setCrForm] = useState({ entityType: "course", entityId: "", payload: '{\n  "titleAr": "الاسم الجديد"\n}' });
   const [openForm, setOpenForm] = useState<"skill" | "course" | "pathway" | "cr" | null>(null);
 
@@ -111,11 +111,12 @@ export default function CatalogAdmin() {
         activityAr: m.activityAr.trim() || undefined,
         artifactAr: m.artifactAr.trim() || undefined,
         bodyAr: m.bodyAr.trim() || undefined,
+        checksAr: m.checksAr.trim() || undefined,
         hours: Number(m.hours) || 1,
       })),
     });
     setCourseForm({ id: "", pathwayId: "", sequence: "1", titleAr: "", shortPromiseAr: "", levelAr: "", totalHours: "", skillIds: [] });
-    setModules([{ titleAr: "", outcomeAr: "", activityAr: "", artifactAr: "", bodyAr: "", hours: "" }]);
+    setModules([{ titleAr: "", outcomeAr: "", activityAr: "", artifactAr: "", bodyAr: "", checksAr: "", hours: "" }]);
     setOpenForm(null);
   }, "أُنشئت الدورة كمسودة مرتبطة بالمسار والمهارات — أكمل سير الاعتماد ثم النشر");
 
@@ -321,11 +322,22 @@ export default function CatalogAdmin() {
                   <p className="mt-1 text-[10px] leading-5 text-white/50">
                     ما يُكتب هنا يظهر للمتعلم درسا داخل الدورة. يمرّ بنفس حاكمية النسخ والاعتماد والنشر — ولا يُعدَّل على إصدار منشور بأثر رجعي.
                   </p>
+                  {/* البند ح-٣: تمرين استرجاع بعد الوحدة */}
+                  <textarea
+                    value={m.checksAr}
+                    onChange={(e) => setModules(modules.map((x, j) => (j === i ? { ...x, checksAr: e.target.value } : x)))}
+                    rows={5}
+                    placeholder={"تمرين استرجاع (اختياري)\nس: نص السؤال\n- خيار\n+ الخيار الصحيح\nش: شرح الخطأ"}
+                    className={`${inputCls} mt-2 w-full font-mono leading-7`}
+                  />
+                  <p className="mt-1 text-[10px] leading-5 text-white/50">
+                    ثلاثة أسئلة كافية. علامة <span dir="ltr" className="font-mono">+</span> قبل الجواب الصحيح — واحد فقط لكل سؤال، والصيغة تُتحقَّق عند الحفظ.
+                  </p>
                 </div>
               ))}
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-3">
-              <button type="button" onClick={() => setModules([...modules, { titleAr: "", outcomeAr: "", activityAr: "", artifactAr: "", bodyAr: "", hours: "" }])}
+              <button type="button" onClick={() => setModules([...modules, { titleAr: "", outcomeAr: "", activityAr: "", artifactAr: "", bodyAr: "", checksAr: "", hours: "" }])}
                 className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-1.5 text-xs font-bold text-white/60 hover:border-white/40">
                 <Plus className="h-3.5 w-3.5" /> وحدة إضافية
               </button>

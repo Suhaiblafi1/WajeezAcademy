@@ -59,6 +59,8 @@ export interface Lesson {
   body?: string | null;
   /** ساعات الوحدة من الكتالوج — تُعرض بدل دقائق مقدَّرة حين تتوفر */
   hours?: number;
+  /** تمرين الاسترجاع الخام (ح-٣) — null حين لا تمرين لهذه الوحدة */
+  checks?: string | null;
 }
 export interface QuizQuestion { q: string; options: string[]; correct: number; explain: string; }
 
@@ -76,6 +78,7 @@ export function courseLessons(c: Course): Lesson[] {
       hours: m.hours,
       kind: m.body ? "reading" : m.activity ? "activity" : "video",
       body: m.body,
+      checks: m.checks,
     }));
   }
   const d = courseDetails(c);

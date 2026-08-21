@@ -277,6 +277,9 @@ model CourseModuleVersion {
      وروابط وصور. يُخزَّن على الإصدار لا على الوحدة، فيمرّ بنفس حاكمية
      النسخ والاعتماد والنشر ولا يُعدَّل بأثر رجعي على إصدار منشور. */
   bodyAr     String?
+  /* تمرين الاسترجاع (البند ح-٣) — بصيغة نصّية «س:/-/+/ش:» تُخزَّن كما يُخزَّن
+     المتن، فتُقارَن في سجل الإصدارات نصّا وتمرّ بنفس الحاكمية. */
+  checksAr   String?
   hours      Int
   status     String   @default("published")
   createdAt  DateTime @default(now())

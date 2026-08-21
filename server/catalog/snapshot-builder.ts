@@ -101,6 +101,7 @@ export async function buildSnapshotFromDb(
       evidence_artifact_ar: v.artifactAr ?? '', expected_hours: v.hours,
       /* متن الدرس (ح-١) — يُحذف الحقل حين لا متن، فلا تنتفخ اللقطة بسلاسل فارغة */
       ...(v.bodyAr ? { module_body_ar: v.bodyAr } : {}),
+      ...(v.checksAr ? { module_checks_ar: v.checksAr } : {}),
     }]
   })
 

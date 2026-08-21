@@ -49,6 +49,8 @@ export interface CoreCatalogModule {
   expected_hours: number
   /** متن الدرس (ح-١) — Markdown مقيّد؛ غائب حين لا درس */
   module_body_ar?: string
+  /** تمرين الاسترجاع (ح-٣) — صيغة «س:/-/+/ش:»؛ غائب حين لا تمرين */
+  module_checks_ar?: string
 }
 
 export interface CoreCatalogRaw {
