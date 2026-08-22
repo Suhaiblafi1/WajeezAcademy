@@ -215,3 +215,34 @@ export const B2C_BANNED_FACTS = [
 
 /** أسئلة محظورة في B2C (M0 المؤسسي + M9 كاملًا) */
 export const B2C_BANNED_QUESTION_PREFIXES = ['QB-M0-001', 'QB-M0-009', 'QB-M9-'] as const
+
+/* ─── الميول المهنية (RIASEC) → المجالات ─── */
+
+/** أبعاد هولاند الستة كما تقيسها أسئلة M5 (ثلاثة أسئلة لكل بعد) */
+export type RiasecDim =
+  | 'riasec_realistic'
+  | 'riasec_investigative'
+  | 'riasec_artistic'
+  | 'riasec_social'
+  | 'riasec_enterprising'
+  | 'riasec_conventional'
+
+/** بعد الميل → المجالات التي يرجّحها.
+    مخطَّط أكاديمي ثابت (هولاند) لا بيانات كتالوج، فموضعه هنا لا في اللقطة.
+    الميل دليل غير مباشر: يرجّح ولا يحسم — والاحتياج يبقى محرّك اكتشاف المجال. */
+export const RIASEC_DOMAINS: Record<RiasecDim, DomainId[]> = {
+  /* أدوات وأجهزة ونتائج ملموسة، إصلاح وتحسين، مهام عملية واضحة */
+  riasec_realistic: ['operations'],
+  /* تحليل معلومات معقدة، بحث عميق، أسئلة بلا إجابة مباشرة */
+  riasec_investigative: ['data_decision', 'cyber_risk'],
+  /* صناعة محتوى وتصميم وسرد، مهام مفتوحة، لغة وصورة */
+  riasec_artistic: ['marketing_growth', 'communication_influence'],
+  /* مساعدة الآخرين على الفهم، الشرح والتدريب، التعاون */
+  riasec_social: ['learning_design', 'people_leadership'],
+  /* قيادة مبادرة وإقناع، بيع وتفاوض، منافسة ونتائج */
+  riasec_enterprising: ['sales', 'entrepreneurship'],
+  /* تنظيم المعلومات والملفات والخطوات بدقة */
+  riasec_conventional: ['project_management', 'finance_mgmt'],
+}
+
+export const RIASEC_DIMS = Object.keys(RIASEC_DOMAINS) as RiasecDim[]

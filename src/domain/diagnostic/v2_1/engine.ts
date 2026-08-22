@@ -59,7 +59,10 @@ import {
   needsForStage,
   Q,
   STAGE_NEEDS_EMPLOYMENT_QUESTION,
+  RIASEC_DIMS,
+  RIASEC_DOMAINS,
   type CareerStage,
+  type RiasecDim,
 } from './maps'
 
 export const CONFIRMATION_MIN_QUESTIONS = 2
@@ -82,10 +85,16 @@ const W_GOAL = 0.8
 const W_INTEREST = 0.55
 const W_FUNCTION = 0.35
 const W_SECTOR_GOV = 0.3
+/* كتلة الميول (RIASEC) كلها — دون الهدف (0.8) وفوق الوظيفة (0.35).
+   سقفٌ للكتلة لا لكل بعد: ستة أبعاد بوزن مستقل كانت ستطغى على الاحتياج (1.2). */
+const W_RIASEC = 0.5
 const DOMAIN_CONTEST_MARGIN = 0.15
 
 /** تقييم المجالات V2.1 — الاحتياج أولًا، ثم الهدف، ثم الوظيفة والقطاع */
-export function assessDomainsV21(facts: DiagnosticState['facts']): DomainAssessment {
+export function assessDomainsV21(
+  facts: DiagnosticState['facts'],
+  interestVector: Record<string, number> = {},
+): DomainAssessment {
   const scores: Partial<Record<DomainId, number>> = {}
   const add = (id: DomainId, w: number) => {
     scores[id] = (scores[id] ?? 0) + w
@@ -125,7 +134,37 @@ export function assessDomainsV21(facts: DiagnosticState['facts']): DomainAssessm
   const interestList = Array.isArray(interests) ? (interests as string[]) : typeof interests === 'string' ? [interests] : []
   for (const d of interestList) add(d as DomainId, W_INTEREST)
 
-  const hasSignal = Boolean(need || legacyGoal || interestList.length > 0)
+  /* ميول هولاند (M5) — تُسأل فقط للمستكشف (هدف/احتياج غير محسومين)، فلا تلوّث
+     المحسوم. كانت إجاباتها تُخزَّن في interestVector ولا يقرؤها أحد: 185 مقعدًا
+     في 300 جلسة لا يغيّر أيٌّ منها شيئًا (audit-question-waste). توصيلها هنا
+     يجعل للاستكشاف معنى لمن قال «غير متأكد» — وهو أحوج من يحتاج التشخيص.
+
+     الإسهام موجب فقط: صيغة ثقة المجال نسبةٌ (الأول ÷ الأول + الثاني)، والقيم
+     السالبة تكسرها. فالنفور لا يخصم — غيابُ الميل يكفي ألا يرجّح.
+     والكتلة كلها محدودة بـW_RIASEC موزّعة بالتناسب، فلا يطغى ستة أبعاد على
+     الاحتياج مهما ارتفعت درجاتها. */
+  const riasecSignal = new Map<RiasecDim, number>()
+  let riasecTotal = 0
+  for (const dim of RIASEC_DIMS) {
+    const score = interestVector[dim]
+    if (score === undefined) continue
+    /* ليكرت 1..5، والحياد 3 — الإشارة (score-3)/2 في المدى 0..1 للموجب */
+    const signal = Math.max(0, (score - 3) / 2)
+    if (signal > 0) {
+      riasecSignal.set(dim, signal)
+      riasecTotal += signal
+    }
+  }
+  if (riasecTotal > 0) {
+    for (const [dim, signal] of riasecSignal) {
+      const ds = RIASEC_DOMAINS[dim]
+      if (ds.length === 0) continue
+      const share = (W_RIASEC * signal) / riasecTotal / ds.length
+      ds.forEach((d) => add(d, share))
+    }
+  }
+
+  const hasSignal = Boolean(need || legacyGoal || interestList.length > 0 || riasecTotal > 0)
 
   const ranked = (Object.entries(scores) as [DomainId, number][])
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
@@ -509,7 +548,7 @@ export class DiagnosticEngineV21 {
 
   private decisionContext(): DecisionContext {
     const persona = derivePersonaV21(this.state.facts)
-    const domains = assessDomainsV21(this.state.facts)
+    const domains = assessDomainsV21(this.state.facts, this.state.interestVector)
     const skillStates = buildSkillStates(this.state.skillVector)
     return { facts: this.state.facts, persona, domains, skillStates }
   }
