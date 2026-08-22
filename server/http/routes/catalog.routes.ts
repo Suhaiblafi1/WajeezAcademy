@@ -125,6 +125,42 @@ export function registerCatalogRoutes(app: FastifyInstance, prisma: PrismaClient
     return reply.status(201).send({ id: pathway.id, status: pathway.status })
   })
 
+  app.post('/api/admin/catalog/measurement-questions', {
+    /* الصلاحية القائمة لا واحدة جديدة: تأليف سؤال قياس عملُ «مدير التشخيص»
+       الذي يملك diagnostic.question.edit أصلا — واختراع مفتاح ثالث للمفهوم
+       نفسه هو ما يجعل الصلاحيات تتفرّق. */
+    preHandler: requirePermission('diagnostic.question.edit'),
+    schema: { tags: ['admin-catalog'], summary: 'سؤال قياس مهارة كمسودة — يفعّل وزن فجوة المهارة (موجة ٦ · أ-٢)' },
+  }, async (req, reply) => {
+    const body = z.object({
+      id: z.string(),
+      skillSlug: z.string().min(2),
+      textAr: z.string().min(15).max(400),
+      decisionImpactAr: z.string().min(15).max(400),
+      weight: z.number().min(0.5).max(2).optional(),
+    }).parse(req.body)
+    const q = await admin.createMeasurementQuestion(body, req.auth!.userId)
+    return reply.status(201).send(q)
+  })
+
+  app.post('/api/admin/catalog/measurement-questions/:id/retire', {
+    preHandler: requirePermission('diagnostic.question.edit'),
+    schema: { tags: ['admin-catalog'], summary: 'إيقاف سؤال قياس معلَّق — يتوقف إهدار وقت المتعلم (موجة ٦ · أ-٣)' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string() }).parse(req.params)
+    const { reasonAr } = z.object({ reasonAr: z.string().min(10).max(400) }).parse(req.body)
+    return admin.retireMeasurementQuestion(id, reasonAr)
+  })
+
+  app.get('/api/admin/catalog/measurement-coverage', {
+    preHandler: requirePermission('catalog.view'),
+    schema: { tags: ['admin-catalog'], summary: 'تغطية القياس لكل مسار وفجواتها مرتبة بالأثر (موجة ٦ · أ-١)' },
+  }, async () => {
+    /* من الكتالوج المثبَّت في هذه العملية — أي من اللقطة المنشورة */
+    const { buildCoverageReport } = await import('../../../src/application/catalog/measurement-coverage')
+    return buildCoverageReport()
+  })
+
   app.put('/api/admin/catalog/pathways/:id/profile', {
     preHandler: requirePermission('catalog.pathway.create'),
     schema: { tags: ['admin-catalog'], summary: 'الجمهور والهدف للمسار — استبدال كامل (ج-٣)' },

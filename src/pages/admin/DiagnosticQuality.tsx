@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { FlaskConical, RefreshCw } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import { apiGet, ApiError } from "@/services/api";
+import MeasurementCoverage from "@/components/MeasurementCoverage";
 
 type PersonaResult = {
   persona: string; questions?: number; kind: string; top: string | null; tpl: string | null; conf?: number; match: boolean
@@ -70,6 +71,9 @@ export default function DiagnosticQuality() {
   return (
     <AdminLayout title="جودة التشخيص والمحاكي">
       {error && <p className="mb-4 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-200">{error}</p>}
+
+      {/* موجة ٦ · أ-١: التغطية أولا — أضخم أصل خامل يُرى قبل أي شيء آخر */}
+      <MeasurementCoverage className="mb-10" />
 
       <section>
         <h2 className="flex items-center gap-2 text-lg font-black">

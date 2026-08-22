@@ -313,6 +313,121 @@ export class CatalogAdminService {
     return [...new Set(domainIds)]
   }
 
+  /* ═══ موجة ٦ · أ-٢ · تأليف سؤال قياس ═══
+     الحاجة: ٨ مهارات مقيسة من ٢٢٨ نشطة، و١٠ مسارات من ٢٠ وزنُ فجوة المهارة
+     فيها خامل. وقبل ج-٢ كان إغلاق فجوة يحتاج نشر كود؛ الآن يحتاج صفّا في
+     القاعدة وبناء لقطة.
+
+     ونطاق هذه العملية **ضيّق بقصد**: تُنشئ سؤال `skill_level_5` يقيس مهارة
+     مسجَّلة، لا سؤالا تشخيصيا عاما. الفرق حكوميّ لا تقني: شكل سؤال القياس
+     يحدده المحرك (نوع الجواب · مقياس الأدلة الخمسة · `measures`)، فالحرّ فيه
+     نصُّه وحده. وباب «أنشئ أي سؤال» يفتح سطح حوكمة أوسع بكثير ولا حاجة له
+     لسدّ هذه الفجوة. */
+
+  /** مقياس الأدلة الخمسة — نصٌّ واحد لكل أسئلة القياس، فلا يتفرّق المقياس */
+  static readonly SKILL_LEVEL_OPTIONS = [
+    'لا أعرفها',
+    'مبتدئ',
+    'أستخدمها أحيانا',
+    'جيد عمليًا',
+    'متقدم وأطبقها بثقة',
+  ]
+
+  async createMeasurementQuestion(input: {
+    id: string
+    /** المهارة المقيسة — يجب أن تكون مسجَّلة ونشطة، وإلا يُسأل المتعلم بلا أثر */
+    skillSlug: string
+    textAr: string
+    /** أثر القرار كما يكتبه المؤلّف — تقرؤه خطة V2.1 لجملة «هذا السؤال موجود لأن…» */
+    decisionImpactAr: string
+    weight?: number
+  }, actorId?: string) {
+    if (!/^QB-M4-[A-Z0-9-]+$/.test(input.id)) {
+      throw new AuthError('invalid_id', 'معرف سؤال القياس بصيغة QB-M4-XXX — الوحدة M4 هي وحدة أدلة المهارات')
+    }
+    if (await this.prisma.question.findUnique({ where: { id: input.id } })) {
+      throw new AuthError('duplicate_id', 'معرف السؤال موجود مسبقا', 409)
+    }
+    if (input.textAr.trim().length < 15) {
+      throw new AuthError('invalid_text', 'نص السؤال قصير جدا — المتعلم يقيس نفسه به')
+    }
+    if (input.decisionImpactAr.trim().length < 15) {
+      throw new AuthError('invalid_impact', 'أثر القرار مطلوب: سؤال لا نستطيع إكمال جملة أثره يصبح متقاعدا في خطة V2.1 فلا يُطرح')
+    }
+
+    const skill = await this.prisma.skill.findFirst({ where: { slug: input.skillSlug } })
+    if (!skill) throw new AuthError('unknown_skill', `لا مهارة مسجَّلة بالمُعرّف «${input.skillSlug}» — سجّلها أولا أو صحّح الاسم`)
+    if (skill.active === false || skill.mergedInto) {
+      throw new AuthError('inactive_skill', `المهارة «${input.skillSlug}» موقوفة أو مدموجة — قياسها لا يدخل أي ترشيح`)
+    }
+    /* مهارة لا يتطلبها مسار: يُسمح ويُبلَّغ. قياسها إشارة تخصيص لا فجوة —
+       والمنع هنا يمنع أيضا الحالة المشروعة (مهارة تُقاس لتوجيه الخطة). */
+    const inPathway = await this.prisma.pathwaySkillRequirement.count({ where: { skillId: skill.id } })
+      + await this.prisma.courseSkillLink.count({ where: { skillId: skill.id } })
+
+    const question = await this.prisma.question.create({
+      data: {
+        id: input.id, moduleId: 'M4', moduleName: 'خط أساس المهارات المحورية',
+        answerType: 'skill_level_5', optionsKey: 'skill_level_5',
+        personaScope: ['all'],
+        /* skill_vector إلى جانب المهارة — هكذا يقرأ المحرك متجه المهارات */
+        measures: [input.skillSlug, 'skill_vector'],
+        triggerCondition: 'always',
+        reasonAr: input.decisionImpactAr.trim(),
+        sensitivityLevel: 'low', requiredLevel: 'deep',
+        weight: input.weight ?? 1.1,
+        active: true,
+        /* مسودة: لا تدخل اللقطة المنشورة قبل الاعتماد والنشر */
+        status: 'draft',
+        versions: { create: { version: 1, textAr: input.textAr.trim(), status: 'draft', createdBy: actorId } },
+        options: {
+          create: CatalogAdminService.SKILL_LEVEL_OPTIONS.map((textAr, i) => ({
+            optionId: `o${i + 1}`, orderIndex: i, textAr,
+            /* التأثير: مستوى المهارة من ١ إلى ٥ في متجه المهارات */
+            effects: { [input.skillSlug]: String(i + 1) },
+          })),
+        },
+      },
+    })
+    await this.prisma.questionSkillLink.create({
+      data: { questionId: question.id, skillId: skill.id },
+    }).catch(() => undefined) // الرابط توثيقي — تكراره لا يُفشل التأليف
+
+    return {
+      id: question.id, status: question.status, skillSlug: input.skillSlug,
+      /* تنبيه لا منع */
+      noteAr: inPathway === 0
+        ? `المهارة «${input.skillSlug}» لا تتطلبها دورة ولا مسار — قياسها إشارة تخصيص لا يغيّر ترتيب المرشحين.`
+        : null,
+    }
+  }
+
+  /** موجة ٦ · أ-٣ — إيقاف سؤال قياس معلَّق.
+      المشكلة: أسئلة `skill_level_5` تقيس مفاتيح ليست مهارات مسجَّلة. ما كان
+      منها على سطح B2C **يُسأل المتعلم ويُهمَل جوابه** — وقتٌ مهدور بلا مقابل.
+
+      وللمعلَّق طريقان، وهذا أحدهما:
+      ١) **تسجيل المهارة** وربطها بدورات — يصير القياس محتسبا (الأفضل حين
+         المهارة حقيقية في المنتج).
+      ٢) **الإيقاف** — هذه العملية. `active = false` يُخرج السؤال من اللقطة،
+         فيسقط مفتاحه من المهارات المقيسة، ويتوقف إهدار وقت المتعلم.
+
+      والفرق بينهما قرارٌ أكاديمي لا تقني، فلا تُتخذ هنا: العمليتان متاحتان
+      والتقرير يعرض الاثنين. والإيقاف بيانيّ وقابل للرجوع — لا تعديل كود. */
+  async retireMeasurementQuestion(id: string, reasonAr: string) {
+    if (reasonAr.trim().length < 10) {
+      throw new AuthError('reason_required', 'سبب الإيقاف مطلوب — يُقرأ في سجل التدقيق بعد أشهر')
+    }
+    const q = await this.prisma.question.findUnique({ where: { id } })
+    if (!q) throw new AuthError('not_found', 'السؤال غير موجود', 404)
+    if (q.answerType !== 'skill_level_5') {
+      throw new AuthError('not_measurement', 'هذه العملية لأسئلة القياس وحدها — غيرها يُدار من خطة الأسئلة')
+    }
+    if (!q.active) return { id, active: false, alreadyInactive: true }
+    await this.prisma.question.update({ where: { id }, data: { active: false, reasonAr: `${q.reasonAr ?? ''}\n[أُوقف] ${reasonAr.trim()}`.trim() } })
+    return { id, active: false, alreadyInactive: false }
+  }
+
   /* ═══ ج-٣ · جاهزية المسار — تعريفٌ واحد ═══
      إضافة مسار تتطلب خمسة مواضع، ونقصُ واحدٍ ينتج «جوكرا»: كيانا ينافس الجميع
      أو لا يُوصى به أبدا. الخطوات الخمس هنا هي **نفسها** التي يعرضها المعالج
