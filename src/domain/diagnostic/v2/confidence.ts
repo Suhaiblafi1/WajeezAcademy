@@ -38,8 +38,15 @@ export function computeConfidenceV2(
   const top = candidates[0]
   const skillEvidenceCoverage = top ? top.measuredSkillCoverage : 0
   const trackFit = top ? Math.min(1, top.total / 0.85) : 0
-  const separation =
-    candidates.length >= 2 ? Math.min(1, Math.max(0, (candidates[0].total - candidates[1].total) / 0.15)) : 0.5
+  /* لا منافس = فصلٌ تام لا نصف غموض.
+     كان المرشح المنفرد يُحتسب 0.5 — أي أن أقوى دليل ممكن على وضوح التوصية (ألا
+     ينجو منافس أصلا) يُسجَّل عدمَ يقين. وظل العيب مستترا لأن كيانا بلا جمهور
+     معلن كان ينافس الجميع فيملأ المقعد الثاني؛ فلما أُغلق ذلك الباب انكشف أن
+     معايرة «تطابق قوي» كانت قائمة على منافس وهمي. */
+  const uncontested = candidates.length < 2
+  const separation = uncontested
+    ? 1
+    : Math.min(1, Math.max(0, (candidates[0].total - candidates[1].total) / 0.15))
   const unresolved = contradictions.filter((c) => !c.resolved)
   const highSev = unresolved.filter((c) => c.severity === 'high').length
   const consistency = Math.max(0, 1 - (unresolved.length - highSev) * 0.15 - highSev * 0.35)
@@ -82,7 +89,10 @@ export function computeConfidenceV2(
      المتماسك: المانع يعمل فقط حيث يصر المحرك على المزيد من الدليل
      (هامش < 0.08 أي separation < 0.533) — هناك يمكن لمهارة مجهولة أن تقلب
      الفائز فعلًا */
-  if (skillEvidenceCoverage < 0.5 && separation < 0.08 / 0.15) blockers.push('أغلب مهارات المسار المتصدر لم تُقس بدليل مباشر.')
+  /* «تطابق قوي» ادّعاءُ معرفةٍ بالمتعلم، فلا يُمنح دون نصف مهارات المسار مقيسة —
+     قاعدةٌ لا تُستثنى بحال السباق. وكانت مشروطة بضيق الهامش، فصار المرشح المنفرد
+     يُمنح «قوية» بلا قياس واحد متى امتلأ المقعد الثاني بكيان وهمي أو خلا. */
+  if (skillEvidenceCoverage < 0.5) blockers.push('أغلب مهارات المسار المتصدر لم تُقس بدليل مباشر.')
   if (separation < 0.5) blockers.push('الفارق بين أول مرشحين ضيق.')
   if (highSev > 0) blockers.push('يوجد تناقض جوهري غير محسوم بين إجاباتك.')
 

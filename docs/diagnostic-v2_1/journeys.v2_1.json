@@ -86,7 +86,7 @@
         "kind": "single_pathway",
         "topPathwayId": "PW-STU-002",
         "compositeTemplateId": null,
-        "confidence": 0.6624999999250001,
+        "confidence": 0.8382352940294117,
         "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true
@@ -94,7 +94,7 @@
     {
       "persona": "خريج حديث + باحث عن عمل",
       "stage": "fresh_graduate",
-      "questionsCount": 10,
+      "questionsCount": 8,
       "steps": [
         {
           "questionId": "QC-S1-001",
@@ -170,31 +170,13 @@
           "what_changed": [
             "+application_readiness"
           ]
-        },
-        {
-          "questionId": "QB-M3A-003",
-          "question_ar": "هل لديك تصور واضح لأول وظيفة تريدها؟",
-          "why_now_ar": "يكمل الصورة العامة.",
-          "answer_ar": "غير واضح",
-          "what_changed": [
-            "+first_job_clarity"
-          ]
-        },
-        {
-          "questionId": "QB-M3A-004",
-          "question_ar": "هل لديك سيرة ذاتية أو LinkedIn أو ملف تعريفي جاهز؟",
-          "why_now_ar": "يكمل الصورة العامة.",
-          "answer_ar": "نعم",
-          "what_changed": [
-            "+career_assets"
-          ]
         }
       ],
       "result": {
         "kind": "single_pathway",
         "topPathwayId": "PW-STU-002",
         "compositeTemplateId": null,
-        "confidence": 0.6484999999250001,
+        "confidence": 0.8217647057941178,
         "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true
@@ -328,7 +310,7 @@
     {
       "persona": "موظف خبير",
       "stage": "experienced",
-      "questionsCount": 10,
+      "questionsCount": 8,
       "steps": [
         {
           "questionId": "QC-S1-001",
@@ -404,31 +386,13 @@
             "+function_specialization",
             "+current_domain"
           ]
-        },
-        {
-          "questionId": "QB-M3B-003",
-          "question_ar": "هل تتعامل مباشرة مع الجمهور أو العملاء؟",
-          "why_now_ar": "فاز أساسًا بسبب: يستكمل سياقك العام.",
-          "answer_ar": "نعم",
-          "what_changed": [
-            "+public_facing"
-          ]
-        },
-        {
-          "questionId": "QB-M3B-012",
-          "question_ar": "هل تدير أشخاصا أو مشاريع أو اجتماعات؟",
-          "why_now_ar": "فاز أساسًا بسبب: يستكمل سياقك العام.",
-          "answer_ar": "نعم",
-          "what_changed": [
-            "+leadership_context"
-          ]
         }
       ],
       "result": {
         "kind": "single_pathway",
         "topPathwayId": "PW-EMP-003",
         "compositeTemplateId": null,
-        "confidence": 0.6434090908138843,
+        "confidence": 0.815775400957511,
         "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true
@@ -857,7 +821,7 @@
         "kind": "single_pathway",
         "topPathwayId": "PW-LND-001",
         "compositeTemplateId": null,
-        "confidence": 0.650431034419342,
+        "confidence": 0.8240365110815789,
         "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true

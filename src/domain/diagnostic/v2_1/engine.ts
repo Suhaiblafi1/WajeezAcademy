@@ -35,6 +35,8 @@ import type {
 } from '../types'
 import { computeConfidenceV2 } from '../v2/confidence'
 import { DOMAIN_CONFIDENCE_MIN } from '../v2/domains'
+import { personalizePlan, assessPathwayByCourses, courseLevelOf, type PersonalPlan, type PathwayCourseFit } from './course-fit'
+import { catalogCourses } from '../catalog'
 import { buildExplanation } from '../v2/explain'
 import { buildAdvisorHandoff } from '../v2/handoff'
 import { buildSkillStates, personalizationNotes } from '../v2/skills'
@@ -483,6 +485,13 @@ export function rankAdaptiveQuestionsV21(
 
 /** توصية V2.1 = توصية V2 + معرفات النسخ الموثقة */
 export type RecommendationV21 = Recommendation & {
+  /** الخطة المشخصنة — مقررات الفائز مقيسة كلٌّ على مهاراته، مع ما استُبدل منها.
+      إضافةٌ لا تغيير: منافسة المسارات تبقى كما هي، والتشخيص يقع داخل الفائز. */
+  personalPlan?: PersonalPlan
+  /** المسار كما صُمم — يُعرض خيارا ثانيا حين شخصنّا الخطة الأولى */
+  originalPlan?: PathwayCourseFit
+  /** بديل واحد متباين مع سبب تباينه — لا قائمة مرتّبة بلا معنى */
+  alternativeContrast_ar?: string
   v2?: {
     explanation: unknown
     confidence: ConfidenceV2
@@ -490,6 +499,32 @@ export type RecommendationV21 = Recommendation & {
     advisorHandoff?: unknown
     versions: { engine: string; question_plan: string; question_bank: string; catalog: string; skill_taxonomy: string }
   }
+}
+
+
+/* ─── البديل المتباين ─── */
+
+/** متوسط موضع مقررات المسار على سلّم المستوى — لوصف التباين لا لتقييمه */
+function meanCourseLevel(pathwayId: string): number {
+  const cs = catalogCourses.filter((c) => c.pathway_id === pathwayId)
+  if (cs.length === 0) return 1
+  const ord: Record<string, number> = { foundational: 0, foundational_applied: 1, applied: 2, practitioner: 3 }
+  return cs.reduce((sum, c) => sum + (ord[courseLevelOf(c)] ?? 1), 0) / cs.length
+}
+function totalHoursOf(pathwayId: string): number {
+  return catalogCourses.filter((c) => c.pathway_id === pathwayId).reduce((s, c) => s + c.total_hours, 0)
+}
+
+/** لماذا هذا البديل مختلف — نصٌّ يقرؤه المتعلم، وnull إن لم يختلف اختلافا مفيدا.
+    بديلٌ لا يختلف عن الأول إلا بالترتيب لا يستحق مقعدا على الشاشة. */
+function contrastOf(primaryId: string, altId: string): string | null {
+  const dh = totalHoursOf(altId) - totalHoursOf(primaryId)
+  const dl = meanCourseLevel(altId) - meanCourseLevel(primaryId)
+  if (dh <= -8) return 'أقصر — ساعات أقل إن كان وقتك أضيق'
+  if (dl <= -0.5) return 'أكثر تأسيسا — يبدأ من قاعدة أوسع'
+  if (dl >= 0.5) return 'أكثر تقدما — إن كنت تريد سقفا أعلى'
+  if (dh >= 8) return 'أوسع — ساعات أكثر وتغطية أشمل'
+  return null
 }
 
 export class DiagnosticEngineV21 {
@@ -1350,7 +1385,33 @@ export class DiagnosticEngineV21 {
 
     const standardCandidates = comp.candidates.filter((c) => c.entity.entity_type === 'standard')
     const primary = standardCandidates[0] ?? null
-    const alternatives = standardCandidates.slice(1, 3)
+    /* بديل واحد متباين لا اثنان بالترتيب: الأول خطةٌ شخصناها، والبديل مسارٌ سليم
+       كما صُمم لمن لا يريد الاستبدال. وثلاثة خيارات على شاشة قرار تُربك ولا تُعين. */
+    let alternativeContrast_ar: string | undefined
+    let alternatives: typeof standardCandidates = []
+    if (primary) {
+      /* ١) مسار قياسي آخر يختلف اختلافا مفيدا */
+      for (const cand of standardCandidates.slice(1)) {
+        const contrast = contrastOf(primary.entity.entity_id, cand.entity.entity_id)
+        if (contrast) {
+          alternatives = [cand]
+          alternativeContrast_ar = contrast
+          break
+        }
+      }
+      /* ٢) وإلا فأقرب مركب مؤهل — خطةٌ أوسع تجمع أكثر من مجال */
+      if (alternatives.length === 0) {
+        const composites = comp.candidates.filter((c) => c.entity.entity_type === 'composite')
+        if (composites.length > 0) {
+          alternatives = [composites[0]]
+          alternativeContrast_ar = 'خطة أوسع تجمع أكثر من مجال — إن أردت تغطية أشمل'
+        }
+      }
+      /* ٣) وإلا فالمسار نفسه كما صُمم — البديل الصادق حين شخصنّا خطته:
+         من لا يريد استبدالا يأخذ المسار الأصلي بمقرراته الخمسة وشهادته كما هي.
+         ولا يُعرض حين لم نستبدل شيئا: عرضُ الشيء بديلا عن نفسه عبث. */
+      if (alternatives.length === 0 && standardCandidates.length > 1) alternatives = [standardCandidates[1]]
+    }
 
     const unavailable: { skill: string; note_ar: string }[] = []
     const coveredSlugs = new Set(candidates.flatMap((c) => c.gapSkillSlugs.concat(c.masteredSkillSlugs)))
@@ -1419,10 +1480,22 @@ export class DiagnosticEngineV21 {
       excluded: eligibility.filter((e) => !e.eligible).map((e) => ({ entityId: e.pathwayId, reasons: e.excludedReasons_ar })),
     })
 
+    const personalPlan = primary ? personalizePlan(primary.entity.entity_id, ctx) : undefined
+    /* شخصنّا الخطة ولا بديل خارجي: البديل هو المسار كما صُمم — خيارٌ ثانٍ حقيقي
+       لمن يفضّل تماسك المسار الأصلي وشهادته على خطةٍ فُصّلت له. */
+    let originalPlan: PathwayCourseFit | undefined
+    if (alternatives.length === 0 && personalPlan?.personalized && primary) {
+      originalPlan = assessPathwayByCourses(primary.entity.entity_id, ctx)
+      alternativeContrast_ar = 'المسار كما صُمم — بمقرراته الخمسة الأصلية بلا استبدال'
+    }
+
     const partial = {
       kind,
       primaryPathway: primary ? toLegacyCandidate(toV2Candidate(primary)) : null,
       alternatives: alternatives.map((c) => toLegacyCandidate(toV2Candidate(c))),
+      personalPlan,
+      originalPlan,
+      alternativeContrast_ar,
       composite,
       confidence: toLegacyConfidence(confidence),
       reasons_ar: [
