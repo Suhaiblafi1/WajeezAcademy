@@ -1,0 +1,2586 @@
+{
+  "doc_ar": "قاموس مهارات نحيف — مولَّد من skills.v1.ar.json للحزمة المضمنة. لا يُحرر يدويا.",
+  "generated_by": "scripts/build-v2-overlays.ts",
+  "skills": [
+    {
+      "skill_id": "SK-COG-001",
+      "slug": "analytical_thinking",
+      "name_ar": "التفكير التحليلي",
+      "family_id": "COG",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-COG-002",
+      "slug": "critical_thinking",
+      "name_ar": "التفكير النقدي",
+      "family_id": "COG",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-COG-003",
+      "slug": "creative_thinking",
+      "name_ar": "التفكير الإبداعي",
+      "family_id": "COG",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-COG-004",
+      "slug": "systems_thinking",
+      "name_ar": "التفكير المنظومي",
+      "family_id": "COG",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-COG-005",
+      "slug": "complex_problem_solving",
+      "name_ar": "حل المشكلات المعقدة",
+      "family_id": "COG",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-COG-006",
+      "slug": "decision_making",
+      "name_ar": "اتخاذ القرار",
+      "family_id": "COG",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-COG-007",
+      "slug": "strategic_thinking",
+      "name_ar": "التفكير الاستراتيجي",
+      "family_id": "COG",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-COG-008",
+      "slug": "sensemaking",
+      "name_ar": "فهم السياق واستخلاص المعنى",
+      "family_id": "COG",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-COG-009",
+      "slug": "learning_agility",
+      "name_ar": "مرونة التعلم",
+      "family_id": "COG",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-COG-010",
+      "slug": "curiosity",
+      "name_ar": "الفضول المهني",
+      "family_id": "COG",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-COG-011",
+      "slug": "research_literacy",
+      "name_ar": "مهارة البحث والتحقق",
+      "family_id": "COG",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-COG-012",
+      "slug": "scenario_planning",
+      "name_ar": "تخطيط السيناريوهات",
+      "family_id": "COG",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-COG-013",
+      "slug": "design_thinking",
+      "name_ar": "التفكير التصميمي",
+      "family_id": "COG",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-COG-014",
+      "slug": "innovation_methods",
+      "name_ar": "منهجيات الابتكار",
+      "family_id": "COG",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-COG-015",
+      "slug": "prioritization",
+      "name_ar": "ترتيب الأولويات",
+      "family_id": "COG",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-COG-016",
+      "slug": "mental_models",
+      "name_ar": "النماذج الذهنية",
+      "family_id": "COG",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-COG-017",
+      "slug": "ethical_reasoning",
+      "name_ar": "التفكير الأخلاقي",
+      "family_id": "COG",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-COG-018",
+      "slug": "ambiguity_tolerance",
+      "name_ar": "التعامل مع الغموض",
+      "family_id": "COG",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-DIG-001",
+      "slug": "digital_literacy",
+      "name_ar": "الثقافة الرقمية العامة",
+      "family_id": "DIG",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "ESCO",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-DIG-002",
+      "slug": "information_search",
+      "name_ar": "البحث الرقمي الفعال",
+      "family_id": "DIG",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "ESCO",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-DIG-003",
+      "slug": "information_evaluation",
+      "name_ar": "تقييم موثوقية المعلومات",
+      "family_id": "DIG",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "ESCO",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-DIG-004",
+      "slug": "digital_file_management",
+      "name_ar": "إدارة الملفات الرقمية",
+      "family_id": "DIG",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "ESCO",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-DIG-005",
+      "slug": "cloud_collaboration",
+      "name_ar": "التعاون السحابي",
+      "family_id": "DIG",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "ESCO",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-DIG-006",
+      "slug": "online_meetings",
+      "name_ar": "إدارة الاجتماعات الرقمية",
+      "family_id": "DIG",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "ESCO",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-DIG-007",
+      "slug": "digital_productivity",
+      "name_ar": "الإنتاجية الرقمية",
+      "family_id": "DIG",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "ESCO",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-DIG-008",
+      "slug": "spreadsheets_basics",
+      "name_ar": "أساسيات الجداول الإلكترونية",
+      "family_id": "DIG",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "ESCO",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-DIG-009",
+      "slug": "document_design",
+      "name_ar": "تصميم المستندات المهنية",
+      "family_id": "DIG",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "ESCO",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-DIG-010",
+      "slug": "presentation_tools",
+      "name_ar": "أدوات العروض التقديمية",
+      "family_id": "DIG",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "ESCO",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-DIG-011",
+      "slug": "digital_content_creation",
+      "name_ar": "إنشاء المحتوى الرقمي",
+      "family_id": "DIG",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "ESCO",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-DIG-012",
+      "slug": "basic_design_literacy",
+      "name_ar": "الثقافة التصميمية الأساسية",
+      "family_id": "DIG",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "ESCO",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-DIG-013",
+      "slug": "cybersecurity_basics",
+      "name_ar": "أساسيات الأمن السيبراني",
+      "family_id": "DIG",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "ESCO",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-DIG-014",
+      "slug": "privacy_management",
+      "name_ar": "إدارة الخصوصية الرقمية",
+      "family_id": "DIG",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "ESCO",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-DIG-015",
+      "slug": "digital_wellbeing",
+      "name_ar": "الرفاه الرقمي",
+      "family_id": "DIG",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "ESCO",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-DIG-016",
+      "slug": "remote_work_tools",
+      "name_ar": "أدوات العمل عن بعد",
+      "family_id": "DIG",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "ESCO",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-DIG-017",
+      "slug": "no_code_tools",
+      "name_ar": "أدوات No-code",
+      "family_id": "DIG",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "ESCO",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-DIG-018",
+      "slug": "digital_accessibility",
+      "name_ar": "إتاحة المحتوى الرقمي",
+      "family_id": "DIG",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "ESCO",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-AI-001",
+      "slug": "ai_literacy",
+      "name_ar": "الثقافة العامة في الذكاء الاصطناعي",
+      "family_id": "AI",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "UNESCO AI",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-AI-002",
+      "slug": "prompting_basics",
+      "name_ar": "أساسيات التوجيه وكتابة الطلبات",
+      "family_id": "AI",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "UNESCO AI",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-AI-003",
+      "slug": "prompt_iteration",
+      "name_ar": "تحسين الطلبات بالتكرار",
+      "family_id": "AI",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "UNESCO AI",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-AI-004",
+      "slug": "ai_output_evaluation",
+      "name_ar": "تقييم مخرجات الذكاء الاصطناعي",
+      "family_id": "AI",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "UNESCO AI",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-AI-005",
+      "slug": "ai_fact_checking",
+      "name_ar": "التحقق من حقائق مخرجات AI",
+      "family_id": "AI",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "UNESCO AI",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-AI-006",
+      "slug": "ai_workflow_design",
+      "name_ar": "تصميم سير عمل مدعوم بالذكاء الاصطناعي",
+      "family_id": "AI",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "UNESCO AI",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-AI-007",
+      "slug": "ai_automation",
+      "name_ar": "أتمتة مهام بالذكاء الاصطناعي",
+      "family_id": "AI",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "UNESCO AI",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-AI-008",
+      "slug": "ai_for_research",
+      "name_ar": "استخدام AI في البحث والتلخيص",
+      "family_id": "AI",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "UNESCO AI",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-AI-009",
+      "slug": "ai_for_writing",
+      "name_ar": "استخدام AI في الكتابة والتحرير",
+      "family_id": "AI",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "UNESCO AI",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-AI-010",
+      "slug": "ai_for_learning",
+      "name_ar": "استخدام AI كمدرب تعلم",
+      "family_id": "AI",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "UNESCO AI",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-AI-011",
+      "slug": "ai_ethics",
+      "name_ar": "أخلاقيات الذكاء الاصطناعي",
+      "family_id": "AI",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "UNESCO AI",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-AI-012",
+      "slug": "ai_data_privacy",
+      "name_ar": "خصوصية البيانات مع AI",
+      "family_id": "AI",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "UNESCO AI",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-AI-013",
+      "slug": "ai_use_cases_mapping",
+      "name_ar": "تحديد حالات استخدام AI",
+      "family_id": "AI",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "UNESCO AI",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-AI-014",
+      "slug": "human_ai_collaboration",
+      "name_ar": "التعاون بين الإنسان والذكاء الاصطناعي",
+      "family_id": "AI",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "UNESCO AI",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-AI-015",
+      "slug": "ai_risk_management",
+      "name_ar": "إدارة مخاطر AI",
+      "family_id": "AI",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "UNESCO AI",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-AI-016",
+      "slug": "ai_adoption_change",
+      "name_ar": "تبني AI داخل الفريق",
+      "family_id": "AI",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "UNESCO AI",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-DATA-001",
+      "slug": "data_literacy",
+      "name_ar": "الثقافة البيانية",
+      "family_id": "DATA",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "ESCO",
+        "O*NET"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-DATA-002",
+      "slug": "data_collection",
+      "name_ar": "جمع البيانات",
+      "family_id": "DATA",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "ESCO",
+        "O*NET"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-DATA-003",
+      "slug": "data_cleaning",
+      "name_ar": "تنظيف البيانات",
+      "family_id": "DATA",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "ESCO",
+        "O*NET"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-DATA-004",
+      "slug": "data_analysis_basics",
+      "name_ar": "أساسيات تحليل البيانات",
+      "family_id": "DATA",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "ESCO",
+        "O*NET"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-DATA-005",
+      "slug": "dashboard_reading",
+      "name_ar": "قراءة لوحات المؤشرات",
+      "family_id": "DATA",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "ESCO",
+        "O*NET"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-DATA-006",
+      "slug": "dashboard_design",
+      "name_ar": "تصميم لوحات المؤشرات",
+      "family_id": "DATA",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "ESCO",
+        "O*NET"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-DATA-007",
+      "slug": "kpi_design",
+      "name_ar": "تصميم مؤشرات الأداء",
+      "family_id": "DATA",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "ESCO",
+        "O*NET"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-DATA-008",
+      "slug": "survey_design",
+      "name_ar": "تصميم الاستبيانات",
+      "family_id": "DATA",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "ESCO",
+        "O*NET"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-DATA-009",
+      "slug": "experiment_design",
+      "name_ar": "تصميم التجارب",
+      "family_id": "DATA",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "ESCO",
+        "O*NET"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-DATA-010",
+      "slug": "statistical_thinking",
+      "name_ar": "التفكير الإحصائي الأساسي",
+      "family_id": "DATA",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "ESCO",
+        "O*NET"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-DATA-011",
+      "slug": "data_visualization",
+      "name_ar": "تصور البيانات",
+      "family_id": "DATA",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "ESCO",
+        "O*NET"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-DATA-012",
+      "slug": "business_intelligence",
+      "name_ar": "ذكاء الأعمال",
+      "family_id": "DATA",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "ESCO",
+        "O*NET"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-DATA-013",
+      "slug": "data_storytelling",
+      "name_ar": "سرد القصة بالبيانات",
+      "family_id": "DATA",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "ESCO",
+        "O*NET"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-DATA-014",
+      "slug": "data_governance",
+      "name_ar": "حوكمة البيانات",
+      "family_id": "DATA",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "ESCO",
+        "O*NET"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-COM-001",
+      "slug": "active_listening",
+      "name_ar": "الإصغاء الفعال",
+      "family_id": "COM",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-COM-002",
+      "slug": "clear_expression",
+      "name_ar": "التعبير الواضح",
+      "family_id": "COM",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-COM-003",
+      "slug": "arabic_business_writing",
+      "name_ar": "الكتابة العربية المهنية",
+      "family_id": "COM",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-COM-004",
+      "slug": "english_for_work",
+      "name_ar": "الإنجليزية للعمل والتعلم",
+      "family_id": "COM",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-COM-005",
+      "slug": "report_writing",
+      "name_ar": "كتابة التقارير",
+      "family_id": "COM",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-COM-006",
+      "slug": "executive_summary",
+      "name_ar": "كتابة الملخص التنفيذي",
+      "family_id": "COM",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-COM-007",
+      "slug": "presentation_delivery",
+      "name_ar": "الإلقاء والعرض",
+      "family_id": "COM",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-COM-008",
+      "slug": "public_speaking",
+      "name_ar": "الخطابة والتحدث العام",
+      "family_id": "COM",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-COM-009",
+      "slug": "storytelling",
+      "name_ar": "السرد القصصي",
+      "family_id": "COM",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-COM-010",
+      "slug": "persuasion",
+      "name_ar": "الإقناع",
+      "family_id": "COM",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-COM-011",
+      "slug": "negotiation",
+      "name_ar": "التفاوض",
+      "family_id": "COM",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-COM-012",
+      "slug": "conflict_resolution",
+      "name_ar": "حل النزاعات",
+      "family_id": "COM",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-COM-013",
+      "slug": "feedback_giving",
+      "name_ar": "إعطاء الملاحظات",
+      "family_id": "COM",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-COM-014",
+      "slug": "feedback_receiving",
+      "name_ar": "استقبال الملاحظات",
+      "family_id": "COM",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-COM-015",
+      "slug": "meeting_facilitation",
+      "name_ar": "إدارة الاجتماعات",
+      "family_id": "COM",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-COM-016",
+      "slug": "customer_communication",
+      "name_ar": "التواصل مع العملاء أو الجمهور",
+      "family_id": "COM",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-COM-017",
+      "slug": "cross_cultural_communication",
+      "name_ar": "التواصل بين الثقافات",
+      "family_id": "COM",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-COM-018",
+      "slug": "media_literacy",
+      "name_ar": "الثقافة الإعلامية",
+      "family_id": "COM",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-COM-019",
+      "slug": "voice_and_presence",
+      "name_ar": "الحضور والصوت",
+      "family_id": "COM",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-COM-020",
+      "slug": "briefing_skills",
+      "name_ar": "مهارة الإيجاز والإحاطة",
+      "family_id": "COM",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-CAREER-001",
+      "slug": "career_planning",
+      "name_ar": "تخطيط المسار المهني",
+      "family_id": "CAREER",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "OECD"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-CAREER-002",
+      "slug": "cv_writing",
+      "name_ar": "كتابة السيرة الذاتية",
+      "family_id": "CAREER",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "OECD"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-CAREER-003",
+      "slug": "linkedin_profile",
+      "name_ar": "بناء ملف LinkedIn",
+      "family_id": "CAREER",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "OECD"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-CAREER-004",
+      "slug": "portfolio_building",
+      "name_ar": "بناء ملف الأعمال",
+      "family_id": "CAREER",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "OECD"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-CAREER-005",
+      "slug": "interview_skills",
+      "name_ar": "مهارات المقابلات",
+      "family_id": "CAREER",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "OECD"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-CAREER-006",
+      "slug": "job_search_strategy",
+      "name_ar": "استراتيجية البحث عن عمل",
+      "family_id": "CAREER",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "OECD"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-CAREER-007",
+      "slug": "networking",
+      "name_ar": "بناء العلاقات المهنية",
+      "family_id": "CAREER",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "OECD"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-CAREER-008",
+      "slug": "personal_branding",
+      "name_ar": "العلامة المهنية الشخصية",
+      "family_id": "CAREER",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "OECD"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-CAREER-009",
+      "slug": "workplace_professionalism",
+      "name_ar": "الاحتراف في بيئة العمل",
+      "family_id": "CAREER",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "OECD"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-CAREER-010",
+      "slug": "career_transition",
+      "name_ar": "تغيير المسار المهني",
+      "family_id": "CAREER",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "OECD"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-CAREER-011",
+      "slug": "internship_readiness",
+      "name_ar": "الجاهزية للتدريب العملي",
+      "family_id": "CAREER",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "OECD"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-CAREER-012",
+      "slug": "salary_negotiation",
+      "name_ar": "التفاوض على العرض الوظيفي",
+      "family_id": "CAREER",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "OECD"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-CAREER-013",
+      "slug": "professional_ethics",
+      "name_ar": "الأخلاقيات المهنية",
+      "family_id": "CAREER",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "OECD"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-CAREER-014",
+      "slug": "mentorship_use",
+      "name_ar": "الاستفادة من الإرشاد المهني",
+      "family_id": "CAREER",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "OECD"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-BIZ-001",
+      "slug": "business_model",
+      "name_ar": "نموذج العمل",
+      "family_id": "BIZ",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-BIZ-002",
+      "slug": "value_proposition",
+      "name_ar": "عرض القيمة",
+      "family_id": "BIZ",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-BIZ-003",
+      "slug": "customer_discovery",
+      "name_ar": "اكتشاف العملاء",
+      "family_id": "BIZ",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-BIZ-004",
+      "slug": "market_research",
+      "name_ar": "بحث السوق",
+      "family_id": "BIZ",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-BIZ-005",
+      "slug": "competitive_analysis",
+      "name_ar": "تحليل المنافسين",
+      "family_id": "BIZ",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-BIZ-006",
+      "slug": "pricing_strategy",
+      "name_ar": "استراتيجية التسعير",
+      "family_id": "BIZ",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-BIZ-007",
+      "slug": "sales_fundamentals",
+      "name_ar": "أساسيات المبيعات",
+      "family_id": "BIZ",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-BIZ-008",
+      "slug": "sales_pipeline",
+      "name_ar": "إدارة خط المبيعات",
+      "family_id": "BIZ",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-BIZ-009",
+      "slug": "negotiation_commercial",
+      "name_ar": "التفاوض التجاري",
+      "family_id": "BIZ",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-BIZ-010",
+      "slug": "digital_marketing",
+      "name_ar": "التسويق الرقمي",
+      "family_id": "BIZ",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-BIZ-011",
+      "slug": "content_marketing",
+      "name_ar": "تسويق المحتوى",
+      "family_id": "BIZ",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-BIZ-012",
+      "slug": "brand_strategy",
+      "name_ar": "استراتيجية العلامة",
+      "family_id": "BIZ",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-BIZ-013",
+      "slug": "social_media_strategy",
+      "name_ar": "استراتيجية الشبكات الاجتماعية",
+      "family_id": "BIZ",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-BIZ-014",
+      "slug": "customer_success",
+      "name_ar": "نجاح العملاء",
+      "family_id": "BIZ",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-BIZ-015",
+      "slug": "operations_basics",
+      "name_ar": "أساسيات العمليات",
+      "family_id": "BIZ",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-BIZ-016",
+      "slug": "process_design",
+      "name_ar": "تصميم الإجراءات",
+      "family_id": "BIZ",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-BIZ-017",
+      "slug": "project_management",
+      "name_ar": "إدارة المشاريع",
+      "family_id": "BIZ",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-BIZ-018",
+      "slug": "product_management",
+      "name_ar": "إدارة المنتج",
+      "family_id": "BIZ",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-BIZ-019",
+      "slug": "ux_basics",
+      "name_ar": "أساسيات تجربة المستخدم",
+      "family_id": "BIZ",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-BIZ-020",
+      "slug": "ecommerce_basics",
+      "name_ar": "أساسيات التجارة الإلكترونية",
+      "family_id": "BIZ",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-BIZ-021",
+      "slug": "crm_basics",
+      "name_ar": "أساسيات CRM",
+      "family_id": "BIZ",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-BIZ-022",
+      "slug": "business_finance",
+      "name_ar": "مالية المشروع",
+      "family_id": "BIZ",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-BIZ-023",
+      "slug": "cashflow_management",
+      "name_ar": "إدارة التدفق النقدي",
+      "family_id": "BIZ",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-BIZ-024",
+      "slug": "legal_basics_business",
+      "name_ar": "أساسيات قانونية للمشاريع",
+      "family_id": "BIZ",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-BIZ-025",
+      "slug": "vendor_management",
+      "name_ar": "إدارة الموردين",
+      "family_id": "BIZ",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-BIZ-026",
+      "slug": "growth_experimentation",
+      "name_ar": "تجارب النمو",
+      "family_id": "BIZ",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-LEAD-001",
+      "slug": "self_leadership",
+      "name_ar": "قيادة الذات",
+      "family_id": "LEAD",
+      "source_frameworks": [
+        "O*NET",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-LEAD-002",
+      "slug": "team_leadership",
+      "name_ar": "قيادة الفريق",
+      "family_id": "LEAD",
+      "source_frameworks": [
+        "O*NET",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-LEAD-003",
+      "slug": "delegation",
+      "name_ar": "التفويض",
+      "family_id": "LEAD",
+      "source_frameworks": [
+        "O*NET",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-LEAD-004",
+      "slug": "coaching",
+      "name_ar": "التدريب والتوجيه",
+      "family_id": "LEAD",
+      "source_frameworks": [
+        "O*NET",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-LEAD-005",
+      "slug": "performance_management",
+      "name_ar": "إدارة الأداء",
+      "family_id": "LEAD",
+      "source_frameworks": [
+        "O*NET",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-LEAD-006",
+      "slug": "goal_setting_okrs",
+      "name_ar": "تحديد الأهداف وOKRs",
+      "family_id": "LEAD",
+      "source_frameworks": [
+        "O*NET",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-LEAD-007",
+      "slug": "change_management",
+      "name_ar": "إدارة التغيير",
+      "family_id": "LEAD",
+      "source_frameworks": [
+        "O*NET",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-LEAD-008",
+      "slug": "stakeholder_management",
+      "name_ar": "إدارة أصحاب المصلحة",
+      "family_id": "LEAD",
+      "source_frameworks": [
+        "O*NET",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-LEAD-009",
+      "slug": "decision_governance",
+      "name_ar": "حوكمة القرار",
+      "family_id": "LEAD",
+      "source_frameworks": [
+        "O*NET",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-LEAD-010",
+      "slug": "risk_management",
+      "name_ar": "إدارة المخاطر",
+      "family_id": "LEAD",
+      "source_frameworks": [
+        "O*NET",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-LEAD-011",
+      "slug": "crisis_management",
+      "name_ar": "إدارة الأزمات",
+      "family_id": "LEAD",
+      "source_frameworks": [
+        "O*NET",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-LEAD-012",
+      "slug": "organizational_culture",
+      "name_ar": "بناء الثقافة المؤسسية",
+      "family_id": "LEAD",
+      "source_frameworks": [
+        "O*NET",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-LEAD-013",
+      "slug": "motivation_design",
+      "name_ar": "تصميم الدافعية",
+      "family_id": "LEAD",
+      "source_frameworks": [
+        "O*NET",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-LEAD-014",
+      "slug": "talent_development",
+      "name_ar": "تطوير المواهب",
+      "family_id": "LEAD",
+      "source_frameworks": [
+        "O*NET",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-LEAD-015",
+      "slug": "meeting_cadence",
+      "name_ar": "إيقاع الاجتماعات والمتابعة",
+      "family_id": "LEAD",
+      "source_frameworks": [
+        "O*NET",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-LEAD-016",
+      "slug": "strategic_communication",
+      "name_ar": "التواصل القيادي الاستراتيجي",
+      "family_id": "LEAD",
+      "source_frameworks": [
+        "O*NET",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-LEAD-017",
+      "slug": "decision_under_pressure",
+      "name_ar": "القرار تحت الضغط",
+      "family_id": "LEAD",
+      "source_frameworks": [
+        "O*NET",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-LEAD-018",
+      "slug": "inclusive_leadership",
+      "name_ar": "القيادة الشاملة",
+      "family_id": "LEAD",
+      "source_frameworks": [
+        "O*NET",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-GOV-001",
+      "slug": "public_service_mindset",
+      "name_ar": "عقلية الخدمة العامة",
+      "family_id": "GOV",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "OECD"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-GOV-002",
+      "slug": "citizen_experience",
+      "name_ar": "تجربة المواطن أو المراجع",
+      "family_id": "GOV",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "OECD"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-GOV-003",
+      "slug": "government_correspondence",
+      "name_ar": "المراسلات الحكومية",
+      "family_id": "GOV",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "OECD"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-GOV-004",
+      "slug": "policy_literacy",
+      "name_ar": "الثقافة السياساتية",
+      "family_id": "GOV",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "OECD"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-GOV-005",
+      "slug": "public_finance_basics",
+      "name_ar": "أساسيات المالية العامة",
+      "family_id": "GOV",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "OECD"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-GOV-006",
+      "slug": "public_procurement",
+      "name_ar": "المشتريات والعطاءات الحكومية",
+      "family_id": "GOV",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "OECD"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-GOV-007",
+      "slug": "regulatory_compliance",
+      "name_ar": "الامتثال والتنظيم",
+      "family_id": "GOV",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "OECD"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-GOV-008",
+      "slug": "service_design_government",
+      "name_ar": "تصميم الخدمات الحكومية",
+      "family_id": "GOV",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "OECD"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-GOV-009",
+      "slug": "digital_government",
+      "name_ar": "التحول الرقمي الحكومي",
+      "family_id": "GOV",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "OECD"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-GOV-010",
+      "slug": "government_data_governance",
+      "name_ar": "حوكمة البيانات الحكومية",
+      "family_id": "GOV",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "OECD"
+      ],
+      "active": false,
+      "merged_into": "SK-DATA-014",
+      "merge_date": "2026-08-19"
+    },
+    {
+      "skill_id": "SK-GOV-011",
+      "slug": "public_sector_project_management",
+      "name_ar": "إدارة مشاريع القطاع العام",
+      "family_id": "GOV",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "OECD"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-GOV-012",
+      "slug": "stakeholder_coordination_gov",
+      "name_ar": "التنسيق بين الجهات",
+      "family_id": "GOV",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "OECD"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-GOV-013",
+      "slug": "public_ethics",
+      "name_ar": "أخلاقيات الوظيفة العامة",
+      "family_id": "GOV",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "OECD"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-GOV-014",
+      "slug": "complaint_handling",
+      "name_ar": "التعامل مع الشكاوى",
+      "family_id": "GOV",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "OECD"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-GOV-015",
+      "slug": "frontline_service",
+      "name_ar": "خدمة الجمهور في الصف الأمامي",
+      "family_id": "GOV",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "OECD"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-GOV-016",
+      "slug": "policy_evaluation",
+      "name_ar": "تقييم السياسات والبرامج",
+      "family_id": "GOV",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "OECD"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-GOV-017",
+      "slug": "public_reporting",
+      "name_ar": "التقارير الحكومية",
+      "family_id": "GOV",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "OECD"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-GOV-018",
+      "slug": "government_ai_readiness",
+      "name_ar": "جاهزية AI في الحكومة",
+      "family_id": "GOV",
+      "source_frameworks": [
+        "ESCO",
+        "O*NET",
+        "OECD"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-FIN-001",
+      "slug": "personal_budgeting",
+      "name_ar": "إعداد الميزانية الشخصية",
+      "family_id": "FIN",
+      "source_frameworks": [
+        "ESCO",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-FIN-002",
+      "slug": "saving_habits",
+      "name_ar": "عادات الادخار",
+      "family_id": "FIN",
+      "source_frameworks": [
+        "ESCO",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-FIN-003",
+      "slug": "debt_management",
+      "name_ar": "إدارة الديون",
+      "family_id": "FIN",
+      "source_frameworks": [
+        "ESCO",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-FIN-004",
+      "slug": "emergency_fund",
+      "name_ar": "صندوق الطوارئ",
+      "family_id": "FIN",
+      "source_frameworks": [
+        "ESCO",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-FIN-005",
+      "slug": "investment_basics",
+      "name_ar": "أساسيات الاستثمار",
+      "family_id": "FIN",
+      "source_frameworks": [
+        "ESCO",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-FIN-006",
+      "slug": "risk_return",
+      "name_ar": "العلاقة بين المخاطر والعائد",
+      "family_id": "FIN",
+      "source_frameworks": [
+        "ESCO",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-FIN-007",
+      "slug": "financial_goal_setting",
+      "name_ar": "تحديد الأهداف المالية",
+      "family_id": "FIN",
+      "source_frameworks": [
+        "ESCO",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-FIN-008",
+      "slug": "consumer_awareness",
+      "name_ar": "الوعي الاستهلاكي",
+      "family_id": "FIN",
+      "source_frameworks": [
+        "ESCO",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-FIN-009",
+      "slug": "tax_basics",
+      "name_ar": "أساسيات الضرائب",
+      "family_id": "FIN",
+      "source_frameworks": [
+        "ESCO",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-FIN-010",
+      "slug": "accounting_basics",
+      "name_ar": "أساسيات المحاسبة",
+      "family_id": "FIN",
+      "source_frameworks": [
+        "ESCO",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-FIN-011",
+      "slug": "financial_statements",
+      "name_ar": "قراءة القوائم المالية",
+      "family_id": "FIN",
+      "source_frameworks": [
+        "ESCO",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-FIN-012",
+      "slug": "unit_economics",
+      "name_ar": "اقتصاديات الوحدة",
+      "family_id": "FIN",
+      "source_frameworks": [
+        "ESCO",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-FIN-013",
+      "slug": "economic_literacy",
+      "name_ar": "الثقافة الاقتصادية",
+      "family_id": "FIN",
+      "source_frameworks": [
+        "ESCO",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-FIN-014",
+      "slug": "public_economics_basics",
+      "name_ar": "أساسيات الاقتصاد العام",
+      "family_id": "FIN",
+      "source_frameworks": [
+        "ESCO",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-FIN-015",
+      "slug": "financial_decision_making",
+      "name_ar": "اتخاذ القرار المالي",
+      "family_id": "FIN",
+      "source_frameworks": [
+        "ESCO",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-FIN-016",
+      "slug": "family_financial_literacy",
+      "name_ar": "الثقافة المالية للأسرة",
+      "family_id": "FIN",
+      "source_frameworks": [
+        "ESCO",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-LEARN-001",
+      "slug": "learning_plan",
+      "name_ar": "بناء خطة تعلم",
+      "family_id": "LEARN",
+      "source_frameworks": [
+        "1EdTech CLR",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-LEARN-002",
+      "slug": "self_directed_learning",
+      "name_ar": "التعلم الذاتي",
+      "family_id": "LEARN",
+      "source_frameworks": [
+        "1EdTech CLR",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-LEARN-003",
+      "slug": "reading_strategies",
+      "name_ar": "استراتيجيات القراءة",
+      "family_id": "LEARN",
+      "source_frameworks": [
+        "1EdTech CLR",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-LEARN-004",
+      "slug": "note_taking",
+      "name_ar": "تدوين الملاحظات",
+      "family_id": "LEARN",
+      "source_frameworks": [
+        "1EdTech CLR",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-LEARN-005",
+      "slug": "summarization",
+      "name_ar": "التلخيص",
+      "family_id": "LEARN",
+      "source_frameworks": [
+        "1EdTech CLR",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-LEARN-006",
+      "slug": "memory_spaced_repetition",
+      "name_ar": "التكرار المتباعد",
+      "family_id": "LEARN",
+      "source_frameworks": [
+        "1EdTech CLR",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-LEARN-007",
+      "slug": "deliberate_practice",
+      "name_ar": "الممارسة المتعمدة",
+      "family_id": "LEARN",
+      "source_frameworks": [
+        "1EdTech CLR",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-LEARN-008",
+      "slug": "learning_transfer",
+      "name_ar": "نقل التعلم إلى التطبيق",
+      "family_id": "LEARN",
+      "source_frameworks": [
+        "1EdTech CLR",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-LEARN-009",
+      "slug": "reflection",
+      "name_ar": "التأمل والمراجعة الذاتية",
+      "family_id": "LEARN",
+      "source_frameworks": [
+        "1EdTech CLR",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-LEARN-010",
+      "slug": "knowledge_management",
+      "name_ar": "إدارة المعرفة الشخصية",
+      "family_id": "LEARN",
+      "source_frameworks": [
+        "1EdTech CLR",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-LEARN-011",
+      "slug": "course_completion",
+      "name_ar": "إكمال الدورات",
+      "family_id": "LEARN",
+      "source_frameworks": [
+        "1EdTech CLR",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-LEARN-012",
+      "slug": "portfolio_learning",
+      "name_ar": "التعلم عبر ملف إنجاز",
+      "family_id": "LEARN",
+      "source_frameworks": [
+        "1EdTech CLR",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-LEARN-013",
+      "slug": "peer_learning",
+      "name_ar": "التعلم مع الأقران",
+      "family_id": "LEARN",
+      "source_frameworks": [
+        "1EdTech CLR",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-LEARN-014",
+      "slug": "assessment_literacy",
+      "name_ar": "فهم التقييمات",
+      "family_id": "LEARN",
+      "source_frameworks": [
+        "1EdTech CLR",
+        "OECD",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-WELL-001",
+      "slug": "focus_management",
+      "name_ar": "إدارة التركيز",
+      "family_id": "WELL",
+      "source_frameworks": [
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-WELL-002",
+      "slug": "time_management",
+      "name_ar": "إدارة الوقت",
+      "family_id": "WELL",
+      "source_frameworks": [
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-WELL-003",
+      "slug": "energy_management",
+      "name_ar": "إدارة الطاقة",
+      "family_id": "WELL",
+      "source_frameworks": [
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-WELL-004",
+      "slug": "habit_building",
+      "name_ar": "بناء العادات",
+      "family_id": "WELL",
+      "source_frameworks": [
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-WELL-005",
+      "slug": "distraction_reduction",
+      "name_ar": "تقليل التشتت",
+      "family_id": "WELL",
+      "source_frameworks": [
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-WELL-006",
+      "slug": "stress_resilience_nonclinical",
+      "name_ar": "المرونة تحت الضغط غير السريرية",
+      "family_id": "WELL",
+      "source_frameworks": [
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-WELL-007",
+      "slug": "sleep_routine_awareness",
+      "name_ar": "وعي روتين النوم",
+      "family_id": "WELL",
+      "source_frameworks": [
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-WELL-008",
+      "slug": "mindful_technology_use",
+      "name_ar": "الاستخدام الواعي للتقنية",
+      "family_id": "WELL",
+      "source_frameworks": [
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-WELL-009",
+      "slug": "goal_consistency",
+      "name_ar": "ثبات الهدف",
+      "family_id": "WELL",
+      "source_frameworks": [
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-WELL-010",
+      "slug": "motivation_systems",
+      "name_ar": "أنظمة التحفيز",
+      "family_id": "WELL",
+      "source_frameworks": [
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-WELL-011",
+      "slug": "accountability",
+      "name_ar": "المساءلة الذاتية والخارجية",
+      "family_id": "WELL",
+      "source_frameworks": [
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-WELL-012",
+      "slug": "emotional_regulation_learning",
+      "name_ar": "تنظيم الانفعال أثناء التعلم",
+      "family_id": "WELL",
+      "source_frameworks": [
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-WELL-013",
+      "slug": "healthy_boundaries",
+      "name_ar": "الحدود الشخصية العملية",
+      "family_id": "WELL",
+      "source_frameworks": [
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-WELL-014",
+      "slug": "recovery_planning",
+      "name_ar": "تخطيط الاستراحة والتعافي",
+      "family_id": "WELL",
+      "source_frameworks": [
+        "O*NET",
+        "WEF"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-FAM-001",
+      "slug": "parent_child_communication",
+      "name_ar": "التواصل مع الأبناء",
+      "family_id": "FAM",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "OECD",
+        "Wajeez"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-FAM-002",
+      "slug": "positive_discipline",
+      "name_ar": "الانضباط الإيجابي",
+      "family_id": "FAM",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "OECD",
+        "Wajeez"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-FAM-003",
+      "slug": "child_learning_support",
+      "name_ar": "دعم تعلم الأبناء",
+      "family_id": "FAM",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "OECD",
+        "Wajeez"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-FAM-004",
+      "slug": "child_financial_literacy",
+      "name_ar": "الثقافة المالية للأطفال",
+      "family_id": "FAM",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "OECD",
+        "Wajeez"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-FAM-005",
+      "slug": "child_digital_safety",
+      "name_ar": "السلامة الرقمية للأطفال",
+      "family_id": "FAM",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "OECD",
+        "Wajeez"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-FAM-006",
+      "slug": "family_reading_culture",
+      "name_ar": "ثقافة القراءة في الأسرة",
+      "family_id": "FAM",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "OECD",
+        "Wajeez"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-FAM-007",
+      "slug": "family_goal_setting",
+      "name_ar": "تحديد أهداف عائلية",
+      "family_id": "FAM",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "OECD",
+        "Wajeez"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-FAM-008",
+      "slug": "teen_confidence_support",
+      "name_ar": "دعم ثقة اليافعين",
+      "family_id": "FAM",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "OECD",
+        "Wajeez"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-FAM-009",
+      "slug": "family_dialogue",
+      "name_ar": "إدارة الحوار العائلي",
+      "family_id": "FAM",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "OECD",
+        "Wajeez"
+      ],
+      "active": true
+    },
+    {
+      "skill_id": "SK-FAM-010",
+      "slug": "role_modeling",
+      "name_ar": "القدوة العملية",
+      "family_id": "FAM",
+      "source_frameworks": [
+        "DigComp 2.2",
+        "OECD",
+        "Wajeez"
+      ],
+      "active": true
+    }
+  ]
+}

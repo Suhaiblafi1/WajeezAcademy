@@ -5,7 +5,11 @@
    وقت build عندما تتوفر لقطة منشورة من الخادم. */
 
 import questionsJson from '../../data/catalog/questions.v1.ar.json'
-import skillsJson from '../../data/catalog/skills.v1.ar.json'
+/* موجة ٦ · ج: القاموس النحيف لا الكامل. المحرك يقرأ أربعة حقول + الأطر
+   المرجعية، والكامل (٢٨٨ كيلو مقابل ٥٧) كان يهبط على صفحة التشخيص في كل
+   زيارة ثم يُرمى لأن اللقطة المنشورة تحلّ محلّه. والكامل يبقى مصدر الحقيقة
+   للمستورد والخادم؛ النحيف مولَّد منه ويحرسه `npm run ci:overlays`. */
+import skillsJson from '../../data/catalog/skills.slim.v1.json'
 import coreCatalogJson from '../../data/catalog/core-catalog.v2.json'
 import templatesJson from '../../data/catalog/composite-templates.v1.json'
 import optionEffectsJson from '../../data/overlays/option-effects.v2.json'

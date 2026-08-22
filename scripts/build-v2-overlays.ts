@@ -37,12 +37,39 @@ for (const slug of layers.activationNeeded) {
 const CHECK = process.argv.includes('--check')
 const outDir = join(root, 'src/data/catalog/v2')
 const sortObj = <T,>(o: Record<string, T>) => Object.fromEntries(Object.keys(o).sort().map((k) => [k, o[k]]))
+/* موجة ٦ · ج — قاموس مهارات نحيف للحزمة المضمنة.
+   القياس: الحزمة المضمنة تشحن القاموس كاملا (٢٨٨ كيلو) والمحرك يقرأ منه أربعة
+   حقول (٢٣ كيلو) + الأطر المرجعية. والفرق يهبط على صفحة التشخيص — باب المنصة
+   — في كل زيارة، ثم يُرمى لأن اللقطة المنشورة تحلّ محلّه.
+
+   والقاموس الكامل يبقى مصدر الحقيقة: المستورد والخادم يقرآنه كما هو. النحيف
+   نسخة مولَّدة للواجهة وحدها، ويحرسها --check فلا تتقادم عن أصلها. */
+const SLIM_SKILL_KEYS = ['skill_id', 'slug', 'name_ar', 'family_id', 'source_frameworks', 'active', 'merged_into', 'merge_date'] as const
+const skillsFile = read('src/data/catalog/skills.v1.ar.json') as { version?: string; skills: Record<string, unknown>[] }
+const slimSkills = {
+  version: skillsFile.version,
+  doc_ar: 'قاموس مهارات نحيف — مولَّد من skills.v1.ar.json للحزمة المضمنة. لا يُحرر يدويا.',
+  generated_by: 'scripts/build-v2-overlays.ts',
+  skills: skillsFile.skills.map((s) => {
+    const out: Record<string, unknown> = {}
+    for (const k of SLIM_SKILL_KEYS) if (s[k] !== undefined) out[k] = s[k]
+    return out
+  }),
+}
+
 const files: [string, unknown][] = [
   ['question-meta.v2.json', { version: '2.0.0', generated_by: 'scripts/build-v2-overlays.mjs', questions: sortObj(questionMeta) }],
   ['skill-layers.v2.json', { version: '2.0.0', generated_by: 'scripts/build-v2-overlays.mjs', skills: sortObj(layers.skills) }],
 ]
+/* النحيف يعيش مع مصدره لا في مجلد v2 */
+const SLIM_PATH = join(root, 'src/data/catalog/skills.slim.v1.json')
+const slimText = JSON.stringify(slimSkills, null, 2) + '\n'
 if (CHECK) {
   let drift = 0
+  if (readFileSync(SLIM_PATH, 'utf8') !== slimText) {
+    drift++
+    console.error('✗ skills.slim.v1.json يخالف مصدره — أُضيفت مهارة أو تغيّر حقل بلا إعادة توليد.')
+  }
   for (const [name, data] of files) {
     const expected = JSON.stringify(data, null, 2) + '\n'
     const actual = readFileSync(join(outDir, name), 'utf8')
@@ -59,6 +86,7 @@ if (CHECK) {
 } else {
   mkdirSync(outDir, { recursive: true })
   for (const [name, data] of files) writeFileSync(join(outDir, name), JSON.stringify(data, null, 2) + '\n')
+  writeFileSync(SLIM_PATH, slimText)
 }
 const retired = Object.entries(questionMeta).filter(([, m]) => m.layer === 'retire_candidate')
 console.log(`questions: ${src.questions.length} | retire_candidates: ${retired.length} | skills: ${src.skills.length + src.skillExtensions.length} | measured: ${layers.measured.length} | measured-uncovered: ${layers.measuredUncovered.join(', ')}`)

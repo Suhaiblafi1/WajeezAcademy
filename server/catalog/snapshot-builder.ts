@@ -295,8 +295,16 @@ export async function buildSnapshotFromDb(
   }
 }
 
-function skillRow(s: { id: string; slug: string; nameAr: string; familyId: string | null }) {
-  return { skill_id: s.id, slug: s.slug, name_ar: s.nameAr, family_id: s.familyId ?? undefined }
+/* صفّ المهارة في اللقطة — الشكل الذي يقرؤه المحرك فعلا، لا القاموس كاملا.
+   `source` أُضيف لأن `methodology-session` تقرأ `source_frameworks` لتقرير أي
+   مرجع منهجي يُذكر للمتعلم. وبلا ذلك كانت مراجع O*NET وESCO وDigComp **لا
+   تظهر في الإنتاج إطلاقا** وتظهر على الحزمة المضمنة وحدها — عيبٌ صامت كشفه
+   قياس الحزم في هذه الموجة. */
+function skillRow(s: { id: string; slug: string; nameAr: string; familyId: string | null; source: string | null }) {
+  return {
+    skill_id: s.id, slug: s.slug, name_ar: s.nameAr, family_id: s.familyId ?? undefined,
+    ...(s.source ? { source_frameworks: s.source.split('، ').map((x) => x.trim()).filter(Boolean) } : {}),
+  }
 }
 
 /** اللقطة الفعالة: أحدث إصدار منشور — المحرك لا يقرأ غيرها */

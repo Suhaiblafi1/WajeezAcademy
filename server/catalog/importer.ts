@@ -136,6 +136,9 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
         active: s.active !== false,
         mergedInto: s.merged_into ?? null,
         mergeDate: s.merge_date ?? null,
+        /* الأطر المرجعية تعبر إلى اللقطة (موجة ٦ · ج) — قاعدة قائمة تُصحَّح
+           بإعادة الاستيراد بلا حذف، وبلا ذلك تبقى مراجع المنهجية غائبة. */
+        source: Array.isArray(s.source_frameworks) ? (s.source_frameworks as string[]).join('، ') : null,
       },
       create: {
         id: s.skill_id, slug: s.slug, nameAr: s.name_ar, definitionAr: s.definition_ar ?? null,
