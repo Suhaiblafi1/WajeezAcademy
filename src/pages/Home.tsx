@@ -37,6 +37,7 @@ function useReveal() {
 /* ───────────────────────── data ─────────────────────────
    القصص والشعارات انتقلت إلى مصدر مشترك تتقاسمه صفحة القصص المستقلة */
 import { stories, partnerLogos } from '@/data/stories'
+import RemoteImage from '@/components/RemoteImage'
 
 /* «مؤشر وجيز» — خمسة أسئلة وعي مستقلة: تُحفظ محليا على جهاز الزائر فقط ولا تغذي التشخيص،
    بل توقظ فيه السؤال الصحيح وتفتح شهيته لخدمتنا، ثم يبدأ التشخيص الكامل من الصفر باحترافية */
@@ -470,11 +471,12 @@ function HowItWorks() {
 function ImageBand() {
   return (
     <section className="relative overflow-hidden">
-      <img
+      {/* و-٢: صورة خارجية بديلُها تدرّج — لا فراغ إن لم تُحمَّل */}
+      <RemoteImage
         src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1600&q=80&auto=format&fit=crop"
         alt="متعلمون يتعاونون حول طاولة واحدة"
-        loading="lazy"
         className="h-[340px] w-full object-cover md:h-[420px]"
+        fallbackClassName="h-[340px] w-full md:h-[420px]"
       />
       <div className="absolute inset-0 bg-gradient-to-t from-[#0D0D0D] via-[#0D0D0D]/55 to-[#0D0D0D]/25" />
       <div className="absolute inset-0 flex items-end">
@@ -533,11 +535,11 @@ function Stories() {
           >
             <div className="relative h-36 overflow-hidden">
               {s.img ? (
-                <img
+                <RemoteImage
                   src={s.img}
                   alt={`مشهد من قصة ${s.name}`}
-                  loading="lazy"
                   className="h-full w-full object-cover object-top transition duration-500 group-hover:scale-105"
+                  fallbackClassName="h-full w-full"
                 />
               ) : (
                 <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_60%_20%,rgba(56,167,180,0.35),transparent_65%)]">
@@ -1135,13 +1137,17 @@ function Partners() {
           </p>
         </div>
         <div className="reveal mt-10 flex flex-wrap items-center justify-center gap-10 md:gap-16">
+          {/* و-٢: الشعار يحمل معنى (اسم الجهة) فبديله نصُّه لا فراغ.
+              كانت الثلاثة تُستضاف على مُحسِّن صور الموقع الأم ولا تُحمَّل،
+              فيقرأ الزائر «تحدث عنا الإعلام» ولا يرى تحته شيئا. */}
           {partnerLogos.map((p) => (
-            <img
+            <RemoteImage
               key={p.name}
               src={p.src}
               alt={p.name}
-              loading="lazy"
+              fallback="label"
               className="h-10 w-auto opacity-70 grayscale transition hover:opacity-100 hover:grayscale-0 md:h-12"
+              fallbackClassName="h-10 md:h-12"
             />
           ))}
         </div>
