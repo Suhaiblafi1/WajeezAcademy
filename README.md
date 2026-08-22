@@ -30,10 +30,12 @@ npm run ci:journeys-baseline    # ب-٣ · خط أساس رحلات التشخي
 npm run ci:lint-baseline        # ب-٣ · دين التلويم لا يزيد
 npm run ci:overlays             # ج-٢ · الملفات المولّدة لا تنحرف عن مولّدها
 npm run ci:coverage-baseline    # أ-٤ · تغطية القياس لا تتراجع
+npm run ci:question-waste       # هـ-١ · هدر مقاعد الأسئلة لا ينمو (~30s)
 npm run a11y:audit              # ب · الإتاحة مقيسة (يحتاج الواجهة والخادم)
 npm run pathway:audit           # أ-٣ · تدقيق المسارات قبل التفعيل
 npm run audit:catalog -- --source          # د-٢ · تدقيق الملفات بلا قاعدة بيانات
 npm run audit:recommendation-universe      # د-١ · خصائص الفضاء لا أعداده
+npm run audit:question-waste               # هـ-١ · أي سؤال لا يغيّر جوابُه شيئا (مضاد للواقع)
 npm run audit:catalog                      # ج-١ · شبكة أمان على القاعدة الحيّة (تحتاج قاعدة)
 ```
 
@@ -60,6 +62,7 @@ npm run audit:catalog                      # ج-١ · شبكة أمان على �
 | `server/` | خادم Fastify: خدمات، مسارات، صلاحيات RBAC |
 | `prisma/` | المخطط و23 ترحيلا |
 | `docs/DECISIONS_PENDING_AR.md` | **قرارات تنتظر المالك** — أكاديمية وتحريرية، بخياراتها وثمنها |
+| `docs/QUESTION_WASTE_V2_1_AR.md` | **هدر مقاعد الأسئلة** — قياس مضاد للواقع: أي سؤال لا يستطيع أيُّ جواب له تغيير النتيجة |
 | `docs/RUNBOOK_AR.md` | **دليل التشغيل والتدقيق الشامل — ابدأ هنا** |
 | `docs/DEPLOYMENT.md` | دليل النقل للإنتاج والنطاق وSEO |
 

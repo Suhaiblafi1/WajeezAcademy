@@ -57,6 +57,8 @@
     "ci:a11y": "tsx scripts/a11y-audit.ts --public",
     "simulate:v2_1-journeys": "tsx scripts/v2_1/sim-journeys.ts",
     "audit:recommendation-universe": "tsx scripts/v2_1/audit-universe.ts",
+    "audit:question-waste": "tsx scripts/v2_1/audit-question-waste.ts",
+    "ci:question-waste": "tsx scripts/v2_1/audit-question-waste.ts --check",
     "simulate:v2_1-reachability": "tsx scripts/v2_1/golden-suite.ts --montecarlo",
     "report:v2_1-docs": "tsx scripts/v2_1/report-docs.ts"
   },
