@@ -279,7 +279,10 @@ export default function PortalLayout({ children, title }: { children: React.Reac
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-5 py-8 pb-28 md:pb-8">
+      {/* ب-٢: حاوية تخطيط لا منطقة landmark — منطقة main واحدة في التطبيق
+                (App.tsx) وهي هدف رابط «تجاوز إلى المحتوى». main متداخلة تجعل
+                التخطي غامضا وتُجبر قارئ الشاشة على الاختيار بين منطقتين. */}
+      <div className="mx-auto max-w-6xl px-5 py-8 pb-28 md:pb-8">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-2xl font-black">{title}</h1>
           {enrollment && !sessionUser && (
@@ -289,7 +292,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
           )}
         </div>
         {children}
-      </main>
+      </div>
       {/* تعريف المنظومة — تذييل ثقة خفيف داخل البوابة (يظهر مرة واحدة أسفل المحتوى) */}
       <EcosystemNote className="mx-auto max-w-6xl px-5 pb-24 md:pb-6" />
       {/* شريط تنقل سفلي للجوال — أربعة أساسية + «المزيد» بقائمة منبثقة */}

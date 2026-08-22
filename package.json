@@ -53,6 +53,8 @@
     "build:v2_1-overlays": "tsx scripts/build-v2_1-overlays.ts",
     "ci:overlays": "tsx scripts/build-v2-overlays.ts --check && tsx scripts/build-v2_1-overlays.ts --check",
     "ci:coverage-baseline": "tsx scripts/coverage-baseline.ts",
+    "a11y:audit": "tsx scripts/a11y-audit.ts",
+    "ci:a11y": "tsx scripts/a11y-audit.ts --public",
     "simulate:v2_1-journeys": "tsx scripts/v2_1/sim-journeys.ts",
     "audit:recommendation-universe": "tsx scripts/v2_1/audit-universe.ts",
     "simulate:v2_1-reachability": "tsx scripts/v2_1/golden-suite.ts --montecarlo",

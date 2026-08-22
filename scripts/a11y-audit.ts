@@ -1,0 +1,234 @@
+#!/usr/bin/env tsx
+/* موجة ٦ · ب — فحص إتاحة متكرر لا فحصٌ لمرة واحدة (البند ت-٤).
+
+   خطة التجربة قالت صراحة: «ت-٤ لم يُفحص بعد: ترتيب Tab كاملا، ووضوح حلقة
+   التركيز، وقارئ الشاشة، والتكبير ٢٠٠٪ — ولا أدّعي أنها فُحصت». وفحصٌ يدويّ
+   لمرة واحدة يتقادم في أول تغيير، فهذا سكربتٌ يُشغَّل في CI بخط أساس على
+   قاعدة «الاتجاه لا القيمة» (نفس درس أ-٤ ود-١).
+
+   ما يفحصه على كل صفحة:
+   ١) اسمٌ مقروء لكل عنصر تفاعلي  ٢) tabindex موجب  ٣) منطقة main ولغة الصفحة
+   ٤) ترتيب العناوين  ٥) حلقة تركيز مرئية على كل محطة Tab  ٦) عنصر يُركَّز عليه
+   وهو مخفي (مصيدة صامتة)  ٧) انسياب بلا تمرير أفقي عند ١٠٠٪ و٢٠٠٪ و٤٠٠٪.
+
+   شغّل: npm run a11y:audit            (يحتاج الواجهة على 3000 والخادم على 7101)
+        npm run a11y:audit -- --update  لتحديث خط الأساس بعد إصلاح مقصود */
+
+import { readFileSync, writeFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { chromium, type Page } from 'playwright'
+
+/** واقعة إتاحة واحدة — بصيغة واحدة كي تُقارن وتُعدّ. الشكل يقابل probe.browser.js */
+interface A11yFinding {
+  rule: 'name' | 'focus-visible' | 'focus-hidden' | 'tabindex-positive' | 'landmark' | 'reflow' | 'lang' | 'heading-order'
+  /** ما يمنعه هذا الخلل على المستخدم — لا رقم قاعدة */
+  impactAr: string
+  target: string
+}
+interface FocusStyle {
+  tag: string; text: string; outline: string; shadow: string; ring: string; hidden: boolean
+}
+
+const root = join(dirname(fileURLToPath(import.meta.url)), '..')
+const BASELINE = join(root, 'a11y-baseline.json')
+const UPDATE = process.argv.includes('--update')
+/* مجموعتان: `all` محليا (تحتاج خادم API وحسابات ديمو)، و`public` في CI —
+   الصفحات العامة وحدها تكفي لحراسة الانحدار بلا إقلاع قاعدة وبذر حسابات.
+   وخط الأساس مفهرس بالمجموعة، فلا تُقارن أعدادُ ثمانِ صفحات بأعداد أربع. */
+const SET: 'all' | 'public' = process.argv.includes('--public') ? 'public' : 'all'
+const BASE = process.env.A11Y_BASE ?? 'http://localhost:3000'
+/* مسار المتصفح: بيئة التطوير هنا تضع Chromium في مسار ثابت، وCI يثبّته
+   بـplaywright install. فالمسار يُستعمل إن وُجد، وإلا يجد Playwright متصفحه. */
+const CHROME_HINT = process.env.A11Y_CHROME ?? '/opt/pw-browsers/chromium'
+const MAX_TABS = 60
+/** انتظار استقرار انتقال الحلقة قبل قراءتها — انظر التعليق في focusWalk */
+const FOCUS_SETTLE_MS = 220
+
+interface PageSpec {
+  path: string
+  labelAr: string
+  /** حساب يُدخَل قبل الزيارة — الصفحات العامة بلا حساب */
+  as?: 'learner' | 'admin'
+}
+
+/* صفحات مختارة تغطي الأدوار والأنماط: عامة · نموذج · بوابة متعلم · إدارة */
+const PAGES: PageSpec[] = [
+  { path: '/', labelAr: 'الرئيسية' },
+  { path: '/pathways', labelAr: 'المسارات' },
+  { path: '/diagnostic', labelAr: 'التشخيص' },
+  { path: '/auth', labelAr: 'الدخول والتسجيل' },
+  { path: '/student', labelAr: 'لوحة المتعلم', as: 'learner' },
+  { path: '/student/review', labelAr: 'مراجعتي', as: 'learner' },
+  { path: '/admin/catalog', labelAr: 'إدارة الكتالوج', as: 'admin' },
+  { path: '/admin/quality', labelAr: 'جودة التشخيص', as: 'admin' },
+]
+
+const CREDS = {
+  learner: { email: 'student.demo@wajeez.local', password: 'Wajeez-Demo-2026' },
+  admin: { email: 'admin.demo@wajeez.local', password: 'Wajeez-Demo-2026' },
+}
+
+async function login(page: Page, as: 'learner' | 'admin') {
+  await page.goto(`${BASE}/auth`, { waitUntil: 'networkidle' })
+  await page.fill('input[type=email]', CREDS[as].email)
+  await page.fill('input[type=password]', CREDS[as].password)
+  await page.click('button[type=submit]')
+  await page.waitForTimeout(2500)
+}
+
+/** حلقة التركيز: تُقارن بصمة النمط قبل التركيز وبعده — الفرق هو الدليل */
+async function focusWalk(page: Page): Promise<A11yFinding[]> {
+  const out: A11yFinding[] = []
+  const seen = new Set<string>()
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
+  for (let i = 0; i < MAX_TABS; i++) {
+    await page.keyboard.press('Tab')
+    /* ⚠ مهلة استقرار مقصودة: عناصر عليها `transition-all` تُحرّك عرض الحلقة من
+       صفر، فقراءةٌ فورية ترى 0px وتُبلّغ عن غياب حلقة **موجودة**. كان هذا
+       يعطي خمس وقائع وهمية في الرئيسية وحدها — وأداةٌ تُبلّغ عن أعطال وهمية
+       أسوأ من لا أداة، لأنها تعلّم القارئ تجاهل الأحمر. */
+    await page.waitForTimeout(FOCUS_SETTLE_MS)
+    const s = await page.evaluate('window.__a11y.focusStyle()') as FocusStyle | null
+    if (!s) continue
+    const key = `${s.tag}|${s.text}`
+    if (seen.has(key)) continue // دورة كاملة أو تكرار — لا نعيد الإبلاغ
+    seen.add(key)
+
+    if (s.hidden) {
+      out.push({
+        rule: 'focus-hidden', target: `${s.tag} «${s.text}»`,
+        impactAr: 'يُركَّز عليه وهو غير مرئي — مستخدم لوحة المفاتيح يفقد مؤشره بلا سبب ظاهر',
+      })
+      continue
+    }
+    /* دليل التركيز: outline أو ظل أو حلقة Tailwind. غياب الثلاثة = لا دليل. */
+    const hasOutline = s.outline !== '' && !/none/.test(s.outline) && !/\b0px\b/.test(s.outline)
+    const hasShadow = s.shadow !== 'none' && s.shadow !== ''
+    const hasRing = s.ring !== '' && s.ring !== '0 0 #0000'
+    if (!hasOutline && !hasShadow && !hasRing) {
+      out.push({
+        rule: 'focus-visible', target: `${s.tag} «${s.text}»`,
+        impactAr: 'لا حلقة تركيز مرئية — مستخدم لوحة المفاتيح لا يعرف أين هو في الصفحة',
+      })
+    }
+  }
+  return out
+}
+
+async function reflow(page: Page, labelAr: string): Promise<A11yFinding[]> {
+  const out: A11yFinding[] = []
+  /* التكبير يُحاكى بتصغير المنفذ: ٢٠٠٪ على 1280 = 640 بكسل CSS، و٤٠٠٪ = 320 */
+  for (const [zoom, width] of [[100, 1280], [200, 640], [400, 320]] as const) {
+    await page.setViewportSize({ width, height: 900 })
+    await page.waitForTimeout(400)
+    if (await page.evaluate('window.__a11y.hasHScroll()')) {
+      out.push({
+        rule: 'reflow', target: `${labelAr} @ ${zoom}%`,
+        impactAr: `تمرير أفقي عند تكبير ${zoom}٪ — القراءة تصير سطرا سطرا بتمرير يمينا ويسارا`,
+      })
+    }
+  }
+  await page.setViewportSize({ width: 1280, height: 900 })
+  return out
+}
+
+const PROBE_SRC = readFileSync(join(root, 'scripts/a11y/probe.browser.js'), 'utf8')
+const { existsSync } = await import('node:fs')
+const browser = await chromium.launch(
+  existsSync(CHROME_HINT) ? { executablePath: CHROME_HINT } : {},
+)
+const results: Record<string, A11yFinding[]> = {}
+
+const SELECTED = SET === 'public' ? PAGES.filter((p) => !p.as) : PAGES
+
+for (const spec of SELECTED) {
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } })
+  /* حقن فحوص الصفحة قبل أي تحميل — addInitScript يسبق شيفرة التطبيق */
+  await ctx.addInitScript({ content: PROBE_SRC })
+  const page = await ctx.newPage()
+  try {
+    if (spec.as) await login(page, spec.as)
+    await page.goto(`${BASE}${spec.path}`, { waitUntil: 'networkidle' })
+    await page.waitForTimeout(1200)
+    const findings = [
+      ...(await page.evaluate('window.__a11y.names()') as A11yFinding[]),
+      ...(await focusWalk(page)),
+      ...(await reflow(page, spec.labelAr)),
+    ]
+    results[spec.labelAr] = findings
+    const byRule = findings.reduce<Record<string, number>>((a, f) => ({ ...a, [f.rule]: (a[f.rule] ?? 0) + 1 }), {})
+    console.log(`${findings.length === 0 ? '✅' : '⚠ '} ${spec.labelAr.padEnd(18)} ${findings.length} واقعة ${JSON.stringify(byRule)}`)
+  } catch (e) {
+    console.error(`✗ ${spec.labelAr}: ${String(e).slice(0, 120)}`)
+    results[spec.labelAr] = [{ rule: 'landmark', target: spec.path, impactAr: `تعذّر فحص الصفحة: ${String(e).slice(0, 80)}` }]
+  }
+  await ctx.close()
+}
+await browser.close()
+
+/* عدّاد لكل قاعدة — خط الأساس يقارن الأعداد لا النصوص، فلا يفشل على تغيير صياغة */
+const counts: Record<string, number> = {}
+for (const findings of Object.values(results)) {
+  for (const f of findings) counts[f.rule] = (counts[f.rule] ?? 0) + 1
+}
+const total = Object.values(counts).reduce((a, b) => a + b, 0)
+
+console.log(`\n── المجموع: ${total} واقعة · المجموعة: ${SET} (${SELECTED.length} صفحة) ──`)
+for (const [page, findings] of Object.entries(results)) {
+  if (findings.length === 0) continue
+  console.log(`\n${page}:`)
+  const shown = new Map<string, A11yFinding & { n: number }>()
+  for (const f of findings) {
+    const k = `${f.rule}|${f.impactAr}`
+    const prev = shown.get(k)
+    shown.set(k, prev ? { ...prev, n: prev.n + 1 } : { ...f, n: 1 })
+  }
+  for (const f of shown.values()) {
+    console.log(`  · [${f.rule}] ${f.impactAr}${f.n > 1 ? ` (×${f.n})` : ''}`)
+    console.log(`    ← ${f.target}`)
+  }
+}
+
+if (UPDATE) {
+  let prev: Record<string, unknown> = {}
+  try { prev = JSON.parse(readFileSync(BASELINE, 'utf8')) as Record<string, unknown> } catch { /* أول مرة */ }
+  writeFileSync(BASELINE, JSON.stringify({ ...prev, [SET]: counts }, null, 2) + '\n')
+  console.log(`\n✍️  حُدِّث خط أساس الإتاحة (${SET}):`, JSON.stringify(counts))
+  process.exit(0)
+}
+
+type BaselineFile = Partial<Record<'all' | 'public', Record<string, number>>>
+let file: BaselineFile = {}
+try {
+  file = JSON.parse(readFileSync(BASELINE, 'utf8')) as BaselineFile
+} catch { /* أول تشغيل — يُكتب أدناه */ }
+const base = file[SET]
+if (!base) {
+  writeFileSync(BASELINE, JSON.stringify({ ...file, [SET]: counts }, null, 2) + '\n')
+  console.log(`\n✍️  أُنشئ خط أساس الإتاحة (${SET}) أول مرة:`, JSON.stringify(counts))
+  process.exit(0)
+}
+
+const worse: string[] = []
+const better: string[] = []
+for (const rule of new Set([...Object.keys(base), ...Object.keys(counts)])) {
+  const b = base[rule] ?? 0
+  const l = counts[rule] ?? 0
+  if (l > b) worse.push(`${rule}: ${b} ← ${l}`)
+  else if (l < b) better.push(`${rule}: ${b} → ${l}`)
+}
+
+if (worse.length > 0) {
+  console.error('\n✗ تراجع في الإتاحة:')
+  for (const w of worse) console.error(`  · ${w}`)
+  console.error('\n  أصلح الواقعة، أو وثّق السبب وحدّث خط الأساس:')
+  console.error(`  npm run a11y:audit -- --update${SET === 'public' ? ' --public' : ''}`)
+  process.exit(1)
+}
+if (better.length > 0) {
+  console.log(`\n✅ تحسّن — ${better.join(' · ')}.`)
+  console.log('   حدّث خط الأساس كي يُحفَظ المكسب: npm run a11y:audit -- --update')
+} else {
+  console.log('\n✅ لا تراجع في الإتاحة.')
+}

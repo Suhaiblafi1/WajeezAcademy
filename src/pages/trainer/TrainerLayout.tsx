@@ -110,10 +110,13 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-5 py-8">
+      {/* ب-٢: حاوية تخطيط لا منطقة landmark — منطقة main واحدة في التطبيق
+                (App.tsx) وهي هدف رابط «تجاوز إلى المحتوى». main متداخلة تجعل
+                التخطي غامضا وتُجبر قارئ الشاشة على الاختيار بين منطقتين. */}
+      <div className="mx-auto max-w-6xl px-5 py-8">
         <h1 className="mb-6 text-2xl font-black">{title}</h1>
         {children}
-      </main>
+      </div>
       {realTrainer && <PortalSearchPalette kind="trainer" />}
     </div>
   );

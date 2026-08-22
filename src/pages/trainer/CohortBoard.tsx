@@ -136,7 +136,13 @@ export default function CohortBoard() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-5 py-8">
+      {/* ب-٢: حاوية تخطيط لا منطقة landmark — منطقة main واحدة في التطبيق
+
+                (App.tsx) وهي هدف رابط «تجاوز إلى المحتوى». main متداخلة تجعل
+
+                التخطي غامضا وتُجبر قارئ الشاشة على الاختيار بين منطقتين. */}
+
+      <div className="mx-auto max-w-5xl px-5 py-8">
         {flash && (
           <p className="mb-5 flex items-center gap-2 rounded-2xl border border-teal/40 bg-teal/10 px-4 py-3 text-sm font-bold text-teal-light-ink">
             <CheckCircle2 className="h-4 w-4 shrink-0" /> {flash}
@@ -360,7 +366,7 @@ export default function CohortBoard() {
             </section>
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }

@@ -304,7 +304,9 @@ export default function PathwayPage() {
           onDone={() => setUser(readUserName())}
         />
       ) : (
-        <main className="mx-auto max-w-5xl px-5 py-12">
+        /* ب-٢: حاوية تخطيط لا منطقة landmark — main واحدة في التطبيق (App.tsx)
+           وهي هدف رابط «تجاوز إلى المحتوى»؛ والمتداخلة تجعل التخطي غامضا. */
+        <div className="mx-auto max-w-5xl px-5 py-12">
           {/* ترويسة المسار */}
           <div className="story-fade">
             <div className="flex flex-wrap items-center gap-2">
@@ -610,7 +612,7 @@ export default function PathwayPage() {
             <Sparkles className="h-3.5 w-3.5" />
             منصة الطالب الكاملة (الدورات، الواجبات، المتابعة) تُفتح تلقائيا بعد أول دفع ناجح — وهي محطتنا القادمة.
           </p>
-        </main>
+        </div>
       )}
 
       {/* تعريف المنظومة — سطر ثقة ختامي يظهر للزائر والمسجّل معا */}

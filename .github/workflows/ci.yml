@@ -81,6 +81,17 @@ jobs:
       - name: بناء الإنتاج
         run: npm run build
 
+      - name: فحص الإتاحة على الصفحات العامة
+        # موجة ٦ · ب: خطة التجربة قالت «ت-٤ لم يُفحص بعد… ولا أدّعي أنها فُحصت».
+        # هذا يفحصه على كل دفع: اسمٌ مقروء لكل عنصر تفاعلي · حلقة تركيز مرئية على
+        # كل محطة Tab · منطقة main واحدة · ترتيب العناوين · انسياب عند ٢٠٠٪ و٤٠٠٪.
+        # المجموعة العامة وحدها هنا: لا تحتاج قاعدة ولا حسابات، والانحدار يُمسك.
+        run: |
+          npx playwright install --with-deps chromium
+          npx vite preview --port 3000 &
+          for i in $(seq 1 40); do curl -sf http://localhost:3000 >/dev/null && break; sleep 1; done
+          npm run ci:a11y
+
   server:
     name: اختبارات الخادم بقاعدة حقيقية
     runs-on: ubuntu-latest

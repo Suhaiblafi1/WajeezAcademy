@@ -126,7 +126,10 @@ export default function AdminLayout({ children, title }: { children: React.React
               <option key={t.to} value={t.to}>{t.label}</option>
             ))}
           </select>
-          <div className="flex items-center gap-3">
+          {/* ب-٣: min-w-0 يسمح للصفّ بالتقلّص عند التكبير ٤٠٠٪ (٣٢٠ بكسل CSS).
+              بلا ذلك كان اسم الحساب يفيض ٣٨ بكسل خارج الشاشة فيظهر تمرير أفقي
+              على مستوى المستند — والقراءة تصير سطرا سطرا بتمرير يمينا ويسارا. */}
+          <div className="flex min-w-0 items-center gap-3">
             <button
               onClick={() => window.dispatchEvent(new Event("wajeez:open-search"))}
               aria-label="بحث سريع — Ctrl+K"
@@ -139,8 +142,8 @@ export default function AdminLayout({ children, title }: { children: React.React
             <ThemeToggle />
             <button
               onClick={() => { localStorage.removeItem(ADMIN_IDENTITY_KEY); setMe(null); }}
-              className="cursor-pointer text-xs text-white/55 hover:text-white"
-              title={realAdmin && !me ? "حسابك الحقيقي" : "تبديل الهوية"}
+              className="max-w-[9rem] cursor-pointer truncate text-xs text-white/60 hover:text-white sm:max-w-none"
+              title={`${effectiveMe.name} — ${realAdmin && !me ? "حسابك الحقيقي" : "تبديل الهوية"}`}
             >
               {effectiveMe.name}
             </button>
@@ -166,10 +169,16 @@ export default function AdminLayout({ children, title }: { children: React.React
           ))}
         </aside>
 
-        <main className="min-w-0 flex-1 py-8">
+        {/* ب-٢: حاوية تخطيط لا منطقة landmark — منطقة main واحدة في التطبيق
+
+                  (App.tsx) وهي هدف رابط «تجاوز إلى المحتوى». main متداخلة تجعل
+
+                  التخطي غامضا وتُجبر قارئ الشاشة على الاختيار بين منطقتين. */}
+
+        <div className="min-w-0 flex-1 py-8">
           <h1 className="mb-6 text-2xl font-black">{title}</h1>
           {children}
-        </main>
+        </div>
       </div>
     </div>
   );

@@ -19,7 +19,10 @@ function Shell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-3xl px-5 py-12 md:py-16">{children}</main>
+      {/* ب-٢: حاوية تخطيط لا منطقة landmark — منطقة main واحدة في التطبيق
+                (App.tsx) وهي هدف رابط «تجاوز إلى المحتوى». main متداخلة تجعل
+                التخطي غامضا وتُجبر قارئ الشاشة على الاختيار بين منطقتين. */}
+      <div className="mx-auto max-w-3xl px-5 py-12 md:py-16">{children}</div>
       <footer className="border-t border-white/5 py-8 text-center text-xs text-white/55">
         © 2026 أكاديمية وجيز — من مجموعة wajeez.com
       </footer>
