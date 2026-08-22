@@ -59,6 +59,7 @@ npm run audit:catalog                      # ج-١ · شبكة أمان على �
 | `src/` | الواجهة (React + Tailwind، RTL) ومحرك التشخيص الحتمي `src/domain/diagnostic/` |
 | `server/` | خادم Fastify: خدمات، مسارات، صلاحيات RBAC |
 | `prisma/` | المخطط و23 ترحيلا |
+| `docs/DECISIONS_PENDING_AR.md` | **قرارات تنتظر المالك** — أكاديمية وتحريرية، بخياراتها وثمنها |
 | `docs/RUNBOOK_AR.md` | **دليل التشغيل والتدقيق الشامل — ابدأ هنا** |
 | `docs/DEPLOYMENT.md` | دليل النقل للإنتاج والنطاق وSEO |
 
