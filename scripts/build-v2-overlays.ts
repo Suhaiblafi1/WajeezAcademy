@@ -44,7 +44,9 @@ const sortObj = <T,>(o: Record<string, T>) => Object.fromEntries(Object.keys(o).
 
    والقاموس الكامل يبقى مصدر الحقيقة: المستورد والخادم يقرآنه كما هو. النحيف
    نسخة مولَّدة للواجهة وحدها، ويحرسها --check فلا تتقادم عن أصلها. */
-const SLIM_SKILL_KEYS = ['skill_id', 'slug', 'name_ar', 'family_id', 'source_frameworks', 'active', 'merged_into', 'merge_date'] as const
+/* family_ar لازم للواجهة: قياس العائلات يسأل المتعلم باسمها العربي،
+   وبدونه يظهر رمز (COM) بدل «التواصل واللغة والتأثير». */
+const SLIM_SKILL_KEYS = ['skill_id', 'slug', 'name_ar', 'family_id', 'family_ar', 'source_frameworks', 'active', 'merged_into', 'merge_date'] as const
 const skillsFile = read('src/data/catalog/skills.v1.ar.json') as { version?: string; skills: Record<string, unknown>[] }
 const slimSkills = {
   version: skillsFile.version,

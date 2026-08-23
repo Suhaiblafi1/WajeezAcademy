@@ -39,6 +39,8 @@ export interface SkillEntry {
   slug: string
   name_ar?: string
   family_id?: string
+  /** اسم العائلة العربي — تُسأل به عائلات المهارات في الواجهة */
+  family_ar?: string
 }
 
 export interface CatalogCourse {
