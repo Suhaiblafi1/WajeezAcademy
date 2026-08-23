@@ -120,6 +120,11 @@ html[data-theme="light"] .to-\[\#0D0D0D\] { --tw-gradient-to: #F6F4EF var(--tw-g
 html[data-theme="light"] .to-\[\#0D0D0D\]\/25 { --tw-gradient-to: rgb(246 244 239 / 0.25) var(--tw-gradient-to-position); }
 html[data-theme="light"] .to-\[\#1A2E31\] { --tw-gradient-to: #E9F1F2 var(--tw-gradient-to-position); }
 
+/* ── شعارات الإعلام البيضاء (wajeez.com *-dark.png) — على الورق تُعكس
+     إلى حبري مقروء وتبقى رمادية هادئة حتى التحويم، تماما كسلوكها الداكن ── */
+html[data-theme="light"] .partner-logo { filter: grayscale(1) invert(0.88); opacity: 0.8; }
+html[data-theme="light"] .partner-logo:hover { filter: grayscale(1) invert(0.88); opacity: 1; }
+
 /* ── المرافق المسماة (نفس معالجة الأصناف الحرفية أعلاه) ── */
 html[data-theme="light"] .text-teal-light { color: #1F6E77; }      /* تركوازي فاتح ← أعمق للتباين */
 html[data-theme="light"] .text-amber-brand { color: #8F6E00; }     /* ذهبي ← نحاسي مقروء */

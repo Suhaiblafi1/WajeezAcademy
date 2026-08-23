@@ -1144,7 +1144,7 @@ function Partners() {
               src={p.src}
               alt={p.name}
               loading="lazy"
-              className="h-10 w-auto opacity-70 grayscale transition hover:opacity-100 hover:grayscale-0 md:h-12"
+              className="partner-logo h-10 w-auto opacity-70 grayscale transition hover:opacity-100 hover:grayscale-0 md:h-12"
             />
           ))}
         </div>
