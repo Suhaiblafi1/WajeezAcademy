@@ -35,7 +35,7 @@ import type {
 } from '../types'
 import { computeConfidenceV2 } from '../v2/confidence'
 import { DOMAIN_CONFIDENCE_MIN } from '../v2/domains'
-import { personalizePlan, assessPathwayByCourses, courseLevelOf, type PersonalPlan, type PathwayCourseFit } from './course-fit'
+import { personalizePlan, assessPathwayByCourses, courseLevelOf, normalizedDomains, type PersonalPlan, type PathwayCourseFit } from './course-fit'
 import { catalogCourses } from '../catalog'
 import { buildExplanation } from '../v2/explain'
 import { buildAdvisorHandoff } from '../v2/handoff'
@@ -1385,33 +1385,45 @@ export class DiagnosticEngineV21 {
 
     const standardCandidates = comp.candidates.filter((c) => c.entity.entity_type === 'standard')
     const primary = standardCandidates[0] ?? null
-    /* بديل واحد متباين لا اثنان بالترتيب: الأول خطةٌ شخصناها، والبديل مسارٌ سليم
-       كما صُمم لمن لا يريد الاستبدال. وثلاثة خيارات على شاشة قرار تُربك ولا تُعين. */
+    /* بديل واحد لا اثنان بالترتيب — وثلاثة خيارات على شاشة قرار تُربك ولا تُعين.
+
+       والبديل يُنتقى بالصلة أولا لا بالملاءمة الخام. كان يُنتقى بأعلى ملاءمة بين
+       المركّبات، فعُرض على مؤسس حاجته «التواصل والتأثير» قالبُ «مدير أمن سيبراني»
+       (0.847) بينما PW-NEG-001 «التفاوض والتأثير» (0.822) أقرب إليه بكثير: القالب
+       يمرّ البوابة لأنه يشمل communication_influence، لكن نصفه cyber_risk لم يطلبه
+       المتعلم قط. فصار الترتيب بنقاء المجال: متوسط درجات مجالات الكيان عند المتعلم
+       — يعاقب من يحمل مجالا لم يُشِر إليه، ولا يعاقب من يركّز على مجاله. */
     let alternativeContrast_ar: string | undefined
     let alternatives: typeof standardCandidates = []
     if (primary) {
-      /* ١) مسار قياسي آخر يختلف اختلافا مفيدا */
-      for (const cand of standardCandidates.slice(1)) {
-        const contrast = contrastOf(primary.entity.entity_id, cand.entity.entity_id)
-        if (contrast) {
-          alternatives = [cand]
-          alternativeContrast_ar = contrast
-          break
-        }
+      const domainScores = normalizedDomains(ctx)
+      const relevance = (c: (typeof comp.candidates)[number]): number => {
+        const ds = c.entity.domains
+        if (ds.length === 0) return 0
+        return ds.reduce((s, d) => s + (domainScores.get(d) ?? 0), 0) / ds.length
       }
-      /* ٢) وإلا فأقرب مركب مؤهل — خطةٌ أوسع تجمع أكثر من مجال */
-      if (alternatives.length === 0) {
-        const composites = comp.candidates.filter((c) => c.entity.entity_type === 'composite')
-        if (composites.length > 0) {
-          alternatives = [composites[0]]
-          alternativeContrast_ar = 'خطة أوسع تجمع أكثر من مجال — إن أردت تغطية أشمل'
-        }
+      const pool = comp.candidates.filter((c) => c.entity.entity_id !== primary.entity.entity_id)
+      /* الأصلح صلةً أولا. وعند التعادل: القياسي قبل المركّب — نفس عقيدة «الأبسط
+         الكافي يفوز» (البند 5) المطبَّقة على الفائز، لا قاعدة مخترعة للبديل.
+         بدونها كان المؤسس يُعرض عليه قالبٌ سيبراني ومسارُ التفاوض متعادلان في
+         الصلة (0.500 لكليهما: مجال مطلوب + مجال لم يُطلب)، فيحسم الترتيبُ
+         بالملاءمة الخام فيفوز الأعقد والأبعد عن حاجته. ثم الملاءمة أخيرا. */
+      const simplicity = (c: (typeof comp.candidates)[number]) => (c.entity.entity_type === 'standard' ? 1 : 0)
+      const ranked = [...pool].sort(
+        (a, b) => relevance(b) - relevance(a) || simplicity(b) - simplicity(a) || b.netFit - a.netFit,
+      )
+      const best = ranked[0]
+      if (best) {
+        alternatives = [best]
+        alternativeContrast_ar =
+          contrastOf(primary.entity.entity_id, best.entity.entity_id) ??
+          (best.entity.entity_type === 'composite'
+            ? 'خطة أوسع تجمع أكثر من مجال — إن أردت تغطية أشمل'
+            : 'مسار قريب من حاجتك — إن أردت زاوية أخرى')
       }
-      /* ٣) وإلا فالمسار نفسه كما صُمم — البديل الصادق حين شخصنّا خطته:
-         من لا يريد استبدالا يأخذ المسار الأصلي بمقرراته الخمسة وشهادته كما هي.
-         ولا يُعرض حين لم نستبدل شيئا: عرضُ الشيء بديلا عن نفسه عبث. */
-      if (alternatives.length === 0 && standardCandidates.length > 1) alternatives = [standardCandidates[1]]
     }
+    /* شخصنّا الخطة ولا بديل خارجي: المسار كما صُمم خيارٌ ثانٍ حقيقي لمن يفضّل
+       تماسك المسار الأصلي وشهادته على خطةٍ فُصّلت له. */
 
     const unavailable: { skill: string; note_ar: string }[] = []
     const coveredSlugs = new Set(candidates.flatMap((c) => c.gapSkillSlugs.concat(c.masteredSkillSlugs)))

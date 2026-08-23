@@ -107,8 +107,9 @@ export interface CourseFit {
   reason_ar: string
 }
 
-/** درجات المجال مطبَّعة على أعلاها — النسبة هي المعنى لا القيمة الخام */
-function normalizedDomains(ctx: DecisionContext): Map<DomainId, number> {
+/** درجات المجال مطبَّعة على أعلاها — النسبة هي المعنى لا القيمة الخام.
+    مصدَّرة لأن انتقاء البديل في المحرك يقيس بها نقاء مجال الكيان. */
+export function normalizedDomains(ctx: DecisionContext): Map<DomainId, number> {
   const out = new Map<DomainId, number>()
   const entries = Object.entries(ctx.domains.scores) as [DomainId, number][]
   const max = entries.reduce((m, [, v]) => Math.max(m, v), 0)
