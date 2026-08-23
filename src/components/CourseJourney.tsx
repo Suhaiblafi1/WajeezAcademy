@@ -82,8 +82,8 @@ export default function CourseJourney({
               <div className="flex items-start gap-3 p-4">
                 <span className={`z-10 grid h-8 w-8 shrink-0 place-items-center rounded-full border text-xs font-black ${
                   isGift
-                    ? "border-gold/60 bg-gold text-on-gold"
-                    : "border-teal/50 bg-ground text-teal-light-ink"
+                    ? "border-[#FABC05]/60 bg-[#FABC05] text-[#0D0D0D]"
+                    : "border-[#38A7B4]/50 bg-paper text-[#6EC7D1]"
                 }`}>
                   {isGift ? <Gift className="h-3.5 w-3.5" /> : i + 1}
                 </span>

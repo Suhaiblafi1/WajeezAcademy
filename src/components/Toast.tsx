@@ -40,8 +40,8 @@ export default function ToastHost() {
           key={t.id}
           className={`pointer-events-auto flex max-w-lg items-center gap-2 rounded-2xl border px-4 py-3 text-sm font-bold shadow-2xl backdrop-blur ${
             t.kind === "success"
-              ? "border-teal/50 bg-[#0E2225]/95 text-teal-light-ink"
-              : "border-gold/50 bg-[#241E0E]/95 text-gold-ink"
+              ? "border-[#38A7B4]/50 bg-paneldeep/95 text-[#6EC7D1]"
+              : "border-[#FABC05]/50 bg-warm2/95 text-[#FABC05]"
           }`}
         >
           {t.kind === "success" ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <Info className="h-4 w-4 shrink-0" />}

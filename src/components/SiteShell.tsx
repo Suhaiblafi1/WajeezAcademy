@@ -2,12 +2,13 @@ import { Link } from 'react-router'
 import { ArrowRight } from 'lucide-react'
 import { CONTACT } from '@/data/stories'
 import { ECOSYSTEM_NOTE } from '@/data/siteContent'
+import ThemeToggle from '@/components/ThemeToggle'
 
 /* قالب الصفحات العامة الداخلية: ترويسة عودة + محتوى + تذييل موحد */
 export default function SiteShell({ children }: { children: React.ReactNode }) {
   return (
-    <div dir="rtl" className="min-h-screen bg-ground text-white">
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-ground/85 backdrop-blur">
+    <div dir="rtl" className="min-h-screen bg-paper text-white">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-paper/85 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
           <Link to="/" className="flex items-center gap-2 text-white/70 transition hover:text-white">
             <ArrowRight className="h-5 w-5" />
@@ -20,9 +21,12 @@ export default function SiteShell({ children }: { children: React.ReactNode }) {
             <Link to="/trainers" className="transition hover:text-teal-light-ink">المدربون</Link>
             <Link to="/contact" className="transition hover:text-teal-light-ink">تواصل</Link>
           </nav>
-          <Link to="/diagnostic" className="rounded-xl bg-teal-deep px-4 py-2 text-sm font-bold text-white transition hover:bg-teal-darker">
-            ابدأ التشخيص
-          </Link>
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <Link to="/diagnostic" className="rounded-xl bg-[#247B84] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#1E666E]">
+              ابدأ التشخيص
+            </Link>
+          </div>
         </div>
       </header>
       <div className="mx-auto max-w-6xl px-5 py-12 md:py-16">{children}</div>

@@ -84,7 +84,7 @@ export default function App() {
       <ScrollToTop />
       <main id="main-content" tabIndex={-1}>
         <Suspense fallback={
-          <div dir="rtl" className="min-h-screen bg-ground px-5 py-10" aria-busy="true" aria-label="جاري التحميل">
+          <div dir="rtl" className="min-h-screen bg-paper px-5 py-10" aria-busy="true" aria-label="جاري التحميل">
             <div className="mx-auto max-w-3xl animate-pulse space-y-6">
               <div className="mx-auto h-6 w-44 rounded-full bg-white/10" />
               <div className="mx-auto h-10 w-3/4 rounded-2xl bg-white/10" />

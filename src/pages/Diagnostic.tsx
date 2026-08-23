@@ -20,11 +20,11 @@ import {
   BellRing,
   Zap,
   Wallet,
-  Lightbulb,
   History,
   FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import ThemeToggle from "@/components/ThemeToggle";
 import { track } from "@/services/analytics";
 import { apiPost } from "@/services/api";
 import { ensurePublishedSnapshot } from "@/services/catalog-snapshot";
@@ -35,7 +35,6 @@ import { Badge } from "@/components/ui/badge";
 import ResultGate from "@/components/ResultGate";
 import ResultFeedback from "@/components/ResultFeedback";
 import CourseJourney, { type CourseSuggestion } from "@/components/CourseJourney";
-import CvUpload from "@/components/CvUpload";
 import { ResultErrorBoundary } from "@/components/ResultErrorBoundary";
 import {
   type DiagQuestion,
@@ -46,7 +45,6 @@ import {
 import { AssessmentSession, createAssessment, diagQuestionById } from "@/application/diagnostic/assessment-service";
 import type { DeepeningComparison } from "@/application/diagnostic/assessment-service";
 import { loadSession, saveLastResult, loadLastResultSafe } from "@/application/diagnostic/session-store";
-import { sessionContributingReferences } from "@/data/methodology-session";
 import {
   courseById,
   pathwayCourses,
@@ -273,9 +271,9 @@ function CompositePlan({ composite }: { composite: CompositeView }) {
     .map((id) => pathways.find((p) => p.id === id))
     .filter((p): p is Pathway => Boolean(p));
   return (
-    <div className="mt-10 overflow-hidden rounded-3xl border border-gold/40 bg-gradient-to-b from-surface to-ground">
-      <div className="border-b border-white/10 bg-gold/10 px-6 py-3">
-        <span className="text-sm font-black text-gold-ink">التوصية الأولى · {composite.label_ar}</span>
+    <div className="mt-10 overflow-hidden rounded-3xl border border-[#FABC05]/40 bg-gradient-to-b from-surface to-paper">
+      <div className="border-b border-white/10 bg-[#FABC05]/10 px-6 py-3">
+        <span className="text-sm font-black text-[#FABC05]">التوصية الأولى · {composite.label_ar}</span>
         <span className="mr-2 text-xs text-white/50">
           خطة مبنية لحالتك من أكثر من مجال — وليست مسارا جاهزا من الكتالوج
         </span>
@@ -724,22 +722,25 @@ export default function Diagnostic() {
   const qOptions: DiagOption[] = question ? (resolve(question.options, answers) ?? []) : [];
 
   return (
-    <div dir="rtl" className="min-h-screen bg-ground text-white">
+    <div dir="rtl" className="min-h-screen bg-paper text-white">
       <SeoHead
         title="التشخيص الذكي"
         description="تشخيص تعليمي تكيفي يفهم هدفك وواقعك، ويوصي بمسار واحد مفسّر بدرجة ثقة — مجاني ودون حساب."
         path="/diagnostic"
       />
       {/* Top bar */}
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-ground/85 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-paper/85 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-5">
           <Link to="/" className="flex items-center gap-2 text-white/70 hover:text-white">
             <ArrowRight className="h-5 w-5" />
             <span className="text-sm font-medium">العودة للرئيسية</span>
           </Link>
-          <div className="flex items-center gap-2">
-            <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 object-contain" />
-            <span className="font-black">أكاديمية وجيز</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 object-contain" />
+              <span className="font-black">أكاديمية وجيز</span>
+            </div>
+            <ThemeToggle />
           </div>
         </div>
       </header>
@@ -1357,8 +1358,8 @@ export default function Diagnostic() {
 
           {/* بطاقة التوصية الأولى للمسار القياسي — تظهر فقط عندما لا تفوز خطة مركبة */}
           {((result.resultJson.composite as CompositeView | null) ?? null) === null && (
-          <div className="mt-10 overflow-hidden rounded-3xl border border-teal/40 bg-gradient-to-b from-surface-teal to-ground">
-            <div className="border-b border-white/10 bg-teal/10 px-6 py-3 text-sm font-bold text-teal-light-ink">
+          <div className="mt-10 overflow-hidden rounded-3xl border border-[#38A7B4]/40 bg-gradient-to-b from-panel to-paper">
+            <div className="border-b border-white/10 bg-[#38A7B4]/10 px-6 py-3 text-sm font-bold text-[#6EC7D1]">
               التوصية الأولى
             </div>
             <div className="p-6 md:p-8">
@@ -1490,13 +1491,13 @@ export default function Diagnostic() {
                   onClick={adoptComposite}
                   className="h-auto min-h-14 max-w-full whitespace-normal rounded-full bg-gold px-8 py-3 text-center text-base font-black leading-snug text-on-gold hover:bg-gold/90 md:text-lg"
                 >
-                  اعتمد خطتي «{compositeView.name_ar}»
+                  اعتمد هذه الخطة
                   <ArrowLeft className="mr-2 h-5 w-5 shrink-0" />
                 </Button>
               ) : (
                 <Button size="lg" className="h-auto min-h-14 max-w-full whitespace-normal rounded-full bg-gold px-8 py-3 text-center text-base font-black leading-snug text-on-gold hover:bg-gold/90 md:text-lg" asChild>
                   <Link to={`/pathways/${topPathway.id}`}>
-                    اعتمد مساري «{topPathway.name}»
+                    اعتمد هذا المسار
                     <ArrowLeft className="mr-2 h-5 w-5 shrink-0" />
                   </Link>
                 </Button>
@@ -1512,88 +1513,33 @@ export default function Diagnostic() {
             );
           })()}
 
-          {/* Why this recommendation — أكورديون مغلق افتراضيا ليبقى المسح البصري خفيفا */}
-          <details className="mt-8 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
-            <summary className="flex cursor-pointer items-center gap-2 text-lg font-black">
-              <Sparkles className="h-5 w-5 text-gold-ink" />
-              {((result.resultJson.composite as CompositeView | null) ?? null) ? "لماذا هذه الخطة؟" : "لماذا هذا المسار؟"}
-            </summary>
-            <ul className="mt-4 space-y-3">
-              {result.reasons.slice(0, 3).map((r) => (
-                <li key={r} className="flex items-start gap-3 text-sm leading-relaxed text-white/70">
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-teal-ink" />
-                  {r}
-                </li>
+          {/* «مع المسار لا تأخذ دورات فقط — تأخذ منظومة كاملة» — إثبات قيمة مضغوط قبل الاعتماد،
+              بنفس حجم خط القسم. حلّت محل ثلاثة أكورديونات كانت هنا بقرار المالك (2026-08-23):
+              «لماذا هذا المسار؟» و«هل هناك معلومات لم نعرفها بعد؟» و«كيف بُنيت توصيتك؟» */}
+          <div className="mt-8 rounded-3xl border border-white/10 bg-white/[0.03] p-5 md:p-6 print:hidden">
+            <h3 className="flex items-center gap-2 text-base font-black">
+              <Sparkles className="h-4 w-4 text-[#FABC05]" />
+              مع المسار لا تأخذ دورات فقط — تأخذ منظومة كاملة
+            </h3>
+            <div className="mt-3.5 grid gap-x-4 gap-y-2 sm:grid-cols-2">
+              {[
+                "دورات مسجلة + جلسات مباشرة مع المدرب",
+                "ملخصات كتب وجيز الصوتية المرتبطة بمسارك",
+                "واجبات تُراجع بشريا — لا تصحيحا آليا",
+                "مشروع تخرج حقيقي يُقدَّم للمراجعة قبل الاعتماد",
+                "شهادة موثقة بشروط إنجاز — لا شهادة مشاهدة",
+                "خريطة مهارات قبل وبعد (0–5)",
+                "خطة تقدم شخصية لما بعد المسار",
+                "مستشار نجاح يرافقك أسبوعيا",
+                "منظومة ما بعد الإتمام: وظائف وتوصيات وسفراء",
+              ].map((f) => (
+                <p key={f} className="flex items-start gap-2 text-xs leading-relaxed text-white/65">
+                  <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#38A7B4]" />
+                  {f}
+                </p>
               ))}
-            </ul>
-            <details className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 print:hidden">
-              <summary className="cursor-pointer text-sm font-bold text-teal-light-ink">
-                اعرف سبب التوصية بالتفصيل
-              </summary>
-              <div className="mt-3">
-                {result.reasons.length > 3 && (
-                  <ul className="space-y-2.5">
-                    {result.reasons.slice(3).map((r) => (
-                      <li key={r} className="flex items-start gap-3 text-sm leading-relaxed text-white/60">
-                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-teal-ink/70" />
-                        {r}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                {answers["notes"] && (
-                  <p className="mt-4 rounded-xl border border-white/10 bg-white/[0.04] p-4 text-sm leading-relaxed text-white/60">
-                    <span className="font-bold text-teal-light-ink">وكلمتك محفوظة: </span>«{answers["notes"]}» —
-                    سيقرأها مستشارك قبل أول جلسة لتكون خطتك أدق.
-                  </p>
-                )}
-                {answers["emp_moment"] && (
-                  <p className="mt-3 rounded-xl border border-white/10 bg-white/[0.04] p-4 text-sm leading-relaxed text-white/60">
-                    <span className="font-bold text-teal-light-ink">وقصتك وصلت: </span>«{answers["emp_moment"]}» —
-                    سيقرأها مدربك قبل أول لقاء ليعرف من أين يبدأ معك.
-                  </p>
-                )}
-                {/* مكونات الملاءمة الخمسة للمسار الأول — شفافية كاملة */}
-                {(() => {
-                  const fit = result.resultJson.primary_fit as
-                    | { persona: number; goal: number; skill_gap: number; feasibility: number; motivation: number; total?: number }
-                    | null
-                    | undefined
-                  if (!fit) return null
-                  const parts = [
-                    { label: "ملاءمة شخصيتك وواقعك", value: fit.persona },
-                    { label: "ملاءمة هدفك", value: fit.goal },
-                    { label: "سدّ فجوة مهاراتك", value: fit.skill_gap },
-                    { label: "ملاءمة وقتك وظروفك", value: fit.feasibility },
-                    { label: "دافعيتك واستعدادك", value: fit.motivation },
-                  ]
-                  return (
-                    <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-4 text-xs">
-                      <p className="font-bold text-white/70">
-                        درجة ملاءمة المسار لك: {Math.floor((fit.total ?? 0) * 100)}٪ — كيف توزعت؟
-                      </p>
-                      <div className="mt-3 space-y-2">
-                        {parts.map((p) => (
-                          <div key={p.label} className="flex items-center gap-2">
-                            <span className="w-36 shrink-0 text-white/60">{p.label}</span>
-                            <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
-                              <span
-                                className="block h-full rounded-full bg-gold"
-                                style={{ width: `${Math.max(0, Math.min(100, Math.floor(p.value * 100)))}%` }}
-                              />
-                            </span>
-                            <span className="w-9 shrink-0 text-left font-bold text-white/70">
-                              {Math.floor(p.value * 100)}٪
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )
-                })()}
-              </div>
-            </details>
-          </details>
+            </div>
+          </div>
 
           {/* تقاطع الرصيد السابق مع دورات التوصية — لا يدفع ثمن ما يعرفه */}
           {result.priorOverlap.length > 0 && (
@@ -1677,93 +1623,8 @@ export default function Diagnostic() {
             </div>
           )}
 
-          {/* هل هناك معلومات لم نعرفها بعد؟ — قسم مختصر قابل للتوسعة بثلاثة إجراءات */}
-          <details className="mt-8 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8 print:hidden">
-            <summary className="flex cursor-pointer items-center gap-2 text-lg font-black">
-              <Lightbulb className="h-5 w-5 text-teal-light-ink" />
-              هل هناك معلومات لم نعرفها بعد؟
-            </summary>
-            <p className="mt-3 text-sm leading-relaxed text-white/60">
-              خبرتك السابقة، سيرتك الذاتية أو هدف مهني محدد قد يساعدنا على تدقيق خطتك أكثر.
-            </p>
-            <ul className="mt-4 space-y-2.5">
-              {result.changeMakers.map((c) => (
-                <li key={c} className="flex items-start gap-3 text-xs leading-relaxed text-white/55">
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-teal-light" />
-                  {c}
-                </li>
-              ))}
-            </ul>
-            <div className="mt-5 grid gap-3 sm:grid-cols-3">
-              {!result.resultJson.deepening && canDeepen && result.resultJson.kind !== "guardrail_stop" && (
-                <button
-                  onClick={startDeepeningRound}
-                  className="flex items-center justify-center gap-2 rounded-2xl border border-teal/50 bg-teal/[0.08] px-4 py-3 text-xs font-bold text-teal-light-ink transition hover:bg-teal/15"
-                >
-                  <Wand2 className="h-4 w-4" />
-                  أجب عن أسئلة إضافية
-                </button>
-              )}
-              <AdvisorContact
-                text={`مرحبا، أكملت مؤشر وجيز ورُشّح لي مسار «${topPathway.name}»، وأود أن أضيف معلومة قد تغيّر نتيجتي.`}
-                label="تواصل مع المستشار"
-                className="flex items-center justify-center gap-2 rounded-2xl border border-teal/50 bg-teal/[0.08] px-4 py-3 text-xs font-bold text-teal-light-ink transition hover:bg-teal/15"
-              />
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-center text-xs font-bold text-white/60 sm:col-span-1">
-                أرسل سيرتك للمستشار ↓
-              </div>
-            </div>
-            {/* رفع السيرة — اختياري تماما، يقرأه المستشار البشري فقط */}
-            <div className="mt-4">
-              <p className="mb-2 text-xs leading-relaxed text-white/50">
-                يمكنك إرفاق سيرتك الذاتية ليطّلع عليها مستشار وجيز قبل التواصل معك.
-              </p>
-              <CvUpload
-                sessionId={(result.resultJson.session_id as string | undefined) ?? `result-${topPathway.id}`}
-                userId={authed ? (localStorage.getItem("wajeez_user") ?? null) : null}
-              />
-            </div>
-          </details>
-
-          {/* كيف بُنيت توصيتك؟ — المراجع التي ساهمت فعليا في هذه الجلسة فقط */}
-          {(() => {
-            const refs = sessionContributingReferences({
-              interestVector: (result.resultJson.interest_vector as Record<string, number> | undefined) ?? {},
-              skillVector: (result.resultJson.skill_vector as Record<string, number> | undefined) ?? {},
-              hasTrace: Array.isArray(result.resultJson.decision_trace) && (result.resultJson.decision_trace as unknown[]).length > 0,
-            });
-            if (refs.length === 0) return null;
-            return (
-              <details className="mt-8 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8 print:hidden">
-                <summary className="flex cursor-pointer items-center gap-2 text-lg font-black">
-                  <BookOpen className="h-5 w-5 text-teal-light-ink" />
-                  كيف بُنيت توصيتك؟
-                </summary>
-                <p className="mt-3 text-sm leading-relaxed text-white/60">
-                  بُنيت هذه النتيجة على إشارات من إجاباتك (هدفك وواقعك وميولك)، وفجوات المهارات المكتشفة أعلاه،
-                  ثم رُبطت بالمسار أو الخطة المركبة الأعلى ملاءمة — بالاستفادة من الأطر المهنية التالية التي
-                  ساهمت فعليا في جلستك:
-                </p>
-                <ul className="mt-4 space-y-2.5">
-                  {refs.map((r) => (
-                    <li key={r.id} className="flex items-start gap-3 text-sm leading-relaxed text-white/65">
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-teal-ink" />
-                      <span>
-                        <span className="font-bold text-white/85">{r.name_ar}</span> — {r.purpose_ar}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  to="/methodology"
-                  className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-teal-light-ink transition hover:text-white"
-                >
-                  اكتشف كيف نبني توصيتك — منهجية وجيز
-                  <ArrowLeft className="h-4 w-4" />
-                </Link>
-              </details>
-            );
-          })()}
+          {/* حُذف أكورديونا «هل هناك معلومات لم نعرفها بعد؟» و«كيف بُنيت توصيتك؟» —
+              استُبدل الثلاثة بقسم «منظومة كاملة» المضغوط أعلاه (قرار المالك 2026-08-23) */}
 
           {/* Advisor flag */}
           {result.needsAdvisor && (
@@ -1786,15 +1647,18 @@ export default function Diagnostic() {
           )}
 
           {/* البدائل في ميزان واحد — ضمن النتيجة الكاملة للموثق */}
-          {/* مقارنة الخيارات الثلاثة — الأساسي والأسرع والأوفر في ميزان واحد */}
-          {(result.faster || result.cheaper) && (
+          {/* مقارنة الخيارات — الأساسي مع ما توفر من بدائل (أسرع/أوفر)، والعنوان يتبع العدد الفعلي */}
+          {(result.faster || result.cheaper) && (() => {
+            const altCount = 1 + (result.faster ? 1 : 0) + (result.cheaper ? 1 : 0);
+            return (
             <div className="card-soft mt-8">
-              <h3 className="h-card">خياراتك الثلاثة في ميزان واحد — بدّل بثقة</h3>
+              <h3 className="h-card">{altCount === 2 ? "خياران" : "خياراتك الثلاثة"} في ميزان واحد — بدّل بثقة</h3>
               <p className="mt-2 text-xs leading-relaxed text-white/50">
-                ثلاثة مسارات انتقاها المحرك لحالتك تحديدا: توصيتنا الأساسية، وبديل أسرع، وبديل أوفر — والقرار الأخير لك.
+                {altCount === 2 ? "مساران انتقاهما المحرك" : "ثلاثة مسارات انتقاها المحرك"} لحالتك تحديدا:
+                توصيتنا الأساسية{result.faster ? "، وبديل أسرع" : ""}{result.cheaper ? "، وبديل أوفر" : ""} — والقرار الأخير لك.
                 تفاصيل الاستثمار تظهر في صفحة المسار بعد اعتماده.
               </p>
-              <div className="mt-6 grid gap-4 md:grid-cols-3">
+              <div className={`mt-6 grid gap-4 ${altCount === 2 ? "md:grid-cols-2" : "md:grid-cols-3"}`}>
                 {/* الأساسي */}
                 <div className="flex flex-col rounded-2xl border border-teal/50 bg-teal/10 p-5">
                   <span className="kicker">توصيتك الحالية</span>
@@ -1872,7 +1736,8 @@ export default function Diagnostic() {
                 )}
               </div>
             </div>
-          )}
+            );
+          })()}
 
           {/* شرح قوة الأدلة — أسفل التوصية كاملة لمن يريد التعمق بعد أن رأى كل شيء */}
           <details className="mx-auto mt-10 max-w-md rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-right text-xs leading-relaxed text-white/55 print:hidden">

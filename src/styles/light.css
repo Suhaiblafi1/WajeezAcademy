@@ -2,23 +2,21 @@
    المظهر الفاتح — Light Theme Overrides
    تُفعَّل عند html[data-theme="light"].
 
-   بعد البند و-١ صار قلب ألوان العلامة والأسطح في متغيرات `src/index.css`
-   (‏--teal-ink · --gold-ink · --ground · --surface · --surface-teal ومعها
-   توكنات shadcn). فلم يبقَ هنا إلا ما لا يمكن تمثيله بمتغيّر: مقياس
-   الأبيض الشفاف (text-white/NN وbg-white/NN) وألوان الحالة من لوحة
-   Tailwind الجاهزة.
+   البنية بعد ترحيل الرموز السيميائية:
+   • الأسطح (paper/surface/panel/warm…) أصبحت متغيرات --c-* في index.css
+     تتبدل تلقائيا — لا قواعد لها هنا، وأي سطح جديد يجب أن يستخدم
+     bg-paper / bg-surface / bg-panel… وليس hex حرفيا.
+   • ما تبقى هنا: النصوص البيضاء بدرجاتها، الحدود الشفافة، التعبئات
+     الزجاجية، ألوان العلامة والحالات على الفاتح، ولمسات عامة.
 
-   الحبر: #16211F (أخضر مائل للسواد) — الورق: #F6F4EF — الأسطح: أبيض.
+   الحبر: #16211F — الورق: #F6F4EF — الأسطح: أبيض.
    ═══════════════════════════════════════════════════════════════ */
 
 html[data-theme="light"] {
   color-scheme: light;
 }
 
-/* ── النص: الأبيض بدرجاته ← الحبر بدرجاته ──
-   المقياس مضغوط لا مطابق: الأبيض/40 على أرضية داكنة يعطي 4.9:1، أما
-   الحبر/40 على ورق فيعطي 2.6:1. فتُرفع الدرجات الخفيفة إلى أدنى حدّ
-   يمرّ AA (0.65) بدل نقلها حرفيا. */
+/* ── النص: الأبيض بدرجاته ← الحبر بدرجاته ── */
 html[data-theme="light"] .text-white { color: #16211F; }
 html[data-theme="light"] .text-white\/95 { color: rgba(22, 33, 31, 0.95); }
 html[data-theme="light"] .text-white\/90 { color: rgba(22, 33, 31, 0.92); }
@@ -101,8 +99,13 @@ html[data-theme="light"] .bg-\[\#1E666E\].text-white,
 html[data-theme="light"] .bg-\[\#247B84\] .text-white,
 html[data-theme="light"] .bg-\[\#38A7B4\] .text-white { color: #FFFFFF; }
 
-/* ملاحظة: تغميق .text-teal-light جُرّب وأُلغي — الرئيسية تحتفظ بأقسام داكنة
-   في الوضع الفاتح، فالفيروزي الداكن عليها يهبط دون الحد. يُحل جذريا بالتوكنات. */
-
 html[data-theme="light"] .funnel .funnel-bar { background-color: #1E666E; }
 html[data-theme="light"] .funnel { background-color: #FFFFFF; }
+/* ── شعارات الإعلام البيضاء (wajeez.com *-dark.png) — على الورق تُعكس
+     إلى حبري مقروء وتبقى رمادية هادئة حتى التحويم، تماما كسلوكها الداكن ── */
+html[data-theme="light"] .partner-logo { filter: grayscale(1) invert(0.88); opacity: 0.8; }
+html[data-theme="light"] .partner-logo:hover { filter: grayscale(1) invert(0.88); opacity: 1; }
+
+/* ── المرافق المسماة (نفس معالجة الأصناف الحرفية أعلاه) ── */
+html[data-theme="light"] .text-teal-light { color: #1F6E77; }      /* تركوازي فاتح ← أعمق للتباين */
+html[data-theme="light"] .text-amber-brand { color: #8F6E00; }     /* ذهبي ← نحاسي مقروء */

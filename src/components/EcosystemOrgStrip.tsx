@@ -6,7 +6,8 @@ import { displayedEcosystemOrgs } from '@/data/ecosystemOrganizations'
    - الإطار النصي ينسب الخبرة لمنظومة وجيز/وجيز مهارات صراحة —
      لا «عملاء الأكاديمية» إلا لعقود Academy فعلية (لا توجد حالياً).
    - الشعارات artwork أبيض من المصدر الرسمي، لذا تُعرض على سطح داكن ثابت
-     يبقى واضحاً في الوضعين الفاتح والداكن. */
+     يبقى واضحاً في الوضعين الفاتح والداكن — لذلك لون السطح inline style
+     محصّن: إعادة تعريف light.css للأصناف الحرفية لا تمسّه إطلاقا */
 export default function EcosystemOrgStrip() {
   const orgs = displayedEcosystemOrgs()
   if (orgs.length === 0) return null
@@ -21,7 +22,7 @@ export default function EcosystemOrgStrip() {
           </p>
         </div>
 
-        <div className="reveal mt-8 rounded-2xl border border-white/5 bg-ground px-6 py-8 md:px-10">
+        <div className="reveal mt-8 rounded-2xl border border-white/5 px-6 py-8 md:px-10" style={{ backgroundColor: '#0D0D0D' }}>
           <ul className="flex flex-wrap items-center justify-center gap-x-10 gap-y-7 md:gap-x-14">
             {orgs.map((o) => (
               <li key={o.name} className="flex items-center">

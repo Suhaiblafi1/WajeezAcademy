@@ -56,8 +56,8 @@ export default function RequireRole({ allow }: { allow: readonly string[] }) {
 
   if (state === 'loading') {
     return (
-      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-ground px-5" aria-busy="true" aria-label="التحقق من الصلاحيات">
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/10 border-t-teal" />
+      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper px-5" aria-busy="true" aria-label="التحقق من الصلاحيات">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/10 border-t-[#38A7B4]" />
         <p className="mt-4 text-sm font-semibold text-white/50">نتحقق من صلاحياتك…</p>
       </div>
     )

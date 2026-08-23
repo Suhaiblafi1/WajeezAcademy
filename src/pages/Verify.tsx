@@ -59,7 +59,7 @@ export default function Verify() {
   }, [number]);
 
   return (
-    <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-ground px-5 py-16 text-white">
+    <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper px-5 py-16 text-white">
       <Link to="/" className="flex items-center gap-2 text-white/60 transition hover:text-white">
         <ArrowRight className="h-4 w-4" /> أكاديمية وجيز
       </Link>

@@ -14,6 +14,7 @@ import { CONTACT } from '@/data/stories'
 import { track } from '@/services/analytics'
 import { usePublishedContent } from '@/services/public-content'
 import SeoHead from '@/components/SeoHead'
+import ThemeToggle from '@/components/ThemeToggle'
 import CourseModal from '@/components/CourseModal'
 import Modal from '@/components/Modal'
 import EcosystemNote from '@/components/EcosystemNote'
@@ -128,7 +129,7 @@ function Nav() {
       <a key={l.href} href={l.href} onClick={onClick} className={className}>{l.label}</a>
     )
   return (
-    <header className="fixed inset-x-0 top-0 z-50 border-b border-white/5 bg-ground/80 backdrop-blur-xl">
+    <header className="fixed inset-x-0 top-0 z-50 border-b border-white/5 bg-paper/80 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
         <a href="#top" className="flex items-center gap-2.5">
           <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-8 w-8 object-contain md:h-10 md:w-10" />
@@ -140,6 +141,7 @@ function Nav() {
           )}
         </nav>
         <div className="flex items-center gap-3">
+          <ThemeToggle />
           {userName ? (
             <Link to="/student" className="hidden items-center gap-2 rounded-xl border border-teal/40 bg-teal/10 px-4 py-2 text-sm font-semibold text-teal-light-ink transition hover:bg-teal/20 md:inline-flex">
               <User className="h-4 w-4" />
@@ -173,7 +175,7 @@ function Nav() {
         </div>
       </div>
       {open && (
-        <nav id="mobile-menu" ref={mobileNavRef} aria-label="قائمة التنقل الرئيسية" className="border-t border-white/5 bg-ground px-5 py-4 md:hidden">
+        <nav id="mobile-menu" ref={mobileNavRef} aria-label="قائمة التنقل الرئيسية" className="border-t border-white/5 bg-paper px-5 py-4 md:hidden">
           {links.map((l) =>
             renderLink(l, 'block py-2.5 text-muted-foreground hover:text-teal-light-ink', () => setOpen(false))
           )}
@@ -194,6 +196,7 @@ function Nav() {
             ابدأ مؤشر وجيز
           </a>
           <div className="mt-3 flex justify-center">
+            <ThemeToggle />
           </div>
         </nav>
       )}
@@ -478,7 +481,7 @@ function ImageBand() {
         className="h-[340px] w-full object-cover md:h-[420px]"
         fallbackClassName="h-[340px] w-full md:h-[420px]"
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0D0D0D] via-[#0D0D0D]/55 to-[#0D0D0D]/25" />
+      <div className="absolute inset-0 bg-gradient-to-t from-paper via-paper/55 to-paper/25" />
       <div className="absolute inset-0 flex items-end">
         <div className="mx-auto w-full max-w-6xl px-5 pb-10">
           <p className="reveal max-w-xl text-2xl font-bold leading-relaxed md:text-3xl">
@@ -543,7 +546,7 @@ function Stories() {
                 />
               ) : (
                 <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_60%_20%,rgba(56,167,180,0.35),transparent_65%)]">
-                  <span className="grid h-16 w-16 place-items-center rounded-full border border-teal/30 bg-surface-teal text-2xl font-black text-teal-light-ink">
+                  <span className="grid h-16 w-16 place-items-center rounded-full border border-teal/30 bg-panel text-2xl font-black text-teal-light">
                     {s.name.slice(0, 1)}
                   </span>
                 </div>
@@ -593,7 +596,7 @@ function Stories() {
                   <img src={open.img} alt={`مشهد من قصة ${open.name}`} loading="lazy" width="1200" height="600" className="h-full w-full object-cover object-top" />
                 ) : (
                   <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_60%_20%,rgba(56,167,180,0.35),transparent_65%)]">
-                    <span className="grid h-20 w-20 place-items-center rounded-full border border-teal/30 bg-surface-teal text-3xl font-black text-teal-light-ink">
+                    <span className="grid h-20 w-20 place-items-center rounded-full border border-teal/30 bg-panel text-3xl font-black text-teal-light">
                       {open.name.slice(0, 1)}
                     </span>
                   </div>
@@ -812,7 +815,7 @@ function Bestsellers() {
         <div className="mx-auto max-w-6xl px-5">
           <Link
             to={`/pathways/${spotlight.id}`}
-            className="reveal group mt-8 grid overflow-hidden rounded-3xl border border-teal/30 bg-gradient-to-l from-surface-teal to-card transition hover:border-teal/60 hover:shadow-[0_30px_80px_-40px_rgba(56,167,180,0.5)] md:grid-cols-5"
+            className="reveal group mt-8 grid overflow-hidden rounded-3xl border border-teal/30 bg-gradient-to-l from-panel to-card transition hover:border-teal/60 hover:shadow-[0_30px_80px_-40px_rgba(56,167,180,0.5)] md:grid-cols-5"
           >
             <div className="relative flex min-h-[104px] items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_70%_30%,rgba(56,167,180,0.4),transparent_65%)] md:col-span-2 md:min-h-[190px]">
               <Route className="h-10 w-10 text-teal-light-ink/70 md:h-16 md:w-16" />
@@ -1049,7 +1052,7 @@ function Faq() {
           {(() => {
             const i = faqs.length
             return (
-              <div className="reveal overflow-hidden rounded-2xl border-2 border-teal/50 bg-gradient-to-l from-surface-teal/50 to-card transition hover:border-teal/70" style={{ transitionDelay: `${i * 60}ms` }}>
+              <div className="reveal overflow-hidden rounded-2xl border-2 border-teal/50 bg-gradient-to-l from-panel/50 to-card transition hover:border-teal/70" style={{ transitionDelay: `${i * 60}ms` }}>
                 <button
                   onClick={() => setOpen(open === i ? null : i)}
                   aria-expanded={open === i}
@@ -1146,7 +1149,8 @@ function Partners() {
               src={p.src}
               alt={p.name}
               fallback="label"
-              className="h-10 w-auto opacity-70 grayscale transition hover:opacity-100 hover:grayscale-0 md:h-12"
+              loading="lazy"
+              className="partner-logo h-10 w-auto opacity-70 grayscale transition hover:opacity-100 hover:grayscale-0 md:h-12"
               fallbackClassName="h-10 md:h-12"
             />
           ))}
@@ -1205,7 +1209,7 @@ const footerCols: { title: string; icon: typeof GraduationCap; links: { label: s
 
 function Footer() {
   return (
-    <footer className="border-t border-white/5 bg-ground">
+    <footer className="border-t border-white/5 bg-surface3">
       <div className="mx-auto max-w-6xl px-5 py-12">
         <div className="grid gap-8 md:grid-cols-5">
           <div className="md:col-span-1">
@@ -1280,7 +1284,7 @@ function MobileCtaBar() {
   return (
     <div
       aria-hidden={!visible}
-      className={`fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-ground/90 px-5 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-3 backdrop-blur-xl transition-transform duration-300 md:hidden ${visible ? 'translate-y-0' : 'translate-y-full'}`}
+      className={`fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-paper/90 px-5 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-3 backdrop-blur-xl transition-transform duration-300 md:hidden ${visible ? 'translate-y-0' : 'translate-y-full'}`}
     >
       <a href="#diagnostic" className="btn-teal w-full py-3.5">
         مؤشر وجيز — دقيقة واحدة
@@ -1315,7 +1319,7 @@ function AdvisorStrip() {
   const isWhatsApp = Boolean(CONTACT.whatsapp)
   return (
     <section className="mx-auto max-w-6xl px-5 pb-4">
-      <div className="reveal flex flex-col items-center justify-between gap-5 rounded-3xl border border-teal/20 bg-gradient-to-l from-surface-teal/80 to-card px-6 py-6 md:flex-row md:px-8">
+      <div className="reveal flex flex-col items-center justify-between gap-5 rounded-3xl border border-teal/20 bg-gradient-to-l from-panel/80 to-card px-6 py-6 md:flex-row md:px-8">
         <div className="flex items-center gap-4 text-center md:text-right">
           <span className="relative hidden h-12 w-12 shrink-0 place-items-center rounded-2xl bg-teal/12 text-teal-ink md:grid">
             <Headset className="h-6 w-6" />

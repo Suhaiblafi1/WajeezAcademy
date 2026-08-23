@@ -213,8 +213,12 @@ export const TRAINER_POOLS: Record<string, Trainer[]> = {
     { name: TRAINER_PENDING_AR, role: 'مدرب إدارة المشاريع والبيانات' },
   ],
   COM: [
-    { name: TRAINER_PENDING_AR, role: 'مدربة العروض والخطابة' },
+    /* خمسة مقاعد — مدرب لكل دورة من دورات مسار الخطابة والتواصل التنفيذي الخمس */
+    { name: TRAINER_PENDING_AR, role: 'مدربة بناء الرسالة والسرد القصصي' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب تصميم العروض التنفيذية والشرائح' },
+    { name: TRAINER_PENDING_AR, role: 'مدرب الحضور والصوت وإدارة رهبة الإلقاء' },
     { name: TRAINER_PENDING_AR, role: 'مدربة الحوار والإقناع' },
+    { name: TRAINER_PENDING_AR, role: 'مدربة العروض والخطابة أمام اللجان' },
   ],
   NEG: [
     { name: TRAINER_PENDING_AR, role: 'مدرب التفاوض' },
@@ -270,13 +274,11 @@ export const TRAINER_POOLS: Record<string, Trainer[]> = {
     { name: TRAINER_PENDING_AR, role: 'مدربة الحوار والتغذية الراجعة' },
   ],
 }
-/** مدربو مسار معين — مقاعد التخصصات التدريبية المشاركة (2–3)؛ الاسم يُعلن بعد اعتماد الشعبة */
+/** مدربو مسار معين — مقاعد التخصصات التدريبية المشاركة كلها وبترتيب ثابت؛ الاسم يُعلن بعد اعتماد الشعبة.
+    الترتيب الثابت يجعل courseTrainer يعيّن لكل دورة مدرب مقعدها المطابق لموضوعها */
 export function pathwayTrainers(pathwayId: string): Trainer[] {
   const family = pathwayId.split('-')[1] ?? 'FND'
-  const pool = TRAINER_POOLS[family] ?? TRAINER_POOLS.FND
-  const num = parseInt(pathwayId.split('-')[2] ?? '1', 10) || 1
-  const rotated = [...pool.slice(num % pool.length), ...pool.slice(0, num % pool.length)]
-  return rotated.slice(0, Math.min(3, pool.length))
+  return TRAINER_POOLS[family] ?? TRAINER_POOLS.FND
 }
 /** مدرب الدورة — أحد مدربي مسارها بالتناوب */
 export function courseTrainer(c: Course): Trainer {

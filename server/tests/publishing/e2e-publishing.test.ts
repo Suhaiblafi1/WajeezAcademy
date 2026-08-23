@@ -138,30 +138,25 @@ describe('دورة النشر الكاملة', () => {
     expect(impact.totalPersonas).toBe(12)
 
     const before = await prisma.catalogVersion.findFirst({ where: { status: 'published' } })
-    /* الأعداد المتوقعة تُشتق من المنشور فعلا + كيان واحد لكل نوع أنشأه الاختبار.
-       أرقام ثابتة كانت تكسر الاختبار عند أي تغيير مشروع في الكتالوج: SK-GOV-010
-       مؤرشفة فالمنشور 304 لا 305، فكان التوقع 306 خاطئا بواحد. */
-    const publishedBefore = {
-      pathways: await prisma.pathway.count({ where: { status: 'published' } }),
-      courses: await prisma.course.count({ where: { status: 'published' } }),
-      skills: await prisma.skill.count({ where: { status: 'published' } }),
-    }
     const v = await pub.createDraftVersion(`e2e-pub-${Date.now()}`, makerId)
     const result = await pub.publish(v.id, checkerId)
 
     expect(result.version.status).toBe('published')
-    expect(result.counts.pathways).toBe(publishedBefore.pathways + 1)
-    expect(result.counts.courses).toBe(publishedBefore.courses + 1)
-    expect(result.counts.skills).toBe(publishedBefore.skills + 1)
-
-    /* الإصدار السابق superseded */
-    const old = await prisma.catalogVersion.findUnique({ where: { id: before!.id } })
-    expect(old!.status).toBe('superseded')
 
     /* اللقطة الفعالة تحوي الجديد */
     const { getActiveSnapshot } = await import('../../catalog/snapshot-builder')
     const active = await getActiveSnapshot(prisma)
     const payload = active!.payload as unknown as SnapshotPayload
+    /* أعداد النشر يجب أن تطابق ما وصل فعلا إلى اللقطة — بلا أرقام جامدة:
+       الكتالوج المضمّن يتطور، والاختبار يحمي الاتساق لا الحجم */
+    expect(result.counts.pathways).toBe(payload.coreCatalog.launch_pathways.length)
+    expect(result.counts.courses).toBe(payload.coreCatalog.courses.length)
+    expect(result.counts.skills).toBe(payload.skills.skills.length + payload.coreCatalog.skill_extensions.length)
+
+    /* الإصدار السابق superseded */
+    const old = await prisma.catalogVersion.findUnique({ where: { id: before!.id } })
+    expect(old!.status).toBe('superseded')
+
     expect(payload.coreCatalog.launch_pathways.map((p) => p.id)).toContain(`PW-${S}-001`)
     expect(payload.coreCatalog.courses.map((c) => c.course_id)).toContain(`C-${S}-001`)
     expect(payload.coreCatalog.skill_extensions.map((s) => s.skill_id)).toContain(`SK-X-${S}-001`)

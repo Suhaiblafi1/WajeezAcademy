@@ -51,7 +51,7 @@ export default function VideoPlayer({
   return (
     <div className="overflow-hidden rounded-2xl border border-white/10 bg-black">
       {/* شاشة العرض */}
-      <div className="relative grid h-52 place-items-center bg-gradient-to-br from-[#123B40] via-[#0D0D0D] to-[#1A2E31] sm:h-64">
+      <div className="relative grid h-52 place-items-center bg-gradient-to-br from-panel via-paper to-panelto sm:h-64">
         <button
           onClick={() => {
             if (playing && pct > lastSaved.current) { lastSaved.current = pct; onProgress(pct); }

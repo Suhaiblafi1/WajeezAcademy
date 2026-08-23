@@ -25,9 +25,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import AuthGate from "@/components/AuthGate";
+import ThemeToggle from "@/components/ThemeToggle";
 import AdvisorContact from "@/components/AdvisorContact";
 import CourseJourney from "@/components/CourseJourney";
-import PathwayResources from "@/components/PathwayResources";
 import Modal from "@/components/Modal";
 import { pathwayById } from "@/data/pathways";
 import { hasCoreCatalog } from "@/data/core-catalog-source";
@@ -243,6 +243,16 @@ export default function PathwayPage() {
     }
   }, []);
 
+  /* نتيجة تشخيص مكتملة ومحفوظة على الجهاز (تبقى بعد إغلاق التبويب، بخلاف جلسة الصفحة) —
+     وجودها يحوّل دعوة «لست متأكدا» إلى إعادة تخصيص المسار بدل إعادة التشخيص */
+  const hasSavedResult = useMemo(() => {
+    try {
+      return !!localStorage.getItem("wajeez_diag_v2_last_full");
+    } catch {
+      return false;
+    }
+  }, []);
+
   if (!pathway) {
     /* البند ع-١: الكتالوج يصل بعد أول رسم، فـ«غير موجود» قبل وصوله خطأ —
        نعرض حالة تحميل حتى يثبت الكتالوج، ثم نحكم بالغياب. */
@@ -254,7 +264,7 @@ export default function PathwayPage() {
       );
     }
     return (
-      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-ground text-white">
+      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper text-white">
         <p className="text-xl font-bold">هذا المسار غير موجود</p>
         <Link to="/" className="mt-4 text-teal-light-ink underline">العودة للرئيسية</Link>
       </div>
@@ -273,14 +283,14 @@ export default function PathwayPage() {
   const totalWeeks = pathwayCoursesList.reduce((s, c) => s + c.weeks, 0);
 
   return (
-    <div dir="rtl" className="min-h-screen bg-ground text-white">
+    <div dir="rtl" className="min-h-screen bg-paper text-white">
       <SeoHead
         title={pathway.name}
         description={`${pathway.transformation} — مسار ${pathway.level} من ${weeksLabel(pathway.durationWeeks)} في أكاديمية وجيز.`}
         path={`/pathways/${pathway.id}`}
       />
       {/* Top bar */}
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-ground/85 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-paper/85 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-5">
           <Link to="/" className="flex items-center gap-2 text-white/70 hover:text-white">
             <ArrowRight className="h-5 w-5" />
@@ -290,11 +300,14 @@ export default function PathwayPage() {
             <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 object-contain" />
             <span className="font-black">أكاديمية وجيز</span>
           </div>
-          {user && (
-            <span className="flex items-center gap-1.5 text-xs text-white/50">
-              <User className="h-4 w-4" /> {user}
-            </span>
-          )}
+          <div className="flex items-center gap-3">
+            {user && (
+              <span className="flex items-center gap-1.5 text-xs text-white/50">
+                <User className="h-4 w-4" /> {user}
+              </span>
+            )}
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 
@@ -355,8 +368,7 @@ export default function PathwayPage() {
             giftId={custom?.giftId ?? null}
           />
 
-          {/* أنواع المصادر المرافقة للرحلة — بلا تكاملات جديدة ولا أمثلة مخترعة */}
-          <PathwayResources />
+          {/* أنواع المصادر المرافقة حُذفت — كانت مكررة مع صندوق «منظومة كاملة» أدناه */}
 
           {/* مقاعد التخصصات التدريبية — الأسماء تُعلن بعد اعتماد الشعبة */}
           <div className="story-fade mt-8 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4">
@@ -378,15 +390,17 @@ export default function PathwayPage() {
             </p>
           </div>
 
-          {/* التشخيص: دعوة للزائر الجديد — وشارة اعتماد لمن جاء من تشخيصه */}
+          {/* التشخيص: دعوة للزائر الجديد — وإعادة تخصيص لمن أكمل تشخيصه سابقا (بلا إعادة تشخيص) */}
           {!report && (
             <div className="story-fade mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-dashed border-teal/40 bg-teal/5 px-6 py-4">
               <p className="text-sm leading-relaxed text-white/70">
-                <span className="font-black text-teal-light-ink">لست متأكدا أن هذا مسارك الأنسب؟ </span>
-                ثلاث دقائق مع مؤشر وجيز تطابقك مع مساراتنا المصممة وتشرح لك السبب.
+                <span className="font-black text-[#6EC7D1]">لست متأكدا أن هذا مسارك الأنسب؟ </span>
+                {hasSavedResult
+                  ? "نتيجتك محفوظة — عد إليها وأعد تخصيص مسارك: استبدالا أو حذفا أو هدية مجانية، بلا إعادة تشخيص."
+                  : "ثلاث دقائق مع مؤشر وجيز تطابقك مع مساراتنا المصممة وتشرح لك السبب."}
               </p>
-              <Button variant="outline" className="border-teal/60 text-teal-light-ink hover:bg-teal/15" asChild>
-                <Link to="/diagnostic">ابدأ بمؤشر وجيز</Link>
+              <Button variant="outline" className="border-[#38A7B4]/60 text-[#6EC7D1] hover:bg-[#38A7B4]/15" asChild>
+                <Link to="/diagnostic">{hasSavedResult ? "أعد تخصيص مسارك" : "ابدأ بمؤشر وجيز"}</Link>
               </Button>
             </div>
           )}
@@ -410,8 +424,8 @@ export default function PathwayPage() {
 
           {/* تقريره الشخصي — مطوي افتراضيا في تبويب صغير */}
           {report && (
-            <details className="story-fade group mt-6 rounded-2xl border border-teal/35 bg-gradient-to-b from-surface-teal/60 to-transparent">
-              <summary className="flex cursor-pointer list-none items-center gap-2 px-5 py-3 text-sm font-black text-teal-light-ink [&::-webkit-details-marker]:hidden">
+            <details className="story-fade group mt-6 rounded-2xl border border-[#38A7B4]/35 bg-gradient-to-b from-panel/60 to-transparent">
+              <summary className="flex cursor-pointer list-none items-center gap-2 px-5 py-3 text-sm font-black text-[#6EC7D1] [&::-webkit-details-marker]:hidden">
                 <FileText className="h-4 w-4" />
                 تقريرك الشخصي — ما فهمناه عنك
                 <span className="mr-auto text-[10px] font-semibold text-white/40 transition group-open:rotate-180">▾</span>
@@ -544,13 +558,13 @@ export default function PathwayPage() {
             </div>
           )}
 
-          {/* ما ستحصل عليه مع المسار — من عروض أكاديمية وجيز */}
-          <div className="story-fade mt-10 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
-            <h2 className="flex items-center gap-2 text-xl font-black">
-              <Sparkles className="h-5 w-5 text-gold-ink" />
+          {/* ما ستحصل عليه مع المسار — من عروض أكاديمية وجيز (نسخة مضغوطة: خانات أصغر ومتقاربة) */}
+          <div className="story-fade mt-8 rounded-3xl border border-white/10 bg-white/[0.03] p-5 md:p-6">
+            <h2 className="flex items-center gap-2 text-lg font-black">
+              <Sparkles className="h-5 w-5 text-[#FABC05]" />
               مع المسار لا تأخذ دورات فقط — تأخذ منظومة كاملة
             </h2>
-            <div className="mt-5 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {[
                 { icon: MonitorPlay, t: "دورات مسجلة + جلسات مباشرة", d: "وحدات فيديو وجلسة حية مع المدرب ومهمة تطبيقية لكل دورة" },
                 { icon: Headphones, t: "ملخصات كتب وجيز الصوتية", d: "اسمع ملخصات الكتب المرتبطة بمسارك — ثم اختبر نفسك فيها" },
@@ -562,13 +576,13 @@ export default function PathwayPage() {
                 { icon: UserCheck, t: "مستشار نجاح يرافقك", d: "متابعة أسبوعية ورسالة مباشرة عند أي تعثر" },
                 { icon: Briefcase, t: "منظومة ما بعد الإتمام", d: "لوحة وظائف وتوصيات مهنية وبرنامج سفراء وجيز" },
               ].map((b) => (
-                <div key={b.t} className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3.5">
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-teal/15">
-                    <b.icon className="h-4 w-4 text-teal-light-ink" />
+                <div key={b.t} className="flex items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.04] p-2.5">
+                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-[#38A7B4]/15">
+                    <b.icon className="h-3.5 w-3.5 text-[#6EC7D1]" />
                   </span>
                   <div className="min-w-0">
-                    <p className="text-sm font-black leading-relaxed">{b.t}</p>
-                    <p className="mt-1 text-xs leading-relaxed text-white/50">{b.d}</p>
+                    <p className="text-[13px] font-black leading-snug">{b.t}</p>
+                    <p className="mt-0.5 text-[11px] leading-relaxed text-white/50">{b.d}</p>
                   </div>
                 </div>
               ))}

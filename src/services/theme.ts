@@ -1,13 +1,16 @@
-/* إدارة المظهر — داكن افتراضي / فاتح اختياري.
-   التطبيق على <html data-theme> ويُحفظ في localStorage؛ يُقرأ مبكرا في index.html
-   قبل أول رسم حتى لا يومض المظهر عند الفتح. */
+/* إدارة المظهر — داكن عند كل فتح / فاتح اختياري أثناء الزيارة.
+   القاعدة المعتمدة: الموقع يفتح بالوضع الليلي دائما مهما اختار الزائر سابقا،
+   واختيار «الفاتح» يعيش طوال الزيارة الحالية فقط (تنقل وتحديث الصفحة) وينتهي
+   بإغلاقها — لذلك يُحفظ في sessionStorage لا localStorage.
+   التطبيق على <html data-theme>؛ يُقرأ مبكرا في index.html قبل أول رسم
+   حتى لا يومض المظهر عند الفتح. */
 
 export type Theme = "dark" | "light";
 
 const KEY = "wajeez_theme";
 
 export function getTheme(): Theme {
-  try { return localStorage.getItem(KEY) === "light" ? "light" : "dark"; } catch { return "dark"; }
+  try { return sessionStorage.getItem(KEY) === "light" ? "light" : "dark"; } catch { return "dark"; }
 }
 
 export function applyTheme(t: Theme): void {
@@ -19,12 +22,12 @@ export function applyTheme(t: Theme): void {
 
 export function toggleTheme(): Theme {
   const next: Theme = getTheme() === "light" ? "dark" : "light";
-  try { localStorage.setItem(KEY, next); } catch { /* وضع خاص بلا تخزين — التبديل آني فقط */ }
+  try { sessionStorage.setItem(KEY, next); } catch { /* وضع خاص بلا تخزين — التبديل آني فقط */ }
   applyTheme(next);
   return next;
 }
 
-/** يُستدعى قبل إقلاع React — يعيد المظهر المحفوظ */
+/** يُستدعى قبل إقلاع React — يطبق مظهر الزيارة الحالية (داكن إن لم يختر فاتحا) */
 export function initTheme(): void {
   applyTheme(getTheme());
 }

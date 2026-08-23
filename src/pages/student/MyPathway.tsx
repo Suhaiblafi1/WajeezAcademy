@@ -154,7 +154,7 @@ function MyPathwayBody() {
       </section>
 
       {/* مشروع التخرج — ظاهر منذ البداية، لا يفتح قبل الشروط */}
-      <section className="mt-8 rounded-3xl border border-gold/30 bg-gradient-to-b from-[#2A2108]/40 to-transparent p-6">
+      <section className="mt-8 rounded-3xl border border-[#FABC05]/30 bg-gradient-to-b from-warmglow/40 to-transparent p-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gold/15 text-gold-ink">

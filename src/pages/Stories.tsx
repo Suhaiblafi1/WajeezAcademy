@@ -51,13 +51,13 @@ export default function StoriesPage() {
                 />
               ) : (
                 <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_60%_20%,rgba(56,167,180,0.35),transparent_65%)]">
-                  <span className="grid h-16 w-16 place-items-center rounded-full border border-teal/30 bg-surface-teal text-2xl font-black text-teal-light-ink">
+                  <span className="grid h-16 w-16 place-items-center rounded-full border border-[#38A7B4]/30 bg-panel text-2xl font-black text-[#6EC7D1]">
                     {s.name.slice(0, 1)}
                   </span>
                 </div>
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-[#101415] to-transparent" />
-              <span className="absolute bottom-3 right-4 rounded-full bg-teal-deep px-3 py-1 text-[11px] font-bold text-white">{s.tag}</span>
+              <div className="absolute inset-0 bg-gradient-to-t from-surface to-transparent" />
+              <span className="absolute bottom-3 right-4 rounded-full bg-[#247B84] px-3 py-1 text-[11px] font-bold text-white">{s.tag}</span>
             </div>
             <div className="flex flex-1 flex-col p-5">
               <p className="text-sm font-bold">
@@ -120,12 +120,12 @@ export default function StoriesPage() {
                 <img src={open.img} alt={`مشهد من قصة ${open.name}`} loading="lazy" width="1200" height="600" className="h-full w-full object-cover object-top" />
               ) : (
                 <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_60%_20%,rgba(56,167,180,0.35),transparent_65%)]">
-                  <span className="grid h-20 w-20 place-items-center rounded-full border border-teal/30 bg-surface-teal text-3xl font-black text-teal-light-ink">
+                  <span className="grid h-20 w-20 place-items-center rounded-full border border-[#38A7B4]/30 bg-panel text-3xl font-black text-[#6EC7D1]">
                     {open.name.slice(0, 1)}
                   </span>
                 </div>
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-[#101415] via-[#101415]/40 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-surface via-surface/40 to-transparent" />
               <button
                 onClick={() => setOpen(null)}
                 aria-label="إغلاق القصة"
@@ -149,17 +149,17 @@ export default function StoriesPage() {
 
             <div className="grid gap-px bg-white/5 md:grid-cols-3">
               <div className="bg-surface p-6">
-                <div className="flex items-center gap-2 text-xs text-teal-light-ink"><Route className="h-4 w-4" /> المسار الذي {open.gender === 'f' ? 'سلكته' : 'سلكه'}</div>
+                <div className="flex items-center gap-2 text-xs text-[#6EC7D1]"><Route className="h-4 w-4" /> المسار الذي {open.gender === 'f' ? 'سلكته' : 'سلكه'}</div>
                 <div className="mt-2 font-bold leading-7">{open.pathway}</div>
                 <div className="mt-1 text-xs text-white/50">{open.duration}</div>
               </div>
               <div className="bg-surface p-6">
-                <div className="flex items-center gap-2 text-xs text-teal-light-ink"><User className="h-4 w-4" /> المدرب</div>
+                <div className="flex items-center gap-2 text-xs text-[#6EC7D1]"><User className="h-4 w-4" /> المدرب</div>
                 <div className="mt-2 font-bold">{open.trainer}</div>
                 <div className="mt-1 text-xs text-white/50">{open.gender === 'f' ? 'رافقها' : 'رافقه'} في التقييم والمتابعة طوال المسار</div>
               </div>
               <div className="bg-surface p-6">
-                <div className="flex items-center gap-2 text-xs text-teal-light-ink"><FileCheck className="h-4 w-4" /> المخرج العملي</div>
+                <div className="flex items-center gap-2 text-xs text-[#6EC7D1]"><FileCheck className="h-4 w-4" /> المخرج العملي</div>
                 <div className="mt-2 font-bold leading-7">{open.output}</div>
               </div>
             </div>

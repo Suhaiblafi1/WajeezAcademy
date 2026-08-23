@@ -46,7 +46,7 @@ function Pill({ v }: { v: string }) {
   return <span className={`rounded-full border px-2 py-0.5 text-[11px] font-bold ${color}`}>{STATUS_AR[v] ?? v}</span>;
 }
 
-const inputCls = "w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/25 outline-none focus:border-gold/60";
+const inputCls = "w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/25 outline-none focus:border-[#FABC05]/60";
 const selectCls = `${inputCls} [&>option]:bg-surface`;
 
 export default function CatalogAdmin() {

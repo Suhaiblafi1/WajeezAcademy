@@ -20,16 +20,16 @@ export default function AdvisorLayout({ children, title }: { children: React.Rea
 
   if (!effectiveMe && !checked) {
     return (
-      <div dir="rtl" className="grid min-h-screen place-items-center bg-ground text-white">
-        <Headset className="h-10 w-10 animate-pulse text-teal-ink" />
+      <div dir="rtl" className="grid min-h-screen place-items-center bg-paper text-white">
+        <Headset className="h-10 w-10 animate-pulse text-[#38A7B4]" />
       </div>
     );
   }
 
   if (!effectiveMe) {
     return (
-      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-ground px-5 text-white">
-        <Headset className="h-12 w-12 text-teal-ink" />
+      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper px-5 text-white">
+        <Headset className="h-12 w-12 text-[#38A7B4]" />
         <h1 className="mt-5 text-2xl font-black">بوابة المستشار — من أنت؟</h1>
         <p className="mt-2 max-w-md text-center text-sm leading-7 text-white/55">
           يرى كل مستشار الطلبة والعملاء المسندين إليه فقط (RBAC) — اختر هويتك للمتابعة.
@@ -59,9 +59,9 @@ export default function AdvisorLayout({ children, title }: { children: React.Rea
   ];
 
   return (
-    <div dir="rtl" className="min-h-screen bg-ground text-white">
+    <div dir="rtl" className="min-h-screen bg-paper text-white">
       <PrototypeBanner hidden={realAdvisor} />
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-ground/90 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-paper/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
           <Link to="/" className="flex items-center gap-2">
             <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 object-contain" />

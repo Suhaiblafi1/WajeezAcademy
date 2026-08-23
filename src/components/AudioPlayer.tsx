@@ -42,7 +42,7 @@ export default function AudioPlayer({
   const fmt = (v: number) => `${Math.floor(v / 60)}:${String(Math.floor(v % 60)).padStart(2, "0")}`;
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-gradient-to-l from-[#123B40]/60 to-black/40 p-4">
+    <div className="rounded-2xl border border-white/10 bg-gradient-to-l from-panel/60 to-black/40 p-4">
       <div className="flex items-center gap-3">
         <button
           onClick={() => {

@@ -90,16 +90,16 @@ export default function PortalLayout({ children, title }: { children: React.Reac
   /* بوابة القفل لا تظهر قبل اكتمال فحص الجلسة — زائر الديمو يراها فورا، وصاحب الحساب لا يراها أبدا */
   if (!allowed && !sessionChecked) {
     return (
-      <div dir="rtl" className="grid min-h-screen place-items-center bg-ground text-white">
-        <span className="h-8 w-8 animate-spin rounded-full border-2 border-white/15 border-t-teal" aria-label="يُحمَّل" />
+      <div dir="rtl" className="grid min-h-screen place-items-center bg-paper text-white">
+        <span className="h-8 w-8 animate-spin rounded-full border-2 border-white/15 border-t-[#38A7B4]" aria-label="يُحمَّل" />
       </div>
     );
   }
 
   if (!allowed) {
     return (
-      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-ground px-5 text-white">
-        <Lock className="h-12 w-12 text-gold-ink" />
+      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper px-5 text-white">
+        <Lock className="h-12 w-12 text-[#FABC05]" />
         <h1 className="mt-5 text-2xl font-black">منصة الطالب تُفتح بعد أول دفع ناجح</h1>
         <p className="mt-3 max-w-md text-center text-sm leading-7 text-white/60">
           وفق سياسة وجيز: حدث دفع واحد ينشئ تسجيلا واحدا، يرسل فاتورتك، ويفتح وصولك تلقائيا دون تدخل يدوي.
@@ -156,9 +156,9 @@ export default function PortalLayout({ children, title }: { children: React.Reac
   const moreActive = moreTabs.some((t) => pathname.startsWith(t.to));
 
   return (
-    <div dir="rtl" className="min-h-screen bg-ground text-white">
+    <div dir="rtl" className="min-h-screen bg-paper text-white">
       <PrototypeBanner hidden={!!sessionUser} />
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-ground/90 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-paper/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
           <Link to="/" className="flex items-center gap-2">
             <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 object-contain" />
@@ -296,7 +296,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
       {/* تعريف المنظومة — تذييل ثقة خفيف داخل البوابة (يظهر مرة واحدة أسفل المحتوى) */}
       <EcosystemNote className="mx-auto max-w-6xl px-5 pb-24 md:pb-6" />
       {/* شريط تنقل سفلي للجوال — أربعة أساسية + «المزيد» بقائمة منبثقة */}
-      <nav aria-label="تنقل المنصة" className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-white/10 bg-ground/95 pb-[max(env(safe-area-inset-bottom),0.25rem)] backdrop-blur-xl md:hidden">
+      <nav aria-label="تنقل المنصة" className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-white/10 bg-paper/95 pb-[max(env(safe-area-inset-bottom),0.25rem)] backdrop-blur-xl md:hidden">
         {mainTabs.map((t) => (
           <NavLink
             key={t.to}

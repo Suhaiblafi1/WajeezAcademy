@@ -60,9 +60,11 @@ const FIELD_CLS =
   "h-12 w-full rounded-2xl border border-white/15 bg-white/[0.04] pr-11 pl-11 text-left text-sm text-white placeholder:text-white/30 focus:border-teal focus:outline-none";
 const LABEL_CLS = "mb-1.5 block text-xs font-bold text-white/60";
 
-/** بوابة الدخول والتسجيل — نموذج حقيقي، تحقق آمن، ورسائل عربية لا تكشف شيئا */
-export default function AuthGate({ onDone, message }: { onDone: () => void; message?: string }) {
-  const [mode, setMode] = useState<"login" | "signup">("login");
+/** بوابة الدخول والتسجيل — نموذج حقيقي، تحقق آمن، ورسائل عربية لا تكشف شيئا.
+    initialMode: الوضع الابتدائي (بوابة النتيجة تبدأ بـ«حساب جديد»).
+    source: وسم تحليلات اختياري يميّز مصدر التسجيل (مثل result_gate). */
+export default function AuthGate({ onDone, message, initialMode = "login", source }: { onDone: () => void; message?: string; initialMode?: "login" | "signup"; source?: string }) {
+  const [mode, setMode] = useState<"login" | "signup">(initialMode);
   const [view, setView] = useState<View>("auth");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -107,7 +109,7 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
     }
     setBusy(true);
     setErr("");
-    track("account_started", { mode });
+    track("account_started", { mode, ...(source ? { source } : {}) });
     try {
       const result =
         mode === "signup" ? await signUp(name, email, pass) : await signIn(email, pass);
@@ -117,7 +119,7 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
         return;
       }
       if (mode === "signup") {
-        track("account_created");
+        track("account_created", source ? { source } : {});
         setView("verify");
         setResent(false);
       } else {
@@ -178,9 +180,9 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
   if (view === "verify") {
     return (
       <div className="mx-auto max-w-md">
-        <div className="overflow-hidden rounded-3xl border border-teal/25 bg-gradient-to-b from-surface to-ground px-8 py-10 text-center shadow-[0_24px_80px_-24px_rgba(56,167,180,0.35)]">
-          <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-teal/15">
-            <Mail className="h-7 w-7 text-teal-light-ink" />
+        <div className="overflow-hidden rounded-3xl border border-[#38A7B4]/25 bg-gradient-to-b from-panel to-paper px-8 py-10 text-center shadow-[0_24px_80px_-24px_rgba(56,167,180,0.35)]">
+          <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[#38A7B4]/15">
+            <Mail className="h-7 w-7 text-[#6EC7D1]" />
           </span>
           <h2 className="mt-5 text-2xl font-black text-white">تم إنشاء حسابك — بقي تأكيد بريدك</h2>
           <p className="mt-3 text-sm leading-relaxed text-white/55">
@@ -217,7 +219,7 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
   if (view === "reset") {
     return (
       <div className="mx-auto max-w-md">
-        <div className="overflow-hidden rounded-3xl border border-teal/25 bg-gradient-to-b from-surface to-ground shadow-[0_24px_80px_-24px_rgba(56,167,180,0.35)]">
+        <div className="overflow-hidden rounded-3xl border border-[#38A7B4]/25 bg-gradient-to-b from-panel to-paper shadow-[0_24px_80px_-24px_rgba(56,167,180,0.35)]">
           <div className="border-b border-white/5 px-8 pb-6 pt-8 text-center">
             <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="mx-auto h-12 w-12 object-contain" />
             <h2 className="mt-4 text-2xl font-black text-white">استعادة كلمة المرور</h2>
@@ -276,7 +278,7 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
   if (view === "resetConfirm") {
     return (
       <div className="mx-auto max-w-md">
-        <div className="overflow-hidden rounded-3xl border border-teal/25 bg-gradient-to-b from-surface to-ground shadow-[0_24px_80px_-24px_rgba(56,167,180,0.35)]">
+        <div className="overflow-hidden rounded-3xl border border-[#38A7B4]/25 bg-gradient-to-b from-panel to-paper shadow-[0_24px_80px_-24px_rgba(56,167,180,0.35)]">
           <div className="border-b border-white/5 px-8 pb-6 pt-8 text-center">
             <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="mx-auto h-12 w-12 object-contain" />
             <h2 className="mt-4 text-2xl font-black text-white">تعيين كلمة مرور جديدة</h2>
@@ -374,7 +376,7 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
   /* ── الشاشة الرئيسية: دخول / حساب جديد ── */
   return (
     <div className="mx-auto max-w-md">
-      <div className="overflow-hidden rounded-3xl border border-teal/25 bg-gradient-to-b from-surface to-ground shadow-[0_24px_80px_-24px_rgba(56,167,180,0.35)]">
+      <div className="overflow-hidden rounded-3xl border border-[#38A7B4]/25 bg-gradient-to-b from-panel to-paper shadow-[0_24px_80px_-24px_rgba(56,167,180,0.35)]">
         <div className="border-b border-white/5 px-8 pb-6 pt-8 text-center">
           <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="mx-auto h-12 w-12 object-contain" />
           <h1 className="mt-4 text-2xl font-black text-white">

@@ -2,6 +2,7 @@
 
 import Fastify from 'fastify'
 import cookie from '@fastify/cookie'
+import helmet from '@fastify/helmet'
 import swagger from '@fastify/swagger'
 import swaggerUi from '@fastify/swagger-ui'
 import cors from '@fastify/cors'
@@ -40,6 +41,24 @@ export async function buildApp(prisma: PrismaClient) {
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   })
   await app.register(cookie)
+  /* ترويسات أمان على كل استجابة (API + /docs) — تعمل في الدالة السحابية أيضا:
+     CSP وnosniff وframeguard وReferrer-Policy وHSTS. الاستثناء الوحيد المقصود:
+     unsafe-inline في script/style داخل CSP لأن توثيق Swagger UI يعتمد عليهما —
+     وهو صفحة توثيق داخلية، ولا يمتد أثره إلى الواجهة (ترويساتها في vercel.json) */
+  await app.register(helmet, {
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", 'data:'],
+        objectSrc: ["'none'"],
+        frameAncestors: ["'self'"],
+        baseUri: ["'self'"],
+        formAction: ["'self'"],
+      },
+    },
+  })
   /* تحديد معدل الطلبات — سقف عام لكل IP (يُسترخى في بيئة الاختبار الآلية فقط)،
      وتُشدَّد نقاط الهوية في مساراتها (10/5د للدخول والتسجيل، 5/15د للاستعادة) */
   const isTestEnv = process.env.NODE_ENV === 'test' || process.env.VITEST === 'true'
