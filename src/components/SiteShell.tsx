@@ -2,6 +2,7 @@ import { Link } from 'react-router'
 import { ArrowRight } from 'lucide-react'
 import { CONTACT } from '@/data/stories'
 import { ECOSYSTEM_NOTE } from '@/data/siteContent'
+import ThemeToggle from '@/components/ThemeToggle'
 
 /* قالب الصفحات العامة الداخلية: ترويسة عودة + محتوى + تذييل موحد */
 export default function SiteShell({ children }: { children: React.ReactNode }) {
@@ -20,9 +21,12 @@ export default function SiteShell({ children }: { children: React.ReactNode }) {
             <Link to="/trainers" className="transition hover:text-[#6EC7D1]">المدربون</Link>
             <Link to="/contact" className="transition hover:text-[#6EC7D1]">تواصل</Link>
           </nav>
-          <Link to="/diagnostic" className="rounded-xl bg-[#247B84] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#1E666E]">
-            ابدأ التشخيص
-          </Link>
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <Link to="/diagnostic" className="rounded-xl bg-[#247B84] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#1E666E]">
+              ابدأ التشخيص
+            </Link>
+          </div>
         </div>
       </header>
       <div className="mx-auto max-w-6xl px-5 py-12 md:py-16">{children}</div>

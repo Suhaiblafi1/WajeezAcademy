@@ -25,6 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import AuthGate from "@/components/AuthGate";
+import ThemeToggle from "@/components/ThemeToggle";
 import AdvisorContact from "@/components/AdvisorContact";
 import CourseJourney from "@/components/CourseJourney";
 import Modal from "@/components/Modal";
@@ -289,11 +290,14 @@ export default function PathwayPage() {
             <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 object-contain" />
             <span className="font-black">أكاديمية وجيز</span>
           </div>
-          {user && (
-            <span className="flex items-center gap-1.5 text-xs text-white/50">
-              <User className="h-4 w-4" /> {user}
-            </span>
-          )}
+          <div className="flex items-center gap-3">
+            {user && (
+              <span className="flex items-center gap-1.5 text-xs text-white/50">
+                <User className="h-4 w-4" /> {user}
+              </span>
+            )}
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 

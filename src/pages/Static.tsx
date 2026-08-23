@@ -3,6 +3,7 @@ import { ArrowRight, CheckCircle2, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { staticPageBySlug, faqs } from "@/data/siteContent";
 import SeoHead from "@/components/SeoHead";
+import ThemeToggle from "@/components/ThemeToggle";
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
@@ -13,9 +14,12 @@ function Shell({ children }: { children: React.ReactNode }) {
             <ArrowRight className="h-5 w-5" />
             <span className="text-sm font-medium">الرئيسية</span>
           </Link>
-          <div className="flex items-center gap-2">
-            <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 object-contain" />
-            <span className="font-black">أكاديمية وجيز</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 object-contain" />
+              <span className="font-black">أكاديمية وجيز</span>
+            </div>
+            <ThemeToggle />
           </div>
         </div>
       </header>
