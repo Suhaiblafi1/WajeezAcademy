@@ -93,8 +93,32 @@ html[data-theme="light"] ::-webkit-scrollbar-thumb { background: rgba(22, 33, 31
 /* ── فجوات كانت تبقى داكنة على الفاتح (هيدر / فوتر / دوائر الأرقام) ── */
 html[data-theme="light"] .bg-\[\#0D0D0D\]\/80 { background-color: rgba(246, 244, 239, 0.8); }
 html[data-theme="light"] .bg-\[\#0D0D0D\]\/85 { background-color: rgba(246, 244, 239, 0.85); }
+html[data-theme="light"] .bg-\[\#0D0D0D\]\/60 { background-color: rgba(246, 244, 239, 0.6); }
 html[data-theme="light"] .bg-\[\#0A0A0A\] { background-color: #EDEAE1; }
 html[data-theme="light"] .bg-\[\#12343B\] { background-color: #DCECEE; }
+html[data-theme="light"] .bg-\[\#0E2225\]\/95 { background-color: rgba(228, 240, 242, 0.97); }
+html[data-theme="light"] .bg-\[\#101012\]\/95 { background-color: rgba(255, 255, 255, 0.97); }
+html[data-theme="light"] .bg-\[\#161513\]\/95 { background-color: rgba(246, 241, 226, 0.96); }
+html[data-theme="light"] .bg-\[\#241E0E\]\/95 { background-color: rgba(250, 244, 222, 0.96); }
+
+/* ── توقفات التدرجات الداكنة ← فاتحة (نفس آلية متغيرات Tailwind) ── */
+html[data-theme="light"] .from-\[\#0D0D0D\] { --tw-gradient-from: #F6F4EF var(--tw-gradient-from-position); --tw-gradient-to: rgb(246 244 239 / 0) var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+html[data-theme="light"] .from-\[\#101415\] { --tw-gradient-from: #FFFFFF var(--tw-gradient-from-position); --tw-gradient-to: rgb(255 255 255 / 0) var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+html[data-theme="light"] .from-\[\#1A1A1A\] { --tw-gradient-from: #FFFFFF var(--tw-gradient-from-position); --tw-gradient-to: rgb(255 255 255 / 0) var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+html[data-theme="light"] .from-\[\#12262A\] { --tw-gradient-from: #E4F0F2 var(--tw-gradient-from-position); --tw-gradient-to: rgb(228 240 242 / 0) var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+html[data-theme="light"] .from-\[\#12343B\] { --tw-gradient-from: #DCECEE var(--tw-gradient-from-position); --tw-gradient-to: rgb(220 236 238 / 0) var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+html[data-theme="light"] .from-\[\#12343B\]\/50 { --tw-gradient-from: rgb(220 236 238 / 0.5) var(--tw-gradient-from-position); --tw-gradient-to: rgb(220 236 238 / 0) var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+html[data-theme="light"] .from-\[\#12343B\]\/60 { --tw-gradient-from: rgb(220 236 238 / 0.6) var(--tw-gradient-from-position); --tw-gradient-to: rgb(220 236 238 / 0) var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+html[data-theme="light"] .from-\[\#12343B\]\/80 { --tw-gradient-from: rgb(220 236 238 / 0.8) var(--tw-gradient-from-position); --tw-gradient-to: rgb(220 236 238 / 0) var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+html[data-theme="light"] .from-\[\#123B40\] { --tw-gradient-from: #DCECEE var(--tw-gradient-from-position); --tw-gradient-to: rgb(220 236 238 / 0) var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+html[data-theme="light"] .from-\[\#123B40\]\/60 { --tw-gradient-from: rgb(220 236 238 / 0.6) var(--tw-gradient-from-position); --tw-gradient-to: rgb(220 236 238 / 0) var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+html[data-theme="light"] .from-\[\#2A2108\]\/40 { --tw-gradient-from: rgb(250 188 5 / 0.1) var(--tw-gradient-from-position); --tw-gradient-to: rgb(250 188 5 / 0) var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+html[data-theme="light"] .via-\[\#0D0D0D\] { --tw-gradient-to: rgb(246 244 239 / 0) var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), #F6F4EF var(--tw-gradient-via-position), var(--tw-gradient-to); }
+html[data-theme="light"] .via-\[\#0D0D0D\]\/55 { --tw-gradient-to: rgb(246 244 239 / 0) var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), rgb(246 244 239 / 0.55) var(--tw-gradient-via-position), var(--tw-gradient-to); }
+html[data-theme="light"] .via-\[\#101415\]\/40 { --tw-gradient-to: rgb(255 255 255 / 0) var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), rgb(255 255 255 / 0.4) var(--tw-gradient-via-position), var(--tw-gradient-to); }
+html[data-theme="light"] .to-\[\#0D0D0D\] { --tw-gradient-to: #F6F4EF var(--tw-gradient-to-position); }
+html[data-theme="light"] .to-\[\#0D0D0D\]\/25 { --tw-gradient-to: rgb(246 244 239 / 0.25) var(--tw-gradient-to-position); }
+html[data-theme="light"] .to-\[\#1A2E31\] { --tw-gradient-to: #E9F1F2 var(--tw-gradient-to-position); }
 
 /* ── المرافق المسماة (نفس معالجة الأصناف الحرفية أعلاه) ── */
 html[data-theme="light"] .text-teal-light { color: #1F6E77; }      /* تركوازي فاتح ← أعمق للتباين */
