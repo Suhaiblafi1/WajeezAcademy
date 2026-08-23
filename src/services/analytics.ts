@@ -40,6 +40,9 @@ export type AnalyticsEvent =
   | 'deepening_started'
   | 'deepening_completed'
   | 'composite_adopted'
+  /* شبكة تقييم الجوانب — تُقاس لأننا نحتاج أن نعرف كم يملؤها وكم يتخطاها */
+  | 'skills_rated'
+  | 'skills_skipped'
 
 /** سمات وصفية غير شخصية فقط: أرقام أسئلة، مجالات، أنواع شراء — لا نصوص حرة */
 type Meta = Record<string, string | number | boolean>

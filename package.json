@@ -59,6 +59,7 @@
     "audit:recommendation-universe": "tsx scripts/v2_1/audit-universe.ts",
     "audit:question-waste": "tsx scripts/v2_1/audit-question-waste.ts",
     "audit:confirmation-value": "tsx scripts/v2_1/audit-confirmation-value.ts",
+    "audit:plan-diversity": "tsx scripts/v2_1/audit-plan-diversity.ts",
     "ci:question-waste": "tsx scripts/v2_1/audit-question-waste.ts --check",
     "simulate:v2_1-reachability": "tsx scripts/v2_1/golden-suite.ts --montecarlo",
     "report:v2_1-docs": "tsx scripts/v2_1/report-docs.ts"

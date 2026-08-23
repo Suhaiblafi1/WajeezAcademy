@@ -150,6 +150,18 @@ export class AssessmentSession {
   }
 
   /** التوصية النهائية + حفظ النتيجة بالمفاتيح التي تقرأها الصفحات */
+  /** العائلات التي يستحق أن يُسأل عنها هذا المتعلم — فارغة على المحركات الأقدم */
+  familiesToRate(): { family: string; label_ar: string; skills: string[]; courseCount: number }[] {
+    const e = this.engine as { familiesToRate?: () => { family: string; label_ar: string; skills: string[]; courseCount: number }[] }
+    return e.familiesToRate ? e.familiesToRate() : []
+  }
+
+  /** تقييم المتعلم لعائلاته — يُمرَّر للمحرك قبل الحساب النهائي */
+  setFamilyRatings(ratings: Record<string, number>): void {
+    const e = this.engine as { setFamilyRatings?: (r: Record<string, number>) => void }
+    e.setFamilyRatings?.(ratings)
+  }
+
   finish(): { result: DiagResult; recommendation: Recommendation } {
     const recommendation = this.engine.recommend()
     const state = this.engine.getState()

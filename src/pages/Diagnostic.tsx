@@ -36,6 +36,8 @@ import ResultGate from "@/components/ResultGate";
 import ResultFeedback from "@/components/ResultFeedback";
 import CourseJourney, { type CourseSuggestion } from "@/components/CourseJourney";
 import { ResultErrorBoundary } from "@/components/ResultErrorBoundary";
+import SkillFamilyGrid, { type FamilyToRate } from "@/components/SkillFamilyGrid";
+import ComposedPlanCard, { type ComposedPathView } from "@/components/ComposedPlanCard";
 import {
   type DiagQuestion,
   type DiagOption,
@@ -59,7 +61,7 @@ import AdvisorContact from "@/components/AdvisorContact";
 import { pathways, type Pathway } from "@/data/pathways";
 
 type DiagAnswers = Record<string, string>;
-type Stage = "intro" | "questions" | "computing" | "result";
+type Stage = "intro" | "questions" | "skills" | "computing" | "result";
 
 const resolve = <T,>(v: T | ((a: DiagAnswers) => T) | undefined, a: DiagAnswers): T | undefined =>
   typeof v === "function" ? (v as (a: DiagAnswers) => T)(a) : v;
@@ -401,6 +403,7 @@ export default function Diagnostic() {
   const [canDeepen, setCanDeepen] = useState(false);
   /* نُقرع الزر ولا جولة نافعة (أقل من 4 أسئلة) — رسالة بدل الصمت */
   const [deepUnavailable, setDeepUnavailable] = useState(false);
+  const [families, setFamilies] = useState<FamilyToRate[]>([]);
 
   /* تحذير قبل مغادرة تشخيص غير محفوظ — التقدم محفوظ تلقائيا لكن نطمئنه */
   const stageRef = useRef(stage);
@@ -488,9 +491,18 @@ export default function Diagnostic() {
     if (!step.question) {
       if (inDeepeningRef.current) {
         finishDeepeningRound();
-      } else {
-        finish();
+        return;
       }
+      /* قبل النتيجة: شبكة تقييم الجوانب — شاشة واحدة اختيارية.
+         تُعرض فقط إن كان للمحرك ما يسأل عنه؛ وإلا نمضي كما كنا. */
+      const toRate = session?.familiesToRate() ?? [];
+      if (toRate.length > 0) {
+        setFamilies(toRate);
+        setStage("skills");
+        window.scrollTo(0, 0);
+        return;
+      }
+      finish();
       return;
     }
     setQuestion(step.question);
@@ -577,6 +589,16 @@ export default function Diagnostic() {
     setAuthed(true);
     setJustRevealed(true);
     if (result) attachToAccount(result);
+  };
+
+  const submitFamilyRatings = (ratings: Record<string, number>) => {
+    sessionRef.current?.setFamilyRatings(ratings);
+    track("skills_rated", { families: Object.keys(ratings).length });
+    finish();
+  };
+  const skipFamilyRatings = () => {
+    track("skills_skipped");
+    finish();
   };
 
   const finish = () => {
@@ -1148,6 +1170,13 @@ export default function Diagnostic() {
         </section>
       )}
 
+      {/* ─── تقييم الجوانب — شاشة واحدة اختيارية قبل النتيجة ─── */}
+      {stage === "skills" && (
+        <section className="px-5 pb-24 pt-10 md:pt-14">
+          <SkillFamilyGrid families={families} onDone={submitFamilyRatings} onSkip={skipFamilyRatings} />
+        </section>
+      )}
+
       {/* ─── Result ─── */}
       {stage === "result" && result && (
         <ResultErrorBoundary onReset={restart}>
@@ -1511,6 +1540,12 @@ export default function Diagnostic() {
               </button>
             </div>
             );
+          })()}
+
+          {/* الخطة المركّبة — تظهر فقط لمن قيّم جوانبه، وإلا لا شيء يتغيّر */}
+          {(() => {
+            const cp = result.resultJson.composed_path as ComposedPathView | null | undefined;
+            return cp && cp.courses?.length ? <ComposedPlanCard plan={cp} /> : null;
           })()}
 
           {/* «مع المسار لا تأخذ دورات فقط — تأخذ منظومة كاملة» — إثبات قيمة مضغوط قبل الاعتماد،

@@ -37,6 +37,8 @@ const ALLOWED_EVENTS = new Set([
   'deepening_started',
   'deepening_completed',
   'composite_adopted',
+  'skills_rated',
+  'skills_skipped',
 ])
 
 /* المفاتيح وanonId: رموز لاتينية قصيرة — قيم meta: رموز مصنفة بلا مسافات

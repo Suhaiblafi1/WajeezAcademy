@@ -119,6 +119,9 @@ export function recommendationToDiagResult(
     resultJson: {
       kind: rec.kind,
       pathway_id: rec.primaryPathway?.pathwayId ?? null,
+      /* الخطة المركّبة من المقررات — تظهر متى قيّم المتعلم جوانبه، وإلا undefined
+         فتعرض الواجهة ما كانت تعرضه قبل هذه الطبقة بلا نقص. */
+      composed_path: (rec as { composedPath?: unknown }).composedPath ?? null,
       /** مكونات ملاءمة المسار الأول الخمسة — شفافية التوصية */
       primary_fit: rec.primaryPathway
         ? {

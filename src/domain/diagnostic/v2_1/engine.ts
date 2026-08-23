@@ -36,6 +36,8 @@ import type {
 import { computeConfidenceV2 } from '../v2/confidence'
 import { DOMAIN_CONFIDENCE_MIN } from '../v2/domains'
 import { personalizePlan, assessPathwayByCourses, courseLevelOf, normalizedDomains, type PersonalPlan, type PathwayCourseFit } from './course-fit'
+import { composePath, type ComposedPath } from './compose-path'
+import { familiesForCourses, familyIndex as familyIndexRef } from './skill-families'
 import { catalogCourses } from '../catalog'
 import { buildExplanation } from '../v2/explain'
 import { buildAdvisorHandoff } from '../v2/handoff'
@@ -490,6 +492,9 @@ export type RecommendationV21 = Recommendation & {
   personalPlan?: PersonalPlan
   /** المسار كما صُمم — يُعرض خيارا ثانيا حين شخصنّا الخطة الأولى */
   originalPlan?: PathwayCourseFit
+  /** خطة مركّبة من المقررات حسب فجوات المهارات — تظهر متى قيّم المتعلم عائلاته.
+      من تخطّى الشبكة لا يفقد شيئا: تبقى التوصية كما كانت قبلها. */
+  composedPath?: ComposedPath
   /** بديل واحد متباين مع سبب تباينه — لا قائمة مرتّبة بلا معنى */
   alternativeContrast_ar?: string
   v2?: {
@@ -559,6 +564,32 @@ export class DiagnosticEngineV21 {
 
   getState(): DiagnosticState {
     return this.state
+  }
+
+  /** تقييم المتعلم لعائلات مهاراته (1..5) — العائلة غير المقيَّمة تبقى مجهولة */
+  private familyRatings: Record<string, number> = {}
+
+  setFamilyRatings(ratings: Record<string, number>): void {
+    this.familyRatings = { ...ratings }
+  }
+
+  getFamilyRatings(): Record<string, number> {
+    return { ...this.familyRatings }
+  }
+
+  /** العائلات التي تستحق أن يُسأل عنها هذا المتعلم — مقررات مرشحيه الأوائل وحدهم،
+      لا العائلات الأربع والعشرون. بلا مرشحين بعد تعود فارغة. */
+  familiesToRate(): { family: string; label_ar: string; skills: string[]; courseCount: number }[] {
+    const ctx = this.decisionContext()
+    const { candidates } = this.eligibilityAndCandidates(ctx)
+    const top = candidates.slice(0, 2).map((c) => c.pathwayId)
+    if (top.length === 0) return []
+    const courseIds = catalogCourses.filter((c) => top.includes(c.pathway_id)).map((c) => c.course_id)
+    const idx = familyIndexRef()
+    return familiesForCourses(courseIds).map((f) => ({
+      ...f,
+      label_ar: idx.labelOf.get(f.family) ?? f.family,
+    }))
   }
 
   seedFacts(facts: DiagnosticState['facts'], sourceLabel_ar: string) {
@@ -1493,6 +1524,10 @@ export class DiagnosticEngineV21 {
     })
 
     const personalPlan = primary ? personalizePlan(primary.entity.entity_id, ctx) : undefined
+    /* الخطة المركّبة تظهر متى قيّم المتعلم عائلة واحدة فأكثر — وإلا فلا شيء
+       يتغيّر عمّا كان قبل هذه الطبقة. */
+    const composedPath =
+      Object.keys(this.familyRatings).length > 0 ? composePath(ctx, this.familyRatings) : undefined
     /* شخصنّا الخطة ولا بديل خارجي: البديل هو المسار كما صُمم — خيارٌ ثانٍ حقيقي
        لمن يفضّل تماسك المسار الأصلي وشهادته على خطةٍ فُصّلت له. */
     let originalPlan: PathwayCourseFit | undefined
@@ -1507,6 +1542,7 @@ export class DiagnosticEngineV21 {
       alternatives: alternatives.map((c) => toLegacyCandidate(toV2Candidate(c))),
       personalPlan,
       originalPlan,
+      composedPath,
       alternativeContrast_ar,
       composite,
       confidence: toLegacyConfidence(confidence),
