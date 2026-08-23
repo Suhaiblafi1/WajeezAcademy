@@ -93,7 +93,7 @@ function MultiPick({ id, label, options, selected, onChange }: {
       </button>
       {open && (
         <div role="listbox" aria-labelledby={id} aria-multiselectable="true"
-          className="absolute z-20 mt-1.5 max-h-56 w-full overflow-y-auto rounded-xl border border-white/15 bg-[#121B1D] p-1.5 shadow-xl shadow-black/40">
+          className="absolute z-20 mt-1.5 max-h-56 w-full overflow-y-auto rounded-xl border border-white/15 bg-surface p-1.5 shadow-xl shadow-black/40">
           {options.map((o) => {
             const checked = selected.includes(o);
             return (
@@ -354,7 +354,7 @@ export default function JoinTrainer() {
             <div className="flex gap-2">
               <div className="w-24 shrink-0">
                 <label htmlFor="jt-cc" className="mb-1.5 block text-xs font-bold text-white/60">الرمز</label>
-                <select id="jt-cc" value={form.phoneCountryCode} onChange={set("phoneCountryCode")} className={`${inputCls} [&>option]:bg-[#121B1D]`} dir="ltr">
+                <select id="jt-cc" value={form.phoneCountryCode} onChange={set("phoneCountryCode")} className={`${inputCls} [&>option]:bg-surface`} dir="ltr">
                   {COUNTRY_CODES.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
@@ -365,7 +365,7 @@ export default function JoinTrainer() {
             </div>
             <div>
               <label htmlFor="jt-country" className="mb-1.5 block text-xs font-bold text-white/60">دولة الإقامة</label>
-              <select id="jt-country" value={form.country} onChange={set("country")} className={`${inputCls} [&>option]:bg-[#121B1D]`}>
+              <select id="jt-country" value={form.country} onChange={set("country")} className={`${inputCls} [&>option]:bg-surface`}>
                 <option value="" disabled>اختر دولتك</option>
                 {ARAB_COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
                 <option value="أخرى">أخرى</option>
@@ -373,7 +373,7 @@ export default function JoinTrainer() {
             </div>
             <div>
               <label htmlFor="jt-employment" className="mb-1.5 block text-xs font-bold text-white/60">حالتك المهنية الحالية *</label>
-              <select id="jt-employment" required value={form.employmentStatus} onChange={set("employmentStatus")} className={`${inputCls} [&>option]:bg-[#121B1D]`}>
+              <select id="jt-employment" required value={form.employmentStatus} onChange={set("employmentStatus")} className={`${inputCls} [&>option]:bg-surface`}>
                 <option value="" disabled>اختر الأقرب لواقعك</option>
                 {EMPLOYMENT_STATUS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
               </select>
@@ -406,14 +406,14 @@ export default function JoinTrainer() {
           <div className="grid gap-5 border-t border-white/5 pt-7 sm:grid-cols-2">
             <div>
               <label htmlFor="jt-years" className="mb-1.5 block text-xs font-bold text-white/60">سنوات الخبرة المهنية في المجال *</label>
-              <select id="jt-years" required value={form.domainYears} onChange={set("domainYears")} className={`${inputCls} [&>option]:bg-[#121B1D]`}>
+              <select id="jt-years" required value={form.domainYears} onChange={set("domainYears")} className={`${inputCls} [&>option]:bg-surface`}>
                 <option value="" disabled>اختر نطاق الخبرة</option>
                 {DOMAIN_YEARS.map((y) => <option key={y.value} value={y.value}>{y.label}</option>)}
               </select>
             </div>
             <div>
               <label htmlFor="jt-training" className="mb-1.5 block text-xs font-bold text-white/60">سنوات/نوع خبرة التدريب تحديدا *</label>
-              <select id="jt-training" required value={form.trainingYears} onChange={set("trainingYears")} className={`${inputCls} [&>option]:bg-[#121B1D]`}>
+              <select id="jt-training" required value={form.trainingYears} onChange={set("trainingYears")} className={`${inputCls} [&>option]:bg-surface`}>
                 <option value="" disabled>اختر الأقرب لواقعك</option>
                 {TRAINING_YEARS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
@@ -493,7 +493,7 @@ export default function JoinTrainer() {
             </fieldset>
             <div>
               <label htmlFor="jt-mode" className="mb-1.5 block text-xs font-bold text-white/60">نمط التدريب *</label>
-              <select id="jt-mode" required value={form.deliveryMode} onChange={set("deliveryMode")} className={`${inputCls} [&>option]:bg-[#121B1D]`}>
+              <select id="jt-mode" required value={form.deliveryMode} onChange={set("deliveryMode")} className={`${inputCls} [&>option]:bg-surface`}>
                 <option value="" disabled>اختر</option>
                 <option value="remote">عن بعد</option>
                 <option value="in_person">حضوري</option>

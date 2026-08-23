@@ -104,7 +104,7 @@ export default function Exceptions() {
               <div className="flex flex-wrap items-center gap-2">
                 {advisors.length > 0 ? (
                   <select value={pick[c.id] ?? ""} onChange={(e) => setPick({ ...pick, [c.id]: e.target.value })}
-                    className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white [&>option]:bg-[#121B1D]">
+                    className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white [&>option]:bg-surface">
                     <option value="">اختر مستشارا…</option>
                     {advisors.map((a) => <option key={a.id} value={a.id}>{a.displayName} ({a.email})</option>)}
                   </select>

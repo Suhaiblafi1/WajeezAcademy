@@ -242,7 +242,7 @@ export default function Contact() {
               <div className="mt-4">
                 <label htmlFor="ct-topic" className={LABEL}>نوع الطلب</label>
                 <select id="ct-topic" name="topic" value={topic} onChange={(e) => setTopic(e.target.value)}
-                  className={`${FIELD} cursor-pointer [&>option]:bg-[#121B1D]`}>
+                  className={`${FIELD} cursor-pointer [&>option]:bg-surface`}>
                   {TOPICS.map((t) => <option key={t} value={t}>{t}</option>)}
                 </select>
               </div>

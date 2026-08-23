@@ -83,7 +83,7 @@ export default function CourseJourney({
                 <span className={`z-10 grid h-8 w-8 shrink-0 place-items-center rounded-full border text-xs font-black ${
                   isGift
                     ? "border-[#FABC05]/60 bg-[#FABC05] text-[#0D0D0D]"
-                    : "border-[#38A7B4]/50 bg-[#0D0D0D] text-[#6EC7D1]"
+                    : "border-[#38A7B4]/50 bg-paper text-[#6EC7D1]"
                 }`}>
                   {isGift ? <Gift className="h-3.5 w-3.5" /> : i + 1}
                 </span>

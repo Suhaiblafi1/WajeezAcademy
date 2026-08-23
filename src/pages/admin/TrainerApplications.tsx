@@ -354,7 +354,7 @@ export default function TrainerApplications() {
           <>
             <select
               value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="رشّح بالحالة"
-              className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white [&>option]:bg-[#121B1D]"
+              className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white [&>option]:bg-surface"
             >
               <option value="">كل الحالات</option>
               {Object.entries(STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}

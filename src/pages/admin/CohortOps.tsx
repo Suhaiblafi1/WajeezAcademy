@@ -9,7 +9,7 @@ import {
 import { apiGet, apiPatch, apiPost, ApiError } from "@/services/api";
 
 const inputCls = "w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none";
-const selectCls = `${inputCls} [&>option]:bg-[#121B1D]`;
+const selectCls = `${inputCls} [&>option]:bg-surface`;
 
 interface CohortLite {
   id: string; title: string; status: string; courseId: string; daysOfWeek: string[];

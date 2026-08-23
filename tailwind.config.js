@@ -48,6 +48,18 @@ module.exports = {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        /* رموز الأسطح السيميائية — تتبدل تلقائيا بين الليلي والنهاري
+           عبر متغيرات --c-* في src/index.css. ممنوع استخدام hex داكن
+           حرفي للأسطح المتكيفة مع الثيم؛ استخدم هذه الأسماء دائما. */
+        paper: "rgb(var(--c-paper) / <alpha-value>)",
+        surface: "rgb(var(--c-surface) / <alpha-value>)",
+        surface3: "rgb(var(--c-surface3) / <alpha-value>)",
+        panel: "rgb(var(--c-panel) / <alpha-value>)",
+        paneldeep: "rgb(var(--c-paneldeep) / <alpha-value>)",
+        panelto: "rgb(var(--c-panelto) / <alpha-value>)",
+        warm: "rgb(var(--c-warm) / <alpha-value>)",
+        warm2: "rgb(var(--c-warm2) / <alpha-value>)",
+        warmglow: "rgb(var(--c-warmglow) / <alpha-value>)",
       },
       borderRadius: {
         xl: "calc(var(--radius) + 4px)",

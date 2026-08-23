@@ -76,7 +76,7 @@ export default function Project() {
     <PortalLayout title="مشروع التخرج">
       <SimulationNote what="حالة المشروع" />
       {/* حالة المشروع */}
-      <section className={`rounded-3xl border p-6 ${locked ? "border-white/10 bg-white/[0.02]" : "border-[#FABC05]/30 bg-gradient-to-b from-[#2A2108]/40 to-transparent"}`}>
+      <section className={`rounded-3xl border p-6 ${locked ? "border-white/10 bg-white/[0.02]" : "border-[#FABC05]/30 bg-gradient-to-b from-warmglow/40 to-transparent"}`}>
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <span className={`grid h-12 w-12 place-items-center rounded-2xl ${locked ? "bg-white/5 text-white/30" : "bg-[#FABC05]/15 text-[#FABC05]"}`}>

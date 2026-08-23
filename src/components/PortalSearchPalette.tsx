@@ -94,7 +94,7 @@ export default function PortalSearchPalette({ kind }: { kind: keyof typeof PALET
   let rowIndex = -1;
   return (
     <div className="fixed inset-0 z-[90] flex items-start justify-center bg-black/70 px-4 pt-24 backdrop-blur-sm" onClick={() => setOpen(false)}>
-      <div dir="rtl" className="w-full max-w-xl overflow-hidden rounded-3xl border border-white/15 bg-[#121B1D] shadow-2xl"
+      <div dir="rtl" className="w-full max-w-xl overflow-hidden rounded-3xl border border-white/15 bg-surface shadow-2xl"
         onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-3 border-b border-white/10 px-5 py-4">
           <Search className="h-4 w-4 shrink-0 text-[#6EC7D1]" />

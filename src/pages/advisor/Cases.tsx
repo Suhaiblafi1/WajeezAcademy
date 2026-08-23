@@ -353,7 +353,7 @@ function ContactForm({ onSubmit }: { onSubmit: (channel: string, summary: string
     <form onSubmit={(e) => { e.preventDefault(); if (summary.trim().length >= 3) { onSubmit(channel, summary.trim()); setSummary(""); } }}>
       <div className="flex gap-2">
         <select value={channel} onChange={(e) => setChannel(e.target.value)}
-          className="rounded-xl border border-white/15 bg-black/30 px-2 py-2 text-xs text-white [&>option]:bg-[#121B1D]">
+          className="rounded-xl border border-white/15 bg-black/30 px-2 py-2 text-xs text-white [&>option]:bg-surface">
           {Object.entries(CHANNEL_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
         <input value={summary} onChange={(e) => setSummary(e.target.value)} placeholder="ملخص التواصل…" className={INPUT} />
@@ -375,7 +375,7 @@ function FollowUpForm({ onSubmit }: { onSubmit: (scheduledAt: string, channel: s
       <div className="flex flex-wrap gap-2">
         <input type="datetime-local" required value={at} onChange={(e) => setAt(e.target.value)} className={INPUT} dir="ltr" />
         <select value={channel} onChange={(e) => setChannel(e.target.value)}
-          className="rounded-xl border border-white/15 bg-black/30 px-2 py-2 text-xs text-white [&>option]:bg-[#121B1D]">
+          className="rounded-xl border border-white/15 bg-black/30 px-2 py-2 text-xs text-white [&>option]:bg-surface">
           {Object.entries(CHANNEL_LABELS).filter(([k]) => k !== "in_app").map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
         <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="ملاحظة (اختياري)" className={INPUT} />

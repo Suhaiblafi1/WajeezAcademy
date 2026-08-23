@@ -252,7 +252,7 @@ export default function CohortView() {
       {/* نافذة كشف الحضور */}
       {roster && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-5 backdrop-blur-sm">
-          <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-white/10 bg-[#151515] p-6">
+          <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-white/10 bg-surface p-6">
             <div className="flex items-center justify-between">
               <h3 className="font-black">كشف حضور الجلسة</h3>
               <button onClick={() => setRoster(null)} className="cursor-pointer text-white/50 hover:text-white" aria-label="إغلاق"><X className="h-5 w-5" /></button>

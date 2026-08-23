@@ -316,7 +316,7 @@ export default function AdvisorDashboard() {
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             {unassigned.map((c) => (
-              <div key={c.id} className="flex items-center gap-2 rounded-full border border-[#FABC05]/30 bg-[#0D0D0D]/60 py-1.5 pr-4 pl-1.5 text-xs">
+              <div key={c.id} className="flex items-center gap-2 rounded-full border border-[#FABC05]/30 bg-paper/60 py-1.5 pr-4 pl-1.5 text-xs">
                 <span className="font-bold text-white/80">{c.studentName}</span>
                 <button
                   onClick={() => claimCase(c)}

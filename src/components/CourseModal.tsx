@@ -19,7 +19,7 @@ export default function CourseModal({
     <Modal onClose={onClose} label={`تفاصيل دورة ${course.name}`} panelClassName="w-full max-w-lg">
       <div
         dir="rtl"
-        className="story-fade max-h-[85vh] overflow-y-auto rounded-3xl border border-white/10 bg-[#121B1D] p-7"
+        className="story-fade max-h-[85vh] overflow-y-auto rounded-3xl border border-white/10 bg-surface p-7"
       >
         <div className="flex items-start justify-between gap-4">
           <div>

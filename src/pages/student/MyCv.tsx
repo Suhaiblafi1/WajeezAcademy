@@ -140,7 +140,7 @@ export default function MyCv() {
       {/* نافذة الحذف الموثق */}
       {delId && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-5 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#151515] p-6">
+          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-surface p-6">
             <div className="flex items-center justify-between">
               <h3 className="font-black">حذف السيرة — حذف منطقي بسبب موثق</h3>
               <button onClick={() => setDelId(null)} className="cursor-pointer text-white/50 hover:text-white" aria-label="إغلاق"><X className="h-5 w-5" /></button>
@@ -154,7 +154,7 @@ export default function MyCv() {
               value={delReason}
               onChange={(e) => setDelReason(e.target.value)}
               placeholder="مثال: رفعت نسخة أحدث وأريد إزالة القديمة"
-              className="mt-1.5 w-full resize-none rounded-xl border border-white/15 bg-[#0D0D0D] px-3 py-2.5 text-sm text-white focus:border-red-400 focus:outline-none"
+              className="mt-1.5 w-full resize-none rounded-xl border border-white/15 bg-paper px-3 py-2.5 text-sm text-white focus:border-red-400 focus:outline-none"
             />
             <button
               onClick={confirmDelete}

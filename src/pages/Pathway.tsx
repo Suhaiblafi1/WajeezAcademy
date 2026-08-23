@@ -107,7 +107,7 @@ function StripeCheckout({
   };
   return (
     <Modal onClose={onClose} label={`إتمام الدفع: ${title}`} panelClassName="w-full max-w-md">
-      <div className="story-fade rounded-3xl border border-white/10 bg-[#121B1D] p-7">
+      <div className="story-fade rounded-3xl border border-white/10 bg-surface p-7">
         <div className="flex items-center justify-between">
           <h3 className="flex items-center gap-2 text-lg font-black">
             <CreditCard className="h-5 w-5 text-[#6EC7D1]" />
@@ -131,7 +131,7 @@ function StripeCheckout({
               aria-label="عملة الدفع"
               value={cur.code}
               onChange={(e) => setCurrency(e.target.value as CurrencyCode)}
-              className="cursor-pointer rounded-lg border border-white/15 bg-transparent px-2 py-1.5 text-xs font-bold text-white/80 outline-none [&>option]:bg-[#121B1D]"
+              className="cursor-pointer rounded-lg border border-white/15 bg-transparent px-2 py-1.5 text-xs font-bold text-white/80 outline-none [&>option]:bg-surface"
             >
               {(Object.keys(CURRENCIES) as CurrencyCode[]).map((code) => (
                 <option key={code} value={code}>{CURRENCIES[code].label} ({CURRENCIES[code].symbol})</option>
@@ -254,7 +254,7 @@ export default function PathwayPage() {
 
   if (!pathway) {
     return (
-      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-[#0D0D0D] text-white">
+      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper text-white">
         <p className="text-xl font-bold">هذا المسار غير موجود</p>
         <Link to="/" className="mt-4 text-[#6EC7D1] underline">العودة للرئيسية</Link>
       </div>
@@ -273,14 +273,14 @@ export default function PathwayPage() {
   const totalWeeks = pathwayCoursesList.reduce((s, c) => s + c.weeks, 0);
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#0D0D0D] text-white">
+    <div dir="rtl" className="min-h-screen bg-paper text-white">
       <SeoHead
         title={pathway.name}
         description={`${pathway.transformation} — مسار ${pathway.level} من ${weeksLabel(pathway.durationWeeks)} في أكاديمية وجيز.`}
         path={`/pathways/${pathway.id}`}
       />
       {/* Top bar */}
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0D0D0D]/85 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-paper/85 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-5">
           <Link to="/" className="flex items-center gap-2 text-white/70 hover:text-white">
             <ArrowRight className="h-5 w-5" />
@@ -412,7 +412,7 @@ export default function PathwayPage() {
 
           {/* تقريره الشخصي — مطوي افتراضيا في تبويب صغير */}
           {report && (
-            <details className="story-fade group mt-6 rounded-2xl border border-[#38A7B4]/35 bg-gradient-to-b from-[#12343B]/60 to-transparent">
+            <details className="story-fade group mt-6 rounded-2xl border border-[#38A7B4]/35 bg-gradient-to-b from-panel/60 to-transparent">
               <summary className="flex cursor-pointer list-none items-center gap-2 px-5 py-3 text-sm font-black text-[#6EC7D1] [&::-webkit-details-marker]:hidden">
                 <FileText className="h-4 w-4" />
                 تقريرك الشخصي — ما فهمناه عنك

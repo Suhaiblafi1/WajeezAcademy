@@ -55,7 +55,7 @@ export default function ResultGate({ revealed, onDone, children }: ResultGatePro
         >
           <div className="mx-auto max-w-md px-4 pb-8 pt-10">
             {/* لافتة «ما ينتظرك» — العنوان والبنود الستة المعتمدة، تسبق النموذج الرسمي */}
-            <div className="relative overflow-hidden rounded-3xl border border-[#FABC05]/35 bg-[#101012]/95 p-5 shadow-[0_24px_70px_-18px_rgba(0,0,0,0.85)] ring-1 ring-white/5 backdrop-blur-xl">
+            <div className="relative overflow-hidden rounded-3xl border border-[#FABC05]/35 bg-surface/95 p-5 shadow-[0_24px_70px_-18px_rgba(0,0,0,0.85)] ring-1 ring-white/5 backdrop-blur-xl">
               {/* توهج علوي خفيف بلون العلامة — لمسة عمق بلا تشويش */}
               <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-[#FABC05]/[0.08] to-transparent" />
 

@@ -72,7 +72,7 @@ export default function Notifications() {
           <h3 className="flex items-center gap-2 text-sm font-black"><Bell className="h-4 w-4 text-[#FABC05]" /> قالب جديد أو تحديث — متغيرات {"{{key}}"}</h3>
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
             <input value={form.key} onChange={(e) => setForm({ ...form, key: e.target.value })} placeholder="المفتاح — enrollment.approved" dir="ltr" className={`${inputCls} font-mono`} />
-            <select value={form.channel} onChange={(e) => setForm({ ...form, channel: e.target.value })} className={`${inputCls} [&>option]:bg-[#121B1D]`}>
+            <select value={form.channel} onChange={(e) => setForm({ ...form, channel: e.target.value })} className={`${inputCls} [&>option]:bg-surface`}>
               {Object.entries(CHANNEL_AR).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
             <input value={form.titleAr} onChange={(e) => setForm({ ...form, titleAr: e.target.value })} placeholder="العنوان" className={`${inputCls} sm:col-span-2`} />
@@ -112,7 +112,7 @@ export default function Notifications() {
           <div className="flex items-center justify-between gap-2">
             <h3 className="flex items-center gap-2 text-sm font-black"><Send className="h-4 w-4 text-[#FABC05]" /> سجل الإرسال</h3>
             <select value={logFilter} onChange={(e) => setLogFilter(e.target.value)} aria-label="رشّح بالحالة"
-              className={`${inputCls} [&>option]:bg-[#121B1D]`}>
+              className={`${inputCls} [&>option]:bg-surface`}>
               <option value="">كل الحالات</option>
               {Object.entries(LOG_STATUS_AR).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>

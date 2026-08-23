@@ -271,7 +271,7 @@ function CompositePlan({ composite }: { composite: CompositeView }) {
     .map((id) => pathways.find((p) => p.id === id))
     .filter((p): p is Pathway => Boolean(p));
   return (
-    <div className="mt-10 overflow-hidden rounded-3xl border border-[#FABC05]/40 bg-gradient-to-b from-[#1A1A1A] to-[#0D0D0D]">
+    <div className="mt-10 overflow-hidden rounded-3xl border border-[#FABC05]/40 bg-gradient-to-b from-surface to-paper">
       <div className="border-b border-white/10 bg-[#FABC05]/10 px-6 py-3">
         <span className="text-sm font-black text-[#FABC05]">التوصية الأولى · {composite.label_ar}</span>
         <span className="mr-2 text-xs text-white/50">
@@ -722,14 +722,14 @@ export default function Diagnostic() {
   const qOptions: DiagOption[] = question ? (resolve(question.options, answers) ?? []) : [];
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#0D0D0D] text-white">
+    <div dir="rtl" className="min-h-screen bg-paper text-white">
       <SeoHead
         title="التشخيص الذكي"
         description="تشخيص تعليمي تكيفي يفهم هدفك وواقعك، ويوصي بمسار واحد مفسّر بدرجة ثقة — مجاني ودون حساب."
         path="/diagnostic"
       />
       {/* Top bar */}
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0D0D0D]/85 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-paper/85 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-5">
           <Link to="/" className="flex items-center gap-2 text-white/70 hover:text-white">
             <ArrowRight className="h-5 w-5" />
@@ -1358,7 +1358,7 @@ export default function Diagnostic() {
 
           {/* بطاقة التوصية الأولى للمسار القياسي — تظهر فقط عندما لا تفوز خطة مركبة */}
           {((result.resultJson.composite as CompositeView | null) ?? null) === null && (
-          <div className="mt-10 overflow-hidden rounded-3xl border border-[#38A7B4]/40 bg-gradient-to-b from-[#12343B] to-[#0D0D0D]">
+          <div className="mt-10 overflow-hidden rounded-3xl border border-[#38A7B4]/40 bg-gradient-to-b from-panel to-paper">
             <div className="border-b border-white/10 bg-[#38A7B4]/10 px-6 py-3 text-sm font-bold text-[#6EC7D1]">
               التوصية الأولى
             </div>

@@ -125,7 +125,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
             aria-label="ترتيب النتائج"
             value={sort}
             onChange={(e) => patch('sort', e.target.value)}
-            className="cursor-pointer bg-transparent text-sm font-semibold outline-none [&>option]:bg-[#121B1D]"
+            className="cursor-pointer bg-transparent text-sm font-semibold outline-none [&>option]:bg-surface"
           >
             <option value="featured">المختارة أولا</option>
             <option value="shortest">الأقصر زمنا</option>

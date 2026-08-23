@@ -252,7 +252,7 @@ export default function StudentCard() {
               {s.timeline.map((e, i) => (
                 <div key={i} className="relative flex gap-4 pb-5 pr-2">
                   {i < s.timeline.length - 1 && <span className="absolute right-[13px] top-6 h-full w-px bg-white/10" />}
-                  <span className="z-10 grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/10 bg-[#151515] text-sm">
+                  <span className="z-10 grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/10 bg-surface text-sm">
                     {KIND_ICON[e.kind] ?? "•"}
                   </span>
                   <div className="pt-1">
@@ -339,7 +339,7 @@ export default function StudentCard() {
                   value={naText ?? kase.nextAction ?? ""}
                   onChange={(e) => setNaText(e.target.value)}
                   placeholder="ما الخطوة القادمة مع هذا العميل؟"
-                  className="mt-1 w-full rounded-xl border border-white/15 bg-[#0D0D0D] px-3 py-2 text-xs text-white focus:border-[#FABC05] focus:outline-none"
+                  className="mt-1 w-full rounded-xl border border-white/15 bg-paper px-3 py-2 text-xs text-white focus:border-[#FABC05] focus:outline-none"
                 />
               </div>
               <div>
@@ -348,7 +348,7 @@ export default function StudentCard() {
                   type="datetime-local"
                   value={naWhen ?? kase.nextFollowUpAt ?? ""}
                   onChange={(e) => setNaWhen(e.target.value)}
-                  className="mt-1 block cursor-pointer rounded-xl border border-white/15 bg-[#0D0D0D] px-3 py-2 text-xs text-white [color-scheme:dark] focus:border-[#FABC05] focus:outline-none"
+                  className="mt-1 block cursor-pointer rounded-xl border border-white/15 bg-paper px-3 py-2 text-xs text-white [color-scheme:dark] focus:border-[#FABC05] focus:outline-none"
                 />
               </div>
               <button
@@ -398,14 +398,14 @@ export default function StudentCard() {
                   value={taskTitle}
                   onChange={(e) => setTaskTitle(e.target.value)}
                   placeholder="مهمة جديدة على الحالة…"
-                  className="w-full rounded-xl border border-white/15 bg-[#0D0D0D] px-3 py-2 text-xs text-white focus:border-[#FABC05] focus:outline-none"
+                  className="w-full rounded-xl border border-white/15 bg-paper px-3 py-2 text-xs text-white focus:border-[#FABC05] focus:outline-none"
                 />
                 <div className="flex gap-2">
                   <input
                     type="datetime-local"
                     value={taskDue}
                     onChange={(e) => setTaskDue(e.target.value)}
-                    className="min-w-0 flex-1 cursor-pointer rounded-xl border border-white/15 bg-[#0D0D0D] px-3 py-2 text-xs text-white [color-scheme:dark] focus:border-[#FABC05] focus:outline-none"
+                    className="min-w-0 flex-1 cursor-pointer rounded-xl border border-white/15 bg-paper px-3 py-2 text-xs text-white [color-scheme:dark] focus:border-[#FABC05] focus:outline-none"
                   />
                   <button
                     onClick={submitTask}
@@ -449,7 +449,7 @@ export default function StudentCard() {
                           value={fuOutcome}
                           onChange={(e) => setFuOutcome(e.target.value)}
                           placeholder="نتيجة المتابعة…"
-                          className="min-w-0 flex-1 rounded-xl border border-white/15 bg-[#0D0D0D] px-3 py-1.5 text-xs text-white focus:border-[#38A7B4] focus:outline-none"
+                          className="min-w-0 flex-1 rounded-xl border border-white/15 bg-paper px-3 py-1.5 text-xs text-white focus:border-[#38A7B4] focus:outline-none"
                         />
                         <button
                           onClick={() => submitFollowUpDone(f.id)}
@@ -469,12 +469,12 @@ export default function StudentCard() {
                     type="datetime-local"
                     value={fuWhen}
                     onChange={(e) => setFuWhen(e.target.value)}
-                    className="min-w-0 flex-1 cursor-pointer rounded-xl border border-white/15 bg-[#0D0D0D] px-3 py-2 text-xs text-white [color-scheme:dark] focus:border-[#38A7B4] focus:outline-none"
+                    className="min-w-0 flex-1 cursor-pointer rounded-xl border border-white/15 bg-paper px-3 py-2 text-xs text-white [color-scheme:dark] focus:border-[#38A7B4] focus:outline-none"
                   />
                   <select
                     value={fuChannel}
                     onChange={(e) => setFuChannel(e.target.value as ContactChannel)}
-                    className="cursor-pointer rounded-xl border border-white/15 bg-[#0D0D0D] px-2 py-2 text-xs text-white focus:border-[#38A7B4] focus:outline-none"
+                    className="cursor-pointer rounded-xl border border-white/15 bg-paper px-2 py-2 text-xs text-white focus:border-[#38A7B4] focus:outline-none"
                   >
                     {(Object.keys(CHANNEL_LABEL) as ContactChannel[]).filter((c) => c !== "in_app").map((c) => (
                       <option key={c} value={c}>{CHANNEL_LABEL[c]}</option>
@@ -485,7 +485,7 @@ export default function StudentCard() {
                   value={fuNote}
                   onChange={(e) => setFuNote(e.target.value)}
                   placeholder="ملاحظة الموعد (اختياري)…"
-                  className="w-full rounded-xl border border-white/15 bg-[#0D0D0D] px-3 py-2 text-xs text-white focus:border-[#38A7B4] focus:outline-none"
+                  className="w-full rounded-xl border border-white/15 bg-paper px-3 py-2 text-xs text-white focus:border-[#38A7B4] focus:outline-none"
                 />
                 <button
                   onClick={submitFollowUp}
@@ -528,7 +528,7 @@ export default function StudentCard() {
                     <select
                       value={ctChannel}
                       onChange={(e) => setCtChannel(e.target.value as ContactChannel)}
-                      className="flex-1 cursor-pointer rounded-xl border border-white/15 bg-[#0D0D0D] px-2 py-2 text-xs text-white focus:border-[#38A7B4] focus:outline-none"
+                      className="flex-1 cursor-pointer rounded-xl border border-white/15 bg-paper px-2 py-2 text-xs text-white focus:border-[#38A7B4] focus:outline-none"
                     >
                       {(Object.keys(CHANNEL_LABEL) as ContactChannel[]).map((c) => (
                         <option key={c} value={c}>{CHANNEL_LABEL[c]}</option>
@@ -537,7 +537,7 @@ export default function StudentCard() {
                     <select
                       value={ctDir}
                       onChange={(e) => setCtDir(e.target.value as "out" | "in")}
-                      className="cursor-pointer rounded-xl border border-white/15 bg-[#0D0D0D] px-2 py-2 text-xs text-white focus:border-[#38A7B4] focus:outline-none"
+                      className="cursor-pointer rounded-xl border border-white/15 bg-paper px-2 py-2 text-xs text-white focus:border-[#38A7B4] focus:outline-none"
                     >
                       <option value="out">صادر</option>
                       <option value="in">وارد</option>
@@ -547,7 +547,7 @@ export default function StudentCard() {
                     value={ctSummary}
                     onChange={(e) => setCtSummary(e.target.value)}
                     placeholder="ملخص التواصل…"
-                    className="w-full rounded-xl border border-white/15 bg-[#0D0D0D] px-3 py-2 text-xs text-white focus:border-[#38A7B4] focus:outline-none"
+                    className="w-full rounded-xl border border-white/15 bg-paper px-3 py-2 text-xs text-white focus:border-[#38A7B4] focus:outline-none"
                   />
                   <button
                     onClick={submitContact}
@@ -587,7 +587,7 @@ export default function StudentCard() {
                     value={noteBody}
                     onChange={(e) => setNoteBody(e.target.value)}
                     placeholder="ملاحظة داخلية جديدة…"
-                    className="min-w-0 flex-1 rounded-xl border border-white/15 bg-[#0D0D0D] px-3 py-2 text-xs text-white focus:border-[#FABC05] focus:outline-none"
+                    className="min-w-0 flex-1 rounded-xl border border-white/15 bg-paper px-3 py-2 text-xs text-white focus:border-[#FABC05] focus:outline-none"
                   />
                   <button
                     onClick={submitNote}
@@ -620,7 +620,7 @@ export default function StudentCard() {
       {/* نافذة سير الموافقة */}
       {workflow && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-5 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#151515] p-6">
+          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-surface p-6">
             <div className="flex items-center justify-between">
               <h3 className="font-black">طلب تغيير دورة — {s.name}</h3>
               <button onClick={() => setWorkflow(false)} className="cursor-pointer text-white/50 hover:text-white" aria-label="إغلاق"><X className="h-5 w-5" /></button>
@@ -632,7 +632,7 @@ export default function StudentCard() {
             <select
               value={swapCourse}
               onChange={(e) => setSwapCourse(e.target.value)}
-              className="mt-1.5 w-full cursor-pointer rounded-xl border border-white/15 bg-[#0D0D0D] px-3 py-2.5 text-sm text-white focus:border-[#FABC05] focus:outline-none"
+              className="mt-1.5 w-full cursor-pointer rounded-xl border border-white/15 bg-paper px-3 py-2.5 text-sm text-white focus:border-[#FABC05] focus:outline-none"
             >
               <option value="">— اختر من بدائل المسار —</option>
               {ids.map((cid) => {

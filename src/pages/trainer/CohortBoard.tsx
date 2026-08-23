@@ -126,7 +126,7 @@ export default function CohortBoard() {
     }, "أُرسلت التغذية الراجعة للمتعلم");
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#0D0D0D] text-white">
+    <div dir="rtl" className="min-h-screen bg-paper text-white">
       <header className="border-b border-white/8 px-5 py-4">
         <div className="mx-auto flex max-w-5xl items-center justify-between">
           <Link to="/" className="flex items-center gap-2 text-white/60 transition hover:text-white">

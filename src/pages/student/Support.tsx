@@ -63,7 +63,7 @@ export default function StudentSupport() {
           <div className="mt-4 space-y-3">
             <div className="grid gap-3 sm:grid-cols-2">
               <input value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} placeholder="الموضوع" className={inputCls} />
-              <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className={`${inputCls} [&>option]:bg-[#121B1D]`}>
+              <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className={`${inputCls} [&>option]:bg-surface`}>
                 <option value="billing">الفواتير والدفع</option>
                 <option value="learning">المحتوى والجلسات</option>
                 <option value="technical">مشكلة تقنية</option>

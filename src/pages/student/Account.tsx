@@ -288,7 +288,7 @@ export default function StudentAccount() {
             <input dir="ltr" type="tel" autoComplete="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="+962…" className={`${inputCls} text-left`} />
           </Field>
           <Field label="الدولة">
-            <select value={form.country} onChange={(e) => set("country", e.target.value)} className={`${inputCls} [&>option]:bg-[#121B1D]`}>
+            <select value={form.country} onChange={(e) => set("country", e.target.value)} className={`${inputCls} [&>option]:bg-surface`}>
               <option value="">اختر دولتك</option>
               {ARAB_COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
@@ -300,14 +300,14 @@ export default function StudentAccount() {
             <input type="date" dir="ltr" value={form.birthDate} onChange={(e) => set("birthDate", e.target.value)} className={`${inputCls} text-left`} />
           </Field>
           <Field label="الجنس" hint="اختياري تماما">
-            <select value={form.gender} onChange={(e) => set("gender", e.target.value as ProfileForm["gender"])} className={`${inputCls} [&>option]:bg-[#121B1D]`}>
+            <select value={form.gender} onChange={(e) => set("gender", e.target.value as ProfileForm["gender"])} className={`${inputCls} [&>option]:bg-surface`}>
               <option value="">أفضّل عدم الذكر</option>
               <option value="male">ذكر</option>
               <option value="female">أنثى</option>
             </select>
           </Field>
           <Field label="اللغة المفضلة للتعلم">
-            <select value={form.preferredLanguage} onChange={(e) => set("preferredLanguage", e.target.value)} className={`${inputCls} [&>option]:bg-[#121B1D]`}>
+            <select value={form.preferredLanguage} onChange={(e) => set("preferredLanguage", e.target.value)} className={`${inputCls} [&>option]:bg-surface`}>
               <option value="">اختر</option>
               {LANGUAGES.map((l) => <option key={l} value={l}>{l}</option>)}
             </select>
@@ -320,7 +320,7 @@ export default function StudentAccount() {
         <h2 className="flex items-center gap-2 text-base font-black"><BookOpen className="h-4 w-4 text-[#6EC7D1]" /> التعليم</h2>
         <div className="mt-5 grid gap-4 sm:grid-cols-3">
           <Field label="المؤهل العلمي">
-            <select value={form.education} onChange={(e) => set("education", e.target.value)} className={`${inputCls} [&>option]:bg-[#121B1D]`}>
+            <select value={form.education} onChange={(e) => set("education", e.target.value)} className={`${inputCls} [&>option]:bg-surface`}>
               <option value="">اختر</option>
               {EDUCATION_LEVELS.map((l) => <option key={l} value={l}>{l}</option>)}
             </select>
@@ -345,7 +345,7 @@ export default function StudentAccount() {
             <input value={form.company} onChange={(e) => set("company", e.target.value)} className={inputCls} />
           </Field>
           <Field label="سنوات الخبرة">
-            <select value={form.experienceYears} onChange={(e) => set("experienceYears", e.target.value)} className={`${inputCls} [&>option]:bg-[#121B1D]`}>
+            <select value={form.experienceYears} onChange={(e) => set("experienceYears", e.target.value)} className={`${inputCls} [&>option]:bg-surface`}>
               <option value="">اختر النطاق</option>
               {EXPERIENCE_RANGES.map((r) => <option key={r} value={r}>{r === "12+" ? "أكثر من ١٢ سنة" : `${r} سنوات`}</option>)}
             </select>

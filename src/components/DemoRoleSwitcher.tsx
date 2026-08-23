@@ -62,7 +62,7 @@ export default function DemoRoleSwitcher() {
 
   return (
     <div dir="rtl" className="fixed inset-x-0 bottom-3 z-[90] flex justify-center px-3" role="region" aria-label="مبدل أدوار الديمو">
-      <div className="flex flex-wrap items-center justify-center gap-1.5 rounded-2xl border border-amber-400/30 bg-[#161513]/95 px-3 py-2 shadow-2xl backdrop-blur">
+      <div className="flex flex-wrap items-center justify-center gap-1.5 rounded-2xl border border-amber-400/30 bg-warm/95 px-3 py-2 shadow-2xl backdrop-blur">
         <span className="px-1 text-[11px] font-bold text-amber-300">وضع الديمو</span>
         {ROLES.map((r) => (
           <button

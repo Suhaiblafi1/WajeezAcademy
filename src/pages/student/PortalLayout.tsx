@@ -90,7 +90,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
   /* بوابة القفل لا تظهر قبل اكتمال فحص الجلسة — زائر الديمو يراها فورا، وصاحب الحساب لا يراها أبدا */
   if (!allowed && !sessionChecked) {
     return (
-      <div dir="rtl" className="grid min-h-screen place-items-center bg-[#0D0D0D] text-white">
+      <div dir="rtl" className="grid min-h-screen place-items-center bg-paper text-white">
         <span className="h-8 w-8 animate-spin rounded-full border-2 border-white/15 border-t-[#38A7B4]" aria-label="يُحمَّل" />
       </div>
     );
@@ -98,7 +98,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
 
   if (!allowed) {
     return (
-      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-[#0D0D0D] px-5 text-white">
+      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper px-5 text-white">
         <Lock className="h-12 w-12 text-[#FABC05]" />
         <h1 className="mt-5 text-2xl font-black">منصة الطالب تُفتح بعد أول دفع ناجح</h1>
         <p className="mt-3 max-w-md text-center text-sm leading-7 text-white/60">
@@ -149,9 +149,9 @@ export default function PortalLayout({ children, title }: { children: React.Reac
   const moreActive = moreTabs.some((t) => pathname.startsWith(t.to));
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#0D0D0D] text-white">
+    <div dir="rtl" className="min-h-screen bg-paper text-white">
       <PrototypeBanner hidden={!!sessionUser} />
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0D0D0D]/90 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-paper/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
           <Link to="/" className="flex items-center gap-2">
             <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 object-contain" />
@@ -189,7 +189,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
               {deskMoreOpen && (
                 <>
                   <button aria-label="إغلاق القائمة" onClick={() => setDeskMoreOpen(false)} className="fixed inset-0 z-40 cursor-default" />
-                  <div className="absolute left-0 top-10 z-50 w-56 rounded-2xl border border-white/10 bg-[#141414] p-2 shadow-2xl">
+                  <div className="absolute left-0 top-10 z-50 w-56 rounded-2xl border border-white/10 bg-surface p-2 shadow-2xl">
                     {deskOverflow.map((t) => (
                       <NavLink
                         key={t.to}
@@ -226,7 +226,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
               {bellOpen && (
                 <>
                   <button aria-label="إغلاق الإشعارات" onClick={() => setBellOpen(false)} className="fixed inset-0 z-40 cursor-default" />
-                  <div className="absolute left-0 top-10 z-50 w-80 max-w-[85vw] rounded-2xl border border-white/10 bg-[#141414] p-3 shadow-2xl">
+                  <div className="absolute left-0 top-10 z-50 w-80 max-w-[85vw] rounded-2xl border border-white/10 bg-surface p-3 shadow-2xl">
                     <div className="flex items-center justify-between px-1 pb-2">
                       <p className="text-xs font-black text-white/80">الإشعارات</p>
                       <button onClick={markAllRead} className="flex cursor-pointer items-center gap-1 text-[10px] font-bold text-[#6EC7D1] transition hover:text-white">
@@ -286,7 +286,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
       {/* تعريف المنظومة — تذييل ثقة خفيف داخل البوابة (يظهر مرة واحدة أسفل المحتوى) */}
       <EcosystemNote className="mx-auto max-w-6xl px-5 pb-24 md:pb-6" />
       {/* شريط تنقل سفلي للجوال — أربعة أساسية + «المزيد» بقائمة منبثقة */}
-      <nav aria-label="تنقل المنصة" className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-white/10 bg-[#0D0D0D]/95 pb-[max(env(safe-area-inset-bottom),0.25rem)] backdrop-blur-xl md:hidden">
+      <nav aria-label="تنقل المنصة" className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-white/10 bg-paper/95 pb-[max(env(safe-area-inset-bottom),0.25rem)] backdrop-blur-xl md:hidden">
         {mainTabs.map((t) => (
           <NavLink
             key={t.to}
@@ -318,7 +318,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
       {moreOpen && (
         <>
           <button aria-label="إغلاق القائمة" onClick={() => setMoreOpen(false)} className="fixed inset-0 z-50 cursor-default bg-black/60 backdrop-blur-sm md:hidden" />
-          <div dir="rtl" className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl border-t border-white/10 bg-[#141414] p-5 pb-[max(env(safe-area-inset-bottom),1rem)] md:hidden">
+          <div dir="rtl" className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl border-t border-white/10 bg-surface p-5 pb-[max(env(safe-area-inset-bottom),1rem)] md:hidden">
             <div className="mb-3 flex items-center justify-between">
               <p className="text-sm font-black">صفحات أخرى</p>
               <button onClick={() => setMoreOpen(false)} aria-label="إغلاق" className="cursor-pointer text-white/50 hover:text-white"><X className="h-5 w-5" /></button>

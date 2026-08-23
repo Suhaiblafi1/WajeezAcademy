@@ -203,7 +203,7 @@ export default function Support() {
       ]} />
       <div className="mb-5 flex flex-wrap items-center gap-2">
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} aria-label="رشّح بالحالة"
-          className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white [&>option]:bg-[#121B1D]">
+          className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white [&>option]:bg-surface">
           <option value="">كل الحالات</option>
           {Object.entries(STATUS_AR).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>

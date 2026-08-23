@@ -170,7 +170,7 @@ export default function TrainerProposals() {
             <div>
               <label htmlFor="tp-course" className="mb-1.5 block text-xs font-bold text-white/60">الدورة * — من دوراتك المؤهلة</label>
               <select id="tp-course" required value={form.courseId} onChange={(e) => setForm({ ...form, courseId: e.target.value })}
-                className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white [&>option]:bg-[#121B1D]">
+                className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white [&>option]:bg-surface">
                 <option value="" disabled>اختر الدورة</option>
                 {quals.map((q) => <option key={q.courseId} value={q.courseId}>{q.title} ({q.courseId})</option>)}
               </select>
@@ -178,7 +178,7 @@ export default function TrainerProposals() {
             <div>
               <label htmlFor="tp-type" className="mb-1.5 block text-xs font-bold text-white/60">نوع التعديل *</label>
               <select id="tp-type" value={form.changeType} onChange={(e) => setForm({ ...form, changeType: e.target.value })}
-                className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white [&>option]:bg-[#121B1D]">
+                className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white [&>option]:bg-surface">
                 {Object.entries(CHANGE_TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
             </div>

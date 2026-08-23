@@ -86,7 +86,7 @@ export default function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute left-0 top-11 z-50 w-80 overflow-hidden rounded-2xl border border-white/15 bg-[#121B1D] shadow-2xl shadow-black/60 sm:w-96">
+        <div className="absolute left-0 top-11 z-50 w-80 overflow-hidden rounded-2xl border border-white/15 bg-surface shadow-2xl shadow-black/60 sm:w-96">
           <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
             <p className="text-xs font-black">الإشعارات</p>
             {items && items.some((n) => n.status === "sent") && (

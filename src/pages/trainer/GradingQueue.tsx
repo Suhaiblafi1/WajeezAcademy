@@ -231,7 +231,7 @@ function LocalGradingQueue() {
       {/* نافذة تعديل الدرجة */}
       {editGrade && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-5 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#151515] p-6">
+          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-surface p-6">
             <div className="flex items-center justify-between">
               <h3 className="font-black">تعديل درجة معتمدة</h3>
               <button onClick={() => setEditGrade(null)} className="cursor-pointer text-white/50 hover:text-white" aria-label="إغلاق"><X className="h-5 w-5" /></button>
@@ -274,7 +274,7 @@ function LocalGradingQueue() {
       {/* نافذة رفض التسليم بسبب موثق */}
       {rejecting && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-5 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#151515] p-6">
+          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-surface p-6">
             <div className="flex items-center justify-between">
               <h3 className="font-black">رفض التسليم</h3>
               <button onClick={() => setRejecting(null)} className="cursor-pointer text-white/50 hover:text-white" aria-label="إغلاق"><X className="h-5 w-5" /></button>
