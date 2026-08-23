@@ -3,12 +3,14 @@
    وكل ما بعد الحدّ يُغلَّف بهذا المكوّن: المحتوى الحقيقي يبقى في مكانه ويُغطّى
    بضباب blur(8px) + opacity .4 بلا أي نص شارح خلفه — الضباب بلا معالم،
    والمستخدم يعرف ما ينتظره من لافتة التسجيل لا من خلفها.
-   اللافتة تطفو موسّطة فوق الضباب وتلتصق أثناء التمرير داخل المنطقة المضبّبة،
-   وتسبق نموذج الدخول/التسجيل الرسمي (AuthGate — نفس بوابة /auth بحقولها
+   اللافتة ونموذج التسجيل في التدفق الطبيعي أعلى المنطقة المضبّبة — ينزلان مع
+   الصفحة أثناء التمرير ولا يلتصقان بالشاشة، والنموذج بلا شريط تمرير داخلي.
+   النموذج هو بوابة الدخول/التسجيل الرسمية (AuthGate — نفس بوابة /auth بحقولها
    وتحققها واستعادة كلمة المرور كاملة) بعد أن كانت نموذجا مختصرا خاصا.
-   بعد التسجيل: الضباب يزول blur(8px)→blur(0) على ٤٠٠ms، واللافتة تتلاشى على
-   ٣٠٠ms — نفس الصفحة، بلا انتقال ولا إعادة تحميل ولا قفزة تخطيط، وموضع
-   التمرير كما هو. المحتوى المضبّب aria-hidden + inert، وقبل التسجيل لا يُطبع. */
+   بعد التسجيل: الضباب يزول blur(8px)→blur(0) على ٤٠٠ms، واللافتة تنطوي
+   (ارتفاعها وشفافيتها إلى صفر على ٥٠٠ms) فلا قفزة تخطيط — نفس الصفحة،
+   بلا انتقال ولا إعادة تحميل. المحتوى المضبّب aria-hidden + inert،
+   وقبل التسجيل لا يُطبع. */
 
 import { useEffect, useState, type ReactNode } from "react";
 import { BookOpen, Gift, Lock, SlidersHorizontal, Sparkles, Target, UserCheck } from "lucide-react";
@@ -31,27 +33,27 @@ const UNLOCKS: { icon: typeof Target; label: string }[] = [
 ];
 
 export default function ResultGate({ revealed, onDone, children }: ResultGateProps) {
-  /* اللافتة تتلاشى ٣٠٠ms ثم تُرفع من الشجرة فلا تحجب شيئا مما انكشف تحتها */
+  /* اللافتة تنطوي على ٥٠٠ms ثم تُرفع من الشجرة فلا تحجب شيئا مما انكشف تحتها */
   const [cardGone, setCardGone] = useState(false);
 
   useEffect(() => {
     if (!revealed) return;
-    const t = window.setTimeout(() => setCardGone(true), 320);
+    const t = window.setTimeout(() => setCardGone(true), 520);
     return () => window.clearTimeout(t);
   }, [revealed]);
 
   return (
     <div className="relative">
-      {/* لافتة التسجيل — موسّطة فوق المنطقة المضبّبة، تلتصق أثناء التمرير داخلها
-          فلا يمرّ المستخدم بضباب بلا دعوة. مسافة علوية pt-10 تفصلها عن بطاقة
-          التوصية فوقها، ونصها كله مقروء بتباين كامل — لا ضباب عليها إطلاقا */}
+      {/* لافتة التسجيل ونموذجها — في التدفق الطبيعي أعلى المنطقة المضبّبة،
+          ينزلان مع الصفحة أثناء التمرير (لا التصاق ولا تمرير داخلي).
+          بعد التسجيل تنطوي الرقعة تدريجيا (max-height + opacity) فلا قفزة تخطيط */}
       {!cardGone && (
-        <div className="sticky top-20 z-10 h-0 overflow-visible print:hidden md:top-24">
-          <div
-            className={`mx-auto max-h-[calc(100dvh-6rem)] max-w-md overflow-y-auto px-4 pb-4 pt-10 motion-safe:transition-opacity motion-safe:duration-300 ${
-              revealed ? "pointer-events-none opacity-0" : ""
-            }`}
-          >
+        <div
+          className={`relative z-10 overflow-hidden print:hidden motion-safe:transition-[max-height,opacity] motion-safe:duration-500 ${
+            revealed ? "pointer-events-none max-h-0 opacity-0" : "max-h-[2200px] opacity-100"
+          }`}
+        >
+          <div className="mx-auto max-w-md px-4 pb-8 pt-10">
             {/* لافتة «ما ينتظرك» — العنوان والبنود الستة المعتمدة، تسبق النموذج الرسمي */}
             <div className="relative overflow-hidden rounded-3xl border border-[#FABC05]/35 bg-[#101012]/95 p-5 shadow-[0_24px_70px_-18px_rgba(0,0,0,0.85)] ring-1 ring-white/5 backdrop-blur-xl">
               {/* توهج علوي خفيف بلون العلامة — لمسة عمق بلا تشويش */}
