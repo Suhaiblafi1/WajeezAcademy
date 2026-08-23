@@ -60,9 +60,11 @@ const FIELD_CLS =
   "h-12 w-full rounded-2xl border border-white/15 bg-white/[0.04] pr-11 pl-11 text-left text-sm text-white placeholder:text-white/30 focus:border-[#38A7B4] focus:outline-none";
 const LABEL_CLS = "mb-1.5 block text-xs font-bold text-white/60";
 
-/** بوابة الدخول والتسجيل — نموذج حقيقي، تحقق آمن، ورسائل عربية لا تكشف شيئا */
-export default function AuthGate({ onDone, message }: { onDone: () => void; message?: string }) {
-  const [mode, setMode] = useState<"login" | "signup">("login");
+/** بوابة الدخول والتسجيل — نموذج حقيقي، تحقق آمن، ورسائل عربية لا تكشف شيئا.
+    initialMode: الوضع الابتدائي (بوابة النتيجة تبدأ بـ«حساب جديد»).
+    source: وسم تحليلات اختياري يميّز مصدر التسجيل (مثل result_gate). */
+export default function AuthGate({ onDone, message, initialMode = "login", source }: { onDone: () => void; message?: string; initialMode?: "login" | "signup"; source?: string }) {
+  const [mode, setMode] = useState<"login" | "signup">(initialMode);
   const [view, setView] = useState<View>("auth");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -107,7 +109,7 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
     }
     setBusy(true);
     setErr("");
-    track("account_started", { mode });
+    track("account_started", { mode, ...(source ? { source } : {}) });
     try {
       const result =
         mode === "signup" ? await signUp(name, email, pass) : await signIn(email, pass);
@@ -117,7 +119,7 @@ export default function AuthGate({ onDone, message }: { onDone: () => void; mess
         return;
       }
       if (mode === "signup") {
-        track("account_created");
+        track("account_created", source ? { source } : {});
         setView("verify");
         setResent(false);
       } else {

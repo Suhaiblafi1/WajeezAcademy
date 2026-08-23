@@ -27,7 +27,6 @@ import { Badge } from "@/components/ui/badge";
 import AuthGate from "@/components/AuthGate";
 import AdvisorContact from "@/components/AdvisorContact";
 import CourseJourney from "@/components/CourseJourney";
-import PathwayResources from "@/components/PathwayResources";
 import Modal from "@/components/Modal";
 import { pathwayById } from "@/data/pathways";
 import { courseById, pathwayCourses, pathwayDelivery, coursePriceOf, pathwayPriceFor, pathwayTrainers, courseTrainer, weeksLabel } from "@/data/courses";
@@ -242,6 +241,16 @@ export default function PathwayPage() {
     }
   }, []);
 
+  /* نتيجة تشخيص مكتملة ومحفوظة على الجهاز (تبقى بعد إغلاق التبويب، بخلاف جلسة الصفحة) —
+     وجودها يحوّل دعوة «لست متأكدا» إلى إعادة تخصيص المسار بدل إعادة التشخيص */
+  const hasSavedResult = useMemo(() => {
+    try {
+      return !!localStorage.getItem("wajeez_diag_v2_last_full");
+    } catch {
+      return false;
+    }
+  }, []);
+
   if (!pathway) {
     return (
       <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-[#0D0D0D] text-white">
@@ -343,8 +352,7 @@ export default function PathwayPage() {
             giftId={custom?.giftId ?? null}
           />
 
-          {/* أنواع المصادر المرافقة للرحلة — بلا تكاملات جديدة ولا أمثلة مخترعة */}
-          <PathwayResources />
+          {/* أنواع المصادر المرافقة حُذفت — كانت مكررة مع صندوق «منظومة كاملة» أدناه */}
 
           {/* مقاعد التخصصات التدريبية — الأسماء تُعلن بعد اعتماد الشعبة */}
           <div className="story-fade mt-8 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4">
@@ -366,15 +374,17 @@ export default function PathwayPage() {
             </p>
           </div>
 
-          {/* التشخيص: دعوة للزائر الجديد — وشارة اعتماد لمن جاء من تشخيصه */}
+          {/* التشخيص: دعوة للزائر الجديد — وإعادة تخصيص لمن أكمل تشخيصه سابقا (بلا إعادة تشخيص) */}
           {!report && (
             <div className="story-fade mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-dashed border-[#38A7B4]/40 bg-[#38A7B4]/5 px-6 py-4">
               <p className="text-sm leading-relaxed text-white/70">
                 <span className="font-black text-[#6EC7D1]">لست متأكدا أن هذا مسارك الأنسب؟ </span>
-                ثلاث دقائق مع مؤشر وجيز تطابقك مع مساراتنا المصممة وتشرح لك السبب.
+                {hasSavedResult
+                  ? "نتيجتك محفوظة — عد إليها وأعد تخصيص مسارك: استبدالا أو حذفا أو هدية مجانية، بلا إعادة تشخيص."
+                  : "ثلاث دقائق مع مؤشر وجيز تطابقك مع مساراتنا المصممة وتشرح لك السبب."}
               </p>
               <Button variant="outline" className="border-[#38A7B4]/60 text-[#6EC7D1] hover:bg-[#38A7B4]/15" asChild>
-                <Link to="/diagnostic">ابدأ بمؤشر وجيز</Link>
+                <Link to="/diagnostic">{hasSavedResult ? "أعد تخصيص مسارك" : "ابدأ بمؤشر وجيز"}</Link>
               </Button>
             </div>
           )}
@@ -532,13 +542,13 @@ export default function PathwayPage() {
             </div>
           )}
 
-          {/* ما ستحصل عليه مع المسار — من عروض أكاديمية وجيز */}
-          <div className="story-fade mt-10 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
-            <h2 className="flex items-center gap-2 text-xl font-black">
+          {/* ما ستحصل عليه مع المسار — من عروض أكاديمية وجيز (نسخة مضغوطة: خانات أصغر ومتقاربة) */}
+          <div className="story-fade mt-8 rounded-3xl border border-white/10 bg-white/[0.03] p-5 md:p-6">
+            <h2 className="flex items-center gap-2 text-lg font-black">
               <Sparkles className="h-5 w-5 text-[#FABC05]" />
               مع المسار لا تأخذ دورات فقط — تأخذ منظومة كاملة
             </h2>
-            <div className="mt-5 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {[
                 { icon: MonitorPlay, t: "دورات مسجلة + جلسات مباشرة", d: "وحدات فيديو وجلسة حية مع المدرب ومهمة تطبيقية لكل دورة" },
                 { icon: Headphones, t: "ملخصات كتب وجيز الصوتية", d: "اسمع ملخصات الكتب المرتبطة بمسارك — ثم اختبر نفسك فيها" },
@@ -550,13 +560,13 @@ export default function PathwayPage() {
                 { icon: UserCheck, t: "مستشار نجاح يرافقك", d: "متابعة أسبوعية ورسالة مباشرة عند أي تعثر" },
                 { icon: Briefcase, t: "منظومة ما بعد الإتمام", d: "لوحة وظائف وتوصيات مهنية وبرنامج سفراء وجيز" },
               ].map((b) => (
-                <div key={b.t} className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3.5">
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#38A7B4]/15">
-                    <b.icon className="h-4 w-4 text-[#6EC7D1]" />
+                <div key={b.t} className="flex items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.04] p-2.5">
+                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-[#38A7B4]/15">
+                    <b.icon className="h-3.5 w-3.5 text-[#6EC7D1]" />
                   </span>
                   <div className="min-w-0">
-                    <p className="text-sm font-black leading-relaxed">{b.t}</p>
-                    <p className="mt-1 text-xs leading-relaxed text-white/50">{b.d}</p>
+                    <p className="text-[13px] font-black leading-snug">{b.t}</p>
+                    <p className="mt-0.5 text-[11px] leading-relaxed text-white/50">{b.d}</p>
                   </div>
                 </div>
               ))}

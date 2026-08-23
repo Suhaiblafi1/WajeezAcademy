@@ -16,6 +16,7 @@ html[data-theme="light"] .bg-\[\#0D0D0D\]\/90 { background-color: rgba(246, 244,
 html[data-theme="light"] .bg-\[\#0D0D0D\]\/95 { background-color: rgba(246, 244, 239, 0.95); }
 html[data-theme="light"] .bg-\[\#121B1D\],
 html[data-theme="light"] .bg-\[\#141414\],
+html[data-theme="light"] .bg-\[\#101415\],
 html[data-theme="light"] .bg-\[\#151515\] { background-color: #FFFFFF; }
 
 /* ── النص: الأبيض بدرجاته ← الحبر بدرجاته ── */
@@ -88,3 +89,13 @@ html[data-theme="light"] .shadow-2xl { box-shadow: 0 20px 45px -18px rgba(22, 33
 
 /* ── تمرير أنيق على الفاتح ── */
 html[data-theme="light"] ::-webkit-scrollbar-thumb { background: rgba(22, 33, 31, 0.2); }
+
+/* ── فجوات كانت تبقى داكنة على الفاتح (هيدر / فوتر / دوائر الأرقام) ── */
+html[data-theme="light"] .bg-\[\#0D0D0D\]\/80 { background-color: rgba(246, 244, 239, 0.8); }
+html[data-theme="light"] .bg-\[\#0D0D0D\]\/85 { background-color: rgba(246, 244, 239, 0.85); }
+html[data-theme="light"] .bg-\[\#0A0A0A\] { background-color: #EDEAE1; }
+html[data-theme="light"] .bg-\[\#12343B\] { background-color: #DCECEE; }
+
+/* ── المرافق المسماة (نفس معالجة الأصناف الحرفية أعلاه) ── */
+html[data-theme="light"] .text-teal-light { color: #1F6E77; }      /* تركوازي فاتح ← أعمق للتباين */
+html[data-theme="light"] .text-amber-brand { color: #8F6E00; }     /* ذهبي ← نحاسي مقروء */

@@ -14,6 +14,7 @@ import { CONTACT } from '@/data/stories'
 import { track } from '@/services/analytics'
 import { usePublishedContent } from '@/services/public-content'
 import SeoHead from '@/components/SeoHead'
+import ThemeToggle from '@/components/ThemeToggle'
 import CourseModal from '@/components/CourseModal'
 import Modal from '@/components/Modal'
 import EcosystemNote from '@/components/EcosystemNote'
@@ -139,6 +140,7 @@ function Nav() {
           )}
         </nav>
         <div className="flex items-center gap-3">
+          <ThemeToggle />
           {userName ? (
             <Link to="/student" className="hidden items-center gap-2 rounded-xl border border-teal/40 bg-[#38A7B4]/10 px-4 py-2 text-sm font-semibold text-teal-light transition hover:bg-[#38A7B4]/20 md:inline-flex">
               <User className="h-4 w-4" />
@@ -193,6 +195,7 @@ function Nav() {
             ابدأ مؤشر وجيز
           </a>
           <div className="mt-3 flex justify-center">
+            <ThemeToggle />
           </div>
         </nav>
       )}

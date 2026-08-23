@@ -26,6 +26,22 @@
     --ring: 186 52% 43%;
     --radius: 1rem;
   }
+
+  /* المظهر الفاتح — نفس الهيكل: حبري على ورقي بدل الأبيض على الداكن */
+  html[data-theme="light"] {
+    --background: 43 30% 95%;           /* #F6F4EF ورقي */
+    --foreground: 175 20% 11%;          /* #16211F حبري */
+    --card: 0 0% 100%;
+    --card-foreground: 175 20% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 175 20% 11%;
+    --secondary: 43 20% 91%;
+    --secondary-foreground: 175 20% 11%;
+    --muted: 43 20% 91%;
+    --muted-foreground: 175 8% 35%;
+    --border: 175 10% 84%;
+    --input: 175 10% 84%;
+  }
 }
 
 @layer base {
