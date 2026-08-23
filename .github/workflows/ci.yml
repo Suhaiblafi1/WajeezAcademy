@@ -1,0 +1,48 @@
+# بوابة الدمج — كل push/PR إلى main يمر هنا قبل أن يُعتمد
+# الترتيب مقصود: الأسرع والأرخص أولا (توليد الأنواع ← tsc ← lint ← الاختبارات)
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # أنواع Prisma تُولَّد لا تُخزَّن — tsc يفشل بدونها على checkout نظيف
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: TypeScript check
+        run: npx tsc -b
+
+      # إرشادي حاليا — 6 ملاحظات نقاء react-hooks موثقة وتُعالج على مهل؛
+      # تُرفع إلى مانعة فور تصفيرها حتى لا يتراكم جديد
+      - name: Lint (informational)
+        run: npm run lint
+        continue-on-error: true
+
+      # 39 ملف اختبار عبر 16 نطاقا — postgres مدمج، لا خدمات خارجية
+      - name: Server test suites
+        run: npm run test:e2e
+        env:
+          NODE_ENV: test
+
+      - name: Diagnostic engine tests
+        run: npm run test:diagnostic
+        env:
+          NODE_ENV: test
