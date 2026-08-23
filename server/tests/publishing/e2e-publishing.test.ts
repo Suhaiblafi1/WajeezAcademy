@@ -120,18 +120,21 @@ describe('دورة النشر الكاملة', () => {
     const result = await pub.publish(v.id, checkerId)
 
     expect(result.version.status).toBe('published')
-    expect(result.counts.pathways).toBe(21)
-    expect(result.counts.courses).toBe(101)
-    expect(result.counts.skills).toBe(306)
-
-    /* الإصدار السابق superseded */
-    const old = await prisma.catalogVersion.findUnique({ where: { id: before!.id } })
-    expect(old!.status).toBe('superseded')
 
     /* اللقطة الفعالة تحوي الجديد */
     const { getActiveSnapshot } = await import('../../catalog/snapshot-builder')
     const active = await getActiveSnapshot(prisma)
     const payload = active!.payload as unknown as SnapshotPayload
+    /* أعداد النشر يجب أن تطابق ما وصل فعلا إلى اللقطة — بلا أرقام جامدة:
+       الكتالوج المضمّن يتطور، والاختبار يحمي الاتساق لا الحجم */
+    expect(result.counts.pathways).toBe(payload.coreCatalog.launch_pathways.length)
+    expect(result.counts.courses).toBe(payload.coreCatalog.courses.length)
+    expect(result.counts.skills).toBe(payload.skills.skills.length + payload.coreCatalog.skill_extensions.length)
+
+    /* الإصدار السابق superseded */
+    const old = await prisma.catalogVersion.findUnique({ where: { id: before!.id } })
+    expect(old!.status).toBe('superseded')
+
     expect(payload.coreCatalog.launch_pathways.map((p) => p.id)).toContain(`PW-${S}-001`)
     expect(payload.coreCatalog.courses.map((c) => c.course_id)).toContain(`C-${S}-001`)
     expect(payload.coreCatalog.skill_extensions.map((s) => s.skill_id)).toContain(`SK-X-${S}-001`)
