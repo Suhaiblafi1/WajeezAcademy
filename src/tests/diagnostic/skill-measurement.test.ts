@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { catalogCourses, skillsCatalog } from '../../domain/diagnostic/catalog'
 import { measurableSkills } from '../../domain/diagnostic/v2_1/universe'
+import { layersOfSkill } from '../../domain/diagnostic/v2/data'
+import { planOf } from '../../domain/diagnostic/v2_1/data'
 import {
   DILUTION_RATIO, SOFT_MAX_SKILLS, STATE_LABEL_AR,
   assessSkillSelection, byStateThenName, measurementDocDrift, skillStateOf,
@@ -100,10 +102,33 @@ describe('ب-٤ الترتيب', () => {
 describe('ب-٤ تباعد التوثيق عن المحرك — واقعة تُعلَن', () => {
   it('يُحصى الاتجاهان: مقيسة بلا توثيق، وموثَّقة لا تُقاس', () => {
     const d = measurementDocDrift()
-    /* الاختبار يثبّت أن الرصد يعمل لا أن الرقم ثابت */
-    expect(d.undocumented.length + d.staleDoc.length).toBeGreaterThan(0)
+    /* كان هنا `undocumented + staleDoc > 0` بحجة «يثبّت أن الرصد يعمل لا أن
+       الرقم ثابت» — وهو في الحقيقة يثبّت رقما: أن الخلل قائم. أُغلق الاتجاهان
+       في 2026-08-26؛ الناقص امتلأ بتأليف سبعة أسئلة قياس، والبائت تبيّن أنه
+       ليس بائتا بل ثلاثة أسئلة منقولة عمدا إلى ما بعد التوصية. فانقلب الحارس
+       إلى ما هو أقوى: صفر في الاتجاهين، مع بقاء تصنيف كل اتجاه محروسا لو عاد. */
     for (const slug of d.undocumented) expect(measurableSkills().has(slug)).toBe(true)
     for (const slug of d.staleDoc) expect(measurableSkills().has(slug)).toBe(false)
+    expect(d.undocumented, `مقيسة بلا توثيق: ${d.undocumented.join(' · ')}`).toEqual([])
+    expect(d.staleDoc, `موثَّقة لا تُقاس: ${d.staleDoc.join(' · ')}`).toEqual([])
+  })
+
+  it('الصفر ليس أجوف: القياس قائم وموثَّق، والإعفاء مقصور على المنقول عمدا', () => {
+    /* صفرٌ يمرّ لأن لا شيء يجري ليس نجاحا. هنا يُثبَت أن الرصد له مُدخَل حقيقي:
+       مهارات مقيسة فعلا وكلها موثَّقة، وأن إعفاء «ما بعد التوصية» لا يبتلع
+       حالة يجب أن تسقط. */
+    const registered = new Set(skillsCatalog.map((s) => s.slug))
+    const measuredRegistered = [...measurableSkills()].filter((s) => registered.has(s))
+    expect(measuredRegistered.length).toBeGreaterThan(0)
+    for (const slug of measuredRegistered) {
+      expect(layersOfSkill(slug)?.measured_by, `مقيسة بلا توثيق: ${slug}`).toBeTruthy()
+    }
+    /* كل موثَّقة لا يقيسها المحرك يجب أن يكون سؤالها منقولا فعلا — لا معفاة بلا سبب */
+    for (const s of skillsCatalog) {
+      const by = layersOfSkill(s.slug)?.measured_by
+      if (!by || measurableSkills().has(s.slug)) continue
+      expect(planOf(by)?.final_status, `${s.slug} معفاة والسؤال ${by} ليس منقولا`).toBe('post_recommendation')
+    }
   })
 
   it('المفاتيح غير المسجَّلة تُستثنى من تباعد التوثيق — تُبلَّغ بعلّتها لا بعلّة مختلقة', () => {

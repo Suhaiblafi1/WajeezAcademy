@@ -7,14 +7,16 @@
 
    المصدر الحاكم هو المحرك لا التوثيق: `measurableSkills()` تُشتق من بنك
    الأسئلة الفعلي ومن خطة سطح B2C — أي ما يُسأل حقا. وحقل `measured_by` في
-   skill-layers توثيقٌ قد يتباعد عنه (وهو متباعد اليوم: خمس مهارات يقيسها
-   المحرك بلا توثيق، وثلاث موثقة لا يقيسها). فمن يقرأ التوثيق وحده يخطئ.
+   skill-layers توثيقٌ قد يتباعد عنه، فمن يقرأ التوثيق وحده يخطئ. (صفر تباعد
+   في 2026-08-26: التوثيق الناقص امتلأ بتأليف أسئلة القياس، والثلاث «الموثقة بلا
+   قياس» تبيّن أنها ليست تباعدا بل أسئلة منقولة عمدا إلى ما بعد التوصية.)
 
    ولا حكم هنا يمنع: المؤلّف يرى الحالة ويقرّر. المنع بلا بديل يدفعه إلى حشر
    مهارة قريبة خاطئة — وهذا أسوأ من مهارة صحيحة غير مقيسة. */
 
 import { measurableSkills } from '../../domain/diagnostic/v2_1/universe'
 import { isDiagnosticSkillActive, layersOfSkill } from '../../domain/diagnostic/v2/data'
+import { planOf } from '../../domain/diagnostic/v2_1/data'
 import { skillsCatalog } from '../../domain/diagnostic/catalog'
 
 /** ثلاث حالات فقط، مرتّبة من الأنفع إلى الأضرّ */
@@ -49,11 +51,25 @@ export const STATE_LABEL_AR: Record<SkillMeasureState, string> = {
   inactive: 'موقوفة تشخيصيا',
 }
 
+/** سؤال قياس المهارة نُقل عمدا إلى ما بعد التوصية — موجود ويُسأل، ولا يفصل بين
+    المرشحين. غيابه عن الترشيح قرارٌ لا عطل: مهارة لا يتطلبها أي مقرر، فقياسها
+    قبل النتيجة مقعد بلا أثر قراري. */
+function isPostRecommendation(questionId: string | null): boolean {
+  return !!questionId && planOf(questionId)?.final_status === 'post_recommendation'
+}
+
 function noteFor(state: SkillMeasureState, measuredBy: string | null): string {
   if (state === 'measured') {
     return measuredBy ? `يقيسها ${measuredBy} · تفصل بين المرشحين` : 'يقيسها سؤال فعلي · تفصل بين المرشحين'
   }
-  if (state === 'registered_unmeasured') return 'مسجَّلة بلا سؤال · تدخل المقام ولا تُقاس'
+  if (state === 'registered_unmeasured') {
+    /* «بلا سؤال» تكذب حين يوجد سؤال بعد التوصية: من يقرأها قد يؤلّف سؤالا ثانيا
+       للمهارة نفسها — وحارس التأليف على معرّف السؤال لا على المهارة، فلن يمنعه. */
+    if (isPostRecommendation(measuredBy)) {
+      return `يقيسها ${measuredBy} بعد التوصية · لا تفصل بين المرشحين`
+    }
+    return 'مسجَّلة بلا سؤال · تدخل المقام ولا تُقاس'
+  }
   return 'موقوفة تشخيصيا · لا تدخل الحساب إطلاقا'
 }
 
@@ -146,7 +162,12 @@ export function measurementDocDrift(): { undocumented: string[]; staleDoc: strin
   }
   for (const s of skillsCatalog) {
     const meta = layersOfSkill(s.slug)
-    if (meta?.measured_by && !engine.has(s.slug)) staleDoc.push(s.slug)
+    if (!meta?.measured_by || engine.has(s.slug)) continue
+    /* سؤال نُقل عمدا إلى ما بعد التوصية ليس توثيقا بائتا: الحقل يصف سؤالا قائما
+       يُسأل فعلا، والمحرك لا يقيسه قبل النتيجة بقرار موثق في خطة V2.1. البائت
+       هو ما يَعِد بقياس لا وجود له — سؤال على سطح B2C لا يقيسه المحرك. */
+    if (isPostRecommendation(meta.measured_by)) continue
+    staleDoc.push(s.slug)
   }
   return { undocumented: undocumented.sort(), staleDoc: staleDoc.sort() }
 }
