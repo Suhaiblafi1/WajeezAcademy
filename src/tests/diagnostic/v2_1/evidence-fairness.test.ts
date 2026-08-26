@@ -15,7 +15,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { createEngineV21, type RecommendationV21 } from '../../../domain/diagnostic/v2_1'
-import { Q, type CareerStage } from '../../../domain/diagnostic/v2_1/maps'
+import { Q, GOALS_V21, type CareerStage } from '../../../domain/diagnostic/v2_1/maps'
 import { recommendationUniverse, measurableSkills } from '../../../domain/diagnostic/v2_1/universe'
 import { compositeVictoryCheck, type CompetitionResult } from '../../../domain/diagnostic/v2_1/compete'
 import { questionPlanV21 } from '../../../domain/diagnostic/v2_1/data'
@@ -377,6 +377,46 @@ describe('Regression المرحلة 4 — عدالة الدليل المهاري
       /* لا سؤال يقيس slug مهارة حقيقية — أسئلة دليل الاستكشاف (exploration_evidence) مسموحة */
       const measuresSkill = (questionPlanV21[id]?.measures ?? []).some((m) => SKILL_SLUGS.has(m))
       expect(measuresSkill, `سؤال مهارة ${id} تسلل إلى رحلة استكشاف`).toBe(false)
+    }
+  })
+
+  /* TPL-PERSONAL-BRAND-001 كان بلا إشارة persona_type — وهي مصدر career_stages
+     لكل مركّب — فيقع في فرع «لا جمهور معلن» ويُستبعد من كل منافسة. عاش كذلك
+     دون أن يكشفه اختبار: بوابة الفضاء تحرس أن يكون للكيان النشط جمهور، ولا
+     تحرس أن يفوز به أحد. فهذا يحرس الطرفين معا. */
+  it('١٣) العلامة المهنية تفوز لجمهورها المعلن وتُستبعد من خارجه', () => {
+    const inside = runJourneyTraced('علامة-مستقل', {
+      stage: 'freelancer',
+      employment: 'أعمل لحسابي (عمل حر)',
+      goal: 'بناء ملف أعمال يثبت قدراتي',
+      need: 'التواصل والعرض والتأثير',
+      time: '٥–٧ ساعات',
+      mastery: 'أن أبني مجموعة مهارات مترابطة لتحقيق هدف',
+      skillLevel: 2,
+    })
+    expect(inside.rec.composite?.templateId).toBe('TPL-PERSONAL-BRAND-001')
+
+    /* not_for يستثني من لا يملك أدلة يمكن التحقق منها — فالخريج الجديد خارجه
+       ولو تطابق هدفه واحتياجه تماما مع القالب */
+    const outside = runJourneyTraced('علامة-خريج', {
+      stage: 'fresh_graduate',
+      employment: 'أبحث عن عمل',
+      goal: 'بناء ملف أعمال يثبت قدراتي',
+      need: 'التواصل والعرض والتأثير',
+      time: '٥–٧ ساعات',
+      mastery: 'أن أبني مجموعة مهارات مترابطة لتحقيق هدف',
+      skillLevel: 2,
+    })
+    expect(outside.rec.composite?.templateId).not.toBe('TPL-PERSONAL-BRAND-001')
+
+    /* وكل مرحلة يعلنها القالب تبلغها أحد هدفيه — إعلان جمهور لا يبلغ هدفا وعدٌ فارغ */
+    const e = recommendationUniverse().byId.get('TPL-PERSONAL-BRAND-001')!
+    expect(e.career_stages.length).toBeGreaterThan(0)
+    const reachable = new Set(
+      GOALS_V21.filter((g) => e.goals.includes(g.legacy_goal)).flatMap((g) => g.stages),
+    )
+    for (const st of e.career_stages) {
+      expect(reachable.has(st), `مرحلة ${st} معلنة ولا يبلغها أي هدف للقالب`).toBe(true)
     }
   })
 })

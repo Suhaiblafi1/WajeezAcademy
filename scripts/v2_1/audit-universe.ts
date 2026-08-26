@@ -35,14 +35,15 @@ if (u.active.length > u.entities.length) failures.push('النشط أكثر من
 /* ثغرة جمهور معروفة تنتظر قرارا أكاديميا — تُبلَّغ ولا تُفشل، وكل ثغرة جديدة
    تُفشل. القائمة تسمّي الكيان وسببه وما يحلّه، على نفس نمط ACADEMIC_REVIEW_OVERRIDES:
    حاجزٌ يفشل دائما على حالة قائمة يُعتاد تجاهله، وحاجزٌ بلا استثناء موثق يُعطَّل.
-   ⚠ إضافة سطر هنا قرار أكاديمي لا حلٌّ تقني: يُحلّ بتحديد المراحل المهنية في
-   composite-templates (نصّ persona موجود: «باحث عن ترقية، خبير، قائد، متحدث،
-   أو مستقل») ثم إزالة السطر. */
-const KNOWN_AUDIENCE_GAPS: Record<string, string> = {
-  'TPL-PERSONAL-BRAND-001':
-    'جمهوره موصوف نصّا في persona ولا مراحل مهنية مهيكلة — فينافس كل مرحلة. ' +
-    'يُحلّ بتحديد career_stages من نصّه ثم إزالة هذا السطر.',
-}
+   ⚠ إضافة سطر هنا قرار أكاديمي لا حلٌّ تقني.
+
+   خلَت في 2026-08-26 بحلّ ثغرتها الوحيدة: TPL-PERSONAL-BRAND-001 كان بلا
+   إشارة persona_type — وهي مصدر career_stages لكل مركّب — فكان يفشل مغلقا
+   ولا ينافس أحدا. اشتُقّ جمهوره من نصّه («باحث عن ترقية، خبير، قائد، متحدث،
+   أو مستقل») إلى employee · manager · freelancer · trainer، ولم يُضمّ طالب
+   ولا خريج جديد ولا مؤسس لأن not_for يستثني من لا يملك أدلة يمكن التحقق منها.
+   والحلقة أسفله تُفشل بقاء أي سطر هنا بعد حلّه، فلا يخفي عودة العلّة. */
+const KNOWN_AUDIENCE_GAPS: Record<string, string> = {}
 
 for (const e of u.active) {
   const personaGate = e.hard_exclusions.find((h) => h.id === 'persona_mismatch')
