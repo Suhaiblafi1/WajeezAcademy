@@ -4,7 +4,7 @@ import {
   Sparkles, Compass, Route, BadgeCheck, BrainCircuit, Target,
   FileCheck, Quote, ChevronDown, Menu, X, ArrowLeft,
   Clock, User, Award, GraduationCap, Building2, Landmark,
-  CheckCircle2, Play, Flame, ChevronLeft, ChevronRight, BookOpen,
+  CheckCircle2, Flame, ChevronLeft, ChevronRight, BookOpen,
   Users, Mail, MessageCircle, Headset, MapPin
 } from 'lucide-react'
 import { bestsellers, pathwayById, pathwayCategory } from '@/data/pathways'
