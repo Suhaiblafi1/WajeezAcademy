@@ -6,6 +6,7 @@ await build({
   bundle: true,
   platform: 'node',
   format: 'esm',
+  minify: true,
   packages: 'external',
   target: 'node22',
   outfile: 'api/index.js',
