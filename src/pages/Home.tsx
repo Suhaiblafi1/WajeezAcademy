@@ -783,15 +783,22 @@ function Bestsellers() {
   const pwCounts = useMemo(() => countBy(allPathways.map((b) => pathwayCategory(b.p.id))), [allPathways])
   const crCounts = useMemo(() => countBy(allCourses.map((b) => b.c.category)), [allCourses])
 
-  /* الرئيسية تعرض نخبة فقط — 6 مسارات و4 دورات كحد أقصى، والكتالوج الكامل في صفحته */
+  /* الرئيسية تعرض كل المختارات — الشرائط قابلة للتمرير أفقيا */
   const shownPathways = allPathways
     .filter((b) => pwCat === 'الكل' || pathwayCategory(b.p.id) === pwCat)
-    .slice(0, 6)
   const shownCourses = allCourses
     .filter((b) => crCat === 'الكل' || b.c.category === crCat)
-    .slice(0, 4)
   const spotlight = shownPathways[0]
   const railPathways = shownPathways.slice(1)
+
+  /* الشرائط تُملأ بعد وصول الكتالوج أو عند تغيير الفلتر — نعيد التمرير لبداية الشريط
+     (scrollLeft = 0 هو الطرف الأيمن في RTL بكل المتصفحات الحديثة) حتى لا تبدأ من المنتصف */
+  useEffect(() => {
+    pwRailRef.current?.scrollTo({ left: 0 })
+  }, [shownPathways.length, pwCat, catalogVersion])
+  useEffect(() => {
+    crRailRef.current?.scrollTo({ left: 0 })
+  }, [shownCourses.length, crCat, catalogVersion])
 
   return (
     <section id="bestsellers" className="pb-20 pt-24 md:pb-24 md:pt-28">
