@@ -2,10 +2,13 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
   "outputDirectory": "dist",
-  "buildCommand": "npx prisma migrate deploy && npm run build",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
+  "buildCommand": "npx prisma generate && npx prisma migrate deploy && npm run build && node scripts/bundle-api.mjs",
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/api" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ],
   "functions": {
-    "api/[...path].ts": { "maxDuration": 30, "memory": 1024 }
+    "api/index.js": { "maxDuration": 30, "memory": 1024 }
   },
   "headers": [
     {

@@ -16,3 +16,5 @@ scripts/tmp/
 # تخزين وثائق المتقدمين الخاص — لا يدخل Git أبدا
 storage/private/
 .vercel
+.env*
+api/index.js

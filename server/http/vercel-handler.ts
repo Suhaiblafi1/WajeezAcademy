@@ -4,9 +4,9 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import type { FastifyInstance } from 'fastify'
-import { getPrisma } from '../server/db/client'
-import { seedRbac } from '../server/auth/rbac-seed'
-import { buildApp } from '../server/http/app'
+import { getPrisma } from '../db/client'
+import { seedRbac } from '../auth/rbac-seed'
+import { buildApp } from './app'
 
 let cached: FastifyInstance | null = null
 
