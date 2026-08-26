@@ -250,11 +250,11 @@ function Hero() {
             <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
           </a>
           <a
-            href="#stories"
+            href="#bestsellers"
             className="mt-5 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition hover:text-teal-light-ink"
           >
-            <Play className="h-3.5 w-3.5" />
-            <span className="underline-offset-4 hover:underline">أو شاهد رحلات من سبقوك أولا</span>
+            <Route className="h-3.5 w-3.5" />
+            <span className="underline-offset-4 hover:underline">اختر مسارك بنفسك</span>
           </a>
         </div>
       </div>
