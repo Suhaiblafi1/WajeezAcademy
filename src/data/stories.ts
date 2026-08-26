@@ -118,7 +118,7 @@ export const stories: Story[] = [
     tag: 'حلول الشركات',
     name: 'فريق القيادات الجديدة',
     role: 'شركة لوجستية — 14 مديرا',
-    img: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=1200&q=80&auto=format&fit=crop', // مشهد فريق جماعي — لا ادعاء هوية
+    img: '/story-team.jpg', // مشهد فريق جماعي — لا ادعاء هوية (محلية: CSP يمنع الخارجية)
     before: 'رقّت الشركة 14 موظفا إلى مناصب قيادية دفعة واحدة، ثم اكتشفت أن الترقية وحدها لا تصنع قائدا.',
     turn: 'شخّصت وجيز فجوات الفريق كاملا، فوجدتها متقاربة: إدارة الوقت، والتغذية الراجعة، والمحادثات الصعبة.',
     pathway: 'مسار قيادة الفرق للمدراء الجدد (دفعة خاصة)',
@@ -148,11 +148,11 @@ export const appReviews = [
   { name: 'راشد جميل', text: 'الملخصات تلامس جوهر الكتب فعلا، وتحفزني أحيانا لقراءة النسخة الكاملة.' },
 ]
 
-/* شعارات وسائل إعلام غطّت منصة وجيز الأم — من موقع wajeez.com نفسه */
+/* شعارات وسائل إعلام غطّت منصة وجيز الأم — نسخ محلية من موقع wajeez.com (CSP يمنع الخارجية) */
 export const partnerLogos = [
-  { name: 'BBC', src: 'https://wajeez.com/_next/image?url=%2Fassets%2Fimages%2Fbbc-dark.png&w=256&q=75' },
-  { name: 'Forbes', src: 'https://wajeez.com/_next/image?url=%2Fassets%2Fimages%2Fforbes-dark.png&w=256&q=75' },
-  { name: 'صحيفة الوطن', src: 'https://wajeez.com/_next/image?url=%2Fassets%2Fimages%2Falwatan-dark.png&w=256&q=75' },
+  { name: 'BBC', src: '/media-bbc.png' },
+  { name: 'Forbes', src: '/media-forbes.png' },
+  { name: 'صحيفة الوطن', src: '/media-alwatan.png' },
 ]
 
 /* بيانات التواصل الموثقة — واتساب المستشارين هو القناة الرسمية المعتمدة،

@@ -483,9 +483,9 @@ function HowItWorks() {
 function ImageBand() {
   return (
     <section className="relative overflow-hidden">
-      {/* و-٢: صورة خارجية بديلُها تدرّج — لا فراغ إن لم تُحمَّل */}
+      {/* الصورة محلية (public/) — CSP يمنع الصور الخارجية، والاستضافة الذاتية تضمن ظهورها دائما */}
       <RemoteImage
-        src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1600&q=80&auto=format&fit=crop"
+        src="/band-learners.jpg"
         alt="متعلمون يتعاونون حول طاولة واحدة"
         className="h-[340px] w-full object-cover md:h-[420px]"
         fallbackClassName="h-[340px] w-full md:h-[420px]"
