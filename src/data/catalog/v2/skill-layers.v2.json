@@ -207,17 +207,18 @@
     },
     "ai_output_evaluation": {
       "layers": [
-        "pathway_requirement",
-        "learning_outcome"
+        "diagnostic",
+        "pathway_requirement"
       ],
       "active": true,
       "diagnostic_active": true,
       "academic_status": "approved_active",
-      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
       "pathway_ids": [
         "PW-AUT-001",
         "PW-FND-003"
-      ]
+      ],
+      "measured_by": "QB-M4-004"
     },
     "ai_risk_management": {
       "layers": [
@@ -991,16 +992,17 @@
     },
     "cybersecurity_basics": {
       "layers": [
-        "pathway_requirement",
-        "learning_outcome"
+        "diagnostic",
+        "pathway_requirement"
       ],
       "active": true,
       "diagnostic_active": true,
       "academic_status": "approved_active",
-      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
       "pathway_ids": [
         "PW-CYB-001"
-      ]
+      ],
+      "measured_by": "QB-M4-007"
     },
     "dashboard_design": {
       "layers": [
@@ -1260,16 +1262,17 @@
     },
     "digital_content_creation": {
       "layers": [
-        "pathway_requirement",
-        "learning_outcome"
+        "diagnostic",
+        "pathway_requirement"
       ],
       "active": true,
       "diagnostic_active": true,
       "academic_status": "approved_active",
-      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
       "pathway_ids": [
         "PW-MKT-001"
-      ]
+      ],
+      "measured_by": "QB-M4-008"
     },
     "digital_file_management": {
       "layers": [
@@ -2562,17 +2565,18 @@
     },
     "persuasion": {
       "layers": [
-        "pathway_requirement",
-        "learning_outcome"
+        "diagnostic",
+        "pathway_requirement"
       ],
       "active": true,
       "diagnostic_active": true,
       "academic_status": "approved_active",
-      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
       "pathway_ids": [
         "PW-COM-001",
         "PW-NEG-001"
-      ]
+      ],
+      "measured_by": "QB-M4-012"
     },
     "policy_evaluation": {
       "layers": [
@@ -3147,17 +3151,18 @@
     },
     "sales_fundamentals": {
       "layers": [
-        "pathway_requirement",
-        "learning_outcome"
+        "diagnostic",
+        "pathway_requirement"
       ],
       "active": true,
       "diagnostic_active": true,
       "academic_status": "approved_active",
-      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
       "pathway_ids": [
         "PW-BIZ-001",
         "PW-SAL-001"
-      ]
+      ],
+      "measured_by": "QB-M4-017"
     },
     "sales_pipeline": {
       "layers": [

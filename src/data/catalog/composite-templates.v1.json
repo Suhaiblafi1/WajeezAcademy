@@ -1554,7 +1554,7 @@
           "hours": 8,
           "reason_ar": "يضاف إذا كان المحتوى قناة أساسية لإثبات الخبرة.",
           "when": {
-            "fact_key": "digital_content",
+            "fact_key": "digital_content_creation",
             "operator": "lte",
             "values": [
               2
@@ -1715,7 +1715,7 @@
             "rationale_ar": "الحاجة واضحة إلى حزمة خدمة ووعد محدد."
           },
           {
-            "fact_key": "sales",
+            "fact_key": "sales_fundamentals",
             "operator": "lte",
             "values": [
               3
@@ -2136,7 +2136,7 @@
             "minimum_confidence": 0.65
           },
           {
-            "fact_key": "digital_content",
+            "fact_key": "digital_content_creation",
             "question_ids": [
               "QB-M4-008"
             ],
@@ -2193,7 +2193,7 @@
             "rationale_ar": "الحضور والعرض فجوة مؤثرة."
           },
           {
-            "fact_key": "digital_content",
+            "fact_key": "digital_content_creation",
             "operator": "lte",
             "values": [
               3
@@ -3019,7 +3019,7 @@
           "hours": 8,
           "reason_ar": "جسر الرسالة قبل إدارة المحادثات والتوقعات.",
           "when": {
-            "fact_key": "communication_persuasion",
+            "fact_key": "persuasion",
             "operator": "lte",
             "values": [
               1
@@ -3074,7 +3074,7 @@
             "minimum_confidence": 0.65
           },
           {
-            "fact_key": "communication_persuasion",
+            "fact_key": "persuasion",
             "question_ids": [
               "QB-M4-012"
             ],
@@ -3131,7 +3131,7 @@
             "rationale_ar": "يوجد فريق يمكن تطبيق النظام معه."
           },
           {
-            "fact_key": "communication_persuasion",
+            "fact_key": "persuasion",
             "operator": "lte",
             "values": [
               3
@@ -3527,7 +3527,7 @@
             "minimum_confidence": 0.65
           },
           {
-            "fact_key": "sales",
+            "fact_key": "sales_fundamentals",
             "question_ids": [
               "QB-M4-017"
             ],
@@ -3602,7 +3602,7 @@
             "rationale_ar": "هناك فرص/عملاء يمكن تطبيق النظام عليهم."
           },
           {
-            "fact_key": "sales",
+            "fact_key": "sales_fundamentals",
             "operator": "lte",
             "values": [
               3
@@ -3921,7 +3921,7 @@
           "hours": 8,
           "reason_ar": "يضاف إذا كانت الرسائل والتوضيح سبب سوء التجربة.",
           "when": {
-            "fact_key": "communication_persuasion",
+            "fact_key": "persuasion",
             "operator": "lte",
             "values": [
               2
@@ -4053,7 +4053,7 @@
             "rationale_ar": "توجد فجوة في تحويل الشكوى إلى تحسين."
           },
           {
-            "fact_key": "communication_persuasion",
+            "fact_key": "persuasion",
             "operator": "lte",
             "values": [
               3
@@ -4391,7 +4391,7 @@
           "hours": 12,
           "reason_ar": "يضاف عندما يتضمن الحل وكيلًا أو قرارًا مدعومًا بالذكاء الاصطناعي.",
           "when": {
-            "fact_key": "ai_applied_use",
+            "fact_key": "ai_output_evaluation",
             "operator": "gte",
             "values": [
               2
@@ -5905,7 +5905,7 @@
             "minimum_confidence": 0.65
           },
           {
-            "fact_key": "cyber_safety",
+            "fact_key": "cybersecurity_basics",
             "question_ids": [
               "QB-M4-007"
             ],
@@ -5968,7 +5968,7 @@
             "rationale_ar": "يوجد سياق مسؤولية أعمال."
           },
           {
-            "fact_key": "cyber_safety",
+            "fact_key": "cybersecurity_basics",
             "operator": "lte",
             "values": [
               3
@@ -6047,7 +6047,7 @@
             "rationale_ar": "إذا كان الأثر الرئيسي عملية/أتمتة فقد يفوز التحول الرقمي مع إضافة ضوابط."
           },
           {
-            "fact_key": "cyber_safety",
+            "fact_key": "cybersecurity_basics",
             "operator": "gte",
             "values": [
               4
@@ -6781,7 +6781,7 @@
           "hours": 8,
           "reason_ar": "يضاف لبناء سير كتابة/بحث مسؤول للمواد.",
           "when": {
-            "fact_key": "ai_applied_use",
+            "fact_key": "ai_output_evaluation",
             "operator": "gte",
             "values": [
               2
@@ -6817,7 +6817,7 @@
           "hours": 8,
           "reason_ar": "جسر بناء الرسالة قبل التيسير.",
           "when": {
-            "fact_key": "communication_persuasion",
+            "fact_key": "persuasion",
             "operator": "lte",
             "values": [
               1
@@ -6855,7 +6855,7 @@
             "minimum_confidence": 0.65
           },
           {
-            "fact_key": "digital_content",
+            "fact_key": "digital_content_creation",
             "question_ids": [
               "QB-M4-008"
             ],
@@ -6863,7 +6863,7 @@
             "minimum_confidence": 0.65
           },
           {
-            "fact_key": "ai_applied_use",
+            "fact_key": "ai_output_evaluation",
             "question_ids": [
               "QB-M4-004"
             ],
@@ -6909,7 +6909,7 @@
             "rationale_ar": "الدور ملائم."
           },
           {
-            "fact_key": "digital_content",
+            "fact_key": "digital_content_creation",
             "operator": "lte",
             "values": [
               3
@@ -6927,7 +6927,7 @@
             "rationale_ar": "التيسير والحضور يحتاجان تطويرًا."
           },
           {
-            "fact_key": "ai_applied_use",
+            "fact_key": "ai_output_evaluation",
             "operator": "between",
             "values": [
               1,
@@ -7779,7 +7779,7 @@
           "hours": 8,
           "reason_ar": "جسر الرسالة قبل إحاطات البرنامج.",
           "when": {
-            "fact_key": "communication_persuasion",
+            "fact_key": "persuasion",
             "operator": "lte",
             "values": [
               1

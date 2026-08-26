@@ -20,7 +20,13 @@ export function runSession(script: Script, mode: 'quick' | 'deep' = 'quick') {
     if (scripted !== undefined) {
       value = scripted
     } else if (q.options_ar.length > 0) {
-      value = q.answer_type === 'multi_choice' || q.answer_type === 'rank_top3' ? [q.options_ar[0]] : q.options_ar[0]
+      /* سؤال مهارة غير مكتوب في النص: الوسط لا القاع. الافتراض السابق
+         (options_ar[0]) يعني «لم أتعامل معها عمليًا» في كل مهارة، فتصير
+         الشخصية «من لم يفعل شيئا قط» ويحسم الترشيحَ أكبرُ فجوة لا أقربُ
+         سياق — وهو ليس ما تدّعي هذه الاختبارات قياسه. */
+      const skillLike = q.answer_type === 'skill_level_5' || q.answer_type === 'likert_5'
+      const idx = skillLike ? Math.min(2, q.options_ar.length - 1) : 0
+      value = q.answer_type === 'multi_choice' || q.answer_type === 'rank_top3' ? [q.options_ar[idx]] : q.options_ar[idx]
     } else {
       value = 'لا ينطبق'
     }

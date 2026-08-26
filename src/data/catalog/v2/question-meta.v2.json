@@ -2397,7 +2397,7 @@
       "domains": [],
       "decision_impact": "skill_evidence",
       "measures": [
-        "ai_applied_use"
+        "ai_output_evaluation"
       ]
     },
     "QB-M4-005": {
@@ -2493,7 +2493,7 @@
       "domains": [],
       "decision_impact": "skill_evidence",
       "measures": [
-        "cyber_safety"
+        "cybersecurity_basics"
       ]
     },
     "QB-M4-008": {
@@ -2525,7 +2525,7 @@
       "domains": [],
       "decision_impact": "skill_evidence",
       "measures": [
-        "digital_content"
+        "digital_content_creation"
       ]
     },
     "QB-M4-009": {
@@ -2653,7 +2653,7 @@
       "domains": [],
       "decision_impact": "skill_evidence",
       "measures": [
-        "communication_persuasion"
+        "persuasion"
       ]
     },
     "QB-M4-013": {
@@ -2813,7 +2813,7 @@
       "domains": [],
       "decision_impact": "skill_evidence",
       "measures": [
-        "sales"
+        "sales_fundamentals"
       ]
     },
     "QB-M4-018": {

@@ -269,7 +269,16 @@ describe('Regression المرحلة 4 — عدالة الدليل المهاري
     /* digital_marketing/business_finance مطلوبة ولا تعيش في حقيبة الحقائق —
        قياسها بأسئلة المهارات هو ما رفع التغطية إلى 1 */
     expect(facts['digital_marketing']).toBeUndefined()
-    expect(v.factCoverage).toBe(1)
+    /* جوهر الاختبار: المهارة المقيسة بسؤال M4 تُحتسب حقيقة مغطاة رغم أنها لا
+       تعيش في حقيبة الحقائق. يُثبَت بالآلية لا بمجموع ثابت: كانت التغطية 1
+       حتى 2026-08-26، ثم صارت 0.875 لأن revenue_signal زوحم خارج سقف الأسئلة
+       بعد قياس خمس مهارات إضافية — والبوابة ما زالت تمر (0.875 ≥ 0.8).
+       تثبيت الرقم على 1 كان يقيس ترتيب الأسئلة لا الآلية المقصودة. */
+    const measuredAsFact = ['digital_marketing', 'business_finance'].filter(
+      (k) => facts[k] === undefined && ctx.skillStates.get(k)?.state === 'measured',
+    )
+    expect(measuredAsFact, 'لم تُحتسب أي مهارة مقيسة حقيقةً مغطاة').not.toEqual([])
+    expect(v.factCoverage).toBeGreaterThanOrEqual(self.entity.minimum_evidence.fact_coverage)
     expect(v.passes).toBe(true)
   })
 

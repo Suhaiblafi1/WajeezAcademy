@@ -135,8 +135,15 @@ describe('الرحلات البشرية المصممة الثلاثون — إغ
       need: needLabel('need_negotiation'), time: '٥–٧ ساعات', skillLevel: 3,
     }
     const a = runJourney('حافة-سباق-حي', j)
-    expect(a.rec.kind).toBe('advisor_referral')
-    expect(a.rec.primaryPathway?.pathwayId ?? a.rec.composite?.templateId).toBeTruthy()
+    /* قياس 2026-08-26: لم تعد هذه الرحلة تُجسّد «بلا أي حاسمة مقاسة». حواسم
+       PW-NEG-001 ثلاث — active_listening وnegotiation وpersuasion — وصارت
+       الثلاث مقيسة: الأولى بسؤال جديد (QB-M4-027)، والثالثة بإعادة توجيه
+       QB-M4-012 من مفتاح غير مسجَّل إلى مهارته. فحُسم السباق دليليا ونال
+       المتعلم مسارا محددا بدل تحويله إلى مستشار — وهو المقصود من القياس.
+       عقد «لا صمت عند غياب الحواسم» لم يسقط: يحرسه stop-caps.test.ts
+       («ثقة منخفضة بلا إحالة») وcompletion-v2.test.ts على حالة تُجسّده فعلا. */
+    expect(a.rec.kind).toBe('single_pathway')
+    expect(a.rec.primaryPathway?.pathwayId).toBe('PW-NEG-001')
     expectHealthyJourney('حافة-سباق-حي', a, runJourney('حافة-سباق-حي-ب', j))
   })
 

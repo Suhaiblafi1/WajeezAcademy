@@ -280,6 +280,15 @@
           ]
         },
         {
+          "questionId": "QB-M4-004",
+          "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في استخدام أدوات AI في العمل أو التعلم بطريقة مسؤولة؟",
+          "why_now_ar": "فاز أساسًا بسبب: يقيس مهارة حاسمة للمتصدر قبل أي اكتفاء.",
+          "answer_ar": "شاركت في مهمة أو مشروع استخدمها",
+          "what_changed": [
+            "+skill:ai_output_evaluation"
+          ]
+        },
+        {
           "questionId": "QB-M3B-003",
           "question_ar": "هل تتعامل مباشرة مع الجمهور أو العملاء؟",
           "why_now_ar": "فاز أساسًا بسبب: يستكمل سياقك العام.",
@@ -287,22 +296,13 @@
           "what_changed": [
             "+public_facing"
           ]
-        },
-        {
-          "questionId": "QB-M3B-012",
-          "question_ar": "هل تدير أشخاصا أو مشاريع أو اجتماعات؟",
-          "why_now_ar": "فاز أساسًا بسبب: يستكمل سياقك العام.",
-          "answer_ar": "نعم",
-          "what_changed": [
-            "+leadership_context"
-          ]
         }
       ],
       "result": {
         "kind": "single_pathway",
         "topPathwayId": "PW-FND-003",
         "compositeTemplateId": null,
-        "confidence": 0.6084286986570215,
+        "confidence": 0.615762031990355,
         "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true
@@ -616,7 +616,7 @@
     {
       "persona": "مستقل",
       "stage": "freelancer",
-      "questionsCount": 12,
+      "questionsCount": 14,
       "steps": [
         {
           "questionId": "QC-S1-001",
@@ -676,6 +676,15 @@
           ]
         },
         {
+          "questionId": "QB-M4-008",
+          "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في إنتاج محتوى رقمي؟",
+          "why_now_ar": "فاز أساسًا بسبب: يفصل بين المرشحين المتصدرين بدليل مهارة.",
+          "answer_ar": "شاركت في مهمة أو مشروع استخدمها",
+          "what_changed": [
+            "+skill:digital_content_creation"
+          ]
+        },
+        {
           "questionId": "QB-M4-010",
           "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في الكتابة العربية المهنية؟",
           "why_now_ar": "فاز أساسًا بسبب: يفصل بين المرشحين المتصدرين بدليل مهارة.",
@@ -691,6 +700,15 @@
           "answer_ar": "شاركت في مهمة أو مشروع استخدمها",
           "what_changed": [
             "+skill:digital_marketing"
+          ]
+        },
+        {
+          "questionId": "QB-M4-017",
+          "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في المبيعات؟",
+          "why_now_ar": "فاز أساسًا بسبب: يفصل بين المرشحين المتصدرين بدليل مهارة.",
+          "answer_ar": "شاركت في مهمة أو مشروع استخدمها",
+          "what_changed": [
+            "+skill:sales_fundamentals"
           ]
         },
         {
@@ -714,7 +732,7 @@
         {
           "questionId": "QB-M4-029",
           "question_ar": "قبل أن تقرر أن فكرة أو منتجا أو تخصصا يستحق — من أين تأتي بمعلوماتك عن السوق؟",
-          "why_now_ar": "فاز أساسًا بسبب: يقيس مهارة حاسمة للمتصدر قبل أي اكتفاء.",
+          "why_now_ar": "مهارة حاسمة لأحد مرشحي الصدارة ما زالت مجهولة في سباق حي — قياسها يسبق منح المتحدين فرصًا إضافية.",
           "answer_ar": "بحثت مرة في مشروع أو مهمة دراسية",
           "what_changed": [
             "+skill:market_research"
@@ -734,7 +752,7 @@
         "kind": "single_pathway",
         "topPathwayId": "PW-SAL-001",
         "compositeTemplateId": null,
-        "confidence": 0.6444220845530104,
+        "confidence": 0.6504736841402139,
         "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true
@@ -934,29 +952,29 @@
           ]
         },
         {
-          "questionId": "QB-M4-027",
-          "question_ar": "حين يشرح لك زميل أو عميل مشكلة غير واضحة — ما أقرب وصف لما تفعله؟",
+          "questionId": "QB-M4-004",
+          "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في استخدام أدوات AI في العمل أو التعلم بطريقة مسؤولة؟",
           "why_now_ar": "مهارة حاسمة لأحد مرشحي الصدارة ما زالت مجهولة في سباق حي — قياسها يسبق منح المتحدين فرصًا إضافية.",
-          "answer_ar": "أسأل أسئلة توضيح حين أنتبه إلى ذلك في مواقف معينة",
+          "answer_ar": "شاركت في مهمة أو مشروع استخدمها",
           "what_changed": [
-            "+skill:active_listening"
+            "+skill:ai_output_evaluation"
           ]
         },
         {
-          "questionId": "QB-M4-029",
-          "question_ar": "قبل أن تقرر أن فكرة أو منتجا أو تخصصا يستحق — من أين تأتي بمعلوماتك عن السوق؟",
+          "questionId": "QB-M4-007",
+          "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في الأمان الرقمي والخصوصية؟",
           "why_now_ar": "مهارة حاسمة لأحد مرشحي الصدارة ما زالت مجهولة في سباق حي — قياسها يسبق منح المتحدين فرصًا إضافية.",
-          "answer_ar": "بحثت مرة في مشروع أو مهمة دراسية",
+          "answer_ar": "شاركت في مهمة أو مشروع استخدمها",
           "what_changed": [
-            "+skill:market_research"
+            "+skill:cybersecurity_basics"
           ]
         }
       ],
       "result": {
-        "kind": "single_pathway",
+        "kind": "advisor_referral",
         "topPathwayId": "PW-STU-003",
         "compositeTemplateId": null,
-        "confidence": 0.5145364144976444,
+        "confidence": 0.5056568626769161,
         "outputKind_ar": "اتجاه استكشافي"
       },
       "deterministic": true

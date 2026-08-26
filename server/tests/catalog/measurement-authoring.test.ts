@@ -10,13 +10,19 @@ import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthError } from '../../services/auth.service'
 import { CatalogAdminService } from '../../services/catalog-admin.service'
 
-/* مسار صفري التغطية في الكتالوج المنشور، وrisk_management من مهاراته.
-   كان PW-CYB-001 حتى 2026-08-26، ثم صار مغطّى بسؤال clear_expression الجديد
-   (QB-M4-028) فلم يعد يصلح «حالة قبل». المسارات الصفرية الباقية التي يفتحها
-   risk_management: PW-AUT-001 · PW-FIN-001 · PW-SCM-001 — واخترنا الأول.
-   لو غُطّيت كلها لاحقا فهذا نجاح لا عطل: يُختار مسار صفري آخر ومهارته. */
-const TARGET_PATHWAY = 'PW-AUT-001'
-const SKILL = 'risk_management'
+/* مسار صفري التغطية في الكتالوج المنشور، والمهارة من مهاراته وفي قائمة الفجوات.
+
+   هذا التثبيت يُبطله نجاحُنا لا فشلُنا: كلما قِسنا مهارة جديدة خرج مسار من
+   الخمول فلم يعد يصلح «حالة قبل». حدث مرتين في 2026-08-26 — كان PW-CYB-001
+   فغطّاه QB-M4-028 (clear_expression)، ثم PW-AUT-001 فغطّاه إعادة توجيه
+   QB-M4-004 إلى ai_output_evaluation.
+
+   فإن سقط هذا الاختبار على `pBefore.measured` فالأرجح أنه نجاح: اختر زوجا
+   جديدا من مخرَج `npm run ci:coverage-baseline` — أي مسار خامل ومهارة في
+   قائمة فجواته. الخاملة وقت الكتابة: PW-FIN-001 · PW-HR-001 · PW-LND-001 ·
+   PW-SCM-001. ويوم لا يبقى خامل واحد، يُتقاعد هذا الاختبار احتفالا لا إصلاحا. */
+const TARGET_PATHWAY = 'PW-HR-001'
+const SKILL = 'workforce_planning'
 const QID = 'QB-M4-901'
 
 let prisma: PrismaClient

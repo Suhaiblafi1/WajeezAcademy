@@ -177,7 +177,7 @@ describe('فضاء التوصيات الموحد V2.1 — معايير القب�
     }
   })
 
-  it('مركب يفوز عند حاجة متعددة المجالات مُثبتة: مستقل start_business + تفاوض + ميول أعمال', () => {
+  it('حاجة متعددة المجالات مع حواسم مقيسة → مسار محسوم لا وسم مستشار: مستقل start_business + تفاوض', () => {
     const { rec } = runJourney('مستقل-ثلاثي', {
       stage: 'freelancer',
       goal: 'بدء مشروع أو مصدر دخل مستقل',
@@ -193,11 +193,19 @@ describe('فضاء التوصيات الموحد V2.1 — معايير القب�
        أدلته فأصبح الفائز المرفق (ملاءمته الخام دون FREELANCE بـ0.006 ويفوز
        بتكلفة التعقيد)، ومهارة التفاوض غير المقيسة لدى FREELANCE (هامش 0.003)
        تُبقي الوسم صحيحًا — السباق غير محسوم دليليًا فعلًا */
-    expect(rec.kind).toBe('advisor_referral')
-    expect(rec.composite, 'فوز مركب بلا خطة مرفقة').not.toBeNull()
-    expect(rec.composite!.templateId).toBe('TPL-VENTURE-001')
-    const reasons = JSON.stringify(rec)
-    expect(reasons).toContain('مهارة حاسمة')
+    /* قياس 2026-08-26: كان هذا يتحقق من فوز TPL-VENTURE-001 موسوما لمراجعة
+       مستشار، لأن حاسمتَي FREELANCE (التفاوض والكتابة التجارية) لم يقسهما أي
+       سؤال فبقي السباق غير محسوم دليليا. وبعد قياس التفاوض حُسم السباق ونال
+       المتعلم PW-BIZ-001 — وهدفه المعلن «بدء مشروع» يطابقه. على 400 شخصية
+       نزلت الإحالة/الاستكشاف 146 ← 139: سبعة متعلمين إضافيين ينالون جوابا.
+       فوز القوالب المركبة نفسه ما زال محروسا في evidence-fairness (٨ وصفة
+       STRATEGY · ٩ وصفة ECOM) — وكلاهما يمر، فالعقد لم يسقط بتغيير العنوان. */
+    expect(rec.kind).toBe('single_pathway')
+    expect(rec.primaryPathway?.pathwayId).toBe('PW-BIZ-001')
+    /* الفائز يبقى داخل الفضاء النشط ومحسوما بلا وسم — لا فوز صامت */
+    const active = new Set(recommendationUniverse().active.map((e) => e.entity_id))
+    expect(active, 'فائز خارج الفضاء النشط').toContain(rec.primaryPathway!.pathwayId)
+    expect(rec.confidence.total).toBeGreaterThan(0)
   })
 
   it('غير المتأكد بلا دليل → اتجاه استكشافي بلا مسار مفروض ولا مركب', () => {

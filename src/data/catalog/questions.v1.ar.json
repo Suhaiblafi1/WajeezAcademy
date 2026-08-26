@@ -3412,7 +3412,7 @@
       ],
       "trigger_condition": "always",
       "measures": [
-        "ai_applied_use",
+        "ai_output_evaluation",
         "skill_vector"
       ],
       "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة.",
@@ -3502,7 +3502,7 @@
       ],
       "trigger_condition": "always",
       "measures": [
-        "cyber_safety",
+        "cybersecurity_basics",
         "skill_vector"
       ],
       "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة.",
@@ -3532,7 +3532,7 @@
       ],
       "trigger_condition": "always",
       "measures": [
-        "digital_content",
+        "digital_content_creation",
         "skill_vector"
       ],
       "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة.",
@@ -3652,7 +3652,7 @@
       ],
       "trigger_condition": "always",
       "measures": [
-        "communication_persuasion",
+        "persuasion",
         "skill_vector"
       ],
       "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة.",
@@ -3802,7 +3802,7 @@
       ],
       "trigger_condition": "always",
       "measures": [
-        "sales",
+        "sales_fundamentals",
         "skill_vector"
       ],
       "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة.",
