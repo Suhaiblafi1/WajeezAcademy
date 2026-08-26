@@ -23,16 +23,24 @@ import TrustMetricsBar from '@/components/TrustMetricsBar'
 import EcosystemOrgStrip from '@/components/EcosystemOrgStrip'
 import '../App.css'
 
-/* ───────────────────────── scroll reveal hook ───────────────────────── */
+/* ───────────────────────── scroll reveal hook ─────────────────────────
+   MutationObserver يلتقط العناصر المُضافة لاحقا (محتوى يصل بعد أول رسم —
+   مثل بطاقة المسار المميز التي تنتظر لقطة الكتالوج) فلا تبقى مخفية للأبد */
 function useReveal() {
   useEffect(() => {
-    const els = document.querySelectorAll('.reveal')
     const io = new IntersectionObserver(
       (entries) => entries.forEach((e) => e.isIntersecting && e.target.classList.add('is-visible')),
       { threshold: 0.12 }
     )
-    els.forEach((el) => io.observe(el))
-    return () => io.disconnect()
+    const seen = new WeakSet<Element>()
+    const scan = () =>
+      document.querySelectorAll('.reveal').forEach((el) => {
+        if (!seen.has(el)) { seen.add(el); io.observe(el) }
+      })
+    scan()
+    const mo = new MutationObserver(scan)
+    mo.observe(document.body, { childList: true, subtree: true })
+    return () => { io.disconnect(); mo.disconnect() }
   }, [])
 }
 
