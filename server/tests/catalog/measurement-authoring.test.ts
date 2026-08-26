@@ -1,8 +1,8 @@
 /* موجة ٦ · أ-٢ — تأليف سؤال قياس يفعّل وزن فجوة المهارة فعلا.
 
-   الحقيقة التي تحميها هذه الاختبارات: مسار وزنُ فجوة المهارة فيه خامل تماما
-   (صفر مهارة مقيسة) يصير له مهارة **حاسمة** بسؤال واحد يُؤلَّف من الإدارة —
-   بلا نشر كود. وهذا مستحيل قبل ج-٢ لأن خطة الأسئلة كانت مولَّدة وقت البناء. */
+   الحقيقة التي تحميها هذه الاختبارات: مهارة لا يقيسها سؤال تصير **حاسمة**
+   في مسارها بسؤال واحد يُؤلَّف من الإدارة — بلا نشر كود. وهذا مستحيل قبل ج-٢
+   لأن خطة الأسئلة كانت مولَّدة وقت البناء. */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -10,17 +10,17 @@ import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthError } from '../../services/auth.service'
 import { CatalogAdminService } from '../../services/catalog-admin.service'
 
-/* مسار صفري التغطية في الكتالوج المنشور، والمهارة من مهاراته وفي قائمة الفجوات.
+/* مسار في الكتالوج المنشور، ومهارة من مهاراته لم تُقَس بعد.
 
-   هذا التثبيت يُبطله نجاحُنا لا فشلُنا: كلما قِسنا مهارة جديدة خرج مسار من
-   الخمول فلم يعد يصلح «حالة قبل». حدث مرتين في 2026-08-26 — كان PW-CYB-001
-   فغطّاه QB-M4-028 (clear_expression)، ثم PW-AUT-001 فغطّاه إعادة توجيه
-   QB-M4-004 إلى ai_output_evaluation.
+   كان هذا التثبيت يشترط مسارا **صفري التغطية**، وسقط ثلاث مرات في
+   2026-08-26 — في كل مرة لأن التغطية تحسّنت حتى لم يبقَ مسار خامل واحد
+   (كل المسارات العشرين صار فيها مهارة مقيسة). فالشرط القديم صار يقيس حالة
+   نقص في الكتالوج بدل أن يقيس القدرة التي وُجد الاختبار لحراستها.
 
-   فإن سقط هذا الاختبار على `pBefore.measured` فالأرجح أنه نجاح: اختر زوجا
-   جديدا من مخرَج `npm run ci:coverage-baseline` — أي مسار خامل ومهارة في
-   قائمة فجواته. الخاملة وقت الكتابة: PW-FIN-001 · PW-HR-001 · PW-LND-001 ·
-   PW-SCM-001. ويوم لا يبقى خامل واحد، يُتقاعد هذا الاختبار احتفالا لا إصلاحا. */
+   فأُعيدت صياغته على الخاصية الدائمة: تأليف سؤال يرفع تغطية المسار **ويجعل
+   المهارة حاسمة**. يعمل هذا على أي مسار ومهارة غير مقيسة، فلا يبطله تحسّن
+   التغطية بعد اليوم. لو قِيست workforce_planning لاحقا فاختر أي مهارة أخرى
+   من `PW-HR-001` غير مقيسة — والقائمة تُستخرج بـ`measurableSkills()`. */
 const TARGET_PATHWAY = 'PW-HR-001'
 const SKILL = 'workforce_planning'
 const QID = 'QB-M4-901'
@@ -85,8 +85,8 @@ describe('حراسة التأليف', () => {
   })
 })
 
-describe('الأثر الحقيقي: من وزنٍ خامل إلى مهارة حاسمة', () => {
-  it('سؤال واحد يُؤلَّف من الإدارة يجعل المهارة مقيسة والمسار مغطّى', async () => {
+describe('الأثر الحقيقي: من مهارة غير مقيسة إلى مهارة حاسمة', () => {
+  it('سؤال واحد يُؤلَّف من الإدارة يجعل المهارة مقيسة وحاسمة ويرفع تغطية المسار', async () => {
     const cov = await import('../../../src/application/catalog/measurement-coverage')
     const { installCatalogSnapshot } = await import('../../../src/domain/diagnostic/catalog')
     const { buildSnapshotFromDb } = await import('../../catalog/snapshot-builder')
@@ -96,11 +96,9 @@ describe('الأثر الحقيقي: من وزنٍ خامل إلى مهارة ح
     installCatalogSnapshot((await buildSnapshotFromDb(prisma)).payload as never, 'before-authoring')
     const before = cov.buildCoverageReport()
     const pBefore = before.pathways.find((p) => p.pathwayId === TARGET_PATHWAY)!
-    expect(pBefore.measured).toBe(0)
-    expect(pBefore.costAr).toContain('خامل')
-    const gapBefore = before.gaps.find((g) => g.slug === SKILL)!
-    expect(gapBefore.unlocks).toContain(TARGET_PATHWAY)
     expect(universe.measurableSkills().has(SKILL)).toBe(false)
+    expect(universe.recommendationUniverse().byId.get(TARGET_PATHWAY)!.skill_roles.decisive)
+      .not.toContain(SKILL)
 
     /* التأليف — مسودة لا تدخل المنشور */
     const created = await admin.createMeasurementQuestion({
@@ -124,12 +122,10 @@ describe('الأثر الحقيقي: من وزنٍ خامل إلى مهارة ح
     expect(universe.measurableSkills().has(SKILL)).toBe(true)
     const after = cov.buildCoverageReport()
     const pAfter = after.pathways.find((p) => p.pathwayId === TARGET_PATHWAY)!
-    expect(pAfter.measured).toBeGreaterThan(0)
-    expect(pAfter.costAr).not.toContain('خامل')
-    expect(after.totals.pathwaysZeroCoverage).toBeLessThan(before.totals.pathwaysZeroCoverage)
-    /* وسؤال واحد أخرج كل ما كانت الفجوة تفتحه — لا مسارا واحدا */
-    expect(before.totals.pathwaysZeroCoverage - after.totals.pathwaysZeroCoverage)
-      .toBe(gapBefore.unlocks.length)
+    expect(pAfter.measured).toBe(pBefore.measured + 1)
+    /* ولا مسار يتراجع بسبب سؤال يُضاف */
+    expect(after.totals.pathwaysZeroCoverage).toBeLessThanOrEqual(before.totals.pathwaysZeroCoverage)
+    expect(after.totals.measuredSkills).toBe(before.totals.measuredSkills + 1)
 
     /* والمهارة صارت **حاسمة** في الكيان لا مساندة — وهذا ما يفصل بين المرشحين */
     const entity = universe.recommendationUniverse().byId.get(TARGET_PATHWAY)!

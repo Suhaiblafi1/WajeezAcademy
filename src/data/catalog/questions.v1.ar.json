@@ -4176,6 +4176,130 @@
       "v2_1_authored": true
     },
     {
+      "question_id": "QB-M4-030",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "حين تقابل مرشحا لوظيفة — كيف تصل إلى قرارك؟",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "أعتمد على انطباعي العام من الحديث",
+        "أعرف أن هناك طريقة منظمة لكني لا أستخدمها",
+        "أحضّر بعض الأسئلة مسبقا وأسأل الجميع عنها",
+        "أستخدم أسئلة موحدة ومعايير تقييم مكتوبة لكل مرشح",
+        "صممت عملية مقابلة يستخدمها غيري، وأدرّب المقيّمين عليها"
+      ],
+      "options_key": "evidence_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "structured_interviewing",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة. — يُخرج PW-HR-001 من الخمول: كان وزن فجوة المهارة (٢٥٪) بلا أثر فيه.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "WEF",
+      "active": true,
+      "v2_1_authored": true
+    },
+    {
+      "question_id": "QB-M4-031",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "كيف تُقرَّر كميات الشراء أو الإنتاج في عملك؟",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا علاقة لي بهذا القرار",
+        "أعرف كيف يُتخذ لكني لم أشارك فيه",
+        "شاركت في تقدير احتياج لفترة أو صنف",
+        "أبني خطة توريد دورية من توقع الطلب",
+        "أدير التخطيط المشترك بين المبيعات والعمليات وأصحح انحرافه"
+      ],
+      "options_key": "evidence_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "supply_planning",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة. — يُخرج PW-SCM-001 من الخمول: كان وزن فجوة المهارة (٢٥٪) بلا أثر فيه.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "WEF",
+      "active": true,
+      "v2_1_authored": true
+    },
+    {
+      "question_id": "QB-M4-032",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "حين يُطلب منك تدريب — من أين تبدأ؟",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "أبدأ بتجهيز المحتوى والشرائح مباشرة",
+        "أعرف أن عليّ تحليل الحاجة أولا، لكني لا أفعل",
+        "أسأل الجهة الطالبة عمّا تريده وأبني عليه",
+        "أحلل مشكلة الأداء قبل أن أقرر إن كان التدريب حلّها أصلا",
+        "أبني نواتج تعلم قابلة للقياس من تحليل الحاجة، وأردّ الطلب حين لا يحلّه التدريب"
+      ],
+      "options_key": "evidence_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "training_needs_analysis",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة. — يُخرج PW-LND-001 من الخمول: كان وزن فجوة المهارة (٢٥٪) بلا أثر فيه.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "WEF",
+      "active": true,
+      "v2_1_authored": true
+    },
+    {
+      "question_id": "QB-M4-033",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "حين تختلف نتائج الربع عن الموازنة — ماذا تفعل؟",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أتعامل مع الموازنات في عملي",
+        "أرى الأرقام لكن تفسيرها ليس مسؤوليتي",
+        "ألاحظ الفرق الكبير وأسأل عنه",
+        "أحلل سبب الانحراف بندا بندا وأعرضه",
+        "أبني تفسير الانحراف وخطة تصحيحه، وأتابع أثرها في الربع التالي"
+      ],
+      "options_key": "evidence_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "variance_analysis",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة. — يُخرج PW-FIN-001 من الخمول: كان وزن فجوة المهارة (٢٥٪) بلا أثر فيه.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "WEF",
+      "active": true,
+      "v2_1_authored": true
+    },
+    {
       "question_id": "QB-M5-001",
       "module_id": "M5",
       "module_name": "الميول المهنية RIASEC",

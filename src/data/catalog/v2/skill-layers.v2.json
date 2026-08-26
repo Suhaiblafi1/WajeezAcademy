@@ -3453,16 +3453,17 @@
     },
     "structured_interviewing": {
       "layers": [
-        "pathway_requirement",
-        "learning_outcome"
+        "diagnostic",
+        "pathway_requirement"
       ],
       "active": true,
       "diagnostic_active": true,
       "academic_status": "approved_active",
-      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
       "pathway_ids": [
         "PW-HR-001"
-      ]
+      ],
+      "measured_by": "QB-M4-030"
     },
     "summarization": {
       "layers": [
@@ -3527,16 +3528,17 @@
     },
     "supply_planning": {
       "layers": [
-        "pathway_requirement",
-        "learning_outcome"
+        "diagnostic",
+        "pathway_requirement"
       ],
       "active": true,
       "diagnostic_active": true,
       "academic_status": "approved_active",
-      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
       "pathway_ids": [
         "PW-SCM-001"
-      ]
+      ],
+      "measured_by": "QB-M4-031"
     },
     "survey_design": {
       "layers": [
@@ -3626,16 +3628,17 @@
     },
     "training_needs_analysis": {
       "layers": [
-        "pathway_requirement",
-        "learning_outcome"
+        "diagnostic",
+        "pathway_requirement"
       ],
       "active": true,
       "diagnostic_active": true,
       "academic_status": "approved_active",
-      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
       "pathway_ids": [
         "PW-LND-001"
-      ]
+      ],
+      "measured_by": "QB-M4-032"
     },
     "unit_economics": {
       "layers": [
@@ -3709,16 +3712,17 @@
     },
     "variance_analysis": {
       "layers": [
-        "pathway_requirement",
-        "learning_outcome"
+        "diagnostic",
+        "pathway_requirement"
       ],
       "active": true,
       "diagnostic_active": true,
       "academic_status": "approved_active",
-      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
       "pathway_ids": [
         "PW-FIN-001"
-      ]
+      ],
+      "measured_by": "QB-M4-033"
     },
     "vendor_management": {
       "layers": [

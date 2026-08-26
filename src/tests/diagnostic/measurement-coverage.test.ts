@@ -66,10 +66,15 @@ describe('الفجوات مرتبة بالأثر لا بالاستعمال', () 
     for (const g of r.gaps) expect(g.state).toBe('registered_unmeasured')
   })
 
-  it('أعلى الفجوات تفتح مسارات فعلا — وإلا فالترتيب بلا معنى', () => {
+  it('الفجوات مرتبة بالأثر تنازليا — وإلا فالترتيب بلا معنى', () => {
     expect(r.gaps.length).toBeGreaterThan(0)
-    expect(r.gaps[0].unlocks.length).toBeGreaterThan(0)
-    expect(r.totals.topThreeUnlock).toBeGreaterThan(0)
+    /* كان هنا شرط «أعلى فجوة تفتح مسارا». صار unlocks صفرا لكل الفجوات في
+       2026-08-26 لأن كل المسارات صارت مغطّاة — ولا مسار مغلق ليُفتح. فالترتيب
+       يُحرس بخاصيته الدائمة: لا فجوة أدنى تسبق أعلى منها أثرا. */
+    for (let i = 1; i < r.gaps.length; i++) {
+      expect(r.gaps[i - 1].unlocks.length).toBeGreaterThanOrEqual(r.gaps[i].unlocks.length)
+    }
+    if (r.gaps[0].unlocks.length > 0) expect(r.totals.topThreeUnlock).toBeGreaterThan(0)
   })
 })
 
@@ -112,8 +117,16 @@ describe('أسئلة القياس المعلّقة', () => {
 describe('جملة الحال', () => {
   it('تقول العدد والثمن والفعل — لا نسبة مجردة', () => {
     const h = coverageHeadlineAr(r)
-    expect(h).toContain(String(r.totals.pathwaysZeroCoverage))
-    expect(h).toContain('٢٥٪')
-    expect(h).toContain(String(r.totals.topThreeUnlock))
+    /* للجملة حالتان في المنتج: نقص وتمام. كان الاختبار يثبّت حالة النقص وحدها
+       حتى بلغت التغطية التمام في 2026-08-26. كلتاهما تُحرس الآن. */
+    if (r.totals.pathwaysZeroCoverage > 0) {
+      expect(h).toContain(String(r.totals.pathwaysZeroCoverage))
+      expect(h).toContain('٢٥٪')
+      expect(h).toContain(String(r.totals.topThreeUnlock))
+    } else {
+      expect(h).toContain(String(r.totals.pathways))
+      expect(h).toContain('مهارة مقيسة')
+      expect(h).not.toContain('خامل')
+    }
   })
 })

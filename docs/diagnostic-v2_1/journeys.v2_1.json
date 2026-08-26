@@ -496,6 +496,15 @@
           ]
         },
         {
+          "questionId": "QB-M4-030",
+          "question_ar": "حين تقابل مرشحا لوظيفة — كيف تصل إلى قرارك؟",
+          "why_now_ar": "فاز أساسًا بسبب: يفصل بين المرشحين المتصدرين بدليل مهارة.",
+          "answer_ar": "أستخدم أسئلة موحدة ومعايير تقييم مكتوبة لكل مرشح",
+          "what_changed": [
+            "+skill:structured_interviewing"
+          ]
+        },
+        {
           "questionId": "QB-M3B-003",
           "question_ar": "هل تتعامل مباشرة مع الجمهور أو العملاء؟",
           "why_now_ar": "فاز أساسًا بسبب: يستكمل سياقك العام.",
@@ -503,22 +512,13 @@
           "what_changed": [
             "+public_facing"
           ]
-        },
-        {
-          "questionId": "QB-M1-011",
-          "question_ar": "هل لديك دليل حالي على مهاراتك: مشروع، شهادة، ملف أعمال، أو نتيجة عملية؟",
-          "why_now_ar": "يكمل الصورة العامة.",
-          "answer_ar": "لا يوجد دليل",
-          "what_changed": [
-            "+evidence_strength"
-          ]
         }
       ],
       "result": {
         "kind": "single_pathway",
         "topPathwayId": "PW-EMP-005",
         "compositeTemplateId": null,
-        "confidence": 0.6156831352596783,
+        "confidence": 0.6234084099849531,
         "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true

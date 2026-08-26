@@ -11,9 +11,14 @@ describe('أ-١ بوابة المصدر — الكتالوج المنشور يج
   })
 
   it('تُبلّغ ما لا يجتازه الكتالوج تحذيرا لا خطأ — الحجب يمحو نصف الترشيحات', () => {
-    /* عشرة مسارات بلا مهارة مقيسة اليوم: واقعة تُعلَن ولا تُفشل الاستيراد */
-    expect(r.stats.pathwaysWithoutMeasurableSkill.length).toBeGreaterThan(0)
-    expect(r.warningsAr.join(' ')).toContain('بلا مهارة مقيسة')
+    /* كان هنا «عشرة مسارات بلا مهارة مقيسة» كواقعة ثابتة. صارت صفرا في
+       2026-08-26 بعد تأليف أسئلة القياس، فلم يعد وجود النقص شرطا يصح تثبيته.
+       العقد المحروس ليس وجود النقص بل **أن النقص يُبلَّغ ولا يُفشل**: فحين
+       يوجد يظهر تحذيرا، وفي الحالتين لا يصير خطأ يُسقط الاستيراد. */
+    if (r.stats.pathwaysWithoutMeasurableSkill.length > 0) {
+      expect(r.warningsAr.join(' ')).toContain('بلا مهارة مقيسة')
+    }
+    expect(r.errorsAr.join(' ')).not.toContain('بلا مهارة مقيسة')
   })
 
   it('تُحصي ما فحصته — فحص لا يقول ما فحصه لا يُثق به', () => {
@@ -52,13 +57,18 @@ describe('أ-٣ تدقيق المسار القياسي', () => {
   })
 
   it('ضعف القياس يُبلَّغ ولا يحجب — وإلا سقط نصف الكتالوج من المنافسة', () => {
+    /* لا مسار بلا مهارة مقيسة منذ 2026-08-26، فوجودُه لم يعد شرطا يصح تثبيته.
+       المحروس أن ضعف القياس لا يُخرج مسارا من المنافسة: أي مسار ضعيف يبقى
+       approved_active بسبب معلن، وكل المسارات تبقى نشطة على أي حال. */
     const unmeasured = launchPathways
       .map((p) => auditStandard(p.id))
       .filter((a) => a.metrics.measurable_skills === 0)
-    expect(unmeasured.length).toBeGreaterThan(0)
     for (const a of unmeasured) {
       expect(a.status).toBe('approved_active')
       expect(a.reasons_ar.join(' ')).toContain('أداة فصل')
+    }
+    for (const p of launchPathways) {
+      expect(auditStandard(p.id).status).toBe('approved_active')
     }
   })
 

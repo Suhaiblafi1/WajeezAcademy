@@ -3200,6 +3200,134 @@
         "market_research"
       ]
     },
+    "QB-M4-030": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "structured_interviewing"
+      ]
+    },
+    "QB-M4-031": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "supply_planning"
+      ]
+    },
+    "QB-M4-032": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "training_needs_analysis"
+      ]
+    },
+    "QB-M4-033": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "variance_analysis"
+      ]
+    },
     "QB-M5-001": {
       "layer": "adaptive",
       "phase": "adaptive",

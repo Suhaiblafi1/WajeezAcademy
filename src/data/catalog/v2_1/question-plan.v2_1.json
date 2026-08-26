@@ -1932,6 +1932,66 @@
       ],
       "final_status": "active_b2c"
     },
+    "QB-M4-030": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "rewrite",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "يقيس مهارة «structured_interviewing» بمقياس الدليل — تغيّر الفجوة المقيسة والثقة لكل مسار يتطلبها.",
+      "why_ar": "سؤال دليل مهاري — يُطرح فقط عندما تكون المهارة متطلبة لمرشح متصدر وقادرة على تغيير الترتيب.",
+      "measures": [
+        "structured_interviewing",
+        "skill_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M4-031": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "rewrite",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "يقيس مهارة «supply_planning» بمقياس الدليل — تغيّر الفجوة المقيسة والثقة لكل مسار يتطلبها.",
+      "why_ar": "سؤال دليل مهاري — يُطرح فقط عندما تكون المهارة متطلبة لمرشح متصدر وقادرة على تغيير الترتيب.",
+      "measures": [
+        "supply_planning",
+        "skill_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M4-032": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "rewrite",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "يقيس مهارة «training_needs_analysis» بمقياس الدليل — تغيّر الفجوة المقيسة والثقة لكل مسار يتطلبها.",
+      "why_ar": "سؤال دليل مهاري — يُطرح فقط عندما تكون المهارة متطلبة لمرشح متصدر وقادرة على تغيير الترتيب.",
+      "measures": [
+        "training_needs_analysis",
+        "skill_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M4-033": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "rewrite",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "يقيس مهارة «variance_analysis» بمقياس الدليل — تغيّر الفجوة المقيسة والثقة لكل مسار يتطلبها.",
+      "why_ar": "سؤال دليل مهاري — يُطرح فقط عندما تكون المهارة متطلبة لمرشح متصدر وقادرة على تغيير الترتيب.",
+      "measures": [
+        "variance_analysis",
+        "skill_vector"
+      ],
+      "final_status": "active_b2c"
+    },
     "QB-M5-001": {
       "surface": "b2c",
       "layer21": "domain_differentiation",
