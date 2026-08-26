@@ -17,3 +17,8 @@ scripts/tmp/
 storage/private/
 .vercel
 .env*
+
+# أدوات الوكيل المحلية — لا تُرفع للمستودع
+.agents/
+.claude/
+skills-lock.json

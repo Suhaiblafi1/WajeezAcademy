@@ -48,6 +48,7 @@
     "test:integration": "npm run test:e2e",
     "test:diagnostic-regression": "tsx scripts/test-diagnostic-regression.ts",
     "test": "npm run test:diagnostic && npm run test:scenarios",
+    "check:theme": "node scripts/check-theme-hex.mjs",
     "audit:skill-coverage": "tsx scripts/with-db.ts tsx scripts/audit-skill-coverage-matrix.ts",
     "seed:demo": "tsx scripts/with-db.ts tsx server/db/seed-demo.ts",
     "build:v2_1-overlays": "tsx scripts/build-v2_1-overlays.ts",
