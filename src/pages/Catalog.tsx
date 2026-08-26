@@ -4,6 +4,7 @@ import { ArrowLeft, BookOpen, Flame, Route, Search, SlidersHorizontal, Users } f
 import { bestsellers, pathways } from '@/data/pathways'
 import { bestsellerCourses, courseCategories, courses, pathwayTrainers, weeksLabel, type Course } from '@/data/courses'
 import CourseModal from '@/components/CourseModal'
+import FavoriteButton from '@/components/FavoriteButton'
 import SiteShell from '@/components/SiteShell'
 import SeoHead from '@/components/SeoHead'
 import { track } from '@/services/analytics'
@@ -200,6 +201,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
                 )}
                 <span className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-white/50">{pwCategory(p.id)}</span>
                 <span className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-white/50">{p.level}</span>
+                <FavoriteButton pathwayId={p.id} pathwayName={p.name} className="-ms-1 ms-auto" />
               </div>
               <h2 className="mt-4 text-lg font-bold leading-relaxed">{p.name}</h2>
               <p className="mt-2 line-clamp-2 text-xs leading-6 text-white/55">{p.transformation}</p>

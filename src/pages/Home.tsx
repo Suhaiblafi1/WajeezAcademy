@@ -17,6 +17,7 @@ import { usePublishedContent } from '@/services/public-content'
 import SeoHead from '@/components/SeoHead'
 import ThemeToggle from '@/components/ThemeToggle'
 import CourseModal from '@/components/CourseModal'
+import FavoriteButton from '@/components/FavoriteButton'
 import Modal from '@/components/Modal'
 import EcosystemNote from '@/components/EcosystemNote'
 import TrustMetricsBar from '@/components/TrustMetricsBar'
@@ -822,9 +823,10 @@ function Bestsellers() {
       {/* البطاقة المميزة — اختيار وجيز الأول في هذا المجال */}
       {spotlight && (
         <div className="mx-auto max-w-6xl px-5">
+          <div className="reveal relative mt-8">
           <Link
             to={`/pathways/${spotlight.id}`}
-            className="reveal group mt-8 grid overflow-hidden rounded-3xl border border-teal/30 bg-gradient-to-l from-panel to-card transition hover:border-teal/60 hover:shadow-[0_30px_80px_-40px_rgba(56,167,180,0.5)] md:grid-cols-5"
+            className="group grid overflow-hidden rounded-3xl border border-teal/30 bg-gradient-to-l from-panel to-card transition hover:border-teal/60 hover:shadow-[0_30px_80px_-40px_rgba(56,167,180,0.5)] md:grid-cols-5"
           >
             <div className="relative flex min-h-[104px] items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_70%_30%,rgba(56,167,180,0.4),transparent_65%)] md:col-span-2 md:min-h-[190px]">
               <Route className="h-10 w-10 text-teal-light-ink/70 md:h-16 md:w-16" />
@@ -855,6 +857,10 @@ function Bestsellers() {
               </span>
             </div>
           </Link>
+          {/* مفضلة البطاقة المميزة — فوق الرابط بزاوية حرة، والنقر لا يفتح المسار */}
+          <FavoriteButton pathwayId={spotlight.id} pathwayName={spotlight.p.name}
+            className="absolute left-3 top-3 z-10 bg-paper/70 backdrop-blur md:left-5 md:top-5" />
+          </div>
         </div>
       )}
 
@@ -883,6 +889,7 @@ function Bestsellers() {
                 {note}
               </span>
               <span className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-muted-foreground">{pathwayCategory(id)}</span>
+              <FavoriteButton pathwayId={id} pathwayName={p.name} className="-ms-1 ms-auto" />
             </div>
             <h3 className="mt-4 text-lg font-bold leading-relaxed">{p.name}</h3>
             <div className="mt-2 text-xs leading-6 text-muted-foreground">

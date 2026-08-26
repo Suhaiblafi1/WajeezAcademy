@@ -25,6 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import AuthGate from "@/components/AuthGate";
+import FavoriteButton from "@/components/FavoriteButton";
 import ThemeToggle from "@/components/ThemeToggle";
 import AdvisorContact from "@/components/AdvisorContact";
 import CourseJourney from "@/components/CourseJourney";
@@ -338,6 +339,7 @@ export default function PathwayPage() {
               <Badge variant="outline" className="border-white/20 text-white/70">{pathway.level}</Badge>
               {custom && !compositeCtx && <Badge className="border border-teal-light/50 bg-teal/15 text-teal-light-ink">نسختك المخصصة</Badge>}
               {compositeCtx && <Badge className="border border-gold/60 bg-gold/15 text-gold-ink">خطة مركبة مخصصة</Badge>}
+              <FavoriteButton pathwayId={pathway.id} pathwayName={pathway.name} className="ms-auto" />
             </div>
             <h1 className="mt-4 text-3xl font-black leading-snug md:text-4xl">{pathway.name}</h1>
             <p className="mt-4 max-w-2xl leading-loose text-white/65">{pathway.transformation}</p>
