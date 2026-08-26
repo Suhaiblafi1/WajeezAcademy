@@ -201,6 +201,16 @@ export function buildQuestionPlan(src: OverlaySource): { plan: Record<string, Pl
     }
     const ov = overrides[q.question_id]
     if (ov) entry = { ...entry, ...ov } as PlanEntry
+    /* سؤال متقاعد في البنك (active:false) لا يصل المتعلم أبدًا — catalog.ts يرشّحه
+       خارج السطح. فلو بقيت الخطة تصفه active_b2c لناقضت التشغيل الفعلي. */
+    if (q.active === false) {
+      entry = {
+        ...entry,
+        surface: 'retired_b2c', layer21: null, phase: 'none', action: 'retire', stages: [],
+        why_ar: q.retired_reason_ar ?? entry.why_ar,
+        impact_ar: 'لا أثر — متقاعد من البنك.',
+      }
+    }
     /* سؤال B2C نشط بلا جملة حاسمة = تقاعد إجباري */
     if (entry.surface === 'b2c' && entry.action !== 'replaced' && !keepSentence(entry)) {
       entry = {

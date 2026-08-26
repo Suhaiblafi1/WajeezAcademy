@@ -66,6 +66,8 @@ interface BankQ {
   weight: number
   active: boolean
   version?: string
+  /** سؤال M4 مؤلَّف بصياغة موقفية نهائية — يمر بلا إعادة كتابة بالقالب العام */
+  v2_1_authored?: boolean
 }
 
 const bank = (bankJson as unknown as { questions: BankQ[] }).questions
@@ -209,9 +211,15 @@ const EVIDENCE_OPTIONS = [
 const m4Overrides: BankQ[] = bank
   .filter((q) => q.module_id === 'M4')
   .map((q) => {
+    /* سؤال مؤلَّف بصياغة موقفية خاصة: نصه وخياراته نهائية في البنك، فيمر كما هو.
+       القالب العام أدناه يصف المهارة بمصطلحها، والمؤلَّف يصف موقفًا يتعرّف
+       المتعلم على نفسه فيه — فلا يُعاد كتابته. */
+    if (q.v2_1_authored) return { ...q }
     let topic = q.text_ar.replace(/^قيّم مستواك الحالي في\s*/, '')
     const colon = topic.indexOf(':')
     if (colon > 0) topic = topic.slice(0, colon)
+    /* بلا هذا التشذيب ينتج «...بطريقة واضحة.؟» في كل سؤال بلا نقطتين في نصه */
+    topic = topic.replace(/[\s.،؟!]+$/, '')
     return {
       ...q,
       text_ar: `أي وصف يقترب أكثر من خبرتك العملية في ${topic}؟`,

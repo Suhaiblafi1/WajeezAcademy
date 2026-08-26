@@ -15,6 +15,10 @@ export interface OverlayQuestion {
   sensitivity_level?: string
   /** أثر القرار كما كتبه المؤلّف — تقرؤه خطة V2.1 لجملة «هذا السؤال موجود لأن…» */
   decision_impact?: string
+  /** غياب الحقل = نشط (نفس دلالة الملف: active !== false). false = متقاعد لا يصل المتعلم */
+  active?: boolean
+  /** سبب التقاعد الموثق — تنقله الخطة إلى why_ar كي يبقى القرار مقروءا */
+  retired_reason_ar?: string
 }
 
 export interface OverlaySkill {

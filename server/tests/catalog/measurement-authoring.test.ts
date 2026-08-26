@@ -10,8 +10,12 @@ import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthError } from '../../services/auth.service'
 import { CatalogAdminService } from '../../services/catalog-admin.service'
 
-/* PW-CYB-001 مسار صفري التغطية في الكتالوج المنشور، وrisk_management من مهاراته */
-const TARGET_PATHWAY = 'PW-CYB-001'
+/* مسار صفري التغطية في الكتالوج المنشور، وrisk_management من مهاراته.
+   كان PW-CYB-001 حتى 2026-08-26، ثم صار مغطّى بسؤال clear_expression الجديد
+   (QB-M4-028) فلم يعد يصلح «حالة قبل». المسارات الصفرية الباقية التي يفتحها
+   risk_management: PW-AUT-001 · PW-FIN-001 · PW-SCM-001 — واخترنا الأول.
+   لو غُطّيت كلها لاحقا فهذا نجاح لا عطل: يُختار مسار صفري آخر ومهارته. */
+const TARGET_PATHWAY = 'PW-AUT-001'
 const SKILL = 'risk_management'
 const QID = 'QB-M4-901'
 

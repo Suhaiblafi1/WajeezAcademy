@@ -3104,6 +3104,102 @@
         "entrepreneurship_basics"
       ]
     },
+    "QB-M4-027": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "active_listening"
+      ]
+    },
+    "QB-M4-028": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "clear_expression"
+      ]
+    },
+    "QB-M4-029": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "market_research"
+      ]
+    },
     "QB-M5-001": {
       "layer": "adaptive",
       "phase": "adaptive",

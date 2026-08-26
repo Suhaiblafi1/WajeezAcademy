@@ -191,8 +191,17 @@ describe('Regression المرحلة 4 — عدالة الدليل المهاري
       interest: 'أعمال',
     })
     expect(asked, 'حد الدليل الأدنى لم يقس أي حاسمة للمتصدر').toContain('QB-M4-010')
-    expect(rec.kind).toBe('composite_template')
-    expect(rec.composite!.templateId).toBe('TPL-FREELANCE-001')
+    /* قياس 2026-08-26: كان الفائز هنا TPL-FREELANCE-001. لم يتغيّر الترتيب الخام
+       — PW-BIZ-001 كان ولا يزال أعلى صافيا (0.858 ثم 0.837) — بل تغيّر منح القالب
+       ترقيته: القالب يشترط 7 حقائق بتغطية ≥ 0.8، وsales_negotiation لا يُنتجها
+       إلا QB-M3C-008. وبإضافة أسئلة المهارات الثلاثة زاحمت المقاعدَ داخل سقف
+       الأربعة عشر سؤالا فسقط QB-M3C-008، فنزلت التغطية دون البوابة.
+       المفاضلة قِيست على 400 شخصية لا قُدِّرت: القوالب المركبة 3 ← 2، مقابل
+       نزول الإحالة/الاستكشاف 146 ← 139 — أي سبعة متعلمين إضافيين ينالون
+       توصية محددة بدل تحويلهم لمستشار. أُبقيت الأسئلة والمكسب الأكبر.
+       الأقفال الثلاثة التي وُضع الاختبار لحراستها باقية كما هي أدناه. */
+    expect(rec.kind).toBe('single_pathway')
+    expect(rec.primaryPathway!.pathwayId).toBe('PW-BIZ-001')
     const winner = comp.candidates[0]
     expect(winner.skills.gapSkillSlugs, 'مهارة مجهولة احتُسبت فجوة').not.toContain('negotiation')
     expect(JSON.stringify(rec.reasons_ar), 'مهارة مجهولة تسللت إلى الشرح').not.toContain('negotiation')

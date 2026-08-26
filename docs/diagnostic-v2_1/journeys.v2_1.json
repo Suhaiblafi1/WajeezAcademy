@@ -271,6 +271,15 @@
           ]
         },
         {
+          "questionId": "QB-M4-028",
+          "question_ar": "حين تشرح فكرتك لشخص من خارج تخصصك — كيف تصل عادة؟",
+          "why_now_ar": "فاز أساسًا بسبب: يفصل بين المرشحين المتصدرين بدليل مهارة.",
+          "answer_ar": "أبسّطها حين ألاحظ أن المستمع تاه",
+          "what_changed": [
+            "+skill:clear_expression"
+          ]
+        },
+        {
           "questionId": "QB-M3B-003",
           "question_ar": "هل تتعامل مباشرة مع الجمهور أو العملاء؟",
           "why_now_ar": "فاز أساسًا بسبب: يستكمل سياقك العام.",
@@ -287,22 +296,13 @@
           "what_changed": [
             "+leadership_context"
           ]
-        },
-        {
-          "questionId": "QB-M1-011",
-          "question_ar": "هل لديك دليل حالي على مهاراتك: مشروع، شهادة، ملف أعمال، أو نتيجة عملية؟",
-          "why_now_ar": "يكمل الصورة العامة.",
-          "answer_ar": "لا يوجد دليل",
-          "what_changed": [
-            "+evidence_strength"
-          ]
         }
       ],
       "result": {
         "kind": "single_pathway",
         "topPathwayId": "PW-FND-003",
         "compositeTemplateId": null,
-        "confidence": 0.6050953653236884,
+        "confidence": 0.6084286986570215,
         "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true
@@ -487,6 +487,15 @@
           ]
         },
         {
+          "questionId": "QB-M4-027",
+          "question_ar": "حين يشرح لك زميل أو عميل مشكلة غير واضحة — ما أقرب وصف لما تفعله؟",
+          "why_now_ar": "فاز أساسًا بسبب: يفصل بين المرشحين المتصدرين بدليل مهارة.",
+          "answer_ar": "أعيد صياغة ما فهمته عليه قبل أن أرد، بانتظام",
+          "what_changed": [
+            "+skill:active_listening"
+          ]
+        },
+        {
           "questionId": "QB-M3B-003",
           "question_ar": "هل تتعامل مباشرة مع الجمهور أو العملاء؟",
           "why_now_ar": "فاز أساسًا بسبب: يستكمل سياقك العام.",
@@ -503,22 +512,13 @@
           "what_changed": [
             "+evidence_strength"
           ]
-        },
-        {
-          "questionId": "QB-M2-015",
-          "question_ar": "ما مدى استعدادك لتطبيق عملي ومهام خارج مشاهدة المحتوى؟",
-          "why_now_ar": "يكمل الصورة العامة.",
-          "answer_ar": "منخفضة جدا",
-          "what_changed": [
-            "+application_readiness"
-          ]
         }
       ],
       "result": {
         "kind": "single_pathway",
         "topPathwayId": "PW-EMP-005",
         "compositeTemplateId": null,
-        "confidence": 0.6170977010860087,
+        "confidence": 0.6156831352596783,
         "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true
@@ -694,6 +694,33 @@
           ]
         },
         {
+          "questionId": "QB-M4-027",
+          "question_ar": "حين يشرح لك زميل أو عميل مشكلة غير واضحة — ما أقرب وصف لما تفعله؟",
+          "why_now_ar": "فاز أساسًا بسبب: يفصل بين المرشحين المتصدرين بدليل مهارة.",
+          "answer_ar": "أسأل أسئلة توضيح حين أنتبه إلى ذلك في مواقف معينة",
+          "what_changed": [
+            "+skill:active_listening"
+          ]
+        },
+        {
+          "questionId": "QB-M4-028",
+          "question_ar": "حين تشرح فكرتك لشخص من خارج تخصصك — كيف تصل عادة؟",
+          "why_now_ar": "فاز أساسًا بسبب: يفصل بين المرشحين المتصدرين بدليل مهارة.",
+          "answer_ar": "أبسّطها حين ألاحظ أن المستمع تاه",
+          "what_changed": [
+            "+skill:clear_expression"
+          ]
+        },
+        {
+          "questionId": "QB-M4-029",
+          "question_ar": "قبل أن تقرر أن فكرة أو منتجا أو تخصصا يستحق — من أين تأتي بمعلوماتك عن السوق؟",
+          "why_now_ar": "فاز أساسًا بسبب: يقيس مهارة حاسمة للمتصدر قبل أي اكتفاء.",
+          "answer_ar": "بحثت مرة في مشروع أو مهمة دراسية",
+          "what_changed": [
+            "+skill:market_research"
+          ]
+        },
+        {
           "questionId": "QB-M3C-007",
           "question_ar": "هل تتحدث مع العملاء لفهم مشاكلهم قبل بناء الحل؟",
           "why_now_ar": "فاز أساسًا بسبب: يفصل بين المرشحين المتصدرين بدليل مهارة.",
@@ -701,37 +728,13 @@
           "what_changed": [
             "+customer_discovery"
           ]
-        },
-        {
-          "questionId": "QB-M3B-003",
-          "question_ar": "هل تتعامل مباشرة مع الجمهور أو العملاء؟",
-          "why_now_ar": "فاز أساسًا بسبب: يستكمل سياقك العام.",
-          "answer_ar": "نعم",
-          "what_changed": [
-            "+public_facing"
-          ]
-        },
-        {
-          "questionId": "QB-M3C-002",
-          "question_ar": "هل عرضك أو منتجك واضح لمن يشتريه؟",
-          "why_now_ar": "فاز أساسًا بسبب: يستكمل سياقك العام.",
-          "answer_ar": "غير واضح",
-          "what_changed": [
-            "+offer_clarity"
-          ]
-        },
-        {
-          "questionId": "QB-M3C-011",
-          "question_ar": "هل تعمل وحدك أم مع فريق؟",
-          "why_now_ar": "فاز أساسًا بسبب: يستكمل سياقك العام.",
-          "what_changed": []
         }
       ],
       "result": {
         "kind": "single_pathway",
         "topPathwayId": "PW-SAL-001",
         "compositeTemplateId": null,
-        "confidence": 0.6342280701051262,
+        "confidence": 0.6444220845530104,
         "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true
@@ -829,7 +832,7 @@
     {
       "persona": "غير محسوم",
       "stage": "other_unsure",
-      "questionsCount": 12,
+      "questionsCount": 14,
       "steps": [
         {
           "questionId": "QC-S1-001",
@@ -880,15 +883,6 @@
           ]
         },
         {
-          "questionId": "QB-M3E-004",
-          "question_ar": "هل جرّبت عمليا أي مسار قبل الحكم عليه؟",
-          "why_now_ar": "فاز أساسًا بسبب: يستكشف ميولك لأن الهدف غير محسوم.",
-          "answer_ar": "لا يوجد دليل",
-          "what_changed": [
-            "+exploration_evidence"
-          ]
-        },
-        {
           "questionId": "QB-M5-001",
           "question_ar": "أستمتع بالأعمال التي تتضمن أدوات، أجهزة، أو نتائج ملموسة.",
           "why_now_ar": "فاز أساسًا بسبب: يستكشف ميولك لأن الهدف غير محسوم.",
@@ -929,13 +923,40 @@
           "why_now_ar": "فاز أساسًا بسبب: يستكشف ميولك لأن الهدف غير محسوم.",
           "answer_ar": "ينطبق أحيانا",
           "what_changed": []
+        },
+        {
+          "questionId": "QB-M3E-002",
+          "question_ar": "ما المجالات التي تجذبك ولو قليلا؟",
+          "why_now_ar": "فاز أساسًا بسبب: يستكشف ميولك لأن الهدف غير محسوم.",
+          "answer_ar": "تقنية",
+          "what_changed": [
+            "+interest_domains"
+          ]
+        },
+        {
+          "questionId": "QB-M4-027",
+          "question_ar": "حين يشرح لك زميل أو عميل مشكلة غير واضحة — ما أقرب وصف لما تفعله؟",
+          "why_now_ar": "مهارة حاسمة لأحد مرشحي الصدارة ما زالت مجهولة في سباق حي — قياسها يسبق منح المتحدين فرصًا إضافية.",
+          "answer_ar": "أسأل أسئلة توضيح حين أنتبه إلى ذلك في مواقف معينة",
+          "what_changed": [
+            "+skill:active_listening"
+          ]
+        },
+        {
+          "questionId": "QB-M4-029",
+          "question_ar": "قبل أن تقرر أن فكرة أو منتجا أو تخصصا يستحق — من أين تأتي بمعلوماتك عن السوق؟",
+          "why_now_ar": "مهارة حاسمة لأحد مرشحي الصدارة ما زالت مجهولة في سباق حي — قياسها يسبق منح المتحدين فرصًا إضافية.",
+          "answer_ar": "بحثت مرة في مشروع أو مهمة دراسية",
+          "what_changed": [
+            "+skill:market_research"
+          ]
         }
       ],
       "result": {
-        "kind": "exploratory_direction",
-        "topPathwayId": null,
+        "kind": "single_pathway",
+        "topPathwayId": "PW-STU-003",
         "compositeTemplateId": null,
-        "confidence": 0.5215109573241061,
+        "confidence": 0.5145364144976444,
         "outputKind_ar": "اتجاه استكشافي"
       },
       "deterministic": true

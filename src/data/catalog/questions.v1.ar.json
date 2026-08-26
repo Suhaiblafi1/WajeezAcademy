@@ -3135,7 +3135,8 @@
       "required_level": "core",
       "weight": 1.0,
       "reference_anchor": "Wajeez-PRD",
-      "active": true
+      "active": false,
+      "retired_reason_ar": "ميت كليا: 54 مقعدا عبر 300 جلسة، ولا جواب من أجوبته غيّر المسار أو الثقة ولو مرة (تدقيق مضاد للواقع)."
     },
     {
       "question_id": "QB-M3E-005",
@@ -4080,6 +4081,99 @@
       "weight": 1.1,
       "reference_anchor": "WEF",
       "active": true
+    },
+    {
+      "question_id": "QB-M4-027",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "حين يشرح لك زميل أو عميل مشكلة غير واضحة — ما أقرب وصف لما تفعله؟",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "أرد بأول حل يخطر لي قبل أن يكمل كلامه",
+        "أعرف أن عليّ الإنصات أولا، لكني نادرا ما أطبقه فعلا",
+        "أسأل أسئلة توضيح حين أنتبه إلى ذلك في مواقف معينة",
+        "أعيد صياغة ما فهمته عليه قبل أن أرد، بانتظام",
+        "أدرّب غيري على ذلك، ولديّ موقف غيّر مساره إصغائي"
+      ],
+      "options_key": "evidence_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "active_listening",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة. — أعلى مهارة غير مقيسة أثرا: تظهر مجهولة في 47٪ من الجلسات وتتطلبها 9 دورات.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "WEF",
+      "active": true,
+      "v2_1_authored": true
+    },
+    {
+      "question_id": "QB-M4-028",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "حين تشرح فكرتك لشخص من خارج تخصصك — كيف تصل عادة؟",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "أشرحها كما أفهمها أنا، ومن لم يفهم فليسأل",
+        "أعرف أن عليّ تبسيطها، لكني لا أعرف كيف",
+        "أبسّطها حين ألاحظ أن المستمع تاه",
+        "أختار مستوى الشرح حسب جمهوري قبل أن أبدأ",
+        "أعيد صياغة عمل غيري ليكون مفهوما، ولديّ مخرج اعتُمد بسبب وضوحه"
+      ],
+      "options_key": "evidence_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "clear_expression",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة. — تظهر مجهولة في 36٪ من الجلسات وتتطلبها 7 دورات عبر 7 مسارات.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "WEF",
+      "active": true,
+      "v2_1_authored": true
+    },
+    {
+      "question_id": "QB-M4-029",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قبل أن تقرر أن فكرة أو منتجا أو تخصصا يستحق — من أين تأتي بمعلوماتك عن السوق؟",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "من انطباعي وممّا أسمعه من المحيطين بي",
+        "أعرف أن هناك طرقا للبحث لكني لم أستخدمها",
+        "بحثت مرة في مشروع أو مهمة دراسية",
+        "أجمع بيانات سوق بانتظام قبل القرارات المهمة",
+        "بنيت تحليل سوق اعتُمد في قرار حقيقي — تسعير أو إطلاق أو توظيف"
+      ],
+      "options_key": "evidence_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "market_research",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة. — تظهر مجهولة في 32٪ من الجلسات وتتطلبها 6 دورات عبر 6 مسارات.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "WEF",
+      "active": true,
+      "v2_1_authored": true
     },
     {
       "question_id": "QB-M5-001",

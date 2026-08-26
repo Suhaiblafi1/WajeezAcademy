@@ -111,7 +111,7 @@ describe('بنية أسئلة B2C — معايير النجاح', () => {
     expect(asked).not.toContain('QB-M1-010')
   })
 
-  it('التوفيق النهائي: كل سؤال له final_status واحدة والمجموع = 198', () => {
+  it('التوفيق النهائي: كل سؤال له final_status واحدة والمجموع = 201', () => {
     const counts: Record<string, number> = {}
     for (const [id, p] of Object.entries(questionPlanV21)) {
       expect(p.final_status, `سؤال بلا حالة نهائية: ${id}`).toBeDefined()
@@ -123,8 +123,8 @@ describe('بنية أسئلة B2C — معايير النجاح', () => {
       if (p.surface === 'retired_b2c') expect(['retired', 'out_of_scope']).toContain(p.final_status)
       counts[p.final_status] = (counts[p.final_status] ?? 0) + 1
     }
-    expect(Object.keys(questionPlanV21).length).toBe(198)
-    expect(Object.values(counts).reduce((a, b) => a + b, 0)).toBe(198)
+    expect(Object.keys(questionPlanV21).length).toBe(201)
+    expect(Object.values(counts).reduce((a, b) => a + b, 0)).toBe(201)
     /* الأرقام المرجعية الموثقة — أي تغيير يتطلب تحديثًا مقصودًا لهذا الاختبار.
        المرحلة 4: نُقلت أسئلة المهارات الأربع المقاسة غير المغطاة
        (QB-M4-002/005/023/025) إلى ما بعد التوصية بقرار أكاديمي موثق.
@@ -134,8 +134,12 @@ describe('بنية أسئلة B2C — معايير النجاح', () => {
        التوصية: قياسها قبل النتيجة مقعد بلا أثر قراري.
        حوكمة 2026-08-19: QB-M4-002 (creative_thinking) → retired_b2c — فحص
        الكود أثبت عدم وجود أي فعل تخصيص مبرمج يستهلك قياسها؛ لا تُسأل لمجرد
-       جمع البيانات (post_recommendation 38→37 · retired 58→59) */
-    expect(counts).toEqual({ active_b2c: 62, deep_only: 11, post_recommendation: 37, institutional: 14, retired: 59, out_of_scope: 15 })
+       جمع البيانات (post_recommendation 38→37 · retired 58→59)
+       قياس 2026-08-26: أُضيفت ثلاثة أسئلة مهارية موقفية (QB-M4-027 إصغاء ·
+       028 تعبير · 029 بحث سوق) تقيس أعلى ثلاث مهارات غير مقيسة أثرا، فارتفع
+       active_b2c 62→65؛ وتقاعد QB-M3E-004 (ميت كليا: 54 مقعدا بلا أثر ولا
+       مستهلك تصريحي لمفتاحه) فعاد 65→64 وretired 59→60. المجموع 198→201. */
+    expect(counts).toEqual({ active_b2c: 64, deep_only: 11, post_recommendation: 37, institutional: 14, retired: 60, out_of_scope: 15 })
   })
 
   it('كل سؤال نشط في B2C له أثر قراري موثق في الخطة', () => {

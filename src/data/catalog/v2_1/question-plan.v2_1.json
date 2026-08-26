@@ -1400,18 +1400,18 @@
       "final_status": "retired"
     },
     "QB-M3E-004": {
-      "surface": "b2c",
-      "layer21": "evidence_skill",
-      "phase": "adaptive",
-      "action": "keep",
-      "stages": "all",
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
       "domains": [],
-      "impact_ar": "تغيّر نوع المخرج (استكشافي مقابل تطابق).",
-      "why_ar": "التجربة العملية السابقة دليل يفصل الاستكشاف الجاد عن الفضول.",
+      "impact_ar": "لا أثر — متقاعد من البنك.",
+      "why_ar": "ميت كليا: 54 مقعدا عبر 300 جلسة، ولا جواب من أجوبته غيّر المسار أو الثقة ولو مرة (تدقيق مضاد للواقع).",
       "measures": [
         "exploration_evidence"
       ],
-      "final_status": "active_b2c"
+      "final_status": "retired"
     },
     "QB-M3E-005": {
       "surface": "retired_b2c",
@@ -1886,6 +1886,51 @@
         "skill_vector"
       ],
       "final_status": "post_recommendation"
+    },
+    "QB-M4-027": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "rewrite",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "يقيس مهارة «active_listening» بمقياس الدليل — تغيّر الفجوة المقيسة والثقة لكل مسار يتطلبها.",
+      "why_ar": "سؤال دليل مهاري — يُطرح فقط عندما تكون المهارة متطلبة لمرشح متصدر وقادرة على تغيير الترتيب.",
+      "measures": [
+        "active_listening",
+        "skill_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M4-028": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "rewrite",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "يقيس مهارة «clear_expression» بمقياس الدليل — تغيّر الفجوة المقيسة والثقة لكل مسار يتطلبها.",
+      "why_ar": "سؤال دليل مهاري — يُطرح فقط عندما تكون المهارة متطلبة لمرشح متصدر وقادرة على تغيير الترتيب.",
+      "measures": [
+        "clear_expression",
+        "skill_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M4-029": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "rewrite",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "يقيس مهارة «market_research» بمقياس الدليل — تغيّر الفجوة المقيسة والثقة لكل مسار يتطلبها.",
+      "why_ar": "سؤال دليل مهاري — يُطرح فقط عندما تكون المهارة متطلبة لمرشح متصدر وقادرة على تغيير الترتيب.",
+      "measures": [
+        "market_research",
+        "skill_vector"
+      ],
+      "final_status": "active_b2c"
     },
     "QB-M5-001": {
       "surface": "b2c",
