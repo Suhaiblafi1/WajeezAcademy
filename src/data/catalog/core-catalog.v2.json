@@ -13805,535 +13805,624 @@
    "skill_id": "SK-X-AUT-001",
    "slug": "process_mapping",
    "name_ar": "رسم العمليات وتحليل التدفق",
-   "family_id": "AUT"
+   "family_id": "AUT",
+   "family_ar": "أتمتة الأعمال وتكامل الأنظمة"
   },
   {
    "skill_id": "SK-X-AUT-002",
    "slug": "automation_opportunity_analysis",
    "name_ar": "تحليل فرص الأتمتة وجدواها",
-   "family_id": "AUT"
+   "family_id": "AUT",
+   "family_ar": "أتمتة الأعمال وتكامل الأنظمة"
   },
   {
    "skill_id": "SK-X-AUT-003",
    "slug": "api_integration_basics",
    "name_ar": "أساسيات التكامل وواجهات API",
-   "family_id": "AUT"
+   "family_id": "AUT",
+   "family_ar": "أتمتة الأعمال وتكامل الأنظمة"
   },
   {
    "skill_id": "SK-X-AUT-004",
    "slug": "workflow_automation",
    "name_ar": "تصميم سير العمل الآلي",
-   "family_id": "AUT"
+   "family_id": "AUT",
+   "family_ar": "أتمتة الأعمال وتكامل الأنظمة"
   },
   {
    "skill_id": "SK-X-AUT-005",
    "slug": "knowledge_base_design",
    "name_ar": "تصميم قواعد المعرفة",
-   "family_id": "AUT"
+   "family_id": "AUT",
+   "family_ar": "أتمتة الأعمال وتكامل الأنظمة"
   },
   {
    "skill_id": "SK-X-AUT-006",
    "slug": "agent_design",
    "name_ar": "تصميم وكلاء الذكاء الاصطناعي",
-   "family_id": "AUT"
+   "family_id": "AUT",
+   "family_ar": "أتمتة الأعمال وتكامل الأنظمة"
   },
   {
    "skill_id": "SK-X-AUT-007",
    "slug": "human_in_loop_controls",
    "name_ar": "ضوابط الإشراف البشري",
-   "family_id": "AUT"
+   "family_id": "AUT",
+   "family_ar": "أتمتة الأعمال وتكامل الأنظمة"
   },
   {
    "skill_id": "SK-X-MKT-001",
    "slug": "marketing_strategy",
    "name_ar": "استراتيجية التسويق",
-   "family_id": "MKT"
+   "family_id": "MKT",
+   "family_ar": "التسويق ونمو العملاء"
   },
   {
    "skill_id": "SK-X-MKT-002",
    "slug": "customer_segmentation",
    "name_ar": "تقسيم العملاء",
-   "family_id": "MKT"
+   "family_id": "MKT",
+   "family_ar": "التسويق ونمو العملاء"
   },
   {
    "skill_id": "SK-X-MKT-003",
    "slug": "customer_journey_marketing",
    "name_ar": "تصميم رحلة العميل التسويقية",
-   "family_id": "MKT"
+   "family_id": "MKT",
+   "family_ar": "التسويق ونمو العملاء"
   },
   {
    "skill_id": "SK-X-MKT-004",
    "slug": "funnel_design",
    "name_ar": "تصميم قمع التحويل",
-   "family_id": "MKT"
+   "family_id": "MKT",
+   "family_ar": "التسويق ونمو العملاء"
   },
   {
    "skill_id": "SK-X-MKT-005",
    "slug": "lifecycle_marketing",
    "name_ar": "التسويق عبر دورة حياة العميل",
-   "family_id": "MKT"
+   "family_id": "MKT",
+   "family_ar": "التسويق ونمو العملاء"
   },
   {
    "skill_id": "SK-X-MKT-006",
    "slug": "campaign_measurement",
    "name_ar": "قياس الحملات التسويقية",
-   "family_id": "MKT"
+   "family_id": "MKT",
+   "family_ar": "التسويق ونمو العملاء"
   },
   {
    "skill_id": "SK-X-SAL-001",
    "slug": "ideal_customer_profile",
    "name_ar": "بناء ملف العميل المثالي",
-   "family_id": "SAL"
+   "family_id": "SAL",
+   "family_ar": "المبيعات وتنمية الأعمال"
   },
   {
    "skill_id": "SK-X-SAL-002",
    "slug": "prospecting",
    "name_ar": "توليد العملاء المحتملين",
-   "family_id": "SAL"
+   "family_id": "SAL",
+   "family_ar": "المبيعات وتنمية الأعمال"
   },
   {
    "skill_id": "SK-X-SAL-003",
    "slug": "consultative_selling",
    "name_ar": "البيع الاستشاري",
-   "family_id": "SAL"
+   "family_id": "SAL",
+   "family_ar": "المبيعات وتنمية الأعمال"
   },
   {
    "skill_id": "SK-X-SAL-004",
    "slug": "proposal_design",
    "name_ar": "تصميم العروض التجارية",
-   "family_id": "SAL"
+   "family_id": "SAL",
+   "family_ar": "المبيعات وتنمية الأعمال"
   },
   {
    "skill_id": "SK-X-SAL-005",
    "slug": "account_management",
    "name_ar": "إدارة الحسابات وتنميتها",
-   "family_id": "SAL"
+   "family_id": "SAL",
+   "family_ar": "المبيعات وتنمية الأعمال"
   },
   {
    "skill_id": "SK-X-HR-001",
    "slug": "workforce_planning",
    "name_ar": "تخطيط القوى العاملة",
-   "family_id": "HR"
+   "family_id": "HR",
+   "family_ar": "إدارة الموارد البشرية والمواهب"
   },
   {
    "skill_id": "SK-X-HR-002",
    "slug": "job_analysis",
    "name_ar": "تحليل وتصميم الوظائف",
-   "family_id": "HR"
+   "family_id": "HR",
+   "family_ar": "إدارة الموارد البشرية والمواهب"
   },
   {
    "skill_id": "SK-X-HR-003",
    "slug": "competency_frameworks",
    "name_ar": "بناء أطر الجدارات",
-   "family_id": "HR"
+   "family_id": "HR",
+   "family_ar": "إدارة الموارد البشرية والمواهب"
   },
   {
    "skill_id": "SK-X-HR-004",
    "slug": "structured_interviewing",
    "name_ar": "المقابلات المنظمة",
-   "family_id": "HR"
+   "family_id": "HR",
+   "family_ar": "إدارة الموارد البشرية والمواهب"
   },
   {
    "skill_id": "SK-X-HR-005",
    "slug": "selection_design",
    "name_ar": "تصميم قرارات الاختيار",
-   "family_id": "HR"
+   "family_id": "HR",
+   "family_ar": "إدارة الموارد البشرية والمواهب"
   },
   {
    "skill_id": "SK-X-HR-006",
    "slug": "performance_cycle_design",
    "name_ar": "تصميم دورة إدارة الأداء",
-   "family_id": "HR"
+   "family_id": "HR",
+   "family_ar": "إدارة الموارد البشرية والمواهب"
   },
   {
    "skill_id": "SK-X-HR-007",
    "slug": "learning_needs_analysis",
    "name_ar": "تحليل احتياجات التعلم",
-   "family_id": "HR"
+   "family_id": "HR",
+   "family_ar": "إدارة الموارد البشرية والمواهب"
   },
   {
    "skill_id": "SK-X-HR-008",
    "slug": "people_analytics",
    "name_ar": "تحليلات الموارد البشرية",
-   "family_id": "HR"
+   "family_id": "HR",
+   "family_ar": "إدارة الموارد البشرية والمواهب"
   },
   {
    "skill_id": "SK-X-HR-009",
    "slug": "hr_privacy_ethics",
    "name_ar": "أخلاقيات وخصوصية بيانات الموظفين",
-   "family_id": "HR"
+   "family_id": "HR",
+   "family_ar": "إدارة الموارد البشرية والمواهب"
   },
   {
    "skill_id": "SK-X-FIN-001",
    "slug": "cost_analysis",
    "name_ar": "تحليل التكاليف والهوامش",
-   "family_id": "FINX"
+   "family_id": "FINX",
+   "family_ar": "الإدارة المالية وقرارات الاستثمار"
   },
   {
    "skill_id": "SK-X-FIN-002",
    "slug": "budgeting_forecasting",
    "name_ar": "الموازنة والتنبؤ المالي",
-   "family_id": "FINX"
+   "family_id": "FINX",
+   "family_ar": "الإدارة المالية وقرارات الاستثمار"
   },
   {
    "skill_id": "SK-X-FIN-003",
    "slug": "variance_analysis",
    "name_ar": "تحليل الانحرافات",
-   "family_id": "FINX"
+   "family_id": "FINX",
+   "family_ar": "الإدارة المالية وقرارات الاستثمار"
   },
   {
    "skill_id": "SK-X-FIN-004",
    "slug": "working_capital",
    "name_ar": "إدارة رأس المال العامل",
-   "family_id": "FINX"
+   "family_id": "FINX",
+   "family_ar": "الإدارة المالية وقرارات الاستثمار"
   },
   {
    "skill_id": "SK-X-FIN-005",
    "slug": "cashflow_forecasting",
    "name_ar": "التنبؤ بالتدفقات النقدية",
-   "family_id": "FINX"
+   "family_id": "FINX",
+   "family_ar": "الإدارة المالية وقرارات الاستثمار"
   },
   {
    "skill_id": "SK-X-FIN-006",
    "slug": "investment_appraisal",
    "name_ar": "تقييم القرارات الاستثمارية",
-   "family_id": "FINX"
+   "family_id": "FINX",
+   "family_ar": "الإدارة المالية وقرارات الاستثمار"
   },
   {
    "skill_id": "SK-X-FIN-007",
    "slug": "financial_dashboarding",
    "name_ar": "تصميم لوحات القرار المالي",
-   "family_id": "FINX"
+   "family_id": "FINX",
+   "family_ar": "الإدارة المالية وقرارات الاستثمار"
   },
   {
    "skill_id": "SK-X-PRD-001",
    "slug": "product_strategy",
    "name_ar": "استراتيجية المنتج",
-   "family_id": "PRD"
+   "family_id": "PRD",
+   "family_ar": "إدارة المنتج وتجربة المستخدم"
   },
   {
    "skill_id": "SK-X-PRD-002",
    "slug": "product_discovery",
    "name_ar": "اكتشاف المنتج",
-   "family_id": "PRD"
+   "family_id": "PRD",
+   "family_ar": "إدارة المنتج وتجربة المستخدم"
   },
   {
    "skill_id": "SK-X-PRD-003",
    "slug": "user_research",
    "name_ar": "بحث المستخدم",
-   "family_id": "PRD"
+   "family_id": "PRD",
+   "family_ar": "إدارة المنتج وتجربة المستخدم"
   },
   {
    "skill_id": "SK-X-PRD-004",
    "slug": "prototyping",
    "name_ar": "بناء النماذج الأولية",
-   "family_id": "PRD"
+   "family_id": "PRD",
+   "family_ar": "إدارة المنتج وتجربة المستخدم"
   },
   {
    "skill_id": "SK-X-PRD-005",
    "slug": "mvp_design",
    "name_ar": "تصميم المنتج الأولي القابل للاختبار",
-   "family_id": "PRD"
+   "family_id": "PRD",
+   "family_ar": "إدارة المنتج وتجربة المستخدم"
   },
   {
    "skill_id": "SK-X-PRD-006",
    "slug": "product_roadmapping",
    "name_ar": "بناء خريطة طريق المنتج",
-   "family_id": "PRD"
+   "family_id": "PRD",
+   "family_ar": "إدارة المنتج وتجربة المستخدم"
   },
   {
    "skill_id": "SK-X-PRD-007",
    "slug": "backlog_management",
    "name_ar": "إدارة قائمة عمل المنتج",
-   "family_id": "PRD"
+   "family_id": "PRD",
+   "family_ar": "إدارة المنتج وتجربة المستخدم"
   },
   {
    "skill_id": "SK-X-PRD-008",
    "slug": "product_metrics",
    "name_ar": "مؤشرات المنتج",
-   "family_id": "PRD"
+   "family_id": "PRD",
+   "family_ar": "إدارة المنتج وتجربة المستخدم"
   },
   {
    "skill_id": "SK-X-PRD-009",
    "slug": "product_launch",
    "name_ar": "إطلاق المنتج والتعلم من السوق",
-   "family_id": "PRD"
+   "family_id": "PRD",
+   "family_ar": "إدارة المنتج وتجربة المستخدم"
   },
   {
    "skill_id": "SK-X-OPS-001",
    "slug": "lean_waste_analysis",
    "name_ar": "تحليل الهدر وفق Lean",
-   "family_id": "OPS"
+   "family_id": "OPS",
+   "family_ar": "العمليات والتحسين المستمر"
   },
   {
    "skill_id": "SK-X-OPS-002",
    "slug": "standard_work",
    "name_ar": "تصميم العمل المعياري",
-   "family_id": "OPS"
+   "family_id": "OPS",
+   "family_ar": "العمليات والتحسين المستمر"
   },
   {
    "skill_id": "SK-X-OPS-003",
    "slug": "root_cause_analysis",
    "name_ar": "تحليل السبب الجذري",
-   "family_id": "OPS"
+   "family_id": "OPS",
+   "family_ar": "العمليات والتحسين المستمر"
   },
   {
    "skill_id": "SK-X-OPS-004",
    "slug": "operational_kpis",
    "name_ar": "مؤشرات الأداء التشغيلي",
-   "family_id": "OPS"
+   "family_id": "OPS",
+   "family_ar": "العمليات والتحسين المستمر"
   },
   {
    "skill_id": "SK-X-OPS-005",
    "slug": "continuous_improvement",
    "name_ar": "إدارة التحسين المستمر",
-   "family_id": "OPS"
+   "family_id": "OPS",
+   "family_ar": "العمليات والتحسين المستمر"
   },
   {
    "skill_id": "SK-X-OPS-006",
    "slug": "pdca",
    "name_ar": "تجارب التحسين وفق PDCA",
-   "family_id": "OPS"
+   "family_id": "OPS",
+   "family_ar": "العمليات والتحسين المستمر"
   },
   {
    "skill_id": "SK-X-CYB-001",
    "slug": "cyber_risk_assessment",
    "name_ar": "تقييم المخاطر السيبرانية",
-   "family_id": "CYB"
+   "family_id": "CYB",
+   "family_ar": "الأمن السيبراني وحوكمة المخاطر"
   },
   {
    "skill_id": "SK-X-CYB-002",
    "slug": "identity_access_management",
    "name_ar": "إدارة الهوية والوصول",
-   "family_id": "CYB"
+   "family_id": "CYB",
+   "family_ar": "الأمن السيبراني وحوكمة المخاطر"
   },
   {
    "skill_id": "SK-X-CYB-003",
    "slug": "social_engineering_awareness",
    "name_ar": "مقاومة التصيد والهندسة الاجتماعية",
-   "family_id": "CYB"
+   "family_id": "CYB",
+   "family_ar": "الأمن السيبراني وحوكمة المخاطر"
   },
   {
    "skill_id": "SK-X-CYB-004",
    "slug": "data_protection_controls",
    "name_ar": "ضوابط حماية البيانات",
-   "family_id": "CYB"
+   "family_id": "CYB",
+   "family_ar": "الأمن السيبراني وحوكمة المخاطر"
   },
   {
    "skill_id": "SK-X-CYB-005",
    "slug": "cloud_security_basics",
    "name_ar": "أساسيات أمن السحابة",
-   "family_id": "CYB"
+   "family_id": "CYB",
+   "family_ar": "الأمن السيبراني وحوكمة المخاطر"
   },
   {
    "skill_id": "SK-X-CYB-006",
    "slug": "security_governance",
    "name_ar": "حوكمة الأمن السيبراني",
-   "family_id": "CYB"
+   "family_id": "CYB",
+   "family_ar": "الأمن السيبراني وحوكمة المخاطر"
   },
   {
    "skill_id": "SK-X-CYB-007",
    "slug": "incident_response",
    "name_ar": "الاستجابة للحوادث السيبرانية",
-   "family_id": "CYB"
+   "family_id": "CYB",
+   "family_ar": "الأمن السيبراني وحوكمة المخاطر"
   },
   {
    "skill_id": "SK-X-CYB-008",
    "slug": "business_continuity",
    "name_ar": "استمرارية الأعمال والتعافي",
-   "family_id": "CYB"
+   "family_id": "CYB",
+   "family_ar": "الأمن السيبراني وحوكمة المخاطر"
   },
   {
    "skill_id": "SK-X-SCM-001",
    "slug": "supply_chain_mapping",
    "name_ar": "رسم سلسلة الإمداد",
-   "family_id": "SCM"
+   "family_id": "SCM",
+   "family_ar": "سلسلة الإمداد واللوجستيات"
   },
   {
    "skill_id": "SK-X-SCM-002",
    "slug": "demand_forecasting",
    "name_ar": "التنبؤ بالطلب",
-   "family_id": "SCM"
+   "family_id": "SCM",
+   "family_ar": "سلسلة الإمداد واللوجستيات"
   },
   {
    "skill_id": "SK-X-SCM-003",
    "slug": "supply_planning",
    "name_ar": "تخطيط التوريد",
-   "family_id": "SCM"
+   "family_id": "SCM",
+   "family_ar": "سلسلة الإمداد واللوجستيات"
   },
   {
    "skill_id": "SK-X-SCM-004",
    "slug": "inventory_management",
    "name_ar": "إدارة المخزون",
-   "family_id": "SCM"
+   "family_id": "SCM",
+   "family_ar": "سلسلة الإمداد واللوجستيات"
   },
   {
    "skill_id": "SK-X-SCM-005",
    "slug": "warehouse_basics",
    "name_ar": "أساسيات عمليات المستودعات",
-   "family_id": "SCM"
+   "family_id": "SCM",
+   "family_ar": "سلسلة الإمداد واللوجستيات"
   },
   {
    "skill_id": "SK-X-SCM-006",
    "slug": "strategic_sourcing",
    "name_ar": "التوريد الاستراتيجي",
-   "family_id": "SCM"
+   "family_id": "SCM",
+   "family_ar": "سلسلة الإمداد واللوجستيات"
   },
   {
    "skill_id": "SK-X-SCM-007",
    "slug": "supplier_evaluation",
    "name_ar": "تقييم الموردين",
-   "family_id": "SCM"
+   "family_id": "SCM",
+   "family_ar": "سلسلة الإمداد واللوجستيات"
   },
   {
    "skill_id": "SK-X-SCM-008",
    "slug": "supply_chain_risk",
    "name_ar": "إدارة مخاطر سلسلة الإمداد",
-   "family_id": "SCM"
+   "family_id": "SCM",
+   "family_ar": "سلسلة الإمداد واللوجستيات"
   },
   {
    "skill_id": "SK-X-SCM-009",
    "slug": "supply_chain_metrics",
    "name_ar": "مؤشرات سلسلة الإمداد",
-   "family_id": "SCM"
+   "family_id": "SCM",
+   "family_ar": "سلسلة الإمداد واللوجستيات"
   },
   {
    "skill_id": "SK-X-COM-001",
    "slug": "message_design",
    "name_ar": "تصميم الرسالة",
-   "family_id": "COMX"
+   "family_id": "COMX",
+   "family_ar": "الإلقاء وتصميم العروض"
   },
   {
    "skill_id": "SK-X-COM-002",
    "slug": "audience_analysis",
    "name_ar": "تحليل الجمهور",
-   "family_id": "COMX"
+   "family_id": "COMX",
+   "family_ar": "الإلقاء وتصميم العروض"
   },
   {
    "skill_id": "SK-X-COM-003",
    "slug": "executive_presentation",
    "name_ar": "تصميم العرض التنفيذي",
-   "family_id": "COMX"
+   "family_id": "COMX",
+   "family_ar": "الإلقاء وتصميم العروض"
   },
   {
    "skill_id": "SK-X-COM-004",
    "slug": "speaking_anxiety_management",
    "name_ar": "إدارة رهبة الإلقاء",
-   "family_id": "COMX"
+   "family_id": "COMX",
+   "family_ar": "الإلقاء وتصميم العروض"
   },
   {
    "skill_id": "SK-X-COM-005",
    "slug": "q_and_a_management",
    "name_ar": "إدارة الأسئلة والأجوبة",
-   "family_id": "COMX"
+   "family_id": "COMX",
+   "family_ar": "الإلقاء وتصميم العروض"
   },
   {
    "skill_id": "SK-X-NEG-001",
    "slug": "negotiation_preparation",
    "name_ar": "التحضير المنهجي للتفاوض",
-   "family_id": "NEG"
+   "family_id": "NEG",
+   "family_ar": "التفاوض وحل النزاعات"
   },
   {
    "skill_id": "SK-X-NEG-002",
    "slug": "batna_zopa",
    "name_ar": "تحليل BATNA وZOPA",
-   "family_id": "NEG"
+   "family_id": "NEG",
+   "family_ar": "التفاوض وحل النزاعات"
   },
   {
    "skill_id": "SK-X-NEG-003",
    "slug": "value_creation_negotiation",
    "name_ar": "خلق القيمة في التفاوض",
-   "family_id": "NEG"
+   "family_id": "NEG",
+   "family_ar": "التفاوض وحل النزاعات"
   },
   {
    "skill_id": "SK-X-NEG-004",
    "slug": "concession_strategy",
    "name_ar": "إدارة التنازلات",
-   "family_id": "NEG"
+   "family_id": "NEG",
+   "family_ar": "التفاوض وحل النزاعات"
   },
   {
    "skill_id": "SK-X-NEG-005",
    "slug": "ethical_influence",
    "name_ar": "التأثير الأخلاقي",
-   "family_id": "NEG"
+   "family_id": "NEG",
+   "family_ar": "التفاوض وحل النزاعات"
   },
   {
    "skill_id": "SK-X-NEG-006",
    "slug": "mediation_basics",
    "name_ar": "أساسيات الوساطة",
-   "family_id": "NEG"
+   "family_id": "NEG",
+   "family_ar": "التفاوض وحل النزاعات"
   },
   {
    "skill_id": "SK-X-NEG-007",
    "slug": "multiparty_negotiation",
    "name_ar": "التفاوض متعدد الأطراف",
-   "family_id": "NEG"
+   "family_id": "NEG",
+   "family_ar": "التفاوض وحل النزاعات"
   },
   {
    "skill_id": "SK-X-NEG-008",
    "slug": "agreement_design",
    "name_ar": "تصميم الاتفاقات القابلة للتنفيذ",
-   "family_id": "NEG"
+   "family_id": "NEG",
+   "family_ar": "التفاوض وحل النزاعات"
   },
   {
    "skill_id": "SK-X-LND-001",
    "slug": "training_needs_analysis",
    "name_ar": "تحليل الحاجة التدريبية",
-   "family_id": "LND"
+   "family_id": "LND",
+   "family_ar": "تصميم التعلم والتدريب"
   },
   {
    "skill_id": "SK-X-LND-002",
    "slug": "learning_outcomes_design",
    "name_ar": "تصميم نواتج التعلم",
-   "family_id": "LND"
+   "family_id": "LND",
+   "family_ar": "تصميم التعلم والتدريب"
   },
   {
    "skill_id": "SK-X-LND-003",
    "slug": "backward_design",
    "name_ar": "التصميم التعليمي العكسي",
-   "family_id": "LND"
+   "family_id": "LND",
+   "family_ar": "تصميم التعلم والتدريب"
   },
   {
    "skill_id": "SK-X-LND-004",
    "slug": "learning_experience_design",
    "name_ar": "تصميم تجربة التعلم",
-   "family_id": "LND"
+   "family_id": "LND",
+   "family_ar": "تصميم التعلم والتدريب"
   },
   {
    "skill_id": "SK-X-LND-005",
    "slug": "assessment_design",
    "name_ar": "تصميم التقييم",
-   "family_id": "LND"
+   "family_id": "LND",
+   "family_ar": "تصميم التعلم والتدريب"
   },
   {
    "skill_id": "SK-X-LND-006",
    "slug": "rubric_design",
    "name_ar": "تصميم سلالم التقدير",
-   "family_id": "LND"
+   "family_id": "LND",
+   "family_ar": "تصميم التعلم والتدريب"
   },
   {
    "skill_id": "SK-X-LND-007",
    "slug": "instructional_material_design",
    "name_ar": "تصميم المواد التعليمية",
-   "family_id": "LND"
+   "family_id": "LND",
+   "family_ar": "تصميم التعلم والتدريب"
   },
   {
    "skill_id": "SK-X-LND-008",
    "slug": "facilitation",
    "name_ar": "تيسير التعلم",
-   "family_id": "LND"
+   "family_id": "LND",
+   "family_ar": "تصميم التعلم والتدريب"
   },
   {
    "skill_id": "SK-X-LND-009",
    "slug": "digital_learning_design",
    "name_ar": "تصميم التعلم الرقمي",
-   "family_id": "LND"
+   "family_id": "LND",
+   "family_ar": "تصميم التعلم والتدريب"
   },
   {
    "skill_id": "SK-X-LND-010",
    "slug": "learning_evaluation",
    "name_ar": "تقييم أثر التعلم",
-   "family_id": "LND"
+   "family_id": "LND",
+   "family_ar": "تصميم التعلم والتدريب"
   }
  ]
 }
