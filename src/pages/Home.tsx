@@ -1377,6 +1377,13 @@ export default function Home() {
   useReveal()
   usePublishedContent()
   const topRef = useRef<HTMLDivElement>(null)
+  /* الوصول من صفحة داخلية مع مرساة (/#diagnostic): المتصفح يحاول التمرير قبل تركيب React،
+     فنمرّر للقسم المطلوب بعد التركيب */
+  useEffect(() => {
+    if (!window.location.hash) return
+    const el = document.querySelector(window.location.hash)
+    el?.scrollIntoView({ behavior: 'smooth' })
+  }, [])
   return (
     <div ref={topRef} dir="rtl" className="min-h-screen bg-background text-foreground">
       <SeoHead
