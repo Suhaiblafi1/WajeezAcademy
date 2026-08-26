@@ -811,16 +811,6 @@ function Bestsellers() {
               لا تريد البدء بالتشخيص؟ اختر مجالك أولا — ثم مسارا كاملا، أو دورة واحدة إن كنت تعرف ما تريد بالضبط.
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <button onClick={() => scroll(pwRailRef, 'prev')} aria-label="السابق"
-              className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/5 transition hover:border-teal/50 hover:text-teal-light-ink">
-              <ChevronRight className="h-5 w-5" />
-            </button>
-            <button onClick={() => scroll(pwRailRef, 'next')} aria-label="التالي"
-              className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/5 transition hover:border-teal/50 hover:text-teal-light-ink">
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-          </div>
         </div>
 
         {/* فلتر المسارات — أهم 5 مجالات بعدادات حقيقية، والباقي ينسدل بـ«المزيد» */}
@@ -929,6 +919,17 @@ function Bestsellers() {
           </span>
         </Link>
       </div>
+      {/* أسهم التقليب — أسفل الشريط: يبقى السحب بالإصبع متاحا والأسهم بديل واضح */}
+      <div className="mt-4 flex items-center justify-center gap-3">
+        <button onClick={() => scroll(pwRailRef, 'prev')} aria-label="السابق في المسارات"
+          className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/5 transition hover:border-teal/50 hover:text-teal-light-ink">
+          <ChevronRight className="h-5 w-5" />
+        </button>
+        <button onClick={() => scroll(pwRailRef, 'next')} aria-label="التالي في المسارات"
+          className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/5 transition hover:border-teal/50 hover:text-teal-light-ink">
+          <ChevronLeft className="h-5 w-5" />
+        </button>
+      </div>
       </div>
 
       {/* راويل الدورات المختارة */}
@@ -942,16 +943,6 @@ function Bestsellers() {
             <p className="mt-2 max-w-lg text-sm leading-7 text-muted-foreground">
               تعرف تماما ما تريد؟ خذ دورة واحدة وابدأ اليوم — وإن أكملت لاحقا لمسارها الكامل، خُصم ما دفعته من سعره.
             </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button onClick={() => scroll(crRailRef, 'prev')} aria-label="السابق في الدورات"
-              className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/5 transition hover:border-teal/50 hover:text-teal-light-ink">
-              <ChevronRight className="h-4 w-4" />
-            </button>
-            <button onClick={() => scroll(crRailRef, 'next')} aria-label="التالي في الدورات"
-              className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/5 transition hover:border-teal/50 hover:text-teal-light-ink">
-              <ChevronLeft className="h-4 w-4" />
-            </button>
           </div>
         </div>
         {/* فلتر الدورات — حسب المجال، بعدادات من بيانات الدورات نفسها */}
@@ -999,9 +990,18 @@ function Bestsellers() {
           </article>
         ))}
       </div>
+      {/* أسهم التقليب — أسفل الشريط: يبقى السحب بالإصبع متاحا والأسهم بديل واضح */}
+      <div className="mt-4 flex items-center justify-center gap-3">
+        <button onClick={() => scroll(crRailRef, 'prev')} aria-label="السابق في الدورات"
+          className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/5 transition hover:border-teal/50 hover:text-teal-light-ink">
+          <ChevronRight className="h-5 w-5" />
+        </button>
+        <button onClick={() => scroll(crRailRef, 'next')} aria-label="التالي في الدورات"
+          className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/5 transition hover:border-teal/50 hover:text-teal-light-ink">
+          <ChevronLeft className="h-5 w-5" />
+        </button>
       </div>
-
-      {/* روابط الكتالوج الكامل */}
+      </div>
       <div className="mx-auto mt-10 flex max-w-6xl flex-wrap items-center justify-center gap-3 px-5">
         <Link
           to="/pathways"
