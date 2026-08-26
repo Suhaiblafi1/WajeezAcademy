@@ -173,13 +173,17 @@ function StripeCheckout({
 }
 
 /* ─────────── الصفحة ─────────── */
+type CheckoutIntent = { title: string; amount: number; kind: "pathway" | "course" | "courses"; courseId?: string; courseIds?: string[] };
+
 export default function PathwayPage() {
   usePublishedContent();
   const { id } = useParams();
   const navigate = useNavigate();
   const pathway = pathwayById(id ?? "");
   const [user, setUser] = useState<string | null>(readUserName);
-  const [checkout, setCheckout] = useState<{ title: string; amount: number; kind: "pathway" | "course" | "courses"; courseId?: string; courseIds?: string[] } | null>(null);
+  const [checkout, setCheckout] = useState<CheckoutIntent | null>(null);
+  /* نية شراء معلقة بانتظار تسجيل الدخول — التصفح مفتوح، والتسجيل يُطلب لحظة الدفع فقط */
+  const [pendingCheckout, setPendingCheckout] = useState<CheckoutIntent | null>(null);
   const [pickedIds, setPickedIds] = useState<string[]>([]);
   const fmt = usePriceFormatter();
 
@@ -282,6 +286,12 @@ export default function PathwayPage() {
     setPickedIds(pickedIds.includes(cid) ? pickedIds.filter((x) => x !== cid) : [...pickedIds, cid]);
   const totalWeeks = pathwayCoursesList.reduce((s, c) => s + c.weeks, 0);
 
+  /* بدء الشراء: المسجّل تفتح له نافذة الدفع مباشرة — والزائر تظهر له بوابة التسجيل أولا ثم نكمل الدفع تلقائيا */
+  const startCheckout = (intent: CheckoutIntent) => {
+    if (user) setCheckout(intent);
+    else setPendingCheckout(intent);
+  };
+
   return (
     <div dir="rtl" className="min-h-screen bg-paper text-white">
       <SeoHead
@@ -301,22 +311,23 @@ export default function PathwayPage() {
             <span className="font-black">أكاديمية وجيز</span>
           </div>
           <div className="flex items-center gap-3">
-            {user && (
+            {user ? (
               <span className="flex items-center gap-1.5 text-xs text-white/50">
                 <User className="h-4 w-4" /> {user}
               </span>
+            ) : (
+              <Link to="/auth" className="flex items-center gap-1.5 rounded-xl border border-white/15 px-3.5 py-1.5 text-xs font-semibold text-white/70 transition hover:border-teal/50 hover:text-teal-light-ink">
+                <User className="h-3.5 w-3.5" />
+                دخول
+              </Link>
             )}
             <ThemeToggle />
           </div>
         </div>
       </header>
 
-      {!user ? (
-        <AuthGate
-          message="سجّل حسابك لترى صفحة مسارك كاملة: تقريرك الشخصي، دوراتك، تعديلاتك، وبوابة الدفع"
-          onDone={() => setUser(readUserName())}
-        />
-      ) : (
+      {/* تصفح المسار مفتوح للجميع بلا تسجيل — التسجيل يُطلب لحظة الدفع فقط (pendingCheckout) */}
+      {(
         /* ب-٢: حاوية تخطيط لا منطقة landmark — main واحدة في التطبيق (App.tsx)
            وهي هدف رابط «تجاوز إلى المحتوى»؛ والمتداخلة تجعل التخطي غامضا. */
         <div className="mx-auto max-w-5xl px-5 py-12">
@@ -511,7 +522,7 @@ export default function PathwayPage() {
                   )}
                   <Button
                     onClick={() =>
-                      setCheckout({
+                      startCheckout({
                         title:
                           picked.length === 1
                             ? `دورة «${picked[0].name}» من مسار ${pathway.name}`
@@ -546,7 +557,7 @@ export default function PathwayPage() {
                     <Gift className="h-3.5 w-3.5" /> + دورة إضافية مجانية من اختيارك هدية
                   </p>
                   <Button
-                    onClick={() => setCheckout({ title: `مسار «${pathway.name}» كاملا (${pathwayCoursesList.length} دورات + هدية)`, amount: pathwayTotal, kind: "pathway" })}
+                    onClick={() => startCheckout({ title: `مسار «${pathway.name}» كاملا (${pathwayCoursesList.length} دورات + هدية)`, amount: pathwayTotal, kind: "pathway" })}
                     className="mt-4 h-11 rounded-full bg-gold font-black text-on-gold hover:bg-gold/90"
                   >
                     <CreditCard className="ml-2 h-4 w-4" />
@@ -631,6 +642,21 @@ export default function PathwayPage() {
 
       {/* تعريف المنظومة — سطر ثقة ختامي يظهر للزائر والمسجّل معا */}
       <EcosystemNote className="mx-auto max-w-5xl px-5 pb-8" />
+
+      {/* بوابة التسجيل لحظة الدفع — تظهر فوق الصفحة دون حجب تصفحها، وبعدها يكمل الدفع تلقائيا */}
+      {pendingCheckout && (
+        <Modal onClose={() => setPendingCheckout(null)} label="سجّل لإتمام الشراء" panelClassName="w-full max-w-md">
+          <AuthGate
+            message="تصفح المسار مفتوح للجميع — التسجيل هنا خطوة أخيرة قبل الدفع لتحفظ مشترياتك وتُفتح منصتك."
+            source="checkout_gate"
+            onDone={() => {
+              setUser(readUserName());
+              setCheckout(pendingCheckout);
+              setPendingCheckout(null);
+            }}
+          />
+        </Modal>
+      )}
 
       {/* نافذة الدفع */}
       {checkout && (
