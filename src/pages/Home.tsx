@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { Link, useNavigate } from 'react-router'
 import {
   Sparkles, Compass, Route, BadgeCheck, BrainCircuit, Target,
@@ -8,6 +8,7 @@ import {
   Users, Mail, MessageCircle, Headset, MapPin
 } from 'lucide-react'
 import { bestsellers, pathwayById, pathwayCategory } from '@/data/pathways'
+import { getCatalogVersion, onCoreCatalogInstalled } from '@/data/core-catalog-source'
 import { bestsellerCourses, courseById, pathwayTrainers, weeksLabel, type Course } from '@/data/courses'
 import { faqs } from '@/data/siteContent'
 import { CONTACT } from '@/data/stories'
@@ -740,6 +741,9 @@ function CategoryFilter({
 }
 
 function Bestsellers() {
+  // الاشتراك في نسخة الكتالوج: تُحسب القوائم أول مرة والمصدر فارغ في الإنتاج
+  // (البند ع-١) — بلا هذا الاشتراك تبقى المصفوفات الفارغة محفوظة في useMemo
+  const catalogVersion = useSyncExternalStore(onCoreCatalogInstalled, getCatalogVersion)
   const [pwCat, setPwCat] = useState('الكل')
   const [crCat, setCrCat] = useState('الكل')
   const [modalCourse, setModalCourse] = useState<Course | null>(null)
@@ -757,11 +761,11 @@ function Bestsellers() {
 
   const allPathways = useMemo(
     () => bestsellers.map((b) => ({ ...b, p: pathwayById(b.id)! })).filter((b) => b.p),
-    [],
+    [catalogVersion],
   )
   const allCourses = useMemo(
     () => bestsellerCourses.map((b) => ({ ...b, c: courseById(b.id)! })).filter((b) => b.c),
-    [],
+    [catalogVersion],
   )
   const countBy = (items: string[]) => {
     const m = new Map<string, number>()
