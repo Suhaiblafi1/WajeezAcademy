@@ -936,26 +936,6 @@ export default function Diagnostic() {
           </>
           )}
 
-          {/* الإشارات الحية — المحرك يفهمك أثناء الحديث */}
-          {understoodDims.length > 0 && (
-            <div className="mb-6 flex flex-wrap items-center gap-2">
-              <span className="flex items-center gap-1.5 text-xs font-bold text-white/45">
-                <BrainCircuit className="h-3.5 w-3.5 text-teal-ink" />
-                يفهم الآن:
-              </span>
-              {understoodDims.map((d) => (
-                <span
-                  key={d}
-                  className="rounded-full border border-teal/30 bg-teal/10 px-2.5 py-0.5 text-[11px] font-semibold text-teal-light-ink"
-                >
-                  {DIM_LABELS[d]}
-                </span>
-              ))}
-              {/* لا يُعرض اسم المسار أو القالب أثناء الأسئلة أبدا — كشف التوصية مبكرا يوجّه الإجابات.
-                  يظهر فقط ما فُهم (هدف/وقت/سياق) عبر شارات الأبعاد أعلاه. */}
-            </div>
-          )}
-
           <div key={question.id} className="story-fade">
             {(question.level === "deep" || question.level === "conditional") && (
               <p className="mb-4 w-fit rounded-full border border-gold/40 bg-gold/10 px-3 py-1 text-xs font-bold text-gold-ink">
@@ -970,12 +950,6 @@ export default function Diagnostic() {
               </p>
             )}
             {qHint && <p className="mt-3 text-sm leading-relaxed text-white/50">{qHint}</p>}
-            {question.source && (
-              <p className="mt-4 w-fit rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1.5 text-[11px] leading-relaxed text-white/45">
-                <span className="font-bold text-teal-light-ink">المصدر العلمي: </span>
-                {question.source}
-              </p>
-            )}
 
             {question.type === "single" && (
               <div className="mt-8 grid gap-3">
@@ -1155,6 +1129,37 @@ export default function Diagnostic() {
                 </span>
               )}
             </div>
+
+            {/* طمأنة وإسناد — تحت الخيارات لا فوق السؤال. كانتا تفصلان السؤال عن
+                خياراته: «يفهم الآن» صفَّ شارات فوق السؤال، و«المصدر العلمي» سطرا
+                بينه وبين الخيارات في كل سؤال من التسعة والتسعين بعد المئة. تبقيان
+                مقروءتين لمن يريدهما، وتخرجان من طريق من يريد أن يجيب. */}
+            {(understoodDims.length > 0 || question.source) && (
+              <div className="mt-10 space-y-2.5 border-t border-white/[0.07] pt-5">
+                {understoodDims.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="flex items-center gap-1.5 text-[11px] font-bold text-white/40">
+                      <BrainCircuit className="h-3.5 w-3.5 text-teal-ink" />
+                      يفهم الآن:
+                    </span>
+                    {understoodDims.map((d) => (
+                      <span
+                        key={d}
+                        className="rounded-full border border-teal/25 bg-teal/[0.08] px-2.5 py-0.5 text-[11px] font-semibold text-teal-light-ink"
+                      >
+                        {DIM_LABELS[d]}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {question.source && (
+                  <p className="text-[11px] leading-relaxed text-white/35">
+                    <span className="font-bold text-white/45">المصدر العلمي: </span>
+                    {question.source}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </section>
       )}
