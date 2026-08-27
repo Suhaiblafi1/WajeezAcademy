@@ -144,6 +144,13 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
         /* الأطر المرجعية تعبر إلى اللقطة (موجة ٦ · ج) — قاعدة قائمة تُصحَّح
            بإعادة الاستيراد بلا حذف، وبلا ذلك تبقى مراجع المنهجية غائبة. */
         source: Array.isArray(s.source_frameworks) ? (s.source_frameworks as string[]).join('، ') : null,
+        /* وهذه كانت تنقص: إعادة تسمية مهارة أو تحرير تعريفها في المستودع لا
+           تصل قاعدة قائمة أبدا — والاسم هو ما يقرأه المستخدم في نتيجته. */
+        nameAr: s.name_ar, definitionAr: s.definition_ar ?? null,
+        domain: s.family_ar ?? s.family_id ?? null,
+        masteryScale: s.mastery_indicators_ar === undefined ? undefined : JSON.parse(JSON.stringify(s.mastery_indicators_ar)),
+        evidenceExamples: s.evidence_examples_ar === undefined ? undefined : JSON.parse(JSON.stringify(s.evidence_examples_ar)),
+        status: s.active === false ? 'archived' : 'published',
       },
       create: {
         id: s.skill_id, slug: s.slug, nameAr: s.name_ar, definitionAr: s.definition_ar ?? null,
@@ -345,7 +352,12 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
       for (const [i, r] of refs.entries()) {
         await prisma.templateCourse.upsert({
           where: { templateId_courseId_listType: { templateId: t.template_id, courseId: r.course_id, listType } },
-          update: { sequence: r.sequence ?? i + 1 },
+          /* الدور والسبب والشرط نصوص من المستودع تُعرض للمستخدم في التوصية —
+             وبلا تحديثها يبقى القالب القائم على نصوص أول استيراد. */
+          update: {
+            sequence: r.sequence ?? i + 1, roleAr: r.role_ar ?? null,
+            reasonAr: r.reason_ar ?? null, conditionAr: r.condition_ar ?? null,
+          },
           create: {
             templateId: t.template_id, courseId: r.course_id, listType,
             sequence: r.sequence ?? i + 1, roleAr: r.role_ar ?? null,
@@ -361,10 +373,18 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
   for (const q of questions) {
     await prisma.question.upsert({
       where: { id: q.question_id },
+      /* update يعكس create حقلا بحقل عدا المعرّف. كانت تنقصه خمسة، وكلها
+         تصمت بدل أن تُعطب: `active` فلا يصل تقاعد سؤال، و`measures` فتبقى
+         الأسئلة موجّهة إلى slug قديم غير مسجّل — فتخرج إجابتها من متجه
+         المهارات بلا خطأ يُرى. خمسة أسئلة M4 عاشت كذلك في الإنتاج. */
       update: {
-        moduleId: q.module_id ?? null, moduleName: q.module_name ?? null, optionsKey: q.options_key ?? null,
-        personaScope: q.persona_scope ?? [], sensitivityLevel: q.sensitivity_level ?? 'low',
-        requiredLevel: q.required_level ?? 'core', weight: typeof q.weight === 'number' ? q.weight : 1,
+        moduleId: q.module_id ?? null, moduleName: q.module_name ?? null,
+        answerType: q.answer_type, optionsKey: q.options_key ?? null,
+        personaScope: q.persona_scope ?? [], measures: q.measures ?? [],
+        triggerCondition: q.trigger_condition ?? 'always', reasonAr: q.decision_impact ?? null,
+        sensitivityLevel: q.sensitivity_level ?? 'low', requiredLevel: q.required_level ?? 'core',
+        weight: typeof q.weight === 'number' ? q.weight : 1,
+        active: q.active !== false, status: 'published',
       },
       create: {
         id: q.question_id, moduleId: q.module_id ?? null, moduleName: q.module_name ?? null,
@@ -435,7 +455,15 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
     const profile = pathwayProfiles.profiles?.[p.id]
     await prisma.diagnosticProfile.upsert({
       where: { entityType_entityId: { entityType: 'pathway', entityId: p.id } },
-      update: { profile: profile === undefined ? undefined : JSON.parse(JSON.stringify(profile)) },
+      /* الحقول المشتقة من الملف تُحدَّث معه — وإلا بقيت الجماهير والأهداف
+         وقيود الوقت على أول استيراد بينما profile نفسه يتقدّم. */
+      update: {
+        profile: profile === undefined ? undefined : JSON.parse(JSON.stringify(profile)),
+        audience: profile?.personas === undefined ? undefined : JSON.parse(JSON.stringify(profile.personas)),
+        goals: profile?.goals === undefined ? undefined : JSON.parse(JSON.stringify(profile.goals)),
+        timeConstraints: profile?.min_weekly_load === undefined ? undefined : JSON.parse(JSON.stringify({ min_weekly_load: profile.min_weekly_load })),
+        rationales: profile?.notes_ar === undefined ? undefined : JSON.parse(JSON.stringify({ notes_ar: profile.notes_ar })),
+      },
       create: {
         entityType: 'pathway', entityId: p.id,
         profile: profile === undefined ? undefined : JSON.parse(JSON.stringify(profile)),
