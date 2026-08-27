@@ -38,6 +38,27 @@ const RULES: Rule[] = [
     detail_ar: 'صرّحت أن هدفك واضح ثم اخترت «لا أعرف بعد» — أي الوصفين أقرب لواقعك اليوم؟',
   },
   {
+    /* «موظف في بداية مساري» ثم «لا أعمل حاليًا» — رُصد في مراجعة التجربة: مضى
+       التشخيص بلا تنبيه، ثم سأل من قال إنه لا يعمل عن قطاعه الوظيفي وعن تعامله
+       بالمشتريات والعطاءات. والوصفان قد يجتمعان بلا كذب (منقطع عن عمل حديث،
+       أو نقرة خاطئة)، فلا يُرفض أحدهما — لكن ترك التناقض بلا حسم يُضعف ست
+       إجابات تالية ويُشعر المتعلم بأن النظام لا يستمع. */
+    id: 'employed_stage_not_working',
+    factKeys: ['career_stage', 'employment_state'],
+    severity: 'medium',
+    check: (f) => {
+      const stage = f['career_stage']?.value
+      const employed = ['early_career', 'experienced', 'manager', 'senior_manager', 'trainer_ld']
+      const idle = f['employment_state']?.value
+      return (
+        typeof stage === 'string' &&
+        employed.includes(stage) &&
+        (idle === 'not_working' || idle === 'job_seeking')
+      )
+    },
+    detail_ar: 'وصفت نفسك موظفا ثم أنك لا تعمل حاليا — أي الوصفين أقرب لواقعك اليوم؟',
+  },
+  {
     id: 'family_branch_business_goal',
     factKeys: ['persona_branch', 'primary_goal'],
     severity: 'low',

@@ -59,6 +59,20 @@ export interface NextStep {
   deepening?: { index: number; total: number; reasonAr: string | null } | null
   /** لماذا اختار المحرك هذا السؤال بالذات — للعرض تحته حين يكون سببا حقيقيا */
   whyAr?: string | null
+  /* تناقض قائم بين إجابتين — نصّه مكتوب للمتعلم أصلا وينتهي بسؤال، وكان
+     يُحسب ويُخزَّن ويُخفَّض به مكوّن «اتساق إجاباتك» ولا يُعرض له أثر.
+     يُرفع أشدّها لا كلّها: التنبيهات المتراكمة تُقرأ لوما لا مساعدة. */
+  contradictionAr?: string | null
+}
+
+const SEVERITY_ORDER = { high: 0, medium: 1, low: 2 } as const
+
+function topContradiction(
+  list: { detail_ar: string; severity: 'low' | 'medium' | 'high'; resolved: boolean }[],
+): string | null {
+  const open = list.filter((c) => !c.resolved)
+  if (open.length === 0) return null
+  return [...open].sort((a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity])[0].detail_ar
 }
 
 /* ─────────── لماذا هذا السؤال؟ — ترجمة أثر المحرك إلى لغة المتعلم ───────────
@@ -191,6 +205,7 @@ export class AssessmentSession {
       stopReasonAr: r.stop.shouldStop ? r.stop.reason_ar : null,
       deepening: ds ? { index: ds.index, total: ds.total, reasonAr: ds.currentReason_ar } : null,
       whyAr: r.question ? whyOfLastQuestion(this.engine.getState().trace) : null,
+      contradictionAr: r.question ? topContradiction(this.engine.getState().contradictions) : null,
     }
   }
 

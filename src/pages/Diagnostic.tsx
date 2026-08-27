@@ -13,6 +13,7 @@ import {
   CalendarClock,
   Route as RouteIcon,
   Gauge,
+  AlertCircle,
   Gift,
   Wand2,
   BookOpen,
@@ -556,6 +557,8 @@ export default function Diagnostic() {
      يسجّله لكل سؤال. والسؤال غير البديهي («كيف تشرح فكرة لمن هو خارج تخصصك؟»
      لمن هدفه أول وظيفة) هو أحوج ما يكون إلى سببه. */
   const [whyAr, setWhyAr] = useState<string | null>(null);
+  /* تناقض قائم بين إجابتين — يُعرض حيث يمكن حسمه، أي بجوار «السؤال السابق». */
+  const [contradictionAr, setContradictionAr] = useState<string | null>(null);
   const [deepReason, setDeepReason] = useState<string | null>(null);
   const inDeepeningRef = useRef(false);
   /* هل الجلسة الحالية حية وتسمح بجولة تدقيق؟ — حالة تصيير لا تُقرأ من المرجع */
@@ -653,7 +656,7 @@ export default function Diagnostic() {
   /* كان النوع مكتوبا هنا حرفيا بدل NextStep، فكل حقل يضيفه المصدر لا يصل — وقد
      مرّ `step.whyAr` صامتا لأن الجذر tsconfig بلا ملفات و`tsc --noEmit` لا يفحص
      شيئا. النوع المسمّى يمنع تكرارها. */
-  const applyStep = (step: Pick<NextStep, "question" | "deepening" | "whyAr">) => {
+  const applyStep = (step: Pick<NextStep, "question" | "deepening" | "whyAr" | "contradictionAr">) => {
     const session = sessionRef.current;
     if (session) {
       const snapshot = session.answersSnapshot;
@@ -665,6 +668,7 @@ export default function Diagnostic() {
     }
     setDeepStep(step.deepening ?? null);
     setWhyAr(step.whyAr ?? null);
+    setContradictionAr(step.contradictionAr ?? null);
     setMultiDraft([]);
     setTextDraft("");
     setRatingsDraft({});
@@ -1128,8 +1132,27 @@ export default function Diagnostic() {
                 {deepStep?.reasonAr ?? whyAr}
               </p>
             )}
+            {/* المحرك يكشف التناقض بين إجابتين ويخفض به «اتساق إجاباتك» في قوة
+                الأدلة، وكان لا يُعرض منه شيء — فيمضي التشخيص يسأل من قال إنه لا
+                يعمل عن قطاعه الوظيفي. ونصّ القاعدة مكتوب للمتعلم أصلا وينتهي
+                بسؤال، فيُعرض حيث يمكن حسمه: فوق الخيارات وبجوار «السؤال السابق».
+                ملاحظة لا حاجز: من رأى أن الوصفين يجتمعان في حاله فليمضِ. */}
+            {contradictionAr && (
+              <p className="mt-3 flex w-fit items-start gap-2 rounded-xl border border-gold/30 bg-gold/[0.07] px-3.5 py-2 text-[11px] leading-relaxed text-white/65">
+                <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-ink" />
+                <span>
+                  {contradictionAr}
+                  <span className="text-white/45"> — تستطيع الرجوع وتعديلها، أو المضي إن كانتا تصفانك معا.</span>
+                </span>
+              </p>
+            )}
             {qHint && <p className="mt-3 text-sm leading-relaxed text-white/50">{qHint}</p>}
 
+            {/* transition-colors لا transition-all: الأخيرة تُحرّك outline-width أيضا،
+                فحلقة التركيز في index.css كانت تتصاعد من صفر إلى بكسلين على نحو
+                ٤٠٠ms بدل أن تظهر فورا. قياسٌ بلوحة المفاتيح: 0px عند الضغط، 1px
+                بعد 120ms، 2px بعد 400ms. الحلقة تعمل — لكن من يتنقّل بسرعة بين
+                الخيارات يسبقها. والألوان وحدها هي ما يُقصد تحريكه هنا. */}
             {question.type === "single" && (
               <div className="mt-8 grid gap-3">
                 {qOptions.map((opt) => {
@@ -1138,7 +1161,7 @@ export default function Diagnostic() {
                     <button
                       key={opt.value}
                       onClick={() => answer(question.id, opt.value, opt.optionId ? [opt.optionId] : undefined)}
-                      className={`rounded-2xl border p-5 text-right transition-all ${
+                      className={`rounded-2xl border p-5 text-right transition-colors ${
                         selected
                           ? "border-teal-light bg-teal/15"
                           : "border-white/10 bg-white/[0.03] hover:border-teal-light/60 hover:bg-white/[0.06]"
@@ -1253,7 +1276,7 @@ export default function Diagnostic() {
                         key={opt.value}
                         onClick={() => toggleMulti(question, opt.value)}
                         disabled={disabled}
-                        className={`rounded-2xl border p-4 text-right transition-all ${
+                        className={`rounded-2xl border p-4 text-right transition-colors ${
                           selected
                             ? "border-gold bg-gold/15"
                             : "border-white/10 bg-white/[0.03] hover:border-gold/60 disabled:opacity-40"
