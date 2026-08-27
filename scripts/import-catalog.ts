@@ -9,8 +9,15 @@ import { seedRbac } from '../server/auth/rbac-seed'
 const prisma = await getPrisma()
 const url = process.env.DATABASE_URL!
 
-console.log('① نشر migrations…')
-execSync('npx prisma migrate deploy', { stdio: 'pipe', env: { ...process.env, DATABASE_URL: url } })
+/* البناء على Vercel ينشر الهجرات بنفسه داخل حلقة إعادة محاولة، لأن كل دفع
+   يطلق بناءين يتزاحمان على القفل الاستشاري. فإعادة نشرها هنا تعيد إنتاج
+   السباق ذاته الذي كُتبت تلك الحلقة لتفاديه — فنتخطّاها حين ينادينا البناء. */
+if (process.env.CATALOG_IMPORT_SKIP_MIGRATE === '1') {
+  console.log('① تخطّي نشر migrations — نُشرت في خطوة البناء')
+} else {
+  console.log('① نشر migrations…')
+  execSync('npx prisma migrate deploy', { stdio: 'pipe', env: { ...process.env, DATABASE_URL: url } })
+}
 
 console.log('② بذر الأدوار والصلاحيات…')
 const rbac = await seedRbac(prisma)
