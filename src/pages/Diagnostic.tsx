@@ -290,8 +290,11 @@ function CompositePlan({ composite }: { composite: CompositeView }) {
     .filter((p): p is Pathway => Boolean(p));
   return (
     <div className="mt-10 overflow-hidden rounded-3xl border border-[#FABC05]/40 bg-gradient-to-b from-surface to-paper">
+      {/* «التوصية الأولى» تركت المتعلم يرى ثلاثة كيانات مسمّاة على شاشة واحدة —
+          الخطة المركّبة، وأقوى مسار مفرد، ونسخة الخطة — بلا جملة تقول أيّها خطته.
+          والتسمية الصريحة هنا تحسمها، وما دونها يُوسم مرجعا. */}
       <div className="border-b border-white/10 bg-[#FABC05]/10 px-6 py-3">
-        <span className="text-sm font-black text-[#FABC05]">التوصية الأولى · {composite.label_ar}</span>
+        <span className="text-sm font-black text-[#FABC05]">هذه خطتك · {composite.label_ar}</span>
         <span className="mr-2 text-xs text-white/50">
           خطة مبنية لحالتك من أكثر من مجال — وليست مسارا جاهزا من الكتالوج
         </span>
@@ -470,7 +473,12 @@ export default function Diagnostic() {
 
   /* حالة الفهم الحية — تُحدَّث مع كل خطوة محرك، لا تُقرأ من المرجع أثناء التصيير */
   const ESTIMATE_MAX = 14; // «غالبا 8–14 سؤالا» — توقف تكيفي
-  const estimatedTotal = Math.max(8, Math.min(ESTIMATE_MAX, asked.length + 3));
+  const ESTIMATE_MIN = 8; // أقصر رحلة مقيسة فعليا
+  /* كان المقام `max(8, min(14, asked.length + 3))` — أي أنه من السؤال السادس فصاعدا
+     يساوي «سؤالك الحالي + ٢». فخط النهاية مُثبَّت سؤالين أمام المتعلم مهما تقدّم،
+     ويتمدّد بعد كل إجابة: من وُعد بـ«~٨» أجاب أربعة عشر في ثلاث من رحلات المراجعة.
+     والشريط تحته يقسم على ESTIMATE_MAX بصدق، فالمؤشران كانا يتناقضان على شاشة واحدة.
+     المدى المعلن ثابت الآن ويطابق ما يفرضه المحرك: 8–14. */
   const progress = Math.min(100, Math.round(((asked.length + (question ? 1 : 0)) / ESTIMATE_MAX) * 100));
   const liveNow = stage === "questions" ? live : null;
   const understoodDims = liveNow ? (Object.keys(DIM_LABELS) as Dim[]).filter((d) => liveNow.dims[d] >= 0.6) : [];
@@ -784,7 +792,9 @@ export default function Diagnostic() {
         <section className="story-fade mx-auto max-w-3xl px-5 py-16 text-center md:py-24">
           <Badge className="border border-gold/40 bg-gold/10 text-gold-ink">مؤشر وجيز الكامل</Badge>
           {/* كان «ثلاث دقائق» بينما الشارة تحته تقول «١–٣ دقائق»، والرحلة الفعلية
-              8–14 سؤالا. «بضع» تصدق على المدى كله. */}
+              8–14 سؤالا. «بضع» تصدق على المدى كله.
+              والشارة صارت «٣–٦ دقائق»: أقصر رحلة مقيسة 8 أسئلة + خطوة معايرة بتسع
+              عائلات، ولا يبلغها قارئ عربي في دقيقة. الحد الأدنى المعلن يجب أن يبلغه أحد. */}
           <h1 className="mt-5 text-3xl font-black leading-snug md:text-5xl">
             بضع دقائق من الوضوح
             <span className="text-teal-light-ink"> تختصر عليك شهورا من التشتت</span>
@@ -796,7 +806,7 @@ export default function Diagnostic() {
           <div className="mx-auto mt-7 flex max-w-full flex-wrap items-center justify-center gap-1.5 sm:gap-2 sm:flex-nowrap sm:whitespace-nowrap">
             {[
               { icon: Compass, text: "توصية مفسَّرة، ليست حظًا" },
-              { icon: Clock3, text: "١–٣ دقائق فقط" },
+              { icon: Clock3, text: "٣–٦ دقائق" },
               { icon: ShieldCheck, text: "تشخيص تعليمي — لا نفسي ولا طبي" },
             ].map((f) => (
               <span key={f.text} className="inline-flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-[10px] font-bold text-white/65 sm:px-3.5 sm:text-[11px]">
@@ -921,11 +931,18 @@ export default function Diagnostic() {
               يكفي عن الترقيم البصري. */}
           <div className="mb-7">
             <div className="mb-2 flex items-baseline justify-between gap-3 text-xs">
+              {/* كان يُعرض اسما مجردا بجوار عدّاد، فيُقرأ «المرحلة كذا من خمس» —
+                  ولا يمكن أن يكون كذلك: المحرك يختار السؤال بأعلى قيمة تمييزية لا
+                  بترتيب المراحل، فيسأل «وقتك» (المرحلة الخامسة) عند السؤال السادس
+                  ثم يعود إلى «قصتك». قياس على خط أساس الرحلات المُلتزم: التراجع
+                  يقع في ٩ رحلات من ٩، بثلاث عشرة خطوة تراجع.
+                  فالتسلسل سليم، والتسمية هي التي كانت تَعِد بترتيب لا وجود له —
+                  و«عن:» تجعلها موضوعا لا موضعا. */}
               <span className="font-black text-gold-ink">
-                {JOURNEY_STAGES[currentStageIdx]?.label}
+                عن: {JOURNEY_STAGES[currentStageIdx]?.label}
               </span>
               <span className="shrink-0 font-semibold text-white/45">
-                سؤال {asked.length + 1} من ~{estimatedTotal}
+                سؤال {asked.length + 1} من {ESTIMATE_MIN}–{ESTIMATE_MAX}
               </span>
             </div>
             <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
@@ -1058,7 +1075,15 @@ export default function Diagnostic() {
 
             {question.type === "multi" && (
               <div className="mt-8">
-                <div className="grid gap-3 sm:grid-cols-2">
+                {/* أول سؤال يكسر عقد «نقرة واحدة تكفي» بعد سبعة أسئلة تنتقل وحدها،
+                    فيُعلَن تغيّر النمط قبل الخيارات لا بعدها. */}
+                <p className="mb-3 text-xs font-bold text-gold-ink">
+                  اختر ما ينطبق عليك — يمكن أكثر من واحد — ثم «متابعة».
+                </p>
+                {/* كان عمودا واحدا على الجوال: تسعة خيارات تنتهي عند 884 بكسل على شاشة
+                    ارتفاعها 844، فيقع زر «متابعة» عند 908 خارج الشاشة تماما — والمتعلم
+                    لا يرى سبيله الوحيد إلى الأمام. عمودان يُدخلانه داخل الطية. */}
+                <div className="grid grid-cols-2 gap-3">
                   {qOptions.map((opt) => {
                     const selected = multiDraft.includes(opt.value);
                     const disabled =
@@ -1478,8 +1503,9 @@ export default function Diagnostic() {
                 <CompositePlan composite={compositeView} />
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4">
                   <p className="text-xs leading-relaxed text-white/60">
-                    <span className="font-bold text-white/80">أقوى مسار مفرد ضمن خطتك: «{topPathway.name}»</span>
-                    {" "}— استُمدت منه دورات أساسية في تركيبتك، وهو مرجعك إن أردت التركيز على مجال واحد فقط.
+                    <span className="font-bold text-white/80">للاطّلاع فقط — وليس خطتك: «{topPathway.name}»</span>
+                    {" "}— أقوى مسار مفرد ضمن خطتك، استُمدت منه دورات أساسية في تركيبتك.
+                    راجعه إن أردت التركيز على مجال واحد بدل الخطة أعلاه.
                   </p>
                   <Link
                     to={`/pathways/${topPathway.id}`}

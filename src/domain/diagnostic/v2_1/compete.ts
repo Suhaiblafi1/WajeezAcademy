@@ -16,7 +16,7 @@ import type { FactBag } from '../types'
 import { DOMAIN_CONFIDENCE_MIN } from '../v2/domains'
 import { basePersonaCode } from '../v2/personas'
 import { TARGET_LEVEL } from '../v2/skills'
-import { layersOfSkill, isDiagnosticSkillActive, functionDomainsV2 } from '../v2/data'
+import { layersOfSkill, isDiagnosticSkillActive, functionDomainsV2, domainLabelAr } from '../v2/data'
 import type { DecisionContext, DomainId, SkillState } from '../v2/types'
 import type { CareerStage } from './maps'
 import {
@@ -518,6 +518,15 @@ export interface CompositeVictory {
   reasons_ar: string[]
 }
 
+/* عدّ عربي سليم في نص يقرؤه المتعلم: «مجال واحد» و«مجالين» لا «2 مجالات».
+   المثنى في العربية صيغة مستقلة، وكتابته جمعا يقرأ كخطأ آلة لا كجملة كُتبت له. */
+function countAr(n: number, one: string, two: string, many: string): string {
+  if (n === 1) return `${one} واحد`
+  if (n === 2) return two
+  if (n <= 10) return `${n} ${many}`
+  return `${n} ${one}`
+}
+
 export function compositeVictoryCheck(
   composite: EntityCandidate,
   bestStandard: EntityCandidate | undefined,
@@ -573,7 +582,7 @@ export function compositeVictoryCheck(
   if (masteryPref === 'master_one') reasons.push('اخترت صراحة إتقان مهارة واحدة — المركب مستبعد بقرارك.')
   if (passes) {
     reasons.push(
-      `حاجتك تمتد فعلًا إلى ${coveredByComposite.length} مجالات، وأفضل مسار منفرد يترك «${gapDomains[0]}» — القيمة الإضافية تتجاوز العتبة بعد تكلفة التعقيد.`,
+      `حاجتك تمتد إلى ${countAr(coveredByComposite.length, 'مجال', 'مجالين', 'مجالات')}، وأفضل مسار جاهز واحد يترك «${domainLabelAr(gapDomains[0])}» خارج خطتك — فركّبنا لك خطة تغطيها معا.`,
     )
   }
 

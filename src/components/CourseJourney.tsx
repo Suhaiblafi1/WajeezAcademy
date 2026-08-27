@@ -67,6 +67,13 @@ export default function CourseJourney({
           : "رحلة تعليمية مرتبة تنقلك من احتياجك الحالي إلى نتائج عملية يمكنك استخدامها في عملك وحياتك."}
       </p>
 
+      {/* سياسة المدربين تُقال مرة واحدة هنا بدل أن تتكرر شارةً على كل بطاقة —
+          كانت خمس دورات تحمل خمس نسخ من الجملة نفسها فتغرق ما يختلف بينها.
+          والشارة أدناه تبقى للمدرب المُعلَن، لأن اسمه معلومة تخص بطاقته وحدها. */}
+      <p className="mt-1.5 text-[11px] leading-relaxed text-white/40">
+        نُعلن اسم مدرب كل دورة عند اعتماد شعبتها — ولا نعرض اسما قبل ذلك.
+      </p>
+
       <ol className="mt-6">
         {list.map((c, i) => {
           const isGift = edit ? edit.giftId === c.id : giftId === c.id;
@@ -359,11 +366,11 @@ function CourseTrainer({ courseId }: { courseId: string }) {
     )
       .then((res) => {
         if (cancelled) return;
+        /* المُعلَن وحده يستحق شارة على بطاقته. أما «لم يُعلن بعد» فسياسة عامة
+           تُقال مرة فوق القائمة (انظر أعلى المكوّن)، لا خمس مرات داخلها. */
         if (res.announced && res.trainers.length > 0) {
           const names = res.trainers.map((t) => t.name).join("، ");
           setLabel(`المدرب: ${names}`);
-        } else {
-          setLabel(res.messageAr ?? "يُعلن المدرب عند اعتماد الشعبة");
         }
       })
       .catch(() => {

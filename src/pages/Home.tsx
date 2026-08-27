@@ -278,7 +278,8 @@ function DiagnosticTeaser() {
   const done = step >= mirrorQuestions.length
   const current = mirrorQuestions[Math.min(step, mirrorQuestions.length - 1)]
 
-  /* حفظ مؤقت محلي آمن — لا يغادر جهاز الزائر ولا يُرسل لأي خادم */
+  /* حفظ مؤقت محلي آمن — الإجابات لا تغادر جهاز الزائر. الذي يُرسل هو حدثا
+     mirror_started/mirror_completed بلا أي محتوى إجابة (انظر analytics.ts). */
   useEffect(() => {
     localStorage.setItem('wajeez_mirror', JSON.stringify({ step, answers }))
   }, [step, answers])
@@ -327,9 +328,12 @@ function DiagnosticTeaser() {
       <div className="mx-auto max-w-4xl px-5">
         <div className="reveal text-center">
           <SectionLabel>مؤشر وجيز — دقيقة واحدة</SectionLabel>
-          <h2 className="mt-5 text-3xl font-bold md:text-4xl">لا تشترِ دورة عشوائيا… اكتشف ما تحتاج تعلّمه أولا</h2>
+          {/* الوعد السابق كان «ما الذي تحتاج تعلّمه — وبأي ترتيب»، ولا يسأل أيٌّ من
+              الأسئلة الخمسة عن مجال ولا هدف ولا مهارة، فلا يستطيع أن يجيبه. وما تجيبه
+              فعلا هو ما يعطّل الزائر عن البدء — وهو وعد يفي به كاملا. */}
+          <h2 className="mt-5 text-3xl font-bold md:text-4xl">قبل أن تختار دورة… اعرف لماذا لم تبدأ بعد</h2>
           <p className="mx-auto mt-4 max-w-lg text-muted-foreground leading-8">
-            خمسة أسئلة صادقة تكشف لك: ما الذي تحتاج تعلّمه فعلا — وبأي ترتيب.
+            خمسة أسئلة صادقة عن علاقتك بالتعلّم — تكشف ما يعطّلك فعلا، ثم يبني عليها التشخيص الكامل.
           </p>
         </div>
 
@@ -1107,8 +1111,9 @@ function Faq() {
                   <div className="overflow-hidden">
                     <div className="px-6 pb-6">
                       <p className="leading-8 text-muted-foreground">
-                        توصية مبنية على منهجية، لا على التخمين: يحلل مؤشر وجيز ميولك وأهدافك وفجوات مهاراتك بأطر مهنية معروفة
+                        توصية مبنية على منهجية، لا على التخمين: يحلل التشخيص الكامل ميولك وأهدافك وفجوات مهاراتك بأطر مهنية معروفة
                         (RIASEC وO*NET وESCO وDigComp)، وكل استنتاج مرتبط بإجابة قدّمتها — بلا صناديق سوداء، وبدرجة ثقة معلنة.
+                        أما «مؤشر وجيز» على هذه الصفحة فخمسة أسئلة تمهيدية عن علاقتك بالتعلّم، لا تحليل مهارات.
                       </p>
                       <Link
                         to="/methodology"
@@ -1142,17 +1147,21 @@ function FinalCta() {
           <span className="text-teal-light-ink">أكثر من دورة عشوائية.</span>
         </h2>
         <p className="reveal mx-auto mt-6 max-w-md leading-8 text-muted-foreground">
-          امنحنا ثلاث دقائق من الوضوح، نمنحك خريطة طريق كاملة.
+          امنحنا بضع دقائق من الوضوح، نمنحك خريطة طريق كاملة.
         </p>
         <div className="reveal mt-9">
-          <a
-            href="#diagnostic"
+          {/* كان يعِد بخريطة طريق كاملة ثم يهبط بالزائر إلى مؤشّر الخمسة أسئلة في
+              الصفحة نفسها. الوعد المكتوب فوق الزر يقرر وجهته: التشخيص الكامل. */}
+          <Link
+            to="/diagnostic"
             className="btn-teal px-10 py-5 text-lg shadow-[0_0_60px_-10px_#38A7B4]"
           >
-            ابدأ مؤشر وجيز الآن
+            ابدأ التشخيص الكامل
             <ArrowLeft className="h-5 w-5" />
-          </a>
-          <p className="mt-4 text-xs text-muted-foreground">مجاني · بدون حساب · إجاباتك تُحفظ على جهازك فقط</p>
+          </Link>
+          <p className="mt-4 text-xs text-muted-foreground">
+            مجاني · بدون حساب · إجاباتك على جهازك — لا نُرسل إلا أنك بدأت وأكملت
+          </p>
         </div>
       </div>
     </section>
