@@ -2557,7 +2557,7 @@
       "domains": [],
       "decision_impact": "skill_evidence",
       "measures": [
-        "english"
+        "english_for_work"
       ]
     },
     "QB-M4-010": {
@@ -2717,7 +2717,7 @@
       "domains": [],
       "decision_impact": "skill_evidence",
       "measures": [
-        "financial_literacy"
+        "financial_decision_making"
       ]
     },
     "QB-M4-015": {
@@ -2749,7 +2749,7 @@
       "domains": [],
       "decision_impact": "skill_evidence",
       "measures": [
-        "economics_basics"
+        "unit_economics"
       ]
     },
     "QB-M4-016": {
@@ -2877,7 +2877,7 @@
       "domains": [],
       "decision_impact": "skill_evidence",
       "measures": [
-        "leadership_influence"
+        "team_leadership"
       ]
     },
     "QB-M4-020": {
@@ -2909,7 +2909,7 @@
       "domains": [],
       "decision_impact": "skill_evidence",
       "measures": [
-        "emotional_intelligence"
+        "conflict_resolution"
       ]
     },
     "QB-M4-021": {
@@ -2941,7 +2941,7 @@
       "domains": [],
       "decision_impact": "skill_evidence",
       "measures": [
-        "problem_solving"
+        "complex_problem_solving"
       ]
     },
     "QB-M4-022": {
@@ -2973,7 +2973,7 @@
       "domains": [],
       "decision_impact": "skill_evidence",
       "measures": [
-        "research_learning"
+        "research_literacy"
       ]
     },
     "QB-M4-023": {
@@ -3037,7 +3037,7 @@
       "domains": [],
       "decision_impact": "skill_evidence",
       "measures": [
-        "time_energy_management"
+        "time_management"
       ]
     },
     "QB-M4-025": {
@@ -3101,7 +3101,7 @@
       "domains": [],
       "decision_impact": "skill_evidence",
       "measures": [
-        "entrepreneurship_basics"
+        "business_model"
       ]
     },
     "QB-M4-027": {

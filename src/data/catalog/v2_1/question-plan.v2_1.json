@@ -1618,19 +1618,19 @@
       "final_status": "active_b2c"
     },
     "QB-M4-009": {
-      "surface": "post_recommendation",
-      "layer21": "evidence_skill",
-      "phase": "adaptive",
-      "action": "move_post",
-      "stages": "all",
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
       "domains": [],
-      "impact_ar": "لا أثر على المسار — تُقاس بعده لتخصيص المتابعة.",
-      "why_ar": "english مهارة مقاسة غير معلَنة حاسمة ولا داعمة ولا مخرج تعلم لأي كيان نشط (فحص إغلاق منطق V2.1 — 2000+10000 جلسة بلا سؤال واحد) — قياسها قبل التوصية مقعد بلا أثر.",
+      "impact_ar": "لا أثر — متقاعد من البنك.",
+      "why_ar": "لا دورة واحدة في الكتالوج تُعلّم الإنجليزية، ومهارتها المسجّلة english_for_work محكومة بحالة future_catalog_skill (صفر تغطية وتدريس). فالقياس هنا يكشف فجوة لا يوجد ما يسدّها. يُعاد تفعيله وتُوجَّه measures إلى english_for_work يوم تُضاف الدورة.",
       "measures": [
-        "english",
+        "english_for_work",
         "skill_vector"
       ],
-      "final_status": "post_recommendation"
+      "final_status": "retired"
     },
     "QB-M4-010": {
       "surface": "b2c",
@@ -1702,7 +1702,7 @@
       "impact_ar": "لا أثر على المسار — تُقاس بعده لتخصيص المتابعة.",
       "why_ar": "financial_literacy مهارة مقاسة غير معلَنة حاسمة ولا داعمة ولا مخرج تعلم لأي كيان نشط (فحص إغلاق منطق V2.1 — 2000+10000 جلسة بلا سؤال واحد) — قياسها قبل التوصية مقعد بلا أثر.",
       "measures": [
-        "financial_literacy",
+        "financial_decision_making",
         "skill_vector"
       ],
       "final_status": "post_recommendation"
@@ -1717,7 +1717,7 @@
       "impact_ar": "لا أثر على المسار — تُقاس بعده لتخصيص المتابعة.",
       "why_ar": "economics_basics مهارة مقاسة غير معلَنة حاسمة ولا داعمة ولا مخرج تعلم لأي كيان نشط (فحص إغلاق منطق V2.1 — 2000+10000 جلسة بلا سؤال واحد) — قياسها قبل التوصية مقعد بلا أثر.",
       "measures": [
-        "economics_basics",
+        "unit_economics",
         "skill_vector"
       ],
       "final_status": "post_recommendation"
@@ -1777,7 +1777,7 @@
       "impact_ar": "لا أثر على المسار — تُقاس بعده لتخصيص المتابعة.",
       "why_ar": "leadership_influence مهارة مقاسة غير معلَنة حاسمة ولا داعمة ولا مخرج تعلم لأي كيان نشط (فحص إغلاق منطق V2.1 — 2000+10000 جلسة بلا سؤال واحد) — قياسها قبل التوصية مقعد بلا أثر.",
       "measures": [
-        "leadership_influence",
+        "team_leadership",
         "skill_vector"
       ],
       "final_status": "post_recommendation"
@@ -1792,7 +1792,7 @@
       "impact_ar": "لا أثر على المسار — تُقاس بعده لتخصيص المتابعة.",
       "why_ar": "emotional_intelligence مهارة مقاسة غير معلَنة حاسمة ولا داعمة ولا مخرج تعلم لأي كيان نشط (فحص إغلاق منطق V2.1 — 2000+10000 جلسة بلا سؤال واحد) — قياسها قبل التوصية مقعد بلا أثر.",
       "measures": [
-        "emotional_intelligence",
+        "conflict_resolution",
         "skill_vector"
       ],
       "final_status": "post_recommendation"
@@ -1807,7 +1807,7 @@
       "impact_ar": "لا أثر على المسار — تُقاس بعده لتخصيص المتابعة.",
       "why_ar": "problem_solving مهارة مقاسة غير معلَنة حاسمة ولا داعمة ولا مخرج تعلم لأي كيان نشط (فحص إغلاق منطق V2.1 — 2000+10000 جلسة بلا سؤال واحد) — قياسها قبل التوصية مقعد بلا أثر.",
       "measures": [
-        "problem_solving",
+        "complex_problem_solving",
         "skill_vector"
       ],
       "final_status": "post_recommendation"
@@ -1822,7 +1822,7 @@
       "impact_ar": "لا أثر على المسار — تُقاس بعده لتخصيص المتابعة.",
       "why_ar": "research_learning مهارة مقاسة غير معلَنة حاسمة ولا داعمة ولا مخرج تعلم لأي كيان نشط (فحص إغلاق منطق V2.1 — 2000+10000 جلسة بلا سؤال واحد) — قياسها قبل التوصية مقعد بلا أثر.",
       "measures": [
-        "research_learning",
+        "research_literacy",
         "skill_vector"
       ],
       "final_status": "post_recommendation"
@@ -1852,7 +1852,7 @@
       "impact_ar": "لا أثر على المسار — تُقاس بعده لتخصيص المتابعة.",
       "why_ar": "time_energy_management مهارة مقاسة غير معلَنة حاسمة ولا داعمة ولا مخرج تعلم لأي كيان نشط (فحص إغلاق منطق V2.1 — 2000+10000 جلسة بلا سؤال واحد) — قياسها قبل التوصية مقعد بلا أثر.",
       "measures": [
-        "time_energy_management",
+        "time_management",
         "skill_vector"
       ],
       "final_status": "post_recommendation"
@@ -1882,7 +1882,7 @@
       "impact_ar": "لا أثر على المسار — تُقاس بعده لتخصيص المتابعة.",
       "why_ar": "entrepreneurship_basics مهارة مقاسة غير معلَنة حاسمة ولا داعمة ولا مخرج تعلم لأي كيان نشط (فحص إغلاق منطق V2.1 — 2000+10000 جلسة بلا سؤال واحد) — قياسها قبل التوصية مقعد بلا أثر.",
       "measures": [
-        "entrepreneurship_basics",
+        "business_model",
         "skill_vector"
       ],
       "final_status": "post_recommendation"

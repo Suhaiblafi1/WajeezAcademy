@@ -51,6 +51,14 @@ export const ACADEMIC_GOVERNANCE: Record<string, Governance> = {
     'distraction_reduction', 'stress_resilience_nonclinical', 'sleep_routine_awareness', 'mindful_technology_use',
     'motivation_systems', 'healthy_boundaries', 'recovery_planning',
   ].map((slug) => [slug, { academic_status: 'future_catalog_skill', reason_ar: FUTURE_CATALOG_REASON }])),
+  /* QB-M4-009 متقاعد ووجهته هنا: السؤال باق في البنك للتاريخ ولا يُسأل، فقياسه
+     غير حيّ ولا يستدعي تحذير تفعيل. يُرفع هذا البند ويُستأنف السؤال يوم تُضاف
+     دورة إنجليزية — عندها يصير القياس حيّا ويجب أن يُفعَّل أكاديميا فعلا. */
+  english_for_work: {
+    academic_status: 'future_catalog_skill',
+    expected_measured: true,
+    reason_ar: FUTURE_CATALOG_REASON,
+  },
   /* مقاسة بلا فعل تخصيص مبرمج — لا تُسأل لمجرد جمع البيانات (قرار 2026-08-19) */
   creative_thinking: {
     academic_status: 'future_personalization_signal',

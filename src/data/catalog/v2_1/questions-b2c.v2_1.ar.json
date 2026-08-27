@@ -461,7 +461,7 @@
       ],
       "trigger_condition": "always",
       "measures": [
-        "english",
+        "english_for_work",
         "skill_vector"
       ],
       "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",
@@ -469,7 +469,8 @@
       "required_level": "deep",
       "weight": 1.1,
       "reference_anchor": "ESCO",
-      "active": true
+      "active": false,
+      "retired_reason_ar": "لا دورة واحدة في الكتالوج تُعلّم الإنجليزية، ومهارتها المسجّلة english_for_work محكومة بحالة future_catalog_skill (صفر تغطية وتدريس). فالقياس هنا يكشف فجوة لا يوجد ما يسدّها. يُعاد تفعيله وتُوجَّه measures إلى english_for_work يوم تُضاف الدورة."
     },
     {
       "question_id": "QB-M4-010",
@@ -611,7 +612,7 @@
       ],
       "trigger_condition": "always",
       "measures": [
-        "financial_literacy",
+        "financial_decision_making",
         "skill_vector"
       ],
       "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",
@@ -641,7 +642,7 @@
       ],
       "trigger_condition": "always",
       "measures": [
-        "economics_basics",
+        "unit_economics",
         "skill_vector"
       ],
       "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",
@@ -761,7 +762,7 @@
       ],
       "trigger_condition": "always",
       "measures": [
-        "leadership_influence",
+        "team_leadership",
         "skill_vector"
       ],
       "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",
@@ -791,7 +792,7 @@
       ],
       "trigger_condition": "always",
       "measures": [
-        "emotional_intelligence",
+        "conflict_resolution",
         "skill_vector"
       ],
       "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",
@@ -821,7 +822,7 @@
       ],
       "trigger_condition": "always",
       "measures": [
-        "problem_solving",
+        "complex_problem_solving",
         "skill_vector"
       ],
       "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",
@@ -851,7 +852,7 @@
       ],
       "trigger_condition": "always",
       "measures": [
-        "research_learning",
+        "research_literacy",
         "skill_vector"
       ],
       "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",
@@ -911,7 +912,7 @@
       ],
       "trigger_condition": "always",
       "measures": [
-        "time_energy_management",
+        "time_management",
         "skill_vector"
       ],
       "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",
@@ -971,7 +972,7 @@
       ],
       "trigger_condition": "always",
       "measures": [
-        "entrepreneurship_basics",
+        "business_model",
         "skill_vector"
       ],
       "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",

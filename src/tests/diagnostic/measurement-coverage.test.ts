@@ -98,14 +98,24 @@ describe('لا خلط بين المقيس والمفتاح غير المسجَّ
 })
 
 describe('أسئلة القياس المعلّقة', () => {
-  it('كل واحد يقيس مفتاحا غير مسجَّل، ويقول أهو على سطح B2C', () => {
+  /* كان هذا يثبّت وجود النقص: «يوجد أسئلة يتيمة، وهذه صفتها». وبلغ العدد صفرا
+     في 2026-08-27 حين وُجّهت التسعة الأخيرة إلى مهاراتها المسجّلة. فصار يحرس
+     العقد الدائم — لا يتيم واحد — ويبقي وصف اليتيم صحيحا لو عاد. */
+  it('لا سؤال يقيس مفتاحا غير مسجَّل — والوصف يبقى صحيحا لو عاد', () => {
     const registered = new Set(skillsCatalog.map((s) => s.slug))
-    expect(r.orphanQuestions.length).toBeGreaterThan(0)
+    expect(r.orphanQuestions.map((q) => `${q.questionId}→${q.measuredKey}`)).toEqual([])
     for (const q of r.orphanQuestions) {
       expect(registered.has(q.measuredKey), q.measuredKey).toBe(false)
       expect(typeof q.onB2cSurface).toBe('boolean')
       expect(q.textAr.length).toBeGreaterThan(5)
     }
+  })
+
+  /* مضاد للفراغ: لو انهار الحساب وأعاد لا شيء لمرّ الاختبار أعلاه صامتا */
+  it('الحساب يقرأ بنكا حقيقيا — الصفر نتيجة لا فراغ', () => {
+    expect(r.totals.pathways).toBeGreaterThan(0)
+    expect(skillsCatalog.length).toBeGreaterThan(50)
+    expect(r.totals.measuredKeysUnregistered).toBe(0)
   })
 
   it('ما على سطح B2C منها يطابق ما يعدّه المحرك مقيسا بلا تسجيل — رقمٌ واحد لا رقمان', () => {
