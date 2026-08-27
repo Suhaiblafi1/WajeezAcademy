@@ -1808,9 +1808,6 @@ export default function Diagnostic() {
             );
           })()}
 
-          {/* ─── حدّ الظهور: ينتهي المقروء عند آخر عنصر في بطاقة «ماذا ستحصل عليه فعليا؟»
-              وكل ما بعده داخل البوابة — محتوى حقيقي في مكانه تحت الضباب للضيف ─── */}
-          <ResultGate revealed={authed} onDone={revealResult}>
           {/* كانت الصفحة تعرض خطتين متتاليتين تسمّي كلٌّ منهما نفسها «خطتك»:
               «ماذا ستحقق من خلال خطتك؟» ثم «خطتك مرتَّبة على مقاسك». وقياسٌ على خمس
               حالات: المتعلم يرى ١٠–١١ بطاقة دورة، أربع أو خمس منها الدورات نفسها
@@ -1878,39 +1875,6 @@ export default function Diagnostic() {
             return <PlanCourses pathway={topPathway} gaps={result.gaps} authed={authed} resetKey={swapCount} />;
           })()}
 
-          {/* الاعتماد أسفل الخطة مباشرة — يظهر للضيف مضبّبا في مكانه، ويعمل فور انكشافه بالتسجيل */}
-          {(() => {
-            const compositeView = (result.resultJson.composite as CompositeView | null) ?? null;
-            return (
-            <div className="mt-6 flex flex-col items-center gap-3">
-              {compositeView ? (
-                <Button
-                  size="lg"
-                  onClick={adoptComposite}
-                  className="h-auto min-h-14 max-w-full whitespace-normal rounded-full bg-gold px-8 py-3 text-center text-base font-black leading-snug text-on-gold hover:bg-gold/90 md:text-lg"
-                >
-                  اعتمد هذه الخطة
-                  <ArrowLeft className="mr-2 h-5 w-5 shrink-0" />
-                </Button>
-              ) : (
-                <Button size="lg" className="h-auto min-h-14 max-w-full whitespace-normal rounded-full bg-gold px-8 py-3 text-center text-base font-black leading-snug text-on-gold hover:bg-gold/90 md:text-lg" asChild>
-                  <Link to={`/pathways/${topPathway.id}`}>
-                    اعتمد هذا المسار
-                    <ArrowLeft className="mr-2 h-5 w-5 shrink-0" />
-                  </Link>
-                </Button>
-              )}
-              <button
-                onClick={restart}
-                className="flex items-center gap-1.5 text-xs font-semibold text-white/45 transition hover:text-white"
-              >
-                <RefreshCcw className="h-3.5 w-3.5" />
-                لا يشبهني؟ أعد التشخيص من جديد
-              </button>
-            </div>
-            );
-          })()}
-
           {/* الخطة المركّبة — لمن قيّم جوانبه، وحين تضيف مقررات لا تحويها الخطة أعلاه.
               أما إذا كانت تعيد سرد الدورات نفسها فقد طُويت إلى سطر في بطاقة الأسباب. */}
           {composedFold.showCard && !composedPrimary && (() => {
@@ -1960,6 +1924,51 @@ export default function Diagnostic() {
               </p>
             </div>
           )}
+
+          {/* ─── حدّ الظهور ───
+              كان ينتهي المقروء عند بطاقة «ماذا ستحصل عليه فعليا؟» — أي عند تسع
+              بطاقات منافع تسويقية — ويقع خلفه الدليلُ كلُّه: الدورات ومخرجاتها،
+              وأسباب الترشيح، وتحذير «لن تدفع ثمن ما تعرفه أصلا». فالزائر الشكّاك،
+              وهو من يجب إقناعه، كان يرى الوعود ويُطلب منه حساب.
+
+              فانتقل الحدّ إلى ما بعد الخطة وتحذير التقاطع: القيمة تُثبَت أولًا ثم
+              يُطلب البريد. وبقي خلفه ما يحتاج حسابا فعلا — والاعتماد أوّلها، لأنه
+              فعلٌ يقود إلى صفحة الدفع لا معلومةٌ تُقرأ. ─── */}
+          <ResultGate revealed={authed} onDone={revealResult}>
+
+          {/* الاعتماد أسفل الخطة مباشرة — يظهر للضيف مضبّبا في مكانه، ويعمل فور انكشافه بالتسجيل */}
+          {(() => {
+            const compositeView = (result.resultJson.composite as CompositeView | null) ?? null;
+            return (
+            <div className="mt-6 flex flex-col items-center gap-3">
+              {compositeView ? (
+                <Button
+                  size="lg"
+                  onClick={adoptComposite}
+                  className="h-auto min-h-14 max-w-full whitespace-normal rounded-full bg-gold px-8 py-3 text-center text-base font-black leading-snug text-on-gold hover:bg-gold/90 md:text-lg"
+                >
+                  اعتمد هذه الخطة
+                  <ArrowLeft className="mr-2 h-5 w-5 shrink-0" />
+                </Button>
+              ) : (
+                <Button size="lg" className="h-auto min-h-14 max-w-full whitespace-normal rounded-full bg-gold px-8 py-3 text-center text-base font-black leading-snug text-on-gold hover:bg-gold/90 md:text-lg" asChild>
+                  <Link to={`/pathways/${topPathway.id}`}>
+                    اعتمد هذا المسار
+                    <ArrowLeft className="mr-2 h-5 w-5 shrink-0" />
+                  </Link>
+                </Button>
+              )}
+              <button
+                onClick={restart}
+                className="flex items-center gap-1.5 text-xs font-semibold text-white/45 transition hover:text-white"
+              >
+                <RefreshCcw className="h-3.5 w-3.5" />
+                لا يشبهني؟ أعد التشخيص من جديد
+              </button>
+            </div>
+            );
+          })()}
+
 
           {/* خريطة فجواتك التفصيلية — داخل توسعة ليبقى المسح البصري خفيفا */}
           {result.gapDetails.length > 0 && (

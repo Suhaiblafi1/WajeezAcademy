@@ -23,13 +23,17 @@ interface ResultGateProps {
 }
 
 /* البنود الستة داخل لافتة التسجيل — الوعود نفسها بأقصر صياغة، أيقونة وسطر واحد */
+/* البنود الستة تتبع حدّ الظهور — لا تسبقه.
+   حين انتقل الحدّ إلى ما بعد الخطة وتحذير التقاطع، صار «تفاصيل دوراتك» و«لماذا
+   هذا المسار» مقروءَين قبل التسجيل، فالوعد بهما وعدٌ بما في اليد أصلا — وهو
+   أسوأ من ألّا يُوعد به. وما بقي خلف الحدّ فعلا هو ما يُذكر. */
 const UNLOCKS: { icon: typeof Target; label: string }[] = [
-  { icon: Target, label: "ماذا ستحقق فعليا" },
-  { icon: BookOpen, label: "تفاصيل دوراتك" },
+  { icon: Target, label: "اعتماد خطتك والبدء" },
+  { icon: SlidersHorizontal, label: "تخصيصها وحفظها" },
   { icon: UserCheck, label: "من سيرافقك" },
   { icon: Gift, label: "هدية مجانية تختارها" },
-  { icon: Sparkles, label: "لماذا هذا المسار" },
-  { icon: SlidersHorizontal, label: "تخصيص مسارك وحفظه" },
+  { icon: BookOpen, label: "خريطة فجواتك مهارة بمهارة" },
+  { icon: Sparkles, label: "البدائل الأسرع والأوفر" },
 ];
 
 export default function ResultGate({ revealed, onDone, children }: ResultGateProps) {
@@ -68,7 +72,7 @@ export default function ResultGate({ revealed, onDone, children }: ResultGatePro
                 </h3>
               </div>
               <p className="relative mt-1.5 text-center text-xs leading-relaxed text-white/65">
-                نتيجتك جاهزة — والتسجيل يكشف بقيتها في نفس الصفحة.
+                خطتك أمامك كاملة — والحساب يفتح اعتمادها وتخصيصها وحفظها.
               </p>
 
               <ul className="relative mt-4 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-white/[0.07] pt-3.5">
