@@ -45,13 +45,24 @@ export function ensurePublishedContent(): Promise<void> {
         fetchJson("/api/public/core-catalog"),
         fetchJson("/api/public/methodology"),
       ]);
+      /* الفراغ ليس جوابا. /api/public/core-catalog يقرأ جداول Pathway وCourse
+         مباشرة، فقاعدة لم تُستورد بعد ترد 200 ومصفوفات فارغة — و`Array.isArray([])`
+         صحيحة. فكان الموقع يثبّت الفراغ، ويعدّ نفسه ناجحا، ويتخطى الاحتياطي
+         المضمن الذي وُضع لهذه الحالة بالذات: الصفحة الرئيسية تعرض «الكل ٠»
+         بلا بطاقة واحدة. الطول شرطٌ لا زينة — وهو نفس ما يشترطه
+         installCatalogSnapshot وloadBundledCoreCatalog أصلا. */
       const c = catalog as Partial<CoreCatalogRaw> | null;
-      if (c && Array.isArray(c.launch_pathways) && Array.isArray(c.courses) && Array.isArray(c.modules)) {
+      if (
+        c &&
+        Array.isArray(c.launch_pathways) && c.launch_pathways.length > 0 &&
+        Array.isArray(c.courses) && c.courses.length > 0 &&
+        Array.isArray(c.modules)
+      ) {
         installCoreCatalogRaw(c as CoreCatalogRaw);
         installed = true;
       }
       const m = methodology as { references?: MethodologyReference[] } | null;
-      if (m && Array.isArray(m.references)) {
+      if (m && Array.isArray(m.references) && m.references.length > 0) {
         installMethodologyRegistry(m.references);
       }
     } catch {

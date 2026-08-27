@@ -4,7 +4,14 @@
     "target": "ES2023",
     "lib": ["ES2023", "DOM"],
     "module": "ESNext",
-    "types": ["node"],
+    /* vite/client لأجل import.meta.env، و@/* لأجل الاستيراد من src: هذا
+       المشروع يضم src/tests، والاختبار الذي يستورد وحدة تطبيق كان يفشل
+       بـTS2307 لا بمنطقه — فبقيت وحدات src/services بلا اختبار أصلا. */
+    "types": ["node", "vite/client"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
     "skipLibCheck": true,
 
     /* Bundler mode */
