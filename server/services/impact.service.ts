@@ -8,7 +8,7 @@
    والأسئلة. ومن غيّر السؤال وحده يعرف الآن أنه غيّره. */
 
 import type { PrismaClient } from '@prisma/client'
-import { buildSnapshotFromDb } from '../catalog/snapshot-builder'
+import { buildSnapshotFromDb, getActiveSnapshot } from '../catalog/snapshot-builder'
 import { installCatalogSnapshot, type CatalogSnapshotPayload } from '../../src/domain/diagnostic/catalog'
 import { runSession } from '../../src/tests/diagnostic/helpers'
 import { PERSONAS } from '../../src/tests/diagnostic/personas'
@@ -63,6 +63,10 @@ export interface ImpactSummary {
   changedConfidence: ConfidenceDrift[]
   /** من تغيّر مساره أو قالبه — أثقل أنواع الأثر */
   changedWinners: { name: string; beforeTop: string | null; afterTop: string | null }[]
+  /** ما قِيس عليه «قبل»: اللقطة المنشورة فعلا، أو الجداول حين لا لقطة بعد */
+  baselineAr: string
+  /** تسمية اللقطة المنشورة المقيس عليها — null حين لم يُنشر شيء بعد */
+  baselineLabel: string | null
 }
 
 
@@ -136,17 +140,24 @@ const same = (a: PersonaOutcome, b: PersonaOutcome) =>
 
 /** تحليل أثر كامل: لقطة منشورة حالية مقابل لقطة مرشحة تشمل المعتمد — ويعيد حالة المحرك كما كانت */
 export async function analyzeImpact(prisma: PrismaClient, changeRef: string, actorId?: string): Promise<ImpactSummary & { runId: string }> {
-  const publishedSnap = await buildSnapshotFromDb(prisma)
+  /* «قبل» = ما يقرأه المحرك الآن فعلا: اللقطة المنشورة المجمّدة.
+     كانت تُعاد بناؤها من الجداول، وهو صحيح ما دامت الجداول واللقطة متطابقتين
+     — وهما تفترقان في الحالة التي يُنشر فيها أصلا. فحين تُستورد جداول جديدة
+     ولمّا تُنشر لقطتها، كان الطرفان يُبنيان من الجداول نفسها فيتطابقان،
+     ويقول التحليل «لم تتغيّر توصية أحد» عن نشرٍ يغيّر الكتالوج كله.
+     أخطر أنواع الخطأ: طمأنينة في الخطوة التي وُضعت لتحذّر. */
+  const active = await getActiveSnapshot(prisma)
+  const beforePayload = (active?.payload ?? (await buildSnapshotFromDb(prisma)).payload) as unknown as CatalogSnapshotPayload
   const candidateSnap = await buildSnapshotFromDb(prisma, { extraStatuses: ['approved'] })
 
-  installCatalogSnapshot(publishedSnap.payload as unknown as CatalogSnapshotPayload, 'impact-before')
+  installCatalogSnapshot(beforePayload, 'impact-before')
   const before = runCohort()
 
   installCatalogSnapshot(candidateSnap.payload as unknown as CatalogSnapshotPayload, 'impact-after')
   const after = runCohort()
 
-  /* إعادة المحرك إلى اللقطة المنشورة — التحليل لا يترك أثرا */
-  installCatalogSnapshot(publishedSnap.payload as unknown as CatalogSnapshotPayload, 'impact-restored')
+  /* إعادة المحرك إلى ما كان — التحليل لا يترك أثرا */
+  installCatalogSnapshot(beforePayload, 'impact-restored')
 
   const changed = before
     .map((b, i) => ({ name: b.name, before: b, after: after[i] }))
@@ -154,6 +165,10 @@ export async function analyzeImpact(prisma: PrismaClient, changeRef: string, act
 
   const summary: ImpactSummary = {
     before, after, changed, changedCount: changed.length, totalPersonas: before.length,
+    baselineAr: active
+      ? `اللقطة المنشورة «${active.label}» — ما يقرأه المحرك الآن`
+      : 'الجداول المنشورة — لا لقطة منشورة بعد، فلا شيء يقرأه المحرك ليُقاس عليه',
+    baselineLabel: active?.label ?? null,
     ...diffOutcomes(before, after),
   }
   const run = await prisma.impactAnalysisRun.create({

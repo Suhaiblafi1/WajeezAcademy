@@ -9,7 +9,7 @@ type Version = {
   id: string; label: string; status: string; createdAt: string; publishedAt: string | null
   snapshots: { payloadHash: string }[]; events: { action: string; createdAt: string }[]
 };
-type Impact = { runId: string; changedCount: number; totalPersonas: number; changed: { name: string }[] };
+type Impact = { runId: string; changedCount: number; totalPersonas: number; changed: { name: string }[]; baselineAr: string };
 type Validation = { ok: boolean; errors: string[] };
 type RegressionRun = { id: string; passed: boolean; createdAt: string; results: { name: string; match: boolean }[] };
 
@@ -76,6 +76,9 @@ export default function PublishingBoard() {
           {impact && (
             <p className="mt-3 text-xs leading-6 text-white/70">
               تغيّرت توصية {impact.changedCount} من {impact.totalPersonas} شخصية.
+              {/* الرقم بلا مرجعه يُقرأ خطأ: «صفر» عن قياسٍ على الجداول لا على
+                  اللقطة الحية يعني «لا معتمد ينتظر»، لا «النشر بلا أثر». */}
+              <span className="mt-1 block text-white/45">مقيس على: {impact.baselineAr}</span>
               {impact.changed.map((c) => <span key={c.name} className="block text-amber-300">• {c.name}</span>)}
             </p>
           )}
