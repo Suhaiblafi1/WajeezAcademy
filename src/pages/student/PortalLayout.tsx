@@ -20,13 +20,19 @@ interface RealNotif { id: string; title: string; body: string; status: string; s
 export default function PortalLayout({ children, title }: { children: React.ReactNode; title: string }) {
   /* فتح علم المالك عبر ?preview=owner في العنوان — مشتق أثناء التصيير لا في تأثير */
   const previewOwner = new URLSearchParams(window.location.search).get("preview") === "owner";
-  const [allowed, setAllowed] = useState<boolean>(() => canAccessPortal() || previewOwner);
+  /* فتحٌ يدوي: زر معاينة المالك أدناه، والإذن المحلي المقروء عند التركيب.
+     أما جلسة الخادم فتُعطَف أثناء التصيير بعد قراءتها — لا تُقلب بتأثير. */
+  const [manualAllowed, setManualAllowed] = useState<boolean>(() => canAccessPortal() || previewOwner);
   const [bellOpen, setBellOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [deskMoreOpen, setDeskMoreOpen] = useState(false);
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { user: sessionUser, checked: sessionChecked } = useRealSession();
+  /* كان useEffect يقلب allowed عند ظهور الجلسة، فيصيّر مرة بالمنع ثم مرة
+     بالسماح — ومضة يراها المستخدم، وتحذير «setState داخل تأثير». العطف هنا
+     يعطي النتيجة نفسها في تصيير واحد. */
+  const allowed = manualAllowed || !!sessionUser;
   /* الهوية: اسم الجلسة الحقيقية أولاً، ثم الاسم المحلي التجريبي */
   const user = sessionUser?.displayName ?? readUserName();
   const enrollment = getEnrollment();
@@ -40,12 +46,6 @@ export default function PortalLayout({ children, title }: { children: React.Reac
   useEffect(() => {
     if (previewOwner) { unlockOwner(); enablePreview(); } // يستمر عبر التنقلات لا لصفحة واحدة
   }, [previewOwner]);
-
-  /* حساب الخادم الحقيقي يفتح البوابة فورا — حتى قبل أول تسجيل في شعبة.
-     الحساب المسجل يملك لوحته وإشعاراته وطلباته من يومه الأول. */
-  useEffect(() => {
-    if (!allowed && sessionUser) setAllowed(true);
-  }, [allowed, sessionUser]);
 
   useEffect(() => {
     apiGet<RealNotif[]>("/api/learner/notifications").then((rows) => setRealNotifs(rows.slice(0, 6))).catch(() => setRealNotifs(null));
@@ -113,7 +113,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
           </Link>
           {isOwnerUnlocked() && (
             <button
-              onClick={() => { enablePreview(); setAllowed(true); }}
+              onClick={() => { enablePreview(); setManualAllowed(true); }}
               className="flex cursor-pointer items-center gap-1.5 rounded-full border border-dashed border-white/20 px-4 py-2 text-xs text-white/50 hover:border-teal-light/50 hover:text-teal-light-ink"
             >
               <Eye className="h-3.5 w-3.5" /> معاينة تجريبية (للمالك)

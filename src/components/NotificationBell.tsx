@@ -26,6 +26,10 @@ export default function NotificationBell() {
 
   useEffect(() => {
     if (!user) return;
+    /* استدعاء غير متزامن: لا setState يجري قبل أول await، فالتصيير
+       المتتالي الذي تحذّر منه القاعدة لا يقع هنا. القاعدة لا ترى عبر
+       الحدّ غير المتزامن فتَعُدّ كل دالة تنتهي بـsetState متزامنة. */
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- setState بعد await لا قبله
     void refreshCount();
     const t = setInterval(() => void refreshCount(), 30_000);
     return () => clearInterval(t);

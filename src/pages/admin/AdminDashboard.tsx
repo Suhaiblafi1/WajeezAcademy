@@ -176,6 +176,10 @@ export default function AdminDashboard() {
     setUpdatedAt(new Date());
   }, []);
 
+  /* استدعاء غير متزامن: لا setState يجري قبل أول await، فالتصيير
+     المتتالي الذي تحذّر منه القاعدة لا يقع هنا. القاعدة لا ترى عبر
+     الحدّ غير المتزامن فتَعُدّ كل دالة تنتهي بـsetState متزامنة. */
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- setState بعد await لا قبله
   useEffect(() => { void load(); }, [load]);
   /* نبضة كل 45 ثانية طالما التبويب ظاهر — الأرقام حية دون تحديث يدوي */
   useAutoRefresh(() => void load(true), 45_000);

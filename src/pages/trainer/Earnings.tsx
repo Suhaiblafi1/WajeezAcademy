@@ -40,6 +40,10 @@ function RealEarningsView() {
     try { setData(await apiGet<RealEarnings>("/api/trainer/earnings")); }
     catch (e) { setErr(e instanceof ApiError ? e.message : "تعذر تحميل المستحقات"); }
   }, []);
+  /* استدعاء غير متزامن: لا setState يجري قبل أول await، فالتصيير
+     المتتالي الذي تحذّر منه القاعدة لا يقع هنا. القاعدة لا ترى عبر
+     الحدّ غير المتزامن فتَعُدّ كل دالة تنتهي بـsetState متزامنة. */
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- setState بعد await لا قبله
   useEffect(() => { void load(); }, [load]);
 
   if (err) {

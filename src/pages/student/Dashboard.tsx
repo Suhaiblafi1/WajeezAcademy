@@ -73,14 +73,24 @@ const greeting = () => (new Date().getHours() < 12 ? "صباح الخير" : new
 /** لوحتي — موزّع: جلسة حقيقية بتسجيلات ترى بياناتها الفعلية، وإلا تجربة المحاكاة للديمو */
 export default function StudentDashboard() {
   const { user: sessionUser } = useRealSession();
-  const [rows, setRows] = useState<RealEnrollment[] | null>(null);
+  /* النتيجة موسومة بصاحبها. كان التأثير يبدأ بـsetRows(null) متزامنا عند غياب
+     الجلسة — تصيير زائد، وتحذير «setState داخل تأثير». وحذف التصفير وحده كان
+     سيترك صفوف مستخدم سابق معروضة لحظة تبديل الحساب، لأن الجلب يستغرق وقتا.
+     الوسم يحلّ الاثنين: ما لا يخصّ صاحب الجلسة الحالية يُقرأ null بلا تصفير. */
+  const [fetched, setFetched] = useState<{ userId: string; rows: RealEnrollment[] | null } | null>(null);
+  const rows = sessionUser && fetched?.userId === sessionUser.userId ? fetched.rows : null;
 
   useEffect(() => {
-    if (!sessionUser) { setRows(null); return; }
+    if (!sessionUser) return;
+    const userId = sessionUser.userId;
     let on = true;
     apiGet<RealEnrollment[]>("/api/learner/my-learning")
-      .then((r) => { if (on) setRows(r); })
-      .catch(() => { if (on) setRows(null); });
+      .then((r) => { if (on) setFetched({ userId, rows: r }); })
+      /* الفشل يُبقي rows على null كما كان قبل الوسم — أي يستمر مؤشر التحميل.
+         وهذا سلوك قائم لا أغيّره هنا: تحويله إلى «لا شعب لديك» يكذب على من
+         فشل طلبه، وإظهار خطأ صريح تحسينٌ يستحق تغييرا مستقلا لا يُدسّ في
+         إصلاح تلويم. */
+      .catch(() => { if (on) setFetched({ userId, rows: null }); });
     return () => { on = false; };
   }, [sessionUser]);
 
@@ -192,15 +202,20 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
     : 0;
   const activeCount = rows.filter((r) => r.status === "enrolled").length;
 
+  /* حدّ «القادمة» يُلتقط مرة عند التركيب. كان Date.now() يُقرأ داخل useMemo —
+     أي أثناء التصيير، وهو استدعاء غير نقي يمنعه مصرّف React. ولا يغيّر
+     الالتقاطُ سلوكا: الذاكرة لا تُعاد إلا بتغيّر details، فالوقت كان مجمّدا
+     عمليا على أي حال. جلسة بدأت قبل ثلاث ساعات تبقى معروضة. */
+  const [upcomingCutoff] = useState(() => Date.now() - 3 * 3600_000);
+
   /* الجلسات القادمة من كل الشعب — مرتبة زمنيا */
-  const upcoming = useMemo(() => {
-    const now = Date.now();
-    return (details ?? [])
+  const upcoming = useMemo(() =>
+    (details ?? [])
       .flatMap((d) => d.cohort.sessions.map((s) => ({ ...s, cohortTitle: d.cohort.title })))
-      .filter((s) => new Date(s.startsAt).getTime() >= now - 3 * 3600_000)
+      .filter((s) => new Date(s.startsAt).getTime() >= upcomingCutoff)
       .sort((a, b) => a.startsAt.localeCompare(b.startsAt))
-      .slice(0, 4);
-  }, [details]);
+      .slice(0, 4),
+  [details, upcomingCutoff]);
 
   /* واجبات بانتظارك: لم تُسلَّم أو طُلبت إعادتها */
   const pendingAssessments = useMemo(() =>
