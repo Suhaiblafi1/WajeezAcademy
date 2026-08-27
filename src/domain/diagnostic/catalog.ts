@@ -10,7 +10,11 @@ import questionsJson from '../../data/catalog/questions.v1.ar.json'
    زيارة ثم يُرمى لأن اللقطة المنشورة تحلّ محلّه. والكامل يبقى مصدر الحقيقة
    للمستورد والخادم؛ النحيف مولَّد منه ويحرسه `npm run ci:overlays`. */
 import skillsJson from '../../data/catalog/skills.slim.v1.json'
-import coreCatalogJson from '../../data/catalog/core-catalog.v2.json'
+/* موجة ٦ · ج — نفس علاج القاموس النحيف أعلاه، مطبَّقا على الكتالوج الجوهري.
+   المحرك يقرأ منه ثلاثة حقول فقط (انظر install أدناه)، والكامل يحمل معها 400
+   وحدة بمتون دروسها وتدقيقات مصادرها — تهبط على كل من يفتح التشخيص ثم تُستبدل
+   باللقطة المنشورة. النحيف مولَّد من الكامل ويحرسه `npm run ci:overlays`. */
+import coreCatalogJson from '../../data/catalog/core-catalog.slim.v2.json'
 import templatesJson from '../../data/catalog/composite-templates.v1.json'
 import optionEffectsJson from '../../data/overlays/option-effects.v2.json'
 import optionEffectsV21Json from '../../data/overlays/option-effects.v2_1.json'
