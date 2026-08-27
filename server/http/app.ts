@@ -82,6 +82,59 @@ export async function buildApp(prisma: PrismaClient) {
     return { ok: true, time: new Date().toISOString() }
   })
 
+  /* «كيف أعرف أن المنشور هو آخر نسخة؟» — سؤال كان جوابه تنقّلا بين لوحة
+     Vercel وGitHub ومقارنة بصمات بالعين. وهو سؤال يتكرر بعد كل دفعة.
+
+     العنوان الواحد يجيبه: الالتزام الذي بُني منه الكود العامل، واللقطة التي
+     يقرأها المحرك، وهل هما من نفس الالتزام. والمقارنة ممكنة أصلا لأن تسمية
+     اللقطة الآلية تحمل بصمة التزامها (auto-<sha7>-<hash6>) — فالخادم يقارن
+     نفسه بنفسه بلا مصدر خارجي.
+
+     ولا يكشف شيئا ليس معلنا: بصمة التزام في مستودع، وتسمية لقطة منشورة. */
+  app.get('/api/version', { schema: { tags: ['system'], summary: 'النسخة العاملة واللقطة المنشورة — هل هما من نفس الالتزام؟' } }, async () => {
+    const sha = process.env.VERCEL_GIT_COMMIT_SHA ?? null
+    const sha7 = sha ? sha.slice(0, 7) : null
+    const { getActiveSnapshot } = await import('../catalog/snapshot-builder')
+    const active = await getActiveSnapshot(prisma)
+    const payload = active?.payload as
+      | { questions?: { questions?: unknown[] }; coreCatalog?: { launch_pathways?: unknown[]; courses?: unknown[] } }
+      | undefined
+
+    /* التسمية الآلية شكلان: auto-<sha7>-<hash6> حين يعرف البناء التزامه،
+       وauto-<hash12> حين لا يعرفه (نشر محلي). والثاني لا يحمل بصمة التزام،
+       فالحكم عليه بعدم التطابق كذبٌ صريح — وهو ما فعله أول تنفيذ لهذا المسار
+       حتى كشفه الاختبار: قارن sha7 بأول ١٢ حرفا من بصمة المحتوى فأعلن اختلافا
+       لا وجود له. لا يُحكم إلا حين توجد بصمة التزام فعلا. */
+    const auto = active?.label?.startsWith('auto-') ?? false
+    const withCommit = active?.label?.match(/^auto-([0-9a-f]{7})-[0-9a-f]{6}(?:-\d+)?$/)
+    const labelSha = withCommit ? withCommit[1] : null
+    const inSync = sha7 && labelSha ? sha7 === labelSha : null
+
+    return {
+      الكود: {
+        الالتزام: sha7,
+        الفرع: process.env.VERCEL_GIT_COMMIT_REF ?? null,
+        رسالة_الالتزام: process.env.VERCEL_GIT_COMMIT_MESSAGE?.split('\n')[0] ?? null,
+        البيئة: process.env.VERCEL_ENV ?? 'محلية',
+      },
+      اللقطة_المنشورة: {
+        التسمية: active?.label ?? null,
+        من_التزام: labelSha,
+        نُشرت_آليا: auto,
+        أسئلة: payload?.questions?.questions?.length ?? null,
+        مسارات: payload?.coreCatalog?.launch_pathways?.length ?? null,
+        دورات: payload?.coreCatalog?.courses?.length ?? null,
+      },
+      متطابقان:
+        inSync === null
+          ? 'لا يمكن الحكم — لقطة يدوية أو تشغيل محلي'
+          : inSync
+            ? 'نعم — الكود واللقطة من نفس الالتزام'
+            : 'لا — اللقطة من التزام أقدم، وآخر نشر لم يُحدّثها',
+      الوقت: new Date().toISOString(),
+    }
+  })
+
   registerAuthRoutes(app, auth)
   registerAdminUserRoutes(app, prisma, auth)
   registerCatalogRoutes(app, prisma)
