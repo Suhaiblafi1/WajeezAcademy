@@ -38,6 +38,7 @@ import CourseJourney, { type CourseSuggestion } from "@/components/CourseJourney
 import { ResultErrorBoundary } from "@/components/ResultErrorBoundary";
 import SkillFamilyGrid, { type FamilyToRate } from "@/components/SkillFamilyGrid";
 import ComposedPlanCard, { type ComposedPathView } from "@/components/ComposedPlanCard";
+import { Q } from "@/domain/diagnostic/v2_1/maps";
 import {
   type DiagQuestion,
   type DiagOption,
@@ -84,8 +85,23 @@ const JOURNEY_STAGES = [
   { key: "life", label: "ظروفك وخطتك" },
 ] as const;
 
+/* أسئلة القرار الست (وحدة QC) تُوزَّع على مراحلها بمعرّفها لا بوحدتها: وحدتها
+   واحدة بينما تنتمي إلى ثلاث مراحل مختلفة. وقبل هذا كانت تسقط إلى الفرع الأخير
+   فيرى المتعلم «المرحلة ٥ من ٥» في السؤال الأول — وهي أسئلة «من أنت» و«هدفك»
+   نفسها — ثم يتذبذب المؤشر ٥→٢→٥. */
+const QC_STAGE: Record<string, number> = {
+  [Q.STAGE]: 0,       // من أنت
+  [Q.EMPLOYMENT]: 0,  // من أنت
+  [Q.GOAL]: 1,        // هدفك
+  [Q.NEED]: 1,        // هدفك
+  [Q.TIME]: 4,        // ظروفك وخطتك
+  [Q.MASTERY]: 4,     // ظروفك وخطتك
+};
+
 function stageIndexOf(q: DiagQuestion | null): number {
   if (!q) return 0;
+  const qc = QC_STAGE[q.id];
+  if (qc !== undefined) return qc;
   const m = q.module;
   if (m === "M0" || m === "M1") return 0;
   if (m === "M2" || m === "M2B" || m === "M8") return 1;
@@ -460,13 +476,9 @@ export default function Diagnostic() {
   const understoodDims = liveNow ? (Object.keys(DIM_LABELS) as Dim[]).filter((d) => liveNow.dims[d] >= 0.6) : [];
   /* لا نشتق «التطابق الأولي» ولا نعرضه — اسم المسار/القالب يُكشف في النتيجة فقط */
 
-  /* مراحل الرحلة الخمس — أيها اكتمل وأيها نشط الآن */
+  /* المرحلة الحالية — تُسمّى في شريط التقدم. سقط `passedStages` مع صف الدوائر:
+     لم يعد شيء يعرض «أيّ مرحلة اكتملت» بعد توحيد المؤشر. */
   const currentStageIdx = stageIndexOf(question);
-  const passedStages = useMemo(() => {
-    const s = new Set(history.map((q) => stageIndexOf(q)));
-    s.add(currentStageIdx);
-    return s;
-  }, [history, currentStageIdx]);
 
   // يبدأ مجانا بلا حساب — الحساب يُطلب عند النتيجة لفتح تفاصيلها الكاملة
   const begin = () => {
@@ -901,41 +913,18 @@ export default function Diagnostic() {
             </div>
           ) : (
           <>
-          {/* شريط الوحدات الخمس — رحلة مفهومة لا استبيان لا نهائي */}
-          <div className="mb-6">
-            <div className="mb-4 flex items-center justify-between gap-1" dir="rtl">
-              {JOURNEY_STAGES.map((s, i) => {
-                const active = i === currentStageIdx;
-                const done = passedStages.has(i) && !active;
-                return (
-                  <div key={s.key} className="flex flex-1 flex-col items-center gap-1.5">
-                    <span
-                      className={`grid h-7 w-7 place-items-center rounded-full border text-[11px] font-black transition ${
-                        active
-                          ? "border-gold bg-gold text-on-gold"
-                          : done
-                            ? "border-teal bg-teal/20 text-teal-light-ink"
-                            : "border-white/15 text-white/55"
-                      }`}
-                    >
-                      {done ? <CheckCircle2 className="h-4 w-4" /> : i + 1}
-                    </span>
-                    <span
-                      className={`text-center text-[10px] font-bold leading-tight md:text-[11px] ${
-                        active ? "text-gold-ink" : done ? "text-teal-light-ink" : "text-white/55"
-                      }`}
-                    >
-                      {s.label}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="mb-2 flex items-center justify-between text-xs text-white/50">
-              <span>
+          {/* مؤشر واحد: أين أنا، وكم بقي. كان هنا صف من خمس دوائر بتسمياتها فوق
+              عدّاد وشريط — ثلاثة مؤشرات تقول الشيء نفسه وتستهلك نصف شاشة الجوال
+              قبل أن يصل المتعلم إلى السؤال. اسم المرحلة يكفي عن الدوائر، والشريط
+              يكفي عن الترقيم البصري. */}
+          <div className="mb-7">
+            <div className="mb-2 flex items-baseline justify-between gap-3 text-xs">
+              <span className="font-black text-gold-ink">
+                {JOURNEY_STAGES[currentStageIdx]?.label}
+              </span>
+              <span className="shrink-0 font-semibold text-white/45">
                 سؤال {asked.length + 1} من ~{estimatedTotal}
               </span>
-              <span className="text-teal-light-ink">{question.moduleLabel}</span>
             </div>
             <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
               <div
