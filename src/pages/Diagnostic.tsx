@@ -139,6 +139,79 @@ function clearProgress() {
 
 /* ═══════════ رحلة الدورات القابلة للتخصيص — «ماذا ستحقق من خلال خطتك؟» ═══════════ */
 
+/* ─────────── الخطة المركّبة قابلة للاستبدال — لا للحذف ولا للإضافة ───────────
+
+   كانت الخطة المركّبة تُعرض بلا أي أداة تخصيص، بينما المسار القياسي يُمرَّر إليه
+   استبدال وحذف وإضافة وهدية. فالمتعلم صاحب أعقد حالة — الذي احتاج خطة من أكثر
+   من مجال — كان الوحيد الذي لا يملك ضبط خطته.
+
+   والتبديل وحده لا الحذف: عدد الدورات هو ما يحدد السعر، فتثبيته يفتح الاختيار
+   ويُبقي السعر ثابتا. والمجموعة تُبنى من المسارات التي رُكّبت منها الخطة نفسها —
+   فالبديل يبقى داخل مجالاتها لا خارجها — ويتقدّم فيها ما يسدّ فجوة معروفة. */
+function ComposedSwap({
+  planCourseIds,
+  reasons,
+  pathwayIds,
+  gaps,
+  delivery,
+  authed,
+}: {
+  planCourseIds: string[];
+  reasons: Record<string, string>;
+  pathwayIds: string[];
+  gaps: string[];
+  delivery?: string;
+  authed: boolean;
+}) {
+  const [chosenIds, setChosenIds] = useState<string[]>(planCourseIds);
+  const [swapForId, setSwapForId] = useState<string | null>(null);
+
+  const pool = useMemo<CourseSuggestion[]>(() => {
+    const taken = new Set(chosenIds);
+    const inPlan = new Set(pathwayIds);
+    const closesGap = (skill: string | undefined) =>
+      skill && gaps.some((g) => g.includes(skill.slice(0, 8))) ? 1 : 0;
+    return courses
+      .filter((c) => !taken.has(c.id) && inPlan.has(c.pathwayId))
+      .sort((x, y) => closesGap(y.skill) - closesGap(x.skill))
+      .slice(0, 6)
+      .map((c) => ({ id: c.id, name: c.name, note: `${c.skill} · من مسار ${c.pathwayName}` }));
+  }, [chosenIds, pathwayIds, gaps]);
+
+  const swapPick = (oldId: string, newId: string) => {
+    const next = chosenIds.map((i) => (i === oldId ? newId : i));
+    setChosenIds(next);
+    setSwapForId(null);
+    /* يُحفظ كتخصيص خطة مركّبة — بلا pathwayId لأنها ليست مسارا في الكتالوج */
+    sessionStorage.setItem("wajeez_custom", JSON.stringify({ composite: true, chosenIds: next, giftId: null }));
+  };
+
+  return (
+    <CourseJourney
+      courseIds={chosenIds}
+      reasons={reasons}
+      delivery={delivery}
+      edit={
+        authed
+          ? {
+              giftId: null,
+              swapForId,
+              pool,
+              minReached: true,
+              maxReached: true,
+              swapOnly: true,
+              onSwapToggle: setSwapForId,
+              onSwapPick: swapPick,
+              onRemove: () => {},
+              onAdd: () => {},
+              onGiftToggle: () => {},
+            }
+          : undefined
+      }
+    />
+  );
+}
+
 /* ─────────── رحلة الدورات القابلة للتخصيص — دمج التخصيص داخل «ماذا ستحقق من خلال خطتك؟» ─────────── */
 function PlanCourses({
   pathway,
@@ -1730,15 +1803,22 @@ export default function Diagnostic() {
           {/* «ماذا ستحقق من خلال خطتك؟» — رحلة الدورات، والتخصيص داخلها للمسارات الأساسية */}
           {(() => {
             const compositeView = (result.resultJson.composite as CompositeView | null) ?? null;
-            const ordered = compositeView
-              ? [...compositeView.courses].sort((a, b) => a.sequence - b.sequence)
-              : null;
-            if (!ordered) {
+            if (!compositeView) {
               return <PlanCourses pathway={topPathway} gaps={result.gaps} authed={authed} resetKey={swapCount} />;
             }
+            const ordered = [...compositeView.courses].sort((a, b) => a.sequence - b.sequence);
             const ids = ordered.map((c) => c.courseId);
             const reasons = Object.fromEntries(ordered.map((c) => [c.courseId, c.reason_ar]));
-            return <CourseJourney courseIds={ids} reasons={reasons} delivery={pathwayDelivery(topPathway.id)} />;
+            return (
+              <ComposedSwap
+                planCourseIds={ids}
+                reasons={reasons}
+                pathwayIds={compositeView.represented_pathway_ids}
+                gaps={result.gaps}
+                delivery={pathwayDelivery(topPathway.id)}
+                authed={authed}
+              />
+            );
           })()}
 
           {/* الاعتماد أسفل الخطة مباشرة — يظهر للضيف مضبّبا في مكانه، ويعمل فور انكشافه بالتسجيل */}

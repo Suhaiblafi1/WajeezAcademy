@@ -21,6 +21,10 @@ export interface CourseJourneyEdit {
   pool: CourseSuggestion[];
   minReached: boolean;
   maxReached: boolean;
+  /* التبديل وحده — للخطة المركّبة: يستبدل المتعلم دورة بأخرى تناسب احتياجه،
+     ولا يحذف ولا يضيف ولا يختار هدية. والسبب أن عدد الدورات هو ما يحدد السعر،
+     فتثبيته يُبقي السعر ثابتا ويفتح الاختيار في الوقت نفسه. */
+  swapOnly?: boolean;
   onSwapToggle: (id: string | null) => void;
   onSwapPick: (oldId: string, newId: string) => void;
   onRemove: (id: string) => void;
@@ -62,9 +66,11 @@ export default function CourseJourney({
         ماذا ستحقق من خلال خطتك؟
       </Heading>
       <p className="mt-2 text-xs leading-relaxed text-white/50">
-        {edit
-          ? `رحلتك مرتبة من احتياجك إلى نتيجة عملية — وكل دورة فيها قابلة للاستبدال أو الحذف (بين ${MIN_PATHWAY_COURSES} و${MAX_PATHWAY_COURSES})، والهدية المجانية فوقها.`
-          : "رحلة تعليمية مرتبة تنقلك من احتياجك الحالي إلى نتائج عملية يمكنك استخدامها في عملك وحياتك."}
+        {!edit
+          ? "رحلة تعليمية مرتبة تنقلك من احتياجك الحالي إلى نتائج عملية يمكنك استخدامها في عملك وحياتك."
+          : edit.swapOnly
+            ? "خطة مبنية لك من أكثر من مجال — وكل دورة فيها قابلة للاستبدال بأخرى تناسب احتياجك. العدد ثابت، فالسعر لا يتغير."
+            : `رحلتك مرتبة من احتياجك إلى نتيجة عملية — وكل دورة فيها قابلة للاستبدال أو الحذف (بين ${MIN_PATHWAY_COURSES} و${MAX_PATHWAY_COURSES})، والهدية المجانية فوقها.`}
       </p>
 
       {/* سياسة المدربين تُقال مرة واحدة هنا بدل أن تتكرر شارةً على كل بطاقة —
@@ -159,6 +165,7 @@ export default function CourseJourney({
                         <RefreshCcw className="h-3 w-3" />
                         {swapOpen ? "إخفاء البدائل" : "استبدالها"}
                       </button>
+                      {!edit.swapOnly && (
                       <button
                         onClick={() => edit.onRemove(c.id)}
                         disabled={edit.minReached}
@@ -168,9 +175,10 @@ export default function CourseJourney({
                         <X className="h-3 w-3" />
                         حذفها
                       </button>
+                      )}
                     </div>
                   )}
-                  {edit && isGift && (
+                  {edit && !edit.swapOnly && isGift && (
                     <div className="mt-3">
                       <button
                         onClick={() => edit.onGiftToggle(c.id)}
@@ -305,8 +313,11 @@ export default function CourseJourney({
         </li>
       </ol>
 
-      {/* الهدية والإضافة — أسفل الرحلة مباشرة */}
-      {edit && (
+      {/* الهدية والإضافة — أسفل الرحلة مباشرة.
+          ولا شيء منهما في وضع التبديل: الهدية تزيد العدد والإضافة كذلك، وكلاهما
+          يمسّ السعر. وقبل هذا الشرط كانت بطاقة الهدية تظهر في الخطة المركّبة
+          وأزرارها موصولة بدالة فارغة — عرضٌ لخيار لا يعمل. */}
+      {edit && !edit.swapOnly && (
         <div className="mt-5 space-y-3 border-t border-white/10 pt-5">
           {!edit.giftId && edit.pool.length > 0 && (
             <div className="rounded-2xl border border-gold/40 bg-gold/5 p-4">
@@ -346,7 +357,7 @@ export default function CourseJourney({
               </div>
             </div>
           )}
-          {edit.minReached && (
+          {edit.minReached && !edit.swapOnly && (
             <p className="text-[11px] text-gold-ink/80">وصلت للحد الأدنى — {MIN_PATHWAY_COURSES} دورات هي نواة المسار.</p>
           )}
         </div>
