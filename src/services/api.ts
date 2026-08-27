@@ -32,6 +32,7 @@ export const apiGet = <T>(path: string) => request<T>("GET", path);
 export const apiPost = <T>(path: string, body?: unknown) => request<T>("POST", path, body);
 export const apiPut = <T>(path: string, body?: unknown) => request<T>("PUT", path, body);
 export const apiPatch = <T>(path: string, body?: unknown) => request<T>("PATCH", path, body);
+export const apiDelete = <T>(path: string, body?: unknown) => request<T>("DELETE", path, body);
 
 /** رسالة موحدة لرفض الصلاحية — توضح المطلوب وطريق الديمو بدل رسالة عامة مبهمة */
 export function permissionMessage(e: unknown, fallback: string): string {

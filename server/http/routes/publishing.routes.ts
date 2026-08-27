@@ -25,6 +25,15 @@ export function registerPublishingRoutes(app: FastifyInstance, prisma: PrismaCli
     return reply.status(201).send(v)
   })
 
+  app.delete('/api/admin/publishing/versions/:id', {
+    preHandler: requirePermission('catalog.pathway.publish'),
+    schema: { tags: ['publishing'], summary: 'حذف مسودة معلّقة — مسودة بلا لقطة فقط، ويُسجَّل في التدقيق' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const { reasonAr } = z.object({ reasonAr: z.string().optional() }).parse(req.body ?? {})
+    return pub.deleteDraftVersion(id, req.auth!.userId, reasonAr)
+  })
+
   app.post('/api/admin/publishing/validate', { preHandler: requirePermission('catalog.impact.view'), schema: { tags: ['publishing'], summary: 'تحقق بنيوي من الكيانات المعتمدة قبل النشر' } },
     () => pub.validateDrafts())
 

@@ -9,6 +9,7 @@ import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { buildSnapshotFromDb } from '../catalog/snapshot-builder'
 import { CatalogAdminService } from './catalog-admin.service'
+import { recordAudit } from './audit'
 
 export class PublishingService {
   private prisma: PrismaClient
@@ -28,6 +29,35 @@ export class PublishingService {
     const dup = await this.prisma.catalogVersion.findUnique({ where: { label } })
     if (dup) throw new AuthError('duplicate_label', 'تسمية الإصدار مستخدمة', 409)
     return this.prisma.catalogVersion.create({ data: { label, status: 'draft', createdBy: actorId } })
+  }
+
+  /** حذف مسودة معلّقة — نشرٌ أخفق بعد إنشاء الإصدار يترك تسميتها محجوزة للأبد،
+      واللوحة لا تعرض لها زر نشر لأنها بلا لقطة، فتبقى تمنع إعادة استعمال التسمية
+      بلا وسيلة لإزالتها.
+
+      الشرطان يجعلان الحذف غير قادر على إتلاف تاريخ: مسودة فقط — فلا يمسّ منشورا
+      ولا متجاوَزا؛ وبلا لقطة واحدة — فلا يمحو هدف رجوع محتملا. وما عدا ذلك يُرفض
+      برسالة تقول أي الشرطين تخلّف. والحذف نفسه يُسجَّل في AuditEvent لا في
+      CatalogPublishEvent، لأن أحداث الإصدار تُحذف معه بالتتالي — فيبقى أثر الحذف
+      بعد زوال المحذوف. */
+  async deleteDraftVersion(versionId: string, actorId: string, reasonAr?: string) {
+    const v = await this.prisma.catalogVersion.findUnique({
+      where: { id: versionId },
+      include: { snapshots: { select: { id: true } } },
+    })
+    if (!v) throw new AuthError('not_found', 'الإصدار غير موجود', 404)
+    if (v.status !== 'draft') {
+      throw new AuthError('not_draft', `لا يُحذف إلا إصدار مسودة — حالة «${v.label}»: ${v.status}`, 409)
+    }
+    if (v.snapshots.length > 0) {
+      throw new AuthError('has_snapshot', `الإصدار «${v.label}» يحمل لقطة — قد يكون هدف رجوع، فلا يُحذف`, 409)
+    }
+    await recordAudit(this.prisma, {
+      actorId, action: 'catalog.version.delete_draft', entityType: 'CatalogVersion', entityId: v.id,
+      reason: reasonAr, before: { label: v.label, status: v.status, createdAt: v.createdAt },
+    })
+    await this.prisma.catalogVersion.delete({ where: { id: v.id } })
+    return { deleted: true, label: v.label }
   }
 
   /** الكيانات المرشحة للنشر: كل ما هو «approved» */

@@ -1,9 +1,9 @@
 /* لوحة النشر والجودة — إصدارات الكتالوج، التحقق، تحليل الأثر، النشر الذري، الرجوع */
 import { useCallback, useEffect, useState } from "react";
-import { Activity, ArrowUpCircle, History, PlayCircle, Rocket, ShieldCheck, Undo2 } from "lucide-react";
+import { Activity, ArrowUpCircle, History, PlayCircle, Rocket, ShieldCheck, Trash2, Undo2 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import FlowSteps from "@/components/FlowSteps";
-import { apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
+import { apiDelete, apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
 
 type Version = {
   id: string; label: string; status: string; createdAt: string; publishedAt: string | null
@@ -118,6 +118,18 @@ export default function PublishingBoard() {
                   <button disabled={busy !== null} onClick={() => act(`rb-${v.id}`, () => apiPost("/api/admin/publishing/rollback", { targetVersionId: v.id, reasonAr: "رجوع من لوحة النشر" }))}
                     className="flex cursor-pointer items-center gap-1 rounded-full border border-amber-400/40 px-3 py-1.5 text-xs font-bold text-amber-300 disabled:opacity-40">
                     <Undo2 className="h-3.5 w-3.5" /> استرجاع هذه اللقطة
+                  </button>
+                )}
+                {/* مسودة بلا لقطة = نشرٌ أخفق بعد إنشاء الإصدار: لا تُنشر ولا
+                    تُسترجع، وتحجز تسميتها للأبد. هذا طريقها الوحيد للخروج. */}
+                {v.status === "draft" && v.snapshots.length === 0 && (
+                  <button disabled={busy !== null}
+                    onClick={() => {
+                      if (!confirm(`حذف المسودة المعلّقة «${v.label}»؟ تُحرَّر تسميتها للاستعمال، ويُسجَّل الحذف في التدقيق.`)) return
+                      void act(`del-${v.id}`, () => apiDelete(`/api/admin/publishing/versions/${v.id}`, { reasonAr: "تنظيف مسودة معلّقة من لوحة النشر" }))
+                    }}
+                    className="flex cursor-pointer items-center gap-1 rounded-full border border-white/20 px-3 py-1.5 text-xs font-bold text-white/60 hover:border-rose-400/50 hover:text-rose-300 disabled:opacity-40">
+                    <Trash2 className="h-3.5 w-3.5" /> احذف المسودة
                   </button>
                 )}
               </div>
