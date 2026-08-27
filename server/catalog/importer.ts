@@ -137,6 +137,7 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
          الاستيراد بلا حذف — وبلا ذلك تبقى المهارة المدموجة «نشطة» في الطبقات. */
       update: {
         familyId: s.family_id ?? null,
+        familyAr: s.family_ar ?? null,
         active: s.active !== false,
         mergedInto: s.merged_into ?? null,
         mergeDate: s.merge_date ?? null,
@@ -146,6 +147,7 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
       },
       create: {
         id: s.skill_id, slug: s.slug, nameAr: s.name_ar, definitionAr: s.definition_ar ?? null,
+        familyAr: s.family_ar ?? null,
         active: s.active !== false, mergedInto: s.merged_into ?? null, mergeDate: s.merge_date ?? null,
         familyId: s.family_id ?? null,
         domain: s.family_ar ?? s.family_id ?? null,
@@ -157,7 +159,7 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
     })
     await prisma.skillVersion.upsert({
       where: { skillId_version: { skillId: s.skill_id, version: 1 } },
-      update: {},
+      update: { nameAr: s.name_ar, definitionAr: s.definition_ar ?? null, status: 'published' },
       create: { skillId: s.skill_id, version: 1, nameAr: s.name_ar, definitionAr: s.definition_ar ?? null, status: 'published' },
     })
   }
@@ -167,12 +169,20 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
   for (const p of pathways) {
     await prisma.pathway.upsert({
       where: { id: p.id },
-      update: {},
+      update: { status: 'published' },
       create: { id: p.id, status: 'published', currentVersion: 1 },
     })
     await prisma.pathwayVersion.upsert({
       where: { pathwayId_version: { pathwayId: p.id, version: 1 } },
-      update: {},
+      update: {
+        title: p.title, shortTitle: p.short_title ?? null,
+        audience: p.audience ?? null, notFor: p.not_for ?? null, entry: p.entry ?? null,
+        beforeText: p.before ?? null, afterText: p.after ?? null,
+        durationWeeks: toInt(p.duration_weeks), weeklyHours: p.weekly_hours == null ? null : String(p.weekly_hours),
+        level: p.level ?? null, delivery: p.delivery ?? null, capstone: p.capstone ?? null,
+        outcomeMetric: p.outcome_metric ?? null, credentialAr: p.credential_ar ?? null,
+        status: 'published',
+      },
       create: {
         pathwayId: p.id, version: 1, title: p.title, shortTitle: p.short_title ?? null,
         audience: p.audience ?? null, notFor: p.not_for ?? null, entry: p.entry ?? null,
@@ -189,12 +199,17 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
   for (const c of courses) {
     await prisma.course.upsert({
       where: { id: c.course_id },
-      update: {},
+      update: { status: 'published' },
       create: { id: c.course_id, status: 'published', currentVersion: 1 },
     })
     const cv = await prisma.courseVersion.upsert({
       where: { courseId_version: { courseId: c.course_id, version: 1 } },
-      update: {},
+      update: {
+        titleAr: c.title_ar, legacyTitleAr: c.legacy_title_ar ?? null,
+        shortPromiseAr: c.short_promise_ar ?? c.subtitle_ar ?? null, descriptionAr: c.description_ar ?? null,
+        audienceAr: c.target_audience_ar ?? null, prerequisitesAr: c.prerequisites_ar ?? null,
+        levelAr: c.level_ar ?? null, totalHours: toInt(c.total_hours) ?? 0, status: 'published',
+      },
       create: {
         courseId: c.course_id, version: 1, titleAr: c.title_ar, legacyTitleAr: c.legacy_title_ar ?? null,
         shortPromiseAr: c.short_promise_ar ?? c.subtitle_ar ?? null, descriptionAr: c.description_ar ?? null,
@@ -205,21 +220,21 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
     for (const [i, text] of (c.learning_objectives_ar ?? []).entries()) {
       await prisma.learningObjective.upsert({
         where: { id: deterministicUuid(`obj:${c.course_id}:${i}`) },
-        update: {},
+        update: { sequence: i + 1, textAr: text },
         create: { id: deterministicUuid(`obj:${c.course_id}:${i}`), courseVersionId: cv.id, sequence: i + 1, textAr: text },
       })
     }
     for (const [i, text] of (c.learning_outcomes_ar ?? []).entries()) {
       await prisma.learningOutcome.upsert({
         where: { id: deterministicUuid(`out:${c.course_id}:${i}`) },
-        update: {},
+        update: { sequence: i + 1, textAr: text },
         create: { id: deterministicUuid(`out:${c.course_id}:${i}`), courseVersionId: cv.id, sequence: i + 1, textAr: text },
       })
     }
     if (c.summative_assessment_ar) {
       await prisma.practicalProject.upsert({
         where: { courseVersionId: cv.id },
-        update: {},
+        update: { descriptionAr: c.summative_assessment_ar },
         create: { courseVersionId: cv.id, descriptionAr: c.summative_assessment_ar },
       })
     }
@@ -231,7 +246,7 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
     for (const skillId of skillIds) {
       await prisma.courseSkillLink.upsert({
         where: { courseId_skillId: { courseId: c.course_id, skillId } },
-        update: {},
+        update: { targetLevel: 3, weight: 1 },
         create: { courseId: c.course_id, skillId, targetLevel: 3, weight: 1 },
       })
       links++
@@ -258,7 +273,7 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
         seen.add(skillId)
         await prisma.pathwaySkillRequirement.upsert({
           where: { pathwayId_skillId: { pathwayId: p.id, skillId } },
-          update: {},
+          update: { requiredLevel: 3, priority: 'medium', weight: 1 },
           create: { pathwayId: p.id, skillId, requiredLevel: 3, priority: 'medium', weight: 1 },
         })
         links++
@@ -270,12 +285,19 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
   for (const m of modules) {
     await prisma.courseModule.upsert({
       where: { id: m.module_id },
-      update: {},
+      update: { courseId: m.course_id, status: 'published' },
       create: { id: m.module_id, courseId: m.course_id, status: 'published' },
     })
     await prisma.courseModuleVersion.upsert({
       where: { moduleId_version: { moduleId: m.module_id, version: 1 } },
-      update: {},
+      update: {
+        sequence: toInt(m.sequence) ?? 1, titleAr: m.title_ar,
+        outcomeAr: m.module_outcome_ar ?? null, activityAr: m.practice_activity_ar ?? null,
+        artifactAr: m.evidence_artifact_ar ?? null, bodyAr: m.module_body_ar ?? null,
+        checksAr: m.module_checks_ar ?? null, videoAr: m.module_video_ar ?? null,
+        scenarioAr: m.module_scenario_ar ?? null,
+        hours: toInt(m.expected_hours) ?? 0, status: 'published',
+      },
       create: {
         moduleId: m.module_id, version: 1, sequence: toInt(m.sequence) ?? 1, titleAr: m.title_ar,
         outcomeAr: m.module_outcome_ar ?? null, activityAr: m.practice_activity_ar ?? null,
@@ -291,12 +313,20 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
   for (const t of templates) {
     await prisma.compositeTemplate.upsert({
       where: { id: t.template_id },
-      update: {},
+      update: { status: 'published', notCountedAsPathway: t.not_counted_as_pathway ?? true },
       create: { id: t.template_id, status: 'published', currentVersion: 1, notCountedAsPathway: t.not_counted_as_pathway ?? true },
     })
     await prisma.compositeTemplateVersion.upsert({
       where: { templateId_version: { templateId: t.template_id, version: 1 } },
-      update: {},
+      update: {
+        nameAr: t.name_ar, shortNameAr: t.short_name_ar ?? null,
+        intentAr: t.intent_ar ?? null,
+        persona: t.persona === undefined ? undefined : JSON.parse(JSON.stringify(t.persona)),
+        transformation: t.transformation === undefined ? undefined : JSON.parse(JSON.stringify(t.transformation)),
+        plan: t.plan === undefined ? undefined : JSON.parse(JSON.stringify(t.plan)),
+        diagnostic: t.diagnostic === undefined ? undefined : JSON.parse(JSON.stringify(t.diagnostic)),
+        status: 'published',
+      },
       create: {
         templateId: t.template_id, version: 1, nameAr: t.name_ar, shortNameAr: t.short_name_ar ?? null,
         intentAr: t.intent_ar ?? null,
@@ -348,7 +378,7 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
     })
     await prisma.questionVersion.upsert({
       where: { questionId_version: { questionId: q.question_id, version: 1 } },
-      update: {},
+      update: { textAr: q.text_ar, status: 'published' },
       create: { questionId: q.question_id, version: 1, textAr: q.text_ar, status: 'published' },
     })
     const effects = optionEffects.option_effects?.[q.question_id] as Record<string, unknown> | undefined
@@ -356,7 +386,10 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
       const optionId = `o${i + 1}`
       await prisma.questionOption.upsert({
         where: { questionId_optionId: { questionId: q.question_id, optionId } },
-        update: {},
+        update: {
+          orderIndex: i, textAr: text,
+          effects: effects?.[optionId] === undefined ? undefined : JSON.parse(JSON.stringify(effects[optionId])),
+        },
         create: {
           questionId: q.question_id, optionId, orderIndex: i, textAr: text,
           effects: effects?.[optionId] === undefined ? undefined : JSON.parse(JSON.stringify(effects[optionId])),
@@ -372,7 +405,7 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
       if (!(q.measures ?? []).some((m) => measures.has(m))) continue
       await prisma.questionSkillLink.upsert({
         where: { questionId_skillId: { questionId: q.question_id, skillId: s.skill_id } },
-        update: {},
+        update: { weight: 1 },
         create: { questionId: q.question_id, skillId: s.skill_id, weight: 1 },
       })
       links++
@@ -383,7 +416,11 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
   for (const r of references) {
     await prisma.methodologyReference.upsert({
       where: { code: r.id },
-      update: {},
+      update: {
+        titleAr: r.name_ar, publisherAr: r.organization ?? null,
+        url: r.source_url ?? null, status: r.implementation_status ?? 'implemented',
+        evidenceAr: r.implementation_evidence ?? null,
+      },
       create: {
         code: r.id, titleAr: r.name_ar, publisherAr: r.organization ?? null,
         url: r.source_url ?? null, status: r.implementation_status ?? 'implemented',
@@ -414,7 +451,10 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
   for (const t of templates) {
     await prisma.diagnosticProfile.upsert({
       where: { entityType_entityId: { entityType: 'template', entityId: t.template_id } },
-      update: {},
+      update: {
+        eligibility: JSON.parse(JSON.stringify((t.diagnostic as Record<string, unknown>) ?? {})),
+        readinessStatus: 'diagnostic_ready',
+      },
       create: {
         entityType: 'template', entityId: t.template_id,
         eligibility: JSON.parse(JSON.stringify((t.diagnostic as Record<string, unknown>) ?? {})),
@@ -444,12 +484,12 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
   /* 9) إصدارات التقييم والتوصية الأولى */
   await prisma.scoringConfigVersion.upsert({
     where: { version: 1 },
-    update: {},
+    update: { config: readJson('src/data/overlays/option-effects.v2.json').metadata ?? {}, status: 'published' },
     create: { version: 1, config: readJson('src/data/overlays/option-effects.v2.json').metadata ?? {}, status: 'published', publishedAt: new Date() },
   })
   await prisma.recommendationVersion.upsert({
     where: { version: 1 },
-    update: {},
+    update: { rules: { source: 'composite-templates.v1.json', variant_policy: 'starter|full|extended' }, status: 'published' },
     create: { version: 1, rules: { source: 'composite-templates.v1.json', variant_policy: 'starter|full|extended' }, status: 'published', publishedAt: new Date() },
   })
 

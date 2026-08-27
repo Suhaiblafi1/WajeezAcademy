@@ -10,36 +10,38 @@ datasource db {
   provider = "postgresql"
 }
 
-/* ═══════════ الهوية والصلاحيات ═══════════ */
+/**
+ * ═══════════ الهوية والصلاحيات ═══════════
+ */
 
 model User {
-  id           String    @id @default(uuid()) @db.Uuid
-  email        String    @unique
-  passwordHash String
-  displayName  String
-  status       String    @default("active") // active | suspended
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  suspendedAt  DateTime?
-  roles        UserRole[]
-  sessions     Session[]
-  resetTokens  PasswordResetToken[]
-  trainerProfile TrainerProfile?
-  enrollments  Enrollment[] @relation("EnrollmentUser")
-  learnerProfile LearnerProfile?
-  leads        Lead[] @relation("LeadUser")
-  cvSubmissions CvSubmission[]
-  consentRecords ConsentRecord[]
+  id                 String               @id @default(uuid()) @db.Uuid
+  email              String               @unique
+  passwordHash       String
+  displayName        String
+  status             String               @default("active") // active | suspended
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  suspendedAt        DateTime?
+  roles              UserRole[]
+  sessions           Session[]
+  resetTokens        PasswordResetToken[]
+  trainerProfile     TrainerProfile?
+  enrollments        Enrollment[]         @relation("EnrollmentUser")
+  learnerProfile     LearnerProfile?
+  leads              Lead[]               @relation("LeadUser")
+  cvSubmissions      CvSubmission[]
+  consentRecords     ConsentRecord[]
   enrollmentRequests EnrollmentRequest[]
-  subscriptions Subscription[]
-  orders       Order[]
-  notifications Notification[]
-  supportTickets SupportTicket[] @relation("TicketOwner")
-  advisorCases AdvisorCase[] @relation("CaseClient")
-  advisorAssignments AdvisorAssignment[] @relation("CaseAdvisor")
-  skillRemeasures SkillRemeasure[] @relation("SkillRemeasureUser")
-  retrievalCards RetrievalCard[] @relation("RetrievalCardUser")
-  scenarioRuns ScenarioRun[] @relation("ScenarioRunUser")
+  subscriptions      Subscription[]
+  orders             Order[]
+  notifications      Notification[]
+  supportTickets     SupportTicket[]      @relation("TicketOwner")
+  advisorCases       AdvisorCase[]        @relation("CaseClient")
+  advisorAssignments AdvisorAssignment[]  @relation("CaseAdvisor")
+  skillRemeasures    SkillRemeasure[]     @relation("SkillRemeasureUser")
+  retrievalCards     RetrievalCard[]      @relation("RetrievalCardUser")
+  scenarioRuns       ScenarioRun[]        @relation("ScenarioRunUser")
 }
 
 model Role {
@@ -56,10 +58,11 @@ model Permission {
 }
 
 model RolePermission {
-  roleId       String
+  roleId        String
   permissionKey String
-  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  permission   Permission @relation(fields: [permissionKey], references: [key], onDelete: Cascade)
+  role          Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission    Permission @relation(fields: [permissionKey], references: [key], onDelete: Cascade)
+
   @@id([roleId, permissionKey])
 }
 
@@ -68,19 +71,21 @@ model UserRole {
   roleId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
   @@id([userId, roleId])
 }
 
 model Session {
-  id         String    @id @default(uuid()) @db.Uuid
-  userId     String    @db.Uuid
-  tokenHash  String    @unique // لا يُحفظ الرمز ذاته بل هاشه
-  userAgent  String?
-  ip         String?
-  createdAt  DateTime  @default(now())
-  expiresAt  DateTime
-  revokedAt  DateTime?
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  tokenHash String    @unique // لا يُحفظ الرمز ذاته بل هاشه
+  userAgent String?
+  ip        String?
+  createdAt DateTime  @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
 }
 
@@ -100,67 +105,76 @@ model LoginAttempt {
   ip        String?
   success   Boolean
   createdAt DateTime @default(now())
+
   @@index([email, createdAt])
 }
 
-/* ═══════════ إصدارات الكتالوج والنشر ═══════════ */
+/**
+ * ═══════════ إصدارات الكتالوج والنشر ═══════════
+ */
 
 model CatalogVersion {
-  id          String    @id @default(uuid()) @db.Uuid
-  label       String    @unique // مثل 2026.08.16-01
-  status      String    @default("draft") // draft | published | superseded
-  createdBy   String?   @db.Uuid
-  createdAt   DateTime  @default(now())
+  id          String                @id @default(uuid()) @db.Uuid
+  label       String                @unique // مثل 2026.08.16-01
+  status      String                @default("draft") // draft | published | superseded
+  createdBy   String?               @db.Uuid
+  createdAt   DateTime              @default(now())
   publishedAt DateTime?
-  publishedBy String?   @db.Uuid
+  publishedBy String?               @db.Uuid
   snapshots   CatalogSnapshot[]
   events      CatalogPublishEvent[]
 }
 
 model CatalogSnapshot {
-  id               String   @id @default(uuid()) @db.Uuid
-  catalogVersionId String   @db.Uuid
-  payload          Json     // اللقطة المجمدة التي يقرأها محرك التشخيص
+  id               String         @id @default(uuid()) @db.Uuid
+  catalogVersionId String         @db.Uuid
+  payload          Json // اللقطة المجمدة التي يقرأها محرك التشخيص
   payloadHash      String
-  createdAt        DateTime @default(now())
+  createdAt        DateTime       @default(now())
   catalogVersion   CatalogVersion @relation(fields: [catalogVersionId], references: [id], onDelete: Cascade)
+
   @@index([catalogVersionId])
 }
 
 model CatalogPublishEvent {
-  id               String   @id @default(uuid()) @db.Uuid
-  catalogVersionId String   @db.Uuid
-  actorId          String?  @db.Uuid
-  action           String   // publish | rollback | schedule
+  id               String         @id @default(uuid()) @db.Uuid
+  catalogVersionId String         @db.Uuid
+  actorId          String?        @db.Uuid
+  action           String // publish | rollback | schedule
   details          Json?
-  createdAt        DateTime @default(now())
+  createdAt        DateTime       @default(now())
   catalogVersion   CatalogVersion @relation(fields: [catalogVersionId], references: [id], onDelete: Cascade)
 }
 
-/* ═══════════ الكتالوج الأكاديمي ═══════════ */
+/**
+ * ═══════════ الكتالوج الأكاديمي ═══════════
+ */
 
 model Pathway {
-  id              String  @id // PW-BIZ-001 — ثابت لا يتغير
-  status          String  @default("draft") // draft|diagnostic_incomplete|diagnostic_ready|in_review|changes_requested|approved|published|paused|archived
-  currentVersion  Int     @default(1)
-  createdBy       String? @db.Uuid
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  versions        PathwayVersion[]
-  courses         PathwayCourse[]
+  id                String                    @id // PW-BIZ-001 — ثابت لا يتغير
+  status            String                    @default("draft") // draft|diagnostic_incomplete|diagnostic_ready|in_review|changes_requested|approved|published|paused|archived
+  currentVersion    Int                       @default(1)
+  createdBy         String?                   @db.Uuid
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+  versions          PathwayVersion[]
+  courses           PathwayCourse[]
   skillRequirements PathwaySkillRequirement[]
-  domains         PathwayDomain[]
+  domains           PathwayDomain[]
 }
 
-/* مجالات المسار (ج-١) — كانت تُستورد وقت البناء من pathway-domains.v2.json فقط،
-   فأي مسار يُضاف بعد النشر يبقى بلا مجال ولا يدخل مطابقة احتياج المستخدم.
-   صارت صفوفا تُنشر داخل اللقطة كبقية الكتالوج. */
+/**
+ * مجالات المسار (ج-١) — كانت تُستورد وقت البناء من pathway-domains.v2.json فقط،
+ * فأي مسار يُضاف بعد النشر يبقى بلا مجال ولا يدخل مطابقة احتياج المستخدم.
+ * صارت صفوفا تُنشر داخل اللقطة كبقية الكتالوج.
+ */
 model PathwayDomain {
   pathwayId  String
   domainId   String // career_direction | ai_productivity | … من domains في المصدر الموثق
   orderIndex Int      @default(0) // الترتيب المصدري محفوظ — أول مجال هو الأقرب
   createdAt  DateTime @default(now())
   pathway    Pathway  @relation(fields: [pathwayId], references: [id], onDelete: Cascade)
+
   @@id([pathwayId, domainId])
   @@index([domainId])
 }
@@ -187,23 +201,24 @@ model PathwayVersion {
   createdBy     String?  @db.Uuid
   createdAt     DateTime @default(now())
   pathway       Pathway  @relation(fields: [pathwayId], references: [id], onDelete: Cascade)
+
   @@unique([pathwayId, version])
   @@index([pathwayId])
 }
 
 model CompositeTemplate {
-  id             String  @id // TPL-VENTURE-001
-  status         String  @default("draft")
-  currentVersion Int     @default(1)
-  notCountedAsPathway Boolean @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  versions       CompositeTemplateVersion[]
-  courses        TemplateCourse[]
+  id                  String                     @id // TPL-VENTURE-001
+  status              String                     @default("draft")
+  currentVersion      Int                        @default(1)
+  notCountedAsPathway Boolean                    @default(true)
+  createdAt           DateTime                   @default(now())
+  updatedAt           DateTime                   @updatedAt
+  versions            CompositeTemplateVersion[]
+  courses             TemplateCourse[]
 }
 
 model CompositeTemplateVersion {
-  id             String   @id @default(uuid()) @db.Uuid
+  id             String            @id @default(uuid()) @db.Uuid
   templateId     String
   version        Int
   nameAr         String
@@ -213,30 +228,31 @@ model CompositeTemplateVersion {
   transformation Json?
   plan           Json?
   diagnostic     Json?
-  status         String   @default("draft")
-  createdBy      String?  @db.Uuid
-  createdAt      DateTime @default(now())
+  status         String            @default("draft")
+  createdBy      String?           @db.Uuid
+  createdAt      DateTime          @default(now())
   template       CompositeTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
   @@unique([templateId, version])
 }
 
 model Course {
-  id                    String  @id // C-BIZ-101 — ثابت حتى عند تغيير الاسم
-  status                String  @default("draft") // draft|in_review|approved|published|paused|archived
-  currentVersion        Int     @default(1)
-  recommendableDirectly Boolean @default(false)
+  id                    String                       @id // C-BIZ-101 — ثابت حتى عند تغيير الاسم
+  status                String                       @default("draft") // draft|in_review|approved|published|paused|archived
+  currentVersion        Int                          @default(1)
+  recommendableDirectly Boolean                      @default(false)
   priceUsd              Int?
-  availability          String  @default("available") // available | waitlist | retired
-  createdBy             String? @db.Uuid
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  availability          String                       @default("available") // available | waitlist | retired
+  createdBy             String?                      @db.Uuid
+  createdAt             DateTime                     @default(now())
+  updatedAt             DateTime                     @updatedAt
   versions              CourseVersion[]
   modules               CourseModule[]
   skillLinks            CourseSkillLink[]
   pathwayLinks          PathwayCourse[]
   templateLinks         TemplateCourse[]
-  prerequisites         Prerequisite[] @relation("CoursePrereq")
-  requiredBy            Prerequisite[] @relation("PrereqOf")
+  prerequisites         Prerequisite[]               @relation("CoursePrereq")
+  requiredBy            Prerequisite[]               @relation("PrereqOf")
   trainerQualifications TrainerCourseQualification[]
   trainerAssignments    TrainerCourseAssignment[]
   trainerChangeRequests TrainerChangeRequest[]
@@ -244,45 +260,47 @@ model Course {
 }
 
 model CourseVersion {
-  id             String   @id @default(uuid()) @db.Uuid
-  courseId       String
-  version        Int
-  titleAr        String
-  legacyTitleAr  String?
-  shortPromiseAr String?
-  descriptionAr  String?
-  audienceAr     String?
-  prerequisitesAr String?
-  levelAr        String?
-  totalHours     Int
-  weeklyHours    Int?
-  deliveryAr     String?
-  languageAr     String?  @default("العربية")
+  id                  String              @id @default(uuid()) @db.Uuid
+  courseId            String
+  version             Int
+  titleAr             String
+  legacyTitleAr       String?
+  shortPromiseAr      String?
+  descriptionAr       String?
+  audienceAr          String?
+  prerequisitesAr     String?
+  levelAr             String?
+  totalHours          Int
+  weeklyHours         Int?
+  deliveryAr          String?
+  languageAr          String?             @default("العربية")
   trainerRequirements Json?
-  status         String   @default("draft")
-  createdBy      String?  @db.Uuid
-  createdAt      DateTime @default(now())
-  course         Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  objectives     LearningObjective[]
-  outcomes       LearningOutcome[]
-  project        PracticalProject?
-  assessments    Assessment[]
+  status              String              @default("draft")
+  createdBy           String?             @db.Uuid
+  createdAt           DateTime            @default(now())
+  course              Course              @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  objectives          LearningObjective[]
+  outcomes            LearningOutcome[]
+  project             PracticalProject?
+  assessments         Assessment[]
+
   @@unique([courseId, version])
   @@index([courseId])
 }
 
 model CourseModule {
-  id        String  @id // C-BIZ-101-M1 — ثابت
+  id        String                @id // C-BIZ-101-M1 — ثابت
   courseId  String
-  status    String  @default("published") // draft|published|archived — المستخدمة في شعبة لا تُحذف بل تؤرشف
-  createdAt DateTime @default(now())
-  course    Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  status    String                @default("published") // draft|published|archived — المستخدمة في شعبة لا تُحذف بل تؤرشف
+  createdAt DateTime              @default(now())
+  course    Course                @relation(fields: [courseId], references: [id], onDelete: Cascade)
   versions  CourseModuleVersion[]
+
   @@index([courseId])
 }
 
 model CourseModuleVersion {
-  id         String   @id @default(uuid()) @db.Uuid
+  id         String       @id @default(uuid()) @db.Uuid
   moduleId   String
   version    Int
   sequence   Int
@@ -290,56 +308,67 @@ model CourseModuleVersion {
   outcomeAr  String?
   activityAr String?
   artifactAr String?
-  /* متن الدرس (البند ح-١) — Markdown مقيّد: عناوين وقوائم واقتباسات وكود
-     وروابط وصور. يُخزَّن على الإصدار لا على الوحدة، فيمرّ بنفس حاكمية
-     النسخ والاعتماد والنشر ولا يُعدَّل بأثر رجعي على إصدار منشور. */
+  /**
+   * متن الدرس (البند ح-١) — Markdown مقيّد: عناوين وقوائم واقتباسات وكود
+   * وروابط وصور. يُخزَّن على الإصدار لا على الوحدة، فيمرّ بنفس حاكمية
+   * النسخ والاعتماد والنشر ولا يُعدَّل بأثر رجعي على إصدار منشور.
+   */
   bodyAr     String?
-  /* تمرين الاسترجاع (البند ح-٣) — بصيغة نصّية «س:/-/+/ش:» تُخزَّن كما يُخزَّن
-     المتن، فتُقارَن في سجل الإصدارات نصّا وتمرّ بنفس الحاكمية. */
+  /**
+   * تمرين الاسترجاع (البند ح-٣) — بصيغة نصّية «س:/-/+/ش:» تُخزَّن كما يُخزَّن
+   * المتن، فتُقارَن في سجل الإصدارات نصّا وتمرّ بنفس الحاكمية.
+   */
   checksAr   String?
-  /* الفيديو وفصوله (البند ح-٢) — رابط مستضاف + فصول معنونة بطوابع زمنية.
-     لا مشغّل نبنيه: نستضيف ونربط، والقيمة في الفصول ونقاط التفتيش. */
+  /**
+   * الفيديو وفصوله (البند ح-٢) — رابط مستضاف + فصول معنونة بطوابع زمنية.
+   * لا مشغّل نبنيه: نستضيف ونربط، والقيمة في الفصول ونقاط التفتيش.
+   */
   videoAr    String?
-  /* سيناريو القرار المتفرّع (البند ح-٥) — موقف مهني وعقد قرار وآثار وتأمل،
-     بصيغة «موقف/عقدة/نص/> خيار/أثر/إلى/تأمل». يُخزَّن على الإصدار كسائر
-     المحتوى فيمرّ بنفس الحاكمية ويُقارَن نصّا في السجل. */
+  /**
+   * سيناريو القرار المتفرّع (البند ح-٥) — موقف مهني وعقد قرار وآثار وتأمل،
+   * بصيغة «موقف/عقدة/نص/> خيار/أثر/إلى/تأمل». يُخزَّن على الإصدار كسائر
+   * المحتوى فيمرّ بنفس الحاكمية ويُقارَن نصّا في السجل.
+   */
   scenarioAr String?
   hours      Int
-  status     String   @default("published")
-  createdAt  DateTime @default(now())
+  status     String       @default("published")
+  createdAt  DateTime     @default(now())
   module     CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
   @@unique([moduleId, version])
 }
 
 model LearningObjective {
-  id              String @id @default(uuid()) @db.Uuid
-  courseVersionId String @db.Uuid
+  id              String        @id @default(uuid()) @db.Uuid
+  courseVersionId String        @db.Uuid
   sequence        Int
   textAr          String
   courseVersion   CourseVersion @relation(fields: [courseVersionId], references: [id], onDelete: Cascade)
+
   @@index([courseVersionId])
 }
 
 model LearningOutcome {
-  id              String @id @default(uuid()) @db.Uuid
-  courseVersionId String @db.Uuid
+  id              String        @id @default(uuid()) @db.Uuid
+  courseVersionId String        @db.Uuid
   sequence        Int
   textAr          String
   courseVersion   CourseVersion @relation(fields: [courseVersionId], references: [id], onDelete: Cascade)
+
   @@index([courseVersionId])
 }
 
 model PracticalProject {
-  id              String @id @default(uuid()) @db.Uuid
-  courseVersionId String @unique @db.Uuid
-  descriptionAr   String
+  id               String        @id @default(uuid()) @db.Uuid
+  courseVersionId  String        @unique @db.Uuid
+  descriptionAr    String
   evidenceRequired Json?
-  courseVersion   CourseVersion @relation(fields: [courseVersionId], references: [id], onDelete: Cascade)
+  courseVersion    CourseVersion @relation(fields: [courseVersionId], references: [id], onDelete: Cascade)
 }
 
 model Assessment {
-  id              String @id @default(uuid()) @db.Uuid
-  courseVersionId String @db.Uuid
+  id              String        @id @default(uuid()) @db.Uuid
+  courseVersionId String        @db.Uuid
   kind            String // summative | formative | project_review
   specAr          String?
   courseVersion   CourseVersion @relation(fields: [courseVersionId], references: [id], onDelete: Cascade)
@@ -347,52 +376,63 @@ model Assessment {
 }
 
 model Rubric {
-  id           String  @id @default(uuid()) @db.Uuid
-  assessmentId String? @db.Uuid
+  id           String      @id @default(uuid()) @db.Uuid
+  assessmentId String?     @db.Uuid
   nameAr       String
-  criteria     Json    // [{criterion_ar, weight, levels:[...]}]
+  criteria     Json // [{criterion_ar, weight, levels:[...]}]
   assessment   Assessment? @relation(fields: [assessmentId], references: [id], onDelete: SetNull)
 }
 
-/* ═══════════ المهارات ═══════════ */
+/**
+ * ═══════════ المهارات ═══════════
+ */
 
 model Skill {
-  id              String  @id // SK-...
-  slug            String  @unique
-  nameAr          String
-  familyId        String? // رمز العائلة من المصدر: COG, AUT ...
-  definitionAr    String?
-  aliases         Json?   // أسماء بديلة
-  domain          String?
-  source          String? // مصدر التصنيف
-  masteryScale    Json?
+  id               String                    @id // SK-...
+  slug             String                    @unique
+  nameAr           String
+  familyId         String? // رمز العائلة من المصدر: COG, AUT ...
+  /**
+   * اسم العائلة العربي. بلا هذا العمود يضيع اسم العائلة في القاعدة، فتعود
+   * شاشة تقييم الجوانب إلى اشتقاق الاسم من عنوان المسار الأغلب — وهو ما
+   * يجعل المتعلم يرى اسم مساره نفسه بُعدا يقيّم عليه.
+   */
+  familyAr         String?
+  definitionAr     String?
+  aliases          Json? // أسماء بديلة
+  domain           String?
+  source           String? // مصدر التصنيف
+  masteryScale     Json?
   evidenceExamples Json?
-  /* ج-٢: حقول تحتاجها طبقات المهارات المولّدة وقت النشر. كانت تعيش في
-     skills.v1.ar.json وحده، فتوليد الطبقات من اللقطة كان يصنّف المدموجة نشطة. */
-  active          Boolean @default(true)
-  mergedInto      String? // معرف المهارة التي دُمجت فيها — لا تدخل التشخيص بعدها
-  mergeDate       String? // تاريخ قرار الدمج كما في المصدر الموثق
-  status          String  @default("published")
-  currentVersion  Int     @default(1)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  versions        SkillVersion[]
-  relations       SkillRelation[] @relation("SkillFrom")
-  courseLinks     CourseSkillLink[]
-  pathwayReqs     PathwaySkillRequirement[]
-  questionLinks   QuestionSkillLink[]
+  /**
+   * ج-٢: حقول تحتاجها طبقات المهارات المولّدة وقت النشر. كانت تعيش في
+   * skills.v1.ar.json وحده، فتوليد الطبقات من اللقطة كان يصنّف المدموجة نشطة.
+   */
+  active           Boolean                   @default(true)
+  mergedInto       String? // معرف المهارة التي دُمجت فيها — لا تدخل التشخيص بعدها
+  mergeDate        String? // تاريخ قرار الدمج كما في المصدر الموثق
+  status           String                    @default("published")
+  currentVersion   Int                       @default(1)
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
+  versions         SkillVersion[]
+  relations        SkillRelation[]           @relation("SkillFrom")
+  courseLinks      CourseSkillLink[]
+  pathwayReqs      PathwaySkillRequirement[]
+  questionLinks    QuestionSkillLink[]
 }
 
 model SkillVersion {
-  id        String   @id @default(uuid()) @db.Uuid
-  skillId   String
-  version   Int
-  nameAr    String
+  id           String   @id @default(uuid()) @db.Uuid
+  skillId      String
+  version      Int
+  nameAr       String
   definitionAr String?
-  status    String   @default("draft")
-  createdBy String?  @db.Uuid
-  createdAt DateTime @default(now())
-  skill     Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  status       String   @default("draft")
+  createdBy    String?  @db.Uuid
+  createdAt    DateTime @default(now())
+  skill        Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
   @@unique([skillId, version])
 }
 
@@ -400,28 +440,31 @@ model SkillRelation {
   skillId        String
   relatedSkillId String
   type           String // broader | narrower | related | prerequisite
-  skill          Skill   @relation("SkillFrom", fields: [skillId], references: [id], onDelete: Cascade)
+  skill          Skill  @relation("SkillFrom", fields: [skillId], references: [id], onDelete: Cascade)
+
   @@id([skillId, relatedSkillId, type])
 }
 
 model CourseSkillLink {
   courseId    String
   skillId     String
-  targetLevel Int     @default(3)
-  weight      Float   @default(1)
-  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  skill       Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  targetLevel Int    @default(3)
+  weight      Float  @default(1)
+  course      Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  skill       Skill  @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
   @@id([courseId, skillId])
 }
 
 model PathwaySkillRequirement {
   pathwayId     String
   skillId       String
-  requiredLevel Int    @default(3)
-  priority      String @default("medium") // high | medium | low
-  weight        Float  @default(1)
+  requiredLevel Int     @default(3)
+  priority      String  @default("medium") // high | medium | low
+  weight        Float   @default(1)
   pathway       Pathway @relation(fields: [pathwayId], references: [id], onDelete: Cascade)
   skill         Skill   @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
   @@id([pathwayId, skillId])
 }
 
@@ -429,23 +472,25 @@ model PathwayCourse {
   pathwayId String
   courseId  String
   sequence  Int
-  kind      String @default("required") // required | optional | gift
+  kind      String  @default("required") // required | optional | gift
   pathway   Pathway @relation(fields: [pathwayId], references: [id], onDelete: Cascade)
-  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  course    Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
   @@id([pathwayId, courseId])
   @@index([courseId])
 }
 
 model TemplateCourse {
-  templateId String
-  courseId   String
-  listType   String // required | conditional | bridge | starter
-  sequence   Int    @default(1)
-  roleAr     String?
-  reasonAr   String?
+  templateId  String
+  courseId    String
+  listType    String // required | conditional | bridge | starter
+  sequence    Int               @default(1)
+  roleAr      String?
+  reasonAr    String?
   conditionAr String?
-  template   CompositeTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
-  course     Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  template    CompositeTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  course      Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
   @@id([templateId, courseId, listType])
   @@index([courseId])
 }
@@ -455,40 +500,43 @@ model Prerequisite {
   requiresCourseId String
   course           Course @relation("CoursePrereq", fields: [courseId], references: [id], onDelete: Cascade)
   requires         Course @relation("PrereqOf", fields: [requiresCourseId], references: [id], onDelete: Cascade)
+
   @@id([courseId, requiresCourseId])
 }
 
 model MethodologyReference {
-  code       String  @id // REF-...
-  titleAr    String
+  code        String   @id // REF-...
+  titleAr     String
   publisherAr String?
-  url        String?
-  status     String  @default("implemented")
-  evidenceAr String?
-  createdAt  DateTime @default(now())
+  url         String?
+  status      String   @default("implemented")
+  evidenceAr  String?
+  createdAt   DateTime @default(now())
 }
 
-/* ═══════════ بنك الأسئلة ═══════════ */
+/**
+ * ═══════════ بنك الأسئلة ═══════════
+ */
 
 model Question {
-  id               String  @id // QB-M0-001 — ثابت
+  id               String              @id // QB-M0-001 — ثابت
   moduleId         String?
   moduleName       String?
   answerType       String
   optionsKey       String?
-  personaScope     Json     @default("[]")
+  personaScope     Json                @default("[]")
   measures         Json
-  triggerCondition String  @default("always")
+  triggerCondition String              @default("always")
   reasonAr         String? // سبب اختيار السؤال
-  differentiates   Json?   // مرشحو التعادل الذين يفرق بينهم
-  sensitivityLevel String  @default("low")
-  requiredLevel    String  @default("core")
-  weight           Float   @default(1)
-  active           Boolean @default(true)
-  status           String  @default("published")
-  currentVersion   Int     @default(1)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  differentiates   Json? // مرشحو التعادل الذين يفرق بينهم
+  sensitivityLevel String              @default("low")
+  requiredLevel    String              @default("core")
+  weight           Float               @default(1)
+  active           Boolean             @default(true)
+  status           String              @default("published")
+  currentVersion   Int                 @default(1)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
   versions         QuestionVersion[]
   options          QuestionOption[]
   skillLinks       QuestionSkillLink[]
@@ -503,17 +551,19 @@ model QuestionVersion {
   createdBy  String?  @db.Uuid
   createdAt  DateTime @default(now())
   question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
   @@unique([questionId, version])
 }
 
 model QuestionOption {
-  id         String  @id @default(uuid()) @db.Uuid
+  id         String   @id @default(uuid()) @db.Uuid
   questionId String
-  optionId   String  // o1, o2 ... ثابت — لا يُستخدم النص العربي مفتاح قرار
+  optionId   String // o1, o2 ... ثابت — لا يُستخدم النص العربي مفتاح قرار
   orderIndex Int
   textAr     String
-  effects    Json?   // أثر الخيار على الحقائق والأوزان
+  effects    Json? // أثر الخيار على الحقائق والأوزان
   question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
   @@unique([questionId, optionId])
   @@unique([questionId, orderIndex])
 }
@@ -521,21 +571,24 @@ model QuestionOption {
 model QuestionSkillLink {
   questionId String
   skillId    String
-  weight     Float  @default(1)
+  weight     Float    @default(1)
   question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
   skill      Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
   @@id([questionId, skillId])
 }
 
-/* ═══════════ الملفات التشخيصية والتقييم ═══════════ */
+/**
+ * ═══════════ الملفات التشخيصية والتقييم ═══════════
+ */
 
 model DiagnosticProfile {
-  id              String  @id @default(uuid()) @db.Uuid
-  entityType      String  // pathway | template | course
+  id              String   @id @default(uuid()) @db.Uuid
+  entityType      String // pathway | template | course
   entityId        String
   audience        Json?
   goals           Json?
-  requiredSkills  Json?   // [{skill_id, target_level, weight, priority}]
+  requiredSkills  Json? // [{skill_id, target_level, weight, priority}]
   interests       Json?
   timeConstraints Json?
   eligibility     Json?
@@ -543,12 +596,13 @@ model DiagnosticProfile {
   positiveSignals Json?
   negativeSignals Json?
   differentiators Json?
-  minCoverage     Float   @default(0.8)
+  minCoverage     Float    @default(0.8)
   rationales      Json?
-  readinessStatus String  @default("incomplete") // incomplete | diagnostic_ready
-  profile         Json?   // اللقطة الكاملة لملف المصدر (personas/goals/sectors/functions/...) بلا اقتطاع
-  version         Int     @default(1)
+  readinessStatus String   @default("incomplete") // incomplete | diagnostic_ready
+  profile         Json? // اللقطة الكاملة لملف المصدر (personas/goals/sectors/functions/...) بلا اقتطاع
+  version         Int      @default(1)
   updatedAt       DateTime @updatedAt
+
   @@unique([entityType, entityId])
 }
 
@@ -574,63 +628,67 @@ model RecommendationVersion {
 
 model SlugRedirect {
   oldSlug    String   @id
-  entityType String   // course | pathway
+  entityType String // course | pathway
   entityId   String
   createdAt  DateTime @default(now())
 }
 
-/* ═══════════ الحوكمة: طلبات التغيير والمراجعة ═══════════ */
+/**
+ * ═══════════ الحوكمة: طلبات التغيير والمراجعة ═══════════
+ */
 
 model ContentChangeRequest {
-  id          String    @id @default(uuid()) @db.Uuid
-  entityType  String    // pathway | course | skill | question | template
-  entityId    String
-  payload     Json      // التعديل المقترح
-  status      String    @default("draft") // draft | in_review | changes_requested | approved | rejected | applied
-  createdBy   String?   @db.Uuid
-  createdAt   DateTime  @default(now())
-  reviewedBy  String?   @db.Uuid
-  reviewedAt  DateTime?
-  comments    ContentReviewComment[]
-  decisions   ContentApprovalDecision[]
+  id         String                    @id @default(uuid()) @db.Uuid
+  entityType String // pathway | course | skill | question | template
+  entityId   String
+  payload    Json // التعديل المقترح
+  status     String                    @default("draft") // draft | in_review | changes_requested | approved | rejected | applied
+  createdBy  String?                   @db.Uuid
+  createdAt  DateTime                  @default(now())
+  reviewedBy String?                   @db.Uuid
+  reviewedAt DateTime?
+  comments   ContentReviewComment[]
+  decisions  ContentApprovalDecision[]
 }
 
 model ContentReviewComment {
-  id              String   @id @default(uuid()) @db.Uuid
-  changeRequestId String   @db.Uuid
-  authorId        String?  @db.Uuid
+  id              String               @id @default(uuid()) @db.Uuid
+  changeRequestId String               @db.Uuid
+  authorId        String?              @db.Uuid
   bodyAr          String
-  createdAt       DateTime @default(now())
+  createdAt       DateTime             @default(now())
   changeRequest   ContentChangeRequest @relation(fields: [changeRequestId], references: [id], onDelete: Cascade)
 }
 
 model ContentApprovalDecision {
-  id              String   @id @default(uuid()) @db.Uuid
-  changeRequestId String   @db.Uuid
-  actorId         String?  @db.Uuid
-  decision        String   // approve | request_changes | reject
+  id              String               @id @default(uuid()) @db.Uuid
+  changeRequestId String               @db.Uuid
+  actorId         String?              @db.Uuid
+  decision        String // approve | request_changes | reject
   noteAr          String?
-  createdAt       DateTime @default(now())
+  createdAt       DateTime             @default(now())
   changeRequest   ContentChangeRequest @relation(fields: [changeRequestId], references: [id], onDelete: Cascade)
 }
 
 model ImpactAnalysisRun {
-  id          String   @id @default(uuid()) @db.Uuid
-  changeRef   String   // وصف أو معرف التغيير
-  summary     Json     // ما تغير + المتأثرون + نتائج المحاكاة قبل/بعد
-  createdBy   String?  @db.Uuid
-  createdAt   DateTime @default(now())
+  id        String   @id @default(uuid()) @db.Uuid
+  changeRef String // وصف أو معرف التغيير
+  summary   Json // ما تغير + المتأثرون + نتائج المحاكاة قبل/بعد
+  createdBy String?  @db.Uuid
+  createdAt DateTime @default(now())
 }
 
 model DiagnosticRegressionRun {
   id               String   @id @default(uuid()) @db.Uuid
   catalogVersionId String?  @db.Uuid
-  results          Json     // 12 شخصية × توصية × ثقة × حتمية
+  results          Json // 12 شخصية × توصية × ثقة × حتمية
   passed           Boolean
   createdAt        DateTime @default(now())
 }
 
-/* ═══════════ جلسات التشخيص — الأثر التاريخي ═══════════ */
+/**
+ * ═══════════ جلسات التشخيص — الأثر التاريخي ═══════════
+ */
 
 model DiagnosticSession {
   id                     String   @id @default(uuid()) @db.Uuid
@@ -642,75 +700,79 @@ model DiagnosticSession {
   recommendationVersion  Int?
   answers                Json
   decisionTrace          Json
-  candidates             Json?    // المرشحون المقيَّمون ودرجاتهم
+  candidates             Json? // المرشحون المقيَّمون ودرجاتهم
   exclusionReasons       Json?
-  recommendationSnapshot Json     // لقطة النتيجة كما عُرضت — لا تتغير بأثر رجعي
+  recommendationSnapshot Json // لقطة النتيجة كما عُرضت — لا تتغير بأثر رجعي
   createdAt              DateTime @default(now())
+
   @@index([userId])
   @@index([catalogVersionId])
 }
 
-/* ═══════════ منظومة المدربين — من الطلب العام إلى الاعتماد والنشر ═══════════
-   الحاكمية: قبول الطلب ≠ إنشاء الحساب ≠ تفعيل الدور ≠ التأهيل لدورة ≠ التعيين ≠ النشر العام.
-   كل انتقال حالة يُسجَّل في TrainerStatusHistory، وكل إجراء حساس في AuditEvent. */
+/**
+ * ═══════════ منظومة المدربين — من الطلب العام إلى الاعتماد والنشر ═══════════
+ * الحاكمية: قبول الطلب ≠ إنشاء الحساب ≠ تفعيل الدور ≠ التأهيل لدورة ≠ التعيين ≠ النشر العام.
+ * كل انتقال حالة يُسجَّل في TrainerStatusHistory، وكل إجراء حساس في AuditEvent.
+ */
 
 model TrainerApplication {
-  id                  String    @id @default(uuid()) @db.Uuid
-  reference           String    @unique // WJ-TR-2026-00001
-  status              String    @default("email_verification_pending")
+  id                   String                        @id @default(uuid()) @db.Uuid
+  reference            String                        @unique // WJ-TR-2026-00001
+  status               String                        @default("email_verification_pending")
   // draft | email_verification_pending | submitted | under_review | information_requested
   // | shortlisted | interview_scheduled | demo_requested | academic_review
   // | conditionally_approved | contract_pending | onboarding | active
   // | waitlisted | rejected | withdrawn | suspended
-  email               String
-  emailVerifiedAt     DateTime?
-  emailVerifyTokenHash String?  @unique // رمز تحقق البريد — هاش فقط
+  email                String
+  emailVerifiedAt      DateTime?
+  emailVerifyTokenHash String?                       @unique // رمز تحقق البريد — هاش فقط
   emailVerifyExpiresAt DateTime?
-  accessTokenHash     String?   @unique // رمز وصول المرشح لمرحلة الاستكمال — هاش فقط
+  accessTokenHash      String?                       @unique // رمز وصول المرشح لمرحلة الاستكمال — هاش فقط
   // المرحلة الأولى
-  fullName            String
-  phoneCountryCode    String?
-  phone               String?
-  country             String?
-  timezone            String?
-  employmentStatus    String?   // employed | own_business | full_time_training
-  jobTitle            String?
-  domainYears         String?   // 1-3 | 4-7 | 8-12 | 12+
-  trainingYears       String?   // خبرة التدريب منفصلة عن خبرة المجال
-  bio                 String?
-  linkedinUrl         String?
+  fullName             String
+  phoneCountryCode     String?
+  phone                String?
+  country              String?
+  timezone             String?
+  employmentStatus     String? // employed | own_business | full_time_training
+  jobTitle             String?
+  domainYears          String? // 1-3 | 4-7 | 8-12 | 12+
+  trainingYears        String? // خبرة التدريب منفصلة عن خبرة المجال
+  bio                  String?
+  linkedinUrl          String?
   // حضور رقمي واعتماد — تساعد المراجعة الأكاديمية على التقييم
-  youtubeUrl          String?   // قناة أو فيديو تدريبي
-  instagramUrl        String?
-  hasAccreditation    Boolean?  // اعتماد/ترخيص رسمي من جهة أو هيئة تدريب
-  accreditationDetails String?  // اسم الجهة ورقم الاعتماد إن وُجد
-  targetCountries     String[]  @default([]) // الدول التي يستهدفها بالتدريب
-  targetAudiences     String[]  @default([]) // الفئات المستهدفة: طلاب، موظفون، حكومي...
-  trainingLanguages   String[]  @default([])
-  deliveryMode        String?   // in_person | remote | both
-  motivation          String?
-  privacyConsentAt    DateTime?
+  youtubeUrl           String? // قناة أو فيديو تدريبي
+  instagramUrl         String?
+  hasAccreditation     Boolean? // اعتماد/ترخيص رسمي من جهة أو هيئة تدريب
+  accreditationDetails String? // اسم الجهة ورقم الاعتماد إن وُجد
+  targetCountries      String[]                      @default([]) // الدول التي يستهدفها بالتدريب
+  targetAudiences      String[]                      @default([]) // الفئات المستهدفة: طلاب، موظفون، حكومي...
+  trainingLanguages    String[]                      @default([])
+  deliveryMode         String? // in_person | remote | both
+  motivation           String?
+  privacyConsentAt     DateTime?
   // المرحلة الثانية — تُفتح للمرشحين فقط
-  phase2CompletedAt   DateTime?
-  previousCourses     Json?     // [{title, org, year, learnersCount}] — حتى ثلاث
-  totalLearners       Int?
-  previousOrgs        String?
-  evidenceNotes       String?
-  availability        Json?     // {days, hoursPerWeek, startFrom}
-  demoConsent         Boolean   @default(false)
-  teachableCourseIds  String[]  @default([]) // الدورات الحالية التي يستطيع تدريسها
-  withdrawReason      String?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
-  specialties         TrainerApplicationSpecialty[]
-  documents           TrainerApplicationDocument[]
-  reviews             TrainerApplicationReview[]
-  interviews          TrainerInterview[]
-  demoEvaluations     TrainerDemoEvaluation[]
-  references          TrainerReference[]
-  statusHistory       TrainerStatusHistory[]
-  invitations         TrainerInvitation[]
-  profile             TrainerProfile?
+  phase2CompletedAt    DateTime?
+  previousCourses      Json? // [{title, org, year, learnersCount}] — حتى ثلاث
+  totalLearners        Int?
+  previousOrgs         String?
+  evidenceNotes        String?
+  availability         Json? // {days, hoursPerWeek, startFrom}
+  demoConsent          Boolean                       @default(false)
+  teachableCourseIds   String[]                      @default([]) // الدورات الحالية التي يستطيع تدريسها
+  withdrawReason       String?
+  createdAt            DateTime                      @default(now())
+  updatedAt            DateTime                      @updatedAt
+  specialties          TrainerApplicationSpecialty[]
+  documents            TrainerApplicationDocument[]
+  reviews              TrainerApplicationReview[]
+  interviews           TrainerInterview[]
+  demoEvaluations      TrainerDemoEvaluation[]
+  references           TrainerReference[]
+  statusHistory        TrainerStatusHistory[]
+  invitations          TrainerInvitation[]
+  profile              TrainerProfile?
+
   @@index([status, createdAt])
   @@index([email])
 }
@@ -719,19 +781,21 @@ model TrainerApplicationSpecialty {
   applicationId String             @db.Uuid
   specialty     String
   application   TrainerApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
   @@id([applicationId, specialty])
 }
 
 model TrainerApplicationDocument {
   id            String             @id @default(uuid()) @db.Uuid
   applicationId String             @db.Uuid
-  kind          String             // cv | training_video | certificate | evidence | reference_letter | other
+  kind          String // cv | training_video | certificate | evidence | reference_letter | other
   storageKey    String             @unique // مفتاح تخزين خاص — لا يُقدَّم إلا برابط موقع مؤقت
   originalName  String
   mime          String
   sizeBytes     Int
   uploadedAt    DateTime           @default(now())
   application   TrainerApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
   @@index([applicationId])
 }
 
@@ -739,10 +803,11 @@ model TrainerApplicationReview {
   id            String             @id @default(uuid()) @db.Uuid
   applicationId String             @db.Uuid
   reviewerId    String             @db.Uuid
-  scores        Json               // {domain_expertise, evidence, facilitation, demo_quality, activity_design, feedback_skill, digital_training, values_fit, availability} 1-5
+  scores        Json // {domain_expertise, evidence, facilitation, demo_quality, activity_design, feedback_skill, digital_training, values_fit, availability} 1-5
   overallNote   String?
   createdAt     DateTime           @default(now())
   application   TrainerApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
   @@index([applicationId])
 }
 
@@ -752,10 +817,11 @@ model TrainerInterview {
   scheduledAt   DateTime
   mode          String             @default("remote") // remote | in_person
   interviewerId String?            @db.Uuid
-  outcome       String?            // passed | hold | failed
+  outcome       String? // passed | hold | failed
   notes         String?
   createdAt     DateTime           @default(now())
   application   TrainerApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
   @@index([applicationId])
 }
 
@@ -763,11 +829,12 @@ model TrainerDemoEvaluation {
   id            String             @id @default(uuid()) @db.Uuid
   applicationId String             @db.Uuid
   evaluatorId   String             @db.Uuid
-  scores        Json               // نفس محاور الروبرك البشري
-  decision      String?            // pass | retry | fail
+  scores        Json // نفس محاور الروبرك البشري
+  decision      String? // pass | retry | fail
   notes         String?
   createdAt     DateTime           @default(now())
   application   TrainerApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
   @@index([applicationId])
 }
 
@@ -782,6 +849,7 @@ model TrainerReference {
   verifiedBy    String?            @db.Uuid
   createdAt     DateTime           @default(now())
   application   TrainerApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
   @@index([applicationId])
 }
 
@@ -794,6 +862,7 @@ model TrainerStatusHistory {
   note          String?
   createdAt     DateTime           @default(now())
   application   TrainerApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
   @@index([applicationId, createdAt])
 }
 
@@ -807,54 +876,58 @@ model TrainerInvitation {
   createdBy     String?            @db.Uuid
   createdAt     DateTime           @default(now())
   application   TrainerApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
   @@index([applicationId])
 }
 
 model TrainerOnboardingTask {
-  profileId   String          @db.Uuid
-  key         String          // sign_contract | academy_orientation | lms_setup | first_cohort_brief ...
-  title       String
-  doneAt      DateTime?
-  createdAt   DateTime        @default(now())
-  profile     TrainerProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profileId String         @db.Uuid
+  key       String // sign_contract | academy_orientation | lms_setup | first_cohort_brief ...
+  title     String
+  doneAt    DateTime?
+  createdAt DateTime       @default(now())
+  profile   TrainerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
   @@id([profileId, key])
 }
 
 model TrainerProfile {
-  id                 String    @id @default(uuid()) @db.Uuid
-  applicationId      String    @unique @db.Uuid
-  userId             String?   @unique @db.Uuid // يُربط فقط عبر الدعوة الآمنة — المتقدم لا يمنح نفسه الدور
-  headline           String?
-  bioPublic          String?
-  photoUrl           String?   // صورة المدرب — لا تُعرض إلا بصورة حقيقية يرفعها المدرب/الإدارة
-  ratingAvg          Float?    // متوسط التقييم من خريجين حقيقيين — null = لا يُعرض
-  ratingCount        Int?      // عدد التقييمات
-  hoursTaught        Int?      // ساعات التدريب الفعلية مع الأكاديمية
-  graduatesCount     Int?      // عدد الخريجين الفعليين
-  isVerified         Boolean   @default(false) // ملف موثق
-  publicVisibility   Boolean   @default(false) // لا يظهر للعامة إلا بموافقة نشر
-  publishApprovedBy  String?   @db.Uuid
-  publishApprovedAt  DateTime?
-  suspendedAt        DateTime?
-  suspendedBy        String?   @db.Uuid
-  /* نطاق الكتالوج صلاحية تُمنح بعد سجل مثبت (البند هـ-١) — والافتراضي نطاق
-     الشعبة: المدرب يجرّب ويبدع فيه بلا مخاطرة على أحد. */
+  id                    String                       @id @default(uuid()) @db.Uuid
+  applicationId         String                       @unique @db.Uuid
+  userId                String?                      @unique @db.Uuid // يُربط فقط عبر الدعوة الآمنة — المتقدم لا يمنح نفسه الدور
+  headline              String?
+  bioPublic             String?
+  photoUrl              String? // صورة المدرب — لا تُعرض إلا بصورة حقيقية يرفعها المدرب/الإدارة
+  ratingAvg             Float? // متوسط التقييم من خريجين حقيقيين — null = لا يُعرض
+  ratingCount           Int? // عدد التقييمات
+  hoursTaught           Int? // ساعات التدريب الفعلية مع الأكاديمية
+  graduatesCount        Int? // عدد الخريجين الفعليين
+  isVerified            Boolean                      @default(false) // ملف موثق
+  publicVisibility      Boolean                      @default(false) // لا يظهر للعامة إلا بموافقة نشر
+  publishApprovedBy     String?                      @db.Uuid
+  publishApprovedAt     DateTime?
+  suspendedAt           DateTime?
+  suspendedBy           String?                      @db.Uuid
+  /**
+   * نطاق الكتالوج صلاحية تُمنح بعد سجل مثبت (البند هـ-١) — والافتراضي نطاق
+   * الشعبة: المدرب يجرّب ويبدع فيه بلا مخاطرة على أحد.
+   */
   catalogScopeGrantedAt DateTime?
-  catalogScopeGrantedBy String?  @db.Uuid
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-  application        TrainerApplication       @relation(fields: [applicationId], references: [id])
-  user               User?                  @relation(fields: [userId], references: [id])
-  skills             TrainerSkill[]
-  qualifications     TrainerCourseQualification[]
-  assignments        TrainerCourseAssignment[]
-  changeRequests     TrainerChangeRequest[]
-  onboardingTasks    TrainerOnboardingTask[]
-  contracts          TrainerContract[]
-  compensationRules  TrainerCompensationRule[]
-  payouts            TrainerPayout[]
-  cohortPlans        CohortDeliveryPlan[]
-  cohortTrainers     CohortTrainer[]
+  catalogScopeGrantedBy String?                      @db.Uuid
+  createdAt             DateTime                     @default(now())
+  updatedAt             DateTime                     @updatedAt
+  application           TrainerApplication           @relation(fields: [applicationId], references: [id])
+  user                  User?                        @relation(fields: [userId], references: [id])
+  skills                TrainerSkill[]
+  qualifications        TrainerCourseQualification[]
+  assignments           TrainerCourseAssignment[]
+  changeRequests        TrainerChangeRequest[]
+  onboardingTasks       TrainerOnboardingTask[]
+  contracts             TrainerContract[]
+  compensationRules     TrainerCompensationRule[]
+  payouts               TrainerPayout[]
+  cohortPlans           CohortDeliveryPlan[]
+  cohortTrainers        CohortTrainer[]
 }
 
 model TrainerSkill {
@@ -862,6 +935,7 @@ model TrainerSkill {
   skillId   String
   level     Int            @default(3) // 1-5
   profile   TrainerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
   @@id([profileId, skillId])
 }
 
@@ -875,6 +949,7 @@ model TrainerCourseQualification {
   createdAt   DateTime       @default(now())
   profile     TrainerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
   course      Course         @relation(fields: [courseId], references: [id])
+
   @@unique([profileId, courseId])
 }
 
@@ -889,45 +964,48 @@ model TrainerCourseAssignment {
   profile    TrainerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
   course     Course         @relation(fields: [courseId], references: [id])
   cohort     Cohort?        @relation(fields: [cohortId], references: [id])
+
   @@index([profileId, status])
 }
 
 model TrainerChangeRequest {
-  id                 String          @id @default(uuid()) @db.Uuid
-  profileId          String          @db.Uuid
+  id                 String                     @id @default(uuid()) @db.Uuid
+  profileId          String                     @db.Uuid
   courseId           String
-  baseCourseVersion  Int             // الإصدار الأساسي الذي بُني عليه الاقتراح
-  scope              String          // cohort | catalog
-  cohortId           String?         @db.Uuid
-  status             String          @default("draft")
+  baseCourseVersion  Int // الإصدار الأساسي الذي بُني عليه الاقتراح
+  scope              String // cohort | catalog
+  cohortId           String?                    @db.Uuid
+  status             String                     @default("draft")
   // draft | submitted | under_review | changes_requested | approved_for_cohort
   // | approved_for_catalog | rejected | withdrawn | published | superseded
   reason             String
   evidence           String?
   scheduledPublishAt DateTime?
-  reviewedBy         String?         @db.Uuid
+  reviewedBy         String?                    @db.Uuid
   reviewedAt         DateTime?
   reviewerComment    String?
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime        @updatedAt
-  profile            TrainerProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  course             Course          @relation(fields: [courseId], references: [id])
-  cohort             Cohort?         @relation(fields: [cohortId], references: [id])
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
+  profile            TrainerProfile             @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  course             Course                     @relation(fields: [courseId], references: [id])
+  cohort             Cohort?                    @relation(fields: [cohortId], references: [id])
   items              TrainerChangeRequestItem[]
+
   @@index([status, createdAt])
 }
 
 model TrainerChangeRequestItem {
-  id          String              @id @default(uuid()) @db.Uuid
-  requestId   String              @db.Uuid
-  changeType  String              // module_title_edit | module_add | module_reorder | explanation_improve
-                                  // | material_add | activity_add | assignment_add | assessment_improve
-                                  // | examples_update | duration_propose | project_propose | outcome_propose
-  targetKey   String?             // مثل معرف الوحدة C-XXX-001-M2
+  id          String               @id @default(uuid()) @db.Uuid
+  requestId   String               @db.Uuid
+  changeType  String // module_title_edit | module_add | module_reorder | explanation_improve
+  // | material_add | activity_add | assignment_add | assessment_improve
+  // | examples_update | duration_propose | project_propose | outcome_propose
+  targetKey   String? // مثل معرف الوحدة C-XXX-001-M2
   beforeValue Json?
   afterValue  Json?
   note        String?
   request     TrainerChangeRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
   @@index([requestId])
 }
 
@@ -935,45 +1013,48 @@ model TrainerContract {
   id        String         @id @default(uuid()) @db.Uuid
   profileId String         @db.Uuid
   title     String
-  terms     Json?          // شروط التعاقد المهيكلة
+  terms     Json? // شروط التعاقد المهيكلة
   status    String         @default("draft") // draft | sent | signed | expired | terminated
   sentAt    DateTime?
   signedAt  DateTime?
   createdBy String?        @db.Uuid
   createdAt DateTime       @default(now())
   profile   TrainerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
   @@index([profileId])
 }
 
 model TrainerCompensationRule {
-  id             String         @id @default(uuid()) @db.Uuid
-  profileId      String         @db.Uuid
-  type           String         // per_seat | fixed_per_cohort | revenue_share
-  rate           Decimal        @db.Decimal(10, 2)
-  currency       String         @default("JOD")
-  minSeats       Int            @default(0) // حد أدنى للمقاعد المحتسبة في per_seat — يُدفع حتى لو قلّ العدد الفعلي
-  courseId       String?        // نطاق اختياري: قاعدة خاصة بدورة
-  cohortId       String?        @db.Uuid // نطاق اختياري: قاعدة خاصة بشعبة — الأعلى أولوية
-  effectiveFrom  DateTime       @default(now())
-  effectiveTo    DateTime?
-  createdBy      String?        @db.Uuid
-  createdAt      DateTime       @default(now())
-  profile        TrainerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  id            String         @id @default(uuid()) @db.Uuid
+  profileId     String         @db.Uuid
+  type          String // per_seat | fixed_per_cohort | revenue_share
+  rate          Decimal        @db.Decimal(10, 2)
+  currency      String         @default("JOD")
+  minSeats      Int            @default(0) // حد أدنى للمقاعد المحتسبة في per_seat — يُدفع حتى لو قلّ العدد الفعلي
+  courseId      String? // نطاق اختياري: قاعدة خاصة بدورة
+  cohortId      String?        @db.Uuid // نطاق اختياري: قاعدة خاصة بشعبة — الأعلى أولوية
+  effectiveFrom DateTime       @default(now())
+  effectiveTo   DateTime?
+  createdBy     String?        @db.Uuid
+  createdAt     DateTime       @default(now())
+  profile       TrainerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
   @@index([profileId])
 }
 
 model TrainerPayout {
-  id         String         @id @default(uuid()) @db.Uuid
-  profileId  String         @db.Uuid
-  period     String         // مثل 2026-08
-  status     String         @default("pending") // pending | approved | paid | cancelled
-  total      Decimal        @default(0) @db.Decimal(10, 2)
-  currency   String         @default("JOD")
-  approvedBy String?        @db.Uuid
+  id         String              @id @default(uuid()) @db.Uuid
+  profileId  String              @db.Uuid
+  period     String // مثل 2026-08
+  status     String              @default("pending") // pending | approved | paid | cancelled
+  total      Decimal             @default(0) @db.Decimal(10, 2)
+  currency   String              @default("JOD")
+  approvedBy String?             @db.Uuid
   paidAt     DateTime?
-  createdAt  DateTime       @default(now())
-  profile    TrainerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  createdAt  DateTime            @default(now())
+  profile    TrainerProfile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
   items      TrainerPayoutItem[]
+
   @@index([profileId, period])
 }
 
@@ -982,85 +1063,97 @@ model TrainerPayoutItem {
   payoutId    String        @db.Uuid
   description String
   amount      Decimal       @db.Decimal(10, 2)
-  sourceRef   String?       // مرجع الشعبة أو الدورة
+  sourceRef   String? // مرجع الشعبة أو الدورة
   payout      TrainerPayout @relation(fields: [payoutId], references: [id], onDelete: Cascade)
+
   @@index([payoutId])
 }
 
-/* ═══════════ الشعب وخطط التنفيذ — فصل المخطط الأساسي عن خطة الشعبة ═══════════
-   Canonical Course Blueprint = Course + CourseVersion + CourseModule (قائم أصلا).
-   CohortDeliveryPlan = مدرب الشعبة ومواعيدها وأمثلتها وموادها الإضافية وأنشطتها —
-   يمكن اعتماد اقتراح لشعبة واحدة دون تغيير الكتالوج. */
+/**
+ * ═══════════ الشعب وخطط التنفيذ — فصل المخطط الأساسي عن خطة الشعبة ═══════════
+ * Canonical Course Blueprint = Course + CourseVersion + CourseModule (قائم أصلا).
+ * CohortDeliveryPlan = مدرب الشعبة ومواعيدها وأمثلتها وموادها الإضافية وأنشطتها —
+ * يمكن اعتماد اقتراح لشعبة واحدة دون تغيير الكتالوج.
+ */
 
 model Cohort {
-  id           String    @id @default(uuid()) @db.Uuid
-  courseId     String
-  pathwayId    String?
-  title        String
-  status       String    @default("draft") // draft | open | full | active | completed | cancelled
-  startsAt     DateTime?
-  endsAt       DateTime?
-  /* جدولة وسعة وتقديم — تُدار من الإدارة فقط */
-  daysOfWeek   String[]  @default([])
-  startTime    String?   // مثل 18:00
-  timezone     String?
-  capacity     Int?
-  price        Decimal?  @db.Decimal(10, 2)
-  currency     String    @default("JOD")
-  language     String    @default("العربية")
-  deliveryMode String    @default("remote") // remote | in_person | hybrid
-  registrationOpen Boolean @default(false)
-  financialReady   Boolean @default(false) // إعداد مالي مكتمل — شرط فتح الشعبة
-  createdAt    DateTime  @default(now())
-  course       Course    @relation(fields: [courseId], references: [id])
-  plans        CohortDeliveryPlan[]
-  assignments  TrainerCourseAssignment[]
-  changeRequests TrainerChangeRequest[]
-  trainers     CohortTrainer[]
-  sessions     CohortSession[]
-  enrollments  Enrollment[]
+  id                 String                    @id @default(uuid()) @db.Uuid
+  courseId           String
+  pathwayId          String?
+  title              String
+  status             String                    @default("draft") // draft | open | full | active | completed | cancelled
+  startsAt           DateTime?
+  endsAt             DateTime?
+  /**
+   * جدولة وسعة وتقديم — تُدار من الإدارة فقط
+   */
+  daysOfWeek         String[]                  @default([])
+  startTime          String? // مثل 18:00
+  timezone           String?
+  capacity           Int?
+  price              Decimal?                  @db.Decimal(10, 2)
+  currency           String                    @default("JOD")
+  language           String                    @default("العربية")
+  deliveryMode       String                    @default("remote") // remote | in_person | hybrid
+  registrationOpen   Boolean                   @default(false)
+  financialReady     Boolean                   @default(false) // إعداد مالي مكتمل — شرط فتح الشعبة
+  createdAt          DateTime                  @default(now())
+  course             Course                    @relation(fields: [courseId], references: [id])
+  plans              CohortDeliveryPlan[]
+  assignments        TrainerCourseAssignment[]
+  changeRequests     TrainerChangeRequest[]
+  trainers           CohortTrainer[]
+  sessions           CohortSession[]
+  enrollments        Enrollment[]
   enrollmentRequests EnrollmentRequest[]
-  materials    LearningMaterial[]
-  assessments  CohortAssessment[]
-  completionRules CompletionRule[]
+  materials          LearningMaterial[]
+  assessments        CohortAssessment[]
+  completionRules    CompletionRule[]
+
   @@index([courseId, status])
 }
 
 model CohortDeliveryPlan {
-  id         String          @id @default(uuid()) @db.Uuid
-  cohortId   String          @db.Uuid
-  trainerId  String?         @db.Uuid
-  content    Json            // {schedule, examples, extraMaterials, activities, ordering}
-  status     String          @default("draft") // draft | approved | published | superseded
-  sourceChangeRequestId String? @db.Uuid // إن نُشرت من اقتراح مدرب بنطاق شعبة
-  createdBy  String?         @db.Uuid
-  createdAt  DateTime        @default(now())
-  cohort     Cohort          @relation(fields: [cohortId], references: [id], onDelete: Cascade)
-  trainer    TrainerProfile? @relation(fields: [trainerId], references: [id])
+  id                    String          @id @default(uuid()) @db.Uuid
+  cohortId              String          @db.Uuid
+  trainerId             String?         @db.Uuid
+  content               Json // {schedule, examples, extraMaterials, activities, ordering}
+  status                String          @default("draft") // draft | approved | published | superseded
+  sourceChangeRequestId String?         @db.Uuid // إن نُشرت من اقتراح مدرب بنطاق شعبة
+  createdBy             String?         @db.Uuid
+  createdAt             DateTime        @default(now())
+  cohort                Cohort          @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  trainer               TrainerProfile? @relation(fields: [trainerId], references: [id])
+
   @@index([cohortId, status])
 }
 
-/* ═══════════ سجل التدقيق العام — كل إجراء حساس ═══════════ */
+/**
+ * ═══════════ سجل التدقيق العام — كل إجراء حساس ═══════════
+ */
 
 model AuditEvent {
   id         String   @id @default(uuid()) @db.Uuid
   actorId    String?  @db.Uuid // null = النظام
-  action     String   // trainer.application.submit | payment.record.manual ...
+  action     String // trainer.application.submit | payment.record.manual ...
   entityType String
   entityId   String
   meta       Json?
-  reason     String?  // سبب الفعل عندما يكون مطلوبا (إلغاء، استرداد، تجاوز)
-  ip         String?  // عنوان IP عند الحاجة الأمنية
-  before     Json?    // القيم المهمة قبل التغيير
-  after      Json?    // القيم المهمة بعد التغيير
+  reason     String? // سبب الفعل عندما يكون مطلوبا (إلغاء، استرداد، تجاوز)
+  ip         String? // عنوان IP عند الحاجة الأمنية
+  before     Json? // القيم المهمة قبل التغيير
+  after      Json? // القيم المهمة بعد التغيير
   createdAt  DateTime @default(now())
+
   @@index([entityType, entityId, createdAt])
   @@index([actorId, createdAt])
 }
 
-/* ═══════════ التشغيل الأكاديمي — شعب وجلسات وتعلم وشهادات ═══════════
-   فتح الشعبة مشروط: دورة منشورة + مدرب معتمد مؤهل + جدول + سعة + خطة تقديم + إعداد مالي.
-   التقدم يُحسب من أدلة حقيقية (حضور/وحدات/تسليمات/تقييمات) لا من فتح الصفحة. */
+/**
+ * ═══════════ التشغيل الأكاديمي — شعب وجلسات وتعلم وشهادات ═══════════
+ * فتح الشعبة مشروط: دورة منشورة + مدرب معتمد مؤهل + جدول + سعة + خطة تقديم + إعداد مالي.
+ * التقدم يُحسب من أدلة حقيقية (حضور/وحدات/تسليمات/تقييمات) لا من فتح الصفحة.
+ */
 
 model CohortTrainer {
   id         String         @id @default(uuid()) @db.Uuid
@@ -1071,38 +1164,40 @@ model CohortTrainer {
   createdAt  DateTime       @default(now())
   cohort     Cohort         @relation(fields: [cohortId], references: [id], onDelete: Cascade)
   profile    TrainerProfile @relation(fields: [profileId], references: [id])
+
   @@unique([cohortId, profileId])
 }
 
 model CohortSession {
-  id        String       @id @default(uuid()) @db.Uuid
-  cohortId  String       @db.Uuid
-  moduleId  String?      // الوحدة المرتبطة من مخطط الدورة
-  title     String
-  startsAt  DateTime
-  endsAt    DateTime?
-  timezone  String?
-  status    String       @default("scheduled") // scheduled | live | done | cancelled
-  createdAt DateTime     @default(now())
-  cohort    Cohort       @relation(fields: [cohortId], references: [id], onDelete: Cascade)
-  zoom      ZoomMeeting?
+  id         String       @id @default(uuid()) @db.Uuid
+  cohortId   String       @db.Uuid
+  moduleId   String? // الوحدة المرتبطة من مخطط الدورة
+  title      String
+  startsAt   DateTime
+  endsAt     DateTime?
+  timezone   String?
+  status     String       @default("scheduled") // scheduled | live | done | cancelled
+  createdAt  DateTime     @default(now())
+  cohort     Cohort       @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  zoom       ZoomMeeting?
   recordings Recording[]
   attendance Attendance[]
+
   @@index([cohortId, startsAt])
 }
 
 model ZoomMeeting {
-  id             String        @id @default(uuid()) @db.Uuid
-  sessionId      String        @unique @db.Uuid
-  provider       String        @default("manual") // manual | zoom_api — لا اجتماع حقيقي دون مفاتيح
-  joinUrl        String
-  meetingId      String?
-  passcodeEnc    String?       // محمي — لا يُعرض إلا لصاحب الحق
-  learnerUrl     String?       // رابط المتعلم إن اختلف
-  hostProfileId  String?       @db.Uuid // صلاحية المدرب على الاجتماع
-  createdBy      String?       @db.Uuid
-  createdAt      DateTime      @default(now())
-  session        CohortSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  id            String        @id @default(uuid()) @db.Uuid
+  sessionId     String        @unique @db.Uuid
+  provider      String        @default("manual") // manual | zoom_api — لا اجتماع حقيقي دون مفاتيح
+  joinUrl       String
+  meetingId     String?
+  passcodeEnc   String? // محمي — لا يُعرض إلا لصاحب الحق
+  learnerUrl    String? // رابط المتعلم إن اختلف
+  hostProfileId String?       @db.Uuid // صلاحية المدرب على الاجتماع
+  createdBy     String?       @db.Uuid
+  createdAt     DateTime      @default(now())
+  session       CohortSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 }
 
 model LearningMaterial {
@@ -1112,47 +1207,50 @@ model LearningMaterial {
   title       String
   kind        String   @default("file") // file | link | summary_audio | summary_text
   storageKey  String?  @unique // ملفات خاصة — signed URLs فقط
-  externalUrl String?  // للروابط الخارجية
+  externalUrl String? // للروابط الخارجية
   status      String   @default("active") // active | archived | disabled
   createdBy   String?  @db.Uuid
   createdAt   DateTime @default(now())
   cohort      Cohort   @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+
   @@index([cohortId, status])
 }
 
 model Recording {
-  id         String        @id @default(uuid()) @db.Uuid
-  sessionId  String        @db.Uuid
-  moduleId   String?
-  title      String
-  storageKey String        @unique
-  mime       String
-  sizeBytes  Int
+  id          String        @id @default(uuid()) @db.Uuid
+  sessionId   String        @db.Uuid
+  moduleId    String?
+  title       String
+  storageKey  String        @unique
+  mime        String
+  sizeBytes   Int
   durationSec Int?
-  status     String        @default("active") // active | archived | disabled
-  createdBy  String?       @db.Uuid
-  createdAt  DateTime      @default(now())
-  session    CohortSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  status      String        @default("active") // active | archived | disabled
+  createdBy   String?       @db.Uuid
+  createdAt   DateTime      @default(now())
+  session     CohortSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
   @@index([sessionId])
 }
 
 model Enrollment {
-  id          String   @id @default(uuid()) @db.Uuid
-  cohortId    String   @db.Uuid
-  userId      String   @db.Uuid
-  status      String   @default("enrolled") // enrolled | waitlisted | completed | dropped
-  enrolledBy  String?  @db.Uuid
-  overrideCapacity Boolean @default(false) // تجاوز سعة موثق بصلاحية
-  createdAt   DateTime @default(now())
-  cohort      Cohort   @relation(fields: [cohortId], references: [id], onDelete: Cascade)
-  user        User     @relation("EnrollmentUser", fields: [userId], references: [id])
-  attendance  Attendance[]
-  attempts    AssessmentAttempt[]
-  submissions AssignmentSubmission[]
-  moduleProgress ModuleProgress[]
-  courseProgress CourseProgress?
-  certificates Certificate[]
-  skillRemeasures SkillRemeasure[]
+  id               String                 @id @default(uuid()) @db.Uuid
+  cohortId         String                 @db.Uuid
+  userId           String                 @db.Uuid
+  status           String                 @default("enrolled") // enrolled | waitlisted | completed | dropped
+  enrolledBy       String?                @db.Uuid
+  overrideCapacity Boolean                @default(false) // تجاوز سعة موثق بصلاحية
+  createdAt        DateTime               @default(now())
+  cohort           Cohort                 @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  user             User                   @relation("EnrollmentUser", fields: [userId], references: [id])
+  attendance       Attendance[]
+  attempts         AssessmentAttempt[]
+  submissions      AssignmentSubmission[]
+  moduleProgress   ModuleProgress[]
+  courseProgress   CourseProgress?
+  certificates     Certificate[]
+  skillRemeasures  SkillRemeasure[]
+
   @@unique([cohortId, userId])
   @@index([userId, status])
 }
@@ -1161,60 +1259,66 @@ model Attendance {
   id           String        @id @default(uuid()) @db.Uuid
   sessionId    String        @db.Uuid
   enrollmentId String        @db.Uuid
-  status       String        // present | late | absent | excused
+  status       String // present | late | absent | excused
   markedBy     String?       @db.Uuid // مدرب الشعبة فقط
   note         String?
   createdAt    DateTime      @default(now())
   session      CohortSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   enrollment   Enrollment    @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
   @@unique([sessionId, enrollmentId])
 }
 
-/* تقييمات الشعبة — واجبات/اختبارات/مشاريع مرتبطة بالمخطط الأساسي */
+/**
+ * تقييمات الشعبة — واجبات/اختبارات/مشاريع مرتبطة بالمخطط الأساسي
+ */
 model CohortAssessment {
-  id          String   @id @default(uuid()) @db.Uuid
-  cohortId    String   @db.Uuid
+  id          String                 @id @default(uuid()) @db.Uuid
+  cohortId    String                 @db.Uuid
   moduleId    String?
   title       String
-  type        String   @default("assignment") // assignment | quiz | project
-  maxScore    Int      @default(100)
+  type        String                 @default("assignment") // assignment | quiz | project
+  maxScore    Int                    @default(100)
   passScore   Int?
   dueAt       DateTime?
-  rubricId    String?  @db.Uuid
-  status      String   @default("published") // draft | published | closed
-  createdBy   String?  @db.Uuid
-  createdAt   DateTime @default(now())
-  cohort      Cohort   @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  rubricId    String?                @db.Uuid
+  status      String                 @default("published") // draft | published | closed
+  createdBy   String?                @db.Uuid
+  createdAt   DateTime               @default(now())
+  cohort      Cohort                 @relation(fields: [cohortId], references: [id], onDelete: Cascade)
   items       AssessmentItem[]
   attempts    AssessmentAttempt[]
   submissions AssignmentSubmission[]
-  rubric      GradingRubric? @relation("AssessmentRubric", fields: [rubricId], references: [id])
+  rubric      GradingRubric?         @relation("AssessmentRubric", fields: [rubricId], references: [id])
+
   @@index([cohortId, status])
 }
 
 model AssessmentItem {
-  id           String           @id @default(uuid()) @db.Uuid
-  assessmentId String           @db.Uuid
+  id           String               @id @default(uuid()) @db.Uuid
+  assessmentId String               @db.Uuid
   sequence     Int
   prompt       String
-  kind         String           @default("text") // text | choice | file
-  maxScore     Int              @default(10)
-  assessment   CohortAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  kind         String               @default("text") // text | choice | file
+  maxScore     Int                  @default(10)
+  assessment   CohortAssessment     @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
   responses    AssessmentResponse[]
+
   @@index([assessmentId])
 }
 
 model AssessmentAttempt {
-  id           String           @id @default(uuid()) @db.Uuid
-  assessmentId String           @db.Uuid
-  enrollmentId String           @db.Uuid
-  status       String           @default("submitted") // submitted | under_review | graded | returned
-  submittedAt  DateTime         @default(now())
+  id           String               @id @default(uuid()) @db.Uuid
+  assessmentId String               @db.Uuid
+  enrollmentId String               @db.Uuid
+  status       String               @default("submitted") // submitted | under_review | graded | returned
+  submittedAt  DateTime             @default(now())
   gradedAt     DateTime?
-  assessment   CohortAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
-  enrollment   Enrollment       @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  assessment   CohortAssessment     @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  enrollment   Enrollment           @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
   responses    AssessmentResponse[]
   grades       Grade[]
+
   @@index([enrollmentId])
 }
 
@@ -1223,20 +1327,23 @@ model AssessmentResponse {
   attemptId  String            @db.Uuid
   itemId     String            @db.Uuid
   answer     Json?
-  storageKey String?           // لإجابات الملفات
+  storageKey String? // لإجابات الملفات
   attempt    AssessmentAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
   item       AssessmentItem    @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
   @@index([attemptId])
 }
 
-/* روبرك تقييم مستقل قابل لإعادة الاستخدام */
+/**
+ * روبرك تقييم مستقل قابل لإعادة الاستخدام
+ */
 model GradingRubric {
-  id        String   @id @default(uuid()) @db.Uuid
-  title     String
-  status    String   @default("active") // active | archived
-  createdBy String?  @db.Uuid
-  createdAt DateTime @default(now())
-  criteria  RubricCriterion[]
+  id          String             @id @default(uuid()) @db.Uuid
+  title       String
+  status      String             @default("active") // active | archived
+  createdBy   String?            @db.Uuid
+  createdAt   DateTime           @default(now())
+  criteria    RubricCriterion[]
   assessments CohortAssessment[] @relation("AssessmentRubric")
 }
 
@@ -1247,37 +1354,39 @@ model RubricCriterion {
   title    String
   maxScore Int           @default(10)
   rubric   GradingRubric @relation(fields: [rubricId], references: [id], onDelete: Cascade)
+
   @@index([rubricId])
 }
 
 model AssignmentSubmission {
-  id           String           @id @default(uuid()) @db.Uuid
-  assessmentId String           @db.Uuid
-  enrollmentId String           @db.Uuid
-  storageKey   String?          // ملف التسليم — تخزين خاص
+  id           String            @id @default(uuid()) @db.Uuid
+  assessmentId String            @db.Uuid
+  enrollmentId String            @db.Uuid
+  storageKey   String? // ملف التسليم — تخزين خاص
   textAnswer   String?
-  status       String           @default("submitted")
+  status       String            @default("submitted")
   // submitted | under_review | resubmit_requested | accepted | rejected
   reviewNote   String?
-  submittedAt  DateTime         @default(now())
+  submittedAt  DateTime          @default(now())
   reviewedAt   DateTime?
-  reviewedBy   String?          @db.Uuid
-  assessment   CohortAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
-  enrollment   Enrollment       @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  reviewedBy   String?           @db.Uuid
+  assessment   CohortAssessment  @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  enrollment   Enrollment        @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
   grades       Grade[]
   feedback     TrainerFeedback[]
+
   @@index([enrollmentId, status])
 }
 
 model Grade {
-  id           String   @id @default(uuid()) @db.Uuid
-  submissionId String?  @db.Uuid
-  attemptId    String?  @db.Uuid
-  score        Decimal  @db.Decimal(6, 2)
-  maxScore     Decimal  @db.Decimal(6, 2)
-  rubricScores Json?    // [{criterionId, score}]
-  gradedBy     String   @db.Uuid
-  createdAt    DateTime @default(now())
+  id           String                @id @default(uuid()) @db.Uuid
+  submissionId String?               @db.Uuid
+  attemptId    String?               @db.Uuid
+  score        Decimal               @db.Decimal(6, 2)
+  maxScore     Decimal               @db.Decimal(6, 2)
+  rubricScores Json? // [{criterionId, score}]
+  gradedBy     String                @db.Uuid
+  createdAt    DateTime              @default(now())
   submission   AssignmentSubmission? @relation(fields: [submissionId], references: [id], onDelete: Cascade)
   attempt      AssessmentAttempt?    @relation(fields: [attemptId], references: [id], onDelete: Cascade)
   history      GradeHistory[]
@@ -1290,6 +1399,7 @@ model TrainerFeedback {
   body         String
   createdAt    DateTime             @default(now())
   submission   AssignmentSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
   @@index([submissionId])
 }
 
@@ -1302,15 +1412,18 @@ model GradeHistory {
   changedBy String   @db.Uuid
   createdAt DateTime @default(now())
   grade     Grade    @relation(fields: [gradeId], references: [id], onDelete: Cascade)
+
   @@index([gradeId])
 }
 
-/* التقدم — مشتق من أدلة حقيقية ويُعاد حسابه عند كل حدث */
+/**
+ * التقدم — مشتق من أدلة حقيقية ويُعاد حسابه عند كل حدث
+ */
 model CourseProgress {
   id           String     @id @default(uuid()) @db.Uuid
   enrollmentId String     @unique @db.Uuid
   percent      Int        @default(0)
-  evidence     Json       // {attendancePct, modulesCompleted, assignmentsAccepted, assessmentsPassed}
+  evidence     Json // {attendancePct, modulesCompleted, assignmentsAccepted, assessmentsPassed}
   updatedAt    DateTime   @updatedAt
   enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
 }
@@ -1320,9 +1433,10 @@ model ModuleProgress {
   enrollmentId String     @db.Uuid
   moduleId     String
   status       String     @default("not_started") // not_started | in_progress | completed
-  evidence     Json?      // ما الذي أثبت الإكمال
+  evidence     Json? // ما الذي أثبت الإكمال
   completedAt  DateTime?
   enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
   @@unique([enrollmentId, moduleId])
 }
 
@@ -1330,86 +1444,99 @@ model CompletionRule {
   id        String   @id @default(uuid()) @db.Uuid
   courseId  String
   cohortId  String?  @db.Uuid // قاعدة خاصة بشعبة تتقدم على قاعدة الدورة
-  type      String   // attendance_pct | modules_completed | assignment_accepted | project_accepted | assessment_passed
+  type      String // attendance_pct | modules_completed | assignment_accepted | project_accepted | assessment_passed
   threshold Int      @default(1) // نسبة أو عدد
   required  Boolean  @default(true)
   createdBy String?  @db.Uuid
   createdAt DateTime @default(now())
   cohort    Cohort?  @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+
   @@index([courseId])
 }
 
-/* القياس البعديّ للمهارة بعد إتمام الدورة (البند ح-٧).
-   beforeLevel لقطة وقت القياس لا اشتقاق لاحق: لو أعاد المتعلم التشخيص بعد سنة
-   لا يتغير فرقٌ سُجّل قبلها. والقيد الفريد يجعل القياس مرة واحدة لكل تسجيل،
-   فالفرق سجلٌ لا مقبض يُحرَّك حتى يُرضي صاحبه. */
+/**
+ * القياس البعديّ للمهارة بعد إتمام الدورة (البند ح-٧).
+ * beforeLevel لقطة وقت القياس لا اشتقاق لاحق: لو أعاد المتعلم التشخيص بعد سنة
+ * لا يتغير فرقٌ سُجّل قبلها. والقيد الفريد يجعل القياس مرة واحدة لكل تسجيل،
+ * فالفرق سجلٌ لا مقبض يُحرَّك حتى يُرضي صاحبه.
+ */
 model SkillRemeasure {
-  id           String   @id @default(uuid()) @db.Uuid
-  userId       String   @db.Uuid
-  enrollmentId String   @db.Uuid
+  id           String     @id @default(uuid()) @db.Uuid
+  userId       String     @db.Uuid
+  enrollmentId String     @db.Uuid
   courseId     String
   skillSlug    String
-  beforeLevel  Int?     // ١..٥ — null يعني أن المؤشر لم يقس هذه المهارة قبل الدورة
-  afterLevel   Int      // ١..٥
-  measuredAt   DateTime @default(now())
-  user         User     @relation("SkillRemeasureUser", fields: [userId], references: [id], onDelete: Cascade)
+  beforeLevel  Int? // ١..٥ — null يعني أن المؤشر لم يقس هذه المهارة قبل الدورة
+  afterLevel   Int // ١..٥
+  measuredAt   DateTime   @default(now())
+  user         User       @relation("SkillRemeasureUser", fields: [userId], references: [id], onDelete: Cascade)
   enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
   @@unique([enrollmentId, skillSlug])
   @@index([userId, measuredAt])
 }
 
-/* بطاقة استرجاع متباعد (البند ح-٤) — سؤال بعينه في وحدة بعينها لمتعلم بعينه.
-   step موضعه في سلّم التباعد (١ · ٣ · ٧ · ٢١ · ٦٠ يوما)، والصحيح يتقدم خطوة
-   والخطأ يعيد إلى أوله. ⚠ لا يكتب هذا الجدول في متجه المهارات ولا يقربه:
-   الاسترجاع دليل تذكّر، والمستوى يأتي من القياس (مؤشر وجيز والقياس البعديّ). */
+/**
+ * بطاقة استرجاع متباعد (البند ح-٤) — سؤال بعينه في وحدة بعينها لمتعلم بعينه.
+ * step موضعه في سلّم التباعد (١ · ٣ · ٧ · ٢١ · ٦٠ يوما)، والصحيح يتقدم خطوة
+ * والخطأ يعيد إلى أوله. ⚠ لا يكتب هذا الجدول في متجه المهارات ولا يقربه:
+ * الاسترجاع دليل تذكّر، والمستوى يأتي من القياس (مؤشر وجيز والقياس البعديّ).
+ */
 model RetrievalCard {
-  id           String   @id @default(uuid()) @db.Uuid
-  userId       String   @db.Uuid
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @db.Uuid
   moduleId     String
-  checkIndex   Int      // ترتيب السؤال في تمرين الوحدة، بدءا من صفر
-  skillSlug    String?  // ربط «م: slug» إن وُجد
-  step         Int      @default(0)
+  checkIndex   Int // ترتيب السؤال في تمرين الوحدة، بدءا من صفر
+  skillSlug    String? // ربط «م: slug» إن وُجد
+  step         Int       @default(0)
   dueAt        DateTime
   lastAnswerAt DateTime?
   lastCorrect  Boolean?
-  correctCount Int      @default(0)
-  wrongCount   Int      @default(0)
-  createdAt    DateTime @default(now())
-  user         User     @relation("RetrievalCardUser", fields: [userId], references: [id], onDelete: Cascade)
+  correctCount Int       @default(0)
+  wrongCount   Int       @default(0)
+  createdAt    DateTime  @default(now())
+  user         User      @relation("RetrievalCardUser", fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([userId, moduleId, checkIndex])
   @@index([userId, dueAt])
 }
 
-/* جولة سيناريو قرار (البند ح-٥) — مسار قرارات متعلم واحد وتأمله في نهايتها.
-   ⚠ ليست تقييما: لا درجة ولا وزن، ولا تكتب في متجه المهارات. القيمة في أن
-   المتعلم يتخذ القرار ويرى أثره ثم يكتب تأمله — والسجل ليقرأ قراره بعد حين
-   ويجرّب غيره. ولذلك تُسمح جولات متعددة: إعادة القرار هي الفائدة لا الغش. */
+/**
+ * جولة سيناريو قرار (البند ح-٥) — مسار قرارات متعلم واحد وتأمله في نهايتها.
+ * ⚠ ليست تقييما: لا درجة ولا وزن، ولا تكتب في متجه المهارات. القيمة في أن
+ * المتعلم يتخذ القرار ويرى أثره ثم يكتب تأمله — والسجل ليقرأ قراره بعد حين
+ * ويجرّب غيره. ولذلك تُسمح جولات متعددة: إعادة القرار هي الفائدة لا الغش.
+ */
 model ScenarioRun {
-  id           String   @id @default(uuid()) @db.Uuid
-  userId       String   @db.Uuid
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @db.Uuid
   moduleId     String
-  /* [{node: عنوان العقدة, optionIndex: ترتيب الخيار}] بالترتيب */
+  /**
+   * [{node: عنوان العقدة, optionIndex: ترتيب الخيار}] بالترتيب
+   */
   path         Json
   reflectionAr String?
-  startedAt    DateTime @default(now())
+  startedAt    DateTime  @default(now())
   endedAt      DateTime?
-  user         User     @relation("ScenarioRunUser", fields: [userId], references: [id], onDelete: Cascade)
+  user         User      @relation("ScenarioRunUser", fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId, moduleId, startedAt])
 }
 
 model Certificate {
-  id            String     @id @default(uuid()) @db.Uuid
-  number        String     @unique // WJ-CERT-YYYY-#####
-  enrollmentId  String     @db.Uuid
-  learnerName   String     // لقطة وقت الإصدار
+  id            String                    @id @default(uuid()) @db.Uuid
+  number        String                    @unique // WJ-CERT-YYYY-#####
+  enrollmentId  String                    @db.Uuid
+  learnerName   String // لقطة وقت الإصدار
   courseId      String
   courseVersion Int
-  issuedAt      DateTime   @default(now())
-  issuedBy      String?    @db.Uuid // null = إصدار نظامي بعد تحقق القواعد
-  status        String     @default("active") // active | revoked
-  enrollment    Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  issuedAt      DateTime                  @default(now())
+  issuedBy      String?                   @db.Uuid // null = إصدار نظامي بعد تحقق القواعد
+  status        String                    @default("active") // active | revoked
+  enrollment    Enrollment                @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
   verifications CertificateVerification[]
   revocation    CertificateRevocation?
+
   @@index([enrollmentId])
 }
 
@@ -1419,6 +1546,7 @@ model CertificateVerification {
   ip            String?
   createdAt     DateTime    @default(now())
   certificate   Certificate @relation(fields: [certificateId], references: [id], onDelete: Cascade)
+
   @@index([certificateId])
 }
 
@@ -1431,394 +1559,425 @@ model CertificateRevocation {
   certificate   Certificate @relation(fields: [certificateId], references: [id], onDelete: Cascade)
 }
 
-
-/* ═══════════ منظومة العمليات والتجارة — مستشارون وسير ذاتية وتسجيل ومدفوعات
-   وإشعارات ودعم وإعدادات. المستشار يرى الحالات المسندة إليه فقط؛
-   الملاحظات الداخلية لا تظهر للعميل؛ لا تُخزن بيانات بطاقات أبدا. ═══════════ */
+/**
+ * ═══════════ منظومة العمليات والتجارة — مستشارون وسير ذاتية وتسجيل ومدفوعات
+ * وإشعارات ودعم وإعدادات. المستشار يرى الحالات المسندة إليه فقط؛
+ * الملاحظات الداخلية لا تظهر للعميل؛ لا تُخزن بيانات بطاقات أبدا. ═══════════
+ */
 
 model LearnerProfile {
-  id                 String   @id @default(uuid()) @db.Uuid
-  userId             String   @unique @db.Uuid
-  goalAr             String?  // هدفه التعلمي بصياغته
-  preferredLanguage  String?  // العربية | English | الاثنان
+  id                 String    @id @default(uuid()) @db.Uuid
+  userId             String    @unique @db.Uuid
+  goalAr             String? // هدفه التعلمي بصياغته
+  preferredLanguage  String? // العربية | English | الاثنان
   timezone           String?
-  diagnosticSnapshot Json?    // نتيجة التشخيص المرفقة بالحساب — لا تُعدل بعد الاعتماد
+  diagnosticSnapshot Json? // نتيجة التشخيص المرفقة بالحساب — لا تُعدل بعد الاعتماد
   attachedAt         DateTime? // وقت ربط التشخيص بالحساب
   // ── الملف الشخصي الكامل — اختيارية كلها، يملؤها المتعلم ويعدلها من حسابه ──
-  avatarUrl          String?  // صورة شخصية (رابط تخزين داخلي)
+  avatarUrl          String? // صورة شخصية (رابط تخزين داخلي)
   phone              String?
   country            String?
   city               String?
   birthDate          DateTime? // اختياري — لأغراض الشهادات والفرص العمرية فقط
-  gender             String?   // اختياري تماما — male | female
-  education          String?   // المؤهل العلمي
-  university         String?   // الجامعة / المؤسسة التعليمية
-  major              String?   // التخصص
-  jobTitle           String?   // الوظيفة الحالية
+  gender             String? // اختياري تماما — male | female
+  education          String? // المؤهل العلمي
+  university         String? // الجامعة / المؤسسة التعليمية
+  major              String? // التخصص
+  jobTitle           String? // الوظيفة الحالية
   company            String?
-  experienceYears    String?   // نطاق سنوات الخبرة (مثل 4-7)
-  careerGoal         String?   // الهدف المهني — يختلف عن هدف التعلم goalAr
-  interests          Json?     // string[] اهتماماته
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  experienceYears    String? // نطاق سنوات الخبرة (مثل 4-7)
+  careerGoal         String? // الهدف المهني — يختلف عن هدف التعلم goalAr
+  interests          Json? // string[] اهتماماته
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Lead {
-  id            String   @id @default(uuid()) @db.Uuid
-  fullName      String
-  email         String?
-  phone         String?
-  source        String   @default("site") // diagnostic | site | referral | business
-  status        String   @default("new") // new | converted | archived
-  userId        String?  @db.Uuid // يُربط عند إنشاء الحساب
+  id                 String        @id @default(uuid()) @db.Uuid
+  fullName           String
+  email              String?
+  phone              String?
+  source             String        @default("site") // diagnostic | site | referral | business
+  status             String        @default("new") // new | converted | archived
+  userId             String?       @db.Uuid // يُربط عند إنشاء الحساب
   diagnosticSnapshot Json? // نتيجة تشخيص الضيف قبل إنشاء الحساب
-  createdAt     DateTime @default(now())
-  user          User?    @relation("LeadUser", fields: [userId], references: [id])
-  cases         AdvisorCase[]
+  createdAt          DateTime      @default(now())
+  user               User?         @relation("LeadUser", fields: [userId], references: [id])
+  cases              AdvisorCase[]
+
   @@index([status, createdAt])
 }
 
 model AdvisorCase {
-  id             String   @id @default(uuid()) @db.Uuid
-  leadId         String?  @db.Uuid
-  clientId       String?  @db.Uuid // حساب العميل إن وُجد
-  status         String   @default("new") // new | contacted | needs_review | follow_up | recommended | enrolled | not_interested | closed
-  nextAction     String?  // الإجراء التالي المقترح
-  nextFollowUpAt DateTime?
+  id                 String              @id @default(uuid()) @db.Uuid
+  leadId             String?             @db.Uuid
+  clientId           String?             @db.Uuid // حساب العميل إن وُجد
+  status             String              @default("new") // new | contacted | needs_review | follow_up | recommended | enrolled | not_interested | closed
+  nextAction         String? // الإجراء التالي المقترح
+  nextFollowUpAt     DateTime?
   diagnosticSnapshot Json? // نتيجة التشخيص + decision_trace بصياغة مفهومة
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  lead           Lead?    @relation(fields: [leadId], references: [id])
-  client         User?    @relation("CaseClient", fields: [clientId], references: [id])
-  assignments    AdvisorAssignment[]
-  notes          AdvisorNote[]
-  tasks          AdvisorTask[]
-  followUps      FollowUp[]
-  contactEvents  ContactEvent[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  lead               Lead?               @relation(fields: [leadId], references: [id])
+  client             User?               @relation("CaseClient", fields: [clientId], references: [id])
+  assignments        AdvisorAssignment[]
+  notes              AdvisorNote[]
+  tasks              AdvisorTask[]
+  followUps          FollowUp[]
+  contactEvents      ContactEvent[]
+
   @@index([status, updatedAt])
 }
 
 model AdvisorAssignment {
-  id          String   @id @default(uuid()) @db.Uuid
-  caseId      String   @db.Uuid
-  advisorId   String   @db.Uuid
-  assignedBy  String?  @db.Uuid
-  assignedAt  DateTime @default(now())
+  id           String      @id @default(uuid()) @db.Uuid
+  caseId       String      @db.Uuid
+  advisorId    String      @db.Uuid
+  assignedBy   String?     @db.Uuid
+  assignedAt   DateTime    @default(now())
   unassignedAt DateTime? // التعيين النشط هو ما لم يُلغَ
-  case        AdvisorCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  advisor     User        @relation("CaseAdvisor", fields: [advisorId], references: [id])
+  case         AdvisorCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  advisor      User        @relation("CaseAdvisor", fields: [advisorId], references: [id])
+
   @@index([advisorId, unassignedAt])
 }
 
 model AdvisorNote {
-  id        String   @id @default(uuid()) @db.Uuid
-  caseId    String   @db.Uuid
-  authorId  String?  @db.Uuid
-  body      String   // داخلية — لا تظهر للعميل أبدا
-  createdAt DateTime @default(now())
+  id        String      @id @default(uuid()) @db.Uuid
+  caseId    String      @db.Uuid
+  authorId  String?     @db.Uuid
+  body      String // داخلية — لا تظهر للعميل أبدا
+  createdAt DateTime    @default(now())
   case      AdvisorCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
   @@index([caseId, createdAt])
 }
 
 model AdvisorTask {
-  id        String   @id @default(uuid()) @db.Uuid
-  caseId    String   @db.Uuid
+  id        String      @id @default(uuid()) @db.Uuid
+  caseId    String      @db.Uuid
   title     String
   dueAt     DateTime?
-  status    String   @default("open") // open | done
-  createdBy String?  @db.Uuid
+  status    String      @default("open") // open | done
+  createdBy String?     @db.Uuid
   doneAt    DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime    @default(now())
   case      AdvisorCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
   @@index([caseId, status])
 }
 
 model FollowUp {
-  id          String   @id @default(uuid()) @db.Uuid
-  caseId      String   @db.Uuid
+  id          String      @id @default(uuid()) @db.Uuid
+  caseId      String      @db.Uuid
   scheduledAt DateTime
-  channel     String   @default("whatsapp") // whatsapp | email | phone
-  outcome     String?  // reached | no_answer | rescheduled
+  channel     String      @default("whatsapp") // whatsapp | email | phone
+  outcome     String? // reached | no_answer | rescheduled
   note        String?
-  createdBy   String?  @db.Uuid
+  createdBy   String?     @db.Uuid
   doneAt      DateTime?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime    @default(now())
   case        AdvisorCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
   @@index([caseId, scheduledAt])
 }
 
 model ContactEvent {
-  id        String   @id @default(uuid()) @db.Uuid
-  caseId    String   @db.Uuid
-  channel   String   // whatsapp | email | phone | in_app
-  direction String   @default("out") // out | in
+  id        String      @id @default(uuid()) @db.Uuid
+  caseId    String      @db.Uuid
+  channel   String // whatsapp | email | phone | in_app
+  direction String      @default("out") // out | in
   summary   String
-  createdBy String?  @db.Uuid
-  createdAt DateTime @default(now())
+  createdBy String?     @db.Uuid
+  createdAt DateTime    @default(now())
   case      AdvisorCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
   @@index([caseId, createdAt])
 }
 
-/* ── السير الذاتية — رفع اختياري بموافقة صريحة، تخزين خاص،
-   سجل مشاهدة عبر التدقيق، لا تُرسل لأي ذكاء اصطناعي، حذف وفق السياسة ── */
+/**
+ * ── السير الذاتية — رفع اختياري بموافقة صريحة، تخزين خاص،
+ * سجل مشاهدة عبر التدقيق، لا تُرسل لأي ذكاء اصطناعي، حذف وفق السياسة ──
+ */
 
 model ConsentRecord {
-  id          String   @id @default(uuid()) @db.Uuid
-  userId      String   @db.Uuid
-  kind        String   // cv_upload | marketing | terms
-  textVersion String   // نسخة نص الموافقة الذي وافق عليها
+  id          String         @id @default(uuid()) @db.Uuid
+  userId      String         @db.Uuid
+  kind        String // cv_upload | marketing | terms
+  textVersion String // نسخة نص الموافقة الذي وافق عليها
   ip          String?
-  grantedAt   DateTime @default(now())
+  grantedAt   DateTime       @default(now())
   revokedAt   DateTime?
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   cvs         CvSubmission[]
+
   @@index([userId, kind])
 }
 
 model CvSubmission {
-  id           String   @id @default(uuid()) @db.Uuid
-  userId       String   @db.Uuid
-  consentId    String   @db.Uuid // موافقة إلزامية مرتبطة
-  storageKey   String   // خاص — لا يكشف إلا برابط موقع بعد فحص الصلاحية
+  id           String        @id @default(uuid()) @db.Uuid
+  userId       String        @db.Uuid
+  consentId    String        @db.Uuid // موافقة إلزامية مرتبطة
+  storageKey   String // خاص — لا يكشف إلا برابط موقع بعد فحص الصلاحية
   originalName String
   mime         String
   sizeBytes    Int
-  status       String   @default("active") // active | deleted
+  status       String        @default("active") // active | deleted
   deletedAt    DateTime?
-  createdAt    DateTime @default(now())
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime      @default(now())
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   consent      ConsentRecord @relation(fields: [consentId], references: [id])
+
   @@index([userId, status])
 }
 
-/* ── التسجيل والمدفوعات — طلب تسجيل → حجز مقعد → طلب → فاتورة → دفعة → تسجيل.
-   وضع اختبار فقط حتى قرار المالك بالمزود؛ رجوع المتصفح ليس دليل دفع ── */
+/**
+ * ── التسجيل والمدفوعات — طلب تسجيل → حجز مقعد → طلب → فاتورة → دفعة → تسجيل.
+ * وضع اختبار فقط حتى قرار المالك بالمزود؛ رجوع المتصفح ليس دليل دفع ──
+ */
 
 model EnrollmentRequest {
-  id         String   @id @default(uuid()) @db.Uuid
-  userId     String   @db.Uuid
-  cohortId   String   @db.Uuid
-  pathwayId  String?
-  status     String   @default("pending") // pending | seat_held | rejected | converted | cancelled
-  note       String?
-  decidedBy  String?  @db.Uuid
-  decidedAt  DateTime?
-  orderId    String?  @db.Uuid
-  createdAt  DateTime @default(now())
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  cohort     Cohort   @relation(fields: [cohortId], references: [id])
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  cohortId  String    @db.Uuid
+  pathwayId String?
+  status    String    @default("pending") // pending | seat_held | rejected | converted | cancelled
+  note      String?
+  decidedBy String?   @db.Uuid
+  decidedAt DateTime?
+  orderId   String?   @db.Uuid
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cohort    Cohort    @relation(fields: [cohortId], references: [id])
+
   @@unique([userId, cohortId])
   @@index([cohortId, status])
 }
 
 model SubscriptionPlan {
-  id             String   @id @default(uuid()) @db.Uuid
-  code           String   @unique // monthly | yearly ...
+  id             String         @id @default(uuid()) @db.Uuid
+  code           String         @unique // monthly | yearly ...
   nameAr         String
   descriptionAr  String?
-  price          Decimal  @db.Decimal(10, 2)
-  currency       String   @default("JOD")
-  intervalMonths Int      @default(1)
-  features       Json     @default("[]")
-  active         Boolean  @default(true)
+  price          Decimal        @db.Decimal(10, 2)
+  currency       String         @default("JOD")
+  intervalMonths Int            @default(1)
+  features       Json           @default("[]")
+  active         Boolean        @default(true)
   subscriptions  Subscription[]
 }
 
 model Subscription {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @db.Uuid
-  planId    String   @db.Uuid
-  status    String   @default("active") // active | cancelled | expired
-  startedAt DateTime @default(now())
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @db.Uuid
+  planId    String           @db.Uuid
+  status    String           @default("active") // active | cancelled | expired
+  startedAt DateTime         @default(now())
   endsAt    DateTime?
-  orderId   String?  @db.Uuid
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderId   String?          @db.Uuid
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   plan      SubscriptionPlan @relation(fields: [planId], references: [id])
+
   @@index([userId, status])
 }
 
 model Coupon {
-  id         String   @id @default(uuid()) @db.Uuid
-  code       String   @unique
-  percentOff Int?     // 1-100
-  amountOff  Decimal? @db.Decimal(10, 2)
-  currency   String?  // لازم مع amountOff
+  id         String    @id @default(uuid()) @db.Uuid
+  code       String    @unique
+  percentOff Int? // 1-100
+  amountOff  Decimal?  @db.Decimal(10, 2)
+  currency   String? // لازم مع amountOff
   maxUses    Int?
-  usedCount  Int      @default(0)
+  usedCount  Int       @default(0)
   expiresAt  DateTime?
-  active     Boolean  @default(true)
+  active     Boolean   @default(true)
   orders     Order[]
 }
 
 model Order {
-  id         String   @id @default(uuid()) @db.Uuid
-  userId     String   @db.Uuid
-  status     String   @default("pending_payment") // pending_payment | paid | cancelled | partially_refunded | refunded
-  subtotal   Decimal  @db.Decimal(10, 2)
-  discount   Decimal  @default(0) @db.Decimal(10, 2)
-  total      Decimal  @db.Decimal(10, 2)
-  currency   String   @default("JOD")
-  couponId   String?  @db.Uuid
-  paidAt     DateTime?
-  createdAt  DateTime @default(now())
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  coupon     Coupon?  @relation(fields: [couponId], references: [id])
-  items      OrderItem[]
-  invoice    Invoice?
+  id        String      @id @default(uuid()) @db.Uuid
+  userId    String      @db.Uuid
+  status    String      @default("pending_payment") // pending_payment | paid | cancelled | partially_refunded | refunded
+  subtotal  Decimal     @db.Decimal(10, 2)
+  discount  Decimal     @default(0) @db.Decimal(10, 2)
+  total     Decimal     @db.Decimal(10, 2)
+  currency  String      @default("JOD")
+  couponId  String?     @db.Uuid
+  paidAt    DateTime?
+  createdAt DateTime    @default(now())
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coupon    Coupon?     @relation(fields: [couponId], references: [id])
+  items     OrderItem[]
+  invoice   Invoice?
+
   @@index([userId, status])
 }
 
 model OrderItem {
   id        String  @id @default(uuid()) @db.Uuid
   orderId   String  @db.Uuid
-  kind      String  // course | cohort | pathway | subscription
-  refId     String  // معرف الدورة/الشعبة/المسار/الخطة
-  titleAr   String  // لقطة وقت الشراء
+  kind      String // course | cohort | pathway | subscription
+  refId     String // معرف الدورة/الشعبة/المسار/الخطة
+  titleAr   String // لقطة وقت الشراء
   unitPrice Decimal @db.Decimal(10, 2)
   quantity  Int     @default(1)
   order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
 
 model Invoice {
-  id        String   @id @default(uuid()) @db.Uuid
-  number    String   @unique // WJ-INV-YYYY-#####
-  orderId   String   @unique @db.Uuid
-  amount    Decimal  @db.Decimal(10, 2)
-  currency  String   @default("JOD")
-  status    String   @default("issued") // issued | paid | void
-  issuedAt  DateTime @default(now())
-  paidAt    DateTime?
-  order     Order    @relation(fields: [orderId], references: [id])
-  payments  Payment[]
+  id       String    @id @default(uuid()) @db.Uuid
+  number   String    @unique // WJ-INV-YYYY-#####
+  orderId  String    @unique @db.Uuid
+  amount   Decimal   @db.Decimal(10, 2)
+  currency String    @default("JOD")
+  status   String    @default("issued") // issued | paid | void
+  issuedAt DateTime  @default(now())
+  paidAt   DateTime?
+  order    Order     @relation(fields: [orderId], references: [id])
+  payments Payment[]
 }
 
 model Payment {
-  id             String   @id @default(uuid()) @db.Uuid
-  invoiceId      String   @db.Uuid
-  provider       String   // test | manual — لا مزود نهائي دون قرار المالك
-  amount         Decimal  @db.Decimal(10, 2)
-  currency       String   @default("JOD")
-  status         String   @default("pending") // pending | succeeded | failed | partially_refunded | refunded
-  providerRef    String?  // مرجع المزود — لا بيانات بطاقات أبدا
-  idempotencyKey String   @unique // يمنع تسجيل الدفعة مرتين
-  methodNote     String?  // «تحويل بنكي»، «كاش»... للدفع اليدوي
-  recordedBy     String?  @db.Uuid // من سجل الدفعة اليدوية
-  createdAt      DateTime @default(now())
+  id             String    @id @default(uuid()) @db.Uuid
+  invoiceId      String    @db.Uuid
+  provider       String // test | manual — لا مزود نهائي دون قرار المالك
+  amount         Decimal   @db.Decimal(10, 2)
+  currency       String    @default("JOD")
+  status         String    @default("pending") // pending | succeeded | failed | partially_refunded | refunded
+  providerRef    String? // مرجع المزود — لا بيانات بطاقات أبدا
+  idempotencyKey String    @unique // يمنع تسجيل الدفعة مرتين
+  methodNote     String? // «تحويل بنكي»، «كاش»... للدفع اليدوي
+  recordedBy     String?   @db.Uuid // من سجل الدفعة اليدوية
+  createdAt      DateTime  @default(now())
   succeededAt    DateTime?
-  invoice        Invoice  @relation(fields: [invoiceId], references: [id])
+  invoice        Invoice   @relation(fields: [invoiceId], references: [id])
   refunds        Refund[]
+
   @@index([invoiceId, status])
 }
 
 model PaymentWebhookEvent {
-  id          String   @id @default(uuid()) @db.Uuid
+  id          String    @id @default(uuid()) @db.Uuid
   provider    String
-  eventId     String   // معرف الحدث عند المزود
+  eventId     String // معرف الحدث عند المزود
   payload     Json
   processedAt DateTime?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
+
   @@unique([provider, eventId]) // idempotency — الحدث المكرر يُتجاهل
 }
 
 model Refund {
-  id          String   @id @default(uuid()) @db.Uuid
-  paymentId   String   @db.Uuid
-  amount      Decimal  @db.Decimal(10, 2)
+  id          String    @id @default(uuid()) @db.Uuid
+  paymentId   String    @db.Uuid
+  amount      Decimal   @db.Decimal(10, 2)
   reason      String
-  status      String   @default("pending") // pending | processed | rejected
-  requestedBy String?  @db.Uuid
-  approvedBy  String?  @db.Uuid // صلاحية مالية مستقلة
+  status      String    @default("pending") // pending | processed | rejected
+  requestedBy String?   @db.Uuid
+  approvedBy  String?   @db.Uuid // صلاحية مالية مستقلة
   processedAt DateTime?
-  createdAt   DateTime @default(now())
-  payment     Payment  @relation(fields: [paymentId], references: [id])
+  createdAt   DateTime  @default(now())
+  payment     Payment   @relation(fields: [paymentId], references: [id])
 }
 
-/* ── الإشعارات — داخل المنصة الآن؛ البريد وWhatsApp عند توفر المزود.
-   لا إرسال حقيقي في التطوير؛ النجاح والفشل وإعادة المحاولة مسجلة ── */
+/**
+ * ── الإشعارات — داخل المنصة الآن؛ البريد وWhatsApp عند توفر المزود.
+ * لا إرسال حقيقي في التطوير؛ النجاح والفشل وإعادة المحاولة مسجلة ──
+ */
 
 model NotificationTemplate {
-  id      String @id @default(uuid()) @db.Uuid
+  id      String  @id @default(uuid()) @db.Uuid
   key     String // enrollment.confirmed | certificate.issued ...
   channel String // in_app | email | whatsapp | sms
   titleAr String
   bodyAr  String // متغيرات {{name}} {{course}} ...
   active  Boolean @default(true)
+
   @@unique([key, channel])
 }
 
 model Notification {
-  id          String   @id @default(uuid()) @db.Uuid
-  userId      String   @db.Uuid
-  channel     String   @default("in_app")
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @db.Uuid
+  channel     String    @default("in_app")
   templateKey String?
   title       String
   body        String
   data        Json?
-  status      String   @default("queued") // queued | sent | failed | read
-  attempts    Int      @default(0)
+  status      String    @default("queued") // queued | sent | failed | read
+  attempts    Int       @default(0)
   lastError   String?
-  queuedAt    DateTime @default(now())
+  queuedAt    DateTime  @default(now())
   sentAt      DateTime?
   readAt      DateTime?
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId, status, queuedAt])
 }
 
-/* ── الدعم — تذاكر برسائل وتعيين وسجل حالات؛ دور support يرى الحد الأدنى ── */
+/**
+ * ── الدعم — تذاكر برسائل وتعيين وسجل حالات؛ دور support يرى الحد الأدنى ──
+ */
 
 model SupportTicket {
-  id         String   @id @default(uuid()) @db.Uuid
-  userId     String   @db.Uuid
-  subject    String
-  category   String   @default("other") // technical | billing | learning | other
-  priority   String   @default("normal") // low | normal | high | urgent
-  status     String   @default("open") // open | pending | resolved | closed | reopened
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  closedAt   DateTime?
-  user       User     @relation("TicketOwner", fields: [userId], references: [id])
-  messages   SupportMessage[]
-  assignments TicketAssignment[]
+  id            String                @id @default(uuid()) @db.Uuid
+  userId        String                @db.Uuid
+  subject       String
+  category      String                @default("other") // technical | billing | learning | other
+  priority      String                @default("normal") // low | normal | high | urgent
+  status        String                @default("open") // open | pending | resolved | closed | reopened
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  closedAt      DateTime?
+  user          User                  @relation("TicketOwner", fields: [userId], references: [id])
+  messages      SupportMessage[]
+  assignments   TicketAssignment[]
   statusHistory TicketStatusHistory[]
+
   @@index([status, priority, updatedAt])
 }
 
 model SupportMessage {
-  id        String   @id @default(uuid()) @db.Uuid
-  ticketId  String   @db.Uuid
-  authorId  String?  @db.Uuid
+  id        String        @id @default(uuid()) @db.Uuid
+  ticketId  String        @db.Uuid
+  authorId  String?       @db.Uuid
   body      String
-  internal  Boolean  @default(false) // داخلية لا تظهر لمقدم التذكرة
-  createdAt DateTime @default(now())
+  internal  Boolean       @default(false) // داخلية لا تظهر لمقدم التذكرة
+  createdAt DateTime      @default(now())
   ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
   @@index([ticketId, createdAt])
 }
 
 model TicketAssignment {
-  id           String   @id @default(uuid()) @db.Uuid
-  ticketId     String   @db.Uuid
-  agentId      String   @db.Uuid
-  assignedBy   String?  @db.Uuid
-  assignedAt   DateTime @default(now())
+  id           String        @id @default(uuid()) @db.Uuid
+  ticketId     String        @db.Uuid
+  agentId      String        @db.Uuid
+  assignedBy   String?       @db.Uuid
+  assignedAt   DateTime      @default(now())
   unassignedAt DateTime?
   ticket       SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
   @@index([agentId, unassignedAt])
 }
 
 model TicketStatusHistory {
-  id         String   @id @default(uuid()) @db.Uuid
-  ticketId   String   @db.Uuid
+  id         String        @id @default(uuid()) @db.Uuid
+  ticketId   String        @db.Uuid
   fromStatus String?
   toStatus   String
-  changedBy  String?  @db.Uuid
+  changedBy  String?       @db.Uuid
   note       String?
-  createdAt  DateTime @default(now())
+  createdAt  DateTime      @default(now())
   ticket     SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
   @@index([ticketId, createdAt])
 }
 
-/* ── الإعدادات — القيم الحساسة (مفاتيح) تبقى في البيئة ولا تُخزن هنا ── */
+/**
+ * ── الإعدادات — القيم الحساسة (مفاتيح) تبقى في البيئة ولا تُخزن هنا ──
+ */
 
 model SystemSetting {
   key       String   @id
@@ -1835,9 +1994,11 @@ model IntegrationSetting {
   updatedAt DateTime @updatedAt
 }
 
-/* ═══════════ تحليلات الرحلة وبطاقة رأي التشخيص ═══════════
-   أحداث بلا أي نص حر (التحقق في طبقة المسارات): أرقام ورموز فقط.
-   anonId يميز الجهاز قبل التسجيل، ويُربط بالحساب عبر أول حدث بعده. */
+/**
+ * ═══════════ تحليلات الرحلة وبطاقة رأي التشخيص ═══════════
+ * أحداث بلا أي نص حر (التحقق في طبقة المسارات): أرقام ورموز فقط.
+ * anonId يميز الجهاز قبل التسجيل، ويُربط بالحساب عبر أول حدث بعده.
+ */
 
 model AnalyticsEvent {
   id        String   @id @default(uuid()) @db.Uuid
@@ -1846,6 +2007,7 @@ model AnalyticsEvent {
   anonId    String?
   userId    String?  @db.Uuid
   createdAt DateTime @default(now())
+
   @@index([event, createdAt])
   @@index([anonId])
 }
@@ -1858,6 +2020,7 @@ model DiagnosticFeedback {
   note      String?
   userId    String?  @db.Uuid
   createdAt DateTime @default(now())
+
   @@index([sessionId])
   @@index([createdAt])
 }

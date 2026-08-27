@@ -72,7 +72,9 @@ export async function buildSnapshotFromDb(
   const courses = await prisma.course.findMany({
     where: { status: { in: visible } },
     include: {
-      versions: { orderBy: { version: 'desc' }, take: 1 },
+      /* المشروع الختامي معلَّق على إصدار الدورة — بلا جلبه يخرج
+         summative_assessment_ar فارغا من اللقطة بينما نصه محفوظ في القاعدة. */
+      versions: { orderBy: { version: 'desc' }, take: 1, include: { project: true } },
       skillLinks: { include: { skill: true } },
       pathwayLinks: { orderBy: { sequence: 'asc' } },
     },
@@ -86,6 +88,9 @@ export async function buildSnapshotFromDb(
       sequence: home?.sequence ?? 1,
       title_ar: v?.titleAr ?? '',
       subtitle_ar: v?.shortPromiseAr ?? undefined,
+      /* نص المشروع الختامي — يقرؤه المتعلم في صفحة الدورة وبطاقة الخطة */
+      summative_assessment_ar: v?.project?.descriptionAr ?? undefined,
+      practical_project_ar: v?.project?.descriptionAr ?? undefined,
       level_ar: v?.levelAr ?? undefined,
       total_hours: v?.totalHours ?? 0,
       skill_ids: c.skillLinks.map((l) => l.skillId),
@@ -300,9 +305,10 @@ export async function buildSnapshotFromDb(
    مرجع منهجي يُذكر للمتعلم. وبلا ذلك كانت مراجع O*NET وESCO وDigComp **لا
    تظهر في الإنتاج إطلاقا** وتظهر على الحزمة المضمنة وحدها — عيبٌ صامت كشفه
    قياس الحزم في هذه الموجة. */
-function skillRow(s: { id: string; slug: string; nameAr: string; familyId: string | null; source: string | null }) {
+function skillRow(s: { id: string; slug: string; nameAr: string; familyId: string | null; familyAr: string | null; source: string | null }) {
   return {
     skill_id: s.id, slug: s.slug, name_ar: s.nameAr, family_id: s.familyId ?? undefined,
+    family_ar: s.familyAr ?? undefined,
     ...(s.source ? { source_frameworks: s.source.split('، ').map((x) => x.trim()).filter(Boolean) } : {}),
   }
 }
