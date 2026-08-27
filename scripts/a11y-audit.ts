@@ -50,12 +50,14 @@ interface PageSpec {
   labelAr: string
   /** حساب يُدخَل قبل الزيارة — الصفحات العامة بلا حساب */
   as?: 'learner' | 'admin'
+  /** مُنتقٍ يثبت أن المحتوى المُدار بالبيانات رُسم فعلا — انظر waitForContent */
+  readySel?: string
 }
 
 /* صفحات مختارة تغطي الأدوار والأنماط: عامة · نموذج · بوابة متعلم · إدارة */
 const PAGES: PageSpec[] = [
-  { path: '/', labelAr: 'الرئيسية' },
-  { path: '/pathways', labelAr: 'المسارات' },
+  { path: '/', labelAr: 'الرئيسية', readySel: 'article' },
+  { path: '/pathways', labelAr: 'المسارات', readySel: 'article' },
   { path: '/diagnostic', labelAr: 'التشخيص' },
   { path: '/auth', labelAr: 'الدخول والتسجيل' },
   { path: '/student', labelAr: 'لوحة المتعلم', as: 'learner' },
@@ -140,6 +142,29 @@ const browser = await chromium.launch(
 )
 const results: Record<string, A11yFinding[]> = {}
 
+/* لا يُقاس ما لم يُرسَم بعد.
+   انتظارٌ ثابت (waitForTimeout) يجعل النتيجة رهن سرعة الجهاز: على عدّاء CI
+   البطيء كانت صفحة المسارات تُقاس قبل وصول كتالوجها فتُعلن «صفر واقعة»، وعلى
+   جهاز أسرع تظهر البطاقات فتظهر معها واقعة تجاوز حقيقية. بوابةٌ تُجيز صفحة لم
+   ترها أسوأ من غياب البوابة: تُطمئن بلا أن تفحص.
+   فالانتظار الآن على دليل: مُنتقٍ للمحتوى المُدار بالبيانات حيث يوجد، وحدٌّ
+   أدنى للنص في كل صفحة. وتعذّر بلوغه يُسقط الفحص بدل أن يُعلنه نظيفا. */
+const MIN_TEXT = 400
+const CONTENT_TIMEOUT_MS = 25_000
+
+async function waitForContent(page: Page, spec: PageSpec): Promise<void> {
+  if (spec.readySel) {
+    await page.waitForSelector(spec.readySel, { state: 'visible', timeout: CONTENT_TIMEOUT_MS })
+  }
+  await page.waitForFunction(
+    (min) => (document.body?.innerText ?? '').trim().length >= min,
+    MIN_TEXT,
+    { timeout: CONTENT_TIMEOUT_MS },
+  )
+  /* هدأة قصيرة بعد ظهور المحتوى: التخطيط يستقر بعد الرسم الأول */
+  await page.waitForTimeout(600)
+}
+
 const SELECTED = SET === 'public' ? PAGES.filter((p) => !p.as) : PAGES
 
 for (const spec of SELECTED) {
@@ -150,7 +175,7 @@ for (const spec of SELECTED) {
   try {
     if (spec.as) await login(page, spec.as)
     await page.goto(`${BASE}${spec.path}`, { waitUntil: 'networkidle' })
-    await page.waitForTimeout(1200)
+    await waitForContent(page, spec)
     const findings = [
       ...(await page.evaluate('window.__a11y.names()') as A11yFinding[]),
       ...(await focusWalk(page)),
@@ -160,8 +185,8 @@ for (const spec of SELECTED) {
     const byRule = findings.reduce<Record<string, number>>((a, f) => ({ ...a, [f.rule]: (a[f.rule] ?? 0) + 1 }), {})
     console.log(`${findings.length === 0 ? '✅' : '⚠ '} ${spec.labelAr.padEnd(18)} ${findings.length} واقعة ${JSON.stringify(byRule)}`)
   } catch (e) {
-    console.error(`✗ ${spec.labelAr}: ${String(e).slice(0, 120)}`)
-    results[spec.labelAr] = [{ rule: 'landmark', target: spec.path, impactAr: `تعذّر فحص الصفحة: ${String(e).slice(0, 80)}` }]
+    console.error(`✗ ${spec.labelAr}: ${String(e).slice(0, 160)}`)
+    results[spec.labelAr] = [{ rule: 'landmark', target: spec.path, impactAr: `تعذّر فحص الصفحة: ${String(e).slice(0, 120)}` }]
   }
   await ctx.close()
 }

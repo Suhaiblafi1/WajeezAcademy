@@ -43,7 +43,9 @@ function RefCard({ id }: { id: string }) {
         href={ref.source_url}
         target="_blank"
         rel="noreferrer"
-        className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-teal-light-ink transition hover:text-white"
+        /* min-h و py: مساحة اللمس لا تقل عن ٢٤×٢٤ (WCAG 2.5.8) — النص وحده
+           كان ١٦ بكسل ارتفاعا، أصغر مما تطاله الإصبع بثقة. */
+        className="mt-3 inline-flex min-h-[24px] items-center gap-1.5 py-1 text-xs font-bold text-teal-light-ink transition hover:text-white"
       >
         المصدر الأصلي
         <ExternalLink className="h-3 w-3" />

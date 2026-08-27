@@ -78,12 +78,14 @@ export default function Verify() {
             placeholder="WJ-CERT-2026-…"
             dir="ltr"
             aria-label="رقم الشهادة"
-            className="flex-1 rounded-xl border border-white/15 bg-black/30 px-4 py-3 font-mono text-sm text-white placeholder:text-white/25 focus:border-teal focus:outline-none"
+            /* min-w-0: عنصر flex لا ينكمش دون عرض محتواه ما لم يُسمح له،
+               وحقل النص هنا كان يدفع زر البحث خارج الشاشة الضيقة. */
+            className="min-w-0 flex-1 rounded-xl border border-white/15 bg-black/30 px-4 py-3 font-mono text-sm text-white placeholder:text-white/25 focus:border-teal focus:outline-none"
           />
           <button
             type="submit"
             disabled={state.kind === "loading"}
-            className="cursor-pointer rounded-xl bg-teal px-5 text-on-teal transition hover:bg-teal-light disabled:opacity-50"
+            className="grid shrink-0 place-items-center rounded-xl bg-teal px-5 py-3 text-on-teal transition hover:bg-teal-light disabled:opacity-50"
             aria-label="تحقق"
           >
             {state.kind === "loading" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}

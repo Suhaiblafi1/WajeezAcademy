@@ -190,9 +190,11 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
           {shownPathways.map((p) => (
             <article
               key={p.id}
-              className="group flex flex-col rounded-3xl border border-white/10 bg-white/[0.03] p-6 transition hover:border-teal/40 hover:shadow-[0_20px_60px_-30px_rgba(56,167,180,0.4)]"
+              className="group flex min-w-0 flex-col rounded-3xl border border-white/10 bg-white/[0.03] p-6 transition hover:border-teal/40 hover:shadow-[0_20px_60px_-30px_rgba(56,167,180,0.4)]"
             >
-              <div className="flex items-center gap-2">
+              {/* يلتف: صفٌّ لا يلتف يفرض عرض محتواه على البطاقة مهما ضاقت الشاشة،
+                  فتخرج البطاقة خارج شبكتها ويظهر تمرير أفقي عند التكبير. */}
+              <div className="flex flex-wrap items-center gap-2">
                 {bestsellerIds.has(p.id) && (
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-gold/10 px-3 py-1 text-[11px] font-bold text-gold-ink">
                     <Flame className="h-3 w-3" />
@@ -208,9 +210,10 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
               <div className="mt-3 text-xs text-white/45">
                 {weeksLabel(p.durationWeeks)} · {p.weeklyHours} أسبوعيا
               </div>
-              <div className="mt-2 flex items-center gap-1.5 text-[11px] leading-5 text-white/45">
-                <Users className="h-3.5 w-3.5 shrink-0 text-teal-ink" />
-                {pathwayTrainers(p.id).map((t) => t.name).join('، ')}
+              <div className="mt-2 flex items-start gap-1.5 text-[11px] leading-5 text-white/45">
+                <Users className="mt-0.5 h-3.5 w-3.5 shrink-0 text-teal-ink" />
+                {/* min-w-0 يسمح للاسم الطويل بالانكماش والالتفاف بدل دفع البطاقة */}
+                <span className="min-w-0 break-words">{pathwayTrainers(p.id).map((t) => t.name).join('، ')}</span>
               </div>
               <div className="mt-auto pt-5">
                 <Link

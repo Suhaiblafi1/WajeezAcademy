@@ -147,7 +147,7 @@ export default function SiteShell({ children }: { children: React.ReactNode }) {
             <span key={loc.label}>
               {i > 0 && ' · '}
               {loc.href ? (
-                <a href={loc.href} target="_blank" rel="noreferrer" className="transition hover:text-teal-light-ink">{loc.label}</a>
+                <a href={loc.href} target="_blank" rel="noreferrer" className="inline-flex min-h-[24px] items-center py-1 transition hover:text-teal-light-ink">{loc.label}</a>
               ) : (
                 loc.label
               )}
@@ -155,7 +155,7 @@ export default function SiteShell({ children }: { children: React.ReactNode }) {
           ))}
         </div>
         <div className="mt-2">
-          <Link to="/methodology" className="font-semibold text-white/50 transition hover:text-teal-light-ink">
+          <Link to="/methodology" className="inline-flex min-h-[24px] items-center py-1 font-semibold text-white/50 transition hover:text-teal-light-ink">
             منهجية وجيز
           </Link>
         </div>
