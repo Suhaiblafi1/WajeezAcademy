@@ -39,6 +39,10 @@ export interface ImportStats {
   catalogVersionId: string
   catalogVersionCreated: boolean
   snapshotHash: string
+  /** بصمة ملفات المستودع الآن — تُقارن باللقطة المنشورة لكشف الانحراف */
+  repoSnapshotHash: string
+  /** اللقطة المنشورة لا تطابق ملفات المستودع: الجداول حُدِّثت والمحرك ما زال يقرأ القديم */
+  snapshotStale: boolean
 }
 
 /* ── أنواع مصادر JSON ── */
@@ -449,30 +453,49 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
     create: { version: 1, rules: { source: 'composite-templates.v1.json', variant_policy: 'starter|full|extended' }, status: 'published', publishedAt: new Date() },
   })
 
-  /* 10) إصدار الكتالوج الأول + اللقطة المجمدة التي يقرأها المحرك */
+  /* 10) إصدار الكتالوج الأول + اللقطة المجمدة التي يقرأها المحرك.
+
+     اللقطة تُبنى مرة واحدة عند أول استيراد فقط، لأن تسمية الإصدار ثابتة. وهذا
+     مقصود: النشر إلى منصة حيّة يمرّ بلوحة النشر (مسودة ← تحقق ← تحليل أثر على
+     12 شخصية ← نشر ذرّي ← تراجع)، ولا يجوز أن يستبدلها استيراد من سطر الأوامر.
+
+     لكن الصمت كان الخطأ: الاستيراد يحدّث الجداول ثم يُنهي بـ«✅ اكتمل» بينما
+     المحرك ما زال يقرأ لقطة قديمة — فيظن المشغّل أن التغيير وصل المستخدم وهو لم
+     يصل. نقارن الآن بصمة ملفات المستودع باللقطة المنشورة ونرفع العلم صراحة. */
+  const snapshotPayload = {
+    questions: questionsFile,
+    skills: skillsFile,
+    coreCatalog: core,
+    templates: templatesFile,
+    optionEffects,
+    pathwayProfiles,
+    pathwayDomains: { pathway_domains: domainMap },
+  }
+  const repoHash = createHash('sha256').update(JSON.stringify(snapshotPayload)).digest('hex')
+
   let catalogVersion = await prisma.catalogVersion.findUnique({ where: { label: IMPORT_VERSION_LABEL } })
   let created = false
   if (!catalogVersion) {
-    const snapshotPayload = {
-      questions: questionsFile,
-      skills: skillsFile,
-      coreCatalog: core,
-      templates: templatesFile,
-      optionEffects,
-      pathwayProfiles,
-      pathwayDomains: { pathway_domains: domainMap },
-    }
-    const hash = createHash('sha256').update(JSON.stringify(snapshotPayload)).digest('hex')
     catalogVersion = await prisma.catalogVersion.create({
       data: {
         label: IMPORT_VERSION_LABEL, status: 'published', publishedAt: new Date(),
-        snapshots: { create: { payload: snapshotPayload, payloadHash: hash } },
-        events: { create: { action: 'publish', details: { source: 'import-catalog', hash } } },
+        snapshots: { create: { payload: snapshotPayload, payloadHash: repoHash } },
+        events: { create: { action: 'publish', details: { source: 'import-catalog', hash: repoHash } } },
       },
     })
     created = true
   }
   const snapshot = await prisma.catalogSnapshot.findFirst({ where: { catalogVersionId: catalogVersion.id } })
+
+  /* اللقطة الفعالة قد تكون من إصدار أحدث نشرته اللوحة — نقارن بالمنشور لا
+     بلقطة الاستيراد وحدها، وإلا صرخنا عند كل نشر سليم. */
+  const publishedNow = await prisma.catalogVersion.findFirst({
+    where: { status: 'published' },
+    orderBy: { publishedAt: 'desc' },
+    include: { snapshots: { orderBy: { createdAt: 'desc' }, take: 1 } },
+  })
+  const liveHash = publishedNow?.snapshots[0]?.payloadHash ?? ''
+  const snapshotStale = !created && liveHash !== repoHash
 
   return {
     pathways: pathways.length, courses: courses.length, modules: modules.length,
@@ -482,6 +505,7 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
     pathwayDomains,
     catalogVersionId: catalogVersion.id, catalogVersionCreated: created,
     snapshotHash: snapshot?.payloadHash ?? '',
+    repoSnapshotHash: repoHash, snapshotStale,
   }
 }
 

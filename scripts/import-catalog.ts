@@ -25,6 +25,19 @@ console.log(`   ${s.links} علاقة مرجعية · ${s.diagnosticProfiles} م
 console.log(`   إصدار الكتالوج: ${s.catalogVersionId} ${s.catalogVersionCreated ? '(أُنشئ ونُشر الآن)' : '(موجود — لم يتكرر)'}`)
 console.log(`   بصمة اللقطة: ${s.snapshotHash.slice(0, 16)}…`)
 
+/* الاستيراد يحدّث الجداول، والمحرك يقرأ اللقطة المنشورة. حين يفترقان يظن
+   المشغّل أن تغييره وصل المستخدم وهو لم يصل — فنقولها صراحة ونسمّي الخطوة
+   التالية بدل أن ننهي بـ«اكتمل» مطمئنة. */
+if (s.snapshotStale) {
+  console.log('')
+  console.log('⚠️  الجداول حُدِّثت، واللقطة المنشورة لم تتغيّر — المحرك ما زال يقرأ الكتالوج السابق.')
+  console.log(`   بصمة ملفات المستودع: ${s.repoSnapshotHash.slice(0, 16)}…`)
+  console.log(`   بصمة اللقطة المنشورة: ${s.snapshotHash.slice(0, 16)}…`)
+  console.log('   لا يصل التغيير إلى المستخدم إلا بنشر لقطة جديدة من لوحة النشر:')
+  console.log('   إصدار مسودة ← تحقق بنيوي ← تحليل أثر (12 شخصية) ← نشر ذرّي.')
+  console.log('   والتراجع متاح من اللوحة نفسها إن ساء شيء.')
+}
+
 await disconnectPrisma()
 /* سباق إغلاق معروف عند إيقاف القاعدة المدمجة — رسالة pg الآمنة لا تعني فشلا */
 process.on('uncaughtException', (e) => {
@@ -32,4 +45,4 @@ process.on('uncaughtException', (e) => {
   throw e
 })
 await stopEmbeddedPostgres()
-console.log('✅ اكتمل الاستيراد')
+console.log(s.snapshotStale ? '✅ اكتمل الاستيراد — ويبقى النشر من اللوحة' : '✅ اكتمل الاستيراد')

@@ -49,6 +49,45 @@ describe('استيراد الكتالوج', () => {
     expect(await prisma.catalogSnapshot.count()).toBe(before.s)
   })
 
+  /* اللقطة تُبنى مرة واحدة عند أول استيراد، والمحرك يقرؤها لا الجداول. فاستيراد
+     ثانٍ بعد تعديل ملفات المستودع كان ينتهي بـ«اكتمل» بينما التغيير لم يصل
+     المستخدم — صمتٌ يوهم المشغّل أنه نشر. صار الانحراف يُرفع علمه صراحة. */
+  it('انحراف اللقطة يُكشف: الجداول تُحدَّث والمنشور لا يتغيّر', { timeout: 120_000 }, async () => {
+    const { importCatalog } = await import('../../catalog/importer')
+    const again = await importCatalog(prisma)
+    /* ملفات المستودع لم تتغيّر بين التشغيلين، فالبصمتان تتطابقان ولا انحراف */
+    expect(again.catalogVersionCreated).toBe(false)
+    expect(again.repoSnapshotHash).toBe(again.snapshotHash)
+    expect(again.snapshotStale).toBe(false)
+
+    /* ومحاكاة تعديل محتوى بعد النشر: بصمة مختلفة عن اللقطة المنشورة = انحراف */
+    const live = await prisma.catalogVersion.findFirst({
+      where: { status: 'published' },
+      orderBy: { publishedAt: 'desc' },
+      include: { snapshots: { orderBy: { createdAt: 'desc' }, take: 1 } },
+    })
+    expect(live?.snapshots[0]?.payloadHash).toBe(again.repoSnapshotHash)
+
+    /* والآن الاتجاه الذي يهم: منشورٌ أحدث ببصمة مختلفة — كما يحدث حين تُعدَّل
+       ملفات المستودع بعد آخر نشر. يجب أن يُرفع العلم لا أن يمرّ صامتا. */
+    const drifted = await prisma.catalogVersion.create({
+      data: {
+        label: `test-drift-${Date.now().toString(36)}`,
+        status: 'published',
+        publishedAt: new Date(),
+        snapshots: { create: { payload: { marker: 'drift' }, payloadHash: 'x'.repeat(64) } },
+      },
+    })
+    try {
+      const after = await importCatalog(prisma)
+      expect(after.snapshotStale, 'انحراف حقيقي مرّ بلا علم').toBe(true)
+      expect(after.repoSnapshotHash).not.toBe('x'.repeat(64))
+    } finally {
+      await prisma.catalogSnapshot.deleteMany({ where: { catalogVersionId: drifted.id } })
+      await prisma.catalogVersion.delete({ where: { id: drifted.id } })
+    }
+  })
+
   it('لا تكرار في course_id ولا مراجع مفقودة', async () => {
     const links = await prisma.pathwayCourse.findMany()
     const ids = new Set((await prisma.course.findMany({ select: { id: true } })).map((c) => c.id))
