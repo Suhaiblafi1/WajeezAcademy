@@ -1,0 +1,79 @@
+/* «لماذا هذا السؤال؟» لا يعرض مفردات المحرك الداخلية.
+ *
+ * الأثر التدقيقي يتحدث بلغة بطولته: «فاز أساسًا بسبب»، «المرشح المتصدر»،
+ * «سباق حي». وهي مفردات صحيحة للتقارير، وكاشفة للمتعلم أنه ينظر إلى مخرجات
+ * نظام لا إلى جملة كُتبت له — في اللحظة التي يُفترض أن يثق فيها بالسؤال.
+ *
+ * وهذا الاختبار يمسك الحالة التي لا يمسكها فحص العين: سببا جديدا يضيفه المحرك
+ * غدا بلا ترجمة. القاعدة المحروسة هنا ليست «كل سبب مترجَم» — بل «لا سبب يتسرّب
+ * خامًا»: إما ترجمة، وإما حجب. والصمت مقبول؛ الجرگون لا.
+ */
+
+import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { learnerWhy } from '@/application/diagnostic/assessment-service'
+
+/** مفردات لا يجوز أن تصل إلى شاشة المتعلم بأي حال */
+const FORBIDDEN = /مرشح|المتصدر|الصدارة|سباق|المتحدين|الكيان|entity_id|فاز أساسًا/
+
+/** كل سبب يمكن أن يسجّله المحرك — يُقرأ من مصدره لا من قائمة تُنسى */
+function reasonsInEngine(): string[] {
+  const src = readFileSync('src/domain/diagnostic/v2_1/engine.ts', 'utf8')
+  const out = new Set<string>()
+  /* تذييلات جدول الأسباب: ['يكمل سياقًا حاسمًا للقرار', missingContext] */
+  for (const m of src.matchAll(/\[\s*'([^']{8,80})',\s*[a-zA-Z]/g)) out.add(`فاز أساسًا بسبب: ${m[1]}.`)
+  /* العبارات الكاملة: winnerReason_ar: '...' */
+  for (const m of src.matchAll(/winnerReason_ar:\s*'([^']{10,200})'/g)) out.add(m[1])
+  return [...out]
+}
+
+describe('لماذا هذا السؤال؟ — ترجمة أثر المحرك', () => {
+  it('لا يتسرّب أي سبب من المحرك خامًا إلى المتعلم', () => {
+    const raw = reasonsInEngine()
+    expect(raw.length, 'لم يُقرأ أي سبب من المحرك — تغيّرت صيغته وبطل الفحص').toBeGreaterThan(5)
+
+    const leaked = raw
+      .map((r) => ({ raw: r, shown: learnerWhy(r) }))
+      .filter((x) => x.shown !== null && FORBIDDEN.test(x.shown))
+
+    expect(
+      leaked.map((x) => `«${x.shown}»  ← ${x.raw}`),
+      'أسباب وصلت إلى الشاشة بمفردات المحرك — ترجِمها في WHY_AR أو دعها تُحجب',
+    ).toEqual([])
+  })
+
+  /* الحجب وحده يُرضي الفحص أعلاه: لو انكسر تحليل «فاز أساسًا بسبب» لصار كل سبب
+     null، فلا يتسرّب شيء — ويختفي الشرح كله بصمت ويبقى الفحص أخضر. فيُشترط هنا
+     أن تبقى نسبة معتبرة من أسباب المحرك مترجَمة فعلا لا محجوبة. */
+  it('يبقى أكثر أسباب المحرك مترجَما لا محجوبا', () => {
+    const raw = reasonsInEngine()
+    const shown = raw.map(learnerWhy).filter((s): s is string => s !== null)
+    expect(
+      shown.length,
+      `تُرجم ${shown.length} من ${raw.length} — انكسر التحليل أو حُجب الشرح كله`,
+    ).toBeGreaterThanOrEqual(Math.ceil(raw.length / 2))
+  })
+
+  it('يترجم الأسباب المعروفة إلى لغة المتعلم', () => {
+    expect(learnerWhy('فاز أساسًا بسبب: يفصل غموض المجال.'))
+      .toBe('مجالك ما زال غير محسوم — إجابتك توضّحه.')
+    expect(learnerWhy('مهارة حاسمة للمرشح المتصدر ما زالت مجهولة — لا توصية بلا أي دليل مهاري مقاس.'))
+      .toBe('لا نرشّح مسارًا بلا دليل مهاري واحد على الأقل — وهذا هو.')
+  })
+
+  it('يمرّر عبارات النواة المكتوبة للمتعلم كما هي', () => {
+    const core = 'وقتك الأسبوعي الواقعي يحدد جدوى الخطة وطولها — لا يحدد المجال.'
+    expect(learnerWhy(core)).toBe(core)
+  })
+
+  it('يحجب العام والفارغ بدل أن يملأ الشاشة بلا معنى', () => {
+    expect(learnerWhy('يكمل الصورة العامة.')).toBeNull()
+    expect(learnerWhy('فاز أساسًا بسبب: يستكمل سياقك العام.')).toBeNull()
+    expect(learnerWhy('   ')).toBeNull()
+  })
+
+  it('يحجب سببا جديدا بمفردات بطولة لم تُترجَم بعد', () => {
+    expect(learnerWhy('فاز أساسًا بسبب: يرجّح المرشح المتصدر الجديد.')).toBeNull()
+    expect(learnerWhy('المتصدر الحالي يتقدم في السباق بفارق ضئيل.')).toBeNull()
+  })
+})

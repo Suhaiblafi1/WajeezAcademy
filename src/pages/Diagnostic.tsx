@@ -282,6 +282,107 @@ const VARIANT_AR: Record<CompositeView["variant"], { label: string; hint: string
   extended: { label: "النسخة الموسعة", hint: "الكاملة مع دورات جسرية تربط المجالين" },
 };
 
+export interface ConfidenceParts {
+  coverage: number;
+  consistency: number;
+  separation: number;
+  evidenceQuality: number;
+  stability: number;
+  total?: number;
+}
+
+/* «لماذا هذا المسار» — الوعد الخامس في بطاقة التسجيل، وأول ما يُكشف بعدها.
+   ثلاث طبقات بترتيب ما يسأل عنه القارئ: على أي شيء بُنيت التوصية، وما قوة
+   أدلتها، وما الذي يغيّرها. كلها محسوبة في المحرك من قبل — هذه عرضها فقط. */
+function WhyThisPathway({
+  reasons,
+  confidence,
+  bandAr,
+  changeMakers,
+}: {
+  reasons: string[];
+  confidence: ConfidenceParts | undefined;
+  bandAr: string | null;
+  changeMakers: string[];
+}) {
+  const evidence = reasons.filter((r) => r.trim().length > 0).slice(0, 5);
+  if (evidence.length === 0 && !confidence) return null;
+
+  const parts = confidence
+    ? [
+        { label: "اكتمال صورتك", value: confidence.coverage },
+        { label: "اتساق إجاباتك", value: confidence.consistency },
+        { label: "وضوح الفارق بين المسارات", value: confidence.separation },
+        { label: "جودة الأدلة", value: confidence.evidenceQuality },
+        { label: "ثبات النتيجة", value: confidence.stability },
+      ]
+    : [];
+  const total = Math.floor((confidence?.total ?? 0) * 100);
+
+  return (
+    <div className="card-soft mt-8">
+      <h3 className="h-card flex items-center gap-2">
+        <Sparkles className="h-5 w-5 text-gold-ink" />
+        لماذا هذا المسار بالذات؟
+      </h3>
+
+      {evidence.length > 0 && (
+        <>
+          <p className="mt-2 text-xs leading-relaxed text-white/50">
+            لم نخمّن — هذه هي إجاباتك التي بُنيت عليها التوصية:
+          </p>
+          <ul className="mt-4 space-y-2.5">
+            {evidence.map((r) => (
+              <li key={r} className="flex items-start gap-2.5 text-sm leading-relaxed text-white/75">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-teal-light-ink" />
+                {r}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      {confidence && (
+        <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4 md:p-5">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+            <span className="text-sm font-black text-white/85">قوة أدلة هذه التوصية</span>
+            <span className="text-sm font-black text-teal-light-ink">
+              {total}٪{bandAr ? ` — ${bandAr}` : ""}
+            </span>
+          </div>
+          <div className="mt-4 space-y-2 text-xs">
+            {parts.map((p) => (
+              <div key={p.label} className="flex items-center gap-2">
+                <span className="w-36 shrink-0 text-white/55">{p.label}</span>
+                <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
+                  <span
+                    className="block h-full rounded-full bg-teal"
+                    style={{ width: `${Math.max(0, Math.min(100, Math.floor(p.value * 100)))}%` }}
+                  />
+                </span>
+                <span className="w-9 shrink-0 text-left font-bold tabular-nums text-white/70">
+                  {Math.floor(p.value * 100)}٪
+                </span>
+              </div>
+            ))}
+          </div>
+          <p className="mt-4 border-t border-white/10 pt-3 text-[11px] leading-relaxed text-white/45">
+            ترتفع حين تتفق إجاباتك، وتنخفض عند التناقض أو حين تقف حالتك بين مسارين متقاربين.
+            فوق ٧٥٪ نحن واثقون بالترشيح، وبين ٥٠ و٧٥٪ نعرض معه بدائل، ودون ذلك نحيلك لمستشار بشري قبل أي قرار.
+          </p>
+        </div>
+      )}
+
+      {changeMakers.length > 0 && (
+        <p className="mt-4 text-xs leading-relaxed text-white/55">
+          <span className="font-bold text-white/75">وما الذي يغيّر هذه التوصية؟ </span>
+          {changeMakers[0]}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function CompositePlan({ composite }: { composite: CompositeView }) {
   const totalHours = composite.courses.reduce((s, c) => s + c.hours, 0);
   const variant = VARIANT_AR[composite.variant] ?? VARIANT_AR.full;
@@ -416,6 +517,10 @@ export default function Diagnostic() {
   const [savedFlash, setSavedFlash] = useState(false);
   /* جولة تدقيق الخطة: حالة السؤال المعروض وسبب فتح الجولة */
   const [deepStep, setDeepStep] = useState<{ index: number; total: number; reasonAr: string | null } | null>(null);
+  /* سبب اختيار السؤال الحالي — كان يُعرض لأسئلة جولة التدقيق وحدها، بينما المحرك
+     يسجّله لكل سؤال. والسؤال غير البديهي («كيف تشرح فكرة لمن هو خارج تخصصك؟»
+     لمن هدفه أول وظيفة) هو أحوج ما يكون إلى سببه. */
+  const [whyAr, setWhyAr] = useState<string | null>(null);
   const [deepReason, setDeepReason] = useState<string | null>(null);
   const inDeepeningRef = useRef(false);
   /* هل الجلسة الحالية حية وتسمح بجولة تدقيق؟ — حالة تصيير لا تُقرأ من المرجع */
@@ -505,6 +610,7 @@ export default function Diagnostic() {
       setLive(step.question ? session.liveState() : null);
     }
     setDeepStep(step.deepening ?? null);
+    setWhyAr(step.whyAr ?? null);
     setMultiDraft([]);
     setTextDraft("");
     setRatingsDraft({});
@@ -962,10 +1068,10 @@ export default function Diagnostic() {
               </p>
             )}
             <h2 className="text-2xl font-black leading-snug md:text-3xl">{qText}</h2>
-            {deepStep?.reasonAr && (
+            {(deepStep?.reasonAr ?? whyAr) && (
               <p className="mt-3 w-fit rounded-xl border border-teal/30 bg-teal/[0.06] px-3.5 py-2 text-[11px] leading-relaxed text-white/55">
                 <span className="font-bold text-teal-light-ink">لماذا هذا السؤال؟ </span>
-                {deepStep.reasonAr}
+                {deepStep?.reasonAr ?? whyAr}
               </p>
             )}
             {qHint && <p className="mt-3 text-sm leading-relaxed text-white/50">{qHint}</p>}
@@ -1521,6 +1627,18 @@ export default function Diagnostic() {
           {/* ─── حدّ الظهور: ينتهي المقروء عند آخر عنصر في بطاقة «ماذا ستحصل عليه فعليا؟»
               وكل ما بعده داخل البوابة — محتوى حقيقي في مكانه تحت الضباب للضيف ─── */}
           <ResultGate revealed={authed} onDone={revealResult}>
+          {/* بطاقة التسجيل تَعِد بستة بنود خامسها «لماذا هذا المسار» — وكانت كلمة
+              «لماذا» لا ترد ولا مرة في المحتوى المكشوف. المحرك يحسب أسبابه
+              (reasons_ar) وثبات نتيجته (change_makers_ar) وقوة أدلته الخمسة، ثم
+              كان يُشحن كل ذلك إلى المتصفح ولا يُعرض منه شيء إلا قائمة منطوية في
+              أسفل الصفحة. فهذه أول ما ينكشف بعد التسجيل — وفاءً بالوعد كما قُطع. */}
+          <WhyThisPathway
+            reasons={result.reasons}
+            confidence={result.resultJson.confidence as ConfidenceParts | undefined}
+            bandAr={result.confidenceBand}
+            changeMakers={(result.resultJson.change_makers_ar as string[] | undefined) ?? []}
+          />
+
           {/* «ماذا ستحقق من خلال خطتك؟» — رحلة الدورات، والتخصيص داخلها للمسارات الأساسية */}
           {(() => {
             const compositeView = (result.resultJson.composite as CompositeView | null) ?? null;
@@ -1800,50 +1918,8 @@ export default function Diagnostic() {
             );
           })()}
 
-          {/* شرح قوة الأدلة — أسفل التوصية كاملة لمن يريد التعمق بعد أن رأى كل شيء */}
-          <details className="mx-auto mt-10 max-w-md rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-right text-xs leading-relaxed text-white/55 print:hidden">
-            <summary className="cursor-pointer text-center font-bold text-white/70">كيف حسبنا قوة أدلة التوصية؟</summary>
-            <p className="mt-2">
-              تبدأ من اكتمال صورتك: كل إجابة توضّح هدفك وواقعك ومهاراتك أكثر. ترتفع عندما تتفق
-              إجاباتك مع بعضها، وتنخفض عند التناقض أو عندما تقف حالتك بين مسارين متقاربين.
-              فوق ٧٥٪ المحرك واثق بتوصيته، وبين ٥٠ و٧٥٪ التوصية قوية ونعرض معها بدائل،
-              ودون ذلك نحيلك لمستشار بشري قبل أي قرار.
-            </p>
-            {(() => {
-              const conf = result.resultJson.confidence as
-                | { coverage: number; consistency: number; separation: number; evidenceQuality: number; stability: number; total?: number }
-                | undefined
-              if (!conf) return null
-              const parts = [
-                { label: "اكتمال الصورة", value: conf.coverage },
-                { label: "اتساق إجاباتك", value: conf.consistency },
-                { label: "وضوح الفارق بين المسارات", value: conf.separation },
-                { label: "جودة الأدلة", value: conf.evidenceQuality },
-                { label: "ثبات النتيجة", value: conf.stability },
-              ]
-              return (
-                <div className="mt-3 space-y-2 border-t border-white/10 pt-3">
-                  <p className="text-center font-bold text-white/70">
-                    قوة الأدلة الإجمالية: {Math.floor((conf.total ?? 0) * 100)}٪
-                  </p>
-                  {parts.map((p) => (
-                    <div key={p.label} className="flex items-center gap-2">
-                      <span className="w-32 shrink-0 text-white/60">{p.label}</span>
-                      <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
-                        <span
-                          className="block h-full rounded-full bg-teal"
-                          style={{ width: `${Math.max(0, Math.min(100, Math.floor(p.value * 100)))}%` }}
-                        />
-                      </span>
-                      <span className="w-9 shrink-0 text-left font-bold text-white/70">
-                        {Math.floor(p.value * 100)}٪
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )
-            })()}
-          </details>
+          {/* شرح قوة الأدلة انتقل إلى بطاقة «لماذا هذا المسار» أعلى المنطقة المكشوفة —
+              كان هنا في ذيل الصفحة ومطويًّا، أي بعد أن يكون القرار قد اتُّخذ. */}
 
           <p className="mt-6 text-center text-xs leading-relaxed text-white/55">
             التوصية صادرة عن محرك تشخيص قطعي مبني على إجاباتك، وهي نقطة بداية مفسَّرة —
