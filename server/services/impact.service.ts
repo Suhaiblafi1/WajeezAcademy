@@ -12,6 +12,14 @@ import { buildSnapshotFromDb } from '../catalog/snapshot-builder'
 import { installCatalogSnapshot, type CatalogSnapshotPayload } from '../../src/domain/diagnostic/catalog'
 import { runSession } from '../../src/tests/diagnostic/helpers'
 import { PERSONAS } from '../../src/tests/diagnostic/personas'
+/* الحزمة المضمنة عبر الاستيراد الثابت لا القراءة من القرص — انظر التعليق في
+   runRegressionAgainstBundled أدناه */
+import questionsJson from '../../src/data/catalog/questions.v1.ar.json'
+import skillsJson from '../../src/data/catalog/skills.v1.ar.json'
+import coreCatalogJson from '../../src/data/catalog/core-catalog.v2.json'
+import templatesJson from '../../src/data/catalog/composite-templates.v1.json'
+import optionEffectsJson from '../../src/data/overlays/option-effects.v2.json'
+import pathwayProfilesJson from '../../src/data/overlays/pathway-profiles.v1.json'
 
 export interface PersonaOutcome {
   name: string
@@ -156,21 +164,21 @@ export async function analyzeImpact(prisma: PrismaClient, changeRef: string, act
 
 /** تشغيل ارتداد للقطات المنشورة — يقارنها بالحزمة المضمنة ويحفظ DiagnosticRegressionRun */
 export async function runRegressionAgainstBundled(prisma: PrismaClient, catalogVersionId?: string) {
-  /* الحزمة المضمنة = إعادة التهيئة الافتراضية — نستورد وحدة جديدة المعزل؟
-     بدلا من ذلك: نشغل على المضمن أولا (الحالة الافتراضية وقت الإقلاع لم تعد متاحة بعد install).
-     الحل: نقرأ ملفات JSON ونبني حمولة مضمنة ثم نثبتها. */
-  const { readFileSync } = await import('node:fs')
-  const { join, dirname } = await import('node:path')
-  const { fileURLToPath } = await import('node:url')
-  const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
-  const j = (p: string) => JSON.parse(readFileSync(join(root, p), 'utf8'))
+  /* الحزمة المضمنة = إعادة التهيئة الافتراضية، والحالة وقت الإقلاع لم تعد
+     متاحة بعد أول install — فنعيد تركيبها من ملفات المصدر نفسها.
+
+     كانت تُقرأ من القرص بجذر محسوب من import.meta.url بصعود مستويين: صحيح
+     للمصدر (server/services/…)، وخاطئ للحزمة التي يشغّلها الإنتاج من
+     api/index.js وحده — فيصعد المستويان فوق جذر المستودع وتسقط القراءة
+     بـENOENT. الاستيراد الثابت يزيل الحساب والقراءة معا، ويجعل تتبّع ملفات
+     Vercel يرى الاعتماد بدل أن يخمّنه. */
   const bundled = {
-    questions: j('src/data/catalog/questions.v1.ar.json'),
-    skills: j('src/data/catalog/skills.v1.ar.json'),
-    coreCatalog: j('src/data/catalog/core-catalog.v2.json'),
-    templates: j('src/data/catalog/composite-templates.v1.json'),
-    optionEffects: j('src/data/overlays/option-effects.v2.json'),
-    pathwayProfiles: j('src/data/overlays/pathway-profiles.v1.json'),
+    questions: questionsJson,
+    skills: skillsJson,
+    coreCatalog: coreCatalogJson,
+    templates: templatesJson,
+    optionEffects: optionEffectsJson,
+    pathwayProfiles: pathwayProfilesJson,
   }
   installCatalogSnapshot(bundled as unknown as CatalogSnapshotPayload, 'bundled')
   const bundledOut = runCohort()

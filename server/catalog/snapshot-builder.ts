@@ -4,16 +4,20 @@
    لا يمكن أن تتقادم لأنها لا تُخزَّن أصلا. */
 
 import { createHash } from 'node:crypto'
-import { readFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import type { PrismaClient } from '@prisma/client'
+import optionEffectsOverlay from '../../src/data/overlays/option-effects.v2.json'
 import { buildQuestionMeta } from '../../src/application/catalog/overlays/question-meta'
 import { buildSkillLayers } from '../../src/application/catalog/overlays/skill-layers'
 import { buildQuestionPlan } from '../../src/application/catalog/overlays/question-plan'
 import type { OverlaySource } from '../../src/application/catalog/overlays/source'
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
+/* كان هنا `root` محسوبا من import.meta.url بصعود مستويين — صحيح للمصدر
+   (server/catalog/…) وخاطئ للحزمة: الإنتاج يشغّل api/index.js وحده، فيصعد
+   المستويان إلى ما فوق جذر المستودع ويسقط القارئ بـENOENT. وتحليل الأثر —
+   الخطوة التي تسبق كل نشر — كان يردّ «خطأ داخلي غير متوقع» لهذا وحده.
+   الاستيراد الثابت يزيل الحساب والقراءة معا: esbuild يضمّن الملف، وتتبّع
+   ملفات Vercel يتبع الاستيرادات لا مسارات readFileSync المحسوبة — فالملف
+   موجود قطعا حيث يُقرأ. */
 
 export interface BuiltSnapshot {
   payload: Record<string, unknown>
@@ -261,8 +265,8 @@ export async function buildSnapshotFromDb(
   const skillLayers = sortKeys(buildSkillLayers(overlaySource).skills)
   const questionPlan = sortKeys(buildQuestionPlan(overlaySource).plan)
 
-  /* مصنفات الكلمات — وثيقة تراكب لم تُنمذج بعد؛ تُقرأ من مصدرها الموثق */
-  const optionEffectsOverlay = JSON.parse(readFileSync(join(root, 'src/data/overlays/option-effects.v2.json'), 'utf8'))
+  /* مصنفات الكلمات — وثيقة تراكب لم تُنمذج بعد؛ تأتي من مصدرها الموثق
+     عبر الاستيراد الثابت أعلاه */
 
   const payload = {
     questions: { questions: questionRows },
