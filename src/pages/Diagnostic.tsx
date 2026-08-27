@@ -59,7 +59,7 @@ import {
   weeksLabel,
 } from "@/data/courses";
 import AdvisorContact from "@/components/AdvisorContact";
-import { pathways, type Pathway } from "@/data/pathways";
+import { pathways, pathwayCategory, type Pathway } from "@/data/pathways";
 
 type DiagAnswers = Record<string, string>;
 type Stage = "intro" | "questions" | "skills" | "computing" | "result";
@@ -783,8 +783,10 @@ export default function Diagnostic() {
       {stage === "intro" && (
         <section className="story-fade mx-auto max-w-3xl px-5 py-16 text-center md:py-24">
           <Badge className="border border-gold/40 bg-gold/10 text-gold-ink">مؤشر وجيز الكامل</Badge>
+          {/* كان «ثلاث دقائق» بينما الشارة تحته تقول «١–٣ دقائق»، والرحلة الفعلية
+              8–14 سؤالا. «بضع» تصدق على المدى كله. */}
           <h1 className="mt-5 text-3xl font-black leading-snug md:text-5xl">
-            ثلاث دقائق من الوضوح
+            بضع دقائق من الوضوح
             <span className="text-teal-light-ink"> تختصر عليك شهورا من التشتت</span>
           </h1>
           <p className="mx-auto mt-5 max-w-xl leading-loose text-white/60">
@@ -1386,9 +1388,13 @@ export default function Diagnostic() {
               التوصية الأولى
             </div>
             <div className="p-6 md:p-8">
+              {/* sector تصنيف تسويقي داخلي (B2C/B2B/B2G) يُشتق من رمز المسار. وكان
+                  يظهر مرتين هنا: مرة في الشارة الذهبية البارزة — لأن badge معلَن
+                  في النوع ولا يُسنَد أبدا فتسقط دائما إلى sector — ومرة في شارة
+                  ثانية بجوارها. فأبرز ما يراه المتعلم في بطاقة توصيته كان رمزا
+                  لا يعنيه. pathwayCategory تقول له أين يقع مساره بلغته. */}
               <div className="flex flex-wrap items-center gap-2">
-                <Badge className="bg-gold font-black text-on-gold">{topPathway.badge ?? topPathway.sector}</Badge>
-                <Badge variant="outline" className="border-white/20 text-white/70">{topPathway.sector}</Badge>
+                <Badge className="bg-gold font-black text-on-gold">{topPathway.badge ?? pathwayCategory(topPathway.id)}</Badge>
                 <Badge variant="outline" className="border-white/20 text-white/70">{topPathway.level}</Badge>
               </div>
               <h2 className="mt-4 text-2xl font-black leading-snug md:text-3xl">{topPathway.name}</h2>
