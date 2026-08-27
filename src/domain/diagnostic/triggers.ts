@@ -56,6 +56,9 @@ export function evaluateTrigger(trigger: string, ctx: TriggerContext): boolean {
       return ctx.askedCount >= 8 && ctx.confidenceTotal >= 0.65
     case 'goal_clarity_low AND pathway_selected':
       return ctx.facts['goal_clarity']?.value === 'low' && ctx.facts['pathway_selected'] !== undefined
+    /* لا يتحقق بعد تقاعد سؤال الوقت الأسبوعي: weekly_load لم يعد يُجمع في B2C،
+       والسؤال الوحيد الذي يستخدمه (QB-M8-001) متقاعد في الخطة. يبقى الرمز
+       لأن قيمته منصوصة في بنك الأسئلة المنشور. */
     case 'goal_urgent AND weekly_load_low':
       return ctx.facts['goal_urgency']?.value === 'urgent' && ctx.facts['weekly_load']?.value === 'lt_3'
     case 'low_confidence OR user_flagged_uncertainty':

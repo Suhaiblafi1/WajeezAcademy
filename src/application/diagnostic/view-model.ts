@@ -184,21 +184,6 @@ const PERSONA_AR: Record<string, string> = {
   organization: 'جهة عمل',
 }
 
-const LOAD_AR: Record<string, string> = {
-  lt_3: 'أقل من 3 ساعات أسبوعيا',
-  '3_4': '3 إلى 4 ساعات أسبوعيا',
-  '5_6': '5 إلى 6 ساعات أسبوعيا',
-  '7_plus': '7 ساعات فأكثر أسبوعيا',
-}
-
-const FORMAT_AR: Record<string, string> = {
-  self_video: 'فيديو ذاتي',
-  live_trainer: 'مباشر مع مدرب',
-  applied_projects: 'تطبيق ومشاريع',
-  reading: 'قراءة وملخصات',
-  mixed: 'مزيج مرن',
-}
-
 /** ملخص قصة المتعلم من حقائق المحرك — يحل محل storySummary القديم */
 export function storyFromFacts(facts: Record<string, { value: unknown }>, factsRaw: Record<string, string>): string[] {
   const lines: string[] = []
@@ -214,13 +199,9 @@ export function storyFromFacts(facts: Record<string, { value: unknown }>, factsR
   }
   const pain = factsRaw['current_pain']
   if (pain) lines.push(`ما يبطئك فعلا بلسانك: «${pain.slice(0, 120)}» — ومسارك مبني ليعالج هذا أولا.`)
-  const load = facts['weekly_load']?.value as string | undefined
-  const format = facts['learning_format']?.value as string | undefined
-  if (load || format) {
-    lines.push(
-      `إيقاعك الواقعي: ${load ? LOAD_AR[load] ?? load : 'وقت مرن'}${format ? `، وتتعلم أفضل عبر ${FORMAT_AR[format] ?? format}` : ''}.`,
-    )
-  }
+  /* سطر «إيقاعك الواقعي» حُذف مع سؤال الوقت الأسبوعي: حقيقتاه (weekly_load
+     وlearning_format) لم تعودا تُجمعان في B2C، فكان يقول للمتعلم «وقت مرن»
+     دائمًا — نصٌّ ثابت يقدَّم كأنه ملخّص لما أخبرنا به. */
   return lines
 }
 

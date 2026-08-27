@@ -28,7 +28,6 @@ interface Journey {
   employment?: string
   goal?: string
   need?: string
-  time?: string
   mastery?: string
   interest?: string
   answers?: Record<string, string>
@@ -52,7 +51,6 @@ function runJourney(name: string, script: Journey): { asked: string[]; rec: Reco
       else if (q.question_id === Q.EMPLOYMENT) idx = byLabel(script.employment ?? 'أعمل لدى جهة')
       else if (q.question_id === Q.GOAL) idx = byLabel(script.goal ?? '')
       else if (q.question_id === Q.NEED) idx = byLabel(script.need ?? '')
-      else if (q.question_id === Q.TIME) idx = byLabel(script.time ?? '٢–٤ ساعات')
       else if (q.question_id === Q.MASTERY) idx = byLabel(script.mastery ?? 'غير متأكد')
       else if (q.question_id === 'QB-M3E-002') idx = byLabel(script.interest ?? 'لا أعرف')
       else if (q.answer_type === 'skill_level_5' || q.answer_type === 'likert_5') idx = (script.skillLevel ?? 3) - 1
@@ -132,7 +130,7 @@ describe('الرحلات البشرية المصممة الثلاثون — إغ
     const j: Journey = {
       stage: 'founder', employment: 'لدي مشروعي الخاص',
       goal: 'غير متأكد — أريد أن يساعدني التشخيص',
-      need: needLabel('need_negotiation'), time: '٥–٧ ساعات', skillLevel: 3,
+      need: needLabel('need_negotiation'), skillLevel: 3,
     }
     const a = runJourney('حافة-سباق-حي', j)
     /* قياس 2026-08-26: لم تعد هذه الرحلة تُجسّد «بلا أي حاسمة مقاسة». حواسم
@@ -173,7 +171,7 @@ describe('الرحلات البشرية المصممة الثلاثون — إغ
   it('حافة ٤ — وقت شحيح (أقل من ساعتين) لقيادي أول: توصية صالحة تحترم العبء', () => {
     const j: Journey = {
       stage: 'senior_manager', goal: 'تطوير مهارة محددة أعرفها',
-      need: needLabel('need_leadership'), time: 'أقل من ساعتين', skillLevel: 4,
+      need: needLabel('need_leadership'), skillLevel: 4,
     }
     const a = runJourney('حافة-وقت', j)
     expect(['single_pathway', 'composite_template', 'advisor_referral']).toContain(a.rec.kind)

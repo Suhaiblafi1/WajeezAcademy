@@ -26,7 +26,6 @@ interface Journey {
   employment?: string
   goal?: string
   need?: string
-  time?: string
   mastery?: string
   interest?: string
   answers?: Record<string, string>
@@ -97,7 +96,6 @@ function runJourneyTraced(name: string, script: Journey): {
       else if (q.question_id === Q.EMPLOYMENT) idx = byLabel(script.employment ?? 'أعمل لدى جهة')
       else if (q.question_id === Q.GOAL) idx = byLabel(script.goal ?? '')
       else if (q.question_id === Q.NEED) idx = byLabel(script.need ?? '')
-      else if (q.question_id === Q.TIME) idx = byLabel(script.time ?? '٢–٤ ساعات')
       else if (q.question_id === Q.MASTERY) idx = byLabel(script.mastery ?? 'غير متأكد')
       else if (q.question_id === 'QB-M3E-002') idx = byLabel(script.interest ?? 'لا أعرف')
       else if (q.answer_type === 'skill_level_5' || q.answer_type === 'likert_5') idx = (script.skillLevel ?? 3) - 1
@@ -116,11 +114,11 @@ const RETIRED_NO_ACTION = 'QB-M4-002'
 
 /* رحلات متنوعة تغطي شخصيات مختلفة — تُستخدم في اختبارات الخصائص */
 const PROPERTY_JOURNEYS: [string, Journey][] = [
-  ['تسويق-مريح', { stage: 'experienced', goal: 'التقدم أو الترقية في عملي', need: 'التسويق ونمو العملاء', time: '٥–٧ ساعات', mastery: 'أن أتقن مهارة أو تخصصًا واحدًا بعمق' }],
+  ['تسويق-مريح', { stage: 'experienced', goal: 'التقدم أو الترقية في عملي', need: 'التسويق ونمو العملاء', mastery: 'أن أتقن مهارة أو تخصصًا واحدًا بعمق' }],
   ['طالب-أول-وظيفة', { stage: 'university_student', employment: 'لا أعمل حاليًا', goal: 'الحصول على أول وظيفة', need: 'التفاوض وإغلاق الصفقات', skillLevel: 2 }],
-  ['مؤسس-بداية', { stage: 'founder', employment: 'لدي مشروعي الخاص', goal: 'بدء مشروع أو مصدر دخل مستقل', need: 'بناء مشروعي من الصفر', time: '٥–٧ ساعات', skillLevel: 2 }],
+  ['مؤسس-بداية', { stage: 'founder', employment: 'لدي مشروعي الخاص', goal: 'بدء مشروع أو مصدر دخل مستقل', need: 'بناء مشروعي من الصفر', skillLevel: 2 }],
   ['مدير-قيادة', { stage: 'manager', goal: 'الاستعداد لدور قيادي', need: 'القيادة وإدارة الفرق', skillLevel: 3 }],
-  ['مستقل-تفاوض', { stage: 'freelancer', employment: 'أعمل لحسابي (عمل حر)', goal: 'بدء مشروع أو مصدر دخل مستقل', need: 'التفاوض وإغلاق الصفقات', time: '٥–٧ ساعات', mastery: 'أن أبني مجموعة مهارات مترابطة لتحقيق هدف', interest: 'أعمال' }],
+  ['مستقل-تفاوض', { stage: 'freelancer', employment: 'أعمل لحسابي (عمل حر)', goal: 'بدء مشروع أو مصدر دخل مستقل', need: 'التفاوض وإغلاق الصفقات', mastery: 'أن أبني مجموعة مهارات مترابطة لتحقيق هدف', interest: 'أعمال' }],
 ]
 
 describe('Regression المرحلة 4 — عدالة الدليل المهاري', () => {
@@ -186,7 +184,6 @@ describe('Regression المرحلة 4 — عدالة الدليل المهاري
       employment: 'أعمل لحسابي (عمل حر)',
       goal: 'بدء مشروع أو مصدر دخل مستقل',
       need: 'التواصل والعرض والتأثير',
-      time: '٥–٧ ساعات',
       mastery: 'أن أبني مجموعة مهارات مترابطة لتحقيق هدف',
       interest: 'أعمال',
     })
@@ -244,7 +241,6 @@ describe('Regression المرحلة 4 — عدالة الدليل المهاري
       stage: 'experienced',
       goal: 'التقدم أو الترقية في عملي',
       need: 'التسويق ونمو العملاء',
-      time: '٥–٧ ساعات',
       mastery: 'أن أتقن مهارة أو تخصصًا واحدًا بعمق',
     })
     expect(rec.kind).toBe('single_pathway')
@@ -257,7 +253,6 @@ describe('Regression المرحلة 4 — عدالة الدليل المهاري
       employment: 'أعمل لحسابي (عمل حر)',
       goal: 'زيادة دخلي وعملائي في العمل الحر',
       need: 'تحليل البيانات واتخاذ القرار',
-      time: '٥–٧ ساعات',
       mastery: 'أن أبني مجموعة مهارات مترابطة لتحقيق هدف',
       skillLevel: 2,
     })
@@ -288,7 +283,6 @@ describe('Regression المرحلة 4 — عدالة الدليل المهاري
       employment: 'أعمل لحسابي (عمل حر)',
       goal: 'زيادة دخلي وعملائي في العمل الحر',
       need: 'تحليل البيانات واتخاذ القرار',
-      time: '٥–٧ ساعات',
       mastery: 'أن أبني مجموعة مهارات مترابطة لتحقيق هدف',
       skillLevel: 2,
     })
@@ -308,7 +302,6 @@ describe('Regression المرحلة 4 — عدالة الدليل المهاري
       stage: 'manager',
       goal: 'تطوير مهارة محددة أعرفها',
       need: 'إدارة المشاريع',
-      time: '٥–٧ ساعات',
       mastery: 'أن أبني مجموعة مهارات مترابطة لتحقيق هدف',
       answers: { 'QB-M3B-011': 'قيادة' },
       skillLevel: 2,
@@ -322,7 +315,6 @@ describe('Regression المرحلة 4 — عدالة الدليل المهاري
       employment: 'أعمل لحسابي (عمل حر)',
       goal: 'زيادة دخلي وعملائي في العمل الحر',
       need: 'تحليل البيانات واتخاذ القرار',
-      time: '٥–٧ ساعات',
       mastery: 'أن أبني مجموعة مهارات مترابطة لتحقيق هدف',
       skillLevel: 2,
     })
@@ -350,7 +342,6 @@ describe('Regression المرحلة 4 — عدالة الدليل المهاري
       employment: 'أعمل لحسابي (عمل حر)',
       goal: 'بدء مشروع أو مصدر دخل مستقل',
       need: 'التفاوض وإغلاق الصفقات',
-      time: '٥–٧ ساعات',
       mastery: 'أن أبني مجموعة مهارات مترابطة لتحقيق هدف',
       interest: 'أعمال',
     }
@@ -390,7 +381,6 @@ describe('Regression المرحلة 4 — عدالة الدليل المهاري
       employment: 'أعمل لحسابي (عمل حر)',
       goal: 'بناء ملف أعمال يثبت قدراتي',
       need: 'التواصل والعرض والتأثير',
-      time: '٥–٧ ساعات',
       mastery: 'أن أبني مجموعة مهارات مترابطة لتحقيق هدف',
       skillLevel: 2,
     })
@@ -403,7 +393,6 @@ describe('Regression المرحلة 4 — عدالة الدليل المهاري
       employment: 'أبحث عن عمل',
       goal: 'بناء ملف أعمال يثبت قدراتي',
       need: 'التواصل والعرض والتأثير',
-      time: '٥–٧ ساعات',
       mastery: 'أن أبني مجموعة مهارات مترابطة لتحقيق هدف',
       skillLevel: 2,
     })

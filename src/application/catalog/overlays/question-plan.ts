@@ -117,6 +117,11 @@ const overrides: Record<string, Partial<PlanEntry>> = {
   'QB-M3E-002': { surface: 'b2c', layer21: 'domain_differentiation', phase: 'adaptive', action: 'keep', stages: 'all', why_ar: 'قائمة الميول المختصرة تكتشف المجال عندما يكون الهدف والاحتياج غير محسومين.', impact_ar: 'تفتح مجالات لم تظهر من الهدف — تغيّر المرشحين.' },
   'QB-M3E-004': { surface: 'b2c', layer21: 'evidence_skill', phase: 'adaptive', action: 'keep', stages: 'all', why_ar: 'التجربة العملية السابقة دليل يفصل الاستكشاف الجاد عن الفضول.', impact_ar: 'تغيّر نوع المخرج (استكشافي مقابل تطابق).' },
 
+  /* تناقض «هدف عاجل + وقت منخفض» لم يعد قابلًا للاكتشاف بعد تقاعد سؤال الوقت:
+     شرطه (weekly_load_low) لا يمكن أن يصدق، فالسؤال غير قابل للطرح مطلقًا.
+     يُحسب متقاعدًا بدل أن يبقى في عداد الأسئلة العميقة وهو لا يُطرح أبدًا. */
+  'QB-M8-001': { surface: 'retired_b2c', layer21: null, phase: 'none', action: 'retire', stages: [], why_ar: 'شرط ظهوره يعتمد على الوقت الأسبوعي المتقاعد — لا يمكن أن يتحقق.', impact_ar: 'لا أثر — غير قابل للطرح.' },
+
   'QB-M7-001': { action: 'replaced', replaced_by: Q.TIME, why_ar: 'استُبدل بسؤال الوقت الجديد (4 فئات واضحة) — القديم كرّر «7+» مرتين.', impact_ar: 'خليفته يحدد الجدوى فقط.' },
   'QB-M7-002': { surface: 'post_recommendation', action: 'move_post', why_ar: 'صيغة التعلم قيد منتج (Cohort) — لا تغيّر ماذا يتعلم.', impact_ar: 'لا أثر على المسار.' },
   'QB-M7-003': { surface: 'post_recommendation', action: 'move_post', why_ar: 'تفضيل الدفعة قيد منتج — يُستخدم في العرض لا في التوصية.', impact_ar: 'لا أثر على المسار.' },
@@ -229,7 +234,17 @@ export function buildQuestionPlan(src: OverlaySource): { plan: Record<string, Pl
     [Q.EMPLOYMENT]: { surface: 'b2c', layer21: 'orientation', phase: 'core', action: 'keep', stages: 'all', domains: [], impact_ar: 'يفصل أول وظيفة عن ترقية ويضبط واقعية التوصية.', why_ar: 'حالة العمل منفصلة عن المرحلة — تُسأل عند الحاجة فقط.', measures: ['employment_state'] },
     [Q.GOAL]: { surface: 'b2c', layer21: 'goal_need', phase: 'core', action: 'keep', stages: 'all', domains: [], impact_ar: 'يحدد فضاء المشكلة بخيارات مفلترة حسب المرحلة.', why_ar: 'الهدف قبل المجال قبل المسار.', measures: ['primary_goal'] },
     [Q.NEED]: { surface: 'b2c', layer21: 'goal_need', phase: 'core', action: 'keep', stages: 'all', domains: NEEDS_V21.flatMap((n) => n.domains), impact_ar: 'يكتشف المجال — محرك التمييز الرئيس بين المسارات والقوالب.', why_ar: 'الاحتياج الحقيقي لا اسم المسار.', measures: ['need_id'] },
-    [Q.TIME]: { surface: 'b2c', layer21: 'feasibility', phase: 'core', action: 'keep', stages: 'all', domains: [], impact_ar: 'يحدد الجدوى وطول الخطة فقط.', why_ar: 'إشارة جدوى حقيقية.', measures: ['weekly_load'] },
+    /* الساعات الأسبوعية — متقاعد بقياسين لا بحدس:
+       (١) أربع شخصيات × أربع إجابات مع تثبيت كل ما عداه — ستة عشر تشغيلًا
+       بناتج واحد: نفس المسار ونفس الدورات ونفس الساعات لمن يملك أقل من ساعتين
+       ولمن يملك ثمانيًا.
+       (٢) بوابة هدر الأسئلة (300 جلسة، قياس مضاد للواقع، خط الأساس السابق):
+       من 300 مقعد، 45 ميت، و14 كان جوابه قادرًا على قلب الترشيح، و69 خفض
+       الثقة. والقلب الأربعة عشر لم يأتِ من مطابقة أفضل بل من طريقين: استبعاد
+       كيانات بحدٍّ أدنى للوقت، واختيار نسخة الخطة (starter بثلاث دورات مقابل
+       full بست). أي أن السؤال كان يقلّص خطة من يقول إن وقته ضيق بدل أن يجد
+       له خطة أنسب — وذلك ليس قيمةً تُشترى بمقعد من وقت المتعلم. */
+    [Q.TIME]: { surface: 'retired_b2c', layer21: null, phase: 'none', action: 'retire', stages: [], domains: [], impact_ar: 'كان يقلّص الخطة أو يستبعد كيانات بحدّ زمني — لا يحسّن المطابقة.', why_ar: 'قياسان: ناتج واحد لأربع إجابات، وقلبٌ مصدره الاستبعاد لا المطابقة.', measures: ['weekly_load'] },
     [Q.MASTERY]: { surface: 'b2c', layer21: 'confirmation_deep', phase: 'confirmation', action: 'keep', stages: 'all', domains: [], impact_ar: 'يفصل قياسيًا عن مركبًا عند الغموض.', why_ar: 'لا يُسأل إلا عند غموض فعلي.', measures: ['mastery_portfolio_pref'] },
   }
   Object.assign(plan, newPlan)

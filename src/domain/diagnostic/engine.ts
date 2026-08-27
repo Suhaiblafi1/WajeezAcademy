@@ -394,9 +394,10 @@ export class DiagnosticEngine {
     const unmeasuredGapSkills = new Set(
       (candidates[0]?.gapSkillSlugs ?? []).filter((s) => this.state.skillVector[s] === undefined),
     )
-    const missingConstraints = ['weekly_load', 'budget_profile', 'learning_format'].filter(
-      (k) => this.state.facts[k] === undefined,
-    )
+    /* «قيود لم تُحسم» حُذف من مناطق عدم اليقين: حقائقه الثلاث لا تُجمع في B2C
+       (الميزانية محظورة، وصيغة التعلم بعد التوصية، والوقت الأسبوعي متقاعد)،
+       فكان شرطًا يصدق دائمًا — سببُ تعميقٍ ثابت لا يخبر بشيء، وسؤالٌ لا وجود
+       له يُعرض كأنه يحسم قيدًا. */
     const unresolvedContradictions = this.state.contradictions.filter((c) => !c.resolved)
     const goalUnclear =
       this.state.facts['primary_goal'] === undefined || this.state.facts['goal_clarity']?.value === 'low'
@@ -404,7 +405,6 @@ export class DiagnosticEngine {
     const reasonParts: string[] = []
     if (margin !== null && margin < 0.12) reasonParts.push('تقارب المسارين المتصدرين')
     if (unmeasuredGapSkills.size > 0) reasonParts.push('مهارات فجوة لم تُقس بدليل مباشر')
-    if (missingConstraints.length > 0) reasonParts.push('قيود لم تُحسم بعد')
     if (goalUnclear) reasonParts.push('وضوح الهدف يحتاج تدقيقا')
     if (unresolvedContradictions.length > 0) reasonParts.push('تناقض ظاهر بين بعض الإجابات')
     if (reasonParts.length === 0) reasonParts.push('رفع جودة الأدلة واكتمال الصورة')
@@ -424,11 +424,6 @@ export class DiagnosticEngine {
 
     const skillNameAr = (slug: string) =>
       pathwaySkills(candidates[0]?.pathwayId ?? '').find((s) => s.slug === slug)?.nameAr ?? slug
-    const CONSTRAINT_AR: Record<string, string> = {
-      weekly_load: 'وقتك الأسبوعي المتاح',
-      budget_profile: 'ميزانيتك',
-      learning_format: 'طريقة التعلم الأنسب لك',
-    }
 
     const plan: DeepeningPlanItem[] = []
     for (const r of ranked) {
@@ -444,11 +439,6 @@ export class DiagnosticEngine {
       if (skillHit) {
         targets.push('weak_skill')
         reasons.push(`يقيس مهارة «${skillNameAr(skillHit)}» بسؤال مباشر بدل افتراضها فجوة`)
-      }
-      const constraintHit = q.measures.find((m) => missingConstraints.includes(m))
-      if (constraintHit) {
-        targets.push('missing_constraint')
-        reasons.push(`يحسم قيد «${CONSTRAINT_AR[constraintHit] ?? constraintHit}» المؤثر في جدوى خطتك`)
       }
       if (goalUnclear && q.measures.some((m) => m === 'primary_goal' || m === 'goal_clarity')) {
         targets.push('goal_unclear')

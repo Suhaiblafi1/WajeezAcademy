@@ -2642,18 +2642,18 @@
       "final_status": "post_recommendation"
     },
     "QB-M8-001": {
-      "surface": "b2c",
-      "layer21": "confirmation_deep",
-      "phase": "confirmation",
-      "action": "keep",
-      "stages": "all",
-      "why_ar": "أسئلة تحقق وتعميق — تُدار من جولة التأكيد المشروطة.",
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
+      "why_ar": "شرط ظهوره يعتمد على الوقت الأسبوعي المتقاعد — لا يمكن أن يتحقق.",
       "domains": [],
-      "impact_ar": "يفتح عند goal urgency > high وweekly_load منخفض.",
+      "impact_ar": "لا أثر — غير قابل للطرح.",
       "measures": [
         "time_goal_conflict_resolution"
       ],
-      "final_status": "deep_only"
+      "final_status": "retired"
     },
     "QB-M8-002": {
       "surface": "b2c",
@@ -3026,18 +3026,18 @@
       "final_status": "active_b2c"
     },
     "QC-F7-001": {
-      "surface": "b2c",
-      "layer21": "feasibility",
-      "phase": "core",
-      "action": "keep",
-      "stages": "all",
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
       "domains": [],
-      "impact_ar": "يحدد الجدوى وطول الخطة فقط.",
-      "why_ar": "إشارة جدوى حقيقية.",
+      "impact_ar": "كان يقلّص الخطة أو يستبعد كيانات بحدّ زمني — لا يحسّن المطابقة.",
+      "why_ar": "قياسان: ناتج واحد لأربع إجابات، وقلبٌ مصدره الاستبعاد لا المطابقة.",
       "measures": [
         "weekly_load"
       ],
-      "final_status": "active_b2c"
+      "final_status": "retired"
     },
     "QC-C8-001": {
       "surface": "b2c",

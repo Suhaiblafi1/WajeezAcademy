@@ -268,12 +268,16 @@ export function pendingDifferentiator(
   return null
 }
 
-function planVariant(facts: FactBag, evidenceConfidence: number): PlanVariant {
-  const load = facts['weekly_load']?.value as string | undefined
-  const order = load ? (WEEKLY_LOAD_ORDER[load] ?? 2) : 2
-  if (order <= 2 || evidenceConfidence < 0.8) return 'starter'
-  if (order === 3) return 'full'
-  return 'extended'
+/* نسخة الخطة — بقوة الدليل وحدها بعد تقاعد سؤال الوقت الأسبوعي.
+
+   كانت القاعدة «عبء أسبوعي خفيف أو دليل دون 0.8 → starter»، وافتراضها عند غياب
+   الوقت هو الرتبة 2 — أي starter دائمًا. وstarter ثلاث مقررات بينما full ستة،
+   فترك القاعدة كما هي كان سيقلّص كل خطة قالبية من ستٍّ إلى ثلاث بلا قرار.
+
+   وextended سقط: مقرراته الجسرية تُقتطع أصلًا بسقف الستة (المطلوبة وحدها ست في
+   القوالب الستة عشر كلها)، فمخرجه مطابق لـ full حرفيًا. */
+function planVariant(_facts: FactBag, evidenceConfidence: number): PlanVariant {
+  return evidenceConfidence < 0.8 ? 'starter' : 'full'
 }
 
 export interface CoursePlan {

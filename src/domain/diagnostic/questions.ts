@@ -97,7 +97,7 @@ function measuresTopTwoSeparator(q: BankQuestion, candidates: PathwayCandidate[]
   if (a.fit.total - b.fit.total >= 0.08) return 0
   // السؤال فاصل إذا كان يقيس حقيقة يختلف عليها المرشحان (هدف/شخصية/عبء/سياق)
   const decisive = [
-    'primary_goal', 'persona_type', 'weekly_load', 'goal_clarity', 'function_specialization', 'sector',
+    'primary_goal', 'persona_type', 'goal_clarity', 'function_specialization', 'sector',
     'leadership_context', 'team_context', 'business_stage', 'offer_clarity', 'revenue_signal',
     'application_readiness', 'public_facing',
   ]
@@ -119,7 +119,6 @@ const SEPARATOR_FACT_PRIORITY: Record<string, number> = {
   offer_clarity: 2,
   revenue_signal: 2,
   goal_clarity: 2,
-  weekly_load: 2,
   public_facing: 1,
   application_readiness: 1,
 }

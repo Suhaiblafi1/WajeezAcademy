@@ -18,7 +18,7 @@ import { applyDerivedRules, decisionCriticalMissing, reduceAnswer } from '../fac
 import { matchTrainer } from '../instructor-match'
 import { buildCoursePlan } from '../composite'
 import type { TriggerContext } from '../triggers'
-import { DISCLAIMER_AR, WEEKLY_LOAD_ORDER } from '../config'
+import { DISCLAIMER_AR } from '../config'
 import type {
   Answer,
   BankQuestion,
@@ -62,6 +62,7 @@ import {
   goalsForStage,
   needsForStage,
   Q,
+  RETIRED_IN_CODE,
   STAGE_NEEDS_EMPLOYMENT_QUESTION,
   RIASEC_DIMS,
   RIASEC_DOMAINS,
@@ -258,11 +259,6 @@ export const CORE_FLOW_V21: CoreStepV21[] = [
     },
     reason_ar: 'القطاع (عام/خاص) يفلتر مسارات حكومية بأكملها.',
   },
-  {
-    questionId: Q.TIME,
-    neededWhen: (f) => !has(f, 'weekly_load'),
-    reason_ar: 'وقتك الأسبوعي الواقعي يحدد جدوى الخطة وطولها — لا يحدد المجال.',
-  },
 ]
 
 /* ─── أهلية السؤال في V2.1 — الخطة هي القانون ─── */
@@ -275,6 +271,8 @@ export interface QuestionEligibilityCtxV21 extends TriggerContext {
 
 export function isQuestionEligibleV21(q: BankQuestion, ctx: QuestionEligibilityCtxV21): boolean {
   if (ctx.askedIds.has(q.question_id)) return false
+  /* تقاعد برمجي يسبق اللقطة المنشورة — لقطة قديمة لا تعيد سؤالًا حُذف */
+  if (RETIRED_IN_CODE.has(q.question_id)) return false
   const plan = planOf(q.question_id)
   /* سؤال بلا خطة أو ليس سطحه B2C — لا يُطرح أبدًا (تسرب مؤسسي = مستحيل بنيويًا) */
   if (!plan || plan.surface !== 'b2c') return false
@@ -1593,13 +1591,10 @@ function toV2Candidate(c: EntityCandidate): V2Candidate {
   }
 }
 
-/** نسخة الخطة المركبة — نفس قاعدة V2 الموثقة: عبء أسبوعي خفيف أو دليل دون 0.8 → starter */
-function planVariantV21(facts: DiagnosticState['facts'], fit: number): PlanVariant {
-  const load = facts['weekly_load']?.value as string | undefined
-  const order = load ? (WEEKLY_LOAD_ORDER[load] ?? 2) : 2
-  if (order <= 2 || fit < 0.8) return 'starter'
-  if (order === 3) return 'full'
-  return 'extended'
+/** نسخة الخطة المركبة — بقوة الدليل وحدها (انظر planVariant في composite.ts:
+    الوقت الأسبوعي تقاعد، وافتراض غيابه كان يجعل كل خطة starter بثلاث مقررات) */
+function planVariantV21(_facts: DiagnosticState['facts'], fit: number): PlanVariant {
+  return fit < 0.8 ? 'starter' : 'full'
 }
 
 function toLegacyCandidate(c: V2Candidate): PathwayCandidate {

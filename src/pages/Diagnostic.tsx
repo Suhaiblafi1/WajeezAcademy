@@ -77,7 +77,6 @@ const DIM_LABELS: Record<Dim, string> = {
   branch: "قصتك",
   skills: "مهاراتك",
   interest: "اهتماماتك",
-  constraints: "إيقاعك وظروفك",
 };
 
 /* ═══════════ وحدات الرحلة الخمس — شريط التقدم الجديد ═══════════ */
@@ -547,7 +546,10 @@ function CompositePlan({ composite }: { composite: CompositeView }) {
           <div className="rounded-xl bg-white/[0.05] p-4">
             <p className="text-sm text-white/50">إجمالي ساعات الخطة</p>
             <p className="font-black">{totalHours} ساعة</p>
-            <p className="mt-1 text-[11px] leading-5 text-white/45">موزعة على إيقاعك الأسبوعي الذي أخبرتنا به</p>
+            {/* كان مكتوبًا هنا «موزعة على إيقاعك الأسبوعي الذي أخبرتنا به» — وهو ادعاء
+                لا يقع: الرقم مجموع ساعات الدورات الثابتة، لا يُقسَّم على أي إيقاع.
+                والوقت الأسبوعي لم يعد يُسأل عنه أصلًا. */}
+            <p className="mt-1 text-[11px] leading-5 text-white/45">مجموع ساعات دورات خطتك</p>
           </div>
         </div>
 

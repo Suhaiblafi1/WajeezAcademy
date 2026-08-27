@@ -22,7 +22,6 @@ interface ScriptedJourney {
   employment?: string // optionId o1..o5
   goal?: string // optionId ضمن المفلترة
   need?: string
-  time?: string
   mastery?: string
   skillLevel?: number // 1..5 لأسئلة الدليل
 }
@@ -49,8 +48,6 @@ function runJourney(script: ScriptedJourney): {
       optionId = script.goal ?? (q.active_option_ids ?? [])[0] ?? 'o1'
     } else if (q.question_id === Q.NEED) {
       optionId = script.need ?? (q.active_option_ids ?? [])[0] ?? 'o1'
-    } else if (q.question_id === Q.TIME) {
-      optionId = script.time ?? 'o2'
     } else if (q.question_id === Q.MASTERY) {
       optionId = script.mastery ?? 'o3'
     } else if (q.answer_type === 'skill_level_5' || q.answer_type === 'likert_5') {
@@ -149,8 +146,13 @@ describe('بنية أسئلة B2C — معايير النجاح', () => {
        منها بقيت في مواضعها؛ أما QB-M4-009 (الإنجليزية) فتقاعد: مهارته
        english_for_work محكومة بـfuture_catalog_skill ولا دورة تُعلّمها، فلا
        يُقاس ما لا يُعلَّم. post_recommendation 37→36 · retired 60→61،
-       والمجموع 205 كما هو — انتقال حالة لا زيادة سؤال. */
-    expect(counts).toEqual({ active_b2c: 68, deep_only: 11, post_recommendation: 36, institutional: 14, retired: 61, out_of_scope: 15 })
+       والمجموع 205 كما هو — انتقال حالة لا زيادة سؤال.
+       حذف 2026-08-27: تقاعد QC-F7-001 (الساعات الأسبوعية) — قِيس بأربع شخصيات
+       في أربع إجابات مع تثبيت كل ما عداه فأعطت الستة عشر تشغيلًا ناتجًا واحدًا:
+       نفس المسار ونفس الدورات ونفس الساعات. ومعه تقاعد QB-M8-001 لأن شرط
+       ظهوره (هدف عاجل + وقت منخفض) لم يعد قابلًا للتحقق أصلًا.
+       active_b2c 68→67 · deep_only 11→10 · retired 61→63، والمجموع 205. */
+    expect(counts).toEqual({ active_b2c: 67, deep_only: 10, post_recommendation: 36, institutional: 14, retired: 63, out_of_scope: 15 })
   })
 
   it('كل سؤال نشط في B2C له أثر قراري موثق في الخطة', () => {

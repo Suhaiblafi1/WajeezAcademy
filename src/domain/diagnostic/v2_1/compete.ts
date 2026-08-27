@@ -298,14 +298,22 @@ function scoreDomainComponent(entity: RecommendationEntity, facts: FactBag, ctx:
   }
 }
 
-function scoreFeasibilityComponent(entity: RecommendationEntity, facts: FactBag): { score: number; reason?: string } {
+/* الجدوى الزمنية — تُقاس فقط إذا وُجدت الحقيقة. بعد تقاعد سؤال الوقت لا تُقاس
+   أبدًا، فيُعاد توزيع وزنها كما يُعاد وزن فجوة المهارات غير المقيسة: المجهول
+   لا يعاقب ولا يكافئ. وإعادتها كـ0.6 ثابتة كانت تخصم 0.04 من ملاءمة كل كيان
+   بلا استثناء — فتنخفض trackFit والثقة، فيطلب المحرك أسئلة أكثر بحثًا عن
+   يقين لا ينقصه شيء أصلًا. */
+function scoreFeasibilityComponent(
+  entity: RecommendationEntity,
+  facts: FactBag,
+): { score: number; measured: boolean; reason?: string } {
   const load = facts['weekly_load']?.value as string | undefined
-  if (!load) return { score: 0.6 }
+  if (!load) return { score: 0, measured: false }
   const user = WEEKLY_LOAD_ORDER[load] ?? 2
   const need = entity.feasibility.min_weekly_load_order
-  if (user >= need) return { score: 1, reason: 'وقتك الأسبوعي يكفي لعبء هذه الخطة.' }
-  if (user === need - 1) return { score: 0.5, reason: 'وقتك أقل قليلًا من العبء المعتاد — وتيرة أبطأ.' }
-  return { score: 0.15, reason: 'وقتك الحالي دون الحد الأدنى لهذه الخطة.' }
+  if (user >= need) return { score: 1, measured: true, reason: 'وقتك الأسبوعي يكفي لعبء هذه الخطة.' }
+  if (user === need - 1) return { score: 0.5, measured: true, reason: 'وقتك أقل قليلًا من العبء المعتاد — وتيرة أبطأ.' }
+  return { score: 0.15, measured: true, reason: 'وقتك الحالي دون الحد الأدنى لهذه الخطة.' }
 }
 
 function scoreMotivationComponent(facts: FactBag): { score: number; reason?: string } {
@@ -427,13 +435,16 @@ export function scoreEntity(entity: RecommendationEntity, facts: FactBag, ctx: D
   const skillWeight = W.skillGap * skills.measuredCoverage
   const redistributed = (W.skillGap - skillWeight) / 2
   const skillComponent = skills.gapScore ?? 0
+  /* والجدوى الزمنية بالقاعدة نفسها — لا تُقاس بعد تقاعد سؤال الوقت */
+  const feasibilityWeight = feasibility.measured ? W.feasibility : 0
+  const feasibilityRedistributed = (W.feasibility - feasibilityWeight) / 2
 
   let fit =
-    persona.score * (W.persona + redistributed) +
-    goal.score * (W.goal + redistributed) +
+    persona.score * (W.persona + redistributed + feasibilityRedistributed) +
+    goal.score * (W.goal + redistributed + feasibilityRedistributed) +
     domain.score * W.domain +
     skillComponent * skillWeight +
-    feasibility.score * W.feasibility +
+    feasibility.score * feasibilityWeight +
     motivation.score * W.motivation
 
   const reasons_ar = [persona.reason, goal.reason, domain.reason, feasibility.reason, motivation.reason].filter(

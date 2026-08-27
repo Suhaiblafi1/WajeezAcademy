@@ -3,7 +3,7 @@
 
 import type { Pathway } from './pathways'
 
-export type Dim = 'persona' | 'goal' | 'branch' | 'skills' | 'interest' | 'constraints'
+export type Dim = 'persona' | 'goal' | 'branch' | 'skills' | 'interest'
 type Answers = Record<string, string>
 
 export interface DiagOption {

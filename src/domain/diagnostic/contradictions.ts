@@ -10,14 +10,9 @@ interface Rule {
   detail_ar: string
 }
 
+/* قاعدة urgent_goal_low_time حُذفت مع تقاعد سؤال الوقت الأسبوعي: شرطها الثاني
+   (weekly_load = lt_3) لم يعد قابلًا للتحقق، فكانت قاعدة لا تُطلق أبدًا. */
 const RULES: Rule[] = [
-  {
-    id: 'urgent_goal_low_time',
-    factKeys: ['goal_urgency', 'weekly_load'],
-    severity: 'medium',
-    check: (f) => f['goal_urgency']?.value === 'urgent' && f['weekly_load']?.value === 'lt_3',
-    detail_ar: 'هدف مستعجل مع وقت أسبوعي أقل من 3 ساعات — التوقعات الزمنية تحتاج ضبطا.',
-  },
   {
     id: 'high_self_no_evidence',
     factKeys: ['skill_vector', 'evidence_strength'],

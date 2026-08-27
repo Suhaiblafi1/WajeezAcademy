@@ -688,14 +688,6 @@
             "minimum_confidence": 0.65
           },
           {
-            "fact_key": "weekly_load",
-            "question_ids": [
-              "QB-M7-001"
-            ],
-            "importance": "required",
-            "minimum_confidence": 0.65
-          },
-          {
             "fact_key": "application_readiness",
             "question_ids": [
               "QB-M2-015"
@@ -1198,14 +1190,6 @@
             ],
             "importance": "required",
             "minimum_confidence": 0.65
-          },
-          {
-            "fact_key": "weekly_load",
-            "question_ids": [
-              "QB-M7-001"
-            ],
-            "importance": "required",
-            "minimum_confidence": 0.65
           }
         ],
         "positive_signals": [
@@ -1663,14 +1647,6 @@
             "fact_key": "business_finance",
             "question_ids": [
               "QB-M3C-009"
-            ],
-            "importance": "required",
-            "minimum_confidence": 0.65
-          },
-          {
-            "fact_key": "weekly_load",
-            "question_ids": [
-              "QB-M7-001"
             ],
             "importance": "required",
             "minimum_confidence": 0.65
@@ -2134,14 +2110,6 @@
             "fact_key": "digital_content_creation",
             "question_ids": [
               "QB-M4-008"
-            ],
-            "importance": "required",
-            "minimum_confidence": 0.65
-          },
-          {
-            "fact_key": "weekly_load",
-            "question_ids": [
-              "QB-M7-001"
             ],
             "importance": "required",
             "minimum_confidence": 0.65
@@ -2623,14 +2591,6 @@
             ],
             "importance": "required",
             "minimum_confidence": 0.65
-          },
-          {
-            "fact_key": "weekly_load",
-            "question_ids": [
-              "QB-M7-001"
-            ],
-            "importance": "required",
-            "minimum_confidence": 0.65
           }
         ],
         "positive_signals": [
@@ -3083,14 +3043,6 @@
             "fact_key": "persuasion",
             "question_ids": [
               "QB-M4-012"
-            ],
-            "importance": "required",
-            "minimum_confidence": 0.65
-          },
-          {
-            "fact_key": "weekly_load",
-            "question_ids": [
-              "QB-M7-001"
             ],
             "importance": "required",
             "minimum_confidence": 0.65
@@ -3555,14 +3507,6 @@
             ],
             "importance": "required",
             "minimum_confidence": 0.65
-          },
-          {
-            "fact_key": "weekly_load",
-            "question_ids": [
-              "QB-M7-001"
-            ],
-            "importance": "required",
-            "minimum_confidence": 0.65
           }
         ],
         "positive_signals": [
@@ -4004,14 +3948,6 @@
             "fact_key": "data_literacy",
             "question_ids": [
               "QB-M4-006"
-            ],
-            "importance": "required",
-            "minimum_confidence": 0.65
-          },
-          {
-            "fact_key": "weekly_load",
-            "question_ids": [
-              "QB-M7-001"
             ],
             "importance": "required",
             "minimum_confidence": 0.65
@@ -4483,14 +4419,6 @@
             "fact_key": "stakeholder_management",
             "question_ids": [
               "QB-M3B-010"
-            ],
-            "importance": "required",
-            "minimum_confidence": 0.65
-          },
-          {
-            "fact_key": "weekly_load",
-            "question_ids": [
-              "QB-M7-001"
             ],
             "importance": "required",
             "minimum_confidence": 0.65
@@ -4992,14 +4920,6 @@
             ],
             "importance": "required",
             "minimum_confidence": 0.65
-          },
-          {
-            "fact_key": "weekly_load",
-            "question_ids": [
-              "QB-M7-001"
-            ],
-            "importance": "required",
-            "minimum_confidence": 0.65
           }
         ],
         "positive_signals": [
@@ -5469,14 +5389,6 @@
             ],
             "importance": "required",
             "minimum_confidence": 0.65
-          },
-          {
-            "fact_key": "weekly_load",
-            "question_ids": [
-              "QB-M7-001"
-            ],
-            "importance": "required",
-            "minimum_confidence": 0.65
           }
         ],
         "positive_signals": [
@@ -5940,14 +5852,6 @@
               "QB-M9-011"
             ],
             "importance": "optional",
-            "minimum_confidence": 0.65
-          },
-          {
-            "fact_key": "weekly_load",
-            "question_ids": [
-              "QB-M7-001"
-            ],
-            "importance": "required",
             "minimum_confidence": 0.65
           }
         ],
@@ -6415,14 +6319,6 @@
             ],
             "importance": "required",
             "minimum_confidence": 0.65
-          },
-          {
-            "fact_key": "weekly_load",
-            "question_ids": [
-              "QB-M7-001"
-            ],
-            "importance": "required",
-            "minimum_confidence": 0.65
           }
         ],
         "positive_signals": [
@@ -6883,14 +6779,6 @@
             ],
             "importance": "required",
             "minimum_confidence": 0.65
-          },
-          {
-            "fact_key": "weekly_load",
-            "question_ids": [
-              "QB-M7-001"
-            ],
-            "importance": "required",
-            "minimum_confidence": 0.65
           }
         ],
         "positive_signals": [
@@ -7346,14 +7234,6 @@
             "fact_key": "ai_work_readiness",
             "question_ids": [
               "QB-M3B-015"
-            ],
-            "importance": "required",
-            "minimum_confidence": 0.65
-          },
-          {
-            "fact_key": "weekly_load",
-            "question_ids": [
-              "QB-M7-001"
             ],
             "importance": "required",
             "minimum_confidence": 0.65
@@ -7852,14 +7732,6 @@
               "QB-M9-006"
             ],
             "importance": "optional",
-            "minimum_confidence": 0.65
-          },
-          {
-            "fact_key": "weekly_load",
-            "question_ids": [
-              "QB-M7-001"
-            ],
-            "importance": "required",
             "minimum_confidence": 0.65
           }
         ],

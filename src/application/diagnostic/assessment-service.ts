@@ -291,7 +291,7 @@ export class AssessmentSession {
 
   /** حالة الفهم الحية للواجهة — أبعاد مألوفة + ترتيب أولي للمسارات */
   liveState(): {
-    dims: Record<'persona' | 'goal' | 'branch' | 'skills' | 'interest' | 'constraints', number>
+    dims: Record<'persona' | 'goal' | 'branch' | 'skills' | 'interest', number>
     overall: number
     rankedPathwayIds: { id: string; score: number }[]
   } {
@@ -306,10 +306,11 @@ export class AssessmentSession {
         f['employment_state'] || f['education_state'] || f['business_stage'] || f['sector'] ? 0.85 : 0,
       skills: skillsCount >= 3 ? 1 : skillsCount > 0 ? 0.6 : 0,
       interest: interestCount >= 3 ? 1 : interestCount > 0 ? 0.7 : 0,
-      constraints:
-        (f['weekly_load'] ? 0.5 : 0) + (f['budget_profile'] ? 0.25 : 0) + (f['learning_format'] ? 0.25 : 0),
     }
-    const overall = Object.values(dims).reduce((a, b) => a + b, 0) / 6
+    /* بُعد «القيود» أُسقط: حقائقه الثلاث لم تعد تُجمع في B2C — الميزانية محظورة،
+       وصيغة التعلم نُقلت لما بعد التوصية، والوقت الأسبوعي تقاعد. بُعدٌ صفرُه
+       مضمون يخفض النسبة المعروضة سُدسًا دائمًا ولا يقيس شيئًا. */
+    const overall = Object.values(dims).reduce((a, b) => a + b, 0) / 5
     const rankedPathwayIds = scorePathways(s.facts, s.skillVector)
       .slice(0, 4)
       .map((c) => ({ id: c.pathwayId, score: c.fit.total }))

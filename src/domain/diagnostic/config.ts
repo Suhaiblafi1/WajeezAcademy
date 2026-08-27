@@ -107,5 +107,6 @@ export const REQUIRED_CORE_FACTS = [
   'persona_type',
   'primary_goal',
   'goal_clarity',
-  'weekly_load',
+  /* weekly_load حُذف: تقاعد سؤاله، فإبقاؤه هنا يخصم ربع التغطية من كل جلسة
+     على حقيقة لم يعد أحد يُسأل عنها — أي ثقةٌ أقل بلا سبب. */
 ] as const

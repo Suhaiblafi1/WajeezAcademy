@@ -29,7 +29,6 @@ interface Journey {
   employment?: string
   goal?: string
   need?: string
-  time?: string
   mastery?: string
   interest?: string
   answers?: Record<string, string>
@@ -50,7 +49,6 @@ const STAGE_LABEL: Record<CareerStage, string> = {
 }
 const ALL_STAGES = Object.keys(STAGE_LABEL) as CareerStage[]
 
-const TIME_BY_ORDER = ['أقل من ساعتين أسبوعيًا', '٢–٤ ساعات', '٥–٧ ساعات', '٨ ساعات أو أكثر']
 const MASTERY_ONE = 'أن أتقن مهارة أو تخصصًا واحدًا بعمق'
 const MASTERY_SET = 'أن أبني مجموعة مهارات مترابطة لتحقيق هدف'
 const MASTERY_UNSURE = 'غير متأكد'
@@ -102,7 +100,6 @@ function runJourney(name: string, script: Journey): RunOutcome {
       else if (q.question_id === Q.EMPLOYMENT) idx = byLabel(script.employment ?? 'أعمل لدى جهة')
       else if (q.question_id === Q.GOAL) idx = byLabel(script.goal ?? '')
       else if (q.question_id === Q.NEED) idx = byLabel(script.need ?? '')
-      else if (q.question_id === Q.TIME) idx = byLabel(script.time ?? '٢–٤ ساعات')
       else if (q.question_id === Q.MASTERY) idx = byLabel(script.mastery ?? MASTERY_UNSURE)
       else if (q.question_id === 'QB-M3E-002') idx = byLabel(script.interest ?? 'لا أعرف')
       else if (q.answer_type === 'skill_level_5' || q.answer_type === 'likert_5') idx = (script.skillLevel ?? 3) - 1
@@ -130,11 +127,6 @@ function winnerOf(rec: RecommendationV21): string | null {
 }
 
 /* ─── توليد التوليفات canonical لكيان ─── */
-function timeFor(e: RecommendationEntity): string {
-  const order = Math.max(e.feasibility.min_weekly_load_order, e.entity_type === 'composite' ? 3 : 2)
-  return TIME_BY_ORDER[Math.min(order, 4) - 1]
-}
-
 function* combosFor(e: RecommendationEntity): Generator<Journey> {
   const stages = e.career_stages.length > 0 ? e.career_stages : ALL_STAGES
   /* بناء قوائم كل مرحلة أولًا */
@@ -207,7 +199,7 @@ function* combosFor(e: RecommendationEntity): Generator<Journey> {
                  ويحرم قوالب ريادة الأعمال من إشاراتها (ECOM فُقدت بهذا السبب) */
               const employment =
                 stage === 'freelancer' ? 'أعمل لحسابي (عمل حر)' : stage === 'founder' ? 'لدي مشروعي الخاص' : undefined
-              yield { stage, goal, need, time: timeFor(e), mastery, answers, skillLevel, employment }
+              yield { stage, goal, need, mastery, answers, skillLevel, employment }
             }
 }
 
@@ -352,19 +344,18 @@ for (const e of active) {
     stage: (Object.keys(STAGE_LABEL) as CareerStage[]).find((s) => STAGE_LABEL[s] === base?.stage) ?? e.career_stages[0] ?? 'experienced',
     goal: base?.goal,
     need: base?.need,
-    time: timeFor(e),
     mastery: base?.mastery,
     answers: base?.fn ? { [FN_Q]: base.fn } : e.entity_id === 'PW-GOV-002' ? { 'QB-M3B-001': 'حكومي' } : {},
     skillLevel: 2,
   }
-  const minOrder = e.feasibility.min_weekly_load_order
-  const times = TIME_BY_ORDER.filter((_, i) => i + 1 >= minOrder)
   const masteries = e.entity_type === 'composite' ? [MASTERY_SET, MASTERY_UNSURE] : [MASTERY_ONE, MASTERY_UNSURE]
   for (const skillLevel of [1, 2, 3, 4, 5]) {
-    for (const time of times) {
+    /* بُعد الوقت الأسبوعي أُسقط من التوليفات مع تقاعد سؤاله: كان يضاعف كل
+       تشغيل أربع مرات بنتائج متطابقة حرفيًا. */
+    {
       for (const mastery of masteries) {
-        const variant: Journey = { ...baseJourney, skillLevel, time, mastery }
-        const name = `${e.entity_id}-v${skillLevel}-${time}-${mastery}`
+        const variant: Journey = { ...baseJourney, skillLevel, mastery }
+        const name = `${e.entity_id}-v${skillLevel}-${mastery}`
         const out = runJourney(name, variant)
         const winner = winnerOf(out.rec)
         variantRuns.push({ id: name, winner, kind: out.rec.kind })
@@ -474,7 +465,6 @@ function monteCarloRun(seed: number, sessions: number, offset = 0): { stats: McS
         employment: pick(rng, ['أعمل لدى جهة', 'لا أعمل حاليًا', 'لدي مشروعي الخاص']),
         goal: pick(rng, goals).label_ar,
         need: pick(rng, needs).label_ar,
-        time: pick(rng, TIME_BY_ORDER),
         mastery: pick(rng, [MASTERY_ONE, MASTERY_SET, MASTERY_UNSURE]),
         interest: pick(rng, Object.keys(INTEREST_DOMAINS)),
         skillLevel: 1 + Math.floor(rng() * 5),

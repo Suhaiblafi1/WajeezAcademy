@@ -19,7 +19,6 @@ interface Journey {
   employment?: string
   goal?: string
   need?: string
-  time?: string
   mastery?: string
   interest?: string
   answers?: Record<string, string>
@@ -60,7 +59,6 @@ function runJourney(name: string, script: Journey): {
       else if (q.question_id === Q.EMPLOYMENT) idx = byLabel(script.employment ?? 'أعمل لدى جهة')
       else if (q.question_id === Q.GOAL) idx = byLabel(script.goal ?? '')
       else if (q.question_id === Q.NEED) idx = byLabel(script.need ?? '')
-      else if (q.question_id === Q.TIME) idx = byLabel(script.time ?? '٢–٤ ساعات')
       else if (q.question_id === Q.MASTERY) idx = byLabel(script.mastery ?? 'غير متأكد')
       else if (q.question_id === 'QB-M3E-002') idx = byLabel(script.interest ?? 'لا أعرف')
       else if (q.answer_type === 'skill_level_5' || q.answer_type === 'likert_5') idx = (script.skillLevel ?? 3) - 1
@@ -124,7 +122,6 @@ describe('فضاء التوصيات الموحد V2.1 — معايير القب�
       stage: 'experienced',
       goal: 'تحسين أدائي في عملي الحالي',
       need: 'تحليل البيانات واتخاذ القرار',
-      time: '٥–٧ ساعات',
     })
     const e = comp.eligibility.find((x) => x.entityId === 'PW-EMP-004')
     expect(e, 'PW-EMP-004 غائب عن سجل الأهلية').toBeDefined()
@@ -136,7 +133,6 @@ describe('فضاء التوصيات الموحد V2.1 — معايير القب�
       stage: 'early_career',
       goal: 'تحسين أدائي في عملي الحالي',
       need: 'التسويق والنمو',
-      time: '٥–٧ ساعات',
       answers: { 'QB-M3B-012': 'لا', 'QB-M3B-003': 'لا', 'QB-M3B-001': 'خاص' },
     })
     expect(rec.kind).toBe('single_pathway')
@@ -148,7 +144,6 @@ describe('فضاء التوصيات الموحد V2.1 — معايير القب�
       stage: 'early_career',
       goal: 'تحسين أدائي في عملي الحالي',
       need: 'التسويق والنمو',
-      time: '٥–٧ ساعات',
       answers: { 'QB-M3B-012': 'لا', 'QB-M3B-003': 'لا', 'QB-M3B-001': 'خاص' },
     })
     expect(rec.composite ?? null).toBeNull()
@@ -158,33 +153,26 @@ describe('فضاء التوصيات الموحد V2.1 — معايير القب�
     expect(comp.compositeVictory?.passes ?? false).toBe(false)
   })
 
-  it('مركب غير مجدٍ زمنيًا لا يفوز: مؤسس بأقل من ٣ ساعات يستبعد الخطط الثقيلة بالجدوى', () => {
-    const { rec, comp } = runJourney('مؤسس-ضيق', {
-      stage: 'founder',
-      employment: 'لدي مشروعي الخاص',
-      goal: 'تنمية مشروعي القائم وزيادة إيراداته',
-      need: 'بناء مشروعي من الصفر',
-      time: 'أقل من ٣ ساعات',
-      mastery: 'أن أبني مجموعة مهارات مترابطة لتحقيق هدف',
-    })
-    expect(rec.kind).toBe('single_pathway')
-    expect(rec.primaryPathway?.pathwayId).toBe('PW-BIZ-001')
-    expect(rec.composite ?? null).toBeNull()
-    for (const id of ['TPL-VENTURE-001', 'TPL-FREELANCE-001']) {
-      const e = comp.eligibility.find((x) => x.entityId === id)
-      expect(e!.eligible).toBe(false)
-      expect(e!.excludedReasons_ar.join(' ')).toContain('وقتك الأسبوعي الحالي دون حدها الأدنى')
-    }
-  })
+  /* حُذف: «مركب غير مجدٍ زمنيًا لا يفوز — مؤسس بأقل من ٣ ساعات».
+     كان يتحقق من استبعادٍ بالجدوى الزمنية، وهو استبعاد لم يعد له مدخل: سؤال
+     الساعات الأسبوعية (QC-F7-001) تقاعد بعد أن أعطى في القياس ناتجًا واحدًا
+     لأربع إجابات مختلفة. غياب weekly_load يجعل مكوّن الجدوى ثابتًا (0.6) عبر
+     كل الكيانات — لا يرتّبها ولا يستبعد منها أحدًا. الاختبار كان سيبقى أخضر
+     فقط لو اخترعنا له حقيقة لا يستطيع أي متعلم إنتاجها. */
 
   it('حاجة متعددة المجالات مع حواسم مقيسة → مسار محسوم لا وسم مستشار: مستقل start_business + تفاوض', () => {
     const { rec } = runJourney('مستقل-ثلاثي', {
       stage: 'freelancer',
       goal: 'بدء مشروع أو مصدر دخل مستقل',
       need: 'التفاوض وإغلاق الصفقات',
-      time: '٥–٧ ساعات',
       mastery: 'أن أبني مجموعة مهارات مترابطة لتحقيق هدف',
       interest: 'أعمال',
+      /* الاستعداد للتطبيق يُصرَّح به هنا بدل أن يأتي من الافتراض الصامت للجسر
+         (الخيار الأول = «منخفضة جدا»). القالب VENTURE يحمل قاعدة معلنة
+         (VENTURE-NO-PRACTICE) توسم المتعلم منخفضَ الاستعداد لمراجعة مستشار،
+         فترك القيمة للافتراض كان سيقيس تلك القاعدة لا دعوى هذا الاختبار.
+         القاعدة نفسها محروسة في completion-v2 (VENTURE-NO-PRACTICE). */
+      answers: { 'QB-M2-015': 'متوسطة' },
     })
     /* المرحلة 4 (عدالة الدليل): مهارتا FREELANCE الحاسمتان (التفاوض، الكتابة
        التجارية) لا يقيسهما أي سؤال في بنك V2.1، والسباق حي — فيفوز القالب
@@ -200,11 +188,21 @@ describe('فضاء التوصيات الموحد V2.1 — معايير القب�
        نزلت الإحالة/الاستكشاف 146 ← 139: سبعة متعلمين إضافيين ينالون جوابا.
        فوز القوالب المركبة نفسه ما زال محروسا في evidence-fairness (٨ وصفة
        STRATEGY · ٩ وصفة ECOM) — وكلاهما يمر، فالعقد لم يسقط بتغيير العنوان. */
-    expect(rec.kind).toBe('single_pathway')
+    /* قياس 2026-08-27 بعد تقاعد سؤال الوقت: المقعد الذي كان يشغله تحرّر فسأل
+       المحرك QB-M3C-002 مكانه، ودليله رجّح الخطة المركّبة على المسار الجاهز.
+       فأصبح المخرج composite_template بست دورات (٥٢ ساعة) بدل PW-BIZ-001
+       وحده — وهذا هو الاتجاه المقصود: خطة مركّبة تُبنى للمتعلم بدل مسار جاهز
+       يُباع كما هو. والدعوى الأصلية (محسوم بلا وسم مستشار) قائمة كما هي.
+       ملاءمات المرشحين نزلت جميعًا 0.04 بالقدر نفسه (مكوّن الجدوى 1 ← 0.6
+       بوزن 0.1) فلم يتغيّر ترتيبها بذلك. */
+    expect(rec.kind).toBe('composite_template')
+    expect(rec.composite?.templateId).toBe('TPL-VENTURE-001')
+    expect(rec.composite?.courses.length).toBe(6)
+    expect(rec.composite?.advisorHandoff ?? null, 'وُسم بمستشار رغم اكتمال أدلته').toBeNull()
     expect(rec.primaryPathway?.pathwayId).toBe('PW-BIZ-001')
     /* الفائز يبقى داخل الفضاء النشط ومحسوما بلا وسم — لا فوز صامت */
     const active = new Set(recommendationUniverse().active.map((e) => e.entity_id))
-    expect(active, 'فائز خارج الفضاء النشط').toContain(rec.primaryPathway!.pathwayId)
+    expect(active, 'فائز خارج الفضاء النشط').toContain(rec.composite!.templateId)
     expect(rec.confidence.total).toBeGreaterThan(0)
   })
 
@@ -246,7 +244,6 @@ describe('فضاء التوصيات الموحد V2.1 — معايير القب�
       stage: 'freelancer',
       goal: 'بدء مشروع أو مصدر دخل مستقل',
       need: 'التفاوض وإغلاق الصفقات',
-      time: '٥–٧ ساعات',
       mastery: 'أن أبني مجموعة مهارات مترابطة لتحقيق هدف',
       interest: 'أعمال',
     }
