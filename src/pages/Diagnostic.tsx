@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
 import { track } from "@/services/analytics";
 import { apiPost } from "@/services/api";
+import { usePriceFormatter } from "@/services/currency";
 import { ensurePublishedSnapshot } from "@/services/catalog-snapshot";
 import { ensurePublishedContent } from "@/services/public-content";
 import SeoHead from "@/components/SeoHead";
@@ -45,7 +46,7 @@ import {
   type DiagResult,
   type Dim,
 } from "@/data/diagnostic";
-import { AssessmentSession, createAssessment, diagQuestionById } from "@/application/diagnostic/assessment-service";
+import { AssessmentSession, createAssessment, diagQuestionById, type NextStep } from "@/application/diagnostic/assessment-service";
 import type { DeepeningComparison } from "@/application/diagnostic/assessment-service";
 import { loadSession, saveLastResult, loadLastResultSafe } from "@/application/diagnostic/session-store";
 import {
@@ -54,6 +55,7 @@ import {
   pathwayDelivery,
   courses,
   pathwayPriceFor,
+  coursePriceOf,
   MIN_PATHWAY_COURSES,
   MAX_PATHWAY_COURSES,
   weeksLabel,
@@ -281,6 +283,28 @@ const VARIANT_AR: Record<CompositeView["variant"], { label: string; hint: string
   full: { label: "النسخة الكاملة", hint: "كل الدورات الأساسية مع ما يناسب ظرفك من الشرطية" },
   extended: { label: "النسخة الموسعة", hint: "الكاملة مع دورات جسرية تربط المجالين" },
 };
+
+/* سعر المسار كما تعرضه صفحته العامة بالضبط — لا رقم جديد ولا تقدير.
+   المسار المركّب لا سعر كتالوج له، فيُقال ذلك صراحة بدل تعميم رقم لا يخصه. */
+function PathwayPriceNote({ pathwayId }: { pathwayId: string }) {
+  const fmt = usePriceFormatter();
+  const courses = pathwayCourses[pathwayId] ?? [];
+  if (courses.length === 0) return null;
+  const total = pathwayPriceFor(courses.length);
+  const separate = courses.reduce((s, cid) => {
+    const c = courseById(cid);
+    return c ? s + coursePriceOf(c) : s;
+  }, 0);
+  const savingPct = separate > total ? Math.round((1 - total / separate) * 100) : 0;
+
+  return (
+    <p className="mt-3 text-[11px] leading-5 text-white/45">
+      <span className="font-bold text-white/70">هذا المسار كاملا: {fmt(total)}</span>
+      {savingPct > 0 && <> — بدل {fmt(separate)} لو اشتريت دوراته منفردة، أي توفير {savingPct}٪</>}
+      . والدفع لا يُطلب الآن؛ تفاصيله وخيار الدورة المفردة في صفحة المسار.
+    </p>
+  );
+}
 
 export interface ConfidenceParts {
   coverage: number;
@@ -599,7 +623,10 @@ export default function Diagnostic() {
   };
 
   /** يدفع خطوة المحرك إلى حالة الواجهة */
-  const applyStep = (step: { question: DiagQuestion | null; deepening?: { index: number; total: number; reasonAr: string | null } | null }) => {
+  /* كان النوع مكتوبا هنا حرفيا بدل NextStep، فكل حقل يضيفه المصدر لا يصل — وقد
+     مرّ `step.whyAr` صامتا لأن الجذر tsconfig بلا ملفات و`tsc --noEmit` لا يفحص
+     شيئا. النوع المسمّى يمنع تكرارها. */
+  const applyStep = (step: Pick<NextStep, "question" | "deepening" | "whyAr">) => {
     const session = sessionRef.current;
     if (session) {
       const snapshot = session.answersSnapshot;
@@ -1592,9 +1619,12 @@ export default function Diagnostic() {
                     </div>
                   ))}
                 </div>
-                <p className="mt-3 text-[11px] leading-5 text-white/40">
-                  تفاصيل الاستثمار وقيمة الخصم تظهر في صفحة مسارك بعد اعتماده.
-                </p>
+                {/* كانت هنا «تفاصيل الاستثمار وقيمة الخصم تظهر في صفحة مسارك بعد اعتماده»،
+                    بينما صفحة المسار نفسها تعرض سعره لأي زائر بلا حساب — ومعه السعر
+                    المشطوب ونسبة التوفير وزر الدفع. فالتأجيل لم يكن سياسة تسعير بل
+                    تناقضا يجعل التشخيص أكثر تكتّما من الموقع الذي ينتمي إليه، ويترك
+                    القارئ يظن أن رقما سيفاجئه بعد أن يُلزم نفسه. نفس الرقم، هنا. */}
+                <PathwayPriceNote pathwayId={topPathway.id} />
               </div>
             </div>
           </div>
