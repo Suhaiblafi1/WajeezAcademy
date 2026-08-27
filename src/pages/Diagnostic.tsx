@@ -39,7 +39,7 @@ import ResultFeedback from "@/components/ResultFeedback";
 import CourseJourney, { type CourseSuggestion } from "@/components/CourseJourney";
 import { ResultErrorBoundary } from "@/components/ResultErrorBoundary";
 import SkillFamilyGrid, { type FamilyToRate } from "@/components/SkillFamilyGrid";
-import ComposedPlanCard, { type ComposedPathView } from "@/components/ComposedPlanCard";
+import ComposedPlanCard, { type ComposedPathView, type ComposedCourseView } from "@/components/ComposedPlanCard";
 import { Q } from "@/domain/diagnostic/v2_1/maps";
 import {
   type DiagQuestion,
@@ -138,6 +138,22 @@ function clearProgress() {
 
 
 /* ═══════════ رحلة الدورات القابلة للتخصيص — «ماذا ستحقق من خلال خطتك؟» ═══════════ */
+
+/* سبب وجود المقرر في خطة مركّبة من المقررات — بلغة المتعلم لا بلغة المحرك.
+   الفجوة المسدودة هي المعلومة الحقيقية هنا، والخروج عن المجال الأول يُقال صراحة
+   لأنه القرار الوحيد في الخطة الذي قد يفاجئ قارئها. */
+function composedReason(c: ComposedCourseView): string {
+  const bits: string[] = [];
+  if (c.closesGaps.length > 0) {
+    bits.push(
+      c.closesGaps.length === 1
+        ? 'يسدّ فجوة واحدة من فجواتك المقيسة'
+        : `يسدّ ${c.closesGaps.length} من فجواتك المقيسة`,
+    );
+  }
+  bits.push(c.onAnchor ? 'في صميم مجالك الأول' : 'خارج مجالك الأول — أُدرج لفجوة قوية');
+  return `${bits.join(' · ')}.`;
+}
 
 /* ─────────── الخطة المركّبة قابلة للاستبدال — لا للحذف ولا للإضافة ───────────
 
@@ -361,9 +377,11 @@ const VARIANT_AR: Record<CompositeView["variant"], { label: string; hint: string
 
 /* سعر المسار كما تعرضه صفحته العامة بالضبط — لا رقم جديد ولا تقدير.
    المسار المركّب لا سعر كتالوج له، فيُقال ذلك صراحة بدل تعميم رقم لا يخصه. */
-function PathwayPriceNote({ pathwayId }: { pathwayId: string }) {
+function PathwayPriceNote({ pathwayId, courseIds }: { pathwayId: string; courseIds?: string[] }) {
   const fmt = usePriceFormatter();
-  const courses = pathwayCourses[pathwayId] ?? [];
+  /* خطة المقررات تُسعَّر بعدد مقرراتها هي — لا بعدد مقررات المسار الذي اشتُقّ
+     منه مرساتها. والقاعدة واحدة في الحالتين: العدد هو ما يحدد السعر. */
+  const courses = courseIds ?? pathwayCourses[pathwayId] ?? [];
   if (courses.length === 0) return null;
   const total = pathwayPriceFor(courses.length);
   const separate = courses.reduce((s, cid) => {
@@ -715,6 +733,15 @@ export default function Diagnostic() {
       shown,
     );
   }, [result, topPathway]);
+
+  /* خطة المقررات هي التوصية الأولى متى وُجدت وتجاوزت مسارا واحدا: لا قالب فاز،
+     وقيّم المتعلم جوانبه، ولا تطابق مقرراتُها مسارا قائما. وحين تكون كذلك تحمل
+     رأس الصفحة أيضا — لا رأسَ مسارٍ جاهز فوق قائمة مقررات مركّبة. */
+  const composedPrimary = useMemo(() => {
+    if ((result?.resultJson.composite as CompositeView | null) ?? null) return null;
+    const cp = (result?.resultJson.composed_path as ComposedPathView | null | undefined) ?? null;
+    return cp && cp.courses.length > 0 && !cp.matchesPathwayId ? cp : null;
+  }, [result]);
 
   /* المرحلة الحالية — تُسمّى في شريط التقدم. سقط `passedStages` مع صف الدوائر:
      لم يعد شيء يعرض «أيّ مرحلة اكتملت» بعد توحيد المؤشر. */
@@ -1662,8 +1689,12 @@ export default function Diagnostic() {
             );
           })()}
 
-          {/* بطاقة التوصية الأولى للمسار القياسي — تظهر فقط عندما لا تفوز خطة مركبة */}
-          {((result.resultJson.composite as CompositeView | null) ?? null) === null && (
+          {/* رأس التوصية حين تكون خطة المقررات هي الأولى — بدل رأس مسار جاهز
+              فوق قائمة مقررات رُكّبت من أكثر من مسار. */}
+          {composedPrimary && <ComposedPlanCard plan={composedPrimary} />}
+
+          {/* بطاقة التوصية الأولى للمسار القياسي — لا قالب فاز ولا خطة مقررات */}
+          {((result.resultJson.composite as CompositeView | null) ?? null) === null && !composedPrimary && (
           <div className="mt-10 overflow-hidden rounded-3xl border border-[#38A7B4]/40 bg-gradient-to-b from-panel to-paper">
             <div className="border-b border-white/10 bg-[#38A7B4]/10 px-6 py-3 text-sm font-bold text-[#6EC7D1]">
               التوصية الأولى
@@ -1800,25 +1831,51 @@ export default function Diagnostic() {
             gapNote={composedFold.gapNote}
           />
 
-          {/* «ماذا ستحقق من خلال خطتك؟» — رحلة الدورات، والتخصيص داخلها للمسارات الأساسية */}
+          {/* «ماذا ستحقق من خلال خطتك؟» — ترتيب الأولوية بين ثلاثة مخرجات.
+
+              كانت القوالب المركّبة هي التركيب الوحيد، وهي ستة عشر قالبا تغطي
+              واحدا وثلاثين زوجا من المجالات فقط — فمن لا يقابل زوجُه واحدا منها
+              يأخذ مسارا جاهزا مهما تعددت حاجته. قياس: صفر خطط مركّبة في تسع رحلات.
+
+              وتركيب المقررات (composePath) لا سقف له: يرتّب المئة مقرر كلها
+              بفجوات المتعلم المقيسة ويبني منها خطة لأي تركيبة مجالات. فصار هو
+              المخرج المركّب الأساسي، والقوالب تبقى لمن يطابقها بدقة.
+
+              والترتيب: قالب فاز ببوابته ← خطة مقررات تتجاوز مسارا واحدا ← مسار جاهز.
+              وشرط «تتجاوز مسارا واحدا» ليس زينة: composePath يعلن matchesPathwayId
+              حين تُطابق مقرراتُه مسارا قائما، وحينها عرضُه «تركيبا» ادعاء — يُعرض
+              المسار نفسه بشهادته وسعره. */}
           {(() => {
             const compositeView = (result.resultJson.composite as CompositeView | null) ?? null;
-            if (!compositeView) {
-              return <PlanCourses pathway={topPathway} gaps={result.gaps} authed={authed} resetKey={swapCount} />;
+            if (compositeView) {
+              const ordered = [...compositeView.courses].sort((a, b) => a.sequence - b.sequence);
+              return (
+                <ComposedSwap
+                  planCourseIds={ordered.map((c) => c.courseId)}
+                  reasons={Object.fromEntries(ordered.map((c) => [c.courseId, c.reason_ar]))}
+                  pathwayIds={compositeView.represented_pathway_ids}
+                  gaps={result.gaps}
+                  delivery={pathwayDelivery(topPathway.id)}
+                  authed={authed}
+                />
+              );
             }
-            const ordered = [...compositeView.courses].sort((a, b) => a.sequence - b.sequence);
-            const ids = ordered.map((c) => c.courseId);
-            const reasons = Object.fromEntries(ordered.map((c) => [c.courseId, c.reason_ar]));
-            return (
-              <ComposedSwap
-                planCourseIds={ids}
-                reasons={reasons}
-                pathwayIds={compositeView.represented_pathway_ids}
-                gaps={result.gaps}
-                delivery={pathwayDelivery(topPathway.id)}
-                authed={authed}
-              />
-            );
+
+            const cp = composedPrimary;
+            if (cp) {
+              return (
+                <ComposedSwap
+                  planCourseIds={cp.courses.map((c) => c.courseId)}
+                  reasons={Object.fromEntries(cp.courses.map((c) => [c.courseId, composedReason(c)]))}
+                  pathwayIds={[...new Set(cp.courses.map((c) => c.pathwayId))]}
+                  gaps={result.gaps}
+                  delivery={pathwayDelivery(topPathway.id)}
+                  authed={authed}
+                />
+              );
+            }
+
+            return <PlanCourses pathway={topPathway} gaps={result.gaps} authed={authed} resetKey={swapCount} />;
           })()}
 
           {/* الاعتماد أسفل الخطة مباشرة — يظهر للضيف مضبّبا في مكانه، ويعمل فور انكشافه بالتسجيل */}
@@ -1856,7 +1913,7 @@ export default function Diagnostic() {
 
           {/* الخطة المركّبة — لمن قيّم جوانبه، وحين تضيف مقررات لا تحويها الخطة أعلاه.
               أما إذا كانت تعيد سرد الدورات نفسها فقد طُويت إلى سطر في بطاقة الأسباب. */}
-          {composedFold.showCard && (() => {
+          {composedFold.showCard && !composedPrimary && (() => {
             const cp = result.resultJson.composed_path as ComposedPathView | null | undefined;
             return cp && cp.courses?.length ? <ComposedPlanCard plan={cp} /> : null;
           })()}

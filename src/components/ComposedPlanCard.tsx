@@ -1,4 +1,6 @@
 import { Route as RouteIcon, CheckCircle2, ArrowUpRight } from "lucide-react";
+import { pathwayPriceFor, courseById, coursePriceOf } from "@/data/courses";
+import { usePriceFormatter } from "@/services/currency";
 
 /* بطاقة الخطة المركّبة — تُعرض حين يقيّم المتعلم جوانبه.
 
@@ -40,6 +42,24 @@ function levelNote(m: number): string {
   return "يمتد فوق مستواك الحالي";
 }
 
+function PlanPrice({ courseIds }: { courseIds: string[] }) {
+  const fmt = usePriceFormatter();
+  if (courseIds.length === 0) return null;
+  const total = pathwayPriceFor(courseIds.length);
+  const separate = courseIds.reduce((s, id) => {
+    const c = courseById(id);
+    return c ? s + coursePriceOf(c) : s;
+  }, 0);
+  const saving = separate > total ? Math.round((1 - total / separate) * 100) : 0;
+  return (
+    <p className="mt-2 text-[11px] leading-6 text-white/45">
+      <span className="font-bold text-white/70">هذه الخطة كاملة: {fmt(total)}</span>
+      {saving > 0 && <> — بدل {fmt(separate)} لو اشتريت دوراتها منفردة، أي توفير {saving}٪</>}
+      . والدفع لا يُطلب الآن.
+    </p>
+  );
+}
+
 export default function ComposedPlanCard({ plan }: { plan: ComposedPathView }) {
   if (!plan || plan.courses.length === 0) return null;
   const covered = plan.coveredGaps.length;
@@ -54,6 +74,12 @@ export default function ComposedPlanCard({ plan }: { plan: ComposedPathView }) {
         <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] font-bold text-white/60" dir="ltr">
           {plan.courses.length} دورات · {plan.totalHours} ساعة
         </span>
+      </div>
+
+      {/* السعر بنفس قاعدة المسار الجاهز: العدد هو ما يحدده. وخطة مركّبة بلا سعر
+          تترك القارئ يظن أن رقما سيفاجئه — وقد رُصد ذلك في مراجعة التجربة. */}
+      <div>
+        <PlanPrice courseIds={plan.courses.map((c) => c.courseId)} />
       </div>
 
       <p className="mt-2.5 text-sm leading-relaxed text-white/60">
