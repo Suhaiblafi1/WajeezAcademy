@@ -1015,17 +1015,6 @@
         {
           "sequence": 3,
           "course_type": "required",
-          "course_id": "C-MKT-103",
-          "course_title_ar": "إنتاج محتوى يخدم هدفًا تجاريًا محددًا",
-          "pathway_id": "PW-MKT-001",
-          "pathway_title_ar": "التسويق الرقمي: من فهم العميل إلى نتائج تُقاس",
-          "hours": 8,
-          "role_ar": "محتوى قرار الشراء",
-          "reason_ar": "إنتاج محتوى يخدم الاعتراضات والمقارنة والثقة."
-        },
-        {
-          "sequence": 4,
-          "course_type": "required",
           "course_id": "C-SAL-102",
           "course_title_ar": "تحويل الاستهداف إلى فرص بيع منظمة",
           "pathway_id": "PW-SAL-001",
@@ -1035,7 +1024,7 @@
           "reason_ar": "ربط العملاء المحتملين والمتابعة ببيانات CRM."
         },
         {
-          "sequence": 5,
+          "sequence": 4,
           "course_type": "required",
           "course_id": "C-FINM-102",
           "course_title_ar": "معرفة تكلفة قرارك وهامش ربحه",
@@ -1046,7 +1035,7 @@
           "reason_ar": "منع نمو مبيعات لا يخلق قيمة مالية."
         },
         {
-          "sequence": 6,
+          "sequence": 5,
           "course_type": "required",
           "course_id": "C-OPS-101",
           "course_title_ar": "رسم عمليتك الحالية ومعرفة نقطة البداية",
@@ -1057,7 +1046,7 @@
           "reason_ar": "رسم تدفق الطلب والتسليم وخط أساس للجودة والزمن."
         },
         {
-          "sequence": 7,
+          "sequence": 6,
           "course_type": "required",
           "course_id": "C-DAT-103",
           "course_title_ar": "اختيار مؤشرات أداء تقود لقرار صحيح",
@@ -1069,6 +1058,12 @@
         }
       ],
       "conditional_courses": [
+        {
+          "course_id": "C-MKT-103",
+          "course_title_ar": "إنتاج محتوى يخدم هدفًا تجاريًا محددًا",
+          "hours": 8,
+          "condition_ar": "لمن يعتمد المحتوى قناةَ اكتساب أساسية لمتجره — لا لمن يعتمد الإعلان المدفوع أو البيع المباشر."
+        },
         {
           "sequence": 1,
           "course_type": "conditional",
