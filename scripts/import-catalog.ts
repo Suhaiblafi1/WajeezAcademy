@@ -40,9 +40,10 @@ if (s.snapshotStale) {
   console.log('⚠️  الجداول حُدِّثت، واللقطة المنشورة لم تتغيّر — المحرك ما زال يقرأ الكتالوج السابق.')
   console.log(`   بصمة ملفات المستودع: ${s.repoSnapshotHash.slice(0, 16)}…`)
   console.log(`   بصمة اللقطة المنشورة: ${s.snapshotHash.slice(0, 16)}…`)
-  console.log('   لا يصل التغيير إلى المستخدم إلا بنشر لقطة جديدة من لوحة النشر:')
-  console.log('   إصدار مسودة ← تحقق بنيوي ← تحليل أثر (12 شخصية) ← نشر ذرّي.')
-  console.log('   والتراجع متاح من اللوحة نفسها إن ساء شيء.')
+  console.log('   لا يصل التغيير إلى المستخدم إلا بنشر لقطة جديدة.')
+  console.log('   في بناء الإنتاج: يجري تاليا وآليا (npm run catalog:publish).')
+  console.log('   وفي غيره: من /admin/publishing — تحقق ← تحليل أثر ← نشر ذرّي.')
+  console.log('   والتراجع متاح من اللوحة في الحالتين إن ساء شيء.')
 }
 
 await disconnectPrisma()
@@ -52,4 +53,4 @@ process.on('uncaughtException', (e) => {
   throw e
 })
 await stopEmbeddedPostgres()
-console.log(s.snapshotStale ? '✅ اكتمل الاستيراد — ويبقى النشر من اللوحة' : '✅ اكتمل الاستيراد')
+console.log(s.snapshotStale ? '✅ اكتمل الاستيراد — ويبقى نشر اللقطة' : '✅ اكتمل الاستيراد')

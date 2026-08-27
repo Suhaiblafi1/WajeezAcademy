@@ -19,6 +19,7 @@
     "ci:lint-baseline": "tsx scripts/lint-baseline.ts",
     "ci:journeys-baseline": "tsx scripts/v2_1/sim-journeys.ts --check",
     "catalog:import": "tsx scripts/import-catalog.ts",
+    "catalog:publish": "tsx scripts/publish-catalog-snapshot.ts",
     "audit:diagnostic": "tsx scripts/audit-diagnostic-data.ts",
     "audit:methodology": "tsx scripts/audit-methodology.ts",
     "audit:catalog": "tsx scripts/audit-catalog.ts",

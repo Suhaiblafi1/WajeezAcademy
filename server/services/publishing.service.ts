@@ -134,8 +134,10 @@ export class PublishingService {
     return { ok: errors.length === 0, errors }
   }
 
-  /** النشر الذري — يرفض إن بقي نقص، ولا ينشر شيئا جزئيا أبدا */
-  async publish(versionId: string, actorId: string) {
+  /** النشر الذري — يرفض إن بقي نقص، ولا ينشر شيئا جزئيا أبدا.
+      actorId = null فعلٌ نظامي (النشر الآلي مع البناء) — نفس اصطلاح سجل
+      التدقيق، والعمودان publishedBy وactorId يقبلان null أصلا في المخطط. */
+  async publish(versionId: string, actorId: string | null) {
     const version = await this.prisma.catalogVersion.findUnique({ where: { id: versionId } })
     if (!version) throw new AuthError('not_found', 'الإصدار غير موجود', 404)
     if (version.status !== 'draft') throw new AuthError('bad_state', `الإصدار بحالة ${version.status} — النشر من draft فقط`, 409)
