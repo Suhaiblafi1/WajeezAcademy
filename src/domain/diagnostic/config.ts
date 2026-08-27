@@ -69,6 +69,12 @@ export const TEMPLATE_THRESHOLDS = {
   max_conditional_courses_full: 2,
   max_conditional_courses_extended: 3,
   max_plan_hours: 80,
+  /* سقف عدد المقررات في الخطة المركّبة — كان السقف على الساعات وحدها (٨٠)،
+     فكانت النسخة الكاملة تبلغ ٨–٩ مقررات والموسّعة عشرة في كل القوالب الستة عشر،
+     بينما وعد المنتج للمتعلم مسار من ستة مقررات يستبدل منها ويحذف، وفوقها الهدية.
+     والسقف هنا هو نفسه MAX_PATHWAY_COURSES في بيانات الواجهة، ولا يُشتق منها لأن
+     المحرك لا يستورد من طبقة العرض. */
+  max_plan_courses: 6,
 } as const
 
 export const TRAINER_WEIGHTS = {

@@ -282,6 +282,8 @@ export interface CoursePlan {
   removed: { courseId: string; titleAr: string; reason_ar: string }[]
   /** الدورات المطلوبة وحدها تتجاوز 80 ساعة — الخطة لا تُصدر آليا بل تُحال لمستشار */
   requiredOverflow: boolean
+  /** المطلوبة وحدها فوق سقف المقررات — لا يُقتطع أساسي بصمت، ويُحسم في بيانات القالب */
+  requiredOverCourseCap?: boolean
 }
 
 export function buildCoursePlan(
@@ -352,20 +354,34 @@ export function buildCoursePlan(
     }
   }
 
-  /* سقف 80 ساعة صارم — حتى الدورات المطلوبة لا تتجاوزه آليا */
+  /* سقفان: 80 ساعة، وستة مقررات.
+
+     كان السقف على الساعات وحدها، فبلغت النسخة الكاملة ثمانية أو تسعة مقررات
+     والموسّعة عشرة في القوالب الستة عشر كلها — بينما وعد المنتج للمتعلم خطة من
+     ستة يستبدل منها ويحذف وفوقها الهدية. والزائد لا يزيده خيارا بل عبئا يقرأه
+     ثم يقرأ مثله في البطاقة التالية.
+
+     والترتيب: الأساسي أولا، فالشرطي، فالجسري — فما يُقتطع هو الأقل إلزاما.
+     أما قالب مقرراته الأساسية وحدها فوق الستة (TPL-ECOM-001 بسبعة) فلا يُقتطع
+     منه أساسي بصمت: خطة ناقصة الإلزام أسوأ من خطة طويلة. يُبقى كما هو ويُرفع
+     في requiredOverCourseCap ليُحسم في بيانات القالب لا في المحرك. */
   const sorted = items.sort((a, b) => a.sequence - b.sequence)
-  const requiredHours = sorted.filter((i) => i.type === 'required').reduce((s, i) => s + i.hours, 0)
+  const requiredItems = sorted.filter((i) => i.type === 'required')
+  const requiredHours = requiredItems.reduce((s, i) => s + i.hours, 0)
   if (requiredHours > TEMPLATE_THRESHOLDS.max_plan_hours) {
     return { items: [], removed, requiredOverflow: true }
   }
+  const requiredOverCourseCap = requiredItems.length > TEMPLATE_THRESHOLDS.max_plan_courses
   let total = 0
   const capped: CoursePlanItem[] = []
   for (const item of sorted) {
-    if (total + item.hours > TEMPLATE_THRESHOLDS.max_plan_hours && item.type !== 'required') break
+    const optional = item.type !== 'required'
+    if (optional && total + item.hours > TEMPLATE_THRESHOLDS.max_plan_hours) break
+    if (optional && capped.length >= TEMPLATE_THRESHOLDS.max_plan_courses) break
     total += item.hours
     capped.push(item)
   }
-  return { items: capped, removed, requiredOverflow: false }
+  return { items: capped, removed, requiredOverflow: false, requiredOverCourseCap }
 }
 
 export function selectTemplate(

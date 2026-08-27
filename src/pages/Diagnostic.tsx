@@ -49,6 +49,7 @@ import {
 import { AssessmentSession, createAssessment, diagQuestionById, type NextStep } from "@/application/diagnostic/assessment-service";
 import type { DeepeningComparison } from "@/application/diagnostic/assessment-service";
 import { loadSession, saveLastResult, loadLastResultSafe } from "@/application/diagnostic/session-store";
+import { foldComposedPlan } from "@/application/diagnostic/composed-fold";
 import {
   courseById,
   pathwayCourses,
@@ -323,11 +324,14 @@ function WhyThisPathway({
   confidence,
   bandAr,
   changeMakers,
+  gapNote,
 }: {
   reasons: string[];
   confidence: ConfidenceParts | undefined;
   bandAr: string | null;
   changeMakers: string[];
+  /** أثر معايرة الجوانب حين لا تستحق قائمة مستقلة — تفسير لا تكرار */
+  gapNote?: string | null;
 }) {
   const evidence = reasons.filter((r) => r.trim().length > 0).slice(0, 5);
   if (evidence.length === 0 && !confidence) return null;
@@ -395,6 +399,13 @@ function WhyThisPathway({
             فوق ٧٥٪ نحن واثقون بالترشيح، وبين ٥٠ و٧٥٪ نعرض معه بدائل، ودون ذلك نحيلك لمستشار بشري قبل أي قرار.
           </p>
         </div>
+      )}
+
+      {gapNote && (
+        <p className="mt-4 flex items-start gap-2.5 text-sm leading-relaxed text-white/70">
+          <Gauge className="mt-0.5 h-4 w-4 shrink-0 text-teal-light-ink" />
+          {gapNote}
+        </p>
       )}
 
       {changeMakers.length > 0 && (
@@ -612,6 +623,22 @@ export default function Diagnostic() {
   const liveNow = stage === "questions" ? live : null;
   const understoodDims = liveNow ? (Object.keys(DIM_LABELS) as Dim[]).filter((d) => liveNow.dims[d] >= 0.6) : [];
   /* لا نشتق «التطابق الأولي» ولا نعرضه — اسم المسار/القالب يُكشف في النتيجة فقط */
+
+  /* هل تستحق «خطتك مرتَّبة على مقاسك» قائمةً ثانية، أم أنها إعادة سرد للأولى؟
+     تُقارَن بما تعرضه الخطة المرئية فعلا: مقررات القالب المركّب إن فاز، وإلا
+     مقررات المسار حتى السقف. فإن لم تضف مقررين لا تحويهما الأولى فهي تكرار —
+     تُطوى إلى سطر تفسيري واحد داخل بطاقة «لماذا هذا المسار» بدل صفٍّ ثانٍ من
+     البطاقات يقرؤه المتعلم فيجد فيه ما قرأه للتو. */
+  const composedFold = useMemo(() => {
+    const composite = (result?.resultJson.composite as CompositeView | null) ?? null;
+    const shown = composite
+      ? composite.courses.map((c) => c.courseId)
+      : (pathwayCourses[topPathway?.id ?? ""] ?? []).slice(0, MAX_PATHWAY_COURSES);
+    return foldComposedPlan(
+      (result?.resultJson.composed_path as ComposedPathView | null | undefined) ?? null,
+      shown,
+    );
+  }, [result, topPathway]);
 
   /* المرحلة الحالية — تُسمّى في شريط التقدم. سقط `passedStages` مع صف الدوائر:
      لم يعد شيء يعرض «أيّ مرحلة اكتملت» بعد توحيد المؤشر. */
@@ -1657,7 +1684,14 @@ export default function Diagnostic() {
           {/* ─── حدّ الظهور: ينتهي المقروء عند آخر عنصر في بطاقة «ماذا ستحصل عليه فعليا؟»
               وكل ما بعده داخل البوابة — محتوى حقيقي في مكانه تحت الضباب للضيف ─── */}
           <ResultGate revealed={authed} onDone={revealResult}>
-          {/* بطاقة التسجيل تَعِد بستة بنود خامسها «لماذا هذا المسار» — وكانت كلمة
+          {/* كانت الصفحة تعرض خطتين متتاليتين تسمّي كلٌّ منهما نفسها «خطتك»:
+              «ماذا ستحقق من خلال خطتك؟» ثم «خطتك مرتَّبة على مقاسك». وقياسٌ على خمس
+              حالات: المتعلم يرى ١٠–١١ بطاقة دورة، أربع أو خمس منها الدورات نفسها
+              مكرّرة — وفي ثلاث حالات من الخمس كانت القائمة الثانية إعادة سرد للأولى
+              كاملة بإطار مختلف. فالثانية لا تُعرض إلا حين تضيف مقررين فأكثر لا
+              تحويهما الأولى؛ وحين لا تضيف، تُطوى قيمتها التفسيرية (تغطية الفجوات)
+              إلى بطاقة «لماذا هذا المسار» حيث موضعها الطبيعي، ولا تتكرر الدورات. */}
+          {/* وبطاقة التسجيل تَعِد بستة بنود خامسها «لماذا هذا المسار» — وكانت كلمة
               «لماذا» لا ترد ولا مرة في المحتوى المكشوف. المحرك يحسب أسبابه
               (reasons_ar) وثبات نتيجته (change_makers_ar) وقوة أدلته الخمسة، ثم
               كان يُشحن كل ذلك إلى المتصفح ولا يُعرض منه شيء إلا قائمة منطوية في
@@ -1667,6 +1701,7 @@ export default function Diagnostic() {
             confidence={result.resultJson.confidence as ConfidenceParts | undefined}
             bandAr={result.confidenceBand}
             changeMakers={(result.resultJson.change_makers_ar as string[] | undefined) ?? []}
+            gapNote={composedFold.gapNote}
           />
 
           {/* «ماذا ستحقق من خلال خطتك؟» — رحلة الدورات، والتخصيص داخلها للمسارات الأساسية */}
@@ -1716,8 +1751,9 @@ export default function Diagnostic() {
             );
           })()}
 
-          {/* الخطة المركّبة — تظهر فقط لمن قيّم جوانبه، وإلا لا شيء يتغيّر */}
-          {(() => {
+          {/* الخطة المركّبة — لمن قيّم جوانبه، وحين تضيف مقررات لا تحويها الخطة أعلاه.
+              أما إذا كانت تعيد سرد الدورات نفسها فقد طُويت إلى سطر في بطاقة الأسباب. */}
+          {composedFold.showCard && (() => {
             const cp = result.resultJson.composed_path as ComposedPathView | null | undefined;
             return cp && cp.courses?.length ? <ComposedPlanCard plan={cp} /> : null;
           })()}
