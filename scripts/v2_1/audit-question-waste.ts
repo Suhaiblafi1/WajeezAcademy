@@ -45,6 +45,30 @@ const TIME_BY_ORDER = ['أقل من ساعتين أسبوعيًا', '٢–٤ س�
 const MASTERY = ['أن أتقن مهارة أو تخصصًا واحدًا بعمق', 'أن أبني مجموعة مهارات مترابطة لتحقيق هدف', 'غير متأكد']
 const INTERESTS = ['تقنية', 'أعمال', 'تسويق', 'تعليم', 'صناعة محتوى', 'قيادة', 'حكومة/سياسات', 'مالية', 'لا أعرف']
 
+/* حارس بوابة: سؤالٌ هو المنتِج الوحيد لحقيقةٍ يعلنها قالبٌ مركّب `required`.
+   قيمته في أن يُطرح لا في أيّ جوابٍ يُجاب — فطرحُه يرفع تغطية حقائق القالب فوق
+   بوابته، وأيُّ جواب يفعل ذلك. فيقيسه هذا التقرير «ميتا» وهو ليس كذلك: حذفُه
+   يُسقط القالب من فضاء التوصيات كليا.
+   لولا هذا التمييز لقرأ القارئُ جدولَ «الميتة كليا» دعوةً للحذف — وهو دعوةٌ
+   لإسقاط خمسة قوالب. */
+function gateKeeperQuestions(): Map<string, string[]> {
+  const templates = JSON.parse(readFileSync('src/data/catalog/composite-templates.v1.json', 'utf8')) as {
+    templates: { template_id: string; diagnostic?: { required_facts?: { importance?: string; question_ids?: string[] }[] } }[]
+  }
+  const out = new Map<string, string[]>()
+  for (const t of templates.templates) {
+    for (const f of t.diagnostic?.required_facts ?? []) {
+      if (f.importance !== 'required') continue
+      for (const qid of f.question_ids ?? []) {
+        const list = out.get(qid) ?? []
+        list.push(t.template_id)
+        out.set(qid, list)
+      }
+    }
+  }
+  return out
+}
+
 /** الفرق الذي نعتبره تحتَه «لا شيء تغيّر» — أصغر من أي حركة ذات معنى في الثقة */
 const EPS = 1e-6
 /** سقف البدائل المجرَّبة لكل سؤال — يحمي من انفجار زمن التشغيل على أسئلة طويلة الخيارات */
@@ -256,11 +280,18 @@ function main() {
   md.push(`- **أسئلة ميتة في كل مقاعدها:** ${fullyDead.length} من ${rows.length}`)
   md.push(`- **أسئلة تخفض الثقة أحيانا:** ${lowering.length}`, '')
 
+  const gates = gateKeeperQuestions()
   if (fullyDead.length > 0) {
     md.push('## أسئلة لم يغيّر أيُّ جواب لها شيئا — في كل مقاعدها', '')
-    md.push('| السؤال | النص (مختصر) | مقاعد |')
-    md.push('|---|---|---|')
-    for (const r of fullyDead) md.push(`| \`${r.id}\` | ${r.text.replace(/\|/g, '\\|')} | ${r.seats} |`)
+    md.push('> عمود «حارس بوابة» يقلب القراءة: السؤال المنتِج الوحيد لحقيقةٍ يعلنها قالبٌ')
+    md.push('> `required` قيمتُه في طرحه لا في جوابه — طرحُه يرفع تغطية القالب فوق بوابته،')
+    md.push('> وحذفُه يُسقط القالب من فضاء التوصيات. فلا يُقرأ صفُّه دعوةً للحذف.', '')
+    md.push('| السؤال | النص (مختصر) | مقاعد | حارس بوابة لـ |')
+    md.push('|---|---|---|---|')
+    for (const r of fullyDead) {
+      const g = gates.get(r.id)
+      md.push(`| \`${r.id}\` | ${r.text.replace(/\|/g, '\\|')} | ${r.seats} | ${g ? g.join('، ') : '—'} |`)
+    }
     md.push('')
   }
 
@@ -320,7 +351,11 @@ function main() {
   console.log(`📄 docs/QUESTION_WASTE_V2_1_AR.md — ${sessions} جلسة · ${elapsed}s`)
   console.log(`   مقاعد كلية: ${totalSeats} · ميتة: ${deadSeats} (${((deadSeats / Math.max(1, totalSeats)) * 100).toFixed(1)}٪)`)
   console.log(`   أسئلة ميتة كليا: ${fullyDead.length} من ${rows.length} · تخفض الثقة: ${lowering.length}`)
-  if (fullyDead.length > 0) console.log('   الميتة كليا:', fullyDead.map((r) => `${r.id}(${r.seats})`).join(' '))
+  if (fullyDead.length > 0) {
+    console.log('   الميتة كليا:', fullyDead.map((r) => `${r.id}(${r.seats})${gates.has(r.id) ? '⚑' : ''}`).join(' '))
+    const guarded = fullyDead.filter((r) => gates.has(r.id))
+    if (guarded.length > 0) console.log(`   ⚑ حارس بوابة — قيمته في طرحه لا في جوابه، وحذفه يُسقط قالبا: ${guarded.map((r) => r.id).join(' ')}`)
+  }
   console.log('   أعلى خمسة هدرا:', rows.slice(0, 5).map((r) => `${r.id} ${(r.deadRate * 100).toFixed(0)}٪`).join(' · '))
   console.log(`   أسئلة نافعة ولو مرة: ${everUseful.length}`)
 }

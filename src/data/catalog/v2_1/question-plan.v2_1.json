@@ -518,18 +518,18 @@
       "final_status": "retired"
     },
     "QB-M2-015": {
-      "surface": "b2c",
-      "layer21": "feasibility",
-      "phase": "adaptive",
-      "action": "keep",
-      "stages": "all",
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
       "domains": [],
-      "impact_ar": "«جاهز للتطبيق» مقابل «أفضل النظرية» يغيّر مكون الخطة لا المسار.",
-      "why_ar": "الاستعداد للتطبيق العملي يضبط طبيعة الخطة (مشاريع مقابل محتوى نظري).",
+      "impact_ar": "كان يخفض الثقة في 93 مقعدًا من 207 ويقلب المسار في أربعة.",
+      "why_ar": "أثره المبرمج عقوبة لا مطابقة: لا خطة نظرية يُحوَّل إليها من قال «استعدادي منخفض».",
       "measures": [
         "application_readiness"
       ],
-      "final_status": "active_b2c"
+      "final_status": "retired"
     },
     "QB-M2-016": {
       "surface": "post_recommendation",

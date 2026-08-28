@@ -686,14 +686,6 @@
             ],
             "importance": "required",
             "minimum_confidence": 0.65
-          },
-          {
-            "fact_key": "application_readiness",
-            "question_ids": [
-              "QB-M2-015"
-            ],
-            "importance": "required",
-            "minimum_confidence": 0.65
           }
         ],
         "positive_signals": [
@@ -6768,14 +6760,6 @@
             "fact_key": "ai_output_evaluation",
             "question_ids": [
               "QB-M4-004"
-            ],
-            "importance": "required",
-            "minimum_confidence": 0.65
-          },
-          {
-            "fact_key": "application_readiness",
-            "question_ids": [
-              "QB-M2-015"
             ],
             "importance": "required",
             "minimum_confidence": 0.65
