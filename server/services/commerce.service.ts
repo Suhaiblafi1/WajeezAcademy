@@ -9,7 +9,7 @@ import { recordAudit } from './audit'
 import { EnrollmentService } from './enrollment.service'
 import { safeNotify, publicSiteUrl } from './notification.service'
 import { getPaymentProvider, verifyPaymentWebhook } from './payments/provider'
-import { getPaymentConfig } from './integrations.service'
+import { getEmailConfig, getPaymentConfig } from './integrations.service'
 
 const num = (d: Prisma.Decimal | number | null | undefined) => Number(d ?? 0)
 
@@ -24,6 +24,22 @@ export class CommerceService {
   /* ── طلب التسجيل وحجز المقعد ── */
 
   async requestEnrollment(userId: string, cohortId: string, note?: string) {
+    /* حاجز توثيق البريد (١هـ). المال والمواعيد والفاتورة كلها تُرسل إلى عنوان
+       لم يُثبت أنه يصل صاحبه — فالتوثيق شرطٌ قبل بدء الشراء لا بعده.
+
+       واستثناءٌ واحد مقصود: حين تكون قناة البريد غير مفعّلة أصلا، فالحاجز
+       قفلٌ لا مفتاح له — لا أحد يستطيع أن يوثّق فلا أحد يستطيع أن يشتري أبدا.
+       وهذا بعينه ما وقع في مسار المدرب فوقف كل متقدّم عند «بانتظار تحقق
+       البريد». فيمضي الطلب حينها بأثرٍ صريح يقرؤه المراجع قبل الموافقة، ولا
+       يُكتب emailVerifiedAt: لم يتحقّق شيء. */
+    const verified = await this.emailVerified(userId)
+    if (!verified) {
+      const channelUp = await this.emailChannelEnabled()
+      if (channelUp) {
+        throw new AuthError('email_unverified', 'وثّق بريدك أولا — اطلب رابط التوثيق من الشريط أعلى الصفحة، والشراء يُفتح بمجرّد فتحه', 403)
+      }
+    }
+
     const cohort = await this.prisma.cohort.findUnique({ where: { id: cohortId } })
     if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
     if (!['open', 'full'].includes(cohort.status) || !cohort.registrationOpen) {
@@ -36,8 +52,23 @@ export class CommerceService {
     const req = existing
       ? await this.prisma.enrollmentRequest.update({ where: { id: existing.id }, data: { status: 'pending', note, decidedBy: null, decidedAt: null } })
       : await this.prisma.enrollmentRequest.create({ data: { userId, cohortId, note } })
-    await recordAudit(this.prisma, { actorId: userId, action: 'enrollment_request.create', entityType: 'enrollment_request', entityId: req.id, meta: { cohortId } })
+    await recordAudit(this.prisma, {
+      actorId: userId, action: 'enrollment_request.create', entityType: 'enrollment_request', entityId: req.id,
+      meta: { cohortId, ...(verified ? {} : { emailUnverified: true, reason: 'قناة البريد غير مفعّلة — مرّ الطلب بلا توثيق' }) },
+    })
     return req
+  }
+
+  /** هل بريد صاحب الطلب موثَّق؟ — قراءةٌ واحدة، والحاجز يقرّر بها */
+  private async emailVerified(userId: string): Promise<boolean> {
+    const u = await this.prisma.user.findUnique({ where: { id: userId }, select: { emailVerifiedAt: true } })
+    return u?.emailVerifiedAt != null
+  }
+
+  /** هل تستطيع المنصّة إرسال بريد أصلا؟ — بها وحدها يصير الحاجز قفلا له مفتاح */
+  private async emailChannelEnabled(): Promise<boolean> {
+    const cfg = await getEmailConfig(this.prisma)
+    return Boolean(cfg.enabled && cfg.host && cfg.fromEmail)
   }
 
   async listEnrollmentRequests(status?: string) {

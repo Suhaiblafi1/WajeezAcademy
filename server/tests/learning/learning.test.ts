@@ -90,6 +90,10 @@ beforeAll(async () => {
 
   const l = await auth.register('learning-learner@test.local', 'Learner#12345', 'متعلم التشغيل')
   learnerId = l.userId
+  /* ١هـ — الشهادة لا تصدر لبريد غير موثَّق. المتعلم هنا يمرّ بالمسار الحقيقي:
+     يوثّق بريده كما يفعل صاحب الحساب، فلا يُضعَّف الحاجز من أجل الاختبار. */
+  const verify = await auth.issueEmailVerification(learnerId)
+  await auth.verifyEmail(verify!.token)
   const o = await auth.register('learning-outsider@test.local', 'Learner#12345', 'متطفل')
   outsiderId = o.userId
 }, 300_000)

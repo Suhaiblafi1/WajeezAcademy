@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { CalendarDays, Loader2, Send, ServerOff, Users } from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
+import { useRealSession } from "@/services/session";
 
 interface OpenCohort {
   id: string; title: string; status: string; courseId: string; courseTitle: string;
@@ -43,6 +44,11 @@ export default function OpenCohorts() {
   }, []);
 
   useEffect(() => { void load(); }, [load]);
+
+  /* ١هـ — الطلب يُرفض على الخادم بلا بريد موثَّق، فالزرّ لا يُترك حيّا ليصطدم:
+     شريط التوثيق فوق هذه الصفحة هو الطريق، والزرّ يقول ذلك بدل أن يخطئ. */
+  const { user: sessionUser } = useRealSession();
+  const needsVerification = sessionUser != null && !sessionUser.emailVerified;
 
   const requestSeat = async (cohortId: string) => {
     if (busy) return;
@@ -144,9 +150,9 @@ export default function OpenCohorts() {
                   </div>
                 </div>
               ) : (
-                <button onClick={() => setNoteFor(c.id)} disabled={c.seatsLeft === 0}
+                <button onClick={() => setNoteFor(c.id)} disabled={c.seatsLeft === 0 || needsVerification}
                   className="mt-3 w-full cursor-pointer rounded-full bg-teal px-4 py-2.5 text-xs font-black text-on-teal transition hover:bg-teal/90 disabled:cursor-not-allowed disabled:opacity-40">
-                  {c.seatsLeft === 0 ? "اكتمل العدد" : "اطلب مقعدا في هذه الشعبة"}
+                  {c.seatsLeft === 0 ? "اكتمل العدد" : needsVerification ? "وثّق بريدك أولا" : "اطلب مقعدا في هذه الشعبة"}
                 </button>
               )}
             </article>

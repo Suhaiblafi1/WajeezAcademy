@@ -23,8 +23,9 @@ describe('موارد المكتبة', () => {
   })
 
   it('كتالوج بلا حقل مكتبة أصلا لا يكسر القراءة', () => {
-    const { library_resources: _omit, ...rest } = BUNDLED
-    installCoreCatalogRaw(rest as CoreCatalogRaw)
+    const rest = { ...BUNDLED }
+    delete rest.library_resources
+    installCoreCatalogRaw(rest)
     expect(getLibraryResources()).toEqual([])
   })
 

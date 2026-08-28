@@ -24,6 +24,8 @@ export class AuthError extends Error {
 
 const SESSION_TTL_DAYS = Number(process.env.SESSION_TTL_DAYS ?? 30)
 const GENERIC_LOGIN_FAIL = 'البريد أو كلمة المرور غير صحيحة'
+/** مهلة رابط توثيق البريد — يومان: أطول من مهلة الاستعادة لأنه ليس إجراء طوارئ */
+const EMAIL_VERIFY_TTL_MS = 48 * 3600_000
 
 export interface AuthContext {
   userId: string
@@ -31,6 +33,9 @@ export interface AuthContext {
   displayName: string
   roles: string[]
   permissions: string[]
+  /* توثيق البريد (١هـ) — الواجهة تبني عليه الشريط وحالة زر الشراء، فلا تحتاج
+     نداء ثانيا لتعرف حالة الحساب الذي بين يديها. */
+  emailVerified: boolean
 }
 
 export class AuthService {
@@ -101,7 +106,10 @@ export class AuthService {
       roles.push(ur.roleId)
       for (const rp of ur.role.permissions) permissions.add(rp.permissionKey)
     }
-    return { userId: session.user.id, email: session.user.email, displayName: session.user.displayName, roles, permissions: [...permissions] }
+    return {
+      userId: session.user.id, email: session.user.email, displayName: session.user.displayName,
+      roles, permissions: [...permissions], emailVerified: session.user.emailVerifiedAt != null,
+    }
   }
 
   async logout(token: string): Promise<void> {
@@ -142,6 +150,50 @@ export class AuthService {
       /* أمن: تغيير كلمة المرور يبطل كل الجلسات القائمة */
       this.prisma.session.updateMany({ where: { userId: row.userId, revokedAt: null }, data: { revokedAt: new Date() } }),
     ])
+  }
+
+  /* ── توثيق البريد (١هـ) ───────────────────────────────────────────────
+     المبدأ: التوثيق دليلٌ على أن العنوان يصل صاحبَه، لا حاجزُ دخول. فهو
+     يحجب الشراء وسكّ الشهادة — حيث يكلّف العنوانُ الخاطئ مالا أو شهادةً
+     تذهب إلى لا أحد — ولا يحجب الدخول ولا التصفّح ولا التشخيص. */
+
+  /** يُصدر رمز توثيق جديدا ويُبطل ما قبله — الرمز يُعاد مرة واحدة للإرسال فقط.
+      يعيد null حين يكون البريد موثَّقا أصلا: لا رمز بلا حاجة إليه. */
+  async issueEmailVerification(userId: string): Promise<{ token: string; email: string; displayName: string } | null> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } })
+    if (!user) throw new AuthError('not_found', 'الحساب غير موجود', 404)
+    if (user.emailVerifiedAt) return null
+    const token = newToken()
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        emailVerifyTokenHash: sha256(token),
+        emailVerifyExpiresAt: new Date(Date.now() + EMAIL_VERIFY_TTL_MS),
+      },
+    })
+    return { token, email: user.email, displayName: user.displayName }
+  }
+
+  /** يوثّق البريد بالرمز — ويستهلك الرمز، فالرابط لا يعمل مرتين.
+      الرسالة لا تفرّق بين رمزٍ مجهول ومنتهٍ: التفريق يخبر المهاجم أيّ رموزه صحيح. */
+  async verifyEmail(token: string): Promise<{ userId: string; alreadyVerified: boolean }> {
+    const user = await this.prisma.user.findUnique({ where: { emailVerifyTokenHash: sha256(token) } })
+    if (!user) throw new AuthError('invalid_token', 'رابط التوثيق غير صالح أو استُهلك — اطلب رابطا جديدا', 400)
+    if (user.emailVerifiedAt) return { userId: user.id, alreadyVerified: true }
+    if (!user.emailVerifyExpiresAt || user.emailVerifyExpiresAt < new Date()) {
+      throw new AuthError('expired_token', 'انتهت صلاحية رابط التوثيق — اطلب رابطا جديدا', 400)
+    }
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { emailVerifiedAt: new Date(), emailVerifyTokenHash: null, emailVerifyExpiresAt: null },
+    })
+    return { userId: user.id, alreadyVerified: false }
+  }
+
+  /** هل بريد هذا الحساب موثَّق؟ — تستدعيها حواجز الشراء والشهادة */
+  async isEmailVerified(userId: string): Promise<boolean> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { emailVerifiedAt: true } })
+    return user?.emailVerifiedAt != null
   }
 
   /** إيقاف حساب — يبطل جلساته فورا */

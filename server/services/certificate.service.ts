@@ -30,7 +30,14 @@ export class CertificateService {
       throw new AuthError('rules_unmet', `قواعد الإكمال غير محققة: ${check.failures.join(' — ')}`, 409)
     }
 
+    /* حاجز توثيق البريد (١هـ) — صارم هنا بلا استثناء، بخلاف حاجز الشراء.
+       الشهادة وثيقةٌ تُنسب إلى شخص وتُتحقَّق علنا بالرقم، فصدورُها لعنوان لم
+       يثبت أنه يصل صاحبه يضع اسم الأكاديمية خلف نسبةٍ لا دليل عليها. ولا أحد
+       يعلق هنا: الإصدار بيد الإدارة، فترى السبب وتطلب من المتعلم التوثيق. */
     const learner = await this.prisma.user.findUnique({ where: { id: e.userId } })
+    if (!learner?.emailVerifiedAt) {
+      throw new AuthError('email_unverified', 'بريد المتعلم غير موثَّق — الشهادة تُنسب إلى شخص، فلا تصدر قبل إثبات أن عنوانه يصله', 409)
+    }
     const year = new Date().getFullYear()
     const count = await this.prisma.certificate.count()
     const number = `WJ-CERT-${year}-${String(count + 1).padStart(5, '0')}`
