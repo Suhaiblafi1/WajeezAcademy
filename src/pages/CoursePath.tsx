@@ -12,20 +12,19 @@
    وله أن يسمّي تركيبته — تُحفظ عندنا لعلّها تصير مسارا معتمدا للعامة. */
 
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { Link, useParams } from "react-router";
 import {
-  ArrowRight, BookOpen, CheckCircle2, Clock3, CreditCard, Layers, ListChecks,
+  ArrowRight, BookOpen, CheckCircle2, Clock3, CalendarDays, Layers, ListChecks,
   Plus, Route as RouteIcon, Save, Target, Trash2, User, Sparkles,
 } from "lucide-react";
 import SeoHead from "@/components/SeoHead";
 import AuthGate from "@/components/AuthGate";
 import Modal from "@/components/Modal";
-import StripeCheckout from "@/components/StripeCheckout";
+import EnrollRequest from "@/components/EnrollRequest";
 import { Button } from "@/components/ui/button";
 import { usePublishedContent } from "@/services/public-content";
 import { usePriceFormatter } from "@/services/currency";
 import { track } from "@/services/analytics";
-import { grantEnrollment } from "@/services/access";
 import { bundleNudge, pathPricing, suggestNext, MAX_BUILT_COURSES } from "@/application/catalog/course-path";
 import { DISCOUNT_CATEGORIES, MAX_CATEGORY_PCT } from "@/application/commerce/discount-policy";
 import { FIRST_TIME_PROMO, isFirstTimePromo } from "@/application/commerce/first-time-promo";
@@ -64,7 +63,6 @@ function CoursePathPage({ courseId }: { courseId: string }) {
      يعرض سعرها (يُحسب في كل رسم) وبطاقةُ السعر تحته تقول صفرا (محفوظة من
      الرسم الأول). رقمٌ يناقض رقما فوقه مباشرة. */
   const catalogVersion = usePublishedContent();
-  const navigate = useNavigate();
   const fmt = usePriceFormatter();
 
   const anchor = courseById(courseId);
@@ -464,8 +462,8 @@ function CoursePathPage({ courseId }: { courseId: string }) {
               onClick={buy}
               className="mt-4 h-12 w-full rounded-full bg-gold px-8 font-black text-on-gold hover:bg-gold/90"
             >
-              <CreditCard className="ml-2 h-4 w-4" />
-              {picked.length === 1 ? "اشترِ هذه الدورة" : `اشترِ مسارك (${picked.length})`}
+              <CalendarDays className="ml-2 h-4 w-4" />
+              {picked.length === 1 ? "اطلب تسجيلك في هذه الدورة" : `اطلب تسجيلك (${picked.length} دورات)`}
             </Button>
 
             {/* التنبيه — بالكلفة الحقيقية للدورة الإضافية لا بسعرها المعلن */}
@@ -640,23 +638,11 @@ function CoursePathPage({ courseId }: { courseId: string }) {
       )}
 
       {checkout && (
-        <StripeCheckout
+        <EnrollRequest
           title={checkout.title}
           amount={checkout.amount}
+          contactHref={`/contact?type=enroll&courses=${picked.join(",")}`}
           onClose={() => setCheckout(null)}
-          onSuccess={() => {
-            grantEnrollment({
-              pathwayId: matchesPathway ?? anchor.pathwayId,
-              pathwayName: matchesPathway ? anchor.pathwayName : (name.trim() || `مسارك من «${anchor.name}»`),
-              courseIds: picked,
-              giftId: null,
-              kind: checkout.kind,
-              amount: checkout.amount,
-            });
-            track("payment_completed", { kind: checkout.kind, courses: picked.length });
-            setCheckout(null);
-            navigate("/student");
-          }}
         />
       )}
     </div>

@@ -17,7 +17,6 @@ import PortalLayout from "./PortalLayout";
 import SkillMeter from "@/components/SkillMeter";
 import { apiGet } from "@/services/api";
 import { loadLastResultSafe } from "@/application/diagnostic/session-store";
-import { getEnrollment } from "@/services/access";
 import { usePublishedContent } from "@/services/public-content";
 import {
   buildSkillsProfile, levelLabelAr, pathwayIdFromSnapshot, skillVectorFromSnapshot,
@@ -334,7 +333,7 @@ export default function MySkills() {
     /* القياس البعديّ أحدث من التشخيص فيغلب في العرض — ولا تُعاد كتابة اللقطة نفسها:
        تلك سجل تاريخي، وهذا ما عليه المتعلم الآن. */
     const vector = mergeMeasured(skillVectorFromSnapshot(snapshot), growth.records);
-    const pathwayId = pathwayIdFromSnapshot(snapshot) ?? getEnrollment()?.pathwayId ?? null;
+    const pathwayId = pathwayIdFromSnapshot(snapshot) ?? null;
     return buildSkillsProfile(vector, pathwayId, growthBySlug(summary));
   }, [snapshot, catalogVersion, growth.records, summary]);
 

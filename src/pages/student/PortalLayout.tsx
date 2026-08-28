@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router";
 import { LayoutDashboard, Award, Lock, LogOut, Bell, CheckCheck, UserCircle, ReceiptText, X, LifeBuoy, BookOpen, ChevronDown, Inbox } from "lucide-react";
-import { getEnrollment } from "@/services/access";
 import { signOut } from "@/services/auth";
 import { apiGet, apiPost } from "@/services/api";
 import { useRealSession } from "@/services/session";
@@ -62,7 +61,6 @@ export default function PortalLayout({ children, title }: { children: React.Reac
   /* الهوية من الجلسة وحدها. كان `readUserName()` يقرأ اسما محليا ويعيد
      «متعلم وجيز» حين لا يجد — اسمٌ لا صاحب له. */
   const user = sessionUser?.displayName ?? "";
-  const enrollment = getEnrollment();
   /* الإشعارات من الخادم وحده. كان بجانبها متجرٌ محليّ مبذور — منه «وصلت
      فاتورتك وتأكيد الدفع على بريدك» — ويُعرض حين يتعذّر نداء الخادم. */
   const [realNotifs, setRealNotifs] = useState<RealNotif[] | null>(null);
@@ -112,16 +110,17 @@ export default function PortalLayout({ children, title }: { children: React.Reac
     return (
       <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper px-5 text-white">
         <Lock className="h-12 w-12 text-[#FABC05]" />
-        <h1 className="mt-5 text-2xl font-black">منصة الطالب تُفتح بعد أول دفع ناجح</h1>
+        <h1 className="mt-5 text-2xl font-black">منصتك تُفتح بحسابك</h1>
         <p className="mt-3 max-w-md text-center text-sm leading-7 text-white/60">
-          وفق سياسة وجيز: حدث دفع واحد ينشئ تسجيلا واحدا، يرسل فاتورتك، ويفتح وصولك تلقائيا دون تدخل يدوي.
+          سجّل دخولك إن كان لك حساب. وإن لم تكن سجّلت في شعبة بعد، فابدأ بالتشخيص
+          ليُقترح عليك مسار، أو تصفّح الشعب المفتوحة واطلب التسجيل.
         </p>
         <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
-          <Link to="/diagnostic" className="rounded-full bg-teal px-6 py-3 font-bold text-on-gold hover:bg-teal-light">
-            ابدأ بالتشخيص
+          <Link to="/auth" className="rounded-full bg-teal px-6 py-3 font-black text-on-teal hover:bg-teal-light">
+            تسجيل الدخول
           </Link>
-          <Link to="/" className="rounded-full border border-white/15 px-6 py-3 font-bold text-white/80 hover:border-white/40">
-            الرئيسية
+          <Link to="/diagnostic" className="rounded-full border border-white/15 px-6 py-3 font-bold text-white/80 hover:border-white/40">
+            ابدأ بالتشخيص
           </Link>
         </div>
         {/* تعريف المنظومة عند مدخل البوابة — سطر ثقة ثانوي لا ينافس الرسالة */}
@@ -294,11 +293,6 @@ export default function PortalLayout({ children, title }: { children: React.Reac
       <div className="mx-auto max-w-6xl px-5 py-8 pb-28 md:pb-8">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-2xl font-black">{title}</h1>
-          {enrollment && !sessionUser && (
-            <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-[11px] text-white/50">
-              طلب {enrollment.ref} · {enrollment.kind === "pathway" ? "مسار كامل" : "دورة"}
-            </span>
-          )}
         </div>
         {/* التنقّل الثانوي داخل القسم — صفحاتُه هنا لا في الشريط الأعلى.
             يُمرَّر أفقيا داخل حاويته وحدها كي لا تُمرَّر الصفحة كلها (ت-٤). */}

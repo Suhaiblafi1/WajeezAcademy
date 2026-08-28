@@ -10,7 +10,6 @@ import { buildPathwayMap, enrollmentFactsFromApi } from "@/application/student/p
 import { pathwayIdFromSnapshot } from "@/application/student/skills-profile";
 import { loadLastResultSafe } from "@/application/diagnostic/session-store";
 import { usePublishedContent } from "@/services/public-content";
-import { getEnrollment } from "@/services/access";
 import { useRealSession } from "@/services/session";
 import { apiGet } from "@/services/api";
 import {
@@ -237,7 +236,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
     void catalogVersion;
     const local = loadLastResultSafe();
     const snap = local.status === "ok" || local.status === "migrated" ? local.result : null;
-    const pathwayId = pathwayIdFromSnapshot(snap) ?? getEnrollment()?.pathwayId ?? null;
+    const pathwayId = pathwayIdFromSnapshot(snap) ?? null;
     return buildPathwayMap(pathwayId, enrollmentFactsFromApi(rows));
   }, [rows, catalogVersion]);
 

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { Link, useParams } from "react-router";
 import {
   ArrowRight,
   CalendarClock,
@@ -8,7 +8,7 @@ import {
   Gift,
   Sparkles,
   CheckCircle2,
-  CreditCard,
+  CalendarDays,
   User,
   UserCheck,
   FileText,
@@ -26,14 +26,13 @@ import AuthGate from "@/components/AuthGate";
 import FavoriteButton from "@/components/FavoriteButton";
 import ThemeToggle from "@/components/ThemeToggle";
 import AdvisorContact from "@/components/AdvisorContact";
-import StripeCheckout from "@/components/StripeCheckout";
+import EnrollRequest from "@/components/EnrollRequest";
 import CourseJourney from "@/components/CourseJourney";
 import Modal from "@/components/Modal";
 import { pathwayById, pathwayCategory } from "@/data/pathways";
 import { hasCoreCatalog } from "@/data/core-catalog-source";
 import { courseById, pathwayCourses, pathwayDelivery, coursePriceOf, pathwayPriceFor, pathwayTrainers, courseTrainer, weeksLabel } from "@/data/courses";
 import { GOAL_LABELS, GAP_LABELS, OBSTACLE_TO_GAP } from "@/data/diagnostic";
-import { grantEnrollment } from "@/services/access";
 import { usePriceFormatter } from "@/services/currency";
 import { track } from "@/services/analytics";
 import { usePublishedContent } from "@/services/public-content";
@@ -87,7 +86,6 @@ type CheckoutIntent = { title: string; amount: number; kind: "pathway" | "course
 export default function PathwayPage() {
   usePublishedContent();
   const { id } = useParams();
-  const navigate = useNavigate();
   const pathway = pathwayById(id ?? "");
   const [user, setUser] = useState<string | null>(readUserName);
   const [checkout, setCheckout] = useState<CheckoutIntent | null>(null);
@@ -367,13 +365,13 @@ export default function PathwayPage() {
           {/* مقارنة الشراء: دورة واحدة أم المسار كاملا — تصميم هادئ يريح القرار */}
           {(
             <div id="buy" className="story-fade mt-10 scroll-mt-24 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
-              <h3 className="text-xl font-black">اشترِ بالطريقة التي تناسبك</h3>
+              <h3 className="text-xl font-black">سجّل بالطريقة التي تناسبك</h3>
               <p className="mt-2 text-xs leading-relaxed text-white/50">خياران واضحان بلا ضغط — قارن بهدوء، والقرار لك.</p>
               <div className="mt-6 grid gap-5 md:grid-cols-2">
                 {/* دورة أو أكثر — اختيار حر */}
                 <div className="flex flex-col rounded-2xl border border-white/15 bg-black/30 p-5">
                   <p className="font-black text-sm">دورة أو أكثر من المسار</p>
-                  <p className="mt-1 text-xs text-white/50">اختر ما تحتاجه بالضبط — دورة واحدة أو عدة دورات — وادفع مجموعها فقط</p>
+                  <p className="mt-1 text-xs text-white/50">اختر ما تحتاجه بالضبط — دورة واحدة أو عدة دورات — ورسومك مجموعها فقط</p>
                   <div className="mt-4 space-y-2">
                     {buyableCourses.map((c) => {
                       const on = pickedIds.includes(c.id);
@@ -443,8 +441,8 @@ export default function PathwayPage() {
                     {picked.length === 0
                       ? "اختر دورة واحدة على الأقل"
                       : picked.length === 1
-                        ? "اشترِ الدورة المختارة"
-                        : `اشترِ الدورات المختارة (${picked.length})`}
+                        ? "اطلب تسجيلك في الدورة"
+                        : `اطلب تسجيلك (${picked.length} دورات)`}
                   </Button>
                 </div>
                 {/* المسار كاملا */}
@@ -464,8 +462,8 @@ export default function PathwayPage() {
                     onClick={() => startCheckout({ title: `مسار «${pathway.name}» كاملا (${pathwayCoursesList.length} دورات + هدية)`, amount: pathwayTotal, kind: "pathway" })}
                     className="mt-4 h-11 rounded-full bg-gold font-black text-on-gold hover:bg-gold/90"
                   >
-                    <CreditCard className="ml-2 h-4 w-4" />
-                    ادفع عبر Stripe
+                    <CalendarDays className="ml-2 h-4 w-4" />
+                    اطلب تسجيلك في المسار
                   </Button>
                   {/* كان أسفل الزر فراغ في صندوق أطول من محتواه. وثلاثة من عناصر
                       «المنظومة» التسعة أدناه هي في الحقيقة فرق بين شراء دورة وشراء
@@ -489,7 +487,9 @@ export default function PathwayPage() {
                   </div>
                 </div>
               </div>
-              <p className="mt-4 text-center text-[11px] text-white/40">دفع آمنا عبر Stripe — يصلك تأكيد فوري على بريدك وتُفتح منصة الطالب الخاصة بك</p>
+              {/* كان هنا وعدٌ بـ«دفع آمن عبر Stripe وتأكيد فوري»، ولا تكامل دفعٍ في
+                  الموقع أصلا. النصّ يصف ما يحدث فعلا. */}
+              <p className="mt-4 text-center text-[11px] text-white/40">طلبك يُراجَع، ثم تصلك فاتورتك وتُفتح شعبتك</p>
               {/* الدعوة إلى التشخيص سطر عند لحظة القرار، لا شريطا مؤطّرا في وسط
                   الصفحة. صفحة المسار الجاهز صفحة منتج معروضة للجميع، وكل صندوق
                   يعترضها يقرأ كأنه نتيجة شخصية لزائر لم يتشخّص أصلا. */}
@@ -591,24 +591,11 @@ export default function PathwayPage() {
 
       {/* نافذة الدفع */}
       {checkout && (
-        <StripeCheckout
+        <EnrollRequest
           title={checkout.title}
           amount={checkout.amount}
+          contactHref={`/contact?type=enroll&pathway=${pathway.id}`}
           onClose={() => setCheckout(null)}
-          onSuccess={() => {
-            grantEnrollment({
-              pathwayId: pathway.id,
-              pathwayName: pathway.name,
-              courseIds: checkout.kind === "pathway" ? courseIds : (checkout.courseIds ?? courseIds),
-              giftId: custom?.giftId ?? null,
-              kind: checkout.kind,
-              amount: checkout.amount,
-            });
-            track("payment_completed", { kind: checkout.kind, courses: checkout.kind === "pathway" ? courseIds.length : (checkout.courseIds?.length ?? 1) });
-            setCheckout(null);
-            /* انتهت عملية الشراء — ينتقل مباشرة إلى تجربته التعليمية في منصة الطالب */
-            navigate("/student");
-          }}
         />
       )}
 

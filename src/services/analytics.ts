@@ -32,8 +32,11 @@ export type AnalyticsEvent =
   | 'feedback_submitted'
   | 'pathway_viewed'
   | 'course_viewed'
+  /* حُذف 'payment_completed': كان يُطلق بعد مؤقّت نافذة دفعٍ وهمية، فيصير
+     في التحليلات «مبيعات» لا وجود لها. والدفع الحقيقي حين يُربط يُطلقه من
+     الخادم بعد تأكيد المزوّد لا من المتصفّح. */
   | 'checkout_started'
-  | 'payment_completed'
+  | 'enroll_request_opened'
   | 'payment_failed'
   | 'refund_requested'
   | 'contact_submitted'
