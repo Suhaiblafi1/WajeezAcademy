@@ -36,6 +36,8 @@ const StudentInbox = lazy(() => import('./pages/student/Inbox'))
 const StudentSupport = lazy(() => import('./pages/student/Support'))
 const MyVault = lazy(() => import('./pages/student/MyVault'))
 const StudentLibrary = lazy(() => import('./pages/student/Library'))
+const VerifyEmail = lazy(() => import('./pages/VerifyEmail'))
+const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 const CourseMilestones = lazy(() => import('./pages/student/CourseMilestones'))
 const StudentOpenCohorts = lazy(() => import('./pages/student/OpenCohorts'))
 const AdvisorCases = lazy(() => import('./pages/advisor/Cases'))
@@ -113,6 +115,9 @@ export default function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/p/contact" element={<Contact />} />
           <Route path="/auth" element={<Auth />} />
+          {/* الصفحتان اللتان تفتحهما رسائل الحساب — رابطٌ في بريد بلا صفحة أسوأ من لا رسالة */}
+          <Route path="/auth/verify" element={<VerifyEmail />} />
+          <Route path="/auth/reset" element={<ResetPassword />} />
           <Route path="/verify" element={<Verify />} />
           <Route path="/verify/:number" element={<Verify />} />
           <Route path="/p/:slug" element={<StaticPage />} />

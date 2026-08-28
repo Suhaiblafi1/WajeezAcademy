@@ -11,6 +11,8 @@ export interface SessionUser {
   displayName: string;
   roles: string[];
   permissions: string[];
+  /* توثيق البريد (١هـ) — يحجب الشراء والشهادة فقط، لا الدخول ولا التصفّح */
+  emailVerified: boolean;
 }
 
 /** يجلب جلسة الخادم مرة واحدة — user=null حتى يكتمل الفحص أو عند غياب جلسة */

@@ -7,6 +7,7 @@ import { useRealSession } from "@/services/session";
 import { useAutoRefresh } from "@/services/useAutoRefresh";
 import ThemeToggle from "@/components/ThemeToggle";
 import EcosystemNote from "@/components/EcosystemNote";
+import VerifyEmailNotice from "@/components/VerifyEmailNotice";
 import { usePublishedContent } from "@/services/public-content";
 import { getLibraryResources } from "@/data/core-catalog-source";
 
@@ -311,6 +312,10 @@ export default function PortalLayout({ children, title }: { children: React.Reac
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-2xl font-black">{title}</h1>
         </div>
+        {/* ١هـ — يظهر لغير الموثَّق وحده، ويزول بمجرّد التوثيق */}
+        {sessionUser && !sessionUser.emailVerified && (
+          <VerifyEmailNotice email={sessionUser.email} className="mb-6" />
+        )}
         {/* التنقّل الثانوي داخل القسم — صفحاتُه هنا لا في الشريط الأعلى.
             يُمرَّر أفقيا داخل حاويته وحدها كي لا تُمرَّر الصفحة كلها (ت-٤). */}
         {activeSection && activeSection.items.length > 0 && (

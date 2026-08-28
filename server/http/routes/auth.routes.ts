@@ -4,6 +4,8 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { AuthService } from '../../services/auth.service'
 import { SESSION_COOKIE, requireAuth } from '../auth-plugin'
+import { sendPasswordResetEmail, sendVerifyEmail } from '../../services/account-mail'
+import { getPrisma } from '../../db/client'
 
 const email = z.string().trim().toLowerCase().email('صيغة البريد غير صحيحة')
 const password = z.string().min(8, 'كلمة المرور 8 أحرف على الأقل')
@@ -21,7 +23,16 @@ export function registerAuthRoutes(app: FastifyInstance, auth: AuthService) {
   }, async (req, reply) => {
     const body = z.object({ email, password, displayName: z.string().trim().max(80).optional() }).parse(req.body)
     const { userId } = await auth.register(body.email, body.password, body.displayName ?? '')
-    return reply.status(201).send({ userId, message: 'أنشئ الحساب — يمكنك تسجيل الدخول الآن' })
+    /* رابط التوثيق يُرسل مع الإنشاء لا بعده بخطوة يدوية — ولا يُسقط التسجيل
+       عند تعذّر الإرسال: الحساب أُنشئ فعلا، وردٌّ بخطأ يجعل المستخدم يظنّ أنه
+       لم يُنشأ فيعيد المحاولة فيصطدم بـ«هذا البريد مسجل». */
+    const issued = await auth.issueEmailVerification(userId)
+    const mail = issued ? await sendVerifyEmail(await getPrisma(), { to: issued.email, displayName: issued.displayName, token: issued.token }) : null
+    return reply.status(201).send({
+      userId,
+      message: 'أنشئ الحساب — يمكنك تسجيل الدخول الآن',
+      verificationSent: mail?.status === 'sent',
+    })
   })
 
   app.post('/api/auth/login', {
@@ -64,7 +75,14 @@ export function registerAuthRoutes(app: FastifyInstance, auth: AuthService) {
   }, async (req) => {
     const body = z.object({ email }).parse(req.body)
     const { tokenForDelivery } = await auth.requestPasswordReset(body.email)
-    /* مرحلة التأسيس: لا قناة بريد بعد — يُعاد الرمز في وضع التطوير فقط لتسهيل الفحص */
+    /* كان الرمز يُولَّد ثم يُسقَط: يُعاد في التطوير وحده، ولا يُرسَل في الإنتاج
+       أبدا — والردّ مع ذلك يقول «ستصلك رسالة». فمن نسي كلمته على الموقع الحيّ
+       لم يكن له سبيل. الإرسال هنا هو الإصلاح، والنصّ في account-mail.ts. */
+    if (tokenForDelivery) {
+      await sendPasswordResetEmail(await getPrisma(), { to: body.email, token: tokenForDelivery })
+    }
+    /* الردّ واحد سواء وُجد البريد أم لا وسواء نجح الإرسال أم لا: تفريقُه يكشف
+       من له حساب عندنا لمن يجرّب العناوين. */
     return {
       message: 'إن كان البريد مسجلا فستصله رسالة استعادة',
       ...(process.env.NODE_ENV !== 'production' ? { devToken: tokenForDelivery } : {}),
@@ -84,6 +102,35 @@ export function registerAuthRoutes(app: FastifyInstance, auth: AuthService) {
     const body = z.object({ token: z.string().min(10), newPassword: password }).parse(req.body)
     await auth.resetPassword(body.token, body.newPassword)
     return { ok: true, message: 'عُيّنت كلمة المرور — سجّل الدخول من جديد' }
+  })
+
+  app.post('/api/auth/email/verify/request', {
+    preHandler: requireAuth,
+    config: { rateLimit: { max: 5, timeWindow: '15 minutes' } },
+    schema: { tags: ['auth'], summary: 'إعادة إرسال رابط توثيق البريد' },
+  }, async (req) => {
+    const issued = await auth.issueEmailVerification(req.auth!.userId)
+    if (!issued) return { status: 'already_verified', message: 'بريدك موثَّق أصلا' }
+    const mail = await sendVerifyEmail(await getPrisma(), { to: issued.email, displayName: issued.displayName, token: issued.token })
+    /* الحالة تُعاد كما هي: «not_configured» تعني أن قناة البريد لم تُفعَّل بعد،
+       وقولُ «أُرسل» حينها يجعل المستخدم ينتظر رسالة لا وجود لها. */
+    if (mail.status === 'sent') return { status: 'sent', message: `أُرسل رابط التوثيق إلى ${issued.email}` }
+    if (mail.status === 'not_configured') {
+      return { status: 'not_configured', message: 'قناة البريد غير مفعّلة بعد — تواصل مع الأكاديمية لتوثيق بريدك' }
+    }
+    return { status: 'failed', message: 'تعذّر إرسال الرسالة الآن — أعد المحاولة بعد قليل' }
+  })
+
+  app.post('/api/auth/email/verify', {
+    config: { rateLimit: { max: 10, timeWindow: '15 minutes' } },
+    schema: {
+      tags: ['auth'], summary: 'توثيق البريد برمز الرابط',
+      body: { type: 'object', required: ['token'], properties: { token: { type: 'string' } } },
+    },
+  }, async (req) => {
+    const body = z.object({ token: z.string().min(10) }).parse(req.body)
+    const { alreadyVerified } = await auth.verifyEmail(body.token)
+    return { ok: true, alreadyVerified, message: alreadyVerified ? 'بريدك موثَّق أصلا' : 'وُثّق بريدك — الشراء والشهادة مفتوحان الآن' }
   })
 
   app.get('/api/auth/me', { schema: { tags: ['auth'], summary: 'هوية الجلسة الحالية وصلاحياتها' } }, async (req) => {
