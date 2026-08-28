@@ -745,6 +745,22 @@ export default function Diagnostic() {
       track("gate_viewed");
     }
   }, [stage, result, topPathway, authed]);
+  /* كل سؤال يبدأ من أعلاه.
+
+     الصفحة كانت تحتفظ بموضع التمرير بين سؤالين، والسؤال أطولُ على الهاتف منه
+     على الحاسوب: قياس على شاشة 390×844 — بعد السؤال الخامس بقي التمرير عند 43
+     بكسل، وبعد التاسع عند 157، والترويسة اللاصقة تغطي أول سطر من نص السؤال.
+     فيرى المتعلم سؤالا مقطوع الرأس وعدّادَ تقدّمٍ خرج من الشاشة، ويظن نفسه
+     أخطأ. والقفز إلى الأعلى عند تغيّر معرّف السؤال يعيد لكل سؤال بدايته.
+
+     behavior من تفضيل النظام: من طلب تقليل الحركة يقفز بلا انزلاق. */
+  const questionId = question?.id ?? null;
+  useEffect(() => {
+    if (stage !== "questions" || !questionId) return;
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
+  }, [stage, questionId]);
+
   useEffect(() => {
     if (stage !== "questions") return;
     const warn = (e: BeforeUnloadEvent) => {
@@ -1169,7 +1185,15 @@ export default function Diagnostic() {
             ابدأ الحديث
             <ArrowLeft className="mr-2 h-5 w-5" />
           </Button>
-          <p className="mt-4 text-xs text-white/55">ابدأ مجانا — ترى مسارك المقترح فورا، وحسابك المجاني يفتح نتيجتك كاملة · بالمتابعة أنت توافق على استخدام إجاباتك لبناء التوصية · التشخيص مصمم للبالغين، وإن كنت دون ١٨ عاما أكمله مع ولي أمرك</p>
+          {/* ثلاث جمل مستقلة كانت مسبوكة في فقرة واحدة بفواصل «·». وفي سياق عربي
+              تلتصق النقطة الوسطى بالأرقام فتُقرأ صفرا، وعلى الهاتف تصير الفقرة
+              ثلاثة أسطر متلاصقة بحجم 12 بكسل لا يُميَّز فيها أين تنتهي جملة.
+              كلٌّ في سطرها: الأولى دعوة، والثانية إقرار، والثالثة شرط سنّ. */}
+          <ul className="mx-auto mt-4 max-w-md space-y-1.5 text-xs leading-relaxed text-white/55">
+            <li>ابدأ مجانا — ترى مسارك المقترح فورا، وحسابك المجاني يفتح نتيجتك كاملة</li>
+            <li>بالمتابعة أنت توافق على استخدام إجاباتك لبناء التوصية</li>
+            <li>التشخيص مصمم للبالغين، وإن كنت دون ١٨ عاما أكمله مع ولي أمرك</li>
+          </ul>
 
           {/* بطاقة الاستئناف — تشخيص غير مكتمل ينتظر صاحبه */}
           {savedProgress && (
@@ -1240,7 +1264,8 @@ export default function Diagnostic() {
 
       {/* ─── Questions ─── */}
       {stage === "questions" && question && (
-        <section className="story-fade mx-auto max-w-2xl px-5 py-12 md:py-16">
+        /* حشو رأسي أقل على الهاتف: 96 بكسل من 844 كانت فراغا فوق السؤال وتحته */
+        <section className="story-fade mx-auto max-w-2xl px-5 py-7 sm:py-12 md:py-16">
           {offline && (
             <div role="status" className="mb-5 rounded-2xl border border-gold/40 bg-gold/10 px-5 py-3 text-center text-xs font-bold text-gold-ink">
               انقطع الاتصال بالشبكة — لا تقلق: تشخيصك يعمل على جهازك وإجاباتك محفوظة، أكمل بثقة
@@ -1306,7 +1331,9 @@ export default function Diagnostic() {
                 سؤال تعميق — بناءً على إجاباتك تحديدا
               </p>
             )}
-            <h2 className="text-2xl font-black leading-snug md:text-3xl">{qText}</h2>
+            {/* درجةٌ أصغر على الهاتف: نص السؤال كان يأخذ ثلاثة أسطر من الشاشة فلا يبقى
+                إلا لأربعة خيارات ونصف — وقياسُ الاختيار أن ترى بدائلك مجتمعة. */}
+            <h2 className="text-xl font-black leading-snug sm:text-2xl md:text-3xl">{qText}</h2>
             {(deepStep?.reasonAr ?? whyAr) && (
               <p className="mt-3 w-fit rounded-xl border border-teal/30 bg-teal/[0.06] px-3.5 py-2 text-[11px] leading-relaxed text-white/55">
                 <span className="font-bold text-teal-light-ink">لماذا هذا السؤال؟ </span>
@@ -1335,20 +1362,20 @@ export default function Diagnostic() {
                 بعد 120ms، 2px بعد 400ms. الحلقة تعمل — لكن من يتنقّل بسرعة بين
                 الخيارات يسبقها. والألوان وحدها هي ما يُقصد تحريكه هنا. */}
             {question.type === "single" && (
-              <div className="mt-8 grid gap-3">
+              <div className="mt-6 grid gap-2.5 sm:mt-8 sm:gap-3">
                 {qOptions.map((opt) => {
                   const selected = answers[question.id] === opt.value;
                   return (
                     <button
                       key={opt.value}
                       onClick={() => answer(question.id, opt.value, opt.optionId ? [opt.optionId] : undefined)}
-                      className={`rounded-2xl border p-5 text-right transition-colors ${
+                      className={`rounded-2xl border p-4 text-right transition-colors sm:p-5 ${
                         selected
                           ? "border-teal-light bg-teal/15"
                           : "border-white/10 bg-white/[0.03] hover:border-teal-light/60 hover:bg-white/[0.06]"
                       }`}
                     >
-                      <span className="text-base font-bold">{opt.label}</span>
+                      <span className="text-[15px] font-bold leading-relaxed sm:text-base">{opt.label}</span>
                     </button>
                   );
                 })}
