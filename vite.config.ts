@@ -1,4 +1,5 @@
 import path from "path"
+import { existsSync, readFileSync, writeFileSync } from "fs"
 import { spawn, execSync, type ChildProcess } from "child_process"
 import { createConnection } from "net"
 import react from "@vitejs/plugin-react"
@@ -32,6 +33,51 @@ function killStaleApi(): void {
   try {
     execSync("lsof -tiTCP:7101 -sTCP:LISTEN | xargs kill 2>/dev/null || true")
   } catch { /* لا مستمع أصلا */ }
+}
+
+/* حقن الأصل القانوني في index.html وقت البناء.
+
+   الوسوم الساكنة (canonical وog:url وog:image وJSON-LD) هي ما تقرؤه بوتات
+   المعاينة وزاحف الفهرسة — لا تشغّل React فلا يبلغها SeoHead. وكانت تعلن
+   النطاق النهائي دائما، والموقع في فترة تجريبية على نطاق آخر: canonical إلى
+   عنوان لا يستجيب، ومعاينةُ رابطٍ يُشارَك تفشل.
+
+   الترتيب: VITE_SITE_ORIGIN إن ضُبط، ثم نطاق إنتاج Vercel (يوفّره البناء
+   نفسه)، ثم النطاق النهائي. ولا يُترك %VITE_SITE_ORIGIN% حرفيا في أي حال —
+   وسمٌ نصفُ مستبدَل أسوأ من نطاق خاطئ. */
+const CANONICAL_ORIGIN = "https://academy.wajeez.com"
+function siteOriginHtml(): Plugin {
+  const origin = (
+    process.env.VITE_SITE_ORIGIN ||
+    (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "") ||
+    CANONICAL_ORIGIN
+  ).replace(/\/+$/, "")
+  if (!/^https?:\/\/[^/\s]+$/.test(origin)) {
+    throw new Error(`VITE_SITE_ORIGIN غير صالح: «${origin}» — يُتوقع أصل مطلق بلا مسار، مثل https://academy.wajeez.com`)
+  }
+  return {
+    name: "wajeez-site-origin",
+    /* order: "pre" لازم لا تجميل. فيت نفسه يستبدل %VITE_*% في index.html من
+       البيئة بقيمتها الخام، فلو سبقنا لَورثت الوسومُ الشرطةَ المائلة الزائدة
+       («…com//»). السبق هنا يجعل التطبيع نافذا في الحالتين: بمتغيّر وبدونه. */
+    transformIndexHtml: {
+      order: "pre",
+      handler(html: string) {
+        return html.replaceAll("%VITE_SITE_ORIGIN%", origin)
+      },
+    },
+    /* sitemap.xml وrobots.txt يُنسخان من public/ كما هما — لا يمرّان بالتحويل.
+       فيُعاد كتابتهما بعد النسخ. ولو فُقد أحدهما فالبناء يسقط: خريطةٌ فيها
+       %VITE_SITE_ORIGIN% حرفيا تُقدَّم لمحرك البحث فتُرفض كلها. */
+    closeBundle() {
+      const out = path.resolve(__dirname, "dist")
+      for (const name of ["sitemap.xml", "robots.txt"]) {
+        const file = path.join(out, name)
+        if (!existsSync(file)) throw new Error(`dist/${name} مفقود — لا يمكن حقن الأصل القانوني فيه`)
+        writeFileSync(file, readFileSync(file, "utf8").replaceAll("%VITE_SITE_ORIGIN%", origin))
+      }
+    },
+  }
 }
 
 function withApi(): Plugin {
@@ -71,7 +117,7 @@ function withApi(): Plugin {
 // https://vite.dev/config/
 export default defineConfig({
   base: '/',
-  plugins: [inspectAttr(), react(), withApi()],
+  plugins: [inspectAttr(), react(), siteOriginHtml(), withApi()],
   server: {
     port: 3000,
     proxy: {

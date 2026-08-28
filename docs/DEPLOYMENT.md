@@ -7,13 +7,34 @@
 
 ## 1) النطاق والـ SEO
 
-- انقل الموقع إلى النطاق النهائي (المقترح: `academy.wajeez.com`).
-- حدّث النطاق في ثلاثة مواضع:
-  - `index.html` → `<link rel="canonical">` و `og:url`
-  - `src/components/SeoHead.tsx` → ثابت `ORIGIN`
-  - `public/sitemap.xml` → كل الروابط
-- فعّل سطر `Sitemap:` في `public/robots.txt`.
-- أضف الموقع إلى Google Search Console وقدّم الخريطة.
+النطاق النهائي: **`academy.wajeez.com`**. والموقع اليوم في فترة تجريبية على
+نطاق Vercel.
+
+لا تحرّر النطاق في أي ملف. الأصل القانوني يُحقن وقت البناء من مصدر واحد
+(`src/application/site/origin.ts` وإضافة `wajeez-site-origin` في
+`vite.config.ts`) في: `index.html` (canonical وog:url وog:image وJSON-LD)،
+و`public/sitemap.xml`، و`public/robots.txt`، و`SeoHead` وقت التشغيل.
+
+الترتيب الذي يُختار به الأصل:
+
+| # | المصدر | متى يُستعمل |
+|---|---|---|
+| ١ | `VITE_SITE_ORIGIN` | إن ضُبط في متغيّرات Vercel — الكلمة الأخيرة |
+| ٢ | `https://$VERCEL_PROJECT_PRODUCTION_URL` | الفترة التجريبية: يوفّره البناء نفسه |
+| ٣ | `academy.wajeez.com` | البناء المحلي وأي تصيير خارج المتصفح |
+
+**يوم يشير النطاق النهائي إلى النشرة**، الخطوات ثلاث لا أكثر:
+
+1. أضف النطاق في Vercel → Domains ووجّه سجل DNS.
+2. اضبط في متغيّرات Vercel (Production):
+   - `VITE_SITE_ORIGIN=https://academy.wajeez.com` — للوسوم الساكنة والخريطة.
+   - `APP_URL=https://academy.wajeez.com` — لروابط الرسائل الصادرة
+     (`publicSiteUrl()` في `server/services/notification.service.ts`)، وإلا
+     خرجت الروابط على نطاق Vercel.
+3. أعد النشر، ثم أضف الموقع إلى Google Search Console وقدّم
+   `‎/sitemap.xml`.
+
+وحارس `src/tests/site-origin.test.ts` يمنع عودة النطاق مكتوبا بالأيدي.
 
 ## 2) المصادقة (إحلال المخزن المحلي)
 

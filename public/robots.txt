@@ -9,5 +9,6 @@ Disallow: /trainer
 Disallow: /admin
 Disallow: /auth
 
-# فعّل السطر التالي بعد ضبط النطاق النهائي (انظر docs/DEPLOYMENT.md):
-# Sitemap: https://academy.wajeez.com/sitemap.xml
+# الأصل يُحقن وقت البناء (vite.config.ts ← src/application/site/origin.ts):
+# النطاق النهائي في الإنتاج، ونطاق النشرة في الفترة التجريبية.
+Sitemap: %VITE_SITE_ORIGIN%/sitemap.xml

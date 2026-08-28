@@ -18,24 +18,27 @@
     <!-- الهوية والوصف الافتراضيان — كل صفحة تحدّثهما عبر SeoHead -->
     <title>أكاديمية وجيز — مسارك يبدأ من فهمك</title>
     <meta name="description" content="أكاديمية وجيز — تشخيص تعليمي ذكي يفهم هدفك وواقعك، ثم يرسم لك مسارا واحدا مفسّرا بمدربين حقيقيين ومخرج عملي يثبت جاهزيتك." />
-    <!-- النطاق النهائي يُضبط عند النشر — انظر docs/DEPLOYMENT.md -->
-    <link rel="canonical" href="https://academy.wajeez.com/" />
+    <!-- الأصل يُحقن وقت البناء: %VITE_SITE_ORIGIN% — النطاق النهائي في الإنتاج،
+         ونطاق النشرة في الفترة التجريبية. الوسوم الساكنة هي ما تقرؤه بوتات
+         المعاينة (واتساب/تويتر) وزاحف الفهرسة، فهي لا تنتظر React.
+         المصدر: src/application/site/origin.ts وscripts/vercel-build.sh -->
+    <link rel="canonical" href="%VITE_SITE_ORIGIN%/" />
 
     <!-- المشاركة الاجتماعية -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="أكاديمية وجيز" />
     <meta property="og:title" content="أكاديمية وجيز — مسارك يبدأ من فهمك" />
     <meta property="og:description" content="تشخيص ذكي يفهمك، مسار واحد مفسّر، ومخرج عملي يثبت جاهزيتك — من مجموعة وجيز." />
-    <meta property="og:url" content="https://academy.wajeez.com/" />
+    <meta property="og:url" content="%VITE_SITE_ORIGIN%/" />
     <meta property="og:locale" content="ar_AR" />
-    <meta property="og:image" content="https://academy.wajeez.com/og-image.png" />
+    <meta property="og:image" content="%VITE_SITE_ORIGIN%/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="شعار أكاديمية وجيز" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="أكاديمية وجيز — مسارك يبدأ من فهمك" />
     <meta name="twitter:description" content="تشخيص ذكي يفهمك، مسار واحد مفسّر، ومخرج عملي يثبت جاهزيتك." />
-    <meta name="twitter:image" content="https://academy.wajeez.com/og-image.png" />
+    <meta name="twitter:image" content="%VITE_SITE_ORIGIN%/og-image.png" />
 
     <!-- بيانات منظمة: المنظمة + الموقع + الأسئلة الشائعة الظاهرة فعليا في الصفحة -->
     <script type="application/ld+json">
@@ -46,15 +49,15 @@
           "@type": "Organization",
           "name": "أكاديمية وجيز",
           "alternateName": "Wajeez Academy",
-          "url": "https://academy.wajeez.com/",
+          "url": "%VITE_SITE_ORIGIN%/",
           "parentOrganization": { "@type": "Organization", "name": "وجيز", "url": "https://wajeez.com" },
-          "email": "support@wajeez.co",
+          "email": "Academy@wajeez.co",
           "address": { "@type": "PostalAddress", "addressLocality": "الرياض — حي الياسمين — شارع أنس بن مالك", "addressCountry": "SA" }
         },
         {
           "@type": "WebSite",
           "name": "أكاديمية وجيز",
-          "url": "https://academy.wajeez.com/",
+          "url": "%VITE_SITE_ORIGIN%/",
           "inLanguage": "ar"
         },
         {

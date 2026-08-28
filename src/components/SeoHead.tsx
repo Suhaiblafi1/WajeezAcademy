@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { siteOrigin } from '@/application/site/origin'
 
 /* رأس SEO لكل صفحة: عنوان ووصف ومشاركة وفهرسة — يُحقن عند التنقل */
 interface Props {
@@ -11,7 +12,8 @@ interface Props {
 }
 
 const SITE = 'أكاديمية وجيز'
-const ORIGIN = 'https://academy.wajeez.com' // يُحدَّث للنطاق النهائي عند النشر (انظر docs/DEPLOYMENT.md)
+/* الأصل لم يعد ثابتا هنا: في الفترة التجريبية كان يُعلن canonical إلى نطاق لا
+   يستجيب. انظر src/application/site/origin.ts. */
 
 function upsertMeta(attr: 'name' | 'property', key: string, content: string) {
   let el = document.head.querySelector<HTMLMetaElement>(`meta[${attr}="${key}"]`)
@@ -27,7 +29,7 @@ export default function SeoHead({ title, description, path = '/', noindex = fals
   useEffect(() => {
     const fullTitle = `${title} — ${SITE}`
     document.title = fullTitle
-    const url = `${ORIGIN}${path}`
+    const url = `${siteOrigin()}${path}`
     upsertMeta('name', 'description', description)
     upsertMeta('name', 'robots', noindex ? 'noindex, nofollow' : 'index, follow')
     upsertMeta('property', 'og:title', fullTitle)
