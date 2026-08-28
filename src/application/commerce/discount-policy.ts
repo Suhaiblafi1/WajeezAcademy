@@ -1,0 +1,65 @@
+/* سياسة الخصومات — مصدر واحد لكل رقم يُعرض على المتعلم.
+
+   ثلاث طبقات لا تتداخل، وهذا الترتيب هو الذي يُحسب به:
+     ١) خصم البناء: يرتفع كلما أضاف دورة إلى مساره. لا كود له ولا شرط —
+        جزء من التسعير نفسه.
+     ٢) كود واحد فوق الناتج: إما كود التشجيع لأول شراء، وإما كود فئة يُصدَر
+        بعد تحقق الأهلية. واحد لا اثنان — تكديس الأكواد يفتح بابا لا نغلقه.
+     ٣) لا شيء بعد ذلك.
+
+   ولماذا هنا لا في الصفحة: النسبة تُعرض في بطاقة السعر، وتُطبَّق في نافذة
+   الدفع، وتُذكر في نص الأهلية، وتُخصم في الفاتورة. أربعة مواضع — ورقمٌ يفترق
+   في أحدها وعدٌ مكسور. */
+
+import { pathwayPriceFor } from '../../data/courses'
+
+/* ─────────── ١) خصم البناء ─────────── */
+
+/** أقصى ما يبنيه المتعلم بنفسه. الستة للمسارات الجاهزة المصمَّمة، لا للتركيب. */
+export const MAX_BUILT_COURSES = 5
+
+/* السلّم: نسبة الخصم على مجموع الأسعار المفردة، بعدد الدورات.
+   مضبوط ليبقى البناء الحر أرخص من المسار الجاهز بالعدد نفسه أبدا — وإلا كان
+   بناء المتعلم لنفسه عقوبةً على الاختيار. يحرسه اختبار على الكتالوج كله. */
+const BUILD_LADDER: readonly number[] = [0, 0, 5, 12, 20, 27]
+
+/** نسبة خصم البناء لعدد دورات — صفر لدورة واحدة، وثابتة عند السقف */
+export function buildDiscountPct(count: number): number {
+  if (count < 1) return 0
+  return BUILD_LADDER[Math.min(count, MAX_BUILT_COURSES)] ?? 0
+}
+
+/** خطوة السلّم التالية — لتقول له ماذا يكسب بدورة أخرى، أو null عند السقف */
+export function nextBuildStep(count: number): { count: number; pct: number } | null {
+  if (count >= MAX_BUILT_COURSES) return null
+  const next = count + 1
+  const pct = buildDiscountPct(next)
+  return pct > buildDiscountPct(count) ? { count: next, pct } : null
+}
+
+/** سقف السعر الذي لا يجوز أن يتجاوزه البناء الحر: المسار الجاهز بالعدد نفسه */
+export function readyPathwayCeiling(count: number): number {
+  return pathwayPriceFor(count)
+}
+
+/* ─────────── ٢) أكواد الفئات ─────────── */
+
+export interface DiscountCategory {
+  id: string
+  label_ar: string
+  percentOff: number
+  /** ما يُطلب إثباتا — يُقال صراحة قبل أن يراسلنا، لا بعد */
+  evidence_ar: string
+}
+
+/* الفئات المؤهلة. الكود لا يُنشر: يُصدَر لكل مؤهَّل بعد التحقق، فلا يتسرّب
+   خصمُ فئةٍ إلى من ليس منها. ونسبها هنا لا في نص صفحة الشراء. */
+export const DISCOUNT_CATEGORIES: readonly DiscountCategory[] = [
+  { id: 'university_student', label_ar: 'طلبة الجامعات والكليات', percentOff: 25, evidence_ar: 'إثبات قيد ساري أو بطاقة جامعية' },
+  { id: 'government', label_ar: 'موظفو القطاع الحكومي', percentOff: 15, evidence_ar: 'بريد جهة حكومية أو تعريف بالراتب' },
+  { id: 'job_seeker', label_ar: 'الباحثون والباحثات عن عمل', percentOff: 25, evidence_ar: 'شهادة تعطّل عن العمل أو إقرار ذاتي' },
+  { id: 'homemaker', label_ar: 'ربّات المنزل', percentOff: 25, evidence_ar: 'إقرار ذاتي — لا نطلب مستندا' },
+]
+
+/** أعلى نسبة فئة — تُذكر في الدعوة («حتى ٢٥٪») بلا تعداد الفئات في كل صفحة */
+export const MAX_CATEGORY_PCT = Math.max(...DISCOUNT_CATEGORIES.map((c) => c.percentOff))

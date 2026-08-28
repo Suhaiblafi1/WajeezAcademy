@@ -48,6 +48,9 @@ export type AnalyticsEvent =
      وأين يتوقفون — عند الدورة الواحدة أم عند حدّ الحزمة؟ */
   | 'course_path_opened'
   | 'course_path_added'
+  /* اختيارٌ تجاوز سقف البناء فحُفظ للمرحلة التالية — لا رفض صامت */
+  | 'course_path_deferred'
+  | 'promo_applied'
   | 'course_path_named'
 
 /** سمات وصفية غير شخصية فقط: أرقام أسئلة، مجالات، أنواع شراء — لا نصوص حرة */

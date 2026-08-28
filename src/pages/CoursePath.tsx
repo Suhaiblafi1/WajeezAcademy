@@ -26,7 +26,10 @@ import { usePublishedContent } from "@/services/public-content";
 import { usePriceFormatter } from "@/services/currency";
 import { track } from "@/services/analytics";
 import { grantEnrollment } from "@/services/access";
-import { bundleNudge, pathPricing, suggestNext, BUNDLE_MIN_COURSES } from "@/application/catalog/course-path";
+import { bundleNudge, pathPricing, suggestNext, MAX_BUILT_COURSES } from "@/application/catalog/course-path";
+import { DISCOUNT_CATEGORIES, MAX_CATEGORY_PCT } from "@/application/commerce/discount-policy";
+import { FIRST_TIME_PROMO, isFirstTimePromo } from "@/application/commerce/first-time-promo";
+import { CONTACT } from "@/data/stories";
 import { savePathDraft } from "@/services/path-drafts";
 import {
   courseById, courseFullById, coursePriceOf, courseDetails,
@@ -55,7 +58,12 @@ export default function CoursePathRoute() {
 }
 
 function CoursePathPage({ courseId }: { courseId: string }) {
-  usePublishedContent();
+  /* رقم إصدار الكتالوج — يتغيّر لحظة تثبيت اللقطة المنشورة.
+     وهو دالّة في كل useMemo يقرأ الكتالوج هنا، وليس زينة: الكتالوج يصل بعد
+     أول رسم، فالحسبة الأولى تجري على كتالوج فارغ. وكان أثره ظاهرا: صفّ الدورة
+     يعرض سعرها (يُحسب في كل رسم) وبطاقةُ السعر تحته تقول صفرا (محفوظة من
+     الرسم الأول). رقمٌ يناقض رقما فوقه مباشرة. */
+  const catalogVersion = usePublishedContent();
   const navigate = useNavigate();
   const fmt = usePriceFormatter();
 
@@ -66,13 +74,28 @@ function CoursePathPage({ courseId }: { courseId: string }) {
   const [pending, setPending] = useState<Intent | null>(null);
   const [name, setName] = useState("");
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "failed">("idle");
+  /* الكود يُكتب هنا ويُطبَّق بزر — لا فور الكتابة: التطبيق التلقائي يجعل كل
+     حرف يُكتب محاولةً فاشلة، فيرى المتعلم رفضا وهو في منتصف كلمة. */
+  const [promoInput, setPromoInput] = useState("");
+  const [promoApplied, setPromoApplied] = useState<string | null>(null);
+  const [promoError, setPromoError] = useState(false);
+  /* ما تجاوز السقف يُحفظ لمرحلة تالية بدل أن يُرفض بصمت */
+  const [deferred, setDeferred] = useState<string[]>([]);
 
   useEffect(() => {
     if (anchor) track("course_path_opened", { course: anchor.id, pathway: anchor.pathwayId });
   }, [anchor]);
 
-  const suggestions = useMemo(() => suggestNext(picked, 8), [picked]);
-  const pricing = useMemo(() => pathPricing(picked), [picked]);
+  const suggestions = useMemo(() => {
+    /* الكتالوج يصل بعد أول رسم — فإعادة الحساب معلَّقة على إصداره */
+    void catalogVersion;
+    return suggestNext(picked, 8);
+  }, [picked, catalogVersion]);
+  const pricing = useMemo(() => {
+    /* الكتالوج يصل بعد أول رسم — فإعادة الحساب معلَّقة على إصداره */
+    void catalogVersion;
+    return pathPricing(picked);
+  }, [picked, catalogVersion]);
   const nudge = useMemo(
     () => bundleNudge(picked, suggestions.map((s) => s.courseId)),
     [picked, suggestions],
@@ -80,11 +103,13 @@ function CoursePathPage({ courseId }: { courseId: string }) {
 
   /* هل صارت مختاراته مسارا جاهزا بعينه؟ حينها نقوله له بدل ادّعاء تركيب جديد */
   const matchesPathway = useMemo(() => {
-    if (!anchor || picked.length < BUNDLE_MIN_COURSES) return null;
+    /* الكتالوج يصل بعد أول رسم — فإعادة الحساب معلَّقة على إصداره */
+    void catalogVersion;
+    if (!anchor || picked.length < 4) return null;
     const full = pathwayCourses[anchor.pathwayId] ?? [];
     if (full.length === 0 || picked.length !== full.length) return null;
     return full.every((id) => picked.includes(id)) ? anchor.pathwayId : null;
-  }, [anchor, picked]);
+  }, [anchor, picked, catalogVersion]);
 
   if (!anchor) {
     if (!hasCoreCatalog()) {
@@ -113,7 +138,16 @@ function CoursePathPage({ courseId }: { courseId: string }) {
   const totalWeeks = pickedCourses.reduce((s, c) => s + c.weeks, 0);
 
   const add = (id: string) => {
-    setPicked((p) => (p.includes(id) ? p : [...p, id]));
+    if (picked.includes(id)) return;
+    /* عند السقف: تُحفظ للمرحلة التالية لا تُرفض. الرفض الصامت يجعل الزر يبدو
+       معطّلا بلا سبب، والرفض بتنبيه يقطع البناء — والحفظ يقول «ليست الآن». */
+    if (picked.length >= MAX_BUILT_COURSES) {
+      setDeferred((d) => (d.includes(id) ? d : [...d, id]));
+      track("course_path_deferred", { course: id });
+      return;
+    }
+    setPicked((p) => [...p, id]);
+    setDeferred((d) => d.filter((x) => x !== id));
     track("course_path_added", { course: id, count: picked.length + 1 });
   };
   const remove = (id: string) => {
@@ -121,6 +155,24 @@ function CoursePathPage({ courseId }: { courseId: string }) {
     if (id === anchor.id) return;
     setPicked((p) => p.filter((x) => x !== id));
   };
+
+  /* الكود واحد لا اثنان: كود التشجيع أو كود فئة يُصدَر بعد التحقق. وكود الفئة
+     لا يُتحقّق منه هنا — الواجهة لا تعرف الأكواد المُصدَرة، والفوترة تعرفها.
+     فما نقوله صادق: نطبّق ما نعرفه، ونقول للباقي إنه يُراجَع عند الدفع. */
+  const applyPromo = () => {
+    const code = promoInput.trim().toUpperCase();
+    if (!code) return;
+    if (isFirstTimePromo(code)) {
+      setPromoApplied(code);
+      setPromoError(false);
+      track("promo_applied", { code });
+      return;
+    }
+    setPromoApplied(null);
+    setPromoError(true);
+  };
+  const promoPct = promoApplied ? FIRST_TIME_PROMO.percentOff : 0;
+  const finalPayable = Math.round(pricing.payable * (1 - promoPct / 100));
 
   const start = (intent: Intent) => {
     if (user) setCheckout(intent);
@@ -135,7 +187,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
           : matchesPathway
             ? `مسار «${anchor.pathwayName}» كاملا (${picked.length} دورات)`
             : `مسارك المبني: ${name.trim() || `${picked.length} دورات`}`,
-      amount: pricing.payable,
+      amount: finalPayable,
       kind: picked.length === 1 ? "course" : matchesPathway ? "pathway" : "courses",
     });
 
@@ -272,8 +324,14 @@ function CoursePathPage({ courseId }: { courseId: string }) {
               <RouteIcon className="h-5 w-5 text-teal-light-ink" />
               مسارك حتى الآن
             </h2>
-            <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] font-bold text-white/60" dir="ltr">
-              {picked.length} {picked.length === 1 ? "دورة" : "دورات"} · {totalWeeks} أسبوعا
+            {/* العدد والمدة والسقف في شارة واحدة: من يبني يحتاج أن يعرف أين هو
+                من الحد قبل أن يصطدم به، لا بعد أن يُرفض اختياره. */}
+            <span className={`rounded-full border px-3 py-1 text-[11px] font-bold ${
+              pricing.atCap ? "border-gold/50 bg-gold/10 text-gold-ink" : "border-white/10 bg-white/[0.04] text-white/60"
+            }`}>
+              <span dir="ltr">{picked.length}</span> من <span dir="ltr">{MAX_BUILT_COURSES}</span> دورات
+              {" · "}{weeksLabel(totalWeeks)}
+              {pricing.atCap && " · بلغت الحد"}
             </span>
           </div>
 
@@ -307,41 +365,127 @@ function CoursePathPage({ courseId }: { courseId: string }) {
             ))}
           </ol>
 
-          {/* السعر — القاعدة: ما دام المجموع دون سعر المسار فلا يُذكر سعر المسار */}
+          {/* السعر مفصَّلا لا رقما واحدا: المجموع قبل الخصم، ثم خصم البناء
+              بنسبته وقيمته، ثم الكود إن كان، ثم ما يدفعه. كل سطر يقابل قرارا
+              اتخذه المتعلم بنفسه — وهذا ما يجعل الرقم الأخير مفهوما. */}
           <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-            <div className="flex flex-wrap items-end justify-between gap-3">
-              <div>
-                <p className="text-xs text-white/50">
-                  {pricing.useBundle ? "سعر مسارك كاملا" : picked.length === 1 ? "سعر الدورة" : "مجموع دوراتك"}
-                </p>
-                <p className="mt-1 flex items-baseline gap-2">
-                  <span className="text-3xl font-black text-white">{fmt(pricing.payable)}</span>
-                  {pricing.useBundle && pricing.separate > pricing.payable && (
-                    <span className="text-sm text-white/40 line-through">{fmt(pricing.separate)}</span>
-                  )}
-                </p>
-                {pricing.useBundle && pricing.savingPct > 0 && (
-                  <p className="mt-1 text-xs text-teal-light-ink">
-                    بدل {fmt(pricing.separate)} لو اشتريتها منفردة — توفير {pricing.savingPct}٪
-                  </p>
-                )}
+            <dl className="space-y-1.5 text-sm">
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="text-white/55">{picked.length === 1 ? "سعر الدورة" : `مجموع الـ${picked.length} دورات`}</dt>
+                <dd className="font-bold text-white/80">{fmt(pricing.separate)}</dd>
               </div>
-              <Button
-                onClick={buy}
-                className="h-12 rounded-full bg-gold px-8 font-black text-on-gold hover:bg-gold/90"
-              >
-                <CreditCard className="ml-2 h-4 w-4" />
-                {picked.length === 1 ? "اشترِ هذه الدورة" : `اشترِ مسارك (${picked.length})`}
-              </Button>
+              {pricing.discountPct > 0 && (
+                <div className="flex items-baseline justify-between gap-3">
+                  <dt className="text-teal-light-ink">
+                    خصم بناء المسار — {pricing.discountPct}٪
+                    {pricing.cappedByReady && <span className="text-white/40"> (بسعر المسار الجاهز)</span>}
+                  </dt>
+                  <dd className="font-bold text-teal-light-ink">−{fmt(pricing.saving)}</dd>
+                </div>
+              )}
+              {promoPct > 0 && (
+                <div className="flex items-baseline justify-between gap-3">
+                  <dt className="text-teal-light-ink">كود {promoApplied} — {promoPct}٪</dt>
+                  <dd className="font-bold text-teal-light-ink">−{fmt(pricing.payable - finalPayable)}</dd>
+                </div>
+              )}
+              <div className="flex flex-wrap items-baseline justify-between gap-3 border-t border-white/10 pt-2.5">
+                <dt className="text-xs text-white/50">ما تدفعه</dt>
+                <dd className="flex items-baseline gap-2">
+                  {finalPayable < pricing.separate && (
+                    <span className="text-sm text-white/35 line-through">{fmt(pricing.separate)}</span>
+                  )}
+                  <span className="text-3xl font-black text-white">{fmt(finalPayable)}</span>
+                </dd>
+              </div>
+            </dl>
+
+            {/* كود الخصم — حقل مستقل بزر، لا يُطبَّق بالكتابة */}
+            <div className="mt-4 border-t border-white/10 pt-4">
+              <label className="block text-[11px] font-bold text-white/55" htmlFor="promo">كود الخصم</label>
+              <div className="mt-1.5 flex gap-2">
+                <input
+                  id="promo"
+                  value={promoInput}
+                  onChange={(e) => { setPromoInput(e.target.value.toUpperCase()); setPromoError(false); }}
+                  onKeyDown={(e) => { if (e.key === "Enter") applyPromo(); }}
+                  placeholder={FIRST_TIME_PROMO.code}
+                  dir="ltr"
+                  maxLength={24}
+                  className={`min-w-0 flex-1 rounded-xl border bg-white/[0.04] px-3 py-2.5 text-left text-sm tracking-widest placeholder:tracking-normal placeholder:text-white/25 focus:outline-none ${
+                    promoApplied ? "border-teal-light text-teal-light-ink" : promoError ? "border-gold/60" : "border-white/15 focus:border-teal-light"
+                  }`}
+                />
+                <Button
+                  onClick={applyPromo}
+                  variant="outline"
+                  className="h-auto shrink-0 rounded-xl border-white/20 px-5 font-bold text-white/80"
+                >
+                  تطبيق
+                </Button>
+              </div>
+              {promoApplied && (
+                <p className="mt-2 text-[11px] font-bold text-teal-light-ink">طُبِّق خصم {promoPct}٪ {FIRST_TIME_PROMO.labelAr}.</p>
+              )}
+              {promoError && (
+                <p className="mt-2 text-[11px] text-gold-ink">لم نتعرّف على هذا الكود. راجع كتابته، أو تحقّق من أهليتك لخصم فئة أدناه.</p>
+              )}
+              {/* الفئات من مصدر السياسة لا من نصٍّ مكتوب هنا: نسبةٌ تُذكر في
+                  صفحة الشراء وتُخالف ما يُصدره الإداري كودا هي وعدٌ مكسور.
+                  ومطويّة: من ليس منها لا يُشغل بها، ومن يظن نفسه منها يجدها. */}
+              <details className="group mt-2.5">
+                <summary className="cursor-pointer list-none text-[11px] leading-relaxed text-white/40 [&::-webkit-details-marker]:hidden">
+                  هل قد تكون مؤهلا لخصم فئة (حتى {MAX_CATEGORY_PCT}٪)؟{" "}
+                  <span className="font-bold text-white/60 underline underline-offset-4 transition group-hover:text-[#6EC7D1]">
+                    اطّلع على الفئات وتحقّق من أهليتك
+                  </span>
+                </summary>
+                <ul className="mt-2.5 space-y-1.5 border-r-2 border-white/10 pe-0 ps-3">
+                  {DISCOUNT_CATEGORIES.map((cat) => (
+                    <li key={cat.id} className="text-[11px] leading-relaxed text-white/50">
+                      <span className="font-bold text-white/75">{cat.label_ar} — {cat.percentOff}٪</span>
+                      <span className="text-white/40"> · {cat.evidence_ar}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-2.5 text-[11px] leading-relaxed text-white/40">
+                  الكود لا يُنشر: يُصدَر لك وحدك بعد التحقق، فلا يتسرّب خصم فئةٍ إلى من ليس منها.{" "}
+                  <a
+                    href={`mailto:${CONTACT.email}?subject=${encodeURIComponent("تحقق من الأهلية لخصم فئة")}`}
+                    className="font-bold text-white/60 underline underline-offset-4 transition hover:text-[#6EC7D1]"
+                  >
+                    تواصل معنا للتحقق والحصول على كودك
+                  </a>
+                </p>
+              </details>
             </div>
 
-            {/* التنبيه — يُقال قبل الحزمة بخطوة واحدة، وبأرقام تصدق على أرخص إضافة */}
+            <Button
+              onClick={buy}
+              className="mt-4 h-12 w-full rounded-full bg-gold px-8 font-black text-on-gold hover:bg-gold/90"
+            >
+              <CreditCard className="ml-2 h-4 w-4" />
+              {picked.length === 1 ? "اشترِ هذه الدورة" : `اشترِ مسارك (${picked.length})`}
+            </Button>
+
+            {/* التنبيه — بالكلفة الحقيقية للدورة الإضافية لا بسعرها المعلن */}
             {nudge && (
               <p className="mt-4 flex items-start gap-2 rounded-xl border border-gold/40 bg-gold/10 px-4 py-3 text-[12px] font-semibold leading-relaxed text-gold-ink">
                 <Sparkles className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>
-                  أضف دورة واحدة أخرى ويصير مسارك بـ{fmt(nudge.nextPayable)} — بدل {fmt(nudge.nextSeparate)}
-                  {" "}لو اشتريت الـ{nudge.nextCount} منفردة. أي أن الدورة الإضافية تكلّفك أقل من ثمنها بـ{fmt(nudge.saves)}.
+                  دورة واحدة أخرى ترفع خصمك إلى {nudge.nextPct}٪: تصير الـ{nudge.nextCount} بـ{fmt(nudge.nextPayable)}.
+                  {" "}أي أن الدورة الإضافية تكلّفك {fmt(nudge.marginal)} بدل {fmt(nudge.listPrice)}.
+                </span>
+              </p>
+            )}
+
+            {/* السقف — يُقال بسببه لا بمنعٍ صامت */}
+            {pricing.atCap && (
+              <p className="mt-3 flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-[12px] leading-relaxed text-white/60">
+                <ListChecks className="mt-0.5 h-4 w-4 shrink-0 text-teal-light-ink" />
+                <span>
+                  بلغتَ {MAX_BUILT_COURSES} دورات — وهو حدّ ما تبنيه بنفسك. ليس بخلا بل حمايةٌ لإنهائه:
+                  خطةٌ تُنجَز خير من خطةٍ تُشترى. وما تختاره بعدها يُحفظ لمرحلتك التالية أدناه.
                 </span>
               </p>
             )}
@@ -359,6 +503,40 @@ function CoursePathPage({ courseId }: { courseId: string }) {
             )}
           </div>
         </section>
+
+        {/* ══ مرحلتك التالية ══ — ما اختاره بعد السقف، محفوظا لا مرفوضا */}
+        {deferred.length > 0 && (
+          <section className="mt-6 rounded-3xl border border-dashed border-gold/40 bg-gold/[0.05] p-5 md:p-6">
+            <h2 className="flex items-center gap-2 text-base font-black text-gold-ink">
+              <Save className="h-4.5 w-4.5" />
+              مرحلتك التالية — محفوظة لك
+            </h2>
+            <p className="mt-1.5 text-xs leading-relaxed text-white/50">
+              اخترتها بعد بلوغ الحد، فحفظناها بدل رفضها. أنهِ مسارك الأول ثم ابنِ هذه — أو احذف واحدة من الخمس أعلاه وأدخِلها مكانها.
+            </p>
+            <ul className="mt-3.5 space-y-2">
+              {deferred.map((id) => {
+                const c = courseById(id);
+                if (!c) return null;
+                return (
+                  <li key={id} className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2.5">
+                    <span className="min-w-0 text-sm font-bold leading-snug">{c.name}</span>
+                    <span className="flex shrink-0 items-center gap-2">
+                      <span className="text-xs font-black text-white/60">{fmt(coursePriceOf(c))}</span>
+                      <button
+                        onClick={() => setDeferred((d) => d.filter((x) => x !== id))}
+                        aria-label={`أزل ${c.name} من مرحلتك التالية`}
+                        className="grid h-8 w-8 place-items-center rounded-lg text-white/35 transition hover:bg-white/5 hover:text-white/70"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
 
         {/* ══ ما يكمل مسارك ══ */}
         {suggestions.length > 0 && (
