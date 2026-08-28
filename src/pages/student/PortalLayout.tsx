@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router";
-import { GraduationCap, LayoutDashboard, Route as RouteIcon, Trophy, Award, Lock, Eye, LogOut, Bell, CheckCheck, UserCircle, ReceiptText, FileText, MoreHorizontal, X, LifeBuoy, CalendarDays, BookOpen, ChevronDown, Target, Inbox, Layers } from "lucide-react";
+import { LayoutDashboard, Award, Lock, Eye, LogOut, Bell, CheckCheck, UserCircle, ReceiptText, X, LifeBuoy, BookOpen, ChevronDown, Inbox } from "lucide-react";
 import { canAccessPortal, enablePreview, getEnrollment, isOwnerUnlocked, unlockOwner } from "@/services/access";
 import { signOut } from "@/services/auth";
 import { apiGet, apiPost } from "@/services/api";
@@ -15,6 +15,30 @@ import EcosystemNote from "@/components/EcosystemNote";
 
 interface RealNotif { id: string; title: string; body: string; status: string; sentAt: string | null; queuedAt: string }
 
+/** قسمٌ في التنقّل الرئيسي: عنوانه وسؤاله، وصفحاتُه تنقّلٌ ثانويّ تحته */
+interface SubTab { to: string; label: string }
+interface Section {
+  id: string
+  label: string
+  icon: typeof LayoutDashboard
+  /** وجهة النقر على القسم — أوّل صفحاته */
+  to: string
+  end?: boolean
+  items: SubTab[]
+  /** بوادئ المسارات التي تُعدّ داخل القسم (تشمل صفحاتٍ لا تظهر في شريطه) */
+  match: string[]
+}
+
+/* شؤون الحساب لا تكون تبويبا في شريط التعلّم — مكانها قائمة الحساب أعلى
+   اليسار، كما في المنصّات التي يعرفها المتعلم. */
+const ACCOUNT_ITEMS: { to: string; label: string; icon: typeof LayoutDashboard }[] = [
+  { to: "/student/account", label: "الملف الشخصي", icon: UserCircle },
+  { to: "/student/billing", label: "فواتيري", icon: ReceiptText },
+  { to: "/student/inbox", label: "صندوقي", icon: Inbox },
+  { to: "/student/notifications", label: "الإشعارات", icon: Bell },
+  { to: "/student/support", label: "الدعم", icon: LifeBuoy },
+]
+
 /** إطار بوابة الطالب: شريط علوي + تنقل + إشعارات + حارس الوصول.
     جلسة الخادم الحقيقية أولاً — الاسم والوصول والإشعارات منها؛ المحاكاة المحلية للديمو فقط. */
 export default function PortalLayout({ children, title }: { children: React.ReactNode; title: string }) {
@@ -24,11 +48,18 @@ export default function PortalLayout({ children, title }: { children: React.Reac
      أما جلسة الخادم فتُعطَف أثناء التصيير بعد قراءتها — لا تُقلب بتأثير. */
   const [manualAllowed, setManualAllowed] = useState<boolean>(() => canAccessPortal() || previewOwner);
   const [bellOpen, setBellOpen] = useState(false);
-  const [moreOpen, setMoreOpen] = useState(false);
-  const [deskMoreOpen, setDeskMoreOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  /* الخروج ينتظر مسح الجلسة عند الخادم قبل التنقّل. كان `void signOut()`
+     فيسبق التنقّلُ المسحَ، فيعود المستخدم داخلا وهو يظنّ أنه خرج. */
+  const doSignOut = async () => {
+    if (signingOut) return;
+    setSigningOut(true);
+    await signOut();
+    navigate("/", { replace: true });
+  };
   const { user: sessionUser, checked: sessionChecked } = useRealSession();
   /* كان useEffect يقلب allowed عند ظهور الجلسة، فيصيّر مرة بالمنع ثم مرة
      بالسماح — ومضة يراها المستخدم، وتحذير «setState داخل تأثير». العطف هنا
@@ -127,34 +158,43 @@ export default function PortalLayout({ children, title }: { children: React.Reac
     );
   }
 
-  const tabs = [
-    { to: "/student", label: "لوحتي", icon: LayoutDashboard, end: true },
-    { to: "/student/learning", label: "تعلّمي", icon: BookOpen },
-    { to: "/student/pathway", label: "مساري", icon: RouteIcon },
-    { to: "/student/skills", label: "مهاراتي", icon: Target },
-    /* ح-٤: المراجعة عادة يومية، فمكانها في الأساسية لا في «المزيد» */
-    { to: "/student/review", label: "مراجعتي", icon: Layers },
-    { to: "/student/project", label: "مشروع التخرج", icon: Trophy },
-    { to: "/student/cohorts", label: "الشعب المفتوحة", icon: CalendarDays },
-    { to: "/student/certificates", label: "شهاداتي", icon: Award },
-    { to: "/student/billing", label: "فواتيري", icon: ReceiptText },
-    { to: "/student/cv", label: "سيرتي", icon: FileText },
-    { to: "/student/account", label: "حسابي", icon: UserCircle },
-    /* ص-١: صندوق موحّد يجمع الإشعارات وتعليقات المدرب وردود الدعم */
-    { to: "/student/inbox", label: "صندوقي", icon: Inbox },
-    { to: "/student/support", label: "الدعم", icon: LifeBuoy },
+  /* ١أ — التنقّل حول سؤال المتعلم لا حول جداول قاعدة البيانات.
+     كانت ثلاثة عشر تبويبا في صفٍّ واحد: خمسة على سطح المكتب وثمانية تحت
+     «المزيد»، وأربعة على الجوال وتسعة تحت «المزيد». وأربعةٌ منها — تعلّمي
+     ومساري ومهاراتي ومراجعتي — تجيب عن سؤال واحد: «أين أنا من هدفي؟» فلم
+     يكن يُفرَّق بينها. صارت ثلاثة أقسام لكلٍّ سؤالُه، وما تحتها تنقّلٌ ثانوي
+     داخل القسم لا في الشريط الأعلى. والمساراتُ كلها كما هي — لا صفحة تُحذف
+     ولا عنوانٌ يتغيّر؛ هذه الدفعة تنقّلٌ فقط. */
+  const sections: Section[] = [
+    { id: "home", label: "الرئيسية", icon: LayoutDashboard, to: "/student", end: true, items: [], match: ["/student"] },
+    {
+      id: "learn", label: "تعلّمي", icon: BookOpen, to: "/student/learning",
+      items: [
+        { to: "/student/learning", label: "دوراتي" },
+        { to: "/student/pathway", label: "مساري" },
+        { to: "/student/review", label: "مراجعتي" },
+        { to: "/student/project", label: "مشروع التخرج" },
+        { to: "/student/cohorts", label: "الشعب المفتوحة" },
+      ],
+      /* صفحتا الدورة وإعادة القياس تتبعان القسم وإن لم تكونا في شريطه */
+      match: ["/student/learning", "/student/pathway", "/student/review", "/student/project", "/student/cohorts", "/student/course", "/student/remeasure"],
+    },
+    {
+      id: "vault", label: "خزانتي", icon: Award, to: "/student/certificates",
+      items: [
+        { to: "/student/certificates", label: "شهاداتي" },
+        { to: "/student/cv", label: "سيرتي" },
+        { to: "/student/skills", label: "مهاراتي" },
+      ],
+      match: ["/student/certificates", "/student/cv", "/student/skills"],
+    },
   ];
-  /* سطح المكتب: خمسة أساسية + «المزيد» منسدلة — لا شريط مكتظ يضغط التبويبات */
-  const deskPrimary = tabs.slice(0, 5);
-  const deskOverflow = tabs.slice(5);
-  const deskMoreActive = deskOverflow.some((t) => pathname.startsWith(t.to));
-  /* جوال: أربعة تبويبات أساسية ثابتة + «المزيد» يفتح الباقي — لا تمرير أفقي يُخفي الصفحات.
-     «مهاراتي» تأخذ الخانة الرابعة و«حسابي» تنزل للمزيد: الأولى شاشة قيمة يومية والثانية إعدادات. */
-  /* المراجع بالمسار لا بالفهرس: إدراج تبويب جديد لا يعيد ترتيب شريط الجوال */
-  const MOBILE_MAIN = ["/student", "/student/learning", "/student/pathway", "/student/skills"];
-  const mainTabs = MOBILE_MAIN.map((to) => tabs.find((t) => t.to === to)!).filter(Boolean);
-  const moreTabs = tabs.filter((t) => !MOBILE_MAIN.includes(t.to));
-  const moreActive = moreTabs.some((t) => pathname.startsWith(t.to));
+  /* القسم النشط: «الرئيسية» بمطابقة تامة، وغيرُها ببادئة المسار */
+  const activeSection =
+    pathname === "/student"
+      ? sections[0]
+      : sections.find((sec) => sec.id !== "home" && sec.match.some((m) => pathname.startsWith(m)));
+  const accountActive = ACCOUNT_ITEMS.some((a) => pathname.startsWith(a.to));
 
   return (
     <div dir="rtl" className="min-h-screen bg-paper text-white">
@@ -165,58 +205,20 @@ export default function PortalLayout({ children, title }: { children: React.Reac
             <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 object-contain" />
             <span className="hidden font-black sm:block">أكاديمية وجيز</span>
           </Link>
-          <nav className="hidden items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1 md:flex">
-            {deskPrimary.map((t) => (
-              <NavLink
-                key={t.to}
-                to={t.to}
-                end={t.end as boolean | undefined}
-                className={({ isActive }) =>
-                  `flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition lg:px-4 ${
-                    isActive ? "bg-teal text-on-teal" : "text-white/60 hover:text-white"
-                  }`
-                }
-              >
-                <t.icon className="h-3.5 w-3.5" />
-                {t.label}
-              </NavLink>
-            ))}
-            {/* «المزيد» لسطح المكتب — بقية الصفحات في منسدلة واحدة أنيقة */}
-            <div className="relative">
-              <button
-                onClick={() => setDeskMoreOpen((v) => !v)}
-                aria-label="المزيد من الصفحات"
-                className={`flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition lg:px-4 ${
-                  deskMoreActive ? "bg-teal text-on-teal" : "text-white/60 hover:text-white"
+          <nav aria-label="أقسام المنصة" className="hidden items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1 md:flex">
+            {sections.map((sec) => (
+              <Link
+                key={sec.id}
+                to={sec.to}
+                aria-current={activeSection?.id === sec.id ? "page" : undefined}
+                className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold transition ${
+                  activeSection?.id === sec.id ? "bg-teal text-on-teal" : "text-white/60 hover:text-white"
                 }`}
               >
-                <MoreHorizontal className="h-3.5 w-3.5" />
-                المزيد
-                <ChevronDown className={`h-3 w-3 transition ${deskMoreOpen ? "rotate-180" : ""}`} />
-              </button>
-              {deskMoreOpen && (
-                <>
-                  <button aria-label="إغلاق القائمة" onClick={() => setDeskMoreOpen(false)} className="fixed inset-0 z-40 cursor-default" />
-                  <div className="absolute left-0 top-10 z-50 w-56 rounded-2xl border border-white/10 bg-surface p-2 shadow-2xl">
-                    {deskOverflow.map((t) => (
-                      <NavLink
-                        key={t.to}
-                        to={t.to}
-                        onClick={() => setDeskMoreOpen(false)}
-                        className={({ isActive }) =>
-                          `flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs font-bold transition ${
-                            isActive ? "bg-teal/15 text-teal-light-ink" : "text-white/60 hover:bg-white/[0.04] hover:text-white"
-                          }`
-                        }
-                      >
-                        <t.icon className="h-4 w-4" />
-                        {t.label}
-                      </NavLink>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
+                <sec.icon className="h-3.5 w-3.5" />
+                {sec.label}
+              </Link>
+            ))}
           </nav>
           <div className="flex items-center gap-2 text-xs text-white/55">
             {/* جرس الإشعارات */}
@@ -266,24 +268,57 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                 </>
               )}
             </div>
-            <GraduationCap className="h-4 w-4 text-teal-light-ink" />
             <ThemeToggle />
-            <span className="max-w-[110px] truncate">{user}</span>
-            {/* الخروج ينتظر مسح الجلسة عند الخادم قبل التنقل. كان `void signOut()`
-                فيسبق التنقلُ المسحَ، فيعود المستخدم داخلا وهو يظنّ أنه خرج. */}
-            <button
-              onClick={async () => {
-                if (signingOut) return;
-                setSigningOut(true);
-                await signOut();
-                navigate("/", { replace: true });
-              }}
-              disabled={signingOut}
-              className="flex h-11 items-center gap-2 rounded-full border border-white/10 px-4 text-sm font-bold text-white/60 transition hover:border-red-400/50 hover:text-red-300 disabled:opacity-60"
-            >
-              <LogOut className="h-3.5 w-3.5" />
-              <span>{signingOut ? "يُسجَّل الخروج…" : "تسجيل الخروج"}</span>
-            </button>
+            {/* قائمة الحساب — شؤون الحساب كلها هنا لا تبويباتٍ في شريط التعلّم.
+                وفيها زرُّ الخروج نصّا صريحا: كان أيقونةَ سهمٍ في الشريط. */}
+            <div className="relative hidden md:block">
+              <button
+                onClick={() => setAccountOpen((v) => !v)}
+                aria-expanded={accountOpen}
+                aria-haspopup="menu"
+                className={`flex h-11 cursor-pointer items-center gap-2 rounded-full border px-3 text-xs font-bold transition ${
+                  accountActive || accountOpen ? "border-teal/50 bg-teal/10 text-teal-light-ink" : "border-white/10 text-white/60 hover:border-white/25 hover:text-white"
+                }`}
+              >
+                <span className="grid h-7 w-7 place-items-center rounded-full bg-teal/20 text-[11px] font-black text-teal-light-ink">
+                  {user.trim().charAt(0) || "و"}
+                </span>
+                <span className="max-w-[90px] truncate">{user.split(" ")[0]}</span>
+                <ChevronDown className={`h-3 w-3 transition ${accountOpen ? "rotate-180" : ""}`} />
+              </button>
+              {accountOpen && (
+                <>
+                  <button aria-label="إغلاق قائمة الحساب" onClick={() => setAccountOpen(false)} className="fixed inset-0 z-40 cursor-default" />
+                  <div role="menu" className="absolute left-0 top-14 z-50 w-60 rounded-2xl border border-white/10 bg-surface p-2 shadow-2xl">
+                    <p className="px-3 pb-2 pt-1 text-[11px] text-white/45">{user}</p>
+                    {ACCOUNT_ITEMS.map((a) => (
+                      <NavLink
+                        key={a.to}
+                        to={a.to}
+                        onClick={() => setAccountOpen(false)}
+                        className={({ isActive }) =>
+                          `flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs font-bold transition ${
+                            isActive ? "bg-teal/15 text-teal-light-ink" : "text-white/65 hover:bg-white/[0.04] hover:text-white"
+                          }`
+                        }
+                      >
+                        <a.icon className="h-4 w-4" />
+                        {a.label}
+                      </NavLink>
+                    ))}
+                    <div className="my-1.5 border-t border-white/10" />
+                    <button
+                      onClick={doSignOut}
+                      disabled={signingOut}
+                      className="flex w-full cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs font-bold text-white/65 transition hover:bg-red-500/10 hover:text-red-300 disabled:opacity-60"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      {signingOut ? "يُسجَّل الخروج…" : "تسجيل الخروج"}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -291,7 +326,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                 (App.tsx) وهي هدف رابط «تجاوز إلى المحتوى». main متداخلة تجعل
                 التخطي غامضا وتُجبر قارئ الشاشة على الاختيار بين منطقتين. */}
       <div className="mx-auto max-w-6xl px-5 py-8 pb-28 md:pb-8">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-2xl font-black">{title}</h1>
           {enrollment && !sessionUser && (
             <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-[11px] text-white/50">
@@ -299,64 +334,90 @@ export default function PortalLayout({ children, title }: { children: React.Reac
             </span>
           )}
         </div>
+        {/* التنقّل الثانوي داخل القسم — صفحاتُه هنا لا في الشريط الأعلى.
+            يُمرَّر أفقيا داخل حاويته وحدها كي لا تُمرَّر الصفحة كلها (ت-٤). */}
+        {activeSection && activeSection.items.length > 0 && (
+          <nav aria-label={`صفحات ${activeSection.label}`} className="-mx-1 mb-6 flex gap-1.5 overflow-x-auto px-1 pb-1">
+            {activeSection.items.map((it) => (
+              <NavLink
+                key={it.to}
+                to={it.to}
+                className={({ isActive }) =>
+                  `shrink-0 rounded-full border px-4 py-1.5 text-xs font-bold transition ${
+                    isActive ? "border-teal/60 bg-teal/15 text-teal-light-ink" : "border-white/10 text-white/55 hover:border-white/30 hover:text-white"
+                  }`
+                }
+              >
+                {it.label}
+              </NavLink>
+            ))}
+          </nav>
+        )}
         {children}
       </div>
       {/* تعريف المنظومة — تذييل ثقة خفيف داخل البوابة (يظهر مرة واحدة أسفل المحتوى) */}
       <EcosystemNote className="mx-auto max-w-6xl px-5 pb-24 md:pb-6" />
-      {/* شريط تنقل سفلي للجوال — أربعة أساسية + «المزيد» بقائمة منبثقة */}
-      <nav aria-label="تنقل المنصة" className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-white/10 bg-paper/95 pb-[max(env(safe-area-inset-bottom),0.25rem)] backdrop-blur-xl md:hidden">
-        {mainTabs.map((t) => (
-          <NavLink
-            key={t.to}
-            to={t.to}
-            end={t.end as boolean | undefined}
-            className={({ isActive }) =>
-              `flex flex-col items-center gap-1 py-2.5 text-[10px] font-bold transition ${
-                isActive ? "text-teal-light-ink" : "text-white/50"
-              }`
-            }
+      {/* شريط الجوال: ثلاثة أقسام + الحساب — أربع خانات بلا «المزيد».
+          كان خمسَ خاناتٍ رابعُها «مهاراتي» وتحت «المزيد» تسعُ صفحات مخبّأة. */}
+      <nav aria-label="أقسام المنصة" className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-white/10 bg-paper/95 pb-[max(env(safe-area-inset-bottom),0.25rem)] backdrop-blur-xl md:hidden">
+        {sections.map((sec) => (
+          <Link
+            key={sec.id}
+            to={sec.to}
+            aria-current={activeSection?.id === sec.id ? "page" : undefined}
+            className={`flex flex-col items-center gap-1 py-2.5 text-[10px] font-bold transition ${
+              activeSection?.id === sec.id ? "text-teal-light-ink" : "text-white/50"
+            }`}
           >
-            <t.icon className="h-5 w-5" />
-            {t.label}
-          </NavLink>
+            <sec.icon className="h-5 w-5" />
+            {sec.label}
+          </Link>
         ))}
         <button
-          onClick={() => setMoreOpen(true)}
-          aria-label="المزيد من الصفحات"
+          onClick={() => setAccountOpen(true)}
+          aria-expanded={accountOpen}
           className={`flex cursor-pointer flex-col items-center gap-1 py-2.5 text-[10px] font-bold transition ${
-            moreActive ? "text-teal-light-ink" : "text-white/50"
+            accountActive ? "text-teal-light-ink" : "text-white/50"
           }`}
         >
-          <MoreHorizontal className="h-5 w-5" />
-          المزيد
+          <UserCircle className="h-5 w-5" />
+          حسابي
         </button>
       </nav>
 
-      {/* قائمة «المزيد» للجوال — بقية الصفحات */}
-      {moreOpen && (
+      {/* ورقة الحساب للجوال — نفس عناصر قائمة سطح المكتب */}
+      {accountOpen && (
         <>
-          <button aria-label="إغلاق القائمة" onClick={() => setMoreOpen(false)} className="fixed inset-0 z-50 cursor-default bg-black/60 backdrop-blur-sm md:hidden" />
+          <button aria-label="إغلاق قائمة الحساب" onClick={() => setAccountOpen(false)} className="fixed inset-0 z-50 cursor-default bg-black/60 backdrop-blur-sm md:hidden" />
           <div dir="rtl" className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl border-t border-white/10 bg-surface p-5 pb-[max(env(safe-area-inset-bottom),1rem)] md:hidden">
             <div className="mb-3 flex items-center justify-between">
-              <p className="text-sm font-black">صفحات أخرى</p>
-              <button onClick={() => setMoreOpen(false)} aria-label="إغلاق" className="cursor-pointer text-white/50 hover:text-white"><X className="h-5 w-5" /></button>
+              <p className="text-sm font-black">{user}</p>
+              <button onClick={() => setAccountOpen(false)} aria-label="إغلاق" className="cursor-pointer text-white/50 hover:text-white"><X className="h-5 w-5" /></button>
             </div>
             <div className="space-y-1.5">
-              {moreTabs.map((t) => (
+              {ACCOUNT_ITEMS.map((a) => (
                 <NavLink
-                  key={t.to}
-                  to={t.to}
-                  onClick={() => setMoreOpen(false)}
+                  key={a.to}
+                  to={a.to}
+                  onClick={() => setAccountOpen(false)}
                   className={({ isActive }) =>
                     `flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-bold transition ${
                       isActive ? "border-teal/50 bg-teal/10 text-teal-light-ink" : "border-white/10 text-white/70 hover:border-white/25"
                     }`
                   }
                 >
-                  <t.icon className="h-4 w-4" />
-                  {t.label}
+                  <a.icon className="h-4 w-4" />
+                  {a.label}
                 </NavLink>
               ))}
+              <button
+                onClick={doSignOut}
+                disabled={signingOut}
+                className="flex w-full cursor-pointer items-center gap-3 rounded-2xl border border-white/10 px-4 py-3 text-sm font-bold text-white/70 transition hover:border-red-400/50 hover:text-red-300 disabled:opacity-60"
+              >
+                <LogOut className="h-4 w-4" />
+                {signingOut ? "يُسجَّل الخروج…" : "تسجيل الخروج"}
+              </button>
             </div>
           </div>
         </>

@@ -52,7 +52,7 @@ export default function EmptyState({
   return (
     <div className={`grid place-items-center rounded-3xl border px-6 py-12 text-center ${TONE_RING[tone]} ${className}`}>
       <Icon className={`h-10 w-10 ${TONE_ICON[tone]}`} aria-hidden="true" />
-      <h3 className="mt-4 text-lg font-black">{titleAr}</h3>
+      <h2 className="mt-4 text-lg font-black">{titleAr}</h2>
       <p className="mt-2 max-w-md text-sm leading-7 text-white/60">{reasonAr}</p>
 
       {actions.length > 0 && (

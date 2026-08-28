@@ -288,7 +288,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
       {/* مؤشر الزخم (ط-٥) — بعد «أين أنا» وقبل «ماذا الآن»: ما فعلته فعلا */}
       {momentum && <MomentumCard m={momentum} className="mt-6" />}
 
-      <div className="mt-6 grid gap-5 lg:grid-cols-3">
+      <div className="mt-6 grid gap-5 [&>*]:min-w-0 lg:grid-cols-3">
         {/* التالي الآن — حقيقي */}
         <section className="rounded-3xl border border-teal/40 bg-gradient-to-b from-teal/10 to-transparent p-6 lg:col-span-2">
           <div className="flex items-center gap-2 text-sm font-bold text-teal-light-ink">
@@ -335,7 +335,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
         </section>
       </div>
 
-      <div className="mt-6 grid gap-5 lg:grid-cols-3">
+      <div className="mt-6 grid gap-5 [&>*]:min-w-0 lg:grid-cols-3">
         {/* جدولي الحقيقي */}
         <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 lg:col-span-2">
           <div className="flex items-center justify-between">
@@ -564,7 +564,7 @@ function SimulatedDashboardBody() {
         </div>
       </section>
 
-      <div className="mt-6 grid gap-5 lg:grid-cols-3">
+      <div className="mt-6 grid gap-5 [&>*]:min-w-0 lg:grid-cols-3">
         {/* التالي الآن — إجراء واحد (US-04) */}
         <section className="rounded-3xl border border-teal/40 bg-gradient-to-b from-teal/10 to-transparent p-6 lg:col-span-2">
           <div className="flex items-center gap-2 text-sm font-bold text-teal-light-ink">
@@ -600,7 +600,7 @@ function SimulatedDashboardBody() {
         </section>
       </div>
 
-      <div className="mt-6 grid gap-5 lg:grid-cols-3">
+      <div className="mt-6 grid gap-5 [&>*]:min-w-0 lg:grid-cols-3">
         {/* حُذف «جدولي — الجلسات القادمة». كان يُركَّب من `courseSessions`
             التي تخترع جلستين لكل دورة بتاريخ ووقت ثابتين. */}
 
@@ -622,7 +622,7 @@ function SimulatedDashboardBody() {
         </section>
       </div>
 
-      <div className="mt-6 grid gap-5 lg:grid-cols-3">
+      <div className="mt-6 grid gap-5 [&>*]:min-w-0 lg:grid-cols-3">
         {/* حُذف «مهاراتي — الحالي مقابل المستهدف». كان المستوى يُحسب
             `1 + عدد الدورات المكتملة × 2` ويُعرض رقما من ٥ كأنه قياس. */}
 
