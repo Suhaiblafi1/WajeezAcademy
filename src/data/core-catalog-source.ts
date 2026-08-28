@@ -59,17 +59,32 @@ export interface CoreCatalogModule {
   module_scenario_ar?: string
 }
 
+/** مورد مكتبة — مادّة خارج الدورة، من المصدر إلى الشاشة بسلسلة الكتالوج */
+export interface CoreCatalogLibraryResource {
+  id: string
+  kind: 'video' | 'article' | 'template' | 'post' | 'pdf' | 'text' | 'book'
+  title_ar: string
+  description_ar?: string
+  url: string
+  source_ar?: string
+  minutes?: number
+  skill_slugs?: string[]
+  sort_order?: number
+}
+
 export interface CoreCatalogRaw {
   launch_pathways: CoreCatalogPathway[]
   courses: CoreCatalogCourse[]
   modules: CoreCatalogModule[]
+  /** اختياريّ: مكتبة فارغة لا تُعطّل شيئا، وتبويبها لا يظهر أصلا */
+  library_resources?: CoreCatalogLibraryResource[]
 }
 
 /* البند ع-١: الحزمة المضمنة كانت تُستورد ثابتا فتهبط في حزمة الدخول
    (720 كيلوبايت من JSON على كل زائر قبل أول بكسل) رغم أنها نسخة احتياطية
    فقط — المصدر الأساسي هو لقطة API المنشورة. صارت تُحمَّل كسولا عند فشل
    الجلب وحده، والمحولات تعيد ملء مصفوفاتها عبر onCoreCatalogInstalled. */
-const EMPTY: CoreCatalogRaw = { launch_pathways: [], courses: [], modules: [] }
+const EMPTY: CoreCatalogRaw = { launch_pathways: [], courses: [], modules: [], library_resources: [] }
 let active: CoreCatalogRaw = EMPTY
 let version = 0
 const listeners = new Set<() => void>()
@@ -112,6 +127,13 @@ export function loadBundledCoreCatalog(): Promise<void> {
       /* لا احتياطي متاح — الصفحات تعرض حالة الفراغ الموجِّهة */
     })
   return fallbackInflight
+}
+
+/** موارد المكتبة المنشورة — مرتّبة بترتيب النشر ثم المعرّف.
+    فارغة حتى تُضاف موادّ إلى مصدر الكتالوج، وتبويب المكتبة لا يظهر حينها. */
+export function getLibraryResources(): CoreCatalogLibraryResource[] {
+  const rows = active.library_resources ?? []
+  return [...rows].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.id.localeCompare(b.id))
 }
 
 /** هل توجد بيانات كتالوج فعالة؟ — للصفحات كي تعرض حالة تحميل لا صفرا مضلّلا */

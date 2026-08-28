@@ -36,6 +36,10 @@ const F = {
 
 interface SourceCourse { course_id: string; title_ar: string; total_hours: number; skill_slugs: string[] }
 interface SourcePathway { id: string; title: string; course_ids: string[] }
+interface SourceLibraryResource { id: string; kind: string; title_ar: string; url: string; skill_slugs?: string[] }
+
+/** أنواع موارد المكتبة المعروفة — الصفحة تعرف أيقونة كلٍّ منها وتسميته */
+const LIBRARY_KINDS = new Set(['video', 'article', 'template', 'post', 'pdf', 'text', 'book'])
 
 export interface ValidationResult {
   errorsAr: string[]
@@ -64,6 +68,7 @@ export function validateCatalogSource(): ValidationResult {
     courses: SourceCourse[]
     launch_pathways: SourcePathway[]
     skill_extensions?: { slug: string }[]
+    library_resources?: SourceLibraryResource[]
   }
   const skills = (skillsJson as unknown as { skills: { slug: string }[] }).skills
   const templates = (templatesJson as unknown as {
@@ -244,6 +249,25 @@ export function validateCatalogSource(): ValidationResult {
       `${drift.staleDoc.length} مهارة موثَّقة بـmeasured_by ولا يقيسها المحرك: ` +
       `${drift.staleDoc.join(' · ')} — سؤالها خارج سطح B2C، فالتوثيق يَعِد بقياس لا يحدث.`,
     )
+  }
+
+  /* المكتبة (١د) — موادّ تُفتح في تبويب خارجي، فرابطها هو المادّة نفسها:
+     رابطٌ معطوب هنا صفحةُ خطأ يراها المتعلم، لا حقلٌ ناقص في لوحة. */
+  const library = core.library_resources ?? []
+  const libIds = new Set<string>()
+  for (const r of library) {
+    if (libIds.has(r.id)) errorsAr.push(`مورد مكتبة مكرر المعرّف: ${r.id} في ${F.core}`)
+    libIds.add(r.id)
+    if (!r.title_ar?.trim()) errorsAr.push(`مورد المكتبة ${r.id} بلا عنوان عربي في ${F.core}`)
+    if (!LIBRARY_KINDS.has(r.kind)) {
+      errorsAr.push(`مورد المكتبة ${r.id} نوعه «${r.kind}» غير معروف — المعروف: ${[...LIBRARY_KINDS].join(' · ')}`)
+    }
+    if (!/^https:\/\//.test(r.url ?? '')) {
+      errorsAr.push(`مورد المكتبة ${r.id} رابطه ليس https — المكتبة تفتح روابط خارجية، وhttp يُحجب في المتصفح`)
+    }
+    for (const slug of r.skill_slugs ?? []) {
+      if (!knownSlugs.has(slug)) errorsAr.push(`مورد المكتبة ${r.id} يشير إلى مهارة غير مسجَّلة: ${slug}`)
+    }
   }
 
   return {

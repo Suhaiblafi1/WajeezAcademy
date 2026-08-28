@@ -296,6 +296,33 @@ model CourseVersion {
   @@index([courseId])
 }
 
+/**
+ * مورد المكتبة — مادّةٌ خارج الدورة يستفيد منها المتعلّم: فيديو أو مقال أو
+ * قالب أو منشور أو ملفّ PDF أو نصّ. تمرّ بسلسلة الكتالوج نفسها (مصدرٌ ←
+ * استيراد ← نشر) فترث حاكميتها ولا تحتاج شاشة إدارة مستقلّة.
+ *
+ * والروابط تُفتح في تبويب خارجي لا تُضمَّن: التضمين يجلب متتبّعات الطرف
+ * الثالث إلى صفحات المنصّة، ويُبطئ الصفحة بما لا يخصّها.
+ */
+model LibraryResource {
+  id            String   @id // LIB-001 — ثابت من المصدر
+  kind          String // video | article | template | post | pdf | text | book
+  titleAr       String
+  descriptionAr String?
+  url           String
+  /** الناشر أو القناة — يُعرض ليعرف المتعلّم مصدر ما يقرأ */
+  sourceAr      String?
+  /** دقائق تقريبية للفيديو والمقال — null لما لا مدّة له */
+  minutes       Int?
+  /** شرائح المهارات التي يخدمها — للترشيح لاحقا بحسب فجوة المتعلم */
+  skillSlugs    String[] @default([])
+  sortOrder     Int      @default(0)
+  status        String   @default("published") // draft | published | archived
+  createdAt     DateTime @default(now())
+
+  @@index([status, sortOrder])
+}
+
 model CourseModule {
   id        String                @id // C-BIZ-101-M1 — ثابت
   courseId  String

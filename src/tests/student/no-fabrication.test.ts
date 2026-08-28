@@ -32,6 +32,12 @@ describe('لا محاكاة في البوابات', () => {
       'components/PrototypeBanner.tsx', 'components/DemoRoleSwitcher.tsx',
       'pages/advisor/advisor-identity.ts', 'pages/trainer/trainer-identity.ts',
       'services/access.ts',
+      /* كتب وجيز كانت مكتبةً مخترعة: عناوين منسوبة إلى «فريق وجيز» بمدد
+         استماعٍ واختباراتٍ مولَّدة، وجزيرةٌ لا تستوردها صفحة. المكتبة الحقيقية
+         (١د) تقرأ من مصدر الكتالوج وتفتح روابط خارجية. */
+      'services/wajeezBooks.ts', 'services/courseResources.ts',
+      'components/BookSummaryCard.tsx', 'components/CourseResources.tsx',
+      'components/PathwayResources.tsx', 'components/AudioPlayer.tsx',
     ]) {
       expect(existsSync(join(SRC, f)), `${f} عاد إلى المستودع`).toBe(false)
     }
@@ -44,7 +50,7 @@ describe('لا محاكاة في البوابات', () => {
       for (const bad of [
         'data/student', 'data/advisor', 'data/trainer', 'data/admin', 'data/billing',
         'data/cv', 'data/showcase', 'SimulationNote', 'StripeCheckout', 'PrototypeBanner',
-        'services/access',
+        'services/access', 'wajeezBooks', 'courseResources', 'BookSummaryCard',
       ]) {
         /* `ComposedCourseView` وأمثالُه أسماءُ أنواعٍ لا استيراد وحدة */
         if (new RegExp(`from ["'][^"']*${bad}["']`).test(body)) offenders.push(`${f} ← ${bad}`)

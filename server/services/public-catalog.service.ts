@@ -117,7 +117,7 @@ export class PublicCatalogService {
      عرضها منه بالمحوّلات ذاتها، فلا توجد نسخة ثانية متعارضة داخل المكونات.
      المنشور فقط: لا draft ولا in_review يخرج من هنا أبدا. */
   async coreCatalog() {
-    const [pathways, courses] = await Promise.all([
+    const [pathways, courses, library] = await Promise.all([
       this.prisma.pathway.findMany({
         where: { status: 'published' },
         include: {
@@ -142,6 +142,11 @@ export class PublicCatalogService {
           pathwayLinks: true,
         },
         orderBy: { id: 'asc' },
+      }),
+      /* المكتبة — موادّ خارج الدورات، تُفتح في تبويب خارجي لا داخل الصفحة */
+      this.prisma.libraryResource.findMany({
+        where: { status: 'published' },
+        orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
       }),
     ])
 
@@ -205,6 +210,17 @@ export class PublicCatalogService {
           }
         }),
       ),
+      library_resources: library.map((r) => ({
+        id: r.id,
+        kind: r.kind,
+        title_ar: r.titleAr,
+        ...(r.descriptionAr ? { description_ar: r.descriptionAr } : {}),
+        url: r.url,
+        ...(r.sourceAr ? { source_ar: r.sourceAr } : {}),
+        ...(r.minutes ? { minutes: r.minutes } : {}),
+        ...(r.skillSlugs.length ? { skill_slugs: r.skillSlugs } : {}),
+        sort_order: r.sortOrder,
+      })),
     }
   }
 }
