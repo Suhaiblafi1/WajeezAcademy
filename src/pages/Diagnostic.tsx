@@ -1036,6 +1036,20 @@ export default function Diagnostic() {
     window.scrollTo(0, 0);
   };
 
+  /* تأكيد بصري قبل الانتقال — الاختيار المفرد ينتقل فورا بلا زر تأكيد، وكان
+     الانتقال آنيا فلا يرى المتعلم اختياره يُسجَّل: يضغط فيتبدّل السؤال، فلا
+     يدري أضغط ما أراد أم أخطأ. ربعُ ثانية يُظهر الخيار محدَّدا ثم ينتقل — لا
+     زر تأكيد إضافي ولا انتظار محسوس.
+     ولمن طلب تقليل الحركة: انتقالٌ فوري كما كان. */
+  const [pendingOpt, setPendingOpt] = useState<string | null>(null);
+  const pendingTimer = useRef<number | null>(null);
+  useEffect(
+    () => () => {
+      if (pendingTimer.current !== null) window.clearTimeout(pendingTimer.current);
+    },
+    [],
+  );
+
   const answer = (qid: string, value: string | string[], optionIds?: string[]) => {
     const session = sessionRef.current;
     if (!question || !session) return;
@@ -1043,6 +1057,23 @@ export default function Diagnostic() {
     setHistory([...history, question]);
     const step = session.submit(qid, value, optionIds);
     applyStep(step);
+  };
+
+  /** اختيار مفرد: يومض محدَّدا ثم ينتقل. النقرة الثانية أثناء الوميض تُهمل —
+      وإلا سجّل المتعلم إجابتين لسؤالين بضغطة واحدة سريعة. */
+  const chooseSingle = (opt: { value: string; optionId?: string }) => {
+    if (!question || pendingTimer.current !== null) return;
+    const qid = question.id;
+    setPendingOpt(opt.value);
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    pendingTimer.current = window.setTimeout(
+      () => {
+        pendingTimer.current = null;
+        setPendingOpt(null);
+        answer(qid, opt.value, opt.optionId ? [opt.optionId] : undefined);
+      },
+      reduce ? 0 : 220,
+    );
   };
 
   const toggleMulti = (q: DiagQuestion, value: string) => {
@@ -1068,6 +1099,13 @@ export default function Diagnostic() {
   };
 
   const back = () => {
+    /* الرجوع أثناء وميض التأكيد يلغيه: وإلا سجّل المؤقّت إجابة السؤال الذي
+       غادره المتعلم للتوّ على السؤال الذي عاد إليه. */
+    if (pendingTimer.current !== null) {
+      window.clearTimeout(pendingTimer.current);
+      pendingTimer.current = null;
+      setPendingOpt(null);
+    }
     const session = sessionRef.current;
     if (history.length === 0 || !session) {
       setStage("intro");
@@ -1366,18 +1404,24 @@ export default function Diagnostic() {
             {question.type === "single" && (
               <div className="mt-6 grid gap-2.5 sm:mt-8 sm:gap-3">
                 {qOptions.map((opt) => {
-                  const selected = answers[question.id] === opt.value;
+                  const confirming = pendingOpt === opt.value;
+                  const selected = confirming || answers[question.id] === opt.value;
+                  /* الباقي يخفت أثناء التأكيد: العين تتبع ما بقي واضحا، فيرى
+                     المتعلم أيّ خيار سُجّل قبل أن تتبدّل الشاشة. */
+                  const dimmed = pendingOpt !== null && !confirming;
                   return (
                     <button
                       key={opt.value}
-                      onClick={() => answer(question.id, opt.value, opt.optionId ? [opt.optionId] : undefined)}
-                      className={`rounded-2xl border p-4 text-right transition-colors sm:p-5 ${
+                      onClick={() => chooseSingle(opt)}
+                      aria-pressed={selected}
+                      className={`flex items-center justify-between gap-3 rounded-2xl border p-4 text-right transition-all duration-200 sm:p-5 ${
                         selected
                           ? "border-teal-light bg-teal/15"
                           : "border-white/10 bg-white/[0.03] hover:border-teal-light/60 hover:bg-white/[0.06]"
-                      }`}
+                      } ${dimmed ? "opacity-40" : ""}`}
                     >
                       <span className="text-[15px] font-bold leading-relaxed sm:text-base">{opt.label}</span>
+                      {confirming && <CheckCircle2 className="h-5 w-5 shrink-0 text-teal-light-ink" />}
                     </button>
                   );
                 })}
