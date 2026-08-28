@@ -28,8 +28,6 @@ const MyPathway = lazy(() => import('./pages/student/MyPathway'))
 const MySkills = lazy(() => import('./pages/student/MySkills'))
 const Remeasure = lazy(() => import('./pages/student/Remeasure'))
 const Review = lazy(() => import('./pages/student/Review'))
-const CourseView = lazy(() => import('./pages/student/CourseView'))
-const Project = lazy(() => import('./pages/student/Project'))
 const Certificates = lazy(() => import('./pages/student/Certificates'))
 const MyLearning = lazy(() => import('./pages/student/MyLearning'))
 const StudentAccount = lazy(() => import('./pages/student/Account'))
@@ -39,10 +37,7 @@ const StudentNotifications = lazy(() => import('./pages/student/Notifications'))
 const StudentInbox = lazy(() => import('./pages/student/Inbox'))
 const StudentSupport = lazy(() => import('./pages/student/Support'))
 const StudentOpenCohorts = lazy(() => import('./pages/student/OpenCohorts'))
-const AdvisorDashboard = lazy(() => import('./pages/advisor/AdvisorDashboard'))
-const AdvisorReviews = lazy(() => import('./pages/advisor/Reviews'))
 const AdvisorCases = lazy(() => import('./pages/advisor/Cases'))
-const StudentCard = lazy(() => import('./pages/advisor/StudentCard'))
 const TrainerDashboard = lazy(() => import('./pages/trainer/TrainerDashboard'))
 const GradingQueue = lazy(() => import('./pages/trainer/GradingQueue'))
 const CohortView = lazy(() => import('./pages/trainer/CohortView'))
@@ -127,8 +122,12 @@ export default function App() {
           <Route path="/student/skills" element={<MySkills />} />
           <Route path="/student/remeasure/:enrollmentId" element={<Remeasure />} />
           <Route path="/student/review" element={<Review />} />
-          <Route path="/student/course/:courseId" element={<CourseView />} />
-          <Route path="/student/project" element={<Project />} />
+          {/* حُذفت صفحتا الدورة ومشروع التخرج: كانتا مبنيّتين بالكامل على متجر
+              محاكاةٍ محليّ (دروس وتقدّم وتسليم واعتماد). و«تعلّمي» هي صفحة
+              الدورة الحقيقية من /api/learner/enrollments/:id — وتُعاد صفحة
+              الدورة بالمحطات في الدفعة ١ب فوق البيانات الحقيقية. */}
+          <Route path="/student/course/:courseId" element={<Navigate to="/student/learning" replace />} />
+          <Route path="/student/project" element={<Navigate to="/student/learning" replace />} />
           <Route path="/student/certificates" element={<Certificates />} />
           <Route path="/student/learning" element={<MyLearning />} />
           <Route path="/student/account" element={<StudentAccount />} />
@@ -142,10 +141,12 @@ export default function App() {
           <Route path="/trainer/accept-invite" element={<TrainerAcceptInvite />} />
           {/* بوابات الفريق — حارس يتحقق من الجلسة والدور عند الخادم */}
           <Route element={<RequireRole allow={ADVISOR_ROLES} />}>
-            <Route path="/advisor" element={<AdvisorDashboard />} />
-            <Route path="/advisor/cases" element={<AdvisorCases />} />
-            <Route path="/advisor/reviews" element={<AdvisorReviews />} />
-            <Route path="/advisor/student/:id" element={<StudentCard />} />
+            {/* «حالاتي» هي بوابة المستشار الحقيقية (‏/api/advisor/cases وما
+                يتفرّع عنه). وحُذفت «طلابي» و«طلبات المراجعة» وبطاقة الطالب:
+                ثلاثتها من `data/advisor` — قائمةُ طلبةٍ وأخطارٌ وطلباتُ مراجعةٍ
+                مولَّدة في المتصفّح، تُعرض على المستشار كأنها حالة طلبة. */}
+            <Route path="/advisor" element={<AdvisorCases />} />
+            <Route path="/advisor/cases" element={<Navigate to="/advisor" replace />} />
           </Route>
           <Route element={<RequireRole allow={TRAINER_ROLES} />}>
             <Route path="/trainer" element={<TrainerDashboard />} />

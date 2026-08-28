@@ -6,9 +6,6 @@ import { signOut } from "@/services/auth";
 import { apiGet, apiPost } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import { useAutoRefresh } from "@/services/useAutoRefresh";
-import { loadPortal, readUserName, savePortal, type PortalNotification } from "@/data/student";
-import { pathways } from "@/data/pathways";
-import { pathwayCourses } from "@/data/courses";
 import PrototypeBanner from "@/components/PrototypeBanner";
 import ThemeToggle from "@/components/ThemeToggle";
 import EcosystemNote from "@/components/EcosystemNote";
@@ -65,14 +62,12 @@ export default function PortalLayout({ children, title }: { children: React.Reac
      بالسماح — ومضة يراها المستخدم، وتحذير «setState داخل تأثير». العطف هنا
      يعطي النتيجة نفسها في تصيير واحد. */
   const allowed = manualAllowed || !!sessionUser;
-  /* الهوية: اسم الجلسة الحقيقية أولاً، ثم الاسم المحلي التجريبي */
-  const user = sessionUser?.displayName ?? readUserName();
+  /* الهوية من الجلسة وحدها. كان `readUserName()` يقرأ اسما محليا ويعيد
+     «متعلم وجيز» حين لا يجد — اسمٌ لا صاحب له. */
+  const user = sessionUser?.displayName ?? "";
   const enrollment = getEnrollment();
-  const pathwayId = enrollment?.pathwayId ?? pathways.find((p) => (pathwayCourses[p.id] ?? []).length >= 4)?.id ?? "";
-  const [notifs, setNotifs] = useState<PortalNotification[]>(() =>
-    pathwayId ? loadPortal(pathwayId).notifications.slice(0, 6) : []
-  );
-  /* إشعارات الخادم الحقيقية — عند توفر جلسة تحل محل المحلية */
+  /* الإشعارات من الخادم وحده. كان بجانبها متجرٌ محليّ مبذور — منه «وصلت
+     فاتورتك وتأكيد الدفع على بريدك» — ويُعرض حين يتعذّر نداء الخادم. */
   const [realNotifs, setRealNotifs] = useState<RealNotif[] | null>(null);
 
   useEffect(() => {
@@ -93,9 +88,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
   useEffect(() => { refreshUnread(); }, [refreshUnread]);
   useAutoRefresh(refreshUnread, 60_000);
 
-  const unreadCount = serverUnread ?? (realNotifs
-    ? realNotifs.filter((n) => n.status !== "read").length
-    : notifs.filter((n) => !n.read).length);
+  const unreadCount = serverUnread ?? (realNotifs?.filter((n) => n.status !== "read").length ?? 0);
 
   const markAllRead = () => {
     if (realNotifs) {
@@ -103,13 +96,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
       setRealNotifs(realNotifs.map((n) => ({ ...n, status: "read" })));
       setServerUnread(0);
       void Promise.allSettled(unread.map((n) => apiPost(`/api/learner/notifications/${n.id}/read`)));
-      return;
     }
-    if (!pathwayId) return;
-    const s = loadPortal(pathwayId);
-    s.notifications = s.notifications.map((n) => ({ ...n, read: true }));
-    savePortal(s);
-    setNotifs(s.notifications.slice(0, 6));
   };
 
   const markOneRead = (id: string) => {
@@ -173,11 +160,10 @@ export default function PortalLayout({ children, title }: { children: React.Reac
         { to: "/student/learning", label: "دوراتي" },
         { to: "/student/pathway", label: "مساري" },
         { to: "/student/review", label: "مراجعتي" },
-        { to: "/student/project", label: "مشروع التخرج" },
         { to: "/student/cohorts", label: "الشعب المفتوحة" },
       ],
       /* صفحتا الدورة وإعادة القياس تتبعان القسم وإن لم تكونا في شريطه */
-      match: ["/student/learning", "/student/pathway", "/student/review", "/student/project", "/student/cohorts", "/student/course", "/student/remeasure"],
+      match: ["/student/learning", "/student/pathway", "/student/review", "/student/cohorts", "/student/course", "/student/remeasure"],
     },
     {
       id: "vault", label: "خزانتي", icon: Award, to: "/student/certificates",
@@ -256,12 +242,8 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                           ))}
                         </>
                       ) : (
-                        <>
-                          {notifs.length === 0 && <p className="px-2 py-6 text-center text-[11px] text-white/55">لا إشعارات بعد</p>}
-                          {notifs.map((n) => (
-                            <p key={n.id} className={`rounded-xl border px-3 py-2 text-[11px] leading-5 ${n.read ? "border-white/5 text-white/50" : "border-teal/25 bg-teal/5 text-white/75"}`}>{n.text}</p>
-                          ))}
-                        </>
+                        /* تعذّر نداء الخادم — لا بديل محليّ يُعرض */
+                        <p className="px-2 py-6 text-center text-[11px] text-white/55">تعذّر جلب إشعاراتك الآن</p>
                       )}
                     </div>
                   </div>

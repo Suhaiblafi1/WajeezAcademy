@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import SkillMeter from "@/components/SkillMeter";
-import SimulationNote from "@/components/SimulationNote";
 import { apiGet } from "@/services/api";
 import { loadLastResultSafe } from "@/application/diagnostic/session-store";
 import { getEnrollment } from "@/services/access";
@@ -376,7 +375,6 @@ export default function MySkills() {
 
   return (
     <PortalLayout title="ملف مهاراتي">
-      <SimulationNote what="تقدّم الدورات المرتبط بالمهارات" />
       <Hero p={profile} />
       <DueReviewStrip due={dueReview} />
       <GrowthInvites invites={growth.invites} />

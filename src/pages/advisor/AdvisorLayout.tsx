@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, NavLink } from "react-router";
-import { ClipboardList, Headset, LayoutDashboard, Users } from "lucide-react";
+import { Headset, LayoutDashboard } from "lucide-react";
 import { ADVISOR_IDENTITIES, ADVISOR_IDENTITY_KEY, advisorIdentity } from "./advisor-identity";
 import NotificationBell from "@/components/NotificationBell";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -52,10 +52,10 @@ export default function AdvisorLayout({ children, title }: { children: React.Rea
     );
   }
 
+  /* صفحة واحدة لأنها الحقيقية وحدها: «طلابي» و«طلبات المراجعة» كانتا
+     مبنيّتين على `data/advisor` — بيانات مولَّدة في المتصفّح. */
   const tabs = [
-    { to: "/advisor", label: "طلابي", icon: Users, end: true },
-    { to: "/advisor/cases", label: "حالاتي", icon: Headset },
-    { to: "/advisor/reviews", label: "طلبات المراجعة", icon: ClipboardList },
+    { to: "/advisor", label: "حالاتي", icon: Headset, end: true },
   ];
 
   return (

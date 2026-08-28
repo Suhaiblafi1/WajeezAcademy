@@ -3,7 +3,6 @@ import {
   Eye, FileText, ShieldCheck, Trash2, Upload, X,
 } from "lucide-react";
 import PortalLayout from "./PortalLayout";
-import SimulationNote from "@/components/SimulationNote";
 import { toast } from "@/components/Toast";
 import { fmtWhen } from "@/utils/format";
 import {
@@ -47,7 +46,6 @@ export default function MyCv() {
 
   return (
     <PortalLayout title="سيرتي الذاتية">
-      <SimulationNote what="السير الذاتية" />
       <p className="mb-5 max-w-2xl rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-xs leading-6 text-white/55">
         تُرفع السيرة بموافقة صريحة منك فقط، وبصيغة PDF أو Word حتى {CV_MAX_LABEL}.
         مستشارك المسند يفتحها برابط قراءة موقع وتُسجل كل مشاهدة — والحذف بسبب موثق لا يمحو الأثر.
