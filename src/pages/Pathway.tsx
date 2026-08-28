@@ -30,7 +30,7 @@ import AdvisorContact from "@/components/AdvisorContact";
 import StripeCheckout from "@/components/StripeCheckout";
 import CourseJourney from "@/components/CourseJourney";
 import Modal from "@/components/Modal";
-import { pathwayById } from "@/data/pathways";
+import { pathwayById, pathwayCategory } from "@/data/pathways";
 import { hasCoreCatalog } from "@/data/core-catalog-source";
 import { courseById, pathwayCourses, pathwayDelivery, coursePriceOf, pathwayPriceFor, pathwayTrainers, courseTrainer, weeksLabel } from "@/data/courses";
 import { GOAL_LABELS, GAP_LABELS, OBSTACLE_TO_GAP } from "@/data/diagnostic";
@@ -254,7 +254,12 @@ export default function PathwayPage() {
           {/* ترويسة المسار */}
           <div className="story-fade">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge className="bg-gold font-black text-on-gold">{pathway.badge ?? "مسار مرشح لك"}</Badge>
+              {/* «مرشح لك» ادّعاء شخصي، وكان يُقال لكل زائر على كل مسار — حتى لمن لم
+                  يفتح التشخيص قط، لأن `badge` التي يسقط عليها لا يضبطها أحد في المصدر.
+                  والتصنيف يقول له أين يقع المسار بلا ادّعاء؛ والترشيح يبقى لمساره هو. */}
+              <Badge className="bg-gold font-black text-on-gold">
+                {pathway.badge ?? (diagTopId === pathway.id ? "مسار مرشح لك" : pathwayCategory(pathway.id))}
+              </Badge>
               <Badge variant="outline" className="border-white/20 text-white/70">{pathway.level}</Badge>
               {custom && !compositeCtx && <Badge className="border border-teal-light/50 bg-teal/15 text-teal-light-ink">نسختك المخصصة</Badge>}
               {compositeCtx && <Badge className="border border-gold/60 bg-gold/15 text-gold-ink">خطة مركبة مخصصة</Badge>}
@@ -322,22 +327,6 @@ export default function PathwayPage() {
             </p>
           </div>
 
-          {/* الدعوة تظهر على كل مسار ليس مسارَ تشخيصه: الزائر الجديد يُدعى للتشخيص،
-             ومن تشخّص سابقا يُدعى للعودة لنتيجته. أما مسار تشخيصه هو فيرى التأكيد
-             والتقرير أدناه بدلا منها. */}
-          {diagTopId !== pathway.id && (
-            <div className="story-fade mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-dashed border-teal/40 bg-teal/5 px-6 py-4">
-              <p className="text-sm leading-relaxed text-white/70">
-                <span className="font-black text-[#6EC7D1]">لست متأكدا أن هذا مسارك الأنسب؟ </span>
-                {hasSavedResult
-                  ? "نتيجتك محفوظة — عد إليها وأعد تخصيص مسارك: استبدالا أو حذفا أو هدية مجانية، بلا إعادة تشخيص."
-                  : "ثلاث دقائق مع مؤشر وجيز تطابقك مع مساراتنا المصممة وتشرح لك السبب."}
-              </p>
-              <Button variant="outline" className="border-[#38A7B4]/60 text-[#6EC7D1] hover:bg-[#38A7B4]/15" asChild>
-                <Link to="/diagnostic">{hasSavedResult ? "أعد تخصيص مسارك" : "ابدأ بمؤشر وجيز"}</Link>
-              </Button>
-            </div>
-          )}
           {/* التأكيد لا يظهر إلا على مسار تشخيصه نفسه.
               كان يظهر على كل مسار جاهز يفتحه بعد التشخيص ليقول له «تستعرض مسارا
               مختلفا عن الذي اعتمده تشخيصك» — وهي جملة لا تخدمه: هو يعلم أنه يتصفح
@@ -513,6 +502,17 @@ export default function PathwayPage() {
                 </div>
               </div>
               <p className="mt-4 text-center text-[11px] text-white/40">دفع آمنا عبر Stripe — يصلك تأكيد فوري على بريدك وتُفتح منصة الطالب الخاصة بك</p>
+              {/* الدعوة إلى التشخيص سطر عند لحظة القرار، لا شريطا مؤطّرا في وسط
+                  الصفحة. صفحة المسار الجاهز صفحة منتج معروضة للجميع، وكل صندوق
+                  يعترضها يقرأ كأنه نتيجة شخصية لزائر لم يتشخّص أصلا. */}
+              {diagTopId !== pathway.id && (
+                <p className="mt-2 text-center text-[11px] leading-relaxed text-white/35">
+                  {hasSavedResult ? "نتيجتك محفوظة — " : "لست متأكدا أنه الأنسب لك؟ "}
+                  <Link to="/diagnostic" className="font-bold text-white/55 underline underline-offset-4 transition hover:text-[#6EC7D1]">
+                    {hasSavedResult ? "عد إليها وأعد تخصيص مسارك" : "ثلاث دقائق مع مؤشر وجيز"}
+                  </Link>
+                </p>
+              )}
             </div>
           )}
 
