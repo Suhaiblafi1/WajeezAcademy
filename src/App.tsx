@@ -34,6 +34,7 @@ const StudentCv = lazy(() => import('./pages/student/MyCv'))
 const StudentNotifications = lazy(() => import('./pages/student/Notifications'))
 const StudentInbox = lazy(() => import('./pages/student/Inbox'))
 const StudentSupport = lazy(() => import('./pages/student/Support'))
+const MyVault = lazy(() => import('./pages/student/MyVault'))
 const CourseMilestones = lazy(() => import('./pages/student/CourseMilestones'))
 const StudentOpenCohorts = lazy(() => import('./pages/student/OpenCohorts'))
 const AdvisorCases = lazy(() => import('./pages/advisor/Cases'))
@@ -123,6 +124,7 @@ export default function App() {
               الحقيقيّين. حلّت محلّ `CourseView` التي كانت محاكاة كاملة. */}
           <Route path="/student/course/:courseId" element={<CourseMilestones />} />
           <Route path="/student/project" element={<Navigate to="/student/learning" replace />} />
+          <Route path="/student/vault" element={<MyVault />} />
           <Route path="/student/certificates" element={<Certificates />} />
           <Route path="/student/learning" element={<MyLearning />} />
           <Route path="/student/account" element={<StudentAccount />} />

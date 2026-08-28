@@ -114,6 +114,43 @@ export class EnrollmentService {
     return e
   }
 
+  /** نواتج المتعلم — كلُّ ما سلّمه عبر تسجيلاته، مرتّبا بالأحدث.
+      خزانةُ النواتج تُبنى عليها، وهي قراءةٌ محضة لما حدث فعلا: لا يظهر فيها
+      ناتجٌ لم يُسلَّم، ولا يُوصف بالاعتماد ما لم يعتمده مدرّب. */
+  async myArtifacts(userId: string) {
+    const rows = await this.prisma.assignmentSubmission.findMany({
+      where: { enrollment: { userId } },
+      orderBy: { submittedAt: 'desc' },
+      include: {
+        assessment: {
+          include: {
+            cohort: { include: { course: { include: { versions: { orderBy: { version: 'desc' }, take: 1 } } } } },
+          },
+        },
+        grades: { orderBy: { createdAt: 'desc' }, take: 1 },
+        feedback: { orderBy: { createdAt: 'desc' }, take: 1 },
+      },
+    })
+    /* لا مفاتيح تخزين إلى المتصفّح — الملف يُقرأ برابط موقّع عند طلبه */
+    return rows.map((r) => ({
+      id: r.id,
+      status: r.status,
+      submittedAt: r.submittedAt,
+      reviewedAt: r.reviewedAt,
+      hasFile: !!r.storageKey,
+      textAnswer: r.textAnswer,
+      reviewNote: r.reviewNote,
+      moduleId: r.assessment.moduleId,
+      assessmentTitle: r.assessment.title,
+      assessmentType: r.assessment.type,
+      cohortTitle: r.assessment.cohort.title,
+      courseId: r.assessment.cohort.courseId,
+      courseTitleAr: r.assessment.cohort.course.versions[0]?.titleAr ?? '',
+      grade: r.grades[0] ? { score: Number(r.grades[0].score), maxScore: Number(r.grades[0].maxScore) } : null,
+      feedbackAr: r.feedback[0]?.body ?? null,
+    }))
+  }
+
   async myEnrollments(userId: string) {
     return this.prisma.enrollment.findMany({
       where: { userId, status: { not: 'dropped' } },

@@ -152,11 +152,12 @@ export default function PortalLayout({ children, title }: { children: React.Reac
     {
       id: "vault", label: "خزانتي", icon: Award, to: "/student/certificates",
       items: [
+        { to: "/student/vault", label: "نواتجي" },
         { to: "/student/certificates", label: "شهاداتي" },
         { to: "/student/cv", label: "سيرتي" },
         { to: "/student/skills", label: "مهاراتي" },
       ],
-      match: ["/student/certificates", "/student/cv", "/student/skills"],
+      match: ["/student/vault", "/student/certificates", "/student/cv", "/student/skills"],
     },
   ];
   /* القسم النشط: «الرئيسية» بمطابقة تامة، وغيرُها ببادئة المسار */

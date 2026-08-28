@@ -72,6 +72,11 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     return rows.map((r) => ({ ...r, cohort: { ...r.cohort } }))
   })
 
+  app.get('/api/learner/artifacts', {
+    preHandler: requirePermission('learner.portal'),
+    schema: { tags: ['learner-portal'], summary: 'نواتجي — ما سلّمته عبر تسجيلاتي كلها، بحالته واعتماده' },
+  }, async (req) => enrollments.myArtifacts(req.auth!.userId))
+
   app.get('/api/learner/enrollments/:id', {
     preHandler: requirePermission('learner.portal'),
     schema: { tags: ['learner-portal'], summary: 'محتوى شعبتي — جلسات وروابط Zoom وتسجيلات ومواد بروابط موقعة وحضوري وتقدمي' },
