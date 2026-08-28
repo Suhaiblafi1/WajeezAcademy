@@ -354,22 +354,6 @@
         "sector": "nonprofit"
       },
       "o4": {
-        "sector": "private",
-        "industry_note": "tech"
-      },
-      "o5": {
-        "sector": "private",
-        "industry_note": "commerce"
-      },
-      "o6": {
-        "sector": "private",
-        "industry_note": "health"
-      },
-      "o7": {
-        "sector": "private",
-        "industry_note": "finance"
-      },
-      "o8": {
         "sector": "other"
       }
     },

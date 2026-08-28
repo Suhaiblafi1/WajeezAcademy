@@ -50,7 +50,11 @@ const BASE_DECISION_FACTS = [
   // القيود والتفضيلات
   'weekly_load', 'learning_format', 'cohort_preference', 'content_language', 'budget_profile',
   // التحقق
-  'evidence_strength', 'low_confidence_flag', 'pathway_selected', 'industry_note',
+  'evidence_strength', 'low_confidence_flag', 'pathway_selected',
+  /* industry_note حُذفت: كانت تُكتب من أربعة خيارات في سؤال القطاع (تقني/تجاري/
+     صحي/مالي) ولا يقرؤها أحد — لا كيان يعلن مجالا صناعيا. وكانت تكلفتها أعلى من
+     صفر: من يعمل في صحة خاصة كان مخيَّرا بين «خاص» و«صحي» وكلاهما صادق، فيخسر
+     أحدهما — والخاسر دائما هو الذي لا يُقرأ. */
 ]
 
 /* حقيقة → مجالات تساعد على فصلها */
