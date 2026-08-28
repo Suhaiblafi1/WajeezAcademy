@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-28T08:25:18.926Z",
+  "generated_at": "2026-08-28T10:12:12.118Z",
   "universe_active": 35,
   "reachable": 33,
   "golden": {
@@ -538,7 +538,7 @@
       "positive": {
         "winner": "PW-MKT-001",
         "kind": "single_pathway",
-        "confidence": 0.63,
+        "confidence": 0.64,
         "won": true,
         "askedCount": 14,
         "eligible": true,
@@ -596,7 +596,7 @@
       "positive": {
         "winner": "PW-SAL-001",
         "kind": "single_pathway",
-        "confidence": 0.61,
+        "confidence": 0.59,
         "won": true,
         "askedCount": 14,
         "eligible": true,
@@ -612,7 +612,7 @@
       "near_miss": {
         "winner": "PW-SAL-001",
         "kind": "single_pathway",
-        "confidence": 0.6,
+        "confidence": 0.59,
         "won": true,
         "askedCount": 14,
         "eligible": true,
@@ -825,14 +825,14 @@
       "tried": 1,
       "positive": {
         "winner": "PW-OPS-001",
-        "kind": "advisor_referral",
-        "confidence": 0.59,
+        "kind": "single_pathway",
+        "confidence": 0.58,
         "won": true,
         "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.745,
-        "winnerNetFit": 0.745,
+        "entityNetFit": 0.741,
+        "winnerNetFit": 0.741,
         "recipe": {
           "stage": "موظف في بداية مساري المهني",
           "need": "العمليات وتحسين الإجراءات",
@@ -842,7 +842,7 @@
       "near_miss": {
         "winner": "PW-OPS-001",
         "kind": "single_pathway",
-        "confidence": 0.58,
+        "confidence": 0.55,
         "won": true,
         "askedCount": 14,
         "eligible": true,
@@ -998,7 +998,7 @@
       "positive": {
         "winner": "PW-COM-001",
         "kind": "single_pathway",
-        "confidence": 0.66,
+        "confidence": 0.67,
         "won": true,
         "askedCount": 14,
         "eligible": true,
@@ -1015,7 +1015,7 @@
       "near_miss": {
         "winner": "PW-COM-001",
         "kind": "single_pathway",
-        "confidence": 0.66,
+        "confidence": 0.67,
         "won": true,
         "askedCount": 14,
         "eligible": true,
@@ -1346,13 +1346,13 @@
       "positive": {
         "winner": "TPL-PERSONAL-BRAND-001",
         "kind": "composite_template",
-        "confidence": 0.63,
+        "confidence": 0.62,
         "won": true,
         "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.855,
-        "winnerNetFit": 0.855,
+        "entityNetFit": 0.847,
+        "winnerNetFit": 0.847,
         "recipe": {
           "stage": "موظف في بداية مساري المهني",
           "goal": "بناء ملف أعمال يثبت قدراتي",
@@ -1363,13 +1363,13 @@
       "near_miss": {
         "winner": "TPL-PERSONAL-BRAND-001",
         "kind": "composite_template",
-        "confidence": 0.63,
+        "confidence": 0.62,
         "won": true,
         "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
-        "entityNetFit": 0.839,
-        "winnerNetFit": 0.839,
+        "entityNetFit": 0.833,
+        "winnerNetFit": 0.833,
         "recipe": {
           "stage": "موظف في بداية مساري المهني",
           "goal": "بناء ملف أعمال يثبت قدراتي",
@@ -2055,9 +2055,9 @@
     "determinism_failures": 0,
     "determinism_log": [],
     "kind_distribution": {
-      "single_pathway": 198,
-      "advisor_referral": 22,
-      "composite_template": 130
+      "single_pathway": 202,
+      "advisor_referral": 20,
+      "composite_template": 128
     },
     "winner_distribution": {
       "PW-STU-003": 20,
@@ -2068,8 +2068,7 @@
       "PW-EMP-003": 10,
       "PW-EMP-005": 10,
       "PW-BIZ-001": 10,
-      "TPL-PERSONAL-BRAND-001": 12,
-      "PW-MKT-001": 8,
+      "PW-MKT-001": 10,
       "PW-SAL-001": 14,
       "PW-HR-001": 10,
       "PW-FIN-001": 10,
@@ -2083,6 +2082,7 @@
       "TPL-VENTURE-001": 10,
       "TPL-ECOM-001": 10,
       "TPL-FREELANCE-001": 10,
+      "TPL-PERSONAL-BRAND-001": 10,
       "TPL-NEW-MANAGER-001": 10,
       "TPL-B2B-001": 6,
       "TPL-CX-001": 6,

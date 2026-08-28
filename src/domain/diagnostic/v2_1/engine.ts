@@ -11,7 +11,7 @@
    - القوالب المركبة في فضاء التوصية من البداية — لا تفوز لمجرد احتوائها دورات أكثر.
    حتمي بالكامل: نفس الإجابات → نفس السؤال التالي والنتيجة. */
 
-import { compositeTemplates, launchPathways, optionIdAt, questionById } from '../catalog'
+import { compositeTemplates, launchPathways, optionIdAt, questionById, skillNameAr } from '../catalog'
 import { detectContradictions } from '../contradictions'
 import { buildChangeMakers } from '../explanation'
 import { applyDerivedRules, decisionCriticalMissing, reduceAnswer } from '../facts'
@@ -468,6 +468,30 @@ export function scoreAdaptiveQuestionV21(
   }
 }
 
+/* سياق «لماذا هذا السؤال؟» بلغة المتعلم — أسماءٌ لا رموز.
+   المحرك يعرف اسم المسار المتصدر واسم منافسه واسم المهارة التي يقيسها، وكان
+   يترجم سببه إلى جملة عامة واحدة لكل الحالات («مساران يناسبانك حتى الآن»).
+   وجملةٌ لا تذكر أيّ مسارين ولا أيّ مهارة لا تشرح شيئا — يقرؤها المتعلم مرة
+   ثم يتجاهل الصندوق. هذه تحمل الأسماء إلى حدّ العرض، وهناك تُركَّب الجملة. */
+export interface WhyContextV21 {
+  topTitle_ar?: string
+  rivalTitle_ar?: string
+  skillName_ar?: string
+}
+
+function whyContextOf(q: BankQuestion, candidates: readonly EntityCandidate[], isSkill: boolean): WhyContextV21 {
+  const top = candidates[0]
+  const rival = candidates[1]
+  /* المنافس يُذكر في السباق الحي وحده: تسميةُ منافسٍ بعيد تُوهم تنافسا لا وجود له */
+  const live = top && rival && top.netFit - rival.netFit < 0.15
+  const slug = q.measures[0]
+  return {
+    topTitle_ar: top?.entity.title_ar,
+    rivalTitle_ar: live ? rival.entity.title_ar : undefined,
+    skillName_ar: isSkill && slug ? skillNameAr(slug) : undefined,
+  }
+}
+
 export function rankAdaptiveQuestionsV21(
   questions: BankQuestion[],
   facts: DiagnosticState['facts'],
@@ -840,6 +864,7 @@ export class DiagnosticEngineV21 {
         this.traceEntry('question_selected', `أرضية الدليل — ${question.question_id}: ${question.text_ar}`, {
           winner: question.question_id,
           winnerReason_ar: 'مهارة حاسمة لأحد مرشحي الصدارة ما زالت مجهولة في سباق حي — قياسها يسبق منح المتحدين فرصًا إضافية.',
+          whyContext: whyContextOf(question, comp.candidates, true),
           utility: floorFirst.utility,
           utilityComponents: floorFirst.components,
         })
@@ -878,6 +903,7 @@ export class DiagnosticEngineV21 {
           this.traceEntry('question_selected', `عدالة الدليل — ${question.question_id}: ${question.text_ar}`, {
             winner: question.question_id,
             winnerReason_ar: `خطة مركبة منافسة (${challenger.entity.entity_id}) تنقصها حقيقة مطلوبة — تُمنح فرصة الدليل قبل الاكتفاء.`,
+            whyContext: { ...whyContextOf(question, comp.candidates, planOf(question.question_id)?.layer21 === 'evidence_skill'), rivalTitle_ar: challenger.entity.title_ar },
             utility: challengerQ.utility,
             utilityComponents: challengerQ.components,
           })
@@ -892,6 +918,7 @@ export class DiagnosticEngineV21 {
           this.traceEntry('question_selected', `حد الدليل الأدنى — ${question.question_id}: ${question.text_ar}`, {
             winner: question.question_id,
             winnerReason_ar: 'مهارة حاسمة للمرشح المتصدر ما زالت مجهولة — لا توصية بلا أي دليل مهاري مقاس.',
+            whyContext: whyContextOf(question, comp.candidates, true),
             utility: rescue.utility,
             utilityComponents: rescue.components,
           })
@@ -910,6 +937,7 @@ export class DiagnosticEngineV21 {
     this.traceEntry('question_selected', `تكيفي — ${question.question_id}: ${question.text_ar}`, {
       winner: question.question_id,
       winnerReason_ar: best.reason_ar,
+      whyContext: whyContextOf(question, comp.candidates, planOf(question.question_id)?.layer21 === 'evidence_skill'),
       utility: best.utility,
       utilityComponents: best.components,
       top3: ranked.slice(0, 3).map((r) => ({ questionId: r.questionId, utility: r.utility })),

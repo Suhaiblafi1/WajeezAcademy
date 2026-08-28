@@ -2,27 +2,27 @@
   "sessions": 10000,
   "seed": 20260818,
   "kind": {
-    "advisor_referral": 1257,
+    "advisor_referral": 1255,
     "exploratory_direction": 1006,
-    "single_pathway": 6905,
-    "composite_template": 832
+    "single_pathway": 6927,
+    "composite_template": 812
   },
   "confidenceBands": {
-    "preliminary": 4026,
-    "good": 5974
+    "preliminary": 4030,
+    "good": 5970
   },
   "winners": {
-    "PW-MKT-001": 319,
+    "PW-MKT-001": 333,
     "PW-EMP-004": 187,
     "PW-STU-002": 710,
-    "PW-COM-001": 397,
+    "PW-COM-001": 403,
     "PW-EMP-005": 304,
     "PW-NEG-001": 313,
     "PW-STU-003": 785,
     "PW-FND-003": 1048,
     "PW-BIZ-001": 435,
     "PW-CYB-001": 179,
-    "TPL-PERSONAL-BRAND-001": 227,
+    "TPL-PERSONAL-BRAND-001": 207,
     "PW-AUT-001": 697,
     "PW-PRD-001": 233,
     "PW-LND-001": 459,
@@ -44,7 +44,7 @@
   },
   "avgQuestions": 11.85,
   "exploratoryRate": 0.1006,
-  "advisorRate": 0.1257,
+  "advisorRate": 0.1255,
   "alienWinners": 0,
   "errors": 0,
   "determinismProbe": {
@@ -53,13 +53,13 @@
   },
   "skillEvidence": {
     "sessionsWithWinner": 8107,
-    "zeroSkillEvidence": 1716,
-    "decisiveSessions": 6419,
+    "zeroSkillEvidence": 1714,
+    "decisiveSessions": 6415,
     "decisiveNoneMeasuredSilent": 0,
-    "decisiveNoneMeasuredAdvisorFlagged": 115,
-    "with1PlusDecisive": 6304,
-    "with2PlusDecisive": 3918,
-    "avgDecisiveCoverage": 0.9357,
-    "avgMeasuredCoverage": 0.0987
+    "decisiveNoneMeasuredAdvisorFlagged": 113,
+    "with1PlusDecisive": 6302,
+    "with2PlusDecisive": 3914,
+    "avgDecisiveCoverage": 0.9358,
+    "avgMeasuredCoverage": 0.0986
   }
 }
