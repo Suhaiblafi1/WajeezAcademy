@@ -26,6 +26,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
   const [bellOpen, setBellOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [deskMoreOpen, setDeskMoreOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { user: sessionUser, checked: sessionChecked } = useRealSession();
@@ -268,13 +269,20 @@ export default function PortalLayout({ children, title }: { children: React.Reac
             <GraduationCap className="h-4 w-4 text-teal-light-ink" />
             <ThemeToggle />
             <span className="max-w-[110px] truncate">{user}</span>
+            {/* الخروج ينتظر مسح الجلسة عند الخادم قبل التنقل. كان `void signOut()`
+                فيسبق التنقلُ المسحَ، فيعود المستخدم داخلا وهو يظنّ أنه خرج. */}
             <button
-              onClick={() => { void signOut(); navigate("/"); }}
-              aria-label="تسجيل الخروج"
-              title="تسجيل الخروج"
-              className="grid h-11 w-11 place-items-center rounded-full border border-white/10 text-white/45 transition hover:border-red-400/50 hover:text-red-300"
+              onClick={async () => {
+                if (signingOut) return;
+                setSigningOut(true);
+                await signOut();
+                navigate("/", { replace: true });
+              }}
+              disabled={signingOut}
+              className="flex h-11 items-center gap-2 rounded-full border border-white/10 px-4 text-sm font-bold text-white/60 transition hover:border-red-400/50 hover:text-red-300 disabled:opacity-60"
             >
               <LogOut className="h-3.5 w-3.5" />
+              <span>{signingOut ? "يُسجَّل الخروج…" : "تسجيل الخروج"}</span>
             </button>
           </div>
         </div>

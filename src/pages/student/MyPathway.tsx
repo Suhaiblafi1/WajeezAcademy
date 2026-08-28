@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import {
   Lock, PlayCircle, CheckCircle2, AlertTriangle, Trophy, RefreshCcw, Loader2,
@@ -9,6 +9,8 @@ import PathwayMap from "@/components/PathwayMap";
 import { usePublishedContent } from "@/services/public-content";
 import { buildPathwayMap, type EnrollmentFact } from "@/application/student/pathway-map";
 import { getEnrollment } from "@/services/access";
+import { useRealSession } from "@/services/session";
+import { apiGet } from "@/services/api";
 import { pathwayById, pathways } from "@/data/pathways";
 import { courseById, pathwayCourses, courseTrainer, coursePriceOf } from "@/data/courses";
 import { loadPortal, courseGate, coursePercent, projectConditions, type CourseStatus } from "@/data/student";
@@ -31,6 +33,50 @@ import SimulationNote from "@/components/SimulationNote";
    المحاكاة مبنيّة على مسار خاطئ اختير قبل وصول البيانات. */
 export default function MyPathway() {
   const catalogVersion = usePublishedContent();
+  /* صاحبُ حسابٍ حقيقي لا تُعرض له محاكاة. كانت الصفحة تختار مسارا محليا
+     (`getEnrollment()` من localStorage، أو أول مسار فيه ٤ دورات) فتعرض خمس
+     دورات «متاحة للتسجيل» بينما اللوحةُ تقرأ الخادم وتقول بصدق: لا شعبة لك.
+     التناقضُ الذي رآه صاحب المنتج مصدرُه هنا لا في اللوحة. */
+  const { user: sessionUser } = useRealSession();
+  const [realCount, setRealCount] = useState<number | null>(null);
+  useEffect(() => {
+    if (!sessionUser) { return; }
+    let on = true;
+    apiGet<unknown[]>("/api/learner/my-learning")
+      .then((r) => { if (on) setRealCount(r.length); })
+      .catch(() => { if (on) setRealCount(0); });
+    return () => { on = false; };
+  }, [sessionUser]);
+
+  if (sessionUser && realCount === null) {
+    return (
+      <PortalLayout title="مساري">
+        <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" aria-label="يُحمَّل" /></div>
+      </PortalLayout>
+    );
+  }
+  if (sessionUser && realCount === 0) {
+    return (
+      <PortalLayout title="مساري">
+        <section className="grid place-items-center rounded-3xl border border-teal/30 bg-gradient-to-b from-teal/10 to-transparent py-16 text-center">
+          <BookOpen className="h-12 w-12 text-teal-light-ink" />
+          <h2 className="mt-5 text-2xl font-black">لا مسار لك بعد</h2>
+          <p className="mt-3 max-w-md text-sm leading-7 text-white/60">
+            مسارك يُبنى حين تُفتح أول شعبة لك. تصفح الشعب المفتوحة واطلب التسجيل،
+            أو ابدأ بالتشخيص ليُقترح عليك مسار يناسب هدفك.
+          </p>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <Link to="/student/cohorts" className="rounded-full bg-teal px-6 py-3 font-black text-on-teal transition hover:bg-teal-light">
+              تصفح الشعب المفتوحة
+            </Link>
+            <Link to="/diagnostic" className="rounded-full border border-white/15 px-6 py-3 font-bold text-white/80 hover:border-white/40">
+              ابدأ التشخيص
+            </Link>
+          </div>
+        </section>
+      </PortalLayout>
+    );
+  }
   if (pathways.length === 0) {
     return (
       <PortalLayout title="مساري">
@@ -57,7 +103,7 @@ function MyPathwayBody() {
     const facts: EnrollmentFact[] = ids.map((id) => {
       const c = courseById(id);
       const gate = courseGate(pathwayId, id, state);
-      const pct = c ? coursePercent(c, state.courses[id] ?? { lessons: {}, quiz: { attempts: 0, best: 0, passed: false }, assignment: { status: "none" }, attendance: null, bookQuiz: {} }) : 0;
+      const pct = c ? coursePercent(c, state.courses[id] ?? { lessons: {}, assignment: { status: "none" }, attendance: null, bookQuiz: {} }) : 0;
       /* المحاكاة لا تعرف «تسجيلا» بل بوابة فتح — فنمرّر enrolled بحسب انفتاحها،
          ونمرّر تسميتها الخاصة («مقفلة»/«متاحة — ابدأ») كي لا تختلف الخريطة عن القائمة أسفلها */
       const open = gate.status !== "locked";
@@ -107,7 +153,7 @@ function MyPathwayBody() {
           if (!c) return null;
           const gate = courseGate(pathwayId, id, state);
           const meta = STATUS_META[gate.status];
-          const pct = coursePercent(c, state.courses[id] ?? { lessons: {}, quiz: { attempts: 0, best: 0, passed: false }, assignment: { status: "none" }, attendance: null, bookQuiz: {} });
+          const pct = coursePercent(c, state.courses[id] ?? { lessons: {}, assignment: { status: "none" }, attendance: null, bookQuiz: {} });
           const trainer = courseTrainer(c);
           const openable = gate.status !== "locked";
           return (

@@ -11,7 +11,7 @@ import { getEnrollment } from "@/services/access";
 import { pathwayById } from "@/data/pathways";
 import {
   loadPortal, savePortal, projectConditions, PROJECT_RUBRIC,
-  issueCertificate, readUserName, type PortalState, type ProjectStatus,
+  type PortalState, type ProjectStatus,
 } from "@/data/student";
 
 const STATUS_LABEL: Record<ProjectStatus, string> = {
@@ -69,23 +69,12 @@ function ProjectBody() {
   };
 
   const saveDraft = () => update((s) => { s.project = { ...s.project, status: "draft", kind, fields }; });
+  /* التسليم يقف عند «سُلِّم». كان بعده مؤقّتان: الأول يقلب الحالة إلى «قيد
+     المراجعة» بعد ٦ ثوان، والثاني بعد ١٥ ثانية يقلبها إلى «ناجح» بملاحظةٍ
+     تقويميةٍ مكتوبة ودرجاتِ معيارٍ مفصّلة (14/27/22/13/9/5) ثم يسكّ شهادة
+     المسار. تقويمٌ لم يقرأه إنسان، وشهادةٌ لا تجتاز التحقق العام. */
   const submit = () => {
     update((s) => { s.project = { ...s.project, status: "submitted", kind, fields }; });
-    // محاكاة إسناد مقيم ثم اعتماد
-    window.setTimeout(() => update((s) => { if (s.project.status === "submitted") s.project.status = "under_review"; }), 6000);
-    window.setTimeout(() => {
-      update((s) => {
-        if (s.project.status === "under_review") {
-          s.project = {
-            ...s.project, status: "passed",
-            feedback: "مشروع متكامل — طبقت مهارات المسار بوضوح، والمخرج قابل للاستخدام فعلا. اعتُمد بامتياز.",
-            rubricScores: { problem: 14, skills: 27, quality: 22, analysis: 13, presentation: 9, originality: 5 },
-          };
-          s.notifications.unshift({ id: `n-${Date.now()}`, text: "اعتُمد مشروع تخرجك — شهادة المسار صدرت!", kind: "certificate", read: false });
-        }
-      });
-      issueCertificate(readUserName(), pathway?.name ?? "مسار وجيز", "pathway");
-    }, 15000);
   };
 
   return (

@@ -5,15 +5,13 @@
  * load/save بنداءات API — الأنواع والحالات مطابقة للوثيقة (القسم ٩–١٣).
  */
 
-import { courseById, courseDetails, courseFullById, courseTrainer, pathwayCourses, type Course } from "./courses";
-import { pathwayById } from "./pathways";
+import { courseById, courseFullById, courseTrainer, pathwayCourses, type Course } from "./courses";
 
 /* ─────────── الأنواع ─────────── */
 export type CourseStatus = "locked" | "available" | "in_progress" | "needs_action" | "completed";
 export type Attendance = "present" | "late" | "absent" | "excused" | null;
 
 export interface LessonState { pct: number; } // 0-100
-export interface QuizState { attempts: number; best: number; passed: boolean; }
 export interface AssignmentState {
   status: "none" | "submitted" | "under_review" | "approved" | "revision";
   fileName?: string;
@@ -22,7 +20,6 @@ export interface AssignmentState {
 }
 export interface CourseProgress {
   lessons: Record<string, LessonState>;
-  quiz: QuizState;
   assignment: AssignmentState;
   attendance: Attendance;
   bookQuiz: Record<string, { passed: boolean; score: number }>;
@@ -66,8 +63,6 @@ export interface Lesson {
   /** سيناريو القرار الخام (ح-٥) — null حين لا سيناريو لهذه الوحدة */
   scenario?: string | null;
 }
-export interface QuizQuestion { q: string; options: string[]; correct: number; explain: string; }
-
 export function courseLessons(c: Course): Lesson[] {
   /* البند ح-١: وحدات الكتالوج هي الدروس الحقيقية — عنوانها وساعاتها ومتنها
      من قاعدة البيانات عبر اللقطة المنشورة. لا نصطنع دروسا مادامت موجودة.
@@ -87,47 +82,27 @@ export function courseLessons(c: Course): Lesson[] {
       scenario: m.scenario,
     }));
   }
-  const d = courseDetails(c);
-  return d.topics.map((t, i) => ({
-    id: `${c.id}-L${i + 1}`,
-    title: t,
-    minutes: 8 + ((c.id.charCodeAt(i % c.id.length) + i * 7) % 14),
-    kind: i % 3 === 2 ? "activity" : "video",
-  }));
+  /* دورة بلا وحدات في الكتالوج لا دروس لها. كان هنا اشتقاق دروس من «محاور»
+     الدورة بمُدد محسوبة من رموز المعرّف — أي درسٌ مخترع بمدة مخترعة. */
+  return [];
 }
 
-export function courseQuiz(c: Course): QuizQuestion[] {
-  const d = courseDetails(c);
-  const t = d.topics;
-  return [
-    { q: `ما الترتيب الصحيح للبدء في «${t[0] ?? c.skill}»؟`, options: ["الفهم ثم التطبيق ثم المراجعة", "التطبيق فورا دون فهم", "الحفظ ثم النسيان", "الانتظار حتى تتضح الرؤية"], correct: 0, explain: "الفهم أولا يجعل التطبيق موجها لا عشوائيا — وهذا منهج وجيز في كل دورة." },
-    { q: `أي مما يلي دليل إتقان حقيقي لمهارة «${c.skill}»؟`, options: ["مشاهدة كل الدروس", "مخرج عملي راجعه المدرب", "حفظ المصطلحات", "حضور الجلسات فقط"], correct: 1, explain: "المشاهدة نشاط، والإتقان مخرج — لذلك تُقيم واجباتك بشريا." },
-    { q: `عندما تتعثر في «${t[1] ?? c.skill}»، ما التصرف الأصح داخل المسار؟`, options: ["تخطي الدرس نهائيا", "إعادة المشاهدة بسرعة أعلى فقط", "طرح سؤال في قناة الدورة أو حجز استشارة", "الانتقال لدورة أخرى"], correct: 2, explain: "قناة الأسئلة والاستشارة جزء من التصميم — التعثر المعلن يُعالج أسرع." },
-    { q: `ما أفضل طريقة لترسيخ «${t[2] ?? c.skill}» بعد الدرس؟`, options: ["تلخيصه صوتيا لنفسك", "تطبيقه على حالة من واقعك خلال 48 ساعة", "قراءة المصطلحات مرة أخرى", "مشاركة الرابط مع الأصدقاء"], correct: 1, explain: "التطبيق خلال 48 ساعة يرفع التثبيت بشكل موثق في أدبيات التعلم." },
-  ];
-}
+/* حُذف `courseQuiz` و`QUIZ_PASS` و`QUIZ_MAX_ATTEMPTS`. كانت أربعة أسئلة
+   قالبية تُركَّب لكل دورة من اسمها ومحاورها، وتُبنى عليها بوابةُ نجاحٍ بنسبة
+   ٧٠٪ وثلاث محاولات. اختبارٌ لم يضعه مدرّب ولا يقيس الدورة، ونتيجتُه تفتح
+   المحطة التالية وتُصدر شهادة. الاختبار الحقيقي يأتي من المنهج لا من قالب. */
 
-export const QUIZ_PASS = 70; // درجة النجاح
-export const QUIZ_MAX_ATTEMPTS = 3;
 
-/* ─────────── الجلسات المباشرة (زووم) ─────────── */
-export function courseSessions(c: Course, startDate: Date): SessionItem[] {
-  const mk = (offset: number, title: string, type: SessionItem["type"]): SessionItem => {
-    const d = new Date(startDate);
-    d.setDate(d.getDate() + offset);
-    return {
-      id: `${c.id}-S${offset}`, courseId: c.id, courseName: c.name, title,
-      date: d.toISOString().slice(0, 10), time: "7:00–8:30 م", type, status: "confirmed",
-    };
-  };
-  return [mk(2, "الجلسة الافتتاحية", "live"), mk(Math.max(5, c.weeks * 4), "ورشة تطبيقية", "workshop")];
-}
+/* حُذف `courseSessions`. كان يخترع جلستين لكل دورة — «الجلسة الافتتاحية»
+   و«ورشة تطبيقية» — بتاريخ محسوب من تاريخ البدء ووقت ثابت «7:00–8:30 م»
+   وحالة «مؤكدة». مواعيدُ لا وجود لها في أي شعبة، تُعرض في جدول المتعلم.
+   الجلسات الحقيقية من /api/learner/enrollments/:id. */
 
 /* ─────────── المتجر المحلي ─────────── */
 const storeKey = (pathwayId: string) => `wajeez_portal_${pathwayId}`;
 
 function emptyCourseProgress(): CourseProgress {
-  return { lessons: {}, quiz: { attempts: 0, best: 0, passed: false }, assignment: { status: "none" }, attendance: null, bookQuiz: {} };
+  return { lessons: {}, assignment: { status: "none" }, attendance: null, bookQuiz: {} };
 }
 
 export function seedPortal(pathwayId: string): PortalState {
@@ -137,11 +112,10 @@ export function seedPortal(pathwayId: string): PortalState {
     startedAt: Date.now(),
     courses: Object.fromEntries(ids.map((id) => [id, emptyCourseProgress()])),
     project: { status: "not_open" },
-    notifications: [
-      { id: "n1", text: "أهلا بك في مسارك! أكمل ملفك وابدأ أول درس.", kind: "content", read: false },
-      { id: "n2", text: "تم تأكيد شعبتك — الجلسة الافتتاحية في جدولك.", kind: "session", read: false },
-      { id: "n3", text: "وصلت فاتورتك وتأكيد الدفع على بريدك.", kind: "payment", read: true },
-    ],
+    /* لا إشعارات مبذورة. كانت هنا ثلاثة نصوص مخترعة، منها «تم تأكيد شعبتك»
+       و«وصلت فاتورتك وتأكيد الدفع على بريدك» — تُعرض لمستخدم لم يسجّل ولم
+       يدفع. الإشعارات الحقيقية وحدها تأتي من /api/learner/notifications. */
+    notifications: [],
   };
   savePortal(state);
   return state;
@@ -164,14 +138,17 @@ export function coursePercent(c: Course, p: CourseProgress): number {
   const lessons = courseLessons(c);
   if (!lessons.length) return 0;
   const lessonPct = lessons.reduce((s, l) => s + (p.lessons[l.id]?.pct ?? 0), 0) / lessons.length;
-  const quizPct = p.quiz.passed ? 100 : 0;
   const assignPct = p.assignment.status === "approved" ? 100 : p.assignment.status === "submitted" || p.assignment.status === "under_review" ? 50 : 0;
-  return Math.round(lessonPct * 0.6 + quizPct * 0.25 + assignPct * 0.15);
+  /* الوزن كان 0.6 دروس + 0.25 اختبار + 0.15 واجب. وبزوال الاختبار المخترع
+     يُعاد توزيع نصيبه على الدليل البشري لا على المشاهدة. */
+  return Math.round(lessonPct * 0.75 + assignPct * 0.25);
 }
 
 export function isCourseComplete(c: Course, p: CourseProgress): boolean {
   const lessonsDone = courseLessons(c).every((l) => (p.lessons[l.id]?.pct ?? 0) >= 90);
-  return lessonsDone && p.quiz.passed && (p.assignment.status === "approved" || p.assignment.status === "submitted" || p.assignment.status === "under_review");
+  /* الاكتمال يلزمه اعتماد المدرّب. كان «سُلِّم» أو «قيد المراجعة» يكفي مع
+     اجتياز اختبارٍ مخترع — فيكتمل المسار بلا أن يقرأ إنسانٌ سطرا واحدا. */
+  return lessonsDone && p.assignment.status === "approved";
 }
 
 export interface CourseGate { status: CourseStatus; lockReason?: string; unlockHint?: string; }
@@ -219,8 +196,6 @@ export function nextAction(pathwayId: string, state: PortalState): NextAction {
     const nextLesson = lessons.find((l) => (p.lessons[l.id]?.pct ?? 0) < 90);
     if (nextLesson)
       return { label: `أكمل درس «${nextLesson.title}»`, detail: `${c.name} · ${nextLesson.minutes} دقيقة تقريبا`, courseId: id, cta: "أكمل الدرس" };
-    if (!p.quiz.passed)
-      return { label: `اختبار «${c.name}» بانتظارك`, detail: `درجة النجاح ${QUIZ_PASS}% — لديك ${QUIZ_MAX_ATTEMPTS - p.quiz.attempts} محاولات`, courseId: id, cta: "ابدأ الاختبار" };
     if (p.assignment.status === "none")
       return { label: `سلّم واجب «${c.name}»`, detail: "التطبيق العملي هو دليل إتقانك — يُراجعه مدربك بشريا", courseId: id, cta: "ارفع الواجب" };
     if (p.assignment.status === "submitted" || p.assignment.status === "under_review")
@@ -250,14 +225,13 @@ export function projectConditions(pathwayId: string, state: PortalState): Projec
   const ids = pathwayCourses[pathwayId] ?? [];
   const courses = ids.map((id) => ({ c: courseById(id)!, p: state.courses[id] ?? emptyCourseProgress() })).filter((x) => x.c);
   const allLessons = courses.every(({ c, p }) => courseLessons(c).every((l) => (p.lessons[l.id]?.pct ?? 0) >= 90));
-  const allQuizzes = courses.every(({ p }) => p.quiz.passed);
   const allAssignments = courses.every(({ p }) => ["submitted", "under_review", "approved"].includes(p.assignment.status));
+  /* بقي شرطان يُقاسان فعلا. حُذف «اجتياز كل الاختبارات» (لا اختبار)،
+     و«الحضور يحقق الحد الأدنى» (لا مصدر حضور حقيقي)، و«الحساب المالي غير
+     متعثر» الذي كان `met: true` ثابتا — أي إقرارٌ ماليّ لم يُفحص. */
   return [
     { label: "إكمال دروس كل الدورات الأساسية (100%)", met: allLessons },
-    { label: "اجتياز كل الاختبارات النهائية", met: allQuizzes },
     { label: "تسليم الواجبات الإلزامية", met: allAssignments },
-    { label: "الحضور يحقق الحد الأدنى للمسار", met: courses.every(({ p }) => p.attendance !== "absent") },
-    { label: "الحساب المالي غير متعثر", met: true },
   ];
 }
 
@@ -282,42 +256,17 @@ export const PROJECT_RUBRIC: { key: string; label: string; weight: number }[] = 
 ];
 
 /* ─────────── الشهادات (القسم 12.5) ─────────── */
-export interface Certificate {
-  number: string; // WJ-2026-XXXXX
-  holder: string; courseOrPath: string; kind: "course" | "pathway";
-  issuedAt: string; status: "valid" | "revoked";
-}
-const CERT_KEY = "wajeez_certificates";
+/* حُذفت `Certificate` و`loadCertificates` و`issueCertificate`
+   و`verifyCertificate`. كانت تسكّ شهادةً في المتصفّح برقم عشوائي
+   (`Math.random()`) وتحفظها في localStorage وتُعيدها للمتعلم على أنها شهادته.
+   وصفحة التحقق العامة تسأل الخادم (/api/v1/certificates/verify/:number) —
+   فالرقم المسكوك محليا لا يجتاز التحقق: شهادةٌ تنهار أول ما تُفحص.
+   الإصدار الحقيقي من الإدارة: POST /api/admin/certificates/:id/issue */
 
-export function loadCertificates(): Certificate[] {
-  try { return JSON.parse(localStorage.getItem(CERT_KEY) ?? "[]") as Certificate[]; } catch { return []; }
-}
-export function issueCertificate(holder: string, title: string, kind: Certificate["kind"]): Certificate {
-  const certs = loadCertificates();
-  const num = `WJ-${new Date().getFullYear()}-${String(10000 + certs.length * 7 + Math.floor(Math.random() * 6)).slice(0, 5)}`;
-  const cert: Certificate = { number: num, holder, courseOrPath: title, kind, issuedAt: new Date().toISOString().slice(0, 10), status: "valid" };
-  localStorage.setItem(CERT_KEY, JSON.stringify([...certs, cert]));
-  return cert;
-}
-export function verifyCertificate(number: string): Certificate | null {
-  return loadCertificates().find((c) => c.number === number.trim().toUpperCase()) ?? null;
-}
-
-/* ─────────── المهارات: الحالي مقابل المستهدف (0–5) ─────────── */
-export interface SkillState { name: string; current: number; target: number; evidence: string; }
-export function pathwaySkills(pathwayId: string, state: PortalState): SkillState[] {
-  const p = pathwayById(pathwayId);
-  const ids = pathwayCourses[pathwayId] ?? [];
-  return (p?.coreSkills ?? []).slice(0, 5).map((name, i) => {
-    const related = ids.filter((id) => courseById(id)?.skill === name || i === 0);
-    const done = related.filter((id) => {
-      const c = courseById(id);
-      return c && isCourseComplete(c, state.courses[id] ?? emptyCourseProgress());
-    }).length;
-    const current = Math.min(4, 1 + done * 2); // يرتفع مع كل دورة مكتملة مرتبطة
-    return { name, current, target: 5, evidence: done > 0 ? `أُثبت في ${done} ${done === 1 ? "دورة" : "دورات"}` : "لم يُثبت بعد — سيظهر الدليل مع تقدمك" };
-  });
-}
+/* حُذفت `SkillState` و`pathwaySkills`. كانت تحسب مستوى المهارة بمعادلة
+   `1 + عدد الدورات المكتملة × 2` وتعرضه رقما من ٥ — مستوى لم يُقَس بأداة،
+   وهو بالضبط ما لاحظه صاحب المنتج: «نقول إننا نقيس المهارات ولا نفعل».
+   القياس الحقيقي في SkillGrowthService عبر /api/learner/skill-growth. */
 
 export function readUserName(): string {
   try {

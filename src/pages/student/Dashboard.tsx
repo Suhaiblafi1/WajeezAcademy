@@ -6,7 +6,6 @@ import {
 } from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import { hasShowcaseCatalog, showcasePathwayId } from "@/data/showcase";
-import SkillMeter from "@/components/SkillMeter";
 import PathwayMap from "@/components/PathwayMap";
 import { buildPathwayMap, enrollmentFactsFromApi } from "@/application/student/pathway-map";
 import { pathwayIdFromSnapshot } from "@/application/student/skills-profile";
@@ -20,9 +19,9 @@ import {
   type EvidenceKind, type Momentum,
 } from "@/application/student/momentum";
 import { pathwayById } from "@/data/pathways";
-import { courseById, pathwayCourses } from "@/data/courses";
+import { pathwayCourses } from "@/data/courses";
 import {
-  loadPortal, nextAction, pathwayPercent, pathwaySkills, courseSessions,
+  loadPortal, nextAction, pathwayPercent,
   readUserName, courseGate,
 } from "@/data/student";
 import AdvisorContact from "@/components/AdvisorContact";
@@ -519,16 +518,7 @@ function SimulatedDashboardBody() {
   const state = useMemo(() => loadPortal(pathwayId), [pathwayId]);
   const pct = pathwayPercent(pathwayId, state);
   const next = nextAction(pathwayId, state);
-  const skills = pathwaySkills(pathwayId, state);
   const user = readUserName();
-
-  const startDate = new Date(state.startedAt);
-  const sessions = (pathwayCourses[pathwayId] ?? [])
-    .map((id) => courseById(id))
-    .filter(Boolean)
-    .flatMap((c) => courseSessions(c!, startDate))
-    .sort((a, b) => a.date.localeCompare(b.date))
-    .slice(0, 4);
 
   const advisorMsg = `مرحبا، أنا ${user} طالب مسار «${pathway?.name}» وأريد استشارة.`;
   const unread = state.notifications.filter((n) => !n.read).length;
@@ -611,36 +601,8 @@ function SimulatedDashboardBody() {
       </div>
 
       <div className="mt-6 grid gap-5 lg:grid-cols-3">
-        {/* جدولي */}
-        <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 lg:col-span-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm font-bold text-white/70">
-              <CalendarDays className="h-4 w-4 text-gold-ink" /> جدولي — الجلسات القادمة
-            </div>
-            <span className="text-[11px] text-white/50">بتوقيت الرياض (GMT+3)</span>
-          </div>
-          <div className="mt-4 space-y-2.5">
-            {sessions.map((s) => (
-              <div key={s.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <span className={`grid h-9 w-9 place-items-center rounded-xl ${s.type === "live" ? "bg-gold/15 text-gold-ink" : "bg-teal/15 text-teal-light-ink"}`}>
-                    <Video className="h-4 w-4" />
-                  </span>
-                  <div>
-                    <p className="text-sm font-bold">{s.title}</p>
-                    <p className="text-[11px] text-white/45">{s.courseName} · {s.date} · {s.time}</p>
-                  </div>
-                </div>
-                <Link
-                  to={`/student/course/${s.courseId}`}
-                  className="rounded-full border border-teal/40 px-4 py-1.5 text-xs font-bold text-teal-light-ink transition hover:bg-teal hover:text-on-teal"
-                >
-                  التفاصيل والانضمام
-                </Link>
-              </div>
-            ))}
-          </div>
-        </section>
+        {/* حُذف «جدولي — الجلسات القادمة». كان يُركَّب من `courseSessions`
+            التي تخترع جلستين لكل دورة بتاريخ ووقت ثابتين. */}
 
         {/* الإشعارات */}
         <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
@@ -661,27 +623,8 @@ function SimulatedDashboardBody() {
       </div>
 
       <div className="mt-6 grid gap-5 lg:grid-cols-3">
-        {/* مهاراتي: الحالي مقابل المستهدف */}
-        <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 lg:col-span-2">
-          <div className="flex items-center gap-2 text-sm font-bold text-white/70">
-            <TrendingUp className="h-4 w-4 text-teal-light-ink" /> مهاراتي — الحالي مقابل المستهدف (0–5)
-            <Link to="/student/skills" className="ms-auto text-[11px] font-bold text-teal-light-ink hover:text-white">
-              ملفي المقيس ←
-            </Link>
-          </div>
-          <div className="mt-4 space-y-3">
-            {skills.map((s) => (
-              <div key={s.name}>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold">{s.name}</span>
-                  <span className="text-white/45">{s.current} / {s.target}</span>
-                </div>
-                <SkillMeter level={s.current} className="mt-1.5" />
-                <p className="mt-1 text-[10px] text-white/55">{s.evidence}</p>
-              </div>
-            ))}
-          </div>
-        </section>
+        {/* حُذف «مهاراتي — الحالي مقابل المستهدف». كان المستوى يُحسب
+            `1 + عدد الدورات المكتملة × 2` ويُعرض رقما من ٥ كأنه قياس. */}
 
         {/* التوصيات + الدعم */}
         <section className="space-y-5">

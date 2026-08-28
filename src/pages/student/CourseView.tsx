@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router";
 import {
   ArrowLeft, ArrowRight, Award, CheckCircle2, ClipboardList, FileUp,
-  HelpCircle, Lock, MessageSquare, Send, Upload, Video, XCircle, Loader2, BookOpen} from "lucide-react";
+  HelpCircle, Lock, MessageSquare, Send, Upload, Video, Loader2, BookOpen} from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import { hasShowcaseCatalog, showcasePathwayId } from "@/data/showcase";
 import { usePublishedContent } from "@/services/public-content";
@@ -14,13 +14,11 @@ import DecisionScenario from "@/components/DecisionScenario";
 import ModuleVideo from "@/components/ModuleVideo";
 import CourseResources from "@/components/CourseResources";
 import { getEnrollment } from "@/services/access";
-import { zoom, type ZoomJoinInfo } from "@/services/zoom";
 import { pathways, pathwayById } from "@/data/pathways";
 import { courseById, courseDetails, courseTrainer, pathwayCourses } from "@/data/courses";
 import {
-  courseGate, courseLessons, courseQuiz, courseSessions, isCourseComplete,
-  loadPortal, maybeOpenProject, savePortal, QUIZ_PASS, QUIZ_MAX_ATTEMPTS,
-  issueCertificate, readUserName, type PortalState,
+  courseGate, courseLessons, isCourseComplete,
+  loadPortal, maybeOpenProject, savePortal, type PortalState,
 } from "@/data/student";
 
 /* ⚠ الكتالوج كسول (ع-١): الجسم خلف حالة تحميل، ويُعاد تركيبه بمفتاح نسخته. */
@@ -49,11 +47,7 @@ function CourseViewBody() {
   const pathway = pathwayById(pathwayId);
 
   const [state, setState] = useState<PortalState>(() => loadPortal(pathwayId));
-  const [zoomInfo, setZoomInfo] = useState<Record<string, ZoomJoinInfo>>({});
   const [activeLesson, setActiveLesson] = useState(0);
-  const [quizOn, setQuizOn] = useState(false);
-  const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({});
-  const [quizResult, setQuizResult] = useState<{ score: number; passed: boolean } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [question, setQuestion] = useState("");
   const [asked, setAsked] = useState<string[]>([]);
@@ -61,8 +55,6 @@ function CourseViewBody() {
   const gate = course ? courseGate(pathwayId, course.id, state) : null;
   const progress = course ? state.courses[course.id] : null;
   const lessons = useMemo(() => (course ? courseLessons(course) : []), [course]);
-  const quiz = useMemo(() => (course ? courseQuiz(course) : []), [course]);
-  const sessions = useMemo(() => (course ? courseSessions(course, new Date(state.startedAt)) : []), [course, state.startedAt]);
   const details = course ? courseDetails(course) : null;
   const trainer = course ? courseTrainer(course) : null;
 
@@ -103,33 +95,15 @@ function CourseViewBody() {
   const lessonPct = progress.lessons[lesson.id]?.pct ?? 0;
   const complete = isCourseComplete(course, progress);
 
-  const submitQuiz = () => {
-    const correct = quiz.filter((q, i) => quizAnswers[i] === q.correct).length;
-    const score = Math.round((correct / quiz.length) * 100);
-    const passed = score >= QUIZ_PASS;
-    setQuizResult({ score, passed });
-    update((s) => {
-      const cp = s.courses[course.id];
-      cp.quiz = { attempts: cp.quiz.attempts + 1, best: Math.max(cp.quiz.best, score), passed: cp.quiz.passed || passed };
-    });
-  };
-
   const submitAssignment = (fileName: string) => {
     update((s) => {
       const cp = s.courses[course.id];
       cp.assignment = { status: "under_review", fileName };
       s.notifications.unshift({ id: `n-${Date.now()}`, text: `استلمنا واجب «${course.name}» — يراجعه ${trainer.name} خلال 72 ساعة.`, kind: "grade", read: false });
     });
-    // محاكاة المراجعة البشرية بعد لحظات
-    window.setTimeout(() => {
-      update((s) => {
-        const cp = s.courses[course.id];
-        if (cp.assignment.status === "under_review") {
-          cp.assignment = { status: "approved", fileName, grade: 88, feedback: "عمل متقن — طبقت المنهجية بدقة. لاحظ التعليق على المحور الثاني لتطويره في الدورة القادمة." };
-          s.notifications.unshift({ id: `n-${Date.now() + 1}`, text: `اعتُمد واجب «${course.name}» بدرجة 88 — اقرأ ملاحظات مدربك.`, kind: "grade", read: false });
-        }
-      });
-    }, 12000);
+    /* لا اعتماد آليّ. كان هنا مؤقّتٌ من ١٢ ثانية يقلب الحالة إلى «معتمد»
+       بدرجة ٨٨ وملاحظةٍ نصّية منسوبةٍ إلى المدرّب بالاسم — أي حكمٌ بشريّ
+       مخترع. الاعتماد لا يأتي إلا من طابور تقييم المدرّب. */
   };
 
   /* إعادة التسليم — بعد طلب المدرب فقط (حالة revision)، كما في POST /api/learner/assessments/:id/resubmit */
@@ -254,90 +228,22 @@ function CourseViewBody() {
                 <ArrowLeft className="h-4 w-4" />
               </button>
             )}
-            {lessonPct >= 90 && activeLesson === lessons.length - 1 && !progress.quiz.passed && (
+            {lessonPct >= 90 && activeLesson === lessons.length - 1 && (
               <p className="mt-4 flex items-center justify-center gap-2 rounded-full border border-gold/40 bg-gold/5 py-3 text-sm font-bold text-gold-ink">
-                <CheckCircle2 className="h-4 w-4" /> أنهيت كل الدروس — اختبار الدورة بانتظارك بالأسفل
+                <CheckCircle2 className="h-4 w-4" /> أنهيت كل الدروس — بقي تطبيقك العملي بالأسفل
               </p>
             )}
           </section>
 
-          {/* الاختبار النهائي */}
+          {/* الاختبار: لا يُعرض حتى يوجد اختبار حقيقي في المنهج.
+              كان هنا اختبارٌ من أربعة أسئلة تُركَّب قالبيا من اسم الدورة،
+              بدرجة نجاح ٧٠٪ وثلاث محاولات، ونتيجتُه «تغذي ملف مهاراتك». */}
           <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
-            <div className="flex items-center justify-between">
-              <h3 className="flex items-center gap-2 font-black"><HelpCircle className="h-4 w-4 text-gold-ink" /> اختبار الدورة</h3>
-              <span className="text-[11px] text-white/50">نجاح من {QUIZ_PASS}% · {QUIZ_MAX_ATTEMPTS} محاولات</span>
-            </div>
-            {progress.quiz.passed ? (
-              <p className="mt-4 flex items-center gap-2 rounded-xl border border-teal/40 bg-teal/10 px-4 py-3 text-sm font-bold text-teal-light-ink">
-                <CheckCircle2 className="h-4 w-4" /> اجتزت الاختبار بأفضل درجة {progress.quiz.best}%
-              </p>
-            ) : !quizOn ? (
-              <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                <p className="text-sm text-white/55">
-                  {progress.quiz.attempts > 0
-                    ? `آخر محاولة: ${progress.quiz.best}% — تبقى ${QUIZ_MAX_ATTEMPTS - progress.quiz.attempts} محاولات`
-                    : `${quiz.length} أسئلة تقيس فهمك الفعلي — النتيجة تغذي ملف مهاراتك`}
-                </p>
-                <button
-                  onClick={() => { setQuizOn(true); setQuizAnswers({}); setQuizResult(null); }}
-                  disabled={progress.quiz.attempts >= QUIZ_MAX_ATTEMPTS}
-                  className="cursor-pointer rounded-full bg-gold px-5 py-2.5 text-sm font-black text-on-gold transition hover:bg-gold/90 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  {progress.quiz.attempts > 0 ? "أعد المحاولة" : "ابدأ الاختبار"}
-                </button>
-              </div>
-            ) : (
-              <div className="mt-4 space-y-4">
-                {quiz.map((q, i) => (
-                  <div key={i} className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                    <p className="text-sm font-bold leading-7">{i + 1}. {q.q}</p>
-                    <div className="mt-2.5 grid gap-1.5">
-                      {q.options.map((op, j) => {
-                        const chosen = quizAnswers[i] === j;
-                        const revealed = quizResult !== null;
-                        const isCorrect = q.correct === j;
-                        return (
-                          <button
-                            key={j}
-                            disabled={revealed}
-                            onClick={() => setQuizAnswers({ ...quizAnswers, [i]: j })}
-                            className={`cursor-pointer rounded-lg border px-3 py-2 text-right text-xs transition disabled:cursor-default ${
-                              revealed && isCorrect ? "border-teal bg-teal/15 text-teal-light-ink"
-                              : revealed && chosen && !isCorrect ? "border-red-500/60 bg-red-500/10 text-red-300"
-                              : chosen ? "border-teal/60 bg-teal/10" : "border-white/10 hover:border-white/25"
-                            }`}
-                          >
-                            {op}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {quizResult && <p className="mt-2 text-[11px] leading-5 text-white/45">{q.explain}</p>}
-                  </div>
-                ))}
-                {!quizResult ? (
-                  <button
-                    onClick={submitQuiz}
-                    disabled={Object.keys(quizAnswers).length < quiz.length}
-                    className="w-full cursor-pointer rounded-full bg-gold py-3 font-black text-on-gold transition hover:bg-gold/90 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    سلّم الإجابات
-                  </button>
-                ) : (
-                  <div className={`rounded-2xl border p-4 text-center ${quizResult.passed ? "border-teal/50 bg-teal/10" : "border-red-500/40 bg-red-500/10"}`}>
-                    <p className="flex items-center justify-center gap-2 text-lg font-black">
-                      {quizResult.passed ? <CheckCircle2 className="h-5 w-5 text-teal-ink" /> : <XCircle className="h-5 w-5 text-red-400" />}
-                      {quizResult.score}% — {quizResult.passed ? "ناجح! أحسنت" : "لم تبلغ درجة النجاح بعد"}
-                    </p>
-                    {!quizResult.passed && (
-                      <button onClick={() => { setQuizOn(false); }} className="mt-3 cursor-pointer rounded-full border border-white/20 px-5 py-2 text-xs font-bold hover:border-white/40">
-                        راجع الدروس ثم حاول مجددا
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
+            <h3 className="flex items-center gap-2 font-black"><HelpCircle className="h-4 w-4 text-white/40" /> اختبار الدورة</h3>
+            <p className="mt-3 text-sm leading-7 text-white/55">
+              لم يُضَف بعد اختبارٌ لهذه الدورة. حين يضعه مدرّبها سيظهر هنا،
+              ودرجتُك فيه تُحتسب ضمن تقدّمك.
+            </p>
           </section>
 
           {/* الواجب العملي */}
@@ -430,39 +336,10 @@ function CourseViewBody() {
 
         {/* العمود الجانبي */}
         <div className="space-y-5">
-          {/* الجلسات المباشرة — زووم */}
-          <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
-            <h3 className="flex items-center gap-2 text-sm font-black"><Video className="h-4 w-4 text-gold-ink" /> الجلسات المباشرة (Zoom)</h3>
-            <div className="mt-4 space-y-3">
-              {sessions.map((s) => (
-                <div key={s.id} className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                  <p className="text-sm font-bold">{s.title}</p>
-                  <p className="mt-1 text-[11px] text-white/45">{s.date} · {s.time} · بتوقيت الرياض</p>
-                  {zoomInfo[s.id] ? (
-                    <a
-                      href={zoomInfo[s.id].joinUrl}
-                      target="_blank" rel="noreferrer"
-                      onClick={() => update((st) => { st.courses[course.id].attendance = "present"; })}
-                      className="mt-3 block rounded-full bg-[#2D8CFF] py-2 text-center text-xs font-black text-on-bright transition hover:bg-[#2D8CFF]/85"
-                    >
-                      انضم عبر Zoom — {zoomInfo[s.id].meetingId}
-                    </a>
-                  ) : (
-                    <button
-                      onClick={() => zoom.getJoinInfo(s.id).then((info) => setZoomInfo({ ...zoomInfo, [s.id]: info }))}
-                      className="mt-3 w-full cursor-pointer rounded-full border border-[#2D8CFF]/50 py-2 text-xs font-bold text-zoom-ink transition hover:bg-[#2D8CFF]/10"
-                    >
-                      أظهر رابط الانضمام
-                    </button>
-                  )}
-                  <p className="mt-2 text-[10px] text-white/55">الانضمام يُسجل حضورك تلقائيا · التسجيل يُنشر بعد المراجعة</p>
-                </div>
-              ))}
-            </div>
-            <p className="mt-3 text-[11px] text-white/50">
-              الحضور: {progress.attendance === "present" ? <span className="font-bold text-teal-light-ink">حاضر ✓</span> : "لم يُسجل بعد"}
-            </p>
-          </section>
+          {/* حُذف قسم «الجلسات المباشرة (Zoom)». كان يعرض جلستين مخترعتين
+              بتاريخ محسوب ووقت ثابت وحالة «مؤكدة»، وزرَّ انضمامٍ يسجّل الحضور
+              تلقائيا. مواعيدُ لا وجود لها في أي شعبة. جلسات الشعبة الحقيقية
+              في /api/learner/enrollments/:id وتُعرض في «تعلّمي». */}
 
           {/* مصادر الدورة — تبويبات تُشتق من البيانات المتاحة فقط، بلا أنواع فارغة */}
           <CourseResources
@@ -477,17 +354,16 @@ function CourseViewBody() {
           {/* شهادة الدورة */}
           <section className="rounded-3xl border border-gold/25 bg-gold/5 p-6">
             <h3 className="flex items-center gap-2 text-sm font-black text-gold-ink"><Award className="h-4 w-4" /> شهادة الدورة</h3>
+            {/* لا سكّ شهادة من المتصفّح. كان الزر يستدعي `issueCertificate`
+                فيولّد رقما عشوائيا في localStorage — رقمٌ لا يجتاز التحقق
+                العام. الإصدار من الإدارة بعد اعتماد المدرّب. */}
             {complete ? (
-              <Link
-                to="/student/certificates"
-                onClick={() => issueCertificate(readUserName(), course.name, "course")}
-                className="mt-3 block rounded-full bg-gold py-2.5 text-center text-sm font-black text-on-gold transition hover:bg-gold/90"
-              >
-                شهادتك جاهزة — اعرضها
+              <Link to="/student/certificates" className="mt-3 block rounded-full bg-gold py-2.5 text-center text-sm font-black text-on-gold transition hover:bg-gold/90">
+                استوفيت الشروط — تابع حالة شهادتك
               </Link>
             ) : (
               <p className="mt-2 text-xs leading-6 text-white/55">
-                تصدر بعد: إكمال الدروس (90%+) + اجتياز الاختبار + تسليم الواجب. لا شهادة مشاهدة عندنا.
+                تصدر بعد: إكمال الدروس (90%+) وتسليم تطبيقك العملي واعتماد مدرّبك له. لا شهادة مشاهدة عندنا.
               </p>
             )}
           </section>
