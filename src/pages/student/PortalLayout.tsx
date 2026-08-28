@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router";
-import { LayoutDashboard, Award, Lock, LogOut, Bell, CheckCheck, UserCircle, ReceiptText, X, LifeBuoy, BookOpen, ChevronDown, Inbox } from "lucide-react";
+import { LayoutDashboard, Award, Lock, LogOut, Bell, CheckCheck, UserCircle, ReceiptText, X, LifeBuoy, BookOpen, ChevronDown, Inbox, Library } from "lucide-react";
 import { signOut } from "@/services/auth";
 import { apiGet, apiPost } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import { useAutoRefresh } from "@/services/useAutoRefresh";
 import ThemeToggle from "@/components/ThemeToggle";
 import EcosystemNote from "@/components/EcosystemNote";
+import { usePublishedContent } from "@/services/public-content";
+import { getLibraryResources } from "@/data/core-catalog-source";
 
 interface RealNotif { id: string; title: string; body: string; status: string; sentAt: string | null; queuedAt: string }
 
@@ -80,6 +82,11 @@ export default function PortalLayout({ children, title }: { children: React.Reac
   useAutoRefresh(refreshUnread, 60_000);
 
   const unreadCount = serverUnread ?? (realNotifs?.filter((n) => n.status !== "read").length ?? 0);
+
+  /* عدد موادّ المكتبة المنشورة — من لقطة الكتالوج العامة نفسها التي تقرأها
+     صفحة المكتبة، فلا يظهر التبويب ثم تُفتح صفحةٌ فارغة. */
+  usePublishedContent();
+  const libraryCount = getLibraryResources().length;
 
   const markAllRead = () => {
     if (realNotifs) {
@@ -160,6 +167,15 @@ export default function PortalLayout({ children, title }: { children: React.Reac
       match: ["/student/vault", "/student/certificates", "/student/cv", "/student/skills"],
     },
   ];
+  /* ١د — المكتبة قسمٌ رابع، ولا يظهر إلا حين تكون فيه مادّة منشورة.
+     تبويبٌ يَعِد بمكتبة ثم يفتح على فراغ أسوأ من غيابه: المتعلم ينقره مرة
+     ثم يتعلّم ألّا يثق بالشريط كله. */
+  if (libraryCount > 0) {
+    sections.push({
+      id: "library", label: "المكتبة", icon: Library, to: "/student/library",
+      items: [], match: ["/student/library"],
+    });
+  }
   /* القسم النشط: «الرئيسية» بمطابقة تامة، وغيرُها ببادئة المسار */
   const activeSection =
     pathname === "/student"
@@ -320,7 +336,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
       <EcosystemNote className="mx-auto max-w-6xl px-5 pb-24 md:pb-6" />
       {/* شريط الجوال: ثلاثة أقسام + الحساب — أربع خانات بلا «المزيد».
           كان خمسَ خاناتٍ رابعُها «مهاراتي» وتحت «المزيد» تسعُ صفحات مخبّأة. */}
-      <nav aria-label="أقسام المنصة" className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-white/10 bg-paper/95 pb-[max(env(safe-area-inset-bottom),0.25rem)] backdrop-blur-xl md:hidden">
+      <nav aria-label="أقسام المنصة" className={`fixed inset-x-0 bottom-0 z-40 grid ${sections.length >= 4 ? "grid-cols-5" : "grid-cols-4"} border-t border-white/10 bg-paper/95 pb-[max(env(safe-area-inset-bottom),0.25rem)] backdrop-blur-xl md:hidden`}>
         {sections.map((sec) => (
           <Link
             key={sec.id}

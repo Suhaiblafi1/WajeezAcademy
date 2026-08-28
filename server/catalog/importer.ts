@@ -65,6 +65,12 @@ interface RawPathway {
   weekly_hours?: string | number; level?: string; delivery?: string; capstone?: string
   outcome_metric?: string; credential_ar?: string; course_ids: string[]
 }
+interface RawLibraryResource {
+  id: string; kind: string; title_ar: string; description_ar?: string
+  url: string; source_ar?: string; minutes?: number
+  skill_slugs?: string[]; sort_order?: number
+}
+
 interface RawCourse {
   course_id: string; pathway_id: string; sequence: number; title_ar: string
   /** المصطلح المهنيّ بالإنجليزية — سطر ثانويّ تحت العنوان لا جزء منه */
@@ -308,6 +314,32 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
     await prisma.pathwaySkillRequirement.deleteMany({
       where: { pathwayId: p.id, skillId: { notIn: noneIfEmpty([...seen]) } },
     })
+  }
+
+  /* 3.5) مكتبة الموارد — تُقلَّم كسائر المجموعات: ما زال في المصدر يبقى،
+     وما حُذف منه يُحذف. ومكتبةٌ غائبة من المصدر لا تمسّ الجدول أصلا. */
+  const library = (core.library_resources ?? []) as RawLibraryResource[]
+  if (core.library_resources !== undefined) {
+    for (const r of library) {
+      /* الحقول مكتوبة صراحةً في الفرعين لا `update: data`: بوابة تكافؤ الـupsert
+         تقرأ مفاتيح الكائنين من النصّ، ومتغيّرٌ مختصَر يعميها عن حقلٍ يُبذر
+         ولا يُحدَّث — وهو الخطأ الذي وُضعت البوابة له. */
+      await prisma.libraryResource.upsert({
+        where: { id: r.id },
+        update: {
+          kind: r.kind, titleAr: r.title_ar, descriptionAr: r.description_ar ?? null,
+          url: r.url, sourceAr: r.source_ar ?? null, minutes: toInt(r.minutes) ?? null,
+          skillSlugs: r.skill_slugs ?? [], sortOrder: toInt(r.sort_order) ?? 0, status: 'published',
+        },
+        create: {
+          id: r.id,
+          kind: r.kind, titleAr: r.title_ar, descriptionAr: r.description_ar ?? null,
+          url: r.url, sourceAr: r.source_ar ?? null, minutes: toInt(r.minutes) ?? null,
+          skillSlugs: r.skill_slugs ?? [], sortOrder: toInt(r.sort_order) ?? 0, status: 'published',
+        },
+      })
+    }
+    await prisma.libraryResource.deleteMany({ where: { id: { notIn: noneIfEmpty(library.map((r) => r.id)) } } })
   }
 
   /* 4) الوحدات — لا تُحذف أبدا؛ الإصدار الأول يُنشأ مرة واحدة */
