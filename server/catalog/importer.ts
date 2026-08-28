@@ -24,6 +24,11 @@ const toInt = (v: unknown): number | null => {
   return null
 }
 
+/* قائمةُ معرّفاتٍ صالحةٌ لـ`notIn`. المصفوفة الفارغة تعني في Prisma «لا استثناء»
+   أي احذف كل ما تحت الأب — وهو المقصود حين تفرغ القائمة في المستودع؛ لكن كتابته
+   صراحةً أوضح من الاتّكال على سلوكٍ ضمني، فيقوم حارسٌ لا وجود له في البيانات. */
+const noneIfEmpty = (ids: readonly string[]): string[] => (ids.length > 0 ? [...ids] : ['__none__'])
+
 export interface ImportStats {
   pathways: number
   courses: number
@@ -224,26 +229,32 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
         levelAr: c.level_ar ?? null, totalHours: toInt(c.total_hours) ?? 0, status: 'published',
       },
     })
+    const objectiveIds = (c.learning_objectives_ar ?? []).map((_, i) => deterministicUuid(`obj:${c.course_id}:${i}`))
     for (const [i, text] of (c.learning_objectives_ar ?? []).entries()) {
       await prisma.learningObjective.upsert({
-        where: { id: deterministicUuid(`obj:${c.course_id}:${i}`) },
+        where: { id: objectiveIds[i] },
         update: { sequence: i + 1, textAr: text },
-        create: { id: deterministicUuid(`obj:${c.course_id}:${i}`), courseVersionId: cv.id, sequence: i + 1, textAr: text },
+        create: { id: objectiveIds[i], courseVersionId: cv.id, sequence: i + 1, textAr: text },
       })
     }
+    await prisma.learningObjective.deleteMany({ where: { courseVersionId: cv.id, id: { notIn: noneIfEmpty(objectiveIds) } } })
+    const outcomeIds = (c.learning_outcomes_ar ?? []).map((_, i) => deterministicUuid(`out:${c.course_id}:${i}`))
     for (const [i, text] of (c.learning_outcomes_ar ?? []).entries()) {
       await prisma.learningOutcome.upsert({
-        where: { id: deterministicUuid(`out:${c.course_id}:${i}`) },
+        where: { id: outcomeIds[i] },
         update: { sequence: i + 1, textAr: text },
-        create: { id: deterministicUuid(`out:${c.course_id}:${i}`), courseVersionId: cv.id, sequence: i + 1, textAr: text },
+        create: { id: outcomeIds[i], courseVersionId: cv.id, sequence: i + 1, textAr: text },
       })
     }
+    await prisma.learningOutcome.deleteMany({ where: { courseVersionId: cv.id, id: { notIn: noneIfEmpty(outcomeIds) } } })
     if (c.summative_assessment_ar) {
       await prisma.practicalProject.upsert({
         where: { courseVersionId: cv.id },
         update: { descriptionAr: c.summative_assessment_ar },
         create: { courseVersionId: cv.id, descriptionAr: c.summative_assessment_ar },
       })
+    } else {
+      await prisma.practicalProject.deleteMany({ where: { courseVersionId: cv.id } })
     }
     /* روابط المهارات — بمعرفات SK الثابتة، مع جسر slug عند الحاجة */
     const skillIds = new Set<string>([
@@ -258,6 +269,9 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
       })
       links++
     }
+    await prisma.courseSkillLink.deleteMany({
+      where: { courseId: c.course_id, skillId: { notIn: noneIfEmpty([...skillIds]) } },
+    })
   }
 
   /* 3ب) روابط المسارات: الدورات (مرجعية) + متطلبات المهارات المشتقة — بعد وجود الدورات */
@@ -286,6 +300,12 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
         links++
       }
     }
+    await prisma.pathwayCourse.deleteMany({
+      where: { pathwayId: p.id, courseId: { notIn: noneIfEmpty(p.course_ids) } },
+    })
+    await prisma.pathwaySkillRequirement.deleteMany({
+      where: { pathwayId: p.id, skillId: { notIn: noneIfEmpty([...seen]) } },
+    })
   }
 
   /* 4) الوحدات — لا تُحذف أبدا؛ الإصدار الأول يُنشأ مرة واحدة */
@@ -366,6 +386,9 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
         })
         links++
       }
+      await prisma.templateCourse.deleteMany({
+        where: { templateId: t.template_id, listType, courseId: { notIn: noneIfEmpty(refs.map((r) => r.course_id)) } },
+      })
     }
   }
 
@@ -416,20 +439,45 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
         },
       })
     }
+    /* التقليص لا يصل بالتحديث وحده. الخيار المحذوف من المستودع يبقى صفّا في
+       القاعدة، فتقرؤه اللقطة (options_ar تُبنى من صفوف الخيارات) وتعرضه
+       الواجهة تحت الخيارات الجديدة. حدث هذا في الإنتاج: قُلِّص سؤال القطاع
+       من ثمانية خيارات إلى أربعة، فظهر للمستخدم ثمانية — الأربعة الجديدة ثم
+       الأربعة القديمة. */
+    await prisma.questionOption.deleteMany({
+      where: {
+        questionId: q.question_id,
+        optionId: { notIn: noneIfEmpty(q.options_ar.map((_, i) => `o${i + 1}`)) },
+      },
+    })
   }
-  /* روابط سؤال↔مهارة: تقاطع measures السؤال مع related_question_measures للمهارة */
-  for (const s of skills) {
-    const measures = new Set(s.related_question_measures ?? [])
+  /* روابط سؤال↔مهارة: تقاطع measures السؤال مع related_question_measures للمهارة.
+     تُجمع أولا ثم تُكتب، كي يُعرف لكل سؤال ما يخصّه فيُحذف ما سواه: تغيير
+     measures في المستودع يبدّل التقاطع، والرابط القديم يبقى بلا هذا الحذف.
+     والحذف محصور بأسئلة المستودع، فروابط الأسئلة المؤلَّفة من اللوحة — تنشئها
+     CatalogAdminService — خارج مداه. */
+  const linkedSkillsByQuestion = new Map<string, Set<string>>()
+  for (const q of questions) linkedSkillsByQuestion.set(q.question_id, new Set())
+  for (const sk of skills) {
+    const measures = new Set(sk.related_question_measures ?? [])
     if (measures.size === 0) continue
     for (const q of questions) {
       if (!(q.measures ?? []).some((m) => measures.has(m))) continue
+      linkedSkillsByQuestion.get(q.question_id)!.add(sk.skill_id)
+    }
+  }
+  for (const [questionId, skillIds] of linkedSkillsByQuestion) {
+    for (const skillId of skillIds) {
       await prisma.questionSkillLink.upsert({
-        where: { questionId_skillId: { questionId: q.question_id, skillId: s.skill_id } },
+        where: { questionId_skillId: { questionId, skillId } },
         update: { weight: 1 },
-        create: { questionId: q.question_id, skillId: s.skill_id, weight: 1 },
+        create: { questionId, skillId, weight: 1 },
       })
       links++
     }
+    await prisma.questionSkillLink.deleteMany({
+      where: { questionId, skillId: { notIn: noneIfEmpty([...skillIds]) } },
+    })
   }
 
   /* 7) المراجع المنهجية */
