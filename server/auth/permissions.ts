@@ -33,6 +33,10 @@ export const PERMISSIONS = [
   // الإدارة
   { key: 'admin.users.manage', description: 'إدارة المستخدمين والأدوار وإيقاف الحسابات' },
   // منظومة المدربين — الإدارة
+  /* صلاحية المتقدّم على طلبه هو — لا على طلبات غيره. تفصل حساب «متقدّم مدرب»
+     عن حساب المتعلم: الأول يرى طلبه ومسودته وملفاته وحالة مراجعته ولا شيء
+     سواها، ولا يملك بوابة المتعلم ولا بوابة المدرب. */
+  { key: 'trainer.application.own', description: 'عرض طلب الانضمام الخاص بصاحبه ومتابعة حالته' },
   { key: 'trainer.applications.view', description: 'عرض طلبات انضمام المدربين' },
   { key: 'trainer.applications.review', description: 'مراجعة الطلبات وتسجيل الروبرك والمقابلات والديمو' },
   { key: 'trainer.applications.decide', description: 'قرار القبول المشروط أو الرفض أو الانتظار' },
@@ -121,6 +125,9 @@ export const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
   ],
   advisor: ['catalog.view', 'advisor.cases.view', 'advisor.cases.operate', 'cv.view'],
   trainer: ['trainer.portal', 'trainer.change.submit', 'trainer.cohort.operate'],
+  /* حساب التقديم — لا بوابة متعلم ولا بوابة مدرب. يصير مدربا بالدعوة بعد
+     الاعتماد (trainer.invite)، وحتى ذلك الحين لا يملك إلا رؤية طلبه. */
+  trainer_applicant: ['trainer.application.own'],
   finance: ['trainer.compensation.manage', 'finance.view', 'finance.payment.record', 'finance.refund.process', 'reports.view', 'reports.export'],
   support: ['catalog.view', 'support.operate'],
   learner: ['learner.portal', 'learner.submit', 'cv.upload', 'enrollment.request'],
@@ -133,6 +140,7 @@ export const ROLE_NAMES_AR: Record<string, string> = {
   operations_manager: 'مدير العمليات',
   advisor: 'مستشار',
   trainer: 'مدرب',
+  trainer_applicant: 'متقدّم لعضوية التدريب',
   finance: 'المالية',
   support: 'الدعم',
   learner: 'متعلم',

@@ -27,6 +27,7 @@ model User {
   sessions           Session[]
   resetTokens        PasswordResetToken[]
   trainerProfile     TrainerProfile?
+  trainerApplication TrainerApplication?  @relation("TrainerApplicant")
   enrollments        Enrollment[]         @relation("EnrollmentUser")
   learnerProfile     LearnerProfile?
   leads              Lead[]               @relation("LeadUser")
@@ -719,6 +720,10 @@ model DiagnosticSession {
 model TrainerApplication {
   id                   String                        @id @default(uuid()) @db.Uuid
   reference            String                        @unique // WJ-TR-2026-00001
+  /// حساب «متقدّم مدرب» — يحفظ الطلب لصاحبه بدل رمزٍ يُنسخ ويُفقد. اختياري:
+  /// الطلبات السابقة بلا حساب تبقى تُتابَع برمزها.
+  userId               String?                       @unique @db.Uuid
+  user                 User?                         @relation("TrainerApplicant", fields: [userId], references: [id], onDelete: SetNull)
   status               String                        @default("email_verification_pending")
   // draft | email_verification_pending | submitted | under_review | information_requested
   // | shortlisted | interview_scheduled | demo_requested | academic_review

@@ -116,7 +116,7 @@ const STEPS = [
   { n: 1, title: "معلوماتك وخبرتك", hint: "من أنت وماذا تُتقن" },
   { n: 2, title: "ما يمكنك تدريسه", hint: "من الكتالوج، بمجاله ومستواه" },
   { n: 3, title: "نماذجك وأدلتك", hint: "سيرتك ودوراتك السابقة" },
-  { n: 4, title: "مراجعة وإرسال", hint: "ما سيقرؤه المراجع عنك" },
+  { n: 4, title: "حسابك وتقدّمك", hint: "يحفظ طلبك ومسودتك وحالته" },
 ] as const;
 
 /** قائمة منسدلة متعددة الاختيار — مربع صح بجانب كل خيار، والمختار يظهر وسمًا صغيرًا قابلا للإزالة */
@@ -258,6 +258,10 @@ export default function JoinTrainer() {
   const [demoConsent, setDemoConsent] = useState(false);
   const [uploads, setUploads] = useState<Record<string, UploadState>>({});
   const [phase2Done, setPhase2Done] = useState(false);
+  /* حساب المتقدّم — اختياري لكنه الوسيلة الوحيدة لمتابعة الطلب بلا رمز يُنسخ */
+  const [accountPassword, setAccountPassword] = useState("");
+  const [accountState, setAccountState] = useState<"idle" | "busy" | "done" | "error">("idle");
+  const [accountError, setAccountError] = useState("");
 
   /* متابعة حالة طلب سابق */
   const [lookup, setLookup] = useState({ reference: "", email: "" });
@@ -376,6 +380,22 @@ export default function JoinTrainer() {
       return false;
     } finally {
       setBusy(false);
+    }
+  };
+
+  const createAccount = async () => {
+    if (!result || !candidateToken || accountState === "busy") return;
+    if (accountPassword.length < 8) { setAccountError("كلمة المرور 8 أحرف على الأقل"); return; }
+    setAccountState("busy"); setAccountError("");
+    try {
+      await apiPost(`/api/v1/trainer-applications/${encodeURIComponent(result.reference)}/account`, {
+        candidateToken, password: accountPassword,
+      });
+      setAccountState("done");
+      setAccountPassword("");
+    } catch (err) {
+      setAccountState("error");
+      setAccountError(err instanceof ApiError ? err.message : "تعذّر إنشاء الحساب — حاول مجددا");
     }
   };
 
@@ -881,13 +901,49 @@ export default function JoinTrainer() {
           {/* ══ ٤) مراجعة وإرسال ══ */}
           {step === 4 && (
             <div className="space-y-5">
-              <div className="rounded-2xl border border-teal/30 bg-teal/[0.05] p-5">
+              {/* الحساب اختياري ومفيد: بدونه يتابع طلبه برقم ورمز ينسخهما من
+                  الشاشة — ومن فقدهما فقد طلبه. وهو حساب «متقدّم مدرب» لا حساب
+                  متعلم: لا يفتح بوابة الطالب ولا بوابة المدرب، ولا يرى إلا
+                  طلبه هو. ويصير مدربا بالدعوة بعد الاعتماد لا بالتسجيل. */}
+              <div className={`rounded-2xl border p-5 ${accountState === "done" ? "border-teal/45 bg-teal/[0.07]" : "border-teal/30 bg-teal/[0.05]"}`}>
                 <p className="flex items-center gap-2 text-sm font-black text-teal-light-ink">
-                  <BadgeCheck className="h-4 w-4" /> طلبك محفوظ برقمه المرجعي
+                  <BadgeCheck className="h-4 w-4" />
+                  {accountState === "done" ? "حسابك جاهز" : "أنشئ حساب متقدّم — يحفظ طلبك عنك"}
                 </p>
-                <p className="mt-2 text-[11.5px] leading-6 text-white/60">
-                  رقمك: <b className="font-mono text-white/85" dir="ltr">{result?.reference ?? "—"}</b> — به وحده تتابع
-                  حالة طلبك وتستأنف مسودتك. احفظه، ولا تشاركه.
+                {accountState === "done" ? (
+                  <p className="mt-2 text-[11.5px] leading-6 text-white/65">
+                    سجّل الدخول ببريدك <b dir="ltr" className="text-white/85">{form.email.trim()}</b> لترى حالة طلبك
+                    ومستنداتك متى شئت. حسابك حساب تقديم فقط — تصير مدربا بدعوة منّا بعد الاعتماد.
+                  </p>
+                ) : (
+                  <>
+                    <p className="mt-2 text-[11.5px] leading-6 text-white/60">
+                      بدونه تتابع طلبك برقمه المرجعي ورمز المرشح — ومن فقدهما فقد طريقه إلى طلبه.
+                      الحساب ببريد طلبك <b dir="ltr" className="text-white/80">{form.email.trim() || "—"}</b>، ولا يفتح
+                      بوابة متعلم ولا بوابة مدرب.
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <input
+                        type="password" autoComplete="new-password" placeholder="كلمة مرور — 8 أحرف على الأقل"
+                        aria-label="كلمة مرور حساب المتقدّم"
+                        value={accountPassword}
+                        onChange={(e) => { setAccountPassword(e.target.value); setAccountError(""); }}
+                        className={`${inputCls} min-w-0 flex-1`}
+                      />
+                      <button
+                        type="button" onClick={createAccount}
+                        disabled={accountPassword.length < 8 || accountState === "busy" || !candidateToken}
+                        className="flex shrink-0 cursor-pointer items-center gap-2 rounded-xl border border-teal/50 px-5 text-xs font-black text-teal-light-ink transition hover:bg-teal/10 disabled:cursor-not-allowed disabled:opacity-35"
+                      >
+                        {accountState === "busy" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                        أنشئ الحساب
+                      </button>
+                    </div>
+                    {accountError && <p className="mt-2 text-[11px] text-gold-ink">{accountError}</p>}
+                  </>
+                )}
+                <p className="mt-3 border-t border-white/10 pt-3 text-[11.5px] leading-6 text-white/50">
+                  ورقمك المرجعي: <b className="font-mono text-white/80" dir="ltr">{result?.reference ?? "—"}</b> — احفظه ولا تشاركه.
                 </p>
               </div>
 

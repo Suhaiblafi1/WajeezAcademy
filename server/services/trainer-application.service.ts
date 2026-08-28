@@ -4,6 +4,7 @@
    كل انتقال حالة يُسجَّل في TrainerStatusHistory وAuditEvent. */
 
 import { createHash, randomBytes } from 'node:crypto'
+import bcrypt from 'bcryptjs'
 import type { PrismaClient, Prisma } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
@@ -301,6 +302,71 @@ export class TrainerApplicationService {
     if (!app || !app.accessTokenHash || app.accessTokenHash !== sha256(token)) {
       throw new AuthError('invalid_candidate_token', 'رابط المرشح غير صالح', 401)
     }
+    return app
+  }
+
+  /** حساب «متقدّم مدرب» — يحفظ الطلب لصاحبه بدل رمزٍ يُنسخ ويُفقد.
+
+      ولا يُنشئ حساب متعلم: AuthService.register تُسند دور learner دائما، وهو
+      الصواب لبوابة التسجيل العامة والخطأ هنا — من يتقدّم للتدريب ليس طالبا.
+      الدور trainer_applicant وحده، وصلاحيته الوحيدة رؤية طلبه هو.
+
+      والبريد هو بريد الطلب لا بريدا يختاره: حسابٌ ببريد آخر يفصل صاحب الطلب
+      عن طلبه، ويفتح بابا لربط طلب غيره بحسابه. */
+  async createApplicantAccount(reference: string, token: string, password: string): Promise<{ userId: string; email: string }> {
+    const app = await this.resolveCandidate(reference, token)
+    if (app.userId) throw new AuthError('account_exists', 'لهذا الطلب حساب بالفعل — سجّل الدخول ببريدك', 409)
+    if (password.length < 8) throw new AuthError('weak_password', 'كلمة المرور 8 أحرف على الأقل')
+
+    const email = app.email.trim().toLowerCase()
+    const taken = await this.prisma.user.findUnique({ where: { email } })
+    /* بريدٌ له حساب أصلا: يُربَط لا يُرفض ولا يُنشأ ثانٍ. من كان متعلما ثم
+       تقدّم للتدريب يبقى حسابه واحدا، ويُضاف إليه دور التقديم. */
+    if (taken) {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.userRole.upsert({
+          where: { userId_roleId: { userId: taken.id, roleId: 'trainer_applicant' } },
+          update: {}, create: { userId: taken.id, roleId: 'trainer_applicant' },
+        })
+        await tx.trainerApplication.update({ where: { id: app.id }, data: { userId: taken.id } })
+        await recordAudit(tx, {
+          actorId: taken.id, action: 'trainer.application.account_linked',
+          entityType: 'trainer_application', entityId: app.id, meta: { reference },
+        })
+      })
+      return { userId: taken.id, email }
+    }
+
+    const created = await this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          email,
+          displayName: app.fullName.trim() || email.split('@')[0],
+          passwordHash: await bcrypt.hash(password, 10),
+          roles: { create: { roleId: 'trainer_applicant' } },
+        },
+      })
+      await tx.trainerApplication.update({ where: { id: app.id }, data: { userId: user.id } })
+      await recordAudit(tx, {
+        actorId: user.id, action: 'trainer.application.account_created',
+        entityType: 'trainer_application', entityId: app.id, meta: { reference },
+      })
+      return user
+    })
+    return { userId: created.id, email }
+  }
+
+  /** طلبُ صاحبِ الحساب هو — لا طلب غيره */
+  async myApplication(userId: string) {
+    const app = await this.prisma.trainerApplication.findUnique({
+      where: { userId },
+      select: {
+        reference: true, status: true, fullName: true, email: true,
+        createdAt: true, phase2CompletedAt: true, teachableCourseIds: true,
+        documents: { select: { kind: true, originalName: true, uploadedAt: true } },
+      },
+    })
+    if (!app) throw new AuthError('no_application', 'لا طلب مرتبط بحسابك', 404)
     return app
   }
 

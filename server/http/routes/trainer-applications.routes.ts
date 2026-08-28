@@ -9,6 +9,7 @@ import { TrainerReviewService } from '../../services/trainer-review.service'
 import { verifySignature, writeStreamToKey, MAX_UPLOAD_BYTES } from '../../services/storage.service'
 import { createReadStream, existsSync, statSync } from 'node:fs'
 import { filePathFor } from '../../services/storage.service'
+import { requirePermission } from '../auth-plugin'
 
 const IS_PROD = process.env.NODE_ENV === 'production'
 
@@ -98,6 +99,27 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
     const { email } = z.object({ email: z.string().email() }).parse(req.query)
     return svc.getPublicStatus(reference, email)
   })
+
+  /* حساب «متقدّم مدرب» — يحفظ الطلب لصاحبه بدل رمزٍ يُنسخ ويُفقد.
+     الرمز شرطٌ لإنشائه: بدونه يستطيع من عرف رقما مرجعيا أن يربط طلب غيره
+     بحسابه. والبريد يأتي من الطلب لا من الطلبِ الوارد. */
+  app.post('/api/v1/trainer-applications/:reference/account', {
+    schema: { tags: ['trainer-applications'], summary: 'إنشاء حساب متقدّم مدرب — برمز المرشح' },
+  }, async (req, reply) => {
+    const { reference } = z.object({ reference: z.string().min(5) }).parse(req.params)
+    const { candidateToken, password } = z.object({
+      candidateToken: z.string().min(10),
+      password: z.string().min(8).max(200),
+    }).parse(req.body)
+    return reply.status(201).send(await svc.createApplicantAccount(reference, candidateToken, password))
+  })
+
+  /* طلبُ صاحب الحساب هو — الصلاحية trainer.application.own، ولا تُعطى إلا
+     لدور المتقدّم. فلا يقرأ متعلمٌ طلبا ولا يقرأ متقدّمٌ طلب غيره. */
+  app.get('/api/v1/trainer-applications/mine', {
+    preHandler: requirePermission('trainer.application.own'),
+    schema: { tags: ['trainer-applications'], summary: 'طلب الانضمام الخاص بصاحب الحساب' },
+  }, async (req) => svc.myApplication(req.auth!.userId))
 
   app.post('/api/v1/trainer-applications/:reference/phase-2', {
     schema: { tags: ['trainer-applications'], summary: 'استكمال المرحلة الثانية — للمرشحين برمز الوصول' },
