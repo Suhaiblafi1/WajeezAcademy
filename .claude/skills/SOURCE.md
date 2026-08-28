@@ -15,9 +15,31 @@ GitHub» ولا «من الفرع الرئيسي». وأي تحديث لاحق �
 | `systematic-debugging` (+ ثلاثة ملفات شقيقة) | obra/superpowers · `skills/systematic-debugging/` | `b36e082` | MIT |
 | `test-driven-development` | obra/superpowers · `skills/test-driven-development/` | `b36e082` | MIT |
 | `webapp-testing` | [anthropics/skills](https://github.com/anthropics/skills) · `skills/webapp-testing/` | `3b3fad9` | Apache 2.0 |
+| `retrieval-practice-generator` | [GarethManning/claude-education-skills](https://github.com/GarethManning/claude-education-skills) · `skills/memory-learning-science/` | سجلّ ‎2026-08-10T12:45:42Z | CC BY-SA 4.0 |
+| `cognitive-load-analyser` | المصدر نفسه · `skills/memory-learning-science/` | السجلّ نفسه | CC BY-SA 4.0 |
+| `backwards-design-unit-planner` | المصدر نفسه · `skills/curriculum-assessment/` | السجلّ نفسه | CC BY-SA 4.0 |
+| `assessment-validity-checker` | المصدر نفسه · `skills/curriculum-assessment/` | السجلّ نفسه | CC BY-SA 4.0 |
 
-نصّا الرخصتين محفوظان: `LICENSE-superpowers.txt` و`webapp-testing/LICENSE.txt`.
-كلتاهما تشترط بقاء إشعار الرخصة مع النسخة — وهو هنا.
+نصوص الرخص محفوظة: `LICENSE-superpowers.txt` و`webapp-testing/LICENSE.txt`
+و`LICENSE-education-skills.txt`. كلُّها تشترط بقاء إشعار الرخصة مع النسخة —
+وهو هنا.
+
+## تنبيه على CC BY-SA 4.0
+
+مكتبة التعليم بالمشاركة بالمثل: النسخُ حرفا مع النسبة والرخصة — كما هنا —
+لا يُلزم شيئا زائدا. لكنّ **أيَّ تعديل على ملفّاتها الأربعة يجعله عملا مشتقّا
+يجب نشره بالرخصة نفسها**. فلا تُعدَّل، وما يخصّنا في ملفٍّ مجاور مستقلّ لا
+يقتبس نصّها (`WAJEEZ-AUTHORING.md`).
+
+المكتبة `GarethManning/claude-education-skills`: ١٦٥ مهارة في ٢٠ نطاقا، كلٌّ
+منها بأدلّةٍ مُسمّاة وتقديرٍ صريح لقوّتها (strong · moderate · emerging)،
+ومعها `docs/EXCLUSIONS.md` يوثّق ما استُبعد لضعف دليله — ومنه «أنماط التعلّم»
+وVAK. وهذا التوثيقُ للاستبعاد هو ما رجّحها على غيرها: مكتبةٌ تُعلن ما لا
+تُصدّقه أوثقُ من مكتبةٍ تجمع كل شيء.
+
+والمثبَّت أربعٌ من الأربع والستّين المرشّحة، وكلُّها `evidence_strength:
+strong`، وكلُّها تطابق ما نؤلّفه فعلا. وتُركت `learning-target-authoring-guide`
+مع حاجتنا إليها لأن المكتبة نفسها تصنّفها `emerging`.
 
 ## ما لم يُستورد ولماذا
 
