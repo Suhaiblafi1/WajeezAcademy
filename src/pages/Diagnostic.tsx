@@ -35,6 +35,7 @@ import SeoHead from "@/components/SeoHead";
 import EcosystemNote from "@/components/EcosystemNote";
 import { Badge } from "@/components/ui/badge";
 import ResultGate from "@/components/ResultGate";
+import { FIRST_TIME_PROMO, priceAfterPromo } from "@/application/commerce/first-time-promo";
 import ResultFeedback from "@/components/ResultFeedback";
 import CourseJourney, { type CourseSuggestion } from "@/components/CourseJourney";
 import { ResultErrorBoundary } from "@/components/ResultErrorBoundary";
@@ -406,27 +407,54 @@ const VARIANT_AR: Record<CompositeView["variant"], { label: string; hint: string
   extended: { label: "النسخة الموسعة", hint: "الكاملة مع دورات جسرية تربط المجالين" },
 };
 
-/* سعر المسار كما تعرضه صفحته العامة بالضبط — لا رقم جديد ولا تقدير.
-   المسار المركّب لا سعر كتالوج له، فيُقال ذلك صراحة بدل تعميم رقم لا يخصه. */
-function PathwayPriceNote({ pathwayId, courseIds }: { pathwayId: string; courseIds?: string[] }) {
+/* سعر الخطة — أسفل الصفحة قبل التسجيل مباشرة، لا في أول بطاقة يراها المتعلم.
+
+   كان الرقم داخل بطاقة التوصية الأولى، فأول ما يقرؤه من أنهى تشخيصه ثمنٌ قبل
+   أن يعرف ما يشتري. والترتيب الذي يقنع هو ترتيب السؤال في رأس القارئ: ما
+   المسار؟ ثم ماذا سأتعلم؟ ثم لماذا هذا بالذات؟ ثم — وقد عرف — بكم؟
+
+   والرقم نفسه الذي تعرضه صفحة المسار العامة لأي زائر بلا حساب: لا رقم جديد
+   ولا تقدير. والخطة المركّبة تُسعَّر بعدد مقرراتها هي لا بعدد مقررات المسار
+   الذي اشتُقّت منه مرساتها — العدد وحده يحدد السعر في الحالتين. */
+function ResultPriceCard({ courseIds }: { courseIds: readonly string[] }) {
   const fmt = usePriceFormatter();
-  /* خطة المقررات تُسعَّر بعدد مقرراتها هي — لا بعدد مقررات المسار الذي اشتُقّ
-     منه مرساتها. والقاعدة واحدة في الحالتين: العدد هو ما يحدد السعر. */
-  const courses = courseIds ?? pathwayCourses[pathwayId] ?? [];
-  if (courses.length === 0) return null;
-  const total = pathwayPriceFor(courses.length);
-  const separate = courses.reduce((s, cid) => {
+  if (courseIds.length === 0) return null;
+  const total = pathwayPriceFor(courseIds.length);
+  const separate = courseIds.reduce((s, cid) => {
     const c = courseById(cid);
     return c ? s + coursePriceOf(c) : s;
   }, 0);
   const savingPct = separate > total ? Math.round((1 - total / separate) * 100) : 0;
+  const afterPromo = priceAfterPromo(total);
 
   return (
-    <p className="mt-3 text-[11px] leading-5 text-white/45">
-      <span className="font-bold text-white/70">هذا المسار كاملا: {fmt(total)}</span>
-      {savingPct > 0 && <> — بدل {fmt(separate)} لو اشتريت دوراته منفردة، أي توفير {savingPct}٪</>}
-      . والدفع لا يُطلب الآن؛ تفاصيله وخيار الدورة المفردة في صفحة المسار.
-    </p>
+    <div className="story-fade mt-8 rounded-3xl border border-gold/35 bg-gradient-to-b from-gold/[0.07] to-transparent p-6 md:p-7">
+      <p className="text-[11px] font-black tracking-wide text-gold-ink">وبكم؟</p>
+      <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <span className="text-3xl font-black text-white md:text-4xl">{fmt(total)}</span>
+        <span className="text-sm text-white/45">للخطة كاملة — {courseIds.length} دورات</span>
+      </div>
+      {savingPct > 0 && (
+        <p className="mt-1.5 text-xs text-white/50">
+          بدل <span className="line-through">{fmt(separate)}</span> لو اشتريتها دورةً دورة — أي توفير {savingPct}٪
+        </p>
+      )}
+      <div className="mt-5 rounded-2xl border border-teal/35 bg-teal/[0.07] p-4">
+        <p className="text-sm font-black leading-relaxed text-teal-light-ink">
+          سجّل الآن لتعرف المزيد — ولك خصم إضافي {FIRST_TIME_PROMO.percentOff}٪ {FIRST_TIME_PROMO.labelAr}
+        </p>
+        <p className="mt-2 flex flex-wrap items-center gap-2 text-xs text-white/60">
+          <span>بالكود</span>
+          <code className="rounded-lg border border-teal/50 bg-black/30 px-2.5 py-1 text-sm font-black tracking-widest text-white" dir="ltr">
+            {FIRST_TIME_PROMO.code}
+          </code>
+          <span>تصير {fmt(afterPromo)} — يُكتب في نافذة الدفع.</span>
+        </p>
+      </div>
+      <p className="mt-3 text-[11px] leading-5 text-white/40">
+        ولا يُطلب دفعٌ الآن. التسجيل يفتح تفاصيل خطتك كاملة، وخيار شراء دورة مفردة في صفحة مسارك.
+      </p>
+    </div>
   );
 }
 
@@ -784,6 +812,17 @@ export default function Diagnostic() {
     const cp = (result?.resultJson.composed_path as ComposedPathView | null | undefined) ?? null;
     return cp && cp.courses.length > 0 && !cp.matchesPathwayId ? cp : null;
   }, [result]);
+
+  /* مقررات الخطة المعروضة فعلا — بالترتيب الذي تختاره الصفحة نفسها: قالب مركّب
+     فاز، ثم خطة مقررات، ثم مسار جاهز حتى السقف. عددها هو ما يحدد السعر، فلا
+     يُشتقّ في بطاقة السعر اشتقاقا ثانيا قد يفترق عمّا يراه المتعلم فوقها.
+     والتبديل داخل الخطة لا يغيّر العدد — فلا يغيّر السعر. */
+  const planCourseIds = useMemo<string[]>(() => {
+    const composite = (result?.resultJson.composite as CompositeView | null) ?? null;
+    if (composite) return [...composite.courses].sort((a, b) => a.sequence - b.sequence).map((c) => c.courseId);
+    if (composedPrimary) return composedPrimary.courses.map((c) => c.courseId);
+    return (pathwayCourses[topPathway?.id ?? ""] ?? []).slice(0, MAX_PATHWAY_COURSES);
+  }, [result, composedPrimary, topPathway]);
 
   /* المرحلة الحالية — تُسمّى في شريط التقدم. سقط `passedStages` مع صف الدوائر:
      لم يعد شيء يعرض «أيّ مرحلة اكتملت» بعد توحيد المؤشر. */
@@ -1817,12 +1856,10 @@ export default function Diagnostic() {
                     </div>
                   ))}
                 </div>
-                {/* كانت هنا «تفاصيل الاستثمار وقيمة الخصم تظهر في صفحة مسارك بعد اعتماده»،
-                    بينما صفحة المسار نفسها تعرض سعره لأي زائر بلا حساب — ومعه السعر
-                    المشطوب ونسبة التوفير وزر الدفع. فالتأجيل لم يكن سياسة تسعير بل
-                    تناقضا يجعل التشخيص أكثر تكتّما من الموقع الذي ينتمي إليه، ويترك
-                    القارئ يظن أن رقما سيفاجئه بعد أن يُلزم نفسه. نفس الرقم، هنا. */}
-                <PathwayPriceNote pathwayId={topPathway.id} />
+                {/* السعر لم يعد هنا. أول ما يقرؤه المتعلم يجب أن يكون مسارَه لا
+                    ثمنَه: البطاقة الأولى تعرّفه على المسار وحده، ثم يرى ما سيتعلمه،
+                    ثم لماذا رُشّح له، ثم — وقد عرف ما يشتري — يأتي السعر أسفل
+                    الصفحة قبل التسجيل مباشرة (ResultPriceCard). */}
               </div>
             </div>
           </div>
@@ -1859,19 +1896,6 @@ export default function Diagnostic() {
               كاملة بإطار مختلف. فالثانية لا تُعرض إلا حين تضيف مقررين فأكثر لا
               تحويهما الأولى؛ وحين لا تضيف، تُطوى قيمتها التفسيرية (تغطية الفجوات)
               إلى بطاقة «لماذا هذا المسار» حيث موضعها الطبيعي، ولا تتكرر الدورات. */}
-          {/* وبطاقة التسجيل تَعِد بستة بنود خامسها «لماذا هذا المسار» — وكانت كلمة
-              «لماذا» لا ترد ولا مرة في المحتوى المكشوف. المحرك يحسب أسبابه
-              (reasons_ar) وثبات نتيجته (change_makers_ar) وقوة أدلته الخمسة، ثم
-              كان يُشحن كل ذلك إلى المتصفح ولا يُعرض منه شيء إلا قائمة منطوية في
-              أسفل الصفحة. فهذه أول ما ينكشف بعد التسجيل — وفاءً بالوعد كما قُطع. */}
-          <WhyThisPathway
-            reasons={result.reasons}
-            confidence={result.resultJson.confidence as ConfidenceParts | undefined}
-            bandAr={result.confidenceBand}
-            changeMakers={(result.resultJson.change_makers_ar as string[] | undefined) ?? []}
-            gapNote={composedFold.gapNote}
-          />
-
           {/* «ماذا ستحقق من خلال خطتك؟» — ترتيب الأولوية بين ثلاثة مخرجات.
 
               كانت القوالب المركّبة هي التركيب الوحيد، وهي ستة عشر قالبا تغطي
@@ -1928,6 +1952,19 @@ export default function Diagnostic() {
             return cp && cp.courses?.length ? <ComposedPlanCard plan={cp} /> : null;
           })()}
 
+          {/* «لماذا هذا المسار» بعد الدورات لا قبلها. السبب يُقنع من عرف ما
+              يُعرض عليه؛ ومن لم يرَ خطته بعدُ يقرأ التبرير قبل الشيء المبرَّر.
+              وبطاقة التسجيل تَعِد بستة بنود خامسها «لماذا هذا المسار» — والمحرك
+              يحسب أسبابه (reasons_ar) وثبات نتيجته (change_makers_ar) وقوة أدلته
+              الخمسة، فتُعرض هنا وفاءً بالوعد كما قُطع. */}
+          <WhyThisPathway
+            reasons={result.reasons}
+            confidence={result.resultJson.confidence as ConfidenceParts | undefined}
+            bandAr={result.confidenceBand}
+            changeMakers={(result.resultJson.change_makers_ar as string[] | undefined) ?? []}
+            gapNote={composedFold.gapNote}
+          />
+
           {/* «مع المسار لا تأخذ دورات فقط — تأخذ منظومة كاملة» — إثبات قيمة مضغوط قبل الاعتماد،
               بنفس حجم خط القسم. حلّت محل ثلاثة أكورديونات كانت هنا بقرار المالك (2026-08-23):
               «لماذا هذا المسار؟» و«هل هناك معلومات لم نعرفها بعد؟» و«كيف بُنيت توصيتك؟» */}
@@ -1970,6 +2007,9 @@ export default function Diagnostic() {
               </p>
             </div>
           )}
+
+          {/* السعر آخر ما يُقرأ قبل التسجيل — بعد أن عرف المسار ودوراته وسببه */}
+          <ResultPriceCard courseIds={planCourseIds} />
 
           {/* ─── حدّ الظهور ───
               كان ينتهي المقروء عند بطاقة «ماذا ستحصل عليه فعليا؟» — أي عند تسع

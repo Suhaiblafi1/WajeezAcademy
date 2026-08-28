@@ -12,6 +12,7 @@ import { CreditCard, ShieldCheck } from "lucide-react";
 import Modal from "@/components/Modal";
 import { Button } from "@/components/ui/button";
 import { CURRENCIES, setCurrency, useCurrency, usePriceFormatter, type CurrencyCode } from "@/services/currency";
+import { FIRST_TIME_PROMO, isFirstTimePromo, priceAfterPromo } from "@/application/commerce/first-time-promo";
 import { track } from "@/services/analytics";
 
 export default function StripeCheckout({
@@ -26,7 +27,12 @@ export default function StripeCheckout({
   onClose: () => void;
 }) {
   const [card, setCard] = useState("");
+  const [promo, setPromo] = useState("");
   const [processing, setProcessing] = useState(false);
+  /* الكود يُعرض على صفحة النتيجة وصفحة المسار، فلا بد أن يعمل هنا: رقمٌ معروض
+     لا يُطبَّق عند الدفع وعدٌ مكسور. النسبة من مصدر واحد لا من حرفٍ هنا. */
+  const promoApplied = isFirstTimePromo(promo);
+  const payable = promoApplied ? priceAfterPromo(amount) : amount;
   const cur = useCurrency();
   const fmt = usePriceFormatter();
   /* فتح نافذة الدفع = بدء عملية شراء */
@@ -50,11 +56,32 @@ export default function StripeCheckout({
         <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
           <div className="flex items-baseline justify-between">
             <span className="text-sm text-white/60">الإجمالي</span>
-            <span className="text-3xl font-black text-gold-ink">{fmt(amount)}</span>
+            <span className="text-3xl font-black text-gold-ink">
+              {promoApplied && <span className="me-2 text-lg font-bold text-white/35 line-through">{fmt(amount)}</span>}
+              {fmt(payable)}
+            </span>
           </div>
           {cur.code !== "USD" && (
-            <p className="mt-1 text-left text-[11px] text-white/40">يعادل {amount}$ — التحويل بسعر ثابت للعرض</p>
+            <p className="mt-1 text-left text-[11px] text-white/40">يعادل {payable}$ — التحويل بسعر ثابت للعرض</p>
           )}
+          <label className="mt-3 block border-t border-white/5 pt-3">
+            <span className="text-[11px] text-white/50">كود الخصم (اختياري)</span>
+            <input
+              value={promo}
+              onChange={(e) => setPromo(e.target.value.toUpperCase())}
+              placeholder={FIRST_TIME_PROMO.code}
+              dir="ltr"
+              maxLength={24}
+              className={`mt-1.5 w-full rounded-xl border bg-white/[0.04] px-3 py-2 text-left text-sm tracking-widest placeholder:tracking-normal placeholder:text-white/25 focus:outline-none ${
+                promoApplied ? "border-teal-light text-teal-light-ink" : "border-white/15 focus:border-teal-light"
+              }`}
+            />
+            {promoApplied && (
+              <span className="mt-1.5 block text-[11px] font-bold text-teal-light-ink">
+                طُبِّق خصم {FIRST_TIME_PROMO.percentOff}٪ {FIRST_TIME_PROMO.labelAr}
+              </span>
+            )}
+          </label>
           {/* عملة الدفع — تُختار هنا فقط لحظة الدفع، والافتراضي دينار أردني */}
           <label className="mt-3 flex items-center justify-between gap-3 border-t border-white/5 pt-3 text-[11px] text-white/50">
             <span>عملة الدفع</span>
@@ -91,7 +118,7 @@ export default function StripeCheckout({
           disabled={processing || card.replace(/\s/g, "").length < 12}
           className="mt-5 h-12 w-full rounded-xl bg-[#635BFF] font-black text-white hover:bg-[#635BFF]/85"
         >
-          {processing ? "جارٍ تأكيد الدفع…" : `ادفع ${fmt(amount)} الآن`}
+          {processing ? "جارٍ تأكيد الدفع…" : `ادفع ${fmt(payable)} الآن`}
         </Button>
         <p className="mt-3 flex items-center justify-center gap-1.5 text-[11px] text-white/40">
           <ShieldCheck className="h-3.5 w-3.5" />
