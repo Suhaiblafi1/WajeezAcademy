@@ -18,6 +18,8 @@ export interface ComposedCourseView {
   total: number;
   closesGaps: string[];
   onAnchor: boolean;
+  /** «هدفك» أو «فجوة قِسناها» أو «دعم» — يُعرض وسمًا فوق كل مقرر */
+  role?: "goal" | "gap" | "support";
   levelMatch: number;
 }
 export interface ComposedPathView {
@@ -26,8 +28,19 @@ export interface ComposedPathView {
   coveredGaps: string[];
   uncoveredGaps: string[];
   matchesPathwayId: string | null;
+  /** مقررات لم يتّسع لها حجم الخطة — تُعرض «لمرحلة لاحقة» لا تختفي */
+  deferred?: ComposedCourseView[];
   reasons_ar: string[];
 }
+
+/* لماذا وسمٌ لكل مقرر: المتعلم يسأل عن كل سطر «ولمَ هذا؟». والجواب كان مبعثرا
+   بين لون رقم وشارة «من خارج مسارك». الدور يجيب في كلمتين قبل أن يقرأ التفصيل:
+   هذا لهدفك، وهذا لفجوة قِسناها، وهذا يدعم الخطة. */
+const ROLE_AR: Record<NonNullable<ComposedCourseView["role"]>, { label: string; cls: string }> = {
+  goal: { label: "لهدفك", cls: "bg-teal/20 text-teal-light-ink" },
+  gap: { label: "لفجوة قِسناها", cls: "bg-gold/15 text-gold-ink" },
+  support: { label: "يدعم خطتك", cls: "bg-white/[0.06] text-white/55" },
+};
 
 const LEVEL_AR: Record<string, string> = {
   foundational: "تأسيسي",
@@ -117,7 +130,14 @@ export default function ComposedPlanCard({ plan, courseList = true }: { plan: Co
                 {i + 1}
               </span>
               <div className="min-w-0 flex-1">
-                <h3 className="text-sm font-black leading-snug md:text-[15px]">{c.title_ar}</h3>
+                <h3 className="flex flex-wrap items-center gap-2 text-sm font-black leading-snug md:text-[15px]">
+                  {c.title_ar}
+                  {c.role && (
+                    <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-black ${ROLE_AR[c.role].cls}`}>
+                      {ROLE_AR[c.role].label}
+                    </span>
+                  )}
+                </h3>
                 <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-white/45">
                   <span>{LEVEL_AR[c.level] ?? c.level}</span>
                   <span dir="ltr">{c.hours} ساعة</span>
@@ -151,6 +171,32 @@ export default function ComposedPlanCard({ plan, courseList = true }: { plan: Co
           </li>
         ))}
       </ol>
+      )}
+
+      {/* المؤجَّل يُسمّى لا يُلمَّح إليه. «تبقى ٣ جوانب خارج الخطة» جملةٌ تقول
+          إن شيئا نقص ولا تقول ما هو — فيظن المتعلم أن ما رآه كل ما يخصه، أو
+          يظن أننا أخفينا الأفضل. هنا المقرران التاليان باسميهما، ومكانهما
+          صريح: مرحلة تالية لا هذه. */}
+      {courseList && (plan.deferred?.length ?? 0) > 0 && (
+        <div className="mt-4 rounded-2xl border border-dashed border-white/15 bg-white/[0.02] p-3.5 md:p-4">
+          <p className="text-[11.5px] font-black text-white/60">وهذان لمرحلتك التالية — لا لهذه الخطة</p>
+          <p className="mt-1 text-[11px] leading-relaxed text-white/40">
+            يناسبانك أيضا، لكن حشرهما هنا يطيل الخطة ويضعف إنهاءها. نعرضهما كي تعرف ما ينتظرك لا كي تشتريه الآن.
+          </p>
+          <ul className="mt-2.5 space-y-1.5">
+            {plan.deferred!.map((d) => (
+              <li key={d.courseId} className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11.5px] text-white/60">
+                <span className="font-bold text-white/80">{d.title_ar}</span>
+                <span className="text-white/35" dir="ltr">{d.hours} ساعة</span>
+                {d.role && (
+                  <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-black ${ROLE_AR[d.role].cls}`}>
+                    {ROLE_AR[d.role].label}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
       {plan.uncoveredGaps.length > 0 && (

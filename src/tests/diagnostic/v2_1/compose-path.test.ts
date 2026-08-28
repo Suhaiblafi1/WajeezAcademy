@@ -17,6 +17,8 @@ import {
   COMPOSED_MAX_COURSES,
   MAX_OFF_ANCHOR,
 } from '../../../domain/diagnostic/v2_1/compose-path'
+import { pathwayDomainsV2 } from '../../../domain/diagnostic/v2/data'
+import { courseById } from '../../../domain/diagnostic/catalog'
 import { assessDomainsV21, derivePersonaV21 } from '../../../domain/diagnostic/v2_1/engine'
 import type { DecisionContext, SkillState } from '../../../domain/diagnostic/v2/types'
 import type { FactBag } from '../../../domain/diagnostic/types'
@@ -171,5 +173,93 @@ describe('تركيب المسار من المقررات', () => {
   it('حتمي: نفس المدخلات تعطي نفس الخطة', () => {
     const mk = () => composePath(ctxOf(GRAD_AI), { AI: 1, COG: 2, COM: 3, DIG: 3 }).courses.map((c) => c.courseId)
     expect(mk()).toEqual(mk())
+  })
+})
+
+/* الفجوة خادمة للهدف لا بديلة عنه.
+
+   الترتيب في composePath بـ(ملاءمة + قيمة فجوة)، والفجوة المقيسة تُثقل بقوة.
+   فمن هدفه «أول وظيفة» وقِيست له فجوة حادّة في مهارات جانبية، كانت مقررات تلك
+   المهارات تصعد وتُزيح مقررات مجال الهدف نفسه — خطةٌ تعالج نقصا وتُسقط الهدف.
+   هذه تثبت أن الحجز يعمل: نُغرق المتعلم بفجوات خارج مجال هدفه ونطلب الخطة. */
+describe('حماية مجال الهدف من الفجوات الجانبية', () => {
+  const domainsOf = (courseId: string) =>
+    (pathwayDomainsV2[courseById.get(courseId)?.pathway_id ?? ''] ?? []) as string[]
+
+  /* خريج هدفه أول وظيفة — ومجاله المعلن employment_readiness.
+     ثم نقيس له فجوات حادّة (مستوى 1) في مهارات مقررات لا تنتمي إلى مجاله. */
+  const JOB_SEEKER: FactBag = {
+    career_stage: fact('fresh_graduate'),
+    primary_goal: fact('first_job'),
+    employment_status: fact('unemployed_seeking'),
+  } as unknown as FactBag
+
+  const offGoalSlugs = () => {
+    const slugs = new Set<string>()
+    for (const c of catalogCourses) {
+      if (domainsOf(c.course_id).includes('employment_readiness')) continue
+      for (const s of c.skill_slugs) slugs.add(s)
+    }
+    return [...slugs]
+  }
+
+  /* الحالة ليست مخترعة: مُسحت 380 تركيبة (هدف × احتياج × مرحلة) بفجوات حادّة
+     خارج مجال الهدف، فكان أسوأها بلا الحجز صفرَ مقررات في مجال الهدف — وهي
+     هذه بعينها: «أول وظيفة» + احتياج قيادي + خريج حديث، خطةٌ من ستة مقررات
+     ليس فيها مقرر جاهزية توظيف واحد. ومع الحجز صارت أرضية المسح كلها اثنين. */
+  it('«أول وظيفة» لا تخرج منها الجاهزية للتوظيف مهما اشتدّت فجوة جانبية', () => {
+    const measured: Record<string, number> = {}
+    for (const s of offGoalSlugs()) measured[s] = 1
+    const facts = { ...JOB_SEEKER, need_id: fact('need_leadership') } as unknown as FactBag
+    const plan = composePath(ctxOf(facts, measured))
+    const inGoal = plan.courses.filter((c) => domainsOf(c.courseId).includes('employment_readiness'))
+    expect(
+      inGoal.length,
+      `الخطة: ${plan.courses.map((c) => c.title_ar).join(' · ')}`,
+    ).toBeGreaterThanOrEqual(2)
+    expect(inGoal.every((c) => c.role === 'goal')).toBe(true)
+  })
+
+  it('الاحتياج لا يبتلع الهدف: مجال الهدف وحده هو المحجوز', () => {
+    /* لو ضُمّ مجال الاحتياج إلى الهدف لملأ المقاعد وخرج الهدف — وهو ما وقع
+       فعلا قبل الفصل. الحارس يمنع عودة الاتحاد. */
+    const measured: Record<string, number> = {}
+    for (const s of offGoalSlugs()) measured[s] = 1
+    for (const need of ['need_leadership', 'need_direction', 'need_employability']) {
+      const facts = { ...JOB_SEEKER, need_id: fact(need) } as unknown as FactBag
+      const plan = composePath(ctxOf(facts, measured))
+      const inGoal = plan.courses.filter((c) => domainsOf(c.courseId).includes('employment_readiness'))
+      expect(inGoal.length, `احتياج ${need}`).toBeGreaterThanOrEqual(2)
+    }
+  })
+
+  it('كل مقرر يحمل دورا واحدا مفهوما، وسببه يذكره', () => {
+    const plan = composePath(ctxOf(JOB_SEEKER, { cv_writing: 1, interview_skills: 1 }))
+    expect(plan.courses.length).toBeGreaterThan(0)
+    for (const c of plan.courses) {
+      expect(['goal', 'gap', 'support']).toContain(c.role)
+      expect(c.why_ar.trim().length).toBeGreaterThan(5)
+      if (c.role === 'goal') expect(c.why_ar).toContain('هدفك')
+    }
+  })
+
+  it('بلا هدف معلن لا حجز — لا نحمي هدفا لا نعرفه', () => {
+    const explorer: FactBag = { career_stage: fact('other_unsure'), primary_goal: fact('explore') } as unknown as FactBag
+    const plan = composePath(ctxOf(explorer, { cv_writing: 1 }))
+    /* لا انهيار ولا خطة فارغة — والأدوار تبقى مشتقّة */
+    expect(plan.courses.length).toBeGreaterThan(0)
+    for (const c of plan.courses) expect(['goal', 'gap', 'support']).toContain(c.role)
+  })
+
+  it('المؤجَّل يضيف مهارة لا يكررها، ولا يكرر ما في الخطة', () => {
+    const plan = composePath(ctxOf(JOB_SEEKER, { cv_writing: 1, interview_skills: 2 }))
+    const inPlan = new Set(plan.courses.map((c) => c.courseId))
+    const planSkills = new Set(plan.courses.flatMap((c) => courseById.get(c.courseId)?.skill_slugs ?? []))
+    for (const d of plan.deferred) {
+      expect(inPlan.has(d.courseId), d.title_ar).toBe(false)
+      const fresh = (courseById.get(d.courseId)?.skill_slugs ?? []).filter((s) => !planSkills.has(s))
+      expect(fresh.length, `${d.title_ar} لا يضيف مهارة`).toBeGreaterThan(0)
+    }
+    expect(plan.deferred.length).toBeLessThanOrEqual(2)
   })
 })
