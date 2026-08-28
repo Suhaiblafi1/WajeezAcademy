@@ -158,7 +158,7 @@ export const partnerLogos = [
 /* بيانات التواصل الموثقة — واتساب المستشارين هو القناة الرسمية المعتمدة،
    والبريد لدعم عام. المواقع: الرياض وعمّان */
 export const CONTACT = {
-  email: 'support@wajeez.co',
+  email: 'Academy@wajeez.co',
   whatsapp: '962771052222',
   address: 'الرياض — حي الياسمين — شارع أنس بن مالك',
   locations: [

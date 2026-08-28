@@ -7,7 +7,7 @@ import type { PrismaClient, Prisma } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { EnrollmentService } from './enrollment.service'
-import { safeNotify } from './notification.service'
+import { safeNotify, publicSiteUrl } from './notification.service'
 import { getPaymentProvider, verifyPaymentWebhook } from './payments/provider'
 import { getPaymentConfig } from './integrations.service'
 
@@ -158,7 +158,9 @@ export class CommerceService {
 
     const config = await getPaymentConfig(this.prisma)
     const provider = getPaymentProvider(config)
-    const appUrl = process.env.APP_URL ?? 'http://localhost:7100'
+    /* مصدر واحد لأصل الموقع: رابط عودة الدفع كان يسقط إلى localhost في الإنتاج
+       متى غاب APP_URL، تماما كروابط الرسائل. */
+    const appUrl = publicSiteUrl()
     const charge = await provider.createCharge({
       invoiceNumber: order.invoice.number, amount: num(order.total),
       currency: order.currency, descriptionAr: `طلب وجيز ${order.id}`,

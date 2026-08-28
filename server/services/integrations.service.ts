@@ -52,6 +52,12 @@ export async function getPaymentConfig(prisma: PrismaClient): Promise<PaymentCon
   return base
 }
 
+/* عنوان الأكاديمية الرسمي للاستقبال والإرسال — قرار المالك.
+
+   كان الافتراضي سلسلة فارغة، وmail.ts يرفض الإرسال بلا عنوان مرسِل: فمن يفعّل
+   القناة من شاشة التكاملات وينسى الحقل يجد قناةً «مفعّلة» لا ترسل شيئا. */
+export const ACADEMY_EMAIL = 'Academy@wajeez.co'
+
 export async function getEmailConfig(prisma: PrismaClient): Promise<EmailConfig> {
   const row = await prisma.integrationSetting.findUnique({ where: { provider: 'email' } })
   const c = (row?.config ?? {}) as Partial<EmailConfig>
@@ -59,7 +65,7 @@ export async function getEmailConfig(prisma: PrismaClient): Promise<EmailConfig>
     enabled: row?.enabled ?? false,
     host: c.host ?? '', port: Number(c.port ?? 465), secure: c.secure !== false,
     user: c.user || undefined, pass: c.pass || undefined,
-    fromName: c.fromName ?? 'أكاديمية وجيز', fromEmail: c.fromEmail ?? '',
+    fromName: c.fromName ?? 'أكاديمية وجيز', fromEmail: c.fromEmail || ACADEMY_EMAIL,
   }
   /* غشاء البيئة — كل متغير موجود يغلب حقله استقلالا، ووجود المضيف يفعّل القناة */
   const env = process.env

@@ -2075,7 +2075,7 @@ export default function Diagnostic() {
               </p>
               <Button variant="outline" className="mt-4 border-gold/60 text-gold-ink hover:bg-gold/10" asChild>
                 <a
-                  href={`mailto:care@wajeez.com?subject=${encodeURIComponent("أشعرني عند توفر: " + result.unavailableSkills.join("، "))}`}
+                  href={`mailto:Academy@wajeez.co?subject=${encodeURIComponent("أشعرني عند توفر: " + result.unavailableSkills.join("، "))}`}
                 >
                   أشعِرني عند توفرها
                 </a>

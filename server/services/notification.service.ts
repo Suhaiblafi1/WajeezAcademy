@@ -85,9 +85,18 @@ export async function sendDirectEmail(
   }
 }
 
-/** أصل الموقع العام لبناء الروابط في الرسائل — نفس المتغير الذي تستخدمه التجارة */
+/** أصل الموقع العام لبناء الروابط في الرسائل.
+
+    الترتيب مقصود: APP_URL أولا لأنه اختيار صريح، ثم نطاق الإنتاج الذي تحقنه
+    Vercel، ثم المحلي. وبلا الوسط كانت روابط تأكيد البريد ودعوة إنشاء الحساب
+    تُبنى على localhost:7100 في الإنتاج ما لم يُضبط المتغير يدويا — رسالة تصل
+    برابط لا يفتح عند أحد. */
 export function publicSiteUrl(): string {
-  return (process.env.APP_URL ?? 'http://localhost:7100').replace(/\/+$/, '')
+  const explicit = process.env.APP_URL?.trim()
+  if (explicit) return explicit.replace(/\/+$/, '')
+  const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim()
+  if (vercel) return `https://${vercel.replace(/\/+$/, '')}`
+  return 'http://localhost:7100'
 }
 
 const MAX_ATTEMPTS = 3

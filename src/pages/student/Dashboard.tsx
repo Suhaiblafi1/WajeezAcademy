@@ -713,7 +713,7 @@ function SimulatedDashboardBody() {
             </div>
             <p className="mt-2 text-xs leading-6 text-white/55">الدورات وحالاتها وقواعد الفتح ومشروع التخرج</p>
           </Link>
-          <a href="mailto:support@wajeez.com" className="block rounded-3xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-white/30">
+          <a href="mailto:Academy@wajeez.co" className="block rounded-3xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-white/30">
             <div className="flex items-center gap-2 text-sm font-bold text-white/70">
               <LifeBuoy className="h-4 w-4" /> الدعم
             </div>
