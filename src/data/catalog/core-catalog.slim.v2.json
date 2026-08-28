@@ -3184,6 +3184,33 @@
         "الإلقاء والعرض",
         "تقييم أثر التعلم"
       ]
+    },
+    {
+      "course_id": "C-COMX-106",
+      "pathway_id": "PW-COM-001",
+      "sequence": 6,
+      "title_ar": "الإنجليزية للأعمال: من الفهم إلى المشاركة",
+      "subtitle_ar": "إنجليزية العمل اليومية: اجتماع وبريد وعرض قصير",
+      "level_ar": "تأسيسي–تطبيقي",
+      "total_hours": 8,
+      "skill_slugs": [
+        "english_for_work",
+        "cross_cultural_communication",
+        "online_meetings",
+        "clear_expression"
+      ],
+      "skill_ids": [
+        "SK-COM-004",
+        "SK-COM-017",
+        "SK-DIG-006",
+        "SK-COM-002"
+      ],
+      "skill_names_ar": [
+        "الإنجليزية للعمل والتعلم",
+        "التواصل بين الثقافات",
+        "إدارة الاجتماعات الرقمية",
+        "التعبير الواضح"
+      ]
     }
   ],
   "skill_extensions": [

@@ -7,6 +7,16 @@ import { describe, expect, it } from 'vitest'
 import { buildCoursePlan } from '../../domain/diagnostic/composite'
 import { compositeTemplates, courseById, launchPathways, type CompositeTemplate } from '../../domain/diagnostic/catalog'
 import { courses, pathwayCourses, courseFullById } from '../../data/courses'
+import { readFileSync } from 'node:fs'
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+/** عدد المقررات في المصدر المركزي — يُقرأ لا يُكتب رقما */
+const coreCourseCount = (): number => {
+  const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..')
+  const core = JSON.parse(readFileSync(join(root, 'src/data/catalog/core-catalog.v2.json'), 'utf8')) as { courses: unknown[] }
+  return core.courses.length
+}
 
 describe('وحدة مصدر الدورة — الدورة كيان مركزي واحد', () => {
   const venture = compositeTemplates.find((t) => t.template_id === 'TPL-VENTURE-001')!
@@ -42,7 +52,10 @@ describe('وحدة مصدر الدورة — الدورة كيان مركزي و
   })
 
   it('محوّل الواجهة (courses.ts) يشتق اسمه ومساره من الكتالوج المركزي ذاته', () => {
-    expect(courses.length).toBe(100)
+    /* 100 مقرر في المسارات العشرين + مقرر مستقل واحد (C-COMX-106 «الإنجليزية
+       للأعمال») لا يدخل تسلسل مسار جاهز ولا يُرشَّح إلا بفجوة مقيسة. العدد
+       يُشتقّ من المصدر لا يُكتب رقما، فلا يقفل الرقمُ بابَ إضافة مقرر. */
+    expect(courses.length).toBe(coreCourseCount())
     for (const c of courses.slice(0, 20)) {
       const central = courseById.get(c.id)!
       expect(c.name).toBe(central.title_ar)

@@ -34,7 +34,7 @@ export const ACADEMIC_GOVERNANCE: Record<string, Governance> = {
     'ai_for_learning', 'competitive_analysis', 'social_media_strategy', 'ecommerce_basics',
     'legal_basics_business', 'career_transition', 'salary_negotiation', 'mentorship_use',
     'sensemaking', 'curiosity', 'innovation_methods', 'mental_models',
-    'ambiguity_tolerance', 'english_for_work', 'report_writing', 'cross_cultural_communication',
+    'ambiguity_tolerance', 'report_writing', 'cross_cultural_communication',
     'media_literacy', 'dashboard_reading', 'business_intelligence', 'information_search',
     'digital_file_management', 'cloud_collaboration', 'online_meetings', 'digital_productivity',
     'basic_design_literacy', 'digital_wellbeing', 'remote_work_tools', 'parent_child_communication',
@@ -51,14 +51,9 @@ export const ACADEMIC_GOVERNANCE: Record<string, Governance> = {
     'distraction_reduction', 'stress_resilience_nonclinical', 'sleep_routine_awareness', 'mindful_technology_use',
     'motivation_systems', 'healthy_boundaries', 'recovery_planning',
   ].map((slug) => [slug, { academic_status: 'future_catalog_skill', reason_ar: FUTURE_CATALOG_REASON }])),
-  /* QB-M4-009 متقاعد ووجهته هنا: السؤال باق في البنك للتاريخ ولا يُسأل، فقياسه
-     غير حيّ ولا يستدعي تحذير تفعيل. يُرفع هذا البند ويُستأنف السؤال يوم تُضاف
-     دورة إنجليزية — عندها يصير القياس حيّا ويجب أن يُفعَّل أكاديميا فعلا. */
-  english_for_work: {
-    academic_status: 'future_catalog_skill',
-    expected_measured: true,
-    reason_ar: FUTURE_CATALOG_REASON,
-  },
+  /* رُفع البند 2026-08-28: أُضيفت C-COMX-106 «الإنجليزية للأعمال» فصار للمهارة
+     مقرر يُعلّمها، فعاد القياس حيّا وأُعيد تفعيل QB-M4-009 — وهو الشرط الذي
+     كُتب هنا يوم علّقناها. */
   /* مقاسة بلا فعل تخصيص مبرمج — لا تُسأل لمجرد جمع البيانات (قرار 2026-08-19) */
   creative_thinking: {
     academic_status: 'future_personalization_signal',

@@ -1613,19 +1613,19 @@
       "final_status": "active_b2c"
     },
     "QB-M4-009": {
-      "surface": "retired_b2c",
-      "layer21": null,
-      "phase": "none",
-      "action": "retire",
-      "stages": [],
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "keep",
+      "stages": "all",
       "domains": [],
-      "impact_ar": "لا أثر — متقاعد من البنك.",
-      "why_ar": "لا دورة واحدة في الكتالوج تُعلّم الإنجليزية، ومهارتها المسجّلة english_for_work محكومة بحالة future_catalog_skill (صفر تغطية وتدريس). فالقياس هنا يكشف فجوة لا يوجد ما يسدّها. يُعاد تفعيله وتُوجَّه measures إلى english_for_work يوم تُضاف الدورة.",
+      "impact_ar": "فجوة مقيسة قوية تُدخل «الإنجليزية للأعمال» في الخطة المركَّبة.",
+      "why_ar": "الإنجليزية للعمل صارت مهارة يُعلّمها مقرر في الكتالوج — فقياسها يجلب ما يسدّ فجوتها.",
       "measures": [
         "english_for_work",
         "skill_vector"
       ],
-      "final_status": "retired"
+      "final_status": "active_b2c"
     },
     "QB-M4-010": {
       "surface": "b2c",

@@ -1429,12 +1429,14 @@
     },
     "english_for_work": {
       "layers": [
-        "learning_outcome"
+        "diagnostic",
+        "personalization_signal"
       ],
-      "active": false,
-      "diagnostic_active": false,
-      "academic_status": "future_catalog_skill",
-      "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "مهارة مقاسة لا يتطلبها أي مسار حاليًا — إشارة تخصيص موثقة، لا تغيّر اختيار المسار.",
+      "measured_by": "QB-M4-009"
     },
     "ethical_influence": {
       "layers": [

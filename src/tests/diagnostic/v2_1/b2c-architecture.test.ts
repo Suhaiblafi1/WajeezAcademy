@@ -160,8 +160,15 @@ describe('بنية أسئلة B2C — معايير النجاح', () => {
        حذف 2026-08-28 (ب): تقاعد QB-M3A-005 (ملف الأعمال) — حقيقته
        portfolio_evidence بلا قارئ في المحرك، وشروطها الأربعة الوحيدة تقارن
        نصا بأعداد فلا تصدق أبدا. أُثبت ميتا إحصاء (٩ مقاعد) وبنية.
-       active_b2c 66→65 · retired 64→65، والمجموع 205. */
-    expect(counts).toEqual({ active_b2c: 65, deep_only: 10, post_recommendation: 36, institutional: 14, retired: 65, out_of_scope: 15 })
+       active_b2c 66→65 · retired 64→65، والمجموع 205.
+       إعادة 2026-08-28: أُضيفت C-COMX-106 «الإنجليزية للأعمال» إلى الكتالوج،
+       فزال سبب تقاعد QB-M4-009: english_for_work صار يُعلّمها مقرر، وقياسها
+       يجلب ما يسدّ فجوتها بدل أن يكشف نقصا بلا علاج.
+       وكان محسوبا `retired` لا `post_recommendation` رغم أن خطته تقول الثانية:
+       buildQuestionPlan يقهر كل خطة بـretired متى كان active:false في البنك —
+       وهو الصواب، فسؤال موقوف لا يصل المتعلم مهما قالت خطته.
+       active_b2c 65→66 · retired 65→64، والمجموع 205. */
+    expect(counts).toEqual({ active_b2c: 66, deep_only: 10, post_recommendation: 36, institutional: 14, retired: 64, out_of_scope: 15 })
   })
 
   it('كل سؤال نشط في B2C له أثر قراري موثق في الخطة', () => {

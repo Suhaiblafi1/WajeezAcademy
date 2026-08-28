@@ -3567,13 +3567,12 @@
         "english_for_work",
         "skill_vector"
       ],
-      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة.",
+      "decision_impact": "يدخل في gap_vector؛ وفجوته تجلب «الإنجليزية للأعمال» إلى الخطة المركَّبة حين تكون فجوة مقيسة قوية.",
       "sensitivity_level": "low",
       "required_level": "deep",
       "weight": 1.1,
       "reference_anchor": "ESCO",
-      "active": false,
-      "retired_reason_ar": "لا دورة واحدة في الكتالوج تُعلّم الإنجليزية، ومهارتها المسجّلة english_for_work محكومة بحالة future_catalog_skill (صفر تغطية وتدريس). فالقياس هنا يكشف فجوة لا يوجد ما يسدّها. يُعاد تفعيله وتُوجَّه measures إلى english_for_work يوم تُضاف الدورة."
+      "active": true
     },
     {
       "question_id": "QB-M4-010",
