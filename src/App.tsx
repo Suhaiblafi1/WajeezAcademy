@@ -20,6 +20,7 @@ const IS_DEMO_BUILD = import.meta.env.VITE_DEMO_MODE === 'true'
 const Methodology = lazy(() => import('./pages/Methodology'))
 const Diagnostic = lazy(() => import('./pages/Diagnostic'))
 const PathwayPage = lazy(() => import('./pages/Pathway'))
+const CoursePathPage = lazy(() => import('./pages/CoursePath'))
 
 /* البوابات الداخلية تُحمَّل عند الطلب فقط — لا تبطئ الصفحات العامة */
 const StudentDashboard = lazy(() => import('./pages/student/Dashboard'))
@@ -106,6 +107,8 @@ export default function App() {
           <Route path="/pathways" element={<Catalog kind="pathways" />} />
           <Route path="/courses" element={<Catalog kind="courses" />} />
           <Route path="/pathways/:id" element={<PathwayPage />} />
+          {/* مسار يبدأ بدورة واحدة — «تفاصيل الدورة» تفتح هذه لا صفحة المسار كاملا */}
+          <Route path="/build/:courseId" element={<CoursePathPage />} />
           <Route path="/stories" element={<StoriesPage />} />
           <Route path="/trainers" element={<Trainers />} />
           <Route path="/join-trainer" element={<JoinTrainer />} />

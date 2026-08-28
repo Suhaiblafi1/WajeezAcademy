@@ -1,9 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { ArrowLeft, BookOpen, Flame, Route, Search, SlidersHorizontal, Users } from 'lucide-react'
 import { bestsellers, pathways } from '@/data/pathways'
-import { bestsellerCourses, courseCategories, courses, pathwayTrainers, weeksLabel, type Course } from '@/data/courses'
-import CourseModal from '@/components/CourseModal'
+import { bestsellerCourses, courseCategories, courses, pathwayTrainers, weeksLabel } from '@/data/courses'
 import FavoriteButton from '@/components/FavoriteButton'
 import SiteShell from '@/components/SiteShell'
 import SeoHead from '@/components/SeoHead'
@@ -31,7 +30,6 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
   const bestsellerIds = useMemo(() => new Set(bestsellers.map((b) => b.id)), [catalogVersion])
   const bestsellerCourseIds = useMemo(() => new Set(bestsellerCourses.map((b) => b.id)), [catalogVersion])
   const [params, setParams] = useSearchParams()
-  const [modalCourse, setModalCourse] = useState<Course | null>(null)
 
   const q = params.get('q') ?? ''
   const cat = params.get('cat') ?? 'أساسيات'
@@ -251,12 +249,16 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
                 {c.skill}
               </span>
               <div className="mt-auto pt-4">
-                <button
-                  onClick={() => { track('course_viewed', { from: 'catalog', category: c.category }); setModalCourse(c) }}
-                  className="w-full cursor-pointer rounded-lg border border-white/15 py-2 text-xs font-semibold transition group-hover:border-teal/50 group-hover:text-teal-light-ink"
+                {/* التفاصيل تفتح مسارا من هذه الدورة وحدها لا نافذة مقتطفة:
+                    النافذة كانت تعرض المحاور والمخرج فقط، وزرّها الوحيد ينقل
+                    القارئ إلى المسار كاملا — فمن أراد دورة وجد ستّا وسعر مسار. */}
+                <Link
+                  to={`/build/${c.id}`}
+                  onClick={() => track('course_viewed', { from: 'catalog', category: c.category })}
+                  className="block w-full cursor-pointer rounded-lg border border-white/15 py-2 text-center text-xs font-semibold transition group-hover:border-teal/50 group-hover:text-teal-light-ink"
                 >
                   تفاصيل الدورة
-                </button>
+                </Link>
               </div>
             </article>
           ))}
@@ -275,13 +277,6 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
         </Link>
       </div>
 
-      {modalCourse && (
-        <CourseModal
-          course={modalCourse}
-          onClose={() => setModalCourse(null)}
-          onBuy={(c) => { window.location.href = `/pathways/${c.pathwayId}` }}
-        />
-      )}
     </SiteShell>
   )
 }

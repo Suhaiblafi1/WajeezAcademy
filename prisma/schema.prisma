@@ -30,6 +30,7 @@ model User {
   enrollments        Enrollment[]         @relation("EnrollmentUser")
   learnerProfile     LearnerProfile?
   leads              Lead[]               @relation("LeadUser")
+  pathDrafts         LearnerPathDraft[]   @relation("PathDraftUser")
   cvSubmissions      CvSubmission[]
   consentRecords     ConsentRecord[]
   enrollmentRequests EnrollmentRequest[]
@@ -1591,6 +1592,31 @@ model LearnerProfile {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
   user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/**
+ * مسار سمّاه متعلم لنفسه من الدورات — طلبٌ معلَن بلسانه.
+ * لماذا يُخزَّن: الكتالوج يعرض مئة دورة وعشرين مسارا وستة عشر قالبا، وكلها
+ * صممناها نحن. أما ما يركّبه المتعلم لنفسه فهو الدليل الوحيد على تركيبة
+ * يريدها أحد فعلا — وكان يُفقد بإغلاق التبويب. ما تكرر منه يستحق مراجعة
+ * أكاديمية ليصير مسارا معتمدا للعامة.
+ * بلا أي حقل شخصي: لا اسم ولا بريد. `name` اسم المسار لا اسم صاحبه، و`userId`
+ * يُملأ فقط إن كان مسجّلا وقت الحفظ — وليس شرطا.
+ */
+model LearnerPathDraft {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  courseIds String[]
+  /**
+   * pending_review | reviewed | adopted | rejected
+   */
+  status    String   @default("pending_review")
+  source    String   @default("course_path_builder")
+  userId    String?  @db.Uuid
+  createdAt DateTime @default(now())
+  user      User?    @relation("PathDraftUser", fields: [userId], references: [id])
+
+  @@index([status, createdAt])
 }
 
 model Lead {

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link } from 'react-router'
 import {
   Sparkles, Compass, Route, BadgeCheck, BrainCircuit, Target,
   FileCheck, Quote, ChevronDown, Menu, X, ArrowLeft,
@@ -9,14 +9,13 @@ import {
 } from 'lucide-react'
 import { bestsellers, pathwayById, pathwayCategory } from '@/data/pathways'
 import { getCatalogVersion, onCoreCatalogInstalled } from '@/data/core-catalog-source'
-import { bestsellerCourses, courseById, pathwayTrainers, weeksLabel, type Course } from '@/data/courses'
+import { bestsellerCourses, courseById, pathwayTrainers, weeksLabel } from '@/data/courses'
 import { faqs } from '@/data/siteContent'
 import { CONTACT } from '@/data/stories'
 import { track } from '@/services/analytics'
 import { usePublishedContent } from '@/services/public-content'
 import SeoHead from '@/components/SeoHead'
 import ThemeToggle from '@/components/ThemeToggle'
-import CourseModal from '@/components/CourseModal'
 import FavoriteButton from '@/components/FavoriteButton'
 import Modal from '@/components/Modal'
 import EcosystemNote from '@/components/EcosystemNote'
@@ -759,8 +758,6 @@ function Bestsellers() {
   const catalogVersion = useSyncExternalStore(onCoreCatalogInstalled, getCatalogVersion)
   const [pwCat, setPwCat] = useState('الكل')
   const [crCat, setCrCat] = useState('الكل')
-  const [modalCourse, setModalCourse] = useState<Course | null>(null)
-  const navigate = useNavigate()
   const pwRailRef = useRef<HTMLDivElement>(null)
   const crRailRef = useRef<HTMLDivElement>(null)
   // في RTL المحتوى الزائد يكون يسارا؛ scrollBy النسبي يعمل في كل المتصفحات
@@ -1000,9 +997,10 @@ function Bestsellers() {
               </span>
             )}
             <div className="mt-auto pt-4">
-              <button onClick={() => { track('course_viewed', { category: c.category }); setModalCourse(c) }} className="w-full cursor-pointer rounded-lg border border-white/15 py-2 text-xs font-semibold transition group-hover:border-teal/50 group-hover:text-teal-light-ink">
+              {/* تفتح مسارا من هذه الدورة وحدها — لا نافذة مقتطفة ولا المسار كاملا */}
+              <Link to={`/build/${c.id}`} onClick={() => track('course_viewed', { category: c.category })} className="block w-full cursor-pointer rounded-lg border border-white/15 py-2 text-center text-xs font-semibold transition group-hover:border-teal/50 group-hover:text-teal-light-ink">
                 تفاصيل الدورة
-              </button>
+              </Link>
             </div>
           </article>
         ))}
@@ -1036,14 +1034,6 @@ function Bestsellers() {
         </Link>
       </div>
 
-      {/* نافذة تفاصيل الدورة */}
-      {modalCourse && (
-        <CourseModal
-          course={modalCourse}
-          onClose={() => setModalCourse(null)}
-          onBuy={(c) => navigate(`/pathways/${c.pathwayId}`)}
-        />
-      )}
     </section>
   )
 }

@@ -21,6 +21,7 @@ import { registerTrainerPortalRoutes } from './routes/trainer-portal.routes'
 import { registerAdminLearningRoutes } from './routes/admin-learning.routes'
 import { registerLearningPortalRoutes } from './routes/learning-portal.routes'
 import { registerPublicCatalogRoutes } from './routes/public.routes'
+import { registerPathDraftRoutes } from './routes/path-drafts.routes'
 import { registerOperationsRoutes } from './routes/operations.routes'
 import { registerSupportRoutes } from './routes/support.routes'
 import { registerNotificationRoutes } from './routes/notifications.routes'
@@ -149,6 +150,7 @@ export async function buildApp(prisma: PrismaClient) {
   registerAdminLearningRoutes(app, prisma)
   registerLearningPortalRoutes(app, prisma)
   registerPublicCatalogRoutes(app, prisma)
+  registerPathDraftRoutes(app, prisma)
   registerOperationsRoutes(app, prisma)
   registerSupportRoutes(app, prisma)
   registerNotificationRoutes(app, prisma)
