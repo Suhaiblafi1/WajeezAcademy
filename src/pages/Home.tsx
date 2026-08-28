@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { Link } from 'react-router'
 import {
-  Sparkles, Compass, Route, BadgeCheck, BrainCircuit, Target,
+  Sparkles, Compass, Route, BadgeCheck, Network, Target,
   FileCheck, Quote, ChevronDown, Menu, X, ArrowLeft,
   Clock, User, Award, GraduationCap, Building2, Landmark,
   CheckCircle2, Flame, ChevronLeft, ChevronRight, BookOpen,
@@ -407,10 +407,15 @@ function DiagnosticTeaser() {
               </div>
             ) : (
               <div className="story-fade text-center">
+                {/* الأيقونة تشرح ما يليها: الدماغ والدوائر تقول «ذكاء اصطناعي»
+                    وهي ليست الحالة. الحالة أن مهاراته ستُقاس ثم تُرتَّب في مسار
+                    — فخريطةُ مهاراتٍ موصولةٍ بمسار أصدق. */}
                 <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-teal/12 ring-1 ring-teal/25">
-                  <BrainCircuit className="h-8 w-8 text-teal-ink" />
+                  <Network className="h-8 w-8 text-teal-ink" />
                 </div>
-                <h3 className="mt-5 text-2xl font-bold leading-relaxed">سمعناك — صورتك بدأت تتضح.</h3>
+                {/* «سمعناك — صورتك بدأت تتضح» تصف شعورا لا خطوة، ولا تقول له ماذا
+                    يفعل الآن ولا لماذا. هذه تضعه في مكانه وتسمّي ما يلي. */}
+                <h3 className="mt-5 text-2xl font-bold leading-relaxed">أنت في المكان الصحيح. الآن نبني خطتك.</h3>
                 {/* قراءة واحدة عميقة مشتقة من إجاباته — سطر واحد يختصر، لا صندوق يشتت */}
                 {insights.length > 0 && (
                   <p className="mx-auto mt-4 max-w-md text-base font-bold leading-8 text-teal-light-ink md:text-lg">
@@ -418,7 +423,7 @@ function DiagnosticTeaser() {
                   </p>
                 )}
                 <p className="mx-auto mt-3 max-w-sm text-xs leading-6 text-muted-foreground">
-                  هذه إشارة أولية فقط — التشخيص الكامل يحوّلها إلى مسار مفسّر بمخرج عملي وموعد واضح.
+                  أجب عن أسئلة أعمق عن هدفك وخبرتك ومهاراتك، لنحدّد ما تحتاجه من دورات مرتّبة في مسار واحد.
                 </p>
                 <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
                   <Link to="/diagnostic" className="btn-teal px-8 py-4">

@@ -4,6 +4,8 @@ import {
   ArrowRight,
   ArrowLeft,
   Compass,
+  ListChecks,
+  ScanSearch as SearchIcon,
   ShieldCheck,
   Clock3,
   Sparkles,
@@ -1627,20 +1629,35 @@ export default function Diagnostic() {
             } | null) ?? null;
             const isExploratory = result.resultJson.kind === "exploratory_direction";
             return (
+              /* العنوان يصف حالة بياناتنا لا حالة المتعلم.
+                 كان «اتجاهك ما زال يتشكّل»: جملةٌ تضع النقص فيه — وكأنه يحتاج
+                 أن ينضج قبل أن نستطيع خدمته. والحقيقة أن إجاباته حتى الآن لا
+                 تكفينا نحن، وهذا وصفٌ لنا لا حكمٌ عليه. والفرق ليس تلطّفا:
+                 الأول يوحي بالانتظار، والثاني يوحي بخطوة تالية — وهي موجودة.
+                 والأيقونة تبعت المعنى: العدسة فوق خريطة ناقصة تقول «ينقصنا
+                 قياس» لا البوصلة التي تقول «أنت تائه». */
               <section className="story-fade mx-auto max-w-xl px-5 py-20 text-center md:py-24">
                 <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-teal/15">
-                  <Compass className="h-7 w-7 text-teal-light-ink" />
+                  {isExploratory
+                    ? <SearchIcon className="h-7 w-7 text-teal-light-ink" />
+                    : <Compass className="h-7 w-7 text-teal-light-ink" />}
                 </span>
                 <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
                   <Badge className="border border-teal/40 bg-teal/10 text-teal-light-ink">اكتمل التشخيص</Badge>
                   <Badge className="bg-teal font-black text-on-teal">
-                    {isExploratory ? "اتجاه استكشافي" : "مراجعة مستشار"}
+                    {isExploratory ? "نحتاج قياسا أعمق" : "مراجعة مستشار"}
                   </Badge>
                 </div>
                 <h2 className="mt-5 text-2xl font-black leading-snug md:text-3xl">
-                  {isExploratory ? "اتجاهك ما زال يتشكّل — ونرفض أن نخمّن عليك" : "حالتك تستحق مستشارًا بشريًا قبل الترشيح"}
+                  {isExploratory ? "إجاباتك الحالية لا تكفي بعد لبناء خطة نثق بها" : "حالتك تستحق مستشارًا بشريًا قبل الترشيح"}
                 </h2>
-                <div className="mx-auto mt-4 max-w-md space-y-2 text-sm leading-loose text-white/60">
+                {isExploratory && (
+                  <p className="mx-auto mt-4 max-w-md text-sm leading-loose text-white/70">
+                    لا نريد أن نرشّح لك مسارا عاما لا يعكس فجواتك الفعلية. أجب عن استبيان أعمق مبني على
+                    مواقف عملية، وسنحدّد المهارات التي تحتاجها ثم نبني لك خطة دورات مناسبة.
+                  </p>
+                )}
+                <div className="mx-auto mt-4 max-w-md space-y-2 text-sm leading-loose text-white/55">
                   {result.reasons.slice(0, 3).map((r) => (
                     <p key={r}>{r}</p>
                   ))}
@@ -1673,24 +1690,66 @@ export default function Diagnostic() {
                   </div>
                 )}
 
-                <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
+                {/* الخطوة التالية أولا، وإعادةُ التشخيص ثانية، والمستشار سطرا.
+                    كان الترتيب معكوسا: زرٌّ ذهبي واحد يقول «ابدأ من جديد» —
+                    أي أعِد ما لم ينجح — ثم مستشار. والاستبيان التفصيلي موجود
+                    أصلا (جولة التدقيق) ولم يكن يُعرض هنا، وهو المكان الذي
+                    يحتاجه فيه المتعلم أكثر من أي مكان. */}
+                {/* الشرط canDeepen ليس زينة: النتيجة المستعادة من الجهاز تُعرض
+                    بلا جلسة حيّة (showSavedResult يصفّره)، فزرٌّ يستدعي
+                    startDeepeningRound عليها لا يفعل شيئا — ضغطةٌ في فراغ أسوأ
+                    من زرٍّ غائب. ولمن استعاد نتيجته تبقى إعادةُ التشخيص. */}
+                {isExploratory && canDeepen && !deepUnavailable && (
+                  <div className="mt-9">
+                    <Button
+                      size="lg"
+                      className="h-12 rounded-full bg-gold px-8 font-black text-on-gold hover:bg-gold/90"
+                      onClick={startDeepeningRound}
+                    >
+                      <ListChecks className="ml-2 h-4 w-4" />
+                      ابدأ الاستبيان التفصيلي
+                    </Button>
+                    <p className="mt-2.5 text-[11px] text-white/40">مواقف عملية تقيس مهاراتك مباشرة — لا إعادة لما أجبت عنه.</p>
+                  </div>
+                )}
+                {isExploratory && canDeepen && deepUnavailable && (
+                  <p className="mx-auto mt-9 max-w-md rounded-2xl border border-gold/35 bg-gold/[0.07] px-5 py-3 text-xs leading-relaxed text-gold-ink">
+                    لا تكفي أسئلتنا المتبقية لاستبيان تفصيلي مفيد على إجاباتك الحالية — فإعادة التشخيص
+                    بإجابات أدقّ أنفع لك من أسئلة لا تضيف.
+                  </p>
+                )}
+                <div className={`flex flex-wrap items-center justify-center gap-3 ${isExploratory && canDeepen ? "mt-5" : "mt-9"}`}>
                   <Button
                     size="lg"
-                    className="h-12 rounded-full bg-gold px-8 font-black text-on-gold hover:bg-gold/90"
+                    variant={isExploratory && canDeepen ? "outline" : "default"}
+                    className={isExploratory && canDeepen
+                      ? "h-12 rounded-full border-white/20 px-8 font-bold text-white/75"
+                      : "h-12 rounded-full bg-gold px-8 font-black text-on-gold hover:bg-gold/90"}
                     onClick={restart}
                   >
                     <RefreshCcw className="ml-2 h-4 w-4" />
-                    ابدأ التشخيص من جديد
+                    {isExploratory ? "أعد التشخيص السريع" : "ابدأ التشخيص من جديد"}
                   </Button>
+                  {isExploratory && (
+                    <Button size="lg" variant="ghost" className="h-12 rounded-full px-6 font-bold text-white/55" asChild>
+                      <Link to="/pathways">استعرض المسارات بنفسك</Link>
+                    </Button>
+                  )}
+                </div>
+                {/* المستشار سطرٌ لمن يحتاجه لا زرٌّ بحجم الخطوة التالية */}
+                <p className="mt-5 text-xs text-white/40">
+                  أو{" "}
                   <AdvisorContact
-                    label="تحدث مع مستشار مهني"
+                    label="تحدّث مع مستشار مهني"
+                    icon={<></>}
+                    className="font-bold text-white/60 underline underline-offset-4 transition hover:text-[#6EC7D1]"
                     text={
                       isExploratory
-                        ? "مرحبا، أكملت مؤشر وجيز وكانت نتيجتي «اتجاه استكشافي» — أريد مستشارا يساعدني على حسم اتجاهي."
+                        ? "مرحبا، أكملت مؤشر وجيز ولم تكفِ إجاباتي لبناء خطة — أريد مستشارا يساعدني."
                         : "مرحبا، أكملت مؤشر وجيز وأحالني التشخيص لمستشار — أريد مراجعة حالتي."
                     }
                   />
-                </div>
+                </p>
                 <p className="mt-4 text-[11px] leading-relaxed text-white/40">
                   هذا تشخيص تعليمي مهني: ليس تقييما نفسيا أو طبيا. لا نرشّح مسارا بلا دليل كافٍ — هذه مسؤولية لا ضعف.
                 </p>
