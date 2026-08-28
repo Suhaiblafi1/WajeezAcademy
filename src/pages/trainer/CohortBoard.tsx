@@ -57,6 +57,9 @@ export default function CohortBoard() {
   const [reviewNote, setReviewNote] = useState<Record<string, string>>({});
   const [gradeForm, setGradeForm] = useState<Record<string, string>>({});
   const [feedbackForm, setFeedbackForm] = useState<Record<string, string>>({});
+  /* أدوات الشعبة: رابط مادة، وعنوان تكليف ونوعه — لكل شعبة على حدة */
+  const [materialLink, setMaterialLink] = useState<Record<string, { title: string; url: string }>>({});
+  const [taskForm, setTaskForm] = useState<Record<string, { title: string; type: string }>>({});
 
   const load = useCallback(async () => {
     setLoading(true); setOffline(null);
@@ -92,6 +95,41 @@ export default function CohortBoard() {
 
   const markAttendance = (sessionId: string, enrollmentId: string, status: string) =>
     act(() => apiPost(`/api/trainer/sessions/${sessionId}/attendance`, { enrollmentId, status }), "سُجل الحضور وأُعيد حساب التقدم");
+
+  /* رفع كرّاسة أو فيديو لمادة الشعبة — نفس نمط تسجيل الجلسة: تسجيل ثم رفع موقّع */
+  const uploadMaterialFile = (cohortId: string, file: File) =>
+    act(async () => {
+      const res = await apiPost<{ uploadUrl?: string }>(`/api/trainer/cohorts/${cohortId}/materials`, {
+        title: file.name.replace(/\.[^.]+$/, ""), kind: "file",
+        file: { originalName: file.name, mime: file.type || "application/octet-stream", sizeBytes: file.size },
+      });
+      if (res.uploadUrl) {
+        const put = await fetch(`${API_BASE}${res.uploadUrl}`, {
+          method: "PUT", credentials: "include",
+          headers: { "content-type": file.type || "application/octet-stream" },
+          body: file,
+        });
+        if (!put.ok) throw new ApiError("upload_failed", "تعذر رفع الملف بعد تسجيل المادة", put.status);
+      }
+    }, "أُضيفت المادة ورُفعت — تظهر للمسجلين في الشعبة");
+
+  const addMaterialLink = (cohortId: string) => {
+    const f = materialLink[cohortId];
+    if (!f?.title.trim() || !f.url.trim()) return;
+    return act(
+      () => apiPost(`/api/trainer/cohorts/${cohortId}/materials`, { title: f.title.trim(), kind: "link", externalUrl: f.url.trim() }),
+      "أُضيف الرابط إلى مواد الشعبة",
+    ).then(() => setMaterialLink({ ...materialLink, [cohortId]: { title: "", url: "" } }));
+  };
+
+  const createAssessment = (cohortId: string) => {
+    const f = taskForm[cohortId];
+    if (!f?.title.trim() || !f.type) return;
+    return act(
+      () => apiPost(`/api/trainer/cohorts/${cohortId}/assessments`, { title: f.title.trim(), type: f.type, maxScore: 100 }),
+      "أُنشئ التكليف — يظهر للمسجلين ويعود إليك تسليمهم في طابور المراجعة",
+    ).then(() => setTaskForm({ ...taskForm, [cohortId]: { title: "", type: "assignment" } }));
+  };
 
   const uploadRecording = (sessionId: string, file: File) =>
     act(async () => {
@@ -269,6 +307,96 @@ export default function CohortBoard() {
                                 </div>
                               </div>
                             )}
+
+                            {/* ── مواد الشعبة وتكاليفها ──
+                                كانت المواد معلَنة في نوع البيانات ولا تُعرض في الصفحة أصلا،
+                                والمدرب يصحّح تكليفا لا يستطيع تأليفه. الاثنان هنا. */}
+                            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                              <h3 className="flex items-center gap-2 text-sm font-black text-white/75">
+                                <Upload className="h-4 w-4 text-teal-light-ink" /> مواد الشعبة
+                              </h3>
+                              {c.materials.length > 0 ? (
+                                <ul className="mt-3 space-y-1.5">
+                                  {c.materials.map((m) => (
+                                    <li key={m.id} className="flex items-center justify-between gap-3 text-xs text-white/65">
+                                      <span className="min-w-0 truncate">{m.title}</span>
+                                      {m.readUrl && (
+                                        <a href={`${API_BASE}${m.readUrl}`} target="_blank" rel="noreferrer"
+                                          className="shrink-0 font-bold text-teal-light-ink underline decoration-dotted underline-offset-4">
+                                          افتح
+                                        </a>
+                                      )}
+                                    </li>
+                                  ))}
+                                </ul>
+                              ) : (
+                                <p className="mt-2 text-[11px] text-white/45">لا مواد بعد — ارفع كرّاسة أو أضف رابطا.</p>
+                              )}
+
+                              <div className="mt-4 flex flex-wrap items-center gap-2">
+                                <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-teal/45 px-3.5 py-1.5 text-[11px] font-bold text-teal-light-ink transition hover:bg-teal/10">
+                                  <Upload className="h-3 w-3" /> ارفع ملفا (كرّاسة أو فيديو)
+                                  <input type="file" className="hidden" disabled={busy}
+                                    onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadMaterialFile(c.id, f); e.target.value = ""; }} />
+                                </label>
+                              </div>
+
+                              <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+                                <input
+                                  aria-label="عنوان الرابط" placeholder="عنوان المادة"
+                                  value={materialLink[c.id]?.title ?? ""}
+                                  onChange={(e) => setMaterialLink({ ...materialLink, [c.id]: { title: e.target.value, url: materialLink[c.id]?.url ?? "" } })}
+                                  className="rounded-lg border border-white/12 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/30 focus:border-teal focus:outline-none"
+                                />
+                                <input
+                                  aria-label="رابط المادة" dir="ltr" placeholder="https://…"
+                                  value={materialLink[c.id]?.url ?? ""}
+                                  onChange={(e) => setMaterialLink({ ...materialLink, [c.id]: { title: materialLink[c.id]?.title ?? "", url: e.target.value } })}
+                                  className="rounded-lg border border-white/12 bg-black/30 px-3 py-2 text-left text-xs text-white placeholder:text-white/30 focus:border-teal focus:outline-none"
+                                />
+                                <button
+                                  disabled={busy || !materialLink[c.id]?.title?.trim() || !materialLink[c.id]?.url?.trim()}
+                                  onClick={() => void addMaterialLink(c.id)}
+                                  className="cursor-pointer rounded-lg border border-white/15 px-4 py-2 text-[11px] font-bold text-white/70 transition hover:border-teal/50 hover:text-teal-light-ink disabled:opacity-40"
+                                >
+                                  أضف رابطا
+                                </button>
+                              </div>
+
+                              <div className="mt-5 border-t border-white/10 pt-4">
+                                <h3 className="flex items-center gap-2 text-sm font-black text-white/75">
+                                  <ClipboardCheck className="h-4 w-4 text-gold-ink" /> تكليف جديد
+                                </h3>
+                                <p className="mt-1 text-[11px] text-white/45">
+                                  ما تؤلّفه هنا يصل المسجلين، ويعود إليك تسليمهم في طابور المراجعة أدناه.
+                                </p>
+                                <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto_auto]">
+                                  <input
+                                    aria-label="عنوان التكليف" placeholder="عنوان الواجب أو المشروع"
+                                    value={taskForm[c.id]?.title ?? ""}
+                                    onChange={(e) => setTaskForm({ ...taskForm, [c.id]: { title: e.target.value, type: taskForm[c.id]?.type ?? "assignment" } })}
+                                    className="rounded-lg border border-white/12 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/30 focus:border-teal focus:outline-none"
+                                  />
+                                  <select
+                                    aria-label="نوع التكليف"
+                                    value={taskForm[c.id]?.type ?? "assignment"}
+                                    onChange={(e) => setTaskForm({ ...taskForm, [c.id]: { title: taskForm[c.id]?.title ?? "", type: e.target.value } })}
+                                    className="rounded-lg border border-white/12 bg-black/30 px-3 py-2 text-xs text-white focus:border-teal focus:outline-none [&>option]:bg-surface"
+                                  >
+                                    <option value="assignment">واجب</option>
+                                    <option value="quiz">اختبار</option>
+                                    <option value="project">مشروع تخرج</option>
+                                  </select>
+                                  <button
+                                    disabled={busy || !taskForm[c.id]?.title?.trim()}
+                                    onClick={() => void createAssessment(c.id)}
+                                    className="cursor-pointer rounded-lg border border-gold/50 px-4 py-2 text-[11px] font-bold text-gold-ink transition hover:bg-gold/10 disabled:opacity-40"
+                                  >
+                                    أنشئ
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         )}
                       </div>

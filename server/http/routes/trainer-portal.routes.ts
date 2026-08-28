@@ -8,6 +8,7 @@ import { TrainerChangeService } from '../../services/trainer-change.service'
 import { TrainerReviewService } from '../../services/trainer-review.service'
 import { EarningsService } from '../../services/earnings.service'
 import { requirePermission } from '../auth-plugin'
+import { AuthError } from '../../services/auth.service'
 
 export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const changes = new TrainerChangeService(prisma)
@@ -33,6 +34,33 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
       },
     })
     return full
+  })
+
+  /* مهام التهيئة تُكمَل من صاحبها.
+
+     أربع مهام تُزرع عند القبول المشروط، ويُغلَق «توقيع العقد» تلقائيا عند
+     التوقيع — والثلاث الباقية لم يكن لها طريق إغلاق في الشيفرة كلها: لا مسار
+     ولا زر ولا حتى نداء إداري. فتبقى معلّقة في ملف كل مدرب إلى الأبد.
+     الإغلاق هنا للمدرب على مهامّه هو وحدها؛ و«توقيع العقد» مستثنى لأنه يُغلَق
+     بواقعة موثقة لا بإقرار صاحبه. */
+  app.post('/api/trainer/me/onboarding-tasks/:key/complete', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'إتمام مهمة تهيئة من مهامي' },
+  }, async (req) => {
+    const { key } = z.object({ key: z.string().min(2).max(64) }).parse(req.params)
+    if (key === 'sign_contract') {
+      throw new AuthError('not_self_completable', 'توقيع العقد يُغلق بتوقيعه لا بإقرارك', 409)
+    }
+    const profile = await changes.profileForUser(req.auth!.userId)
+    const task = await prisma.trainerOnboardingTask.findUnique({
+      where: { profileId_key: { profileId: profile.id, key } },
+    })
+    if (!task) throw new AuthError('not_found', 'لا مهمة بهذا المفتاح في ملفك', 404)
+    if (task.doneAt) return task
+    return prisma.trainerOnboardingTask.update({
+      where: { profileId_key: { profileId: profile.id, key } },
+      data: { doneAt: new Date() },
+    })
   })
 
   app.get('/api/trainer/me/qualifications', {

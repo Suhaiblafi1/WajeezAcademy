@@ -263,6 +263,43 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     return reply.status(201).send(await cohorts.registerRecording(req.auth!.userId, sessionId, body))
   })
 
+  /* ── أدوات الدورة في يد مدربها ──
+
+     المدرب كان يستطيع تصحيح الواجب ولا يستطيع تأليفه، ويستطيع رفع تسجيل الجلسة
+     ولا يستطيع رفع كرّاستها. السبب أن كلا الفعلين كان خلف صلاحية إدارية عامة
+     (material.manage و cohort.manage) تُعطي حاملها كل الشعب — فمنحُها للمدرب
+     يفتح له شعب غيره. فالفعلان هنا بصلاحيته هو (trainer.cohort.operate) خلف
+     assertCohortTrainer: شعبته وحدها، لا شعبة سواه. */
+
+  app.post('/api/trainer/cohorts/:id/materials', {
+    preHandler: requirePermission('trainer.cohort.operate'),
+    schema: { tags: ['trainer-ops'], summary: 'رفع مادة لشعبتي — فيديو أو كرّاسة أو ملخص أو رابط' },
+  }, async (req, reply) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      title: z.string().min(2), kind: z.enum(['file', 'link', 'summary_audio', 'summary_text']),
+      moduleId: z.string().optional(), externalUrl: z.string().url().optional(),
+      file: z.object({ originalName: z.string(), mime: z.string(), sizeBytes: z.number().int().positive() }).optional(),
+    }).parse(req.body)
+    await enrollments.assertCohortTrainer(req.auth!.userId, id)
+    return reply.status(201).send(await cohorts.registerMaterial(req.auth!.userId, id, body))
+  })
+
+  app.post('/api/trainer/cohorts/:id/assessments', {
+    preHandler: requirePermission('trainer.cohort.operate'),
+    schema: { tags: ['trainer-ops'], summary: 'إنشاء واجب أو اختبار أو مشروع لشعبتي' },
+  }, async (req, reply) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      title: z.string().min(3), type: z.enum(['assignment', 'quiz', 'project']),
+      moduleId: z.string().optional(), maxScore: z.number().int().min(1).optional(),
+      passScore: z.number().int().optional(), dueAt: z.coerce.date().optional(), rubricId: z.string().uuid().optional(),
+      items: z.array(z.object({ prompt: z.string().min(2), kind: z.enum(['text', 'choice', 'file']).optional(), maxScore: z.number().int().optional() })).optional(),
+    }).parse(req.body)
+    await enrollments.assertCohortTrainer(req.auth!.userId, id)
+    return reply.status(201).send(await assessments.createAssessment(req.auth!.userId, { ...body, cohortId: id }))
+  })
+
   app.get('/api/trainer/grading-queue', {
     preHandler: requirePermission('trainer.cohort.operate'),
     schema: { tags: ['trainer-ops'], summary: 'طابور المراجعة — تسليمات شعبي المعلقة فقط' },

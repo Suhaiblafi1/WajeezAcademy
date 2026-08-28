@@ -3,7 +3,7 @@ import { Link } from "react-router";
 import { AlertTriangle, CheckCircle2, ChevronLeft, Circle, ClipboardCheck, GitPullRequest, GraduationCap, ListChecks, Loader2, ServerOff, Users, Video } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import { trainerIdentity } from "./trainer-identity";
-import { apiGet } from "@/services/api";
+import { apiGet, apiPost } from "@/services/api";
 import TrainerWorkQueue from "@/components/TrainerWorkQueue";
 import AtRiskList from "@/components/AtRiskList";
 import { buildWorkQueue } from "@/application/trainer/work-queue";
@@ -44,6 +44,10 @@ function RealTrainerHome({ name }: { name: string }) {
   const [cohorts, setCohorts] = useState<RealCohort[] | null>(null);
   const [queue, setQueue] = useState<RealQueueItem[] | null>(null);
   const [failed, setFailed] = useState(false);
+  /* مهام التهيئة الحقيقية من ملف المدرب. كانت الصفحة تعرض مهاما من localStorage
+     (بيانات استعراض) بينما مهامه الفعلية في TrainerOnboardingTask لا يقرؤها أحد
+     ولا يملك أحد طريقا لإغلاقها — أربع مهام تُزرع عند القبول وتبقى معلّقة أبدا. */
+  const [tasks, setTasks] = useState<{ key: string; title: string; doneAt: string | null }[]>([]);
   /* نبضة كل دقيقة: «جلستك الآن» تتغيّر مع الوقت بلا إعادة تحميل.
      القيمة في حالة لا في الرسم — Date.now() في الرسم غير نقي. */
   const [now, setNow] = useState(() => Date.now());
@@ -59,7 +63,17 @@ function RealTrainerHome({ name }: { name: string }) {
     ])
       .then(([c, q]) => { setCohorts(c); setQueue(q); })
       .catch(() => setFailed(true));
+    apiGet<{ onboardingTasks?: { key: string; title: string; doneAt: string | null }[] }>("/api/trainer/me")
+      .then((me) => setTasks(me.onboardingTasks ?? []))
+      .catch(() => { /* المهام رفاهية — غيابها لا يمنع الشعب */ });
   }, []);
+
+  const completeTask = async (key: string) => {
+    try {
+      await apiPost(`/api/trainer/me/onboarding-tasks/${encodeURIComponent(key)}/complete`, {});
+      setTasks((prev) => prev.map((t) => (t.key === key ? { ...t, doneAt: new Date().toISOString() } : t)));
+    } catch { /* الرسالة تظهر عند إعادة التحميل — لا نخترع نجاحا */ }
+  };
 
   if (failed)
     return (
@@ -112,6 +126,48 @@ function RealTrainerHome({ name }: { name: string }) {
             حتى يصلك أول إسناد يمكنك مراجعة المحتوى واقتراح تحسينات عليه من{" "}
             <Link to="/trainer/proposals" className="font-bold text-teal-light-ink underline decoration-dotted underline-offset-4 hover:text-white">«اقتراحاتي»</Link>.
           </p>
+        </section>
+      )}
+
+      {/* مهام تهيئتك — من ملفك عند الخادم لا من هذا الجهاز */}
+      {tasks.length > 0 && tasks.some((t) => !t.doneAt) && (
+        <section className="mb-8 rounded-3xl border border-teal/25 bg-teal/[0.05] p-6">
+          <div className="flex items-center justify-between">
+            <p className="flex items-center gap-2 text-sm font-black">
+              <ListChecks className="h-4 w-4 text-teal-light-ink" /> مهام تهيئتك كمدرب
+            </p>
+            <span className="text-xs font-bold text-teal-light-ink">
+              {tasks.filter((t) => t.doneAt).length} / {tasks.length}
+            </span>
+          </div>
+          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
+            <div className="h-full rounded-full bg-teal transition-all"
+              style={{ width: `${(tasks.filter((t) => t.doneAt).length / tasks.length) * 100}%` }} />
+          </div>
+          <div className="mt-4 space-y-2">
+            {tasks.map((t) => {
+              /* توقيع العقد يُغلق بواقعة موثقة لا بإقرار صاحبه — فلا زر له */
+              const selfCompletable = t.key !== "sign_contract" && !t.doneAt;
+              return (
+                <button
+                  key={t.key}
+                  onClick={selfCompletable ? () => void completeTask(t.key) : undefined}
+                  disabled={!selfCompletable}
+                  className={`flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-right transition ${
+                    selfCompletable ? "cursor-pointer hover:border-teal/40" : "cursor-default"
+                  }`}
+                >
+                  {t.doneAt
+                    ? <CheckCircle2 className="h-4.5 w-4.5 shrink-0 text-teal-ink" />
+                    : <Circle className="h-4.5 w-4.5 shrink-0 text-white/25" />}
+                  <span className={`text-sm ${t.doneAt ? "text-white/50 line-through" : "font-bold text-white/85"}`}>{t.title}</span>
+                  {!t.doneAt && t.key === "sign_contract" && (
+                    <span className="mr-auto text-[10px] font-bold text-white/40">يُغلق بتوقيع العقد</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </section>
       )}
 
