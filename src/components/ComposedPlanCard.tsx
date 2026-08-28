@@ -1,5 +1,6 @@
 import { Route as RouteIcon, CheckCircle2, ArrowUpRight } from "lucide-react";
 import { pathwayPriceFor, courseById, coursePriceOf } from "@/data/courses";
+import { skillNamesAr } from "@/domain/diagnostic/catalog";
 import { usePriceFormatter } from "@/services/currency";
 
 /* بطاقة الخطة المركّبة — تُعرض حين يقيّم المتعلم جوانبه.
@@ -60,7 +61,14 @@ function PlanPrice({ courseIds }: { courseIds: string[] }) {
   );
 }
 
-export default function ComposedPlanCard({ plan }: { plan: ComposedPathView }) {
+/* البطاقة لها موضعان:
+   ١) بطاقة مستقلة أسفل الخطة، حين تضيف مقررات لا تحويها الخطة المعروضة — فتسرد
+      دوراتها لأنها هي التي تعرّف بها.
+   ٢) رأس التوصية حين تكون خطة المقررات هي الأولى — وحينها الدورات نفسها تُسرد
+      بعدها مباشرة في «ماذا ستحقق من خلال خطتك؟» بتفصيل أوفى وبأداة استبدال.
+      فسردها هنا يجعل المتعلم يقرأ ست بطاقات ثم يقرأ الستّ نفسها. لذا `courseList`.
+*/
+export default function ComposedPlanCard({ plan, courseList = true }: { plan: ComposedPathView; courseList?: boolean }) {
   if (!plan || plan.courses.length === 0) return null;
   const covered = plan.coveredGaps.length;
 
@@ -89,6 +97,13 @@ export default function ComposedPlanCard({ plan }: { plan: ComposedPathView }) {
         {covered > 0 && <> وتغطي <b className="text-teal-light-ink">{covered}</b> من الجوانب التي قلت إنك دونها.</>}
       </p>
 
+      {!courseList && (
+        <p className="mt-3 text-[11.5px] leading-relaxed text-white/45">
+          وتفصيل كل دورة — ما تخرج به منها ولماذا هي فيها — أدناه، ولك أن تستبدل أيّها شئت.
+        </p>
+      )}
+
+      {courseList && (
       <ol className="mt-5 space-y-2.5">
         {plan.courses.map((c, i) => (
           <li key={c.courseId} className="rounded-2xl border border-white/10 bg-white/[0.03] p-3.5 md:p-4">
@@ -113,17 +128,30 @@ export default function ComposedPlanCard({ plan }: { plan: ComposedPathView }) {
                     </span>
                   )}
                 </div>
-                {c.closesGaps.length > 0 && (
-                  <p className="mt-1.5 flex items-start gap-1.5 text-[11.5px] leading-relaxed text-teal-light-ink">
-                    <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                    تسدّ {c.closesGaps.length} من الجوانب التي قلت إنك دونها
-                  </p>
-                )}
+                {/* تُسمّى الجوانب لا تُعدّ: «تسدّ ٤ من الجوانب» كانت تتكرر بنصّها
+                    تحت كل دورة، فلا تقول للقارئ لماذا هذه بالذات.
+                    والشرط على الأسماء المعروفة لا على عدد الرموز: رمز بلا اسم
+                    عربي يُسقَط، فسطر «تسدّ ما قلت إنك دونه في:» بلا شيء بعده
+                    أسوأ من غيابه. */}
+                {(() => {
+                  const named = skillNamesAr(c.closesGaps);
+                  if (named.length === 0) return null;
+                  return (
+                    <p className="mt-1.5 flex items-start gap-1.5 text-[11.5px] leading-relaxed text-teal-light-ink">
+                      <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                      <span>
+                        تسدّ ما قلت إنك دونه في: {named.slice(0, 3).join("، ")}
+                        {named.length > 3 && <> وغيرها</>}
+                      </span>
+                    </p>
+                  );
+                })()}
               </div>
             </div>
           </li>
         ))}
       </ol>
+      )}
 
       {plan.uncoveredGaps.length > 0 && (
         <p className="mt-4 flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-[11.5px] leading-relaxed text-white/55">

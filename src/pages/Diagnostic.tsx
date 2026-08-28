@@ -41,6 +41,7 @@ import { ResultErrorBoundary } from "@/components/ResultErrorBoundary";
 import SkillFamilyGrid, { type FamilyToRate } from "@/components/SkillFamilyGrid";
 import ComposedPlanCard, { type ComposedPathView, type ComposedCourseView } from "@/components/ComposedPlanCard";
 import { Q } from "@/domain/diagnostic/v2_1/maps";
+import { skillNamesAr, courseById as catalogCourseById } from "@/domain/diagnostic/catalog";
 import {
   type DiagQuestion,
   type DiagOption,
@@ -139,19 +140,50 @@ function clearProgress() {
 /* ═══════════ رحلة الدورات القابلة للتخصيص — «ماذا ستحقق من خلال خطتك؟» ═══════════ */
 
 /* سبب وجود المقرر في خطة مركّبة من المقررات — بلغة المتعلم لا بلغة المحرك.
-   الفجوة المسدودة هي المعلومة الحقيقية هنا، والخروج عن المجال الأول يُقال صراحة
-   لأنه القرار الوحيد في الخطة الذي قد يفاجئ قارئها. */
+
+   كان السطر «يسدّ ٤ من فجواتك المقيسة · في صميم مجالك الأول» — ويظهر بنصّه هذا
+   حرفيا تحت كل دورة في الخطة. عددٌ متساوٍ ووصفٌ ثابت لا يفرّقان دورة عن أخرى،
+   فسؤال «لماذا هذه بالذات؟» يبقى بلا جواب رغم وجود سطر يدّعي أنه جوابه.
+   والمحرك يعرف أيّ الفجوات تسدّها كلٌّ منها بالاسم (closesGaps رموزُ مهارات)،
+   فتُسمّى. وتُذكر الصفة الثابتة «في صميم مجالك» فقط حين تنتفي — أي حين يخرج
+   المقرر عن مجاله الأول — لأن ذلك وحده ما قد يفاجئ القارئ. */
 function composedReason(c: ComposedCourseView): string {
   const bits: string[] = [];
-  if (c.closesGaps.length > 0) {
+  const names = skillNamesAr(c.closesGaps);
+  if (names.length > 0) {
+    const shown = names.slice(0, 3).join('، ');
+    const rest = names.length - 3;
     bits.push(
-      c.closesGaps.length === 1
-        ? 'يسدّ فجوة واحدة من فجواتك المقيسة'
-        : `يسدّ ${c.closesGaps.length} من فجواتك المقيسة`,
+      names.length === 1
+        ? `يسدّ فجوتك في ${shown}`
+        : `يسدّ فجواتك في ${shown}${rest > 0 ? ` و${rest === 1 ? 'واحدة' : `${rest}`} غيرها` : ''}`,
     );
   }
-  bits.push(c.onAnchor ? 'في صميم مجالك الأول' : 'خارج مجالك الأول — أُدرج لفجوة قوية');
-  return `${bits.join(' · ')}.`;
+  if (!c.onAnchor) bits.push('من خارج مجالك الأول — أُدرج لفجوة قوية');
+  return bits.length > 0 ? `${bits.join(' · ')}.` : 'يبني الأساس الذي تقوم عليه بقية خطتك.';
+}
+
+/* سبب وجود المقرر في خطة قالب مركّب.
+
+   القالب يعطي كل مقرر وصفَ دوره فقط: «مقرر أساسي في هذه الخطة» — وهو نصّ واحد
+   يتكرر تحت ستة مقررات، فيسأل القارئ «ولماذا هذا بالذات؟» ولا يجد جوابا.
+   الجواب موجود على جهازه أصلا: مهارات المقرر تتقاطع مع فجواته المقاسة، والفارق
+   بين مقرر وآخر هو أيّ فجوة يسدّ. فإن عُرف التقاطع سُمّي، وإلا بقي وصف الدور
+   كما هو — لا نخترع سببا حيث لا دليل. */
+function templateCourseReason(courseId: string, gapSlugs: Set<string>, fallbackAr: string): string {
+  const skills = catalogCourseById.get(courseId)?.skill_slugs ?? [];
+  const named = skillNamesAr(skills.filter((s) => gapSlugs.has(s)));
+  if (named.length === 0) return fallbackAr;
+  const shown = named.slice(0, 3).join("، ");
+  const rest = named.length - 3;
+  const head =
+    named.length === 1
+      ? `يسدّ فجوتك في ${shown}`
+      : `يسدّ فجواتك في ${shown}${rest > 0 ? ` و${rest === 1 ? "واحدة" : rest} غيرها` : ""}`;
+  /* وصف الدور يبقى فقط حين يضيف معنى — الشرطي والجسري يفسّران سبب الإدراج،
+     أما «أساسي» فهو حال الأغلب فلا يفرّق. */
+  const roleAdds = !fallbackAr.startsWith("مقرر أساسي");
+  return roleAdds ? `${head} · ${fallbackAr}` : `${head}.`;
 }
 
 /* ─────────── الخطة المركّبة قابلة للاستبدال — لا للحذف ولا للإضافة ───────────
@@ -735,6 +767,14 @@ export default function Diagnostic() {
       shown,
     );
   }, [result, topPathway]);
+
+  /* رموز الفجوات المقاسة — من أشرطة المهارات التي يرسلها المحرك مع النتيجة.
+     تُستخدم لتسمية ما يسدّه كل مقرر في خطة القوالب، حيث لا يعطي القالبُ إلا
+     وصفَ دورٍ واحدا يتكرر تحت مقرراته كلها. */
+  const measuredGapSlugs = useMemo(() => {
+    const bars = (result?.resultJson.skill_bars as { slug: string; isGap: boolean }[] | undefined) ?? [];
+    return new Set(bars.filter((b) => b.isGap).map((b) => b.slug));
+  }, [result]);
 
   /* خطة المقررات هي التوصية الأولى متى وُجدت وتجاوزت مسارا واحدا: لا قالب فاز،
      وقيّم المتعلم جوانبه، ولا تطابق مقرراتُها مسارا قائما. وحين تكون كذلك تحمل
@@ -1692,8 +1732,10 @@ export default function Diagnostic() {
           })()}
 
           {/* رأس التوصية حين تكون خطة المقررات هي الأولى — بدل رأس مسار جاهز
-              فوق قائمة مقررات رُكّبت من أكثر من مسار. */}
-          {composedPrimary && <ComposedPlanCard plan={composedPrimary} />}
+              فوق قائمة مقررات رُكّبت من أكثر من مسار.
+              بلا سرد الدورات: كانت تسردها كلها هنا ثم تسردها «ماذا ستحقق من خلال
+              خطتك؟» بعدها بتفصيل أوفى — ست بطاقات تُقرأ مرتين على شاشة واحدة. */}
+          {composedPrimary && <ComposedPlanCard plan={composedPrimary} courseList={false} />}
 
           {/* بطاقة التوصية الأولى للمسار القياسي — لا قالب فاز ولا خطة مقررات */}
           {((result.resultJson.composite as CompositeView | null) ?? null) === null && !composedPrimary && (
@@ -1851,7 +1893,9 @@ export default function Diagnostic() {
               return (
                 <ComposedSwap
                   planCourseIds={ordered.map((c) => c.courseId)}
-                  reasons={Object.fromEntries(ordered.map((c) => [c.courseId, c.reason_ar]))}
+                  reasons={Object.fromEntries(
+                    ordered.map((c) => [c.courseId, templateCourseReason(c.courseId, measuredGapSlugs, c.reason_ar)]),
+                  )}
                   pathwayIds={compositeView.represented_pathway_ids}
                   gaps={result.gaps}
                   delivery={pathwayDelivery(topPathway.id)}

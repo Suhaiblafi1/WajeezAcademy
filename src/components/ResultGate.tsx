@@ -3,13 +3,16 @@
    وكل ما بعد الحدّ يُغلَّف بهذا المكوّن: المحتوى الحقيقي يبقى في مكانه ويُغطّى
    بضباب blur(8px) + opacity .4 بلا أي نص شارح خلفه — الضباب بلا معالم،
    والمستخدم يعرف ما ينتظره من لافتة التسجيل لا من خلفها.
-   اللافتة ونموذج التسجيل في التدفق الطبيعي أعلى المنطقة المضبّبة — ينزلان مع
-   الصفحة أثناء التمرير ولا يلتصقان بالشاشة، والنموذج بلا شريط تمرير داخلي.
+   اللافتة ونموذج التسجيل يعومان فوق المنطقة المضبّبة لا قبلها: طبقة مطلقة
+   تغطي المضبّب، والبطاقة داخلها لاصقة (sticky) فترافق القارئ وهو يمرّر التشويق
+   المضبّب بدل أن تختفي فوق رأس الصفحة. الضباب خلفها لا تحتها — وهذا هو الفرق:
+   قبل ذلك كانت البطاقة تدفع المضبّب لأسفل فيبدو الضباب كأنه قسم تالٍ منفصل،
+   والآن هو خلفية البطاقة نفسها. والنموذج بلا شريط تمرير داخلي.
    النموذج هو بوابة الدخول/التسجيل الرسمية (AuthGate — نفس بوابة /auth بحقولها
    وتحققها واستعادة كلمة المرور كاملة) بعد أن كانت نموذجا مختصرا خاصا.
-   بعد التسجيل: الضباب يزول blur(8px)→blur(0) على ٤٠٠ms، واللافتة تنطوي
-   (ارتفاعها وشفافيتها إلى صفر على ٥٠٠ms) فلا قفزة تخطيط — نفس الصفحة،
-   بلا انتقال ولا إعادة تحميل. المحتوى المضبّب aria-hidden + inert،
+   بعد التسجيل: الضباب يزول blur(8px)→blur(0) على ٤٠٠ms، واللافتة تتلاشى
+   (شفافيتها إلى صفر على ٥٠٠ms) ثم تُرفع — ولأنها طبقة مطلقة فلا قفزة تخطيط
+   أصلا: ما تحتها لم يتحرك قط. نفس الصفحة، بلا انتقال ولا إعادة تحميل. المحتوى المضبّب aria-hidden + inert،
    وقبل التسجيل لا يُطبع. */
 
 import { useEffect, useState, type ReactNode } from "react";
@@ -47,17 +50,34 @@ export default function ResultGate({ revealed, onDone, children }: ResultGatePro
   }, [revealed]);
 
   return (
-    <div className="relative">
-      {/* لافتة التسجيل ونموذجها — في التدفق الطبيعي أعلى المنطقة المضبّبة،
-          ينزلان مع الصفحة أثناء التمرير (لا التصاق ولا تمرير داخلي).
-          بعد التسجيل تنطوي الرقعة تدريجيا (max-height + opacity) فلا قفزة تخطيط */}
+    <div className="relative isolate grid grid-cols-1">
+      {/* كل ما بعد حدّ الظهور — محتوى حقيقي في مكانه، يغطّيه قبل التسجيل ضباب
+          بلا معالم: لا يقرؤه قارئ الشاشة ولا يصله Tab ولا يُطبع ولا يُحدد.
+          يأتي أولا في الشجرة لأن البطاقة تعوم فوقه، لا تسبقه. */}
+      <div
+        aria-hidden={revealed ? undefined : true}
+        inert={revealed ? undefined : true}
+        className={`col-start-1 row-start-1 self-start ${
+          revealed
+            ? "opacity-100 blur-[0px] motion-safe:transition-[filter,opacity] motion-safe:duration-[400ms]"
+            : "pointer-events-none select-none opacity-40 blur-[8px] print:hidden"
+        }`}
+      >
+        {children}
+      </div>
+
+      {/* اللافتة ونموذجها — تشغل الخليةَ نفسها في الشبكة فتعوم فوق المضبّب،
+          والبطاقة داخلها لاصقة فتبقى في مرمى البصر ما دام القارئ داخل المنطقة.
+          والتراكب بالشبكة لا بـabsolute عمدا: ارتفاع الغلاف يصير أطولَ الاثنين،
+          فالنموذج — وهو أطول من المضبّب على شاشة الجوال — لا يفيض على ما بعد
+          البوابة ويحجب التذييل. بعد التسجيل تتلاشى ثم تُرفع، وما تحتها لم يتحرك. */}
       {!cardGone && (
         <div
-          className={`relative z-10 overflow-hidden print:hidden motion-safe:transition-[max-height,opacity] motion-safe:duration-500 ${
-            revealed ? "pointer-events-none max-h-0 opacity-0" : "max-h-[2200px] opacity-100"
+          className={`col-start-1 row-start-1 z-10 print:hidden motion-safe:transition-opacity motion-safe:duration-500 ${
+            revealed ? "pointer-events-none opacity-0" : "opacity-100"
           }`}
         >
-          <div className="mx-auto max-w-md px-4 pb-8 pt-10">
+          <div className="sticky top-4 mx-auto max-w-md px-4 pb-8 pt-6 sm:top-8">
             {/* لافتة «ما ينتظرك» — العنوان والبنود الستة المعتمدة، تسبق النموذج الرسمي */}
             <div className="relative overflow-hidden rounded-3xl border border-[#FABC05]/35 bg-surface/95 p-5 shadow-[0_24px_70px_-18px_rgba(0,0,0,0.85)] ring-1 ring-white/5 backdrop-blur-xl">
               {/* توهج علوي خفيف بلون العلامة — لمسة عمق بلا تشويش */}
@@ -94,20 +114,6 @@ export default function ResultGate({ revealed, onDone, children }: ResultGatePro
           </div>
         </div>
       )}
-
-      {/* كل ما بعد حدّ الظهور — محتوى حقيقي في مكانه، يغطّيه قبل التسجيل ضباب
-          بلا معالم: لا يقرؤه قارئ الشاشة ولا يصله Tab ولا يُطبع ولا يُحدد */}
-      <div
-        aria-hidden={revealed ? undefined : true}
-        inert={revealed ? undefined : true}
-        className={
-          revealed
-            ? "opacity-100 blur-[0px] motion-safe:transition-[filter,opacity] motion-safe:duration-[400ms]"
-            : "pointer-events-none select-none opacity-40 blur-[8px] print:hidden"
-        }
-      >
-        {children}
-      </div>
     </div>
   );
 }

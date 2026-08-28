@@ -115,6 +115,10 @@ export let skillSlugs = new Set<string>()
 export let launchPathways: CatalogPathway[] = []
 export let catalogCourses: CatalogCourse[] = []
 export let courseById = new Map<string, CatalogCourse>()
+/* فهرس رمز المهارة ← اسمها العربي — يُبنى كسولا ويُبطَل عند كل تثبيت لقطة.
+   يُعلن هنا لا مع دواله لأن install() يعمل عند تحميل الوحدة، فإعلانه بعده
+   يجعل تصفيره داخله وصولا قبل التهيئة (TDZ). */
+let skillNameIndex: Map<string, string> | null = null
 export let compositeTemplates: CompositeTemplate[] = []
 export let optionEffects: OptionEffectsFile['option_effects'] = {}
 export let keywordClassifiers: OptionEffectsFile['keyword_classifiers'] = {}
@@ -139,6 +143,7 @@ function install(payload: CatalogSnapshotPayload, label: string): void {
   launchPathways = payload.coreCatalog.launch_pathways
   catalogCourses = payload.coreCatalog.courses
   courseById = new Map(catalogCourses.map((c) => [c.course_id, c]))
+  skillNameIndex = null
   compositeTemplates = payload.templates.templates
   optionEffects = {
     ...payload.optionEffects.option_effects,
@@ -218,6 +223,44 @@ export function optionIndexOfId(optionId: string): number {
 export function optionIdFromText(question: BankQuestion, text: string): string | null {
   const idx = question.options_ar.indexOf(text)
   return idx >= 0 ? optionIdAt(question, idx) : null
+}
+
+/* رمز المهارة ← اسمها العربي، من مقررات الكتالوج الحي (skill_slugs مقابل
+   skill_names_ar) لأن الكتالوج لا يحمل جدول مهارات مستقلا.
+
+   وُجد لأن صفحة النتيجة كانت تقول تحت كل دورة «يسدّ ٤ من فجواتك المقيسة» —
+   العدد نفسه تحت الدورات الست، فقياسٌ على ٦٨ خطة و٣٩١ مقررا: ١٢٨ سببا مميزا
+   من ٣٩١ فقط. الفجوات مسمّاةً تعطي ٣٩١ من ٣٩١.
+
+   يُبنى كسولا ويُبطَل مع كل تثبيت لقطة (installCatalogSnapshot). */
+function skillIndex(): Map<string, string> {
+  if (skillNameIndex) return skillNameIndex
+  const m = new Map<string, string>()
+  for (const c of catalogCourses) {
+    c.skill_slugs.forEach((slug, i) => {
+      const ar = c.skill_names_ar[i]
+      if (ar && !m.has(slug)) m.set(slug, ar)
+    })
+  }
+  skillNameIndex = m
+  return m
+}
+
+/** اسم المهارة بالعربية من رمزها — يسقط على الرمز نفسه إن لم يُعرف */
+export function skillNameAr(slug: string): string {
+  return skillIndex().get(slug) ?? slug
+}
+
+/** أسماء عربية لقائمة رموز مهارات: بلا تكرار، وبترتيبها، ويُسقط ما لم يُعرف
+    اسمه العربي — عرض رمز إنجليزي للمتعلم أسوأ من حذفه. */
+export function skillNamesAr(slugs: readonly string[]): string[] {
+  const idx = skillIndex()
+  const out: string[] = []
+  for (const s of slugs) {
+    const ar = idx.get(s)
+    if (ar && !out.includes(ar)) out.push(ar)
+  }
+  return out
 }
 
 export function pathwaySkills(pathwayId: string): { slug: string; nameAr: string }[] {

@@ -84,6 +84,14 @@ const DAY_LABELS: Record<string, string> = {
 }
 const DATE_LABELS: Record<string, string> = { soon: "خلال شهر إلى 3 أشهر", mid: "خلال 3 إلى 6 أشهر", year: "خلال سنة" }
 
+/* ثلاثة من المنظومة لا تُعطى لمن يشتري دورة مفردة — فهي فرق الشراءَين لا قائمة
+   عامة. تُعرض تحت زر الدفع مباشرة حيث القرار، لا في صندوق أسفل الصفحة. */
+const PATHWAY_ONLY_PERKS = [
+  { icon: Headphones, t: "ملخصات كتب وجيز الصوتية", d: "ملخصات الكتب المرتبطة بمسارك — تسمعها ثم تختبر نفسك فيها" },
+  { icon: BarChart3, t: "خريطة مهارات قبل وبعد", d: "مستواك 0–5 في كل مهارة قبل المسار وبعده — بالقياس لا بالانطباع" },
+  { icon: UserCheck, t: "مستشار نجاح يرافقك", d: "متابعة أسبوعية ورسالة مباشرة عند أي تعثر" },
+] as const
+
 /* ─────────── نافذة الدفع (Stripe) ─────────── */
 function StripeCheckout({
   title,
@@ -403,8 +411,10 @@ export default function PathwayPage() {
             </p>
           </div>
 
-          {/* التشخيص: دعوة للزائر الجديد — وإعادة تخصيص لمن أكمل تشخيصه سابقا (بلا إعادة تشخيص) */}
-          {!report && (
+          {/* الدعوة تظهر على كل مسار ليس مسارَ تشخيصه: الزائر الجديد يُدعى للتشخيص،
+             ومن تشخّص سابقا يُدعى للعودة لنتيجته. أما مسار تشخيصه هو فيرى التأكيد
+             والتقرير أدناه بدلا منها. */}
+          {diagTopId !== pathway.id && (
             <div className="story-fade mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-dashed border-teal/40 bg-teal/5 px-6 py-4">
               <p className="text-sm leading-relaxed text-white/70">
                 <span className="font-black text-[#6EC7D1]">لست متأكدا أن هذا مسارك الأنسب؟ </span>
@@ -417,13 +427,16 @@ export default function PathwayPage() {
               </Button>
             </div>
           )}
-          {report && (
+          {/* التأكيد لا يظهر إلا على مسار تشخيصه نفسه.
+              كان يظهر على كل مسار جاهز يفتحه بعد التشخيص ليقول له «تستعرض مسارا
+              مختلفا عن الذي اعتمده تشخيصك» — وهي جملة لا تخدمه: هو يعلم أنه يتصفح
+              مسارا آخر، وقولها يحوّل التصفح إلى مخالفة. والصفحة نفسها مسار جاهز
+              معروض للجميع، لا نتيجة شخصية. */}
+          {report && diagTopId === pathway.id && (
             <div className="story-fade mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-teal/40 bg-teal/[0.06] px-5 py-3">
               <p className="flex items-center gap-2 text-xs font-bold leading-relaxed text-white/75">
                 <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-light-ink" />
-                {diagTopId === pathway.id
-                  ? "هذا المسار اعتمده تشخيصك — بُني على إجاباتك أنت."
-                  : "تستعرض مسارا مختلفا عن الذي اعتمده تشخيصك."}
+                هذا المسار اعتمده تشخيصك — بُني على إجاباتك أنت.
               </p>
               <Link
                 to="/diagnostic"
@@ -435,8 +448,9 @@ export default function PathwayPage() {
             </div>
           )}
 
-          {/* تقريره الشخصي — مطوي افتراضيا في تبويب صغير */}
-          {report && (
+          {/* تقريره الشخصي — مطوي افتراضيا، وعلى مسار تشخيصه وحده:
+              تقرير «ما فهمناه عنك» جزء من نتيجته لا من صفحة مسار جاهز. */}
+          {report && diagTopId === pathway.id && (
             <details className="story-fade group mt-6 rounded-2xl border border-[#38A7B4]/35 bg-gradient-to-b from-panel/60 to-transparent">
               <summary className="flex cursor-pointer list-none items-center gap-2 px-5 py-3 text-sm font-black text-[#6EC7D1] [&::-webkit-details-marker]:hidden">
                 <FileText className="h-4 w-4" />
@@ -549,7 +563,7 @@ export default function PathwayPage() {
                 <div className="relative flex flex-col rounded-2xl border border-gold/30 bg-white/[0.03] p-5">
                   <span className="absolute left-3 top-3 rounded-full bg-gold/15 px-2.5 py-0.5 text-[10px] font-black text-gold-ink">الأوفر</span>
                   <p className="font-black text-sm">المسار كاملا</p>
-                  <p className="mt-1 text-xs text-white/50">كل الدورات + التشخيص الكامل + المنظومة التسع أدناه</p>
+                  <p className="mt-1 text-xs text-white/50">كل الدورات + التشخيص الكامل + المنظومة الست أدناه</p>
                   <div className="mt-4 flex items-end gap-2">
                     <span className="text-2xl font-black text-white">{fmt(pathwayTotal)}</span>
                     {savingPct > 0 && <span className="mb-0.5 text-sm text-white/45 line-through">{fmt(separateCost)}</span>}
@@ -565,6 +579,26 @@ export default function PathwayPage() {
                     <CreditCard className="ml-2 h-4 w-4" />
                     ادفع عبر Stripe
                   </Button>
+                  {/* كان أسفل الزر فراغ في صندوق أطول من محتواه. وثلاثة من عناصر
+                      «المنظومة» التسعة أدناه هي في الحقيقة فرق بين شراء دورة وشراء
+                      مسار — لا تُعطى لمن يشتري دورة واحدة — فمكانها هنا لا في قائمة
+                      عامة أسفل الصفحة. بقيت ستة هناك. */}
+                  <div className="mt-4 border-t border-white/10 pt-3.5">
+                    <p className="text-[11px] font-black text-gold-ink">ومعه ثلاثة لا تأتي مع الدورة المفردة:</p>
+                    <ul className="mt-2 space-y-2">
+                      {PATHWAY_ONLY_PERKS.map((perk) => (
+                        <li key={perk.t} className="flex items-start gap-2.5">
+                          <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-gold/15">
+                            <perk.icon className="h-3.5 w-3.5 text-gold-ink" />
+                          </span>
+                          <span className="min-w-0">
+                            <span className="block text-[12px] font-black leading-snug text-white/90">{perk.t}</span>
+                            <span className="block text-[10.5px] leading-relaxed text-white/45">{perk.d}</span>
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               </div>
               <p className="mt-4 text-center text-[11px] text-white/40">دفع آمنا عبر Stripe — يصلك تأكيد فوري على بريدك وتُفتح منصة الطالب الخاصة بك</p>
@@ -580,13 +614,10 @@ export default function PathwayPage() {
             <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {[
                 { icon: MonitorPlay, t: "دورات مسجلة + جلسات مباشرة", d: "وحدات فيديو وجلسة حية مع المدرب ومهمة تطبيقية لكل دورة" },
-                { icon: Headphones, t: "ملخصات كتب وجيز الصوتية", d: "اسمع ملخصات الكتب المرتبطة بمسارك — ثم اختبر نفسك فيها" },
                 { icon: ClipboardCheck, t: "واجبات تُراجع بشريا", d: "مدربك يقرأ واجبك ويعطيك تغذية راجعة عملية — لا تصحيحا آليا" },
                 { icon: FolderKanban, t: "مشروع تخرج حقيقي", d: "تبني مخرجا على واقعك وتقدمه للمراجعة قبل الاعتماد" },
                 { icon: BadgeCheck, t: "شهادة موثقة بشروط إنجاز", d: "مرتبطة بالحضور والاختبار والمشروع — لا شهادة مشاهدة" },
-                { icon: BarChart3, t: "خريطة مهارات قبل وبعد", d: "ترى مستواك 0–5 في كل مهارة قبل المسار وبعده" },
                 { icon: RouteIcon, t: "خطة تقدم شخصية", d: "خطوة تالية واضحة بعد المسار — ماذا تتعلم بعده ولماذا" },
-                { icon: UserCheck, t: "مستشار نجاح يرافقك", d: "متابعة أسبوعية ورسالة مباشرة عند أي تعثر" },
                 { icon: Briefcase, t: "منظومة ما بعد الإتمام", d: "لوحة وظائف وتوصيات مهنية وبرنامج سفراء وجيز" },
               ].map((b) => (
                 <div key={b.t} className="flex items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.04] p-2.5">
