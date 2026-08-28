@@ -170,6 +170,7 @@ export class PublicCatalogService {
           pathway_id: link?.pathwayId ?? '',
           sequence: link?.sequence ?? 1,
           title_ar: v?.titleAr ?? '',
+          ...(v?.termEn ? { title_term_en: v.termEn } : {}),
           ...(v?.legacyTitleAr ? { legacy_title_ar: v.legacyTitleAr } : {}),
           ...(v?.shortPromiseAr ? { short_promise_ar: v.shortPromiseAr } : {}),
           ...(v?.descriptionAr ? { description_ar: v.descriptionAr } : {}),

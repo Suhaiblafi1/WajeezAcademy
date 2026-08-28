@@ -91,6 +91,7 @@ export async function buildSnapshotFromDb(
       pathway_id: home?.pathwayId ?? '',
       sequence: home?.sequence ?? 1,
       title_ar: v?.titleAr ?? '',
+      title_term_en: v?.termEn ?? undefined,
       subtitle_ar: v?.shortPromiseAr ?? undefined,
       /* نص المشروع الختامي — يقرؤه المتعلم في صفحة الدورة وبطاقة الخطة */
       summative_assessment_ar: v?.project?.descriptionAr ?? undefined,

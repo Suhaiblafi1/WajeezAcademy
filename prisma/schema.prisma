@@ -266,6 +266,12 @@ model CourseVersion {
   courseId            String
   version             Int
   titleAr             String
+  /**
+   * المصطلح المهنيّ المعروف بالإنجليزية — يُعرض سطرا ثانويا تحت العنوان لا
+   * داخله. اختياريّ: لا يُذكر إلا حيث يكون الإنجليزي أشهر من العربي في سوق
+   * العمل، وحيث يفيد المتعلم في البحث والسيرة الذاتية.
+   */
+  termEn              String?
   legacyTitleAr       String?
   shortPromiseAr      String?
   descriptionAr       String?

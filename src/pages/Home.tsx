@@ -15,6 +15,7 @@ import { CONTACT } from '@/data/stories'
 import { track } from '@/services/analytics'
 import { usePublishedContent } from '@/services/public-content'
 import SeoHead from '@/components/SeoHead'
+import CourseTitle from "@/components/CourseTitle";
 import ThemeToggle from '@/components/ThemeToggle'
 import FavoriteButton from '@/components/FavoriteButton'
 import Modal from '@/components/Modal'
@@ -994,7 +995,7 @@ function Bestsellers() {
               </span>
               <span className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-muted-foreground">{c.category}</span>
             </div>
-            <h4 className="mt-3 font-bold leading-relaxed">{c.name}</h4>
+            <CourseTitle as="h4" name={c.name} termEn={c.termEn} className="mt-3 font-bold leading-relaxed" termClassName="text-muted-foreground" />
             <p className="mt-1 text-xs text-muted-foreground">من مسار «{c.pathwayName}» · {c.weeks} {c.weeks === 1 ? 'أسبوع' : 'أسابيع'}</p>
             {c.skill && (
               <span className="mt-3 w-fit rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-[11px] text-teal-light-ink">

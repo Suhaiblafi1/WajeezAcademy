@@ -21,6 +21,7 @@ import SeoHead from "@/components/SeoHead";
 import AuthGate from "@/components/AuthGate";
 import Modal from "@/components/Modal";
 import EnrollRequest from "@/components/EnrollRequest";
+import CourseTitle from "@/components/CourseTitle";
 import { Button } from "@/components/ui/button";
 import { usePublishedContent } from "@/services/public-content";
 import { usePriceFormatter } from "@/services/currency";
@@ -225,7 +226,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
           <span className="rounded-full border border-teal/40 bg-teal/10 px-3 py-1 text-[11px] font-bold text-teal-light-ink">
             {anchor.category}
           </span>
-          <h1 className="mt-3 text-2xl font-black leading-snug md:text-3xl">{anchor.name}</h1>
+          <CourseTitle as="h1" name={anchor.name} termEn={anchor.termEn} className="mt-3 text-2xl font-black leading-snug md:text-3xl" termClassName="text-xs text-white/45" />
           <p className="mt-2 text-sm text-white/50">من مسار «{anchor.pathwayName}»</p>
           {full?.shortPromise && <p className="mt-4 leading-loose text-white/70">{full.shortPromise}</p>}
 

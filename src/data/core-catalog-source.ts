@@ -22,6 +22,9 @@ export interface CoreCatalogCourse {
   pathway_id: string
   sequence: number
   title_ar: string
+  /** المصطلح المهنيّ المعروف بالإنجليزية — اختياريّ، ولا يُذكر إلا حيث يكون
+      المصطلح الإنجليزي أشهر من العربي في سوق العمل */
+  title_term_en?: string
   legacy_title_ar?: string
   subtitle_ar?: string
   short_promise_ar?: string

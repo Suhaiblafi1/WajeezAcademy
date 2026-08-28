@@ -67,6 +67,8 @@ interface RawPathway {
 }
 interface RawCourse {
   course_id: string; pathway_id: string; sequence: number; title_ar: string
+  /** المصطلح المهنيّ بالإنجليزية — سطر ثانويّ تحت العنوان لا جزء منه */
+  title_term_en?: string
   legacy_title_ar?: string; subtitle_ar?: string; short_promise_ar?: string
   description_ar?: string; target_audience_ar?: string; prerequisites_ar?: string
   level_ar?: string; total_hours: number; skill_ids?: string[]; skill_slugs?: string[]
@@ -217,13 +219,13 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
     const cv = await prisma.courseVersion.upsert({
       where: { courseId_version: { courseId: c.course_id, version: 1 } },
       update: {
-        titleAr: c.title_ar, legacyTitleAr: c.legacy_title_ar ?? null,
+        titleAr: c.title_ar, termEn: c.title_term_en ?? null, legacyTitleAr: c.legacy_title_ar ?? null,
         shortPromiseAr: c.short_promise_ar ?? c.subtitle_ar ?? null, descriptionAr: c.description_ar ?? null,
         audienceAr: c.target_audience_ar ?? null, prerequisitesAr: c.prerequisites_ar ?? null,
         levelAr: c.level_ar ?? null, totalHours: toInt(c.total_hours) ?? 0, status: 'published',
       },
       create: {
-        courseId: c.course_id, version: 1, titleAr: c.title_ar, legacyTitleAr: c.legacy_title_ar ?? null,
+        courseId: c.course_id, version: 1, titleAr: c.title_ar, termEn: c.title_term_en ?? null, legacyTitleAr: c.legacy_title_ar ?? null,
         shortPromiseAr: c.short_promise_ar ?? c.subtitle_ar ?? null, descriptionAr: c.description_ar ?? null,
         audienceAr: c.target_audience_ar ?? null, prerequisitesAr: c.prerequisites_ar ?? null,
         levelAr: c.level_ar ?? null, totalHours: toInt(c.total_hours) ?? 0, status: 'published',

@@ -13,6 +13,8 @@ import { pathwayCategory } from './pathways'
 export interface Course {
   id: string
   name: string
+  /** المصطلح المهنيّ بالإنجليزية — سطرٌ ثانويّ تحت العنوان، لا جزءٌ منه */
+  termEn?: string | null
   legacyName?: string
   pathwayId: string
   pathwayName: string
@@ -62,6 +64,8 @@ function buildCourses(raw: CoreCatalogRaw): Course[] {
   return raw.courses.map((c) => ({
     id: c.course_id,
     name: c.title_ar,
+    /** المصطلح المهنيّ بالإنجليزية — يُعرض سطرا ثانويا لا داخل العنوان */
+    termEn: c.title_term_en ?? null,
     legacyName: c.legacy_title_ar,
     pathwayId: c.pathway_id,
     pathwayName: pathwayTitle.get(c.pathway_id) ?? '',

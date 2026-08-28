@@ -6,6 +6,7 @@ import { bestsellerCourses, courseCategories, courses, pathwayTrainers, weeksLab
 import FavoriteButton from '@/components/FavoriteButton'
 import SiteShell from '@/components/SiteShell'
 import SeoHead from '@/components/SeoHead'
+import CourseTitle from "@/components/CourseTitle";
 import { track } from '@/services/analytics'
 import { usePublishedContent } from '@/services/public-content'
 
@@ -241,7 +242,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
                 )}
                 <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] text-white/50">{c.category}</span>
               </div>
-              <h2 className="mt-3 font-bold leading-relaxed">{c.name}</h2>
+              <CourseTitle name={c.name} termEn={c.termEn} className="mt-3 font-bold leading-relaxed" />
               <p className="mt-1 text-xs text-white/50">
                 من مسار «{c.pathwayName}» · {c.weeks} {c.weeks === 1 ? 'أسبوع' : 'أسابيع'}
               </p>
