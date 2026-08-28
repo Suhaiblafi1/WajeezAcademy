@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router";
-import { LayoutDashboard, Award, Lock, Eye, LogOut, Bell, CheckCheck, UserCircle, ReceiptText, X, LifeBuoy, BookOpen, ChevronDown, Inbox } from "lucide-react";
-import { canAccessPortal, enablePreview, getEnrollment, isOwnerUnlocked, unlockOwner } from "@/services/access";
+import { LayoutDashboard, Award, Lock, LogOut, Bell, CheckCheck, UserCircle, ReceiptText, X, LifeBuoy, BookOpen, ChevronDown, Inbox } from "lucide-react";
+import { getEnrollment } from "@/services/access";
 import { signOut } from "@/services/auth";
 import { apiGet, apiPost } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import { useAutoRefresh } from "@/services/useAutoRefresh";
-import PrototypeBanner from "@/components/PrototypeBanner";
 import ThemeToggle from "@/components/ThemeToggle";
 import EcosystemNote from "@/components/EcosystemNote";
 
@@ -39,11 +38,9 @@ const ACCOUNT_ITEMS: { to: string; label: string; icon: typeof LayoutDashboard }
 /** إطار بوابة الطالب: شريط علوي + تنقل + إشعارات + حارس الوصول.
     جلسة الخادم الحقيقية أولاً — الاسم والوصول والإشعارات منها؛ المحاكاة المحلية للديمو فقط. */
 export default function PortalLayout({ children, title }: { children: React.ReactNode; title: string }) {
-  /* فتح علم المالك عبر ?preview=owner في العنوان — مشتق أثناء التصيير لا في تأثير */
-  const previewOwner = new URLSearchParams(window.location.search).get("preview") === "owner";
-  /* فتحٌ يدوي: زر معاينة المالك أدناه، والإذن المحلي المقروء عند التركيب.
-     أما جلسة الخادم فتُعطَف أثناء التصيير بعد قراءتها — لا تُقلب بتأثير. */
-  const [manualAllowed, setManualAllowed] = useState<boolean>(() => canAccessPortal() || previewOwner);
+  /* البوابة بجلسة حقيقية وحدها. كان يفتحها أيضا «وضع المعاينة» (‏?preview=owner
+     أو علمٌ في localStorage) أو «استحقاقٌ» مكتوب محليا — أي بلا حساب على
+     الخادم. ولمّا زالت البيانات المحاكاة لم يبق للمعاينة ما تعرضه. */
   const [bellOpen, setBellOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
@@ -61,7 +58,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
   /* كان useEffect يقلب allowed عند ظهور الجلسة، فيصيّر مرة بالمنع ثم مرة
      بالسماح — ومضة يراها المستخدم، وتحذير «setState داخل تأثير». العطف هنا
      يعطي النتيجة نفسها في تصيير واحد. */
-  const allowed = manualAllowed || !!sessionUser;
+  const allowed = !!sessionUser;
   /* الهوية من الجلسة وحدها. كان `readUserName()` يقرأ اسما محليا ويعيد
      «متعلم وجيز» حين لا يجد — اسمٌ لا صاحب له. */
   const user = sessionUser?.displayName ?? "";
@@ -69,10 +66,6 @@ export default function PortalLayout({ children, title }: { children: React.Reac
   /* الإشعارات من الخادم وحده. كان بجانبها متجرٌ محليّ مبذور — منه «وصلت
      فاتورتك وتأكيد الدفع على بريدك» — ويُعرض حين يتعذّر نداء الخادم. */
   const [realNotifs, setRealNotifs] = useState<RealNotif[] | null>(null);
-
-  useEffect(() => {
-    if (previewOwner) { unlockOwner(); enablePreview(); } // يستمر عبر التنقلات لا لصفحة واحدة
-  }, [previewOwner]);
 
   useEffect(() => {
     apiGet<RealNotif[]>("/api/learner/notifications").then((rows) => setRealNotifs(rows.slice(0, 6))).catch(() => setRealNotifs(null));
@@ -130,14 +123,6 @@ export default function PortalLayout({ children, title }: { children: React.Reac
           <Link to="/" className="rounded-full border border-white/15 px-6 py-3 font-bold text-white/80 hover:border-white/40">
             الرئيسية
           </Link>
-          {isOwnerUnlocked() && (
-            <button
-              onClick={() => { enablePreview(); setManualAllowed(true); }}
-              className="flex cursor-pointer items-center gap-1.5 rounded-full border border-dashed border-white/20 px-4 py-2 text-xs text-white/50 hover:border-teal-light/50 hover:text-teal-light-ink"
-            >
-              <Eye className="h-3.5 w-3.5" /> معاينة تجريبية (للمالك)
-            </button>
-          )}
         </div>
         {/* تعريف المنظومة عند مدخل البوابة — سطر ثقة ثانوي لا ينافس الرسالة */}
         <EcosystemNote className="mt-10" />
@@ -184,7 +169,6 @@ export default function PortalLayout({ children, title }: { children: React.Reac
 
   return (
     <div dir="rtl" className="min-h-screen bg-paper text-white">
-      <PrototypeBanner hidden={!!sessionUser} />
       <header className="sticky top-0 z-40 border-b border-white/10 bg-paper/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
           <Link to="/" className="flex items-center gap-2">

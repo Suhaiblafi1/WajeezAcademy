@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router";
-import { BookMarked, CalendarCog, Crown, FlaskConical, GitBranch, Layers, ShieldAlert, LayoutDashboard, UserPlus, Users, BarChart3, LifeBuoy, Wallet, Bell, PlugZap } from "lucide-react";
+import { CalendarCog, Crown, FlaskConical, GitBranch, Layers, ShieldAlert, LayoutDashboard, UserPlus, Users, BarChart3, LifeBuoy, Wallet, Bell, PlugZap } from "lucide-react";
 import { ADMIN_IDENTITIES, ADMIN_IDENTITY_KEY, adminIdentity } from "./admin-identity";
 import NotificationBell from "@/components/NotificationBell";
 import ThemeToggle from "@/components/ThemeToggle";
 import SearchPalette from "@/components/SearchPalette";
-import PrototypeBanner from "@/components/PrototypeBanner";
 import { useRealSession } from "@/services/session";
 
 /** إطار لوحة الإدارة والعمليات.
@@ -66,7 +65,6 @@ export default function AdminLayout({ children, title }: { children: React.React
         { to: "/admin/catalog", label: "الكتالوج", icon: Layers },
         { to: "/admin/publishing", label: "النشر والإصدارات", icon: GitBranch },
         { to: "/admin/cohorts", label: "الشعب", icon: CalendarCog },
-        { to: "/admin/content", label: "سير المحتوى", icon: BookMarked },
         { to: "/admin/quality", label: "جودة التشخيص", icon: FlaskConical },
       ],
     },
@@ -108,7 +106,6 @@ export default function AdminLayout({ children, title }: { children: React.React
   return (
     <div dir="rtl" className="min-h-screen bg-paper text-white">
       <SearchPalette />
-      <PrototypeBanner hidden={realAdmin} />
       <header className="sticky top-0 z-40 border-b border-white/10 bg-paper/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5">
           <Link to="/" className="flex items-center gap-2">

@@ -8,9 +8,7 @@
 import { useEffect, useState } from 'react'
 import { Navigate, Outlet } from 'react-router'
 import { homePathForRoles, refreshSession } from '../services/auth'
-import { isPreview } from '../services/access'
 
-const IS_DEMO_BUILD = import.meta.env.VITE_DEMO_MODE === 'true'
 
 /** أدوار بوابة الإدارة — تطابق مصفوفة الصلاحيات في server/auth/permissions.ts */
 export const ADMIN_ROLES = [
@@ -29,14 +27,12 @@ export const ADVISOR_ROLES = ['advisor', 'super_admin'] as const
 type GuardState = 'loading' | 'ok' | 'anon' | 'forbidden'
 
 export default function RequireRole({ allow }: { allow: readonly string[] }) {
-  /* معاينة المالك أثناء الاستعراض المحلي — بناء الديمو فقط */
-  const demoPreview = IS_DEMO_BUILD && isPreview()
-
-  const [state, setState] = useState<GuardState>(demoPreview ? 'ok' : 'loading')
+  /* حُذف تجاوزُ «معاينة المالك»: كان علمٌ في localStorage مع VITE_DEMO_MODE
+     يجعل الحارس يمرّر أيَّ دورٍ بلا جلسة. حارسُ صلاحياتٍ له بابٌ خلفي ليس حارسا. */
+  const [state, setState] = useState<GuardState>('loading')
   const [home, setHome] = useState('/student')
 
   useEffect(() => {
-    if (demoPreview) return
     let alive = true
     void refreshSession().then((s) => {
       if (!alive) return
@@ -52,7 +48,7 @@ export default function RequireRole({ allow }: { allow: readonly string[] }) {
     return () => { alive = false }
     // allow قائمة ثابتة من ثوابت الملف — لا تتغير بين التصييرات
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [demoPreview])
+  }, [])
 
   if (state === 'loading') {
     return (

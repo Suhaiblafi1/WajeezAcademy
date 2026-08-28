@@ -6,7 +6,6 @@ import {
 } from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import { apiGet, apiPatch, apiPost, ApiError } from "@/services/api";
-import { isPreview } from "@/services/access";
 import { clearLocalSession, readSession } from "@/services/auth";
 
 /* ─────────── صفحة «حسابي» — الملف الشخصي الكامل للطالب ───────────
@@ -244,7 +243,7 @@ export default function StudentAccount() {
     <PortalLayout title="حسابي وملفي الشخصي">
       {mode === "local" && (
         <p className="mb-5 rounded-xl border border-dashed border-gold/40 bg-gold/5 px-4 py-2 text-center text-xs text-gold-ink">
-          {isPreview() ? "وضع المعاينة — الحفظ هنا محلي على هذا الجهاز حتى يربط حسابك بالخادم." : "جلسة الخادم غير فعالة — الحفظ محلي مؤقتا."}
+          {"جلسة الخادم غير فعالة — الحفظ محلي مؤقتا."}
         </p>
       )}
 

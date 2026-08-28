@@ -1,24 +1,16 @@
-import { useState } from "react";
 import { Link, NavLink } from "react-router";
 import { Headset, LayoutDashboard } from "lucide-react";
-import { ADVISOR_IDENTITIES, ADVISOR_IDENTITY_KEY, advisorIdentity } from "./advisor-identity";
 import NotificationBell from "@/components/NotificationBell";
 import ThemeToggle from "@/components/ThemeToggle";
-import PrototypeBanner from "@/components/PrototypeBanner";
 import PortalSearchPalette from "@/components/PortalSearchPalette";
 import { useRealSession } from "@/services/session";
 
-/** إطار بوابة المستشار: اختيار هوية المستشار + تنقل.
-   من سجّل دخوله بحساب مستشار حقيقي يتجاوز شاشة اختيار الهوية التجريبية تلقائيا. */
+/** إطار بوابة المستشار: هويته من جلسته وحدها. */
 export default function AdvisorLayout({ children, title }: { children: React.ReactNode; title: string }) {
-  const [me, setMe] = useState(advisorIdentity);
   const { user, checked } = useRealSession();
   const realAdvisor = user?.permissions.includes("advisor.cases.view") ?? false;
-  const effectiveMe = me ?? (realAdvisor && user
-    ? { id: user.userId, name: user.displayName, title: "مستشار — حساب حقيقي" }
-    : null);
 
-  if (!effectiveMe && !checked) {
+  if (!checked) {
     return (
       <div dir="rtl" className="grid min-h-screen place-items-center bg-paper text-white">
         <Headset className="h-10 w-10 animate-pulse text-[#38A7B4]" />
@@ -26,27 +18,20 @@ export default function AdvisorLayout({ children, title }: { children: React.Rea
     );
   }
 
-  if (!effectiveMe) {
+  /* حُذفت شاشة «من أنت؟» التي كانت تعرض أربعة أسماء مستشارين مختلَقين ليختار
+     الزائر واحدا منها فيدخل البوابة بهويته — وهي الأسماء نفسها التي حُذفت من
+     صفحة المسار ولوحة المتعلم من قبل. */
+  if (!realAdvisor) {
     return (
       <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper px-5 text-white">
         <Headset className="h-12 w-12 text-[#38A7B4]" />
-        <h1 className="mt-5 text-2xl font-black">بوابة المستشار — من أنت؟</h1>
+        <h1 className="mt-5 text-2xl font-black">بوابة المستشار</h1>
         <p className="mt-2 max-w-md text-center text-sm leading-7 text-white/55">
-          يرى كل مستشار الطلبة والعملاء المسندين إليه فقط (RBAC) — اختر هويتك للمتابعة.
+          تُفتح هذه البوابة بحساب مستشار معتمد، ويرى كلٌّ منهم الحالات المسندة إليه وحدها.
         </p>
-        <div className="mt-7 grid w-full max-w-md gap-3">
-          {ADVISOR_IDENTITIES.map((a) => (
-            <button
-              key={a.id}
-              onClick={() => { localStorage.setItem(ADVISOR_IDENTITY_KEY, JSON.stringify(a)); setMe(a); }}
-              className="cursor-pointer rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-right transition hover:border-teal/50"
-            >
-              <p className="font-black">{a.name}</p>
-              <p className="mt-0.5 text-xs text-teal-light-ink">{a.title}</p>
-            </button>
-          ))}
-        </div>
-        <p className="mt-4 text-[11px] font-bold text-gold-ink/70">نسخة تجريبية — البيانات المعروضة محلية وليست تشغيلية</p>
+        <Link to="/auth" className="mt-7 rounded-full bg-teal px-6 py-3 font-black text-on-teal transition hover:bg-teal-light">
+          تسجيل الدخول
+        </Link>
         <Link to="/" className="mt-6 text-xs text-white/50 hover:text-white/70">العودة للموقع العام</Link>
       </div>
     );
@@ -60,7 +45,6 @@ export default function AdvisorLayout({ children, title }: { children: React.Rea
 
   return (
     <div dir="rtl" className="min-h-screen bg-paper text-white">
-      <PrototypeBanner hidden={realAdvisor} />
       <header className="sticky top-0 z-40 border-b border-white/10 bg-paper/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
           <Link to="/" className="flex items-center gap-2">
@@ -98,14 +82,10 @@ export default function AdvisorLayout({ children, title }: { children: React.Rea
             )}
             <NotificationBell />
             <ThemeToggle />
-            <button
-              onClick={() => { localStorage.removeItem(ADVISOR_IDENTITY_KEY); setMe(null); }}
-              className="flex cursor-pointer items-center gap-2 text-xs text-white/55 hover:text-white"
-              title={realAdvisor && !me ? "حسابك الحقيقي" : "تبديل المستشار"}
-            >
+            <span className="flex items-center gap-2 text-xs text-white/55">
               <LayoutDashboard className="h-4 w-4 text-gold-ink" />
-              <span className="max-w-[110px] truncate">{effectiveMe.name}</span>
-            </button>
+              <span className="max-w-[110px] truncate">{user?.displayName}</span>
+            </span>
           </div>
         </div>
       </header>

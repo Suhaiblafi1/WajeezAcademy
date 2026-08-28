@@ -1,25 +1,16 @@
-import { useState } from "react";
 import { Link, NavLink } from "react-router";
 import { GraduationCap, ClipboardCheck, GitPullRequest, Users, Wallet } from "lucide-react";
-import { TRAINER_IDENTITIES } from "@/data/trainer";
-import { TRAINER_IDENTITY_KEY, trainerIdentity } from "./trainer-identity";
 import NotificationBell from "@/components/NotificationBell";
 import ThemeToggle from "@/components/ThemeToggle";
-import PrototypeBanner from "@/components/PrototypeBanner";
 import PortalSearchPalette from "@/components/PortalSearchPalette";
 import { useRealSession } from "@/services/session";
 
-/** إطار بوابة المدرب: هوية المدرب + تنقل + حدوده معلنة.
-   من سجّل دخوله بحساب مدرب حقيقي يتجاوز شاشة اختيار الهوية التجريبية تلقائيا. */
+/** إطار بوابة المدرب: هويته من جلسته وحدها. */
 export default function TrainerLayout({ children, title }: { children: React.ReactNode; title: string }) {
-  const [me, setMe] = useState(trainerIdentity);
   const { user, checked } = useRealSession();
   const realTrainer = user?.permissions.includes("trainer.portal") ?? false;
-  const effectiveMe = me ?? (realTrainer && user
-    ? { id: user.userId, name: user.displayName, role: "مدرب — حساب حقيقي" }
-    : null);
 
-  if (!effectiveMe && !checked) {
+  if (!checked) {
     return (
       <div dir="rtl" className="grid min-h-screen place-items-center bg-paper text-white">
         <GraduationCap className="h-10 w-10 animate-pulse text-[#6EC7D1]" />
@@ -27,27 +18,26 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
     );
   }
 
-  if (!effectiveMe) {
+  /* حُذفت شاشة «من أنت؟» التي كانت تعرض أربعة أسماء مدرّبين مختلَقة ليختار
+     الزائر واحدا منها فيدخل البوابة بهويته. أسماءُ أشخاصٍ لا وجود لهم تُعرض
+     كمدرّبين — وقاعدةُ هذا المستودع صريحة: لا اسم مدرّب قبل توثيقه. */
+  if (!realTrainer) {
     return (
       <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper px-5 text-white">
         <GraduationCap className="h-12 w-12 text-[#6EC7D1]" />
-        <h1 className="mt-5 text-2xl font-black">بوابة المدرب — من أنت؟</h1>
+        <h1 className="mt-5 text-2xl font-black">بوابة المدرب</h1>
         <p className="mt-2 max-w-md text-center text-sm leading-7 text-white/55">
-          يرى المدرب شعبه وطلابه وتسليماتهم فقط — لا بيانات دفع الطلاب ولا مسارات غير مسندة إليه.
+          تُفتح هذه البوابة بحساب مدرّب معتمد. إن كنت مدرّبا فسجّل الدخول،
+          وإن أردت الانضمام إلى فريق التدريب فابدأ بطلب العضوية.
         </p>
-        <div className="mt-7 grid w-full max-w-md gap-3">
-          {TRAINER_IDENTITIES.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => { localStorage.setItem(TRAINER_IDENTITY_KEY, JSON.stringify(t)); setMe(t); }}
-              className="cursor-pointer rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-right transition hover:border-teal/50"
-            >
-              <p className="font-black">{t.name}</p>
-              <p className="mt-0.5 text-xs text-teal-light-ink">{t.role}</p>
-            </button>
-          ))}
+        <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
+          <Link to="/auth" className="rounded-full bg-teal px-6 py-3 font-black text-on-teal transition hover:bg-teal-light">
+            تسجيل الدخول
+          </Link>
+          <Link to="/join-trainer" className="rounded-full border border-white/15 px-6 py-3 font-bold text-white/80 hover:border-white/40">
+            انضم مدرّبا
+          </Link>
         </div>
-        <p className="mt-4 text-[11px] font-bold text-gold-ink/70">نسخة تجريبية — البيانات المعروضة محلية وليست تشغيلية</p>
         <Link to="/" className="mt-6 text-xs text-white/50 hover:text-white/70">العودة للموقع العام</Link>
       </div>
     );
@@ -62,7 +52,6 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
 
   return (
     <div dir="rtl" className="min-h-screen bg-paper text-white">
-      <PrototypeBanner hidden={realTrainer} />
       <header className="sticky top-0 z-40 border-b border-white/10 bg-paper/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
           <Link to="/" className="flex items-center gap-2">
@@ -100,13 +89,7 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
             )}
             <NotificationBell />
             <ThemeToggle />
-            <button
-              onClick={() => { localStorage.removeItem(TRAINER_IDENTITY_KEY); setMe(null); }}
-              className="cursor-pointer text-xs text-white/55 hover:text-white"
-              title={realTrainer && !me ? "حسابك الحقيقي" : "تبديل المدرب"}
-            >
-              {effectiveMe.name}
-            </button>
+            <span className="max-w-[140px] truncate text-xs text-white/55">{user?.displayName}</span>
           </div>
         </div>
       </header>

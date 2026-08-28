@@ -25,7 +25,11 @@ function filesUnder(dir: string): string[] {
 
 describe('لا محاكاة في البوابات', () => {
   it('ملفّات المحاكاة محذوفة ولم تعد', () => {
-    for (const f of ['data/student.ts', 'data/advisor.ts', 'components/SimulationNote.tsx']) {
+    for (const f of [
+      'data/student.ts', 'data/advisor.ts', 'data/trainer.ts', 'data/admin.ts',
+      'data/admin-extras.ts', 'data/billing.ts', 'data/cv.ts', 'data/showcase.ts',
+      'components/SimulationNote.tsx',
+    ]) {
       expect(existsSync(join(SRC, f)), `${f} عاد إلى المستودع`).toBe(false)
     }
   })
@@ -34,7 +38,7 @@ describe('لا محاكاة في البوابات', () => {
     const offenders: string[] = []
     for (const f of [...filesUnder(join(SRC, 'pages')), ...filesUnder(join(SRC, 'components'))]) {
       const body = readFileSync(f, 'utf8')
-      for (const bad of ['data/student', 'data/advisor', 'SimulationNote']) {
+      for (const bad of ['data/student', 'data/advisor', 'data/trainer', 'data/admin', 'data/billing', 'data/cv', 'data/showcase', 'SimulationNote']) {
         /* `ComposedCourseView` وأمثالُه أسماءُ أنواعٍ لا استيراد وحدة */
         if (new RegExp(`from ["'][^"']*${bad}["']`).test(body)) offenders.push(`${f} ← ${bad}`)
       }
@@ -49,6 +53,7 @@ describe('لا محاكاة في البوابات', () => {
       [/issueCertificate/, 'سكّ شهادة في المتصفّح'],
       [/7:00–8:30/, 'موعد جلسة ثابت مخترع'],
       [/محاكاة المراجعة البشرية/, 'اعتماد آليّ لواجب'],
+      [/أ\. ريم القحطاني|د\. فيصل العتيبي|م\. سلطان الدوسري|م\. لينا الحربي/, 'اسم مدرّب مختلَق'],
     ]
     const offenders: string[] = []
     for (const f of filesUnder(join(SRC, 'pages'))) {
