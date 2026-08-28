@@ -102,7 +102,16 @@ const overrides: Record<string, Partial<PlanEntry>> = {
 
   'QB-M3A-003': { surface: 'b2c', layer21: 'goal_need', phase: 'adaptive', action: 'keep', stages: STUDENTISH, why_ar: 'وضوح تصور أول وظيفة يفصل «جاهزية توظيف» عن «استكشاف اتجاه».', impact_ar: 'يغيّر المجال المتصدر لطالب/خريج.' },
   'QB-M3A-004': { surface: 'b2c', layer21: 'evidence_skill', phase: 'adaptive', action: 'keep', stages: STUDENTISH, why_ar: 'وجود سيرة/ملف أصول مهنية دليل مباشر على جاهزية التوظيف.', impact_ar: 'يفصل مسارات الجاهزية عن بناء الأساس.' },
-  'QB-M3A-005': { surface: 'b2c', layer21: 'evidence_skill', phase: 'adaptive', action: 'keep', stages: [...STUDENTISH, 'freelancer'], why_ar: 'ملف الأعمال دليل مهارة قابل للعرض — يدعم أهداف بناء الهوية المهنية.', impact_ar: 'يغيّر قوة الأدلة وترتيب مسارات العلامة الشخصية.' },
+  /* متقاعد 2026-08-28 — أثره المعلن غير موجود في الكود.
+     كان يَعِد بأنه «يغيّر قوة الأدلة وترتيب مسارات العلامة الشخصية»، وحقيقته
+     portfolio_evidence لا يقرؤها سطر واحد في المحرك. وشروطها الأربعة الوحيدة
+     في TPL-PERSONAL-BRAND-001 تقارنها بأعداد (lte 0.5 · gte 0.4 · lt 0.3 ·
+     lt 0.2) بينما السؤال اختيارٌ يُنتج نصا — وevalCondition تشترط
+     typeof === 'number' فتردّ false دائما؛ بل 'lt' ليست في مفاتيحها فتسقط إلى
+     default. فالبوابة أثبتت موته إحصاء (تسعة مقاعد، لا جواب يغيّر شيئا)
+     والقراءة تثبته بنية. وليست حقيقةً `required` في أي قالب فلا يسقط بتقاعده
+     كيان. */
+  'QB-M3A-005': { surface: 'retired_b2c', layer21: null, phase: 'none', action: 'retire', stages: [], why_ar: 'حقيقته portfolio_evidence بلا قارئ في المحرك، وشروطها الوحيدة تقارن نصا بأعداد فلا تصدق أبدا.', impact_ar: 'لا أثر — أُثبت ميتا إحصاء وبنية.' },
   'QB-M3A-006': { surface: 'b2c', layer21: 'evidence_skill', phase: 'adaptive', action: 'keep', stages: STUDENTISH, why_ar: 'الثقة بالمقابلات بصياغة دليلية تقيس فجوة جاهزية حقيقية.', impact_ar: 'تغيّر فجوة المهارات المقيسة لمسارات التوظيف.' },
   'QB-M3A-007': { surface: 'b2c', layer21: 'evidence_skill', phase: 'adaptive', action: 'keep', stages: STUDENTISH, why_ar: 'التعرض العملي (تدريب/تطوع) دليل خبرة يفرّق بين مسارين متقاربين.', impact_ar: 'يرفع جودة الأدلة وقد يحسم الترتيب.' },
 

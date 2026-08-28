@@ -156,8 +156,12 @@ describe('بنية أسئلة B2C — معايير النجاح', () => {
        عقوبة لا مطابقة: «عالٍ» وزن موجب صغير و«منخفض» وزن خطر، ولا قالب يفضّل
        خطة نظرية لمن استعداده منخفض لأن لا خطة نظرية عندنا. والقياس المضاد
        للواقع: القلب ممكن في أربعة مقاعد من 207، وفي 93 منها خفض الثقة.
-       active_b2c 67→66 · retired 63→64، والمجموع 205. */
-    expect(counts).toEqual({ active_b2c: 66, deep_only: 10, post_recommendation: 36, institutional: 14, retired: 64, out_of_scope: 15 })
+       active_b2c 67→66 · retired 63→64، والمجموع 205.
+       حذف 2026-08-28 (ب): تقاعد QB-M3A-005 (ملف الأعمال) — حقيقته
+       portfolio_evidence بلا قارئ في المحرك، وشروطها الأربعة الوحيدة تقارن
+       نصا بأعداد فلا تصدق أبدا. أُثبت ميتا إحصاء (٩ مقاعد) وبنية.
+       active_b2c 66→65 · retired 64→65، والمجموع 205. */
+    expect(counts).toEqual({ active_b2c: 65, deep_only: 10, post_recommendation: 36, institutional: 14, retired: 65, out_of_scope: 15 })
   })
 
   it('كل سؤال نشط في B2C له أثر قراري موثق في الخطة', () => {

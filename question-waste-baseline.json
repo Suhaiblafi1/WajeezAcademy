@@ -2,9 +2,8 @@
   "seed": 20260822,
   "sessions": 300,
   "totalSeats": 3535,
-  "deadSeats": 432,
+  "deadSeats": 424,
   "fullyDead": [
-    "QB-M3A-005",
     "QB-M3B-014",
     "QB-M3B-015",
     "QB-M3C-011"

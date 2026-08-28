@@ -610,23 +610,18 @@
       "final_status": "active_b2c"
     },
     "QB-M3A-005": {
-      "surface": "b2c",
-      "layer21": "evidence_skill",
-      "phase": "adaptive",
-      "action": "keep",
-      "stages": [
-        "university_student",
-        "fresh_graduate",
-        "early_career",
-        "freelancer"
-      ],
+      "surface": "retired_b2c",
+      "layer21": null,
+      "phase": "none",
+      "action": "retire",
+      "stages": [],
       "domains": [],
-      "impact_ar": "يغيّر قوة الأدلة وترتيب مسارات العلامة الشخصية.",
-      "why_ar": "ملف الأعمال دليل مهارة قابل للعرض — يدعم أهداف بناء الهوية المهنية.",
+      "impact_ar": "لا أثر — أُثبت ميتا إحصاء وبنية.",
+      "why_ar": "حقيقته portfolio_evidence بلا قارئ في المحرك، وشروطها الوحيدة تقارن نصا بأعداد فلا تصدق أبدا.",
       "measures": [
         "portfolio_evidence"
       ],
-      "final_status": "active_b2c"
+      "final_status": "retired"
     },
     "QB-M3A-006": {
       "surface": "b2c",
