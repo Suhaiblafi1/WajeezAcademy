@@ -41,18 +41,35 @@ export const EMBEDDED_DATABASE_URL =
 
    العلاج: لا نكتفي بالمنفذ، بل نتصل فعلا ونستعلم. وإن كانت النسخة الحية في
    طور الإغلاق ننتظرها حتى تختفي ثم نشغّل نسختنا. */
+/* «الخادم قائم» لا «القاعدة موجودة».
+
+   على عدّاء بارد تُنشأ قاعدة wajeez بعد start لا قبله، وقاعدة postgres قد لا
+   تكون موجودة في مجلد بيانات embedded-postgres أصلا. فأي فحص يشترط وجود قاعدة
+   بعينها يقرأ خادما سليما على أنه لم يقم — وهذا ما أسقط تشغيلا كاملا في CI.
+
+   الجواب الصحيح من الخادم هو الدليل: 3D000 (لا قاعدة بهذا الاسم) يعني أنه ردّ،
+   أي أنه قائم ويستقبل. أما 57P03 (يبدأ الآن) و57P01 (يُطفأ) وأخطاء الشبكة
+   فتعني: لم يجهز بعد. */
+const SERVER_ANSWERED = new Set(['3D000', '28P01', '28000'])
+const NOT_READY = new Set(['57P03', '57P01'])
+
 async function acceptsConnections(url: string): Promise<boolean> {
   const client = new pg.Client({ connectionString: url, connectionTimeoutMillis: 2000 })
   try {
     await client.connect()
     await client.query('SELECT 1')
     return true
-  } catch {
-    return false
+  } catch (e) {
+    const code = (e as { code?: string }).code
+    if (code && NOT_READY.has(code)) return false
+    return Boolean(code && SERVER_ANSWERED.has(code))
   } finally {
     await client.end().catch(() => { /* أُغلق أصلا */ })
   }
 }
+
+const READINESS_URL =
+  `postgresql://${EMBEDDED_PG.user}:${EMBEDDED_PG.password}@localhost:${EMBEDDED_PG.port}/postgres`
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
@@ -87,7 +104,7 @@ export async function ensureEmbeddedPostgres(): Promise<string> {
     /* نسخة حية من عملية أخرى (مثل خادم API) — نستخدمها ولا نبدأ منافسا،
        بشرط أن تكون جاهزة فعلا لا مجرد منفذ مفتوح */
     if (await portAlive(EMBEDDED_PG.port)) {
-      if (await waitUntilReady(EMBEDDED_DATABASE_URL, 20_000)) return EMBEDDED_DATABASE_URL
+      if (await waitUntilReady(READINESS_URL, 20_000)) return EMBEDDED_DATABASE_URL
       /* منفذ حيّ لا يقبل اتصالا = نسخة في طور الإغلاق. ننتظر انصرافها ثم نبدأ. */
       await waitUntilPortFree(EMBEDDED_PG.port, 30_000)
     }
@@ -103,7 +120,7 @@ export async function ensureEmbeddedPostgres(): Promise<string> {
     }
     await instance.start()
     /* «بدأت» لا تعني «جاهزة» — أول استعلام بعد start قد يسبق قبول الاتصالات */
-    if (!(await waitUntilReady(EMBEDDED_DATABASE_URL, 30_000))) {
+    if (!(await waitUntilReady(READINESS_URL, 30_000))) {
       throw new Error('تعذّر تشغيل PostgreSQL المدمج: بدأ ولم يقبل اتصالا خلال 30 ثانية')
     }
     try {
