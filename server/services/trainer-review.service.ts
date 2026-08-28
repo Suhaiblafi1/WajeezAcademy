@@ -10,6 +10,8 @@ import type { PrismaClient, Prisma } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { TrainerApplicationService } from './trainer-application.service'
+import { sendDirectEmail, publicSiteUrl, type DirectMailStatus } from './notification.service'
+import { CohortService } from './cohort.service'
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex')
 const newToken = () => randomBytes(32).toString('base64url')
@@ -214,7 +216,12 @@ export class TrainerReviewService {
   /* ─────────── الدعوة الآمنة وإنشاء الحساب ───────────
      تُرسل بعد الاعتماد والعقد فقط. الرمز يُحفظ هاش، صالح 72 ساعة، يُستخدم مرة. */
 
-  async createInvitation(applicationId: string, actorId: string): Promise<{ tokenForDelivery: string; expiresAt: Date }> {
+  async createInvitation(applicationId: string, actorId: string): Promise<{
+    tokenForDelivery: string
+    expiresAt: Date
+    acceptUrl: string
+    emailDelivery: DirectMailStatus
+  }> {
     const app = await this.prisma.trainerApplication.findUnique({ where: { id: applicationId }, include: { profile: true } })
     if (!app) throw new AuthError('not_found', 'الطلب غير موجود', 404)
     if (!['onboarding', 'contract_pending'].includes(app.status)) {
@@ -228,11 +235,21 @@ export class TrainerReviewService {
     await this.prisma.trainerInvitation.create({
       data: { applicationId, tokenHash: sha256(token), sentTo: app.email, expiresAt, createdBy: actorId },
     })
+    const acceptUrl = `${publicSiteUrl()}/trainer/accept-invite?token=${encodeURIComponent(token)}`
+    const mail = await sendDirectEmail(this.prisma, {
+      to: app.email,
+      subject: 'دعوتك لإنشاء حساب مدرب — أكاديمية وجيز',
+      text:
+        `مرحبا ${app.fullName},\n\n` +
+        `اكتمل اعتماد طلبك (${app.reference}) — وهذه دعوتك لإنشاء حسابك على منصة المدربين.\n` +
+        `افتح الرابط واختر كلمة مرورك خلال 72 ساعة:\n${acceptUrl}\n\n` +
+        `الرابط يُستخدم مرة واحدة. إن انتهى فاطلب من فريقنا إعادة إرساله.\n— أكاديمية وجيز`,
+    })
     await recordAudit(this.prisma, {
       actorId, action: 'trainer.invitation.create', entityType: 'trainer_application', entityId: applicationId,
-      meta: { sentTo: app.email, expiresAt },
+      meta: { sentTo: app.email, expiresAt, emailDelivery: mail.status },
     })
-    return { tokenForDelivery: token, expiresAt }
+    return { tokenForDelivery: token, expiresAt, acceptUrl, emailDelivery: mail.status }
   }
 
   /** استهلاك الدعوة — ينشئ الحساب بدور trainer ويربط الملف ويفعّل الحالة */
@@ -308,9 +325,24 @@ export class TrainerReviewService {
     const assignment = await this.prisma.trainerCourseAssignment.create({
       data: { profileId, courseId, cohortId, assignedBy: actorId },
     })
+    /* الربط التشغيلي بالشعبة — CohortTrainer.
+
+       كان الإسناد من شاشة «عمليات المدربين» يكتب TrainerCourseAssignment وحده،
+       بينما كل سطح المدرب يقرأ CohortTrainer: شعبي، وطابور التصحيح، والحضور،
+       والتسجيلات، وحارس assertCohortTrainer. فالمدرب يُسنَد ثم يفتح منصته
+       فيجدها فارغة — ولا رسالة خطأ، لأن لا خطأ وقع في نظر أيٍّ من الطرفين.
+       الجدولان مفهومان مختلفان (تأهيل وإسناد إداري مقابل تشغيل شعبة) فلا يُدمجان،
+       لكن إسنادا إلى شعبة بعينها يجب أن يُنتج الاثنين معا.
+
+       ويمرّ عبر CohortService لا بكتابة مباشرة: هناك حارس تعارض الجدول — مدرب
+       في شعبتين جلستاهما متداخلتان — وتخطّيه هنا يفتح بابا خلفيا لما يمنعه
+       الباب الأمامي. */
+    if (cohortId) {
+      await new CohortService(this.prisma).assignTrainer(cohortId, profileId, actorId, 'lead')
+    }
     await recordAudit(this.prisma, {
       actorId, action: 'trainer.assign', entityType: 'trainer_profile', entityId: profile.id,
-      meta: { courseId, cohortId },
+      meta: { courseId, cohortId, cohortLinked: Boolean(cohortId) },
     })
     return assignment
   }

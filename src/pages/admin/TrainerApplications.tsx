@@ -72,6 +72,8 @@ export default function TrainerApplications() {
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState("");
+  /* رابط الدعوة بعد إنشائها — يُعرض للمسؤول ليسلّمه حين لا يصل البريد */
+  const [invite, setInvite] = useState<{ url: string; delivery: string } | null>(null);
   const [mode, setMode] = useState<"apps" | "changes" | "payouts">("apps");
 
   const load = useCallback(async (silent = false) => {
@@ -309,15 +311,34 @@ export default function TrainerApplications() {
                 <button
                   disabled={busy}
                   onClick={() => void act(async () => {
-                    const r = await apiPost<{ expiresAt: string; devInvitationToken?: string }>(`/api/admin/trainer-applications/${a.id}/invitations`);
-                    if (r.devInvitationToken) {
-                      setFlash(`دعوة أُنشئت (تطوير): /trainer/accept-invite?token=${r.devInvitationToken}`);
-                    }
-                  }, "أُرسلت الدعوة الآمنة")}
+                    /* الرابط يُعرض للمسؤول دائما لا في التطوير وحده: كان يُحجب في
+                       الإنتاج انتظارا لقناة بريد لا وجود لها، فتُنشأ الدعوة ولا
+                       يملك رمزَها أحد — أي أن الحساب لا يُفتح أبدا. البريد يُرسل
+                       الآن، وهذه نسخة تُسلَّم باليد حين لا تصل الرسالة. */
+                    const r = await apiPost<{ expiresAt: string; acceptUrl: string; emailDelivery: string; invitationToken: string }>(
+                      `/api/admin/trainer-applications/${a.id}/invitations`,
+                    );
+                    setInvite({ url: r.acceptUrl, delivery: r.emailDelivery });
+                  }, "أُنشئت الدعوة الآمنة")}
                   className="mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-teal/50 py-2.5 text-xs font-black text-teal-light-ink transition hover:bg-teal/10 disabled:opacity-40"
                 >
                   <KeyRound className="h-3.5 w-3.5" /> أرسل دعوة إنشاء الحساب
                 </button>
+              )}
+              {invite && a.status === "onboarding" && !a.profile?.userId && (
+                <div className="mt-3 rounded-xl border border-teal/35 bg-teal/[0.06] p-3">
+                  <p className="text-[11px] font-black text-teal-light-ink">
+                    {invite.delivery === "sent"
+                      ? "أُرسلت الدعوة إلى بريد المدرب — وهذه نسخة الرابط إن لم تصله"
+                      : invite.delivery === "not_configured"
+                        ? "قناة البريد غير مفعّلة — سلّم هذا الرابط للمدرب بنفسك"
+                        : "تعذّر إرسال البريد — سلّم هذا الرابط للمدرب بنفسك"}
+                  </p>
+                  <code dir="ltr" className="mt-2 block overflow-x-auto whitespace-nowrap rounded-lg bg-black/40 p-2 font-mono text-[10.5px] text-white/75">
+                    {invite.url}
+                  </code>
+                  <p className="mt-1.5 text-[10.5px] text-white/45">يُستخدم مرة واحدة ويسقط بعد ٧٢ ساعة.</p>
+                </div>
               )}
               {a.profile?.userId && (
                 <p className="mt-3 flex items-center justify-center gap-1.5 text-[11px] font-bold text-teal-light-ink">

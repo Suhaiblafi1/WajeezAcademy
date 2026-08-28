@@ -55,6 +55,41 @@ export class SmtpEmailProvider implements NotificationProvider {
   }
 }
 
+/* ─── بريد مباشر لعنوان بلا حساب ───
+
+   NotificationService.notify يشترط userId — كل إشعار مرتبط بصف User. وهذا صحيح
+   لمن عنده حساب، لكنه أغلق البابَ على الحالتين اللتين لا حساب فيهما أصلا:
+   رمز تحقق بريد المتقدم للتدريب، ودعوة إنشاء الحساب بعد اعتماده. فلم يكن في
+   الشيفرة كلها نداءٌ واحد يستطيع مراسلة عنوان لا يملك صفا في User — وكان الرمز
+   يُعاد في التطوير فقط، فالمتقدم في الإنتاج يقف عند «بانتظار تحقق البريد» أبدا.
+
+   لا يُنشئ صف Notification: لا مالك له. والمُنادي هو من يسجّل الأثر ويقرر ماذا
+   يفعل عند تعذّر الإرسال — ولا يُبتلع الفشل صامتا. */
+export type DirectMailStatus = 'sent' | 'not_configured' | 'failed'
+export interface DirectMailResult {
+  status: DirectMailStatus
+  error?: string
+}
+
+export async function sendDirectEmail(
+  prisma: PrismaClient,
+  input: { to: string; subject: string; text: string },
+): Promise<DirectMailResult> {
+  try {
+    const config = await getEmailConfig(prisma)
+    if (!config.enabled || !config.host || !config.fromEmail) return { status: 'not_configured' }
+    const res = await sendEmail(config, input)
+    return res.ok ? { status: 'sent' } : { status: 'failed', error: res.error }
+  } catch (e) {
+    return { status: 'failed', error: e instanceof Error ? e.message : String(e) }
+  }
+}
+
+/** أصل الموقع العام لبناء الروابط في الرسائل — نفس المتغير الذي تستخدمه التجارة */
+export function publicSiteUrl(): string {
+  return (process.env.APP_URL ?? 'http://localhost:7100').replace(/\/+$/, '')
+}
+
 const MAX_ATTEMPTS = 3
 
 /** إشعار غير معيق — فشله لا يوقف أي مسار تشغيلي (قبول/دفع/شهادة/مالية) */

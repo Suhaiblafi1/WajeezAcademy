@@ -47,6 +47,14 @@ beforeAll(async () => {
   const admin = await auth.register('admin-trainer-e2e@test.local', 'Admin#12345', 'المدير الأكاديمي')
   adminId = admin.userId
   await auth.setRoles(adminId, ['academic_manager'])
+  /* قناة البريد مفعّلة بمضيف لا يستجيب: الإرسال يخفق، والبوابة تبقى قائمة —
+     وهذا بالضبط ما تفحصه هذه الدورة. أما قناةٌ غير مفعّلة فلها اختبارها المستقل
+     أدناه، لأن سلوكها مختلف عمدا. */
+  await prisma.integrationSetting.upsert({
+    where: { provider: 'email' },
+    update: { enabled: true, config: { host: '127.0.0.1', port: 1, secure: false, fromEmail: 'no-reply@test.local' } },
+    create: { provider: 'email', enabled: true, config: { host: '127.0.0.1', port: 1, secure: false, fromEmail: 'no-reply@test.local' } },
+  })
 }, 180_000)
 
 describe('دورة طلب المدرب', () => {

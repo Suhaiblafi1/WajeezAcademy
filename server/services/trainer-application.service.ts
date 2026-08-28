@@ -7,7 +7,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import type { PrismaClient, Prisma } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
-import { notifyRole } from './notification.service'
+import { notifyRole, sendDirectEmail, publicSiteUrl, type DirectMailStatus } from './notification.service'
 import { newStorageKey, signKey, SIGNED_URL_TTL_MS, MAX_UPLOAD_BYTES } from './storage.service'
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex')
@@ -85,7 +85,14 @@ export class TrainerApplicationService {
   }
 
   /** تقديم المرحلة الأولى — ينشئ الطلب برقم مرجعي ويرسل رمز تحقق البريد */
-  async submitPhase1(input: Phase1Input): Promise<{ reference: string; verificationTokenForDelivery: string }> {
+  async submitPhase1(input: Phase1Input): Promise<{
+    reference: string
+    verificationTokenForDelivery: string
+    /* حالة تسليم رمز التحقق — 'sent' وحدها تعني أن البريد بوابةٌ فعلية */
+    emailDelivery: DirectMailStatus
+    /* يُصدر فقط حين تعذّر البريد: الطلب يمضي بلا بوابة، فيحتاج المتقدم رمز وصوله */
+    candidateToken?: string
+  }> {
     const email = input.email.trim().toLowerCase()
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new AuthError('invalid_email', 'صيغة البريد غير صحيحة')
     if (!input.privacyConsent) throw new AuthError('consent_required', 'موافقة الخصوصية إلزامية')
@@ -131,7 +138,69 @@ export class TrainerApplicationService {
       action: 'trainer.application.submit', entityType: 'trainer_application', entityId: app.id,
       meta: { reference, email },
     })
-    return { reference, verificationTokenForDelivery: verifyToken }
+
+    /* إرسال رمز التحقق فعليا — لا في التطوير وحده */
+    const link = `${publicSiteUrl()}/join-trainer?ref=${encodeURIComponent(reference)}&token=${encodeURIComponent(verifyToken)}`
+    const mail = await sendDirectEmail(this.prisma, {
+      to: email,
+      subject: `تأكيد طلب الانضمام كمدرب — ${reference}`,
+      text:
+        `مرحبا ${input.fullName.trim()},\n\n` +
+        `وصلنا طلبك للانضمام إلى نخبة مدربي أكاديمية وجيز برقم ${reference}.\n` +
+        `أكّد بريدك من هذا الرابط خلال 24 ساعة:\n${link}\n\n` +
+        `أو أدخل هذا الرمز في صفحة الطلب: ${verifyToken}\n\n` +
+        `إن لم تكن أنت من قدّم الطلب فتجاهل هذه الرسالة.\n— أكاديمية وجيز`,
+    })
+
+    /* قناة البريد غير مفعّلة أصلا: البوابة لا تستطيع أن تعمل، وإبقاء الطلب عندها
+       يعني أن أحدا لا يستطيع التقدم أبدا — وهو ما كان يقع في الإنتاج فعلا. فيمضي
+       الطلب إلى «مقدَّم» بأثر صريح يقول إن البريد لم يُتحقَّق منه، فيرى المراجع
+       أن دليله أضعف بدل أن يظن أنه تحقّق. وemailVerifiedAt يبقى فارغا.
+
+       أما الإخفاق مع قناة مفعّلة (انقطاع، عنوان خاطئ، رفض الخادم) فلا يُسقط
+       البوابة: هو عابر وله طريق إصلاح قائم — إعادة الإرسال. إسقاطها عنده يحوّل
+       عطلا مؤقتا إلى طلب غير موثَّق للأبد. */
+    if (mail.status === 'not_configured') {
+      const candidateToken = await this.acceptWithoutEmailGate(app.id, reference, mail.status, mail.error)
+      return { reference, verificationTokenForDelivery: verifyToken, emailDelivery: mail.status, candidateToken }
+    }
+    return { reference, verificationTokenForDelivery: verifyToken, emailDelivery: mail.status }
+  }
+
+  /** ينقل الطلب إلى «مقدَّم» بلا تحقق بريدي — يُستدعى فقط حين تتعذّر قناة البريد */
+  private async acceptWithoutEmailGate(
+    applicationId: string, reference: string, why: DirectMailStatus, error?: string,
+  ): Promise<string> {
+    const candidateToken = newToken()
+    const note = why === 'not_configured'
+      ? 'قناة البريد غير مفعّلة — قُبل الطلب بلا تحقق بريدي'
+      : `تعذّر إرسال رمز التحقق (${error ?? 'سبب غير معروف'}) — قُبل الطلب بلا تحقق بريدي`
+    await this.prisma.$transaction(async (tx) => {
+      await tx.trainerApplication.update({
+        where: { id: applicationId },
+        data: {
+          status: 'submitted',
+          /* emailVerifiedAt يبقى فارغا: لم يُتحقَّق منه فعلا، ولا نكتب ما لم يقع */
+          emailVerifyTokenHash: null, emailVerifyExpiresAt: null,
+          accessTokenHash: sha256(candidateToken),
+        },
+      })
+      await tx.trainerStatusHistory.create({
+        data: { applicationId, fromStatus: 'email_verification_pending', toStatus: 'submitted', note },
+      })
+      await recordAudit(tx, {
+        action: 'trainer.application.email_gate_skipped', entityType: 'trainer_application', entityId: applicationId,
+        meta: { reference, why },
+      })
+    })
+    await notifyRole(this.prisma, ['super_admin', 'academic_manager', 'operations_manager'], {
+      channel: 'in_app',
+      title: 'طلب انضمام مدرب — بلا تحقق بريدي',
+      body: `وصل طلب (${reference}) وقناة البريد لم تُسلّم رمز التحقق، فقُبل بلا تحقق. راجعه بدليل أضعف من المعتاد.`,
+      templateKey: 'admin.trainer_application',
+      data: { applicationId, reference },
+    })
+    return candidateToken
   }
 
   /** تحقق البريد — ينقل الطلب إلى submitted ويصدر رمز وصول المرشح */
@@ -179,18 +248,26 @@ export class TrainerApplicationService {
   }
 
   /** إعادة إرسال رمز التحقق — نفس الرد سواء وُجد الطلب أم لا */
-  async resendVerification(email: string): Promise<{ tokenForDelivery: string | null }> {
+  async resendVerification(email: string): Promise<{ tokenForDelivery: string | null; emailDelivery: DirectMailStatus | null }> {
     const normalized = email.trim().toLowerCase()
     const app = await this.prisma.trainerApplication.findFirst({
       where: { email: normalized, status: 'email_verification_pending' },
     })
-    if (!app) return { tokenForDelivery: null }
+    if (!app) return { tokenForDelivery: null, emailDelivery: null }
     const token = newToken()
     await this.prisma.trainerApplication.update({
       where: { id: app.id },
       data: { emailVerifyTokenHash: sha256(token), emailVerifyExpiresAt: new Date(Date.now() + VERIFY_TTL_MS) },
     })
-    return { tokenForDelivery: token }
+    const link = `${publicSiteUrl()}/join-trainer?ref=${encodeURIComponent(app.reference)}&token=${encodeURIComponent(token)}`
+    const mail = await sendDirectEmail(this.prisma, {
+      to: normalized,
+      subject: `رمز تحقق جديد — ${app.reference}`,
+      text:
+        `أعدنا إرسال رمز تحقق بريدك لطلب الانضمام ${app.reference}.\n` +
+        `أكّده من هذا الرابط خلال 24 ساعة:\n${link}\n\nأو أدخل الرمز: ${token}\n\n— أكاديمية وجيز`,
+    })
+    return { tokenForDelivery: token, emailDelivery: mail.status }
   }
 
   /** عرض الحالة بأمان — يتطلب البريد مطابقا للرقم المرجعي ويكشف الحالة فقط */

@@ -138,9 +138,16 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
   }, async (req, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const result = await review.createInvitation(id, req.auth!.userId)
+    /* الرابط يُعاد للمسؤول دائما لا في التطوير وحده.
+       كان يُحجب في الإنتاج انتظارا لقناة بريد لا وجود لها في الشيفرة، فتُنشأ
+       الدعوة ولا يملك أحد رمزها — أي أن الحساب لا يُفتح أبدا. والبريد يُرسل
+       الآن فعلا، لكن المسؤول (وله صلاحية trainer.invite) يحتاج نسخةً يسلّمها
+       بيده حين تتعذّر القناة أو لا تصل الرسالة. */
     return reply.status(201).send({
       expiresAt: result.expiresAt,
-      ...(process.env.NODE_ENV === 'production' ? {} : { devInvitationToken: result.tokenForDelivery }),
+      acceptUrl: result.acceptUrl,
+      emailDelivery: result.emailDelivery,
+      invitationToken: result.tokenForDelivery,
     })
   })
 

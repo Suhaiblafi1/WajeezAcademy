@@ -31,6 +31,13 @@ async function cookieFor(email: string, password: string): Promise<string> {
 beforeAll(async () => {
   await setupTestDb()
   prisma = await testPrisma()
+  /* قناة البريد مفعّلة بمضيف لا يستجيب — البوابة البريدية تبقى قائمة كما صُمّمت.
+     (قناة غير مفعّلة تُسقط البوابة عمدا؛ لها اختبارها المستقل في applications.) */
+  await prisma.integrationSetting.upsert({
+    where: { provider: 'email' },
+    update: { enabled: true, config: { host: '127.0.0.1', port: 1, secure: false, fromEmail: 'no-reply@test.local' } },
+    create: { provider: 'email', enabled: true, config: { host: '127.0.0.1', port: 1, secure: false, fromEmail: 'no-reply@test.local' } },
+  })
   auth = new AuthService(prisma)
   review = new TrainerReviewService(prisma)
   appsSvc = new TrainerApplicationService(prisma)

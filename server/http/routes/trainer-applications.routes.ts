@@ -60,10 +60,14 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
       youtubeUrl: body.youtubeUrl || undefined,
       instagramUrl: body.instagramUrl || undefined,
     })
+    /* رمز التحقق يُرسَل بالبريد فعليا الآن. وحين تتعذّر القناة يمضي الطلب بلا
+       بوابة بريدية (بأثر صريح في سجل الحالة) ويعود رمز وصول المرشح هنا — وإلا
+       بقي المتقدم عند «بانتظار التحقق» أبدا، وهو ما كان يقع في الإنتاج. */
     return reply.status(201).send({
       reference: result.reference,
-      status: 'email_verification_pending',
-      /* لا قناة بريد فعلية بعد — الرمز يظهر في التطوير فقط */
+      status: result.candidateToken ? 'submitted' : 'email_verification_pending',
+      emailDelivery: result.emailDelivery,
+      ...(result.candidateToken ? { candidateToken: result.candidateToken } : {}),
       ...(IS_PROD ? {} : { devVerificationToken: result.verificationTokenForDelivery }),
     })
   })
@@ -81,7 +85,8 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
   }, async (req) => {
     const body = z.object({ email: z.string().email() }).parse(req.body)
     const result = await svc.resendVerification(body.email)
-    return { ok: true, ...(IS_PROD ? {} : { devVerificationToken: result.tokenForDelivery }) }
+    /* الحالة تُعاد دائما بلا كشف وجود الطلب: null تعني «لا طلب معلّق بهذا البريد» */
+    return { ok: true, emailDelivery: result.emailDelivery, ...(IS_PROD ? {} : { devVerificationToken: result.tokenForDelivery }) }
   })
 
   app.get('/api/v1/trainer-applications/:reference/status', {
