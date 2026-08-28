@@ -6,7 +6,6 @@ import {
   Clock3,
   Route as RouteIcon,
   Gift,
-  MessageCircle,
   Sparkles,
   CheckCircle2,
   CreditCard,
@@ -57,20 +56,11 @@ function readUserName(): string | null {
   }
 }
 
-/* ─────────── المستشارون حسب المجال ─────────── */
-const ADVISORS: Record<string, { name: string; title: string }> = {
-  FND: { name: "أ. ريم القحطاني", title: "مستشارة المسارات التأسيسية" },
-  STU: { name: "أ. ريم القحطاني", title: "مستشارة الجاهزية المهنية" },
-  CAREER: { name: "أ. ريم القحطاني", title: "مستشارة التحول المهني" },
-  EMP: { name: "د. فيصل العتيبي", title: "مستشار تطوير الموظفين" },
-  GOV: { name: "م. سلطان الدوسري", title: "مستشار القطاع الحكومي" },
-  BIZ: { name: "م. لينا الحربي", title: "مستشارة ريادة الأعمال" },
-  FREE: { name: "م. لينا الحربي", title: "مستشارة العمل الحر" },
-  LEAD: { name: "م. سلطان الدوسري", title: "مستشار القيادة" },
-  FAM: { name: "أ. ريم القحطاني", title: "مستشارة المسارات الأسرية" },
-  WELL: { name: "أ. ريم القحطاني", title: "مستشارة التركيز والرفاه" },
-}
-// قناة مراسلة المستشار تُدار مركزيا عبر مكوّن AdvisorContact وبيانات CONTACT
+/* حُذفت خريطة ADVISORS: عشرة أسماء لأشخاص («أ. ريم القحطاني»، «د. فيصل
+   العتيبي»…) مكتوبة في الكود وتُعرض على مسارات موقعٍ حي كأنها فريق استشاري
+   قائم. ولا أحد منهم موثَّق ولا معتمد — وقاعدة المستودع أن لا اسم يُعرض كحقيقة
+   قبل توثيقه واعتماده. وقناة المراسلة تُدار مركزيا عبر AdvisorContact وبيانات
+   CONTACT، فلم تكن الأسماء تفعل شيئا إلا الادّعاء. */
 
 const PERSONA_LABELS: Record<string, string> = {
   student: "طالب يستعد لسوق العمل", graduate: "خريج جديد يبحث عن فرصته الأولى",
@@ -195,8 +185,7 @@ export default function PathwayPage() {
     );
   }
 
-  const advisor = ADVISORS[pathway.id.split("-")[1]] ?? ADVISORS.FND;
-  const advisorMsg = `مرحبا ${advisor.name}، أكملت تشخيص وجيز ورُشّح لي مسار «${pathway.name}» وأريد استشارتك قبل البدء.`;
+  const advisorMsg = `مرحبا، أكملت تشخيص وجيز ورُشّح لي مسار «${pathway.name}» وأريد استشارة قبل البدء.`;
 
   /* اختيار الدورات المتعدد — دورة واحدة أو عدة دورات بحرية كاملة */
   const buyableCourses = pathwayCoursesList.filter((c) => c.id !== custom?.giftId);
@@ -554,28 +543,27 @@ export default function PathwayPage() {
             </a>
           </div>
 
-          {/* مستشارك على واتساب */}
-          <div className="story-fade mt-10 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
-            <div className="flex flex-wrap items-center gap-5">
-              <div className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-gradient-to-br from-teal to-teal-deep text-xl font-black text-white">
-                {advisor.name.replace(/^(أ\.|د\.|م\.)\s*/, "").charAt(0)}
-              </div>
-              <div className="flex-1">
-                <p className="font-black">{advisor.name}</p>
-                <p className="mt-0.5 text-sm text-teal-light-ink">{advisor.title} — مستشارك المخصص لهذا المسار</p>
-                <p className="mt-2 text-sm leading-relaxed text-white/55">
-                  متردد قبل الدفع؟ راسل مستشارك مباشرة — قرأ تشخيصك وسيجيبك بنفسه، لا رد آلي.
-                </p>
-              </div>
-              <Button asChild className="h-12 rounded-full bg-[#25D366] px-6 font-black text-on-bright hover:bg-[#25D366]/85">
-                <AdvisorContact
-                  text={advisorMsg}
-                  label="كلم مستشارك"
-                  icon={<MessageCircle className="ml-2 h-5 w-5" />}
-                />
-              </Button>
-            </div>
-          </div>
+          {/* المستشار سطرٌ لمن يحتاجه، لا صندوقٌ يُشجَّع عليه الجميع.
+
+              كان بطاقةً بعرض الصفحة: دائرةُ حرفٍ كبيرة، واسمُ شخصٍ بخط عريض،
+              ولقبٌ يقول «مستشارك المخصص لهذا المسار»، وزرٌّ أخضر بحجم زر الشراء.
+              وفيها عيبان: الأول أن دور المستشار في هذا المنتج استثناء لا قاعدة —
+              التشخيص يحسم، والمستشار لمن لم يحسم له. والثاني أن الأسماء
+              (ADVISORS) بيانات ثابتة في الكود لا أشخاصٌ موثّقون، فعرضها كأنها
+              فريقٌ قائم ادّعاء — وهو ما تمنعه قاعدةُ «لا اسم يُعرض كحقيقة قبل
+              توثيقه». فبقي الباب مفتوحا وسقط الادّعاء: قناة الاتصال نفسها، بلا
+              اسم ولا صورة ولا إلحاح. */}
+          <p className="story-fade mt-6 text-center text-xs leading-relaxed text-white/40">
+            ما زلت مترددا؟{" "}
+            <AdvisorContact
+              text={advisorMsg}
+              label="راسل مستشار وجيز قبل الدفع"
+              /* شذرة فارغة لا null: التوقيع يسقط عند null إلى أيقونة افتراضية،
+                 وهذه دعوةٌ داخل جملة لا زرّ — أيقونةٌ فيها ضجيج. */
+              icon={<></>}
+              className="font-bold text-white/60 underline underline-offset-4 transition hover:text-[#6EC7D1]"
+            />
+          </p>
 
           <p className="mt-8 flex items-center justify-center gap-2 text-center text-xs text-white/55">
             <Sparkles className="h-3.5 w-3.5" />

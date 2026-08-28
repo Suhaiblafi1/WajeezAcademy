@@ -28,14 +28,12 @@ import {
 import AdvisorContact from "@/components/AdvisorContact";
 import EmptyState from "@/components/EmptyState";
 
-/* مستشارو المجالات — نفس منطق صفحة المسار العامة (وضع المحاكاة) */
-const ADVISORS: Record<string, { name: string; title: string }> = {
-  EMP: { name: "د. فيصل العتيبي", title: "مستشار تطوير الموظفين" },
-  GOV: { name: "م. سلطان الدوسري", title: "مستشار القطاع الحكومي" },
-  STU: { name: "أ. ريم القحطاني", title: "مستشارة الجاهزية المهنية" },
-  BIZ: { name: "م. لينا الحربي", title: "مستشارة ريادة الأعمال" },
-  LEAD: { name: "م. سلطان الدوسري", title: "مستشار القيادة" },
-};
+/* حُذفت خريطة ADVISORS هنا كما حُذفت في صفحة المسار: أسماءُ أشخاصٍ مكتوبةٌ في
+   الكود تُعرض للطالب الدافع كأنها مستشارُه المعيَّن. والقاعدة أن لا اسم يُعرض
+   كحقيقة قبل توثيقه واعتماده.
+   وللإسناد الحقيقي جداولُه في القاعدة (AdvisorCase وAdvisorAssignment
+   وAdvisorNote)، ولا تقرؤها هذه الصفحة بعدُ. فحين تُوصَل، يُعرض المستشار
+   المعيَّن فعلا وملاحظتُه الفعلية — لا اسمٌ يُنتقى برمز المسار. */
 
 /* ─── أنواع الوضع الحقيقي (مطابقة لاستجابات /api/learner) ─── */
 interface RealEnrollment {
@@ -532,8 +530,7 @@ function SimulatedDashboardBody() {
     .sort((a, b) => a.date.localeCompare(b.date))
     .slice(0, 4);
 
-  const advisor = ADVISORS[pathwayId.split("-")[1]] ?? ADVISORS.EMP;
-  const advisorMsg = `مرحبا ${advisor.name}، أنا ${user} طالب مسار «${pathway?.name}» وأريد استشارتك.`;
+  const advisorMsg = `مرحبا، أنا ${user} طالب مسار «${pathway?.name}» وأريد استشارة.`;
   const unread = state.notifications.filter((n) => !n.read).length;
   const completedCount = (pathwayCourses[pathwayId] ?? []).filter((id) => courseGate(pathwayId, id, state).status === "completed").length;
   const totalCourses = (pathwayCourses[pathwayId] ?? []).length;
@@ -594,25 +591,21 @@ function SimulatedDashboardBody() {
           </Link>
         </section>
 
-        {/* المستشار */}
+        {/* المستشار — بابٌ مفتوح بلا اسمٍ مختلق ولا ملاحظةٍ لم تُكتب.
+            كانت البطاقة تعرض اسم شخص ولقبه، ثم «آخر ملاحظة: بداية موفقة…» —
+            رسالةٌ منسوبةٌ إلى إنسان لم يكتبها. الاسمُ والملاحظة يعودان معًا يوم
+            تُقرأ AdvisorAssignment وAdvisorNote من القاعدة. */}
         <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
           <div className="flex items-center gap-2 text-sm font-bold text-white/70">
-            <MessageCircle className="h-4 w-4 text-[#25D366]" /> مستشارك
+            <MessageCircle className="h-4 w-4 text-[#25D366]" /> مستشار وجيز
           </div>
-          <div className="mt-4 flex items-center gap-3">
-            <span className="grid h-12 w-12 place-items-center rounded-full bg-gradient-to-br from-teal to-teal-deep text-lg font-black">
-              {advisor.name.replace(/^(أ\.|د\.|م\.)\s*/, "").charAt(0)}
-            </span>
-            <div>
-              <p className="font-black">{advisor.name}</p>
-              <p className="text-xs text-teal-light-ink">{advisor.title}</p>
-            </div>
-          </div>
-          <p className="mt-3 text-xs leading-6 text-white/50">آخر ملاحظة: «بداية موفقة — ركز على إنهاء دروس الدورة الأولى هذا الأسبوع.»</p>
+          <p className="mt-3 text-xs leading-6 text-white/50">
+            تعثّرت في محور، أو أردت تبديل دورة، أو احتجت رأيا قبل قرار — راسلنا ويردّ عليك إنسان.
+          </p>
           <AdvisorContact
             text={advisorMsg}
-            label="راسل مستشارك"
-            className="mt-4 flex items-center justify-center gap-2 rounded-full bg-[#25D366] py-2.5 text-sm font-black text-on-bright hover:bg-[#25D366]/85"
+            label="راسل مستشارا"
+            className="mt-4 flex items-center justify-center gap-2 rounded-full border border-[#25D366]/50 py-2.5 text-sm font-bold text-[#25D366] transition hover:bg-[#25D366]/10"
           />
         </section>
       </div>
