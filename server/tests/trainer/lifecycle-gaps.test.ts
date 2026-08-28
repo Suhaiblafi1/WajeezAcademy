@@ -28,7 +28,7 @@ const base = {
   jobTitle: 'مدرب', specialties: ['تحليل البيانات والمالية'],
   domainYears: '8-12' as const, trainingYears: 'formal_teaching',
   bio: 'خبرة', trainingLanguages: ['العربية'], deliveryMode: 'both' as const,
-  motivation: 'أريد تدريب مهارات حقيقية بمنهجية موثقة', privacyConsent: true as const,
+  motivation: 'أريد الانضمام إلى وجيز لأنني درّبت فرقا حقيقية في بيئات عمل عربية، وأعرف الفرق بين من يعرف المادة ومن يستطيع تعليمها. سأقدّم للمتعلمين مهمة تطبيقية من واقع عملهم في كل وحدة، وأراجع مخرجاتهم بنفسي وأكتب لكل واحد ما ينقصه تحديدا لا تقييما عاما.', privacyConsent: true as const,
 }
 
 beforeAll(async () => {
@@ -75,8 +75,7 @@ describe('قناة البريد غير مفعّلة — الطلب لا يُحب
     await review.decide(row!.id, adminId, 'move_to_review')
     await review.decide(row!.id, adminId, 'request_info', 'أرسل نموذج تدريب')
     const saved = await apps.completePhase2(res.reference, res.candidateToken!, {
-      previousCourses: [{ title: 'التفاوض التجاري', org: 'جهة سابقة', year: 2025, learnersCount: 40 }],
-      totalLearners: 40,
+      previousCourses: [{ title: 'التفاوض التجاري', org: 'جهة سابقة', year: 2025, link: 'https://example.test/course' }],
       teachableCourseIds: [teachable!.id],
       availability: { hoursPerWeek: 6 },
       demoConsent: true,

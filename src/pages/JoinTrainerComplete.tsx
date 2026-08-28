@@ -20,16 +20,19 @@ const DAYS = ["السبت", "الأحد", "الاثنين", "الثلاثاء", 
 
 interface UploadState { status: "idle" | "registering" | "uploading" | "done" | "error"; name?: string }
 
-/** المرحلة الثانية — الاستكمال المهني: تُفتح للمرشحين فقط برمز الوصول */
+/** الاستكمال المهني — صفحةٌ موروثة.
+
+   صار الطلب نموذجا واحدا بأربعة أقسام في /join-trainer (2026-08-28)، فلا
+   يُرسَل أحدٌ إلى هنا بعد اليوم. لكن روابط قديمة ما زالت في بُرُد مرشحين
+   سابقين، وكسرُها يوقف طلبا في منتصفه ولا يعلم صاحبه. فتبقى تعمل بالعقد
+   الجديد نفسه: بلا «إجمالي المتدربين» ولا «جهات عملت معها» ولا «أدلة
+   وتوصيات» — حقولٌ حُذفت لأن المتقدّم يكتبها عن نفسه بلا تحقق. */
 export default function JoinTrainerComplete() {
   const [params] = useSearchParams();
   const reference = params.get("ref") ?? "";
   const candidateToken = params.get("token") ?? "";
 
-  const [prevCourses, setPrevCourses] = useState([{ title: "", org: "", year: "", learnersCount: "" }]);
-  const [totalLearners, setTotalLearners] = useState("");
-  const [previousOrgs, setPreviousOrgs] = useState("");
-  const [evidenceNotes, setEvidenceNotes] = useState("");
+  const [prevCourses, setPrevCourses] = useState([{ title: "", org: "", year: "", link: "" }]);
   const [teachable, setTeachable] = useState<string[]>([]);
   const [days, setDays] = useState<string[]>([]);
   const [hoursPerWeek, setHoursPerWeek] = useState("");
@@ -77,10 +80,8 @@ export default function JoinTrainerComplete() {
         previousCourses: prevCourses.filter((c) => c.title.trim()).map((c) => ({
           title: c.title, org: c.org || undefined,
           year: c.year ? Number(c.year) : undefined,
-          learnersCount: c.learnersCount ? Number(c.learnersCount) : undefined,
+          link: c.link || undefined,
         })),
-        totalLearners: totalLearners ? Number(totalLearners) : undefined,
-        previousOrgs: previousOrgs || undefined, evidenceNotes: evidenceNotes || undefined,
         teachableCourseIds: teachable,
         availability: { days, hoursPerWeek: hoursPerWeek ? Number(hoursPerWeek) : undefined, startFrom: startFrom || undefined },
         demoConsent,
@@ -174,7 +175,10 @@ export default function JoinTrainerComplete() {
 
           {/* الدورات السابقة */}
           <fieldset>
-            <legend className="text-sm font-black">ثلاث دورات درّبتها سابقا — الأبرز فقط</legend>
+            <legend className="text-sm font-black">أبرز ثلاث دورات قدّمتها عبر الإنترنت</legend>
+            <p className="mt-1 text-[11px] leading-relaxed text-white/40">
+              اذكر اسم الدورة، والجهة أو المنصة التي قدّمتها من خلالها، ورابطا أو نموذجا مختصرا إن توفّر.
+            </p>
             <div className="mt-3 space-y-3">
               {prevCourses.map((c, i) => (
                 <div key={i} className="grid gap-2 rounded-2xl border border-white/10 bg-black/20 p-3 sm:grid-cols-4">
@@ -187,32 +191,19 @@ export default function JoinTrainerComplete() {
                   <input placeholder="السنة" dir="ltr" value={c.year} aria-label="السنة"
                     onChange={(e) => setPrevCourses(prevCourses.map((x, j) => j === i ? { ...x, year: e.target.value } : x))}
                     className={`${inputCls} text-left`} />
+                  <input placeholder="رابط أو نموذج (اختياري)" dir="ltr" value={c.link} aria-label={`رابط الدورة ${i + 1}`}
+                    onChange={(e) => setPrevCourses(prevCourses.map((x, j) => j === i ? { ...x, link: e.target.value } : x))}
+                    className={`${inputCls} text-left sm:col-span-4`} />
                 </div>
               ))}
               {prevCourses.length < 3 && (
-                <button type="button" onClick={() => setPrevCourses([...prevCourses, { title: "", org: "", year: "", learnersCount: "" }])}
+                <button type="button" onClick={() => setPrevCourses([...prevCourses, { title: "", org: "", year: "", link: "" }])}
                   className="cursor-pointer text-xs font-bold text-teal-light-ink hover:text-teal-ink">
                   + أضف دورة أخرى
                 </button>
               )}
             </div>
           </fieldset>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label htmlFor="p2-learners" className="mb-1.5 block text-xs font-bold text-white/60">إجمالي المتدربين الذين درّبتهم</label>
-              <input id="p2-learners" dir="ltr" inputMode="numeric" value={totalLearners} onChange={(e) => setTotalLearners(e.target.value)} className={`${inputCls} text-left`} />
-            </div>
-            <div>
-              <label htmlFor="p2-orgs" className="mb-1.5 block text-xs font-bold text-white/60">جهات عملت معها سابقا</label>
-              <input id="p2-orgs" value={previousOrgs} onChange={(e) => setPreviousOrgs(e.target.value)} className={inputCls} />
-            </div>
-          </div>
-
-          <div>
-            <label htmlFor="p2-evidence" className="mb-1.5 block text-xs font-bold text-white/60">أدلة وتوصيات — روابط أو وصف موجز</label>
-            <textarea id="p2-evidence" rows={2} value={evidenceNotes} onChange={(e) => setEvidenceNotes(e.target.value)} className={inputCls} />
-          </div>
 
           {/* الدورات القابلة للتدريس */}
           <fieldset>

@@ -33,7 +33,7 @@ const applicant = (email: string, name: string) => ({
   jobTitle: 'مدرب', specialties: ['تحليل البيانات والمالية'],
   domainYears: '8-12' as const, trainingYears: 'formal_teaching',
   bio: 'خبرة', trainingLanguages: ['العربية'], deliveryMode: 'both' as const,
-  motivation: 'أريد تدريب مهارات حقيقية بمنهجية موثقة', privacyConsent: true as const,
+  motivation: 'أريد الانضمام إلى وجيز لأنني درّبت فرقا حقيقية في بيئات عمل عربية، وأعرف الفرق بين من يعرف المادة ومن يستطيع تعليمها. سأقدّم للمتعلمين مهمة تطبيقية من واقع عملهم في كل وحدة، وأراجع مخرجاتهم بنفسي وأكتب لكل واحد ما ينقصه تحديدا لا تقييما عاما.', privacyConsent: true as const,
 })
 
 /** يمضي بمتقدم حتى يصير مدربا فعالا بحساب، ويعيد ملفه ورمز جلسته */

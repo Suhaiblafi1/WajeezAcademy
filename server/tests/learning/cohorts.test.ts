@@ -29,7 +29,7 @@ async function makeActiveTrainer(email: string, name: string) {
     fullName: name, email, specialties: ['إدارة المشاريع والعمليات'],
     domainYears: '8-12', trainingYears: 'formal_teaching',
     trainingLanguages: ['العربية'], deliveryMode: 'remote',
-    motivation: 'مدرب اختبار الشعب', privacyConsent: true,
+    motivation: 'أريد الانضمام إلى وجيز لأنني درّبت فرقا حقيقية في بيئات عمل عربية، وأعرف الفرق بين من يعرف المادة ومن يستطيع تعليمها. سأقدّم للمتعلمين مهمة تطبيقية من واقع عملهم في كل وحدة، وأراجع مخرجاتهم بنفسي وأكتب لكل واحد ما ينقصه تحديدا لا تقييما عاما.', privacyConsent: true,
   })
   await apps.verifyEmail(p1.reference, p1.verificationTokenForDelivery)
   const app = await prisma.trainerApplication.findUnique({ where: { reference: p1.reference } })

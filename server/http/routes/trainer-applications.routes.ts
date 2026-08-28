@@ -51,7 +51,9 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
       targetAudiences: z.array(z.string().min(2)).max(12).optional(),
       trainingLanguages: z.array(z.string().min(2)).min(1),
       deliveryMode: z.enum(['in_person', 'remote', 'both']),
-      motivation: z.string().min(10),
+      /* ١٥٠–٥٠٠: عشرةُ أحرف كانت تقبل «أحب التدريب» — سطرٌ لا يُقرأ منه شيء
+         ولا يُفاضَل به بين طلبين. والسقف يمنع سيرةً ذاتية ثانية في حقل نصّ. */
+      motivation: z.string().trim().min(150).max(500),
       privacyConsent: z.literal(true),
     }).parse(req.body)
     const result = await svc.submitPhase1({
@@ -103,14 +105,14 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
     const { reference } = z.object({ reference: z.string().min(5) }).parse(req.params)
     const body = z.object({
       candidateToken: z.string().min(10),
+      /* «أبرز ثلاث دورات قدمتها عبر الإنترنت»: العنوان والجهة والسنة ورابط
+         اختياري. وسقط learnersCount معها — عددٌ يكتبه المتقدم عن نفسه ولا
+         يُتحقق منه لا يفاضل بين طلبين. */
       previousCourses: z.array(z.object({
         title: z.string().min(2), org: z.string().optional(),
         year: z.number().int().min(1980).max(2100).optional(),
-        learnersCount: z.number().int().min(0).optional(),
+        link: z.string().max(500).optional(),
       })).max(3),
-      totalLearners: z.number().int().min(0).optional(),
-      previousOrgs: z.string().max(1000).optional(),
-      evidenceNotes: z.string().max(3000).optional(),
       teachableCourseIds: z.array(z.string()).min(1),
       availability: z.object({
         days: z.array(z.string()).optional(), hoursPerWeek: z.number().min(1).max(80).optional(),

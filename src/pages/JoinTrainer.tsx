@@ -2,12 +2,13 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import {
   ArrowLeft, ArrowRight, BadgeCheck, Check, CheckCircle2, ChevronDown, Compass, Copy,
-  Loader2, MailCheck, Mic2, Search, Send, Sparkles, Users,
+  FileUp, Loader2, MailCheck, Mic2, RefreshCcw, Search, Send, Sparkles, Users,
 } from "lucide-react";
 import SiteShell from "@/components/SiteShell";
 import SeoHead from "@/components/SeoHead";
 import { apiPost, apiGet, ApiError } from "@/services/api";
 import { TRAINING_SPECIALIZATIONS } from "@/data/trainer-contracts";
+import TeachableCoursePicker from "@/components/TeachableCoursePicker";
 
 /* صفحة انضمام المدربين.
 
@@ -87,10 +88,35 @@ const STATUS_LABELS: Record<string, string> = {
 const inputCls =
   "w-full rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:border-teal focus:outline-none";
 
+/* أربعة أقسام في نموذج واحد لا مرحلتان بينهما بريد.
+
+   كان الطلب يُقسم مرحلتين: مرحلة أولى تُرسَل، ثم رابطٌ يصل بالبريد يفتح مرحلة
+   ثانية. وكلفة ذلك أن كل متقدّم يعبر بابين لا بابا، وأن قناة البريد صارت
+   شرطا لإكمال الطلب — من لم تصله الرسالة توقف طلبه عند نصفه.
+   والقسمان الأخيران يحتاجان مرجع الطلب (لرفع الملفات)، فيُرسَل القسمان
+   الأولان في الخلفية عند الانتقال إلى الثالث — والمتقدّم يرى نموذجا واحدا. */
+/* حدّ الدافع: ١٥٠ حرفا لا عشرة. «أحب التدريب» جوابٌ كان يمرّ ولا يُقرأ منه
+   شيء ولا يفاضل بين طلبين. والسقف ٥٠٠ يمنع سيرةً ذاتية ثانية في حقل نصّ.
+   الرقمان هنا مطابقان لما يفرضه الخادم — والعدّاد يقرأ منهما. */
+export const MOTIVATION_MIN = 150;
+export const MOTIVATION_MAX = 500;
+
+const DOC_KINDS = [
+  { kind: "cv", label: "السيرة الذاتية", hint: "PDF · حتى ١٠MB", accept: "application/pdf", required: true },
+  { kind: "evidence", label: "ملف أعمال أو نماذج تدريب سابقة", hint: "PDF أو رابط في الحقول أدناه · حتى ٢٠MB", accept: "application/pdf,image/*", required: false },
+  { kind: "training_video", label: "فيديو تدريبي", hint: "حتى ٣٠٠MB — أو ضع رابط قناتك أدناه", accept: "video/*", required: false },
+  { kind: "certificate", label: "شهادات واعتمادات", hint: "PDF أو صورة · حتى ٢٠MB", accept: "application/pdf,image/*", required: false },
+] as const;
+
+const DAYS = ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"];
+
+interface UploadState { status: "idle" | "registering" | "uploading" | "done" | "error"; name?: string; error?: string }
+
 const STEPS = [
-  { n: 1, title: "من أنت", hint: "بياناتك وكيف نصل إليك" },
-  { n: 2, title: "ماذا تُتقن", hint: "تخصصاتك وخبرتك وأدلتها" },
-  { n: 3, title: "كيف تدرّب", hint: "جمهورك ولغتك ونمطك" },
+  { n: 1, title: "معلوماتك وخبرتك", hint: "من أنت وماذا تُتقن" },
+  { n: 2, title: "ما يمكنك تدريسه", hint: "من الكتالوج، بمجاله ومستواه" },
+  { n: 3, title: "نماذجك وأدلتك", hint: "سيرتك ودوراتك السابقة" },
+  { n: 4, title: "مراجعة وإرسال", hint: "ما سيقرؤه المراجع عنك" },
 ] as const;
 
 /** قائمة منسدلة متعددة الاختيار — مربع صح بجانب كل خيار، والمختار يظهر وسمًا صغيرًا قابلا للإزالة */
@@ -219,6 +245,20 @@ export default function JoinTrainer() {
   /* رمز المرشح — من رد التحقق أو من رد التقديم حين تتعذّر قناة البريد */
   const [candidateToken, setCandidateToken] = useState("");
 
+  /* الأقسام 2–4 — كانت في صفحة مستقلة تُفتح برابط بريد، وصارت أقساما هنا */
+  const [teachable, setTeachable] = useState<string[]>([]);
+  const [prevCourses, setPrevCourses] = useState([
+    { title: "", org: "", year: "", link: "" },
+    { title: "", org: "", year: "", link: "" },
+    { title: "", org: "", year: "", link: "" },
+  ]);
+  const [days, setDays] = useState<string[]>([]);
+  const [hoursPerWeek, setHoursPerWeek] = useState("");
+  const [startFrom, setStartFrom] = useState("");
+  const [demoConsent, setDemoConsent] = useState(false);
+  const [uploads, setUploads] = useState<Record<string, UploadState>>({});
+  const [phase2Done, setPhase2Done] = useState(false);
+
   /* متابعة حالة طلب سابق */
   const [lookup, setLookup] = useState({ reference: "", email: "" });
   const [lookupResult, setLookupResult] = useState<string | null>(null);
@@ -233,18 +273,83 @@ export default function JoinTrainer() {
   const toggle = (list: string[], v: string, fn: (x: string[]) => void) =>
     fn(list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
 
-  /* تحقق لكل خطوة على حدة — الخطأ يظهر عند بابه لا كله عند الإرسال */
+  /* تحقق لكل قسم على حدة — الخطأ يظهر عند بابه لا كله عند الإرسال.
+
+     والقسم الأول يحمل كل ما تطلبه المرحلة الأولى في الخادم، لأنه هو الذي
+     يُرسَل عند الانتقال إلى الثاني: قسمٌ ناقص يعني طلبا مرفوضا في الخلفية
+     والمتقدّم يظن أنه مضى. */
+  const motivationLen = form.motivation.trim().length;
   const stepValid = useMemo(() => ({
-    1: form.fullName.trim().length >= 3 && /.+@.+\..+/.test(form.email) && Boolean(form.employmentStatus),
-    2: specialties.length > 0 && Boolean(form.domainYears) && Boolean(form.trainingYears),
-    3: languages.length > 0 && Boolean(form.deliveryMode) && form.motivation.trim().length >= 10 && form.privacyConsent,
-  }), [form, specialties, languages]);
+    1:
+      form.fullName.trim().length >= 3 && /.+@.+\..+/.test(form.email) && Boolean(form.employmentStatus) &&
+      specialties.length > 0 && Boolean(form.domainYears) && Boolean(form.trainingYears) &&
+      languages.length > 0 && Boolean(form.deliveryMode) &&
+      motivationLen >= MOTIVATION_MIN && motivationLen <= MOTIVATION_MAX && form.privacyConsent,
+    2: teachable.length > 0 && demoConsent,
+    3: uploads.cv?.status === "done" && prevCourses.some((c) => c.title.trim().length >= 2),
+    4: true,
+  }), [form, specialties, languages, motivationLen, teachable, demoConsent, uploads, prevCourses]);
 
   const valid = stepValid[1] && stepValid[2] && stepValid[3];
 
+  /* الإرسال النهائي — الأقسام 2–4. القسم الأول أُرسل عند المضيّ منه. */
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!valid || busy) return;
+    if (!valid || busy || !result || !candidateToken) return;
+    setBusy(true); setError("");
+    try {
+      await apiPost(`/api/v1/trainer-applications/${encodeURIComponent(result.reference)}/phase-2`, {
+        candidateToken,
+        previousCourses: prevCourses
+          .filter((c) => c.title.trim().length >= 2)
+          .map((c) => ({
+            title: c.title.trim(),
+            org: c.org.trim() || undefined,
+            year: c.year ? Number(c.year) : undefined,
+            link: c.link.trim() || undefined,
+          })),
+        teachableCourseIds: teachable,
+        availability: {
+          days: days.length ? days : undefined,
+          hoursPerWeek: hoursPerWeek ? Number(hoursPerWeek) : undefined,
+          startFrom: startFrom || undefined,
+        },
+        demoConsent,
+      });
+      setPhase2Done(true);
+      window.scrollTo(0, 0);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "تعذر إرسال الطلب — تحقق من اتصالك وحاول مجددا");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /* رفع مستند — يُسجَّل عند الخادم ثم يُرفع، وكل حالة تُعرض باسمها.
+     والخطأ يبقى مع صاحبه (لكل نوع حالته) وبزر إعادة، لا رسالة عامة أعلى
+     الصفحة تجعل المتقدّم يخمّن أيّ ملف سقط. */
+  const uploadFile = async (kind: string, file: File) => {
+    if (!result) return;
+    setUploads((u) => ({ ...u, [kind]: { status: "registering", name: file.name } }));
+    try {
+      const reg = await apiPost<{ uploadUrl: string }>(
+        `/api/v1/trainer-applications/${encodeURIComponent(result.reference)}/documents`,
+        { candidateToken, kind, originalName: file.name, mime: file.type || "application/octet-stream", sizeBytes: file.size },
+      );
+      setUploads((u) => ({ ...u, [kind]: { status: "uploading", name: file.name } }));
+      const res = await fetch(reg.uploadUrl, { method: "PUT", headers: { "content-type": "application/octet-stream" }, body: file });
+      if (!res.ok) throw new Error("upload failed");
+      setUploads((u) => ({ ...u, [kind]: { status: "done", name: file.name } }));
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : "تعذّر الرفع — جرّب مجددا";
+      setUploads((u) => ({ ...u, [kind]: { status: "error", name: file.name, error: msg } }));
+    }
+  };
+
+  /* المضيّ من القسم الأول: يُرسَل الطلب في الخلفية كي يوجد له مرجعٌ ترفع عليه
+     الملفات. المتقدّم يرى «التالي» لا «إرسال» — والنموذج واحد عنده. */
+  const startApplication = async () => {
+    if (result || busy) return true;
     setBusy(true); setError("");
     try {
       const res = await apiPost<SubmitResponse>("/api/v1/trainer-applications", {
@@ -261,14 +366,14 @@ export default function JoinTrainer() {
         targetCountries: targetCountries.length ? targetCountries : undefined,
         targetAudiences: targetAudiences.length ? targetAudiences : undefined,
         trainingLanguages: languages, deliveryMode: form.deliveryMode,
-        motivation: form.motivation, privacyConsent: form.privacyConsent,
+        motivation: form.motivation.trim(), privacyConsent: form.privacyConsent,
       });
       setResult(res);
-      /* قناة البريد متعذّرة: الطلب مضى بلا بوابة، ورمز المرشح يعود هنا */
       if (res.candidateToken) { setCandidateToken(res.candidateToken); setVerified(true); }
-      window.scrollTo(0, 0);
+      return true;
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "تعذر إرسال الطلب — تحقق من اتصالك وحاول مجددا");
+      setError(err instanceof ApiError ? err.message : "تعذر بدء الطلب — تحقق من اتصالك وحاول مجددا");
+      return false;
     } finally {
       setBusy(false);
     }
@@ -330,11 +435,10 @@ export default function JoinTrainer() {
     }
   };
 
-  /* ── شاشة ما بعد الإرسال ── */
-  if (result) {
-    const phase2Url = candidateToken
-      ? `/join-trainer/complete?ref=${encodeURIComponent(result.reference)}&token=${encodeURIComponent(candidateToken)}`
-      : null;
+  /* ── شاشة ما بعد الإرسال ── تظهر بعد اكتمال الأقسام الأربعة لا بعد الأول:
+     بدء الطلب في الخلفية تفصيلٌ تقني، وإظهار شاشة النجاح عنده يوهم المتقدّم
+     أنه انتهى وقد بقي نصف طلبه. */
+  if (result && phase2Done) {
     const mailUnavailable = result.emailDelivery && result.emailDelivery !== "sent";
     return (
       <SiteShell>
@@ -391,8 +495,8 @@ export default function JoinTrainer() {
                 </p>
               )}
               <p className="text-sm leading-8 text-white/60">
-                سيراجع فريقنا طلبك، وإن اختُرت أوليًا فُتحت لك المرحلة الثانية: ملفك المهني وسيرتك ونموذج
-                تدريب لك. احفظ الرابط والرمز أدناه — بهما وحدهما تُكمل ملفك أو تسحب طلبك.
+                وصلنا طلبك كاملا — بأقسامه الأربعة ومستنداتك. سيقرؤه فريقنا ثم نراسلك بالخطوة التالية:
+                مقابلة ودرس تجريبي قصير. احفظ رقمك المرجعي ورمز المرشح أدناه — بهما تتابع حالتك أو تسحب طلبك.
               </p>
 
               {candidateToken && (
@@ -400,17 +504,7 @@ export default function JoinTrainer() {
                   <p className="flex items-center gap-2 text-sm font-black text-teal-light-ink">
                     <BadgeCheck className="h-4 w-4" /> مفتاح متابعة طلبك
                   </p>
-                  <CopyBox label="رابط استكمال ملفك المهني" value={`${window.location.origin}${phase2Url ?? ""}`} mono={false} />
-                  <CopyBox label="رمز المرشح — لسحب الطلب أو استعادة الرابط" value={candidateToken} />
-                  {phase2Url && (
-                    <Link
-                      to={phase2Url}
-                      className="mt-4 inline-flex items-center gap-2 rounded-full bg-teal px-6 py-2.5 text-sm font-black text-on-teal transition hover:bg-teal/90"
-                    >
-                      أكمل ملفي المهني الآن
-                      <ArrowLeft className="h-4 w-4" />
-                    </Link>
-                  )}
+                  <CopyBox label="رمز المرشح — لمتابعة الحالة أو سحب الطلب" value={candidateToken} />
                 </div>
               )}
             </div>
@@ -425,8 +519,18 @@ export default function JoinTrainer() {
     );
   }
 
-  const next = () => { setStep((s) => Math.min(3, s + 1)); window.scrollTo({ top: 0, behavior: "smooth" }); };
-  const back = () => { setStep((s) => Math.max(1, s - 1)); window.scrollTo({ top: 0, behavior: "smooth" }); };
+  /* المضيّ من القسم الأول يبدأ الطلب في الخادم أولا — فبدونه لا مرجع تُرفع
+     عليه مستنداتُ القسم الثالث. وإن أخفق البدء بقي المتقدّم مكانه مع الخطأ،
+     ولم يمضِ إلى قسمٍ لا يعمل. */
+  const next = async () => {
+    if (step === 1 && !result) {
+      const ok = await startApplication();
+      if (!ok) return;
+    }
+    setStep((n) => Math.min(4, n + 1));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  const back = () => { setStep((n) => Math.max(1, n - 1)); window.scrollTo({ top: 0, behavior: "smooth" }); };
 
   return (
     <SiteShell>
@@ -440,7 +544,7 @@ export default function JoinTrainer() {
         <h1 className="h-section mt-4">درّب ما تتقنه — وأثرّ في مسارات حقيقية</h1>
         <p className="mt-4 max-w-2xl text-base leading-8 text-white/65">
           مدربو وجيز لا يلقون دروسا مسجلة فحسب — يراجعون واجبات، ويرافقون طلابا، ويقيمون مشاريع تخرج.
-          الطلب يمر بمرحلتين: هذا الطلب الأولي، ثم ملف مهني يُفتح للمرشحين فقط.
+          نموذج واحد بأربعة أقسام — يُحفظ تقدّمك كلما مضيت، ولا ينتظرك بريد بينها.
         </p>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-3">
@@ -457,7 +561,7 @@ export default function JoinTrainer() {
         </div>
 
         {/* مؤشر الخطوات — ثلاث محطات قصيرة بدل جدار واحد */}
-        <ol className="mt-10 grid grid-cols-3 gap-2" aria-label="خطوات الطلب">
+        <ol className="mt-10 grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="أقسام الطلب">
           {STEPS.map((s) => {
             const state = s.n === step ? "current" : s.n < step ? "done" : "todo";
             return (
@@ -536,13 +640,8 @@ export default function JoinTrainer() {
                 <label htmlFor="jt-bio" className="mb-1.5 block text-xs font-bold text-white/60">نبذة مختصرة عنك</label>
                 <textarea id="jt-bio" rows={2} value={form.bio} onChange={set("bio")} className={inputCls} />
               </div>
-            </div>
-          )}
 
-          {/* ══ ٢) ماذا تُتقن ══ */}
-          {step === 2 && (
-            <div className="space-y-6">
-              <fieldset>
+              <fieldset className="border-t border-white/5 pt-6">
                 <legend className="mb-1 text-xs font-bold text-white/60">تخصصاتك التدريبية *</legend>
                 <p className="mb-3 text-[11px] text-white/40">اختر ما تتقنه فعلا — الكثرة هنا لا تُحسب لك، والدقة تُحسب.</p>
                 <Chips options={TRAINING_SPECIALIZATIONS} selected={specialties} onToggle={(v) => toggle(specialties, v, setSpecialties)} />
@@ -568,6 +667,10 @@ export default function JoinTrainer() {
 
               <div className="space-y-5 border-t border-white/5 pt-6">
                 <p className="text-xs font-bold text-white/60">أدلتك — اختيارية كلها، لكنها ما يقرؤه المراجع قبل غيره</p>
+                <p className="-mt-3 text-[11px] leading-relaxed text-white/45">
+                  كل دليل واضح وموثوق يساعدنا على فهم خبرتك بسرعة ودقة. تُمنح الأولوية للطلبات التي تعرض خبرة
+                  قابلة للتحقق ونماذج حقيقية من العمل أو التدريب.
+                </p>
                 <div className="grid gap-5 sm:grid-cols-2">
                   <div>
                     <label htmlFor="jt-links" className="mb-1.5 block text-xs font-bold text-white/60">لينكدإن أو ملف أعمال</label>
@@ -602,13 +705,8 @@ export default function JoinTrainer() {
                   )}
                 </div>
               </div>
-            </div>
-          )}
 
-          {/* ══ ٣) كيف تدرّب ══ */}
-          {step === 3 && (
-            <div className="space-y-6">
-              <div className="grid gap-5 sm:grid-cols-2">
+              <div className="grid gap-5 border-t border-white/5 pt-6 sm:grid-cols-2">
                 <div>
                   <label htmlFor="jt-target-countries" className="mb-1.5 block text-xs font-bold text-white/60">الدول التي تستهدفها بتدريبك</label>
                   <MultiPick id="jt-target-countries" label="اختر من القائمة" options={[ALL_ARAB, ...ARAB_COUNTRIES]} selected={targetCountries} onChange={setTargetCountries} />
@@ -635,10 +733,26 @@ export default function JoinTrainer() {
                 </div>
               </div>
 
+              {/* عدّادٌ مباشر لا رسالةَ رفضٍ بعد الضغط: من كتب ٤٠ حرفا يجب أن يرى
+                  كم بقي وهو يكتب، لا أن يُردّ عند الإرسال. */}
               <div className="border-t border-white/5 pt-6">
                 <label htmlFor="jt-why" className="mb-1.5 block text-xs font-bold text-white/60">لماذا تريد الانضمام إلى وجيز تحديدا؟ *</label>
-                <textarea id="jt-why" rows={3} value={form.motivation} onChange={set("motivation")} className={inputCls} />
-                <p className="mt-1.5 text-[11px] text-white/40">سطران يكفيان — نقرؤها فعلا.</p>
+                <textarea
+                  id="jt-why" rows={4} value={form.motivation} onChange={set("motivation")}
+                  maxLength={MOTIVATION_MAX}
+                  aria-describedby="jt-why-count"
+                  className={`${inputCls} ${motivationLen > 0 && motivationLen < MOTIVATION_MIN ? "border-gold/50" : ""}`}
+                />
+                <p id="jt-why-count" className="mt-1.5 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                  <span className={motivationLen < MOTIVATION_MIN ? "text-gold-ink" : "text-white/40"}>
+                    {motivationLen < MOTIVATION_MIN
+                      ? `اكتب ${MOTIVATION_MIN} حرفا على الأقل. أضف مثالا يوضّح القيمة التي ستقدّمها للمتعلمين في وجيز.`
+                      : "نقرؤها فعلا — وهي أول ما يقرؤه المراجع."}
+                  </span>
+                  <span className="shrink-0 tabular-nums text-white/45" dir="ltr">
+                    {motivationLen} / {MOTIVATION_MAX}
+                  </span>
+                </p>
               </div>
 
               <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-white/10 bg-black/20 p-3">
@@ -653,16 +767,142 @@ export default function JoinTrainer() {
                 </span>
               </label>
 
-              {/* ملخّص قبل الإرسال — ما سيصلنا، بلا مفاجآت */}
-              <div className="rounded-2xl border border-teal/25 bg-teal/[0.04] p-4">
-                <p className="flex items-center gap-2 text-xs font-black text-teal-light-ink">
-                  <Sparkles className="h-3.5 w-3.5" /> ما سيصلنا عنك
+            </div>
+          )}
+
+          {/* ══ ٢) ما يمكنك تدريسه ══ */}
+          {step === 2 && (
+            <div className="space-y-6">
+              <fieldset>
+                <legend className="text-sm font-black">الدورات التي تستطيع تدريسها الآن *</legend>
+                <p className="mb-4 mt-1 text-[11px] leading-relaxed text-white/40">
+                  من كتالوج وجيز نفسه لا بنصّ حرّ — لأن المراجع يقارن عناوين، والربط بالمقرر بعد الاعتماد يحتاج
+                  المقرر نفسه لا وصفه.
+                </p>
+                <TeachableCoursePicker selected={teachable} onChange={setTeachable} />
+              </fieldset>
+
+              <div className="grid gap-5 border-t border-white/5 pt-6 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="jt-hours" className="mb-1.5 block text-xs font-bold text-white/60">ساعات أسبوعيا تستطيع تخصيصها</label>
+                  <input id="jt-hours" type="number" min={1} max={80} dir="ltr" value={hoursPerWeek}
+                    onChange={(e) => setHoursPerWeek(e.target.value)} className={`${inputCls} text-left`} />
+                </div>
+                <div>
+                  <label htmlFor="jt-start" className="mb-1.5 block text-xs font-bold text-white/60">يمكنك البدء من</label>
+                  <input id="jt-start" type="date" dir="ltr" value={startFrom}
+                    onChange={(e) => setStartFrom(e.target.value)} className={`${inputCls} text-left`} />
+                </div>
+              </div>
+
+              <fieldset className="border-t border-white/5 pt-6">
+                <legend className="mb-2.5 text-xs font-bold text-white/60">أيامك المتاحة</legend>
+                <Chips options={DAYS} selected={days} onToggle={(v) => toggle(days, v, setDays)} />
+              </fieldset>
+
+              <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-white/10 bg-black/20 p-3">
+                <input type="checkbox" checked={demoConsent} onChange={(e) => setDemoConsent(e.target.checked)} className="mt-0.5 h-4 w-4 accent-teal" />
+                <span className="text-xs leading-6 text-white/60">
+                  أوافق على تقديم درس تجريبي قصير (Demo) ومقابلة قبل الاعتماد. *
+                </span>
+              </label>
+            </div>
+          )}
+
+          {/* ══ ٣) نماذجك وأدلتك ══ */}
+          {step === 3 && (
+            <div className="space-y-6">
+              <fieldset>
+                <legend className="text-sm font-black">مستنداتك</legend>
+                <p className="mb-4 mt-1 text-[11px] leading-relaxed text-white/40">
+                  السيرة الذاتية مطلوبة، وما عداها موصى به بشدة. لكل ملف نوعه وحدّه — ولو تعثّر رفعٌ بقي خطؤه
+                  عنده بزر إعادة، لا رسالة عامة تجعلك تخمّن أيّها سقط.
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {DOC_KINDS.map((d) => {
+                    const st = uploads[d.kind];
+                    return (
+                      <div key={d.kind} className={`rounded-xl border p-3.5 ${
+                        st?.status === "done" ? "border-teal/45 bg-teal/[0.06]"
+                          : st?.status === "error" ? "border-gold/50 bg-gold/[0.06]" : "border-white/12 bg-black/25"
+                      }`}>
+                        <label className="flex cursor-pointer items-start gap-2.5">
+                          <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white/[0.06]">
+                            {st?.status === "done" ? <CheckCircle2 className="h-4 w-4 text-teal-light-ink" />
+                              : st?.status === "registering" || st?.status === "uploading" ? <Loader2 className="h-4 w-4 animate-spin text-white/60" />
+                              : <FileUp className="h-4 w-4 text-white/45" />}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <b className="block text-xs text-white/85">{d.label}{d.required ? " *" : ""}</b>
+                            <span className="mt-0.5 block text-[10.5px] text-white/40">{d.hint}</span>
+                            {st?.name && <span className="mt-1 block truncate text-[10.5px] text-white/55">{st.name}</span>}
+                          </span>
+                          <input type="file" accept={d.accept} className="sr-only"
+                            onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadFile(d.kind, f); }} />
+                        </label>
+                        {st?.status === "error" && (
+                          <p className="mt-2 flex items-center gap-1.5 text-[10.5px] text-gold-ink">
+                            <RefreshCcw className="h-3 w-3" /> {st.error ?? "تعذّر الرفع"} — اختر الملف مجددا
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </fieldset>
+
+              <fieldset className="border-t border-white/5 pt-6">
+                <legend className="text-sm font-black">أبرز ثلاث دورات قدّمتها عبر الإنترنت *</legend>
+                <p className="mb-4 mt-1 text-[11px] leading-relaxed text-white/40">
+                  اذكر اسم الدورة، والجهة أو المنصة التي قدّمتها من خلالها، ورابطا أو نموذجا مختصرا إن توفّر.
+                </p>
+                <div className="space-y-3">
+                  {prevCourses.map((c, i) => (
+                    <div key={i} className="grid gap-2.5 rounded-xl border border-white/10 bg-black/20 p-3 sm:grid-cols-4">
+                      <input placeholder={`عنوان الدورة ${i + 1}`} aria-label={`عنوان الدورة ${i + 1}`} value={c.title}
+                        onChange={(e) => setPrevCourses(prevCourses.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)))}
+                        className={`${inputCls} sm:col-span-2`} />
+                      <input placeholder="الجهة أو المنصة" aria-label={`الجهة للدورة ${i + 1}`} value={c.org}
+                        onChange={(e) => setPrevCourses(prevCourses.map((x, j) => (j === i ? { ...x, org: e.target.value } : x)))}
+                        className={inputCls} />
+                      <input placeholder="السنة" dir="ltr" inputMode="numeric" aria-label={`سنة الدورة ${i + 1}`} value={c.year}
+                        onChange={(e) => setPrevCourses(prevCourses.map((x, j) => (j === i ? { ...x, year: e.target.value.replace(/\D/g, "").slice(0, 4) } : x)))}
+                        className={`${inputCls} text-left`} />
+                      <input placeholder="رابط أو نموذج (اختياري)" dir="ltr" aria-label={`رابط الدورة ${i + 1}`} value={c.link}
+                        onChange={(e) => setPrevCourses(prevCourses.map((x, j) => (j === i ? { ...x, link: e.target.value } : x)))}
+                        className={`${inputCls} text-left sm:col-span-4`} />
+                    </div>
+                  ))}
+                </div>
+              </fieldset>
+            </div>
+          )}
+
+          {/* ══ ٤) مراجعة وإرسال ══ */}
+          {step === 4 && (
+            <div className="space-y-5">
+              <div className="rounded-2xl border border-teal/30 bg-teal/[0.05] p-5">
+                <p className="flex items-center gap-2 text-sm font-black text-teal-light-ink">
+                  <BadgeCheck className="h-4 w-4" /> طلبك محفوظ برقمه المرجعي
                 </p>
                 <p className="mt-2 text-[11.5px] leading-6 text-white/60">
-                  {form.fullName.trim() || "—"} · {specialties.length} تخصصا ·{" "}
-                  {DOMAIN_YEARS.find((y) => y.value === form.domainYears)?.label ?? "—"} في المجال ·{" "}
-                  {languages.join("، ") || "—"}
+                  رقمك: <b className="font-mono text-white/85" dir="ltr">{result?.reference ?? "—"}</b> — به وحده تتابع
+                  حالة طلبك وتستأنف مسودتك. احفظه، ولا تشاركه.
                 </p>
+              </div>
+
+              {/* ملخّص ما سيصل المراجع — بلا مفاجآت */}
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+                <p className="flex items-center gap-2 text-xs font-black text-white/75">
+                  <Sparkles className="h-3.5 w-3.5 text-teal-light-ink" /> ما سيقرؤه المراجع عنك
+                </p>
+                <ul className="mt-3 space-y-1.5 text-[11.5px] leading-6 text-white/60">
+                  <li>{form.fullName.trim() || "—"} · {specialties.length} تخصصا · {DOMAIN_YEARS.find((y) => y.value === form.domainYears)?.label ?? "—"} في المجال</li>
+                  <li>{teachable.length} دورة تستطيع تدريسها من الكتالوج</li>
+                  <li>{prevCourses.filter((c) => c.title.trim()).length} دورة سابقة عبر الإنترنت</li>
+                  <li>{Object.values(uploads).filter((u) => u.status === "done").length} مستندا مرفوعا</li>
+                  <li>دافعك: {motivationLen} حرفا</li>
+                </ul>
               </div>
             </div>
           )}
@@ -677,12 +917,14 @@ export default function JoinTrainer() {
               </button>
             ) : <span />}
 
-            {step < 3 ? (
+            {step < 4 ? (
               <button
-                type="button" onClick={next} disabled={!stepValid[step as 1 | 2]}
+                type="button" onClick={next} disabled={!stepValid[step as 1 | 2 | 3] || busy}
                 className="flex cursor-pointer items-center gap-2 rounded-full bg-teal px-7 py-2.5 text-sm font-black text-on-teal transition hover:bg-teal/90 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                التالي <ArrowLeft className="h-4 w-4" />
+                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {busy ? "نحفظ قسمك الأول…" : "التالي"}
+                {!busy && <ArrowLeft className="h-4 w-4" />}
               </button>
             ) : (
               <button
@@ -720,7 +962,7 @@ export default function JoinTrainer() {
           <div className="mt-5 border-t border-white/5 pt-5">
             <p className="text-xs font-bold text-white/55">غيّرت رأيك؟ يمكنك سحب طلبك نهائيا من هنا.</p>
             <p className="mt-1 text-[11px] leading-6 text-white/40">
-              رمز المرشح هو الذي عُرض عليك بعد تحقق بريدك (ومعه رابط استكمال ملفك). إن فقدته فراسلنا بالرقم
+              رمز المرشح هو الذي عُرض عليك بعد إتمام طلبك. إن فقدته فراسلنا بالرقم
               المرجعي وبريدك.
             </p>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">

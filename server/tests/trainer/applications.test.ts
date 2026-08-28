@@ -26,7 +26,7 @@ const phase1 = {
   domainYears: '8-12' as const, trainingYears: 'formal_teaching',
   bio: 'خبير بيانات', linkedinUrl: 'https://linkedin.com/in/test',
   trainingLanguages: ['العربية'], deliveryMode: 'both' as const,
-  motivation: 'أريد تدريب مهارات حقيقية بمنهجية موثقة', privacyConsent: true as const,
+  motivation: 'أريد الانضمام إلى وجيز لأنني درّبت فرقا حقيقية في بيئات عمل عربية، وأعرف الفرق بين من يعرف المادة ومن يستطيع تعليمها. سأقدّم للمتعلمين مهمة تطبيقية من واقع عملهم في كل وحدة، وأراجع مخرجاتهم بنفسي وأكتب لكل واحد ما ينقصه تحديدا لا تقييما عاما.', privacyConsent: true as const,
 }
 
 let reference = ''
@@ -96,20 +96,41 @@ describe('دورة طلب المدرب', () => {
     expect(mine!.fullName).toBe(phase1.fullName)
   })
 
-  it('6) المرحلة الثانية مغلقة قبل قرار الإدارة، وتُفتح بعد طلب المعلومات', async () => {
+  /* تغيّرت السياسة 2026-08-28: الطلب نموذج واحد بأربعة أقسام، فالملف المهني
+     يُستكمل فور التقديم لا بعد قرار إدارة. وكان الانتظار يعبر بالمتقدّم بابين
+     بينهما رسالة بريد — ومن لم تصله توقّف طلبه عند نصفه ولا يعلم أحد.
+     والحالات القديمة تبقى مفتوحة كي لا ينكسر طلبٌ في منتصف الدورة السابقة. */
+  it('6) الملف المهني يُستكمل فور التقديم، وبعد قرار الإدارة أيضا', async () => {
     const p2 = {
-      previousCourses: [{ title: 'أساسيات SQL', org: 'جهة سابقة', year: 2023, learnersCount: 120 }],
-      totalLearners: 300, teachableCourseIds: ['C-BIZ-101'],
+      previousCourses: [{ title: 'أساسيات SQL', org: 'جهة سابقة', year: 2023, link: 'https://example.test/sql' }],
+      teachableCourseIds: ['C-BIZ-101'],
       availability: { days: ['السبت', 'الثلاثاء'], hoursPerWeek: 6 },
       demoConsent: true as const,
     }
-    await expect(apps.completePhase2(reference, candidateToken, p2)).rejects.toMatchObject({ code: 'phase2_closed' })
+    const first = await apps.completePhase2(reference, candidateToken, p2)
+    expect(first.phase2CompletedAt).toBeTruthy()
 
     await review.decide(applicationId, adminId, 'move_to_review')
     await review.decide(applicationId, adminId, 'request_info', 'نحتاج سيرتك وأدلة خبرتك')
 
-    const done = await apps.completePhase2(reference, candidateToken, p2)
-    expect(done.phase2CompletedAt).toBeTruthy()
+    /* ويبقى قابلا للتحديث بعد طلب معلومات إضافية — لا يُقفل بأول إرسال */
+    const again = await apps.completePhase2(reference, candidateToken, p2)
+    expect(again.phase2CompletedAt).toBeTruthy()
+  })
+
+  it('6ب) الحقول المحذوفة لا تُكتب — ولو مرّرها متصل قديم', async () => {
+    const row = await prisma.trainerApplication.findUniqueOrThrow({ where: { reference } })
+    expect(row.totalLearners).toBeNull()
+    expect(row.previousOrgs).toBeNull()
+    expect(row.evidenceNotes).toBeNull()
+  })
+
+  it('6ج) الدافع دون ١٥٠ حرفا مرفوض، وفوق ٥٠٠ مرفوض', async () => {
+    const base = { ...phase1, email: `short-${Date.now()}@wajeez.test` }
+    await expect(apps.submitPhase1({ ...base, motivation: 'أحب التدريب' }))
+      .rejects.toMatchObject({ code: 'invalid_motivation' })
+    await expect(apps.submitPhase1({ ...base, motivation: 'م'.repeat(501) }))
+      .rejects.toMatchObject({ code: 'invalid_motivation' })
   })
 
   it('7) رفع وثيقة خاصة برابط موقع، وقراءتها برابط موقع، ورفض توقيع مزور', async () => {

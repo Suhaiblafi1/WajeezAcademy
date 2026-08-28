@@ -74,7 +74,7 @@ describe('صلاحيات منظومة المدربين عبر HTTP', () => {
         fullName: 'متقدم الصلاحيات', email: 'perm-applicant@test.local',
         specialties: ['القيادة وتطوير المدراء'], domainYears: '4-7', trainingYears: 'workshops',
         trainingLanguages: ['العربية'], deliveryMode: 'remote',
-        motivation: 'أريد الانضمام مدربا معتمدا', privacyConsent: true,
+        motivation: 'أريد الانضمام إلى وجيز لأنني درّبت فرقا حقيقية في بيئات عمل عربية، وأعرف الفرق بين من يعرف المادة ومن يستطيع تعليمها. سأقدّم للمتعلمين مهمة تطبيقية من واقع عملهم في كل وحدة، وأراجع مخرجاتهم بنفسي وأكتب لكل واحد ما ينقصه تحديدا لا تقييما عاما.', privacyConsent: true,
       },
     })
     expect(res.statusCode).toBe(201)

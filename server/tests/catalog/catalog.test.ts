@@ -104,7 +104,10 @@ describe('باني اللقطة', () => {
 
     const snap = await buildSnapshotFromDb(prisma)
     expect(snap.counts.pathways).toBe(20)
-    expect(snap.counts.courses).toBe(100)
+    /* العدد يُقرأ من المصدر لا يُكتب رقما: 100 في المسارات + المستقلّات
+       (C-COMX-106 «الإنجليزية للأعمال» أولها) — ورقمٌ ثابت هنا يقفل باب
+       إضافة مقرر بعد اليوم. */
+    expect(snap.counts.courses).toBe(j('src/data/catalog/core-catalog.v2.json').courses.length)
 
     /* المضمن أولا */
     const bundled = {

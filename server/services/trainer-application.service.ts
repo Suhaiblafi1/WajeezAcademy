@@ -42,8 +42,18 @@ export const ALLOWED_TRANSITIONS: Record<TrainerStatus, TrainerStatus[]> = {
   suspended: ['active'],
 }
 
-/* حالات تُفتح فيها المرحلة الثانية للمرشح */
+/* حالات يُقبل فيها استكمال الملف المهني.
+
+   كانت تبدأ بـinformation_requested — أي أن الملف لا يُفتح إلا بقرار إدارة.
+   وكان لذلك سبب: ألا نطلب من كل متقدّم رفع سيرة وفيديو قبل أن نقرأ طلبه.
+   لكنه صار كلفةً أعلى من فائدته: كل متقدّم يعبر بابين، وبينهما رسالة بريد —
+   ومن لم تصله توقّف طلبه عند نصفه، ولا يعلم أحد.
+
+   والنموذج صار واحدا بأربعة أقسام (2026-08-28): يعطي المتقدّم كل شيء مرة
+   واحدة، والإدارة تقرأ طلبا مكتملا لا نصفه. فأُضيف submitted إلى القائمة —
+   والحالات القديمة باقية كي لا ينكسر طلبٌ في منتصف الدورة القديمة. */
 const PHASE2_OPEN_STATUSES: TrainerStatus[] = [
+  'submitted',
   'information_requested', 'shortlisted', 'interview_scheduled', 'demo_requested', 'academic_review',
 ]
 
@@ -98,7 +108,12 @@ export class TrainerApplicationService {
     if (!input.privacyConsent) throw new AuthError('consent_required', 'موافقة الخصوصية إلزامية')
     if (!input.specialties.length) throw new AuthError('no_specialty', 'اختر تخصصا تدريبيا واحدا على الأقل')
     if (input.fullName.trim().length < 3) throw new AuthError('invalid_name', 'الاسم الكامل مطلوب')
-    if (input.motivation.trim().length < 10) throw new AuthError('invalid_motivation', 'اكتب سبب انضمامك بوضوح')
+    /* الحدّ ١٥٠ حرفا لا عشرة: «أحب التدريب» جوابٌ يمرّ ولا يُقرأ منه شيء،
+       ولا يفاضل بين طلبين. والحدّ يُفحص هنا أيضا لا في المسار وحده — لا مسار
+       تقديم يتخطّى القاعدة (لا من API ولا من اختبار). */
+    const motivation = input.motivation.trim()
+    if (motivation.length < 150) throw new AuthError('invalid_motivation', 'اكتب ١٥٠ حرفا على الأقل — وأضف مثالا يوضّح القيمة التي ستقدّمها للمتعلمين')
+    if (motivation.length > 500) throw new AuthError('invalid_motivation', 'خمسمائة حرف كحد أقصى — الاختصار جزء من المهارة')
 
     /* منع التكرار: بريد له طلب حي لا يقدم مرة أخرى */
     const existing = await this.prisma.trainerApplication.findFirst({
@@ -291,10 +306,7 @@ export class TrainerApplicationService {
 
   /** استكمال المرحلة الثانية — للمرشحين فقط وحين تكون الحالة تسمح */
   async completePhase2(reference: string, token: string, input: {
-    previousCourses: { title: string; org?: string; year?: number; learnersCount?: number }[]
-    totalLearners?: number
-    previousOrgs?: string
-    evidenceNotes?: string
+    previousCourses: { title: string; org?: string; year?: number; link?: string }[]
     teachableCourseIds: string[]
     availability: { days?: string[]; hoursPerWeek?: number; startFrom?: string }
     demoConsent: boolean
@@ -322,8 +334,12 @@ export class TrainerApplicationService {
         data: {
           phase2CompletedAt: done,
           previousCourses: input.previousCourses as unknown as Prisma.InputJsonValue,
-          totalLearners: input.totalLearners ?? null,
-          previousOrgs: input.previousOrgs, evidenceNotes: input.evidenceNotes,
+          /* حُذفت ثلاثة حقول من النموذج (2026-08-28): «إجمالي المتدربين» و«جهات
+             عملت معها» و«أدلة وتوصيات — روابط أو وصف موجز». كلها يكتبها المتقدم
+             عن نفسه بلا تحقق، فلا تفاضل بين طلبين، وتزيد النموذج طولا يزيد
+             هجره. وأعمدتها تبقى في القاعدة لأن فيها بيانات طلبات سابقة —
+             تُقرأ ولا تُكتب. */
+          totalLearners: null, previousOrgs: null, evidenceNotes: null,
           teachableCourseIds: input.teachableCourseIds,
           availability: input.availability as unknown as Prisma.InputJsonValue,
           demoConsent: input.demoConsent,
