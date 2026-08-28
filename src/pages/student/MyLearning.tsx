@@ -25,7 +25,7 @@ interface EnrollmentRow {
   id: string; status: string; createdAt: string;
   cohort: {
     id: string; title: string;
-    course: { versions: { titleAr: string }[] };
+    course: { id: string; versions: { titleAr: string }[] };
     trainers: { profile: { application: { fullName: string } } }[];
   };
   courseProgress: { percent: number } | null;
@@ -193,6 +193,14 @@ export default function MyLearning() {
 
                   {isOpen && (
                     <div className="border-t border-white/8 p-5">
+                      {/* محطات الدورة: المتن والتمارين والسيناريو — صفحةٌ مستقلّة
+                          لأنها قراءةٌ طويلة لا تُقرأ داخل بطاقة مطويّة. */}
+                      <Link
+                        to={`/student/course/${r.cohort.course.id}`}
+                        className="mb-5 flex items-center justify-center gap-2 rounded-2xl border border-teal/40 bg-teal/[0.07] py-3 text-sm font-black text-teal-light-ink transition hover:bg-teal/15"
+                      >
+                        <BookOpen className="h-4 w-4" /> افتح محطات الدورة
+                      </Link>
                       {detailLoading || !detail ? (
                         <div className="grid place-items-center py-8"><Loader2 className="h-6 w-6 animate-spin text-teal-ink" /></div>
                       ) : (

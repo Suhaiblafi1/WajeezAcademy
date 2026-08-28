@@ -159,8 +159,8 @@ function PathwayBody({ rows }: { rows: Row[] }) {
                   {done ? "مكتملة" : enrolled ? "مسجَّل" : "غير مسجَّل"}
                 </span>
                 {enrolled ? (
-                  <Link to="/student/learning" className="flex items-center gap-1 rounded-full bg-teal px-4 py-2 text-xs font-black text-on-teal transition hover:bg-teal-light">
-                    افتح في تعلّمي <ChevronLeft className="h-3.5 w-3.5" />
+                  <Link to={`/student/course/${id}`} className="flex items-center gap-1 rounded-full bg-teal px-4 py-2 text-xs font-black text-on-teal transition hover:bg-teal-light">
+                    افتح المحطات <ChevronLeft className="h-3.5 w-3.5" />
                   </Link>
                 ) : (
                   <Link to="/student/cohorts" className="text-[11px] font-bold text-teal-light-ink hover:text-white">

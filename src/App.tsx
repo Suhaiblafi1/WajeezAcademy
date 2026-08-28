@@ -34,6 +34,7 @@ const StudentCv = lazy(() => import('./pages/student/MyCv'))
 const StudentNotifications = lazy(() => import('./pages/student/Notifications'))
 const StudentInbox = lazy(() => import('./pages/student/Inbox'))
 const StudentSupport = lazy(() => import('./pages/student/Support'))
+const CourseMilestones = lazy(() => import('./pages/student/CourseMilestones'))
 const StudentOpenCohorts = lazy(() => import('./pages/student/OpenCohorts'))
 const AdvisorCases = lazy(() => import('./pages/advisor/Cases'))
 const TrainerDashboard = lazy(() => import('./pages/trainer/TrainerDashboard'))
@@ -118,11 +119,9 @@ export default function App() {
           <Route path="/student/skills" element={<MySkills />} />
           <Route path="/student/remeasure/:enrollmentId" element={<Remeasure />} />
           <Route path="/student/review" element={<Review />} />
-          {/* حُذفت صفحتا الدورة ومشروع التخرج: كانتا مبنيّتين بالكامل على متجر
-              محاكاةٍ محليّ (دروس وتقدّم وتسليم واعتماد). و«تعلّمي» هي صفحة
-              الدورة الحقيقية من /api/learner/enrollments/:id — وتُعاد صفحة
-              الدورة بالمحطات في الدفعة ١ب فوق البيانات الحقيقية. */}
-          <Route path="/student/course/:courseId" element={<Navigate to="/student/learning" replace />} />
+          {/* صفحة الدورة بالمحطات — على الكتالوج المنشور وتقدّمِ التسجيل
+              الحقيقيّين. حلّت محلّ `CourseView` التي كانت محاكاة كاملة. */}
+          <Route path="/student/course/:courseId" element={<CourseMilestones />} />
           <Route path="/student/project" element={<Navigate to="/student/learning" replace />} />
           <Route path="/student/certificates" element={<Certificates />} />
           <Route path="/student/learning" element={<MyLearning />} />
