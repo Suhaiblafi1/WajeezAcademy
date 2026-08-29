@@ -31,6 +31,7 @@ import CourseJourney from "@/components/CourseJourney";
 import Modal from "@/components/Modal";
 import { pathwayById, pathwayCategory } from "@/data/pathways";
 import { hasCoreCatalog } from "@/data/core-catalog-source";
+import { readAdoptedPlan } from "@/application/plan/adopted-plan";
 import { courseById, pathwayCourses, pathwayDelivery, coursePriceOf, pathwayPriceFor, pathwayTrainers, courseTrainer, weeksLabel } from "@/data/courses";
 import { GOAL_LABELS, GAP_LABELS, OBSTACLE_TO_GAP } from "@/data/diagnostic";
 import { usePriceFormatter } from "@/services/currency";
@@ -99,13 +100,15 @@ export default function PathwayPage() {
     if (pathway) track("pathway_viewed", { sector: pathway.sector });
   }, [pathway]);
 
-  /* تخصيصه المحفوظ من صفحة التشخيص */
-  const custom = useMemo(() => {
-    try {
-      const c = JSON.parse(sessionStorage.getItem("wajeez_custom") ?? "null");
-      return c && c.pathwayId === pathway?.id ? c as { chosenIds: string[]; giftId: string | null } : null;
-    } catch { return null; }
-  }, [pathway?.id]);
+  /* الخطّة التي اعتمدها فعلا — تُقرأ كما كُتبت، بهوية مضيفٍ مطابقة.
+
+     كان هنا حارسٌ يقارن `c.pathwayId` بسجلٍّ لا يحمل هذا الحقل أصلا، فيُرفض
+     كلُّ ما اعتمده المتعلّم بصمت وتُعرض قائمة الكتالوج مكانه. */
+  const adopted = useMemo(() => readAdoptedPlan(pathway?.id), [pathway?.id]);
+  const custom = useMemo(
+    () => (adopted ? { chosenIds: adopted.courseIds, giftId: adopted.giftId } : null),
+    [adopted],
+  );
 
   /* سياق الخطة المركبة — حاضر فقط عندما اعتمد المستخدم خطة مركبة من نتيجته، ومقترن بتخصيص مطابق لهذا المسار */
   const compositeCtx = useMemo(() => {
@@ -117,10 +120,13 @@ export default function PathwayPage() {
   }, [custom]);
 
   const courseIds = custom?.chosenIds ?? (pathway ? pathwayCourses[pathway.id] ?? [] : []);
-  const pathwayCoursesList = courseIds.map((cid) => courseById(cid)!).filter(Boolean);
+  /* الدورات المعروضة هي وحدها ما يُسعَّر. كان العدد يُؤخذ من `courseIds` الخام
+     والمجموع من القائمة بعد ترشيح المجهول — فيفترقان حين لا يُعرف معرّف، فيظهر
+     مرجعٌ لا يطابق ما على الشاشة. مصدرٌ واحد يمنع ذلك. */
+  const pathwayCoursesList = courseIds.map((cid) => courseById(cid)).filter((c): c is NonNullable<typeof c> => Boolean(c));
   const separateCost = pathwayCoursesList.reduce((s, c) => s + coursePriceOf(c), 0);
   // التسعير المتدرج: ٤ دورات = 500$ · ٥ = 550$ · ٦+ = 600$
-  const pathwayTotal = pathwayPriceFor(courseIds.length || 6);
+  const pathwayTotal = pathwayPriceFor(pathwayCoursesList.length || 6);
   const savingPct = separateCost > pathwayTotal ? Math.round((1 - pathwayTotal / separateCost) * 100) : 0;
 
   /* تقريره الشخصي من إجابات التشخيص */
@@ -251,7 +257,9 @@ export default function PathwayPage() {
               {compositeCtx && <Badge className="border border-gold/60 bg-gold/15 text-gold-ink">خطة مركبة مخصصة</Badge>}
               <FavoriteButton pathwayId={pathway.id} pathwayName={pathway.name} className="ms-auto" />
             </div>
-            <h1 className="mt-4 text-3xl font-black leading-snug md:text-4xl">{pathway.name}</h1>
+            {/* اسم الخطّة كما اعتُمدت — لا اسم المسار المضيف. استعارةُ اسمه هي
+                ما جعل المتعلّم يظنّ أن خطّته أُعيدت تسميتها. */}
+            <h1 className="mt-4 text-3xl font-black leading-snug md:text-4xl">{adopted?.nameAr ?? pathway.name}</h1>
             <p className="mt-4 max-w-2xl leading-loose text-white/65">{pathway.transformation}</p>
 
             <div className="mt-5 flex flex-wrap items-center gap-2">
@@ -318,14 +326,20 @@ export default function PathwayPage() {
               مختلفا عن الذي اعتمده تشخيصك» — وهي جملة لا تخدمه: هو يعلم أنه يتصفح
               مسارا آخر، وقولها يحوّل التصفح إلى مخالفة. والصفحة نفسها مسار جاهز
               معروض للجميع، لا نتيجة شخصية. */}
-          {report && diagTopId === pathway.id && (
+          {/* يظهر لمن اعتمد خطّة على هذا المسار. كان مشروطا بـwajeez_diag_top
+              وحده، ولا يُكتب إلا في مسار القوالب — فمعظم من اعتمد لم يكن يرى
+              الزرّ أصلا. */}
+          {(adopted || (report && diagTopId === pathway.id)) && (
             <div className="story-fade mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-teal/40 bg-teal/[0.06] px-5 py-3">
               <p className="flex items-center gap-2 text-xs font-bold leading-relaxed text-white/75">
                 <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-light-ink" />
                 هذا المسار اعتمده تشخيصك — بُني على إجاباتك أنت.
               </p>
+              {/* كان `to="/diagnostic"` مجرّدا، وصفحة التشخيص تفتح دائما على
+                  المقدّمة — فالزرّ يَعِد بالعودة إلى النتيجة ويأتي بالبداية،
+                  ويحتاج المتعلّم نقرةً ثانية يكتشفها بنفسه. */}
               <Link
-                to="/diagnostic"
+                to="/diagnostic?view=result"
                 className="flex items-center gap-1.5 rounded-full border border-teal/50 px-4 py-1.5 text-xs font-bold text-teal-light-ink transition hover:bg-teal/15"
               >
                 <ArrowRight className="h-3.5 w-3.5" />
