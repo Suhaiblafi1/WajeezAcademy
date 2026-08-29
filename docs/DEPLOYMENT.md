@@ -53,14 +53,20 @@
 
 ## 3) الدفع — Stripe
 
-- نافذة الدفع الحالية (`StripeCheckout` في `src/pages/Pathway.tsx`) محاكاة. تُستبدل بـ Stripe Checkout أو Payment Element.
-- القواعد الإلزامية:
-  1. إنشاء الـ PaymentIntent في الخادم فقط.
-  2. استقبال `webhook` والتحقق من توقيعه بـ `STRIPE_WEBHOOK_SECRET`.
-  3. إنشاء التسجيل (Enrollment) مرة واحدة لكل حدث دفع — idempotency key.
-  4. إرسال بريد التأكيد وفتح منصة الطالب من حدث الـ webhook نفسه — لا من المتصفح.
-  5. حالات الفشل تعرض رسالة عربية واضحة وتُسجل `payment_failed` في التحليلات.
-- `src/services/access.ts` → `getEnrollment()` تُستبدل بـ `GET /api/me/enrollment` محمي بالجلسة.
+> **الدليل العملي في [`CONNECT_AR.md`](./CONNECT_AR.md)** — ما تعطيه وأين يُوضع وكيف تتأكّد.
+
+- **مُنفَّذ:** جلسة Checkout مستضافة عند Stripe (ولا بيانات بطاقة تمرّ بخادمنا)،
+  والتسوية من webhook موقَّع بصيغة Stripe الرسمية (`t=…,v1=…` على `<الطابع>.<الجسم>`)
+  بنافذة خمس دقائق، مع idempotency على `PaymentWebhookEvent`، والاسترداد يُنادي
+  المزوّد قبل القيد.
+- **المطلوب منك:** `PAYMENT_DRIVER` و`PAYMENT_PUBLISHABLE_KEY` و`PAYMENT_SECRET_KEY`
+  و`PAYMENT_WEBHOOK_SECRET` — **لا `STRIPE_WEBHOOK_SECRET`، هذا الاسم لا يُقرأ**.
+- **عنوان الـwebhook:** `/api/webhooks/payments/stripe` بحدث `checkout.session.completed`.
+- **`APP_URL` إلزامي**: عليه تُبنى صفحة العودة بعد الدفع.
+- القواعد الثابتة: لا بطاقات تُخزَّن، ورجوع المتصفح ليس دليل دفع، والنجاح من
+  الـwebhook وحده.
+- ملاحظة تاريخية: `StripeCheckout` ونافذتُه المحاكاة و`src/services/access.ts`
+  حُذفت كلها — لم يعد لها وجود في الشيفرة.
 
 ## 4) البريد المعاملاتي
 

@@ -339,6 +339,28 @@ export class CommerceService {
       await recordAudit(this.prisma, { actorId, action: 'refund.reject', entityType: 'refund', entityId: refundId, reason: note })
       return r
     }
+    /* ردّ المال عند المزود قبل القيد. كان القيد وحده: يُعلَّم الاسترداد
+       «مُنفَّذا» وتُحدَّث الدفعة والطلب، ولا يُنادى المزود أبدا — فالمتعلم يرى
+       «استُرد» وبطاقته لا تُرصَّد. والرمي هنا مقصود: استردادٌ لم يقع لا يُقيَّد. */
+    const config = await getPaymentConfig(this.prisma)
+    const provider = getPaymentProvider(config)
+    let providerRefundRef: string | null = null
+    try {
+      const done = await provider.refund({
+        providerRef: refund.payment.providerRef ?? '',
+        amount: num(refund.amount),
+        currency: refund.payment.currency,
+        reasonAr: note,
+      })
+      providerRefundRef = done.providerRefundRef
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e)
+      await recordAudit(this.prisma, {
+        actorId, action: 'refund.provider_failed', entityType: 'refund', entityId: refundId, reason: msg,
+      })
+      throw new AuthError('refund_provider_failed', `تعذّر ردّ المبلغ عند المزود، فلم يُقيَّد الاسترداد: ${msg}`, 502)
+    }
+
     const result = await this.prisma.$transaction(async (tx) => {
       const r = await tx.refund.update({ where: { id: refundId }, data: { status: 'processed', approvedBy: actorId, processedAt: new Date() } })
       const processed = await tx.refund.findMany({ where: { paymentId: refund.paymentId, status: 'processed' } })
@@ -348,7 +370,10 @@ export class CommerceService {
       await tx.order.update({ where: { id: refund.payment.invoice.orderId }, data: { status: fully ? 'refunded' : 'partially_refunded' } })
       return r
     })
-    await recordAudit(this.prisma, { actorId, action: 'refund.process', entityType: 'refund', entityId: refundId, meta: { amount: num(refund.amount) } })
+    await recordAudit(this.prisma, {
+      actorId, action: 'refund.process', entityType: 'refund', entityId: refundId,
+      meta: { amount: num(refund.amount), provider: provider.name, providerRefundRef },
+    })
     return result
   }
 
