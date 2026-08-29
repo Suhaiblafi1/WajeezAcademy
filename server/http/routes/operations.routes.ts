@@ -297,11 +297,16 @@ export function registerOperationsRoutes(app: FastifyInstance, prisma: PrismaCli
     schema: { tags: ['webhooks'], summary: 'أحداث مزود الدفع — توقيع إلزامي والحدث المكرر يُتجاهل' },
   }, async (req) => {
     const { provider } = z.object({ provider: z.string().max(30) }).parse(req.params)
-    /* التوقيع: ترويسة x-payment-signature بصيغة hmac=… للعقد العام/Stripe،
-       أو حقل secret_token داخل الجسم لأسلوب Moyasar */
+    /* التوقيع، بترتيب المصادر: ترويسة Stripe الرسمية أولا، ثم ترويسة العقد
+       العام، ثم رمز مشترك في الجسم لأسلوب Moyasar. كانت ترويسة Stripe غير
+       مقروءة أصلا، فحدثُه الحقيقي يصل بلا توقيع يُعرَف فيُرفض. */
     const bodyToken = (req.body as Record<string, unknown> | null)?.secret_token
-    const signature = String(req.headers['x-payment-signature'] ?? bodyToken ?? '')
-    const rawBody = JSON.stringify(req.body)
+    const signature = String(
+      req.headers['stripe-signature'] ?? req.headers['x-payment-signature'] ?? bodyToken ?? '',
+    )
+    /* الجسم الخام كما وصل — لا إعادة تسلسل. مُلتقَط في محلّل المحتوى (app.ts).
+       والرجوع إلى JSON.stringify احتياطٌ للمسارات التي لا تمرّ بالمحلّل. */
+    const rawBody = (req as unknown as { rawBody?: string }).rawBody ?? JSON.stringify(req.body)
     return commerce.handleWebhook(provider, rawBody, signature)
   })
 }

@@ -36,6 +36,23 @@ export async function buildApp(prisma: PrismaClient) {
   const app = Fastify({ logger: false })
   const auth = new AuthService(prisma)
 
+  /* الجسم الخام محفوظا مع الجسم المحلَّل — لتوقيع webhook الدفع.
+     كان المسار يوقّع `JSON.stringify(req.body)`: إعادةُ تسلسلٍ لا الجسمَ الأصلي.
+     وStripe يوقّع البايتات كما أرسلها حرفا بحرف، وأي فرق في ترتيب المفاتيح أو
+     المسافات يغيّر التوقيع — فكان كل حدث حقيقي سيُرفض بـ«توقيع غير صالح»،
+     أي مالٌ يُقبض ولا يُسوّى تسجيلُه أبدا. */
+  app.addContentTypeParser('application/json', { parseAs: 'string' }, (req, body, done) => {
+    ;(req as unknown as { rawBody?: string }).rawBody = body as string
+    if (!body || (body as string).length === 0) return done(null, undefined)
+    try {
+      done(null, JSON.parse(body as string))
+    } catch (e) {
+      const err = e as Error & { statusCode?: number }
+      err.statusCode = 400
+      done(err, undefined)
+    }
+  })
+
   await app.register(cors, {
     origin: process.env.WEB_ORIGIN?.split(',') ?? ['http://localhost:7100'],
     credentials: true,
