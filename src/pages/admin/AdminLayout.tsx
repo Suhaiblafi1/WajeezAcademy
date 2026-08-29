@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router";
-import { CalendarCog, Crown, FlaskConical, GitBranch, Layers, ShieldAlert, LayoutDashboard, UserPlus, Users, BarChart3, LifeBuoy, Wallet, Bell, PlugZap } from "lucide-react";
+import { CalendarCog, Crown, FlaskConical, GitBranch, Layers, ShieldAlert, LayoutDashboard, UserPlus, Users, BarChart3, LifeBuoy, Wallet, Bell, PlugZap, Star } from "lucide-react";
 import { ADMIN_IDENTITIES, ADMIN_IDENTITY_KEY, adminIdentity } from "./admin-identity";
 import NotificationBell from "@/components/NotificationBell";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -87,6 +87,7 @@ export default function AdminLayout({ children, title }: { children: React.React
       title: "العملاء",
       items: [
         { to: "/admin/support", label: "تذاكر الدعم", icon: LifeBuoy },
+        { to: "/admin/ratings", label: "مراجعة التقييمات", icon: Star },
         { to: "/admin/notifications", label: "الإشعارات", icon: Bell },
       ],
     },

@@ -36,6 +36,9 @@ const StudentInbox = lazy(() => import('./pages/student/Inbox'))
 const StudentSupport = lazy(() => import('./pages/student/Support'))
 const MyVault = lazy(() => import('./pages/student/MyVault'))
 const StudentLibrary = lazy(() => import('./pages/student/Library'))
+const RateMyLearning = lazy(() => import('./pages/student/RateMyLearning'))
+const TrainerMyRatings = lazy(() => import('./pages/trainer/MyRatings'))
+const AdminRatingModeration = lazy(() => import('./pages/admin/RatingModeration'))
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 const CourseMilestones = lazy(() => import('./pages/student/CourseMilestones'))
@@ -132,6 +135,9 @@ export default function App() {
           <Route path="/student/project" element={<Navigate to="/student/learning" replace />} />
           <Route path="/student/vault" element={<MyVault />} />
           <Route path="/student/library" element={<StudentLibrary />} />
+          <Route path="/student/rate" element={<RateMyLearning />} />
+          <Route path="/trainer/ratings" element={<TrainerMyRatings />} />
+          <Route path="/admin/ratings" element={<AdminRatingModeration />} />
           <Route path="/student/certificates" element={<Certificates />} />
           <Route path="/student/learning" element={<MyLearning />} />
           <Route path="/student/account" element={<StudentAccount />} />

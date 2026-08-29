@@ -164,8 +164,9 @@ export default function PortalLayout({ children, title }: { children: React.Reac
         { to: "/student/certificates", label: "شهاداتي" },
         { to: "/student/cv", label: "سيرتي" },
         { to: "/student/skills", label: "مهاراتي" },
+        { to: "/student/rate", label: "تقييمي" },
       ],
-      match: ["/student/vault", "/student/certificates", "/student/cv", "/student/skills"],
+      match: ["/student/vault", "/student/certificates", "/student/cv", "/student/skills", "/student/rate"],
     },
   ];
   /* ١د — المكتبة قسمٌ رابع، ولا يظهر إلا حين تكون فيه مادّة منشورة.

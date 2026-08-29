@@ -86,6 +86,11 @@ export const PERMISSIONS = [
   { key: 'support.operate', description: 'تشغيل تذاكر الدعم المسندة' },
   { key: 'support.assign', description: 'إسناد تذاكر الدعم لوكلاء' },
   { key: 'settings.manage', description: 'إدارة إعدادات النظام والتكاملات غير السرية' },
+  /* التقييم (١و) — مفاتيح مستقلّة عن حزم الأدوار العريضة: trainer.portal يفتح
+     البوابة كلها، وقراءةُ ما يُقال عنك حبّةٌ أدقّ من ذلك. */
+  { key: 'rating.submit', description: 'إرسال تقييم للمدرب أو المستشار أو الدورة' },
+  { key: 'rating.view.subject', description: 'رؤية التقييمات الواردة عنك مجهولةَ المُقيِّم' },
+  { key: 'rating.moderate', description: 'مراجعة تعليقات التقييم واعتماد نشرها' },
 ] as const
 
 export type PermissionKey = (typeof PERMISSIONS)[number]['key']
@@ -109,6 +114,7 @@ export const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
     'finance.view', 'finance.payment.record', 'finance.refund.process',
     'reports.view', 'reports.export',
     'notifications.manage', 'support.operate', 'support.assign', 'settings.manage',
+    'rating.moderate',
   ],
   diagnostic_manager: [
     'catalog.view',
@@ -123,14 +129,14 @@ export const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
     'advisor.assign', 'enrollment.request.review', 'support.assign',
     'reports.view', 'reports.export',
   ],
-  advisor: ['catalog.view', 'advisor.cases.view', 'advisor.cases.operate', 'cv.view'],
-  trainer: ['trainer.portal', 'trainer.change.submit', 'trainer.cohort.operate'],
+  advisor: ['catalog.view', 'advisor.cases.view', 'advisor.cases.operate', 'cv.view', 'rating.view.subject'],
+  trainer: ['trainer.portal', 'trainer.change.submit', 'trainer.cohort.operate', 'rating.view.subject'],
   /* حساب التقديم — لا بوابة متعلم ولا بوابة مدرب. يصير مدربا بالدعوة بعد
      الاعتماد (trainer.invite)، وحتى ذلك الحين لا يملك إلا رؤية طلبه. */
   trainer_applicant: ['trainer.application.own'],
   finance: ['trainer.compensation.manage', 'finance.view', 'finance.payment.record', 'finance.refund.process', 'reports.view', 'reports.export'],
   support: ['catalog.view', 'support.operate'],
-  learner: ['learner.portal', 'learner.submit', 'cv.upload', 'enrollment.request'],
+  learner: ['learner.portal', 'learner.submit', 'cv.upload', 'enrollment.request', 'rating.submit'],
 }
 
 export const ROLE_NAMES_AR: Record<string, string> = {

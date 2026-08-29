@@ -1,5 +1,5 @@
 import { Link, NavLink } from "react-router";
-import { GraduationCap, ClipboardCheck, GitPullRequest, Users, Wallet } from "lucide-react";
+import { GraduationCap, ClipboardCheck, GitPullRequest, Users, Wallet, Star } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import ThemeToggle from "@/components/ThemeToggle";
 import PortalSearchPalette from "@/components/PortalSearchPalette";
@@ -48,6 +48,7 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
     { to: "/trainer/grading", label: "طابور التقييم", icon: ClipboardCheck },
     { to: "/trainer/proposals", label: "اقتراحاتي", icon: GitPullRequest },
     { to: "/trainer/earnings", label: "مستحقاتي", icon: Wallet },
+    { to: "/trainer/ratings", label: "ما قيل عنّي", icon: Star },
   ];
 
   return (
