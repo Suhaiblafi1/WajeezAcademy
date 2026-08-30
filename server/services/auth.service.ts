@@ -7,6 +7,9 @@ import { createHash, randomBytes } from 'node:crypto'
 import bcrypt from 'bcryptjs'
 import type { PrismaClient } from '@prisma/client'
 
+/** الدور الأرضيّ لكلّ حساب — يُمنح عند التسجيل ولا يُنزع بترقية */
+const LEARNER_ROLE = 'learner'
+
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex')
 const newToken = () => randomBytes(32).toString('base64url')
 
@@ -56,7 +59,7 @@ export class AuthService {
         email: normalized,
         displayName: displayName.trim() || normalized.split('@')[0],
         passwordHash: await bcrypt.hash(password, 10),
-        roles: { create: { roleId: 'learner' } },
+        roles: { create: { roleId: LEARNER_ROLE } },
       },
     })
     return { userId: user.id }
@@ -207,9 +210,19 @@ export class AuthService {
   async setRoles(userId: string, roleIds: string[]): Promise<void> {
     const roles = await this.prisma.role.findMany({ where: { id: { in: roleIds } } })
     if (roles.length !== roleIds.length) throw new AuthError('unknown_role', 'دور غير معروف ضمن القائمة')
+    /* `learner` أرضيّة لا تُنزع بترقية.
+
+       كان هذا يحذف الأدوار كلّها ثمّ يكتب الجديدة، والتسجيل يمنح `learner`
+       وحده — فكلّ من رُقّي إلى دورٍ إداريّ فقد بوابة المتعلّم صامتا: الشريط
+       يعرض «تعلّمي» و«خزانتي» والخادم يردّ ٤٠٣ «لا تملك الصلاحية»، فيبدو
+       الموقع معطوبا وهو يطبّق قاعدةً لم يقصدها أحد.
+
+       والصواب أنّ الإداريّ إنسانٌ يتعلّم أيضا: يشتري دورة، ويحضر شعبة، وينال
+       شهادة. فالدور الوظيفيّ يُضاف فوق الأرضيّة لا مكانها. */
+    const next = [...new Set([...roleIds, LEARNER_ROLE])]
     await this.prisma.$transaction([
       this.prisma.userRole.deleteMany({ where: { userId } }),
-      this.prisma.userRole.createMany({ data: roleIds.map((roleId) => ({ userId, roleId })) }),
+      this.prisma.userRole.createMany({ data: next.map((roleId) => ({ userId, roleId })) }),
     ])
   }
 }
