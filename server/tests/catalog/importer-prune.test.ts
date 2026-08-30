@@ -98,6 +98,38 @@ describe('المستورد يحذف ما زال من المستودع', () => {
     expect(after).toEqual(before)
   })
 
+  /* الفجوة التي وقعت في الإنتاج فعلا: التقليم كان يصل إلى الأبناء ولا يصل
+     إلى كيانٍ أعلى زال من المصدر. فبقيت العشرون النصفية (C-*-102) منشورةً بعد
+     الدمج، فعرض الكتالوج ١٠١ دورة لا ٨١ — عشرون منها تكرّر ما صار داخل الدورة
+     المدمجة. ولم يمسكه أيّ اختبار لأن هذا الملفّ كان يزرع أبناء دخلاء فقط. */
+  it('دورة زالت من المصدر تُؤرشف — ولا تُحذف فتأخذ سجلّاتها معها', { timeout: 180_000 }, async () => {
+    const core = j('src/data/catalog/core-catalog.v2.json') as { courses: { course_id: string }[] }
+    const sourceIds = new Set(core.courses.map((c) => c.course_id))
+
+    /* دورة ليست في المصدر أصلا — كما صارت C-*-102 بعد الدمج */
+    const stray = await prisma.course.create({
+      data: { id: 'C-ZZZ-999', status: 'published', currentVersion: 1 },
+    })
+    /* وسجلّ يعتمد عليها: لو حُذفت الدورة لأخذته معها بالتتابع */
+    const version = await prisma.courseVersion.create({
+      data: { courseId: stray.id, version: 1, titleAr: 'دورة زالت من المستودع', totalHours: 8, status: 'published' },
+    })
+
+    await importCatalog(prisma)
+
+    const after = await prisma.course.findUnique({ where: { id: stray.id } })
+    expect(after, 'الدورة حُذفت — وحذفُها يأخذ الشعب والتسجيلات وطلبات الدفع معها').not.toBeNull()
+    expect(after!.status, 'الدورة الزائلة ما زالت منشورة — ستظهر في الكتالوج بلا مسار').toBe('archived')
+    /* السجلّ المعتمد عليها باقٍ — هذا هو الفرق بين الأرشفة والحذف */
+    expect(await prisma.courseVersion.findUnique({ where: { id: version.id } })).not.toBeNull()
+
+    /* ولا تُؤرشف دورةٌ ما زالت في المصدر — التقليم يقطع الزائد لا الأصل */
+    const stillPublished = await prisma.course.count({ where: { status: 'published' } })
+    expect(stillPublished).toBe(sourceIds.size)
+
+    await prisma.course.delete({ where: { id: stray.id } })
+  })
+
   it('سؤال القطاع أربعة خيارات لا ثمانية', async () => {
     const questions = j('src/data/catalog/questions.v1.ar.json').questions as Array<{
       question_id: string; options_ar: string[]

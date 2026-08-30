@@ -283,6 +283,25 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
     })
   }
 
+  /* 3أ) ما زال من المستودع يُؤرشف — لا يُحذف.
+
+     كان المستورد يقلّم الأبناء (الخيارات والروابط والمخرجات) ولا يمسّ كيانا
+     أعلى زال من المصدر. فبعد دمج أوّل دورتين من كل مسار بقيت العشرون النصفية
+     (C-*-102) منشورةً في الإنتاج بلا رابط مسار: الكتالوج يعرض ١٠١ دورة لا ٨١،
+     ومنها عشرون تكرّر محتوى صار داخل الدورة المدمجة — وهي بالضبط سمعةُ
+     «دورات سطحية مكرّرة» التي أُريد تفاديها بالدمج.
+
+     والأرشفة لا الحذف: الدورة قد تحمل شعبا وتسجيلات وطلبات دفع وشهادات،
+     وحذفُ صفّها يأخذها معه بالتتابع. والأرشفة تُخرجها من كلّ مسلك عامّ
+     (كلّها تشترط status = 'published') ويبقى سجلّ من دفع كما هو.
+     الحارس: server/tests/catalog/importer-prune.test.ts */
+  const sourceCourseIds = courses.map((c) => c.course_id)
+  const retired = await prisma.course.updateMany({
+    where: { status: 'published', id: { notIn: noneIfEmpty(sourceCourseIds) } },
+    data: { status: 'archived' },
+  })
+  if (retired.count > 0) console.log(`   أُرشفت ${retired.count} دورة زالت من المستودع — لم تُحذف، وسجلّاتها باقية`)
+
   /* 3ب) روابط المسارات: الدورات (مرجعية) + متطلبات المهارات المشتقة — بعد وجود الدورات */
   for (const p of pathways) {
     for (const [i, cid] of p.course_ids.entries()) {
