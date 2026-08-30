@@ -25,10 +25,18 @@ export interface CoursePrice {
 interface PublicCohort {
   id: string
   courseId: string
+  status: string | null
   price: number | string | null
   currency: string | null
   startsAt: string | null
 }
+
+/* الحالات التي يستطيع المتعلّم أن يلتحق بها — وهي عينها التي تعدّها
+   `PlanService` على الخادم `schedulable`. والشعبة `active` بدأت فعلا: عرضُ
+   سعرها «تبدأ من» يَعِد برقمٍ لشيءٍ لا يُشترى، وهو الخطأ نفسه من بابٍ آخر.
+   ومصدرا الرقم والحالة يجب أن يتّفقا، وإلا قالت الصفحة سعرا وقالت الخطّة
+   «بانتظار شعبة» عن الدورة نفسها. */
+const JOINABLE = new Set(['open', 'full'])
 
 /** أقرب شعبة مفتوحة لكل دورة، بسعرها وعملتها. فارغة حين لا شعب أو تعذّر الجلب. */
 export function useCoursePrices(): { prices: Map<string, CoursePrice>; loaded: boolean } {
@@ -45,6 +53,7 @@ export function useCoursePrices(): { prices: Map<string, CoursePrice>; loaded: b
         /* القائمة مرتّبة بالبدء من الخادم، فأوّل ظهورٍ لدورةٍ هو أقرب شعبها */
         for (const c of Array.isArray(rows) ? rows : []) {
           if (map.has(c.courseId)) continue
+          if (c.status && !JOINABLE.has(c.status)) continue
           const amount = Number(c.price)
           if (!Number.isFinite(amount) || amount <= 0 || !c.currency) continue
           map.set(c.courseId, { amount, currency: c.currency, cohortId: c.id })
