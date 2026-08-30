@@ -81,6 +81,8 @@ interface RawCourse {
   level_ar?: string; total_hours: number; skill_ids?: string[]; skill_slugs?: string[]
   skill_names_ar?: string[]; learning_objectives_ar?: string[]; learning_outcomes_ar?: string[]
   summative_assessment_ar?: string
+  /** سعر القائمة وعملته — يُعلَنان في الكتالوج ويرثهما إنشاء الشعبة */
+  list_price?: number; list_currency?: string
 }
 interface RawModule {
   module_id: string; course_id: string; sequence: number; title_ar: string
@@ -222,8 +224,15 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
       where: { id: c.course_id },
       /* المسار الأمّ والترتيب من المصدر مباشرةً — لا يُستنتجان من الروابط:
          للدورة روابط مساندة في مسارات أخرى، وبعضها بلا رابط أساسيّ أصلا */
-      update: { status: 'published', homePathwayId: c.pathway_id, homeSequence: toInt(c.sequence) ?? null },
-      create: { id: c.course_id, status: 'published', currentVersion: 1, homePathwayId: c.pathway_id, homeSequence: toInt(c.sequence) ?? null },
+      update: {
+        status: 'published', homePathwayId: c.pathway_id, homeSequence: toInt(c.sequence) ?? null,
+        listPrice: c.list_price ?? null, listCurrency: c.list_currency ?? 'USD',
+      },
+      create: {
+        id: c.course_id, status: 'published', currentVersion: 1,
+        homePathwayId: c.pathway_id, homeSequence: toInt(c.sequence) ?? null,
+        listPrice: c.list_price ?? null, listCurrency: c.list_currency ?? 'USD',
+      },
     })
     const cv = await prisma.courseVersion.upsert({
       where: { courseId_version: { courseId: c.course_id, version: 1 } },

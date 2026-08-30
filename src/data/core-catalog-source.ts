@@ -44,6 +44,9 @@ export interface CoreCatalogCourse {
   learning_outcomes_ar?: string[]
   summative_assessment_ar?: string
   source_codes?: string[]
+  /** سعر القائمة وعملته — الرقم المُعلن قبل فتح الشعبة، وترثه الشعبة */
+  list_price?: number
+  list_currency?: string
 }
 
 export interface CoreCatalogModule {

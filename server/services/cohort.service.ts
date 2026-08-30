@@ -54,14 +54,22 @@ export class CohortService {
   }) {
     const course = await this.prisma.course.findUnique({ where: { id: input.courseId } })
     if (!course) throw new AuthError('unknown_course', 'الدورة غير موجودة', 404)
+    /* الشعبة ترث سعر قائمة الدورة حين لا يُملى عليها سعر.
+
+       صفحةُ المسار تعلن «تبدأ من …» من سعر القائمة، والفاتورة تُصدَر بسعر
+       الشعبة. فلو فُتحت شعبةٌ بسعرٍ آخر بلا قصد لافترق المُعلَن عن المُطالَب
+       به — وهو الوعد المكسور الذي أُزيل من هذه المنصّة مرّة. والإملاء يبقى
+       متاحا: من يكتب سعرا صراحةً يكتبه، والوراثة للصمت لا للتجاوز. */
+    const price = input.price ?? (course.listPrice !== null ? Number(course.listPrice) : undefined)
+    const currency = input.currency ?? course.listCurrency ?? 'JOD'
     const cohort = await this.prisma.cohort.create({
       data: {
         courseId: input.courseId, pathwayId: input.pathwayId, title: input.title,
         startsAt: input.startsAt, endsAt: input.endsAt,
         daysOfWeek: input.daysOfWeek ?? [], startTime: input.startTime, timezone: input.timezone,
-        capacity: input.capacity, price: input.price, currency: input.currency ?? 'JOD',
+        capacity: input.capacity, price, currency,
         language: input.language ?? 'العربية', deliveryMode: input.deliveryMode ?? 'remote',
-        financialReady: input.price !== undefined && input.price !== null,
+        financialReady: price !== undefined && price !== null,
       },
     })
     await recordAudit(this.prisma, { actorId, action: 'cohort.create', entityType: 'cohort', entityId: cohort.id, meta: { title: input.title } })

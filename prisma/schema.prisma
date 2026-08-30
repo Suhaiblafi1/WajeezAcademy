@@ -260,6 +260,12 @@ model Course {
    */
   homePathwayId         String?
   homeSequence          Int?
+  /**
+   * سعر القائمة — الرقم المُعلن قبل فتح الشعبة، وترثه الشعبة عند إنشائها
+   * فلا يفترق ما تعرضه الصفحة عمّا تُصدره الفاتورة
+   */
+  listPrice             Decimal?                     @db.Decimal(10, 2)
+  listCurrency          String                       @default("USD")
   createdBy             String?                      @db.Uuid
   createdAt             DateTime                     @default(now())
   updatedAt             DateTime                     @updatedAt

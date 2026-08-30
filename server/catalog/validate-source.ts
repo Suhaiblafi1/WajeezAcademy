@@ -34,7 +34,10 @@ const F = {
   layers: 'src/data/catalog/v2/skill-layers.v2.json',
 } as const
 
-interface SourceCourse { course_id: string; title_ar: string; total_hours: number; skill_slugs: string[] }
+interface SourceCourse {
+  course_id: string; title_ar: string; total_hours: number; skill_slugs: string[]
+  list_price?: number; list_currency?: string
+}
 interface SourcePathway {
   id: string
   title: string
@@ -152,6 +155,32 @@ export function validateCatalogSource(): ValidationResult {
       if (!courseIds.has(cid)) errorsAr.push(`${F.core} · المسار ${p.id}: يشير إلى دورة غير موجودة «${cid}»`)
     }
   }
+  /* ٤-أ — سعر القائمة: لكل دورة سعرٌ معلن، ضمن المدى المعتمد، بعملةٍ واحدة.
+
+     الرقم يُعرض للزائر على صفحة المسار («تبدأ الدورة من …») وترثه الشعبة عند
+     فتحها فتُصدَر به الفاتورة. فدورةٌ بلا سعر تُسقط «تبدأ من» إلى فراغ،
+     وسعرٌ خارج المدى يخالف ما اعتُمد، وعملتان تعنيان جمعَ ما لا يُجمع. */
+  const PRICE_MIN = 100
+  const PRICE_MAX = 200
+  const currencies = new Set<string>()
+  for (const c of core.courses) {
+    const price = c.list_price
+    if (typeof price !== 'number') {
+      errorsAr.push(`${F.core} · الدورة ${c.course_id}: بلا سعر قائمة — «تبدأ من» تسقط إلى فراغ`)
+      continue
+    }
+    if (price < PRICE_MIN || price > PRICE_MAX) {
+      errorsAr.push(`${F.core} · الدورة ${c.course_id}: سعرها ${price} خارج المدى المعتمد ${PRICE_MIN}–${PRICE_MAX}`)
+    }
+    if (!Number.isInteger(price)) {
+      errorsAr.push(`${F.core} · الدورة ${c.course_id}: سعرها ${price} ليس صحيحا — الكسور تُقرَّب في الفاتورة فيفترق المعروض`)
+    }
+    currencies.add(c.list_currency ?? '')
+  }
+  if (currencies.size > 1) {
+    errorsAr.push(`${F.core}: أسعار القائمة بعملتين أو أكثر (${[...currencies].join(' · ')}) — لا يُجمع مسارٌ بعملتين`)
+  }
+
   /* ٤-ب — الدورات المساندة: ثلاث لكل مسار جاهز، موجودة، ولا تكرّر دورةً أساسية.
 
      والأهمّ أنّها **خارج** course_ids بقصد: تلك القائمة وحدها يقرؤها

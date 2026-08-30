@@ -203,6 +203,9 @@ export class PublicCatalogService {
           ...(v?.prerequisitesAr ? { prerequisites_ar: v.prerequisitesAr } : {}),
           ...(v?.levelAr ? { level_ar: v.levelAr } : {}),
           total_hours: v?.totalHours ?? 0,
+          /* سعر القائمة — رقمٌ معلن لكل دورة، لا مقدَّرٌ ولا محوَّل عملة.
+             ترثه الشعبة عند إنشائها، فما تعرضه الصفحة هو ما تُصدره الفاتورة. */
+          ...(c.listPrice !== null ? { list_price: Number(c.listPrice), list_currency: c.listCurrency } : {}),
           skill_slugs: c.skillLinks.map((l) => l.skill.slug),
           skill_names_ar: c.skillLinks.map((l) => l.skill.nameAr),
           learning_objectives_ar: (v?.objectives ?? []).map((o) => o.textAr),

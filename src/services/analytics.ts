@@ -24,6 +24,9 @@ export type AnalyticsEvent =
   | 'recommendation_viewed'
   | 'result_teaser_viewed'
   | 'gate_viewed'
+  /* الزائر ضغط «أنشئ حسابك» من عرض صفحة المسار — يقيس ما يكسبه إخفاءُ
+     المدرّبين ومكان الدفع خلف التسجيل */
+  | 'offer_signup_clicked'
   | 'gate_dismissed'
   | 'result_full_viewed'
   | 'account_started'

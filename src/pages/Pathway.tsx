@@ -41,6 +41,7 @@ import { track } from "@/services/analytics";
 import { usePublishedContent } from "@/services/public-content";
 import SeoHead from "@/components/SeoHead";
 import EcosystemNote from "@/components/EcosystemNote";
+import { pathwayOffer, formatOfferPrice } from "@/application/commerce/pathway-offer";
 
 /* اسم المستخدم — يدعم الصيغتين: JSON الجديدة والنص القديم، ويحترم انتهاء الجلسة */
 function readUserName(): string | null {
@@ -87,7 +88,7 @@ const PATHWAY_ONLY_PERKS = [
 type CheckoutIntent = { title: string; amount: number; kind: "pathway" | "course" | "courses"; courseId?: string; courseIds?: string[] };
 
 export default function PathwayPage() {
-  usePublishedContent();
+  const catalogVersion = usePublishedContent();
   const { id } = useParams();
   const pathway = pathwayById(id ?? "");
   const [user, setUser] = useState<string | null>(readUserName);
@@ -174,6 +175,13 @@ export default function PathwayPage() {
   /* «تبدأ من» من **سعر شعبةٍ حقيقية** لا من تقديرٍ في المتصفّح. كان الرقم
      المعروض مُختلَقا بمطابقة كلماتٍ في العنوان، والفاتورة تُصدر بسعر الشعبة
      وبعملة أخرى — فالوعد غير المطالبة. وحين لا شعبة معلومة: لا رقم. */
+  /* عرض الزائر — من أسعار قائمة الدورات المعروضة نفسها، لا من رقم مكتوب.
+     والكتالوج يصل بعد أوّل رسم، فإعادة الحساب معلَّقة على إصداره. */
+  const offer = useMemo(() => {
+    void catalogVersion;
+    return pathwayOffer(courseIds);
+  }, [courseIds, catalogVersion]);
+
   const { prices, loaded: pricesLoaded } = useCoursePrices();
   const cheapest = cheapestOf(courseIds, prices);
   const known = pricedCount(courseIds, prices);
@@ -421,8 +429,16 @@ export default function PathwayPage() {
 
           {/* أنواع المصادر المرافقة حُذفت — كانت مكررة مع صندوق «منظومة كاملة» أدناه */}
 
-          {/* مقاعد التخصصات التدريبية — الأسماء تُعلن بعد اعتماد الشعبة */}
-          <div className="story-fade mt-8 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4">
+          {/* الفريق التدريبي — خلف التسجيل.
+
+              قرار صاحب المنصّة: الزائر يرى المسار ودوراته كاملةً، ويبقى شيئان
+              وراء الباب: من يدرّبه، وأين يدفع. وهذا ما يجعل التسجيل خطوةً
+              يكسب بها شيئا محدّدا لا رسما يُطلب منه بلا مقابل.
+
+              و`id` هنا لأنّ الصفحة تنتقل إليه لحظة اكتمال التسجيل: أوّل ما
+              كان مخفيّا هو أوّل ما يُقرأ. */}
+          {user && (
+          <div id="trainers-reveal" className="story-fade mt-8 scroll-mt-24 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4">
             <h2 className="flex items-center gap-2 text-sm font-black">
               <User className="h-4 w-4 text-teal-light-ink" />
               الفريق التدريبي لهذا المسار
@@ -440,33 +456,15 @@ export default function PathwayPage() {
               كل دورة يقدمها المدرب الأعمق في موضوعها — وينسّقون معا حتى تتكامل المهارات لا أن تتكرر. تُعلن الأسماء بعد اعتماد الشعبة رسميا.
             </p>
           </div>
-
-          {/* التأكيد لا يظهر إلا على مسار تشخيصه نفسه.
-              كان يظهر على كل مسار جاهز يفتحه بعد التشخيص ليقول له «تستعرض مسارا
-              مختلفا عن الذي اعتمده تشخيصك» — وهي جملة لا تخدمه: هو يعلم أنه يتصفح
-              مسارا آخر، وقولها يحوّل التصفح إلى مخالفة. والصفحة نفسها مسار جاهز
-              معروض للجميع، لا نتيجة شخصية. */}
-          {/* يظهر لمن اعتمد خطّة على هذا المسار. كان مشروطا بـwajeez_diag_top
-              وحده، ولا يُكتب إلا في مسار القوالب — فمعظم من اعتمد لم يكن يرى
-              الزرّ أصلا. */}
-          {(adopted || (report && diagTopId === pathway.id)) && (
-            <div className="story-fade mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-teal/40 bg-teal/[0.06] px-5 py-3">
-              <p className="flex items-center gap-2 text-xs font-bold leading-relaxed text-white/75">
-                <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-light-ink" />
-                هذا المسار اعتمده تشخيصك — بُني على إجاباتك أنت.
-              </p>
-              {/* كان `to="/diagnostic"` مجرّدا، وصفحة التشخيص تفتح دائما على
-                  المقدّمة — فالزرّ يَعِد بالعودة إلى النتيجة ويأتي بالبداية،
-                  ويحتاج المتعلّم نقرةً ثانية يكتشفها بنفسه. */}
-              <Link
-                to="/diagnostic?view=result"
-                className="flex items-center gap-1.5 rounded-full border border-teal/50 px-4 py-1.5 text-xs font-bold text-teal-light-ink transition hover:bg-teal/15"
-              >
-                <ArrowRight className="h-3.5 w-3.5" />
-                عد لنتيجتك لإعادة التخصيص
-              </Link>
-            </div>
           )}
+
+          {/* شارة «هذا المسار اعتمده تشخيصك» حُذفت.
+
+              كانت تقول للمتعلّم إنّ هذا مساره، وتعرض زرّا يعيده إلى نتيجة
+              التشخيص «لإعادة التخصيص». وكلاهما لا يخدمه: هو يعلم من أين جاء،
+              والتخصيص كلّه متاح في هذه الصفحة نفسها — يستبدل ويحذف ويضيف
+              ويختار هديّته في رحلة الدورات أعلاه. فإعادته إلى صفحةٍ سابقة
+              لينال ما بين يديه خطوةٌ تُضيع لا تُفيد. */}
 
           {/* تقريره الشخصي — مطوي افتراضيا، وعلى مسار تشخيصه وحده:
               تقرير «ما فهمناه عنك» جزء من نتيجته لا من صفحة مسار جاهز. */}
@@ -496,8 +494,74 @@ export default function PathwayPage() {
             </details>
           )}
 
-          {/* مقارنة الشراء: دورة واحدة أم المسار كاملا — تصميم هادئ يريح القرار */}
-          {(
+          {/* عرض الزائر — يقوم مقام قسم الشراء قبل التسجيل.
+
+              لا يخفي شيئا عن المتصفّح: المسار ودوراته ومخرجاتها كلّها فوق هذا
+              مكشوفة. وهذا القسم يقول له بصراحة ما وراء الباب — المدرّبون
+              ومكان الدفع — ويضع أمامه الرقم قبل أن يطلب منه شيئا: من كم تبدأ
+              الدورة، وكم يكسب في أوّل شراء، وكم يكسب إن أخذ المسار كاملا.
+
+              والأرقام كلّها من مصدرٍ واحد (pathway-offer.ts) تقرؤه الفاتورة
+              نفسها — فما يقرؤه هنا هو ما يُطالَب به هناك. وحين لا سعر لدورةٍ
+              بعد، لا يُختلق رقم: يُقال إنّ السعر يُعلن مع فتح الشعبة. */}
+          {!user && (
+            <div id="offer" className="story-fade mt-10 scroll-mt-24 overflow-hidden rounded-3xl border border-teal/40 bg-gradient-to-br from-teal/[0.14] via-white/[0.04] to-gold/[0.08]">
+              <div className="p-6 md:p-8">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-gold/50 bg-gold/15 px-3 py-1 text-[11px] font-black text-gold-ink">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  خطوة واحدة تفصلك عن البدء
+                </span>
+                <h2 className="mt-4 text-2xl font-black leading-snug md:text-3xl">
+                  سجّل بالطريقة التي تناسبك
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/70">
+                  حسابك المجاني يفتح لك شيئين في هذه الصفحة: <span className="font-bold text-teal-light-ink">من يدرّبك</span> —
+                  أسماء فريق المسار وتخصّصاتهم — و<span className="font-bold text-teal-light-ink">مكان الدفع</span>،
+                  فتختار دورةً أو المسار كاملا وتُصدر طلبك. والتسجيل لا يُلزمك بشراء.
+                </p>
+
+                {/* الأرقام الثلاثة — أكبر ما في البطاقة، لأنها ما يقرّر */}
+                <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-2xl border border-white/12 bg-black/30 p-4">
+                    <p className="text-[11px] font-bold text-white/50">تبدأ الدورة من</p>
+                    <p className="mt-1 text-2xl font-black tabular-nums text-white">
+                      {offer.fromPrice !== null ? formatOfferPrice(offer.fromPrice, offer.currency) : "—"}
+                    </p>
+                    <p className="mt-0.5 text-[11px] leading-4 text-white/45">
+                      {offer.fromPrice !== null ? "أرخص دورة في هذا المسار" : "يُعلن السعر مع فتح الشعبة"}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-gold/35 bg-gold/[0.08] p-4">
+                    <p className="text-[11px] font-bold text-gold-ink/80">أول عملية شراء</p>
+                    <p className="mt-1 text-2xl font-black tabular-nums text-gold-ink">{offer.firstTimePct}٪ خصم</p>
+                    <p className="mt-0.5 text-[11px] leading-4 text-white/45">يُخصم عند الدفع بكود يظهر لك</p>
+                  </div>
+                  <div className="rounded-2xl border border-teal/40 bg-teal/[0.10] p-4">
+                    <p className="text-[11px] font-bold text-teal-light-ink/80">المسار كاملا</p>
+                    <p className="mt-1 text-2xl font-black tabular-nums text-teal-light-ink">
+                      يصل إلى {offer.bundleMaxPct}٪
+                    </p>
+                    <p className="mt-0.5 text-[11px] leading-4 text-white/45">كلما زادت دوراتك ارتفع خصمك</p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => { track("offer_signup_clicked", { pathway: pathway.id }); setPendingCheckout({ title: `مسار «${pathway.name}»`, amount: 0, kind: "pathway" }); }}
+                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-teal px-6 py-3.5 text-sm font-black text-on-teal transition hover:brightness-110 sm:w-auto"
+                >
+                  أنشئ حسابك المجاني الآن
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+                <p className="mt-2.5 text-[11px] text-white/45">
+                  بالبريد أو بحساب لينكدإن · دقيقة واحدة · ولا نطلب بطاقتك عند التسجيل
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* مقارنة الشراء: دورة واحدة أم المسار كاملا — تصميم هادئ يريح القرار.
+              خلف التسجيل: مكان الدفع هو الشيء الثاني الذي يكسبه بالتسجيل. */}
+          {user && (
             <div id="buy" className="story-fade mt-10 scroll-mt-24 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
               <h3 className="text-xl font-black">سجّل بالطريقة التي تناسبك</h3>
               <p className="mt-2 text-xs leading-relaxed text-white/50">خياران واضحان بلا ضغط — قارن بهدوء، والقرار لك.</p>
@@ -758,12 +822,22 @@ export default function PathwayPage() {
       {pendingCheckout && (
         <Modal onClose={() => setPendingCheckout(null)} label="سجّل لإتمام الشراء" panelClassName="w-full max-w-md">
           <AuthGate
-            message="تصفح المسار مفتوح للجميع — التسجيل هنا خطوة أخيرة قبل الدفع لتحفظ مشترياتك وتُفتح منصتك."
+            message="تصفح المسار مفتوح للجميع — التسجيل يفتح لك فريق المسار ومكان الدفع، ويحفظ مشترياتك."
             source="checkout_gate"
             onDone={() => {
               setUser(readUserName());
               const intent = pendingCheckout;
               setPendingCheckout(null);
+              /* من ضغط «أنشئ حسابك» من العرض لم يختر شيئا بعد: لا نُقحمه في
+                 دفعٍ لم يطلبه، بل نأخذه إلى أوّل ما كان مخفيّا عنه — الفريق
+                 التدريبي — ليقرأه ثمّ يهبط إلى الشراء بنفسه. والانتقال بعد
+                 رسمةٍ واحدة كي يكون العنصر قد ظهر في الشجرة. */
+              if (intent?.kind === "pathway" && intent.amount === 0) {
+                requestAnimationFrame(() => {
+                  document.getElementById("trainers-reveal")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                });
+                return;
+              }
               /* «التسجيل ← الخطّة المعتمَدة ← الطلب» بلا خطوةٍ ضائعة بينها */
               if (intent?.kind === "pathway") void goToPlan(intent);
               else setCheckout(intent);

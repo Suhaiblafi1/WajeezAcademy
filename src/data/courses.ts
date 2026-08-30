@@ -21,6 +21,9 @@ export interface Course {
   category: string
   weeks: number
   skill: string
+  /** سعر القائمة وعملته — معلنان في الكتالوج، ترثهما الشعبة عند فتحها */
+  listPrice?: number | null
+  listCurrency?: string
 }
 
 /* تفاصيل الدورة الكاملة لعرض الرحلة التعليمية — مشتقة من الكتالوج الموثق */
@@ -72,6 +75,8 @@ function buildCourses(raw: CoreCatalogRaw): Course[] {
     category: pathwayCategory(c.pathway_id),
     weeks: Math.max(1, Math.ceil(c.total_hours / 7)),
     skill: c.skill_names_ar[0] ?? '',
+    listPrice: c.list_price ?? null,
+    listCurrency: c.list_currency ?? 'USD',
   }))
 }
 

@@ -2315,7 +2315,9 @@
         "يستخرج مهارات من أعمال أو دراسة أو تطوع ويربطها بمواقف.",
         "يبني مصفوفة معايير ويخرج ثلاث فرضيات قابلة للاختبار."
       ],
-      "practical_project_ar": "ملف قرار مهني: بيان قرار + جرد أدلة + مصفوفة موزونة + ثلاث فرضيات مع دفاع شفهي 5 دقائق."
+      "practical_project_ar": "ملف قرار مهني: بيان قرار + جرد أدلة + مصفوفة موزونة + ثلاث فرضيات مع دفاع شفهي 5 دقائق.",
+      "list_price": 125,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-CAR-105",
@@ -2379,7 +2381,9 @@
         "يسأل عن وقائع ومهام ومسار دخول وتحديات ويستمع للمتابعة.",
         "يقارن المقابلة ببيانات أخرى ويمنع تعميم تجربة فردية."
       ],
-      "practical_project_ar": "رسالتا تواصل + مقابلة معلوماتية موثقة + مذكرة تثليث وتحديث فرضية."
+      "practical_project_ar": "رسالتا تواصل + مقابلة معلوماتية موثقة + مذكرة تثليث وتحديث فرضية.",
+      "list_price": 100,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-CAR-103",
@@ -2444,7 +2448,9 @@
         "ينفذ ويوثق ويطلب تغذية راجعة محددة.",
         "يفصل الأداء الأولي عن الملاءمة ويحدث الثقة."
       ],
-      "practical_project_ar": "ملف تجربة مهنية: الميثاق، المخرج، ملاحظة خارجية، ومراجعة قرار."
+      "practical_project_ar": "ملف تجربة مهنية: الميثاق، المخرج، ملاحظة خارجية، ومراجعة قرار.",
+      "list_price": 100,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-CAR-104",
@@ -2508,7 +2514,9 @@
         "يصوغ قرارًا متواضعًا مع إشارات استمرار أو تغيير.",
         "يحول القرار إلى بحث وتجربة وتواصل أو تعلم بدليل."
       ],
-      "practical_project_ar": "مذكرة قرار مهني مع مصفوفة حساسية وخطة 30 يومًا ودفاع 7 دقائق."
+      "practical_project_ar": "مذكرة قرار مهني مع مصفوفة حساسية وخطة 30 يومًا ودفاع 7 دقائق.",
+      "list_price": 100,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-JOB-101",
@@ -2586,7 +2594,9 @@
         "يميز فجوة التعلم من فجوة العرض أو الدليل."
       ],
       "practical_project_ar": "ملف تموضع: خريطة أدوار + تحليل 15 إعلانًا + عرض قيمة + خطة فجوتين.",
-      "title_term_en": "Value Proposition"
+      "title_term_en": "Value Proposition",
+      "list_price": 125,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-JOB-103",
@@ -2651,7 +2661,9 @@
         "ينفذ بإصدارات قصيرة ويسجل القرارات والمصادر.",
         "يجمع نقدًا ويصحح ويشرح الأثر والتعلم."
       ],
-      "practical_project_ar": "مشروع محفظة + سجل قرارات + نسختان قبل/بعد + دراسة حالة 400–600 كلمة."
+      "practical_project_ar": "مشروع محفظة + سجل قرارات + نسختان قبل/بعد + دراسة حالة 400–600 كلمة.",
+      "list_price": 100,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-JOB-104",
@@ -2716,7 +2728,9 @@
         "يدير مقابلة ثنائية الاتجاه ويطرح أسئلة نوعية."
       ],
       "practical_project_ar": "مقابلة مسجلة 25 دقيقة + تقييم مقيمين + تأمل تحسيني.",
-      "title_term_en": "Behavioural Interviews (STAR)"
+      "title_term_en": "Behavioural Interviews (STAR)",
+      "list_price": 100,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-JOB-105",
@@ -2780,7 +2794,9 @@
         "يتابع المرحلة والخطوة التالية ومصدر الفرصة.",
         "يقرأ معدلات التحويل ويفصل النشاط عن النتيجة."
       ],
-      "practical_project_ar": "لوحة بحث 6 أسابيع + خطة جهات + 6 رسائل + أول مراجعة أسبوعية."
+      "practical_project_ar": "لوحة بحث 6 أسابيع + خطة جهات + 6 رسائل + أول مراجعة أسبوعية.",
+      "list_price": 100,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-AI-101",
@@ -2860,7 +2876,9 @@
         "يميز البيانات العامة والداخلية والحساسة ويطبق سياسة أداة.",
         "يحدد التحقق والمراجعة والمسؤولية حسب الأثر."
       ],
-      "practical_project_ar": "تدقيق 10 مهام عمل مع قرار استخدام/عدم استخدام ومخاطر وضوابط لكل مهمة."
+      "practical_project_ar": "تدقيق 10 مهام عمل مع قرار استخدام/عدم استخدام ومخاطر وضوابط لكل مهمة.",
+      "list_price": 125,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-AI-103",
@@ -2925,7 +2943,9 @@
         "يقبل أو يصحح أو يرفض ويشرح حدود الثقة."
       ],
       "practical_project_ar": "تدقيق مخرج AI من 800–1200 كلمة: rubric + 12 ادعاء + مصادر + قرار نشر.",
-      "title_term_en": "AI Fact-Checking"
+      "title_term_en": "AI Fact-Checking",
+      "list_price": 175,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-AI-104",
@@ -2989,7 +3009,9 @@
         "ينفذ بمصادر حقيقية وسجل طلبات وتعديلات.",
         "يقيس وقتًا وجودة ومخاطر ويقارن بخط أساس."
       ],
-      "practical_project_ar": "سير عمل مطبق على تقرير مهني مع خط أساس وسجل تحقق وتحليل عائد/مخاطر."
+      "practical_project_ar": "سير عمل مطبق على تقرير مهني مع خط أساس وسجل تحقق وتحليل عائد/مخاطر.",
+      "list_price": 175,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-AI-105",
@@ -3053,7 +3075,9 @@
         "ينفذ على نطاق محدود ويوثق الحوادث والملاحظات.",
         "يحلل الأثر ويحدد التدريب والحوكمة والخطوة التالية."
       ],
-      "practical_project_ar": "مشروع طيار: ميثاق + مخاطر + بيانات قبل/بعد + عرض قرار 10 دقائق."
+      "practical_project_ar": "مشروع طيار: ميثاق + مخاطر + بيانات قبل/بعد + عرض قرار 10 دقائق.",
+      "list_price": 175,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-DAT-101",
@@ -3134,7 +3158,9 @@
         "يربط كل خطوة بادعاء ومخرج وحد خطأ."
       ],
       "practical_project_ar": "مذكرة سؤال قرار + قاموس بيانات + خطة تحليل لحالة عمل.",
-      "title_term_en": "Requirements Framing"
+      "title_term_en": "Requirements Framing",
+      "list_price": 125,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-DAT-103",
@@ -3199,7 +3225,9 @@
         "يكشف الحوافز السيئة والتلاعب والتفاوت."
       ],
       "practical_project_ar": "شجرة هدف + 6 بطاقات KPI + تحليل آثار غير مقصودة + مؤشر موازنة.",
-      "title_term_en": "KPI Design"
+      "title_term_en": "KPI Design",
+      "list_price": 175,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-DAT-104",
@@ -3264,7 +3292,9 @@
         "يختبر مع قارئ وموبايل وتباين وتسميات."
       ],
       "practical_project_ar": "لوحة من صفحة واحدة + مذكرة قرار 250 كلمة + تسجيل اختبار مستخدم.",
-      "title_term_en": "Data Visualisation & Dashboards"
+      "title_term_en": "Data Visualisation & Dashboards",
+      "list_price": 175,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-DAT-105",
@@ -3329,7 +3359,9 @@
         "يحزم النتيجة في لوحة وتوصية وحدود.",
         "يجيب عن الاعتراضات ويحدد ما يغير القرار."
       ],
-      "practical_project_ar": "حزمة قرار: ميثاق + ملف تحليل + لوحة + مذكرة + إحاطة مسجلة."
+      "practical_project_ar": "حزمة قرار: ميثاق + ملف تحليل + لوحة + مذكرة + إحاطة مسجلة.",
+      "list_price": 175,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-PM-101",
@@ -3410,7 +3442,9 @@
         "يحدد الراعي والمدير والفريق وحقوق القرار."
       ],
       "practical_project_ar": "ميثاق مشروع حقيقي/محاكى + عرض اعتماد 7 دقائق.",
-      "title_term_en": "Project Scoping"
+      "title_term_en": "Project Scoping",
+      "list_price": 125,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-PM-103",
@@ -3475,7 +3509,9 @@
         "يصعد مبكرًا بلا ضجيج ويعرض خيارات."
       ],
       "practical_project_ar": "خريطة + خطة مشاركة + اجتماع مسجل + تقرير حالة من صفحة.",
-      "title_term_en": "Stakeholder Communication"
+      "title_term_en": "Stakeholder Communication",
+      "list_price": 175,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-PM-104",
@@ -3540,7 +3576,9 @@
         "يشغل إيقاعًا ومؤشرات وإنذارات وتصعيدًا."
       ],
       "practical_project_ar": "سجل مخاطر وتغيير + محاكاة لجنة + لوحة متابعة لمشروع المسار.",
-      "title_term_en": "Risk & Change Management"
+      "title_term_en": "Risk & Change Management",
+      "list_price": 175,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-PM-105",
@@ -3605,7 +3643,9 @@
         "يلخص المنجز والانحراف والمخاطر المتبقية."
       ],
       "practical_project_ar": "حزمة إغلاق كاملة لمشروع المسار + إحاطة تنفيذية 8 دقائق.",
-      "title_term_en": "Project Closure & Benefits Realisation"
+      "title_term_en": "Project Closure & Benefits Realisation",
+      "list_price": 175,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-MGR-101",
@@ -3683,7 +3723,9 @@
         "يعلن ما يتوقعه وما يلتزم به وكيف يتخذ القرار."
       ],
       "practical_project_ar": "خريطة انتقال + تدقيق وقت + ميثاق قيادة + دفاع موقف أخلاقي.",
-      "title_term_en": "First-Time Manager"
+      "title_term_en": "First-Time Manager",
+      "list_price": 200,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-MGR-103",
@@ -3748,7 +3790,9 @@
         "يختار سؤال تدريب أو توجيه أو قرارًا مباشرًا."
       ],
       "practical_project_ar": "محاكاة تفويض مسجلة + موجز + خطة متابعة + تحليل حالة تعثر.",
-      "title_term_en": "Delegation"
+      "title_term_en": "Delegation",
+      "list_price": 175,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-MGR-104",
@@ -3813,7 +3857,9 @@
         "يحدد النتيجة والدعم والدليل والموعد والتصعيد."
       ],
       "practical_project_ar": "محادثة أداء مسجلة + ملف أدلة + خطة تحسين + تأمل تحيز.",
-      "title_term_en": "Feedback & Difficult Conversations"
+      "title_term_en": "Feedback & Difficult Conversations",
+      "list_price": 175,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-MGR-105",
@@ -3877,7 +3923,9 @@
         "يختار تجربة تحسين ومؤشرات ومخاطر.",
         "يعرض الافتراضات والطلبات ومسار التحديث."
       ],
-      "practical_project_ar": "خطة 30/60/90 + خريطة أصحاب مصلحة + تجربة تحسين + عرض 12 دقيقة."
+      "practical_project_ar": "خطة 30/60/90 + خريطة أصحاب مصلحة + تجربة تحسين + عرض 12 دقيقة.",
+      "list_price": 175,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-SVC-101",
@@ -3952,7 +4000,9 @@
         "يصوغ مشكلة من منظور المستخدم مع حدود وأثر."
       ],
       "practical_project_ar": "خريطة رحلة مستفيد + 5 أدلة + بيان مشكلة + خط أساس.",
-      "title_term_en": "Customer Journey Mapping"
+      "title_term_en": "Customer Journey Mapping",
+      "list_price": 125,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-SVC-103",
@@ -4016,7 +4066,9 @@
         "يطبق الإجراء ويحدد سببًا وموعدًا وحق مراجعة.",
         "يجمع الأنماط والأسباب ويقترح إجراءً تصحيحيًا."
       ],
-      "practical_project_ar": "محاكاة شكوى + رد مكتوب + تحليل نمط شكاوى + خطة إجراء تصحيحي."
+      "practical_project_ar": "محاكاة شكوى + رد مكتوب + تحليل نمط شكاوى + خطة إجراء تصحيحي.",
+      "list_price": 175,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-SVC-104",
@@ -4082,7 +4134,9 @@
         "يحدد عنق زجاجة وخط أساس وهدفًا وموازنة."
       ],
       "practical_project_ar": "قاموس 8 مؤشرات + استبيان 5 أسئلة + تحليل بيانات خدمة + هدف تحسين.",
-      "title_term_en": "Service Quality Measurement (CSAT · NPS)"
+      "title_term_en": "Service Quality Measurement (CSAT · NPS)",
+      "list_price": 175,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-SVC-105",
@@ -4146,7 +4200,9 @@
         "يجمع دليل نجاح وفشل من عينة صغيرة.",
         "يقارن قبل/بعد ويحدد التكلفة والمخاطر والخطوة."
       ],
-      "practical_project_ar": "ميثاق + blueprint + نموذج + اختبار + بيانات قبل/بعد + عرض قرار."
+      "practical_project_ar": "ميثاق + blueprint + نموذج + اختبار + بيانات قبل/بعد + عرض قرار.",
+      "list_price": 175,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-BIZ-101",
@@ -4227,7 +4283,9 @@
         "يحدد النمط والاستثناء واللايقين والخطوة التالية."
       ],
       "practical_project_ar": "5 مقابلات موثقة + جدول أدلة + فرضية محدثة + مذكرة استمر/غيّر/توقف.",
-      "title_term_en": "Problem Validation"
+      "title_term_en": "Problem Validation",
+      "list_price": 125,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-BIZ-103",
@@ -4292,7 +4350,9 @@
         "يبني base/upside/downside واحتياج نقدي."
       ],
       "practical_project_ar": "خريطة نموذج + اقتصاديات وحدة + خطة تشغيل + 3 سيناريوهات نقدية.",
-      "title_term_en": "Business Model & Unit Costs"
+      "title_term_en": "Business Model & Unit Costs",
+      "list_price": 175,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-BIZ-104",
@@ -4357,7 +4417,9 @@
         "يكشف سبب الاعتراض ويختبر خيارًا ويطلب خطوة."
       ],
       "practical_project_ar": "مذكرة سعر + مكالمة مبيعات مسجلة + عرض تجاري + متابعة مكتوبة.",
-      "title_term_en": "Pricing Strategy"
+      "title_term_en": "Pricing Strategy",
+      "list_price": 175,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-BIZ-105",
@@ -4421,7 +4483,9 @@
         "ينفذ ويتابع ويصنف الاعتراض والرفض والالتزام.",
         "يقرأ التحويل والسيولة والسعة ويختار مسارًا."
       ],
-      "practical_project_ar": "خط 20 فرصة + سجل تجربة + دليل بيع/رفض + نموذج نقدي وخطة 90 يومًا."
+      "practical_project_ar": "خط 20 فرصة + سجل تجربة + دليل بيع/رفض + نموذج نقدي وخطة 90 يومًا.",
+      "list_price": 175,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-AUT-101",
@@ -4509,7 +4573,9 @@
         "يقيّم مصفوفة الأولوية والعائد وفق معايير واضحة ويصحح الخلل في مثال معطى.",
         "ينفذ قرار الأتمتة وحدودها وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
-      "practical_project_ar": "خريطة عملية + مصفوفة أولوية بالوقت ونسبة الخطأ وحجم التكرار + دراسة جدوى مبسطة لنقطة أتمتة واحدة."
+      "practical_project_ar": "خريطة عملية + مصفوفة أولوية بالوقت ونسبة الخطأ وحجم التكرار + دراسة جدوى مبسطة لنقطة أتمتة واحدة.",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-AUT-103",
@@ -4579,7 +4645,9 @@
         "ينفذ تشغيل Workflow ومراقبته وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "سير عمل آلي لاستقبال طلب ومعالجته وإرساله + مخطط شروط وتفرعات + خطة معالجة أخطاء وإعادة محاولة.",
-      "title_term_en": "Workflow Automation"
+      "title_term_en": "Workflow Automation",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-AUT-104",
@@ -4649,7 +4717,9 @@
         "ينفذ اختبار مساعد داخلي وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "مساعد داخلي مرتبط بقاعدة معرفة مختارة + سياسة مصادر وحدود إجابة + سجل اختبار للتحقق من الالتزام بالمصدر.",
-      "title_term_en": "Retrieval-Augmented Assistant (RAG)"
+      "title_term_en": "Retrieval-Augmented Assistant (RAG)",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-AUT-105",
@@ -4720,7 +4790,9 @@
         "ينفذ تشغيل المشروع وقياس العائد وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "مخطط وكيل بنقاط تحكم بشرية + سياسة تشغيل وصلاحيات + عملية مؤتمتة عاملة على حالة فعلية + توثيق مراقبة واستثناءات.",
-      "title_term_en": "AI Agents"
+      "title_term_en": "AI Agents",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-MKT-101",
@@ -4806,7 +4878,9 @@
         "ينفذ وثيقة استراتيجية التسويق وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "وثيقة عميل وتموضع + تقسيم سوق مبرر + عرض قيمة مدعوم بمقابلات موثقة.",
-      "title_term_en": "Segmentation & Positioning"
+      "title_term_en": "Segmentation & Positioning",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-MKT-103",
@@ -4875,7 +4949,9 @@
         "يقيّم إعادة الاستخدام والتوزيع وفق معايير واضحة ويصحح الخلل في مثال معطى.",
         "ينفذ حزمة محتوى مرتبطة بهدف وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
-      "practical_project_ar": "تقويم محتوى + أعمدة محتوى محددة + نماذج منشورة + خطة إعادة استخدام وتوزيع."
+      "practical_project_ar": "تقويم محتوى + أعمدة محتوى محددة + نماذج منشورة + خطة إعادة استخدام وتوزيع.",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-MKT-104",
@@ -4946,7 +5022,9 @@
         "ينفذ حملة متابعة قابلة للتشغيل وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "سلسلة متابعة آلية لعرض واحد + تقسيم قوائم + مراجعة امتثال للخصوصية وقنوات المراسلة.",
-      "title_term_en": "Lead Nurturing"
+      "title_term_en": "Lead Nurturing",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-MKT-105",
@@ -5016,7 +5094,9 @@
         "يقيّم القياس والتفسير وفق معايير واضحة ويصحح الخلل في مثال معطى.",
         "ينفذ خطة نمو وقرار التحسين وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
-      "practical_project_ar": "خطة تجارب نمو + لوحة أداء + خط أساس ونتائج قياس + خطة نمو 90 يومًا قابلة للتنفيذ."
+      "practical_project_ar": "خطة تجارب نمو + لوحة أداء + خط أساس ونتائج قياس + خطة نمو 90 يومًا قابلة للتنفيذ.",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-SAL-101",
@@ -5102,7 +5182,9 @@
         "ينفذ قائمة فرص وخطة استهداف وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "ملف العميل المثالي (ICP) + خريطة سوق + قائمة فرص مرتبة بالأولوية + رسالة قيمة موجهة.",
-      "title_term_en": "Ideal Customer Profile & Prospecting"
+      "title_term_en": "Ideal Customer Profile & Prospecting",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-SAL-103",
@@ -5172,7 +5254,9 @@
         "ينفذ ملخص احتياج موثق وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "محاكاة محادثة اكتشاف مسجلة + دليل أسئلة + ملخص احتياج مرتب بالأولوية والأثر.",
-      "title_term_en": "Discovery Calls"
+      "title_term_en": "Discovery Calls",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-SAL-104",
@@ -5241,7 +5325,9 @@
         "يقيّم التقديم لأصحاب القرار وفق معايير واضحة ويصحح الخلل في مثال معطى.",
         "ينفذ Proposal وعرض شفهي وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
-      "practical_project_ar": "عرض تجاري كامل + تقديم شفهي مسجل + ربط موثق بين كل بند وقيمته لدى صاحب القرار."
+      "practical_project_ar": "عرض تجاري كامل + تقديم شفهي مسجل + ربط موثق بين كل بند وقيمته لدى صاحب القرار.",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-SAL-105",
@@ -5312,7 +5398,9 @@
         "ينفذ محاكاة صفقة وخطة حساب وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "محاكاة تفاوض مسجلة + خطة تفاوض واتفاق مبدئي + خطة نمو حساب رئيسي + خريطة شراكات.",
-      "title_term_en": "Closing & Account Growth"
+      "title_term_en": "Closing & Account Growth",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-HR-101",
@@ -5399,7 +5487,9 @@
         "ينفذ خطة قوى عاملة وبطاقة دور وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "خطة قوى عاملة + تحليل فجوة + بطاقة وظيفة + مصفوفة جدارات بمستوياتها.",
-      "title_term_en": "Workforce Planning & Job Design"
+      "title_term_en": "Workforce Planning & Job Design",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-HR-103",
@@ -5469,7 +5559,9 @@
         "ينفذ تصميم دورة أداء وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "نموذج دورة أداء + أهداف ومعايير + دليل محادثة مراجعة + سجل أدلة على مدار الدورة.",
-      "title_term_en": "Performance Management"
+      "title_term_en": "Performance Management",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-HR-104",
@@ -5541,7 +5633,9 @@
         "يقيّم المسار والتطوير وفق معايير واضحة ويصحح الخلل في مثال معطى.",
         "ينفذ خطة مواهب واحتفاظ وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
-      "practical_project_ar": "خطة تعلم وتطوير لقسم + تحليل فجوة قدرة + مسار تطوير وخطة نقل التعلم إلى العمل."
+      "practical_project_ar": "خطة تعلم وتطوير لقسم + تحليل فجوة قدرة + مسار تطوير وخطة نقل التعلم إلى العمل.",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-HR-105",
@@ -5615,7 +5709,9 @@
         "ينفذ لوحة قرار ومشروع دورة الحياة وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "لوحة مؤشرات موظفين + تحليل قرار واحد بالكامل + سياسة استخدام بيانات + مراجعة تحيز وخصوصية.",
-      "title_term_en": "People Analytics"
+      "title_term_en": "People Analytics",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-FINM-101",
@@ -5701,7 +5797,9 @@
         "ينفذ ملخص صحة مالية وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "ملخص صحة مالية: قراءة قائمة دخل ومركز مالي وتدفق نقدي + المؤشرات المستخرجة منها وتفسيرها.",
-      "title_term_en": "Financial Statements"
+      "title_term_en": "Financial Statements",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-FINM-103",
@@ -5771,7 +5869,9 @@
         "ينفذ موازنة وتقرير انحراف وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "موازنة ربع سنوية + توقع بسيناريوهين + تقرير انحراف يقارن الفعلي بالخطة ويفسر أسبابه.",
-      "title_term_en": "Budgeting & Variance Analysis"
+      "title_term_en": "Budgeting & Variance Analysis",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-FINM-104",
@@ -5841,7 +5941,9 @@
         "ينفذ خطة حماية النقد وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "توقع تدفق نقدي + تحليل دورة التحصيل والدفع + خطة حماية رأس المال العامل.",
-      "title_term_en": "Cash Flow Management"
+      "title_term_en": "Cash Flow Management",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-FINM-105",
@@ -5911,7 +6013,9 @@
         "ينفذ مذكرة قرار مالي وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "مذكرة قرار استثماري بـROI وPayback وNPV + تحليل حساسية + لوحة مؤشرات + عرض على الإدارة.",
-      "title_term_en": "Capital Budgeting & ROI"
+      "title_term_en": "Capital Budgeting & ROI",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-PRD-101",
@@ -5997,7 +6101,9 @@
         "ينفذ Product Strategy Brief وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "موجز استراتيجية منتج: رؤية وهدف + مشكلة سوق وقيمة + حدود المنتج وأصحاب المصلحة.",
-      "title_term_en": "Product Vision"
+      "title_term_en": "Product Vision",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-PRD-103",
@@ -6067,7 +6173,9 @@
         "ينفذ تعريف MVP وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "تعريف MVP + نموذج أولي مختبر مع مستخدمين + قصص مستخدم بمعايير قبول.",
-      "title_term_en": "Minimum Viable Product (MVP)"
+      "title_term_en": "Minimum Viable Product (MVP)",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-PRD-104",
@@ -6138,7 +6246,9 @@
         "ينفذ خريطة طريق فصلية وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "خريطة طريق منتج فصلية + قائمة عمل مرتبة + مفاضلات موثقة وخطة تعاون مع الفريق.",
-      "title_term_en": "Roadmap & Backlog"
+      "title_term_en": "Roadmap & Backlog",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-PRD-105",
@@ -6208,7 +6318,9 @@
         "يقيّم التجارب والاحتفاظ وفق معايير واضحة ويصحح الخلل في مثال معطى.",
         "ينفذ عرض Product Case وقرار الاستثمار وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
-      "practical_project_ar": "خطة إطلاق ومؤشرات + لوحة قياس + تجارب واحتفاظ بعد الإطلاق + عرض المنتج أمام لجنة."
+      "practical_project_ar": "خطة إطلاق ومؤشرات + لوحة قياس + تجارب واحتفاظ بعد الإطلاق + عرض المنتج أمام لجنة.",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-OPS-101",
@@ -6294,7 +6406,9 @@
         "ينفذ خط أساس وميثاق تحسين وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "خريطة الحالة الحالية + SIPOC وحدود العملية + خط أساس للزمن والقيمة.",
-      "title_term_en": "Process Mapping"
+      "title_term_en": "Process Mapping",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-OPS-103",
@@ -6364,7 +6478,9 @@
         "ينفذ تقرير A3 وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "تقرير A3 لمشكلة تشغيلية: تعريف المشكلة + تحليل 5 Whys وFishbone + اختبار السبب الجذري.",
-      "title_term_en": "Root Cause Analysis"
+      "title_term_en": "Root Cause Analysis",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-OPS-104",
@@ -6434,7 +6550,9 @@
         "ينفذ KPI Dashboard وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "شجرة مؤشرات + لوحة تشغيل بمؤشرات قائدة وتابعة + إيقاع مراجعة معتمد.",
-      "title_term_en": "Operational KPIs"
+      "title_term_en": "Operational KPIs",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-OPS-105",
@@ -6504,7 +6622,9 @@
         "يقيّم التوحيد وإدارة التغيير وفق معايير واضحة ويصحح الخلل في مثال معطى.",
         "ينفذ عرض حالة تحسين متكاملة وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
-      "practical_project_ar": "تجربة تحسين بدورة PDCA + بيانات قبل وبعد + خطة توحيد وإدارة تغيير + عرض حالة تحسين تشغيلي."
+      "practical_project_ar": "تجربة تحسين بدورة PDCA + بيانات قبل وبعد + خطة توحيد وإدارة تغيير + عرض حالة تحسين تشغيلي.",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-CYB-101",
@@ -6590,7 +6710,9 @@
         "ينفذ سجل مخاطر أولي وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "موجز تهديدات: جرد أصول وقيمتها + تحليل حادثة معروفة + تقييم احتمال وأثر.",
-      "title_term_en": "Cyber Risk Awareness"
+      "title_term_en": "Cyber Risk Awareness",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-CYB-103",
@@ -6660,7 +6782,9 @@
         "ينفذ قائمة ضوابط أساسية وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "قائمة ضوابط حماية للأجهزة والبيانات والسحابة + خطة نسخ وتشفير + توزيع المسؤولية السحابية المشتركة.",
-      "title_term_en": "Cloud & Endpoint Security"
+      "title_term_en": "Cloud & Endpoint Security",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-CYB-104",
@@ -6730,7 +6854,9 @@
         "ينفذ Profile وخطة مخاطر وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "سجل مخاطر + سياسة أمن + خطة معالجة مرتبة بالأولوية ومربوطة بوظائف إطار CSF.",
-      "title_term_en": "Security Controls Selection"
+      "title_term_en": "Security Controls Selection",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-CYB-105",
@@ -6800,7 +6926,9 @@
         "ينفذ تمرين Tabletop وخطة حادث وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "خطة استجابة للحوادث + محاكاة Tabletop موثقة + خطة تواصل واستمرارية عمل.",
-      "title_term_en": "Incident Response"
+      "title_term_en": "Incident Response",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-SCM-101",
@@ -6886,7 +7014,9 @@
         "ينفذ خريطة سلسلة إمداد وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "خريطة سلسلة إمداد: التدفقات والأطراف + العقد الحرجة + موازنة بين مستوى الخدمة والتكلفة.",
-      "title_term_en": "Supply Chain Fundamentals"
+      "title_term_en": "Supply Chain Fundamentals",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-SCM-103",
@@ -6956,7 +7086,9 @@
         "ينفذ سياسة مخزون وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "سياسة مخزون: تصنيف ABC + مخزون أمان ونقطة طلب + خطة رفع دقة الجرد.",
-      "title_term_en": "Inventory Management"
+      "title_term_en": "Inventory Management",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-SCM-104",
@@ -7029,7 +7161,9 @@
         "ينفذ حزمة مشتريات وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "حزمة مشتريات: طلب عرض (RFP) + معايير تقييم موزونة + تقييم مورد وخطة تفاوض.",
-      "title_term_en": "Supplier Selection"
+      "title_term_en": "Supplier Selection",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-SCM-105",
@@ -7100,7 +7234,9 @@
         "ينفذ مشروع سلسلة إمداد متكامل وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "خطة إدارة موردين + بطاقة أداء مورد + لوحة سلسلة بمؤشرات OTIF والدوران والتكلفة + خطة تطوير ومخاطر.",
-      "title_term_en": "Supplier Performance & Risk"
+      "title_term_en": "Supplier Performance & Risk",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-COMX-101",
@@ -7186,7 +7322,9 @@
         "ينفذ Message Map وخطاب قصير وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "خريطة رسالة: فكرة رئيسة واحدة + هيكل قصة ودليل + تحليل جمهور والقرار المطلوب منه.",
-      "title_term_en": "Message Architecture"
+      "title_term_en": "Message Architecture",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-COMX-103",
@@ -7257,7 +7395,9 @@
       ],
       "practical_project_ar": "خطاب مسجَّل من دقيقتين قبل وبعد، مع جدول المعايير الستّة (النفَس · الطبقة · السرعة · الوقفات · الحشو · الجسد) وخطّة تحسين بثلاثة إجراءات وما تغيّر منها فعلا.",
       "legacy_title_ar": "التحكم برهبة المسرح وبناء حضورك",
-      "title_term_en": "Public Speaking & Vocal Delivery"
+      "title_term_en": "Public Speaking & Vocal Delivery",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-COMX-104",
@@ -7327,7 +7467,9 @@
         "ينفذ Persuasive Pitch وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "عرض إقناعي شفهي + بناء حجة بالمنطق والدليل والمصداقية + معالجة اعتراضات ودعوة فعل.",
-      "title_term_en": "Persuasion & Influence"
+      "title_term_en": "Persuasion & Influence",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-COMX-105",
@@ -7397,7 +7539,9 @@
         "ينفذ عرض نهائي وQ&A وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "دليل أسئلة وأجوبة + محاكاة لجنة بأسئلة صعبة + تقييم الإيجاز والصدق تحت الضغط.",
-      "title_term_en": "Handling Tough Q&A"
+      "title_term_en": "Handling Tough Q&A",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-NEG-101",
@@ -7484,7 +7628,9 @@
         "ينفذ مذكرة تحضير وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "خطة تفاوض: مصالح مقابل مواقف + تحليل BATNA وحد أدنى + تحديد ZOPA ومعايير موضوعية.",
-      "title_term_en": "Negotiation Preparation (BATNA)"
+      "title_term_en": "Negotiation Preparation (BATNA)",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-NEG-103",
@@ -7554,7 +7700,9 @@
         "ينفذ خريطة تأثير وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "خريطة تأثير داخلي + خطة رسائل لأصحاب المصلحة + حدود أخلاقية معلنة للإقناع.",
-      "title_term_en": "Principled Negotiation"
+      "title_term_en": "Principled Negotiation",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-NEG-104",
@@ -7624,7 +7772,9 @@
         "ينفذ خطة محادثة نزاع وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "خطة محادثة نزاع + محاكاة مسجلة + فصل الحقائق عن الاحتياجات وتحديد خيار الوساطة.",
-      "title_term_en": "Conflict De-escalation"
+      "title_term_en": "Conflict De-escalation",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-NEG-105",
@@ -7694,7 +7844,9 @@
         "ينفذ محاكاة واتفاق نهائي وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "اتفاق متعدد الأطراف + خريطة أطراف وتحالفات + تسلسل قضايا + التزامات قابلة للتنفيذ والمتابعة.",
-      "title_term_en": "Multi-Party Negotiation"
+      "title_term_en": "Multi-Party Negotiation",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-LND-101",
@@ -7783,7 +7935,9 @@
         "ينفذ Training Needs Brief وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "موجز حاجة تدريبية: مشكلة أداء وسياقها + جمهور وقيود + نواتج تعلم قابلة للملاحظة.",
-      "title_term_en": "Training Needs Analysis"
+      "title_term_en": "Training Needs Analysis",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-LND-103",
@@ -7856,7 +8010,9 @@
         "ينفذ Activity & Assessment Kit وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "حقيبة نشاط وتقييم: مهمة أصيلة + سلم تقدير (rubric) بمعايير عادلة + خطة ممارسة متعمدة.",
-      "title_term_en": "Assessment & Rubric Design"
+      "title_term_en": "Assessment & Rubric Design",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-LND-104",
@@ -7929,7 +8085,9 @@
         "ينفذ حزمة مواد متاحة وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "مواد مدرب: عرض + دليل مشارك + أداة عمل، بمعايير وضوح بصري وإتاحة.",
-      "title_term_en": "Instructional Materials Design"
+      "title_term_en": "Instructional Materials Design",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-LND-105",
@@ -8003,7 +8161,9 @@
         "ينفذ جلسة ووحدة تجريبية وتحسين وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "جلسة تجريبية مسجلة + وحدة رقمية مصغرة منشورة + خطة تيسير وإدارة مشاركة + قياس أثر.",
-      "title_term_en": "Facilitation & Delivery"
+      "title_term_en": "Facilitation & Delivery",
+      "list_price": 150,
+      "list_currency": "USD"
     },
     {
       "course_id": "C-COMX-106",
@@ -8070,7 +8230,9 @@
         "ينتج ملف إنجليزية العمل ويدافع عنه شفهيا بالإنجليزية في دقيقتين."
       ],
       "practical_project_ar": "ملف إنجليزية العمل: بريدان مهنيان + تلخيص اجتماع مسجَّل + تحديث شفهي دقيقتان بالإنجليزية عن مهمة حقيقية.",
-      "title_term_en": "Business English"
+      "title_term_en": "Business English",
+      "list_price": 125,
+      "list_currency": "USD"
     }
   ],
   "modules": [
