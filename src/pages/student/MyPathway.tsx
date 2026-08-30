@@ -27,10 +27,29 @@ interface Row {
   certificates?: unknown[];
 }
 
+/* الخطّة المعتمَدة من الخادم — حالةُ كلّ دورة مشتقّةٌ هناك لا هنا */
+type PlanItemState = "enrolled" | "schedulable" | "awaiting_cohort";
+interface PlanItem {
+  courseId: string;
+  sequence: number;
+  isGift: boolean;
+  state: PlanItemState;
+  cohort: { id: string; title: string; startsAt: string | null; seatsLeft: number | null } | null;
+  requestPending: boolean;
+}
+interface Plan {
+  id: string;
+  nameAr: string;
+  composed: boolean;
+  items: PlanItem[];
+  counts: { total: number; enrolled: number; schedulable: number; awaitingCohort: number };
+}
+
 export default function MyPathway() {
   const catalogVersion = usePublishedContent();
   const { user: sessionUser } = useRealSession();
   const [fetched, setFetched] = useState<Row[] | null>(null);
+  const [plan, setPlan] = useState<Plan | null>(null);
   /* بلا جلسة لا نداء ولا تصفير حالة داخل تأثير (react-hooks/set-state-in-effect):
      النتيجة تُعطف أثناء التصيير — زائرٌ بلا جلسة صفوفُه فارغة قطعا. */
   const rows = sessionUser ? fetched : [];
@@ -41,6 +60,10 @@ export default function MyPathway() {
     apiGet<Row[]>("/api/learner/my-learning")
       .then((r) => { if (on) setFetched(r); })
       .catch(() => { if (on) setFetched([]); });
+    /* الخطّة المعتمَدة — إن وُجدت فهي المصدر، وإلا يبقى الاستنتاج القديم */
+    apiGet<{ plan: Plan | null }>("/api/learner/plan")
+      .then((r) => { if (on) setPlan(r.plan); })
+      .catch(() => { if (on) setPlan(null); });
     return () => { on = false; };
   }, [sessionUser]);
 
@@ -51,6 +74,8 @@ export default function MyPathway() {
       </PortalLayout>
     );
   }
+  /* الخطّة أوّلا: هي ما اعتمده هو. والاستنتاج احتياطٌ لمن سجّل بلا خطّة. */
+  if (plan) return <PlanBody key={catalogVersion} plan={plan} rows={rows} />;
   if (rows.length === 0) return <NoPathway />;
   return <PathwayBody key={catalogVersion} rows={rows} />;
 }
@@ -73,6 +98,123 @@ function NoPathway() {
             ابدأ التشخيص
           </Link>
         </div>
+      </section>
+    </PortalLayout>
+  );
+}
+
+/* ─────────── الخطّة كما اعتمدها — لا استنتاجا ───────────
+
+   كانت هذه الصفحة **تستنتج** المسار: تنظر إلى دوراته المسجَّلة وتختار المسار
+   الأكثر تطابقا معها، ثم تعرض **قائمة الكتالوج** لا قائمته هو. فمن سجّل في
+   دورة واحدة قد يُنسَب إلى مسارٍ لم يخترْه، ومن اعتمد خطّةً بستّ دورات يرى خمسا.
+
+   وحالةُ كلّ دورة تأتي مشتقّةً من الخادم: أمسجَّل فيها؟ ألها شعبة يطلبها الآن؟
+   أم لا شعبة لها بعد؟ وهذا آخرها هو ما يجب أن يُقال صراحةً لا أن يُكتشَف بعد
+   الدفع — «بانتظار شعبة» أصدق من زرٍّ يقود إلى لا شيء. */
+
+const STATE_AR: Record<PlanItemState, { label: string; cls: string }> = {
+  enrolled: { label: "مسجَّل", cls: "border-teal/50 text-teal-light-ink" },
+  schedulable: { label: "شعبة متاحة", cls: "border-gold/50 text-gold-ink" },
+  awaiting_cohort: { label: "بانتظار شعبة", cls: "border-white/15 text-white/45" },
+};
+
+function startsLabel(iso: string | null): string {
+  if (!iso) return "الموعد يُعلن قريبا";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "الموعد يُعلن قريبا";
+  return `تبدأ ${d.toLocaleDateString("ar", { day: "numeric", month: "long" })}`;
+}
+
+function PlanBody({ plan, rows }: { plan: Plan; rows: Row[] }) {
+  const facts = enrollmentFactsFromApi(rows);
+  const factOf = new Map(facts.map((f) => [f.courseId, f]));
+  const { total, enrolled, awaitingCohort } = plan.counts;
+  const reviewMsg = `مرحبا، أنا صاحب «${plan.nameAr}» وأريد مراجعة خطّتي (تبديل/إضافة دورة).`;
+
+  return (
+    <PortalLayout title={plan.nameAr}>
+      <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h2 className="text-lg font-black">خطّتك كما اعتمدتها</h2>
+            <p className="mt-1 max-w-2xl text-sm leading-7 text-white/60">
+              {total} دورات · <span className="text-teal-light-ink">{enrolled} مسجَّل</span>
+              {awaitingCohort > 0 && (
+                <> · <span className="text-white/45">{awaitingCohort} بانتظار شعبة</span></>
+              )}
+            </p>
+          </div>
+          <AdvisorContact
+            text={reviewMsg}
+            label="مراجعة خطّتي"
+            icon={<RefreshCcw className="h-4 w-4" />}
+            className="flex items-center gap-2 rounded-full border border-gold/40 px-5 py-2.5 text-sm font-bold text-gold-ink transition hover:bg-gold/10"
+          />
+        </div>
+        {awaitingCohort > 0 && (
+          <p className="mt-3 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 text-[12px] leading-6 text-white/60">
+            <span className="font-bold text-white/80">{awaitingCohort} من دوراتك لم تُفتح لها شعبة بعد.</span>{" "}
+            لا تُطلب الآن ولا يُدفع ثمنها — نُعلمك فور جدولتها، أو استبدلها بمراجعة مع مستشارك.
+          </p>
+        )}
+      </section>
+
+      <section className="mt-6 space-y-3">
+        {plan.items.map((item) => {
+          const c = courseById(item.courseId);
+          if (!c) return null;
+          const f = factOf.get(item.courseId);
+          const done = !!f?.completed;
+          const pct = f?.percent ?? null;
+          const chip = done ? { label: "مكتملة", cls: "border-teal/60 text-teal-ink" } : STATE_AR[item.state];
+          return (
+            <div
+              key={item.courseId}
+              className={`flex flex-wrap items-center gap-4 rounded-3xl border p-5 ${
+                done || item.state === "enrolled" ? "border-teal/40 bg-white/[0.03]" : "border-white/10 bg-white/[0.01]"
+              }`}
+            >
+              <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-sm font-black ${done ? "bg-teal text-on-teal" : "bg-white/5"}`}>
+                {done ? <CheckCircle2 className="h-5 w-5" /> : item.sequence}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className={`font-black ${item.state === "awaiting_cohort" ? "text-white/50" : ""}`}>
+                  {c.name}
+                  {item.isGift && (
+                    <span className="ms-2 rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-bold text-gold-ink">هديّتك</span>
+                  )}
+                </p>
+                <p className="mt-0.5 text-xs text-white/45">
+                  {c.skill}
+                  {item.state === "schedulable" && item.cohort && <> · {startsLabel(item.cohort.startsAt)}</>}
+                </p>
+                {item.state === "enrolled" && pct !== null && pct > 0 && pct < 100 && (
+                  <div className="mt-2 h-1.5 w-48 overflow-hidden rounded-full bg-white/10">
+                    <div className="h-full rounded-full bg-teal" style={{ width: `${pct}%` }} />
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-3">
+                <span className={`rounded-full border px-3 py-1 text-[11px] font-bold ${chip.cls}`}>{chip.label}</span>
+                {item.state === "enrolled" ? (
+                  <Link to={`/student/course/${item.courseId}`} className="flex items-center gap-1 rounded-full bg-teal px-4 py-2 text-xs font-black text-on-teal transition hover:bg-teal-light">
+                    افتح المحطات <ChevronLeft className="h-3.5 w-3.5" />
+                  </Link>
+                ) : item.requestPending ? (
+                  <span className="text-[11px] font-bold text-gold-ink">طلبك قيد المراجعة</span>
+                ) : item.state === "schedulable" ? (
+                  <Link to="/student/cohorts" className="rounded-full border border-gold/50 px-4 py-2 text-[11px] font-black text-gold-ink transition hover:bg-gold/10">
+                    اطلب مقعدا
+                  </Link>
+                ) : (
+                  /* لا زرّ لما لا شعبة له — زرٌّ يقود إلى لا شيء أسوأ من غيابه */
+                  <span className="text-[11px] text-white/35">نُعلمك عند فتحها</span>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </section>
     </PortalLayout>
   );

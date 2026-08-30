@@ -33,9 +33,9 @@ import { pathwayById, pathwayCategory } from "@/data/pathways";
 import { hasCoreCatalog } from "@/data/core-catalog-source";
 import { readAdoptedPlan, saveAdoptedPlan } from "@/application/plan/adopted-plan";
 import { FIRST_TIME_PROMO } from "@/application/commerce/first-time-promo";
-import { courseById, courses, pathwayCourses, pathwayDelivery, coursePriceOf, pathwayPriceFor, pathwayTrainers, courseTrainer, weeksLabel, MIN_PATHWAY_COURSES, MAX_PATHWAY_COURSES } from "@/data/courses";
+import { useCoursePrices, cheapestOf, pricedCount, formatCohortPrice } from "@/services/cohort-prices";
+import { courseById, courses, pathwayCourses, pathwayDelivery, pathwayTrainers, courseTrainer, weeksLabel, MIN_PATHWAY_COURSES, MAX_PATHWAY_COURSES } from "@/data/courses";
 import { GOAL_LABELS, GAP_LABELS, OBSTACLE_TO_GAP } from "@/data/diagnostic";
-import { usePriceFormatter } from "@/services/currency";
 import { track } from "@/services/analytics";
 import { usePublishedContent } from "@/services/public-content";
 import SeoHead from "@/components/SeoHead";
@@ -94,7 +94,8 @@ export default function PathwayPage() {
   /* نية شراء معلقة بانتظار تسجيل الدخول — التصفح مفتوح، والتسجيل يُطلب لحظة الدفع فقط */
   const [pendingCheckout, setPendingCheckout] = useState<CheckoutIntent | null>(null);
   const [pickedIds, setPickedIds] = useState<string[]>([]);
-  const fmt = usePriceFormatter();
+  /* مُنسّق الدولار لم يعد يُستعمل هنا: كلّ سعر على هذه الصفحة صار من شعبةٍ
+     حقيقية بعملتها، بلا تحويل — لأن التحويل يُخرج رقما ثالثا لا يُطالَب به أحد. */
 
   /* تتبع مشاهدة صفحة المسار — بلا بيانات شخصية */
   useEffect(() => {
@@ -152,12 +153,15 @@ export default function PathwayPage() {
      والمجموع من القائمة بعد ترشيح المجهول — فيفترقان حين لا يُعرف معرّف، فيظهر
      مرجعٌ لا يطابق ما على الشاشة. مصدرٌ واحد يمنع ذلك. */
   const pathwayCoursesList = courseIds.map((cid) => courseById(cid)).filter((c): c is NonNullable<typeof c> => Boolean(c));
-  const separateCost = pathwayCoursesList.reduce((s, c) => s + coursePriceOf(c), 0);
-  // التسعير المتدرج: ٤ دورات = 500$ · ٥ = 550$ · ٦+ = 600$
-  const pathwayTotal = pathwayPriceFor(pathwayCoursesList.length || 6);
-  const savingPct = separateCost > pathwayTotal ? Math.round((1 - pathwayTotal / separateCost) * 100) : 0;
-  /* «تبدأ من» — أرخص دورة في الخطّة بعد خصم المسار، مقرَّبة لأعلى فلا نَعِد بأقلّ مما يُدفع */
-  const perCourse = pathwayCoursesList.length > 0 ? Math.ceil(pathwayTotal / pathwayCoursesList.length) : 0;
+  /* التسعير المُختلَق (coursePriceOf/pathwayPriceFor) لم يعد يُعرض في أي مكان
+     على هذه الصفحة: كان يقدّر بمطابقة كلمات، والفاتورة تُصدر بسعر الشعبة. */
+
+  /* «تبدأ من» من **سعر شعبةٍ حقيقية** لا من تقديرٍ في المتصفّح. كان الرقم
+     المعروض مُختلَقا بمطابقة كلماتٍ في العنوان، والفاتورة تُصدر بسعر الشعبة
+     وبعملة أخرى — فالوعد غير المطالبة. وحين لا شعبة معلومة: لا رقم. */
+  const { prices, loaded: pricesLoaded } = useCoursePrices();
+  const cheapest = cheapestOf(courseIds, prices);
+  const known = pricedCount(courseIds, prices);
 
   /* تقريره الشخصي من إجابات التشخيص */
   const report = useMemo(() => {
@@ -223,7 +227,13 @@ export default function PathwayPage() {
   /* اختيار الدورات المتعدد — دورة واحدة أو عدة دورات بحرية كاملة */
   const buyableCourses = pathwayCoursesList.filter((c) => c.id !== custom?.giftId);
   const picked = buyableCourses.filter((c) => pickedIds.includes(c.id));
-  const pickedTotal = picked.reduce((s, c) => s + coursePriceOf(c), 0);
+  /* مجموع المختارات من أسعار الشعب الحقيقية — و null حين لا يُعرف سعر إحداها،
+     فلا يُجمع معلومٌ ومجهول ويُعرض الناتج كأنه كامل. */
+  const pickedPrices = picked.map((c) => prices.get(c.id));
+  const pickedTotal =
+    picked.length > 0 && pickedPrices.every((p) => p != null)
+      ? { amount: pickedPrices.reduce((sum, p) => sum + (p as { amount: number }).amount, 0), currency: (pickedPrices[0] as { currency: string }).currency, cohortId: "" }
+      : null;
   const togglePick = (cid: string) =>
     setPickedIds(pickedIds.includes(cid) ? pickedIds.filter((x) => x !== cid) : [...pickedIds, cid]);
   const totalWeeks = pathwayCoursesList.reduce((s, c) => s + c.weeks, 0);
@@ -472,7 +482,14 @@ export default function PathwayPage() {
                               </span>
                             </span>
                           </span>
-                          <span className="shrink-0 text-sm font-black text-white/85">{fmt(coursePriceOf(c))}</span>
+                          {/* سعر الدورة من شعبتها لا من تقدير — وبلا شعبة لا رقم */}
+                          <span className="shrink-0 text-sm font-black text-white/85">
+                            {prices.get(c.id) ? (
+                              <span dir="ltr">{formatCohortPrice(prices.get(c.id)!)}</span>
+                            ) : (
+                              <span className="text-[11px] font-bold text-white/40">مع الشعبة</span>
+                            )}
+                          </span>
                         </button>
                       );
                     })}
@@ -484,13 +501,18 @@ export default function PathwayPage() {
                       <span className="text-xs text-white/55">
                         اخترت {picked.length === 1 ? "دورة واحدة" : `${picked.length} دورات`} من {buyableCourses.length}
                       </span>
-                      <span className="text-2xl font-black text-white">{fmt(pickedTotal)}</span>
+                      {pickedTotal ? (
+                        <span dir="ltr" className="text-2xl font-black text-white">{formatCohortPrice(pickedTotal)}</span>
+                      ) : (
+                        <span className="text-xs text-white/50">يُعلن السعر مع الشعبة</span>
+                      )}
                     </div>
                   )}
-                  {picked.length > 0 && pickedTotal >= pathwayTotal && (
+                  {picked.length > 0 && (
+                    /* التنبيه بلا مقارنةٍ رقمية: المقارنة القديمة كانت بين رقمين
+                       مُختلَقين، فكانت تنصح بناءً على ما لا يُدفع. */
                     <p className="mt-2 rounded-xl border border-gold/40 bg-gold/10 px-4 py-2.5 text-[11px] font-semibold leading-relaxed text-gold-ink">
-                      انتبه — مجموع مختاراتك {fmt(pickedTotal)} {pickedTotal > pathwayTotal ? "تجاوز" : "ساوى"} سعر المسار كاملا {fmt(pathwayTotal)}!
-                      المسار الكامل أوفر لك ويشمل التشخيص والمتابعة ودورة إضافية هدية.
+                      المسار كاملا أوفر، ويشمل التشخيص والمتابعة ودورةً إضافية هديّة.
                     </p>
                   )}
                   <Button
@@ -500,7 +522,7 @@ export default function PathwayPage() {
                           picked.length === 1
                             ? `دورة «${picked[0].name}» من مسار ${pathway.name}`
                             : `${picked.length} دورات مختارة من مسار ${pathway.name}`,
-                        amount: pickedTotal,
+                        amount: pickedTotal?.amount ?? 0,
                         kind: picked.length === 1 ? "course" : "courses",
                         courseIds: picked.map((c) => c.id),
                       })
@@ -525,31 +547,45 @@ export default function PathwayPage() {
                       المتعلّم هنا يقرّر أيبدأ أم لا، ورقمٌ من ثلاث خانات في
                       صدارة البطاقة يُقرأ حاجزا قبل أن يُقرأ قيمة. وسعرُ الخطّة
                       يُحدَّد بعد أن يعتمدها هو — لأن عددها يتغيّر بيده. */}
-                  <div className="mt-4 flex items-end gap-1.5">
-                    <span className="mb-1 text-xs text-white/50">تبدأ من</span>
-                    <span className="text-2xl font-black text-white">{fmt(perCourse)}</span>
-                    <span className="mb-1 text-xs text-white/50">للدورة</span>
-                  </div>
-                  <div className="mt-2 space-y-1 text-xs">
-                    {savingPct > 0 && (
-                      <p className="text-teal-light-ink">
-                        خصم <span className="font-black">{savingPct}%</span> على المسار كاملا — بدل{" "}
-                        <span className="line-through text-white/40">{fmt(separateCost)}</span> لو اشتريتها منفردة
+                  {cheapest ? (
+                    <>
+                      <div className="mt-4 flex items-end gap-1.5">
+                        <span className="mb-1 text-xs text-white/50">تبدأ من</span>
+                        <span dir="ltr" className="text-2xl font-black text-white">{formatCohortPrice(cheapest)}</span>
+                        <span className="mb-1 text-xs text-white/50">للدورة</span>
+                      </div>
+                      <div className="mt-2 space-y-1 text-xs">
+                        <p className="text-teal-light-ink">خصمٌ كبير على المسار كاملا مقابل شراء دوراته منفردة</p>
+                        <p className="text-gold-ink">
+                          و<span className="font-black">{FIRST_TIME_PROMO.percentOff}%</span> إضافية لأوّل عملية شراء بالكود{" "}
+                          <span dir="ltr" className="font-mono font-black">{FIRST_TIME_PROMO.code}</span>
+                        </p>
+                        <p className="flex items-center gap-1.5 text-gold-ink">
+                          <Gift className="h-3.5 w-3.5" /> ودورةٌ من اختيارك هديّة داخل الخطّة
+                        </p>
+                        <p className="pt-0.5 text-white/45">
+                          سعر مسارك يُحدَّد بعد أن تعتمده — أنت من يقرّر دوراته.
+                          {known < courseIds.length && " وبعض دوراته لم تُفتح لها شعبة بعد."}
+                        </p>
+                      </div>
+                    </>
+                  ) : (
+                    /* لا شعبة مسعَّرة: لا رقم. رقمٌ لا تسنده شعبة هو الذي جعل
+                       الوعد يفترق عن الفاتورة. */
+                    <div className="mt-4 space-y-1.5 text-xs">
+                      <p className="text-sm font-black text-white">
+                        {pricesLoaded ? "يُعلن السعر مع فتح الشعبة" : "يُقرأ السعر…"}
                       </p>
-                    )}
-                    <p className="text-gold-ink">
-                      و<span className="font-black">{FIRST_TIME_PROMO.percentOff}%</span> إضافية لأوّل عملية شراء بالكود{" "}
-                      <span dir="ltr" className="font-mono font-black">{FIRST_TIME_PROMO.code}</span>
-                    </p>
-                    <p className="flex items-center gap-1.5 text-gold-ink">
-                      <Gift className="h-3.5 w-3.5" /> ودورةٌ من اختيارك هديّة داخل الخطّة
-                    </p>
-                    <p className="pt-0.5 text-white/45">
-                      سعر مسارك يُحدَّد بعد أن تعتمده — أنت من يقرّر دوراته.
-                    </p>
-                  </div>
+                      <p className="text-white/50">
+                        نُسعّر كل شعبة على حدة، ولا نعرض رقما قبل أن يكون هو الرقم الذي تدفعه.
+                      </p>
+                      <p className="flex items-center gap-1.5 text-gold-ink">
+                        <Gift className="h-3.5 w-3.5" /> ودورةٌ من اختيارك هديّة داخل الخطّة
+                      </p>
+                    </div>
+                  )}
                   <Button
-                    onClick={() => startCheckout({ title: `مسار «${pathway.name}» كاملا (${pathwayCoursesList.length} دورات + هدية)`, amount: pathwayTotal, kind: "pathway" })}
+                    onClick={() => startCheckout({ title: `مسار «${pathway.name}» كاملا (${pathwayCoursesList.length} دورات + هدية)`, amount: 0, kind: "pathway" })}
                     className="mt-4 h-11 rounded-full bg-gold font-black text-on-gold hover:bg-gold/90"
                   >
                     <CalendarDays className="ml-2 h-4 w-4" />

@@ -1,7 +1,6 @@
 import { Route as RouteIcon, CheckCircle2, ArrowUpRight } from "lucide-react";
-import { pathwayPriceFor, courseById, coursePriceOf } from "@/data/courses";
 import { skillNamesAr } from "@/domain/diagnostic/catalog";
-import { usePriceFormatter } from "@/services/currency";
+import { useCoursePrices, cheapestOf, pricedCount, formatCohortPrice } from "@/services/cohort-prices";
 
 /* بطاقة الخطة المركّبة — تُعرض حين يقيّم المتعلم جوانبه.
 
@@ -56,20 +55,29 @@ function levelNote(m: number): string {
   return "يمتد فوق مستواك الحالي";
 }
 
+/* سعر الخطة من **شعبةٍ حقيقية** لا من تقدير. كان يُحسب بـ
+   `pathwayPriceFor(العدد)` و`coursePriceOf(العنوان)`، والفاتورة تُصدر بسعر
+   الشعبة وبعملتها — فالوعد غير المطالبة. وحين لا شعبة مسعَّرة: لا رقم. */
 function PlanPrice({ courseIds }: { courseIds: string[] }) {
-  const fmt = usePriceFormatter();
+  const { prices, loaded } = useCoursePrices();
+  const cheapest = cheapestOf(courseIds, prices);
+  const known = pricedCount(courseIds, prices);
   if (courseIds.length === 0) return null;
-  const total = pathwayPriceFor(courseIds.length);
-  const separate = courseIds.reduce((s, id) => {
-    const c = courseById(id);
-    return c ? s + coursePriceOf(c) : s;
-  }, 0);
-  const saving = separate > total ? Math.round((1 - total / separate) * 100) : 0;
+  if (!cheapest) {
+    return (
+      <p className="mt-2 text-[11px] leading-6 text-white/45">
+        {loaded ? "يُعلن سعر دورات هذه الخطة مع فتح شعبها. والدفع لا يُطلب الآن." : "يُقرأ السعر…"}
+      </p>
+    );
+  }
   return (
     <p className="mt-2 text-[11px] leading-6 text-white/45">
-      <span className="font-bold text-white/70">هذه الخطة كاملة: {fmt(total)}</span>
-      {saving > 0 && <> — بدل {fmt(separate)} لو اشتريت دوراتها منفردة، أي توفير {saving}٪</>}
-      . والدفع لا يُطلب الآن.
+      <span className="font-bold text-white/70">
+        تبدأ من <span dir="ltr">{formatCohortPrice(cheapest)}</span> للدورة
+      </span>
+      {" — وخصمٌ كبير على الخطة كاملة مقابل شرائها دورةً دورة."}
+      {known < courseIds.length && " وبعض دوراتها لم تُفتح لها شعبة بعد."}
+      {" والدفع لا يُطلب الآن."}
     </p>
   );
 }

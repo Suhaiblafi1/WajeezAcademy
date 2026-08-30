@@ -19,8 +19,18 @@
 
    منطق خالص بلا React ليُختبر وحده. */
 
-import { courseById, coursePriceOf, pathwayCourses, courses, type Course } from '../../data/courses'
-import { MAX_BUILT_COURSES, buildDiscountPct, nextBuildStep, readyPathwayCeiling } from '../commerce/discount-policy'
+import { courseById, pathwayCourses, courses, type Course } from '../../data/courses'
+import { MAX_BUILT_COURSES, buildDiscountPct, nextBuildStep } from '../commerce/discount-policy'
+
+/* من أين يأتي سعر الدورة؟ من الشعبة — تُمرَّر الدالة ولا تُستورَد.
+
+   كانت هذه الوحدة تستورد `coursePriceOf` من الكتالوج، وهي تقدّر ١٣٠–١٨٠ دولارا
+   بمطابقة كلماتٍ في عنوان الدورة، بينما الفاتورة تُصدر بسعر الشعبة وبعملتها.
+   فكان كل رقم تحسبه هذه الوحدة وعدا لا يُطالَب به.
+
+   وحقن الدالة يبقيها منطقا خالصا يُختبر وحده، ويجعل «لا سعر معلوم» حالةً
+   صريحة (`null`) لا صفرا يُقرأ مجانا. */
+export type PriceOf = (courseId: string) => number | null
 
 export { MAX_BUILT_COURSES }
 
@@ -34,45 +44,39 @@ export interface PathPricing {
   saving: number
   /** ما يدفعه فعلا قبل أي كود */
   payable: number
-  /** هل حدّ المسار الجاهز هو الذي قرّر السعر (لا السلّم)؟ */
-  cappedByReady: boolean
+  /** كم من المختارة لها سعر شعبةٍ معلوم */
+  priced: number
+  /** أكلُّ المختارة مسعَّرة؟ حين لا — الأرقام أصفار والواجهة لا تعرض رقما */
+  allPriced: boolean
   /** بلغ السقف فلا تُضاف دورة سادسة */
   atCap: boolean
 }
 
-/** ما يدفعه على عدد ومجموع — السلّم مع سقف المسار الجاهز فوقه */
+/** ما يدفعه على عدد ومجموع — السلّم وحده، ولا سقف فوقه (انظر discount-policy) */
 function payableFor(separate: number, count: number): number {
-  const laddered = Math.round(separate * (1 - buildDiscountPct(count) / 100))
-  /* السقف: من ركّب أربع دورات بنفسه لا يجوز أن يدفع أكثر ممن اشترى مسارا
-     جاهزا بأربع. السلّم وحده لا يضمنها — قِيس على أغلى خمس دورات في الكتالوج
-     فأعطى 566 مقابل 550. فالضمان بنيويّ لا بمعايرة نسبةٍ تنكسر مع أول تسعيرة
-     جديدة. وما دون الحدّ الأدنى للمسار الجاهز لا سقف له: لا مسار بثلاث. */
-  const ceiling = count >= MIN_READY_COURSES ? readyPathwayCeiling(count) : Infinity
-  return Math.min(laddered, ceiling)
-}
-
-/** الحدّ الذي يبدأ عنده وجود مسار جاهز بهذا العدد — ودونه لا سقف يُقارن به */
-const MIN_READY_COURSES = 4
-
-export function pathPricing(courseIds: readonly string[]): PathPricing {
-  const picked = courseIds.map((id) => courseById(id)).filter((c): c is Course => Boolean(c))
-  const separate = picked.reduce((s, c) => s + coursePriceOf(c), 0)
-  const count = picked.length
   /* التقريب على المدفوع لا على الخصم: الفاتورة تُصدر بالمدفوع، فتقريبُ الخصم
      ثم الطرح يُخرج قرشا لا يظهر في أي شاشة ويظهر في الفاتورة. */
-  const payable = payableFor(separate, count)
-  /* النسبة تُشتقّ مما يدفع لا من السلّم: حين يحسم السقف، النسبة الفعلية أعلى
-     من المعلنة — وعرضُ الأدنى كذبٌ في صالحنا، وهو كذب. */
-  const discountPct = separate > 0 ? Math.round((1 - payable / separate) * 100) : 0
-  return {
-    count,
-    separate,
-    discountPct,
-    saving: separate - payable,
-    payable,
-    cappedByReady: count >= MIN_READY_COURSES && payable < Math.round(separate * (1 - buildDiscountPct(count) / 100)),
-    atCap: count >= MAX_BUILT_COURSES,
+  return Math.round(separate * (1 - buildDiscountPct(count) / 100))
+}
+
+export function pathPricing(courseIds: readonly string[], priceOf: PriceOf): PathPricing {
+  const picked = courseIds.map((id) => courseById(id)).filter((c): c is Course => Boolean(c))
+  const count = picked.length
+  const each = picked.map((c) => priceOf(c.id))
+  const priced = each.filter((p): p is number => p !== null && Number.isFinite(p)).length
+  const allPriced = count > 0 && priced === count
+
+  /* لا سعر إلا حين تُعرف أسعار المختارة كلها: مجموعٌ ينقصه سعرُ دورةٍ يُقرأ
+     «هذا ثمن الأربع» وهو ثمن ثلاث. والنقص يُقال نصّا لا يُخفى في رقم. */
+  if (!allPriced) {
+    return { count, separate: 0, discountPct: buildDiscountPct(count), saving: 0, payable: 0, priced, allPriced: false, atCap: count >= MAX_BUILT_COURSES }
   }
+
+  const separate = each.reduce<number>((s, p) => s + (p ?? 0), 0)
+  const payable = payableFor(separate, count)
+  /* النسبة تُشتقّ مما يدفع لا من السلّم — فلا يفترق المعلن عن المحسوب */
+  const discountPct = separate > 0 ? Math.round((1 - payable / separate) * 100) : 0
+  return { count, separate, discountPct, saving: separate - payable, payable, priced, allPriced: true, atCap: count >= MAX_BUILT_COURSES }
 }
 
 export interface BundleNudge {
@@ -96,16 +100,19 @@ export interface BundleNudge {
  * فعلا، وحين تكون كلفتها الحقيقية دون سعرها المعلن.
  * يعود null عند السقف، أو حين لا مرشح، أو حين لا مكسب يُقال.
  */
-export function bundleNudge(courseIds: readonly string[], candidateIds: readonly string[]): BundleNudge | null {
-  const now = pathPricing(courseIds)
+export function bundleNudge(courseIds: readonly string[], candidateIds: readonly string[], priceOf: PriceOf): BundleNudge | null {
+  const now = pathPricing(courseIds, priceOf)
   const step = nextBuildStep(now.count)
-  if (!step) return null
+  /* بلا أسعارٍ كاملة لا وعد رقميّ يُقال — والتنبيه كلُّه أرقام */
+  if (!step || !now.allPriced) return null
   const cheapest = candidateIds
     .map((id) => courseById(id))
     .filter((c): c is Course => Boolean(c))
-    .reduce<Course | null>((best, c) => (!best || coursePriceOf(c) < coursePriceOf(best) ? c : best), null)
+    .map((c) => ({ c, p: priceOf(c.id) }))
+    .filter((x): x is { c: Course; p: number } => x.p !== null && Number.isFinite(x.p))
+    .reduce<{ c: Course; p: number } | null>((best, x) => (!best || x.p < best.p ? x : best), null)
   if (!cheapest) return null
-  const listPrice = coursePriceOf(cheapest)
+  const listPrice = cheapest.p
   const nextSeparate = now.separate + listPrice
   const nextPayable = payableFor(nextSeparate, step.count)
   const marginal = nextPayable - now.payable

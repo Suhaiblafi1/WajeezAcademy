@@ -6,6 +6,7 @@ import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { EnrollmentService } from './enrollment.service'
 import { newStorageKey, signKey, SIGNED_URL_TTL_MS } from './storage.service'
+import { safeNotify } from './notification.service'
 
 const MAX_SUBMISSION_BYTES = 100 * 1024 * 1024 // 100MB
 
@@ -138,7 +139,10 @@ export class AssessmentService {
       submitted: ['under_review'],
       under_review: ['resubmit_requested', 'accepted', 'rejected'],
       resubmit_requested: [],
-      accepted: [], rejected: [],
+      accepted: [],
+      /* «مرفوض» كانت نهايةً صمّاء: لا إشعار ولا طريق للعودة. صار المدرّب يستطيع
+         إعادة فتحها بطلب تسليمٍ جديد — فالرفض تقويمٌ لا طرد. */
+      rejected: ['resubmit_requested'],
     }
     const to = targets[action]
     if (!allowed[submission.status]?.includes(to)) {
@@ -153,7 +157,49 @@ export class AssessmentService {
     await recordAudit(this.prisma, {
       actorId: trainerUserId, action: `submission.${action}`, entityType: 'assignment_submission', entityId: submissionId, meta: { note },
     })
+
+    /* إغلاق الحلقة عند المتعلّم. كان يرسل واجبه ثم **لا يُخبَر بشيء أبدا** —
+       لا عند القبول ولا الرفض ولا طلب الإعادة — فيفتح الصفحة كل يوم يتفقّد.
+       والتغذية الراجعة هي المنتَج نفسه: التعلّم يقع فيها لا في المشاهدة، وتأخّرُها
+       يُفقدها أثرها. أمّا `start_review` فحالةٌ داخلية لا تعني المتعلّم شيئا. */
+    if (action !== 'start_review') {
+      await this.notifyLearnerOfReview(submission.enrollmentId, submissionId, action, note)
+    }
     return updated
+  }
+
+  /** نصّ الإشعار يقول ما حدث وما يُفعل الآن — لا «تغيّرت حالة تسليمك» */
+  private async notifyLearnerOfReview(
+    enrollmentId: string, submissionId: string,
+    action: 'request_resubmit' | 'accept' | 'reject', note?: string,
+  ) {
+    const enrollment = await this.prisma.enrollment.findUnique({
+      where: { id: enrollmentId },
+      select: { userId: true, cohort: { select: { title: true } } },
+    })
+    if (!enrollment) return
+    const where = enrollment.cohort.title
+    const reason = note?.trim() ? `\n\nملاحظة المدرّب: ${note.trim()}` : ''
+    const copy: Record<typeof action, { title: string; body: string }> = {
+      accept: {
+        title: 'قُبل تسليمك ✅',
+        body: `قُبل واجبك في «${where}» — احتُسبت المحطّة، وتستطيع المضيّ إلى التالية.${reason}`,
+      },
+      request_resubmit: {
+        title: 'تسليمك يحتاج إضافة',
+        body: `راجع المدرّب واجبك في «${where}» وطلب تسليما جديدا. ما ينقص مكتوبٌ لك، وتستطيع الإعادة الآن.${reason}`,
+      },
+      reject: {
+        title: 'لم يُقبل تسليمك',
+        body: `لم يُقبل واجبك في «${where}». السبب مكتوبٌ لك، وبابُ الإعادة يفتحه مدرّبك متى راجعتَه.${reason}`,
+      },
+    }
+    await safeNotify(this.prisma, {
+      userId: enrollment.userId, channel: 'in_app',
+      title: copy[action].title, body: copy[action].body,
+      templateKey: `submission.${action}`,
+      data: { submissionId },
+    })
   }
 
   /** تقدير بالدرجة — اختياري بالروبرك؛ كل تعديل لاحق يُسجل في GradeHistory */
@@ -193,6 +239,7 @@ export class AssessmentService {
         data: { gradeId: existing.id, oldScore: existing.score, newScore: input.score, reason: 'تعديل درجة من المدرب', changedBy: trainerUserId },
       })
       await recordAudit(this.prisma, { actorId: trainerUserId, action: 'grade.update', entityType: 'grade', entityId: existing.id, meta: { old: Number(existing.score), new: input.score } })
+      await this.notifyLearnerOfGrade(input, 'update')
       return updated
     }
 
@@ -208,7 +255,36 @@ export class AssessmentService {
       await this.prisma.assessmentAttempt.update({ where: { id: input.attemptId }, data: { status: 'graded', gradedAt: new Date() } })
     }
     await recordAudit(this.prisma, { actorId: trainerUserId, action: 'grade.create', entityType: 'grade', entityId: grade.id, meta: { cohortId, score: input.score } })
+    await this.notifyLearnerOfGrade(input, 'create')
     return grade
+  }
+
+  /** درجةٌ لا يعلم بها صاحبُها ليست تقويما. تصل مع اسم الشعبة ومكان التفصيل. */
+  private async notifyLearnerOfGrade(
+    input: { submissionId?: string; attemptId?: string; score: number; maxScore: number },
+    kind: 'create' | 'update',
+  ) {
+    const owner = input.submissionId
+      ? await this.prisma.assignmentSubmission.findUnique({
+          where: { id: input.submissionId },
+          select: { enrollment: { select: { userId: true, cohort: { select: { title: true } } } } },
+        })
+      : await this.prisma.assessmentAttempt.findUnique({
+          where: { id: input.attemptId! },
+          select: { enrollment: { select: { userId: true, cohort: { select: { title: true } } } } },
+        })
+    if (!owner?.enrollment) return
+    const where = owner.enrollment.cohort.title
+    await safeNotify(this.prisma, {
+      userId: owner.enrollment.userId, channel: 'in_app',
+      title: kind === 'create' ? 'وصلت درجتك' : 'عُدّلت درجتك',
+      body:
+        `${input.score} من ${input.maxScore} في «${where}»` +
+        (kind === 'update' ? ' — راجعها مدرّبك وعدّلها.' : '.') +
+        ' التفصيل في «تعلّمي».',
+      templateKey: `grade.${kind}`,
+      data: { submissionId: input.submissionId ?? null, attemptId: input.attemptId ?? null },
+    })
   }
 
   async addFeedback(trainerUserId: string, submissionId: string, body: string) {

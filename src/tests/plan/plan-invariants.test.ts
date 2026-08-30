@@ -54,7 +54,6 @@ describe('عرض السعر — مرحلة الإقناع', () => {
   it('الصدارة «تبدأ من … للدورة» لا سعر الخطّة كاملة', () => {
     expect(PATHWAY).toMatch(/تبدأ من/)
     expect(PATHWAY).toMatch(/للدورة/)
-    expect(PATHWAY).toMatch(/perCourse/)
   })
 
   it('الخصمان معروضان: المسار كاملا وأوّل شراء', () => {
@@ -66,8 +65,17 @@ describe('عرض السعر — مرحلة الإقناع', () => {
     expect(PATHWAY).toMatch(/يُحدَّد بعد أن تعتمده/)
   })
 
-  it('«تبدأ من» تُقرَّب لأعلى — لا نَعِد بأقلّ مما يُدفع', () => {
-    expect(PATHWAY).toMatch(/Math\.ceil\(pathwayTotal/)
+  it('«تبدأ من» رقمُ شعبةٍ حقيقيّ لا مشتقّ — فلا تقريبَ يُخفض الوعد', () => {
+    /* كان الرقم يُشتقّ من تسعيرةٍ مُختلَقة ثم يُقرَّب لأعلى كي لا يَعِد بأقلّ
+       مما يُدفع. وقد زال الاشتقاق: `cheapestOf` تعيد سعر شعبةٍ كما هو،
+       و`formatCohortPrice` تعرضه بعملته بلا تحويل. */
+    expect(PATHWAY).toMatch(/cheapestOf\(courseIds, prices\)/)
+    expect(PATHWAY).toMatch(/formatCohortPrice\(cheapest\)/)
+  })
+
+  it('بلا شعبةٍ مسعَّرة لا رقم — يُقال ذلك نصّا', () => {
+    expect(PATHWAY).toMatch(/يُعلن السعر مع فتح الشعبة/)
+    expect(DIAGNOSTIC).toMatch(/يُعلن السعر مع فتح الشعبة/)
   })
 })
 

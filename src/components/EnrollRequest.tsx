@@ -43,7 +43,13 @@ export default function EnrollRequest({
         <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
           <div className="flex items-baseline justify-between">
             <span className="text-xs text-white/50">الرسوم</span>
-            <span className="text-2xl font-black">{fmt(amount)}</span>
+            {/* صفر يعني «لا سعر معلوم» لا «مجّانا»: الشعبة لم تُفتح بعد فلا
+                رقم يُعرض. رقمٌ لا تسنده شعبة هو ما جعل الوعد يفترق عن الفاتورة. */}
+            {amount > 0 ? (
+              <span className="text-2xl font-black">{fmt(amount)}</span>
+            ) : (
+              <span className="text-sm font-black text-white/70">يُعلن مع فتح الشعبة</span>
+            )}
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-1.5">
             {(Object.keys(CURRENCIES) as CurrencyCode[]).map((c) => (

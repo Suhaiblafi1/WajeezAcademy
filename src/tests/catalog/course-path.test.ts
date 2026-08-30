@@ -5,29 +5,42 @@
    يظهر بجانب الإجمالي: نسبة الخصم، قيمة التوفير، والسعر النهائي». وسقفه خمس
    دورات، وما زاد يُحفظ للمرحلة التالية.
 
-   وحارسان لا يظهران في أي شاشة ولكن كسرُهما يفسد المنتج كله:
-   ألا يكون البناءُ الحر أغلى من المسار الجاهز بالعدد نفسه — وإلا عُوقب من
-   اختار لنفسه؛ وألا تخفض إضافةُ دورةٍ الإجماليَّ — وإلا صار السلّم بابا
-   لسعرٍ سالب. كلاهما مقيس على الكتالوج كله لا على مثال. */
+   وحارسٌ لا يظهر في أي شاشة ولكن كسرَه يفسد المنتج كله: ألا تخفض إضافةُ
+   دورةٍ الإجماليَّ — وإلا صار السلّم بابا لسعرٍ سالب. مقيسٌ على الكتالوج كله
+   لا على مثال. (وكان معه حارسٌ ثانٍ يقارن البناء الحر بسعر المسار الجاهز؛
+   زال بزوال السعر المقطوع — انظر discount-policy.ts.)
+
+   والأسعار هنا من سلّمٍ صناعيّ (`../pricing-scale`) لا من الشعب: المقيس
+   خصائصُ الصيغة لا أرقامُ السوق، وهي تحتاج مدى عريضا مضمونا. أمّا ما يُعرض
+   على المتعلم فمن `Cohort.price` وحده — يحرسه `no-fabricated-prices.test.ts`. */
 
 import { describe, expect, it } from 'vitest'
 import '../setup-catalog'
 import { bundleNudge, pathPricing, suggestNext, MAX_BUILT_COURSES } from '../../application/catalog/course-path'
 import { buildDiscountPct, nextBuildStep } from '../../application/commerce/discount-policy'
-import { courses, coursePriceOf, courseById, pathwayCourses, pathwayPriceFor } from '../../data/courses'
+import { courses, courseById, pathwayCourses } from '../../data/courses'
+import { scalePriceOf } from '../pricing-scale'
+
+/** دالّة السعر التي تتلقّاها الوحدة — من السلّم الصناعيّ */
+const priceOf = (id: string) => {
+  const c = courseById(id)
+  return c ? scalePriceOf(c) : null
+}
+/** ودالّةٌ لا تعرف سعرا — لاختبار حالة «لم تُفتح شعبة» */
+const noPrice = () => null
 
 const anyCourse = () => courses[0]!
-const byPrice = (dir: 1 | -1) => [...courses].sort((a, b) => dir * (coursePriceOf(a) - coursePriceOf(b)))
+const byPrice = (dir: 1 | -1) => [...courses].sort((a, b) => dir * (scalePriceOf(a) - scalePriceOf(b)))
 const cheapestId = (ids: readonly string[]) =>
-  ids.reduce((best, id) => (coursePriceOf(courseById(id)!) < coursePriceOf(courseById(best)!) ? id : best), ids[0])
+  ids.reduce((best, id) => (scalePriceOf(courseById(id)!) < scalePriceOf(courseById(best)!) ? id : best), ids[0])
 
 describe('سلّم خصم البناء', () => {
   it('دورة واحدة بلا خصم — الخصم مكافأة تركيب لا هدية', () => {
     expect(buildDiscountPct(1)).toBe(0)
     const c = anyCourse()
-    const p = pathPricing([c.id])
-    expect(p.separate).toBe(coursePriceOf(c))
-    expect(p.payable).toBe(coursePriceOf(c))
+    const p = pathPricing([c.id], priceOf)
+    expect(p.separate).toBe(scalePriceOf(c))
+    expect(p.payable).toBe(scalePriceOf(c))
     expect(p.discountPct).toBe(0)
     expect(p.saving).toBe(0)
   })
@@ -43,28 +56,47 @@ describe('سلّم خصم البناء', () => {
   it('السقف خمس دورات، ويُعلَن في التسعير نفسه', () => {
     expect(MAX_BUILT_COURSES).toBe(5)
     const ids = courses.slice(0, 5).map((c) => c.id)
-    expect(pathPricing(ids.slice(0, 4)).atCap).toBe(false)
-    expect(pathPricing(ids).atCap).toBe(true)
+    expect(pathPricing(ids.slice(0, 4), priceOf).atCap).toBe(false)
+    expect(pathPricing(ids, priceOf).atCap).toBe(true)
     expect(nextBuildStep(MAX_BUILT_COURSES)).toBeNull()
   })
 })
 
-describe('حارسا التسعير — على الكتالوج كله', () => {
-  it('البناء الحر لا يتجاوز سعر المسار الجاهز بالعدد نفسه', () => {
+describe('حوارس التسعير — على الكتالوج كله', () => {
+  it('ما يدفعه لا يتجاوز مجموع الأسعار المفردة أبدا', () => {
     /* أغلى ما يمكن اختياره: إن نجا هذا نجا كل ما دونه */
     const dearest = byPrice(-1)
     for (let n = 1; n <= MAX_BUILT_COURSES; n++) {
-      const p = pathPricing(dearest.slice(0, n).map((c) => c.id))
-      expect(p.payable, `${n} دورات: البناء الحر أغلى من المسار الجاهز`).toBeLessThanOrEqual(pathwayPriceFor(n))
+      const p = pathPricing(dearest.slice(0, n).map((c) => c.id), priceOf)
+      expect(p.payable, `${n} دورات: المدفوع فوق المجموع المفرد`).toBeLessThanOrEqual(p.separate)
+      expect(p.discountPct, `${n} دورات: النسبة المعروضة تخالف السلّم`).toBe(buildDiscountPct(n))
     }
+  })
+
+  it('دورةٌ بلا شعبةٍ مسعَّرة تُبطل الأرقام كلها — ولا مجموعَ ناقص', () => {
+    /* المجموعُ الناقص أخطر من لا مجموع: يُقرأ ثمنَ الأربع وهو ثمن ثلاث */
+    const ids = courses.slice(0, 4).map((c) => c.id)
+    const partial = (id: string) => (id === ids[0] ? null : priceOf(id))
+    const p = pathPricing(ids, partial)
+    expect(p.allPriced).toBe(false)
+    expect(p.priced).toBe(3)
+    expect(p.count).toBe(4)
+    expect(p.separate).toBe(0)
+    expect(p.payable).toBe(0)
+    expect(p.saving).toBe(0)
+    /* والسلّم يبقى معلنا: النسبة وعدٌ قائم حين تُفتح الشعب */
+    expect(p.discountPct).toBe(buildDiscountPct(4))
+    /* ولا تنبيهَ رقميّ بلا أرقام */
+    expect(bundleNudge(ids, courses.slice(10, 20).map((c) => c.id), partial)).toBeNull()
+    expect(bundleNudge([ids[1]], courses.slice(10, 20).map((c) => c.id), noPrice)).toBeNull()
   })
 
   it('إضافة دورة لا تخفض الإجمالي أبدا — بأي خليط من أرخص وأغلى', () => {
     const mixes = [byPrice(1), byPrice(-1), [...byPrice(-1).slice(0, 4), ...byPrice(1).slice(0, 4)]]
     for (const mix of mixes) {
       for (let n = 2; n <= MAX_BUILT_COURSES; n++) {
-        const before = pathPricing(mix.slice(0, n - 1).map((c) => c.id)).payable
-        const after = pathPricing(mix.slice(0, n).map((c) => c.id)).payable
+        const before = pathPricing(mix.slice(0, n - 1).map((c) => c.id), priceOf).payable
+        const after = pathPricing(mix.slice(0, n).map((c) => c.id), priceOf).payable
         expect(after, `${n} دورات: الإضافة خفضت الإجمالي`).toBeGreaterThan(before)
       }
     }
@@ -72,15 +104,15 @@ describe('حارسا التسعير — على الكتالوج كله', () => {
 
   it('التوفير المعلن يساوي الفرق فعلا، والمدفوع صحيح لا كسر', () => {
     const ids = byPrice(-1).slice(0, 4).map((c) => c.id)
-    const p = pathPricing(ids)
+    const p = pathPricing(ids, priceOf)
     expect(p.saving).toBe(p.separate - p.payable)
     expect(Number.isInteger(p.payable)).toBe(true)
-    /* النسبة مشتقّة مما يدفع: تساوي السلّم أو تفوقه حين يحسم سقف المسار الجاهز */
-    expect(p.discountPct).toBeGreaterThanOrEqual(buildDiscountPct(4))
+    /* النسبة مشتقّة مما يدفع لا معلنة قبله — فلا تفترق عن السلّم */
+    expect(p.discountPct).toBe(buildDiscountPct(4))
   })
 
   it('معرّف دورة غير موجود يُسقَط بلا انهيار', () => {
-    const p = pathPricing(['LA-YOUJAD', anyCourse().id])
+    const p = pathPricing(['LA-YOUJAD', anyCourse().id], priceOf)
     expect(p.count).toBe(1)
   })
 })
@@ -88,32 +120,32 @@ describe('حارسا التسعير — على الكتالوج كله', () => {
 describe('تنبيه «دورة أخرى ترفع خصمك»', () => {
   it('لا تنبيه عند السقف', () => {
     const ids = courses.slice(0, MAX_BUILT_COURSES).map((c) => c.id)
-    expect(pathPricing(ids).atCap).toBe(true)
-    expect(bundleNudge(ids, courses.slice(10, 20).map((c) => c.id))).toBeNull()
+    expect(pathPricing(ids, priceOf).atCap).toBe(true)
+    expect(bundleNudge(ids, courses.slice(10, 20).map((c) => c.id), priceOf)).toBeNull()
   })
 
   it('لا تنبيه بلا مرشحين', () => {
-    expect(bundleNudge([anyCourse().id], [])).toBeNull()
+    expect(bundleNudge([anyCourse().id], [], priceOf)).toBeNull()
   })
 
   it('أرقامه تصدق على أرخص مرشح — لا على أغلاه', () => {
     const dearest = byPrice(-1)
     const ids = dearest.slice(0, 2).map((c) => c.id)
     const candidates = dearest.slice(2, 12).map((c) => c.id)
-    const n = bundleNudge(ids, candidates)
+    const n = bundleNudge(ids, candidates, priceOf)
     expect(n, 'لم يُنبَّه رغم أن الثالثة ترفع الخصم').not.toBeNull()
-    const cheapest = Math.min(...candidates.map((id) => coursePriceOf(courseById(id)!)))
+    const cheapest = Math.min(...candidates.map((id) => scalePriceOf(courseById(id)!)))
     expect(n!.listPrice).toBe(cheapest)
     expect(n!.nextCount).toBe(3)
-    expect(n!.nextSeparate).toBe(pathPricing(ids).separate + cheapest)
-    expect(n!.nextPayable).toBe(pathPricing([...ids, cheapestId(candidates)]).payable)
+    expect(n!.nextSeparate).toBe(pathPricing(ids, priceOf).separate + cheapest)
+    expect(n!.nextPayable).toBe(pathPricing([...ids, cheapestId(candidates)], priceOf).payable)
   })
 
   it('الكلفة الحقيقية للإضافة دون سعرها المعلن — وهو كل ما يَعِد به', () => {
     const dearest = byPrice(-1)
     for (let n = 1; n < MAX_BUILT_COURSES; n++) {
       const ids = dearest.slice(0, n).map((c) => c.id)
-      const nudge = bundleNudge(ids, dearest.slice(n, n + 10).map((c) => c.id))
+      const nudge = bundleNudge(ids, dearest.slice(n, n + 10).map((c) => c.id), priceOf)
       if (!nudge) continue
       expect(nudge.marginal, `${n} دورات`).toBeLessThan(nudge.listPrice)
       expect(nudge.marginal, 'الإضافة بلا كلفة أو بكلفة سالبة').toBeGreaterThan(0)
