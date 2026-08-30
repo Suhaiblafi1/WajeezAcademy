@@ -559,9 +559,18 @@
           ]
         },
         {
+          "questionId": "QB-M4-006",
+          "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في التعامل مع البيانات؟",
+          "why_now_ar": "فاز أساسًا بسبب: يفصل بين المرشحين المتصدرين بدليل مهارة.",
+          "answer_ar": "أستخدمها بانتظام في عملي أو دراستي",
+          "what_changed": [
+            "+skill:data_literacy"
+          ]
+        },
+        {
           "questionId": "QB-M4-027",
           "question_ar": "حين يشرح لك أحدهم مشكلة غير واضحة — ما أقرب وصف لما تفعله؟",
-          "why_now_ar": "فاز أساسًا بسبب: يفصل بين المرشحين المتصدرين بدليل مهارة.",
+          "why_now_ar": "فاز أساسًا بسبب: يقيس مهارة حاسمة للمتصدر قبل أي اكتفاء.",
           "answer_ar": "أعيد صياغة ما فهمته عليه قبل أن أرد، بانتظام",
           "what_changed": [
             "+skill:active_listening"
@@ -575,22 +584,13 @@
           "what_changed": [
             "+skill:structured_interviewing"
           ]
-        },
-        {
-          "questionId": "QB-M3B-003",
-          "question_ar": "هل تتعامل مباشرة مع الجمهور أو العملاء؟",
-          "why_now_ar": "فاز أساسًا بسبب: يستكمل سياقك العام.",
-          "answer_ar": "نعم",
-          "what_changed": [
-            "+public_facing"
-          ]
         }
       ],
       "result": {
         "kind": "single_pathway",
         "topPathwayId": "PW-EMP-005",
         "compositeTemplateId": null,
-        "confidence": 0.6230878971644401,
+        "confidence": 0.6367091092856523,
         "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true

@@ -3313,19 +3313,22 @@
         "project_management",
         "prioritization",
         "time_management",
-        "vendor_management"
+        "vendor_management",
+        "focus_management"
       ],
       "skill_ids": [
         "SK-BIZ-017",
         "SK-COG-015",
         "SK-WELL-002",
-        "SK-BIZ-025"
+        "SK-BIZ-025",
+        "SK-WELL-001"
       ],
       "skill_names_ar": [
         "إدارة المشاريع",
         "ترتيب الأولويات",
         "إدارة الوقت",
-        "إدارة الموردين"
+        "إدارة الموردين",
+        "إدارة التركيز"
       ],
       "learning_outcomes_ar": [
         "يفكك المخرجات إلى حزم عمل ومعايير قبول قابلة للإدارة.",
@@ -4611,19 +4614,22 @@
         "api_integration_basics",
         "no_code_tools",
         "data_governance",
-        "privacy_management"
+        "privacy_management",
+        "digital_literacy"
       ],
       "skill_ids": [
         "SK-X-AUT-003",
         "SK-DIG-017",
         "SK-DATA-014",
-        "SK-DIG-014"
+        "SK-DIG-014",
+        "SK-DIG-001"
       ],
       "skill_names_ar": [
         "أساسيات التكامل وواجهات API",
         "أدوات No-code",
         "حوكمة البيانات",
-        "إدارة الخصوصية الرقمية"
+        "إدارة الخصوصية الرقمية",
+        "الثقافة الرقمية العامة"
       ],
       "learning_outcomes_ar": [
         "يحلل Triggers وActions في حالة مهنية ويحدد الافتراضات والقرار المطلوب.",
@@ -5664,19 +5670,22 @@
         "structured_interviewing",
         "selection_design",
         "ethical_reasoning",
-        "professional_ethics"
+        "professional_ethics",
+        "active_listening"
       ],
       "skill_ids": [
         "SK-X-HR-004",
         "SK-X-HR-005",
         "SK-COG-017",
-        "SK-CAREER-013"
+        "SK-CAREER-013",
+        "SK-COM-001"
       ],
       "skill_names_ar": [
         "المقابلات المنظمة",
         "تصميم قرارات الاختيار",
         "التفكير الأخلاقي",
-        "الأخلاقيات المهنية"
+        "الأخلاقيات المهنية",
+        "الإصغاء الفعال"
       ],
       "learning_outcomes_ar": [
         "يحلل مصادر المرشحين وتجربتهم في حالة مهنية ويحدد الافتراضات والقرار المطلوب.",
@@ -5804,19 +5813,22 @@
         "learning_needs_analysis",
         "talent_development",
         "learning_plan",
-        "organizational_culture"
+        "organizational_culture",
+        "learning_agility"
       ],
       "skill_ids": [
         "SK-X-HR-007",
         "SK-LEAD-014",
         "SK-LEARN-001",
-        "SK-LEAD-012"
+        "SK-LEAD-012",
+        "SK-COG-009"
       ],
       "skill_names_ar": [
         "تحليل احتياجات التعلم",
         "تطوير المواهب",
         "بناء خطة تعلم",
-        "بناء الثقافة المؤسسية"
+        "بناء الثقافة المؤسسية",
+        "مرونة التعلم"
       ],
       "learning_outcomes_ar": [
         "يحلل تحليل فجوة القدرة في حالة مهنية ويحدد الافتراضات والقرار المطلوب.",
@@ -5873,19 +5885,22 @@
         "people_analytics",
         "hr_privacy_ethics",
         "data_analysis_basics",
-        "ai_risk_management"
+        "ai_risk_management",
+        "data_literacy"
       ],
       "skill_ids": [
         "SK-X-HR-008",
         "SK-X-HR-009",
         "SK-DATA-004",
-        "SK-AI-015"
+        "SK-AI-015",
+        "SK-DATA-001"
       ],
       "skill_names_ar": [
         "تحليلات الموارد البشرية",
         "أخلاقيات وخصوصية بيانات الموظفين",
         "أساسيات تحليل البيانات",
-        "إدارة مخاطر AI"
+        "إدارة مخاطر AI",
+        "الثقافة البيانية"
       ],
       "learning_outcomes_ar": [
         "يحلل سؤال القرار ومؤشرات الناس في حالة مهنية ويحدد الافتراضات والقرار المطلوب.",
@@ -7416,19 +7431,22 @@
         "demand_forecasting",
         "supply_planning",
         "statistical_thinking",
-        "scenario_planning"
+        "scenario_planning",
+        "data_literacy"
       ],
       "skill_ids": [
         "SK-X-SCM-002",
         "SK-X-SCM-003",
         "SK-DATA-010",
-        "SK-COG-012"
+        "SK-COG-012",
+        "SK-DATA-001"
       ],
       "skill_names_ar": [
         "التنبؤ بالطلب",
         "تخطيط التوريد",
         "التفكير الإحصائي الأساسي",
-        "تخطيط السيناريوهات"
+        "تخطيط السيناريوهات",
+        "الثقافة البيانية"
       ],
       "learning_outcomes_ar": [
         "يحلل بيانات الطلب في حالة مهنية ويحدد الافتراضات والقرار المطلوب.",
@@ -7556,19 +7574,22 @@
         "strategic_sourcing",
         "supplier_evaluation",
         "vendor_management",
-        "negotiation_commercial"
+        "negotiation_commercial",
+        "negotiation"
       ],
       "skill_ids": [
         "SK-X-SCM-006",
         "SK-X-SCM-007",
         "SK-BIZ-025",
-        "SK-BIZ-009"
+        "SK-BIZ-009",
+        "SK-COM-011"
       ],
       "skill_names_ar": [
         "التوريد الاستراتيجي",
         "تقييم الموردين",
         "إدارة الموردين",
-        "التفاوض التجاري"
+        "التفاوض التجاري",
+        "التفاوض"
       ],
       "learning_outcomes_ar": [
         "يحلل قرار الشراء أو الصنع في حالة مهنية ويحدد الافتراضات والقرار المطلوب.",

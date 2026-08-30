@@ -57,6 +57,7 @@
         "PW-COM-001",
         "PW-EMP-005",
         "PW-GOV-002",
+        "PW-HR-001",
         "PW-NEG-001",
         "PW-SAL-001",
         "PW-STU-002",
@@ -1096,7 +1097,9 @@
       "academic_status": "approved_active",
       "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
       "pathway_ids": [
-        "PW-EMP-004"
+        "PW-EMP-004",
+        "PW-HR-001",
+        "PW-SCM-001"
       ],
       "measured_by": "QB-M4-006"
     },
@@ -1311,12 +1314,15 @@
     "digital_literacy": {
       "layers": [
         "diagnostic",
-        "personalization_signal"
+        "pathway_requirement"
       ],
       "active": true,
       "diagnostic_active": true,
       "academic_status": "approved_active",
-      "decision_role_ar": "إشارة جاهزية رقمية: عند انخفاضها مع مسار رقمي تُضاف ملاحظة تمهيد رقمي في الخطة — لا تغيّر اختيار المسار.",
+      "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
+      "pathway_ids": [
+        "PW-AUT-001"
+      ],
       "measured_by": "QB-M4-005"
     },
     "digital_marketing": {
@@ -1639,12 +1645,15 @@
     "focus_management": {
       "layers": [
         "diagnostic",
-        "personalization_signal"
+        "pathway_requirement"
       ],
       "active": true,
       "diagnostic_active": true,
       "academic_status": "approved_active",
-      "decision_role_ar": "إشارة تخصيص: توجّه توزيع العبء الأسبوعي داخل الخطة — لا تغيّر اختيار المسار.",
+      "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
+      "pathway_ids": [
+        "PW-EMP-003"
+      ],
       "measured_by": "QB-M4-025"
     },
     "frontline_service": {
@@ -2045,12 +2054,15 @@
     "learning_agility": {
       "layers": [
         "diagnostic",
-        "personalization_signal"
+        "pathway_requirement"
       ],
       "active": true,
       "diagnostic_active": true,
       "academic_status": "approved_active",
-      "decision_role_ar": "إشارة تخصيص: توجّه وتيرة الخطة المقترحة — لا تغيّر اختيار المسار.",
+      "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
+      "pathway_ids": [
+        "PW-HR-001"
+      ],
       "measured_by": "QB-M4-023"
     },
     "learning_evaluation": {
@@ -2357,7 +2369,8 @@
       "academic_status": "approved_active",
       "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
       "pathway_ids": [
-        "PW-NEG-001"
+        "PW-NEG-001",
+        "PW-SCM-001"
       ],
       "measured_by": "QB-M4-013"
     },
