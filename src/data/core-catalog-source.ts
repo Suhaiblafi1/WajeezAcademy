@@ -15,6 +15,11 @@ export interface CoreCatalogPathway {
   level: string
   delivery?: string
   course_ids: string[]
+  /** الدورات المساندة للمسار الجاهز — **خارج** course_ids بقصد.
+      course_ids وحدها يقرؤها pathwaySkills، ومنها تُحسب فجوة المهارات التي
+      يرتّب بها التشخيص المسارات؛ فالمساندة وعدُ عرضٍ في المسار الجاهز لا
+      إشارةُ تشخيص. الحارس: src/tests/catalog/support-courses.test.ts */
+  support_courses?: { course_id: string; reason_ar: string }[]
 }
 
 export interface CoreCatalogCourse {

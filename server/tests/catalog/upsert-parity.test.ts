@@ -48,7 +48,9 @@ const DELIBERATE: Record<string, Record<string, string>> = {
   pathway: { currentVersion: 'مؤشّر الإصدار تملكه دورة النشر — والمستورد يكتب 1 دائما، فتحديثه يرجع المنشور إلى الوراء' },
   course: { currentVersion: 'المصدر نفسه' },
   compositeTemplate: { currentVersion: 'المصدر نفسه' },
-  pathwayCourse: { kind: 'ثابت افتراضي «required» لا يرد في ملفات المستودع — والإدارة قد تجعلها اختيارية' },
+  /* pathwayCourse.kind خرج من هنا: صار للمسار نوعان من الروابط — «required»
+     للدورات الأساسية و«support» للمساندة — فلم يعد ثابتا افتراضيا، ووجب أن
+     تحدّثه update وإلا بقيت مساندةٌ صارت أساسيةً موسومةً بالقديم. */
   diagnosticProfile: { readinessStatus: 'ثابت افتراضي، والجاهزية تتغيّر من اللوحة لا من الملفات' },
 }
 

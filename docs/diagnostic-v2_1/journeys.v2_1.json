@@ -111,7 +111,7 @@
         {
           "questionId": "QB-M4-028",
           "question_ar": "حين تشرح فكرتك لشخص من خارج تخصصك — كيف تصل عادة؟",
-          "why_now_ar": "مهارة حاسمة لأحد مرشحي الصدارة ما زالت مجهولة في سباق حي — قياسها يسبق منح المتحدين فرصًا إضافية.",
+          "why_now_ar": "فاز أساسًا بسبب: يقيس مهارة حاسمة للمتصدر قبل أي اكتفاء.",
           "answer_ar": "أعرف أن عليّ تبسيطها، لكني لا أعرف كيف",
           "what_changed": [
             "+skill:clear_expression"
@@ -131,7 +131,7 @@
         "kind": "single_pathway",
         "topPathwayId": "PW-STU-002",
         "compositeTemplateId": null,
-        "confidence": 0.7113070174688596,
+        "confidence": 0.7039736841355262,
         "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true
@@ -248,7 +248,7 @@
         "kind": "single_pathway",
         "topPathwayId": "PW-STU-002",
         "compositeTemplateId": null,
-        "confidence": 0.7092678017825851,
+        "confidence": 0.7019344684492519,
         "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true
@@ -334,6 +334,33 @@
           ]
         },
         {
+          "questionId": "QB-M4-004",
+          "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في استخدام أدوات AI في العمل أو التعلم بطريقة مسؤولة؟",
+          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "answer_ar": "شاركت في مهمة أو مشروع استخدمها",
+          "what_changed": [
+            "+skill:ai_output_evaluation"
+          ]
+        },
+        {
+          "questionId": "QB-M3A-007",
+          "question_ar": "هل حصلت على تدريب عملي أو تطوع أو عمل جزئي مرتبط بهدفك؟",
+          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "answer_ar": "لا يوجد دليل",
+          "what_changed": [
+            "+practical_exposure"
+          ]
+        },
+        {
+          "questionId": "QB-M4-028",
+          "question_ar": "حين تشرح فكرتك لشخص من خارج تخصصك — كيف تصل عادة؟",
+          "why_now_ar": "فاز أساسًا بسبب: يفصل بين المرشحين المتصدرين بدليل مهارة.",
+          "answer_ar": "أبسّطها حين ألاحظ أن المستمع تاه",
+          "what_changed": [
+            "+skill:clear_expression"
+          ]
+        },
+        {
           "questionId": "QB-M3B-010",
           "question_ar": "ما مدى قوتك في إدارة أصحاب المصلحة المختلفين؟",
           "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
@@ -345,46 +372,19 @@
         {
           "questionId": "QB-M4-018",
           "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في إدارة المشاريع والمهام والمواعيد؟",
-          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "why_now_ar": "مهارة حاسمة لأحد مرشحي الصدارة ما زالت مجهولة في سباق حي — قياسها يسبق منح المتحدين فرصًا إضافية.",
           "answer_ar": "شاركت في مهمة أو مشروع استخدمها",
           "what_changed": [
             "+skill:project_management"
           ]
         },
         {
-          "questionId": "QB-M4-004",
-          "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في استخدام أدوات AI في العمل أو التعلم بطريقة مسؤولة؟",
-          "why_now_ar": "فاز أساسًا بسبب: يفصل بين المرشحين المتصدرين بدليل مهارة.",
-          "answer_ar": "شاركت في مهمة أو مشروع استخدمها",
-          "what_changed": [
-            "+skill:ai_output_evaluation"
-          ]
-        },
-        {
-          "questionId": "QB-M4-028",
-          "question_ar": "حين تشرح فكرتك لشخص من خارج تخصصك — كيف تصل عادة؟",
-          "why_now_ar": "فاز أساسًا بسبب: يقيس مهارة حاسمة للمتصدر قبل أي اكتفاء.",
-          "answer_ar": "أبسّطها حين ألاحظ أن المستمع تاه",
-          "what_changed": [
-            "+skill:clear_expression"
-          ]
-        },
-        {
-          "questionId": "QB-M4-032",
-          "question_ar": "تصميم تدريب أو شرح منظَّم لمجموعة — ما أقرب وصف لخبرتك به؟",
-          "why_now_ar": "مهارة حاسمة لأحد مرشحي الصدارة ما زالت مجهولة في سباق حي — قياسها يسبق منح المتحدين فرصًا إضافية.",
-          "answer_ar": "أسأل الجهة الطالبة عمّا تريده وأبني عليه",
-          "what_changed": [
-            "+skill:training_needs_analysis"
-          ]
-        },
-        {
-          "questionId": "QB-M4-035",
-          "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في توقّع ما قد يتعثّر في عملك والاستعداد له قبل وقوعه؟",
+          "questionId": "QB-M4-001",
+          "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في التفكير التحليلي؟",
           "why_now_ar": "مهارة حاسمة لأحد مرشحي الصدارة ما زالت مجهولة في سباق حي — قياسها يسبق منح المتحدين فرصًا إضافية.",
           "answer_ar": "شاركت في مهمة أو مشروع استخدمها",
           "what_changed": [
-            "+skill:risk_management"
+            "+skill:analytical_thinking"
           ]
         }
       ],
@@ -392,7 +392,7 @@
         "kind": "single_pathway",
         "topPathwayId": "PW-FND-003",
         "compositeTemplateId": null,
-        "confidence": 0.6092557931311748,
+        "confidence": 0.6143012476766294,
         "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true
@@ -549,19 +549,9 @@
           ]
         },
         {
-          "questionId": "QB-M3B-011",
-          "question_ar": "هل تتعامل مع مشتريات، عطاءات، مالية، موازنة، أو موارد بشرية؟",
-          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
-          "answer_ar": "خدمة جمهور",
-          "what_changed": [
-            "+function_specialization",
-            "+current_domain"
-          ]
-        },
-        {
           "questionId": "QB-M3B-010",
           "question_ar": "ما مدى قوتك في إدارة أصحاب المصلحة المختلفين؟",
-          "why_now_ar": "فاز أساسًا بسبب: يفصل بين المرشحين المتصدرين بدليل مهارة.",
+          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
           "answer_ar": "لا أعرفها",
           "what_changed": [
             "+stakeholder_management"
@@ -574,6 +564,16 @@
           "answer_ar": "أستخدمها بانتظام في عملي أو دراستي",
           "what_changed": [
             "+skill:persuasion"
+          ]
+        },
+        {
+          "questionId": "QB-M3B-011",
+          "question_ar": "هل تتعامل مع مشتريات، عطاءات، مالية، موازنة، أو موارد بشرية؟",
+          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "answer_ar": "خدمة جمهور",
+          "what_changed": [
+            "+function_specialization",
+            "+current_domain"
           ]
         },
         {
@@ -727,21 +727,21 @@
           ]
         },
         {
-          "questionId": "QB-M4-016",
-          "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في التسويق الرقمي؟",
-          "why_now_ar": "فاز أساسًا بسبب: يفصل بين المرشحين المتصدرين بدليل مهارة.",
-          "answer_ar": "شاركت في مهمة أو مشروع استخدمها",
-          "what_changed": [
-            "+skill:digital_marketing"
-          ]
-        },
-        {
           "questionId": "QB-M4-034",
           "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في اختيار مؤشرات تقيس نجاح عملك فعلا لا ما يسهل عدّه؟",
           "why_now_ar": "فاز أساسًا بسبب: يفصل بين المرشحين المتصدرين بدليل مهارة.",
           "answer_ar": "شاركت في مهمة أو مشروع استخدمها",
           "what_changed": [
             "+skill:kpi_design"
+          ]
+        },
+        {
+          "questionId": "QB-M4-016",
+          "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في التسويق الرقمي؟",
+          "why_now_ar": "فاز أساسًا بسبب: يقيس مهارة حاسمة للمتصدر قبل أي اكتفاء.",
+          "answer_ar": "شاركت في مهمة أو مشروع استخدمها",
+          "what_changed": [
+            "+skill:digital_marketing"
           ]
         },
         {
@@ -835,21 +835,21 @@
           ]
         },
         {
-          "questionId": "QB-M3C-009",
-          "question_ar": "هل تعرف أرقامك الأساسية: تكلفة، هامش، تدفق نقدي؟",
-          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
-          "answer_ar": "لا أعرفها",
-          "what_changed": [
-            "+business_finance"
-          ]
-        },
-        {
           "questionId": "QB-M4-017",
           "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في المبيعات؟",
           "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
           "answer_ar": "شاركت في مهمة أو مشروع استخدمها",
           "what_changed": [
             "+skill:sales_fundamentals"
+          ]
+        },
+        {
+          "questionId": "QB-M3C-009",
+          "question_ar": "هل تعرف أرقامك الأساسية: تكلفة، هامش، تدفق نقدي؟",
+          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "answer_ar": "لا أعرفها",
+          "what_changed": [
+            "+business_finance"
           ]
         },
         {
@@ -911,7 +911,7 @@
         "kind": "single_pathway",
         "topPathwayId": "PW-SAL-001",
         "compositeTemplateId": null,
-        "confidence": 0.6299282295947592,
+        "confidence": 0.636594896261426,
         "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true
@@ -978,6 +978,15 @@
           ]
         },
         {
+          "questionId": "QB-M4-004",
+          "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في استخدام أدوات AI في العمل أو التعلم بطريقة مسؤولة؟",
+          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "answer_ar": "أستخدمها بانتظام في عملي أو دراستي",
+          "what_changed": [
+            "+skill:ai_output_evaluation"
+          ]
+        },
+        {
           "questionId": "QB-M3B-011",
           "question_ar": "هل تتعامل مع مشتريات، عطاءات، مالية، موازنة، أو موارد بشرية؟",
           "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
@@ -985,15 +994,6 @@
           "what_changed": [
             "+function_specialization",
             "+current_domain"
-          ]
-        },
-        {
-          "questionId": "QB-M4-004",
-          "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في استخدام أدوات AI في العمل أو التعلم بطريقة مسؤولة؟",
-          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
-          "answer_ar": "أستخدمها بانتظام في عملي أو دراستي",
-          "what_changed": [
-            "+skill:ai_output_evaluation"
           ]
         },
         {
@@ -1037,7 +1037,7 @@
         "kind": "single_pathway",
         "topPathwayId": "PW-LND-001",
         "compositeTemplateId": null,
-        "confidence": 0.6654310344193421,
+        "confidence": 0.6594310344193421,
         "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true

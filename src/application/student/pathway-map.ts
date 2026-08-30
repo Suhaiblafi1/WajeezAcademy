@@ -33,6 +33,9 @@ export interface PathwayMapModel {
   pathwayId: string
   pathwayTitleAr: string
   nodes: CourseNode[]
+  /** مشروع التخرّج — **خارج** المسار لا عقدةً فيه: لا يُعدّ دورةً في
+      totalCount ولا ساعةً في totalHours، ولا يقع على سكّة الرحلة. مهمّةٌ
+      إضافية بعد الدورات. */
   capstoneAr: string | null
   /** فهرس أول دورة غير مكتملة — -1 إذا اكتمل المسار كله */
   currentIndex: number

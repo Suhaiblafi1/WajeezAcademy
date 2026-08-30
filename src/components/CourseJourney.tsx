@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ChevronDown, Clock3, Target, ListChecks, FolderKanban, Award, RefreshCcw, X, Gift, Plus, UserRound } from "lucide-react";
+import { ChevronDown, Clock3, Target, ListChecks, FolderKanban, Award, RefreshCcw, X, Gift, Plus, UserRound, LifeBuoy } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { courseFullById, weeksLabel, MIN_PATHWAY_COURSES, MAX_PATHWAY_COURSES } from "@/data/courses";
 import { apiGet } from "@/services/api";
@@ -43,6 +43,7 @@ export default function CourseJourney({
   headingLevel: Heading = "h3",
   edit,
   giftId,
+  supportReasons,
 }: {
   courseIds: string[];
   /** سبب وجود كل دورة في الخطة (للخطط المركبة) — يظهر سطرا واحدا تحت الاسم */
@@ -53,11 +54,21 @@ export default function CourseJourney({
   edit?: CourseJourneyEdit;
   /** شارة «هدية مجانية» بلا أدوات تخصيص — للعرض فقط كصفحة المسار */
   giftId?: string | null;
+  /** الدورات المساندة وسببُ كلٍّ منها — تُفصل عن الأساسية بفاصلٍ معنون.
+
+      المساندة ليست خطوةً خامسة في الرحلة: هي مهارةٌ عامّة يحتاجها صاحب هذا
+      المسار من مسارٍ آخر. فترقيمُها امتدادا للرحلة يقول ما ليس صحيحا — ولذلك
+      لا رقم لها بل أيقونة، ولها سببٌ مكتوب لأنّ دورةً من مجالٍ آخر بلا تفسير
+      تُقرأ حشوا. */
+  supportReasons?: Record<string, string>;
 }) {
   const list = courseIds
     .map((id) => courseFullById(id))
     .filter((c): c is NonNullable<typeof c> => Boolean(c));
   if (list.length === 0) return null;
+  const isSupportId = (id: string) => Boolean(supportReasons?.[id]);
+  const firstSupport = list.findIndex((c) => isSupportId(c.id));
+  const coreCount = firstSupport === -1 ? list.length : firstSupport;
 
   return (
     <div className="card-soft mt-8" id="learning-plan">
@@ -84,9 +95,21 @@ export default function CourseJourney({
         {list.map((c, i) => {
           const isGift = edit ? edit.giftId === c.id : giftId === c.id;
           const swapOpen = edit?.swapForId === c.id;
+          const isSupport = isSupportId(c.id);
           return (
           <li key={c.id} className="relative pb-4 last:pb-0">
-            {i < list.length - 1 && (
+            {isSupport && i === firstSupport && (
+              <div className="mb-4 border-t border-dashed border-white/15 pt-4">
+                <p className="flex items-center gap-2 text-xs font-black text-teal-light-ink">
+                  <LifeBuoy className="h-4 w-4" />
+                  دورات مساندة ({list.length - coreCount})
+                </p>
+                <p className="mt-1 text-[11px] leading-relaxed text-white/45">
+                  مهارات من مسارات أخرى يحتاجها صاحب هذا المسار في عمله — تُكمل الرحلة ولا تُكرّرها.
+                </p>
+              </div>
+            )}
+            {i < list.length - 1 && !(isSupportId(list[i + 1].id) && i + 1 === firstSupport) && (
               <span aria-hidden className="absolute right-[15px] top-10 h-[calc(100%-32px)] w-px bg-white/10" />
             )}
             <Collapsible className={`rounded-2xl border transition-colors data-[state=open]:border-teal/40 data-[state=open]:bg-teal/[0.05] ${
@@ -98,7 +121,7 @@ export default function CourseJourney({
                     ? "border-[#FABC05]/60 bg-[#FABC05] text-[#0D0D0D]"
                     : "border-[#38A7B4]/50 bg-paper text-[#6EC7D1]"
                 }`}>
-                  {isGift ? <Gift className="h-3.5 w-3.5" /> : i + 1}
+                  {isGift ? <Gift className="h-3.5 w-3.5" /> : isSupport ? <LifeBuoy className="h-3.5 w-3.5" /> : i + 1}
                 </span>
                 <div className="min-w-0 flex-1">
                   <CollapsibleTrigger
@@ -139,6 +162,12 @@ export default function CourseJourney({
                     <p className="mt-2 text-[11px] leading-relaxed text-white/45">
                       <span className="font-bold text-gold-ink/80">لماذا هي في خطتك: </span>
                       {reasons[c.id]}
+                    </p>
+                  )}
+                  {isSupport && supportReasons?.[c.id] && (
+                    <p className="mt-2 text-[11px] leading-relaxed text-white/45">
+                      <span className="font-bold text-teal-light-ink">لماذا هي مساندة لهذا المسار: </span>
+                      {supportReasons[c.id]}
                     </p>
                   )}
                   {c.practicalProject && (

@@ -64,6 +64,7 @@ interface RawPathway {
   entry?: string; before?: string; after?: string; duration_weeks?: number
   weekly_hours?: string | number; level?: string; delivery?: string; capstone?: string
   outcome_metric?: string; credential_ar?: string; course_ids: string[]
+  support_courses?: { course_id: string; reason_ar: string }[]
 }
 interface RawLibraryResource {
   id: string; kind: string; title_ar: string; description_ar?: string
@@ -287,8 +288,23 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
     for (const [i, cid] of p.course_ids.entries()) {
       await prisma.pathwayCourse.upsert({
         where: { pathwayId_courseId: { pathwayId: p.id, courseId: cid } },
-        update: { sequence: i + 1 },
-        create: { pathwayId: p.id, courseId: cid, sequence: i + 1, kind: 'required' },
+        update: { sequence: i + 1, kind: 'required', reasonAr: null },
+        create: { pathwayId: p.id, courseId: cid, sequence: i + 1, kind: 'required', reasonAr: null },
+      })
+      links++
+    }
+    /* الدورات المساندة: روابط بنوع «support» تُميّزها عن الأساسية.
+
+       ترقيمها يبدأ بعد الأساسية كي لا يتصادم مفتاحُ ترتيبٍ ولا يُقرأ ترتيبها
+       امتدادا للرحلة. وبناء اللقطة يقصر course_ids على غير المساندة، لأنّ
+       تلك القائمة وحدها يقرؤها pathwaySkills فتُشتقّ منها فجوةُ المهارات
+       التي يرتّب بها التشخيص المسارات. */
+    const supports = p.support_courses ?? []
+    for (const [i, sc] of supports.entries()) {
+      await prisma.pathwayCourse.upsert({
+        where: { pathwayId_courseId: { pathwayId: p.id, courseId: sc.course_id } },
+        update: { sequence: p.course_ids.length + i + 1, kind: 'support', reasonAr: sc.reason_ar },
+        create: { pathwayId: p.id, courseId: sc.course_id, sequence: p.course_ids.length + i + 1, kind: 'support', reasonAr: sc.reason_ar },
       })
       links++
     }
@@ -309,7 +325,7 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
       }
     }
     await prisma.pathwayCourse.deleteMany({
-      where: { pathwayId: p.id, courseId: { notIn: noneIfEmpty(p.course_ids) } },
+      where: { pathwayId: p.id, courseId: { notIn: noneIfEmpty([...p.course_ids, ...supports.map((x) => x.course_id)]) } },
     })
     await prisma.pathwaySkillRequirement.deleteMany({
       where: { pathwayId: p.id, skillId: { notIn: noneIfEmpty([...seen]) } },

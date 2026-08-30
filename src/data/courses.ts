@@ -121,6 +121,30 @@ export const pathwayCourses: Record<string, string[]> = Object.fromEntries(
   getCoreCatalogRaw().launch_pathways.map((p) => [p.id, p.course_ids]),
 )
 
+/** الدورات المساندة لكلّ مسار جاهز — ثلاث، كلٌّ بسبب وجودها.
+
+    فُصلت عن `pathwayCourses` عمدا لا تنظيما: `pathwayCourses` نسخةُ
+    `course_ids`، وهي القائمة التي يقرؤها `pathwaySkills` فتُشتقّ منها فجوةُ
+    المهارات التي يرتّب بها التشخيص المسارات. فدمجُ المساندة فيها يغيّر ترتيب
+    المسارات لكلّ متعلّم — والمساندة عرضٌ في المسار الجاهز لا قياس. وصفحةُ
+    التشخيص تبقى على `pathwayCourses` وحدها: هناك تظهر الدورات حسب الحاجة. */
+export interface SupportCourse { courseId: string; reasonAr: string }
+const buildSupports = (): Record<string, SupportCourse[]> =>
+  Object.fromEntries(
+    getCoreCatalogRaw().launch_pathways.map((p) => [
+      p.id,
+      (p.support_courses ?? []).map((s) => ({ courseId: s.course_id, reasonAr: s.reason_ar })),
+    ]),
+  )
+export const pathwaySupportCourses: Record<string, SupportCourse[]> = buildSupports()
+
+/** دورات المسار الجاهز كما تُعرض وتُسعَّر: أربعُ أساسيات ثمّ ثلاثُ مساندات.
+    لا يستعملها التشخيص — هناك تُبنى القائمة من نتيجة القياس لا من حزمة. */
+export const readyPathwayCourseIds = (pathwayId: string): string[] => [
+  ...(pathwayCourses[pathwayId] ?? []),
+  ...(pathwaySupportCourses[pathwayId] ?? []).map((s) => s.courseId),
+]
+
 /** طريقة تقديم المسار من الكتالوج الموثق — تُعرض ضمن تفاصيل دورات الرحلة */
 export const pathwayDelivery = (pathwayId: string): string | undefined =>
   getCoreCatalogRaw().launch_pathways.find((p) => p.id === pathwayId)?.delivery
@@ -160,6 +184,8 @@ onCoreCatalogInstalled(() => {
   courses.splice(0, courses.length, ...buildCourses(raw))
   for (const k of Object.keys(pathwayCourses)) delete pathwayCourses[k]
   Object.assign(pathwayCourses, Object.fromEntries(raw.launch_pathways.map((p) => [p.id, p.course_ids])))
+  for (const k of Object.keys(pathwaySupportCourses)) delete pathwaySupportCourses[k]
+  Object.assign(pathwaySupportCourses, buildSupports())
   bestsellerCourses.splice(0, bestsellerCourses.length, ...buildBestsellerCourses())
 })
 
@@ -174,7 +200,9 @@ export const weeksLabel = (n: number) =>
 
 /* حدّا عدد دورات المسار — بنيةٌ لا سعر */
 export const MIN_PATHWAY_COURSES = 4
-export const MAX_PATHWAY_COURSES = 6
+/* سبعة: أربعُ دوراتِ المسار الأساسية وثلاثُ مساندات. كان ستّة حين كان المسار
+   خمس دوراتٍ خفيفة؛ وبعد الدمج صارت الأساسيات أربعا أثقل، وفوقها المساندات. */
+export const MAX_PATHWAY_COURSES = 7
 
 /* ─────────── ولا سعر هنا ───────────
    كان في هذا الموضع `PATHWAY_PRICE` و`pathwayPriceFor(العدد)`

@@ -13,12 +13,12 @@
   "stats": {
     "approved_core_pathways": 20,
     "composite_templates": 16,
-    "distinct_required_courses_used": 74,
-    "distinct_all_courses_used": 85,
-    "required_course_slots": 97,
-    "conditional_course_slots": 52,
-    "bridge_course_slots": 14,
-    "required_hours_across_templates": 844,
+    "distinct_required_courses_used": 61,
+    "distinct_all_courses_used": 69,
+    "required_course_slots": 82,
+    "conditional_course_slots": 53,
+    "bridge_course_slots": 12,
+    "required_hours_across_templates": 896,
     "core_pathways_covered": 20
   },
   "approved_core_pathways": [
@@ -505,29 +505,18 @@
           "sequence": 1,
           "course_type": "required",
           "course_id": "C-BIZ-101",
-          "course_title_ar": "التأكد من مشكلة عميلك قبل بناء الحل",
+          "course_title_ar": "دورة اكتشاف العملاء وصياغة عرض القيمة",
           "pathway_id": "PW-BIZ-001",
           "pathway_title_ar": "ريادة الأعمال: من الفكرة إلى أول عميل يدفع",
-          "hours": 8,
-          "role_ar": "إثبات المشكلة",
-          "reason_ar": "منع بناء حل قبل فهم سلوك العميل وبدائله الحالية."
+          "hours": 16,
+          "role_ar": "إثبات المشكلة · صياغة القيمة",
+          "reason_ar": "منع بناء حل قبل فهم سلوك العميل وبدائله الحالية · تحويل المشكلة المثبتة إلى وعد محدد وتجربة بديل أولي."
         },
         {
           "sequence": 2,
           "course_type": "required",
-          "course_id": "C-BIZ-102",
-          "course_title_ar": "صياغة وعد واضح يحل مشكلة عميلك",
-          "pathway_id": "PW-BIZ-001",
-          "pathway_title_ar": "ريادة الأعمال: من الفكرة إلى أول عميل يدفع",
-          "hours": 8,
-          "role_ar": "صياغة القيمة",
-          "reason_ar": "تحويل المشكلة المثبتة إلى وعد محدد وتجربة بديل أولي."
-        },
-        {
-          "sequence": 3,
-          "course_type": "required",
           "course_id": "C-BIZ-103",
-          "course_title_ar": "كيف يربح مشروعك: نموذج العمل والتكاليف",
+          "course_title_ar": "دورة نماذج الأعمال واقتصاديات الوحدة",
           "pathway_id": "PW-BIZ-001",
           "pathway_title_ar": "ريادة الأعمال: من الفكرة إلى أول عميل يدفع",
           "hours": 8,
@@ -535,21 +524,21 @@
           "reason_ar": "فهم من يدفع والتكلفة والهامش والسعة قبل التوسع."
         },
         {
-          "sequence": 4,
+          "sequence": 3,
           "course_type": "required",
           "course_id": "C-MKT-101",
-          "course_title_ar": "تحديد من تخدم ولماذا يختارك العميل",
+          "course_title_ar": "دورة استراتيجية التسويق ورحلة العميل",
           "pathway_id": "PW-MKT-001",
           "pathway_title_ar": "التسويق الرقمي: من فهم العميل إلى نتائج تُقاس",
-          "hours": 8,
+          "hours": 16,
           "role_ar": "اختيار السوق والتموضع",
           "reason_ar": "تحديد الشريحة والسوق ورسالة التمايز."
         },
         {
-          "sequence": 5,
+          "sequence": 4,
           "course_type": "required",
           "course_id": "C-SAL-103",
-          "course_title_ar": "فهم مشكلة العميل قبل عرض الحل",
+          "course_title_ar": "دورة البيع الاستشاري واكتشاف الاحتياج",
           "pathway_id": "PW-SAL-001",
           "pathway_title_ar": "المبيعات الاستشارية: من الاستهداف إلى صفقة موقعة",
           "hours": 8,
@@ -557,13 +546,13 @@
           "reason_ar": "استخدام محادثة اكتشاف تختبر الأولوية والقدرة على القرار."
         },
         {
-          "sequence": 6,
+          "sequence": 5,
           "course_type": "required",
           "course_id": "C-BIZ-105",
-          "course_title_ar": "أول عملية بيع وخطة أول 90 يومًا",
+          "course_title_ar": "دورة أول عملية بيع وخطة النمو",
           "pathway_id": "PW-BIZ-001",
           "pathway_title_ar": "ريادة الأعمال: من الفكرة إلى أول عميل يدفع",
-          "hours": 12,
+          "hours": 8,
           "role_ar": "تجربة الإطلاق",
           "reason_ar": "تشغيل تجربة أول بيع وتحويل النتائج إلى خطة 90 يومًا."
         }
@@ -573,7 +562,7 @@
           "sequence": 1,
           "course_type": "conditional",
           "course_id": "C-PRD-103",
-          "course_title_ar": "أصغر نسخة تثبت أن منتجك مطلوب (MVP)",
+          "course_title_ar": "دورة النماذج الأولية والمنتج الأدنى القابل للتطبيق",
           "pathway_id": "PW-PRD-001",
           "pathway_title_ar": "إدارة المنتج الرقمي: من مشكلة المستخدم إلى إطلاق ناجح",
           "hours": 8,
@@ -590,7 +579,7 @@
           "sequence": 2,
           "course_type": "conditional",
           "course_id": "C-FINM-104",
-          "course_title_ar": "حماية شركتك من نفاد السيولة",
+          "course_title_ar": "دورة إدارة التدفق النقدي ورأس المال العامل",
           "pathway_id": "PW-FIN-001",
           "pathway_title_ar": "المالية لغير الماليين: من قراءة الأرقام إلى قرار استثمار",
           "hours": 8,
@@ -607,10 +596,10 @@
           "sequence": 3,
           "course_type": "conditional",
           "course_id": "C-MKT-105",
-          "course_title_ar": "قرارات تسويق مبنية على الأرقام: مشروع 90 يومًا",
+          "course_title_ar": "دورة قياس الحملات التسويقية وتحسينها",
           "pathway_id": "PW-MKT-001",
           "pathway_title_ar": "التسويق الرقمي: من فهم العميل إلى نتائج تُقاس",
-          "hours": 12,
+          "hours": 8,
           "reason_ar": "يضاف بعد وجود إشارة إيراد لتصميم تجارب نمو وقياس.",
           "when": {
             "fact_key": "revenue_signal",
@@ -627,10 +616,10 @@
           "sequence": 1,
           "course_type": "bridge",
           "course_id": "C-CAR-104",
-          "course_title_ar": "مقارنة خياراتك المهنية وخطة أول 30 يومًا",
+          "course_title_ar": "دورة اتخاذ القرار المهني وخطة الانتقال",
           "pathway_id": "PW-STU-003",
           "pathway_title_ar": "قرارك المهني الأول: من التشتت إلى خيار مدعوم بدليل",
-          "hours": 12,
+          "hours": 8,
           "reason_ar": "جسر قرار إذا كان الدافع ريادة الأعمال لكن نوع المشكلة/المجال غير محسوم.",
           "when": {
             "fact_key": "goal_clarity",
@@ -842,7 +831,7 @@
             "target_level": 3,
             "priority": "critical",
             "course_ids": [
-              "C-BIZ-102"
+              "C-BIZ-101"
             ]
           },
           {
@@ -915,33 +904,25 @@
         {
           "sequence": 1,
           "course_id": "C-BIZ-101",
-          "course_title_ar": "التأكد من مشكلة عميلك قبل بناء الحل",
+          "course_title_ar": "دورة اكتشاف العملاء وصياغة عرض القيمة",
           "pathway_id": "PW-BIZ-001",
           "pathway_title_ar": "ريادة الأعمال: من الفكرة إلى أول عميل يدفع",
-          "hours": 8
+          "hours": 16
         },
         {
           "sequence": 2,
-          "course_id": "C-BIZ-102",
-          "course_title_ar": "صياغة وعد واضح يحل مشكلة عميلك",
-          "pathway_id": "PW-BIZ-001",
-          "pathway_title_ar": "ريادة الأعمال: من الفكرة إلى أول عميل يدفع",
-          "hours": 8
-        },
-        {
-          "sequence": 3,
           "course_id": "C-SAL-103",
-          "course_title_ar": "فهم مشكلة العميل قبل عرض الحل",
+          "course_title_ar": "دورة البيع الاستشاري واكتشاف الاحتياج",
           "pathway_id": "PW-SAL-001",
           "pathway_title_ar": "المبيعات الاستشارية: من الاستهداف إلى صفقة موقعة",
           "hours": 8
         }
       ],
       "plan": {
-        "starter_course_count": 3,
+        "starter_course_count": 2,
         "starter_hours": 24,
-        "full_required_course_count": 6,
-        "full_required_hours": 52,
+        "full_required_course_count": 5,
+        "full_required_hours": 56,
         "recommended_duration_weeks": 10,
         "minimum_weekly_hours": 4,
         "recommended_weekly_hours": 6,
@@ -978,62 +959,51 @@
           "sequence": 1,
           "course_type": "required",
           "course_id": "C-MKT-101",
-          "course_title_ar": "تحديد من تخدم ولماذا يختارك العميل",
+          "course_title_ar": "دورة استراتيجية التسويق ورحلة العميل",
           "pathway_id": "PW-MKT-001",
           "pathway_title_ar": "التسويق الرقمي: من فهم العميل إلى نتائج تُقاس",
-          "hours": 8,
-          "role_ar": "السوق والتموضع",
-          "reason_ar": "اختيار شريحة ووعد واضحين قبل شراء الزيارات."
+          "hours": 16,
+          "role_ar": "السوق والتموضع · رحلة الشراء",
+          "reason_ar": "اختيار شريحة ووعد واضحين قبل شراء الزيارات · تصميم نقاط انتقال قابلة للقياس من الوعي إلى التحويل."
         },
         {
           "sequence": 2,
           "course_type": "required",
-          "course_id": "C-MKT-102",
-          "course_title_ar": "رحلة الشراء: كيف يصل العميل إليك ويبقى",
-          "pathway_id": "PW-MKT-001",
-          "pathway_title_ar": "التسويق الرقمي: من فهم العميل إلى نتائج تُقاس",
-          "hours": 8,
-          "role_ar": "رحلة الشراء",
-          "reason_ar": "تصميم نقاط انتقال قابلة للقياس من الوعي إلى التحويل."
-        },
-        {
-          "sequence": 3,
-          "course_type": "required",
-          "course_id": "C-SAL-102",
-          "course_title_ar": "تحويل الاستهداف إلى فرص بيع منظمة",
+          "course_id": "C-SAL-101",
+          "course_title_ar": "دورة استهداف السوق وبناء خط المبيعات",
           "pathway_id": "PW-SAL-001",
           "pathway_title_ar": "المبيعات الاستشارية: من الاستهداف إلى صفقة موقعة",
-          "hours": 8,
+          "hours": 16,
           "role_ar": "إدارة العملاء والفرص",
           "reason_ar": "ربط العملاء المحتملين والمتابعة ببيانات CRM."
         },
         {
-          "sequence": 4,
+          "sequence": 3,
           "course_type": "required",
-          "course_id": "C-FINM-102",
-          "course_title_ar": "معرفة تكلفة قرارك وهامش ربحه",
+          "course_id": "C-FINM-101",
+          "course_title_ar": "دورة قراءة القوائم المالية وتحليل التكاليف",
           "pathway_id": "PW-FIN-001",
           "pathway_title_ar": "المالية لغير الماليين: من قراءة الأرقام إلى قرار استثمار",
-          "hours": 8,
+          "hours": 16,
           "role_ar": "الهامش والتسعير",
           "reason_ar": "منع نمو مبيعات لا يخلق قيمة مالية."
         },
         {
-          "sequence": 5,
+          "sequence": 4,
           "course_type": "required",
           "course_id": "C-OPS-101",
-          "course_title_ar": "رسم عمليتك الحالية ومعرفة نقطة البداية",
+          "course_title_ar": "دورة رسم العمليات ومنهجية Lean",
           "pathway_id": "PW-OPS-001",
           "pathway_title_ar": "تحسين العمليات: من رسم العملية إلى أثر تقيسه",
-          "hours": 8,
+          "hours": 16,
           "role_ar": "عملية الطلب",
           "reason_ar": "رسم تدفق الطلب والتسليم وخط أساس للجودة والزمن."
         },
         {
-          "sequence": 6,
+          "sequence": 5,
           "course_type": "required",
           "course_id": "C-DAT-103",
-          "course_title_ar": "اختيار مؤشرات أداء تقود لقرار صحيح",
+          "course_title_ar": "دورة تصميم مؤشرات الأداء وأهداف OKR",
           "pathway_id": "PW-EMP-004",
           "pathway_title_ar": "من جدول بيانات إلى قرار تدافع عنه",
           "hours": 8,
@@ -1044,18 +1014,18 @@
       "conditional_courses": [
         {
           "course_id": "C-MKT-103",
-          "course_title_ar": "إنتاج محتوى يخدم هدفًا تجاريًا محددًا",
+          "course_title_ar": "دورة تسويق المحتوى",
           "hours": 8,
           "condition_ar": "لمن يعتمد المحتوى قناةَ اكتساب أساسية لمتجره — لا لمن يعتمد الإعلان المدفوع أو البيع المباشر."
         },
         {
-          "sequence": 1,
+          "sequence": 2,
           "course_type": "conditional",
           "course_id": "C-AUT-101",
-          "course_title_ar": "اختيار المهمة الأنسب للأتمتة أولا",
+          "course_title_ar": "دورة تحليل فرص الأتمتة والربط بين التطبيقات",
           "pathway_id": "PW-AUT-001",
           "pathway_title_ar": "أتمتة مهامك بالذكاء الاصطناعي تحت إشرافك",
-          "hours": 8,
+          "hours": 16,
           "reason_ar": "يضاف عند وجود عملية متكررة قابلة للأتمتة.",
           "when": {
             "fact_key": "operations_maturity",
@@ -1067,13 +1037,13 @@
           }
         },
         {
-          "sequence": 2,
+          "sequence": 3,
           "course_type": "conditional",
           "course_id": "C-SVC-101",
-          "course_title_ar": "فهم احتياج المستفيد ورحلته معك",
+          "course_title_ar": "دورة تجربة المستفيد ومهارات خدمة العملاء",
           "pathway_id": "PW-GOV-002",
           "pathway_title_ar": "خدمة العملاء: من الشكوى إلى عميل راضٍ",
-          "hours": 8,
+          "hours": 16,
           "reason_ar": "يضاف إذا كان الاحتفاظ والتجربة بعد البيع سبب المشكلة.",
           "when": {
             "fact_key": "current_pain",
@@ -1086,10 +1056,10 @@
           }
         },
         {
-          "sequence": 3,
+          "sequence": 4,
           "course_type": "conditional",
           "course_id": "C-SCM-103",
-          "course_title_ar": "متى تطلب وكم تخزّن: قرارات المخزون",
+          "course_title_ar": "دورة إدارة المخزون والمستودعات",
           "pathway_id": "PW-SCM-001",
           "pathway_title_ar": "سلسلة الإمداد: من الطلب إلى المورد بلا اختناقات",
           "hours": 8,
@@ -1107,11 +1077,11 @@
         {
           "sequence": 1,
           "course_type": "bridge",
-          "course_id": "C-BIZ-102",
-          "course_title_ar": "صياغة وعد واضح يحل مشكلة عميلك",
+          "course_id": "C-BIZ-101",
+          "course_title_ar": "دورة اكتشاف العملاء وصياغة عرض القيمة",
           "pathway_id": "PW-BIZ-001",
           "pathway_title_ar": "ريادة الأعمال: من الفكرة إلى أول عميل يدفع",
-          "hours": 8,
+          "hours": 16,
           "reason_ar": "جسر عرض القيمة قبل بناء القمع والمحتوى.",
           "when": {
             "fact_key": "offer_clarity",
@@ -1314,7 +1284,7 @@
             "target_level": 3,
             "priority": "critical",
             "course_ids": [
-              "C-MKT-102"
+              "C-MKT-101"
             ]
           },
           {
@@ -1322,7 +1292,7 @@
             "target_level": 3,
             "priority": "critical",
             "course_ids": [
-              "C-FINM-102"
+              "C-FINM-101"
             ]
           },
           {
@@ -1385,33 +1355,25 @@
         {
           "sequence": 1,
           "course_id": "C-MKT-101",
-          "course_title_ar": "تحديد من تخدم ولماذا يختارك العميل",
+          "course_title_ar": "دورة استراتيجية التسويق ورحلة العميل",
           "pathway_id": "PW-MKT-001",
           "pathway_title_ar": "التسويق الرقمي: من فهم العميل إلى نتائج تُقاس",
-          "hours": 8
+          "hours": 16
         },
         {
           "sequence": 2,
-          "course_id": "C-MKT-102",
-          "course_title_ar": "رحلة الشراء: كيف يصل العميل إليك ويبقى",
-          "pathway_id": "PW-MKT-001",
-          "pathway_title_ar": "التسويق الرقمي: من فهم العميل إلى نتائج تُقاس",
-          "hours": 8
-        },
-        {
-          "sequence": 3,
-          "course_id": "C-FINM-102",
-          "course_title_ar": "معرفة تكلفة قرارك وهامش ربحه",
+          "course_id": "C-FINM-101",
+          "course_title_ar": "دورة قراءة القوائم المالية وتحليل التكاليف",
           "pathway_id": "PW-FIN-001",
           "pathway_title_ar": "المالية لغير الماليين: من قراءة الأرقام إلى قرار استثمار",
-          "hours": 8
+          "hours": 16
         }
       ],
       "plan": {
-        "starter_course_count": 3,
-        "starter_hours": 24,
-        "full_required_course_count": 7,
-        "full_required_hours": 56,
+        "starter_course_count": 2,
+        "starter_hours": 32,
+        "full_required_course_count": 5,
+        "full_required_hours": 72,
         "recommended_duration_weeks": 11,
         "minimum_weekly_hours": 4,
         "recommended_weekly_hours": 6,
@@ -1450,11 +1412,11 @@
         {
           "sequence": 1,
           "course_type": "required",
-          "course_id": "C-BIZ-102",
-          "course_title_ar": "صياغة وعد واضح يحل مشكلة عميلك",
+          "course_id": "C-BIZ-101",
+          "course_title_ar": "دورة اكتشاف العملاء وصياغة عرض القيمة",
           "pathway_id": "PW-BIZ-001",
           "pathway_title_ar": "ريادة الأعمال: من الفكرة إلى أول عميل يدفع",
-          "hours": 8,
+          "hours": 16,
           "role_ar": "حزمة الخدمة",
           "reason_ar": "تحويل الخبرة إلى نتيجة ونطاق ووعد يمكن تسليمه."
         },
@@ -1462,10 +1424,10 @@
           "sequence": 2,
           "course_type": "required",
           "course_id": "C-SAL-101",
-          "course_title_ar": "تحديد عميلك المثالي وخطة الوصول إليه",
+          "course_title_ar": "دورة استهداف السوق وبناء خط المبيعات",
           "pathway_id": "PW-SAL-001",
           "pathway_title_ar": "المبيعات الاستشارية: من الاستهداف إلى صفقة موقعة",
-          "hours": 8,
+          "hours": 16,
           "role_ar": "الاستهداف",
           "reason_ar": "تحديد السوق والعميل المثالي بدل التواصل العشوائي."
         },
@@ -1473,7 +1435,7 @@
           "sequence": 3,
           "course_type": "required",
           "course_id": "C-SAL-103",
-          "course_title_ar": "فهم مشكلة العميل قبل عرض الحل",
+          "course_title_ar": "دورة البيع الاستشاري واكتشاف الاحتياج",
           "pathway_id": "PW-SAL-001",
           "pathway_title_ar": "المبيعات الاستشارية: من الاستهداف إلى صفقة موقعة",
           "hours": 8,
@@ -1484,7 +1446,7 @@
           "sequence": 4,
           "course_type": "required",
           "course_id": "C-SAL-104",
-          "course_title_ar": "تقديم عرض تجاري يربط الحل بالقيمة",
+          "course_title_ar": "دورة إعداد العروض التجارية وتقديمها",
           "pathway_id": "PW-SAL-001",
           "pathway_title_ar": "المبيعات الاستشارية: من الاستهداف إلى صفقة موقعة",
           "hours": 8,
@@ -1495,21 +1457,21 @@
           "sequence": 5,
           "course_type": "required",
           "course_id": "C-NEG-101",
-          "course_title_ar": "التحضير للتفاوض: ماذا تريد وما بديلك إن فشل",
+          "course_title_ar": "دورة أساسيات التفاوض واستراتيجياته",
           "pathway_id": "PW-NEG-001",
           "pathway_title_ar": "التفاوض والتأثير: من التحضير إلى اتفاق يدوم",
-          "hours": 8,
+          "hours": 16,
           "role_ar": "التحضير للتفاوض",
           "reason_ar": "فهم البدائل والحد الأدنى قبل مناقشة السعر والشروط."
         },
         {
           "sequence": 6,
           "course_type": "required",
-          "course_id": "C-FINM-102",
-          "course_title_ar": "معرفة تكلفة قرارك وهامش ربحه",
+          "course_id": "C-FINM-101",
+          "course_title_ar": "دورة قراءة القوائم المالية وتحليل التكاليف",
           "pathway_id": "PW-FIN-001",
           "pathway_title_ar": "المالية لغير الماليين: من قراءة الأرقام إلى قرار استثمار",
-          "hours": 8,
+          "hours": 16,
           "role_ar": "التسعير والهامش",
           "reason_ar": "بناء سعر يحمي الوقت والتكلفة والقيمة."
         }
@@ -1519,7 +1481,7 @@
           "sequence": 1,
           "course_type": "conditional",
           "course_id": "C-MKT-103",
-          "course_title_ar": "إنتاج محتوى يخدم هدفًا تجاريًا محددًا",
+          "course_title_ar": "دورة تسويق المحتوى",
           "pathway_id": "PW-MKT-001",
           "pathway_title_ar": "التسويق الرقمي: من فهم العميل إلى نتائج تُقاس",
           "hours": 8,
@@ -1535,11 +1497,11 @@
         {
           "sequence": 2,
           "course_type": "conditional",
-          "course_id": "C-JOB-102",
-          "course_title_ar": "سيرة ذاتية وLinkedIn يثبتان إنجازاتك",
+          "course_id": "C-JOB-101",
+          "course_title_ar": "دورة استهداف الوظائف وبناء ملفّك المهني",
           "pathway_id": "PW-STU-002",
           "pathway_title_ar": "التحضير لأول وظيفة: من السيرة إلى قبول العرض",
-          "hours": 8,
+          "hours": 16,
           "reason_ar": "يضاف لبناء واجهة LinkedIn وملف أدلة يخدمان الاستهداف.",
           "when": {
             "fact_key": "career_assets",
@@ -1554,10 +1516,10 @@
           "sequence": 3,
           "course_type": "conditional",
           "course_id": "C-SAL-105",
-          "course_title_ar": "إغلاق الصفقة وتنمية العلاقة بعد البيع",
+          "course_title_ar": "دورة إغلاق الصفقات وإدارة الحسابات",
           "pathway_id": "PW-SAL-001",
           "pathway_title_ar": "المبيعات الاستشارية: من الاستهداف إلى صفقة موقعة",
-          "hours": 12,
+          "hours": 8,
           "reason_ar": "يضاف لتطوير الحساب والاحتفاظ بعد تجاوز البيع الأول.",
           "when": {
             "fact_key": "revenue_signal",
@@ -1574,10 +1536,10 @@
           "sequence": 1,
           "course_type": "bridge",
           "course_id": "C-CAR-101",
-          "course_title_ar": "تحويل قيمك وأولوياتك إلى معايير قرار",
+          "course_title_ar": "دورة التخطيط للمسار المهني وبحث سوق العمل",
           "pathway_id": "PW-STU-003",
           "pathway_title_ar": "قرارك المهني الأول: من التشتت إلى خيار مدعوم بدليل",
-          "hours": 8,
+          "hours": 16,
           "reason_ar": "جسر قرار إذا لم يحدد المتعلم الخدمة أو المجال الذي سيعرضه.",
           "when": {
             "fact_key": "goal_clarity",
@@ -1788,7 +1750,7 @@
             "target_level": 3,
             "priority": "critical",
             "course_ids": [
-              "C-FINM-102"
+              "C-FINM-101"
             ]
           },
           {
@@ -1851,24 +1813,24 @@
       "starter_courses": [
         {
           "sequence": 1,
-          "course_id": "C-BIZ-102",
-          "course_title_ar": "صياغة وعد واضح يحل مشكلة عميلك",
+          "course_id": "C-BIZ-101",
+          "course_title_ar": "دورة اكتشاف العملاء وصياغة عرض القيمة",
           "pathway_id": "PW-BIZ-001",
           "pathway_title_ar": "ريادة الأعمال: من الفكرة إلى أول عميل يدفع",
-          "hours": 8
+          "hours": 16
         },
         {
           "sequence": 2,
           "course_id": "C-SAL-101",
-          "course_title_ar": "تحديد عميلك المثالي وخطة الوصول إليه",
+          "course_title_ar": "دورة استهداف السوق وبناء خط المبيعات",
           "pathway_id": "PW-SAL-001",
           "pathway_title_ar": "المبيعات الاستشارية: من الاستهداف إلى صفقة موقعة",
-          "hours": 8
+          "hours": 16
         },
         {
           "sequence": 3,
           "course_id": "C-SAL-103",
-          "course_title_ar": "فهم مشكلة العميل قبل عرض الحل",
+          "course_title_ar": "دورة البيع الاستشاري واكتشاف الاحتياج",
           "pathway_id": "PW-SAL-001",
           "pathway_title_ar": "المبيعات الاستشارية: من الاستهداف إلى صفقة موقعة",
           "hours": 8
@@ -1876,9 +1838,9 @@
       ],
       "plan": {
         "starter_course_count": 3,
-        "starter_hours": 24,
+        "starter_hours": 40,
         "full_required_course_count": 6,
-        "full_required_hours": 48,
+        "full_required_hours": 80,
         "recommended_duration_weeks": 9,
         "minimum_weekly_hours": 4,
         "recommended_weekly_hours": 6,
@@ -1916,29 +1878,18 @@
           "sequence": 1,
           "course_type": "required",
           "course_id": "C-JOB-101",
-          "course_title_ar": "استهداف الوظيفة الصحيحة وبناء عرض قيمتك",
+          "course_title_ar": "دورة استهداف الوظائف وبناء ملفّك المهني",
           "pathway_id": "PW-STU-002",
           "pathway_title_ar": "التحضير لأول وظيفة: من السيرة إلى قبول العرض",
-          "hours": 8,
-          "role_ar": "التموضع",
-          "reason_ar": "ربط الهوية بسوق وجمهور ونتيجة محددة."
+          "hours": 16,
+          "role_ar": "التموضع · ملف الأدلة",
+          "reason_ar": "ربط الهوية بسوق وجمهور ونتيجة محددة · تحويل الخبرة إلى سيرة وLinkedIn موجّهين بالأثر."
         },
         {
           "sequence": 2,
           "course_type": "required",
-          "course_id": "C-JOB-102",
-          "course_title_ar": "سيرة ذاتية وLinkedIn يثبتان إنجازاتك",
-          "pathway_id": "PW-STU-002",
-          "pathway_title_ar": "التحضير لأول وظيفة: من السيرة إلى قبول العرض",
-          "hours": 8,
-          "role_ar": "ملف الأدلة",
-          "reason_ar": "تحويل الخبرة إلى سيرة وLinkedIn موجّهين بالأثر."
-        },
-        {
-          "sequence": 3,
-          "course_type": "required",
           "course_id": "C-MKT-103",
-          "course_title_ar": "إنتاج محتوى يخدم هدفًا تجاريًا محددًا",
+          "course_title_ar": "دورة تسويق المحتوى",
           "pathway_id": "PW-MKT-001",
           "pathway_title_ar": "التسويق الرقمي: من فهم العميل إلى نتائج تُقاس",
           "hours": 8,
@@ -1946,21 +1897,21 @@
           "reason_ar": "بناء محتوى يخدم قرار الجمهور لا النشر العشوائي."
         },
         {
-          "sequence": 4,
+          "sequence": 3,
           "course_type": "required",
           "course_id": "C-COMX-101",
-          "course_title_ar": "بناء رسالة واحدة يتذكرها جمهورك",
+          "course_title_ar": "دورة بناء الرسالة وتصميم العرض التنفيذي",
           "pathway_id": "PW-COM-001",
           "pathway_title_ar": "الخطابة والعرض التنفيذي: من الفكرة إلى إقناع اللجنة",
-          "hours": 8,
+          "hours": 16,
           "role_ar": "الرسالة",
           "reason_ar": "تنظيم قصة مهنية واحدة حول جمهور وقرار."
         },
         {
-          "sequence": 5,
+          "sequence": 4,
           "course_type": "required",
           "course_id": "C-COMX-103",
-          "course_title_ar": "التحكم برهبة المسرح وبناء حضورك",
+          "course_title_ar": "دورة مهارات الإلقاء والتحدث أمام الجمهور",
           "pathway_id": "PW-COM-001",
           "pathway_title_ar": "الخطابة والعرض التنفيذي: من الفكرة إلى إقناع اللجنة",
           "hours": 8,
@@ -1968,13 +1919,13 @@
           "reason_ar": "رفع الثقة والصوت والوضوح أمام الآخرين."
         },
         {
-          "sequence": 6,
+          "sequence": 5,
           "course_type": "required",
           "course_id": "C-COMX-105",
-          "course_title_ar": "الرد على أسئلة صعبة أمام لجنة",
+          "course_title_ar": "دورة إدارة الأسئلة والرد تحت الضغط",
           "pathway_id": "PW-COM-001",
           "pathway_title_ar": "الخطابة والعرض التنفيذي: من الفكرة إلى إقناع اللجنة",
-          "hours": 12,
+          "hours": 8,
           "role_ar": "الدفاع عن الخبرة",
           "reason_ar": "التعامل مع الأسئلة الصعبة دون مبالغة أو ارتباك."
         }
@@ -1984,7 +1935,7 @@
           "sequence": 1,
           "course_type": "conditional",
           "course_id": "C-JOB-103",
-          "course_title_ar": "إثبات المهارة بمشروع: قطعة عمل تقنع صاحب القرار",
+          "course_title_ar": "دورة بناء ملف الأعمال المهني",
           "pathway_id": "PW-STU-002",
           "pathway_title_ar": "التحضير لأول وظيفة: من السيرة إلى قبول العرض",
           "hours": 8,
@@ -2001,7 +1952,7 @@
           "sequence": 2,
           "course_type": "conditional",
           "course_id": "C-SAL-104",
-          "course_title_ar": "تقديم عرض تجاري يربط الحل بالقيمة",
+          "course_title_ar": "دورة إعداد العروض التجارية وتقديمها",
           "pathway_id": "PW-SAL-001",
           "pathway_title_ar": "المبيعات الاستشارية: من الاستهداف إلى صفقة موقعة",
           "hours": 8,
@@ -2019,7 +1970,7 @@
           "sequence": 3,
           "course_type": "conditional",
           "course_id": "C-DAT-104",
-          "course_title_ar": "عرض بياناتك في لوحة تدفع لقرار",
+          "course_title_ar": "دورة تصميم لوحات المعلومات وتمثيل البيانات",
           "pathway_id": "PW-EMP-004",
           "pathway_title_ar": "من جدول بيانات إلى قرار تدافع عنه",
           "hours": 8,
@@ -2038,10 +1989,10 @@
           "sequence": 1,
           "course_type": "bridge",
           "course_id": "C-CAR-104",
-          "course_title_ar": "مقارنة خياراتك المهنية وخطة أول 30 يومًا",
+          "course_title_ar": "دورة اتخاذ القرار المهني وخطة الانتقال",
           "pathway_id": "PW-STU-003",
           "pathway_title_ar": "قرارك المهني الأول: من التشتت إلى خيار مدعوم بدليل",
-          "hours": 12,
+          "hours": 8,
           "reason_ar": "لا تُبنى علامة قبل حسم الاتجاه والجمهور.",
           "when": {
             "fact_key": "goal_clarity",
@@ -2245,8 +2196,7 @@
             "target_level": 3,
             "priority": "critical",
             "course_ids": [
-              "C-JOB-101",
-              "C-JOB-102"
+              "C-JOB-101"
             ]
           },
           {
@@ -2317,33 +2267,25 @@
         {
           "sequence": 1,
           "course_id": "C-JOB-101",
-          "course_title_ar": "استهداف الوظيفة الصحيحة وبناء عرض قيمتك",
+          "course_title_ar": "دورة استهداف الوظائف وبناء ملفّك المهني",
           "pathway_id": "PW-STU-002",
           "pathway_title_ar": "التحضير لأول وظيفة: من السيرة إلى قبول العرض",
-          "hours": 8
+          "hours": 16
         },
         {
           "sequence": 2,
-          "course_id": "C-JOB-102",
-          "course_title_ar": "سيرة ذاتية وLinkedIn يثبتان إنجازاتك",
-          "pathway_id": "PW-STU-002",
-          "pathway_title_ar": "التحضير لأول وظيفة: من السيرة إلى قبول العرض",
-          "hours": 8
-        },
-        {
-          "sequence": 3,
           "course_id": "C-COMX-101",
-          "course_title_ar": "بناء رسالة واحدة يتذكرها جمهورك",
+          "course_title_ar": "دورة بناء الرسالة وتصميم العرض التنفيذي",
           "pathway_id": "PW-COM-001",
           "pathway_title_ar": "الخطابة والعرض التنفيذي: من الفكرة إلى إقناع اللجنة",
-          "hours": 8
+          "hours": 16
         }
       ],
       "plan": {
-        "starter_course_count": 3,
-        "starter_hours": 24,
-        "full_required_course_count": 6,
-        "full_required_hours": 52,
+        "starter_course_count": 2,
+        "starter_hours": 32,
+        "full_required_course_count": 5,
+        "full_required_hours": 56,
         "recommended_duration_weeks": 10,
         "minimum_weekly_hours": 4,
         "recommended_weekly_hours": 6,
@@ -2380,10 +2322,10 @@
           "sequence": 1,
           "course_type": "required",
           "course_id": "C-CAR-104",
-          "course_title_ar": "مقارنة خياراتك المهنية وخطة أول 30 يومًا",
+          "course_title_ar": "دورة اتخاذ القرار المهني وخطة الانتقال",
           "pathway_id": "PW-STU-003",
           "pathway_title_ar": "قرارك المهني الأول: من التشتت إلى خيار مدعوم بدليل",
-          "hours": 12,
+          "hours": 8,
           "role_ar": "حسم الاتجاه",
           "reason_ar": "تحويل البدائل إلى قرار مهني وخطة تحقق قصيرة."
         },
@@ -2391,29 +2333,18 @@
           "sequence": 2,
           "course_type": "required",
           "course_id": "C-JOB-101",
-          "course_title_ar": "استهداف الوظيفة الصحيحة وبناء عرض قيمتك",
+          "course_title_ar": "دورة استهداف الوظائف وبناء ملفّك المهني",
           "pathway_id": "PW-STU-002",
           "pathway_title_ar": "التحضير لأول وظيفة: من السيرة إلى قبول العرض",
-          "hours": 8,
-          "role_ar": "التموضع",
-          "reason_ar": "تحديد السوق والدور والقيمة التي يقدمها المتعلم."
+          "hours": 16,
+          "role_ar": "التموضع · السيرة وLinkedIn",
+          "reason_ar": "تحديد السوق والدور والقيمة التي يقدمها المتعلم · تقديم الأدلة بما يلائم وظيفة مستهدفة."
         },
         {
           "sequence": 3,
           "course_type": "required",
-          "course_id": "C-JOB-102",
-          "course_title_ar": "سيرة ذاتية وLinkedIn يثبتان إنجازاتك",
-          "pathway_id": "PW-STU-002",
-          "pathway_title_ar": "التحضير لأول وظيفة: من السيرة إلى قبول العرض",
-          "hours": 8,
-          "role_ar": "السيرة وLinkedIn",
-          "reason_ar": "تقديم الأدلة بما يلائم وظيفة مستهدفة."
-        },
-        {
-          "sequence": 4,
-          "course_type": "required",
           "course_id": "C-JOB-103",
-          "course_title_ar": "إثبات المهارة بمشروع: قطعة عمل تقنع صاحب القرار",
+          "course_title_ar": "دورة بناء ملف الأعمال المهني",
           "pathway_id": "PW-STU-002",
           "pathway_title_ar": "التحضير لأول وظيفة: من السيرة إلى قبول العرض",
           "hours": 8,
@@ -2421,10 +2352,10 @@
           "reason_ar": "تعويض نقص الخبرة بمشروع قابل للفحص."
         },
         {
-          "sequence": 5,
+          "sequence": 4,
           "course_type": "required",
           "course_id": "C-JOB-104",
-          "course_title_ar": "الإجابة على أسئلة المقابلة بقصص حقيقية",
+          "course_title_ar": "دورة مهارات المقابلات الوظيفية",
           "pathway_id": "PW-STU-002",
           "pathway_title_ar": "التحضير لأول وظيفة: من السيرة إلى قبول العرض",
           "hours": 8,
@@ -2432,13 +2363,13 @@
           "reason_ar": "الدفاع عن الأدلة والإجابة بوضوح."
         },
         {
-          "sequence": 6,
+          "sequence": 5,
           "course_type": "required",
           "course_id": "C-JOB-105",
-          "course_title_ar": "خطة بحث عن وظيفة لمدة 6 أسابيع",
+          "course_title_ar": "دورة استراتيجية البحث عن عمل",
           "pathway_id": "PW-STU-002",
           "pathway_title_ar": "التحضير لأول وظيفة: من السيرة إلى قبول العرض",
-          "hours": 12,
+          "hours": 8,
           "role_ar": "نظام البحث",
           "reason_ar": "إدارة القنوات والشبكة والمتابعة ستة أسابيع."
         }
@@ -2448,10 +2379,10 @@
           "sequence": 1,
           "course_type": "conditional",
           "course_id": "C-CAR-101",
-          "course_title_ar": "تحويل قيمك وأولوياتك إلى معايير قرار",
+          "course_title_ar": "دورة التخطيط للمسار المهني وبحث سوق العمل",
           "pathway_id": "PW-STU-003",
           "pathway_title_ar": "قرارك المهني الأول: من التشتت إلى خيار مدعوم بدليل",
-          "hours": 8,
+          "hours": 16,
           "reason_ar": "يضاف إذا لم يحسم المتعلم عائلة الدور.",
           "when": {
             "fact_key": "first_job_clarity",
@@ -2464,11 +2395,11 @@
         {
           "sequence": 2,
           "course_type": "conditional",
-          "course_id": "C-CAR-102",
-          "course_title_ar": "بحث المهن والسوق كما هي فعلا لا كما تبدو",
+          "course_id": "C-CAR-101",
+          "course_title_ar": "دورة التخطيط للمسار المهني وبحث سوق العمل",
           "pathway_id": "PW-STU-003",
           "pathway_title_ar": "قرارك المهني الأول: من التشتت إلى خيار مدعوم بدليل",
-          "hours": 8,
+          "hours": 16,
           "reason_ar": "يضاف إذا لم يفهم سوق الوظائف والمهارات المطلوبة.",
           "when": {
             "fact_key": "job_skill_awareness",
@@ -2482,7 +2413,7 @@
           "sequence": 3,
           "course_type": "conditional",
           "course_id": "C-AI-104",
-          "course_title_ar": "الكتابة والبحث بمساعدة الذكاء الاصطناعي بأمان",
+          "course_title_ar": "دورة الكتابة والبحث بالذكاء الاصطناعي",
           "pathway_id": "PW-FND-003",
           "pathway_title_ar": "الذكاء الاصطناعي في عملك اليومي بأمان ومسؤولية",
           "hours": 8,
@@ -2500,7 +2431,7 @@
           "sequence": 4,
           "course_type": "conditional",
           "course_id": "C-COMX-103",
-          "course_title_ar": "التحكم برهبة المسرح وبناء حضورك",
+          "course_title_ar": "دورة مهارات الإلقاء والتحدث أمام الجمهور",
           "pathway_id": "PW-COM-001",
           "pathway_title_ar": "الخطابة والعرض التنفيذي: من الفكرة إلى إقناع اللجنة",
           "hours": 8,
@@ -2788,33 +2719,25 @@
         {
           "sequence": 1,
           "course_id": "C-CAR-104",
-          "course_title_ar": "مقارنة خياراتك المهنية وخطة أول 30 يومًا",
+          "course_title_ar": "دورة اتخاذ القرار المهني وخطة الانتقال",
           "pathway_id": "PW-STU-003",
           "pathway_title_ar": "قرارك المهني الأول: من التشتت إلى خيار مدعوم بدليل",
-          "hours": 12
+          "hours": 8
         },
         {
           "sequence": 2,
           "course_id": "C-JOB-101",
-          "course_title_ar": "استهداف الوظيفة الصحيحة وبناء عرض قيمتك",
+          "course_title_ar": "دورة استهداف الوظائف وبناء ملفّك المهني",
           "pathway_id": "PW-STU-002",
           "pathway_title_ar": "التحضير لأول وظيفة: من السيرة إلى قبول العرض",
-          "hours": 8
-        },
-        {
-          "sequence": 3,
-          "course_id": "C-JOB-102",
-          "course_title_ar": "سيرة ذاتية وLinkedIn يثبتان إنجازاتك",
-          "pathway_id": "PW-STU-002",
-          "pathway_title_ar": "التحضير لأول وظيفة: من السيرة إلى قبول العرض",
-          "hours": 8
+          "hours": 16
         }
       ],
       "plan": {
-        "starter_course_count": 3,
-        "starter_hours": 28,
-        "full_required_course_count": 6,
-        "full_required_hours": 56,
+        "starter_course_count": 2,
+        "starter_hours": 24,
+        "full_required_course_count": 5,
+        "full_required_hours": 48,
         "recommended_duration_weeks": 11,
         "minimum_weekly_hours": 4,
         "recommended_weekly_hours": 6,
@@ -2849,29 +2772,18 @@
           "sequence": 1,
           "course_type": "required",
           "course_id": "C-MGR-101",
-          "course_title_ar": "الانتقال من منفّذ للمهام إلى مدير فريق",
+          "course_title_ar": "دورة الانتقال إلى الإدارة وقيادة إيقاع الفريق",
           "pathway_id": "PW-EMP-005",
           "pathway_title_ar": "المدير لأول مرة: قيادة فريقك في أول 90 يومًا",
-          "hours": 8,
-          "role_ar": "هوية المدير",
-          "reason_ar": "فصل مسؤولية القيادة عن الإنجاز الفردي."
+          "hours": 16,
+          "role_ar": "هوية المدير · نظام الفريق",
+          "reason_ar": "فصل مسؤولية القيادة عن الإنجاز الفردي · بناء توقعات وإيقاع اجتماعات وأهداف."
         },
         {
           "sequence": 2,
           "course_type": "required",
-          "course_id": "C-MGR-102",
-          "course_title_ar": "توضيح التوقعات وتنظيم اجتماعات فريقك",
-          "pathway_id": "PW-EMP-005",
-          "pathway_title_ar": "المدير لأول مرة: قيادة فريقك في أول 90 يومًا",
-          "hours": 8,
-          "role_ar": "نظام الفريق",
-          "reason_ar": "بناء توقعات وإيقاع اجتماعات وأهداف."
-        },
-        {
-          "sequence": 3,
-          "course_type": "required",
           "course_id": "C-MGR-103",
-          "course_title_ar": "تفويض المهام ومتابعتها دون خنق الفريق",
+          "course_title_ar": "دورة التفويض والتوجيه (Coaching)",
           "pathway_id": "PW-EMP-005",
           "pathway_title_ar": "المدير لأول مرة: قيادة فريقك في أول 90 يومًا",
           "hours": 8,
@@ -2879,10 +2791,10 @@
           "reason_ar": "تسليم المسؤولية دون إدارة دقيقة أو غياب متابعة."
         },
         {
-          "sequence": 4,
+          "sequence": 3,
           "course_type": "required",
           "course_id": "C-MGR-104",
-          "course_title_ar": "إعطاء ملاحظات صادقة وإجراء المحادثات الصعبة",
+          "course_title_ar": "دورة التغذية الراجعة والمحادثات الصعبة",
           "pathway_id": "PW-EMP-005",
           "pathway_title_ar": "المدير لأول مرة: قيادة فريقك في أول 90 يومًا",
           "hours": 8,
@@ -2890,21 +2802,21 @@
           "reason_ar": "تحويل الملاحظة إلى تغذية راجعة عادلة ومحددة."
         },
         {
-          "sequence": 5,
+          "sequence": 4,
           "course_type": "required",
           "course_id": "C-MGR-105",
-          "course_title_ar": "خطتك كمدير في أول 90 يومًا",
+          "course_title_ar": "دورة خطة الـ٩٠ يوما الأولى للمدير",
           "pathway_id": "PW-EMP-005",
           "pathway_title_ar": "المدير لأول مرة: قيادة فريقك في أول 90 يومًا",
-          "hours": 12,
+          "hours": 8,
           "role_ar": "خطة 90 يومًا",
           "reason_ar": "دمج الممارسات في خطة قيادة قابلة للمراجعة."
         },
         {
-          "sequence": 6,
+          "sequence": 5,
           "course_type": "required",
           "course_id": "C-HR-103",
-          "course_title_ar": "متابعة أداء الموظف وتقديم ملاحظات فعالة",
+          "course_title_ar": "دورة إدارة الأداء الوظيفي",
           "pathway_id": "PW-HR-001",
           "pathway_title_ar": "إدارة الموظفين بالدليل: من التوظيف إلى الاحتفاظ بهم",
           "hours": 8,
@@ -2917,7 +2829,7 @@
           "sequence": 1,
           "course_type": "conditional",
           "course_id": "C-NEG-104",
-          "course_title_ar": "معالجة الخلاف قبل أن يتصاعد",
+          "course_title_ar": "دورة إدارة الخلاف والوساطة",
           "pathway_id": "PW-NEG-001",
           "pathway_title_ar": "التفاوض والتأثير: من التحضير إلى اتفاق يدوم",
           "hours": 8,
@@ -2935,7 +2847,7 @@
           "sequence": 2,
           "course_type": "conditional",
           "course_id": "C-DAT-103",
-          "course_title_ar": "اختيار مؤشرات أداء تقود لقرار صحيح",
+          "course_title_ar": "دورة تصميم مؤشرات الأداء وأهداف OKR",
           "pathway_id": "PW-EMP-004",
           "pathway_title_ar": "من جدول بيانات إلى قرار تدافع عنه",
           "hours": 8,
@@ -2952,10 +2864,10 @@
           "sequence": 3,
           "course_type": "conditional",
           "course_id": "C-COMX-105",
-          "course_title_ar": "الرد على أسئلة صعبة أمام لجنة",
+          "course_title_ar": "دورة إدارة الأسئلة والرد تحت الضغط",
           "pathway_id": "PW-COM-001",
           "pathway_title_ar": "الخطابة والعرض التنفيذي: من الفكرة إلى إقناع اللجنة",
-          "hours": 12,
+          "hours": 8,
           "reason_ar": "يضاف إذا كان الدور يتضمن لجانًا وأسئلة تنفيذية متكررة.",
           "when": {
             "fact_key": "public_facing",
@@ -2971,10 +2883,10 @@
           "sequence": 1,
           "course_type": "bridge",
           "course_id": "C-COMX-101",
-          "course_title_ar": "بناء رسالة واحدة يتذكرها جمهورك",
+          "course_title_ar": "دورة بناء الرسالة وتصميم العرض التنفيذي",
           "pathway_id": "PW-COM-001",
           "pathway_title_ar": "الخطابة والعرض التنفيذي: من الفكرة إلى إقناع اللجنة",
-          "hours": 8,
+          "hours": 16,
           "reason_ar": "جسر الرسالة قبل إدارة المحادثات والتوقعات.",
           "when": {
             "fact_key": "persuasion",
@@ -3241,33 +3153,25 @@
         {
           "sequence": 1,
           "course_id": "C-MGR-101",
-          "course_title_ar": "الانتقال من منفّذ للمهام إلى مدير فريق",
+          "course_title_ar": "دورة الانتقال إلى الإدارة وقيادة إيقاع الفريق",
           "pathway_id": "PW-EMP-005",
           "pathway_title_ar": "المدير لأول مرة: قيادة فريقك في أول 90 يومًا",
-          "hours": 8
+          "hours": 16
         },
         {
           "sequence": 2,
-          "course_id": "C-MGR-102",
-          "course_title_ar": "توضيح التوقعات وتنظيم اجتماعات فريقك",
-          "pathway_id": "PW-EMP-005",
-          "pathway_title_ar": "المدير لأول مرة: قيادة فريقك في أول 90 يومًا",
-          "hours": 8
-        },
-        {
-          "sequence": 3,
           "course_id": "C-MGR-103",
-          "course_title_ar": "تفويض المهام ومتابعتها دون خنق الفريق",
+          "course_title_ar": "دورة التفويض والتوجيه (Coaching)",
           "pathway_id": "PW-EMP-005",
           "pathway_title_ar": "المدير لأول مرة: قيادة فريقك في أول 90 يومًا",
           "hours": 8
         }
       ],
       "plan": {
-        "starter_course_count": 3,
+        "starter_course_count": 2,
         "starter_hours": 24,
-        "full_required_course_count": 6,
-        "full_required_hours": 52,
+        "full_required_course_count": 5,
+        "full_required_hours": 48,
         "recommended_duration_weeks": 10,
         "minimum_weekly_hours": 4,
         "recommended_weekly_hours": 6,
@@ -3303,10 +3207,10 @@
           "sequence": 1,
           "course_type": "required",
           "course_id": "C-MKT-101",
-          "course_title_ar": "تحديد من تخدم ولماذا يختارك العميل",
+          "course_title_ar": "دورة استراتيجية التسويق ورحلة العميل",
           "pathway_id": "PW-MKT-001",
           "pathway_title_ar": "التسويق الرقمي: من فهم العميل إلى نتائج تُقاس",
-          "hours": 8,
+          "hours": 16,
           "role_ar": "السوق والتموضع",
           "reason_ar": "منع الاستهداف دون فهم الشريحة والقيمة."
         },
@@ -3314,29 +3218,18 @@
           "sequence": 2,
           "course_type": "required",
           "course_id": "C-SAL-101",
-          "course_title_ar": "تحديد عميلك المثالي وخطة الوصول إليه",
+          "course_title_ar": "دورة استهداف السوق وبناء خط المبيعات",
           "pathway_id": "PW-SAL-001",
           "pathway_title_ar": "المبيعات الاستشارية: من الاستهداف إلى صفقة موقعة",
-          "hours": 8,
-          "role_ar": "ICP وخطة السوق",
-          "reason_ar": "تحويل السوق إلى قائمة فرص ذات أولوية."
+          "hours": 16,
+          "role_ar": "ICP وخطة السوق · Pipeline وCRM",
+          "reason_ar": "تحويل السوق إلى قائمة فرص ذات أولوية · إدارة المراحل والمتابعة والمساءلة."
         },
         {
           "sequence": 3,
           "course_type": "required",
-          "course_id": "C-SAL-102",
-          "course_title_ar": "تحويل الاستهداف إلى فرص بيع منظمة",
-          "pathway_id": "PW-SAL-001",
-          "pathway_title_ar": "المبيعات الاستشارية: من الاستهداف إلى صفقة موقعة",
-          "hours": 8,
-          "role_ar": "Pipeline وCRM",
-          "reason_ar": "إدارة المراحل والمتابعة والمساءلة."
-        },
-        {
-          "sequence": 4,
-          "course_type": "required",
           "course_id": "C-SAL-103",
-          "course_title_ar": "فهم مشكلة العميل قبل عرض الحل",
+          "course_title_ar": "دورة البيع الاستشاري واكتشاف الاحتياج",
           "pathway_id": "PW-SAL-001",
           "pathway_title_ar": "المبيعات الاستشارية: من الاستهداف إلى صفقة موقعة",
           "hours": 8,
@@ -3344,10 +3237,10 @@
           "reason_ar": "فهم المشكلة والسلطة والأولوية والوقت."
         },
         {
-          "sequence": 5,
+          "sequence": 4,
           "course_type": "required",
           "course_id": "C-SAL-104",
-          "course_title_ar": "تقديم عرض تجاري يربط الحل بالقيمة",
+          "course_title_ar": "دورة إعداد العروض التجارية وتقديمها",
           "pathway_id": "PW-SAL-001",
           "pathway_title_ar": "المبيعات الاستشارية: من الاستهداف إلى صفقة موقعة",
           "hours": 8,
@@ -3355,13 +3248,13 @@
           "reason_ar": "ربط نطاق وقيمة ودليل بقرار العميل."
         },
         {
-          "sequence": 6,
+          "sequence": 5,
           "course_type": "required",
           "course_id": "C-SAL-105",
-          "course_title_ar": "إغلاق الصفقة وتنمية العلاقة بعد البيع",
+          "course_title_ar": "دورة إغلاق الصفقات وإدارة الحسابات",
           "pathway_id": "PW-SAL-001",
           "pathway_title_ar": "المبيعات الاستشارية: من الاستهداف إلى صفقة موقعة",
-          "hours": 12,
+          "hours": 8,
           "role_ar": "الإغلاق ونمو الحساب",
           "reason_ar": "إدارة الاتفاق والمتابعة والنجاح بعد البيع."
         }
@@ -3371,10 +3264,10 @@
           "sequence": 1,
           "course_type": "conditional",
           "course_id": "C-NEG-101",
-          "course_title_ar": "التحضير للتفاوض: ماذا تريد وما بديلك إن فشل",
+          "course_title_ar": "دورة أساسيات التفاوض واستراتيجياته",
           "pathway_id": "PW-NEG-001",
           "pathway_title_ar": "التفاوض والتأثير: من التحضير إلى اتفاق يدوم",
-          "hours": 8,
+          "hours": 16,
           "reason_ar": "يضاف عند ضعف التحضير والبدائل والحد الأدنى.",
           "when": {
             "fact_key": "sales_negotiation",
@@ -3388,7 +3281,7 @@
           "sequence": 2,
           "course_type": "conditional",
           "course_id": "C-DAT-103",
-          "course_title_ar": "اختيار مؤشرات أداء تقود لقرار صحيح",
+          "course_title_ar": "دورة تصميم مؤشرات الأداء وأهداف OKR",
           "pathway_id": "PW-EMP-004",
           "pathway_title_ar": "من جدول بيانات إلى قرار تدافع عنه",
           "hours": 8,
@@ -3405,10 +3298,10 @@
           "sequence": 3,
           "course_type": "conditional",
           "course_id": "C-MKT-105",
-          "course_title_ar": "قرارات تسويق مبنية على الأرقام: مشروع 90 يومًا",
+          "course_title_ar": "دورة قياس الحملات التسويقية وتحسينها",
           "pathway_id": "PW-MKT-001",
           "pathway_title_ar": "التسويق الرقمي: من فهم العميل إلى نتائج تُقاس",
-          "hours": 12,
+          "hours": 8,
           "reason_ar": "يضاف عند توفر حجم بيانات يسمح بتجارب نمو.",
           "when": {
             "fact_key": "revenue_signal",
@@ -3424,11 +3317,11 @@
         {
           "sequence": 1,
           "course_type": "bridge",
-          "course_id": "C-BIZ-102",
-          "course_title_ar": "صياغة وعد واضح يحل مشكلة عميلك",
+          "course_id": "C-BIZ-101",
+          "course_title_ar": "دورة اكتشاف العملاء وصياغة عرض القيمة",
           "pathway_id": "PW-BIZ-001",
           "pathway_title_ar": "ريادة الأعمال: من الفكرة إلى أول عميل يدفع",
-          "hours": 8,
+          "hours": 16,
           "reason_ar": "يلزم عرض قيمة واضح قبل بناء Pipeline.",
           "when": {
             "fact_key": "offer_clarity",
@@ -3646,7 +3539,7 @@
             "target_level": 3,
             "priority": "critical",
             "course_ids": [
-              "C-SAL-102",
+              "C-SAL-101",
               "C-SAL-105"
             ]
           },
@@ -3710,23 +3603,23 @@
         {
           "sequence": 1,
           "course_id": "C-MKT-101",
-          "course_title_ar": "تحديد من تخدم ولماذا يختارك العميل",
+          "course_title_ar": "دورة استراتيجية التسويق ورحلة العميل",
           "pathway_id": "PW-MKT-001",
           "pathway_title_ar": "التسويق الرقمي: من فهم العميل إلى نتائج تُقاس",
-          "hours": 8
+          "hours": 16
         },
         {
           "sequence": 2,
           "course_id": "C-SAL-101",
-          "course_title_ar": "تحديد عميلك المثالي وخطة الوصول إليه",
+          "course_title_ar": "دورة استهداف السوق وبناء خط المبيعات",
           "pathway_id": "PW-SAL-001",
           "pathway_title_ar": "المبيعات الاستشارية: من الاستهداف إلى صفقة موقعة",
-          "hours": 8
+          "hours": 16
         },
         {
           "sequence": 3,
           "course_id": "C-SAL-103",
-          "course_title_ar": "فهم مشكلة العميل قبل عرض الحل",
+          "course_title_ar": "دورة البيع الاستشاري واكتشاف الاحتياج",
           "pathway_id": "PW-SAL-001",
           "pathway_title_ar": "المبيعات الاستشارية: من الاستهداف إلى صفقة موقعة",
           "hours": 8
@@ -3734,9 +3627,9 @@
       ],
       "plan": {
         "starter_course_count": 3,
-        "starter_hours": 24,
-        "full_required_course_count": 6,
-        "full_required_hours": 52,
+        "starter_hours": 40,
+        "full_required_course_count": 5,
+        "full_required_hours": 56,
         "recommended_duration_weeks": 10,
         "minimum_weekly_hours": 4,
         "recommended_weekly_hours": 6,
@@ -3772,29 +3665,18 @@
           "sequence": 1,
           "course_type": "required",
           "course_id": "C-SVC-101",
-          "course_title_ar": "فهم احتياج المستفيد ورحلته معك",
+          "course_title_ar": "دورة تجربة المستفيد ومهارات خدمة العملاء",
           "pathway_id": "PW-GOV-002",
           "pathway_title_ar": "خدمة العملاء: من الشكوى إلى عميل راضٍ",
-          "hours": 8,
-          "role_ar": "رحلة العميل",
-          "reason_ar": "تحديد نقاط الألم والاحتياج والانتقال."
+          "hours": 16,
+          "role_ar": "رحلة العميل · حوار الخدمة",
+          "reason_ar": "تحديد نقاط الألم والاحتياج والانتقال · رفع جودة الاستماع والتوضيح في الصف الأمامي."
         },
         {
           "sequence": 2,
           "course_type": "required",
-          "course_id": "C-SVC-102",
-          "course_title_ar": "الرد على العملاء بوضوح وحسم",
-          "pathway_id": "PW-GOV-002",
-          "pathway_title_ar": "خدمة العملاء: من الشكوى إلى عميل راضٍ",
-          "hours": 8,
-          "role_ar": "حوار الخدمة",
-          "reason_ar": "رفع جودة الاستماع والتوضيح في الصف الأمامي."
-        },
-        {
-          "sequence": 3,
-          "course_type": "required",
           "course_id": "C-SVC-103",
-          "course_title_ar": "حل الشكاوى قبل أن تتصاعد",
+          "course_title_ar": "دورة إدارة الشكاوى وحل النزاعات",
           "pathway_id": "PW-GOV-002",
           "pathway_title_ar": "خدمة العملاء: من الشكوى إلى عميل راضٍ",
           "hours": 8,
@@ -3802,10 +3684,10 @@
           "reason_ar": "معالجة الشكوى وخفض التصعيد ضمن حدود واضحة."
         },
         {
-          "sequence": 4,
+          "sequence": 3,
           "course_type": "required",
           "course_id": "C-SVC-104",
-          "course_title_ar": "قياس جودة خدمتك وتحويلها إلى تحسين",
+          "course_title_ar": "دورة قياس جودة الخدمة واستطلاعات الرضا",
           "pathway_id": "PW-GOV-002",
           "pathway_title_ar": "خدمة العملاء: من الشكوى إلى عميل راضٍ",
           "hours": 8,
@@ -3813,21 +3695,21 @@
           "reason_ar": "تحويل التجربة إلى مؤشرات وأداة قياس سليمة."
         },
         {
-          "sequence": 5,
+          "sequence": 4,
           "course_type": "required",
           "course_id": "C-SVC-105",
-          "course_title_ar": "تجربة صغيرة تحسّن رحلة المستفيد",
+          "course_title_ar": "دورة تحسين الخدمات الحكومية بالتجريب",
           "pathway_id": "PW-GOV-002",
           "pathway_title_ar": "خدمة العملاء: من الشكوى إلى عميل راضٍ",
-          "hours": 12,
+          "hours": 8,
           "role_ar": "مشروع الرحلة",
           "reason_ar": "دمج التصميم والعملية والتجربة في تحسين قابل للقياس."
         },
         {
-          "sequence": 6,
+          "sequence": 5,
           "course_type": "required",
           "course_id": "C-OPS-103",
-          "course_title_ar": "معالجة السبب الجذري لا الأعراض فقط",
+          "course_title_ar": "دورة تحليل السبب الجذري وحل المشكلات",
           "pathway_id": "PW-OPS-001",
           "pathway_title_ar": "تحسين العمليات: من رسم العملية إلى أثر تقيسه",
           "hours": 8,
@@ -3840,7 +3722,7 @@
           "sequence": 1,
           "course_type": "conditional",
           "course_id": "C-DAT-104",
-          "course_title_ar": "عرض بياناتك في لوحة تدفع لقرار",
+          "course_title_ar": "دورة تصميم لوحات المعلومات وتمثيل البيانات",
           "pathway_id": "PW-EMP-004",
           "pathway_title_ar": "من جدول بيانات إلى قرار تدافع عنه",
           "hours": 8,
@@ -3857,10 +3739,10 @@
           "sequence": 2,
           "course_type": "conditional",
           "course_id": "C-COMX-101",
-          "course_title_ar": "بناء رسالة واحدة يتذكرها جمهورك",
+          "course_title_ar": "دورة بناء الرسالة وتصميم العرض التنفيذي",
           "pathway_id": "PW-COM-001",
           "pathway_title_ar": "الخطابة والعرض التنفيذي: من الفكرة إلى إقناع اللجنة",
-          "hours": 8,
+          "hours": 16,
           "reason_ar": "يضاف إذا كانت الرسائل والتوضيح سبب سوء التجربة.",
           "when": {
             "fact_key": "persuasion",
@@ -3874,7 +3756,7 @@
           "sequence": 3,
           "course_type": "conditional",
           "course_id": "C-NEG-104",
-          "course_title_ar": "معالجة الخلاف قبل أن يتصاعد",
+          "course_title_ar": "دورة إدارة الخلاف والوساطة",
           "pathway_id": "PW-NEG-001",
           "pathway_title_ar": "التفاوض والتأثير: من التحضير إلى اتفاق يدوم",
           "hours": 8,
@@ -4137,15 +4019,15 @@
         {
           "sequence": 1,
           "course_id": "C-SVC-101",
-          "course_title_ar": "فهم احتياج المستفيد ورحلته معك",
+          "course_title_ar": "دورة تجربة المستفيد ومهارات خدمة العملاء",
           "pathway_id": "PW-GOV-002",
           "pathway_title_ar": "خدمة العملاء: من الشكوى إلى عميل راضٍ",
-          "hours": 8
+          "hours": 16
         },
         {
           "sequence": 2,
           "course_id": "C-SVC-103",
-          "course_title_ar": "حل الشكاوى قبل أن تتصاعد",
+          "course_title_ar": "دورة إدارة الشكاوى وحل النزاعات",
           "pathway_id": "PW-GOV-002",
           "pathway_title_ar": "خدمة العملاء: من الشكوى إلى عميل راضٍ",
           "hours": 8
@@ -4153,7 +4035,7 @@
         {
           "sequence": 3,
           "course_id": "C-OPS-103",
-          "course_title_ar": "معالجة السبب الجذري لا الأعراض فقط",
+          "course_title_ar": "دورة تحليل السبب الجذري وحل المشكلات",
           "pathway_id": "PW-OPS-001",
           "pathway_title_ar": "تحسين العمليات: من رسم العملية إلى أثر تقيسه",
           "hours": 8
@@ -4161,9 +4043,9 @@
       ],
       "plan": {
         "starter_course_count": 3,
-        "starter_hours": 24,
-        "full_required_course_count": 6,
-        "full_required_hours": 52,
+        "starter_hours": 32,
+        "full_required_course_count": 5,
+        "full_required_hours": 48,
         "recommended_duration_weeks": 10,
         "minimum_weekly_hours": 4,
         "recommended_weekly_hours": 6,
@@ -4199,10 +4081,10 @@
           "sequence": 1,
           "course_type": "required",
           "course_id": "C-PM-101",
-          "course_title_ar": "تحديد مشكلة مشروعك ونتيجته المطلوبة",
+          "course_title_ar": "دورة تأسيس المشروع: النطاق والتخطيط والجدولة",
           "pathway_id": "PW-EMP-003",
           "pathway_title_ar": "إدارة مشروع من التكليف حتى التسليم",
-          "hours": 8,
+          "hours": 16,
           "role_ar": "حالة العمل والميثاق",
           "reason_ar": "تثبيت القيمة والمالك والنطاق قبل التقنية."
         },
@@ -4210,7 +4092,7 @@
           "sequence": 2,
           "course_type": "required",
           "course_id": "C-PM-104",
-          "course_title_ar": "متابعة المشروع والتعامل مع المخاطر والتغييرات",
+          "course_title_ar": "دورة إدارة مخاطر المشاريع والتغيير",
           "pathway_id": "PW-EMP-003",
           "pathway_title_ar": "إدارة مشروع من التكليف حتى التسليم",
           "hours": 8,
@@ -4221,10 +4103,10 @@
           "sequence": 3,
           "course_type": "required",
           "course_id": "C-AUT-101",
-          "course_title_ar": "اختيار المهمة الأنسب للأتمتة أولا",
+          "course_title_ar": "دورة تحليل فرص الأتمتة والربط بين التطبيقات",
           "pathway_id": "PW-AUT-001",
           "pathway_title_ar": "أتمتة مهامك بالذكاء الاصطناعي تحت إشرافك",
-          "hours": 8,
+          "hours": 16,
           "role_ar": "اختيار العملية",
           "reason_ar": "اختبار القيمة والجدوى وحدود الأتمتة."
         },
@@ -4232,7 +4114,7 @@
           "sequence": 4,
           "course_type": "required",
           "course_id": "C-AUT-103",
-          "course_title_ar": "بناء سير عمل آلي بخطوات متعددة",
+          "course_title_ar": "دورة بناء سير العمل الآلي",
           "pathway_id": "PW-AUT-001",
           "pathway_title_ar": "أتمتة مهامك بالذكاء الاصطناعي تحت إشرافك",
           "hours": 8,
@@ -4243,10 +4125,10 @@
           "sequence": 5,
           "course_type": "required",
           "course_id": "C-OPS-101",
-          "course_title_ar": "رسم عمليتك الحالية ومعرفة نقطة البداية",
+          "course_title_ar": "دورة رسم العمليات ومنهجية Lean",
           "pathway_id": "PW-OPS-001",
           "pathway_title_ar": "تحسين العمليات: من رسم العملية إلى أثر تقيسه",
-          "hours": 8,
+          "hours": 16,
           "role_ar": "خريطة وخط أساس",
           "reason_ar": "فهم العملية الحالية قبل التحسين."
         },
@@ -4254,10 +4136,10 @@
           "sequence": 6,
           "course_type": "required",
           "course_id": "C-MGR-105",
-          "course_title_ar": "خطتك كمدير في أول 90 يومًا",
+          "course_title_ar": "دورة خطة الـ٩٠ يوما الأولى للمدير",
           "pathway_id": "PW-EMP-005",
           "pathway_title_ar": "المدير لأول مرة: قيادة فريقك في أول 90 يومًا",
-          "hours": 12,
+          "hours": 8,
           "role_ar": "التبني والقيادة",
           "reason_ar": "تحويل الحل إلى خطة أصحاب مصلحة وإدارة 90 يومًا."
         }
@@ -4267,7 +4149,7 @@
           "sequence": 1,
           "course_type": "conditional",
           "course_id": "C-DAT-103",
-          "course_title_ar": "اختيار مؤشرات أداء تقود لقرار صحيح",
+          "course_title_ar": "دورة تصميم مؤشرات الأداء وأهداف OKR",
           "pathway_id": "PW-EMP-004",
           "pathway_title_ar": "من جدول بيانات إلى قرار تدافع عنه",
           "hours": 8,
@@ -4284,7 +4166,7 @@
           "sequence": 2,
           "course_type": "conditional",
           "course_id": "C-CYB-104",
-          "course_title_ar": "اختيار ضوابط أمنية تناسب قرار الإدارة",
+          "course_title_ar": "دورة حوكمة الأمن السيبراني والامتثال",
           "pathway_id": "PW-CYB-001",
           "pathway_title_ar": "حماية شركتك سيبرانيًا: من الوعي إلى الاستجابة",
           "hours": 8,
@@ -4302,7 +4184,7 @@
           "sequence": 3,
           "course_type": "conditional",
           "course_id": "C-PM-103",
-          "course_title_ar": "التواصل مع أصحاب المصلحة دون رسائل زائدة",
+          "course_title_ar": "دورة إدارة أصحاب المصلحة والتواصل في المشاريع",
           "pathway_id": "PW-EMP-003",
           "pathway_title_ar": "إدارة مشروع من التكليف حتى التسليم",
           "hours": 8,
@@ -4319,10 +4201,10 @@
           "sequence": 4,
           "course_type": "conditional",
           "course_id": "C-AI-105",
-          "course_title_ar": "تطبيق الذكاء الاصطناعي على مهمة حقيقية في عملك",
+          "course_title_ar": "دورة تطبيق الذكاء الاصطناعي في بيئة العمل",
           "pathway_id": "PW-FND-003",
           "pathway_title_ar": "الذكاء الاصطناعي في عملك اليومي بأمان ومسؤولية",
-          "hours": 12,
+          "hours": 8,
           "reason_ar": "يضاف عندما يتضمن الحل وكيلًا أو قرارًا مدعومًا بالذكاء الاصطناعي.",
           "when": {
             "fact_key": "ai_output_evaluation",
@@ -4338,10 +4220,10 @@
           "sequence": 1,
           "course_type": "bridge",
           "course_id": "C-AI-101",
-          "course_title_ar": "ماذا يفعل الذكاء الاصطناعي جيدًا وأين يخطئ",
+          "course_title_ar": "دورة أساسيات الذكاء الاصطناعي وهندسة الأوامر",
           "pathway_id": "PW-FND-003",
           "pathway_title_ar": "الذكاء الاصطناعي في عملك اليومي بأمان ومسؤولية",
-          "hours": 8,
+          "hours": 16,
           "reason_ar": "جسر ثقافة AI قبل تنفيذ أتمتة أو وكيل.",
           "when": {
             "fact_key": "ai_work_readiness",
@@ -4643,33 +4525,33 @@
         {
           "sequence": 1,
           "course_id": "C-PM-101",
-          "course_title_ar": "تحديد مشكلة مشروعك ونتيجته المطلوبة",
+          "course_title_ar": "دورة تأسيس المشروع: النطاق والتخطيط والجدولة",
           "pathway_id": "PW-EMP-003",
           "pathway_title_ar": "إدارة مشروع من التكليف حتى التسليم",
-          "hours": 8
+          "hours": 16
         },
         {
           "sequence": 2,
           "course_id": "C-AUT-101",
-          "course_title_ar": "اختيار المهمة الأنسب للأتمتة أولا",
+          "course_title_ar": "دورة تحليل فرص الأتمتة والربط بين التطبيقات",
           "pathway_id": "PW-AUT-001",
           "pathway_title_ar": "أتمتة مهامك بالذكاء الاصطناعي تحت إشرافك",
-          "hours": 8
+          "hours": 16
         },
         {
           "sequence": 3,
           "course_id": "C-OPS-101",
-          "course_title_ar": "رسم عمليتك الحالية ومعرفة نقطة البداية",
+          "course_title_ar": "دورة رسم العمليات ومنهجية Lean",
           "pathway_id": "PW-OPS-001",
           "pathway_title_ar": "تحسين العمليات: من رسم العملية إلى أثر تقيسه",
-          "hours": 8
+          "hours": 16
         }
       ],
       "plan": {
         "starter_course_count": 3,
-        "starter_hours": 24,
+        "starter_hours": 48,
         "full_required_course_count": 6,
-        "full_required_hours": 52,
+        "full_required_hours": 72,
         "recommended_duration_weeks": 10,
         "minimum_weekly_hours": 4,
         "recommended_weekly_hours": 6,
@@ -4707,29 +4589,18 @@
           "sequence": 1,
           "course_type": "required",
           "course_id": "C-PRD-101",
-          "course_title_ar": "تحديد رؤية منتجك والقيمة التي يقدمها",
+          "course_title_ar": "دورة استراتيجية المنتج واكتشاف المستخدم",
           "pathway_id": "PW-PRD-001",
           "pathway_title_ar": "إدارة المنتج الرقمي: من مشكلة المستخدم إلى إطلاق ناجح",
-          "hours": 8,
-          "role_ar": "الرؤية والقيمة",
-          "reason_ar": "تحديد مسؤولية المنتج والنتيجة والسوق."
+          "hours": 16,
+          "role_ar": "الرؤية والقيمة · الاكتشاف",
+          "reason_ar": "تحديد مسؤولية المنتج والنتيجة والسوق · تحويل الملاحظات إلى أنماط ومشكلة موثقة."
         },
         {
           "sequence": 2,
           "course_type": "required",
-          "course_id": "C-PRD-102",
-          "course_title_ar": "التأكد من احتياج المستخدم الحقيقي",
-          "pathway_id": "PW-PRD-001",
-          "pathway_title_ar": "إدارة المنتج الرقمي: من مشكلة المستخدم إلى إطلاق ناجح",
-          "hours": 8,
-          "role_ar": "الاكتشاف",
-          "reason_ar": "تحويل الملاحظات إلى أنماط ومشكلة موثقة."
-        },
-        {
-          "sequence": 3,
-          "course_type": "required",
           "course_id": "C-PRD-103",
-          "course_title_ar": "أصغر نسخة تثبت أن منتجك مطلوب (MVP)",
+          "course_title_ar": "دورة النماذج الأولية والمنتج الأدنى القابل للتطبيق",
           "pathway_id": "PW-PRD-001",
           "pathway_title_ar": "إدارة المنتج الرقمي: من مشكلة المستخدم إلى إطلاق ناجح",
           "hours": 8,
@@ -4737,10 +4608,10 @@
           "reason_ar": "اختبار الافتراض الأخطر بأقل حل مناسب."
         },
         {
-          "sequence": 4,
+          "sequence": 3,
           "course_type": "required",
           "course_id": "C-PRD-104",
-          "course_title_ar": "تحويل رؤية المنتج إلى خطة تنفيذ مع الفريق",
+          "course_title_ar": "دورة خارطة طريق المنتج وإدارة الأعمال المتراكمة",
           "pathway_id": "PW-PRD-001",
           "pathway_title_ar": "إدارة المنتج الرقمي: من مشكلة المستخدم إلى إطلاق ناجح",
           "hours": 8,
@@ -4748,24 +4619,24 @@
           "reason_ar": "ترجمة الرؤية إلى أولويات وتعاون مع الفريق."
         },
         {
-          "sequence": 5,
+          "sequence": 4,
           "course_type": "required",
           "course_id": "C-PRD-105",
-          "course_title_ar": "إطلاق منتجك وقياس نجاحه: مشروع متكامل",
+          "course_title_ar": "دورة إطلاق المنتج وقياس مؤشراته",
           "pathway_id": "PW-PRD-001",
           "pathway_title_ar": "إدارة المنتج الرقمي: من مشكلة المستخدم إلى إطلاق ناجح",
-          "hours": 12,
+          "hours": 8,
           "role_ar": "الإطلاق والقياس",
           "reason_ar": "ربط التجارب والمؤشرات بقرار الاستثمار."
         },
         {
-          "sequence": 6,
+          "sequence": 5,
           "course_type": "required",
           "course_id": "C-BIZ-101",
-          "course_title_ar": "التأكد من مشكلة عميلك قبل بناء الحل",
+          "course_title_ar": "دورة اكتشاف العملاء وصياغة عرض القيمة",
           "pathway_id": "PW-BIZ-001",
           "pathway_title_ar": "ريادة الأعمال: من الفكرة إلى أول عميل يدفع",
-          "hours": 8,
+          "hours": 16,
           "role_ar": "دليل العميل",
           "reason_ar": "تعميق مقابلات المشكلة ومنع تحيز بناء الحل."
         }
@@ -4775,10 +4646,10 @@
           "sequence": 1,
           "course_type": "conditional",
           "course_id": "C-MKT-105",
-          "course_title_ar": "قرارات تسويق مبنية على الأرقام: مشروع 90 يومًا",
+          "course_title_ar": "دورة قياس الحملات التسويقية وتحسينها",
           "pathway_id": "PW-MKT-001",
           "pathway_title_ar": "التسويق الرقمي: من فهم العميل إلى نتائج تُقاس",
-          "hours": 12,
+          "hours": 8,
           "reason_ar": "يضاف عندما يكون نمو الاستخدام/الإيراد محور الإطلاق.",
           "when": {
             "fact_key": "primary_goal",
@@ -4792,7 +4663,7 @@
           "sequence": 2,
           "course_type": "conditional",
           "course_id": "C-DAT-104",
-          "course_title_ar": "عرض بياناتك في لوحة تدفع لقرار",
+          "course_title_ar": "دورة تصميم لوحات المعلومات وتمثيل البيانات",
           "pathway_id": "PW-EMP-004",
           "pathway_title_ar": "من جدول بيانات إلى قرار تدافع عنه",
           "hours": 8,
@@ -4809,10 +4680,10 @@
           "sequence": 3,
           "course_type": "conditional",
           "course_id": "C-COMX-105",
-          "course_title_ar": "الرد على أسئلة صعبة أمام لجنة",
+          "course_title_ar": "دورة إدارة الأسئلة والرد تحت الضغط",
           "pathway_id": "PW-COM-001",
           "pathway_title_ar": "الخطابة والعرض التنفيذي: من الفكرة إلى إقناع اللجنة",
-          "hours": 12,
+          "hours": 8,
           "reason_ar": "يضاف للدفاع عن Roadmap وقرار الاستثمار أمام لجنة.",
           "when": {
             "fact_key": "public_facing",
@@ -4826,10 +4697,10 @@
           "sequence": 4,
           "course_type": "conditional",
           "course_id": "C-FINM-105",
-          "course_title_ar": "مقارنة خيارات الاستثمار وعرضها على الإدارة",
+          "course_title_ar": "دورة تقييم الاستثمارات وعرض القرار المالي",
           "pathway_id": "PW-FIN-001",
           "pathway_title_ar": "المالية لغير الماليين: من قراءة الأرقام إلى قرار استثمار",
-          "hours": 12,
+          "hours": 8,
           "reason_ar": "يضاف إذا كان القرار يحتاج NPV/حساسية ولوحة استثمار.",
           "when": {
             "fact_key": "economic_financial_need",
@@ -4846,10 +4717,10 @@
           "sequence": 1,
           "course_type": "bridge",
           "course_id": "C-DAT-101",
-          "course_title_ar": "تحويل طلب تقرير غامض إلى سؤال واضح",
+          "course_title_ar": "دورة أساسيات تحليل البيانات وتنظيفها",
           "pathway_id": "PW-EMP-004",
           "pathway_title_ar": "من جدول بيانات إلى قرار تدافع عنه",
-          "hours": 8,
+          "hours": 16,
           "reason_ar": "جسر لصياغة سؤال قرار وخطة بيانات المنتج.",
           "when": {
             "fact_key": "data_literacy",
@@ -5058,7 +4929,7 @@
             "target_level": 3,
             "priority": "critical",
             "course_ids": [
-              "C-PRD-102",
+              "C-PRD-101",
               "C-BIZ-101"
             ]
           },
@@ -5123,33 +4994,25 @@
         {
           "sequence": 1,
           "course_id": "C-PRD-101",
-          "course_title_ar": "تحديد رؤية منتجك والقيمة التي يقدمها",
+          "course_title_ar": "دورة استراتيجية المنتج واكتشاف المستخدم",
           "pathway_id": "PW-PRD-001",
           "pathway_title_ar": "إدارة المنتج الرقمي: من مشكلة المستخدم إلى إطلاق ناجح",
-          "hours": 8
+          "hours": 16
         },
         {
           "sequence": 2,
-          "course_id": "C-PRD-102",
-          "course_title_ar": "التأكد من احتياج المستخدم الحقيقي",
-          "pathway_id": "PW-PRD-001",
-          "pathway_title_ar": "إدارة المنتج الرقمي: من مشكلة المستخدم إلى إطلاق ناجح",
-          "hours": 8
-        },
-        {
-          "sequence": 3,
           "course_id": "C-PRD-103",
-          "course_title_ar": "أصغر نسخة تثبت أن منتجك مطلوب (MVP)",
+          "course_title_ar": "دورة النماذج الأولية والمنتج الأدنى القابل للتطبيق",
           "pathway_id": "PW-PRD-001",
           "pathway_title_ar": "إدارة المنتج الرقمي: من مشكلة المستخدم إلى إطلاق ناجح",
           "hours": 8
         }
       ],
       "plan": {
-        "starter_course_count": 3,
+        "starter_course_count": 2,
         "starter_hours": 24,
-        "full_required_course_count": 6,
-        "full_required_hours": 52,
+        "full_required_course_count": 5,
+        "full_required_hours": 56,
         "recommended_duration_weeks": 10,
         "minimum_weekly_hours": 4,
         "recommended_weekly_hours": 6,
@@ -5186,29 +5049,18 @@
           "sequence": 1,
           "course_type": "required",
           "course_id": "C-FINM-101",
-          "course_title_ar": "قراءة قائمة الدخل والميزانية بثقة",
+          "course_title_ar": "دورة قراءة القوائم المالية وتحليل التكاليف",
           "pathway_id": "PW-FIN-001",
           "pathway_title_ar": "المالية لغير الماليين: من قراءة الأرقام إلى قرار استثمار",
-          "hours": 8,
-          "role_ar": "لغة القوائم",
-          "reason_ar": "فهم الربح والمركز المالي والتدفق والروابط."
+          "hours": 16,
+          "role_ar": "لغة القوائم · التكلفة والهامش",
+          "reason_ar": "فهم الربح والمركز المالي والتدفق والروابط · تحليل تكلفة وتسعير واقتصاديات وحدة."
         },
         {
           "sequence": 2,
           "course_type": "required",
-          "course_id": "C-FINM-102",
-          "course_title_ar": "معرفة تكلفة قرارك وهامش ربحه",
-          "pathway_id": "PW-FIN-001",
-          "pathway_title_ar": "المالية لغير الماليين: من قراءة الأرقام إلى قرار استثمار",
-          "hours": 8,
-          "role_ar": "التكلفة والهامش",
-          "reason_ar": "تحليل تكلفة وتسعير واقتصاديات وحدة."
-        },
-        {
-          "sequence": 3,
-          "course_type": "required",
           "course_id": "C-FINM-103",
-          "course_title_ar": "بناء موازنة ومتابعة الفرق بين الخطة والواقع",
+          "course_title_ar": "دورة إعداد الموازنات وتحليل الانحرافات",
           "pathway_id": "PW-FIN-001",
           "pathway_title_ar": "المالية لغير الماليين: من قراءة الأرقام إلى قرار استثمار",
           "hours": 8,
@@ -5216,10 +5068,10 @@
           "reason_ar": "تحويل الخطة إلى سيناريو ومتابعة انحراف."
         },
         {
-          "sequence": 4,
+          "sequence": 3,
           "course_type": "required",
           "course_id": "C-FINM-104",
-          "course_title_ar": "حماية شركتك من نفاد السيولة",
+          "course_title_ar": "دورة إدارة التدفق النقدي ورأس المال العامل",
           "pathway_id": "PW-FIN-001",
           "pathway_title_ar": "المالية لغير الماليين: من قراءة الأرقام إلى قرار استثمار",
           "hours": 8,
@@ -5227,21 +5079,21 @@
           "reason_ar": "حماية القدرة على الاستمرار ورأس المال العامل."
         },
         {
-          "sequence": 5,
+          "sequence": 4,
           "course_type": "required",
           "course_id": "C-FINM-105",
-          "course_title_ar": "مقارنة خيارات الاستثمار وعرضها على الإدارة",
+          "course_title_ar": "دورة تقييم الاستثمارات وعرض القرار المالي",
           "pathway_id": "PW-FIN-001",
           "pathway_title_ar": "المالية لغير الماليين: من قراءة الأرقام إلى قرار استثمار",
-          "hours": 12,
+          "hours": 8,
           "role_ar": "قرار الاستثمار",
           "reason_ar": "مقارنة البدائل والحساسية وعرض القرار."
         },
         {
-          "sequence": 6,
+          "sequence": 5,
           "course_type": "required",
           "course_id": "C-DAT-104",
-          "course_title_ar": "عرض بياناتك في لوحة تدفع لقرار",
+          "course_title_ar": "دورة تصميم لوحات المعلومات وتمثيل البيانات",
           "pathway_id": "PW-EMP-004",
           "pathway_title_ar": "من جدول بيانات إلى قرار تدافع عنه",
           "hours": 8,
@@ -5253,11 +5105,11 @@
         {
           "sequence": 1,
           "course_type": "conditional",
-          "course_id": "C-DAT-102",
-          "course_title_ar": "تنظيف البيانات وتحليلها بجداول إلكترونية",
+          "course_id": "C-DAT-101",
+          "course_title_ar": "دورة أساسيات تحليل البيانات وتنظيفها",
           "pathway_id": "PW-EMP-004",
           "pathway_title_ar": "من جدول بيانات إلى قرار تدافع عنه",
-          "hours": 8,
+          "hours": 16,
           "reason_ar": "يضاف إذا كانت نظافة الجداول والتحليل الأساسي فجوة.",
           "when": {
             "fact_key": "data_literacy",
@@ -5271,10 +5123,10 @@
           "sequence": 2,
           "course_type": "conditional",
           "course_id": "C-DAT-105",
-          "course_title_ar": "قرار مدعوم بالبيانات: من السؤال إلى التوصية",
+          "course_title_ar": "دورة سرد البيانات وعرض التوصيات",
           "pathway_id": "PW-EMP-004",
           "pathway_title_ar": "من جدول بيانات إلى قرار تدافع عنه",
-          "hours": 12,
+          "hours": 8,
           "reason_ar": "يضاف لتكامل مشروع القرار بالبيانات.",
           "when": {
             "fact_key": "analytical_thinking",
@@ -5287,11 +5139,11 @@
         {
           "sequence": 3,
           "course_type": "conditional",
-          "course_id": "C-COMX-102",
-          "course_title_ar": "تحويل بياناتك إلى شرائح واضحة ومقنعة",
+          "course_id": "C-COMX-101",
+          "course_title_ar": "دورة بناء الرسالة وتصميم العرض التنفيذي",
           "pathway_id": "PW-COM-001",
           "pathway_title_ar": "الخطابة والعرض التنفيذي: من الفكرة إلى إقناع اللجنة",
-          "hours": 8,
+          "hours": 16,
           "reason_ar": "يضاف عندما يلزم عرض القرار أمام لجنة.",
           "when": {
             "fact_key": "public_facing",
@@ -5302,25 +5154,7 @@
           }
         }
       ],
-      "bridge_courses": [
-        {
-          "sequence": 1,
-          "course_type": "bridge",
-          "course_id": "C-DAT-101",
-          "course_title_ar": "تحويل طلب تقرير غامض إلى سؤال واضح",
-          "pathway_id": "PW-EMP-004",
-          "pathway_title_ar": "من جدول بيانات إلى قرار تدافع عنه",
-          "hours": 8,
-          "reason_ar": "جسر لصياغة سؤال القرار وخطة البيانات.",
-          "when": {
-            "fact_key": "data_literacy",
-            "operator": "lte",
-            "values": [
-              1
-            ]
-          }
-        }
-      ],
+      "bridge_courses": [],
       "diagnostic": {
         "primary_goal_codes": [
           "financial_decision"
@@ -5596,33 +5430,25 @@
         {
           "sequence": 1,
           "course_id": "C-FINM-101",
-          "course_title_ar": "قراءة قائمة الدخل والميزانية بثقة",
+          "course_title_ar": "دورة قراءة القوائم المالية وتحليل التكاليف",
           "pathway_id": "PW-FIN-001",
           "pathway_title_ar": "المالية لغير الماليين: من قراءة الأرقام إلى قرار استثمار",
-          "hours": 8
+          "hours": 16
         },
         {
           "sequence": 2,
-          "course_id": "C-FINM-102",
-          "course_title_ar": "معرفة تكلفة قرارك وهامش ربحه",
-          "pathway_id": "PW-FIN-001",
-          "pathway_title_ar": "المالية لغير الماليين: من قراءة الأرقام إلى قرار استثمار",
-          "hours": 8
-        },
-        {
-          "sequence": 3,
           "course_id": "C-DAT-104",
-          "course_title_ar": "عرض بياناتك في لوحة تدفع لقرار",
+          "course_title_ar": "دورة تصميم لوحات المعلومات وتمثيل البيانات",
           "pathway_id": "PW-EMP-004",
           "pathway_title_ar": "من جدول بيانات إلى قرار تدافع عنه",
           "hours": 8
         }
       ],
       "plan": {
-        "starter_course_count": 3,
+        "starter_course_count": 2,
         "starter_hours": 24,
-        "full_required_course_count": 6,
-        "full_required_hours": 52,
+        "full_required_course_count": 5,
+        "full_required_hours": 48,
         "recommended_duration_weeks": 10,
         "minimum_weekly_hours": 4,
         "recommended_weekly_hours": 6,
@@ -5656,29 +5482,18 @@
           "sequence": 1,
           "course_type": "required",
           "course_id": "C-CYB-101",
-          "course_title_ar": "فهم كيف تتعرض شركتك لمخاطر رقمية",
+          "course_title_ar": "دورة أساسيات الأمن السيبراني وحماية الهويات",
           "pathway_id": "PW-CYB-001",
           "pathway_title_ar": "حماية شركتك سيبرانيًا: من الوعي إلى الاستجابة",
-          "hours": 8,
-          "role_ar": "مخاطر الأعمال",
-          "reason_ar": "ربط الأصل والتهديد والاحتمال والأثر بقرار."
+          "hours": 16,
+          "role_ar": "مخاطر الأعمال · الهوية والعنصر البشري",
+          "reason_ar": "ربط الأصل والتهديد والاحتمال والأثر بقرار · معالجة الوصول والتصيد والسلوك."
         },
         {
           "sequence": 2,
           "course_type": "required",
-          "course_id": "C-CYB-102",
-          "course_title_ar": "حماية الحسابات من التصيد والاختراق البشري",
-          "pathway_id": "PW-CYB-001",
-          "pathway_title_ar": "حماية شركتك سيبرانيًا: من الوعي إلى الاستجابة",
-          "hours": 8,
-          "role_ar": "الهوية والعنصر البشري",
-          "reason_ar": "معالجة الوصول والتصيد والسلوك."
-        },
-        {
-          "sequence": 3,
-          "course_type": "required",
           "course_id": "C-CYB-103",
-          "course_title_ar": "تأمين أجهزتك وبياناتك على السحابة",
+          "course_title_ar": "دورة حماية البيانات وأمن السحابة",
           "pathway_id": "PW-CYB-001",
           "pathway_title_ar": "حماية شركتك سيبرانيًا: من الوعي إلى الاستجابة",
           "hours": 8,
@@ -5686,10 +5501,10 @@
           "reason_ar": "فهم ضوابط الأجهزة والسحابة والبيانات."
         },
         {
-          "sequence": 4,
+          "sequence": 3,
           "course_type": "required",
           "course_id": "C-CYB-104",
-          "course_title_ar": "اختيار ضوابط أمنية تناسب قرار الإدارة",
+          "course_title_ar": "دورة حوكمة الأمن السيبراني والامتثال",
           "pathway_id": "PW-CYB-001",
           "pathway_title_ar": "حماية شركتك سيبرانيًا: من الوعي إلى الاستجابة",
           "hours": 8,
@@ -5697,24 +5512,24 @@
           "reason_ar": "اختيار الضوابط والأدوار وخطة المعالجة."
         },
         {
-          "sequence": 5,
+          "sequence": 4,
           "course_type": "required",
           "course_id": "C-CYB-105",
-          "course_title_ar": "ماذا تفعل عند وقوع اختراق سيبراني",
+          "course_title_ar": "دورة الاستجابة للحوادث واستمرارية الأعمال",
           "pathway_id": "PW-CYB-001",
           "pathway_title_ar": "حماية شركتك سيبرانيًا: من الوعي إلى الاستجابة",
-          "hours": 12,
+          "hours": 8,
           "role_ar": "الاستجابة والاستمرارية",
           "reason_ar": "تجربة القرار والاتصال والتعافي."
         },
         {
-          "sequence": 6,
+          "sequence": 5,
           "course_type": "required",
           "course_id": "C-COMX-105",
-          "course_title_ar": "الرد على أسئلة صعبة أمام لجنة",
+          "course_title_ar": "دورة إدارة الأسئلة والرد تحت الضغط",
           "pathway_id": "PW-COM-001",
           "pathway_title_ar": "الخطابة والعرض التنفيذي: من الفكرة إلى إقناع اللجنة",
-          "hours": 12,
+          "hours": 8,
           "role_ar": "إحاطة الأزمة",
           "reason_ar": "التعامل مع أسئلة لجنة وقرارات تحت ضغط."
         }
@@ -5724,7 +5539,7 @@
           "sequence": 1,
           "course_type": "conditional",
           "course_id": "C-PM-104",
-          "course_title_ar": "متابعة المشروع والتعامل مع المخاطر والتغييرات",
+          "course_title_ar": "دورة إدارة مخاطر المشاريع والتغيير",
           "pathway_id": "PW-EMP-003",
           "pathway_title_ar": "إدارة مشروع من التكليف حتى التسليم",
           "hours": 8,
@@ -5741,10 +5556,10 @@
           "sequence": 2,
           "course_type": "conditional",
           "course_id": "C-OPS-101",
-          "course_title_ar": "رسم عمليتك الحالية ومعرفة نقطة البداية",
+          "course_title_ar": "دورة رسم العمليات ومنهجية Lean",
           "pathway_id": "PW-OPS-001",
           "pathway_title_ar": "تحسين العمليات: من رسم العملية إلى أثر تقيسه",
-          "hours": 8,
+          "hours": 16,
           "reason_ar": "يضاف لرسم العمليات الحساسة وخط الأساس.",
           "when": {
             "fact_key": "operations_maturity",
@@ -5759,10 +5574,10 @@
           "sequence": 3,
           "course_type": "conditional",
           "course_id": "C-MGR-105",
-          "course_title_ar": "خطتك كمدير في أول 90 يومًا",
+          "course_title_ar": "دورة خطة الـ٩٠ يوما الأولى للمدير",
           "pathway_id": "PW-EMP-005",
           "pathway_title_ar": "المدير لأول مرة: قيادة فريقك في أول 90 يومًا",
-          "hours": 12,
+          "hours": 8,
           "reason_ar": "يضاف لخطة تبنٍ ومسؤوليات الفريق.",
           "when": {
             "fact_key": "leadership_context",
@@ -5779,10 +5594,10 @@
           "sequence": 1,
           "course_type": "bridge",
           "course_id": "C-AI-101",
-          "course_title_ar": "ماذا يفعل الذكاء الاصطناعي جيدًا وأين يخطئ",
+          "course_title_ar": "دورة أساسيات الذكاء الاصطناعي وهندسة الأوامر",
           "pathway_id": "PW-FND-003",
           "pathway_title_ar": "الذكاء الاصطناعي في عملك اليومي بأمان ومسؤولية",
-          "hours": 8,
+          "hours": 16,
           "reason_ar": "جسر مخاطر AI إذا كان سبب الحاجة مشروعًا ذكيًا.",
           "when": {
             "fact_key": "primary_goal",
@@ -6060,33 +5875,25 @@
         {
           "sequence": 1,
           "course_id": "C-CYB-101",
-          "course_title_ar": "فهم كيف تتعرض شركتك لمخاطر رقمية",
+          "course_title_ar": "دورة أساسيات الأمن السيبراني وحماية الهويات",
           "pathway_id": "PW-CYB-001",
           "pathway_title_ar": "حماية شركتك سيبرانيًا: من الوعي إلى الاستجابة",
-          "hours": 8
+          "hours": 16
         },
         {
           "sequence": 2,
-          "course_id": "C-CYB-102",
-          "course_title_ar": "حماية الحسابات من التصيد والاختراق البشري",
-          "pathway_id": "PW-CYB-001",
-          "pathway_title_ar": "حماية شركتك سيبرانيًا: من الوعي إلى الاستجابة",
-          "hours": 8
-        },
-        {
-          "sequence": 3,
           "course_id": "C-CYB-104",
-          "course_title_ar": "اختيار ضوابط أمنية تناسب قرار الإدارة",
+          "course_title_ar": "دورة حوكمة الأمن السيبراني والامتثال",
           "pathway_id": "PW-CYB-001",
           "pathway_title_ar": "حماية شركتك سيبرانيًا: من الوعي إلى الاستجابة",
           "hours": 8
         }
       ],
       "plan": {
-        "starter_course_count": 3,
+        "starter_course_count": 2,
         "starter_hours": 24,
-        "full_required_course_count": 6,
-        "full_required_hours": 56,
+        "full_required_course_count": 5,
+        "full_required_hours": 48,
         "recommended_duration_weeks": 11,
         "minimum_weekly_hours": 4,
         "recommended_weekly_hours": 6,
@@ -6123,29 +5930,18 @@
           "sequence": 1,
           "course_type": "required",
           "course_id": "C-SCM-101",
-          "course_title_ar": "فهم رحلة منتجك من المورد إلى العميل",
+          "course_title_ar": "دورة أساسيات سلسلة الإمداد والتنبؤ بالطلب",
           "pathway_id": "PW-SCM-001",
           "pathway_title_ar": "سلسلة الإمداد: من الطلب إلى المورد بلا اختناقات",
-          "hours": 8,
-          "role_ar": "خريطة السلسلة",
-          "reason_ar": "فهم التدفقات والأطراف والعقد والمخاطر."
+          "hours": 16,
+          "role_ar": "خريطة السلسلة · الطلب والتوريد",
+          "reason_ar": "فهم التدفقات والأطراف والعقد والمخاطر · تحويل بيانات الطلب إلى سيناريو وخطة."
         },
         {
           "sequence": 2,
           "course_type": "required",
-          "course_id": "C-SCM-102",
-          "course_title_ar": "تحويل توقعات المبيعات إلى قرارات توريد",
-          "pathway_id": "PW-SCM-001",
-          "pathway_title_ar": "سلسلة الإمداد: من الطلب إلى المورد بلا اختناقات",
-          "hours": 8,
-          "role_ar": "الطلب والتوريد",
-          "reason_ar": "تحويل بيانات الطلب إلى سيناريو وخطة."
-        },
-        {
-          "sequence": 3,
-          "course_type": "required",
           "course_id": "C-SCM-103",
-          "course_title_ar": "متى تطلب وكم تخزّن: قرارات المخزون",
+          "course_title_ar": "دورة إدارة المخزون والمستودعات",
           "pathway_id": "PW-SCM-001",
           "pathway_title_ar": "سلسلة الإمداد: من الطلب إلى المورد بلا اختناقات",
           "hours": 8,
@@ -6153,10 +5949,10 @@
           "reason_ar": "ضبط سياسة الأصناف ونقطة الطلب والأمان."
         },
         {
-          "sequence": 4,
+          "sequence": 3,
           "course_type": "required",
           "course_id": "C-SCM-104",
-          "course_title_ar": "اختيار المورد الأنسب لا الأرخص فقط",
+          "course_title_ar": "دورة التوريد الاستراتيجي واختيار الموردين",
           "pathway_id": "PW-SCM-001",
           "pathway_title_ar": "سلسلة الإمداد: من الطلب إلى المورد بلا اختناقات",
           "hours": 8,
@@ -6164,24 +5960,24 @@
           "reason_ar": "شراء القيمة وتقييم المورد لا السعر فقط."
         },
         {
-          "sequence": 5,
+          "sequence": 4,
           "course_type": "required",
           "course_id": "C-SCM-105",
-          "course_title_ar": "متابعة أداء الموردين وتقليل مخاطرهم",
+          "course_title_ar": "دورة إدارة مخاطر سلسلة الإمداد وقياس أدائها",
           "pathway_id": "PW-SCM-001",
           "pathway_title_ar": "سلسلة الإمداد: من الطلب إلى المورد بلا اختناقات",
-          "hours": 12,
+          "hours": 8,
           "role_ar": "المرونة والمؤشرات",
           "reason_ar": "قياس المخاطر والأداء وخطة التحسين."
         },
         {
-          "sequence": 6,
+          "sequence": 5,
           "course_type": "required",
-          "course_id": "C-DAT-102",
-          "course_title_ar": "تنظيف البيانات وتحليلها بجداول إلكترونية",
+          "course_id": "C-DAT-101",
+          "course_title_ar": "دورة أساسيات تحليل البيانات وتنظيفها",
           "pathway_id": "PW-EMP-004",
           "pathway_title_ar": "من جدول بيانات إلى قرار تدافع عنه",
-          "hours": 8,
+          "hours": 16,
           "role_ar": "جودة بيانات السلسلة",
           "reason_ar": "تنظيف وتحليل بيانات الطلب والمخزون."
         }
@@ -6191,10 +5987,10 @@
           "sequence": 1,
           "course_type": "conditional",
           "course_id": "C-NEG-101",
-          "course_title_ar": "التحضير للتفاوض: ماذا تريد وما بديلك إن فشل",
+          "course_title_ar": "دورة أساسيات التفاوض واستراتيجياته",
           "pathway_id": "PW-NEG-001",
           "pathway_title_ar": "التفاوض والتأثير: من التحضير إلى اتفاق يدوم",
-          "hours": 8,
+          "hours": 16,
           "reason_ar": "يضاف للتحضير لتفاوض المورد والبدائل.",
           "when": {
             "fact_key": "sales_negotiation",
@@ -6208,7 +6004,7 @@
           "sequence": 2,
           "course_type": "conditional",
           "course_id": "C-FINM-104",
-          "course_title_ar": "حماية شركتك من نفاد السيولة",
+          "course_title_ar": "دورة إدارة التدفق النقدي ورأس المال العامل",
           "pathway_id": "PW-FIN-001",
           "pathway_title_ar": "المالية لغير الماليين: من قراءة الأرقام إلى قرار استثمار",
           "hours": 8,
@@ -6225,7 +6021,7 @@
           "sequence": 3,
           "course_type": "conditional",
           "course_id": "C-OPS-104",
-          "course_title_ar": "اختيار مؤشرات تشغيل تقود للسلوك الصحيح",
+          "course_title_ar": "دورة مؤشرات الأداء التشغيلي",
           "pathway_id": "PW-OPS-001",
           "pathway_title_ar": "تحسين العمليات: من رسم العملية إلى أثر تقيسه",
           "hours": 8,
@@ -6239,25 +6035,7 @@
           }
         }
       ],
-      "bridge_courses": [
-        {
-          "sequence": 1,
-          "course_type": "bridge",
-          "course_id": "C-DAT-101",
-          "course_title_ar": "تحويل طلب تقرير غامض إلى سؤال واضح",
-          "pathway_id": "PW-EMP-004",
-          "pathway_title_ar": "من جدول بيانات إلى قرار تدافع عنه",
-          "hours": 8,
-          "reason_ar": "جسر لصياغة سؤال القرار ومصادر بيانات السلسلة.",
-          "when": {
-            "fact_key": "data_literacy",
-            "operator": "lte",
-            "values": [
-              1
-            ]
-          }
-        }
-      ],
+      "bridge_courses": [],
       "diagnostic": {
         "primary_goal_codes": [
           "supply_chain_resilience",
@@ -6459,7 +6237,7 @@
             "target_level": 3,
             "priority": "critical",
             "course_ids": [
-              "C-SCM-102"
+              "C-SCM-101"
             ]
           },
           {
@@ -6522,33 +6300,25 @@
         {
           "sequence": 1,
           "course_id": "C-SCM-101",
-          "course_title_ar": "فهم رحلة منتجك من المورد إلى العميل",
+          "course_title_ar": "دورة أساسيات سلسلة الإمداد والتنبؤ بالطلب",
           "pathway_id": "PW-SCM-001",
           "pathway_title_ar": "سلسلة الإمداد: من الطلب إلى المورد بلا اختناقات",
-          "hours": 8
+          "hours": 16
         },
         {
           "sequence": 2,
-          "course_id": "C-SCM-102",
-          "course_title_ar": "تحويل توقعات المبيعات إلى قرارات توريد",
-          "pathway_id": "PW-SCM-001",
-          "pathway_title_ar": "سلسلة الإمداد: من الطلب إلى المورد بلا اختناقات",
-          "hours": 8
-        },
-        {
-          "sequence": 3,
           "course_id": "C-SCM-103",
-          "course_title_ar": "متى تطلب وكم تخزّن: قرارات المخزون",
+          "course_title_ar": "دورة إدارة المخزون والمستودعات",
           "pathway_id": "PW-SCM-001",
           "pathway_title_ar": "سلسلة الإمداد: من الطلب إلى المورد بلا اختناقات",
           "hours": 8
         }
       ],
       "plan": {
-        "starter_course_count": 3,
+        "starter_course_count": 2,
         "starter_hours": 24,
-        "full_required_course_count": 6,
-        "full_required_hours": 52,
+        "full_required_course_count": 5,
+        "full_required_hours": 56,
         "recommended_duration_weeks": 10,
         "minimum_weekly_hours": 4,
         "recommended_weekly_hours": 6,
@@ -6584,29 +6354,18 @@
           "sequence": 1,
           "course_type": "required",
           "course_id": "C-LND-101",
-          "course_title_ar": "تحديد ما يحتاج متعلموك أن يتعلموه فعلا",
+          "course_title_ar": "دورة تحليل الاحتياجات والتصميم التعليمي",
           "pathway_id": "PW-LND-001",
           "pathway_title_ar": "إعداد المدرب: من تحليل الحاجة إلى تجربة تعلم فعالة",
-          "hours": 8,
-          "role_ar": "الحاجة والنواتج",
-          "reason_ar": "بدء التصميم من فجوة أداء قابلة للتحقق."
+          "hours": 16,
+          "role_ar": "الحاجة والنواتج · الرحلة",
+          "reason_ar": "بدء التصميم من فجوة أداء قابلة للتحقق · مواءمة النواتج والأنشطة والتقييم."
         },
         {
           "sequence": 2,
           "course_type": "required",
-          "course_id": "C-LND-102",
-          "course_title_ar": "ترتيب دورتك بدءًا من نتيجتها لا شرائحها",
-          "pathway_id": "PW-LND-001",
-          "pathway_title_ar": "إعداد المدرب: من تحليل الحاجة إلى تجربة تعلم فعالة",
-          "hours": 8,
-          "role_ar": "الرحلة",
-          "reason_ar": "مواءمة النواتج والأنشطة والتقييم."
-        },
-        {
-          "sequence": 3,
-          "course_type": "required",
           "course_id": "C-LND-103",
-          "course_title_ar": "تصميم تمارين ومعايير تصحيح عادلة",
+          "course_title_ar": "دورة تصميم التقييمات ومعايير التصحيح",
           "pathway_id": "PW-LND-001",
           "pathway_title_ar": "إعداد المدرب: من تحليل الحاجة إلى تجربة تعلم فعالة",
           "hours": 8,
@@ -6614,10 +6373,10 @@
           "reason_ar": "بناء مهام وRubrics تقيس أداءً لا حفظًا فقط."
         },
         {
-          "sequence": 4,
+          "sequence": 3,
           "course_type": "required",
           "course_id": "C-LND-104",
-          "course_title_ar": "تصميم مواد تعليمية واضحة لا مزدحمة",
+          "course_title_ar": "دورة تصميم المواد التعليمية",
           "pathway_id": "PW-LND-001",
           "pathway_title_ar": "إعداد المدرب: من تحليل الحاجة إلى تجربة تعلم فعالة",
           "hours": 8,
@@ -6625,21 +6384,21 @@
           "reason_ar": "إنتاج شرائح ومواد واضحة ومتاحة."
         },
         {
-          "sequence": 5,
+          "sequence": 4,
           "course_type": "required",
           "course_id": "C-LND-105",
-          "course_title_ar": "تقديم دورتك حضوريًا أو رقميًا: مشروع تخرج",
+          "course_title_ar": "دورة التيسير وتقديم التدريب رقميا",
           "pathway_id": "PW-LND-001",
           "pathway_title_ar": "إعداد المدرب: من تحليل الحاجة إلى تجربة تعلم فعالة",
-          "hours": 12,
+          "hours": 8,
           "role_ar": "التيسير والتعلم الرقمي",
           "reason_ar": "تقديم وتحسين وحدة فعلية."
         },
         {
-          "sequence": 6,
+          "sequence": 5,
           "course_type": "required",
           "course_id": "C-AI-103",
-          "course_title_ar": "التأكد من صحة إجابات الذكاء الاصطناعي",
+          "course_title_ar": "دورة تقييم مخرجات الذكاء الاصطناعي والتحقق منها",
           "pathway_id": "PW-FND-003",
           "pathway_title_ar": "الذكاء الاصطناعي في عملك اليومي بأمان ومسؤولية",
           "hours": 8,
@@ -6652,7 +6411,7 @@
           "sequence": 1,
           "course_type": "conditional",
           "course_id": "C-COMX-103",
-          "course_title_ar": "التحكم برهبة المسرح وبناء حضورك",
+          "course_title_ar": "دورة مهارات الإلقاء والتحدث أمام الجمهور",
           "pathway_id": "PW-COM-001",
           "pathway_title_ar": "الخطابة والعرض التنفيذي: من الفكرة إلى إقناع اللجنة",
           "hours": 8,
@@ -6669,7 +6428,7 @@
           "sequence": 2,
           "course_type": "conditional",
           "course_id": "C-AI-104",
-          "course_title_ar": "الكتابة والبحث بمساعدة الذكاء الاصطناعي بأمان",
+          "course_title_ar": "دورة الكتابة والبحث بالذكاء الاصطناعي",
           "pathway_id": "PW-FND-003",
           "pathway_title_ar": "الذكاء الاصطناعي في عملك اليومي بأمان ومسؤولية",
           "hours": 8,
@@ -6686,7 +6445,7 @@
           "sequence": 3,
           "course_type": "conditional",
           "course_id": "C-DAT-103",
-          "course_title_ar": "اختيار مؤشرات أداء تقود لقرار صحيح",
+          "course_title_ar": "دورة تصميم مؤشرات الأداء وأهداف OKR",
           "pathway_id": "PW-EMP-004",
           "pathway_title_ar": "من جدول بيانات إلى قرار تدافع عنه",
           "hours": 8,
@@ -6705,10 +6464,10 @@
           "sequence": 1,
           "course_type": "bridge",
           "course_id": "C-COMX-101",
-          "course_title_ar": "بناء رسالة واحدة يتذكرها جمهورك",
+          "course_title_ar": "دورة بناء الرسالة وتصميم العرض التنفيذي",
           "pathway_id": "PW-COM-001",
           "pathway_title_ar": "الخطابة والعرض التنفيذي: من الفكرة إلى إقناع اللجنة",
-          "hours": 8,
+          "hours": 16,
           "reason_ar": "جسر بناء الرسالة قبل التيسير.",
           "when": {
             "fact_key": "persuasion",
@@ -6892,7 +6651,7 @@
             "target_level": 3,
             "priority": "critical",
             "course_ids": [
-              "C-LND-102"
+              "C-LND-101"
             ]
           },
           {
@@ -6964,33 +6723,25 @@
         {
           "sequence": 1,
           "course_id": "C-LND-101",
-          "course_title_ar": "تحديد ما يحتاج متعلموك أن يتعلموه فعلا",
+          "course_title_ar": "دورة تحليل الاحتياجات والتصميم التعليمي",
           "pathway_id": "PW-LND-001",
           "pathway_title_ar": "إعداد المدرب: من تحليل الحاجة إلى تجربة تعلم فعالة",
-          "hours": 8
+          "hours": 16
         },
         {
           "sequence": 2,
-          "course_id": "C-LND-102",
-          "course_title_ar": "ترتيب دورتك بدءًا من نتيجتها لا شرائحها",
-          "pathway_id": "PW-LND-001",
-          "pathway_title_ar": "إعداد المدرب: من تحليل الحاجة إلى تجربة تعلم فعالة",
-          "hours": 8
-        },
-        {
-          "sequence": 3,
           "course_id": "C-LND-103",
-          "course_title_ar": "تصميم تمارين ومعايير تصحيح عادلة",
+          "course_title_ar": "دورة تصميم التقييمات ومعايير التصحيح",
           "pathway_id": "PW-LND-001",
           "pathway_title_ar": "إعداد المدرب: من تحليل الحاجة إلى تجربة تعلم فعالة",
           "hours": 8
         }
       ],
       "plan": {
-        "starter_course_count": 3,
+        "starter_course_count": 2,
         "starter_hours": 24,
-        "full_required_course_count": 6,
-        "full_required_hours": 52,
+        "full_required_course_count": 5,
+        "full_required_hours": 48,
         "recommended_duration_weeks": 10,
         "minimum_weekly_hours": 4,
         "recommended_weekly_hours": 6,
@@ -7025,29 +6776,18 @@
           "sequence": 1,
           "course_type": "required",
           "course_id": "C-OPS-101",
-          "course_title_ar": "رسم عمليتك الحالية ومعرفة نقطة البداية",
+          "course_title_ar": "دورة رسم العمليات ومنهجية Lean",
           "pathway_id": "PW-OPS-001",
           "pathway_title_ar": "تحسين العمليات: من رسم العملية إلى أثر تقيسه",
-          "hours": 8,
-          "role_ar": "العملية وخط الأساس",
-          "reason_ar": "فهم التدفق والقيمة وحدود العملية."
+          "hours": 16,
+          "role_ar": "العملية وخط الأساس · الهدر والتدفق",
+          "reason_ar": "فهم التدفق والقيمة وحدود العملية · اكتشاف العمل غير الضروري والاختناق."
         },
         {
           "sequence": 2,
           "course_type": "required",
-          "course_id": "C-OPS-102",
-          "course_title_ar": "اكتشاف الهدر وتسريع الإنجاز بمنهجية Lean",
-          "pathway_id": "PW-OPS-001",
-          "pathway_title_ar": "تحسين العمليات: من رسم العملية إلى أثر تقيسه",
-          "hours": 8,
-          "role_ar": "الهدر والتدفق",
-          "reason_ar": "اكتشاف العمل غير الضروري والاختناق."
-        },
-        {
-          "sequence": 3,
-          "course_type": "required",
           "course_id": "C-OPS-103",
-          "course_title_ar": "معالجة السبب الجذري لا الأعراض فقط",
+          "course_title_ar": "دورة تحليل السبب الجذري وحل المشكلات",
           "pathway_id": "PW-OPS-001",
           "pathway_title_ar": "تحسين العمليات: من رسم العملية إلى أثر تقيسه",
           "hours": 8,
@@ -7055,10 +6795,10 @@
           "reason_ar": "حل المشكلة بدل علاج العرض."
         },
         {
-          "sequence": 4,
+          "sequence": 3,
           "course_type": "required",
           "course_id": "C-OPS-104",
-          "course_title_ar": "اختيار مؤشرات تشغيل تقود للسلوك الصحيح",
+          "course_title_ar": "دورة مؤشرات الأداء التشغيلي",
           "pathway_id": "PW-OPS-001",
           "pathway_title_ar": "تحسين العمليات: من رسم العملية إلى أثر تقيسه",
           "hours": 8,
@@ -7066,24 +6806,24 @@
           "reason_ar": "بناء لوحة وإيقاع قرار."
         },
         {
-          "sequence": 5,
+          "sequence": 4,
           "course_type": "required",
           "course_id": "C-OPS-105",
-          "course_title_ar": "تثبيت التحسين وإثبات أثره: مشروع تطبيقي",
+          "course_title_ar": "دورة التحسين المستمر ومنهجية PDCA",
           "pathway_id": "PW-OPS-001",
           "pathway_title_ar": "تحسين العمليات: من رسم العملية إلى أثر تقيسه",
-          "hours": 12,
+          "hours": 8,
           "role_ar": "تجربة التحسين",
           "reason_ar": "تشغيل PDCA وتثبيت التعلم والتغيير."
         },
         {
-          "sequence": 6,
+          "sequence": 5,
           "course_type": "required",
           "course_id": "C-AUT-101",
-          "course_title_ar": "اختيار المهمة الأنسب للأتمتة أولا",
+          "course_title_ar": "دورة تحليل فرص الأتمتة والربط بين التطبيقات",
           "pathway_id": "PW-AUT-001",
           "pathway_title_ar": "أتمتة مهامك بالذكاء الاصطناعي تحت إشرافك",
-          "hours": 8,
+          "hours": 16,
           "role_ar": "قرار الأتمتة",
           "reason_ar": "اختيار ما يستحق الأتمتة بعد استقرار المنطق."
         }
@@ -7093,7 +6833,7 @@
           "sequence": 1,
           "course_type": "conditional",
           "course_id": "C-AUT-103",
-          "course_title_ar": "بناء سير عمل آلي بخطوات متعددة",
+          "course_title_ar": "دورة بناء سير العمل الآلي",
           "pathway_id": "PW-AUT-001",
           "pathway_title_ar": "أتمتة مهامك بالذكاء الاصطناعي تحت إشرافك",
           "hours": 8,
@@ -7111,7 +6851,7 @@
           "sequence": 2,
           "course_type": "conditional",
           "course_id": "C-DAT-104",
-          "course_title_ar": "عرض بياناتك في لوحة تدفع لقرار",
+          "course_title_ar": "دورة تصميم لوحات المعلومات وتمثيل البيانات",
           "pathway_id": "PW-EMP-004",
           "pathway_title_ar": "من جدول بيانات إلى قرار تدافع عنه",
           "hours": 8,
@@ -7128,7 +6868,7 @@
           "sequence": 3,
           "course_type": "conditional",
           "course_id": "C-PM-104",
-          "course_title_ar": "متابعة المشروع والتعامل مع المخاطر والتغييرات",
+          "course_title_ar": "دورة إدارة مخاطر المشاريع والتغيير",
           "pathway_id": "PW-EMP-003",
           "pathway_title_ar": "إدارة مشروع من التكليف حتى التسليم",
           "hours": 8,
@@ -7146,11 +6886,11 @@
         {
           "sequence": 1,
           "course_type": "bridge",
-          "course_id": "C-DAT-102",
-          "course_title_ar": "تنظيف البيانات وتحليلها بجداول إلكترونية",
+          "course_id": "C-DAT-101",
+          "course_title_ar": "دورة أساسيات تحليل البيانات وتنظيفها",
           "pathway_id": "PW-EMP-004",
           "pathway_title_ar": "من جدول بيانات إلى قرار تدافع عنه",
-          "hours": 8,
+          "hours": 16,
           "reason_ar": "جسر تنظيف وتحليل بيانات العملية.",
           "when": {
             "fact_key": "data_literacy",
@@ -7443,33 +7183,25 @@
         {
           "sequence": 1,
           "course_id": "C-OPS-101",
-          "course_title_ar": "رسم عمليتك الحالية ومعرفة نقطة البداية",
+          "course_title_ar": "دورة رسم العمليات ومنهجية Lean",
           "pathway_id": "PW-OPS-001",
           "pathway_title_ar": "تحسين العمليات: من رسم العملية إلى أثر تقيسه",
-          "hours": 8
+          "hours": 16
         },
         {
           "sequence": 2,
-          "course_id": "C-OPS-102",
-          "course_title_ar": "اكتشاف الهدر وتسريع الإنجاز بمنهجية Lean",
-          "pathway_id": "PW-OPS-001",
-          "pathway_title_ar": "تحسين العمليات: من رسم العملية إلى أثر تقيسه",
-          "hours": 8
-        },
-        {
-          "sequence": 3,
           "course_id": "C-OPS-103",
-          "course_title_ar": "معالجة السبب الجذري لا الأعراض فقط",
+          "course_title_ar": "دورة تحليل السبب الجذري وحل المشكلات",
           "pathway_id": "PW-OPS-001",
           "pathway_title_ar": "تحسين العمليات: من رسم العملية إلى أثر تقيسه",
           "hours": 8
         }
       ],
       "plan": {
-        "starter_course_count": 3,
+        "starter_course_count": 2,
         "starter_hours": 24,
-        "full_required_course_count": 6,
-        "full_required_hours": 52,
+        "full_required_course_count": 5,
+        "full_required_hours": 56,
         "recommended_duration_weeks": 10,
         "minimum_weekly_hours": 4,
         "recommended_weekly_hours": 6,
@@ -7504,29 +7236,18 @@
           "sequence": 1,
           "course_type": "required",
           "course_id": "C-PM-101",
-          "course_title_ar": "تحديد مشكلة مشروعك ونتيجته المطلوبة",
+          "course_title_ar": "دورة تأسيس المشروع: النطاق والتخطيط والجدولة",
           "pathway_id": "PW-EMP-003",
           "pathway_title_ar": "إدارة مشروع من التكليف حتى التسليم",
-          "hours": 8,
-          "role_ar": "الميثاق والقيمة",
-          "reason_ar": "تحويل الأولوية إلى نتيجة ونطاق ومالك."
+          "hours": 16,
+          "role_ar": "الميثاق والقيمة · الخطة والموارد",
+          "reason_ar": "تحويل الأولوية إلى نتيجة ونطاق ومالك · بناء نطاق وجدول وموارد قابلة للتتبع."
         },
         {
           "sequence": 2,
           "course_type": "required",
-          "course_id": "C-PM-102",
-          "course_title_ar": "بناء خطة مشروع تُنفَّذ لا تبقى على الورق",
-          "pathway_id": "PW-EMP-003",
-          "pathway_title_ar": "إدارة مشروع من التكليف حتى التسليم",
-          "hours": 8,
-          "role_ar": "الخطة والموارد",
-          "reason_ar": "بناء نطاق وجدول وموارد قابلة للتتبع."
-        },
-        {
-          "sequence": 3,
-          "course_type": "required",
           "course_id": "C-PM-103",
-          "course_title_ar": "التواصل مع أصحاب المصلحة دون رسائل زائدة",
+          "course_title_ar": "دورة إدارة أصحاب المصلحة والتواصل في المشاريع",
           "pathway_id": "PW-EMP-003",
           "pathway_title_ar": "إدارة مشروع من التكليف حتى التسليم",
           "hours": 8,
@@ -7534,10 +7255,10 @@
           "reason_ar": "إدارة الاتصال والقرار والتعارض."
         },
         {
-          "sequence": 4,
+          "sequence": 3,
           "course_type": "required",
           "course_id": "C-PM-104",
-          "course_title_ar": "متابعة المشروع والتعامل مع المخاطر والتغييرات",
+          "course_title_ar": "دورة إدارة مخاطر المشاريع والتغيير",
           "pathway_id": "PW-EMP-003",
           "pathway_title_ar": "إدارة مشروع من التكليف حتى التسليم",
           "hours": 8,
@@ -7545,24 +7266,24 @@
           "reason_ar": "ضبط التغيير والتصعيد والمراجعة."
         },
         {
-          "sequence": 5,
+          "sequence": 4,
           "course_type": "required",
           "course_id": "C-PM-105",
-          "course_title_ar": "إغلاق المشروع وإثبات القيمة التي حققها",
+          "course_title_ar": "دورة إغلاق المشاريع وقياس أثرها",
           "pathway_id": "PW-EMP-003",
           "pathway_title_ar": "إدارة مشروع من التكليف حتى التسليم",
-          "hours": 12,
+          "hours": 8,
           "role_ar": "الإغلاق والقيمة",
           "reason_ar": "قياس المنفعة والتعلم والإغلاق."
         },
         {
-          "sequence": 6,
+          "sequence": 5,
           "course_type": "required",
           "course_id": "C-MGR-105",
-          "course_title_ar": "خطتك كمدير في أول 90 يومًا",
+          "course_title_ar": "دورة خطة الـ٩٠ يوما الأولى للمدير",
           "pathway_id": "PW-EMP-005",
           "pathway_title_ar": "المدير لأول مرة: قيادة فريقك في أول 90 يومًا",
-          "hours": 12,
+          "hours": 8,
           "role_ar": "قيادة 90 يومًا",
           "reason_ar": "ربط تنفيذ البرنامج بالنفوذ والتبني والإيقاع القيادي."
         }
@@ -7572,7 +7293,7 @@
           "sequence": 1,
           "course_type": "conditional",
           "course_id": "C-DAT-103",
-          "course_title_ar": "اختيار مؤشرات أداء تقود لقرار صحيح",
+          "course_title_ar": "دورة تصميم مؤشرات الأداء وأهداف OKR",
           "pathway_id": "PW-EMP-004",
           "pathway_title_ar": "من جدول بيانات إلى قرار تدافع عنه",
           "hours": 8,
@@ -7589,10 +7310,10 @@
           "sequence": 2,
           "course_type": "conditional",
           "course_id": "C-COMX-105",
-          "course_title_ar": "الرد على أسئلة صعبة أمام لجنة",
+          "course_title_ar": "دورة إدارة الأسئلة والرد تحت الضغط",
           "pathway_id": "PW-COM-001",
           "pathway_title_ar": "الخطابة والعرض التنفيذي: من الفكرة إلى إقناع اللجنة",
-          "hours": 12,
+          "hours": 8,
           "reason_ar": "يضاف لإحاطة لجنة وإدارة الأسئلة الصعبة.",
           "when": {
             "fact_key": "public_facing",
@@ -7606,7 +7327,7 @@
           "sequence": 3,
           "course_type": "conditional",
           "course_id": "C-HR-103",
-          "course_title_ar": "متابعة أداء الموظف وتقديم ملاحظات فعالة",
+          "course_title_ar": "دورة إدارة الأداء الوظيفي",
           "pathway_id": "PW-HR-001",
           "pathway_title_ar": "إدارة الموظفين بالدليل: من التوظيف إلى الاحتفاظ بهم",
           "hours": 8,
@@ -7624,10 +7345,10 @@
           "sequence": 4,
           "course_type": "conditional",
           "course_id": "C-NEG-105",
-          "course_title_ar": "التفاوض مع أكثر من طرف على اتفاق واحد",
+          "course_title_ar": "دورة التفاوض متعدد الأطراف",
           "pathway_id": "PW-NEG-001",
           "pathway_title_ar": "التفاوض والتأثير: من التحضير إلى اتفاق يدوم",
-          "hours": 12,
+          "hours": 8,
           "reason_ar": "يضاف عند تعدد الأطراف والحاجة لاتفاقات معقدة.",
           "when": {
             "fact_key": "stakeholder_management",
@@ -7643,10 +7364,10 @@
           "sequence": 1,
           "course_type": "bridge",
           "course_id": "C-COMX-101",
-          "course_title_ar": "بناء رسالة واحدة يتذكرها جمهورك",
+          "course_title_ar": "دورة بناء الرسالة وتصميم العرض التنفيذي",
           "pathway_id": "PW-COM-001",
           "pathway_title_ar": "الخطابة والعرض التنفيذي: من الفكرة إلى إقناع اللجنة",
-          "hours": 8,
+          "hours": 16,
           "reason_ar": "جسر الرسالة قبل إحاطات البرنامج.",
           "when": {
             "fact_key": "persuasion",
@@ -7861,7 +7582,6 @@
             "priority": "critical",
             "course_ids": [
               "C-PM-101",
-              "C-PM-102",
               "C-PM-104",
               "C-PM-105"
             ]
@@ -7938,33 +7658,25 @@
         {
           "sequence": 1,
           "course_id": "C-PM-101",
-          "course_title_ar": "تحديد مشكلة مشروعك ونتيجته المطلوبة",
+          "course_title_ar": "دورة تأسيس المشروع: النطاق والتخطيط والجدولة",
           "pathway_id": "PW-EMP-003",
           "pathway_title_ar": "إدارة مشروع من التكليف حتى التسليم",
-          "hours": 8
+          "hours": 16
         },
         {
           "sequence": 2,
-          "course_id": "C-PM-102",
-          "course_title_ar": "بناء خطة مشروع تُنفَّذ لا تبقى على الورق",
-          "pathway_id": "PW-EMP-003",
-          "pathway_title_ar": "إدارة مشروع من التكليف حتى التسليم",
-          "hours": 8
-        },
-        {
-          "sequence": 3,
           "course_id": "C-PM-103",
-          "course_title_ar": "التواصل مع أصحاب المصلحة دون رسائل زائدة",
+          "course_title_ar": "دورة إدارة أصحاب المصلحة والتواصل في المشاريع",
           "pathway_id": "PW-EMP-003",
           "pathway_title_ar": "إدارة مشروع من التكليف حتى التسليم",
           "hours": 8
         }
       ],
       "plan": {
-        "starter_course_count": 3,
+        "starter_course_count": 2,
         "starter_hours": 24,
-        "full_required_course_count": 6,
-        "full_required_hours": 56,
+        "full_required_course_count": 5,
+        "full_required_hours": 48,
         "recommended_duration_weeks": 11,
         "minimum_weekly_hours": 4,
         "recommended_weekly_hours": 6,
@@ -7984,7 +7696,7 @@
     "pathways": [
       {
         "pathway_id": "PW-STU-003",
-        "pathway_title_ar": "استكشاف الاتجاه المهني واتخاذ قرار أول",
+        "pathway_title_ar": "قرارك المهني الأول: من التشتت إلى خيار مدعوم بدليل",
         "required": 1,
         "conditional": 2,
         "bridge": 3,
@@ -7992,15 +7704,15 @@
       },
       {
         "pathway_id": "PW-STU-002",
-        "pathway_title_ar": "الاستعداد لأول فرصة مهنية",
-        "required": 7,
+        "pathway_title_ar": "التحضير لأول وظيفة: من السيرة إلى قبول العرض",
+        "required": 5,
         "conditional": 2,
         "bridge": 0,
-        "total_mentions": 9
+        "total_mentions": 7
       },
       {
         "pathway_id": "PW-FND-003",
-        "pathway_title_ar": "الذكاء الاصطناعي للإنتاجية المهنية المسؤولة",
+        "pathway_title_ar": "الذكاء الاصطناعي في عملك اليومي بأمان ومسؤولية",
         "required": 1,
         "conditional": 3,
         "bridge": 2,
@@ -8008,47 +7720,47 @@
       },
       {
         "pathway_id": "PW-EMP-004",
-        "pathway_title_ar": "تحليل البيانات لاتخاذ القرار",
+        "pathway_title_ar": "من جدول بيانات إلى قرار تدافع عنه",
         "required": 3,
         "conditional": 11,
-        "bridge": 4,
-        "total_mentions": 18
+        "bridge": 2,
+        "total_mentions": 16
       },
       {
         "pathway_id": "PW-EMP-003",
-        "pathway_title_ar": "إدارة المشاريع العملية: من التكليف إلى الإغلاق",
-        "required": 7,
+        "pathway_title_ar": "إدارة مشروع من التكليف حتى التسليم",
+        "required": 6,
         "conditional": 3,
         "bridge": 0,
-        "total_mentions": 10
+        "total_mentions": 9
       },
       {
         "pathway_id": "PW-EMP-005",
-        "pathway_title_ar": "المدير الجديد: قيادة الفريق في أول 90 يومًا",
-        "required": 7,
+        "pathway_title_ar": "المدير لأول مرة: قيادة فريقك في أول 90 يومًا",
+        "required": 6,
         "conditional": 1,
         "bridge": 0,
-        "total_mentions": 8
+        "total_mentions": 7
       },
       {
         "pathway_id": "PW-GOV-002",
-        "pathway_title_ar": "تجربة المستفيد ومعالجة الشكاوى",
-        "required": 5,
+        "pathway_title_ar": "خدمة العملاء: من الشكوى إلى عميل راضٍ",
+        "required": 4,
         "conditional": 1,
         "bridge": 0,
-        "total_mentions": 6
+        "total_mentions": 5
       },
       {
         "pathway_id": "PW-BIZ-001",
-        "pathway_title_ar": "ريادة الأعمال التطبيقية: من الفكرة إلى أول عميل",
-        "required": 6,
+        "pathway_title_ar": "ريادة الأعمال: من الفكرة إلى أول عميل يدفع",
+        "required": 5,
         "conditional": 0,
         "bridge": 2,
-        "total_mentions": 8
+        "total_mentions": 7
       },
       {
         "pathway_id": "PW-AUT-001",
-        "pathway_title_ar": "أتمتة الأعمال والوكلاء الذكيون تحت إشراف بشري",
+        "pathway_title_ar": "أتمتة مهامك بالذكاء الاصطناعي تحت إشرافك",
         "required": 3,
         "conditional": 2,
         "bridge": 0,
@@ -8056,23 +7768,23 @@
       },
       {
         "pathway_id": "PW-MKT-001",
-        "pathway_title_ar": "نظام النمو الرقمي: من فهم العميل إلى تجربة قابلة للقياس",
-        "required": 6,
-        "conditional": 4,
+        "pathway_title_ar": "التسويق الرقمي: من فهم العميل إلى نتائج تُقاس",
+        "required": 4,
+        "conditional": 5,
         "bridge": 0,
-        "total_mentions": 10
+        "total_mentions": 9
       },
       {
         "pathway_id": "PW-SAL-001",
-        "pathway_title_ar": "المبيعات الاستشارية وتطوير الأعمال: من الاستهداف إلى اتفاق قابل للتنفيذ",
-        "required": 10,
+        "pathway_title_ar": "المبيعات الاستشارية: من الاستهداف إلى صفقة موقعة",
+        "required": 9,
         "conditional": 2,
         "bridge": 0,
-        "total_mentions": 12
+        "total_mentions": 11
       },
       {
         "pathway_id": "PW-HR-001",
-        "pathway_title_ar": "إدارة المواهب القائمة على الدليل: من تخطيط القوى العاملة إلى الاحتفاظ",
+        "pathway_title_ar": "إدارة الموظفين بالدليل: من التوظيف إلى الاحتفاظ بهم",
         "required": 1,
         "conditional": 1,
         "bridge": 0,
@@ -8080,47 +7792,47 @@
       },
       {
         "pathway_id": "PW-FIN-001",
-        "pathway_title_ar": "المالية للمديرين: من قراءة الأرقام إلى قرار استثماري",
-        "required": 7,
+        "pathway_title_ar": "المالية لغير الماليين: من قراءة الأرقام إلى قرار استثمار",
+        "required": 6,
         "conditional": 3,
         "bridge": 0,
-        "total_mentions": 10
+        "total_mentions": 9
       },
       {
         "pathway_id": "PW-PRD-001",
-        "pathway_title_ar": "إدارة المنتج الرقمي: من مشكلة مستخدم إلى إطلاق قابل للقياس",
-        "required": 5,
+        "pathway_title_ar": "إدارة المنتج الرقمي: من مشكلة المستخدم إلى إطلاق ناجح",
+        "required": 4,
         "conditional": 1,
         "bridge": 0,
-        "total_mentions": 6
+        "total_mentions": 5
       },
       {
         "pathway_id": "PW-OPS-001",
-        "pathway_title_ar": "التميز التشغيلي: من خريطة العملية إلى أثر قابل للقياس",
-        "required": 8,
+        "pathway_title_ar": "تحسين العمليات: من رسم العملية إلى أثر تقيسه",
+        "required": 7,
         "conditional": 2,
         "bridge": 0,
-        "total_mentions": 10
+        "total_mentions": 9
       },
       {
         "pathway_id": "PW-CYB-001",
-        "pathway_title_ar": "إدارة المخاطر السيبرانية للأعمال: من الوعي إلى الاستجابة",
-        "required": 5,
+        "pathway_title_ar": "حماية شركتك سيبرانيًا: من الوعي إلى الاستجابة",
+        "required": 4,
         "conditional": 1,
         "bridge": 0,
-        "total_mentions": 6
+        "total_mentions": 5
       },
       {
         "pathway_id": "PW-SCM-001",
-        "pathway_title_ar": "سلسلة الإمداد المرنة: من الطلب إلى المورد والمؤشر",
-        "required": 5,
+        "pathway_title_ar": "سلسلة الإمداد: من الطلب إلى المورد بلا اختناقات",
+        "required": 4,
         "conditional": 1,
         "bridge": 0,
-        "total_mentions": 6
+        "total_mentions": 5
       },
       {
         "pathway_id": "PW-COM-001",
-        "pathway_title_ar": "الخطابة والتواصل التنفيذي: من الفكرة إلى عرض أمام لجنة",
+        "pathway_title_ar": "الخطابة والعرض التنفيذي: من الفكرة إلى إقناع اللجنة",
         "required": 4,
         "conditional": 7,
         "bridge": 3,
@@ -8128,7 +7840,7 @@
       },
       {
         "pathway_id": "PW-NEG-001",
-        "pathway_title_ar": "التفاوض والتأثير الأخلاقي: من التحضير إلى اتفاق مستدام",
+        "pathway_title_ar": "التفاوض والتأثير: من التحضير إلى اتفاق يدوم",
         "required": 1,
         "conditional": 5,
         "bridge": 0,
@@ -8136,17 +7848,17 @@
       },
       {
         "pathway_id": "PW-LND-001",
-        "pathway_title_ar": "تصميم التعلم وإعداد المدرب: من تحليل الحاجة إلى تجربة قابلة للقياس",
-        "required": 5,
+        "pathway_title_ar": "إعداد المدرب: من تحليل الحاجة إلى تجربة تعلم فعالة",
+        "required": 4,
         "conditional": 0,
         "bridge": 0,
-        "total_mentions": 5
+        "total_mentions": 4
       }
     ],
     "courses": [
       {
         "course_id": "C-BIZ-101",
-        "course_title_ar": "مشكلة العميل والمقابلات الاستكشافية",
+        "course_title_ar": "دورة اكتشاف العملاء وصياغة عرض القيمة",
         "pathway_id": "PW-BIZ-001",
         "template_ids": [
           "TPL-PRODUCT-001",
@@ -8155,8 +7867,8 @@
         "template_count": 2
       },
       {
-        "course_id": "C-BIZ-102",
-        "course_title_ar": "عرض القيمة والبديل الأولي",
+        "course_id": "C-BIZ-101",
+        "course_title_ar": "دورة اكتشاف العملاء وصياغة عرض القيمة",
         "pathway_id": "PW-BIZ-001",
         "template_ids": [
           "TPL-B2B-001",
@@ -8168,7 +7880,7 @@
       },
       {
         "course_id": "C-BIZ-103",
-        "course_title_ar": "نموذج العمل واقتصاديات الوحدة",
+        "course_title_ar": "دورة نماذج الأعمال واقتصاديات الوحدة",
         "pathway_id": "PW-BIZ-001",
         "template_ids": [
           "TPL-VENTURE-001"
@@ -8177,7 +7889,7 @@
       },
       {
         "course_id": "C-MKT-101",
-        "course_title_ar": "العميل والتموضع واستراتيجية السوق",
+        "course_title_ar": "دورة استراتيجية التسويق ورحلة العميل",
         "pathway_id": "PW-MKT-001",
         "template_ids": [
           "TPL-B2B-001",
@@ -8188,7 +7900,7 @@
       },
       {
         "course_id": "C-SAL-103",
-        "course_title_ar": "محادثة الاكتشاف والبيع الاستشاري",
+        "course_title_ar": "دورة البيع الاستشاري واكتشاف الاحتياج",
         "pathway_id": "PW-SAL-001",
         "template_ids": [
           "TPL-B2B-001",
@@ -8199,7 +7911,7 @@
       },
       {
         "course_id": "C-BIZ-105",
-        "course_title_ar": "تجربة أول بيع وخطة 90 يومًا",
+        "course_title_ar": "دورة أول عملية بيع وخطة النمو",
         "pathway_id": "PW-BIZ-001",
         "template_ids": [
           "TPL-VENTURE-001"
@@ -8208,7 +7920,7 @@
       },
       {
         "course_id": "C-PRD-103",
-        "course_title_ar": "تحديد الحل وبناء MVP",
+        "course_title_ar": "دورة النماذج الأولية والمنتج الأدنى القابل للتطبيق",
         "pathway_id": "PW-PRD-001",
         "template_ids": [
           "TPL-PRODUCT-001",
@@ -8218,7 +7930,7 @@
       },
       {
         "course_id": "C-FINM-104",
-        "course_title_ar": "السيولة ورأس المال العامل",
+        "course_title_ar": "دورة إدارة التدفق النقدي ورأس المال العامل",
         "pathway_id": "PW-FIN-001",
         "template_ids": [
           "TPL-FIN-DATA-001",
@@ -8229,7 +7941,7 @@
       },
       {
         "course_id": "C-MKT-105",
-        "course_title_ar": "تجارب النمو والقياس: مشروع 90 يومًا",
+        "course_title_ar": "دورة قياس الحملات التسويقية وتحسينها",
         "pathway_id": "PW-MKT-001",
         "template_ids": [
           "TPL-B2B-001",
@@ -8240,7 +7952,7 @@
       },
       {
         "course_id": "C-CAR-104",
-        "course_title_ar": "مصفوفة الاختيار وخطة 30 يومًا",
+        "course_title_ar": "دورة اتخاذ القرار المهني وخطة الانتقال",
         "pathway_id": "PW-STU-003",
         "template_ids": [
           "TPL-FIRST-JOB-001",
@@ -8250,8 +7962,8 @@
         "template_count": 3
       },
       {
-        "course_id": "C-MKT-102",
-        "course_title_ar": "رحلة العميل وقمع التحويل",
+        "course_id": "C-MKT-101",
+        "course_title_ar": "دورة استراتيجية التسويق ورحلة العميل",
         "pathway_id": "PW-MKT-001",
         "template_ids": [
           "TPL-ECOM-001"
@@ -8260,7 +7972,7 @@
       },
       {
         "course_id": "C-MKT-103",
-        "course_title_ar": "المحتوى الذي يخدم قرارًا تجاريًا",
+        "course_title_ar": "دورة تسويق المحتوى",
         "pathway_id": "PW-MKT-001",
         "template_ids": [
           "TPL-ECOM-001",
@@ -8270,8 +7982,8 @@
         "template_count": 3
       },
       {
-        "course_id": "C-SAL-102",
-        "course_title_ar": "توليد العملاء وإدارة Pipeline",
+        "course_id": "C-SAL-101",
+        "course_title_ar": "دورة استهداف السوق وبناء خط المبيعات",
         "pathway_id": "PW-SAL-001",
         "template_ids": [
           "TPL-B2B-001",
@@ -8280,8 +7992,8 @@
         "template_count": 2
       },
       {
-        "course_id": "C-FINM-102",
-        "course_title_ar": "التكاليف والهوامش والتسعير",
+        "course_id": "C-FINM-101",
+        "course_title_ar": "دورة قراءة القوائم المالية وتحليل التكاليف",
         "pathway_id": "PW-FIN-001",
         "template_ids": [
           "TPL-ECOM-001",
@@ -8292,7 +8004,7 @@
       },
       {
         "course_id": "C-OPS-101",
-        "course_title_ar": "العملية والقيمة وخط الأساس",
+        "course_title_ar": "دورة رسم العمليات ومنهجية Lean",
         "pathway_id": "PW-OPS-001",
         "template_ids": [
           "TPL-CYBER-MANAGER-001",
@@ -8304,7 +8016,7 @@
       },
       {
         "course_id": "C-DAT-103",
-        "course_title_ar": "تصميم مؤشرات أداء قابلة للإدارة",
+        "course_title_ar": "دورة تصميم مؤشرات الأداء وأهداف OKR",
         "pathway_id": "PW-EMP-004",
         "template_ids": [
           "TPL-B2B-001",
@@ -8318,7 +8030,7 @@
       },
       {
         "course_id": "C-AUT-101",
-        "course_title_ar": "اختيار العملية وجدوى الأتمتة",
+        "course_title_ar": "دورة تحليل فرص الأتمتة والربط بين التطبيقات",
         "pathway_id": "PW-AUT-001",
         "template_ids": [
           "TPL-DIGITAL-TRANSFORM-001",
@@ -8329,7 +8041,7 @@
       },
       {
         "course_id": "C-SVC-101",
-        "course_title_ar": "فهم المستفيد ورحلته",
+        "course_title_ar": "دورة تجربة المستفيد ومهارات خدمة العملاء",
         "pathway_id": "PW-GOV-002",
         "template_ids": [
           "TPL-CX-001",
@@ -8339,7 +8051,7 @@
       },
       {
         "course_id": "C-SCM-103",
-        "course_title_ar": "المخزون وقرارات التجديد",
+        "course_title_ar": "دورة إدارة المخزون والمستودعات",
         "pathway_id": "PW-SCM-001",
         "template_ids": [
           "TPL-ECOM-001",
@@ -8349,7 +8061,7 @@
       },
       {
         "course_id": "C-SAL-101",
-        "course_title_ar": "السوق والعميل المثالي وخطة الاستهداف",
+        "course_title_ar": "دورة استهداف السوق وبناء خط المبيعات",
         "pathway_id": "PW-SAL-001",
         "template_ids": [
           "TPL-B2B-001",
@@ -8359,7 +8071,7 @@
       },
       {
         "course_id": "C-SAL-104",
-        "course_title_ar": "العرض التجاري والدفاع عن القيمة",
+        "course_title_ar": "دورة إعداد العروض التجارية وتقديمها",
         "pathway_id": "PW-SAL-001",
         "template_ids": [
           "TPL-B2B-001",
@@ -8370,7 +8082,7 @@
       },
       {
         "course_id": "C-NEG-101",
-        "course_title_ar": "التحضير: المصالح وBATNA وZOPA",
+        "course_title_ar": "دورة أساسيات التفاوض واستراتيجياته",
         "pathway_id": "PW-NEG-001",
         "template_ids": [
           "TPL-B2B-001",
@@ -8380,8 +8092,8 @@
         "template_count": 3
       },
       {
-        "course_id": "C-JOB-102",
-        "course_title_ar": "سيرة وLinkedIn موجهان بالأدلة",
+        "course_id": "C-JOB-101",
+        "course_title_ar": "دورة استهداف الوظائف وبناء ملفّك المهني",
         "pathway_id": "PW-STU-002",
         "template_ids": [
           "TPL-FIRST-JOB-001",
@@ -8392,7 +8104,7 @@
       },
       {
         "course_id": "C-SAL-105",
-        "course_title_ar": "التفاوض والإغلاق ونمو الحساب",
+        "course_title_ar": "دورة إغلاق الصفقات وإدارة الحسابات",
         "pathway_id": "PW-SAL-001",
         "template_ids": [
           "TPL-B2B-001",
@@ -8402,7 +8114,7 @@
       },
       {
         "course_id": "C-CAR-101",
-        "course_title_ar": "بوصلة القرار المهني",
+        "course_title_ar": "دورة التخطيط للمسار المهني وبحث سوق العمل",
         "pathway_id": "PW-STU-003",
         "template_ids": [
           "TPL-FIRST-JOB-001",
@@ -8412,7 +8124,7 @@
       },
       {
         "course_id": "C-JOB-101",
-        "course_title_ar": "التموضع المهني للسوق المستهدف",
+        "course_title_ar": "دورة استهداف الوظائف وبناء ملفّك المهني",
         "pathway_id": "PW-STU-002",
         "template_ids": [
           "TPL-FIRST-JOB-001",
@@ -8422,7 +8134,7 @@
       },
       {
         "course_id": "C-COMX-101",
-        "course_title_ar": "بناء الرسالة والقصة للجمهور",
+        "course_title_ar": "دورة بناء الرسالة وتصميم العرض التنفيذي",
         "pathway_id": "PW-COM-001",
         "template_ids": [
           "TPL-CX-001",
@@ -8435,7 +8147,7 @@
       },
       {
         "course_id": "C-COMX-103",
-        "course_title_ar": "الحضور والصوت وإدارة رهبة الإلقاء",
+        "course_title_ar": "دورة مهارات الإلقاء والتحدث أمام الجمهور",
         "pathway_id": "PW-COM-001",
         "template_ids": [
           "TPL-DIGITAL-TRAINER-001",
@@ -8446,7 +8158,7 @@
       },
       {
         "course_id": "C-COMX-105",
-        "course_title_ar": "الأسئلة الصعبة والعرض أمام لجنة",
+        "course_title_ar": "دورة إدارة الأسئلة والرد تحت الضغط",
         "pathway_id": "PW-COM-001",
         "template_ids": [
           "TPL-CYBER-MANAGER-001",
@@ -8459,7 +8171,7 @@
       },
       {
         "course_id": "C-JOB-103",
-        "course_title_ar": "مشروع إثبات مهارة",
+        "course_title_ar": "دورة بناء ملف الأعمال المهني",
         "pathway_id": "PW-STU-002",
         "template_ids": [
           "TPL-FIRST-JOB-001",
@@ -8469,7 +8181,7 @@
       },
       {
         "course_id": "C-DAT-104",
-        "course_title_ar": "لوحة قرار وقصة بيانات",
+        "course_title_ar": "دورة تصميم لوحات المعلومات وتمثيل البيانات",
         "pathway_id": "PW-EMP-004",
         "template_ids": [
           "TPL-CX-001",
@@ -8482,7 +8194,7 @@
       },
       {
         "course_id": "C-JOB-104",
-        "course_title_ar": "المقابلة المبنية على الدليل",
+        "course_title_ar": "دورة مهارات المقابلات الوظيفية",
         "pathway_id": "PW-STU-002",
         "template_ids": [
           "TPL-FIRST-JOB-001"
@@ -8491,7 +8203,7 @@
       },
       {
         "course_id": "C-JOB-105",
-        "course_title_ar": "نظام البحث عن فرصة لمدة 6 أسابيع",
+        "course_title_ar": "دورة استراتيجية البحث عن عمل",
         "pathway_id": "PW-STU-002",
         "template_ids": [
           "TPL-FIRST-JOB-001"
@@ -8499,8 +8211,8 @@
         "template_count": 1
       },
       {
-        "course_id": "C-CAR-102",
-        "course_title_ar": "بحث المهن والسوق بلا أوهام",
+        "course_id": "C-CAR-101",
+        "course_title_ar": "دورة التخطيط للمسار المهني وبحث سوق العمل",
         "pathway_id": "PW-STU-003",
         "template_ids": [
           "TPL-FIRST-JOB-001"
@@ -8509,7 +8221,7 @@
       },
       {
         "course_id": "C-AI-104",
-        "course_title_ar": "سير عمل الكتابة والبحث المدعوم بالذكاء الاصطناعي",
+        "course_title_ar": "دورة الكتابة والبحث بالذكاء الاصطناعي",
         "pathway_id": "PW-FND-003",
         "template_ids": [
           "TPL-DIGITAL-TRAINER-001",
@@ -8519,7 +8231,7 @@
       },
       {
         "course_id": "C-MGR-101",
-        "course_title_ar": "الانتقال من منجز إلى مدير",
+        "course_title_ar": "دورة الانتقال إلى الإدارة وقيادة إيقاع الفريق",
         "pathway_id": "PW-EMP-005",
         "template_ids": [
           "TPL-NEW-MANAGER-001"
@@ -8527,8 +8239,8 @@
         "template_count": 1
       },
       {
-        "course_id": "C-MGR-102",
-        "course_title_ar": "توقعات الفريق وإيقاع الإدارة",
+        "course_id": "C-MGR-101",
+        "course_title_ar": "دورة الانتقال إلى الإدارة وقيادة إيقاع الفريق",
         "pathway_id": "PW-EMP-005",
         "template_ids": [
           "TPL-NEW-MANAGER-001"
@@ -8537,7 +8249,7 @@
       },
       {
         "course_id": "C-MGR-103",
-        "course_title_ar": "التفويض والمتابعة دون إدارة دقيقة",
+        "course_title_ar": "دورة التفويض والتوجيه (Coaching)",
         "pathway_id": "PW-EMP-005",
         "template_ids": [
           "TPL-NEW-MANAGER-001"
@@ -8546,7 +8258,7 @@
       },
       {
         "course_id": "C-MGR-104",
-        "course_title_ar": "التغذية الراجعة والأداء والمحادثات الصعبة",
+        "course_title_ar": "دورة التغذية الراجعة والمحادثات الصعبة",
         "pathway_id": "PW-EMP-005",
         "template_ids": [
           "TPL-NEW-MANAGER-001"
@@ -8555,7 +8267,7 @@
       },
       {
         "course_id": "C-MGR-105",
-        "course_title_ar": "خطة قيادة أول 90 يومًا",
+        "course_title_ar": "دورة خطة الـ٩٠ يوما الأولى للمدير",
         "pathway_id": "PW-EMP-005",
         "template_ids": [
           "TPL-CYBER-MANAGER-001",
@@ -8567,7 +8279,7 @@
       },
       {
         "course_id": "C-HR-103",
-        "course_title_ar": "دورة الأداء والتغذية الراجعة",
+        "course_title_ar": "دورة إدارة الأداء الوظيفي",
         "pathway_id": "PW-HR-001",
         "template_ids": [
           "TPL-NEW-MANAGER-001",
@@ -8577,7 +8289,7 @@
       },
       {
         "course_id": "C-NEG-104",
-        "course_title_ar": "إدارة النزاع والمحادثة الصعبة",
+        "course_title_ar": "دورة إدارة الخلاف والوساطة",
         "pathway_id": "PW-NEG-001",
         "template_ids": [
           "TPL-CX-001",
@@ -8586,8 +8298,8 @@
         "template_count": 2
       },
       {
-        "course_id": "C-SVC-102",
-        "course_title_ar": "حوار الخدمة في الصف الأمامي",
+        "course_id": "C-SVC-101",
+        "course_title_ar": "دورة تجربة المستفيد ومهارات خدمة العملاء",
         "pathway_id": "PW-GOV-002",
         "template_ids": [
           "TPL-CX-001"
@@ -8596,7 +8308,7 @@
       },
       {
         "course_id": "C-SVC-103",
-        "course_title_ar": "معالجة الشكاوى وخفض التصعيد",
+        "course_title_ar": "دورة إدارة الشكاوى وحل النزاعات",
         "pathway_id": "PW-GOV-002",
         "template_ids": [
           "TPL-CX-001"
@@ -8605,7 +8317,7 @@
       },
       {
         "course_id": "C-SVC-104",
-        "course_title_ar": "قياس جودة الخدمة",
+        "course_title_ar": "دورة قياس جودة الخدمة واستطلاعات الرضا",
         "pathway_id": "PW-GOV-002",
         "template_ids": [
           "TPL-CX-001"
@@ -8614,7 +8326,7 @@
       },
       {
         "course_id": "C-SVC-105",
-        "course_title_ar": "مشروع تحسين رحلة مستفيد",
+        "course_title_ar": "دورة تحسين الخدمات الحكومية بالتجريب",
         "pathway_id": "PW-GOV-002",
         "template_ids": [
           "TPL-CX-001"
@@ -8623,7 +8335,7 @@
       },
       {
         "course_id": "C-OPS-103",
-        "course_title_ar": "حل المشكلة والسبب الجذري",
+        "course_title_ar": "دورة تحليل السبب الجذري وحل المشكلات",
         "pathway_id": "PW-OPS-001",
         "template_ids": [
           "TPL-CX-001",
@@ -8633,7 +8345,7 @@
       },
       {
         "course_id": "C-PM-101",
-        "course_title_ar": "تعريف المشروع وميثاق القيمة",
+        "course_title_ar": "دورة تأسيس المشروع: النطاق والتخطيط والجدولة",
         "pathway_id": "PW-EMP-003",
         "template_ids": [
           "TPL-DIGITAL-TRANSFORM-001",
@@ -8643,7 +8355,7 @@
       },
       {
         "course_id": "C-PM-104",
-        "course_title_ar": "المخاطر والتغيير ومتابعة التنفيذ",
+        "course_title_ar": "دورة إدارة مخاطر المشاريع والتغيير",
         "pathway_id": "PW-EMP-003",
         "template_ids": [
           "TPL-CYBER-MANAGER-001",
@@ -8655,7 +8367,7 @@
       },
       {
         "course_id": "C-AUT-103",
-        "course_title_ar": "بناء سير عمل آلي موثوق",
+        "course_title_ar": "دورة بناء سير العمل الآلي",
         "pathway_id": "PW-AUT-001",
         "template_ids": [
           "TPL-DIGITAL-TRANSFORM-001",
@@ -8665,7 +8377,7 @@
       },
       {
         "course_id": "C-CYB-104",
-        "course_title_ar": "حوكمة الأمن واختيار الضوابط",
+        "course_title_ar": "دورة حوكمة الأمن السيبراني والامتثال",
         "pathway_id": "PW-CYB-001",
         "template_ids": [
           "TPL-CYBER-MANAGER-001",
@@ -8675,7 +8387,7 @@
       },
       {
         "course_id": "C-PM-103",
-        "course_title_ar": "أصحاب المصلحة واتصالات المشروع",
+        "course_title_ar": "دورة إدارة أصحاب المصلحة والتواصل في المشاريع",
         "pathway_id": "PW-EMP-003",
         "template_ids": [
           "TPL-DIGITAL-TRANSFORM-001",
@@ -8685,7 +8397,7 @@
       },
       {
         "course_id": "C-AI-105",
-        "course_title_ar": "مشروع إنتاجية مسؤول بالذكاء الاصطناعي",
+        "course_title_ar": "دورة تطبيق الذكاء الاصطناعي في بيئة العمل",
         "pathway_id": "PW-FND-003",
         "template_ids": [
           "TPL-DIGITAL-TRANSFORM-001"
@@ -8694,7 +8406,7 @@
       },
       {
         "course_id": "C-AI-101",
-        "course_title_ar": "الثقافة العملية للذكاء الاصطناعي",
+        "course_title_ar": "دورة أساسيات الذكاء الاصطناعي وهندسة الأوامر",
         "pathway_id": "PW-FND-003",
         "template_ids": [
           "TPL-CYBER-MANAGER-001",
@@ -8704,7 +8416,7 @@
       },
       {
         "course_id": "C-PRD-101",
-        "course_title_ar": "رؤية المنتج واستراتيجية القيمة",
+        "course_title_ar": "دورة استراتيجية المنتج واكتشاف المستخدم",
         "pathway_id": "PW-PRD-001",
         "template_ids": [
           "TPL-PRODUCT-001"
@@ -8712,8 +8424,8 @@
         "template_count": 1
       },
       {
-        "course_id": "C-PRD-102",
-        "course_title_ar": "اكتشاف المستخدم والمشكلة",
+        "course_id": "C-PRD-101",
+        "course_title_ar": "دورة استراتيجية المنتج واكتشاف المستخدم",
         "pathway_id": "PW-PRD-001",
         "template_ids": [
           "TPL-PRODUCT-001"
@@ -8722,7 +8434,7 @@
       },
       {
         "course_id": "C-PRD-104",
-        "course_title_ar": "Roadmap والعمل مع فريق المنتج",
+        "course_title_ar": "دورة خارطة طريق المنتج وإدارة الأعمال المتراكمة",
         "pathway_id": "PW-PRD-001",
         "template_ids": [
           "TPL-PRODUCT-001"
@@ -8731,7 +8443,7 @@
       },
       {
         "course_id": "C-PRD-105",
-        "course_title_ar": "الإطلاق ومؤشرات المنتج: مشروع متكامل",
+        "course_title_ar": "دورة إطلاق المنتج وقياس مؤشراته",
         "pathway_id": "PW-PRD-001",
         "template_ids": [
           "TPL-PRODUCT-001"
@@ -8740,7 +8452,7 @@
       },
       {
         "course_id": "C-FINM-105",
-        "course_title_ar": "قرار الاستثمار ولوحة الإدارة",
+        "course_title_ar": "دورة تقييم الاستثمارات وعرض القرار المالي",
         "pathway_id": "PW-FIN-001",
         "template_ids": [
           "TPL-FIN-DATA-001",
@@ -8750,7 +8462,7 @@
       },
       {
         "course_id": "C-DAT-101",
-        "course_title_ar": "صياغة سؤال القرار وخطة البيانات",
+        "course_title_ar": "دورة أساسيات تحليل البيانات وتنظيفها",
         "pathway_id": "PW-EMP-004",
         "template_ids": [
           "TPL-FIN-DATA-001",
@@ -8761,7 +8473,7 @@
       },
       {
         "course_id": "C-FINM-101",
-        "course_title_ar": "لغة القوائم المالية للقرار",
+        "course_title_ar": "دورة قراءة القوائم المالية وتحليل التكاليف",
         "pathway_id": "PW-FIN-001",
         "template_ids": [
           "TPL-FIN-DATA-001"
@@ -8770,7 +8482,7 @@
       },
       {
         "course_id": "C-FINM-103",
-        "course_title_ar": "الموازنة والتوقع وتحليل الانحراف",
+        "course_title_ar": "دورة إعداد الموازنات وتحليل الانحرافات",
         "pathway_id": "PW-FIN-001",
         "template_ids": [
           "TPL-FIN-DATA-001"
@@ -8778,8 +8490,8 @@
         "template_count": 1
       },
       {
-        "course_id": "C-DAT-102",
-        "course_title_ar": "تنظيف وتحليل البيانات بالجداول",
+        "course_id": "C-DAT-101",
+        "course_title_ar": "دورة أساسيات تحليل البيانات وتنظيفها",
         "pathway_id": "PW-EMP-004",
         "template_ids": [
           "TPL-FIN-DATA-001",
@@ -8790,7 +8502,7 @@
       },
       {
         "course_id": "C-DAT-105",
-        "course_title_ar": "مشروع قرار بالبيانات",
+        "course_title_ar": "دورة سرد البيانات وعرض التوصيات",
         "pathway_id": "PW-EMP-004",
         "template_ids": [
           "TPL-FIN-DATA-001"
@@ -8798,8 +8510,8 @@
         "template_count": 1
       },
       {
-        "course_id": "C-COMX-102",
-        "course_title_ar": "تصميم العرض التنفيذي والشرائح",
+        "course_id": "C-COMX-101",
+        "course_title_ar": "دورة بناء الرسالة وتصميم العرض التنفيذي",
         "pathway_id": "PW-COM-001",
         "template_ids": [
           "TPL-FIN-DATA-001"
@@ -8808,7 +8520,7 @@
       },
       {
         "course_id": "C-CYB-101",
-        "course_title_ar": "الأصول والتهديدات ومخاطر الأعمال",
+        "course_title_ar": "دورة أساسيات الأمن السيبراني وحماية الهويات",
         "pathway_id": "PW-CYB-001",
         "template_ids": [
           "TPL-CYBER-MANAGER-001"
@@ -8816,8 +8528,8 @@
         "template_count": 1
       },
       {
-        "course_id": "C-CYB-102",
-        "course_title_ar": "الهوية والتصيد والعنصر البشري",
+        "course_id": "C-CYB-101",
+        "course_title_ar": "دورة أساسيات الأمن السيبراني وحماية الهويات",
         "pathway_id": "PW-CYB-001",
         "template_ids": [
           "TPL-CYBER-MANAGER-001"
@@ -8826,7 +8538,7 @@
       },
       {
         "course_id": "C-CYB-103",
-        "course_title_ar": "حماية الأجهزة والبيانات والسحابة",
+        "course_title_ar": "دورة حماية البيانات وأمن السحابة",
         "pathway_id": "PW-CYB-001",
         "template_ids": [
           "TPL-CYBER-MANAGER-001"
@@ -8835,7 +8547,7 @@
       },
       {
         "course_id": "C-CYB-105",
-        "course_title_ar": "الاستجابة للحادث واستمرارية العمل",
+        "course_title_ar": "دورة الاستجابة للحوادث واستمرارية الأعمال",
         "pathway_id": "PW-CYB-001",
         "template_ids": [
           "TPL-CYBER-MANAGER-001"
@@ -8844,7 +8556,7 @@
       },
       {
         "course_id": "C-SCM-101",
-        "course_title_ar": "خريطة سلسلة الإمداد والقيمة",
+        "course_title_ar": "دورة أساسيات سلسلة الإمداد والتنبؤ بالطلب",
         "pathway_id": "PW-SCM-001",
         "template_ids": [
           "TPL-SUPPLY-001"
@@ -8852,8 +8564,8 @@
         "template_count": 1
       },
       {
-        "course_id": "C-SCM-102",
-        "course_title_ar": "تخطيط الطلب والتوريد",
+        "course_id": "C-SCM-101",
+        "course_title_ar": "دورة أساسيات سلسلة الإمداد والتنبؤ بالطلب",
         "pathway_id": "PW-SCM-001",
         "template_ids": [
           "TPL-SUPPLY-001"
@@ -8862,7 +8574,7 @@
       },
       {
         "course_id": "C-SCM-104",
-        "course_title_ar": "التوريد والمشتريات وتقييم المورد",
+        "course_title_ar": "دورة التوريد الاستراتيجي واختيار الموردين",
         "pathway_id": "PW-SCM-001",
         "template_ids": [
           "TPL-SUPPLY-001"
@@ -8871,7 +8583,7 @@
       },
       {
         "course_id": "C-SCM-105",
-        "course_title_ar": "مخاطر الموردين ولوحة السلسلة",
+        "course_title_ar": "دورة إدارة مخاطر سلسلة الإمداد وقياس أدائها",
         "pathway_id": "PW-SCM-001",
         "template_ids": [
           "TPL-SUPPLY-001"
@@ -8880,7 +8592,7 @@
       },
       {
         "course_id": "C-OPS-104",
-        "course_title_ar": "مؤشرات التشغيل ولوحة المراجعة",
+        "course_title_ar": "دورة مؤشرات الأداء التشغيلي",
         "pathway_id": "PW-OPS-001",
         "template_ids": [
           "TPL-SMART-OPS-001",
@@ -8890,7 +8602,7 @@
       },
       {
         "course_id": "C-LND-101",
-        "course_title_ar": "تحليل الحاجة وصياغة نواتج التعلم",
+        "course_title_ar": "دورة تحليل الاحتياجات والتصميم التعليمي",
         "pathway_id": "PW-LND-001",
         "template_ids": [
           "TPL-DIGITAL-TRAINER-001"
@@ -8898,8 +8610,8 @@
         "template_count": 1
       },
       {
-        "course_id": "C-LND-102",
-        "course_title_ar": "التصميم العكسي وبناء رحلة التعلم",
+        "course_id": "C-LND-101",
+        "course_title_ar": "دورة تحليل الاحتياجات والتصميم التعليمي",
         "pathway_id": "PW-LND-001",
         "template_ids": [
           "TPL-DIGITAL-TRAINER-001"
@@ -8908,7 +8620,7 @@
       },
       {
         "course_id": "C-LND-103",
-        "course_title_ar": "الأنشطة والتقييم وRubrics",
+        "course_title_ar": "دورة تصميم التقييمات ومعايير التصحيح",
         "pathway_id": "PW-LND-001",
         "template_ids": [
           "TPL-DIGITAL-TRAINER-001"
@@ -8917,7 +8629,7 @@
       },
       {
         "course_id": "C-LND-104",
-        "course_title_ar": "تصميم الشرائح والمواد المتاحة",
+        "course_title_ar": "دورة تصميم المواد التعليمية",
         "pathway_id": "PW-LND-001",
         "template_ids": [
           "TPL-DIGITAL-TRAINER-001"
@@ -8926,7 +8638,7 @@
       },
       {
         "course_id": "C-LND-105",
-        "course_title_ar": "التيسير والتعلم الرقمي: مشروع مدرب",
+        "course_title_ar": "دورة التيسير وتقديم التدريب رقميا",
         "pathway_id": "PW-LND-001",
         "template_ids": [
           "TPL-DIGITAL-TRAINER-001"
@@ -8935,7 +8647,7 @@
       },
       {
         "course_id": "C-AI-103",
-        "course_title_ar": "التحقق من مخرجات الذكاء الاصطناعي",
+        "course_title_ar": "دورة تقييم مخرجات الذكاء الاصطناعي والتحقق منها",
         "pathway_id": "PW-FND-003",
         "template_ids": [
           "TPL-DIGITAL-TRAINER-001"
@@ -8943,8 +8655,8 @@
         "template_count": 1
       },
       {
-        "course_id": "C-OPS-102",
-        "course_title_ar": "Lean والهدر والتدفق",
+        "course_id": "C-OPS-101",
+        "course_title_ar": "دورة رسم العمليات ومنهجية Lean",
         "pathway_id": "PW-OPS-001",
         "template_ids": [
           "TPL-SMART-OPS-001"
@@ -8953,7 +8665,7 @@
       },
       {
         "course_id": "C-OPS-105",
-        "course_title_ar": "تجربة التحسين والتغيير: مشروع أثر",
+        "course_title_ar": "دورة التحسين المستمر ومنهجية PDCA",
         "pathway_id": "PW-OPS-001",
         "template_ids": [
           "TPL-SMART-OPS-001"
@@ -8961,8 +8673,8 @@
         "template_count": 1
       },
       {
-        "course_id": "C-PM-102",
-        "course_title_ar": "النطاق والجدول والموارد",
+        "course_id": "C-PM-101",
+        "course_title_ar": "دورة تأسيس المشروع: النطاق والتخطيط والجدولة",
         "pathway_id": "PW-EMP-003",
         "template_ids": [
           "TPL-STRATEGY-001"
@@ -8971,7 +8683,7 @@
       },
       {
         "course_id": "C-PM-105",
-        "course_title_ar": "إغلاق المشروع وقياس القيمة",
+        "course_title_ar": "دورة إغلاق المشاريع وقياس أثرها",
         "pathway_id": "PW-EMP-003",
         "template_ids": [
           "TPL-STRATEGY-001"
@@ -8980,7 +8692,7 @@
       },
       {
         "course_id": "C-NEG-105",
-        "course_title_ar": "التفاوض متعدد الأطراف وتصميم الاتفاق",
+        "course_title_ar": "دورة التفاوض متعدد الأطراف",
         "pathway_id": "PW-NEG-001",
         "template_ids": [
           "TPL-STRATEGY-001"
@@ -8998,7 +8710,7 @@
       "All differentiator question IDs exist in question bank v1",
       "All competitor template IDs resolve",
       "All 20 core pathways are covered by required, conditional, or bridge composition",
-      "Every starter version contains exactly three required courses",
+      "Every starter version stays within 24–48 hours (2–3 courses after the merge)",
       "All conditions use supported operators and array values",
       "All hard-filter actions and target-skill course references resolve",
       "No course is repeated across required, conditional, and bridge buckets",

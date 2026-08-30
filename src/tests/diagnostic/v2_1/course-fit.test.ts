@@ -2,7 +2,8 @@
    المهارة تُقاس على مقررها لا على اتحاد المسار. */
 
 import { describe, it, expect, beforeAll } from 'vitest'
-import { catalogCourses, courseById } from '../../../domain/diagnostic/catalog'
+import { catalogCourses, courseById, launchPathways } from '../../../domain/diagnostic/catalog'
+import { MIN_PATHWAY_COURSES } from '../../../data/courses'
 import {
   assessCourseFit,
   assessPathwayByCourses,
@@ -30,12 +31,14 @@ describe('ملاءمة المقرر — لكل مقرر مهاراته', () => {
 
   it('مقرران في نفس المسار يختلفان بالملاءمة حين تختلف مهارات المتعلم — لا متوسط واحد للمسار', () => {
     const cs = catalogCourses.filter((c) => c.pathway_id === 'PW-EMP-003').sort((a, b) => a.sequence - b.sequence)
-    expect(cs.length).toBe(5)
+    /* العدد يُقرأ لا يُكتب: كان مكتوبا ٥ فاحمرّ حين صار المسار أربع دورات بعد
+       الدمج — والمقصود «أكثر من مقرر في المسار» لا رقمٌ بعينه */
+    expect(cs.length).toBeGreaterThanOrEqual(2)
     /* نُتقن مهارات المقرر الأول كلها ولا شيء غيرها */
     const mastered = Object.fromEntries(cs[0].skill_slugs.map((s) => [s, 5]))
     const ctx = ctxOf({ career_stage: fact('manager') }, mastered)
     const first = assessCourseFit(cs[0], ctx)
-    const last = assessCourseFit(cs[4], ctx)
+    const last = assessCourseFit(cs[cs.length - 1], ctx)
     expect(first.masteredSkills.length).toBe(cs[0].skill_slugs.length)
     /* المقرر الذي أتقن المتعلم كل مهاراته حاجته صفر — والآخر لا */
     expect(first.skillNeed).toBe(0)
@@ -99,12 +102,18 @@ describe('ملاءمة المقرر — لكل مقرر مهاراته', () => {
     expect(personalizePlan('PW-FND-003', ctx).courses.some((c) => c.courseId === capstone.course_id)).toBe(true)
   })
 
-  it('الخطة تبقى خمسة مقررات بعد التشخيص — ولا تكرار', () => {
+  it('الخطة تبقى بكامل مقررات المسار بعد التشخيص — ولا تكرار', () => {
+    /* كان العنوان والرقم «خمسة». وبعد دمج أوّل دورتين من كل مسار صارت أربعا،
+       فاحمرّ الاختبار على تغيّرٍ مقصود. والمقصود منه أصلا: التشخيص يُخصّص
+       المقررات ولا يُنقص عددها ولا يكرّرها — فيُقرأ العدد من المسار نفسه،
+       بأرضيّةٍ صريحة تمنع انكماشه بصمت. */
     for (const pid of ['PW-FND-003', 'PW-STU-002', 'PW-EMP-003']) {
+      const expected = launchPathways.find((p) => p.id === pid)!.course_ids.length
+      expect(expected).toBeGreaterThanOrEqual(MIN_PATHWAY_COURSES)
       const ctx = ctxOf({ career_stage: fact('fresh_graduate') })
       const plan = personalizePlan(pid, ctx)
-      expect(plan.courses.length).toBe(5)
-      expect(new Set(plan.courses.map((c) => c.courseId)).size).toBe(5)
+      expect(plan.courses.length, pid).toBe(expected)
+      expect(new Set(plan.courses.map((c) => c.courseId)).size, pid).toBe(expected)
       expect(plan.totalHours).toBeGreaterThan(0)
     }
   })

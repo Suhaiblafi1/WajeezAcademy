@@ -35,7 +35,12 @@ const F = {
 } as const
 
 interface SourceCourse { course_id: string; title_ar: string; total_hours: number; skill_slugs: string[] }
-interface SourcePathway { id: string; title: string; course_ids: string[] }
+interface SourcePathway {
+  id: string
+  title: string
+  course_ids: string[]
+  support_courses?: { course_id: string; reason_ar: string }[]
+}
 interface SourceLibraryResource { id: string; kind: string; title_ar: string; url: string; skill_slugs?: string[] }
 
 /** أنواع موارد المكتبة المعروفة — الصفحة تعرف أيقونة كلٍّ منها وتسميته */
@@ -147,6 +152,37 @@ export function validateCatalogSource(): ValidationResult {
       if (!courseIds.has(cid)) errorsAr.push(`${F.core} · المسار ${p.id}: يشير إلى دورة غير موجودة «${cid}»`)
     }
   }
+  /* ٤-ب — الدورات المساندة: ثلاث لكل مسار جاهز، موجودة، ولا تكرّر دورةً أساسية.
+
+     والأهمّ أنّها **خارج** course_ids بقصد: تلك القائمة وحدها يقرؤها
+     pathwaySkills، ومنها تُحسب فجوة المهارات التي يرتّب بها التشخيص المسارات.
+     فإدخال مساندةٍ هناك يغيّر ترتيب المسارات لكلّ متعلّم — والمساندات وعدُ عرضٍ
+     في المسار الجاهز لا إشارةُ تشخيص. حارسُ هذا في
+     src/tests/catalog/support-courses.test.ts. */
+  for (const p of core.launch_pathways) {
+    const sup = p.support_courses ?? []
+    if (sup.length !== 3) {
+      errorsAr.push(`${F.core} · المسار ${p.id}: الدورات المساندة ${sup.length} لا ٣ — المسار الجاهز أربعُ أساسيات وثلاثُ مساندات`)
+    }
+    const core_ = new Set(p.course_ids)
+    const seen = new Set<string>()
+    for (const sc of sup) {
+      if (!courseIds.has(sc.course_id)) {
+        errorsAr.push(`${F.core} · المسار ${p.id}: مساندة تشير إلى دورة غير موجودة «${sc.course_id}»`)
+      }
+      if (core_.has(sc.course_id)) {
+        errorsAr.push(`${F.core} · المسار ${p.id}: «${sc.course_id}» مساندة وأساسية معا — تُعرض مرّتين وتُسعَّر مرّتين`)
+      }
+      if (seen.has(sc.course_id)) {
+        errorsAr.push(`${F.core} · المسار ${p.id}: مساندة مكرّرة «${sc.course_id}»`)
+      }
+      seen.add(sc.course_id)
+      if (!sc.reason_ar?.trim()) {
+        errorsAr.push(`${F.core} · المسار ${p.id}: المساندة «${sc.course_id}» بلا سبب — دورةٌ تُعرض بلا تفسير لماذا هي هنا`)
+      }
+    }
+  }
+
   for (const t of templates) {
     const refs = [
       ...(t.required_courses ?? []), ...(t.conditional_courses ?? []),

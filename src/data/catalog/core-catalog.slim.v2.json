@@ -20,12 +20,11 @@
       "outcome_metric": "80% يكملون تجربتين؛ 70% يقدمون قرارًا يستوفي rubric؛ إعادة قياس وضوح القرار بعد 30 يومًا.",
       "course_ids": [
         "C-CAR-101",
-        "C-CAR-102",
         "C-CAR-105",
         "C-CAR-103",
         "C-CAR-104"
       ],
-      "total_hours": 44
+      "total_hours": 40
     },
     {
       "id": "PW-STU-002",
@@ -44,12 +43,11 @@
       "outcome_metric": "75% يجتازون مراجعة الملف؛ تحسن 20 نقطة في rubric المقابلة؛ 80% يشغلون لوحة البحث 4 أسابيع.",
       "course_ids": [
         "C-JOB-101",
-        "C-JOB-102",
         "C-JOB-103",
         "C-JOB-104",
         "C-JOB-105"
       ],
-      "total_hours": 44
+      "total_hours": 40
     },
     {
       "id": "PW-FND-003",
@@ -68,12 +66,11 @@
       "outcome_metric": "90% بلا خرق خصوصية في المحاكاة؛ 75% يجتازون تدقيق التحقق؛ 60% يثبتون أثرًا أو قرار إيقاف صحيحًا.",
       "course_ids": [
         "C-AI-101",
-        "C-AI-102",
         "C-AI-103",
         "C-AI-104",
         "C-AI-105"
       ],
-      "total_hours": 44
+      "total_hours": 40
     },
     {
       "id": "PW-EMP-004",
@@ -92,12 +89,11 @@
       "outcome_metric": "80% بلا خطأ حسابي جوهري؛ 75% اجتياز الحزمة؛ تحسن زمن الوصول للمعلومة في اختبار مستخدم.",
       "course_ids": [
         "C-DAT-101",
-        "C-DAT-102",
         "C-DAT-103",
         "C-DAT-104",
         "C-DAT-105"
       ],
-      "total_hours": 44
+      "total_hours": 40
     },
     {
       "id": "PW-EMP-003",
@@ -116,12 +112,11 @@
       "outcome_metric": "80% يجتازون بوابات الميثاق والخطة والمخاطر؛ 75% يقدمون ملف إغلاق متكامل.",
       "course_ids": [
         "C-PM-101",
-        "C-PM-102",
         "C-PM-103",
         "C-PM-104",
         "C-PM-105"
       ],
-      "total_hours": 44
+      "total_hours": 40
     },
     {
       "id": "PW-EMP-005",
@@ -140,12 +135,11 @@
       "outcome_metric": "75% اجتياز محادثات الأداء؛ تحسن وضوح التوقعات في pulse قصير؛ 80% يطبقون إيقاع 4 أسابيع.",
       "course_ids": [
         "C-MGR-101",
-        "C-MGR-102",
         "C-MGR-103",
         "C-MGR-104",
         "C-MGR-105"
       ],
-      "total_hours": 44
+      "total_hours": 40
     },
     {
       "id": "PW-GOV-002",
@@ -164,12 +158,11 @@
       "outcome_metric": "85% اجتياز السلامة والخصوصية؛ تحسن 20 نقطة في rubric الحوار؛ مشروع واحد قابل للتجربة لكل فريق.",
       "course_ids": [
         "C-SVC-101",
-        "C-SVC-102",
         "C-SVC-103",
         "C-SVC-104",
         "C-SVC-105"
       ],
-      "total_hours": 44
+      "total_hours": 40
     },
     {
       "id": "PW-BIZ-001",
@@ -188,12 +181,11 @@
       "outcome_metric": "كل متعلم يجري 5 مقابلات و5 اختبارات قيمة؛ 70% يشغلون تجربة بيع؛ القرار الصحيح أهم من حدوث البيع.",
       "course_ids": [
         "C-BIZ-101",
-        "C-BIZ-102",
         "C-BIZ-103",
         "C-BIZ-104",
         "C-BIZ-105"
       ],
-      "total_hours": 44
+      "total_hours": 40
     },
     {
       "id": "PW-AUT-001",
@@ -212,12 +204,11 @@
       "outcome_metric": "خفض زمن العملية أو أخطائها 20% على الأقل في التجربة، وصفر قرار حساس دون نقطة تحكم بشرية.",
       "course_ids": [
         "C-AUT-101",
-        "C-AUT-102",
         "C-AUT-103",
         "C-AUT-104",
         "C-AUT-105"
       ],
-      "total_hours": 44
+      "total_hours": 40
     },
     {
       "id": "PW-MKT-001",
@@ -236,12 +227,11 @@
       "outcome_metric": "اكتمال تجربة واحدة بفرضية ومقياس وقرار؛ وتحسن مؤشر قمع محدد مقارنة بخط الأساس دون ادعاء سببية زائفة.",
       "course_ids": [
         "C-MKT-101",
-        "C-MKT-102",
         "C-MKT-103",
         "C-MKT-104",
         "C-MKT-105"
       ],
-      "total_hours": 44
+      "total_hours": 40
     },
     {
       "id": "PW-SAL-001",
@@ -260,12 +250,11 @@
       "outcome_metric": "اجتياز محادثة اكتشاف وعرض وتفاوض وفق rubric واتساق مراحل CRM؛ لا يُقاس النجاح بالإغلاق وحده.",
       "course_ids": [
         "C-SAL-101",
-        "C-SAL-102",
         "C-SAL-103",
         "C-SAL-104",
         "C-SAL-105"
       ],
-      "total_hours": 44
+      "total_hours": 40
     },
     {
       "id": "PW-HR-001",
@@ -284,12 +273,11 @@
       "outcome_metric": "اجتياز حزمة HR وفق rubric، واتفاق مقيمين على عينات قرار، واكتمال فحص التحيز والخصوصية.",
       "course_ids": [
         "C-HR-101",
-        "C-HR-102",
         "C-HR-103",
         "C-HR-104",
         "C-HR-105"
       ],
-      "total_hours": 44
+      "total_hours": 40
     },
     {
       "id": "PW-FIN-001",
@@ -308,12 +296,11 @@
       "outcome_metric": "دقة النموذج ضمن عتبة محددة، اتساق الافتراضات، وقدرة المتعلم على تفسير القرار وحدوده أمام لجنة.",
       "course_ids": [
         "C-FINM-101",
-        "C-FINM-102",
         "C-FINM-103",
         "C-FINM-104",
         "C-FINM-105"
       ],
-      "total_hours": 44
+      "total_hours": 40
     },
     {
       "id": "PW-PRD-001",
@@ -332,12 +319,11 @@
       "outcome_metric": "خمسة اختبارات مستخدم على الأقل، قرار MVP موثق، ومؤشر نتيجة لا مؤشر نشاط فقط.",
       "course_ids": [
         "C-PRD-101",
-        "C-PRD-102",
         "C-PRD-103",
         "C-PRD-104",
         "C-PRD-105"
       ],
-      "total_hours": 44
+      "total_hours": 40
     },
     {
       "id": "PW-OPS-001",
@@ -356,12 +342,11 @@
       "outcome_metric": "تحسن مؤشر تشغيل محدد مع توثيق خط الأساس وعدم وجود أثر سلبي جوهري على الجودة أو العميل.",
       "course_ids": [
         "C-OPS-101",
-        "C-OPS-102",
         "C-OPS-103",
         "C-OPS-104",
         "C-OPS-105"
       ],
-      "total_hours": 44
+      "total_hours": 40
     },
     {
       "id": "PW-CYB-001",
@@ -380,12 +365,11 @@
       "outcome_metric": "اكتمال ملف مخاطر وضوابط قابلة للتحقق، وزمن اكتشاف/تصعيد في المحاكاة، وعدم جمع بيانات حساسة أثناء التدريب.",
       "course_ids": [
         "C-CYB-101",
-        "C-CYB-102",
         "C-CYB-103",
         "C-CYB-104",
         "C-CYB-105"
       ],
-      "total_hours": 44
+      "total_hours": 40
     },
     {
       "id": "PW-SCM-001",
@@ -404,12 +388,11 @@
       "outcome_metric": "تحسن سيناريو OTIF/مخزون/تكلفة في المحاكاة مع افتراضات واضحة ومخاطر ومفاضلات موثقة.",
       "course_ids": [
         "C-SCM-101",
-        "C-SCM-102",
         "C-SCM-103",
         "C-SCM-104",
         "C-SCM-105"
       ],
-      "total_hours": 44
+      "total_hours": 40
     },
     {
       "id": "PW-COM-001",
@@ -428,12 +411,11 @@
       "outcome_metric": "تحسن rubric قبل/بعد في وضوح الرسالة والأدلة والإلقاء والاستجابة للأسئلة، لا الثقة الذاتية وحدها.",
       "course_ids": [
         "C-COMX-101",
-        "C-COMX-102",
         "C-COMX-103",
         "C-COMX-104",
         "C-COMX-105"
       ],
-      "total_hours": 44
+      "total_hours": 40
     },
     {
       "id": "PW-NEG-001",
@@ -452,12 +434,11 @@
       "outcome_metric": "جودة التحضير وخلق القيمة وحماية الحد الأدنى ووضوح الالتزامات؛ لا يقاس النجاح بنسبة ما أخذه طرف فقط.",
       "course_ids": [
         "C-NEG-101",
-        "C-NEG-102",
         "C-NEG-103",
         "C-NEG-104",
         "C-NEG-105"
       ],
-      "total_hours": 44
+      "total_hours": 40
     },
     {
       "id": "PW-LND-001",
@@ -476,12 +457,11 @@
       "outcome_metric": "بلوغ 85/100 في بوابة جودة التصميم، واتفاق مقيمين على rubric، وتحسن أداء المتعلمين في التجربة.",
       "course_ids": [
         "C-LND-101",
-        "C-LND-102",
         "C-LND-103",
         "C-LND-104",
         "C-LND-105"
       ],
-      "total_hours": 44
+      "total_hours": 40
     }
   ],
   "courses": [
@@ -489,60 +469,42 @@
       "course_id": "C-CAR-101",
       "pathway_id": "PW-STU-003",
       "sequence": 1,
-      "title_ar": "دورة التخطيط للمسار المهني",
-      "subtitle_ar": "تحويل قيمك وأولوياتك إلى معايير قرار",
+      "title_ar": "دورة التخطيط للمسار المهني وبحث سوق العمل",
+      "subtitle_ar": "تحويل قيمك وأولوياتك إلى معايير قرار · بحث المهن والسوق كما هي فعلا لا كما تبدو",
       "level_ar": "تأسيسي",
-      "total_hours": 8,
+      "total_hours": 16,
       "skill_slugs": [
         "career_planning",
         "self_leadership",
         "decision_making",
-        "reflection"
+        "reflection",
+        "research_literacy",
+        "market_research",
+        "information_evaluation"
       ],
       "skill_ids": [
         "SK-CAREER-001",
         "SK-LEAD-001",
         "SK-COG-006",
-        "SK-LEARN-009"
+        "SK-LEARN-009",
+        "SK-COG-011",
+        "SK-BIZ-004",
+        "SK-DIG-003"
       ],
       "skill_names_ar": [
         "تخطيط المسار المهني",
         "قيادة الذات",
         "اتخاذ القرار",
-        "التأمل والمراجعة الذاتية"
-      ]
-    },
-    {
-      "course_id": "C-CAR-102",
-      "pathway_id": "PW-STU-003",
-      "sequence": 2,
-      "title_ar": "دورة بحث سوق العمل والمهن",
-      "subtitle_ar": "بحث المهن والسوق كما هي فعلا لا كما تبدو",
-      "level_ar": "تأسيسي",
-      "total_hours": 8,
-      "skill_slugs": [
-        "research_literacy",
-        "market_research",
-        "information_evaluation",
-        "career_planning"
-      ],
-      "skill_ids": [
-        "SK-COG-011",
-        "SK-BIZ-004",
-        "SK-DIG-003",
-        "SK-CAREER-001"
-      ],
-      "skill_names_ar": [
+        "التأمل والمراجعة الذاتية",
         "مهارة البحث والتحقق",
         "بحث السوق",
-        "تقييم موثوقية المعلومات",
-        "تخطيط المسار المهني"
+        "تقييم موثوقية المعلومات"
       ]
     },
     {
       "course_id": "C-CAR-105",
       "pathway_id": "PW-STU-003",
-      "sequence": 3,
+      "sequence": 2,
       "title_ar": "دورة بناء شبكة العلاقات المهنية",
       "subtitle_ar": "التحدث مع محترفين قبل اختيار مسارك",
       "level_ar": "تأسيسي",
@@ -569,7 +531,7 @@
     {
       "course_id": "C-CAR-103",
       "pathway_id": "PW-STU-003",
-      "sequence": 4,
+      "sequence": 3,
       "title_ar": "دورة التجريب المهني والتدريب العملي",
       "subtitle_ar": "اختبار المهن بتجارب قصيرة: من الفرضية إلى الدليل",
       "level_ar": "تأسيسي",
@@ -596,11 +558,11 @@
     {
       "course_id": "C-CAR-104",
       "pathway_id": "PW-STU-003",
-      "sequence": 5,
+      "sequence": 4,
       "title_ar": "دورة اتخاذ القرار المهني وخطة الانتقال",
       "subtitle_ar": "مقارنة خياراتك المهنية وخطة أول 30 يومًا",
       "level_ar": "تأسيسي",
-      "total_hours": 12,
+      "total_hours": 8,
       "skill_slugs": [
         "decision_making",
         "scenario_planning",
@@ -624,60 +586,42 @@
       "course_id": "C-JOB-101",
       "pathway_id": "PW-STU-002",
       "sequence": 1,
-      "title_ar": "دورة استهداف الوظائف وبناء عرض القيمة المهني",
-      "subtitle_ar": "استهداف الوظيفة الصحيحة وبناء عرض قيمتك",
+      "title_ar": "دورة استهداف الوظائف وبناء ملفّك المهني",
+      "subtitle_ar": "استهداف الوظيفة الصحيحة وبناء عرض قيمتك · سيرة ذاتية وLinkedIn يثبتان إنجازاتك",
       "level_ar": "تأسيسي",
-      "total_hours": 8,
+      "total_hours": 16,
       "skill_slugs": [
         "career_planning",
         "market_research",
         "personal_branding",
-        "workplace_professionalism"
+        "workplace_professionalism",
+        "cv_writing",
+        "linkedin_profile",
+        "arabic_business_writing"
       ],
       "skill_ids": [
         "SK-CAREER-001",
         "SK-BIZ-004",
         "SK-CAREER-008",
-        "SK-CAREER-009"
+        "SK-CAREER-009",
+        "SK-CAREER-002",
+        "SK-CAREER-003",
+        "SK-COM-003"
       ],
       "skill_names_ar": [
         "تخطيط المسار المهني",
         "بحث السوق",
         "العلامة المهنية الشخصية",
-        "الاحتراف في بيئة العمل"
-      ]
-    },
-    {
-      "course_id": "C-JOB-102",
-      "pathway_id": "PW-STU-002",
-      "sequence": 2,
-      "title_ar": "دورة كتابة السيرة الذاتية وملف LinkedIn",
-      "subtitle_ar": "سيرة ذاتية وLinkedIn يثبتان إنجازاتك",
-      "level_ar": "تأسيسي",
-      "total_hours": 8,
-      "skill_slugs": [
-        "cv_writing",
-        "linkedin_profile",
-        "arabic_business_writing",
-        "personal_branding"
-      ],
-      "skill_ids": [
-        "SK-CAREER-002",
-        "SK-CAREER-003",
-        "SK-COM-003",
-        "SK-CAREER-008"
-      ],
-      "skill_names_ar": [
+        "الاحتراف في بيئة العمل",
         "كتابة السيرة الذاتية",
         "بناء ملف LinkedIn",
-        "الكتابة العربية المهنية",
-        "العلامة المهنية الشخصية"
+        "الكتابة العربية المهنية"
       ]
     },
     {
       "course_id": "C-JOB-103",
       "pathway_id": "PW-STU-002",
-      "sequence": 3,
+      "sequence": 2,
       "title_ar": "دورة بناء ملف الأعمال المهني",
       "subtitle_ar": "إثبات المهارة بمشروع: قطعة عمل تقنع صاحب القرار",
       "level_ar": "تأسيسي",
@@ -704,7 +648,7 @@
     {
       "course_id": "C-JOB-104",
       "pathway_id": "PW-STU-002",
-      "sequence": 4,
+      "sequence": 3,
       "title_ar": "دورة مهارات المقابلات الوظيفية",
       "subtitle_ar": "الإجابة على أسئلة المقابلة بقصص حقيقية",
       "level_ar": "تأسيسي",
@@ -731,11 +675,11 @@
     {
       "course_id": "C-JOB-105",
       "pathway_id": "PW-STU-002",
-      "sequence": 5,
+      "sequence": 4,
       "title_ar": "دورة استراتيجية البحث عن عمل",
       "subtitle_ar": "خطة بحث عن وظيفة لمدة 6 أسابيع",
       "level_ar": "تأسيسي",
-      "total_hours": 12,
+      "total_hours": 8,
       "skill_slugs": [
         "job_search_strategy",
         "networking",
@@ -759,50 +703,35 @@
       "course_id": "C-AI-101",
       "pathway_id": "PW-FND-003",
       "sequence": 1,
-      "title_ar": "دورة أساسيات الذكاء الاصطناعي وأخلاقياته",
-      "subtitle_ar": "ماذا يفعل الذكاء الاصطناعي جيدًا وأين يخطئ",
+      "title_ar": "دورة أساسيات الذكاء الاصطناعي وهندسة الأوامر",
+      "subtitle_ar": "ماذا يفعل الذكاء الاصطناعي جيدًا وأين يخطئ · كتابة طلبات ذكاء اصطناعي تعطي نتائج ثابتة",
       "level_ar": "تأسيسي",
-      "total_hours": 8,
+      "total_hours": 16,
       "skill_slugs": [
         "ai_literacy",
         "ai_use_cases_mapping",
         "ai_ethics",
-        "ai_data_privacy"
-      ],
-      "skill_ids": [
-        "SK-AI-001",
-        "SK-AI-013",
-        "SK-AI-011",
-        "SK-AI-012"
-      ],
-      "skill_names_ar": [
-        "الثقافة العامة في الذكاء الاصطناعي",
-        "تحديد حالات استخدام AI",
-        "أخلاقيات الذكاء الاصطناعي",
-        "خصوصية البيانات مع AI"
-      ]
-    },
-    {
-      "course_id": "C-AI-102",
-      "pathway_id": "PW-FND-003",
-      "sequence": 2,
-      "title_ar": "دورة هندسة الأوامر (Prompt Engineering)",
-      "subtitle_ar": "كتابة طلبات ذكاء اصطناعي تعطي نتائج ثابتة",
-      "level_ar": "تأسيسي",
-      "total_hours": 8,
-      "skill_slugs": [
+        "ai_data_privacy",
         "prompting_basics",
         "prompt_iteration",
         "clear_expression",
         "ai_output_evaluation"
       ],
       "skill_ids": [
+        "SK-AI-001",
+        "SK-AI-013",
+        "SK-AI-011",
+        "SK-AI-012",
         "SK-AI-002",
         "SK-AI-003",
         "SK-COM-002",
         "SK-AI-004"
       ],
       "skill_names_ar": [
+        "الثقافة العامة في الذكاء الاصطناعي",
+        "تحديد حالات استخدام AI",
+        "أخلاقيات الذكاء الاصطناعي",
+        "خصوصية البيانات مع AI",
         "أساسيات التوجيه وكتابة الطلبات",
         "تحسين الطلبات بالتكرار",
         "التعبير الواضح",
@@ -812,7 +741,7 @@
     {
       "course_id": "C-AI-103",
       "pathway_id": "PW-FND-003",
-      "sequence": 3,
+      "sequence": 2,
       "title_ar": "دورة تقييم مخرجات الذكاء الاصطناعي والتحقق منها",
       "subtitle_ar": "التأكد من صحة إجابات الذكاء الاصطناعي",
       "level_ar": "ممارس",
@@ -839,7 +768,7 @@
     {
       "course_id": "C-AI-104",
       "pathway_id": "PW-FND-003",
-      "sequence": 4,
+      "sequence": 3,
       "title_ar": "دورة الكتابة والبحث بالذكاء الاصطناعي",
       "subtitle_ar": "الكتابة والبحث بمساعدة الذكاء الاصطناعي بأمان",
       "level_ar": "ممارس",
@@ -866,11 +795,11 @@
     {
       "course_id": "C-AI-105",
       "pathway_id": "PW-FND-003",
-      "sequence": 5,
+      "sequence": 4,
       "title_ar": "دورة تطبيق الذكاء الاصطناعي في بيئة العمل",
       "subtitle_ar": "تطبيق الذكاء الاصطناعي على مهمة حقيقية في عملك",
       "level_ar": "ممارس",
-      "total_hours": 12,
+      "total_hours": 8,
       "skill_slugs": [
         "ai_use_cases_mapping",
         "ai_workflow_design",
@@ -894,50 +823,35 @@
       "course_id": "C-DAT-101",
       "pathway_id": "PW-EMP-004",
       "sequence": 1,
-      "title_ar": "دورة أساسيات تحليل البيانات وصياغة الأسئلة",
-      "subtitle_ar": "تحويل طلب تقرير غامض إلى سؤال واضح",
+      "title_ar": "دورة أساسيات تحليل البيانات وتنظيفها",
+      "subtitle_ar": "تحويل طلب تقرير غامض إلى سؤال واضح · تنظيف البيانات وتحليلها بجداول إلكترونية",
       "level_ar": "تأسيسي",
-      "total_hours": 8,
+      "total_hours": 16,
       "skill_slugs": [
         "data_literacy",
         "analytical_thinking",
         "data_collection",
-        "decision_making"
-      ],
-      "skill_ids": [
-        "SK-DATA-001",
-        "SK-COG-001",
-        "SK-DATA-002",
-        "SK-COG-006"
-      ],
-      "skill_names_ar": [
-        "الثقافة البيانية",
-        "التفكير التحليلي",
-        "جمع البيانات",
-        "اتخاذ القرار"
-      ]
-    },
-    {
-      "course_id": "C-DAT-102",
-      "pathway_id": "PW-EMP-004",
-      "sequence": 2,
-      "title_ar": "دورة تنظيف البيانات وتحليلها بالجداول الإلكترونية",
-      "subtitle_ar": "تنظيف البيانات وتحليلها بجداول إلكترونية",
-      "level_ar": "تأسيسي",
-      "total_hours": 8,
-      "skill_slugs": [
+        "decision_making",
         "spreadsheets_basics",
         "data_cleaning",
         "data_analysis_basics",
         "statistical_thinking"
       ],
       "skill_ids": [
+        "SK-DATA-001",
+        "SK-COG-001",
+        "SK-DATA-002",
+        "SK-COG-006",
         "SK-DIG-008",
         "SK-DATA-003",
         "SK-DATA-004",
         "SK-DATA-010"
       ],
       "skill_names_ar": [
+        "الثقافة البيانية",
+        "التفكير التحليلي",
+        "جمع البيانات",
+        "اتخاذ القرار",
         "أساسيات الجداول الإلكترونية",
         "تنظيف البيانات",
         "أساسيات تحليل البيانات",
@@ -947,7 +861,7 @@
     {
       "course_id": "C-DAT-103",
       "pathway_id": "PW-EMP-004",
-      "sequence": 3,
+      "sequence": 2,
       "title_ar": "دورة تصميم مؤشرات الأداء وأهداف OKR",
       "subtitle_ar": "اختيار مؤشرات أداء تقود لقرار صحيح",
       "level_ar": "ممارس",
@@ -974,7 +888,7 @@
     {
       "course_id": "C-DAT-104",
       "pathway_id": "PW-EMP-004",
-      "sequence": 4,
+      "sequence": 3,
       "title_ar": "دورة تصميم لوحات المعلومات وتمثيل البيانات",
       "subtitle_ar": "عرض بياناتك في لوحة تدفع لقرار",
       "level_ar": "ممارس",
@@ -1001,11 +915,11 @@
     {
       "course_id": "C-DAT-105",
       "pathway_id": "PW-EMP-004",
-      "sequence": 5,
+      "sequence": 4,
       "title_ar": "دورة سرد البيانات وعرض التوصيات",
       "subtitle_ar": "قرار مدعوم بالبيانات: من السؤال إلى التوصية",
       "level_ar": "ممارس",
-      "total_hours": 12,
+      "total_hours": 8,
       "skill_slugs": [
         "data_analysis_basics",
         "data_storytelling",
@@ -1029,39 +943,15 @@
       "course_id": "C-PM-101",
       "pathway_id": "PW-EMP-003",
       "sequence": 1,
-      "title_ar": "دورة أساسيات إدارة المشاريع وتحديد النطاق",
-      "subtitle_ar": "تحديد مشكلة مشروعك ونتيجته المطلوبة",
+      "title_ar": "دورة تأسيس المشروع: النطاق والتخطيط والجدولة",
+      "subtitle_ar": "تحديد مشكلة مشروعك ونتيجته المطلوبة · بناء خطة مشروع تُنفَّذ لا تبقى على الورق",
       "level_ar": "تأسيسي",
-      "total_hours": 8,
+      "total_hours": 16,
       "skill_slugs": [
         "project_management",
         "stakeholder_management",
         "business_model",
-        "clear_expression"
-      ],
-      "skill_ids": [
-        "SK-BIZ-017",
-        "SK-LEAD-008",
-        "SK-BIZ-001",
-        "SK-COM-002"
-      ],
-      "skill_names_ar": [
-        "إدارة المشاريع",
-        "إدارة أصحاب المصلحة",
-        "نموذج العمل",
-        "التعبير الواضح"
-      ]
-    },
-    {
-      "course_id": "C-PM-102",
-      "pathway_id": "PW-EMP-003",
-      "sequence": 2,
-      "title_ar": "دورة تخطيط المشاريع وجدولتها",
-      "subtitle_ar": "بناء خطة مشروع تُنفَّذ لا تبقى على الورق",
-      "level_ar": "تأسيسي",
-      "total_hours": 8,
-      "skill_slugs": [
-        "project_management",
+        "clear_expression",
         "prioritization",
         "time_management",
         "vendor_management",
@@ -1069,6 +959,9 @@
       ],
       "skill_ids": [
         "SK-BIZ-017",
+        "SK-LEAD-008",
+        "SK-BIZ-001",
+        "SK-COM-002",
         "SK-COG-015",
         "SK-WELL-002",
         "SK-BIZ-025",
@@ -1076,6 +969,9 @@
       ],
       "skill_names_ar": [
         "إدارة المشاريع",
+        "إدارة أصحاب المصلحة",
+        "نموذج العمل",
+        "التعبير الواضح",
         "ترتيب الأولويات",
         "إدارة الوقت",
         "إدارة الموردين",
@@ -1085,7 +981,7 @@
     {
       "course_id": "C-PM-103",
       "pathway_id": "PW-EMP-003",
-      "sequence": 3,
+      "sequence": 2,
       "title_ar": "دورة إدارة أصحاب المصلحة والتواصل في المشاريع",
       "subtitle_ar": "التواصل مع أصحاب المصلحة دون رسائل زائدة",
       "level_ar": "ممارس",
@@ -1112,7 +1008,7 @@
     {
       "course_id": "C-PM-104",
       "pathway_id": "PW-EMP-003",
-      "sequence": 4,
+      "sequence": 3,
       "title_ar": "دورة إدارة مخاطر المشاريع والتغيير",
       "subtitle_ar": "متابعة المشروع والتعامل مع المخاطر والتغييرات",
       "level_ar": "ممارس",
@@ -1139,11 +1035,11 @@
     {
       "course_id": "C-PM-105",
       "pathway_id": "PW-EMP-003",
-      "sequence": 5,
+      "sequence": 4,
       "title_ar": "دورة إغلاق المشاريع وقياس أثرها",
       "subtitle_ar": "إغلاق المشروع وإثبات القيمة التي حققها",
       "level_ar": "ممارس",
-      "total_hours": 12,
+      "total_hours": 8,
       "skill_slugs": [
         "project_management",
         "reflection",
@@ -1167,60 +1063,42 @@
       "course_id": "C-MGR-101",
       "pathway_id": "PW-EMP-005",
       "sequence": 1,
-      "title_ar": "دورة الانتقال إلى الإدارة: المدير الجديد",
-      "subtitle_ar": "الانتقال من منفّذ للمهام إلى مدير فريق",
+      "title_ar": "دورة الانتقال إلى الإدارة وقيادة إيقاع الفريق",
+      "subtitle_ar": "الانتقال من منفّذ للمهام إلى مدير فريق · توضيح التوقعات وتنظيم اجتماعات فريقك",
       "level_ar": "ممارس",
-      "total_hours": 8,
+      "total_hours": 16,
       "skill_slugs": [
         "self_leadership",
         "team_leadership",
         "ethical_reasoning",
-        "inclusive_leadership"
+        "inclusive_leadership",
+        "goal_setting_okrs",
+        "meeting_cadence",
+        "motivation_design"
       ],
       "skill_ids": [
         "SK-LEAD-001",
         "SK-LEAD-002",
         "SK-COG-017",
-        "SK-LEAD-018"
+        "SK-LEAD-018",
+        "SK-LEAD-006",
+        "SK-LEAD-015",
+        "SK-LEAD-013"
       ],
       "skill_names_ar": [
         "قيادة الذات",
         "قيادة الفريق",
         "التفكير الأخلاقي",
-        "القيادة الشاملة"
-      ]
-    },
-    {
-      "course_id": "C-MGR-102",
-      "pathway_id": "PW-EMP-005",
-      "sequence": 2,
-      "title_ar": "دورة تحديد الأهداف وإدارة إيقاع الفريق",
-      "subtitle_ar": "توضيح التوقعات وتنظيم اجتماعات فريقك",
-      "level_ar": "ممارس",
-      "total_hours": 8,
-      "skill_slugs": [
-        "goal_setting_okrs",
-        "meeting_cadence",
-        "motivation_design",
-        "team_leadership"
-      ],
-      "skill_ids": [
-        "SK-LEAD-006",
-        "SK-LEAD-015",
-        "SK-LEAD-013",
-        "SK-LEAD-002"
-      ],
-      "skill_names_ar": [
+        "القيادة الشاملة",
         "تحديد الأهداف وOKRs",
         "إيقاع الاجتماعات والمتابعة",
-        "تصميم الدافعية",
-        "قيادة الفريق"
+        "تصميم الدافعية"
       ]
     },
     {
       "course_id": "C-MGR-103",
       "pathway_id": "PW-EMP-005",
-      "sequence": 3,
+      "sequence": 2,
       "title_ar": "دورة التفويض والتوجيه (Coaching)",
       "subtitle_ar": "تفويض المهام ومتابعتها دون خنق الفريق",
       "level_ar": "ممارس",
@@ -1247,7 +1125,7 @@
     {
       "course_id": "C-MGR-104",
       "pathway_id": "PW-EMP-005",
-      "sequence": 4,
+      "sequence": 3,
       "title_ar": "دورة التغذية الراجعة والمحادثات الصعبة",
       "subtitle_ar": "إعطاء ملاحظات صادقة وإجراء المحادثات الصعبة",
       "level_ar": "ممارس",
@@ -1274,11 +1152,11 @@
     {
       "course_id": "C-MGR-105",
       "pathway_id": "PW-EMP-005",
-      "sequence": 5,
+      "sequence": 4,
       "title_ar": "دورة خطة الـ٩٠ يوما الأولى للمدير",
       "subtitle_ar": "خطتك كمدير في أول 90 يومًا",
       "level_ar": "ممارس",
-      "total_hours": 12,
+      "total_hours": 8,
       "skill_slugs": [
         "team_leadership",
         "stakeholder_management",
@@ -1302,60 +1180,39 @@
       "course_id": "C-SVC-101",
       "pathway_id": "PW-GOV-002",
       "sequence": 1,
-      "title_ar": "دورة تصميم تجربة المستفيد",
-      "subtitle_ar": "فهم احتياج المستفيد ورحلته معك",
+      "title_ar": "دورة تجربة المستفيد ومهارات خدمة العملاء",
+      "subtitle_ar": "فهم احتياج المستفيد ورحلته معك · الرد على العملاء بوضوح وحسم",
       "level_ar": "تأسيسي",
-      "total_hours": 8,
+      "total_hours": 16,
       "skill_slugs": [
         "citizen_experience",
         "customer_communication",
         "service_design_government",
-        "active_listening"
+        "active_listening",
+        "frontline_service",
+        "clear_expression"
       ],
       "skill_ids": [
         "SK-GOV-002",
         "SK-COM-016",
         "SK-GOV-008",
-        "SK-COM-001"
+        "SK-COM-001",
+        "SK-GOV-015",
+        "SK-COM-002"
       ],
       "skill_names_ar": [
         "تجربة المواطن أو المراجع",
         "التواصل مع العملاء أو الجمهور",
         "تصميم الخدمات الحكومية",
-        "الإصغاء الفعال"
-      ]
-    },
-    {
-      "course_id": "C-SVC-102",
-      "pathway_id": "PW-GOV-002",
-      "sequence": 2,
-      "title_ar": "دورة مهارات خدمة العملاء والتواصل",
-      "subtitle_ar": "الرد على العملاء بوضوح وحسم",
-      "level_ar": "تأسيسي",
-      "total_hours": 8,
-      "skill_slugs": [
-        "frontline_service",
-        "active_listening",
-        "clear_expression",
-        "customer_communication"
-      ],
-      "skill_ids": [
-        "SK-GOV-015",
-        "SK-COM-001",
-        "SK-COM-002",
-        "SK-COM-016"
-      ],
-      "skill_names_ar": [
-        "خدمة الجمهور في الصف الأمامي",
         "الإصغاء الفعال",
-        "التعبير الواضح",
-        "التواصل مع العملاء أو الجمهور"
+        "خدمة الجمهور في الصف الأمامي",
+        "التعبير الواضح"
       ]
     },
     {
       "course_id": "C-SVC-103",
       "pathway_id": "PW-GOV-002",
-      "sequence": 3,
+      "sequence": 2,
       "title_ar": "دورة إدارة الشكاوى وحل النزاعات",
       "subtitle_ar": "حل الشكاوى قبل أن تتصاعد",
       "level_ar": "ممارس",
@@ -1382,7 +1239,7 @@
     {
       "course_id": "C-SVC-104",
       "pathway_id": "PW-GOV-002",
-      "sequence": 4,
+      "sequence": 3,
       "title_ar": "دورة قياس جودة الخدمة واستطلاعات الرضا",
       "subtitle_ar": "قياس جودة خدمتك وتحويلها إلى تحسين",
       "level_ar": "ممارس",
@@ -1409,11 +1266,11 @@
     {
       "course_id": "C-SVC-105",
       "pathway_id": "PW-GOV-002",
-      "sequence": 5,
+      "sequence": 4,
       "title_ar": "دورة تحسين الخدمات الحكومية بالتجريب",
       "subtitle_ar": "تجربة صغيرة تحسّن رحلة المستفيد",
       "level_ar": "ممارس",
-      "total_hours": 12,
+      "total_hours": 8,
       "skill_slugs": [
         "service_design_government",
         "process_design",
@@ -1437,50 +1294,35 @@
       "course_id": "C-BIZ-101",
       "pathway_id": "PW-BIZ-001",
       "sequence": 1,
-      "title_ar": "دورة اكتشاف العملاء والتحقق من السوق",
-      "subtitle_ar": "التأكد من مشكلة عميلك قبل بناء الحل",
+      "title_ar": "دورة اكتشاف العملاء وصياغة عرض القيمة",
+      "subtitle_ar": "التأكد من مشكلة عميلك قبل بناء الحل · صياغة وعد واضح يحل مشكلة عميلك",
       "level_ar": "تأسيسي",
-      "total_hours": 8,
+      "total_hours": 16,
       "skill_slugs": [
         "customer_discovery",
         "market_research",
         "active_listening",
-        "research_literacy"
-      ],
-      "skill_ids": [
-        "SK-BIZ-003",
-        "SK-BIZ-004",
-        "SK-COM-001",
-        "SK-COG-011"
-      ],
-      "skill_names_ar": [
-        "اكتشاف العملاء",
-        "بحث السوق",
-        "الإصغاء الفعال",
-        "مهارة البحث والتحقق"
-      ]
-    },
-    {
-      "course_id": "C-BIZ-102",
-      "pathway_id": "PW-BIZ-001",
-      "sequence": 2,
-      "title_ar": "دورة صياغة عرض القيمة",
-      "subtitle_ar": "صياغة وعد واضح يحل مشكلة عميلك",
-      "level_ar": "تأسيسي",
-      "total_hours": 8,
-      "skill_slugs": [
+        "research_literacy",
         "value_proposition",
         "business_model",
         "design_thinking",
         "ux_basics"
       ],
       "skill_ids": [
+        "SK-BIZ-003",
+        "SK-BIZ-004",
+        "SK-COM-001",
+        "SK-COG-011",
         "SK-BIZ-002",
         "SK-BIZ-001",
         "SK-COG-013",
         "SK-BIZ-019"
       ],
       "skill_names_ar": [
+        "اكتشاف العملاء",
+        "بحث السوق",
+        "الإصغاء الفعال",
+        "مهارة البحث والتحقق",
         "عرض القيمة",
         "نموذج العمل",
         "التفكير التصميمي",
@@ -1490,7 +1332,7 @@
     {
       "course_id": "C-BIZ-103",
       "pathway_id": "PW-BIZ-001",
-      "sequence": 3,
+      "sequence": 2,
       "title_ar": "دورة نماذج الأعمال واقتصاديات الوحدة",
       "subtitle_ar": "كيف يربح مشروعك: نموذج العمل والتكاليف",
       "level_ar": "ممارس",
@@ -1517,7 +1359,7 @@
     {
       "course_id": "C-BIZ-104",
       "pathway_id": "PW-BIZ-001",
-      "sequence": 4,
+      "sequence": 3,
       "title_ar": "دورة استراتيجيات التسعير",
       "subtitle_ar": "كيف تسعّر خدمتك وتطلب السعر بثقة",
       "level_ar": "ممارس",
@@ -1544,11 +1386,11 @@
     {
       "course_id": "C-BIZ-105",
       "pathway_id": "PW-BIZ-001",
-      "sequence": 5,
+      "sequence": 4,
       "title_ar": "دورة أول عملية بيع وخطة النمو",
       "subtitle_ar": "أول عملية بيع وخطة أول 90 يومًا",
       "level_ar": "ممارس",
-      "total_hours": 12,
+      "total_hours": 8,
       "skill_slugs": [
         "sales_pipeline",
         "growth_experimentation",
@@ -1572,38 +1414,15 @@
       "course_id": "C-AUT-101",
       "pathway_id": "PW-AUT-001",
       "sequence": 1,
-      "title_ar": "دورة تحليل فرص الأتمتة وجدواها",
-      "subtitle_ar": "اختيار المهمة الأنسب للأتمتة أولا",
+      "title_ar": "دورة تحليل فرص الأتمتة والربط بين التطبيقات",
+      "subtitle_ar": "اختيار المهمة الأنسب للأتمتة أولا · ربط تطبيقاتك ببعضها دون برمجة (API)",
       "level_ar": "تأسيسي–تطبيقي",
-      "total_hours": 8,
+      "total_hours": 16,
       "skill_slugs": [
         "process_mapping",
         "automation_opportunity_analysis",
         "operations_basics",
-        "financial_decision_making"
-      ],
-      "skill_ids": [
-        "SK-X-AUT-001",
-        "SK-X-AUT-002",
-        "SK-BIZ-015",
-        "SK-FIN-015"
-      ],
-      "skill_names_ar": [
-        "رسم العمليات وتحليل التدفق",
-        "تحليل فرص الأتمتة وجدواها",
-        "أساسيات العمليات",
-        "اتخاذ القرار المالي"
-      ]
-    },
-    {
-      "course_id": "C-AUT-102",
-      "pathway_id": "PW-AUT-001",
-      "sequence": 2,
-      "title_ar": "دورة الربط بين التطبيقات بأدوات بلا برمجة",
-      "subtitle_ar": "ربط تطبيقاتك ببعضها دون برمجة (API)",
-      "level_ar": "تأسيسي–تطبيقي",
-      "total_hours": 8,
-      "skill_slugs": [
+        "financial_decision_making",
         "api_integration_basics",
         "no_code_tools",
         "data_governance",
@@ -1611,6 +1430,10 @@
         "digital_literacy"
       ],
       "skill_ids": [
+        "SK-X-AUT-001",
+        "SK-X-AUT-002",
+        "SK-BIZ-015",
+        "SK-FIN-015",
         "SK-X-AUT-003",
         "SK-DIG-017",
         "SK-DATA-014",
@@ -1618,6 +1441,10 @@
         "SK-DIG-001"
       ],
       "skill_names_ar": [
+        "رسم العمليات وتحليل التدفق",
+        "تحليل فرص الأتمتة وجدواها",
+        "أساسيات العمليات",
+        "اتخاذ القرار المالي",
         "أساسيات التكامل وواجهات API",
         "أدوات No-code",
         "حوكمة البيانات",
@@ -1628,7 +1455,7 @@
     {
       "course_id": "C-AUT-103",
       "pathway_id": "PW-AUT-001",
-      "sequence": 3,
+      "sequence": 2,
       "title_ar": "دورة بناء سير العمل الآلي",
       "subtitle_ar": "بناء سير عمل آلي بخطوات متعددة",
       "level_ar": "تطبيقي",
@@ -1655,7 +1482,7 @@
     {
       "course_id": "C-AUT-104",
       "pathway_id": "PW-AUT-001",
-      "sequence": 4,
+      "sequence": 3,
       "title_ar": "دورة بناء مساعد ذكي من قاعدة معرفتك",
       "subtitle_ar": "بناء مساعد ذكي يجيب من ملفاتك أنت",
       "level_ar": "تطبيقي",
@@ -1682,11 +1509,11 @@
     {
       "course_id": "C-AUT-105",
       "pathway_id": "PW-AUT-001",
-      "sequence": 5,
+      "sequence": 4,
       "title_ar": "دورة تصميم الوكلاء الأذكياء بإشراف بشري",
       "subtitle_ar": "بناء وكيل ذكي ينفذ مهامك تحت إشرافك",
       "level_ar": "تطبيقي",
-      "total_hours": 12,
+      "total_hours": 8,
       "skill_slugs": [
         "agent_design",
         "human_in_loop_controls",
@@ -1710,50 +1537,35 @@
       "course_id": "C-MKT-101",
       "pathway_id": "PW-MKT-001",
       "sequence": 1,
-      "title_ar": "دورة استراتيجية التسويق وتقسيم العملاء",
-      "subtitle_ar": "تحديد من تخدم ولماذا يختارك العميل",
+      "title_ar": "دورة استراتيجية التسويق ورحلة العميل",
+      "subtitle_ar": "تحديد من تخدم ولماذا يختارك العميل · رحلة الشراء: كيف يصل العميل إليك ويبقى",
       "level_ar": "تأسيسي–تطبيقي",
-      "total_hours": 8,
+      "total_hours": 16,
       "skill_slugs": [
         "marketing_strategy",
         "customer_segmentation",
         "market_research",
-        "value_proposition"
-      ],
-      "skill_ids": [
-        "SK-X-MKT-001",
-        "SK-X-MKT-002",
-        "SK-BIZ-004",
-        "SK-BIZ-002"
-      ],
-      "skill_names_ar": [
-        "استراتيجية التسويق",
-        "تقسيم العملاء",
-        "بحث السوق",
-        "عرض القيمة"
-      ]
-    },
-    {
-      "course_id": "C-MKT-102",
-      "pathway_id": "PW-MKT-001",
-      "sequence": 2,
-      "title_ar": "دورة رحلة العميل وتصميم قمع التسويق",
-      "subtitle_ar": "رحلة الشراء: كيف يصل العميل إليك ويبقى",
-      "level_ar": "تأسيسي–تطبيقي",
-      "total_hours": 8,
-      "skill_slugs": [
+        "value_proposition",
         "customer_journey_marketing",
         "funnel_design",
         "digital_marketing",
         "ux_basics"
       ],
       "skill_ids": [
+        "SK-X-MKT-001",
+        "SK-X-MKT-002",
+        "SK-BIZ-004",
+        "SK-BIZ-002",
         "SK-X-MKT-003",
         "SK-X-MKT-004",
         "SK-BIZ-010",
         "SK-BIZ-019"
       ],
       "skill_names_ar": [
+        "استراتيجية التسويق",
+        "تقسيم العملاء",
+        "بحث السوق",
+        "عرض القيمة",
         "تصميم رحلة العميل التسويقية",
         "تصميم قمع التحويل",
         "التسويق الرقمي",
@@ -1763,7 +1575,7 @@
     {
       "course_id": "C-MKT-103",
       "pathway_id": "PW-MKT-001",
-      "sequence": 3,
+      "sequence": 2,
       "title_ar": "دورة تسويق المحتوى",
       "subtitle_ar": "إنتاج محتوى يخدم هدفًا تجاريًا محددًا",
       "level_ar": "تطبيقي",
@@ -1790,7 +1602,7 @@
     {
       "course_id": "C-MKT-104",
       "pathway_id": "PW-MKT-001",
-      "sequence": 4,
+      "sequence": 3,
       "title_ar": "دورة أتمتة التسويق وإدارة العملاء المحتملين",
       "subtitle_ar": "متابعة العملاء المحتملين حتى يشترون",
       "level_ar": "تطبيقي",
@@ -1817,11 +1629,11 @@
     {
       "course_id": "C-MKT-105",
       "pathway_id": "PW-MKT-001",
-      "sequence": 5,
+      "sequence": 4,
       "title_ar": "دورة قياس الحملات التسويقية وتحسينها",
       "subtitle_ar": "قرارات تسويق مبنية على الأرقام: مشروع 90 يومًا",
       "level_ar": "تطبيقي",
-      "total_hours": 12,
+      "total_hours": 8,
       "skill_slugs": [
         "campaign_measurement",
         "growth_experimentation",
@@ -1845,50 +1657,35 @@
       "course_id": "C-SAL-101",
       "pathway_id": "PW-SAL-001",
       "sequence": 1,
-      "title_ar": "دورة تحديد العميل المثالي واستهداف السوق",
-      "subtitle_ar": "تحديد عميلك المثالي وخطة الوصول إليه",
+      "title_ar": "دورة استهداف السوق وبناء خط المبيعات",
+      "subtitle_ar": "تحديد عميلك المثالي وخطة الوصول إليه · تحويل الاستهداف إلى فرص بيع منظمة",
       "level_ar": "تأسيسي–تطبيقي",
-      "total_hours": 8,
+      "total_hours": 16,
       "skill_slugs": [
         "ideal_customer_profile",
         "market_research",
         "sales_fundamentals",
-        "prioritization"
-      ],
-      "skill_ids": [
-        "SK-X-SAL-001",
-        "SK-BIZ-004",
-        "SK-BIZ-007",
-        "SK-COG-015"
-      ],
-      "skill_names_ar": [
-        "بناء ملف العميل المثالي",
-        "بحث السوق",
-        "أساسيات المبيعات",
-        "ترتيب الأولويات"
-      ]
-    },
-    {
-      "course_id": "C-SAL-102",
-      "pathway_id": "PW-SAL-001",
-      "sequence": 2,
-      "title_ar": "دورة التنقيب عن العملاء وإدارة خط المبيعات",
-      "subtitle_ar": "تحويل الاستهداف إلى فرص بيع منظمة",
-      "level_ar": "تأسيسي–تطبيقي",
-      "total_hours": 8,
-      "skill_slugs": [
+        "prioritization",
         "prospecting",
         "sales_pipeline",
         "crm_basics",
         "accountability"
       ],
       "skill_ids": [
+        "SK-X-SAL-001",
+        "SK-BIZ-004",
+        "SK-BIZ-007",
+        "SK-COG-015",
         "SK-X-SAL-002",
         "SK-BIZ-008",
         "SK-BIZ-021",
         "SK-WELL-011"
       ],
       "skill_names_ar": [
+        "بناء ملف العميل المثالي",
+        "بحث السوق",
+        "أساسيات المبيعات",
+        "ترتيب الأولويات",
         "توليد العملاء المحتملين",
         "إدارة خط المبيعات",
         "أساسيات CRM",
@@ -1898,7 +1695,7 @@
     {
       "course_id": "C-SAL-103",
       "pathway_id": "PW-SAL-001",
-      "sequence": 3,
+      "sequence": 2,
       "title_ar": "دورة البيع الاستشاري واكتشاف الاحتياج",
       "subtitle_ar": "فهم مشكلة العميل قبل عرض الحل",
       "level_ar": "تطبيقي",
@@ -1925,7 +1722,7 @@
     {
       "course_id": "C-SAL-104",
       "pathway_id": "PW-SAL-001",
-      "sequence": 4,
+      "sequence": 3,
       "title_ar": "دورة إعداد العروض التجارية وتقديمها",
       "subtitle_ar": "تقديم عرض تجاري يربط الحل بالقيمة",
       "level_ar": "تطبيقي",
@@ -1952,11 +1749,11 @@
     {
       "course_id": "C-SAL-105",
       "pathway_id": "PW-SAL-001",
-      "sequence": 5,
+      "sequence": 4,
       "title_ar": "دورة إغلاق الصفقات وإدارة الحسابات",
       "subtitle_ar": "إغلاق الصفقة وتنمية العلاقة بعد البيع",
       "level_ar": "تطبيقي",
-      "total_hours": 12,
+      "total_hours": 8,
       "skill_slugs": [
         "negotiation_commercial",
         "account_management",
@@ -1980,50 +1777,35 @@
       "course_id": "C-HR-101",
       "pathway_id": "PW-HR-001",
       "sequence": 1,
-      "title_ar": "دورة تخطيط القوى العاملة وتصميم الوظائف",
-      "subtitle_ar": "تحديد احتياجك من الموظفين وتصميم أدوارهم",
+      "title_ar": "دورة تخطيط القوى العاملة والتوظيف المنظم",
+      "subtitle_ar": "تحديد احتياجك من الموظفين وتصميم أدوارهم · توظيف عادل من الإعلان إلى القبول",
       "level_ar": "تأسيسي–تطبيقي",
-      "total_hours": 8,
+      "total_hours": 16,
       "skill_slugs": [
         "workforce_planning",
         "job_analysis",
         "competency_frameworks",
-        "strategic_thinking"
-      ],
-      "skill_ids": [
-        "SK-X-HR-001",
-        "SK-X-HR-002",
-        "SK-X-HR-003",
-        "SK-COG-007"
-      ],
-      "skill_names_ar": [
-        "تخطيط القوى العاملة",
-        "تحليل وتصميم الوظائف",
-        "بناء أطر الجدارات",
-        "التفكير الاستراتيجي"
-      ]
-    },
-    {
-      "course_id": "C-HR-102",
-      "pathway_id": "PW-HR-001",
-      "sequence": 2,
-      "title_ar": "دورة التوظيف والمقابلات المنظمة",
-      "subtitle_ar": "توظيف عادل من الإعلان إلى القبول",
-      "level_ar": "تأسيسي–تطبيقي",
-      "total_hours": 8,
-      "skill_slugs": [
+        "strategic_thinking",
         "structured_interviewing",
         "selection_design",
         "ethical_reasoning",
         "professional_ethics"
       ],
       "skill_ids": [
+        "SK-X-HR-001",
+        "SK-X-HR-002",
+        "SK-X-HR-003",
+        "SK-COG-007",
         "SK-X-HR-004",
         "SK-X-HR-005",
         "SK-COG-017",
         "SK-CAREER-013"
       ],
       "skill_names_ar": [
+        "تخطيط القوى العاملة",
+        "تحليل وتصميم الوظائف",
+        "بناء أطر الجدارات",
+        "التفكير الاستراتيجي",
         "المقابلات المنظمة",
         "تصميم قرارات الاختيار",
         "التفكير الأخلاقي",
@@ -2033,7 +1815,7 @@
     {
       "course_id": "C-HR-103",
       "pathway_id": "PW-HR-001",
-      "sequence": 3,
+      "sequence": 2,
       "title_ar": "دورة إدارة الأداء الوظيفي",
       "subtitle_ar": "متابعة أداء الموظف وتقديم ملاحظات فعالة",
       "level_ar": "تطبيقي",
@@ -2060,7 +1842,7 @@
     {
       "course_id": "C-HR-104",
       "pathway_id": "PW-HR-001",
-      "sequence": 4,
+      "sequence": 3,
       "title_ar": "دورة تطوير المواهب والاحتفاظ بها",
       "subtitle_ar": "تطوير الموظفين وتقليل تسربهم",
       "level_ar": "تطبيقي",
@@ -2090,11 +1872,11 @@
     {
       "course_id": "C-HR-105",
       "pathway_id": "PW-HR-001",
-      "sequence": 5,
+      "sequence": 4,
       "title_ar": "دورة تحليلات الموارد البشرية",
       "subtitle_ar": "قراءة بيانات الموظفين دون ظلم أحد",
       "level_ar": "تطبيقي",
-      "total_hours": 12,
+      "total_hours": 8,
       "skill_slugs": [
         "people_analytics",
         "hr_privacy_ethics",
@@ -2121,50 +1903,35 @@
       "course_id": "C-FINM-101",
       "pathway_id": "PW-FIN-001",
       "sequence": 1,
-      "title_ar": "دورة قراءة القوائم المالية",
-      "subtitle_ar": "قراءة قائمة الدخل والميزانية بثقة",
+      "title_ar": "دورة قراءة القوائم المالية وتحليل التكاليف",
+      "subtitle_ar": "قراءة قائمة الدخل والميزانية بثقة · معرفة تكلفة قرارك وهامش ربحه",
       "level_ar": "تأسيسي–تطبيقي",
-      "total_hours": 8,
+      "total_hours": 16,
       "skill_slugs": [
         "financial_statements",
         "accounting_basics",
         "economic_literacy",
-        "financial_decision_making"
-      ],
-      "skill_ids": [
-        "SK-FIN-011",
-        "SK-FIN-010",
-        "SK-FIN-013",
-        "SK-FIN-015"
-      ],
-      "skill_names_ar": [
-        "قراءة القوائم المالية",
-        "أساسيات المحاسبة",
-        "الثقافة الاقتصادية",
-        "اتخاذ القرار المالي"
-      ]
-    },
-    {
-      "course_id": "C-FINM-102",
-      "pathway_id": "PW-FIN-001",
-      "sequence": 2,
-      "title_ar": "دورة تحليل التكاليف وهوامش الربح",
-      "subtitle_ar": "معرفة تكلفة قرارك وهامش ربحه",
-      "level_ar": "تأسيسي–تطبيقي",
-      "total_hours": 8,
-      "skill_slugs": [
+        "financial_decision_making",
         "cost_analysis",
         "unit_economics",
         "pricing_strategy",
         "business_finance"
       ],
       "skill_ids": [
+        "SK-FIN-011",
+        "SK-FIN-010",
+        "SK-FIN-013",
+        "SK-FIN-015",
         "SK-X-FIN-001",
         "SK-FIN-012",
         "SK-BIZ-006",
         "SK-BIZ-022"
       ],
       "skill_names_ar": [
+        "قراءة القوائم المالية",
+        "أساسيات المحاسبة",
+        "الثقافة الاقتصادية",
+        "اتخاذ القرار المالي",
         "تحليل التكاليف والهوامش",
         "اقتصاديات الوحدة",
         "استراتيجية التسعير",
@@ -2174,7 +1941,7 @@
     {
       "course_id": "C-FINM-103",
       "pathway_id": "PW-FIN-001",
-      "sequence": 3,
+      "sequence": 2,
       "title_ar": "دورة إعداد الموازنات وتحليل الانحرافات",
       "subtitle_ar": "بناء موازنة ومتابعة الفرق بين الخطة والواقع",
       "level_ar": "تطبيقي",
@@ -2201,7 +1968,7 @@
     {
       "course_id": "C-FINM-104",
       "pathway_id": "PW-FIN-001",
-      "sequence": 4,
+      "sequence": 3,
       "title_ar": "دورة إدارة التدفق النقدي ورأس المال العامل",
       "subtitle_ar": "حماية شركتك من نفاد السيولة",
       "level_ar": "تطبيقي",
@@ -2228,11 +1995,11 @@
     {
       "course_id": "C-FINM-105",
       "pathway_id": "PW-FIN-001",
-      "sequence": 5,
+      "sequence": 4,
       "title_ar": "دورة تقييم الاستثمارات وعرض القرار المالي",
       "subtitle_ar": "مقارنة خيارات الاستثمار وعرضها على الإدارة",
       "level_ar": "تطبيقي",
-      "total_hours": 12,
+      "total_hours": 8,
       "skill_slugs": [
         "investment_appraisal",
         "financial_dashboarding",
@@ -2256,50 +2023,35 @@
       "course_id": "C-PRD-101",
       "pathway_id": "PW-PRD-001",
       "sequence": 1,
-      "title_ar": "دورة أساسيات إدارة المنتج واستراتيجيته",
-      "subtitle_ar": "تحديد رؤية منتجك والقيمة التي يقدمها",
+      "title_ar": "دورة استراتيجية المنتج واكتشاف المستخدم",
+      "subtitle_ar": "تحديد رؤية منتجك والقيمة التي يقدمها · التأكد من احتياج المستخدم الحقيقي",
       "level_ar": "تأسيسي–تطبيقي",
-      "total_hours": 8,
+      "total_hours": 16,
       "skill_slugs": [
         "product_strategy",
         "product_management",
         "market_research",
-        "strategic_thinking"
-      ],
-      "skill_ids": [
-        "SK-X-PRD-001",
-        "SK-BIZ-018",
-        "SK-BIZ-004",
-        "SK-COG-007"
-      ],
-      "skill_names_ar": [
-        "استراتيجية المنتج",
-        "إدارة المنتج",
-        "بحث السوق",
-        "التفكير الاستراتيجي"
-      ]
-    },
-    {
-      "course_id": "C-PRD-102",
-      "pathway_id": "PW-PRD-001",
-      "sequence": 2,
-      "title_ar": "دورة اكتشاف المنتج وبحث المستخدم",
-      "subtitle_ar": "التأكد من احتياج المستخدم الحقيقي",
-      "level_ar": "تأسيسي–تطبيقي",
-      "total_hours": 8,
-      "skill_slugs": [
+        "strategic_thinking",
         "product_discovery",
         "user_research",
         "customer_discovery",
         "ux_basics"
       ],
       "skill_ids": [
+        "SK-X-PRD-001",
+        "SK-BIZ-018",
+        "SK-BIZ-004",
+        "SK-COG-007",
         "SK-X-PRD-002",
         "SK-X-PRD-003",
         "SK-BIZ-003",
         "SK-BIZ-019"
       ],
       "skill_names_ar": [
+        "استراتيجية المنتج",
+        "إدارة المنتج",
+        "بحث السوق",
+        "التفكير الاستراتيجي",
         "اكتشاف المنتج",
         "بحث المستخدم",
         "اكتشاف العملاء",
@@ -2309,7 +2061,7 @@
     {
       "course_id": "C-PRD-103",
       "pathway_id": "PW-PRD-001",
-      "sequence": 3,
+      "sequence": 2,
       "title_ar": "دورة النماذج الأولية والمنتج الأدنى القابل للتطبيق",
       "subtitle_ar": "أصغر نسخة تثبت أن منتجك مطلوب (MVP)",
       "level_ar": "تطبيقي",
@@ -2336,7 +2088,7 @@
     {
       "course_id": "C-PRD-104",
       "pathway_id": "PW-PRD-001",
-      "sequence": 4,
+      "sequence": 3,
       "title_ar": "دورة خارطة طريق المنتج وإدارة الأعمال المتراكمة",
       "subtitle_ar": "تحويل رؤية المنتج إلى خطة تنفيذ مع الفريق",
       "level_ar": "تطبيقي",
@@ -2363,11 +2115,11 @@
     {
       "course_id": "C-PRD-105",
       "pathway_id": "PW-PRD-001",
-      "sequence": 5,
+      "sequence": 4,
       "title_ar": "دورة إطلاق المنتج وقياس مؤشراته",
       "subtitle_ar": "إطلاق منتجك وقياس نجاحه: مشروع متكامل",
       "level_ar": "تطبيقي",
-      "total_hours": 12,
+      "total_hours": 8,
       "skill_slugs": [
         "product_metrics",
         "product_launch",
@@ -2391,50 +2143,35 @@
       "course_id": "C-OPS-101",
       "pathway_id": "PW-OPS-001",
       "sequence": 1,
-      "title_ar": "دورة رسم العمليات وتحليلها",
-      "subtitle_ar": "رسم عمليتك الحالية ومعرفة نقطة البداية",
+      "title_ar": "دورة رسم العمليات ومنهجية Lean",
+      "subtitle_ar": "رسم عمليتك الحالية ومعرفة نقطة البداية · اكتشاف الهدر وتسريع الإنجاز بمنهجية Lean",
       "level_ar": "تأسيسي–تطبيقي",
-      "total_hours": 8,
+      "total_hours": 16,
       "skill_slugs": [
         "process_mapping",
         "operations_basics",
         "process_design",
-        "systems_thinking"
-      ],
-      "skill_ids": [
-        "SK-X-AUT-001",
-        "SK-BIZ-015",
-        "SK-BIZ-016",
-        "SK-COG-004"
-      ],
-      "skill_names_ar": [
-        "رسم العمليات وتحليل التدفق",
-        "أساسيات العمليات",
-        "تصميم الإجراءات",
-        "التفكير المنظومي"
-      ]
-    },
-    {
-      "course_id": "C-OPS-102",
-      "pathway_id": "PW-OPS-001",
-      "sequence": 2,
-      "title_ar": "دورة منهجية Lean وتقليل الهدر",
-      "subtitle_ar": "اكتشاف الهدر وتسريع الإنجاز بمنهجية Lean",
-      "level_ar": "تأسيسي–تطبيقي",
-      "total_hours": 8,
-      "skill_slugs": [
+        "systems_thinking",
         "lean_waste_analysis",
         "standard_work",
         "prioritization",
         "analytical_thinking"
       ],
       "skill_ids": [
+        "SK-X-AUT-001",
+        "SK-BIZ-015",
+        "SK-BIZ-016",
+        "SK-COG-004",
         "SK-X-OPS-001",
         "SK-X-OPS-002",
         "SK-COG-015",
         "SK-COG-001"
       ],
       "skill_names_ar": [
+        "رسم العمليات وتحليل التدفق",
+        "أساسيات العمليات",
+        "تصميم الإجراءات",
+        "التفكير المنظومي",
         "تحليل الهدر وفق Lean",
         "تصميم العمل المعياري",
         "ترتيب الأولويات",
@@ -2444,7 +2181,7 @@
     {
       "course_id": "C-OPS-103",
       "pathway_id": "PW-OPS-001",
-      "sequence": 3,
+      "sequence": 2,
       "title_ar": "دورة تحليل السبب الجذري وحل المشكلات",
       "subtitle_ar": "معالجة السبب الجذري لا الأعراض فقط",
       "level_ar": "تطبيقي",
@@ -2471,7 +2208,7 @@
     {
       "course_id": "C-OPS-104",
       "pathway_id": "PW-OPS-001",
-      "sequence": 4,
+      "sequence": 3,
       "title_ar": "دورة مؤشرات الأداء التشغيلي",
       "subtitle_ar": "اختيار مؤشرات تشغيل تقود للسلوك الصحيح",
       "level_ar": "تطبيقي",
@@ -2498,11 +2235,11 @@
     {
       "course_id": "C-OPS-105",
       "pathway_id": "PW-OPS-001",
-      "sequence": 5,
+      "sequence": 4,
       "title_ar": "دورة التحسين المستمر ومنهجية PDCA",
       "subtitle_ar": "تثبيت التحسين وإثبات أثره: مشروع تطبيقي",
       "level_ar": "تطبيقي",
-      "total_hours": 12,
+      "total_hours": 8,
       "skill_slugs": [
         "continuous_improvement",
         "pdca",
@@ -2526,50 +2263,35 @@
       "course_id": "C-CYB-101",
       "pathway_id": "PW-CYB-001",
       "sequence": 1,
-      "title_ar": "دورة أساسيات الأمن السيبراني وتقييم المخاطر",
-      "subtitle_ar": "فهم كيف تتعرض شركتك لمخاطر رقمية",
+      "title_ar": "دورة أساسيات الأمن السيبراني وحماية الهويات",
+      "subtitle_ar": "فهم كيف تتعرض شركتك لمخاطر رقمية · حماية الحسابات من التصيد والاختراق البشري",
       "level_ar": "تأسيسي–تطبيقي",
-      "total_hours": 8,
+      "total_hours": 16,
       "skill_slugs": [
         "cybersecurity_basics",
         "cyber_risk_assessment",
         "risk_management",
-        "systems_thinking"
-      ],
-      "skill_ids": [
-        "SK-DIG-013",
-        "SK-X-CYB-001",
-        "SK-LEAD-010",
-        "SK-COG-004"
-      ],
-      "skill_names_ar": [
-        "أساسيات الأمن السيبراني",
-        "تقييم المخاطر السيبرانية",
-        "إدارة المخاطر",
-        "التفكير المنظومي"
-      ]
-    },
-    {
-      "course_id": "C-CYB-102",
-      "pathway_id": "PW-CYB-001",
-      "sequence": 2,
-      "title_ar": "دورة إدارة الهويات والوعي بالهندسة الاجتماعية",
-      "subtitle_ar": "حماية الحسابات من التصيد والاختراق البشري",
-      "level_ar": "تأسيسي–تطبيقي",
-      "total_hours": 8,
-      "skill_slugs": [
+        "systems_thinking",
         "identity_access_management",
         "social_engineering_awareness",
         "privacy_management",
         "clear_expression"
       ],
       "skill_ids": [
+        "SK-DIG-013",
+        "SK-X-CYB-001",
+        "SK-LEAD-010",
+        "SK-COG-004",
         "SK-X-CYB-002",
         "SK-X-CYB-003",
         "SK-DIG-014",
         "SK-COM-002"
       ],
       "skill_names_ar": [
+        "أساسيات الأمن السيبراني",
+        "تقييم المخاطر السيبرانية",
+        "إدارة المخاطر",
+        "التفكير المنظومي",
         "إدارة الهوية والوصول",
         "مقاومة التصيد والهندسة الاجتماعية",
         "إدارة الخصوصية الرقمية",
@@ -2579,7 +2301,7 @@
     {
       "course_id": "C-CYB-103",
       "pathway_id": "PW-CYB-001",
-      "sequence": 3,
+      "sequence": 2,
       "title_ar": "دورة حماية البيانات وأمن السحابة",
       "subtitle_ar": "تأمين أجهزتك وبياناتك على السحابة",
       "level_ar": "تطبيقي",
@@ -2606,7 +2328,7 @@
     {
       "course_id": "C-CYB-104",
       "pathway_id": "PW-CYB-001",
-      "sequence": 4,
+      "sequence": 3,
       "title_ar": "دورة حوكمة الأمن السيبراني والامتثال",
       "subtitle_ar": "اختيار ضوابط أمنية تناسب قرار الإدارة",
       "level_ar": "تطبيقي",
@@ -2633,11 +2355,11 @@
     {
       "course_id": "C-CYB-105",
       "pathway_id": "PW-CYB-001",
-      "sequence": 5,
+      "sequence": 4,
       "title_ar": "دورة الاستجابة للحوادث واستمرارية الأعمال",
       "subtitle_ar": "ماذا تفعل عند وقوع اختراق سيبراني",
       "level_ar": "تطبيقي",
-      "total_hours": 12,
+      "total_hours": 8,
       "skill_slugs": [
         "incident_response",
         "business_continuity",
@@ -2661,50 +2383,35 @@
       "course_id": "C-SCM-101",
       "pathway_id": "PW-SCM-001",
       "sequence": 1,
-      "title_ar": "دورة أساسيات سلسلة الإمداد",
-      "subtitle_ar": "فهم رحلة منتجك من المورد إلى العميل",
+      "title_ar": "دورة أساسيات سلسلة الإمداد والتنبؤ بالطلب",
+      "subtitle_ar": "فهم رحلة منتجك من المورد إلى العميل · تحويل توقعات المبيعات إلى قرارات توريد",
       "level_ar": "تأسيسي–تطبيقي",
-      "total_hours": 8,
+      "total_hours": 16,
       "skill_slugs": [
         "supply_chain_mapping",
         "systems_thinking",
         "operations_basics",
-        "risk_management"
-      ],
-      "skill_ids": [
-        "SK-X-SCM-001",
-        "SK-COG-004",
-        "SK-BIZ-015",
-        "SK-LEAD-010"
-      ],
-      "skill_names_ar": [
-        "رسم سلسلة الإمداد",
-        "التفكير المنظومي",
-        "أساسيات العمليات",
-        "إدارة المخاطر"
-      ]
-    },
-    {
-      "course_id": "C-SCM-102",
-      "pathway_id": "PW-SCM-001",
-      "sequence": 2,
-      "title_ar": "دورة التنبؤ بالطلب وتخطيط التوريد",
-      "subtitle_ar": "تحويل توقعات المبيعات إلى قرارات توريد",
-      "level_ar": "تأسيسي–تطبيقي",
-      "total_hours": 8,
-      "skill_slugs": [
+        "risk_management",
         "demand_forecasting",
         "supply_planning",
         "statistical_thinking",
         "scenario_planning"
       ],
       "skill_ids": [
+        "SK-X-SCM-001",
+        "SK-COG-004",
+        "SK-BIZ-015",
+        "SK-LEAD-010",
         "SK-X-SCM-002",
         "SK-X-SCM-003",
         "SK-DATA-010",
         "SK-COG-012"
       ],
       "skill_names_ar": [
+        "رسم سلسلة الإمداد",
+        "التفكير المنظومي",
+        "أساسيات العمليات",
+        "إدارة المخاطر",
         "التنبؤ بالطلب",
         "تخطيط التوريد",
         "التفكير الإحصائي الأساسي",
@@ -2714,7 +2421,7 @@
     {
       "course_id": "C-SCM-103",
       "pathway_id": "PW-SCM-001",
-      "sequence": 3,
+      "sequence": 2,
       "title_ar": "دورة إدارة المخزون والمستودعات",
       "subtitle_ar": "متى تطلب وكم تخزّن: قرارات المخزون",
       "level_ar": "تطبيقي",
@@ -2741,7 +2448,7 @@
     {
       "course_id": "C-SCM-104",
       "pathway_id": "PW-SCM-001",
-      "sequence": 4,
+      "sequence": 3,
       "title_ar": "دورة التوريد الاستراتيجي واختيار الموردين",
       "subtitle_ar": "اختيار المورد الأنسب لا الأرخص فقط",
       "level_ar": "تطبيقي",
@@ -2771,11 +2478,11 @@
     {
       "course_id": "C-SCM-105",
       "pathway_id": "PW-SCM-001",
-      "sequence": 5,
+      "sequence": 4,
       "title_ar": "دورة إدارة مخاطر سلسلة الإمداد وقياس أدائها",
       "subtitle_ar": "متابعة أداء الموردين وتقليل مخاطرهم",
       "level_ar": "تطبيقي",
-      "total_hours": 12,
+      "total_hours": 8,
       "skill_slugs": [
         "supply_chain_risk",
         "supply_chain_metrics",
@@ -2799,50 +2506,35 @@
       "course_id": "C-COMX-101",
       "pathway_id": "PW-COM-001",
       "sequence": 1,
-      "title_ar": "دورة بناء الرسالة والملخص التنفيذي",
-      "subtitle_ar": "بناء رسالة واحدة يتذكرها جمهورك",
+      "title_ar": "دورة بناء الرسالة وتصميم العرض التنفيذي",
+      "subtitle_ar": "بناء رسالة واحدة يتذكرها جمهورك · تحويل بياناتك إلى شرائح واضحة ومقنعة",
       "level_ar": "تأسيسي–تطبيقي",
-      "total_hours": 8,
+      "total_hours": 16,
       "skill_slugs": [
         "message_design",
         "clear_expression",
         "executive_summary",
-        "audience_analysis"
-      ],
-      "skill_ids": [
-        "SK-X-COM-001",
-        "SK-COM-002",
-        "SK-COM-006",
-        "SK-X-COM-002"
-      ],
-      "skill_names_ar": [
-        "تصميم الرسالة",
-        "التعبير الواضح",
-        "كتابة الملخص التنفيذي",
-        "تحليل الجمهور"
-      ]
-    },
-    {
-      "course_id": "C-COMX-102",
-      "pathway_id": "PW-COM-001",
-      "sequence": 2,
-      "title_ar": "دورة تصميم العروض التقديمية",
-      "subtitle_ar": "تحويل بياناتك إلى شرائح واضحة ومقنعة",
-      "level_ar": "تأسيسي–تطبيقي",
-      "total_hours": 8,
-      "skill_slugs": [
+        "audience_analysis",
         "executive_presentation",
         "presentation_tools",
         "data_visualization",
         "storytelling"
       ],
       "skill_ids": [
+        "SK-X-COM-001",
+        "SK-COM-002",
+        "SK-COM-006",
+        "SK-X-COM-002",
         "SK-X-COM-003",
         "SK-DIG-010",
         "SK-DATA-011",
         "SK-COM-009"
       ],
       "skill_names_ar": [
+        "تصميم الرسالة",
+        "التعبير الواضح",
+        "كتابة الملخص التنفيذي",
+        "تحليل الجمهور",
         "تصميم العرض التنفيذي",
         "أدوات العروض التقديمية",
         "تصور البيانات",
@@ -2852,7 +2544,7 @@
     {
       "course_id": "C-COMX-103",
       "pathway_id": "PW-COM-001",
-      "sequence": 3,
+      "sequence": 2,
       "title_ar": "دورة مهارات الإلقاء والتحدث أمام الجمهور",
       "subtitle_ar": "الإلقاء أمام جمهور: ضبط الصوت والإيقاع والحضور",
       "level_ar": "تطبيقي",
@@ -2879,7 +2571,7 @@
     {
       "course_id": "C-COMX-104",
       "pathway_id": "PW-COM-001",
-      "sequence": 4,
+      "sequence": 3,
       "title_ar": "دورة الإقناع والتواصل المؤثر",
       "subtitle_ar": "إقناع جمهورك بفكرتك دون تلاعب",
       "level_ar": "تطبيقي",
@@ -2906,11 +2598,11 @@
     {
       "course_id": "C-COMX-105",
       "pathway_id": "PW-COM-001",
-      "sequence": 5,
+      "sequence": 4,
       "title_ar": "دورة إدارة الأسئلة والرد تحت الضغط",
       "subtitle_ar": "الرد على أسئلة صعبة أمام لجنة",
       "level_ar": "تطبيقي",
-      "total_hours": 12,
+      "total_hours": 8,
       "skill_slugs": [
         "q_and_a_management",
         "briefing_skills",
@@ -2934,50 +2626,35 @@
       "course_id": "C-NEG-101",
       "pathway_id": "PW-NEG-001",
       "sequence": 1,
-      "title_ar": "دورة أساسيات التفاوض والتحضير له",
-      "subtitle_ar": "التحضير للتفاوض: ماذا تريد وما بديلك إن فشل",
+      "title_ar": "دورة أساسيات التفاوض واستراتيجياته",
+      "subtitle_ar": "التحضير للتفاوض: ماذا تريد وما بديلك إن فشل · توسيع خيارات التفاوض قبل التنازل",
       "level_ar": "تأسيسي–تطبيقي",
-      "total_hours": 8,
+      "total_hours": 16,
       "skill_slugs": [
         "negotiation_preparation",
         "batna_zopa",
         "negotiation",
-        "scenario_planning"
-      ],
-      "skill_ids": [
-        "SK-X-NEG-001",
-        "SK-X-NEG-002",
-        "SK-COM-011",
-        "SK-COG-012"
-      ],
-      "skill_names_ar": [
-        "التحضير المنهجي للتفاوض",
-        "تحليل BATNA وZOPA",
-        "التفاوض",
-        "تخطيط السيناريوهات"
-      ]
-    },
-    {
-      "course_id": "C-NEG-102",
-      "pathway_id": "PW-NEG-001",
-      "sequence": 2,
-      "title_ar": "دورة استراتيجيات التفاوض وخلق القيمة",
-      "subtitle_ar": "توسيع خيارات التفاوض قبل التنازل",
-      "level_ar": "تأسيسي–تطبيقي",
-      "total_hours": 8,
-      "skill_slugs": [
+        "scenario_planning",
         "value_creation_negotiation",
         "concession_strategy",
         "active_listening",
         "critical_thinking"
       ],
       "skill_ids": [
+        "SK-X-NEG-001",
+        "SK-X-NEG-002",
+        "SK-COM-011",
+        "SK-COG-012",
         "SK-X-NEG-003",
         "SK-X-NEG-004",
         "SK-COM-001",
         "SK-COG-002"
       ],
       "skill_names_ar": [
+        "التحضير المنهجي للتفاوض",
+        "تحليل BATNA وZOPA",
+        "التفاوض",
+        "تخطيط السيناريوهات",
         "خلق القيمة في التفاوض",
         "إدارة التنازلات",
         "الإصغاء الفعال",
@@ -2987,7 +2664,7 @@
     {
       "course_id": "C-NEG-103",
       "pathway_id": "PW-NEG-001",
-      "sequence": 3,
+      "sequence": 2,
       "title_ar": "دورة التأثير الأخلاقي في التفاوض",
       "subtitle_ar": "كسب موافقة الطرف الآخر دون تلاعب",
       "level_ar": "تطبيقي",
@@ -3014,7 +2691,7 @@
     {
       "course_id": "C-NEG-104",
       "pathway_id": "PW-NEG-001",
-      "sequence": 4,
+      "sequence": 3,
       "title_ar": "دورة إدارة الخلاف والوساطة",
       "subtitle_ar": "معالجة الخلاف قبل أن يتصاعد",
       "level_ar": "تطبيقي",
@@ -3041,11 +2718,11 @@
     {
       "course_id": "C-NEG-105",
       "pathway_id": "PW-NEG-001",
-      "sequence": 5,
+      "sequence": 4,
       "title_ar": "دورة التفاوض متعدد الأطراف",
       "subtitle_ar": "التفاوض مع أكثر من طرف على اتفاق واحد",
       "level_ar": "تطبيقي",
-      "total_hours": 12,
+      "total_hours": 8,
       "skill_slugs": [
         "multiparty_negotiation",
         "agreement_design",
@@ -3069,50 +2746,35 @@
       "course_id": "C-LND-101",
       "pathway_id": "PW-LND-001",
       "sequence": 1,
-      "title_ar": "دورة تحليل الاحتياجات التدريبية وصياغة المخرجات",
-      "subtitle_ar": "تحديد ما يحتاج متعلموك أن يتعلموه فعلا",
+      "title_ar": "دورة تحليل الاحتياجات والتصميم التعليمي",
+      "subtitle_ar": "تحديد ما يحتاج متعلموك أن يتعلموه فعلا · ترتيب دورتك بدءًا من نتيجتها لا شرائحها",
       "level_ar": "تأسيسي–تطبيقي",
-      "total_hours": 8,
+      "total_hours": 16,
       "skill_slugs": [
         "training_needs_analysis",
         "learning_outcomes_design",
         "research_literacy",
-        "assessment_literacy"
-      ],
-      "skill_ids": [
-        "SK-X-LND-001",
-        "SK-X-LND-002",
-        "SK-COG-011",
-        "SK-LEARN-014"
-      ],
-      "skill_names_ar": [
-        "تحليل الحاجة التدريبية",
-        "تصميم نواتج التعلم",
-        "مهارة البحث والتحقق",
-        "فهم التقييمات"
-      ]
-    },
-    {
-      "course_id": "C-LND-102",
-      "pathway_id": "PW-LND-001",
-      "sequence": 2,
-      "title_ar": "دورة التصميم التعليمي بالتخطيط العكسي",
-      "subtitle_ar": "ترتيب دورتك بدءًا من نتيجتها لا شرائحها",
-      "level_ar": "تأسيسي–تطبيقي",
-      "total_hours": 8,
-      "skill_slugs": [
+        "assessment_literacy",
         "backward_design",
         "learning_experience_design",
         "prioritization",
         "design_thinking"
       ],
       "skill_ids": [
+        "SK-X-LND-001",
+        "SK-X-LND-002",
+        "SK-COG-011",
+        "SK-LEARN-014",
         "SK-X-LND-003",
         "SK-X-LND-004",
         "SK-COG-015",
         "SK-COG-013"
       ],
       "skill_names_ar": [
+        "تحليل الحاجة التدريبية",
+        "تصميم نواتج التعلم",
+        "مهارة البحث والتحقق",
+        "فهم التقييمات",
         "التصميم التعليمي العكسي",
         "تصميم تجربة التعلم",
         "ترتيب الأولويات",
@@ -3122,7 +2784,7 @@
     {
       "course_id": "C-LND-103",
       "pathway_id": "PW-LND-001",
-      "sequence": 3,
+      "sequence": 2,
       "title_ar": "دورة تصميم التقييمات ومعايير التصحيح",
       "subtitle_ar": "تصميم تمارين ومعايير تصحيح عادلة",
       "level_ar": "تطبيقي",
@@ -3149,7 +2811,7 @@
     {
       "course_id": "C-LND-104",
       "pathway_id": "PW-LND-001",
-      "sequence": 4,
+      "sequence": 3,
       "title_ar": "دورة تصميم المواد التعليمية",
       "subtitle_ar": "تصميم مواد تعليمية واضحة لا مزدحمة",
       "level_ar": "تطبيقي",
@@ -3176,11 +2838,11 @@
     {
       "course_id": "C-LND-105",
       "pathway_id": "PW-LND-001",
-      "sequence": 5,
+      "sequence": 4,
       "title_ar": "دورة التيسير وتقديم التدريب رقميا",
       "subtitle_ar": "تقديم دورتك حضوريًا أو رقميًا: مشروع تخرج",
       "level_ar": "تطبيقي",
-      "total_hours": 12,
+      "total_hours": 8,
       "skill_slugs": [
         "facilitation",
         "digital_learning_design",
@@ -3203,7 +2865,7 @@
     {
       "course_id": "C-COMX-106",
       "pathway_id": "PW-COM-001",
-      "sequence": 6,
+      "sequence": 5,
       "title_ar": "دورة الإنجليزية للأعمال",
       "subtitle_ar": "الإنجليزية للأعمال: من الفهم إلى المشاركة",
       "level_ar": "تأسيسي–تطبيقي",

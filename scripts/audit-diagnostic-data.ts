@@ -36,13 +36,22 @@ const check = (cond: boolean, msg: string) => {
   if (!cond) problems.push(msg)
 }
 
-/* 1) الأعداد المرجعية */
-check(questions.questions.length === 192, `عدد الأسئلة ${questions.questions.length} ≠ 192`)
-check(skills.skills.length === 216, `عدد المهارات ${skills.skills.length} ≠ 216`)
-check(core.launch_pathways.length === 20, `عدد المسارات ${core.launch_pathways.length} ≠ 20`)
-check(core.courses.length === 100, `عدد الدورات ${core.courses.length} ≠ 100`)
-check(core.modules.length === 400, `عدد الوحدات ${core.modules.length} ≠ 400`)
-check(templates.templates.length === 16, `عدد القوالب ${templates.templates.length} ≠ 16`)
+/* 1) الأعداد المرجعية — كل ملف يعلن عدده، والتدقيق يقابل المعلن بالفعلي.
+
+   كانت هذه الأعداد ستة أرقام مكتوبة هنا، فتقادمت: بلغ البنك 205 أسئلة والتدقيق
+   ما زال يطالب بـ192، فصار الفحص ضجيجا يُتجاوز لا حارسا يُصدَّق. والعدد المعلن
+   في الملف نفسه هو نية المؤلف، وطول المصفوفة هو الواقع؛ فاختلافهما وحده يدل
+   على تعديل نصف مكتمل — وهو ما نريد اصطياده حقا. */
+const declared = (n: unknown, actual: number, label: string) => {
+  if (typeof n !== 'number') { problems.push(`${label}: لا عدد معلن في الملف — أضفه ليصح الفحص`); return }
+  check(n === actual, `${label}: المعلن ${n} ≠ الفعلي ${actual} — عُدِّلت البيانات ولم يُعدَّل عدّها`)
+}
+declared(questions.metadata?.question_count, questions.questions.length, 'الأسئلة')
+declared(skills.metadata?.skill_count, skills.skills.length, 'المهارات')
+declared(core.stats?.launch_pathways, core.launch_pathways.length, 'المسارات')
+declared(core.stats?.launch_courses, core.courses.length, 'الدورات')
+declared(core.stats?.launch_modules, core.modules.length, 'الوحدات')
+declared(templates.stats?.composite_templates, templates.templates.length, 'القوالب المركبة')
 
 /* 2) عدم تكرار المعرفات */
 const dup = (arr: string[], label: string) => {
@@ -215,6 +224,6 @@ if (problems.length > 0) {
   process.exit(1)
 }
 console.log('✅ تدقيق بيانات التشخيص ناجح:')
-console.log('   192 سؤالا · 216 مهارة · 20 مسارا · 100 دورة · 400 وحدة · 16 قالبا مركبا')
+console.log(`   ${questions.questions.length} سؤالا · ${skills.skills.length} مهارة · ${core.launch_pathways.length} مسارا · ${core.courses.length} دورة · ${core.modules.length} وحدة · ${templates.templates.length} قالبا مركبا`)
 console.log('   لا معرفات مكررة · كل المراجع سليمة · كل المحفزات معروفة · كل الأسئلة الحاسمة مغطاة بتأثير موثق')
 console.log('   الدورات كيانات مركزية فريدة: لا تكرار عناوين/مهارات/أوصاف · القوالب تشير مرجعيا ونسخها المضمنة متسقة')

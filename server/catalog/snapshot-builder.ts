@@ -135,7 +135,13 @@ export async function buildSnapshotFromDb(
   const hoursByCourse = new Map(courseRows.map((c) => [c.course_id, c.total_hours]))
   const pathwayRows = pathways.map((p) => {
     const v = p.versions[0]
-    const courseIds = p.courses.map((l) => l.courseId)
+    /* المساندات تُقصى من course_ids بقصد: تلك القائمة يقرؤها pathwaySkills،
+       ومنها تُحسب فجوة المهارات التي يرتّب بها التشخيص المسارات. فلو دخلت
+       المساندة هنا لتغيّر ترتيبُ المسارات لكلّ متعلّم من عرضٍ لا من قياس. */
+    const courseIds = p.courses.filter((l) => l.kind !== 'support').map((l) => l.courseId)
+    const supportCourses = p.courses
+      .filter((l) => l.kind === 'support')
+      .map((l) => ({ course_id: l.courseId, reason_ar: l.reasonAr ?? '' }))
     return {
       id: p.id,
       title: v?.title ?? '',
@@ -153,6 +159,9 @@ export async function buildSnapshotFromDb(
       outcome_metric: v?.outcomeMetric ?? undefined,
       credential_ar: v?.credentialAr ?? undefined,
       course_ids: courseIds,
+      support_courses: supportCourses,
+      support_course_count: supportCourses.length,
+      support_hours: supportCourses.reduce((s, sc) => s + (hoursByCourse.get(sc.course_id) ?? 0), 0),
       total_hours: courseIds.reduce((s, cid) => s + (hoursByCourse.get(cid) ?? 0), 0),
     }
   })

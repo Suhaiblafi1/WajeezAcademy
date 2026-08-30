@@ -521,7 +521,11 @@ model PathwayCourse {
   pathwayId String
   courseId  String
   sequence  Int
-  kind      String  @default("required") // required | optional | gift
+  kind      String  @default("required") // required | optional | gift | support
+  /**
+   * سبب المساندة كما يُعرض للمتعلّم — للمساندات وحدها، فارغ لغيرها
+   */
+  reasonAr  String?
   pathway   Pathway @relation(fields: [pathwayId], references: [id], onDelete: Cascade)
   course    Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
 

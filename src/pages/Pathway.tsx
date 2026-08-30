@@ -19,6 +19,7 @@ import {
   BadgeCheck,
   BarChart3,
   Briefcase,
+  Trophy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,7 +35,7 @@ import { hasCoreCatalog } from "@/data/core-catalog-source";
 import { readAdoptedPlan, saveAdoptedPlan, syncAdoptedPlan } from "@/application/plan/adopted-plan";
 import { FIRST_TIME_PROMO } from "@/application/commerce/first-time-promo";
 import { useCoursePrices, cheapestOf, pricedCount, formatCohortPrice } from "@/services/cohort-prices";
-import { courseById, courses, pathwayCourses, pathwayDelivery, pathwayTrainers, courseTrainer, weeksLabel, MIN_PATHWAY_COURSES, MAX_PATHWAY_COURSES } from "@/data/courses";
+import { courseById, courses, pathwaySupportCourses, readyPathwayCourseIds, pathwayDelivery, pathwayTrainers, courseTrainer, weeksLabel, MIN_PATHWAY_COURSES, MAX_PATHWAY_COURSES } from "@/data/courses";
 import { GOAL_LABELS, GAP_LABELS, OBSTACLE_TO_GAP } from "@/data/diagnostic";
 import { track } from "@/services/analytics";
 import { usePublishedContent } from "@/services/public-content";
@@ -129,9 +130,21 @@ export default function PathwayPage() {
      تغيير — مصدرٌ واحد لا نسخةٌ ثانية تفترق عنه. */
   const [edits, setEdits] = useState<{ courseIds: string[]; giftId: string | null } | null>(null);
   const editable = Boolean(adopted);
+  /* المسار الجاهز = أربعُ أساسيات + ثلاثُ مساندات. أمّا الخطّة المعتمَدة من
+     التشخيص فتبقى كما اعتُمدت: هناك تُبنى من القياس لا من حزمةٍ جاهزة. */
   const courseIds = useMemo(
-    () => edits?.courseIds ?? custom?.chosenIds ?? (pathway ? pathwayCourses[pathway.id] ?? [] : []),
+    () => edits?.courseIds ?? custom?.chosenIds ?? (pathway ? readyPathwayCourseIds(pathway.id) : []),
     [edits, custom, pathway],
+  );
+  /* أيّ المعروضات مساندة — للوسم في الرحلة. المساندة تبقى مساندةً حتّى بعد
+     تخصيصٍ يحذف غيرها، فالوسم من الكتالوج لا من موضعها في القائمة. */
+  const supportIds = useMemo(
+    () => new Set((pathway ? pathwaySupportCourses[pathway.id] ?? [] : []).map((s) => s.courseId)),
+    [pathway],
+  );
+  const supportReasons = useMemo(
+    () => new Map((pathway ? pathwaySupportCourses[pathway.id] ?? [] : []).map((s) => [s.courseId, s.reasonAr])),
+    [pathway],
   );
   const giftId = edits?.giftId ?? custom?.giftId ?? null;
   const [swapForId, setSwapForId] = useState<string | null>(null);
@@ -335,13 +348,6 @@ export default function PathwayPage() {
                 {pathway.weeklyHours} أسبوعيا
               </span>
             </div>
-            <p className="mt-3 flex max-w-2xl items-start gap-2 text-sm leading-relaxed text-white/60">
-              <RouteIcon className="mt-0.5 h-4 w-4 shrink-0 text-gold-ink" />
-              <span>
-                <span className="font-bold text-white/80">المخرج العملي: </span>
-                {pathway.output}
-              </span>
-            </p>
           </div>
 
           {/* شارة الخطة المركبة — تسبق رحلة الدورات لتفسير لماذا تختلف القائمة عن كتالوج المسار */}
@@ -360,6 +366,7 @@ export default function PathwayPage() {
             delivery={pathwayDelivery(pathway.id)}
             headingLevel="h2"
             giftId={giftId}
+            supportReasons={Object.fromEntries([...supportReasons].filter(([id]) => supportIds.has(id)))}
             edit={
               editable
                 ? {
@@ -388,6 +395,29 @@ export default function PathwayPage() {
                 : undefined
             }
           />
+
+          {/* مشروع التخرّج — **خارج** المسار لا خطوةً داخله.
+
+              كان يُعرض في الترويسة باسم «المخرج العملي» فوق الدورات، فيُقرأ
+              محتوى المسار ويُحتسب ضمن ما يُشترى. وهو ليس دورةً ولا ساعةً في
+              الحساب: مهمّةٌ إضافية على واقع المتعلّم يقدّمها بعد الدورات إن
+              أرادها. فمكانه بعد الرحلة، بحدٍّ يفصله عنها، وبنصٍّ يقول ذلك. */}
+          {pathway.output && (
+            <section className="story-fade mt-8 rounded-2xl border border-gold/30 bg-gold/[0.05] px-5 py-4">
+              <h2 className="flex flex-wrap items-center gap-2 text-sm font-black text-gold-ink">
+                <Trophy className="h-4 w-4" />
+                مشروع التخرّج
+                <span className="rounded-full border border-gold/40 bg-gold/10 px-2 py-0.5 text-[10px] font-black text-gold-ink/90">
+                  إضافيّ — خارج دورات المسار
+                </span>
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-white/70">{pathway.output}</p>
+              <p className="mt-2 text-[11px] leading-relaxed text-white/45">
+                لا يُحتسب دورةً ولا ساعةً في المسار ولا في سعره. تبنيه على واقع عملك بعد الدورات
+                وتقدّمه للمراجعة إن أردت شهادةً موثّقة بمخرَج.
+              </p>
+            </section>
+          )}
 
           {/* أنواع المصادر المرافقة حُذفت — كانت مكررة مع صندوق «منظومة كاملة» أدناه */}
 

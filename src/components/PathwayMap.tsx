@@ -121,22 +121,32 @@ export default function PathwayMap({
             <NodeCard node={n} isCurrent={i === currentIndex} linkTo={courseLinkBase ? `${courseLinkBase}/${n.id}` : undefined} />
           </li>
         ))}
-
-        {capstoneAr && (
-          <li className="relative flex items-start gap-3 sm:flex-col sm:items-stretch sm:gap-2">
-            <span
-              aria-hidden="true"
-              className="relative z-10 grid h-9 w-9 shrink-0 place-items-center rounded-full border-2 border-gold/60 bg-surface text-gold-ink"
-            >
-              <Trophy className="h-4 w-4" />
-            </span>
-            <div className="min-w-0 rounded-2xl border border-gold/30 bg-gold/[0.06] px-3 py-2">
-              <p className="text-xs font-bold leading-5 text-gold-ink">مشروع التخرج</p>
-              <p className="mt-1 line-clamp-2 text-[10px] leading-4 text-white/55">{capstoneAr}</p>
-            </div>
-          </li>
-        )}
       </ol>
+
+      {/* المشروع خارج السكّة لا محطّةً عليها.
+
+          كان آخر عنصرٍ في <ol> فيُقرأ خطوةً تالية تُقطع كالدورات — بينما هو
+          مهمّةٌ إضافية بعد المسار، لا تُعدّ في «الدورة ن من م» ولا في ساعاته.
+          فأُخرج من القائمة إلى كتلةٍ تحتها مفصولةٍ بحدّ، تقول ذلك صراحة. */}
+      {capstoneAr && (
+        <div className="mt-5 flex items-start gap-3 border-t border-dashed border-white/15 pt-4">
+          <span
+            aria-hidden="true"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-full border-2 border-gold/60 bg-surface text-gold-ink"
+          >
+            <Trophy className="h-4 w-4" />
+          </span>
+          <div className="min-w-0">
+            <p className="flex flex-wrap items-center gap-2 text-xs font-bold leading-5 text-gold-ink">
+              مشروع التخرج
+              <span className="rounded-full border border-gold/40 bg-gold/10 px-2 py-0.5 text-[10px] font-black text-gold-ink/90">
+                إضافيّ — خارج دورات المسار
+              </span>
+            </p>
+            <p className="mt-1 text-[10px] leading-4 text-white/55">{capstoneAr}</p>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
