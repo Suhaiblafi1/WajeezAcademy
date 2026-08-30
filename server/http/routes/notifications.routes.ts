@@ -5,8 +5,14 @@
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
-import { NotificationService } from '../../services/notification.service'
+import { NOTIFICATION_AUDIENCES, NotificationService } from '../../services/notification.service'
 import { requireAuth, requirePermission } from '../auth-plugin'
+
+/* البوابة التي يسأل منها الجرس. والافتراضي `learner` لأنّه ما كانت عليه
+   النقطة قبل الفصل — فقارئٌ قديم لا يُكسَر، ويرى ما كان يخصّه أصلا. */
+const audienceQuery = z.object({
+  audience: z.enum(NOTIFICATION_AUDIENCES as unknown as [string, ...string[]]).default('learner'),
+})
 
 export function registerNotificationRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const notifications = new NotificationService(prisma)
@@ -14,13 +20,19 @@ export function registerNotificationRoutes(app: FastifyInstance, prisma: PrismaC
   /* ════ المستخدم ════ */
   app.get('/api/learner/notifications', {
     preHandler: requireAuth,
-    schema: { tags: ['notifications'], summary: 'إشعاراتي الداخلية' },
-  }, async (req) => notifications.myNotifications(req.auth!.userId))
+    schema: { tags: ['notifications'], summary: 'إشعاراتي الداخلية — بجمهور البوابة السائلة' },
+  }, async (req) => {
+    const { audience } = audienceQuery.parse(req.query)
+    return notifications.myNotifications(req.auth!.userId, audience as 'learner' | 'trainer' | 'staff')
+  })
 
   app.get('/api/learner/notifications/unread-count', {
     preHandler: requireAuth,
-    schema: { tags: ['notifications'], summary: 'عدد غير المقروء — لشارة الواجهة' },
-  }, async (req) => ({ unread: await notifications.unreadCount(req.auth!.userId) }))
+    schema: { tags: ['notifications'], summary: 'عدد غير المقروء — لشارة بوابةٍ بعينها' },
+  }, async (req) => {
+    const { audience } = audienceQuery.parse(req.query)
+    return { unread: await notifications.unreadCount(req.auth!.userId, audience as 'learner' | 'trainer' | 'staff') }
+  })
 
   app.post('/api/learner/notifications/:id/read', {
     preHandler: requireAuth,

@@ -8,6 +8,15 @@ import { recordAudit } from './audit'
 import { getEmailConfig, type EmailConfig } from './integrations.service'
 import { sendEmail } from './mail'
 
+/* لأيّ بوابةٍ الإشعار — جرسُ كلٍّ يعرض جمهورَه وحده.
+
+   والثلاثة هي البوابات التي تُنتِج إشعارا فعلا: بوابة المتعلّم، وبوابة
+   المدرّب (كشوف المستحقّات)، وبوابات العمل الإداريّة. وبوابة المستشار
+   تقرأ `staff` لأنّها بوابة عملٍ لا تعلُّم — ولا يُنتَج لها اليوم شيء. */
+export type NotificationAudience = 'learner' | 'trainer' | 'staff'
+
+export const NOTIFICATION_AUDIENCES: readonly NotificationAudience[] = ['learner', 'trainer', 'staff']
+
 export interface NotificationPayload {
   userId: string
   channel: 'in_app' | 'email' | 'whatsapp' | 'sms'
@@ -15,6 +24,8 @@ export interface NotificationPayload {
   body: string
   templateKey?: string
   data?: Record<string, unknown>
+  /** الافتراضي `learner`: السهو يُبقي الإشعار حيث يراه صاحبه لا حيث يختفي */
+  audience?: NotificationAudience
 }
 
 export interface NotificationProvider {
@@ -108,7 +119,11 @@ export async function safeNotify(prisma: PrismaClient, payload: NotificationPayl
   } catch { /* الإشعار رفاهية — السجلات التشغيلية هي مصدر الحقيقة */ }
 }
 
-/** إشعار كل المستخدمين الفعالين الحاملين لأدوار معينة — لأحداث تهم الإدارة (طلب مدرب، تذكرة دعم) */
+/** إشعار كل المستخدمين الفعالين الحاملين لأدوار معينة — لأحداث تهم الإدارة (طلب مدرب، تذكرة دعم).
+
+    وجمهورُه `staff` بحكم بابه: من يُرسَل إليه بدوره الوظيفيّ يُرسَل إليه في
+    بوابته الوظيفية. وكان يقع في جرس بوابة الطالب لأنّ الإشعار يحمل صاحبَه
+    ولا يحمل بوابتَه — فيرى الإداريّ في «تعلّمي» طلبَ انضمام مدرّب. */
 export async function notifyRole(
   prisma: PrismaClient, roleIds: string[], payload: Omit<NotificationPayload, 'userId'>,
 ): Promise<void> {
@@ -118,7 +133,7 @@ export async function notifyRole(
       select: { userId: true },
     })
     const unique = [...new Set(holders.map((h) => h.userId))]
-    for (const userId of unique) await safeNotify(prisma, { ...payload, userId })
+    for (const userId of unique) await safeNotify(prisma, { audience: 'staff', ...payload, userId })
   } catch { /* لا يعيق الحدث الأصلي */ }
 }
 
@@ -155,6 +170,7 @@ export class NotificationService {
       data: {
         userId: payload.userId, channel: payload.channel, templateKey: payload.templateKey,
         title: payload.title, body: payload.body, data: payload.data as object,
+        audience: payload.audience ?? 'learner',
       },
     })
     return this.attemptSend(notification.id)
@@ -195,15 +211,23 @@ export class NotificationService {
 
   /* ── صندوق المتعلم ── */
 
-  async myNotifications(userId: string) {
+  /* جرسٌ لكلّ بوابة — يعرض جمهورَها وحده.
+
+     والجرس مكوّنٌ واحد في أربع بوابات، فالتصفية بالجمهور وحدها كانت تُفرغ
+     جرس الإداريّ كما تُنظّف جرس المتعلّم: الإداريّ يقرأ من نقطة النهاية
+     نفسها. فالبوابة تُعلن جمهورَها، ولا يضيع إشعارٌ عن صاحبه — ينتقل إلى
+     الجرس الذي يقرأه فيه. */
+  async myNotifications(userId: string, audience: NotificationAudience = 'learner') {
     return this.prisma.notification.findMany({
-      where: { userId, channel: 'in_app', status: { in: ['sent', 'read'] } },
+      where: { userId, channel: 'in_app', audience, status: { in: ['sent', 'read'] } },
       orderBy: { sentAt: 'desc' }, take: 50,
     })
   }
 
-  async unreadCount(userId: string) {
-    return this.prisma.notification.count({ where: { userId, channel: 'in_app', status: 'sent' } })
+  async unreadCount(userId: string, audience: NotificationAudience = 'learner') {
+    return this.prisma.notification.count({
+      where: { userId, channel: 'in_app', audience, status: 'sent' },
+    })
   }
 
   async markRead(userId: string, notificationId: string) {

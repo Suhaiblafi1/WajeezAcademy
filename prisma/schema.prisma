@@ -2054,6 +2054,11 @@ model Notification {
   body        String
   data        Json?
   status      String    @default("queued") // queued | sent | failed | read
+  /**
+   * لأيّ بوابةٍ هذا الإشعار: learner | trainer | staff. جرسُ كلّ بوابة يعرض
+   * جمهورَه وحده — وشأنُ الإدارة لا يقع في موضع المتعلّم.
+   */
+  audience    String    @default("learner")
   attempts    Int       @default(0)
   lastError   String?
   queuedAt    DateTime  @default(now())
@@ -2062,6 +2067,7 @@ model Notification {
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, status, queuedAt])
+  @@index([userId, audience, status])
 }
 
 /**

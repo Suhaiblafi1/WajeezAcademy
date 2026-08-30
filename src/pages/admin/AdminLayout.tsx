@@ -136,7 +136,7 @@ export default function AdminLayout({ children, title }: { children: React.React
             >
               بحث… <kbd className="rounded border border-white/15 px-1.5 text-[9px]">Ctrl K</kbd>
             </button>
-            <NotificationBell />
+            <NotificationBell audience="staff" />
             <ThemeToggle />
             <button
               onClick={() => { localStorage.removeItem(ADMIN_IDENTITY_KEY); setMe(null); }}

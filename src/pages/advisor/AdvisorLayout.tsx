@@ -80,7 +80,7 @@ export default function AdvisorLayout({ children, title }: { children: React.Rea
                 بحث… <kbd className="rounded border border-white/15 px-1.5 text-[9px]">Ctrl K</kbd>
               </button>
             )}
-            <NotificationBell />
+            <NotificationBell audience="staff" />
             <ThemeToggle />
             <span className="flex items-center gap-2 text-xs text-white/55">
               <LayoutDashboard className="h-4 w-4 text-gold-ink" />

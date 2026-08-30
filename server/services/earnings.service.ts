@@ -114,7 +114,7 @@ export class EarningsService {
       if (!profile?.userId) return
       await new NotificationService(this.prisma).notify({
         userId: profile.userId, channel: 'in_app', title, body,
-        templateKey: 'trainer_payout', data,
+        templateKey: 'trainer_payout', data, audience: 'trainer',
       })
     } catch { /* الكشف نفسه هو مصدر الحقيقة — الإشعار رفاهية لا يوقف مساراً مالياً */ }
   }

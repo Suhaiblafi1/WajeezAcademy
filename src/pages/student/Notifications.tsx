@@ -16,7 +16,7 @@ export default function Notifications() {
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
-    try { setRows(await apiGet<Notif[]>("/api/learner/notifications")); }
+    try { setRows(await apiGet<Notif[]>("/api/learner/notifications?audience=learner")); }
     catch (e) { setError(e instanceof ApiError ? e.message : "تعذر تحميل الإشعارات"); }
     finally { setLoading(false); }
   }, []);

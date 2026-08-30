@@ -47,7 +47,7 @@ export default function Inbox() {
     void (async () => {
       const safe = async <T,>(pr: Promise<T>): Promise<T | null> => pr.then((v) => v).catch(() => null);
       const [notifs, tickets, enrollList] = await Promise.all([
-        safe(apiGet<unknown>("/api/learner/notifications")),
+        safe(apiGet<unknown>("/api/learner/notifications?audience=learner")),
         safe(apiGet<unknown>("/api/learner/support/tickets")),
         safe(apiGet<{ id: string }[]>("/api/learner/my-learning")),
       ]);

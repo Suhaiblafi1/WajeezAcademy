@@ -69,13 +69,13 @@ export default function PortalLayout({ children, title }: { children: React.Reac
   const [realNotifs, setRealNotifs] = useState<RealNotif[] | null>(null);
 
   useEffect(() => {
-    apiGet<RealNotif[]>("/api/learner/notifications").then((rows) => setRealNotifs(rows.slice(0, 6))).catch(() => setRealNotifs(null));
+    apiGet<RealNotif[]>("/api/learner/notifications?audience=learner").then((rows) => setRealNotifs(rows.slice(0, 6))).catch(() => setRealNotifs(null));
   }, []);
 
   /* عداد الخادم الرسمي للشارة — يُفضَّل على الحساب المحلي، ويُحدَّث كل دقيقة */
   const [serverUnread, setServerUnread] = useState<number | null>(null);
   const refreshUnread = useCallback(() => {
-    apiGet<{ unread: number }>("/api/learner/notifications/unread-count")
+    apiGet<{ unread: number }>("/api/learner/notifications/unread-count?audience=learner")
       .then((r) => setServerUnread(r.unread))
       .catch(() => setServerUnread(null));
   }, []);

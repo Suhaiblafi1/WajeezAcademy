@@ -8,9 +8,16 @@ interface InAppNotification {
   sentAt?: string | null; createdAt: string; readAt?: string | null;
 }
 
+/** بوابة الجرس — لأنّ المكوّن واحد في أربع بوابات.
+
+   كان الجرس يسأل نقطة النهاية بلا جمهور، فيعرض كلَّ ما لصاحب الحساب أينما
+   وقف: من يحمل دورا إداريا يرى في «تعلّمي» طلبَ انضمام مدرّب. فصارت البوابة
+   تُعلن جمهورَها، ولا يضيع إشعار — ينتقل إلى الجرس الذي يخصّه. */
+export type BellAudience = "learner" | "trainer" | "staff";
+
 /** جرس إشعارات داخل المنصة — يظهر فقط لمن له جلسة حقيقية.
    يحدّث العدّاد كل 30 ثانية، والقائمة تُجلب عند الفتح، والنقر يعلّم كمقروء. */
-export default function NotificationBell() {
+export default function NotificationBell({ audience }: { audience: BellAudience }) {
   const { user } = useRealSession();
   const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
@@ -19,10 +26,10 @@ export default function NotificationBell() {
 
   const refreshCount = useCallback(async () => {
     try {
-      const r = await apiGet<{ unread: number }>("/api/learner/notifications/unread-count");
+      const r = await apiGet<{ unread: number }>(`/api/learner/notifications/unread-count?audience=${audience}`);
       setUnread(r.unread);
     } catch { /* بلا جلسة أو خادم غير متاح — الجرس يبقى صامتاً */ }
-  }, []);
+  }, [audience]);
 
   useEffect(() => {
     if (!user) return;
@@ -51,7 +58,7 @@ export default function NotificationBell() {
     const next = !open;
     setOpen(next);
     if (next) {
-      try { setItems(await apiGet<InAppNotification[]>("/api/learner/notifications")); }
+      try { setItems(await apiGet<InAppNotification[]>(`/api/learner/notifications?audience=${audience}`)); }
       catch { setItems([]); }
     }
   };

@@ -88,7 +88,7 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
                 بحث… <kbd className="rounded border border-white/15 px-1.5 text-[9px]">Ctrl K</kbd>
               </button>
             )}
-            <NotificationBell />
+            <NotificationBell audience="trainer" />
             <ThemeToggle />
             <span className="max-w-[140px] truncate text-xs text-white/55">{user?.displayName}</span>
           </div>

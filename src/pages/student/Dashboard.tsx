@@ -157,7 +157,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
     let on = true;
     Promise.all(rows.slice(0, 4).map((r) => apiGet<EnrollmentDetail>(`/api/learner/enrollments/${r.id}`).catch(() => null)))
       .then((ds) => { if (on) setDetails(ds.filter((d): d is EnrollmentDetail => d !== null)); });
-    apiGet<RealNotif[]>("/api/learner/notifications").then((n) => on && setNotifs(n.slice(0, 4))).catch(() => undefined);
+    apiGet<RealNotif[]>("/api/learner/notifications?audience=learner").then((n) => on && setNotifs(n.slice(0, 4))).catch(() => undefined);
     apiGet<unknown[]>("/api/learner/certificates").then((c) => on && setCertCount(c.length)).catch(() => undefined);
     void (async () => {
       const safe = async <T,>(pr: Promise<T>): Promise<T | null> => pr.then((v) => v).catch(() => null);
