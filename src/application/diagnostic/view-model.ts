@@ -4,7 +4,7 @@ import { goalLabel, skillLabel } from '../../domain/diagnostic/explanation'
 import type { Recommendation } from '../../domain/diagnostic/types'
 import type { DiagResult, GapDetail } from '../../data/diagnostic'
 import { pathwayById } from '../../data/pathways'
-import { courseById, pathwayCourses, pathwayPriceFor } from '../../data/courses'
+import { courseById, pathwayCourses } from '../../data/courses'
 
 const LEGACY_PERSONA: Record<string, string> = {
   student: 'student',
@@ -69,8 +69,11 @@ export function recommendationToDiagResult(
     (top
       ? altPathways
           .filter((x) => x.p.id !== faster?.id)
-          .map((x) => ({ p: x.p, price: pathwayPriceFor((pathwayCourses[x.p.id] ?? []).length || 6) }))
-          .sort((a, b) => a.price - b.price)[0]
+          /* «الأوفر» يُرتَّب بعدد المقررات لا برقمٍ مُختلَق: كان يُرتَّب بـ
+             `pathwayPriceFor(العدد)` وهي دالّةٌ صاعدة بالعدد وحده، فالترتيب
+             هو هو — والفرق أنّ رقما لا تسنده شعبة لم يعد يُحمَل في النتيجة. */
+          .map((x) => ({ p: x.p, courseCount: (pathwayCourses[x.p.id] ?? []).length || 6 }))
+          .sort((a, b) => a.courseCount - b.courseCount)[0]
       : undefined) ?? null
 
   const pid = rec.primaryPathway?.pathwayId ?? top?.id ?? ''

@@ -11,7 +11,7 @@
 
    وله أن يسمّي تركيبته — تُحفظ عندنا لعلّها تصير مسارا معتمدا للعامة. */
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
 import {
   ArrowRight, BookOpen, CheckCircle2, Clock3, CalendarDays, Layers, ListChecks,
@@ -24,7 +24,7 @@ import EnrollRequest from "@/components/EnrollRequest";
 import CourseTitle from "@/components/CourseTitle";
 import { Button } from "@/components/ui/button";
 import { usePublishedContent } from "@/services/public-content";
-import { usePriceFormatter } from "@/services/currency";
+import { useCoursePrices } from "@/services/cohort-prices";
 import { track } from "@/services/analytics";
 import { bundleNudge, pathPricing, suggestNext, MAX_BUILT_COURSES } from "@/application/catalog/course-path";
 import { DISCOUNT_CATEGORIES, MAX_CATEGORY_PCT } from "@/application/commerce/discount-policy";
@@ -32,10 +32,17 @@ import { FIRST_TIME_PROMO, isFirstTimePromo } from "@/application/commerce/first
 import { CONTACT } from "@/data/stories";
 import { savePathDraft } from "@/services/path-drafts";
 import {
-  courseById, courseFullById, coursePriceOf, courseDetails,
+  courseById, courseFullById, courseDetails,
   pathwayCourses, weeksLabel, type Course,
 } from "@/data/courses";
 import { hasCoreCatalog } from "@/data/core-catalog-source";
+
+/* سعر الدورة الواحدة في القوائم: رقمٌ من شعبةٍ حقيقية، أو «مع الشعبة» —
+   ولا تقدير بينهما. */
+function CoursePriceTag({ amount, money, className }: { amount: number | null; money: (n: number) => string; className: string }) {
+  if (amount === null) return <span className="text-[11px] font-bold text-white/35">مع الشعبة</span>;
+  return <span dir="ltr" className={className}>{money(amount)}</span>;
+}
 
 function readUserName(): string | null {
   try {
@@ -64,7 +71,10 @@ function CoursePathPage({ courseId }: { courseId: string }) {
      يعرض سعرها (يُحسب في كل رسم) وبطاقةُ السعر تحته تقول صفرا (محفوظة من
      الرسم الأول). رقمٌ يناقض رقما فوقه مباشرة. */
   const catalogVersion = usePublishedContent();
-  const fmt = usePriceFormatter();
+  /* الأسعار من الشعب لا من تقديرٍ في المتصفّح (التوصية ٤). وعملةٌ واحدة
+     مرجعا: خلطُ دينارٍ بريالٍ في مجموعٍ واحد يُخرج رقما لا يُطالَب به أحد،
+     فما خالف عملةَ المرجع يُعدّ «غير مسعَّر» ويُقال ذلك نصّا. */
+  const { prices, loaded: pricesLoaded } = useCoursePrices();
 
   const anchor = courseById(courseId);
   const [picked, setPicked] = useState<string[]>(courseId ? [courseId] : []);
@@ -90,14 +100,30 @@ function CoursePathPage({ courseId }: { courseId: string }) {
     void catalogVersion;
     return suggestNext(picked, 8);
   }, [picked, catalogVersion]);
+  const baseCurrency = useMemo(() => {
+    for (const id of picked) { const p = prices.get(id); if (p) return p.currency; }
+    for (const p of prices.values()) return p.currency;
+    return null;
+  }, [picked, prices]);
+  const priceOf = useCallback(
+    (id: string) => {
+      const p = prices.get(id);
+      return p && p.currency === baseCurrency ? p.amount : null;
+    },
+    [prices, baseCurrency],
+  );
+  const money = useCallback(
+    (n: number) => `${Math.round(n).toLocaleString("en-US")} ${baseCurrency ?? ""}`.trim(),
+    [baseCurrency],
+  );
   const pricing = useMemo(() => {
     /* الكتالوج يصل بعد أول رسم — فإعادة الحساب معلَّقة على إصداره */
     void catalogVersion;
-    return pathPricing(picked);
-  }, [picked, catalogVersion]);
+    return pathPricing(picked, priceOf);
+  }, [picked, catalogVersion, priceOf]);
   const nudge = useMemo(
-    () => bundleNudge(picked, suggestions.map((s) => s.courseId)),
-    [picked, suggestions],
+    () => bundleNudge(picked, suggestions.map((s) => s.courseId), priceOf),
+    [picked, suggestions, priceOf],
   );
 
   /* هل صارت مختاراته مسارا جاهزا بعينه؟ حينها نقوله له بدل ادّعاء تركيب جديد */
@@ -349,7 +375,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                   </span>
                 </span>
                 <span className="flex shrink-0 items-center gap-3">
-                  <span className="text-sm font-black text-white/85">{fmt(coursePriceOf(c))}</span>
+                  <CoursePriceTag amount={priceOf(c.id)} money={money} className="text-sm font-black text-white/85" />
                   {c.id !== anchor.id && (
                     <button
                       onClick={() => remove(c.id)}
@@ -368,36 +394,53 @@ function CoursePathPage({ courseId }: { courseId: string }) {
               بنسبته وقيمته، ثم الكود إن كان، ثم ما يدفعه. كل سطر يقابل قرارا
               اتخذه المتعلم بنفسه — وهذا ما يجعل الرقم الأخير مفهوما. */}
           <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-            <dl className="space-y-1.5 text-sm">
-              <div className="flex items-baseline justify-between gap-3">
-                <dt className="text-white/55">{picked.length === 1 ? "سعر الدورة" : `مجموع الـ${picked.length} دورات`}</dt>
-                <dd className="font-bold text-white/80">{fmt(pricing.separate)}</dd>
-              </div>
-              {pricing.discountPct > 0 && (
+            {pricing.allPriced ? (
+              <dl className="space-y-1.5 text-sm">
                 <div className="flex items-baseline justify-between gap-3">
-                  <dt className="text-teal-light-ink">
-                    خصم بناء المسار — {pricing.discountPct}٪
-                    {pricing.cappedByReady && <span className="text-white/40"> (بسعر المسار الجاهز)</span>}
-                  </dt>
-                  <dd className="font-bold text-teal-light-ink">−{fmt(pricing.saving)}</dd>
+                  <dt className="text-white/55">{picked.length === 1 ? "سعر الدورة" : `مجموع الـ${picked.length} دورات`}</dt>
+                  <dd dir="ltr" className="font-bold text-white/80">{money(pricing.separate)}</dd>
                 </div>
-              )}
-              {promoPct > 0 && (
-                <div className="flex items-baseline justify-between gap-3">
-                  <dt className="text-teal-light-ink">كود {promoApplied} — {promoPct}٪</dt>
-                  <dd className="font-bold text-teal-light-ink">−{fmt(pricing.payable - finalPayable)}</dd>
+                {pricing.discountPct > 0 && (
+                  <div className="flex items-baseline justify-between gap-3">
+                    <dt className="text-teal-light-ink">خصم بناء المسار — {pricing.discountPct}٪</dt>
+                    <dd dir="ltr" className="font-bold text-teal-light-ink">−{money(pricing.saving)}</dd>
+                  </div>
+                )}
+                {promoPct > 0 && (
+                  <div className="flex items-baseline justify-between gap-3">
+                    <dt className="text-teal-light-ink">كود {promoApplied} — {promoPct}٪</dt>
+                    <dd dir="ltr" className="font-bold text-teal-light-ink">−{money(pricing.payable - finalPayable)}</dd>
+                  </div>
+                )}
+                <div className="flex flex-wrap items-baseline justify-between gap-3 border-t border-white/10 pt-2.5">
+                  <dt className="text-xs text-white/50">ما تدفعه</dt>
+                  <dd className="flex items-baseline gap-2">
+                    {finalPayable < pricing.separate && (
+                      <span dir="ltr" className="text-sm text-white/35 line-through">{money(pricing.separate)}</span>
+                    )}
+                    <span dir="ltr" className="text-3xl font-black text-white">{money(finalPayable)}</span>
+                  </dd>
                 </div>
-              )}
-              <div className="flex flex-wrap items-baseline justify-between gap-3 border-t border-white/10 pt-2.5">
-                <dt className="text-xs text-white/50">ما تدفعه</dt>
-                <dd className="flex items-baseline gap-2">
-                  {finalPayable < pricing.separate && (
-                    <span className="text-sm text-white/35 line-through">{fmt(pricing.separate)}</span>
-                  )}
-                  <span className="text-3xl font-black text-white">{fmt(finalPayable)}</span>
-                </dd>
+              </dl>
+            ) : (
+              /* دورةٌ واحدة بلا شعبةٍ مسعَّرة تُبطل المجموع كله: مجموعُ ثلاثٍ
+                 يُقرأ ثمنَ أربع. فلا رقم — ويُقال السبب. */
+              <div className="space-y-1.5 text-sm">
+                <p className="font-black text-white">
+                  {pricesLoaded ? "يُعلن السعر مع فتح الشعبة" : "يُقرأ السعر…"}
+                </p>
+                <p className="text-[11px] leading-relaxed text-white/50">
+                  {pricesLoaded && pricing.priced > 0
+                    ? `${pricing.priced} من ${pricing.count} من دوراتك لها شعبة مسعَّرة، والباقي لم تُفتح شعبته بعد. ولا نعرض مجموعا ناقصا.`
+                    : "نُسعّر كل شعبة على حدة، ولا نعرض رقما قبل أن يكون هو الرقم الذي تدفعه."}
+                </p>
+                {pricing.discountPct > 0 && (
+                  <p className="text-[11px] font-bold text-teal-light-ink">
+                    وخصم بناء المسار عند {pricing.count} دورات — {pricing.discountPct}٪ — قائمٌ لك حين تُفتح الشعب.
+                  </p>
+                )}
               </div>
-            </dl>
+            )}
 
             {/* كود الخصم — حقل مستقل بزر، لا يُطبَّق بالكتابة */}
             <div className="mt-4 border-t border-white/10 pt-4">
@@ -472,8 +515,8 @@ function CoursePathPage({ courseId }: { courseId: string }) {
               <p className="mt-4 flex items-start gap-2 rounded-xl border border-gold/40 bg-gold/10 px-4 py-3 text-[12px] font-semibold leading-relaxed text-gold-ink">
                 <Sparkles className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>
-                  دورة واحدة أخرى ترفع خصمك إلى {nudge.nextPct}٪: تصير الـ{nudge.nextCount} بـ{fmt(nudge.nextPayable)}.
-                  {" "}أي أن الدورة الإضافية تكلّفك {fmt(nudge.marginal)} بدل {fmt(nudge.listPrice)}.
+                  دورة واحدة أخرى ترفع خصمك إلى {nudge.nextPct}٪: تصير الـ{nudge.nextCount} بـ<span dir="ltr">{money(nudge.nextPayable)}</span>.
+                  {" "}أي أن الدورة الإضافية تكلّفك <span dir="ltr">{money(nudge.marginal)}</span> بدل <span dir="ltr">{money(nudge.listPrice)}</span>.
                 </span>
               </p>
             )}
@@ -521,7 +564,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                   <li key={id} className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2.5">
                     <span className="min-w-0 text-sm font-bold leading-snug">{c.name}</span>
                     <span className="flex shrink-0 items-center gap-2">
-                      <span className="text-xs font-black text-white/60">{fmt(coursePriceOf(c))}</span>
+                      <CoursePriceTag amount={priceOf(c.id)} money={money} className="text-xs font-black text-white/60" />
                       <button
                         onClick={() => setDeferred((d) => d.filter((x) => x !== id))}
                         aria-label={`أزل ${c.name} من مرحلتك التالية`}
@@ -564,7 +607,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                       <span className="mt-1 block text-[11px] text-white/40">{weeksLabel(c.weeks)}</span>
                     </span>
                     <span className="flex shrink-0 flex-col items-end gap-2">
-                      <span className="text-sm font-black text-white/85">{fmt(coursePriceOf(c))}</span>
+                      <CoursePriceTag amount={priceOf(c.id)} money={money} className="text-sm font-black text-white/85" />
                       <span className="grid h-8 w-8 place-items-center rounded-lg bg-teal/15 text-teal-light-ink">
                         <Plus className="h-4 w-4" />
                       </span>

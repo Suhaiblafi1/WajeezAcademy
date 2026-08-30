@@ -28,6 +28,7 @@ model User {
    * الرمز يُحفظ هاشا كسائر الرموز: تسريب القاعدة لا يعطي مفاتيح صالحة.
    */
   ratingsGiven         Rating[]             @relation("RatingRater")
+  learnerPlans         LearnerPlan[]        @relation("LearnerPlanUser")
   emailVerifiedAt      DateTime?
   emailVerifyTokenHash String?              @unique
   emailVerifyExpiresAt DateTime?
@@ -1655,6 +1656,56 @@ model LearnerProfile {
  * بلا أي حقل شخصي: لا اسم ولا بريد. `name` اسم المسار لا اسم صاحبه، و`userId`
  * يُملأ فقط إن كان مسجّلا وقت الحفظ — وليس شرطا.
  */
+/**
+ * خطّة المتعلّم — التوصية ١.
+ * كانت الخطّة تعيش في ذاكرة التبويب وحدها: تُبنى في التشخيص، وتُعتمد، ثم تموت
+ * بإغلاق التبويب. ولا صفحة في المنصّة تقرؤها، فـ«مساري» كان **يستنتج** مسارا
+ * من دورات المتعلّم المسجَّلة ويعرض قائمة الكتالوج مكانها.
+ * ولماذا لا يُعاد استعمال LearnerPathDraft: ذاك مسوّدةٌ تُرفع للمراجعة من باني
+ * المسار، قائمةٌ مسطّحة بلا ترتيبٍ ولا هديّة ولا وصلٍ بشعبة، وحالتُه عن
+ * مراجعته لا عن حياة الخطّة. المفهومان مختلفان، ودمجهما يُفسد كليهما.
+ * ويُخزَّن هنا **القصد وحده**: أيّ دورات، بأيّ ترتيب، وأيّها الهديّة. أمّا
+ * الحالة — أمسجَّل هو؟ ألها شعبة مفتوحة؟ — فتُشتقّ عند القراءة من التسجيلات
+ * والشعب. حالةٌ مخزَّنة تنحرف عن الواقع بلا أن يشتكي أحد.
+ */
+model LearnerPlan {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @db.Uuid
+  nameAr        String
+  /**
+   * مركَّبة من أكثر من مسار؟ يحدّد الاسم والشارة
+   */
+  composed      Boolean  @default(false)
+  /**
+   * المسار المضيف — للتوجيه والعرض، لا للتسمية
+   */
+  hostPathwayId String?
+  /**
+   * دورة الهديّة التي اختارها — من دورات الخطّة نفسها، ضمن السقف
+   */
+  giftCourseId  String?
+  status        String   @default("active") // active | archived
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user  User              @relation("LearnerPlanUser", fields: [userId], references: [id], onDelete: Cascade)
+  items LearnerPlanItem[]
+
+  @@index([userId, status])
+}
+
+model LearnerPlanItem {
+  id       String @id @default(uuid()) @db.Uuid
+  planId   String @db.Uuid
+  courseId String
+  sequence Int
+
+  plan LearnerPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, courseId])
+  @@index([planId, sequence])
+}
+
 model LearnerPathDraft {
   id        String   @id @default(uuid()) @db.Uuid
   name      String
@@ -1825,12 +1876,15 @@ model EnrollmentRequest {
   decidedBy String?   @db.Uuid
   decidedAt DateTime?
   orderId   String?   @db.Uuid
+  /// خطّة المتعلّم التي وُلد منها هذا الطلب — تجمع طلباتِ خطّةٍ واحدة في طلب شراء واحد وفاتورة واحدة
+  planId    String?   @db.Uuid
   createdAt DateTime  @default(now())
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   cohort    Cohort    @relation(fields: [cohortId], references: [id])
 
   @@unique([userId, cohortId])
   @@index([cohortId, status])
+  @@index([planId, status])
 }
 
 model SubscriptionPlan {

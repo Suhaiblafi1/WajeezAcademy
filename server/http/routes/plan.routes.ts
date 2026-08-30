@@ -1,0 +1,68 @@
+/* مسارات خطّة المتعلّم (التوصية ١) — خطّةٌ فعّالة واحدة لكلّ حساب.
+
+   الصلاحية `learner.portal`: الخطّة جزءٌ من بوابته لا امتيازٌ مستقل. ولا يقرأ
+   أحدٌ خطّة غيره: المعرّف من الجلسة دائما، ولا يُقبل من الطلب. */
+
+import type { FastifyInstance } from 'fastify'
+import { z } from 'zod'
+import type { PrismaClient } from '@prisma/client'
+import { PlanService } from '../../services/plan.service'
+import { requirePermission } from '../auth-plugin'
+
+const courseIds = z.array(z.string().trim().min(1).max(60)).min(1).max(12)
+
+export function registerPlanRoutes(app: FastifyInstance, prisma: PrismaClient) {
+  const plans = new PlanService(prisma)
+
+  app.get('/api/learner/plan', {
+    preHandler: requirePermission('learner.portal'),
+    schema: { tags: ['plan'], summary: 'الخطّة الفعّالة — بحالة مشتقّة لكل دورة' },
+  }, async (req) => ({ plan: await plans.active(req.auth!.userId) }))
+
+  app.post('/api/learner/plan', {
+    preHandler: requirePermission('learner.portal'),
+    config: { rateLimit: { max: 20, timeWindow: '10 minutes' } },
+    schema: {
+      tags: ['plan'], summary: 'اعتماد خطّة — تُؤرشَف السابقة',
+      body: {
+        type: 'object', required: ['nameAr', 'courseIds'],
+        properties: {
+          nameAr: { type: 'string' }, composed: { type: 'boolean' },
+          hostPathwayId: { type: 'string' }, giftCourseId: { type: 'string' },
+          courseIds: { type: 'array', items: { type: 'string' } },
+        },
+      },
+    },
+  }, async (req, reply) => {
+    const body = z.object({
+      nameAr: z.string().trim().min(1).max(120),
+      composed: z.boolean().optional(),
+      hostPathwayId: z.string().trim().max(60).optional(),
+      giftCourseId: z.string().trim().max(60).optional(),
+      courseIds,
+    }).parse(req.body)
+    const plan = await plans.adopt(req.auth!.userId, {
+      nameAr: body.nameAr,
+      composed: body.composed ?? false,
+      hostPathwayId: body.hostPathwayId ?? null,
+      giftCourseId: body.giftCourseId ?? null,
+      courseIds: body.courseIds,
+    })
+    return reply.status(201).send({ plan })
+  })
+
+  app.put('/api/learner/plan/courses', {
+    preHandler: requirePermission('learner.portal'),
+    config: { rateLimit: { max: 60, timeWindow: '10 minutes' } },
+    schema: {
+      tags: ['plan'], summary: 'تبديل دورات الخطّة الفعّالة — الاسم والهوية يبقيان',
+      body: {
+        type: 'object', required: ['courseIds'],
+        properties: { courseIds: { type: 'array', items: { type: 'string' } }, giftCourseId: { type: 'string' } },
+      },
+    },
+  }, async (req) => {
+    const body = z.object({ courseIds, giftCourseId: z.string().trim().max(60).nullable().optional() }).parse(req.body)
+    return { plan: await plans.replaceCourses(req.auth!.userId, body.courseIds, body.giftCourseId ?? null) }
+  })
+}

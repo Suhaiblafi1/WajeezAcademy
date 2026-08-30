@@ -30,14 +30,14 @@ import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
 import { track } from "@/services/analytics";
 import { apiPost } from "@/services/api";
-import { usePriceFormatter } from "@/services/currency";
+import { useCoursePrices, cheapestOf, pricedCount, formatCohortPrice } from "@/services/cohort-prices";
 import { ensurePublishedSnapshot } from "@/services/catalog-snapshot";
 import { ensurePublishedContent } from "@/services/public-content";
 import SeoHead from "@/components/SeoHead";
 import EcosystemNote from "@/components/EcosystemNote";
 import { Badge } from "@/components/ui/badge";
 import ResultGate from "@/components/ResultGate";
-import { FIRST_TIME_PROMO, priceAfterPromo } from "@/application/commerce/first-time-promo";
+import { FIRST_TIME_PROMO } from "@/application/commerce/first-time-promo";
 import ResultFeedback from "@/components/ResultFeedback";
 import CourseJourney, { type CourseSuggestion } from "@/components/CourseJourney";
 import { ResultErrorBoundary } from "@/components/ResultErrorBoundary";
@@ -55,14 +55,12 @@ import { AssessmentSession, createAssessment, diagQuestionById, type NextStep } 
 import type { DeepeningComparison } from "@/application/diagnostic/assessment-service";
 import { loadSession, saveLastResult, loadLastResultSafe } from "@/application/diagnostic/session-store";
 import { foldComposedPlan } from "@/application/diagnostic/composed-fold";
-import { saveAdoptedPlan, PERSONAL_PLAN_NAME_AR } from "@/application/plan/adopted-plan";
+import { saveAdoptedPlan, syncAdoptedPlan, PERSONAL_PLAN_NAME_AR } from "@/application/plan/adopted-plan";
 import {
   courseById,
   pathwayCourses,
   pathwayDelivery,
   courses,
-  pathwayPriceFor,
-  coursePriceOf,
   MIN_PATHWAY_COURSES,
   MAX_PATHWAY_COURSES,
   weeksLabel,
@@ -424,30 +422,36 @@ const VARIANT_AR: Record<CompositeView["variant"], { label: string; hint: string
    أن يعرف ما يشتري. والترتيب الذي يقنع هو ترتيب السؤال في رأس القارئ: ما
    المسار؟ ثم ماذا سأتعلم؟ ثم لماذا هذا بالذات؟ ثم — وقد عرف — بكم؟
 
-   والرقم نفسه الذي تعرضه صفحة المسار العامة لأي زائر بلا حساب: لا رقم جديد
-   ولا تقدير. والخطة المركّبة تُسعَّر بعدد مقرراتها هي لا بعدد مقررات المسار
-   الذي اشتُقّت منه مرساتها — العدد وحده يحدد السعر في الحالتين. */
+   والرقم من **شعبةٍ حقيقية** لا من تقديرٍ في المتصفّح. كان يُحسب بـ
+   `pathwayPriceFor(العدد)` و`coursePriceOf(العنوان)` — أي بعدد الدورات
+   ومطابقةِ كلماتٍ في أسمائها — بينما الفاتورة تُصدر بسعر الشعبة وبعملتها.
+   فالرقم الذي وعدنا به ليس الرقم الذي نُطالب به. وحين لا شعبة مسعَّرة: لا رقم.
+
+   والصيغة «تبدأ من … للدورة» لا «الخطة كاملة = كذا»: عدد دورات الخطة يتغيّر
+   بيد المتعلم في الشاشة التالية، فسعرُ الخطة يُحدَّد بعد أن يعتمدها هو. */
 function ResultPriceCard({ courseIds }: { courseIds: readonly string[] }) {
-  const fmt = usePriceFormatter();
+  const { prices, loaded } = useCoursePrices();
+  const cheapest = cheapestOf(courseIds, prices);
+  const known = pricedCount(courseIds, prices);
   if (courseIds.length === 0) return null;
-  const total = pathwayPriceFor(courseIds.length);
-  const separate = courseIds.reduce((s, cid) => {
-    const c = courseById(cid);
-    return c ? s + coursePriceOf(c) : s;
-  }, 0);
-  const savingPct = separate > total ? Math.round((1 - total / separate) * 100) : 0;
-  const afterPromo = priceAfterPromo(total);
 
   return (
     <div className="story-fade mt-8 rounded-3xl border border-gold/35 bg-gradient-to-b from-gold/[0.07] to-transparent p-6 md:p-7">
       <p className="text-[11px] font-black tracking-wide text-gold-ink">وبكم؟</p>
-      <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <span className="text-3xl font-black text-white md:text-4xl">{fmt(total)}</span>
-        <span className="text-sm text-white/45">للخطة كاملة — {courseIds.length} دورات</span>
-      </div>
-      {savingPct > 0 && (
-        <p className="mt-1.5 text-xs text-white/50">
-          بدل <span className="line-through">{fmt(separate)}</span> لو اشتريتها دورةً دورة — أي توفير {savingPct}٪
+      {cheapest ? (
+        <>
+          <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+            <span className="text-sm text-white/50">تبدأ من</span>
+            <span dir="ltr" className="text-3xl font-black text-white md:text-4xl">{formatCohortPrice(cheapest)}</span>
+            <span className="text-sm text-white/45">للدورة</span>
+          </div>
+          <p className="mt-1.5 text-xs text-teal-light-ink">
+            وخصمٌ كبير على خطتك كاملة ({courseIds.length} دورات) مقابل شرائها دورةً دورة
+          </p>
+        </>
+      ) : (
+        <p className="mt-2 text-2xl font-black text-white md:text-3xl">
+          {loaded ? "يُعلن السعر مع فتح الشعبة" : "يُقرأ السعر…"}
         </p>
       )}
       <div className="mt-5 rounded-2xl border border-teal/35 bg-teal/[0.07] p-4">
@@ -459,11 +463,12 @@ function ResultPriceCard({ courseIds }: { courseIds: readonly string[] }) {
           <code className="rounded-lg border border-teal/50 bg-black/30 px-2.5 py-1 text-sm font-black tracking-widest text-white" dir="ltr">
             {FIRST_TIME_PROMO.code}
           </code>
-          <span>تصير {fmt(afterPromo)} — يُكتب في نافذة الدفع.</span>
+          <span>يُكتب في نافذة الدفع.</span>
         </p>
       </div>
       <p className="mt-3 text-[11px] leading-5 text-white/40">
-        ولا يُطلب دفعٌ الآن. التسجيل يفتح تفاصيل خطتك كاملة، وخيار شراء دورة مفردة في صفحة مسارك.
+        سعر خطتك يُحدَّد بعد أن تعتمدها — أنت من يقرّر دوراتها.
+        {cheapest && known < courseIds.length && " وبعض دوراتها لم تُفتح لها شعبة بعد."} ولا يُطلب دفعٌ الآن.
       </p>
     </div>
   );
@@ -978,7 +983,7 @@ export default function Diagnostic() {
     /* ما رآه المتعلّم فعلا — بتبديلاته إن بدّل */
     const courseIds = shownPlanRef.current?.courseIds ?? planCourseIds;
     const giftId = shownPlanRef.current?.giftId ?? null;
-    saveAdoptedPlan({
+    const adoptedPlan = {
       hostPathwayId: hostId,
       composed,
       /* الخطّة المركَّبة لا تستعير اسم المسار المضيف: هي ليست هو، وتسميتُها
@@ -986,7 +991,11 @@ export default function Diagnostic() {
       nameAr: composed ? PERSONAL_PLAN_NAME_AR : topPathway.name,
       courseIds,
       giftId,
-    });
+    };
+    saveAdoptedPlan(adoptedPlan);
+    /* وإلى الخادم أيضا لمن له حساب — فلا تموت الخطّة بإغلاق التبويب.
+       لا ننتظرها: التنقّل لا يُؤجَّل لنداء شبكة، والفشل لا يُلغي الاعتماد. */
+    void syncAdoptedPlan(adoptedPlan);
     try {
       if (c) sessionStorage.setItem("wajeez_diag_composite", JSON.stringify({ template_id: c.template_id, name_ar: c.name_ar }));
       sessionStorage.setItem("wajeez_diag_top", hostId);
@@ -1190,12 +1199,11 @@ export default function Diagnostic() {
   const swapTop = (p: Pathway, slot: "faster" | "cheaper") => {
     if (!result || !topPathway) return;
     const old = topPathway;
-    const oldPrice = pathwayPriceFor((pathwayCourses[old.id] ?? []).length || 6);
     setResult({
       ...result,
       top: p,
       faster: slot === "faster" ? old : result.faster,
-      cheaper: slot === "cheaper" ? { p: old, price: oldPrice } : result.cheaper,
+      cheaper: slot === "cheaper" ? { p: old, courseCount: (pathwayCourses[old.id] ?? []).length || 6 } : result.cheaper,
     });
     setTopPathway(p);
     setSwapCount(swapCount + 1);

@@ -72,6 +72,31 @@ export function updateAdoptedCourses(hostPathwayId: string, courseIds: string[])
   return saveAdoptedPlan({ ...current, courseIds })
 }
 
+/** يُرسل الخطّة إلى الخادم لتبقى بعد إغلاق التبويب — أفضل جهد.
+
+    لماذا «أفضل جهد» ولا يُسقط الاعتماد عند الفشل: الضيف بلا حساب لا خادم له،
+    والمسجَّل الذي انقطعت شبكتُه ما زال أمامه خطّته في هذه الجلسة. فالفشل يُخفض
+    التجربة ولا يُلغيها. ومن كان له حساب صار للخطّة بيتٌ يبقى. */
+export async function syncAdoptedPlan(plan: Omit<AdoptedPlan, 'v' | 'adoptedAt'>): Promise<boolean> {
+  try {
+    const res = await fetch('/api/learner/plan', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        nameAr: plan.nameAr,
+        composed: plan.composed,
+        hostPathwayId: plan.hostPathwayId,
+        ...(plan.giftId ? { giftCourseId: plan.giftId } : {}),
+        courseIds: plan.courseIds,
+      }),
+    })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
 export function clearAdoptedPlan(): void {
   try {
     sessionStorage.removeItem(ADOPTED_PLAN_KEY)

@@ -10,6 +10,7 @@ import { EnrollmentService } from './enrollment.service'
 import { safeNotify, publicSiteUrl } from './notification.service'
 import { getPaymentProvider, verifyPaymentWebhook } from './payments/provider'
 import { getEmailConfig, getPaymentConfig } from './integrations.service'
+import { PlanService } from './plan.service'
 
 const num = (d: Prisma.Decimal | number | null | undefined) => Number(d ?? 0)
 
@@ -69,6 +70,160 @@ export class CommerceService {
   private async emailChannelEnabled(): Promise<boolean> {
     const cfg = await getEmailConfig(this.prisma)
     return Boolean(cfg.enabled && cfg.host && cfg.fromEmail)
+  }
+
+  /* ── الخطّة كاملةً: طلبٌ واحد، وفاتورةٌ واحدة (التوصيتان ٢ و٣) ── */
+
+  /**
+   * يطلب التسجيل في كل دورات الخطّة الفعّالة التي لها شعبة مفتوحة، دفعةً واحدة.
+   *
+   * قبل هذا لم يكن للخطّة بابٌ على الخادم أصلا: زرُّ الشراء في صفحة المسار
+   * يفتح نافذةً تحيل المتعلّم إلى «تصفّح الشعب المفتوحة» فيبدأ اختياره من
+   * جديد، دورةً دورة. فالخطّة التي بناها بالتشخيص تموت عند الزر.
+   *
+   * وما لا شعبة له لا يُسكَت عنه: يعود باسمه في `awaiting` ليُقال للمتعلّم
+   * قبل أن يدفع أيّ دورةٍ من خطّته لم تُفتح بعد — لا أن يكتشفها بعد الدفع.
+   */
+  async requestPlanEnrollment(userId: string) {
+    const verified = await this.emailVerified(userId)
+    if (!verified && (await this.emailChannelEnabled())) {
+      throw new AuthError('email_unverified', 'وثّق بريدك أولا — اطلب رابط التوثيق من الشريط أعلى الصفحة، والشراء يُفتح بمجرّد فتحه', 403)
+    }
+
+    const plan = await new PlanService(this.prisma).active(userId)
+    if (!plan) throw new AuthError('no_plan', 'لا خطّة فعّالة — اعتمد خطّتك أولا', 404)
+
+    const schedulable = plan.items.filter((i) => i.state === 'schedulable' && i.cohort && !i.requestPending)
+    const awaiting = plan.items.filter((i) => i.state === 'awaiting_cohort').map((i) => i.courseId)
+    const alreadyRequested = plan.items.filter((i) => i.requestPending).map((i) => i.courseId)
+    const alreadyEnrolled = plan.items.filter((i) => i.state === 'enrolled').map((i) => i.courseId)
+
+    const created: { courseId: string; cohortId: string; requestId: string }[] = []
+    for (const item of schedulable) {
+      const cohortId = item.cohort!.id
+      /* الفريد على (userId, cohortId) يمنع التكرار؛ والمرفوض أو الملغى يُحيا */
+      const existing = await this.prisma.enrollmentRequest.findUnique({ where: { userId_cohortId: { userId, cohortId } } })
+      const req = existing
+        ? await this.prisma.enrollmentRequest.update({
+            where: { id: existing.id },
+            data: { status: 'pending', planId: plan.id, decidedBy: null, decidedAt: null, orderId: null },
+          })
+        : await this.prisma.enrollmentRequest.create({ data: { userId, cohortId, planId: plan.id } })
+      created.push({ courseId: item.courseId, cohortId, requestId: req.id })
+    }
+
+    await recordAudit(this.prisma, {
+      actorId: userId, action: 'plan.request_enrollment', entityType: 'learner_plan', entityId: plan.id,
+      meta: { requested: created.length, awaiting: awaiting.length, alreadyRequested: alreadyRequested.length, ...(verified ? {} : { emailUnverified: true }) },
+    })
+    if (created.length > 0) {
+      await safeNotify(this.prisma, {
+        userId, channel: 'in_app',
+        title: 'وصلنا طلبك — نراجع خطّتك',
+        body: `طلبتَ التسجيل في ${created.length} من دورات «${plan.nameAr}». نراجعها ونحجز مقاعدك، ثم تصلك فاتورةٌ واحدة للخطّة كلها.${awaiting.length > 0 ? ` و${awaiting.length} من دوراتك لم تُفتح لها شعبة بعد — نُعلمك عند فتحها ولا تُحتسب عليك الآن.` : ''}`,
+        templateKey: 'plan.requested',
+        data: { planId: plan.id, requested: created.length, awaiting: awaiting.length },
+      })
+    }
+    return { planId: plan.id, nameAr: plan.nameAr, requested: created, awaiting, alreadyRequested, alreadyEnrolled }
+  }
+
+  /**
+   * موافقة العمليات على طلبات خطّةٍ واحدة: حجزُ كل المقاعد، وطلبُ شراءٍ واحد،
+   * وفاتورةٌ واحدة بمجموع أسعار الشعب.
+   *
+   * ولماذا فاتورةٌ واحدة لا فاتورة لكل دورة: المتعلّم اشترى خطّة. وأربعُ
+   * فواتير تعني أربع دفعاتٍ وأربع فرصٍ للتوقّف في منتصف الطريق — ومن دفع
+   * ثلاثا من أربع لا هو مشترٍ خطّةً ولا هو تاركها.
+   */
+  async approvePlanRequests(planId: string, actorId: string, couponCode?: string) {
+    const reqs = await this.prisma.enrollmentRequest.findMany({
+      where: { planId, status: 'pending' },
+      include: { cohort: { include: { course: { include: { versions: { orderBy: { version: 'desc' }, take: 1 } } } } } },
+      orderBy: { createdAt: 'asc' },
+    })
+    if (reqs.length === 0) throw new AuthError('not_found', 'لا طلبات معلّقة على هذه الخطّة', 404)
+    const userId = reqs[0].userId
+    if (reqs.some((r) => r.userId !== userId)) throw new AuthError('mixed_users', 'طلبات الخطّة ليست لمتعلّم واحد', 409)
+
+    const unpriced = reqs.filter((r) => r.cohort.price === null)
+    if (unpriced.length > 0) {
+      throw new AuthError('no_price', `${unpriced.length} من شعب الخطّة بلا سعر — أكمل الإعداد المالي أولا`, 409)
+    }
+    /* عملةٌ واحدة للفاتورة: جمعُ دينارٍ إلى ريالٍ في مبلغٍ واحد رقمٌ لا يُطالَب به */
+    const currency = reqs[0].cohort.currency
+    if (reqs.some((r) => r.cohort.currency !== currency)) {
+      throw new AuthError('mixed_currency', 'شعب الخطّة بعملات مختلفة — لا تُجمع في فاتورة واحدة', 409)
+    }
+
+    /* السعة تُقاس لكل شعبة قبل أيّ حجز: حجزُ بعضها ثم الفشل يترك مقاعد
+       محجوزةً لطلبٍ لن يُنشأ. فإمّا الكل وإمّا لا شيء. */
+    for (const r of reqs) {
+      if (!r.cohort.capacity) continue
+      const [enrolled, held] = await Promise.all([
+        this.prisma.enrollment.count({ where: { cohortId: r.cohortId, status: 'enrolled' } }),
+        this.prisma.enrollmentRequest.count({ where: { cohortId: r.cohortId, status: 'seat_held' } }),
+      ])
+      if (enrolled + held >= r.cohort.capacity) {
+        const title = r.cohort.course.versions[0]?.titleAr ?? r.cohort.title
+        throw new AuthError('capacity_full', `لا مقاعد في «${title}» — أزل الدورة من الخطّة أو افتح شعبة أخرى`, 409)
+      }
+    }
+
+    const subtotal = reqs.reduce((sum, r) => sum + num(r.cohort.price), 0)
+    let discount = 0
+    let couponId: string | undefined
+    if (couponCode) {
+      const coupon = await this.prisma.coupon.findUnique({ where: { code: couponCode.trim().toUpperCase() } })
+      if (!coupon || !coupon.active) throw new AuthError('bad_coupon', 'الكوبون غير صالح')
+      if (coupon.expiresAt && coupon.expiresAt < new Date()) throw new AuthError('bad_coupon', 'الكوبون منتهي')
+      if (coupon.maxUses && coupon.usedCount >= coupon.maxUses) throw new AuthError('bad_coupon', 'استنفد الكوبون عدد استخداماته')
+      discount = coupon.percentOff ? Math.round((subtotal * coupon.percentOff) / 100 * 100) / 100 : num(coupon.amountOff)
+      if (discount > subtotal) discount = subtotal
+      couponId = coupon.id
+    }
+    const total = Math.max(0, subtotal - discount)
+    const plan = await this.prisma.learnerPlan.findUnique({ where: { id: planId }, select: { nameAr: true } })
+
+    const order = await this.prisma.$transaction(async (tx) => {
+      const o = await tx.order.create({
+        data: {
+          userId, subtotal, discount, total, currency, couponId,
+          items: {
+            create: reqs.map((r) => ({
+              kind: 'cohort',
+              refId: r.cohortId,
+              titleAr: `${r.cohort.course.versions[0]?.titleAr ?? r.cohort.title} — ${r.cohort.title}`,
+              unitPrice: num(r.cohort.price),
+            })),
+          },
+        },
+      })
+      const count = await tx.invoice.count()
+      const year = new Date().getFullYear()
+      await tx.invoice.create({
+        data: { number: `WJ-INV-${year}-${String(count + 1).padStart(5, '0')}`, orderId: o.id, amount: total, currency },
+      })
+      if (couponId) await tx.coupon.update({ where: { id: couponId }, data: { usedCount: { increment: 1 } } })
+      await tx.enrollmentRequest.updateMany({
+        where: { id: { in: reqs.map((r) => r.id) } },
+        data: { status: 'seat_held', orderId: o.id, decidedBy: actorId, decidedAt: new Date() },
+      })
+      return o
+    })
+
+    await recordAudit(this.prisma, {
+      actorId, action: 'plan.approve_requests', entityType: 'learner_plan', entityId: planId,
+      meta: { orderId: order.id, cohorts: reqs.length, total, discount },
+    })
+    await safeNotify(this.prisma, {
+      userId, channel: 'in_app',
+      title: 'حُجزت مقاعد خطّتك — بقي الدفع',
+      body: `حُجز لك ${reqs.length === 1 ? 'مقعد' : `${reqs.length} مقاعد`} في «${plan?.nameAr ?? 'خطّتك'}». أتمم الدفع (${total} ${currency}) دفعةً واحدة ليتحوّل حجزك إلى تسجيل فعليّ في دوراتك كلها.`,
+      templateKey: 'plan.seats_held',
+      data: { planId, orderId: order.id, total, cohorts: reqs.length },
+    })
+    return order
   }
 
   async listEnrollmentRequests(status?: string) {
@@ -195,7 +350,9 @@ export class CommerceService {
     const charge = await provider.createCharge({
       invoiceNumber: order.invoice.number, amount: num(order.total),
       currency: order.currency, descriptionAr: `طلب وجيز ${order.id}`,
-      callbackUrl: `${appUrl}/student/billing`,
+      /* العودة إلى التعلّم لا إلى الفواتير (التوصية ٥): من أتمّ دفعه يريد أن
+         يبدأ، لا أن يقرأ فاتورته. والصفحة تقرأ `paid` فتؤكّد وتوجّه. */
+      callbackUrl: `${appUrl}/student/learning?paid=${order.id}`,
     })
 
     const payment = await this.prisma.payment.create({
@@ -286,26 +443,55 @@ export class CommerceService {
       await tx.invoice.update({ where: { orderId }, data: { status: 'paid', paidAt: new Date() } })
       await tx.order.update({ where: { id: orderId }, data: { status: 'paid', paidAt: new Date() } })
     })
-    /* تحويل طلب التسجيل المرتبط */
-    const req = await this.prisma.enrollmentRequest.findFirst({ where: { orderId, status: 'seat_held' } })
-    if (req) {
+    /* تحويل **كل** طلبات التسجيل المرتبطة بالطلب — لا أوّلها (التوصية ٣).
+
+       كان هنا `findFirst`: من اشترى خطّةً بأربع دورات ودفع مرّة واحدة كان
+       يُسجَّل في دورةٍ واحدة ويبقى خارج الثلاث بلا أن يحمرّ شيء — فالطلب
+       «مدفوع» والفاتورة «مدفوعة»، والنقص لا يظهر إلا في شاشة المتعلّم.
+       والدفعة الواحدة تشتري الخطّة كلها، فتسويتها تحوّلها كلها. */
+    const reqs = await this.prisma.enrollmentRequest.findMany({ where: { orderId, status: 'seat_held' } })
+    const converted: string[] = []
+    const failed: { requestId: string; reason: string }[] = []
+    for (const req of reqs) {
       try {
         await this.enrollments.enroll(req.cohortId, req.userId, actorId, {})
       } catch (err) {
         /* مسجل مسبقا (مثل إعادة معالجة) — لا يمنع التحويل */
-        if (!(err instanceof AuthError && err.code === 'already_enrolled')) throw err
+        if (!(err instanceof AuthError && err.code === 'already_enrolled')) {
+          /* دورةٌ تعذّر تسجيلها (امتلأت بين الحجز والدفع مثلا) لا تُسقط أخواتها:
+             المال قُبض عن الخطّة كلها، فمنعُ الباقي عقوبةٌ مضاعفة. تُقيَّد
+             بأثرٍ صريح ويُنبَّه المتعلّم، ويبقى الطلب محجوزا لا مُحوَّلا. */
+          failed.push({ requestId: req.id, reason: err instanceof Error ? err.message : String(err) })
+          continue
+        }
       }
       await this.prisma.enrollmentRequest.update({ where: { id: req.id }, data: { status: 'converted' } })
+      converted.push(req.id)
     }
+    if (failed.length > 0) {
+      await recordAudit(this.prisma, {
+        actorId, action: 'order.settle_partial', entityType: 'order', entityId: orderId,
+        meta: { converted: converted.length, failed },
+        reason: 'دفعةٌ سُوّيت وبقيت دورات لم يُسجَّل فيها — تدخّل يدويّ مطلوب',
+      })
+    }
+
     /* إشعار تأكيد الدفع — يصل الطالب سواء حُوّل طلبه أم دفع لغير شعبة */
     const order = await this.prisma.order.findUnique({ where: { id: orderId }, include: { items: true } })
     if (order) {
+      const what = order.items.length > 1 ? `خطّتك (${order.items.length} دورات)` : `«${order.items[0]?.titleAr ?? 'طلبك'}»`
+      const tail =
+        failed.length > 0
+          ? `وسُجّلت ${converted.length} من ${reqs.length}؛ تواصلنا جارٍ بشأن الباقي ولن تدفع عنه مرّة أخرى.`
+          : converted.length > 0
+            ? 'مقاعدك صارت تسجيلاً فعلياً — شعبك تظهر في «تعلّمي».'
+            : 'تفاصيل طلبك في «الفواتير».'
       await safeNotify(this.prisma, {
         userId: order.userId, channel: 'in_app',
         title: 'تأكد دفعك ✓ — أهلاً بك',
-        body: `استلمنا دفعتك (${num(order.total)} ${order.currency}) عن «${order.items[0]?.titleAr ?? 'طلبك'}». ${req ? 'مقعدك صار تسجيلاً فعلياً — شعبتك تظهر في «تعلّمي».' : 'تفاصيل طلبك في «الفواتير».'}`,
+        body: `استلمنا دفعتك (${num(order.total)} ${order.currency}) عن ${what}. ${tail}`,
         templateKey: 'payment.succeeded',
-        data: { orderId, total: num(order.total) },
+        data: { orderId, total: num(order.total), enrolled: converted.length, of: reqs.length },
       })
     }
   }

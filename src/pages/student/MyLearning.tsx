@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import {
   ArrowLeft, Award, BookOpen, CalendarDays, CheckCircle2, ChevronDown, FileText,
   Loader2, PlayCircle, RefreshCw, Ruler, Send, ServerOff, Video,
@@ -62,6 +62,11 @@ interface EnrollmentDetail extends EnrollmentRow {
 
 /** تعلّمي — بوابة المتعلم الحقيقية: شعبي وجلساتي وروابط Zoom وتسجيلاتي وواجباتي وشهاداتي */
 export default function MyLearning() {
+  /* عودة الدفع تهبط هنا لا في «الفواتير» (التوصية ٥): من أتمّ دفعه يريد أن
+     يبدأ لا أن يقرأ فاتورته. و`paid` ليست دليل دفع — التسوية بـwebhook موقَّت
+     وحده — فالرسالة تقول «نؤكّد» لا «تأكّد»، والقائمة أدناه هي الدليل. */
+  const [params] = useSearchParams();
+  const paidOrder = params.get("paid");
   const [rows, setRows] = useState<EnrollmentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState<string | null>(null);
@@ -140,6 +145,17 @@ export default function MyLearning() {
   return (
     <PortalLayout title="تعلّمي">
       <div className="mx-auto max-w-4xl">
+        {paidOrder && (
+          <div className="mb-5 rounded-2xl border border-teal/40 bg-teal/10 px-4 py-3.5">
+            <p className="flex items-center gap-2 text-sm font-black text-teal-light-ink">
+              <CheckCircle2 className="h-4 w-4 shrink-0" /> شكرا لك — عدنا بك إلى تعلّمك
+            </p>
+            <p className="mt-1.5 text-[12px] leading-6 text-white/60">
+              نؤكّد دفعتك مع البنك، وشعبك تظهر أدناه فور تأكيدها — عادةً خلال دقائق.
+              وتفصيل الفاتورة في <Link to="/student/billing" className="font-bold text-teal-light-ink underline underline-offset-4">الفواتير</Link>.
+            </p>
+          </div>
+        )}
         {flash && (
           <p className="mb-5 flex items-center gap-2 rounded-2xl border border-teal/40 bg-teal/10 px-4 py-3 text-sm font-bold text-teal-light-ink">
             <CheckCircle2 className="h-4 w-4 shrink-0" /> {flash}

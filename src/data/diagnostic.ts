@@ -79,7 +79,7 @@ export interface DiagResult {
   /** المسار الأعلى — null عندما لا كيان مفروضًا (اتجاه استكشافي / إحالة مستشار بلا مرشح) */
   top: Pathway | null
   faster: Pathway | null
-  cheaper: { p: Pathway; price: number } | null
+  cheaper: { p: Pathway; courseCount: number } | null
   confidence: number
   confidenceBand: string
   needsAdvisor: boolean
