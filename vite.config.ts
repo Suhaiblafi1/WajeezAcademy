@@ -84,7 +84,19 @@ function withApi(): Plugin {
   let api: ChildProcess | null = null
   return {
     name: "wajeez-api-dev",
+    /* خادم التطوير وحده — لا تحت الاختبار.
+
+       Vitest ينشئ خادم Vite داخليا، فيُستدعى `configureServer` عند كل تشغيل
+       اختبارات، فيُشعل هذا الملحق خادم API على قاعدة `wajeez` المدمجة. وتلك
+       القاعدة لا تُهاجَر في CI (المهاجَرة هي `wajeez_test` وحدها)، فيسقط
+       الخادم بـ«الجدول public.Permission غير موجود» ويُنهي العملية برمز 1 —
+       فتحمرّ وظيفة «اختبارات الخادم بقاعدة حقيقية» بينما كلّ اختبار فيها ناجح.
+
+       وسقوطه سباقٌ لا حتمية: التزام e173905 نفسه نجح على main وسقط على الفرع.
+       ومحلّيا كان يزاحم الاختبارات على PostgreSQL المدمج فتسقط ملفات بـ«the
+       database system is shutting down». */
     configureServer() {
+      if (process.env.VITEST) return
       void (async () => {
         if (await apiHealthy()) return // API سليم من نافذة أخرى — نستخدمه
         if (await portAlive(7101)) {

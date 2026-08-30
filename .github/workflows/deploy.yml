@@ -12,12 +12,20 @@
 
 name: Deploy
 
+# التشغيل يدويّ وحده اليوم — بقصد.
+#
+# كان يعمل تلقائيا بعد كل نجاح لـCI على main، فيحمرّ في كل مرّة: الموقع على
+# Vercel ولا خادم ذاتيّ بعد، فأسرار SSH غير مضبوطة. وعلامةُ خطأٍ حمراء تتكرّر
+# بلا سبب حقيقيّ أسوأ من غياب الفحص: تعلّم القارئ تجاهل الأحمر، فيمرّ الأحمر
+# الحقيقيّ بينها بلا أن يُرى.
+#
+# فحين يجهز الخادم الذاتيّ وتُضبط الأسرار، يُعاد سطرا `workflow_run` أدناه.
 on:
-  workflow_run:
-    workflows: ["CI"]
-    types: [completed]
-    branches: [main]
   workflow_dispatch:
+  # workflow_run:
+  #   workflows: ["CI"]
+  #   types: [completed]
+  #   branches: [main]
 
 concurrency:
   group: deploy-production
