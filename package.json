@@ -65,7 +65,8 @@
     "ci:question-waste": "tsx scripts/v2_1/audit-question-waste.ts --check",
     "simulate:v2_1-reachability": "tsx scripts/v2_1/golden-suite.ts --montecarlo",
     "report:v2_1-docs": "tsx scripts/v2_1/report-docs.ts",
-    "cohorts:align-prices": "tsx scripts/align-cohort-prices.ts"
+    "cohorts:align-prices": "tsx scripts/align-cohort-prices.ts",
+    "demo:purge": "tsx scripts/purge-demo-data.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.2",
