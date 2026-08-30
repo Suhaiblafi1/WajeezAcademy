@@ -164,7 +164,18 @@ export class PublicCatalogService {
           weekly_hours: v?.weeklyHours ?? '',
           level: v?.level ?? '',
           ...(v?.delivery ? { delivery: v.delivery } : {}),
-          course_ids: pw.courses.map((l) => l.courseId),
+          /* المساندة تُقصى من course_ids هنا كما تُقصى في بناء اللقطة.
+
+             هذا المسلك هو ما تقرؤه الواجهة الحيّة فعلا (services/public-content.ts)،
+             وكان يجمع كلّ روابط المسار بلا تمييز — فتدخل المساندات الثلاث
+             `course_ids`، ومنها يقرؤها `pathwaySkills` فتُشتقّ منها فجوةُ
+             المهارات التي تزن ٢٥٪ من ترتيب المسارات. أي أنّ الفصل الذي حرسناه
+             في الملفّ وفي اللقطة كان ينهار عند أوّل تحميلٍ من القاعة.
+             حارسه: server/tests/catalog/public-core-catalog.test.ts */
+          course_ids: pw.courses.filter((l) => l.kind !== 'support').map((l) => l.courseId),
+          support_courses: pw.courses
+            .filter((l) => l.kind === 'support')
+            .map((l) => ({ course_id: l.courseId, reason_ar: l.reasonAr ?? '' })),
         }
       }),
       courses: courses.map((c) => {
