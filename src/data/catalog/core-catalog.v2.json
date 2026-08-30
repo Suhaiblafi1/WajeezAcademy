@@ -5670,22 +5670,19 @@
         "structured_interviewing",
         "selection_design",
         "ethical_reasoning",
-        "professional_ethics",
-        "active_listening"
+        "professional_ethics"
       ],
       "skill_ids": [
         "SK-X-HR-004",
         "SK-X-HR-005",
         "SK-COG-017",
-        "SK-CAREER-013",
-        "SK-COM-001"
+        "SK-CAREER-013"
       ],
       "skill_names_ar": [
         "المقابلات المنظمة",
         "تصميم قرارات الاختيار",
         "التفكير الأخلاقي",
-        "الأخلاقيات المهنية",
-        "الإصغاء الفعال"
+        "الأخلاقيات المهنية"
       ],
       "learning_outcomes_ar": [
         "يحلل مصادر المرشحين وتجربتهم في حالة مهنية ويحدد الافتراضات والقرار المطلوب.",
@@ -7431,22 +7428,19 @@
         "demand_forecasting",
         "supply_planning",
         "statistical_thinking",
-        "scenario_planning",
-        "data_literacy"
+        "scenario_planning"
       ],
       "skill_ids": [
         "SK-X-SCM-002",
         "SK-X-SCM-003",
         "SK-DATA-010",
-        "SK-COG-012",
-        "SK-DATA-001"
+        "SK-COG-012"
       ],
       "skill_names_ar": [
         "التنبؤ بالطلب",
         "تخطيط التوريد",
         "التفكير الإحصائي الأساسي",
-        "تخطيط السيناريوهات",
-        "الثقافة البيانية"
+        "تخطيط السيناريوهات"
       ],
       "learning_outcomes_ar": [
         "يحلل بيانات الطلب في حالة مهنية ويحدد الافتراضات والقرار المطلوب.",

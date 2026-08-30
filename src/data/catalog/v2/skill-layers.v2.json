@@ -57,7 +57,6 @@
         "PW-COM-001",
         "PW-EMP-005",
         "PW-GOV-002",
-        "PW-HR-001",
         "PW-NEG-001",
         "PW-SAL-001",
         "PW-STU-002",
@@ -1098,8 +1097,7 @@
       "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
       "pathway_ids": [
         "PW-EMP-004",
-        "PW-HR-001",
-        "PW-SCM-001"
+        "PW-HR-001"
       ],
       "measured_by": "QB-M4-006"
     },

@@ -570,7 +570,7 @@
         {
           "questionId": "QB-M4-027",
           "question_ar": "حين يشرح لك أحدهم مشكلة غير واضحة — ما أقرب وصف لما تفعله؟",
-          "why_now_ar": "فاز أساسًا بسبب: يقيس مهارة حاسمة للمتصدر قبل أي اكتفاء.",
+          "why_now_ar": "فاز أساسًا بسبب: يفصل بين المرشحين المتصدرين بدليل مهارة.",
           "answer_ar": "أعيد صياغة ما فهمته عليه قبل أن أرد، بانتظام",
           "what_changed": [
             "+skill:active_listening"
@@ -590,7 +590,7 @@
         "kind": "single_pathway",
         "topPathwayId": "PW-EMP-005",
         "compositeTemplateId": null,
-        "confidence": 0.6367091092856523,
+        "confidence": 0.6300424426189856,
         "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true
