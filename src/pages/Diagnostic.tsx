@@ -55,7 +55,7 @@ import { AssessmentSession, createAssessment, diagQuestionById, type NextStep } 
 import type { DeepeningComparison } from "@/application/diagnostic/assessment-service";
 import { loadSession, saveLastResult, loadLastResultSafe } from "@/application/diagnostic/session-store";
 import { foldComposedPlan } from "@/application/diagnostic/composed-fold";
-import { saveAdoptedPlan, PERSONAL_PLAN_NAME_AR } from "@/application/plan/adopted-plan";
+import { saveAdoptedPlan, syncAdoptedPlan, PERSONAL_PLAN_NAME_AR } from "@/application/plan/adopted-plan";
 import {
   courseById,
   pathwayCourses,
@@ -978,7 +978,7 @@ export default function Diagnostic() {
     /* ما رآه المتعلّم فعلا — بتبديلاته إن بدّل */
     const courseIds = shownPlanRef.current?.courseIds ?? planCourseIds;
     const giftId = shownPlanRef.current?.giftId ?? null;
-    saveAdoptedPlan({
+    const adoptedPlan = {
       hostPathwayId: hostId,
       composed,
       /* الخطّة المركَّبة لا تستعير اسم المسار المضيف: هي ليست هو، وتسميتُها
@@ -986,7 +986,11 @@ export default function Diagnostic() {
       nameAr: composed ? PERSONAL_PLAN_NAME_AR : topPathway.name,
       courseIds,
       giftId,
-    });
+    };
+    saveAdoptedPlan(adoptedPlan);
+    /* وإلى الخادم أيضا لمن له حساب — فلا تموت الخطّة بإغلاق التبويب.
+       لا ننتظرها: التنقّل لا يُؤجَّل لنداء شبكة، والفشل لا يُلغي الاعتماد. */
+    void syncAdoptedPlan(adoptedPlan);
     try {
       if (c) sessionStorage.setItem("wajeez_diag_composite", JSON.stringify({ template_id: c.template_id, name_ar: c.name_ar }));
       sessionStorage.setItem("wajeez_diag_top", hostId);
