@@ -13,6 +13,8 @@
    تطلب، توافق، تدفع — ثم تسأل: أفي كل دوراته صار مسجَّلا؟ */
 
 import { beforeAll, describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
@@ -26,19 +28,25 @@ let commerce: CommerceService
 
 /* دورات مختلفة لكل اختبار: الشعب تتراكم في قاعدة واحدة، و`viewOf` تختار
    أقرب شعبةٍ للدورة — فدورةٌ استعملها اختبارٌ سابق تُعطي شعبته لا شعبتنا،
-   فيخضرّ الاختبار أو يحمرّ لسببٍ لا علاقة له بالمقيس. */
-const A = 'C-CAR-101'
-const B = 'C-CAR-102'
-const C = 'C-CAR-103'
-const D = 'C-CAR-104'
-const E = 'C-JOB-101'
-const F = 'C-JOB-102'
-const G = 'C-JOB-103'
-const H = 'C-JOB-104'
-const I = 'C-AI-101'
-const J = 'C-AI-102'
-const K = 'C-DAT-101'
-const L = 'C-DAT-102'
+   فيخضرّ الاختبار أو يحمرّ لسببٍ لا علاقة له بالمقيس.
+
+   والمعرّفات تُقرأ من الكتالوج لا تُكتب يدا. كانت اثني عشر معرّفا مكتوبا،
+   فلمّا دُمجت أوّل دورتين من كل مسار زالت أربعةٌ منها (C-*-102) — فسقطت
+   أربعة اختبارات بـ«Foreign key constraint violated on Cohort_courseId_fkey»:
+   حمرةٌ سببها معرّفٌ متقادم لا خللٌ في الشراء الذي تقيسه. */
+const POOL: string[] = (
+  JSON.parse(
+    readFileSync(join(process.cwd(), 'src/data/catalog/core-catalog.v2.json'), 'utf8'),
+  ) as { courses: { course_id: string }[] }
+).courses.map((c) => c.course_id).sort()
+
+/** الدورة رقم n من الكتالوج — مختلفةٌ عن سائرها بحكم البناء */
+const at = (n: number): string => {
+  const id = POOL[n]
+  if (!id) throw new Error(`الكتالوج فيه ${POOL.length} دورة فقط — لا دورة بالفهرس ${n}`)
+  return id
+}
+const [A, B, C, D, E, F, G, H, I, J, K, L, M, N, O] = Array.from({ length: 15 }, (_, i) => at(i))
 
 let seq = 0
 async function learner() {
@@ -173,8 +181,8 @@ describe('فاتورةٌ واحدة للخطّة — التوصية ٣', () => {
     const u = await learner()
     const ops = await admin()
     await openCohort(L, { currency: 'JOD' })
-    await openCohort('C-DAT-103', { currency: 'SAR' })
-    await plans.adopt(u, { nameAr: 'خطّتي', composed: true, courseIds: [L, 'C-DAT-103'] })
+    await openCohort(M, { currency: 'SAR' })
+    await plans.adopt(u, { nameAr: 'خطّتي', composed: true, courseIds: [L, M] })
     const req = await commerce.requestPlanEnrollment(u)
     await expect(commerce.approvePlanRequests(req.planId, ops)).rejects.toMatchObject({ code: 'mixed_currency' })
     expect(await prisma.order.count({ where: { userId: u } })).toBe(0)
@@ -184,10 +192,10 @@ describe('فاتورةٌ واحدة للخطّة — التوصية ٣', () => {
     const u = await learner()
     const other = await learner()
     const ops = await admin()
-    await openCohort('C-DAT-104')
-    const tight = await openCohort('C-DAT-105', { capacity: 1 })
+    await openCohort(N)
+    const tight = await openCohort(O, { capacity: 1 })
     await prisma.enrollment.create({ data: { cohortId: tight.id, userId: other, status: 'enrolled' } })
-    await plans.adopt(u, { nameAr: 'خطّتي', composed: true, courseIds: ['C-DAT-104', 'C-DAT-105'] })
+    await plans.adopt(u, { nameAr: 'خطّتي', composed: true, courseIds: [N, O] })
     const req = await commerce.requestPlanEnrollment(u)
     await expect(commerce.approvePlanRequests(req.planId, ops)).rejects.toMatchObject({ code: 'capacity_full' })
     const still = await prisma.enrollmentRequest.findMany({ where: { planId: req.planId } })
