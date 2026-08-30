@@ -22,7 +22,11 @@ beforeAll(async () => {
 
 afterEach(() => {
   delete process.env.DEMO_MODE
+  delete process.env.VERCEL_ENV
+  process.env.NODE_ENV = savedNodeEnv
 })
+
+const savedNodeEnv = process.env.NODE_ENV ?? 'test'
 
 describe('مسار تبديل أدوار الديمو', () => {
   it('يرفض 404 عند غياب DEMO_MODE — حتى لدور صالح', async () => {
@@ -65,5 +69,34 @@ describe('مسار تبديل أدوار الديمو', () => {
     process.env.DEMO_MODE = 'true'
     const res = await app.inject({ method: 'POST', url: '/api/demo/switch-role', payload: { role: 'hacker' } })
     expect(res.statusCode).toBe(400)
+  })
+
+  /* ── الطبقة الثالثة: النشر الإنتاجيّ يغلبُ العلم ──
+
+     العلم ضُبط على Production فعلا في ٢٤ آب، فبقي `/api/demo/switch-role`
+     يستقبل على الإنترنت ستّة أيّام — ولو كانت حسابات الديمو مزروعةً هناك
+     لسلّم جلسةَ super_admin لكلّ طارق. فالحارس لا يسأل من ضبط العلم. */
+
+  it('يرفض ٤٠٤ على نشر Vercel الإنتاجيّ رغم ضبط DEMO_MODE', async () => {
+    process.env.DEMO_MODE = 'true'
+    process.env.VERCEL_ENV = 'production'
+    const res = await app.inject({ method: 'POST', url: '/api/demo/switch-role', payload: { role: 'superadmin' } })
+    expect(res.statusCode).toBe(404)
+    expect(res.headers['set-cookie']).toBeUndefined()
+  })
+
+  it('يرفض ٤٠٤ على استضافةٍ ذاتيّة بـNODE_ENV=production رغم ضبط DEMO_MODE', async () => {
+    process.env.DEMO_MODE = 'true'
+    process.env.NODE_ENV = 'production'
+    const res = await app.inject({ method: 'POST', url: '/api/demo/switch-role', payload: { role: 'superadmin' } })
+    expect(res.statusCode).toBe(404)
+    expect(res.headers['set-cookie']).toBeUndefined()
+  })
+
+  it('/status يصدُق: enabled=false في الإنتاج مهما ضُبط العلم', async () => {
+    process.env.DEMO_MODE = 'true'
+    process.env.VERCEL_ENV = 'production'
+    const res = await app.inject({ method: 'GET', url: '/api/demo/status' })
+    expect(res.json()).toEqual({ enabled: false })
   })
 })
