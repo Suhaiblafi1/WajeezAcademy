@@ -24,6 +24,7 @@ import { registerPublicCatalogRoutes } from './routes/public.routes'
 import { registerPathDraftRoutes } from './routes/path-drafts.routes'
 import { registerOperationsRoutes } from './routes/operations.routes'
 import { registerSupportRoutes } from './routes/support.routes'
+import { registerRatingRoutes } from './routes/rating.routes'
 import { registerNotificationRoutes } from './routes/notifications.routes'
 import { registerReportRoutes } from './routes/reports.routes'
 import { registerProfileRoutes } from './routes/profile.routes'
@@ -170,6 +171,7 @@ export async function buildApp(prisma: PrismaClient) {
   registerPathDraftRoutes(app, prisma)
   registerOperationsRoutes(app, prisma)
   registerSupportRoutes(app, prisma)
+  registerRatingRoutes(app, prisma)
   registerNotificationRoutes(app, prisma)
   registerReportRoutes(app, prisma)
   registerProfileRoutes(app, prisma)

@@ -31,7 +31,9 @@ import CourseJourney from "@/components/CourseJourney";
 import Modal from "@/components/Modal";
 import { pathwayById, pathwayCategory } from "@/data/pathways";
 import { hasCoreCatalog } from "@/data/core-catalog-source";
-import { courseById, pathwayCourses, pathwayDelivery, coursePriceOf, pathwayPriceFor, pathwayTrainers, courseTrainer, weeksLabel } from "@/data/courses";
+import { readAdoptedPlan, saveAdoptedPlan } from "@/application/plan/adopted-plan";
+import { FIRST_TIME_PROMO } from "@/application/commerce/first-time-promo";
+import { courseById, courses, pathwayCourses, pathwayDelivery, coursePriceOf, pathwayPriceFor, pathwayTrainers, courseTrainer, weeksLabel, MIN_PATHWAY_COURSES, MAX_PATHWAY_COURSES } from "@/data/courses";
 import { GOAL_LABELS, GAP_LABELS, OBSTACLE_TO_GAP } from "@/data/diagnostic";
 import { usePriceFormatter } from "@/services/currency";
 import { track } from "@/services/analytics";
@@ -99,13 +101,15 @@ export default function PathwayPage() {
     if (pathway) track("pathway_viewed", { sector: pathway.sector });
   }, [pathway]);
 
-  /* تخصيصه المحفوظ من صفحة التشخيص */
-  const custom = useMemo(() => {
-    try {
-      const c = JSON.parse(sessionStorage.getItem("wajeez_custom") ?? "null");
-      return c && c.pathwayId === pathway?.id ? c as { chosenIds: string[]; giftId: string | null } : null;
-    } catch { return null; }
-  }, [pathway?.id]);
+  /* الخطّة التي اعتمدها فعلا — تُقرأ كما كُتبت، بهوية مضيفٍ مطابقة.
+
+     كان هنا حارسٌ يقارن `c.pathwayId` بسجلٍّ لا يحمل هذا الحقل أصلا، فيُرفض
+     كلُّ ما اعتمده المتعلّم بصمت وتُعرض قائمة الكتالوج مكانه. */
+  const adopted = useMemo(() => readAdoptedPlan(pathway?.id), [pathway?.id]);
+  const custom = useMemo(
+    () => (adopted ? { chosenIds: adopted.courseIds, giftId: adopted.giftId } : null),
+    [adopted],
+  );
 
   /* سياق الخطة المركبة — حاضر فقط عندما اعتمد المستخدم خطة مركبة من نتيجته، ومقترن بتخصيص مطابق لهذا المسار */
   const compositeCtx = useMemo(() => {
@@ -116,12 +120,44 @@ export default function PathwayPage() {
     } catch { return null; }
   }, [custom]);
 
-  const courseIds = custom?.chosenIds ?? (pathway ? pathwayCourses[pathway.id] ?? [] : []);
-  const pathwayCoursesList = courseIds.map((cid) => courseById(cid)!).filter(Boolean);
+  /* ─── تخصيص الخطّة على هذه الصفحة (المرحلة ٢) ───
+     كان التخصيص في شاشة النتيجة وحدها، والصفحة عرضٌ فقط. صار هنا: يحذف
+     ويستبدل ويضيف ويختار هديّته، ويُحفظ في الخطّة المعتمَدة نفسها لحظةَ كل
+     تغيير — مصدرٌ واحد لا نسخةٌ ثانية تفترق عنه. */
+  const [edits, setEdits] = useState<{ courseIds: string[]; giftId: string | null } | null>(null);
+  const editable = Boolean(adopted);
+  const courseIds = useMemo(
+    () => edits?.courseIds ?? custom?.chosenIds ?? (pathway ? pathwayCourses[pathway.id] ?? [] : []),
+    [edits, custom, pathway],
+  );
+  const giftId = edits?.giftId ?? custom?.giftId ?? null;
+  const [swapForId, setSwapForId] = useState<string | null>(null);
+
+  const commit = (ids: string[], gift: string | null) => {
+    setEdits({ courseIds: ids, giftId: gift });
+    if (adopted) saveAdoptedPlan({ ...adopted, courseIds: ids, giftId: gift });
+  };
+
+  /* بدائل ومقترحات: خارج المختار والهديّة، ومن مجال المسار أوّلا */
+  const pool = useMemo(() => {
+    const taken = new Set([...courseIds, ...(giftId ? [giftId] : [])]);
+    return courses
+      .filter((c) => !taken.has(c.id))
+      .sort((x, y) => (y.pathwayId === pathway?.id ? 1 : 0) - (x.pathwayId === pathway?.id ? 1 : 0))
+      .slice(0, 8)
+      .map((c) => ({ id: c.id, name: c.name, note: `${c.skill} · من مسار ${c.pathwayName}` }));
+  }, [courseIds, giftId, pathway?.id]);
+
+  /* الدورات المعروضة هي وحدها ما يُسعَّر. كان العدد يُؤخذ من `courseIds` الخام
+     والمجموع من القائمة بعد ترشيح المجهول — فيفترقان حين لا يُعرف معرّف، فيظهر
+     مرجعٌ لا يطابق ما على الشاشة. مصدرٌ واحد يمنع ذلك. */
+  const pathwayCoursesList = courseIds.map((cid) => courseById(cid)).filter((c): c is NonNullable<typeof c> => Boolean(c));
   const separateCost = pathwayCoursesList.reduce((s, c) => s + coursePriceOf(c), 0);
   // التسعير المتدرج: ٤ دورات = 500$ · ٥ = 550$ · ٦+ = 600$
-  const pathwayTotal = pathwayPriceFor(courseIds.length || 6);
+  const pathwayTotal = pathwayPriceFor(pathwayCoursesList.length || 6);
   const savingPct = separateCost > pathwayTotal ? Math.round((1 - pathwayTotal / separateCost) * 100) : 0;
+  /* «تبدأ من» — أرخص دورة في الخطّة بعد خصم المسار، مقرَّبة لأعلى فلا نَعِد بأقلّ مما يُدفع */
+  const perCourse = pathwayCoursesList.length > 0 ? Math.ceil(pathwayTotal / pathwayCoursesList.length) : 0;
 
   /* تقريره الشخصي من إجابات التشخيص */
   const report = useMemo(() => {
@@ -251,7 +287,9 @@ export default function PathwayPage() {
               {compositeCtx && <Badge className="border border-gold/60 bg-gold/15 text-gold-ink">خطة مركبة مخصصة</Badge>}
               <FavoriteButton pathwayId={pathway.id} pathwayName={pathway.name} className="ms-auto" />
             </div>
-            <h1 className="mt-4 text-3xl font-black leading-snug md:text-4xl">{pathway.name}</h1>
+            {/* اسم الخطّة كما اعتُمدت — لا اسم المسار المضيف. استعارةُ اسمه هي
+                ما جعل المتعلّم يظنّ أن خطّته أُعيدت تسميتها. */}
+            <h1 className="mt-4 text-3xl font-black leading-snug md:text-4xl">{adopted?.nameAr ?? pathway.name}</h1>
             <p className="mt-4 max-w-2xl leading-loose text-white/65">{pathway.transformation}</p>
 
             <div className="mt-5 flex flex-wrap items-center gap-2">
@@ -288,7 +326,34 @@ export default function PathwayPage() {
             courseIds={pathwayCoursesList.map((c) => c.id)}
             delivery={pathwayDelivery(pathway.id)}
             headingLevel="h2"
-            giftId={custom?.giftId ?? null}
+            giftId={giftId}
+            edit={
+              editable
+                ? {
+                    giftId,
+                    swapForId,
+                    pool,
+                    minReached: courseIds.length <= MIN_PATHWAY_COURSES,
+                    maxReached: courseIds.length >= MAX_PATHWAY_COURSES,
+                    onSwapToggle: setSwapForId,
+                    onSwapPick: (oldId, newId) => {
+                      commit(courseIds.map((i) => (i === oldId ? newId : i)), giftId);
+                      setSwapForId(null);
+                    },
+                    onRemove: (id) => {
+                      if (courseIds.length <= MIN_PATHWAY_COURSES) return;
+                      commit(courseIds.filter((i) => i !== id), giftId === id ? null : giftId);
+                    },
+                    onAdd: (id) => {
+                      if (courseIds.length >= MAX_PATHWAY_COURSES) return;
+                      commit([...courseIds, id], giftId);
+                    },
+                    /* الهديّة يختارها هو، وتُحتسب ضمن السقف: دورةٌ في الخطّة
+                       بلا ثمن، لا دورةٌ سابعة خارجها. */
+                    onGiftToggle: (id) => commit(courseIds, giftId === id ? null : id),
+                  }
+                : undefined
+            }
           />
 
           {/* أنواع المصادر المرافقة حُذفت — كانت مكررة مع صندوق «منظومة كاملة» أدناه */}
@@ -318,14 +383,20 @@ export default function PathwayPage() {
               مختلفا عن الذي اعتمده تشخيصك» — وهي جملة لا تخدمه: هو يعلم أنه يتصفح
               مسارا آخر، وقولها يحوّل التصفح إلى مخالفة. والصفحة نفسها مسار جاهز
               معروض للجميع، لا نتيجة شخصية. */}
-          {report && diagTopId === pathway.id && (
+          {/* يظهر لمن اعتمد خطّة على هذا المسار. كان مشروطا بـwajeez_diag_top
+              وحده، ولا يُكتب إلا في مسار القوالب — فمعظم من اعتمد لم يكن يرى
+              الزرّ أصلا. */}
+          {(adopted || (report && diagTopId === pathway.id)) && (
             <div className="story-fade mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-teal/40 bg-teal/[0.06] px-5 py-3">
               <p className="flex items-center gap-2 text-xs font-bold leading-relaxed text-white/75">
                 <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-light-ink" />
                 هذا المسار اعتمده تشخيصك — بُني على إجاباتك أنت.
               </p>
+              {/* كان `to="/diagnostic"` مجرّدا، وصفحة التشخيص تفتح دائما على
+                  المقدّمة — فالزرّ يَعِد بالعودة إلى النتيجة ويأتي بالبداية،
+                  ويحتاج المتعلّم نقرةً ثانية يكتشفها بنفسه. */}
               <Link
-                to="/diagnostic"
+                to="/diagnostic?view=result"
                 className="flex items-center gap-1.5 rounded-full border border-teal/50 px-4 py-1.5 text-xs font-bold text-teal-light-ink transition hover:bg-teal/15"
               >
                 <ArrowRight className="h-3.5 w-3.5" />
@@ -450,14 +521,33 @@ export default function PathwayPage() {
                   <span className="absolute left-3 top-3 rounded-full bg-gold/15 px-2.5 py-0.5 text-[10px] font-black text-gold-ink">الأوفر</span>
                   <p className="font-black text-sm">المسار كاملا</p>
                   <p className="mt-1 text-xs text-white/50">كل الدورات + التشخيص الكامل + المنظومة الست أدناه</p>
-                  <div className="mt-4 flex items-end gap-2">
-                    <span className="text-2xl font-black text-white">{fmt(pathwayTotal)}</span>
-                    {savingPct > 0 && <span className="mb-0.5 text-sm text-white/45 line-through">{fmt(separateCost)}</span>}
+                  {/* الرقم الأوّل «تبدأ من … للدورة» لا سعرُ الخطّة كاملة.
+                      المتعلّم هنا يقرّر أيبدأ أم لا، ورقمٌ من ثلاث خانات في
+                      صدارة البطاقة يُقرأ حاجزا قبل أن يُقرأ قيمة. وسعرُ الخطّة
+                      يُحدَّد بعد أن يعتمدها هو — لأن عددها يتغيّر بيده. */}
+                  <div className="mt-4 flex items-end gap-1.5">
+                    <span className="mb-1 text-xs text-white/50">تبدأ من</span>
+                    <span className="text-2xl font-black text-white">{fmt(perCourse)}</span>
+                    <span className="mb-1 text-xs text-white/50">للدورة</span>
                   </div>
-                  {savingPct > 0 && <p className="mt-1 text-xs text-teal-light-ink">بدل {fmt(separateCost)} لو اشتريت الدورات منفردة — توفير {savingPct}%</p>}
-                  <p className="mt-1.5 flex items-center gap-1.5 text-xs text-gold-ink">
-                    <Gift className="h-3.5 w-3.5" /> + دورة إضافية مجانية من اختيارك هدية
-                  </p>
+                  <div className="mt-2 space-y-1 text-xs">
+                    {savingPct > 0 && (
+                      <p className="text-teal-light-ink">
+                        خصم <span className="font-black">{savingPct}%</span> على المسار كاملا — بدل{" "}
+                        <span className="line-through text-white/40">{fmt(separateCost)}</span> لو اشتريتها منفردة
+                      </p>
+                    )}
+                    <p className="text-gold-ink">
+                      و<span className="font-black">{FIRST_TIME_PROMO.percentOff}%</span> إضافية لأوّل عملية شراء بالكود{" "}
+                      <span dir="ltr" className="font-mono font-black">{FIRST_TIME_PROMO.code}</span>
+                    </p>
+                    <p className="flex items-center gap-1.5 text-gold-ink">
+                      <Gift className="h-3.5 w-3.5" /> ودورةٌ من اختيارك هديّة داخل الخطّة
+                    </p>
+                    <p className="pt-0.5 text-white/45">
+                      سعر مسارك يُحدَّد بعد أن تعتمده — أنت من يقرّر دوراته.
+                    </p>
+                  </div>
                   <Button
                     onClick={() => startCheckout({ title: `مسار «${pathway.name}» كاملا (${pathwayCoursesList.length} دورات + هدية)`, amount: pathwayTotal, kind: "pathway" })}
                     className="mt-4 h-11 rounded-full bg-gold font-black text-on-gold hover:bg-gold/90"

@@ -109,9 +109,12 @@ export function clearAllSessionData() {
       store.removeItem(PROGRESS_KEY)
       store.removeItem(RESULT_KEY)
       store.removeItem(LAST_RESULT_KEY)
-      /* مفاتيح التخصيص والخطة المركبة — تُمسح مع الجلسة حتى لا تتسرب لنتيجة جديدة */
+      /* مفاتيح التخصيص والخطة المركبة — تُمسح مع الجلسة حتى لا تتسرب لنتيجة جديدة.
+         و`wajeez_custom` مفتاحٌ قديم لم يعد يُكتب: يُمسح لأن متصفّحا مفتوحا منذ
+         نشرةٍ سابقة قد يحمله، ولا نترك سجلّا لا يقرؤه أحد. */
       store.removeItem('wajeez_custom')
       store.removeItem('wajeez_diag_composite')
+      store.removeItem('wajeez_adopted_plan')
     } catch {
       /* لا شيء */
     }

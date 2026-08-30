@@ -27,6 +27,7 @@ model User {
    * توثيق البريد (١هـ) — يحجب الشراء وسكّ الشهادة، ولا يحجب الدخول ولا التصفّح.
    * الرمز يُحفظ هاشا كسائر الرموز: تسريب القاعدة لا يعطي مفاتيح صالحة.
    */
+  ratingsGiven         Rating[]             @relation("RatingRater")
   emailVerifiedAt      DateTime?
   emailVerifyTokenHash String?              @unique
   emailVerifyExpiresAt DateTime?
@@ -1301,6 +1302,7 @@ model Enrollment {
   courseProgress   CourseProgress?
   certificates     Certificate[]
   skillRemeasures  SkillRemeasure[]
+  ratings          Rating[]
 
   @@unique([cohortId, userId])
   @@index([userId, status])
@@ -2086,6 +2088,49 @@ model AnalyticsEvent {
 
   @@index([event, createdAt])
   @@index([anonId])
+}
+
+/**
+ * تقييم المتعلّم (١و) — للمدرّب والمستشار والدورة.
+ * ثلاث قواعد تحكم هذا الجدول، وكلٌّ منها وُضعت لعطبٍ محدّد:
+ * ١) raterId يُحفظ ولا يُعرض. حفظُه ضروريّ لقاعدة «تقييم واحد لكل تسجيل لكل
+ * هدف» — وبدونه يستطيع متعلّم واحد أن يرفع المعدّل عشر مرّات. وعرضُه ممنوع
+ * في كل قراءة تصل المدرّب أو العامّة، وحارسٌ في الاختبارات يثبّت ذلك.
+ * ٢) publishStatus يحكم **التعليق المكتوب وحده** لا الدرجة. المعدّل المعلَن
+ * يُحسب على كل التقييمات المُرسَلة: لو اختارت الإدارة أيّ الدرجات تدخل فيه
+ * لصار الرقم مصنوعا — وهو نفس ما أزلناه من المنصّة دفعةً بعد دفعة.
+ * ٣) لا يُعرض شيء تحت حدٍّ أدنى من العدد: المدرّب لا يرى حتى تبلغ شعبتُه ثلاثة
+ * تقييمات، والعامّة كذلك. في شعبة من ثلاثة، «بلا اسم» ليست إخفاءَ هوية.
+ */
+model Rating {
+  id               String    @id @default(uuid()) @db.Uuid
+  enrollmentId     String    @db.Uuid
+  /**
+   * صاحب التقييم — للنزاهة لا للعرض؛ لا يخرج في أيّ قراءة عامّة أو للمدرّب
+   */
+  raterId          String    @db.Uuid
+  subjectType      String // trainer | advisor | course
+  /**
+   * معرّف الهدف: profileId للمدرّب، userId للمستشار، courseId للدورة
+   */
+  subjectId        String
+  score            Int // ١..٥
+  commentAr        String?
+  /**
+   * حالة نشر **التعليق** علنا — لا علاقة لها باحتساب الدرجة
+   */
+  publishStatus    String    @default("pending") // pending | approved | rejected
+  moderatedBy      String?   @db.Uuid
+  moderatedAt      DateTime?
+  moderationReason String?
+  createdAt        DateTime  @default(now())
+
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  rater      User       @relation("RatingRater", fields: [raterId], references: [id])
+
+  @@unique([enrollmentId, subjectType, subjectId])
+  @@index([subjectType, subjectId, createdAt])
+  @@index([publishStatus, createdAt])
 }
 
 model DiagnosticFeedback {

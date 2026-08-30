@@ -391,6 +391,24 @@ export class TrainerReviewService {
         assignments: { where: { status: 'active' }, select: { courseId: true, cohortId: true } },
       },
     })
+    /* التعليقات المعتمَدة للنشر (١و) — نداءٌ واحد لكل المدرّبين المعروضين ثم
+       تجميع، لا استعلامٌ داخل حلقة. والدرجة والعدد يأتيان من عمودَي الملفّ
+       اللذين يكتبهما RatingService بعد بلوغ عتبة إخفاء الهوية. */
+    const approved = profiles.length
+      ? await this.prisma.rating.findMany({
+          where: { subjectType: 'trainer', subjectId: { in: profiles.map((p) => p.id) }, publishStatus: 'approved', commentAr: { not: null } },
+          orderBy: { createdAt: 'desc' },
+          /* لا raterId ولا enrollmentId: ما يخرج للعامّة لا يدلّ على قائله */
+          select: { subjectId: true, score: true, commentAr: true },
+        })
+      : []
+    const bySubject = new Map<string, { score: number; commentAr: string }[]>()
+    for (const r of approved) {
+      const list = bySubject.get(r.subjectId) ?? []
+      if (list.length < 5) list.push({ score: r.score, commentAr: r.commentAr as string })
+      bySubject.set(r.subjectId, list)
+    }
+
     return profiles.map((p) => ({
       id: p.id, name: p.application.fullName, headline: p.headline, bio: p.bioPublic,
       country: p.application.country,
@@ -398,6 +416,8 @@ export class TrainerReviewService {
       photoUrl: p.photoUrl,
       ratingAvg: p.ratingAvg,
       ratingCount: p.ratingCount,
+      /* التعليق لا يُعرض إلا مع متوسّط معروض: تعليقٌ بلا رقم يُقرأ انتقاءً */
+      testimonials: p.ratingAvg != null ? bySubject.get(p.id) ?? [] : [],
       hoursTaught: p.hoursTaught,
       graduatesCount: p.graduatesCount,
       assignedCourseIds: p.assignments.map((a) => a.courseId),

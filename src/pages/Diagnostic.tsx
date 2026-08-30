@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import {
   ArrowRight,
   ArrowLeft,
@@ -55,6 +55,7 @@ import { AssessmentSession, createAssessment, diagQuestionById, type NextStep } 
 import type { DeepeningComparison } from "@/application/diagnostic/assessment-service";
 import { loadSession, saveLastResult, loadLastResultSafe } from "@/application/diagnostic/session-store";
 import { foldComposedPlan } from "@/application/diagnostic/composed-fold";
+import { saveAdoptedPlan, PERSONAL_PLAN_NAME_AR } from "@/application/plan/adopted-plan";
 import {
   courseById,
   pathwayCourses,
@@ -205,6 +206,7 @@ function ComposedSwap({
   gaps,
   delivery,
   authed,
+  onChange,
 }: {
   planCourseIds: string[];
   reasons: Record<string, string>;
@@ -212,6 +214,8 @@ function ComposedSwap({
   gaps: string[];
   delivery?: string;
   authed: boolean;
+  /** يبلّغ الصفحة بالقائمة الحالية — الاعتماد يكتب ما على الشاشة لا ما يشتقّه من جديد */
+  onChange: (ids: string[]) => void;
 }) {
   const [chosenIds, setChosenIds] = useState<string[]>(planCourseIds);
   const [swapForId, setSwapForId] = useState<string | null>(null);
@@ -232,8 +236,9 @@ function ComposedSwap({
     const next = chosenIds.map((i) => (i === oldId ? newId : i));
     setChosenIds(next);
     setSwapForId(null);
-    /* يُحفظ كتخصيص خطة مركّبة — بلا pathwayId لأنها ليست مسارا في الكتالوج */
-    sessionStorage.setItem("wajeez_custom", JSON.stringify({ composite: true, chosenIds: next, giftId: null }));
+    /* كان يكتب هنا سجلّا بلا hostPathwayId، وصفحة المسار ترفضه فتعرض غيره.
+       صار يبلّغ الصفحة، والاعتماد وحده يكتب — بهوية مضيفٍ صريحة. */
+    onChange(next);
   };
 
   return (
@@ -268,11 +273,14 @@ function PlanCourses({
   gaps,
   authed,
   resetKey,
+  onChange,
 }: {
   pathway: Pathway;
   gaps: string[];
   authed: boolean;
   resetKey: number; // يتغير عند تبديل المسار لإعادة التهيئة
+  /** يبلّغ الصفحة بما على الشاشة — الاعتماد وحده يكتب، بمسلك واحد للحالتين */
+  onChange: (ids: string[], giftId: string | null) => void;
 }) {
   const baseIds = pathwayCourses[pathway.id] ?? [];
   const [chosenIds, setChosenIds] = useState<string[]>(baseIds.slice(0, MAX_PATHWAY_COURSES));
@@ -305,9 +313,10 @@ function PlanCourses({
       .map((c) => ({ id: c.id, name: c.name, note: `${c.skill} · من مسار ${c.pathwayName}` }));
   }, [chosenIds, giftId, category, gaps]);
 
-  /* يُحفظ التخصيص فوريا مع كل تغيير — يظهر في صفحة المسار بعد اعتماده */
+  /* كان يكتب هنا سجلّ `wajeez_custom` مع كل تغيير. صار يبلّغ الصفحة فقط:
+     الاعتماد هو الكتابة الوحيدة، فلا شكلان للسجلّ ولا قارئان يفترقان. */
   const persist = (ids: string[], gift: string | null) => {
-    sessionStorage.setItem("wajeez_custom", JSON.stringify({ pathwayId: pathway.id, chosenIds: ids, giftId: gift }));
+    onChange(ids, gift);
   };
   const swapPick = (oldId: string, newId: string) => {
     const next = chosenIds.map((i) => (i === oldId ? newId : i));
@@ -680,7 +689,20 @@ function CompositePlan({ composite }: { composite: CompositeView }) {
 /* ─────────── الصفحة ─────────── */
 export default function Diagnostic() {
   const navigate = useNavigate();
-  const [stage, setStage] = useState<Stage>("intro");
+  /* `?view=result` — قادمٌ من زرّ «عد لنتيجتك» في صفحة المسار. يُقرأ في مُهيّئ
+     الحالة لا في تأثير: savedDone متاح في أوّل تصيير (يُقرأ في مُهيّئ useState
+     أدناه)، فلا حاجة إلى قلب الحالة بعد التصيير ولا إلى ومضة مقدّمةٍ تُرى. */
+  const [searchParams] = useSearchParams();
+  const wantsSavedResult = searchParams.get("view") === "result";
+
+  /* نتيجة مكتملة محفوظة — تُقرأ عبر مخطط صارم: تُرحّل إن أمكن، وتُحذف بأمان مع رسالة إن تعذر */
+  const [storedInitial] = useState(() => loadLastResultSafe());
+  const savedDone: DiagResult | null =
+    storedInitial.status === "ok" || storedInitial.status === "migrated" ? storedInitial.result : null;
+  const discardedResultNotice = storedInitial.status === "discarded" ? storedInitial.reason_ar : null;
+  /* فتحُ النتيجة المحفوظة مباشرة حين طُلبت وكانت موجودة */
+  const openSaved = wantsSavedResult && savedDone != null;
+  const [stage, setStage] = useState<Stage>(openSaved ? "result" : "intro");
   const [answers, setAnswers] = useState<DiagAnswers>({});
   const [asked, setAsked] = useState<string[]>([]);
   const [live, setLive] = useState<ReturnType<AssessmentSession["liveState"]> | null>(null);
@@ -689,15 +711,10 @@ export default function Diagnostic() {
   const [multiDraft, setMultiDraft] = useState<string[]>([]);
   const [textDraft, setTextDraft] = useState("");
   const [ratingsDraft, setRatingsDraft] = useState<Record<string, number>>({});
-  const [result, setResult] = useState<DiagResult | null>(null);
-  const [topPathway, setTopPathway] = useState<Pathway | null>(null);
+  const [result, setResult] = useState<DiagResult | null>(openSaved ? savedDone : null);
+  const [topPathway, setTopPathway] = useState<Pathway | null>(openSaved ? savedDone.top : null);
   const [swapCount, setSwapCount] = useState(0);
   const [savedProgress, setSavedProgress] = useState<SavedProgress | null>(() => loadProgress());
-  /* نتيجة مكتملة محفوظة — تُقرأ عبر مخطط صارم: تُرحّل إن أمكن، وتُحذف بأمان مع رسالة إن تعذر */
-  const [storedInitial] = useState(() => loadLastResultSafe());
-  const savedDone: DiagResult | null =
-    storedInitial.status === "ok" || storedInitial.status === "migrated" ? storedInitial.result : null;
-  const discardedResultNotice = storedInitial.status === "discarded" ? storedInitial.reason_ar : null;
   /* جلسة المحرك الحتمي — مصدر الأسئلة والنتيجة الوحيد */
   const sessionRef = useRef<AssessmentSession | null>(null);
   /* الضيف أولا: يكمل التشخيص كاملا ويرى نتيجته حتى حدّ الظهور، والحساب يُطلب فقط لكشف الباقي والحفظ */
@@ -937,26 +954,51 @@ export default function Diagnostic() {
     setStage("result");
   };
 
-  /* اعتماد خطة مركبة: نحفظ دوراتها كنسخة مخصصة على مسارها المضيف، ونمرر هويتها لصفحة المسار —
-     لا تدفق دفع جديدا: صفحة المسار نفسها تعرض الدورات المختارة وتسعّرها كما تفعل مع أي تخصيص */
-  const adoptComposite = () => {
+  /* ─────────── الاعتماد: كتابةٌ واحدة، وهي مصدر ما تعرضه صفحة المسار ───────────
+
+     كان هنا مسلكان يكتبان شكلين مختلفين، وثالثٌ لا يكتب شيئا:
+     · التبديل يكتب `{composite:true, chosenIds}` بلا hostPathwayId
+     · اعتماد القالب يعيد اشتقاق القائمة من نتيجة المحرّك فيمحو التبديل
+     · اعتماد المسار الجاهز كان مجرّد <Link> لا يكتب شيئا، فتسقط الصفحة على
+       قائمة الكتالوج
+
+     صار مسلكا واحدا يكتب ما **على الشاشة** بهوية مضيفٍ صريحة واسمٍ صريح. */
+
+  /* آخر قائمة عرضها التبديل — في ref لا في state: قراءتها عند الاعتماد فقط،
+     فلا داعي لإعادة تصيير عند كل تبديل. */
+  const shownPlanRef = useRef<{ courseIds: string[]; giftId: string | null } | null>(null);
+
+  const adoptPlan = () => {
+    if (!topPathway) return;
     const c = (result?.resultJson.composite as CompositeView | null) ?? null;
-    if (!c || !topPathway) return;
-    const hostId = c.represented_pathway_ids.includes(topPathway.id)
-      ? topPathway.id
-      : (c.represented_pathway_ids[0] ?? topPathway.id);
-    const ids = [...c.courses].sort((a, b) => a.sequence - b.sequence).map((x) => x.courseId);
+    const composed = Boolean(c) || Boolean(composedPrimary);
+    const hostId = c
+      ? (c.represented_pathway_ids.includes(topPathway.id) ? topPathway.id : (c.represented_pathway_ids[0] ?? topPathway.id))
+      : topPathway.id;
+    /* ما رآه المتعلّم فعلا — بتبديلاته إن بدّل */
+    const courseIds = shownPlanRef.current?.courseIds ?? planCourseIds;
+    const giftId = shownPlanRef.current?.giftId ?? null;
+    saveAdoptedPlan({
+      hostPathwayId: hostId,
+      composed,
+      /* الخطّة المركَّبة لا تستعير اسم المسار المضيف: هي ليست هو، وتسميتُها
+         باسمه هي ما جعل المتعلّم يظنّ أننا غيّرنا خطّته. */
+      nameAr: composed ? PERSONAL_PLAN_NAME_AR : topPathway.name,
+      courseIds,
+      giftId,
+    });
     try {
-      const custom = JSON.stringify({ pathwayId: hostId, chosenIds: ids, giftId: null });
-      const compositeCtx = JSON.stringify({ template_id: c.template_id, name_ar: c.name_ar });
-      sessionStorage.setItem("wajeez_custom", custom);
-      sessionStorage.setItem("wajeez_diag_composite", compositeCtx);
+      if (c) sessionStorage.setItem("wajeez_diag_composite", JSON.stringify({ template_id: c.template_id, name_ar: c.name_ar }));
       sessionStorage.setItem("wajeez_diag_top", hostId);
       localStorage.setItem("wajeez_diag_top", hostId);
     } catch {
-      /* مساحة ممتلئة أو خصوصية صارمة — نتابع والصفحة تسقط على شكلها الافتراضي */
+      /* مساحة ممتلئة أو خصوصية صارمة — الصفحة تقول إنها لم تجد الخطّة */
     }
-    track("composite_adopted", { template: c.template_id, host: hostId });
+    track(c ? "composite_adopted" : "pathway_adopted", {
+      ...(c ? { template: c.template_id } : {}),
+      host: hostId,
+      courses: courseIds.length,
+    });
     navigate(`/pathways/${hostId}`);
   };
 
@@ -1225,14 +1267,19 @@ export default function Diagnostic() {
             ابدأ الحديث
             <ArrowLeft className="mr-2 h-5 w-5" />
           </Button>
-          {/* ثلاث جمل مستقلة كانت مسبوكة في فقرة واحدة بفواصل «·». وفي سياق عربي
-              تلتصق النقطة الوسطى بالأرقام فتُقرأ صفرا، وعلى الهاتف تصير الفقرة
-              ثلاثة أسطر متلاصقة بحجم 12 بكسل لا يُميَّز فيها أين تنتهي جملة.
-              كلٌّ في سطرها: الأولى دعوة، والثانية إقرار، والثالثة شرط سنّ. */}
+          {/* هذه شاشة إقناعٍ بالبدء، وثلاثة أسطر من الشروط قبل الخطوة الأولى
+              تُقرأ عقبةً لا طمأنة. بقيت الدعوة، وزال سطرا الإقرار والسنّ.
+
+              والإفصاح لم يُلغَ بل صغُر: «سياسة الخصوصية» رابطٌ واحد يقول أين
+              التفصيل. وإسقاطُه كلّه كان يترك المنصّة بلا إفصاحٍ ظاهر البتّة —
+              والمحرّك يسجّل «إقرار الواجهة» على أي حال (engine.ts). */}
           <ul className="mx-auto mt-4 max-w-md space-y-1.5 text-xs leading-relaxed text-white/55">
             <li>ابدأ مجانا — ترى مسارك المقترح فورا، وحسابك المجاني يفتح نتيجتك كاملة</li>
-            <li>بالمتابعة أنت توافق على استخدام إجاباتك لبناء التوصية</li>
-            <li>التشخيص مصمم للبالغين، وإن كنت دون ١٨ عاما أكمله مع ولي أمرك</li>
+            <li>
+              <Link to="/p/privacy" className="underline-offset-4 hover:text-teal-light-ink hover:underline">
+                سياسة الخصوصية
+              </Link>
+            </li>
           </ul>
 
           {/* بطاقة الاستئناف — تشخيص غير مكتمل ينتظر صاحبه */}
@@ -2054,6 +2101,7 @@ export default function Diagnostic() {
                   gaps={result.gaps}
                   delivery={pathwayDelivery(topPathway.id)}
                   authed={authed}
+                  onChange={(ids) => { shownPlanRef.current = { courseIds: ids, giftId: null }; }}
                 />
               );
             }
@@ -2068,11 +2116,20 @@ export default function Diagnostic() {
                   gaps={result.gaps}
                   delivery={pathwayDelivery(topPathway.id)}
                   authed={authed}
+                  onChange={(ids) => { shownPlanRef.current = { courseIds: ids, giftId: null }; }}
                 />
               );
             }
 
-            return <PlanCourses pathway={topPathway} gaps={result.gaps} authed={authed} resetKey={swapCount} />;
+            return (
+              <PlanCourses
+                pathway={topPathway}
+                gaps={result.gaps}
+                authed={authed}
+                resetKey={swapCount}
+                onChange={(ids, gift) => { shownPlanRef.current = { courseIds: ids, giftId: gift }; }}
+              />
+            );
           })()}
 
           {/* الخطة المركّبة — لمن قيّم جوانبه، وحين تضيف مقررات لا تحويها الخطة أعلاه.
@@ -2155,25 +2212,19 @@ export default function Diagnostic() {
           {/* الاعتماد أسفل الخطة مباشرة — يظهر للضيف مضبّبا في مكانه، ويعمل فور انكشافه بالتسجيل */}
           {(() => {
             const compositeView = (result.resultJson.composite as CompositeView | null) ?? null;
+            const isComposed = Boolean(compositeView) || Boolean(composedPrimary);
             return (
             <div className="mt-6 flex flex-col items-center gap-3">
-              {compositeView ? (
-                <Button
-                  size="lg"
-                  onClick={adoptComposite}
-                  className="h-auto min-h-14 max-w-full whitespace-normal rounded-full bg-gold px-8 py-3 text-center text-base font-black leading-snug text-on-gold hover:bg-gold/90 md:text-lg"
-                >
-                  اعتمد هذه الخطة
-                  <ArrowLeft className="mr-2 h-5 w-5 shrink-0" />
-                </Button>
-              ) : (
-                <Button size="lg" className="h-auto min-h-14 max-w-full whitespace-normal rounded-full bg-gold px-8 py-3 text-center text-base font-black leading-snug text-on-gold hover:bg-gold/90 md:text-lg" asChild>
-                  <Link to={`/pathways/${topPathway.id}`}>
-                    اعتمد هذا المسار
-                    <ArrowLeft className="mr-2 h-5 w-5 shrink-0" />
-                  </Link>
-                </Button>
-              )}
+              {/* زرٌّ واحد للحالتين. كان اعتماد المسار الجاهز <Link> لا يكتب شيئا،
+                  فتصل الصفحة بلا خطّة معتمَدة فتسقط على قائمة الكتالوج. */}
+              <Button
+                size="lg"
+                onClick={adoptPlan}
+                className="h-auto min-h-14 max-w-full whitespace-normal rounded-full bg-gold px-8 py-3 text-center text-base font-black leading-snug text-on-gold hover:bg-gold/90 md:text-lg"
+              >
+                {isComposed ? "اعتمد هذه الخطة" : "اعتمد هذا المسار"}
+                <ArrowLeft className="mr-2 h-5 w-5 shrink-0" />
+              </Button>
               <button
                 onClick={restart}
                 className="flex items-center gap-1.5 text-xs font-semibold text-white/45 transition hover:text-white"

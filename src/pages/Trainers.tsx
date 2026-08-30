@@ -12,6 +12,8 @@ interface PublicTrainer {
   country: string | null; specialties: string[]; assignedCourseIds: string[];
   photoUrl: string | null;
   ratingAvg: number | null; ratingCount: number | null;
+  /* ١و — تعليقات اعتمدتها الإدارة للنشر؛ فارغة حتى ذلك */
+  testimonials?: { score: number; commentAr: string }[];
   hoursTaught: number | null; graduatesCount: number | null;
 }
 
@@ -163,6 +165,22 @@ export default function Trainers() {
                         {t.graduatesCount} خريجا
                       </span>
                     )}
+                  </div>
+                )}
+
+                {/* ١و — التعليقات المعتمَدة للنشر. المتوسّط أعلاه محسوبٌ على كل
+                    التقييمات لا على المعروض منها، فلا يُقرأ الاقتباس رقما. */}
+                {t.testimonials && t.testimonials.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    {t.testimonials.map((c, i) => (
+                      <blockquote key={i} className="rounded-xl border border-white/[0.07] bg-black/20 px-3 py-2">
+                        <span className="mb-0.5 block text-[10px] font-bold text-gold-ink">{c.score} ★</span>
+                        <p className="text-[11px] leading-6 text-white/60">{c.commentAr}</p>
+                      </blockquote>
+                    ))}
+                    <p className="text-[10px] text-white/30">
+                      تعليقات متعلّمين، منشورة باعتماد الأكاديمية. والمتوسّط أعلاه من كل التقييمات لا من المعروض منها.
+                    </p>
                   </div>
                 )}
 

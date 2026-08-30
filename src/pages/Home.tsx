@@ -306,23 +306,6 @@ function DiagnosticTeaser() {
     localStorage.removeItem('wajeez_mirror')
   }
 
-  /* صورة أولية صادقة مشتقة من إجابات المؤشر نفسها — بلا أرقام ولا ادعاءات */
-  const mirrorInsights: Record<string, string> = {
-    'نعم — أعرفها بالضبط': 'تعرف فجواتك بالاسم — نصف الطريق قطعتَه، والباقي خطة تنفيذ لا بحث.',
-    'لدي تخمين لا أكثر': 'عندك تخمين عن فجواتك — التشخيص الكامل يحوّله إلى يقين موثّق.',
-    'بصراحة؟ لا أعرف': 'لم تُسمِّ فجواتك بعد — وهذا أول ما يكشفه لك التشخيص الكامل.',
-    'أكملت معظمها': 'عادتك في الإكمال قوية — تحتاج فقط ما يستحق إكماله.',
-    'بعضها فقط': 'تُكمل بعض ما تبدأ — الفرق عندنا مرافقة بشرية تحميك من التوقف الصامت.',
-    'أبدأ بحماس وأتوقف — قصتي المعتادة': 'قصة التوقف المتكرر لا تُحل بإرادة أقوى — بل بمسار مرافَق يعرف متى تتعثر.',
-    'واضحة ومكتوبة': 'صورتك عن سنتين واضحة — سنبني عليها لا أن نعيد رسمها.',
-    'في رأسي تقريبا': 'صورتك موجودة لكنها شفافة — التشخيص يحوّلها إلى خطة مكتوبة بموعد.',
-    'ضبابية — وهذا يقلقني أحيانا': 'ضبابية الصورة أخطر إشارة — وأكثر ما يجيده التشخيص الكامل هو تبلورها.',
-  }
-  const insights = (['m2', 'm3', 'm4']
-    .map((id) => answers[id])
-    .map((a) => (a ? mirrorInsights[a] : null))
-    .filter(Boolean) as string[]).slice(0, 2)
-
   return (
     <section id="diagnostic" className="relative py-20 md:py-24">
       <div className="mx-auto max-w-4xl px-5">
@@ -331,8 +314,8 @@ function DiagnosticTeaser() {
           {/* الوعد السابق كان «ما الذي تحتاج تعلّمه — وبأي ترتيب»، ولا يسأل أيٌّ من
               الأسئلة الخمسة عن مجال ولا هدف ولا مهارة، فلا يستطيع أن يجيبه. وما تجيبه
               فعلا هو ما يعطّل الزائر عن البدء — وهو وعد يفي به كاملا. */}
-          <h2 className="mt-5 text-3xl font-bold md:text-4xl">قبل أن تختار دورة… اعرف لماذا لم تبدأ بعد</h2>
-          <p className="mx-auto mt-4 max-w-lg text-muted-foreground leading-8">
+          <h2 className="mt-5 text-2xl font-bold sm:text-3xl md:text-4xl">قبل أن تختار دورة… اعرف لماذا لم تبدأ بعد</h2>
+          <p className="mx-auto mt-4 max-w-lg text-sm leading-7 text-muted-foreground sm:text-base sm:leading-8">
             خمسة أسئلة صادقة عن علاقتك بالتعلّم — تكشف ما يعطّلك فعلا، ثم يبني عليها التشخيص الكامل.
           </p>
         </div>
@@ -357,7 +340,7 @@ function DiagnosticTeaser() {
             {!done ? `سؤال ${step + 1} من ${mirrorQuestions.length}: ${current.text}` : 'اكتملت المؤشر — تظهر خلاصتك الآن'}
           </p>
 
-          <div className="p-8 md:p-10" key={step}>
+          <div className="p-5 sm:p-8 md:p-10" key={step}>
             {!done ? (
               <div className="story-fade">
                 <div className="flex items-center justify-between">
@@ -381,7 +364,7 @@ function DiagnosticTeaser() {
                     </button>
                   </div>
                 </div>
-                <h3 className="mt-3 text-2xl font-bold leading-relaxed">{current.text}</h3>
+                <h3 className="mt-3 text-lg font-bold leading-8 sm:text-2xl sm:leading-relaxed">{current.text}</h3>
                 <div className="mt-7 grid gap-3" role="group" aria-label={`خيارات السؤال ${step + 1}`}>
                   {current.options.map((opt) => {
                     const selected = picked === opt || (!picked && answers[current.id] === opt)
@@ -390,7 +373,7 @@ function DiagnosticTeaser() {
                         key={opt}
                         onClick={() => pick(current.id, opt)}
                         aria-pressed={selected}
-                        className={`group flex items-center justify-between rounded-2xl border px-5 py-4 text-right font-medium transition ${
+                        className={`group flex items-center justify-between gap-2 rounded-2xl border px-4 py-3.5 text-right text-sm font-medium leading-6 transition sm:px-5 sm:py-4 sm:text-base ${
                           selected
                             ? 'border-teal bg-teal/20 text-teal-light-ink'
                             : 'border-white/10 bg-white/[0.03] hover:border-teal/50 hover:bg-teal/10 hover:text-teal-light-ink'
@@ -416,13 +399,10 @@ function DiagnosticTeaser() {
                 </div>
                 {/* «سمعناك — صورتك بدأت تتضح» تصف شعورا لا خطوة، ولا تقول له ماذا
                     يفعل الآن ولا لماذا. هذه تضعه في مكانه وتسمّي ما يلي. */}
-                <h3 className="mt-5 text-2xl font-bold leading-relaxed">أنت في المكان الصحيح. الآن نبني خطتك.</h3>
-                {/* قراءة واحدة عميقة مشتقة من إجاباته — سطر واحد يختصر، لا صندوق يشتت */}
-                {insights.length > 0 && (
-                  <p className="mx-auto mt-4 max-w-md text-base font-bold leading-8 text-teal-light-ink md:text-lg">
-                    «{insights[0]}»
-                  </p>
-                )}
+                <h3 className="mt-5 text-xl font-bold leading-8 sm:text-2xl sm:leading-relaxed">أنت في المكان الصحيح. الآن نبني خطتك.</h3>
+                {/* حُذفت هنا «قراءة» مشتقة من الإجابات («عندك تخمين عن فجواتك…»).
+                    كانت تدفع زرّ «ابدأ التشخيص الكامل» تحت الطيّة على الهاتف: هذه
+                    شاشةُ إجراء لا شاشةُ تأمّل، ونصٌّ يؤخّر الزرّ يكلّف أكثر مما يعطي. */}
                 <p className="mx-auto mt-3 max-w-sm text-xs leading-6 text-muted-foreground">
                   أجب عن أسئلة أعمق عن هدفك وخبرتك ومهاراتك، لنحدّد ما تحتاجه من دورات مرتّبة في مسار واحد.
                 </p>
