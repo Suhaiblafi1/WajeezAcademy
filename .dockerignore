@@ -1,0 +1,14 @@
+node_modules
+dist
+.git
+.github
+.pgdata
+storage
+audit
+*.log
+.env
+.env.*
+!.env.example
+coverage
+playwright-report
+test-results

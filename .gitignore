@@ -17,6 +17,11 @@ scripts/tmp/
 storage/private/
 .vercel
 .env*
+# والقوالب وحدها تُرفع: تحمل أسماء المتغيّرات لا قيمها، وغيابها يجعل
+# الإعداد تخمينا. الاستثناء بلاحقة .example صراحةً فلا يتسرّب ملفٌّ حقيقيّ.
+!.env.example
+!*.env.example
+!deploy/.env.production.example
 
 # أدوات الوكيل المحلية — لا تُرفع للمستودع
 .agents/

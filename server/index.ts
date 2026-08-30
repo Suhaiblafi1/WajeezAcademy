@@ -9,7 +9,14 @@ const main = async () => {
   await seedRbac(prisma) // idempotent — يضمن الأدوار والصلاحيات عند كل إقلاع
   const app = await buildApp(prisma)
   const port = Number(process.env.API_PORT ?? 7101)
-  await app.listen({ port, host: '127.0.0.1' })
+  /* العنوان قابل للضبط، وافتراضه المغلق لا المفتوح.
+     على الجهاز 127.0.0.1 هو الصواب: لا يُنصت الخادم على الشبكة بلا قصد.
+     وداخل حاوية Docker هذا العنوان يعني «داخل الحاوية وحدها» فلا يصل إليه
+     الوسيط العكسي أبدا — فتُضبط API_HOST=0.0.0.0 هناك. والحاوية نفسها لا
+     تنشر منفذها إلى المضيف (انظر deploy/compose.prod.yml)، فالانفتاح داخل
+     شبكة Docker الخاصة لا على الإنترنت. */
+  const host = process.env.API_HOST ?? '127.0.0.1'
+  await app.listen({ port, host })
   console.log(`✅ خادم وجيز يعمل: http://localhost:${port} — التوثيق: http://localhost:${port}/docs`)
 }
 
