@@ -254,6 +254,12 @@ model Course {
   recommendableDirectly Boolean                      @default(false)
   priceUsd              Int?
   availability          String                       @default("available") // available | waitlist | retired
+  /**
+   * المسار الأمّ للدورة وترتيبها فيه — صريحان لا مستنتَجَين من الروابط:
+   * للدورة روابط مساندة في مسارات أخرى، وقد لا يكون لها رابط أساسيّ أصلا
+   */
+  homePathwayId         String?
+  homeSequence          Int?
   createdBy             String?                      @db.Uuid
   createdAt             DateTime                     @default(now())
   updatedAt             DateTime                     @updatedAt

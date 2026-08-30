@@ -180,11 +180,20 @@ export class PublicCatalogService {
       }),
       courses: courses.map((c) => {
         const v = c.versions[0]
-        const link = c.pathwayLinks[0]
+        /* المسار الأمّ للدورة = رابطها غير المساند.
+
+           صار للدورة أكثر من رابط مسار: واحدٌ أساسيّ في مسارها، وحتى أربعةٌ مساندة
+           في مسارات أخرى. وأخذُ `pathwayLinks[0]` صار يلتقط أحدها اعتباطا — فظهرت
+           «دورة الكتابة والبحث بالذكاء الاصطناعي» تحت مسار «قرارك المهني الأول»
+           بترتيب ٥ بدل ٣، فوقعت في التصنيف الخطأ في كتالوج الدورات واختفت من فئتها.
+           الحارس: server/tests/catalog/public-core-catalog.test.ts */
+        const link = c.pathwayLinks.find((l) => l.pathwayId === c.homePathwayId)
+          ?? c.pathwayLinks.find((l) => l.kind === 'required')
+          ?? c.pathwayLinks[0]
         return {
           course_id: c.id,
-          pathway_id: link?.pathwayId ?? '',
-          sequence: link?.sequence ?? 1,
+          pathway_id: c.homePathwayId ?? link?.pathwayId ?? '',
+          sequence: c.homeSequence ?? link?.sequence ?? 1,
           title_ar: v?.titleAr ?? '',
           ...(v?.termEn ? { title_term_en: v.termEn } : {}),
           ...(v?.legacyTitleAr ? { legacy_title_ar: v.legacyTitleAr } : {}),

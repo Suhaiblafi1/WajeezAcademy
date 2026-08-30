@@ -53,6 +53,27 @@ describe('/api/public/core-catalog — ما تقرؤه الواجهة الحيّ
     expect(supportsChecked).toBe(CORE.launch_pathways.length * 3)
   })
 
+  /* عيبٌ ثانٍ من المساندات نفسها، ظهر على الإنتاج: صار للدورة أكثر من رابط
+     مسار — واحدٌ أساسيّ وحتى أربعةٌ مساندة — وكان `pathwayLinks[0]` يلتقط
+     أحدها اعتباطا. فظهرت «دورة الكتابة والبحث بالذكاء الاصطناعي» منسوبةً إلى
+     «قرارك المهني الأول» بترتيب ٥ بدل ٣، فسقطت من فئتها في كتالوج الدورات:
+     صفحة الدورات تُصنّف من `pathway_id`، فاختفت الدورة من «أساسيات». */
+  it('كل دورة منسوبة إلى مسارها الأمّ لا إلى مسارٍ تسانده', () => {
+    const truth = new Map(
+      (JSON.parse(readFileSync(join(root, 'src/data/catalog/core-catalog.v2.json'), 'utf8')) as {
+        courses: { course_id: string; pathway_id: string; sequence: number }[]
+      }).courses.map((c) => [c.course_id, { pathwayId: c.pathway_id, sequence: c.sequence }]),
+    )
+    const wrong = payload.courses
+      .map((c) => ({ id: c.course_id, live: { pathwayId: c.pathway_id, sequence: c.sequence }, src: truth.get(c.course_id) }))
+      .filter((x) => x.src && (x.live.pathwayId !== x.src.pathwayId || x.live.sequence !== x.src.sequence))
+    expect(wrong, 'دورات نُسبت إلى مسارٍ تسانده لا إلى مسارها').toEqual([])
+
+    /* والفحص يفحص شيئا: لا بدّ من دوراتٍ تحمل رابطا مساندا فعلا */
+    const supported = new Set(payload.launch_pathways.flatMap((p) => (p.support_courses ?? []).map((s) => s.course_id)))
+    expect(supported.size).toBeGreaterThanOrEqual(20)
+  })
+
   it('المساندات تصل كاملة بأسبابها — وإلا عُرضت بلا تفسير أو بلا وسم', () => {
     for (const src of CORE.launch_pathways) {
       const live = payload.launch_pathways.find((p) => p.id === src.id)!

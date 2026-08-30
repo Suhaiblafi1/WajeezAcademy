@@ -85,11 +85,14 @@ export async function buildSnapshotFromDb(
   })
   const courseRows = courses.map((c) => {
     const v = c.versions[0]
-    const home = c.pathwayLinks[0]
+    /* المسار الأمّ صريحٌ على الدورة — الروابط لا تكفي (انظر public-catalog.service.ts) */
+    const home = c.pathwayLinks.find((l) => l.pathwayId === c.homePathwayId)
+      ?? c.pathwayLinks.find((l) => l.kind === 'required')
+      ?? c.pathwayLinks[0]
     return {
       course_id: c.id,
-      pathway_id: home?.pathwayId ?? '',
-      sequence: home?.sequence ?? 1,
+      pathway_id: c.homePathwayId ?? home?.pathwayId ?? '',
+      sequence: c.homeSequence ?? home?.sequence ?? 1,
       title_ar: v?.titleAr ?? '',
       title_term_en: v?.termEn ?? undefined,
       subtitle_ar: v?.shortPromiseAr ?? undefined,
@@ -179,7 +182,7 @@ export async function buildSnapshotFromDb(
       t.courses.filter((l) => l.listType === listType).map((l) => {
         const central = courseCentral.get(l.courseId)
         const cv = central?.versions[0]
-        const pathwayId = central?.pathwayLinks[0]?.pathwayId ?? ''
+        const pathwayId = central?.homePathwayId ?? central?.pathwayLinks.find((l) => l.kind === 'required')?.pathwayId ?? ''
         return {
           sequence: l.sequence,
           course_type: l.listType,

@@ -220,8 +220,10 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
   for (const c of courses) {
     await prisma.course.upsert({
       where: { id: c.course_id },
-      update: { status: 'published' },
-      create: { id: c.course_id, status: 'published', currentVersion: 1 },
+      /* المسار الأمّ والترتيب من المصدر مباشرةً — لا يُستنتجان من الروابط:
+         للدورة روابط مساندة في مسارات أخرى، وبعضها بلا رابط أساسيّ أصلا */
+      update: { status: 'published', homePathwayId: c.pathway_id, homeSequence: toInt(c.sequence) ?? null },
+      create: { id: c.course_id, status: 'published', currentVersion: 1, homePathwayId: c.pathway_id, homeSequence: toInt(c.sequence) ?? null },
     })
     const cv = await prisma.courseVersion.upsert({
       where: { courseId_version: { courseId: c.course_id, version: 1 } },
