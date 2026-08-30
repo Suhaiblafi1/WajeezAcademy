@@ -570,20 +570,21 @@
     },
     "change_management": {
       "layers": [
-        "pathway_requirement",
-        "learning_outcome"
+        "diagnostic",
+        "pathway_requirement"
       ],
       "active": true,
       "diagnostic_active": true,
       "academic_status": "approved_active",
-      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
       "pathway_ids": [
         "PW-AUT-001",
         "PW-EMP-003",
         "PW-EMP-005",
         "PW-OPS-001",
         "PW-SCM-001"
-      ]
+      ],
+      "measured_by": "QB-M4-036"
     },
     "child_digital_safety": {
       "layers": [
@@ -1096,7 +1097,8 @@
       "academic_status": "approved_active",
       "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
       "pathway_ids": [
-        "PW-EMP-004"
+        "PW-EMP-004",
+        "PW-HR-001"
       ],
       "measured_by": "QB-M4-006"
     },
@@ -1115,17 +1117,18 @@
     },
     "data_storytelling": {
       "layers": [
-        "pathway_requirement",
-        "learning_outcome"
+        "diagnostic",
+        "pathway_requirement"
       ],
       "active": true,
       "diagnostic_active": true,
       "academic_status": "approved_active",
-      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
       "pathway_ids": [
         "PW-EMP-004",
         "PW-FIN-001"
-      ]
+      ],
+      "measured_by": "QB-M4-039"
     },
     "data_visualization": {
       "layers": [
@@ -1168,18 +1171,19 @@
     },
     "decision_making": {
       "layers": [
-        "pathway_requirement",
-        "learning_outcome"
+        "diagnostic",
+        "pathway_requirement"
       ],
       "active": true,
       "diagnostic_active": true,
       "academic_status": "approved_active",
-      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
       "pathway_ids": [
         "PW-EMP-004",
         "PW-FIN-001",
         "PW-STU-003"
-      ]
+      ],
+      "measured_by": "QB-M4-037"
     },
     "decision_under_pressure": {
       "layers": [
@@ -1235,19 +1239,20 @@
     },
     "design_thinking": {
       "layers": [
-        "pathway_requirement",
-        "learning_outcome"
+        "diagnostic",
+        "pathway_requirement"
       ],
       "active": true,
       "diagnostic_active": true,
       "academic_status": "approved_active",
-      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
       "pathway_ids": [
         "PW-BIZ-001",
         "PW-LND-001",
         "PW-PRD-001",
         "PW-STU-003"
-      ]
+      ],
+      "measured_by": "QB-M4-038"
     },
     "digital_accessibility": {
       "layers": [
@@ -1311,12 +1316,15 @@
     "digital_literacy": {
       "layers": [
         "diagnostic",
-        "personalization_signal"
+        "pathway_requirement"
       ],
       "active": true,
       "diagnostic_active": true,
       "academic_status": "approved_active",
-      "decision_role_ar": "إشارة جاهزية رقمية: عند انخفاضها مع مسار رقمي تُضاف ملاحظة تمهيد رقمي في الخطة — لا تغيّر اختيار المسار.",
+      "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
+      "pathway_ids": [
+        "PW-AUT-001"
+      ],
       "measured_by": "QB-M4-005"
     },
     "digital_marketing": {
@@ -1639,12 +1647,15 @@
     "focus_management": {
       "layers": [
         "diagnostic",
-        "personalization_signal"
+        "pathway_requirement"
       ],
       "active": true,
       "diagnostic_active": true,
       "academic_status": "approved_active",
-      "decision_role_ar": "إشارة تخصيص: توجّه توزيع العبء الأسبوعي داخل الخطة — لا تغيّر اختيار المسار.",
+      "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
+      "pathway_ids": [
+        "PW-EMP-003"
+      ],
       "measured_by": "QB-M4-025"
     },
     "frontline_service": {
@@ -2013,13 +2024,13 @@
     },
     "kpi_design": {
       "layers": [
-        "pathway_requirement",
-        "learning_outcome"
+        "diagnostic",
+        "pathway_requirement"
       ],
       "active": true,
       "diagnostic_active": true,
       "academic_status": "approved_active",
-      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
       "pathway_ids": [
         "PW-EMP-004",
         "PW-GOV-002",
@@ -2027,7 +2038,8 @@
         "PW-OPS-001",
         "PW-PRD-001",
         "PW-SCM-001"
-      ]
+      ],
+      "measured_by": "QB-M4-034"
     },
     "lean_waste_analysis": {
       "layers": [
@@ -2045,12 +2057,15 @@
     "learning_agility": {
       "layers": [
         "diagnostic",
-        "personalization_signal"
+        "pathway_requirement"
       ],
       "active": true,
       "diagnostic_active": true,
       "academic_status": "approved_active",
-      "decision_role_ar": "إشارة تخصيص: توجّه وتيرة الخطة المقترحة — لا تغيّر اختيار المسار.",
+      "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
+      "pathway_ids": [
+        "PW-HR-001"
+      ],
       "measured_by": "QB-M4-023"
     },
     "learning_evaluation": {
@@ -2357,7 +2372,8 @@
       "academic_status": "approved_active",
       "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
       "pathway_ids": [
-        "PW-NEG-001"
+        "PW-NEG-001",
+        "PW-SCM-001"
       ],
       "measured_by": "QB-M4-013"
     },
@@ -3087,13 +3103,13 @@
     },
     "risk_management": {
       "layers": [
-        "pathway_requirement",
-        "learning_outcome"
+        "diagnostic",
+        "pathway_requirement"
       ],
       "active": true,
       "diagnostic_active": true,
       "academic_status": "approved_active",
-      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
       "pathway_ids": [
         "PW-AUT-001",
         "PW-CYB-001",
@@ -3101,7 +3117,8 @@
         "PW-EMP-005",
         "PW-FIN-001",
         "PW-SCM-001"
-      ]
+      ],
+      "measured_by": "QB-M4-035"
     },
     "risk_return": {
       "layers": [

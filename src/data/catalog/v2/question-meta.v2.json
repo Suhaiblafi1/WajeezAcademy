@@ -3328,6 +3328,198 @@
         "variance_analysis"
       ]
     },
+    "QB-M4-034": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "kpi_design"
+      ]
+    },
+    "QB-M4-035": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "risk_management"
+      ]
+    },
+    "QB-M4-036": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "change_management"
+      ]
+    },
+    "QB-M4-037": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "decision_making"
+      ]
+    },
+    "QB-M4-038": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "design_thinking"
+      ]
+    },
+    "QB-M4-039": {
+      "layer": "adaptive",
+      "phase": "adaptive",
+      "allowed_personas": [
+        "school_student",
+        "university_student",
+        "graduate",
+        "job_seeker",
+        "junior_employee",
+        "experienced_employee",
+        "new_manager",
+        "leader",
+        "gov_employee",
+        "gov_manager",
+        "founder_idea",
+        "founder_operating",
+        "freelancer",
+        "ld_professional",
+        "parent_guardian",
+        "personal_development",
+        "unsure_explorer",
+        "b2b_sponsor",
+        "b2g_sponsor",
+        "unknown"
+      ],
+      "excluded_personas": [],
+      "domains": [],
+      "decision_impact": "skill_evidence",
+      "measures": [
+        "data_storytelling"
+      ]
+    },
     "QB-M5-001": {
       "layer": "adaptive",
       "phase": "adaptive",

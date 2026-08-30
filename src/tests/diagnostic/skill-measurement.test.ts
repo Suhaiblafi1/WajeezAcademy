@@ -153,8 +153,16 @@ describe('ب-٤ تباعد التوثيق عن المحرك — واقعة تُ�
 })
 
 describe('ب-٤ الواقع المنشور — الأرقام التي يعالجها البند', () => {
-  it('أغلب الدورات المنشورة بلا مهارة مقيسة — وهذا ما يُظهره المنتقي', () => {
+  /* كان هذا الاختبار يُثبت المشكلة: «أغلب الدورات بلا مهارة مقيسة» — أكثر من
+     نصف الكتالوج لا يراه مطابق المهارات. وقد عولجت: ثلاثة أسئلة جديدة
+     (kpi_design · risk_management · change_management) وخمس مهاراتٍ أُلحقت
+     بدوراتٍ تعلّمها فعلا أنزلت العدد من ٥٤ إلى ٤٢، ثم ثلاثةٌ أخرى إلى ٣٣.
+
+     فانقلب الحارس إلى سقفٍ لا أرضية: العدد لا يعود يصعد. أي تراجع — بحذف
+     سؤال أو فكّ ارتباط مهارة — يسقط هنا قبل أن يصل متعلما. */
+  it('الدورات بلا مهارة مقيسة لا يعود عددها يرتفع', () => {
     const zero = catalogCourses.filter((c) => assessSkillSelection(c.skill_slugs).measured === 0)
-    expect(zero.length).toBeGreaterThan(catalogCourses.length / 2)
+    expect(zero.length, `دورات لا يراها مطابق المهارات: ${zero.length}`).toBeLessThanOrEqual(33)
+    expect(zero.length, 'أقلّ من نصف الكتالوج — وكان أكثر من نصفه').toBeLessThan(catalogCourses.length / 2)
   })
 })

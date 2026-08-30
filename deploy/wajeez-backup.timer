@@ -1,0 +1,12 @@
+[Unit]
+Description=تشغيل نسخة وجيز الاحتياطية يوميا
+
+[Timer]
+# ٠٣:٠٠ بتوقيت عمّان — أهدأ ساعة، وقبل بدء اليوم
+OnCalendar=*-*-* 03:00:00
+Persistent=true
+# تشتيت دقيقتين: لا تتزاحم مع مهامّ أخرى على الدقيقة نفسها
+RandomizedDelaySec=120
+
+[Install]
+WantedBy=timers.target
