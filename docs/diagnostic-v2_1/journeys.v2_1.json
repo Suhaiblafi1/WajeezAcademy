@@ -361,12 +361,12 @@
           ]
         },
         {
-          "questionId": "QB-M3A-007",
-          "question_ar": "هل حصلت على تدريب عملي أو تطوع أو عمل جزئي مرتبط بهدفك؟",
-          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
-          "answer_ar": "لا يوجد دليل",
+          "questionId": "QB-M4-035",
+          "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في توقّع ما قد يتعثّر في عملك والاستعداد له قبل وقوعه؟",
+          "why_now_ar": "مهارة حاسمة لأحد مرشحي الصدارة ما زالت مجهولة في سباق حي — قياسها يسبق منح المتحدين فرصًا إضافية.",
+          "answer_ar": "شاركت في مهمة أو مشروع استخدمها",
           "what_changed": [
-            "+practical_exposure"
+            "+skill:risk_management"
           ]
         }
       ],
@@ -374,7 +374,7 @@
         "kind": "single_pathway",
         "topPathwayId": "PW-FND-003",
         "compositeTemplateId": null,
-        "confidence": 0.6076345810099627,
+        "confidence": 0.6092557931311748,
         "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true
@@ -472,7 +472,7 @@
     {
       "persona": "مدير",
       "stage": "manager",
-      "questionsCount": 12,
+      "questionsCount": 14,
       "steps": [
         {
           "questionId": "QC-S1-001",
@@ -577,9 +577,27 @@
           ]
         },
         {
+          "questionId": "QB-M4-035",
+          "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في توقّع ما قد يتعثّر في عملك والاستعداد له قبل وقوعه؟",
+          "why_now_ar": "فاز أساسًا بسبب: يفصل بين المرشحين المتصدرين بدليل مهارة.",
+          "answer_ar": "أستخدمها بانتظام في عملي أو دراستي",
+          "what_changed": [
+            "+skill:risk_management"
+          ]
+        },
+        {
+          "questionId": "QB-M4-036",
+          "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في إدارة تغيير يقبله من حولك ويستمر بعد انتهاء الحماس؟",
+          "why_now_ar": "مهارة حاسمة لأحد مرشحي الصدارة ما زالت مجهولة في سباق حي — قياسها يسبق منح المتحدين فرصًا إضافية.",
+          "answer_ar": "أستخدمها بانتظام في عملي أو دراستي",
+          "what_changed": [
+            "+skill:change_management"
+          ]
+        },
+        {
           "questionId": "QB-M4-030",
           "question_ar": "اختيار مرشّح لوظيفة أو لفريق — ما أقرب وصف لخبرتك به؟",
-          "why_now_ar": "فاز أساسًا بسبب: يفصل بين المرشحين المتصدرين بدليل مهارة.",
+          "why_now_ar": "مهارة حاسمة لأحد مرشحي الصدارة ما زالت مجهولة في سباق حي — قياسها يسبق منح المتحدين فرصًا إضافية.",
           "answer_ar": "أستخدم أسئلة موحدة ومعايير تقييم مكتوبة لكل مرشح",
           "what_changed": [
             "+skill:structured_interviewing"
@@ -590,7 +608,7 @@
         "kind": "single_pathway",
         "topPathwayId": "PW-EMP-005",
         "compositeTemplateId": null,
-        "confidence": 0.6300424426189856,
+        "confidence": 0.6283561681091816,
         "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true
@@ -700,9 +718,18 @@
           ]
         },
         {
+          "questionId": "QB-M4-034",
+          "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في اختيار مؤشرات تقيس نجاح عملك فعلا لا ما يسهل عدّه؟",
+          "why_now_ar": "فاز أساسًا بسبب: يفصل بين المرشحين المتصدرين بدليل مهارة.",
+          "answer_ar": "شاركت في مهمة أو مشروع استخدمها",
+          "what_changed": [
+            "+skill:kpi_design"
+          ]
+        },
+        {
           "questionId": "QB-M4-029",
           "question_ar": "قبل أن تقرر أن فكرة أو منتجا أو تخصصا يستحق — من أين تأتي بمعلوماتك عن السوق؟",
-          "why_now_ar": "فاز أساسًا بسبب: يقيس مهارة حاسمة للمتصدر قبل أي اكتفاء.",
+          "why_now_ar": "مهارة حاسمة لأحد مرشحي الصدارة ما زالت مجهولة في سباق حي — قياسها يسبق منح المتحدين فرصًا إضافية.",
           "answer_ar": "بحثت مرة في مشروع أو مهمة دراسية",
           "what_changed": [
             "+skill:market_research"
@@ -716,22 +743,13 @@
           "what_changed": [
             "+skill:arabic_business_writing"
           ]
-        },
-        {
-          "questionId": "QB-M4-017",
-          "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في المبيعات؟",
-          "why_now_ar": "مهارة حاسمة لأحد مرشحي الصدارة ما زالت مجهولة في سباق حي — قياسها يسبق منح المتحدين فرصًا إضافية.",
-          "answer_ar": "شاركت في مهمة أو مشروع استخدمها",
-          "what_changed": [
-            "+skill:sales_fundamentals"
-          ]
         }
       ],
       "result": {
         "kind": "single_pathway",
         "topPathwayId": "PW-MKT-001",
         "compositeTemplateId": null,
-        "confidence": 0.6196666666216668,
+        "confidence": 0.6251666666216666,
         "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true

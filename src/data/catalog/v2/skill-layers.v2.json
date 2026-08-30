@@ -570,20 +570,21 @@
     },
     "change_management": {
       "layers": [
-        "pathway_requirement",
-        "learning_outcome"
+        "diagnostic",
+        "pathway_requirement"
       ],
       "active": true,
       "diagnostic_active": true,
       "academic_status": "approved_active",
-      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
       "pathway_ids": [
         "PW-AUT-001",
         "PW-EMP-003",
         "PW-EMP-005",
         "PW-OPS-001",
         "PW-SCM-001"
-      ]
+      ],
+      "measured_by": "QB-M4-036"
     },
     "child_digital_safety": {
       "layers": [
@@ -2020,13 +2021,13 @@
     },
     "kpi_design": {
       "layers": [
-        "pathway_requirement",
-        "learning_outcome"
+        "diagnostic",
+        "pathway_requirement"
       ],
       "active": true,
       "diagnostic_active": true,
       "academic_status": "approved_active",
-      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
       "pathway_ids": [
         "PW-EMP-004",
         "PW-GOV-002",
@@ -2034,7 +2035,8 @@
         "PW-OPS-001",
         "PW-PRD-001",
         "PW-SCM-001"
-      ]
+      ],
+      "measured_by": "QB-M4-034"
     },
     "lean_waste_analysis": {
       "layers": [
@@ -3098,13 +3100,13 @@
     },
     "risk_management": {
       "layers": [
-        "pathway_requirement",
-        "learning_outcome"
+        "diagnostic",
+        "pathway_requirement"
       ],
       "active": true,
       "diagnostic_active": true,
       "academic_status": "approved_active",
-      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
       "pathway_ids": [
         "PW-AUT-001",
         "PW-CYB-001",
@@ -3112,7 +3114,8 @@
         "PW-EMP-005",
         "PW-FIN-001",
         "PW-SCM-001"
-      ]
+      ],
+      "measured_by": "QB-M4-035"
     },
     "risk_return": {
       "layers": [
