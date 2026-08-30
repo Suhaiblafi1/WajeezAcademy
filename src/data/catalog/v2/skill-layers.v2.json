@@ -1117,17 +1117,18 @@
     },
     "data_storytelling": {
       "layers": [
-        "pathway_requirement",
-        "learning_outcome"
+        "diagnostic",
+        "pathway_requirement"
       ],
       "active": true,
       "diagnostic_active": true,
       "academic_status": "approved_active",
-      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
       "pathway_ids": [
         "PW-EMP-004",
         "PW-FIN-001"
-      ]
+      ],
+      "measured_by": "QB-M4-039"
     },
     "data_visualization": {
       "layers": [
@@ -1170,18 +1171,19 @@
     },
     "decision_making": {
       "layers": [
-        "pathway_requirement",
-        "learning_outcome"
+        "diagnostic",
+        "pathway_requirement"
       ],
       "active": true,
       "diagnostic_active": true,
       "academic_status": "approved_active",
-      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
       "pathway_ids": [
         "PW-EMP-004",
         "PW-FIN-001",
         "PW-STU-003"
-      ]
+      ],
+      "measured_by": "QB-M4-037"
     },
     "decision_under_pressure": {
       "layers": [
@@ -1237,19 +1239,20 @@
     },
     "design_thinking": {
       "layers": [
-        "pathway_requirement",
-        "learning_outcome"
+        "diagnostic",
+        "pathway_requirement"
       ],
       "active": true,
       "diagnostic_active": true,
       "academic_status": "approved_active",
-      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
       "pathway_ids": [
         "PW-BIZ-001",
         "PW-LND-001",
         "PW-PRD-001",
         "PW-STU-003"
-      ]
+      ],
+      "measured_by": "QB-M4-038"
     },
     "digital_accessibility": {
       "layers": [

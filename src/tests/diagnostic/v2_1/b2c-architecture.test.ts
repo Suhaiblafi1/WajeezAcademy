@@ -108,7 +108,7 @@ describe('بنية أسئلة B2C — معايير النجاح', () => {
     expect(asked).not.toContain('QB-M1-010')
   })
 
-  it('التوفيق النهائي: كل سؤال له final_status واحدة والمجموع = 208', () => {
+  it('التوفيق النهائي: كل سؤال له final_status واحدة والمجموع = 211', () => {
     const counts: Record<string, number> = {}
     for (const [id, p] of Object.entries(questionPlanV21)) {
       expect(p.final_status, `سؤال بلا حالة نهائية: ${id}`).toBeDefined()
@@ -123,8 +123,8 @@ describe('بنية أسئلة B2C — معايير النجاح', () => {
     /* 205 ← 208: أُضيفت QB-M4-034/035/036 (kpi_design · risk_management ·
        change_management) لتُرى ٤١٪ من الدورات التي كان مطابق المهارات لا يراها.
        العدد مرجعيّ موثّق — أي تغيير يتطلب تحديثا مقصودا هنا. */
-    expect(Object.keys(questionPlanV21).length).toBe(208)
-    expect(Object.values(counts).reduce((a, b) => a + b, 0)).toBe(208)
+    expect(Object.keys(questionPlanV21).length).toBe(211)
+    expect(Object.values(counts).reduce((a, b) => a + b, 0)).toBe(211)
     /* الأرقام المرجعية الموثقة — أي تغيير يتطلب تحديثًا مقصودًا لهذا الاختبار.
        المرحلة 4: نُقلت أسئلة المهارات الأربع المقاسة غير المغطاة
        (QB-M4-002/005/023/025) إلى ما بعد التوصية بقرار أكاديمي موثق.
@@ -177,8 +177,15 @@ describe('بنية أسئلة B2C — معايير النجاح', () => {
        واختيرت بالرافعة: كل واحدة تُضيء ٤–٦ دورات عبر ٣–٤ مسارات، ولا تكرّر
        مقيسا قائما. الكلفة سؤالان اثنان عبر الرحلات التسع (١٠٩→١١١)، والهدر
        انخفض ١٢٫٠٪→١٠٫٥٪ لأن السؤال النافع يزيح المقاعد الميتة.
-       active_b2c 66→69، والمجموع 205→208. */
-    expect(counts).toEqual({ active_b2c: 69, deep_only: 10, post_recommendation: 36, institutional: 14, retired: 64, out_of_scope: 15 })
+       active_b2c 66→69، والمجموع 205→208.
+       إضافة 2026-08-30 (ب): ثلاثة أخرى — QB-M4-037 decision_making ·
+       QB-M4-038 design_thinking · QB-M4-039 data_storytelling. العمياء
+       ٢٦→١٨. والكلفة صفر: مجموع أسئلة الرحلات التسع بقي ١١١ كما هو، لأن
+       الأسئلة الجديدة أزاحت أسئلة أقلّ نفعا بدل أن تُضاف فوقها. ورحلة
+       «مدرب/مختص تعلم» انقلبت من advisor_referral إلى single_pathway
+       بثقة ٦٢٪→٦٧٪ وسؤالين أقلّ — صارت تُطابَق بدل أن تُحال.
+       active_b2c 69→72، والمجموع 208→211. */
+    expect(counts).toEqual({ active_b2c: 72, deep_only: 10, post_recommendation: 36, institutional: 14, retired: 64, out_of_scope: 15 })
   })
 
   it('كل سؤال نشط في B2C له أثر قراري موثق في الخطة', () => {

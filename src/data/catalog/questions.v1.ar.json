@@ -4392,6 +4392,96 @@
       "active": true
     },
     {
+      "question_id": "QB-M4-037",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في الحسم حين تكون الأدلة ناقصة والوقت ضيّقا.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "decision_making",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-038",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في تصميم حلٍّ يبدأ من حاجة المستفيد لا من فكرتك أنت.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "design_thinking",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-039",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في تحويل الأرقام إلى رواية تدفع صاحب القرار إلى قرار.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "data_storytelling",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
       "question_id": "QB-M5-001",
       "module_id": "M5",
       "module_name": "الميول المهنية RIASEC",

@@ -2032,6 +2032,51 @@
       ],
       "final_status": "active_b2c"
     },
+    "QB-M4-037": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "rewrite",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "يقيس مهارة «decision_making» بمقياس الدليل — تغيّر الفجوة المقيسة والثقة لكل مسار يتطلبها.",
+      "why_ar": "سؤال دليل مهاري — يُطرح فقط عندما تكون المهارة متطلبة لمرشح متصدر وقادرة على تغيير الترتيب.",
+      "measures": [
+        "decision_making",
+        "skill_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M4-038": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "rewrite",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "يقيس مهارة «design_thinking» بمقياس الدليل — تغيّر الفجوة المقيسة والثقة لكل مسار يتطلبها.",
+      "why_ar": "سؤال دليل مهاري — يُطرح فقط عندما تكون المهارة متطلبة لمرشح متصدر وقادرة على تغيير الترتيب.",
+      "measures": [
+        "design_thinking",
+        "skill_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M4-039": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "rewrite",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "يقيس مهارة «data_storytelling» بمقياس الدليل — تغيّر الفجوة المقيسة والثقة لكل مسار يتطلبها.",
+      "why_ar": "سؤال دليل مهاري — يُطرح فقط عندما تكون المهارة متطلبة لمرشح متصدر وقادرة على تغيير الترتيب.",
+      "measures": [
+        "data_storytelling",
+        "skill_vector"
+      ],
+      "final_status": "active_b2c"
+    },
     "QB-M5-001": {
       "surface": "b2c",
       "layer21": "domain_differentiation",
