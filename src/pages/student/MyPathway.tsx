@@ -7,14 +7,14 @@
    المصدر الآن واحد: /api/learner/my-learning. ولا شيء يُعرض بلا تسجيل. */
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import { CheckCircle2, Loader2, BookOpen, ChevronLeft, RefreshCcw } from "lucide-react";
+import { CheckCircle2, Loader2, BookOpen, ChevronLeft, RefreshCcw, Send } from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import PathwayMap from "@/components/PathwayMap";
 import AdvisorContact from "@/components/AdvisorContact";
 import { usePublishedContent } from "@/services/public-content";
 import { buildPathwayMap, enrollmentFactsFromApi } from "@/application/student/pathway-map";
 import { useRealSession } from "@/services/session";
-import { apiGet } from "@/services/api";
+import { apiGet, apiPost, ApiError } from "@/services/api";
 import { pathwayById, pathways } from "@/data/pathways";
 import { courseById, pathwayCourses } from "@/data/courses";
 
@@ -50,6 +50,8 @@ export default function MyPathway() {
   const { user: sessionUser } = useRealSession();
   const [fetched, setFetched] = useState<Row[] | null>(null);
   const [plan, setPlan] = useState<Plan | null>(null);
+  /* بعد إرسال طلب الخطّة تُعاد القراءة: الحالة مشتقّة على الخادم، فلا تُصحَّح هنا بيد */
+  const [reloadKey, setReloadKey] = useState(0);
   /* بلا جلسة لا نداء ولا تصفير حالة داخل تأثير (react-hooks/set-state-in-effect):
      النتيجة تُعطف أثناء التصيير — زائرٌ بلا جلسة صفوفُه فارغة قطعا. */
   const rows = sessionUser ? fetched : [];
@@ -65,7 +67,7 @@ export default function MyPathway() {
       .then((r) => { if (on) setPlan(r.plan); })
       .catch(() => { if (on) setPlan(null); });
     return () => { on = false; };
-  }, [sessionUser]);
+  }, [sessionUser, reloadKey]);
 
   if (rows === null || pathways.length === 0) {
     return (
@@ -75,7 +77,7 @@ export default function MyPathway() {
     );
   }
   /* الخطّة أوّلا: هي ما اعتمده هو. والاستنتاج احتياطٌ لمن سجّل بلا خطّة. */
-  if (plan) return <PlanBody key={catalogVersion} plan={plan} rows={rows} />;
+  if (plan) return <PlanBody key={catalogVersion} plan={plan} rows={rows} reload={() => setReloadKey((k) => k + 1)} />;
   if (rows.length === 0) return <NoPathway />;
   return <PathwayBody key={catalogVersion} rows={rows} />;
 }
@@ -126,7 +128,77 @@ function startsLabel(iso: string | null): string {
   return `تبدأ ${d.toLocaleDateString("ar", { day: "numeric", month: "long" })}`;
 }
 
-function PlanBody({ plan, rows }: { plan: Plan; rows: Row[] }) {
+/* طلب الخطّة كاملةً بنداءٍ واحد (التوصيتان ٢ و٣).
+
+   كان على المتعلّم أن يذهب إلى «الشعب المفتوحة» ويطلب دورةً دورة — أي أن
+   يعيد بناء خطّته بيده في شاشةٍ لا تعرف أنّ له خطّة، ثم يدفع أربع فواتير
+   وفي كلٍّ منها فرصةٌ للتوقّف. والخادم الآن يقرأ خطّته، فيطلب ما له شعبة
+   ويسمّي ما لا شعبة له بدل أن يبيعه صامتا. */
+interface PlanRequestResult {
+  requested: { courseId: string }[];
+  awaiting: string[];
+  alreadyRequested: string[];
+}
+
+function RequestWholePlan({ plan, onDone }: { plan: Plan; onDone: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState<PlanRequestResult | null>(null);
+  const askable = plan.items.filter((i) => i.state === "schedulable" && !i.requestPending).length;
+  const pending = plan.items.filter((i) => i.requestPending).length;
+
+  if (done) {
+    return (
+      <p className="mt-4 rounded-2xl border border-teal/35 bg-teal/[0.07] px-4 py-3 text-[12px] leading-6 text-teal-light-ink">
+        وصلنا طلبك على {done.requested.length === 1 ? "دورة واحدة" : `${done.requested.length} دورات`}.
+        نراجعها ونحجز مقاعدك، ثم تصلك فاتورةٌ واحدة للخطّة كلها.
+        {done.awaiting.length > 0 && ` و${done.awaiting.length} من دوراتك تنتظر فتح شعبتها — لا تُحتسب عليك الآن.`}
+      </p>
+    );
+  }
+
+  if (askable === 0) {
+    if (pending === 0) return null;
+    return (
+      <p className="mt-4 rounded-2xl border border-gold/30 bg-gold/[0.06] px-4 py-3 text-[12px] leading-6 text-gold-ink">
+        طلبك على {pending === 1 ? "دورة واحدة" : `${pending} دورات`} قيد المراجعة. نحجز مقاعدك ثم تصلك
+        فاتورةٌ واحدة للخطّة كلها — دفعةٌ واحدة لا أربع.
+      </p>
+    );
+  }
+
+  return (
+    <div className="mt-4">
+      <button
+        onClick={async () => {
+          setBusy(true);
+          setError(null);
+          try {
+            const r = await apiPost<PlanRequestResult>("/api/learner/plan/enrollment-request");
+            setDone(r);
+            onDone();
+          } catch (e) {
+            setError(e instanceof ApiError ? e.message : "تعذّر إرسال الطلب — أعد المحاولة");
+          } finally {
+            setBusy(false);
+          }
+        }}
+        disabled={busy}
+        className="flex items-center gap-2 rounded-full bg-teal px-6 py-3 text-sm font-black text-on-teal transition hover:bg-teal-light disabled:opacity-50"
+      >
+        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+        اطلب تسجيلك في {askable === 1 ? "دورتك المتاحة" : `دوراتك الـ${askable} المتاحة`}
+      </button>
+      <p className="mt-2 text-[11px] leading-5 text-white/45">
+        طلبٌ واحد لخطّتك كلها، وفاتورةٌ واحدة بعد حجز مقاعدك — لا دورةً دورة.
+        {plan.counts.awaitingCohort > 0 && " وما لم تُفتح شعبته لا يُطلب ولا يُدفع ثمنه."}
+      </p>
+      {error && <p className="mt-2 text-[11px] font-bold text-gold-ink">{error}</p>}
+    </div>
+  );
+}
+
+function PlanBody({ plan, rows, reload }: { plan: Plan; rows: Row[]; reload: () => void }) {
   const facts = enrollmentFactsFromApi(rows);
   const factOf = new Map(facts.map((f) => [f.courseId, f]));
   const { total, enrolled, awaitingCohort } = plan.counts;
@@ -158,6 +230,7 @@ function PlanBody({ plan, rows }: { plan: Plan; rows: Row[] }) {
             لا تُطلب الآن ولا يُدفع ثمنها — نُعلمك فور جدولتها، أو استبدلها بمراجعة مع مستشارك.
           </p>
         )}
+        <RequestWholePlan plan={plan} onDone={reload} />
       </section>
 
       <section className="mt-6 space-y-3">
@@ -204,9 +277,9 @@ function PlanBody({ plan, rows }: { plan: Plan; rows: Row[] }) {
                 ) : item.requestPending ? (
                   <span className="text-[11px] font-bold text-gold-ink">طلبك قيد المراجعة</span>
                 ) : item.state === "schedulable" ? (
-                  <Link to="/student/cohorts" className="rounded-full border border-gold/50 px-4 py-2 text-[11px] font-black text-gold-ink transition hover:bg-gold/10">
-                    اطلب مقعدا
-                  </Link>
+                  /* الطلب من زرّ الخطّة أعلاه لا من هنا: طلبٌ لدورةٍ واحدة
+                     يُنتج فاتورةً لدورةٍ واحدة — وهو بعينه ما يُفتّت الخطّة. */
+                  <span className="text-[11px] font-bold text-gold-ink">جاهزة للطلب</span>
                 ) : (
                   /* لا زرّ لما لا شعبة له — زرٌّ يقود إلى لا شيء أسوأ من غيابه */
                   <span className="text-[11px] text-white/35">نُعلمك عند فتحها</span>

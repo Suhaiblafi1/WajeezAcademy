@@ -174,6 +174,14 @@ export function registerOperationsRoutes(app: FastifyInstance, prisma: PrismaCli
     return reply.status(201).send(await commerce.requestEnrollment(req.auth!.userId, body.cohortId, body.note))
   })
 
+  /* الخطّة كاملةً في نداءٍ واحد (التوصيتان ٢ و٣): يطلب المتعلّم التسجيل في
+     دورات خطّته التي لها شعبة، وما لا شعبة له يعود باسمه لا صامتا. */
+  app.post('/api/learner/plan/enrollment-request', {
+    preHandler: requirePermission('enrollment.request'),
+    config: { rateLimit: { max: 10, timeWindow: '10 minutes' } },
+    schema: { tags: ['commerce'], summary: 'طلب التسجيل في دورات الخطّة كلها — وما لا شعبة له يُقال' },
+  }, async (req, reply) => reply.status(201).send(await commerce.requestPlanEnrollment(req.auth!.userId)))
+
   app.get('/api/learner/orders', {
     preHandler: requireAuth,
     schema: { tags: ['commerce'], summary: 'طلباتي وفواتيري ودفعاتي' },
@@ -204,6 +212,15 @@ export function registerOperationsRoutes(app: FastifyInstance, prisma: PrismaCli
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({ couponCode: z.string().optional() }).parse(req.body ?? {})
     return reply.status(201).send(await commerce.approveEnrollmentRequest(id, req.auth!.userId, body.couponCode))
+  })
+
+  app.post('/api/admin/plans/:planId/approve-requests', {
+    preHandler: requirePermission('enrollment.request.review'),
+    schema: { tags: ['admin-commerce'], summary: 'موافقة على طلبات خطّة كاملة: حجز كل المقاعد + طلب وفاتورة واحدة' },
+  }, async (req, reply) => {
+    const { planId } = z.object({ planId: z.string().uuid() }).parse(req.params)
+    const body = z.object({ couponCode: z.string().optional() }).parse(req.body ?? {})
+    return reply.status(201).send(await commerce.approvePlanRequests(planId, req.auth!.userId, body.couponCode))
   })
 
   app.post('/api/admin/enrollment-requests/:id/reject', {

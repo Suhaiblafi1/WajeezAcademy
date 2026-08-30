@@ -1876,12 +1876,15 @@ model EnrollmentRequest {
   decidedBy String?   @db.Uuid
   decidedAt DateTime?
   orderId   String?   @db.Uuid
+  /// خطّة المتعلّم التي وُلد منها هذا الطلب — تجمع طلباتِ خطّةٍ واحدة في طلب شراء واحد وفاتورة واحدة
+  planId    String?   @db.Uuid
   createdAt DateTime  @default(now())
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   cohort    Cohort    @relation(fields: [cohortId], references: [id])
 
   @@unique([userId, cohortId])
   @@index([cohortId, status])
+  @@index([planId, status])
 }
 
 model SubscriptionPlan {

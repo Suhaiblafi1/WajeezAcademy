@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
 import {
   ArrowRight,
   CalendarClock,
@@ -31,7 +31,7 @@ import CourseJourney from "@/components/CourseJourney";
 import Modal from "@/components/Modal";
 import { pathwayById, pathwayCategory } from "@/data/pathways";
 import { hasCoreCatalog } from "@/data/core-catalog-source";
-import { readAdoptedPlan, saveAdoptedPlan } from "@/application/plan/adopted-plan";
+import { readAdoptedPlan, saveAdoptedPlan, syncAdoptedPlan } from "@/application/plan/adopted-plan";
 import { FIRST_TIME_PROMO } from "@/application/commerce/first-time-promo";
 import { useCoursePrices, cheapestOf, pricedCount, formatCohortPrice } from "@/services/cohort-prices";
 import { courseById, courses, pathwayCourses, pathwayDelivery, pathwayTrainers, courseTrainer, weeksLabel, MIN_PATHWAY_COURSES, MAX_PATHWAY_COURSES } from "@/data/courses";
@@ -93,6 +93,8 @@ export default function PathwayPage() {
   const [checkout, setCheckout] = useState<CheckoutIntent | null>(null);
   /* نية شراء معلقة بانتظار تسجيل الدخول — التصفح مفتوح، والتسجيل يُطلب لحظة الدفع فقط */
   const [pendingCheckout, setPendingCheckout] = useState<CheckoutIntent | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const navigate = useNavigate();
   const [pickedIds, setPickedIds] = useState<string[]>([]);
   /* مُنسّق الدولار لم يعد يُستعمل هنا: كلّ سعر على هذه الصفحة صار من شعبةٍ
      حقيقية بعملتها، بلا تحويل — لأن التحويل يُخرج رقما ثالثا لا يُطالَب به أحد. */
@@ -238,10 +240,31 @@ export default function PathwayPage() {
     setPickedIds(pickedIds.includes(cid) ? pickedIds.filter((x) => x !== cid) : [...pickedIds, cid]);
   const totalWeeks = pathwayCoursesList.reduce((s, c) => s + c.weeks, 0);
 
-  /* بدء الشراء: المسجّل تفتح له نافذة الدفع مباشرة — والزائر تظهر له بوابة التسجيل أولا ثم نكمل الدفع تلقائيا */
+  /* بدء الشراء: المسجّل تفتح له نافذة الدفع مباشرة — والزائر تظهر له بوابة التسجيل أولا ثم نكمل الدفع تلقائيا.
+
+     والمسار كاملا استثناء (التوصيتان ٢ و٣): خطّته تُرفَع إلى الخادم ثم يُنقَل
+     إلى «مساري» ليطلبها كلها بنداءٍ واحد. كان الزرّ يفتح نافذةً تحيله إلى
+     «تصفّح الشعب المفتوحة» — أي يبدأ اختياره من الصفر في شاشةٍ لا تعرف أنّ
+     له خطّة. فالخطّة التي بناها كانت تموت عند الزرّ. */
+  const goToPlan = async (intent: CheckoutIntent) => {
+    setSyncing(true);
+    const ok = await syncAdoptedPlan({
+      hostPathwayId: adopted?.hostPathwayId ?? pathway?.id ?? "",
+      composed: adopted?.composed ?? false,
+      nameAr: adopted?.nameAr ?? pathway?.name ?? "خطّتي",
+      courseIds,
+      giftId,
+    });
+    setSyncing(false);
+    /* تعذّر الرفع (شبكة أو جلسة) لا يترك الزرّ صامتا: تُفتح نافذة التواصل */
+    if (ok) navigate("/student/pathway");
+    else setCheckout(intent);
+  };
+
   const startCheckout = (intent: CheckoutIntent) => {
-    if (user) setCheckout(intent);
-    else setPendingCheckout(intent);
+    if (!user) { setPendingCheckout(intent); return; }
+    if (intent.kind === "pathway") { void goToPlan(intent); return; }
+    setCheckout(intent);
   };
 
   return (
@@ -586,10 +609,11 @@ export default function PathwayPage() {
                   )}
                   <Button
                     onClick={() => startCheckout({ title: `مسار «${pathway.name}» كاملا (${pathwayCoursesList.length} دورات + هدية)`, amount: 0, kind: "pathway" })}
-                    className="mt-4 h-11 rounded-full bg-gold font-black text-on-gold hover:bg-gold/90"
+                    disabled={syncing}
+                    className="mt-4 h-11 rounded-full bg-gold font-black text-on-gold hover:bg-gold/90 disabled:opacity-60"
                   >
                     <CalendarDays className="ml-2 h-4 w-4" />
-                    اطلب تسجيلك في المسار
+                    {syncing ? "نحفظ خطّتك…" : "اطلب تسجيلك في المسار"}
                   </Button>
                   {/* كان أسفل الزر فراغ في صندوق أطول من محتواه. وثلاثة من عناصر
                       «المنظومة» التسعة أدناه هي في الحقيقة فرق بين شراء دورة وشراء
@@ -708,8 +732,11 @@ export default function PathwayPage() {
             source="checkout_gate"
             onDone={() => {
               setUser(readUserName());
-              setCheckout(pendingCheckout);
+              const intent = pendingCheckout;
               setPendingCheckout(null);
+              /* «التسجيل ← الخطّة المعتمَدة ← الطلب» بلا خطوةٍ ضائعة بينها */
+              if (intent?.kind === "pathway") void goToPlan(intent);
+              else setCheckout(intent);
             }}
           />
         </Modal>
