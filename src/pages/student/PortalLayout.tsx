@@ -114,6 +114,35 @@ export default function PortalLayout({ children, title }: { children: React.Reac
     );
   }
 
+  /* حسابٌ وظيفيّ بلا بوابة تعلّم — يُقال له لماذا، لا يُترك أمام خطأٍ عامّ.
+
+     الشريط يعرض «تعلّمي» و«خزانتي» لكلّ من دخل، والخادم يردّ ٤٠٣ «لا تملك
+     الصلاحية المطلوبة» لمن لا يحمل `learner`. فيقرأ صاحب الحساب رسالةً
+     لا تخصّه ويظنّ الموقع معطوبا — وقع هذا لصاحب المنصّة نفسه. والسبب
+     ليس عطبا: حسابُه إداريّ بلا دور متعلّم، وهذا اختيارٌ مشروع. */
+  if (sessionChecked && sessionUser && !sessionUser.permissions.includes("learner.portal")) {
+    return (
+      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper px-5 text-white">
+        <Lock className="h-12 w-12 text-white/25" />
+        <h1 className="mt-5 text-2xl font-black">هذا حسابٌ وظيفيّ — لا بوابة تعلّم له</h1>
+        <p className="mt-3 max-w-md text-center text-sm leading-7 text-white/60">
+          حسابك <span className="font-bold text-white/80">{sessionUser.email}</span> يحمل
+          {" "}{sessionUser.roles.length === 1 ? "دورا وظيفيّا" : "أدوارا وظيفيّة"} بلا دور «متعلّم»،
+          وبوابة التعلّم تُفتح بذلك الدور. أضِفه للحساب من إدارة المستخدمين إن أردتَ أن
+          تتعلّم به أيضا — أو ادخل ببوابتك الوظيفيّة.
+        </p>
+        <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
+          <Link to="/admin" className="rounded-full bg-teal px-6 py-3 font-black text-on-teal hover:bg-teal-light">
+            بوابتي الوظيفيّة
+          </Link>
+          <Link to="/" className="rounded-full border border-white/15 px-6 py-3 font-bold text-white/80 hover:border-white/40">
+            الصفحة الرئيسة
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   if (!allowed) {
     return (
       <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper px-5 text-white">

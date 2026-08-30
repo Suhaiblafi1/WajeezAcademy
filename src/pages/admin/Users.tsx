@@ -118,6 +118,15 @@ export default function Users() {
                       </button>
                     ))}
                   </div>
+                  {/* نزعُ «متعلّم» يُغلق بوابة تعلّم صاحب الحساب — ولا يظهر أثره
+                      إلّا عنده لا هنا. فيُقال قبل الحفظ لا بعد الشكوى. */}
+                  {u.roles.some((r) => r.id === "learner") && !rolePick.includes("learner") && (
+                    <p className="mt-3 flex items-start gap-2 rounded-xl border border-[#FABC05]/40 bg-[#FABC05]/10 px-3 py-2.5 text-[11px] font-bold leading-6 text-[#FABC05]">
+                      <ShieldOff className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                      بنزع «متعلّم» تُغلق بوابة التعلّم عن هذا الحساب: لا شعبه ولا نواتجه
+                      ولا شهاداته. وما اشتراه يبقى محفوظا ويعود بإعادة الدور.
+                    </p>
+                  )}
                   <button disabled={busy || rolePick.length === 0}
                     onClick={() => act(() => apiPost(`/api/admin/users/${u.id}/roles`, { roleIds: rolePick }), "حُدثت الأدوار")}
                     className="mt-3 cursor-pointer rounded-full bg-gold px-5 py-1.5 text-xs font-black text-on-gold disabled:opacity-40">
