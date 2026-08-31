@@ -43,7 +43,6 @@ const AdminRatingModeration = lazy(() => import('./pages/admin/RatingModeration'
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 const CourseMilestones = lazy(() => import('./pages/student/CourseMilestones'))
-const StudentOpenCohorts = lazy(() => import('./pages/student/OpenCohorts'))
 const AdvisorCases = lazy(() => import('./pages/advisor/Cases'))
 const TrainerDashboard = lazy(() => import('./pages/trainer/TrainerDashboard'))
 const GradingQueue = lazy(() => import('./pages/trainer/GradingQueue'))
@@ -155,7 +154,6 @@ export default function App() {
           <Route path="/student/notifications" element={<StudentNotifications />} />
           <Route path="/student/inbox" element={<StudentInbox />} />
           <Route path="/student/support" element={<StudentSupport />} />
-          <Route path="/student/cohorts" element={<StudentOpenCohorts />} />
           {/* دعوة المدرب مسار عام برمز دعوة — خارج حارس الأدوار عمدا */}
           <Route path="/trainer/accept-invite" element={<TrainerAcceptInvite />} />
           {/* بوابات الفريق — حارس يتحقق من الجلسة والدور عند الخادم */}

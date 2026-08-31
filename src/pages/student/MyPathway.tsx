@@ -17,6 +17,9 @@ import { useRealSession } from "@/services/session";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { pathwayById, pathways } from "@/data/pathways";
 import { courseById, pathwayCourses } from "@/data/courses";
+import { useCourseCohorts } from "@/services/cohort-prices";
+import CohortPicker from "@/components/CohortPicker";
+import BuyCohort from "@/components/BuyCohort";
 
 /** صفٌّ من /api/learner/my-learning — ما نحتاجه منه هنا فقط */
 interface Row {
@@ -93,7 +96,7 @@ function NoPathway() {
           أو ابدأ بالتشخيص ليُقترح عليك مسار يناسب هدفك.
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-          <Link to="/student/cohorts" className="rounded-full bg-teal px-6 py-3 font-black text-on-teal transition hover:bg-teal-light">
+          <Link to="/pathways" className="rounded-full bg-teal px-6 py-3 font-black text-on-teal transition hover:bg-teal-light">
             تصفح الشعب المفتوحة
           </Link>
           <Link to="/diagnostic" className="rounded-full border border-white/15 px-6 py-3 font-bold text-white/80 hover:border-white/40">
@@ -199,6 +202,9 @@ function RequestWholePlan({ plan, onDone }: { plan: Plan; onDone: () => void }) 
 }
 
 function PlanBody({ plan, rows, reload }: { plan: Plan; rows: Row[]; reload: () => void }) {
+  /* مواعيد الشعب لكلّ دورة — نداءٌ واحد لكلّ الصفحة، والاختيار محفوظٌ بالدورة */
+  const { cohorts } = useCourseCohorts();
+  const [picked, setPicked] = useState<Record<string, string>>({});
   const facts = enrollmentFactsFromApi(rows);
   const factOf = new Map(facts.map((f) => [f.courseId, f]));
   const { total, enrolled, awaitingCohort } = plan.counts;
@@ -285,6 +291,29 @@ function PlanBody({ plan, rows, reload }: { plan: Plan; rows: Row[]; reload: () 
                   <span className="text-[11px] text-white/35">نُعلمك عند فتحها</span>
                 )}
               </div>
+
+              {/* غير المسجَّلة: موعدُها وشراؤها هنا لا في صفحةٍ أخرى.
+
+                  كان الزرّ يرمي إلى «الشعب المفتوحة»، فيبحث المتعلّم عن موعد
+                  دورةٍ في قائمةٍ عامّة بعيدةٍ عن مساره، ثمّ ينتظر موافقة
+                  إدارة. وقد صار الشراء مباشرا، فصار الموعد والدفع في موضع
+                  القرار. */}
+              {item.state !== "enrolled" && !done && (
+                <div className="w-full border-t border-white/8 pt-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <CohortPicker
+                      compact
+                      cohorts={cohorts.get(item.courseId) ?? []}
+                      selectedId={picked[item.courseId] ?? null}
+                      onSelect={(cid) => setPicked((prev) => ({ ...prev, [item.courseId]: cid }))}
+                    />
+                    <BuyCohort
+                      cohort={(cohorts.get(item.courseId) ?? []).find((x) => x.id === (picked[item.courseId] ?? (cohorts.get(item.courseId) ?? [])[0]?.id)) ?? null}
+                      onBought={reload}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
@@ -305,6 +334,8 @@ function pathwayOf(courseIds: string[]): string | null {
 }
 
 function PathwayBody({ rows }: { rows: Row[] }) {
+  const { cohorts } = useCourseCohorts();
+  const [picked, setPicked] = useState<Record<string, string>>({});
   const enrolledCourseIds = rows.map((r) => r.cohort?.course?.id).filter((x): x is string => typeof x === "string");
   const pathwayId = pathwayOf(enrolledCourseIds);
   const pathway = pathwayId ? pathwayById(pathwayId) : null;
@@ -373,16 +404,35 @@ function PathwayBody({ rows }: { rows: Row[] }) {
                 }`}>
                   {done ? "مكتملة" : enrolled ? "مسجَّل" : "غير مسجَّل"}
                 </span>
-                {enrolled ? (
+                {enrolled && (
                   <Link to={`/student/course/${id}`} className="flex items-center gap-1 rounded-full bg-teal px-4 py-2 text-xs font-black text-on-teal transition hover:bg-teal-light">
                     افتح المحطات <ChevronLeft className="h-3.5 w-3.5" />
                   </Link>
-                ) : (
-                  <Link to="/student/cohorts" className="text-[11px] font-bold text-teal-light-ink hover:text-white">
-                    اطلب شعبة
-                  </Link>
                 )}
               </div>
+
+              {/* غير المسجَّلة: موعدُها وشراؤها هنا لا في صفحةٍ أخرى.
+
+                  كان الزرّ يرمي إلى «الشعب المفتوحة»، فيبحث المتعلّم عن موعد
+                  دورةٍ في قائمةٍ عامّة بعيدةٍ عن مساره، ثمّ ينتظر موافقة
+                  إدارة. وقد صار الشراء مباشرا، فصار الموعد والدفع في موضع
+                  القرار. */}
+              {!enrolled && (
+                <div className="w-full border-t border-white/8 pt-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <CohortPicker
+                      compact
+                      cohorts={cohorts.get(id) ?? []}
+                      selectedId={picked[id] ?? null}
+                      onSelect={(cid) => setPicked((prev) => ({ ...prev, [id]: cid }))}
+                    />
+                    <BuyCohort
+                      cohort={(cohorts.get(id) ?? []).find((x) => x.id === (picked[id] ?? (cohorts.get(id) ?? [])[0]?.id)) ?? null}
+                      onBought={undefined}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}

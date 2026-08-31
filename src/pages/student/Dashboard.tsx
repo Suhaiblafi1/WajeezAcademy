@@ -353,7 +353,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
                     ? [{ to: "/student/learning", labelAr: `تابع «${rows[0].cohort.course.versions[0]?.titleAr ?? rows[0].cohort.title}»`, hintAr: "الوحدات والمواد" }]
                     : []),
                   { to: "/student/review", labelAr: "راجع ما تعلّمته", hintAr: "بطاقات الاسترجاع" },
-                  { to: "/student/cohorts", labelAr: "تصفّح الشعب المفتوحة", hintAr: "للتسجيل في دورة أخرى" },
+                  { to: "/student/pathway", labelAr: "افتح مسارك", hintAr: "مواعيد دوراتك القادمة واختيارها" },
                 ]}
               />
             ) : (
@@ -432,7 +432,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
           </div>
           <p className="mt-2 text-xs leading-6 text-white/55">ما قِيس لك فعلا: فجواتك وما تُتقنه وما لم يُقس بعد</p>
         </Link>
-        <Link to="/student/cohorts" className="block rounded-3xl border border-teal/30 bg-teal/5 p-5 transition hover:border-teal/60">
+        <Link to="/student/pathway" className="block rounded-3xl border border-teal/30 bg-teal/5 p-5 transition hover:border-teal/60">
           <div className="flex items-center gap-2 text-sm font-bold text-teal-light-ink">
             <CalendarDays className="h-4 w-4" /> الشعب المفتوحة
           </div>
@@ -473,7 +473,7 @@ function EmptyRealDashboard({ name }: { name: string }) {
           تصفح الشعب المفتوحة واطلب التسجيل؛ عند موافقة العمليات تصلك فاتورتك، وبالدفع تُفتح شعبتك هنا تلقائيا.
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-          <Link to="/student/cohorts" className="rounded-full bg-teal px-6 py-3 font-black text-on-teal transition hover:bg-teal-light">
+          <Link to="/student/pathway" className="rounded-full bg-teal px-6 py-3 font-black text-on-teal transition hover:bg-teal-light">
             تصفح الشعب المفتوحة
           </Link>
           <Link to="/catalog" className="rounded-full border border-white/15 px-6 py-3 font-bold text-white/80 hover:border-white/40">

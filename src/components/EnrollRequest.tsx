@@ -68,10 +68,10 @@ export default function EnrollRequest({
 
         <div className="mt-5 grid gap-2.5">
           <Link
-            to="/student/cohorts"
+            to="/student/pathway"
             className="flex items-center justify-center gap-2 rounded-full bg-teal py-3 text-sm font-black text-on-teal transition hover:bg-teal-light"
           >
-            <CalendarDays className="h-4 w-4" /> تصفّح الشعب المفتوحة واطلب التسجيل
+            <CalendarDays className="h-4 w-4" /> افتح مسارك واختر موعدك
           </Link>
           <Link
             to={contactHref}

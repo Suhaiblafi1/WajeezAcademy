@@ -1,3 +1,5 @@
+import { useCourseCohorts } from "@/services/cohort-prices";
+import CohortPicker from "@/components/CohortPicker";
 import { useEffect, useState } from "react";
 import { ChevronDown, Clock3, Target, ListChecks, FolderKanban, Award, RefreshCcw, X, Gift, Plus, UserRound, LifeBuoy } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -44,6 +46,7 @@ export default function CourseJourney({
   edit,
   giftId,
   supportReasons,
+  showSchedule = false,
 }: {
   courseIds: string[];
   /** سبب وجود كل دورة في الخطة (للخطط المركبة) — يظهر سطرا واحدا تحت الاسم */
@@ -54,6 +57,13 @@ export default function CourseJourney({
   edit?: CourseJourneyEdit;
   /** شارة «هدية مجانية» بلا أدوات تخصيص — للعرض فقط كصفحة المسار */
   giftId?: string | null;
+  /* موعدُ كلّ دورة تحت اسمها — قرارُ صاحب المنتج: «يجب أن يكون هناك تاريخ
+     لأقرب شعبة لكلّ دورة بالمسار، ويحقّ له اختيار الشعبة التي يريد».
+
+     ومتى يبدأ سؤالٌ في قلب قرار الشراء لا تفصيلٌ بعده: من يقرأ عن مسارٍ من
+     ستّ دورات يريد أن يعرف متى يبدأ قبل أن يدفع. وكان الجواب في صفحةٍ أخرى
+     («الشعب المفتوحة») حُذفت لأنّها فصلت الموعد عن الدورة. */
+  showSchedule?: boolean;
   /** الدورات المساندة وسببُ كلٍّ منها — تُفصل عن الأساسية بفاصلٍ معنون.
 
       المساندة ليست خطوةً خامسة في الرحلة: هي مهارةٌ عامّة يحتاجها صاحب هذا
@@ -62,6 +72,9 @@ export default function CourseJourney({
       تُقرأ حشوا. */
   supportReasons?: Record<string, string>;
 }) {
+  /* نداءٌ واحد للمواعيد، والاختيار محفوظٌ بالدورة — يُقرأ عند الشراء */
+  const { cohorts } = useCourseCohorts();
+  const [picked, setPicked] = useState<Record<string, string>>({});
   const list = courseIds
     .map((id) => courseFullById(id))
     .filter((c): c is NonNullable<typeof c> => Boolean(c));
@@ -143,6 +156,16 @@ export default function CourseJourney({
                       <span className="mt-1 block text-xs leading-relaxed text-white/55">{c.shortPromise}</span>
                     )}
                   </CollapsibleTrigger>
+                  {showSchedule && (
+                    <div className="mt-2">
+                      <CohortPicker
+                        compact
+                        cohorts={cohorts.get(c.id) ?? []}
+                        selectedId={picked[c.id] ?? null}
+                        onSelect={(cid) => setPicked((prev) => ({ ...prev, [c.id]: cid }))}
+                      />
+                    </div>
+                  )}
                   <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
                     <span className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-[11px] font-semibold text-white/60">
                       <Clock3 className="h-3 w-3 text-teal-light-ink" />

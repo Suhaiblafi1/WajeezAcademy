@@ -181,10 +181,9 @@ export default function PortalLayout({ children, title }: { children: React.Reac
         { to: "/student/learning", label: "دوراتي" },
         { to: "/student/pathway", label: "مساري" },
         { to: "/student/review", label: "مراجعتي" },
-        { to: "/student/cohorts", label: "الشعب المفتوحة" },
       ],
       /* صفحتا الدورة وإعادة القياس تتبعان القسم وإن لم تكونا في شريطه */
-      match: ["/student/learning", "/student/pathway", "/student/review", "/student/cohorts", "/student/course", "/student/remeasure"],
+      match: ["/student/learning", "/student/pathway", "/student/review", "/student/course", "/student/remeasure"],
     },
     {
       id: "vault", label: "خزانتي", icon: Award, to: "/student/certificates",

@@ -156,7 +156,7 @@ function NotEnrolled({ name, termEn }: { name: string; termEn?: string | null })
           المفتوحة واطلب التسجيل فيها.
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-          <Link to="/student/cohorts" className="rounded-full bg-teal px-6 py-3 font-black text-on-teal transition hover:bg-teal-light">
+          <Link to="/student/pathway" className="rounded-full bg-teal px-6 py-3 font-black text-on-teal transition hover:bg-teal-light">
             الشعب المفتوحة
           </Link>
           <Link to="/student/learning" className="rounded-full border border-white/15 px-6 py-3 font-bold text-white/80 hover:border-white/40">

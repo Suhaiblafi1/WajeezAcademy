@@ -377,6 +377,7 @@ export default function PathwayPage() {
             courseIds={pathwayCoursesList.map((c) => c.id)}
             delivery={pathwayDelivery(pathway.id)}
             headingLevel="h2"
+            showSchedule
             giftId={giftId}
             supportReasons={Object.fromEntries([...supportReasons].filter(([id]) => supportIds.has(id)))}
             edit={
