@@ -18,6 +18,7 @@ import { fileURLToPath } from 'node:url'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { PublicCatalogService } from '../../services/public-catalog.service'
+import { SUPPORT_PER_PATHWAY } from '../../../src/data/courses'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..')
 const CORE = JSON.parse(readFileSync(join(root, 'src/data/catalog/core-catalog.v2.json'), 'utf8')) as {
@@ -49,8 +50,10 @@ describe('/api/public/core-catalog — ما تقرؤه الواجهة الحيّ
         supportsChecked++
       }
     }
-    /* فحصٌ لا يفحص شيئا أسوأ من غيابه: نثبت أنّ هناك مساندات فُحصت فعلا */
-    expect(supportsChecked).toBe(CORE.launch_pathways.length * 3)
+    /* فحصٌ لا يفحص شيئا أسوأ من غيابه: نثبت أنّ هناك مساندات فُحصت فعلا.
+       والعدد من الثابت لا من رقمٍ مكتوب هنا — كُتب ٣ فلمّا صارت مساندتين
+       احمرّ الحارس على تغييرٍ مقصود بدل أن يتبع مصدره. */
+    expect(supportsChecked).toBe(CORE.launch_pathways.length * SUPPORT_PER_PATHWAY)
   })
 
   /* عيبٌ ثانٍ من المساندات نفسها، ظهر على الإنتاج: صار للدورة أكثر من رابط

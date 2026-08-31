@@ -18,6 +18,7 @@ import templatesJson from '../../src/data/catalog/composite-templates.v1.json'
 import profilesJson from '../../src/data/overlays/pathway-profiles.v1.json'
 import domainsJson from '../../src/data/catalog/v2/pathway-domains.v2.json'
 import layersJson from '../../src/data/catalog/v2/skill-layers.v2.json'
+import { SUPPORT_PER_PATHWAY } from '../../src/data/courses'
 import { measurementDocDrift } from '../../src/application/catalog/skill-measurement'
 import { measurableSkills } from '../../src/domain/diagnostic/v2_1/universe'
 
@@ -181,7 +182,10 @@ export function validateCatalogSource(): ValidationResult {
     errorsAr.push(`${F.core}: أسعار القائمة بعملتين أو أكثر (${[...currencies].join(' · ')}) — لا يُجمع مسارٌ بعملتين`)
   }
 
-  /* ٤-ب — الدورات المساندة: ثلاث لكل مسار جاهز، موجودة، ولا تكرّر دورةً أساسية.
+  /* ٤-ب — الدورات المساندة: اثنتان لكل مسار جاهز، موجودتان، ولا تكرّران أساسية.
+
+     كانت ثلاثا فصار المسار سبع دورات، والمتّفق عليه ستّ. فحُذفت الأخيرة من
+     كلّ مسار — آخر ترتيب الأهميّة — وصار ٤ أساسية + ٢ مساندة.
 
      والأهمّ أنّها **خارج** course_ids بقصد: تلك القائمة وحدها يقرؤها
      pathwaySkills، ومنها تُحسب فجوة المهارات التي يرتّب بها التشخيص المسارات.
@@ -190,8 +194,8 @@ export function validateCatalogSource(): ValidationResult {
      src/tests/catalog/support-courses.test.ts. */
   for (const p of core.launch_pathways) {
     const sup = p.support_courses ?? []
-    if (sup.length !== 3) {
-      errorsAr.push(`${F.core} · المسار ${p.id}: الدورات المساندة ${sup.length} لا ٣ — المسار الجاهز أربعُ أساسيات وثلاثُ مساندات`)
+    if (sup.length !== SUPPORT_PER_PATHWAY) {
+      errorsAr.push(`${F.core} · المسار ${p.id}: الدورات المساندة ${sup.length} لا ${SUPPORT_PER_PATHWAY} — المسار الجاهز أربعُ أساسيات ومساندتان`)
     }
     const core_ = new Set(p.course_ids)
     const seen = new Set<string>()

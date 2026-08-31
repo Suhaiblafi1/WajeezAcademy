@@ -1330,14 +1330,10 @@
         {
           "course_id": "C-COMX-106",
           "reason_ar": "أكثر أوصاف الوظائف وتقارير المهن التي ستقرؤها في بحثك بالإنجليزية."
-        },
-        {
-          "course_id": "C-COMX-104",
-          "reason_ar": "قرارك المهني لا يكفي أن يكون صحيحا — عليك أن تُقنع به من يموّله أو يوظّفك."
         }
       ],
-      "support_course_count": 3,
-      "support_hours": 24
+      "support_course_count": 2,
+      "support_hours": 16
     },
     {
       "id": "PW-STU-002",
@@ -1380,14 +1376,10 @@
         {
           "course_id": "C-COMX-106",
           "reason_ar": "المقابلة والسيرة والمراسلة في أغلب الفرص المطلوبة بالإنجليزية."
-        },
-        {
-          "course_id": "C-AI-105",
-          "reason_ar": "أول ما يُسأل عنه المتقدّم اليوم: كيف تستعمل الذكاء الاصطناعي في عملك؟"
         }
       ],
-      "support_course_count": 3,
-      "support_hours": 24
+      "support_course_count": 2,
+      "support_hours": 16
     },
     {
       "id": "PW-FND-003",
@@ -1427,14 +1419,10 @@
         {
           "course_id": "C-AUT-103",
           "reason_ar": "الأداة وحدها لا توفّر وقتا — سير العمل الذي تربطها به هو ما يوفّره."
-        },
-        {
-          "course_id": "C-DAT-105",
-          "reason_ar": "مخرج النموذج ليس توصية؛ تحويله إلى قرارٍ يُعرض هو المهارة الناقصة."
         }
       ],
-      "support_course_count": 3,
-      "support_hours": 24
+      "support_course_count": 2,
+      "support_hours": 16
     },
     {
       "id": "PW-EMP-004",
@@ -1474,14 +1462,10 @@
         {
           "course_id": "C-AI-103",
           "reason_ar": "تحليلٌ بُني على مخرَج نموذجٍ لم يُتحقّق منه ينهار عند أول مراجعة."
-        },
-        {
-          "course_id": "C-FINM-103",
-          "reason_ar": "الرقم بلا موازنته ولا انحرافه لا يقول شيئا لمن يقرّر."
         }
       ],
-      "support_course_count": 3,
-      "support_hours": 24
+      "support_course_count": 2,
+      "support_hours": 16
     },
     {
       "id": "PW-EMP-003",
@@ -1521,14 +1505,10 @@
         {
           "course_id": "C-AI-105",
           "reason_ar": "التوثيق والمتابعة والتقارير — أثقل أعمال مدير المشروع وأقبلها للأتمتة."
-        },
-        {
-          "course_id": "C-FINM-103",
-          "reason_ar": "مشروعٌ بلا قراءة موازنته وانحرافها يُغلق على وقتٍ لا على قيمة."
         }
       ],
-      "support_course_count": 3,
-      "support_hours": 24
+      "support_course_count": 2,
+      "support_hours": 16
     },
     {
       "id": "PW-EMP-005",
@@ -1568,14 +1548,10 @@
         {
           "course_id": "C-HR-103",
           "reason_ar": "دورة الأداء ولوائحها تُدار مع الموارد البشرية لا عنها."
-        },
-        {
-          "course_id": "C-COMX-104",
-          "reason_ar": "الإقناع لأعلى — لرئيسك — لا يقلّ عن التوجيه لأسفل."
         }
       ],
-      "support_course_count": 3,
-      "support_hours": 24
+      "support_course_count": 2,
+      "support_hours": 16
     },
     {
       "id": "PW-GOV-002",
@@ -1616,14 +1592,10 @@
         {
           "course_id": "C-DAT-104",
           "reason_ar": "رضا المستفيد يُقاس بلوحةٍ تُقرأ أسبوعيا لا باستطلاعٍ سنوي."
-        },
-        {
-          "course_id": "C-AI-105",
-          "reason_ar": "الردّ الأول ومعالجة الطلبات المتكرّرة أكثر مواضع الخدمة قبولا للأدوات."
         }
       ],
-      "support_course_count": 3,
-      "support_hours": 24
+      "support_course_count": 2,
+      "support_hours": 16
     },
     {
       "id": "PW-BIZ-001",
@@ -1665,14 +1637,10 @@
         {
           "course_id": "C-FINM-104",
           "reason_ar": "أكثر ما يقتل المشاريع الصغيرة نفادُ السيولة لا نقصُ الأرباح."
-        },
-        {
-          "course_id": "C-AI-101",
-          "reason_ar": "المؤسّس الفرد يشغّل عمل فريقٍ كامل — والأداة هي فريقه الأول."
         }
       ],
-      "support_course_count": 3,
-      "support_hours": 32
+      "support_course_count": 2,
+      "support_hours": 16
     },
     {
       "id": "PW-AUT-001",
@@ -1712,14 +1680,10 @@
         {
           "course_id": "C-CYB-103",
           "reason_ar": "كل ربطٍ بين تطبيقين هو مفتاح وصولٍ جديد يجب أن يُحكم."
-        },
-        {
-          "course_id": "C-PM-104",
-          "reason_ar": "الأتمتة تفشل عند التبنّي لا عند البناء — وهذا بابُ إدارة التغيير."
         }
       ],
-      "support_course_count": 3,
-      "support_hours": 32
+      "support_course_count": 2,
+      "support_hours": 24
     },
     {
       "id": "PW-MKT-001",
@@ -1759,14 +1723,10 @@
         {
           "course_id": "C-AI-104",
           "reason_ar": "إنتاج المحتوى وبحث الكلمات صارا أسرع بالأدوات — وأخطر بلا تحقّق."
-        },
-        {
-          "course_id": "C-COMX-106",
-          "reason_ar": "أدوات التسويق ومصادره ومقاييسه بالإنجليزية في أغلبها."
         }
       ],
-      "support_course_count": 3,
-      "support_hours": 24
+      "support_course_count": 2,
+      "support_hours": 16
     },
     {
       "id": "PW-SAL-001",
@@ -1806,14 +1766,10 @@
         {
           "course_id": "C-COMX-103",
           "reason_ar": "العرض التجاري يُقدَّم شفاها قبل أن يُقرأ في ملف."
-        },
-        {
-          "course_id": "C-MKT-104",
-          "reason_ar": "خطُّ بيعٍ بلا تغذيةٍ من التسويق يجفّ بعد أول قائمة."
         }
       ],
-      "support_course_count": 3,
-      "support_hours": 32
+      "support_course_count": 2,
+      "support_hours": 24
     },
     {
       "id": "PW-HR-001",
@@ -1853,14 +1809,10 @@
         {
           "course_id": "C-NEG-104",
           "reason_ar": "أثقل ما في المهنة: الوساطة بين موظّف ومديره."
-        },
-        {
-          "course_id": "C-LND-105",
-          "reason_ar": "خطط التطوير التي تُكتب ولا تُيسَّر ورشُها تبقى ملفّات."
         }
       ],
-      "support_course_count": 3,
-      "support_hours": 24
+      "support_course_count": 2,
+      "support_hours": 16
     },
     {
       "id": "PW-FIN-001",
@@ -1900,14 +1852,10 @@
         {
           "course_id": "C-COMX-105",
           "reason_ar": "قرارك المالي يُقبل أو يُرفض في الأسئلة التي تليه."
-        },
-        {
-          "course_id": "C-AI-103",
-          "reason_ar": "رقمٌ من أداةٍ لم يُتحقّق منه يدخل قرارا ماليا — هذا أخطر ما يقع."
         }
       ],
-      "support_course_count": 3,
-      "support_hours": 24
+      "support_course_count": 2,
+      "support_hours": 16
     },
     {
       "id": "PW-PRD-001",
@@ -1947,14 +1895,10 @@
         {
           "course_id": "C-DAT-103",
           "reason_ar": "منتجٌ بلا مؤشّرٍ وهدفٍ محدّد يقيس نشاطه لا قيمته."
-        },
-        {
-          "course_id": "C-AI-105",
-          "reason_ar": "الاكتشاف وتحليل الملاحظات والنماذج — أكثر أعمال المنتج قبولا للأدوات."
         }
       ],
-      "support_course_count": 3,
-      "support_hours": 32
+      "support_course_count": 2,
+      "support_hours": 24
     },
     {
       "id": "PW-OPS-001",
@@ -1994,14 +1938,10 @@
         {
           "course_id": "C-AUT-103",
           "reason_ar": "ما ثبت أنه هدرٌ متكرّر يُؤتمت لا يُحسَّن مرّة بعد مرّة."
-        },
-        {
-          "course_id": "C-PM-104",
-          "reason_ar": "التحسين تغييرٌ على من يعمل — ومقاومته متوقّعة وتُدار."
         }
       ],
-      "support_course_count": 3,
-      "support_hours": 32
+      "support_course_count": 2,
+      "support_hours": 24
     },
     {
       "id": "PW-CYB-001",
@@ -2041,14 +1981,10 @@
         {
           "course_id": "C-PM-104",
           "reason_ar": "الضابط الأمني تغييرٌ على عمل الناس قبل أن يكون إعدادا في نظام."
-        },
-        {
-          "course_id": "C-LND-105",
-          "reason_ar": "العنصر البشري أضعف الحلقات، وتوعيته تدريبٌ يُصمَّم ويُيسَّر."
         }
       ],
-      "support_course_count": 3,
-      "support_hours": 32
+      "support_course_count": 2,
+      "support_hours": 24
     },
     {
       "id": "PW-SCM-001",
@@ -2088,14 +2024,10 @@
         {
           "course_id": "C-FINM-104",
           "reason_ar": "المخزون سيولةٌ محبوسة على الرفّ — وهذا ما يقوله التدفّق النقدي."
-        },
-        {
-          "course_id": "C-DAT-104",
-          "reason_ar": "التنبّؤ بالطلب يُتابَع بلوحةٍ أسبوعية لا بجدولٍ ربع سنوي."
         }
       ],
-      "support_course_count": 3,
-      "support_hours": 32
+      "support_course_count": 2,
+      "support_hours": 24
     },
     {
       "id": "PW-COM-001",
@@ -2135,14 +2067,10 @@
         {
           "course_id": "C-DAT-105",
           "reason_ar": "أقوى ما في العرض التنفيذي رقمٌ يُروى لا شريحةٌ تُقرأ."
-        },
-        {
-          "course_id": "C-NEG-103",
-          "reason_ar": "خطُّ الفصل بين الإقناع والتلاعب يُتعلَّم صراحةً لا بالفطرة."
         }
       ],
-      "support_course_count": 3,
-      "support_hours": 24
+      "support_course_count": 2,
+      "support_hours": 16
     },
     {
       "id": "PW-NEG-001",
@@ -2182,14 +2110,10 @@
         {
           "course_id": "C-FINM-101",
           "reason_ar": "لا تعرف حدّك الأدنى في التفاوض قبل أن تقرأ تكلفتك."
-        },
-        {
-          "course_id": "C-SAL-104",
-          "reason_ar": "أكثر ما يُتفاوض عليه في العمل عرضٌ تجاريّ كُتب قبل الجلسة."
         }
       ],
-      "support_course_count": 3,
-      "support_hours": 32
+      "support_course_count": 2,
+      "support_hours": 24
     },
     {
       "id": "PW-LND-001",
@@ -2229,14 +2153,10 @@
         {
           "course_id": "C-COMX-103",
           "reason_ar": "التيسير إلقاءٌ أمام جمهورٍ يقاطع ويسأل."
-        },
-        {
-          "course_id": "C-DAT-103",
-          "reason_ar": "برنامجٌ بلا مؤشّر أثرٍ متّفق عليه يُلغى في أول ضغط ميزانية."
         }
       ],
-      "support_course_count": 3,
-      "support_hours": 24
+      "support_course_count": 2,
+      "support_hours": 16
     }
   ],
   "courses": [

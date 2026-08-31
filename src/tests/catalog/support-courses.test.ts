@@ -17,7 +17,7 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { launchPathways, pathwaySkills, courseById } from '../../domain/diagnostic/catalog'
-import { pathwayCourses, pathwaySupportCourses, readyPathwayCourseIds, MIN_PATHWAY_COURSES, MAX_PATHWAY_COURSES } from '../../data/courses'
+import { pathwayCourses, pathwaySupportCourses, readyPathwayCourseIds, MIN_PATHWAY_COURSES, MAX_PATHWAY_COURSES, SUPPORT_PER_PATHWAY } from '../../data/courses'
 
 const CORE = JSON.parse(
   readFileSync(join(process.cwd(), 'src/data/catalog/core-catalog.v2.json'), 'utf8'),
@@ -27,10 +27,14 @@ const CORE = JSON.parse(
 }
 
 describe('الدورات المساندة — بنيتها', () => {
-  it('كل مسار جاهز: أربعُ أساسيات على الأقل وثلاثُ مساندات بالضبط', () => {
+  /* ستّ دورات لا سبع: أربعٌ أساسية ومساندتان. كانت ثلاث مساندات فصار
+     المجموع سبعا — أثقل ممّا اتُّفق عليه — فحُذفت الأخيرة من كلّ مسار. */
+  it('كل مسار جاهز: أربعُ أساسيات على الأقل ومساندتان بالضبط — والمجموع ستّ', () => {
     for (const p of CORE.launch_pathways) {
       expect(p.course_ids.length, p.id).toBeGreaterThanOrEqual(MIN_PATHWAY_COURSES)
-      expect(p.support_courses?.length ?? 0, p.id).toBe(3)
+      expect(p.support_courses?.length ?? 0, p.id).toBe(SUPPORT_PER_PATHWAY)
+      expect(p.course_ids.length + (p.support_courses?.length ?? 0), p.id)
+        .toBeLessThanOrEqual(MAX_PATHWAY_COURSES)
     }
   })
 

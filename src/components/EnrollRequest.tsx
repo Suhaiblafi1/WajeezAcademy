@@ -14,7 +14,8 @@ import { useEffect } from "react";
 import { Link } from "react-router";
 import { CalendarDays, Headset, Info } from "lucide-react";
 import Modal from "@/components/Modal";
-import { CURRENCIES, setCurrency, useCurrency, usePriceFormatter, type CurrencyCode } from "@/services/currency";
+import { usePriceFormatter } from "@/services/currency";
+import CurrencyPicker from "@/components/CurrencyPicker";
 import { FIRST_TIME_PROMO } from "@/application/commerce/first-time-promo";
 import { track } from "@/services/analytics";
 
@@ -30,7 +31,6 @@ export default function EnrollRequest({
   contactHref?: string;
   onClose: () => void;
 }) {
-  const cur = useCurrency();
   const fmt = usePriceFormatter();
   useEffect(() => { track("enroll_request_opened"); }, []);
 
@@ -51,18 +51,9 @@ export default function EnrollRequest({
               <span className="text-sm font-black text-white/70">يُعلن مع فتح الشعبة</span>
             )}
           </div>
-          <div className="mt-3 flex flex-wrap items-center gap-1.5">
-            {(Object.keys(CURRENCIES) as CurrencyCode[]).map((c) => (
-              <button
-                key={c}
-                onClick={() => setCurrency(c)}
-                className={`cursor-pointer rounded-full border px-2.5 py-1 text-[11px] font-bold transition ${
-                  cur.code === c ? "border-teal/60 bg-teal/15 text-teal-light-ink" : "border-white/10 text-white/50 hover:border-white/30"
-                }`}
-              >
-                {CURRENCIES[c].label}
-              </button>
-            ))}
+          {/* العملة زرٌّ صغير بجانب الرقم — لا صفَّ شرائح يعلو الرسوم نفسها */}
+          <div className="mt-2 flex items-center justify-end">
+            <CurrencyPicker />
           </div>
           <p className="mt-3 text-[11px] leading-5 text-white/50">
             كود <span className="font-black text-gold-ink">{FIRST_TIME_PROMO.code}</span> يخصم
