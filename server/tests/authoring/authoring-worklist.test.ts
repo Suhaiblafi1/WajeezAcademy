@@ -34,6 +34,17 @@ describe('طابور التأليف', () => {
     expect(missing.rows.length).toBeGreaterThan(0)
   })
 
+  it('والعدّاد يصف الكتالوج لا الشريحة المعروضة', async () => {
+    /* كان يُحسب بعد الترشيح، فيقول «لها متن: ٠» مع «الناقصة فقط» — رقمٌ
+       صادقٌ عن الشريحة كاذبٌ عن الكتالوج، وهو ما تقرؤه بطاقاتُ الشاشة. */
+    const all = await svc.worklist({ limit: 500 })
+    const missing = await svc.worklist({ onlyMissing: true, limit: 500 })
+    expect(missing.total).toBe(all.total)
+    expect(missing.withBody).toBe(all.withBody)
+    expect(missing.withBody).toBeGreaterThan(0)
+    expect(missing.rows.length).toBe(missing.missing)
+  })
+
   it('ومن ينتظره متعلّمٌ يسبق من لا ينتظره أحد', async () => {
     const rows = (await svc.worklist({ limit: 500 })).rows
     /* الترتيب غير متزايد في عدد المنتظرين */

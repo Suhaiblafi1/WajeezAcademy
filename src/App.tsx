@@ -57,6 +57,7 @@ const TrainerProposals = lazy(() => import('./pages/trainer/Proposals'))
 const CohortBoard = lazy(() => import('./pages/trainer/CohortBoard'))
 const Exceptions = lazy(() => import('./pages/admin/Exceptions'))
 const CatalogAdmin = lazy(() => import('./pages/admin/CatalogAdmin'))
+const AdminAuthoring = lazy(() => import('./pages/admin/Authoring'))
 const PublishingBoard = lazy(() => import('./pages/admin/PublishingBoard'))
 const DiagnosticQuality = lazy(() => import('./pages/admin/DiagnosticQuality'))
 const AdminUsers = lazy(() => import('./pages/admin/Users'))
@@ -184,6 +185,7 @@ export default function App() {
             <Route path="/admin/content" element={<Navigate to="/admin/publishing" replace />} />
             <Route path="/admin/trainers" element={<AdminTrainerApps />} />
             <Route path="/admin/catalog" element={<CatalogAdmin />} />
+            <Route path="/admin/authoring" element={<AdminAuthoring />} />
             <Route path="/admin/publishing" element={<PublishingBoard />} />
             <Route path="/admin/quality" element={<DiagnosticQuality />} />
             <Route path="/admin/users" element={<AdminUsers />} />

@@ -294,12 +294,11 @@ export class ModuleAuthoringService {
     }
     const openCourses = new Set(cohorts.map((c) => c.courseId))
 
-    const rows = modules.flatMap((m) => {
+    const all = modules.flatMap((m) => {
       const readable = m.versions.find((v) => (READABLE_MODULE_VERSION_STATUSES as readonly string[]).includes(v.status))
       const open = m.versions.find((v) => v.status === DRAFT || v.status === IN_REVIEW)
       if (!readable) return []
       const hasBody = Boolean(readable.bodyAr?.trim())
-      if (options.onlyMissing && hasBody) return []
       return [{
         moduleId: m.id,
         courseId: m.courseId,
@@ -316,14 +315,20 @@ export class ModuleAuthoringService {
       }]
     })
 
-    rows.sort((a, b) =>
+    all.sort((a, b) =>
       b.learnersWaiting - a.learnersWaiting ||
       Number(b.courseHasOpenCohort) - Number(a.courseHasOpenCohort) ||
       a.courseId.localeCompare(b.courseId) ||
       a.sequence - b.sequence)
 
-    const total = rows.length
-    const withBody = rows.filter((r) => r.hasBody).length
+    /* الإحصاء على الكتالوج كلِّه لا على الشريحة المعروضة.
+
+       كان يُحسب بعد الترشيح، فمع «الناقصة فقط» يصير «لها متن: ٠» دائما —
+       رقمٌ صحيحٌ عن الشريحة وكاذبٌ عن الكتالوج، وهو ما تقرؤه البطاقاتُ
+       الثلاث. ومستودعٌ قاعدتُه «القياس قبل التغيير» لا يعرض عدّادا يكذب. */
+    const total = all.length
+    const withBody = all.filter((r) => r.hasBody).length
+    const rows = options.onlyMissing ? all.filter((r) => !r.hasBody) : all
     return { total, withBody, missing: total - withBody, rows: rows.slice(0, limit) }
   }
 

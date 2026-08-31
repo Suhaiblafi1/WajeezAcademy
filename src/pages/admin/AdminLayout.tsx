@@ -1,5 +1,5 @@
 import { Link, NavLink, useLocation, useNavigate } from "react-router";
-import { CalendarCog, Crown, FlaskConical, GitBranch, Layers, ShieldAlert, LayoutDashboard, UserPlus, Users, BarChart3, LifeBuoy, Wallet, Bell, PlugZap, Star } from "lucide-react";
+import { CalendarCog, Crown, FlaskConical, GitBranch, Layers, PenLine, ShieldAlert, LayoutDashboard, UserPlus, Users, BarChart3, LifeBuoy, Wallet, Bell, PlugZap, Star } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import ThemeToggle from "@/components/ThemeToggle";
 import SearchPalette from "@/components/SearchPalette";
@@ -42,6 +42,7 @@ export default function AdminLayout({ children, title }: { children: React.React
       title: "التعليم والمحتوى",
       items: [
         { to: "/admin/catalog", label: "الكتالوج", icon: Layers , need: "catalog.view"},
+        { to: "/admin/authoring", label: "تأليف المتون", icon: PenLine , need: "catalog.course.edit"},
         { to: "/admin/publishing", label: "النشر والإصدارات", icon: GitBranch , need: "catalog.impact.view"},
         { to: "/admin/cohorts", label: "الشعب", icon: CalendarCog , need: "cohort.manage"},
         { to: "/admin/quality", label: "جودة التشخيص", icon: FlaskConical , need: "diagnostic.simulate"},
