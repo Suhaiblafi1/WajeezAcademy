@@ -2,6 +2,7 @@ import { Link, NavLink, useLocation, useNavigate } from "react-router";
 import { CalendarCog, Crown, FlaskConical, GitBranch, Layers, PenLine, ShieldAlert, LayoutDashboard, UserPlus, Users, BarChart3, LifeBuoy, Wallet, Bell, PlugZap, Star } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import ThemeToggle from "@/components/ThemeToggle";
+import StaffAccountMenu from "@/components/StaffAccountMenu";
 import SearchPalette from "@/components/SearchPalette";
 import { useRealSession } from "@/services/session";
 
@@ -138,12 +139,7 @@ export default function AdminLayout({ children, title }: { children: React.React
             </button>
             <NotificationBell audience="staff" />
             <ThemeToggle />
-            <span
-              className="max-w-[9rem] truncate text-xs text-white/60 sm:max-w-none"
-              title={user?.email ?? ""}
-            >
-              {user?.displayName}
-            </span>
+            <StaffAccountMenu user={user} />
           </div>
         </div>
       </header>

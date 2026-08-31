@@ -1,7 +1,8 @@
 import { Link, NavLink } from "react-router";
-import { Headset, LayoutDashboard } from "lucide-react";
+import { Headset } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import ThemeToggle from "@/components/ThemeToggle";
+import StaffAccountMenu from "@/components/StaffAccountMenu";
 import PortalSearchPalette from "@/components/PortalSearchPalette";
 import { useRealSession } from "@/services/session";
 
@@ -82,10 +83,7 @@ export default function AdvisorLayout({ children, title }: { children: React.Rea
             )}
             <NotificationBell audience="staff" />
             <ThemeToggle />
-            <span className="flex items-center gap-2 text-xs text-white/55">
-              <LayoutDashboard className="h-4 w-4 text-gold-ink" />
-              <span className="max-w-[110px] truncate">{user?.displayName}</span>
-            </span>
+            <StaffAccountMenu user={user} />
           </div>
         </div>
       </header>

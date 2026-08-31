@@ -2,6 +2,7 @@ import { Link, NavLink } from "react-router";
 import { GraduationCap, ClipboardCheck, GitPullRequest, LayoutDashboard, Users, Wallet, Star } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import ThemeToggle from "@/components/ThemeToggle";
+import StaffAccountMenu from "@/components/StaffAccountMenu";
 import PortalSearchPalette from "@/components/PortalSearchPalette";
 import { useRealSession } from "@/services/session";
 
@@ -93,7 +94,7 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
             )}
             <NotificationBell audience="trainer" />
             <ThemeToggle />
-            <span className="max-w-[140px] truncate text-xs text-white/55">{user?.displayName}</span>
+            <StaffAccountMenu user={user} />
           </div>
         </div>
       </header>
