@@ -9,6 +9,7 @@ import { apiGet, apiPost, apiDelete, ApiError } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import { useAutoRefresh } from "@/services/useAutoRefresh";
 import { TrainerDetailOps, TrainerChangeRequests, TrainerPayouts } from "./TrainerOps";
+import ApplicationDossier, { type Dossier } from "./ApplicationDossier";
 
 const STATUS_LABELS: Record<string, string> = {
   email_verification_pending: "بانتظار تحقق البريد",
@@ -222,37 +223,16 @@ export default function TrainerApplications() {
                   <span className="font-bold text-white/50">لماذا وجيز؟ </span>{a.motivation}
                 </p>
               )}
-              {a.linkedinUrl && <p className="mt-2 text-[11px] text-teal-light-ink" dir="ltr">{a.linkedinUrl}</p>}
-              {(() => {
-                const yt = a.youtubeUrl as string | null | undefined
-                const ig = a.instagramUrl as string | null | undefined
-                const accred = a.hasAccreditation as boolean | null | undefined
-                const accredDetails = a.accreditationDetails as string | null | undefined
-                const tCountries = (a.targetCountries as string[] | undefined) ?? []
-                const tAudiences = (a.targetAudiences as string[] | undefined) ?? []
-                if (!yt && !ig && !accred && !tCountries.length && !tAudiences.length) return null
-                return (
-                  <div className="mt-4 space-y-2.5 rounded-xl border border-white/5 bg-black/20 p-3 text-xs leading-6 text-white/65">
-                    {(yt || ig) && (
-                      <p>
-                        <span className="font-bold text-white/50">الحضور الرقمي: </span>
-                        {yt && <span dir="ltr" className="text-teal-light-ink">{yt}</span>}
-                        {yt && ig && ' · '}
-                        {ig && <span dir="ltr" className="text-teal-light-ink">{ig}</span>}
-                      </p>
-                    )}
-                    {accred && (
-                      <p><span className="font-bold text-white/50">اعتماد رسمي: </span>{accredDetails || 'نعم — بلا تفاصيل مذكورة'}</p>
-                    )}
-                    {!!tCountries.length && (
-                      <p><span className="font-bold text-white/50">الدول المستهدفة: </span>{tCountries.join('، ')}</p>
-                    )}
-                    {!!tAudiences.length && (
-                      <p><span className="font-bold text-white/50">الفئات المستهدفة: </span>{tAudiences.join('، ')}</p>
-                    )}
-                  </div>
-                )
-              })()}
+
+              {/* الملفّ كاملا — كان المراجع يقرّر على نصف الطلب.
+
+                  الخادمُ يُرسل كلَّ ما ملأه المتقدّم؛ الشاشةُ وحدها كانت
+                  تُسقط الهاتفَ وحالتَه المهنيّة وخبرةَ التدريب والدوراتِ
+                  التي يستطيع تدريسها وتوفّرَه وموافقتَه على الدرس
+                  التجريبيّ ولغاتِ تدريبه ونمطَه. */}
+              <div className="mt-5">
+                <ApplicationDossier a={a as unknown as Dossier} />
+              </div>
             </article>
 
             {/* الوثائق الخاصة */}
