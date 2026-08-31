@@ -13,7 +13,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-type Handler = (event: { target: unknown }) => void
+type Handler = (event: Record<string, unknown>) => void
 
 /** يستخرج سكربت الحارس من index.html المشحون ويُشغّله ببيئةٍ مصطنعة */
 function bootGuard(
@@ -25,13 +25,13 @@ function bootGuard(
   const source = blocks.find((b) => b.includes('wajeez_stale_reload_at'))
   expect(source, 'سكربت الحارس غير موجود في index.html').toBeTruthy()
 
-  const handlers: Handler[] = []
+  const handlers: Record<string, Handler[]> = {}
   let reloads = 0
   const win = {
     addEventListener: (type: string, fn: Handler, capture?: boolean) => {
-      expect(type).toBe('error')
-      expect(capture, 'لا بدّ من طور الالتقاط — فشلُ المورد لا يصعد').toBe(true)
-      handlers.push(fn)
+      /* فشلُ المورد لا يصعد، فمسمع `error` وحده يلزمه طور الالتقاط */
+      if (type === 'error') expect(capture, 'مسمع error بلا طور التقاط').toBe(true)
+      ;(handlers[type] ??= []).push(fn)
     },
   } as Record<string, unknown>
 
@@ -46,7 +46,18 @@ function bootGuard(
   )
 
   return {
-    fail: (target: unknown) => handlers.forEach((h) => h({ target })),
+    types: () => Object.keys(handlers),
+    fail: (target: unknown) => (handlers.error ?? []).forEach((h) => h({ target })),
+    /** قطعةٌ مؤجَّلة أخفقت — الحدث الذي يُطلقه Vite */
+    chunkFail: () => {
+      let prevented = false
+      ;(handlers['vite:preloadError'] ?? []).forEach((h) =>
+        h({ preventDefault: () => { prevented = true } }))
+      return prevented
+    },
+    /** رفضٌ غير ملتقَط بنصٍّ ما */
+    reject: (message: string) => (handlers.unhandledrejection ?? [])
+      .forEach((h) => h({ reason: new Error(message) })),
     reloads: () => reloads,
   }
 }
@@ -144,5 +155,46 @@ describe('التعافي من حزمةٍ محذوفة بعد نشرٍ جديد',
     const later = bootGuard(store, () => clock)
     later.fail(bundleScript)
     expect(later.reloads()).toBe(1)
+  })
+
+  /* ── القطع المؤجَّلة: العطب الذي أفلت من الحارس الأوّل ──
+
+     التطبيق يحمّل ٤٨ صفحةً تكاسليّا، وكلّ نشرٍ يحذف قطعها القديمة. وفشلُ
+     `import()` الديناميكيّ لا يُطلق حدث `error` على عنصر — يرفض وعدا. فحارسٌ
+     يسمع `error` وحده يرى إخفاق الحزمة الرئيسة ولا يرى إخفاق القطع: تُقلع
+     الصفحة سليمةً ثمّ تنهار عند أوّل انتقال. وهذا ما رآه صاحب المنتج بعد كلّ
+     نشرٍ الليلة، وأنا أقول له إنّ الموقع سليم — وكان سليما من الخارج فعلا. */
+
+  it('٩) الحارس يسمع المصادر الثلاثة لا مصدرا واحدا', () => {
+    const g = bootGuard(workingStorage())
+    expect(g.types().sort()).toEqual(['error', 'unhandledrejection', 'vite:preloadError'])
+  })
+
+  it('١٠) إخفاق قطعةٍ مؤجَّلة يُعيد التحميل — ويمنع الانفجار', () => {
+    const g = bootGuard(workingStorage())
+    const prevented = g.chunkFail()
+    expect(g.reloads()).toBe(1)
+    expect(prevented, 'لم يُمنع افتراض الحدث فينفجر رغم الإعادة').toBe(true)
+  })
+
+  it('١١) رفضٌ نصُّه يدلّ على قطعةٍ زائلة يُعيد التحميل', () => {
+    const g = bootGuard(workingStorage())
+    g.reject('Failed to fetch dynamically imported module: /assets/Diagnostic-x.js')
+    expect(g.reloads()).toBe(1)
+  })
+
+  it('١٢) ورفضٌ عاديّ لا يُعيد — خطأُ شبكةٍ في نداء API ليس نشرا', () => {
+    const g = bootGuard(workingStorage())
+    g.reject('Network request failed')
+    g.reject('Unexpected token < in JSON')
+    expect(g.reloads()).toBe(0)
+  })
+
+  it('١٣) النافذة الواحدة تحكم المصادر الثلاثة معا — لا نافذةً لكلٍّ', () => {
+    const g = bootGuard(workingStorage())
+    g.fail(bundleScript)
+    g.chunkFail()
+    g.reject('Failed to fetch dynamically imported module: /assets/x.js')
+    expect(g.reloads()).toBe(1)
   })
 })

@@ -38,29 +38,65 @@
         var KEY = "wajeez_stale_reload_at";
         var COOLDOWN = 60000; // مللي ثانية
 
-        /* الحدّ زمنيّ لا «مرّةً واحدة».
+        /* التطبيق يحمّل صفحاته تكاسليّا — ١٢٩ قطعة — وكلّ نشرٍ يحذف القديمة.
+           فصفحةٌ مخزّنة في متصفّح الزائر تطلب قطعةً صارت ٤٠٤.
 
-           كانت العلامة تُمسح عند كلّ إقلاعٍ ناجح للحزمة الرئيسة — وهو ما
-           يقع في كلّ دورة. فإن أقلعت الرئيسة وفشلت قطعةٌ مؤجَّلة صار:
-           إقلاعٌ ← مسحٌ ← فشلٌ ← إعادةُ تحميل ← إقلاع… حلقةٌ لا تنتهي.
-           أبطلتُ الحارس بيدي في السطر الذي يليه، وأوقعتُ ما جئتُ أمنعه.
+           وهنا الفخّ الذي أوقعني: فشلُ `import()` الديناميكيّ **لا يُطلق حدث
+           error** على عنصر — يرفض وعدا. فحارسٌ يسمع `error` وحده يرى إخفاق
+           الحزمة الرئيسة ولا يرى إخفاق القطع. تُقلع الصفحة سليمةً ثمّ تنهار
+           عند أوّل انتقال، فيبدو أنّ «الموقع لا يعمل» بعد كلّ نشر.
 
-           والوقتُ لا يُمسح بإقلاع: نافذةٌ واحدة كلَّ دقيقة مهما جرى. فإن
-           كان النقص عابرا شُفيت الصفحة بإعادةٍ واحدة، وإن كان مقيما بقيت
-           كما هي — ولم يدُر التبويب. */
-        window.addEventListener("error", function (event) {
-          var el = event.target;
-          if (!el || el === window) return;               // خطأ شيفرةٍ لا فشلُ مورد
-          if (el.tagName !== "SCRIPT" && el.tagName !== "LINK") return;
-          var src = el.src || el.href || "";
-          if (src.indexOf("/assets/") === -1) return;     // حزمُنا وحدها
+           فالمسامع ثلاثة لمصادر الإخفاق الثلاثة، وبابُ الإعادة واحد:
+           · error         — الحزمة الرئيسة أو ورقة نمط
+           · vite:preloadError — إخفاق تحميل قطعةٍ مؤجَّلة (يُطلقه Vite)
+           · unhandledrejection — شبكة أمانٍ لما تفلته الأولان
+
+           والحدّ زمنيّ لا «مرّةً واحدة»: نافذةُ دقيقة لا يمسحها إقلاع. كان
+           المسحُ عند الإقلاع يصنع حلقةً — إقلاعٌ ← مسحٌ ← فشلٌ ← إعادة — وقد
+           وقعت فعلا. فإن كان النقص عابرا شُفيت الصفحة بإعادةٍ واحدة، وإن كان
+           مقيما بقيت كما هي ولم يدُر التبويب. */
+        function mayReload() {
           try {
             var last = parseInt(sessionStorage.getItem(KEY) || "0", 10);
-            if (last && Date.now() - last < COOLDOWN) return;
+            if (last && Date.now() - last < COOLDOWN) return false;
             sessionStorage.setItem(KEY, String(Date.now()));
-          } catch (e) { return; }                          // بلا تخزين: لا إعادة أبدا
+            return true;
+          } catch (e) {
+            return false;                                  // بلا تخزين: لا إعادة أبدا
+          }
+        }
+
+        function isStaleChunkMessage(text) {
+          if (!text) return false;
+          return text.indexOf("dynamically imported module") !== -1
+            || text.indexOf("Importing a module script failed") !== -1
+            || text.indexOf("error loading dynamically imported module") !== -1;
+        }
+
+        /* ١) الحزمة الرئيسة أو ورقة نمط — طور الالتقاط: فشلُ المورد لا يصعد */
+        window.addEventListener("error", function (event) {
+          var el = event.target;
+          if (!el || el === window) return;                // خطأ شيفرةٍ لا فشلُ مورد
+          if (el.tagName !== "SCRIPT" && el.tagName !== "LINK") return;
+          var src = el.src || el.href || "";
+          if (src.indexOf("/assets/") === -1) return;      // حزمُنا وحدها
+          if (mayReload()) location.reload();
+        }, true);
+
+        /* ٢) قطعةٌ مؤجَّلة أخفقت — يمنعه Vite من الانفجار إن مُنع افتراضُه */
+        window.addEventListener("vite:preloadError", function (event) {
+          if (!mayReload()) return;
+          if (event.preventDefault) event.preventDefault();
           location.reload();
-        }, true);                                          // الالتقاط: فشلُ المورد لا يصعد
+        });
+
+        /* ٣) شبكة أمان: رفضٌ غير ملتقَط نصُّه يدلّ على قطعةٍ زائلة */
+        window.addEventListener("unhandledrejection", function (event) {
+          var reason = event.reason;
+          var text = reason && (reason.message || String(reason));
+          if (!isStaleChunkMessage(text)) return;
+          if (mayReload()) location.reload();
+        });
       })();
     </script>
 
