@@ -52,9 +52,10 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
       targetAudiences: z.array(z.string().min(2)).max(12).optional(),
       trainingLanguages: z.array(z.string().min(2)).min(1),
       deliveryMode: z.enum(['in_person', 'remote', 'both']),
-      /* ١٥٠–٥٠٠: عشرةُ أحرف كانت تقبل «أحب التدريب» — سطرٌ لا يُقرأ منه شيء
-         ولا يُفاضَل به بين طلبين. والسقف يمنع سيرةً ذاتية ثانية في حقل نصّ. */
-      motivation: z.string().trim().min(150).max(500),
+      /* ٧٥–٥٠٠: عشرةُ أحرف كانت تقبل «أحب التدريب» — سطرٌ لا يُقرأ منه شيء ولا
+         يُفاضَل به بين طلبين — ومئةٌ وخمسون كانت تطلب فقرةً تُستدرّ. سطران
+         يُكتبان يكفيان للتمييز، والسقف يمنع سيرةً ذاتية ثانية في حقل نصّ. */
+      motivation: z.string().trim().min(75).max(500),
       privacyConsent: z.literal(true),
     }).parse(req.body)
     const result = await svc.submitPhase1({
@@ -135,7 +136,10 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
         year: z.number().int().min(1980).max(2100).optional(),
         link: z.string().max(500).optional(),
       })).max(3),
-      teachableCourseIds: z.array(z.string()).min(1),
+      /* دورات الكتالوج لم تعد تُطلب من المتقدّم: إسنادُ المقرر قرارُ الإدارة
+         بعد الاعتماد لا إقرارُ المتقدّم قبله. والحقل باقٍ اختياريا لأن طلبات
+         سابقة تحمله، ولأنّ الإدارة قد تملؤه عنه. */
+      teachableCourseIds: z.array(z.string()).max(60).optional().default([]),
       availability: z.object({
         days: z.array(z.string()).optional(), hoursPerWeek: z.number().min(1).max(80).optional(),
         startFrom: z.string().optional(),

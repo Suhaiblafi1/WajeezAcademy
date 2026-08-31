@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { CheckCircle2, FileUp, Loader2, ShieldCheck } from "lucide-react";
 import SiteShell from "@/components/SiteShell";
 import SeoHead from "@/components/SeoHead";
 import { apiPost, ApiError } from "@/services/api";
-import { courses } from "@/data/courses";
 
 const inputCls =
   "w-full rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:border-teal focus:outline-none";
@@ -33,7 +32,6 @@ export default function JoinTrainerComplete() {
   const candidateToken = params.get("token") ?? "";
 
   const [prevCourses, setPrevCourses] = useState([{ title: "", org: "", year: "", link: "" }]);
-  const [teachable, setTeachable] = useState<string[]>([]);
   const [days, setDays] = useState<string[]>([]);
   const [hoursPerWeek, setHoursPerWeek] = useState("");
   const [startFrom, setStartFrom] = useState("");
@@ -42,8 +40,6 @@ export default function JoinTrainerComplete() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
-
-  const catalogCourses = useMemo(() => courses.map((c) => ({ id: c.id, title: c.name })), []);
 
   useEffect(() => { window.scrollTo(0, 0); }, [done]);
 
@@ -67,7 +63,7 @@ export default function JoinTrainerComplete() {
 
   const validLink = reference.trim().length >= 5 && candidateToken.trim().length >= 10;
   const valid =
-    validLink && prevCourses.some((c) => c.title.trim()) && teachable.length > 0 &&
+    validLink && prevCourses.some((c) => c.title.trim()) &&
     demoConsent && uploads.cv?.status === "done";
 
   const submit = async (e: React.FormEvent) => {
@@ -82,7 +78,6 @@ export default function JoinTrainerComplete() {
           year: c.year ? Number(c.year) : undefined,
           link: c.link || undefined,
         })),
-        teachableCourseIds: teachable,
         availability: { days, hoursPerWeek: hoursPerWeek ? Number(hoursPerWeek) : undefined, startFrom: startFrom || undefined },
         demoConsent,
       });
@@ -202,28 +197,6 @@ export default function JoinTrainerComplete() {
                   + أضف دورة أخرى
                 </button>
               )}
-            </div>
-          </fieldset>
-
-          {/* الدورات القابلة للتدريس */}
-          <fieldset>
-            <legend className="text-sm font-black">الدورات الحالية التي تستطيع تدريسها فعلا *</legend>
-            <p className="mt-1 text-[11px] text-white/45">من كتالوج وجيز الحالي — اختر ما تملك خبرة مثبتة فيه فقط.</p>
-            <div className="mt-3 flex max-h-56 flex-wrap gap-2 overflow-y-auto rounded-2xl border border-white/10 bg-black/20 p-3">
-              {catalogCourses.map((c) => (
-                <button
-                  type="button" key={c.id}
-                  onClick={() => setTeachable(teachable.includes(c.id) ? teachable.filter((x) => x !== c.id) : [...teachable, c.id])}
-                  aria-pressed={teachable.includes(c.id)}
-                  className={`cursor-pointer rounded-full border px-3 py-1.5 text-[11px] font-bold transition ${
-                    teachable.includes(c.id)
-                      ? "border-teal bg-teal/15 text-teal-light-ink"
-                      : "border-white/15 text-white/55 hover:border-white/35"
-                  }`}
-                >
-                  {c.title}
-                </button>
-              ))}
             </div>
           </fieldset>
 

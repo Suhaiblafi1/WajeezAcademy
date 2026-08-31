@@ -60,6 +60,8 @@ const PAGES: PageSpec[] = [
   { path: '/pathways', labelAr: 'المسارات', readySel: 'article' },
   { path: '/diagnostic', labelAr: 'التشخيص' },
   { path: '/auth', labelAr: 'الدخول والتسجيل' },
+  /* أول احتكاك المدرب بوجيز، ونموذجُها الأطول: ثلاث خطوات وقوائم وحقول ملفّات */
+  { path: '/join-trainer', labelAr: 'انضمام المدربين' },
   { path: '/student', labelAr: 'لوحة المتعلم', as: 'learner' },
   { path: '/student/review', labelAr: 'مراجعتي', as: 'learner' },
   { path: '/admin/catalog', labelAr: 'إدارة الكتالوج', as: 'admin' },

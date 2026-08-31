@@ -113,7 +113,7 @@ export class TrainerApplicationService {
        ولا يفاضل بين طلبين. والحدّ يُفحص هنا أيضا لا في المسار وحده — لا مسار
        تقديم يتخطّى القاعدة (لا من API ولا من اختبار). */
     const motivation = input.motivation.trim()
-    if (motivation.length < 150) throw new AuthError('invalid_motivation', 'اكتب ١٥٠ حرفا على الأقل — وأضف مثالا يوضّح القيمة التي ستقدّمها للمتعلمين')
+    if (motivation.length < 75) throw new AuthError('invalid_motivation', 'اكتب ٧٥ حرفا على الأقل — وأضف مثالا يوضّح القيمة التي ستقدّمها للمتعلمين')
     if (motivation.length > 500) throw new AuthError('invalid_motivation', 'خمسمائة حرف كحد أقصى — الاختصار جزء من المهارة')
 
     /* منع التكرار: بريد له طلب حي لا يقدم مرة أخرى */
@@ -383,9 +383,9 @@ export class TrainerApplicationService {
     }
     if (!input.demoConsent) throw new AuthError('demo_consent_required', 'الموافقة على درس تجريبي (Demo) إلزامية للاستكمال')
     if (input.previousCourses.length > 3) throw new AuthError('too_many_courses', 'ثلاث دورات سابقة كحد أقصى')
-    if (!input.teachableCourseIds.length) throw new AuthError('no_teachable', 'اختر دورة واحدة على الأقل تستطيع تدريسها')
 
-    /* التحقق من وجود الدورات المختارة في الكتالوج */
+    /* لا تُطلب دورات الكتالوج من المتقدّم بعد اليوم — والتحقق يبقى لما يصل:
+       قائمةٌ فارغة تمرّ، وقائمةٌ فيها معرّفٌ لا وجود له تُردّ كما كانت. */
     const courses = await this.prisma.course.findMany({
       where: { id: { in: input.teachableCourseIds } }, select: { id: true },
     })

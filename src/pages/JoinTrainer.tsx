@@ -8,7 +8,7 @@ import SiteShell from "@/components/SiteShell";
 import SeoHead from "@/components/SeoHead";
 import { apiPost, apiGet, ApiError } from "@/services/api";
 import { TRAINING_SPECIALIZATIONS } from "@/data/trainer-contracts";
-import TeachableCoursePicker from "@/components/TeachableCoursePicker";
+import { countAr } from "@/application/text/count-ar";
 
 /* صفحة انضمام المدربين.
 
@@ -55,6 +55,45 @@ const COUNTRY_TIMEZONE: Record<string, string> = {
   "السودان": "Africa/Khartoum", "اليمن": "Asia/Aden", "موريتانيا": "Africa/Nouakchott",
 };
 
+/* جهات الاعتماد الرسمية في الوطن العربي — قائمةٌ تُختار لا حقل نصٍّ حرّ.
+
+   «اسم الجهة» مكتوبا بالأيدي يصل المراجعَ بعشر صيغ للجهة الواحدة (ETEC،
+   «هيئة تقويم»، «تقويم التعليم والتدريب»)، فلا يُفرز ولا يُحصى ولا يُتحقّق
+   منه. والقائمة هنا وطنية حكومية — وهي ما يملكه المتقدّم العربي فعلا — و«أخرى»
+   تبقى مفتوحة لمن اعتمادُه دوليٌّ أو خاصّ فيكتبه كما هو. */
+const ACCREDITATION_BODIES: { country: string; bodies: string[] }[] = [
+  { country: "السعودية", bodies: [
+    "هيئة تقويم التعليم والتدريب (ETEC)",
+    "المؤسسة العامة للتدريب التقني والمهني (TVTC)",
+  ] },
+  { country: "الأردن", bodies: [
+    "هيئة تنمية وتطوير المهارات المهنية والتقنية (TVSDC)",
+    "هيئة الاعتماد وضمان الجودة للمؤسسات التعليمية",
+  ] },
+  { country: "الإمارات", bodies: [
+    "المركز الوطني للتأهيل المؤسسي والمهني (NQA)",
+    "هيئة المعرفة والتنمية البشرية — دبي (KHDA)",
+  ] },
+  { country: "مصر", bodies: [
+    "الهيئة القومية لضمان جودة التعليم والاعتماد",
+    "الأكاديمية المهنية للمعلمين",
+  ] },
+  { country: "قطر", bodies: ["وزارة التربية والتعليم والتعليم العالي — إدارة التدريب"] },
+  { country: "الكويت", bodies: ["الهيئة العامة للتعليم التطبيقي والتدريب"] },
+  { country: "عُمان", bodies: ["الهيئة العُمانية للاعتماد الأكاديمي وضمان جودة التعليم"] },
+  { country: "البحرين", bodies: ["هيئة جودة التعليم والتدريب (BQA)"] },
+  { country: "العراق", bodies: ["وزارة التعليم العالي والبحث العلمي — جهاز الإشراف والتقويم"] },
+  { country: "فلسطين", bodies: ["هيئة الاعتماد والجودة لمؤسسات التعليم العالي"] },
+  { country: "لبنان", bodies: ["المديرية العامة للتعليم المهني والتقني"] },
+  { country: "المغرب", bodies: ["مكتب التكوين المهني وإنعاش الشغل (OFPPT)"] },
+  { country: "تونس", bodies: ["الوكالة التونسية للتكوين المهني"] },
+  { country: "الجزائر", bodies: ["وزارة التكوين والتعليم المهنيين"] },
+  { country: "ليبيا", bodies: ["المركز الوطني لضمان جودة واعتماد المؤسسات التعليمية والتدريبية"] },
+  { country: "السودان", bodies: ["المجلس القومي للتدريب المهني والتلمذة"] },
+  { country: "اليمن", bodies: ["وزارة التعليم الفني والتدريب المهني"] },
+];
+const ACCREDITATION_OTHER = "أخرى — أكتبها بنفسي";
+
 const EMPLOYMENT_STATUS = [
   { value: "employed", label: "موظف — أعمل لدى جهة" },
   { value: "own_business", label: "لدي عملي الخاص" },
@@ -85,20 +124,24 @@ const STATUS_LABELS: Record<string, string> = {
   suspended: "موقوف",
 };
 
+/* «بقي 2 أشياء» عربيةٌ مكسورة يقرؤها المتقدّم في أول احتكاك به */
+const MISSING_FORMS = { one: "بند", two: "بندان", few: "بنود", many: "بندا" } as const;
+const CHAR_FORMS = { one: "حرف", two: "حرفان", few: "أحرف", many: "حرفا" } as const;
+
 const inputCls =
   "w-full rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:border-teal focus:outline-none";
 
-/* أربعة أقسام في نموذج واحد لا مرحلتان بينهما بريد.
+/* ثلاثة أقسام في نموذج واحد لا مرحلتان بينهما بريد.
 
    كان الطلب يُقسم مرحلتين: مرحلة أولى تُرسَل، ثم رابطٌ يصل بالبريد يفتح مرحلة
    ثانية. وكلفة ذلك أن كل متقدّم يعبر بابين لا بابا، وأن قناة البريد صارت
    شرطا لإكمال الطلب — من لم تصله الرسالة توقف طلبه عند نصفه.
-   والقسمان الأخيران يحتاجان مرجع الطلب (لرفع الملفات)، فيُرسَل القسمان
-   الأولان في الخلفية عند الانتقال إلى الثالث — والمتقدّم يرى نموذجا واحدا. */
-/* حدّ الدافع: ١٥٠ حرفا لا عشرة. «أحب التدريب» جوابٌ كان يمرّ ولا يُقرأ منه
-   شيء ولا يفاضل بين طلبين. والسقف ٥٠٠ يمنع سيرةً ذاتية ثانية في حقل نصّ.
-   الرقمان هنا مطابقان لما يفرضه الخادم — والعدّاد يقرأ منهما. */
-export const MOTIVATION_MIN = 150;
+   والقسمان الأخيران يحتاجان مرجع الطلب (لرفع الملفات)، فيُرسَل القسم
+   الأول في الخلفية عند الانتقال إلى الثاني — والمتقدّم يرى نموذجا واحدا. */
+/* حدّ الدافع: ٧٥ حرفا. كان ١٥٠ فصار سطرين يُكتبان لا فقرةً تُستدرّ — والعشرة
+   الأولى («أحب التدريب») هي ما أُغلق، لا الإيجاز. والسقف ٥٠٠ يمنع سيرةً ذاتية
+   ثانية في حقل نصّ. الرقمان هنا مطابقان لما يفرضه الخادم — والعدّاد يقرأ منهما. */
+export const MOTIVATION_MIN = 75;
 export const MOTIVATION_MAX = 500;
 
 const DOC_KINDS = [
@@ -112,11 +155,15 @@ const DAYS = ["السبت", "الأحد", "الاثنين", "الثلاثاء", 
 
 interface UploadState { status: "idle" | "registering" | "uploading" | "done" | "error"; name?: string; error?: string }
 
+/* ثلاث خطوات لا أربع. حُذف قسم «ما يمكنك تدريسه»: كان يطلب من المتقدّم أن
+   يفتح كتالوج وجيز ويختار منه دورات قبل أن يعرف أنّنا قبلناه أصلا — وإسنادُ
+   المقرر قرارُ الإدارة بعد الاعتماد لا إقرارُ المتقدّم قبله. وما كان معه في
+   الخطوة ممّا يخصّ المتقدّم نفسه — توفّره وموافقته على الدرس التجريبي — بقي
+   وانتقل إلى خطوة أدلته. */
 const STEPS = [
   { n: 1, title: "معلوماتك وخبرتك", hint: "من أنت وماذا تُتقن" },
-  { n: 2, title: "ما يمكنك تدريسه", hint: "من الكتالوج، بمجاله ومستواه" },
-  { n: 3, title: "نماذجك وأدلتك", hint: "سيرتك ودوراتك السابقة" },
-  { n: 4, title: "حسابك وتقدّمك", hint: "يحفظ طلبك ومسودتك وحالته" },
+  { n: 2, title: "نماذجك وأدلتك", hint: "سيرتك ودوراتك وتوفّرك" },
+  { n: 3, title: "حسابك وتقدّمك", hint: "يحفظ طلبك ومسودتك وحالته" },
 ] as const;
 
 /** قائمة منسدلة متعددة الاختيار — مربع صح بجانب كل خيار، والمختار يظهر وسمًا صغيرًا قابلا للإزالة */
@@ -226,7 +273,8 @@ export default function JoinTrainer() {
   const [form, setForm] = useState({
     fullName: "", email: "", phoneCountryCode: "+962", phone: "", country: "",
     jobTitle: "", employmentStatus: "", domainYears: "", trainingYears: "", bio: "", linkedinUrl: "",
-    youtubeUrl: "", instagramUrl: "", accreditationDetails: "", hasAccreditation: false,
+    youtubeUrl: "", instagramUrl: "", hasAccreditation: false,
+    accreditationBody: "", accreditationOther: "", accreditationRef: "",
     deliveryMode: "", motivation: "", privacyConsent: false,
   });
   const [specialties, setSpecialties] = useState<string[]>([]);
@@ -245,8 +293,7 @@ export default function JoinTrainer() {
   /* رمز المرشح — من رد التحقق أو من رد التقديم حين تتعذّر قناة البريد */
   const [candidateToken, setCandidateToken] = useState("");
 
-  /* الأقسام 2–4 — كانت في صفحة مستقلة تُفتح برابط بريد، وصارت أقساما هنا */
-  const [teachable, setTeachable] = useState<string[]>([]);
+  /* القسمان 2–3 — كانا في صفحة مستقلة تُفتح برابط بريد، وصارا قسمين هنا */
   const [prevCourses, setPrevCourses] = useState([
     { title: "", org: "", year: "", link: "" },
     { title: "", org: "", year: "", link: "" },
@@ -283,20 +330,47 @@ export default function JoinTrainer() {
      يُرسَل عند الانتقال إلى الثاني: قسمٌ ناقص يعني طلبا مرفوضا في الخلفية
      والمتقدّم يظن أنه مضى. */
   const motivationLen = form.motivation.trim().length;
+
+  /* الاعتماد يُركَّب من قائمةٍ ورقمٍ اختياريّ، ويصل الخادمَ سطرا واحدا كما كان */
+  const accreditationName =
+    form.accreditationBody === ACCREDITATION_OTHER ? form.accreditationOther.trim() : form.accreditationBody;
+  const accreditationDetails = [accreditationName, form.accreditationRef.trim()].filter(Boolean).join(" — ").slice(0, 300);
+  /* من رفع العلامة يلزمه أن يسمّي الجهة — وإلّا فهي علامةٌ بلا خبر */
+  const accreditationReady = !form.hasAccreditation || accreditationName.length >= 3;
+
+  /* ما ينقص الخطوة، بالاسم لا بزرٍّ مطفأ.
+
+     كان «التالي» يُطفأ ولا يقول لماذا: أربعة عشر شرطا في تعبير واحد، والمتقدّم
+     يمسح النموذج بعينه يبحث عن النجمة التي فاتته. فصارت الشروط قائمةَ نقصٍ
+     تُقرأ — وكلُّ عنصرٍ فيها بصيغة ما يُفعل لا ما يَنقص. */
+  const missing = useMemo(() => {
+    const m: Record<1 | 2 | 3, string[]> = { 1: [], 2: [], 3: [] };
+    if (form.fullName.trim().length < 3) m[1].push("اسمك الكامل");
+    if (!/.+@.+\..+/.test(form.email)) m[1].push("بريد إلكتروني صحيح");
+    if (!form.employmentStatus) m[1].push("حالتك المهنية");
+    if (specialties.length === 0) m[1].push("تخصص تدريبي واحد على الأقل");
+    if (!form.domainYears) m[1].push("سنوات خبرتك في المجال");
+    if (!form.trainingYears) m[1].push("خبرتك في التدريب");
+    if (!accreditationReady) m[1].push("جهة الاعتماد التي أشرت إليها");
+    if (languages.length === 0) m[1].push("لغة تدريب واحدة على الأقل");
+    if (!form.deliveryMode) m[1].push("نمط التدريب");
+    if (motivationLen < MOTIVATION_MIN) m[1].push(`دافعك — بقي ${countAr(MOTIVATION_MIN - motivationLen, CHAR_FORMS)}`);
+    if (!form.privacyConsent) m[1].push("الموافقة على سياسة الخصوصية");
+    if (uploads.cv?.status !== "done") m[2].push("رفع سيرتك الذاتية");
+    if (!prevCourses.some((c) => c.title.trim().length >= 2)) m[2].push("دورة سابقة واحدة على الأقل");
+    if (!demoConsent) m[2].push("الموافقة على الدرس التجريبي والمقابلة");
+    return m;
+  }, [form, specialties, languages, motivationLen, accreditationReady, uploads, prevCourses, demoConsent]);
+
   const stepValid = useMemo(() => ({
-    1:
-      form.fullName.trim().length >= 3 && /.+@.+\..+/.test(form.email) && Boolean(form.employmentStatus) &&
-      specialties.length > 0 && Boolean(form.domainYears) && Boolean(form.trainingYears) &&
-      languages.length > 0 && Boolean(form.deliveryMode) &&
-      motivationLen >= MOTIVATION_MIN && motivationLen <= MOTIVATION_MAX && form.privacyConsent,
-    2: teachable.length > 0 && demoConsent,
-    3: uploads.cv?.status === "done" && prevCourses.some((c) => c.title.trim().length >= 2),
-    4: true,
-  }), [form, specialties, languages, motivationLen, teachable, demoConsent, uploads, prevCourses]);
+    1: missing[1].length === 0 && motivationLen <= MOTIVATION_MAX,
+    2: missing[2].length === 0,
+    3: true,
+  }), [missing, motivationLen]);
 
-  const valid = stepValid[1] && stepValid[2] && stepValid[3];
+  const valid = stepValid[1] && stepValid[2];
 
-  /* الإرسال النهائي — الأقسام 2–4. القسم الأول أُرسل عند المضيّ منه. */
+  /* الإرسال النهائي — القسمان 2–3. القسم الأول أُرسل عند المضيّ منه. */
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!valid || busy || !result || !candidateToken) return;
@@ -312,7 +386,6 @@ export default function JoinTrainer() {
             year: c.year ? Number(c.year) : undefined,
             link: c.link.trim() || undefined,
           })),
-        teachableCourseIds: teachable,
         availability: {
           days: days.length ? days : undefined,
           hoursPerWeek: hoursPerWeek ? Number(hoursPerWeek) : undefined,
@@ -366,7 +439,7 @@ export default function JoinTrainer() {
         bio: form.bio || undefined, linkedinUrl: form.linkedinUrl || undefined,
         youtubeUrl: form.youtubeUrl || undefined, instagramUrl: form.instagramUrl || undefined,
         hasAccreditation: form.hasAccreditation,
-        accreditationDetails: form.hasAccreditation ? form.accreditationDetails || undefined : undefined,
+        accreditationDetails: form.hasAccreditation ? accreditationDetails || undefined : undefined,
         targetCountries: targetCountries.length ? targetCountries : undefined,
         targetAudiences: targetAudiences.length ? targetAudiences : undefined,
         trainingLanguages: languages, deliveryMode: form.deliveryMode,
@@ -455,7 +528,7 @@ export default function JoinTrainer() {
     }
   };
 
-  /* ── شاشة ما بعد الإرسال ── تظهر بعد اكتمال الأقسام الأربعة لا بعد الأول:
+  /* ── شاشة ما بعد الإرسال ── تظهر بعد اكتمال الأقسام الثلاثة لا بعد الأول:
      بدء الطلب في الخلفية تفصيلٌ تقني، وإظهار شاشة النجاح عنده يوهم المتقدّم
      أنه انتهى وقد بقي نصف طلبه. */
   if (result && phase2Done) {
@@ -515,7 +588,7 @@ export default function JoinTrainer() {
                 </p>
               )}
               <p className="text-sm leading-8 text-white/60">
-                وصلنا طلبك كاملا — بأقسامه الأربعة ومستنداتك. سيقرؤه فريقنا ثم نراسلك بالخطوة التالية:
+                وصلنا طلبك كاملا — بأقسامه الثلاثة ومستنداتك. سيقرؤه فريقنا ثم نراسلك بالخطوة التالية:
                 مقابلة ودرس تجريبي قصير. احفظ رقمك المرجعي ورمز المرشح أدناه — بهما تتابع حالتك أو تسحب طلبك.
               </p>
 
@@ -564,7 +637,7 @@ export default function JoinTrainer() {
         <h1 className="h-section mt-4">درّب ما تتقنه — وأثرّ في مسارات حقيقية</h1>
         <p className="mt-4 max-w-2xl text-base leading-8 text-white/65">
           مدربو وجيز لا يلقون دروسا مسجلة فحسب — يراجعون واجبات، ويرافقون طلابا، ويقيمون مشاريع تخرج.
-          نموذج واحد بأربعة أقسام — يُحفظ تقدّمك كلما مضيت، ولا ينتظرك بريد بينها.
+          نموذج واحد بثلاثة أقسام — يُحفظ تقدّمك كلما مضيت، ولا ينتظرك بريد بينها.
         </p>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-3">
@@ -581,7 +654,7 @@ export default function JoinTrainer() {
         </div>
 
         {/* مؤشر الخطوات — ثلاث محطات قصيرة بدل جدار واحد */}
-        <ol className="mt-10 grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="أقسام الطلب">
+        <ol className="mt-10 grid grid-cols-1 gap-2 sm:grid-cols-3" aria-label="أقسام الطلب">
           {STEPS.map((s) => {
             const state = s.n === step ? "current" : s.n < step ? "done" : "todo";
             return (
@@ -656,9 +729,18 @@ export default function JoinTrainer() {
                   <input id="jt-role" name="role" placeholder="مثال: مدير تحليل بيانات" value={form.jobTitle} onChange={set("jobTitle")} className={inputCls} />
                 </div>
               </div>
+              {/* حقلٌ كان فارغا من كل دلالة: عنوانٌ وصندوق. و«نبذة عنك» سؤالٌ
+                  مفتوح يُجاب بسطرٍ عامّ («مدرب شغوف بالتطوير») ما لم يُقل ماذا
+                  يُكتب فيه — فصار التلميح يسمّي الثلاثة التي يقرؤها المراجع. */}
               <div>
                 <label htmlFor="jt-bio" className="mb-1.5 block text-xs font-bold text-white/60">نبذة مختصرة عنك</label>
-                <textarea id="jt-bio" rows={2} value={form.bio} onChange={set("bio")} className={inputCls} />
+                <p className="mb-2 text-[11px] leading-relaxed text-white/40">
+                  ثلاثة أسطر تكفي: أين تعمل اليوم وماذا تُتقن، وأبرز ما أنجزته في مجالك، ولمن دربت من قبل.
+                </p>
+                <textarea
+                  id="jt-bio" rows={3} value={form.bio} onChange={set("bio")} className={inputCls}
+                  placeholder="مثال: أعمل مديرا لتحليل البيانات في شركة اتصالات منذ ٦ سنوات، بنيت فيها وحدة التقارير من الصفر. دربت أكثر من ٢٠٠ موظف على Power BI داخل الشركة وفي ورش خارجية."
+                />
               </div>
 
               <fieldset className="border-t border-white/5 pt-6">
@@ -685,6 +767,65 @@ export default function JoinTrainer() {
               </div>
               <p className="-mt-3 text-[11px] text-white/40">إتقان المجال شيء والقدرة على تدريبه شيء آخر — نقرؤهما منفصلين.</p>
 
+              {/* الاعتماد مع الخبرة لا مع الروابط.
+
+                  كان تحت «أدلتك — روابطك وملفّك»، بين لينكدإن وإنستغرام: وهو
+                  ليس رابطا يُلصق بل مؤهّلٌ رسميّ يُقرأ مع سنوات الخبرة ويُقارن
+                  بها. فمن يقرأ سطر الخبرة يقرؤه معه، ومن لا اعتماد له يمرّ
+                  بعلامةٍ واحدة ولا يُفتح له شيء. */}
+              <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+                <label className="flex cursor-pointer items-start gap-2.5">
+                  <input
+                    type="checkbox" checked={form.hasAccreditation}
+                    onChange={(e) => setForm(e.target.checked
+                      ? { ...form, hasAccreditation: true }
+                      : { ...form, hasAccreditation: false, accreditationBody: "", accreditationOther: "", accreditationRef: "" })}
+                    className="mt-0.5 h-4 w-4 accent-teal"
+                  />
+                  <span className="text-xs leading-6 text-white/60">
+                    لدي اعتماد أو ترخيص رسمي من جهة أو هيئة تدريب معترف بها
+                  </span>
+                </label>
+                {form.hasAccreditation && (
+                  <div className="mt-4 grid gap-4 border-t border-white/10 pt-4 sm:grid-cols-2">
+                    <div>
+                      <label htmlFor="jt-accred-body" className="mb-1.5 block text-xs font-bold text-white/60">جهة الاعتماد *</label>
+                      <select
+                        id="jt-accred-body" value={form.accreditationBody} onChange={set("accreditationBody")}
+                        className={`${inputCls} [&>option]:bg-surface [&>optgroup]:bg-surface`}
+                      >
+                        <option value="" disabled>اختر الجهة</option>
+                        {ACCREDITATION_BODIES.map((g) => (
+                          <optgroup key={g.country} label={g.country}>
+                            {g.bodies.map((b) => <option key={b} value={b}>{b}</option>)}
+                          </optgroup>
+                        ))}
+                        <option value={ACCREDITATION_OTHER}>{ACCREDITATION_OTHER}</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label htmlFor="jt-accred-ref" className="mb-1.5 block text-xs font-bold text-white/60">رقم الاعتماد أو تاريخه</label>
+                      <input
+                        id="jt-accred-ref" placeholder="اختياري — مثال: TR-2023-4471"
+                        value={form.accreditationRef} onChange={set("accreditationRef")} className={inputCls}
+                      />
+                    </div>
+                    {form.accreditationBody === ACCREDITATION_OTHER && (
+                      <div className="sm:col-span-2">
+                        <label htmlFor="jt-accred-other" className="mb-1.5 block text-xs font-bold text-white/60">اكتب اسم الجهة كما هو في وثيقتك *</label>
+                        <input
+                          id="jt-accred-other" placeholder="مثال: Chartered Institute of Personnel and Development (CIPD)"
+                          value={form.accreditationOther} onChange={set("accreditationOther")} className={inputCls}
+                        />
+                      </div>
+                    )}
+                    <p className="text-[11px] leading-relaxed text-white/40 sm:col-span-2">
+                      نطلب وثيقة الاعتماد لاحقا في خطوة المستندات — والمذكور هنا لا يُنشر ولا يُعرض للمتعلمين قبل توثيقه.
+                    </p>
+                  </div>
+                )}
+              </div>
+
               <div className="space-y-5 border-t border-white/5 pt-6">
                 <p className="text-xs font-bold text-white/60">أدلتك — اختيارية كلها، لكنها ما يقرؤه المراجع قبل غيره</p>
                 <p className="-mt-3 text-[11px] leading-relaxed text-white/45">
@@ -706,24 +847,6 @@ export default function JoinTrainer() {
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-white/10 bg-black/20 p-4">
-                  <label className="flex cursor-pointer items-start gap-2.5">
-                    <input
-                      type="checkbox" checked={form.hasAccreditation}
-                      onChange={(e) => setForm({ ...form, hasAccreditation: e.target.checked, accreditationDetails: e.target.checked ? form.accreditationDetails : "" })}
-                      className="mt-0.5 h-4 w-4 accent-teal"
-                    />
-                    <span className="text-xs leading-6 text-white/60">
-                      لدي اعتماد أو ترخيص رسمي من جهة أو هيئة تدريب معترف بها
-                    </span>
-                  </label>
-                  {form.hasAccreditation && (
-                    <div className="mt-3">
-                      <label htmlFor="jt-accred" className="mb-1.5 block text-xs font-bold text-white/60">اسم الجهة وتفاصيل الاعتماد</label>
-                      <input id="jt-accred" placeholder="مثال: اعتماد هيئة تقويم التعليم والتدريب — رقم ..." value={form.accreditationDetails} onChange={set("accreditationDetails")} className={inputCls} />
-                    </div>
-                  )}
-                </div>
               </div>
 
               <div className="grid gap-5 border-t border-white/5 pt-6 sm:grid-cols-2">
@@ -790,47 +913,8 @@ export default function JoinTrainer() {
             </div>
           )}
 
-          {/* ══ ٢) ما يمكنك تدريسه ══ */}
+          {/* ══ ٢) نماذجك وأدلتك وتوفّرك ══ */}
           {step === 2 && (
-            <div className="space-y-6">
-              <fieldset>
-                <legend className="text-sm font-black">الدورات التي تستطيع تدريسها الآن *</legend>
-                <p className="mb-4 mt-1 text-[11px] leading-relaxed text-white/40">
-                  من كتالوج وجيز نفسه لا بنصّ حرّ — لأن المراجع يقارن عناوين، والربط بالمقرر بعد الاعتماد يحتاج
-                  المقرر نفسه لا وصفه.
-                </p>
-                <TeachableCoursePicker selected={teachable} onChange={setTeachable} />
-              </fieldset>
-
-              <div className="grid gap-5 border-t border-white/5 pt-6 sm:grid-cols-2">
-                <div>
-                  <label htmlFor="jt-hours" className="mb-1.5 block text-xs font-bold text-white/60">ساعات أسبوعيا تستطيع تخصيصها</label>
-                  <input id="jt-hours" type="number" min={1} max={80} dir="ltr" value={hoursPerWeek}
-                    onChange={(e) => setHoursPerWeek(e.target.value)} className={`${inputCls} text-left`} />
-                </div>
-                <div>
-                  <label htmlFor="jt-start" className="mb-1.5 block text-xs font-bold text-white/60">يمكنك البدء من</label>
-                  <input id="jt-start" type="date" dir="ltr" value={startFrom}
-                    onChange={(e) => setStartFrom(e.target.value)} className={`${inputCls} text-left`} />
-                </div>
-              </div>
-
-              <fieldset className="border-t border-white/5 pt-6">
-                <legend className="mb-2.5 text-xs font-bold text-white/60">أيامك المتاحة</legend>
-                <Chips options={DAYS} selected={days} onToggle={(v) => toggle(days, v, setDays)} />
-              </fieldset>
-
-              <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-white/10 bg-black/20 p-3">
-                <input type="checkbox" checked={demoConsent} onChange={(e) => setDemoConsent(e.target.checked)} className="mt-0.5 h-4 w-4 accent-teal" />
-                <span className="text-xs leading-6 text-white/60">
-                  أوافق على تقديم درس تجريبي قصير (Demo) ومقابلة قبل الاعتماد. *
-                </span>
-              </label>
-            </div>
-          )}
-
-          {/* ══ ٣) نماذجك وأدلتك ══ */}
-          {step === 3 && (
             <div className="space-y-6">
               <fieldset>
                 <legend className="text-sm font-black">مستنداتك</legend>
@@ -895,11 +979,36 @@ export default function JoinTrainer() {
                   ))}
                 </div>
               </fieldset>
+
+              <div className="grid gap-5 border-t border-white/5 pt-6 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="jt-hours" className="mb-1.5 block text-xs font-bold text-white/60">ساعات أسبوعيا تستطيع تخصيصها</label>
+                  <input id="jt-hours" type="number" min={1} max={80} dir="ltr" value={hoursPerWeek}
+                    onChange={(e) => setHoursPerWeek(e.target.value)} className={`${inputCls} text-left`} />
+                </div>
+                <div>
+                  <label htmlFor="jt-start" className="mb-1.5 block text-xs font-bold text-white/60">يمكنك البدء من</label>
+                  <input id="jt-start" type="date" dir="ltr" value={startFrom}
+                    onChange={(e) => setStartFrom(e.target.value)} className={`${inputCls} text-left`} />
+                </div>
+              </div>
+
+              <fieldset className="border-t border-white/5 pt-6">
+                <legend className="mb-2.5 text-xs font-bold text-white/60">أيامك المتاحة</legend>
+                <Chips options={DAYS} selected={days} onToggle={(v) => toggle(days, v, setDays)} />
+              </fieldset>
+
+              <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-white/10 bg-black/20 p-3">
+                <input type="checkbox" checked={demoConsent} onChange={(e) => setDemoConsent(e.target.checked)} className="mt-0.5 h-4 w-4 accent-teal" />
+                <span className="text-xs leading-6 text-white/60">
+                  أوافق على تقديم درس تجريبي قصير (Demo) ومقابلة قبل الاعتماد. *
+                </span>
+              </label>
             </div>
           )}
 
-          {/* ══ ٤) مراجعة وإرسال ══ */}
-          {step === 4 && (
+          {/* ══ ٣) مراجعة وإرسال ══ */}
+          {step === 3 && (
             <div className="space-y-5">
               {/* الحساب اختياري ومفيد: بدونه يتابع طلبه برقم ورمز ينسخهما من
                   الشاشة — ومن فقدهما فقد طلبه. وهو حساب «متقدّم مدرب» لا حساب
@@ -954,7 +1063,6 @@ export default function JoinTrainer() {
                 </p>
                 <ul className="mt-3 space-y-1.5 text-[11.5px] leading-6 text-white/60">
                   <li>{form.fullName.trim() || "—"} · {specialties.length} تخصصا · {DOMAIN_YEARS.find((y) => y.value === form.domainYears)?.label ?? "—"} في المجال</li>
-                  <li>{teachable.length} دورة تستطيع تدريسها من الكتالوج</li>
                   <li>{prevCourses.filter((c) => c.title.trim()).length} دورة سابقة عبر الإنترنت</li>
                   <li>{Object.values(uploads).filter((u) => u.status === "done").length} مستندا مرفوعا</li>
                   <li>دافعك: {motivationLen} حرفا</li>
@@ -965,6 +1073,24 @@ export default function JoinTrainer() {
 
           {error && <p className="rounded-xl border border-red-400/30 bg-red-400/10 p-3 text-xs text-red-200" role="alert">{error}</p>}
 
+          {/* ما ينقص، بالاسم. زرٌّ مطفأ بلا سبب يجعل المتقدّم يفتّش النموذج
+              بعينه؛ وهذه قائمةٌ تُقرأ في سطرين وتختفي حين تكتمل الخطوة.
+              aria-live كي يسمعها قارئ الشاشة وهي تتناقص. */}
+          {step < 3 && missing[step as 1 | 2].length > 0 && (
+            <div className="rounded-2xl border border-gold/30 bg-gold/[0.06] p-4" aria-live="polite">
+              <p className="text-xs font-black text-gold-ink">
+                بقي {countAr(missing[step as 1 | 2].length, MISSING_FORMS)} قبل «التالي»
+              </p>
+              <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 text-[11.5px] leading-6 text-white/65">
+                {missing[step as 1 | 2].map((m) => (
+                  <li key={m} className="flex items-center gap-1.5">
+                    <span className="h-1 w-1 shrink-0 rounded-full bg-gold-ink" /> {m}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {/* التنقل — «التالي» معطّل حتى تكتمل الخطوة، لا حتى يكتمل النموذج كله */}
           <div className="flex items-center justify-between gap-3 border-t border-white/5 pt-6">
             {step > 1 ? (
@@ -973,7 +1099,7 @@ export default function JoinTrainer() {
               </button>
             ) : <span />}
 
-            {step < 4 ? (
+            {step < 3 ? (
               <button
                 type="button" onClick={next} disabled={!stepValid[step as 1 | 2 | 3] || busy}
                 className="flex cursor-pointer items-center gap-2 rounded-full bg-teal px-7 py-2.5 text-sm font-black text-on-teal transition hover:bg-teal/90 disabled:cursor-not-allowed disabled:opacity-40"
