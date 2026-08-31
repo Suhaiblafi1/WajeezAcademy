@@ -14,6 +14,29 @@ import { PlanService } from './plan.service'
 
 const num = (d: Prisma.Decimal | number | null | undefined) => Number(d ?? 0)
 
+/* صلاحيةُ الكوبون — فحصٌ واحد لثلاثة مواضع شراء.
+
+   كان منسوخا ثلاث مرّات (خطّة، سلّة، شعبةٌ واحدة)، فأيُّ شرطٍ يُضاف في
+   واحدٍ يُنسى في اثنين. وقد حدث ذلك فعلا حين صار للكوبون قصرٌ على عميل:
+   قصرٌ لا يُفحص عند الاستعمال زينةٌ في القاعدة — يكفي أن يقرأ العميل رمزه
+   في فاتورته ويرسله إلى عشرة. */
+export interface UsableCoupon {
+  active: boolean
+  expiresAt: Date | null
+  maxUses: number | null
+  usedCount: number
+  restrictedToUserId: string | null
+}
+
+export function assertCouponUsable(coupon: UsableCoupon | null, userId: string): void {
+  if (!coupon || !coupon.active) throw new AuthError('bad_coupon', 'الكوبون غير صالح')
+  if (coupon.expiresAt && coupon.expiresAt < new Date()) throw new AuthError('bad_coupon', 'الكوبون منتهي')
+  if (coupon.maxUses && coupon.usedCount >= coupon.maxUses) throw new AuthError('bad_coupon', 'استنفد الكوبون عدد استخداماته')
+  if (coupon.restrictedToUserId && coupon.restrictedToUserId !== userId) {
+    throw new AuthError('bad_coupon', 'هذا الكوبون ليس لحسابك')
+  }
+}
+
 export class CommerceService {
   private prisma: PrismaClient
   private enrollments: EnrollmentService
@@ -175,9 +198,9 @@ export class CommerceService {
     let couponId: string | undefined
     if (couponCode) {
       const coupon = await this.prisma.coupon.findUnique({ where: { code: couponCode.trim().toUpperCase() } })
-      if (!coupon || !coupon.active) throw new AuthError('bad_coupon', 'الكوبون غير صالح')
-      if (coupon.expiresAt && coupon.expiresAt < new Date()) throw new AuthError('bad_coupon', 'الكوبون منتهي')
-      if (coupon.maxUses && coupon.usedCount >= coupon.maxUses) throw new AuthError('bad_coupon', 'استنفد الكوبون عدد استخداماته')
+      assertCouponUsable(coupon, userId)
+      /* الفحصُ يرمي عند الغياب — فما بعده كوبونٌ موجود */
+      if (!coupon) throw new AuthError('bad_coupon', 'الكوبون غير صالح')
       discount = coupon.percentOff ? Math.round((subtotal * coupon.percentOff) / 100 * 100) / 100 : num(coupon.amountOff)
       if (discount > subtotal) discount = subtotal
       couponId = coupon.id
@@ -297,9 +320,9 @@ export class CommerceService {
     let couponId: string | undefined
     if (couponCode) {
       const coupon = await this.prisma.coupon.findUnique({ where: { code: couponCode.trim().toUpperCase() } })
-      if (!coupon || !coupon.active) throw new AuthError('bad_coupon', 'الكوبون غير صالح')
-      if (coupon.expiresAt && coupon.expiresAt < new Date()) throw new AuthError('bad_coupon', 'الكوبون منتهي')
-      if (coupon.maxUses && coupon.usedCount >= coupon.maxUses) throw new AuthError('bad_coupon', 'استنفد الكوبون عدد استخداماته')
+      assertCouponUsable(coupon, userId)
+      /* الفحصُ يرمي عند الغياب — فما بعده كوبونٌ موجود */
+      if (!coupon) throw new AuthError('bad_coupon', 'الكوبون غير صالح')
       discount = coupon.percentOff
         ? Math.round(subtotal * coupon.percentOff / 100 * 100) / 100
         : num(coupon.amountOff)
@@ -379,9 +402,11 @@ export class CommerceService {
     let couponId: string | undefined
     if (couponCode) {
       const coupon = await this.prisma.coupon.findUnique({ where: { code: couponCode.trim().toUpperCase() } })
-      if (!coupon || !coupon.active) throw new AuthError('bad_coupon', 'الكوبون غير صالح')
-      if (coupon.expiresAt && coupon.expiresAt < new Date()) throw new AuthError('bad_coupon', 'الكوبون منتهي')
-      if (coupon.maxUses && coupon.usedCount >= coupon.maxUses) throw new AuthError('bad_coupon', 'استنفد الكوبون عدد استخداماته')
+      /* المشتري صاحبُ الطلب لا الإداريُّ المعتمِد — والكوبونُ المقصور
+         يُقاس على من تُصدَر له الفاتورة. */
+      assertCouponUsable(coupon, req.userId)
+      /* الفحصُ يرمي عند الغياب — فما بعده كوبونٌ موجود */
+      if (!coupon) throw new AuthError('bad_coupon', 'الكوبون غير صالح')
       const price = num(req.cohort.price)
       discount = coupon.percentOff ? Math.round(price * coupon.percentOff / 100 * 100) / 100 : num(coupon.amountOff)
       if (discount > price) discount = price

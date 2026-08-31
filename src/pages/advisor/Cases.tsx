@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   CalendarClock, CheckCircle2, ChevronLeft, ClipboardList, Loader2, MessageSquarePlus,
-  PhoneCall, Send, ServerOff, StickyNote, UserRound,
+  PhoneCall, Send, ServerOff, StickyNote, UserRound, GraduationCap, BadgePercent,
 } from "lucide-react";
 import AdvisorLayout from "./AdvisorLayout";
-import FlowSteps from "@/components/FlowSteps";
 import { apiGet, apiPost, ApiError } from "@/services/api";
+import Pipeline from "./Pipeline";
+import LearnerPanel from "./LearnerPanel";
+import RequestsPanel from "./RequestsPanel";
 
 const STATUS_LABELS: Record<string, string> = {
   new: "جديدة", contacted: "تم التواصل", needs_review: "تحتاج مراجعة", follow_up: "متابعة",
@@ -45,9 +47,12 @@ interface CaseDetail extends CaseRow {
 const INPUT = "w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/25 focus:border-teal focus:outline-none";
 const LBL = "mb-1 block text-[11px] font-bold text-white/60";
 
+/* `ar-SA` تُخرج تقويما **هجريّا**، فكان المستشار وحده يرى «١٥ ربيع الآخر»
+   بينما الشعبةُ مجدولةٌ ميلاديّا في كل شاشةٍ أخرى — فيُقارن موعدين
+   بتقويمين. و`ar-u-ca-gregory` تُثبّت الميلاديّ مهما كانت لغة المتصفّح. */
 function fmt(d: string | null) {
   if (!d) return "—";
-  return new Date(d).toLocaleDateString("ar-SA", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  return new Date(d).toLocaleDateString("ar-u-ca-gregory", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 }
 
 /* لقطة التشخيص: نستخرج أبرز مسار وثقة مهما كان شكل الحفظ */
@@ -168,6 +173,21 @@ export default function AdvisorCases() {
               )} />
           </section>
 
+          {/* الوجه الأكاديميّ — أين وصل عميلي */}
+          <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+            <h2 className="mb-3 flex items-center gap-2 text-sm font-black text-teal-light-ink"><GraduationCap className="h-4 w-4" /> أين وصل — قراءةٌ لا تعديل</h2>
+            <LearnerPanel key={detail.id} caseId={detail.id} />
+          </section>
+
+          {/* ما لا يملكه المستشار وحده */}
+          <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 lg:col-span-2">
+            <h2 className="mb-1 flex items-center gap-2 text-sm font-black text-teal-light-ink"><BadgePercent className="h-4 w-4" /> طلباتٌ تبتّ فيها الإدارة</h2>
+            <p className="mb-3 text-[11px] leading-6 text-white/45">
+              خصمٌ على فاتورته، أو تعديلٌ على خطّته. لا يُنفَّذ بطلبك وحده — ويبقى أثرُه مكتوبا.
+            </p>
+            <RequestsPanel key={detail.id} caseId={detail.id} />
+          </section>
+
           {/* تسجيل تواصل */}
           <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
             <h2 className="mb-3 flex items-center gap-2 text-sm font-black text-teal-light-ink"><PhoneCall className="h-4 w-4" /> سجل التواصل</h2>
@@ -264,17 +284,11 @@ export default function AdvisorCases() {
   /* ══ قائمة الحالات ══ */
   return (
     <AdvisorLayout title="حالاتي — عملاء التشخيص المسندون إليّ">
-      <FlowSteps steps={[
-        { label: "حالة جديدة", actor: "تُسند إليك" },
-        { label: "أول تواصل", actor: "أنت هنا" },
-        { label: "متابعة ومراجعة", actor: "أنت" },
-        { label: "توصية بمسار", actor: "أنت" },
-        { label: "تسجيل أو إغلاق", actor: "العميل يقرر" },
-      ]} />
+      {/* القِمع أوّلا — «أين أنا؟» في نظرة، ثمّ التصفية لمن أرادها */}
       <div className="mb-5 flex flex-wrap items-center gap-2">
         <button onClick={() => setStatusFilter("")}
           className={`cursor-pointer rounded-full border px-3 py-1.5 text-xs font-bold transition ${!statusFilter ? "border-gold bg-gold/10 text-gold-ink" : "border-white/15 text-white/55 hover:text-white"}`}>
-          الكل
+          كل الحالات
         </button>
         {Object.entries(STATUS_LABELS).map(([k, v]) => (
           <button key={k} onClick={() => setStatusFilter(k)}
@@ -294,7 +308,8 @@ export default function AdvisorCases() {
           <h2 className="mt-4 text-xl font-black">لا حالات مسندة هنا</h2>
           <p className="mt-2 max-w-md text-sm leading-7 text-white/55">حين يُسند إليك عميل من لوحة الأدمن (الاستثناءات) سيظهر هنا فورا.</p>
         </div>
-      ) : (
+      ) : statusFilter ? (
+        /* تصفيةٌ صريحة: قائمةٌ مسطّحة أنفعُ من قِمعٍ بعمودٍ واحد */
         <div className="space-y-3">
           {cases.map((c) => (
             <button key={c.id} onClick={() => void openCase(c.id)}
@@ -319,6 +334,15 @@ export default function AdvisorCases() {
             </button>
           ))}
         </div>
+      ) : (
+        <Pipeline
+          cases={cases}
+          onOpen={(id) => void openCase(id)}
+          renderName={(id) => {
+            const c = cases.find((x) => x.id === id);
+            return c ? partyOf(c) : { name: "—", email: "" };
+          }}
+        />
       )}
     </AdvisorLayout>
   );

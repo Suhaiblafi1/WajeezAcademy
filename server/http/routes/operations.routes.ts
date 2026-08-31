@@ -6,12 +6,14 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { AdvisorService } from '../../services/advisor.service'
+import { AdvisorRequestService } from '../../services/advisor-request.service'
 import { CvService } from '../../services/cv.service'
 import { CommerceService } from '../../services/commerce.service'
 import { requireAuth, requirePermission } from '../auth-plugin'
 
 export function registerOperationsRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const advisors = new AdvisorService(prisma)
+  const advisorRequests = new AdvisorRequestService(prisma)
   const cvs = new CvService(prisma)
   const commerce = new CommerceService(prisma)
 
@@ -113,6 +115,66 @@ export function registerOperationsRoutes(app: FastifyInstance, prisma: PrismaCli
       direction: z.enum(['out', 'in']).optional(), summary: z.string().min(3),
     }).parse(req.body)
     return reply.status(201).send(await advisors.addContactEvent(req.auth!.userId, id, body))
+  })
+
+  /* ── الوجه الأكاديميّ: المستشار يتابع من أُسند إليه ── */
+  app.get('/api/advisor/cases/:id/learner', {
+    preHandler: requirePermission('advisor.learner.view'),
+    schema: { tags: ['advisor-portal'], summary: 'الصورة الأكاديمية لعميلٍ مسند — تسجيلاته وتقدّمها وجلساته القادمة وخطّته' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return advisors.learnerSnapshot(req.auth!.userId, id)
+  })
+
+  /* ── ما لا يملكه المستشار وحده: خصمٌ وتعديلُ خطّة ── */
+  app.get('/api/advisor/cases/:id/requests', {
+    preHandler: requirePermission('advisor.request.submit'),
+    schema: { tags: ['advisor-portal'], summary: 'طلباتي على هذه الحالة وحالة كلٍّ منها' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return advisorRequests.byCase(req.auth!.userId, id)
+  })
+
+  app.post('/api/advisor/cases/:id/requests', {
+    preHandler: requirePermission('advisor.request.submit'),
+    schema: { tags: ['advisor-portal'], summary: 'رفع طلب خصم أو تعديل خطّة — يبتّ فيه غيرُك' },
+  }, async (req, reply) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      kind: z.enum(['discount', 'plan_add', 'plan_remove']),
+      percentOff: z.number().int().optional(),
+      amountOff: z.number().optional(),
+      currency: z.string().max(8).optional(),
+      courseId: z.string().max(64).optional(),
+      reasonAr: z.string().min(1).max(2000),
+    }).parse(req.body)
+    return reply.status(201).send(await advisorRequests.submit(req.auth!.userId, id, body))
+  })
+
+  app.post('/api/advisor/requests/:requestId/cancel', {
+    preHandler: requirePermission('advisor.request.submit'),
+    schema: { tags: ['advisor-portal'], summary: 'سحب طلبٍ معلّق رفعتَه أنت' },
+  }, async (req) => {
+    const { requestId } = z.object({ requestId: z.string().uuid() }).parse(req.params)
+    return advisorRequests.cancel(req.auth!.userId, requestId)
+  })
+
+  /* ── طابور الإدارة ── */
+  app.get('/api/admin/advisor-requests', {
+    preHandler: requirePermission('advisor.request.review'),
+    schema: { tags: ['admin-operations'], summary: 'طلبات المستشارين المعلّقة — أقدمُها أوّلا' },
+  }, async () => advisorRequests.pending())
+
+  app.post('/api/admin/advisor-requests/:requestId/decision', {
+    preHandler: requirePermission('advisor.request.review'),
+    schema: { tags: ['admin-operations'], summary: 'اعتماد طلب أو رفضه — والرفض يلزمه سبب' },
+  }, async (req) => {
+    const { requestId } = z.object({ requestId: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      decision: z.enum(['approved', 'rejected']),
+      noteAr: z.string().max(2000).optional(),
+    }).parse(req.body)
+    return advisorRequests.decide(requestId, req.auth!.userId, body.decision, body.noteAr)
   })
 
   /* ════ إدارة حالات المستشارين ════ */

@@ -57,6 +57,7 @@ const TrainerAcceptInvite = lazy(() => import('./pages/TrainerAcceptInvite'))
 const TrainerProposals = lazy(() => import('./pages/trainer/Proposals'))
 const CohortBoard = lazy(() => import('./pages/trainer/CohortBoard'))
 const Exceptions = lazy(() => import('./pages/admin/Exceptions'))
+const AdminAdvisorRequests = lazy(() => import('./pages/admin/AdvisorRequests'))
 const CatalogAdmin = lazy(() => import('./pages/admin/CatalogAdmin'))
 const AdminAuthoring = lazy(() => import('./pages/admin/Authoring'))
 const PublishingBoard = lazy(() => import('./pages/admin/PublishingBoard'))
@@ -182,6 +183,7 @@ export default function App() {
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/cohorts" element={<AdminCohorts />} />
             <Route path="/admin/exceptions" element={<Exceptions />} />
+            <Route path="/admin/advisor-requests" element={<AdminAdvisorRequests />} />
             {/* حُذفت «سير المحتوى»: مراحلُ اعتمادٍ ومحتوىً تتحرّك في المتصفّح من
                 `data/admin`. سير المحتوى الحقيقي في «الكتالوج» و«النشر والإصدارات». */}
             <Route path="/admin/content" element={<Navigate to="/admin/publishing" replace />} />

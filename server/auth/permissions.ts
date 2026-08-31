@@ -72,6 +72,12 @@ export const PERMISSIONS = [
   { key: 'advisor.cases.view', description: 'عرض حالات العملاء المسندة إلى المستشار فقط' },
   { key: 'advisor.cases.operate', description: 'تشغيل الحالة المسندة: ملاحظات ومهام ومتابعات وتواصل وحالة' },
   { key: 'advisor.assign', description: 'إسناد حالة إلى مستشار' },
+  /* دورُ المستشار مبيعاتٌ ومتابعةٌ أكاديمية معا — وكانت له خمسُ صلاحيات
+     لا تكفي إلّا للأولى. فمن يتابع طالبا لا يرى تقدّمه ولا مواعيد شعبه،
+     ومن يبيع لا يملك أن يطلب خصما فيخرج بالطلب من المنصّة كلّها. */
+  { key: 'advisor.learner.view', description: 'رؤية تقدّم عميلٍ مسند وتسجيلاته ومواعيد جلساته وتقييماته' },
+  { key: 'advisor.request.submit', description: 'رفع طلب خصم أو تعديل خطّة لعميلٍ مسند — يبتّ فيه غيرُه' },
+  { key: 'advisor.request.review', description: 'البتّ في طلبات المستشارين: خصمٌ أو تعديل خطّة' },
   // السير الذاتية
   { key: 'cv.upload', description: 'رفع سيرة ذاتية بموافقة صريحة' },
   { key: 'cv.view', description: 'عرض سيرة عميل مسند — كل مشاهدة مسجلة' },
@@ -115,7 +121,7 @@ export const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
     'trainer.change.review',
     'cohort.manage', 'cohort.open', 'cohort.override_capacity', 'enrollment.manage',
     'material.manage', 'certificate.issue', 'certificate.revoke',
-    'advisor.assign', 'cv.manage', 'cv.view',
+    'advisor.assign', 'advisor.request.review', 'advisor.learner.view', 'cv.manage', 'cv.view',
     'enrollment.request.review', 'commerce.manage',
     'finance.view', 'finance.payment.record', 'finance.refund.process',
     'reports.view', 'reports.export',
@@ -137,7 +143,7 @@ export const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
     'advisor.assign', 'enrollment.request.review', 'support.assign',
     'reports.view', 'reports.export',
   ],
-  advisor: ['catalog.view', 'advisor.cases.view', 'advisor.cases.operate', 'cv.view', 'rating.view.subject'],
+  advisor: ['catalog.view', 'advisor.cases.view', 'advisor.cases.operate', 'advisor.learner.view', 'advisor.request.submit', 'cv.view', 'rating.view.subject'],
   trainer: ['trainer.portal', 'trainer.change.submit', 'trainer.cohort.operate', 'rating.view.subject'],
   /* حساب التقديم — لا بوابة متعلم ولا بوابة مدرب. يصير مدربا بالدعوة بعد
      الاعتماد (trainer.invite)، وحتى ذلك الحين لا يملك إلا رؤية طلبه. */

@@ -135,6 +135,69 @@ export class AdvisorService {
     return kase
   }
 
+  /* ── الوجه الثاني: المتابعة الأكاديمية ──
+
+     المستشار ليس بائعا ينصرف بعد الإغلاق. دورُه المعلَن استشاريّ: يبقى
+     يتابع تقدّم من أسندناهم إليه، ويرى تقييماتهم ومواعيد شعبهم، فيتدخّل
+     قبل أن يتعثّروا لا بعد أن يتركوا.
+
+     وكان لا يرى شيئا من ذلك: خمسُ صلاحيّاتٍ تكفي للبيع وحده. فمن سأله
+     عميلُه «أين وصلت؟» لم يجد جوابا في المنصّة. */
+
+  /** الصورة الأكاديمية لعميلٍ مسند — تسجيلاته وتقدّمها وجلساتُه القادمة وخطّته */
+  async learnerSnapshot(advisorId: string, caseId: string) {
+    await this.assertAssigned(advisorId, caseId)
+    const kase = await this.prisma.advisorCase.findUnique({
+      where: { id: caseId },
+      select: { clientId: true },
+    })
+    if (!kase) throw new AuthError('not_found', 'الحالة غير موجودة', 404)
+    /* لا حساب للعميل بعد — حالةٌ مشروعة لا خطأ: عميلٌ محتمل لم يسجّل */
+    if (!kase.clientId) return { hasAccount: false as const, enrollments: [], upcomingSessions: [], plan: null }
+
+    const userId = kase.clientId
+    const now = new Date()
+
+    const [enrollments, upcoming, plan] = await Promise.all([
+      this.prisma.enrollment.findMany({
+        where: { userId },
+        select: {
+          id: true, status: true, createdAt: true,
+          courseProgress: { select: { percent: true } },
+          cohort: {
+            select: {
+              id: true, title: true, status: true, startsAt: true,
+              course: { select: { id: true, status: true } },
+            },
+          },
+          moduleProgress: { select: { moduleId: true, status: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.cohortSession.findMany({
+        where: {
+          startsAt: { gte: now },
+          cohort: { enrollments: { some: { userId, status: 'enrolled' } } },
+        },
+        select: {
+          id: true, title: true, startsAt: true, endsAt: true, status: true,
+          cohort: { select: { id: true, title: true } },
+        },
+        orderBy: { startsAt: 'asc' },
+        take: 5,
+      }),
+      this.prisma.learnerPlan.findFirst({
+        where: { userId, status: 'active' },
+        select: {
+          id: true, nameAr: true, hostPathwayId: true, giftCourseId: true,
+          items: { select: { courseId: true, sequence: true }, orderBy: { sequence: 'asc' } },
+        },
+      }),
+    ])
+
+    return { hasAccount: true as const, enrollments, upcomingSessions: upcoming, plan }
+  }
+
   /* ── التشغيل على الحالة — كلها محروسة بالإسناد ── */
 
   async setStatus(advisorId: string, caseId: string, status: string, note?: string) {
