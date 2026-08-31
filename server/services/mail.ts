@@ -9,6 +9,11 @@ export interface MailInput {
   to: string
   subject: string
   text: string
+  /* دعوةُ تقويم تُرفَق بالرسالة — يفتحها قوقل وآبل وأوتلوك بلا حساب.
+     والاسمُ `.ics` والنوعُ `text/calendar` كلاهما لازم: بعضُ العملاء
+     يقرأ النوعَ وبعضُهم اللاحقة. */
+  icsContent?: string
+  icsFilename?: string
 }
 
 export async function sendEmail(config: EmailConfig, input: MailInput): Promise<{ ok: boolean; error?: string }> {
@@ -27,6 +32,13 @@ export async function sendEmail(config: EmailConfig, input: MailInput): Promise<
       to: input.to,
       subject: input.subject,
       text: input.text,
+      attachments: input.icsContent
+        ? [{
+            filename: input.icsFilename ?? 'wajeez-event.ics',
+            content: input.icsContent,
+            contentType: 'text/calendar; charset=utf-8; method=REQUEST',
+          }]
+        : undefined,
     })
     return { ok: true }
   } catch (e) {

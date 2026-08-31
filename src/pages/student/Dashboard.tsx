@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import {
-  Activity, ArrowLeft, Award, Bell, BookOpen, CalendarDays, CheckCircle2, Clock3,
+  Activity, ArrowLeft, Award, Bell, BookOpen, CalendarDays, CalendarPlus, CheckCircle2, Clock3,
   Loader2, Send, Sparkles, Target, TrendingUp, Video, LifeBuoy,
 } from "lucide-react";
 import PortalLayout from "./PortalLayout";
@@ -368,17 +368,27 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
                       <p className="text-[11px] text-white/45">{s.cohortTitle} · {fmtWhen(s.startsAt)}</p>
                     </div>
                   </div>
-                  {s.zoom ? (
-                    <a href={s.zoom.learnerUrl ?? s.zoom.joinUrl} target="_blank" rel="noreferrer"
-                      className="rounded-full border border-teal/40 px-4 py-1.5 text-xs font-bold text-teal-light-ink transition hover:bg-teal hover:text-on-teal">
-                      انضم الآن
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* دعوةُ تقويم — موعدٌ لا يدخل تقويمَ صاحبه موعدٌ يُنسى.
+                        وهي ملفٌّ معياريّ يفتحه قوقل وآبل وأوتلوك بلا حساب. */}
+                    <a
+                      href={`/api/calendar/cohort-sessions/${s.id}.ics`}
+                      className="flex items-center gap-1.5 rounded-full border border-white/15 px-3.5 py-1.5 text-[11px] font-bold text-white/65 transition hover:border-white/35 hover:text-white"
+                    >
+                      <CalendarPlus className="h-3.5 w-3.5" /> أضِفها لتقويمك
                     </a>
-                  ) : (
-                    <Link to="/student/learning"
-                      className="rounded-full border border-teal/40 px-4 py-1.5 text-xs font-bold text-teal-light-ink transition hover:bg-teal hover:text-on-teal">
-                      التفاصيل
-                    </Link>
-                  )}
+                    {s.zoom ? (
+                      <a href={s.zoom.learnerUrl ?? s.zoom.joinUrl} target="_blank" rel="noreferrer"
+                        className="rounded-full border border-teal/40 px-4 py-1.5 text-xs font-bold text-teal-light-ink transition hover:bg-teal hover:text-on-teal">
+                        انضم الآن
+                      </a>
+                    ) : (
+                      <Link to="/student/learning"
+                        className="rounded-full border border-teal/40 px-4 py-1.5 text-xs font-bold text-teal-light-ink transition hover:bg-teal hover:text-on-teal">
+                        التفاصيل
+                      </Link>
+                    )}
+                  </div>
                 </div>
               ))
             )}

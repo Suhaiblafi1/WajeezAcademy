@@ -9,6 +9,7 @@ import bcrypt from 'bcryptjs'
 import type { PrismaClient, Prisma } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
+import { buildIcs } from './calendar/ics'
 import { TrainerApplicationService } from './trainer-application.service'
 import { sendDirectEmail, publicSiteUrl, type DirectMailStatus } from './notification.service'
 import { CohortService } from './cohort.service'
@@ -92,13 +93,61 @@ export class TrainerReviewService {
     return review
   }
 
+  /* المقابلةُ كانت تُجدوَل في القاعدة ولا يُخبَر بها صاحبُها: لا رسالةَ
+     ولا دعوةَ تقويم. فيُنتظَر متقدّمٌ لا يعرف أنّ له موعدا.
+
+     فصار يصله بريدٌ فيه الموعدُ نصّا **ودعوةُ تقويم مرفَقة** يفتحها قوقل
+     وآبل وأوتلوك. والإرسالُ لا يُعيق: تعذُّرُ البريد لا يُلغي الجدولة،
+     ويعود حالُه في الردّ فيراه من جدول. */
   async scheduleInterview(applicationId: string, actorId: string, input: { scheduledAt: Date; mode?: string; notes?: string }) {
     await this.requireStatus(applicationId, ['shortlisted', 'under_review'])
     const interview = await this.prisma.trainerInterview.create({
       data: { applicationId, scheduledAt: input.scheduledAt, mode: input.mode ?? 'remote', interviewerId: actorId, notes: input.notes },
     })
     await this.apps.transition(applicationId, 'interview_scheduled', actorId, 'جدولة مقابلة')
-    return interview
+
+    const app = await this.prisma.trainerApplication.findUnique({
+      where: { id: applicationId },
+      select: { fullName: true, email: true, reference: true },
+    })
+    let emailDelivery: DirectMailStatus = 'not_configured'
+    if (app) {
+      const when = input.scheduledAt.toLocaleString('ar-u-ca-gregory', {
+        weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit',
+        timeZone: 'Asia/Amman',
+      })
+      const remote = (input.mode ?? 'remote') !== 'in_person'
+      const ics = buildIcs({
+        uid: `interview-${interview.id}@wajeez-academy`,
+        title: 'مقابلة انضمام إلى نخبة مدرّبي وجيز',
+        startsAt: input.scheduledAt,
+        durationMinutes: 45,
+        description: `مقابلةٌ بشأن طلبك رقم ${app.reference}. ${remote ? 'عن بُعد — يصلك الرابط قبل الموعد.' : 'حضوريّة.'}`,
+        url: `${publicSiteUrl()}/join-trainer`,
+        organizer: { name: 'أكاديمية وجيز', email: 'Academy@wajeez.co' },
+        attendee: { name: app.fullName, email: app.email },
+      })
+      const res = await sendDirectEmail(this.prisma, {
+        to: app.email,
+        subject: 'موعد مقابلتك مع أكاديمية وجيز',
+        text: [
+          `مرحبا ${app.fullName}،`,
+          '',
+          `حدّدنا موعد مقابلتك بشأن طلبك رقم ${app.reference}:`,
+          `${when} (بتوقيت عمّان)`,
+          remote ? 'المقابلة عن بُعد، ويصلك رابطها قبل الموعد.' : 'المقابلة حضوريّة.',
+          '',
+          'أرفقنا دعوة تقويم — افتحها لتُضاف إلى تقويمك مباشرة.',
+          '',
+          'وإن لم يناسبك الموعد فأخبرنا بالردّ على هذه الرسالة.',
+        ].join('\n'),
+        icsContent: ics,
+        icsFilename: `wajeez-interview-${interview.id}.ics`,
+      })
+      emailDelivery = res.status
+    }
+
+    return { ...interview, emailDelivery }
   }
 
   async recordInterviewOutcome(interviewId: string, actorId: string, outcome: 'passed' | 'hold' | 'failed', notes?: string) {

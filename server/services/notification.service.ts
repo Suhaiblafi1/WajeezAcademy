@@ -84,7 +84,7 @@ export interface DirectMailResult {
 
 export async function sendDirectEmail(
   prisma: PrismaClient,
-  input: { to: string; subject: string; text: string },
+  input: { to: string; subject: string; text: string; icsContent?: string; icsFilename?: string },
 ): Promise<DirectMailResult> {
   try {
     const config = await getEmailConfig(prisma)
