@@ -187,13 +187,29 @@ export function registerOperationsRoutes(app: FastifyInstance, prisma: PrismaCli
     schema: { tags: ['commerce'], summary: 'طلباتي وفواتيري ودفعاتي' },
   }, async (req) => commerce.myOrders(req.auth!.userId))
 
-  app.post('/api/learner/orders/:id/pay-test', {
+  /* الشراء المباشر — لا طلبَ ولا انتظارَ موافقة.
+
+     التسجيل متاحٌ دائما مهما كان موعد بدء الشعبة: التسجيل شيء والبدء شيء
+     آخر. والذي يحجب قرارٌ إداريّ (إغلاق التسجيل) أو نفادُ المقاعد — لا
+     التقويم. */
+  app.post('/api/learner/checkout', {
     preHandler: requireAuth,
-    schema: { tags: ['commerce'], summary: 'دفع اختباري عبر المزود التجريبي — idempotent، لا مال حقيقي' },
+    schema: { tags: ['commerce'], summary: 'شراء مباشر لشعبة أو أكثر — يُنشئ طلبا وفاتورة ويحجز المقاعد' },
+  }, async (req, reply) => {
+    const body = z.object({
+      cohortIds: z.array(z.string().uuid()).min(1).max(10),
+      couponCode: z.string().trim().min(2).max(40).optional(),
+    }).parse(req.body)
+    return reply.status(201).send(await commerce.checkout(req.auth!.userId, body.cohortIds, body.couponCode))
+  })
+
+  app.post('/api/learner/orders/:id/pay', {
+    preHandler: requireAuth,
+    schema: { tags: ['commerce'], summary: 'دفع الطلب بالمزود المضبوط — idempotent؛ يعيد redirectUrl عند المزود المستضاف' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({ idempotencyKey: z.string().min(8).max(80) }).parse(req.body)
-    return commerce.payOrderTest(id, req.auth!.userId, body.idempotencyKey)
+    return commerce.payOrder(id, req.auth!.userId, body.idempotencyKey)
   })
 
   /* ════ التجارة — العمليات ════ */

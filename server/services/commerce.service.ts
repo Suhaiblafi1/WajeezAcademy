@@ -238,6 +238,122 @@ export class CommerceService {
   }
 
   /** موافقة العمليات: حجز مقعد + إنشاء طلب وفاتورة بسعر الشعبة — لا تسجيل فعليا قبل الدفع */
+  /* ─────────── الشراء المباشر: لا طلبَ ولا انتظارَ موافقة ───────────
+
+     كان المسلك الوحيد: يطلب المتعلّم ← تراجع الإدارة وتوافق ← يُنشأ الطلب ←
+     يدفع. وقرار صاحب المنتج: «الأسعار معلنة والدفع مباشر بلا طلب — التسجيل
+     دائما متاح بغضّ النظر عن موعد فتح الشعبة. التسجيل شيء والبدء شيء آخر».
+
+     فالتاريخ لا يحجب الشراء: شعبةٌ تبدأ بعد شهرين تُشترى اليوم، ومقعدُ
+     المشتري محجوزٌ حتّى تبدأ. والذي يحجب أمران فقط: أن يكون التسجيل مغلقا
+     بقرارٍ إداريّ، أو ألّا تبقى مقاعد — وكلاهما قرارٌ لا تقويم.
+
+     ولا يُبنى مسلكُ تسويةٍ ثانٍ: تُكتب `enrollmentRequest` مباشرةً بحالة
+     `seat_held` مربوطةً بالطلب، فتعمل `settleOrder` القائمة كما هي. «الطلب»
+     هنا سجلُّ حجزِ مقعدٍ داخليّ لا خطوةَ موافقةٍ بشريّة. */
+  async checkout(userId: string, cohortIds: string[], couponCode?: string) {
+    if (cohortIds.length === 0) throw new AuthError('empty_cart', 'لا شعبة في طلبك')
+    const unique = [...new Set(cohortIds)]
+
+    /* حاجز توثيق البريد — نفسه الذي في `requestEnrollment`، ولنفس السبب:
+       الفاتورة والمواعيد تُرسل إلى عنوان. ويسقط حين تكون قناة البريد معطّلة،
+       وإلّا صار قفلا بلا مفتاح. */
+    if (!(await this.emailVerified(userId)) && (await this.emailChannelEnabled())) {
+      throw new AuthError('email_unverified', 'وثّق بريدك أولا — الشراء يُفتح بمجرّد فتح رابط التوثيق', 403)
+    }
+
+    const cohorts = await this.prisma.cohort.findMany({
+      where: { id: { in: unique } },
+      include: { course: { include: { versions: { orderBy: { version: 'desc' }, take: 1 } } } },
+    })
+    if (cohorts.length !== unique.length) throw new AuthError('not_found', 'شعبة غير موجودة ضمن طلبك', 404)
+
+    for (const c of cohorts) {
+      if (!['open', 'full', 'active'].includes(c.status) || !c.registrationOpen) {
+        throw new AuthError('closed', `التسجيل مغلق في «${c.title}»`, 409)
+      }
+      if (c.price === null) throw new AuthError('no_price', `«${c.title}» بلا سعر معلن`, 409)
+      const already = await this.prisma.enrollment.findFirst({
+        where: { userId, cohortId: c.id, status: { in: ['enrolled', 'completed'] } },
+      })
+      if (already) throw new AuthError('already_enrolled', `أنت مسجّل في «${c.title}» بالفعل`, 409)
+      if (c.capacity) {
+        const [enrolled, held] = await Promise.all([
+          this.prisma.enrollment.count({ where: { cohortId: c.id, status: 'enrolled' } }),
+          this.prisma.enrollmentRequest.count({ where: { cohortId: c.id, status: 'seat_held' } }),
+        ])
+        if (enrolled + held >= c.capacity) throw new AuthError('capacity_full', `لا مقاعد متاحة في «${c.title}»`, 409)
+      }
+    }
+
+    /* عملةٌ واحدة للطلب: جمعُ مئةِ دولارٍ إلى مئةِ ريالٍ يعطي فاتورةً كاذبة */
+    const currency = cohorts[0].currency
+    if (cohorts.some((c) => c.currency !== currency)) {
+      throw new AuthError('mixed_currency', 'لا تُجمع شعبٌ بعملاتٍ مختلفة في طلبٍ واحد', 409)
+    }
+
+    const subtotal = cohorts.reduce((sum, c) => sum + num(c.price), 0)
+    let discount = 0
+    let couponId: string | undefined
+    if (couponCode) {
+      const coupon = await this.prisma.coupon.findUnique({ where: { code: couponCode.trim().toUpperCase() } })
+      if (!coupon || !coupon.active) throw new AuthError('bad_coupon', 'الكوبون غير صالح')
+      if (coupon.expiresAt && coupon.expiresAt < new Date()) throw new AuthError('bad_coupon', 'الكوبون منتهي')
+      if (coupon.maxUses && coupon.usedCount >= coupon.maxUses) throw new AuthError('bad_coupon', 'استنفد الكوبون عدد استخداماته')
+      discount = coupon.percentOff
+        ? Math.round(subtotal * coupon.percentOff / 100 * 100) / 100
+        : num(coupon.amountOff)
+      if (discount > subtotal) discount = subtotal
+      couponId = coupon.id
+    }
+    const total = Math.max(0, subtotal - discount)
+    const titleOf = (c: (typeof cohorts)[number]) =>
+      `${c.course.versions[0]?.titleAr ?? c.courseId} — ${c.title}`
+
+    const order = await this.prisma.$transaction(async (tx) => {
+      const o = await tx.order.create({
+        data: {
+          userId, subtotal, discount, total, currency, couponId,
+          items: {
+            create: cohorts.map((c) => ({
+              kind: 'cohort', refId: c.id, titleAr: titleOf(c), unitPrice: num(c.price),
+            })),
+          },
+        },
+      })
+      const count = await tx.invoice.count()
+      const year = new Date().getFullYear()
+      const invoice = await tx.invoice.create({
+        data: {
+          number: `WJ-INV-${year}-${String(count + 1).padStart(5, '0')}`,
+          orderId: o.id, amount: total, currency,
+        },
+      })
+      if (couponId) await tx.coupon.update({ where: { id: couponId }, data: { usedCount: { increment: 1 } } })
+      /* حجزُ المقعد فورا — لا حالة `pending` تنتظر بشرا */
+      for (const c of cohorts) {
+        await tx.enrollmentRequest.upsert({
+          where: { userId_cohortId: { userId, cohortId: c.id } },
+          update: { status: 'seat_held', orderId: o.id, decidedBy: null, decidedAt: new Date() },
+          create: { userId, cohortId: c.id, status: 'seat_held', orderId: o.id, decidedAt: new Date() },
+        })
+      }
+      return { order: o, invoice }
+    })
+
+    await recordAudit(this.prisma, {
+      actorId: userId, action: 'order.checkout', entityType: 'order', entityId: order.order.id,
+      meta: { cohorts: unique, subtotal, discount, total, currency },
+    })
+    return {
+      orderId: order.order.id,
+      invoiceId: order.invoice.id,
+      invoiceNumber: order.invoice.number,
+      subtotal, discount, total, currency,
+      items: cohorts.map((c) => ({ cohortId: c.id, titleAr: titleOf(c), price: num(c.price), startsAt: c.startsAt })),
+    }
+  }
+
   async approveEnrollmentRequest(requestId: string, actorId: string, couponCode?: string) {
     const req = await this.prisma.enrollmentRequest.findUnique({
       where: { id: requestId },
@@ -329,7 +445,17 @@ export class CommerceService {
   /* ── الدفع ── */
 
   /** دفع اختباري عبر المزود — idempotent بمفتاح العميل */
-  async payOrderTest(orderId: string, userId: string, idempotencyKey: string) {
+  /* دفعُ طلبٍ قائم بالمزوّد المضبوط.
+
+     كان اسمها `payOrderTest`، وهو مضلِّل: لا تستعمل مزوّدا تجريبيّا بل
+     `getPaymentProvider(config)` — أيّا كان المضبوط في شاشة التكاملات. فمن
+     ضبط Stripe يحصل على رابط صفحة دفعٍ مستضافة هنا، ومن لم يضبط شيئا يقع
+     على المزوّد الاختباريّ. والاسم الخطأ أخفى عنّي أنّ نصف سترايب مبنيٌّ
+     أصلا، فكدتُ أبنيه مرّةً ثانية.
+
+     والمفتاح `idempotencyKey` يجعل النداء آمن التكرار: ضغطةٌ مزدوجة أو
+     شبكةٌ تتعثّر لا تُنشئان دفعتين. */
+  async payOrder(orderId: string, userId: string, idempotencyKey: string) {
     const order = await this.prisma.order.findUnique({ where: { id: orderId }, include: { invoice: true } })
     if (!order || order.userId !== userId) throw new AuthError('not_found', 'الطلب غير موجود', 404)
     if (order.status === 'paid') {

@@ -147,7 +147,7 @@ describe('فاتورةٌ واحدة للخطّة — التوصية ٣', () => {
     expect(req.requested).toHaveLength(3)
     const order = await commerce.approvePlanRequests(req.planId, ops)
 
-    await commerce.payOrderTest(order.id, u, `plan-pay-${order.id}`)
+    await commerce.payOrder(order.id, u, `plan-pay-${order.id}`)
 
     const enrolled = await prisma.enrollment.findMany({
       where: { userId: u, status: 'enrolled' }, include: { cohort: { select: { courseId: true } } },

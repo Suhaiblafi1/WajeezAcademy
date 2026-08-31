@@ -83,7 +83,7 @@ describe('التسجيل والدفع الاختباري', () => {
   })
 
   it('4) الدفع الاختباري يسوّي الطلب ويحوّل الحجز إلى تسجيل فعلي', async () => {
-    const payment = await commerce.payOrderTest(orderId, learnerId, 'idem-key-0001')
+    const payment = await commerce.payOrder(orderId, learnerId, 'idem-key-0001')
     paymentId = payment.id
     expect(payment.status).toBe('succeeded')
     expect(payment.providerRef).toMatch(/^TEST-/)
@@ -98,7 +98,7 @@ describe('التسجيل والدفع الاختباري', () => {
   })
 
   it('5) نفس مفتاح idempotency يعيد الدفعة نفسها — لا ازدواج', async () => {
-    const again = await commerce.payOrderTest(orderId, learnerId, 'idem-key-0001')
+    const again = await commerce.payOrder(orderId, learnerId, 'idem-key-0001')
     expect(again?.id).toBe(paymentId)
     expect(await prisma.payment.count({ where: { idempotencyKey: 'idem-key-0001' } })).toBe(1)
   })

@@ -18,32 +18,7 @@
    بالمفتاح نفسه — فلا تجتمع إعادتان ولا يدور التبويب إن كان النقص مقيما. */
 
 import { Component, type ReactNode } from "react";
-
-const KEY = "wajeez_stale_reload_at";
-const COOLDOWN = 60_000;
-
-/** هل يدلّ نصُّ الخطأ على قطعةٍ زالت بنشرٍ جديد؟ */
-export function isStaleChunkError(error: unknown): boolean {
-  const text = error instanceof Error ? `${error.name}: ${error.message}` : String(error ?? "");
-  return (
-    text.includes("dynamically imported module") ||
-    text.includes("Importing a module script failed") ||
-    text.includes("error loading dynamically imported module") ||
-    text.includes("Failed to fetch")
-  );
-}
-
-/** أُذن لإعادة التحميل؟ نافذةٌ واحدة لكلّ دقيقة، ولا إعادة بلا تخزين */
-export function mayReload(now: number = Date.now()): boolean {
-  try {
-    const last = Number.parseInt(sessionStorage.getItem(KEY) ?? "0", 10);
-    if (last && now - last < COOLDOWN) return false;
-    sessionStorage.setItem(KEY, String(now));
-    return true;
-  } catch {
-    return false;
-  }
-}
+import { isStaleChunkError, mayReload } from "@/application/deploy/stale-chunk";
 
 interface State { failed: boolean }
 

@@ -11,7 +11,7 @@
    زائلة»، والنافذة التي تمنع دوران التبويب. */
 
 import { describe, expect, it } from 'vitest'
-import { isStaleChunkError, mayReload } from '@/components/StaleChunkBoundary'
+import { STALE_RELOAD_KEY, isStaleChunkError, mayReload } from '@/application/deploy/stale-chunk'
 
 describe('تمييز خطأ القطعة الزائلة', () => {
   it('١) يتعرّف على صيغ المتصفّحات الثلاث', () => {
@@ -84,7 +84,7 @@ describe('نافذة إعادة التحميل', () => {
     const restore = stub()
     try {
       mayReload(6_000_000)
-      expect(sessionStorage.getItem('wajeez_stale_reload_at')).toBe('6000000')
+      expect(sessionStorage.getItem(STALE_RELOAD_KEY)).toBe('6000000')
     } finally { restore() }
   })
 })

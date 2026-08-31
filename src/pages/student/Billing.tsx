@@ -50,7 +50,7 @@ export default function Billing() {
     setBusy(order.id); setFlash("");
     try {
       /* مفتاح idempotency ثابت لكل طلب — إعادة النقر لا تدفع مرتين */
-      const res = await apiPost<{ redirectUrl?: string }>(`/api/learner/orders/${order.id}/pay-test`, { idempotencyKey: `pay-${order.id}` });
+      const res = await apiPost<{ redirectUrl?: string }>(`/api/learner/orders/${order.id}/pay`, { idempotencyKey: `pay-${order.id}` });
       /* مزود مستضاف: نحوّل المتعلم لصفحة الدفع عند المزود — التسوية تصل بـ webhook */
       if (res.redirectUrl) { window.location.assign(res.redirectUrl); return; }
       setFlash(provider.driver === "test" ? "تم الدفع الاختباري — فُتح وصولك وتحدثت الفاتورة" : "سُجل الدفع — فُتح وصولك");
