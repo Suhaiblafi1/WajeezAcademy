@@ -14,6 +14,8 @@ export type AnalyticsEvent =
   | 'module_check_answered'
   /* ح-٢: فتح فصل فيديو — رقم الوحدة والفصل */
   | 'module_video_chapter_opened'
+  /* خطوةٌ في مشغّل دروس الوحدة — يقيس أين يتوقّف المتعلّمون فعلا */
+  | 'module_step'
   | 'hero_cta_clicked'
   | 'mirror_started'
   | 'mirror_completed'

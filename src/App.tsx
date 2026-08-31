@@ -43,6 +43,7 @@ const AdminRatingModeration = lazy(() => import('./pages/admin/RatingModeration'
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 const CourseMilestones = lazy(() => import('./pages/student/CourseMilestones'))
+const ModuleStudy = lazy(() => import('./pages/student/ModuleStudy'))
 const AdvisorCases = lazy(() => import('./pages/advisor/Cases'))
 const TrainerDashboard = lazy(() => import('./pages/trainer/TrainerDashboard'))
 const GradingQueue = lazy(() => import('./pages/trainer/GradingQueue'))
@@ -141,6 +142,7 @@ export default function App() {
           {/* صفحة الدورة بالمحطات — على الكتالوج المنشور وتقدّمِ التسجيل
               الحقيقيّين. حلّت محلّ `CourseView` التي كانت محاكاة كاملة. */}
           <Route path="/student/course/:courseId" element={<CourseMilestones />} />
+          <Route path="/student/course/:courseId/module/:moduleId" element={<ModuleStudy />} />
           <Route path="/student/project" element={<Navigate to="/student/learning" replace />} />
           <Route path="/student/vault" element={<MyVault />} />
           <Route path="/student/library" element={<StudentLibrary />} />

@@ -15,10 +15,9 @@ import { Link, useParams } from "react-router";
 import { BookOpen, CheckCircle2, ChevronDown, Circle, FileText, Loader2, Play, Target } from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import CourseTitle from "@/components/CourseTitle";
-import LessonBody from "@/components/LessonBody";
-import ModuleCheck from "@/components/ModuleCheck";
-import DecisionScenario from "@/components/DecisionScenario";
-import ModuleVideo from "@/components/ModuleVideo";
+import { splitLessons } from "@/application/content/lesson-split";
+import { parseChecks } from "@/application/content/module-checks";
+import { countAr } from "@/application/text/count-ar";
 import { usePublishedContent } from "@/services/public-content";
 import { useRealSession } from "@/services/session";
 import { apiGet } from "@/services/api";
@@ -131,6 +130,7 @@ export default function CourseMilestones() {
             done={doneIds.has(m.id)}
             current={i === currentIndex}
             prevTitle={i > 0 ? full.modules[i - 1].title : null}
+            courseId={courseId}
           />
         ))}
       </ol>
@@ -168,13 +168,19 @@ function NotEnrolled({ name, termEn }: { name: string; termEn?: string | null })
   );
 }
 
+const MIN_FORMS = { one: "دقيقة", two: "دقيقتان", few: "دقائق", many: "دقيقة" } as const;
+const LESSON_FORMS = { one: "درس", two: "درسان", few: "دروس", many: "درسا" } as const;
+const CHECK_FORMS = { one: "تمرين", two: "تمرينان", few: "تمارين", many: "تمرينا" } as const;
+
 type Mod = { id: string; title: string; outcome: string; activity: string; artifact: string; hours: number; body: string | null; checks: string | null; video: string | null; scenario: string | null };
 
-function Milestone({ index, module: m, done, current, prevTitle }: {
-  index: number; module: Mod; done: boolean; current: boolean; prevTitle: string | null;
+function Milestone({ index, module: m, done, current, prevTitle, courseId }: {
+  index: number; module: Mod; done: boolean; current: boolean; prevTitle: string | null; courseId: string;
 }) {
   /* الحالية مفتوحة، وما عداها مطويّ — والفتح متاح لمن أراد الاطلاع مسبقا */
   const [open, setOpen] = useState(current);
+  const lessons = useMemo(() => splitLessons(m.body), [m.body]);
+  const checkCount = useMemo(() => parseChecks(m.checks).checks.filter((c) => c.chapterIndex === null).length, [m.checks]);
   const hasContent = !!(m.body || m.checks || m.scenario || m.video);
 
   return (
@@ -217,15 +223,43 @@ function Milestone({ index, module: m, done, current, prevTitle }: {
             </p>
           )}
 
-          {m.video && <ModuleVideo raw={m.video} checksRaw={m.checks} moduleId={m.id} className="mb-5" />}
-          {m.body ? <LessonBody body={m.body} /> : (
+          {/* المحطة تُعرّف بما فيها وتُفتح في مشغّلها — لا تُفرَغ هنا.
+
+              كان المتنُ كلُّه والتمارينُ والسيناريو تنهال داخل الأكورديون:
+              ألفا كلمةٍ في عمودٍ واحد بلا تقدّمٍ ولا توقّف. فصفحةُ الدورة
+              الآن خريطةٌ تُقرأ في نصف دقيقة، والدراسةُ في شاشةٍ لها. */}
+          {lessons.length > 0 ? (
+            <>
+              <ol className="space-y-2">
+                {lessons.map((l) => (
+                  <li key={l.index} className="flex items-start gap-2.5 rounded-xl border border-white/8 bg-white/[0.02] px-3.5 py-2.5">
+                    <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-teal/15 text-[10px] font-black tabular-nums text-teal-light-ink">
+                      {l.index}
+                    </span>
+                    <span className="min-w-0 flex-1 text-xs font-bold leading-6">{l.title || "تمهيد"}</span>
+                    {l.minutes > 0 && <span className="shrink-0 text-[10px] text-white/35">{countAr(l.minutes, MIN_FORMS)}</span>}
+                  </li>
+                ))}
+              </ol>
+              <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-white/45">
+                <span>{countAr(lessons.length, LESSON_FORMS)}</span>
+                {checkCount > 0 && <span>· {countAr(checkCount, CHECK_FORMS)} استرجاع</span>}
+                {m.scenario && <span>· سيناريو قرار</span>}
+                {m.video && <span>· فيديو</span>}
+              </p>
+              <Link
+                to={`/student/course/${courseId}/module/${m.id}`}
+                className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-teal px-6 py-3 text-sm font-black text-on-teal transition hover:bg-teal-light"
+              >
+                {done ? "راجع الوحدة" : current ? "ابدأ الوحدة" : "اطّلع على الوحدة"}
+                <Play className="h-4 w-4" />
+              </Link>
+            </>
+          ) : (
             <p className="rounded-xl border border-dashed border-white/15 px-4 py-6 text-center text-xs leading-6 text-white/50">
               لم يُضَف متن هذه الوحدة بعد. عنوانها ونشاطها وناتجها أدناه، ويظهر المتن هنا فور كتابته.
             </p>
           )}
-
-          {m.checks && <ModuleCheck raw={m.checks} moduleId={m.id} className="mt-6" />}
-          {m.scenario && <DecisionScenario raw={m.scenario} moduleId={m.id} className="mt-6" />}
 
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
             <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
