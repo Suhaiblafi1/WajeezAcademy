@@ -970,6 +970,7 @@ export default function Diagnostic() {
     setCanDeepen(false);
     setResult(savedDone);
     setTopPathway(savedDone.top);
+    if (landOnPathway(savedDone)) return;
     setStage("result");
   };
 
@@ -1046,6 +1047,21 @@ export default function Diagnostic() {
     adoptFromResult(result, shownPlanRef.current);
   };
 
+  /* بابٌ واحد للهبوط على صفحة المسار — تمرّ منه المسالك الثلاثة.
+
+     كانت ثلاثة مسالك تنتهي إلى شاشة «اعتمد»: إنهاءُ التشخيص، واستعادةُ نتيجةٍ
+     محفوظة، وإنهاءُ جولة تعميق. أغلقتُ الأوّل وحده وأعلنتُ الطلب منفَّذا —
+     فبقي مَن يعود إلى تشخيصه المحفوظ يُردّ إلى الشاشة نفسها. وصاحب المنتج
+     أعاد التشخيص مرارا، فكان بابُه هو الذي تركتُه مفتوحا.
+
+     `true` تعني: هبطنا، فلا تُعرض شاشة. و`false` للحالتين اللتين لا مسار
+     فيهما — التوقّف الحوكميّ والاتّجاه الاستكشافيّ — وهما وحدهما شاشة. */
+  const landOnPathway = (res: DiagResult): boolean => {
+    if (res.resultJson.kind === "guardrail_stop" || !res.top) return false;
+    adoptFromResult(res);
+    return true;
+  };
+
   /* إرفاق النتيجة بحساب المستخدم أفضل جهد — ينشئ الخادم ملف متعلم وحالة مستشار دون حجب النتيجة */
   const attachToAccount = (res: DiagResult) => {
     if (!localStorage.getItem("wajeez_user")) return; // ضيف — النتيجة تبقى على جهازه فقط
@@ -1096,10 +1112,7 @@ export default function Diagnostic() {
        وحالتان تبقيان هنا لأنّه لا مسار فيهما أصلا: التوقّف الحوكميّ (رفضُ
        الموافقة أو قاصر)، والاتّجاه الاستكشافيّ حين لا يكفي الدليل. كلتاهما
        بلا `res.top`، أو بنوعٍ يقول ذلك صراحةً. */
-    if (res.resultJson.kind !== "guardrail_stop" && res.top) {
-      adoptFromResult(res);
-      return;
-    }
+    if (landOnPathway(res)) return;
     setCanDeepen(true);
     setStage("result");
     window.scrollTo(0, 0);
@@ -1136,6 +1149,7 @@ export default function Diagnostic() {
     setResult(res);
     setTopPathway(res.top);
     track("deepening_completed", { changed: cmp.changed, answered: cmp.answeredCount });
+    if (landOnPathway(res)) return;
     setStage("result");
     window.scrollTo(0, 0);
   };

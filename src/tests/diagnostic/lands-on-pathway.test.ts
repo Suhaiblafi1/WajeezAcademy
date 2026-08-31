@@ -22,13 +22,34 @@ describe('التشخيص ينتهي على صفحة المسار', () => {
   it('١) `finish` يعتمد الخطّة وينتقل بدل أن يعرض شاشة النتيجة', () => {
     const finish = diag.slice(diag.indexOf('const finish = '), diag.indexOf('const restart') > 0 ? diag.length : diag.length)
     const body = finish.slice(0, finish.indexOf('\n  };') + 5)
-    expect(body).toContain('adoptFromResult(res)')
-    /* الاعتماد قبل السقوط إلى الشاشة، لا بعده */
-    expect(body.indexOf('adoptFromResult(res)')).toBeLessThan(body.indexOf('setStage("result")'))
+    expect(body).toContain('landOnPathway(res)')
+    /* الهبوط قبل السقوط إلى الشاشة، لا بعده */
+    expect(body.indexOf('landOnPathway(res)')).toBeLessThan(body.indexOf('setStage("result")'))
   })
 
   it('٢) الحالتان اللتان لا مسار فيهما تبقيان شاشةً', () => {
-    expect(diag).toContain('res.resultJson.kind !== "guardrail_stop" && res.top')
+    expect(diag).toContain('res.resultJson.kind === "guardrail_stop" || !res.top')
+  })
+
+  /* ثلاثة أبوابٍ تؤدّي إلى شاشة «اعتمد»، وأغلقتُ واحدا وأعلنتُ الطلب منفَّذا.
+     فبقي مَن يعود إلى تشخيصه المحفوظ يُردّ إليها — وهو باب صاحب المنتج نفسه،
+     لأنّه أعاد التشخيص مرارا. والعدّ هنا مقصود: حارسٌ يفحص بابا واحدا يمرّ
+     وبابان مفتوحان. */
+  it('٢ب) المسالك الثلاثة كلُّها تمرّ من باب الهبوط الواحد', () => {
+    const doors = [
+      { name: 'إنهاء التشخيص', at: diag.indexOf('const finish = ') },
+      { name: 'استعادة نتيجة محفوظة', at: diag.indexOf('const showSavedResult = ') },
+      { name: 'إنهاء جولة تعميق', at: diag.indexOf('const finishDeepeningRound = ') },
+    ]
+    for (const d of doors) {
+      expect(d.at, `لم يُعثر على ${d.name}`).toBeGreaterThan(-1)
+      const body = diag.slice(d.at, diag.indexOf('\n  };', d.at))
+      expect(body, `${d.name} لا يمرّ بـlandOnPathway`).toContain('landOnPathway')
+    }
+    /* ولا باب رابع: كلّ عرضٍ لشاشة النتيجة مسبوقٌ بمحاولة الهبوط */
+    expect(diag.split('setStage("result")').length - 1).toBe(3)
+    /* ثلاثة نداءات — التعريف نفسه `const landOnPathway = (res:` بلا قوسٍ لاصق */
+    expect(diag.split('landOnPathway(').length - 1).toBe(3)
   })
 
   it('٣) الاعتماد يشتقّ من النتيجة لا من حالة React', () => {
@@ -98,5 +119,13 @@ describe('إحالة المستشار تسافر مع الخطّة', () => {
       if (original) Object.defineProperty(globalThis, 'sessionStorage', original)
       else Reflect.deleteProperty(globalThis, 'sessionStorage')
     }
+  })
+
+  /* زرٌّ لا يستجيب أسوأ من غياب زرّ: يقول للزائر إنّ الموقع معطوب. */
+  it('٩) لا مرساةَ إلى قسمٍ مخفيّ عمّن لم يسجّل', () => {
+    const page = read('src/pages/Pathway.tsx')
+    expect(page).not.toContain('href="#buy"')
+    /* والقسم نفسه ما زال مبنيّا خلف التسجيل — الحذف مسّ المرساة لا البوّابة */
+    expect(page).toContain('id="buy"')
   })
 })
