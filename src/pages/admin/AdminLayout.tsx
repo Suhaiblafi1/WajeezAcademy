@@ -1,25 +1,26 @@
-import { useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router";
 import { CalendarCog, Crown, FlaskConical, GitBranch, Layers, ShieldAlert, LayoutDashboard, UserPlus, Users, BarChart3, LifeBuoy, Wallet, Bell, PlugZap, Star } from "lucide-react";
-import { ADMIN_IDENTITIES, ADMIN_IDENTITY_KEY, adminIdentity } from "./admin-identity";
 import NotificationBell from "@/components/NotificationBell";
 import ThemeToggle from "@/components/ThemeToggle";
 import SearchPalette from "@/components/SearchPalette";
 import { useRealSession } from "@/services/session";
 
-/** إطار لوحة الإدارة والعمليات.
-   من سجّل دخوله بحساب إداري حقيقي يتجاوز شاشة اختيار الهوية التجريبية تلقائيا. */
+/** إطار لوحة الإدارة والعمليات — هويّة الإداريّ من جلسته وحدها.
+
+    حُذفت شاشة «من أنت؟» التي كانت تعرض ثلاثة أسماء إداريّين مختلَقين
+    («م. عبدالله الرشيد» و«د. سارة العمري» و«أ. محمد الحربي») ليختار الداخلُ
+    واحدا منها فيُحفظ في متصفّحه، ومعها سطر «نسخة تجريبية». وهي القاعدة نفسها
+    التي حُذفت من بوابة المدرب: لا اسمَ يُعرض كحقيقة قبل توثيقه.
+
+    وكانت تُصيَّر لمن جاز حارسَ المسار ولم يملك صلاحية `admin.*` أو `catalog.*`
+    — أي لحساب المالية بالضبط — فلا يبلغ شاشاته ويُدعى إلى انتحال اسم. */
 export default function AdminLayout({ children, title }: { children: React.ReactNode; title: string }) {
-  const [me, setMe] = useState(adminIdentity);
   const { user, checked } = useRealSession();
   const location = useLocation();
   const navigate = useNavigate();
-  const realAdmin = user?.permissions.some((p) => p.startsWith("admin.") || p.startsWith("catalog.")) ?? false;
-  const effectiveMe = me ?? (realAdmin && user
-    ? { id: user.userId, name: user.displayName, title: "إدارة — حساب حقيقي" }
-    : null);
+  const can = (key: string) => user?.permissions.includes(key) ?? false;
 
-  if (!effectiveMe && !checked) {
+  if (!checked) {
     return (
       <div dir="rtl" className="grid min-h-screen place-items-center bg-paper text-white">
         <Crown className="h-10 w-10 animate-pulse text-[#FABC05]" />
@@ -27,34 +28,12 @@ export default function AdminLayout({ children, title }: { children: React.React
     );
   }
 
-  if (!effectiveMe) {
-    return (
-      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper px-5 text-white">
-        <Crown className="h-12 w-12 text-[#FABC05]" />
-        <h1 className="mt-5 text-2xl font-black">لوحة الإدارة والعمليات — من أنت؟</h1>
-        <p className="mt-2 max-w-md text-center text-sm leading-7 text-white/55">
-          صلاحيات منفصلة: العمليات ترى الشعب والحالات، المالية ترى المبالغ لا إجابات الاختبارات — RBAC كامل.
-        </p>
-        <div className="mt-7 grid w-full max-w-md gap-3">
-          {ADMIN_IDENTITIES.map((a) => (
-            <button
-              key={a.id}
-              onClick={() => { localStorage.setItem(ADMIN_IDENTITY_KEY, JSON.stringify(a)); setMe(a); }}
-              className="cursor-pointer rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-right transition hover:border-gold/50"
-            >
-              <p className="font-black">{a.name}</p>
-              <p className="mt-0.5 text-xs text-gold-ink">{a.title}</p>
-            </button>
-          ))}
-        </div>
-        <p className="mt-4 text-[11px] font-bold text-gold-ink/70">نسخة تجريبية — البيانات المعروضة محلية وليست تشغيلية</p>
-        <Link to="/" className="mt-6 text-xs text-white/50 hover:text-white/70">العودة للموقع العام</Link>
-      </div>
-    );
-  }
-
   /* الأقسام الخمسة — كل قسم يجيب سؤالاً واحداً: ماذا نعلّم؟ من معنا؟ كيف المال؟ كيف عملاؤنا؟ */
-  const sections: { title: string; items: { to: string; label: string; icon: typeof LayoutDashboard; end?: boolean }[] }[] = [
+  /* لكلّ تبويبٍ صلاحيتُه المعلَنة، والقائمة تُرشَّح بها.
+
+     كانت تُعرض كاملةً لكلّ إداريّ: ثلاثة عشر بابا يفتح من لا يملكها فيُردّ
+     عند الخادم — الحارس يعمل، لكنّه يكتشف حدّه بالاصطدام لا بالقراءة. */
+  const allSections: { title: string; items: { to: string; label: string; icon: typeof LayoutDashboard; end?: boolean; need?: string }[] }[] = [
     {
       title: "نظرة عامة",
       items: [{ to: "/admin", label: "الرئيسية", icon: LayoutDashboard, end: true }],
@@ -62,42 +41,62 @@ export default function AdminLayout({ children, title }: { children: React.React
     {
       title: "التعليم والمحتوى",
       items: [
-        { to: "/admin/catalog", label: "الكتالوج", icon: Layers },
-        { to: "/admin/publishing", label: "النشر والإصدارات", icon: GitBranch },
-        { to: "/admin/cohorts", label: "الشعب", icon: CalendarCog },
-        { to: "/admin/quality", label: "جودة التشخيص", icon: FlaskConical },
+        { to: "/admin/catalog", label: "الكتالوج", icon: Layers , need: "catalog.view"},
+        { to: "/admin/publishing", label: "النشر والإصدارات", icon: GitBranch , need: "catalog.impact.view"},
+        { to: "/admin/cohorts", label: "الشعب", icon: CalendarCog , need: "cohort.manage"},
+        { to: "/admin/quality", label: "جودة التشخيص", icon: FlaskConical , need: "diagnostic.simulate"},
       ],
     },
     {
       title: "الأشخاص",
       items: [
-        { to: "/admin/users", label: "المستخدمون والأدوار", icon: Users },
-        { to: "/admin/trainers", label: "طلبات المدربين", icon: UserPlus },
-        { to: "/admin/exceptions", label: "الاستثناءات", icon: ShieldAlert },
+        { to: "/admin/users", label: "المستخدمون والأدوار", icon: Users , need: "admin.users.manage"},
+        { to: "/admin/trainers", label: "طلبات المدربين", icon: UserPlus , need: "trainer.applications.view"},
+        { to: "/admin/exceptions", label: "الاستثناءات", icon: ShieldAlert , need: "enrollment.request.review"},
       ],
     },
     {
       title: "المالية",
       items: [
-        { to: "/admin/finance", label: "الطلبات والفواتير", icon: Wallet },
-        { to: "/admin/reports", label: "التقارير والتصدير", icon: BarChart3 },
+        { to: "/admin/finance", label: "الطلبات والفواتير", icon: Wallet , need: "finance.view"},
+        { to: "/admin/reports", label: "التقارير والتصدير", icon: BarChart3 , need: "reports.view"},
       ],
     },
     {
       title: "العملاء",
       items: [
-        { to: "/admin/support", label: "تذاكر الدعم", icon: LifeBuoy },
-        { to: "/admin/ratings", label: "مراجعة التقييمات", icon: Star },
-        { to: "/admin/notifications", label: "الإشعارات", icon: Bell },
+        { to: "/admin/support", label: "تذاكر الدعم", icon: LifeBuoy , need: "support.operate"},
+        { to: "/admin/ratings", label: "مراجعة التقييمات", icon: Star , need: "rating.moderate"},
+        { to: "/admin/notifications", label: "الإشعارات", icon: Bell , need: "notifications.manage"},
       ],
     },
     {
       title: "النظام",
       items: [
-        { to: "/admin/integrations", label: "التكاملات — الدفع والبريد", icon: PlugZap },
+        { to: "/admin/integrations", label: "التكاملات — الدفع والبريد", icon: PlugZap , need: "settings.manage"},
       ],
     },
   ];
+
+  /* «الرئيسية» بلا شرط: من جاز حارسَ المسار له مكانٌ يقف فيه */
+  const sections = allSections
+    .map((sec) => ({ ...sec, items: sec.items.filter((it) => !it.need || can(it.need)) }))
+    .filter((sec) => sec.items.length > 0);
+
+  /* من لا تبويبَ له لا يُترك في لوحةٍ فارغة يظنّها معطوبة */
+  if (sections.every((sec) => sec.items.every((it) => !it.need))) {
+    return (
+      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper px-5 text-white">
+        <Crown className="h-12 w-12 text-[#FABC05]" />
+        <h1 className="mt-5 text-2xl font-black">لا صلاحيات مفعّلة لحسابك</h1>
+        <p className="mt-2 max-w-md text-center text-sm leading-7 text-white/55">
+          حسابك <b className="text-white/75">{user?.displayName}</b> يدخل اللوحة، ولا صلاحية إداريّة مفعّلة عليه بعد.
+          راجع مدير النظام ليمنحك ما يخصّ عملك.
+        </p>
+        <Link to="/" className="mt-6 text-xs text-white/50 hover:text-white/70">العودة للموقع العام</Link>
+      </div>
+    );
+  }
 
   const linkCls = (isActive: boolean) =>
     `flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-bold transition ${
@@ -138,13 +137,12 @@ export default function AdminLayout({ children, title }: { children: React.React
             </button>
             <NotificationBell audience="staff" />
             <ThemeToggle />
-            <button
-              onClick={() => { localStorage.removeItem(ADMIN_IDENTITY_KEY); setMe(null); }}
-              className="max-w-[9rem] cursor-pointer truncate text-xs text-white/60 hover:text-white sm:max-w-none"
-              title={`${effectiveMe.name} — ${realAdmin && !me ? "حسابك الحقيقي" : "تبديل الهوية"}`}
+            <span
+              className="max-w-[9rem] truncate text-xs text-white/60 sm:max-w-none"
+              title={user?.email ?? ""}
             >
-              {effectiveMe.name}
-            </button>
+              {user?.displayName}
+            </span>
           </div>
         </div>
       </header>

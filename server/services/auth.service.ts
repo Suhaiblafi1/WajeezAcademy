@@ -99,7 +99,14 @@ export class AuthService {
     if (!token) return null
     const session = await this.prisma.session.findUnique({
       where: { tokenHash: sha256(token) },
-      include: { user: { include: { roles: { include: { role: { include: { permissions: true } } } } } } },
+      include: {
+        user: {
+          include: {
+            roles: { include: { role: { include: { permissions: true } } } },
+            permissionOverrides: true,
+          },
+        },
+      },
     })
     if (!session || session.revokedAt || session.expiresAt < new Date()) return null
     if (session.user.status !== 'active') return null
@@ -108,6 +115,17 @@ export class AuthService {
     for (const ur of session.user.roles) {
       roles.push(ur.roleId)
       for (const rp of ur.role.permissions) permissions.add(rp.permissionKey)
+    }
+    /* استثناء الشخص — بعد الأدوار وفي هذا الموضع وحده.
+       كان القرار بالدور كلّه: من أراد صلاحيةً واحدة زائدة مُنح الدور بما فيه.
+       والحساب هنا لا في المسارات: أيّ مسارٍ يسأل عن صلاحية يسأل عن هذه.
+       والمنعُ يُطبَّق بعد المنح لأنّه الأعلى — سحبُ صلاحيةٍ بعينها أسرع
+       وأأمن من إعادة تركيب أدوار الموظّف. */
+    for (const o of session.user.permissionOverrides) {
+      if (o.effect === 'grant') permissions.add(o.permissionKey)
+    }
+    for (const o of session.user.permissionOverrides) {
+      if (o.effect === 'deny') permissions.delete(o.permissionKey)
     }
     return {
       userId: session.user.id, email: session.user.email, displayName: session.user.displayName,
@@ -205,6 +223,14 @@ export class AuthService {
       this.prisma.user.update({ where: { id: userId }, data: { status: 'suspended', suspendedAt: new Date() } }),
       this.prisma.session.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } }),
     ])
+  }
+
+  /* تُبطَل جلساتُه دون إيقاف حسابه: الجلسة تحمل الصلاحيات وقت حلّها، فمن
+     نُزعت عنه صلاحيةٌ بقي يعمل بها حتى تنتهي جلسته. */
+  async revokeAllSessions(userId: string): Promise<void> {
+    await this.prisma.session.updateMany({
+      where: { userId, revokedAt: null }, data: { revokedAt: new Date() },
+    })
   }
 
   async setRoles(userId: string, roleIds: string[]): Promise<void> {

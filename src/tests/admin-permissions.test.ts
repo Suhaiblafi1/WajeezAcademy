@@ -1,0 +1,101 @@
+/* لوحة الإدارة: هويّةٌ من الجلسة، وقائمةٌ من الصلاحيات، واستثناءٌ لمدير النظام.
+
+   دخلتُ اللوحة بحسابين حقيقيّين فوجدت ثلاثة أشياء:
+
+   ١) حسابُ الماليّة يُسأل «من أنت؟» وتُعرض عليه ثلاثةُ أسماء إداريّين لا وجود
+      لها، تُختار وتُحفظ في متصفّحه، ومعها «نسخة تجريبية». وهي القاعدة نفسها
+      التي حُذفت من بوابة المدرب — ولم تكن قد حُذفت من هذه.
+   ٢) القائمة الجانبيّة تُعرض كاملةً لكلّ إداريّ: ثلاثة عشر بابا يفتح من لا
+      يملكها فيُردّ عند الخادم — فيكتشف حدّه بالاصطدام لا بالقراءة.
+   ٣) ولا سبيل إلى منح شخصٍ صلاحيةً واحدة: القرار بالدور كلّه أو لا شيء.
+
+   وهذه حراسةُ الثلاثة. أمّا قاعدةُ الحساب نفسها — (الأدوار + منح) − منع —
+   فلها اختبارها على قاعدة حقيقية. */
+
+import { describe, expect, it } from 'vitest'
+import { execFileSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
+const read = (p: string) => readFileSync(join(root, p), 'utf8')
+
+const LAYOUT = 'src/pages/admin/AdminLayout.tsx'
+const USERS = 'src/pages/admin/Users.tsx'
+const ROUTES = 'server/http/routes/admin-users.routes.ts'
+
+describe('هويّة الإداريّ', () => {
+  it('لا هويّةَ مختلَقة ولا تبديلَ هويّة من المتصفّح', () => {
+    const tracked = execFileSync('git', ['ls-files'], { cwd: root, encoding: 'utf8' })
+    expect(tracked, 'ملفّ الهويّات المختلَقة ما زال في المستودع').not.toContain('admin-identity')
+
+    const src = read(LAYOUT)
+    /* التعليق يشرح ما حُذف فيسمّيه — والفحص على ما يُعرض لا على شرحه */
+    const shown = src.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
+    for (const ghost of ['عبدالله الرشيد', 'سارة العمري', 'محمد الحربي', 'من أنت؟', 'نسخة تجريبية']) {
+      expect(shown, `«${ghost}» ما زالت تُعرض في لوحة الإدارة`).not.toContain(ghost)
+    }
+    /* والهويّة من الجلسة لا من تخزينٍ يُكتب فيه ما شئت */
+    expect(shown, 'الهويّة تُقرأ من التخزين المحلّي').not.toContain('localStorage')
+    expect(src).toContain('useRealSession()')
+  })
+})
+
+describe('قائمة الإدارة تُبنى من الصلاحيات', () => {
+  const src = read(LAYOUT)
+
+  it('لكلّ تبويبٍ صلاحيتُه — ولا تبويب بلا واحدة', () => {
+    const block = /const allSections[\s\S]*?\n {2}\];/.exec(src)?.[0] ?? ''
+    expect(block, 'كتلة التبويبات مفقودة').toBeTruthy()
+    const items = [...block.matchAll(/\{ to: "(\/admin[^"]*)"[^}]*\}/g)].map((m) => m[0])
+    expect(items.length, 'لا تبويبات').toBeGreaterThan(5)
+    for (const item of items) {
+      const to = /to: "([^"]+)"/.exec(item)![1]
+      /* «الرئيسية» وحدها بلا شرط: من جاز حارس المسار له مكانٌ يقف فيه */
+      if (to === '/admin') continue
+      expect(item, `${to} بلا صلاحية معلَنة — يراه من لا يملكه`).toMatch(/need: "[a-z.]+"/)
+    }
+  })
+
+  it('الصلاحيات المعلَنة موجودةٌ في سجلّ الخادم — لا مفتاحَ يُخترع', () => {
+    const perms = read('server/auth/permissions.ts')
+    const known = new Set([...perms.matchAll(/\{ key: '([^']+)'/g)].map((m) => m[1]))
+    expect(known.size, 'سجلّ الصلاحيات لم يُقرأ').toBeGreaterThan(30)
+    for (const m of src.matchAll(/need: "([^"]+)"/g)) {
+      expect(known.has(m[1]), `التبويب يشترط صلاحيةً لا وجود لها: ${m[1]}`).toBe(true)
+    }
+  })
+
+  it('الترشيح يقع فعلا — ومن لا تبويبَ له يُقال له', () => {
+    expect(src, 'التبويبات لا تُرشَّح بالصلاحيات').toMatch(/\.filter\(\(it\) => !it\.need \|\| can\(it\.need\)\)/)
+    expect(src, 'من لا صلاحية له يُترك في لوحةٍ فارغة').toContain('لا صلاحيات مفعّلة لحسابك')
+  })
+})
+
+describe('استثناء الصلاحية لشخص', () => {
+  it('لمدير النظام وحده — في الشاشة وفي الخادم معا', () => {
+    expect(read(USERS), 'الزرّ يظهر لغير مدير النظام').toContain('roles.includes("super_admin")')
+    const routes = read(ROUTES)
+    const guards = [...routes.matchAll(/roles\.includes\('super_admin'\)/g)]
+    expect(guards.length, 'مسارٌ من مساري الصلاحيات بلا حارس مدير النظام').toBeGreaterThanOrEqual(2)
+    expect(routes).toContain("code: 'super_admin_only'")
+  })
+
+  it('لا استثناء بلا سبب، ولا بابٌ يُغلق على صاحبه', () => {
+    const routes = read(ROUTES)
+    expect(routes, 'يُقبل استثناءٌ بلا سبب').toContain("code: 'reason_required'")
+    expect(routes, 'يستطيع منع إدارة المستخدمين عن نفسه').toContain("code: 'self_lockout'")
+    /* والشاشة تمنع الضغط قبل السبب — لا تنتظر ردّ الخادم */
+    expect(read(USERS)).toMatch(/permReason\.trim\(\)\.length < 5/)
+  })
+
+  it('كلّ تغييرٍ يُقيَّد وتُبطَل جلساتُ صاحبه', () => {
+    const routes = read(ROUTES)
+    const block = /app\.post\('\/api\/admin\/users\/:id\/permissions'[\s\S]*?\n {2}\}\)/.exec(routes)?.[0] ?? ''
+    expect(block, 'مسار الاستثناء مفقود').toBeTruthy()
+    expect(block, 'لا يُقيَّد في سجلّ التدقيق').toContain('recordAudit')
+    /* الجلسة تحمل الصلاحيات وقت حلّها: بلا إبطالها يعمل بصلاحيةٍ نُزعت */
+    expect(block, 'الجلسات لا تُبطَل — فيعمل بصلاحيةٍ نُزعت').toContain('revokeAllSessions')
+  })
+})

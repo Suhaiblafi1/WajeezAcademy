@@ -40,6 +40,7 @@ model User {
   enrollments          Enrollment[]               @relation("EnrollmentUser")
   cohortMessages       CohortMessage[]            @relation("CohortMessageAuthor")
   rescheduleRequests   SessionRescheduleRequest[] @relation("RescheduleRequester")
+  permissionOverrides  UserPermission[]           @relation("UserPermissionSubject")
   learnerProfile       LearnerProfile?
   leads                Lead[]                     @relation("LeadUser")
   pathDrafts           LearnerPathDraft[]         @relation("PathDraftUser")
@@ -68,6 +69,7 @@ model Permission {
   key         String           @id // catalog.course.edit ...
   description String
   roles       RolePermission[]
+  userGrants  UserPermission[]
 }
 
 model RolePermission {
@@ -86,6 +88,31 @@ model UserRole {
   role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@id([userId, roleId])
+}
+
+/**
+ * ── استثناء الصلاحية لشخص بعينه ──
+ * كانت الصلاحية تُمنح بالدور كلّه ولا تُمنح لشخص: `Role → Permission` و
+ * `User → Role` وحدهما. فمن أراد أن يزيد موظّفا صلاحيةً واحدة مُنح الدورَ
+ * كلّه بما فيه — وهو ما يفتح أبوابا لم تُقصد.
+ * والقاعدة: صلاحيّاته = (صلاحيات أدواره + `grant`) − `deny`. والمنعُ الأعلى
+ * دائما: سحبُ صلاحيةٍ بعينها أسرع وأأمن من إعادة تركيب أدواره.
+ * ولا استثناء بلا سبب: `reason` إلزاميّ، ومعه فاعله ووقته — والسجلّ يُقرأ
+ * عند المراجعة، وسؤالُ «لماذا يملك هذا؟» يجد جوابه هنا لا في ذاكرة أحد.
+ */
+model UserPermission {
+  userId        String     @db.Uuid
+  permissionKey String
+  /// grant: زائدةٌ على دوره · deny: منزوعةٌ منه وحده
+  effect        String
+  reason        String
+  grantedBy     String?    @db.Uuid
+  createdAt     DateTime   @default(now())
+  user          User       @relation("UserPermissionSubject", fields: [userId], references: [id], onDelete: Cascade)
+  permission    Permission @relation(fields: [permissionKey], references: [key], onDelete: Cascade)
+
+  @@id([userId, permissionKey])
+  @@index([userId])
 }
 
 model Session {
