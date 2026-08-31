@@ -348,42 +348,61 @@ export default function CourseJourney({
           وأزرارها موصولة بدالة فارغة — عرضٌ لخيار لا يعمل. */}
       {edit && !edit.swapOnly && (
         <div className="mt-5 space-y-3 border-t border-white/10 pt-5">
-          {!edit.giftId && edit.pool.length > 0 && (
-            <div className="rounded-2xl border border-gold/40 bg-gold/5 p-4">
-              <p className="flex items-center gap-2 text-sm font-black text-gold-ink">
-                <Gift className="h-4 w-4" />
-                هدية وجيز: اختر دورة إضافية مجانية فوق دورات مسارك
+          {/* قائمةٌ واحدة لا قائمتان.
+
+              كانت الدورات المقترحة تُعرض مرّتين: صفَّ شرائحَ للهديّة، وتحته
+              صفَّ شرائحِ «+ أضف» — الأسماء نفسها بالترتيب نفسه. فسبعُ دوراتٍ
+              تصير أربعَ عشرة شريحةً بعرضٍ متفاوت تلتفّ بلا محاذاة، وعلى
+              القارئ أن يكتشف بنفسه أنّ الصفّين شيءٌ واحد باحتمالين.
+
+              فصارت الدورة سطرا واحدا في شبكة: اسمُها، وإلى جانبه ما يمكن
+              فعله بها. و«مجانا» لا يظهر إلّا ما دامت الهديّة غير مأخوذة —
+              والفعلان باقيان كما كانا، لم يُدمجا في واحد: من أراد أن يدّخر
+              هديّته لدورةٍ أخرى ويشتري هذه، له ذلك. */}
+          {edit.pool.length > 0 && (!edit.giftId || !edit.maxReached) && (
+            <div className={`rounded-2xl border p-4 ${!edit.giftId ? "border-gold/40 bg-gold/5" : "border-white/10 bg-white/[0.02]"}`}>
+              <p className={`flex items-center gap-2 text-sm font-black ${!edit.giftId ? "text-gold-ink" : "text-white/70"}`}>
+                {!edit.giftId ? <Gift className="h-4 w-4 shrink-0" /> : <Plus className="h-4 w-4 shrink-0" />}
+                {!edit.giftId ? "هدية وجيز: دورة إضافية مجانية فوق دورات مسارك" : "أضف دورة أخرى من المقترحة لك"}
               </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {edit.pool.map((p) => (
-                  <button
-                    key={p.id}
-                    onClick={() => edit.onGiftToggle(p.id)}
-                    className="rounded-full border border-white/15 px-3 py-1.5 text-xs font-semibold text-white/60 transition hover:border-gold/60 hover:text-gold-ink"
-                  >
-                    {p.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-          {!edit.maxReached && edit.pool.length > 0 && (
-            <div>
-              <p className="mb-2 text-xs font-bold text-white/55">
-                أو أضف دورة أخرى من المقترحة لك (حتى {MAX_PATHWAY_COURSES}):
+              <p className="mt-1 text-[11px] leading-5 text-white/45">
+                {!edit.giftId
+                  ? `اختر واحدة مجانا — أو أضف ما تشاء بالسعر حتى ${MAX_PATHWAY_COURSES} دورات.`
+                  : `حتى ${MAX_PATHWAY_COURSES} دورات في المسار.`}
               </p>
-              <div className="flex flex-wrap gap-2">
+
+              <ul className="mt-3 grid gap-1.5 sm:grid-cols-2">
                 {edit.pool.map((p) => (
-                  <button
+                  <li
                     key={p.id}
-                    onClick={() => edit.onAdd(p.id)}
-                    className="flex items-center gap-1 rounded-full border border-dashed border-white/15 px-3 py-1.5 text-xs font-semibold text-white/60 transition hover:border-teal-light/60 hover:text-teal-light-ink"
+                    className="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/[0.03] py-1.5 pe-2 ps-3"
                   >
-                    <Plus className="h-3 w-3" />
-                    {p.name}
-                  </button>
+                    <span className="min-w-0 flex-1 truncate text-xs font-semibold text-white/70" title={p.name}>
+                      {p.name}
+                    </span>
+                    <span className="flex shrink-0 items-center gap-1">
+                      {!edit.giftId && (
+                        <button
+                          onClick={() => edit.onGiftToggle(p.id)}
+                          aria-label={`اجعل «${p.name}» هديتك المجانية`}
+                          className="cursor-pointer rounded-full border border-gold/50 bg-gold/10 px-2.5 py-1 text-[11px] font-black text-gold-ink transition hover:bg-gold/20"
+                        >
+                          مجانا
+                        </button>
+                      )}
+                      {!edit.maxReached && (
+                        <button
+                          onClick={() => edit.onAdd(p.id)}
+                          aria-label={`أضف «${p.name}» إلى مسارك`}
+                          className="grid h-6 w-6 cursor-pointer place-items-center rounded-full border border-white/15 text-white/55 transition hover:border-teal-light/60 hover:text-teal-light-ink"
+                        >
+                          <Plus className="h-3 w-3" />
+                        </button>
+                      )}
+                    </span>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </div>
           )}
           {edit.minReached && !edit.swapOnly && (
