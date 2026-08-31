@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import {
-  CalendarDays, CheckCircle2, ChevronDown, ClipboardCheck,
+  CalendarClock, CalendarDays, CheckCircle2, ChevronDown, ClipboardCheck,
   Loader2, MessageSquarePlus, RefreshCw, ServerOff, Star, Upload, Users, Video,
 } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
@@ -38,6 +38,12 @@ interface TrainerCohort {
   };
 }
 
+interface CohortMessage {
+  id: string; audience: string; body: string; recipients: number; createdAt: string;
+  author: { displayName: string };
+  enrollment: { user: { displayName: string } } | null;
+}
+
 interface QueueItem {
   id: string; status: string; textAnswer: string | null; submittedAt: string; reviewNote: string | null;
   assessment: { title: string; maxScore: number; cohort: { title: string } };
@@ -61,6 +67,11 @@ export default function CohortBoard() {
   /* أدوات الشعبة: رابط مادة، وعنوان تكليف ونوعه — لكل شعبة على حدة */
   const [materialLink, setMaterialLink] = useState<Record<string, { title: string; url: string }>>({});
   const [taskForm, setTaskForm] = useState<Record<string, { title: string; type: string }>>({});
+  /* المخاطبة والتأجيل — لكل شعبة وجلسة على حدة */
+  const [msgForm, setMsgForm] = useState<Record<string, { body: string; enrollmentId: string }>>({});
+  const [msgLog, setMsgLog] = useState<Record<string, CohortMessage[]>>({});
+  const [rescheduleFor, setRescheduleFor] = useState<string | null>(null);
+  const [rescheduleForm, setRescheduleForm] = useState({ at: "", reason: "" });
 
   const load = useCallback(async () => {
     setLoading(true); setOffline(null);
@@ -158,6 +169,42 @@ export default function CohortBoard() {
       setGradeForm((prev) => ({ ...prev, [submissionId]: "" }));
     }, "سُجلت الدرجة — وأي تعديل لاحق سيوثق في السجل");
 
+  /* ── مخاطبة الشعبة ──
+     الرسالة تُسجَّل ثم تُوصَّل، والسجلّ يُعاد تحميله فورا: من أرسل يرى أثره
+     لا رسالةَ نجاحٍ تختفي. */
+  const loadMessages = useCallback(async (cohortId: string) => {
+    try {
+      const list = await apiGet<CohortMessage[]>(`/api/trainer/cohorts/${cohortId}/messages`);
+      setMsgLog((prev) => ({ ...prev, [cohortId]: list }));
+    } catch { /* السجلّ رفاهية — غيابه لا يمنع الإرسال */ }
+  }, []);
+
+  const sendMessage = (cohortId: string) => {
+    const f = msgForm[cohortId];
+    if (!f?.body.trim()) return;
+    void act(async () => {
+      await apiPost(`/api/trainer/cohorts/${cohortId}/messages`, {
+        audience: f.enrollmentId ? "learner" : "cohort",
+        enrollmentId: f.enrollmentId || undefined,
+        body: f.body.trim(),
+      });
+      setMsgForm((prev) => ({ ...prev, [cohortId]: { body: "", enrollmentId: "" } }));
+      await loadMessages(cohortId);
+    }, f.enrollmentId ? "وصلت رسالتك المتعلّم — وبقيت في السجلّ" : "بلغ إعلانك الشعبة — وبقي في السجلّ");
+  };
+
+  /* ── اقتراح موعد ──
+     يُقترح ولا يُغيَّر: الموعد لا يتبدّل عند المتعلّمين إلا باعتماد الإدارة. */
+  const proposeReschedule = (sessionId: string) =>
+    act(async () => {
+      await apiPost(`/api/trainer/sessions/${sessionId}/reschedule`, {
+        proposedStartsAt: new Date(rescheduleForm.at).toISOString(),
+        reason: rescheduleForm.reason.trim(),
+      });
+      setRescheduleFor(null);
+      setRescheduleForm({ at: "", reason: "" });
+    }, "وصل اقتراحك الإدارة — والموعد لا يتغيّر حتى تعتمده");
+
   const sendFeedback = (submissionId: string) =>
     act(async () => {
       await apiPost(`/api/trainer/submissions/${submissionId}/feedback`, { body: feedbackForm[submissionId] });
@@ -253,7 +300,44 @@ export default function CohortBoard() {
                                           <input type="file" accept="video/*" className="hidden"
                                             onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadRecording(s.id, f); e.target.value = ""; }} />
                                         </label>
+                                        {s.status !== "done" && (
+                                          <button type="button"
+                                            onClick={() => { setRescheduleFor(rescheduleFor === s.id ? null : s.id); setRescheduleForm({ at: "", reason: "" }); }}
+                                            className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-bold text-white/60 transition hover:border-gold/50 hover:text-gold-ink">
+                                            <CalendarClock className="h-3 w-3" /> اقترح موعدا
+                                          </button>
+                                        )}
                                       </div>
+
+                                      {/* الاقتراح لا يغيّر شيئا حتى تعتمده الإدارة — والنصّ يقولها
+                                          قبل الضغط لا بعده، فلا يظنّ المدرب أن الموعد تبدّل. */}
+                                      {rescheduleFor === s.id && (
+                                        <div className="mt-3 space-y-2.5 rounded-2xl border border-gold/30 bg-gold/[0.05] p-3.5">
+                                          <p className="text-[11px] leading-relaxed text-gold-ink">
+                                            تقترح ولا تغيّر: الموعد يبقى كما هو عند متعلّميك حتى تعتمد الإدارة اقتراحك.
+                                          </p>
+                                          <div className="grid gap-2.5 sm:grid-cols-2">
+                                            <div>
+                                              <label htmlFor={`rs-at-${s.id}`} className="mb-1 block text-[11px] font-bold text-white/55">الموعد المقترح</label>
+                                              <input id={`rs-at-${s.id}`} type="datetime-local" dir="ltr" value={rescheduleForm.at}
+                                                onChange={(e) => setRescheduleForm((f) => ({ ...f, at: e.target.value }))}
+                                                className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-left text-xs text-white focus:border-teal focus:outline-none" />
+                                            </div>
+                                            <div>
+                                              <label htmlFor={`rs-why-${s.id}`} className="mb-1 block text-[11px] font-bold text-white/55">السبب — تقرؤه الإدارة لتقرّر</label>
+                                              <input id={`rs-why-${s.id}`} value={rescheduleForm.reason}
+                                                onChange={(e) => setRescheduleForm((f) => ({ ...f, reason: e.target.value }))}
+                                                placeholder="مثال: سفر في موعد الجلسة"
+                                                className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/30 focus:border-teal focus:outline-none" />
+                                            </div>
+                                          </div>
+                                          <button type="button" disabled={busy || !rescheduleForm.at || rescheduleForm.reason.trim().length < 10}
+                                            onClick={() => void proposeReschedule(s.id)}
+                                            className="cursor-pointer rounded-full bg-gold px-5 py-1.5 text-[11px] font-black text-on-gold transition hover:bg-gold/90 disabled:cursor-not-allowed disabled:opacity-40">
+                                            أرسل الاقتراح للإدارة
+                                          </button>
+                                        </div>
+                                      )}
                                       {s.zoom?.passcode && (
                                         <p className="mt-2 text-[11px] text-white/45">رمز المرور: <span className="font-mono text-white/70" dir="ltr">{s.zoom.passcode}</span></p>
                                       )}
@@ -307,6 +391,72 @@ export default function CohortBoard() {
                                 </div>
                               </div>
                             )}
+
+                            {/* ── مخاطبة الشعبة ──
+
+                                كان المدرب يرى المتعثّر ولا يملك أن يخاطبه: التغذية
+                                الراجعة تُكتب على تسليم، ومن لم يُسلّم شيئا لا يبلغه
+                                شيء. والرسالة تُسجَّل ثم تُوصَّل — فالسجلّ هو الأثر
+                                الباقي، ومن مسح الإشعار لم يمسح الرسالة. */}
+                            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                              <h3 className="flex items-center gap-2 text-sm font-black text-white/75">
+                                <MessageSquarePlus className="h-4 w-4 text-teal-light-ink" /> مخاطبة الشعبة
+                              </h3>
+                              <p className="mt-1 text-[11px] leading-relaxed text-white/45">
+                                إعلانٌ يبلغ كلّ مسجَّل، أو رسالةٌ إلى متعلّم بعينه. وكلاهما يبقى في السجلّ أدناه.
+                              </p>
+                              <div className="mt-3 space-y-2.5">
+                                <select
+                                  aria-label="إلى من"
+                                  value={msgForm[c.id]?.enrollmentId ?? ""}
+                                  onChange={(e) => setMsgForm((prev) => ({ ...prev, [c.id]: { body: prev[c.id]?.body ?? "", enrollmentId: e.target.value } }))}
+                                  className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white focus:border-teal focus:outline-none [&>option]:bg-surface"
+                                >
+                                  <option value="">إلى الشعبة كلّها ({c.enrollments.filter((e) => e.status !== "waitlisted").length} متعلّما)</option>
+                                  {c.enrollments.filter((e) => e.status !== "waitlisted").map((e) => (
+                                    <option key={e.id} value={e.id}>إلى {e.user.displayName} وحده</option>
+                                  ))}
+                                </select>
+                                <textarea
+                                  aria-label="نصّ الرسالة" rows={3} maxLength={2000}
+                                  value={msgForm[c.id]?.body ?? ""}
+                                  onChange={(e) => setMsgForm((prev) => ({ ...prev, [c.id]: { enrollmentId: prev[c.id]?.enrollmentId ?? "", body: e.target.value } }))}
+                                  placeholder="اكتب ما تريد أن يبلغهم…"
+                                  className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs leading-6 text-white placeholder:text-white/30 focus:border-teal focus:outline-none"
+                                />
+                                <button type="button" disabled={busy || (msgForm[c.id]?.body ?? "").trim().length < 2}
+                                  onClick={() => sendMessage(c.id)}
+                                  className="flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-5 py-1.5 text-[11px] font-black text-on-teal transition hover:bg-teal-light disabled:cursor-not-allowed disabled:opacity-40">
+                                  <MessageSquarePlus className="h-3 w-3" /> أرسل
+                                </button>
+                              </div>
+
+                              <div className="mt-4 border-t border-white/8 pt-3">
+                                <button type="button" onClick={() => void loadMessages(c.id)}
+                                  className="cursor-pointer text-[11px] font-bold text-teal-light-ink transition hover:text-teal-ink">
+                                  {msgLog[c.id] ? "حدّث السجلّ" : "اعرض سجلّ ما أُرسل"}
+                                </button>
+                                {msgLog[c.id] && (
+                                  msgLog[c.id].length === 0 ? (
+                                    <p className="mt-2 text-[11px] text-white/40">لم تُرسل شيئا في هذه الشعبة بعد.</p>
+                                  ) : (
+                                    <ul className="mt-2.5 space-y-2">
+                                      {msgLog[c.id].map((m) => (
+                                        <li key={m.id} className="rounded-xl border border-white/8 bg-black/20 p-3">
+                                          <p className="text-[10.5px] text-white/45">
+                                            {m.audience === "cohort"
+                                              ? `إلى الشعبة · ${m.recipients} متعلّما`
+                                              : `إلى ${m.enrollment?.user.displayName ?? "متعلّم"}`}
+                                            {" · "}{fmtDateTimeAr(m.createdAt)}
+                                          </p>
+                                          <p className="mt-1.5 whitespace-pre-line text-xs leading-6 text-white/75">{m.body}</p>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  )
+                                )}
+                              </div>
+                            </div>
 
                             {/* ── مواد الشعبة وتكاليفها ──
                                 كانت المواد معلَنة في نوع البيانات ولا تُعرض في الصفحة أصلا،

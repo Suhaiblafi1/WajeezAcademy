@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import {
-  CalendarPlus, CheckCircle2, ChevronDown, Loader2, Lock, Play, RefreshCw,
+  CalendarClock, CalendarPlus, CheckCircle2, ChevronDown, Loader2, Lock, Play, RefreshCw,
   ServerOff, UserPlus, Users, Video, XCircle,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { CohortOps, LearningSettings } from "./CohortOps";
+import { fmtDateTimeAr } from "@/utils/format";
 
 const STATUS_META: Record<string, { label: string; cls: string }> = {
   draft: { label: "مسودة", cls: "border-white/20 text-white/50" },
@@ -15,6 +16,12 @@ const STATUS_META: Record<string, { label: string; cls: string }> = {
   completed: { label: "مكتملة", cls: "border-white/20 text-white/60" },
   cancelled: { label: "ملغاة", cls: "border-red-500/40 text-red-400" },
 };
+
+interface RescheduleRow {
+  id: string; currentStartsAt: string; proposedStartsAt: string; reason: string; createdAt: string;
+  requester: { displayName: string };
+  session: { id: string; title: string; cohort: { id: string; title: string } };
+}
 
 interface CohortRow {
   id: string; title: string; status: string; courseId: string; courseTitle: string;
@@ -45,16 +52,21 @@ export default function AdminCohorts() {
   const [zoomForm, setZoomForm] = useState<Record<string, { sessionId: string; joinUrl: string; meetingId: string; passcode: string }>>({});
   const [enrollUserId, setEnrollUserId] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
+  const [reschedules, setReschedules] = useState<RescheduleRow[]>([]);
+  const [rsComment, setRsComment] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     setLoading(true); setOffline(null);
     try {
-      const [cohortRows, courseRows] = await Promise.all([
+      const [cohortRows, courseRows, rsRows] = await Promise.all([
         apiGet<CohortRow[]>("/api/admin/cohorts"),
         apiGet<CourseOption[]>("/api/admin/catalog/courses"),
+        /* اقتراحات التأجيل لا تُسقط الصفحة: غيابها أهون من شعبٍ لا تُدار */
+        apiGet<RescheduleRow[]>("/api/admin/session-reschedules").catch(() => [] as RescheduleRow[]),
       ]);
       setRows(cohortRows);
       setCourses(courseRows.filter((c) => c.status === "published"));
+      setReschedules(rsRows);
     } catch (err) {
       setOffline(err instanceof ApiError ? err.message : "الخادم غير متصل — شغّل واجهة API أولا");
     } finally {
@@ -78,6 +90,13 @@ export default function AdminCohorts() {
       setBusy(false);
     }
   };
+
+  /* قرار الإدارة — والاعتماد وحده يحرّك الموعد عند المتعلّمين */
+  const reviewReschedule = (id: string, action: "approve" | "reject") =>
+    act(
+      () => apiPost(`/api/admin/session-reschedules/${id}/review`, { action, comment: rsComment[id]?.trim() || undefined }),
+      action === "approve" ? "اعتُمد الموعد الجديد — وأُخبر المتعلّمون" : "لم يُعتمد الاقتراح — ووصل المدرب تعليقك",
+    );
 
   const loadChecklist = async (id: string) => {
     try {
@@ -126,6 +145,56 @@ export default function AdminCohorts() {
         <p className="mb-5 flex items-center gap-2 rounded-2xl border border-teal/40 bg-teal/10 px-4 py-3 text-sm font-bold text-teal-light-ink">
           <CheckCircle2 className="h-4 w-4 shrink-0" /> {flash}
         </p>
+      )}
+
+      {/* ── اقتراحات تأجيل الجلسات ──
+
+          المدرب يقترح والإدارة تعتمد — وهو القرار المتّفق عليه. والموعد لا
+          يتبدّل عند المتعلّمين قبل الاعتماد، فما هنا ينتظر قرارا لا علما.
+          وموضعه أعلى الصفحة لأنّ ما ينتظر قرارا يسبق ما يُنشأ. */}
+      {reschedules.length > 0 && (
+        <div className="mb-6 rounded-3xl border border-gold/30 bg-gold/[0.05] p-5">
+          <h2 className="flex items-center gap-2 text-sm font-black text-gold-ink">
+            <CalendarClock className="h-4 w-4" /> اقتراحات تأجيل تنتظر قرارك ({reschedules.length})
+          </h2>
+          <div className="mt-4 space-y-3">
+            {reschedules.map((r) => (
+              <div key={r.id} className="rounded-2xl border border-white/10 bg-black/25 p-4">
+                <p className="text-sm font-bold">{r.session.title}</p>
+                <p className="mt-0.5 text-[11px] text-white/50">
+                  {r.session.cohort.title} · اقترحه {r.requester.displayName}
+                </p>
+                <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-1.5 text-[11.5px]">
+                  <span className="text-white/55">الموعد الآن: <span className="text-white/80">{fmtDateTimeAr(r.currentStartsAt)}</span></span>
+                  <span className="text-gold-ink">المقترح: <span className="font-bold">{fmtDateTimeAr(r.proposedStartsAt)}</span></span>
+                </div>
+                <p className="mt-2.5 rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-xs leading-6 text-white/70">{r.reason}</p>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <input
+                    aria-label={`تعليق على اقتراح ${r.session.title}`}
+                    value={rsComment[r.id] ?? ""}
+                    onChange={(e) => setRsComment((prev) => ({ ...prev, [r.id]: e.target.value }))}
+                    placeholder="تعليقك — يصل المدرب مع القرار"
+                    className="min-w-0 flex-1 rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/30 focus:border-teal focus:outline-none"
+                  />
+                  <button type="button" disabled={busy}
+                    onClick={() => void reviewReschedule(r.id, "approve")}
+                    className="cursor-pointer rounded-full bg-teal px-5 py-2 text-[11px] font-black text-on-teal transition hover:bg-teal-light disabled:opacity-40">
+                    اعتمد الموعد
+                  </button>
+                  <button type="button" disabled={busy}
+                    onClick={() => void reviewReschedule(r.id, "reject")}
+                    className="cursor-pointer rounded-full border border-red-400/40 px-5 py-2 text-[11px] font-bold text-red-300 transition hover:bg-red-400/10 disabled:opacity-40">
+                    لا أعتمده
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 text-[11px] leading-relaxed text-white/45">
+            الاعتماد يحرّك الموعد ويُخبر المتعلّمين. والردّ لا يحرّكه، ويصل المدرب بتعليقك.
+          </p>
+        </div>
       )}
 
       {/* إنشاء شعبة */}

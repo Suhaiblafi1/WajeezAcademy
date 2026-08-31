@@ -14,6 +14,7 @@ import { CertificateService } from '../../services/certificate.service'
 import { SkillGrowthService } from '../../services/skill-growth.service'
 import { RetrievalService } from '../../services/retrieval.service'
 import { ScenarioService } from '../../services/scenario.service'
+import { CohortMessageService } from '../../services/cohort-message.service'
 import { AuthError } from '../../services/auth.service'
 import { requirePermission } from '../auth-plugin'
 
@@ -54,6 +55,7 @@ function signCohortContent<T extends {
 export function registerLearningPortalRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const cohorts = new CohortService(prisma)
   const enrollments = new EnrollmentService(prisma)
+  const messages = new CohortMessageService(prisma)
   const assessments = new AssessmentService(prisma)
   const progress = new ProgressService(prisma)
   const certificates = new CertificateService(prisma)
@@ -303,6 +305,81 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     }).parse(req.body)
     await enrollments.assertCohortTrainer(req.auth!.userId, id)
     return reply.status(201).send(await assessments.createAssessment(req.auth!.userId, { ...body, cohortId: id }))
+  })
+
+  /* ── مخاطبة الشعبة، واقتراح تأجيل جلسة ──
+
+     الفعلان بصلاحيته هو خلف assertCohortTrainer: شعبته وحدها لا شعبة سواه.
+     ومعرّف الشعبة في المسار لا في الجسم — فلا يُخاطب شعبةً بمعرّفٍ يُخمَّن. */
+
+  app.post('/api/trainer/cohorts/:id/messages', {
+    preHandler: requirePermission('trainer.cohort.operate'),
+    schema: { tags: ['trainer-ops'], summary: 'رسالة إلى الشعبة كلّها أو إلى متعلّم فيها — تُسجَّل وتُوصَّل' },
+  }, async (req, reply) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      audience: z.enum(['cohort', 'learner']),
+      enrollmentId: z.string().uuid().optional(),
+      body: z.string().min(2).max(2000),
+    }).parse(req.body)
+    await enrollments.assertCohortTrainer(req.auth!.userId, id)
+    return reply.status(201).send(await messages.send(req.auth!.userId, id, body))
+  })
+
+  app.get('/api/trainer/cohorts/:id/messages', {
+    preHandler: requirePermission('trainer.cohort.operate'),
+    schema: { tags: ['trainer-ops'], summary: 'سجلّ ما أُرسل في شعبتي' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    await enrollments.assertCohortTrainer(req.auth!.userId, id)
+    return messages.list(id)
+  })
+
+  app.post('/api/trainer/sessions/:sessionId/reschedule', {
+    preHandler: requirePermission('trainer.cohort.operate'),
+    schema: { tags: ['trainer-ops'], summary: 'اقتراح موعد جديد لجلسة من شعبي — الإدارة تعتمد' },
+  }, async (req, reply) => {
+    const { sessionId } = z.object({ sessionId: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      proposedStartsAt: z.coerce.date(),
+      reason: z.string().min(10).max(500),
+    }).parse(req.body)
+    const session = await prisma.cohortSession.findUnique({ where: { id: sessionId }, select: { cohortId: true } })
+    if (!session) throw new AuthError('not_found', 'الجلسة غير موجودة', 404)
+    await enrollments.assertCohortTrainer(req.auth!.userId, session.cohortId)
+    return reply.status(201).send(await messages.propose(req.auth!.userId, sessionId, body))
+  })
+
+  app.get('/api/trainer/reschedules', {
+    preHandler: requirePermission('trainer.cohort.operate'),
+    schema: { tags: ['trainer-ops'], summary: 'اقتراحاتي لتأجيل الجلسات وأين وقفت' },
+  }, async (req) => messages.mine(req.auth!.userId))
+
+  app.post('/api/trainer/reschedules/:id/withdraw', {
+    preHandler: requirePermission('trainer.cohort.operate'),
+    schema: { tags: ['trainer-ops'], summary: 'سحب اقتراح تأجيل معلّق' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return messages.withdraw(req.auth!.userId, id)
+  })
+
+  /* ── قرار الإدارة: الاعتماد وحده يحرّك الموعد عند المتعلّمين ── */
+
+  app.get('/api/admin/session-reschedules', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-cohorts'], summary: 'اقتراحات تأجيل الجلسات المعلّقة' },
+  }, async () => messages.pending())
+
+  app.post('/api/admin/session-reschedules/:id/review', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-cohorts'], summary: 'اعتماد اقتراح تأجيل أو ردّه بسبب' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      action: z.enum(['approve', 'reject']),
+      comment: z.string().max(500).optional(),
+    }).parse(req.body)
+    return messages.review(req.auth!.userId, id, body)
   })
 
   app.get('/api/trainer/grading-queue', {

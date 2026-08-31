@@ -15,44 +15,46 @@ datasource db {
  */
 
 model User {
-  id                   String               @id @default(uuid()) @db.Uuid
-  email                String               @unique
+  id                   String                     @id @default(uuid()) @db.Uuid
+  email                String                     @unique
   passwordHash         String
   displayName          String
-  status               String               @default("active") // active | suspended
-  createdAt            DateTime             @default(now())
-  updatedAt            DateTime             @updatedAt
+  status               String                     @default("active") // active | suspended
+  createdAt            DateTime                   @default(now())
+  updatedAt            DateTime                   @updatedAt
   suspendedAt          DateTime?
   /**
    * توثيق البريد (١هـ) — يحجب الشراء وسكّ الشهادة، ولا يحجب الدخول ولا التصفّح.
    * الرمز يُحفظ هاشا كسائر الرموز: تسريب القاعدة لا يعطي مفاتيح صالحة.
    */
-  ratingsGiven         Rating[]             @relation("RatingRater")
-  learnerPlans         LearnerPlan[]        @relation("LearnerPlanUser")
+  ratingsGiven         Rating[]                   @relation("RatingRater")
+  learnerPlans         LearnerPlan[]              @relation("LearnerPlanUser")
   emailVerifiedAt      DateTime?
-  emailVerifyTokenHash String?              @unique
+  emailVerifyTokenHash String?                    @unique
   emailVerifyExpiresAt DateTime?
   roles                UserRole[]
   sessions             Session[]
   resetTokens          PasswordResetToken[]
   trainerProfile       TrainerProfile?
-  trainerApplication   TrainerApplication?  @relation("TrainerApplicant")
-  enrollments          Enrollment[]         @relation("EnrollmentUser")
+  trainerApplication   TrainerApplication?        @relation("TrainerApplicant")
+  enrollments          Enrollment[]               @relation("EnrollmentUser")
+  cohortMessages       CohortMessage[]            @relation("CohortMessageAuthor")
+  rescheduleRequests   SessionRescheduleRequest[] @relation("RescheduleRequester")
   learnerProfile       LearnerProfile?
-  leads                Lead[]               @relation("LeadUser")
-  pathDrafts           LearnerPathDraft[]   @relation("PathDraftUser")
+  leads                Lead[]                     @relation("LeadUser")
+  pathDrafts           LearnerPathDraft[]         @relation("PathDraftUser")
   cvSubmissions        CvSubmission[]
   consentRecords       ConsentRecord[]
   enrollmentRequests   EnrollmentRequest[]
   subscriptions        Subscription[]
   orders               Order[]
   notifications        Notification[]
-  supportTickets       SupportTicket[]      @relation("TicketOwner")
-  advisorCases         AdvisorCase[]        @relation("CaseClient")
-  advisorAssignments   AdvisorAssignment[]  @relation("CaseAdvisor")
-  skillRemeasures      SkillRemeasure[]     @relation("SkillRemeasureUser")
-  retrievalCards       RetrievalCard[]      @relation("RetrievalCardUser")
-  scenarioRuns         ScenarioRun[]        @relation("ScenarioRunUser")
+  supportTickets       SupportTicket[]            @relation("TicketOwner")
+  advisorCases         AdvisorCase[]              @relation("CaseClient")
+  advisorAssignments   AdvisorAssignment[]        @relation("CaseAdvisor")
+  skillRemeasures      SkillRemeasure[]           @relation("SkillRemeasureUser")
+  retrievalCards       RetrievalCard[]            @relation("RetrievalCardUser")
+  scenarioRuns         ScenarioRun[]              @relation("ScenarioRunUser")
 }
 
 model Role {
@@ -1085,6 +1087,60 @@ model TrainerChangeRequestItem {
   @@index([requestId])
 }
 
+/**
+ * ── مخاطبة المدرب لشعبته — رسالةٌ تُسجَّل لا تمرّ ──
+ * كان المدرب يرى المتعثّر ولا يملك أن يخاطبه: التغذية الراجعة على التسليم
+ * وحدها، ومن لم يُسلّم شيئا لا يبلغه شيء. والقرار: رسائل تُسجَّل — فالسجلّ
+ * يُقرأ عند المراجعة ويحمي الطرفين، والإشعار العابر لا يفعل.
+ * صنفان في نموذج واحد لأنّهما فعلٌ واحد باتّساعين: `cohort` تبلغ كلّ مسجَّل،
+ * و`learner` تبلغ واحدا بعينه (فيلزمها enrollmentId). والتوصيل عبر Notification
+ * بجمهور المتعلّم — والرسالة نفسها هي الأثر الباقي.
+ */
+model CohortMessage {
+  id           String      @id @default(uuid()) @db.Uuid
+  cohortId     String      @db.Uuid
+  authorId     String      @db.Uuid
+  audience     String // cohort | learner
+  /// المتعلّم المقصود حين تكون الرسالة إليه وحده
+  enrollmentId String?     @db.Uuid
+  body         String
+  /// عدد من بلغتهم الرسالة وقت إرسالها — يُقرأ ولا يُعاد حسابه
+  recipients   Int         @default(0)
+  createdAt    DateTime    @default(now())
+  cohort       Cohort      @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  author       User        @relation("CohortMessageAuthor", fields: [authorId], references: [id])
+  enrollment   Enrollment? @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  @@index([cohortId, createdAt])
+  @@index([enrollmentId, createdAt])
+}
+
+/**
+ * ── اقتراح تأجيل جلسة — المدرب يقترح والإدارة تعتمد ──
+ * الجدولة كانت بيد الإدارة وحدها، والمدرب هو من يعرف انقطاعه. والقرار المتّفق
+ * عليه: يقترح ولا يغيّر. فالموعد لا يتبدّل عند المتعلّمين إلا باعتماد
+ * الإدارة — والاقتراح المرفوض يبقى بسببه مكتوبا.
+ */
+model SessionRescheduleRequest {
+  id               String        @id @default(uuid()) @db.Uuid
+  sessionId        String        @db.Uuid
+  requestedBy      String        @db.Uuid
+  /// الموعد وقت الاقتراح — يُحفظ كي يُقرأ القرار بعد تبدّل الجدول
+  currentStartsAt  DateTime
+  proposedStartsAt DateTime
+  reason           String
+  status           String        @default("pending") // pending | approved | rejected | withdrawn
+  reviewedBy       String?       @db.Uuid
+  reviewedAt       DateTime?
+  reviewerComment  String?
+  createdAt        DateTime      @default(now())
+  session          CohortSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  requester        User          @relation("RescheduleRequester", fields: [requestedBy], references: [id])
+
+  @@index([status, createdAt])
+  @@index([sessionId, createdAt])
+}
+
 model TrainerContract {
   id        String         @id @default(uuid()) @db.Uuid
   profileId String         @db.Uuid
@@ -1181,6 +1237,7 @@ model Cohort {
   trainers           CohortTrainer[]
   sessions           CohortSession[]
   enrollments        Enrollment[]
+  messages           CohortMessage[]
   enrollmentRequests EnrollmentRequest[]
   materials          LearningMaterial[]
   assessments        CohortAssessment[]
@@ -1245,19 +1302,20 @@ model CohortTrainer {
 }
 
 model CohortSession {
-  id         String       @id @default(uuid()) @db.Uuid
-  cohortId   String       @db.Uuid
-  moduleId   String? // الوحدة المرتبطة من مخطط الدورة
-  title      String
-  startsAt   DateTime
-  endsAt     DateTime?
-  timezone   String?
-  status     String       @default("scheduled") // scheduled | live | done | cancelled
-  createdAt  DateTime     @default(now())
-  cohort     Cohort       @relation(fields: [cohortId], references: [id], onDelete: Cascade)
-  zoom       ZoomMeeting?
-  recordings Recording[]
-  attendance Attendance[]
+  id          String                     @id @default(uuid()) @db.Uuid
+  cohortId    String                     @db.Uuid
+  moduleId    String? // الوحدة المرتبطة من مخطط الدورة
+  title       String
+  startsAt    DateTime
+  endsAt      DateTime?
+  timezone    String?
+  status      String                     @default("scheduled") // scheduled | live | done | cancelled
+  createdAt   DateTime                   @default(now())
+  cohort      Cohort                     @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  zoom        ZoomMeeting?
+  recordings  Recording[]
+  attendance  Attendance[]
+  reschedules SessionRescheduleRequest[]
 
   @@index([cohortId, startsAt])
 }
@@ -1327,6 +1385,7 @@ model Enrollment {
   certificates     Certificate[]
   skillRemeasures  SkillRemeasure[]
   ratings          Rating[]
+  messages         CohortMessage[]
 
   @@unique([cohortId, userId])
   @@index([userId, status])
