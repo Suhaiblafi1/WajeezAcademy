@@ -48,7 +48,8 @@ function useReveal() {
 
 /* ───────────────────────── data ─────────────────────────
    القصص والشعارات انتقلت إلى مصدر مشترك تتقاسمه صفحة القصص المستقلة */
-import { stories, partnerLogos } from '@/data/stories'
+import { stories, partnerLogos, STORY_ILLUSTRATIVE_BADGE_AR } from '@/data/stories'
+import StoryAvatar from '@/components/StoryAvatar'
 import RemoteImage from '@/components/RemoteImage'
 
 /* «مؤشر وجيز» — خمسة أسئلة وعي مستقلة: تُحفظ محليا على جهاز الزائر فقط ولا تغذي التشخيص،
@@ -527,9 +528,10 @@ function Stories() {
           <SectionLabel>نماذج توضيحية لرحلات التعلم</SectionLabel>
           <h2 className="mt-5 text-3xl font-bold md:text-4xl">هكذا تُبنى الرحلة عندنا</h2>
           <p className="mx-auto mt-4 max-w-xl leading-8 text-muted-foreground">
-            كل رحلة تبدأ بتشخيص، وتمر بمسار ومدرب، وتنتهي بمخرج يمكنك أن تراه — اختر نموذجا واقرأه كاملا.
+            كل رحلة تبدأ بتشخيص أو بمسار جاهز، وتمر بدورات الكتالوج، وتنتهي بمشروع تخرج يدخل ملفك — اختر نموذجا واقرأه كاملا.
           </p>
-          <p className="mx-auto mt-3 max-w-md text-xs leading-6 text-muted-foreground">
+          {/* الصدقُ باقٍ والصوتُ خافت: تنويهٌ لا يزاحم ما جاء الزائرُ ليقرأه */}
+          <p className="mx-auto mt-3 max-w-md text-[11px] leading-5 text-muted-foreground/60">
             نماذج توضيحية مركبة من أنماط شائعة — ليست شهادات لأشخاص حقيقيين.
           </p>
         </div>
@@ -555,20 +557,9 @@ function Stories() {
             className="group flex w-[280px] shrink-0 snap-start flex-col overflow-hidden rounded-3xl border border-white/10 bg-card text-right transition-all duration-200 hover:-translate-y-1 hover:border-teal/50 hover:shadow-[0_20px_60px_-30px_rgba(56,167,180,0.4)]"
           >
             <div className="relative h-36 overflow-hidden">
-              {s.img ? (
-                <RemoteImage
-                  src={s.img}
-                  alt={`مشهد من قصة ${s.name}`}
-                  className="h-full w-full object-cover object-top transition duration-500 group-hover:scale-105"
-                  fallbackClassName="h-full w-full"
-                />
-              ) : (
-                <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_60%_20%,rgba(56,167,180,0.35),transparent_65%)]">
-                  <span className="grid h-16 w-16 place-items-center rounded-full border border-teal/30 bg-panel text-2xl font-black text-teal-light">
-                    {s.name.slice(0, 1)}
-                  </span>
-                </div>
-              )}
+              <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_60%_20%,rgba(56,167,180,0.35),transparent_65%)]">
+                <StoryAvatar id={s.id} name={s.name} look={s.look} className="h-20 w-20" />
+              </div>
               <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
               <span className="tag-teal absolute bottom-3 right-4 rounded-full px-3 py-1 text-[11px] font-bold">{s.tag}</span>
             </div>
@@ -608,17 +599,11 @@ function Stories() {
       {open && (
         <Modal onClose={() => setOpen(null)} label={`قصة ${open.name} كاملة`} panelClassName="my-8 w-full max-w-3xl">
           <div dir="rtl" className="story-fade overflow-hidden rounded-3xl border border-white/10 bg-card">
-              {/* صورة القصة */}
-              <div className="relative h-56 overflow-hidden md:h-72">
-                {open.img ? (
-                  <img src={open.img} alt={`مشهد من قصة ${open.name}`} loading="lazy" width="1200" height="600" className="h-full w-full object-cover object-top" />
-                ) : (
-                  <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_60%_20%,rgba(56,167,180,0.35),transparent_65%)]">
-                    <span className="grid h-20 w-20 place-items-center rounded-full border border-teal/30 bg-panel text-3xl font-black text-teal-light">
-                      {open.name.slice(0, 1)}
-                    </span>
-                  </div>
-                )}
+              {/* رأس القصة */}
+              <div className="relative h-52 overflow-hidden md:h-60">
+                <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_60%_20%,rgba(56,167,180,0.35),transparent_65%)]">
+                  <StoryAvatar id={open.id} name={open.name} look={open.look} className="h-28 w-28 md:h-32 md:w-32" />
+                </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-transparent" />
                 <button
                   onClick={() => setOpen(null)}
@@ -630,7 +615,7 @@ function Stories() {
                 <div className="absolute bottom-4 right-6 flex flex-wrap items-center gap-3">
                   <span className="tag-teal rounded-full px-4 py-1.5 text-sm font-bold">{open.tag}</span>
                   <span className="text-sm text-white/80">{open.name} — {open.role}</span>
-                  <span className="rounded-full border border-gold/50 bg-black/40 px-3 py-1 text-[11px] font-bold text-gold-ink">نموذج توضيحي</span>
+                  <span className="text-[11px] font-normal text-white/50">{STORY_ILLUSTRATIVE_BADGE_AR}</span>
                 </div>
               </div>
 
@@ -643,35 +628,77 @@ function Stories() {
               </div>
 
               {/* تفاصيل المسار */}
+              {/* المدخلُ والمسارُ ومشروعُ التخرّج.
+
+                  حُذف عمودُ «المدرب»: قاعدتُنا ألّا يُعرض اسمُ مدرّبٍ قبل اعتماد
+                  شعبته، فكان العمودُ يعرض الجملةَ المؤقّتة نفسَها في خمس بطاقات.
+                  ومكانَه دخل ما يُقنع فعلا: كيف دخل، ومشروعُ تخرّجه. */}
               <div className="grid gap-px bg-white/5 md:grid-cols-3">
                 <div className="bg-card p-6">
-                  <div className="flex items-center gap-2 text-xs text-teal-light-ink"><Route className="h-4 w-4" /> المسار الذي {open.gender === 'f' ? 'سلكته' : 'سلكه'}</div>
+                  <div className="flex items-center gap-2 text-xs text-teal-light-ink">
+                    {open.entry === 'diagnostic' ? <Compass className="h-4 w-4" /> : <Route className="h-4 w-4" />}
+                    {open.entry === 'diagnostic' ? 'بدأ بالتشخيص' : 'اشترى مسارا جاهزا'}
+                  </div>
+                  <div className="mt-2 text-sm leading-7 text-muted-foreground">
+                    {open.entry === 'diagnostic'
+                      ? 'لم يكن يعرف من أين يبدأ — فرسم له التشخيص المسار.'
+                      : 'كان يعرف وجهته، فبدأ المسار مباشرة.'}
+                  </div>
+                </div>
+                <div className="bg-card p-6">
+                  <div className="flex items-center gap-2 text-xs text-teal-light-ink"><Route className="h-4 w-4" /> المسار</div>
                   <div className="mt-2 font-bold leading-7">{open.pathway}</div>
-                  <div className="mt-1 text-xs text-muted-foreground">{open.duration}</div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    {open.weeks} أسبوعا · {open.weeklyHours} · {open.courses.length} دورات
+                  </div>
                 </div>
                 <div className="bg-card p-6">
-                  <div className="flex items-center gap-2 text-xs text-teal-light-ink"><User className="h-4 w-4" /> المدرب</div>
-                  <div className="mt-2 font-bold">{open.trainer}</div>
-                  <div className="mt-1 text-xs text-muted-foreground">{open.gender === 'f' ? 'رافقها' : 'رافقه'} في التقييم والمتابعة طوال المسار</div>
-                </div>
-                <div className="bg-card p-6">
-                  <div className="flex items-center gap-2 text-xs text-teal-light-ink"><FileCheck className="h-4 w-4" /> المخرج العملي</div>
-                  <div className="mt-2 font-bold leading-7">{open.output}</div>
+                  <div className="flex items-center gap-2 text-xs text-teal-light-ink"><FileCheck className="h-4 w-4" /> مشروع التخرّج</div>
+                  <div className="mt-2 text-sm font-bold leading-7">{open.capstone}</div>
                 </div>
               </div>
 
               {/* دورات القصة ومخرجاتها */}
               <div className="border-t border-white/5 p-8 md:px-10">
                 <div className="flex items-center gap-2 text-xs text-teal-light-ink">
-                  <BookOpen className="h-4 w-4" /> الدورات التي {open.gender === 'f' ? 'أخذتها' : 'أخذها'} {open.name} — وماذا خرج{open.gender === 'f' ? 'ت' : ''} من كل واحدة
+                  <BookOpen className="h-4 w-4" /> دورات المسار — وماذا خرج من كلّ واحدة
                 </div>
-                <div className="mt-4 grid gap-3 md:grid-cols-3">
+                <div className="mt-4 grid gap-3 md:grid-cols-2">
                   {open.courses.map((c) => (
-                    <div key={c.name} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                    <div key={c.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                       <p className="text-sm font-bold leading-relaxed">{c.name}</p>
                       <p className="mt-2 flex items-start gap-1.5 text-xs leading-6 text-muted-foreground">
                         <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-teal-ink" />
                         {c.output}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* ما تغيّر فعلا — قبل وبعد.
+
+                  هذا أنفعُ ما في القصّة: النتيجةُ في الأسفل تُروى، وهذه تُقاس.
+                  وثلاثةٌ من مسارات الكتالوج تنصّ على قياس قبل/بعد في مشروع
+                  تخرّجها — فما يُعرض هنا ما نفعله، لا ما نتمنّاه. */}
+              <div className="border-t border-white/5 p-8 md:px-10">
+                <div className="flex items-center gap-2 text-xs text-teal-light-ink">
+                  <Target className="h-4 w-4" /> قياس المهارة — قبل المسار وبعده
+                </div>
+                <div className="mt-4 overflow-hidden rounded-2xl border border-white/10">
+                  {open.measure.map((m, i) => (
+                    <div
+                      key={m.skill}
+                      className={`grid gap-3 p-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1.2fr)] sm:items-center ${i ? 'border-t border-white/10' : ''}`}
+                    >
+                      <p className="text-sm font-bold leading-relaxed">{m.skill}</p>
+                      <p className="flex items-start gap-2 text-xs leading-6 text-muted-foreground">
+                        <span className="mt-0.5 shrink-0 rounded-full bg-white/5 px-2 py-0.5 text-[10px] font-bold">قبل</span>
+                        {m.before}
+                      </p>
+                      <p className="flex items-start gap-2 text-xs leading-6 text-foreground/90">
+                        <span className="mt-0.5 shrink-0 rounded-full bg-teal/15 px-2 py-0.5 text-[10px] font-bold text-teal-light-ink">بعد</span>
+                        {m.after}
                       </p>
                     </div>
                   ))}
