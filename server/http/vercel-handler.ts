@@ -5,7 +5,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import type { FastifyInstance } from 'fastify'
 import { getPrisma } from '../db/client'
-import { seedRbac } from '../auth/rbac-seed'
+import { ensureRbacSeeded } from '../auth/rbac-seed'
 import { buildApp } from './app'
 
 let cached: FastifyInstance | null = null
@@ -13,7 +13,8 @@ let cached: FastifyInstance | null = null
 async function getApp(): Promise<FastifyInstance> {
   if (cached) return cached
   const prisma = await getPrisma()
-  await seedRbac(prisma) // idempotent — آمنة عند كل إقلاع بارد
+  /* فحصٌ واحد لا ٩٩ كتابة: البناء يبذر، وهذا يتأكّد فقط — انظر rbac-seed.ts */
+  await ensureRbacSeeded(prisma)
   cached = await buildApp(prisma)
   await cached.ready()
   return cached

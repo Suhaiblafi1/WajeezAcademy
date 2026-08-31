@@ -67,7 +67,8 @@
     "report:v2_1-docs": "tsx scripts/v2_1/report-docs.ts",
     "cohorts:align-prices": "tsx scripts/align-cohort-prices.ts",
     "demo:purge": "tsx scripts/purge-demo-data.ts",
-    "roles:restore-learner": "tsx scripts/restore-learner-role.ts"
+    "roles:restore-learner": "tsx scripts/restore-learner-role.ts",
+    "cohorts:open-all": "tsx scripts/open-all-cohorts.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.2",

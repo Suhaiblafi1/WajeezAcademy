@@ -34,3 +34,32 @@ export async function seedRbac(prisma: PrismaClient): Promise<{ roles: number; p
     grants,
   }
 }
+
+/* ─────────── البذر الكسول: فحصٌ واحد بدل تسعةٍ وتسعين ───────────
+
+   `seedRbac` تُنفّذ upsert لكلّ صلاحيّة (٦٧) وكلّ دور (٩) وكلّ منحٍ بينهما
+   (٢٣) — نحو ٩٩ رحلةً **متتالية** إلى القاعدة. وكانت تُنادى في كلّ إقلاعٍ
+   باردٍ لدالّة Vercel قبل خدمة أيّ طلب، والقاعدة على Neon عبر الشبكة لا
+   في الذاكرة. فأوّلُ من يفتح الموقع بعد فترة خمولٍ ينتظرها كلَّها — وهو ما
+   وصفه صاحب المنصّة: «فتح الحساب والخروج منه يأخذ وقتا طويلا».
+
+   والبذر أصلا يجري في البناء: `scripts/vercel-build.sh` ينادي
+   `catalog:import` وهي تبذر. فنداؤه في مسار الطلب تكرارٌ لعملٍ تمّ.
+
+   ولا يُحذف بلا بديل: لو نُشرت قاعدةٌ بلا بذرٍ لردّ الخادم ٤٠٣ على كلّ شيء.
+   فالفحص عدٌّ واحد — رحلةٌ واحدة — ولا يُبذَر إلّا إن نقص العدد. */
+export async function ensureRbacSeeded(prisma: PrismaClient): Promise<{ seeded: boolean }> {
+  try {
+    const [permissions, roles] = await prisma.$transaction([
+      prisma.permission.count(),
+      prisma.role.count(),
+    ])
+    if (permissions >= PERMISSIONS.length && roles >= Object.keys(ROLE_PERMISSIONS).length) {
+      return { seeded: false }
+    }
+  } catch {
+    /* تعذّر العدّ — نبذر احتياطا بدل أن نخدم بصلاحيّاتٍ ناقصة */
+  }
+  await seedRbac(prisma)
+  return { seeded: true }
+}

@@ -1,12 +1,12 @@
 /* نقطة تشغيل خادم API — يضمن قاعدة البيانات (المدمجة أو DATABASE_URL) ثم يستمع */
 
 import { getPrisma } from './db/client'
-import { seedRbac } from './auth/rbac-seed'
+import { ensureRbacSeeded } from './auth/rbac-seed'
 import { buildApp } from './http/app'
 
 const main = async () => {
   const prisma = await getPrisma()
-  await seedRbac(prisma) // idempotent — يضمن الأدوار والصلاحيات عند كل إقلاع
+  await ensureRbacSeeded(prisma) // فحصٌ واحد، ويبذر إن نقص
   const app = await buildApp(prisma)
   const port = Number(process.env.API_PORT ?? 7101)
   /* العنوان قابل للضبط، وافتراضه المغلق لا المفتوح.
