@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
 import {
   ArrowLeft, ArrowRight, BadgeCheck, Check, CheckCircle2, ChevronDown, Compass, Copy,
@@ -9,6 +9,8 @@ import SeoHead from "@/components/SeoHead";
 import { apiPost, apiGet, ApiError } from "@/services/api";
 import { TRAINING_SPECIALIZATIONS } from "@/data/trainer-contracts";
 import { countAr } from "@/application/text/count-ar";
+import TeachableCoursePicker from "@/components/TeachableCoursePicker";
+import { clearDraft, draftHasContent, loadDraft, saveDraft } from "@/application/trainer/application-draft";
 
 /* صفحة انضمام المدربين.
 
@@ -156,6 +158,10 @@ const DOC_KINDS = [
 ] as const;
 
 const DAYS = ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"];
+const PERIODS = [
+  { value: "morning", label: "صباحي" },
+  { value: "evening", label: "مسائي" },
+] as const;
 
 interface UploadState { status: "idle" | "registering" | "uploading" | "done" | "error"; name?: string; error?: string }
 
@@ -298,12 +304,10 @@ export default function JoinTrainer() {
   const [candidateToken, setCandidateToken] = useState("");
 
   /* القسمان 2–3 — كانا في صفحة مستقلة تُفتح برابط بريد، وصارا قسمين هنا */
-  const [prevCourses, setPrevCourses] = useState([
-    { title: "", org: "", year: "", link: "" },
-    { title: "", org: "", year: "", link: "" },
-    { title: "", org: "", year: "", link: "" },
-  ]);
+  const [teachable, setTeachable] = useState<string[]>([]);
+  const [teachableOther, setTeachableOther] = useState("");
   const [days, setDays] = useState<string[]>([]);
+  const [periods, setPeriods] = useState<string[]>([]);
   const [hoursPerWeek, setHoursPerWeek] = useState("");
   const [startFrom, setStartFrom] = useState("");
   const [demoConsent, setDemoConsent] = useState(false);
@@ -321,6 +325,56 @@ export default function JoinTrainer() {
   const [resent, setResent] = useState(false);
   const [withdrawForm, setWithdrawForm] = useState({ candidateToken: "", reason: "" });
   const [withdrawMsg, setWithdrawMsg] = useState("");
+
+  /* المسودّة: تُقرأ مرّة عند الفتح، وتُكتب مع كل تغيير */
+  const [resumed, setResumed] = useState(false);
+  const draftLoaded = useRef(false);
+
+  /* ── المسودّة ──
+     الاستعادة مرّةً واحدة (StrictMode يشغّل الأثر مرّتين، والمرجع يمنع الثانية)،
+     ثم الحفظ عند كل تغيير. ولا يُحفظ ما بعد الإرسال: الطلب صار عند الخادم. */
+  useEffect(() => {
+    if (draftLoaded.current) return;
+    draftLoaded.current = true;
+    const d = loadDraft();
+    if (!d || !draftHasContent(d)) return;
+    setForm((f) => ({ ...f, ...d.form }));
+    setSpecialties(d.specialties ?? []);
+    setLanguages(d.languages?.length ? d.languages : ["العربية"]);
+    setTargetCountries(d.targetCountries ?? []);
+    setTargetAudiences(d.targetAudiences ?? []);
+    setTeachable(d.teachable ?? []);
+    setTeachableOther(d.teachableOther ?? "");
+    setDays(d.days ?? []);
+    setPeriods(d.periods ?? []);
+    setHoursPerWeek(d.hoursPerWeek ?? "");
+    setStartFrom(d.startFrom ?? "");
+    setDemoConsent(Boolean(d.demoConsent));
+    /* المرجع والرمز يعودان معا أو لا يعودان: بلا الرمز لا يُكمَل الطلب */
+    if (d.reference && d.candidateToken) {
+      setResult({ reference: d.reference, status: "submitted", candidateToken: d.candidateToken });
+      setCandidateToken(d.candidateToken);
+      setVerified(true);
+      setStep(Math.min(Math.max(d.step ?? 1, 1), 3));
+    }
+    setResumed(true);
+  }, []);
+
+  useEffect(() => {
+    if (!draftLoaded.current || phase2Done) return;
+    saveDraft({
+      step, form, specialties, languages, targetCountries, targetAudiences,
+      teachable, teachableOther, days, periods, hoursPerWeek, startFrom, demoConsent,
+      reference: result?.reference, candidateToken: candidateToken || undefined,
+    });
+  }, [step, form, specialties, languages, targetCountries, targetAudiences,
+      teachable, teachableOther, days, periods, hoursPerWeek, startFrom, demoConsent,
+      result, candidateToken, phase2Done]);
+
+  const startOver = () => {
+    clearDraft();
+    window.location.reload();
+  };
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm({ ...form, [k]: e.target.value });
@@ -361,10 +415,14 @@ export default function JoinTrainer() {
     if (motivationLen < MOTIVATION_MIN) m[1].push(`دافعك — بقي ${countAr(MOTIVATION_MIN - motivationLen, CHAR_FORMS)}`);
     if (!form.privacyConsent) m[1].push("الموافقة على سياسة الخصوصية");
     if (uploads.cv?.status !== "done") m[2].push("رفع سيرتك الذاتية");
-    if (!prevCourses.some((c) => c.title.trim().length >= 2)) m[2].push("دورة سابقة واحدة على الأقل");
+    /* دورةٌ من الكتالوج أو سطرٌ يكتبه بنفسه — أحدهما يكفي، فالكتالوج ليس
+       نهاية ما يُتقنه أحد. */
+    if (teachable.length === 0 && teachableOther.trim().length < 10) {
+      m[2].push("دورة واحدة تستطيع تقديمها — من القائمة أو بقلمك");
+    }
     if (!demoConsent) m[2].push("الموافقة على الدرس التجريبي والمقابلة");
     return m;
-  }, [form, specialties, languages, motivationLen, accreditationReady, uploads, prevCourses, demoConsent]);
+  }, [form, specialties, languages, motivationLen, accreditationReady, uploads, teachable, teachableOther, demoConsent]);
 
   const stepValid = useMemo(() => ({
     1: missing[1].length === 0 && motivationLen <= MOTIVATION_MAX,
@@ -377,27 +435,26 @@ export default function JoinTrainer() {
   /* الإرسال النهائي — القسمان 2–3. القسم الأول أُرسل عند المضيّ منه. */
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    /* حزامٌ ثانٍ مع المفتاحين: النموذج يلتقط Enter من أي حقل في أي خطوة،
+       وإرسالٌ من خطوةٍ غير خطوته يقفز بالمتقدّم فوق شاشة حسابه. */
+    if (step !== 3) return;
     if (!valid || busy || !result || !candidateToken) return;
     setBusy(true); setError("");
     try {
       await apiPost(`/api/v1/trainer-applications/${encodeURIComponent(result.reference)}/phase-2`, {
         candidateToken,
-        previousCourses: prevCourses
-          .filter((c) => c.title.trim().length >= 2)
-          .map((c) => ({
-            title: c.title.trim(),
-            org: c.org.trim() || undefined,
-            year: c.year ? Number(c.year) : undefined,
-            link: c.link.trim() || undefined,
-          })),
+        teachableCourseIds: teachable,
+        teachableOther: teachableOther.trim() || undefined,
         availability: {
           days: days.length ? days : undefined,
           hoursPerWeek: hoursPerWeek ? Number(hoursPerWeek) : undefined,
           startFrom: startFrom || undefined,
+          periods: periods.length ? periods : undefined,
         },
         demoConsent,
       });
       setPhase2Done(true);
+      clearDraft();
       window.scrollTo(0, 0);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "تعذر إرسال الطلب — تحقق من اتصالك وحاول مجددا");
@@ -703,6 +760,23 @@ export default function JoinTrainer() {
           })}
         </ol>
 
+        {/* الاستئناف يُقال ولا يُفترض: من يرى حقولا مملوءة ولا يعرف من ملأها
+            يرتاب. والباب مفتوح للبدء من جديد بضغطة. */}
+        {resumed && (
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-teal/30 bg-teal/[0.06] px-5 py-3.5">
+            <p className="flex items-center gap-2 text-xs font-bold text-teal-light-ink">
+              <RefreshCcw className="h-3.5 w-3.5" />
+              أكملنا من حيث توقّفت — إجاباتك محفوظة في هذا المتصفّح.
+            </p>
+            <button
+              type="button" onClick={startOver}
+              className="cursor-pointer rounded-full border border-white/20 px-4 py-1.5 text-[11px] font-bold text-white/60 transition hover:border-white/40 hover:text-white/85"
+            >
+              ابدأ من جديد
+            </button>
+          </div>
+        )}
+
         <form onSubmit={submit} className="mt-5 space-y-6 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-9">
           {/* ══ ١) من أنت ══ */}
           {step === 1 && (
@@ -977,28 +1051,33 @@ export default function JoinTrainer() {
                 </div>
               </fieldset>
 
+              {/* ما يستطيع تقديمه — لا ما قدّمه.
+
+                  كان السؤال «أبرز ثلاث دورات قدّمتها»: ماضٍ يُروى نصّا حرّا، لا
+                  يُقارَن ولا يُربط بمقرر ولا يقول ماذا نسند إليه غدا. فصار
+                  السؤال عن القادم: مجالٌ يقصّ الكتالوج، ودوراتُه تُختار
+                  بمعرّفاتها، ونصٌّ حرّ لما ليس عندنا بعد. */}
               <fieldset className="border-t border-white/5 pt-6">
-                <legend className="text-sm font-black">أبرز ثلاث دورات قدّمتها عبر الإنترنت *</legend>
+                <legend className="text-sm font-black">ما الدورات التي تستطيع تقديمها؟ *</legend>
                 <p className="mb-4 mt-1 text-[11px] leading-relaxed text-white/40">
-                  اذكر اسم الدورة، والجهة أو المنصة التي قدّمتها من خلالها، ورابطا أو نموذجا مختصرا إن توفّر.
+                  اختر مجالك ثم دوراته التي تُتقنها — ولك أكثر من مجال وأكثر من دورة. واختيارك هنا
+                  يسهّل تعيينك على شعبة بعد الاعتماد، ولا يُلزمك بها.
                 </p>
-                <div className="space-y-3">
-                  {prevCourses.map((c, i) => (
-                    <div key={i} className="grid gap-2.5 rounded-xl border border-white/10 bg-black/20 p-3 sm:grid-cols-4">
-                      <input placeholder={`عنوان الدورة ${i + 1}`} aria-label={`عنوان الدورة ${i + 1}`} value={c.title}
-                        onChange={(e) => setPrevCourses(prevCourses.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)))}
-                        className={`${inputCls} sm:col-span-2`} />
-                      <input placeholder="الجهة أو المنصة" aria-label={`الجهة للدورة ${i + 1}`} value={c.org}
-                        onChange={(e) => setPrevCourses(prevCourses.map((x, j) => (j === i ? { ...x, org: e.target.value } : x)))}
-                        className={inputCls} />
-                      <input placeholder="السنة" dir="ltr" inputMode="numeric" aria-label={`سنة الدورة ${i + 1}`} value={c.year}
-                        onChange={(e) => setPrevCourses(prevCourses.map((x, j) => (j === i ? { ...x, year: e.target.value.replace(/\D/g, "").slice(0, 4) } : x)))}
-                        className={`${inputCls} text-left`} />
-                      <input placeholder="رابط أو نموذج (اختياري)" dir="ltr" aria-label={`رابط الدورة ${i + 1}`} value={c.link}
-                        onChange={(e) => setPrevCourses(prevCourses.map((x, j) => (j === i ? { ...x, link: e.target.value } : x)))}
-                        className={`${inputCls} text-left sm:col-span-4`} />
-                    </div>
-                  ))}
+                <TeachableCoursePicker selected={teachable} onChange={setTeachable} />
+
+                <div className="mt-5 border-t border-white/5 pt-5">
+                  <label htmlFor="jt-other-courses" className="mb-1.5 block text-xs font-bold text-white/60">
+                    دورات تستطيع تقديمها ولم نذكرها
+                  </label>
+                  <p className="mb-2 text-[11px] leading-relaxed text-white/40">
+                    كتالوجنا ليس نهاية المعرفة. اكتب ما تُتقنه ولا تجده أعلاه — عنوانا لكل سطر، ولمن هو.
+                  </p>
+                  <textarea
+                    id="jt-other-courses" rows={3} maxLength={1000}
+                    value={teachableOther} onChange={(e) => setTeachableOther(e.target.value)}
+                    placeholder="مثال: تحليل تكلفة الاستحواذ للمتاجر الإلكترونية — لمدراء التسويق"
+                    className={inputCls}
+                  />
                 </div>
               </fieldset>
 
@@ -1015,9 +1094,20 @@ export default function JoinTrainer() {
                 </div>
               </div>
 
+              {/* اليومُ وحده لا يقول متى هو متفرّغ فيه: من يعمل نهارا لا يدرّب
+                  إلا مساء، والشعبةُ تُجدوَل بالساعة لا باليوم. */}
               <fieldset className="border-t border-white/5 pt-6">
                 <legend className="mb-2.5 text-xs font-bold text-white/60">أيامك المتاحة</legend>
                 <Chips options={DAYS} selected={days} onToggle={(v) => toggle(days, v, setDays)} />
+                <p className="mb-2.5 mt-5 text-xs font-bold text-white/60">وفي أي وقت منها؟</p>
+                <Chips
+                  options={PERIODS.map((p) => p.label)}
+                  selected={periods.map((v) => PERIODS.find((p) => p.value === v)?.label ?? v)}
+                  onToggle={(label) => {
+                    const v = PERIODS.find((p) => p.label === label)?.value
+                    if (v) toggle(periods, v, setPeriods)
+                  }}
+                />
               </fieldset>
 
               <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-white/10 bg-black/20 p-3">
@@ -1085,7 +1175,7 @@ export default function JoinTrainer() {
                 </p>
                 <ul className="mt-3 space-y-1.5 text-[11.5px] leading-6 text-white/60">
                   <li>{form.fullName.trim() || "—"} · {specialties.length} تخصصا · {DOMAIN_YEARS.find((y) => y.value === form.domainYears)?.label ?? "—"} في المجال</li>
-                  <li>{prevCourses.filter((c) => c.title.trim()).length} دورة سابقة عبر الإنترنت</li>
+                  <li>{teachable.length} دورة من الكتالوج تستطيع تدريسها{teachableOther.trim() ? " · وأخرى بقلمك" : ""}</li>
                   <li>{Object.values(uploads).filter((u) => u.status === "done").length} مستندا مرفوعا</li>
                   <li>دافعك: {motivationLen} حرفا</li>
                 </ul>
@@ -1121,8 +1211,16 @@ export default function JoinTrainer() {
               </button>
             ) : <span />}
 
+            {/* مفتاحان مختلفان لا زرٌّ واحد يتبدّل نوعه.
+
+                بلا المفتاح يرى React زرّا واحدا في الموضع نفسه فيبدّل خاصيّته
+                من button إلى submit على العنصر ذاته — ونقرةُ «التالي» التي
+                نقلتنا إلى الخطوة الأخيرة يقع فعلُها الافتراضيّ بعد ذلك على
+                الزرّ وقد صار submit، فيُرسَل الطلبُ فورا وتُقفز الخطوة الثالثة
+                كلها. عطبٌ صامت: المتقدّم لا يرى شاشة حسابه أصلا. */}
             {step < 3 ? (
               <button
+                key="next"
                 type="button" onClick={next} disabled={!stepValid[step as 1 | 2 | 3] || busy}
                 className="flex cursor-pointer items-center gap-2 rounded-full bg-teal px-7 py-2.5 text-sm font-black text-on-teal transition hover:bg-teal/90 disabled:cursor-not-allowed disabled:opacity-40"
               >
@@ -1132,6 +1230,7 @@ export default function JoinTrainer() {
               </button>
             ) : (
               <button
+                key="send"
                 type="submit" disabled={!valid || busy}
                 className="flex cursor-pointer items-center justify-center gap-2 rounded-full bg-gold px-8 py-3 font-black text-on-gold transition hover:bg-gold/90 disabled:cursor-not-allowed disabled:opacity-40"
               >

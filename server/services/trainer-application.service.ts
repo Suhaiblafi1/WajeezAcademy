@@ -374,7 +374,8 @@ export class TrainerApplicationService {
   async completePhase2(reference: string, token: string, input: {
     previousCourses: { title: string; org?: string; year?: number; link?: string }[]
     teachableCourseIds: string[]
-    availability: { days?: string[]; hoursPerWeek?: number; startFrom?: string }
+    teachableOther?: string
+    availability: { days?: string[]; hoursPerWeek?: number; startFrom?: string; periods?: string[] }
     demoConsent: boolean
   }): Promise<{ phase2CompletedAt: Date }> {
     const app = await this.resolveCandidate(reference, token)
@@ -407,6 +408,7 @@ export class TrainerApplicationService {
              تُقرأ ولا تُكتب. */
           totalLearners: null, previousOrgs: null, evidenceNotes: null,
           teachableCourseIds: input.teachableCourseIds,
+          teachableOther: input.teachableOther?.trim() || null,
           availability: input.availability as unknown as Prisma.InputJsonValue,
           demoConsent: input.demoConsent,
         },

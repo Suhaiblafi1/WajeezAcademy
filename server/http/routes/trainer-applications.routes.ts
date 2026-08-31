@@ -129,21 +129,22 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
     const { reference } = z.object({ reference: z.string().min(5) }).parse(req.params)
     const body = z.object({
       candidateToken: z.string().min(10),
-      /* «أبرز ثلاث دورات قدمتها عبر الإنترنت»: العنوان والجهة والسنة ورابط
-         اختياري. وسقط learnersCount معها — عددٌ يكتبه المتقدم عن نفسه ولا
-         يُتحقق منه لا يفاضل بين طلبين. */
+      /* «أبرز ثلاث دورات قدمتها عبر الإنترنت» سقط من النموذج: ماضٍ يُروى ولا
+         يُربط بمقرر. والحقل باقٍ اختياريا لأن الرابط البريدي القديم يرسله. */
       previousCourses: z.array(z.object({
         title: z.string().min(2), org: z.string().optional(),
         year: z.number().int().min(1980).max(2100).optional(),
         link: z.string().max(500).optional(),
-      })).max(3),
-      /* دورات الكتالوج لم تعد تُطلب من المتقدّم: إسنادُ المقرر قرارُ الإدارة
-         بعد الاعتماد لا إقرارُ المتقدّم قبله. والحقل باقٍ اختياريا لأن طلبات
-         سابقة تحمله، ولأنّ الإدارة قد تملؤه عنه. */
+      })).max(3).optional().default([]),
+      /* ما يستطيع تدريسه: معرّفاتٌ من الكتالوج تُربط بالمقرر عند التعيين،
+         ونصٌّ حرّ بجانبها لما ليس عندنا بعد. */
       teachableCourseIds: z.array(z.string()).max(60).optional().default([]),
+      teachableOther: z.string().max(1000).optional(),
       availability: z.object({
         days: z.array(z.string()).optional(), hoursPerWeek: z.number().min(1).max(80).optional(),
         startFrom: z.string().optional(),
+        /* صباحيّ أو مسائيّ — اليوم وحده لا يقول متى هو متفرّغ فيه */
+        periods: z.array(z.enum(['morning', 'evening'])).optional(),
       }),
       demoConsent: z.literal(true),
     }).parse(req.body)

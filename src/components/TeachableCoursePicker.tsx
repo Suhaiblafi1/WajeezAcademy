@@ -1,0 +1,107 @@
+/* ما يستطيع المدرّب تدريسه — مجالٌ أوّلا، ثم دورات ذلك المجال.
+
+   الكتالوج مئةُ عنوان، وعرضُها دفعةً واحدة يجعل المتقدّم يمسح لا يختار. فالمجال
+   يقصّها إلى عشرة تُقرأ، وله أن يعود فيختار مجالا آخر ودورةً أخرى — فمداره
+   ليس مجالا واحدا ولا دورة واحدة.
+
+   والمعرّف لا النصّ: المراجع يقارن عناوين، وربطُ المدرب بمقرر بعد الاعتماد
+   يحتاج معرّف المقرر لا جملةً تُترجَم بيد أحدهم فتُنسى وتُخطئ. وما ليس في
+   الكتالوج له حقلٌ حرٌّ بجانبه لا بدلا عنه — فلا يُغلق باب ما لم نفكّر فيه. */
+
+import { useMemo, useState } from 'react'
+import { X } from 'lucide-react'
+import { courses } from '@/data/courses'
+import { pathwayCategory } from '@/data/pathways'
+import { usePublishedContent } from '@/services/public-content'
+
+export default function TeachableCoursePicker({
+  selected,
+  onChange,
+}: {
+  selected: string[]
+  onChange: (ids: string[]) => void
+}) {
+  const [domain, setDomain] = useState('')
+  /* الكتالوج لا يُحمَّل مع الحزمة: `courses` تبدأ فارغة وتُملأ حين تصل اللقطة
+     المنشورة. وصفحة الانضمام لا تطلبها لغير هذا الحقل — فبلا هذا الخطاف تبقى
+     القائمة فارغةً أبدا عند المتقدّم ولا يعرف لماذا. وهو يجلب ويشترك معا. */
+  const catalogVersion = usePublishedContent()
+
+  const domains = useMemo(() => {
+    void catalogVersion /* `courses` تُملأ في مكانها — فالنسخة هي إشارة الحساب */
+    return [...new Set(courses.map((c) => pathwayCategory(c.pathwayId)))]
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b, 'ar'))
+  }, [catalogVersion])
+  const inDomain = useMemo(() => {
+    void catalogVersion
+    return domain ? courses.filter((c) => pathwayCategory(c.pathwayId) === domain) : []
+  }, [domain, catalogVersion])
+  const picked = useMemo(() => {
+    void catalogVersion
+    return selected.map((id) => courses.find((c) => c.id === id))
+      .filter((c): c is (typeof courses)[number] => Boolean(c))
+  }, [selected, catalogVersion])
+
+  const toggle = (id: string) =>
+    onChange(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id])
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <label htmlFor="tc-domain" className="mb-1.5 block text-xs font-bold text-white/60">المجال</label>
+        <select
+          id="tc-domain" value={domain} onChange={(e) => setDomain(e.target.value)}
+          className="w-full rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-sm text-white focus:border-teal focus:outline-none [&>option]:bg-surface"
+        >
+          <option value="">اختر المجال لتظهر دوراته</option>
+          {domains.map((d) => <option key={d} value={d}>{d}</option>)}
+        </select>
+      </div>
+
+      {domain && (
+        <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+          <p className="mb-2.5 text-[11px] text-white/45">
+            اختر ما تستطيع تدريسه الآن من {domain} — ولك أن تعود وتختار مجالا آخر.
+          </p>
+          <div className="flex max-h-52 flex-wrap gap-2 overflow-y-auto">
+            {inDomain.map((c) => (
+              <button
+                type="button" key={c.id} onClick={() => toggle(c.id)}
+                aria-pressed={selected.includes(c.id)}
+                className={`cursor-pointer rounded-full border px-3 py-1.5 text-[11px] font-bold transition ${
+                  selected.includes(c.id)
+                    ? 'border-teal bg-teal/15 text-teal-light-ink'
+                    : 'border-white/15 text-white/55 hover:border-white/35'
+                }`}
+              >
+                {c.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* المختار يبقى مرئيا ولو غادر مجاله — وإلا ظنّ أنه فقده */}
+      {picked.length > 0 && (
+        <div>
+          <p className="mb-2 text-[11px] font-bold text-white/55">اخترت {picked.length} دورة:</p>
+          <ul className="flex flex-wrap gap-2">
+            {picked.map((c) => (
+              <li key={c.id}>
+                <button
+                  type="button" onClick={() => toggle(c.id)}
+                  aria-label={`أزل ${c.name}`}
+                  className="flex cursor-pointer items-center gap-1.5 rounded-full border border-teal/50 bg-teal/10 px-3 py-1.5 text-[11px] font-bold text-teal-light-ink transition hover:border-teal"
+                >
+                  {c.name}
+                  <X className="h-3 w-3" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  )
+}

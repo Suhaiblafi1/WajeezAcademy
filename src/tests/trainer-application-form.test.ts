@@ -14,7 +14,7 @@
       شرط يُطفئ الزرّ بلا أن يُسمّى. */
 
 import { describe, expect, it } from 'vitest'
-import { execFileSync } from 'node:child_process'
+
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -89,7 +89,7 @@ describe('نموذج انضمام المدرب', () => {
       ['التخصصات', 'specialties.length'], ['سنوات المجال', 'form.domainYears'], ['خبرة التدريب', 'form.trainingYears'],
       ['جهة الاعتماد', 'accreditationReady'], ['اللغات', 'languages.length'], ['نمط التدريب', 'form.deliveryMode'],
       ['الدافع', 'motivationLen'], ['الخصوصية', 'form.privacyConsent'],
-      ['السيرة الذاتية', 'uploads.cv'], ['الدورات السابقة', 'prevCourses.some'], ['الدرس التجريبي', 'demoConsent'],
+      ['السيرة الذاتية', 'uploads.cv'], ['ما يستطيع تقديمه', 'teachable.length === 0'], ['الدرس التجريبي', 'demoConsent'],
     ] as const) {
       expect(list, `${subject}: إلزامٌ بلا سطرٍ في قائمة النقص — والزرّ يقرأ منها`).toContain(guard)
     }
@@ -98,18 +98,67 @@ describe('نموذج انضمام المدرب', () => {
     expect(src, 'قائمة النقص لا تُعرض').toContain('aria-live="polite"')
   })
 
-  it('قسم «ما يمكنك تدريسه» مرفوع من الطلب كلّه', () => {
-    const tracked = execFileSync('git', ['ls-files'], { cwd: root, encoding: 'utf8' })
-    expect(tracked, 'منتقي دورات الكتالوج ما زال في المستودع').not.toContain('TeachableCoursePicker')
-
+  it('السؤال عن القادم لا عن الماضي: مجالٌ يقصّ الكتالوج، ونصٌّ حرّ بجانبه', () => {
     const src = read(PAGE)
+    /* «أبرز ثلاث دورات قدّمتها» سقط: ماضٍ يُروى نصّا حرّا لا يُربط بمقرر.
+       والتعليق يذكره شرحا — فيُقرأ الوسمُ المعروض لا الشرحُ عنه. */
+    const shown = src.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
+    expect(shown, 'سؤال الدورات السابقة عاد').not.toContain('أبرز ثلاث دورات')
+    expect(src, 'الصفحة ما زالت ترسل الدورات السابقة').not.toContain('previousCourses:')
+
+    expect(src, 'سؤال ما يستطيع تقديمه مفقود').toContain('ما الدورات التي تستطيع تقديمها؟')
+    expect(src, 'المعرّفات لا تُرسَل — فلا يُربط بمقرر عند التعيين').toContain('teachableCourseIds: teachable')
+    expect(src, 'النصّ الحرّ لا يُرسَل').toContain('teachableOther: teachableOther.trim()')
+
+    /* المجال أوّلا: الكتالوج مئةُ عنوان، وعرضُها دفعةً واحدة مسحٌ لا اختيار */
+    const picker = read('src/components/TeachableCoursePicker.tsx')
+    const domainIdx = picker.indexOf("id=\"tc-domain\"")
+    const listIdx = picker.indexOf('inDomain.map')
+    expect(domainIdx, 'قائمة المجال مفقودة').toBeGreaterThan(0)
+    expect(listIdx, 'قائمة دورات المجال مفقودة').toBeGreaterThan(0)
+    expect(domainIdx, 'الدورات تُعرض قبل المجال').toBeLessThan(listIdx)
+    expect(picker, 'الدورات لا تُقصّ بالمجال المختار').toContain('pathwayCategory(c.pathwayId) === domain')
+    /* والكتالوج لا يصل مع الحزمة: بلا جلبه تبقى القائمة فارغة أبدا */
+    expect(picker, 'الكتالوج لا يُجلب — فالقائمة تبقى فارغة').toContain('usePublishedContent()')
+
+    /* الخطوات ثلاث، والمنتقي داخل خطوة الأدلة لا خطوةً مستقلّة */
     const steps = (/const STEPS = \[[\s\S]*?\] as const;/.exec(src)?.[0].match(/\{ n: \d+,/g) ?? []).length
     expect(steps, 'عدد الخطوات تغيّر').toBe(3)
-    /* والخادم لم يعد يشترطها — وإلّا سقط كلُّ طلبٍ عند الإرسال */
-    expect(read(ROUTES), 'المخطط ما زال يشترط دورة من الكتالوج').not.toMatch(/teachableCourseIds: z\.array\(z\.string\(\)\)\.min\(/)
-    expect(read(SERVICE), 'الخدمة ما زالت ترفض الطلب بلا دورات').not.toContain("'no_teachable'")
-    for (const page of [PAGE, 'src/pages/JoinTrainerComplete.tsx']) {
-      expect(read(page), `${page} ما زال يرسل دورات الكتالوج`).not.toContain('teachableCourseIds:')
-    }
+  })
+
+  it('«التالي» لا يُرسل الطلب — وشاشة الحساب لا تُقفَز', () => {
+    const src = read(PAGE)
+    /* زرٌّ واحد يتبدّل نوعه من button إلى submit على العنصر نفسه: فعلُ النقرة
+       الافتراضيّ يقع بعد إعادة الرسم فيُرسَل الطلب فورا وتُقفز الخطوة الثالثة.
+       مفتاحان مختلفان يجعلان العنصرين اثنين لا واحدا. */
+    const nav = src.slice(src.lastIndexOf('{step < 3 ? ('))
+    expect(nav, 'زرّ «التالي» بلا مفتاح مميّز').toContain('key="next"')
+    expect(nav, 'زرّ الإرسال بلا مفتاح مميّز').toContain('key="send"')
+
+    /* وحزامٌ ثانٍ في المعالج نفسه — النموذج يلتقط Enter من أيّ حقل */
+    const handler = /const submit = async \(e: React\.FormEvent\) => \{[\s\S]*?\n {4}if \(!valid/.exec(src)?.[0] ?? ''
+    expect(handler, 'الإرسال يقع من أي خطوة').toContain('if (step !== 3) return;')
+  })
+
+  it('التوفّر يقول متى من اليوم لا اليوم وحده', () => {
+    const src = read(PAGE)
+    expect(src).toMatch(/const PERIODS = \[[\s\S]*?value: "morning"[\s\S]*?value: "evening"[\s\S]*?\] as const;/)
+    expect(src, 'الفترات لا تُرسَل مع التوفّر').toContain('periods: periods.length ? periods : undefined')
+    /* والخادم يقبلها — وإلّا سقط الطلب كلّه عند الإرسال */
+    expect(read(ROUTES), 'المخطط لا يعرف الفترات').toContain("periods: z.array(z.enum(['morning', 'evening'])).optional()")
+  })
+
+  it('المسودّة تُحفظ وتُستأنف، ولا تحفظ سرّا', () => {
+    const src = read(PAGE)
+    expect(src, 'لا حفظ للمسودّة').toContain('saveDraft({')
+    expect(src, 'لا استئناف').toContain('loadDraft()')
+    /* المسح عند نجاح الإرسال بعينه — لا في مكانٍ آخر يجعل الفحص يمرّ به */
+    expect(src, 'المسودّة تبقى بعد وصول الطلب').toMatch(/setPhase2Done\(true\);\s*\n\s*clearDraft\(\);/)
+    expect(src, 'الاستئناف يقع صامتا بلا أن يُقال').toContain('أكملنا من حيث توقّفت')
+
+    /* كلمة المرور ورمز التحقق أسرارٌ عابرة: تُستثنى في الوحدة نفسها لا بالنسيان */
+    const draft = read('src/application/trainer/application-draft.ts')
+    expect(draft).toMatch(/NEVER_PERSISTED = \['accountPassword', 'verifyTokenInput', 'password'\]/)
+    expect(draft, 'الاستثناء معلَنٌ ولا يُطبَّق').toContain('if ((NEVER_PERSISTED as readonly string[]).includes(k)) continue')
   })
 })

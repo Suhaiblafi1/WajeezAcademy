@@ -829,6 +829,9 @@ model TrainerApplication {
   availability         Json? // {days, hoursPerWeek, startFrom}
   demoConsent          Boolean                       @default(false)
   teachableCourseIds   String[]                      @default([]) // الدورات الحالية التي يستطيع تدريسها
+  /// دوراتٌ يقدر عليها وليست في كتالوجنا — نصٌّ حرّ بجانب المعرّفات لا بدلا
+  /// عنها: الكتالوج يُربط بالمقرر، وهذا يفتح لنا ما لم نفكّر فيه بعد.
+  teachableOther       String?
   withdrawReason       String?
   createdAt            DateTime                      @default(now())
   updatedAt            DateTime                      @updatedAt
