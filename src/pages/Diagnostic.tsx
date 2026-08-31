@@ -56,6 +56,7 @@ import type { DeepeningComparison } from "@/application/diagnostic/assessment-se
 import { loadSession, saveLastResult, loadLastResultSafe } from "@/application/diagnostic/session-store";
 import { foldComposedPlan } from "@/application/diagnostic/composed-fold";
 import { saveAdoptedPlan, syncAdoptedPlan, PERSONAL_PLAN_NAME_AR } from "@/application/plan/adopted-plan";
+import { NEEDS_ADVISOR_KEY } from "@/application/plan/advisor-referral";
 import {
   courseById,
   pathwayCourses,
@@ -692,6 +693,25 @@ function CompositePlan({ composite }: { composite: CompositeView }) {
 }
 
 /* ─────────── الصفحة ─────────── */
+/* اشتقاقان نقيّان خارج المكوّن.
+
+   كانا `useMemo` داخله، فلمّا احتاجهما `finish()` بالنتيجة الطازجة — قبل أن
+   تستقرّ حالة React — لم يصلحا. واستخراجُهما إلى الوحدة يجعلهما نقيّين:
+   يُنادَيان من الخطّاف ومن الحدث سواء، ولا يدخلان قائمة اعتماد. */
+function composedPrimaryOf(res: DiagResult | null): ComposedPathView | null {
+  if ((res?.resultJson.composite as CompositeView | null) ?? null) return null;
+  const cp = (res?.resultJson.composed_path as ComposedPathView | null | undefined) ?? null;
+  return cp && cp.courses.length > 0 && !cp.matchesPathwayId ? cp : null;
+}
+
+function planCourseIdsOf(res: DiagResult | null, hostId: string | undefined): string[] {
+  const composite = (res?.resultJson.composite as CompositeView | null) ?? null;
+  if (composite) return [...composite.courses].sort((a, b) => a.sequence - b.sequence).map((c) => c.courseId);
+  const cp = composedPrimaryOf(res);
+  if (cp) return cp.courses.map((c) => c.courseId);
+  return (pathwayCourses[hostId ?? ""] ?? []).slice(0, MAX_PATHWAY_COURSES);
+}
+
 export default function Diagnostic() {
   const navigate = useNavigate();
   /* `?view=result` — قادمٌ من زرّ «عد لنتيجتك» في صفحة المسار. يُقرأ في مُهيّئ
@@ -847,22 +867,16 @@ export default function Diagnostic() {
   /* خطة المقررات هي التوصية الأولى متى وُجدت وتجاوزت مسارا واحدا: لا قالب فاز،
      وقيّم المتعلم جوانبه، ولا تطابق مقرراتُها مسارا قائما. وحين تكون كذلك تحمل
      رأس الصفحة أيضا — لا رأسَ مسارٍ جاهز فوق قائمة مقررات مركّبة. */
-  const composedPrimary = useMemo(() => {
-    if ((result?.resultJson.composite as CompositeView | null) ?? null) return null;
-    const cp = (result?.resultJson.composed_path as ComposedPathView | null | undefined) ?? null;
-    return cp && cp.courses.length > 0 && !cp.matchesPathwayId ? cp : null;
-  }, [result]);
+  const composedPrimary = useMemo(() => composedPrimaryOf(result), [result]);
 
   /* مقررات الخطة المعروضة فعلا — بالترتيب الذي تختاره الصفحة نفسها: قالب مركّب
      فاز، ثم خطة مقررات، ثم مسار جاهز حتى السقف. عددها هو ما يحدد السعر، فلا
      يُشتقّ في بطاقة السعر اشتقاقا ثانيا قد يفترق عمّا يراه المتعلم فوقها.
      والتبديل داخل الخطة لا يغيّر العدد — فلا يغيّر السعر. */
-  const planCourseIds = useMemo<string[]>(() => {
-    const composite = (result?.resultJson.composite as CompositeView | null) ?? null;
-    if (composite) return [...composite.courses].sort((a, b) => a.sequence - b.sequence).map((c) => c.courseId);
-    if (composedPrimary) return composedPrimary.courses.map((c) => c.courseId);
-    return (pathwayCourses[topPathway?.id ?? ""] ?? []).slice(0, MAX_PATHWAY_COURSES);
-  }, [result, composedPrimary, topPathway]);
+  const planCourseIds = useMemo<string[]>(
+    () => planCourseIdsOf(result, topPathway?.id),
+    [result, topPathway],
+  );
 
   /* المرحلة الحالية — تُسمّى في شريط التقدم. سقط `passedStages` مع صف الدوائر:
      لم يعد شيء يعرض «أيّ مرحلة اكتملت» بعد توحيد المؤشر. */
@@ -973,16 +987,23 @@ export default function Diagnostic() {
      فلا داعي لإعادة تصيير عند كل تبديل. */
   const shownPlanRef = useRef<{ courseIds: string[]; giftId: string | null } | null>(null);
 
-  const adoptPlan = () => {
-    if (!topPathway) return;
-    const c = (result?.resultJson.composite as CompositeView | null) ?? null;
-    const composed = Boolean(c) || Boolean(composedPrimary);
+  /* الاعتماد مشتقٌّ من النتيجة لا من حالة React.
+
+     كان يقرأ `topPathway` و`planCourseIds` من الحالة، فلا يصلح نداؤه من
+     `finish()`: الحالة هناك لم تستقرّ بعد. وصار يُنادى من موضعين — من
+     `finish` بالنتيجة الطازجة، ومن الزرّ بما على الشاشة. */
+  const adoptFromResult = (res: DiagResult, shown?: { courseIds: string[]; giftId: string | null } | null) => {
+    const top = res.top;
+    if (!top) return;
+    const c = (res.resultJson.composite as CompositeView | null) ?? null;
+    const composed = Boolean(c) || Boolean(composedPrimaryOf(res));
     const hostId = c
-      ? (c.represented_pathway_ids.includes(topPathway.id) ? topPathway.id : (c.represented_pathway_ids[0] ?? topPathway.id))
-      : topPathway.id;
+      ? (c.represented_pathway_ids.includes(top.id) ? top.id : (c.represented_pathway_ids[0] ?? top.id))
+      : top.id;
     /* ما رآه المتعلّم فعلا — بتبديلاته إن بدّل */
-    const courseIds = shownPlanRef.current?.courseIds ?? planCourseIds;
-    const giftId = shownPlanRef.current?.giftId ?? null;
+    const courseIds = shown?.courseIds ?? planCourseIdsOf(res, hostId);
+    const giftId = shown?.giftId ?? null;
+    const topPathway = top;
     const adoptedPlan = {
       hostPathwayId: hostId,
       composed,
@@ -1008,7 +1029,21 @@ export default function Diagnostic() {
       host: hostId,
       courses: courseIds.length,
     });
+    /* إحالة المستشار تسافر مع الخطّة.
+
+       كانت تعيش في شاشة النتيجة وحدها. ولمّا صار التشخيص ينتقل مباشرةً إلى
+       صفحة المسار سقطت الشاشة — وكادت الإحالة تسقط معها، فيدفع مَن كان
+       ينبغي أن يُستشار. فالعَلَم يُكتب هنا وتقرؤه صفحة المسار. */
+    try {
+      if (res.needsAdvisor) sessionStorage.setItem(NEEDS_ADVISOR_KEY, "1");
+      else sessionStorage.removeItem(NEEDS_ADVISOR_KEY);
+    } catch { /* بلا تخزين — الصفحة لا تعرض الإحالة، ولا يتعطّل شيء */ }
     navigate(`/pathways/${hostId}`);
+  };
+
+  const adoptPlan = () => {
+    if (!result) return;
+    adoptFromResult(result, shownPlanRef.current);
   };
 
   /* إرفاق النتيجة بحساب المستخدم أفضل جهد — ينشئ الخادم ملف متعلم وحالة مستشار دون حجب النتيجة */
@@ -1047,6 +1082,24 @@ export default function Diagnostic() {
     setResult(res);
     setTopPathway(res.top);
     track("recommendation_viewed", { confidence: Math.round(res.confidence) });
+
+    /* نهاية التشخيص هي صفحة المسار — لا صفحةً قبلها.
+
+       بقرار صاحب المنتج: «هذه الصفحة التي يجب أن تظهر بعد انتهاء التشخيص،
+       ولا داعي للصفحات التي قبلها». وكنتُ بنيتُ صفحة المسار وربطتُ الانتقال
+       إليها بزرٍّ يضغطه المتعلّم — فبقي الطريق القديم مفتوحا، وشاشة النتيجة
+       تعترضه قبل وجهته. نصفُ الطلب نُفِّذ وأُعلن تامّا.
+
+       والتخصيص لم يضع: هو في صفحة المسار نفسها — يحذف ويستبدل ويضيف. ولذلك
+       حُذفت شارة «اعتمده تشخيصك» بطلبه: لا رجعةَ إلى صفحةٍ لا نريدها.
+
+       وحالتان تبقيان هنا لأنّه لا مسار فيهما أصلا: التوقّف الحوكميّ (رفضُ
+       الموافقة أو قاصر)، والاتّجاه الاستكشافيّ حين لا يكفي الدليل. كلتاهما
+       بلا `res.top`، أو بنوعٍ يقول ذلك صراحةً. */
+    if (res.resultJson.kind !== "guardrail_stop" && res.top) {
+      adoptFromResult(res);
+      return;
+    }
     setCanDeepen(true);
     setStage("result");
     window.scrollTo(0, 0);

@@ -42,6 +42,7 @@ import { usePublishedContent } from "@/services/public-content";
 import SeoHead from "@/components/SeoHead";
 import EcosystemNote from "@/components/EcosystemNote";
 import { pathwayOffer, formatOfferPrice } from "@/application/commerce/pathway-offer";
+import { needsAdvisorReferral } from "@/application/plan/advisor-referral";
 
 /* اسم المستخدم — يدعم الصيغتين: JSON الجديدة والنص القديم، ويحترم انتهاء الجلسة */
 function readUserName(): string | null {
@@ -92,6 +93,9 @@ export default function PathwayPage() {
   const { id } = useParams();
   const pathway = pathwayById(id ?? "");
   const [user, setUser] = useState<string | null>(readUserName);
+  /* يُقرأ مرّةً عند التركيب: sessionStorage ليس مصدرا تفاعليّا، وقراءتُه في
+     كلّ تصيير تُقحم أثرا جانبيّا في جسم المكوّن. */
+  const [advisorReferral] = useState(needsAdvisorReferral);
   const [checkout, setCheckout] = useState<CheckoutIntent | null>(null);
   /* نية شراء معلقة بانتظار تسجيل الدخول — التصفح مفتوح، والتسجيل يُطلب لحظة الدفع فقط */
   const [pendingCheckout, setPendingCheckout] = useState<CheckoutIntent | null>(null);
@@ -504,6 +508,33 @@ export default function PathwayPage() {
               والأرقام كلّها من مصدرٍ واحد (pathway-offer.ts) تقرؤه الفاتورة
               نفسها — فما يقرؤه هنا هو ما يُطالَب به هناك. وحين لا سعر لدورةٍ
               بعد، لا يُختلق رقم: يُقال إنّ السعر يُعلن مع فتح الشعبة. */}
+          {/* إحالة المستشار — قبل بوّابة الشراء لا بعدها.
+
+              حين تنخفض ثقة المحرّك، أو يطلب المتعلّم استشارة، كانت الدعوة
+              تُعرض في شاشة النتيجة. وقد زالت تلك الشاشة: التشخيص ينتقل الآن
+              إلى هنا مباشرةً. فلو لم تنتقل الدعوة معها لدفع مَن كان ينبغي
+              أن يُستشار — وهذا أسوأ من صفحةٍ زائدة.
+
+              وموضعها فوق العرض مقصود: تُقرأ قبل السعر لا بعده. */}
+          {advisorReferral && (
+            <div className="story-fade mt-10 rounded-3xl border border-gold/40 bg-gold/5 p-6 md:p-8">
+              <h2 className="flex items-center gap-2 text-lg font-black text-gold-ink">
+                <UserCheck className="h-5 w-5 shrink-0" />
+                حالتك تستحق جلسة مع مستشار بشري
+              </h2>
+              <p className="mt-3 text-sm leading-loose text-white/70">
+                تشخيصك لم يعطنا يقينا كافيا بأنّ هذا المسار هو الأنسب لك — أو أنّك
+                طلبتَ استشارة. جلسةٌ تعريفيّة (٣٠ دقيقة) تصوغ خطّتك بدقّة، وتشخيصُك
+                يجعلها أقصر وأعمق. ولا تدفع شيئا قبلها.
+              </p>
+              <AdvisorContact
+                text="مرحبا، أكملت مؤشر وجيز وأخبرني أن حالتي تستحق جلسة مع مستشار بشري — أريد حجز الجلسة التعريفية."
+                label="احجز جلسة مستشار عبر واتساب"
+                className="mt-4 inline-flex items-center gap-2 rounded-full border border-gold/60 px-5 py-2.5 text-sm font-bold text-gold-ink transition hover:bg-gold/10"
+              />
+            </div>
+          )}
+
           {!user && (
             <div id="offer" className="story-fade mt-10 scroll-mt-24 overflow-hidden rounded-3xl border border-teal/40 bg-gradient-to-br from-teal/[0.14] via-white/[0.04] to-gold/[0.08]">
               <div className="p-6 md:p-8">
