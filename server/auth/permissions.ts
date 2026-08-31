@@ -31,7 +31,11 @@ export const PERMISSIONS = [
   { key: 'catalog.impact.view', description: 'عرض تحليل الأثر قبل النشر' },
   { key: 'catalog.rollback', description: 'الرجوع إلى إصدار سابق منشور' },
   // الإدارة
-  { key: 'admin.users.manage', description: 'إدارة المستخدمين والأدوار وإيقاف الحسابات' },
+  /* ثلاثُ حبّاتٍ لا حبّةٌ واحدة: من يفوّض لمرؤوسيه يحتاج أن يراهم، ولا يلزم
+     أن يملك تعيينَ الأدوار ولا إيقافَ الحسابات — وهما أوسعُ أثرا منه. */
+  { key: 'admin.users.view', description: 'عرض قائمة المستخدمين وأدوارهم' },
+  { key: 'admin.users.manage', description: 'تعيين الأدوار وإيقاف الحسابات' },
+  { key: 'admin.permissions.delegate', description: 'منح صلاحية لشخص أو منعها عنه — في حدود رتبته ومهامّه' },
   // منظومة المدربين — الإدارة
   /* صلاحية المتقدّم على طلبه هو — لا على طلبات غيره. تفصل حساب «متقدّم مدرب»
      عن حساب المتعلم: الأول يرى طلبه ومسودته وملفاته وحالة مراجعته ولا شيء
@@ -115,6 +119,8 @@ export const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
     'reports.view', 'reports.export',
     'notifications.manage', 'support.operate', 'support.assign', 'settings.manage',
     'rating.moderate',
+    /* يرى مرؤوسيه ويفوّض لهم — ولا يعيّن الأدوار ولا يوقف الحسابات */
+    'admin.users.view', 'admin.permissions.delegate',
   ],
   diagnostic_manager: [
     'catalog.view',
@@ -137,6 +143,74 @@ export const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
   finance: ['trainer.compensation.manage', 'finance.view', 'finance.payment.record', 'finance.refund.process', 'reports.view', 'reports.export'],
   support: ['catalog.view', 'support.operate'],
   learner: ['learner.portal', 'learner.submit', 'cv.upload', 'enrollment.request', 'rating.submit'],
+}
+
+/* ═══════════ تفويض الصلاحيات — من يمنح لمن، وماذا ═══════════
+
+   القرار: «يعطي صلاحيات للمدرب والطالب — أي أنّه يدير من هو أقلّ منه، وأيضا
+   التحكّم بالمسارات والدورات وكلّ ما يتعلّق بمهامّه».
+
+   فثلاث قواعد تجتمع، ولا يكفي واحدةٌ منها:
+
+   أ) لا يمنح أحدٌ ما لا يملك. من لا يملك «نشر دورة» لا يمنحها لغيره — وإلّا
+      صار التفويض بابا يرفع به الموظّفُ نفسَه بأيدي غيره.
+   ب) ولا يمسّ إلّا من هو أقلّ منه رتبةً. والمساواة لا تكفي: زميلان في الرتبة
+      نفسها لا يتنازعان صلاحيات بعضهما، ومديرُ نظامٍ لا ينزع عن مدير نظام.
+   ج) وفي حدود مهامّه وحدها. فالمدير الأكاديميّ يملك «عرض المالية» بحكم عمله
+      ولا يفوّضها: عائلةُ الصلاحية تقول لمن تخصّ. */
+
+/** رتبةُ الدور — الأعلى يدير الأدنى، ولا مساواةَ تُدير */
+export const ROLE_RANK: Record<string, number> = {
+  super_admin: 100,
+  academic_manager: 80,
+  operations_manager: 70,
+  diagnostic_manager: 70,
+  finance: 70,
+  support: 60,
+  advisor: 40,
+  trainer: 30,
+  trainer_applicant: 20,
+  learner: 10,
+}
+
+/** عائلاتُ الصلاحيات التي يفوّضها كلُّ دور — مهامُّه لا كلُّ ما يملك */
+export const DELEGATABLE_FAMILIES: Record<string, string[]> = {
+  /* مديرُ النظام: كلّ شيء — ولا يستثنيه إلّا قيدُ الرتبة */
+  super_admin: ['*'],
+  /* المدير الأكاديميّ: المسارات والدورات والمدربون والشعب وما يتصل بالتعلّم */
+  academic_manager: [
+    'catalog', 'trainer', 'cohort', 'enrollment', 'material',
+    'certificate', 'learner', 'rating', 'cv',
+  ],
+}
+
+export function rankOf(roles: readonly string[]): number {
+  return roles.reduce((max, r) => Math.max(max, ROLE_RANK[r] ?? 0), 0)
+}
+
+export interface DelegationRefusal { code: string; message_ar: string }
+
+/** أيجوز لهذا أن يمنح تلك الصلاحية لذاك؟ — أو لماذا لا يجوز */
+export function refuseDelegation(actor: {
+  roles: readonly string[]
+  permissions: readonly string[]
+}, target: { roles: readonly string[] }, permissionKey: string): DelegationRefusal | null {
+  const families = actor.roles.flatMap((r) => DELEGATABLE_FAMILIES[r] ?? [])
+  if (families.length === 0) {
+    return { code: 'not_delegator', message_ar: 'حسابك لا يفوّض الصلاحيات' }
+  }
+  if (rankOf(actor.roles) <= rankOf(target.roles)) {
+    return { code: 'rank_too_low', message_ar: 'لا تُدار إلّا صلاحياتُ من هو أقلّ منك رتبة' }
+  }
+  const family = permissionKey.split('.')[0]
+  if (!families.includes('*') && !families.includes(family)) {
+    return { code: 'out_of_scope', message_ar: 'هذه الصلاحية خارج مهامّك — راجع مدير النظام' }
+  }
+  /* ولا يمنح ما لا يملك: يُفحص أخيرا كي تسبقه الرسائلُ الأوضح */
+  if (!families.includes('*') && !actor.permissions.includes(permissionKey)) {
+    return { code: 'not_held', message_ar: 'لا تُفوَّض صلاحيةٌ لا تملكها أنت' }
+  }
+  return null
 }
 
 export const ROLE_NAMES_AR: Record<string, string> = {

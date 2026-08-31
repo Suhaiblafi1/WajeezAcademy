@@ -50,7 +50,7 @@ export default function AdminLayout({ children, title }: { children: React.React
     {
       title: "الأشخاص",
       items: [
-        { to: "/admin/users", label: "المستخدمون والأدوار", icon: Users , need: "admin.users.manage"},
+        { to: "/admin/users", label: "المستخدمون والأدوار", icon: Users , need: "admin.users.view"},
         { to: "/admin/trainers", label: "طلبات المدربين", icon: UserPlus , need: "trainer.applications.view"},
         { to: "/admin/exceptions", label: "الاستثناءات", icon: ShieldAlert , need: "enrollment.request.review"},
       ],

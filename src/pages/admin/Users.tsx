@@ -25,11 +25,14 @@ interface PermRow {
   effect: "grant" | "deny" | null;
   reason: string | null;
   effective: boolean;
+  delegatable: boolean;
+  refusal: string | null;
 }
 
 interface PermView {
   user: { id: string; displayName: string; email: string };
   roles: { id: string; nameAr: string }[];
+  rank: { actor: number; target: number };
   permissions: PermRow[];
 }
 
@@ -53,7 +56,11 @@ export default function Users() {
   const [rolePick, setRolePick] = useState<string[]>([]);
   /* صلاحيات شخصٍ بعينه — لمدير النظام وحده */
   const { user: me } = useRealSession();
-  const isSuper = me?.roles.includes("super_admin") ?? false;
+  /* الصلاحية لا الدور: الشاشة تُخفي ما لا يملكه، والخادم هو الحَكَم.
+     وثلاثُ حبّات — الرؤية والإدارة والتفويض — لا حبّةٌ واحدة. */
+  const can = (key: string) => me?.permissions.includes(key) ?? false;
+  const canDelegate = can("admin.permissions.delegate");
+  const canManage = can("admin.users.manage");
   const [permFor, setPermFor] = useState<string | null>(null);
   const [perms, setPerms] = useState<PermView | null>(null);
   const [permReason, setPermReason] = useState("");
@@ -147,17 +154,19 @@ export default function Users() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => { setEditing(editing === u.id ? null : u.id); setRolePick(u.roles.map((r) => r.id)); }}
-                    className="cursor-pointer rounded-full border border-white/15 px-4 py-1.5 text-xs font-bold text-white/65 hover:border-white/40">
-                    الأدوار
-                  </button>
-                  {isSuper && (
+                  {canManage && (
+                    <button onClick={() => { setEditing(editing === u.id ? null : u.id); setRolePick(u.roles.map((r) => r.id)); }}
+                      className="cursor-pointer rounded-full border border-white/15 px-4 py-1.5 text-xs font-bold text-white/65 hover:border-white/40">
+                      الأدوار
+                    </button>
+                  )}
+                  {canDelegate && (
                     <button onClick={() => void openPerms(u.id)}
                       className="flex cursor-pointer items-center gap-1.5 rounded-full border border-teal/40 px-4 py-1.5 text-xs font-bold text-teal-light-ink hover:bg-teal/10">
                       <KeyRound className="h-3.5 w-3.5" /> صلاحياته
                     </button>
                   )}
-                  {u.status === "active" && (
+                  {canManage && u.status === "active" && (
                     <button disabled={busy}
                       onClick={() => act(() => apiPost(`/api/admin/users/${u.id}/suspend`), "أُوقف الحساب وأُبطلت جلساته فورا")}
                       className="flex cursor-pointer items-center gap-1.5 rounded-full border border-red-500/40 px-4 py-1.5 text-xs font-bold text-red-400 hover:bg-red-500/10 disabled:opacity-40">
@@ -178,6 +187,12 @@ export default function Users() {
                           <p className="mt-0.5 text-[11px] leading-relaxed text-white/45">
                             الدور حزمةٌ، وهذا استثناءٌ لشخصه: منحٌ زائدٌ عليه، أو منعٌ ينزع منه وحده. والمنع أعلى من الدور والمنح معا.
                           </p>
+                          {/* لا تفويضَ في العلوّ: من لا يعلو رتبةَ صاحبه لا يمسّ شيئا — ويُقال قبل المحاولة */}
+                          {perms.rank.actor <= perms.rank.target && (
+                            <p className="mt-2 rounded-xl border border-[#FABC05]/40 bg-[#FABC05]/10 px-3 py-2 text-[11px] font-bold leading-6 text-[#FABC05]">
+                              لا تُدار إلّا صلاحياتُ من هو أقلّ منك رتبة — هذا الحساب في رتبتك أو فوقها.
+                            </p>
+                          )}
                         </div>
                         <div className="text-left">
                           <p className="text-[11px] text-white/45">صلاحيّاته الفعليّة</p>
@@ -228,7 +243,9 @@ export default function Users() {
                                     }`}>
                                       {p.effect === "deny" ? "مُنعت عنه" : p.effect === "grant" ? "مُنحت له" : p.fromRole ? "من دوره" : "خارج دوره"}
                                     </span>
-                                    {p.effect ? (
+                                    {!p.delegatable ? (
+                                      <span className="max-w-[11rem] text-left text-[10px] leading-4 text-white/35">{p.refusal}</span>
+                                    ) : p.effect ? (
                                       <button disabled={busy} onClick={() => void setPerm(u.id, p.key, "clear")}
                                         className="cursor-pointer rounded-full border border-white/15 px-3 py-1 text-[10px] font-bold text-white/60 hover:border-white/35 disabled:opacity-40">
                                         أزل الاستثناء

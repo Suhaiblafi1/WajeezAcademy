@@ -74,12 +74,28 @@ describe('قائمة الإدارة تُبنى من الصلاحيات', () => {
 })
 
 describe('استثناء الصلاحية لشخص', () => {
-  it('لمدير النظام وحده — في الشاشة وفي الخادم معا', () => {
-    expect(read(USERS), 'الزرّ يظهر لغير مدير النظام').toContain('roles.includes("super_admin")')
+  it('بصلاحيةٍ لا بدور — وثلاثُ حبّاتٍ لا حبّةٌ واحدة', () => {
+    /* الرؤية · تعيين الأدوار والإيقاف · التفويض. من يفوّض لمرؤوسيه يحتاج أن
+       يراهم ولا يلزم أن يملك تعيين الأدوار — وهو أوسعُ أثرا منه. */
+    const perms = read('server/auth/permissions.ts')
+    for (const key of ['admin.users.view', 'admin.users.manage', 'admin.permissions.delegate']) {
+      expect(perms, `${key} مفقودة من السجلّ`).toContain(`key: '${key}'`)
+    }
     const routes = read(ROUTES)
-    const guards = [...routes.matchAll(/roles\.includes\('super_admin'\)/g)]
-    expect(guards.length, 'مسارٌ من مساري الصلاحيات بلا حارس مدير النظام').toBeGreaterThanOrEqual(2)
-    expect(routes).toContain("code: 'super_admin_only'")
+    expect(routes, 'القائمة بحارس الإدارة لا بحارس الرؤية').toContain("requirePermission('admin.users.view')")
+    expect(routes, 'التفويض بلا حارسه').toContain("requirePermission('admin.permissions.delegate')")
+    /* والشاشة تُخفي بالصلاحية لا بالدور */
+    const users = read(USERS)
+    expect(users).toContain('can("admin.permissions.delegate")')
+    expect(users).toContain('can("admin.users.manage")')
+    expect(users, 'الشاشة تحكم بالدور لا بالصلاحية').not.toContain('roles.includes("super_admin")')
+  })
+
+  it('التفويض محكومٌ بالرتبة والمهامّ — من وحدةٍ واحدة لا شروطٍ مبعثرة', () => {
+    const routes = read(ROUTES)
+    expect(routes, 'القواعد لا تُطبَّق في مسار التفويض').toContain('refuseDelegation(')
+    /* والقرار يُردّ برسالته لا برسالةٍ عامّة */
+    expect(routes).toMatch(/if \(refusal\) return reply\.status\(403\)\.send\(\{ error: refusal \}\)/)
   })
 
   it('لا استثناء بلا سبب، ولا بابٌ يُغلق على صاحبه', () => {

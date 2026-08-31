@@ -6,12 +6,19 @@ import type { PrismaClient } from '@prisma/client'
 import { AuthService } from '../../services/auth.service'
 import { requirePermission } from '../auth-plugin'
 import { recordAudit } from '../../services/audit'
-import { PERMISSIONS, ROLE_NAMES_AR, ROLE_PERMISSIONS, type PermissionKey } from '../../auth/permissions'
+import {
+  PERMISSIONS, ROLE_NAMES_AR, ROLE_PERMISSIONS, refuseDelegation, rankOf,
+  DELEGATABLE_FAMILIES, type PermissionKey,
+} from '../../auth/permissions'
 
 export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClient, auth: AuthService) {
+  /* ثلاثُ حبّات: الرؤية · تعيين الأدوار والإيقاف · التفويض. والمدير
+     الأكاديميّ يملك الأولى والثالثة لا الثانية. */
+  const canView = requirePermission('admin.users.view')
   const guard = requirePermission('admin.users.manage')
+  const canDelegate = requirePermission('admin.permissions.delegate')
 
-  app.get('/api/admin/users', { preHandler: guard, schema: { tags: ['admin-users'], summary: 'قائمة المستخدمين وأدوارهم وحالاتهم' } },
+  app.get('/api/admin/users', { preHandler: canView, schema: { tags: ['admin-users'], summary: 'قائمة المستخدمين وأدوارهم وحالاتهم' } },
     async () => {
       const users = await prisma.user.findMany({
         orderBy: { createdAt: 'desc' },
@@ -28,16 +35,17 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
 
   /* ── صلاحيّاتُ شخصٍ بعينه ──
 
-     مديرُ النظام وحده: من يملك admin.users.manage يعيّن الأدوار، وهذا أبعد —
-     يفتح صلاحيةً بعينها خارج أيّ دور. فحارسُه أضيق. */
-  const superOnly = requirePermission('admin.users.manage')
+     ثلاث قواعد تجتمع في `refuseDelegation`: لا يمنح أحدٌ ما لا يملك · ولا
+     يمسّ إلّا من هو أقلّ منه رتبة · وفي حدود مهامّه وحدها. وهي في وحدةٍ نقيّة
+     تُختبر بمعزل، لا شروطٌ مبعثرة في المسار. */
 
   app.get('/api/admin/users/:id/permissions', {
-    preHandler: superOnly,
+    preHandler: canDelegate,
     schema: { tags: ['admin-users'], summary: 'صلاحيات مستخدم: من دوره، وما مُنح له، وما مُنع عنه' },
   }, async (req, reply) => {
-    if (!req.auth!.roles.includes('super_admin')) {
-      return reply.status(403).send({ error: { code: 'super_admin_only', message_ar: 'صلاحيات الأشخاص لمدير النظام وحده' } })
+    /* من لا يفوّض شيئا لا يفتح الشاشة أصلا */
+    if (!req.auth!.roles.some((r) => DELEGATABLE_FAMILIES[r])) {
+      return reply.status(403).send({ error: { code: 'not_delegator', message_ar: 'حسابك لا يفوّض الصلاحيات' } })
     }
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const user = await prisma.user.findUnique({
@@ -53,13 +61,23 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
     return {
       user: { id: user.id, displayName: user.displayName, email: user.email },
       roles: user.roles.map((r) => ({ id: r.roleId, nameAr: ROLE_NAMES_AR[r.roleId] ?? r.roleId })),
+      /* رتبةُ الطرفين تُعرض: من يُردّ يعرف لماذا قبل أن يضغط */
+      rank: { actor: rankOf(req.auth!.roles), target: rankOf(user.roles.map((r) => r.roleId)) },
       permissions: PERMISSIONS.map((p) => {
         const o = override.get(p.key)
+        const refusal = refuseDelegation(
+          { roles: req.auth!.roles, permissions: req.auth!.permissions },
+          { roles: user.roles.map((r) => r.roleId) },
+          p.key,
+        )
         return {
           key: p.key, description: p.description,
           fromRole: fromRoles.has(p.key),
           effect: o?.effect ?? null,
           reason: o?.reason ?? null,
+          /* ما لا تستطيع تفويضه يُعرض ولا يُمكَّن — والسبب معه */
+          delegatable: refusal === null,
+          refusal: refusal?.message_ar ?? null,
           /* المحصّلة تُحسب هنا بالقاعدة نفسها التي يحسبها بها الخادم عند كل
              طلب — فما تراه الشاشة هو ما يقع، لا تقديرٌ يوازيه */
           effective: o?.effect === 'deny' ? false : (o?.effect === 'grant' ? true : fromRoles.has(p.key)),
@@ -69,12 +87,9 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
   })
 
   app.post('/api/admin/users/:id/permissions', {
-    preHandler: superOnly,
+    preHandler: canDelegate,
     schema: { tags: ['admin-users'], summary: 'منح صلاحية لشخص أو منعها عنه أو إزالة الاستثناء' },
   }, async (req, reply) => {
-    if (!req.auth!.roles.includes('super_admin')) {
-      return reply.status(403).send({ error: { code: 'super_admin_only', message_ar: 'صلاحيات الأشخاص لمدير النظام وحده' } })
-    }
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({
       permissionKey: z.string().min(3),
@@ -86,6 +101,16 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
     if (!known) {
       return reply.status(400).send({ error: { code: 'unknown_permission', message_ar: 'صلاحية غير معروفة' } })
     }
+    /* القواعد الثلاث — والحكم من الوحدة النقيّة لا من شروطٍ هنا */
+    const target = await prisma.user.findUnique({ where: { id }, include: { roles: true } })
+    if (!target) return reply.status(404).send({ error: { code: 'not_found', message_ar: 'المستخدم غير موجود' } })
+    const refusal = refuseDelegation(
+      { roles: req.auth!.roles, permissions: req.auth!.permissions },
+      { roles: target.roles.map((r) => r.roleId) },
+      body.permissionKey,
+    )
+    if (refusal) return reply.status(403).send({ error: refusal })
+
     /* بابٌ لا يُغلق على صاحبه: من منع عن نفسه إدارةَ المستخدمين لم يعد يملك
        رفعَ المنع — ولا سبيل إلى الإصلاح إلا من القاعدة مباشرة. */
     if (id === req.auth!.userId && body.effect === 'deny' && body.permissionKey === 'admin.users.manage') {
