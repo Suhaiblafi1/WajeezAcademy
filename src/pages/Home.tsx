@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { safeGet, safeSet, safeRemove } from '@/services/safe-storage'
 import { Link } from 'react-router'
 import {
   Sparkles, Compass, Route, BadgeCheck, Network, Target,
@@ -91,12 +92,12 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 function readUserName(): string | null {
-  const raw = localStorage.getItem('wajeez_user')
+  const raw = safeGet('wajeez_user')
   if (!raw) return null
   try {
     const parsed = JSON.parse(raw) as { name?: string; exp?: number }
     if (typeof parsed.exp === 'number' && Date.now() > parsed.exp) {
-      localStorage.removeItem('wajeez_user')
+      safeRemove('wajeez_user')
       return null
     }
     return parsed.name ?? raw
@@ -268,7 +269,7 @@ function DiagnosticTeaser() {
   /* استرجاع المحفوظ المحلي كحالة أولية كسولة — لا setState داخل تأثير */
   const [savedMirror] = useState(() => {
     try {
-      const saved = JSON.parse(localStorage.getItem('wajeez_mirror') ?? 'null') as { step?: number; answers?: Record<string, string> } | null
+      const saved = JSON.parse(safeGet('wajeez_mirror') ?? 'null') as { step?: number; answers?: Record<string, string> } | null
       return saved && typeof saved.step === 'number' && saved.answers ? saved : null
     } catch { return null } // لا محفوظات صالحة
   })
@@ -281,7 +282,7 @@ function DiagnosticTeaser() {
   /* حفظ مؤقت محلي آمن — الإجابات لا تغادر جهاز الزائر. الذي يُرسل هو حدثا
      mirror_started/mirror_completed بلا أي محتوى إجابة (انظر analytics.ts). */
   useEffect(() => {
-    localStorage.setItem('wajeez_mirror', JSON.stringify({ step, answers }))
+    safeSet('wajeez_mirror', JSON.stringify({ step, answers }))
   }, [step, answers])
 
   const pick = (qid: string, value: string) => {
@@ -303,7 +304,7 @@ function DiagnosticTeaser() {
     setStep(0)
     setAnswers({})
     setPicked(null)
-    localStorage.removeItem('wajeez_mirror')
+    safeRemove('wajeez_mirror')
   }
 
   return (

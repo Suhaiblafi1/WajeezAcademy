@@ -67,8 +67,11 @@ describe('التشخيص ينتهي على صفحة المسار', () => {
 describe('إحالة المستشار تسافر مع الخطّة', () => {
   it('٥) التشخيص يكتب العَلَم عند الحاجة ويمسحه عند عدمها', () => {
     const diag = read('src/pages/Diagnostic.tsx')
-    expect(diag).toContain('if (res.needsAdvisor) sessionStorage.setItem(NEEDS_ADVISOR_KEY, "1")')
-    expect(diag).toContain('else sessionStorage.removeItem(NEEDS_ADVISOR_KEY)')
+    /* صار الكتب عبر `safeSet`/`safeRemove`: سفاري يرمي عند الوصول إلى
+       التخزين حين يُحظر، وهذا السطر يجري في مسار النتيجة — فرميُه يكسر
+       التشخيص عند من يُحظر عنده التخزين. والعَلَم نفسُه لم يتغيّر. */
+    expect(diag).toContain('if (res.needsAdvisor) safeSet(NEEDS_ADVISOR_KEY, "1", \'session\')')
+    expect(diag).toContain('else safeRemove(NEEDS_ADVISOR_KEY, \'session\')')
   })
 
   it('٦) صفحة المسار تقرؤه وتعرض الدعوة — وإلّا دفع من كان يُستشار', () => {

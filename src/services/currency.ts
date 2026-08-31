@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { safeGet, safeSet } from "./safe-storage";
 
 /* ─────────── خدمة العملات ───────────
    المنطق الداخلي للأسعار يبقى بالدولار دائما، وهذه الخدمة للعرض فقط:
@@ -59,7 +60,7 @@ const COUNTRY_CURRENCY: Record<string, CurrencyCode> = {
 };
 
 export function detectCurrency(): CurrencyCode {
-  const saved = localStorage.getItem(STORAGE_KEY);
+  const saved = safeGet(STORAGE_KEY);
   if (saved && saved in CURRENCIES) return saved as CurrencyCode;
   return "JOD"; // الافتراضي دائما: الدينار الأردني — الكشف الجغرافي يُفعَّل لاحقا
 }
@@ -75,7 +76,7 @@ export function getCurrency(): CurrencyInfo {
 }
 
 export function setCurrency(code: CurrencyCode): void {
-  localStorage.setItem(STORAGE_KEY, code);
+  safeSet(STORAGE_KEY, code);
   window.dispatchEvent(new Event(CHANGE_EVENT));
 }
 

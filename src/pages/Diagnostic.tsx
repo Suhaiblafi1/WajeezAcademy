@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { safeGet, safeSet, safeRemove } from "@/services/safe-storage";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import {
   ArrowRight,
@@ -743,7 +744,7 @@ export default function Diagnostic() {
   /* جلسة المحرك الحتمي — مصدر الأسئلة والنتيجة الوحيد */
   const sessionRef = useRef<AssessmentSession | null>(null);
   /* الضيف أولا: يكمل التشخيص كاملا ويرى نتيجته حتى حدّ الظهور، والحساب يُطلب فقط لكشف الباقي والحفظ */
-  const [authed, setAuthed] = useState(() => Boolean(localStorage.getItem("wajeez_user")));
+  const [authed, setAuthed] = useState(() => Boolean(safeGet("wajeez_user")));
   /* انكشف للتو من بوابة النتيجة — نجمّد كل ما فوق حدّ الظهور كما هو حتى لا يقفز التخطيط لحظة الكشف */
   const [justRevealed, setJustRevealed] = useState(false);
   const [offline, setOffline] = useState(() => !navigator.onLine);
@@ -1019,9 +1020,9 @@ export default function Diagnostic() {
        لا ننتظرها: التنقّل لا يُؤجَّل لنداء شبكة، والفشل لا يُلغي الاعتماد. */
     void syncAdoptedPlan(adoptedPlan);
     try {
-      if (c) sessionStorage.setItem("wajeez_diag_composite", JSON.stringify({ template_id: c.template_id, name_ar: c.name_ar }));
-      sessionStorage.setItem("wajeez_diag_top", hostId);
-      localStorage.setItem("wajeez_diag_top", hostId);
+      if (c) safeSet("wajeez_diag_composite", JSON.stringify({ template_id: c.template_id, name_ar: c.name_ar }), 'session');
+      safeSet("wajeez_diag_top", hostId, 'session');
+      safeSet("wajeez_diag_top", hostId);
     } catch {
       /* مساحة ممتلئة أو خصوصية صارمة — الصفحة تقول إنها لم تجد الخطّة */
     }
@@ -1036,8 +1037,8 @@ export default function Diagnostic() {
        صفحة المسار سقطت الشاشة — وكادت الإحالة تسقط معها، فيدفع مَن كان
        ينبغي أن يُستشار. فالعَلَم يُكتب هنا وتقرؤه صفحة المسار. */
     try {
-      if (res.needsAdvisor) sessionStorage.setItem(NEEDS_ADVISOR_KEY, "1");
-      else sessionStorage.removeItem(NEEDS_ADVISOR_KEY);
+      if (res.needsAdvisor) safeSet(NEEDS_ADVISOR_KEY, "1", 'session');
+      else safeRemove(NEEDS_ADVISOR_KEY, 'session');
     } catch { /* بلا تخزين — الصفحة لا تعرض الإحالة، ولا يتعطّل شيء */ }
     navigate(`/pathways/${hostId}`);
   };
@@ -1064,7 +1065,7 @@ export default function Diagnostic() {
 
   /* إرفاق النتيجة بحساب المستخدم أفضل جهد — ينشئ الخادم ملف متعلم وحالة مستشار دون حجب النتيجة */
   const attachToAccount = (res: DiagResult) => {
-    if (!localStorage.getItem("wajeez_user")) return; // ضيف — النتيجة تبقى على جهازه فقط
+    if (!safeGet("wajeez_user")) return; // ضيف — النتيجة تبقى على جهازه فقط
     void apiPost("/api/learner/diagnostic-attach", { snapshot: res as unknown as Record<string, unknown> }).catch(() => undefined);
   };
 

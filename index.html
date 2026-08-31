@@ -55,15 +55,58 @@
            المسحُ عند الإقلاع يصنع حلقةً — إقلاعٌ ← مسحٌ ← فشلٌ ← إعادة — وقد
            وقعت فعلا. فإن كان النقص عابرا شُفيت الصفحة بإعادةٍ واحدة، وإن كان
            مقيما بقيت كما هي ولم يدُر التبويب. */
+        /* بلا تخزينٍ متاح: علامةٌ في العنوان بدل لا شيء.
+
+           كان الحارس يمتنع عن الإعادة كليّا حين يُمنع التخزين — بحجّةٍ صحيحة:
+           عدّادٌ في الذاكرة يُمحى بإعادة التحميل نفسِها، فتصير الحلقة ممكنة.
+           لكنّ الأثر أنّ من يفعّل «حظر كل ملفات تعريف الارتباط» في سفاري —
+           أو يتصفّح خفيّا بصرامة — يبقى على شاشةٍ بيضاء بلا علاج.
+
+           والعلامةُ في العنوان تحلّ الاثنين: تبقى بعد إعادة التحميل (فتمنع
+           الحلقة)، ولا تحتاج تخزينا. فالإعادةُ واحدةٌ لا أكثر: إن شُفيت
+           الصفحة فقد شُفيت، وإن كان العطب مقيما بقيت كما هي ولم يدُر التبويب. */
+        var URL_MARK = "_wr";
+
+        function markedInUrl() {
+          try {
+            return String(location.search || "").indexOf(URL_MARK + "=1") !== -1;
+          } catch (e) {
+            return true;                                   // تعذّر القراءة: لا نُعيد
+          }
+        }
+
+        function reloadWithMark() {
+          try {
+            var u = new URL(location.href);
+            u.searchParams.set(URL_MARK, "1");
+            location.replace(u.toString());
+          } catch (e) {
+            location.reload();
+          }
+        }
+
+        /* هل يُسمح بإعادةٍ الآن؟ ومَن يُعيد: التخزين أم العنوان */
+        var reloadVia = "storage";
+
         function mayReload() {
           try {
             var last = parseInt(sessionStorage.getItem(KEY) || "0", 10);
             if (last && Date.now() - last < COOLDOWN) return false;
             sessionStorage.setItem(KEY, String(Date.now()));
+            reloadVia = "storage";
             return true;
           } catch (e) {
-            return false;                                  // بلا تخزين: لا إعادة أبدا
+            /* لا تخزين — نلجأ إلى العنوان، وإعادةٌ واحدة لا غير */
+            if (markedInUrl()) return false;
+            reloadVia = "url";
+            return true;
           }
+        }
+
+        /* بابُ الإعادة الواحد — يعرف بأيّ وسيلةٍ أُذن له */
+        function doReload() {
+          if (reloadVia === "url") reloadWithMark();
+          else location.reload();
         }
 
         function isStaleChunkMessage(text) {
@@ -80,14 +123,14 @@
           if (el.tagName !== "SCRIPT" && el.tagName !== "LINK") return;
           var src = el.src || el.href || "";
           if (src.indexOf("/assets/") === -1) return;      // حزمُنا وحدها
-          if (mayReload()) location.reload();
+          if (mayReload()) doReload();
         }, true);
 
         /* ٢) قطعةٌ مؤجَّلة أخفقت — يمنعه Vite من الانفجار إن مُنع افتراضُه */
         window.addEventListener("vite:preloadError", function (event) {
           if (!mayReload()) return;
           if (event.preventDefault) event.preventDefault();
-          location.reload();
+          doReload();
         });
 
         /* ٣) شبكة أمان: رفضٌ غير ملتقَط نصُّه يدلّ على قطعةٍ زائلة */
@@ -95,7 +138,7 @@
           var reason = event.reason;
           var text = reason && (reason.message || String(reason));
           if (!isStaleChunkMessage(text)) return;
-          if (mayReload()) location.reload();
+          if (mayReload()) doReload();
         });
       })();
     </script>

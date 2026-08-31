@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { safeGet, safeRemove } from '@/services/safe-storage'
 import { Link } from 'react-router'
 import { Menu, User, X } from 'lucide-react'
 import { CONTACT } from '@/data/stories'
@@ -7,12 +8,12 @@ import ThemeToggle from '@/components/ThemeToggle'
 
 /* اسم المستخدم المحفوظ محليا — نفس منطق ترويسة الرئيسية */
 function readUserName(): string | null {
-  const raw = localStorage.getItem('wajeez_user')
+  const raw = safeGet('wajeez_user')
   if (!raw) return null
   try {
     const parsed = JSON.parse(raw) as { name?: string; exp?: number }
     if (typeof parsed.exp === 'number' && Date.now() > parsed.exp) {
-      localStorage.removeItem('wajeez_user')
+      safeRemove('wajeez_user')
       return null
     }
     return parsed.name ?? raw

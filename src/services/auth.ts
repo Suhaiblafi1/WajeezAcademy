@@ -9,6 +9,7 @@
    - تسجيل الخروج يبطل الجلسة عند الخادم ثم يمسح النسخة المحلية. */
 
 import { ApiError, apiGet, apiPost } from "./api";
+import { safeGet, safeSet, safeRemove } from "./safe-storage";
 
 export const OAUTH_READY = false; // أزرار قوقل ولينكدإن مخفية حتى يكتمل ربط OAuth الحقيقي
 
@@ -59,16 +60,16 @@ export function homePathForRoles(roles: string[]): string {
 function writeSession(name: string, email: string, roles: string[], expiresAt?: string): void {
   const exp = expiresAt ? Date.parse(expiresAt) : Date.now() + 30 * 864e5;
   const s: Session = { name, email, roles, at: Date.now(), exp };
-  localStorage.setItem(USER_KEY, JSON.stringify(s));
+  safeSet(USER_KEY, JSON.stringify(s));
 }
 
 export function readSession(): Session | null {
-  const raw = localStorage.getItem(USER_KEY);
+  const raw = safeGet(USER_KEY);
   if (!raw) return null;
   try {
     const s = JSON.parse(raw) as Partial<Session>;
     if (typeof s.exp === "number" && Date.now() > s.exp) {
-      localStorage.removeItem(USER_KEY);
+      safeRemove(USER_KEY);
       return null;
     }
     return {
@@ -79,7 +80,7 @@ export function readSession(): Session | null {
       exp: s.exp ?? 0,
     };
   } catch {
-    localStorage.removeItem(USER_KEY);
+    safeRemove(USER_KEY);
     return null;
   }
 }
@@ -98,7 +99,7 @@ export async function refreshSession(): Promise<Session | null> {
   try {
     const { user } = await apiGet<{ user: ServerUser | null }>("/api/auth/me");
     if (!user) {
-      localStorage.removeItem(USER_KEY);
+      safeRemove(USER_KEY);
       return null;
     }
     writeSession(user.displayName, user.email, user.roles);
@@ -120,7 +121,7 @@ const LOCK_MINUTES = 10;
 
 function readLock(): LockState {
   try {
-    return JSON.parse(localStorage.getItem(LOCK_KEY) ?? '{"fails":0,"until":0}') as LockState;
+    return JSON.parse(safeGet(LOCK_KEY) ?? '{"fails":0,"until":0}') as LockState;
   } catch {
     return { fails: 0, until: 0 };
   }
@@ -137,11 +138,11 @@ function recordFail(): void {
   const l = readLock();
   const fails = l.fails + 1;
   const until = fails >= MAX_FAILS ? Date.now() + LOCK_MINUTES * 60000 : 0;
-  localStorage.setItem(LOCK_KEY, JSON.stringify({ fails: until ? 0 : fails, until }));
+  safeSet(LOCK_KEY, JSON.stringify({ fails: until ? 0 : fails, until }));
 }
 
 function clearFails(): void {
-  localStorage.removeItem(LOCK_KEY);
+  safeRemove(LOCK_KEY);
 }
 
 /* ─────────── العمليات ─────────── */
@@ -198,13 +199,13 @@ export async function signOut(): Promise<void> {
   } catch {
     // حتى لو تعذر النداء نمسح نسخة العرض — الكوكي منتهي الصلاحية عند الخادم
   }
-  localStorage.removeItem(USER_KEY);
+  safeRemove(USER_KEY);
 }
 
 /** مسح نسخة العرض المحلية دون نداء خادم — تُستخدم بعد logout-all / deactivate
    اللذين أبطلا الجلسات عند الخادم أصلا */
 export function clearLocalSession(): void {
-  localStorage.removeItem(USER_KEY);
+  safeRemove(USER_KEY);
 }
 
 /** طلب استعادة كلمة المرور — رسالة الخادم آمنة ولا تكشف وجود الحساب */

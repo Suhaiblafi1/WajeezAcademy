@@ -19,6 +19,7 @@ type Handler = (event: Record<string, unknown>) => void
 function bootGuard(
   storage: { get: () => string | null; set: (v: string) => void },
   now = () => Date.now(),
+  startUrl = 'https://academy.example/pathways',
 ) {
   const html = readFileSync(join(process.cwd(), 'index.html'), 'utf8')
   const blocks = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1])
@@ -27,6 +28,7 @@ function bootGuard(
 
   const handlers: Record<string, Handler[]> = {}
   let reloads = 0
+  let url = startUrl
   const win = {
     addEventListener: (type: string, fn: Handler, capture?: boolean) => {
       /* فشلُ المورد لا يصعد، فمسمع `error` وحده يلزمه طور الالتقاط */
@@ -41,11 +43,19 @@ function bootGuard(
        القيمة، فيعود parseInt بـNaN فلا تُغلق النافذة أبدا. أداةٌ معطوبة
        تُدين شيفرةً سليمة: أوّل قراءةٍ لهذا الإخفاق حُمّلت على الحارس. */
     { getItem: storage.get, setItem: (_k: string, v: string) => storage.set(v), removeItem: () => {} },
-    { reload: () => { reloads += 1 } },
+    /* موضعٌ حقيقيّ لا `reload` وحده: الحارس يقرأ `search` ويستعمل `replace`
+       حين يتعذّر التخزين — فبيئةٌ ناقصة تُخفي ذلك المسار كلَّه. */
+    {
+      get href() { return url },
+      get search() { return new URL(url).search },
+      reload: () => { reloads += 1 },
+      replace: (next: string) => { reloads += 1; url = next },
+    },
     { now },
   )
 
   return {
+    url: () => url,
     types: () => Object.keys(handlers),
     fail: (target: unknown) => (handlers.error ?? []).forEach((h) => h({ target })),
     /** قطعةٌ مؤجَّلة أخفقت — الحدث الذي يُطلقه Vite */
@@ -103,13 +113,31 @@ describe('التعافي من حزمةٍ محذوفة بعد نشرٍ جديد',
     expect(g.reloads()).toBe(0)
   })
 
-  it('٥) بلا تخزينٍ متاح لا يُعيد التحميل أبدا — الحلقة أسوأ من البياض', () => {
-    const throwing = {
-      get: (): string | null => { throw new Error('تصفّح خفيّ صارم') },
-      set: () => { throw new Error('تصفّح خفيّ صارم') },
-    }
-    const g = bootGuard(throwing)
+  /* كان الحارس يمتنع كليّا بلا تخزين، والحجّة صحيحة: عدّادٌ في الذاكرة يُمحى
+     بإعادة التحميل نفسِها فتصير الحلقة ممكنة. لكنّ الأثر أنّ من يفعّل «حظر كل
+     ملفات تعريف الارتباط» في سفاري يبقى على شاشةٍ بيضاء بلا علاج.
+
+     والعلامةُ في العنوان تحلّ الاثنين: تبقى بعد الإعادة فتمنع الحلقة، ولا
+     تحتاج تخزينا. فما يُحرَس هنا الضمانتان معا — إعادةٌ واحدة، ولا ثانية. */
+  const noStorage = {
+    get: (): string | null => { throw new Error('تصفّح خفيّ صارم') },
+    set: () => { throw new Error('تصفّح خفيّ صارم') },
+  }
+
+  it('٥) بلا تخزينٍ متاح يُعيد التحميل مرّةً واحدة بعلامةٍ في العنوان', () => {
+    const g = bootGuard(noStorage)
     g.fail(bundleScript)
+    expect(g.reloads()).toBe(1)
+    /* والعلامةُ في العنوان — هي ذاكرتُه بدل التخزين */
+    expect(g.url()).toContain('_wr=1')
+  })
+
+  it('٥ب) ولا يُعيدها ثانية — العلامةُ تمنع الحلقة بلا تخزين', () => {
+    /* إقلاعٌ جديد على العنوان المعلَّم: هذا ما يراه المتصفّح بعد الإعادة */
+    const g = bootGuard(noStorage, () => Date.now(), 'https://academy.example/pathways?_wr=1')
+    g.fail(bundleScript)
+    g.chunkFail()
+    g.reject('Failed to fetch dynamically imported module')
     expect(g.reloads()).toBe(0)
   })
 

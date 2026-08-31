@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { safeGet, safeRemove } from "@/services/safe-storage";
 import { Link, useNavigate, useParams } from "react-router";
 import {
   ArrowRight,
@@ -46,12 +47,12 @@ import { needsAdvisorReferral } from "@/application/plan/advisor-referral";
 
 /* اسم المستخدم — يدعم الصيغتين: JSON الجديدة والنص القديم، ويحترم انتهاء الجلسة */
 function readUserName(): string | null {
-  const raw = localStorage.getItem("wajeez_user");
+  const raw = safeGet("wajeez_user");
   if (!raw) return null;
   try {
     const parsed = JSON.parse(raw) as { name?: string; exp?: number };
     if (typeof parsed.exp === "number" && Date.now() > parsed.exp) {
-      localStorage.removeItem("wajeez_user");
+      safeRemove("wajeez_user");
       return null;
     }
     return parsed.name ?? raw;
@@ -124,7 +125,7 @@ export default function PathwayPage() {
   const compositeCtx = useMemo(() => {
     if (!custom) return null;
     try {
-      const c = JSON.parse(sessionStorage.getItem("wajeez_diag_composite") ?? "null");
+      const c = JSON.parse(safeGet("wajeez_diag_composite", 'session') ?? "null");
       return c && typeof c.name_ar === "string" ? c as { template_id: string; name_ar: string } : null;
     } catch { return null; }
   }, [custom]);
@@ -193,7 +194,7 @@ export default function PathwayPage() {
   /* تقريره الشخصي من إجابات التشخيص */
   const report = useMemo(() => {
     try {
-      const a = JSON.parse(sessionStorage.getItem("wajeez_diag_answers") ?? "null");
+      const a = JSON.parse(safeGet("wajeez_diag_answers", 'session') ?? "null");
       if (!a) return null;
       const lines: string[] = [];
       if (a.persona) lines.push(`أنت ${PERSONA_LABELS[a.persona] ?? "متعلم طموح"}، و${DAY_LABELS[a.day_story] ?? "يومك مليء"}.`);
@@ -215,7 +216,7 @@ export default function PathwayPage() {
   /* المسار الذي اعتمده تشخيصه سابقا — إن وُجد */
   const diagTopId = useMemo(() => {
     try {
-      return sessionStorage.getItem("wajeez_diag_top");
+      return safeGet("wajeez_diag_top", 'session');
     } catch {
       return null;
     }
@@ -225,7 +226,7 @@ export default function PathwayPage() {
      وجودها يحوّل دعوة «لست متأكدا» إلى إعادة تخصيص المسار بدل إعادة التشخيص */
   const hasSavedResult = useMemo(() => {
     try {
-      return !!localStorage.getItem("wajeez_diag_v2_last_full");
+      return !!safeGet("wajeez_diag_v2_last_full");
     } catch {
       return false;
     }
