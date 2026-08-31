@@ -33,8 +33,6 @@ const ENTRY = 'server/http/vercel-handler.ts'
 const KNOWN: Record<string, string> = {
   'server/db/embedded.ts':
     'قاعدة التطوير المدمجة — لا تُنادى في الإنتاج لأن DATABASE_URL مضبوطة، فالمسار الخاطئ لا يُقرأ',
-  'server/services/storage.service.ts':
-    'عطل قائم: storage/private يُحلّ فوق الجذر في الحزمة. وتصحيح العمق وحده لا يُصلحه — ملفات Vercel للقراءة فقط عدا /tmp، فالتخزين يحتاج قرار مزوّد (S3/MinIO) لا تعديل مسار',
 }
 
 /* استيرادات نسبية فقط — الحزم الخارجية external ولا تُجمَّع */

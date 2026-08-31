@@ -10,7 +10,6 @@ const inputCls =
 
 const DOC_KINDS = [
   { kind: "cv", label: "السيرة الذاتية" },
-  { kind: "training_video", label: "فيديو تدريبي (حتى ٣٠٠MB)" },
   { kind: "certificate", label: "شهادات واعتمادات" },
   { kind: "evidence", label: "أدلة أو توصيات" },
 ];
@@ -150,7 +149,7 @@ export default function JoinTrainerComplete() {
                 >
                   <input
                     type="file" className="sr-only"
-                    accept={d.kind === "training_video" ? "video/*" : ".pdf,.doc,.docx,.txt,.jpg,.png"}
+                    accept=".pdf,.doc,.docx,.txt,.jpg,.png"
                     onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadFile(d.kind, f); }}
                   />
                   {uploads[d.kind]?.status === "done"

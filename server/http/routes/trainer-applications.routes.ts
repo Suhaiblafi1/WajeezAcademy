@@ -6,9 +6,10 @@ import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { TrainerApplicationService } from '../../services/trainer-application.service'
 import { TrainerReviewService } from '../../services/trainer-review.service'
-import { verifySignature, writeStreamToKey, MAX_UPLOAD_BYTES } from '../../services/storage.service'
-import { createReadStream, existsSync, statSync } from 'node:fs'
-import { filePathFor } from '../../services/storage.service'
+import {
+  verifySignature, writeDocumentContent, readDocumentContent,
+  MAX_UPLOAD_BYTES, MAX_UPLOAD_ANY, UPLOADABLE_KINDS,
+} from '../../services/storage.service'
 import { requirePermission } from '../auth-plugin'
 
 const IS_PROD = process.env.NODE_ENV === 'production'
@@ -166,7 +167,9 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
     const { reference } = z.object({ reference: z.string().min(5) }).parse(req.params)
     const body = z.object({
       candidateToken: z.string().min(10),
-      kind: z.enum(['cv', 'training_video', 'certificate', 'evidence', 'reference_letter', 'other']),
+      /* الفيديو ليس هنا: الدالة السحابية لا تستقبل جسما أكبر من ٤٫٥MB،
+         فيُوضع رابطه في النموذج بدل رفعٍ يُردّ قبل أن يبلغ الخادم. */
+      kind: z.enum(UPLOADABLE_KINDS),
       originalName: z.string().min(1).max(200), mime: z.string().min(3).max(100),
       sizeBytes: z.number().int().positive(),
     }).parse(req.body)
@@ -176,7 +179,7 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
   })
 
   app.put('/api/v1/uploads/:storageKey', {
-    bodyLimit: MAX_UPLOAD_BYTES.training_video,
+    bodyLimit: MAX_UPLOAD_ANY,
     schema: { tags: ['trainer-applications'], summary: 'رفع الملف الخام عبر رابط موقع — داخلي' },
   }, async (req, reply) => {
     const { storageKey } = z.object({ storageKey: z.string().min(10) }).parse(req.params)
@@ -190,9 +193,11 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
     const max = MAX_UPLOAD_BYTES[doc.kind] ?? MAX_UPLOAD_BYTES.other
     const buffer = req.body as Buffer
     if (!buffer || !buffer.length) return reply.status(400).send({ error: { code: 'empty', message_ar: 'الملف فارغ' } })
-    if (buffer.length > max) return reply.status(413).send({ error: { code: 'too_large', message_ar: 'الملف يتجاوز الحد المسموح' } })
-    const { Readable } = await import('node:stream')
-    await writeStreamToKey(storageKey, Readable.from(buffer), max)
+    if (buffer.length > max) {
+      const mb = Math.floor(max / (1024 * 1024))
+      return reply.status(413).send({ error: { code: 'too_large', message_ar: `الملف يتجاوز ${mb}MB` } })
+    }
+    await writeDocumentContent(prisma, storageKey, buffer)
     return { ok: true, storageKey, sizeBytes: buffer.length }
   })
 
@@ -206,12 +211,12 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
     }
     const doc = await prisma.trainerApplicationDocument.findUnique({ where: { storageKey } })
     if (!doc) return reply.status(404).send({ error: { code: 'not_found', message_ar: 'الوثيقة غير موجودة' } })
-    const path = filePathFor(storageKey)
-    if (!existsSync(path) || !statSync(path).isFile()) {
+    const content = await readDocumentContent(prisma, storageKey)
+    if (!content) {
       return reply.status(404).send({ error: { code: 'not_uploaded', message_ar: 'الملف لم يرفع بعد' } })
     }
     reply.header('content-type', doc.mime)
     reply.header('content-disposition', `inline; filename*=UTF-8''${encodeURIComponent(doc.originalName)}`)
-    return reply.send(createReadStream(path))
+    return reply.send(content)
   })
 }

@@ -125,7 +125,7 @@ describe('دورة طلب المدرب', () => {
     expect(row.evidenceNotes).toBeNull()
   })
 
-  it('6ج) الدافع دون ١٥٠ حرفا مرفوض، وفوق ٥٠٠ مرفوض', async () => {
+  it('6ج) الدافع دون ٧٥ حرفا مرفوض، وفوق ٥٠٠ مرفوض', async () => {
     const base = { ...phase1, email: `short-${Date.now()}@wajeez.test` }
     await expect(apps.submitPhase1({ ...base, motivation: 'أحب التدريب' }))
       .rejects.toMatchObject({ code: 'invalid_motivation' })

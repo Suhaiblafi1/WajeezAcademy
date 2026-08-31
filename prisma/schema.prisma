@@ -862,6 +862,10 @@ model TrainerApplicationDocument {
   originalName  String
   mime          String
   sizeBytes     Int
+  /// محتوى الملف نفسه. كان على القرص، والقرص لا يوجد: ملفات Vercel للقراءة
+  /// فقط عدا /tmp، و/tmp يذهب مع الاستدعاء — فالوثيقة تُكتب ولا تُقرأ أبدا.
+  /// فارغ حتى يتم الرفع، ولا يُقرأ إلا برابط موقّع.
+  content       Bytes?
   uploadedAt    DateTime           @default(now())
   application   TrainerApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 

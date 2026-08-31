@@ -144,11 +144,15 @@ const inputCls =
 export const MOTIVATION_MIN = 75;
 export const MOTIVATION_MAX = 500;
 
+/* سقفٌ واحدٌ معلومٌ يُوفى: ٤MB. وكان المكتوب ١٠ و٢٠ و٣٠٠، وكلّها أرقام في
+   النصّ لا في الواقع — الدالة السحابية لا تستقبل جسما أكبر من ٤٫٥MB، فالفيديو
+   يُردّ قبل أن يبلغ الخادم. والفيديو صار رابطا في حقله أعلاه لا ملفّا. */
+export const MAX_DOC_BYTES = 4 * 1024 * 1024;
+
 const DOC_KINDS = [
-  { kind: "cv", label: "السيرة الذاتية", hint: "PDF · حتى ١٠MB", accept: "application/pdf", required: true },
-  { kind: "evidence", label: "ملف أعمال أو نماذج تدريب سابقة", hint: "PDF أو رابط في الحقول أدناه · حتى ٢٠MB", accept: "application/pdf,image/*", required: false },
-  { kind: "training_video", label: "فيديو تدريبي", hint: "حتى ٣٠٠MB — أو ضع رابط قناتك أدناه", accept: "video/*", required: false },
-  { kind: "certificate", label: "شهادات واعتمادات", hint: "PDF أو صورة · حتى ٢٠MB", accept: "application/pdf,image/*", required: false },
+  { kind: "cv", label: "السيرة الذاتية", hint: "PDF · حتى ٤MB", accept: "application/pdf", required: true },
+  { kind: "evidence", label: "ملف أعمال أو نماذج تدريب سابقة", hint: "PDF أو صورة · حتى ٤MB", accept: "application/pdf,image/*", required: false },
+  { kind: "certificate", label: "شهادات واعتمادات", hint: "PDF أو صورة · حتى ٤MB", accept: "application/pdf,image/*", required: false },
 ] as const;
 
 const DAYS = ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"];
@@ -407,6 +411,15 @@ export default function JoinTrainer() {
      الصفحة تجعل المتقدّم يخمّن أيّ ملف سقط. */
   const uploadFile = async (kind: string, file: File) => {
     if (!result) return;
+    /* الحدّ يُقال قبل الرفع لا بعده: من اختار ملفا كبيرا لا ينتظر رحلته
+       كاملةً ليُردّ — ولا يرى «تعذّر الرفع» وهو لا يعرف السبب. */
+    if (file.size > MAX_DOC_BYTES) {
+      setUploads((u) => ({
+        ...u,
+        [kind]: { status: "error", name: file.name, error: `الملف ${(file.size / 1024 / 1024).toFixed(1)}MB — والحدّ ٤MB` },
+      }));
+      return;
+    }
     setUploads((u) => ({ ...u, [kind]: { status: "registering", name: file.name } }));
     try {
       const reg = await apiPost<{ uploadUrl: string }>(
@@ -415,10 +428,16 @@ export default function JoinTrainer() {
       );
       setUploads((u) => ({ ...u, [kind]: { status: "uploading", name: file.name } }));
       const res = await fetch(reg.uploadUrl, { method: "PUT", headers: { "content-type": "application/octet-stream" }, body: file });
-      if (!res.ok) throw new Error("upload failed");
+      if (!res.ok) {
+        /* الخادم يقول ما وقع — فلا تُبتلع رسالته وتُستبدل بـ«حاول مجددا» */
+        const body = (await res.json().catch(() => null)) as { error?: { message_ar?: string } } | null;
+        throw new Error(body?.error?.message_ar ?? `تعذّر الرفع (${res.status})`);
+      }
       setUploads((u) => ({ ...u, [kind]: { status: "done", name: file.name } }));
     } catch (err) {
-      const msg = err instanceof ApiError ? err.message : "تعذّر الرفع — جرّب مجددا";
+      const msg = err instanceof ApiError ? err.message
+        : err instanceof Error && err.message ? err.message
+        : "تعذّر الرفع — جرّب مجددا";
       setUploads((u) => ({ ...u, [kind]: { status: "error", name: file.name, error: msg } }));
     }
   };
@@ -919,8 +938,11 @@ export default function JoinTrainer() {
               <fieldset>
                 <legend className="text-sm font-black">مستنداتك</legend>
                 <p className="mb-4 mt-1 text-[11px] leading-relaxed text-white/40">
-                  السيرة الذاتية مطلوبة، وما عداها موصى به بشدة. لكل ملف نوعه وحدّه — ولو تعثّر رفعٌ بقي خطؤه
+                  السيرة الذاتية مطلوبة، وما عداها موصى به بشدة. الحدّ ٤MB لكل ملف — ولو تعثّر رفعٌ بقي خطؤه
                   عنده بزر إعادة، لا رسالة عامة تجعلك تخمّن أيّها سقط.
+                </p>
+                <p className="mb-4 -mt-2 text-[11px] leading-relaxed text-white/40">
+                  والفيديو التدريبي لا يُرفع من هنا — ضع رابطه في «فيديو تدريبي أو قناة» في الخطوة الأولى.
                 </p>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {DOC_KINDS.map((d) => {
