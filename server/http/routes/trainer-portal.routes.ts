@@ -1,6 +1,7 @@
 /* مسارات بوابة المدرب — ملفي، تأهيلي وإسناداتي، مخطط دورة مؤهل لها،
    اقتراح تعديل، وسحب اقتراح. كلها تتطلب صلاحيات دور trainer الفعلية. */
 
+import { readableModuleVersion } from '../../catalog/module-version-visibility'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
@@ -97,7 +98,7 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
       include: {
         versions: { where: { version: { not: undefined } }, orderBy: { version: 'desc' }, take: 1,
           include: { objectives: true, outcomes: true, project: true, assessments: true } },
-        modules: { include: { versions: { orderBy: { version: 'desc' }, take: 1 } } },
+        modules: { include: { versions: { ...readableModuleVersion(), take: 1 } } },
         skillLinks: true, pathwayLinks: true,
       },
     })

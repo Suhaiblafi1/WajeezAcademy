@@ -390,42 +390,56 @@ model CourseModule {
 }
 
 model CourseModuleVersion {
-  id         String       @id @default(uuid()) @db.Uuid
-  moduleId   String
-  version    Int
-  sequence   Int
-  titleAr    String
-  outcomeAr  String?
-  activityAr String?
-  artifactAr String?
+  id           String       @id @default(uuid()) @db.Uuid
+  moduleId     String
+  version      Int
+  sequence     Int
+  titleAr      String
+  outcomeAr    String?
+  activityAr   String?
+  artifactAr   String?
   /**
    * متن الدرس (البند ح-١) — Markdown مقيّد: عناوين وقوائم واقتباسات وكود
    * وروابط وصور. يُخزَّن على الإصدار لا على الوحدة، فيمرّ بنفس حاكمية
    * النسخ والاعتماد والنشر ولا يُعدَّل بأثر رجعي على إصدار منشور.
    */
-  bodyAr     String?
+  bodyAr       String?
   /**
    * تمرين الاسترجاع (البند ح-٣) — بصيغة نصّية «س:/-/+/ش:» تُخزَّن كما يُخزَّن
    * المتن، فتُقارَن في سجل الإصدارات نصّا وتمرّ بنفس الحاكمية.
    */
-  checksAr   String?
+  checksAr     String?
   /**
    * الفيديو وفصوله (البند ح-٢) — رابط مستضاف + فصول معنونة بطوابع زمنية.
    * لا مشغّل نبنيه: نستضيف ونربط، والقيمة في الفصول ونقاط التفتيش.
    */
-  videoAr    String?
+  videoAr      String?
   /**
    * سيناريو القرار المتفرّع (البند ح-٥) — موقف مهني وعقد قرار وآثار وتأمل،
    * بصيغة «موقف/عقدة/نص/> خيار/أثر/إلى/تأمل». يُخزَّن على الإصدار كسائر
    * المحتوى فيمرّ بنفس الحاكمية ويُقارَن نصّا في السجل.
    */
-  scenarioAr String?
-  hours      Int
-  status     String       @default("published")
-  createdAt  DateTime     @default(now())
-  module     CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  scenarioAr   String?
+  hours        Int
+  status       String       @default("published")
+  createdAt    DateTime     @default(now())
+  /**
+   * حاكميّة التأليف (الدفعة ٣) — من كتب، ومتى رُفع، ومن راجع وبأيّ ملاحظة.
+   * تُسجَّل للحاكمية لا للعرض: المحتوى يُنشر **باسم الأكاديمية** لا باسم
+   * كاتبه، وهذه الحقول تخدم قاعدة «لا يعتمد أحدٌ ما كتبه» وسجلَّ التدقيق.
+   */
+  createdBy    String?      @db.Uuid
+  submittedAt  DateTime?
+  reviewedBy   String?      @db.Uuid
+  reviewedAt   DateTime?
+  reviewNoteAr String?
+  module       CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
 
   @@unique([moduleId, version])
+  /**
+   * طابور المراجعة يُقرأ بالحالة — والمسوّدةُ الواحدة تُلتقط بها
+   */
+  @@index([status])
 }
 
 model LearningObjective {

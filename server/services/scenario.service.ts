@@ -8,6 +8,7 @@
    والمسار يُتحقَّق قبل الحفظ على السيناريو المنشور نفسه: خطوة إلى عقدة غير
    موجودة أو خيار خارج الحدود تُرفض، فلا يُخزَّن مسار لا يمكن إعادة عرضه. */
 
+import { readableVersionOf } from '../catalog/module-version-visibility'
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { parseScenario, replayPath, type ScenarioStep } from '../../src/application/content/scenario'
@@ -28,13 +29,11 @@ export class ScenarioService {
     return new Set(rows.map((r) => r.cohort.courseId))
   }
 
-  /** سيناريو الوحدة من أحدث إصدار — المصدر نفسه الذي يُنشر للمتعلم */
+  /** سيناريو الوحدة من أحدث إصدارٍ **منشور** — المصدر نفسه الذي يراه المتعلم، لا المسوّدة */
   private async scenarioOf(moduleId: string) {
     const mod = await this.prisma.courseModule.findUnique({ where: { id: moduleId } })
     if (!mod) throw new AuthError('not_found', 'الوحدة غير موجودة', 404)
-    const version = await this.prisma.courseModuleVersion.findFirst({
-      where: { moduleId }, orderBy: { version: 'desc' },
-    })
+    const version = await this.prisma.courseModuleVersion.findFirst(readableVersionOf(moduleId))
     const parsed = parseScenario(version?.scenarioAr)
     return { courseId: mod.courseId, scenario: parsed.scenario, errorsAr: parsed.errorsAr }
   }

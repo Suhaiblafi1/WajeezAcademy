@@ -4,6 +4,7 @@
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { PrismaClient } from '@prisma/client'
+import { readableModuleVersion } from '../catalog/module-version-visibility'
 import { AuthError } from './auth.service'
 
 export class PublicCatalogService {
@@ -46,7 +47,7 @@ export class PublicCatalogService {
       where: { status: 'published' },
       include: {
         versions: { orderBy: { version: 'desc' }, take: 1, include: { outcomes: true, objectives: true } },
-        modules: { where: { status: 'published' }, include: { versions: { orderBy: { version: 'desc' }, take: 1 } } },
+        modules: { where: { status: 'published' }, include: { versions: { ...readableModuleVersion(), take: 1 } } },
       },
       orderBy: { id: 'asc' },
     })
@@ -137,7 +138,7 @@ export class PublicCatalogService {
               project: true,
             },
           },
-          modules: { where: { status: 'published' }, include: { versions: { orderBy: { version: 'desc' }, take: 1 } } },
+          modules: { where: { status: 'published' }, include: { versions: { ...readableModuleVersion(), take: 1 } } },
           skillLinks: { include: { skill: true } },
           pathwayLinks: true,
         },

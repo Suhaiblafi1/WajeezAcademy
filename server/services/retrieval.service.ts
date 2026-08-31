@@ -12,6 +12,7 @@
    نسخة ثانية من الأسئلة على الخادم تتباعد عن الأولى. من أراد أن يغالط نفسه
    في بطاقاته فليس في ذلك ضرر على أحد: البطاقات لا تُصدر شهادة ولا تُحرّك قياسا. */
 
+import { readableVersionOf } from '../catalog/module-version-visibility'
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { parseChecks } from '../../src/application/content/module-checks'
@@ -32,11 +33,9 @@ export class RetrievalService {
     return new Set(rows.map((r) => r.cohort.courseId))
   }
 
-  /** أسئلة الوحدة من أحدث إصدار — المصدر نفسه الذي يُنشر للمتعلم */
+  /** أسئلة الوحدة من أحدث إصدارٍ **منشور** — المصدر نفسه الذي يراه المتعلم، لا المسوّدة */
   private async checksOf(moduleId: string) {
-    const version = await this.prisma.courseModuleVersion.findFirst({
-      where: { moduleId }, orderBy: { version: 'desc' },
-    })
+    const version = await this.prisma.courseModuleVersion.findFirst(readableVersionOf(moduleId))
     if (!version) return null
     return { titleAr: version.titleAr, checks: parseChecks(version.checksAr).checks }
   }

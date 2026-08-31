@@ -3,6 +3,7 @@
    الحقول المضمنة في مراجع القوالب تُولَّد من الكتالوج المركزي لحظة البناء —
    لا يمكن أن تتقادم لأنها لا تُخزَّن أصلا. */
 
+import { readableModuleVersion } from './module-version-visibility'
 import { createHash } from 'node:crypto'
 import type { PrismaClient } from '@prisma/client'
 import optionEffectsOverlay from '../../src/data/overlays/option-effects.v2.json'
@@ -107,10 +108,10 @@ export async function buildSnapshotFromDb(
     }
   })
 
-  /* الوحدات المنشورة */
+  /* الوحدات المنشورة — وإصدارُها المنشور، لا مسوّدةٌ تعلوه رقما */
   const modules = await prisma.courseModule.findMany({
     where: { status: { in: visible } },
-    include: { versions: { orderBy: { version: 'desc' }, take: 1 } },
+    include: { versions: { ...readableModuleVersion(), take: 1 } },
   })
   const moduleRows = modules.flatMap((m) => {
     const v = m.versions[0]
