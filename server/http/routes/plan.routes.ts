@@ -51,6 +51,49 @@ export function registerPlanRoutes(app: FastifyInstance, prisma: PrismaClient) {
     return reply.status(201).send({ plan })
   })
 
+  /* ── الدورة التي لا شعبة لها: ثلاثة أبواب ──
+
+     كانت تُعرض ويُقال «نُعلمك عند فتحها» — صادقٌ لكنّه لا يترك للمتعلّم شيئا
+     يفعله، وقد ينتظر شهورا. فالأبواب: بدائلُ لها شعبةٌ الآن · حذفُها ·
+     إبقاؤها بإشعارٍ أو بلا إشعار. والمعرّف من الجلسة دائما. */
+
+  app.get('/api/learner/plan/items/:courseId/alternatives', {
+    preHandler: requirePermission('learner.portal'),
+    schema: { tags: ['plan'], summary: 'بدائلُ دورةٍ لا شعبةَ لها — بما تشاركه من مهارات' },
+  }, async (req) => {
+    const { courseId } = req.params as { courseId: string }
+    return { alternatives: await plans.alternativesFor(req.auth!.userId, courseId) }
+  })
+
+  app.put('/api/learner/plan/items/:courseId/replace', {
+    preHandler: requirePermission('learner.portal'),
+    config: { rateLimit: { max: 30, timeWindow: '10 minutes' } },
+    schema: { tags: ['plan'], summary: 'يستبدل دورةً بأخرى في موضعها نفسِه' },
+  }, async (req) => {
+    const { courseId } = req.params as { courseId: string }
+    const body = z.object({ withCourseId: z.string().trim().min(1).max(60) }).parse(req.body)
+    return { plan: await plans.replaceItem(req.auth!.userId, courseId, body.withCourseId) }
+  })
+
+  app.delete('/api/learner/plan/items/:courseId', {
+    preHandler: requirePermission('learner.portal'),
+    config: { rateLimit: { max: 30, timeWindow: '10 minutes' } },
+    schema: { tags: ['plan'], summary: 'يحذف دورةً من الخطّة — ولا تبقى فارغة' },
+  }, async (req) => {
+    const { courseId } = req.params as { courseId: string }
+    return { plan: await plans.removeItem(req.auth!.userId, courseId) }
+  })
+
+  app.put('/api/learner/plan/items/:courseId/notify', {
+    preHandler: requirePermission('learner.portal'),
+    config: { rateLimit: { max: 60, timeWindow: '10 minutes' } },
+    schema: { tags: ['plan'], summary: 'يُبقيها منتظرةً — بإشعارٍ عند الفتح أو بلا' },
+  }, async (req) => {
+    const { courseId } = req.params as { courseId: string }
+    const body = z.object({ on: z.boolean() }).parse(req.body)
+    return { plan: await plans.setNotify(req.auth!.userId, courseId, body.on) }
+  })
+
   app.put('/api/learner/plan/courses', {
     preHandler: requirePermission('learner.portal'),
     config: { rateLimit: { max: 60, timeWindow: '10 minutes' } },

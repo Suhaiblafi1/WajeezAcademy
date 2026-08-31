@@ -2,6 +2,7 @@
    شروط الفتح الستة: دورة منشورة + مدرب معتمد مؤهل + جدول + سعة + خطة تقديم + إعداد مالي.
    الحالات: draft | open | full | active | completed | cancelled. */
 
+import { notifyPlanWaiters } from './catalog-readiness.service'
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
@@ -86,6 +87,15 @@ export class CohortService {
     if (['completed', 'cancelled'].includes(cohort.status)) throw new AuthError('bad_state', 'شعبة منتهية أو ملغاة لا تُعدل', 409)
     const updated = await this.prisma.cohort.update({ where: { id: cohortId }, data: patch })
     await recordAudit(this.prisma, { actorId, action: 'cohort.update', entityType: 'cohort', entityId: cohortId, meta: patch as object })
+
+    /* صارت قابلةً للتسجيل الآن؟ فمن كان ينتظرها في خطّته يُعلَم.
+
+       الوعد «نُعلمك عند فتحها» مكتوبٌ في بوابة المتعلّم منذ زمن، ولم يكن له
+       منفّذ — فمن انتظر لم يكن يعلم إلّا إن عاد وفحص بنفسه. */
+    const becameOpen = patch.registrationOpen === true && !cohort.registrationOpen
+    if (becameOpen) {
+      await notifyPlanWaiters(this.prisma, [cohort.courseId])
+    }
     return updated
   }
 

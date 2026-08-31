@@ -1818,10 +1818,19 @@ model LearnerPlan {
 }
 
 model LearnerPlanItem {
-  id       String @id @default(uuid()) @db.Uuid
-  planId   String @db.Uuid
-  courseId String
-  sequence Int
+  id             String    @id @default(uuid()) @db.Uuid
+  planId         String    @db.Uuid
+  courseId       String
+  sequence       Int
+  /**
+   * دورةٌ لا شعبةَ لها: أيُعلَم صاحبُها حين تُفتح؟ الافتراض نعم — فمن أبقاها
+   * في خطّته يريدها. ومن اختار «أبقِها بلا إشعار» لا يُلاحَق برسائل.
+   */
+  notifyOnCohort Boolean   @default(true)
+  /**
+   * متى أُعلم آخر مرّة بفتح شعبة — فلا يُكرَّر الإشعار على الفتح نفسه
+   */
+  notifiedAt     DateTime?
 
   plan LearnerPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
 

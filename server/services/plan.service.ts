@@ -25,6 +25,8 @@ export interface PlanItemView {
   cohort: { id: string; title: string; startsAt: Date | null; seatsLeft: number | null; price: unknown; currency: string } | null
   /** له طلبٌ قائم على هذه الدورة؟ يمنع «اطلب» مكرّرا ثم رفضا بـ409 */
   requestPending: boolean
+  /** دورةٌ منتظِرةٌ شعبةً: أيُعلَم صاحبُها حين تُفتح؟ */
+  notifyOnCohort: boolean
 }
 
 export interface PlanView {
@@ -147,6 +149,7 @@ export class PlanService {
         courseId: item.courseId,
         sequence: item.sequence,
         isGift: plan.giftCourseId === item.courseId,
+        notifyOnCohort: item.notifyOnCohort,
         state,
         cohort: c
           ? {
@@ -170,5 +173,159 @@ export class PlanService {
         awaitingCohort: items.filter((i) => i.state === 'awaiting_cohort').length,
       },
     }
+  }
+
+  /* ─────────── الدورة التي لا شعبة لها: ثلاثة أبواب لا بابٌ مسدود ───────────
+
+     كانت تُعرض ويُقال «نُعلمك عند فتحها» — صادقٌ لكنّه لا يترك للمتعلّم شيئا
+     يفعله. وقد تنتظر شهورا، وقد لا يريدها أصلا. فالأبواب ثلاثة:
+
+     **استبدالها** بدورةٍ لها شعبةٌ الآن وتخدم المهارات نفسَها · **حذفها** من
+     خطّته · **إبقاؤها** منتظرةً، بإشعارٍ حين تُفتح أو بلا إشعار.
+
+     ولا شيء من هذا يمسّ دورةً سجّل فيها أو دفع: القرار للمتعلّم في خطّته، لا
+     في التزامٍ قائم. */
+
+  /** الخطّة الفعّالة وعنصرُها — أو خطأٌ مفهوم */
+  private async ownedItem(userId: string, courseId: string) {
+    const plan = await this.prisma.learnerPlan.findFirst({
+      where: { userId, status: 'active' }, orderBy: { createdAt: 'desc' },
+      include: { items: true },
+    })
+    if (!plan) throw new AuthError('no_plan', 'لا خطّة فعّالة', 404)
+    const item = plan.items.find((i) => i.courseId === courseId)
+    if (!item) throw new AuthError('not_in_plan', 'هذه الدورة ليست في خطّتك', 404)
+    return { plan, item }
+  }
+
+  /** يمنع المساس بدورةٍ سجّل فيها فعلا — الخطّة نيّة، والتسجيل التزام */
+  private async assertNotEnrolled(userId: string, courseId: string) {
+    const enrolled = await this.prisma.enrollment.findFirst({
+      where: { userId, status: { in: ['enrolled', 'waitlisted', 'completed'] }, cohort: { courseId } },
+      select: { id: true },
+    })
+    if (enrolled) throw new AuthError('already_enrolled', 'أنت مسجَّل في هذه الدورة — لا تُحذف من الخطّة', 409)
+    const req = await this.prisma.enrollmentRequest.findFirst({
+      where: { userId, status: { in: ['pending', 'seat_held'] }, cohort: { courseId } },
+      select: { id: true },
+    })
+    if (req) throw new AuthError('request_pending', 'لك طلبٌ قائم على هذه الدورة — الغِه أوّلا', 409)
+  }
+
+  /**
+   * بدائلُ دورةٍ لا شعبةَ لها: ما يشاركها أكثرَ مهاراتها وله شعبةٌ مفتوحة الآن.
+   *
+   * والترتيب بعدد المهارات المشتركة لا بالاسم: البديلُ الذي يخدم ثلاثا من
+   * مهاراتها أقربُ ممّن يخدم واحدة. وما في الخطّة أصلا يُستبعد — لا يُقترح
+   * على المتعلّم ما عنده.
+   */
+  async alternativesFor(userId: string, courseId: string) {
+    const { plan } = await this.ownedItem(userId, courseId)
+    const inPlan = new Set(plan.items.map((i) => i.courseId))
+
+    const skills = await this.prisma.courseSkillLink.findMany({
+      where: { courseId }, select: { skillId: true },
+    })
+    const skillIds = skills.map((s) => s.skillId)
+    if (skillIds.length === 0) return []
+
+    /* المرشَّحون: دوراتٌ منشورة لها شعبةٌ مفتوحة وتشارك مهارةً واحدة فأكثر */
+    const links = await this.prisma.courseSkillLink.findMany({
+      where: {
+        skillId: { in: skillIds },
+        courseId: { notIn: [...inPlan] },
+        course: {
+          status: 'published',
+          cohorts: { some: { status: { in: ['open', 'full'] }, registrationOpen: true } },
+        },
+      },
+      select: { courseId: true, skillId: true },
+    })
+
+    const shared = new Map<string, number>()
+    for (const l of links) shared.set(l.courseId, (shared.get(l.courseId) ?? 0) + 1)
+    if (shared.size === 0) return []
+
+    const courses = await this.prisma.course.findMany({
+      where: { id: { in: [...shared.keys()] } },
+      include: {
+        versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true } },
+        cohorts: {
+          where: { status: { in: ['open', 'full'] }, registrationOpen: true },
+          orderBy: { startsAt: 'asc' }, take: 1,
+          select: { startsAt: true, price: true, currency: true },
+        },
+      },
+    })
+
+    return courses
+      .map((c) => ({
+        courseId: c.id,
+        titleAr: c.versions[0]?.titleAr ?? c.id,
+        sharedSkills: shared.get(c.id) ?? 0,
+        startsAt: c.cohorts[0]?.startsAt ?? null,
+        price: c.cohorts[0]?.price ?? null,
+        currency: c.cohorts[0]?.currency ?? 'USD',
+      }))
+      .sort((a, b) => b.sharedSkills - a.sharedSkills || a.titleAr.localeCompare(b.titleAr, 'ar'))
+      .slice(0, 5)
+  }
+
+  /** يستبدل دورةً بأخرى في موضعها نفسِه — فلا يختلّ ترتيب الخطّة */
+  async replaceItem(userId: string, courseId: string, withCourseId: string): Promise<PlanView> {
+    const { plan, item } = await this.ownedItem(userId, courseId)
+    await this.assertNotEnrolled(userId, courseId)
+    if (withCourseId === courseId) throw new AuthError('same_course', 'هذه هي الدورة نفسُها')
+    if (plan.items.some((i) => i.courseId === withCourseId)) {
+      throw new AuthError('already_in_plan', 'البديل موجودٌ في خطّتك أصلا', 409)
+    }
+    const target = await this.prisma.course.findFirst({
+      where: { id: withCourseId, status: 'published' }, select: { id: true },
+    })
+    if (!target) throw new AuthError('bad_course', 'الدورة البديلة غير موجودة أو غير منشورة', 404)
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.learnerPlanItem.delete({ where: { id: item.id } })
+      await tx.learnerPlanItem.create({
+        data: { planId: plan.id, courseId: withCourseId, sequence: item.sequence },
+      })
+      /* الهديّة تتبع البديل — وإلّا صارت الهديّة على دورةٍ خرجت من الخطّة */
+      if (plan.giftCourseId === courseId) {
+        await tx.learnerPlan.update({ where: { id: plan.id }, data: { giftCourseId: withCourseId } })
+      }
+    })
+    await recordAudit(this.prisma, {
+      actorId: userId, action: 'plan.item.replace', entityType: 'plan', entityId: plan.id,
+      meta: { from: courseId, to: withCourseId },
+    })
+    return this.viewOf(userId, plan.id)
+  }
+
+  /** يحذف دورةً من الخطّة — ولا تبقى الخطّة فارغة */
+  async removeItem(userId: string, courseId: string): Promise<PlanView> {
+    const { plan, item } = await this.ownedItem(userId, courseId)
+    await this.assertNotEnrolled(userId, courseId)
+    if (plan.items.length <= 1) throw new AuthError('last_item', 'لا تُحذف آخر دورة في الخطّة', 409)
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.learnerPlanItem.delete({ where: { id: item.id } })
+      if (plan.giftCourseId === courseId) {
+        await tx.learnerPlan.update({ where: { id: plan.id }, data: { giftCourseId: null } })
+      }
+    })
+    await recordAudit(this.prisma, {
+      actorId: userId, action: 'plan.item.remove', entityType: 'plan', entityId: plan.id,
+      meta: { courseId },
+    })
+    return this.viewOf(userId, plan.id)
+  }
+
+  /** يُبقيها منتظرةً — بإشعارٍ عند الفتح أو بلا إشعار */
+  async setNotify(userId: string, courseId: string, on: boolean): Promise<PlanView> {
+    const { plan, item } = await this.ownedItem(userId, courseId)
+    await this.prisma.learnerPlanItem.update({
+      where: { id: item.id }, data: { notifyOnCohort: on },
+    })
+    return this.viewOf(userId, plan.id)
   }
 }

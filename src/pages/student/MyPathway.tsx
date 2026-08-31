@@ -20,6 +20,7 @@ import { courseById, pathwayCourses } from "@/data/courses";
 import { useCourseCohorts } from "@/services/cohort-prices";
 import CohortPicker from "@/components/CohortPicker";
 import BuyCohort from "@/components/BuyCohort";
+import AwaitingCourseChoices from "@/components/AwaitingCourseChoices";
 
 /** صفٌّ من /api/learner/my-learning — ما نحتاجه منه هنا فقط */
 interface Row {
@@ -39,6 +40,7 @@ interface PlanItem {
   state: PlanItemState;
   cohort: { id: string; title: string; startsAt: string | null; seatsLeft: number | null } | null;
   requestPending: boolean;
+  notifyOnCohort: boolean;
 }
 interface Plan {
   id: string;
@@ -287,8 +289,10 @@ function PlanBody({ plan, rows, reload }: { plan: Plan; rows: Row[]; reload: () 
                      يُنتج فاتورةً لدورةٍ واحدة — وهو بعينه ما يُفتّت الخطّة. */
                   <span className="text-[11px] font-bold text-gold-ink">جاهزة للطلب</span>
                 ) : (
-                  /* لا زرّ لما لا شعبة له — زرٌّ يقود إلى لا شيء أسوأ من غيابه */
-                  <span className="text-[11px] text-white/35">نُعلمك عند فتحها</span>
+                  /* الخياراتُ أسفل البطاقة — استبدالٌ أو حذفٌ أو انتظارٌ بإشعار.
+                     وكان هنا نصٌّ ساكن «نُعلمك عند فتحها»: صادقٌ ولا يترك
+                     للمتعلّم شيئا يفعله. */
+                  <span className="text-[11px] text-white/35">بانتظار شعبة</span>
                 )}
               </div>
 
@@ -298,7 +302,16 @@ function PlanBody({ plan, rows, reload }: { plan: Plan; rows: Row[]; reload: () 
                   دورةٍ في قائمةٍ عامّة بعيدةٍ عن مساره، ثمّ ينتظر موافقة
                   إدارة. وقد صار الشراء مباشرا، فصار الموعد والدفع في موضع
                   القرار. */}
-              {item.state !== "enrolled" && !done && (
+              {item.state === "awaiting_cohort" && (
+                <AwaitingCourseChoices
+                  courseId={item.courseId}
+                  courseTitle={c?.name ?? item.courseId}
+                  notifyOnCohort={item.notifyOnCohort}
+                  onChanged={reload}
+                />
+              )}
+
+              {item.state === "schedulable" && !done && (
                 <div className="w-full border-t border-white/8 pt-3">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <CohortPicker

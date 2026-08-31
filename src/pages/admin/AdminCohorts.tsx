@@ -6,6 +6,7 @@ import {
 import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { CohortOps, LearningSettings } from "./CohortOps";
+import CohortReadiness from "./CohortReadiness";
 import { fmtDateTimeAr } from "@/utils/format";
 
 const STATUS_META: Record<string, { label: string; cls: string }> = {
@@ -146,6 +147,8 @@ export default function AdminCohorts() {
           <CheckCircle2 className="h-4 w-4 shrink-0" /> {flash}
         </p>
       )}
+
+      <CohortReadiness onApplied={() => void load()} />
 
       {/* ── اقتراحات تأجيل الجلسات ──
 

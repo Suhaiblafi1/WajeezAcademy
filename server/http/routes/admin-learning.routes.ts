@@ -5,6 +5,7 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { CohortService } from '../../services/cohort.service'
+import { openAllCohorts, alignCohortPrices } from '../../services/catalog-readiness.service'
 import { EnrollmentService } from '../../services/enrollment.service'
 import { AssessmentService } from '../../services/assessment.service'
 import { ProgressService } from '../../services/progress.service'
@@ -25,6 +26,31 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
   }, async (req) => {
     const { status } = z.object({ status: z.string().optional() }).parse(req.query)
     return cohorts.list(status)
+  })
+
+  /* ── جاهزيّة العرض: فتحُ الشعب ومحاذاةُ الأسعار من اللوحة ──
+
+     كانت العمليّتان في `scripts/` وحدهما، فلا تُنفَّذان إلّا من طرفيّةٍ تملك
+     `DATABASE_URL` الإنتاج — فبقيت ٨١ دورةً معروضةً بلا سعر لأنّ أحدا لم
+     يفتح طرفيّة. والمنطق مشترك مع السكربتين فلا يفترق الزرّ عن السطر.
+
+     و`apply=false` هو الافتراض: تُعرض النتيجة أوّلا ولا يُكتب شيء. */
+  app.post('/api/admin/cohorts/open-all', {
+    preHandler: requirePermission('cohort.open'),
+    schema: { tags: ['admin-cohorts'], summary: 'يفتح شعبةً لكلّ دورة منشورة بلا شعبةٍ حيّة' },
+  }, async (req) => {
+    const b = (req.body ?? {}) as { apply?: boolean; weeks?: number; capacity?: number }
+    return openAllCohorts(prisma, {
+      apply: b.apply === true, weeks: b.weeks, capacity: b.capacity, actorId: req.auth!.userId,
+    })
+  })
+
+  app.post('/api/admin/cohorts/align-prices', {
+    preHandler: requirePermission('cohort.open'),
+    schema: { tags: ['admin-cohorts'], summary: 'يوحّد أسعار الشعب على سعر قائمة دورتها' },
+  }, async (req) => {
+    const b = (req.body ?? {}) as { apply?: boolean }
+    return alignCohortPrices(prisma, { apply: b.apply === true, actorId: req.auth!.userId })
   })
 
   app.post('/api/admin/cohorts', {
