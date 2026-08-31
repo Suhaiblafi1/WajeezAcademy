@@ -19,7 +19,9 @@ import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { TrainerApplicationService } from '../../services/trainer-application.service'
 import { buildApp } from '../../http/app'
-import { MAX_UPLOAD_ANY, MAX_UPLOAD_BYTES } from '../../services/storage.service'
+import {
+  MAX_UPLOAD_ANY, MAX_UPLOAD_BYTES, signKey, verifySignature, resetSecretCacheForTests,
+} from '../../services/storage.service'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..')
 const read = (p: string) => readFileSync(join(root, p), 'utf8')
@@ -94,6 +96,35 @@ describe('تخزين وثائق المتقدّم', () => {
     })
     expect(put.statusCode).toBe(413)
     await app.close()
+  })
+
+  it('المفتاح واحدٌ في كل استدعاء سحابيّ — لا عشوائيّ يذهب معه', () => {
+    /* هذا ما كسر الرفع في الإنتاج بلا أثرٍ يُقرأ: بلا STORAGE_SECRET كان
+       المفتاح يُولَّد عشوائيا لكل استدعاء، فيُوقَّع الرابط هنا ويُفحص هناك
+       فيُردّ «غير صالح». والاشتقاق من DATABASE_URL يجعله واحدا. */
+    const prevSecret = process.env.STORAGE_SECRET
+    const prevDb = process.env.DATABASE_URL
+    try {
+      delete process.env.STORAGE_SECRET
+      process.env.DATABASE_URL = 'postgresql://u:p@host/db'
+      resetSecretCacheForTests()
+      const exp = Date.now() + 60_000
+      const sig = signKey('key-abcdefghij', exp, 'write')
+      /* «استدعاءٌ آخر»: ذاكرةٌ منسيّة والبيئة نفسها — التوقيع يجب أن يطابق */
+      resetSecretCacheForTests()
+      expect(verifySignature('key-abcdefghij', exp, sig, 'write'), 'المفتاح تغيّر بين استدعاءين').toBe(true)
+
+      /* وقاعدةٌ أخرى تعني مفتاحا آخر — لا ثابتا مكتوبا في الشيفرة */
+      process.env.DATABASE_URL = 'postgresql://u:p@other/db'
+      resetSecretCacheForTests()
+      expect(verifySignature('key-abcdefghij', exp, sig, 'write'), 'المفتاح لا يعتمد على شيء').toBe(false)
+    } finally {
+      if (prevSecret === undefined) delete process.env.STORAGE_SECRET
+      else process.env.STORAGE_SECRET = prevSecret
+      if (prevDb === undefined) delete process.env.DATABASE_URL
+      else process.env.DATABASE_URL = prevDb
+      resetSecretCacheForTests()
+    }
   })
 
   it('لا قرصَ في مسار الوثيقة — ولا مسارَ يُحسب من موضع الوحدة', () => {

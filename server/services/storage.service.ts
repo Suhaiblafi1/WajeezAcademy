@@ -22,20 +22,38 @@ import { join } from 'node:path'
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 
-/* التطوير وحده يبلغ هذا المسار — والإنتاج يضبط STORAGE_SECRET. وcwd لا
-   import.meta.url: الأخير يصير `/var/task/api` في الحزمة فيصعد فوق النشر. */
+/* التطوير وحده يبلغ هذا المسار. وcwd لا import.meta.url: الأخير يصير
+   `/var/task/api` في الحزمة فيصعد فوق النشر. */
 const DEV_SECRET_DIR = join(process.cwd(), 'storage', 'private')
 
 let cachedSecret: Buffer | null = null
 
+/* مفتاح توقيع الروابط — ثلاثة مصادر بترتيبٍ مقصود.
+
+   ١) STORAGE_SECRET حين يُضبط: اختيارٌ صريح يُثبّت المفتاح ويُدوّر متى شئنا.
+
+   ٢) وإلّا فمشتقٌّ من DATABASE_URL. وهذا هو الدرس الذي كلّفنا نشرةً كاملة:
+      كان المفتاح — بلا المتغيّر — يُولَّد عشوائيا في كل استدعاء سحابيّ ويُكتب
+      على قرصٍ يذهب معه. فيُوقَّع رابطُ الرفع في استدعاء، ويصل الرفعُ إلى
+      استدعاءٍ آخر بمفتاحٍ آخر، فيُردّ «رابط الرفع غير صالح أو منتهي» — عطبٌ
+      يبدو عشوائيا ولا يُشخَّص. والاشتقاق يجعله واحدا في كل استدعاء بلا أن
+      يُخزَّن سرٌّ جديد في مكان: من يملك القاعدة يملك الوثائق نفسها أصلا،
+      فالمفتاح لا يضيف له شيئا. وDATABASE_URL مضبوطٌ حيث يعمل الموقع دائما.
+
+   ٣) وفي التطوير وحده: ملفٌّ محلّيّ يبقى بين الإقلاعات.
+
+   ولا يُشتقّ من قيمةٍ عامة أبدا — الاشتقاق سرٌّ بقدر أصله. */
 function secret(): Buffer {
   if (cachedSecret) return cachedSecret
   if (process.env.STORAGE_SECRET) {
     cachedSecret = Buffer.from(process.env.STORAGE_SECRET, 'utf8')
     return cachedSecret
   }
-  /* بلا متغيّر: ملفٌّ محلّيّ. وإن تعذّرت الكتابة فالخطأ يسمّي دواءه بدل أن
-     يظهر EROFS خاما في سجلّ لا يقرؤه أحد. */
+  const db = process.env.DATABASE_URL
+  if (db) {
+    cachedSecret = createHmac('sha256', db).update('wajeez:storage:url-signing:v1').digest()
+    return cachedSecret
+  }
   try {
     mkdirSync(DEV_SECRET_DIR, { recursive: true })
     const secretPath = join(DEV_SECRET_DIR, '.secret')
@@ -50,6 +68,11 @@ function secret(): Buffer {
   } catch {
     throw new AuthError('storage_secret_missing', 'تخزين الوثائق غير مهيّأ — اضبط STORAGE_SECRET', 500)
   }
+}
+
+/** لأجل الاختبار وحده: نسيان المفتاح المخزَّن مؤقتا بين الحالات */
+export function resetSecretCacheForTests(): void {
+  cachedSecret = null
 }
 
 export function signKey(storageKey: string, exp: number, purpose: 'read' | 'write'): string {
