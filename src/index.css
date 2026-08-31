@@ -2,6 +2,45 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─────────── خطّ محتوى الدورات ───────────
+
+   متنُ الوحدة يُقرأ قراءةً طويلة لا يُمسح مسحَ واجهة، فأُفرد له خطّ بقرار
+   صاحب المنتج: Avenir Arabic. وهو مقصورٌ على `LessonBody` وحده — لا على
+   الواجهة — فاختلافُ خطّ القراءة عن خطّ الأزرار مقصود.
+
+   والملفّات تُستضاف ذاتيّا في `public/fonts/` (انظر README هناك): ترخيص
+   Monotype للويب يُسلَّم woff2، وسياسة الأمان تسمح `font-src 'self'`.
+
+   ولا شيء يُكسر قبل وضعها: المتصفّح يتخطّى ملفّا غير موجود بصمت، ويرتدّ
+   إلى خطّ المنصّة — فالصفحة تُقرأ في الحالين. */
+
+@font-face {
+  font-family: "Avenir Arabic";
+  src: url("/fonts/avenir-arabic-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Avenir Arabic";
+  src: url("/fonts/avenir-arabic-500.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Avenir Arabic";
+  src: url("/fonts/avenir-arabic-700.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/** يُوضع على حاوية المتن وحدها */
+.course-prose {
+  font-family: "Avenir Arabic", "IBM Plex Sans Arabic", "Neo Sans Arabic", system-ui, sans-serif;
+}
+
 @layer base {
   :root {
     /* Wajeez dark identity */

@@ -71,7 +71,7 @@ export default function LessonBody({ body, className = "" }: { body: string; cla
   const blocks = parseLesson(body);
   if (blocks.length === 0) return null;
   return (
-    <div dir="rtl" className={`space-y-3 text-sm leading-8 text-white/80 ${className}`.trim()}>
+    <div dir="rtl" className={`course-prose space-y-3 text-sm leading-8 text-white/80 ${className}`.trim()}>
       {blocks.map((b, i) => {
         const k = `b${i}`;
         switch (b.kind) {
