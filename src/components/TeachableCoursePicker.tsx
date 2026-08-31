@@ -10,6 +10,7 @@
 
 import { useMemo, useState } from 'react'
 import { X } from 'lucide-react'
+import { controlCls, Field, OptionGrid } from '@/components/FormKit'
 import { courses, courseDomain } from '@/data/courses'
 import { usePublishedContent } from '@/services/public-content'
 
@@ -47,36 +48,32 @@ export default function TeachableCoursePicker({
 
   return (
     <div className="space-y-4">
-      <div>
-        <label htmlFor="tc-domain" className="mb-1.5 block text-xs font-bold text-white/60">المجال</label>
+      <Field label="المجال" htmlFor="tc-domain">
         <select
           id="tc-domain" value={domain} onChange={(e) => setDomain(e.target.value)}
-          className="w-full rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-sm text-white focus:border-teal focus:outline-none [&>option]:bg-surface"
+          className={`${controlCls} [&>option]:bg-surface`}
         >
           <option value="">اختر المجال لتظهر دوراته</option>
           {domains.map((d) => <option key={d} value={d}>{d}</option>)}
         </select>
-      </div>
+      </Field>
 
+      {/* شبكةٌ لا رصفٌ حرّ: عناوين الدورات متفاوتة الطول جدا («دورة سرد
+          البيانات وعرض التوصيات» مقابل «دورة SQL»)، فالرصفُ بعرض النصّ يجعل
+          بعضها يملأ السطر وبعضها كلمتين — وهو التبعثر الذي شُكي منه. */}
       {domain && (
         <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-          <p className="mb-2.5 text-[11px] text-white/45">
+          <p className="mb-3 text-[11px] leading-6 text-white/45">
             اختر ما تستطيع تدريسه الآن من {domain} — ولك أن تعود وتختار مجالا آخر.
           </p>
-          <div className="flex max-h-52 flex-wrap gap-2 overflow-y-auto">
-            {inDomain.map((c) => (
-              <button
-                type="button" key={c.id} onClick={() => toggle(c.id)}
-                aria-pressed={selected.includes(c.id)}
-                className={`cursor-pointer rounded-full border px-3 py-1.5 text-[11px] font-bold transition ${
-                  selected.includes(c.id)
-                    ? 'border-teal bg-teal/15 text-teal-light-ink'
-                    : 'border-white/15 text-white/55 hover:border-white/35'
-                }`}
-              >
-                {c.name}
-              </button>
-            ))}
+          <div className="max-h-64 overflow-y-auto pl-1">
+            <OptionGrid
+              items={inDomain.map((c) => ({ value: c.id, label: c.name }))}
+              isOn={(id) => selected.includes(id)}
+              onToggle={toggle}
+              cols={2}
+              name={`دورات ${domain}`}
+            />
           </div>
         </div>
       )}

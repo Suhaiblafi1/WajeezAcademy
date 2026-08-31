@@ -4,6 +4,9 @@ import {
   ArrowLeft, ArrowRight, BadgeCheck, Check, CheckCircle2, ChevronDown, Compass, Copy,
   FileUp, Loader2, MailCheck, Mic2, RefreshCcw, Search, Send, Sparkles, Users,
 } from "lucide-react";
+import {
+  areaCls, ChoiceGrid, ConsentRow, controlCls, Field, FieldRow, FieldSet, Question,
+} from "@/components/FormKit";
 import SiteShell from "@/components/SiteShell";
 import SeoHead from "@/components/SeoHead";
 import { apiPost, apiGet, ApiError } from "@/services/api";
@@ -130,9 +133,6 @@ const STATUS_LABELS: Record<string, string> = {
 const MISSING_FORMS = { one: "بند", two: "بندان", few: "بنود", many: "بندا" } as const;
 const CHAR_FORMS = { one: "حرف", two: "حرفان", few: "أحرف", many: "حرفا" } as const;
 
-const inputCls =
-  "w-full rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:border-teal focus:outline-none";
-
 /* ثلاثة أقسام في نموذج واحد لا مرحلتان بينهما بريد.
 
    كان الطلب يُقسم مرحلتين: مرحلة أولى تُرسَل، ثم رابطٌ يصل بالبريد يفتح مرحلة
@@ -188,7 +188,7 @@ function MultiPick({ id, label, options, selected, onChange }: {
       <button
         type="button" id={id} aria-expanded={open} aria-haspopup="listbox"
         onClick={() => setOpen(!open)}
-        className={`${inputCls} flex cursor-pointer items-center justify-between text-right ${selected.length ? "text-white" : "text-white/40"}`}
+        className={`${controlCls} flex cursor-pointer items-center justify-between text-right ${selected.length ? "text-white" : "text-white/40"}`}
       >
         <span>{label}</span>
         <ChevronDown aria-hidden="true" className={`h-4 w-4 shrink-0 text-teal-light-ink transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
@@ -218,28 +218,6 @@ function MultiPick({ id, label, options, selected, onChange }: {
           ))}
         </div>
       )}
-    </div>
-  );
-}
-
-/** أوسمة اختيار متعددة — بديل مريح للقوائم حين تكون الخيارات قليلة ومقروءة */
-function Chips({ options, selected, onToggle }: { options: readonly string[]; selected: string[]; onToggle: (v: string) => void }) {
-  return (
-    <div className="flex flex-wrap gap-2">
-      {options.map((o) => {
-        const on = selected.includes(o);
-        return (
-          <button
-            type="button" key={o} onClick={() => onToggle(o)} aria-pressed={on}
-            className={`cursor-pointer rounded-full border px-3.5 py-1.5 text-xs font-bold transition-colors ${
-              on ? "border-teal bg-teal/15 text-teal-light-ink" : "border-white/15 text-white/55 hover:border-white/35"
-            }`}
-          >
-            {on && <Check aria-hidden="true" className="ml-1 inline h-3 w-3" />}
-            {o}
-          </button>
-        );
-      })}
     </div>
   );
 }
@@ -638,7 +616,7 @@ export default function JoinTrainer() {
                 <input
                   dir="ltr" value={verifyTokenInput} onChange={(e) => setVerifyTokenInput(e.target.value)}
                   placeholder="رمز التحقق" aria-label="رمز التحقق"
-                  className={`${inputCls} text-left font-mono`}
+                  className={`${controlCls} text-left font-mono`}
                 />
                 <button
                   onClick={verify} disabled={verifyBusy || verifyTokenInput.trim().length < 10}
@@ -780,268 +758,238 @@ export default function JoinTrainer() {
         <form onSubmit={submit} className="mt-5 space-y-6 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-9">
           {/* ══ ١) من أنت ══ */}
           {step === 1 && (
-            <div className="space-y-6">
-              <div className="grid gap-5 sm:grid-cols-2">
-                <div>
-                  <label htmlFor="jt-name" className="mb-1.5 block text-xs font-bold text-white/60">الاسم الكامل *</label>
-                  <input id="jt-name" name="name" autoComplete="name" required value={form.fullName} onChange={set("fullName")} className={inputCls} />
-                </div>
-                <div>
-                  <label htmlFor="jt-email" className="mb-1.5 block text-xs font-bold text-white/60">البريد الإلكتروني *</label>
-                  <input id="jt-email" name="email" type="email" autoComplete="email" required dir="ltr" value={form.email} onChange={set("email")} className={`${inputCls} text-left`} />
-                </div>
-                <div className="flex gap-2">
-                  <div className="w-24 shrink-0">
-                    <label htmlFor="jt-cc" className="mb-1.5 block text-xs font-bold text-white/60">الرمز</label>
-                    <select id="jt-cc" value={form.phoneCountryCode} onChange={set("phoneCountryCode")} className={`${inputCls} [&>option]:bg-surface`} dir="ltr">
-                      {COUNTRY_CODES.map((c) => <option key={c} value={c}>{c}</option>)}
+            <div className="space-y-4">
+              <Question n={1} title="من أنت؟" hint="نتواصل معك على هذين — فراجعهما قبل المضيّ.">
+                <FieldRow>
+                  <Field label="الاسم الكامل" htmlFor="jt-name" required>
+                    <input id="jt-name" name="name" autoComplete="name" required value={form.fullName} onChange={set("fullName")} className={controlCls} />
+                  </Field>
+                  <Field label="البريد الإلكتروني" htmlFor="jt-email" required>
+                    <input id="jt-email" name="email" type="email" autoComplete="email" required dir="ltr" value={form.email} onChange={set("email")} className={`${controlCls} text-left`} />
+                  </Field>
+                  <Field label="رقم الجوال (واتساب)" htmlFor="jt-phone">
+                    <div className="flex gap-2">
+                      <select id="jt-cc" aria-label="رمز الدولة" value={form.phoneCountryCode} onChange={set("phoneCountryCode")} className={`${controlCls} w-24 shrink-0 px-2 [&>option]:bg-surface`} dir="ltr">
+                        {COUNTRY_CODES.map((c) => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                      <input id="jt-phone" name="tel" type="tel" autoComplete="tel" dir="ltr" value={form.phone} onChange={set("phone")} className={`${controlCls} min-w-0 flex-1 text-left`} />
+                    </div>
+                  </Field>
+                  <Field label="دولة الإقامة" htmlFor="jt-country">
+                    <select id="jt-country" value={form.country} onChange={set("country")} className={`${controlCls} [&>option]:bg-surface`}>
+                      <option value="" disabled>اختر دولتك</option>
+                      {ARAB_COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                      <option value="أخرى">أخرى</option>
                     </select>
-                  </div>
-                  <div className="flex-1">
-                    <label htmlFor="jt-phone" className="mb-1.5 block text-xs font-bold text-white/60">رقم الجوال (واتساب)</label>
-                    <input id="jt-phone" name="tel" type="tel" autoComplete="tel" dir="ltr" value={form.phone} onChange={set("phone")} className={`${inputCls} text-left`} />
-                  </div>
-                </div>
-                <div>
-                  <label htmlFor="jt-country" className="mb-1.5 block text-xs font-bold text-white/60">دولة الإقامة</label>
-                  <select id="jt-country" value={form.country} onChange={set("country")} className={`${inputCls} [&>option]:bg-surface`}>
-                    <option value="" disabled>اختر دولتك</option>
-                    {ARAB_COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
-                    <option value="أخرى">أخرى</option>
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="jt-employment" className="mb-1.5 block text-xs font-bold text-white/60">حالتك المهنية الحالية *</label>
-                  <select id="jt-employment" value={form.employmentStatus} onChange={set("employmentStatus")} className={`${inputCls} [&>option]:bg-surface`}>
-                    <option value="" disabled>اختر الأقرب لواقعك</option>
-                    {EMPLOYMENT_STATUS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="jt-role" className="mb-1.5 block text-xs font-bold text-white/60">المسمى المهني الحالي</label>
-                  <input id="jt-role" name="role" placeholder="مثال: مدير تحليل بيانات" value={form.jobTitle} onChange={set("jobTitle")} className={inputCls} />
-                </div>
-              </div>
-              {/* حقلٌ كان فارغا من كل دلالة: عنوانٌ وصندوق. و«نبذة عنك» سؤالٌ
-                  مفتوح يُجاب بسطرٍ عامّ («مدرب شغوف بالتطوير») ما لم يُقل ماذا
-                  يُكتب فيه — فصار التلميح يسمّي الثلاثة التي يقرؤها المراجع. */}
-              <div>
-                <label htmlFor="jt-bio" className="mb-1.5 block text-xs font-bold text-white/60">نبذة مختصرة عنك</label>
-                <p className="mb-2 text-[11px] leading-relaxed text-white/40">
-                  ثلاثة أسطر تكفي: أين تعمل اليوم وماذا تُتقن، وأبرز ما أنجزته في مجالك، ولمن دربت من قبل.
-                </p>
-                <textarea
-                  id="jt-bio" rows={3} value={form.bio} onChange={set("bio")} className={inputCls}
-                  placeholder="مثال: أعمل مديرا لتحليل البيانات في شركة اتصالات منذ ٦ سنوات، بنيت فيها وحدة التقارير من الصفر. دربت أكثر من ٢٠٠ موظف على Power BI داخل الشركة وفي ورش خارجية."
-                />
-              </div>
+                  </Field>
+                </FieldRow>
+              </Question>
 
-              <fieldset className="border-t border-white/5 pt-6">
-                <legend className="mb-1 text-xs font-bold text-white/60">تخصصاتك التدريبية *</legend>
-                <p className="mb-3 text-[11px] text-white/40">اختر ما تتقنه فعلا — الكثرة هنا لا تُحسب لك، والدقة تُحسب.</p>
-                <Chips options={TRAINING_SPECIALIZATIONS} selected={specialties} onToggle={(v) => toggle(specialties, v, setSpecialties)} />
-              </fieldset>
+              {/* «نبذة عنك» سؤالٌ مفتوح يُجاب بسطرٍ عامّ («مدرب شغوف بالتطوير»)
+                  ما لم يُقل ماذا يُكتب فيه — فالتلميح يسمّي الثلاثة التي
+                  يقرؤها المراجع. */}
+              <Question n={2} title="عملك اليوم" hint="ما تعمله الآن يقول لنا أيّ الدورات أقرب إليك.">
+                <FieldRow>
+                  <Field label="حالتك المهنية الحالية" htmlFor="jt-employment" required>
+                    <select id="jt-employment" value={form.employmentStatus} onChange={set("employmentStatus")} className={`${controlCls} [&>option]:bg-surface`}>
+                      <option value="" disabled>اختر الأقرب لواقعك</option>
+                      {EMPLOYMENT_STATUS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+                    </select>
+                  </Field>
+                  <Field label="المسمى المهني الحالي" htmlFor="jt-role">
+                    <input id="jt-role" name="role" placeholder="مثال: مدير تحليل بيانات" value={form.jobTitle} onChange={set("jobTitle")} className={controlCls} />
+                  </Field>
+                  <Field
+                    label="نبذة مختصرة عنك"
+                    htmlFor="jt-bio"
+                    wide
+                    hint="ثلاثة أسطر تكفي: أين تعمل اليوم وماذا تُتقن، وأبرز ما أنجزته في مجالك، ولمن دربت من قبل."
+                  >
+                    <textarea
+                      id="jt-bio" rows={3} value={form.bio} onChange={set("bio")} className={areaCls}
+                      placeholder="مثال: أعمل مديرا لتحليل البيانات في شركة اتصالات منذ ٦ سنوات، بنيت فيها وحدة التقارير من الصفر. دربت أكثر من ٢٠٠ موظف على Power BI داخل الشركة وفي ورش خارجية."
+                    />
+                  </Field>
+                </FieldRow>
+              </Question>
 
-              <div className="grid gap-5 border-t border-white/5 pt-6 sm:grid-cols-2">
-                <div>
-                  <label htmlFor="jt-years" className="mb-1.5 block text-xs font-bold text-white/60">سنوات الخبرة المهنية في المجال *</label>
-                  <select id="jt-years" value={form.domainYears} onChange={set("domainYears")} className={`${inputCls} [&>option]:bg-surface`}>
-                    <option value="" disabled>اختر نطاق الخبرة</option>
-                    {DOMAIN_YEARS.map((y) => <option key={y.value} value={y.value}>{y.label}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="jt-training" className="mb-1.5 block text-xs font-bold text-white/60">خبرة التدريب تحديدا *</label>
-                  <select id="jt-training" value={form.trainingYears} onChange={set("trainingYears")} className={`${inputCls} [&>option]:bg-surface`}>
-                    <option value="" disabled>اختر الأقرب لواقعك</option>
-                    {TRAINING_YEARS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-                  </select>
-                </div>
-              </div>
-              <p className="-mt-3 text-[11px] text-white/40">إتقان المجال شيء والقدرة على تدريبه شيء آخر — نقرؤهما منفصلين.</p>
+              <Question n={3} title="ما الذي تُتقن تدريبه؟" required hint="اختر ما تتقنه فعلا — الكثرة هنا لا تُحسب لك، والدقة تُحسب.">
+                <ChoiceGrid options={TRAINING_SPECIALIZATIONS} selected={specialties} onToggle={(v) => toggle(specialties, v, setSpecialties)} cols={2} name="تخصصاتك التدريبية" />
+              </Question>
 
-              {/* الاعتماد مع الخبرة لا مع الروابط.
+              {/* الاعتماد مع الخبرة لا مع الروابط: مؤهّلٌ رسميّ يُقرأ مع سنوات
+                  الخبرة ويُقارن بها، لا رابطٌ يُلصق. */}
+              <Question n={4} title="خبرتك" hint="إتقان المجال شيء والقدرة على تدريبه شيء آخر — نقرؤهما منفصلين.">
+                <FieldRow>
+                  <Field label="سنوات الخبرة المهنية في المجال" htmlFor="jt-years" required>
+                    <select id="jt-years" value={form.domainYears} onChange={set("domainYears")} className={`${controlCls} [&>option]:bg-surface`}>
+                      <option value="" disabled>اختر نطاق الخبرة</option>
+                      {DOMAIN_YEARS.map((y) => <option key={y.value} value={y.value}>{y.label}</option>)}
+                    </select>
+                  </Field>
+                  <Field label="خبرة التدريب تحديدا" htmlFor="jt-training" required>
+                    <select id="jt-training" value={form.trainingYears} onChange={set("trainingYears")} className={`${controlCls} [&>option]:bg-surface`}>
+                      <option value="" disabled>اختر الأقرب لواقعك</option>
+                      {TRAINING_YEARS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                    </select>
+                  </Field>
+                </FieldRow>
 
-                  كان تحت «أدلتك — روابطك وملفّك»، بين لينكدإن وإنستغرام: وهو
-                  ليس رابطا يُلصق بل مؤهّلٌ رسميّ يُقرأ مع سنوات الخبرة ويُقارن
-                  بها. فمن يقرأ سطر الخبرة يقرؤه معه، ومن لا اعتماد له يمرّ
-                  بعلامةٍ واحدة ولا يُفتح له شيء. */}
-              <div className="rounded-xl border border-white/10 bg-black/20 p-4">
-                <label className="flex cursor-pointer items-start gap-2.5">
-                  <input
-                    type="checkbox" checked={form.hasAccreditation}
-                    onChange={(e) => setForm(e.target.checked
+                <div className="mt-5">
+                  <ConsentRow
+                    checked={form.hasAccreditation}
+                    onChange={(v) => setForm(v
                       ? { ...form, hasAccreditation: true }
                       : { ...form, hasAccreditation: false, accreditationBody: "", accreditationOther: "", accreditationRef: "" })}
-                    className="mt-0.5 h-4 w-4 accent-teal"
-                  />
-                  <span className="text-xs leading-6 text-white/60">
+                  >
                     لدي اعتماد أو ترخيص رسمي من جهة أو هيئة تدريب معترف بها
-                  </span>
-                </label>
-                {form.hasAccreditation && (
-                  <div className="mt-4 grid gap-4 border-t border-white/10 pt-4 sm:grid-cols-2">
-                    <div>
-                      <label htmlFor="jt-accred-body" className="mb-1.5 block text-xs font-bold text-white/60">جهة الاعتماد *</label>
-                      <select
-                        id="jt-accred-body" value={form.accreditationBody} onChange={set("accreditationBody")}
-                        className={`${inputCls} [&>option]:bg-surface [&>optgroup]:bg-surface`}
-                      >
-                        <option value="" disabled>اختر الجهة</option>
-                        {ACCREDITATION_BODIES.map((g) => (
-                          <optgroup key={g.country} label={g.country}>
-                            {g.bodies.map((b) => <option key={b} value={b}>{b}</option>)}
-                          </optgroup>
-                        ))}
-                        <option value={ACCREDITATION_OTHER}>{ACCREDITATION_OTHER}</option>
-                      </select>
+                  </ConsentRow>
+                  {form.hasAccreditation && (
+                    <div className="mt-3 rounded-2xl border border-white/10 bg-black/20 p-4">
+                      <FieldRow>
+                        <Field label="جهة الاعتماد" htmlFor="jt-accred-body" required>
+                          <select
+                            id="jt-accred-body" value={form.accreditationBody} onChange={set("accreditationBody")}
+                            className={`${controlCls} [&>option]:bg-surface [&>optgroup]:bg-surface`}
+                          >
+                            <option value="" disabled>اختر الجهة</option>
+                            {ACCREDITATION_BODIES.map((g) => (
+                              <optgroup key={g.country} label={g.country}>
+                                {g.bodies.map((b) => <option key={b} value={b}>{b}</option>)}
+                              </optgroup>
+                            ))}
+                            <option value={ACCREDITATION_OTHER}>{ACCREDITATION_OTHER}</option>
+                          </select>
+                        </Field>
+                        <Field label="رقم الاعتماد أو تاريخه" htmlFor="jt-accred-ref">
+                          <input
+                            id="jt-accred-ref" placeholder="اختياري — مثال: TR-2023-4471"
+                            value={form.accreditationRef} onChange={set("accreditationRef")} className={controlCls}
+                          />
+                        </Field>
+                        {form.accreditationBody === ACCREDITATION_OTHER && (
+                          <Field label="اكتب اسم الجهة كما هو في وثيقتك" htmlFor="jt-accred-other" required wide>
+                            <input
+                              id="jt-accred-other" placeholder="مثال: Chartered Institute of Personnel and Development (CIPD)"
+                              value={form.accreditationOther} onChange={set("accreditationOther")} className={controlCls}
+                            />
+                          </Field>
+                        )}
+                      </FieldRow>
+                      <p className="mt-4 text-[11px] leading-6 text-white/40">
+                        نطلب وثيقة الاعتماد لاحقا في خطوة المستندات — والمذكور هنا لا يُنشر ولا يُعرض للمتعلمين قبل توثيقه.
+                      </p>
                     </div>
-                    <div>
-                      <label htmlFor="jt-accred-ref" className="mb-1.5 block text-xs font-bold text-white/60">رقم الاعتماد أو تاريخه</label>
-                      <input
-                        id="jt-accred-ref" placeholder="اختياري — مثال: TR-2023-4471"
-                        value={form.accreditationRef} onChange={set("accreditationRef")} className={inputCls}
-                      />
-                    </div>
-                    {form.accreditationBody === ACCREDITATION_OTHER && (
-                      <div className="sm:col-span-2">
-                        <label htmlFor="jt-accred-other" className="mb-1.5 block text-xs font-bold text-white/60">اكتب اسم الجهة كما هو في وثيقتك *</label>
-                        <input
-                          id="jt-accred-other" placeholder="مثال: Chartered Institute of Personnel and Development (CIPD)"
-                          value={form.accreditationOther} onChange={set("accreditationOther")} className={inputCls}
-                        />
-                      </div>
-                    )}
-                    <p className="text-[11px] leading-relaxed text-white/40 sm:col-span-2">
-                      نطلب وثيقة الاعتماد لاحقا في خطوة المستندات — والمذكور هنا لا يُنشر ولا يُعرض للمتعلمين قبل توثيقه.
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-5 border-t border-white/5 pt-6">
-                <p className="text-xs font-bold text-white/60">أدلتك — اختيارية كلها، لكنها ما يقرؤه المراجع قبل غيره</p>
-                <p className="-mt-3 text-[11px] leading-relaxed text-white/45">
-                  كل دليل واضح وموثوق يساعدنا على فهم خبرتك بسرعة ودقة. تُمنح الأولوية للطلبات التي تعرض خبرة
-                  قابلة للتحقق ونماذج حقيقية من العمل أو التدريب.
-                </p>
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <div>
-                    <label htmlFor="jt-links" className="mb-1.5 block text-xs font-bold text-white/60">لينكدإن أو ملف أعمال</label>
-                    <input id="jt-links" name="links" dir="ltr" placeholder="https://linkedin.com/in/..." value={form.linkedinUrl} onChange={set("linkedinUrl")} className={`${inputCls} text-left`} />
-                  </div>
-                  <div>
-                    <label htmlFor="jt-youtube" className="mb-1.5 block text-xs font-bold text-white/60">فيديو تدريبي أو قناة</label>
-                    <input id="jt-youtube" dir="ltr" placeholder="https://youtube.com/@..." value={form.youtubeUrl} onChange={set("youtubeUrl")} className={`${inputCls} text-left`} />
-                  </div>
-                  <div>
-                    <label htmlFor="jt-instagram" className="mb-1.5 block text-xs font-bold text-white/60">حساب إنستغرام المهني</label>
-                    <input id="jt-instagram" dir="ltr" placeholder="https://instagram.com/..." value={form.instagramUrl} onChange={set("instagramUrl")} className={`${inputCls} text-left`} />
-                  </div>
+                  )}
                 </div>
+              </Question>
 
-              </div>
+              <Question n={5} title="لغة تدريبك ونمطه" required>
+                <FieldRow>
+                  <FieldSet legend="لغات التدريب" required>
+                    <ChoiceGrid options={LANGUAGES} selected={languages} onToggle={(v) => toggle(languages, v, setLanguages)} cols={3} name="لغات التدريب" />
+                  </FieldSet>
+                  <Field label="نمط التدريب" htmlFor="jt-mode" required>
+                    <select id="jt-mode" value={form.deliveryMode} onChange={set("deliveryMode")} className={`${controlCls} [&>option]:bg-surface`}>
+                      <option value="" disabled>اختر</option>
+                      <option value="remote">عن بعد</option>
+                      <option value="in_person">حضوري</option>
+                      <option value="both">كلاهما</option>
+                    </select>
+                  </Field>
+                </FieldRow>
+              </Question>
 
-              <div className="grid gap-5 border-t border-white/5 pt-6 sm:grid-cols-2">
-                <div>
-                  <label htmlFor="jt-target-countries" className="mb-1.5 block text-xs font-bold text-white/60">الدول التي تستهدفها بتدريبك</label>
-                  <MultiPick id="jt-target-countries" label="اختر من القائمة" options={[ALL_ARAB, ...ARAB_COUNTRIES]} selected={targetCountries} onChange={setTargetCountries} />
-                </div>
-                <div>
-                  <label htmlFor="jt-target-audiences" className="mb-1.5 block text-xs font-bold text-white/60">الفئات التي تستهدفها</label>
-                  <MultiPick id="jt-target-audiences" label="اختر من القائمة" options={TARGET_AUDIENCES} selected={targetAudiences} onChange={setTargetAudiences} />
-                </div>
-              </div>
+              <Question n={6} title="من تستهدف بتدريبك؟" hint="اختياريّ — ويساعدنا على ترشيحك لشعبةٍ تناسبك.">
+                <FieldRow>
+                  <Field label="الدول التي تستهدفها بتدريبك" htmlFor="jt-target-countries">
+                    <MultiPick id="jt-target-countries" label="اختر من القائمة" options={[ALL_ARAB, ...ARAB_COUNTRIES]} selected={targetCountries} onChange={setTargetCountries} />
+                  </Field>
+                  <Field label="الفئات التي تستهدفها" htmlFor="jt-target-audiences">
+                    <MultiPick id="jt-target-audiences" label="اختر من القائمة" options={TARGET_AUDIENCES} selected={targetAudiences} onChange={setTargetAudiences} />
+                  </Field>
+                </FieldRow>
+              </Question>
 
-              <div className="grid gap-5 border-t border-white/5 pt-6 sm:grid-cols-2">
-                <fieldset>
-                  <legend className="mb-1.5 text-xs font-bold text-white/60">لغات التدريب *</legend>
-                  <Chips options={LANGUAGES} selected={languages} onToggle={(v) => toggle(languages, v, setLanguages)} />
-                </fieldset>
-                <div>
-                  <label htmlFor="jt-mode" className="mb-1.5 block text-xs font-bold text-white/60">نمط التدريب *</label>
-                  <select id="jt-mode" value={form.deliveryMode} onChange={set("deliveryMode")} className={`${inputCls} [&>option]:bg-surface`}>
-                    <option value="" disabled>اختر</option>
-                    <option value="remote">عن بعد</option>
-                    <option value="in_person">حضوري</option>
-                    <option value="both">كلاهما</option>
-                  </select>
-                </div>
-              </div>
+              <Question
+                n={7}
+                title="أدلتك"
+                hint="اختيارية كلها، لكنها ما يقرؤه المراجع قبل غيره. تُمنح الأولوية للطلبات التي تعرض خبرة قابلة للتحقق ونماذج حقيقية من العمل أو التدريب."
+              >
+                <FieldRow>
+                  <Field label="لينكدإن أو ملف أعمال" htmlFor="jt-links">
+                    <input id="jt-links" name="links" dir="ltr" placeholder="https://linkedin.com/in/..." value={form.linkedinUrl} onChange={set("linkedinUrl")} className={`${controlCls} text-left`} />
+                  </Field>
+                  <Field label="فيديو تدريبي أو قناة" htmlFor="jt-youtube">
+                    <input id="jt-youtube" dir="ltr" placeholder="https://youtube.com/@..." value={form.youtubeUrl} onChange={set("youtubeUrl")} className={`${controlCls} text-left`} />
+                  </Field>
+                  <Field label="حساب إنستغرام المهني" htmlFor="jt-instagram">
+                    <input id="jt-instagram" dir="ltr" placeholder="https://instagram.com/..." value={form.instagramUrl} onChange={set("instagramUrl")} className={`${controlCls} text-left`} />
+                  </Field>
+                </FieldRow>
+              </Question>
 
               {/* عدّادٌ مباشر لا رسالةَ رفضٍ بعد الضغط: من كتب ٤٠ حرفا يجب أن يرى
                   كم بقي وهو يكتب، لا أن يُردّ عند الإرسال. */}
-              <div className="border-t border-white/5 pt-6">
-                <label htmlFor="jt-why" className="mb-1.5 block text-xs font-bold text-white/60">لماذا تريد الانضمام إلى وجيز تحديدا؟ *</label>
+              <Question n={8} title="لماذا تريد الانضمام إلى وجيز تحديدا؟" required hint="نقرؤها فعلا — وهي أول ما يقرؤه المراجع.">
                 <textarea
                   id="jt-why" rows={4} value={form.motivation} onChange={set("motivation")}
                   maxLength={MOTIVATION_MAX}
+                  aria-label="لماذا تريد الانضمام إلى وجيز تحديدا؟"
                   aria-describedby="jt-why-count"
-                  className={`${inputCls} ${motivationLen > 0 && motivationLen < MOTIVATION_MIN ? "border-gold/50" : ""}`}
+                  className={`${areaCls} ${motivationLen > 0 && motivationLen < MOTIVATION_MIN ? "border-gold/50" : ""}`}
                 />
-                <p id="jt-why-count" className="mt-1.5 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                <p id="jt-why-count" className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px]">
                   <span className={motivationLen < MOTIVATION_MIN ? "text-gold-ink" : "text-white/40"}>
                     {motivationLen < MOTIVATION_MIN
                       ? `اكتب ${MOTIVATION_MIN} حرفا على الأقل. أضف مثالا يوضّح القيمة التي ستقدّمها للمتعلمين في وجيز.`
-                      : "نقرؤها فعلا — وهي أول ما يقرؤه المراجع."}
+                      : "شكرا — هذا يكفي."}
                   </span>
                   <span className="shrink-0 tabular-nums text-white/45" dir="ltr">
                     {motivationLen} / {MOTIVATION_MAX}
                   </span>
                 </p>
-              </div>
+              </Question>
 
-              <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-white/10 bg-black/20 p-3">
-                <input
-                  type="checkbox" checked={form.privacyConsent}
-                  onChange={(e) => setForm({ ...form, privacyConsent: e.target.checked })}
-                  className="mt-0.5 h-4 w-4 accent-teal"
-                />
-                <span className="text-xs leading-6 text-white/60">
-                  أوافق على أن تُستخدم بياناتي لإدارة طلب الانضمام والتواصل بشأنه فقط، وفق{" "}
-                  <Link to="/p/privacy" className="text-teal-light-ink underline">سياسة الخصوصية</Link>. *
-                </span>
-              </label>
-
+              <ConsentRow checked={form.privacyConsent} onChange={(v) => setForm({ ...form, privacyConsent: v })}>
+                أوافق على أن تُستخدم بياناتي لإدارة طلب الانضمام والتواصل بشأنه فقط، وفق{" "}
+                <Link to="/p/privacy" className="text-teal-light-ink underline">سياسة الخصوصية</Link>. *
+              </ConsentRow>
             </div>
           )}
 
           {/* ══ ٢) نماذجك وأدلتك وتوفّرك ══ */}
           {step === 2 && (
-            <div className="space-y-6">
-              <fieldset>
-                <legend className="text-sm font-black">مستنداتك</legend>
-                <p className="mb-4 mt-1 text-[11px] leading-relaxed text-white/40">
-                  السيرة الذاتية مطلوبة، وما عداها موصى به بشدة. الحدّ ٤MB لكل ملف — ولو تعثّر رفعٌ بقي خطؤه
-                  عنده بزر إعادة، لا رسالة عامة تجعلك تخمّن أيّها سقط.
-                </p>
-                <p className="mb-4 -mt-2 text-[11px] leading-relaxed text-white/40">
-                  والفيديو التدريبي لا يُرفع من هنا — ضع رابطه في «فيديو تدريبي أو قناة» في الخطوة الأولى.
-                </p>
+            <div className="space-y-4">
+              <Question
+                n={1}
+                title="مستنداتك"
+                hint="السيرة الذاتية مطلوبة، وما عداها موصى به بشدة. الحدّ ٤MB لكل ملف. والفيديو التدريبي لا يُرفع من هنا — ضع رابطه في «فيديو تدريبي أو قناة» في الخطوة الأولى."
+              >
                 <div className="grid gap-3 sm:grid-cols-2">
                   {DOC_KINDS.map((d) => {
                     const st = uploads[d.kind];
                     return (
-                      <div key={d.kind} className={`rounded-xl border p-3.5 ${
+                      <div key={d.kind} className={`rounded-xl border p-4 ${
                         st?.status === "done" ? "border-teal/45 bg-teal/[0.06]"
                           : st?.status === "error" ? "border-gold/50 bg-gold/[0.06]" : "border-white/12 bg-black/25"
                       }`}>
-                        <label className="flex cursor-pointer items-start gap-2.5">
-                          <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white/[0.06]">
+                        <label className="flex cursor-pointer items-start gap-3">
+                          <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white/[0.06]">
                             {st?.status === "done" ? <CheckCircle2 className="h-4 w-4 text-teal-light-ink" />
                               : st?.status === "registering" || st?.status === "uploading" ? <Loader2 className="h-4 w-4 animate-spin text-white/60" />
                               : <FileUp className="h-4 w-4 text-white/45" />}
                           </span>
                           <span className="min-w-0 flex-1">
-                            <b className="block text-xs text-white/85">{d.label}{d.required ? " *" : ""}</b>
-                            <span className="mt-0.5 block text-[10.5px] text-white/40">{d.hint}</span>
-                            {st?.name && <span className="mt-1 block truncate text-[10.5px] text-white/55">{st.name}</span>}
+                            <b className="block text-[12.5px] leading-6 text-white/85">{d.label}{d.required ? " *" : ""}</b>
+                            <span className="mt-0.5 block text-[11px] text-white/40">{d.hint}</span>
+                            {st?.name && <span className="mt-1 block truncate text-[11px] text-white/55">{st.name}</span>}
                           </span>
                           <input type="file" accept={d.accept} className="sr-only"
                             onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadFile(d.kind, f); }} />
                         </label>
                         {st?.status === "error" && (
-                          <p className="mt-2 flex items-center gap-1.5 text-[10.5px] text-gold-ink">
+                          <p className="mt-2 flex items-center gap-1.5 text-[11px] text-gold-ink">
                             <RefreshCcw className="h-3 w-3" /> {st.error ?? "تعذّر الرفع"} — اختر الملف مجددا
                           </p>
                         )}
@@ -1049,7 +997,7 @@ export default function JoinTrainer() {
                     );
                   })}
                 </div>
-              </fieldset>
+              </Question>
 
               {/* ما يستطيع تقديمه — لا ما قدّمه.
 
@@ -1057,65 +1005,63 @@ export default function JoinTrainer() {
                   يُقارَن ولا يُربط بمقرر ولا يقول ماذا نسند إليه غدا. فصار
                   السؤال عن القادم: مجالٌ يقصّ الكتالوج، ودوراتُه تُختار
                   بمعرّفاتها، ونصٌّ حرّ لما ليس عندنا بعد. */}
-              <fieldset className="border-t border-white/5 pt-6">
-                <legend className="text-sm font-black">ما الدورات التي تستطيع تقديمها؟ *</legend>
-                <p className="mb-4 mt-1 text-[11px] leading-relaxed text-white/40">
-                  اختر مجالك ثم دوراته التي تُتقنها — ولك أكثر من مجال وأكثر من دورة. واختيارك هنا
-                  يسهّل تعيينك على شعبة بعد الاعتماد، ولا يُلزمك بها.
-                </p>
+              <Question
+                n={2}
+                title="ما الدورات التي تستطيع تقديمها؟"
+                required
+                hint="اختر مجالك ثم دوراته التي تُتقنها — ولك أكثر من مجال وأكثر من دورة. واختيارك هنا يسهّل تعيينك على شعبة بعد الاعتماد، ولا يُلزمك بها."
+              >
                 <TeachableCoursePicker selected={teachable} onChange={setTeachable} />
 
-                <div className="mt-5 border-t border-white/5 pt-5">
-                  <label htmlFor="jt-other-courses" className="mb-1.5 block text-xs font-bold text-white/60">
-                    دورات تستطيع تقديمها ولم نذكرها
-                  </label>
-                  <p className="mb-2 text-[11px] leading-relaxed text-white/40">
-                    كتالوجنا ليس نهاية المعرفة. اكتب ما تُتقنه ولا تجده أعلاه — عنوانا لكل سطر، ولمن هو.
-                  </p>
-                  <textarea
-                    id="jt-other-courses" rows={3} maxLength={1000}
-                    value={teachableOther} onChange={(e) => setTeachableOther(e.target.value)}
-                    placeholder="مثال: تحليل تكلفة الاستحواذ للمتاجر الإلكترونية — لمدراء التسويق"
-                    className={inputCls}
-                  />
+                <div className="mt-5 border-t border-white/10 pt-5">
+                  <Field
+                    label="دورات تستطيع تقديمها ولم نذكرها"
+                    htmlFor="jt-other-courses"
+                    hint="كتالوجنا ليس نهاية المعرفة. اكتب ما تُتقنه ولا تجده أعلاه — عنوانا لكل سطر، ولمن هو."
+                  >
+                    <textarea
+                      id="jt-other-courses" rows={3} maxLength={1000}
+                      value={teachableOther} onChange={(e) => setTeachableOther(e.target.value)}
+                      placeholder="مثال: تحليل تكلفة الاستحواذ للمتاجر الإلكترونية — لمدراء التسويق"
+                      className={areaCls}
+                    />
+                  </Field>
                 </div>
-              </fieldset>
-
-              <div className="grid gap-5 border-t border-white/5 pt-6 sm:grid-cols-2">
-                <div>
-                  <label htmlFor="jt-hours" className="mb-1.5 block text-xs font-bold text-white/60">ساعات أسبوعيا تستطيع تخصيصها</label>
-                  <input id="jt-hours" type="number" min={1} max={80} dir="ltr" value={hoursPerWeek}
-                    onChange={(e) => setHoursPerWeek(e.target.value)} className={`${inputCls} text-left`} />
-                </div>
-                <div>
-                  <label htmlFor="jt-start" className="mb-1.5 block text-xs font-bold text-white/60">يمكنك البدء من</label>
-                  <input id="jt-start" type="date" dir="ltr" value={startFrom}
-                    onChange={(e) => setStartFrom(e.target.value)} className={`${inputCls} text-left`} />
-                </div>
-              </div>
+              </Question>
 
               {/* اليومُ وحده لا يقول متى هو متفرّغ فيه: من يعمل نهارا لا يدرّب
                   إلا مساء، والشعبةُ تُجدوَل بالساعة لا باليوم. */}
-              <fieldset className="border-t border-white/5 pt-6">
-                <legend className="mb-2.5 text-xs font-bold text-white/60">أيامك المتاحة</legend>
-                <Chips options={DAYS} selected={days} onToggle={(v) => toggle(days, v, setDays)} />
-                <p className="mb-2.5 mt-5 text-xs font-bold text-white/60">وفي أي وقت منها؟</p>
-                <Chips
-                  options={PERIODS.map((p) => p.label)}
-                  selected={periods.map((v) => PERIODS.find((p) => p.value === v)?.label ?? v)}
-                  onToggle={(label) => {
-                    const v = PERIODS.find((p) => p.label === label)?.value
-                    if (v) toggle(periods, v, setPeriods)
-                  }}
-                />
-              </fieldset>
+              <Question n={3} title="متى تستطيع أن تُدرّب؟" hint="الشعبة تُجدوَل بالساعة لا باليوم — فقل متى من اليوم، لا اليوم وحده.">
+                <FieldRow>
+                  <Field label="ساعات أسبوعيا تستطيع تخصيصها" htmlFor="jt-hours">
+                    <input id="jt-hours" type="number" min={1} max={80} dir="ltr" value={hoursPerWeek}
+                      onChange={(e) => setHoursPerWeek(e.target.value)} className={`${controlCls} text-left`} />
+                  </Field>
+                  <Field label="يمكنك البدء من" htmlFor="jt-start">
+                    <input id="jt-start" type="date" dir="ltr" value={startFrom}
+                      onChange={(e) => setStartFrom(e.target.value)} className={`${controlCls} text-left`} />
+                  </Field>
+                  <FieldSet legend="أيامك المتاحة" wide>
+                    <ChoiceGrid options={DAYS} selected={days} onToggle={(v) => toggle(days, v, setDays)} cols={3} name="أيامك المتاحة" />
+                  </FieldSet>
+                  <FieldSet legend="وفي أي وقت منها؟" wide>
+                    <ChoiceGrid
+                      options={PERIODS.map((p) => p.label)}
+                      selected={periods.map((v) => PERIODS.find((p) => p.value === v)?.label ?? v)}
+                      onToggle={(label) => {
+                        const v = PERIODS.find((p) => p.label === label)?.value
+                        if (v) toggle(periods, v, setPeriods)
+                      }}
+                      cols={2}
+                      name="وقت التدريب"
+                    />
+                  </FieldSet>
+                </FieldRow>
+              </Question>
 
-              <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-white/10 bg-black/20 p-3">
-                <input type="checkbox" checked={demoConsent} onChange={(e) => setDemoConsent(e.target.checked)} className="mt-0.5 h-4 w-4 accent-teal" />
-                <span className="text-xs leading-6 text-white/60">
-                  أوافق على تقديم درس تجريبي قصير (Demo) ومقابلة قبل الاعتماد. *
-                </span>
-              </label>
+              <ConsentRow checked={demoConsent} onChange={setDemoConsent}>
+                أوافق على تقديم درس تجريبي قصير (Demo) ومقابلة قبل الاعتماد. *
+              </ConsentRow>
             </div>
           )}
 
@@ -1143,18 +1089,19 @@ export default function JoinTrainer() {
                       الحساب ببريد طلبك <b dir="ltr" className="text-white/80">{form.email.trim() || "—"}</b>، ولا يفتح
                       بوابة متعلم ولا بوابة مدرب.
                     </p>
-                    <div className="mt-3 flex flex-wrap gap-2">
+                    {/* على الهاتف يُضغط الحقلُ والزرُّ في سطرٍ واحد فلا يتّسع أيّهما — فيُكدَّسان */}
+                    <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                       <input
                         type="password" autoComplete="new-password" placeholder="كلمة مرور — 8 أحرف على الأقل"
                         aria-label="كلمة مرور حساب المتقدّم"
                         value={accountPassword}
                         onChange={(e) => { setAccountPassword(e.target.value); setAccountError(""); }}
-                        className={`${inputCls} min-w-0 flex-1`}
+                        className={`${controlCls} min-w-0 flex-1`}
                       />
                       <button
                         type="button" onClick={createAccount}
                         disabled={accountPassword.length < 8 || accountState === "busy" || !candidateToken}
-                        className="flex shrink-0 cursor-pointer items-center gap-2 rounded-xl border border-teal/50 px-5 text-xs font-black text-teal-light-ink transition hover:bg-teal/10 disabled:cursor-not-allowed disabled:opacity-35"
+                        className="flex h-12 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl border border-teal/50 px-5 text-xs font-black text-teal-light-ink transition hover:bg-teal/10 disabled:cursor-not-allowed disabled:opacity-35"
                       >
                         {accountState === "busy" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
                         أنشئ الحساب
@@ -1248,9 +1195,9 @@ export default function JoinTrainer() {
           </summary>
           <div className="mt-5 grid gap-3 border-t border-white/5 pt-5 sm:grid-cols-2">
             <input dir="ltr" placeholder="WJ-TR-2026-00001" aria-label="الرقم المرجعي" value={lookup.reference}
-              onChange={(e) => setLookup({ ...lookup, reference: e.target.value })} className={`${inputCls} text-left font-mono`} />
+              onChange={(e) => setLookup({ ...lookup, reference: e.target.value })} className={`${controlCls} text-left font-mono`} />
             <input dir="ltr" type="email" placeholder="بريدك المستخدم في الطلب" aria-label="البريد" value={lookup.email}
-              onChange={(e) => setLookup({ ...lookup, email: e.target.value })} className={`${inputCls} text-left`} />
+              onChange={(e) => setLookup({ ...lookup, email: e.target.value })} className={`${controlCls} text-left`} />
           </div>
           <button
             onClick={checkStatus} disabled={!lookup.reference.trim() || !lookup.email.trim()}
@@ -1273,13 +1220,13 @@ export default function JoinTrainer() {
                 dir="ltr" placeholder="رمز المرشح" aria-label="رمز المرشح"
                 value={withdrawForm.candidateToken}
                 onChange={(e) => setWithdrawForm({ ...withdrawForm, candidateToken: e.target.value })}
-                className={`${inputCls} text-left font-mono`}
+                className={`${controlCls} text-left font-mono`}
               />
               <input
                 placeholder="سبب الانسحاب (اختياري)" aria-label="سبب الانسحاب"
                 value={withdrawForm.reason}
                 onChange={(e) => setWithdrawForm({ ...withdrawForm, reason: e.target.value })}
-                className={inputCls}
+                className={controlCls}
               />
             </div>
             <button
