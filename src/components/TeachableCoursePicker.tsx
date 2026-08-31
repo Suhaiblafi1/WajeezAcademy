@@ -10,8 +10,7 @@
 
 import { useMemo, useState } from 'react'
 import { X } from 'lucide-react'
-import { courses } from '@/data/courses'
-import { pathwayCategory } from '@/data/pathways'
+import { courses, courseDomain } from '@/data/courses'
 import { usePublishedContent } from '@/services/public-content'
 
 export default function TeachableCoursePicker({
@@ -29,13 +28,13 @@ export default function TeachableCoursePicker({
 
   const domains = useMemo(() => {
     void catalogVersion /* `courses` تُملأ في مكانها — فالنسخة هي إشارة الحساب */
-    return [...new Set(courses.map((c) => pathwayCategory(c.pathwayId)))]
+    return [...new Set(courses.map((c) => courseDomain(c.id)))]
       .filter(Boolean)
       .sort((a, b) => a.localeCompare(b, 'ar'))
   }, [catalogVersion])
   const inDomain = useMemo(() => {
     void catalogVersion
-    return domain ? courses.filter((c) => pathwayCategory(c.pathwayId) === domain) : []
+    return domain ? courses.filter((c) => courseDomain(c.id) === domain) : []
   }, [domain, catalogVersion])
   const picked = useMemo(() => {
     void catalogVersion

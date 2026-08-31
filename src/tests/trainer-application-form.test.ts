@@ -117,7 +117,11 @@ describe('نموذج انضمام المدرب', () => {
     expect(domainIdx, 'قائمة المجال مفقودة').toBeGreaterThan(0)
     expect(listIdx, 'قائمة دورات المجال مفقودة').toBeGreaterThan(0)
     expect(domainIdx, 'الدورات تُعرض قبل المجال').toBeLessThan(listIdx)
-    expect(picker, 'الدورات لا تُقصّ بالمجال المختار').toContain('pathwayCategory(c.pathwayId) === domain')
+    /* والمجالُ معرفيّ لا جمهور: كان يُقصّ بـ`pathwayCategory` وهي تُعيد
+       «موظفون» و«طلاب ومهنة» — فيُسأل المدرّب عن مجاله فيُعرض عليه جمهور،
+       ومن يُتقن الأمن السيبرانيّ لا يجده في القائمة أصلا. */
+    expect(picker, 'الدورات لا تُقصّ بالمجال المعرفيّ').toContain('courseDomain(c.id) === domain')
+    expect(picker, 'عاد التصنيف بالفئة المستهدفة').not.toContain('pathwayCategory')
     /* والكتالوج لا يصل مع الحزمة: بلا جلبه تبقى القائمة فارغة أبدا */
     expect(picker, 'الكتالوج لا يُجلب — فالقائمة تبقى فارغة').toContain('usePublishedContent()')
 

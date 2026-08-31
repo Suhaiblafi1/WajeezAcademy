@@ -217,7 +217,16 @@ function Nav() {
 
 function Hero() {
   return (
-    <section id="top" className="relative overflow-hidden pt-28 pb-6 md:pt-36 md:pb-8">
+    <section id="top" className="relative overflow-hidden pt-20 pb-5 md:pt-36 md:pb-8">
+      {/* ─────────── إيقاع الهيرو على الهاتف ───────────
+
+          كانت `pt-28` (١١٢px) والترويسةُ ٦٤px، فيبقى نحوُ ٥٠px فراغا ميتا فوق
+          أوّل كلمة — ويُدفع آخرُ القسم تحت حافّة الشاشة فيُقصّ. والقياس على
+          ٣٩٠×٨٤٤: القسم ٥١٥px ثمّ يليه قسمٌ حشوُه العلويّ ٨٠px.
+
+          والعلاج ليس قصَّ المساحة السوداء بل أن ينتهي القسم حيث ينتهي محتواه:
+          حشوٌ علويّ يكفي الترويسةَ وقليلا، وسُلَّمٌ طباعيّ يهبط درجةً على
+          الهاتف ويعود على الشاشات الأوسع. */}
       {/* ambient glows */}
       <div className="pointer-events-none absolute -top-40 right-1/4 h-[480px] w-[480px] rounded-full bg-teal/15 blur-[140px] animate-pulse-glow" />
       <div className="pointer-events-none absolute top-40 left-0 h-[380px] w-[380px] rounded-full bg-teal-deep/20 blur-[120px] animate-pulse-glow" style={{ animationDelay: '2s' }} />
@@ -226,15 +235,15 @@ function Hero() {
         <div className="reveal is-visible">
           <SectionLabel>منصة تفهمك قبل أن تعلّمك</SectionLabel>
         </div>
-        <h1 className="reveal is-visible mx-auto mt-6 max-w-3xl">
-          <span className="block text-2xl font-semibold leading-relaxed text-foreground/80 md:text-3xl">
+        <h1 className="reveal is-visible mx-auto mt-5 max-w-3xl">
+          <span className="block text-xl font-semibold leading-snug text-foreground/80 sm:text-2xl md:text-3xl">
             المسار الصحيح لا يبدأ باختيار دورة.
           </span>
-          <span className="mt-3 block bg-gradient-to-l from-teal-light-ink via-teal-ink to-gold-ink bg-clip-text text-4xl font-bold leading-[1.25] text-transparent md:text-6xl md:leading-[1.2]">
+          <span className="mt-2 block bg-gradient-to-l from-teal-light-ink via-teal-ink to-gold-ink bg-clip-text text-3xl font-bold leading-[1.3] text-transparent sm:text-4xl md:text-6xl md:leading-[1.2]">
             يبدأ بفهم هدفك.
           </span>
         </h1>
-        <div className="reveal is-visible mx-auto mt-6 flex max-w-xl flex-wrap items-center justify-center gap-2">
+        <div className="reveal is-visible mx-auto mt-5 flex max-w-xl flex-wrap items-center justify-center gap-2">
           {['نقرأ هدفك', 'وقتك المتاح', 'فجواتك الأقرب'].map((chip) => (
             <span key={chip} className="inline-flex items-center gap-1.5 rounded-full border border-teal/25 bg-teal/[0.07] px-3 py-1 text-xs text-teal-light-ink">
               <Sparkles className="h-3 w-3" />
@@ -242,18 +251,18 @@ function Hero() {
             </span>
           ))}
         </div>
-        <div className="reveal is-visible mt-9 flex flex-col items-center justify-center">
+        <div className="reveal is-visible mt-7 flex flex-col items-center justify-center">
           <a
             href="#diagnostic"
             onClick={() => track('hero_cta_clicked')}
-            className="group btn-teal w-full px-10 py-4 text-lg shadow-[0_0_40px_-8px_#38A7B4] sm:w-auto"
+            className="group btn-teal w-full px-10 py-3.5 text-base shadow-[0_0_40px_-8px_#38A7B4] sm:w-auto sm:py-4 sm:text-lg"
           >
             اعرف من أين تبدأ
             <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
           </a>
           <a
             href="#bestsellers"
-            className="mt-5 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition hover:text-teal-light-ink"
+            className="mt-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition hover:text-teal-light-ink"
           >
             <Route className="h-3.5 w-3.5" />
             <span className="underline-offset-4 hover:underline">اختر مسارك بنفسك</span>
@@ -308,20 +317,29 @@ function DiagnosticTeaser() {
   }
 
   return (
-    <section id="diagnostic" className="relative py-20 md:py-24">
+    <section id="diagnostic" className="relative py-12 sm:py-16 md:py-24">
+      {/* ─────────── لماذا ضاق رأسُ هذا القسم ───────────
+
+          على الهاتف كان الزائر يضغط «مؤشر وجيز» فيهبط إلى قسمٍ رأسُه ثلاثةُ
+          أسطر (شارة + عنوانٌ من سطرين + فقرة) وحشوُه العلويّ ٨٠px — فيقع
+          زرُّ الإجراء تحت حافّة الشاشة، ويضطرّ إلى **الصعود** ليصل إلى ما نزل
+          من أجله. وهي أسوأ مفارقةٍ في رحلةٍ كلُّها إجراء.
+
+          والعنوان والفقرة كانا يقولان الشيء نفسَه بصيغتين: «اعرف لماذا لم
+          تبدأ» ثمّ «تكشف ما يعطّلك فعلا». فدُمجا في جملةٍ واحدة تحمل الوعد
+          كاملا، وهبط الحشوُ على الهاتف وحده — والشاشات الأوسع كما كانت. */}
       <div className="mx-auto max-w-4xl px-5">
         <div className="reveal text-center">
           <SectionLabel>مؤشر وجيز — دقيقة واحدة</SectionLabel>
-          {/* الوعد السابق كان «ما الذي تحتاج تعلّمه — وبأي ترتيب»، ولا يسأل أيٌّ من
-              الأسئلة الخمسة عن مجال ولا هدف ولا مهارة، فلا يستطيع أن يجيبه. وما تجيبه
-              فعلا هو ما يعطّل الزائر عن البدء — وهو وعد يفي به كاملا. */}
-          <h2 className="mt-5 text-2xl font-bold sm:text-3xl md:text-4xl">قبل أن تختار دورة… اعرف لماذا لم تبدأ بعد</h2>
-          <p className="mx-auto mt-4 max-w-lg text-sm leading-7 text-muted-foreground sm:text-base sm:leading-8">
-            خمسة أسئلة صادقة عن علاقتك بالتعلّم — تكشف ما يعطّلك فعلا، ثم يبني عليها التشخيص الكامل.
+          <h2 className="mt-4 text-xl font-bold leading-snug sm:text-2xl md:text-4xl">
+            قبل أن تختار دورة… اعرف لماذا لم تبدأ بعد
+          </h2>
+          <p className="mx-auto mt-2.5 max-w-lg text-[13px] leading-6 text-muted-foreground sm:mt-4 sm:text-base sm:leading-8">
+            خمسة أسئلة صادقة يبني عليها التشخيص الكامل.
           </p>
         </div>
 
-        <div className="reveal mt-10 overflow-hidden rounded-[2rem] border border-white/[0.08] bg-card/90 shadow-[0_24px_90px_-40px_rgba(56,167,180,0.35)] backdrop-blur-sm">
+        <div className="reveal mt-6 overflow-hidden sm:mt-10 rounded-[2rem] border border-white/[0.08] bg-card/90 shadow-[0_24px_90px_-40px_rgba(56,167,180,0.35)] backdrop-blur-sm">
           {/* مؤشر التقدم */}
           <div
             className="flex gap-2 px-8 pt-7"
@@ -395,19 +413,19 @@ function DiagnosticTeaser() {
                 {/* الأيقونة تشرح ما يليها: الدماغ والدوائر تقول «ذكاء اصطناعي»
                     وهي ليست الحالة. الحالة أن مهاراته ستُقاس ثم تُرتَّب في مسار
                     — فخريطةُ مهاراتٍ موصولةٍ بمسار أصدق. */}
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-teal/12 ring-1 ring-teal/25">
-                  <Network className="h-8 w-8 text-teal-ink" />
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-teal/12 ring-1 ring-teal/25 sm:h-16 sm:w-16">
+                  <Network className="h-6 w-6 text-teal-ink sm:h-8 sm:w-8" />
                 </div>
                 {/* «سمعناك — صورتك بدأت تتضح» تصف شعورا لا خطوة، ولا تقول له ماذا
                     يفعل الآن ولا لماذا. هذه تضعه في مكانه وتسمّي ما يلي. */}
-                <h3 className="mt-5 text-xl font-bold leading-8 sm:text-2xl sm:leading-relaxed">أنت في المكان الصحيح. الآن نبني خطتك.</h3>
+                <h3 className="mt-4 text-lg font-bold leading-7 sm:mt-5 sm:text-2xl sm:leading-relaxed">أنت في المكان الصحيح. الآن نبني خطتك.</h3>
                 {/* حُذفت هنا «قراءة» مشتقة من الإجابات («عندك تخمين عن فجواتك…»).
                     كانت تدفع زرّ «ابدأ التشخيص الكامل» تحت الطيّة على الهاتف: هذه
                     شاشةُ إجراء لا شاشةُ تأمّل، ونصٌّ يؤخّر الزرّ يكلّف أكثر مما يعطي. */}
                 <p className="mx-auto mt-3 max-w-sm text-xs leading-6 text-muted-foreground">
                   أجب عن أسئلة أعمق عن هدفك وخبرتك ومهاراتك، لنحدّد ما تحتاجه من دورات مرتّبة في مسار واحد.
                 </p>
-                <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:mt-8 sm:flex-row">
                   <Link to="/diagnostic" className="btn-teal px-8 py-4">
                     ابدأ التشخيص الكامل
                     <ArrowLeft className="h-4 w-4" />
