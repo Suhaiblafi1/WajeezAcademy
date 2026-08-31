@@ -209,13 +209,17 @@ describe('الحتمية', () => {
     expect(a.confidenceOverall).toBe(b.confidenceOverall)
   })
 
+  /* مهلةٌ صريحة لأنّ هذا الاختبار يُجري كلَّ الشخصيّات في كلّ تنويعاتها:
+     ٣.١ ثانية وحدَه، ويتجاوز مهلة vitest الافتراضية (٥ ثوان) حين تتزاحم
+     الملفّات على المعالج — فيسقط سقوطا يبدو تذبذبا وهو ضيقُ وقتٍ لا خطأ
+     منطق. ولا يُقصَّر بتقليل الشخصيّات: تغطيتُها هي الغرض. */
   it('عدد الأسئلة ضمن 8–14 — لا سؤال خامس عشر أبدًا', () => {
     const all2 = buildPersonas().flatMap((p) => buildVariants(p).map((v, i) => runSession(v, `cap-${i}`)))
     for (const r of all2) {
       expect(r.answersCount).toBeLessThanOrEqual(14)
       expect(r.answersCount).toBeGreaterThanOrEqual(1)
     }
-  })
+  }, 30_000)
 
   it('لا يظهر اسم مسار أو قالب أثناء الإجابة — الأسئلة من بنك موثق فقط', () => {
     const r = runSession(SCHOOL, 'nohint')

@@ -22,6 +22,9 @@ export const TRAINER_STATUSES = [
 ] as const
 export type TrainerStatus = (typeof TRAINER_STATUSES)[number]
 
+/** الحالات المنتهية التي يجوز حذفُ طلبها نهائيّا — وما عداها قيدُ نظرٍ أو تعاقد */
+export const PURGEABLE_STATUSES: TrainerStatus[] = ['draft', 'email_verification_pending', 'rejected', 'withdrawn']
+
 /* خريطة الانتقالات المشروعة — أي انتقال خارجها مرفوض */
 export const ALLOWED_TRANSITIONS: Record<TrainerStatus, TrainerStatus[]> = {
   draft: ['email_verification_pending', 'withdrawn'],
@@ -509,4 +512,67 @@ export class TrainerApplicationService {
     const count = await this.prisma.trainerApplication.count()
     return `WJ-TR-${year}-${String(count + 1).padStart(5, '0')}`
   }
+  /* ─────────── الحذف النهائيّ — لا التعطيل ───────────
+
+     كان الطلبُ المنتهي يُسحب أو يُرفض فيبقى في القاعدة أبدا. وهو صحيحٌ
+     للطلبات الحقيقية — سجلُّ من تقدّم ولماذا رُفض له قيمة. لكنّه يترك
+     أيضا كلَّ طلبِ اختبارٍ في قاعدة الإنتاج بلا سبيلٍ إلى إزالته.
+
+     والحذفُ هنا حقيقيّ: الأبناء يذهبون بـ`Cascade` (المستندات والمراجعات
+     والمقابلات والمراجع وسجلّ الحالات والدعوات والتخصّصات). وثلاثةُ حرّاس:
+
+     ١) **من صار مدرّبا لا يُحذف طلبُه.** `TrainerProfile` بلا `Cascade`
+        عمدا — والملفّ يرتبط بتأهيلاتٍ وإسنادٍ وعقود. فمن تعاقدنا معه له
+        تاريخٌ لا يُمحى بضغطة.
+     ٢) **ولا يُحذف طلبٌ حيّ.** المنتهيةُ وحدها: مسحوبةٌ أو مرفوضة أو
+        مسوّدةٌ لم تكتمل. وما بينهما قيد نظر.
+     ٣) **ولا حذفَ بلا سبب.** يُكتب في سجلّ التدقيق **قبل** الحذف — فيبقى
+        الأثر بعد أن يذهب الصفّ. */
+
+  async purge(
+    /** فارغٌ أو null = فعلٌ نظاميّ من سكربت صيانة، لا إنسانٌ في اللوحة */
+    reference: string, actorId: string | null, reasonAr: string,
+  ): Promise<{ reference: string; deletedDocuments: number }> {
+    const reason = (reasonAr ?? '').trim()
+    if (reason.length < 5) {
+      throw new AuthError('reason_required', 'اكتب سبب الحذف — الحذف النهائيّ لا يُترك بلا أثر', 422)
+    }
+
+    const app = await this.prisma.trainerApplication.findUnique({
+      where: { reference },
+      include: { profile: { select: { id: true } }, documents: { select: { id: true } } },
+    })
+    if (!app) throw new AuthError('not_found', 'الطلب غير موجود', 404)
+
+    if (app.profile) {
+      throw new AuthError(
+        'has_profile',
+        'صاحب هذا الطلب صار مدرّبا — لا يُحذف طلبُه. أوقِف ملفّه إن أردت.',
+        409,
+      )
+    }
+    if (!PURGEABLE_STATUSES.includes(app.status as TrainerStatus)) {
+      throw new AuthError(
+        'not_terminal',
+        'لا يُحذف إلّا الطلبُ المنتهي: مسحوبٌ أو مرفوضٌ أو مسوّدةٌ لم تُرسَل',
+        409,
+      )
+    }
+
+    /* الأثرُ يُكتب قبل الحذف — فيبقى بعد أن يذهب الصفّ */
+    await recordAudit(this.prisma, {
+      actorId: actorId || null, action: 'trainer.application.purge',
+      entityType: 'trainer_application', entityId: app.id,
+      reason,
+      before: {
+        reference: app.reference, status: app.status, fullName: app.fullName,
+        email: app.email, createdAt: app.createdAt.toISOString(),
+        documents: app.documents.length,
+      },
+    })
+
+    await this.prisma.trainerApplication.delete({ where: { id: app.id } })
+    return { reference: app.reference, deletedDocuments: app.documents.length }
+  }
+
 }

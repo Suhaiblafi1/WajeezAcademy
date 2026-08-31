@@ -5,7 +5,8 @@ import {
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import FlowSteps from "@/components/FlowSteps";
-import { apiGet, apiPost, ApiError } from "@/services/api";
+import { apiGet, apiPost, apiDelete, ApiError } from "@/services/api";
+import { useRealSession } from "@/services/session";
 import { useAutoRefresh } from "@/services/useAutoRefresh";
 import { TrainerDetailOps, TrainerChangeRequests, TrainerPayouts } from "./TrainerOps";
 
@@ -72,6 +73,9 @@ export default function TrainerApplications() {
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState("");
+  const [purging, setPurging] = useState(false);
+  const [purgeReason, setPurgeReason] = useState("");
+  const { user } = useRealSession();
   /* رابط الدعوة بعد إنشائها — يُعرض للمسؤول ليسلّمه حين لا يصل البريد */
   const [invite, setInvite] = useState<{ url: string; delivery: string } | null>(null);
   const [mode, setMode] = useState<"apps" | "changes" | "payouts">("apps");
@@ -145,6 +149,52 @@ export default function TrainerApplications() {
         </button>
 
         {flash && <p className="mb-4 rounded-xl border border-white/10 bg-white/[0.04] p-3 text-xs font-bold text-white/80" role="status">{flash}</p>}
+
+        {/* ── الحذف النهائيّ ──
+
+            الطلبُ المنتهي كان يبقى في القاعدة أبدا، فبقيت طلباتُ الاختبار
+            في الإنتاج بلا سبيلٍ إلى إزالتها. والحبّةُ منفصلة عن المراجعة:
+            من يراجع ليس بالضرورة من يمحو. */}
+        {(user?.permissions.includes("trainer.applications.purge") ?? false)
+          && ["draft", "email_verification_pending", "rejected", "withdrawn"].includes(a.status) && (
+          <details className="mb-4 rounded-2xl border border-red-500/25 bg-red-500/[0.05] p-4">
+            <summary className="cursor-pointer text-xs font-black text-red-300">حذفٌ نهائيّ لهذا الطلب</summary>
+            <p className="mt-2 text-[11.5px] leading-6 text-white/65">
+              يُحذف الطلبُ ومستنداتُه ومراجعاتُه ولا يُستردّ. ويبقى أثرُ الحذف في سجلّ
+              التدقيق: من حذف، ومتى، ولماذا. ولا يُحذف طلبُ من صار مدرّبا.
+            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <input
+                value={purgeReason}
+                onChange={(e) => setPurgeReason(e.target.value)}
+                placeholder="سبب الحذف (مطلوب)"
+                aria-label="سبب الحذف النهائي"
+                className="min-w-[18rem] flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-1.5 text-xs outline-none placeholder:text-white/30 focus:border-red-500/50"
+              />
+              <button
+                type="button"
+                disabled={purging || purgeReason.trim().length < 5}
+                onClick={async () => {
+                  setPurging(true);
+                  try {
+                    await apiDelete(`/api/admin/trainer-applications/${encodeURIComponent(a.reference)}`, { reasonAr: purgeReason.trim() });
+                    setPurgeReason("");
+                    setSelected(null);
+                    setFlash(`حُذف الطلب ${a.reference} نهائيّا.`);
+                    await load();
+                  } catch (e) {
+                    setFlash(e instanceof ApiError ? e.message : "تعذّر الحذف");
+                  } finally {
+                    setPurging(false);
+                  }
+                }}
+                className="rounded-lg bg-red-500/85 px-4 py-1.5 text-[11px] font-black text-white hover:bg-red-500 disabled:opacity-40"
+              >
+                {purging ? "يُحذف…" : "احذفه نهائيّا"}
+              </button>
+            </div>
+          </details>
+        )}
 
         <div className="grid gap-5 lg:grid-cols-3">
           <div className="space-y-4 lg:col-span-2">

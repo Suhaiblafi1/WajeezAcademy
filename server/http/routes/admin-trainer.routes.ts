@@ -6,6 +6,7 @@ import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { TrainerReviewService, RUBRIC_CRITERIA } from '../../services/trainer-review.service'
 import { TrainerChangeService } from '../../services/trainer-change.service'
+import { TrainerApplicationService } from '../../services/trainer-application.service'
 import { EarningsService } from '../../services/earnings.service'
 import { requirePermission } from '../auth-plugin'
 import { blastRadiusSentenceAr, courseBlastRadius } from '../../services/catalog-impact.service'
@@ -18,6 +19,7 @@ const rubricSchema = z.object(
 export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const review = new TrainerReviewService(prisma)
   const changes = new TrainerChangeService(prisma)
+  const applications = new TrainerApplicationService(prisma)
 
   app.get('/api/admin/trainer-applications', {
     preHandler: requirePermission('trainer.applications.view'),
@@ -25,6 +27,24 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
   }, async (req) => {
     const { status } = z.object({ status: z.string().optional() }).parse(req.query)
     return review.listApplications(status)
+  })
+
+  /* ── الحذف النهائيّ ──
+
+     الطلبُ المنتهي كان يبقى في القاعدة أبدا. وهو صحيحٌ للطلبات الحقيقية،
+     ويترك كلَّ طلبِ اختبارٍ في الإنتاج بلا سبيلٍ إلى إزالته.
+
+     وحبّتُه منفصلة (`trainer.applications.purge`) لا تُمنح بالمراجعة: من
+     يراجع ليس بالضرورة من يمحو. وهي عند مدير النظام وحده — ويستطيع أن
+     يفوّضها لغيره من شاشة الصلاحيات إن أراد. */
+  app.delete('/api/admin/trainer-applications/:reference', {
+    preHandler: requirePermission('trainer.applications.purge'),
+    config: { rateLimit: { max: 20, timeWindow: '10 minutes' } },
+    schema: { tags: ['admin-trainers'], summary: 'حذفُ طلبٍ منتهٍ نهائيّا — بسببٍ يُسجَّل قبل الحذف' },
+  }, async (req) => {
+    const { reference } = z.object({ reference: z.string().trim().min(3).max(60) }).parse(req.params)
+    const { reasonAr } = z.object({ reasonAr: z.string().trim().min(5).max(500) }).parse(req.body)
+    return applications.purge(reference, req.auth!.userId, reasonAr)
   })
 
   app.get('/api/admin/trainer-applications/:id', {
