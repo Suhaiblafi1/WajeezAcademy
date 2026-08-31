@@ -8,6 +8,7 @@ import AtRiskList from "@/components/AtRiskList";
 import { buildWorkQueue } from "@/application/trainer/work-queue";
 import { findAtRisk } from "@/application/trainer/at-risk";
 import { useRealSession } from "@/services/session";
+import { fmtDateTimeAr } from "@/utils/format";
 
 /* ── الصفحة الحقيقية للمدرب المسجّل — من الخادم مباشرة، بلا بيانات استعراض ── */
 
@@ -222,7 +223,7 @@ function RealTrainerHome({ name }: { name: string }) {
                 <p className="mt-0.5 truncate text-[10px] text-white/50">{s.cohortTitle}</p>
               </div>
               <span className="shrink-0 text-[10px] font-bold text-white/50">
-                {new Date(s.startsAt).toLocaleString("ar-SA", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                {fmtDateTimeAr(s.startsAt)}
               </span>
             </Link>
           ))}
@@ -240,8 +241,19 @@ function RealTrainerHome({ name }: { name: string }) {
 /* حُذفت لوحة المحاكاة (كانت من `export default` إلى آخر الملف): شعبٌ وطلابٌ
    وتسليماتٌ وقائمةُ تهيئةٍ تُولَّد في المتصفّح لهويّة مدرّبٍ مختلَقة، وتُعرض
    متى وُجدت تلك الهوية في localStorage — أي دائما بعد أول اختيار. */
+/* الإطار على الصفحة الأولى أيضا — وكان غائبا عنها وحدها.
+
+   هي أوّل ما يهبط عليه المدرب بعد الدخول، وكانت تُصيَّر عارية: بلا تبويبات
+   ولا جرس إشعارات ولا بحث ولا خروج. فمن دخل بوابته وقف في غرفةٍ بلا أبواب،
+   ولا يبلغ «طابور التقييم» ولا «مستحقّاتي» إلا بكتابة المسار بيده. والشاشات
+   الخمس الأخرى كانت تحمل الإطار كاملا — فالعطب في هذه وحدها. */
 export default function TrainerDashboard() {
   const { user, checked } = useRealSession();
-  if (!checked) return <TrainerLayout title="شعبي"><div className="grid place-items-center py-24"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" aria-label="يُحمَّل" /></div></TrainerLayout>;
-  return <RealTrainerHome name={user?.displayName ?? ""} />;
+  return (
+    <TrainerLayout title="الرئيسية">
+      {checked
+        ? <RealTrainerHome name={user?.displayName ?? ""} />
+        : <div className="grid place-items-center py-24"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" aria-label="يُحمَّل" /></div>}
+    </TrainerLayout>
+  );
 }

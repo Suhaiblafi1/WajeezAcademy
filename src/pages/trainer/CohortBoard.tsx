@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router";
 import {
-  ArrowRight, CalendarDays, CheckCircle2, ChevronDown, ClipboardCheck, GraduationCap,
+  CalendarDays, CheckCircle2, ChevronDown, ClipboardCheck,
   Loader2, MessageSquarePlus, RefreshCw, ServerOff, Star, Upload, Users, Video,
 } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
+import TrainerLayout from "./TrainerLayout";
+import { fmtDateTimeAr } from "@/utils/format";
 
 const API_BASE: string = import.meta.env.VITE_API_URL ?? "";
 
@@ -163,16 +164,15 @@ export default function CohortBoard() {
       setFeedbackForm((prev) => ({ ...prev, [submissionId]: "" }));
     }, "أُرسلت التغذية الراجعة للمتعلم");
 
+  /* إطارُ البوابة نفسه، لا إطارٌ ثالثٌ خاصّ بها.
+
+     كانت هذه الشاشة تبني رأسا لنفسها — شعارٌ ورابطٌ إلى الموقع العامّ ولا
+     شيء غير ذلك — فصار في بوابةٍ واحدة ثلاثة إطارات: الكامل على خمس شاشات،
+     ولا إطارَ على الرئيسية، وهذا على السادسة. وهي مع ذلك ورشةُ عمل المدرب
+     الفعليّة (الحضور والمواد والتكليفات والدرجات) ولم تكن في التبويبات أصلا،
+     فلا يبلغها إلا من يكتب مسارها بيده. */
   return (
-    <div dir="rtl" className="min-h-screen bg-paper text-white">
-      <header className="border-b border-white/8 px-5 py-4">
-        <div className="mx-auto flex max-w-5xl items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 text-white/60 transition hover:text-white">
-            <ArrowRight className="h-4 w-4" /> أكاديمية وجيز
-          </Link>
-          <h1 className="flex items-center gap-2 text-sm font-black"><GraduationCap className="h-4 w-4 text-teal-light-ink" /> شعبي</h1>
-        </div>
-      </header>
+    <TrainerLayout title="شعبي وجلساتها">
 
       {/* ب-٢: حاوية تخطيط لا منطقة landmark — منطقة main واحدة في التطبيق
 
@@ -238,7 +238,7 @@ export default function CohortBoard() {
                                         <div className="min-w-0 flex-1">
                                           <p className="text-sm font-bold">{s.title}</p>
                                           <p className="mt-0.5 text-[11px] text-white/45">
-                                            {new Date(s.startsAt).toLocaleString("ar-JO", { dateStyle: "medium", timeStyle: "short" })}
+                                            {fmtDateTimeAr(s.startsAt)}
                                             {s.status === "done" && " · انتهت"}
                                           </p>
                                         </div>
@@ -421,7 +421,7 @@ export default function CohortBoard() {
                         <div className="min-w-0 flex-1">
                           <p className="font-black">{q.assessment.title}</p>
                           <p className="mt-0.5 text-xs text-white/50">
-                            {q.assessment.cohort.title} · {SUBMISSION_STATUS[q.status] ?? q.status} · {new Date(q.submittedAt).toLocaleString("ar-JO", { dateStyle: "medium", timeStyle: "short" })}
+                            {q.assessment.cohort.title} · {SUBMISSION_STATUS[q.status] ?? q.status} · {fmtDateTimeAr(q.submittedAt)}
                           </p>
                         </div>
                         {q.grades[0] && (
@@ -495,6 +495,6 @@ export default function CohortBoard() {
           </div>
         )}
       </div>
-    </div>
+    </TrainerLayout>
   );
 }

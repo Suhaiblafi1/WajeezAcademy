@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Banknote, CheckCircle2, Clock3, Loader2, ShieldCheck, XCircle } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import { apiGet, ApiError } from "@/services/api";
+import { fmtDateAr } from "@/utils/format";
 
 const PAYOUT_STATUS: Record<string, { label: string; cls: string; icon: typeof Clock3 }> = {
   pending: { label: "بانتظار الاعتماد", cls: "border-gold/40 text-gold-ink", icon: Clock3 },
@@ -86,7 +87,7 @@ function RealEarningsView() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="font-black">كشف فترة <span dir="ltr" className="font-mono text-sm">{p.period}</span></p>
-                  {p.paidAt && <p className="mt-0.5 text-[11px] text-white/40">صُرف {new Date(p.paidAt).toLocaleString("ar")}</p>}
+                  {p.paidAt && <p className="mt-0.5 text-[11px] text-white/40">صُرف {fmtDateAr(p.paidAt)}</p>}
                 </div>
                 <div className="text-left">
                   <p className="text-xl font-black">{fmt(p.total)} <span className="text-xs text-white/50">{p.currency}</span></p>

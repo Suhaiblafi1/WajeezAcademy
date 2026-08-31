@@ -1,5 +1,5 @@
 import { Link, NavLink } from "react-router";
-import { GraduationCap, ClipboardCheck, GitPullRequest, Users, Wallet, Star } from "lucide-react";
+import { GraduationCap, ClipboardCheck, GitPullRequest, LayoutDashboard, Users, Wallet, Star } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import ThemeToggle from "@/components/ThemeToggle";
 import PortalSearchPalette from "@/components/PortalSearchPalette";
@@ -43,8 +43,11 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
     );
   }
 
+  /* «شعبي وجلساتها» دخلت التبويبات — وهي ورشةُ عمله الفعليّة (الحضور والمواد
+     والتكليفات والدرجات) ولم تكن فيها، فلا يبلغها إلا من يكتب مسارها بيده. */
   const tabs = [
-    { to: "/trainer", label: "شعبي", icon: Users, end: true },
+    { to: "/trainer", label: "الرئيسية", icon: LayoutDashboard, end: true },
+    { to: "/trainer/board", label: "شعبي", icon: Users },
     { to: "/trainer/grading", label: "طابور التقييم", icon: ClipboardCheck },
     { to: "/trainer/proposals", label: "اقتراحاتي", icon: GitPullRequest },
     { to: "/trainer/earnings", label: "مستحقاتي", icon: Wallet },

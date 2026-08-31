@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import { apiGet } from "@/services/api";
+import { fmtShortDateTimeAr } from "@/utils/format";
 
 interface RealQueueItem {
   id: string; status: string; submittedAt: string;
@@ -63,7 +64,7 @@ function RealGradingQueue() {
               <div className="min-w-0 flex-1">
                 <p className="truncate font-bold text-white/85">{q.assessment.title}</p>
                 <p className="mt-0.5 text-[11px] text-white/50">
-                  {q.assessment.cohort.title} · أُرسل {new Date(q.submittedAt).toLocaleString("ar-SA", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                  {q.assessment.cohort.title} · أُرسل {fmtShortDateTimeAr(q.submittedAt)}
                 </p>
               </div>
               <span className="shrink-0 rounded-full bg-gold px-3 py-1 text-[11px] font-black text-on-gold">قيّمه من «شعبي»</span>

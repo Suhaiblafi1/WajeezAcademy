@@ -86,6 +86,35 @@ export function fmtDateAr(iso?: string | null): string {
   return d.toLocaleDateString('ar-u-ca-gregory', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
+/* التقويم واحدٌ في المنصّة كلّها: ميلاديّ بأسماء شهورٍ مشرقيّة قياسيّة.
+
+   وكان في بوابة المدرب وحدها أربع لغات تنسيق: `ar-SA` تطبع «٢٦ ربيع الأول»
+   — هجريّا، والمدرب يجدول عمله بالميلاديّ — و`ar-JO` تطبع «أيلول» لا
+   «سبتمبر»، و`ar` و`ar-EG` كلٌّ بأرقامه. فُحص الأربعة في متصفّح حقيقيّ لا
+   في Node: `ar-SA` وحدها هجريّة، والباقي يختلف في اسم الشهر والأرقام.
+
+   واللاحقة `-u-ca-gregory` تُثبّت التقويم مهما كانت لغة المتصفّح. */
+
+/** موعدٌ كامل: «الثلاثاء، 8 سبتمبر، 11:00 ص» — لجلسةٍ يُحضَر إليها */
+export function fmtDateTimeAr(iso?: string | null): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '—';
+  return d.toLocaleString('ar-u-ca-gregory', {
+    weekday: 'short', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit',
+  });
+}
+
+/** موعدٌ مختصر بلا يوم الأسبوع: «8 سبتمبر، 11:00 ص» */
+export function fmtShortDateTimeAr(iso?: string | null): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '—';
+  return d.toLocaleString('ar-u-ca-gregory', {
+    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+  });
+}
+
 /** كم يبعد الموعد: «بعد 3 أسابيع» — يساعد على القرار أكثر من التاريخ وحده */
 export function untilLabelAr(iso?: string | null): string {
   if (!iso) return '';
