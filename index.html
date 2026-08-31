@@ -35,11 +35,19 @@
          · بلا تخزينٍ متاح (تصفّحٌ خفيّ صارم) لا يُعيد التحميل أبدا: عجزُنا عن
            عدّ المحاولات يجعل الحلقة ممكنة، وشاشةٌ بيضاء أهون من تبويبٍ يدور. */
       (function () {
-        var KEY = "wajeez_stale_reload";
-        /* الحزمة تنادي هذه عند إقلاعها — وصولُها يعني ألّا حاجة للحارس */
-        window.__wajeezBooted = function () {
-          try { sessionStorage.removeItem(KEY); } catch (e) { /* بلا تخزين */ }
-        };
+        var KEY = "wajeez_stale_reload_at";
+        var COOLDOWN = 60000; // مللي ثانية
+
+        /* الحدّ زمنيّ لا «مرّةً واحدة».
+
+           كانت العلامة تُمسح عند كلّ إقلاعٍ ناجح للحزمة الرئيسة — وهو ما
+           يقع في كلّ دورة. فإن أقلعت الرئيسة وفشلت قطعةٌ مؤجَّلة صار:
+           إقلاعٌ ← مسحٌ ← فشلٌ ← إعادةُ تحميل ← إقلاع… حلقةٌ لا تنتهي.
+           أبطلتُ الحارس بيدي في السطر الذي يليه، وأوقعتُ ما جئتُ أمنعه.
+
+           والوقتُ لا يُمسح بإقلاع: نافذةٌ واحدة كلَّ دقيقة مهما جرى. فإن
+           كان النقص عابرا شُفيت الصفحة بإعادةٍ واحدة، وإن كان مقيما بقيت
+           كما هي — ولم يدُر التبويب. */
         window.addEventListener("error", function (event) {
           var el = event.target;
           if (!el || el === window) return;               // خطأ شيفرةٍ لا فشلُ مورد
@@ -47,9 +55,10 @@
           var src = el.src || el.href || "";
           if (src.indexOf("/assets/") === -1) return;     // حزمُنا وحدها
           try {
-            if (sessionStorage.getItem(KEY)) return;      // أُعيد مرّةً — يكفي
-            sessionStorage.setItem(KEY, "1");
-          } catch (e) { return; }
+            var last = parseInt(sessionStorage.getItem(KEY) || "0", 10);
+            if (last && Date.now() - last < COOLDOWN) return;
+            sessionStorage.setItem(KEY, String(Date.now()));
+          } catch (e) { return; }                          // بلا تخزين: لا إعادة أبدا
           location.reload();
         }, true);                                          // الالتقاط: فشلُ المورد لا يصعد
       })();
