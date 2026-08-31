@@ -34,3 +34,7 @@ skills-lock.json
 # وهي أَولى ما يُراجَع، لأنها تُوجّه من يكتب الكود لا الكود نفسه.
 .claude/*
 !.claude/skills/
+
+# Python bytecode from imported skill tools
+__pycache__/
+*.pyc

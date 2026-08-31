@@ -5,7 +5,7 @@
 GitHub» ولا «من الفرع الرئيسي». وأي تحديث لاحق يقارَن بهذه الالتزامات.
 
 جُلبت بـ`curl` من `raw.githubusercontent.com` بلا استنساخ المستودعات.
-تاريخ الجلب: 2026-08-28.
+تاريخ الجلب: 2026-08-28، ودفعةٌ ثانية 2026-08-31.
 
 ## ما استُورد
 
@@ -19,9 +19,18 @@ GitHub» ولا «من الفرع الرئيسي». وأي تحديث لاحق �
 | `cognitive-load-analyser` | المصدر نفسه · `skills/memory-learning-science/` | السجلّ نفسه | CC BY-SA 4.0 |
 | `backwards-design-unit-planner` | المصدر نفسه · `skills/curriculum-assessment/` | السجلّ نفسه | CC BY-SA 4.0 |
 | `assessment-validity-checker` | المصدر نفسه · `skills/curriculum-assessment/` | السجلّ نفسه | CC BY-SA 4.0 |
+| `frontend-design` | [anthropics/skills](https://github.com/anthropics/skills) · `skills/frontend-design/` | `3b3fad9` | Apache 2.0 |
+| `mcp-builder` (+ أربعة مراجع) | anthropics/skills · `skills/mcp-builder/` | `3b3fad9` | Apache 2.0 |
+| `ui-ux-pro-max` (٤٢ ملفا: بيانات وسكربتات) | [nextlevelbuilder/ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) · `.claude/skills/ui-ux-pro-max/` | `d279284` | MIT |
+| عشر مهارات KST + `shared-references` | [vanderbilt-data-science/knowledge-spaces](https://github.com/vanderbilt-data-science/knowledge-spaces) · `.claude/skills/` | `08e7aef` | MIT |
+| `lecture-to-study-guide` · `rubric` · `concept-map` | [Jellypod-Inc/school-skills](https://github.com/Jellypod-Inc/school-skills) · `skills/` | `cd48479` | MIT |
+| `product-marketing` · `cro` · `signup` · `pricing` · `copywriting` | [coreyhaines31/marketingskills](https://github.com/coreyhaines31/marketingskills) · `skills/` | `e55de88` | MIT |
 
 نصوص الرخص محفوظة: `LICENSE-superpowers.txt` و`webapp-testing/LICENSE.txt`
-و`LICENSE-education-skills.txt`. كلُّها تشترط بقاء إشعار الرخصة مع النسخة —
+و`LICENSE-education-skills.txt` و`frontend-design/LICENSE.txt`
+و`mcp-builder/LICENSE.txt` و`ui-ux-pro-max/LICENSE`
+و`shared-references/LICENSE-knowledge-spaces.txt` و`LICENSE-school-skills.txt`
+و`LICENSE-marketingskills.txt`. كلُّها تشترط بقاء إشعار الرخصة مع النسخة —
 وهو هنا.
 
 ## تنبيه على CC BY-SA 4.0
@@ -48,6 +57,37 @@ strong`، وكلُّها تطابق ما نؤلّفه فعلا. وتُركت `le
 (`ModuleNotFoundError: No module named 'playwright'`)، والمثبّت هو
 `playwright-core` على Node. فجلبُها يضع في المستودع ملفات لا تعمل.
 
+### من دفعة 2026-08-31 — مستودعاتٌ طُلبت ولم تُستورد
+
+| المستودع | ما هو فعلا | القرار |
+|---|---|---|
+| `bnaveenbharathi/PERSONALIZED-LEARNING-PLATFORM` | وصفُ تطبيقِ تعلُّمٍ في ملف README، لا مهارات | لا شيء يُستورد: ليس فيه `SKILL.md` واحد |
+| `affaan-m/ECC` | إطارُ تشغيلٍ كاملٌ لوكلاء («agent harness OS») | لا: يستبدل طريقةَ عملنا كلَّها لا يضيف إليها |
+| `xbtlin/ai-berkshire` | عشرون مهارةَ بحثٍ استثماريّ بالصينيّة | لا: لا صلة لها بأكاديمية تدريبٍ عربيّة |
+| `public-apis/public-apis` | فهرسُ واجهاتٍ عامّة، لا مهارة | لا: قائمةُ روابطَ لا تعليماتٌ يتبعها كلود |
+| `awesomeclaude.ai/awesome-claude-skills` | موقعٌ لا مستودع | لا ملفّاتٍ تُجلب بـ`curl`؛ ولو أردناه فهو دليلٌ يُقرأ لا يُثبَّت |
+| `alirezarezvani/claude-skills` | ٣٨٨ مهارة و٧٠٦ سكربت بايثون | لم تُثبَّت جملةً: ٣٨٨ ملفَّ تعليماتٍ في مستودعٍ فيه مدفوعات لا يمكن قراءتها كلَّها قبل الإدخال — وقاعدةُ المراجعة أدناه تمنع الإدخال بلا قراءة. حُفظ فهرسُها في `_catalogs/` لنختار منها واحدةً واحدة عند الحاجة |
+| `w95/awesome-claude-corporate-skills` | ١٦٦ مهارةً بحسب الدور الوظيفيّ | المثل: حُفظ `INDEX.md` و`README.md` في `_catalogs/` فهرسا، ولم يُثبَّت منها شيء بعد |
+
+ومن `Jellypod-Inc/school-skills` تُركت `lesson-plan` و`socratic-tutor`
+و`circle-time` و`arts-crafts`: الأوليان يغطّيهما ما عندنا
+(`backwards-design-unit-planner`)، والأخريان لرياض الأطفال والصفوف الأولى
+ونحن نُدرّب بالغين. وملفّان تشير إليهما ولا وجود لهما في المستودع الأصل عند
+هذا الالتزام: `shared/scripts/pdf_render.py` و`rubric/references/examples/`.
+
+ومن `coreyhaines31/marketingskills` أُخذت خمسٌ تمسّ قِمعنا فعلا (السياق،
+والتحويل، والتسجيل، والتسعير، والنصّ)، وتُركت البقيّة. وفُحصت الخمسُ من
+جهةِ ما يقلق في مكتبةٍ تموّلها «شراكاتٌ موثّقة»: لا رابطَ خارجيّا واحدا في
+نصوصها، ولا ذكرَ لشريكٍ ولا لأداةٍ بعينها. فإن ظهر ذلك في تحديثٍ لاحق
+فهو سببٌ لعدم الترقية.
+
+ومن `nextlevelbuilder/ui-ux-pro-max-skill` أُخذت المهارةُ وبياناتُها
+وسكربتاتُها كاملةً (٤٢ ملفا، ٢ ميغابايت)، ولم يُؤخذ `cli/` ولا `src/`:
+الأوّل مثبِّتُ npm لا نحتاجه، والثاني نسخةُ المطوّر من البيانات نفسها.
+وجُرّبت هنا قبل الإدخال: `python3 .claude/skills/ui-ux-pro-max/scripts/search.py`
+يعمل بمكتبة بايثون القياسية وحدها، ولا يكتب خارج مجلَّده (سوى `__pycache__`،
+وقد أُضيف إلى `.gitignore`).
+
 ## ما أُضيف من عندنا — ولم يُعدَّل من الأصل
 
 الملفات المستوردة **كما هي حرفا**، ولم يُغيَّر فيها شيء: تعديلُها يمنع مقارنة
@@ -58,6 +98,12 @@ strong`، وكلُّها تطابق ما نؤلّفه فعلا. وتُركت `le
   بمتصفّح مثبّت المسار. بلا هذا الملف تكون المهارة صحيحة المبدأ ومستحيلة التنفيذ.
 - `test-driven-development/WAJEEZ-SCOPE.md` — أين يُلزم قانونها الحديدي في هذا
   المستودع، وما البديل المكافئ حيث لا يصلح اختبارٌ فاشل أولا.
+- `shared-references/WAJEEZ-PATHS.md` — مهاراتُ KST العشر تشير إلى
+  `scripts/kst_utils.py` بمسارٍ نسبيٍّ إلى جذر مستودعها لا جذرِنا. الملفُّ
+  يصحّح المسار بلا أن يمسّ نصّها، ويقول أين تنفع عندنا وأين لا تنفع.
+
+و`_catalogs/` ليست مهاراتٍ بل فهارسُ محفوظة (لا `SKILL.md` فيها فلا
+يلتقطها كلود مهارةً): ما في المكتبتين الكبيرتين لنختار منه لاحقا بالقراءة.
 
 ## قاعدة المراجعة
 
