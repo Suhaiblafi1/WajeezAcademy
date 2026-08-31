@@ -1,4 +1,5 @@
 import { Suspense, lazy, useEffect } from 'react'
+import { StaleChunkBoundary } from '@/components/StaleChunkBoundary'
 import { Routes, Route, Navigate, useLocation } from 'react-router'
 import Home from './pages/Home'
 import Verify from './pages/Verify'
@@ -74,6 +75,26 @@ function ScrollToTop() {
   return null
 }
 
+/** شاشة الانتظار — يستعملها Suspense والحاجز معا، فلا يُكرَّر هيكلها */
+function LoadingScreen() {
+  return (
+    <div dir="rtl" className="min-h-screen bg-paper px-5 py-10" aria-busy="true" aria-label="جاري التحميل">
+      <div className="mx-auto max-w-3xl animate-pulse space-y-6">
+        <div className="mx-auto h-6 w-44 rounded-full bg-white/10" />
+        <div className="mx-auto h-10 w-3/4 rounded-2xl bg-white/10" />
+        <div className="mx-auto h-4 w-1/2 rounded-full bg-white/5" />
+        <div className="space-y-3 rounded-3xl border border-white/10 bg-white/[0.03] p-8">
+          <div className="h-2 w-24 rounded-full bg-white/10" />
+          <div className="h-8 w-5/6 rounded-xl bg-white/10" />
+          <div className="h-14 rounded-2xl bg-white/5" />
+          <div className="h-14 rounded-2xl bg-white/5" />
+          <div className="h-14 rounded-2xl bg-white/5" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function App() {
   return (
     <>
@@ -83,22 +104,10 @@ export default function App() {
       </a>
       <ScrollToTop />
       <main id="main-content" tabIndex={-1}>
-        <Suspense fallback={
-          <div dir="rtl" className="min-h-screen bg-paper px-5 py-10" aria-busy="true" aria-label="جاري التحميل">
-            <div className="mx-auto max-w-3xl animate-pulse space-y-6">
-              <div className="mx-auto h-6 w-44 rounded-full bg-white/10" />
-              <div className="mx-auto h-10 w-3/4 rounded-2xl bg-white/10" />
-              <div className="mx-auto h-4 w-1/2 rounded-full bg-white/5" />
-              <div className="space-y-3 rounded-3xl border border-white/10 bg-white/[0.03] p-8">
-                <div className="h-2 w-24 rounded-full bg-white/10" />
-                <div className="h-8 w-5/6 rounded-xl bg-white/10" />
-                <div className="h-14 rounded-2xl bg-white/5" />
-                <div className="h-14 rounded-2xl bg-white/5" />
-                <div className="h-14 rounded-2xl bg-white/5" />
-              </div>
-            </div>
-          </div>
-        }>
+        {/* حاجزُ القطع الزائلة فوق Suspense: إخفاقُ الاستيراد المؤجَّل خطأُ
+            تصييرٍ في شجرة React لا حدثُ موردٍ في النافذة — فيُلتقط هنا. */}
+        <StaleChunkBoundary fallback={<LoadingScreen />}>
+        <Suspense fallback={<LoadingScreen />}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/methodology" element={<Methodology />} />
@@ -189,6 +198,7 @@ export default function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
         </Suspense>
+        </StaleChunkBoundary>
       </main>
       <ToastHost />
     </>
