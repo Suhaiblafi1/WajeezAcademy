@@ -5,6 +5,9 @@ import {
   CheckCircle2, ChevronRight, EyeOff, LifeBuoy, Loader2, RefreshCw, Send, ServerOff, UserPlus,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
+import ListToolbar from "@/components/admin/ListToolbar";
+import { matchesQuery } from "@/application/text/search-ar";
+import { paginate } from "@/application/admin/paginate";
 import FlowSteps from "@/components/FlowSteps";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { useAutoRefresh } from "@/services/useAutoRefresh";
@@ -32,6 +35,8 @@ const inputCls = "rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-x
 export default function Support() {
   const [rows, setRows] = useState<TicketRow[]>([]);
   const [statusFilter, setStatusFilter] = useState("");
+  const [q, setQ] = useState("");
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState<string | null>(null);
   const [flash, setFlash] = useState("");
@@ -68,6 +73,10 @@ export default function Support() {
     } catch (e) { setFlash(e instanceof ApiError ? e.message : "فشل الإجراء"); }
     finally { setBusy(false); }
   };
+
+  /* الحالةُ تُرشَّح في الخادم، والبحثُ هنا على ما وصل — والاثنان يتراكبان */
+  const matched = rows.filter((t) => matchesQuery(q, [t.subject, t.category, t.user.displayName, t.user.email]));
+  const view = paginate(matched, page, 20);
 
   if (offline) {
     return (
@@ -222,8 +231,16 @@ export default function Support() {
           <p className="mt-4 text-sm text-white/50">لا تذاكر بهذه الحالة — تذاكر المتعلمين تصل هنا فور فتحها من بوابتهم.</p>
         </div>
       ) : (
+        <>
+        <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="تذكرة"
+          placeholder="ابحث بعنوانٍ أو صاحبِ تذكرةٍ أو تصنيف…" />
+        {view.total === 0 ? (
+          <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-white/45">
+            لا تذكرة تطابق «{q.trim()}».
+          </p>
+        ) : (
         <div className="space-y-3">
-          {rows.map((t) => (
+          {view.rows.map((t) => (
             <button key={t.id} onClick={() => void openDetail(t.id)}
               className="flex w-full cursor-pointer flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-right transition hover:border-teal/40">
               <div>
@@ -239,6 +256,8 @@ export default function Support() {
             </button>
           ))}
         </div>
+        )}
+        </>
       )}
     </AdminLayout>
   );

@@ -1,3 +1,4 @@
+import { isDayCode, type DayCode } from '@/application/schedule/days';
 import { fmtDateWith, fmtSession } from "@/application/text/format-ar";
 /* ─────────── تنسيق وقت عربي موحد لكل البوابات ───────────
    القريب نسبي («قبل 3 أيام»، «غدا 14:30») والبعيد تاريخ كامل.
@@ -61,14 +62,15 @@ export function fmtWhen(iso?: string): string {
 
    والأيّام كانت تُطبع كما تُخزَّن: `tue, thu` بالإنجليزية في واجهةٍ عربيّة. */
 
-const DAY_AR: Record<string, string> = {
+const DAY_AR: Record<DayCode, string> = {
   sun: 'الأحد', mon: 'الاثنين', tue: 'الثلاثاء', wed: 'الأربعاء',
   thu: 'الخميس', fri: 'الجمعة', sat: 'السبت',
 };
 
 /** يوم الأسبوع بالعربية — ويُعيد ما لا يعرفه كما هو بدل أن يُخفيه */
 export function dayLabelAr(code: string): string {
-  return DAY_AR[code.trim().toLowerCase().slice(0, 3)] ?? code;
+  const key = code.trim().toLowerCase().slice(0, 3);
+  return isDayCode(key) ? DAY_AR[key] : code;
 }
 
 /** أيّام الشعبة مجموعةً: «الثلاثاء والخميس» */

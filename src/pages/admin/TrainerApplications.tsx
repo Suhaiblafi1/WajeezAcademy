@@ -4,6 +4,11 @@ import {
   Loader2, MailCheck, RefreshCw, ServerOff, Star, UserPlus, XCircle,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
+import ListToolbar from "@/components/admin/ListToolbar";
+import BulkBar from "@/components/admin/BulkBar";
+import { bulkMessage, runBulk } from "@/application/admin/bulk";
+import { matchesQuery } from "@/application/text/search-ar";
+import { paginate } from "@/application/admin/paginate";
 import FlowSteps from "@/components/FlowSteps";
 import { apiGet, apiPost, apiDelete, ApiError } from "@/services/api";
 import { useRealSession } from "@/services/session";
@@ -33,6 +38,11 @@ const RUBRIC_AXES: { key: string; label: string }[] = [
   { key: "values_fit", label: "التوافق مع قيم وجيز" },
   { key: "availability", label: "التوفر" },
 ];
+
+/* ما يصلح جماعيّا: قراراتُ الفرز التي تتكرّر على عشراتٍ في جلسةٍ واحدة.
+   وما بعدها (المقابلة والدرس التجريبيّ والعقد) قرارٌ فرديّ بملفٍّ يُقرأ —
+   لا يُجمَّع، ولو جُمّع لصار الاعتمادُ ختما لا مراجعة. */
+const BULK_ACTIONS = ["move_to_review", "waitlist", "reject"];
 
 const DECISIONS: { action: string; label: string; from: string[]; tone: "main" | "warn" | "danger" }[] = [
   { action: "move_to_review", label: "بدء المراجعة", from: ["submitted", "waitlisted"], tone: "main" },
@@ -180,6 +190,12 @@ function TrainerCoursesTab({ summary }: { summary?: TrainerSummary }) {
 export default function TrainerApplications() {
   const [apps, setApps] = useState<AppRow[]>([]);
   const [filter, setFilter] = useState("");
+  const [q, setQ] = useState("");
+  const [page, setPage] = useState(1);
+  /* التحديدُ يبقى عبر الصفحات والبحث — والشريطُ يقول على كم يقع، فلا يُنفَّذ
+     على صفٍّ غاب عن العين بلا علمِ صاحب القرار. */
+  const [sel, setSel] = useState<Set<string>>(new Set());
+  const [bulkProgress, setBulkProgress] = useState("");
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState<string | null>(null);
   const [selected, setSelected] = useState<AppDetail | null>(null);
@@ -235,6 +251,46 @@ export default function TrainerApplications() {
     } finally {
       setBusy(false);
     }
+  };
+
+  /* الحالةُ تُرشَّح في الخادم، والبحثُ هنا على ما وصل */
+  const view = paginate(
+    apps.filter((a) => matchesQuery(q, [a.fullName, a.email, a.reference, a.jobTitle, ...a.specialties])),
+    page, 20);
+
+  const toggleSel = (id: string) => setSel((prev) => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
+
+  /* لا يُعرض إلّا ما يصلح للمحدَّد **كلِّه**: إجراءٌ يصلح لبعضه يُنتج إخفاقا
+     جزئيّا لا سببَ له إلّا أنّا عرضناه. */
+  const selectedRows = apps.filter((a) => sel.has(a.id));
+  const commonActions = selectedRows.length === 0 ? [] :
+    DECISIONS.filter((d) => BULK_ACTIONS.includes(d.action) && selectedRows.every((a) => d.from.includes(a.status)));
+
+  const bulkDecide = async (action: string, labelAr: string) => {
+    if (busy || sel.size === 0) return;
+    /* الرفضُ يحتاج سببا يُكتب في الأثر ويصل صاحبَ الطلب — ولا يُجمَّع بلا سبب */
+    let note: string | undefined;
+    if (action === "reject" || action === "waitlist") {
+      const typed = window.prompt(`سببُ «${labelAr}» على ${sel.size} طلبا (يصل صاحبَ الطلب):`);
+      if (typed === null) return;
+      if (typed.trim().length < 5) { setFlash("السببُ أقصرُ من أن يُفهم — اكتب خمسةَ أحرفٍ فأكثر."); return; }
+      note = typed.trim();
+    }
+    setBusy(true); setFlash(""); setBulkProgress("");
+    const outcome = await runBulk(
+      [...sel],
+      (id) => apiPost(`/api/admin/trainer-applications/${id}/decision`, { action, note }),
+      (done, total) => setBulkProgress(`${done} من ${total}`),
+    );
+    setBulkProgress("");
+    setSel(new Set(outcome.failed.map((f) => f.id)));
+    setFlash(bulkMessage(outcome, `نُفّذ «${labelAr}»`));
+    setBusy(false);
+    await load();
   };
 
   if (offline) {
@@ -576,10 +632,38 @@ export default function TrainerApplications() {
         </div>
       ) : (
         <div className="space-y-3">
-          {apps.map((a) => (
+          <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="طلبا"
+            placeholder="ابحث باسمٍ أو بريدٍ أو رقمِ طلبٍ أو تخصّص…" />
+          <BulkBar count={sel.size} busy={busy} progress={bulkProgress} onClear={() => setSel(new Set())}>
+            {commonActions.length === 0 ? (
+              <span className="text-[11px] text-white/55">
+                لا إجراءَ يصلح للمحدَّد كلِّه — الحالاتُ مختلفة، فاختر ما يتّحد حالُه.
+              </span>
+            ) : commonActions.map((d) => (
+              <button key={d.action} onClick={() => void bulkDecide(d.action, d.label)}
+                className={`cursor-pointer rounded-full px-4 py-1.5 text-[11px] font-black transition ${
+                  d.tone === "danger" ? "border border-red-400/40 text-red-300 hover:bg-red-400/10" : "bg-gold text-on-gold hover:bg-gold/90"
+                }`}>
+                {d.label} — على {sel.size}
+              </button>
+            ))}
+          </BulkBar>
+          {view.total === 0 && (
+            <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-white/45">
+              لا طلب يطابق «{q.trim()}».
+            </p>
+          )}
+          {view.rows.map((a) => (
+            <div key={a.id}
+              className={`flex flex-wrap items-center gap-3 rounded-2xl border bg-white/[0.03] p-5 transition ${sel.has(a.id) ? "border-gold/45" : "border-white/10 hover:border-teal/40"}`}
+            >
+              {/* المربّعُ خارج الزرّ لا داخله: زرٌّ في زرّ لا يصحّ، ونقرةٌ
+                  على التحديد كانت تفتح الملفّ. */}
+              <input type="checkbox" checked={sel.has(a.id)} onChange={() => toggleSel(a.id)}
+                aria-label={`حدّد طلب ${a.fullName}`} className="h-4 w-4 shrink-0 cursor-pointer accent-gold" />
             <button
-              key={a.id} onClick={() => void openDetail(a.id)}
-              className="flex w-full cursor-pointer flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-right transition hover:border-teal/40"
+              onClick={() => void openDetail(a.id)}
+              className="flex flex-1 cursor-pointer flex-wrap items-center justify-between gap-3 text-right"
             >
               <div>
                 <p className="font-black">{a.fullName} <span className="mr-2 font-mono text-[10px] text-white/50" dir="ltr">{a.reference}</span></p>
@@ -595,6 +679,7 @@ export default function TrainerApplications() {
                 {STATUS_LABELS[a.status] ?? a.status}
               </span>
             </button>
+            </div>
           ))}
         </div>
       ))}
