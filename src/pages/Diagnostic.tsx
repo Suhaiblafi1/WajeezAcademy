@@ -1020,7 +1020,17 @@ export default function Diagnostic() {
        لا ننتظرها: التنقّل لا يُؤجَّل لنداء شبكة، والفشل لا يُلغي الاعتماد. */
     void syncAdoptedPlan(adoptedPlan);
     try {
-      if (c) safeSet("wajeez_diag_composite", JSON.stringify({ template_id: c.template_id, name_ar: c.name_ar }), 'session');
+      /* سياقُ المركّبة يعمّر ما تعمّر الخطّةُ نفسُها.
+
+         كانت الخطّة في الجلسة والسياقُ معها، فيموتان معا. ولمّا صارت الخطّة
+         دائمةً وجب أن يدوم السياقُ مثلَها — وإلّا بقيت الخطّةُ وذهب الصندوقُ
+         الذي يشرح لماذا رُكّبت، فتُقرأ خطّةً بلا سبب. والجلسةُ تبقى للتوافق
+         مع تبويبٍ فُتح قبل النشر. */
+      if (c) {
+        const ctx = JSON.stringify({ template_id: c.template_id, name_ar: c.name_ar });
+        safeSet("wajeez_diag_composite", ctx);
+        safeSet("wajeez_diag_composite", ctx, 'session');
+      }
       safeSet("wajeez_diag_top", hostId, 'session');
       safeSet("wajeez_diag_top", hostId);
     } catch {

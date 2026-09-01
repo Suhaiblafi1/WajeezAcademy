@@ -125,7 +125,8 @@ export default function PathwayPage() {
   const compositeCtx = useMemo(() => {
     if (!custom) return null;
     try {
-      const c = JSON.parse(safeGet("wajeez_diag_composite", 'session') ?? "null");
+      /* الدائمُ أوّلا ثمّ الجلسة — والثانيةُ للتوافق مع تبويبٍ فُتح قبل النقل */
+      const c = JSON.parse(safeGet("wajeez_diag_composite") ?? safeGet("wajeez_diag_composite", 'session') ?? "null");
       return c && typeof c.name_ar === "string" ? c as { template_id: string; name_ar: string } : null;
     } catch { return null; }
   }, [custom]);
@@ -363,15 +364,38 @@ export default function PathwayPage() {
             </div>
           </div>
 
-          {/* شارة الخطة المركبة — تسبق رحلة الدورات لتفسير لماذا تختلف القائمة عن كتالوج المسار */}
-          {compositeCtx && (
+          {/* تأطيرُ الخطّة — يسبق رحلة الدورات فيقول: هذه خطّتُك لا صفحةُ كتالوج.
+
+              كان الصندوقُ للمركّبة وحدَها، فالمسارُ الجاهز المعتمَد يصل بلا
+              تأطير: اسمُ المسار الطويل من الكتالوج، وشارةٌ صغيرة، ثمّ قائمةُ
+              دورات. فيُقرأ صفحةَ كتالوجٍ لا نتيجةَ تشخيصٍ اعتمدها صاحبُها —
+              وهو ما وصفه صاحبُ المنصّة بأنّها «صفحةٌ قديمة، ليست كصفحة المسار
+              الشخصي». والفرقُ لم يكن في الصفحة بل في أنّ إحدى الحالتين مؤطَّرة
+              والأخرى عارية.
+
+              فصار لكلٍّ صندوقُه: الذهبيُّ يشرح **لماذا تختلف** القائمةُ عن
+              الكتالوج، والفيروزيُّ يقول **إنّها خطّةٌ تُملَك وتُعدَّل**. ولا
+              يُقال في أيٍّ منهما ما لا نعرفه: الاعتمادُ واقعٌ (وإلّا لم يُعرض
+              الصندوق)، والتعديلُ متاحٌ فعلا (`editable`)، والحفظُ فوريّ. */}
+          {compositeCtx ? (
             <div className="story-fade mt-6 rounded-2xl border border-gold/40 bg-gold/[0.06] px-5 py-4">
               <p className="text-sm font-black text-gold-ink">خطتك المركبة: «{compositeCtx.name_ar}»</p>
               <p className="mt-1 text-xs leading-relaxed text-white/60">
                 الدورات أدناه هي تركيبتك كما ركّبها تشخيصك من أكثر من مجال — تُدار وتُتابع عبر مسار «{pathway.name}» المضيف.
               </p>
             </div>
-          )}
+          ) : custom ? (
+            <div className="story-fade mt-6 rounded-2xl border border-teal-light/40 bg-teal/[0.07] px-5 py-4">
+              <p className="flex items-center gap-1.5 text-sm font-black text-teal-light-ink">
+                <Sparkles className="h-4 w-4 shrink-0" />
+                خطّتك من مؤشر وجيز
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-white/60">
+                هذه ليست صفحة كتالوج — بل الخطّة التي رشّحها تشخيصك واعتمدتها أنت.
+                والدورات أدناه لك: تستبدل وتحذف وتختار هديّتك، ويُحفظ التغيير فور وقوعه.
+              </p>
+            </div>
+          ) : null}
 
           {/* «ماذا ستحقق من خلال خطتك؟» — رحلة الدورات بأكورديون، بلا قائمة مكررة فوقها */}
           <CourseJourney
