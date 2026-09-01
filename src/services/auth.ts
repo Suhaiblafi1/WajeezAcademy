@@ -94,18 +94,55 @@ export function readRoles(): string[] {
   return readSession()?.roles ?? [];
 }
 
-/** يزامن نسخة العرض مع الخادم — يعيد null إن لا جلسة حية */
-export async function refreshSession(): Promise<Session | null> {
+/** جوابُ الخادم عن «من أنت؟» — بثلاث حالات لا حالتين.
+
+    كان `refreshSession` يعيد `Session | null`، ويسقط عند فشل الشبكة إلى
+    النسخة المحلّية: `catch { return readSession() }`. وحارسُ الصلاحيات
+    (`RequireRole`) يبني قرارَه على ما تعيده — فصار قرارُ صلاحيةٍ يُتّخذ على
+    نسخةٍ في `localStorage` كلّما تعذّر النداء، وتعليقُ الحارس نفسِه يقول إنّه
+    «يتحقق عند الخادم وليس من التخزين المحلي».
+
+    وأثرُه في الاتّجاهين:
+
+    · **نسخةٌ أقدم من الحقيقة** — حسابٌ صار `super_admin` بعد آخر مرّة كُتبت
+      فيها النسخة (أو نسخةٌ من متصفّحٍ آخر) يهبط إلى بوابة المتعلّم. وهو ما
+      يشكوه صاحب المنصّة: «أحيانا يأخذني لمنصّة طالب علما أني سوبر فقط».
+    · **نسخةٌ أوسع من الحقيقة** — من سُحبت أدوارُه يمرّ الحارسَ ما دامت
+      نسختُه في متصفّحه. وهذه أخطرُ، ولم تكن في الشكوى.
+
+    فصارت الحالاتُ ثلاثا: `ok` و`anon` و`unreachable` — والثالثةُ **ليست
+    جوابا**، فلا يُبنى عليها قرارُ صلاحية. والنسخةُ المحلّية لا تُقرأ هنا
+    إطلاقا؛ موضعُها عرضُ الاسم لا فتحُ الباب. */
+export type SessionCheck =
+  | { status: "ok"; session: Session }
+  | { status: "anon" }
+  | { status: "unreachable" };
+
+export async function verifySession(): Promise<SessionCheck> {
   try {
     const { user } = await apiGet<{ user: ServerUser | null }>("/api/auth/me");
     if (!user) {
       safeRemove(USER_KEY);
-      return null;
+      return { status: "anon" };
     }
     writeSession(user.displayName, user.email, user.roles);
-    return readSession();
-  } catch {
-    return readSession(); // انقطاع شبكة — نبقي آخر نسخة معروفة
+    const session = readSession();
+    /* التخزينُ قد يكون ممنوعا (تصفّحٌ خاصّ) فتعود القراءةُ فارغة — والجوابُ
+       من الخادم صحيحٌ على كلّ حال، فيُبنى منه لا من المخزَّن. */
+    return {
+      status: "ok",
+      session: session ?? {
+        name: user.displayName, email: user.email, roles: user.roles,
+        at: Date.now(), exp: Date.now() + 30 * 864e5,
+      },
+    };
+  } catch (e) {
+    /* ٤٠١ جوابٌ صريح: لا جلسة. وما عداه تعذُّرُ وصولٍ لا جواب. */
+    if (e instanceof ApiError && e.status === 401) {
+      safeRemove(USER_KEY);
+      return { status: "anon" };
+    }
+    return { status: "unreachable" };
   }
 }
 
