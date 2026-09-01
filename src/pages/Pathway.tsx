@@ -161,13 +161,17 @@ export default function PathwayPage() {
     if (adopted) saveAdoptedPlan({ ...adopted, courseIds: ids, giftId: gift });
   };
 
-  /* بدائل ومقترحات: خارج المختار والهديّة، ومن مجال المسار أوّلا */
+  /* بدائل ومقترحات: خارج المختار والهديّة، ومن مجال المسار أوّلا.
+
+     ستٌّ لا ثمان. من حذف دورةً يبحث عن بديلٍ واحد، والقائمةُ الطويلة تحوّل
+     قرارا واحدا إلى مسحِ ثماني عناوين — فيُغلق الصندوقَ ولا يستبدل شيئا.
+     والإقصاءُ قائمٌ أصلا: ما في مساره وهديّتُه خارج القائمة، فلا يرى مكرَّرا. */
   const pool = useMemo(() => {
     const taken = new Set([...courseIds, ...(giftId ? [giftId] : [])]);
     return courses
       .filter((c) => !taken.has(c.id))
       .sort((x, y) => (y.pathwayId === pathway?.id ? 1 : 0) - (x.pathwayId === pathway?.id ? 1 : 0))
-      .slice(0, 8)
+      .slice(0, 6)
       .map((c) => ({ id: c.id, name: c.name, note: `${c.skill} · من مسار ${c.pathwayName}` }));
   }, [courseIds, giftId, pathway?.id]);
 
@@ -411,6 +415,9 @@ export default function PathwayPage() {
                     giftId,
                     swapForId,
                     pool,
+                    /* الرقمُ من عرض المسار نفسِه (pathwayOffer) لا من ثابتٍ
+                       مكتوب: سلّمُ المسار الجاهز غير سلّم البناء الحرّ. */
+                    addReason: `دورات مسارك تُشترى معا بخصم يصل إلى ${offer.bundleMaxPct}٪ — والدورة وحدها بسعرها كاملا.`,
                     minReached: courseIds.length <= MIN_PATHWAY_COURSES,
                     maxReached: courseIds.length >= MAX_PATHWAY_COURSES,
                     onSwapToggle: setSwapForId,

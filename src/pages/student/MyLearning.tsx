@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
-import { ArrowLeft, Award, BookOpen, CalendarDays, CalendarPlus, CheckCircle2, ChevronDown, FileText, Loader2, PlayCircle, RefreshCw, Ruler, Send, ServerOff, Video } from "lucide-react";
+import { ArrowLeft, Award, BookOpen, CalendarDays, CalendarPlus, CheckCircle2, ChevronDown, FileText, CircleSlash, Loader2, PlayCircle, RefreshCw, Ruler, Send, ServerOff, Video } from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import SubmissionFeedback from "@/components/SubmissionFeedback";
 import { apiGet, apiPost, ApiError } from "@/services/api";
@@ -64,7 +64,17 @@ export default function MyLearning() {
      يبدأ لا أن يقرأ فاتورته. و`paid` ليست دليل دفع — التسوية بـwebhook موقَّت
      وحده — فالرسالة تقول «نؤكّد» لا «تأكّد»، والقائمة أدناه هي الدليل. */
   const [params] = useSearchParams();
+  /* الإلغاء يُقرأ إلغاءً لا نجاحا.
+
+     المزوّد يبني الرابطين من `callbackUrl` نفسِه (payments/provider.ts):
+       نجاح : /student/learning?paid=<orderId>&paid=1
+       إلغاء: /student/learning?paid=<orderId>&cancelled=1
+     فكلاهما يحمل `paid=<orderId>`. وكانت الصفحة تقرأ `paid` وحدَه، فمن ضغط
+     «إلغاء» على صفحة الدفع يُستقبَل بـ«شكرا لك — عدنا بك إلى تعلّمك» ثمّ
+     ينتظر شعبا لن تأتي، لأنّه لم يدفع. و`cancelled` تُفحص أوّلا لأنّها
+     الأخصّ: وجودُها ينفي النجاحَ مهما كان `paid` حاضرا. */
   const paidOrder = params.get("paid");
+  const cancelledOrder = params.get("cancelled") ? paidOrder : null;
   const [rows, setRows] = useState<EnrollmentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState<string | null>(null);
@@ -143,7 +153,19 @@ export default function MyLearning() {
   return (
     <PortalLayout title="تعلّمي">
       <div className="mx-auto max-w-4xl">
-        {paidOrder && (
+        {cancelledOrder && (
+          <div className="mb-5 rounded-2xl border border-gold/40 bg-gold/[0.07] px-4 py-3.5">
+            <p className="flex items-center gap-2 text-sm font-black text-gold-ink">
+              <CircleSlash className="h-4 w-4 shrink-0" /> لم تكتمل دفعتك — ولم يُخصم منك شيء
+            </p>
+            <p className="mt-1.5 text-[12px] leading-6 text-white/60">
+              طلبك محفوظ كما تركته. أكمل الدفع متى شئت من{" "}
+              <Link to="/student/billing" className="font-bold text-gold-ink underline underline-offset-4">الفواتير</Link>
+              {" "}— ولن تفقد مقعدك ما دامت الشعبة مفتوحة.
+            </p>
+          </div>
+        )}
+        {paidOrder && !cancelledOrder && (
           <div className="mb-5 rounded-2xl border border-teal/40 bg-teal/10 px-4 py-3.5">
             <p className="flex items-center gap-2 text-sm font-black text-teal-light-ink">
               <CheckCircle2 className="h-4 w-4 shrink-0" /> شكرا لك — عدنا بك إلى تعلّمك

@@ -1,7 +1,7 @@
 import { useCourseCohorts } from "@/services/cohort-prices";
 import CohortPicker from "@/components/CohortPicker";
 import { useEffect, useState } from "react";
-import { ChevronDown, Clock3, Target, ListChecks, FolderKanban, Award, RefreshCcw, X, Gift, Plus, UserRound, LifeBuoy } from "lucide-react";
+import { ChevronDown, Clock3, Target, ListChecks, FolderKanban, Award, RefreshCcw, X, Gift, Plus, UserRound, LifeBuoy, Tag } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { courseFullById, weeksLabel, MIN_PATHWAY_COURSES, MAX_PATHWAY_COURSES } from "@/data/courses";
 import { apiGet } from "@/services/api";
@@ -27,6 +27,11 @@ export interface CourseJourneyEdit {
      ولا يحذف ولا يضيف ولا يختار هدية. والسبب أن عدد الدورات هو ما يحدد السعر،
      فتثبيته يُبقي السعر ثابتا ويفتح الاختيار في الوقت نفسه. */
   swapOnly?: boolean;
+  /** لماذا يضيف بدل أن يكتفي — جملةٌ يكتبها النداء بأرقامه هو.
+
+      لا تُحسب هنا: سلّمُ خصم المسار الجاهز غير سلّم البناء الحرّ، فرقمٌ
+      مكتوبٌ داخل المكوّن يصدق في صفحةٍ ويكذب في أخرى. */
+  addReason?: string;
   onSwapToggle: (id: string | null) => void;
   onSwapPick: (oldId: string, newId: string) => void;
   onRemove: (id: string) => void;
@@ -75,6 +80,8 @@ export default function CourseJourney({
   /* نداءٌ واحد للمواعيد، والاختيار محفوظٌ بالدورة — يُقرأ عند الشراء */
   const { cohorts } = useCourseCohorts();
   const [picked, setPicked] = useState<Record<string, string>>({});
+  /* صندوقُ المقترحات مطويٌّ افتراضا — العرضُ قائمٌ في سطره، والشبكةُ تُفتح بطلب */
+  const [poolOpen, setPoolOpen] = useState(false);
   const list = courseIds
     .map((id) => courseFullById(id))
     .filter((c): c is NonNullable<typeof c> => Boolean(c));
@@ -382,17 +389,43 @@ export default function CourseJourney({
               فعله بها. و«مجانا» لا يظهر إلّا ما دامت الهديّة غير مأخوذة —
               والفعلان باقيان كما كانا، لم يُدمجا في واحد: من أراد أن يدّخر
               هديّته لدورةٍ أخرى ويشتري هذه، له ذلك. */}
+          {/* الصندوقُ مطويٌّ افتراضا — سطرٌ يُغري بالفتح لا شبكةٌ تبتلع الشاشة.
+
+              كان مفتوحا دائما بستّ دورات في شبكةٍ من عمودين، فيأخذ على الهاتف
+              حيّزا أكبر من رحلة الدورات نفسِها — وهي أصلُ الصفحة. والمطويُّ
+              يبقي العرضَ قائما في سطرٍ واحد: من أراده فتحه، ومن لم يُرده مرّ.
+
+              والسببُ صار مكتوبا. كان الصندوق يقول «أضف دورة أخرى» بلا أن يقول
+              **لماذا** — والسببُ الحقيقيّ أنّ الدورات تُشترى معا بخصمٍ لا
+              تناله الدورةُ وحدَها. فمن حذف دورةً كان يقرأ دعوةً بلا مقابل. */}
           {edit.pool.length > 0 && (!edit.giftId || !edit.maxReached) && (
-            <div className={`rounded-2xl border p-4 ${!edit.giftId ? "border-gold/40 bg-gold/5" : "border-white/10 bg-white/[0.02]"}`}>
-              <p className={`flex items-center gap-2 text-sm font-black ${!edit.giftId ? "text-gold-ink" : "text-white/70"}`}>
-                {!edit.giftId ? <Gift className="h-4 w-4 shrink-0" /> : <Plus className="h-4 w-4 shrink-0" />}
-                {!edit.giftId ? "هدية وجيز: دورة إضافية مجانية فوق دورات مسارك" : "أضف دورة أخرى من المقترحة لك"}
-              </p>
-              <p className="mt-1 text-[11px] leading-5 text-white/45">
+            <Collapsible
+              open={poolOpen}
+              onOpenChange={setPoolOpen}
+              className={`rounded-2xl border ${!edit.giftId ? "border-gold/40 bg-gold/5" : "border-white/10 bg-white/[0.02]"}`}
+            >
+              <CollapsibleTrigger className="flex w-full cursor-pointer items-center gap-2 p-4 text-right">
+                <span className={`flex min-w-0 flex-1 items-center gap-2 text-sm font-black ${!edit.giftId ? "text-gold-ink" : "text-white/70"}`}>
+                  {!edit.giftId ? <Gift className="h-4 w-4 shrink-0" /> : <Plus className="h-4 w-4 shrink-0" />}
+                  <span className="min-w-0 truncate">
+                    {!edit.giftId ? "هديتك: دورة مجانية بانتظارك" : "أضف دورة أخرى إلى مسارك"}
+                  </span>
+                </span>
+                <span className="shrink-0 text-[11px] font-bold text-white/40">{edit.pool.length}</span>
+                <ChevronDown className={`h-4 w-4 shrink-0 text-white/45 transition ${poolOpen ? "rotate-180" : ""}`} />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="px-4 pb-4">
+              <p className="text-[11px] leading-5 text-white/45">
                 {!edit.giftId
                   ? `اختر واحدة مجانا — أو أضف ما تشاء بالسعر حتى ${MAX_PATHWAY_COURSES} دورات.`
                   : `حتى ${MAX_PATHWAY_COURSES} دورات في المسار.`}
               </p>
+              {edit.addReason && (
+                <p className="mt-2 flex items-start gap-1.5 rounded-xl border border-teal-light/25 bg-teal/[0.06] px-3 py-2 text-[11px] leading-5 text-teal-light-ink">
+                  <Tag className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <span className="min-w-0">{edit.addReason}</span>
+                </p>
+              )}
 
               <ul className="mt-3 grid gap-1.5 sm:grid-cols-2">
                 {edit.pool.map((p) => (
@@ -426,7 +459,8 @@ export default function CourseJourney({
                   </li>
                 ))}
               </ul>
-            </div>
+              </CollapsibleContent>
+            </Collapsible>
           )}
           {edit.minReached && !edit.swapOnly && (
             <p className="text-[11px] text-gold-ink/80">وصلت للحد الأدنى — {MIN_PATHWAY_COURSES} دورات هي نواة المسار.</p>

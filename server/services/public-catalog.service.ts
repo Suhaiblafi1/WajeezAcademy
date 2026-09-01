@@ -91,7 +91,20 @@ export class PublicCatalogService {
           include: { profile: { select: { publishApprovedAt: true, application: { select: { fullName: true } } } } },
         },
         sessions: { orderBy: { startsAt: 'asc' }, select: { startsAt: true, endsAt: true, title: true } },
-        _count: { select: { enrollments: { where: { status: 'enrolled' } } } },
+        /* المقعدُ المحجوز مقعدٌ مشغول.
+
+           كان العدُّ على `enrolled` وحدَه، و`checkout` يمنع على
+           `enrolled + seat_held` (commerce.service.ts:303–309). فشعبةٌ امتلأت
+           بحجوزٍ لم تُدفع بعد كانت تُعلن مقاعدَ متاحة، ثمّ تُرفض بـ409 عند
+           الضغط على «اشترِ». والمشتري يقرأ ذلك عطبا في الموقع لا امتلاءً.
+
+           فالعدّان صارا واحدا: ما يُعرض هو ما يقبله الشراء. */
+        _count: {
+          select: {
+            enrollments: { where: { status: 'enrolled' } },
+            enrollmentRequests: { where: { status: 'seat_held' } },
+          },
+        },
       },
       orderBy: { startsAt: 'asc' },
     })
@@ -100,7 +113,8 @@ export class PublicCatalogService {
       courseId: c.courseId, courseTitle: c.course.versions[0]?.titleAr ?? '',
       startsAt: c.startsAt, endsAt: c.endsAt, daysOfWeek: c.daysOfWeek, startTime: c.startTime,
       timezone: c.timezone, price: c.price, currency: c.currency, language: c.language,
-      deliveryMode: c.deliveryMode, seatsLeft: c.capacity ? Math.max(0, c.capacity - c._count.enrollments) : null,
+      deliveryMode: c.deliveryMode,
+      seatsLeft: c.capacity ? Math.max(0, c.capacity - c._count.enrollments - c._count.enrollmentRequests) : null,
       trainers: c.trainers
         .filter((t) => t.profile.publishApprovedAt)
         .map((t) => t.profile.application.fullName),
