@@ -1065,14 +1065,24 @@ model TrainerCourseQualification {
   id          String         @id @default(uuid()) @db.Uuid
   profileId   String         @db.Uuid
   courseId    String
-  status      String         @default("qualified") // qualified | pending | retired
+  status      String         @default("qualified") // qualified | pending | rejected | retired
   qualifiedBy String?        @db.Uuid
   note        String?
+  /**
+   * الشعبة التي طُلب التأهيل من أجلها — فالموافقة تؤهّل وتُسند معا.
+   * كان التأهيل والإسناد فعلين منفصلين في شاشتين، فمن أراد مدرّبا لشعبةٍ
+   * مشى ثلاث خطوات في مكانين. والطلب يُقدَّم من الشعبة، فيبقى معه أثرُها.
+   */
+  requestedCohortId String?  @db.Uuid
+  requestedBy       String?  @db.Uuid
+  requestedAt       DateTime?
+  decidedAt         DateTime?
   createdAt   DateTime       @default(now())
   profile     TrainerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
   course      Course         @relation(fields: [courseId], references: [id])
 
   @@unique([profileId, courseId])
+  @@index([status])
 }
 
 model TrainerCourseAssignment {

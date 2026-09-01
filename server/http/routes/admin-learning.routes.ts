@@ -82,6 +82,19 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     return cohorts.update(req.auth!.userId, id, body)
   })
 
+  /* مدرّبو الشعبة المحتمَلون وحالُ تأهيل كلٍّ منهم.
+
+     كانت الشاشة تعرض «المدرّبين المعلَنين» بلا أن تقول أيُّهم مؤهَّل لدورة
+     هذه الشعبة، فيُجرَّب الإسنادُ ويُردّ بـ409 «غير مؤهل». والفرقُ بين
+     «أسنده» و«أهّله وأسنده» قرارٌ يُتّخذ قبل النقر لا بعده. */
+  app.get('/api/admin/cohorts/:id/eligible-trainers', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-learning'], summary: 'مدرّبو هذه الشعبة المحتمَلون — بحال تأهيل كلٍّ منهم لدورتها' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return cohorts.eligibleTrainersFor(id)
+  })
+
   app.post('/api/admin/cohorts/:id/trainers', {
     preHandler: requirePermission('trainer.assign'),
     schema: { tags: ['admin-learning'], summary: 'تعيين مدرب للشعبة — تأهيل إلزامي ومنع تعارض جدول' },

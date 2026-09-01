@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   Activity, AlertTriangle, BadgeCheck, Banknote, Briefcase, CalendarCheck, CheckCircle2, ChevronDown, FileSignature,
-  Globe, Info, Loader2, Settings2, ShieldOff, Star, UserCheck, XCircle, Zap,
+  Globe, Info, Loader2, Settings2, Star, UserCheck, XCircle, Zap,
 } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { fmtDateTime } from "@/application/text/format-ar";
@@ -69,12 +69,28 @@ function RubricInput({ scores, onChange }: { scores: Record<string, number>; onC
   );
 }
 
+/** ملخّصُ المدرّب كما يحسبه الخادم — لا تُستنتج أرقامُه في الشاشة */
+export interface TrainerSummary {
+  qualifiedCourses: { courseId: string; titleAr: string }[];
+  pendingQualifications: number;
+  cohorts: {
+    id: string; title: string; role: string; status: string;
+    courseTitle: string; enrolled: number; startsAt: string | null;
+  }[];
+  nextSession: { title: string; startsAt: string; cohortTitle: string } | null;
+  rating: number | null;
+  ratingCount: number;
+  publicVisibility: boolean;
+  suspendedAt: string | null;
+}
+
 /** بطاقات التفاصيل المتقدمة لطلب مدرب — تُركب داخل صفحة التفاصيل */
 export function TrainerDetailOps({ app, onAction }: {
   app: {
     id: string; status: string;
     interviews: { id: string; scheduledAt: string; outcome: string | null }[];
     profile: { id: string; userId: string | null } | null;
+    summary?: TrainerSummary;
   };
   onAction: (fn: () => Promise<unknown>, doneMsg: string) => Promise<void>;
 }) {
@@ -86,14 +102,6 @@ export function TrainerDetailOps({ app, onAction }: {
   const [verifyId, setVerifyId] = useState("");
   const [contractForm, setContractForm] = useState({ title: "", terms: "" });
   const [lastContractId, setLastContractId] = useState("");
-  const [qualForm, setQualForm] = useState({ courseId: "", note: "" });
-  const [assignOps, setAssignOps] = useState({ courseId: "", cohortId: "" });
-  const [suspendNote, setSuspendNote] = useState("");
-  const [courses, setCourses] = useState<{ id: string; title: string }[]>([]);
-
-  useEffect(() => {
-    apiGet<{ id: string; title: string }[]>("/api/admin/catalog/courses").then(setCourses).catch(() => setCourses([]));
-  }, []);
 
   const demoComplete = RUBRIC_AXES.every((x) => demoScores[x.key] >= 1);
 
@@ -219,57 +227,41 @@ export function TrainerDetailOps({ app, onAction }: {
         </div>
       </Card>
 
-      {/* عمليات الملف: تأهيل، إسناد، نشر عام، إيقاف */}
+      {/* الشعبُ المؤهَّل لها — عرضٌ لا تحكّم.
+
+          كانت هنا أربعةُ أفعال: تأهيلٌ وإسنادٌ ونشرٌ وإيقاف. وثلاثةٌ منها في
+          غير موضعها:
+
+          · **التأهيلُ والإسناد** انتقلا إلى الشعبة (`CohortOps`)، حيث يقع
+            القرارُ فعلا. وكانا هنا بحقلَي «معرّف شعبة (UUID)» يُكتبان يدا —
+            أي أنّ من يُسند يجب أن يعرف معرّفا لا اسما.
+          · **النشرُ والإيقاف** انتقلا إلى شاشة الطلبات، حيث بقيّةُ قرارات
+            دورة حياة المدرّب — فلا يُتّخذ قرارُ حالةٍ في مكانين.
+
+          وما بقي هنا هو ما تُجيب عنه هذه الشاشة وحدَها: **لأيّ الدورات هو
+          مؤهَّل**. وأمّا «مُسنَدٌ إلى ماذا» فيُقرأ من الشعبة نفسِها لا من
+          ملفّه، فمصدرُ الإسناد هناك. */}
       {app.profile && (
-        <Card icon={Briefcase} title="ملف المدرب — تأهيل وإسناد ونشر وإيقاف" defaultOpen={app.status === "active" || app.status === "onboarding"}>
-          <div className="space-y-3">
-            <div className="flex flex-wrap gap-2">
-              <select value={qualForm.courseId} onChange={(e) => setQualForm({ ...qualForm, courseId: e.target.value })} className={`${selectCls} flex-1`}>
-                <option value="">دورة للتأهيل…</option>
-                {courses.map((c) => <option key={c.id} value={c.id}>{c.title} ({c.id})</option>)}
-              </select>
-              <input value={qualForm.note} onChange={(e) => setQualForm({ ...qualForm, note: e.target.value })} placeholder="ملاحظة" className={inputCls} />
-              <button disabled={!qualForm.courseId}
-                onClick={() => void onAction(
-                  () => apiPost(`/api/admin/trainers/${app.profile!.id}/qualifications`, { courseId: qualForm.courseId, note: qualForm.note || undefined }),
-                  "أُهل المدرب للدورة",
-                )}
-                className="cursor-pointer rounded-full bg-teal px-4 py-1.5 text-xs font-black text-on-teal hover:bg-teal-light disabled:opacity-40">
-                تأهيل
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <select value={assignOps.courseId} onChange={(e) => setAssignOps({ ...assignOps, courseId: e.target.value })} className={`${selectCls} flex-1`}>
-                <option value="">دورة للإسناد…</option>
-                {courses.map((c) => <option key={c.id} value={c.id}>{c.title} ({c.id})</option>)}
-              </select>
-              <input value={assignOps.cohortId} onChange={(e) => setAssignOps({ ...assignOps, cohortId: e.target.value })}
-                placeholder="معرف شعبة (اختياري)" dir="ltr" className={`${inputCls} font-mono`} />
-              <button disabled={!assignOps.courseId}
-                onClick={() => void onAction(
-                  () => apiPost(`/api/admin/trainers/${app.profile!.id}/assignments`, { courseId: assignOps.courseId, cohortId: assignOps.cohortId || undefined }),
-                  "أُسند المدرب — يتطلب تأهيلا قائما",
-                )}
-                className="cursor-pointer rounded-full border border-teal/50 px-4 py-1.5 text-xs font-bold text-teal-light-ink disabled:opacity-40">
-                إسناد
-              </button>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 border-t border-white/8 pt-3">
-              <button onClick={() => void onAction(
-                () => apiPost(`/api/admin/trainers/${app.profile!.id}/publish-approval`),
-                "اعتُمد الظهور العام — الملف موثق وظاهر",
-              )} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-gold/40 px-4 py-1.5 text-xs font-bold text-gold-ink hover:bg-gold/10">
-                <Globe className="h-3.5 w-3.5" /> موافقة الظهور العام
-              </button>
-              <input value={suspendNote} onChange={(e) => setSuspendNote(e.target.value)} placeholder="سبب الإيقاف" className={`${inputCls} max-w-48`} />
-              <button onClick={() => void onAction(
-                () => apiPost(`/api/admin/trainers/${app.profile!.id}/suspend`, { note: suspendNote || undefined }),
-                "أُوقف المدرب — أُبطلت جلساته وأُخفي فورا",
-              )} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-red-500/40 px-4 py-1.5 text-xs font-bold text-red-400 hover:bg-red-500/10">
-                <ShieldOff className="h-3.5 w-3.5" /> إيقاف المدرب
-              </button>
-            </div>
-          </div>
+        <Card icon={Briefcase} title="الدورات المؤهَّل لها" defaultOpen={app.status === "active"}>
+          {(app.summary?.qualifiedCourses?.length ?? 0) === 0 ? (
+            <p className="text-[11px] leading-6 text-white/50">
+              لا دورة مؤهَّلا لها بعد. التأهيل يُطلب من الشعبة التي يُراد إسنادُه إليها — وموافقة المدير
+              الأكاديميّ تؤهّله وتُسنده في فعلٍ واحد.
+            </p>
+          ) : (
+            <ul className="flex flex-wrap gap-1.5">
+              {app.summary!.qualifiedCourses.map((c) => (
+                <li key={c.courseId} className="rounded-full border border-teal/35 bg-teal/[0.08] px-3 py-1 text-[11px] font-bold text-teal-light-ink">
+                  {c.titleAr}
+                </li>
+              ))}
+            </ul>
+          )}
+          {(app.summary?.pendingQualifications ?? 0) > 0 && (
+            <p className="mt-2.5 text-[11px] text-gold-ink">
+              وله {app.summary!.pendingQualifications} طلبُ تأهيلٍ بانتظار القرار.
+            </p>
+          )}
         </Card>
       )}
     </>

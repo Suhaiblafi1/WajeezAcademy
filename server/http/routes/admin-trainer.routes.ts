@@ -122,12 +122,14 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.post('/api/admin/trainer-applications/:id/decision', {
     preHandler: requirePermission('trainer.applications.decide'),
-    schema: { tags: ['admin-trainers'], summary: 'قرار بشري — مراجعة/طلب معلومات/اختصار/ديمو/قبول مشروط/انتظار/رفض' },
+    schema: { tags: ['admin-trainers'], summary: 'قرار بشري — من بدء المراجعة إلى التفعيل النهائي أو رفع الإيقاف' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({
       action: z.enum(['move_to_review', 'request_info', 'shortlist', 'request_demo', 'academic_review',
-        'conditionally_approve', 'waitlist', 'reject']),
+        'conditionally_approve', 'waitlist', 'reject',
+        /* آخرُ السلسلة — كان مفقودا، فلا قرارَ إداريّ ينهي مسار المدرّب */
+        'start_onboarding', 'activate', 'reinstate']),
       note: z.string().max(1000).optional(),
     }).parse(req.body)
     await review.decide(id, req.auth!.userId, body.action, body.note)
@@ -180,6 +182,44 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
     const body = z.object({ courseId: z.string(), note: z.string().optional() }).parse(req.body)
     return reply.status(201).send(await review.qualifyForCourse(profileId, body.courseId, req.auth!.userId, body.note))
+  })
+
+  /* ─────────── طلبُ التأهيل من الشعبة ───────────
+
+     بوّابةُ نزاهة التأهيل تبقى قائمة: **من يطلب ليس من يقرّر**. فالطلبُ
+     بصلاحية إدارة الشعب (`cohort.manage`) — وهي صلاحيةُ من يجدول ويُسند —
+     والقرارُ بصلاحية التأهيل (`trainer.qualify`) وحدَها. ولو جاز للطالب أن
+     يقرّر لصارت الموافقةُ ختما لا مراجعة، وسقط معنى التأهيل كلُّه. */
+  app.post('/api/admin/cohorts/:cohortId/qualification-requests', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'طلب تأهيل مدرّب لدورة هذه الشعبة — الموافقة تؤهّل وتُسند معا' },
+  }, async (req, reply) => {
+    const { cohortId } = z.object({ cohortId: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      profileId: z.string().uuid(),
+      courseId: z.string(),
+      note: z.string().trim().max(500).optional(),
+    }).parse(req.body)
+    return reply.status(201).send(
+      await review.requestQualification(body.profileId, body.courseId, cohortId, req.auth!.userId, body.note),
+    )
+  })
+
+  app.get('/api/admin/qualification-requests', {
+    preHandler: requirePermission('trainer.qualify'),
+    schema: { tags: ['admin-trainers'], summary: 'طلبات التأهيل المعلّقة — بانتظار قرار المدير الأكاديميّ' },
+  }, async () => review.pendingQualifications())
+
+  app.post('/api/admin/qualification-requests/:id/decide', {
+    preHandler: requirePermission('trainer.qualify'),
+    schema: { tags: ['admin-trainers'], summary: 'البتّ في طلب تأهيل — الموافقة تؤهّل وتُسند للشعبة المطلوبة' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      approve: z.boolean(),
+      note: z.string().trim().max(500).optional(),
+    }).parse(req.body)
+    return review.decideQualification(id, body.approve, req.auth!.userId, body.note)
   })
 
   app.post('/api/admin/trainers/:profileId/assignments', {

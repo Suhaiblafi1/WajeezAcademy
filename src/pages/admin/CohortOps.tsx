@@ -17,6 +17,23 @@ interface CohortLite {
   registrationOpen: boolean; financialReady: boolean;
 }
 
+/** مدرّبٌ محتمَل لهذه الشعبة — بحال تأهيله لدورتها */
+interface EligibleTrainer {
+  profileId: string;
+  name: string;
+  qualification: "qualified" | "pending" | "rejected" | "retired" | "none";
+  qualificationId: string | null;
+  assignedRole: string | null;
+}
+
+const QUALIFICATION_LABEL: Record<EligibleTrainer["qualification"], string> = {
+  qualified: "مؤهَّل",
+  pending: "طلبٌ قائم",
+  rejected: "رُدَّ سابقا",
+  retired: "تأهيلٌ مسحوب",
+  none: "غير مؤهَّل",
+};
+
 type Done = (msg: string) => void;
 
 function MiniCard({ icon: Icon, title, children, defaultOpen = false }: {
@@ -37,7 +54,12 @@ function MiniCard({ icon: Icon, title, children, defaultOpen = false }: {
 export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done }) {
   const [busy, setBusy] = useState(false);
   const [localMsg, setLocalMsg] = useState("");
-  const [trainers, setTrainers] = useState<{ id: string; name: string }[]>([]);
+  /* المدرّبون بحالِ تأهيل كلٍّ منهم لدورة **هذه الشعبة** — لا قائمةُ المعلَنين.
+
+     كانت القائمةُ من `/api/trainers/public` بلا أيّ ذكرٍ للتأهيل، فيُختار
+     مدرّبٌ ويُضغط «عيّن» ويُردّ بـ409 «غير مؤهل». والفرقُ بين «أسنده» و«أهّله
+     وأسنده» قرارٌ يُتّخذ قبل النقر لا بعده. */
+  const [trainers, setTrainers] = useState<EligibleTrainer[]>([]);
   const [assignForm, setAssignForm] = useState({ profileId: "", role: "lead" });
   const [editForm, setEditForm] = useState({
     title: cohort.title, days: cohort.daysOfWeek.join("، "), startTime: cohort.startTime ?? "18:00",
@@ -53,9 +75,14 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
   const [recForm, setRecForm] = useState({ sessionId: "", title: "", moduleId: "", mime: "video/mp4", sizeBytes: "", durationSec: "" });
   const [contentForm, setContentForm] = useState({ kind: "material", id: "", status: "archived" });
 
-  useEffect(() => {
-    apiGet<{ id: string; name: string }[]>("/api/trainers/public").then(setTrainers).catch(() => setTrainers([]));
-  }, []);
+  const loadTrainers = useCallback(() => {
+    apiGet<EligibleTrainer[]>(`/api/admin/cohorts/${cohort.id}/eligible-trainers`)
+      .then(setTrainers)
+      .catch(() => setTrainers([]));
+  }, [cohort.id]);
+  useEffect(() => { loadTrainers(); }, [loadTrainers]);
+
+  const picked = trainers.find((t) => t.profileId === assignForm.profileId) ?? null;
 
   const act = useCallback(async (fn: () => Promise<unknown>, msg: string) => {
     if (busy) return;
@@ -69,33 +96,66 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
     <div className="space-y-3">
       {localMsg && <p className="text-[11px] font-bold text-teal-light-ink" role="status">{localMsg}</p>}
 
-      {/* تعيين مدرب */}
-      <MiniCard icon={UserPlus} title="تعيين مدرب — يتطلب تأهيلا قائما ويفحص تعارض الجدول">
+      {/* تعيين مدرب — خطوةٌ واحدة للمؤهَّل، وطلبٌ واحد لغيره.
+
+          كان الإسنادُ يفترض تأهيلا سابقا يُدار في شاشةٍ أخرى، والنصُّ أسفلَه
+          يحيل إليها: «التأهيل يُدار من طلبات المدربين». فمن أراد مدرّبا
+          لشعبةٍ مشى ثلاث خطوات في مكانين، ولو نسي الثانية بقي المدرّبُ
+          مؤهَّلا بلا شعبة والشعبةُ بلا مدرّب.
+
+          وبوّابةُ نزاهة التأهيل باقية: هذا الزرُّ **يطلب** ولا يقرّر. يبتّ
+          فيه المديرُ الأكاديميّ، وموافقتُه تؤهّل وتُسند في فعلٍ واحد. */}
+      <MiniCard icon={UserPlus} title="مدرّب الشعبة — إسنادٌ مباشر للمؤهَّل، وطلبُ تأهيلٍ لغيره">
         <div className="flex flex-wrap gap-2">
           <select value={assignForm.profileId} onChange={(e) => setAssignForm({ ...assignForm, profileId: e.target.value })} className={`${selectCls} flex-1`}>
-            <option value="">اختر مدربا معلنا…</option>
-            {trainers.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            <option value="">اختر مدربا…</option>
+            {trainers.map((t) => (
+              <option key={t.profileId} value={t.profileId}>
+                {t.name} — {QUALIFICATION_LABEL[t.qualification]}{t.assignedRole ? " · مُسنَد" : ""}
+              </option>
+            ))}
           </select>
           <select value={assignForm.role} onChange={(e) => setAssignForm({ ...assignForm, role: e.target.value })} className={selectCls}>
             <option value="lead">رئيسي</option>
             <option value="assistant">مساعد</option>
           </select>
-          <button disabled={busy || !assignForm.profileId}
-            onClick={() => act(() => apiPost(`/api/admin/cohorts/${cohort.id}/trainers`, assignForm), "عُين المدرب للشعبة")}
-            className="cursor-pointer rounded-xl bg-white/10 px-4 py-2 text-xs font-black text-white hover:bg-white/15 disabled:opacity-40">
-            عيّن
-          </button>
+          {picked?.qualification === "qualified" ? (
+            <button disabled={busy}
+              onClick={() => act(
+                () => apiPost(`/api/admin/cohorts/${cohort.id}/trainers`, assignForm).then(loadTrainers),
+                "عُيّن المدرب للشعبة",
+              )}
+              className="cursor-pointer rounded-xl bg-white/10 px-4 py-2 text-xs font-black text-white hover:bg-white/15 disabled:opacity-40">
+              أسنده
+            </button>
+          ) : (
+            <button disabled={busy || !picked || picked.qualification === "pending"}
+              onClick={() => act(
+                () => apiPost(`/api/admin/cohorts/${cohort.id}/qualification-requests`, {
+                  profileId: assignForm.profileId, courseId: cohort.courseId,
+                }).then(loadTrainers),
+                "رُفع طلبُ التأهيل — الموافقة تؤهّله وتُسنده معا",
+              )}
+              className="cursor-pointer rounded-xl bg-gold/85 px-4 py-2 text-xs font-black text-on-gold hover:bg-gold disabled:opacity-40">
+              أهّله وأسنده الآن
+            </button>
+          )}
         </div>
-        {trainers.length === 0 && (
-          <p className="mt-2 text-[10px] text-white/40">لا مدربون معلنون — أدخل معرف الملف يدويا:</p>
+
+        {picked && (
+          <p className="mt-2 text-[10.5px] leading-5 text-white/50">
+            {picked.qualification === "qualified"
+              ? "مؤهَّل لهذه الدورة — الإسناد يقع الآن، ويُفحص تعارضُ جدوله قبل وقوعه."
+              : picked.qualification === "pending"
+                ? "له طلبُ تأهيلٍ قائم على هذه الدورة — بانتظار قرار المدير الأكاديميّ."
+                : picked.qualification === "rejected"
+                  ? "سبق أن رُدَّ تأهيلُه لهذه الدورة. رفعُ طلبٍ جديد يُعيدها إلى طاولة القرار."
+                  : "غير مؤهَّل لهذه الدورة بعد — الطلب يذهب إلى المدير الأكاديميّ، وموافقتُه تؤهّله وتُسنده معا."}
+          </p>
         )}
         {trainers.length === 0 && (
-          <div className="mt-2 flex gap-2">
-            <input value={assignForm.profileId} onChange={(e) => setAssignForm({ ...assignForm, profileId: e.target.value })}
-              placeholder="معرف ملف المدرب (UUID)" dir="ltr" className={`${inputCls} flex-1 font-mono`} />
-          </div>
+          <p className="mt-2 text-[10px] text-white/40">لا مدرّبين نشطين بعد — تُعتمد الطلبات من «طلبات المدربين».</p>
         )}
-        <p className="mt-2 text-[10px] text-white/40">التأهيل يُدار من «طلبات المدربين» — ملف المدرب ← تأهيل لدورة.</p>
       </MiniCard>
 
       {/* تعديل الشعبة */}

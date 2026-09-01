@@ -8,7 +8,7 @@ import FlowSteps from "@/components/FlowSteps";
 import { apiGet, apiPost, apiDelete, ApiError } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import { useAutoRefresh } from "@/services/useAutoRefresh";
-import { TrainerDetailOps, TrainerChangeRequests, TrainerPayouts } from "./TrainerOps";
+import { TrainerDetailOps, TrainerChangeRequests, TrainerPayouts, type TrainerSummary } from "./TrainerOps";
 import ApplicationDossier, { type Dossier } from "./ApplicationDossier";
 import { fmtDateTime } from "@/application/text/format-ar";
 
@@ -43,7 +43,22 @@ const DECISIONS: { action: string; label: string; from: string[]; tone: "main" |
   { action: "conditionally_approve", label: "قبول مشروط", from: ["academic_review"], tone: "main" },
   { action: "waitlist", label: "قائمة الانتظار", from: ["submitted", "under_review", "shortlisted", "interview_scheduled", "academic_review"], tone: "warn" },
   { action: "reject", label: "رفض بلطف", from: ["submitted", "under_review", "information_requested", "shortlisted", "interview_scheduled", "demo_requested", "academic_review", "conditionally_approved", "contract_pending", "waitlisted"], tone: "danger" },
+  /* ─────────── آخرُ السلسلة — كان مفقودا ───────────
+
+     كانت المصفوفةُ تنتهي عند «قبول مشروط»، فمن اجتاز المراجعةَ الأكاديميّة
+     يبقى معلَّقا إلى الأبد ما لم يُنشئ حسابَه بنفسه من رابط الدعوة — أي أنّ
+     آخرَ قرارٍ في مسار المدرّب لم يكن بيد الإدارة أصلا.
+
+     والسلسلةُ الآن مكتملة: المديرُ الأكاديميّ يقيّم ويرفع، والاعتمادُ النهائيّ
+     يجعله مدرّبا نشطا. والتفعيلُ يشترط حسابا — «نشطٌ» لا يستطيع الدخول حالةٌ
+     تكذب على من يقرؤها. */
+  { action: "start_onboarding", label: "ابدأ التهيئة", from: ["contract_pending"], tone: "main" },
+  { action: "activate", label: "فعّله مدرّبا نشطا", from: ["onboarding"], tone: "main" },
+  { action: "reinstate", label: "ارفع الإيقاف", from: ["suspended"], tone: "main" },
 ];
+
+/** تبويبا الملفّ: من هو، وماذا يُدرّس — لا شاشةٌ واحدة تُقرأ عمودا طويلا */
+type DetailTab = "dossier" | "courses";
 
 interface AppRow {
   id: string; reference: string; status: string; fullName: string; email: string;
@@ -62,6 +77,103 @@ interface AppDetail extends Record<string, unknown> {
   interviews: { id: string; scheduledAt: string; outcome: string | null }[];
   statusHistory: { fromStatus: string | null; toStatus: string; note: string | null; createdAt: string }[];
   profile: { id: string; userId: string | null } | null;
+  summary?: TrainerSummary;
+}
+
+/* لوحُ الملخّص وتبويبُ الدورات.
+
+   قرارُ صاحب المنصّة: «أضف لوحةَ ملخّص على ملفّ المدرب تعرض: الدورات المحالة
+   له، تقييمات الطلبة له، شعبه الحالية، وأقرب جلسة قادمة».
+
+   وأرقامُه من الخادم لا من الشاشة (`getApplication#summary`): من يبتّ في حالةٍ
+   ينظر إلى أثرها — من له ثلاثُ شعبٍ جارية ليس كمن لا شعبةَ له، والقرارُ فيهما
+   ليس واحدا. وحسابُها هنا يعني رقمين لشيءٍ واحد. */
+function TrainerCoursesTab({ summary }: { summary?: TrainerSummary }) {
+  if (!summary) {
+    return (
+      <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 text-xs leading-6 text-white/50">
+        لا ملفَّ مدرّبٍ بعد — الملفُّ يُنشأ مع «القبول المشروط»، وقبله لا دورات ولا شعب.
+      </article>
+    );
+  }
+  const stat = (label: string, value: string) => (
+    <div className="rounded-2xl border border-white/10 bg-black/20 p-3.5">
+      <p className="text-[10.5px] font-bold text-white/45">{label}</p>
+      <p className="mt-1 text-lg font-black tabular-nums text-white">{value}</p>
+    </div>
+  );
+  return (
+    <div className="space-y-4">
+      <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+        <h4 className="flex items-center gap-2 text-sm font-black">
+          <Star className="h-4 w-4 text-teal-light-ink" /> ملخّص المدرّب
+        </h4>
+        <div className="mt-4 grid gap-2.5 sm:grid-cols-4">
+          {stat("دورات مؤهَّل لها", String(summary.qualifiedCourses.length))}
+          {stat("شعبٌ حاليّة", String(summary.cohorts.length))}
+          {stat("متعلّمون", String(summary.cohorts.reduce((n, c) => n + c.enrolled, 0)))}
+          {/* لا يُعرض صفرٌ مكان «لا تقييم بعد» — الصفرُ حكمٌ والغيابُ ليس حكما */}
+          {stat("تقييم الطلبة", summary.ratingCount > 0 && summary.rating !== null
+            ? `${summary.rating.toFixed(1)} · ${summary.ratingCount}`
+            : "—")}
+        </div>
+        {summary.nextSession && (
+          <p className="mt-3 rounded-xl border border-teal/30 bg-teal/[0.07] px-3.5 py-2.5 text-[11.5px] leading-6 text-teal-light-ink">
+            أقرب جلسة: <b>{summary.nextSession.title}</b> — شعبة «{summary.nextSession.cohortTitle}» ·{" "}
+            {fmtDateTime(new Date(summary.nextSession.startsAt))}
+          </p>
+        )}
+      </article>
+
+      <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+        <h4 className="text-sm font-black">الدورات المؤهَّل لها</h4>
+        {summary.qualifiedCourses.length === 0 ? (
+          <p className="mt-3 text-xs leading-6 text-white/50">
+            لا دورة بعد. التأهيل يُطلب من الشعبة التي يُراد إسنادُه إليها، وموافقةُ المدير الأكاديميّ
+            تؤهّله وتُسنده في فعلٍ واحد.
+          </p>
+        ) : (
+          <ul className="mt-3 flex flex-wrap gap-1.5">
+            {summary.qualifiedCourses.map((c) => (
+              <li key={c.courseId} className="rounded-full border border-teal/35 bg-teal/[0.08] px-3 py-1 text-[11px] font-bold text-teal-light-ink">
+                {c.titleAr}
+              </li>
+            ))}
+          </ul>
+        )}
+        {summary.pendingQualifications > 0 && (
+          <p className="mt-3 text-[11px] text-gold-ink">
+            وله {summary.pendingQualifications} طلبُ تأهيلٍ بانتظار القرار.
+          </p>
+        )}
+      </article>
+
+      <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+        <h4 className="text-sm font-black">شعبُه الحاليّة</h4>
+        {/* «المُسنَدُ له فعليّا» يُقرأ من كائن الشعبة لا من ملفّ المدرّب:
+            مصدرُ الإسناد هناك، وقراءتُه من هنا تُنشئ مصدرا ثانيا يشيخ. */}
+        {summary.cohorts.length === 0 ? (
+          <p className="mt-3 text-xs text-white/50">لا شعبة مُسنَدة إليه الآن.</p>
+        ) : (
+          <ul className="mt-3 space-y-2">
+            {summary.cohorts.map((c) => (
+              <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/10 bg-black/20 px-3.5 py-2.5">
+                <span className="min-w-0">
+                  <span className="block text-[12px] font-bold text-white/85">{c.title}</span>
+                  <span className="text-[10.5px] text-white/45">
+                    {c.courseTitle} · {c.role === "lead" ? "رئيسي" : "مساعد"} · {c.enrolled} متعلّم
+                  </span>
+                </span>
+                <span className="shrink-0 text-[10.5px] text-white/40">
+                  {c.startsAt ? fmtDateTime(new Date(c.startsAt)) : "بلا موعد"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </article>
+    </div>
+  );
 }
 
 /** إدارة طلبات انضمام المدربين — API حقيقي: مراجعة بشرية، قرارات، عقد، دعوة آمنة */
@@ -77,6 +189,7 @@ export default function TrainerApplications() {
   const [flash, setFlash] = useState("");
   const [purging, setPurging] = useState(false);
   const [purgeReason, setPurgeReason] = useState("");
+  const [tab, setTab] = useState<DetailTab>("dossier");
   const { user } = useRealSession();
   /* رابط الدعوة بعد إنشائها — يُعرض للمسؤول ليسلّمه حين لا يصل البريد */
   const [invite, setInvite] = useState<{ url: string; delivery: string } | null>(null);
@@ -200,6 +313,34 @@ export default function TrainerApplications() {
 
         <div className="grid gap-5 lg:grid-cols-3">
           <div className="space-y-4 lg:col-span-2">
+            {/* تبويبان لا عمودٌ طويل.
+
+                قرارُ صاحب المنصّة: «أعد بناء الصفحة كتبويبين: (أ) الملفّ
+                والمعلومات — بيانات المتقدّم والمقابلة والدرس التجريبيّ
+                والمراجع. (ب) الدورات — الدورات المرشَّح لها».
+
+                وسببُه ظاهرٌ في الشاشة: من يبتّ يقرأ سبعةَ صناديق متتالية
+                ليجد ما يخصّ سؤاله، وأكثرُها لا يخصّه. */}
+            <div className="flex gap-1.5" role="tablist" aria-label="أقسام الملفّ">
+              {([["dossier", "الملفّ والمعلومات"], ["courses", "الدورات والشعب"]] as const).map(([key, label]) => (
+                <button
+                  key={key}
+                  role="tab"
+                  aria-selected={tab === key}
+                  onClick={() => setTab(key)}
+                  className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-black transition ${
+                    tab === key ? "bg-gold text-on-gold" : "border border-white/12 text-white/55 hover:border-white/30 hover:text-white/80"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {tab === "courses" ? (
+              <TrainerCoursesTab summary={a.summary} />
+            ) : (
+            <>
             <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
@@ -272,8 +413,10 @@ export default function TrainerApplications() {
               </ol>
             </article>
 
-            {/* عمليات متقدمة: مقابلات، ديمو، مراجع، عقود، تأهيل وإسناد وإيقاف */}
+            {/* عمليات متقدمة: مقابلات، ديمو، مراجع، عقود */}
             <TrainerDetailOps app={a} onAction={act} />
+            </>
+            )}
           </div>
 
           {/* عمود القرارات والروبرك */}

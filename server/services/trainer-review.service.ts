@@ -11,7 +11,7 @@ import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { buildIcs } from './calendar/ics'
 import { TrainerApplicationService } from './trainer-application.service'
-import { sendDirectEmail, publicSiteUrl, type DirectMailStatus } from './notification.service'
+import { sendDirectEmail, notifyRole, publicSiteUrl, type DirectMailStatus } from './notification.service'
 import { CohortService } from './cohort.service'
 import { fmtDateWith } from '../../src/application/text/format-ar'
 
@@ -68,14 +68,68 @@ export class TrainerReviewService {
         specialties: true, documents: true, reviews: true, interviews: true,
         demoEvaluations: true, references: true, invitations: { select: { id: true, sentTo: true, expiresAt: true, usedAt: true, createdAt: true } },
         statusHistory: { orderBy: { createdAt: 'asc' } },
-        profile: { include: { qualifications: true, assignments: true, contracts: true } },
+        profile: {
+          include: {
+            qualifications: {
+              include: { course: { include: { versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true } } } } },
+            },
+            assignments: true,
+            contracts: true,
+            /* شعبُه الحالية وجلساتُها — لوحُ الملخّص يقرؤها ولا يستنتجها */
+            cohortTrainers: {
+              include: {
+                cohort: {
+                  include: {
+                    course: { include: { versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true } } } },
+                    sessions: { where: { status: { not: 'cancelled' } }, orderBy: { startsAt: 'asc' } },
+                    _count: { select: { enrollments: true } },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     })
     if (!app) throw new AuthError('not_found', 'الطلب غير موجود', 404)
+
+    /* لوحُ الملخّص — ما يحتاجه من يقرّر في سطرٍ واحد، محسوبا هنا لا في الشاشة.
+
+       قرارُ صاحب المنصّة: «أضف لوحةَ ملخّص على ملفّ المدرب تعرض: الدورات
+       المحالة له، تقييمات الطلبة له، شعبه الحالية، وأقرب جلسة قادمة».
+       ومن يبتّ في حالةٍ ينظر إلى أثرها: من له ثلاثُ شعبٍ جارية ليس كمن لا
+       شعبةَ له، والقرارُ فيهما ليس واحدا. */
+    const now = new Date()
+    const cohortLinks = app.profile?.cohortTrainers ?? []
+    const upcoming = cohortLinks
+      .flatMap((t) => t.cohort.sessions.map((sn) => ({ ...sn, cohortTitle: t.cohort.title })))
+      .filter((sn) => sn.startsAt > now)
+      .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())[0] ?? null
+
     return {
       ...app,
       accessTokenHash: undefined, emailVerifyTokenHash: undefined,
       documentUrls: this.apps.signedDocumentUrls(app.documents),
+      summary: {
+        qualifiedCourses: (app.profile?.qualifications ?? [])
+          .filter((q) => q.status === 'qualified')
+          .map((q) => ({ courseId: q.courseId, titleAr: q.course.versions[0]?.titleAr ?? q.courseId })),
+        pendingQualifications: (app.profile?.qualifications ?? []).filter((q) => q.status === 'pending').length,
+        cohorts: cohortLinks.map((t) => ({
+          id: t.cohort.id, title: t.cohort.title, role: t.role, status: t.cohort.status,
+          courseTitle: t.cohort.course.versions[0]?.titleAr ?? t.cohort.courseId,
+          enrolled: t.cohort._count.enrollments,
+          startsAt: t.cohort.startsAt,
+        })),
+        nextSession: upcoming
+          ? { title: upcoming.title, startsAt: upcoming.startsAt, cohortTitle: upcoming.cohortTitle }
+          : null,
+        /* التقييمُ من خرّيجين حقيقيّين — و`null` يعني «لا تقييم بعد» لا صفرا */
+        rating: app.profile?.ratingAvg ?? null,
+        ratingCount: app.profile?.ratingCount ?? 0,
+        publicVisibility: app.profile?.publicVisibility ?? false,
+        suspendedAt: app.profile?.suspendedAt ?? null,
+      },
     }
   }
 
@@ -190,7 +244,8 @@ export class TrainerReviewService {
 
   async decide(applicationId: string, actorId: string, action:
     | 'move_to_review' | 'request_info' | 'shortlist' | 'request_demo' | 'academic_review'
-    | 'conditionally_approve' | 'waitlist' | 'reject', note?: string) {
+    | 'conditionally_approve' | 'waitlist' | 'reject'
+    | 'start_onboarding' | 'activate' | 'reinstate', note?: string) {
     /* حارس التضارب: لا يجوز لأحد اتخاذ قرار في طلب بريده هو */
     const app = await this.prisma.trainerApplication.findUnique({ where: { id: applicationId } })
     if (!app) throw new AuthError('not_found', 'الطلب غير موجود', 404)
@@ -208,8 +263,51 @@ export class TrainerReviewService {
       conditionally_approve: 'conditionally_approved',
       waitlist: 'waitlisted',
       reject: 'rejected',
+      /* ─────────── آخرُ السلسلة ───────────
+
+         كانت السلسلةُ تنتهي عند «قبول مشروط»، ولا زرَّ بعده. فمن اجتاز
+         المراجعةَ الأكاديميّة يبقى `conditionally_approved` أو
+         `contract_pending` إلى الأبد ما لم يُنشئ حسابَه بنفسه من رابط
+         الدعوة — أي أنّ آخرَ قرارٍ في مسار المدرّب لم يكن بيد الإدارة أصلا.
+
+         والقرارُ الآن مكتمل: العقدُ يُرسَل، ثمّ `start_onboarding`، ثمّ
+         `activate` — وهو الاعتمادُ النهائيّ الذي يجعله مدرّبا نشطا. */
+      start_onboarding: 'onboarding',
+      activate: 'active',
+      reinstate: 'active',
     }
+
+    /* التفعيلُ يشترط حسابا: مدرّبٌ «نشط» بلا حسابٍ لا يفتح بوابتَه ولا يُسنَد
+       إليه شيء، وحالتُه في الشاشة تقول غيرَ الحقيقة. ولا يُقال هذا بعد
+       الضغط بل يُمنع قبله. */
+    if (action === 'activate') {
+      const profile = await this.prisma.trainerProfile.findUnique({ where: { applicationId } })
+      if (!profile?.userId) {
+        throw new AuthError(
+          'no_account',
+          'لا حساب لهذا المدرّب بعد — أرسل دعوة إنشاء الحساب أوّلا، فالتفعيل بلا حساب يجعله نشطا ولا يستطيع الدخول',
+          409,
+        )
+      }
+    }
+
     await this.apps.transition(applicationId, targets[action], actorId, note)
+
+    /* رفعُ الإيقاف يُعيد الملفَّ والحساب معا — وإلّا بقي «نشطا» وحسابُه موقوف */
+    if (action === 'reinstate') {
+      const profile = await this.prisma.trainerProfile.findUnique({ where: { applicationId } })
+      if (profile) {
+        await this.prisma.trainerProfile.update({
+          where: { id: profile.id }, data: { suspendedAt: null, suspendedBy: null },
+        })
+        if (profile.userId) {
+          await this.prisma.user.update({ where: { id: profile.userId }, data: { status: 'active', suspendedAt: null } })
+        }
+        await recordAudit(this.prisma, {
+          actorId, action: 'trainer.reinstate', entityType: 'trainer_profile', entityId: profile.id, meta: { note },
+        })
+      }
+    }
 
     /* القبول المشروط ينشئ ملف المدرب — قبل الحساب وقبل الدور */
     if (action === 'conditionally_approve') {
@@ -357,6 +455,133 @@ export class TrainerReviewService {
       meta: { courseId },
     })
     return q
+  }
+
+  /* ─────────── طلبُ التأهيل من الشعبة ───────────
+
+     كان التأهيلُ والإسنادُ فعلين منفصلين في شاشتين: يُؤهَّل المدرّب من
+     «عمليات المدربين»، ثمّ يُسنَد من «عمليات الشعبة». فمن أراد مدرّبا لشعبةٍ
+     بعينها مشى ثلاث خطوات في مكانين، وأوّلُها لا يعرف شيئا عن آخرها — ولو
+     نسي الثانية بقي المدرّب مؤهَّلا بلا شعبة والشعبةُ بلا مدرّب.
+
+     وقرارُ صاحب المنصّة: «لو المدرب مؤهَّل مسبقا، الإسنادُ من الشعبة يكفي
+     وحدَه. ولو غيرَ مؤهَّل، زرٌّ واحد "أهّله وأسنده الآن" يرسل طلبَ تأهيلٍ
+     لموافقة المدير الأكاديميّ، وعند الموافقة يُضاف تلقائيا لتأهيلاته
+     ويُسنَد».
+
+     فالطلبُ يحمل شعبتَه، وبوّابةُ نزاهة التأهيل تبقى كما هي: من يطلب
+     (`cohort.manage`) ليس من يقرّر (`trainer.qualify`). ولو جاز للطالب أن
+     يقرّر لصارت الموافقةُ ختما لا مراجعة. */
+  async requestQualification(
+    profileId: string, courseId: string, cohortId: string, actorId: string, note?: string,
+  ) {
+    const profile = await this.requireActiveProfile(profileId)
+    const cohort = await this.prisma.cohort.findUnique({ where: { id: cohortId } })
+    if (!cohort) throw new AuthError('unknown_cohort', 'الشعبة غير موجودة', 404)
+    if (cohort.courseId !== courseId) {
+      throw new AuthError('course_mismatch', 'الدورة لا تطابق دورة الشعبة', 409)
+    }
+    const existing = await this.prisma.trainerCourseQualification.findUnique({
+      where: { profileId_courseId: { profileId, courseId } },
+    })
+    if (existing?.status === 'qualified') {
+      throw new AuthError('already_qualified', 'المدرب مؤهَّل لهذه الدورة — أسنده مباشرة', 409)
+    }
+
+    /* تعارضُ الجدول يُفحص عند الطلب لا عند الموافقة وحدَها: من يقرأ الطلب
+       يستحقّ أن يعرف أنّه غيرُ قابلٍ للتنفيذ قبل أن يوقّعه، ومن يطلب يستحقّ
+       أن يُردّ الآن لا بعد يومين. ويُفحص عند الموافقة أيضا — فالجدولُ يتحرّك
+       بينهما. */
+    await new CohortService(this.prisma).assertTrainerFreeFor(profileId, cohortId)
+
+    const row = await this.prisma.trainerCourseQualification.upsert({
+      where: { profileId_courseId: { profileId, courseId } },
+      update: {
+        status: 'pending', note, requestedCohortId: cohortId,
+        requestedBy: actorId, requestedAt: new Date(), decidedAt: null, qualifiedBy: null,
+      },
+      create: {
+        profileId, courseId, status: 'pending', note, requestedCohortId: cohortId,
+        requestedBy: actorId, requestedAt: new Date(),
+      },
+    })
+    await recordAudit(this.prisma, {
+      actorId, action: 'trainer.qualify.request', entityType: 'trainer_profile', entityId: profile.id,
+      meta: { courseId, cohortId },
+    })
+    /* من يبتّ يُعلَم — وإلّا بقي الطلبُ في طابورٍ لا أحد يعرف أنّه امتلأ */
+    await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
+      channel: 'in_app',
+      title: 'طلب تأهيل مدرّب — بانتظار قرارك',
+      body: `طُلب تأهيلُ «${profile.application.fullName}» لدورة شعبة «${cohort.title}»، والموافقةُ تؤهّله وتُسنده معا.`,
+      templateKey: 'trainer.qualify.request',
+      data: { profileId: profile.id, courseId, cohortId },
+    })
+    return row
+  }
+
+  /** طلباتُ التأهيل المعلّقة — لمن يملك البتّ فيها */
+  async pendingQualifications() {
+    return this.prisma.trainerCourseQualification.findMany({
+      where: { status: 'pending' },
+      include: {
+        profile: { include: { application: { select: { fullName: true, status: true } } } },
+        course: { include: { versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true } } } },
+      },
+      orderBy: { requestedAt: 'asc' },
+    })
+  }
+
+  /* البتُّ في الطلب — والموافقةُ تؤهّل وتُسند في فعلٍ واحد.
+
+     ولو تعذّر الإسناد (تغيّر الجدول، أو أُغلقت الشعبة بين الطلب والقرار)
+     بقي التأهيلُ قائما ورجع سببُ التعذُّر: التأهيلُ حكمٌ على كفاءة المدرّب
+     في الدورة، ولا يبطله أنّ شعبةً بعينها لم تعد تقبله. */
+  async decideQualification(
+    qualificationId: string, approve: boolean, actorId: string, note?: string,
+  ) {
+    const q = await this.prisma.trainerCourseQualification.findUnique({
+      where: { id: qualificationId },
+      include: { profile: true },
+    })
+    if (!q) throw new AuthError('not_found', 'الطلب غير موجود', 404)
+    if (q.status !== 'pending') throw new AuthError('not_pending', 'بُتَّ في هذا الطلب من قبل', 409)
+
+    if (!approve) {
+      /* لا رفضَ صامت: السببُ يُخزَّن ويُقرأ في ملفّ المدرّب */
+      if (!note?.trim()) throw new AuthError('reason_required', 'الرفض يحتاج سببا يُقرأ', 400)
+      const row = await this.prisma.trainerCourseQualification.update({
+        where: { id: qualificationId },
+        data: { status: 'rejected', note, qualifiedBy: actorId, decidedAt: new Date() },
+      })
+      await recordAudit(this.prisma, {
+        actorId, action: 'trainer.qualify.reject', entityType: 'trainer_profile', entityId: q.profileId,
+        meta: { courseId: q.courseId, note },
+      })
+      return { qualification: row, assigned: false, assignNote: null as string | null }
+    }
+
+    const row = await this.prisma.trainerCourseQualification.update({
+      where: { id: qualificationId },
+      data: { status: 'qualified', qualifiedBy: actorId, decidedAt: new Date(), note },
+    })
+    await recordAudit(this.prisma, {
+      actorId, action: 'trainer.qualify', entityType: 'trainer_profile', entityId: q.profileId,
+      meta: { courseId: q.courseId, viaRequest: true, cohortId: q.requestedCohortId },
+    })
+
+    let assigned = false
+    let assignNote: string | null = null
+    if (q.requestedCohortId) {
+      try {
+        await this.assignToCohort(q.profileId, q.courseId, q.requestedCohortId, actorId)
+        assigned = true
+      } catch (e) {
+        /* التأهيلُ تمّ ولم يقع الإسناد — يُقال لا يُبتلع */
+        assignNote = e instanceof Error ? e.message : 'تعذّر الإسناد'
+      }
+    }
+    return { qualification: row, assigned, assignNote }
   }
 
   async assignToCohort(profileId: string, courseId: string, cohortId: string | undefined, actorId: string) {

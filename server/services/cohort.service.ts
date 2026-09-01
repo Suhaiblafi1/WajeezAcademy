@@ -131,6 +131,52 @@ export class CohortService {
     return link
   }
 
+  /* فحصُ التعارض قبل الطلب لا بعد الموافقة.
+
+     الحارسُ نفسُه الذي يمنع الإسناد، مكشوفا ليُنادى مبكّرا: من يطلب تأهيل
+     مدرّبٍ لشعبةٍ يستحقّ أن يُردّ الآن إن كان جدولُه مشغولا، لا بعد يومين من
+     انتظار قرارٍ لا يقبل التنفيذ. */
+  async assertTrainerFreeFor(profileId: string, cohortId: string) {
+    const cohort = await this.prisma.cohort.findUnique({
+      where: { id: cohortId }, include: { sessions: true },
+    })
+    if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
+    await this.assertNoScheduleConflict(
+      profileId,
+      cohort.sessions.map((s) => ({ startsAt: s.startsAt, endsAt: s.endsAt })),
+      cohortId,
+    )
+  }
+
+  /* مدرّبو هذه الشعبة المحتمَلون — وحالُ تأهيل كلٍّ منهم لدورتها.
+
+     كانت الشاشة تعرض «المدرّبين المعلَنين» بلا أن تقول أيُّهم مؤهَّل، فيُجرَّب
+     الإسنادُ ويُردّ بـ409. والفرقُ بين «أسنده» و«أهّله وأسنده» قرارٌ يُتّخذ
+     قبل النقر لا بعده. */
+  async eligibleTrainersFor(cohortId: string) {
+    const cohort = await this.prisma.cohort.findUnique({ where: { id: cohortId } })
+    if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
+    const profiles = await this.prisma.trainerProfile.findMany({
+      where: { suspendedAt: null, application: { status: 'active' } },
+      include: {
+        application: { select: { fullName: true } },
+        qualifications: { where: { courseId: cohort.courseId } },
+        cohortTrainers: { where: { cohortId }, select: { role: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    })
+    return profiles.map((p) => {
+      const q = p.qualifications[0]
+      return {
+        profileId: p.id,
+        name: p.application.fullName,
+        qualification: (q?.status ?? 'none') as 'qualified' | 'pending' | 'rejected' | 'retired' | 'none',
+        qualificationId: q?.id ?? null,
+        assignedRole: p.cohortTrainers[0]?.role ?? null,
+      }
+    })
+  }
+
   /** تعارض جدول المدرب: جلستان متداخلتان في شعبتين غير ملغاتين/منتهيتين */
   private async assertNoScheduleConflict(profileId: string, sessions: { startsAt: Date; endsAt: Date | null }[], ignoreCohortId?: string) {
     if (!sessions.length) return
