@@ -244,8 +244,20 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
                 <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] text-white/50">{c.category}</span>
               </div>
               <CourseTitle name={c.name} termEn={c.termEn} className="mt-3 font-bold leading-relaxed" />
-              <p className="mt-1 text-xs text-white/50">
-                من مسار «{c.pathwayName}» · {c.weeks} {c.weeks === 1 ? 'أسبوع' : 'أسابيع'}
+              {/* المخرَجُ أوّلا لا موضعُ الدورة من مسار.
+
+                  كان السطرُ تحت العنوان يقول «من مسار كذا» — وهو نسبٌ إداريّ
+                  لا يعني المشتري: من يفتح كتالوج الدورات يريد دورةً بعينها،
+                  ولو أراد المسارَ لفتح المسارات. والوعدُ (`short_promise_ar`)
+                  يقول ما يخرج به، وهو ما يُشترى.
+
+                  والمسارُ لم يُحذف من البحث: `pathwayName` ما زال ضمن ما
+                  يُطابَق عليه في المرشِّح — يُبحث به ولا يُزاحم به المخرَج. */}
+              {c.promise && (
+                <p className="mt-1.5 line-clamp-2 text-xs leading-6 text-white/60">{c.promise}</p>
+              )}
+              <p className="mt-1.5 text-[11px] text-white/40">
+                {c.weeks} {c.weeks === 1 ? 'أسبوع' : 'أسابيع'}
               </p>
               <span className="mt-3 w-fit rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-[11px] text-teal-light-ink">
                 {c.skill}

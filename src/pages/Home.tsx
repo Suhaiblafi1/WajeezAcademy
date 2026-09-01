@@ -265,9 +265,15 @@ function Hero() {
             اعرف من أين تبدأ
             <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
           </a>
+          {/* الفعلُ الثانويّ يجب أن يُرى فعلا.
+
+              كان نصّا رماديّا بلا حدٍّ ولا خطٍّ تحته، فلا شيءَ فيه يقول إنّه
+              يُنقر — والخطُّ تحته لا يظهر إلّا بالتحويم، وهو ما لا يقع على
+              الهاتف أصلا. صار حدّا خفيفا بحشوٍ ظاهر: زرٌّ هادئ إلى جانب
+              الدعوة لا يزاحمها. */}
           <a
             href="#bestsellers"
-            className="mt-3.5 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition hover:text-teal-light-ink"
+            className="mt-3.5 inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-sm font-semibold text-muted-foreground transition hover:border-teal/50 hover:bg-teal/[0.07] hover:text-teal-light-ink"
           >
             <Route className="h-3.5 w-3.5" />
             <span className="underline-offset-4 hover:underline">اختر مسارك بنفسك</span>
@@ -325,8 +331,14 @@ function DiagnosticTeaser() {
     /* `scroll-mt-24`: الرأسُ `fixed h-16`، فالقفزُ إلى مرساةٍ بلا هامشِ تمرير
        يضع رأسَ القسم عند y=0 — أي **تحت** الرأس الثابت. فكان الزائرُ يضغط
        «مؤشر وجيز» فتختفي شارةُ القسم وسطرٌ من عنوانه خلف الرأس. و`#top-courses`
-       وحدَه كان يحمل الهامش، فعمل — وبقي الباقي مقصوصا. */
-    <section id="diagnostic" className="scroll-mt-24 relative py-12 sm:py-16 md:py-24">
+       وحدَه كان يحمل الهامش، فعمل — وبقي الباقي مقصوصا.
+
+       وحشوُه العلويّ على الشاشات الواسعة كان ٩٦px فوق ملاحظةِ المنظومة، فيصير
+       بين نهاية الصدر وأوّل كلمةٍ هنا ١٩٠ بكسل بيضاء على اللابتوب (٤٠ فوق
+       الملاحظة + ٣٦ تحتها + ٩٦ هنا) — وهي «المساحة البيضاء الكبيرة بالأسفل».
+       والهاتفُ ليس فيه هذا: حشوُه ٤٨ فالمجموع ١٢٤، وهو معقول. فخُفّض العلويُّ
+       على `md` وحدَه وبقي السفليُّ كما هو، فلا يتحرّك شيءٌ على الهاتف. */
+    <section id="diagnostic" className="scroll-mt-24 relative py-12 sm:py-16 md:pb-24 md:pt-14">
       {/* ─────────── لماذا ضاق رأسُ هذا القسم ───────────
 
           على الهاتف كان الزائر يضغط «مؤشر وجيز» فيهبط إلى قسمٍ رأسُه ثلاثةُ
@@ -950,12 +962,19 @@ function Bestsellers() {
             key={id}
             className="group flex w-[280px] shrink-0 snap-start flex-col rounded-3xl border border-white/10 bg-card p-6 transition-all duration-200 hover:-translate-y-1 hover:border-teal/50 hover:shadow-[0_20px_60px_-30px_rgba(56,167,180,0.4)]"
           >
+            {/* وسمٌ واحد لا اثنان.
+
+                كان فوق كلّ بطاقةٍ وسمان: «الأنسب للخريجين» و«طلاب ومهنة».
+                والثاني تصنيفٌ يقوله شريطُ التصفية فوق الشريط نفسِه — فمن
+                رشّح «طلاب ومهنة» يقرأ الكلمةَ مرّتين، مرّةً وقد اختارها.
+                والأوّل وحدَه يضيف: يقول لمن يصلح هذا المسار.
+
+                وصغُر: ١٠px وحدٌّ رفيع بلا خلفيّةٍ ولا أيقونة — يُقرأ وسما
+                لا زرّا، فلا ينافس عنوانَ المسار تحته. */}
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-teal/10 px-3 py-1 text-xs font-bold text-teal-light-ink">
-                <Flame className="h-3.5 w-3.5" />
+              <span className="rounded-full border border-teal/30 px-2.5 py-0.5 text-[10px] font-semibold text-teal-light-ink">
                 {note}
               </span>
-              <span className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-muted-foreground">{pathwayCategory(id)}</span>
               <FavoriteButton pathwayId={id} pathwayName={p.name} className="-ms-1 ms-auto" />
             </div>
             <h3 className="mt-4 text-lg font-bold leading-relaxed">{p.name}</h3>
@@ -1301,27 +1320,36 @@ const footerCols: { title: string; icon: typeof GraduationCap; links: { label: s
   },
 ]
 
+/* التذييل: أنعمُ وأصغرُ وأقربُ سطورا.
+
+   وُصف بأنّه «كبير ومبعثر». والسببُ قياسٌ لا ذوق: حشوٌ ٤٨px، وفجوةُ شبكةٍ
+   ٣٢px بين الأعمدة، وروابطُ ١٤px بفراغِ ٨px بينها، ورؤوسُ أعمدةٍ بحجم النصّ
+   العاديّ — فلا يفترق الرأسُ عن رابطه إلا بالوزن. والتذييلُ آخرُ ما يُقرأ،
+   فحجمُه يجب أن يقول ذلك.
+
+   فنزلت الروابطُ إلى ١٢٫٥px بفراغِ ٤px، ورؤوسُ الأعمدة إلى ١٣px بأيقونةٍ
+   أصغر، والحشوُ إلى ٣٦px. ولا يُحذف رابطٌ واحد: الشكوى في الحجم لا في العدد. */
 function Footer() {
   return (
     <footer className="border-t border-white/5 bg-surface3">
-      <div className="mx-auto max-w-6xl px-5 py-12">
-        <div className="grid gap-8 md:grid-cols-5">
+      <div className="mx-auto max-w-6xl px-5 py-9">
+        <div className="grid gap-x-6 gap-y-7 md:grid-cols-5">
           <div className="md:col-span-1">
             <div className="flex items-center gap-2.5">
               <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 object-contain" />
               <div className="font-bold">وجيز <span className="text-teal-light-ink">أكاديمي</span></div>
             </div>
-            <p className="mt-3 text-sm leading-7 text-muted-foreground">
+            <p className="mt-2.5 max-w-xs text-[12.5px] leading-6 text-muted-foreground">
               منصة تفهم الإنسان قبل أن تقترح ما يتعلمه — من مجموعة وجيز wajeez.com
             </p>
-            <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="mt-3 flex items-center gap-2 text-[11.5px] text-muted-foreground">
               <Mail className="h-4 w-4 text-teal-ink" />
               <span dir="ltr">{CONTACT.email}</span>
             </div>
-            <div className="mt-3 space-y-1.5">
+            <div className="mt-2 space-y-1">
               {CONTACT.locations.map((loc) => (
-                <div key={loc.label} className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <MapPin className="h-3.5 w-3.5 shrink-0 text-teal-ink" />
+                <div key={loc.label} className="flex items-start gap-2 text-[11.5px] leading-5 text-muted-foreground">
+                  <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-teal-ink" />
                   {loc.href ? (
                     <a href={loc.href} target="_blank" rel="noreferrer" className="transition hover:text-teal-light-ink">
                       {loc.label}{loc.address ? ` — ${loc.address}` : ''}
@@ -1335,11 +1363,11 @@ function Footer() {
           </div>
           {footerCols.map((col) => (
             <div key={col.title}>
-              <div className="mb-3 flex items-center gap-2 font-bold">
-                <col.icon className="h-4 w-4 text-teal-ink" />
+              <div className="mb-2 flex items-center gap-1.5 text-[13px] font-bold">
+                <col.icon className="h-3.5 w-3.5 text-teal-ink" />
                 {col.title}
               </div>
-              <ul className="space-y-2 text-sm text-muted-foreground">
+              <ul className="space-y-1 text-[12.5px] leading-6 text-muted-foreground">
                 {col.links.map((l) => (
                   <li key={l.label}>
                     {l.to.startsWith('#') ? (
@@ -1353,7 +1381,7 @@ function Footer() {
             </div>
           ))}
         </div>
-        <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-white/5 pt-6 text-xs text-muted-foreground md:flex-row">
+        <div className="mt-7 flex flex-col items-center justify-between gap-2 border-t border-white/5 pt-5 text-[11.5px] text-muted-foreground md:flex-row">
           <div>© 2026 أكاديمية وجيز — جميع الحقوق محفوظة</div>
           <div className="flex items-center gap-2">
             <Clock className="h-3.5 w-3.5" />
@@ -1474,7 +1502,7 @@ export default function Home() {
             كان `mt-1` (٤px) فوق حشوِ الصدر السفليّ، فيُقرأ سطرَه السابع لا سطرَ
             هويّةٍ مستقلّا — وهو أحدُ ما جعل الصدرَ يبدو مزدحما. والفصلُ الآن
             ٤٠px مقابل ١٢–١٤ داخل مجموعات الصدر، فيقع خارجَها بوضوح. */}
-        <EcosystemNote className="mt-10 pb-7 md:pb-9" />
+        <EcosystemNote className="mt-10 pb-7 md:mt-8 md:pb-5" />
         <DiagnosticTeaser />
         <HowItWorks />
         {/* شريط الثقة — أرقام وجيز مهارات الموثقة فقط، بعد شرح الرحلة (مصدر مركزي: data/trustMetrics) */}

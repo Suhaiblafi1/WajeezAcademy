@@ -8,6 +8,7 @@ import { apiGet, apiPost, ApiError } from "@/services/api";
 import { CohortOps, LearningSettings } from "./CohortOps";
 import CohortReadiness from "./CohortReadiness";
 import { fmtDateTimeAr } from "@/utils/format";
+import { courseById } from "@/data/courses";
 
 const STATUS_META: Record<string, { label: string; cls: string }> = {
   draft: { label: "مسودة", cls: "border-white/20 text-white/50" },
@@ -40,6 +41,7 @@ interface Checklist { ready: boolean; missing: string[] }
 export default function AdminCohorts() {
   const [rows, setRows] = useState<CohortRow[]>([]);
   const [courses, setCourses] = useState<CourseOption[]>([]);
+  /* سعرُ الدورة المختارة وعملتُها من الكتالوج نفسِه — وهو ما يرثه الخادم */
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState<string | null>(null);
   const [flash, setFlash] = useState("");
@@ -49,6 +51,11 @@ export default function AdminCohorts() {
 
   /* نماذج */
   const [createForm, setCreateForm] = useState({ courseId: "", title: "", capacity: "20", price: "", days: "", startTime: "18:00" });
+  /* سعرُ الدورة المختارة وعملتُها من الكتالوج — وهو ما يرثه الخادم فعلا
+     (cohort.service.ts:64–65)، فالعنوانُ يقول ما سيقع لا ما نظنّه. */
+  const selectedCourse = createForm.courseId ? courseById(createForm.courseId) : null;
+  const selectedCurrency = selectedCourse?.listCurrency ?? "USD";
+  const selectedListPrice = selectedCourse?.listPrice ?? null;
   const [sessionForm, setSessionForm] = useState({ title: "", date: "", time: "18:00", hours: "2" });
   const [zoomForm, setZoomForm] = useState<Record<string, { sessionId: string; joinUrl: string; meetingId: string; passcode: string }>>({});
   const [enrollUserId, setEnrollUserId] = useState("");
@@ -227,10 +234,25 @@ export default function AdminCohorts() {
               <input value={createForm.capacity} onChange={(e) => setCreateForm({ ...createForm, capacity: e.target.value })} type="number" min={1}
                 className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white focus:border-teal focus:outline-none" />
             </label>
+            {/* العملةُ تُقرأ ولا تُفترض.
+
+                كان مكتوبا «السعر (دينار أردني)»، وأسعارُ الكتالوج كلُّها
+                بالدولار (٨١ دورة)، والشعبةُ ترث عملةَ دورتها
+                (cohort.service.ts:65) لا الافتراضَ الأردنيّ. فمن يكتب ١٢٥
+                ظانّا أنّها دنانير، تُقبض منه ١٢٥ **دولارا** — والفرقُ نحو
+                الأربعين بالمئة، ولا شيءَ على الشاشة يُنبّه.
+
+                فصار العنوان يقول عملةَ الدورة المختارة نفسِها. */}
             <label className="text-xs text-white/50">
-              السعر (دينار أردني)
+              السعر ({selectedCurrency})
               <input value={createForm.price} onChange={(e) => setCreateForm({ ...createForm, price: e.target.value })} type="number" min={0}
-                className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white focus:border-teal focus:outline-none" />
+                placeholder={selectedListPrice !== null ? String(selectedListPrice) : undefined}
+                className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white placeholder:text-white/25 focus:border-teal focus:outline-none" />
+              {selectedListPrice !== null && (
+                <span className="mt-1 block text-[10px] text-white/35">
+                  سعر قائمة الدورة {selectedListPrice} {selectedCurrency} — يُورَث إن تُرك فارغا
+                </span>
+              )}
             </label>
             <label className="text-xs text-white/50">
               أيام الأسبوع (افصل بفاصلة)
