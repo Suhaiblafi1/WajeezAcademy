@@ -106,6 +106,9 @@ export default function PathwayPage() {
   /* نية شراء معلقة بانتظار تسجيل الدخول — التصفح مفتوح، والتسجيل يُطلب لحظة الدفع فقط */
   const [pendingCheckout, setPendingCheckout] = useState<CheckoutIntent | null>(null);
   const [syncing, setSyncing] = useState(false);
+  /* رفضٌ برأيٍ لا بعطب: الخادمُ يمنع تبديل المسار بعد الشراء، فيُقال السببُ
+     في لوح الشراء بدل أن تبقى الخطّةُ كما هي بلا كلمة. */
+  const [planNote, setPlanNote] = useState<string | null>(null);
   const [pickedIds, setPickedIds] = useState<string[]>([]);
   /* مُنسّق الدولار لم يعد يُستعمل هنا: كلّ سعر على هذه الصفحة صار من شعبةٍ
      حقيقية بعملتها، بلا تحويل — لأن التحويل يُخرج رقما ثالثا لا يُطالَب به أحد. */
@@ -283,7 +286,7 @@ export default function PathwayPage() {
      له خطّة. فالخطّة التي بناها كانت تموت عند الزرّ. */
   const goToPlan = async (intent: CheckoutIntent) => {
     setSyncing(true);
-    const ok = await syncAdoptedPlan({
+    const sync = await syncAdoptedPlan({
       hostPathwayId: adopted?.hostPathwayId ?? pathway?.id ?? "",
       composed: adopted?.composed ?? false,
       nameAr: adopted?.nameAr ?? pathway?.name ?? "خطّتي",
@@ -291,6 +294,7 @@ export default function PathwayPage() {
       giftId,
     });
     setSyncing(false);
+    setPlanNote(sync.reasonAr);
     /* الشراءُ قبل المنصّة لا بعدها.
 
        كان الزرّ ينقله إلى «مساري» ليطلب هناك — أي يخرج من الصفحة التي قرّر
@@ -303,7 +307,6 @@ export default function PathwayPage() {
        قبل رفعها لسُعّرت الهديّةُ بثمنها. ولو تعذّر الرفعُ فُتح اللوح على كلّ
        حال: يشتري بلا هديّة خيرٌ من زرٍّ صامت. */
     setCheckout(intent);
-    if (!ok) return;
   };
 
   const startCheckout = (intent: CheckoutIntent) => {
@@ -949,6 +952,7 @@ export default function PathwayPage() {
         <BuyPanel
           title={checkout.title}
           email={session?.email ?? ""}
+          note={planNote}
           lines={(checkout.courseIds ?? courseIds)
             .map((cid) => ({ courseId: cid, name: courseById(cid)?.name ?? cid }))}
           onClose={() => setCheckout(null)}

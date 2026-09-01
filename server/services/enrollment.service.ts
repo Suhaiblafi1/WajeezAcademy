@@ -59,6 +59,117 @@ export class EnrollmentService {
     return enrollment
   }
 
+  /* تبديلُ الشعبة قبل أن تبدأ — الدورةُ نفسُها، والمقعدُ يُنقل لا يُشترى.
+
+     قرارُ صاحب المنصّة: «لا يحقّ له تغيير مساره بعد الدفع. فقط التنقّل بين
+     الشعب ما دامت لم تبدأ بالفعل».
+
+     وقيدُ **الدورة نفسِها** هو تطبيقُ الشقّ الأوّل: لو جاز الانتقال إلى شعبة
+     دورةٍ أخرى لصار «تبديلُ شعبة» بابا خلفيّا لتبديل المسار كلِّه، دورةً
+     دورة، بلا فاتورةٍ ولا فرقِ سعر.
+
+     وقيدُ **قبل البدء** هو الشقّ الثاني، ويُقاس بموعد الشعبة **المغادَرة**
+     أيضا: من حضر جلستين ثمّ انتقل يأخذ محتوى شعبةٍ لم يبدأها ويترك أثرَه في
+     أخرى — والحضورُ والتسليماتُ معلَّقةٌ بالتسجيل لا بالشعبة، فتنتقل معه إلى
+     شعبةٍ لم تُعقد جلساتُها.
+
+     والسعرُ لا يُتجاوَز صامتا: شعبةٌ أغلى تُرفض برسالةٍ تقول لماذا، لا
+     تُقبَل فتُؤخذ قيمةٌ لم تُدفع. والأرخصُ يُقبَل — فالدورةُ هي هي، والفرقُ
+     تاريخُ تسعير الشعبة لا ما يناله المتعلّم. */
+  async switchCohort(userId: string, enrollmentId: string, toCohortId: string) {
+    const enrollment = await this.prisma.enrollment.findUnique({
+      where: { id: enrollmentId },
+      include: { cohort: true, _count: { select: { attendance: true, submissions: true, attempts: true } } },
+    })
+    if (!enrollment || enrollment.userId !== userId) {
+      throw new AuthError('not_found', 'هذا التسجيل ليس لك', 404)
+    }
+    if (enrollment.status !== 'enrolled') {
+      throw new AuthError('not_switchable', 'لا يُبدَّل إلا تسجيلٌ قائم', 409)
+    }
+    if (enrollment.cohortId === toCohortId) {
+      throw new AuthError('same_cohort', 'هذه شعبتك الحالية', 409)
+    }
+
+    const now = new Date()
+    if (enrollment.cohort.startsAt && enrollment.cohort.startsAt <= now) {
+      throw new AuthError('already_started', 'شعبتك بدأت — راسلنا لترتيب نقلك', 409)
+    }
+    const { attendance, submissions, attempts } = enrollment._count
+    if (attendance + submissions + attempts > 0) {
+      /* أثرٌ في شعبةٍ «لم تبدأ» بحسب التقويم: جلسةٌ قُدّمت أو تسليمٌ مبكّر.
+         والأثرُ معلَّقٌ بالتسجيل، فينتقل معه إلى شعبةٍ لم تُعقد جلساتُها. */
+      throw new AuthError('has_activity', 'لك نشاطٌ مسجَّل في هذه الشعبة — راسلنا لترتيب نقلك', 409)
+    }
+
+    const to = await this.prisma.cohort.findUnique({ where: { id: toCohortId } })
+    if (!to) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
+    if (to.courseId !== enrollment.cohort.courseId) {
+      throw new AuthError('other_course', 'التبديل بين شعب الدورة نفسها — ولا يُغيَّر المسار بعد الدفع', 409)
+    }
+    if (!['open', 'full'].includes(to.status) || !to.registrationOpen) {
+      throw new AuthError('closed', `التسجيل مغلق في «${to.title}»`, 409)
+    }
+    if (to.startsAt && to.startsAt <= now) {
+      throw new AuthError('already_started', `«${to.title}» بدأت — اختر شعبةً لم تبدأ`, 409)
+    }
+    if (to.price !== null && enrollment.cohort.price !== null && Number(to.price) > Number(enrollment.cohort.price)) {
+      throw new AuthError('price_higher', `«${to.title}» أعلى سعرا ممّا دفعت — راسلنا لتسوية الفرق`, 409)
+    }
+    if (to.capacity) {
+      const [enrolled, held] = await Promise.all([
+        this.prisma.enrollment.count({ where: { cohortId: to.id, status: 'enrolled' } }),
+        this.prisma.enrollmentRequest.count({ where: { cohortId: to.id, status: 'seat_held' } }),
+      ])
+      if (enrolled + held >= to.capacity) throw new AuthError('capacity_full', `لا مقاعد متاحة في «${to.title}»`, 409)
+    }
+    /* مقعدٌ في الوجهة من قبل — لا يُنشأ تسجيلان لدورةٍ واحدة */
+    const clash = await this.prisma.enrollment.findUnique({
+      where: { cohortId_userId: { cohortId: to.id, userId } },
+    })
+    if (clash && clash.status !== 'dropped') {
+      throw new AuthError('already_enrolled', `أنت مسجّل في «${to.title}» بالفعل`, 409)
+    }
+
+    const from = enrollment.cohort
+    const moved = await this.prisma.$transaction(async (tx) => {
+      if (clash) await tx.enrollment.delete({ where: { id: clash.id } })
+      const e = await tx.enrollment.update({ where: { id: enrollmentId }, data: { cohortId: to.id } })
+      /* سجلُّ حجز المقعد ينتقل معه: تركُه على الشعبة المغادَرة يُبقيها تُحسب
+         ممتلئةً بمقعدٍ لا أحد فيه، ويُخرج الوجهةَ من عدّ المقاعد. */
+      const req = await tx.enrollmentRequest.findUnique({
+        where: { userId_cohortId: { userId, cohortId: from.id } },
+      })
+      if (req) {
+        const atTarget = await tx.enrollmentRequest.findUnique({
+          where: { userId_cohortId: { userId, cohortId: to.id } },
+        })
+        if (atTarget) await tx.enrollmentRequest.delete({ where: { id: atTarget.id } })
+        await tx.enrollmentRequest.update({ where: { id: req.id }, data: { cohortId: to.id } })
+      }
+      /* الشعبةُ المغادَرة تعود مفتوحةً إن كانت أُغلقت بالامتلاء وحدَه */
+      if (from.status === 'full' && from.capacity) {
+        const left = await tx.enrollment.count({ where: { cohortId: from.id, status: 'enrolled' } })
+        if (left < from.capacity) await tx.cohort.update({ where: { id: from.id }, data: { status: 'open' } })
+      }
+      if (to.status === 'open' && to.capacity) {
+        const filled = await tx.enrollment.count({ where: { cohortId: to.id, status: 'enrolled' } })
+        if (filled >= to.capacity) await tx.cohort.update({ where: { id: to.id }, data: { status: 'full' } })
+      }
+      return e
+    })
+
+    await recordAudit(this.prisma, {
+      actorId: userId, action: 'enrollment.switch_cohort', entityType: 'enrollment', entityId: enrollmentId,
+      meta: {
+        courseId: from.courseId,
+        from: from.id, fromTitle: from.title, fromStartsAt: from.startsAt,
+        to: to.id, toTitle: to.title, toStartsAt: to.startsAt,
+      },
+    })
+    return moved
+  }
+
   async drop(enrollmentId: string, actorId: string | null, note?: string) {
     const e = await this.prisma.enrollment.update({ where: { id: enrollmentId }, data: { status: 'dropped' } })
     await recordAudit(this.prisma, { actorId, action: 'enrollment.drop', entityType: 'enrollment', entityId: enrollmentId, meta: { note } })

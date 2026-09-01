@@ -95,6 +95,21 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     return { ...view, cohort: signCohortContent(view.cohort, cohorts, { revealPasscode: true }) }
   })
 
+  /* تبديلُ الشعبة قبل أن تبدأ.
+
+     قرارُ صاحب المنصّة: «لا يحقّ له تغيير مساره بعد الدفع. فقط التنقّل بين
+     الشعب ما دامت لم تبدأ بالفعل». والقيدان يُطبَّقان في الخدمة:
+     الدورةُ نفسُها (فلا يصير التبديلُ بابا خلفيّا لتغيير المسار)، وقبل
+     البدء (وقبل أيّ أثرٍ في الشعبة المغادَرة). */
+  app.post('/api/learner/enrollments/:id/switch-cohort', {
+    preHandler: requirePermission('learner.portal'),
+    schema: { tags: ['learner-portal'], summary: 'تبديل شعبتي إلى شعبةٍ أخرى من الدورة نفسها لم تبدأ بعد' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({ cohortId: z.string().uuid() }).parse(req.body)
+    return enrollments.switchCohort(req.auth!.userId, id, body.cohortId)
+  })
+
   app.post('/api/learner/assessments/:id/submissions', {
     preHandler: requirePermission('learner.submit'),
     schema: { tags: ['learner-portal'], summary: 'تسليم واجب — نص أو ملف خاص حتى 100MB' },

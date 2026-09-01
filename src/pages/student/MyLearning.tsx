@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router";
 import { ArrowLeft, Award, BookOpen, CalendarDays, CalendarPlus, CheckCircle2, ChevronDown, FileText, CircleSlash, Loader2, PlayCircle, RefreshCw, Ruler, Send, ServerOff, Video } from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import SubmissionFeedback from "@/components/SubmissionFeedback";
+import SwitchCohort from "@/components/SwitchCohort";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { fmtDate, fmtDateTime } from "@/application/text/format-ar";
 
@@ -19,10 +20,22 @@ const SUBMISSION_STATUS: Record<string, { label: string; cls: string }> = {
 const ASSESSMENT_TYPE: Record<string, string> = { assignment: "واجب", quiz: "اختبار", project: "مشروع" };
 const ATTENDANCE_LABEL: Record<string, string> = { present: "حاضر", late: "متأخر", absent: "غائب", excused: "معذور" };
 
+/** الطلبُ كما يعرضه الشريطُ بعد العودة من صفحة الدفع */
+interface PaidOrder {
+  id: string;
+  status: string;
+  total: string | number;
+  currency: string;
+  items: { id: string; titleAr: string; unitPrice: string | number }[];
+  invoice: { number: string; status: string } | null;
+}
+
 interface EnrollmentRow {
   id: string; status: string; createdAt: string;
   cohort: {
     id: string; title: string;
+    /* موعدُ البدء — عليه وحدَه يتوقّف حقُّ تبديل الشعبة ذاتيّا */
+    startsAt: string | null;
     course: { id: string; versions: { titleAr: string }[] };
     trainers: { profile: { application: { fullName: string } } }[];
   };
@@ -84,6 +97,12 @@ export default function MyLearning() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [flash, setFlash] = useState("");
+  /* ما دُفع فعلا — لا «شكرا لك» مجرّدةً.
+
+     قرارُ صاحب المنصّة: «وبعد الدفع يذهب للمنصّة **يرى ما دفع**». وكانت
+     البطاقةُ تشكره وتحيله إلى «الفواتير» — أي تطلب منه نقرةً أخرى ليعرف عن
+     ماذا خرج مالُه. والطلبُ معروفٌ برقمه في الرابط، فيُقرأ ويُعرض هنا. */
+  const [paid, setPaid] = useState<PaidOrder | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true); setOffline(null);
@@ -101,6 +120,15 @@ export default function MyLearning() {
   }, []);
 
   useEffect(() => { void load(); }, [load]);
+
+  useEffect(() => {
+    if (!paidOrder || cancelledOrder) { setPaid(null); return; }
+    let on = true;
+    apiGet<PaidOrder[]>("/api/learner/orders")
+      .then((orders) => { if (on) setPaid(orders.find((o) => o.id === paidOrder) ?? null); })
+      .catch(() => undefined);
+    return () => { on = false; };
+  }, [paidOrder, cancelledOrder]);
 
   const openDetail = async (id: string) => {
     if (openId === id) { setOpenId(null); setDetail(null); return; }
@@ -170,7 +198,30 @@ export default function MyLearning() {
             <p className="flex items-center gap-2 text-sm font-black text-teal-light-ink">
               <CheckCircle2 className="h-4 w-4 shrink-0" /> شكرا لك — عدنا بك إلى تعلّمك
             </p>
-            <p className="mt-1.5 text-[12px] leading-6 text-white/60">
+            {/* ما دُفع، بالأسماء والرقم — لا إحالةً إلى صفحةٍ أخرى ليعرف */}
+            {paid && (
+              <div className="mt-3 rounded-xl border border-white/10 bg-black/20 p-3.5">
+                <ul className="space-y-1">
+                  {paid.items.map((it) => (
+                    <li key={it.id} className="flex items-start justify-between gap-3 text-[12px]">
+                      <span className="min-w-0 text-white/75">{it.titleAr}</span>
+                      <span dir="ltr" className="shrink-0 font-bold text-white/55">
+                        {Number(it.unitPrice) === 0 ? "هديّة" : `${Number(it.unitPrice).toLocaleString("en-US")} ${paid.currency}`}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-2.5 flex items-end justify-between border-t border-white/10 pt-2">
+                  <span className="text-[11px] text-white/50">
+                    {paid.invoice ? <>فاتورة <span dir="ltr" className="font-mono">{paid.invoice.number}</span></> : "المجموع المدفوع"}
+                  </span>
+                  <span dir="ltr" className="text-lg font-black text-white">
+                    {Number(paid.total).toLocaleString("en-US")} {paid.currency}
+                  </span>
+                </div>
+              </div>
+            )}
+            <p className="mt-2.5 text-[12px] leading-6 text-white/60">
               نؤكّد دفعتك مع البنك، وشعبك تظهر أدناه فور تأكيدها — عادةً خلال دقائق.
               وتفصيل الفاتورة في <Link to="/student/billing" className="font-bold text-teal-light-ink underline underline-offset-4">الفواتير</Link>.
             </p>
@@ -231,6 +282,16 @@ export default function MyLearning() {
                     <div className="border-t border-white/8 p-5">
                       {/* محطات الدورة: المتن والتمارين والسيناريو — صفحةٌ مستقلّة
                           لأنها قراءةٌ طويلة لا تُقرأ داخل بطاقة مطويّة. */}
+                      {/* تبديلُ الموعد قبل أن تبدأ الشعبة — القيدان في الخادم
+                          (`switchCohort`): الدورةُ نفسُها، وقبل البدء وقبل أيّ
+                          أثر. وهذه الشاشةُ لا تعرض إلّا ما يقبله. */}
+                      <SwitchCohort
+                        enrollmentId={r.id}
+                        courseId={r.cohort.course.id}
+                        cohortId={r.cohort.id}
+                        startsAt={r.cohort.startsAt}
+                        onSwitched={() => { setOpenId(null); void load(); }}
+                      />
                       <Link
                         to={`/student/course/${r.cohort.course.id}`}
                         className="mb-5 flex items-center justify-center gap-2 rounded-2xl border border-teal/40 bg-teal/[0.07] py-3 text-sm font-black text-teal-light-ink transition hover:bg-teal/15"

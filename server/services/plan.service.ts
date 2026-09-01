@@ -61,6 +61,9 @@ export class PlanService {
     if (ids.length > MAX_ITEMS) throw new AuthError('too_many', `الخطّة أكثر من ${MAX_ITEMS} دورة`)
     /* الهديّة من دورات الخطّة نفسها — ضمن السقف لا فوقه، كما اختار المالك */
     const gift = input.giftCourseId && ids.includes(input.giftCourseId) ? input.giftCourseId : null
+    /* اعتمادُ خطّةٍ جديدة يؤرشف القديمة — وهو الطريقُ الثاني إلى تبديل المسار
+       بعد الدفع، فيُحرَس بالحارس نفسِه. */
+    await this.assertKeepsCommitted(userId, ids)
 
     const plan = await this.prisma.$transaction(async (tx) => {
       await tx.learnerPlan.updateMany({ where: { userId, status: 'active' }, data: { status: 'archived' } })
@@ -87,6 +90,7 @@ export class PlanService {
     if (ids.length === 0) throw new AuthError('empty_plan', 'الخطّة بلا دورات')
     if (ids.length > MAX_ITEMS) throw new AuthError('too_many', `الخطّة أكثر من ${MAX_ITEMS} دورة`)
     const gift = giftCourseId && ids.includes(giftCourseId) ? giftCourseId : null
+    await this.assertKeepsCommitted(userId, ids)
 
     await this.prisma.$transaction(async (tx) => {
       await tx.learnerPlanItem.deleteMany({ where: { planId: plan.id } })
@@ -196,6 +200,48 @@ export class PlanService {
     const item = plan.items.find((i) => i.courseId === courseId)
     if (!item) throw new AuthError('not_in_plan', 'هذه الدورة ليست في خطّتك', 404)
     return { plan, item }
+  }
+
+  /* الدوراتُ التي خرج عنها مالٌ أو حُجز لها مقعد — لا تُنزع من الخطّة.
+
+     قرارُ صاحب المنصّة: «لا يحقّ له تغيير مساره بعد الدفع. فقط التنقّل بين
+     الشعب ما دامت لم تبدأ بالفعل».
+
+     و`removeItem` و`replaceItem` محروسان بـ`assertNotEnrolled` منذ كُتبا.
+     لكنّ البابين الجملتين — `replaceCourses` و`adopt` — كانا بلا حارس:
+     الأوّل يحذف بنودَ الخطّة كلَّها ويعيد إنشاءها من قائمةٍ يرسلها العميل،
+     و`adopt` يؤرشف الخطّة الفعّالة وينشئ غيرَها. فنداءٌ واحد إلى أيّهما
+     يبدّل المسارَ كلَّه بعد الدفع، ويتجاوز الحارسَ المفرد بأن لا يمرّ به.
+
+     والقاعدةُ ليست «لا تعديل»: يُضيف ما شاء ويبدّل ما لم يُدفع عنه — والذي
+     لا يُنزع هو ما دُفع أو حُجز له مقعد وحدَه. */
+  private async committedCourseIds(userId: string): Promise<Set<string>> {
+    const [enrolled, held] = await Promise.all([
+      this.prisma.enrollment.findMany({
+        where: { userId, status: { in: ['enrolled', 'waitlisted', 'completed'] } },
+        select: { cohort: { select: { courseId: true } } },
+      }),
+      this.prisma.enrollmentRequest.findMany({
+        where: { userId, status: { in: ['pending', 'seat_held'] } },
+        select: { cohort: { select: { courseId: true } } },
+      }),
+    ])
+    return new Set([...enrolled, ...held].map((r) => r.cohort.courseId))
+  }
+
+  /** يرمي حين تُسقط القائمةُ الجديدة دورةً دُفع عنها أو حُجز لها مقعد */
+  private async assertKeepsCommitted(userId: string, nextIds: readonly string[]) {
+    const committed = await this.committedCourseIds(userId)
+    if (committed.size === 0) return
+    const next = new Set(nextIds)
+    const dropped = [...committed].filter((id) => !next.has(id))
+    if (dropped.length > 0) {
+      throw new AuthError(
+        'committed_course_dropped',
+        `لا يُغيَّر المسار بعد الشراء: ${dropped.length === 1 ? 'دورةٌ اشتريتها' : `${dropped.length} دورات اشتريتها`} خارج القائمة الجديدة. التنقّل بين الشعب متاحٌ ما لم تبدأ.`,
+        409,
+      )
+    }
   }
 
   /** يمنع المساس بدورةٍ سجّل فيها فعلا — الخطّة نيّة، والتسجيل التزام */

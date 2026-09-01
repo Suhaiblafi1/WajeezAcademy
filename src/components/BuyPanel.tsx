@@ -76,6 +76,7 @@ export default function BuyPanel({
   lines,
   email,
   initialCoupon = "",
+  note = null,
   onClose,
 }: {
   title: string;
@@ -84,6 +85,8 @@ export default function BuyPanel({
   email: string;
   /** كودٌ كتبه في الصفحة قبل أن يفتح اللوح — يُحمل معه لا يُنسى */
   initialCoupon?: string;
+  /** ملاحظةٌ من الصفحة قبل الشراء — مثل «خطّتك لم تتبدّل لأنّك اشتريت» */
+  note?: string | null;
   onClose: () => void;
 }) {
   const { cohorts, loaded } = useCourseCohorts();
@@ -188,6 +191,13 @@ export default function BuyPanel({
       <div className="story-fade max-h-[86vh] overflow-y-auto rounded-3xl border border-white/10 bg-surface p-6 sm:p-7">
         <h3 className="text-lg font-black">إتمام الشراء</h3>
         <p className="mt-1 text-sm text-white/55">{title}</p>
+
+        {note && (
+          <p className="mt-3 flex items-start gap-2 rounded-2xl border border-gold/30 bg-gold/[0.06] p-3 text-[11px] leading-5 text-gold-ink">
+            <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            {note}
+          </p>
+        )}
 
         {!loaded && (
           <p className="mt-6 flex items-center gap-2 text-sm text-white/50">

@@ -123,12 +123,25 @@ export function updateAdoptedCourses(hostPathwayId: string, courseIds: string[])
   return saveAdoptedPlan({ ...current, courseIds })
 }
 
+export interface PlanSyncResult {
+  ok: boolean
+  /** سببٌ يُقال للمتعلّم حين يرفض الخادمُ الرفعَ برأيٍ لا بعطب — أو null */
+  reasonAr: string | null
+}
+
 /** يُرسل الخطّة إلى الخادم لتبقى بعد إغلاق التبويب — أفضل جهد.
 
     لماذا «أفضل جهد» ولا يُسقط الاعتماد عند الفشل: الضيف بلا حساب لا خادم له،
     والمسجَّل الذي انقطعت شبكتُه ما زال أمامه خطّته في هذه الجلسة. فالفشل يُخفض
-    التجربة ولا يُلغيها. ومن كان له حساب صار للخطّة بيتٌ يبقى. */
-export async function syncAdoptedPlan(plan: Omit<AdoptedPlan, 'v' | 'adoptedAt'>): Promise<boolean> {
+    التجربة ولا يُلغيها. ومن كان له حساب صار للخطّة بيتٌ يبقى.
+
+    ولا يُبتلع كلُّ فشلٍ صامتا: منذ صار الخادمُ يمنع تبديل المسار بعد الشراء
+    (`plan.service.ts#assertKeepsCommitted`) صار من الرفض ما هو **قرارٌ** لا
+    عطبُ شبكة — ومن اشترى مسارا ثمّ فتح آخر يستحقّ أن يُقال له لماذا بقيت
+    خطّتُه كما هي، لا أن يظنّها تبدّلت. */
+export async function syncAdoptedPlan(
+  plan: Omit<AdoptedPlan, 'v' | 'adoptedAt'>,
+): Promise<PlanSyncResult> {
   try {
     const res = await fetch('/api/learner/plan', {
       method: 'POST',
@@ -142,9 +155,14 @@ export async function syncAdoptedPlan(plan: Omit<AdoptedPlan, 'v' | 'adoptedAt'>
         courseIds: plan.courseIds,
       }),
     })
-    return res.ok
+    if (res.ok) return { ok: true, reasonAr: null }
+    if (res.status === 409) {
+      const body = (await res.json().catch(() => null)) as { error?: { message_ar?: string } } | null
+      return { ok: false, reasonAr: body?.error?.message_ar ?? null }
+    }
+    return { ok: false, reasonAr: null }
   } catch {
-    return false
+    return { ok: false, reasonAr: null }
   }
 }
 
