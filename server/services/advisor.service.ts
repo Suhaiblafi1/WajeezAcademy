@@ -9,6 +9,12 @@ export const CASE_STATUSES = [
   'new', 'contacted', 'needs_review', 'follow_up', 'recommended', 'enrolled', 'not_interested', 'closed',
 ] as const
 
+/** نسبة العمولة الافتراضية لمن لم يُحدَّد له ملفٌّ بعد — لا صفر ولا تجميد */
+const DEFAULT_COMMISSION_PERCENT = 10
+
+/** أقلّ عدد تقييمات قبل عرض المعدَّل — نفس قاعدة تقييم المدرّب */
+const MIN_RATINGS_TO_SHOW = 3
+
 export class AdvisorService {
   private prisma: PrismaClient
   constructor(prisma: PrismaClient) {
@@ -269,5 +275,134 @@ export class AdvisorService {
       await this.prisma.advisorCase.update({ where: { id: caseId }, data: { status: 'contacted' } })
     }
     return event
+  }
+
+  /* ── الإدارة: ملف المستشار — أداؤه وعمولته وتقييماته ──
+
+     قرارُ صاحب المنصّة: «نسبة العمولة يحددها الأدمن ويتابع مسيرته
+     وتقييماته وملاحظاته وطلباته». وكان المستشار بلا ملفٍّ يخصّه —
+     حالاتٌ مسندة إليه فقط، لا صفحة تلخّص أداءه. */
+
+  private async assertAdvisor(advisorId: string) {
+    const advisor = await this.prisma.user.findUnique({ where: { id: advisorId }, include: { roles: true, advisorProfile: true } })
+    if (!advisor || !advisor.roles.some((r) => r.roleId === 'advisor')) {
+      throw new AuthError('not_advisor', 'المستخدم ليس مستشارا', 404)
+    }
+    return advisor
+  }
+
+  private async ratingSummary(advisorId: string) {
+    const agg = await this.prisma.rating.aggregate({
+      where: { subjectType: 'advisor', subjectId: advisorId, publishStatus: 'approved' },
+      _avg: { score: true }, _count: true,
+    })
+    return { avg: agg._count >= MIN_RATINGS_TO_SHOW ? Number(agg._avg.score) : null, count: agg._count }
+  }
+
+  /** قائمةُ كلّ المستشارين — عدد حالاتهم المسندة ومن حوّلوه فعلا ونسبة عمولتهم */
+  async listAdvisorsForAdmin() {
+    const advisors = await this.prisma.user.findMany({
+      where: { roles: { some: { roleId: 'advisor' } } },
+      select: {
+        id: true, displayName: true, email: true, status: true, createdAt: true,
+        advisorProfile: { select: { commissionPercent: true } },
+        advisorAssignments: { where: { unassignedAt: null }, select: { caseId: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    })
+
+    return Promise.all(advisors.map(async (a) => {
+      const caseIds = a.advisorAssignments.map((x) => x.caseId)
+      const [enrolledCount, rating] = await Promise.all([
+        caseIds.length > 0
+          ? this.prisma.advisorCase.count({ where: { id: { in: caseIds }, status: 'enrolled' } })
+          : Promise.resolve(0),
+        this.ratingSummary(a.id),
+      ])
+      return {
+        id: a.id, displayName: a.displayName, email: a.email, status: a.status, createdAt: a.createdAt,
+        casesAssigned: caseIds.length,
+        referralsConverted: enrolledCount,
+        commissionPercent: a.advisorProfile?.commissionPercent ? Number(a.advisorProfile.commissionPercent) : null,
+        ratingAvg: rating.avg, ratingCount: rating.count,
+      }
+    }))
+  }
+
+  /** ملفُّ مستشارٍ كامل — حالاته وعمولته المستحقّة وتقييماته وطلباته وملاحظات الإدارة */
+  async advisorDetailForAdmin(advisorId: string) {
+    const advisor = await this.assertAdvisor(advisorId)
+
+    const assignments = await this.prisma.advisorAssignment.findMany({
+      where: { advisorId, unassignedAt: null },
+      include: { case: { include: { client: { select: { id: true, displayName: true, email: true } }, lead: true } } },
+      orderBy: { assignedAt: 'desc' },
+    })
+    const clientIds = [...new Set(
+      assignments.map((a) => a.case.clientId).filter((id): id is string => !!id),
+    )]
+
+    const [paidOrders, rating, requests] = await Promise.all([
+      clientIds.length > 0
+        ? this.prisma.order.findMany({
+            where: { userId: { in: clientIds }, status: 'paid' },
+            select: { total: true },
+          })
+        : Promise.resolve([]),
+      this.ratingSummary(advisorId),
+      this.prisma.advisorRequest.findMany({ where: { advisorId }, orderBy: { createdAt: 'desc' } }),
+    ])
+
+    const revenueFromReferrals = paidOrders.reduce((sum, o) => sum + Number(o.total), 0)
+    const explicitPercent = advisor.advisorProfile?.commissionPercent ? Number(advisor.advisorProfile.commissionPercent) : null
+    const effectivePercent = explicitPercent ?? DEFAULT_COMMISSION_PERCENT
+    /* تقريبٌ لأقرب سنت — لا يُترك كسرا يتراكم خطأ عرضه لاحقا */
+    const commissionOwed = Math.round(revenueFromReferrals * effectivePercent) / 100
+
+    return {
+      advisor: { id: advisor.id, displayName: advisor.displayName, email: advisor.email, status: advisor.status, createdAt: advisor.createdAt },
+      commissionPercent: explicitPercent,
+      effectiveCommissionPercent: effectivePercent,
+      notesAr: advisor.advisorProfile?.notesAr ?? null,
+      revenueFromReferrals, commissionOwed, currency: 'USD',
+      ratingAvg: rating.avg, ratingCount: rating.count,
+      cases: assignments.map((a) => ({
+        caseId: a.caseId, status: a.case.status,
+        clientName: a.case.client?.displayName ?? a.case.lead?.fullName ?? 'بلا اسم',
+        clientEmail: a.case.client?.email ?? a.case.lead?.email ?? null,
+        assignedAt: a.assignedAt,
+      })),
+      requests: requests.map((r) => ({
+        id: r.id, kind: r.kind, status: r.status, reasonAr: r.reasonAr,
+        createdAt: r.createdAt, decidedAt: r.decidedAt,
+      })),
+    }
+  }
+
+  /** يحدّد نسبة عمولة مستشار — null يعيده للنسبة الافتراضية العامة */
+  async setCommission(actorId: string, advisorId: string, percent: number | null) {
+    await this.assertAdvisor(advisorId)
+    if (percent !== null && (percent < 0 || percent > 100)) {
+      throw new AuthError('bad_percent', 'نسبة العمولة رقمٌ بين صفر ومئة')
+    }
+    await this.prisma.advisorProfile.upsert({
+      where: { userId: advisorId },
+      update: { commissionPercent: percent },
+      create: { userId: advisorId, commissionPercent: percent },
+    })
+    await recordAudit(this.prisma, {
+      actorId, action: 'advisor.commission.set', entityType: 'user', entityId: advisorId, meta: { percent },
+    })
+  }
+
+  /** ملاحظات الإدارة على مستشار — داخلية، لا تظهر له */
+  async setNotes(actorId: string, advisorId: string, notesAr: string) {
+    await this.assertAdvisor(advisorId)
+    await this.prisma.advisorProfile.upsert({
+      where: { userId: advisorId },
+      update: { notesAr },
+      create: { userId: advisorId, notesAr },
+    })
+    await recordAudit(this.prisma, { actorId, action: 'advisor.notes.set', entityType: 'user', entityId: advisorId })
   }
 }

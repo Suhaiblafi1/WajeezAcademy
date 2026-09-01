@@ -36,6 +36,7 @@ import { registerSearchRoutes } from './routes/search.routes'
 import { registerIntegrationRoutes } from './routes/integrations.routes'
 import { registerDemoRoutes } from './routes/demo.routes'
 import { registerAnalyticsRoutes } from './routes/analytics.routes'
+import { registerAdminAuditRoutes } from './routes/admin-audit.routes'
 
 export async function buildApp(prisma: PrismaClient) {
   const app = Fastify({ logger: false })
@@ -186,6 +187,7 @@ export async function buildApp(prisma: PrismaClient) {
   registerSearchRoutes(app, prisma)
   registerIntegrationRoutes(app, prisma)
   registerAnalyticsRoutes(app, prisma)
+  registerAdminAuditRoutes(app, prisma)
   /* مسارات الديمو: /status يخبر الواجهة بالوضع، و/switch-role يرفض 404 ما لم DEMO_MODE=true */
   registerDemoRoutes(app, auth)
 

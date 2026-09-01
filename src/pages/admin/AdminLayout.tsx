@@ -1,5 +1,5 @@
 import { Link, NavLink, useLocation, useNavigate } from "react-router";
-import { BadgePercent, CalendarCog, Crown, FlaskConical, GitBranch, ClipboardList, GraduationCap, Layers, PenLine, ShieldAlert, LayoutDashboard, UserPlus, Users, BarChart3, LifeBuoy, Wallet, Bell, PlugZap, Star } from "lucide-react";
+import { BadgePercent, CalendarCog, Crown, FlaskConical, GitBranch, ClipboardList, GraduationCap, Layers, PenLine, ShieldAlert, LayoutDashboard, UserPlus, Users, BarChart3, LifeBuoy, Wallet, Bell, PlugZap, Star, ScrollText } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import ThemeToggle from "@/components/ThemeToggle";
 import StaffAccountMenu from "@/components/StaffAccountMenu";
@@ -87,6 +87,7 @@ export default function AdminLayout({ children, title }: { children: React.React
       title: "النظام",
       items: [
         { to: "/admin/integrations", label: "التكاملات — الدفع والبريد", icon: PlugZap , need: "settings.manage"},
+        { to: "/admin/audit-log", label: "سجل التدقيق", icon: ScrollText , need: "audit.view"},
       ],
     },
   ];

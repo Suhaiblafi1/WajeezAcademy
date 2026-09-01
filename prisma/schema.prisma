@@ -36,6 +36,7 @@ model User {
   sessions             Session[]
   resetTokens          PasswordResetToken[]
   trainerProfile       TrainerProfile?
+  advisorProfile       AdvisorProfile?
   trainerApplication   TrainerApplication?        @relation("TrainerApplicant")
   enrollments          Enrollment[]               @relation("EnrollmentUser")
   cohortMessages       CohortMessage[]            @relation("CohortMessageAuthor")
@@ -1342,6 +1343,7 @@ model AuditEvent {
 
   @@index([entityType, entityId, createdAt])
   @@index([actorId, createdAt])
+  @@index([createdAt])
 }
 
 /**
@@ -1911,6 +1913,21 @@ model AdvisorCase {
   requests           AdvisorRequest[]
 
   @@index([status, updatedAt])
+}
+
+/// ملفُّ المستشار — ما لا يخصّ حالةً بعينها: نسبةُ عمولته وملاحظاتُ الإدارة عليه.
+///
+/// قرارُ صاحب المنصّة: «نسبة العمولة يحددها الأدمن ويتابع مسيرته وتقييماته
+/// وملاحظاته». ولم يكن للمستشار ملفٌّ يخصّه — فقط حالاتٌ مسندة إليه.
+model AdvisorProfile {
+  id                String   @id @default(uuid()) @db.Uuid
+  userId            String   @unique @db.Uuid
+  /// null = تُستخدم النسبة الافتراضية للمنصّة، لا صفرٌ ولا تجميد
+  commissionPercent Decimal? @db.Decimal(5, 2)
+  notesAr           String? // ملاحظات الإدارة — داخلية، لا تظهر للمستشار
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model AdvisorAssignment {

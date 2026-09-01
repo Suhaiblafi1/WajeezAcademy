@@ -70,6 +70,7 @@ const AdvisorMyLearners = lazy(() => import('./pages/advisor/MyLearners'))
 const AdminReports = lazy(() => import('./pages/admin/Reports'))
 const AdminSupport = lazy(() => import('./pages/admin/Support'))
 const AdminIntegrations = lazy(() => import('./pages/admin/Integrations'))
+const AdminAuditLog = lazy(() => import('./pages/admin/AuditLog'))
 const AdminFinance = lazy(() => import('./pages/admin/Finance'))
 const AdminNotifications = lazy(() => import('./pages/admin/Notifications'))
 
@@ -225,6 +226,7 @@ export default function App() {
             <Route path="/admin/finance" element={<AdminFinance />} />
             <Route path="/admin/notifications" element={<AdminNotifications />} />
             <Route path="/admin/integrations" element={<AdminIntegrations />} />
+            <Route path="/admin/audit-log" element={<AdminAuditLog />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -194,6 +194,40 @@ export function registerOperationsRoutes(app: FastifyInstance, prisma: PrismaCli
     return reply.status(201).send(await advisors.assign(id, body.advisorId, req.auth!.userId))
   })
 
+  /* ════ ملفّ المستشار — أداؤه وعمولته وتقييماته وملاحظات الإدارة ════ */
+  app.get('/api/admin/advisors', {
+    preHandler: requirePermission('advisor.manage'),
+    schema: { tags: ['admin-operations'], summary: 'كل المستشارين — حالاتهم المسندة ومن حوّلوه فعلا ونسبة عمولتهم' },
+  }, async () => advisors.listAdvisorsForAdmin())
+
+  app.get('/api/admin/advisors/:id', {
+    preHandler: requirePermission('advisor.manage'),
+    schema: { tags: ['admin-operations'], summary: 'ملفّ مستشار كامل: حالاته وعمولته المستحقّة وتقييماته وطلباته' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return advisors.advisorDetailForAdmin(id)
+  })
+
+  app.post('/api/admin/advisors/:id/commission', {
+    preHandler: requirePermission('advisor.manage'),
+    schema: { tags: ['admin-operations'], summary: 'تحديد نسبة عمولة مستشار — فارغ يعيده للنسبة الافتراضية' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({ percent: z.number().min(0).max(100).nullable() }).parse(req.body)
+    await advisors.setCommission(req.auth!.userId, id, body.percent)
+    return { ok: true }
+  })
+
+  app.post('/api/admin/advisors/:id/notes', {
+    preHandler: requirePermission('advisor.manage'),
+    schema: { tags: ['admin-operations'], summary: 'ملاحظات الإدارة على مستشار — داخلية' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({ notesAr: z.string().max(4000) }).parse(req.body)
+    await advisors.setNotes(req.auth!.userId, id, body.notesAr)
+    return { ok: true }
+  })
+
   /* ════ دعوات التقويم — ملفّ ICS يفتحه قوقل وآبل وأوتلوك ════
 
      ولماذا ملفٌّ لا واجهةُ قوقل: الواجهةُ تلزمها OAuth وموافقةُ كلّ
