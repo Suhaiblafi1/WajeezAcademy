@@ -4,12 +4,14 @@
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
-import { safeNotify } from './notification.service'
+import { NotificationService } from './notification.service'
 
 export class EnrollmentService {
   private prisma: PrismaClient
+  private notifications: NotificationService
   constructor(prisma: PrismaClient) {
     this.prisma = prisma
+    this.notifications = new NotificationService(prisma)
   }
 
   /** تسجيل متعلم — يملأ السعة ثم يحوّل الفائض لقائمة انتظار؛ التجاوز يتطلب override موثقا */
@@ -168,61 +170,87 @@ export class EnrollmentService {
         to: to.id, toTitle: to.title, toStartsAt: to.startsAt,
       },
     })
-    /* مقعدٌ في الشعبة المغادَرة ربما تحرّر — أول من في قائمة انتظارها يُرقّى */
-    await this.freeSeat(from.id)
     return moved
   }
 
   async drop(enrollmentId: string, actorId: string | null, note?: string) {
-    const existing = await this.prisma.enrollment.findUnique({ where: { id: enrollmentId } })
-    if (!existing) throw new AuthError('not_found', 'التسجيل غير موجود', 404)
     const e = await this.prisma.enrollment.update({ where: { id: enrollmentId }, data: { status: 'dropped' } })
     await recordAudit(this.prisma, { actorId, action: 'enrollment.drop', entityType: 'enrollment', entityId: enrollmentId, meta: { note } })
-    /* من انسحب مسجَّلا من شعبة ممتلئة يفتح مقعدا — لا يبقى شاغرا بلا من يشغله */
-    if (existing.status === 'enrolled') await this.freeSeat(existing.cohortId)
-    return e
+    const promoted = await this.fillSeatFromWaitlist(e.cohortId, actorId)
+    return { ...e, promotedEnrollmentId: promoted?.id ?? null }
   }
 
-  /** مقعدٌ تحرّر في شعبة — تعود «مفتوحة» إن كانت أُغلقت بالامتلاء وحده، وأوّل
-      من في قائمة انتظارها يُرقّى مكانه تلقائيا فيصير «مسجَّلا» ويُشعَر بذلك.
-      حارسٌ صامتٌ لا يفعل شيئا إن لم يتحرّر مقعدٌ فعلا أو لم تكن الشعبة محدودة
-      السعة أصلا — فيصحّ استدعاؤه من أيّ مسارٍ يُحتمل أن يُخلي مقعدا. */
-  private async freeSeat(cohortId: string): Promise<void> {
-    const cohort = await this.prisma.cohort.findUnique({ where: { id: cohortId } })
-    if (!cohort || !cohort.capacity) return
+  /* ─────────── المقعدُ الشاغرُ يُملأ من الطابور ───────────
 
-    const enrolledCount = await this.prisma.enrollment.count({ where: { cohortId, status: 'enrolled' } })
-    if (enrolledCount >= cohort.capacity) return
+     قرارُ صاحب المنصّة: «ترقيةٌ تلقائيّة من قائمة الانتظار عند انسحاب أحدهم».
 
-    if (cohort.status === 'full') {
-      await this.prisma.cohort.update({ where: { id: cohortId }, data: { status: 'open' } })
-    }
+     وكان المقعدُ يُخلى فيبقى خاليا: قائمةُ الانتظار تنتظر فعلا من يقرأها،
+     والشعبةُ تبقى موسومةً `full` وإن شغرت — فلا هي تُشترى ولا هي تُرقّي.
 
-    const next = await this.prisma.enrollment.findFirst({
-      where: { cohortId, status: 'waitlisted' },
-      orderBy: { createdAt: 'asc' },
+     والترتيبُ بأقدميّة الانتظار (`createdAt`) لا بشيءٍ آخر: من انتظر أوّلا
+     يدخل أوّلا، وأيُّ ترتيبٍ غيره يحتاج قرارا بشريّا لا تلقائيّا.
+
+     والحسابُ داخل معاملةٍ واحدة: انسحابان متزامنان على مقعدين قد يرقّيان
+     ثلاثةً لو عُدّ المسجَّلون خارجها. */
+  private async fillSeatFromWaitlist(cohortId: string, actorId: string | null) {
+    const promoted = await this.prisma.$transaction(async (tx) => {
+      const cohort = await tx.cohort.findUnique({ where: { id: cohortId } })
+      if (!cohort) return null
+      const capacity = cohort.capacity ?? 0
+      const enrolled = await tx.enrollment.count({ where: { cohortId, status: 'enrolled' } })
+      /* سعةٌ بلا حدّ (0) لا طابورَ لها أصلا: كلُّ داخلٍ يُسجَّل مباشرة */
+      if (capacity > 0 && enrolled >= capacity) return null
+
+      const next = await tx.enrollment.findFirst({
+        where: { cohortId, status: 'waitlisted' },
+        orderBy: { createdAt: 'asc' },
+      })
+      if (!next) {
+        /* لا منتظِر: الشعبةُ الموسومةُ ممتلئةً تعود مفتوحةً — وإلّا بقي
+           المقعدُ شاغرا على الورق مغلقا على الشاشة. */
+        if (cohort.status === 'full') {
+          await tx.cohort.update({ where: { id: cohortId }, data: { status: 'open' } })
+        }
+        return null
+      }
+
+      const moved = await tx.enrollment.update({ where: { id: next.id }, data: { status: 'enrolled' } })
+      await tx.courseProgress.upsert({
+        where: { enrollmentId: moved.id },
+        update: {},
+        create: { enrollmentId: moved.id, percent: 0, evidence: {} },
+      })
+      /* وإن كان المرقَّى آخرَ ما تسعه: تبقى ممتلئة. وإن بقي مقعدٌ: تُفتح. */
+      const after = await tx.enrollment.count({ where: { cohortId, status: 'enrolled' } })
+      const nextStatus = capacity > 0 && after >= capacity ? 'full' : 'open'
+      if (cohort.status !== nextStatus && ['open', 'full'].includes(cohort.status)) {
+        await tx.cohort.update({ where: { id: cohortId }, data: { status: nextStatus } })
+      }
+      return { moved, cohortTitle: cohort.title }
     })
-    if (!next) return
 
-    const promoted = await this.prisma.enrollment.update({ where: { id: next.id }, data: { status: 'enrolled' } })
-    await this.prisma.courseProgress.upsert({
-      where: { enrollmentId: promoted.id }, update: {},
-      create: { enrollmentId: promoted.id, percent: 0, evidence: {} },
-    })
-    if (enrolledCount + 1 >= cohort.capacity) {
-      await this.prisma.cohort.update({ where: { id: cohortId }, data: { status: 'full' } })
-    }
+    if (!promoted) return null
+
     await recordAudit(this.prisma, {
-      actorId: null, action: 'enrollment.auto_promote', entityType: 'enrollment', entityId: promoted.id,
-      meta: { cohortId },
+      actorId, action: 'enrollment.waitlist.promote', entityType: 'enrollment', entityId: promoted.moved.id,
+      meta: { cohortId, userId: promoted.moved.userId, reason: 'seat_freed_by_drop' },
     })
-    await safeNotify(this.prisma, {
-      userId: promoted.userId, channel: 'in_app',
-      title: 'تأكد مقعدك — صرت مسجَّلا',
-      body: `فتح مقعدٌ في «${cohort.title}» وكنت أوّل قائمة الانتظار، فسجَّلناك تلقائيا.`,
-      templateKey: 'enrollment.auto_promoted',
-      data: { cohortId },
-    })
+
+    /* ولا تُبتلع خيبةُ الإشعار: من رُقّي وهو لا يعلم يظنّ نفسَه منتظِرا،
+       فيُسجَّل الفشلُ ولا يُسقط الترقيةَ نفسَها. */
+    try {
+      await this.notifications.notify({
+        userId: promoted.moved.userId,
+        channel: 'in_app',
+        templateKey: 'enrollment.waitlist.promoted',
+        title: `دخلتَ الشعبة: ${promoted.cohortTitle}`,
+        body: `شغر مقعدٌ في «${promoted.cohortTitle}» فانتقلتَ من قائمة الانتظار إلى المسجَّلين. تجد جلساتها ومادّتها في «تعلُّمي».`,
+        data: { cohortId, enrollmentId: promoted.moved.id },
+        audience: 'learner',
+      })
+    } catch { /* الإشعارُ خدمةٌ مساندة — لا يُبطل ترقيةً وقعت */ }
+
+    return promoted.moved
   }
 
   /** حارس الوصول: هل هذا المستخدم مسجل (وليس منسحبا) في شعبة هذا المحتوى؟ */
@@ -287,8 +315,8 @@ export class EnrollmentService {
             cohort: { include: { course: { include: { versions: { orderBy: { version: 'desc' }, take: 1 } } } } },
           },
         },
-        grades: { orderBy: { createdAt: 'desc' }, take: 1 },
-        feedback: { orderBy: { createdAt: 'desc' }, take: 1 },
+        grades: { orderBy: { createdAt: 'asc' }, take: 1 },
+        feedback: { orderBy: { createdAt: 'asc' }, take: 1 },
       },
     })
     /* لا مفاتيح تخزين إلى المتصفّح — الملف يُقرأ برابط موقّع عند طلبه */
@@ -324,7 +352,7 @@ export class EnrollmentService {
         courseProgress: true,
         certificates: true,
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: 'asc' },
     })
   }
 

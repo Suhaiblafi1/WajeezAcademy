@@ -36,7 +36,6 @@ model User {
   sessions             Session[]
   resetTokens          PasswordResetToken[]
   trainerProfile       TrainerProfile?
-  advisorProfile       AdvisorProfile?
   trainerApplication   TrainerApplication?        @relation("TrainerApplicant")
   enrollments          Enrollment[]               @relation("EnrollmentUser")
   cohortMessages       CohortMessage[]            @relation("CohortMessageAuthor")
@@ -55,6 +54,7 @@ model User {
   supportTickets       SupportTicket[]            @relation("TicketOwner")
   advisorCases         AdvisorCase[]              @relation("CaseClient")
   advisorAssignments   AdvisorAssignment[]        @relation("CaseAdvisor")
+  advisorProfile       AdvisorProfile?
   advisorRequests      AdvisorRequest[]           @relation("AdvisorRequestBy")
   advisorRequestsRuled AdvisorRequest[]           @relation("AdvisorRequestDecidedBy")
   couponsRestricted    Coupon[]                   @relation("CouponRestrictedTo")
@@ -1343,7 +1343,6 @@ model AuditEvent {
 
   @@index([entityType, entityId, createdAt])
   @@index([actorId, createdAt])
-  @@index([createdAt])
 }
 
 /**
@@ -1915,19 +1914,23 @@ model AdvisorCase {
   @@index([status, updatedAt])
 }
 
-/// ملفُّ المستشار — ما لا يخصّ حالةً بعينها: نسبةُ عمولته وملاحظاتُ الإدارة عليه.
+/// ملفُّ المستشار — شروطُ عمله لا حالاتُه.
 ///
-/// قرارُ صاحب المنصّة: «نسبة العمولة يحددها الأدمن ويتابع مسيرته وتقييماته
-/// وملاحظاته». ولم يكن للمستشار ملفٌّ يخصّه — فقط حالاتٌ مسندة إليه.
+/// كان المستشارُ دورا على حسابٍ لا غير: تُسنَد إليه الحالات، ولا موضعَ يُكتب
+/// فيه ما يستحقّه على ما يُغلقه. فعمولتُه تُتّفق خارج المنصّة وتُحسب بالذاكرة
+/// — وأوّلُ خلافٍ عليها لا سجلَّ يفصله.
+///
+/// والنسبةُ هنا لا في `User`: الحسابُ شيءٌ وشرطُ العمل شيء، ومن رُفع عنه دورُ
+/// المستشار يبقى ملفُّه شاهدا على ما مضى.
 model AdvisorProfile {
-  id                String   @id @default(uuid()) @db.Uuid
-  userId            String   @unique @db.Uuid
-  /// null = تُستخدم النسبة الافتراضية للمنصّة، لا صفرٌ ولا تجميد
-  commissionPercent Decimal? @db.Decimal(5, 2)
-  notesAr           String? // ملاحظات الإدارة — داخلية، لا تظهر للمستشار
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @unique @db.Uuid
+  /// نسبةُ العمولة المئويّة على ما يُغلقه — ٠ حتّى تُتّفق
+  commissionPct  Decimal  @default(0) @db.Decimal(5, 2)
+  notesAr        String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model AdvisorAssignment {

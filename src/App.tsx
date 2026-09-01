@@ -65,12 +65,13 @@ const DiagnosticQuality = lazy(() => import('./pages/admin/DiagnosticQuality'))
 const AdminUsers = lazy(() => import('./pages/admin/Users'))
 const AdminLearners = lazy(() => import('./pages/admin/Learners'))
 const AdminTasks = lazy(() => import('./pages/admin/Tasks'))
+const AdminAdvisors = lazy(() => import("./pages/admin/Advisors"));
+const AdminAuditLog = lazy(() => import("./pages/admin/AuditLog"));
 const TrainerMyLearners = lazy(() => import('./pages/trainer/MyLearners'))
 const AdvisorMyLearners = lazy(() => import('./pages/advisor/MyLearners'))
 const AdminReports = lazy(() => import('./pages/admin/Reports'))
 const AdminSupport = lazy(() => import('./pages/admin/Support'))
 const AdminIntegrations = lazy(() => import('./pages/admin/Integrations'))
-const AdminAuditLog = lazy(() => import('./pages/admin/AuditLog'))
 const AdminFinance = lazy(() => import('./pages/admin/Finance'))
 const AdminNotifications = lazy(() => import('./pages/admin/Notifications'))
 
@@ -221,12 +222,13 @@ export default function App() {
             <Route path="/admin/users" element={<AdminUsers />} />
             <Route path="/admin/learners" element={<AdminLearners />} />
             <Route path="/admin/tasks" element={<AdminTasks />} />
+            <Route path="/admin/advisors" element={<AdminAdvisors />} />
+            <Route path="/admin/audit" element={<AdminAuditLog />} />
             <Route path="/admin/reports" element={<AdminReports />} />
             <Route path="/admin/support" element={<AdminSupport />} />
             <Route path="/admin/finance" element={<AdminFinance />} />
             <Route path="/admin/notifications" element={<AdminNotifications />} />
             <Route path="/admin/integrations" element={<AdminIntegrations />} />
-            <Route path="/admin/audit-log" element={<AdminAuditLog />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

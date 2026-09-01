@@ -41,9 +41,12 @@ export const PERMISSIONS = [
      أن يملك تعيينَ الأدوار ولا إيقافَ الحسابات — وهما أوسعُ أثرا منه. */
   { key: 'admin.users.view', description: 'عرض قائمة المستخدمين وأدوارهم' },
   { key: 'admin.users.manage', description: 'تعيين الأدوار وإيقاف الحسابات' },
-  /* سجل التدقيق مكتوبٌ من كل شاشة حساسة أصلا (recordAudit) — هذه صلاحية
-     رؤيته مجموعا في مكان واحد، لا صلاحية إنشائه. */
-  { key: 'audit.view', description: 'عرض سجل التدقيق الموحّد لكل المنصّة' },
+  /* الحذفُ النهائيّ حبّةٌ وحدَها لا تُطوى في «الإدارة».
+
+     قرارُ صاحب المنصّة: «الحذفُ إمّا إزالةٌ كاملةٌ من القاعدة، وإمّا إيقافٌ
+     ويوضع في خانة الحسابات الموقوفة». والأوّلُ لا رجعةَ فيه — فلا يُمنح مع
+     الإيقاف في حبّةٍ واحدة، وإلّا مَلَك من يوقِف أن يمحوَ. */
+  { key: 'admin.users.purge', description: 'حذفُ حسابٍ نهائيّا من قاعدة البيانات — لا رجعةَ فيه' },
   /* التكليفُ والإشعار — حبّتان لا واحدة.
 
      من يوزّع المهامّ ليس بالضرورة من يبثّ الإعلانات: الأولى تُتابَع وتُغلَق،
@@ -94,8 +97,11 @@ export const PERMISSIONS = [
   { key: 'advisor.learner.view', description: 'رؤية تقدّم عميلٍ مسند وتسجيلاته ومواعيد جلساته وتقييماته' },
   { key: 'advisor.request.submit', description: 'رفع طلب خصم أو تعديل خطّة لعميلٍ مسند — يبتّ فيه غيرُه' },
   { key: 'advisor.request.review', description: 'البتّ في طلبات المستشارين: خصمٌ أو تعديل خطّة' },
-  /* ملفُّ المستشار — عمولتُه وملاحظاتُ الإدارة عليه؛ غيرُ حالاته المسندة */
-  { key: 'advisor.manage', description: 'عرض أداء المستشارين وتحديد نسبة عمولة كلٍّ منهم' },
+  /* شرطُ عملِ المستشار — لا حالاتُه. والعمولةُ بندٌ ماليّ، فلا تُطوى في
+     `advisor.assign` التي يملكها من يوزّع الحالات. */
+  { key: 'advisor.manage', description: 'إدارةُ المستشارين وشروطِ عملهم — ومنها نسبةُ العمولة' },
+  /* سجلُّ الأثر يُقرأ ولا يُكتب: كلُّ ما فيه كتبته الخدماتُ نفسُها. */
+  { key: 'audit.view', description: 'قراءةُ سجلّ الأثر الموحَّد لكلّ ما وقع على المنصّة' },
   // السير الذاتية
   { key: 'cv.upload', description: 'رفع سيرة ذاتية بموافقة صريحة' },
   { key: 'cv.view', description: 'عرض سيرة عميل مسند — كل مشاهدة مسجلة' },
@@ -139,7 +145,7 @@ export const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
     'trainer.change.review',
     'cohort.manage', 'cohort.open', 'cohort.override_capacity', 'enrollment.manage',
     'material.manage', 'certificate.issue', 'certificate.revoke',
-    'advisor.assign', 'advisor.request.review', 'advisor.learner.view', 'advisor.manage', 'cv.manage', 'cv.view',
+    'advisor.assign', 'advisor.request.review', 'advisor.learner.view', 'cv.manage', 'cv.view',
     'enrollment.request.review', 'commerce.manage',
     'finance.view', 'finance.payment.record', 'finance.refund.process',
     'reports.view', 'reports.export',
@@ -147,7 +153,6 @@ export const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
     'rating.moderate',
     /* يرى مرؤوسيه ويفوّض لهم — ولا يعيّن الأدوار ولا يوقف الحسابات */
     'admin.users.view', 'admin.permissions.delegate',
-    'audit.view',
   ],
   diagnostic_manager: [
     'catalog.view',

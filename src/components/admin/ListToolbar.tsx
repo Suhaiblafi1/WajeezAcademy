@@ -1,6 +1,8 @@
 import { ChevronRight, ChevronLeft, Search } from "lucide-react";
 import type { Page } from "@/application/admin/paginate";
 
+type PageCounts = Omit<Page<unknown>, "rows">;
+
 /** شريطُ قائمةٍ إداريّة: بحثٌ وترقيمٌ بمكانٍ واحد.
 
     أربعُ شاشاتٍ تعرض قوائمَ تطول (المستخدمون · الفواتير · التذاكر · طلبات
@@ -9,13 +11,15 @@ import type { Page } from "@/application/admin/paginate";
 
     وشريطٌ واحدٌ لأربعتها لا أربعةُ أشرطة: أيُّ تحسينٍ فيه — تطبيعُ الهمزة،
     لجمُ الصفحة، صيغةُ العدّ — يقع على الأربع معا. */
-export default function ListToolbar<T>({
+export default function ListToolbar({
   q, onQ, onPage, view, placeholder, unit = "صفّا",
 }: {
   q: string;
   onQ: (next: string) => void;
   onPage: (next: number) => void;
-  view: Page<T>;
+  /* الصفوفُ لا تعني الشريطَ في شيء: يقرأ الأعدادَ وحدَها. ولو أخذ
+     `Page<T>` لعجز عن قائمةٍ يختلف نوعُها بحسب ما يُستعرَض. */
+  view: PageCounts;
   placeholder: string;
   unit?: string;
 }) {
