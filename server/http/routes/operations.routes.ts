@@ -205,8 +205,10 @@ export function registerOperationsRoutes(app: FastifyInstance, prisma: PrismaCli
     schema: { tags: ['calendar'], summary: 'دعوة تقويم لجلسة شعبة — لمن سجّل فيها' },
   }, async (req, reply) => {
     const { sessionId } = z.object({ sessionId: z.string().uuid() }).parse(req.params)
-    const canOperate = req.auth!.permissions.includes('cohort.manage') || req.auth!.permissions.includes('trainer.cohort.operate')
-    const { filename, content } = await calendar.cohortSessionIcs(sessionId, req.auth!.userId, canOperate)
+    const { filename, content } = await calendar.cohortSessionIcs(sessionId, req.auth!.userId, {
+      manageAll: req.auth!.permissions.includes('cohort.manage'),
+      trainerOperate: req.auth!.permissions.includes('trainer.cohort.operate'),
+    })
     return reply
       .header('content-type', 'text/calendar; charset=utf-8')
       .header('content-disposition', `attachment; filename="${filename}"`)

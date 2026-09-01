@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import {
-  CalendarClock, CalendarDays, CheckCircle2, ChevronDown, ClipboardCheck,
-  Loader2, MessageSquarePlus, RefreshCw, ServerOff, Star, Upload, Users, Video,
+  CalendarClock, CalendarDays, CalendarPlus, CheckCircle2, ChevronDown, ClipboardCheck, Loader2, MessageSquarePlus, RefreshCw, ServerOff, Star, Upload, Users, Video,
 } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import TrainerLayout from "./TrainerLayout";
@@ -293,6 +292,16 @@ export default function CohortBoard() {
                                           <a href={s.zoom.joinUrl} target="_blank" rel="noreferrer"
                                             className="flex items-center gap-1.5 rounded-full bg-teal px-4 py-1.5 text-[11px] font-black text-on-teal transition hover:bg-teal-light">
                                             <Video className="h-3 w-3" /> افتح الاجتماع
+                                          </a>
+                                        )}
+                                        {/* دعوةُ التقويم كانت للمتعلّم وحدَه، ومن يُدير الجلسة
+                                            أولى بها: الصلاحيةُ محروسةٌ في الخدمة (`trainer.cohort.operate`). */}
+                                        {s.status !== "done" && (
+                                          <a
+                                            href={`/api/calendar/cohort-sessions/${s.id}.ics`}
+                                            className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-bold text-white/60 transition hover:border-white/35 hover:text-white"
+                                          >
+                                            <CalendarPlus className="h-3 w-3" /> أضِفها لتقويمك
                                           </a>
                                         )}
                                         <label className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-bold text-white/60 transition hover:border-teal/50 hover:text-teal-light-ink">

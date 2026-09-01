@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
-import {
-  ArrowLeft, Award, BookOpen, CalendarDays, CheckCircle2, ChevronDown, FileText,
-  Loader2, PlayCircle, RefreshCw, Ruler, Send, ServerOff, Video,
-} from "lucide-react";
+import { ArrowLeft, Award, BookOpen, CalendarDays, CalendarPlus, CheckCircle2, ChevronDown, FileText, Loader2, PlayCircle, RefreshCw, Ruler, Send, ServerOff, Video } from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import SubmissionFeedback from "@/components/SubmissionFeedback";
 import { apiGet, apiPost, ApiError } from "@/services/api";
@@ -274,6 +271,15 @@ function LearnerCohortDetail({ detail, answers, setAnswers, busy, onSubmit, onSu
                         {ATTENDANCE_LABEL[myAttendance.status] ?? myAttendance.status}
                       </span>
                     )}
+                    {/* دعوةُ التقويم كانت في اللوحة وحدها، وهذه هي الصفحةُ
+                        التي يُقرأ فيها جدولُ الشعبة فعلا — فالموعدُ يُرى هنا
+                        ولا يُؤخَذ إلّا هناك. */}
+                    <a
+                      href={`/api/calendar/cohort-sessions/${s.id}.ics`}
+                      className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-bold text-white/60 transition hover:border-white/35 hover:text-white"
+                    >
+                      <CalendarPlus className="h-3 w-3" /> أضِفها لتقويمك
+                    </a>
                     {s.zoom && (
                       <a href={s.zoom.learnerUrl ?? s.zoom.joinUrl} target="_blank" rel="noreferrer"
                         className="flex items-center gap-1.5 rounded-full bg-teal px-4 py-1.5 text-[11px] font-black text-on-teal transition hover:bg-teal-light">

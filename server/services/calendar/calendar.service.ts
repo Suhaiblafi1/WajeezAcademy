@@ -4,8 +4,12 @@
    والمعرّفُ (UID) يُشتقّ من معرّف الصفّ لا يُولَّد عشوائيا — فتعديلُ
    الموعد يُحدِّث ما في التقويم بدل أن يُنتج نسخةً ثانية.
 
-   والصلاحية تُفحص هنا لا في المسار وحده: جلسةُ الشعبة لمن سجّل فيها،
-   ومقابلةُ المدرّب لصاحبها أو لمن يراجع الطلبات. */
+   والصلاحية تُفحص هنا لا في المسار وحده: جلسةُ الشعبة لمن سجّل فيها أو
+   لمن يشغّلها، ومقابلةُ المدرّب لصاحبها أو لمن يراجع الطلبات.
+
+   و«يشغّلها» ليست صلاحيةً عامّة: مديرُ الشعب يصل إلى كلّ شعبة، أمّا
+   المدرّبُ فإلى شعبه المسنَدة إليه وحدها. وكانت الصلاحيتان مجموعتين في
+   رايةٍ واحدة تتخطّى الفحص كلَّه — فمرّت شعبةٌ ليست له. */
 
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from '../auth.service'
@@ -25,8 +29,12 @@ export class CalendarService {
     this.siteUrl = siteUrl
   }
 
-  /** جلسةُ شعبة — لمن سجّل فيها أو لمن يشغّل الشعب */
-  async cohortSessionIcs(sessionId: string, userId: string, canOperate: boolean) {
+  /** جلسةُ شعبة — لمن سجّل فيها، أو لمديرِ الشعب، أو لمدرّبها المسنَد */
+  async cohortSessionIcs(
+    sessionId: string,
+    userId: string,
+    access: { manageAll: boolean; trainerOperate: boolean },
+  ) {
     const s = await this.prisma.cohortSession.findUnique({
       where: { id: sessionId },
       select: {
@@ -40,9 +48,22 @@ export class CalendarService {
       },
     })
     if (!s) throw new AuthError('not_found', 'الجلسة غير موجودة', 404)
-    if (!canOperate && s.cohort.enrollments.length === 0) {
-      throw new AuthError('not_enrolled', 'هذه الجلسة ليست في شعبك', 403)
+
+    let allowed = access.manageAll || s.cohort.enrollments.length > 0
+    /* المدرّبُ يصل إلى شعبه المسنَدة إليه وحدها — لا إلى كلّ شعبة */
+    if (!allowed && access.trainerOperate) {
+      const profile = await this.prisma.trainerProfile.findUnique({
+        where: { userId }, select: { id: true, suspendedAt: true },
+      })
+      if (profile && !profile.suspendedAt) {
+        const link = await this.prisma.cohortTrainer.findUnique({
+          where: { cohortId_profileId: { cohortId: s.cohort.id, profileId: profile.id } },
+          select: { cohortId: true },
+        })
+        allowed = link !== null
+      }
     }
+    if (!allowed) throw new AuthError('not_enrolled', 'هذه الجلسة ليست في شعبك', 403)
 
     const minutes = s.endsAt
       ? Math.max(15, Math.round((s.endsAt.getTime() - s.startsAt.getTime()) / 60_000))
