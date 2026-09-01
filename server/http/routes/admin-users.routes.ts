@@ -6,10 +6,12 @@ import type { PrismaClient } from '@prisma/client'
 import { AuthService } from '../../services/auth.service'
 import { requirePermission } from '../auth-plugin'
 import { recordAudit } from '../../services/audit'
+import { randomBytes } from 'node:crypto'
 import {
-  PERMISSIONS, ROLE_NAMES_AR, ROLE_PERMISSIONS, refuseDelegation, rankOf,
+  PERMISSIONS, ROLE_NAMES_AR, ROLE_PERMISSIONS, refuseDelegation, refuseRoleAssignment, rankOf,
   DELEGATABLE_FAMILIES, type PermissionKey,
 } from '../../auth/permissions'
+import { sendStaffInviteEmail } from '../../services/account-mail'
 
 export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClient, auth: AuthService) {
   /* ثلاثُ حبّات: الرؤية · تعيين الأدوار والإيقاف · التفويض. والمدير
@@ -143,19 +145,94 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
     return { ok: true }
   })
 
+  /* ─────────── إنشاءُ حسابٍ إداريّ ───────────
+
+     قرارُ صاحب المنصّة: «ما فيه أي مسار لإنشاء مستخدم جديد — الموجود فقط:
+     عرض القائمة، وتعيين أدوارٍ لمستخدمٍ موجودٍ مسبقا، وإيقاف. أضف مسارا
+     ينشئ حسابا جديدا مباشرة (بريد + دور)، ويرسل بريدا تلقائيا للمستخدم
+     الجديد يوضّح دوره ووظيفته على المنصّة وخطوة تفعيل حسابه».
+
+     ولا كلمةَ مرورٍ تُختار هنا ولا تُرسَل: يُنشأ الحسابُ بعشوائيّةٍ لا يعرفها
+     أحد، ويعيّن صاحبُه كلمتَه من رابطٍ مؤقّت. فكلمةٌ تمرّ في بريدٍ تبقى فيه.
+
+     وتعذُّرُ الإرسال لا يُسقط الإنشاء: الحسابُ أُنشئ فعلا، وردٌّ بخطأٍ يجعل
+     المنشِئ يعيد المحاولة فيصطدم بـ«هذا البريد مسجل». تُعاد حالةُ الإرسال
+     ليقرّر ما يقول. */
+  app.post('/api/admin/users', {
+    preHandler: guard,
+    schema: { tags: ['admin-users'], summary: 'إنشاء حساب إداريّ بدوره — ويصله بريدٌ يشرح دوره ويفعّل حسابه' },
+  }, async (req, reply) => {
+    const body = z.object({
+      email: z.string().trim().toLowerCase().email('صيغة البريد غير صحيحة'),
+      displayName: z.string().trim().min(2).max(80),
+      roleIds: z.array(z.string()).min(1),
+    }).parse(req.body)
+
+    const refusal = refuseRoleAssignment(req.auth!.roles, body.roleIds)
+    if (refusal) return reply.status(403).send({ error: refusal })
+
+    const existing = await prisma.user.findUnique({ where: { email: body.email } })
+    if (existing) {
+      return reply.status(409).send({
+        error: { code: 'email_taken', message_ar: 'لهذا البريد حسابٌ بالفعل — عيّن دورَه من قائمة المستخدمين' },
+      })
+    }
+
+    /* كلمةٌ عشوائيّة لا يعرفها أحد — الدخولُ يبدأ بتعيينِ صاحبه كلمتَه */
+    const { userId } = await auth.register(body.email, randomBytes(24).toString('hex'), body.displayName)
+    await auth.setRoles(userId, body.roleIds)
+
+    const { tokenForDelivery } = await auth.requestPasswordReset(body.email)
+    const actor = await prisma.user.findUnique({ where: { id: req.auth!.userId }, select: { displayName: true } })
+    const mail = tokenForDelivery
+      ? await sendStaffInviteEmail(prisma, {
+          to: body.email,
+          displayName: body.displayName,
+          token: tokenForDelivery,
+          roleNamesAr: body.roleIds.map((r) => ROLE_NAMES_AR[r] ?? r),
+          invitedByAr: actor?.displayName ?? 'مدير المنصّة',
+          /* وظيفتُه على المنصّة بلغته — من وصف الصلاحيات نفسِها لا من نصٍّ
+             ثانٍ يشيخ. وستٌّ تكفي للتعريف، والباقي يراه في لوحته. */
+          dutiesAr: [...new Set(body.roleIds.flatMap((r) => ROLE_PERMISSIONS[r] ?? []))]
+            .flatMap((k) => {
+              const found = PERMISSIONS.find((p) => p.key === k)
+              return found ? [found.description as string] : []
+            })
+            .slice(0, 6),
+        })
+      : null
+
+    await recordAudit(prisma, {
+      actorId: req.auth!.userId, action: 'admin.user.create', entityType: 'user', entityId: userId,
+      meta: { email: body.email, roles: body.roleIds, inviteSent: mail?.status === 'sent' },
+    })
+    return reply.status(201).send({
+      userId,
+      inviteSent: mail?.status === 'sent',
+      /* لا يُقال «أُرسلت» حين لا بريد — انتظارُ رسالةٍ لن تصل أسوأ من معرفة ذلك */
+      inviteNote: mail?.status === 'sent'
+        ? 'أُنشئ الحساب، ووصلته دعوةٌ تشرح دوره وتفعّل حسابه.'
+        : 'أُنشئ الحساب، ولم تُرسل الدعوة — قناةُ البريد غير مفعّلة. اطلب منه «نسيت كلمة المرور» ببريده.',
+    })
+  })
+
   app.post('/api/admin/users/:id/roles', {
     preHandler: guard,
     schema: {
       tags: ['admin-users'], summary: 'تعيين أدوار مستخدم — يستبدل القائمة كاملة',
       body: { type: 'object', required: ['roleIds'], properties: { roleIds: { type: 'array', items: { type: 'string' } } } },
     },
-  }, async (req) => {
+  }, async (req, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const { roleIds } = z.object({ roleIds: z.array(z.string()).min(1) }).parse(req.body)
     /* ممنوع سحب دور super_admin من نفسك — حماية من الإغلاق الذاتي */
     if (id === req.auth!.userId && !roleIds.includes('super_admin') && req.auth!.roles.includes('super_admin')) {
       return { error: { code: 'self_lockout', message_ar: 'لا يمكنك سحب دور مدير النظام من حسابك بنفسك' } }
     }
+    /* ولا يُعيَّن دورٌ أعلى من رتبة المعيِّن — وكان هذا الباب مفتوحا: من مُنح
+       `admin.users.manage` بالتفويض صار يستطيع أن يرقّي نفسه مديرَ نظام. */
+    const rankRefusal = refuseRoleAssignment(req.auth!.roles, roleIds)
+    if (rankRefusal) return reply.status(403).send({ error: rankRefusal })
     await auth.setRoles(id, roleIds)
     return { ok: true }
   })

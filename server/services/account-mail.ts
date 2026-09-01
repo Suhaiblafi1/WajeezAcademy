@@ -50,3 +50,37 @@ export async function sendPasswordResetEmail(
       `إن لم تطلب هذا فتجاهل الرسالة — كلمتك الحالية باقية كما هي.\n— أكاديمية وجيز`,
   })
 }
+
+/* ─────────── دعوةُ حسابٍ إداريّ ───────────
+
+   قرارُ صاحب المنصّة: «أضف مسارا ينشئ حسابا جديدا مباشرة (بريد + دور)،
+   ويرسل بريدا تلقائيا للمستخدم الجديد **يوضّح دوره ووظيفته على المنصّة**
+   وخطوة تفعيل حسابه».
+
+   والرسالةُ تقول ثلاثة لا واحدا: مَن أنشأ الحساب، وما الدورُ وماذا يفتح،
+   وكيف يُفعَّل. فمن يصله رابطٌ بلا سياقٍ يظنّه تصيّدا — وأخطرُ ما في دعوةٍ
+   إداريّة أن تُقرأ رسالةً مشبوهة فتُتجاهل أو يُبلَّغ عنها.
+
+   ولا كلمةَ مرورٍ في الرسالة: يُنشأ الحسابُ بكلمةٍ عشوائيّة لا يعرفها أحد،
+   ويعيّن صاحبُه كلمتَه من رابطٍ مؤقّت. فكلمةٌ تُرسَل بالبريد تبقى فيه. */
+export async function sendStaffInviteEmail(
+  prisma: PrismaClient,
+  input: { to: string; displayName: string; token: string; roleNamesAr: string[]; invitedByAr: string; dutiesAr: string[] },
+): Promise<DirectMailResult> {
+  const link = resetPasswordLink(input.token)
+  const roles = input.roleNamesAr.join('، ')
+  const duties = input.dutiesAr.length > 0
+    ? `\nوهذا ما يفتحه لك:\n${input.dutiesAr.map((d) => `· ${d}`).join('\n')}\n`
+    : ''
+  return sendDirectEmail(prisma, {
+    to: input.to,
+    subject: `حسابك في أكاديمية وجيز — ${roles}`,
+    text:
+      `مرحبا ${input.displayName.trim() || 'بك'},\n\n` +
+      `أنشأ لك ${input.invitedByAr} حسابا في منصّة أكاديمية وجيز بدور: ${roles}.\n` +
+      duties +
+      `\nلتفعيل حسابك عيّن كلمة مرورك من هذا الرابط:\n${link}\n\n` +
+      `الرابط صالحٌ لساعة واحدة. فإن انتهى فاطلب «نسيت كلمة المرور» من صفحة الدخول ببريدك هذا.\n\n` +
+      `إن لم تكن تتوقّع هذه الدعوة فلا تفتح الرابط، وأبلغ من أرسلها إليك.\n— أكاديمية وجيز`,
+  })
+}

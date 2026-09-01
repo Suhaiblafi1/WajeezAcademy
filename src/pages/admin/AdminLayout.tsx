@@ -1,5 +1,5 @@
 import { Link, NavLink, useLocation, useNavigate } from "react-router";
-import { BadgePercent, CalendarCog, Crown, FlaskConical, GitBranch, GraduationCap, Layers, PenLine, ShieldAlert, LayoutDashboard, UserPlus, Users, BarChart3, LifeBuoy, Wallet, Bell, PlugZap, Star } from "lucide-react";
+import { BadgePercent, CalendarCog, Crown, FlaskConical, GitBranch, ClipboardList, GraduationCap, Layers, PenLine, ShieldAlert, LayoutDashboard, UserPlus, Users, BarChart3, LifeBuoy, Wallet, Bell, PlugZap, Star } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import ThemeToggle from "@/components/ThemeToggle";
 import StaffAccountMenu from "@/components/StaffAccountMenu";
@@ -34,10 +34,10 @@ export default function AdminLayout({ children, title }: { children: React.React
 
      كانت تُعرض كاملةً لكلّ إداريّ: ثلاثة عشر بابا يفتح من لا يملكها فيُردّ
      عند الخادم — الحارس يعمل، لكنّه يكتشف حدّه بالاصطدام لا بالقراءة. */
-  const allSections: { title: string; items: { to: string; label: string; icon: typeof LayoutDashboard; end?: boolean; need?: string }[] }[] = [
+  const allSections: { title: string; items: { to: string; label: string; icon: typeof LayoutDashboard; end?: boolean; need?: string; open?: true }[] }[] = [
     {
       title: "نظرة عامة",
-      items: [{ to: "/admin", label: "الرئيسية", icon: LayoutDashboard, end: true }],
+      items: [{ to: "/admin", label: "الرئيسية", icon: LayoutDashboard, end: true, open: true }],
     },
     {
       title: "التعليم والمحتوى",
@@ -74,6 +74,13 @@ export default function AdminLayout({ children, title }: { children: React.React
         { to: "/admin/support", label: "تذاكر الدعم", icon: LifeBuoy , need: "support.operate"},
         { to: "/admin/ratings", label: "مراجعة التقييمات", icon: Star , need: "rating.moderate"},
         { to: "/admin/notifications", label: "الإشعارات", icon: Bell , need: "notifications.manage"},
+        /* `open` لا غيابَ شرط: التبويب الذي لا يعرض إلّا ما يخصّ صاحبَه
+           يُعلن ذلك صراحةً فيُقرأ ويُحصى، ولا يمرّ سهوا.
+
+           و«مهامّي» منه: كلُّ من جاز حارسَ اللوحة قد يُكلَّف — ولو حُرس
+           التبويب بصلاحية التكليف لما رأى المكلَّفُ تكليفَه. وأقسامُ
+           التكليف داخل الصفحة محروسةٌ بـ`staff.task.assign` وحدها. */
+        { to: "/admin/tasks", label: "المهامّ والإشعارات", icon: ClipboardList, open: true },
       ],
     },
     {
@@ -84,13 +91,14 @@ export default function AdminLayout({ children, title }: { children: React.React
     },
   ];
 
-  /* «الرئيسية» بلا شرط: من جاز حارسَ المسار له مكانٌ يقف فيه */
+  /* المفتوحُ (`open`) يمرّ بلا صلاحية: «الرئيسية» ليقف عليها من جاز حارسَ
+     المسار، و«المهامّ» لأنّها لا تعرض إلّا ما يخصّ صاحبَها. */
   const sections = allSections
     .map((sec) => ({ ...sec, items: sec.items.filter((it) => !it.need || can(it.need)) }))
     .filter((sec) => sec.items.length > 0);
 
   /* من لا تبويبَ له لا يُترك في لوحةٍ فارغة يظنّها معطوبة */
-  if (sections.every((sec) => sec.items.every((it) => !it.need))) {
+  if (sections.every((sec) => sec.items.every((it) => it.open))) {
     return (
       <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper px-5 text-white">
         <Crown className="h-12 w-12 text-[#FABC05]" />

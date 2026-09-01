@@ -1,7 +1,7 @@
 /* إدارة المستخدمين — API حقيقي: قائمة، تعيين أدوار (يستبدل القائمة)، إيقاف.
    الحمايات من الخادم: لا سحب super_admin من نفسك ولا إيقاف ذاتي من هنا. */
 import { useCallback, useEffect, useState } from "react";
-import { CheckCircle2, KeyRound, Loader2, Minus, Plus, RefreshCw, ServerOff, ShieldOff, Users as UsersIcon } from "lucide-react";
+import { CheckCircle2, KeyRound, Loader2, Minus, Plus, RefreshCw, ServerOff, ShieldOff, UserPlus, Users as UsersIcon } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
 import { useRealSession } from "@/services/session";
@@ -51,6 +51,8 @@ export default function Users() {
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState<string | null>(null);
   const [flash, setFlash] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [newUser, setNewUser] = useState({ email: "", displayName: "", roleId: "support" });
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   const [rolePick, setRolePick] = useState<string[]>([]);
@@ -93,13 +95,15 @@ export default function Users() {
 
   useEffect(() => { void load(); }, [load]);
 
-  const act = async (fn: () => Promise<unknown>, doneMsg: string) => {
+  /* الرسالةُ قد تُشتقّ من جواب الخادم: «أُنشئ الحساب ووصلته دعوة» كذبةٌ حين
+     لا بريد — والخادمُ يعرف أأُرسلت أم لا، فيُقرأ منه لا يُفترض عنه. */
+  const act = async (fn: () => Promise<unknown>, doneMsg: string | ((res: unknown) => string)) => {
     if (busy) return;
     setBusy(true); setFlash("");
     try {
       const res = await fn() as { error?: { message_ar: string } } | undefined;
       if (res?.error) { setFlash(res.error.message_ar); return; }
-      setFlash(doneMsg); await load();
+      setFlash(typeof doneMsg === "function" ? doneMsg(res) : doneMsg); await load();
     } catch (e) { setFlash(e instanceof ApiError ? e.message : "فشل الإجراء"); }
     finally { setBusy(false); }
   };
@@ -120,12 +124,70 @@ export default function Users() {
 
   return (
     <AdminLayout title="المستخدمون والأدوار">
-      <div className="mb-5 flex items-center gap-3">
+      <div className="mb-5 flex flex-wrap items-center gap-3">
         <button onClick={() => void load()} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-white/60 hover:border-white/40">
           <RefreshCw className="h-3.5 w-3.5" /> تحديث
         </button>
+        {/* إنشاءُ حسابٍ إداريّ — لم يكن له مسارٌ أصلا.
+
+            والدورُ يُختار عند الإنشاء لا بعده: حسابٌ يُنشأ بلا دورٍ ثمّ
+            يُنسى بلا دور يدخل ولا يجد شيئا، ويُقرأ ذلك عطبا لا نقصَ خطوة. */}
+        {canManage && (
+          <button
+            onClick={() => { setCreating(!creating); setFlash(""); }}
+            className="flex cursor-pointer items-center gap-1.5 rounded-full bg-gold px-4 py-2 text-xs font-black text-on-gold transition hover:bg-gold/90"
+          >
+            <UserPlus className="h-3.5 w-3.5" /> {creating ? "إلغاء" : "أنشئ حسابا"}
+          </button>
+        )}
         {flash && <span className="flex items-center gap-1.5 text-xs font-bold text-teal-light-ink" role="status"><CheckCircle2 className="h-3.5 w-3.5" /> {flash}</span>}
       </div>
+
+      {creating && canManage && (
+        <div className="mb-5 rounded-2xl border border-gold/25 bg-gold/[0.04] p-5">
+          <h3 className="text-sm font-black text-gold-ink">حسابٌ جديد بدوره</h3>
+          <p className="mt-1 text-[11px] leading-6 text-white/55">
+            لا كلمةَ مرورٍ تُختار هنا: يصله بريدٌ يشرح دورَه وما يفتحه له، ويعيّن كلمتَه بنفسه من رابطٍ صالحٍ لساعة.
+          </p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_12rem_auto]">
+            <input
+              value={newUser.displayName} onChange={(e) => setNewUser({ ...newUser, displayName: e.target.value })}
+              placeholder="الاسم" aria-label="اسم المستخدم الجديد"
+              className="rounded-xl border border-white/12 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/30 focus:border-gold/50 focus:outline-none"
+            />
+            <input
+              value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+              placeholder="البريد" aria-label="بريد المستخدم الجديد" dir="ltr" type="email"
+              className="rounded-xl border border-white/12 bg-black/30 px-3 py-2 text-left text-xs text-white placeholder:text-white/30 focus:border-gold/50 focus:outline-none"
+            />
+            <select
+              value={newUser.roleId} onChange={(e) => setNewUser({ ...newUser, roleId: e.target.value })}
+              aria-label="دور المستخدم الجديد"
+              className="cursor-pointer rounded-xl border border-white/12 bg-black/30 px-3 py-2 text-xs text-white focus:border-gold/50 focus:outline-none [&>option]:bg-surface"
+            >
+              {ALL_ROLES.map((r) => <option key={r} value={r}>{ROLE_NAMES_AR[r]}</option>)}
+            </select>
+            <button
+              disabled={busy || !newUser.email.trim() || newUser.displayName.trim().length < 2}
+              onClick={() => act(
+                async () => {
+                  const r = await apiPost<{ inviteNote: string }>("/api/admin/users", {
+                    email: newUser.email.trim(), displayName: newUser.displayName.trim(), roleIds: [newUser.roleId],
+                  });
+                  setNewUser({ email: "", displayName: "", roleId: "support" });
+                  setCreating(false);
+                  return r;
+                },
+                /* الجملةُ كاملةٌ من الخادم: هو وحده يعرف أوصلت الدعوةُ أم لا */
+                (res) => (res as { inviteNote?: string } | undefined)?.inviteNote ?? "أُنشئ الحساب.",
+              )}
+              className="cursor-pointer rounded-xl bg-gold px-5 py-2 text-xs font-black text-on-gold transition hover:bg-gold/90 disabled:opacity-40"
+            >
+              أنشئ
+            </button>
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-white/30" /></div>

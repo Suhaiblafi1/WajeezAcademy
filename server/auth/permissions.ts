@@ -41,6 +41,13 @@ export const PERMISSIONS = [
      أن يملك تعيينَ الأدوار ولا إيقافَ الحسابات — وهما أوسعُ أثرا منه. */
   { key: 'admin.users.view', description: 'عرض قائمة المستخدمين وأدوارهم' },
   { key: 'admin.users.manage', description: 'تعيين الأدوار وإيقاف الحسابات' },
+  /* التكليفُ والإشعار — حبّتان لا واحدة.
+
+     من يوزّع المهامّ ليس بالضرورة من يبثّ الإعلانات: الأولى تُتابَع وتُغلَق،
+     والثانية تصل جمهورا ولا تُغلَق. وجمعُهما في حبّةٍ يجعل منحَ إحداهما
+     منحا للأخرى. */
+  { key: 'staff.task.assign', description: 'تكليف موظّف بمهمّة ومتابعتها' },
+  { key: 'staff.notify', description: 'إرسال إشعار إلى موظّف أو أكثر' },
   { key: 'admin.permissions.delegate', description: 'منح صلاحية لشخص أو منعها عنه — في حدود رتبته ومهامّه' },
   // منظومة المدربين — الإدارة
   /* صلاحية المتقدّم على طلبه هو — لا على طلبات غيره. تفصل حساب «متقدّم مدرب»
@@ -200,6 +207,39 @@ export const DELEGATABLE_FAMILIES: Record<string, string[]> = {
 
 export function rankOf(roles: readonly string[]): number {
   return roles.reduce((max, r) => Math.max(max, ROLE_RANK[r] ?? 0), 0)
+}
+
+/* ─────────── قيدُ الرتبة على تعيين الأدوار ───────────
+
+   كان `POST /users/:id/roles` بلا قيدِ رتبةٍ إطلاقا: من يملك
+   `admin.users.manage` يُسند أيَّ دورٍ لأيّ أحد — بما فيه `super_admin`
+   لنفسه.
+
+   ولم يكن ذلك مفتوحا اليوم لأنّ الحبّة لا يملكها إلّا مديرُ النظام. لكنّ
+   التفويضَ يجعلها قابلةً للمنح (`admin.permissions.delegate`)، فمن مُنحها
+   مرّةً لغرضٍ ضيّق صار يستطيع أن يرقّي نفسه — وهو تصعيدٌ صامت لا يظهر في
+   أيّ شاشة.
+
+   والقاعدة: لا يُعيَّن دورٌ أعلى من رتبة المعيِّن. والمساواةُ مقبولة، وإلّا
+   لم يستطع مديرُ نظامٍ أن يعيّن مديرَ نظامٍ آخر أبدا. */
+export function refuseRoleAssignment(
+  actorRoles: readonly string[],
+  roleIds: readonly string[],
+): DelegationRefusal | null {
+  const actorRank = rankOf(actorRoles)
+  const tooHigh = roleIds.filter((r) => (ROLE_RANK[r] ?? 0) > actorRank)
+  if (tooHigh.length > 0) {
+    const names = tooHigh.map((r) => ROLE_NAMES_AR[r] ?? r).join('، ')
+    return {
+      code: 'rank_exceeded',
+      message_ar: `لا تعيّن دورا أعلى من رتبتك: ${names}`,
+    }
+  }
+  const unknown = roleIds.filter((r) => !(r in ROLE_RANK))
+  if (unknown.length > 0) {
+    return { code: 'unknown_role', message_ar: `دورٌ غير معروف: ${unknown.join('، ')}` }
+  }
+  return null
 }
 
 export interface DelegationRefusal { code: string; message_ar: string }

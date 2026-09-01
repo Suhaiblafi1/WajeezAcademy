@@ -64,6 +64,7 @@ const PublishingBoard = lazy(() => import('./pages/admin/PublishingBoard'))
 const DiagnosticQuality = lazy(() => import('./pages/admin/DiagnosticQuality'))
 const AdminUsers = lazy(() => import('./pages/admin/Users'))
 const AdminLearners = lazy(() => import('./pages/admin/Learners'))
+const AdminTasks = lazy(() => import('./pages/admin/Tasks'))
 const TrainerMyLearners = lazy(() => import('./pages/trainer/MyLearners'))
 const AdvisorMyLearners = lazy(() => import('./pages/advisor/MyLearners'))
 const AdminReports = lazy(() => import('./pages/admin/Reports'))
@@ -218,6 +219,7 @@ export default function App() {
             <Route path="/admin/quality" element={<DiagnosticQuality />} />
             <Route path="/admin/users" element={<AdminUsers />} />
             <Route path="/admin/learners" element={<AdminLearners />} />
+            <Route path="/admin/tasks" element={<AdminTasks />} />
             <Route path="/admin/reports" element={<AdminReports />} />
             <Route path="/admin/support" element={<AdminSupport />} />
             <Route path="/admin/finance" element={<AdminFinance />} />
