@@ -71,7 +71,8 @@
     "cohorts:open-all": "tsx scripts/open-all-cohorts.ts",
     "audit:authoring": "tsx scripts/audit-authoring.ts",
     "ci:authoring": "tsx scripts/audit-authoring.ts --check",
-    "ci:locale": "tsx scripts/audit-locale.ts --check"
+    "ci:locale": "tsx scripts/audit-locale.ts --check",
+    "ci:csp": "tsx scripts/audit-csp.ts --check"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.2",
