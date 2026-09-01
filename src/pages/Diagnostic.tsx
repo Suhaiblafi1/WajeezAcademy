@@ -1308,7 +1308,7 @@ export default function Diagnostic() {
 
       {/* ─── Intro ─── */}
       {stage === "intro" && (
-        <section className="story-fade mx-auto max-w-3xl px-5 py-16 text-center md:py-24">
+        <section className="story-fade mx-auto max-w-3xl px-5 py-12 text-center md:py-24">
           <Badge className="border border-gold/40 bg-gold/10 text-gold-ink">مؤشر وجيز الكامل</Badge>
           {/* كان «ثلاث دقائق» بينما الشارة تحته تقول «١–٣ دقائق»، والرحلة الفعلية
               8–14 سؤالا. «بضع» تصدق على المدى كله.
@@ -1318,15 +1318,23 @@ export default function Diagnostic() {
             بضع دقائق من الوضوح
             <span className="text-teal-light-ink"> تختصر عليك شهورا من التشتت</span>
           </h1>
-          <p className="mx-auto mt-5 max-w-xl leading-loose text-white/60">
+          <p className="mx-auto mt-4 max-w-xl leading-8 text-white/60">
             حديث قصير عن يومك وهدفك — كل إجابة تشكّل سؤالك التالي، وتنتهي بمسارك الواضح.
           </p>
 
-          <div className="mx-auto mt-7 flex max-w-full flex-wrap items-center justify-center gap-1.5 sm:gap-2 sm:flex-nowrap sm:whitespace-nowrap">
+          {/* شارتان لا ثلاث — والثالثة نزلت إلى سطور الإفصاح.
+
+              كانت ثلاثا، وأطولُها «تشخيص تعليمي — لا نفسي ولا طبي»، فلا يتّسع
+              لها صفٌّ واحد على ٣٩٠px: تلتفّ اثنتين فوق واحدة، فتُقرأ الصفحةُ
+              عند الوصول إليها غيرَ متّزنة — شارةٌ يتيمةٌ تحت شارتين.
+
+              والثالثةُ ليست وعدَ بيعٍ أصلا بل إفصاحٌ يحمي المنصّة، فمكانُها بين
+              سطور الإفصاح تحت الدعوة لا بين ما يُغري بالبدء. فبقيت الشارتان
+              — وهما ما يُقنع — في صفٍّ واحدٍ متّزن، ونزل الإفصاحُ كاملا. */}
+          <div className="mx-auto mt-6 flex max-w-full flex-nowrap items-center justify-center gap-2 whitespace-nowrap">
             {[
               { icon: Compass, text: "توصية مفسَّرة، ليست حظًا" },
               { icon: Clock3, text: "٣–٦ دقائق" },
-              { icon: ShieldCheck, text: "تشخيص تعليمي — لا نفسي ولا طبي" },
             ].map((f) => (
               <span key={f.text} className="inline-flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-[10px] font-bold text-white/65 sm:px-3.5 sm:text-[11px]">
                 <f.icon className="h-3 w-3 shrink-0 text-teal-light-ink sm:h-3.5 sm:w-3.5" />
@@ -1338,7 +1346,7 @@ export default function Diagnostic() {
           <Button
             size="lg"
             onClick={begin}
-            className="mt-10 h-14 rounded-full bg-gold px-10 text-lg font-black text-on-gold hover:bg-gold/90"
+            className="mt-8 h-14 rounded-full bg-gold px-10 text-lg font-black text-on-gold hover:bg-gold/90"
           >
             ابدأ الحديث
             <ArrowLeft className="mr-2 h-5 w-5" />
@@ -1351,6 +1359,10 @@ export default function Diagnostic() {
               والمحرّك يسجّل «إقرار الواجهة» على أي حال (engine.ts). */}
           <ul className="mx-auto mt-4 max-w-md space-y-1.5 text-xs leading-relaxed text-white/55">
             <li>ابدأ مجانا — ترى مسارك المقترح فورا، وحسابك المجاني يفتح نتيجتك كاملة</li>
+            <li className="inline-flex items-center justify-center gap-1.5">
+              <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-teal-light-ink" />
+              تشخيص تعليمي — لا نفسي ولا طبي
+            </li>
             <li>
               <Link to="/p/privacy" className="underline-offset-4 hover:text-teal-light-ink hover:underline">
                 سياسة الخصوصية
@@ -1524,8 +1536,14 @@ export default function Diagnostic() {
                 ٤٠٠ms بدل أن تظهر فورا. قياسٌ بلوحة المفاتيح: 0px عند الضغط، 1px
                 بعد 120ms، 2px بعد 400ms. الحلقة تعمل — لكن من يتنقّل بسرعة بين
                 الخيارات يسبقها. والألوان وحدها هي ما يُقصد تحريكه هنا. */}
+            {/* مقاسُ الخيار — عشرةُ خياراتٍ لا تُقرأ عناوينَ.
+
+                كان الخيارُ ٥٨px (حشو ١٦×٢ + سطر ٢٤) وخطُّه ١٥px عريضا، فتبلغ
+                عشرةُ خياراتٍ ٦٧٤px من ٨٤٤ — الشاشةُ كلُّها خياراتٌ بلا سؤالٍ
+                يُرى معها. والخيارُ سطرٌ قصير يُمسح بالعين لا فقرةٌ تُقرأ،
+                فلا يحتاج وزنَ ٧٠٠ ولا حشوَ الفقرات. */}
             {question.type === "single" && (
-              <div className="mt-6 grid gap-2.5 sm:mt-8 sm:gap-3">
+              <div className="mt-5 grid gap-2 sm:mt-8 sm:gap-2.5">
                 {qOptions.map((opt) => {
                   const confirming = pendingOpt === opt.value;
                   const selected = confirming || answers[question.id] === opt.value;
@@ -1537,13 +1555,13 @@ export default function Diagnostic() {
                       key={opt.value}
                       onClick={() => chooseSingle(opt)}
                       aria-pressed={selected}
-                      className={`flex items-center justify-between gap-3 rounded-2xl border p-4 text-right transition-all duration-200 sm:p-5 ${
+                      className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-right transition-all duration-200 sm:px-5 sm:py-3.5 ${
                         selected
                           ? "border-teal-light bg-teal/15"
                           : "border-white/10 bg-white/[0.03] hover:border-teal-light/60 hover:bg-white/[0.06]"
                       } ${dimmed ? "opacity-40" : ""}`}
                     >
-                      <span className="text-[15px] font-bold leading-relaxed sm:text-base">{opt.label}</span>
+                      <span className="text-[13.5px] font-semibold leading-6 sm:text-[15px]">{opt.label}</span>
                       {confirming && <CheckCircle2 className="h-5 w-5 shrink-0 text-teal-light-ink" />}
                     </button>
                   );
@@ -1653,13 +1671,13 @@ export default function Diagnostic() {
                         key={opt.value}
                         onClick={() => toggleMulti(question, opt.value)}
                         disabled={disabled}
-                        className={`rounded-2xl border p-4 text-right transition-colors ${
+                        className={`rounded-2xl border px-3.5 py-3 text-right transition-colors ${
                           selected
                             ? "border-gold bg-gold/15"
                             : "border-white/10 bg-white/[0.03] hover:border-gold/60 disabled:opacity-40"
                         }`}
                       >
-                        <span className="flex items-center justify-between text-sm font-bold">
+                        <span className="flex items-center justify-between gap-2 text-[13px] font-semibold leading-6">
                           {opt.label}
                           {selected && <CheckCircle2 className="h-4 w-4 shrink-0 text-gold-ink" />}
                         </span>
