@@ -6,8 +6,14 @@ import {
   RotateCcw, ServerOff, Wallet, XCircle,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
+import ListToolbar from "@/components/admin/ListToolbar";
+import BulkBar from "@/components/admin/BulkBar";
+import { bulkMessage, runBulk } from "@/application/admin/bulk";
+import { matchesQuery } from "@/application/text/search-ar";
+import { paginate } from "@/application/admin/paginate";
 import FlowSteps from "@/components/FlowSteps";
 import { apiGet, apiPost, ApiError } from "@/services/api";
+import { LEDGER_CURRENCY } from "@/application/commerce/presentment";
 import { useAutoRefresh } from "@/services/useAutoRefresh";
 import { fmtDate, fmtDateTime } from "@/application/text/format-ar";
 
@@ -16,7 +22,7 @@ const inputCls = "rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-x
 interface EnrollReq {
   id: string; status: string; note: string | null; createdAt: string;
   user: { displayName: string; email: string };
-  cohort: { id: string; title: string; price: string | null; course: { versions: { titleAr: string }[] } };
+  cohort: { id: string; title: string; price: string | null; currency: string; course: { versions: { titleAr: string }[] } };
 }
 interface Invoice {
   id: string; status: string; total: string; currency: string; issuedAt: string;
@@ -34,6 +40,13 @@ type Tab = "requests" | "invoices" | "refunds" | "coupons";
 
 export default function Finance() {
   const [tab, setTab] = useState<Tab>("requests");
+  /* بحثٌ وترقيمٌ للتبويبين اللذين يطولان بالعمل: الطلبات والفواتير.
+     والاستردادُ والكوبونُ محدودان بطبيعتهما فلا يُثقلان بشريط. */
+  const [q, setQ] = useState("");
+  const [page, setPage] = useState(1);
+  /* التحديدُ للطلبات المعلَّقة وحدَها — وسيأتي بيانُ لِمَ لا يشمل غيرَها */
+  const [sel, setSel] = useState<Set<string>>(new Set());
+  const [bulkProgress, setBulkProgress] = useState("");
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState<string | null>(null);
   const [flash, setFlash] = useState("");
@@ -96,6 +109,53 @@ export default function Finance() {
     ["coupons", "الكوبونات والخطط", coupons.length],
   ];
 
+    /* الجماعيُّ على المعلَّق وحدَه.
+
+     «وافق» تحجز مقعدا وتُصدر فاتورة، و«ارفض» تُغلق الطلبَ وتُخبر صاحبَه —
+     وكلاهما لا يصحّ إلّا على `pending`. ولو سُمح بتحديد ما تحوّل أو رُفض
+     سلفا لصار نصفُ الدفعة إخفاقا لا سببَ له إلّا أنّا عرضناه. */
+  const selectable = requests.filter((r) => r.status === "pending");
+  const toggleSel = (id: string) => setSel((prev) => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
+
+  const bulkRequests = async (kind: "approve" | "reject") => {
+    if (busy || sel.size === 0) return;
+    let reason: string | undefined;
+    if (kind === "reject") {
+      const typed = window.prompt(`سببُ الرفض على ${sel.size} طلبا (يصل صاحبَ الطلب):`);
+      if (typed === null) return;
+      if (typed.trim().length < 5) { setFlash("السببُ أقصرُ من أن يُفهم — خمسةُ أحرفٍ فأكثر."); return; }
+      reason = typed.trim();
+    } else if (!window.confirm(`الموافقةُ على ${sel.size} طلبا تحجز مقاعدَها وتُصدر فواتيرَها. أتمضي؟`)) {
+      return;
+    }
+    setBusy(true); setFlash(""); setBulkProgress("");
+    const outcome = await runBulk(
+      [...sel],
+      (id) => kind === "approve"
+        /* لا كوبونَ في الجماعيّ: الكوبونُ قرارٌ لصفٍّ بعينه، وتعميمُه على
+           دفعةٍ يمنح خصما لمن لم يُقصد. */
+        ? apiPost(`/api/admin/enrollment-requests/${id}/approve`, {})
+        : apiPost(`/api/admin/enrollment-requests/${id}/reject`, { reason }),
+      (done, total) => setBulkProgress(`${done} من ${total}`),
+    );
+    setBulkProgress("");
+    setSel(new Set(outcome.failed.map((f) => f.id)));
+    setFlash(bulkMessage(outcome, kind === "approve" ? "وُوفق" : "رُفض"));
+    setBusy(false);
+    await load();
+  };
+
+  const reqView = paginate(
+    requests.filter((r) => matchesQuery(q, [r.user.displayName, r.user.email, r.cohort.title, r.cohort.course.versions[0]?.titleAr])),
+    page, 20);
+  const invView = paginate(
+    invoices.filter((inv) => matchesQuery(q, [inv.order.user.displayName, inv.order.user.email, inv.id, inv.total])),
+    page, 20);
+
   return (
     <AdminLayout title="المالية — طلبات وفواتير واستردادات وكوبونات">
       <FlowSteps steps={[
@@ -108,7 +168,7 @@ export default function Finance() {
       <div className="mb-5 flex flex-wrap items-center gap-2">
         <div className="flex flex-wrap rounded-full border border-white/15 p-1">
           {tabs.map(([k, label, n]) => (
-            <button key={k} onClick={() => setTab(k)}
+            <button key={k} onClick={() => { setTab(k); setQ(""); setPage(1); setSel(new Set()); }}
               className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-black transition ${tab === k ? "bg-gold text-on-gold" : "text-white/60 hover:text-white"}`}>
               {label} {n > 0 && <span className="mr-1 opacity-70">({n})</span>}
             </button>
@@ -126,17 +186,49 @@ export default function Finance() {
       {!loading && tab === "requests" && (
         <div className="space-y-3">
           {requests.length === 0 && <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-white/45">لا طلبات تسجيل.</p>}
-          {requests.map((r) => (
+          {requests.length > 0 && (
+            <ListToolbar q={q} onQ={setQ} onPage={setPage} view={reqView} unit="طلبا"
+              placeholder="ابحث باسمِ طالبٍ أو بريدٍ أو شعبة…" />
+          )}
+          {selectable.length > 0 && (
+            <div className="flex items-center gap-2 text-[11px] text-white/45">
+              <input type="checkbox"
+                checked={sel.size > 0 && selectable.every((r) => sel.has(r.id))}
+                onChange={(e) => setSel(e.target.checked ? new Set(selectable.map((r) => r.id)) : new Set())}
+                aria-label="حدّد كلّ الطلبات المعلّقة" className="h-3.5 w-3.5 cursor-pointer accent-gold" />
+              حدّد كلّ المعلَّقة ({selectable.length})
+            </div>
+          )}
+          <BulkBar count={sel.size} busy={busy} progress={bulkProgress} onClear={() => setSel(new Set())}>
+            <button onClick={() => void bulkRequests("approve")}
+              className="cursor-pointer rounded-full bg-teal px-4 py-1.5 text-[11px] font-black text-on-teal hover:bg-teal-light">
+              وافق واحجز المقاعد — على {sel.size}
+            </button>
+            <button onClick={() => void bulkRequests("reject")}
+              className="cursor-pointer rounded-full border border-red-400/40 px-4 py-1.5 text-[11px] font-bold text-red-300 hover:bg-red-400/10">
+              ارفض بسبب — على {sel.size}
+            </button>
+          </BulkBar>
+          {requests.length > 0 && reqView.total === 0 && (
+            <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-white/45">لا طلب يطابق «{q.trim()}».</p>
+          )}
+          {reqView.rows.map((r) => (
             <div key={r.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="font-black">{r.user.displayName} <span className="text-[11px] font-normal text-white/40" dir="ltr">{r.user.email}</span></p>
                   <p className="mt-1 text-xs text-white/55">
-                    {r.cohort.course.versions[0]?.titleAr ?? "—"} · {r.cohort.title} · {r.cohort.price ? `${r.cohort.price} د.أ` : "بلا سعر"}
+                    {r.cohort.course.versions[0]?.titleAr ?? "—"} · {r.cohort.title} · {r.cohort.price ? `${r.cohort.price} ${r.cohort.currency}` : "بلا سعر"}
                   </p>
                   {r.note && <p className="mt-1 text-[11px] text-white/45">ملاحظة المتعلم: {r.note}</p>}
                 </div>
-                <span className="rounded-full border border-teal/40 px-3 py-1 text-[11px] font-bold text-teal-light-ink">{ER_STATUS[r.status] ?? r.status}</span>
+                <div className="flex items-center gap-3">
+                  <span className="rounded-full border border-teal/40 px-3 py-1 text-[11px] font-bold text-teal-light-ink">{ER_STATUS[r.status] ?? r.status}</span>
+                  {r.status === "pending" && (
+                    <input type="checkbox" checked={sel.has(r.id)} onChange={() => toggleSel(r.id)}
+                      aria-label={`حدّد طلب ${r.user.displayName}`} className="h-4 w-4 cursor-pointer accent-gold" />
+                  )}
+                </div>
               </div>
               {r.status === "pending" && (
                 <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/8 pt-3">
@@ -166,7 +258,14 @@ export default function Finance() {
       {!loading && tab === "invoices" && (
         <div className="space-y-3">
           {invoices.length === 0 && <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-white/45">لا فواتير.</p>}
-          {invoices.map((inv) => (
+          {invoices.length > 0 && (
+            <ListToolbar q={q} onQ={setQ} onPage={setPage} view={invView} unit="فاتورة"
+              placeholder="ابحث باسمِ مشترٍ أو بريدٍ أو رقمِ فاتورة…" />
+          )}
+          {invoices.length > 0 && invView.total === 0 && (
+            <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-white/45">لا فاتورة تطابق «{q.trim()}».</p>
+          )}
+          {invView.rows.map((inv) => (
             <div key={inv.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
@@ -244,7 +343,7 @@ export default function Finance() {
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               <input value={couponForm.code} onChange={(e) => setCouponForm({ ...couponForm, code: e.target.value.toUpperCase() })} placeholder="الرمز — WAJEEZ20" dir="ltr" className={`${inputCls} font-mono`} />
               <input type="number" min={1} max={100} value={couponForm.percentOff} onChange={(e) => setCouponForm({ ...couponForm, percentOff: e.target.value })} placeholder="خصم %" className={inputCls} />
-              <input type="number" min={0.5} value={couponForm.amountOff} onChange={(e) => setCouponForm({ ...couponForm, amountOff: e.target.value })} placeholder="أو مبلغ ثابت (د.أ)" className={inputCls} />
+              <input type="number" min={0.5} value={couponForm.amountOff} onChange={(e) => setCouponForm({ ...couponForm, amountOff: e.target.value })} placeholder={`أو مبلغ ثابت (${LEDGER_CURRENCY})`} className={inputCls} />
               <input type="number" min={1} value={couponForm.maxUses} onChange={(e) => setCouponForm({ ...couponForm, maxUses: e.target.value })} placeholder="أقصى استخدام" className={inputCls} />
               <input type="date" value={couponForm.expiresAt} onChange={(e) => setCouponForm({ ...couponForm, expiresAt: e.target.value })} className={inputCls} />
             </div>
@@ -279,7 +378,7 @@ export default function Finance() {
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               <input value={planForm.code} onChange={(e) => setPlanForm({ ...planForm, code: e.target.value })} placeholder="الرمز — monthly" dir="ltr" className={`${inputCls} font-mono`} />
               <input value={planForm.nameAr} onChange={(e) => setPlanForm({ ...planForm, nameAr: e.target.value })} placeholder="اسم الخطة" className={inputCls} />
-              <input type="number" min={0} value={planForm.price} onChange={(e) => setPlanForm({ ...planForm, price: e.target.value })} placeholder="السعر (د.أ)" className={inputCls} />
+              <input type="number" min={0} value={planForm.price} onChange={(e) => setPlanForm({ ...planForm, price: e.target.value })} placeholder={`السعر (${LEDGER_CURRENCY})`} className={inputCls} />
               <input type="number" min={1} value={planForm.intervalMonths} onChange={(e) => setPlanForm({ ...planForm, intervalMonths: e.target.value })} placeholder="كل كم شهر" className={inputCls} />
               <input value={planForm.features} onChange={(e) => setPlanForm({ ...planForm, features: e.target.value })} placeholder="مزايا مفصولة بفاصلة" className={`${inputCls} sm:col-span-2`} />
             </div>

@@ -14,7 +14,7 @@ const selectCls = `${inputCls} [&>option]:bg-surface`;
 
 interface CohortLite {
   id: string; title: string; status: string; courseId: string; daysOfWeek: string[];
-  startTime: string | null; capacity: number | null; price: string | null;
+  startTime: string | null; capacity: number | null; price: string | null; currency: string;
   registrationOpen: boolean; financialReady: boolean;
 }
 
@@ -165,7 +165,7 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
             <DayOfWeekPicker value={editForm.days} onChange={(days) => setEditForm({ ...editForm, days })} label="الأيّام" />
             <input type="time" value={editForm.startTime} onChange={(e) => setEditForm({ ...editForm, startTime: e.target.value })} className={inputCls} />
             <input type="number" min={1} value={editForm.capacity} onChange={(e) => setEditForm({ ...editForm, capacity: e.target.value })} placeholder="السعة" className={inputCls} />
-            <input type="number" min={0} value={editForm.price} onChange={(e) => setEditForm({ ...editForm, price: e.target.value })} placeholder="السعر (د.أ)" className={inputCls} />
+            <input type="number" min={0} value={editForm.price} onChange={(e) => setEditForm({ ...editForm, price: e.target.value })} placeholder={`السعر (${cohort.currency})`} className={inputCls} />
             <div className="flex items-center gap-4 text-[11px] text-white/60">
               <label className="flex cursor-pointer items-center gap-1.5">
                 <input type="checkbox" checked={editForm.registrationOpen} onChange={(e) => setEditForm({ ...editForm, registrationOpen: e.target.checked })} className="accent-teal" />

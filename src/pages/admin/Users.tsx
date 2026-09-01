@@ -3,6 +3,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { CheckCircle2, KeyRound, Loader2, Minus, Plus, RefreshCw, ServerOff, ShieldOff, UserPlus, Users as UsersIcon } from "lucide-react";
 import AdminLayout from "./AdminLayout";
+import ListToolbar from "@/components/admin/ListToolbar";
+import { matchesQuery } from "@/application/text/search-ar";
+import { paginate } from "@/application/admin/paginate";
 import { apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
 import { useRealSession } from "@/services/session";
 
@@ -48,6 +51,10 @@ const GROUP_AR: Record<string, string> = {
 
 export default function Users() {
   const [rows, setRows] = useState<UserRow[]>([]);
+  /* بحثٌ وترقيم — القائمةُ تطول بعدد من على المنصّة، والشريطُ مشتركٌ مع
+     ثلاث شاشاتٍ أخرى فلا تتفرّق صيغةُ العدّ ولا تطبيعُ الهمزة. */
+  const [q, setQ] = useState("");
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState<string | null>(null);
   const [flash, setFlash] = useState("");
@@ -107,6 +114,11 @@ export default function Users() {
     } catch (e) { setFlash(e instanceof ApiError ? e.message : "فشل الإجراء"); }
     finally { setBusy(false); }
   };
+
+  /* الترشيحُ ثمّ الترقيم: البحثُ يقع على الكلّ لا على الصفحة المعروضة —
+     وإلّا لم يجد الباحثُ إلّا ما كان أمامه أصلا. */
+  const matched = rows.filter((u) => matchesQuery(q, [u.displayName, u.email, ...u.roles.map((r) => r.nameAr)]));
+  const view = paginate(matched, page, 20);
 
   if (offline) {
     return (
@@ -197,8 +209,16 @@ export default function Users() {
           <p className="mt-4 text-sm text-white/50">لا مستخدمون.</p>
         </div>
       ) : (
+        <>
+        <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="حسابا"
+          placeholder="ابحث باسمٍ أو بريدٍ أو دور…" />
+        {view.total === 0 ? (
+          <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-white/45">
+            لا حساب يطابق «{q.trim()}».
+          </p>
+        ) : (
         <div className="space-y-3">
-          {rows.map((u) => (
+          {view.rows.map((u) => (
             <div key={u.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
@@ -370,6 +390,8 @@ export default function Users() {
             </div>
           ))}
         </div>
+        )}
+        </>
       )}
     </AdminLayout>
   );
