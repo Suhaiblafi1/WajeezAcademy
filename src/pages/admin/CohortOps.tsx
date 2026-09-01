@@ -7,6 +7,7 @@ import {
   Loader2, Pencil, Plus, Trash2, UserMinus, UserPlus,
 } from "lucide-react";
 import { apiGet, apiPatch, apiPost, ApiError } from "@/services/api";
+import DayOfWeekPicker from "@/components/DayOfWeekPicker";
 
 const inputCls = "w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none";
 const selectCls = `${inputCls} [&>option]:bg-surface`;
@@ -62,7 +63,7 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
   const [trainers, setTrainers] = useState<EligibleTrainer[]>([]);
   const [assignForm, setAssignForm] = useState({ profileId: "", role: "lead" });
   const [editForm, setEditForm] = useState({
-    title: cohort.title, days: cohort.daysOfWeek.join("، "), startTime: cohort.startTime ?? "18:00",
+    title: cohort.title, days: cohort.daysOfWeek, startTime: cohort.startTime ?? "18:00",
     capacity: cohort.capacity?.toString() ?? "", price: cohort.price ?? "",
     registrationOpen: cohort.registrationOpen, financialReady: cohort.financialReady,
   });
@@ -161,7 +162,7 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
         <MiniCard icon={Pencil} title="تعديل الشعبة — جدولة وسعة وسعر وبوابات الفتح">
           <div className="grid gap-2 sm:grid-cols-3">
             <input value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} placeholder="العنوان" className={inputCls} />
-            <input value={editForm.days} onChange={(e) => setEditForm({ ...editForm, days: e.target.value })} placeholder="الأيام — الأحد، الثلاثاء" className={inputCls} />
+            <DayOfWeekPicker value={editForm.days} onChange={(days) => setEditForm({ ...editForm, days })} label="الأيّام" />
             <input type="time" value={editForm.startTime} onChange={(e) => setEditForm({ ...editForm, startTime: e.target.value })} className={inputCls} />
             <input type="number" min={1} value={editForm.capacity} onChange={(e) => setEditForm({ ...editForm, capacity: e.target.value })} placeholder="السعة" className={inputCls} />
             <input type="number" min={0} value={editForm.price} onChange={(e) => setEditForm({ ...editForm, price: e.target.value })} placeholder="السعر (د.أ)" className={inputCls} />
@@ -179,7 +180,7 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
           <button disabled={busy || editForm.title.length < 3}
             onClick={() => act(() => apiPatch(`/api/admin/cohorts/${cohort.id}`, {
               title: editForm.title,
-              daysOfWeek: editForm.days ? editForm.days.split(/[،,]/).map((d) => d.trim()).filter(Boolean) : undefined,
+              daysOfWeek: editForm.days,
               startTime: editForm.startTime || undefined,
               capacity: editForm.capacity ? Number(editForm.capacity) : undefined,
               price: editForm.price ? Number(editForm.price) : undefined,

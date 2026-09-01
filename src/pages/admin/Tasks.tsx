@@ -98,7 +98,7 @@ export default function AdminTasks() {
   );
 
   return (
-    <AdminLayout title="المهامّ والإشعارات">
+    <AdminLayout title="المهامّ والتكليفات">
       <div className="mx-auto max-w-4xl space-y-5">
         {flash && (
           <p className="rounded-xl border border-teal/35 bg-teal/[0.07] px-4 py-2.5 text-xs font-bold text-teal-light-ink" role="status">{flash}</p>

@@ -29,50 +29,47 @@ export default function AdminLayout({ children, title }: { children: React.React
     );
   }
 
-  /* الأقسام الخمسة — كل قسم يجيب سؤالاً واحداً: ماذا نعلّم؟ من معنا؟ كيف المال؟ كيف عملاؤنا؟ */
-  /* لكلّ تبويبٍ صلاحيتُه المعلَنة، والقائمة تُرشَّح بها.
+  /* ثلاثةُ أبوابٍ لا ستّة — قرارُ صاحب المنصّة: «الأكاديمية» و«الأمور الفنّية»
+     و«الصلاحيات العامّة للموقع».
 
-     كانت تُعرض كاملةً لكلّ إداريّ: ثلاثة عشر بابا يفتح من لا يملكها فيُردّ
-     عند الخادم — الحارس يعمل، لكنّه يكتشف حدّه بالاصطدام لا بالقراءة. */
+     كانت ستّةً («نظرة عامة» و«التعليم والمحتوى» و«الأشخاص» و«المالية»
+     و«العملاء» و«النظام») لسبعةَ عشرَ تبويبا، فصارت العناوينُ أكثرَ من أن
+     تُقرأ، ووقع «الطلبةُ المسجَّلون» و«طلباتُ المدربين» في «الأشخاص» مع
+     «المستخدمون والأدوار» — وهما شأنان مختلفان: الأوّلُ عملٌ أكاديميّ يوميّ،
+     والثاني منحُ صلاحيةٍ على الموقع كلِّه.
+
+     والسؤالُ الذي يفرزها: أهو عملُ الأكاديمية نفسِها (ما نعلّم ومن نعلّم ومن
+     يعلّم)؟ أم تشغيلُ المنصّة (مالٌ ودعمٌ وتكاملاتٌ وتكليفات)؟ أم من يملك
+     ماذا على الموقع؟
+
+     ولكلّ تبويبٍ صلاحيتُه المعلَنة، والقائمة تُرشَّح بها. كانت تُعرض كاملةً
+     لكلّ إداريّ: ثلاثة عشر بابا يفتح من لا يملكها فيُردّ عند الخادم — الحارس
+     يعمل، لكنّه يكتشف حدّه بالاصطدام لا بالقراءة. */
   const allSections: { title: string; items: { to: string; label: string; icon: typeof LayoutDashboard; end?: boolean; need?: string; open?: true }[] }[] = [
     {
-      title: "نظرة عامة",
-      items: [{ to: "/admin", label: "الرئيسية", icon: LayoutDashboard, end: true, open: true }],
-    },
-    {
-      title: "التعليم والمحتوى",
+      title: "الأكاديمية",
       items: [
+        { to: "/admin", label: "الرئيسية", icon: LayoutDashboard, end: true, open: true },
         { to: "/admin/catalog", label: "الكتالوج", icon: Layers , need: "catalog.view"},
         { to: "/admin/authoring", label: "تأليف المتون", icon: PenLine , need: "catalog.course.edit"},
         { to: "/admin/publishing", label: "النشر والإصدارات", icon: GitBranch , need: "catalog.impact.view"},
         { to: "/admin/cohorts", label: "الشعب", icon: CalendarCog , need: "cohort.manage"},
-        { to: "/admin/quality", label: "جودة التشخيص", icon: FlaskConical , need: "diagnostic.simulate"},
-      ],
-    },
-    {
-      title: "الأشخاص",
-      items: [
-        { to: "/admin/users", label: "المستخدمون والأدوار", icon: Users , need: "admin.users.view"},
         /* الطلبةُ المسجَّلون — نطاقُ كلِّ دورٍ يُشتقّ في الخادم، واللوحُ نفسُه
            يُركَّب في بوابتَي المدرّب والمستشار. */
         { to: "/admin/learners", label: "الطلبة المسجَّلون", icon: GraduationCap , need: "enrollment.manage"},
         { to: "/admin/trainers", label: "طلبات المدربين", icon: UserPlus , need: "trainer.applications.view"},
-        { to: "/admin/exceptions", label: "الاستثناءات", icon: ShieldAlert , need: "enrollment.request.review"},
         { to: "/admin/advisor-requests", label: "طلبات المستشارين", icon: BadgePercent , need: "advisor.request.review"},
+        { to: "/admin/exceptions", label: "الاستثناءات", icon: ShieldAlert , need: "enrollment.request.review"},
+        { to: "/admin/quality", label: "جودة التشخيص", icon: FlaskConical , need: "diagnostic.simulate"},
+        { to: "/admin/ratings", label: "مراجعة التقييمات", icon: Star , need: "rating.moderate"},
       ],
     },
     {
-      title: "المالية",
+      title: "الأمور الفنّية",
       items: [
         { to: "/admin/finance", label: "الطلبات والفواتير", icon: Wallet , need: "finance.view"},
         { to: "/admin/reports", label: "التقارير والتصدير", icon: BarChart3 , need: "reports.view"},
-      ],
-    },
-    {
-      title: "العملاء",
-      items: [
         { to: "/admin/support", label: "تذاكر الدعم", icon: LifeBuoy , need: "support.operate"},
-        { to: "/admin/ratings", label: "مراجعة التقييمات", icon: Star , need: "rating.moderate"},
         { to: "/admin/notifications", label: "الإشعارات", icon: Bell , need: "notifications.manage"},
         /* `open` لا غيابَ شرط: التبويب الذي لا يعرض إلّا ما يخصّ صاحبَه
            يُعلن ذلك صراحةً فيُقرأ ويُحصى، ولا يمرّ سهوا.
@@ -80,13 +77,14 @@ export default function AdminLayout({ children, title }: { children: React.React
            و«مهامّي» منه: كلُّ من جاز حارسَ اللوحة قد يُكلَّف — ولو حُرس
            التبويب بصلاحية التكليف لما رأى المكلَّفُ تكليفَه. وأقسامُ
            التكليف داخل الصفحة محروسةٌ بـ`staff.task.assign` وحدها. */
-        { to: "/admin/tasks", label: "المهامّ والإشعارات", icon: ClipboardList, open: true },
+        { to: "/admin/tasks", label: "المهامّ والتكليفات", icon: ClipboardList, open: true },
+        { to: "/admin/integrations", label: "التكاملات — الدفع والبريد", icon: PlugZap , need: "settings.manage"},
       ],
     },
     {
-      title: "النظام",
+      title: "الصلاحيات العامّة للموقع",
       items: [
-        { to: "/admin/integrations", label: "التكاملات — الدفع والبريد", icon: PlugZap , need: "settings.manage"},
+        { to: "/admin/users", label: "المستخدمون والأدوار", icon: Users , need: "admin.users.view"},
       ],
     },
   ];

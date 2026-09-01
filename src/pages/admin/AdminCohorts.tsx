@@ -7,6 +7,7 @@ import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { CohortOps, LearningSettings } from "./CohortOps";
 import CohortReadiness from "./CohortReadiness";
+import DayOfWeekPicker from "@/components/DayOfWeekPicker";
 import { fmtDateTimeAr } from "@/utils/format";
 import { courseById } from "@/data/courses";
 
@@ -18,6 +19,8 @@ const STATUS_META: Record<string, { label: string; cls: string }> = {
   completed: { label: "مكتملة", cls: "border-white/20 text-white/60" },
   cancelled: { label: "ملغاة", cls: "border-red-500/40 text-red-400" },
 };
+
+const filterCls = "mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-2.5 py-2 text-xs text-white focus:border-teal focus:outline-none [&>option]:bg-surface";
 
 interface RescheduleRow {
   id: string; currentStartsAt: string; proposedStartsAt: string; reason: string; createdAt: string;
@@ -50,7 +53,8 @@ export default function AdminCohorts() {
   const [checklist, setChecklist] = useState<Record<string, Checklist>>({});
 
   /* نماذج */
-  const [createForm, setCreateForm] = useState({ courseId: "", title: "", capacity: "20", price: "", days: "", startTime: "18:00" });
+  const [createForm, setCreateForm] = useState<{ courseId: string; title: string; capacity: string; price: string; days: string[]; startTime: string }>(
+    { courseId: "", title: "", capacity: "20", price: "", days: [], startTime: "18:00" });
   /* سعرُ الدورة المختارة وعملتُها من الكتالوج — وهو ما يرثه الخادم فعلا
      (cohort.service.ts:64–65)، فالعنوانُ يقول ما سيقع لا ما نظنّه. */
   const selectedCourse = createForm.courseId ? courseById(createForm.courseId) : null;
@@ -61,6 +65,10 @@ export default function AdminCohorts() {
   const [enrollUserId, setEnrollUserId] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [reschedules, setReschedules] = useState<RescheduleRow[]>([]);
+  /* الفلاتر الأربعة — قرارُ صاحب المنصّة: «فلاتر: المدرّب، التاريخ، المجال،
+     الحالة». والقائمةُ تطول بطول الكتالوج (٨١ دورة)، فبلا فرزٍ يُقرأ الجدولُ
+     بالتمرير لا بالسؤال. */
+  const [filters, setFilters] = useState({ status: "", pathway: "", trainer: "", from: "", to: "" });
   const [rsComment, setRsComment] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
@@ -125,12 +133,34 @@ export default function AdminCohorts() {
       title: createForm.title,
       capacity: createForm.capacity ? Number(createForm.capacity) : undefined,
       price: createForm.price ? Number(createForm.price) : undefined,
-      daysOfWeek: createForm.days ? createForm.days.split(/[،,]/).map((d) => d.trim()).filter(Boolean) : undefined,
+      daysOfWeek: createForm.days.length > 0 ? createForm.days : undefined,
       startTime: createForm.startTime || undefined,
     });
-    setCreateForm({ courseId: "", title: "", capacity: "20", price: "", days: "", startTime: "18:00" });
+    setCreateForm({ courseId: "", title: "", capacity: "20", price: "", days: [], startTime: "18:00" });
     setCreateOpen(false);
   }, "أُنشئت الشعبة كمسودة — أكمل شروط الفتح الستة");
+
+  /* خياراتُ الفلاتر من الصفوف نفسِها لا من قائمةٍ ثانية تبلى */
+  const pathwayOf = (courseId: string) => courseById(courseId)?.pathwayName ?? "";
+  const pathways = [...new Set(rows.map((c) => pathwayOf(c.courseId)).filter(Boolean))].sort();
+  const trainerNames = [...new Set(rows.flatMap((c) => c.trainers.map((t) => t.name)))].sort();
+  const statuses = [...new Set(rows.map((c) => c.status))];
+
+  /* التاريخُ يقارَن على `startsAt`، والشعبةُ بلا بداية تُستبعد متى حُدّد مدى
+     — فـ«ما بين تاريخين» لا يشمل ما لا تاريخ له. */
+  const filtered = rows.filter((c) => {
+    if (filters.status && c.status !== filters.status) return false;
+    if (filters.pathway && pathwayOf(c.courseId) !== filters.pathway) return false;
+    if (filters.trainer && !c.trainers.some((t) => t.name === filters.trainer)) return false;
+    if (filters.from || filters.to) {
+      if (!c.startsAt) return false;
+      const day = c.startsAt.slice(0, 10);
+      if (filters.from && day < filters.from) return false;
+      if (filters.to && day > filters.to) return false;
+    }
+    return true;
+  });
+  const filtering = Object.values(filters).some(Boolean);
 
   if (offline) {
     return (
@@ -254,12 +284,7 @@ export default function AdminCohorts() {
                 </span>
               )}
             </label>
-            <label className="text-xs text-white/50">
-              أيام الأسبوع (افصل بفاصلة)
-              <input value={createForm.days} onChange={(e) => setCreateForm({ ...createForm, days: e.target.value })}
-                placeholder="الأحد، الثلاثاء"
-                className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white placeholder:text-white/25 focus:border-teal focus:outline-none" />
-            </label>
+            <DayOfWeekPicker value={createForm.days} onChange={(days) => setCreateForm({ ...createForm, days })} />
             <label className="text-xs text-white/50">
               وقت البدء
               <input value={createForm.startTime} onChange={(e) => setCreateForm({ ...createForm, startTime: e.target.value })} type="time"
@@ -275,13 +300,63 @@ export default function AdminCohorts() {
         )}
       </div>
 
+      {!loading && rows.length > 0 && (
+        <div className="mb-4 rounded-3xl border border-white/10 bg-white/[0.02] p-4">
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+            <label className="text-[11px] text-white/45">
+              الحالة
+              <select value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })} className={filterCls}>
+                <option value="">كلّ الحالات</option>
+                {statuses.map((st) => <option key={st} value={st}>{(STATUS_META[st] ?? STATUS_META.draft).label}</option>)}
+              </select>
+            </label>
+            <label className="text-[11px] text-white/45">
+              المجال
+              <select value={filters.pathway} onChange={(e) => setFilters({ ...filters, pathway: e.target.value })} className={filterCls}>
+                <option value="">كلّ المجالات</option>
+                {pathways.map((p) => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </label>
+            <label className="text-[11px] text-white/45">
+              المدرّب
+              <select value={filters.trainer} onChange={(e) => setFilters({ ...filters, trainer: e.target.value })} className={filterCls}>
+                <option value="">كلّ المدرّبين</option>
+                {trainerNames.map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </label>
+            <label className="text-[11px] text-white/45">
+              تبدأ بعد
+              <input type="date" value={filters.from} onChange={(e) => setFilters({ ...filters, from: e.target.value })} className={filterCls} />
+            </label>
+            <label className="text-[11px] text-white/45">
+              تبدأ قبل
+              <input type="date" value={filters.to} onChange={(e) => setFilters({ ...filters, to: e.target.value })} className={filterCls} />
+            </label>
+          </div>
+          {filtering && (
+            <div className="mt-3 flex items-center gap-3 text-[11px] text-white/45">
+              <span>{filtered.length} من {rows.length} شعبة</span>
+              <button onClick={() => setFilters({ status: "", pathway: "", trainer: "", from: "", to: "" })}
+                className="cursor-pointer rounded-full border border-white/15 px-3 py-1 font-bold text-white/60 hover:border-white/35">
+                امسح الفلاتر
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {loading ? (
         <div className="grid place-items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" /></div>
       ) : rows.length === 0 ? (
         <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-white/45">لا شعب بعد — أنشئ أول شعبة من الأعلى.</p>
+      ) : filtered.length === 0 ? (
+        /* «لا نتائج» غيرُ «لا شعب»: الأولى تُمسح فلاترُها، والثانية تُنشأ شعبةً */
+        <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-white/45">
+          لا شعبة تطابق الفلاتر — وسّع المدى أو امسحها.
+        </p>
       ) : (
         <div className="space-y-4">
-          {rows.map((c) => {
+          {filtered.map((c) => {
             const meta = STATUS_META[c.status] ?? STATUS_META.draft;
             const check = checklist[c.id];
             const isOpen = expanded === c.id;

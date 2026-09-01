@@ -3,6 +3,7 @@
 
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
+import { isDayCode } from '../../../src/application/schedule/days'
 import type { PrismaClient } from '@prisma/client'
 import { CohortService } from '../../services/cohort.service'
 import { openAllCohorts, alignCohortPrices } from '../../services/catalog-readiness.service'
@@ -11,6 +12,16 @@ import { AssessmentService } from '../../services/assessment.service'
 import { ProgressService } from '../../services/progress.service'
 import { CertificateService } from '../../services/certificate.service'
 import { requirePermission } from '../auth-plugin'
+
+/* الأيّامُ رموزٌ معروفةٌ لا نصٌّ حرّ.
+
+   كانت `z.array(z.string())` تقبل «الأحد» كما تقبل `sun`، فتُخزَّن الشعبةُ
+   بتمثيلٍ لا يعرفه العارضُ ولا الفارز. والمنتقي في الواجهة يمنع ذلك بالنقر،
+   لكنّ الواجهة ليست الحدّ — من ينادي الـAPI مباشرةً يتجاوزها. */
+const dayCodes = z.array(z.string()).refine(
+  (days) => days.every(isDayCode),
+  { message: 'يومٌ غير معروف — الأيّام رموز: sun mon tue wed thu fri sat' },
+)
 
 export function registerAdminLearningRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const cohorts = new CohortService(prisma)
@@ -60,7 +71,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     const body = z.object({
       courseId: z.string(), pathwayId: z.string().optional(), title: z.string().min(3),
       startsAt: z.coerce.date().optional(), endsAt: z.coerce.date().optional(),
-      daysOfWeek: z.array(z.string()).optional(), startTime: z.string().optional(), timezone: z.string().optional(),
+      daysOfWeek: dayCodes.optional(), startTime: z.string().optional(), timezone: z.string().optional(),
       capacity: z.number().int().min(1).optional(), price: z.number().min(0).optional(), currency: z.string().optional(),
       language: z.string().optional(), deliveryMode: z.enum(['remote', 'in_person', 'hybrid']).optional(),
     }).parse(req.body)
@@ -74,7 +85,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({
       title: z.string().min(3).optional(), startsAt: z.coerce.date().optional(), endsAt: z.coerce.date().optional(),
-      daysOfWeek: z.array(z.string()).optional(), startTime: z.string().optional(), timezone: z.string().optional(),
+      daysOfWeek: dayCodes.optional(), startTime: z.string().optional(), timezone: z.string().optional(),
       capacity: z.number().int().min(1).optional(), price: z.number().min(0).optional(), currency: z.string().optional(),
       language: z.string().optional(), deliveryMode: z.enum(['remote', 'in_person', 'hybrid']).optional(),
       registrationOpen: z.boolean().optional(), financialReady: z.boolean().optional(),
