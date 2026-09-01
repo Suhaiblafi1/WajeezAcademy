@@ -6,6 +6,9 @@ import {
   Loader2, Plus, RefreshCw, Route, Trash2, XCircle,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
+import ListToolbar from "@/components/admin/ListToolbar";
+import { matchesQuery } from "@/application/text/search-ar";
+import { paginate } from "@/application/admin/paginate";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import SkillPicker from "@/components/SkillPicker";
 import type { SkillMeasureState } from "@/application/catalog/skill-measurement";
@@ -61,6 +64,15 @@ export default function CatalogAdmin() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [browse, setBrowse] = useState<"pathways" | "courses" | "skills" | "questions" | "templates" | null>(null);
+  /* فرزُ الكتالوج — قرارُ صاحب المنصّة: «طريقٌ أسهلُ لفرز الدورات».
+
+     الكتالوجُ اليومَ ٨١ دورةً و٣٠٥ مهارةً ومئاتُ الأسئلة، وكانت تُسرد قوائمَ
+     مسطّحةً بلا بحثٍ ولا ترشيح: من أراد دورةً بعينها مرّرها بعينه، ومن أراد
+     «ما بقي مسوّدةً في مسار القيادة» لم يكن له طريق. */
+  const [q, setQ] = useState("");
+  const [page, setPage] = useState(1);
+  const [statusPick, setStatusPick] = useState("");
+  const [pathPick, setPathPick] = useState("");
 
   const [skillForm, setSkillForm] = useState({ id: "", slug: "", nameAr: "", familyId: "" });
   const [courseForm, setCourseForm] = useState({
@@ -162,6 +174,36 @@ export default function CatalogAdmin() {
     </button>
   );
 
+    /* لكلّ قائمةٍ مرشِّحاتُها، والترقيمُ واحد. والحالاتُ من الصفوف نفسِها
+     فلا تُعرض حالةٌ لا وجودَ لها في القائمة المعروضة. */
+  const statusesOf = (rows: { status: string }[]) => [...new Set(rows.map((r) => r.status))];
+
+  const pathwayView = paginate(
+    pathways.filter((p) => (!statusPick || p.status === statusPick) && matchesQuery(q, [p.id, p.title])),
+    page, 25);
+  const courseView = paginate(
+    courses.filter((c) => (!statusPick || c.status === statusPick)
+      && (!pathPick || c.pathways.includes(pathPick))
+      && matchesQuery(q, [c.id, c.title, ...c.pathways])),
+    page, 25);
+  const skillView = paginate(
+    skills.filter((s2) => (!statusPick || s2.status === statusPick) && matchesQuery(q, [s2.id, s2.slug, s2.nameAr, s2.familyId])),
+    page, 25);
+  const questionView = paginate(
+    questions.filter((qq) => (!statusPick || qq.status === statusPick) && matchesQuery(q, [qq.id, qq.text, qq.module])),
+    page, 25);
+  const templateView = paginate(
+    templates.filter((t) => (!statusPick || t.status === statusPick) && matchesQuery(q, [t.id, t.name])),
+    page, 25);
+
+  /* مسارٌ واحدٌ لكلّ مرشِّحٍ يُعرض — فلا يُنسى ترشيحٌ ظاهرٌ على قائمةٍ لا تعنيه */
+  const browseUi = browse === null ? null
+    : browse === "pathways" ? { view: pathwayView, rows: pathways, unit: "مسارا", ph: "ابحث بمعرّفٍ أو عنوان…" }
+    : browse === "courses" ? { view: courseView, rows: courses, unit: "دورة", ph: "ابحث بمعرّفٍ أو عنوانٍ أو مسار…" }
+    : browse === "skills" ? { view: skillView, rows: skills, unit: "مهارة", ph: "ابحث بمعرّفٍ أو اسمٍ أو عائلة…" }
+    : browse === "questions" ? { view: questionView, rows: questions, unit: "سؤالا", ph: "ابحث بنصّ السؤال أو الوحدة…" }
+    : { view: templateView, rows: templates, unit: "قالبا", ph: "ابحث بمعرّفٍ أو اسم…" };
+
   return (
     <AdminLayout title="إدارة الكتالوج الأكاديمي">
       {error && <p className="mb-4 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-200">{error}</p>}
@@ -188,15 +230,43 @@ export default function CatalogAdmin() {
         <h2 className="flex items-center gap-2 text-lg font-black"><Layers className="h-5 w-5 text-gold-ink" /> الكيانات الحالية</h2>
         <div className="mt-3 flex flex-wrap gap-2">
           {([["pathways", `المسارات (${pathways.length})`], ["courses", `الدورات (${courses.length})`], ["skills", `المهارات (${skills.length})`], ["questions", `بنك الأسئلة (${questions.length})`], ["templates", `قوالب التوصية (${templates.length})`]] as const).map(([k, label]) => (
-            <button key={k} onClick={() => setBrowse(browse === k ? null : k)}
+            <button key={k} onClick={() => { setBrowse(browse === k ? null : k); setQ(""); setPage(1); setStatusPick(""); setPathPick(""); }}
               className={`cursor-pointer rounded-full border px-4 py-1.5 text-xs font-bold transition ${browse === k ? "border-gold bg-gold/10 text-gold-ink" : "border-white/15 text-white/60 hover:border-white/40"}`}>
               {label}
             </button>
           ))}
         </div>
+
+        {browseUi && browseUi.rows.length > 0 && (
+          <div className="mt-4">
+            <div className="mb-3 flex flex-wrap gap-2">
+              <select value={statusPick} onChange={(e) => { setStatusPick(e.target.value); setPage(1); }}
+                aria-label="رشِّح بالحالة"
+                className="rounded-xl border border-white/12 bg-black/30 px-3 py-2 text-xs text-white focus:border-gold focus:outline-none [&>option]:bg-surface">
+                <option value="">كلّ الحالات</option>
+                {statusesOf(browseUi.rows).map((st) => <option key={st} value={st}>{STATUS_AR[st] ?? st}</option>)}
+              </select>
+              {browse === "courses" && (
+                <select value={pathPick} onChange={(e) => { setPathPick(e.target.value); setPage(1); }}
+                  aria-label="رشِّح بالمسار"
+                  className="rounded-xl border border-white/12 bg-black/30 px-3 py-2 text-xs text-white focus:border-gold focus:outline-none [&>option]:bg-surface">
+                  <option value="">كلّ المسارات</option>
+                  {[...new Set(courses.flatMap((c) => c.pathways))].sort().map((pw) => <option key={pw} value={pw}>{pw}</option>)}
+                </select>
+              )}
+            </div>
+            <ListToolbar q={q} onQ={setQ} onPage={setPage} view={browseUi.view} unit={browseUi.unit} placeholder={browseUi.ph} />
+            {browseUi.view.total === 0 && (
+              <p className="rounded-2xl border border-white/10 bg-white/[0.02] py-10 text-center text-sm text-white/45">
+                لا نتيجة بهذا الفرز — وسّعه أو امسح البحث.
+              </p>
+            )}
+          </div>
+        )}
+
         {browse === "pathways" && (
           <ul className="mt-3 space-y-2">
-            {pathways.map((p) => (
+            {pathwayView.rows.map((p) => (
               <li key={p.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-2.5 text-sm">
                 <span className="font-mono text-[11px] text-white/55" dir="ltr">{p.id}</span>
                 <span className="font-bold">{p.title}</span>
@@ -209,7 +279,7 @@ export default function CatalogAdmin() {
         )}
         {browse === "courses" && (
           <ul className="mt-3 space-y-2">
-            {courses.map((c) => (
+            {courseView.rows.map((c) => (
               <li key={c.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-2.5 text-sm">
                 <span className="font-mono text-[11px] text-white/55" dir="ltr">{c.id}</span>
                 <span className="font-bold">{c.title}</span>
@@ -230,7 +300,7 @@ export default function CatalogAdmin() {
               <span className="text-white/45"> — غير المقيسة تدخل مقام تغطية القياس ولا تُقاس أبدا.</span>
             </p>
             <ul className="mt-2 grid gap-2 sm:grid-cols-2">
-              {skills.map((s) => (
+              {skillView.rows.map((s) => (
                 <li key={s.id} className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-2.5">
                   <div className="flex items-center gap-3 text-sm">
                     <span className="font-mono text-[11px] text-white/55" dir="ltr">{s.id}</span>
@@ -250,12 +320,12 @@ export default function CatalogAdmin() {
         )}
         {browse === "questions" && (
           <ul className="mt-3 space-y-2">
-            {questions.map((q) => (
-              <li key={q.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-2.5 text-sm">
-                <span className="font-mono text-[11px] text-white/55" dir="ltr">{q.id}</span>
-                <span className="min-w-0 flex-1 font-bold">{q.text || "—"}</span>
-                <span className="text-[11px] text-white/50">{q.module} · {q.optionCount} خيار{!q.active && " · موقوف"}</span>
-                <span className="mr-auto"><Pill v={q.status} /></span>
+            {questionView.rows.map((qq) => (
+              <li key={qq.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-2.5 text-sm">
+                <span className="font-mono text-[11px] text-white/55" dir="ltr">{qq.id}</span>
+                <span className="min-w-0 flex-1 font-bold">{qq.text || "—"}</span>
+                <span className="text-[11px] text-white/50">{qq.module} · {qq.optionCount} خيار{!qq.active && " · موقوف"}</span>
+                <span className="mr-auto"><Pill v={qq.status} /></span>
               </li>
             ))}
             {questions.length === 0 && <p className="text-sm text-white/45">لا أسئلة بعد.</p>}
@@ -263,7 +333,7 @@ export default function CatalogAdmin() {
         )}
         {browse === "templates" && (
           <ul className="mt-3 space-y-2">
-            {templates.map((t) => (
+            {templateView.rows.map((t) => (
               <li key={t.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-2.5 text-sm">
                 <span className="font-mono text-[11px] text-white/55" dir="ltr">{t.id}</span>
                 <span className="font-bold">{t.name || "—"}</span>
