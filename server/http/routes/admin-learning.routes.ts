@@ -253,6 +253,18 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
   })
 
   /* ── الشهادات ── */
+  /* مرشَّحو الشهادة — بدل «الصق معرّف التسجيل (UUID)».
+
+     والأهليّةُ محسوبةٌ بالقواعد نفسِها التي يفحصها الإصدار، فلا تقول القائمةُ
+     «مؤهَّل» ثمّ يرفض الزرّ. */
+  app.get('/api/admin/cohorts/:id/certificate-candidates', {
+    preHandler: requirePermission('certificate.issue'),
+    schema: { tags: ['admin-learning'], summary: 'مَن أنهى فعلا في هذه الشعبة — بأهليّته وأسبابِ تعثّرها' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return certificates.candidates(id)
+  })
+
   app.post('/api/admin/enrollments/:id/certificate', {
     preHandler: requirePermission('certificate.issue'),
     schema: { tags: ['admin-learning'], summary: 'إصدار شهادة — يرفض بقائمة القواعد غير المحققة' },

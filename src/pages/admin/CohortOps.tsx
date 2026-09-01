@@ -70,8 +70,6 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
   const [assessForm, setAssessForm] = useState({ title: "", type: "assignment", maxScore: "100", passScore: "", dueAt: "" });
   const [items, setItems] = useState([{ prompt: "", kind: "text", maxScore: "" }]);
   const [dropForm, setDropForm] = useState({ enrollmentId: "", note: "" });
-  const [certId, setCertId] = useState("");
-  const [revokeForm, setRevokeForm] = useState({ certificateId: "", reason: "" });
   const [recForm, setRecForm] = useState({ sessionId: "", title: "", moduleId: "", mime: "video/mp4", sizeBytes: "", durationSec: "" });
   const [contentForm, setContentForm] = useState({ kind: "material", id: "", status: "archived" });
 
@@ -301,25 +299,17 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
               <UserMinus className="h-3.5 w-3.5" /> إسقاط
             </button>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <input value={certId} onChange={(e) => setCertId(e.target.value)}
-              placeholder="معرف التسجيل لإصدار شهادة (UUID)" dir="ltr" className={`${inputCls} flex-1 font-mono`} />
-            <button disabled={busy || !certId.trim()}
-              onClick={() => act(() => apiPost(`/api/admin/enrollments/${certId.trim()}/certificate`), "أُصدرت الشهادة — أو رُفضت بقائمة القواعد غير المحققة")}
-              className="flex cursor-pointer items-center gap-1 rounded-xl border border-gold/40 px-4 py-2 text-xs font-bold text-gold-ink hover:bg-gold/10 disabled:opacity-40">
-              <BadgeCheck className="h-3.5 w-3.5" /> إصدار شهادة
-            </button>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <input value={revokeForm.certificateId} onChange={(e) => setRevokeForm({ ...revokeForm, certificateId: e.target.value })}
-              placeholder="معرف الشهادة للإلغاء (UUID)" dir="ltr" className={`${inputCls} flex-1 font-mono`} />
-            <input value={revokeForm.reason} onChange={(e) => setRevokeForm({ ...revokeForm, reason: e.target.value })} placeholder="السبب الموثق (5+ أحرف)" className={inputCls} />
-            <button disabled={busy || revokeForm.reason.length < 5 || !revokeForm.certificateId.trim()}
-              onClick={() => act(() => apiPost(`/api/admin/certificates/${revokeForm.certificateId.trim()}/revoke`, { reason: revokeForm.reason }), "أُلغيت الشهادة ووُثق السبب")}
-              className="cursor-pointer rounded-xl border border-red-500/40 px-4 py-2 text-xs font-bold text-red-400 hover:bg-red-500/10 disabled:opacity-40">
-              إلغاء شهادة
-            </button>
-          </div>
+          {/* ─────────── الشهادات: قائمةٌ لا معرّفاتٌ تُلصق ───────────
+
+              كان الإصدارُ يطلب «معرّف التسجيل (UUID)» والإلغاءُ «معرّف
+              الشهادة (UUID)» — يُكتبان يدا ولا شاشةَ تعرضهما. فمن أراد أن
+              يُصدر شهادةً لطالبٍ أنهى دورتَه احتاج أن يستخرج معرّفا من مكانٍ
+              آخر.
+
+              وقرارُ صاحب المنصّة: «فلتر القائمة افتراضيا لمن أنهى فعلا».
+              والأهليّةُ محسوبةٌ في الخادم بالقواعد نفسِها التي يفحصها
+              الإصدار — فلا تقول القائمةُ «مؤهَّل» ثمّ يرفض الزرّ. */}
+          <CertificateCandidates cohortId={cohort.id} busy={busy} act={act} />
         </div>
       </MiniCard>
 
@@ -478,5 +468,118 @@ export function LearningSettings({ courses, cohorts, onDone }: {
       </div>
       {msg && <p className="text-xs font-bold text-teal-light-ink lg:col-span-2" role="status">{msg}</p>}
     </section>
+  );
+}
+
+/* مرشَّحو الشهادة في الشعبة — مَن أنهى فعلا أوّلا، ومن تعثّر بسببه مكتوبا.
+
+   والقائمةُ تقرأ الأهليّةَ من الخادم لا تحسبها: القواعدُ هناك (`evaluateCompletion`)
+   وحاجزُ توثيق البريد كذلك، وحسابُهما هنا يُنشئ مصدرا ثانيا يفترق عن الأوّل
+   فتقول الشاشةُ «مؤهَّل» ويرفض الزرّ. */
+interface CertCandidate {
+  enrollmentId: string;
+  learnerName: string;
+  email: string;
+  percent: number;
+  eligible: boolean;
+  failures: string[];
+  certificate: { id: string; number: string; issuedAt: string } | null;
+}
+
+function CertificateCandidates({ cohortId, busy, act }: {
+  cohortId: string;
+  busy: boolean;
+  act: (fn: () => Promise<unknown>, msg: string) => void;
+}) {
+  const [rows, setRows] = useState<CertCandidate[] | null>(null);
+  const [error, setError] = useState("");
+  const [revoking, setRevoking] = useState<string | null>(null);
+  const [reason, setReason] = useState("");
+
+  const load = useCallback(() => {
+    apiGet<CertCandidate[]>(`/api/admin/cohorts/${cohortId}/certificate-candidates`)
+      .then((r) => { setRows(r); setError(""); })
+      .catch((e) => setError(e instanceof ApiError ? e.message : "تعذّر قراءة المرشَّحين"));
+  }, [cohortId]);
+  useEffect(() => { load(); }, [load]);
+
+  if (error) return <p className="text-[11px] leading-6 text-white/50">{error}</p>;
+  if (!rows) return <p className="text-[11px] text-white/40">نقرأ المرشَّحين…</p>;
+  if (rows.length === 0) return <p className="text-[11px] text-white/50">لا مسجَّلين في هذه الشعبة بعد.</p>;
+
+  return (
+    <ul className="space-y-1.5">
+      {rows.map((r) => (
+        <li key={r.enrollmentId} className="rounded-xl border border-white/8 bg-black/20 px-3 py-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="min-w-0">
+              <span className="block text-[12px] font-bold text-white/85">{r.learnerName}</span>
+              <span dir="ltr" className="block text-left text-[10px] text-white/40">{r.email}</span>
+            </span>
+            <span className="flex shrink-0 items-center gap-2">
+              <span className="text-[10.5px] tabular-nums text-white/45">{r.percent}٪</span>
+              {r.certificate ? (
+                <>
+                  <span dir="ltr" className="rounded-full border border-teal/35 px-2 py-0.5 font-mono text-[10px] text-teal-light-ink">
+                    {r.certificate.number}
+                  </span>
+                  <button
+                    onClick={() => { setRevoking(revoking === r.certificate!.id ? null : r.certificate!.id); setReason(""); }}
+                    className="cursor-pointer rounded-full border border-red-400/30 px-2.5 py-0.5 text-[10.5px] font-bold text-red-300 hover:bg-red-400/10"
+                  >
+                    ألغِها
+                  </button>
+                </>
+              ) : r.eligible ? (
+                <button
+                  disabled={busy}
+                  onClick={() => act(
+                    () => apiPost(`/api/admin/enrollments/${r.enrollmentId}/certificate`).then(load),
+                    `أُصدرت شهادة «${r.learnerName}»`,
+                  )}
+                  className="flex cursor-pointer items-center gap-1 rounded-full border border-gold/40 px-3 py-0.5 text-[10.5px] font-black text-gold-ink hover:bg-gold/10 disabled:opacity-40"
+                >
+                  <BadgeCheck className="h-3 w-3" /> أصدِر
+                </button>
+              ) : (
+                <span className="rounded-full border border-white/12 px-2.5 py-0.5 text-[10.5px] font-bold text-white/40">
+                  لم يُنهِ بعد
+                </span>
+              )}
+            </span>
+          </div>
+
+          {/* السببُ يُقال قبل الضغط لا بعده — فلا يُجرَّب زرٌّ ليُعرف لماذا رُفض */}
+          {!r.eligible && !r.certificate && r.failures.length > 0 && (
+            <ul className="mt-1.5 space-y-0.5">
+              {r.failures.map((f, i) => (
+                <li key={i} className="text-[10px] leading-4 text-white/40">— {f}</li>
+              ))}
+            </ul>
+          )}
+
+          {revoking === r.certificate?.id && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              <input
+                value={reason} onChange={(e) => setReason(e.target.value)}
+                placeholder="سببُ الإلغاء — يبقى في السجلّ (٥ أحرف فأكثر)"
+                className="min-w-[14rem] flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-1.5 text-[11px] outline-none placeholder:text-white/30 focus:border-red-400/50"
+              />
+              <button
+                disabled={busy || reason.trim().length < 5}
+                onClick={() => act(
+                  () => apiPost(`/api/admin/certificates/${r.certificate!.id}/revoke`, { reason: reason.trim() })
+                    .then(() => { setRevoking(null); setReason(""); load(); }),
+                  "أُلغيت الشهادة ووُثّق السبب",
+                )}
+                className="cursor-pointer rounded-lg border border-red-500/40 px-3 py-1.5 text-[11px] font-bold text-red-400 hover:bg-red-500/10 disabled:opacity-40"
+              >
+                أكّد الإلغاء
+              </button>
+            </div>
+          )}
+        </li>
+      ))}
+    </ul>
   );
 }
