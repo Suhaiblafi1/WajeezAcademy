@@ -1,3 +1,4 @@
+import { fmtDateWith, fmtSession } from "@/application/text/format-ar";
 /* ─────────── تنسيق وقت عربي موحد لكل البوابات ───────────
    القريب نسبي («قبل 3 أيام»، «غدا 14:30») والبعيد تاريخ كامل.
    يقبل ISO كاملا أو تاريخا فقط (YYYY-MM-DD) أو الصيغة الناقصة (YYYY-MM-DDTHH:MM). */
@@ -83,7 +84,7 @@ export function fmtDateAr(iso?: string | null): string {
   if (!iso) return '—';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleDateString('ar-u-ca-gregory', { day: 'numeric', month: 'long', year: 'numeric' });
+  return fmtDateWith(d, { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 /* التقويم واحدٌ في المنصّة كلّها: ميلاديّ بأسماء شهورٍ مشرقيّة قياسيّة.
@@ -100,9 +101,7 @@ export function fmtDateTimeAr(iso?: string | null): string {
   if (!iso) return '—';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleString('ar-u-ca-gregory', {
-    weekday: 'short', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit',
-  });
+  return fmtSession(d);
 }
 
 /** موعدٌ مختصر بلا يوم الأسبوع: «8 سبتمبر، 11:00 ص» */
@@ -110,9 +109,7 @@ export function fmtShortDateTimeAr(iso?: string | null): string {
   if (!iso) return '—';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleString('ar-u-ca-gregory', {
-    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
-  });
+  return fmtDateWith(d, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
 
 /** كم يبعد الموعد: «بعد 3 أسابيع» — يساعد على القرار أكثر من التاريخ وحده */

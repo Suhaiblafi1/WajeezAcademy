@@ -8,11 +8,11 @@ import { apiGet, apiPost, ApiError } from "@/services/api";
 import Pipeline from "./Pipeline";
 import LearnerPanel from "./LearnerPanel";
 import RequestsPanel from "./RequestsPanel";
+import { STATUS_AR } from "@/application/advisor/pipeline";
+import { fmtDateWith } from "@/application/text/format-ar";
 
-const STATUS_LABELS: Record<string, string> = {
-  new: "جديدة", contacted: "تم التواصل", needs_review: "تحتاج مراجعة", follow_up: "متابعة",
-  recommended: "أوصينا بمسار", enrolled: "سجّل", not_interested: "غير مهتم", closed: "مغلقة",
-};
+/* أسماءُ المراحل من `pipeline` وحدَه — لا جدولَ ثانيا يفترق عن القِمع */
+const STATUS_LABELS = STATUS_AR;
 const CHANNEL_LABELS: Record<string, string> = { whatsapp: "واتساب", email: "بريد", phone: "اتصال", in_app: "داخل المنصة" };
 
 interface CaseRow {
@@ -52,7 +52,7 @@ const LBL = "mb-1 block text-[11px] font-bold text-white/60";
    بتقويمين. و`ar-u-ca-gregory` تُثبّت الميلاديّ مهما كانت لغة المتصفّح. */
 function fmt(d: string | null) {
   if (!d) return "—";
-  return new Date(d).toLocaleDateString("ar-u-ca-gregory", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  return fmtDateWith(new Date(d), { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 }
 
 /* لقطة التشخيص: نستخرج أبرز مسار وثقة مهما كان شكل الحفظ */

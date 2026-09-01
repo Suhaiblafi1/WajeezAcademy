@@ -9,6 +9,7 @@ import AdminLayout from "./AdminLayout";
 import FlowSteps from "@/components/FlowSteps";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { useAutoRefresh } from "@/services/useAutoRefresh";
+import { fmtDate, fmtDateTime } from "@/application/text/format-ar";
 
 const inputCls = "rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/25 focus:border-teal focus:outline-none";
 
@@ -170,7 +171,7 @@ export default function Finance() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="font-black">{inv.total} {inv.currency} <span className="mr-2 font-mono text-[10px] font-normal text-white/40" dir="ltr">{inv.id.slice(0, 8)}…</span></p>
-                  <p className="mt-1 text-xs text-white/55">{inv.order.user.displayName} · {new Date(inv.issuedAt).toLocaleDateString("ar")}</p>
+                  <p className="mt-1 text-xs text-white/55">{inv.order.user.displayName} · {fmtDate(new Date(inv.issuedAt))}</p>
                 </div>
                 <span className="rounded-full border border-teal/40 px-3 py-1 text-[11px] font-bold text-teal-light-ink">{INV_STATUS[inv.status] ?? inv.status}</span>
               </div>
@@ -213,7 +214,7 @@ export default function Finance() {
             <div key={rf.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
               <div>
                 <p className="font-black">{rf.amount} <span className="text-xs font-normal text-white/50">— {rf.reason}</span></p>
-                <p className="mt-1 text-[11px] text-white/45">{new Date(rf.createdAt).toLocaleString("ar")}</p>
+                <p className="mt-1 text-[11px] text-white/45">{fmtDateTime(new Date(rf.createdAt))}</p>
               </div>
               <div className="flex items-center gap-2">
                 <span className="rounded-full border border-teal/40 px-3 py-1 text-[11px] font-bold text-teal-light-ink">{RF_STATUS[rf.status] ?? rf.status}</span>

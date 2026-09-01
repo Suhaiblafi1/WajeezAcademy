@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Bell, CheckCheck } from "lucide-react";
 import { apiGet, apiPost } from "@/services/api";
 import { useRealSession } from "@/services/session";
+import { fmtDateTime } from "@/application/text/format-ar";
 
 interface InAppNotification {
   id: string; title: string; body: string; status: string;
@@ -124,7 +125,7 @@ export default function NotificationBell({ audience }: { audience: BellAudience 
                 </p>
                 <p className="mt-1 text-[11px] leading-5 text-white/55">{n.body}</p>
                 <p className="mt-1 text-[9px] text-white/55">
-                  {new Date(n.sentAt ?? n.createdAt).toLocaleString("ar")}
+                  {fmtDateTime(new Date(n.sentAt ?? n.createdAt))}
                 </p>
               </button>
             ))}

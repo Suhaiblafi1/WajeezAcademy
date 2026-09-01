@@ -7,6 +7,7 @@ import {
   Globe, Info, Loader2, Settings2, ShieldOff, Star, UserCheck, XCircle, Zap,
 } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
+import { fmtDateTime } from "@/application/text/format-ar";
 
 const inputCls = "w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none";
 const selectCls = `${inputCls} [&>option]:bg-surface`;
@@ -102,7 +103,7 @@ export function TrainerDetailOps({ app, onAction }: {
         <div className="space-y-3">
           {app.interviews.map((iv) => (
             <div key={iv.id} className="rounded-xl border border-white/10 bg-black/20 p-3 text-xs">
-              <p className="font-bold">{new Date(iv.scheduledAt).toLocaleString("ar")} — {iv.outcome ?? "بلا نتيجة"}</p>
+              <p className="font-bold">{fmtDateTime(new Date(iv.scheduledAt))} — {iv.outcome ?? "بلا نتيجة"}</p>
               {!iv.outcome && (
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {([["passed", "ناجح"], ["hold", "تعليق"], ["failed", "راسب"]] as const).map(([o, label]) => (
@@ -370,7 +371,7 @@ export function TrainerChangeRequests() {
               </p>
               <p className="mt-1 text-xs leading-6 text-white/60">{r.reason}</p>
               <p className="mt-1 text-[10px] text-white/55">
-                {new Date(r.createdAt).toLocaleString("ar")} · {r.items?.length ?? 0} بند تعديل
+                {fmtDateTime(new Date(r.createdAt))} · {r.items?.length ?? 0} بند تعديل
               </p>
             </div>
             <span className="rounded-full border border-teal/40 px-3 py-1 text-[11px] font-bold text-teal-light-ink">
@@ -845,7 +846,7 @@ export function TrainerPayouts() {
                 <span className="mr-2 text-[11px] font-bold text-white/50">فترة <span dir="ltr" className="font-mono">{p.period}</span></span>
               </p>
               <p className="mt-1 text-xl font-black">{fmt(p.total)} <span className="text-xs font-bold text-white/50">{p.currency}</span></p>
-              {p.paidAt && <p className="mt-0.5 text-[10px] text-white/40">صُرف {new Date(p.paidAt).toLocaleString("ar")}</p>}
+              {p.paidAt && <p className="mt-0.5 text-[10px] text-white/40">صُرف {fmtDateTime(new Date(p.paidAt))}</p>}
             </div>
             <span className={`rounded-full border px-3 py-1 text-[11px] font-bold ${PAYOUT_STATUS_CLS[p.status] ?? ""}`}>
               {PAYOUT_STATUS_AR[p.status] ?? p.status}

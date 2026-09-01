@@ -4,6 +4,7 @@ import { Activity, ArrowUpCircle, History, PlayCircle, Rocket, ShieldCheck, Tras
 import AdminLayout from "./AdminLayout";
 import FlowSteps from "@/components/FlowSteps";
 import { apiDelete, apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
+import { fmtDateTime } from "@/application/text/format-ar";
 
 type Version = {
   id: string; label: string; status: string; createdAt: string; publishedAt: string | null
@@ -150,7 +151,7 @@ export default function PublishingBoard() {
           {runs.length === 0 && <p className="text-sm text-white/50">لا تشغيلات بعد.</p>}
           {runs.map((r) => (
             <div key={r.id} className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-              <p className="text-xs text-white/55">{new Date(r.createdAt).toLocaleString("ar")}</p>
+              <p className="text-xs text-white/55">{fmtDateTime(new Date(r.createdAt))}</p>
               <p className={`text-sm font-black ${r.passed ? "text-emerald-300" : "text-red-300"}`}>
                 {r.passed ? "✓ متطابق" : `✗ انحراف ${r.results.filter((x) => !x.match).length} شخصية`}
               </p>

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import { ArrowRight, BadgeCheck, Loader2, Search, ServerOff, ShieldX } from "lucide-react";
 import { apiGet, ApiError } from "@/services/api";
+import { fmtDateLong } from "@/application/text/format-ar";
 
 interface VerifyResult {
   number: string;
@@ -101,7 +102,7 @@ export default function Verify() {
               <p>{state.cert.courseTitle}</p>
               <p className="text-xs text-white/50">إصدار المنهج: {state.cert.courseVersion}</p>
               <p className="text-xs text-white/50">
-                تاريخ الإصدار: {new Date(state.cert.issuedAt).toLocaleDateString("ar-JO", { year: "numeric", month: "long", day: "numeric" })}
+                تاريخ الإصدار: {fmtDateLong(new Date(state.cert.issuedAt))}
               </p>
               <p className="font-mono text-xs text-white/40">{state.cert.number}</p>
             </div>

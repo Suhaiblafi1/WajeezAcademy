@@ -12,6 +12,7 @@
    ولا اسم مدرب: «تعليق مدربك» — قاعدة عدم عرض أسماء المدربين قبل الاعتماد. */
 
 import { CheckCircle2, History, MessageSquare, ScrollText } from "lucide-react";
+import { fmtDayMonth } from "@/application/text/format-ar";
 
 export interface RubricCriterionView { id: string; title: string; maxScore: number; sequence: number }
 export interface GradeView {
@@ -43,7 +44,7 @@ const num = (v: string | number | null | undefined): number | null => {
 
 const fmtDate = (iso: string) => {
   const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString("ar-JO", { day: "numeric", month: "long" });
+  return Number.isNaN(d.getTime()) ? "" : fmtDayMonth(d);
 };
 
 export default function SubmissionFeedback({

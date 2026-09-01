@@ -6,6 +6,7 @@ import { CheckCircle2, Loader2, RefreshCw, ServerOff, ShieldAlert, UserPlus } fr
 import AdminLayout from "./AdminLayout";
 import FlowSteps from "@/components/FlowSteps";
 import { apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
+import { fmtDate } from "@/application/text/format-ar";
 
 const CASE_STATUS_AR: Record<string, string> = {
   new: "جديدة", contacted: "تم التواصل", qualified: "مؤهلة", follow_up: "متابعة",
@@ -98,7 +99,7 @@ export default function Exceptions() {
                 <p className="font-black">{c.client?.displayName ?? c.lead?.name ?? "—"}</p>
                 <p className="mt-1 text-xs text-white/50" dir="ltr">{c.client?.email ?? c.lead?.email ?? ""}</p>
                 <p className="mt-1 text-[11px] text-white/45">
-                  الحالة: {CASE_STATUS_AR[c.status] ?? c.status} · منذ {new Date(c.createdAt).toLocaleDateString("ar")}
+                  الحالة: {CASE_STATUS_AR[c.status] ?? c.status} · منذ {fmtDate(new Date(c.createdAt))}
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">

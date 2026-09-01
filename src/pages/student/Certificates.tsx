@@ -10,6 +10,7 @@ import PortalLayout from "./PortalLayout";
 import { apiGet, ApiError } from "@/services/api";
 import { buildGrowthSummary, type CourseGrowth, type RemeasureRecord } from "@/application/student/skill-growth";
 import EmptyState from "@/components/EmptyState";
+import { fmtDate } from "@/application/text/format-ar";
 
 interface Cert {
   id: string; number: string; learnerName: string; courseId: string; courseVersion: number;
@@ -101,7 +102,7 @@ export default function Certificates() {
               </div>
               <h3 className="mt-4 font-black">دورة <span dir="ltr" className="font-mono text-sm">{c.courseId}</span> — إصدار {c.courseVersion}</h3>
               <p className="mt-1 text-xs text-white/55">باسم: {c.learnerName}</p>
-              <p className="mt-1 text-xs text-white/55">أُصدرت في {new Date(c.issuedAt).toLocaleDateString("ar")}</p>
+              <p className="mt-1 text-xs text-white/55">أُصدرت في {fmtDate(new Date(c.issuedAt))}</p>
               {c.revocation && <p className="mt-2 rounded-xl border border-red-500/30 bg-black/20 p-2 text-[11px] text-red-300">سبب الإلغاء: {c.revocation.reason}</p>}
               <div className="mt-4 flex items-center justify-between gap-2 border-t border-white/8 pt-3">
                 <span className="font-mono text-[11px] text-white/50" dir="ltr">{c.number}</span>

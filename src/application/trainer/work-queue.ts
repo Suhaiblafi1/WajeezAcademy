@@ -1,3 +1,4 @@
+import { fmtDate, fmtSession } from "@/application/text/format-ar";
 /* طابور عمل المدرب (البند ف-١) — تحويل صفحة الهبوط من لوحة أرقام إلى طاولة عمل.
    المصدر: /api/trainer/my-cohorts و/api/trainer/grading-queue فقط — بلا نقطة
    نهاية جديدة وبلا تغيير في المخطط: كل ما يلزم موجود في الردّين.
@@ -86,7 +87,7 @@ function whenAr(iso: string, now: number): string {
   if (mins < 60) return `بعد ${mins} دقيقة`
   const hours = Math.round(mins / 60)
   if (hours < 24) return `بعد ${hours} ساعة`
-  return new Date(iso).toLocaleString('ar-JO', { weekday: 'long', hour: 'numeric', minute: '2-digit' })
+  return fmtSession(new Date(iso))
 }
 
 /**
@@ -173,7 +174,7 @@ export function buildWorkQueue(rows: unknown, gradingCount: number, now: number)
       items.push({
         kind: 'not_submitted',
         titleAr: `${arCount(missing.length, 'متعلم واحد لم يسلّم', 'متعلمين لم يسلّموا')} «${a.title}»`,
-        detailAr: `${c.title} · استحق ${new Date(a.dueAt).toLocaleDateString('ar-JO')}`,
+        detailAr: `${c.title} · استحق ${fmtDate(new Date(a.dueAt))}`,
         actionAr: 'ذكّرهم',
         href: '/trainer/board',
         external: false,

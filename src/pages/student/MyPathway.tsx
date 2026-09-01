@@ -21,6 +21,7 @@ import { useCourseCohorts } from "@/services/cohort-prices";
 import CohortPicker from "@/components/CohortPicker";
 import BuyCohort from "@/components/BuyCohort";
 import AwaitingCourseChoices from "@/components/AwaitingCourseChoices";
+import { fmtDayMonth } from "@/application/text/format-ar";
 
 /** صفٌّ من /api/learner/my-learning — ما نحتاجه منه هنا فقط */
 interface Row {
@@ -130,7 +131,7 @@ function startsLabel(iso: string | null): string {
   if (!iso) return "الموعد يُعلن قريبا";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "الموعد يُعلن قريبا";
-  return `تبدأ ${d.toLocaleDateString("ar", { day: "numeric", month: "long" })}`;
+  return `تبدأ ${fmtDayMonth(d)}`;
 }
 
 /* طلب الخطّة كاملةً بنداءٍ واحد (التوصيتان ٢ و٣).

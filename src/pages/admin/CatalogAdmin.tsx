@@ -11,6 +11,7 @@ import SkillPicker from "@/components/SkillPicker";
 import type { SkillMeasureState } from "@/application/catalog/skill-measurement";
 import { toast } from "@/components/Toast";
 import PathwayWizard from "@/components/PathwayWizard";
+import { fmtDateTime } from "@/application/text/format-ar";
 
 type Overview = {
   pathways: Record<string, number>; courses: Record<string, number>; skills: Record<string, number>
@@ -449,7 +450,7 @@ export default function CatalogAdmin() {
             <div key={cr.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
               <div>
                 <p className="font-bold text-sm">{ENTITY_AR[cr.entityType] ?? cr.entityType} · <span dir="ltr" className="font-mono text-xs">{cr.entityId}</span></p>
-                <p className="mt-1 text-xs text-white/45">{new Date(cr.createdAt).toLocaleString("ar")} — {cr.decisions.length} قرار</p>
+                <p className="mt-1 text-xs text-white/45">{fmtDateTime(new Date(cr.createdAt))} — {cr.decisions.length} قرار</p>
               </div>
               <div className="flex items-center gap-2">
                 <Pill v={cr.status} />

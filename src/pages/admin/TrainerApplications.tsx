@@ -10,6 +10,7 @@ import { useRealSession } from "@/services/session";
 import { useAutoRefresh } from "@/services/useAutoRefresh";
 import { TrainerDetailOps, TrainerChangeRequests, TrainerPayouts } from "./TrainerOps";
 import ApplicationDossier, { type Dossier } from "./ApplicationDossier";
+import { fmtDateTime } from "@/application/text/format-ar";
 
 const STATUS_LABELS: Record<string, string> = {
   email_verification_pending: "بانتظار تحقق البريد",
@@ -265,7 +266,7 @@ export default function TrainerApplications() {
                     <span className="h-1.5 w-1.5 rounded-full bg-teal" />
                     <b className="text-white/80">{STATUS_LABELS[h.toStatus] ?? h.toStatus}</b>
                     {h.note && <span>— {h.note}</span>}
-                    <span className="mr-auto text-white/30">{new Date(h.createdAt).toLocaleString("ar")}</span>
+                    <span className="mr-auto text-white/30">{fmtDateTime(new Date(h.createdAt))}</span>
                   </li>
                 ))}
               </ol>

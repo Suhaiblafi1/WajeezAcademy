@@ -7,6 +7,7 @@ import {
 import PortalLayout from "./PortalLayout";
 import SubmissionFeedback from "@/components/SubmissionFeedback";
 import { apiGet, apiPost, ApiError } from "@/services/api";
+import { fmtDate, fmtDateTime } from "@/application/text/format-ar";
 
 const ENROLL_STATUS: Record<string, string> = {
   enrolled: "مسجل", waitlisted: "قائمة انتظار", completed: "مكتمل", dropped: "منسحب",
@@ -249,7 +250,7 @@ function LearnerCohortDetail({ detail, answers, setAnswers, busy, onSubmit, onSu
   onSubmit: (assessmentId: string, isResubmit: boolean) => void;
   onSubmitQuiz: (assessmentId: string, responses: { itemId: string; answer: string }[]) => void;
 }) {
-  const fmtDate = (iso: string) => new Date(iso).toLocaleString("ar-JO", { dateStyle: "medium", timeStyle: "short" });
+  const fmtWhen = (iso: string) => fmtDateTime(new Date(iso));
   return (
     <div className="space-y-6">
       {/* الجلسات */}
@@ -266,7 +267,7 @@ function LearnerCohortDetail({ detail, answers, setAnswers, busy, onSubmit, onSu
                   <div className="flex flex-wrap items-center gap-3">
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-bold">{s.title}</p>
-                      <p className="mt-0.5 text-[11px] text-white/45">{fmtDate(s.startsAt)}</p>
+                      <p className="mt-0.5 text-[11px] text-white/45">{fmtWhen(s.startsAt)}</p>
                     </div>
                     {myAttendance && (
                       <span className="rounded-full border border-white/15 px-2.5 py-0.5 text-[10px] font-bold text-white/55">
@@ -334,7 +335,7 @@ function LearnerCohortDetail({ detail, answers, setAnswers, busy, onSubmit, onSu
                       <p className="text-sm font-bold">{a.title}</p>
                       <p className="mt-0.5 text-[11px] text-white/45">
                         {ASSESSMENT_TYPE[a.type] ?? a.type} · من {a.maxScore}
-                        {a.dueAt && ` · يستحق ${new Date(a.dueAt).toLocaleDateString("ar-JO")}`}
+                        {a.dueAt && ` · يستحق ${fmtDate(a.dueAt)}`}
                       </p>
                     </div>
                     {meta && <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${meta.cls}`}>{meta.label}</span>}

@@ -13,6 +13,7 @@ import { buildIcs } from './calendar/ics'
 import { TrainerApplicationService } from './trainer-application.service'
 import { sendDirectEmail, publicSiteUrl, type DirectMailStatus } from './notification.service'
 import { CohortService } from './cohort.service'
+import { fmtDateWith } from '../../src/application/text/format-ar'
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex')
 const newToken = () => randomBytes(32).toString('base64url')
@@ -112,7 +113,7 @@ export class TrainerReviewService {
     })
     let emailDelivery: DirectMailStatus = 'not_configured'
     if (app) {
-      const when = input.scheduledAt.toLocaleString('ar-u-ca-gregory', {
+      const when = fmtDateWith(input.scheduledAt, {
         weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit',
         timeZone: 'Asia/Amman',
       })

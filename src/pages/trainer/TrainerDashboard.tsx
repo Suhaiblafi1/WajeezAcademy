@@ -9,6 +9,12 @@ import { buildWorkQueue } from "@/application/trainer/work-queue";
 import { findAtRisk } from "@/application/trainer/at-risk";
 import { useRealSession } from "@/services/session";
 import { fmtDateTimeAr } from "@/utils/format";
+import { countAr } from "@/application/text/count-ar";
+
+/* صيغةُ العدد لا تُرتجل في السطر: «و1 طالباً» نصبٌ في غير موضعه يقرؤه
+   المدرّب في كلّ دخول. */
+const COHORT_FORMS = { one: "شعبة", two: "شعبتان", few: "شعب", many: "شعبة" } as const;
+const STUDENT_FORMS = { one: "طالب", two: "طالبان", few: "طلاب", many: "طالبا" } as const;
 
 /* ── الصفحة الحقيقية للمدرب المسجّل — من الخادم مباشرة، بلا بيانات استعراض ── */
 
@@ -101,7 +107,7 @@ function RealTrainerHome({ name }: { name: string }) {
 
   return (
     <div>
-      <p className="mb-6 text-sm text-white/60">أهلاً {name} — {cohorts.length > 0 ? `لديك ${cohorts.length} ${cohorts.length === 1 ? "شعبة" : "شعب"} و${students} طالباً.` : "لم تُسند إليك شعب بعد."}</p>
+      <p className="mb-6 text-sm text-white/60">أهلاً {name} — {cohorts.length > 0 ? `لديك ${countAr(cohorts.length, COHORT_FORMS)} و${countAr(students, STUDENT_FORMS)}.` : "لم تُسند إليك شعب بعد."}</p>
 
       {/* بطاقة إرشاد المدرب الجديد — بوابة بلا شعب تشرح ما يحدث تاليا بدل أن تكتفي بأصفار */}
       {cohorts.length === 0 && (
@@ -172,15 +178,16 @@ function RealTrainerHome({ name }: { name: string }) {
 
       <div className="mb-8 flex flex-wrap items-center gap-2 rounded-2xl border border-dashed border-white/15 bg-white/[0.02] px-4 py-3 text-[11px] text-white/55">
         <span className="font-black text-white/75">من أين أبدأ؟</span>
+        {/* الترقيمُ لاتينيّ كبقيّة أرقام البوّابة — لا رسمان في بطاقةٍ واحدة */}
         {[
-          { n: "١", label: "افتح شعبتك", to: "/trainer/board" },
-          { n: "٢", label: "سجّل حضور الجلسة", to: "/trainer/board" },
-          { n: "٣", label: "قيّم التسليمات", to: "/trainer/grading" },
+          { key: "open", label: "افتح شعبتك", to: "/trainer/board" },
+          { key: "attend", label: "سجّل حضور الجلسة", to: "/trainer/board" },
+          { key: "grade", label: "قيّم التسليمات", to: "/trainer/grading" },
         ].map((s, i) => (
-          <span key={s.n} className="flex items-center gap-2">
+          <span key={s.key} className="flex items-center gap-2">
             {i > 0 && <span aria-hidden="true" className="text-white/20">←</span>}
             <Link to={s.to} className="flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1 font-bold transition hover:border-gold/60 hover:text-gold-ink">
-              <span className="grid h-4 w-4 place-items-center rounded-full bg-gold/15 text-[10px] text-gold-ink">{s.n}</span>
+              <span className="grid h-4 w-4 place-items-center rounded-full bg-gold/15 text-[10px] text-gold-ink">{i + 1}</span>
               {s.label}
             </Link>
           </span>

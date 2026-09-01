@@ -11,6 +11,7 @@ import DiagnosticFunnel from "@/components/DiagnosticFunnel";
 import AdminCharts from "@/components/AdminCharts";
 import { useAutoRefresh } from "@/services/useAutoRefresh";
 import { countWindows, flowTrend, stockTrend, trendBadgeAr, type Trend } from "@/application/metrics/trend";
+import { fmtNum, fmtTime } from "@/application/text/format-ar";
 
 /* اللوحة العليا — نظرة تنفيذية من مصادر الخادم الحقيقية فقط.
    كل بطاقة تتحمل غياب الصلاحية (403) فتختفي بهدوء بدل كسر الصفحة. */
@@ -131,7 +132,7 @@ export default function AdminDashboard() {
       const w = countWindows(paid, (i) => i.paidAt, now);
       out.push({
         to: "/admin/finance", label: "إيراد محصّل (فواتير مدفوعة)",
-        value: top ? `${Math.round(top[1]).toLocaleString("ar-SA")} ${top[0]}` : "0",
+        value: top ? `${fmtNum(Math.round(top[1]))} ${top[0]}` : "0",
         hint: `${paid.length} فاتورة مدفوعة — الإجمالي منذ البداية`, icon: Banknote, tone: "teal",
         trend: flowTrend(w.current, w.previous, INVOICE_FORMS), trendPrefixAr: "المحصَّل",
       });
@@ -195,16 +196,18 @@ export default function AdminDashboard() {
       {/* من أين أبدأ؟ — التسلسل التشغيلي الصحيح: محتوى ← نشر ← شعبة ← تسجيلات */}
       <div className="mb-8 flex flex-wrap items-center gap-2 rounded-2xl border border-dashed border-white/15 bg-white/[0.02] px-4 py-3 text-[11px] text-white/55">
         <span className="font-black text-white/75">من أين أبدأ؟</span>
+        {/* الترقيمُ لاتينيّ كبقيّة أرقام اللوحة — ورقمان مختلفا الرسم في
+            البطاقة الواحدة يُقرآن واجهتين مركّبتين لا واجهةً واحدة */}
         {[
-          { n: "١", label: "أضف دورة", to: "/admin/catalog" },
-          { n: "٢", label: "انشرها", to: "/admin/publishing" },
-          { n: "٣", label: "أنشئ شعبة وعيّن مدربها", to: "/admin/cohorts" },
-          { n: "٤", label: "راجع طلبات التسجيل", to: "/admin/finance" },
+          { label: "أضف دورة", to: "/admin/catalog" },
+          { label: "انشرها", to: "/admin/publishing" },
+          { label: "أنشئ شعبة وعيّن مدربها", to: "/admin/cohorts" },
+          { label: "راجع طلبات التسجيل", to: "/admin/finance" },
         ].map((s, i) => (
-          <span key={s.n} className="flex items-center gap-2">
+          <span key={s.to} className="flex items-center gap-2">
             {i > 0 && <span aria-hidden="true" className="text-white/20">←</span>}
             <Link to={s.to} className="flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1 font-bold transition hover:border-gold/60 hover:text-gold-ink">
-              <span className="grid h-4 w-4 place-items-center rounded-full bg-gold/15 text-[10px] text-gold-ink">{s.n}</span>
+              <span className="grid h-4 w-4 place-items-center rounded-full bg-gold/15 text-[10px] text-gold-ink">{i + 1}</span>
               {s.label}
             </Link>
           </span>
@@ -255,7 +258,7 @@ export default function AdminDashboard() {
 
       <p className="mt-8 text-center text-[11px] text-white/55">
         كل الأرقام هنا حية من قاعدة البيانات وتُحدَّث تلقائيا كل 45 ثانية
-        {updatedAt && ` — آخر تحديث ${updatedAt.toLocaleTimeString("ar-JO", { hour: "2-digit", minute: "2-digit" })}`}.
+        {updatedAt && ` — آخر تحديث ${fmtTime(updatedAt)}`}.
         التقارير التفصيلية والتصدير في شاشة «التقارير».
       </p>
     </AdminLayout>

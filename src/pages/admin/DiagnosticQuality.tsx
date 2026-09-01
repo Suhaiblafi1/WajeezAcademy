@@ -4,6 +4,7 @@ import { FlaskConical, RefreshCw } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import { apiGet, ApiError } from "@/services/api";
 import MeasurementCoverage from "@/components/MeasurementCoverage";
+import { fmtDateTime } from "@/application/text/format-ar";
 
 type PersonaResult = {
   persona: string; questions?: number; kind: string; top: string | null; tpl: string | null; conf?: number; match: boolean
@@ -125,7 +126,7 @@ export default function DiagnosticQuality() {
             <div key={r.id} className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-bold">{r.changeRef}</p>
-                <p className="text-[11px] text-white/50">{new Date(r.createdAt).toLocaleString("ar")}</p>
+                <p className="text-[11px] text-white/50">{fmtDateTime(new Date(r.createdAt))}</p>
               </div>
               <p className="mt-1 text-xs text-white/60">
                 تغيّرت {r.summary.changedCount} من {r.summary.totalPersonas} شخصية
@@ -168,7 +169,7 @@ export default function DiagnosticQuality() {
                     <span className="rounded-full border border-teal/40 bg-teal/10 px-2.5 py-0.5 text-[11px] font-bold text-teal-light-ink">
                       {VERDICT_AR[r.verdict] ?? r.verdict}
                     </span>
-                    <p className="text-[11px] text-white/45" dir="ltr">{r.pathwayId ?? "—"} · {new Date(r.createdAt).toLocaleString("ar")}</p>
+                    <p className="text-[11px] text-white/45" dir="ltr">{r.pathwayId ?? "—"} · {fmtDateTime(new Date(r.createdAt))}</p>
                   </div>
                   <p className="mt-2 text-xs leading-relaxed text-white/70">{r.note}</p>
                 </div>

@@ -17,6 +17,7 @@ import {
   type EvidenceKind, type Momentum,
 } from "@/application/student/momentum";
 import EmptyState from "@/components/EmptyState";
+import { fmtDate, fmtSession } from "@/application/text/format-ar";
 
 /* حُذفت خريطة ADVISORS هنا كما حُذفت في صفحة المسار: أسماءُ أشخاصٍ مكتوبةٌ في
    الكود تُعرض للطالب الدافع كأنها مستشارُه المعيَّن. والقاعدة أن لا اسم يُعرض
@@ -181,7 +182,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
     return buildMomentum(facts, extra ? new Date(extra.at) : new Date());
   }, [details, extra]);
 
-  const fmtWhen = (iso: string) => new Date(iso).toLocaleString("ar-JO", { weekday: "long", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  const fmtWhen = (iso: string) => fmtSession(new Date(iso));
 
   /* التقدم الكلي: متوسط نِسب الشعب التي لها تقدم محسوب */
   const withProgress = rows.filter((r) => r.courseProgress);
@@ -221,7 +222,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
     }
     if (pendingAssessments[0]) {
       const a = pendingAssessments[0];
-      return { label: `سلّم «${a.title}»`, detail: `${a.cohortTitle}${a.dueAt ? ` · يستحق ${new Date(a.dueAt).toLocaleDateString("ar-JO")}` : ""}`, cta: "افتح الواجب", href: "/student/learning", external: false };
+      return { label: `سلّم «${a.title}»`, detail: `${a.cohortTitle}${a.dueAt ? ` · يستحق ${fmtDate(new Date(a.dueAt))}` : ""}`, cta: "افتح الواجب", href: "/student/learning", external: false };
     }
     const first = rows[0];
     return { label: `تابع «${first.cohort.course.versions[0]?.titleAr ?? first.cohort.title}»`, detail: "جلساتك وموادك وواجباتك في صفحة تعلّمي", cta: "افتح تعلّمي", href: "/student/learning", external: false };
@@ -347,7 +348,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
                 reasonAr="عند جدولة شعبتك تظهر الجلسة هنا مع رابط الانضمام. وحتى ذلك الحين وقتك ليس فراغا:"
                 actions={[
                   ...(pendingAssessments[0]
-                    ? [{ to: "/student/learning", labelAr: `سلّم «${pendingAssessments[0].title}»`, hintAr: pendingAssessments[0].dueAt ? `يستحق ${new Date(pendingAssessments[0].dueAt).toLocaleDateString("ar-JO")}` : "بانتظار تسليمك" }]
+                    ? [{ to: "/student/learning", labelAr: `سلّم «${pendingAssessments[0].title}»`, hintAr: pendingAssessments[0].dueAt ? `يستحق ${fmtDate(new Date(pendingAssessments[0].dueAt))}` : "بانتظار تسليمك" }]
                     : []),
                   ...(rows[0]
                     ? [{ to: "/student/learning", labelAr: `تابع «${rows[0].cohort.course.versions[0]?.titleAr ?? rows[0].cohort.title}»`, hintAr: "الوحدات والمواد" }]
@@ -405,7 +406,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
                   <Link key={a.id} to="/student/learning"
                     className="flex items-center justify-between gap-3 rounded-2xl border border-gold/25 bg-gold/5 px-4 py-2.5 transition hover:border-gold/50">
                     <span className="text-xs font-bold text-white/85">{a.title} <span className="font-normal text-white/45">· {a.cohortTitle}</span></span>
-                    {a.dueAt && <span className="shrink-0 text-[10px] text-gold-ink">يستحق {new Date(a.dueAt).toLocaleDateString("ar-JO")}</span>}
+                    {a.dueAt && <span className="shrink-0 text-[10px] text-gold-ink">يستحق {fmtDate(new Date(a.dueAt))}</span>}
                   </Link>
                 ))}
               </div>

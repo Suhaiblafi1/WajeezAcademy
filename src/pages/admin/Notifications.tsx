@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Bell, CheckCircle2, Loader2, RefreshCw, Save, Send, ServerOff } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
+import { fmtDateTime } from "@/application/text/format-ar";
 
 const inputCls = "rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/25 focus:border-teal focus:outline-none";
 
@@ -130,7 +131,7 @@ export default function Notifications() {
                     </span>
                   </div>
                   {n.lastError && <p className="mt-1 text-[10px] text-red-300">{n.lastError}</p>}
-                  <p className="mt-1 text-[10px] text-white/40">{n.attempts} محاولة · {new Date(n.queuedAt).toLocaleString("ar")}</p>
+                  <p className="mt-1 text-[10px] text-white/40">{n.attempts} محاولة · {fmtDateTime(new Date(n.queuedAt))}</p>
                   {n.status === "failed" && (
                     <button disabled={busy}
                       onClick={() => act(() => apiPost(`/api/admin/notifications/${n.id}/retry`), "أُعيدت المحاولة")}

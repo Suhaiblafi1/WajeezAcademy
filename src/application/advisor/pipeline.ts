@@ -19,6 +19,15 @@ export const CLOSED_STAGES = [
   { key: 'closed', label: 'مغلقة' },
 ] as const
 
+/** اسمُ المرحلة العربيّ — مصدرٌ واحد للقِمع ولمرشِّحات القائمة معا.
+
+   كان لكلٍّ منهما جدولُ أسماءٍ خاصّ، فظهرت المرحلةُ الواحدة باسمين في
+   الشاشة نفسِها: «تم التواصل» في المرشِّح و«تواصلنا» في عمود القِمع،
+   و«أوصينا بمسار» مقابل «عُرض عليه». والاسمان لشيءٍ واحدٍ يُقرآن شيئين. */
+export const STATUS_AR: Record<string, string> = Object.fromEntries(
+  [...STAGES, ...CLOSED_STAGES].map((s) => [s.key, s.label]),
+)
+
 export interface PipelineCase {
   id: string
   status: string

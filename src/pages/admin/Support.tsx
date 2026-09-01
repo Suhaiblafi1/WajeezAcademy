@@ -8,6 +8,7 @@ import AdminLayout from "./AdminLayout";
 import FlowSteps from "@/components/FlowSteps";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { useAutoRefresh } from "@/services/useAutoRefresh";
+import { fmtDateTime } from "@/application/text/format-ar";
 
 const STATUS_AR: Record<string, string> = {
   open: "مفتوحة", in_progress: "قيد المعالجة", waiting_customer: "بانتظار العميل",
@@ -109,7 +110,7 @@ export default function Support() {
                 {t.messages.map((m) => (
                   <li key={m.id} className={`rounded-2xl border p-3 text-xs leading-6 ${m.internal ? "border-gold/30 bg-gold/5" : "border-white/10 bg-black/20"}`}>
                     <p className="mb-1 flex items-center gap-2 text-[10px] font-bold text-white/45">
-                      {new Date(m.createdAt).toLocaleString("ar")}
+                      {fmtDateTime(new Date(m.createdAt))}
                       {m.internal && <span className="flex items-center gap-1 text-gold-ink"><EyeOff className="h-3 w-3" /> داخلية — لا يراها العميل</span>}
                     </p>
                     {m.body}
@@ -181,7 +182,7 @@ export default function Support() {
                   <li key={i} className="flex items-center gap-2 text-[11px] text-white/55">
                     <span className="h-1.5 w-1.5 rounded-full bg-teal" />
                     <b className="text-white/80">{STATUS_AR[h.toStatus] ?? h.toStatus}</b>
-                    <span className="mr-auto text-white/30">{new Date(h.createdAt).toLocaleString("ar")}</span>
+                    <span className="mr-auto text-white/30">{fmtDateTime(new Date(h.createdAt))}</span>
                   </li>
                 ))}
               </ol>
@@ -228,7 +229,7 @@ export default function Support() {
               <div>
                 <p className="font-black">{t.subject}</p>
                 <p className="mt-1 text-xs text-white/50">
-                  {t.user.displayName} · {t._count.messages} رسالة · {t.assignments.length ? "مسندة" : "غير مسندة"} · {new Date(t.updatedAt).toLocaleString("ar")}
+                  {t.user.displayName} · {t._count.messages} رسالة · {t.assignments.length ? "مسندة" : "غير مسندة"} · {fmtDateTime(new Date(t.updatedAt))}
                 </p>
               </div>
               <div className="flex gap-2">

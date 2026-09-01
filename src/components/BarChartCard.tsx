@@ -9,6 +9,7 @@
    - طريقة الحساب تُعرض أسفل المخطط — الرقم بلا طريقته لا يُراجَع. */
 
 import { Loader2, ServerOff } from "lucide-react";
+import { fmtNum } from "@/application/text/format-ar";
 
 export interface ChartBar {
   labelAr: string;
@@ -18,7 +19,7 @@ export interface ChartBar {
 const RAMP = ["bg-ramp-1", "bg-ramp-2", "bg-ramp-3", "bg-ramp-4", "bg-ramp-5"] as const;
 
 function fmt(n: number): string {
-  return n.toLocaleString("ar-JO", { maximumFractionDigits: 0 });
+  return fmtNum(n);
 }
 
 export default function BarChartCard({

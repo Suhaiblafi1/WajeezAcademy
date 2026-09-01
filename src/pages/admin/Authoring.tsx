@@ -33,6 +33,7 @@ import { validateChecks } from "@/application/content/module-checks";
 import { validateScenario } from "@/application/content/scenario";
 import { validateVideo } from "@/application/content/module-video";
 import { fmtShortDateTimeAr } from "@/utils/format";
+import { fmtNum } from "@/application/text/format-ar";
 
 interface WorkRow {
   moduleId: string; courseId: string; courseTitleAr: string; titleAr: string; sequence: number;
@@ -415,7 +416,7 @@ export default function Authoring() {
                           <span className="font-black">إصدار {h.version}</span>
                           <span className="rounded-full bg-white/10 px-2 py-0.5 text-[9px]">{STATUS_AR[h.status] ?? h.status}</span>
                           <span className="text-white/40">{fmtShortDateTimeAr(h.reviewedAt ?? h.submittedAt ?? h.createdAt)}</span>
-                          <span className="text-white/35">{(h.bodyAr?.length ?? 0).toLocaleString("ar-EG")} حرفا</span>
+                          <span className="text-white/35">{fmtNum(h.bodyAr?.length ?? 0)} حرفا</span>
                         </p>
                         {h.reviewNoteAr && (
                           <p className="mt-1 text-[11px] leading-5 text-gold/80">ملاحظة المراجع: {h.reviewNoteAr}</p>
@@ -438,7 +439,7 @@ function Stat({ label, value, tone }: { label: string; value: number; tone?: "go
   return (
     <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
       <p className="text-[11px] text-white/50">{label}</p>
-      <p className={`mt-1 text-2xl font-black tabular-nums ${color}`}>{value.toLocaleString("ar-EG")}</p>
+      <p className={`mt-1 text-2xl font-black tabular-nums ${color}`}>{fmtNum(value)}</p>
     </div>
   );
 }
