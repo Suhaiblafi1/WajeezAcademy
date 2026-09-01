@@ -12,6 +12,9 @@ import { bestsellers, pathwayById, pathwayCategory } from '@/data/pathways'
 import { getCatalogVersion, onCoreCatalogInstalled } from '@/data/core-catalog-source'
 import { bestsellerCourses, courseById, pathwaySizeAr } from '@/data/courses'
 import { faqs } from '@/data/siteContent'
+
+/** كم سؤالا يُعرض على الرئيسية — والباقي في `/p/faq` */
+const HOME_FAQ_COUNT = 4
 import { CONTACT } from '@/data/stories'
 import { track } from '@/services/analytics'
 import { usePublishedContent } from '@/services/public-content'
@@ -587,7 +590,13 @@ function Stories() {
               <p className="text-sm font-bold">
                 {s.name} <span className="font-normal text-muted-foreground">— {s.role}</span>
               </p>
-              <p className="mt-2 line-clamp-2 text-xs leading-6 text-muted-foreground">{s.before}</p>
+              {/* «قبل» سقط من البطاقة وبقي في النافذة.
+
+                  كان على كلّ بطاقةٍ سطران: حالُه قبلُ ثمّ نتيجتُه. والقارئُ في
+                  شريطٍ أفقيّ لا يوازن بينهما — يمسح النتائجَ ليجد ما يشبهه، ثمّ
+                  يفتح ما يشبهه ليقرأ القصّة كاملة (وهي كاملةٌ في النافذة أصلا).
+                  و«قبل» بلا «بعد» في مساحةِ سطرين لا يبني الموازنةَ التي وُضع
+                  لها، ويضاعف نصَّ الشريط. */}
               <p className="mt-2 line-clamp-2 text-xs leading-6 text-foreground/85">
                 <span className="font-bold text-gold-ink">النتيجة: </span>
                 {s.result}
@@ -978,9 +987,15 @@ function Bestsellers() {
               <FavoriteButton pathwayId={id} pathwayName={p.name} className="-ms-1 ms-auto" />
             </div>
             <h3 className="mt-4 text-lg font-bold leading-relaxed">{p.name}</h3>
-            {/* ما يخرج به المتعلّم — أوّلُ ما تسأل عنه عينُ المشتري، وكان مكانَه
-                اسمُ مدرّبٍ لم يُعيَّن بعدُ مكرّرا ثلاث مرّات. */}
-            <p className="mt-2 line-clamp-3 text-xs leading-6 text-muted-foreground">{p.transformation}</p>
+            {/* وصفُ التحوّل نزل إلى صفحة المسار.
+
+                كان على البطاقة ثلاثةُ أسطرٍ منه فوق «تتخرّج بـ» — وهما يقولان
+                الشيءَ نفسَه بدرجتين من التجريد: الأوّلُ وعدٌ عامّ، والثاني
+                المخرَجُ الملموس. وفي شريطٍ من ثلاثَ عشرةَ بطاقة يصير الفرقُ
+                خمسَ مئة كلمةٍ على صفحةٍ تُمسح بالعين لا تُقرأ.
+
+                فبقي الأخصُّ: ما يتخرّج به، وحجمُ ما يشتريه. والعامُّ يُقرأ في
+                صفحة المسار حيث للقارئ نيّةُ القراءة. */}
             <div className="mt-3 flex items-start gap-1.5 text-[11px] leading-5 text-teal-light-ink">
               <Target className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               <span className="line-clamp-2">تتخرّج بـ: {p.output}</span>
@@ -1130,8 +1145,14 @@ function Faq() {
           <SectionLabel>أسئلة تصلنا كثيرا</SectionLabel>
           <h2 className="mt-5 text-3xl font-bold md:text-4xl">قبل أن تسأل — أجبنا</h2>
         </div>
+        {/* أربعةٌ هنا، وبقيّتُها في صفحتها.
+
+            كانت السبعةُ كلُّها على الرئيسية، وهي آخرُ قسمٍ قبل الدعوة الختامية
+            — فمن بلغه قد قرأ ألفي كلمةٍ قبله. والأسئلةُ الشائعة صفحةٌ قائمة
+            (`/p/faq`) تُفتح بنيّة السؤال، والرئيسيةُ تُمسح بنيّة القرار. فبقيت
+            الأربعةُ الأولى ونزل الباقي إلى موضعه، برابطٍ صريحٍ إليه. */}
         <div className="mt-12 space-y-3">
-          {faqs.map((f, i) => (
+          {faqs.slice(0, HOME_FAQ_COUNT).map((f, i) => (
             <div key={i} className="reveal overflow-hidden rounded-2xl border border-white/10 bg-card transition hover:border-teal/30" style={{ transitionDelay: `${i * 60}ms` }}>
               <button
                 onClick={() => setOpen(open === i ? null : i)}
@@ -1201,6 +1222,18 @@ function Faq() {
             )
           })()}
         </div>
+        {/* البقيّةُ إلى صفحتها — والرابطُ يقول عددَها فيعرف القارئ ما ينتظره */}
+        {faqs.length > HOME_FAQ_COUNT && (
+          <div className="mt-6 text-center">
+            <Link
+              to="/p/faq"
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground transition hover:text-teal-light-ink"
+            >
+              {faqs.length - HOME_FAQ_COUNT} أسئلة أخرى
+              <ArrowLeft className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        )}
       </div>
     </section>
   )
