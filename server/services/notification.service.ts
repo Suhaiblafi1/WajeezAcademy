@@ -110,6 +110,17 @@ export function publicSiteUrl(): string {
   return 'http://localhost:7100'
 }
 
+/** هل عنوانُ الموقع مضبوطٌ صراحةً، أم نحن على الاحتياطيّ المحلّيّ؟
+
+    يهمّ هذا حيث يخرج العنوانُ إلى طرفٍ ثالث فيعود منه المشتري: بوّابةُ الدفع
+    تأخذ `success_url` و`cancel_url` وقتَ إنشاء الجلسة، فإن كانا `localhost`
+    عاد المشتري بعد دفعٍ ناجح إلى عنوانٍ لا يفتح عنده. والمالُ يُقبض والتسجيلُ
+    يُسوّى (الـwebhook مستقلّ عن المتصفّح) — فيكون العطبُ صامتا في السجلّات
+    صاخبا عند المشتري، وهو أسوأُ ترتيب. */
+export function hasExplicitSiteUrl(): boolean {
+  return Boolean(process.env.APP_URL?.trim() || process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim())
+}
+
 const MAX_ATTEMPTS = 3
 
 /** إشعار غير معيق — فشله لا يوقف أي مسار تشغيلي (قبول/دفع/شهادة/مالية) */

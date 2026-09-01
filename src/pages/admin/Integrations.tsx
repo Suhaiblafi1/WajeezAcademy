@@ -13,6 +13,7 @@ const labelCls = "block text-[10px] font-bold text-white/50";
 interface IntegrationsView {
   payment: {
     enabled: boolean; driver: "test" | "manual" | "moyasar" | "stripe"; envSourced: boolean;
+    siteUrl: string; siteUrlExplicit: boolean;
     publishableKey: string; secretKey: string; webhookSecret: string; hasSecret: boolean; hasWebhookSecret: boolean;
   };
   email: {
@@ -145,10 +146,31 @@ export default function Integrations() {
                     <input dir="ltr" type="password" value={payForm.webhookSecret} onChange={(e) => setPayForm({ ...payForm, webhookSecret: e.target.value })}
                       placeholder={view.payment.hasWebhookSecret ? view.payment.webhookSecret : "whsec_… أو رمز مشترك"} className={`${inputCls} mt-1 w-full font-mono`} />
                   </div>
+                  {/* عنوانُ الموقع — يُرى قبل الحفظ لا بعد الرفض.
+
+                      روابطُ عودة المشتري (نجاح/إلغاء) تُبنى منه وقتَ إنشاء جلسة
+                      الدفع. وبلا ضبطٍ صريح يصير الاحتياطيُّ `localhost`، فيعود
+                      من دفع إلى عنوانٍ لا يفتح عنده — والـwebhook مستقلّ، فيُسوّى
+                      الطلبُ وتبقى سجلّاتُنا خضراء والعطبُ عند المشتري وحدَه. */}
+                  {!view.payment.siteUrlExplicit && (
+                    <p className="rounded-xl border border-red-500/40 bg-red-500/[0.07] px-3 py-2 text-[11px] font-bold leading-5 text-red-300">
+                      اضبط <span dir="ltr" className="font-mono">APP_URL</span> بعنوان الموقع في Vercel أولا — لن يُقبل التفعيل بدونه.
+                      <span className="mt-1 block font-normal text-red-300/75">
+                        العنوان المستعمل الآن: <span dir="ltr" className="font-mono">{view.payment.siteUrl}</span> — ومنه تُبنى صفحة عودة المشتري بعد الدفع.
+                      </span>
+                    </p>
+                  )}
                   <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-[10px] leading-5 text-white/50">
                     <p className="font-bold text-white/70">عنوان الـ webhook — سجّله في لوحة المزود:</p>
                     <p dir="ltr" className="mt-0.5 select-all font-mono text-teal-light-ink">{webhookUrl}</p>
-                    <p className="mt-1">Moyasar: سجّل «سر التوقيع» نفسه رمزاً مشتركاً في لوحتهم. Stripe: أرسل التوقيع بترويسة <span dir="ltr" className="font-mono">x-payment-signature: hmac=&lt;sig&gt;</span> عبر جسر، أو استخدم الرمز المشترك.</p>
+                    {/* كان هنا أنّ Stripe يحتاج «جسرا» يعيد إرسال التوقيع بترويسة
+                        x-payment-signature. صار الخادمُ يقرأ ترويسة Stripe الرسميّة
+                        `stripe-signature` أوّلا ويتحقّق من صيغتها الأصليّة
+                        («t=…,v1=…» موقَّعةً على «الطابع.الجسم») بنافذةِ خمس دقائق —
+                        فبقاءُ النصّ القديم يدفع صاحبَ المنصّة إلى بناء ما لا لزوم له.
+                        حارسُ الصيغة: server/tests/commerce/stripe-signature.test.ts */}
+                    <p className="mt-1"><b className="text-white/70">Stripe:</b> صِلْ لوحتَه بهذا العنوان مباشرة وضع <span dir="ltr" className="font-mono">whsec_…</span> في «سر التوقيع» — لا جسرَ ولا رمزَ مشترك. والحدثُ المطلوب <span dir="ltr" className="font-mono">checkout.session.completed</span> وحدَه؛ غيرُه يُسجَّل ويُتجاهَل.</p>
+                    <p className="mt-1"><b className="text-white/70">Moyasar:</b> سجّل «سر التوقيع» نفسَه رمزاً مشتركاً في لوحتهم.</p>
                   </div>
                 </>
               )}

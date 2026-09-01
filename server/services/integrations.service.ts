@@ -6,6 +6,7 @@
 import type { Prisma, PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
+import { hasExplicitSiteUrl, publicSiteUrl } from './notification.service'
 
 export type PaymentDriver = 'test' | 'manual' | 'moyasar' | 'stripe'
 
@@ -81,7 +82,26 @@ export async function getEmailConfig(prisma: PrismaClient): Promise<EmailConfig>
 
 /* ── الحفظ من شاشة الإدارة — قناع لا يكتب، وكل تغيير موثق ── */
 
+/** المزودون المستضافون — يخرج إليهم المشتري ثمّ يعود بروابطَ نبنيها نحن */
+const HOSTED_DRIVERS = new Set(['stripe', 'moyasar'])
+
 export async function savePaymentConfig(prisma: PrismaClient, actorId: string, input: Partial<PaymentConfig>) {
+  /* لا يُفعَّل مزوّدٌ مستضاف وعنوانُ الموقع غيرُ مضبوط.
+
+     `createCharge` يبني `success_url` و`cancel_url` من `publicSiteUrl()`،
+     واحتياطيُّه `http://localhost:7100`. فلو فُعِّل Stripe بلا `APP_URL` ولا
+     `VERCEL_PROJECT_PRODUCTION_URL`، خرج المشتري إلى صفحة الدفع ودفع ثمّ
+     أُعيد إلى عنوانٍ لا يفتح عنده. والـwebhook مستقلّ عن المتصفّح، فالطلبُ
+     يُسوّى والمقعدُ يُحجز والسجلّاتُ كلُّها خضراء — ولا يظهر العطبُ إلا عند
+     المشتري وحدَه بعد أن دفع. فالرفضُ هنا، عند الحفظ، أرخصُ من اكتشافه هناك. */
+  const driver = input.driver ?? 'test'
+  if (input.enabled && HOSTED_DRIVERS.has(driver) && !hasExplicitSiteUrl()) {
+    throw new AuthError(
+      'site_url_missing',
+      'اضبط APP_URL بعنوان الموقع أولا — بدونه يعود المشتري بعد الدفع إلى عنوان لا يفتح عنده',
+      409,
+    )
+  }
   const current = await getRawConfig(prisma, 'payment')
   const next: Record<string, unknown> = { ...current, driver: input.driver ?? current.driver ?? 'test' }
   /* الأسرار تُستبدل فقط بقيمة جديدة صريحة — القناع أو الفراغ يبقي المخزن */
@@ -141,6 +161,9 @@ export async function maskedIntegrationsView(prisma: PrismaClient) {
       enabled: pay.enabled, driver: pay.driver, envSourced: envSourced.payment,
       publishableKey: mask(pay.publishableKey), secretKey: mask(pay.secretKey), webhookSecret: mask(pay.webhookSecret),
       hasSecret: !!pay.secretKey, hasWebhookSecret: !!pay.webhookSecret,
+      /* عنوانُ الموقع يُعرض ويُوسَم: منه تُبنى روابطُ عودة المشتري من بوّابة
+         الدفع، فصاحبُ المنصّة يراه قبل أن يحفظ لا في رسالة رفضٍ بعدها. */
+      siteUrl: publicSiteUrl(), siteUrlExplicit: hasExplicitSiteUrl(),
     },
     email: {
       enabled: mail.enabled, envSourced: envSourced.email,
