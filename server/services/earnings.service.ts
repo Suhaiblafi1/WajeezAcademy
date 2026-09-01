@@ -8,6 +8,7 @@ import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { NotificationService } from './notification.service'
+import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
 
 const PERIOD_RE = /^\d{4}-(0[1-9]|1[0-2])$/ // «2026-08»
 
@@ -27,7 +28,7 @@ export class EarningsService {
       include: { items: true },
       orderBy: [{ period: 'desc' }, { createdAt: 'desc' }],
     })
-    const summary = { pending: 0, approved: 0, paid: 0, currency: payouts[0]?.currency ?? 'JOD' }
+    const summary = { pending: 0, approved: 0, paid: 0, currency: payouts[0]?.currency ?? LEDGER_CURRENCY }
     for (const p of payouts) {
       if (p.status === 'pending') summary.pending += Number(p.total)
       else if (p.status === 'approved') summary.approved += Number(p.total)
@@ -87,7 +88,7 @@ export class EarningsService {
       data: {
         profileId: input.profileId,
         period: input.period,
-        currency: input.currency ?? 'JOD',
+        currency: input.currency ?? LEDGER_CURRENCY,
         total,
         items: {
           create: input.items.map((i) => ({
@@ -241,7 +242,7 @@ export class EarningsService {
       const created = await tx.trainerCompensationRule.create({
         data: {
           profileId: input.profileId, type: input.type, rate: input.rate,
-          currency: input.currency ?? 'JOD', minSeats, ...scope, effectiveFrom, createdBy: actorId,
+          currency: input.currency ?? LEDGER_CURRENCY, minSeats, ...scope, effectiveFrom, createdBy: actorId,
         },
       })
       await recordAudit(tx, {

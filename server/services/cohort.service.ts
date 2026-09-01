@@ -8,6 +8,7 @@ import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { EarningsService } from './earnings.service'
 import { newStorageKey, signKey, SIGNED_URL_TTL_MS, MAX_COHORT_MEDIA_BYTES } from './storage.service'
+import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
 
 const COHORT_TRANSITIONS: Record<string, string[]> = {
   draft: ['open', 'cancelled'],
@@ -62,7 +63,7 @@ export class CohortService {
        به — وهو الوعد المكسور الذي أُزيل من هذه المنصّة مرّة. والإملاء يبقى
        متاحا: من يكتب سعرا صراحةً يكتبه، والوراثة للصمت لا للتجاوز. */
     const price = input.price ?? (course.listPrice !== null ? Number(course.listPrice) : undefined)
-    const currency = input.currency ?? course.listCurrency ?? 'JOD'
+    const currency = input.currency ?? course.listCurrency ?? LEDGER_CURRENCY
     const cohort = await this.prisma.cohort.create({
       data: {
         courseId: input.courseId, pathwayId: input.pathwayId, title: input.title,

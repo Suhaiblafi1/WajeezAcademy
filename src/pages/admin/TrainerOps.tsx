@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { fmtDateTime } from "@/application/text/format-ar";
+import { LEDGER_CURRENCY } from "@/application/commerce/presentment"
 
 const inputCls = "w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/25 focus:border-[#38A7B4] focus:outline-none";
 const selectCls = `${inputCls} [&>option]:bg-surface`;
@@ -683,7 +684,7 @@ export function TrainerPayouts() {
               {Object.entries(RULE_TYPE_AR).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
             <input value={ruleForm.rate} onChange={(e) => setRuleForm({ ...ruleForm, rate: e.target.value })}
-              placeholder={ruleForm.type === "revenue_share" ? "النسبة ٪" : "المبلغ JOD"} dir="ltr" inputMode="decimal"
+              placeholder={ruleForm.type === "revenue_share" ? "النسبة ٪" : `المبلغ ${LEDGER_CURRENCY}`} dir="ltr" inputMode="decimal"
               className={`${inputCls} w-28 font-mono`} />
             {ruleForm.type === "per_seat" && (
               <input value={ruleForm.minSeats} onChange={(e) => setRuleForm({ ...ruleForm, minSeats: e.target.value })}

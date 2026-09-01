@@ -12,6 +12,7 @@ import {
   convertFromUsd, isPresentmentCurrency, type PresentmentCurrency,
 } from '../../src/application/commerce/presentment'
 import { priceCart } from '../../src/application/commerce/cart-pricing'
+import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
 import { getPaymentProvider, verifyPaymentWebhook } from './payments/provider'
 import { getEmailConfig, getPaymentConfig } from './integrations.service'
 import { PlanService } from './plan.service'
@@ -892,7 +893,7 @@ export class CommerceService {
     const plan = await this.prisma.subscriptionPlan.create({
       data: {
         code: input.code, nameAr: input.nameAr, descriptionAr: input.descriptionAr, price: input.price,
-        currency: input.currency ?? 'JOD', intervalMonths: input.intervalMonths ?? 1, features: (input.features ?? []) as unknown as Prisma.InputJsonValue,
+        currency: input.currency ?? LEDGER_CURRENCY, intervalMonths: input.intervalMonths ?? 1, features: (input.features ?? []) as unknown as Prisma.InputJsonValue,
       },
     })
     await recordAudit(this.prisma, { actorId, action: 'plan.create', entityType: 'subscription_plan', entityId: plan.id })

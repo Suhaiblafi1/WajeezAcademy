@@ -12,6 +12,7 @@ import { BadgePercent, Check, Copy, Loader2, Plus, X } from 'lucide-react'
 import { apiGet, apiPost, ApiError } from '@/services/api'
 import { courseById, courses } from '@/data/courses'
 import { controlCls, areaCls, Field, FieldRow } from '@/components/FormKit'
+import { LEDGER_CURRENCY } from "@/application/commerce/presentment"
 
 /** أعلى نسبةٍ يطلبها مستشار — مطابقةٌ لما يفرضه الخادم */
 const MAX_PERCENT = 50
@@ -53,7 +54,8 @@ export default function RequestsPanel({ caseId }: { caseId: string }) {
   const [mode, setMode] = useState<'percent' | 'amount'>('percent')
   const [percent, setPercent] = useState('10')
   const [amount, setAmount] = useState('')
-  const [currency, setCurrency] = useState('JOD')
+  /* عملةُ الدفتر ثابتة — تُقرأ ولا تُختار */
+  const currency = LEDGER_CURRENCY
   const [courseId, setCourseId] = useState('')
   const [reason, setReason] = useState('')
   const [copied, setCopied] = useState('')
@@ -155,15 +157,17 @@ export default function RequestsPanel({ caseId }: { caseId: string }) {
                           aria-label="مبلغ الخصم"
                           className={`${controlCls} min-w-0 flex-1 text-left`}
                         />
-                        <select
-                          value={currency} onChange={(e) => setCurrency(e.target.value)}
+                        {/* لا منتقيَ عملةٍ هنا: الدفترُ كلُّه بالدولار — الكتالوج
+                            والشعبة والطلب والفاتورة. وكان المستشار يستطيع أن
+                            يرفع خصما بالدينار على شعبةٍ مسعَّرة بالدولار، فيصل
+                            إلى الماليّة رقمٌ بعملةٍ لا يقبلها الطلب. والعملةُ
+                            تُختار عند الدفع وحدَه (`presentment.ts`). */}
+                        <span
+                          className={`${controlCls} grid w-24 shrink-0 place-items-center px-2 text-xs font-black text-white/55`}
                           aria-label="العملة"
-                          className={`${controlCls} w-24 shrink-0 px-2 [&>option]:bg-surface`}
                         >
-                          <option value="JOD">دينار</option>
-                          <option value="SAR">ريال</option>
-                          <option value="USD">دولار</option>
-                        </select>
+                          {LEDGER_CURRENCY}
+                        </span>
                       </>
                     )}
                   </div>

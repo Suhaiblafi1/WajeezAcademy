@@ -1205,7 +1205,7 @@ model TrainerCompensationRule {
   profileId     String         @db.Uuid
   type          String // per_seat | fixed_per_cohort | revenue_share
   rate          Decimal        @db.Decimal(10, 2)
-  currency      String         @default("JOD")
+  currency      String         @default("USD")
   minSeats      Int            @default(0) // حد أدنى للمقاعد المحتسبة في per_seat — يُدفع حتى لو قلّ العدد الفعلي
   courseId      String? // نطاق اختياري: قاعدة خاصة بدورة
   cohortId      String?        @db.Uuid // نطاق اختياري: قاعدة خاصة بشعبة — الأعلى أولوية
@@ -1224,7 +1224,7 @@ model TrainerPayout {
   period     String // مثل 2026-08
   status     String              @default("pending") // pending | approved | paid | cancelled
   total      Decimal             @default(0) @db.Decimal(10, 2)
-  currency   String              @default("JOD")
+  currency   String              @default("USD")
   approvedBy String?             @db.Uuid
   paidAt     DateTime?
   createdAt  DateTime            @default(now())
@@ -1268,7 +1268,7 @@ model Cohort {
   timezone           String?
   capacity           Int?
   price              Decimal?                  @db.Decimal(10, 2)
-  currency           String                    @default("JOD")
+  currency           String                    @default("USD")
   language           String                    @default("العربية")
   deliveryMode       String                    @default("remote") // remote | in_person | hybrid
   registrationOpen   Boolean                   @default(false)
@@ -2029,7 +2029,7 @@ model SubscriptionPlan {
   nameAr         String
   descriptionAr  String?
   price          Decimal        @db.Decimal(10, 2)
-  currency       String         @default("JOD")
+  currency       String         @default("USD")
   intervalMonths Int            @default(1)
   features       Json           @default("[]")
   active         Boolean        @default(true)
@@ -2130,7 +2130,7 @@ model Order {
   subtotal  Decimal     @db.Decimal(10, 2)
   discount  Decimal     @default(0) @db.Decimal(10, 2)
   total     Decimal     @db.Decimal(10, 2)
-  currency  String      @default("JOD")
+  currency  String      @default("USD")
   couponId  String?     @db.Uuid
   paidAt    DateTime?
   createdAt DateTime    @default(now())
@@ -2158,7 +2158,7 @@ model Invoice {
   number   String    @unique // WJ-INV-YYYY-#####
   orderId  String    @unique @db.Uuid
   amount   Decimal   @db.Decimal(10, 2)
-  currency String    @default("JOD")
+  currency String    @default("USD")
   status   String    @default("issued") // issued | paid | void
   issuedAt DateTime  @default(now())
   paidAt   DateTime?
@@ -2171,7 +2171,7 @@ model Payment {
   invoiceId      String    @db.Uuid
   provider       String // test | manual — لا مزود نهائي دون قرار المالك
   amount         Decimal   @db.Decimal(10, 2)
-  currency       String    @default("JOD")
+  currency       String    @default("USD")
   status         String    @default("pending") // pending | succeeded | failed | partially_refunded | refunded
   providerRef    String? // مرجع المزود — لا بيانات بطاقات أبدا
   idempotencyKey String    @unique // يمنع تسجيل الدفعة مرتين
