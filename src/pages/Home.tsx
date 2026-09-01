@@ -218,7 +218,7 @@ function Nav() {
 
 function Hero() {
   return (
-    <section id="top" className="relative overflow-hidden pt-20 pb-5 md:pt-36 md:pb-8">
+    <section id="top" className="relative overflow-hidden pt-20 pb-0 md:pt-36 md:pb-2">
       {/* ─────────── إيقاع الهيرو على الهاتف ───────────
 
           كانت `pt-28` (١١٢px) والترويسةُ ٦٤px، فيبقى نحوُ ٥٠px فراغا ميتا فوق
@@ -236,7 +236,7 @@ function Hero() {
         <div className="reveal is-visible">
           <SectionLabel>منصة تفهمك قبل أن تعلّمك</SectionLabel>
         </div>
-        <h1 className="reveal is-visible mx-auto mt-5 max-w-3xl">
+        <h1 className="reveal is-visible mx-auto mt-3 max-w-3xl">
           <span className="block text-xl font-semibold leading-snug text-foreground/80 sm:text-2xl md:text-3xl">
             المسار الصحيح لا يبدأ باختيار دورة.
           </span>
@@ -244,15 +244,19 @@ function Hero() {
             يبدأ بفهم هدفك.
           </span>
         </h1>
-        <div className="reveal is-visible mx-auto mt-5 flex max-w-xl flex-wrap items-center justify-center gap-2">
-          {['نقرأ هدفك', 'وقتك المتاح', 'فجواتك الأقرب'].map((chip) => (
-            <span key={chip} className="inline-flex items-center gap-1.5 rounded-full border border-teal/25 bg-teal/[0.07] px-3 py-1 text-xs text-teal-light-ink">
-              <Sparkles className="h-3 w-3" />
-              {chip}
-            </span>
-          ))}
-        </div>
-        <div className="reveal is-visible mt-7 flex flex-col items-center justify-center">
+        {/* الإثباتُ سطرٌ واحد لا ثلاثُ شارات.
+
+            الشاراتُ المحاطةُ بحدودٍ وخلفيّةٍ تُقرأ عناصرَ واجهةٍ لها وزنُها، وهي
+            هنا تعيد قولَ ما قاله العنوانُ فوقها («نقرأ هدفك» ≈ «يبدأ بفهم هدفك»).
+            فصارت سطرا نصّيّا بفواصل: المعنى باقٍ كاملا، والوزنُ البصريّ ذاهب. */}
+        <p className="reveal is-visible mx-auto mt-3.5 flex max-w-xl flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[12.5px] leading-7 text-muted-foreground">
+          <span>نقرأ هدفك</span>
+          <span aria-hidden="true" className="text-teal-light-ink/45">·</span>
+          <span>وقتك المتاح</span>
+          <span aria-hidden="true" className="text-teal-light-ink/45">·</span>
+          <span>فجواتك الأقرب</span>
+        </p>
+        <div className="reveal is-visible mt-11 flex flex-col items-center justify-center">
           <a
             href="#diagnostic"
             onClick={() => track('hero_cta_clicked')}
@@ -263,7 +267,7 @@ function Hero() {
           </a>
           <a
             href="#bestsellers"
-            className="mt-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition hover:text-teal-light-ink"
+            className="mt-3.5 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition hover:text-teal-light-ink"
           >
             <Route className="h-3.5 w-3.5" />
             <span className="underline-offset-4 hover:underline">اختر مسارك بنفسك</span>
@@ -1465,8 +1469,12 @@ export default function Home() {
       <Nav />
       <div>
         <Hero />
-        {/* تعريف المنظومة — مرة واحدة أسفل الـHero مباشرة، ثانوي بصريا ولا ينافسه */}
-        <EcosystemNote className="mt-1 pb-7 md:pb-9" />
+        {/* تعريف المنظومة — أسفل الصدر، ومنفصلٌ عنه بفراغٍ يُرى.
+
+            كان `mt-1` (٤px) فوق حشوِ الصدر السفليّ، فيُقرأ سطرَه السابع لا سطرَ
+            هويّةٍ مستقلّا — وهو أحدُ ما جعل الصدرَ يبدو مزدحما. والفصلُ الآن
+            ٤٠px مقابل ١٢–١٤ داخل مجموعات الصدر، فيقع خارجَها بوضوح. */}
+        <EcosystemNote className="mt-10 pb-7 md:pb-9" />
         <DiagnosticTeaser />
         <HowItWorks />
         {/* شريط الثقة — أرقام وجيز مهارات الموثقة فقط، بعد شرح الرحلة (مصدر مركزي: data/trustMetrics) */}
