@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { safeGet, safeRemove } from "@/services/safe-storage";
-import { Link, useNavigate, useParams } from "react-router";
+import { Link, useParams } from "react-router";
 import {
   ArrowRight,
   CalendarClock,
@@ -28,7 +28,7 @@ import AuthGate from "@/components/AuthGate";
 import FavoriteButton from "@/components/FavoriteButton";
 import ThemeToggle from "@/components/ThemeToggle";
 import AdvisorContact from "@/components/AdvisorContact";
-import EnrollRequest from "@/components/EnrollRequest";
+import BuyPanel from "@/components/BuyPanel";
 import CourseJourney from "@/components/CourseJourney";
 import Modal from "@/components/Modal";
 import { pathwayById, pathwayCategory } from "@/data/pathways";
@@ -39,6 +39,7 @@ import { useCoursePrices, formatCohortPrice, totalOf } from "@/services/cohort-p
 import { courseById, courses, pathwaySupportCourses, readyPathwayCourseIds, pathwayDelivery, pathwayTrainers, courseTrainer, weeksLabel, MIN_PATHWAY_COURSES, MAX_PATHWAY_COURSES } from "@/data/courses";
 import { GOAL_LABELS, GAP_LABELS, OBSTACLE_TO_GAP } from "@/data/diagnostic";
 import { track } from "@/services/analytics";
+import { useRealSession } from "@/services/session";
 import { usePublishedContent } from "@/services/public-content";
 import SeoHead from "@/components/SeoHead";
 import EcosystemNote from "@/components/EcosystemNote";
@@ -94,6 +95,10 @@ export default function PathwayPage() {
   const { id } = useParams();
   const pathway = pathwayById(id ?? "");
   const [user, setUser] = useState<string | null>(readUserName);
+  /* الجلسةُ الحقيقيّة إلى جانب الاسم المحلّيّ: لوحُ الشراء يحتاج البريدَ ليطلب
+     توثيقَه في موضعه، و`readUserName` يقرأ التخزين المحلّيّ وحدَه — وقد يخالف
+     كعكةَ الخادم بعد خروجٍ من تبويبٍ آخر. */
+  const { user: session } = useRealSession();
   /* يُقرأ مرّةً عند التركيب: sessionStorage ليس مصدرا تفاعليّا، وقراءتُه في
      كلّ تصيير تُقحم أثرا جانبيّا في جسم المكوّن. */
   const [advisorReferral] = useState(needsAdvisorReferral);
@@ -101,7 +106,6 @@ export default function PathwayPage() {
   /* نية شراء معلقة بانتظار تسجيل الدخول — التصفح مفتوح، والتسجيل يُطلب لحظة الدفع فقط */
   const [pendingCheckout, setPendingCheckout] = useState<CheckoutIntent | null>(null);
   const [syncing, setSyncing] = useState(false);
-  const navigate = useNavigate();
   const [pickedIds, setPickedIds] = useState<string[]>([]);
   /* مُنسّق الدولار لم يعد يُستعمل هنا: كلّ سعر على هذه الصفحة صار من شعبةٍ
      حقيقية بعملتها، بلا تحويل — لأن التحويل يُخرج رقما ثالثا لا يُطالَب به أحد. */
@@ -287,9 +291,19 @@ export default function PathwayPage() {
       giftId,
     });
     setSyncing(false);
-    /* تعذّر الرفع (شبكة أو جلسة) لا يترك الزرّ صامتا: تُفتح نافذة التواصل */
-    if (ok) navigate("/student/pathway");
-    else setCheckout(intent);
+    /* الشراءُ قبل المنصّة لا بعدها.
+
+       كان الزرّ ينقله إلى «مساري» ليطلب هناك — أي يخرج من الصفحة التي قرّر
+       فيها إلى شاشةٍ أخرى يبدأ فيها من جديد. وقرارُ صاحب المنصّة: «اجعل
+       عمليّة الشراء تتمّ قبل نقله لمنصّته، وبعد الدفع يذهب للمنصّة يرى ما
+       دفع ويختار الشعب».
+
+       ورفعُ الخطّة يبقى قبل اللوح لا بعده: الهديّةُ تُستحقّ بالخطّة
+       المحفوظة على الخادم (`commerce.service.ts#giftFor`)، فلو فُتح اللوحُ
+       قبل رفعها لسُعّرت الهديّةُ بثمنها. ولو تعذّر الرفعُ فُتح اللوح على كلّ
+       حال: يشتري بلا هديّة خيرٌ من زرٍّ صامت. */
+    setCheckout(intent);
+    if (!ok) return;
   };
 
   const startCheckout = (intent: CheckoutIntent) => {
@@ -581,7 +595,7 @@ export default function PathwayPage() {
                 <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/70">
                   حسابك المجاني يفتح لك شيئين في هذه الصفحة: <span className="font-bold text-teal-light-ink">من يدرّبك</span> —
                   أسماء فريق المسار وتخصّصاتهم — و<span className="font-bold text-teal-light-ink">مكان الدفع</span>،
-                  فتختار دورةً أو المسار كاملا وتُصدر طلبك. والتسجيل لا يُلزمك بشراء.
+                  فتختار دورةً أو المسار كاملا وتدفع مباشرة. والتسجيل لا يُلزمك بشراء.
                 </p>
 
                 {/* الأرقام الثلاثة — أكبر ما في البطاقة، لأنها ما يقرّر */}
@@ -693,7 +707,7 @@ export default function PathwayPage() {
                     /* التنبيه بلا مقارنةٍ رقمية: المقارنة القديمة كانت بين رقمين
                        مُختلَقين، فكانت تنصح بناءً على ما لا يُدفع. */
                     <p className="mt-2 rounded-xl border border-gold/40 bg-gold/10 px-4 py-2.5 text-[11px] font-semibold leading-relaxed text-gold-ink">
-                      المسار كاملا أوفر، ويشمل التشخيص والمتابعة ودورةً إضافية هديّة.
+                      المسار كاملا أوفر: خصمُ الباقة يرتفع كلّما زادت دوراتك، ويشمل التشخيص والمتابعة.
                     </p>
                   )}
                   <Button
@@ -715,8 +729,8 @@ export default function PathwayPage() {
                     {picked.length === 0
                       ? "اختر دورة واحدة على الأقل"
                       : picked.length === 1
-                        ? "اطلب تسجيلك في الدورة"
-                        : `اطلب تسجيلك (${picked.length} دورات)`}
+                        ? "اشترِ هذه الدورة"
+                        : `اشترِ (${picked.length} دورات)`}
                   </Button>
                 </div>
                 {/* المسار كاملا */}
@@ -750,9 +764,18 @@ export default function PathwayPage() {
                           و<span className="font-black">{FIRST_TIME_PROMO.percentOff}%</span> إضافية لأوّل عملية شراء بالكود{" "}
                           <span dir="ltr" className="font-mono font-black">{FIRST_TIME_PROMO.code}</span>
                         </p>
-                        <p className="flex items-center gap-1.5 text-gold-ink">
-                          <Gift className="h-3.5 w-3.5" /> ودورةٌ من اختيارك هديّة داخل الخطّة
-                        </p>
+                        {/* الهديّةُ تُقال حين تكون معيَّنةً فعلا.
+
+                            كانت تُعرض دائما و`giftCourseId` رايةُ عرضٍ لا
+                            تُحسب — فالمسارُ الجاهز بلا هديّةٍ مختارة كان
+                            يَعِد بواحدةٍ لا وجودَ لها. وقد صار الخادمُ
+                            يحسمها (`cart-pricing.ts`)، فيُقال الوعدُ حيث
+                            يُوفى به وحدَه. */}
+                        {giftId && (
+                          <p className="flex items-center gap-1.5 text-gold-ink">
+                            <Gift className="h-3.5 w-3.5" /> و«{courseById(giftId)?.name ?? "دورة"}» هديّة — تُحسم عند الشراء
+                          </p>
+                        )}
                         <p className="pt-0.5 text-white/45">
                           الرقم أعلاه لهذه الدورات — ويتغيّر إن غيّرتها.
                         </p>
@@ -768,18 +791,20 @@ export default function PathwayPage() {
                       <p className="text-white/50">
                         نُسعّر كل شعبة على حدة، ولا نعرض رقما قبل أن يكون هو الرقم الذي تدفعه.
                       </p>
-                      <p className="flex items-center gap-1.5 text-gold-ink">
-                        <Gift className="h-3.5 w-3.5" /> ودورةٌ من اختيارك هديّة داخل الخطّة
-                      </p>
+                      {giftId && (
+                        <p className="flex items-center gap-1.5 text-gold-ink">
+                          <Gift className="h-3.5 w-3.5" /> و«{courseById(giftId)?.name ?? "دورة"}» هديّة داخل الخطّة
+                        </p>
+                      )}
                     </div>
                   )}
                   <Button
-                    onClick={() => startCheckout({ title: `مسار «${pathway.name}» كاملا (${pathwayCoursesList.length} دورات + هدية)`, amount: 0, kind: "pathway" })}
+                    onClick={() => startCheckout({ title: `مسار «${pathway.name}» كاملا (${pathwayCoursesList.length} دورات)`, amount: 0, kind: "pathway" })}
                     disabled={syncing}
                     className="mt-4 h-11 rounded-full bg-gold font-black text-on-gold hover:bg-gold/90 disabled:opacity-60"
                   >
                     <CalendarDays className="ml-2 h-4 w-4" />
-                    {syncing ? "نحفظ خطّتك…" : "اطلب تسجيلك في المسار"}
+                    {syncing ? "نحفظ خطّتك…" : "اشترِ المسار كاملا"}
                   </Button>
                   {/* كان أسفل الزر فراغ في صندوق أطول من محتواه. وثلاثة من عناصر
                       «المنظومة» التسعة أدناه هي في الحقيقة فرق بين شراء دورة وشراء
@@ -803,9 +828,10 @@ export default function PathwayPage() {
                   </div>
                 </div>
               </div>
-              {/* كان هنا وعدٌ بـ«دفع آمن عبر Stripe وتأكيد فوري»، ولا تكامل دفعٍ في
-                  الموقع أصلا. النصّ يصف ما يحدث فعلا. */}
-              <p className="mt-4 text-center text-[11px] text-white/40">طلبك يُراجَع، ثم تصلك فاتورتك وتُفتح شعبتك</p>
+              {/* كان النصّ «طلبك يُراجَع، ثم تصلك فاتورتك» — وهو ما كان يقع فعلا
+                  يوم كان الشراء طلبا. وقد صار الدفعُ مباشرا، فيصف النصُّ ما
+                  يقع الآن: تُختار الشعبة، ويُدفع، ثمّ تُفتح المنصّة. */}
+              <p className="mt-4 text-center text-[11px] text-white/40">تدفع الآن، ثم تُفتح منصّتك على ما اشتريت وتختار مواعيدك</p>
               {/* الدعوة إلى التشخيص سطر عند لحظة القرار، لا شريطا مؤطّرا في وسط
                   الصفحة. صفحة المسار الجاهز صفحة منتج معروضة للجميع، وكل صندوق
                   يعترضها يقرأ كأنه نتيجة شخصية لزائر لم يتشخّص أصلا. */}
@@ -918,12 +944,13 @@ export default function PathwayPage() {
         </Modal>
       )}
 
-      {/* نافذة الدفع */}
+      {/* لوحُ الشراء — التسعيرُ والدفعُ في مكان القرار، لا طلبٌ يُراجَع */}
       {checkout && (
-        <EnrollRequest
+        <BuyPanel
           title={checkout.title}
-          amount={checkout.amount}
-          contactHref={`/contact?type=enroll&pathway=${pathway.id}`}
+          email={session?.email ?? ""}
+          lines={(checkout.courseIds ?? courseIds)
+            .map((cid) => ({ courseId: cid, name: courseById(cid)?.name ?? cid }))}
           onClose={() => setCheckout(null)}
         />
       )}

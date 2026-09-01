@@ -25,7 +25,9 @@ describe('حذف صفحة الشعب المفتوحة', () => {
       'src/App.tsx', 'src/pages/student/PortalLayout.tsx', 'src/pages/student/Dashboard.tsx',
       'src/pages/student/Inbox.tsx', 'src/pages/student/MyPathway.tsx',
       'src/pages/student/CourseMilestones.tsx', 'src/pages/student/RateMyLearning.tsx',
-      'src/components/EnrollRequest.tsx',
+      /* كان هنا `EnrollRequest.tsx` — وقد حُذف الملفّ حين صار الدفعُ مباشرا،
+         فقراءتُه تُسقط المجموعةَ كلَّها بـENOENT. ومكانُه `BuyPanel.tsx`. */
+      'src/components/BuyPanel.tsx',
     ]) {
       expect(read(f), `${f} ما زال يشير إلى الصفحة المحذوفة`).not.toContain('/student/cohorts')
     }

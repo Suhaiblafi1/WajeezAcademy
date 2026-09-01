@@ -20,7 +20,8 @@ import {
 import SeoHead from "@/components/SeoHead";
 import AuthGate from "@/components/AuthGate";
 import Modal from "@/components/Modal";
-import EnrollRequest from "@/components/EnrollRequest";
+import BuyPanel from "@/components/BuyPanel";
+import { useRealSession } from "@/services/session";
 import CourseTitle from "@/components/CourseTitle";
 import { Button } from "@/components/ui/button";
 import { usePublishedContent } from "@/services/public-content";
@@ -79,6 +80,9 @@ function CoursePathPage({ courseId }: { courseId: string }) {
   const anchor = courseById(courseId);
   const [picked, setPicked] = useState<string[]>(courseId ? [courseId] : []);
   const [user, setUser] = useState<string | null>(readUserName);
+  /* الجلسةُ الحقيقيّة للبريد: لوحُ الشراء يطلب التوثيقَ في موضعه، و`readUserName`
+     يقرأ التخزين المحلّيّ وحدَه فقد يخالف كعكةَ الخادم. */
+  const { user: session } = useRealSession();
   const [checkout, setCheckout] = useState<Intent | null>(null);
   const [pending, setPending] = useState<Intent | null>(null);
   const [name, setName] = useState("");
@@ -519,7 +523,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
               className="mt-4 h-12 w-full rounded-full bg-gold px-8 font-black text-on-gold hover:bg-gold/90"
             >
               <CalendarDays className="ml-2 h-4 w-4" />
-              {picked.length === 1 ? "اطلب تسجيلك في هذه الدورة" : `اطلب تسجيلك (${picked.length} دورات)`}
+              {picked.length === 1 ? "اشترِ هذه الدورة" : `اشترِ (${picked.length} دورات)`}
             </Button>
 
             {/* التنبيه — بالكلفة الحقيقية للدورة الإضافية لا بسعرها المعلن */}
@@ -693,11 +697,15 @@ function CoursePathPage({ courseId }: { courseId: string }) {
         </Modal>
       )}
 
+      {/* لوحُ الشراء — التسعيرُ والدفعُ حيث وقع القرار. والكودُ الذي كُتب هنا
+          يُمرَّر إليه بدل أن يُعرض ثمّ يُنسى: كانت الواجهة تحسب خصمَه وتُظهره
+          ولا ترسله للخادم أصلا، فيُعرض ولا يُخصم. */}
       {checkout && (
-        <EnrollRequest
+        <BuyPanel
           title={checkout.title}
-          amount={checkout.amount}
-          contactHref={`/contact?type=enroll&courses=${picked.join(",")}`}
+          email={session?.email ?? ""}
+          initialCoupon={promoApplied ?? ""}
+          lines={picked.map((cid) => ({ courseId: cid, name: courseById(cid)?.name ?? cid }))}
           onClose={() => setCheckout(null)}
         />
       )}

@@ -65,12 +65,16 @@ describe("غلاف التخزين", () => {
 });
 
 describe("الصفحات لا تمسّ التخزين مباشرة", () => {
-  /* هذه السبع كانت تقرأ التخزين بلا حماية، وإحداها أثناء التصيير */
+  /* هذه السبع كانت تقرأ التخزين بلا حماية، وإحداها أثناء التصيير.
+
+     وسقطت منها `src/services/currency.ts` بحذف الملفّ نفسِه: كان مبدّلَ عملةٍ
+     يحفظ اختيارَ الزائر ويحوّل به الأسعارَ المعروضة، ولم يبقَ في الموقع سطحٌ
+     يحوّل عملة — العرضُ كلُّه بالدولار، والتبديلُ عند الدفع وحدَه وبأسعار
+     ربطٍ رسميّة (`application/commerce/presentment.ts`). */
   const GUARDED = [
     "src/pages/Diagnostic.tsx",
     "src/components/SiteShell.tsx",
     "src/services/auth.ts",
-    "src/services/currency.ts",
     "src/services/favorites.ts",
     "src/pages/Home.tsx",
     "src/pages/Pathway.tsx",

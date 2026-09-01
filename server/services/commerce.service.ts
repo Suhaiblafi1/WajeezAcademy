@@ -11,11 +11,22 @@ import { safeNotify, publicSiteUrl } from './notification.service'
 import {
   convertFromUsd, isPresentmentCurrency, type PresentmentCurrency,
 } from '../../src/application/commerce/presentment'
+import { priceCart } from '../../src/application/commerce/cart-pricing'
 import { getPaymentProvider, verifyPaymentWebhook } from './payments/provider'
 import { getEmailConfig, getPaymentConfig } from './integrations.service'
 import { PlanService } from './plan.service'
 
 const num = (d: Prisma.Decimal | number | null | undefined) => Number(d ?? 0)
+
+/* الشعبةُ كما تلزم السلّة — بدورتها وآخر إصدارٍ منها، ليُبنى عنوانُ البند.
+   والعنوانُ يُبنى مرّةً واحدة هنا: `quote` و`checkout` يعرضان النصَّ نفسَه،
+   فلا يقرأ المشتري في الفاتورة اسما غيرَ الذي رآه على اللوح. */
+type CartCohort = Prisma.CohortGetPayload<{
+  include: { course: { include: { versions: true } } }
+}>
+
+const cartTitleOf = (c: CartCohort) =>
+  `${c.course.versions[0]?.titleAr ?? c.courseId} — ${c.title}`
 
 /* صلاحيةُ الكوبون — فحصٌ واحد لثلاثة مواضع شراء.
 
@@ -277,14 +288,18 @@ export class CommerceService {
      ولا يُبنى مسلكُ تسويةٍ ثانٍ: تُكتب `enrollmentRequest` مباشرةً بحالة
      `seat_held` مربوطةً بالطلب، فتعمل `settleOrder` القائمة كما هي. «الطلب»
      هنا سجلُّ حجزِ مقعدٍ داخليّ لا خطوةَ موافقةٍ بشريّة. */
-  async checkout(userId: string, cohortIds: string[], couponCode?: string) {
+  private async validatedCart(userId: string, cohortIds: string[], requireVerifiedEmail: boolean) {
     if (cohortIds.length === 0) throw new AuthError('empty_cart', 'لا شعبة في طلبك')
     const unique = [...new Set(cohortIds)]
 
     /* حاجز توثيق البريد — نفسه الذي في `requestEnrollment`، ولنفس السبب:
        الفاتورة والمواعيد تُرسل إلى عنوان. ويسقط حين تكون قناة البريد معطّلة،
-       وإلّا صار قفلا بلا مفتاح. */
-    if (!(await this.emailVerified(userId)) && (await this.emailChannelEnabled())) {
+       وإلّا صار قفلا بلا مفتاح.
+
+       ولا يُرفع عند التسعير: من لم يوثّق بريده يرى سعرَه كاملا ثمّ يُطالَب
+       بالتوثيق في اللوح نفسِه. ومنعُه من **رؤية** الرقم يجعل الحاجزَ يبدو
+       عطبا — وهو شرطٌ مفهومٌ حين يُقال في موضعه. */
+    if (requireVerifiedEmail && !(await this.emailVerified(userId)) && (await this.emailChannelEnabled())) {
       throw new AuthError('email_unverified', 'وثّق بريدك أولا — الشراء يُفتح بمجرّد فتح رابط التوثيق', 403)
     }
 
@@ -317,32 +332,132 @@ export class CommerceService {
     if (cohorts.some((c) => c.currency !== currency)) {
       throw new AuthError('mixed_currency', 'لا تُجمع شعبٌ بعملاتٍ مختلفة في طلبٍ واحد', 409)
     }
+    return { unique, cohorts, currency }
+  }
 
-    const subtotal = cohorts.reduce((sum, c) => sum + num(c.price), 0)
-    let discount = 0
-    let couponId: string | undefined
-    if (couponCode) {
-      const coupon = await this.prisma.coupon.findUnique({ where: { code: couponCode.trim().toUpperCase() } })
-      assertCouponUsable(coupon, userId)
-      /* الفحصُ يرمي عند الغياب — فما بعده كوبونٌ موجود */
-      if (!coupon) throw new AuthError('bad_coupon', 'الكوبون غير صالح')
-      discount = coupon.percentOff
-        ? Math.round(subtotal * coupon.percentOff / 100 * 100) / 100
-        : num(coupon.amountOff)
-      if (discount > subtotal) discount = subtotal
-      couponId = coupon.id
+  /* الهديّة المستحقّة في هذه السلّة — أو لا هديّة.
+
+     `plan.giftCourseId` كان **رايةَ عرضٍ** وحدَها: تُظهر شارة «هديّة» في
+     شاشة الخطّة، والدورةُ تُحاسَب بسعرها الكامل. فصار الخادمُ يفي بها.
+
+     والشرطُ هو نصُّ الوعد حرفيّا: «ودورةٌ من اختيارك هديّة **داخل الخطّة**».
+     فالهديّةُ تأتي مع الخطّة لا وحدَها — ولولا هذا لجعل المتعلّمُ أغلى دورةٍ
+     هديّتَه ثمّ اشتراها منفردة، فصارت الهديّةُ بابا لأخذ أيّ دورةٍ مجّانا.
+
+     ودورةٌ من الخطّة سُجّل فيها من قبلُ تُحتسب مغطّاة: من اشترى نصفَ خطّته
+     الشهر الماضي لا يُحرم هديّتَه لأنّه لم يشترِ كلَّ شيءٍ دفعةً واحدة. */
+  private async giftFor(userId: string, orderedCourseIds: Set<string>): Promise<string | null> {
+    const plan = await this.prisma.learnerPlan.findFirst({
+      where: { userId, status: 'active' },
+      orderBy: { updatedAt: 'desc' },
+      include: { items: { select: { courseId: true } } },
+    })
+    const giftId = plan?.giftCourseId ?? null
+    if (!plan || !giftId) return null
+    /* الهديّةُ نفسُها يجب أن تكون في السلّة — لا تُمنح غيابيّا */
+    if (!orderedCourseIds.has(giftId)) return null
+
+    const paidPlanCourses = plan.items.map((i) => i.courseId).filter((id) => id !== giftId)
+    if (paidPlanCourses.length === 0) return null
+
+    const missing = paidPlanCourses.filter((id) => !orderedCourseIds.has(id))
+    if (missing.length > 0) {
+      const enrolled = await this.prisma.enrollment.findMany({
+        where: { userId, status: { in: ['enrolled', 'completed'] }, cohort: { courseId: { in: missing } } },
+        select: { cohort: { select: { courseId: true } } },
+      })
+      const covered = new Set(enrolled.map((e) => e.cohort.courseId))
+      if (missing.some((id) => !covered.has(id))) return null
     }
-    const total = Math.max(0, subtotal - discount)
-    const titleOf = (c: (typeof cohorts)[number]) =>
-      `${c.course.versions[0]?.titleAr ?? c.courseId} — ${c.title}`
+    return giftId
+  }
+
+  private async couponFor(userId: string, couponCode?: string) {
+    if (!couponCode) return null
+    const coupon = await this.prisma.coupon.findUnique({ where: { code: couponCode.trim().toUpperCase() } })
+    assertCouponUsable(coupon, userId)
+    /* الفحصُ يرمي عند الغياب — فما بعده كوبونٌ موجود */
+    if (!coupon) throw new AuthError('bad_coupon', 'الكوبون غير صالح')
+    return coupon
+  }
+
+  private async priceFor(
+    userId: string,
+    cohorts: CartCohort[],
+    couponCode?: string,
+  ) {
+    const gift = await this.giftFor(userId, new Set(cohorts.map((c) => c.courseId)))
+    const coupon = await this.couponFor(userId, couponCode)
+    const pricing = priceCart(
+      cohorts.map((c) => ({
+        cohortId: c.id, courseId: c.courseId, titleAr: cartTitleOf(c), listPrice: num(c.price),
+      })),
+      gift,
+      coupon ? { percentOff: coupon.percentOff, amountOff: coupon.amountOff === null ? null : num(coupon.amountOff) } : null,
+    )
+    return { pricing, couponId: coupon?.id, couponCode: coupon?.code ?? null }
+  }
+
+  /* ─────────── التسعير المعروض: نداءٌ واحد لشاشتين ───────────
+
+     الرقمُ الذي يُعرض على لوح الشراء يأتي من هنا، والرقمُ الذي تُصدره الفاتورة
+     يأتي من `checkout` — وكلاهما ينادي `priceCart` نفسَها بالمدخلات نفسِها.
+     فالتطابقُ بنيةٌ لا اتّفاق: لا حسابَ في الواجهة يُقارَن بحسابٍ في الخادم.
+
+     ولا يكتب هذا النداءُ شيئا: لا حجزَ مقعد، ولا عدَّ استعمالٍ للكوبون. */
+  async quote(userId: string, cohortIds: string[], couponCode?: string) {
+    const { cohorts, currency } = await this.validatedCart(userId, cohortIds, false)
+    const { pricing, couponCode: code } = await this.priceFor(userId, cohorts, couponCode)
+    const emailOk = (await this.emailVerified(userId)) || !(await this.emailChannelEnabled())
+    return {
+      currency,
+      couponCode: code,
+      /* حاجزُ التوثيق يُقال هنا لا يُرمى: اللوحُ يعرض السعرَ ويطلب التوثيق
+         في مكانه — و`VerifyEmailNotice` لا يُعرض خارج بوابة المتعلّم أصلا،
+         فرميُ 403 هنا كان يترك المشتريَ أمام رسالةٍ تحيله إلى شريطٍ لا وجودَ
+         له في هذه الصفحة. */
+      emailVerified: emailOk,
+      subtotal: pricing.subtotal,
+      listTotal: pricing.listTotal,
+      bundlePct: pricing.bundlePct,
+      bundleDiscount: pricing.bundleDiscount,
+      couponDiscount: pricing.couponDiscount,
+      discount: pricing.discount,
+      total: pricing.total,
+      items: pricing.lines.map((l) => ({
+        cohortId: l.cohortId, courseId: l.courseId, titleAr: l.titleAr,
+        listPrice: l.listPrice, unitPrice: l.unitPrice, isGift: l.isGift,
+      })),
+    }
+  }
+
+  /* ─────────── الشراء المباشر: لا طلبَ ولا انتظارَ موافقة ───────────
+
+     كان المسلك الوحيد: يطلب المتعلّم ← تراجع الإدارة وتوافق ← يُنشأ الطلب ←
+     يدفع. وقرار صاحب المنتج: «الأسعار معلنة والدفع مباشر بلا طلب — التسجيل
+     دائما متاح بغضّ النظر عن موعد فتح الشعبة. التسجيل شيء والبدء شيء آخر».
+
+     فالتاريخ لا يحجب الشراء: شعبةٌ تبدأ بعد شهرين تُشترى اليوم، ومقعدُ
+     المشتري محجوزٌ حتّى تبدأ. والذي يحجب أمران فقط: أن يكون التسجيل مغلقا
+     بقرارٍ إداريّ، أو ألّا تبقى مقاعد — وكلاهما قرارٌ لا تقويم.
+
+     ولا يُبنى مسلكُ تسويةٍ ثانٍ: تُكتب `enrollmentRequest` مباشرةً بحالة
+     `seat_held` مربوطةً بالطلب، فتعمل `settleOrder` القائمة كما هي. «الطلب»
+     هنا سجلُّ حجزِ مقعدٍ داخليّ لا خطوةَ موافقةٍ بشريّة. */
+  async checkout(userId: string, cohortIds: string[], couponCode?: string) {
+    const { unique, cohorts, currency } = await this.validatedCart(userId, cohortIds, true)
+    const { pricing, couponId } = await this.priceFor(userId, cohorts, couponCode)
+    const { subtotal, discount, total } = pricing
 
     const order = await this.prisma.$transaction(async (tx) => {
       const o = await tx.order.create({
         data: {
           userId, subtotal, discount, total, currency, couponId,
           items: {
-            create: cohorts.map((c) => ({
-              kind: 'cohort', refId: c.id, titleAr: titleOf(c), unitPrice: num(c.price),
+            /* الهديّةُ بندٌ بصفر لا بندٌ محذوف: الفاتورةُ هي الورقةُ الوحيدة
+               التي تبقى من الوعد، فحذفُها منها يُخفي ما استحقّه المشتري. */
+            create: pricing.lines.map((l) => ({
+              kind: 'cohort', refId: l.cohortId, titleAr: l.titleAr, unitPrice: l.unitPrice,
             })),
           },
         },
@@ -369,14 +484,27 @@ export class CommerceService {
 
     await recordAudit(this.prisma, {
       actorId: userId, action: 'order.checkout', entityType: 'order', entityId: order.order.id,
-      meta: { cohorts: unique, subtotal, discount, total, currency },
+      meta: {
+        cohorts: unique, currency,
+        listTotal: pricing.listTotal, subtotal, total,
+        bundlePct: pricing.bundlePct, bundleDiscount: pricing.bundleDiscount,
+        couponDiscount: pricing.couponDiscount, discount,
+        gift: pricing.lines.find((l) => l.isGift)?.courseId ?? null,
+      },
     })
     return {
       orderId: order.order.id,
       invoiceId: order.invoice.id,
       invoiceNumber: order.invoice.number,
       subtotal, discount, total, currency,
-      items: cohorts.map((c) => ({ cohortId: c.id, titleAr: titleOf(c), price: num(c.price), startsAt: c.startsAt })),
+      listTotal: pricing.listTotal,
+      bundlePct: pricing.bundlePct,
+      bundleDiscount: pricing.bundleDiscount,
+      couponDiscount: pricing.couponDiscount,
+      items: pricing.lines.map((l) => {
+        const c = cohorts.find((x) => x.id === l.cohortId)!
+        return { cohortId: l.cohortId, titleAr: l.titleAr, price: l.unitPrice, isGift: l.isGift, startsAt: c.startsAt }
+      }),
     }
   }
 

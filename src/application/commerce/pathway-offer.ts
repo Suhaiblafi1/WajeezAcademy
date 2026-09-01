@@ -10,9 +10,15 @@
 
 import { courseById } from '../../data/courses'
 import { FIRST_TIME_PROMO } from './first-time-promo'
+import { buildDiscountPct, MAX_BUILT_COURSES } from './discount-policy'
 
-/** أقصى ما يبلغه خصم المسار كاملا — يُعلَن «يصل إلى» لا «هو» */
-export const PATHWAY_BUNDLE_MAX_PCT = 25
+/** أقصى ما يبلغه خصم المسار كاملا — يُعلَن «يصل إلى» لا «هو».
+
+    وكان رقما مكتوبا هنا (٢٥) بينما سلّمُ البناء يبلغ ٢٧ عند سقفه
+    (`discount-policy.ts`) — رقمان لشيءٍ واحد، وأحدهما وعدٌ على الشاشة والآخر
+    ما يُحسب. ومنذ صار الخادمُ يطبّق السلّم فعلا (`cart-pricing.ts`) لم يعد
+    للاختلاف موضع: المعلَن هو المطبَّق، فيُشتقّ منه. */
+export const PATHWAY_BUNDLE_MAX_PCT = buildDiscountPct(MAX_BUILT_COURSES)
 
 export interface PathwayOffer {
   /** أرخص سعر قائمة بين دورات المسار — null حين لا سعر لأيٍّ منها */

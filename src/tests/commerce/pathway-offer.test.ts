@@ -14,7 +14,7 @@
        لأنّ مجموعا ناقصا يُقرأ كاملا. */
 
 import { describe, expect, it } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathwayOffer, formatOfferPrice, PATHWAY_BUNDLE_MAX_PCT } from '../../application/commerce/pathway-offer'
 import { FIRST_TIME_PROMO } from '../../application/commerce/first-time-promo'
@@ -84,5 +84,45 @@ describe('بوابة التسجيل على صفحة المسار', () => {
 
   it('وبعد التسجيل يُنتقل إلى أوّل ما كان مخفيّا', () => {
     expect(SRC).toMatch(/getElementById\("trainers-reveal"\)\?\.scrollIntoView/)
+  })
+})
+
+/* عصرُ «طلب التسجيل» انتهى — والحارسُ يمنع عودتَه لا يوثّق مضيَّه.
+
+   قرارُ صاحب المنصّة: «الدفع يكون مباشرة وليس بطلب التسجيل… واجعل عمليّة
+   الشراء تتمّ **قبل** نقله لمنصّته». والدعوةُ القديمة («اطلب تسجيلك») كانت
+   تقود إلى نافذةٍ تقول إنّ الدفع لم يُفتح بعد وتحيل إلى نموذج تواصل — وهي
+   نصٌّ يبقى في الصفحات بعد أن تزول آلتُه، فيَعِد بما لم يعد يقع. */
+describe('الشراءُ مباشرٌ في الصفحتين اللتين يقع فيهما القرار', () => {
+  const PAGES = ['src/pages/Pathway.tsx', 'src/pages/CoursePath.tsx']
+
+  for (const f of PAGES) {
+    const src = readFileSync(join(process.cwd(), f), 'utf8')
+
+    it(`${f}: لوحُ الشراء لا نافذةُ الطلب`, () => {
+      expect(src, 'المكوّن المحذوف عاد').not.toMatch(/EnrollRequest/)
+      expect(src).toMatch(/<BuyPanel\b/)
+    })
+
+    it(`${f}: ولا دعوةَ «اطلب تسجيلك» — النصُّ يَعِد بما يقع`, () => {
+      expect(src).not.toMatch(/اطلب تسجيلك/)
+    })
+  }
+
+  it('واللوحُ يقرأ سعرَه من الخادم لا يحسبه — فالمعروضُ هو المُصدَر', () => {
+    const panel = readFileSync(join(process.cwd(), 'src/components/BuyPanel.tsx'), 'utf8')
+    expect(panel, 'اللوحُ لا يسأل الخادمَ عن السعر').toMatch(/\/api\/learner\/checkout\/quote/)
+    expect(panel).toMatch(/\/api\/learner\/checkout/)
+    expect(panel).toMatch(/\/pay/)
+    /* رجوعُ المتصفّح ليس دليلَ دفع — التسويةُ بـwebhook موقَّع */
+    expect(panel).toMatch(/redirectUrl/)
+    /* والكودُ يُرسَل فعلا. كان يُعرض على الشاشة ولا يُرسل، فيُوعَد ولا يُخصم. */
+    expect(panel, 'الكودُ يُكتب ولا يُرسَل').toMatch(/couponCode/)
+  })
+
+  it('ولا تحويلَ عملةٍ على سطحٍ يقبض المال — فرعُ التحويل كلُّه محذوف', () => {
+    for (const f of ['src/services/currency.ts', 'src/components/CurrencyPicker.tsx', 'src/components/EnrollRequest.tsx']) {
+      expect(existsSync(join(process.cwd(), f)), `${f} ما زال قائما`).toBe(false)
+    }
   })
 })

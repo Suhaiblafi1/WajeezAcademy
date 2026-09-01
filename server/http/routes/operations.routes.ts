@@ -304,6 +304,22 @@ export function registerOperationsRoutes(app: FastifyInstance, prisma: PrismaCli
     return reply.status(201).send(await commerce.checkout(req.auth!.userId, body.cohortIds, body.couponCode))
   })
 
+  /* تسعيرٌ بلا كتابة — الرقمُ الذي يراه المشتري قبل أن يضغط.
+
+     ولا يُحسب في الواجهة: خصمُ الباقة والهديّة والكوبون كلُّها من
+     `priceCart` نفسِها التي يناديها `checkout`. فما يُعرض هو ما يُصدَر —
+     بنيةً لا باتّفاق. */
+  app.post('/api/learner/checkout/quote', {
+    preHandler: requireAuth,
+    schema: { tags: ['commerce'], summary: 'تسعير السلّة كما ستُصدرها الفاتورة — بلا حجزٍ ولا كتابة' },
+  }, async (req) => {
+    const body = z.object({
+      cohortIds: z.array(z.string().uuid()).min(1).max(10),
+      couponCode: z.string().trim().min(2).max(40).optional(),
+    }).parse(req.body)
+    return commerce.quote(req.auth!.userId, body.cohortIds, body.couponCode)
+  })
+
   app.post('/api/learner/orders/:id/pay', {
     preHandler: requireAuth,
     schema: { tags: ['commerce'], summary: 'دفع الطلب بالمزود المضبوط — idempotent؛ يعيد redirectUrl عند المزود المستضاف' },

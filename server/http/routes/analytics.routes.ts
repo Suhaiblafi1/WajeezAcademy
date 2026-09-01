@@ -8,38 +8,15 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { requireAuth, requirePermission } from '../auth-plugin'
+import { ANALYTICS_EVENTS } from '../../../src/application/analytics/events'
 
-/* الأحداث المسموحة — مرآة نوع AnalyticsEvent في الواجهة (src/services/analytics.ts) */
-const ALLOWED_EVENTS = new Set([
-  'hero_cta_clicked',
-  'mirror_started',
-  'mirror_completed',
-  'diagnostic_started',
-  'diagnostic_question_completed',
-  'diagnostic_abandoned',
-  'diagnostic_completed',
-  'recommendation_viewed',
-  'result_teaser_viewed',
-  'gate_viewed',
-  'gate_dismissed',
-  'result_full_viewed',
-  'account_started',
-  'account_created',
-  'account_failed',
-  'feedback_submitted',
-  'pathway_viewed',
-  'course_viewed',
-  'checkout_started',
-  'payment_completed',
-  'payment_failed',
-  'refund_requested',
-  'contact_submitted',
-  'deepening_started',
-  'deepening_completed',
-  'composite_adopted',
-  'skills_rated',
-  'skills_skipped',
-])
+/* الأحداثُ المسموحة — من القائمة المشتركة لا من نسخةٍ هنا.
+
+   كان تعليقُ هذا الموضع يقول إنّه «مرآة» لاتّحاد الواجهة، وكانت المرآةُ قد
+   شاخت: أحدَ عشرَ حدثا تُطلقها الواجهةُ ولا تعرفها هذه المجموعة، فتعود
+   ٤٢٢ ولا يُسجَّل شيء — والصفحةُ لا تتعطّل، فيُقرأ الصفرُ في اللوحة
+   «لا أحد يفعل هذا». */
+const ALLOWED_EVENTS = new Set<string>(ANALYTICS_EVENTS)
 
 /* المفاتيح وanonId: رموز لاتينية قصيرة — قيم meta: رموز مصنفة بلا مسافات
    (لاتينية أو عربية؛ المسافة هي علامة النص الحر، والجمل مرفوضة دائما) */
