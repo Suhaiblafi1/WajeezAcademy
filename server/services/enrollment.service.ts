@@ -4,6 +4,7 @@
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
+import { safeNotify } from './notification.service'
 
 export class EnrollmentService {
   private prisma: PrismaClient
@@ -167,13 +168,61 @@ export class EnrollmentService {
         to: to.id, toTitle: to.title, toStartsAt: to.startsAt,
       },
     })
+    /* مقعدٌ في الشعبة المغادَرة ربما تحرّر — أول من في قائمة انتظارها يُرقّى */
+    await this.freeSeat(from.id)
     return moved
   }
 
   async drop(enrollmentId: string, actorId: string | null, note?: string) {
+    const existing = await this.prisma.enrollment.findUnique({ where: { id: enrollmentId } })
+    if (!existing) throw new AuthError('not_found', 'التسجيل غير موجود', 404)
     const e = await this.prisma.enrollment.update({ where: { id: enrollmentId }, data: { status: 'dropped' } })
     await recordAudit(this.prisma, { actorId, action: 'enrollment.drop', entityType: 'enrollment', entityId: enrollmentId, meta: { note } })
+    /* من انسحب مسجَّلا من شعبة ممتلئة يفتح مقعدا — لا يبقى شاغرا بلا من يشغله */
+    if (existing.status === 'enrolled') await this.freeSeat(existing.cohortId)
     return e
+  }
+
+  /** مقعدٌ تحرّر في شعبة — تعود «مفتوحة» إن كانت أُغلقت بالامتلاء وحده، وأوّل
+      من في قائمة انتظارها يُرقّى مكانه تلقائيا فيصير «مسجَّلا» ويُشعَر بذلك.
+      حارسٌ صامتٌ لا يفعل شيئا إن لم يتحرّر مقعدٌ فعلا أو لم تكن الشعبة محدودة
+      السعة أصلا — فيصحّ استدعاؤه من أيّ مسارٍ يُحتمل أن يُخلي مقعدا. */
+  private async freeSeat(cohortId: string): Promise<void> {
+    const cohort = await this.prisma.cohort.findUnique({ where: { id: cohortId } })
+    if (!cohort || !cohort.capacity) return
+
+    const enrolledCount = await this.prisma.enrollment.count({ where: { cohortId, status: 'enrolled' } })
+    if (enrolledCount >= cohort.capacity) return
+
+    if (cohort.status === 'full') {
+      await this.prisma.cohort.update({ where: { id: cohortId }, data: { status: 'open' } })
+    }
+
+    const next = await this.prisma.enrollment.findFirst({
+      where: { cohortId, status: 'waitlisted' },
+      orderBy: { createdAt: 'asc' },
+    })
+    if (!next) return
+
+    const promoted = await this.prisma.enrollment.update({ where: { id: next.id }, data: { status: 'enrolled' } })
+    await this.prisma.courseProgress.upsert({
+      where: { enrollmentId: promoted.id }, update: {},
+      create: { enrollmentId: promoted.id, percent: 0, evidence: {} },
+    })
+    if (enrolledCount + 1 >= cohort.capacity) {
+      await this.prisma.cohort.update({ where: { id: cohortId }, data: { status: 'full' } })
+    }
+    await recordAudit(this.prisma, {
+      actorId: null, action: 'enrollment.auto_promote', entityType: 'enrollment', entityId: promoted.id,
+      meta: { cohortId },
+    })
+    await safeNotify(this.prisma, {
+      userId: promoted.userId, channel: 'in_app',
+      title: 'تأكد مقعدك — صرت مسجَّلا',
+      body: `فتح مقعدٌ في «${cohort.title}» وكنت أوّل قائمة الانتظار، فسجَّلناك تلقائيا.`,
+      templateKey: 'enrollment.auto_promoted',
+      data: { cohortId },
+    })
   }
 
   /** حارس الوصول: هل هذا المستخدم مسجل (وليس منسحبا) في شعبة هذا المحتوى؟ */
