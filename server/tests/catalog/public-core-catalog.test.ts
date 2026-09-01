@@ -22,7 +22,13 @@ import { SUPPORT_PER_PATHWAY } from '../../../src/data/courses'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..')
 const CORE = JSON.parse(readFileSync(join(root, 'src/data/catalog/core-catalog.v2.json'), 'utf8')) as {
-  launch_pathways: { id: string; course_ids: string[]; support_courses?: { course_id: string; reason_ar: string }[] }[]
+  launch_pathways: {
+    id: string
+    course_ids: string[]
+    total_hours?: number
+    course_count?: number
+    support_courses?: { course_id: string; reason_ar: string }[]
+  }[]
 }
 
 let prisma: PrismaClient
@@ -86,6 +92,23 @@ describe('/api/public/core-catalog — ما تقرؤه الواجهة الحيّ
         /* السبب هو ما يميّز المساندة في العرض — الفراغ يُسقط وسمها كلّه */
         expect(s.reason_ar.trim().length, `${src.id} · ${s.course_id}`).toBeGreaterThan(20)
       }
+    }
+  })
+
+  /* حجم المسار في البطاقة — «٤ دورات · ٤٠ ساعة · ٧ أسابيع».
+
+     الساعاتُ كانت تُحسب في باني اللقطة وحده، وهذا المسلك هو ما تقرؤه الواجهة
+     فعلا؛ فسقط الرقم من البطاقة في القاعة الحيّة بلا خطأ لأنّ pathways.ts
+     يفترض صفرا عند غياب الحقل. والصفر يُقرأ «بلا ساعات» لا «حقلٌ ناقص». */
+  it('حجم كلّ مسار يصل: عدد دوراته وساعاته مجموعةً من دوراته المطلوبة', () => {
+    const hours = new Map(payload.courses.map((c) => [c.course_id, c.total_hours]))
+    for (const src of CORE.launch_pathways) {
+      const live = payload.launch_pathways.find((p) => p.id === src.id)
+      expect(live, src.id).toBeTruthy()
+      expect(live!.course_count, `${src.id}: عدد الدورات`).toBe(live!.course_ids.length)
+      const expected = live!.course_ids.reduce((sum, cid) => sum + (hours.get(cid) ?? 0), 0)
+      expect(live!.total_hours, `${src.id}: مجموع الساعات`).toBe(expected)
+      expect(live!.total_hours, `${src.id}: ساعاتٌ صفر تُسقط الرقم من البطاقة`).toBeGreaterThan(0)
     }
   })
 })

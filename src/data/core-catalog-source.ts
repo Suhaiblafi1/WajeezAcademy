@@ -14,6 +14,9 @@ export interface CoreCatalogPathway {
   weekly_hours: string
   level: string
   delivery?: string
+  /** محسوبةٌ في الكتالوج المصدر — تُعرض في البطاقة لأنّها ما يسأل عنه المشتري */
+  total_hours?: number
+  course_count?: number
   course_ids: string[]
   /** الدورات المساندة للمسار الجاهز — **خارج** course_ids بقصد.
       course_ids وحدها يقرؤها pathwaySkills، ومنها تُحسب فجوة المهارات التي

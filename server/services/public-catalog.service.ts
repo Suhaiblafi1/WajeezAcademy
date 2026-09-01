@@ -151,10 +151,21 @@ export class PublicCatalogService {
       }),
     ])
 
+    /* ساعاتُ كلّ دورة — تُجمَع للمسار في `total_hours` أدناه.
+
+       البطاقة التي يراها المشتري أوّلَ ما ينزل إلى المسارات تعرض حجمَ المسار:
+       «٤ دورات · ٤٠ ساعة · ٧ أسابيع». والساعات كانت تختفي منها في القاعة الحيّة
+       وحدها: باني اللقطة يحسبها (catalog/snapshot-builder.ts) لكنّ هذا المسلك —
+       وهو ما تقرؤه الواجهة فعلا — لم يكن يُصدر الحقل أصلا، فتقرأ pathways.ts
+       الافتراضَ صفرا ويسقط الرقم من السطر بلا خطأ. تُحسب هنا بالمنطق نفسه:
+       الدورات المطلوبة وحدها، فالمساندة عرضٌ خارج المسار لا جزءٌ من حجمه. */
+    const hoursByCourse = new Map(courses.map((c) => [c.id, c.versions[0]?.totalHours ?? 0]))
+
     return {
       source: 'api',
       launch_pathways: pathways.map((pw) => {
         const v = pw.versions[0]
+        const requiredIds = pw.courses.filter((l) => l.kind !== 'support').map((l) => l.courseId)
         return {
           id: pw.id,
           title: v?.title ?? '',
@@ -173,7 +184,9 @@ export class PublicCatalogService {
              المهارات التي تزن ٢٥٪ من ترتيب المسارات. أي أنّ الفصل الذي حرسناه
              في الملفّ وفي اللقطة كان ينهار عند أوّل تحميلٍ من القاعة.
              حارسه: server/tests/catalog/public-core-catalog.test.ts */
-          course_ids: pw.courses.filter((l) => l.kind !== 'support').map((l) => l.courseId),
+          course_ids: requiredIds,
+          course_count: requiredIds.length,
+          total_hours: requiredIds.reduce((sum, cid) => sum + (hoursByCourse.get(cid) ?? 0), 0),
           support_courses: pw.courses
             .filter((l) => l.kind === 'support')
             .map((l) => ({ course_id: l.courseId, reason_ar: l.reasonAr ?? '' })),

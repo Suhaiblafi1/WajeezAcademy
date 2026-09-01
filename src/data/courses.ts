@@ -203,6 +203,18 @@ export const coursePrice = (weeks: number) => Math.min(180, 105 + weeks * 25)
 export const weeksLabel = (n: number) =>
   n === 1 ? 'أسبوع واحد' : n === 2 ? 'أسبوعان' : n >= 3 && n <= 10 ? `${n} أسابيع` : `${n} أسبوعا`
 
+/* ملخّصُ حجم المسار — «4 دورات · 40 ساعة · 8 أسابيع».
+   حلّ محلَّ سطر المدرّبين: كانت البطاقة تعرض «يُعلن المدرب بعد اعتماد الشعبة»
+   مكرّرةً ثلاث مرّات (اسمُ كلّ مدرّبٍ لم يُعيَّن بعد)، فتُنفق أثمنَ سطرٍ في
+   أوّل ما تراه عينُ المشتري على معلومةٍ لا يسأل عنها الآن ولا تخصّ الدورة. */
+export function pathwaySizeAr(p: { courseCount: number; totalHours: number; durationWeeks: number }): string {
+  const courses = p.courseCount === 1 ? 'دورة واحدة' : p.courseCount === 2 ? 'دورتان' : `${p.courseCount} دورات`
+  const parts = [courses]
+  if (p.totalHours > 0) parts.push(`${p.totalHours} ساعة`)
+  parts.push(weeksLabel(p.durationWeeks))
+  return parts.join(' · ')
+}
+
 /* حدّا عدد دورات المسار — بنيةٌ لا سعر */
 export const MIN_PATHWAY_COURSES = 4
 

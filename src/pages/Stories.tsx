@@ -50,7 +50,7 @@ export default function StoriesPage() {
           >
             <div className="relative h-40 overflow-hidden">
               <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_60%_20%,rgba(56,167,180,0.35),transparent_65%)]">
-                <StoryAvatar id={s.id} name={s.name} look={s.look} className="h-24 w-24" />
+                <StoryAvatar id={s.id} name={s.name} look={s.look} className="h-28 w-28" />
               </div>
               <div className="absolute inset-0 bg-gradient-to-t from-surface to-transparent" />
               <span className="absolute bottom-3 right-4 rounded-full bg-[#247B84] px-3 py-1 text-[11px] font-bold text-white">{s.tag}</span>
@@ -111,11 +111,21 @@ export default function StoriesPage() {
       {open && (
         <Modal onClose={() => setOpen(null)} label={`قصة ${open.name} كاملة`} panelClassName="my-8 w-full max-w-3xl">
           <div dir="rtl" className="overflow-hidden rounded-3xl border border-white/10 bg-surface">
-            <div className="relative h-52 overflow-hidden md:h-60">
-              <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_60%_20%,rgba(56,167,180,0.35),transparent_65%)]">
-                <StoryAvatar id={open.id} name={open.name} look={open.look} className="h-28 w-28 md:h-32 md:w-32" />
+            {/* ─────────── لماذا يتوقّف التراكب عند الهاتف ───────────
+
+                كان الاسمُ والدورُ والشارةُ صفّا **مطلقا** أسفلَ الترويسة فوق
+                الظِّلّ. وعلى شاشة الهاتف يلتفّ هذا الصفُّ إلى ثلاثة أسطر
+                فيصعد داخل الترويسة — فيقع الكلامُ فوق الصورة ويُقرأ الاثنان
+                معا كطبقتين متضاربتين. وهذا ما وقع فعلا.
+
+                فصار على الهاتف: ظِلٌّ في الأعلى، ثمّ الاسمُ تحته في السياق
+                العاديّ — لا تراكبَ ولا التفافَ فوق صورة. والتراكبُ يعود من
+                `md:` حيث العرضُ يتّسع للصفّ في سطرٍ واحد. */}
+            <div className="relative overflow-hidden md:h-60">
+              <div className="grid h-40 w-full place-items-center bg-[radial-gradient(circle_at_60%_20%,rgba(56,167,180,0.35),transparent_65%)] md:h-full">
+                <StoryAvatar id={open.id} name={open.name} look={open.look} className="h-32 w-32 md:h-36 md:w-36" />
               </div>
-              <div className="absolute inset-0 bg-gradient-to-t from-surface via-surface/40 to-transparent" />
+              <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-t from-surface via-surface/30 to-transparent md:h-full" />
               <button
                 onClick={() => setOpen(null)}
                 aria-label="إغلاق القصة"
@@ -123,10 +133,10 @@ export default function StoriesPage() {
               >
                 <X className="h-5 w-5" />
               </button>
-              <div className="absolute bottom-4 right-6 flex flex-wrap items-center gap-3">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-6 pb-1 pt-3 md:absolute md:bottom-4 md:right-6 md:p-0">
                 <span className="rounded-full bg-teal-deep px-4 py-1.5 text-sm font-bold text-white">{open.tag}</span>
                 <span className="text-sm text-white/80">{open.name} — {open.role}</span>
-                <span className="text-[11px] font-normal text-white/50">{STORY_ILLUSTRATIVE_BADGE_AR}</span>
+                <span className="w-full text-[11px] font-normal text-white/50 md:w-auto">{STORY_ILLUSTRATIVE_BADGE_AR}</span>
               </div>
             </div>
 

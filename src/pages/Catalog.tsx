@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router'
-import { ArrowLeft, BookOpen, Flame, Route, Search, SlidersHorizontal, Users } from 'lucide-react'
+import { ArrowLeft, BookOpen, Flame, Route, Search, SlidersHorizontal, Target } from 'lucide-react'
 import { bestsellers, pathways } from '@/data/pathways'
-import { bestsellerCourses, courseCategories, courses, pathwayTrainers, weeksLabel } from '@/data/courses'
+import { bestsellerCourses, courseCategories, courses, pathwaySizeAr } from '@/data/courses'
 import FavoriteButton from '@/components/FavoriteButton'
 import SiteShell from '@/components/SiteShell'
 import SeoHead from '@/components/SeoHead'
@@ -205,14 +205,15 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
                 <FavoriteButton pathwayId={p.id} pathwayName={p.name} className="-ms-1 ms-auto" />
               </div>
               <h2 className="mt-4 text-lg font-bold leading-relaxed">{p.name}</h2>
-              <p className="mt-2 line-clamp-2 text-xs leading-6 text-white/55">{p.transformation}</p>
-              <div className="mt-3 text-xs text-white/45">
-                {weeksLabel(p.durationWeeks)} · {p.weeklyHours} أسبوعيا
+              <p className="mt-2 line-clamp-3 text-xs leading-6 text-white/55">{p.transformation}</p>
+              {/* المخرَجُ الملموس مكانَ اسم مدرّبٍ لم يُعيَّن بعد — كان يظهر
+                  مكرّرا بعدد مدرّبي المسار، فيملأ البطاقة بلا معلومة. */}
+              <div className="mt-3 flex items-start gap-1.5 text-[11px] leading-5 text-teal-light-ink">
+                <Target className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                <span className="line-clamp-2 min-w-0">تتخرّج بـ: {p.output}</span>
               </div>
-              <div className="mt-2 flex items-start gap-1.5 text-[11px] leading-5 text-white/45">
-                <Users className="mt-0.5 h-3.5 w-3.5 shrink-0 text-teal-ink" />
-                {/* min-w-0 يسمح للاسم الطويل بالانكماش والالتفاف بدل دفع البطاقة */}
-                <span className="min-w-0 break-words">{pathwayTrainers(p.id).map((t) => t.name).join('، ')}</span>
+              <div className="mt-3 text-[11px] leading-5 text-white/45">
+                {pathwaySizeAr(p)} · {p.weeklyHours} أسبوعيا
               </div>
               <div className="mt-auto pt-5">
                 <Link

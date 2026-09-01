@@ -6,11 +6,11 @@ import {
   FileCheck, Quote, ChevronDown, Menu, X, ArrowLeft,
   Clock, User, Award, GraduationCap, Building2, Landmark,
   CheckCircle2, Flame, ChevronLeft, ChevronRight, BookOpen,
-  Users, Mail, MessageCircle, Headset, MapPin
+  Mail, MessageCircle, Headset, MapPin
 } from 'lucide-react'
 import { bestsellers, pathwayById, pathwayCategory } from '@/data/pathways'
 import { getCatalogVersion, onCoreCatalogInstalled } from '@/data/core-catalog-source'
-import { bestsellerCourses, courseById, pathwayTrainers, weeksLabel } from '@/data/courses'
+import { bestsellerCourses, courseById, pathwaySizeAr } from '@/data/courses'
 import { faqs } from '@/data/siteContent'
 import { CONTACT } from '@/data/stories'
 import { track } from '@/services/analytics'
@@ -318,7 +318,11 @@ function DiagnosticTeaser() {
   }
 
   return (
-    <section id="diagnostic" className="relative py-12 sm:py-16 md:py-24">
+    /* `scroll-mt-24`: الرأسُ `fixed h-16`، فالقفزُ إلى مرساةٍ بلا هامشِ تمرير
+       يضع رأسَ القسم عند y=0 — أي **تحت** الرأس الثابت. فكان الزائرُ يضغط
+       «مؤشر وجيز» فتختفي شارةُ القسم وسطرٌ من عنوانه خلف الرأس. و`#top-courses`
+       وحدَه كان يحمل الهامش، فعمل — وبقي الباقي مقصوصا. */
+    <section id="diagnostic" className="scroll-mt-24 relative py-12 sm:py-16 md:py-24">
       {/* ─────────── لماذا ضاق رأسُ هذا القسم ───────────
 
           على الهاتف كان الزائر يضغط «مؤشر وجيز» فيهبط إلى قسمٍ رأسُه ثلاثةُ
@@ -457,7 +461,7 @@ const steps = [
 
 function HowItWorks() {
   return (
-    <section id="how" className="border-y border-white/5 bg-white/[0.02] py-14 md:py-16">
+    <section id="how" className="scroll-mt-24 border-y border-white/5 bg-white/[0.02] py-14 md:py-16">
       <div className="mx-auto max-w-6xl px-5">
         <div className="reveal flex flex-wrap items-center justify-center gap-3 text-center md:justify-between md:text-right">
           <h2 className="text-xl font-bold md:text-2xl">كيف تسير رحلتك — أربع خطوات لا أكثر</h2>
@@ -521,7 +525,7 @@ function Stories() {
   const [open, setOpen] = useState<(typeof stories)[number] | null>(null)
 
   return (
-    <section id="stories" className="relative py-20 md:py-24">
+    <section id="stories" className="scroll-mt-24 relative py-20 md:py-24">
       <div className="pointer-events-none absolute left-1/3 top-0 h-[400px] w-[400px] rounded-full bg-teal/8 blur-[130px]" />
       <div className="mx-auto max-w-6xl px-5">
         <div className="reveal text-center">
@@ -751,21 +755,39 @@ function CategoryFilter({
   const activeInRest = rest.some(([c]) => c === active)
   const shown: [string, number][] = [['الكل', total], ...main, ...(more || activeInRest ? rest : [])]
 
+  /* ─────────── لماذا صفٌّ واحدٌ يُمرَّر على الهاتف ───────────
+
+     كانت الأزرارُ `px-4 py-2 text-sm` تلتفّ إلى **ثلاثة صفوف** على شاشة
+     الهاتف، فتأخذ نحو ثلث الشاشة قبل أن تظهر بطاقةٌ واحدة — ومَن جاء يتصفّح
+     المسارات يرى المرشِّحات لا المسارات.
+
+     فصارت على الهاتف شريطا واحدا يُمرَّر أفقيّا بأزرارٍ أصغرَ وأخفّ، وعلى
+     الشاشات الأوسع تلتفّ كما كانت (المساحةُ هناك ليست شحيحة). والالتفافُ
+     يعود من `sm:` فلا يفقد سطحُ المكتب شيئا.
+
+     و`-mx-5 px-5` تمدّ الشريطَ إلى حافّتي الشاشة داخل حاوية `px-5`: بلاها
+     يبدو الزرُّ الأخير مقصوصا عند حدٍّ داخليٍّ لا يفهمه القارئ. */
+  const chip = 'inline-flex shrink-0 snap-start items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] font-semibold transition sm:px-4 sm:py-2 sm:text-sm'
+
   return (
-    <div className="mt-6 flex flex-wrap items-center gap-2" role="group" aria-label={label}>
+    <div
+      className="scrollbar-hide -mx-5 mt-6 flex snap-x items-center gap-2 overflow-x-auto px-5 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
+      role="group"
+      aria-label={label}
+    >
       {shown.map(([c, n]) => (
         <button
           key={c}
           onClick={() => onChange(c)}
           aria-pressed={active === c}
-          className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-semibold transition ${
+          className={`${chip} ${
             active === c
               ? 'border-teal bg-teal-deep text-white shadow-[0_0_24px_-6px_#38A7B4]'
-              : 'border-white/10 bg-white/[0.03] text-muted-foreground hover:border-teal/40 hover:text-teal-light-ink'
+              : 'border-border bg-white/[0.03] text-muted-foreground hover:border-teal/40 hover:text-teal-light-ink'
           }`}
         >
           {c}
-          <span className={`rounded-full px-1.5 text-[10px] font-black tabular-nums ${active === c ? 'bg-black/25' : 'bg-white/[0.06] text-white/45'}`}>
+          <span className={`rounded-full px-1.5 text-[10px] font-black tabular-nums ${active === c ? 'bg-black/25' : 'bg-foreground/[0.07] text-muted-foreground'}`}>
             {n}
           </span>
         </button>
@@ -774,7 +796,7 @@ function CategoryFilter({
         <button
           onClick={() => setMore((m) => !m)}
           aria-expanded={more || activeInRest}
-          className="inline-flex items-center gap-1 rounded-full border border-dashed border-white/15 px-4 py-2 text-sm font-semibold text-muted-foreground transition hover:border-teal/40 hover:text-teal-light-ink"
+          className={`${chip} border-dashed border-border text-muted-foreground hover:border-teal/40 hover:text-teal-light-ink`}
         >
           {more || activeInRest ? 'أقل' : `المزيد (${rest.length})`}
           <ChevronDown className={`h-3.5 w-3.5 transition-transform ${more || activeInRest ? 'rotate-180' : ''}`} />
@@ -841,7 +863,7 @@ function Bestsellers() {
   }, [shownCourses.length, crCat, catalogVersion])
 
   return (
-    <section id="bestsellers" className="pb-20 pt-24 md:pb-24 md:pt-28">
+    <section id="bestsellers" className="scroll-mt-24 pb-20 pt-24 md:pb-24 md:pt-28">
       <div className="mx-auto max-w-6xl px-5">
         <div className="reveal flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -881,15 +903,17 @@ function Bestsellers() {
               <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground">
                 <span>{spotlight.p.level}</span>
                 <span className="text-white/20">•</span>
-                <span>{weeksLabel(spotlight.p.durationWeeks)}</span>
+                {/* الحجم كلّه في عبارةٍ واحدة: دوراتٌ وساعاتٌ وأسابيع. وكان
+                    «الأسابيع» يُكتب مرّتين حين أُضيفت العبارة فوق سطرٍ يحملها. */}
+                <span>{pathwaySizeAr(spotlight.p)}</span>
                 <span className="text-white/20">•</span>
-                <span>{spotlight.p.weeklyHours}</span>
-                <span className="text-white/20">•</span>
-                <span className="flex items-center gap-1.5">
-                  <Users className="h-3.5 w-3.5 text-teal-ink" />
-                  {pathwayTrainers(spotlight.id).map((t) => t.name).join('، ')}
-                </span>
+                <span>{spotlight.p.weeklyHours} أسبوعيا</span>
               </div>
+              {/* المخرَج الملموس — لا اسمُ مدرّبٍ لم يُعيَّن بعد */}
+              <p className="mt-3 flex items-start gap-1.5 text-xs leading-6 text-teal-light-ink">
+                <Target className="mt-1 h-3.5 w-3.5 shrink-0" />
+                <span>تتخرّج بـ: {spotlight.p.output}</span>
+              </p>
               <span className="mt-6 inline-flex items-center gap-2 rounded-full bg-teal-deep px-6 py-2.5 text-sm font-bold text-white transition group-hover:bg-teal-darker">
                 افتح المسار
                 <ArrowLeft className="h-4 w-4 transition group-hover:-translate-x-1" />
@@ -931,12 +955,15 @@ function Bestsellers() {
               <FavoriteButton pathwayId={id} pathwayName={p.name} className="-ms-1 ms-auto" />
             </div>
             <h3 className="mt-4 text-lg font-bold leading-relaxed">{p.name}</h3>
-            <div className="mt-2 text-xs leading-6 text-muted-foreground">
-              {p.level} · {weeksLabel(p.durationWeeks)} · {p.weeklyHours}
+            {/* ما يخرج به المتعلّم — أوّلُ ما تسأل عنه عينُ المشتري، وكان مكانَه
+                اسمُ مدرّبٍ لم يُعيَّن بعدُ مكرّرا ثلاث مرّات. */}
+            <p className="mt-2 line-clamp-3 text-xs leading-6 text-muted-foreground">{p.transformation}</p>
+            <div className="mt-3 flex items-start gap-1.5 text-[11px] leading-5 text-teal-light-ink">
+              <Target className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <span className="line-clamp-2">تتخرّج بـ: {p.output}</span>
             </div>
-            <div className="mt-3 flex items-center gap-1.5 text-[11px] leading-5 text-muted-foreground">
-              <Users className="h-3.5 w-3.5 shrink-0 text-teal-ink" />
-              {pathwayTrainers(id).map((t) => t.name).join('، ')}
+            <div className="mt-3 text-[11px] leading-5 text-muted-foreground">
+              {p.level} · {pathwaySizeAr(p)}
             </div>
             <div className="mt-auto pt-5">
               <Link
@@ -1074,7 +1101,7 @@ function Bestsellers() {
 function Faq() {
   const [open, setOpen] = useState<number | null>(0)
   return (
-    <section id="faq" className="py-20 md:py-24">
+    <section id="faq" className="scroll-mt-24 py-20 md:py-24">
       <div className="mx-auto max-w-3xl px-5">
         <div className="reveal text-center">
           <SectionLabel>أسئلة تصلنا كثيرا</SectionLabel>
@@ -1159,7 +1186,7 @@ function Faq() {
 /* ───────────────── final CTA ───────────────── */
 function FinalCta() {
   return (
-    <section id="cta" className="relative overflow-hidden py-24 md:py-28">
+    <section id="cta" className="scroll-mt-24 relative overflow-hidden py-24 md:py-28">
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-teal/10 to-transparent" />
       <div className="pointer-events-none absolute right-1/2 top-1/2 h-[420px] w-[420px] -translate-y-1/2 translate-x-1/2 rounded-full bg-teal/20 blur-[140px] animate-pulse-glow" />
       <div className="relative mx-auto max-w-3xl px-5 text-center">
@@ -1193,7 +1220,7 @@ function FinalCta() {
 /* ───────────────── partners (شعارات من موقع وجيز الأم — من المصدر المشترك) ───────────────── */
 function Partners() {
   return (
-    <section id="partners" className="py-14 md:py-16">
+    <section id="partners" className="scroll-mt-24 py-14 md:py-16">
       <div className="mx-auto max-w-5xl px-5 text-center">
         <div className="reveal">
           <SectionLabel>شركاؤنا</SectionLabel>

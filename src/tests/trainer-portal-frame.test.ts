@@ -82,12 +82,30 @@ describe('تقويم بوابة المدرب', () => {
     }
   })
 
+  /* التقويمُ مثبَّتٌ في موضعٍ واحد الآن — والحارس يتبعه إليه.
+
+     كانت كلُّ دالّةٍ من الثلاث تكتب `ar-u-ca-gregory` بنفسها، فكان الحارس
+     يقرؤها في `utils/format.ts`. ثمّ صار التنسيقُ كلُّه يمرّ بوحدةٍ واحدة
+     (`application/text/format-ar.ts`) بلغةٍ واحدة معلَنة، فبقي التثبيتُ قائما
+     وانتقل مكانُه. فالمطلوب اليوم شرطان: أن تُفوِّض الثلاثُ إلى تلك الوحدة
+     لا أن تنسّق بأنفسها، وأن تحمل لغتُها `ca-gregory` — وإلّا صار التاريخ
+     هجريّا عند من لغةُ متصفّحه `ar-SA`، وهو ما وقع فعلا في بوابة المدرب. */
   it('الوحدة تُثبّت التقويم صراحةً — لا تتركه للغة المتصفّح', () => {
     const fmt = read('src/utils/format.ts')
+    const DELEGATES = ['fmtDateWith', 'fmtSession', 'fmtDate', 'fmtDateLong', 'fmtDateTime']
     for (const fn of ['fmtDateAr', 'fmtDateTimeAr', 'fmtShortDateTimeAr']) {
       const body = new RegExp(`export function ${fn}\\([\\s\\S]*?\\n\\}`).exec(fmt)?.[0] ?? ''
       expect(body, `${fn} مفقودة`).toBeTruthy()
-      expect(body, `${fn} لا تُثبّت التقويم — فتصير هجريّة عند من لغته ar-SA`).toContain("'ar-u-ca-gregory'")
+      expect(
+        DELEGATES.some((d) => body.includes(`${d}(`)),
+        `${fn} تنسّق بنفسها بدل أن تمرّ بوحدة التنسيق — فتفلت من تثبيت التقويم`,
+      ).toBe(true)
     }
+
+    /* ولا تُفوَّض إلى وحدةٍ غير مثبَّتة: اللغة نفسها تحمل التقويم والأرقام */
+    const unit = read('src/application/text/format-ar.ts')
+    const locale = /UI_LOCALE\s*=\s*'([^']+)'/.exec(unit)?.[1] ?? ''
+    expect(locale, 'UI_LOCALE مفقودة من وحدة التنسيق').toBeTruthy()
+    expect(locale, 'لغةُ الواجهة لا تُثبّت التقويم — فيصير هجريّا عند من لغته ar-SA').toContain('ca-gregory')
   })
 })

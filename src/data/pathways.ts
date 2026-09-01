@@ -19,6 +19,9 @@ export interface Pathway {
   coreSkills: string[]
   transformation: string
   output: string
+  /** عددُ دورات المسار وساعاتُه — رقمان يقولان حجمَ ما يُشترى */
+  courseCount: number
+  totalHours: number
   price: number
   badge?: string
 }
@@ -81,6 +84,8 @@ function buildPathways(raw: CoreCatalogRaw): Pathway[] {
     coreSkills: skillsOf(raw, p.course_ids),
     transformation: p.after,
     output: p.capstone,
+    courseCount: p.course_count ?? p.course_ids.length,
+    totalHours: p.total_hours ?? 0,
     price: 600,
   }))
 }

@@ -1,33 +1,40 @@
-/* وجهٌ للقصّة — مرسومٌ لا مصوَّر، وعن قصد.
+/* وجهٌ للقصّة — ظِلٌّ لا وجهٌ مرسوم، وعن قصد مرّتين.
 
-   طُلبت صورةٌ «تبدو بشرية طبيعية لأبعد حدّ» لكلّ قصّة. والمرسومُ هنا يقترب
-   منها قدر ما يجوز، ولا يبلغها — ويُقال السببُ صراحةً بدل أن يُترك للتخمين:
+   ١) **لماذا لا صورة.** هذه القصص نماذجُ توضيحيّة مُعلَنة — لا أشخاصٌ
+   حقيقيّون. ووجهٌ فوتوغرافيّ هو أقوى إشارةٍ ممكنة على أنّ صاحبَه موجود، فوضعُه
+   على قصّةٍ مؤلَّفة يحوّلها من نموذجٍ صادقٍ إلى شهادةٍ ملفّقة مهما صغُر
+   التنويه تحتها. ولا سبيل إليها تقنيّا أصلا: `img-src 'self'` تمنع كلَّ
+   مصدرٍ خارجيّ.
 
-   هذه القصص **نماذجُ توضيحية** مُعلَنة — لا أشخاصٌ حقيقيّون. ووجهٌ فوتوغرافيّ
-   واقعيّ هو أقوى إشارةٍ ممكنة على أنّ صاحبَه موجود؛ فوضعُه على قصّةٍ مؤلَّفة
-   يحوّلها من نموذجٍ صادقٍ إلى شهادةٍ ملفّقة، مهما صغُر التنويه تحتها. وذلك
-   يناقض قاعدة المنصّة: لا قصّةَ تُعرض كحقيقةٍ قبل توثيقها. ولا سبيل إليها
-   تقنيّا أصلا: سياسةُ الأمن عندنا `img-src 'self'` تمنع كلَّ مصدرٍ خارجيّ.
+   ٢) **ولماذا لا ملامح.** كان الرسمُ الأوّل وجها كاملا: حاجبان وعينان
+   بحدقتين وأنفٌ وابتسامةٌ وخدّان محمرّان. ووصفه صاحبُ المنصّة بأنّه
+   «طفوليّ جدّا» — وهو محقّ: العينُ المرسومةُ في وجهٍ مسطّح تُقرأ رسمَ أطفالٍ
+   لا هويّةَ منتَجٍ مهنيّ، مهما أُتقنت. والملامحُ لم تكن تشتري شيئا: هي لا
+   تُميّز شخصا (لا شخصَ هنا) ولا تحمل معلومة.
 
-   فالمرسومُ يُعطي كلَّ بطاقةٍ وجها بملامحَ ودفءٍ وهيئةٍ تخصّه — ولا يدّعي
-   أنّ أحدا جلس أمام كاميرا. وهو SVG بلا ملفٍّ ولا طلبِ شبكة.
+   فصار ظِلّا: هيئةٌ نظيفةٌ بلا ملامح، بلونين وحدٍّ رفيع. وهذا ما تفعله
+   المنتجاتُ الجادّة في مكان الصورة الغائبة — يُقرأ موضعا محفوظا لصورةٍ لا
+   ادّعاءَ شخصٍ، ولا يُقرأ رسما لطفل.
 
-   ويوم تصير عندنا قصصٌ موثّقةٌ بموافقة أصحابها، تُوضع صورُهم الحقيقية هنا —
-   وتُرفع عنها كلمةُ «نموذج توضيحي» لأنّها لم تعد كذلك. */
+   وتبقى `look` تُفرّق الهيئات (حجاب · شعرٌ طويل · قصير · لحية · مجموعة) فلكلّ
+   قصّةٍ ظلٌّ يخصّها، بلا أن يدّعي أيٌّ منها ملامحَ إنسانٍ بعينه.
+
+   ويوم تصير عندنا قصصٌ موثّقةٌ بموافقة أصحابها، تُوضع صورُهم الحقيقيّة هنا —
+   وتُرفع عنها كلمةُ «نموذج توضيحيّ» لأنّها لم تعد كذلك. */
 
 import type { StoryAvatarLook } from '@/data/stories'
 
-type Palette = { ring: string; skin: string; shade: string; hair: string; cloth: string; veil: string }
+type Palette = { accent: string; figure: string; garment: string }
 
-/* لوحاتٌ ثابتة — تُختار بمعرّف القصّة فلا تتبدّل بين زيارتين.
-   و`veil` أفتحُ من `cloth` عمدا: الحجاب بلون الثوب يذوب في خلفيّةٍ داكنة
-   فيبدو الرأسُ عاريا — وهذا ما وقع في أوّل رسم. */
+/* لوحاتٌ ثابتة تُختار بمعرّف القصّة فلا تتبدّل بين زيارتين.
+   و`figure` أغمقُ من `garment` دائما: التباينُ بينهما هو ما يُظهر الكتفين
+   من الرأس بلا خطٍّ فاصل. */
 const PALETTES: Palette[] = [
-  { ring: '#38A7B4', skin: '#D9A87E', shade: '#B98A63', hair: '#2B2320', cloth: '#1F4E57', veil: '#7FBFC9' },
-  { ring: '#57B9C4', skin: '#C08D62', shade: '#A0714B', hair: '#1C1613', cloth: '#264F45', veil: '#8CC7B4' },
-  { ring: '#D9A94C', skin: '#E2BB95', shade: '#C29B75', hair: '#3A2A20', cloth: '#3E3524', veil: '#D9BE8A' },
-  { ring: '#7FC8D4', skin: '#C99A72', shade: '#A97C57', hair: '#241B16', cloth: '#20404A', veil: '#9BCBD6' },
-  { ring: '#9BD1B0', skin: '#D3A57C', shade: '#B3835C', hair: '#2A1F19', cloth: '#27423A', veil: '#A8D6BC' },
+  { accent: '#38A7B4', figure: '#12343A', garment: '#2F7C87' },
+  { accent: '#57B9C4', figure: '#123833', garment: '#2E7F70' },
+  { accent: '#D9A94C', figure: '#3A2E16', garment: '#8A6C2C' },
+  { accent: '#7FC8D4', figure: '#14303A', garment: '#356E80' },
+  { accent: '#9BD1B0', figure: '#16332A', garment: '#3B7A5E' },
 ]
 
 function paletteFor(id: string): Palette {
@@ -36,32 +43,43 @@ function paletteFor(id: string): Palette {
   return PALETTES[h % PALETTES.length]
 }
 
-/** الملامح: حاجبان وعينان بحدقتين وأنفٌ وابتسامةٌ خفيفة — مرسومةٌ حول (٤٨،٣٨) */
-function Face({ p }: { p: Palette }) {
+/** ظِلُّ شخصٍ واحد — رأسٌ وكتفان، بلا ملامح */
+function Figure({ p, look }: { p: Palette; look: StoryAvatarLook }) {
   return (
     <g>
-      <path d="M39.6 32.2c1.9-1.3 4.2-1.3 6.1 0" stroke={p.hair} strokeWidth="1.5" strokeLinecap="round" fill="none" />
-      <path d="M50.3 32.2c1.9-1.3 4.2-1.3 6.1 0" stroke={p.hair} strokeWidth="1.5" strokeLinecap="round" fill="none" />
-      <ellipse cx="42.6" cy="37.4" rx="2.4" ry="1.9" fill="#FFFFFF" fillOpacity="0.92" />
-      <ellipse cx="53.4" cy="37.4" rx="2.4" ry="1.9" fill="#FFFFFF" fillOpacity="0.92" />
-      <circle cx="42.6" cy="37.6" r="1.15" fill={p.hair} />
-      <circle cx="53.4" cy="37.6" r="1.15" fill={p.hair} />
-      <path d="M48 39.4v4c0 .9-.7 1.4-1.7 1.4" stroke={p.shade} strokeWidth="1.2" strokeLinecap="round" fill="none" />
-      <path d="M43.8 48.6c2.5 2 5.9 2 8.4 0" stroke={p.shade} strokeWidth="1.4" strokeLinecap="round" fill="none" />
-      <ellipse cx="37.6" cy="43" rx="2.6" ry="1.6" fill={p.shade} fillOpacity="0.35" />
-      <ellipse cx="58.4" cy="43" rx="2.6" ry="1.6" fill={p.shade} fillOpacity="0.35" />
-    </g>
-  )
-}
+      {/* الكتفان — يُرسمان أوّلا ليمرّ الرأسُ فوقهما */}
+      <path d="M4 96c0-20 19.7-32 44-32s44 12 44 32z" fill={p.garment} />
+      {/* ياقةٌ خفيفة: خطٌّ واحدٌ يعطي الهيئةَ عمقا بلا تفصيل */}
+      <path d="M38 66.5c3 5.5 17 5.5 20 0l4.5 2.2L48 80 33.5 68.7z" fill={p.figure} fillOpacity="0.18" />
 
-/** كتفان يملآن أسفل الدائرة — بلا هذا يطفو الرأسُ في فراغ */
-function Bust({ p }: { p: Palette }) {
-  return (
-    <>
-      <path d="M41.5 50h13v20a6.5 6.5 0 0 1-13 0z" fill={p.shade} />
-      <path d="M-6 96c0-19 22-30 54-30s54 11 54 30z" fill={p.cloth} />
-      <path d="M42 68c2 4 10 4 12 0l7 3-13 8-13-8z" fill={p.veil} fillOpacity="0.25" />
-    </>
+      {/* الشعرُ الخلفيّ أو الحجاب — قبل الرأس ليظهر من خلفه */}
+      {look === 'longHair' && (
+        <path d="M26 42c0-16.5 9.8-26 22-26s22 9.5 22 26c0 10 1.6 16.5 3.4 22.5-7 2.8-14.4 4-25.4 4s-18.4-1.2-25.4-4C24.4 58.5 26 52 26 42z" fill={p.figure} />
+      )}
+      {look === 'hijab' && (
+        <path d="M23 45c0-17.5 11.2-29 25-29s25 11.5 25 29c0 11-3 17.5-6.2 23.6L71 82H25l4.2-13.4C26 62.5 23 56 23 45z" fill={p.figure} />
+      )}
+
+      {/* الرأس */}
+      <ellipse
+        cx="48"
+        cy={look === 'hijab' ? 40 : 39}
+        rx={look === 'hijab' ? 15.5 : look === 'beard' ? 17.5 : 17}
+        ry={look === 'hijab' ? 17.5 : 19}
+        fill={p.figure}
+      />
+
+      {/* الشعرُ الأماميّ — كتلةٌ واحدة، بلا خصلاتٍ تُقرأ رسما كرتونيّا */}
+      {(look === 'short' || look === 'beard') && (
+        <path d="M31 38c0-13 7.2-19.5 17-19.5S65 25 65 38c-2.2-8.5-7.4-12-17-12s-14.8 3.5-17 12z" fill={p.figure} />
+      )}
+      {look === 'longHair' && (
+        <path d="M31 37c0-13 7.2-19.5 17-19.5S65 24 65 37c-1.4-9.5-8.4-12.8-14.8-9.6-4.2 2.1-8.4 4.2-14.8 3.2-3-.5-3.6 2.6-4.4 6.4z" fill={p.figure} />
+      )}
+      {look === 'beard' && (
+        <path d="M31 44c1 12.5 7.6 20.5 17 20.5S64 56.5 65 44c-3 8.4-8.8 12-17 12s-14-3.6-17-12z" fill={p.figure} />
+      )}
+    </g>
   )
 }
 
@@ -84,74 +102,43 @@ export default function StoryAvatar({
       viewBox="0 0 96 96"
       className={`shrink-0 rounded-full ${className}`}
       role="img"
-      aria-label={`رسمٌ يمثّل ${name} — نموذج توضيحي لا شخص حقيقي`}
+      aria-label={`ظِلٌّ يمثّل ${name} — نموذج توضيحي لا شخص حقيقي`}
     >
       <defs>
         <clipPath id={`${gid}-clip`}>
           <circle cx="48" cy="48" r="46" />
         </clipPath>
-        <radialGradient id={`${gid}-bg`} cx="0.5" cy="0.26" r="0.85">
-          <stop offset="0%" stopColor={p.ring} stopOpacity="0.34" />
-          <stop offset="100%" stopColor={p.ring} stopOpacity="0.08" />
-        </radialGradient>
+        <linearGradient id={`${gid}-bg`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={p.accent} stopOpacity="0.26" />
+          <stop offset="100%" stopColor={p.accent} stopOpacity="0.07" />
+        </linearGradient>
       </defs>
 
       <g clipPath={`url(#${gid}-clip)`}>
         <rect width="96" height="96" fill={`url(#${gid}-bg)`} />
 
         {look === 'group' ? (
-          /* دفعةٌ لا شخصٌ واحد — ثلاثةُ أشخاصٍ خلف بعضهم */
+          /* دفعةٌ لا شخصٌ واحد — ثلاثةُ ظِلالٍ متداخلة، والأوسطُ أقربُ وأكبر */
           <g>
-            <path d="M-2 96c0-15 11-24 25-24s25 9 25 24z" fill={p.cloth} fillOpacity="0.7" />
-            <ellipse cx="23" cy="52" rx="11" ry="12" fill={p.shade} />
-            <path d="M12 51c0-9 5-13 11-13s11 4 11 13c-1.4-5-4-7-11-7s-9.6 2-11 7z" fill={p.hair} />
-            <path d="M48 96c0-15 11-24 25-24s25 9 25 24z" fill={p.cloth} fillOpacity="0.7" />
-            <ellipse cx="73" cy="52" rx="11" ry="12" fill={p.skin} />
-            <path d="M62 53c0-11 5-15 11-15s11 4 11 15c0-6-4-9-11-9s-11 3-11 9z" fill={p.veil} />
-            <path d="M17 96c0-18 13-28 31-28s31 10 31 28z" fill={p.cloth} />
-            <ellipse cx="48" cy="45" rx="15" ry="16.5" fill={p.skin} />
-            <path d="M33 45c0-11 6-16 15-16s15 5 15 16c-1.8-7-6-9.5-15-9.5s-13.2 2.5-15 9.5z" fill={p.hair} />
-            <g transform="translate(48,45) scale(0.86) translate(-48,-38)">
-              <Face p={p} />
+            <g opacity="0.55">
+              <path d="M-6 96c0-15 11-24 25-24s25 9 25 24z" fill={p.garment} />
+              <ellipse cx="19" cy="53" rx="11.5" ry="12.5" fill={p.figure} />
+              <path d="M8.5 52c0-9 4.6-13.5 10.5-13.5S29.5 43 29.5 52c-1.4-5.6-4.4-8-10.5-8s-9.1 2.4-10.5 8z" fill={p.figure} />
+            </g>
+            <g opacity="0.55">
+              <path d="M52 96c0-15 11-24 25-24s25 9 25 24z" fill={p.garment} />
+              <ellipse cx="77" cy="53" rx="11.5" ry="12.5" fill={p.figure} />
+              <path d="M65.5 54c0-11 5-15.5 11.5-15.5S88.5 43 88.5 54c0-6.4-4.6-9.6-11.5-9.6s-11.5 3.2-11.5 9.6z" fill={p.figure} />
+            </g>
+            <g transform="translate(48,52) scale(0.9) translate(-48,-46)">
+              <Figure p={p} look="short" />
             </g>
           </g>
         ) : (
-          <g>
-            <Bust p={p} />
-
-            {/* الشعر الخلفيّ — قبل الوجه ليظهر من خلفه */}
-            {look === 'longHair' && (
-              <path d="M27 40c0-16 9-25 21-25s21 9 21 25c0 9 2 15 4 21-7 3-14 4-25 4s-18-1-25-4c2-6 4-12 4-21z" fill={p.hair} />
-            )}
-            {look === 'hijab' && (
-              <path d="M23 44c0-17 11-28 25-28s25 11 25 28c0 11-3 17-6 23l5 13H24l5-13c-3-6-6-12-6-23z" fill={p.veil} />
-            )}
-
-            {/* الرأس */}
-            <ellipse cx="48" cy="38" rx={look === 'hijab' ? 15 : 17} ry={look === 'hijab' ? 17 : 19} fill={p.skin} />
-            {look !== 'hijab' && (
-              <>
-                <ellipse cx="30.6" cy="39" rx="2.7" ry="3.6" fill={p.shade} />
-                <ellipse cx="65.4" cy="39" rx="2.7" ry="3.6" fill={p.shade} />
-              </>
-            )}
-
-            {/* الشعر الأماميّ */}
-            {(look === 'short' || look === 'beard') && (
-              <path d="M31 37c0-13 7-19 17-19s17 6 17 19c-2-8-7-11-17-11s-15 3-17 11z" fill={p.hair} />
-            )}
-            {look === 'longHair' && (
-              <path d="M31 36c0-13 7-19 17-19s17 6 17 19c-1-9-8-12-14-9-4 2-8 4-14 3-3-.5-5 2-6 6z" fill={p.hair} />
-            )}
-            {look === 'beard' && (
-              <path d="M32 42c.7 12 7 20 16 20s15.3-8 16-20c-3 8-8.4 11.5-16 11.5S35 50 32 42z" fill={p.hair} fillOpacity="0.94" />
-            )}
-
-            <Face p={p} />
-          </g>
+          <Figure p={p} look={look} />
         )}
       </g>
-      <circle cx="48" cy="48" r="46" fill="none" stroke={p.ring} strokeOpacity="0.45" strokeWidth="2" />
+      <circle cx="48" cy="48" r="46" fill="none" stroke={p.accent} strokeOpacity="0.5" strokeWidth="2" />
     </svg>
   )
 }
