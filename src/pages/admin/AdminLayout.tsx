@@ -1,5 +1,5 @@
 import { Link, NavLink, useLocation, useNavigate } from "react-router";
-import { BadgePercent, CalendarCog, Crown, FlaskConical, GitBranch, Layers, PenLine, ShieldAlert, LayoutDashboard, UserPlus, Users, BarChart3, LifeBuoy, Wallet, Bell, PlugZap, Star } from "lucide-react";
+import { BadgePercent, CalendarCog, Crown, FlaskConical, GitBranch, GraduationCap, Layers, PenLine, ShieldAlert, LayoutDashboard, UserPlus, Users, BarChart3, LifeBuoy, Wallet, Bell, PlugZap, Star } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import ThemeToggle from "@/components/ThemeToggle";
 import StaffAccountMenu from "@/components/StaffAccountMenu";
@@ -53,6 +53,9 @@ export default function AdminLayout({ children, title }: { children: React.React
       title: "الأشخاص",
       items: [
         { to: "/admin/users", label: "المستخدمون والأدوار", icon: Users , need: "admin.users.view"},
+        /* الطلبةُ المسجَّلون — نطاقُ كلِّ دورٍ يُشتقّ في الخادم، واللوحُ نفسُه
+           يُركَّب في بوابتَي المدرّب والمستشار. */
+        { to: "/admin/learners", label: "الطلبة المسجَّلون", icon: GraduationCap , need: "enrollment.manage"},
         { to: "/admin/trainers", label: "طلبات المدربين", icon: UserPlus , need: "trainer.applications.view"},
         { to: "/admin/exceptions", label: "الاستثناءات", icon: ShieldAlert , need: "enrollment.request.review"},
         { to: "/admin/advisor-requests", label: "طلبات المستشارين", icon: BadgePercent , need: "advisor.request.review"},

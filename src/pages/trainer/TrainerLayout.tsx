@@ -49,6 +49,7 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
   const tabs = [
     { to: "/trainer", label: "الرئيسية", icon: LayoutDashboard, end: true },
     { to: "/trainer/board", label: "شعبي", icon: Users },
+    { to: "/trainer/learners", label: "طلبتي", icon: GraduationCap },
     { to: "/trainer/grading", label: "طابور التقييم", icon: ClipboardCheck },
     { to: "/trainer/proposals", label: "اقتراحاتي", icon: GitPullRequest },
     { to: "/trainer/earnings", label: "مستحقاتي", icon: Wallet },

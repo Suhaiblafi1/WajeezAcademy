@@ -63,6 +63,9 @@ const AdminAuthoring = lazy(() => import('./pages/admin/Authoring'))
 const PublishingBoard = lazy(() => import('./pages/admin/PublishingBoard'))
 const DiagnosticQuality = lazy(() => import('./pages/admin/DiagnosticQuality'))
 const AdminUsers = lazy(() => import('./pages/admin/Users'))
+const AdminLearners = lazy(() => import('./pages/admin/Learners'))
+const TrainerMyLearners = lazy(() => import('./pages/trainer/MyLearners'))
+const AdvisorMyLearners = lazy(() => import('./pages/advisor/MyLearners'))
 const AdminReports = lazy(() => import('./pages/admin/Reports'))
 const AdminSupport = lazy(() => import('./pages/admin/Support'))
 const AdminIntegrations = lazy(() => import('./pages/admin/Integrations'))
@@ -187,10 +190,12 @@ export default function App() {
                 مولَّدة في المتصفّح، تُعرض على المستشار كأنها حالة طلبة. */}
             <Route path="/advisor" element={<AdvisorCases />} />
             <Route path="/advisor/cases" element={<Navigate to="/advisor" replace />} />
+            <Route path="/advisor/learners" element={<AdvisorMyLearners />} />
           </Route>
           <Route element={<RequireRole allow={TRAINER_ROLES} />}>
             <Route path="/trainer" element={<TrainerDashboard />} />
             <Route path="/trainer/grading" element={<GradingQueue />} />
+            <Route path="/trainer/learners" element={<TrainerMyLearners />} />
             {/* حُذفت `CohortView`: شعبةٌ كاملة بطلابها وجلساتها وحضورهم من `data/trainer`،
                 بلا نداء خادمٍ واحد. لوحة «شعبي» تقرأ /api/trainer/my-cohorts. */}
             <Route path="/trainer/cohort/:id" element={<Navigate to="/trainer" replace />} />
@@ -212,6 +217,7 @@ export default function App() {
             <Route path="/admin/publishing" element={<PublishingBoard />} />
             <Route path="/admin/quality" element={<DiagnosticQuality />} />
             <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/learners" element={<AdminLearners />} />
             <Route path="/admin/reports" element={<AdminReports />} />
             <Route path="/admin/support" element={<AdminSupport />} />
             <Route path="/admin/finance" element={<AdminFinance />} />

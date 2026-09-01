@@ -1,5 +1,5 @@
 import { Link, NavLink } from "react-router";
-import { Headset } from "lucide-react";
+import { GraduationCap, Headset } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import ThemeToggle from "@/components/ThemeToggle";
 import StaffAccountMenu from "@/components/StaffAccountMenu";
@@ -42,6 +42,7 @@ export default function AdvisorLayout({ children, title }: { children: React.Rea
      مبنيّتين على `data/advisor` — بيانات مولَّدة في المتصفّح. */
   const tabs = [
     { to: "/advisor", label: "حالاتي", icon: Headset, end: true },
+    { to: "/advisor/learners", label: "طلبتي", icon: GraduationCap },
   ];
 
   return (
