@@ -8,6 +8,9 @@ import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { EnrollmentService } from './enrollment.service'
 import { safeNotify, publicSiteUrl } from './notification.service'
+import {
+  convertFromUsd, isPresentmentCurrency, type PresentmentCurrency,
+} from '../../src/application/commerce/presentment'
 import { getPaymentProvider, verifyPaymentWebhook } from './payments/provider'
 import { getEmailConfig, getPaymentConfig } from './integrations.service'
 import { PlanService } from './plan.service'
@@ -480,7 +483,7 @@ export class CommerceService {
 
      والمفتاح `idempotencyKey` يجعل النداء آمن التكرار: ضغطةٌ مزدوجة أو
      شبكةٌ تتعثّر لا تُنشئان دفعتين. */
-  async payOrder(orderId: string, userId: string, idempotencyKey: string) {
+  async payOrder(orderId: string, userId: string, idempotencyKey: string, presentment?: string) {
     const order = await this.prisma.order.findUnique({ where: { id: orderId }, include: { invoice: true } })
     if (!order || order.userId !== userId) throw new AuthError('not_found', 'الطلب غير موجود', 404)
     if (order.status === 'paid') {
@@ -498,9 +501,24 @@ export class CommerceService {
     /* مصدر واحد لأصل الموقع: رابط عودة الدفع كان يسقط إلى localhost في الإنتاج
        متى غاب APP_URL، تماما كروابط الرسائل. */
     const appUrl = publicSiteUrl()
+
+    /* عملةُ العرض — تُبدَّل عند البطاقة وحدَها، ودفترُنا لا يتحرّك.
+
+       الطلبُ والفاتورةُ بالدولار دائما، فالمحاسبةُ بعملةٍ واحدة. والمشتري
+       يختار بأيّ عملةٍ تُقتطع بطاقتُه، فيُحوَّل المبلغُ بسعر ربطٍ رسميّ ثابت
+       (presentment.ts) لا بسعرٍ عائمٍ يشيخ في الشيفرة.
+
+       والمجهولُ يسقط إلى عملة الطلب بلا ضجيج: عملةٌ لا نعرفها لا تُرسَل إلى
+       المزوّد فيرفضها بعد أن يكون المشتري قد بلغ صفحة الدفع. */
+    const wanted = presentment && isPresentmentCurrency(presentment) ? (presentment as PresentmentCurrency) : null
+    const chargeCurrency = wanted ?? order.currency
+    const chargeAmount = wanted && order.currency === 'USD'
+      ? convertFromUsd(num(order.total), wanted)
+      : num(order.total)
+
     const charge = await provider.createCharge({
-      invoiceNumber: order.invoice.number, amount: num(order.total),
-      currency: order.currency, descriptionAr: `طلب وجيز ${order.id}`,
+      invoiceNumber: order.invoice.number, amount: chargeAmount,
+      currency: chargeCurrency, descriptionAr: `طلب وجيز ${order.id}`,
       /* العودة إلى التعلّم لا إلى الفواتير (التوصية ٥): من أتمّ دفعه يريد أن
          يبدأ، لا أن يقرأ فاتورته. والصفحة تقرأ `paid` فتؤكّد وتوجّه. */
       callbackUrl: `${appUrl}/student/learning?paid=${order.id}`,
@@ -508,7 +526,11 @@ export class CommerceService {
 
     const payment = await this.prisma.payment.create({
       data: {
-        invoiceId: order.invoice.id, provider: provider.name, amount: num(order.total), currency: order.currency,
+        /* الدفعةُ تُسجَّل بما اقتُطع فعلا — لا بما في الدفتر.
+
+           فلو سُجّلت بالدولار وقُبضت بالدرهم، لم يبقَ في نظامنا أثرٌ للرقم
+           الذي يراه المشتري في كشف بطاقته — وهو أوّلُ ما يُسأل عنه عند نزاع. */
+        invoiceId: order.invoice.id, provider: provider.name, amount: chargeAmount, currency: chargeCurrency,
         status: charge.status, providerRef: charge.providerRef, idempotencyKey,
         succeededAt: charge.status === 'succeeded' ? new Date() : null,
       },
@@ -517,7 +539,12 @@ export class CommerceService {
     if (charge.status === 'succeeded') await this.settleOrder(orderId, null)
     await recordAudit(this.prisma, {
       actorId: userId, action: 'payment.charge', entityType: 'payment', entityId: payment.id,
-      meta: { orderId, provider: provider.name, providerRef: charge.providerRef, mode: charge.redirectUrl ? 'hosted' : 'instant' },
+      meta: {
+        orderId, provider: provider.name, providerRef: charge.providerRef,
+        mode: charge.redirectUrl ? 'hosted' : 'instant',
+        /* الدفترُ والبطاقة معا في السجلّ — فالفرقُ بينهما مقروءٌ لا مستنتَج */
+        ledger: `${num(order.total)} ${order.currency}`, charged: `${chargeAmount} ${chargeCurrency}`,
+      },
     })
     /* redirectUrl يصل الواجهة لتحويل المتعلم لصفحة الدفع المستضافة */
     return Object.assign(payment, charge.redirectUrl ? { redirectUrl: charge.redirectUrl } : {})

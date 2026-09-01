@@ -13,6 +13,10 @@ import { CreditCard, Loader2 } from "lucide-react";
 import { apiPost, ApiError } from "@/services/api";
 import type { CohortOption } from "@/services/cohort-prices";
 import { formatOfferPrice } from "@/application/commerce/pathway-offer";
+import {
+  PRESENTMENT_CODES, PRESENTMENT_CURRENCIES, convertFromUsd, formatPresentment,
+  type PresentmentCurrency,
+} from "@/application/commerce/presentment";
 
 interface CheckoutResult { orderId: string; total: number; currency: string }
 interface PayResult { redirectUrl?: string; status?: string }
@@ -29,8 +33,18 @@ export default function BuyCohort({
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /* عملةُ البطاقة — تُختار هنا وحدَها. والسعرُ المعروض في الموقع كلِّه بالدولار
+     (قرارُ صاحب المنصّة)، فلا مبدّلَ عملةٍ في أيّ صفحةٍ أخرى. */
+  const [currency, setCurrency] = useState<PresentmentCurrency>("USD");
 
   if (!cohort) return null;
+
+  /* التحويلُ يُعرض قبل الضغط لا بعده: من يختار الدرهم يرى ٣٦٧٫٢٥ درهما هنا،
+     وهو بعينه ما سيراه على صفحة Stripe وفي كشف بطاقته. */
+  const usd = cohort.currency === "USD";
+  const shown = usd
+    ? formatPresentment(convertFromUsd(cohort.amount, currency), currency)
+    : formatOfferPrice(cohort.amount, cohort.currency);
 
   const buy = async () => {
     setBusy(true);
@@ -38,7 +52,8 @@ export default function BuyCohort({
     try {
       const order = await apiPost<CheckoutResult>("/api/learner/checkout", { cohortIds: [cohort.id] });
       const pay = await apiPost<PayResult>(`/api/learner/orders/${order.orderId}/pay`, {
-        idempotencyKey: `buy-${order.orderId}`,
+        idempotencyKey: `buy-${order.orderId}-${currency}`,
+        ...(usd ? { presentment: currency } : {}),
       });
       if (pay.redirectUrl) {
         /* صفحة دفعٍ مستضافة — نغادر الموقع، فلا حاجة لإطفاء الانشغال */
@@ -54,14 +69,34 @@ export default function BuyCohort({
   };
 
   return (
-    <div className={`flex flex-col items-end gap-1 ${className}`}>
+    <div className={`flex flex-col items-end gap-1.5 ${className}`}>
+      {/* ثلاثُ عملاتٍ مربوطةٍ بالدولار — لا مبدّلَ عملةٍ في الموقع، بل هنا فقط */}
+      {usd && (
+        <div className="flex items-center gap-1" role="group" aria-label="عملة الدفع">
+          {PRESENTMENT_CODES.map((c) => (
+            <button
+              key={c}
+              onClick={() => setCurrency(c)}
+              aria-pressed={currency === c}
+              title={PRESENTMENT_CURRENCIES[c].labelAr}
+              className={`cursor-pointer rounded-full border px-2 py-0.5 text-[10px] font-bold transition ${
+                currency === c
+                  ? "border-gold/60 bg-gold/15 text-gold-ink"
+                  : "border-white/12 text-white/45 hover:border-white/25 hover:text-white/70"
+              }`}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+      )}
       <button
         onClick={() => void buy()}
         disabled={busy}
         className="flex cursor-pointer items-center gap-2 rounded-full bg-gold px-5 py-2 text-xs font-black text-on-gold transition hover:bg-gold/90 disabled:opacity-50"
       >
         {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CreditCard className="h-3.5 w-3.5" />}
-        اشترِ الآن · <span dir="ltr">{formatOfferPrice(cohort.amount, cohort.currency)}</span>
+        اشترِ الآن · <span dir="ltr">{shown}</span>
       </button>
       {error && <p className="max-w-[16rem] text-left text-[11px] leading-4 text-red-300">{error}</p>}
     </div>

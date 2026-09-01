@@ -309,8 +309,13 @@ export function registerOperationsRoutes(app: FastifyInstance, prisma: PrismaCli
     schema: { tags: ['commerce'], summary: 'دفع الطلب بالمزود المضبوط — idempotent؛ يعيد redirectUrl عند المزود المستضاف' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
-    const body = z.object({ idempotencyKey: z.string().min(8).max(80) }).parse(req.body)
-    return commerce.payOrder(id, req.auth!.userId, body.idempotencyKey)
+    /* `presentment` عملةُ البطاقة لا عملةُ الدفتر — والقائمةُ مغلقة عمدا:
+       ما لا يقبله المزوّد لا يُرسَل إليه، فلا يُكتشف الرفضُ عند صفحة الدفع. */
+    const body = z.object({
+      idempotencyKey: z.string().min(8).max(80),
+      presentment: z.enum(['USD', 'AED', 'SAR']).optional(),
+    }).parse(req.body)
+    return commerce.payOrder(id, req.auth!.userId, body.idempotencyKey, body.presentment)
   })
 
   /* ════ التجارة — العمليات ════ */
