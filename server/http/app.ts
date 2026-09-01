@@ -13,6 +13,7 @@ import { errorHandler } from './errors'
 import { registerAuth } from './auth-plugin'
 import { registerAuthRoutes } from './routes/auth.routes'
 import { registerAdminUserRoutes } from './routes/admin-users.routes'
+import { registerAdminAdvisorRoutes } from './routes/admin-advisors.routes'
 import { registerModuleAuthoringRoutes } from './routes/module-authoring.routes'
 import { registerCatalogRoutes } from './routes/catalog.routes'
 import { registerPublishingRoutes } from './routes/publishing.routes'
@@ -164,6 +165,7 @@ export async function buildApp(prisma: PrismaClient) {
 
   registerAuthRoutes(app, auth)
   registerAdminUserRoutes(app, prisma, auth)
+  registerAdminAdvisorRoutes(app, prisma)
   registerModuleAuthoringRoutes(app, prisma)
   registerCatalogRoutes(app, prisma)
   registerPublishingRoutes(app, prisma)

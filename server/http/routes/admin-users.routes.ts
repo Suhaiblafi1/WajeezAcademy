@@ -237,13 +237,102 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
     return { ok: true }
   })
 
+  /* حارسُ الرتبة على ما يمسّ حسابَ غيرِك: لا يُوقَف ولا يُحذَف من هو في
+     رتبتك أو فوقها. وإلّا صار مَن مُنح «إدارة المستخدمين» استثناءً قادرا على
+     إيقاف مدير النظام الأعلى. */
+  const refuseRank = async (targetId: string, actorRoles: string[], verbAr: string) => {
+    const target = await prisma.user.findUnique({ where: { id: targetId }, include: { roles: true } })
+    if (!target) return { error: { code: 'not_found', message_ar: 'لا حسابَ بهذا المعرّف' } }
+    const targetRank = rankOf(target.roles.map((r) => r.roleId))
+    if (targetRank >= rankOf(actorRoles)) {
+      return { error: { code: 'rank_exceeded', message_ar: `لا تستطيع ${verbAr} حسابا في رتبتك أو فوقها` } }
+    }
+    return { target }
+  }
+
   app.post('/api/admin/users/:id/suspend', { preHandler: guard, schema: { tags: ['admin-users'], summary: 'إيقاف حساب — يبطل جلساته فورا' } },
     async (req) => {
       const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
       if (id === req.auth!.userId) {
         return { error: { code: 'self_suspend', message_ar: 'استخدم إيقاف الحساب الذاتي من ملفك — لا توقف نفسك من هنا' } }
       }
+      const check = await refuseRank(id, req.auth!.roles, 'إيقاف')
+      if ('error' in check) return check
       await auth.suspend(id)
+      await recordAudit(prisma, {
+        actorId: req.auth!.userId, action: 'admin.user.suspend', entityType: 'user', entityId: id,
+        meta: { email: check.target.email },
+      })
       return { ok: true }
     })
+
+  app.post('/api/admin/users/:id/reinstate', { preHandler: guard, schema: { tags: ['admin-users'], summary: 'رفعُ الإيقاف — يعيد الحساب نشطا' } },
+    async (req) => {
+      const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+      const check = await refuseRank(id, req.auth!.roles, 'رفعَ الإيقاف عن')
+      if ('error' in check) return check
+      if (check.target.status !== 'suspended') {
+        return { error: { code: 'not_suspended', message_ar: 'هذا الحساب ليس موقوفا' } }
+      }
+      await auth.reinstate(id)
+      await recordAudit(prisma, {
+        actorId: req.auth!.userId, action: 'admin.user.reinstate', entityType: 'user', entityId: id,
+        meta: { email: check.target.email },
+      })
+      return { ok: true }
+    })
+
+  /* ─────────── الحذفُ النهائيّ ───────────
+
+     قرارُ صاحب المنصّة: «الحذفُ يكون إزالةَ الحساب كليّا من القاعدة، أو
+     إيقافَه فقط ويوضع في خانةٍ منفصلة: الحسابات الموقوفة».
+
+     والإزالةُ الكاملة تُقبل حيث لا تُتلف سجلّا. فالقاعدةُ تُسلسل الحذفَ إلى
+     `Order` و`Subscription` — أي أنّ حذفَ مشترٍ يمحو فواتيرَه ودفعاتِه معه،
+     بلا سؤال. ودفترُ المال لا يُمحى بنقرةٍ في شاشة مستخدمين.
+
+     فالقاعدة: يُحذف من لم يترك أثرا (حسابٌ أُنشئ خطأ، دعوةٌ لم تُقبل،
+     تجربة)، ويُوقَف من ترك. والرفضُ يقول ما يمنعه بالعدد لا «تعذّر الحذف»،
+     ويدلّ على البديل. */
+  app.delete('/api/admin/users/:id', {
+    preHandler: requirePermission('admin.users.purge'),
+    schema: { tags: ['admin-users'], summary: 'حذفُ حسابٍ نهائيّا — يُرفض إن كان له سجلٌّ ماليّ أو تعليميّ' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    if (id === req.auth!.userId) {
+      return { error: { code: 'self_purge', message_ar: 'لا تحذف حسابك من هنا' } }
+    }
+    const check = await refuseRank(id, req.auth!.roles, 'حذفَ')
+    if ('error' in check) return check
+
+    const [enrollments, orders, tickets, certificates, ratings] = await Promise.all([
+      prisma.enrollment.count({ where: { userId: id } }),
+      prisma.order.count({ where: { userId: id } }),
+      prisma.supportTicket.count({ where: { userId: id } }),
+      prisma.certificate.count({ where: { enrollment: { userId: id } } }),
+      prisma.rating.count({ where: { raterId: id } }),
+    ])
+    const blockers: string[] = []
+    if (orders > 0) blockers.push(`${orders} طلبَ شراءٍ وفواتيرَه`)
+    if (enrollments > 0) blockers.push(`${enrollments} تسجيلا في شعب`)
+    if (certificates > 0) blockers.push(`${certificates} شهادة`)
+    if (tickets > 0) blockers.push(`${tickets} تذكرةَ دعم`)
+    if (ratings > 0) blockers.push(`${ratings} تقييما`)
+    if (blockers.length > 0) {
+      return {
+        error: {
+          code: 'has_history',
+          message_ar: `لا يُحذف هذا الحساب: له ${blockers.join('، و')} — وحذفُه يمحوها معه. أوقفه بدل ذلك، فيبقى السجلّ ويُمنع الدخول.`,
+        },
+      }
+    }
+
+    /* الأثرُ يُكتب قبل المحو: بعده لا يبقى ما يُشار إليه */
+    await recordAudit(prisma, {
+      actorId: req.auth!.userId, action: 'admin.user.purge', entityType: 'user', entityId: id,
+      meta: { email: check.target.email, displayName: check.target.displayName, roles: check.target.roles.map((r) => r.roleId) },
+    })
+    await prisma.user.delete({ where: { id } })
+    return { ok: true, purged: check.target.email }
+  })
 }

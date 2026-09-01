@@ -225,6 +225,15 @@ export class AuthService {
     ])
   }
 
+  /* والإيقافُ بابٌ يُفتح: «خانةُ الحسابات الموقوفة» بلا رفعِ إيقافٍ سجنٌ
+     مؤبَّد، وأوّلُ خطأٍ في الإيقاف يصير دائما. */
+  async reinstate(userId: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { status: 'active', suspendedAt: null },
+    })
+  }
+
   /* تُبطَل جلساتُه دون إيقاف حسابه: الجلسة تحمل الصلاحيات وقت حلّها، فمن
      نُزعت عنه صلاحيةٌ بقي يعمل بها حتى تنتهي جلسته. */
   async revokeAllSessions(userId: string): Promise<void> {

@@ -1,12 +1,12 @@
 /* إدارة المستخدمين — API حقيقي: قائمة، تعيين أدوار (يستبدل القائمة)، إيقاف.
    الحمايات من الخادم: لا سحب super_admin من نفسك ولا إيقاف ذاتي من هنا. */
 import { useCallback, useEffect, useState } from "react";
-import { CheckCircle2, KeyRound, Loader2, Minus, Plus, RefreshCw, ServerOff, ShieldOff, UserPlus, Users as UsersIcon } from "lucide-react";
+import { CheckCircle2, KeyRound, Loader2, Minus, Plus, RefreshCw, ServerOff, ShieldCheck, ShieldOff, Trash2, UserPlus, Users as UsersIcon } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import ListToolbar from "@/components/admin/ListToolbar";
 import { matchesQuery } from "@/application/text/search-ar";
 import { paginate } from "@/application/admin/paginate";
-import { apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
+import { apiDelete, apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
 import { useRealSession } from "@/services/session";
 
 const ROLE_NAMES_AR: Record<string, string> = {
@@ -55,6 +55,11 @@ export default function Users() {
      ثلاث شاشاتٍ أخرى فلا تتفرّق صيغةُ العدّ ولا تطبيعُ الهمزة. */
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
+  /* «خانةٌ منفصلة للحسابات الموقوفة» — قرارُ صاحب المنصّة. والفصلُ ليس
+     تزيينا: الموقوفُ لا يُدار كالنشط، وأفعالُه ضدُّ أفعاله (رفعُ إيقافٍ
+     وحذفٌ نهائيّ لا إيقافٌ وأدوار)، وخلطُهما في قائمةٍ واحدة يجعل زرَّ
+     الإيقاف يقع بجوار حسابٍ موقوفٍ أصلا. */
+  const [box, setBox] = useState<"active" | "suspended">("active");
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState<string | null>(null);
   const [flash, setFlash] = useState("");
@@ -70,6 +75,7 @@ export default function Users() {
   const can = (key: string) => me?.permissions.includes(key) ?? false;
   const canDelegate = can("admin.permissions.delegate");
   const canManage = can("admin.users.manage");
+  const canPurge = can("admin.users.purge");
   const [permFor, setPermFor] = useState<string | null>(null);
   const [perms, setPerms] = useState<PermView | null>(null);
   const [permReason, setPermReason] = useState("");
@@ -117,7 +123,9 @@ export default function Users() {
 
   /* الترشيحُ ثمّ الترقيم: البحثُ يقع على الكلّ لا على الصفحة المعروضة —
      وإلّا لم يجد الباحثُ إلّا ما كان أمامه أصلا. */
-  const matched = rows.filter((u) => matchesQuery(q, [u.displayName, u.email, ...u.roles.map((r) => r.nameAr)]));
+  const inBox = rows.filter((u) => (box === "suspended" ? u.status === "suspended" : u.status !== "suspended"));
+  const suspendedCount = rows.filter((u) => u.status === "suspended").length;
+  const matched = inBox.filter((u) => matchesQuery(q, [u.displayName, u.email, ...u.roles.map((r) => r.nameAr)]));
   const view = paginate(matched, page, 20);
 
   if (offline) {
@@ -210,11 +218,19 @@ export default function Users() {
         </div>
       ) : (
         <>
+        <div className="mb-3 flex flex-wrap rounded-full border border-white/15 p-1">
+          {([["active", `الحسابات النشطة (${rows.length - suspendedCount})`], ["suspended", `الحسابات الموقوفة (${suspendedCount})`]] as const).map(([k, label]) => (
+            <button key={k} onClick={() => { setBox(k); setQ(""); setPage(1); setEditing(null); setPermFor(null); }}
+              className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-black transition ${box === k ? "bg-gold text-on-gold" : "text-white/60 hover:text-white"}`}>
+              {label}
+            </button>
+          ))}
+        </div>
         <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="حسابا"
           placeholder="ابحث باسمٍ أو بريدٍ أو دور…" />
         {view.total === 0 ? (
           <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-white/45">
-            لا حساب يطابق «{q.trim()}».
+            {q.trim() ? `لا حساب يطابق «${q.trim()}».` : box === "suspended" ? "لا حسابات موقوفة." : "لا حسابات نشطة."}
           </p>
         ) : (
         <div className="space-y-3">
@@ -253,6 +269,28 @@ export default function Users() {
                       onClick={() => act(() => apiPost(`/api/admin/users/${u.id}/suspend`), "أُوقف الحساب وأُبطلت جلساته فورا")}
                       className="flex cursor-pointer items-center gap-1.5 rounded-full border border-red-500/40 px-4 py-1.5 text-xs font-bold text-red-400 hover:bg-red-500/10 disabled:opacity-40">
                       <ShieldOff className="h-3.5 w-3.5" /> إيقاف
+                    </button>
+                  )}
+                  {canManage && u.status === "suspended" && (
+                    <button disabled={busy}
+                      onClick={() => act(() => apiPost(`/api/admin/users/${u.id}/reinstate`), "رُفع الإيقاف — الحساب نشطٌ ويدخل من جديد")}
+                      className="flex cursor-pointer items-center gap-1.5 rounded-full border border-emerald-400/40 px-4 py-1.5 text-xs font-bold text-emerald-300 hover:bg-emerald-400/10 disabled:opacity-40">
+                      <ShieldCheck className="h-3.5 w-3.5" /> ارفع الإيقاف
+                    </button>
+                  )}
+                  {/* الحذفُ النهائيّ لا رجعةَ فيه، فيُستأذن ويُكتب البريدُ تأكيدا.
+                      ولا يُعرض إلّا في خانة الموقوفة: من أراد محوَ حسابٍ نشطٍ
+                      يوقفه أوّلا، فتمرّ لحظةٌ بين القرار وتنفيذه. */}
+                  {canPurge && u.status === "suspended" && (
+                    <button disabled={busy}
+                      onClick={() => {
+                        const typed = window.prompt(`الحذفُ النهائيُّ لا رجعةَ فيه. اكتب بريدَ الحساب لتأكيده:\n${u.email}`);
+                        if (typed === null) return;
+                        if (typed.trim().toLowerCase() !== u.email.toLowerCase()) { setFlash("البريدُ لا يطابق — لم يُحذف شيء."); return; }
+                        void act(() => apiDelete(`/api/admin/users/${u.id}`), "حُذف الحساب نهائيّا من القاعدة.");
+                      }}
+                      className="flex cursor-pointer items-center gap-1.5 rounded-full border border-red-500/60 bg-red-500/10 px-4 py-1.5 text-xs font-black text-red-300 hover:bg-red-500/20 disabled:opacity-40">
+                      <Trash2 className="h-3.5 w-3.5" /> احذف نهائيّا
                     </button>
                   )}
                 </div>
