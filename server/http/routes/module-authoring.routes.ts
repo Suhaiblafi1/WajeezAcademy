@@ -20,31 +20,49 @@ const contentSchema = z.object({
   scenarioAr: z.string().nullish(),
 })
 
-const decisionSchema = z.object({
-  decision: z.enum(['publish', 'request_changes']),
+const academicSchema = z.object({
+  decision: z.enum(['approve', 'request_changes']),
+  noteAr: z.string().optional(),
+})
+
+const finalSchema = z.object({
+  decision: z.enum(['publish', 'return_to_academic']),
   noteAr: z.string().optional(),
 })
 
 export function registerModuleAuthoringRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const svc = new ModuleAuthoringService(prisma)
   const canWrite = requirePermission('catalog.course.edit')
+  /* حلقتان لا واحدة: الاعتمادُ الأكاديميّ بصلاحية النشر (يملكها المدير
+     الأكاديميّ)، والموافقةُ النهائية بحبّةٍ لا يملكها إلّا السوبر. */
   const canDecide = requirePermission('catalog.course.publish')
+  const canFinalApprove = requirePermission('catalog.content.final_approve')
 
   app.get('/api/admin/authoring/worklist', {
     preHandler: canWrite,
     schema: { tags: ['authoring'], summary: 'طابور التأليف — الوحدات وحالة متونها' },
   }, async (req) => {
-    const q = req.query as { missing?: string; limit?: string }
+    const q = req.query as { body?: string; courseId?: string; missing?: string; limit?: string }
+    /* `missing=1` تبقى مقبولةً: روابطُ محفوظةٌ ومفضّلاتٌ لا تُكسر بتغيير اسم مرشِّح */
+    const body = q.body === 'missing' || q.body === 'written' || q.body === 'all'
+      ? q.body
+      : (q.missing === '1' || q.missing === 'true') ? 'missing' : 'all'
     return svc.worklist({
-      onlyMissing: q.missing === '1' || q.missing === 'true',
+      body,
+      courseId: q.courseId || undefined,
       limit: q.limit ? Number(q.limit) : undefined,
     })
   })
 
   app.get('/api/admin/authoring/review-queue', {
     preHandler: canDecide,
-    schema: { tags: ['authoring'], summary: 'ما رُفع وينتظر قرارا' },
-  }, async () => svc.pendingReview())
+    schema: { tags: ['authoring'], summary: 'ما رُفع وينتظر الاعتماد الأكاديميّ' },
+  }, async () => svc.pendingReview('academic'))
+
+  app.get('/api/admin/authoring/final-queue', {
+    preHandler: canFinalApprove,
+    schema: { tags: ['authoring'], summary: 'ما اعتُمد أكاديميّا وينتظر الموافقة النهائية' },
+  }, async () => svc.pendingReview('final'))
 
   app.get('/api/admin/authoring/:moduleId', {
     preHandler: canWrite,
@@ -93,11 +111,21 @@ export function registerModuleAuthoringRoutes(app: FastifyInstance, prisma: Pris
 
   app.post('/api/admin/authoring/:moduleId/review', {
     preHandler: canDecide,
-    schema: { tags: ['authoring'], summary: 'قرارُ المراجع — ولا يعتمد أحدٌ ما كتبه' },
+    schema: { tags: ['authoring'], summary: 'الاعتماد الأكاديميّ — يرفعه للموافقة النهائية أو يعيده للكاتب بملاحظة' },
   }, async (req) => {
     const { moduleId } = req.params as { moduleId: string }
-    const body = decisionSchema.parse(req.body)
-    const v = await svc.review(moduleId, body, req.auth!.userId)
+    const body = academicSchema.parse(req.body)
+    const v = await svc.reviewAcademic(moduleId, body, req.auth!.userId)
+    return { version: v.version, status: v.status }
+  })
+
+  app.post('/api/admin/authoring/:moduleId/final', {
+    preHandler: canFinalApprove,
+    schema: { tags: ['authoring'], summary: 'الموافقة النهائية — نشرٌ أو إعادةٌ إلى المدير الأكاديميّ بملاحظة' },
+  }, async (req) => {
+    const { moduleId } = req.params as { moduleId: string }
+    const body = finalSchema.parse(req.body)
+    const v = await svc.reviewFinal(moduleId, body, req.auth!.userId)
     return { version: v.version, status: v.status }
   })
 }

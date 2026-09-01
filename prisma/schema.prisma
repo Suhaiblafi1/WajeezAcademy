@@ -436,6 +436,13 @@ model CourseModuleVersion {
   reviewedBy   String?      @db.Uuid
   reviewedAt   DateTime?
   reviewNoteAr String?
+  /**
+   * الاعتماد الأكاديميّ — الحلقة الوسطى في سلسلة الثلاث.
+   * يُسجَّل مَن اعتمد أكاديميّا ليمتنع أن يوقّع هو نفسُه الموافقة النهائية:
+   * سلسلةٌ يوقّعها شخصٌ واحد ثلاثَ مرّات خطوةٌ واحدة بثلاثة أزرار.
+   */
+  academicApprovedBy String?  @db.Uuid
+  academicApprovedAt DateTime?
   module       CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
 
   @@unique([moduleId, version])

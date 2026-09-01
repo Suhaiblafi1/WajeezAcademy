@@ -28,6 +28,12 @@ export const PERMISSIONS = [
   { key: 'diagnostic.scoring.publish', description: 'نشر إصدار تقييم' },
   { key: 'diagnostic.simulate', description: 'تشغيل المحاكي ولوحة الجودة' },
   // الأثر والنشر
+  /* الموافقةُ النهائيّة على متن الوحدة — آخرُ حلقةٍ في سلسلة الثلاث.
+
+     ولم تكن حبّةً مستقلّة: القرارُ كلُّه كان على `catalog.course.publish`،
+     والمديرُ الأكاديميّ يملكها والسوبر يملكها — فأيُّهما نشر انتهى الأمر،
+     ولا حلقةَ وسطى. وحبّةٌ منفصلة هي ما يجعل «ثلاث خطوات» ثلاثا. */
+  { key: 'catalog.content.final_approve', description: 'الموافقة النهائية على متن الوحدة بعد الاعتماد الأكاديميّ' },
   { key: 'catalog.impact.view', description: 'عرض تحليل الأثر قبل النشر' },
   { key: 'catalog.rollback', description: 'الرجوع إلى إصدار سابق منشور' },
   // الإدارة

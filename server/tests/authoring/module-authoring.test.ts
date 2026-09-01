@@ -15,7 +15,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
-import { ModuleAuthoringService, DRAFT, IN_REVIEW, PUBLISHED } from '../../services/module-authoring.service'
+import { ModuleAuthoringService, DRAFT, IN_REVIEW, AWAITING_FINAL, PUBLISHED } from '../../services/module-authoring.service'
 import { readableVersionOf } from '../../catalog/module-version-visibility'
 
 let prisma: PrismaClient
@@ -24,6 +24,8 @@ let moduleId = ''
 
 const AUTHOR = '11111111-1111-4111-8111-111111111111'
 const REVIEWER = '22222222-2222-4222-8222-222222222222'
+/* الحلقةُ الثالثة — ثالثٌ غيرُ الكاتب والمعتمِد الأكاديميّ */
+const FINAL = '33333333-3333-4333-8333-333333333333'
 
 const GOOD_CHECKS = `س: ما الفرق بين الهدف والنتيجة؟
 - الهدف ما نقيسه
@@ -86,25 +88,29 @@ describe('تأليف متن الوحدة', () => {
     await svc.submit(moduleId, AUTHOR)
     const pending = await prisma.courseModuleVersion.findFirst({ where: { moduleId, status: IN_REVIEW } })
     expect(pending).toBeTruthy()
-    await expect(svc.review(moduleId, { decision: 'publish' }, AUTHOR)).rejects.toThrow()
+    await expect(svc.reviewAcademic(moduleId, { decision: 'approve' }, AUTHOR)).rejects.toThrow()
   })
 
   it('٦) والردُّ بالتعديل يوجب سببا، ويُعيدها مسوّدةً لا يراها متعلّم', async () => {
-    await expect(svc.review(moduleId, { decision: 'request_changes', noteAr: 'لا' }, REVIEWER)).rejects.toThrow()
-    await svc.review(moduleId, { decision: 'request_changes', noteAr: 'المتن بلا مثالٍ تطبيقيّ — أضف واحدا' }, REVIEWER)
+    await expect(svc.reviewAcademic(moduleId, { decision: 'request_changes', noteAr: 'لا' }, REVIEWER)).rejects.toThrow()
+    await svc.reviewAcademic(moduleId, { decision: 'request_changes', noteAr: 'المتن بلا مثالٍ تطبيقيّ — أضف واحدا' }, REVIEWER)
     const back = await prisma.courseModuleVersion.findFirst({ where: { moduleId, status: DRAFT } })
     expect(back?.reviewNoteAr).toContain('مثالٍ تطبيقيّ')
     const readable = await prisma.courseModuleVersion.findFirst(readableVersionOf(moduleId))
     expect(readable?.status).toBe(PUBLISHED)
   })
 
-  it('٧) والنشرُ من غير كاتبه يجعلها هي المقروءة', async () => {
+  it('٧) والنشرُ بعد حلقتين يجعلها هي المقروءة', async () => {
     await svc.submit(moduleId, AUTHOR)
-    await svc.review(moduleId, { decision: 'publish' }, REVIEWER)
+    /* حلقتان لا واحدة: اعتمادٌ أكاديميّ ثمّ موافقةٌ نهائية من ثالثٍ غيرهما */
+    await svc.reviewAcademic(moduleId, { decision: 'approve' }, REVIEWER)
+    await svc.reviewFinal(moduleId, { decision: 'publish' }, FINAL)
     const readable = await prisma.courseModuleVersion.findFirst(readableVersionOf(moduleId))
     expect(readable?.bodyAr ?? '').toContain('لم يُعتمد بعد')
     expect(readable?.status).toBe(PUBLISHED)
-    expect(readable?.reviewedBy).toBe(REVIEWER)
+    /* الموقِّعُ الأخير هو المسجَّل مراجعا — وهو من نشر فعلا */
+    expect(readable?.reviewedBy).toBe(FINAL)
+    expect(readable?.academicApprovedBy, 'ضاع أثرُ الحلقة الوسطى').toBe(REVIEWER)
   })
 
   it('٨) والسجلُّ لا يُفشي اسم كاتبٍ — العرضُ باسم الأكاديمية', async () => {
@@ -113,6 +119,90 @@ describe('تأليف متن الوحدة', () => {
     const serialized = JSON.stringify(rows)
     expect(serialized).not.toContain(AUTHOR)
     expect(serialized).not.toContain(REVIEWER)
+    expect(serialized).not.toContain(FINAL)
     expect(rows.some((r) => r.hasAuthor)).toBe(true)
+  })
+})
+
+/* ─────────── ما يجعل «ثلاث خطوات» ثلاثا ───────────
+
+   قرارُ صاحب المنصّة: «المدرب يعدّل دوراته ← المدير الأكاديميّ يستعرض
+   الكلَّ ويعتمد ← السوبر أدمن يعطي الموافقة النهائية أو يعيدها بملاحظة إلى
+   المدير الأكاديميّ، وهو يعيدها بملاحظته إلى المدرب — رفضٌ دائما مع سبب،
+   لا رفضٌ صامت».
+
+   وحارسان لا واحد: لا يوقّعها كاتبُها، **ولا مَن اعتمدها أكاديميّا**.
+   فسلسلةٌ يوقّعها شخصٌ واحد ثلاثَ مرّات خطوةٌ واحدة بثلاثة أزرار. */
+describe('سلسلةُ الاعتماد الثلاثيّة', () => {
+  /* علامةٌ لا تلتبس بالنصّ حولها.
+
+     كانت العلامةُ «السلسلة الثلاثيّة» والمتنُ يقول «للسلسلة الثلاثيّة» —
+     ولامُ الجرّ تبتلع ألفَ التعريف، فالمقطعُ غيرُ موجودٍ أصلا. فمرّ تأكيدُ
+     النفي («لا يراها متعلّم») لسببٍ غير الذي يزعمه، وسقط تأكيدُ الإثبات
+     فكُشف الاثنان. */
+  const CHAIN_MARK = 'وسمُ-حلقاتٍ-ثلاث'
+  let chainModule = ''
+
+  beforeAll(async () => {
+    const base = await prisma.courseModuleVersion.findFirst({
+      where: { status: 'published', bodyAr: { not: null }, moduleId: { not: moduleId } },
+      orderBy: { version: 'asc' },
+    })
+    chainModule = base!.moduleId
+    await prisma.courseModuleVersion.deleteMany({
+      where: { moduleId: chainModule, status: { in: [DRAFT, IN_REVIEW, AWAITING_FINAL] } },
+    })
+  })
+
+  /** يعيد المسوّدة إلى أوّل السلسلة بمتنٍ صالح */
+  const freshDraft = async () => {
+    await prisma.courseModuleVersion.deleteMany({
+      where: { moduleId: chainModule, status: { in: [DRAFT, IN_REVIEW, AWAITING_FINAL] } },
+    })
+    await svc.openDraft(chainModule, AUTHOR)
+    await svc.save(chainModule, { bodyAr: `متنُ ${CHAIN_MARK} — نصٌّ كافٍ للرفع.` }, AUTHOR)
+    await svc.submit(chainModule, AUTHOR)
+  }
+
+  it('الاعتمادُ الأكاديميّ لا ينشر — يرفعها إلى الحلقة الأخيرة', async () => {
+    await freshDraft()
+    const v = await svc.reviewAcademic(chainModule, { decision: 'approve' }, REVIEWER)
+    expect(v.status, 'نشرَ المديرُ الأكاديميّ وحدَه').toBe(AWAITING_FINAL)
+    /* ولا يراها متعلّم قبل التوقيع الأخير */
+    const readable = await prisma.courseModuleVersion.findFirst(readableVersionOf(chainModule))
+    expect(readable?.bodyAr ?? '').not.toContain(CHAIN_MARK)
+  })
+
+  it('ولا يوقّع النهائيةَ مَن اعتمدها أكاديميّا — وإلّا صارت الحلقتان واحدة', async () => {
+    await expect(
+      svc.reviewFinal(chainModule, { decision: 'publish' }, REVIEWER),
+    ).rejects.toThrow(/اعتمدها أكاديميّا/)
+  })
+
+  it('ولا يوقّعها كاتبُها', async () => {
+    await expect(svc.reviewFinal(chainModule, { decision: 'publish' }, AUTHOR)).rejects.toThrow(/كتبتَه/)
+  })
+
+  it('والإعادةُ من الأخير ترجع إلى الحلقة الوسطى بملاحظتها — لا إلى الكاتب', async () => {
+    const v = await svc.reviewFinal(
+      chainModule, { decision: 'return_to_academic', noteAr: 'المصطلحُ الأوّل يخالف معجم الأكاديمية' }, FINAL,
+    )
+    expect(v.status).toBe(IN_REVIEW)
+    expect(v.reviewNoteAr).toContain('معجم الأكاديمية')
+    expect(v.academicApprovedBy, 'بقي أثرُ اعتمادٍ أُلغي').toBeNull()
+  })
+
+  it('ولا إعادةَ صامتة — سببٌ يُقرأ أو لا إعادة', async () => {
+    await svc.reviewAcademic(chainModule, { decision: 'approve' }, REVIEWER)
+    await expect(
+      svc.reviewFinal(chainModule, { decision: 'return_to_academic', noteAr: 'لا' }, FINAL),
+    ).rejects.toThrow(/سبب/)
+  })
+
+  it('ثمّ يوقّع الأخيرُ فتُنشر — بعد ثلاثِ أيدٍ لا يدين', async () => {
+    const v = await svc.reviewFinal(chainModule, { decision: 'publish' }, FINAL)
+    expect(v.status).toBe(PUBLISHED)
+    const readable = await prisma.courseModuleVersion.findFirst(readableVersionOf(chainModule))
+    expect(readable?.bodyAr ?? '').toContain(CHAIN_MARK)
   })
 })

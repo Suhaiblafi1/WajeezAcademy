@@ -40,7 +40,25 @@ interface WorkRow {
   hasBody: boolean; hasChecks: boolean; hasVideo: boolean; hasScenario: boolean;
   draftStatus: string | null; learnersWaiting: number; courseHasOpenCohort: boolean;
 }
-interface Worklist { total: number; withBody: number; missing: number; rows: WorkRow[] }
+interface CourseGroup { courseId: string; titleAr: string; total: number; withBody: number }
+interface Worklist {
+  total: number; withBody: number; missing: number;
+  courses: CourseGroup[];
+  rows: WorkRow[];
+}
+
+/* ثلاثةُ مرشّحات لا رايةٌ واحدة.
+
+   كانت خانةَ اختيارٍ واحدة: «الناقصة فقط» أو الكلّ. وشكوى صاحب المنصّة:
+   «التركيز على الناقص فقط يصعّب الوصول لمتنٍ مكتمل تريد تعديله» — وهو حقّ:
+   من يريد مراجعةَ ما كُتب يبحث عنه وسط أربعمائةِ فارغة. */
+type BodyFilter = "all" | "missing" | "written";
+
+const BODY_FILTERS: { id: BodyFilter; label: string }[] = [
+  { id: "all", label: "الكلّ" },
+  { id: "missing", label: "بلا متن" },
+  { id: "written", label: "لها متن" },
+];
 
 interface Draft { version: number; status: string; bodyAr: string | null; checksAr: string | null; videoAr: string | null; scenarioAr: string | null }
 
@@ -61,7 +79,8 @@ const TABS: { id: Tab; label: string; icon: typeof FileText; field: keyof Draft 
 ];
 
 const STATUS_AR: Record<string, string> = {
-  draft: "مسوّدة", in_review: "قيد المراجعة", published: "منشور", approved: "معتمد",
+  draft: "مسوّدة", in_review: "بانتظار الاعتماد الأكاديميّ",
+  awaiting_final: "بانتظار الموافقة النهائية", published: "منشور", approved: "معتمد",
 };
 
 const PLACEHOLDER: Record<Tab, string> = {
@@ -84,9 +103,14 @@ function errorsFor(tab: Tab, value: string): string[] {
 export default function Authoring() {
   const { user } = useRealSession();
   const canDecide = user?.permissions.includes("catalog.course.publish") ?? false;
+  /* الحلقةُ الأخيرة بحبّةٍ منفصلة — لا يملكها المديرُ الأكاديميّ */
+  const canFinalApprove = user?.permissions.includes("catalog.content.final_approve") ?? false;
 
   const [work, setWork] = useState<Worklist | null>(null);
-  const [onlyMissing, setOnlyMissing] = useState(true);
+  const [bodyFilter, setBodyFilter] = useState<BodyFilter>("missing");
+  /* الاختيارُ يبدأ بالدورة ثمّ وحداتُها تحتها بالترتيب — وهو ما طلبه صاحب
+     المنصّة. وأربعُ مئةِ وحدةٍ في قائمةٍ واحدة تُقرأ طابورا لا كتالوجا. */
+  const [courseId, setCourseId] = useState("");
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -102,11 +126,13 @@ export default function Authoring() {
   const loadWork = useCallback(async () => {
     setLoading(true); setError("");
     try {
-      setWork(await apiGet<Worklist>(`/api/admin/authoring/worklist?missing=${onlyMissing ? 1 : 0}&limit=400`));
+      const qs = new URLSearchParams({ body: bodyFilter, limit: "400" });
+      if (courseId) qs.set("courseId", courseId);
+      setWork(await apiGet<Worklist>(`/api/admin/authoring/worklist?${qs}`));
     } catch (e) {
       setError(permissionMessage(e, "تعذّر جلب طابور التأليف"));
     } finally { setLoading(false); }
-  }, [onlyMissing]);
+  }, [bodyFilter, courseId]);
 
   useEffect(() => { void loadWork(); }, [loadWork]);
 
@@ -129,7 +155,7 @@ export default function Authoring() {
 
   const setValue = (v: string) => setDraft((d) => (d ? { ...d, [field]: v } : d));
 
-  const act = async (kind: "save" | "submit" | "withdraw" | "publish" | "changes") => {
+  const act = async (kind: "save" | "submit" | "withdraw" | "approve" | "changes" | "publish" | "return") => {
     if (!selected || !draft) return;
     setBusy(kind); setNotice("");
     try {
@@ -147,12 +173,28 @@ export default function Authoring() {
         const r = await apiPost<Draft>(`${base}/withdraw`);
         setDraft((d) => (d ? { ...d, status: r.status } : d));
         setNotice("سُحبت من المراجعة — تستطيع تعديلها الآن.");
-      } else {
-        await apiPost(`${base}/review`, {
-          decision: kind === "publish" ? "publish" : "request_changes",
+      } else if (kind === "approve" || kind === "changes") {
+        /* الحلقةُ الوسطى: اعتمادٌ أكاديميّ يرفعها للأخير، أو ردٌّ إلى الكاتب */
+        const r = await apiPost<Draft>(`${base}/review`, {
+          decision: kind === "approve" ? "approve" : "request_changes",
           noteAr: note,
         });
-        setNotice(kind === "publish" ? "نُشرت — يراها المتعلّم الآن باسم الأكاديمية." : "أُعيدت إلى كاتبها مع ملاحظتك.");
+        setDraft((d) => (d ? { ...d, status: r.status } : d));
+        setNotice(kind === "approve"
+          ? "اعتُمدت أكاديميّا — وتنتظر الموافقة النهائية."
+          : "أُعيدت إلى كاتبها مع ملاحظتك.");
+        setNote("");
+        await loadWork();
+      } else {
+        /* الحلقةُ الأخيرة: نشرٌ، أو إعادةٌ إلى المدير الأكاديميّ بملاحظة */
+        const r = await apiPost<Draft>(`${base}/final`, {
+          decision: kind === "publish" ? "publish" : "return_to_academic",
+          noteAr: note,
+        });
+        setDraft((d) => (d ? { ...d, status: r.status } : d));
+        setNotice(kind === "publish"
+          ? "نُشرت — يراها المتعلّم الآن باسم الأكاديمية."
+          : "أُعيدت إلى المدير الأكاديميّ مع ملاحظتك.");
         setNote("");
         await loadWork();
       }
@@ -172,6 +214,7 @@ export default function Authoring() {
 
   const isDraft = draft?.status === "draft";
   const isReview = draft?.status === "in_review";
+  const isAwaitingFinal = draft?.status === "awaiting_final";
 
   return (
     <AdminLayout title="تأليف متون الوحدات">
@@ -198,16 +241,49 @@ export default function Authoring() {
               className="w-full rounded-lg border border-white/10 bg-transparent px-2.5 py-1.5 text-xs outline-none placeholder:text-white/30 focus:border-teal/50"
             />
           </div>
-          <label className="mb-3 flex cursor-pointer items-center gap-2 text-[11px] text-white/60">
-            <input type="checkbox" checked={onlyMissing} onChange={(e) => setOnlyMissing(e.target.checked)} className="accent-teal" />
-            الناقصة فقط
+          {/* الدورةُ أوّلا — ثمّ وحداتُها تحتها بترتيبها */}
+          <label className="mb-2.5 block text-[11px] font-bold text-white/50">
+            الدورة
+            <select
+              value={courseId}
+              onChange={(e) => { setCourseId(e.target.value); setSelected(null); setDraft(null); }}
+              className="mt-1 w-full cursor-pointer rounded-lg border border-white/12 bg-white/[0.04] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal/50 [&>option]:bg-surface"
+            >
+              <option value="">كلّ الدورات</option>
+              {(work?.courses ?? []).map((c) => (
+                <option key={c.courseId} value={c.courseId}>
+                  {c.titleAr} — {c.withBody}/{c.total}
+                </option>
+              ))}
+            </select>
           </label>
+
+          <div className="mb-3 flex gap-1" role="group" aria-label="ترشيح بحال المتن">
+            {BODY_FILTERS.map((f) => (
+              <button
+                key={f.id}
+                onClick={() => setBodyFilter(f.id)}
+                aria-pressed={bodyFilter === f.id}
+                className={`flex-1 cursor-pointer rounded-lg border px-2 py-1 text-[11px] font-bold transition ${
+                  bodyFilter === f.id
+                    ? "border-teal/60 bg-teal/15 text-teal-light-ink"
+                    : "border-white/10 text-white/50 hover:border-white/25 hover:text-white/75"
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
 
           {loading ? (
             <div className="grid place-items-center py-10"><Loader2 className="h-5 w-5 animate-spin text-white/40" /></div>
           ) : rows.length === 0 ? (
             <p className="py-8 text-center text-xs leading-6 text-white/50">
-              {onlyMissing ? "لا وحدةَ بلا متن — اكتمل الكتالوج." : "لا نتيجة لهذا البحث."}
+              {bodyFilter === "missing"
+                ? "لا وحدةَ بلا متن هنا — اكتمل ما اخترتَه."
+                : bodyFilter === "written"
+                  ? "لا وحدةَ لها متنٌ بعد في هذا النطاق."
+                  : "لا نتيجة لهذا البحث."}
             </p>
           ) : (
             <ul className="max-h-[34rem] space-y-1.5 overflow-y-auto pl-1">
@@ -378,10 +454,15 @@ export default function Authoring() {
                   </button>
                 )}
 
+                {/* ─────────── حلقتا القرار ───────────
+
+                    كان زرٌّ واحد اسمُه «نشر» يملكه المديرُ الأكاديميّ، فالسلسلةُ
+                    خطوتان: يكتب ويُنشر. وقرارُ صاحب المنصّة ثلاث — فصارت
+                    الحلقةُ الوسطى تعتمد ولا تنشر، والأخيرةُ توقّع أو تُعيد. */}
                 {isReview && canDecide && (
                   <div className="flex w-full flex-wrap items-center gap-2 rounded-xl border border-gold/25 bg-gold/[0.05] p-3">
                     <p className="flex w-full items-center gap-1.5 text-[11px] font-black text-gold">
-                      <ShieldCheck className="h-3.5 w-3.5" /> قرارُ المراجعة — ولا يعتمد أحدٌ ما كتبه
+                      <ShieldCheck className="h-3.5 w-3.5" /> الاعتماد الأكاديميّ — ولا يعتمد أحدٌ ما كتبه
                     </p>
                     <input
                       value={note} onChange={(e) => setNote(e.target.value)}
@@ -389,18 +470,52 @@ export default function Authoring() {
                       className="min-w-[16rem] flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-1.5 text-xs outline-none placeholder:text-white/30 focus:border-gold/50"
                     />
                     <button
-                      type="button" onClick={() => void act("publish")} disabled={busy !== ""}
+                      type="button" onClick={() => void act("approve")} disabled={busy !== ""}
                       className="rounded-lg bg-teal px-4 py-2 text-xs font-black text-on-teal hover:brightness-110 disabled:opacity-40"
                     >
-                      نشر
+                      اعتمِدها أكاديميّا
                     </button>
                     <button
                       type="button" onClick={() => void act("changes")} disabled={busy !== "" || note.trim().length < 5}
                       className="rounded-lg bg-white/10 px-4 py-2 text-xs font-bold hover:bg-white/15 disabled:opacity-40"
                     >
-                      إعادةٌ مع ملاحظة
+                      إعادةٌ إلى الكاتب مع ملاحظة
                     </button>
+                    <p className="w-full text-[10.5px] leading-5 text-white/45">
+                      الاعتمادُ لا ينشر — يرفعها إلى الموافقة النهائية، ولا يراها متعلّمٌ قبلها.
+                    </p>
                   </div>
+                )}
+
+                {isAwaitingFinal && (
+                  canFinalApprove ? (
+                    <div className="flex w-full flex-wrap items-center gap-2 rounded-xl border border-teal/30 bg-teal/[0.06] p-3">
+                      <p className="flex w-full items-center gap-1.5 text-[11px] font-black text-teal-light-ink">
+                        <ShieldCheck className="h-3.5 w-3.5" /> الموافقة النهائية — ولا يوقّعها كاتبُها ولا مَن اعتمدها أكاديميّا
+                      </p>
+                      <input
+                        value={note} onChange={(e) => setNote(e.target.value)}
+                        placeholder="سببُ الإعادة (مطلوبٌ عند الإعادة)"
+                        className="min-w-[16rem] flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-1.5 text-xs outline-none placeholder:text-white/30 focus:border-teal/50"
+                      />
+                      <button
+                        type="button" onClick={() => void act("publish")} disabled={busy !== ""}
+                        className="rounded-lg bg-teal px-4 py-2 text-xs font-black text-on-teal hover:brightness-110 disabled:opacity-40"
+                      >
+                        وافِق وانشر
+                      </button>
+                      <button
+                        type="button" onClick={() => void act("return")} disabled={busy !== "" || note.trim().length < 5}
+                        className="rounded-lg bg-white/10 px-4 py-2 text-xs font-bold hover:bg-white/15 disabled:opacity-40"
+                      >
+                        أعِدها للمدير الأكاديميّ
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="w-full rounded-xl border border-white/10 bg-white/[0.03] p-3 text-[11px] leading-6 text-white/55">
+                      اعتُمدت أكاديميّا وتنتظر الموافقة النهائية — وهي بحبّةِ صلاحيةٍ لا يملكها حسابك.
+                    </p>
+                  )
                 )}
               </div>
 

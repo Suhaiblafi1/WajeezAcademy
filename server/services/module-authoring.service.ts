@@ -36,7 +36,15 @@ import { validateVideo } from '../../src/application/content/module-video'
 /** حالاتُ التأليف — والمقروءتان في `module-version-visibility` */
 export const DRAFT = 'draft'
 export const IN_REVIEW = 'in_review'
+/* الحلقةُ الوسطى: اعتُمد أكاديميّا وينتظر الموافقة النهائية.
+
+   وهي حالةٌ لا يراها متعلّم: `READABLE_MODULE_VERSION_STATUSES` تقتصر على
+   `published` و`approved`. فالمعتمَدُ أكاديميّا محجوبٌ حتّى يوقّع الأخير. */
+export const AWAITING_FINAL = 'awaiting_final'
 export const PUBLISHED = 'published'
+
+/** الحالاتُ المفتوحة — مسوّدةٌ أو في الطريق، وواحدةٌ لا أكثر لكلّ وحدة */
+export const OPEN_STATUSES = [DRAFT, IN_REVIEW, AWAITING_FINAL] as const
 
 /** ما يملك المؤلِّف تغييره — ولا شيء غيره */
 export interface ModuleContentPatch {
@@ -52,8 +60,15 @@ const CONTENT_FIELDS = ['bodyAr', 'checksAr', 'videoAr', 'scenarioAr'] as const
    يقرؤها كلُّ زائر. اللقطة تُبنى كاملةً في كلِّ نشر، فحجمُها ثمنٌ مشترك. */
 export const MAX_BODY_CHARS = 40_000
 
-export interface AuthoringDecision {
-  decision: 'publish' | 'request_changes'
+/* قرارُ الحلقة الوسطى: يعتمد أكاديميّا فيرفعه إلى الأخير، أو يعيده للكاتب */
+export interface AcademicDecision {
+  decision: 'approve' | 'request_changes'
+  noteAr?: string
+}
+
+/* قرارُ الحلقة الأخيرة: ينشر، أو يعيده إلى المدير الأكاديميّ بملاحظته */
+export interface FinalDecision {
+  decision: 'publish' | 'return_to_academic'
   noteAr?: string
 }
 
@@ -77,7 +92,7 @@ export class ModuleAuthoringService {
   /** المسوّدةُ الجارية — أو ما رُفع للمراجعة؛ واحدةٌ لا أكثر */
   private async openVersion(moduleId: string) {
     return this.prisma.courseModuleVersion.findFirst({
-      where: { moduleId, status: { in: [DRAFT, IN_REVIEW] } },
+      where: { moduleId, status: { in: [...OPEN_STATUSES] } },
       orderBy: { version: 'desc' },
     })
   }
@@ -204,10 +219,19 @@ export class ModuleAuthoringService {
    * وهي ليست شكليّةً هنا: المديرُ الأكاديميّ يملك التأليفَ والمراجعة معا،
    * فبلا هذا الشرط يصير «ثلاثُ خطوات» خطوةً واحدةً بثلاثة أزرار.
    */
-  async review(moduleId: string, input: AuthoringDecision, reviewerId: string) {
+  /**
+   * الحلقةُ الوسطى — اعتمادٌ أكاديميّ يرفعه إلى الأخير، أو ردٌّ إلى الكاتب.
+   *
+   * والقاعدةُ الحاكمة باقية: لا يعتمد أحدٌ ما كتبه. وهي ليست شكليّةً هنا:
+   * المديرُ الأكاديميّ يملك التأليفَ والمراجعة معا، فبلا هذا الشرط تصير
+   * السلسلةُ خطوةً واحدةً بثلاثة أزرار.
+   *
+   * ولا ردَّ صامت: من يُعاد إليه عملُه يستحقّ أن يعرف ما يُعدَّل.
+   */
+  async reviewAcademic(moduleId: string, input: AcademicDecision, reviewerId: string) {
     const pending = await this.openVersion(moduleId)
     if (!pending || pending.status !== IN_REVIEW) {
-      throw new AuthError('bad_state', 'لا مسوّدة قيد المراجعة', 409)
+      throw new AuthError('bad_state', 'لا مسوّدة قيد المراجعة الأكاديميّة', 409)
     }
     if (pending.createdBy && pending.createdBy === reviewerId) {
       throw new AuthError('self_review', 'لا تعتمد ما كتبتَه — يراجعه غيرك', 403)
@@ -217,19 +241,78 @@ export class ModuleAuthoringService {
       throw new AuthError('reason_required', 'اكتب ما يُعدَّل — الردُّ بلا سبب لا يُفيد الكاتب', 422)
     }
 
-    const next = input.decision === 'publish' ? PUBLISHED : DRAFT
+    const approve = input.decision === 'approve'
     const updated = await this.prisma.courseModuleVersion.update({
       where: { id: pending.id },
-      data: {
-        status: next, reviewedBy: reviewerId, reviewedAt: new Date(),
-        reviewNoteAr: noteAr || null,
-        ...(next === DRAFT ? { submittedAt: null } : {}),
-      },
+      data: approve
+        ? {
+            status: AWAITING_FINAL,
+            academicApprovedBy: reviewerId, academicApprovedAt: new Date(),
+            reviewNoteAr: noteAr || null,
+          }
+        : {
+            status: DRAFT, submittedAt: null,
+            reviewedBy: reviewerId, reviewedAt: new Date(), reviewNoteAr: noteAr,
+            academicApprovedBy: null, academicApprovedAt: null,
+          },
     })
     await recordAudit(this.prisma, {
-      actorId: reviewerId, action: `module.content.${input.decision}`,
+      actorId: reviewerId,
+      action: approve ? 'module.content.academic_approve' : 'module.content.request_changes',
       entityType: 'module', entityId: moduleId,
-      meta: { version: pending.version, authorId: pending.createdBy },
+      meta: { version: pending.version, authorId: pending.createdBy, ...(noteAr ? { noteAr } : {}) },
+    })
+    return updated
+  }
+
+  /**
+   * الحلقةُ الأخيرة — نشرٌ، أو ردٌّ إلى المدير الأكاديميّ بملاحظته.
+   *
+   * وحارسان لا واحد: لا يوقّعها كاتبُها، **ولا مَن اعتمدها أكاديميّا**.
+   * فسلسلةٌ يوقّعها شخصٌ واحد ثلاثَ مرّات خطوةٌ واحدة بثلاثة أزرار — وهذا
+   * ما يجعل «ثلاث خطوات» ثلاثا لا اسما لواحدة.
+   */
+  async reviewFinal(moduleId: string, input: FinalDecision, approverId: string) {
+    const pending = await this.openVersion(moduleId)
+    if (!pending || pending.status !== AWAITING_FINAL) {
+      throw new AuthError('bad_state', 'لا مسوّدة بانتظار الموافقة النهائية', 409)
+    }
+    if (pending.createdBy && pending.createdBy === approverId) {
+      throw new AuthError('self_review', 'لا تعتمد ما كتبتَه — يراجعه غيرك', 403)
+    }
+    if (pending.academicApprovedBy && pending.academicApprovedBy === approverId) {
+      throw new AuthError(
+        'same_approver',
+        'أنت مَن اعتمدها أكاديميّا — والموافقةُ النهائية لغيرك، وإلّا صارت الحلقتان واحدة',
+        403,
+      )
+    }
+    const noteAr = (input.noteAr ?? '').trim()
+    if (input.decision === 'return_to_academic' && noteAr.length < 5) {
+      throw new AuthError('reason_required', 'اكتب سببَ الإعادة — الردُّ بلا سبب لا يُفيد أحدا', 422)
+    }
+
+    const publish = input.decision === 'publish'
+    const updated = await this.prisma.courseModuleVersion.update({
+      where: { id: pending.id },
+      data: publish
+        ? { status: PUBLISHED, reviewedBy: approverId, reviewedAt: new Date(), reviewNoteAr: noteAr || null }
+        : {
+            /* تعود إلى الحلقة الوسطى لا إلى الكاتب: الملاحظةُ للمدير
+               الأكاديميّ، وهو من يقرّر ماذا يُبلَّغ به الكاتب. */
+            status: IN_REVIEW,
+            reviewedBy: approverId, reviewedAt: new Date(), reviewNoteAr: noteAr,
+            academicApprovedBy: null, academicApprovedAt: null,
+          },
+    })
+    await recordAudit(this.prisma, {
+      actorId: approverId,
+      action: publish ? 'module.content.publish' : 'module.content.return_to_academic',
+      entityType: 'module', entityId: moduleId,
+      meta: {
+        version: pending.version, authorId: pending.createdBy,
+        academicApprovedBy: pending.academicApprovedBy, ...(noteAr ? { noteAr } : {}),
+      },
     })
     return updated
   }
@@ -261,7 +344,7 @@ export class ModuleAuthoringService {
    *
    * وما يُحسب هنا أعدادٌ لا أسماء: كم متعلّما ينتظر، لا مَن هم.
    */
-  async worklist(options: { onlyMissing?: boolean; limit?: number } = {}) {
+  async worklist(options: { body?: 'all' | 'missing' | 'written'; courseId?: string; limit?: number } = {}) {
     const limit = Math.min(Math.max(options.limit ?? 200, 1), 500)
 
     const modules = await this.prisma.courseModule.findMany({
@@ -328,14 +411,41 @@ export class ModuleAuthoringService {
        الثلاث. ومستودعٌ قاعدتُه «القياس قبل التغيير» لا يعرض عدّادا يكذب. */
     const total = all.length
     const withBody = all.filter((r) => r.hasBody).length
-    const rows = options.onlyMissing ? all.filter((r) => !r.hasBody) : all
-    return { total, withBody, missing: total - withBody, rows: rows.slice(0, limit) }
+
+    /* ثلاثةُ مرشّحات لا اثنان.
+
+       كان المرشِّحُ رايةً واحدة: «الناقصة فقط» أو الكلّ. وشكوى صاحب المنصّة:
+       «التركيز على الناقص فقط يصعّب الوصول لمتنٍ مكتمل تريد تعديله» — وهو
+       حقّ: من يريد مراجعةَ ما كُتب يبحث عنه وسط أربعمائةِ فارغة. */
+    const byBody = options.body === 'missing'
+      ? all.filter((r) => !r.hasBody)
+      : options.body === 'written'
+        ? all.filter((r) => r.hasBody)
+        : all
+    const rows = options.courseId ? byBody.filter((r) => r.courseId === options.courseId) : byBody
+
+    /* الدوراتُ كمجموعات — الاختيارُ يبدأ بالدورة ثمّ وحداتُها تحتها بالترتيب،
+       وهو ما طلبه صاحب المنصّة. والعدّادُ لكلِّ دورةٍ من الكتالوج كلِّه لا من
+       الشريحة، فلا يكذب مع المرشِّح. */
+    const courses = new Map<string, { courseId: string; titleAr: string; total: number; withBody: number }>()
+    for (const r of all) {
+      const c = courses.get(r.courseId) ?? { courseId: r.courseId, titleAr: r.courseTitleAr, total: 0, withBody: 0 }
+      c.total += 1
+      if (r.hasBody) c.withBody += 1
+      courses.set(r.courseId, c)
+    }
+
+    return {
+      total, withBody, missing: total - withBody,
+      courses: [...courses.values()].sort((a, b) => a.titleAr.localeCompare(b.titleAr, 'ar')),
+      rows: rows.slice(0, limit),
+    }
   }
 
-  /** طابورُ المراجعة — ما رُفع وينتظر قرارا */
-  async pendingReview() {
+  /** طابورُ المراجعة — ما ينتظر قرارا في حلقةٍ بعينها */
+  async pendingReview(stage: 'academic' | 'final' = 'academic') {
     const rows = await this.prisma.courseModuleVersion.findMany({
-      where: { status: IN_REVIEW },
+      where: { status: stage === 'final' ? AWAITING_FINAL : IN_REVIEW },
       orderBy: { submittedAt: 'asc' },
       include: { module: { select: { id: true, courseId: true } } },
       take: 100,
@@ -345,6 +455,10 @@ export class ModuleAuthoringService {
       titleAr: v.titleAr, submittedAt: v.submittedAt?.toISOString() ?? null,
       bodyChars: v.bodyAr?.length ?? 0,
       hasChecks: Boolean(v.checksAr), hasVideo: Boolean(v.videoAr), hasScenario: Boolean(v.scenarioAr),
+      /* الملاحظةُ العائدة من الحلقة الأخيرة تُقرأ في طابور الوسطى — وإلّا
+         عاد العملُ بلا أن يعرف مستقبِلُه لماذا. */
+      reviewNoteAr: v.reviewNoteAr,
+      academicApprovedAt: v.academicApprovedAt?.toISOString() ?? null,
     }))
   }
 }

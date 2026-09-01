@@ -20,6 +20,7 @@ let auth: AuthService
 let app: FastifyInstance
 let writerCookie = ''
 let managerCookie = ''
+let superCookie = ''
 let learnerCookie = ''
 let moduleId = ''
 
@@ -48,6 +49,8 @@ beforeAll(async () => {
   /* كاتبٌ لا ينشر: متعلّمٌ مُنح حبّةَ الكتابة وحدها — أوضحُ صورةٍ للفصل */
   writerCookie = await userWith(`writer-${STAMP}@test.local`, 'learner', ['catalog.course.edit'])
   managerCookie = await userWith(`acad-${STAMP}@test.local`, 'academic_manager')
+  /* الحلقةُ الثالثة — والموافقةُ النهائية بحبّةٍ لا يملكها المديرُ الأكاديميّ */
+  superCookie = await userWith(`super-${STAMP}@test.local`, 'super_admin')
   learnerCookie = await userWith(`plain-${STAMP}@test.local`, 'learner')
 
   const base = await prisma.courseModuleVersion.findFirst({
@@ -55,7 +58,7 @@ beforeAll(async () => {
   })
   moduleId = base!.moduleId
   await prisma.courseModuleVersion.deleteMany({
-    where: { moduleId, status: { in: ['draft', 'in_review'] } },
+    where: { moduleId, status: { in: ['draft', 'in_review', 'awaiting_final'] } },
   })
 })
 
@@ -92,20 +95,52 @@ describe('تأليف المتن عبر HTTP', () => {
     })
     expect(submit.statusCode).toBe(200)
 
-    const selfPublish = await app.inject({
+    const selfApprove = await app.inject({
       method: 'POST', url: `/api/admin/authoring/${moduleId}/review`, headers: { cookie: writerCookie },
-      payload: { decision: 'publish' },
+      payload: { decision: 'approve' },
     })
-    /* ٤٠٣ لأنّه لا يملك حبّةَ النشر — والحبّتان منفصلتان فعلا */
-    expect(selfPublish.statusCode).toBe(403)
+    /* ٤٠٣ لأنّه لا يملك حبّةَ القرار — والحبّتان منفصلتان فعلا */
+    expect(selfApprove.statusCode).toBe(403)
   })
 
-  it('والمديرُ الأكاديميّ ينشرها — فتصير هي المقروءة', async () => {
+  /* ─────────── ثلاثُ حلقاتٍ لا اثنتان ───────────
+
+     كان المديرُ الأكاديميّ ينشر بضغطةٍ واحدة، فالسلسلةُ خطوتان: يكتب ويُنشر.
+     وقرارُ صاحب المنصّة ثلاث: يكتب، ثمّ يعتمد المديرُ الأكاديميّ، ثمّ يوقّع
+     السوبر الموافقةَ النهائية أو يعيدها بملاحظة. */
+  it('والمديرُ الأكاديميّ يعتمد أكاديميّا — ولا ينشر', async () => {
     const r = await app.inject({
       method: 'POST', url: `/api/admin/authoring/${moduleId}/review`, headers: { cookie: managerCookie },
+      payload: { decision: 'approve' },
+    })
+    expect(r.statusCode, r.body).toBe(200)
+    expect(r.json().status).toBe('awaiting_final')
+
+    /* ولا يملك حبّةَ الموافقة النهائية */
+    const tryFinal = await app.inject({
+      method: 'POST', url: `/api/admin/authoring/${moduleId}/final`, headers: { cookie: managerCookie },
       payload: { decision: 'publish' },
     })
-    expect(r.statusCode).toBe(200)
+    expect(tryFinal.statusCode, 'وقّع المديرُ الأكاديميّ الحلقتين معا').toBe(403)
+  })
+
+  it('وطابورُ الموافقة النهائية للسوبر وحدَه', async () => {
+    expect((await app.inject({
+      method: 'GET', url: '/api/admin/authoring/final-queue', headers: { cookie: managerCookie },
+    })).statusCode).toBe(403)
+    const mine = await app.inject({
+      method: 'GET', url: '/api/admin/authoring/final-queue', headers: { cookie: superCookie },
+    })
+    expect(mine.statusCode, mine.body).toBe(200)
+    expect(mine.json().some((r: { moduleId: string }) => r.moduleId === moduleId)).toBe(true)
+  })
+
+  it('والسوبرُ يوقّع النهائية — فتصير هي المقروءة', async () => {
+    const r = await app.inject({
+      method: 'POST', url: `/api/admin/authoring/${moduleId}/final`, headers: { cookie: superCookie },
+      payload: { decision: 'publish' },
+    })
+    expect(r.statusCode, r.body).toBe(200)
     const readable = await prisma.courseModuleVersion.findFirst({
       where: { moduleId, status: { in: ['published', 'approved'] } }, orderBy: { version: 'desc' },
     })
