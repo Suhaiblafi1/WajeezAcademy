@@ -241,7 +241,12 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
                     مختارة
                   </span>
                 )}
-                <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] text-white/50">{c.category}</span>
+                {/* لا وسمَ ثانويّا على الدورة.
+
+                    كان «أساسيات» أو «موظفون» — وهو تصنيفُ **المسار** الذي
+                    تسكنه الدورة لا وصفٌ لها. وقد سقط «من مسار كذا» من تحت
+                    العنوان للسبب نفسِه، فبقاؤه وسما فوقَه يعيد الشيءَ من بابٍ
+                    آخر. والبطاقةُ الآن: الاسمُ ثمّ المخرَجُ ثمّ المدّة. */}
               </div>
               <CourseTitle name={c.name} termEn={c.termEn} className="mt-3 font-bold leading-relaxed" />
               {/* المخرَجُ أوّلا لا موضعُ الدورة من مسار.

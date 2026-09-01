@@ -490,13 +490,25 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                     </li>
                   ))}
                 </ul>
+                {/* واتساب لا بريد.
+
+                    التحقّقُ هنا يقوم على **مستندٍ يُرى**: هويّةٌ جامعيّة أو
+                    بطاقةُ عملٍ أو هويّةٌ شخصيّة. وإرسالُ صورةٍ في واتساب فعلٌ
+                    من ضغطتين على الهاتف — وهو حيث يقف المشتري — بينما مرفقُ
+                    بريدٍ من الهاتف رحلةٌ يتركها أكثرُهم في منتصفها.
+
+                    وواتساب المستشارين هو القناة الرسميّة المعتمدة أصلا
+                    (`CONTACT.whatsapp` في data/stories.ts)، فلا قناةَ جديدة
+                    تُفتح هنا بل تُستعمل القائمة. */}
                 <p className="mt-2.5 text-[11px] leading-relaxed text-white/40">
                   الكود لا يُنشر: يُصدَر لك وحدك بعد التحقق، فلا يتسرّب خصم فئةٍ إلى من ليس منها.{" "}
                   <a
-                    href={`mailto:${CONTACT.email}?subject=${encodeURIComponent("تحقق من الأهلية لخصم فئة")}`}
+                    href={`https://wa.me/${CONTACT.whatsapp}?text=${encodeURIComponent("أرغب بالتحقق من أهليتي لخصم فئة — وسأرفق ما يثبت ذلك.")}`}
+                    target="_blank"
+                    rel="noreferrer"
                     className="font-bold text-white/60 underline underline-offset-4 transition hover:text-[#6EC7D1]"
                   >
-                    تواصل معنا للتحقق والحصول على كودك
+                    راسلنا على واتساب بصورة الإثبات
                   </a>
                 </p>
               </details>

@@ -35,7 +35,7 @@ import { pathwayById, pathwayCategory } from "@/data/pathways";
 import { hasCoreCatalog } from "@/data/core-catalog-source";
 import { readAdoptedPlan, saveAdoptedPlan, syncAdoptedPlan } from "@/application/plan/adopted-plan";
 import { FIRST_TIME_PROMO } from "@/application/commerce/first-time-promo";
-import { useCoursePrices, cheapestOf, pricedCount, formatCohortPrice } from "@/services/cohort-prices";
+import { useCoursePrices, formatCohortPrice, totalOf } from "@/services/cohort-prices";
 import { courseById, courses, pathwaySupportCourses, readyPathwayCourseIds, pathwayDelivery, pathwayTrainers, courseTrainer, weeksLabel, MIN_PATHWAY_COURSES, MAX_PATHWAY_COURSES } from "@/data/courses";
 import { GOAL_LABELS, GAP_LABELS, OBSTACLE_TO_GAP } from "@/data/diagnostic";
 import { track } from "@/services/analytics";
@@ -193,8 +193,8 @@ export default function PathwayPage() {
   }, [courseIds, catalogVersion]);
 
   const { prices, loaded: pricesLoaded } = useCoursePrices();
-  const cheapest = cheapestOf(courseIds, prices);
-  const known = pricedCount(courseIds, prices);
+  /* سعرُ المسار كاملا — أو null إن نقص سعرُ دورةٍ واحدة، فلا مجموعَ ناقصا */
+  const fullPrice = totalOf(courseIds, prices);
 
   /* تقريره الشخصي من إجابات التشخيص */
   const report = useMemo(() => {
@@ -724,17 +724,26 @@ export default function PathwayPage() {
                   <span className="absolute left-3 top-3 rounded-full bg-gold/15 px-2.5 py-0.5 text-[10px] font-black text-gold-ink">الأوفر</span>
                   <p className="font-black text-sm">المسار كاملا</p>
                   <p className="mt-1 text-xs text-white/50">كل الدورات + التشخيص الكامل + المنظومة الست أدناه</p>
-                  {/* الرقم الأوّل «تبدأ من … للدورة» لا سعرُ الخطّة كاملة.
-                      المتعلّم هنا يقرّر أيبدأ أم لا، ورقمٌ من ثلاث خانات في
-                      صدارة البطاقة يُقرأ حاجزا قبل أن يُقرأ قيمة. وسعرُ الخطّة
-                      يُحدَّد بعد أن يعتمدها هو — لأن عددها يتغيّر بيده. */}
-                  {cheapest ? (
+                  {/* السعرُ كاملا لا «تبدأ من».
+
+                      قرارُ صاحب المنصّة: «سعر المسار يجب أن يظهر كاملا، ليس
+                      تبدأ من — فهذا أمرٌ قديم تراجعتُ عنه». و«تبدأ من» وُضعت
+                      يوم كانت أكثرُ الشعب بلا سعر، فصارت اليومَ تُخفي الرقمَ
+                      الذي يُقتطع فعلا وتُبقي المشتريَ يخمّن.
+
+                      والمعروضُ هو المجموعُ الذي يُصدره `checkout` بعينه: أسعارُ
+                      شعب الدورات مجموعةً. ولا خصمَ باقةٍ يُعرض هنا لأنّ الخادمَ
+                      لا يطبّقه بعد — وعرضُ خصمٍ لا يُخصم هو ما نغلقه لا ما
+                      نزيده. والكوبونُ يُطبَّق ويُرى عند الدفع. */}
+                  {fullPrice ? (
                     <>
                       <div className="mt-4 flex items-end gap-1.5">
-                        <span className="mb-1 text-xs text-white/50">تبدأ من</span>
-                        <span dir="ltr" className="text-2xl font-black text-white">{formatCohortPrice(cheapest)}</span>
-                        <span className="mb-1 text-xs text-white/50">للدورة</span>
+                        <span className="mb-1 text-xs text-white/50">المسار كاملا</span>
+                        <span dir="ltr" className="text-2xl font-black text-white">{formatCohortPrice(fullPrice)}</span>
                       </div>
+                      <p className="mt-0.5 text-[11px] text-white/40">
+                        {courseIds.length} دورات — وهو ما تُصدره الفاتورة
+                      </p>
                       <div className="mt-2 space-y-1 text-xs">
                         <p className="text-teal-light-ink">خصمٌ كبير على المسار كاملا مقابل شراء دوراته منفردة</p>
                         <p className="text-gold-ink">
@@ -745,8 +754,7 @@ export default function PathwayPage() {
                           <Gift className="h-3.5 w-3.5" /> ودورةٌ من اختيارك هديّة داخل الخطّة
                         </p>
                         <p className="pt-0.5 text-white/45">
-                          سعر مسارك يُحدَّد بعد أن تعتمده — أنت من يقرّر دوراته.
-                          {known < courseIds.length && " وبعض دوراته لم تُفتح لها شعبة بعد."}
+                          الرقم أعلاه لهذه الدورات — ويتغيّر إن غيّرتها.
                         </p>
                       </div>
                     </>

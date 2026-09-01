@@ -126,7 +126,7 @@ export function useCoursePrices(): { prices: Map<string, CoursePrice>; loaded: b
   return { prices, loaded }
 }
 
-export function formatCohortPrice(p: CoursePrice): string {
+export function formatCohortPrice(p: { amount: number; currency: string }): string {
   return `${p.amount.toLocaleString('en-US')} ${p.currency}`
 }
 
@@ -142,6 +142,31 @@ export function cheapestOf(courseIds: readonly string[], prices: Map<string, Cou
     if (p.currency === best.currency && p.amount < best.amount) best = p
   }
   return best
+}
+
+/** مجموعُ أسعار المجموعة — **أو null إن نقص سعرُ دورةٍ واحدة**.
+
+    قرارُ صاحب المنصّة: «سعر المسار يجب أن يظهر كاملا، ليس تبدأ من — فهذا أمرٌ
+    قديم تراجعتُ عنه». و«تبدأ من» وُضعت يوم كانت أكثرُ الشعب بلا سعر، فصارت
+    اليومَ تُخفي الرقمَ الذي يُقتطع فعلا.
+
+    والمجموعُ لا يُعرض ناقصا أبدا: مجموعُ ثلاثٍ من أربعٍ يُقرأ سعرَ الأربع،
+    وهو أسوأُ من لا رقم. والعملاتُ المختلطة تُبطله كذلك — الخادمُ نفسُه يرفض
+    خلطها في طلبٍ واحد (commerce.service.ts). */
+export interface PriceSum { amount: number; currency: string }
+
+export function totalOf(courseIds: readonly string[], prices: Map<string, CoursePrice>): PriceSum | null {
+  if (courseIds.length === 0) return null
+  let sum = 0
+  let currency: string | null = null
+  for (const id of courseIds) {
+    const p = prices.get(id)
+    if (!p) return null // سعرٌ ناقص — لا مجموع
+    if (currency === null) currency = p.currency
+    else if (p.currency !== currency) return null // عملتان — لا يُجمعان
+    sum += p.amount
+  }
+  return currency ? { amount: sum, currency } : null
 }
 
 /** كم دورةً في المجموعة لها سعر معلوم — الواجهة تقول الحقيقة حين ينقص */
