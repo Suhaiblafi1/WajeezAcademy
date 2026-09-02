@@ -15,6 +15,8 @@
 
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { validateChecks } from '../src/application/content/module-checks'
+import { validateScenario } from '../src/application/content/scenario'
 
 const CATALOG = join(process.cwd(), 'src/data/catalog/core-catalog.v2.json')
 
@@ -189,8 +191,25 @@ function auditModule(m: Module, courseSkills: Map<string, string[]>): Violation[
   }
 
   /* ٥) سيناريو القرار */
-  if (!(m.module_scenario_ar ?? '').trim()) {
+  const scenarioRaw = (m.module_scenario_ar ?? '').trim()
+  if (!scenarioRaw) {
     add('سيناريو', 'لا سيناريو قرارٍ في الوحدة')
+  }
+
+  /* ٦) ما ترفضه الشاشة يُردّ هنا — لا فحصَ موازيا أضعفَ من المحرّر.
+
+     البنودُ أعلاه سياسةُ تحرير، وهذا البندُ عقدُ المنصّة: `validateChecks`
+     و`validateScenario` هما ما يحكم به الخادمُ عند الحفظ. وكانت البوّابةُ
+     تفحص السيناريو بوجودِه وحده، فمرّت ستّةَ عشرَ سيناريو فيها عقدةٌ بخيارٍ
+     واحدٍ ومعها «تأمل:» — يرفضها المحرّرُ ويقبلها الكتالوج. ووحدةٌ لا
+     تُفتح في الشاشة التي تملكها ليست مؤلَّفةً بل محبوسة. */
+  {
+    const r = validateChecks(m.module_checks_ar)
+    if (!r.ok) for (const e of r.errorsAr) add('عقد المنصّة', `تمارين: ${e}`)
+  }
+  if (scenarioRaw) {
+    const r = validateScenario(scenarioRaw)
+    if (!r.ok) for (const e of r.errorsAr) add('عقد المنصّة', `سيناريو: ${e}`)
   }
 
   return v
