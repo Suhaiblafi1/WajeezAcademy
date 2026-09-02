@@ -63,9 +63,9 @@ export interface DiscountCategory {
    وربّاتُ المنزل كنّ على الإقرار الذاتيّ أيضا («لا نطلب مستندا»)، فصار
    المطلوبُ الهويّة: تبقى الفئةُ ويبقى لها حدٌّ يُتحقَّق منه. */
 export const DISCOUNT_CATEGORIES: readonly DiscountCategory[] = [
-  { id: 'university_student', label_ar: 'طلبة الجامعات والكليات', percentOff: 25, evidence_ar: 'صورة الهوية الجامعية أو إثبات قيد ساري' },
+  { id: 'university_student', label_ar: 'طلبة الجامعات والكليات', percentOff: 20, evidence_ar: 'صورة الهوية الجامعية أو إثبات قيد ساري' },
   { id: 'government', label_ar: 'موظفو القطاع الحكومي', percentOff: 15, evidence_ar: 'صورة بطاقة العمل أو تعريف من جهة العمل' },
-  { id: 'homemaker', label_ar: 'ربّات المنزل', percentOff: 25, evidence_ar: 'صورة الهوية الشخصية' },
+  { id: 'homemaker', label_ar: 'ربّات المنزل', percentOff: 20, evidence_ar: 'صورة الهوية الشخصية' },
 ]
 
 /** أعلى نسبة فئة — تُذكر في الدعوة («حتى ٢٥٪») بلا تعداد الفئات في كل صفحة */
