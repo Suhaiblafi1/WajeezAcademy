@@ -47,6 +47,20 @@ describe('عاملُ الخدمة موجودٌ ومسجَّل في موضعه', 
     expect(MAIN).toMatch(/register\('\/sw\.js'\)\.catch\(/)
   })
 
+  /* «لا شيء» كان جوابَ صاحب المنصّة حين سُئل هل ظهر العاملُ في سفاري — ولم
+     يكن في يدنا ما يقول لماذا، لأنّ المسارَ كان يبتلع الخطأ صامتا. */
+  it('سببُ الرفض يُعلَن في وحدة التحكّم — لا ابتلاعٌ صامت', () => {
+    expect(MAIN).toContain('console.warn')
+    expect(MAIN).toMatch(/catch\(\(err: unknown\)/)
+  })
+
+  it('`worker-src` مُعلَنةٌ صراحةً — لا اعتمادَ على سلسلة الارتداد', () => {
+    const csp = VERCEL.headers
+      .flatMap((h) => h.headers)
+      .find((h) => h.key === 'Content-Security-Policy')
+    expect(csp?.value).toContain("worker-src 'self'")
+  })
+
   it('إعادةُ الكتابة تستثني `sw.js` — وإلّا خُدِّمت `index.html` مكانه', () => {
     const spa = VERCEL.rewrites.find((r) => r.destination === '/index.html')
     expect(spa?.source).toContain('sw\\.js')

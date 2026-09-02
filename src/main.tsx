@@ -25,8 +25,17 @@ createRoot(document.getElementById('root')!).render(
    التطوير بلا فائدة. */
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    void navigator.serviceWorker.register('/sw.js').catch(() => {
-      /* تعذّر التسجيل (تصفّحٌ خفيّ، أو تخزينٌ محجوب) — الموقعُ يعمل كما كان */
+    void navigator.serviceWorker.register('/sw.js').catch((err: unknown) => {
+      /* الموقعُ يعمل كما كان — لكنّ السببَ يُعلَن.
+
+         كان هذا المسارُ يبتلع الخطأ صامتا، فسُئل صاحبُ المنصّة: هل ظهر
+         العاملُ في سفاري؟ فقال «لا شيء» — ولم يكن في يدنا ما يقول **لماذا**.
+         وأسبابُ الرفض في سفاري ثلاثةٌ لا تُفرَّق إلّا بنصّها: تصفّحٌ خفيّ،
+         أو «حظرُ كلّ ملفات تعريف الارتباط» (يمنع تسجيلَ العامل أصلا)، أو
+         سياسةُ محتوى ترفض `worker-src`.
+
+         فسطرٌ واحدٌ في وحدة التحكّم يحوّل «لا شيء» إلى جواب. */
+      console.warn('[wajeez] تعذّر تسجيل عامل الخدمة:', err)
     })
   })
 }
