@@ -2,7 +2,7 @@
    زر الدفع يتبع المزود الفعال: اختباري = نجاح فوري بلا مال؛ حقيقي = تحويل
    لصفحة دفع مستضافة عند المزود، والتسوية تصل عبر webhook موقَّت لا برجوع المتصفح. */
 import { useCallback, useEffect, useState } from "react";
-import { CreditCard, Loader2, ReceiptText, RefreshCw, RotateCcw, ShieldCheck } from "lucide-react";
+import { CircleSlash, CreditCard, Loader2, ReceiptText, RefreshCw, RotateCcw, ShieldCheck } from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { fmtWhen } from "@/utils/format";
@@ -16,7 +16,24 @@ interface Order {
 }
 interface PaymentProviderInfo { driver: "test" | "manual" | "moyasar" | "stripe" }
 
-const ORDER_STATUS: Record<string, string> = { pending: "بانتظار الدفع", paid: "مدفوع", cancelled: "ملغي", refunded: "مسترد" };
+/* حالاتُ الطلب بأسمائها كما يكتبها الخادم.
+
+   كان المفتاحُ هنا `pending` والخادمُ يكتب `pending_payment` (المخطَّط:
+   `Order.status @default("pending_payment")`) — فيقرأ المتعلّمُ في شاشته
+   `pending_payment` بالإنجليزيّة، و**زرّ إكمال الدفع لا يُعرض أصلا** لأنّ
+   شرطَه لا يتحقّق. أي أنّ طلبا لم يكتمل دفعُه لم يكن له طريقٌ يُكمل به —
+   بينما «تعلّمي» تحيل إليه: «أكمل الدفع متى شئت من الفواتير». */
+const ORDER_STATUS: Record<string, string> = {
+  pending_payment: "بانتظار الدفع",
+  pending: "بانتظار الدفع",
+  paid: "مدفوع",
+  cancelled: "ملغي",
+  partially_refunded: "مسترد جزئيا",
+  refunded: "مسترد",
+};
+
+/** أطلبٌ لم يكتمل دفعُه؟ — الاسمان مقبولان فلا تُكسر الشاشة بتسميةٍ واحدة */
+const isUnpaid = (status: string) => status === "pending_payment" || status === "pending";
 const INV_STATUS: Record<string, string> = { issued: "صادرة", paid: "مدفوعة", partially_refunded: "مستردة جزئيا", refunded: "مستردة كليا", void: "ملغاة" };
 const PAY_LABEL: Record<string, string> = {
   test: "ادفع الآن (مزود اختباري — لا مال حقيقي)",
@@ -49,13 +66,40 @@ export default function Billing() {
     if (busy) return;
     setBusy(order.id); setFlash("");
     try {
-      /* مفتاح idempotency ثابت لكل طلب — إعادة النقر لا تدفع مرتين */
-      const res = await apiPost<{ redirectUrl?: string }>(`/api/learner/orders/${order.id}/pay`, { idempotencyKey: `pay-${order.id}` });
+      /* مفتاح idempotency للمحاولة لا للطلب.
+
+         كان `pay-${order.id}` ثابتا للطلب كلِّه: فمن غادر صفحةَ الدفع
+         المستضافة بلا إتمام تُسجَّل له دفعةٌ `pending`، ثمّ لا يعيده هذا
+         الزرُّ إليها أبدا — `payOrder` يرى المفتاح مستعملا فيُعيد الدفعةَ
+         القديمة بلا `redirectUrl`، فلا يقع شيء. فيُبنى المفتاحُ على عدد
+         محاولاتِ هذه الفاتورة: نقرةٌ مزدوجةٌ في نفس اللحظة تُعيد المفتاح
+         نفسَه (فلا دفعتان)، ومحاولةٌ جديدةٌ بعد دفعةٍ معلّقة تأخذ مفتاحا
+         جديدا فتُفتح لها صفحةُ دفعٍ جديدة. */
+      const attempt = order.invoice?.payments.length ?? 0;
+      const res = await apiPost<{ redirectUrl?: string }>(`/api/learner/orders/${order.id}/pay`, {
+        idempotencyKey: `pay-${order.id}-${attempt}`,
+      });
       /* مزود مستضاف: نحوّل المتعلم لصفحة الدفع عند المزود — التسوية تصل بـ webhook */
       if (res.redirectUrl) { window.location.assign(res.redirectUrl); return; }
       setFlash(provider.driver === "test" ? "تم الدفع الاختباري — فُتح وصولك وتحدثت الفاتورة" : "سُجل الدفع — فُتح وصولك");
       await load();
     } catch (e) { setFlash(e instanceof ApiError ? e.message : "فشل الدفع"); }
+    finally { setBusy(null); }
+  };
+
+  /* الإلغاءُ قبل الدفع — البابُ الآخر لمقعدٍ محجوز.
+
+     الحجزُ يُقفل شراءً ثانيا على الشعبة نفسِها حتّى لا يُدفع ثمنُها مرّتين،
+     فلا بدّ لصاحب الطلب من مفتاح: إمّا يُكمل دفعه، وإمّا يُلغيه فيُفرَج عن
+     مقعده. وبلا هذا يبقى طلبٌ متروكٌ قافلا شعبةً لا يشتريها ولا يتركها. */
+  const cancel = async (order: Order) => {
+    if (busy) return;
+    setBusy(order.id); setFlash("");
+    try {
+      await apiPost(`/api/learner/orders/${order.id}/cancel`, {});
+      setFlash("أُلغي طلبك وفُكّ حجزُ مقعدك — يمكنك الشراء من جديد متى شئت");
+      await load();
+    } catch (e) { setFlash(e instanceof ApiError ? e.message : "تعذّر إلغاء الطلب"); }
     finally { setBusy(null); }
   };
 
@@ -91,7 +135,7 @@ export default function Billing() {
                 </div>
               </div>
 
-              {o.status === "pending" && provider.driver !== "manual" && (
+              {isUnpaid(o.status) && provider.driver !== "manual" && (
                 <div className="mt-4">
                   <button disabled={busy === o.id} onClick={() => void pay(o)}
                     className="flex cursor-pointer items-center gap-2 rounded-full bg-gold px-6 py-2.5 text-xs font-black text-on-gold transition hover:bg-gold/90 disabled:opacity-40">
@@ -106,7 +150,13 @@ export default function Billing() {
                   )}
                 </div>
               )}
-              {o.status === "pending" && provider.driver === "manual" && (
+              {isUnpaid(o.status) && (
+                <button disabled={busy === o.id} onClick={() => void cancel(o)}
+                  className="mt-3 flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-1.5 text-[11px] font-bold text-white/60 transition hover:border-white/40 disabled:opacity-40">
+                  <CircleSlash className="h-3 w-3" /> ألغِ الطلب وافكّ حجز مقعدي
+                </button>
+              )}
+              {isUnpaid(o.status) && provider.driver === "manual" && (
                 <p className="mt-4 rounded-xl border border-gold/30 bg-gold/5 px-4 py-2.5 text-xs font-bold text-gold-ink">
                   {PAY_LABEL.manual}
                 </p>
