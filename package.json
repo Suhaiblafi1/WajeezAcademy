@@ -70,6 +70,8 @@
     "roles:restore-learner": "tsx scripts/restore-learner-role.ts",
     "cohorts:open-all": "tsx scripts/open-all-cohorts.ts",
     "audit:authoring": "tsx scripts/audit-authoring.ts",
+    "library:sync": "tsx scripts/sync-wajeez-library.ts",
+    "library:check": "tsx scripts/sync-wajeez-library.ts --check",
     "ci:authoring": "tsx scripts/audit-authoring.ts --check",
     "ci:locale": "tsx scripts/audit-locale.ts --check",
     "ci:csp": "tsx scripts/audit-csp.ts --check"

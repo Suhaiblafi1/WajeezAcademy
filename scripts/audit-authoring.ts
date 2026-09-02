@@ -19,8 +19,10 @@ import { validateChecks } from '../src/application/content/module-checks'
 import { validateScenario } from '../src/application/content/scenario'
 import { parsePractice, validatePractice } from '../src/application/content/practice'
 import { validateRubric } from '../src/application/content/rubric'
+import { checkLibraryRefs, type LibraryIndex } from '../src/application/content/library'
 
 const CATALOG = join(process.cwd(), 'src/data/catalog/core-catalog.v2.json')
+const LIBRARY = join(process.cwd(), 'src/data/library/wajeez-library.json')
 
 interface Course {
   course_id: string
@@ -108,7 +110,7 @@ function parseChecks(raw: string) {
   })
 }
 
-function auditModule(m: Module, courseSkills: Map<string, string[]>): Violation[] {
+function auditModule(m: Module, courseSkills: Map<string, string[]>, library: LibraryIndex): Violation[] {
   const v: Violation[] = []
   const add = (rule: string, detail: string) => v.push({ moduleId: m.module_id, rule, detail })
   const body = (m.module_body_ar ?? '').trim()
@@ -253,6 +255,23 @@ function auditModule(m: Module, courseSkills: Map<string, string[]>): Violation[
     if (!r.ok) for (const e of r.errorsAr) add('روبرك', e)
   }
 
+  /* ٦ب) إحالةُ مكتبة وجيز (§٧) — تُفحَص بالفهرس لا بالنيّة.
+
+     والقاعدةُ «لا يُخترع عنوانُ كتابٍ ولا رابط» لا تُفحَص إلّا بفهرسٍ يُقرأ.
+     فحتّى تُربط واجهةُ «وجيز مهارات» يبقى الفهرسُ فارغا وهذا البندُ صامتا:
+     حاجزٌ على ما لا يملك المؤلّفُ التحقّقَ منه حاجزٌ ظالم، وسكوتُ اثنتين
+     وخمسين وحدةً عن الإحالة أصدقُ من عنوانٍ لا يُتحقَّق منه.
+     وحين يُربط: يُردّ كلُّ عنوانٍ يُذكر في القسم ولا وجودَ له في الفهرس. */
+  {
+    const r = checkLibraryRefs(body, library)
+    if (!r.pending) {
+      for (const t of r.unknownTitles) {
+        add('مكتبة وجيز', `العنوان «${t}» لا وجودَ له في فهرس المكتبة — ولا يُخترع عنوان`)
+      }
+      if (!r.hasSection) add('مكتبة وجيز', 'لا إحالةَ إلى ملخّصٍ من المكتبة — والفهرسُ مربوط')
+    }
+  }
+
   /* ٧) ما ترفضه الشاشة يُردّ هنا — لا فحصَ موازيا أضعفَ من المحرّر.
 
      البنودُ أعلاه سياسةُ تحرير، وهذا البندُ عقدُ المنصّة: `validateChecks`
@@ -281,8 +300,9 @@ function main() {
     raw.courses.map((c) => [c.course_id, c.skill_slugs ?? []]),
   )
   const authored = all.filter((m) => (m.module_body_ar ?? '').trim())
+  const library = JSON.parse(readFileSync(LIBRARY, 'utf8')) as LibraryIndex
 
-  const violations = authored.flatMap((m) => auditModule(m, courseSkills))
+  const violations = authored.flatMap((m) => auditModule(m, courseSkills, library))
 
   console.log(`\nبوّابةُ التأليف — ${authored.length} وحدةً مؤلَّفة من ${all.length} (${Math.round((authored.length / all.length) * 100)}٪)`)
 
@@ -310,6 +330,14 @@ function main() {
       for (const v of list) console.log(`    · [${v.rule}] ${v.detail}`)
     }
     console.log('')
+  }
+
+  /* حالُ فهرس المكتبة تُعلَن — فبندٌ صامتٌ بلا إعلانٍ يُقرأ نجاحا */
+  if (library.items.length === 0) {
+    console.log('⏳ إحالاتُ مكتبة وجيز (§٧) معلَّقة — بانتظار ربط واجهة «وجيز مهارات».')
+    console.log('   وحين تُربط يصير كلُّ عنوانٍ يُذكر مقابَلا بالفهرس.\n')
+  } else {
+    console.log(`📚 فهرسُ المكتبة مربوط: ${library.items.length} ملخّصا — والإحالاتُ تُقابَل به.\n`)
   }
 
   /* التغطيةُ تُعرض ولا تُسقط: من لم يؤلّف بعدُ لم يخالف */

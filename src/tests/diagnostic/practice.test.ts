@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { MAX_MINUTES, MIN_MINUTES, parsePractice, validatePractice } from '../../application/content/practice'
 import { parseRubric, validateRubric } from '../../application/content/rubric'
+import { checkLibraryRefs, citedTitles, suggestFromLibrary } from '../../application/content/library'
 
 const GOOD_PRACTICE = [
   'نشاط: خريطةُ رسالةٍ لعرضٍ ستقدّمه فعلا',
@@ -114,5 +115,57 @@ describe('ح-٧ تحليل الروبرك', () => {
   it('لا يعدّ الفراغَ خطأ', () => {
     expect(parseRubric(undefined).errorsAr).toEqual([])
     expect(parseRubric('').rubric).toBeNull()
+  })
+})
+
+describe('ح-٨ إحالاتُ مكتبة وجيز', () => {
+  const BODY = [
+    '## درسٌ ما',
+    'نصٌّ.',
+    '',
+    '### ومن مكتبة وجيز',
+    'ملخّصُ *الجرأة على القيادة* لبرينيه براون — بابُه في المحادثة الصعبة.',
+    '',
+    '### وأنفعُ مرجعٍ لهذه الوحدة',
+    '*مبدأُ الهرم* لباربرا مِنتو — وهذا مرجعٌ خارجيٌّ لا من المكتبة.',
+  ].join('\n')
+
+  it('يقرأ العناوين من قسم المكتبة وحدَه', () => {
+    expect(citedTitles(BODY)).toEqual(['الجرأة على القيادة'])
+  })
+
+  it('لا يحكم بشيءٍ والفهرسُ فارغ — البندُ معلَّقٌ لا مخالف', () => {
+    const r = checkLibraryRefs(BODY, { source: 'pending_api', fetchedAt: null, items: [] })
+    expect(r.pending).toBe(true)
+    expect(r.unknownTitles).toEqual([])
+  })
+
+  it('يقبل عنوانا في الفهرس ولو اختلف رسمُ الألف والتاء', () => {
+    const r = checkLibraryRefs(BODY, {
+      source: 'wajeez.co', fetchedAt: '2026-09-02T00:00:00Z',
+      items: [{ id: 'wj-1', titleAr: 'الجرأه على القياده' }],
+    })
+    expect(r.pending).toBe(false)
+    expect(r.unknownTitles).toEqual([])
+    expect(r.hasSection).toBe(true)
+  })
+
+  it('يردّ عنوانا لا وجودَ له في الفهرس', () => {
+    const r = checkLibraryRefs(BODY, {
+      source: 'wajeez.co', fetchedAt: '2026-09-02T00:00:00Z',
+      items: [{ id: 'wj-2', titleAr: 'كتابٌ آخر' }],
+    })
+    expect(r.unknownTitles).toEqual(['الجرأة على القيادة'])
+  })
+
+  it('يقترح من الفهرس بتقاطع الكلمات', () => {
+    const index = {
+      source: 'wajeez.co', fetchedAt: null,
+      items: [
+        { id: 'a', titleAr: 'الجرأة على القيادة', topicsAr: ['القيادة'] },
+        { id: 'b', titleAr: 'أساسيّات المحاسبة' },
+      ],
+    }
+    expect(suggestFromLibrary('القيادة والمحادثات الصعبة', index).map((i) => i.id)).toEqual(['a'])
   })
 })
