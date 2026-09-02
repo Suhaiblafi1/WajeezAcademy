@@ -21,6 +21,7 @@ import { useCourseCohorts } from "@/services/cohort-prices";
 import CohortPicker from "@/components/CohortPicker";
 import BuyCohort from "@/components/BuyCohort";
 import AwaitingCourseChoices from "@/components/AwaitingCourseChoices";
+import HeldSeatNotice, { type HeldSeat } from "@/components/HeldSeatNotice";
 import { fmtDayMonth } from "@/application/text/format-ar";
 
 /** صفٌّ من /api/learner/my-learning — ما نحتاجه منه هنا فقط */
@@ -56,6 +57,8 @@ export default function MyPathway() {
   const { user: sessionUser } = useRealSession();
   const [fetched, setFetched] = useState<Row[] | null>(null);
   const [plan, setPlan] = useState<Plan | null>(null);
+  /* المقاعدُ المحجوزةُ ولم تصر تسجيلا — تُقرأ لتُطفأ أزرارُ الشراء فوقها */
+  const [held, setHeld] = useState<HeldSeat[]>([]);
   /* بعد إرسال طلب الخطّة تُعاد القراءة: الحالة مشتقّة على الخادم، فلا تُصحَّح هنا بيد */
   const [reloadKey, setReloadKey] = useState(0);
   /* بلا جلسة لا نداء ولا تصفير حالة داخل تأثير (react-hooks/set-state-in-effect):
@@ -72,6 +75,9 @@ export default function MyPathway() {
     apiGet<{ plan: Plan | null }>("/api/learner/plan")
       .then((r) => { if (on) setPlan(r.plan); })
       .catch(() => { if (on) setPlan(null); });
+    apiGet<HeldSeat[]>("/api/learner/held-seats")
+      .then((r) => { if (on) setHeld(r); })
+      .catch(() => { if (on) setHeld([]); });
     return () => { on = false; };
   }, [sessionUser, reloadKey]);
 
@@ -83,9 +89,9 @@ export default function MyPathway() {
     );
   }
   /* الخطّة أوّلا: هي ما اعتمده هو. والاستنتاج احتياطٌ لمن سجّل بلا خطّة. */
-  if (plan) return <PlanBody key={catalogVersion} plan={plan} rows={rows} reload={() => setReloadKey((k) => k + 1)} />;
+  if (plan) return <PlanBody key={catalogVersion} plan={plan} rows={rows} held={held} reload={() => setReloadKey((k) => k + 1)} />;
   if (rows.length === 0) return <NoPathway />;
-  return <PathwayBody key={catalogVersion} rows={rows} />;
+  return <PathwayBody key={catalogVersion} rows={rows} held={held} />;
 }
 
 function NoPathway() {
@@ -204,9 +210,10 @@ function RequestWholePlan({ plan, onDone }: { plan: Plan; onDone: () => void }) 
   );
 }
 
-function PlanBody({ plan, rows, reload }: { plan: Plan; rows: Row[]; reload: () => void }) {
+function PlanBody({ plan, rows, held, reload }: { plan: Plan; rows: Row[]; held: HeldSeat[]; reload: () => void }) {
   /* مواعيد الشعب لكلّ دورة — نداءٌ واحد لكلّ الصفحة، والاختيار محفوظٌ بالدورة */
   const { cohorts } = useCourseCohorts();
+  const heldOf = new Map(held.map((h) => [h.courseId, h]));
   const [picked, setPicked] = useState<Record<string, string>>({});
   const facts = enrollmentFactsFromApi(rows);
   const factOf = new Map(facts.map((f) => [f.courseId, f]));
@@ -312,7 +319,18 @@ function PlanBody({ plan, rows, reload }: { plan: Plan; rows: Row[]; reload: () 
                 />
               )}
 
-              {item.state === "schedulable" && !done && (
+              {/* مقعدٌ محجوزٌ فوق هذه الدورة: لا زرَّ شراءٍ عليه.
+
+                  الحجزُ لا يظهر في `my-learning` (فليس تسجيلا)، فكان زرُّ
+                  «اشترِ الآن» يبقى معروضا على دورةٍ دُفع ثمنُها وينتظر تأكيد
+                  البنك — فيُدعى من دفع أن يدفع مرّةً أخرى. */}
+              {item.state === "schedulable" && !done && heldOf.has(item.courseId) && (
+                <div className="w-full border-t border-white/8 pt-3">
+                  <HeldSeatNotice seat={heldOf.get(item.courseId)!} />
+                </div>
+              )}
+
+              {item.state === "schedulable" && !done && !heldOf.has(item.courseId) && (
                 <div className="w-full border-t border-white/8 pt-3">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <CohortPicker
@@ -347,8 +365,9 @@ function pathwayOf(courseIds: string[]): string | null {
   return best?.id ?? null;
 }
 
-function PathwayBody({ rows }: { rows: Row[] }) {
+function PathwayBody({ rows, held }: { rows: Row[]; held: HeldSeat[] }) {
   const { cohorts } = useCourseCohorts();
+  const heldOf = new Map(held.map((h) => [h.courseId, h]));
   const [picked, setPicked] = useState<Record<string, string>>({});
   const enrolledCourseIds = rows.map((r) => r.cohort?.course?.id).filter((x): x is string => typeof x === "string");
   const pathwayId = pathwayOf(enrolledCourseIds);
@@ -431,7 +450,13 @@ function PathwayBody({ rows }: { rows: Row[] }) {
                   دورةٍ في قائمةٍ عامّة بعيدةٍ عن مساره، ثمّ ينتظر موافقة
                   إدارة. وقد صار الشراء مباشرا، فصار الموعد والدفع في موضع
                   القرار. */}
-              {!enrolled && (
+              {!enrolled && heldOf.has(id) && (
+                <div className="w-full border-t border-white/8 pt-3">
+                  <HeldSeatNotice seat={heldOf.get(id)!} />
+                </div>
+              )}
+
+              {!enrolled && !heldOf.has(id) && (
                 <div className="w-full border-t border-white/8 pt-3">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <CohortPicker

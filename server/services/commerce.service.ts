@@ -319,6 +319,44 @@ export class CommerceService {
         where: { userId, cohortId: c.id, status: { in: ['enrolled', 'completed'] } },
       })
       if (already) throw new AuthError('already_enrolled', `أنت مسجّل في «${c.title}» بالفعل`, 409)
+
+      /* حجزُ مقعدٍ مربوطٌ بطلبٍ حيّ — لا طلبَ ثانيا فوقه.
+
+         القيدُ `userId_cohortId` على `enrollmentRequest` واحدٌ لا يُثنّى، فكان
+         الشراءُ الثاني للشعبة نفسِها يُنشئ طلبا جديدا ثمّ **يُحوّل** الحجزَ
+         القائم إليه (`upsert` في `checkout`). فمن دفع طلبَه الأوّل ثمّ عاد
+         إلى «مساري» — وكانت الشاشةُ لا تزال تعرض «اشترِ الآن» لأنّ الحجزَ لا
+         يظهر فيها — ضغط مرّةً أخرى، فانتقل الحجزُ إلى الطلب الثاني، ثمّ وصل
+         webhook الأوّل فوجد `seat_held` بلا حجزٍ يحوّله: فاتورةٌ مدفوعةٌ
+         وشعبةٌ لا تُفتح، ومطالبةٌ بدفعٍ ثانٍ عن مقعدٍ دُفع ثمنُه.
+
+         فالحجزُ المربوطُ بطلبٍ حيّ يُقفل الشراء ويقول أين يُكمَل: المدفوعُ
+         يُنتظر تأكيدُه، والذي لم يكتمل دفعُه يُكمَل من «الفواتير» بطلبه
+         نفسِه لا بطلبٍ جديد.
+
+         وحجزٌ بلا طلب (طلبُ مراجعةٍ إداريّة) لا يُقفل شيئا: لا مالَ فيه
+         يُفقد، والشراءُ المباشر يتقدّم عليه كما كان. */
+      const hold = await this.prisma.enrollmentRequest.findUnique({
+        where: { userId_cohortId: { userId, cohortId: c.id } },
+      })
+      if (hold?.status === 'seat_held' && hold.orderId) {
+        const holdOrder = await this.prisma.order.findUnique({ where: { id: hold.orderId } })
+        if (holdOrder?.status === 'paid') {
+          throw new AuthError(
+            'settling',
+            `دفعتُك عن «${c.title}» وصلت ونحن نفتح مقعدك — لا تدفع مرّةً أخرى`,
+            409,
+          )
+        }
+        if (holdOrder?.status === 'pending_payment') {
+          throw new AuthError(
+            'order_pending',
+            `لك طلبٌ لم يكتمل دفعُه عن «${c.title}» ومقعدُك محجوزٌ به — أكمل دفعه من «الفواتير»`,
+            409,
+          )
+        }
+      }
+
       if (c.capacity) {
         const [enrolled, held] = await Promise.all([
           this.prisma.enrollment.count({ where: { cohortId: c.id, status: 'enrolled' } }),
@@ -757,23 +795,45 @@ export class CommerceService {
        «مدفوع» والفاتورة «مدفوعة»، والنقص لا يظهر إلا في شاشة المتعلّم.
        والدفعة الواحدة تشتري الخطّة كلها، فتسويتها تحوّلها كلها. */
     const reqs = await this.prisma.enrollmentRequest.findMany({ where: { orderId, status: 'seat_held' } })
+    const order = await this.prisma.order.findUnique({ where: { id: orderId }, include: { items: true } })
+
+    /* الفاتورةُ هي الحجّة، لا سجلُّ الحجز.
+
+       كانت التسويةُ تُسجِّل ما وجدَته محجوزا بهذا الطلب وحدَه، فإن ضاع الحجزُ
+       — انتقل إلى طلبٍ آخر، أو حُذف بيدٍ إداريّة — سُوّيت الفاتورةُ ولم
+       يُسجَّل صاحبُها في شيء: «مدفوعة» في الدفتر، و«لا شعب مسجلة» على شاشته.
+
+       فبنودُ الطلب (وهي ما دُفع ثمنُه فعلا) تُضاف إلى الحجوز: كلُّ بندٍ من
+       نوع `cohort` يُسجَّل صاحبُ الطلب فيه، حُفظ حجزُه أو ضاع. والهديّةُ بندٌ
+       بصفر فتُسجَّل كأختها — فهي مشتراةٌ داخل الخطّة لا ممنوحةٌ خارجها. */
+    const targets = new Map<string, { cohortId: string; userId: string; requestId: string | null }>()
+    for (const req of reqs) targets.set(req.cohortId, { cohortId: req.cohortId, userId: req.userId, requestId: req.id })
+    if (order) {
+      for (const item of order.items) {
+        if (item.kind !== 'cohort' || targets.has(item.refId)) continue
+        targets.set(item.refId, { cohortId: item.refId, userId: order.userId, requestId: null })
+      }
+    }
+
     const converted: string[] = []
-    const failed: { requestId: string; reason: string }[] = []
-    for (const req of reqs) {
+    const failed: { cohortId: string; reason: string }[] = []
+    for (const target of targets.values()) {
       try {
-        await this.enrollments.enroll(req.cohortId, req.userId, actorId, {})
+        await this.enrollments.enroll(target.cohortId, target.userId, actorId, {})
       } catch (err) {
         /* مسجل مسبقا (مثل إعادة معالجة) — لا يمنع التحويل */
         if (!(err instanceof AuthError && err.code === 'already_enrolled')) {
           /* دورةٌ تعذّر تسجيلها (امتلأت بين الحجز والدفع مثلا) لا تُسقط أخواتها:
              المال قُبض عن الخطّة كلها، فمنعُ الباقي عقوبةٌ مضاعفة. تُقيَّد
              بأثرٍ صريح ويُنبَّه المتعلّم، ويبقى الطلب محجوزا لا مُحوَّلا. */
-          failed.push({ requestId: req.id, reason: err instanceof Error ? err.message : String(err) })
+          failed.push({ cohortId: target.cohortId, reason: err instanceof Error ? err.message : String(err) })
           continue
         }
       }
-      await this.prisma.enrollmentRequest.update({ where: { id: req.id }, data: { status: 'converted' } })
-      converted.push(req.id)
+      if (target.requestId) {
+        await this.prisma.enrollmentRequest.update({ where: { id: target.requestId }, data: { status: 'converted' } })
+      }
+      converted.push(target.cohortId)
     }
     if (failed.length > 0) {
       await recordAudit(this.prisma, {
@@ -784,12 +844,11 @@ export class CommerceService {
     }
 
     /* إشعار تأكيد الدفع — يصل الطالب سواء حُوّل طلبه أم دفع لغير شعبة */
-    const order = await this.prisma.order.findUnique({ where: { id: orderId }, include: { items: true } })
     if (order) {
       const what = order.items.length > 1 ? `خطّتك (${order.items.length} دورات)` : `«${order.items[0]?.titleAr ?? 'طلبك'}»`
       const tail =
         failed.length > 0
-          ? `وسُجّلت ${converted.length} من ${reqs.length}؛ تواصلنا جارٍ بشأن الباقي ولن تدفع عنه مرّة أخرى.`
+          ? `وسُجّلت ${converted.length} من ${targets.size}؛ تواصلنا جارٍ بشأن الباقي ولن تدفع عنه مرّة أخرى.`
           : converted.length > 0
             ? 'مقاعدك صارت تسجيلاً فعلياً — شعبك تظهر في «تعلّمي».'
             : 'تفاصيل طلبك في «الفواتير».'
@@ -798,7 +857,7 @@ export class CommerceService {
         title: 'تأكد دفعك ✓ — أهلاً بك',
         body: `استلمنا دفعتك (${num(order.total)} ${order.currency}) عن ${what}. ${tail}`,
         templateKey: 'payment.succeeded',
-        data: { orderId, total: num(order.total), enrolled: converted.length, of: reqs.length },
+        data: { orderId, total: num(order.total), enrolled: converted.length, of: targets.size },
       })
     }
   }
@@ -905,6 +964,89 @@ export class CommerceService {
   }
 
   /* ── استعلامات المتعلم والمالية ── */
+
+  /* إلغاءُ طلبٍ لم يكتمل دفعُه — البابُ الآخر للحجز.
+
+     الحجزُ صار يُقفل شراءً ثانيا على الشعبة نفسِها (`validatedCart`)، وذلك
+     يحرس مالَ من دفع. لكنّ قفلا بلا مفتاحٍ يصير سجنا: من فتح صفحة الدفع ثمّ
+     عدل عن الشراء يبقى مقعدُه محجوزا بطلبٍ لن يدفعه أبدا، فلا يشتري تلك
+     الشعبة ولا يُفرَّج عن مقعدها لغيره.
+
+     فلصاحب الطلب أن يُلغيه ما لم يُدفع: الطلبُ يُلغى، وفاتورتُه تُبطَل،
+     وحجوزُه تُفكّ فتعود المقاعدُ إلى العدّ. والمدفوعُ لا يُلغى من هنا أبدا —
+     ذاك استردادٌ له مسلكُه وصلاحيتُه المالية. */
+  async cancelOrder(orderId: string, userId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { invoice: { include: { payments: true } } },
+    })
+    if (!order || order.userId !== userId) throw new AuthError('not_found', 'الطلب غير موجود', 404)
+    if (order.status === 'paid') throw new AuthError('already_paid', 'الطلب مدفوع — الإلغاء بعد الدفع استردادٌ يُطلب من الدعم', 409)
+    if (order.status === 'cancelled') return order
+    if (order.status !== 'pending_payment') throw new AuthError('bad_state', 'لا يُلغى إلّا طلبٌ لم يكتمل دفعُه', 409)
+    /* دفعةٌ نجحت وفاتورتُها لم تُسوَّ بعد: لا يُلغى فوقها — ماله وصل */
+    if ((order.invoice?.payments ?? []).some((p) => p.status === 'succeeded')) {
+      throw new AuthError('has_payment', 'وصلتنا دفعةٌ عن هذا الطلب — راسل الدعم بدل الإلغاء', 409)
+    }
+
+    const cancelled = await this.prisma.$transaction(async (tx) => {
+      const o = await tx.order.update({ where: { id: orderId }, data: { status: 'cancelled' } })
+      if (order.invoice) await tx.invoice.update({ where: { id: order.invoice.id }, data: { status: 'void' } })
+      await tx.enrollmentRequest.updateMany({
+        where: { orderId, status: 'seat_held' },
+        data: { status: 'cancelled', orderId: null },
+      })
+      return o
+    })
+
+    await recordAudit(this.prisma, {
+      actorId: userId, action: 'order.cancel', entityType: 'order', entityId: orderId,
+      meta: { total: num(order.total), currency: order.currency },
+      reason: 'ألغاه صاحبُه قبل الدفع — فُكّت حجوزُه',
+    })
+    return cancelled
+  }
+
+  /* مقاعدي المحجوزةُ ولم تصر تسجيلا بعد — النافذةُ بين الدفع وتأكيده.
+
+     كانت هذه النافذةُ عمياءَ في بوابة المتعلّم: `my-learning` لا تعرض إلّا
+     `enrollment`، والحجزُ ليس تسجيلا، فمن دفع بمزوّدٍ مستضاف ورجع قبل وصول
+     الـwebhook يقرأ «لا شعب مسجلة بعد» ويرى «اشترِ الآن» على الدورة نفسِها
+     — فيظنّ أنّ دفعه ضاع أو أنّ عليه أن يدفع ثانيا.
+
+     فتُقال النافذةُ باسمها: مقعدٌ محجوزٌ بطلبٍ رقمُه كذا، دُفع فينتظر تأكيد
+     البنك، أو لم يكتمل دفعُه فيُكمَل. والقراءةُ محضةٌ لما في السجل. */
+  async myHeldSeats(userId: string) {
+    const rows = await this.prisma.enrollmentRequest.findMany({
+      where: { userId, status: { in: ['pending', 'seat_held'] } },
+      include: {
+        cohort: { include: { course: { include: { versions: { orderBy: { version: 'desc' }, take: 1 } } } } },
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+    const orderIds = [...new Set(rows.map((r) => r.orderId).filter((x): x is string => !!x))]
+    const orders = orderIds.length
+      ? await this.prisma.order.findMany({ where: { id: { in: orderIds } }, include: { invoice: true } })
+      : []
+    const byId = new Map(orders.map((o) => [o.id, o]))
+    return rows.map((r) => {
+      const order = r.orderId ? byId.get(r.orderId) ?? null : null
+      return {
+        requestId: r.id,
+        cohortId: r.cohortId,
+        cohortTitle: r.cohort.title,
+        courseId: r.cohort.courseId,
+        courseTitleAr: r.cohort.course.versions[0]?.titleAr ?? r.cohort.title,
+        startsAt: r.cohort.startsAt,
+        status: r.status,
+        orderId: r.orderId,
+        orderStatus: order?.status ?? null,
+        invoiceNumber: order?.invoice?.number ?? null,
+        total: order ? num(order.total) : null,
+        currency: order?.currency ?? null,
+      }
+    })
+  }
 
   async myOrders(userId: string) {
     return this.prisma.order.findMany({
