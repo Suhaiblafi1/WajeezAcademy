@@ -6,13 +6,11 @@ import {
   CalendarClock,
   Clock3,
   Route as RouteIcon,
-  Gift,
   Sparkles,
   CheckCircle2,
   CalendarDays,
   User,
   UserCheck,
-  FileText,
   MonitorPlay,
   Headphones,
   ClipboardCheck,
@@ -37,7 +35,6 @@ import { readAdoptedPlan, saveAdoptedPlan, syncAdoptedPlan } from "@/application
 import { FIRST_TIME_PROMO } from "@/application/commerce/first-time-promo";
 import { useCoursePrices, formatCohortPrice, totalOf } from "@/services/cohort-prices";
 import { courseById, courses, pathwaySupportCourses, readyPathwayCourseIds, pathwayDelivery, pathwayTrainers, courseTrainer, weeksLabel, MIN_PATHWAY_COURSES, MAX_PATHWAY_COURSES } from "@/data/courses";
-import { GOAL_LABELS, GAP_LABELS, OBSTACLE_TO_GAP } from "@/data/diagnostic";
 import { track } from "@/services/analytics";
 import { useRealSession } from "@/services/session";
 import { usePublishedContent } from "@/services/public-content";
@@ -45,6 +42,8 @@ import SeoHead from "@/components/SeoHead";
 import EcosystemNote from "@/components/EcosystemNote";
 import { pathwayOffer, formatOfferPrice } from "@/application/commerce/pathway-offer";
 import { needsAdvisorReferral } from "@/application/plan/advisor-referral";
+import { DISCOUNT_CATEGORIES, MAX_CATEGORY_PCT } from "@/application/commerce/discount-policy";
+import { CONTACT } from "@/data/stories";
 
 /* اسم المستخدم — يدعم الصيغتين: JSON الجديدة والنص القديم، ويحترم انتهاء الجلسة */
 function readUserName(): string | null {
@@ -66,18 +65,6 @@ function readUserName(): string | null {
    مسارات موقعٍ حيّ كأنها فريق استشاري قائم. ولا أحد منهم موثَّق ولا معتمد — وقاعدة المستودع أن لا اسم يُعرض كحقيقة
    قبل توثيقه واعتماده. وقناة المراسلة تُدار مركزيا عبر AdvisorContact وبيانات
    CONTACT، فلم تكن الأسماء تفعل شيئا إلا الادّعاء. */
-
-const PERSONA_LABELS: Record<string, string> = {
-  student: "طالب يستعد لسوق العمل", graduate: "خريج جديد يبحث عن فرصته الأولى",
-  employee: "موظف يطمح للأفضل", entrepreneur: "رائد أعمال يبني مشروعه",
-  family: "والد/والدة يقود تعلم أسرته", unsure: "مستكشف يبحث عن اتجاهه",
-}
-const DAY_LABELS: Record<string, string> = {
-  meetings: "يومك مزدحم بالاجتماعات والمهام", studying: "يومك بين المحاضرات والواجبات",
-  job_hunting: "يومك يدور حول البحث عن فرصة", clients: "يومك مع عملائك ومشروعك",
-  home_kids: "يومك مليء بالتزامات البيت والأطفال", routine_meaning: "تبحث عن معنى أكبر في روتينك",
-}
-const DATE_LABELS: Record<string, string> = { soon: "خلال شهر إلى 3 أشهر", mid: "خلال 3 إلى 6 أشهر", year: "خلال سنة" }
 
 /* ثلاثة من المنظومة لا تُعطى لمن يشتري دورة مفردة — فهي فرق الشراءَين لا قائمة
    عامة. تُعرض تحت زر الدفع مباشرة حيث القرار، لا في صندوق أسفل الصفحة. */
@@ -108,7 +95,6 @@ export default function PathwayPage() {
   const [syncing, setSyncing] = useState(false);
   /* رفضٌ برأيٍ لا بعطب: الخادمُ يمنع تبديل المسار بعد الشراء، فيُقال السببُ
      في لوح الشراء بدل أن تبقى الخطّةُ كما هي بلا كلمة. */
-  const [planNote, setPlanNote] = useState<string | null>(null);
   const [pickedIds, setPickedIds] = useState<string[]>([]);
   /* مُنسّق الدولار لم يعد يُستعمل هنا: كلّ سعر على هذه الصفحة صار من شعبةٍ
      حقيقية بعملتها، بلا تحويل — لأن التحويل يُخرج رقما ثالثا لا يُطالَب به أحد. */
@@ -160,8 +146,14 @@ export default function PathwayPage() {
     () => new Map((pathway ? pathwaySupportCourses[pathway.id] ?? [] : []).map((s) => [s.courseId, s.reasonAr])),
     [pathway],
   );
-  const giftId = edits?.giftId ?? custom?.giftId ?? null;
+  /* الهديّة تكون دورةً من الخطّة نفسها لا سابعةً خارجها — سادسة المسار
+     مجّانا افتراضا، وله أن يستبدلها بأخرى منه أو يلغيها. `??` كانت تُسقط
+     «ألغيتُها» (giftId فارغ صراحة) لأن الفراغ يساوي غيابَ الاختيار في
+     سلسلتها، فيعود الافتراضُ رغم إلغائه — لذا التحقّق من الحاوية لا القيمة. */
+  const giftId = edits ? edits.giftId : custom ? custom.giftId : (courseIds.length > 0 ? courseIds[courseIds.length - 1] : null);
   const [swapForId, setSwapForId] = useState<string | null>(null);
+  const [trainersOpen, setTrainersOpen] = useState(false);
+  const [planNote, setPlanNote] = useState<string | null>(null);
 
   const commit = (ids: string[], gift: string | null) => {
     setEdits({ courseIds: ids, giftId: gift });
@@ -202,28 +194,11 @@ export default function PathwayPage() {
   const { prices, loaded: pricesLoaded } = useCoursePrices();
   /* سعرُ المسار كاملا — أو null إن نقص سعرُ دورةٍ واحدة، فلا مجموعَ ناقصا */
   const fullPrice = totalOf(courseIds, prices);
-
-  /* تقريره الشخصي من إجابات التشخيص */
-  const report = useMemo(() => {
-    try {
-      const a = JSON.parse(safeGet("wajeez_diag_answers", 'session') ?? "null");
-      if (!a) return null;
-      const lines: string[] = [];
-      if (a.persona) lines.push(`أنت ${PERSONA_LABELS[a.persona] ?? "متعلم طموح"}، و${DAY_LABELS[a.day_story] ?? "يومك مليء"}.`);
-      const goal = a.reconcile_goal ?? a.confirm_goal ?? a.goal;
-      if (goal) lines.push(`هدفك الذي صرّحت به: ${GOAL_LABELS[goal] ?? goal}${a.second_goal && a.second_goal !== "none" ? ` — ومعه هدف ثانٍ: ${GOAL_LABELS[a.second_goal]}` : ""}. هذا الوضوح نعمة، وكثيرون يبدأون دونه.`);
-      const gaps = (a.sk_gaps ?? "").split(",").filter((g: string) => g && g !== "none");
-      const obstacleGaps = (a.emp_obstacle ?? "").split(",").map((o: string) => OBSTACLE_TO_GAP[o]).filter(Boolean);
-      const allGaps: string[] = [...new Set([...gaps, ...obstacleGaps])] as string[];
-      if (allGaps.length) lines.push(`أوجه النمو عندك واضحة: ${allGaps.map((g) => GAP_LABELS[g]).filter(Boolean).join("، ")} — وهذا المسار مصمم ليعالجها واحدة واحدة.`);
-      else lines.push("مهاراتك الأساسية متزنة، وهذا يعني أن المسار سينقلك مباشرة إلى مستوى التطبيق لا التأسيس.");
-      if (a.target_date) lines.push(`موعدك الذي حددته (${DATE_LABELS[a.target_date] ?? a.target_date}) قاد اختيار إيقاع هذا المسار وطوله — لا إجهاد ولا بطء ممل.`);
-      if (a.learn_lang === "arabic") lines.push("ولأن راحتك في العربية، كل محتوى هذا المسار يُقدَّم بالعربية الواضحة.");
-      if (a.learn_lang === "english_ok") lines.push("وراحتك في الإنجليزية ميزة إضافية — ستفتح لك مصادر المسار العالمية بلا حاجز.");
-      if (a.emp_moment) lines.push(`والموقف الذي حكيته لنا: «${String(a.emp_moment).slice(0, 140)}» — مدربو هذا المسار يقرؤونه قبل أول لقاء ليعرفوا من أين يبدؤون معك.`);
-      return { lines, notes: a.notes as string | undefined };
-    } catch { return null; }
-  }, []);
+  /* السعر بعد خصم الباقة — نفس النسبة (`offer.bundleMaxPct`) التي يطبّقها
+     الخادم فعلا عند الدفع (`cart-pricing.ts`)، فالرقمُ هنا هو ما يُدفع لا وعدٌ منفصل. */
+  const discountedFullPrice = fullPrice
+    ? { amount: Math.round(fullPrice.amount * (100 - offer.bundleMaxPct)) / 100, currency: fullPrice.currency }
+    : null;
 
   /* المسار الذي اعتمده تشخيصه سابقا — إن وُجد */
   const diagTopId = useMemo(() => {
@@ -294,6 +269,8 @@ export default function PathwayPage() {
       giftId,
     });
     setSyncing(false);
+    /* رفضُ الخادم لا يُبتلع — من حاول إسقاط دورةٍ دفع ثمنها يُقال له لماذا
+       لم تتبدّل خطّته، لا أن يظنّها تبدّلت وهي لم تتبدّل. */
     setPlanNote(sync.reasonAr);
     /* الشراءُ قبل المنصّة لا بعدها.
 
@@ -439,7 +416,10 @@ export default function PathwayPage() {
                     maxReached: courseIds.length >= MAX_PATHWAY_COURSES,
                     onSwapToggle: setSwapForId,
                     onSwapPick: (oldId, newId) => {
-                      commit(courseIds.map((i) => (i === oldId ? newId : i)), giftId);
+                      /* الهديّةُ صفةُ مكانٍ لا معرّف: من استبدل الدورة المجانية
+                         تبقى بديلتُها هي المجانية — لا فراغا يترك «هديّة» تُشير
+                         إلى دورةٍ لم تعد في الخطّة. */
+                      commit(courseIds.map((i) => (i === oldId ? newId : i)), giftId === oldId ? newId : giftId);
                       setSwapForId(null);
                     },
                     onRemove: (id) => {
@@ -458,58 +438,70 @@ export default function PathwayPage() {
             }
           />
 
-          {/* مشروع التخرّج — **خارج** المسار لا خطوةً داخله.
-
-              كان يُعرض في الترويسة باسم «المخرج العملي» فوق الدورات، فيُقرأ
-              محتوى المسار ويُحتسب ضمن ما يُشترى. وهو ليس دورةً ولا ساعةً في
-              الحساب: مهمّةٌ إضافية على واقع المتعلّم يقدّمها بعد الدورات إن
-              أرادها. فمكانه بعد الرحلة، بحدٍّ يفصله عنها، وبنصٍّ يقول ذلك. */}
+          {/* مشروع التخرّج — سطرٌ في ختام الرحلة يشبه «شهادة إتمام»، لا صندوقا
+              قائما بذاته. وهو ليس دورةً ولا ساعةً في الحساب: مهمّةٌ إضافية
+              على واقع المتعلّم يقدّمها بعد الدورات إن أرادها. */}
           {pathway.output && (
-            <section className="story-fade mt-8 rounded-2xl border border-gold/30 bg-gold/[0.05] px-5 py-4">
-              <h2 className="flex flex-wrap items-center gap-2 text-sm font-black text-gold-ink">
+            <section className="story-fade mt-6 flex items-start gap-3">
+              <span className="z-10 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gold text-xs font-black text-on-gold">
                 <Trophy className="h-4 w-4" />
-                مشروع التخرّج
-                <span className="rounded-full border border-gold/40 bg-gold/10 px-2 py-0.5 text-[10px] font-black text-gold-ink/90">
-                  إضافيّ — خارج دورات المسار
-                </span>
-              </h2>
-              <p className="mt-2 text-sm leading-relaxed text-white/70">{pathway.output}</p>
-              <p className="mt-2 text-[11px] leading-relaxed text-white/45">
-                لا يُحتسب دورةً ولا ساعةً في المسار ولا في سعره. تبنيه على واقع عملك بعد الدورات
-                وتقدّمه للمراجعة إن أردت شهادةً موثّقة بمخرَج.
-              </p>
+              </span>
+              <div className="pt-1">
+                <p className="text-sm font-black text-gold-ink">
+                  مشروع التخرّج <span className="font-bold text-white/40">— إضافيّ، خارج دورات المسار</span>
+                </p>
+                <p className="mt-1 text-xs leading-relaxed text-white/60">{pathway.output}</p>
+                <p className="mt-1 text-[11px] leading-relaxed text-white/40">
+                  لا يُحتسب دورةً ولا ساعةً في المسار ولا في سعره. تبنيه على واقع عملك بعد الدورات
+                  وتقدّمه للمراجعة إن أردت شهادةً موثّقة بمخرَج.
+                </p>
+              </div>
             </section>
           )}
 
           {/* أنواع المصادر المرافقة حُذفت — كانت مكررة مع صندوق «منظومة كاملة» أدناه */}
 
-          {/* الفريق التدريبي — خلف التسجيل.
+          {/* الفريق التدريبي — خلف التسجيل، وسطرٌ يفتح نافذةً لا صندوقٌ ثابت.
 
               قرار صاحب المنصّة: الزائر يرى المسار ودوراته كاملةً، ويبقى شيئان
-              وراء الباب: من يدرّبه، وأين يدفع. وهذا ما يجعل التسجيل خطوةً
-              يكسب بها شيئا محدّدا لا رسما يُطلب منه بلا مقابل.
+              وراء الباب: من يدرّبه، وأين يدفع.
 
               و`id` هنا لأنّ الصفحة تنتقل إليه لحظة اكتمال التسجيل: أوّل ما
               كان مخفيّا هو أوّل ما يُقرأ. */}
           {user && (
-          <div id="trainers-reveal" className="story-fade mt-8 scroll-mt-24 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4">
-            <h2 className="flex items-center gap-2 text-sm font-black">
-              <User className="h-4 w-4 text-teal-light-ink" />
-              الفريق التدريبي لهذا المسار
-            </h2>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {pathwayTrainers(pathway.id).map((t) => (
-                <span key={t.role} className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1.5 text-xs">
-                  <User className="h-3.5 w-3.5 shrink-0 text-teal-light-ink" />
-                  <span className="font-bold text-white/85">{t.role}</span>
-                  <span className="text-teal-light-ink">{t.name}</span>
-                </span>
-              ))}
-            </div>
-            <p className="mt-2.5 text-[11px] leading-relaxed text-white/40">
-              كل دورة يقدمها المدرب الأعمق في موضوعها — وينسّقون معا حتى تتكامل المهارات لا أن تتكرر. تُعلن الأسماء بعد اعتماد الشعبة رسميا.
+            <p id="trainers-reveal" className="story-fade mt-8 scroll-mt-24 text-center text-xs text-white/50">
+              كل دورة يقدّمها المدرّب الأعمق في موضوعها —{" "}
+              <button
+                type="button"
+                onClick={() => setTrainersOpen(true)}
+                className="cursor-pointer font-bold text-teal-light-ink underline underline-offset-4 transition hover:text-teal-light"
+              >
+                تعرّف على مدرّبي هذا المسار
+              </button>
             </p>
-          </div>
+          )}
+
+          {trainersOpen && (
+            <Modal onClose={() => setTrainersOpen(false)} label={`الفريق التدريبي لمسار ${pathway.name}`} panelClassName="w-full max-w-md">
+              <div className="story-fade rounded-3xl border border-white/10 bg-surface p-6">
+                <h3 className="flex items-center gap-2 text-base font-black">
+                  <User className="h-4 w-4 text-teal-light-ink" />
+                  الفريق التدريبي لهذا المسار
+                </h3>
+                <div className="mt-4 space-y-2">
+                  {pathwayTrainers(pathway.id).map((t) => (
+                    <div key={t.role} className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-sm">
+                      <User className="h-4 w-4 shrink-0 text-teal-light-ink" />
+                      <span className="font-bold text-white/85">{t.role}</span>
+                      <span className="text-teal-light-ink">{t.name}</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-4 text-[11px] leading-relaxed text-white/40">
+                  كل دورة يقدمها المدرب الأعمق في موضوعها — وينسّقون معا حتى تتكامل المهارات لا أن تتكرر. تُعلن الأسماء بعد اعتماد الشعبة رسميا.
+                </p>
+              </div>
+            </Modal>
           )}
 
           {/* شارة «هذا المسار اعتمده تشخيصك» حُذفت.
@@ -520,33 +512,11 @@ export default function PathwayPage() {
               ويختار هديّته في رحلة الدورات أعلاه. فإعادته إلى صفحةٍ سابقة
               لينال ما بين يديه خطوةٌ تُضيع لا تُفيد. */}
 
-          {/* تقريره الشخصي — مطوي افتراضيا، وعلى مسار تشخيصه وحده:
-              تقرير «ما فهمناه عنك» جزء من نتيجته لا من صفحة مسار جاهز. */}
-          {report && diagTopId === pathway.id && (
-            <details className="story-fade group mt-6 rounded-2xl border border-[#38A7B4]/35 bg-gradient-to-b from-panel/60 to-transparent">
-              <summary className="flex cursor-pointer list-none items-center gap-2 px-5 py-3 text-sm font-black text-[#6EC7D1] [&::-webkit-details-marker]:hidden">
-                <FileText className="h-4 w-4" />
-                تقريرك الشخصي — ما فهمناه عنك
-                <span className="mr-auto text-[10px] font-semibold text-white/40 transition group-open:rotate-180">▾</span>
-              </summary>
-              <div className="border-t border-white/10 px-5 py-4">
-                <div className="space-y-3">
-                  {report.lines.map((l) => (
-                    <p key={l} className="flex items-start gap-3 text-sm leading-loose text-white/75">
-                      <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-teal-ink" />
-                      {l}
-                    </p>
-                  ))}
-                </div>
-                {report.notes && (
-                  <p className="mt-4 rounded-xl border border-white/10 bg-white/[0.04] p-4 text-sm leading-relaxed text-white/60">
-                    <span className="font-bold text-teal-light-ink">كلمتك التي كتبتها بنفسك: </span>«{report.notes}»
-                  </p>
-                )}
-                <p className="mt-4 text-xs text-white/40">هذا التقرير مبني على إجاباتك في التشخيص — وسيطوره مستشارك معك في أول جلسة.</p>
-              </div>
-            </details>
-          )}
+          {/* تقريره الشخصي — لم يعد هنا. كان يُعرض للمتعلّم نفسِه من إجاباتٍ
+              تبقى على جهازه (session storage) فلا يراه مستشارُه أبدا. صار
+              في ملفّه الذي يفتحه مستشارُه من بوابته (`LearnerPanel.tsx`) —
+              مبنيّا من نتيجة تشخيصه المرفقة بحسابه فعلا، لا نصّا يزول بإغلاق
+              التبويب. */}
 
           {/* عرض الزائر — يقوم مقام قسم الشراء قبل التسجيل.
 
@@ -737,52 +707,61 @@ export default function PathwayPage() {
                   </Button>
                 </div>
                 {/* المسار كاملا */}
-                <div className="relative flex flex-col rounded-2xl border border-gold/30 bg-white/[0.03] p-5">
+                <div className="relative flex flex-col rounded-2xl border border-gold/30 bg-white/[0.03] p-4">
                   <span className="absolute left-3 top-3 rounded-full bg-gold/15 px-2.5 py-0.5 text-[10px] font-black text-gold-ink">الأوفر</span>
                   <p className="font-black text-sm">المسار كاملا</p>
                   <p className="mt-1 text-xs text-white/50">كل الدورات + التشخيص الكامل + المنظومة الست أدناه</p>
-                  {/* السعرُ كاملا لا «تبدأ من».
-
-                      قرارُ صاحب المنصّة: «سعر المسار يجب أن يظهر كاملا، ليس
-                      تبدأ من — فهذا أمرٌ قديم تراجعتُ عنه». و«تبدأ من» وُضعت
-                      يوم كانت أكثرُ الشعب بلا سعر، فصارت اليومَ تُخفي الرقمَ
-                      الذي يُقتطع فعلا وتُبقي المشتريَ يخمّن.
-
-                      والمعروضُ هو المجموعُ الذي يُصدره `checkout` بعينه: أسعارُ
-                      شعب الدورات مجموعةً. ولا خصمَ باقةٍ يُعرض هنا لأنّ الخادمَ
-                      لا يطبّقه بعد — وعرضُ خصمٍ لا يُخصم هو ما نغلقه لا ما
-                      نزيده. والكوبونُ يُطبَّق ويُرى عند الدفع. */}
-                  {fullPrice ? (
+                  {/* السعرُ كاملا لا «تبدأ من» — والرقمُ المعروض بعد خصم الباقة
+                      فعلا (`offer.bundleMaxPct`)، لا وعدٌ منفصلٌ عن الفاتورة:
+                      الأصليُّ يظهر مشطوبا بجانبه لا نسبةً مجردة. هديّةُ المسار
+                      تُقال أعلاه في خطّة الدورات لا هنا مرّتين. */}
+                  {fullPrice && discountedFullPrice ? (
                     <>
-                      <div className="mt-4 flex items-end gap-1.5">
-                        <span className="mb-1 text-xs text-white/50">المسار كاملا</span>
-                        <span dir="ltr" className="text-2xl font-black text-white">{formatCohortPrice(fullPrice)}</span>
+                      <div className="mt-4 flex flex-wrap items-end gap-2">
+                        <span dir="ltr" className="text-2xl font-black text-white">{formatCohortPrice(discountedFullPrice)}</span>
+                        {offer.bundleMaxPct > 0 && (
+                          <span dir="ltr" className="text-sm font-bold text-white/35 line-through">{formatCohortPrice(fullPrice)}</span>
+                        )}
                       </div>
                       <p className="mt-0.5 text-[11px] text-white/40">
-                        {courseIds.length} دورات — وهو ما تُصدره الفاتورة
+                        {courseIds.length} دورات بعد خصم الباقة ({offer.bundleMaxPct}٪) — وهو ما تُصدره الفاتورة
                       </p>
-                      <div className="mt-2 space-y-1 text-xs">
-                        <p className="text-teal-light-ink">خصمٌ كبير على المسار كاملا مقابل شراء دوراته منفردة</p>
-                        <p className="text-gold-ink">
-                          و<span className="font-black">{FIRST_TIME_PROMO.percentOff}%</span> إضافية لأوّل عملية شراء بالكود{" "}
-                          <span dir="ltr" className="font-mono font-black">{FIRST_TIME_PROMO.code}</span>
+                      <p className="mt-2 text-xs text-gold-ink">
+                        و<span className="font-black">{FIRST_TIME_PROMO.percentOff}%</span> إضافية لأوّل عملية شراء بالكود{" "}
+                        <span dir="ltr" className="font-mono font-black">{FIRST_TIME_PROMO.code}</span>
+                      </p>
+                      {/* خصمُ الفئة — نفس مطويّة صفحة شراء الدورة المفردة،
+                          فالوعدُ واحد أينما ظهر. */}
+                      <details className="group mt-2.5">
+                        <summary className="cursor-pointer list-none text-[11px] leading-relaxed text-white/40 [&::-webkit-details-marker]:hidden">
+                          هل قد تكون مؤهلا لخصم فئة (حتى {MAX_CATEGORY_PCT}٪)؟{" "}
+                          <span className="font-bold text-white/60 underline underline-offset-4 transition group-hover:text-teal-light-ink">
+                            اطّلع على الفئات وتحقّق من أهليتك
+                          </span>
+                        </summary>
+                        <ul className="mt-2.5 space-y-1.5 border-r-2 border-white/10 pe-0 ps-3">
+                          {DISCOUNT_CATEGORIES.map((cat) => (
+                            <li key={cat.id} className="text-[11px] leading-relaxed text-white/50">
+                              <span className="font-bold text-white/75">{cat.label_ar} — {cat.percentOff}٪</span>
+                              <span className="text-white/40"> · {cat.evidence_ar}</span>
+                            </li>
+                          ))}
+                        </ul>
+                        <p className="mt-2.5 text-[11px] leading-relaxed text-white/40">
+                          الكود لا يُنشر: يُصدَر لك وحدك بعد التحقق، فلا يتسرّب خصم فئةٍ إلى من ليس منها.{" "}
+                          <a
+                            href={`https://wa.me/${CONTACT.whatsapp}?text=${encodeURIComponent("أرغب بالتحقق من أهليتي لخصم فئة — وسأرفق ما يثبت ذلك.")}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="font-bold text-white/60 underline underline-offset-4 transition hover:text-teal-light-ink"
+                          >
+                            راسلنا على واتساب بصورة الإثبات
+                          </a>
                         </p>
-                        {/* الهديّةُ تُقال حين تكون معيَّنةً فعلا.
-
-                            كانت تُعرض دائما و`giftCourseId` رايةُ عرضٍ لا
-                            تُحسب — فالمسارُ الجاهز بلا هديّةٍ مختارة كان
-                            يَعِد بواحدةٍ لا وجودَ لها. وقد صار الخادمُ
-                            يحسمها (`cart-pricing.ts`)، فيُقال الوعدُ حيث
-                            يُوفى به وحدَه. */}
-                        {giftId && (
-                          <p className="flex items-center gap-1.5 text-gold-ink">
-                            <Gift className="h-3.5 w-3.5" /> و«{courseById(giftId)?.name ?? "دورة"}» هديّة — تُحسم عند الشراء
-                          </p>
-                        )}
-                        <p className="pt-0.5 text-white/45">
-                          الرقم أعلاه لهذه الدورات — ويتغيّر إن غيّرتها.
-                        </p>
-                      </div>
+                      </details>
+                      <p className="mt-2 text-[11px] text-white/45">
+                        الرقم أعلاه لهذه الدورات — ويتغيّر إن غيّرتها.
+                      </p>
                     </>
                   ) : (
                     /* لا شعبة مسعَّرة: لا رقم. رقمٌ لا تسنده شعبة هو الذي جعل
@@ -794,11 +773,6 @@ export default function PathwayPage() {
                       <p className="text-white/50">
                         نُسعّر كل شعبة على حدة، ولا نعرض رقما قبل أن يكون هو الرقم الذي تدفعه.
                       </p>
-                      {giftId && (
-                        <p className="flex items-center gap-1.5 text-gold-ink">
-                          <Gift className="h-3.5 w-3.5" /> و«{courseById(giftId)?.name ?? "دورة"}» هديّة داخل الخطّة
-                        </p>
-                      )}
                     </div>
                   )}
                   <Button

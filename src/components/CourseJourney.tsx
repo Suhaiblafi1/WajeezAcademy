@@ -117,7 +117,7 @@ export default function CourseJourney({
           const swapOpen = edit?.swapForId === c.id;
           const isSupport = isSupportId(c.id);
           return (
-          <li key={c.id} className="relative pb-4 last:pb-0">
+          <li key={c.id} className="relative pb-5 last:pb-0">
             {isSupport && i === firstSupport && (
               <div className="mb-4 border-t border-dashed border-white/15 pt-4">
                 <p className="flex items-center gap-2 text-xs font-black text-teal-light-ink">
@@ -200,18 +200,9 @@ export default function CourseJourney({
                       {supportReasons[c.id]}
                     </p>
                   )}
-                  {c.practicalProject && (
-                    <p className="mt-2 flex items-start gap-1.5 text-[11px] leading-relaxed text-white/50">
-                      <FolderKanban className="mt-0.5 h-3 w-3 shrink-0 text-gold-ink" />
-                      <span>
-                        <span className="font-bold text-white/65">مخرجها العملي: </span>
-                        {c.practicalProject}
-                      </span>
-                    </p>
-                  )}
-
-                  {/* أدوات التخصيص — داخل البطاقة نفسها */}
-                  {edit && !isGift && (
+                  {/* أدوات التخصيص — داخل البطاقة نفسها، والهديّة تُستبدل كغيرها
+                      (فتنتقل الصفة لبديلتها) لا تُقفَل. */}
+                  {edit && (
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       <button
                         onClick={() => edit.onSwapToggle(swapOpen ? null : c.id)}
@@ -273,7 +264,7 @@ export default function CourseJourney({
               </div>
 
               <CollapsibleContent className="overflow-hidden transition-all data-[state=closed]:animate-[accordion-up_0.25s_ease-out] data-[state=open]:animate-[accordion-down_0.3s_ease-out]">
-                <div className="space-y-4 border-t border-white/10 px-4 py-4 pr-[3.25rem] text-xs leading-6">
+                <div className="space-y-5 border-t border-white/10 px-4 py-5 pr-[3.25rem] text-xs leading-7">
                   {c.description && <p className="text-white/60">{c.description}</p>}
                   {c.targetAudience && (
                     <p className="text-white/55">
@@ -310,6 +301,15 @@ export default function CourseJourney({
                         ))}
                       </ul>
                     </div>
+                  )}
+                  {c.practicalProject && (
+                    <p className="flex items-start gap-1.5 text-white/55">
+                      <FolderKanban className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-ink" />
+                      <span>
+                        <span className="font-bold text-white/70">مخرجها العملي: </span>
+                        {c.practicalProject}
+                      </span>
+                    </p>
                   )}
                   {c.modules.length > 0 && (
                     <div>
@@ -386,9 +386,9 @@ export default function CourseJourney({
               القارئ أن يكتشف بنفسه أنّ الصفّين شيءٌ واحد باحتمالين.
 
               فصارت الدورة سطرا واحدا في شبكة: اسمُها، وإلى جانبه ما يمكن
-              فعله بها. و«مجانا» لا يظهر إلّا ما دامت الهديّة غير مأخوذة —
-              والفعلان باقيان كما كانا، لم يُدمجا في واحد: من أراد أن يدّخر
-              هديّته لدورةٍ أخرى ويشتري هذه، له ذلك. */}
+              فعله بها. والهديّةُ لم تعد تُختار من هنا: هي سادسة الخطّة
+              افتراضا، واستبدالُها من بطاقتها في الرحلة نفسِها — لا صندوقٌ
+              يعرض دوراتٍ خارج الخطّة كأنها هديّةٌ ممكنة ثم لا تدخلها. */}
           {/* الصندوقُ مطويٌّ افتراضا — سطرٌ يُغري بالفتح لا شبكةٌ تبتلع الشاشة.
 
               كان مفتوحا دائما بستّ دورات في شبكةٍ من عمودين، فيأخذ على الهاتف
@@ -398,27 +398,23 @@ export default function CourseJourney({
               والسببُ صار مكتوبا. كان الصندوق يقول «أضف دورة أخرى» بلا أن يقول
               **لماذا** — والسببُ الحقيقيّ أنّ الدورات تُشترى معا بخصمٍ لا
               تناله الدورةُ وحدَها. فمن حذف دورةً كان يقرأ دعوةً بلا مقابل. */}
-          {edit.pool.length > 0 && (!edit.giftId || !edit.maxReached) && (
+          {edit.pool.length > 0 && !edit.maxReached && (
             <Collapsible
               open={poolOpen}
               onOpenChange={setPoolOpen}
-              className={`rounded-2xl border ${!edit.giftId ? "border-gold/40 bg-gold/5" : "border-white/10 bg-white/[0.02]"}`}
+              className="rounded-2xl border border-white/10 bg-white/[0.02]"
             >
               <CollapsibleTrigger className="flex w-full cursor-pointer items-center gap-2 p-4 text-right">
-                <span className={`flex min-w-0 flex-1 items-center gap-2 text-sm font-black ${!edit.giftId ? "text-gold-ink" : "text-white/70"}`}>
-                  {!edit.giftId ? <Gift className="h-4 w-4 shrink-0" /> : <Plus className="h-4 w-4 shrink-0" />}
-                  <span className="min-w-0 truncate">
-                    {!edit.giftId ? "هديتك: دورة مجانية بانتظارك" : "أضف دورة أخرى إلى مسارك"}
-                  </span>
+                <span className="flex min-w-0 flex-1 items-center gap-2 text-sm font-black text-white/70">
+                  <Plus className="h-4 w-4 shrink-0" />
+                  <span className="min-w-0 truncate">أضف دورة أخرى إلى مسارك</span>
                 </span>
                 <span className="shrink-0 text-[11px] font-bold text-white/40">{edit.pool.length}</span>
                 <ChevronDown className={`h-4 w-4 shrink-0 text-white/45 transition ${poolOpen ? "rotate-180" : ""}`} />
               </CollapsibleTrigger>
               <CollapsibleContent className="px-4 pb-4">
               <p className="text-[11px] leading-5 text-white/45">
-                {!edit.giftId
-                  ? `اختر واحدة مجانا — أو أضف ما تشاء بالسعر حتى ${MAX_PATHWAY_COURSES} دورات.`
-                  : `حتى ${MAX_PATHWAY_COURSES} دورات في المسار.`}
+                حتى {MAX_PATHWAY_COURSES} دورات في المسار.
               </p>
               {edit.addReason && (
                 <p className="mt-2 flex items-start gap-1.5 rounded-xl border border-teal-light/25 bg-teal/[0.06] px-3 py-2 text-[11px] leading-5 text-teal-light-ink">
@@ -437,15 +433,6 @@ export default function CourseJourney({
                       {p.name}
                     </span>
                     <span className="flex shrink-0 items-center gap-1">
-                      {!edit.giftId && (
-                        <button
-                          onClick={() => edit.onGiftToggle(p.id)}
-                          aria-label={`اجعل «${p.name}» هديتك المجانية`}
-                          className="cursor-pointer rounded-full border border-gold/50 bg-gold/10 px-2.5 py-1 text-[11px] font-black text-gold-ink transition hover:bg-gold/20"
-                        >
-                          مجانا
-                        </button>
-                      )}
                       {!edit.maxReached && (
                         <button
                           onClick={() => edit.onAdd(p.id)}

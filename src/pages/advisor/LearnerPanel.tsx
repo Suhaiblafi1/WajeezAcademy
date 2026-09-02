@@ -8,7 +8,7 @@
    في الخطّة يرفعه طلبا تبتّ فيه الإدارة. */
 
 import { useEffect, useState } from 'react'
-import { BookOpen, CalendarClock, GraduationCap, Loader2, Route } from 'lucide-react'
+import { BookOpen, CalendarClock, Compass, GraduationCap, Loader2, Route, Target } from 'lucide-react'
 import { apiGet, ApiError } from '@/services/api'
 import { courseById } from '@/data/courses'
 import { pathwayById } from '@/data/pathways'
@@ -37,6 +37,15 @@ interface Snapshot {
     hostPathwayId: string | null
     giftCourseId: string | null
     items: { courseId: string; sequence: number }[]
+  } | null
+  diagnostic: {
+    attachedAt: string | null
+    topPathwayName: string | null
+    confidenceBand: string | null
+    needsAdvisor: boolean
+    goalAr: string | null
+    reasons: string[]
+    gaps: { skill: string; current: string; target: string; priority: string }[]
   } | null
 }
 
@@ -69,6 +78,52 @@ export default function LearnerPanel({ caseId }: { caseId: string }) {
 
   return (
     <div className="space-y-5">
+      {/* خلاصة تشخيصه — كانت سطورا تُبنى في متصفّح المتعلّم وحده ولا تصل
+          المستشار أبدا؛ هذه من نتيجته المرفقة بحسابه فعلا. */}
+      {snap.diagnostic && (
+        <div className="rounded-xl border border-teal/25 bg-teal/[0.04] p-3">
+          <p className="flex items-center gap-1.5 text-[11px] font-black text-teal-light-ink">
+            <Compass className="h-3.5 w-3.5" /> خلاصة تشخيصه
+          </p>
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10.5px] text-white/50">
+            {snap.diagnostic.topPathwayName && <span>المسار المرشَّح: {snap.diagnostic.topPathwayName}</span>}
+            {snap.diagnostic.confidenceBand && <span>· ثقة الترشيح: {snap.diagnostic.confidenceBand}</span>}
+            {snap.diagnostic.needsAdvisor && <span className="font-bold text-gold-ink">· يحتاج مراجعتك</span>}
+          </div>
+          {snap.diagnostic.goalAr && (
+            <p className="mt-2 text-[11px] leading-6 text-white/65">
+              <span className="font-bold text-white/45">هدفه: </span>{snap.diagnostic.goalAr}
+            </p>
+          )}
+          {snap.diagnostic.reasons.length > 0 && (
+            <ul className="mt-2 space-y-1">
+              {snap.diagnostic.reasons.map((r, i) => (
+                <li key={i} className="flex items-start gap-2 text-[11px] leading-6 text-white/60">
+                  <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-teal-ink" />
+                  <span className="min-w-0">{r}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {snap.diagnostic.gaps.length > 0 && (
+            <div className="mt-3">
+              <p className="flex items-center gap-1.5 text-[10.5px] font-black text-white/45">
+                <Target className="h-3 w-3" /> أوجه النمو
+              </p>
+              <ul className="mt-1.5 space-y-1.5">
+                {snap.diagnostic.gaps.map((g, i) => (
+                  <li key={i} className="text-[11px] leading-6 text-white/60">
+                    <span className="font-bold text-white/75">{g.skill}</span>
+                    {g.current && g.target && <span className="text-white/45"> — من «{g.current}» إلى «{g.target}»</span>}
+                    {g.priority && <span className="ms-2 text-[10px] text-gold-ink">أولوية {g.priority}</span>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* الخطّة */}
       {snap.plan && (
         <div>

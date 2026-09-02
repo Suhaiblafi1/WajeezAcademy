@@ -1318,7 +1318,7 @@ export default function Diagnostic() {
 
       {/* ─── Intro ─── */}
       {stage === "intro" && (
-        <section className="story-fade mx-auto max-w-3xl px-5 py-12 text-center md:py-24">
+        <section className="story-fade mx-auto max-w-3xl px-5 py-10 text-center md:py-14">
           <Badge className="border border-gold/40 bg-gold/10 text-gold-ink">مؤشر وجيز الكامل</Badge>
           {/* كان «ثلاث دقائق» بينما الشارة تحته تقول «١–٣ دقائق»، والرحلة الفعلية
               8–14 سؤالا. «بضع» تصدق على المدى كله.
@@ -1450,7 +1450,7 @@ export default function Diagnostic() {
       {/* ─── Questions ─── */}
       {stage === "questions" && question && (
         /* حشو رأسي أقل على الهاتف: 96 بكسل من 844 كانت فراغا فوق السؤال وتحته */
-        <section className="story-fade mx-auto max-w-2xl px-5 py-7 sm:py-12 md:py-16">
+        <section className="story-fade mx-auto max-w-2xl px-5 py-7 sm:py-10 md:py-10">
           {offline && (
             <div role="status" className="mb-5 rounded-2xl border border-gold/40 bg-gold/10 px-5 py-3 text-center text-xs font-bold text-gold-ink">
               انقطع الاتصال بالشبكة — لا تقلق: تشخيصك يعمل على جهازك وإجاباتك محفوظة، أكمل بثقة
@@ -1795,7 +1795,7 @@ export default function Diagnostic() {
             const guardMsg = result.reasons[0] ?? "";
             const isMinor = guardMsg.includes("قاصر");
             return (
-          <section className="story-fade mx-auto max-w-xl px-5 py-20 text-center md:py-28">
+          <section className="story-fade mx-auto max-w-xl px-5 py-12 text-center md:py-16">
             <p className="text-lg font-black leading-relaxed">
               {isMinor ? "هذه الجلسة تُكمل مع ولي الأمر" : "احترمنا اختيارك — توقف التشخيص هنا بلا أي توصية."}
             </p>
@@ -1831,7 +1831,7 @@ export default function Diagnostic() {
                  الأول يوحي بالانتظار، والثاني يوحي بخطوة تالية — وهي موجودة.
                  والأيقونة تبعت المعنى: العدسة فوق خريطة ناقصة تقول «ينقصنا
                  قياس» لا البوصلة التي تقول «أنت تائه». */
-              <section className="story-fade mx-auto max-w-xl px-5 py-20 text-center md:py-24">
+              <section className="story-fade mx-auto max-w-xl px-5 py-12 text-center md:py-16">
                 <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-teal/15">
                   {isExploratory
                     ? <SearchIcon className="h-7 w-7 text-teal-light-ink" />
