@@ -1328,7 +1328,7 @@ export default function Diagnostic() {
               التفصيل. وإسقاطُه كلّه كان يترك المنصّة بلا إفصاحٍ ظاهر البتّة —
               والمحرّك يسجّل «إقرار الواجهة» على أي حال (engine.ts). */}
           <ul className="mx-auto mt-4 max-w-md space-y-1.5 text-xs leading-relaxed text-white/55">
-            <li>ابدأ مجانا — ترى مسارك المقترح فورا، وحسابك المجاني يفتح نتيجتك كاملة</li>
+            <li>ابدأ مجانا — ترى مسارك المقترح ونتيجتك كاملة فورا، بلا حساب</li>
             <li className="inline-flex items-center justify-center gap-1.5">
               <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-teal-light-ink" />
               تشخيص تعليمي — لا نفسي ولا طبي
@@ -1908,6 +1908,14 @@ export default function Diagnostic() {
                 <p className="mt-4 text-[11px] leading-relaxed text-white/40">
                   هذا تشخيص تعليمي مهني: ليس تقييما نفسيا أو طبيا. لا نرشّح مسارا بلا دليل كافٍ — هذه مسؤولية لا ضعف.
                 </p>
+                {/* هذه هي الشاشة الفعلية التي تُعرض حين لا مسار — لا الشاشة أدناه
+                    (فرعها الآخر لا يُعرض أبدا: كل أبواب الوصول إلى "result"
+                    تمرّ بـ`landOnPathway` الذي ينقل مباشرة إلى صفحة المسار متى
+                    وُجد `top`، فلا يبقى لهذا الفرع لحظة يُصادَف فيها topPathway).
+                    فبريد الخصم مكانه هنا لا هناك — وإلا بقي بلا زائر أبدا. */}
+                <div className="mx-auto mt-6 max-w-sm">
+                  <DiscountEmailCapture source="diagnostic_discount" />
+                </div>
               </section>
             );
           })()
