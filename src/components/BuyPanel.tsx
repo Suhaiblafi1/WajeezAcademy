@@ -85,7 +85,8 @@ export default function BuyPanel({
   email: string;
   /** كودٌ كتبه في الصفحة قبل أن يفتح اللوح — يُحمل معه لا يُنسى */
   initialCoupon?: string;
-  /** ملاحظةٌ من الصفحة قبل الشراء — مثل «خطّتك لم تتبدّل لأنّك اشتريت» */
+  /** رفضُ خادمٍ يستحقّ أن يُقال — مثل محاولة إسقاط دورةٍ دُفع ثمنها.
+      يظهر خفيفا لا حاجزا: هذه حالةٌ نادرة لا واجهة الشراء المعتادة. */
   note?: string | null;
   onClose: () => void;
 }) {
@@ -193,8 +194,8 @@ export default function BuyPanel({
         <p className="mt-1 text-sm text-white/55">{title}</p>
 
         {note && (
-          <p className="mt-3 flex items-start gap-2 rounded-2xl border border-gold/30 bg-gold/[0.06] p-3 text-[11px] leading-5 text-gold-ink">
-            <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <p className="mt-2 flex items-start gap-1.5 text-[11px] leading-5 text-gold-ink/90">
+            <Info className="mt-0.5 h-3 w-3 shrink-0" />
             {note}
           </p>
         )}
@@ -213,13 +214,15 @@ export default function BuyPanel({
 
         {loaded && buyable.length > 0 && (
           <>
-            {/* البنودُ بشعبها — والموعدُ يُبدَّل هنا لا في شاشةٍ أخرى */}
-            <ul className="mt-5 space-y-2.5">
+            {/* البنودُ بشعبها — والموعدُ يُبدَّل هنا لا في شاشةٍ أخرى.
+                قائمةٌ واحدة بفواصل، لا صندوقٌ مستقلٌّ لكلّ بند — الحاوية
+                واحدة تحمل كلَّ دوراته، أهدأ للعين من صفٍّ من البطاقات. */}
+            <ul className="mt-5 divide-y divide-white/8 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
               {buyable.map(({ line, options }) => {
                 const item = quote?.items.find((i) => i.courseId === line.courseId);
                 const picked = options.find((o) => o.id === chosen[line.courseId]) ?? options[0];
                 return (
-                  <li key={line.courseId} className="rounded-2xl border border-white/10 bg-white/[0.03] p-3.5">
+                  <li key={line.courseId} className="p-3.5">
                     <div className="flex items-start justify-between gap-3">
                       <span className="min-w-0">
                         <span className="block text-sm font-bold leading-snug">{line.name}</span>
