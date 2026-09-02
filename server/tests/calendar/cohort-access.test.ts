@@ -42,8 +42,12 @@ async function makeActiveTrainer(email: string, name: string) {
     trainingLanguages: ['العربية'], deliveryMode: 'remote',
     motivation: 'أريد الانضمام إلى وجيز لأنني درّبت فرقا حقيقية في بيئات عمل عربية، وأعرف الفرق بين من يعرف المادة ومن يستطيع تعليمها. سأقدّم للمتعلمين مهمة تطبيقية من واقع عملهم في كل وحدة، وأراجع مخرجاتهم بنفسي وأكتب لكل واحد ما ينقصه تحديدا لا تقييما عاما.',
     privacyConsent: true,
+    password: 'Trainer#12345',
   })
-  await apps.verifyEmail(p1.reference, p1.verificationTokenForDelivery)
+  /* الطلبُ مسودّةٌ حتّى يُكمَل — الإكمالُ يجعله مقدَّما */
+  await apps.completePhase2(p1.reference, p1.candidateToken, {
+    previousCourses: [], teachableCourseIds: [], availability: {}, demoConsent: true, contact: { channel: 'email' },
+  })
   const app = await prisma.trainerApplication.findUnique({ where: { reference: p1.reference } })
   await review.decide(app!.id, managerId, 'move_to_review')
   await review.decide(app!.id, managerId, 'shortlist')
@@ -54,10 +58,10 @@ async function makeActiveTrainer(email: string, name: string) {
   await review.decide(app!.id, managerId, 'conditionally_approve')
   const contract = await review.createContract(app!.id, managerId, { title: 'عقد اختبار' })
   await review.signContract(contract.id, managerId)
-  const inv = await review.createInvitation(app!.id, managerId)
-  const acc = await review.consumeInvitation(inv.tokenForDelivery, 'Trainer#12345')
+  /* للمتقدّم حسابٌ منذ تقديمه — التفعيلُ يربطه بملفّه ويمنحه دورَ المدرّب */
+  await review.decide(app!.id, managerId, 'activate')
   const profile = await prisma.trainerProfile.findUnique({ where: { applicationId: app!.id } })
-  return { userId: acc.userId, profileId: profile!.id }
+  return { userId: profile!.userId!, profileId: profile!.id }
 }
 
 beforeAll(async () => {

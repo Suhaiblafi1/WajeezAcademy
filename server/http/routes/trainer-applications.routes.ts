@@ -1,5 +1,6 @@
-/* مسارات طلبات المدربين العامة — تقديم، تحقق بريد، حالة آمنة، مرحلة ثانية، وثائق.
-   رموز التحقق/الوصول تُعاد في الاستجابة في التطوير فقط (لا قناة بريد فعلية بعد). */
+/* مسارات طلبات المدربين العامة — قسمٌ أوّل ينشئ الطلبَ والحساب، قسمٌ أخير
+   يُكمله ويُرسل بريدَ التأكيد، توثيقُ البريد من رابطه، حالةٌ بالبريد، وثائق،
+   وما يخصّ صاحبَ الحساب: طلبه، واستئنافه، وسحبه. */
 
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
@@ -11,6 +12,7 @@ import {
   MAX_UPLOAD_BYTES, MAX_UPLOAD_ANY, UPLOADABLE_KINDS,
 } from '../../services/storage.service'
 import { requirePermission } from '../auth-plugin'
+import { CONTACT_CHANNEL_VALUES, TRAINING_SEASON_VALUES } from '../../../src/application/trainer/application-options'
 
 const IS_PROD = process.env.NODE_ENV === 'production'
 
@@ -33,10 +35,13 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
   app.addContentTypeParser('application/octet-stream', { parseAs: 'buffer' }, (_req, body, done) => done(null, body))
 
   app.post('/api/v1/trainer-applications', {
-    schema: { tags: ['trainer-applications'], summary: 'تقديم طلب انضمام مدرب — المرحلة الأولى' },
+    /* الكلمةُ هنا تُقارَن بكلمة حسابٍ قائم إن وُجد — فالحدُّ حدُّ الدخول */
+    config: { rateLimit: { max: 10, timeWindow: '15 minutes' } },
+    schema: { tags: ['trainer-applications'], summary: 'القسم الأوّل — ينشئ الطلبَ مسودّةً وحسابَ المتقدّم' },
   }, async (req, reply) => {
     const body = z.object({
       fullName: z.string().min(3), email: z.string().email(),
+      password: z.string().min(8).max(200),
       phoneCountryCode: z.string().max(6).optional(), phone: z.string().max(20).optional(),
       country: z.string().max(80).optional(), timezone: z.string().max(60).optional(),
       employmentStatus: z.enum(['employed', 'own_business', 'full_time_training']).optional(),
@@ -65,28 +70,26 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
       youtubeUrl: body.youtubeUrl || undefined,
       instagramUrl: body.instagramUrl || undefined,
     })
-    /* رمز التحقق يُرسَل بالبريد فعليا الآن. وحين تتعذّر القناة يمضي الطلب بلا
-       بوابة بريدية (بأثر صريح في سجل الحالة) ويعود رمز وصول المرشح هنا — وإلا
-       بقي المتقدم عند «بانتظار التحقق» أبدا، وهو ما كان يقع في الإنتاج. */
+    /* رمزُ المتابعة يُعاد دائما: به تُرفع الوثائق ويُكمَل الطلب في الجلسة
+       نفسها. وصاحبُ الحساب يستعيده لاحقا من /mine/resume بجلسته. */
     return reply.status(201).send({
       reference: result.reference,
-      status: result.candidateToken ? 'submitted' : 'email_verification_pending',
-      emailDelivery: result.emailDelivery,
-      ...(result.candidateToken ? { candidateToken: result.candidateToken } : {}),
-      ...(IS_PROD ? {} : { devVerificationToken: result.verificationTokenForDelivery }),
+      status: 'draft',
+      resumed: result.resumed,
+      candidateToken: result.candidateToken,
     })
   })
 
   app.post('/api/v1/trainer-applications/verify-email', {
-    schema: { tags: ['trainer-applications'], summary: 'تحقق البريد — يصدر رمز وصول المرشح' },
+    schema: { tags: ['trainer-applications'], summary: 'توثيق البريد من رابط رسالة التأكيد' },
   }, async (req) => {
     const body = z.object({ reference: z.string().min(5), token: z.string().min(10) }).parse(req.body)
-    const result = await svc.verifyEmail(body.reference, body.token)
-    return result
+    return svc.verifyEmail(body.reference, body.token)
   })
 
   app.post('/api/v1/trainer-applications/resend-verification', {
-    schema: { tags: ['trainer-applications'], summary: 'إعادة إرسال رمز التحقق — لا يكشف وجود الطلب' },
+    config: { rateLimit: { max: 5, timeWindow: '15 minutes' } },
+    schema: { tags: ['trainer-applications'], summary: 'إعادة إرسال بريد التأكيد — لا يكشف وجود الطلب' },
   }, async (req) => {
     const body = z.object({ email: z.string().email() }).parse(req.body)
     const result = await svc.resendVerification(body.email)
@@ -94,17 +97,31 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
     return { ok: true, emailDelivery: result.emailDelivery, ...(IS_PROD ? {} : { devVerificationToken: result.tokenForDelivery }) }
   })
 
+  /* الحالةُ بالبريد وحده — والرقمُ إن أُعطي يُطابَق. محدودةُ المعدّل لأنّ
+     البريدَ وحده يكفي للسؤال، فلا يُسأل عن ألف بريد في دقيقة. */
+  app.get('/api/v1/trainer-applications/status', {
+    config: { rateLimit: { max: 10, timeWindow: '10 minutes' } },
+    schema: { tags: ['trainer-applications'], summary: 'حالة الطلب بالبريد — الرقم المرجعي اختياري' },
+  }, async (req) => {
+    const { email, reference } = z.object({
+      email: z.string().email(), reference: z.string().trim().max(40).optional(),
+    }).parse(req.query)
+    return svc.getPublicStatus(email, reference || null)
+  })
+
+  /* الصيغةُ القديمة — روابطُ ومتصلون سابقون */
   app.get('/api/v1/trainer-applications/:reference/status', {
-    schema: { tags: ['trainer-applications'], summary: 'حالة الطلب بأمان — يتطلب البريد مطابقا' },
+    config: { rateLimit: { max: 10, timeWindow: '10 minutes' } },
+    schema: { tags: ['trainer-applications'], summary: 'حالة الطلب — بالرقم والبريد معا' },
   }, async (req) => {
     const { reference } = z.object({ reference: z.string().min(5) }).parse(req.params)
     const { email } = z.object({ email: z.string().email() }).parse(req.query)
-    return svc.getPublicStatus(reference, email)
+    return svc.getPublicStatus(email, reference)
   })
 
-  /* حساب «متقدّم مدرب» — يحفظ الطلب لصاحبه بدل رمزٍ يُنسخ ويُفقد.
-     الرمز شرطٌ لإنشائه: بدونه يستطيع من عرف رقما مرجعيا أن يربط طلب غيره
-     بحسابه. والبريد يأتي من الطلب لا من الطلبِ الوارد. */
+  /* حساب «متقدّم مدرب» لطلبٍ قديم بلا حساب — الطلباتُ الجديدة تُنشئه في
+     القسم الأوّل. الرمز شرطٌ لإنشائه: بدونه يستطيع من عرف رقما مرجعيا أن
+     يربط طلب غيره بحسابه. والبريد يأتي من الطلب لا من الطلبِ الوارد. */
   app.post('/api/v1/trainer-applications/:reference/account', {
     schema: { tags: ['trainer-applications'], summary: 'إنشاء حساب متقدّم مدرب — برمز المرشح' },
   }, async (req, reply) => {
@@ -123,8 +140,22 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
     schema: { tags: ['trainer-applications'], summary: 'طلب الانضمام الخاص بصاحب الحساب' },
   }, async (req) => svc.myApplication(req.auth!.userId))
 
+  app.post('/api/v1/trainer-applications/mine/resume', {
+    preHandler: requirePermission('trainer.application.own'),
+    schema: { tags: ['trainer-applications'], summary: 'مفتاح استئناف الطلب لصاحب الحساب — يُبدَّل رمز المتابعة' },
+  }, async (req) => svc.resumeAccess(req.auth!.userId))
+
+  app.post('/api/v1/trainer-applications/mine/withdraw', {
+    preHandler: requirePermission('trainer.application.own'),
+    schema: { tags: ['trainer-applications'], summary: 'سحب صاحب الحساب طلبَه' },
+  }, async (req) => {
+    const body = z.object({ reason: z.string().max(500).optional() }).parse(req.body ?? {})
+    await svc.withdrawMine(req.auth!.userId, body.reason)
+    return { ok: true }
+  })
+
   app.post('/api/v1/trainer-applications/:reference/phase-2', {
-    schema: { tags: ['trainer-applications'], summary: 'استكمال المرحلة الثانية — للمرشحين برمز الوصول' },
+    schema: { tags: ['trainer-applications'], summary: 'القسم الأخير — يُكمل الطلب ويُرسل بريد التأكيد' },
   }, async (req) => {
     const { reference } = z.object({ reference: z.string().min(5) }).parse(req.params)
     const body = z.object({
@@ -145,8 +176,15 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
         startFrom: z.string().optional(),
         /* صباحيّ أو مسائيّ — اليوم وحده لا يقول متى هو متفرّغ فيه */
         periods: z.array(z.enum(['morning', 'evening'])).optional(),
+        /* والموسمُ: الشعبةُ تُفتح في موسمٍ، والمدرّبُ متفرّغ في بعضها لا كلّها */
+        seasons: z.array(z.enum(TRAINING_SEASON_VALUES)).max(4).optional(),
       }),
       demoConsent: z.literal(true),
+      /* كيف نتواصل معه للاجتماع التعريفيّ */
+      contact: z.object({
+        channel: z.enum(CONTACT_CHANNEL_VALUES),
+        altEmail: z.string().email().max(200).optional(),
+      }).optional(),
     }).parse(req.body)
     const { candidateToken, ...input } = body
     return svc.completePhase2(reference, candidateToken, input)

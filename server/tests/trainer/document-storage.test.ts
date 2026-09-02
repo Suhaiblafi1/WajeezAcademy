@@ -40,7 +40,7 @@ const phase1 = {
   domainYears: '8-12' as const, trainingYears: 'workshops',
   trainingLanguages: ['العربية'], deliveryMode: 'remote' as const,
   motivation: 'أدرّب تحليل البيانات منذ ثماني سنوات وأبني تماريني من بيانات حقيقية لا أمثلة مفتعلة تُنسى بعد الجلسة.',
-  privacyConsent: true as const,
+  privacyConsent: true as const, password: 'Docs#12345',
 }
 
 describe('تخزين وثائق المتقدّم', () => {
@@ -50,8 +50,8 @@ describe('تخزين وثائق المتقدّم', () => {
     apps = new TrainerApplicationService(prisma)
     const res = await apps.submitPhase1(phase1)
     reference = res.reference
-    candidateToken = res.candidateToken ?? ''
-    expect(candidateToken, 'لا رمز مرشح — البريد غير مهيّأ في الاختبار فيُقبل الطلب مباشرة').not.toBe('')
+    candidateToken = res.candidateToken
+    expect(candidateToken).not.toBe('')
   })
 
   it('المحتوى يستقرّ في عمود القاعدة، ويُقرأ منه كما رُفع', async () => {

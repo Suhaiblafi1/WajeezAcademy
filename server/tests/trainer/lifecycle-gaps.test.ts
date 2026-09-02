@@ -29,6 +29,7 @@ const base = {
   domainYears: '8-12' as const, trainingYears: 'formal_teaching',
   bio: 'خبرة', trainingLanguages: ['العربية'], deliveryMode: 'both' as const,
   motivation: 'أريد الانضمام إلى وجيز لأنني درّبت فرقا حقيقية في بيئات عمل عربية، وأعرف الفرق بين من يعرف المادة ومن يستطيع تعليمها. سأقدّم للمتعلمين مهمة تطبيقية من واقع عملهم في كل وحدة، وأراجع مخرجاتهم بنفسي وأكتب لكل واحد ما ينقصه تحديدا لا تقييما عاما.', privacyConsent: true as const,
+  password: 'Applicant#12345',
 }
 
 beforeAll(async () => {
@@ -49,45 +50,63 @@ beforeAll(async () => {
 }, 180_000)
 
 describe('قناة البريد غير مفعّلة — الطلب لا يُحبس عند بوابة لا تعمل', () => {
-  it('يمضي إلى «مقدَّم» ويعيد رمز وصول المرشح بدل الوقوف عند التحقق', async () => {
+  it('القسم الأوّل ينشئ مسودّةً بحساب ويُعيد رمزَ المتابعة دائما', async () => {
     const res = await apps.submitPhase1({ ...base, fullName: 'متقدم بلا بريد', email: 'nomail@test.local' })
-    expect(res.emailDelivery).toBe('not_configured')
-    expect(res.candidateToken, 'لم يُصدر رمز وصول فبقي المتقدم بلا طريق').toBeTruthy()
+    expect(res.candidateToken, 'لم يُصدر رمز متابعة فبقي المتقدم بلا طريق').toBeTruthy()
     const row = await prisma.trainerApplication.findUnique({ where: { reference: res.reference } })
-    expect(row!.status).toBe('submitted')
+    expect(row!.status).toBe('draft')
     expect(row!.accessTokenHash).not.toBeNull()
+    expect(row!.userId).toBe(res.userId)
+    const roles = await prisma.userRole.findMany({ where: { userId: res.userId }, select: { roleId: true } })
+    expect(roles.map((r) => r.roleId)).toEqual(['trainer_applicant'])
   })
 
-  it('لا يدّعي تحققا لم يقع: emailVerifiedAt فارغ والسبب مكتوب في سجل الحالة', async () => {
-    const row = await prisma.trainerApplication.findFirst({
+  it('الإكمالُ يجعله مقدَّما ولو تعذّر البريد — ولا يدّعي تحققا لم يقع', async () => {
+    const row0 = await prisma.trainerApplication.findFirstOrThrow({ where: { email: 'nomail@test.local' } })
+    const access = await apps.resumeAccess(row0.userId!)
+    const done = await apps.completePhase2(access.reference, access.candidateToken, {
+      previousCourses: [], teachableCourseIds: [], availability: {}, demoConsent: true, contact: { channel: 'email' },
+    })
+    expect(done.status).toBe('submitted')
+    expect(done.emailDelivery).toBe('not_configured')
+    const row = await prisma.trainerApplication.findFirstOrThrow({
       where: { email: 'nomail@test.local' }, include: { statusHistory: true },
     })
-    expect(row!.emailVerifiedAt, 'وُسم بريد لم يُتحقق منه كأنه تحقق').toBeNull()
-    const notes = row!.statusHistory.map((h) => h.note ?? '').join(' | ')
-    expect(notes).toContain('قناة البريد غير مفعّلة')
+    expect(row.status).toBe('submitted')
+    expect(row.emailVerifiedAt, 'وُسم بريد لم يُتحقق منه كأنه تحقق').toBeNull()
+    expect(row.statusHistory.map((h) => h.toStatus)).toEqual(['draft', 'submitted'])
   })
 
-  it('رمز المرشح المُعاد يفتح المرحلة الثانية فعلا — لا رمزا لا يعمل', async () => {
+  it('رمز المتابعة المُعاد يفتح المرحلة الثانية فعلا — لا رمزا لا يعمل', async () => {
     const teachable = await prisma.course.findFirst({ select: { id: true } })
     const res = await apps.submitPhase1({ ...base, fullName: 'متقدم ثان', email: 'nomail2@test.local' })
+    const first = await apps.completePhase2(res.reference, res.candidateToken, {
+      previousCourses: [], teachableCourseIds: [], availability: {}, demoConsent: true, contact: { channel: 'email' },
+    })
+    expect(first.status).toBe('submitted')
     const row = await prisma.trainerApplication.findUnique({ where: { reference: res.reference } })
-    /* المرحلة الثانية تُفتح بقرار إدارة؛ نصل بالحالة إليها ثم نستخدم الرمز */
+    /* بعد طلب معلوماتٍ إضافية يبقى الرمز يعمل ويعيد الطلب إلى المراجعة */
     await review.decide(row!.id, adminId, 'move_to_review')
     await review.decide(row!.id, adminId, 'request_info', 'أرسل نموذج تدريب')
-    const saved = await apps.completePhase2(res.reference, res.candidateToken!, {
+    const saved = await apps.completePhase2(res.reference, res.candidateToken, {
       previousCourses: [{ title: 'التفاوض التجاري', org: 'جهة سابقة', year: 2025, link: 'https://example.test/course' }],
       teachableCourseIds: [teachable!.id],
-      availability: { hoursPerWeek: 6 },
+      availability: { hoursPerWeek: 6, seasons: ['nov_jan', 'feb_apr'] },
       demoConsent: true,
     })
     expect(saved.phase2CompletedAt).toBeInstanceOf(Date)
+    expect(saved.status).toBe('under_review')
   })
 })
 
-describe('الدعوة تصل إلى يدٍ ما', () => {
-  it('تُعيد رابط القبول ورمزه للمسؤول مهما كانت البيئة', async () => {
+describe('الاعتمادُ يصل إلى حساب المتقدّم نفسِه', () => {
+  it('لا دعوةَ لمن له حساب — التفعيلُ يربطه بملفّه ويمنحه دورَ المدرّب', async () => {
     const res = await apps.submitPhase1({ ...base, fullName: 'مرشح للاعتماد', email: 'invite-gap@test.local' })
+    await apps.completePhase2(res.reference, res.candidateToken, {
+      previousCourses: [], teachableCourseIds: [], availability: {}, demoConsent: true, contact: { channel: 'whatsapp' },
+    })
     const app = await prisma.trainerApplication.findUnique({ where: { reference: res.reference } })
+    expect(app!.contactChannel).toBe('whatsapp')
     await review.decide(app!.id, adminId, 'move_to_review')
     await review.addReview(app!.id, adminId, scores(), 'مؤهل')
     await review.decide(app!.id, adminId, 'shortlist')
@@ -97,14 +116,14 @@ describe('الدعوة تصل إلى يدٍ ما', () => {
     await review.decide(app!.id, adminId, 'conditionally_approve')
     const contract = await review.createContract(app!.id, adminId, { title: 'عقد تدريب', terms: {} })
     await review.signContract(contract.id, adminId)
-    const inv = await review.createInvitation(app!.id, adminId)
-    expect(inv.tokenForDelivery.length).toBeGreaterThan(20)
-    expect(inv.acceptUrl).toContain('/trainer/accept-invite?token=')
-    expect(inv.acceptUrl).toContain(inv.tokenForDelivery)
-    /* والرمز يعمل: حساب حقيقي بدور مدرب */
-    const { userId } = await review.consumeInvitation(inv.tokenForDelivery, 'TrainerPass#1', 'مدرب معتمد')
-    const roles = await prisma.userRole.findMany({ where: { userId }, select: { roleId: true } })
-    expect(roles.map((r) => r.roleId)).toContain('trainer')
+    await expect(review.createInvitation(app!.id, adminId)).rejects.toMatchObject({ code: 'has_account' })
+    await review.decide(app!.id, adminId, 'activate')
+    const profile = await prisma.trainerProfile.findUniqueOrThrow({ where: { applicationId: app!.id } })
+    expect(profile.userId).toBe(app!.userId)
+    const roles = await prisma.userRole.findMany({ where: { userId: app!.userId! }, select: { roleId: true } })
+    expect(roles.map((r) => r.roleId)).toEqual(['trainer'])
+    const row = await prisma.trainerApplication.findUniqueOrThrow({ where: { id: app!.id } })
+    expect(row.status).toBe('active')
   })
 })
 

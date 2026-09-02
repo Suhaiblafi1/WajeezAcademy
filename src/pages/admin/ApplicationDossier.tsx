@@ -17,6 +17,7 @@
 import type { ReactNode } from 'react'
 import { Award, BadgeCheck, BookOpen, Clock, Globe, Languages, Link2, Mail, Phone, Sparkles, UserRound } from 'lucide-react'
 import { courseById } from '@/data/courses'
+import { contactChannelLabel, seasonLabel } from '@/application/trainer/application-options'
 
 /** حقولٌ يُرسلها الخادم ولم تكن الشاشة تقرؤها */
 export interface Dossier extends Record<string, unknown> {
@@ -43,8 +44,11 @@ export interface Dossier extends Record<string, unknown> {
   deliveryMode?: string | null
   teachableCourseIds?: string[]
   teachableOther?: string | null
-  availability?: { days?: string[]; hoursPerWeek?: number; startFrom?: string; periods?: string[] } | null
+  availability?: { days?: string[]; hoursPerWeek?: number; startFrom?: string; periods?: string[]; seasons?: string[] } | null
   demoConsent?: boolean
+  contactChannel?: string | null
+  contactAltEmail?: string | null
+  userId?: string | null
   specialties?: { specialty: string }[]
   emailVerifiedAt?: string | null
   privacyConsentAt?: string | null
@@ -110,6 +114,23 @@ export default function ApplicationDossier({ a }: { a: Dossier }) {
         </Row>
         <Row icon={Phone} label="الجوال (واتساب)">
           {phone ? <span dir="ltr" className="block text-right">{phone}</span> : '— لم يذكره'}
+        </Row>
+        {/* كيف طلب أن نتواصل معه — قبل أن يُتَّصل بمن لا يجيب المجهول */}
+        <Row icon={Mail} label="يفضّل التواصل عبر">
+          {a.contactChannel ? (
+            <>
+              <span className="font-bold text-teal-light-ink">{contactChannelLabel(a.contactChannel)}</span>
+              {a.contactChannel === 'other_email' && a.contactAltEmail && (
+                <span dir="ltr" className="block text-right text-white/60">{a.contactAltEmail}</span>
+              )}
+              {(a.contactChannel === 'phone' || a.contactChannel === 'whatsapp') && phone && (
+                <span dir="ltr" className="block text-right text-white/60">{phone}</span>
+              )}
+            </>
+          ) : '— لم يختر (طلبٌ قديم)'}
+        </Row>
+        <Row icon={UserRound} label="حسابه على المنصّة">
+          {a.userId ? <span className="text-teal-light-ink">له حساب — يتابع حالته بنفسه</span> : 'بلا حساب'}
         </Row>
         <Row icon={Globe} label="الإقامة والتوقيت">
           {a.country ?? '—'}{a.timezone ? ` · ${a.timezone}` : ''}
@@ -178,6 +199,13 @@ export default function ApplicationDossier({ a }: { a: Dossier }) {
           {has(av?.periods) && (
             <span className="mt-0.5 block text-white/50">
               {av!.periods!.map((p) => PERIOD_AR[p] ?? p).join(' و')}
+            </span>
+          )}
+          {has(av?.seasons) && (
+            <span className="mt-1 flex flex-wrap gap-1.5">
+              {av!.seasons!.map((s) => (
+                <span key={s} className="rounded-full border border-gold/30 bg-gold/[0.06] px-2 py-0.5 text-[10.5px] text-gold-ink">{seasonLabel(s)}</span>
+              ))}
             </span>
           )}
         </Row>

@@ -26,15 +26,20 @@ export interface TrainerDraft {
   teachableOther: string
   days: string[]
   periods: string[]
+  /** مواسمُ التدريب المختارة — قد تغيب في مسودّةٍ قديمة */
+  seasons?: string[]
   hoursPerWeek: string
   startFrom: string
   demoConsent: boolean
+  /** وسيلةُ التواصل للاجتماع التعريفيّ — قد تغيب في مسودّةٍ قديمة */
+  contactChannel?: string
+  contactAltEmail?: string
   reference?: string
   candidateToken?: string
 }
 
 /* ما لا يُكتب أبدا مهما مرّ في `form` — الحارس يقرأ من هنا لا من ذاكرته */
-export const NEVER_PERSISTED = ['accountPassword', 'verifyTokenInput', 'password'] as const
+export const NEVER_PERSISTED = ['accountPassword', 'verifyTokenInput', 'password', 'passwordConfirm'] as const
 
 export function serializeDraft(d: Omit<TrainerDraft, 'savedAt'>, now: number = Date.now()): string {
   const form: Record<string, string | boolean> = {}

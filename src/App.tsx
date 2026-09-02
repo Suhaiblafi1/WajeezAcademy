@@ -10,7 +10,7 @@ import Trainers from './pages/Trainers'
 import Contact from './pages/Contact'
 import Auth from './pages/Auth'
 import NotFound from './pages/NotFound'
-import RequireRole, { ADMIN_ROLES, ADVISOR_ROLES, TRAINER_ROLES } from './components/RequireRole'
+import RequireRole, { ADMIN_ROLES, ADVISOR_ROLES, APPLICANT_ROLES, TRAINER_ROLES } from './components/RequireRole'
 import ToastHost from './components/Toast'
 
 /* مبدل أدوار الديمو — يُحمَّل كقطعة منفصلة ولا يُجلب ولا يظهر إلا في بناء الديمو */
@@ -53,6 +53,8 @@ const AdminCohorts = lazy(() => import('./pages/admin/AdminCohorts'))
 const AdminTrainerApps = lazy(() => import('./pages/admin/TrainerApplications'))
 const JoinTrainer = lazy(() => import('./pages/JoinTrainer'))
 const JoinTrainerComplete = lazy(() => import('./pages/JoinTrainerComplete'))
+const JoinTrainerVerify = lazy(() => import('./pages/JoinTrainerVerify'))
+const ApplicantStatus = lazy(() => import('./pages/ApplicantStatus'))
 const TrainerAcceptInvite = lazy(() => import('./pages/TrainerAcceptInvite'))
 const TrainerProposals = lazy(() => import('./pages/trainer/Proposals'))
 const CohortBoard = lazy(() => import('./pages/trainer/CohortBoard'))
@@ -150,6 +152,12 @@ export default function App() {
           <Route path="/trainers" element={<Trainers />} />
           <Route path="/join-trainer" element={<JoinTrainer />} />
           <Route path="/join-trainer/complete" element={<JoinTrainerComplete />} />
+          {/* رابطُ بريد التأكيد يوثّق العنوان — صفحةٌ عامّة بلا جلسة */}
+          <Route path="/join-trainer/verify" element={<JoinTrainerVerify />} />
+          {/* حالةُ طلب الانضمام لصاحب الحساب — بوّابةُ المتقدّم الوحيدة */}
+          <Route element={<RequireRole allow={APPLICANT_ROLES} />}>
+            <Route path="/join-trainer/status" element={<ApplicantStatus />} />
+          </Route>
           {/* صفحات الجهات أُدمجت في التواصل الموحد — الروابط القديمة تعمل وتُعبّئ نوع الجهة مسبقا */}
           <Route path="/for-business" element={<Navigate to="/contact?type=company" replace />} />
           <Route path="/for-government" element={<Navigate to="/contact?type=gov" replace />} />
