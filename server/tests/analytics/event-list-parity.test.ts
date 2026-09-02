@@ -32,12 +32,23 @@ describe('مصدرٌ واحد لأسماء الأحداث', () => {
 
   it('والأحداثُ التي كانت تُرفض صامتةً مقبولةٌ الآن', () => {
     for (const e of [
-      'offer_signup_clicked', 'promo_applied', 'pathway_adopted',
+      'promo_applied', 'pathway_adopted',
       'course_path_opened', 'course_path_added', 'course_path_deferred', 'course_path_named',
       'module_check_answered', 'module_video_chapter_opened', 'module_step',
       'buy_panel_opened',
     ]) {
       expect(ANALYTICS_EVENTS as readonly string[], `${e} ما زال خارج القائمة`).toContain(e)
+    }
+  })
+
+  /* 'offer_signup_clicked' كان هنا ضمن الأحداث الأحد عشر — ثم حُذف من هذه
+     القائمة (لا لعودة عطب المرآة، بل لأن الزرّ الذي يُطلقه حُذف نفسه):
+     صندوق «سجّل بالطريقة التي تناسبك» زال من صفحة المسار بقرار صاحب
+     المنصّة. و'gate_viewed'/'result_teaser_viewed' سقطا معه لنفس السبب —
+     بوّابة نتيجة التشخيص (ResultGate) حُذفت بالقرار نفسه. */
+  it('وأحداثُ البوّابات المحذوفة لا تعود — الزرّ الذي يُطلقها لم يعد قائما', () => {
+    for (const e of ['offer_signup_clicked', 'gate_viewed', 'gate_dismissed', 'result_teaser_viewed']) {
+      expect(ANALYTICS_EVENTS as readonly string[], `${e} عاد إلى القائمة`).not.toContain(e)
     }
   })
 
