@@ -107,6 +107,44 @@ export class AdvisorService {
     })
   }
 
+  /** عمولتي المستحقّة فعلا من عملائي الدافعين — نفس حساب ملفّه عند الإدارة،
+      لكن للمستشار نفسه لا لمن يديره. كانت الإدارة وحدها ترى هذا الرقم. */
+  async myEarnings(advisorId: string) {
+    const [profile, assignments] = await Promise.all([
+      this.prisma.advisorProfile.findUnique({ where: { userId: advisorId } }),
+      this.prisma.advisorAssignment.findMany({
+        where: { advisorId, unassignedAt: null },
+        select: { caseId: true, case: { select: { clientId: true } } },
+      }),
+    ])
+    const clientIds = [...new Set(
+      assignments.map((a) => a.case.clientId).filter((id): id is string => Boolean(id)),
+    )]
+
+    const MIN_RATINGS_TO_SHOW = 3
+    const [paidOrders, ratingAgg] = await Promise.all([
+      clientIds.length > 0
+        ? this.prisma.order.findMany({ where: { userId: { in: clientIds }, status: 'paid' }, select: { total: true } })
+        : Promise.resolve([]),
+      this.prisma.rating.aggregate({
+        where: { subjectType: 'advisor', subjectId: advisorId, publishStatus: 'approved' },
+        _avg: { score: true }, _count: true,
+      }),
+    ])
+
+    const revenueFromReferrals = paidOrders.reduce((sum, o) => sum + Number(o.total), 0)
+    /* لا عمولةَ بلا نسبةٍ اتّفقت عليها الإدارة صراحة — «لم تُحدَّد بعد» غير «صفر» */
+    const commissionPct = profile ? Number(profile.commissionPct) : null
+    const commissionOwed = commissionPct !== null ? Math.round(revenueFromReferrals * commissionPct) / 100 : null
+
+    return {
+      commissionPct, commissionOwed, revenueFromReferrals, currency: 'USD',
+      activeCases: assignments.length,
+      ratingAvg: ratingAgg._count >= MIN_RATINGS_TO_SHOW ? Number(ratingAgg._avg.score) : null,
+      ratingCount: ratingAgg._count,
+    }
+  }
+
   /** ملف الحالة الكامل للمستشار — العميل والتشخيص والنتيجة وأثر القرار والتواصل والملاحظات والمهام */
   async caseDetail(advisorId: string, caseId: string) {
     await this.assertAssigned(advisorId, caseId)

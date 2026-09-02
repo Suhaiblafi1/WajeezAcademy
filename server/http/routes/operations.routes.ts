@@ -119,6 +119,12 @@ export function registerOperationsRoutes(app: FastifyInstance, prisma: PrismaCli
     return reply.status(201).send(await advisors.addContactEvent(req.auth!.userId, id, body))
   })
 
+  /* ── عمولتي — ما تراه الإدارة عن المستشار الآن يراه هو عن نفسه ── */
+  app.get('/api/advisor/earnings', {
+    preHandler: requirePermission('advisor.cases.view'),
+    schema: { tags: ['advisor-portal'], summary: 'عمولتي المستحقّة من عملائي الدافعين، وتقييمي' },
+  }, async (req) => advisors.myEarnings(req.auth!.userId))
+
   /* ── الوجه الأكاديميّ: المستشار يتابع من أُسند إليه ── */
   app.get('/api/advisor/cases/:id/learner', {
     preHandler: requirePermission('advisor.learner.view'),
