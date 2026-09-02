@@ -17,6 +17,8 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { validateChecks } from '../src/application/content/module-checks'
 import { validateScenario } from '../src/application/content/scenario'
+import { parsePractice, validatePractice } from '../src/application/content/practice'
+import { validateRubric } from '../src/application/content/rubric'
 
 const CATALOG = join(process.cwd(), 'src/data/catalog/core-catalog.v2.json')
 
@@ -33,11 +35,16 @@ interface Module {
   module_body_ar?: string | null
   module_checks_ar?: string | null
   module_scenario_ar?: string | null
+  module_practice_ar?: string | null
+  module_rubric_ar?: string | null
 }
 
 /* ── حدودُ السياسة، رقما رقما ── */
 const LESSONS_FOR_HOURS: Record<number, number> = { 2: 4, 3: 5 }
 const CHECKS_FOR_HOURS: Record<number, number> = { 2: 5, 3: 7 }
+/* زمنُ النشاط بحسب زمن الوحدة (§٢) — ٥٠–٦٠ لوحدة الساعتين، وأوسعُ لوحدة
+   الثلاث ساعات لأنّ نشاطَها أوسعُ لا لأنّ الحدَّ أرخى. */
+const PRACTICE_MINUTES_FOR_HOURS: Record<number, [number, number]> = { 2: [50, 60], 3: [60, 75] }
 const MIN_WORDS = 450
 const MAX_WORDS = 650
 /* هامشٌ يمنع الردَّ على كلمةٍ واحدة — والسياسة نطاقٌ لا رقمٌ حدّيّ */
@@ -218,10 +225,39 @@ function auditModule(m: Module, courseSkills: Map<string, string[]>): Violation[
     add('سيناريو', 'لا سيناريو قرارٍ في الوحدة')
   }
 
-  /* ٦) ما ترفضه الشاشة يُردّ هنا — لا فحصَ موازيا أضعفَ من المحرّر.
+  /* ٦) النشاطُ التطبيقيُّ والروبرك (§٢ و§٨).
+
+     وهذان أطولُ ما في ميزانيّة الوحدة: النشاطُ ٥٠–٦٠ دقيقةً والمراجعةُ عشر،
+     أي نصفُ المئةِ والعشرين. وكانا بلا حقلٍ في نموذج البيانات، فكان الموجودُ
+     عبارةً واحدةً مولَّدةً من عنوان الوحدة تصلح لصفحة البيع ولا يعمل بها
+     أحد — فبوّابةٌ تفحص المتنَ والتمرينَ وتسكت عن نصف الوحدة تُصدّق على
+     وحدةٍ ناقصةٍ نصفَها. */
+  const practiceRaw = (m.module_practice_ar ?? '').trim()
+  if (!practiceRaw) {
+    add('نشاط', 'لا نشاطَ مؤلَّفا — والنشاطُ نصفُ ميزانيّة وقت المتعلّم')
+  } else {
+    const r = validatePractice(practiceRaw)
+    if (!r.ok) for (const e of r.errorsAr) add('نشاط', e)
+    const { practice } = parsePractice(practiceRaw)
+    const band = PRACTICE_MINUTES_FOR_HOURS[m.expected_hours]
+    if (practice && band && (practice.minutes < band[0] || practice.minutes > band[1])) {
+      add('نشاط', `زمنُ النشاط ${practice.minutes} دقيقة — ووحدةُ ${m.expected_hours} ساعات ميزانيّتُها ${band[0]}–${band[1]}`)
+    }
+  }
+
+  const rubricRaw = (m.module_rubric_ar ?? '').trim()
+  if (!rubricRaw) {
+    add('روبرك', 'لا روبرك — فلا يعرف المتعلّم بم يُراجع مخرَجه قبل التسليم')
+  } else {
+    const r = validateRubric(rubricRaw)
+    if (!r.ok) for (const e of r.errorsAr) add('روبرك', e)
+  }
+
+  /* ٧) ما ترفضه الشاشة يُردّ هنا — لا فحصَ موازيا أضعفَ من المحرّر.
 
      البنودُ أعلاه سياسةُ تحرير، وهذا البندُ عقدُ المنصّة: `validateChecks`
-     و`validateScenario` هما ما يحكم به الخادمُ عند الحفظ. وكانت البوّابةُ
+     و`validateScenario` هما ما يحكم به الخادمُ عند الحفظ (والنشاطُ والروبرك
+     يمرّان بمحلّليهما في البند السابق). وكانت البوّابةُ
      تفحص السيناريو بوجودِه وحده، فمرّت ستّةَ عشرَ سيناريو فيها عقدةٌ بخيارٍ
      واحدٍ ومعها «تأمل:» — يرفضها المحرّرُ ويقبلها الكتالوج. ووحدةٌ لا
      تُفتح في الشاشة التي تملكها ليست مؤلَّفةً بل محبوسة. */

@@ -6,9 +6,10 @@
 
    فالمصدرُ ملفّاتٌ باسم الوحدة، والأداةُ تقرأ وتُدخل وتتحقّق:
      <moduleId>.body.md · <moduleId>.checks.txt · <moduleId>.scenario.txt
+     <moduleId>.practice.txt · <moduleId>.rubric.txt
 
-   **وتتحقّق بمحلّلات المنصّة نفسِها** — `validateChecks` و`validateScenario` —
-   لا بفحصٍ مستقلٍّ أضعفَ منها. وهذا سدُّ ثقبٍ وقع فعلا: مرّ من هذا الباب
+   **وتتحقّق بمحلّلات المنصّة نفسِها** — `validateChecks` و`validateScenario`
+   و`validatePractice` و`validateRubric` — لا بفحصٍ مستقلٍّ أضعفَ منها. وهذا سدُّ ثقبٍ وقع فعلا: مرّ من هذا الباب
    ستّةَ عشرَ سيناريو فيها عقدةٌ بخيارٍ واحدٍ ومعها «تأمل:»، وأربعُ وحداتٍ
    بسبعة أسئلةٍ والحدُّ خمسة — كلُّها ترفضها شاشة `/admin/authoring` بـ٤٢٢،
    فدخلت الكتالوجَ من خلف الشاشة وصارت غيرَ قابلةٍ للتحرير فيها.
@@ -23,6 +24,8 @@ import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { validateChecks } from '../src/application/content/module-checks'
 import { validateScenario } from '../src/application/content/scenario'
+import { validatePractice } from '../src/application/content/practice'
+import { validateRubric } from '../src/application/content/rubric'
 
 const CATALOG = join(process.cwd(), 'src/data/catalog/core-catalog.v2.json')
 
@@ -32,6 +35,8 @@ interface Module {
   module_body_ar?: string | null
   module_checks_ar?: string | null
   module_scenario_ar?: string | null
+  module_practice_ar?: string | null
+  module_rubric_ar?: string | null
   [k: string]: unknown
 }
 
@@ -47,7 +52,7 @@ function main() {
   const byId = new Map(catalog.modules.map((m) => [m.module_id, m]))
 
   const files = readdirSync(dir)
-  const ids = [...new Set(files.map((f) => f.replace(/\.(body\.md|checks\.txt|scenario\.txt)$/, '')))]
+  const ids = [...new Set(files.map((f) => f.replace(/\.(body\.md|checks\.txt|scenario\.txt|practice\.txt|rubric\.txt)$/, '')))]
     .filter((id) => files.some((f) => f.startsWith(`${id}.`)))
     .sort()
 
@@ -67,8 +72,10 @@ function main() {
     const body = read('body.md')
     const checks = read('checks.txt')
     const scenario = read('scenario.txt')
+    const practice = read('practice.txt')
+    const rubric = read('rubric.txt')
 
-    /* محلّلا المنصّة قبل الكتابة — لا بعدها */
+    /* محلّلاتُ المنصّة قبل الكتابة — لا بعدها */
     if (checks) {
       const r = validateChecks(checks)
       if (!r.ok) for (const e of r.errorsAr) rejected.push(`${id} · تمارين: ${e}`)
@@ -77,11 +84,21 @@ function main() {
       const r = validateScenario(scenario)
       if (!r.ok) for (const e of r.errorsAr) rejected.push(`${id} · سيناريو: ${e}`)
     }
+    if (practice) {
+      const r = validatePractice(practice)
+      if (!r.ok) for (const e of r.errorsAr) rejected.push(`${id} · نشاط: ${e}`)
+    }
+    if (rubric) {
+      const r = validateRubric(rubric)
+      if (!r.ok) for (const e of r.errorsAr) rejected.push(`${id} · روبرك: ${e}`)
+    }
 
     const parts: string[] = []
     if (body) { m.module_body_ar = body; parts.push(`متن ${body.split(/\s+/).length} كلمة`) }
     if (checks) { m.module_checks_ar = checks; parts.push(`${checks.split(/\n\s*\n/).length} تمارين`) }
     if (scenario) { m.module_scenario_ar = scenario; parts.push('سيناريو') }
+    if (practice) { m.module_practice_ar = practice; parts.push('نشاط') }
+    if (rubric) { m.module_rubric_ar = rubric; parts.push('روبرك') }
 
     if (parts.length > 0) {
       changed++

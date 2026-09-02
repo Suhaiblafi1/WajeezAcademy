@@ -20,7 +20,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle, CheckCircle2, Eye, FileText, Film, GitBranch, Loader2,
-  ListChecks, RefreshCw, Save, Search, Send, ShieldCheck, Undo2, Users,
+  ClipboardCheck, ClipboardList, ListChecks, RefreshCw, Save, Search, Send, ShieldCheck, Undo2, Users,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, apiPut, ApiError, permissionMessage } from "@/services/api";
@@ -29,15 +29,20 @@ import LessonBody from "@/components/LessonBody";
 import ModuleCheck from "@/components/ModuleCheck";
 import ModuleVideo from "@/components/ModuleVideo";
 import DecisionScenario from "@/components/DecisionScenario";
+import PracticeActivity from "@/components/PracticeActivity";
+import RubricSelfReview from "@/components/RubricSelfReview";
 import { validateChecks } from "@/application/content/module-checks";
 import { validateScenario } from "@/application/content/scenario";
 import { validateVideo } from "@/application/content/module-video";
+import { validatePractice } from "@/application/content/practice";
+import { validateRubric } from "@/application/content/rubric";
 import { fmtShortDateTimeAr } from "@/utils/format";
 import { fmtNum } from "@/application/text/format-ar";
 
 interface WorkRow {
   moduleId: string; courseId: string; courseTitleAr: string; titleAr: string; sequence: number;
   hasBody: boolean; hasChecks: boolean; hasVideo: boolean; hasScenario: boolean;
+  hasPractice: boolean; hasRubric: boolean;
   draftStatus: string | null; learnersWaiting: number; courseHasOpenCohort: boolean;
 }
 interface CourseGroup { courseId: string; titleAr: string; total: number; withBody: number }
@@ -60,22 +65,29 @@ const BODY_FILTERS: { id: BodyFilter; label: string }[] = [
   { id: "written", label: "لها متن" },
 ];
 
-interface Draft { version: number; status: string; bodyAr: string | null; checksAr: string | null; videoAr: string | null; scenarioAr: string | null }
+interface Draft {
+  version: number; status: string;
+  bodyAr: string | null; checksAr: string | null; videoAr: string | null; scenarioAr: string | null;
+  practiceAr: string | null; rubricAr: string | null;
+}
 
 interface HistoryRow {
   id: string; version: number; status: string; titleAr: string;
   bodyAr: string | null; checksAr: string | null; videoAr: string | null; scenarioAr: string | null;
+  practiceAr: string | null; rubricAr: string | null;
   createdAt: string; submittedAt: string | null; reviewedAt: string | null;
   reviewNoteAr: string | null; hasAuthor: boolean;
 }
 
-type Tab = "body" | "checks" | "video" | "scenario";
+type Tab = "body" | "checks" | "video" | "scenario" | "practice" | "rubric";
 
 const TABS: { id: Tab; label: string; icon: typeof FileText; field: keyof Draft }[] = [
   { id: "body", label: "المتن", icon: FileText, field: "bodyAr" },
   { id: "checks", label: "التمرين", icon: ListChecks, field: "checksAr" },
   { id: "video", label: "الفيديو", icon: Film, field: "videoAr" },
   { id: "scenario", label: "السيناريو", icon: GitBranch, field: "scenarioAr" },
+  { id: "practice", label: "النشاط", icon: ClipboardList, field: "practiceAr" },
+  { id: "rubric", label: "الروبرك", icon: ClipboardCheck, field: "rubricAr" },
 ];
 
 const STATUS_AR: Record<string, string> = {
@@ -88,6 +100,8 @@ const PLACEHOLDER: Record<Tab, string> = {
   checks: "س: نصّ السؤال\n- خيار خطأ\n+ خيار صحيح\nش: شرحُ الصواب",
   video: "https://www.youtube.com/watch?v=...\n0:00 مقدّمة\n2:30 الفكرة الأولى",
   scenario: "موقف: وصفُ الموقف المهنيّ\n\nعقدة: البداية\nنص: ما الذي تراه\n> خيارٌ أوّل\nأثر: ما يترتّب\nإلى: البداية",
+  practice: "نشاط: عنوانُ ما سيفعله على عملٍ حقيقيّ\nزمن: 55\nمخرَج: القطعةُ التي تدخل ملفَّه المهنيّ\nبديل: من لا عمل له: مهمّةٌ محدَّدةٌ بديلة\n> خطوة: 15 · ما يُفعل بالضبط في هذه الخطوة\n> خطوة: 25 · الخطوةُ الثانية\n> خطوة: 15 · الخطوةُ الثالثة",
+  rubric: "معيار: ما يُقاس به المخرَج\n- 3: وصفُ المستوى الأعلى بالسلوك\n- 2: وصفُ الأوسط\n- 1: وصفُ الأدنى\n\nمعيار: معيارٌ ثانٍ\n- 3: وصف\n- 2: وصف\n- 1: وصف",
 };
 
 /** أخطاءُ الصيغة للتبويب الحالي — بالمحلّل نفسه الذي يحكم به الخادم */
@@ -97,6 +111,8 @@ function errorsFor(tab: Tab, value: string): string[] {
   if (tab === "checks") { const r = validateChecks(v); return r.ok ? [] : r.errorsAr; }
   if (tab === "scenario") { const r = validateScenario(v); return r.ok ? [] : r.errorsAr; }
   if (tab === "video") { const r = validateVideo(v); return r.ok ? [] : r.errorsAr; }
+  if (tab === "practice") { const r = validatePractice(v); return r.ok ? [] : r.errorsAr; }
+  if (tab === "rubric") { const r = validateRubric(v); return r.ok ? [] : r.errorsAr; }
   return [];
 }
 
@@ -303,6 +319,8 @@ export default function Authoring() {
                       <Chip on={r.hasChecks} label="تمرين" />
                       <Chip on={r.hasVideo} label="فيديو" />
                       <Chip on={r.hasScenario} label="سيناريو" />
+                      <Chip on={r.hasPractice} label="نشاط" />
+                      <Chip on={r.hasRubric} label="روبرك" />
                       {r.draftStatus && (
                         <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[9px] font-bold text-gold">
                           {STATUS_AR[r.draftStatus] ?? r.draftStatus}
@@ -410,6 +428,10 @@ export default function Authoring() {
                       <ModuleCheck raw={value} moduleId={`preview-${selected.moduleId}`} />
                     ) : tab === "video" ? (
                       <ModuleVideo raw={value} checksRaw={draft.checksAr} moduleId={`preview-${selected.moduleId}`} />
+                    ) : tab === "practice" ? (
+                      <PracticeActivity raw={value} moduleId={`preview-${selected.moduleId}`} />
+                    ) : tab === "rubric" ? (
+                      <RubricSelfReview raw={value} moduleId={`preview-${selected.moduleId}`} />
                     ) : (
                       <DecisionScenario raw={value} moduleId={`preview-${selected.moduleId}`} />
                     )}
