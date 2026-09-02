@@ -153,6 +153,10 @@ export const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
     'rating.moderate',
     /* يرى مرؤوسيه ويفوّض لهم — ولا يعيّن الأدوار ولا يوقف الحسابات */
     'admin.users.view', 'admin.permissions.delegate',
+    /* يملك إسناد المستشارين ومراجعة طلباتهم فعلا — فمن حقّه أن يرى أثر ما
+       يقع في نطاقه. ولا يُمنح `advisor.manage`: ذاك تعيينُ نسبة عمولة، بندٌ
+       ماليّ يبقى محفوظا لمدير النظام وحده. */
+    'audit.view',
   ],
   diagnostic_manager: [
     'catalog.view',
