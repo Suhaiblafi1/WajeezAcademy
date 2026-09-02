@@ -1,7 +1,7 @@
 import { useCourseCohorts } from "@/services/cohort-prices";
 import CohortPicker from "@/components/CohortPicker";
 import { useEffect, useState } from "react";
-import { ChevronDown, Clock3, Target, ListChecks, FolderKanban, Award, RefreshCcw, X, Gift, Plus, UserRound, LifeBuoy, Tag } from "lucide-react";
+import { ChevronDown, Clock3, Target, ListChecks, FolderKanban, Award, RefreshCcw, X, Gift, Plus, UserRound, LifeBuoy, Tag, Trophy } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { courseFullById, weeksLabel, MIN_PATHWAY_COURSES, MAX_PATHWAY_COURSES } from "@/data/courses";
 import { apiGet } from "@/services/api";
@@ -52,12 +52,15 @@ export default function CourseJourney({
   giftId,
   supportReasons,
   showSchedule = false,
+  graduationProjectAr,
 }: {
   courseIds: string[];
   /** سبب وجود كل دورة في الخطة (للخطط المركبة) — يظهر سطرا واحدا تحت الاسم */
   reasons?: Record<string, string>;
   /** طريقة تقديم المسار — تُعرض ضمن تفاصيل كل دورة */
   delivery?: string;
+  /** مشروع التخرّج — سطرٌ أخيرٌ في الرحلة نفسها لا صندوقٌ منفصلٌ خارجها */
+  graduationProjectAr?: string | null;
   headingLevel?: "h2" | "h3";
   edit?: CourseJourneyEdit;
   /** شارة «هدية مجانية» بلا أدوات تخصيص — للعرض فقط كصفحة المسار */
@@ -132,9 +135,9 @@ export default function CourseJourney({
             {i < list.length - 1 && !(isSupportId(list[i + 1].id) && i + 1 === firstSupport) && (
               <span aria-hidden className="absolute right-[15px] top-10 h-[calc(100%-32px)] w-px bg-white/10" />
             )}
-            <Collapsible className={`rounded-2xl border transition-colors data-[state=open]:border-teal/40 data-[state=open]:bg-teal/[0.05] ${
-              isGift ? "border-gold/40 bg-gold/[0.05]" : "border-white/10 bg-white/[0.03]"
-            }`}>
+            {/* الهديّةُ تُعرَف بشارتها لا بإطارٍ ذهبيّ يميّز بطاقتها كلَّها —
+                بطاقةٌ عاديّة كسائر البطاقات، وشارة واحدة تكفي. */}
+            <Collapsible className="rounded-2xl border border-white/10 bg-white/[0.03] transition-colors data-[state=open]:border-teal/40 data-[state=open]:bg-teal/[0.05]">
               <div className="flex items-start gap-3 p-4">
                 <span className={`z-10 grid h-8 w-8 shrink-0 place-items-center rounded-full border text-xs font-black ${
                   isGift
@@ -370,6 +373,22 @@ export default function CourseJourney({
             </p>
           </div>
         </li>
+
+        {/* مشروع التخرّج — سطرٌ داخل الرحلة نفسها لا صندوقٌ منفصلٌ خارجها،
+            بنفس نمط سطر «شهادة إتمام» أعلاه. */}
+        {graduationProjectAr && (
+          <li className="relative flex items-start gap-3 pt-4">
+            <span className="z-10 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gold text-xs font-black text-on-gold">
+              <Trophy className="h-4 w-4" />
+            </span>
+            <div className="pt-1">
+              <p className="text-sm font-black text-gold-ink">
+                مشروع التخرّج <span className="font-bold text-white/40">— إضافيّ، خارج دورات المسار</span>
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-white/50">{graduationProjectAr}</p>
+            </div>
+          </li>
+        )}
       </ol>
 
       {/* الهدية والإضافة — أسفل الرحلة مباشرة.
