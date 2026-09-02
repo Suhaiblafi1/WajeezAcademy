@@ -29,12 +29,6 @@ export const ANALYTICS_EVENTS = [
   'diagnostic_abandoned',
   'diagnostic_completed',
   'recommendation_viewed',
-  'result_teaser_viewed',
-  'gate_viewed',
-  /* الزائر ضغط «أنشئ حسابك» من عرض صفحة المسار — يقيس ما يكسبه إخفاءُ
-     المدرّبين ومكان الدفع خلف التسجيل */
-  'offer_signup_clicked',
-  'gate_dismissed',
   'result_full_viewed',
   'account_started',
   'account_created',
@@ -71,6 +65,10 @@ export const ANALYTICS_EVENTS = [
   'course_path_deferred',
   'promo_applied',
   'course_path_named',
+  /* بريدٌ مقابل كود خصم — بديل صندوق التسجيل الكامل المحذوف؛ يقيس كم يترك
+     بريده ممّن لا يشتري بعد */
+  'discount_email_captured',
+  'discount_email_failed',
 ] as const
 
 export type AnalyticsEvent = (typeof ANALYTICS_EVENTS)[number]

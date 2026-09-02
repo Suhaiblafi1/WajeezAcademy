@@ -1,10 +1,11 @@
-/* عرض المسار قبل التسجيل — ثلاثة أرقام، كلٌّ منها وعدٌ تُطالَب به الفاتورة.
+/* عرض المسار — أرقامٌ حقيقية، كلٌّ منها وعدٌ تُطالَب به الفاتورة.
 
-   قرار صاحب المنصّة: الزائر يرى المسار ودوراته كاملةً، ويبقى شيئان خلف
-   التسجيل — من يدرّبه وأين يدفع. وفي مكانهما عرضٌ يقول له الرقم قبل أن يُطلب
-   منه شيء: من كم تبدأ الدورة، وكم يكسب في أول شراء، وكم يكسب إن أخذ المسار.
+   كان قرارٌ سابق يُبقي شيئين خلف تسجيلٍ كامل — من يدرّبه وأين يدفع — خلف
+   صندوقٍ بثلاث بطاقات أرقام. وقد نُقض هذا القرار بصريح طلب صاحب المنصّة:
+   لا داعي للصندوق إطلاقا؛ الزائر يرى كل ما يراه المسجَّل، والتسجيل يُطلب
+   فقط لحظة الشراء الفعليّة (انظر describe «التصفح مفتوح للجميع» أدناه).
 
-   وخطر هذا القسم أنّه يَعِد بمال. فحُرس من ثلاث جهات:
+   وخطر ما تبقّى من عرضٍ رقميّ أنّه يَعِد بمال. فحُرس من ثلاث جهات:
      · «تبدأ من» تُقرأ من أرخص سعر قائمةٍ في الدورات المعروضة نفسها، لا من
        رقمٍ مكتوب في الصفحة — وسعرُ القائمة ترثه الشعبة (cohort.service.ts)
        فتُصدَر به الفاتورة.
@@ -65,16 +66,24 @@ describe('عرض المسار', () => {
   })
 })
 
-describe('بوابة التسجيل على صفحة المسار', () => {
+describe('التصفح مفتوح للجميع — لا بوابة تسجيل على السعر أو الفريق التدريبي', () => {
   const SRC = readFileSync(join(process.cwd(), 'src/pages/Pathway.tsx'), 'utf8')
 
-  it('الفريق التدريبي ومكان الدفع خلف التسجيل', () => {
-    expect(SRC).toMatch(/\{user && \(\s*\n\s*<p id="trainers-reveal"/)
-    expect(SRC).toMatch(/\{user && \(\s*\n\s*<div id="buy"/)
+  /* انقلب القرار: كان الفريق التدريبي ومكان الدفع خلف تسجيلٍ كامل («سجّل
+     بالطريقة التي تناسبك» بثلاث بطاقات أرقام وزر «أنشئ حسابك المجاني
+     الآن»). وبصريح طلب صاحب المنصّة بعد رؤية الصندوق على الإنتاج: لا داعي
+     له إطلاقا — يرى الزائر كل ما يراه المسجَّل، والتسجيل يُطلب فقط لحظة
+     الشراء الفعليّة (`pendingCheckout`/`AuthGate`، لا هذا الصندوق). */
+  it('لا صندوق «سجّل بالطريقة التي تناسبك» ولا زرّ «أنشئ حسابك المجاني»', () => {
+    expect(SRC).not.toMatch(/id="offer"/)
+    expect(SRC).not.toMatch(/أنشئ حسابك المجاني الآن/)
   })
 
-  it('وعرض الزائر لا يظهر للمسجَّل', () => {
-    expect(SRC).toMatch(/\{!user && \(\s*\n\s*<div id="offer"/)
+  it('الفريق التدريبي وقسم الشراء يُعرضان بلا شرط — لا خلف {user &&', () => {
+    expect(SRC).toMatch(/<p id="trainers-reveal"/)
+    expect(SRC).not.toMatch(/\{user && \(\s*\n\s*<p id="trainers-reveal"/)
+    expect(SRC).toMatch(/<div id="buy"/)
+    expect(SRC).not.toMatch(/\{user && \(\s*\n\s*<div id="buy"/)
   })
 
   it('شارة «اعتمده تشخيصك» محذوفة — لا مخفيّة', () => {
@@ -82,8 +91,12 @@ describe('بوابة التسجيل على صفحة المسار', () => {
     expect(SRC).not.toMatch(/عد لنتيجتك لإعادة التخصيص/)
   })
 
-  it('وبعد التسجيل يُنتقل إلى أوّل ما كان مخفيّا', () => {
-    expect(SRC).toMatch(/getElementById\("trainers-reveal"\)\?\.scrollIntoView/)
+  /* كان زرّ الصندوق المحذوف يرسل نيّة شراءٍ وهميّة (`amount:0`) يتلوها قفزٌ
+     إلى «trainers-reveal» بعد التسجيل. وبزوال الزرّ صار كل ما يصل بوّابة
+     `pendingCheckout` نيّة شراء حقيقية تمرّ مباشرة لخطّتها/دفعها. */
+  it('لا مسلك قفزٍ خاص لنيّة عرضٍ وهميّة بعد الآن', () => {
+    expect(SRC).not.toMatch(/getElementById\("trainers-reveal"\)\?\.scrollIntoView/)
+    expect(SRC).toMatch(/if \(intent\?\.kind === "pathway"\) void goToPlan\(intent\);/)
   })
 })
 
@@ -124,5 +137,31 @@ describe('الشراءُ مباشرٌ في الصفحتين اللتين يقع 
     for (const f of ['src/services/currency.ts', 'src/components/CurrencyPicker.tsx', 'src/components/EnrollRequest.tsx']) {
       expect(existsSync(join(process.cwd(), f)), `${f} ما زال قائما`).toBe(false)
     }
+  })
+})
+
+/* بوّابة نتيجة التشخيص الكاملة (ResultGate) حُذفت بنفس قرار صفحة المسار —
+   «نعم يشمل الجميع» بصريح كلام صاحب المنصّة. والبديل عن الإشارة التسويقية
+   المفقودة: بريدٌ يُترك طوعا مقابل كود خصمٍ حقيقي، لا حسابا كاملا. */
+describe('بوّابة نتيجة التشخيص حُذفت — والبديل بريدٌ مقابل كود خصم', () => {
+  it('لا ResultGate.tsx ولا استيرادٌ له في صفحة التشخيص', () => {
+    expect(existsSync(join(process.cwd(), 'src/components/ResultGate.tsx')), 'ResultGate.tsx ما زال قائما').toBe(false)
+    const diag = readFileSync(join(process.cwd(), 'src/pages/Diagnostic.tsx'), 'utf8')
+    expect(diag).not.toMatch(/ResultGate/)
+  })
+
+  it('مكوّن البريد مقابل الكود مركَّبٌ في الصفحتين، وموصولٌ بمسار الخادم', () => {
+    const capture = readFileSync(join(process.cwd(), 'src/components/DiscountEmailCapture.tsx'), 'utf8')
+    expect(capture).toMatch(/\/api\/leads\/discount-email/)
+
+    const pathway = readFileSync(join(process.cwd(), 'src/pages/Pathway.tsx'), 'utf8')
+    expect(pathway).toMatch(/<DiscountEmailCapture\b/)
+
+    const diag = readFileSync(join(process.cwd(), 'src/pages/Diagnostic.tsx'), 'utf8')
+    expect(diag).toMatch(/<DiscountEmailCapture\b/)
+  })
+
+  it('الكود نفسه مصدرٌ واحد — لا رقم مكرَّر في المكوّن', () => {
+    expect(FIRST_TIME_PROMO.code).toBe('WA2026')
   })
 })

@@ -2467,3 +2467,20 @@ model DiagnosticFeedback {
   @@index([sessionId])
   @@index([createdAt])
 }
+
+/**
+ * بريدُ زائرٍ لم يُسجَّل بعد — تُرك مقابل كود خصم لا مقابل حساب.
+ * بديلٌ عن بوّابة التسجيل الكاملة التي حُذفت من صفحتي المسار والتشخيص:
+ * الزائر يرى كل شيء بلا حاجز، وهذا الصفّ هو الإشارة التسويقية الوحيدة
+ * الباقية عمّن تصفّح ولم يشترِ بعد.
+ */
+model MarketingLead {
+  id         String   @id @default(uuid()) @db.Uuid
+  email      String   @unique
+  source     String // "pathway_discount" | "diagnostic_discount"
+  pathwayId  String?
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+
+  @@index([createdAt])
+}

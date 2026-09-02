@@ -25,12 +25,13 @@
    المتصفّح ليس دليلا. */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CalendarDays, CreditCard, Gift, Info, Loader2, Tag } from "lucide-react";
+import { CalendarDays, CreditCard, Gift, Info, Loader2, Route as RouteIcon, Tag } from "lucide-react";
 import Modal from "@/components/Modal";
 import VerifyEmailNotice from "@/components/VerifyEmailNotice";
 import { apiPost, ApiError } from "@/services/api";
 import { useCourseCohorts, type CohortOption } from "@/services/cohort-prices";
 import { FIRST_TIME_PROMO } from "@/application/commerce/first-time-promo";
+import { PATHWAY_ONLY_PERKS } from "@/data/pathway-perks";
 import {
   PRESENTMENT_CODES, PRESENTMENT_CURRENCIES, convertFromUsd, formatPresentment,
   type PresentmentCurrency,
@@ -76,7 +77,7 @@ export default function BuyPanel({
   lines,
   email,
   initialCoupon = "",
-  note = null,
+  kind,
   onClose,
 }: {
   title: string;
@@ -85,9 +86,9 @@ export default function BuyPanel({
   email: string;
   /** كودٌ كتبه في الصفحة قبل أن يفتح اللوح — يُحمل معه لا يُنسى */
   initialCoupon?: string;
-  /** رفضُ خادمٍ يستحقّ أن يُقال — مثل محاولة إسقاط دورةٍ دُفع ثمنها.
-      يظهر خفيفا لا حاجزا: هذه حالةٌ نادرة لا واجهة الشراء المعتادة. */
-  note?: string | null;
+  /** شراءُ مسارٍ كاملٍ يُقال بصريح العبارة أعلى القائمة — لا فرقُه سعرٌ فقط.
+      الأسعارُ رآها المشتري قبل أن يصل هنا (صفحة المسار)، فلا تتكرر هنا. */
+  kind?: "pathway" | "course" | "courses";
   onClose: () => void;
 }) {
   const { cohorts, loaded } = useCourseCohorts();
@@ -193,13 +194,6 @@ export default function BuyPanel({
         <h3 className="text-lg font-black">إتمام الشراء</h3>
         <p className="mt-1 text-sm text-white/55">{title}</p>
 
-        {note && (
-          <p className="mt-2 flex items-start gap-1.5 text-[11px] leading-5 text-gold-ink/90">
-            <Info className="mt-0.5 h-3 w-3 shrink-0" />
-            {note}
-          </p>
-        )}
-
         {!loaded && (
           <p className="mt-6 flex items-center gap-2 text-sm text-white/50">
             <Loader2 className="h-4 w-4 animate-spin" /> نقرأ الشعب المتاحة…
@@ -214,34 +208,50 @@ export default function BuyPanel({
 
         {loaded && buyable.length > 0 && (
           <>
-            {/* البنودُ بشعبها — والموعدُ يُبدَّل هنا لا في شاشةٍ أخرى.
-                قائمةٌ واحدة بفواصل، لا صندوقٌ مستقلٌّ لكلّ بند — الحاوية
-                واحدة تحمل كلَّ دوراته، أهدأ للعين من صفٍّ من البطاقات. */}
-            <ul className="mt-5 divide-y divide-white/8 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
+            {/* شراءُ مسارٍ كاملٍ يُقال بصريح العبارة، لا يُترَك للعدّ. */}
+            {kind === "pathway" && (
+              <div className="mt-5 rounded-2xl border border-gold/30 bg-gold/[0.05] p-4">
+                <p className="flex items-center gap-1.5 text-sm font-black text-gold-ink">
+                  <RouteIcon className="h-4 w-4" /> تشتري مسارا كاملا — لا دورات منفردة
+                </p>
+                <ul className="mt-3 space-y-2">
+                  {PATHWAY_ONLY_PERKS.map((perk) => (
+                    <li key={perk.t} className="flex items-start gap-2">
+                      <span className="grid h-5 w-5 shrink-0 place-items-center rounded-md bg-gold/15">
+                        <perk.icon className="h-3 w-3 text-gold-ink" />
+                      </span>
+                      <span className="text-[11px] leading-relaxed text-white/70">{perk.t}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* البنودُ بشعبها — والموعدُ يُبدَّل هنا لا في شاشةٍ أخرى. أسماءٌ
+                وتواريخ بلا أسعار: رآها المشتري قبل أن يصل هنا، ولا تتكرر —
+                المجموعُ وحده أسفل اللوح. قائمةٌ واحدة بفواصل، لا صندوقٌ
+                مستقلٌّ لكلّ بند. */}
+            <ul className="mt-3 divide-y divide-white/8 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
               {buyable.map(({ line, options }) => {
                 const item = quote?.items.find((i) => i.courseId === line.courseId);
                 const picked = options.find((o) => o.id === chosen[line.courseId]) ?? options[0];
                 return (
-                  <li key={line.courseId} className="p-3.5">
+                  <li key={line.courseId} className="p-3">
                     <div className="flex items-start justify-between gap-3">
                       <span className="min-w-0">
-                        <span className="block text-sm font-bold leading-snug">{line.name}</span>
-                        <span className="mt-0.5 flex items-center gap-1 text-[11px] text-white/45">
+                        <span className="block text-[13px] font-bold leading-snug">{line.name}</span>
+                        <span className="mt-0.5 flex items-center gap-1 text-[10.5px] text-white/45">
                           <CalendarDays className="h-3 w-3" /> {startsLabel(picked)}
                           {picked.seatsLeft !== null && picked.seatsLeft <= 5 && (
                             <span className="text-gold-ink"> · بقي {picked.seatsLeft}</span>
                           )}
                         </span>
                       </span>
-                      <span className="shrink-0 text-sm font-black">
-                        {item?.isGift ? (
-                          <span className="flex items-center gap-1 text-gold-ink">
-                            <Gift className="h-3.5 w-3.5" /> هديّة
-                          </span>
-                        ) : (
-                          <span dir="ltr">{money(item?.unitPrice ?? picked.amount, picked.currency)}</span>
-                        )}
-                      </span>
+                      {item?.isGift && (
+                        <span className="flex shrink-0 items-center gap-1 text-[11px] font-black text-gold-ink">
+                          <Gift className="h-3.5 w-3.5" /> هديّة
+                        </span>
+                      )}
                     </div>
                     {options.length > 1 && (
                       <label className="mt-2.5 block">
