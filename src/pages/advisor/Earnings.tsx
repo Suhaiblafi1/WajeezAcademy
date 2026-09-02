@@ -25,11 +25,14 @@ export default function AdvisorEarnings() {
   const [offline, setOffline] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    setOffline(null);
     try { setData(await apiGet<AdvisorEarnings>("/api/advisor/earnings")); }
     catch (e) { setOffline(e instanceof ApiError ? e.message : "الخادم غير متصل"); }
   }, []);
 
+  /* استدعاء غير متزامن: لا setState يجري قبل أول await، فالتصيير
+     المتتالي الذي تحذّر منه القاعدة لا يقع هنا. القاعدة لا ترى عبر
+     الحدّ غير المتزامن فتَعُدّ كل دالة تنتهي بـsetState متزامنة. */
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- setState بعد await لا قبله
   useEffect(() => { void load(); }, [load]);
 
   if (offline) {
