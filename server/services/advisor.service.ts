@@ -9,6 +9,44 @@ export const CASE_STATUSES = [
   'new', 'contacted', 'needs_review', 'follow_up', 'recommended', 'enrolled', 'not_interested', 'closed',
 ] as const
 
+export interface DiagnosticSummary {
+  attachedAt: string | null
+  topPathwayName: string | null
+  confidenceBand: string | null
+  needsAdvisor: boolean
+  goalAr: string | null
+  reasons: string[]
+  gaps: { skill: string; current: string; target: string; priority: string }[]
+}
+
+/** خلاصةُ تشخيص العميل — من نتيجته المرفقة بحسابه (`diagnosticSnapshot`) لا
+    من إجاباتٍ خامّة تبقى على جهازه وحده. أسبابُ الترشيح وأوجهُ النمو
+    منظّمةً، لا نصّا سرديّا يزول بإغلاق التبويب. */
+export function summarizeDiagnostic(
+  snapshot: unknown,
+  goalAr: string | null | undefined,
+  attachedAt: Date | null | undefined,
+): DiagnosticSummary | null {
+  if (!snapshot || typeof snapshot !== 'object') return null
+  const s = snapshot as Record<string, unknown>
+  const top = s.top as { name?: string } | null | undefined
+  const gapDetails = Array.isArray(s.gapDetails)
+    ? (s.gapDetails as { skill?: string; current?: string; target?: string; priority?: string }[])
+    : []
+  const reasons = Array.isArray(s.reasons) ? (s.reasons as unknown[]).filter((r): r is string => typeof r === 'string') : []
+  return {
+    attachedAt: attachedAt ? attachedAt.toISOString() : null,
+    topPathwayName: typeof top?.name === 'string' ? top.name : null,
+    confidenceBand: typeof s.confidenceBand === 'string' ? s.confidenceBand : null,
+    needsAdvisor: Boolean(s.needsAdvisor),
+    goalAr: goalAr ?? null,
+    reasons: reasons.slice(0, 5),
+    gaps: gapDetails.slice(0, 6).map((g) => ({
+      skill: g.skill ?? '', current: g.current ?? '', target: g.target ?? '', priority: g.priority ?? '',
+    })),
+  }
+}
+
 export class AdvisorService {
   private prisma: PrismaClient
   constructor(prisma: PrismaClient) {
@@ -191,12 +229,12 @@ export class AdvisorService {
     })
     if (!kase) throw new AuthError('not_found', 'الحالة غير موجودة', 404)
     /* لا حساب للعميل بعد — حالةٌ مشروعة لا خطأ: عميلٌ محتمل لم يسجّل */
-    if (!kase.clientId) return { hasAccount: false as const, enrollments: [], upcomingSessions: [], plan: null }
+    if (!kase.clientId) return { hasAccount: false as const, enrollments: [], upcomingSessions: [], plan: null, diagnostic: null }
 
     const userId = kase.clientId
     const now = new Date()
 
-    const [enrollments, upcoming, plan] = await Promise.all([
+    const [enrollments, upcoming, plan, profile] = await Promise.all([
       this.prisma.enrollment.findMany({
         where: { userId },
         select: {
@@ -231,9 +269,19 @@ export class AdvisorService {
           items: { select: { courseId: true, sequence: true }, orderBy: { sequence: 'asc' } },
         },
       }),
+      this.prisma.learnerProfile.findUnique({
+        where: { userId },
+        select: { diagnosticSnapshot: true, attachedAt: true, goalAr: true },
+      }),
     ])
 
-    return { hasAccount: true as const, enrollments, upcomingSessions: upcoming, plan }
+    /* خلاصةُ التشخيص — كانت سطورا مبنيّة في المتصفح من إجاباتٍ لا تصل
+       الخادم أصلا (session storage)، فلا يراها المستشار قط. الرابطُ هنا
+       بنتيجة التشخيص المرفقة بالحساب فعلا (`attachDiagnostic`) — أوجهُ
+       النمو وأسبابُ الترشيح ودرجةُ الثقة، لا نصٌّ يزول بإغلاق التبويب. */
+    const diagnostic = summarizeDiagnostic(profile?.diagnosticSnapshot, profile?.goalAr, profile?.attachedAt)
+
+    return { hasAccount: true as const, enrollments, upcomingSessions: upcoming, plan, diagnostic }
   }
 
   /* ── التشغيل على الحالة — كلها محروسة بالإسناد ── */
