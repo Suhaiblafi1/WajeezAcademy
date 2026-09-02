@@ -1749,33 +1749,15 @@ export default function Diagnostic() {
       {/* ─── Result ─── */}
       {stage === "result" && result && (
         <ResultErrorBoundary onReset={restart}>
-        {result.resultJson.kind === "guardrail_stop" ? (
-          /* توقف حوكمي (رفض الموافقة أو قاصر) — شاشة هادئة بلا توصية ولا تشتيت */
-          (() => {
-            const guardMsg = result.reasons[0] ?? "";
-            const isMinor = guardMsg.includes("قاصر");
-            return (
-          <section className="story-fade mx-auto max-w-xl px-5 py-12 text-center md:py-16">
-            <p className="text-lg font-black leading-relaxed">
-              {isMinor ? "هذه الجلسة تُكمل مع ولي الأمر" : "احترمنا اختيارك — توقف التشخيص هنا بلا أي توصية."}
-            </p>
-            <p className="mt-3 text-sm leading-loose text-white/55">
-              {isMinor
-                ? "لأن المتعلم قاصر، يجب أن يجلس ولي أمره معه ويكمل الإجابات بنفسه — ثم تظهر التوصية كاملة."
-                : "لم نحفظ توصية ولم نرشّح مسارا. إن غيّرت رأيك فالبداية الجديدة تستغرق دقائق."}
-            </p>
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-              <Button size="lg" className="h-12 rounded-full bg-gold px-8 font-black text-on-gold hover:bg-gold/90" onClick={restart}>
-                ابدأ من جديد
-              </Button>
-              <Button size="lg" variant="outline" className="h-12 rounded-full border-white/15 px-8 font-bold text-white/70" asChild>
-                <Link to="/">العودة للرئيسية</Link>
-              </Button>
-            </div>
-          </section>
-            );
-          })()
-        ) : !topPathway ? (
+        {/* شاشة «التوقف الحوكمي» (رفض الموافقة/قاصر) حُذفت: كانت لمحرك v1 القديم
+            وحده — محرك v2_1 المفعَّل اليوم لا سؤال عمر ولا موافقة فيه أصلا،
+            و`guardrailStop` في حالته يُهيَّأ بـ null ولا يُعيَّن أبدا (تحقّقتُ
+            من الكود)، فهذا الفرع كان كودا ميتا لا يصل إليه زائر إطلاقا. قرار
+            صاحب المنصّة: حذفه بدل إبقائه. ولو رجع محرك v1 يوما عبر
+            VITE_DIAGNOSTIC_ENGINE_VERSION=v1 فسيُعرض guardrail_stop حينها
+            بواجهة الفرع أدناه (اتجاه استكشافي) لا بواجهته المخصَّصة له —
+            قرارٌ واعٍ لا سهو. */}
+        {!topPathway ? (
           /* اتجاه استكشافي / إحالة مستشار بلا مسار مفروض — بطاقة هادئة موجِّهة، لا صفحة فارغة أبدًا */
           (() => {
             const exploration = (result.resultJson.exploration as {
