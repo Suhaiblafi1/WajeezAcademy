@@ -51,10 +51,21 @@ interface QueueItem {
   feedback: { body: string }[];
 }
 
+interface RescheduleItem {
+  id: string; status: string; proposedStartsAt: string; reason: string; createdAt: string;
+  reviewerComment: string | null;
+  session: { title: string; cohort: { title: string } };
+}
+
+const RESCHEDULE_STATUS_AR: Record<string, string> = {
+  pending: "بانتظار قرار الإدارة", approved: "اعتُمد", rejected: "رُفض", withdrawn: "سُحب",
+};
+
 /** قمرة الشعبة — بوابة المدرب التشغيلية: شعبي فقط، حضور، تسجيلات، مراجعة وتقدير */
 export default function CohortBoard() {
   const [cohorts, setCohorts] = useState<TrainerCohort[]>([]);
   const [queue, setQueue] = useState<QueueItem[]>([]);
+  const [reschedules, setReschedules] = useState<RescheduleItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -75,12 +86,14 @@ export default function CohortBoard() {
   const load = useCallback(async () => {
     setLoading(true); setOffline(null);
     try {
-      const [c, q] = await Promise.all([
+      const [c, q, r] = await Promise.all([
         apiGet<TrainerCohort[]>("/api/trainer/my-cohorts"),
         apiGet<QueueItem[]>("/api/trainer/grading-queue"),
+        apiGet<RescheduleItem[]>("/api/trainer/reschedules"),
       ]);
       setCohorts(c);
       setQueue(q);
+      setReschedules(r);
     } catch (err) {
       setOffline(err instanceof ApiError ? err.message : "الخادم غير متصل — هذه الصفحة تتطلب جلسة مدرب حقيقية");
     } finally {
@@ -203,6 +216,9 @@ export default function CohortBoard() {
       setRescheduleFor(null);
       setRescheduleForm({ at: "", reason: "" });
     }, "وصل اقتراحك الإدارة — والموعد لا يتغيّر حتى تعتمده");
+
+  const withdrawReschedule = (id: string) =>
+    act(() => apiPost(`/api/trainer/reschedules/${id}/withdraw`), "سُحب اقتراحك");
 
   const sendFeedback = (submissionId: string) =>
     act(async () => {
@@ -564,6 +580,41 @@ export default function CohortBoard() {
                 </div>
               )}
             </section>
+
+            {/* ── اقتراحات التأجيل ──
+                كانت الشاشة تقترح ولا تعرض ما اقترحته من قبل ولا تسمح بسحبه —
+                المدرب يقترح موعدا ثم لا يعرف أين وقف اقتراحه إلا بسؤال الإدارة. */}
+            {reschedules.length > 0 && (
+              <section>
+                <h2 className="mb-4 flex items-center gap-2 text-lg font-black"><CalendarClock className="h-5 w-5 text-gold-ink" /> اقتراحات التأجيل</h2>
+                <div className="space-y-3">
+                  {reschedules.map((r) => (
+                    <div key={r.id} className="rounded-2xl border border-white/8 bg-white/[0.02] p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-bold">{r.session.title} — {r.session.cohort.title}</p>
+                          <p className="mt-0.5 text-[11px] text-white/45">موعد مقترح: {fmtDateTimeAr(r.proposedStartsAt)}</p>
+                          <p className="mt-1 text-xs text-white/60">{r.reason}</p>
+                          {r.reviewerComment && (
+                            <p className="mt-1 text-[11px] text-white/50">ملاحظة الإدارة: {r.reviewerComment}</p>
+                          )}
+                        </div>
+                        <span className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-bold ${r.status === "approved" ? "border-teal/40 text-teal-light-ink" : r.status === "rejected" ? "border-red-400/40 text-red-300" : r.status === "withdrawn" ? "border-white/15 text-white/45" : "border-gold/40 text-gold-ink"}`}>
+                          {RESCHEDULE_STATUS_AR[r.status] ?? r.status}
+                        </span>
+                        {r.status === "pending" && (
+                          <button type="button" disabled={busy}
+                            onClick={() => void withdrawReschedule(r.id)}
+                            className="shrink-0 cursor-pointer rounded-full border border-white/15 px-4 py-1.5 text-[11px] font-bold text-white/60 transition hover:border-red-400/40 hover:text-red-300 disabled:opacity-40">
+                            سحب الاقتراح
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
 
             {/* ── طابور المراجعة ── */}
             <section>
