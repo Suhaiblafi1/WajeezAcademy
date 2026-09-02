@@ -28,6 +28,8 @@ export default function StudentSupport() {
   const [createOpen, setCreateOpen] = useState(false);
   const [form, setForm] = useState({ subject: "", category: "other", body: "" });
   const [reply, setReply] = useState("");
+  const [reopenFor, setReopenFor] = useState<string | null>(null);
+  const [reopenNote, setReopenNote] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
@@ -126,14 +128,35 @@ export default function StudentSupport() {
                     </div>
                   )}
                   {["resolved", "closed"].includes(t.status) && (
-                    <button disabled={busy}
-                      onClick={() => {
-                        const note = window.prompt("لماذا تعيد فتح التذكرة؟ (3+ أحرف)");
-                        if (note && note.length >= 3) void act(() => apiPost(`/api/learner/support/tickets/${t.id}/reopen`, { note }), "أُعيد فتح التذكرة");
-                      }}
-                      className="mt-3 cursor-pointer rounded-full border border-gold/40 px-4 py-1.5 text-xs font-bold text-gold-ink hover:bg-gold/10 disabled:opacity-40">
-                      إعادة فتح التذكرة
-                    </button>
+                    reopenFor === t.id ? (
+                      <div className="mt-3 flex gap-2">
+                        <input
+                          value={reopenNote}
+                          onChange={(e) => setReopenNote(e.target.value)}
+                          placeholder="لماذا تعيد فتح التذكرة؟ (٣ أحرف على الأقل)"
+                          className={`${inputCls} flex-1`}
+                        />
+                        <button disabled={busy || reopenNote.trim().length < 3}
+                          onClick={() => act(async () => {
+                            await apiPost(`/api/learner/support/tickets/${t.id}/reopen`, { note: reopenNote.trim() });
+                            setReopenFor(null); setReopenNote("");
+                          }, "أُعيد فتح التذكرة")}
+                          className="cursor-pointer rounded-xl bg-gold px-4 py-2 text-xs font-black text-on-gold disabled:opacity-40">
+                          تأكيد
+                        </button>
+                        <button disabled={busy}
+                          onClick={() => { setReopenFor(null); setReopenNote(""); }}
+                          className="cursor-pointer rounded-xl border border-white/15 px-3 py-2 text-xs font-bold text-white/60 hover:text-white disabled:opacity-40">
+                          إلغاء
+                        </button>
+                      </div>
+                    ) : (
+                      <button disabled={busy}
+                        onClick={() => { setReopenFor(t.id); setReopenNote(""); }}
+                        className="mt-3 cursor-pointer rounded-full border border-gold/40 px-4 py-1.5 text-xs font-bold text-gold-ink hover:bg-gold/10 disabled:opacity-40">
+                        إعادة فتح التذكرة
+                      </button>
+                    )
                   )}
                 </div>
               )}

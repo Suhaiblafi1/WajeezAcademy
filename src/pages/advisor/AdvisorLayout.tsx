@@ -1,5 +1,5 @@
 import { Link, NavLink } from "react-router";
-import { GraduationCap, Headset } from "lucide-react";
+import { GraduationCap, Headset, Star, Wallet } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import ThemeToggle from "@/components/ThemeToggle";
 import StaffAccountMenu from "@/components/StaffAccountMenu";
@@ -38,11 +38,13 @@ export default function AdvisorLayout({ children, title }: { children: React.Rea
     );
   }
 
-  /* صفحة واحدة لأنها الحقيقية وحدها: «طلابي» و«طلبات المراجعة» كانتا
-     مبنيّتين على `data/advisor` — بيانات مولَّدة في المتصفّح. */
+  /* صفحتان أُضيفتا لاحقا لأن ما تراه الإدارة عن المستشار الآن — عمولته
+     وتقييمه — لم يكن للمستشار نفسه نافذة عليه. */
   const tabs = [
     { to: "/advisor", label: "حالاتي", icon: Headset, end: true },
     { to: "/advisor/learners", label: "طلبتي", icon: GraduationCap },
+    { to: "/advisor/earnings", label: "عمولتي", icon: Wallet },
+    { to: "/advisor/ratings", label: "ما قيل عنّي", icon: Star },
   ];
 
   return (

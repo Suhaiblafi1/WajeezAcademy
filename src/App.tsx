@@ -69,6 +69,8 @@ const AdminAdvisors = lazy(() => import("./pages/admin/Advisors"));
 const AdminAuditLog = lazy(() => import("./pages/admin/AuditLog"));
 const TrainerMyLearners = lazy(() => import('./pages/trainer/MyLearners'))
 const AdvisorMyLearners = lazy(() => import('./pages/advisor/MyLearners'))
+const AdvisorMyRatings = lazy(() => import('./pages/advisor/MyRatings'))
+const AdvisorEarnings = lazy(() => import('./pages/advisor/Earnings'))
 const AdminReports = lazy(() => import('./pages/admin/Reports'))
 const AdminSupport = lazy(() => import('./pages/admin/Support'))
 const AdminIntegrations = lazy(() => import('./pages/admin/Integrations'))
@@ -194,6 +196,8 @@ export default function App() {
             <Route path="/advisor" element={<AdvisorCases />} />
             <Route path="/advisor/cases" element={<Navigate to="/advisor" replace />} />
             <Route path="/advisor/learners" element={<AdvisorMyLearners />} />
+            <Route path="/advisor/ratings" element={<AdvisorMyRatings />} />
+            <Route path="/advisor/earnings" element={<AdvisorEarnings />} />
           </Route>
           <Route element={<RequireRole allow={TRAINER_ROLES} />}>
             <Route path="/trainer" element={<TrainerDashboard />} />
