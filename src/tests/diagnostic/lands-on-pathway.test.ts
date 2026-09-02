@@ -78,8 +78,9 @@ describe('إحالة المستشار تسافر مع الخطّة', () => {
     const page = read('src/pages/Pathway.tsx')
     expect(page).toContain('needsAdvisorReferral')
     expect(page).toContain('حالتك تستحق جلسة مع مستشار بشري')
-    /* فوق بوّابة العرض: تُقرأ قبل السعر لا بعده */
-    expect(page.indexOf('advisorReferral &&')).toBeLessThan(page.indexOf('id="offer"'))
+    /* فوق قسم الشراء: تُقرأ قبل السعر لا بعده. «id="offer"» زال مع صندوق
+       التسجيل الكامل المحذوف — المرساة الباقية «id="buy"». */
+    expect(page.indexOf('advisorReferral &&')).toBeLessThan(page.indexOf('id="buy"'))
   })
 
   it('٧) القراءة تصمد بلا تخزين — خصوصيّةٌ صارمة لا تُعطّل الصفحة', () => {
