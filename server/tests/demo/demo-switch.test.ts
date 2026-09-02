@@ -45,7 +45,7 @@ describe('مسار تبديل أدوار الديمو', () => {
     expect(res.json()).toEqual({ enabled: true })
   })
 
-  it('ينشئ جلسة ديمو حقيقية لكل دور من الأدوار الخمسة', async () => {
+  it('ينشئ جلسة ديمو حقيقية لكل دور من الأدوار التسعة', async () => {
     process.env.DEMO_MODE = 'true'
     for (const account of DEMO_ACCOUNTS) {
       const res = await app.inject({ method: 'POST', url: '/api/demo/switch-role', payload: { role: account.key } })

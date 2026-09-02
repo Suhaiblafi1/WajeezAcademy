@@ -10,6 +10,7 @@ import { CheckCircle2, MailWarning, Loader2 } from "lucide-react";
 import SiteShell from "@/components/SiteShell";
 import SeoHead from "@/components/SeoHead";
 import { apiPost, permissionMessage } from "@/services/api";
+import { homePathForRoles, readRoles } from "@/services/auth";
 
 type State = { kind: "working" } | { kind: "done"; message: string } | { kind: "error"; message: string };
 
@@ -53,7 +54,7 @@ export default function VerifyEmail() {
               لم يتغيّر شيء آخر في حسابك — التوثيق يفتح الشراء واستلام الشهادة فقط.
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-              <Link to="/student" className="rounded-full bg-teal px-6 py-3 font-black text-on-teal hover:bg-teal-light">
+              <Link to={homePathForRoles(readRoles())} className="rounded-full bg-teal px-6 py-3 font-black text-on-teal hover:bg-teal-light">
                 إلى منصّتي
               </Link>
               <Link to="/courses" className="rounded-full border border-white/15 px-6 py-3 font-bold text-white/80 hover:border-white/40">

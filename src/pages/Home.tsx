@@ -21,6 +21,7 @@ import { usePublishedContent } from '@/services/public-content'
 import SeoHead from '@/components/SeoHead'
 import CourseTitle from "@/components/CourseTitle";
 import ThemeToggle from '@/components/ThemeToggle'
+import { homePathForRoles, readRoles } from '@/services/auth'
 import FavoriteButton from '@/components/FavoriteButton'
 import Modal from '@/components/Modal'
 import EcosystemNote from '@/components/EcosystemNote'
@@ -113,6 +114,8 @@ function readUserName(): string | null {
 function Nav() {
   const [open, setOpen] = useState(false)
   const [userName] = useState<string | null>(readUserName)
+  /* الاسمُ يقود إلى بوّابة صاحبه — لا إلى بوّابة المتعلّم لكلّ أحد */
+  const [portalHome] = useState(() => homePathForRoles(readRoles()))
   const menuBtnRef = useRef<HTMLButtonElement>(null)
   const mobileNavRef = useRef<HTMLElement>(null)
 
@@ -158,7 +161,7 @@ function Nav() {
         <div className="flex items-center gap-3">
           <ThemeToggle />
           {userName ? (
-            <Link to="/student" className="hidden items-center gap-2 rounded-xl border border-teal/40 bg-teal/10 px-4 py-2 text-sm font-semibold text-teal-light-ink transition hover:bg-teal/20 md:inline-flex">
+            <Link to={portalHome} className="hidden items-center gap-2 rounded-xl border border-teal/40 bg-teal/10 px-4 py-2 text-sm font-semibold text-teal-light-ink transition hover:bg-teal/20 md:inline-flex">
               <User className="h-4 w-4" />
               {userName}
             </Link>
@@ -195,7 +198,7 @@ function Nav() {
             renderLink(l, 'block py-2.5 text-muted-foreground hover:text-teal-light-ink', () => setOpen(false))
           )}
           {userName ? (
-            <Link to="/student" onClick={() => setOpen(false)} className="mt-2 flex items-center justify-center gap-2 rounded-xl border border-teal/40 px-5 py-3 font-semibold text-teal-light-ink">
+            <Link to={portalHome} onClick={() => setOpen(false)} className="mt-2 flex items-center justify-center gap-2 rounded-xl border border-teal/40 px-5 py-3 font-semibold text-teal-light-ink">
               <User className="h-4 w-4" /> {userName}
             </Link>
           ) : (

@@ -1,5 +1,5 @@
 /* بذر حسابات وبيانات الديمو — بيئة العرض المحلية فقط، لا تُشغَّل في الإنتاج.
-   - خمسة حسابات ديمو بكلمة مرور موحدة (انظر DEMO_PASSWORD) وأدوار مختلفة.
+   - تسعة حسابات ديمو بكلمة مرور موحدة (انظر DEMO_PASSWORD) — حسابٌ لكلّ دورٍ من التسعة.
    - طالب ديمو غني: ملف شخصي كامل، تشخيص مرفق، تسجيلان (نشط + مكتمل بشهادة)،
      طلب مدفوع بفاتورة ودفعة، إشعارات، وحالة مستشار مسندة لحساب المستشار التجريبي.
    - كل السجلات موسومة «ديمو/تجريبي» وتستخدم بريدا على نطاق wajeez.local.
@@ -10,7 +10,9 @@ import type { PrismaClient } from '@prisma/client'
 import { seedRbac } from '../auth/rbac-seed'
 import { parseChecks } from '../../src/application/content/module-checks'
 
-export const DEMO_PASSWORD = 'Wajeez-Demo-2026'
+/* كلمةٌ موحّدة معلومة — للعرض المحلّيّ. ومن بذر على قاعدةٍ يراها غيرُه
+   يعيّن DEMO_PASSWORD في البيئة فلا تُزرع كلمةٌ مكتوبةٌ في المستودع. */
+export const DEMO_PASSWORD = process.env.DEMO_PASSWORD?.trim() || 'Wajeez-Demo-2026'
 
 export const DEMO_ACCOUNTS = [
   { key: 'student', email: 'student.demo@wajeez.local', name: 'ليان الحوراني — حساب ديمو', roles: ['learner'] },
@@ -18,6 +20,12 @@ export const DEMO_ACCOUNTS = [
   { key: 'trainer', email: 'trainer.demo@wajeez.local', name: 'أستاذ رامي — مدرب ديمو', roles: ['trainer'] },
   { key: 'admin', email: 'admin.demo@wajeez.local', name: 'مدير أكاديمي — حساب ديمو', roles: ['academic_manager'] },
   { key: 'superadmin', email: 'superadmin.demo@wajeez.local', name: 'مدير النظام — حساب ديمو', roles: ['super_admin'] },
+  /* الأدوارُ الإداريّةُ الأربعةُ الباقية — كانت بلا حسابِ ديمو، فلا تُفحَص
+     لوحاتُها المقيَّدة (التشخيص، العمليات، المالية، الدعم) إلّا بترقيةٍ يدويّة. */
+  { key: 'diagnostics', email: 'diagnostics.demo@wajeez.local', name: 'مدير التشخيص — حساب ديمو', roles: ['diagnostic_manager'] },
+  { key: 'operations', email: 'operations.demo@wajeez.local', name: 'مدير العمليات — حساب ديمو', roles: ['operations_manager'] },
+  { key: 'finance', email: 'finance.demo@wajeez.local', name: 'المالية — حساب ديمو', roles: ['finance'] },
+  { key: 'support', email: 'support.demo@wajeez.local', name: 'الدعم — حساب ديمو', roles: ['support'] },
 ] as const
 
 export type DemoRoleKey = (typeof DEMO_ACCOUNTS)[number]['key']
