@@ -5,6 +5,7 @@ import PortalLayout from "./PortalLayout";
 import SubmissionFeedback from "@/components/SubmissionFeedback";
 import SwitchCohort from "@/components/SwitchCohort";
 import { apiGet, apiPost, ApiError } from "@/services/api";
+import HeldSeatNotice, { type HeldSeat } from "@/components/HeldSeatNotice";
 import { fmtDate, fmtDateTime } from "@/application/text/format-ar";
 
 const ENROLL_STATUS: Record<string, string> = {
@@ -103,11 +104,25 @@ export default function MyLearning() {
      البطاقةُ تشكره وتحيله إلى «الفواتير» — أي تطلب منه نقرةً أخرى ليعرف عن
      ماذا خرج مالُه. والطلبُ معروفٌ برقمه في الرابط، فيُقرأ ويُعرض هنا. */
   const [paid, setPaid] = useState<PaidOrder | null>(null);
+  /* المقاعدُ المحجوزةُ ولم تصر تسجيلا — النافذةُ بين الدفع وتأكيده.
 
-  const load = useCallback(async () => {
-    setLoading(true); setOffline(null);
+     كانت هذه الصفحةُ تعرض `enrollment` وحدَه، فمن دفع بمزوّدٍ مستضاف ورجع
+     قبل وصول webhook يقرأ «لا شعب مسجلة بعد» تحت بطاقةِ شكرٍ تقول إنّ شعبه
+     ستظهر — فلا يعرف أدفعُه وصل أم ضاع. والحجزُ مكتوبٌ في السجل، فيُقال. */
+  const [held, setHeld] = useState<HeldSeat[]>([]);
+
+  /* `quiet` للقراءةِ المتكرّرة بعد الدفع: تحديثٌ بلا أن تنقلب الصفحةُ
+     دوّارةً كلَّ عشر ثوانٍ فوق ما يقرأه المتعلّم. */
+  const load = useCallback(async (quiet = false) => {
+    if (!quiet) setLoading(true);
+    setOffline(null);
     try {
-      setRows(await apiGet<EnrollmentRow[]>("/api/learner/my-learning"));
+      const [enrolled, seats] = await Promise.all([
+        apiGet<EnrollmentRow[]>("/api/learner/my-learning"),
+        apiGet<HeldSeat[]>("/api/learner/held-seats").catch(() => [] as HeldSeat[]),
+      ]);
+      setRows(enrolled);
+      setHeld(seats);
     } catch (err) {
       setOffline(
         err instanceof ApiError && err.status === 401
@@ -115,7 +130,7 @@ export default function MyLearning() {
           : err instanceof ApiError ? err.message : "الخادم غير متصل — أعد المحاولة بعد قليل"
       );
     } finally {
-      setLoading(false);
+      if (!quiet) setLoading(false);
     }
   }, []);
 
@@ -129,6 +144,23 @@ export default function MyLearning() {
       .catch(() => undefined);
     return () => { on = false; };
   }, [paidOrder, cancelledOrder]);
+
+  /* العائدُ من صفحة الدفع لا يُطلب منه أن يحدّث بيده.
+
+     التسويةُ تصل بـwebhook بعد ثوانٍ أو دقائق، والبطاقةُ تقول «شعبك تظهر
+     أدناه فور تأكيدها» — وكانت الصفحةُ تُقرأ مرّةً واحدة عند فتحها، فتبقى
+     الكلمةُ بلا وفاء حتّى يُنعش المتصفّح. فتُقرأ كلَّ عشر ثوانٍ لدقيقتين،
+     ثمّ يكفي: انتظارٌ أطول من ذلك حالةٌ تُراجَع لا شاشةٌ تدور. */
+  useEffect(() => {
+    if (!paidOrder || cancelledOrder) return;
+    let tries = 0;
+    const timer = setInterval(() => {
+      tries += 1;
+      if (tries > 12) { clearInterval(timer); return; }
+      void load(true);
+    }, 10_000);
+    return () => clearInterval(timer);
+  }, [paidOrder, cancelledOrder, load]);
 
   const openDetail = async (id: string) => {
     if (openId === id) { setOpenId(null); setDetail(null); return; }
@@ -233,6 +265,16 @@ export default function MyLearning() {
           </p>
         )}
 
+        {/* مقاعدُ دُفع ثمنُها ولم تصر تسجيلا بعد — تُقال قبل القائمة لا بعدها:
+            هي أوّلُ ما يسأل عنه العائدُ من صفحة الدفع. */}
+        {!offline && !loading && held.length > 0 && (
+          <div className="mb-5 space-y-3">
+            {held.map((seat) => (
+              <HeldSeatNotice key={seat.requestId} seat={seat} />
+            ))}
+          </div>
+        )}
+
         {offline ? (
           <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
             <ServerOff className="h-12 w-12 text-white/20" />
@@ -244,7 +286,7 @@ export default function MyLearning() {
           </div>
         ) : loading ? (
           <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" /></div>
-        ) : rows.length === 0 ? (
+        ) : rows.length === 0 && held.length === 0 ? (
           <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
             <BookOpen className="h-12 w-12 text-white/20" />
             <h2 className="mt-4 text-xl font-black">لا شعب مسجلة بعد</h2>

@@ -289,10 +289,122 @@ export class CommerceService {
      ولا يُبنى مسلكُ تسويةٍ ثانٍ: تُكتب `enrollmentRequest` مباشرةً بحالة
      `seat_held` مربوطةً بالطلب، فتعمل `settleOrder` القائمة كما هي. «الطلب»
      هنا سجلُّ حجزِ مقعدٍ داخليّ لا خطوةَ موافقةٍ بشريّة. */
-  private async validatedCart(userId: string, cohortIds: string[], requireVerifiedEmail: boolean) {
+  /* ما يمنع شراءَ هذه الشعبة الآن — أو لا شيء.
+
+     كان هذا الفحصُ مبثوثا في `validatedCart` يرمي عند أوّل مانع، فكان
+     المانعُ الواحدُ يُسقط السلّةَ كلَّها: من ملك دورةً من مسارٍ رباعيّ لم
+     يستطع شراءَ الثلاث الباقية — يُسعّر فيصطدم بـ409 ويبقى زرُّ الدفع
+     مطفأً. فصار السببُ قيمةً تُعاد لا استثناءً يُرمى، ثمّ يقرّر كلُّ نداءٍ
+     ما يفعل به: `checkout` يرمي (فلا يُنشئ طلبا فوق مقعدٍ مملوك)،
+     و`quote` يستبعد ويسمّي. */
+  private async cohortBlocker(
+    userId: string,
+    c: CartCohort,
+  ): Promise<{ reason: string; messageAr: string } | null> {
+    if (!['open', 'full', 'active'].includes(c.status) || !c.registrationOpen) {
+      return { reason: 'closed', messageAr: `التسجيل مغلق في «${c.title}»` }
+    }
+    if (c.price === null) return { reason: 'no_price', messageAr: `«${c.title}» بلا سعر معلن` }
+
+    const already = await this.prisma.enrollment.findFirst({
+      where: { userId, cohortId: c.id, status: { in: ['enrolled', 'completed'] } },
+    })
+    if (already) return { reason: 'already_enrolled', messageAr: `أنت مسجّل في «${c.title}» بالفعل` }
+
+    /* حجزُ مقعدٍ مربوطٌ بطلبٍ حيّ — لا طلبَ ثانيا فوقه.
+
+       القيدُ `userId_cohortId` على `enrollmentRequest` واحدٌ لا يُثنّى، فكان
+       الشراءُ الثاني للشعبة نفسِها يُنشئ طلبا جديدا ثمّ **يُحوّل** الحجزَ
+       القائم إليه (`upsert` في `checkout`). فمن دفع طلبَه الأوّل ثمّ عاد
+       إلى «مساري» — وكانت الشاشةُ لا تزال تعرض «اشترِ الآن» لأنّ الحجزَ لا
+       يظهر فيها — ضغط مرّةً أخرى، فانتقل الحجزُ إلى الطلب الثاني، ثمّ وصل
+       webhook الأوّل فوجد `seat_held` بلا حجزٍ يحوّله: فاتورةٌ مدفوعةٌ
+       وشعبةٌ لا تُفتح، ومطالبةٌ بدفعٍ ثانٍ عن مقعدٍ دُفع ثمنُه.
+
+       فالحجزُ المربوطُ بطلبٍ حيّ يمنع شراءً ثانيا ويقول أين يُكمَل: المدفوعُ
+       يُنتظر تأكيدُه، والذي لم يكتمل دفعُه يُكمَل من «الفواتير» بطلبه
+       نفسِه لا بطلبٍ جديد.
+
+       وحجزٌ بلا طلب (طلبُ مراجعةٍ إداريّة) لا يمنع شيئا: لا مالَ فيه
+       يُفقد، والشراءُ المباشر يتقدّم عليه كما كان. */
+    const hold = await this.prisma.enrollmentRequest.findUnique({
+      where: { userId_cohortId: { userId, cohortId: c.id } },
+    })
+    if (hold?.status === 'seat_held' && hold.orderId) {
+      const holdOrder = await this.prisma.order.findUnique({ where: { id: hold.orderId } })
+      if (holdOrder?.status === 'paid') {
+        return {
+          reason: 'settling',
+          messageAr: `دفعتُك عن «${c.title}» وصلت ونحن نفتح مقعدك — لا تدفع مرّةً أخرى`,
+        }
+      }
+      if (holdOrder?.status === 'pending_payment') {
+        return {
+          reason: 'order_pending',
+          messageAr: `لك طلبٌ لم يكتمل دفعُه عن «${c.title}» ومقعدُك محجوزٌ به — أكمل دفعه من «الفواتير»`,
+        }
+      }
+    }
+
+    if (c.capacity) {
+      const [enrolled, held] = await Promise.all([
+        this.prisma.enrollment.count({ where: { cohortId: c.id, status: 'enrolled' } }),
+        this.prisma.enrollmentRequest.count({ where: { cohortId: c.id, status: 'seat_held' } }),
+      ])
+      if (enrolled + held >= c.capacity) {
+        return { reason: 'capacity_full', messageAr: `لا مقاعد متاحة في «${c.title}»` }
+      }
+    }
+    return null
+  }
+
+  /* تصنيفُ السلّة: ما يُشترى وما استُبعد وبأيّ سبب — بلا رمي.
+
+     ويبقى الرميُ لما ليس سببَ استبعادٍ أصلا بل خللٌ في الطلب نفسِه: سلّةٌ
+     فارغة، أو معرّفُ شعبةٍ لا وجودَ لها. */
+  private async classifyCart(userId: string, cohortIds: string[]) {
     if (cohortIds.length === 0) throw new AuthError('empty_cart', 'لا شعبة في طلبك')
     const unique = [...new Set(cohortIds)]
 
+    const cohorts = await this.prisma.cohort.findMany({
+      where: { id: { in: unique } },
+      include: { course: { include: { versions: { orderBy: { version: 'desc' }, take: 1 } } } },
+    })
+    if (cohorts.length !== unique.length) throw new AuthError('not_found', 'شعبة غير موجودة ضمن طلبك', 404)
+
+    const buyable: CartCohort[] = []
+    const excluded: { cohortId: string; courseId: string; titleAr: string; reason: string; messageAr: string }[] = []
+    for (const c of cohorts) {
+      const blocker = await this.cohortBlocker(userId, c)
+      if (blocker) {
+        excluded.push({
+          cohortId: c.id, courseId: c.courseId, titleAr: cartTitleOf(c),
+          reason: blocker.reason, messageAr: blocker.messageAr,
+        })
+        continue
+      }
+      buyable.push(c)
+    }
+    return { unique, cohorts, buyable, excluded }
+  }
+
+  /* عملةُ السلّة — واحدةٌ لا تُخلط: جمعُ مئةِ دولارٍ إلى مئةِ ريالٍ يعطي
+     فاتورةً كاذبة. والسلّةُ الفارغةُ تأخذ عملةَ ما طُلب لتُعرض الأصفارُ
+     بعملةٍ مفهومة. */
+  private cartCurrency(buyable: CartCohort[], requested: CartCohort[]): string {
+    const currency = buyable[0]?.currency ?? requested[0]?.currency ?? LEDGER_CURRENCY
+    if (buyable.some((c) => c.currency !== currency)) {
+      throw new AuthError('mixed_currency', 'لا تُجمع شعبٌ بعملاتٍ مختلفة في طلبٍ واحد', 409)
+    }
+    return currency
+  }
+
+  /* السلّةُ المتحقَّقة للشراء — «كلُّ شيءٍ أو لا شيء».
+
+     `checkout` يبقى صارما: أيُّ مانعٍ في أيّ شعبةٍ يرمي قبل أيّ كتابة. فهو
+     ما يمنع طلبا ثانيا فوق مقعدٍ دُفع ثمنُه — والاستبعادُ الصامت هنا يعني
+     فاتورةً بغير ما ضغط عليه المشتري. */
+  private async validatedCart(userId: string, cohortIds: string[], requireVerifiedEmail: boolean) {
     /* حاجز توثيق البريد — نفسه الذي في `requestEnrollment`، ولنفس السبب:
        الفاتورة والمواعيد تُرسل إلى عنوان. ويسقط حين تكون قناة البريد معطّلة،
        وإلّا صار قفلا بلا مفتاح.
@@ -304,36 +416,12 @@ export class CommerceService {
       throw new AuthError('email_unverified', 'وثّق بريدك أولا — الشراء يُفتح بمجرّد فتح رابط التوثيق', 403)
     }
 
-    const cohorts = await this.prisma.cohort.findMany({
-      where: { id: { in: unique } },
-      include: { course: { include: { versions: { orderBy: { version: 'desc' }, take: 1 } } } },
-    })
-    if (cohorts.length !== unique.length) throw new AuthError('not_found', 'شعبة غير موجودة ضمن طلبك', 404)
-
-    for (const c of cohorts) {
-      if (!['open', 'full', 'active'].includes(c.status) || !c.registrationOpen) {
-        throw new AuthError('closed', `التسجيل مغلق في «${c.title}»`, 409)
-      }
-      if (c.price === null) throw new AuthError('no_price', `«${c.title}» بلا سعر معلن`, 409)
-      const already = await this.prisma.enrollment.findFirst({
-        where: { userId, cohortId: c.id, status: { in: ['enrolled', 'completed'] } },
-      })
-      if (already) throw new AuthError('already_enrolled', `أنت مسجّل في «${c.title}» بالفعل`, 409)
-      if (c.capacity) {
-        const [enrolled, held] = await Promise.all([
-          this.prisma.enrollment.count({ where: { cohortId: c.id, status: 'enrolled' } }),
-          this.prisma.enrollmentRequest.count({ where: { cohortId: c.id, status: 'seat_held' } }),
-        ])
-        if (enrolled + held >= c.capacity) throw new AuthError('capacity_full', `لا مقاعد متاحة في «${c.title}»`, 409)
-      }
+    const { unique, cohorts, buyable, excluded } = await this.classifyCart(userId, cohortIds)
+    if (excluded.length > 0) {
+      const first = excluded[0]
+      throw new AuthError(first.reason, first.messageAr, 409)
     }
-
-    /* عملةٌ واحدة للطلب: جمعُ مئةِ دولارٍ إلى مئةِ ريالٍ يعطي فاتورةً كاذبة */
-    const currency = cohorts[0].currency
-    if (cohorts.some((c) => c.currency !== currency)) {
-      throw new AuthError('mixed_currency', 'لا تُجمع شعبٌ بعملاتٍ مختلفة في طلبٍ واحد', 409)
-    }
-    return { unique, cohorts, currency }
+    return { unique, cohorts: buyable, currency: this.cartCurrency(buyable, cohorts) }
   }
 
   /* الهديّة المستحقّة في هذه السلّة — أو لا هديّة.
@@ -346,7 +434,15 @@ export class CommerceService {
      هديّتَه ثمّ اشتراها منفردة، فصارت الهديّةُ بابا لأخذ أيّ دورةٍ مجّانا.
 
      ودورةٌ من الخطّة سُجّل فيها من قبلُ تُحتسب مغطّاة: من اشترى نصفَ خطّته
-     الشهر الماضي لا يُحرم هديّتَه لأنّه لم يشترِ كلَّ شيءٍ دفعةً واحدة. */
+     الشهر الماضي لا يُحرم هديّتَه لأنّه لم يشترِ كلَّ شيءٍ دفعةً واحدة.
+
+     ومثلُها دورةٌ **دُفع ثمنُها ولم يصل تأكيدُها بعد**: صارت السلّةُ تستبعد
+     ما حُجز مقعدُه بطلبٍ حيّ (فلا يُدفع ثمنُه مرّتين)، فلو لم تُحتسب مغطّاةً
+     لسقطت الهديّةُ في الدقائق التي بين الدفع وتأكيده — ويُسعَّر عليه الباقي
+     بأغلى ممّا وُعد لأنّ الـwebhook تأخّر.
+
+     والمعتبَرُ حجزٌ بطلبٍ **مدفوع** لا بأيّ حجز: لو كفى طلبٌ لم يُدفع لصار
+     فتحُ طلبٍ ثمّ إلغاؤه بابا لأخذ الهديّة بلا خطّة. */
   private async giftFor(userId: string, orderedCourseIds: Set<string>): Promise<string | null> {
     const plan = await this.prisma.learnerPlan.findFirst({
       where: { userId, status: 'active' },
@@ -363,11 +459,26 @@ export class CommerceService {
 
     const missing = paidPlanCourses.filter((id) => !orderedCourseIds.has(id))
     if (missing.length > 0) {
-      const enrolled = await this.prisma.enrollment.findMany({
-        where: { userId, status: { in: ['enrolled', 'completed'] }, cohort: { courseId: { in: missing } } },
-        select: { cohort: { select: { courseId: true } } },
-      })
-      const covered = new Set(enrolled.map((e) => e.cohort.courseId))
+      const [enrolled, held] = await Promise.all([
+        this.prisma.enrollment.findMany({
+          where: { userId, status: { in: ['enrolled', 'completed'] }, cohort: { courseId: { in: missing } } },
+          select: { cohort: { select: { courseId: true } } },
+        }),
+        this.prisma.enrollmentRequest.findMany({
+          where: { userId, status: 'seat_held', cohort: { courseId: { in: missing } } },
+          select: { orderId: true, cohort: { select: { courseId: true } } },
+        }),
+      ])
+      const paidOrderIds = new Set(
+        (await this.prisma.order.findMany({
+          where: { id: { in: [...new Set(held.map((h) => h.orderId).filter((x): x is string => !!x))] }, status: 'paid' },
+          select: { id: true },
+        })).map((o) => o.id),
+      )
+      const covered = new Set([
+        ...enrolled.map((e) => e.cohort.courseId),
+        ...held.filter((h) => h.orderId && paidOrderIds.has(h.orderId)).map((h) => h.cohort.courseId),
+      ])
       if (missing.some((id) => !covered.has(id))) return null
     }
     return giftId
@@ -407,12 +518,25 @@ export class CommerceService {
 
      ولا يكتب هذا النداءُ شيئا: لا حجزَ مقعد، ولا عدَّ استعمالٍ للكوبون. */
   async quote(userId: string, cohortIds: string[], couponCode?: string) {
-    const { cohorts, currency } = await this.validatedCart(userId, cohortIds, false)
-    const { pricing, couponCode: code } = await this.priceFor(userId, cohorts, couponCode)
+    /* التسعيرُ لا يُسقط السلّةَ بمانعٍ في بندٍ منها.
+
+       كان ينادي `validatedCart` الصارم، فيرمي عند أوّل شعبةٍ يملكها المشتري
+       أو حُجز مقعدُه فيها — فمن اشترى دورةً من مسارٍ رباعيّ يرى رسالةَ خطأٍ
+       وزرَّ دفعٍ مطفأً، ولا سبيلَ له إلى الثلاث الباقية من اللوح نفسِه.
+
+       فيُسعَّر ما يُشترى، ويُسمَّى ما استُبعد وسببُه — والقرارُ للمشتري لا
+       للخطأ. و`checkout` يبقى صارما: هو ما يمنع طلبا فوق مقعدٍ مملوك. */
+    const { cohorts, buyable, excluded } = await this.classifyCart(userId, cohortIds)
+    const currency = this.cartCurrency(buyable, cohorts)
+    /* الباقةُ والهديّةُ والكوبونُ على المشتراة وحدَها — وهي بعينها ما
+       سيُرسَل إلى `checkout`، فالمعروضُ هو المُصدَر */
+    const { pricing, couponCode: code } = await this.priceFor(userId, buyable, couponCode)
     const emailOk = (await this.emailVerified(userId)) || !(await this.emailChannelEnabled())
     return {
       currency,
       couponCode: code,
+      /* ما استُبعد يُقال باسمه وسببه — لا يُسقَط صامتا ولا يُسقِط أخواته */
+      excluded,
       /* حاجزُ التوثيق يُقال هنا لا يُرمى: اللوحُ يعرض السعرَ ويطلب التوثيق
          في مكانه — و`VerifyEmailNotice` لا يُعرض خارج بوابة المتعلّم أصلا،
          فرميُ 403 هنا كان يترك المشتريَ أمام رسالةٍ تحيله إلى شريطٍ لا وجودَ
@@ -757,23 +881,45 @@ export class CommerceService {
        «مدفوع» والفاتورة «مدفوعة»، والنقص لا يظهر إلا في شاشة المتعلّم.
        والدفعة الواحدة تشتري الخطّة كلها، فتسويتها تحوّلها كلها. */
     const reqs = await this.prisma.enrollmentRequest.findMany({ where: { orderId, status: 'seat_held' } })
+    const order = await this.prisma.order.findUnique({ where: { id: orderId }, include: { items: true } })
+
+    /* الفاتورةُ هي الحجّة، لا سجلُّ الحجز.
+
+       كانت التسويةُ تُسجِّل ما وجدَته محجوزا بهذا الطلب وحدَه، فإن ضاع الحجزُ
+       — انتقل إلى طلبٍ آخر، أو حُذف بيدٍ إداريّة — سُوّيت الفاتورةُ ولم
+       يُسجَّل صاحبُها في شيء: «مدفوعة» في الدفتر، و«لا شعب مسجلة» على شاشته.
+
+       فبنودُ الطلب (وهي ما دُفع ثمنُه فعلا) تُضاف إلى الحجوز: كلُّ بندٍ من
+       نوع `cohort` يُسجَّل صاحبُ الطلب فيه، حُفظ حجزُه أو ضاع. والهديّةُ بندٌ
+       بصفر فتُسجَّل كأختها — فهي مشتراةٌ داخل الخطّة لا ممنوحةٌ خارجها. */
+    const targets = new Map<string, { cohortId: string; userId: string; requestId: string | null }>()
+    for (const req of reqs) targets.set(req.cohortId, { cohortId: req.cohortId, userId: req.userId, requestId: req.id })
+    if (order) {
+      for (const item of order.items) {
+        if (item.kind !== 'cohort' || targets.has(item.refId)) continue
+        targets.set(item.refId, { cohortId: item.refId, userId: order.userId, requestId: null })
+      }
+    }
+
     const converted: string[] = []
-    const failed: { requestId: string; reason: string }[] = []
-    for (const req of reqs) {
+    const failed: { cohortId: string; reason: string }[] = []
+    for (const target of targets.values()) {
       try {
-        await this.enrollments.enroll(req.cohortId, req.userId, actorId, {})
+        await this.enrollments.enroll(target.cohortId, target.userId, actorId, {})
       } catch (err) {
         /* مسجل مسبقا (مثل إعادة معالجة) — لا يمنع التحويل */
         if (!(err instanceof AuthError && err.code === 'already_enrolled')) {
           /* دورةٌ تعذّر تسجيلها (امتلأت بين الحجز والدفع مثلا) لا تُسقط أخواتها:
              المال قُبض عن الخطّة كلها، فمنعُ الباقي عقوبةٌ مضاعفة. تُقيَّد
              بأثرٍ صريح ويُنبَّه المتعلّم، ويبقى الطلب محجوزا لا مُحوَّلا. */
-          failed.push({ requestId: req.id, reason: err instanceof Error ? err.message : String(err) })
+          failed.push({ cohortId: target.cohortId, reason: err instanceof Error ? err.message : String(err) })
           continue
         }
       }
-      await this.prisma.enrollmentRequest.update({ where: { id: req.id }, data: { status: 'converted' } })
-      converted.push(req.id)
+      if (target.requestId) {
+        await this.prisma.enrollmentRequest.update({ where: { id: target.requestId }, data: { status: 'converted' } })
+      }
+      converted.push(target.cohortId)
     }
     if (failed.length > 0) {
       await recordAudit(this.prisma, {
@@ -784,12 +930,11 @@ export class CommerceService {
     }
 
     /* إشعار تأكيد الدفع — يصل الطالب سواء حُوّل طلبه أم دفع لغير شعبة */
-    const order = await this.prisma.order.findUnique({ where: { id: orderId }, include: { items: true } })
     if (order) {
       const what = order.items.length > 1 ? `خطّتك (${order.items.length} دورات)` : `«${order.items[0]?.titleAr ?? 'طلبك'}»`
       const tail =
         failed.length > 0
-          ? `وسُجّلت ${converted.length} من ${reqs.length}؛ تواصلنا جارٍ بشأن الباقي ولن تدفع عنه مرّة أخرى.`
+          ? `وسُجّلت ${converted.length} من ${targets.size}؛ تواصلنا جارٍ بشأن الباقي ولن تدفع عنه مرّة أخرى.`
           : converted.length > 0
             ? 'مقاعدك صارت تسجيلاً فعلياً — شعبك تظهر في «تعلّمي».'
             : 'تفاصيل طلبك في «الفواتير».'
@@ -798,7 +943,7 @@ export class CommerceService {
         title: 'تأكد دفعك ✓ — أهلاً بك',
         body: `استلمنا دفعتك (${num(order.total)} ${order.currency}) عن ${what}. ${tail}`,
         templateKey: 'payment.succeeded',
-        data: { orderId, total: num(order.total), enrolled: converted.length, of: reqs.length },
+        data: { orderId, total: num(order.total), enrolled: converted.length, of: targets.size },
       })
     }
   }
@@ -905,6 +1050,89 @@ export class CommerceService {
   }
 
   /* ── استعلامات المتعلم والمالية ── */
+
+  /* إلغاءُ طلبٍ لم يكتمل دفعُه — البابُ الآخر للحجز.
+
+     الحجزُ صار يُقفل شراءً ثانيا على الشعبة نفسِها (`validatedCart`)، وذلك
+     يحرس مالَ من دفع. لكنّ قفلا بلا مفتاحٍ يصير سجنا: من فتح صفحة الدفع ثمّ
+     عدل عن الشراء يبقى مقعدُه محجوزا بطلبٍ لن يدفعه أبدا، فلا يشتري تلك
+     الشعبة ولا يُفرَّج عن مقعدها لغيره.
+
+     فلصاحب الطلب أن يُلغيه ما لم يُدفع: الطلبُ يُلغى، وفاتورتُه تُبطَل،
+     وحجوزُه تُفكّ فتعود المقاعدُ إلى العدّ. والمدفوعُ لا يُلغى من هنا أبدا —
+     ذاك استردادٌ له مسلكُه وصلاحيتُه المالية. */
+  async cancelOrder(orderId: string, userId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { invoice: { include: { payments: true } } },
+    })
+    if (!order || order.userId !== userId) throw new AuthError('not_found', 'الطلب غير موجود', 404)
+    if (order.status === 'paid') throw new AuthError('already_paid', 'الطلب مدفوع — الإلغاء بعد الدفع استردادٌ يُطلب من الدعم', 409)
+    if (order.status === 'cancelled') return order
+    if (order.status !== 'pending_payment') throw new AuthError('bad_state', 'لا يُلغى إلّا طلبٌ لم يكتمل دفعُه', 409)
+    /* دفعةٌ نجحت وفاتورتُها لم تُسوَّ بعد: لا يُلغى فوقها — ماله وصل */
+    if ((order.invoice?.payments ?? []).some((p) => p.status === 'succeeded')) {
+      throw new AuthError('has_payment', 'وصلتنا دفعةٌ عن هذا الطلب — راسل الدعم بدل الإلغاء', 409)
+    }
+
+    const cancelled = await this.prisma.$transaction(async (tx) => {
+      const o = await tx.order.update({ where: { id: orderId }, data: { status: 'cancelled' } })
+      if (order.invoice) await tx.invoice.update({ where: { id: order.invoice.id }, data: { status: 'void' } })
+      await tx.enrollmentRequest.updateMany({
+        where: { orderId, status: 'seat_held' },
+        data: { status: 'cancelled', orderId: null },
+      })
+      return o
+    })
+
+    await recordAudit(this.prisma, {
+      actorId: userId, action: 'order.cancel', entityType: 'order', entityId: orderId,
+      meta: { total: num(order.total), currency: order.currency },
+      reason: 'ألغاه صاحبُه قبل الدفع — فُكّت حجوزُه',
+    })
+    return cancelled
+  }
+
+  /* مقاعدي المحجوزةُ ولم تصر تسجيلا بعد — النافذةُ بين الدفع وتأكيده.
+
+     كانت هذه النافذةُ عمياءَ في بوابة المتعلّم: `my-learning` لا تعرض إلّا
+     `enrollment`، والحجزُ ليس تسجيلا، فمن دفع بمزوّدٍ مستضاف ورجع قبل وصول
+     الـwebhook يقرأ «لا شعب مسجلة بعد» ويرى «اشترِ الآن» على الدورة نفسِها
+     — فيظنّ أنّ دفعه ضاع أو أنّ عليه أن يدفع ثانيا.
+
+     فتُقال النافذةُ باسمها: مقعدٌ محجوزٌ بطلبٍ رقمُه كذا، دُفع فينتظر تأكيد
+     البنك، أو لم يكتمل دفعُه فيُكمَل. والقراءةُ محضةٌ لما في السجل. */
+  async myHeldSeats(userId: string) {
+    const rows = await this.prisma.enrollmentRequest.findMany({
+      where: { userId, status: { in: ['pending', 'seat_held'] } },
+      include: {
+        cohort: { include: { course: { include: { versions: { orderBy: { version: 'desc' }, take: 1 } } } } },
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+    const orderIds = [...new Set(rows.map((r) => r.orderId).filter((x): x is string => !!x))]
+    const orders = orderIds.length
+      ? await this.prisma.order.findMany({ where: { id: { in: orderIds } }, include: { invoice: true } })
+      : []
+    const byId = new Map(orders.map((o) => [o.id, o]))
+    return rows.map((r) => {
+      const order = r.orderId ? byId.get(r.orderId) ?? null : null
+      return {
+        requestId: r.id,
+        cohortId: r.cohortId,
+        cohortTitle: r.cohort.title,
+        courseId: r.cohort.courseId,
+        courseTitleAr: r.cohort.course.versions[0]?.titleAr ?? r.cohort.title,
+        startsAt: r.cohort.startsAt,
+        status: r.status,
+        orderId: r.orderId,
+        orderStatus: order?.status ?? null,
+        invoiceNumber: order?.invoice?.number ?? null,
+        total: order ? num(order.total) : null,
+        currency: order?.currency ?? null,
+      }
+    })
+  }
 
   async myOrders(userId: string) {
     return this.prisma.order.findMany({

@@ -294,6 +294,22 @@ export function registerOperationsRoutes(app: FastifyInstance, prisma: PrismaCli
     schema: { tags: ['commerce'], summary: 'طلباتي وفواتيري ودفعاتي' },
   }, async (req) => commerce.myOrders(req.auth!.userId))
 
+  /* مقاعدي المحجوزة قبل أن تصير تسجيلا — تُقرأ في «تعلّمي» و«مساري» فلا
+     يُعرَض على من دفع أن يدفع مرّةً أخرى وهو ينتظر تأكيد البنك. */
+  app.get('/api/learner/held-seats', {
+    preHandler: requireAuth,
+    schema: { tags: ['commerce'], summary: 'مقاعدي المحجوزة بانتظار تأكيد الدفع — النافذة بين الدفع والتسجيل' },
+  }, async (req) => commerce.myHeldSeats(req.auth!.userId))
+
+  /* إلغاءُ طلبٍ لم يكتمل دفعُه — يفكّ حجوزَه فلا يبقى مقعدٌ مقفلا بطلبٍ متروك */
+  app.post('/api/learner/orders/:id/cancel', {
+    preHandler: requireAuth,
+    schema: { tags: ['commerce'], summary: 'إلغاء طلبي قبل الدفع — تُبطل فاتورتُه وتُفكّ حجوزُه' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return commerce.cancelOrder(id, req.auth!.userId)
+  })
+
   /* الشراء المباشر — لا طلبَ ولا انتظارَ موافقة.
 
      التسجيل متاحٌ دائما مهما كان موعد بدء الشعبة: التسجيل شيء والبدء شيء
