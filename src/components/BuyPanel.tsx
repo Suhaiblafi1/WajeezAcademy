@@ -16,10 +16,16 @@
       إلّا إذا قرّر أن يغيّرها». فلا يُطالَب المشتري باختيارٍ قبل أن يعرف
       سعرَه — والقائمةُ مرتّبةٌ بالأقرب بدءا، فأوّلُها أقربُها.
 
-   ٣) **ما لا شعبةَ له يُسمَّى لا يُسقَط صامتا.** الخادمُ «كلُّ شيءٍ أو لا
-      شيء»: يرمي عند أوّل دورةٍ بلا سعرٍ أو بلا مقعد قبل أيّ كتابة. فلو
-      أُرسلت الدوراتُ كلُّها لاصطدم الزرُّ بـ409 بلا أن يفهم المشتري لماذا.
-      فتُرشَّح هنا، ويُقال له صراحةً ما استُبعد ولماذا.
+   ٣) **ما لا يُشترى يُسمَّى لا يُسقَط صامتا.** ما لا شعبةَ له مفتوحةً
+      يُرشَّح هنا (فهذه الشاشةُ تعرف الكتالوج)، وما يملكه المشتري أو حُجز
+      مقعدُه فيه يقوله `quote.excluded` — فهو وحده يعرفه.
+
+      وكان `quote` «كلَّ شيءٍ أو لا شيء» كـ`checkout`: يرمي عند أوّل دورةٍ
+      يملكها المشتري، فمن اشترى دورةً من مسارٍ رباعيّ يرى رسالةَ خطأٍ وزرَّ
+      دفعٍ مطفأً ولا سبيلَ له إلى الثلاث الباقية. فصار يُسعّر ما يُشترى
+      ويسمّي ما استُبعد وسببَه. و`checkout` يبقى صارما — وإليه لا يُرسَل
+      إلّا ما سعّره الخادمُ نفسُه (`quote.items`)، فلا فاتورةَ بغير ما
+      ضُغط عليه.
 
    ولا نقول «تمّ الدفع» عند التحويل: التسويةُ بـwebhook موقَّع، ورجوعُ
    المتصفّح ليس دليلا. */
@@ -52,10 +58,20 @@ interface QuoteItem {
   isGift: boolean;
 }
 
+/** ما استبعده الخادمُ من السلّة وسببُه — نصُّ السبب منه لا مُلفَّقٌ هنا */
+interface ExcludedLine {
+  cohortId: string;
+  courseId: string;
+  titleAr: string;
+  reason: string;
+  messageAr: string;
+}
+
 interface Quote {
   currency: string;
   couponCode: string | null;
   emailVerified: boolean;
+  excluded: ExcludedLine[];
   subtotal: number;
   listTotal: number;
   bundlePct: number;
@@ -70,6 +86,16 @@ interface CheckoutResult { orderId: string }
 interface PayResult { redirectUrl?: string }
 
 const money = (n: number, c: string) => `${n.toLocaleString("en-US")} ${c}`;
+
+/* شارةٌ قصيرةٌ لسبب الاستبعاد — والنصُّ الكاملُ من الخادم يُعرض تحتها */
+const REASON_AR: Record<string, string> = {
+  already_enrolled: "مسجَّل فيها",
+  settling: "دُفعت — بانتظار التأكيد",
+  order_pending: "طلبٌ لم يكتمل دفعُه",
+  capacity_full: "لا مقاعد",
+  closed: "التسجيل مغلق",
+  no_price: "بلا سعر معلن",
+};
 
 export default function BuyPanel({
   title,
@@ -104,8 +130,12 @@ export default function BuyPanel({
 
   useEffect(() => { track("buy_panel_opened", { courses: lines.length }); }, [lines.length]);
 
-  /* الدوراتُ القابلة للشراء وما استُبعد منها — بسببِ كلٍّ صريحا */
-  const { buyable, excluded } = useMemo(() => {
+  /* الدوراتُ التي لها شعبٌ يُختار منها، وما لا شعبةَ له بعد.
+
+     وهذا استبعادٌ من الكتالوج (لا شعبةَ مفتوحة أصلا) لا من الخادم. أمّا ما
+     يملكه المشتري أو حُجز مقعدُه فيه فيُعرَف من `quote.excluded` — إذ لا
+     تعرفه هذه الشاشةُ بنفسها. */
+  const { buyable, withoutCohort } = useMemo(() => {
     const ok: { line: BuyLine; options: CohortOption[] }[] = [];
     const out: BuyLine[] = [];
     for (const l of lines) {
@@ -113,7 +143,7 @@ export default function BuyPanel({
       if (options.length > 0) ok.push({ line: l, options });
       else out.push(l);
     }
-    return { buyable: ok, excluded: out };
+    return { buyable: ok, withoutCohort: out };
   }, [lines, cohorts]);
 
   /* الاختيارُ التلقائيّ يقع مرّةً لكلّ دورةٍ جديدة، ولا يدوس اختيارَ المشتري */
@@ -156,6 +186,18 @@ export default function BuyPanel({
 
   useEffect(() => { void refresh(applied); }, [refresh, applied]);
 
+  /* سببُ الاستبعاد بالشعبة لا بالدورة: من مُنع من شعبةٍ قد تُتاح له أخرى
+     من الدورة نفسِها، فيبقى المبدّلُ معروضا ليختار موعدا آخر. */
+  const excludedOf = useMemo(
+    () => new Map((quote?.excluded ?? []).map((e) => [e.cohortId, e])),
+    [quote],
+  );
+  /* ما يُدفع ثمنُه فعلا هو ما سعّره الخادم — لا ما اختارته الشاشة. فلا
+     يُرسَل إلى `checkout` بندٌ يرفضه، وهو صارمٌ بحقّ: طلبٌ فوق مقعدٍ مملوك
+     يعني فاتورةً بغير ما ضغط عليه المشتري. */
+  const payableIds = useMemo(() => (quote?.items ?? []).map((i) => i.cohortId), [quote]);
+  const nothingLeft = !!quote && payableIds.length === 0;
+
   const usd = quote?.currency === "USD";
   const shownTotal = quote
     ? usd
@@ -164,12 +206,12 @@ export default function BuyPanel({
     : "—";
 
   const pay = async () => {
-    if (!quote || cohortIds.length === 0) return;
+    if (!quote || payableIds.length === 0) return;
     setPaying(true);
     setError(null);
     try {
       const order = await apiPost<CheckoutResult>("/api/learner/checkout", {
-        cohortIds,
+        cohortIds: payableIds,
         ...(applied ? { couponCode: applied } : {}),
       });
       const r = await apiPost<PayResult>(`/api/learner/orders/${order.orderId}/pay`, {
@@ -221,20 +263,28 @@ export default function BuyPanel({
               {buyable.map(({ line, options }) => {
                 const item = quote?.items.find((i) => i.courseId === line.courseId);
                 const picked = options.find((o) => o.id === chosen[line.courseId]) ?? options[0];
+                const out = excludedOf.get(picked.id);
                 return (
-                  <li key={line.courseId} className="p-3.5">
+                  <li key={line.courseId} className={`p-3.5 ${out ? "bg-white/[0.02]" : ""}`}>
                     <div className="flex items-start justify-between gap-3">
                       <span className="min-w-0">
-                        <span className="block text-sm font-bold leading-snug">{line.name}</span>
+                        <span className={`block text-sm font-bold leading-snug ${out ? "text-white/45" : ""}`}>{line.name}</span>
                         <span className="mt-0.5 flex items-center gap-1 text-[11px] text-white/45">
                           <CalendarDays className="h-3 w-3" /> {startsLabel(picked)}
-                          {picked.seatsLeft !== null && picked.seatsLeft <= 5 && (
+                          {!out && picked.seatsLeft !== null && picked.seatsLeft <= 5 && (
                             <span className="text-gold-ink"> · بقي {picked.seatsLeft}</span>
                           )}
                         </span>
                       </span>
+                      {/* المستبعَدُ لا يُعرض له سعرٌ لن يُدفع: يُعرض سببُه.
+
+                          وكان اللوحُ يعرض سعرَ الكتالوج لكلّ بندٍ حتّى حين
+                          يرفض الخادمُ السلّةَ كلَّها من أجله — رقمٌ لا يقابله
+                          شيءٌ في الفاتورة. */}
                       <span className="shrink-0 text-sm font-black">
-                        {item?.isGift ? (
+                        {out ? (
+                          <span className="text-[11px] font-bold text-gold-ink">{REASON_AR[out.reason] ?? "غير متاحة الآن"}</span>
+                        ) : item?.isGift ? (
                           <span className="flex items-center gap-1 text-gold-ink">
                             <Gift className="h-3.5 w-3.5" /> هديّة
                           </span>
@@ -243,6 +293,12 @@ export default function BuyPanel({
                         )}
                       </span>
                     </div>
+                    {out && (
+                      <p className="mt-1.5 text-[11px] leading-5 text-white/50">
+                        {out.messageAr}
+                        {options.length > 1 && " — أو اختر موعدا آخر أدناه."}
+                      </p>
+                    )}
                     {options.length > 1 && (
                       <label className="mt-2.5 block">
                         <span className="sr-only">اختر موعد «{line.name}»</span>
@@ -266,12 +322,12 @@ export default function BuyPanel({
 
             {/* ما استُبعد يُسمّى: الخادمُ «كلُّ شيءٍ أو لا شيء»، فإسقاطُه صامتا
                 يجعل المشتريَ يظنّ أنّه اشترى ما لم يشترِه. */}
-            {excluded.length > 0 && (
+            {withoutCohort.length > 0 && (
               <p className="mt-3 flex items-start gap-2 rounded-2xl border border-white/10 bg-white/[0.02] p-3 text-[11px] leading-5 text-white/50">
                 <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>
                   خارج هذا الطلب لأنّها بلا شعبة مفتوحة بعد:{" "}
-                  <span className="text-white/70">{excluded.map((l) => l.name).join("، ")}</span>. تبقى في
+                  <span className="text-white/70">{withoutCohort.map((l) => l.name).join("، ")}</span>. تبقى في
                   مسارك، ونُعلمك فور فتح شعبتها.
                 </span>
               </p>
@@ -298,8 +354,17 @@ export default function BuyPanel({
               </button>
             </div>
 
+            {/* لا شيء يُشترى: كلُّه مملوكٌ أو محجوز — يُقال صراحةً بدل صفٍّ
+                من الأصفار وزرِّ دفعٍ لا يفعل شيئا. */}
+            {nothingLeft && (
+              <p className="mt-4 rounded-2xl border border-teal/35 bg-teal/[0.07] p-4 text-[12px] leading-6 text-teal-light-ink">
+                كلُّ ما في هذا الطلب لك بالفعل — لا شيء يُدفع ثمنُه مرّةً أخرى.
+                تجد شعبك ومقاعدك المحجوزة في «تعلّمي».
+              </p>
+            )}
+
             {/* الحساب — كلُّ سطرٍ منه من الخادم */}
-            {quote && (
+            {quote && !nothingLeft && (
               <div className="mt-4 space-y-1.5 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-[12px]">
                 <div className="flex items-center justify-between text-white/60">
                   <span>مجموع الدورات</span>
@@ -331,7 +396,7 @@ export default function BuyPanel({
             )}
 
             {/* عملةُ البطاقة تُختار هنا وحدَها — والموقعُ كلُّه بالدولار */}
-            {usd && (
+            {usd && !nothingLeft && (
               <div className="mt-2.5 flex items-center justify-end gap-1" role="group" aria-label="عملة الدفع">
                 {PRESENTMENT_CODES.map((c) => (
                   <button
@@ -351,7 +416,7 @@ export default function BuyPanel({
               </div>
             )}
 
-            {quote && !quote.emailVerified && (
+            {quote && !quote.emailVerified && !nothingLeft && (
               /* الحاجزُ يُقال في موضعه: `VerifyEmailNotice` لا يُعرض خارج
                  بوابة المتعلّم، فرسالةُ الخادم كانت تحيل إلى شريطٍ لا وجودَ له
                  في هذه الصفحة — طريقٌ مسدود بلا مخرج. */
@@ -364,17 +429,21 @@ export default function BuyPanel({
               </p>
             )}
 
-            <button
-              onClick={() => void pay()}
-              disabled={paying || quoting || !quote || !quote.emailVerified}
-              className="mt-5 flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-gold py-3.5 text-sm font-black text-on-gold transition hover:bg-gold/90 disabled:opacity-50"
-            >
-              {paying || quoting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
-              {paying ? "نحوّلك إلى صفحة الدفع…" : <>ادفع الآن · <span dir="ltr">{shownTotal}</span></>}
-            </button>
-            <p className="mt-2 text-center text-[11px] leading-5 text-white/40">
-              الدفع على صفحة المزوّد — لا نحفظ بيانات بطاقتك. وبعد الدفع تُفتح منصّتك على ما اشتريت.
-            </p>
+            {!nothingLeft && (
+              <>
+                <button
+                  onClick={() => void pay()}
+                  disabled={paying || quoting || !quote || !quote.emailVerified || payableIds.length === 0}
+                  className="mt-5 flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-gold py-3.5 text-sm font-black text-on-gold transition hover:bg-gold/90 disabled:opacity-50"
+                >
+                  {paying || quoting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
+                  {paying ? "نحوّلك إلى صفحة الدفع…" : <>ادفع الآن · <span dir="ltr">{shownTotal}</span></>}
+                </button>
+                <p className="mt-2 text-center text-[11px] leading-5 text-white/40">
+                  الدفع على صفحة المزوّد — لا نحفظ بيانات بطاقتك. وبعد الدفع تُفتح منصّتك على ما اشتريت.
+                </p>
+              </>
+            )}
           </>
         )}
       </div>
