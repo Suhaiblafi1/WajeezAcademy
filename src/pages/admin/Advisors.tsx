@@ -1,15 +1,26 @@
 import { useCallback, useEffect, useState } from "react";
-import { BadgePercent, Loader2, RefreshCw, ServerOff, UserCheck } from "lucide-react";
+import { BadgePercent, ChevronDown, ChevronUp, Loader2, RefreshCw, ServerOff, Star, UserCheck } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import ListToolbar from "@/components/admin/ListToolbar";
 import { matchesQuery } from "@/application/text/search-ar";
 import { paginate } from "@/application/admin/paginate";
 import { apiGet, apiPatch, ApiError, permissionMessage } from "@/services/api";
+import { fmtMoney, fmtDate } from "@/application/text/format-ar";
 
 interface AdvisorRow {
   userId: string; displayName: string; email: string; status: string;
   commissionPct: number | null; notesAr: string; activeCases: number;
 }
+
+interface AdvisorDetail {
+  revenueFromReferrals: number; commissionOwed: number; currency: string;
+  ratingAvg: number | null; ratingCount: number;
+  cases: { caseId: string; status: string; clientName: string; clientEmail: string | null; assignedAt: string }[];
+  requests: { id: string; kind: string; status: string; reasonAr: string; createdAt: string; decidedAt: string | null }[];
+}
+
+const REQUEST_KIND_AR: Record<string, string> = { discount: "خصم", plan_add: "إضافة دورة", plan_remove: "حذف دورة" };
+const REQUEST_STATUS_AR: Record<string, string> = { pending: "قيد البتّ", approved: "معتمد", rejected: "مرفوض", cancelled: "مسحوب" };
 
 /** المستشارون — شروطُ عملهم لا حالاتُهم.
 
@@ -29,6 +40,17 @@ export default function Advisors() {
   const [page, setPage] = useState(1);
   const [editing, setEditing] = useState<string | null>(null);
   const [form, setForm] = useState({ commissionPct: "", notesAr: "" });
+  const [detailFor, setDetailFor] = useState<string | null>(null);
+  const [detail, setDetail] = useState<AdvisorDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  const toggleDetail = async (userId: string) => {
+    if (detailFor === userId) { setDetailFor(null); setDetail(null); return; }
+    setDetailFor(userId); setDetail(null); setDetailLoading(true);
+    try { setDetail(await apiGet<AdvisorDetail>(`/api/admin/advisors/${userId}`)); }
+    catch (e) { setFlash(e instanceof ApiError ? e.message : "تعذّر جلب ملفّ المستشار"); }
+    finally { setDetailLoading(false); }
+  };
 
   const load = useCallback(async () => {
     setLoading(true); setOffline(null);
@@ -116,16 +138,80 @@ export default function Advisors() {
                       </p>
                       {r.notesAr && <p className="mt-1.5 text-[11px] leading-6 text-white/45">{r.notesAr}</p>}
                     </div>
-                    <button
-                      onClick={() => {
-                        setEditing(editing === r.userId ? null : r.userId);
-                        setForm({ commissionPct: r.commissionPct === null ? "" : String(r.commissionPct), notesAr: r.notesAr });
-                        setFlash("");
-                      }}
-                      className="flex cursor-pointer items-center gap-1.5 rounded-full border border-gold/45 px-4 py-1.5 text-xs font-bold text-gold-ink hover:bg-gold/10">
-                      <BadgePercent className="h-3.5 w-3.5" /> {editing === r.userId ? "إغلاق" : "العمولة"}
-                    </button>
+                    <div className="flex shrink-0 gap-2">
+                      <button
+                        onClick={() => void toggleDetail(r.userId)}
+                        className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-1.5 text-xs font-bold text-white/70 hover:border-teal/50 hover:text-teal-light-ink">
+                        {detailFor === r.userId ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />} الملفّ الكامل
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditing(editing === r.userId ? null : r.userId);
+                          setForm({ commissionPct: r.commissionPct === null ? "" : String(r.commissionPct), notesAr: r.notesAr });
+                          setFlash("");
+                        }}
+                        className="flex cursor-pointer items-center gap-1.5 rounded-full border border-gold/45 px-4 py-1.5 text-xs font-bold text-gold-ink hover:bg-gold/10">
+                        <BadgePercent className="h-3.5 w-3.5" /> {editing === r.userId ? "إغلاق" : "العمولة"}
+                      </button>
+                    </div>
                   </div>
+
+                  {detailFor === r.userId && (
+                    <div className="mt-4 rounded-xl border border-white/10 bg-black/25 p-4">
+                      {detailLoading ? (
+                        <div className="grid place-items-center py-8"><Loader2 className="h-5 w-5 animate-spin text-white/30" /></div>
+                      ) : !detail ? null : (
+                        <div className="space-y-4">
+                          <div className="flex flex-wrap gap-4 text-[11px]">
+                            <span className="text-white/50">
+                              إيراد العملاء المحوَّلين: <b className="text-white/85">{fmtMoney(detail.revenueFromReferrals, detail.currency)}</b>
+                            </span>
+                            <span className="text-white/50">
+                              العمولة المستحقّة: <b className="text-gold-ink">{fmtMoney(detail.commissionOwed, detail.currency)}</b>
+                            </span>
+                            <span className="flex items-center gap-1 text-white/50">
+                              <Star className="h-3 w-3 text-gold" />
+                              {detail.ratingAvg === null
+                                ? `تقييمات قليلة (${detail.ratingCount}) — لا يُعرض المعدَّل قبل ثلاثة`
+                                : `${detail.ratingAvg.toFixed(1)} من ٥ (${detail.ratingCount} تقييما)`}
+                            </span>
+                          </div>
+
+                          <div>
+                            <p className="mb-1.5 text-[10.5px] font-black text-white/40">الحالات المسندة ({detail.cases.length})</p>
+                            {detail.cases.length === 0 ? (
+                              <p className="text-[11px] text-white/40">لا حالات مسندة له حاليا.</p>
+                            ) : (
+                              <ul className="space-y-1">
+                                {detail.cases.map((c) => (
+                                  <li key={c.caseId} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/8 bg-white/[0.02] px-3 py-1.5 text-[11px]">
+                                    <span>{c.clientName} {c.clientEmail && <span dir="ltr" className="text-white/40">— {c.clientEmail}</span>}</span>
+                                    <span className="text-white/45">{c.status} · {fmtDate(new Date(c.assignedAt))}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+
+                          <div>
+                            <p className="mb-1.5 text-[10.5px] font-black text-white/40">طلباته ({detail.requests.length})</p>
+                            {detail.requests.length === 0 ? (
+                              <p className="text-[11px] text-white/40">لم يرفع أي طلب خصم أو تعديل خطّة بعد.</p>
+                            ) : (
+                              <ul className="space-y-1">
+                                {detail.requests.map((req) => (
+                                  <li key={req.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/8 bg-white/[0.02] px-3 py-1.5 text-[11px]">
+                                    <span>{REQUEST_KIND_AR[req.kind] ?? req.kind} — {req.reasonAr}</span>
+                                    <span className="text-white/45">{REQUEST_STATUS_AR[req.status] ?? req.status} · {fmtDate(new Date(req.createdAt))}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {editing === r.userId && (
                     <div className="mt-4 grid gap-3 rounded-xl border border-gold/25 bg-black/25 p-4 sm:grid-cols-[8rem_1fr_auto]">

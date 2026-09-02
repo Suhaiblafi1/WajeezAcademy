@@ -158,7 +158,36 @@ describe('دورة حياة الشعبة', () => {
       .rejects.toMatchObject({ code: 'closed' })
   })
 
-  it('9) انتقالات الحالة غير المشروعة مرفوضة', async () => {
+  it('9) الانسحاب من شعبة ممتلئة يرقّي أوّل قائمة الانتظار تلقائيا', async () => {
+    const promo = await cohorts.create(managerId, { courseId: COURSE, title: 'شعبة ترقية قائمة الانتظار' })
+    await cohorts.addSession(managerId, promo.id, {
+      title: 'جلسة الترقية', startsAt: new Date('2026-09-05T18:00:00Z'), endsAt: new Date('2026-09-05T20:00:00Z'),
+    })
+    await cohorts.assignTrainer(promo.id, profileId, managerId)
+    await cohorts.update(managerId, promo.id, { capacity: 1, price: 500, currency: 'JOD', financialReady: true })
+    await prisma.cohortDeliveryPlan.create({
+      data: { cohortId: promo.id, content: { note: 'خطة تقديم' }, status: 'approved', createdBy: managerId },
+    })
+    await cohorts.open(promo.id, managerId)
+
+    const p1 = await auth.register('promo-learner-one@test.local', 'Learner#12345', 'متعلم أول للترقية')
+    const p2 = await auth.register('promo-learner-two@test.local', 'Learner#12345', 'متعلم ثان للترقية')
+    const first = await enrollments.enroll(promo.id, p1.userId, managerId)
+    const second = await enrollments.enroll(promo.id, p2.userId, managerId)
+    expect(first.status).toBe('enrolled')
+    expect(second.status).toBe('waitlisted')
+    expect((await prisma.cohort.findUnique({ where: { id: promo.id } }))!.status).toBe('full')
+
+    await enrollments.drop(first.id, managerId, 'انسحاب اختباري')
+
+    const promoted = await prisma.enrollment.findUnique({ where: { id: second.id } })
+    expect(promoted!.status).toBe('enrolled')
+    expect((await prisma.cohort.findUnique({ where: { id: promo.id } }))!.status).toBe('full')
+    const progress = await prisma.courseProgress.findUnique({ where: { enrollmentId: second.id } })
+    expect(progress).not.toBeNull()
+  })
+
+  it('10) انتقالات الحالة غير المشروعة مرفوضة', async () => {
     await expect(cohorts.transition(cohortId, 'completed', managerId))
       .rejects.toMatchObject({ code: 'bad_transition' })
     await cohorts.transition(cohortId, 'active', managerId, 'بدء التقديم')

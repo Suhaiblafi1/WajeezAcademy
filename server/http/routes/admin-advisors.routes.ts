@@ -41,6 +41,70 @@ export function registerAdminAdvisorRoutes(app: FastifyInstance, prisma: PrismaC
     }))
   })
 
+  /* ملفّ مستشارٍ واحد — ما لا تحمله قائمتُهم: عمولتُه المستحقّة فعلا من
+     عملائه الذين دفعوا، وتقييمُ عملائه له، وسجلُّ طلباته على حالاته.
+
+     قرارُ صاحب المنصّة: «مجموع العمولة المستحقة/المدفوعة، تقييمات الطلبة
+     له، وسجل طلباته». والقائمةُ (فوق) عرضٌ سريع بلا هذا الحساب — فتحُ
+     الملفّ هو ما يستحقّ استعلاماتِه الإضافية. */
+  app.get('/api/admin/advisors/:userId', {
+    preHandler: canManage,
+    schema: { tags: ['admin-advisors'], summary: 'ملفّ مستشار: عمولتُه المستحقّة من عملائه الدافعين، تقييمُه، وطلباتُه' },
+  }, async (req, reply) => {
+    const { userId } = z.object({ userId: z.string().uuid() }).parse(req.params)
+    const user = await prisma.user.findUnique({ where: { id: userId }, include: { roles: true, advisorProfile: true } })
+    if (!user || !user.roles.some((r) => r.roleId === 'advisor')) {
+      return reply.status(404).send({ error: { code: 'not_advisor', message_ar: 'لا مستشارَ بهذا المعرّف' } })
+    }
+
+    const assignments = await prisma.advisorAssignment.findMany({
+      where: { advisorId: userId, unassignedAt: null },
+      include: { case: { include: { client: { select: { id: true, displayName: true, email: true } }, lead: true } } },
+      orderBy: { assignedAt: 'desc' },
+    })
+    const clientIds = [...new Set(
+      assignments.map((a) => a.case.clientId).filter((id): id is string => Boolean(id)),
+    )]
+
+    /* لا تقييمٌ يُنسب لصاحبه ولا معدَّلٌ يُعرض تحت ثلاثة — نفس قاعدة تقييم المدرّب */
+    const MIN_RATINGS_TO_SHOW = 3
+    const [paidOrders, ratingAgg, requests] = await Promise.all([
+      clientIds.length > 0
+        ? prisma.order.findMany({ where: { userId: { in: clientIds }, status: 'paid' }, select: { total: true } })
+        : Promise.resolve([]),
+      prisma.rating.aggregate({
+        where: { subjectType: 'advisor', subjectId: userId, publishStatus: 'approved' },
+        _avg: { score: true }, _count: true,
+      }),
+      prisma.advisorRequest.findMany({ where: { advisorId: userId }, orderBy: { createdAt: 'desc' } }),
+    ])
+
+    const revenueFromReferrals = paidOrders.reduce((sum, o) => sum + Number(o.total), 0)
+    /* لا عمولةَ بلا نسبةٍ مُتَّفَقٍ عليها صراحة — «لم تُحدَّد» تُحسب صفرا هنا،
+       والقائمةُ تُميّزها بصريّا («لم تُتّفق بعد» لا «صفر بالمئة») */
+    const commissionPct = user.advisorProfile ? Number(user.advisorProfile.commissionPct) : 0
+    const commissionOwed = Math.round(revenueFromReferrals * commissionPct) / 100
+
+    return {
+      userId: user.id, displayName: user.displayName, email: user.email, status: user.status,
+      commissionPct: user.advisorProfile ? Number(user.advisorProfile.commissionPct) : null,
+      notesAr: user.advisorProfile?.notesAr ?? '',
+      revenueFromReferrals, commissionOwed, currency: 'USD',
+      ratingAvg: ratingAgg._count >= MIN_RATINGS_TO_SHOW ? Number(ratingAgg._avg.score) : null,
+      ratingCount: ratingAgg._count,
+      cases: assignments.map((a) => ({
+        caseId: a.caseId, status: a.case.status,
+        clientName: a.case.client?.displayName ?? a.case.lead?.fullName ?? 'بلا اسم',
+        clientEmail: a.case.client?.email ?? a.case.lead?.email ?? null,
+        assignedAt: a.assignedAt,
+      })),
+      requests: requests.map((r) => ({
+        id: r.id, kind: r.kind, status: r.status, reasonAr: r.reasonAr,
+        createdAt: r.createdAt, decidedAt: r.decidedAt,
+      })),
+    }
+  })
+
   app.patch('/api/admin/advisors/:userId', {
     preHandler: canManage,
     schema: { tags: ['admin-advisors'], summary: 'تعيينُ نسبة عمولة المستشار وملاحظاتِه' },

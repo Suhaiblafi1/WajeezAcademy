@@ -3,17 +3,17 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   BookMarked, CheckCircle2, ChevronDown, FilePlus2, GitPullRequest, Layers,
-  Loader2, Plus, RefreshCw, Route, Trash2, XCircle,
+  RefreshCw, Route, XCircle,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import ListToolbar from "@/components/admin/ListToolbar";
 import { matchesQuery } from "@/application/text/search-ar";
 import { paginate } from "@/application/admin/paginate";
 import { apiGet, apiPost, ApiError } from "@/services/api";
-import SkillPicker from "@/components/SkillPicker";
 import type { SkillMeasureState } from "@/application/catalog/skill-measurement";
 import { toast } from "@/components/Toast";
 import PathwayWizard from "@/components/PathwayWizard";
+import CourseWizard from "@/components/CourseWizard";
 import { fmtDateTime } from "@/application/text/format-ar";
 
 type Overview = {
@@ -75,11 +75,6 @@ export default function CatalogAdmin() {
   const [pathPick, setPathPick] = useState("");
 
   const [skillForm, setSkillForm] = useState({ id: "", slug: "", nameAr: "", familyId: "" });
-  const [courseForm, setCourseForm] = useState({
-    id: "", pathwayId: "", sequence: "1", titleAr: "", shortPromiseAr: "", levelAr: "",
-    totalHours: "", skillIds: [] as string[],
-  });
-  const [modules, setModules] = useState([{ titleAr: "", outcomeAr: "", activityAr: "", artifactAr: "", bodyAr: "", checksAr: "", videoAr: "", scenarioAr: "", hours: "" }]);
   const [crForm, setCrForm] = useState({ entityType: "course", entityId: "", payload: '{\n  "titleAr": "الاسم الجديد"\n}' });
   const [openForm, setOpenForm] = useState<"skill" | "course" | "pathway" | "cr" | null>(null);
 
@@ -109,8 +104,6 @@ export default function CatalogAdmin() {
     finally { setBusy(false); }
   };
 
-  const toggleId = (list: string[], id: string) => (list.includes(id) ? list.filter((x) => x !== id) : [...list, id]);
-
   /* ب-٤: طلب مهارة غير موجودة يمرّ بالمراجعة (maker-checker) لا يُنشأ صامتا —
      فلا يحشر المؤلّف مهارة قريبة خاطئة لأن الصحيحة غير موجودة. */
   const requestSkill = async (input: { slug: string; nameAr: string; reasonAr: string }) => {
@@ -121,33 +114,6 @@ export default function CatalogAdmin() {
     });
     toast("قُدّم طلب المهارة للمراجعة");
   };
-
-  const submitCourse = () => act(async () => {
-    await apiPost("/api/admin/catalog/courses", {
-      id: courseForm.id.trim(),
-      pathwayId: courseForm.pathwayId,
-      sequence: Number(courseForm.sequence) || 1,
-      titleAr: courseForm.titleAr.trim(),
-      shortPromiseAr: courseForm.shortPromiseAr.trim() || undefined,
-      levelAr: courseForm.levelAr.trim() || undefined,
-      totalHours: Number(courseForm.totalHours),
-      skillIds: courseForm.skillIds,
-      modules: modules.map((m, i) => ({
-        sequence: i + 1, titleAr: m.titleAr.trim(),
-        outcomeAr: m.outcomeAr.trim() || undefined,
-        activityAr: m.activityAr.trim() || undefined,
-        artifactAr: m.artifactAr.trim() || undefined,
-        bodyAr: m.bodyAr.trim() || undefined,
-        checksAr: m.checksAr.trim() || undefined,
-        videoAr: m.videoAr.trim() || undefined,
-        scenarioAr: m.scenarioAr.trim() || undefined,
-        hours: Number(m.hours) || 1,
-      })),
-    });
-    setCourseForm({ id: "", pathwayId: "", sequence: "1", titleAr: "", shortPromiseAr: "", levelAr: "", totalHours: "", skillIds: [] });
-    setModules([{ titleAr: "", outcomeAr: "", activityAr: "", artifactAr: "", bodyAr: "", checksAr: "", videoAr: "", scenarioAr: "", hours: "" }]);
-    setOpenForm(null);
-  }, "أُنشئت الدورة كمسودة مرتبطة بالمسار والمهارات — أكمل سير الاعتماد ثم النشر");
 
   const submitChangeRequest = () => act(async () => {
     let payload: Record<string, unknown>;
@@ -160,8 +126,14 @@ export default function CatalogAdmin() {
     setOpenForm(null);
   }, "قُدم طلب التغيير — ينتظر اعتماد مراجع آخر (maker-checker)");
 
-  const courseValid = courseForm.id.trim().length >= 3 && courseForm.pathwayId && courseForm.titleAr.trim().length >= 3
-    && Number(courseForm.totalHours) >= 1 && modules.every((m) => m.titleAr.trim().length >= 3);
+  /* لا يُطلب معرّفٌ يُنسخ من قائمةٍ أعلاه — يُختار بالاسم من هنا مباشرة */
+  const entityOptionsFor = (t: string): { id: string; label: string }[] => {
+    if (t === "pathway") return pathways.map((p) => ({ id: p.id, label: p.title }));
+    if (t === "course") return courses.map((c) => ({ id: c.id, label: c.title }));
+    if (t === "skill") return skills.map((s) => ({ id: s.id, label: s.nameAr }));
+    if (t === "question") return questions.map((qq) => ({ id: qq.id, label: qq.text || qq.id }));
+    return templates.map((t2) => ({ id: t2.id, label: t2.name }));
+  };
 
   const FormHead = ({ id, icon: Icon, title, hint }: { id: typeof openForm & string; icon: typeof FilePlus2; title: string; hint: string }) => (
     <button onClick={() => setOpenForm(openForm === id ? null : id)}
@@ -350,112 +322,14 @@ export default function CatalogAdmin() {
       <section className="mt-8 space-y-3">
         <h2 className="text-lg font-black">إنشاء وتعديل — كلها مسودات تمر بسير الاعتماد</h2>
 
-        <FormHead id="course" icon={BookMarked} title="دورة جديدة (مسودة)" hint="تُربط بمسار ومهارات وتُبنى من وحدات" />
+        <FormHead id="course" icon={BookMarked} title="دورة جديدة (مسودة)" hint="أربع خطوات: الدورة، وحداتها، مهاراتها، مراجعة" />
         {openForm === "course" && (
-          <div className="rounded-2xl border border-gold/20 bg-white/[0.02] p-5">
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <input value={courseForm.id} onChange={(e) => setCourseForm({ ...courseForm, id: e.target.value })} placeholder="المعرف — CRS-XXX-000" dir="ltr" className={inputCls} />
-              <select value={courseForm.pathwayId} onChange={(e) => setCourseForm({ ...courseForm, pathwayId: e.target.value })} className={selectCls}>
-                <option value="">المسار الأم…</option>
-                {pathways.map((p) => <option key={p.id} value={p.id}>{p.title} ({p.id})</option>)}
-              </select>
-              <input value={courseForm.sequence} onChange={(e) => setCourseForm({ ...courseForm, sequence: e.target.value })} type="number" min={1} placeholder="الترتيب في المسار" className={inputCls} />
-              <input value={courseForm.titleAr} onChange={(e) => setCourseForm({ ...courseForm, titleAr: e.target.value })} placeholder="اسم الدورة" className={`${inputCls} sm:col-span-2`} />
-              <input value={courseForm.totalHours} onChange={(e) => setCourseForm({ ...courseForm, totalHours: e.target.value })} type="number" min={1} placeholder="إجمالي الساعات" className={inputCls} />
-              <input value={courseForm.shortPromiseAr} onChange={(e) => setCourseForm({ ...courseForm, shortPromiseAr: e.target.value })} placeholder="الوعد المختصر (اختياري)" className={`${inputCls} sm:col-span-2`} />
-              <input value={courseForm.levelAr} onChange={(e) => setCourseForm({ ...courseForm, levelAr: e.target.value })} placeholder="المستوى (اختياري)" className={inputCls} />
-            </div>
-
-            {/* البند ب-٤: منتقٍ ببحث وحالة قياس وتحذيرات حيّة — بديل رقائق ٣٠٥ مهارة الصامتة */}
-            <SkillPicker
-              className="mt-4"
-              skills={skills}
-              selectedIds={courseForm.skillIds}
-              onToggle={(id) => setCourseForm({ ...courseForm, skillIds: toggleId(courseForm.skillIds, id) })}
-              onRequestSkill={requestSkill}
-            />
-
-            <p className="mt-4 mb-2 text-xs font-black text-white/60">الوحدات ({modules.length})</p>
-            <div className="space-y-3">
-              {modules.map((m, i) => (
-                <div key={i} className="rounded-xl border border-white/10 bg-black/20 p-3">
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-white/50">الوحدة {i + 1}</span>
-                    {modules.length > 1 && (
-                      <button type="button" onClick={() => setModules(modules.filter((_, j) => j !== i))} className="cursor-pointer text-white/40 hover:text-red-300">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    )}
-                  </div>
-                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                    <input value={m.titleAr} onChange={(e) => setModules(modules.map((x, j) => (j === i ? { ...x, titleAr: e.target.value } : x)))} placeholder="عنوان الوحدة" className={inputCls} />
-                    <input value={m.hours} onChange={(e) => setModules(modules.map((x, j) => (j === i ? { ...x, hours: e.target.value } : x)))} type="number" min={1} placeholder="الساعات" className={inputCls} />
-                    <input value={m.outcomeAr} onChange={(e) => setModules(modules.map((x, j) => (j === i ? { ...x, outcomeAr: e.target.value } : x)))} placeholder="المخرج (اختياري)" className={inputCls} />
-                    <input value={m.activityAr} onChange={(e) => setModules(modules.map((x, j) => (j === i ? { ...x, activityAr: e.target.value } : x)))} placeholder="النشاط (اختياري)" className={inputCls} />
-                    <input value={m.artifactAr} onChange={(e) => setModules(modules.map((x, j) => (j === i ? { ...x, artifactAr: e.target.value } : x)))} placeholder="الأثر/التسليمة (اختياري)" className={inputCls} />
-                  </div>
-                  {/* البند ح-١: متن الدرس — Markdown مقيّد يقرؤه المتعلم داخل المنصة */}
-                  <textarea
-                    value={m.bodyAr}
-                    onChange={(e) => setModules(modules.map((x, j) => (j === i ? { ...x, bodyAr: e.target.value } : x)))}
-                    rows={6}
-                    placeholder="متن الدرس (اختياري) — # عنوان · - قائمة · > اقتباس · **عريض** · [نص](رابط) · ```كود```"
-                    className={`${inputCls} mt-2 w-full font-mono leading-7`}
-                  />
-                  <p className="mt-1 text-[10px] leading-5 text-white/50">
-                    ما يُكتب هنا يظهر للمتعلم درسا داخل الدورة. يمرّ بنفس حاكمية النسخ والاعتماد والنشر — ولا يُعدَّل على إصدار منشور بأثر رجعي.
-                  </p>
-                  {/* البند ح-٣: تمرين استرجاع بعد الوحدة */}
-                  <textarea
-                    value={m.checksAr}
-                    onChange={(e) => setModules(modules.map((x, j) => (j === i ? { ...x, checksAr: e.target.value } : x)))}
-                    rows={5}
-                    placeholder={"تمرين استرجاع (اختياري)\nس: نص السؤال\n- خيار\n+ الخيار الصحيح\nش: شرح الخطأ"}
-                    className={`${inputCls} mt-2 w-full font-mono leading-7`}
-                  />
-                  <p className="mt-1 text-[10px] leading-5 text-white/50">
-                    ثلاثة أسئلة كافية. علامة <span dir="ltr" className="font-mono">+</span> قبل الجواب الصحيح — واحد فقط لكل سؤال، والصيغة تُتحقَّق عند الحفظ.
-                    ولربط سؤال بفصل فيديو أضف سطر <span dir="ltr" className="font-mono">ف: 2</span> داخله فيصير نقطة تفتيش بعد الفصل الثاني.
-                  </p>
-                  {/* البند ح-٢: فيديو الوحدة وفصوله */}
-                  <textarea
-                    value={m.videoAr}
-                    onChange={(e) => setModules(modules.map((x, j) => (j === i ? { ...x, videoAr: e.target.value } : x)))}
-                    rows={4}
-                    placeholder={"فيديو الوحدة (اختياري)\nhttps://www.youtube.com/watch?v=…\n0:00 عنوان الفصل الأول\n2:30 عنوان الفصل الثاني"}
-                    dir="ltr"
-                    className={`${inputCls} mt-2 w-full font-mono leading-7`}
-                  />
-                  <p className="mt-1 text-[10px] leading-5 text-white/50">
-                    السطر الأول رابط YouTube أو Vimeo عبر https — لا مضيف آخر. ثم سطر لكل فصل بصيغة «د:ث عنوان الفصل».
-                  </p>
-                  {/* البند ح-٥: سيناريو القرار المتفرّع */}
-                  <textarea
-                    value={m.scenarioAr}
-                    onChange={(e) => setModules(modules.map((x, j) => (j === i ? { ...x, scenarioAr: e.target.value } : x)))}
-                    rows={8}
-                    placeholder={"سيناريو قرار (اختياري)\nموقف: وصف الموقف المهني\n\nعقدة: البداية\nنص: ما أول ما تفعله؟\n> خيار: نص الخيار\n  أثر: ما ترتب عليه\n  إلى: عنوان العقدة التالية\n\nعقدة: عنوان العقدة التالية\nنص: النتيجة\nتأمل: سؤال التأمل"}
-                    className={`${inputCls} mt-2 w-full font-mono leading-7`}
-                  />
-                  <p className="mt-1 text-[10px] leading-5 text-white/50">
-                    كل عقدة غير نهائية تحتاج خيارين على الأقل، و«إلى:» لا تشير إلا إلى عقدة موجودة،
-                    والعقدة النهائية (بلا خيارات) تحتاج «تأمل:». يُتحقَّق المسار كاملا عند الحفظ:
-                    عقدة لا تُبلَغ أو مسار يدور بلا نهاية يُرفض.
-                  </p>
-                </div>
-              ))}
-            </div>
-            <div className="mt-3 flex flex-wrap items-center gap-3">
-              <button type="button" onClick={() => setModules([...modules, { titleAr: "", outcomeAr: "", activityAr: "", artifactAr: "", bodyAr: "", checksAr: "", videoAr: "", scenarioAr: "", hours: "" }])}
-                className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-1.5 text-xs font-bold text-white/60 hover:border-white/40">
-                <Plus className="h-3.5 w-3.5" /> وحدة إضافية
-              </button>
-              <button disabled={busy || !courseValid} onClick={submitCourse}
-                className="flex cursor-pointer items-center gap-2 rounded-full bg-gold px-6 py-2 text-sm font-black text-on-gold disabled:opacity-40">
-                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null} إنشاء المسودة
-              </button>
-            </div>
-          </div>
+          <CourseWizard
+            pathways={pathways.map((p) => ({ id: p.id, title: p.title }))}
+            skills={skills}
+            onRequestSkill={requestSkill}
+            onDone={() => { setOpenForm(null); void refresh(); }}
+          />
         )}
 
         <FormHead id="pathway" icon={Route} title="مسار جديد (مسودة)" hint="يربط دورات موجودة في رحلة واحدة" />
@@ -492,11 +366,13 @@ export default function CatalogAdmin() {
         {openForm === "cr" && (
           <div className="rounded-2xl border border-gold/20 bg-white/[0.02] p-5">
             <div className="grid gap-3 sm:grid-cols-2">
-              <select value={crForm.entityType} onChange={(e) => setCrForm({ ...crForm, entityType: e.target.value })} className={selectCls}>
+              <select value={crForm.entityType} onChange={(e) => setCrForm({ ...crForm, entityType: e.target.value, entityId: "" })} className={selectCls}>
                 {Object.entries(ENTITY_AR).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
-              <input value={crForm.entityId} onChange={(e) => setCrForm({ ...crForm, entityId: e.target.value })}
-                placeholder="معرف الكيان — من قائمة الاستعراض أعلاه" dir="ltr" className={inputCls} />
+              <select value={crForm.entityId} onChange={(e) => setCrForm({ ...crForm, entityId: e.target.value })} className={selectCls}>
+                <option value="">اختر {ENTITY_AR[crForm.entityType]}…</option>
+                {entityOptionsFor(crForm.entityType).map((o) => <option key={o.id} value={o.id}>{o.label} ({o.id})</option>)}
+              </select>
             </div>
             <textarea value={crForm.payload} onChange={(e) => setCrForm({ ...crForm, payload: e.target.value })} rows={5}
               dir="ltr" className={`${inputCls} mt-3 font-mono text-xs`} />
