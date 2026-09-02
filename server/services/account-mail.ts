@@ -9,6 +9,7 @@
 
 import type { PrismaClient } from '@prisma/client'
 import { sendDirectEmail, publicSiteUrl, type DirectMailResult } from './notification.service'
+import { FIRST_TIME_PROMO } from '../../src/application/commerce/first-time-promo'
 
 export function verifyEmailLink(token: string): string {
   return `${publicSiteUrl()}/auth/verify?token=${encodeURIComponent(token)}`
@@ -48,6 +49,28 @@ export async function sendPasswordResetEmail(
       `عيّن كلمة مرور جديدة من هذا الرابط خلال ساعة:\n${link}\n\n` +
       `تعيين كلمة مرور جديدة يُخرجك من كل الأجهزة.\n` +
       `إن لم تطلب هذا فتجاهل الرسالة — كلمتك الحالية باقية كما هي.\n— أكاديمية وجيز`,
+  })
+}
+
+/* ─────────── كودُ خصمٍ مقابل بريد ───────────
+
+   قرارُ صاحب المنصّة: صندوقُ التسجيل الكامل الذي كان يحجب الفريقَ التدريبيّ
+   ومكانَ الدفع عن الزائر حُذف — يرى الزائر كل شيء بلا حاجز. والإشارة
+   التسويقية التي فُقدت بحذفه تُستعاض عنها ببريدٍ يُترك طوعا مقابل كود خصمٍ
+   حقيقيّ (`FIRST_TIME_PROMO`)، لا حسابا ولا كلمة مرور. */
+export async function sendDiscountCodeEmail(
+  prisma: PrismaClient,
+  input: { to: string },
+): Promise<DirectMailResult> {
+  return sendDirectEmail(prisma, {
+    to: input.to,
+    subject: 'كود خصمك جاهز — أكاديمية وجيز',
+    text:
+      `مرحبا،\n\n` +
+      `هذا كود خصمك ${FIRST_TIME_PROMO.percentOff}٪ ${FIRST_TIME_PROMO.labelAr}:\n\n` +
+      `${FIRST_TIME_PROMO.code}\n\n` +
+      `اكتبه في حقل الكود عند الدفع في أي مسار أو دورة تختارها.\n\n` +
+      `— أكاديمية وجيز`,
   })
 }
 
