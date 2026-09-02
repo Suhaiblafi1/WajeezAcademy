@@ -69,7 +69,7 @@ describe('بوابة التسجيل على صفحة المسار', () => {
   const SRC = readFileSync(join(process.cwd(), 'src/pages/Pathway.tsx'), 'utf8')
 
   it('الفريق التدريبي ومكان الدفع خلف التسجيل', () => {
-    expect(SRC).toMatch(/\{user && \(\s*\n\s*<div id="trainers-reveal"/)
+    expect(SRC).toMatch(/\{user && \(\s*\n\s*<p id="trainers-reveal"/)
     expect(SRC).toMatch(/\{user && \(\s*\n\s*<div id="buy"/)
   })
 

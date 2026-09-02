@@ -36,13 +36,12 @@ describe('قائمة الدورات المقترحة', () => {
     expect(renders, 'القائمة تُصيَّر أكثر من مرّة — هذا هو التبعثر').toBe(1)
   })
 
-  it('٢) والفعلان باقيان: هديّةٌ مجانيّة وإضافةٌ بالسعر', () => {
-    expect(BLOCK).toContain('edit.onGiftToggle(p.id)')
+  it('٢) الفعل الباقي: إضافةٌ بالسعر — الهديّة لم تعد تُختار من هنا', () => {
     expect(BLOCK).toContain('edit.onAdd(p.id)')
+    expect(BLOCK).not.toContain('edit.onGiftToggle(p.id)')
   })
 
-  it('٣) «مجانا» لا يُعرض بعد أخذ الهديّة، و«أضف» لا يُعرض عند السقف', () => {
-    expect(BLOCK).toContain('!edit.giftId && (')
+  it('٣) «أضف» لا يُعرض عند السقف', () => {
     expect(BLOCK).toContain('!edit.maxReached && (')
   })
 
@@ -50,8 +49,7 @@ describe('قائمة الدورات المقترحة', () => {
     expect(BLOCK).toContain('grid gap-1.5 sm:grid-cols-2')
   })
 
-  it('٥) ولكلّ زرٍّ اسمٌ يُسمع — «مجانا» و«+» وحدهما لا يقولان أيّ دورة', () => {
-    expect(BLOCK).toContain('aria-label={`اجعل «${p.name}» هديتك المجانية`}')
+  it('٥) ولكلّ زرٍّ اسمٌ يُسمع', () => {
     expect(BLOCK).toContain('aria-label={`أضف «${p.name}» إلى مسارك`}')
   })
 })
