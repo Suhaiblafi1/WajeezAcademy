@@ -73,7 +73,8 @@
     "ci:authoring": "tsx scripts/audit-authoring.ts --check",
     "ci:locale": "tsx scripts/audit-locale.ts --check",
     "ci:csp": "tsx scripts/audit-csp.ts --check",
-    "ci:bundle": "node scripts/bundle-api.mjs --check"
+    "ci:bundle": "node scripts/bundle-api.mjs --check",
+    "ci:migrations": "tsx scripts/audit-migrations.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.2",
