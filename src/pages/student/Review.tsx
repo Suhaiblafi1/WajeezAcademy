@@ -186,7 +186,7 @@ export default function Review() {
             reasonAr="تُفتح بطاقات المراجعة من تمرين الاسترجاع في نهاية كل وحدة — أنهِ وحدة ثم اطلب جدولة عودتها."
             actions={[
               { to: "/student/learning", labelAr: "أنهِ وحدة من دوراتي", hintAr: "أول بطاقة تُفتح بعدها" },
-              { to: "/student/pathway", labelAr: "اعرف الوحدة التالية", hintAr: "موضعك من المسار" },
+              { to: "/student/learning", labelAr: "اعرف الوحدة التالية", hintAr: "موضعك من المسار" },
             ]}
           />
         ) : (

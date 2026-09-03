@@ -177,12 +177,15 @@ export default function PortalLayout({ children, title }: { children: React.Reac
     { id: "home", label: "الرئيسية", icon: LayoutDashboard, to: "/student", end: true, items: [], match: ["/student"] },
     {
       id: "learn", label: "تعلّمي", icon: BookOpen, to: "/student/learning",
+      /* «دوراتي» و«مساري» كانتا تبويبين متجاورين يجيبان عن سؤالٍ واحد —
+         وهو التشتّتُ الذي شُكي منه: «حاول أن تجد حلا للتشتّت الذي يصيب
+         الطلبة بوجود خانة دورات وخانة مسارات؟؟». فصارتا «رحلتي»: شريطُ
+         مراحلَ واحد، وعملُ المرحلة أسفلَه، ومبدّلُ مساراتٍ عند تعدّدها. */
       items: [
-        { to: "/student/learning", label: "دوراتي" },
-        { to: "/student/pathway", label: "مساري" },
+        { to: "/student/learning", label: "رحلتي" },
         { to: "/student/review", label: "مراجعتي" },
       ],
-      /* صفحتا الدورة وإعادة القياس تتبعان القسم وإن لم تكونا في شريطه */
+      /* صفحتا الوحدة وإعادة القياس تتبعان القسم وإن لم تكونا في شريطه */
       match: ["/student/learning", "/student/pathway", "/student/review", "/student/course", "/student/remeasure"],
     },
     {

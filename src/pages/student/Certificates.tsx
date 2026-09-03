@@ -85,7 +85,7 @@ export default function Certificates() {
           reasonAr="تُصدر الشهادة بعد تحقق قواعد الإكمال على شعبتك — حضورا وتسليمات — وتظهر هنا فور إصدارها برقم تحقق عام. ما يُقرّبها:"
           actions={[
             { to: "/student/learning", labelAr: "أكمل وحدات شعبتك", hintAr: "الحضور والتسليمات" },
-            { to: "/student/pathway", labelAr: "اعرف موضعك من المسار", hintAr: "ما بقي وما تمّ" },
+            { to: "/student/learning", labelAr: "اعرف موضعك من المسار", hintAr: "ما بقي وما تمّ" },
           ]}
         />
       ) : (

@@ -81,8 +81,10 @@ describe('أين يُقرأ المتن', () => {
   const read = (p: string) =>
     readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', p), 'utf8')
 
-  it('١٠) صفحةُ الدورة خريطةٌ لا متن', () => {
-    const src = read('src/pages/student/CourseMilestones.tsx')
+  /* صارت «صفحةُ الدورة» مرحلةً في شريط الرحلة (`StageWork`)، والحكمُ نفسُه:
+     خريطةٌ تُقرأ في نصف دقيقة، والمتنُ في مشغّله. */
+  it('١٠) مرحلةُ الدورة خريطةٌ لا متن', () => {
+    const src = read('src/components/journey/StageWork.tsx')
     expect(src, 'المتن عاد يُفرَّغ في صفحة الدورة').not.toContain('<LessonBody')
     expect(src, 'التمارين عادت إلى صفحة الدورة').not.toContain('<ModuleCheck')
     expect(src, 'لا رابطَ إلى مشغّل الوحدة').toContain('/module/${m.id}')

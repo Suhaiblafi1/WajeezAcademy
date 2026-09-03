@@ -23,8 +23,11 @@ describe('حذف صفحة الشعب المفتوحة', () => {
   it('٢) ولا رابط إليها في المشروع كلّه — رابطٌ ميّت أسوأ من تبويبٍ زائد', () => {
     for (const f of [
       'src/App.tsx', 'src/pages/student/PortalLayout.tsx', 'src/pages/student/Dashboard.tsx',
-      'src/pages/student/Inbox.tsx', 'src/pages/student/MyPathway.tsx',
-      'src/pages/student/CourseMilestones.tsx', 'src/pages/student/RateMyLearning.tsx',
+      /* «مساري» و«محطات الدورة» صارتا «رحلتي» ومكوّناتِها — والحارسُ يتبع
+         الشاشاتَ حيث انتقلت، فلا يُحرَس ملفٌّ محذوف. */
+      'src/pages/student/Inbox.tsx', 'src/pages/student/Journey.tsx',
+      'src/components/journey/StageOffer.tsx', 'src/components/journey/StageWork.tsx',
+      'src/pages/student/RateMyLearning.tsx',
       /* كان هنا `EnrollRequest.tsx` — وقد حُذف الملفّ حين صار الدفعُ مباشرا،
          فقراءتُه تُسقط المجموعةَ كلَّها بـENOENT. ومكانُه `BuyPanel.tsx`. */
       'src/components/BuyPanel.tsx',
@@ -39,13 +42,17 @@ describe('الموعد في موضع القرار', () => {
     expect(read('src/pages/Pathway.tsx')).toContain('showSchedule')
   })
 
-  it('٤) و«مساري» تعرضه للدورات غير المسجَّلة في عرضَيها معا', () => {
-    const src = read('src/pages/student/MyPathway.tsx')
+  /* كان هذا الحارسُ على «مساري» وعرضَيها. وقد صارت الشاشتان رحلةً واحدة،
+     فموضعُ القرار الآن مرحلةٌ في الشريط لم تُشترَ بعد — ولها لوحٌ واحد. */
+  it('٤) والرحلةُ تعرضه في مرحلةٍ لم تُشترَ بعد — موعدٌ ثمّ سعرٌ ثمّ شراء', () => {
+    const src = read('src/components/journey/StageOffer.tsx')
     /* حدُّ الكلمة مقصود: العدُّ بـ`split('<CohortPicker')` يطابق أيضا اسما
        مشتقّا مثل `<CohortPickerX`، فتمرّ طفرةُ إعادة تسميةٍ خضراء. */
-    expect(src.match(/<CohortPicker\b/g)?.length ?? 0, 'العرضان: الخطّة المعتمَدة والمسار الجاهز').toBe(2)
-    expect(src.match(/<BuyCohort\b/g)?.length ?? 0).toBe(2)
+    expect(src.match(/<CohortPicker\b/g)?.length ?? 0, 'مُنتقي الموعد في لوح المرحلة').toBe(1)
+    expect(src.match(/<BuyCohort\b/g)?.length ?? 0).toBe(1)
     expect(src, 'الزرّ القديم ما زال').not.toContain('اطلب شعبة')
+    /* وسعرُ الشعبة المختارة بجانب زرّها — لا سعرٌ عامّ للدورة */
+    expect(src).toContain('formatCohortPrice(chosen)')
   })
 
   /* وصفحةُ شراء الدورة المفردة كانت الموضعَ الغائب: يقرأ الدورةَ ويرى سعرَها

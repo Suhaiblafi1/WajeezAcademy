@@ -1,6 +1,6 @@
 import { Suspense, lazy, useEffect } from 'react'
 import { StaleChunkBoundary } from '@/components/StaleChunkBoundary'
-import { Routes, Route, Navigate, useLocation } from 'react-router'
+import { Routes, Route, Navigate, useLocation, useParams } from 'react-router'
 import Home from './pages/Home'
 import Verify from './pages/Verify'
 import StaticPage from './pages/Static'
@@ -23,12 +23,11 @@ const CoursePathPage = lazy(() => import('./pages/CoursePath'))
 
 /* البوابات الداخلية تُحمَّل عند الطلب فقط — لا تبطئ الصفحات العامة */
 const StudentDashboard = lazy(() => import('./pages/student/Dashboard'))
-const MyPathway = lazy(() => import('./pages/student/MyPathway'))
+const Journey = lazy(() => import('./pages/student/Journey'))
 const MySkills = lazy(() => import('./pages/student/MySkills'))
 const Remeasure = lazy(() => import('./pages/student/Remeasure'))
 const Review = lazy(() => import('./pages/student/Review'))
 const Certificates = lazy(() => import('./pages/student/Certificates'))
-const MyLearning = lazy(() => import('./pages/student/MyLearning'))
 const StudentAccount = lazy(() => import('./pages/student/Account'))
 const StudentBilling = lazy(() => import('./pages/student/Billing'))
 const StudentCv = lazy(() => import('./pages/student/MyCv'))
@@ -42,7 +41,6 @@ const TrainerMyRatings = lazy(() => import('./pages/trainer/MyRatings'))
 const AdminRatingModeration = lazy(() => import('./pages/admin/RatingModeration'))
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword'))
-const CourseMilestones = lazy(() => import('./pages/student/CourseMilestones'))
 const ModuleStudy = lazy(() => import('./pages/student/ModuleStudy'))
 const AdvisorCases = lazy(() => import('./pages/advisor/Cases'))
 const TrainerDashboard = lazy(() => import('./pages/trainer/TrainerDashboard'))
@@ -60,6 +58,7 @@ const TrainerProposals = lazy(() => import('./pages/trainer/Proposals'))
 const CohortBoard = lazy(() => import('./pages/trainer/CohortBoard'))
 const Exceptions = lazy(() => import('./pages/admin/Exceptions'))
 const AdminAdvisorRequests = lazy(() => import('./pages/admin/AdvisorRequests'))
+const AdminLearnerRequests = lazy(() => import('./pages/admin/LearnerRequests'))
 const CatalogAdmin = lazy(() => import('./pages/admin/CatalogAdmin'))
 const AdminAuthoring = lazy(() => import('./pages/admin/Authoring'))
 const PublishingBoard = lazy(() => import('./pages/admin/PublishingBoard'))
@@ -107,6 +106,16 @@ function ScrollToTop() {
 }
 
 /** شاشة الانتظار — يستعملها Suspense والحاجز معا، فلا يُكرَّر هيكلها */
+/* رابطُ صفحة الدورة القديم يفتح الرحلةَ على مرحلتها.
+
+   `<Navigate>` لا يُبدّل الوسائطَ في وجهته، فيلزم مكوّنٌ يقرأ `courseId`
+   ويبنيه. والبديلُ — إبقاءُ صفحةٍ ثانية للدورة — هو بعينه التشتّتُ الذي
+   شُكي منه: شاشتان تعرضان الدورةَ نفسَها بعينين مختلفتين. */
+function CourseStageRedirect() {
+  const { courseId } = useParams()
+  return <Navigate to={`/student/learning?stage=${encodeURIComponent(courseId ?? '')}`} replace />
+}
+
 function LoadingScreen() {
   return (
     <div dir="rtl" className="min-h-screen bg-paper px-5 py-10" aria-busy="true" aria-label="جاري التحميل">
@@ -171,13 +180,15 @@ export default function App() {
           <Route path="/verify/:number" element={<Verify />} />
           <Route path="/p/:slug" element={<StaticPage />} />
           <Route path="/student" element={<StudentDashboard />} />
-          <Route path="/student/pathway" element={<MyPathway />} />
+          {/* «مساري» و«دوراتي» صارتا رحلةً واحدة — والعنوانان القديمان
+              يُحوَّلان إليها: روابطُ بريدٍ أُرسلت وإشعاراتٌ تشير إليهما. */}
+          <Route path="/student/pathway" element={<Navigate to="/student/learning" replace />} />
           <Route path="/student/skills" element={<MySkills />} />
           <Route path="/student/remeasure/:enrollmentId" element={<Remeasure />} />
           <Route path="/student/review" element={<Review />} />
-          {/* صفحة الدورة بالمحطات — على الكتالوج المنشور وتقدّمِ التسجيل
-              الحقيقيّين. حلّت محلّ `CourseView` التي كانت محاكاة كاملة. */}
-          <Route path="/student/course/:courseId" element={<CourseMilestones />} />
+          {/* صفحةُ الدورة صارت مرحلةً في شريط الرحلة — فالعنوانُ القديم
+              يفتح الرحلةَ على مرحلتها بعينها لا على أوّلها. */}
+          <Route path="/student/course/:courseId" element={<CourseStageRedirect />} />
           <Route path="/student/course/:courseId/module/:moduleId" element={<ModuleStudy />} />
           <Route path="/student/project" element={<Navigate to="/student/learning" replace />} />
           <Route path="/student/vault" element={<MyVault />} />
@@ -186,7 +197,7 @@ export default function App() {
           <Route path="/trainer/ratings" element={<TrainerMyRatings />} />
           <Route path="/admin/ratings" element={<AdminRatingModeration />} />
           <Route path="/student/certificates" element={<Certificates />} />
-          <Route path="/student/learning" element={<MyLearning />} />
+          <Route path="/student/learning" element={<Journey />} />
           <Route path="/student/account" element={<StudentAccount />} />
           <Route path="/student/billing" element={<StudentBilling />} />
           <Route path="/student/cv" element={<StudentCv />} />
@@ -223,6 +234,7 @@ export default function App() {
             <Route path="/admin/cohorts" element={<AdminCohorts />} />
             <Route path="/admin/exceptions" element={<Exceptions />} />
             <Route path="/admin/advisor-requests" element={<AdminAdvisorRequests />} />
+            <Route path="/admin/learner-requests" element={<AdminLearnerRequests />} />
             {/* حُذفت «سير المحتوى»: مراحلُ اعتمادٍ ومحتوىً تتحرّك في المتصفّح من
                 `data/admin`. سير المحتوى الحقيقي في «الكتالوج» و«النشر والإصدارات». */}
             <Route path="/admin/content" element={<Navigate to="/admin/publishing" replace />} />

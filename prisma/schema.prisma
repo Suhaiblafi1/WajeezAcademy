@@ -50,8 +50,9 @@ model User {
   subscriptions        Subscription[]
   orders               Order[]
   notifications        Notification[]
-  staffTasks           StaffTask[]          @relation("StaffTaskAssignee")
+  staffTasks           StaffTask[]                @relation("StaffTaskAssignee")
   supportTickets       SupportTicket[]            @relation("TicketOwner")
+  learnerRequests      LearnerRequest[]
   advisorCases         AdvisorCase[]              @relation("CaseClient")
   advisorAssignments   AdvisorAssignment[]        @relation("CaseAdvisor")
   advisorProfile       AdvisorProfile?
@@ -395,57 +396,57 @@ model CourseModule {
 }
 
 model CourseModuleVersion {
-  id           String       @id @default(uuid()) @db.Uuid
-  moduleId     String
-  version      Int
-  sequence     Int
-  titleAr      String
-  outcomeAr    String?
-  activityAr   String?
-  artifactAr   String?
+  id                 String       @id @default(uuid()) @db.Uuid
+  moduleId           String
+  version            Int
+  sequence           Int
+  titleAr            String
+  outcomeAr          String?
+  activityAr         String?
+  artifactAr         String?
   /**
    * متن الدرس (البند ح-١) — Markdown مقيّد: عناوين وقوائم واقتباسات وكود
    * وروابط وصور. يُخزَّن على الإصدار لا على الوحدة، فيمرّ بنفس حاكمية
    * النسخ والاعتماد والنشر ولا يُعدَّل بأثر رجعي على إصدار منشور.
    */
-  bodyAr       String?
+  bodyAr             String?
   /**
    * تمرين الاسترجاع (البند ح-٣) — بصيغة نصّية «س:/-/+/ش:» تُخزَّن كما يُخزَّن
    * المتن، فتُقارَن في سجل الإصدارات نصّا وتمرّ بنفس الحاكمية.
    */
-  checksAr     String?
+  checksAr           String?
   /**
    * الفيديو وفصوله (البند ح-٢) — رابط مستضاف + فصول معنونة بطوابع زمنية.
    * لا مشغّل نبنيه: نستضيف ونربط، والقيمة في الفصول ونقاط التفتيش.
    */
-  videoAr      String?
+  videoAr            String?
   /**
    * سيناريو القرار المتفرّع (البند ح-٥) — موقف مهني وعقد قرار وآثار وتأمل،
    * بصيغة «موقف/عقدة/نص/> خيار/أثر/إلى/تأمل». يُخزَّن على الإصدار كسائر
    * المحتوى فيمرّ بنفس الحاكمية ويُقارَن نصّا في السجل.
    */
-  scenarioAr   String?
-  hours        Int
-  status       String       @default("published")
-  createdAt    DateTime     @default(now())
+  scenarioAr         String?
+  hours              Int
+  status             String       @default("published")
+  createdAt          DateTime     @default(now())
   /**
    * حاكميّة التأليف (الدفعة ٣) — من كتب، ومتى رُفع، ومن راجع وبأيّ ملاحظة.
    * تُسجَّل للحاكمية لا للعرض: المحتوى يُنشر **باسم الأكاديمية** لا باسم
    * كاتبه، وهذه الحقول تخدم قاعدة «لا يعتمد أحدٌ ما كتبه» وسجلَّ التدقيق.
    */
-  createdBy    String?      @db.Uuid
-  submittedAt  DateTime?
-  reviewedBy   String?      @db.Uuid
-  reviewedAt   DateTime?
-  reviewNoteAr String?
+  createdBy          String?      @db.Uuid
+  submittedAt        DateTime?
+  reviewedBy         String?      @db.Uuid
+  reviewedAt         DateTime?
+  reviewNoteAr       String?
   /**
    * الاعتماد الأكاديميّ — الحلقة الوسطى في سلسلة الثلاث.
    * يُسجَّل مَن اعتمد أكاديميّا ليمتنع أن يوقّع هو نفسُه الموافقة النهائية:
    * سلسلةٌ يوقّعها شخصٌ واحد ثلاثَ مرّات خطوةٌ واحدة بثلاثة أزرار.
    */
-  academicApprovedBy String?  @db.Uuid
+  academicApprovedBy String?      @db.Uuid
   academicApprovedAt DateTime?
-  module       CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  module             CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
 
   @@unique([moduleId, version])
   /**
@@ -1075,24 +1076,24 @@ model TrainerSkill {
 }
 
 model TrainerCourseQualification {
-  id          String         @id @default(uuid()) @db.Uuid
-  profileId   String         @db.Uuid
-  courseId    String
-  status      String         @default("qualified") // qualified | pending | rejected | retired
-  qualifiedBy String?        @db.Uuid
-  note        String?
+  id                String         @id @default(uuid()) @db.Uuid
+  profileId         String         @db.Uuid
+  courseId          String
+  status            String         @default("qualified") // qualified | pending | rejected | retired
+  qualifiedBy       String?        @db.Uuid
+  note              String?
   /**
    * الشعبة التي طُلب التأهيل من أجلها — فالموافقة تؤهّل وتُسند معا.
    * كان التأهيل والإسناد فعلين منفصلين في شاشتين، فمن أراد مدرّبا لشعبةٍ
    * مشى ثلاث خطوات في مكانين. والطلب يُقدَّم من الشعبة، فيبقى معه أثرُها.
    */
-  requestedCohortId String?  @db.Uuid
-  requestedBy       String?  @db.Uuid
+  requestedCohortId String?        @db.Uuid
+  requestedBy       String?        @db.Uuid
   requestedAt       DateTime?
   decidedAt         DateTime?
-  createdAt   DateTime       @default(now())
-  profile     TrainerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  course      Course         @relation(fields: [courseId], references: [id])
+  createdAt         DateTime       @default(now())
+  profile           TrainerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  course            Course         @relation(fields: [courseId], references: [id])
 
   @@unique([profileId, courseId])
   @@index([status])
@@ -1450,6 +1451,7 @@ model Enrollment {
   moduleProgress   ModuleProgress[]
   courseProgress   CourseProgress?
   certificates     Certificate[]
+  learnerRequests  LearnerRequest[]
   skillRemeasures  SkillRemeasure[]
   ratings          Rating[]
   messages         CohortMessage[]
@@ -1743,6 +1745,35 @@ model Certificate {
   @@index([enrollmentId])
 }
 
+/**
+ * طلباتُ المتعلّم في آخر رحلته — شهادةُ دورةٍ، وشهادةُ مسارٍ كاملا، وتوصيةٌ
+ * مهنيّة. جدولٌ واحد لثلاثة أنواع لأنّ دورتَها واحدة: يطلب، فيُراجَع، فيُنفَّذ
+ * أو يُعتذَر بسبب مكتوب.
+ * ولا يُنشأ طلبٌ إلّا بعد أن يستوفي المتعلّم قواعدَ الإكمال (تُفحَص بالقواعد
+ * نفسِها التي يفحصها الإصدار)، فلا تُبنى طابورٌ من طلباتٍ لا تُنفَّذ.
+ * والشهادةُ نفسُها تبقى في Certificate — هذا طلبُها لا هي.
+ */
+model LearnerRequest {
+  id           String      @id @default(uuid()) @db.Uuid
+  userId       String      @db.Uuid
+  kind         String // course_certificate | pathway_certificate | recommendation
+  enrollmentId String?     @db.Uuid // لطلب شهادة دورة
+  pathwayId    String? // لطلب شهادة مسار أو توصية
+  audienceAr   String? // لأيّ جهةٍ التوصية — بكلام صاحبها
+  noteAr       String?
+  status       String      @default("pending") // pending | in_review | fulfilled | declined
+  decisionAr   String?
+  decidedAt    DateTime?
+  decidedById  String?     @db.Uuid
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enrollment   Enrollment? @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  @@index([userId, kind])
+  @@index([status, createdAt])
+}
+
 model CertificateVerification {
   id            String      @id @default(uuid()) @db.Uuid
   certificateId String      @db.Uuid
@@ -1927,14 +1958,14 @@ model AdvisorCase {
 /// والنسبةُ هنا لا في `User`: الحسابُ شيءٌ وشرطُ العمل شيء، ومن رُفع عنه دورُ
 /// المستشار يبقى ملفُّه شاهدا على ما مضى.
 model AdvisorProfile {
-  id             String   @id @default(uuid()) @db.Uuid
-  userId         String   @unique @db.Uuid
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @unique @db.Uuid
   /// نسبةُ العمولة المئويّة على ما يُغلقه — ٠ حتّى تُتّفق
-  commissionPct  Decimal  @default(0) @db.Decimal(5, 2)
-  notesAr        String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  commissionPct Decimal  @default(0) @db.Decimal(5, 2)
+  notesAr       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model AdvisorAssignment {
@@ -2093,21 +2124,21 @@ model Subscription {
 }
 
 model Coupon {
-  id         String    @id @default(uuid()) @db.Uuid
-  code       String    @unique
-  percentOff Int? // 1-100
-  amountOff  Decimal?  @db.Decimal(10, 2)
-  currency   String? // لازم مع amountOff
-  maxUses    Int?
-  usedCount  Int       @default(0)
-  expiresAt  DateTime?
-  active     Boolean   @default(true)
+  id                 String    @id @default(uuid()) @db.Uuid
+  code               String    @unique
+  percentOff         Int? // 1-100
+  amountOff          Decimal?  @db.Decimal(10, 2)
+  currency           String? // لازم مع amountOff
+  maxUses            Int?
+  usedCount          Int       @default(0)
+  expiresAt          DateTime?
+  active             Boolean   @default(true)
   /**
    * كوبونٌ مقصور على عميلٍ بعينه — يخرج من خصمٍ اعتمدته الإدارة لمستشار.
    * فارغٌ يعني كوبونا عامّا كما كان، فالسلوك القديم لا يتغيّر.
    */
-  restrictedToUserId String? @db.Uuid
-  restrictedTo       User?   @relation("CouponRestrictedTo", fields: [restrictedToUserId], references: [id], onDelete: SetNull)
+  restrictedToUserId String?   @db.Uuid
+  restrictedTo       User?     @relation("CouponRestrictedTo", fields: [restrictedToUserId], references: [id], onDelete: SetNull)
 
   orders          Order[]
   advisorRequests AdvisorRequest[]
@@ -2269,11 +2300,9 @@ model NotificationTemplate {
 
 /**
  * ── مهمّةٌ يُكلَّف بها موظّف ──
- *
  * قرارُ صاحب المنصّة: «يحقّ للسوبر إعطاء مهام للمستخدمين وإرسال إشعارات
  * لهم». ولم يكن في القاعدة نموذجُ «مهمّة» إطلاقا — إلّا `AdvisorTask`، وهي
  * مربوطةٌ بحالة عميلٍ بعينها فلا تصلح لتكليفٍ عامّ.
- *
  * والمهمّةُ تُشعِر مكلَّفها دائما: تكليفٌ لا يعلم به صاحبُه ليس تكليفا.
  */
 model StaffTask {
