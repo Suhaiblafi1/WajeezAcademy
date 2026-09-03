@@ -10,6 +10,7 @@ import { paginate } from "@/application/admin/paginate";
 import { apiDelete, apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
 import { fmtDateAr } from "@/utils/format";
 import { useRealSession } from "@/services/session";
+import EntityAuditTimeline from "@/components/EntityAuditTimeline";
 
 const ROLE_NAMES_AR: Record<string, string> = {
   super_admin: "مدير النظام الأعلى", academic_manager: "المدير الأكاديمي",
@@ -531,6 +532,10 @@ export default function Users() {
                   )}
                 </div>
               )}
+
+              {/* أثرُ الحساب: من أنشأه، ومن أوقفه ولماذا، ومن منحه صلاحيّةً
+                  ومتى. وكان ذلك كلُّه في السجلّ العامّ وحده. */}
+              <EntityAuditTimeline entityType="user" entityId={u.id} labelAr="أثرُ هذا الحساب" />
 
               {editing === u.id && (
                 <div className="mt-4 rounded-xl border border-white/10 bg-black/20 p-4">

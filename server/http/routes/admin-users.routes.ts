@@ -369,6 +369,21 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
     const rankRefusal = refuseRoleAssignment(req.auth!.roles, roleIds, before?.roles.map((r) => r.roleId) ?? [])
     if (rankRefusal) return reply.status(403).send({ error: rankRefusal })
     await auth.setRoles(id, roleIds)
+    /* ═══ وتعيينُ الأدوار يُسجَّل ═══
+
+       لم يكن يُسجَّل. وهو **أعلى فعلٍ سلطةً على المنصّة**: به يصير حسابٌ
+       مديرَ نظامٍ أعلى، وبه تُنزع بوّابةُ التعلّم عن متعلّمٍ له تسجيلات.
+       وكلُّ ما هو أدنى منه مسجَّل — الإيقافُ والأرشفةُ ومنحُ حبّةٍ واحدةٍ
+       باستثناء — فكان الأثرُ يحفظ الفروعَ ويترك الأصل.
+
+       و«قبل» و«بعد» هما جوهرُ الفائدة هنا: «صار مديرَ نظام» جوابٌ، و«غُيّرت
+       أدوارُه» ليس جوابا. والقائمتان مرتّبتان كي يُقرأ الفرقُ لا ترتيبُ
+       الإدخال. */
+    await recordAudit(prisma, {
+      actorId: req.auth!.userId, action: 'roles.set', entityType: 'user', entityId: id,
+      before: { roles: (before?.roles.map((r) => r.roleId) ?? []).sort() },
+      after: { roles: [...roleIds].sort() },
+    })
     return { ok: true }
   })
 
@@ -427,9 +442,12 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
     const check = await refuseRank(id, req.auth!.roles, 'أرشفةَ')
     if ('error' in check) return check
     await auth.archive(id, req.auth!.userId, reason)
+    /* السببُ في عمودِه `reason` لا في `meta`: الشاشةُ تقرأ «السببُ المكتوب»
+       من العمود، والمرشّحاتُ تعمل عليه. وإلزامُ سببٍ ثمّ إخفاؤه في حمولةٍ
+       لا تُعرض يُبطل الغرضَ من إلزامه. */
     await recordAudit(prisma, {
       actorId: req.auth!.userId, action: 'admin.user.archive', entityType: 'user', entityId: id,
-      meta: { email: check.target.email, reason },
+      reason, meta: { email: check.target.email },
     })
     return { ok: true }
   })

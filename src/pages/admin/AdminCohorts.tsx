@@ -10,6 +10,7 @@ import { CohortOps, LearningSettings } from "./CohortOps";
 import CohortReadiness from "./CohortReadiness";
 import CohortWizard from "./CohortWizard";
 import LearnerSearchField, { type LearnerHit } from "@/components/LearnerSearchField";
+import EntityAuditTimeline from "@/components/EntityAuditTimeline";
 import { daysLabelAr, fmtDateTimeAr } from "@/utils/format";
 import { courseById } from "@/data/courses";
 
@@ -553,6 +554,10 @@ export default function AdminCohorts() {
 
                     {/* عمليات متقدمة: مدرب، تعديل، مواد، تقييمات، شهادات، نشر عام */}
                     <CohortOps cohort={c} onDone={(msg) => { setFlash({ kind: "ok", text: msg }); void load(); }} />
+
+                    {/* «من غيّر هذه الشعبة؟» — يُسأل هنا، فيُقرأ هنا. وكان
+                        الجوابُ يقتضي فتحَ «سجلّ الأثر» ومعرفةَ معرّفِ الشعبة. */}
+                    <EntityAuditTimeline entityType="cohort" entityId={c.id} labelAr="أثرُ هذه الشعبة" />
                   </div>
                 )}
               </div>

@@ -5,22 +5,20 @@ import { apiGet, permissionMessage } from "@/services/api";
 import { fmtDateTime } from "@/application/text/format-ar";
 
 interface AuditRow {
-  id: string; action: string; entityType: string; entityId: string; createdAt: string;
+  id: string; action: string; actionAr: string; entityType: string; entityTypeAr: string; entityId: string; createdAt: string;
   reason: string | null; ip: string | null;
   actor: { id: string; displayName: string; email: string } | null;
   meta: unknown; before: unknown; after: unknown;
 }
 interface AuditPage {
   total: number; page: number; pages: number; pageSize: number; rows: AuditRow[];
-  facets: { actions: { value: string; count: number }[]; entityTypes: { value: string; count: number }[] };
+  facets: { actions: { value: string; labelAr: string; count: number }[]; entityTypes: { value: string; labelAr: string; count: number }[] };
 }
 
-const ENTITY_AR: Record<string, string> = {
-  user: "حساب", enrollment: "تسجيل", cohort: "شعبة", course: "دورة", invoice: "فاتورة",
-  order: "طلب شراء", payment: "دفعة", refund: "استرداد", notification: "إشعار",
-  trainer_application: "طلب مدرّب", trainer_profile: "ملفّ مدرّب", certificate: "شهادة",
-  support_ticket: "تذكرة دعم", staff_task: "مهمّة", module: "وحدة", pathway: "مسار",
-};
+/* حُذف جدولُ أنواعِ الكيانات من هذه الصفحة: كان يعرّب ستّةَ عشرَ نوعا من
+   سبعةٍ وثلاثين، فما لم يكن فيه يُعرض بمفتاحه. والخادمُ يعرّبها كلَّها من
+   المعجم الواحد (`src/application/audit/labels.ts`) ويرسلها مع الصفّ —
+   فمعجمٌ واحدٌ لا اثنان يفترقان. */
 
 const field = "rounded-xl border border-white/12 bg-black/30 px-3 py-2 text-xs text-white focus:border-teal focus:outline-none [&>option]:bg-surface";
 
@@ -82,7 +80,7 @@ export default function AuditLog() {
           <select value={filters.action} onChange={(e) => set({ action: e.target.value })} className={`mt-1 w-full ${field}`}>
             <option value="">كلّ الأفعال</option>
             {(data?.facets.actions ?? []).map((a) => (
-              <option key={a.value} value={a.value}>{a.value} ({a.count})</option>
+              <option key={a.value} value={a.value}>{a.labelAr} ({a.count})</option>
             ))}
           </select>
         </label>
@@ -91,7 +89,7 @@ export default function AuditLog() {
           <select value={filters.entityType} onChange={(e) => set({ entityType: e.target.value })} className={`mt-1 w-full ${field}`}>
             <option value="">كلّ الأنواع</option>
             {(data?.facets.entityTypes ?? []).map((e2) => (
-              <option key={e2.value} value={e2.value}>{ENTITY_AR[e2.value] ?? e2.value} ({e2.count})</option>
+              <option key={e2.value} value={e2.value}>{e2.labelAr} ({e2.count})</option>
             ))}
           </select>
         </label>
@@ -146,9 +144,12 @@ export default function AuditLog() {
               <button onClick={() => setOpen(open === r.id ? null : r.id)}
                 className="flex w-full cursor-pointer flex-wrap items-center gap-3 text-right">
                 <History className="h-3.5 w-3.5 shrink-0 text-white/30" />
-                <span className="font-mono text-[11px] font-bold text-gold-ink" dir="ltr">{r.action}</span>
+                {/* الاسمُ العربيُّ في الصدارة، والمفتاحُ الخامُ عند الفتح.
+                    وكان السجلُّ يعرض `cohort.session.add` نصّا لاتينيّا لمن
+                    يقرأ — وهو ما أُصلح في لوحة المدير (T5) وبقي هنا. */}
+                <span className="text-[11px] font-black text-gold-ink">{r.actionAr}</span>
                 <span className="text-[11px] text-white/55">
-                  {ENTITY_AR[r.entityType] ?? r.entityType}
+                  {r.entityTypeAr}
                   <span className="mr-1.5 font-mono text-white/35" dir="ltr">{r.entityId.slice(0, 8)}…</span>
                 </span>
                 {/* الفاعلُ يُسمّى دائما: «النظام» ليس فراغا بل فاعلٌ آخر */}
@@ -159,6 +160,7 @@ export default function AuditLog() {
                 <div className="mt-3 space-y-2 border-t border-white/8 pt-3 text-[11px] leading-6 text-white/60">
                   {r.actor?.email && <p dir="ltr" className="font-mono text-white/45">{r.actor.email}</p>}
                   {r.reason && <p>السبب المكتوب: {r.reason}</p>}
+                  <p className="font-mono text-[10px] text-white/35" dir="ltr">{r.action}</p>
                   {r.ip && <p dir="ltr" className="font-mono text-white/40">IP {r.ip}</p>}
                   <p className="font-mono text-[10px] text-white/45" dir="ltr">{r.entityId}</p>
                   {([["قبل", r.before], ["بعد", r.after], ["تفاصيل", r.meta]] as const).map(([label, value]) => value != null && (

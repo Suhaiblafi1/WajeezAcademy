@@ -1,5 +1,5 @@
 import { Link, NavLink, useLocation, useNavigate } from "react-router";
-import { Award, BadgePercent, CalendarCog, Crown, FlaskConical, GitBranch, ClipboardList, GraduationCap, History, Layers, PenLine, ShieldAlert, LayoutDashboard, UserCheck, UserPlus, Users, BarChart3, LifeBuoy, Wallet, Bell, PlugZap, Star } from "lucide-react";
+import { Activity, Award, BadgePercent, CalendarCog, Crown, FlaskConical, GitBranch, ClipboardList, GraduationCap, History, Layers, PenLine, ShieldAlert, LayoutDashboard, UserCheck, UserPlus, Users, BarChart3, LifeBuoy, Wallet, Bell, PlugZap, Star } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import ThemeToggle from "@/components/ThemeToggle";
 import StaffAccountMenu from "@/components/StaffAccountMenu";
@@ -90,6 +90,9 @@ export default function AdminLayout({ children, title }: { children: React.React
       items: [
         { to: "/admin/users", label: "المستخدمون والأدوار", icon: Users , need: "admin.users.view"},
         { to: "/admin/audit", label: "سجلّ الأثر", icon: History , need: "audit.view"},
+        /* «هل النظامُ سليم؟» — بصلاحيّةِ الإعدادات: بنودُها تكشف حالةَ
+           مزوّد الدفع والبريد وأرقامَ محاولاتِ الدخول الفاشلة. */
+        { to: "/admin/system-health", label: "صحّة النظام", icon: Activity , need: "settings.manage"},
       ],
     },
   ];

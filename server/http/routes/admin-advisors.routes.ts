@@ -9,6 +9,7 @@ import { z } from 'zod'
 import type { PrismaClient, Prisma } from '@prisma/client'
 import { requirePermission } from '../auth-plugin'
 import { recordAudit } from '../../services/audit'
+import { auditActionAr, entityTypeAr } from '../../../src/application/audit/labels'
 
 export function registerAdminAdvisorRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const canManage = requirePermission('advisor.manage')
@@ -185,16 +186,76 @@ export function registerAdminAdvisorRoutes(app: FastifyInstance, prisma: PrismaC
       total, page: qs.page, pageSize: qs.pageSize,
       pages: Math.max(1, Math.ceil(total / qs.pageSize)),
       /* الفاعلُ المحذوفُ حسابُه لا يُخفى: يُقال «حسابٌ محذوف» لا يُترك فارغا */
+      /* الاسمُ العربيُّ يُحسب هنا لا في المتصفّح: المعجمُ واحدٌ للشاشتَين
+         (السجلُّ العامّ وجدولُ الكيان)، والمفتاحُ الخامُ يبقى مرافقا لمن
+         يبحث به أو يفتح تذكرةً عليه. */
       rows: rows.map((r) => ({
-        id: r.id, action: r.action, entityType: r.entityType, entityId: r.entityId,
+        id: r.id, action: r.action, actionAr: auditActionAr(r.action),
+        entityType: r.entityType, entityTypeAr: entityTypeAr(r.entityType), entityId: r.entityId,
         createdAt: r.createdAt, reason: r.reason, ip: r.ip,
         actor: r.actorId ? (byId.get(r.actorId) ?? { id: r.actorId, displayName: 'حسابٌ محذوف', email: '' }) : null,
         meta: r.meta, before: r.before, after: r.after,
       })),
       facets: {
-        actions: actions.map((a) => ({ value: a.action, count: a._count._all })),
-        entityTypes: entityTypes.map((e) => ({ value: e.entityType, count: e._count._all })),
+        actions: actions.map((a) => ({ value: a.action, labelAr: auditActionAr(a.action), count: a._count._all })),
+        entityTypes: entityTypes.map((e) => ({ value: e.entityType, labelAr: entityTypeAr(e.entityType), count: e._count._all })),
       },
+    }
+  })
+
+  /* ─────────── «من غيّر هذا؟» — في موضع الشيء نفسِه ───────────
+
+     السجلُّ العامُّ يُجيب السؤالَ بعد بحثٍ: تفتح شاشةً أخرى، وتعرف نوعَ
+     الكيان ومعرّفَه الطويل، وترشّح. فالجوابُ موجودٌ ولا يُقرأ حيث يُسأل —
+     والسؤالُ يُسأل في بطاقة الشعبة وفي بطاقة الحساب لا في شاشةِ سجلّ.
+
+     ولا صلاحيّةَ جديدة: `audit.view` نفسُها. ومن لا يملكها لا يرى اللوحَ
+     أصلا (المتصفّحُ يُسقطه بصمتٍ على ٤٠٣) — لا لافتةَ منعٍ في وسط بطاقة. */
+  app.get('/api/admin/audit/entity/:entityType/:entityId', {
+    preHandler: requirePermission('audit.view'),
+    schema: { tags: ['admin-audit'], summary: 'ما وقع على كيانٍ واحد — الأحدثُ أوّلا' },
+  }, async (req) => {
+    const { entityType, entityId } = z.object({
+      entityType: z.string().min(2).max(60),
+      entityId: z.string().min(1).max(200),
+    }).parse(req.params)
+    const { limit } = z.object({ limit: z.coerce.number().int().min(1).max(100).default(20) }).parse(req.query)
+
+    const [total, rows] = await Promise.all([
+      prisma.auditEvent.count({ where: { entityType, entityId } }),
+      prisma.auditEvent.findMany({
+        where: { entityType, entityId }, orderBy: { createdAt: 'desc' }, take: limit,
+      }),
+    ])
+    const actorIds = [...new Set(rows.map((r) => r.actorId).filter((x): x is string => Boolean(x)))]
+    const actors = actorIds.length === 0 ? [] : await prisma.user.findMany({
+      where: { id: { in: actorIds } }, select: { id: true, displayName: true },
+    })
+    const byId = new Map(actors.map((a) => [a.id, a.displayName]))
+
+    /* ما تغيّر فعلا، لا الحمولةُ كاملة: الحقولُ التي اختلفت قيمتُها بين
+       «قبل» و«بعد». وهي ما يسأل عنه القارئ — والباقي ضجيجٌ في بطاقة. */
+    const changedKeys = (before: unknown, after: unknown): string[] => {
+      if (!before || !after || typeof before !== 'object' || typeof after !== 'object') return []
+      const b = before as Record<string, unknown>
+      const a = after as Record<string, unknown>
+      return [...new Set([...Object.keys(b), ...Object.keys(a)])]
+        .filter((k) => JSON.stringify(b[k]) !== JSON.stringify(a[k]))
+    }
+
+    return {
+      entityType, entityTypeAr: entityTypeAr(entityType), entityId, total,
+      events: rows.map((r) => ({
+        id: r.id,
+        action: r.action,
+        actionAr: auditActionAr(r.action),
+        /* «النظام» فاعلٌ حقيقيّ: المواءمةُ بالتواريخ وتوليدُ المستحقّات
+           تكتبان بلا فاعلٍ بشريّ، فلا يُترك الحقلُ فارغا فيُظنّ عطبا. */
+        actorAr: r.actorId ? (byId.get(r.actorId) ?? 'حسابٌ محذوف') : 'النظام',
+        reason: r.reason,
+        changed: changedKeys(r.before, r.after),
+        createdAt: r.createdAt,
+      })),
     }
   })
 }
