@@ -32,6 +32,17 @@ export function publicReferences(): MethodologyReference[] {
   )
 }
 
+/** مراجعُ دورةٍ بأكوادها (`source_codes` في الكتالوج) — وما لا يُعرف كودُه
+    يُسقَط: لا مرجعَ يُختلق للمتعلّم في صندوق مصادره. */
+export function referencesByIds(ids: readonly string[]): MethodologyReference[] {
+  const out: MethodologyReference[] = []
+  for (const id of ids) {
+    const found = all.find((r) => r.id === id)
+    if (found && !out.includes(found)) out.push(found)
+  }
+  return out
+}
+
 /** الشارات النصية المختصرة للصفحة الرئيسية */
 export function referenceBadges(): string[] {
   const order = ['REF-ONET-CM', 'REF-RIASEC-ONET-IP', 'REF-ESCO', 'REF-DIGCOMP', 'REF-ECD']

@@ -1,4 +1,5 @@
-/* إدارة المستخدمين — API حقيقي: قائمة، تعيين أدوار (يستبدل القائمة)، إيقاف.
+/* إدارة المستخدمين — API حقيقي: إنشاء، تعيين أدوار (يستبدل القائمة)، إيقاف
+   ورفعُه، وحذفٌ نهائيّ — ولمدير النظام الأعلى محوُ حسابٍ بسجلّه (ديمو وتجربة).
    الحمايات من الخادم: لا سحب super_admin من نفسك ولا إيقاف ذاتي من هنا. */
 import { useCallback, useEffect, useState } from "react";
 import { CheckCircle2, KeyRound, Loader2, Minus, Plus, RefreshCw, ServerOff, ShieldCheck, ShieldOff, Trash2, UserPlus, Users as UsersIcon } from "lucide-react";
@@ -76,6 +77,9 @@ export default function Users() {
   const canDelegate = can("admin.permissions.delegate");
   const canManage = can("admin.users.manage");
   const canPurge = can("admin.users.purge");
+  /* المحوُ بالسجلّ حبّةٌ مستقلّة — بالصلاحية لا بالدور، فالشاشةُ لا تفحص
+     أدوارا أبدا (يحرسه `src/tests/admin-permissions.test.ts`). */
+  const canPurgeHistory = can("admin.users.purge_history");
   const [permFor, setPermFor] = useState<string | null>(null);
   const [perms, setPerms] = useState<PermView | null>(null);
   const [permReason, setPermReason] = useState("");
@@ -118,6 +122,33 @@ export default function Users() {
       if (res?.error) { setFlash(res.error.message_ar); return; }
       setFlash(typeof doneMsg === "function" ? doneMsg(res) : doneMsg); await load();
     } catch (e) { setFlash(e instanceof ApiError ? e.message : "فشل الإجراء"); }
+    finally { setBusy(false); }
+  };
+
+  /* الحذفُ النهائيّ: بريدٌ يُكتب تأكيدا، ثمّ إن كان للحساب سجلٌّ عُرض
+     السجلُّ بالعدد — ولمدير النظام الأعلى أن يمحوه معه بسببٍ يكتبه.
+     الطلبُ الأوّل بلا قسر عمدا: الخادمُ هو من يقول ما للحساب من أثر. */
+  const purge = async (u: UserRow) => {
+    const typed = window.prompt(`الحذفُ النهائيُّ لا رجعةَ فيه. اكتب بريدَ الحساب لتأكيده:\n${u.email}`);
+    if (typed === null) return;
+    if (typed.trim().toLowerCase() !== u.email.toLowerCase()) { setFlash("البريدُ لا يطابق — لم يُحذف شيء."); return; }
+    setBusy(true); setFlash("");
+    try {
+      const first = await apiDelete(`/api/admin/users/${u.id}`) as
+        { ok?: boolean; error?: { code: string; message_ar: string; blockers?: string[]; forceAllowed?: boolean } } | undefined;
+      if (!first?.error) { setFlash("حُذف الحساب نهائيّا من القاعدة."); await load(); return; }
+      if (first.error.code !== "has_history" || !first.error.forceAllowed) { setFlash(first.error.message_ar); return; }
+      const list = (first.error.blockers ?? []).map((b) => `· ${b}`).join("\n");
+      const reason = window.prompt(
+        `لهذا الحساب سجلٌّ سيُمحى معه:\n${list}\n\nهذا محوٌ كامل لا يُستعاد — يصلح لحسابات الديمو والتجربة لا لعميلٍ حقيقيّ.\nاكتب سببَ المحو للأثر (٥ أحرف على الأقل)، أو ألغِ:`,
+      );
+      if (reason === null) { setFlash("أُلغي — لم يُحذف شيء."); return; }
+      const second = await apiDelete(`/api/admin/users/${u.id}?force=1`, { reason: reason.trim() }) as
+        { ok?: boolean; error?: { message_ar: string } } | undefined;
+      if (second?.error) { setFlash(second.error.message_ar); return; }
+      setFlash("مُحي الحساب بسجلّه كلّه — والأثرُ محفوظ.");
+      await load();
+    } catch (e) { setFlash(e instanceof ApiError ? e.message : "فشل الحذف"); }
     finally { setBusy(false); }
   };
 
@@ -279,16 +310,12 @@ export default function Users() {
                     </button>
                   )}
                   {/* الحذفُ النهائيّ لا رجعةَ فيه، فيُستأذن ويُكتب البريدُ تأكيدا.
-                      ولا يُعرض إلّا في خانة الموقوفة: من أراد محوَ حسابٍ نشطٍ
-                      يوقفه أوّلا، فتمرّ لحظةٌ بين القرار وتنفيذه. */}
-                  {canPurge && u.status === "suspended" && (
+                      في خانة الموقوفة لكلّ من يملك الحبّة؛ وفي خانة النشطة
+                      لمدير النظام الأعلى وحده — فمن ينظّف حساباتَ الديمو لا
+                      يوقف تسعةً ثمّ يحذف تسعة. */}
+                  {canPurge && (u.status === "suspended" || canPurgeHistory) && (
                     <button disabled={busy}
-                      onClick={() => {
-                        const typed = window.prompt(`الحذفُ النهائيُّ لا رجعةَ فيه. اكتب بريدَ الحساب لتأكيده:\n${u.email}`);
-                        if (typed === null) return;
-                        if (typed.trim().toLowerCase() !== u.email.toLowerCase()) { setFlash("البريدُ لا يطابق — لم يُحذف شيء."); return; }
-                        void act(() => apiDelete(`/api/admin/users/${u.id}`), "حُذف الحساب نهائيّا من القاعدة.");
-                      }}
+                      onClick={() => void purge(u)}
                       className="flex cursor-pointer items-center gap-1.5 rounded-full border border-red-500/60 bg-red-500/10 px-4 py-1.5 text-xs font-black text-red-300 hover:bg-red-500/20 disabled:opacity-40">
                       <Trash2 className="h-3.5 w-3.5" /> احذف نهائيّا
                     </button>

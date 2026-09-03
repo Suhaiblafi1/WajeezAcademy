@@ -58,7 +58,7 @@ npx vite --port 3000
 | متقدّم لعضوية التدريب | `trainer_applicant` | 20 | 1 | ❌ | — |
 | متعلم | `learner` | 10 | 5 | ✅ | الطالب |
 
-### حسابات الديمو الخمسة
+### حسابات الديمو التسعة
 
 | البريد | الدور |
 |---|---|
@@ -67,11 +67,13 @@ npx vite --port 3000
 | `trainer.demo@wajeez.local` | `trainer` |
 | `consultant.demo@wajeez.local` | `advisor` |
 | `student.demo@wajeez.local` | `learner` |
+| `diagnostics.demo@wajeez.local` | `diagnostic_manager` |
+| `operations.demo@wajeez.local` | `operations_manager` |
+| `finance.demo@wajeez.local` | `finance` |
+| `support.demo@wajeez.local` | `support` |
 
-**خمسةٌ من العشرة بلا حسابِ ديمو** (العمليات · التشخيص · المالية · الدعم ·
-المتقدّم للتدريب). لفحصها أنشئ حسابا من `/admin/users` بحساب السوبر (زرّ «أنشئ
-حسابا»)، ثمّ عيّن كلمةَ مرورٍ من «نسيت كلمة المرور» — أو أسند الدورَ إلى حسابٍ
-قائم من زرّ «الأدوار».
+كلمةُ المرور الموحّدة `Wajeez-Demo-2026` ما لم تُضبط `DEMO_PASSWORD` في البيئة قبل البذر.
+`trainer_applicant` وحده بلا حساب — فهو حالةُ طلبٍ لا دورَ دخول؛ يُفحَص من `/join-trainer`.
 
 ---
 

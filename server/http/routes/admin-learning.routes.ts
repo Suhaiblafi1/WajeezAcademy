@@ -11,6 +11,7 @@ import { EnrollmentService } from '../../services/enrollment.service'
 import { AssessmentService } from '../../services/assessment.service'
 import { ProgressService } from '../../services/progress.service'
 import { CertificateService } from '../../services/certificate.service'
+import { LearnerRequestService } from '../../services/learner-request.service'
 import { requirePermission } from '../auth-plugin'
 
 /* الأيّامُ رموزٌ معروفةٌ لا نصٌّ حرّ.
@@ -29,6 +30,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
   const assessments = new AssessmentService(prisma)
   const progress = new ProgressService(prisma)
   const certificates = new CertificateService(prisma)
+  const learnerRequests = new LearnerRequestService(prisma)
 
   /* ── الشعب ── */
   app.get('/api/admin/cohorts', {
@@ -282,6 +284,32 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
   }, async (req, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return reply.status(201).send(await certificates.issue(id, req.auth!.userId))
+  })
+
+  /* ── طلباتُ المتعلّمين: شهادةُ دورةٍ أو مسارٍ أو توصية ──
+
+     الطلبُ يصل من البوابة مستوفيا قواعدَ الإكمال (تُفحَص قبل إنشائه)، فما في
+     هذا الطابور مؤهَّلٌ بحساب النظام لا بدعوى صاحبه. والقرارُ هنا فعلٌ إداريّ
+     يُسجَّل ويُبلَّغ صاحبُه: «أُنجز» بعد إصدار الشهادة أو كتابة التوصية،
+     و«اعتذار» بسببٍ يُقرأ — لا صمتٌ يُبقيه منتظرا. */
+  app.get('/api/admin/learner-requests', {
+    preHandler: requirePermission('certificate.issue'),
+    schema: { tags: ['admin-learning'], summary: 'طلباتُ المتعلّمين المفتوحة — الأقدمُ أوّلا' },
+  }, async (req) => {
+    const q = z.object({ status: z.enum(['pending', 'in_review', 'fulfilled', 'declined']).optional() }).parse(req.query)
+    return learnerRequests.queue(q.status)
+  })
+
+  app.post('/api/admin/learner-requests/:id/decide', {
+    preHandler: requirePermission('certificate.issue'),
+    schema: { tags: ['admin-learning'], summary: 'قرارٌ على طلب متعلّم — والاعتذار بسببٍ إلزاميّ' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      status: z.enum(['in_review', 'fulfilled', 'declined']),
+      decisionAr: z.string().max(2_000).optional(),
+    }).parse(req.body)
+    return learnerRequests.decide(id, req.auth!.userId, body.status, body.decisionAr)
   })
 
   app.post('/api/admin/certificates/:id/revoke', {

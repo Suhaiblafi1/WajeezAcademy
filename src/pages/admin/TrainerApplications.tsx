@@ -18,7 +18,7 @@ import ApplicationDossier, { type Dossier } from "./ApplicationDossier";
 import { fmtDateTime } from "@/application/text/format-ar";
 
 const STATUS_LABELS: Record<string, string> = {
-  email_verification_pending: "بانتظار تحقق البريد",
+  draft: "مسودة — لم يُكمل", email_verification_pending: "بانتظار تحقق البريد",
   submitted: "مُقدَّم", under_review: "قيد المراجعة",
   information_requested: "بانتظار معلومات المرشح", shortlisted: "مختار أولي",
   interview_scheduled: "مقابلة مجدولة", demo_requested: "بانتظار الديمو",
@@ -87,6 +87,8 @@ interface AppDetail extends Record<string, unknown> {
   interviews: { id: string; scheduledAt: string; outcome: string | null }[];
   statusHistory: { fromStatus: string | null; toStatus: string; note: string | null; createdAt: string }[];
   profile: { id: string; userId: string | null } | null;
+  /** حسابُ المتقدّم — يُنشأ مع القسم الأوّل */
+  userId: string | null;
   summary?: TrainerSummary;
 }
 
@@ -537,7 +539,13 @@ export default function TrainerApplications() {
                 ))}
               </div>
 
-              {a.status === "onboarding" && !a.profile?.userId && (
+              {/* للمتقدّم حسابٌ منذ تقديمه: التفعيلُ يربطه — فلا زرَّ دعوةٍ له */}
+              {a.status === "onboarding" && !a.profile?.userId && a.userId && (
+                <p className="mt-3 rounded-xl border border-teal/30 bg-teal/[0.05] p-3 text-[11px] leading-6 text-white/65">
+                  للمتقدّم حسابٌ منذ تقديمه — «فعّله مدرّبا نشطا» يربط حسابه بملفّه ويفتح له بوّابة المدربين مباشرة.
+                </p>
+              )}
+              {a.status === "onboarding" && !a.profile?.userId && !a.userId && (
                 <button
                   disabled={busy}
                   onClick={() => void act(async () => {
@@ -555,7 +563,7 @@ export default function TrainerApplications() {
                   <KeyRound className="h-3.5 w-3.5" /> أرسل دعوة إنشاء الحساب
                 </button>
               )}
-              {invite && a.status === "onboarding" && !a.profile?.userId && (
+              {invite && a.status === "onboarding" && !a.profile?.userId && !a.userId && (
                 <div className="mt-3 rounded-xl border border-teal/35 bg-teal/[0.06] p-3">
                   <p className="text-[11px] font-black text-teal-light-ink">
                     {invite.delivery === "sent"

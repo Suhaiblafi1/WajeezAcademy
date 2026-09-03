@@ -17,7 +17,7 @@ import { describe, expect, it } from 'vitest'
 const read = (f: string) => readFileSync(join(process.cwd(), f), 'utf8')
 
 describe('«يرى ما دفع» — لا شكرا مجرّدة', () => {
-  const ML = read('src/pages/student/MyLearning.tsx')
+  const ML = read('src/pages/student/Journey.tsx')
 
   /* كانت البطاقةُ تشكره وتحيله إلى «الفواتير»: نقرةٌ أخرى ليعرف عن ماذا خرج
      مالُه، في اللحظة التي يكون فيها أكثرَ ما يكون حاجةً إلى اليقين. */
@@ -42,12 +42,14 @@ describe('«يرى ما دفع» — لا شكرا مجرّدة', () => {
 })
 
 describe('التنقّل بين الشعب — بابٌ ظاهر', () => {
-  const ML = read('src/pages/student/MyLearning.tsx')
   const SW = read('src/components/SwitchCohort.tsx')
 
-  it('البابُ في شاشة تعلّمي عند كلّ تسجيل', () => {
-    expect(ML).toMatch(/<SwitchCohort\b/)
-    expect(ML, 'الشاشةُ لا تقرأ موعد البدء فلا تعرف أيُبدَّل أم لا').toMatch(/startsAt=\{r\.cohort\.startsAt\}/)
+  it('البابُ في لوح عمل المرحلة — حيث يقرأ شعبتَه', () => {
+    /* موضعُه انتقل من بطاقة «دوراتي» إلى لوح المرحلة، والشرطُ نفسُه:
+       يقرأ موعدَ البدء وإلّا لم يعرف أيُبدَّل أم لا. */
+    const SWK = read('src/components/journey/StageWork.tsx')
+    expect(SWK).toMatch(/<SwitchCohort\b/)
+    expect(SWK, 'اللوحُ لا يقرأ موعد البدء فلا يعرف أيُبدَّل أم لا').toMatch(/startsAt=\{detail\.cohort\.startsAt\}/)
   })
 
   it('ولا يظهر بعد أن تبدأ الشعبة — القيدُ نصُّ القرار', () => {

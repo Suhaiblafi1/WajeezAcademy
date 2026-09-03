@@ -1,7 +1,8 @@
 /* اختبار E2E لدورة طلب المدرب الكاملة:
-   تقديم → تحقق بريد → منع تكرار → ظهور للإدارة → طلب معلومات → مرحلة ثانية →
-   رفع خاص → مقابلة → ديمو → قبول مشروط → عقد → دعوة آمنة → حساب بدور trainer →
-   منع المتقدم من منح نفسه الدور → دخول المدرب → توثيق كل الانتقالات. */
+   قسم أوّل (مسودّة + حساب) → استئناف المسودّة → إكمال (مقدَّم + بريد تأكيد) →
+   توثيق البريد من رابطه → منع تكرار → الحالة بالبريد → ظهور للإدارة → طلب
+   معلومات → تحديث الملف → رفع خاص → مقابلة → ديمو → قبول مشروط → عقد →
+   تفعيلٌ يربط حساب المتقدّم ويمنحه دور trainer → دخول المدرب → توثيق الانتقالات. */
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -27,15 +28,14 @@ const phase1 = {
   bio: 'خبير بيانات', linkedinUrl: 'https://linkedin.com/in/test',
   trainingLanguages: ['العربية'], deliveryMode: 'both' as const,
   motivation: 'أريد الانضمام إلى وجيز لأنني درّبت فرقا حقيقية في بيئات عمل عربية، وأعرف الفرق بين من يعرف المادة ومن يستطيع تعليمها. سأقدّم للمتعلمين مهمة تطبيقية من واقع عملهم في كل وحدة، وأراجع مخرجاتهم بنفسي وأكتب لكل واحد ما ينقصه تحديدا لا تقييما عاما.', privacyConsent: true as const,
+  password: 'Trainer#12345',
 }
 
 let reference = ''
-let verifyToken = ''
 let candidateToken = ''
 let applicationId = ''
 let profileId = ''
 let contractId = ''
-let invitationToken = ''
 let trainerUserId = ''
 
 beforeAll(async () => {
@@ -58,34 +58,63 @@ beforeAll(async () => {
 }, 180_000)
 
 describe('دورة طلب المدرب', () => {
-  it('1) تقديم المرحلة الأولى ينشئ رقما مرجعيا ويحجب الحساب', async () => {
+  it('1) القسم الأوّل ينشئ مسودّةً برقم مرجعي وحسابا ورمز متابعة', async () => {
     const res = await apps.submitPhase1(phase1)
     reference = res.reference
-    verifyToken = res.verificationTokenForDelivery
+    candidateToken = res.candidateToken
     expect(reference).toMatch(/^WJ-TR-\d{4}-\d{5}$/)
+    expect(candidateToken.length).toBeGreaterThan(20)
     const row = await prisma.trainerApplication.findUnique({ where: { reference } })
     applicationId = row!.id
-    expect(row!.status).toBe('email_verification_pending')
-    expect(row!.accessTokenHash).toBeNull()
+    expect(row!.status).toBe('draft')
+    expect(row!.accessTokenHash).not.toBeNull()
+    expect(row!.userId).toBe(res.userId)
+    trainerUserId = res.userId
   })
 
-  it('2) تكرار نفس البريد ممنوع ما دام الطلب حيا', async () => {
+  it('2) المسودّة تُستأنف بنفس الكلمة لا تُكرَّر — وبكلمة أخرى تُردّ', async () => {
+    await expect(apps.submitPhase1({ ...phase1, password: 'Wrong#12345' })).rejects.toMatchObject({ code: 'email_taken' })
+    const again = await apps.submitPhase1(phase1)
+    expect(again.resumed).toBe(true)
+    expect(again.reference).toBe(reference)
+    candidateToken = again.candidateToken
+  })
+
+  it('3) الإكمالُ يجعله مقدَّما ويُصدر رمزَ توثيق البريد — والخاطئ مرفوض والصحيح يوثّق مرة', async () => {
+    const done = await apps.completePhase2(reference, candidateToken, {
+      previousCourses: [], teachableCourseIds: [], availability: { seasons: ['nov_jan'] },
+      demoConsent: true, contact: { channel: 'phone' },
+    })
+    expect(done.status).toBe('submitted')
+    /* القناة مفعّلة بمضيف لا يستجيب: الإرسال يخفق، والطلب يمضي */
+    expect(done.emailDelivery).toBe('failed')
+    const row = await prisma.trainerApplication.findUniqueOrThrow({ where: { reference } })
+    expect(row.status).toBe('submitted')
+    expect(row.contactChannel).toBe('phone')
+    expect(row.emailVerifyTokenHash).not.toBeNull()
+
+    /* الرمزُ يصل بالبريد — وإعادةُ الإرسال تُصدر رمزا جديدا يُفحص هنا */
+    const resent = await apps.resendVerification(phase1.email)
+    expect(resent.tokenForDelivery).toBeTruthy()
+    await expect(apps.verifyEmail(reference, 'wrong-token-xx')).rejects.toMatchObject({ code: 'invalid_token' })
+    const first = await apps.verifyEmail(reference, resent.tokenForDelivery!)
+    expect(first).toEqual({ status: 'submitted', alreadyVerified: false })
+    /* إعادة النقر على الرابط لا تُخطئ ولا تُغيّر */
+    const second = await apps.verifyEmail(reference, resent.tokenForDelivery!)
+    expect(second.alreadyVerified).toBe(true)
+
+    /* وطلبٌ مكتمل لا يُقدَّم ثانية */
     await expect(apps.submitPhase1(phase1)).rejects.toMatchObject({ code: 'duplicate_application' })
   })
 
-  it('3) رمز تحقق خاطئ مرفوض، والصحيح ينقل إلى submitted ويصدر رمز مرشح', async () => {
-    await expect(apps.verifyEmail(reference, 'wrong-token-xx')).rejects.toMatchObject({ code: 'invalid_token' })
-    const res = await apps.verifyEmail(reference, verifyToken)
-    candidateToken = res.candidateToken
-    expect(res.status).toBe('submitted')
-    /* إعادة النقر على الرابط لا تكشف ولا تُصدر */
-    await expect(apps.verifyEmail(reference, verifyToken)).rejects.toMatchObject({ code: 'already_verified' })
-  })
-
-  it('4) الحالة العامة تتطلب البريد المطابق وتكشف الحالة فقط', async () => {
-    await expect(apps.getPublicStatus(reference, 'someone-else@test.local')).rejects.toMatchObject({ code: 'not_found' })
-    const s = await apps.getPublicStatus(reference, phase1.email)
+  it('4) الحالة العامة بالبريد وحده — والرقم إن أُعطي يُطابَق', async () => {
+    await expect(apps.getPublicStatus('someone-else@test.local')).rejects.toMatchObject({ code: 'not_found' })
+    await expect(apps.getPublicStatus(phase1.email, 'WJ-TR-2000-00001')).rejects.toMatchObject({ code: 'not_found' })
+    const s = await apps.getPublicStatus(phase1.email)
     expect(s.status).toBe('submitted')
+    expect(s.reference).toBe(reference)
+    const withRef = await apps.getPublicStatus(phase1.email, reference.toLowerCase())
+    expect(withRef.reference).toBe(reference)
   })
 
   it('5) الطلب يظهر في قائمة الإدارة', async () => {
@@ -178,34 +207,30 @@ describe('دورة طلب المدرب', () => {
     expect(row!.status).toBe('academic_review')
   })
 
-  it('10) القبول المشروط ينشئ الملف ومهام التهيئة — دون حساب ودون دور', async () => {
+  it('10) القبول المشروط ينشئ الملف ومهام التهيئة — بلا ربطٍ بالحساب وبلا دور مدرب بعد', async () => {
     await review.decide(applicationId, adminId, 'conditionally_approve')
     const profile = await prisma.trainerProfile.findUnique({ where: { applicationId }, include: { onboardingTasks: true } })
     expect(profile).toBeTruthy()
     expect(profile!.userId).toBeNull()
     expect(profile!.onboardingTasks.length).toBe(4)
     profileId = profile!.id
-    /* لا مستخدم بهذا البريد بعد */
-    expect(await prisma.user.findUnique({ where: { email: phase1.email } })).toBeNull()
+    /* الحسابُ قائم منذ التقديم — بدور التقديم وحده */
+    const user = await prisma.user.findUniqueOrThrow({ where: { email: phase1.email }, include: { roles: true } })
+    expect(user.roles.map((r) => r.roleId)).toEqual(['trainer_applicant'])
   })
 
-  it('11) الدعوة قبل العقد مرفوضة — وبعد توقيعه تُصدر وتُستهلك مرة واحدة', async () => {
+  it('11) الدعوة قبل العقد مرفوضة — وبعده لا تلزم: التفعيلُ يربط حسابَ المتقدّم ويمنحه الدور', async () => {
     await expect(review.createInvitation(applicationId, adminId)).rejects.toMatchObject({ code: 'bad_state' })
 
     const contract = await review.createContract(applicationId, adminId, { title: 'عقد تدريب 2026' })
     contractId = contract.id
     await review.signContract(contractId, adminId)
 
-    const inv = await review.createInvitation(applicationId, adminId)
-    invitationToken = inv.tokenForDelivery
+    await expect(review.createInvitation(applicationId, adminId)).rejects.toMatchObject({ code: 'has_account' })
+    await review.decide(applicationId, adminId, 'activate')
 
-    const res = await review.consumeInvitation(invitationToken, 'Trainer#12345')
-    trainerUserId = res.userId
-    const user = await prisma.user.findUnique({ where: { id: trainerUserId }, include: { roles: true } })
-    expect(user!.roles.map((r) => r.roleId)).toContain('trainer')
-
-    /* الدعوة لا تُستهلك مرتين */
-    await expect(review.consumeInvitation(invitationToken, 'Trainer#12345')).rejects.toMatchObject({ code: 'invalid_token' })
+    const user = await prisma.user.findUniqueOrThrow({ where: { id: trainerUserId }, include: { roles: true } })
+    expect(user.roles.map((r) => r.roleId)).toEqual(['trainer'])
 
     const profile = await prisma.trainerProfile.findUnique({ where: { id: profileId } })
     expect(profile!.userId).toBe(trainerUserId)
@@ -232,7 +257,7 @@ describe('دورة طلب المدرب', () => {
     const history = await prisma.trainerStatusHistory.findMany({ where: { applicationId }, orderBy: { createdAt: 'asc' } })
     const statuses = history.map((h) => h.toStatus)
     expect(statuses).toEqual(expect.arrayContaining([
-      'email_verification_pending', 'submitted', 'under_review', 'information_requested',
+      'draft', 'submitted', 'under_review', 'information_requested',
       'shortlisted', 'interview_scheduled', 'demo_requested', 'academic_review',
       'conditionally_approved', 'contract_pending', 'onboarding', 'active',
     ]))
@@ -241,6 +266,7 @@ describe('دورة طلب المدرب', () => {
     })
     const actions = audits.map((a) => a.action)
     expect(actions).toContain('trainer.application.submit')
+    expect(actions).toContain('trainer.application.phase2_complete')
     expect(actions).toContain('trainer.application.verify_email')
     expect(actions).toContain('trainer.status.transition')
   })

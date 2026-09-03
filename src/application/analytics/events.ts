@@ -65,10 +65,9 @@ export const ANALYTICS_EVENTS = [
   'course_path_deferred',
   'promo_applied',
   'course_path_named',
-  /* بريدٌ مقابل كود خصم — بديل صندوق التسجيل الكامل المحذوف؛ يقيس كم يترك
-     بريده ممّن لا يشتري بعد */
-  'discount_email_captured',
-  'discount_email_failed',
+  /* تبديلُ موعد الشعبة في صفحة الدورة — يقيس كم يكفيه أقربُ موعدٍ وكم يبحث
+     عن غيره؛ وهو ما يقول لنا هل نفتح شعبا أكثر أم نُقرّب مواعيدها. */
+  'cohort_chosen',
 ] as const
 
 export type AnalyticsEvent = (typeof ANALYTICS_EVENTS)[number]

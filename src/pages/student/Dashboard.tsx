@@ -5,10 +5,7 @@ import {
   Loader2, Send, Sparkles, Target, TrendingUp, Video, LifeBuoy,
 } from "lucide-react";
 import PortalLayout from "./PortalLayout";
-import PathwayMap from "@/components/PathwayMap";
-import { buildPathwayMap, enrollmentFactsFromApi } from "@/application/student/pathway-map";
-import { pathwayIdFromSnapshot } from "@/application/student/skills-profile";
-import { loadLastResultSafe } from "@/application/diagnostic/session-store";
+import { buildJourney, defaultTrackId, type JourneyPlan, type JourneyTrack } from "@/application/student/journey";
 import { usePublishedContent } from "@/services/public-content";
 import { useRealSession } from "@/services/session";
 import { apiGet } from "@/services/api";
@@ -36,7 +33,9 @@ interface RealEnrollment {
     trainers: { profile: { application: { fullName: string } } }[];
   };
   courseProgress: { percent: number } | null;
-  certificates?: unknown[];
+  /* الشهاداتُ بشكلها لا `unknown[]`: بناءُ الرحلة يقرأ حالتَها — والفعّالةُ
+     دليلُ إنجاز، والملغاةُ ليست دليلا. */
+  certificates?: { id: string; number: string; status: string }[];
 }
 interface RealSessionItem {
   id: string; title: string; startsAt: string; endsAt: string | null; status: string;
@@ -151,6 +150,9 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
   const [details, setDetails] = useState<EnrollmentDetail[] | null>(null);
   const [notifs, setNotifs] = useState<RealNotif[]>([]);
   const [certCount, setCertCount] = useState(0);
+  /* الخطّةُ المعتمَدة — تدخل في بناء المسار كما تدخل في «رحلتي»، فلا تفترق
+     اللوحةُ عن الشاشة التي تُحيل إليها. وفشلُ قراءتها لا يُسقط اللوحة. */
+  const [plan, setPlan] = useState<JourneyPlan | null>(null);
   /* آثار ط-٥ من نقاط نهاية قائمة: بطاقات الاسترجاع والقياس البعديّ */
   const [extra, setExtra] = useState<{ retrievalCards: { lastAnswerAt: string | null }[]; remeasures: { measuredAt: string; courseId: string }[]; at: string } | null>(null);
 
@@ -160,6 +162,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
       .then((ds) => { if (on) setDetails(ds.filter((d): d is EnrollmentDetail => d !== null)); });
     apiGet<RealNotif[]>("/api/learner/notifications?audience=learner").then((n) => on && setNotifs(n.slice(0, 4))).catch(() => undefined);
     apiGet<unknown[]>("/api/learner/certificates").then((c) => on && setCertCount(c.length)).catch(() => undefined);
+    apiGet<{ plan: JourneyPlan | null }>("/api/learner/plan").then((r) => on && setPlan(r.plan)).catch(() => undefined);
     void (async () => {
       const safe = async <T,>(pr: Promise<T>): Promise<T | null> => pr.then((v) => v).catch(() => null);
       const [ret, grw] = await Promise.all([
@@ -230,16 +233,19 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
 
   const unread = notifs.filter((n) => n.status !== "read").length;
 
-  /* خريطة المسار (ط-٢) من التسجيلات الحقيقية — المسار من لقطة التشخيص أو الاستحقاق.
-     الكتالوج كسول (ع-١) فنربط الحساب بنسخته حتى تصل عناوين الدورات وترتيبها. */
+  /* موضعُه من رحلته — من المملوك والخطّة، لا من لقطة تشخيصٍ في المتصفّح.
+
+     كانت هذه اللوحةُ تختار المسارَ من لقطة التشخيص المحفوظة محلّيّا: فمن
+     شخّص مسارا ثمّ اشترى غيره يرى خريطةَ مسارٍ لا يملك منه شيئا، ومن اشترى
+     مسارين يرى واحدا. والمصدرُ الآن هو مصدرُ «رحلتي» نفسُه — فلا تقول
+     اللوحةُ شيئا وتقول الرحلةُ غيرَه. */
   const catalogVersion = usePublishedContent();
-  const map = useMemo(() => {
+  const track: JourneyTrack | null = useMemo(() => {
     void catalogVersion;
-    const local = loadLastResultSafe();
-    const snap = local.status === "ok" || local.status === "migrated" ? local.result : null;
-    const pathwayId = pathwayIdFromSnapshot(snap) ?? null;
-    return buildPathwayMap(pathwayId, enrollmentFactsFromApi(rows));
-  }, [rows, catalogVersion]);
+    const tracks = buildJourney(rows, plan);
+    if (tracks.length === 0) return null;
+    return tracks.find((t) => t.id === defaultTrackId(tracks)) ?? tracks[0];
+  }, [rows, plan, catalogVersion]);
 
   return (
     <PortalLayout title={`${greeting()} يا ${name.split(" ")[0]}`}>
@@ -274,8 +280,11 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
         </div>
       </section>
 
-      {/* خريطة المسار (ط-٢) — تجيب «أين أنا من رحلتي؟» بدل عدّ الشعب وحده */}
-      {map && map.totalCount > 0 && <PathwayMap map={map} className="mt-6" />}
+      {/* «أين أنا من رحلتي؟» — بطاقةٌ تُلخّص وتُحيل، لا خريطةٌ ثانية تُرسم.
+
+          كانت هنا خريطةُ المسار كاملةً، وصارت الرحلةُ شاشةً لها شريطُها —
+          فرسمُها مرّتين يجعل نقرةَ المتعلّم بلا وجهةٍ واضحة. */}
+      {track && track.counts.total > 0 && <JourneyGlance track={track} className="mt-6" />}
 
       {/* مؤشر الزخم (ط-٥) — بعد «أين أنا» وقبل «ماذا الآن»: ما فعلته فعلا */}
       {momentum && <MomentumCard m={momentum} className="mt-6" />}
@@ -499,3 +508,61 @@ function EmptyRealDashboard({ name }: { name: string }) {
 /* حُذفت لوحة المحاكاة (`SimulatedDashboard`). كانت تُعرض لزائر بلا جلسة:
    تختار مسارا من كتالوج العرض وتبني تقدّمه وإشعاراته من متجر محلي. وحارسُ
    `PortalLayout` يكفي — يقول للزائر بصدق إن البوابة تُفتح بعد أول تسجيل. */
+
+/* بطاقةُ «أين أنا من رحلتي» — تُلخّص وتُحيل.
+
+   كانت هنا خريطةُ المسار كاملةً برسمها وعقدِها. ولمّا صارت «رحلتي» شاشةً
+   لها شريطُ مراحلَ يُنقر، صار رسمُها ثانيةً في اللوحة تكرارا يُشتّت: نسختان
+   من الشيء نفسِه، ونقرةٌ لا تعرف أيَّهما تفتح.
+
+   فهذه سطران ورقمان وزرٌّ واحد يقود إلى موضع العمل. */
+function JourneyGlance({ track, className = "" }: { track: JourneyTrack; className?: string }) {
+  const { counts, hours, currentIndex, stages } = track;
+  const here = currentIndex >= 0 ? stages[currentIndex] : null;
+  const pct = counts.total > 0 ? Math.round((counts.completed / counts.total) * 100) : 0;
+  return (
+    <section
+      aria-label="أين أنت من رحلتك"
+      className={`rounded-3xl border border-teal/30 bg-teal-ink/[0.06] p-5 sm:p-6 ${className}`.trim()}
+    >
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-xs text-white/60">أين أنت من رحلتك</p>
+          <p className="mt-1 text-xl font-black leading-tight text-teal-light-ink">
+            {currentIndex === -1 ? "أنجزت مراحلك كلها" : `المرحلة ${currentIndex + 1} من ${counts.total}`}
+          </p>
+          <p className="mt-1 truncate text-xs text-white/55">
+            {track.titleAr}
+            {here && ` · ${here.titleAr}`}
+          </p>
+        </div>
+        <dl className="flex gap-5 text-center">
+          <div>
+            <dd className="text-xl font-black tabular-nums">{counts.completed}</dd>
+            <dt className="mt-0.5 text-[10px] text-white/55">أنجزتها</dt>
+          </div>
+          <div>
+            <dd className="text-xl font-black tabular-nums">{counts.owned - counts.completed}</dd>
+            <dt className="mt-0.5 text-[10px] text-white/55">تعمل فيها</dt>
+          </div>
+          {hours.total > 0 && (
+            <div>
+              <dd className="text-xl font-black tabular-nums">{hours.done}</dd>
+              <dt className="mt-0.5 text-[10px] text-white/55">من {hours.total} ساعة</dt>
+            </div>
+          )}
+        </dl>
+      </div>
+      <div aria-hidden="true" className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/10">
+        <div className="h-full rounded-full bg-teal-ink transition-all" style={{ width: `${Math.max(2, pct)}%` }} />
+      </div>
+      <Link
+        to={here ? `/student/learning?stage=${here.courseId}` : "/student/learning"}
+        className="mt-4 inline-flex items-center gap-2 rounded-full bg-teal px-5 py-2.5 text-xs font-black text-on-teal transition hover:bg-teal-light"
+      >
+        {here ? `تابع «${here.titleAr}»` : "افتح رحلتي"}
+        <ArrowLeft className="h-3.5 w-3.5" />
+      </Link>
+    </section>
+  );
+}

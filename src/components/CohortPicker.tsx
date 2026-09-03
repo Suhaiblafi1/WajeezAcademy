@@ -89,15 +89,31 @@ export default function CohortPicker({
               <button
                 type="button"
                 onClick={() => { onSelect(c.id); setOpen(false); }}
-                aria-label={`ابدأ ${fmtDateAr(c.startsAt)}`}
+                aria-label={`ابدأ ${fmtDateAr(c.startsAt)}${c.title ? ` — ${c.title}` : ""}`}
                 className={`flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg border px-2.5 py-1.5 text-right transition ${
                   c.id === selected.id
                     ? "border-teal/50 bg-teal/10"
                     : "border-white/10 hover:border-white/30 hover:bg-white/[0.04]"
                 }`}
               >
-                <When c={c} />
-                {c.id === selected.id && <Check className="h-3.5 w-3.5 shrink-0 text-teal-light-ink" />}
+                {/* الاسمُ والمقاعدُ في الخيارات لا في السطر المطويّ:
+                    شعبتان تبدآن في اليوم نفسِه (صباحيّةٌ ومسائيّة) كانتا سطرين
+                    متطابقين حرفا بحرف — فالاختيارُ بينهما رجمٌ بالغيب. والمقاعدُ
+                    هي «حسب التوفّر» عينُه: من يختار موعدا يحتاج أن يعرف أيُّها
+                    يوشك أن يمتلئ قبل أن يقع اختيارُه عليه. */}
+                <span className="min-w-0">
+                  <When c={c} />
+                  {c.title && <span className="mt-0.5 block truncate text-[10px] leading-4 text-white/35">{c.title}</span>}
+                </span>
+                <span className="flex shrink-0 items-center gap-1.5">
+                  {typeof c.seatsLeft === "number" && c.seatsLeft <= 5 && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-gold/15 px-1.5 py-0.5 text-[9.5px] font-black text-gold-ink">
+                      <Users className="h-2.5 w-2.5" />
+                      {c.seatsLeft}
+                    </span>
+                  )}
+                  {c.id === selected.id && <Check className="h-3.5 w-3.5 text-teal-light-ink" />}
+                </span>
               </button>
             </li>
           ))}

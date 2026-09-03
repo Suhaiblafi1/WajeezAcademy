@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import {
-  ArrowLeft, ArrowRight, BadgeCheck, Check, CheckCircle2, ChevronDown, Compass, Copy,
-  FileUp, Loader2, MailCheck, Mic2, RefreshCcw, Search, Send, Sparkles, Users,
+  ArrowLeft, ArrowRight, AtSign, BadgeCheck, Check, CheckCircle2, ChevronDown, Compass, Eye, EyeOff,
+  FileUp, KeyRound, Loader2, Mail, MailCheck, MessageCircle, Mic2, Phone, RefreshCcw, Search, Send, Sparkles, Users,
 } from "lucide-react";
 import {
-  areaCls, ChoiceGrid, ConsentRow, controlCls, Field, FieldRow, FieldSet, Question,
+  areaCls, ChoiceGrid, ConsentRow, controlCls, Field, FieldRow, FieldSet, OptionGrid, Question,
 } from "@/components/FormKit";
 import SiteShell from "@/components/SiteShell";
 import SeoHead from "@/components/SeoHead";
@@ -14,6 +14,9 @@ import { TRAINING_SPECIALIZATIONS } from "@/data/trainer-contracts";
 import { countAr } from "@/application/text/count-ar";
 import TeachableCoursePicker from "@/components/TeachableCoursePicker";
 import { clearDraft, draftHasContent, loadDraft, saveDraft } from "@/application/trainer/application-draft";
+import {
+  APPLICANT_STATUS, CONTACT_CHANNELS, TRAINING_SEASONS, type ContactChannel,
+} from "@/application/trainer/application-options";
 
 /* صفحة انضمام المدربين.
 
@@ -23,10 +26,10 @@ import { clearDraft, draftHasContent, loadDraft, saveDraft } from "@/application
    بمؤشر تقدّم وتحقق لكل خطوة على حدة، فلا يُرمى الخطأ كله في وجهه عند الإرسال.
    لا حقل حُذف ولا أُضيف: نفس البيانات، مرتّبة بترتيب يُسأل به الإنسان.
 
-   وأُصلح فيها انقطاع حقيقي: رمز المرشح الذي يصدره تحقق البريد كان يُهمَل في
-   الرد (`await apiPost(...)` بلا قراءة)، وهو الرمز الوحيد الذي يفتح المرحلة
-   الثانية ورفع الوثائق والسحب. فكان `/join-trainer/complete` صفحة لا يملك أحد
-   مفتاحها. يُعرض الآن مع رابطه جاهزا. */
+   وصار للمتقدّم حسابٌ من أوّل قسم: يختار كلمةَ مروره مع بريده، فيدخل بهما
+   متى شاء ويرى حالةَ طلبه — لا رمزٌ يُنسخ من الشاشة فيُفقد. والقسمُ الأخير
+   يسأله كيف نصل إليه للاجتماع التعريفيّ، ثمّ يصله بريدُ تأكيدٍ بتفاصيل طلبه
+   ورقمه، وفي البريد رابطٌ يوثّق عنوانه. */
 
 const DOMAIN_YEARS = [
   { value: "1-3", label: "١–٣ سنوات" },
@@ -110,25 +113,6 @@ const TARGET_AUDIENCES = [
   "رواد أعمال وأصحاب مشاريع", "قادة ومديرون", "مستقلون وأعمال حرة", "الباحثون عن عمل",
 ];
 
-const STATUS_LABELS: Record<string, string> = {
-  email_verification_pending: "بانتظار تحقق البريد",
-  submitted: "قُدّم — بانتظار المراجعة",
-  under_review: "قيد المراجعة",
-  information_requested: "طُلبت معلومات إضافية — أكمل المرحلة الثانية",
-  shortlisted: "مختار أولي — سنرتب مقابلة",
-  interview_scheduled: "مقابلة مجدولة",
-  demo_requested: "بانتظار الدرس التجريبي",
-  academic_review: "مراجعة أكاديمية نهائية",
-  conditionally_approved: "قبول مشروط — بانتظار العقد",
-  contract_pending: "العقد قيد التوقيع",
-  onboarding: "تهيئة الانضمام",
-  active: "مدرب نشط",
-  waitlisted: "قائمة الانتظار",
-  rejected: "اعتذرنا هذه المرة",
-  withdrawn: "مسحوب من قبلك",
-  suspended: "موقوف",
-};
-
 /* «بقي 2 أشياء» عربيةٌ مكسورة يقرؤها المتقدّم في أول احتكاك به */
 const MISSING_FORMS = { one: "بند", two: "بندان", few: "بنود", many: "بندا" } as const;
 const CHAR_FORMS = { one: "حرف", two: "حرفان", few: "أحرف", many: "حرفا" } as const;
@@ -165,15 +149,13 @@ const PERIODS = [
 
 interface UploadState { status: "idle" | "registering" | "uploading" | "done" | "error"; name?: string; error?: string }
 
-/* ثلاث خطوات لا أربع. حُذف قسم «ما يمكنك تدريسه»: كان يطلب من المتقدّم أن
-   يفتح كتالوج وجيز ويختار منه دورات قبل أن يعرف أنّنا قبلناه أصلا — وإسنادُ
-   المقرر قرارُ الإدارة بعد الاعتماد لا إقرارُ المتقدّم قبله. وما كان معه في
-   الخطوة ممّا يخصّ المتقدّم نفسه — توفّره وموافقته على الدرس التجريبي — بقي
-   وانتقل إلى خطوة أدلته. */
+/* ثلاث خطوات: من هو (وكلمةُ حسابه)، وأدلتُه وتوفّره، وكيف نصل إليه.
+   الحسابُ انتقل من الخطوة الأخيرة إلى الأولى: كان اختياريا يُنشأ بعد كلّ
+   شيء فلا يُنشئه أحد، وصار مع البريد — فمن يكتب بريده يكتب كلمته. */
 const STEPS = [
   { n: 1, title: "معلوماتك وخبرتك", hint: "من أنت وماذا تُتقن" },
   { n: 2, title: "نماذجك وأدلتك", hint: "سيرتك ودوراتك وتوفّرك" },
-  { n: 3, title: "حسابك وتقدّمك", hint: "يحفظ طلبك ومسودتك وحالته" },
+  { n: 3, title: "التواصل والإرسال", hint: "كيف نصل إليك للاجتماع التعريفي" },
 ] as const;
 
 /** قائمة منسدلة متعددة الاختيار — مربع صح بجانب كل خيار، والمختار يظهر وسمًا صغيرًا قابلا للإزالة */
@@ -181,10 +163,28 @@ function MultiPick({ id, label, options, selected, onChange }: {
   id: string; label: string; options: string[]; selected: string[]; onChange: (next: string[]) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
   const toggleValue = (v: string) =>
     onChange(selected.includes(v) ? selected.filter((x) => x !== v) : [...selected, v]);
+  /* القائمةُ تُغلق بالنقر خارجها وبـEscape — كانت تبقى مفتوحةً حتّى يُنقر
+     زرُّها ثانية، فيُفتح المتقدّم قائمتين معا ولا يعرف كيف يطويهما. */
+  useEffect(() => {
+    if (!open) return;
+    const onPointer = (e: MouseEvent | TouchEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", onPointer);
+    document.addEventListener("touchstart", onPointer);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onPointer);
+      document.removeEventListener("touchstart", onPointer);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
   return (
-    <div className="relative">
+    <div className="relative" ref={rootRef}>
       <button
         type="button" id={id} aria-expanded={open} aria-haspopup="listbox"
         onClick={() => setOpen(!open)}
@@ -222,41 +222,37 @@ function MultiPick({ id, label, options, selected, onChange }: {
   );
 }
 
-/** صندوق نصّ قابل للنسخ — للرمز والرابط اللذين يحتاجهما المرشح لاحقا */
-function CopyBox({ label, value, mono = true }: { label: string; value: string; mono?: boolean }) {
-  const [done, setDone] = useState(false);
-  const copy = () => {
-    navigator.clipboard?.writeText(value).then(() => setDone(true)).catch(() => setDone(false));
-  };
-  return (
-    <div className="mt-3 rounded-xl border border-white/10 bg-black/30 p-3">
-      <p className="text-[11px] font-bold text-white/45">{label}</p>
-      <div className="mt-1.5 flex items-center gap-2">
-        <code dir="ltr" className={`min-w-0 flex-1 overflow-x-auto whitespace-nowrap text-[11px] text-white/80 ${mono ? "font-mono" : ""}`}>
-          {value}
-        </code>
-        <button
-          type="button" onClick={copy} aria-label={`انسخ ${label}`}
-          className="shrink-0 cursor-pointer rounded-lg border border-white/15 px-2.5 py-1.5 text-[11px] font-bold text-white/70 transition hover:border-teal/50 hover:text-teal-light-ink"
-        >
-          {done ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-        </button>
-      </div>
-    </div>
-  );
-}
-
 interface SubmitResponse {
   reference: string;
   status: string;
-  emailDelivery?: "sent" | "not_configured" | "failed";
-  /** يصدر حين تتعذّر قناة البريد فيمضي الطلب بلا بوابة بريدية */
-  candidateToken?: string;
-  devVerificationToken?: string;
+  /** رمزُ المتابعة — به تُرفع الوثائق ويُكمَل الطلب في هذه الجلسة */
+  candidateToken: string;
+  resumed?: boolean;
 }
 
-/** صفحة انضمام المدربين — المرحلة الأولى على API حقيقي: تقديم، تحقق بريد، متابعة حالة */
+interface CompleteResponse {
+  status: string;
+  emailDelivery: "sent" | "not_configured" | "failed" | null;
+}
+
+/** أرقامٌ لاتينية فقط: العربيّة الهنديّة تُحوَّل، وما سواها يسقط */
+function normalizeDigits(v: string): string {
+  return v
+    .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
+    .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+    .replace(/[^\d]/g, "")
+    .slice(0, 15);
+}
+
+/* رمزُ الدولة: `controlCls` يحمل `w-full`، وكان يُضاف إليه `w-24` فيفوز
+   `w-full` (يأتي بعده في ورقة الأنماط) ويأخذ الرمزُ الصفَّ كلَّه — فيبقى
+   لحقل الرقم ٣٤ بكسلا لا تُرى ولا تُنقر. وهذا ما وُصف بـ«إدخال الرقم لا
+   يعمل، فقط رمز الدولة». الحلُّ صنفٌ بلا `w-full` أصلا. */
+const codeSelectCls = `${controlCls.replace("w-full", "")} w-28 shrink-0 px-2 [&>option]:bg-surface`;
+
+/** صفحة انضمام المدربين — على API حقيقي: قسمٌ أوّل يُنشئ الطلب والحساب، وقسمٌ أخير يُكمله */
 export default function JoinTrainer() {
+  const [params] = useSearchParams();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
     fullName: "", email: "", phoneCountryCode: "+962", phone: "", country: "",
@@ -272,13 +268,13 @@ export default function JoinTrainer() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<SubmitResponse | null>(null);
+  const [completion, setCompletion] = useState<CompleteResponse | null>(null);
 
-  /* تحقق البريد */
-  const [verifyTokenInput, setVerifyTokenInput] = useState("");
-  const [verified, setVerified] = useState(false);
-  const [verifyBusy, setVerifyBusy] = useState(false);
-  const [verifyError, setVerifyError] = useState("");
-  /* رمز المرشح — من رد التحقق أو من رد التقديم حين تتعذّر قناة البريد */
+  /* كلمةُ حسابه — لا تُحفظ في المسودّة أبدا */
+  const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  /* رمزُ المتابعة — من ردّ القسم الأوّل، أو من رابط الاستئناف */
   const [candidateToken, setCandidateToken] = useState("");
 
   /* القسمان 2–3 — كانا في صفحة مستقلة تُفتح برابط بريد، وصارا قسمين هنا */
@@ -286,23 +282,21 @@ export default function JoinTrainer() {
   const [teachableOther, setTeachableOther] = useState("");
   const [days, setDays] = useState<string[]>([]);
   const [periods, setPeriods] = useState<string[]>([]);
+  const [seasons, setSeasons] = useState<string[]>([]);
   const [hoursPerWeek, setHoursPerWeek] = useState("");
   const [startFrom, setStartFrom] = useState("");
   const [demoConsent, setDemoConsent] = useState(false);
   const [uploads, setUploads] = useState<Record<string, UploadState>>({});
   const [phase2Done, setPhase2Done] = useState(false);
-  /* حساب المتقدّم — اختياري لكنه الوسيلة الوحيدة لمتابعة الطلب بلا رمز يُنسخ */
-  const [accountPassword, setAccountPassword] = useState("");
-  const [accountState, setAccountState] = useState<"idle" | "busy" | "done" | "error">("idle");
-  const [accountError, setAccountError] = useState("");
+  /* كيف نتواصل معه للاجتماع التعريفيّ */
+  const [contactChannel, setContactChannel] = useState<ContactChannel | "">("");
+  const [contactAltEmail, setContactAltEmail] = useState("");
 
-  /* متابعة حالة طلب سابق */
+  /* متابعة حالة طلب سابق — البريدُ يكفي، والرقمُ اختياريّ */
   const [lookup, setLookup] = useState({ reference: "", email: "" });
-  const [lookupResult, setLookupResult] = useState<string | null>(null);
+  const [lookupResult, setLookupResult] = useState<{ reference: string; label: string; explain: string } | null>(null);
   const [lookupError, setLookupError] = useState("");
-  const [resent, setResent] = useState(false);
-  const [withdrawForm, setWithdrawForm] = useState({ candidateToken: "", reason: "" });
-  const [withdrawMsg, setWithdrawMsg] = useState("");
+  const [lookupBusy, setLookupBusy] = useState(false);
 
   /* المسودّة: تُقرأ مرّة عند الفتح، وتُكتب مع كل تغيير */
   const [resumed, setResumed] = useState(false);
@@ -325,29 +319,45 @@ export default function JoinTrainer() {
     setTeachableOther(d.teachableOther ?? "");
     setDays(d.days ?? []);
     setPeriods(d.periods ?? []);
+    setSeasons(d.seasons ?? []);
     setHoursPerWeek(d.hoursPerWeek ?? "");
     setStartFrom(d.startFrom ?? "");
     setDemoConsent(Boolean(d.demoConsent));
+    setContactChannel((d.contactChannel as ContactChannel | undefined) ?? "");
+    setContactAltEmail(d.contactAltEmail ?? "");
     /* المرجع والرمز يعودان معا أو لا يعودان: بلا الرمز لا يُكمَل الطلب */
     if (d.reference && d.candidateToken) {
-      setResult({ reference: d.reference, status: "submitted", candidateToken: d.candidateToken });
+      setResult({ reference: d.reference, status: "draft", candidateToken: d.candidateToken });
       setCandidateToken(d.candidateToken);
-      setVerified(true);
-      setStep(Math.min(Math.max(d.step ?? 1, 1), 3));
+      setStep(Math.min(Math.max(d.step ?? 1, 2), 3));
     }
     setResumed(true);
   }, []);
+
+  /* استئنافٌ من صفحة الحالة: `?resume=REF&token=…` — الخادمُ عنده القسمُ
+     الأوّل كاملا، فنبدأ من الثاني بمفتاحٍ جديد. */
+  useEffect(() => {
+    const ref = params.get("resume");
+    const token = params.get("token");
+    if (!ref || !token || token.length < 10) return;
+    setResult({ reference: ref, status: "draft", candidateToken: token, resumed: true });
+    setCandidateToken(token);
+    setStep(2);
+    setResumed(true);
+    window.history.replaceState(null, "", "/join-trainer");
+  }, [params]);
 
   useEffect(() => {
     if (!draftLoaded.current || phase2Done) return;
     saveDraft({
       step, form, specialties, languages, targetCountries, targetAudiences,
-      teachable, teachableOther, days, periods, hoursPerWeek, startFrom, demoConsent,
+      teachable, teachableOther, days, periods, seasons, hoursPerWeek, startFrom, demoConsent,
+      contactChannel: contactChannel || undefined, contactAltEmail: contactAltEmail || undefined,
       reference: result?.reference, candidateToken: candidateToken || undefined,
     });
   }, [step, form, specialties, languages, targetCountries, targetAudiences,
-      teachable, teachableOther, days, periods, hoursPerWeek, startFrom, demoConsent,
-      result, candidateToken, phase2Done]);
+      teachable, teachableOther, days, periods, seasons, hoursPerWeek, startFrom, demoConsent,
+      contactChannel, contactAltEmail, result, candidateToken, phase2Done]);
 
   const startOver = () => {
     clearDraft();
@@ -383,6 +393,12 @@ export default function JoinTrainer() {
     const m: Record<1 | 2 | 3, string[]> = { 1: [], 2: [], 3: [] };
     if (form.fullName.trim().length < 3) m[1].push("اسمك الكامل");
     if (!/.+@.+\..+/.test(form.email)) m[1].push("بريد إلكتروني صحيح");
+    /* كلمةُ الحساب تُفحص قبل أن يُرسَل القسمُ الأوّل — فالحسابُ يُنشأ معه.
+       وبعد الإرسال لا تُطلب ثانية: الحسابُ قائم. */
+    if (!result) {
+      if (password.length < 8) m[1].push(`كلمة مرور حسابك — ${password.length === 0 ? "٨ أحرف على الأقل" : `بقي ${countAr(8 - password.length, CHAR_FORMS)}`}`);
+      else if (passwordConfirm !== password) m[1].push("تأكيد كلمة المرور مطابقا");
+    }
     if (!form.employmentStatus) m[1].push("حالتك المهنية");
     if (specialties.length === 0) m[1].push("تخصص تدريبي واحد على الأقل");
     if (!form.domainYears) m[1].push("سنوات خبرتك في المجال");
@@ -399,16 +415,24 @@ export default function JoinTrainer() {
       m[2].push("دورة واحدة تستطيع تقديمها — من القائمة أو بقلمك");
     }
     if (!demoConsent) m[2].push("الموافقة على الدرس التجريبي والمقابلة");
+    /* كيف نصل إليه — ووسيلةٌ تحتاج رقما بلا رقم لا تُقبل */
+    const channel = CONTACT_CHANNELS.find((c) => c.value === contactChannel);
+    if (!channel) m[3].push("وسيلة التواصل التي تفضّلها");
+    else {
+      if (channel.needsPhone && normalizeDigits(form.phone).length < 6) m[3].push("رقم جوالك في القسم الأول — أو اختر البريد");
+      if (channel.needsAltEmail && !/.+@.+\..+/.test(contactAltEmail)) m[3].push("البريد الآخر بصيغة صحيحة");
+    }
     return m;
-  }, [form, specialties, languages, motivationLen, accreditationReady, uploads, teachable, teachableOther, demoConsent]);
+  }, [form, specialties, languages, motivationLen, accreditationReady, uploads, teachable, teachableOther, demoConsent,
+      password, passwordConfirm, result, contactChannel, contactAltEmail]);
 
   const stepValid = useMemo(() => ({
     1: missing[1].length === 0 && motivationLen <= MOTIVATION_MAX,
     2: missing[2].length === 0,
-    3: true,
+    3: missing[3].length === 0,
   }), [missing, motivationLen]);
 
-  const valid = stepValid[1] && stepValid[2];
+  const valid = stepValid[1] && stepValid[2] && stepValid[3];
 
   /* الإرسال النهائي — القسمان 2–3. القسم الأول أُرسل عند المضيّ منه. */
   const submit = async (e: React.FormEvent) => {
@@ -416,10 +440,10 @@ export default function JoinTrainer() {
     /* حزامٌ ثانٍ مع المفتاحين: النموذج يلتقط Enter من أي حقل في أي خطوة،
        وإرسالٌ من خطوةٍ غير خطوته يقفز بالمتقدّم فوق شاشة حسابه. */
     if (step !== 3) return;
-    if (!valid || busy || !result || !candidateToken) return;
+    if (!valid || busy || !result || !candidateToken || !contactChannel) return;
     setBusy(true); setError("");
     try {
-      await apiPost(`/api/v1/trainer-applications/${encodeURIComponent(result.reference)}/phase-2`, {
+      const res = await apiPost<CompleteResponse>(`/api/v1/trainer-applications/${encodeURIComponent(result.reference)}/phase-2`, {
         candidateToken,
         teachableCourseIds: teachable,
         teachableOther: teachableOther.trim() || undefined,
@@ -428,9 +452,15 @@ export default function JoinTrainer() {
           hoursPerWeek: hoursPerWeek ? Number(hoursPerWeek) : undefined,
           startFrom: startFrom || undefined,
           periods: periods.length ? periods : undefined,
+          seasons: seasons.length ? seasons : undefined,
         },
         demoConsent,
+        contact: {
+          channel: contactChannel,
+          altEmail: contactChannel === "other_email" ? contactAltEmail.trim().toLowerCase() : undefined,
+        },
       });
+      setCompletion(res);
       setPhase2Done(true);
       clearDraft();
       window.scrollTo(0, 0);
@@ -484,8 +514,9 @@ export default function JoinTrainer() {
     setBusy(true); setError("");
     try {
       const res = await apiPost<SubmitResponse>("/api/v1/trainer-applications", {
-        fullName: form.fullName, email: form.email,
-        phoneCountryCode: form.phoneCountryCode || undefined, phone: form.phone || undefined,
+        fullName: form.fullName, email: form.email.trim().toLowerCase(), password,
+        phoneCountryCode: form.phone ? form.phoneCountryCode || undefined : undefined,
+        phone: normalizeDigits(form.phone) || undefined,
         country: form.country || undefined, timezone: COUNTRY_TIMEZONE[form.country] ?? undefined,
         employmentStatus: (form.employmentStatus || undefined) as "employed" | "own_business" | "full_time_training" | undefined,
         jobTitle: form.jobTitle || undefined,
@@ -500,7 +531,9 @@ export default function JoinTrainer() {
         motivation: form.motivation.trim(), privacyConsent: form.privacyConsent,
       });
       setResult(res);
-      if (res.candidateToken) { setCandidateToken(res.candidateToken); setVerified(true); }
+      setCandidateToken(res.candidateToken);
+      /* الكلمةُ أدّت عملها — لا تبقى في الذاكرة أطولَ من حاجتها */
+      setPassword(""); setPasswordConfirm("");
       return true;
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "تعذر بدء الطلب — تحقق من اتصالك وحاول مجددا");
@@ -510,75 +543,18 @@ export default function JoinTrainer() {
     }
   };
 
-  const createAccount = async () => {
-    if (!result || !candidateToken || accountState === "busy") return;
-    if (accountPassword.length < 8) { setAccountError("كلمة المرور 8 أحرف على الأقل"); return; }
-    setAccountState("busy"); setAccountError("");
-    try {
-      await apiPost(`/api/v1/trainer-applications/${encodeURIComponent(result.reference)}/account`, {
-        candidateToken, password: accountPassword,
-      });
-      setAccountState("done");
-      setAccountPassword("");
-    } catch (err) {
-      setAccountState("error");
-      setAccountError(err instanceof ApiError ? err.message : "تعذّر إنشاء الحساب — حاول مجددا");
-    }
-  };
-
-  const verify = async () => {
-    if (!result || verifyBusy || verifyTokenInput.trim().length < 10) return;
-    setVerifyBusy(true); setVerifyError("");
-    try {
-      /* الرد يحمل رمز المرشح — وكان يُهمَل، فتُغلق المرحلة الثانية على صاحبها */
-      const res = await apiPost<{ candidateToken?: string }>("/api/v1/trainer-applications/verify-email", {
-        reference: result.reference, token: verifyTokenInput.trim(),
-      });
-      if (res.candidateToken) setCandidateToken(res.candidateToken);
-      setVerified(true);
-    } catch (err) {
-      setVerifyError(err instanceof ApiError ? err.message : "تعذر التحقق — راجع الرمز وحاول مجددا");
-    } finally {
-      setVerifyBusy(false);
-    }
-  };
-
-  const resendVerify = async () => {
-    if (resent) return;
-    try {
-      const res = await apiPost<{ ok: boolean; devVerificationToken?: string }>(
-        "/api/v1/trainer-applications/resend-verification", { email: form.email.trim().toLowerCase() }
-      );
-      if (res.devVerificationToken) setVerifyTokenInput(res.devVerificationToken);
-      setResent(true);
-    } catch {
-      setVerifyError("تعذرت إعادة الإرسال — حاول بعد قليل");
-    }
-  };
-
-  const withdrawApplication = async () => {
-    setWithdrawMsg("");
-    try {
-      await apiPost(`/api/v1/trainer-applications/${encodeURIComponent(lookup.reference.trim())}/withdraw`, {
-        candidateToken: withdrawForm.candidateToken.trim(),
-        reason: withdrawForm.reason.trim() || undefined,
-      });
-      setWithdrawMsg("سُحب طلبك — شكرا لاهتمامك، وتبقى أهلا بك متى ما عدت");
-      setLookupResult(null);
-    } catch (err) {
-      setWithdrawMsg(err instanceof ApiError ? err.message : "تعذر السحب — تحقق من رمز المرشح");
-    }
-  };
-
   const checkStatus = async () => {
-    setLookupError(""); setLookupResult(null);
+    setLookupError(""); setLookupResult(null); setLookupBusy(true);
     try {
-      const res = await apiGet<{ status: string }>(
-        `/api/v1/trainer-applications/${encodeURIComponent(lookup.reference.trim())}/status?email=${encodeURIComponent(lookup.email.trim())}`
-      );
-      setLookupResult(STATUS_LABELS[res.status] ?? res.status);
+      const q = new URLSearchParams({ email: lookup.email.trim().toLowerCase() });
+      if (lookup.reference.trim()) q.set("reference", lookup.reference.trim());
+      const res = await apiGet<{ reference: string; status: string }>(`/api/v1/trainer-applications/status?${q.toString()}`);
+      const st = APPLICANT_STATUS[res.status];
+      setLookupResult({ reference: res.reference, label: st?.label ?? res.status, explain: st?.explain ?? "" });
     } catch (err) {
       setLookupError(err instanceof ApiError ? err.message : "تعذر جلب الحالة");
+    } finally {
+      setLookupBusy(false);
     }
   };
 
@@ -586,76 +562,65 @@ export default function JoinTrainer() {
      بدء الطلب في الخلفية تفصيلٌ تقني، وإظهار شاشة النجاح عنده يوهم المتقدّم
      أنه انتهى وقد بقي نصف طلبه. */
   if (result && phase2Done) {
-    const mailUnavailable = result.emailDelivery && result.emailDelivery !== "sent";
+    const mailSent = completion?.emailDelivery === "sent";
+    const channel = CONTACT_CHANNELS.find((c) => c.value === contactChannel);
+    const channelValue = contactChannel === "other_email" ? contactAltEmail.trim()
+      : contactChannel === "email" ? form.email.trim()
+      : `${form.phoneCountryCode}${normalizeDigits(form.phone)}`;
     return (
       <SiteShell>
         <SeoHead title="طلبك وصل" description="طلب انضمام مدرب في أكاديمية وجيز" path="/join-trainer" />
         <div className="mx-auto max-w-lg py-14 text-center">
           <span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-teal/15">
-            {verified ? <CheckCircle2 className="h-8 w-8 text-teal-light-ink" /> : <MailCheck className="h-8 w-8 text-teal-light-ink" />}
+            <CheckCircle2 className="h-8 w-8 text-teal-light-ink" />
           </span>
-          <h1 className="mt-6 text-2xl font-black">
-            {verified ? "طلبك قيد المراجعة" : "طلبك محفوظ — بقيت خطوة التحقق"}
-          </h1>
+          <h1 className="mt-6 text-2xl font-black">وصل طلبك كاملا — شكرا لك</h1>
           <p className="mt-4 rounded-2xl border border-gold/30 bg-gold/5 p-4">
-            <span className="text-xs text-white/50">رقمك المرجعي — احفظه لمتابعة طلبك</span>
+            <span className="text-xs text-white/50">رقم طلبك</span>
             <span className="mt-1 block font-mono text-xl font-black tracking-wide text-gold-ink" dir="ltr">{result.reference}</span>
           </p>
 
-          {!verified ? (
-            <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-right">
-              <p className="text-sm leading-7 text-white/65">
-                أرسلنا رمز تحقق إلى بريدك <b className="text-white">{form.email}</b> — أدخله هنا ليصبح طلبك «مُقدَّما» رسميا:
+          <div className="mt-6 space-y-4 text-right">
+            <div className="rounded-2xl border border-teal/30 bg-teal/[0.05] p-5">
+              <p className="flex items-center gap-2 text-sm font-black text-teal-light-ink">
+                <BadgeCheck className="h-4 w-4" /> ما التالي؟
               </p>
-              {result.devVerificationToken && (
-                <p className="mt-2 rounded-lg bg-black/40 p-2 font-mono text-[11px] text-white/45" dir="ltr">
-                  بيئة التطوير — الرمز: {result.devVerificationToken}
-                </p>
-              )}
-              <div className="mt-3 flex gap-2">
-                <input
-                  dir="ltr" value={verifyTokenInput} onChange={(e) => setVerifyTokenInput(e.target.value)}
-                  placeholder="رمز التحقق" aria-label="رمز التحقق"
-                  className={`${controlCls} text-left font-mono`}
-                />
-                <button
-                  onClick={verify} disabled={verifyBusy || verifyTokenInput.trim().length < 10}
-                  className="shrink-0 cursor-pointer rounded-xl bg-teal px-5 text-sm font-black text-on-teal transition hover:bg-teal/90 disabled:opacity-40"
-                >
-                  {verifyBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : "تحقق"}
-                </button>
-              </div>
-              {verifyError && <p className="mt-2 text-xs text-red-300" role="alert">{verifyError}</p>}
-              <button
-                type="button" onClick={resendVerify} disabled={resent}
-                className="mt-3 cursor-pointer text-xs font-bold text-teal-light-ink underline decoration-dotted underline-offset-4 transition hover:text-teal-ink disabled:cursor-default disabled:text-white/40 disabled:no-underline"
-              >
-                {resent ? "أُعيد الإرسال — راجع بريدك مجددا" : "لم يصلك الرمز؟ أعد الإرسال"}
-              </button>
+              <p className="mt-2 text-sm leading-8 text-white/70">
+                سيقرأ فريقنا الأكاديمي طلبك ومستنداتك، ثم <b className="text-white">نتواصل معك عبر {channel?.label ?? "البريد"}</b>
+                {channelValue && <> على <b dir="ltr" className="text-white">{channelValue}</b></>} لتحديد موعد
+                اجتماع تعريفي قصير نعرّفك فيه بمنهجية الأكاديمية ونسمع منك.
+              </p>
             </div>
-          ) : (
-            <div className="mt-6 space-y-4 text-right">
-              {mailUnavailable && (
-                <p className="rounded-xl border border-gold/30 bg-gold/[0.07] p-4 text-xs leading-6 text-gold-ink">
-                  تعذّر إرسال بريد التأكيد الآن، فسجّلنا طلبك مباشرة بلا خطوة التحقق البريدي — واحفظ رمز
-                  المتابعة أدناه لأنه لن يصلك بالبريد.
-                </p>
-              )}
-              <p className="text-sm leading-8 text-white/60">
-                وصلنا طلبك كاملا — بأقسامه الثلاثة ومستنداتك. سيقرؤه فريقنا ثم نراسلك بالخطوة التالية:
-                مقابلة ودرس تجريبي قصير. احفظ رقمك المرجعي ورمز المرشح أدناه — بهما تتابع حالتك أو تسحب طلبك.
-              </p>
 
-              {candidateToken && (
-                <div className="rounded-2xl border border-teal/30 bg-teal/[0.05] p-5">
-                  <p className="flex items-center gap-2 text-sm font-black text-teal-light-ink">
-                    <BadgeCheck className="h-4 w-4" /> مفتاح متابعة طلبك
-                  </p>
-                  <CopyBox label="رمز المرشح — لمتابعة الحالة أو سحب الطلب" value={candidateToken} />
-                </div>
-              )}
+            <div className={`rounded-2xl border p-5 ${mailSent ? "border-white/10 bg-white/[0.03]" : "border-gold/30 bg-gold/[0.07]"}`}>
+              <p className="flex items-center gap-2 text-sm font-black">
+                <MailCheck className="h-4 w-4 text-teal-light-ink" />
+                {mailSent ? "أرسلنا بريد تأكيد إلى" : "تعذّر إرسال بريد التأكيد الآن"}
+                {mailSent && <b dir="ltr" className="text-teal-light-ink">{form.email.trim()}</b>}
+              </p>
+              <p className="mt-2 text-[12px] leading-7 text-white/60">
+                {mailSent
+                  ? "فيه رقم طلبك وتفاصيله والخطوة التالية — وفيه رابطٌ افتحه مرة واحدة ليُوثَّق بريدك. إن لم يصلك خلال دقائق راجع مجلد الرسائل غير المرغوبة، أو أعد إرساله من صفحة حالتك."
+                  : "طلبك محفوظ ومقدَّم على أي حال. يمكنك طلب رسالة التأكيد مجددا من صفحة حالتك بعد الدخول."}
+              </p>
             </div>
-          )}
+
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+              <p className="flex items-center gap-2 text-sm font-black">
+                <KeyRound className="h-4 w-4 text-teal-light-ink" /> تابع حالة طلبك من حسابك
+              </p>
+              <p className="mt-2 text-[12px] leading-7 text-white/60">
+                سجّل الدخول ببريدك <b dir="ltr" className="text-white/85">{form.email.trim()}</b> وكلمة المرور التي اختَرتها.
+                سترى حالة طلبك في كل مرحلة، وإن اعتُمدت تُفتح لك بوابة المدربين من الحساب نفسه.
+              </p>
+              <Link
+                to="/auth"
+                className="mt-4 inline-flex items-center gap-2 rounded-full bg-teal px-6 py-2.5 text-sm font-black text-on-teal transition hover:bg-teal/90"
+              >
+                سجّل الدخول <ArrowLeft className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
           <div>
             <Link to="/" className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-teal-light-ink transition hover:text-teal-ink">
               العودة للرئيسية <ArrowLeft className="h-4 w-4" />
@@ -767,12 +732,18 @@ export default function JoinTrainer() {
                   <Field label="البريد الإلكتروني" htmlFor="jt-email" required>
                     <input id="jt-email" name="email" type="email" autoComplete="email" required dir="ltr" value={form.email} onChange={set("email")} className={`${controlCls} text-left`} />
                   </Field>
-                  <Field label="رقم الجوال (واتساب)" htmlFor="jt-phone">
-                    <div className="flex gap-2">
-                      <select id="jt-cc" aria-label="رمز الدولة" value={form.phoneCountryCode} onChange={set("phoneCountryCode")} className={`${controlCls} w-24 shrink-0 px-2 [&>option]:bg-surface`} dir="ltr">
+                  <Field label="رقم الجوال (واتساب)" htmlFor="jt-phone" hint="بلا رمز الدولة وبلا صفر البداية — مثال: 791234567">
+                    <div className="flex gap-2" dir="ltr">
+                      <select id="jt-cc" aria-label="رمز الدولة" value={form.phoneCountryCode} onChange={set("phoneCountryCode")} className={codeSelectCls}>
                         {COUNTRY_CODES.map((c) => <option key={c} value={c}>{c}</option>)}
                       </select>
-                      <input id="jt-phone" name="tel" type="tel" autoComplete="tel" dir="ltr" value={form.phone} onChange={set("phone")} className={`${controlCls} min-w-0 flex-1 text-left`} />
+                      <input
+                        id="jt-phone" name="tel" type="tel" inputMode="tel" autoComplete="tel-national" dir="ltr"
+                        placeholder="791234567"
+                        value={form.phone}
+                        onChange={(e) => setForm({ ...form, phone: normalizeDigits(e.target.value) })}
+                        className={`${controlCls} min-w-0 flex-1 text-left`}
+                      />
                     </div>
                   </Field>
                   <Field label="دولة الإقامة" htmlFor="jt-country">
@@ -783,6 +754,51 @@ export default function JoinTrainer() {
                     </select>
                   </Field>
                 </FieldRow>
+
+                {/* الحسابُ مع البريد: كلمةٌ يختارها هنا يدخل بها لاحقا ليرى حالة
+                    طلبه — ولا رمزٌ يُنسخ من الشاشة. وبعد إرسال القسم الأوّل
+                    الحسابُ قائم فلا تُطلب ثانية. */}
+                {!result ? (
+                  <div className="mt-5 rounded-2xl border border-teal/25 bg-teal/[0.04] p-4">
+                    <p className="flex items-center gap-2 text-[12.5px] font-black text-teal-light-ink">
+                      <KeyRound className="h-4 w-4" /> كلمة مرور لحسابك على المنصّة
+                    </p>
+                    <p className="mt-1 text-[11px] leading-6 text-white/50">
+                      تدخل بها ببريدك أعلاه لتتابع حالة طلبك في كل مرحلة — وإن اعتُمدت تُفتح لك بوابة المدربين من الحساب نفسه.
+                      إن كان لك حساب على وجيز بهذا البريد فأدخل كلمتَه الحالية.
+                    </p>
+                    <FieldRow>
+                      <Field label="كلمة المرور" htmlFor="jt-password" required hint="٨ أحرف على الأقل">
+                        <div className="relative">
+                          <input
+                            id="jt-password" type={showPassword ? "text" : "password"} autoComplete="new-password" dir="ltr"
+                            value={password} onChange={(e) => setPassword(e.target.value)}
+                            className={`${controlCls} pr-4 pl-11 text-left`}
+                          />
+                          <button
+                            type="button" onClick={() => setShowPassword((v) => !v)}
+                            aria-label={showPassword ? "أخفِ كلمة المرور" : "أظهر كلمة المرور"}
+                            className="absolute left-3 top-1/2 -translate-y-1/2 cursor-pointer text-white/45 transition hover:text-white"
+                          >
+                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
+                      </Field>
+                      <Field label="تأكيد كلمة المرور" htmlFor="jt-password2" required>
+                        <input
+                          id="jt-password2" type={showPassword ? "text" : "password"} autoComplete="new-password" dir="ltr"
+                          value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)}
+                          className={`${controlCls} text-left ${passwordConfirm && passwordConfirm !== password ? "border-gold/60" : ""}`}
+                        />
+                      </Field>
+                    </FieldRow>
+                  </div>
+                ) : (
+                  <p className="mt-5 flex items-center gap-2 rounded-2xl border border-teal/30 bg-teal/[0.06] p-4 text-[12px] font-bold text-teal-light-ink">
+                    <CheckCircle2 className="h-4 w-4 shrink-0" />
+                    حسابك جاهز ببريدك <span dir="ltr" className="text-white/85">{form.email.trim()}</span> — تدخل به بعد الإرسال لمتابعة طلبك.
+                  </p>
+                )}
               </Question>
 
               {/* «نبذة عنك» سؤالٌ مفتوح يُجاب بسطرٍ عامّ («مدرب شغوف بالتطوير»)
@@ -1056,6 +1072,17 @@ export default function JoinTrainer() {
                       name="وقت التدريب"
                     />
                   </FieldSet>
+                  {/* الموسمُ: الشعبةُ تُفتح في موسمٍ، والمدرّبُ متفرّغٌ في بعضها
+                      لا كلّها — فيختار ما يشاء منها، واحدا أو أكثر. */}
+                  <FieldSet legend="وفي أي مواسم السنة؟" hint="اختر موسما أو أكثر — الشعب تُفتح في مواسم لا طول السنة." wide>
+                    <OptionGrid
+                      items={TRAINING_SEASONS.map((sn) => ({ value: sn.value, label: `${sn.label} · ${sn.months} (${sn.monthNums})` }))}
+                      isOn={(v) => seasons.includes(v)}
+                      onToggle={(v) => toggle(seasons, v, setSeasons)}
+                      cols={2}
+                      name="مواسم التدريب"
+                    />
+                  </FieldSet>
                 </FieldRow>
               </Question>
 
@@ -1065,55 +1092,71 @@ export default function JoinTrainer() {
             </div>
           )}
 
-          {/* ══ ٣) مراجعة وإرسال ══ */}
+          {/* ══ ٣) التواصل والإرسال ══ */}
           {step === 3 && (
             <div className="space-y-5">
-              {/* الحساب اختياري ومفيد: بدونه يتابع طلبه برقم ورمز ينسخهما من
-                  الشاشة — ومن فقدهما فقد طلبه. وهو حساب «متقدّم مدرب» لا حساب
-                  متعلم: لا يفتح بوابة الطالب ولا بوابة المدرب، ولا يرى إلا
-                  طلبه هو. ويصير مدربا بالدعوة بعد الاعتماد لا بالتسجيل. */}
-              <div className={`rounded-2xl border p-5 ${accountState === "done" ? "border-teal/45 bg-teal/[0.07]" : "border-teal/30 bg-teal/[0.05]"}`}>
-                <p className="flex items-center gap-2 text-sm font-black text-teal-light-ink">
-                  <BadgeCheck className="h-4 w-4" />
-                  {accountState === "done" ? "حسابك جاهز" : "أنشئ حساب متقدّم — يحفظ طلبك عنك"}
-                </p>
-                {accountState === "done" ? (
-                  <p className="mt-2 text-[11.5px] leading-6 text-white/65">
-                    سجّل الدخول ببريدك <b dir="ltr" className="text-white/85">{form.email.trim()}</b> لترى حالة طلبك
-                    ومستنداتك متى شئت. حسابك حساب تقديم فقط — تصير مدربا بدعوة منّا بعد الاعتماد.
-                  </p>
-                ) : (
-                  <>
-                    <p className="mt-2 text-[11.5px] leading-6 text-white/60">
-                      بدونه تتابع طلبك برقمه المرجعي ورمز المرشح — ومن فقدهما فقد طريقه إلى طلبه.
-                      الحساب ببريد طلبك <b dir="ltr" className="text-white/80">{form.email.trim() || "—"}</b>، ولا يفتح
-                      بوابة متعلم ولا بوابة مدرب.
-                    </p>
-                    {/* على الهاتف يُضغط الحقلُ والزرُّ في سطرٍ واحد فلا يتّسع أيّهما — فيُكدَّسان */}
-                    <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                      <input
-                        type="password" autoComplete="new-password" placeholder="كلمة مرور — 8 أحرف على الأقل"
-                        aria-label="كلمة مرور حساب المتقدّم"
-                        value={accountPassword}
-                        onChange={(e) => { setAccountPassword(e.target.value); setAccountError(""); }}
-                        className={`${controlCls} min-w-0 flex-1`}
-                      />
+              {/* بعد الإرسال نتواصل لاجتماعٍ تعريفيّ — فليختر هو كيف، لا أن
+                  نتّصل بمن لا يجيب المجهول أو نراسل من لا يفتح بريده. */}
+              <Question
+                n={1}
+                title="كيف نتواصل معك للاجتماع التعريفي؟"
+                required
+                hint="بعد قراءة طلبك نتواصل معك لتحديد موعد اجتماع تعريفي قصير — اختر الوسيلة الأنسب لك."
+              >
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {CONTACT_CHANNELS.map((c) => {
+                    const on = contactChannel === c.value;
+                    const phoneShown = normalizeDigits(form.phone) ? `${form.phoneCountryCode}${normalizeDigits(form.phone)}` : "";
+                    const Icon = c.value === "phone" ? Phone : c.value === "whatsapp" ? MessageCircle : c.value === "email" ? Mail : AtSign;
+                    const sub = c.needsPhone
+                      ? (phoneShown || "لم تذكر رقمك في القسم الأول")
+                      : c.value === "email" ? form.email.trim() : "تكتبه أدناه";
+                    return (
                       <button
-                        type="button" onClick={createAccount}
-                        disabled={accountPassword.length < 8 || accountState === "busy" || !candidateToken}
-                        className="flex h-12 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl border border-teal/50 px-5 text-xs font-black text-teal-light-ink transition hover:bg-teal/10 disabled:cursor-not-allowed disabled:opacity-35"
+                        type="button" key={c.value}
+                        onClick={() => setContactChannel(c.value)}
+                        aria-pressed={on}
+                        className={`flex w-full cursor-pointer items-start gap-3 rounded-xl border p-3.5 text-right transition-colors ${
+                          on ? "border-teal bg-teal/[0.12]" : "border-white/12 bg-black/25 hover:border-white/30"
+                        }`}
                       >
-                        {accountState === "busy" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-                        أنشئ الحساب
+                        <span className={`mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg ${on ? "bg-teal/25 text-teal-light-ink" : "bg-white/[0.06] text-white/50"}`}>
+                          <Icon className="h-4 w-4" />
+                        </span>
+                        <span className="min-w-0">
+                          <b className={`block text-[12.5px] ${on ? "text-teal-light-ink" : "text-white/85"}`}>{c.label}</b>
+                          <span className={`mt-0.5 block truncate text-[11px] ${c.needsPhone && !phoneShown ? "text-gold-ink" : "text-white/45"}`} dir={c.value === "other_email" ? "rtl" : "ltr"}>
+                            {sub}
+                          </span>
+                        </span>
                       </button>
-                    </div>
-                    {accountError && <p className="mt-2 text-[11px] text-gold-ink">{accountError}</p>}
-                  </>
+                    );
+                  })}
+                </div>
+
+                {contactChannel === "other_email" && (
+                  <div className="mt-4">
+                    <Field label="البريد الآخر الذي تفضّله" htmlFor="jt-alt-email" required hint="يُحفظ في طلبك بجانب بريد حسابك — والدخول يبقى ببريد الحساب.">
+                      <input
+                        id="jt-alt-email" type="email" dir="ltr" autoComplete="email" placeholder="name@example.com"
+                        value={contactAltEmail} onChange={(e) => setContactAltEmail(e.target.value)}
+                        className={`${controlCls} text-left`}
+                      />
+                    </Field>
+                  </div>
                 )}
-                <p className="mt-3 border-t border-white/10 pt-3 text-[11.5px] leading-6 text-white/50">
-                  ورقمك المرجعي: <b className="font-mono text-white/80" dir="ltr">{result?.reference ?? "—"}</b> — احفظه ولا تشاركه.
-                </p>
-              </div>
+                {(contactChannel === "phone" || contactChannel === "whatsapp") && normalizeDigits(form.phone) && (
+                  <p className="mt-4 flex items-center gap-2 rounded-xl border border-teal/25 bg-teal/[0.05] p-3 text-[11.5px] leading-6 text-white/70">
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-light-ink" />
+                    سنتواصل على <b dir="ltr" className="text-white">{form.phoneCountryCode}{normalizeDigits(form.phone)}</b> — إن لم يكن رقمك، عد إلى القسم الأول وصحّحه.
+                  </p>
+                )}
+                {(contactChannel === "phone" || contactChannel === "whatsapp") && !normalizeDigits(form.phone) && (
+                  <p className="mt-4 rounded-xl border border-gold/30 bg-gold/[0.06] p-3 text-[11.5px] leading-6 text-gold-ink">
+                    لم تذكر رقم جوالك في القسم الأول. <button type="button" onClick={() => setStep(1)} className="cursor-pointer font-black underline">عد وأضفه</button> أو اختر البريد.
+                  </p>
+                )}
+              </Question>
 
               {/* ملخّص ما سيصل المراجع — بلا مفاجآت */}
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
@@ -1124,8 +1167,12 @@ export default function JoinTrainer() {
                   <li>{form.fullName.trim() || "—"} · {specialties.length} تخصصا · {DOMAIN_YEARS.find((y) => y.value === form.domainYears)?.label ?? "—"} في المجال</li>
                   <li>{teachable.length} دورة من الكتالوج تستطيع تدريسها{teachableOther.trim() ? " · وأخرى بقلمك" : ""}</li>
                   <li>{Object.values(uploads).filter((u) => u.status === "done").length} مستندا مرفوعا</li>
+                  {seasons.length > 0 && <li>{seasons.map((v) => TRAINING_SEASONS.find((x) => x.value === v)?.label ?? v).join(" · ")}</li>}
                   <li>دافعك: {motivationLen} حرفا</li>
                 </ul>
+                <p className="mt-3 border-t border-white/10 pt-3 text-[11.5px] leading-6 text-white/50">
+                  رقم طلبك: <b className="font-mono text-white/80" dir="ltr">{result?.reference ?? "—"}</b> — سيصلك في بريد التأكيد مع تفاصيل طلبك.
+                </p>
               </div>
             </div>
           )}
@@ -1135,13 +1182,13 @@ export default function JoinTrainer() {
           {/* ما ينقص، بالاسم. زرٌّ مطفأ بلا سبب يجعل المتقدّم يفتّش النموذج
               بعينه؛ وهذه قائمةٌ تُقرأ في سطرين وتختفي حين تكتمل الخطوة.
               aria-live كي يسمعها قارئ الشاشة وهي تتناقص. */}
-          {step < 3 && missing[step as 1 | 2].length > 0 && (
+          {missing[step as 1 | 2 | 3].length > 0 && (
             <div className="rounded-2xl border border-gold/30 bg-gold/[0.06] p-4" aria-live="polite">
               <p className="text-xs font-black text-gold-ink">
-                بقي {countAr(missing[step as 1 | 2].length, MISSING_FORMS)} قبل «التالي»
+                بقي {countAr(missing[step as 1 | 2 | 3].length, MISSING_FORMS)} قبل «{step < 3 ? "التالي" : "الإرسال"}»
               </p>
               <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 text-[11.5px] leading-6 text-white/65">
-                {missing[step as 1 | 2].map((m) => (
+                {missing[step as 1 | 2 | 3].map((m) => (
                   <li key={m} className="flex items-center gap-1.5">
                     <span className="h-1 w-1 shrink-0 rounded-full bg-gold-ink" /> {m}
                   </li>
@@ -1188,57 +1235,36 @@ export default function JoinTrainer() {
           </div>
         </form>
 
-        {/* متابعة طلب سابق — قسم ثانوي مطوي ليبقى التركيز على الطلب الجديد */}
+        {/* متابعة طلب سابق — قسم ثانوي مطوي ليبقى التركيز على الطلب الجديد.
+            البريدُ يكفي؛ والرقمُ المرجعيّ اختياريّ لمن أراد تحديدا. ولمن أراد
+            التفاصيلَ كلَّها — والسحبَ — حسابُه: يدخل ببريده وكلمته. */}
         <details className="mt-10 rounded-2xl border border-white/10 bg-white/[0.02] px-6 py-5">
           <summary className="flex cursor-pointer items-center gap-2 text-sm font-black">
             <Search className="h-4 w-4 text-teal-light-ink" /> قدّمت سابقا؟ تابع حالة طلبك
           </summary>
-          <div className="mt-5 grid gap-3 border-t border-white/5 pt-5 sm:grid-cols-2">
-            <input dir="ltr" placeholder="WJ-TR-2026-00001" aria-label="الرقم المرجعي" value={lookup.reference}
-              onChange={(e) => setLookup({ ...lookup, reference: e.target.value })} className={`${controlCls} text-left font-mono`} />
-            <input dir="ltr" type="email" placeholder="بريدك المستخدم في الطلب" aria-label="البريد" value={lookup.email}
+          <p className="mt-4 text-[11.5px] leading-6 text-white/50">
+            بريدك يكفي. ولتفاصيل أكثر — وسحب الطلب — <Link to="/auth" className="text-teal-light-ink underline">سجّل الدخول</Link> ببريدك وكلمة المرور التي اختَرتها عند التقديم.
+          </p>
+          <div className="mt-4 grid gap-3 border-t border-white/5 pt-5 sm:grid-cols-2">
+            <input dir="ltr" type="email" placeholder="بريدك المستخدم في الطلب *" aria-label="البريد" value={lookup.email}
               onChange={(e) => setLookup({ ...lookup, email: e.target.value })} className={`${controlCls} text-left`} />
+            <input dir="ltr" placeholder="رقم الطلب (اختياري) WJ-TR-…" aria-label="الرقم المرجعي (اختياري)" value={lookup.reference}
+              onChange={(e) => setLookup({ ...lookup, reference: e.target.value })} className={`${controlCls} text-left font-mono`} />
           </div>
           <button
-            onClick={checkStatus} disabled={!lookup.reference.trim() || !lookup.email.trim()}
-            className="mt-3 cursor-pointer rounded-full border border-teal/50 px-5 py-2 text-xs font-bold text-teal-light-ink transition hover:bg-teal/10 disabled:opacity-40"
+            onClick={checkStatus} disabled={!/.+@.+\..+/.test(lookup.email) || lookupBusy}
+            className="mt-3 flex cursor-pointer items-center gap-2 rounded-full border border-teal/50 px-5 py-2 text-xs font-bold text-teal-light-ink transition hover:bg-teal/10 disabled:opacity-40"
           >
-            اعرض الحالة
+            {lookupBusy && <Loader2 className="h-3.5 w-3.5 animate-spin" />} اعرض الحالة
           </button>
-          {lookupResult && <p className="mt-3 rounded-xl border border-teal/30 bg-teal/5 p-3 text-xs font-bold text-teal-light-ink">{lookupResult}</p>}
-          {lookupError && <p className="mt-3 text-xs text-red-300" role="alert">{lookupError}</p>}
-
-          {/* سحب الطلب — برمز المرشح الذي عُرض عليه عند التحقق */}
-          <div className="mt-5 border-t border-white/5 pt-5">
-            <p className="text-xs font-bold text-white/55">غيّرت رأيك؟ يمكنك سحب طلبك نهائيا من هنا.</p>
-            <p className="mt-1 text-[11px] leading-6 text-white/40">
-              رمز المرشح هو الذي عُرض عليك بعد إتمام طلبك. إن فقدته فراسلنا بالرقم
-              المرجعي وبريدك.
-            </p>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <input
-                dir="ltr" placeholder="رمز المرشح" aria-label="رمز المرشح"
-                value={withdrawForm.candidateToken}
-                onChange={(e) => setWithdrawForm({ ...withdrawForm, candidateToken: e.target.value })}
-                className={`${controlCls} text-left font-mono`}
-              />
-              <input
-                placeholder="سبب الانسحاب (اختياري)" aria-label="سبب الانسحاب"
-                value={withdrawForm.reason}
-                onChange={(e) => setWithdrawForm({ ...withdrawForm, reason: e.target.value })}
-                className={controlCls}
-              />
+          {lookupResult && (
+            <div className="mt-3 rounded-xl border border-teal/30 bg-teal/5 p-4">
+              <p className="text-xs font-black text-teal-light-ink">{lookupResult.label}</p>
+              <p className="mt-1 text-[11px] text-white/45" dir="ltr">{lookupResult.reference}</p>
+              {lookupResult.explain && <p className="mt-2 text-[11.5px] leading-6 text-white/65">{lookupResult.explain}</p>}
             </div>
-            <button
-              onClick={withdrawApplication}
-              disabled={!lookup.reference.trim() || !withdrawForm.candidateToken.trim()}
-              className="mt-3 cursor-pointer rounded-full border border-red-400/40 px-5 py-2 text-xs font-bold text-red-300 transition hover:bg-red-400/10 disabled:opacity-40"
-            >
-              اسحب طلبي نهائيا
-            </button>
-            {withdrawMsg && <p className="mt-3 rounded-xl border border-white/10 bg-white/[0.04] p-3 text-xs font-bold text-white/75">{withdrawMsg}</p>}
-            <p className="mt-2 text-[11px] text-white/35">السحب نهائي لهذه النسخة من الطلب — يمكنك التقديم من جديد متى شئت.</p>
-          </div>
+          )}
+          {lookupError && <p className="mt-3 text-xs text-red-300" role="alert">{lookupError}</p>}
         </details>
       </div>
     </SiteShell>

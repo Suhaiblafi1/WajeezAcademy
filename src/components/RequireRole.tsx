@@ -35,6 +35,8 @@ export const ADMIN_ROLES = [
 /** بوابتا المدرب والمستشار: دورهما + مدير النظام (يملك صلاحياتهما جميعا) */
 export const TRAINER_ROLES = ['trainer', 'super_admin'] as const
 export const ADVISOR_ROLES = ['advisor', 'super_admin'] as const
+/** صفحةُ حالة طلب الانضمام: للمتقدّم، وللمدرّب الذي كان متقدّما */
+export const APPLICANT_ROLES = ['trainer_applicant', 'trainer', 'super_admin'] as const
 
 type GuardState = 'loading' | 'ok' | 'anon' | 'forbidden' | 'unreachable'
 

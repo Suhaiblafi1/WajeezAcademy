@@ -21,14 +21,15 @@ import SeoHead from "@/components/SeoHead";
 import AuthGate from "@/components/AuthGate";
 import Modal from "@/components/Modal";
 import BuyPanel from "@/components/BuyPanel";
+import CohortPicker from "@/components/CohortPicker";
 import { useRealSession } from "@/services/session";
 import CourseTitle from "@/components/CourseTitle";
 import { Button } from "@/components/ui/button";
 import { usePublishedContent } from "@/services/public-content";
-import { useCoursePrices } from "@/services/cohort-prices";
+import { useCourseCohorts, type CohortOption } from "@/services/cohort-prices";
 import { track } from "@/services/analytics";
 import { bundleNudge, pathPricing, suggestNext, MAX_BUILT_COURSES } from "@/application/catalog/course-path";
-import { DISCOUNT_CATEGORIES, MAX_CATEGORY_PCT } from "@/application/commerce/discount-policy";
+import { DISCOUNT_CATEGORIES } from "@/application/commerce/discount-policy";
 import { FIRST_TIME_PROMO, isFirstTimePromo } from "@/application/commerce/first-time-promo";
 import { CONTACT } from "@/data/stories";
 import { savePathDraft } from "@/services/path-drafts";
@@ -75,10 +76,15 @@ function CoursePathPage({ courseId }: { courseId: string }) {
   /* الأسعار من الشعب لا من تقديرٍ في المتصفّح (التوصية ٤). وعملةٌ واحدة
      مرجعا: خلطُ دينارٍ بريالٍ في مجموعٍ واحد يُخرج رقما لا يُطالَب به أحد،
      فما خالف عملةَ المرجع يُعدّ «غير مسعَّر» ويُقال ذلك نصّا. */
-  const { prices, loaded: pricesLoaded } = useCoursePrices();
+  const { cohorts, loaded: pricesLoaded } = useCourseCohorts();
 
   const anchor = courseById(courseId);
   const [picked, setPicked] = useState<string[]>(courseId ? [courseId] : []);
+  /* الشعبةُ المختارة لكلّ دورة — أقربُ متاحٍ افتراضا، ويبدّلها من شاء.
+     وقرارُ صاحب المنصّة: «يختار الشعب المفتوحة للدورة حسب التوفّر». والاختيارُ
+     يعيش هنا لا في لوح الشراء: السعرُ المعروض في هذه الصفحة سعرُ الشعبة
+     المختارة، فلو عاش الاختيارُ في اللوح لقالت الصفحةُ رقما ولقُبض غيرُه. */
+  const [cohortChoice, setCohortChoice] = useState<Record<string, string>>({});
   const [user, setUser] = useState<string | null>(readUserName);
   /* الجلسةُ الحقيقيّة للبريد: لوحُ الشراء يطلب التوثيقَ في موضعه، و`readUserName`
      يقرأ التخزين المحلّيّ وحدَه فقد يخالف كعكةَ الخادم. */
@@ -104,17 +110,27 @@ function CoursePathPage({ courseId }: { courseId: string }) {
     void catalogVersion;
     return suggestNext(picked, 8);
   }, [picked, catalogVersion]);
+  /* شعبةُ الدورة المعتبَرة: ما اختاره إن كان ما زال متاحا، وإلّا أقربُ
+     شعبةٍ مفتوحة. والقائمةُ مرتّبةٌ بالبدء في مصدرها، فأوّلُها أقربُها. */
+  const cohortOf = useCallback(
+    (id: string): CohortOption | null => {
+      const list = cohorts.get(id);
+      if (!list || list.length === 0) return null;
+      return list.find((o) => o.id === cohortChoice[id]) ?? list[0];
+    },
+    [cohorts, cohortChoice],
+  );
   const baseCurrency = useMemo(() => {
-    for (const id of picked) { const p = prices.get(id); if (p) return p.currency; }
-    for (const p of prices.values()) return p.currency;
+    for (const id of picked) { const c = cohortOf(id); if (c) return c.currency; }
+    for (const list of cohorts.values()) { const first = list[0]; if (first) return first.currency; }
     return null;
-  }, [picked, prices]);
+  }, [picked, cohortOf, cohorts]);
   const priceOf = useCallback(
     (id: string) => {
-      const p = prices.get(id);
-      return p && p.currency === baseCurrency ? p.amount : null;
+      const c = cohortOf(id);
+      return c && c.currency === baseCurrency ? c.amount : null;
     },
-    [prices, baseCurrency],
+    [cohortOf, baseCurrency],
   );
   const money = useCallback(
     (n: number) => `${Math.round(n).toLocaleString("en-US")} ${baseCurrency ?? ""}`.trim(),
@@ -202,6 +218,14 @@ function CoursePathPage({ courseId }: { courseId: string }) {
   };
   const promoPct = promoApplied ? FIRST_TIME_PROMO.percentOff : 0;
   const finalPayable = Math.round(pricing.payable * (1 - promoPct / 100));
+  /* هل هناك ما يُفصَّل أصلا؟ بلا خصمِ بناءٍ ولا كود، «سعر الدورة» و«ما تدفعه»
+     رقمٌ واحدٌ مكتوبٌ مرّتين — سطرٌ زائدٌ يُكبّر الصندوق ولا يُضيف علما. */
+  const hasBreakdown = pricing.discountPct > 0 || promoPct > 0;
+  /* نسبةُ الوفر مشتقّةٌ من الرقمين المعروضين لا من نسبةٍ ثالثة تُذكر: ما
+     يُقرأ فوقها هو ما تُحسب منه، فلا تُخالف المشطوبَ الذي بجانبها. */
+  const savedPct = pricing.allPriced && pricing.separate > 0 && finalPayable < pricing.separate
+    ? Math.round((1 - finalPayable / pricing.separate) * 100)
+    : 0;
 
   const start = (intent: Intent) => {
     if (user) setCheckout(intent);
@@ -346,16 +370,23 @@ function CoursePathPage({ courseId }: { courseId: string }) {
           </section>
         )}
 
-        {/* ══ مسارك حتى الآن ══ */}
-        <section className="mt-10 rounded-3xl border border-white/10 bg-white/[0.03] p-5 md:p-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="flex items-center gap-2 text-lg font-black">
-              <RouteIcon className="h-5 w-5 text-teal-light-ink" />
+        {/* ══ مسارك حتى الآن ══
+
+            كان هذا الصندوقُ ضِعفَ حجمه بلا سببٍ يخصّ القرار: حشوةٌ من ٢٤
+            نقطة، وعنوانٌ بحجم عنوان الصفحة، و«سعر الدورة ١٢٥» فوق «ما تدفعه
+            ١٢٥» — سطران لرقمٍ واحد. فصار الحجمُ يتبع المعلومة: التفصيلُ يظهر
+            حين يكون هناك ما يُفصَّل (خصمُ بناءٍ أو كود)، ولا يُكرَّر الرقمُ
+            نفسُه سطرين حين لا خصم. وحُشيَ مكانَ الفراغِ ما ينقص القرارَ فعلا:
+            موعدُ الشعبة. */}
+        <section className="mt-10 rounded-3xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2.5">
+            <h2 className="flex items-center gap-2 text-base font-black">
+              <RouteIcon className="h-4 w-4 text-teal-light-ink" />
               مسارك حتى الآن
             </h2>
             {/* العدد والمدة والسقف في شارة واحدة: من يبني يحتاج أن يعرف أين هو
                 من الحد قبل أن يصطدم به، لا بعد أن يُرفض اختياره. */}
-            <span className={`rounded-full border px-3 py-1 text-[11px] font-bold ${
+            <span className={`rounded-full border px-2.5 py-0.5 text-[10.5px] font-bold ${
               pricing.atCap ? "border-gold/50 bg-gold/10 text-gold-ink" : "border-white/10 bg-white/[0.04] text-white/60"
             }`}>
               <span dir="ltr">{picked.length}</span> من <span dir="ltr">{MAX_BUILT_COURSES}</span> دورات
@@ -364,76 +395,118 @@ function CoursePathPage({ courseId }: { courseId: string }) {
             </span>
           </div>
 
-          <ol className="mt-4 space-y-2.5">
-            {pickedCourses.map((c, i) => (
-              <li key={c.id} className="flex items-start justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3.5">
-                <span className="flex min-w-0 items-start gap-3">
-                  <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-teal/15 text-xs font-black text-teal-light-ink" dir="ltr">
-                    {i + 1}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block text-sm font-black leading-snug">{c.name}</span>
-                    <span className="mt-0.5 block text-[11px] text-white/45">
-                      {weeksLabel(c.weeks)} · من مسار «{c.pathwayName}»
+          <ol className="mt-3.5 space-y-2">
+            {pickedCourses.map((c, i) => {
+              const options = cohorts.get(c.id) ?? [];
+              const chosenCohort = cohortOf(c.id);
+              return (
+                <li key={c.id} className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+                  <div className="flex items-start justify-between gap-2.5">
+                    <span className="flex min-w-0 items-start gap-2.5">
+                      <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-teal/15 text-[11px] font-black text-teal-light-ink" dir="ltr">
+                        {i + 1}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-[12.5px] font-black leading-snug">{c.name}</span>
+                        <span className="mt-0.5 block text-[10.5px] text-white/45">
+                          {weeksLabel(c.weeks)} · من مسار «{c.pathwayName}»
+                        </span>
+                      </span>
                     </span>
-                  </span>
-                </span>
-                <span className="flex shrink-0 items-center gap-3">
-                  <CoursePriceTag amount={priceOf(c.id)} money={money} className="text-sm font-black text-white/85" />
-                  {c.id !== anchor.id && (
-                    <button
-                      onClick={() => remove(c.id)}
-                      aria-label={`احذف ${c.name} من مسارك`}
-                      className="grid h-8 w-8 place-items-center rounded-lg text-white/35 transition hover:bg-white/5 hover:text-white/70"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  )}
-                </span>
-              </li>
-            ))}
+                    <span className="flex shrink-0 items-center gap-1.5">
+                      <CoursePriceTag amount={priceOf(c.id)} money={money} className="text-[13px] font-black text-white/85" />
+                      {c.id !== anchor.id && (
+                        <button
+                          onClick={() => remove(c.id)}
+                          aria-label={`احذف ${c.name} من مسارك`}
+                          className="grid h-7 w-7 place-items-center rounded-lg text-white/35 transition hover:bg-white/5 hover:text-white/70"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </span>
+                  </div>
+                  {/* الموعدُ في موضع القرار — لا في شاشةٍ تالية.
+
+                      وهو ما طلبه صاحب المنصّة: «يختار الشعب المفتوحة للدورة
+                      حسب التوفّر». والمعروضُ هنا هو المتاحُ فعلا: المصدرُ
+                      يُسقط ما ليس `open`/`full` وما نفدت مقاعده وما لا سعر
+                      له، فلا يُعرض موعدٌ لا يُشترى. والسعرُ في هذا السطر
+                      سعرُ الشعبة المختارة — يتبدّل بتبدّلها. */}
+                  <div className="mt-2 border-t border-white/[0.08] pt-2">
+                    <CohortPicker
+                      cohorts={options}
+                      selectedId={chosenCohort?.id ?? null}
+                      onSelect={(cohortId) => {
+                        setCohortChoice((prev) => ({ ...prev, [c.id]: cohortId }));
+                        track("cohort_chosen", { course: c.id });
+                      }}
+                      compact
+                    />
+                  </div>
+                </li>
+              );
+            })}
           </ol>
 
-          {/* السعر مفصَّلا لا رقما واحدا: المجموع قبل الخصم، ثم خصم البناء
-              بنسبته وقيمته، ثم الكود إن كان، ثم ما يدفعه. كل سطر يقابل قرارا
-              اتخذه المتعلم بنفسه — وهذا ما يجعل الرقم الأخير مفهوما. */}
-          <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+          {/* السعر: التفصيلُ حين يكون ما يُفصَّل. المجموع قبل الخصم، ثم خصم
+              البناء بنسبته وقيمته، ثم الكود إن كان، ثم ما يدفعه — وكلُّ سطر
+              يقابل قرارا اتخذه المتعلم بنفسه. وبلا خصمٍ ولا كود يبقى رقمٌ
+              واحد: تكرارُه سطرين كان يُكبّر الصندوق ولا يُضيف علما. */}
+          <div className="mt-3.5 rounded-2xl border border-white/10 bg-white/[0.04] p-3.5">
             {pricing.allPriced ? (
-              <dl className="space-y-1.5 text-sm">
-                <div className="flex items-baseline justify-between gap-3">
-                  <dt className="text-white/55">{picked.length === 1 ? "سعر الدورة" : `مجموع الـ${picked.length} دورات`}</dt>
-                  <dd dir="ltr" className="font-bold text-white/80">{money(pricing.separate)}</dd>
-                </div>
-                {pricing.discountPct > 0 && (
-                  <div className="flex items-baseline justify-between gap-3">
-                    <dt className="text-teal-light-ink">خصم بناء المسار — {pricing.discountPct}٪</dt>
-                    <dd dir="ltr" className="font-bold text-teal-light-ink">−{money(pricing.saving)}</dd>
-                  </div>
-                )}
-                {promoPct > 0 && (
-                  <div className="flex items-baseline justify-between gap-3">
-                    <dt className="text-teal-light-ink">كود {promoApplied} — {promoPct}٪</dt>
-                    <dd dir="ltr" className="font-bold text-teal-light-ink">−{money(pricing.payable - finalPayable)}</dd>
-                  </div>
-                )}
-                <div className="flex flex-wrap items-baseline justify-between gap-3 border-t border-white/10 pt-2.5">
-                  <dt className="text-xs text-white/50">ما تدفعه</dt>
-                  <dd className="flex items-baseline gap-2">
-                    {finalPayable < pricing.separate && (
-                      <span dir="ltr" className="text-sm text-white/35 line-through">{money(pricing.separate)}</span>
+              <dl className="space-y-1 text-[12px]">
+                {hasBreakdown && (
+                  <>
+                    <div className="flex items-baseline justify-between gap-3">
+                      <dt className="text-white/55">{picked.length === 1 ? "سعر الدورة" : `مجموع الـ${picked.length} دورات`}</dt>
+                      <dd dir="ltr" className="font-bold text-white/80">{money(pricing.separate)}</dd>
+                    </div>
+                    {pricing.discountPct > 0 && (
+                      <div className="flex items-baseline justify-between gap-3">
+                        <dt className="text-teal-light-ink">خصم بناء المسار — {pricing.discountPct}٪</dt>
+                        <dd dir="ltr" className="font-bold text-teal-light-ink">−{money(pricing.saving)}</dd>
+                      </div>
                     )}
-                    <span dir="ltr" className="text-3xl font-black text-white">{money(finalPayable)}</span>
+                    {promoPct > 0 && (
+                      <div className="flex items-baseline justify-between gap-3">
+                        <dt className="text-teal-light-ink">كود {promoApplied} — {promoPct}٪</dt>
+                        <dd dir="ltr" className="font-bold text-teal-light-ink">−{money(pricing.payable - finalPayable)}</dd>
+                      </div>
+                    )}
+                  </>
+                )}
+                <div className={`flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1.5 ${
+                  hasBreakdown ? "border-t border-white/10 pt-2.5" : ""
+                }`}>
+                  <dt className="text-[11px] text-white/50">
+                    {hasBreakdown ? "ما تدفعه" : picked.length === 1 ? "سعر الدورة — ما تدفعه" : `مجموع الـ${picked.length} دورات`}
+                  </dt>
+                  <dd className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                    <span dir="ltr" className="text-[26px] font-black leading-none text-white">{money(finalPayable)}</span>
+                    {/* المشطوبُ يُقرأ ونسبةُ الوفر بجانبه: كان `text-sm
+                        text-white/35` فلا يُرى مقدارُ الوفر أصلا. */}
+                    {savedPct > 0 && (
+                      <>
+                        <span dir="ltr" className="text-base font-bold text-white/45 line-through decoration-white/45 decoration-2">
+                          {money(pricing.separate)}
+                        </span>
+                        <span className="rounded-full bg-teal/15 px-2 py-0.5 text-[10px] font-black text-teal-light-ink">
+                          وفّرت {savedPct}٪
+                        </span>
+                      </>
+                    )}
                   </dd>
                 </div>
               </dl>
             ) : (
               /* دورةٌ واحدة بلا شعبةٍ مسعَّرة تُبطل المجموع كله: مجموعُ ثلاثٍ
                  يُقرأ ثمنَ أربع. فلا رقم — ويُقال السبب. */
-              <div className="space-y-1.5 text-sm">
-                <p className="font-black text-white">
+              <div className="space-y-1 text-[12px]">
+                <p className="text-sm font-black text-white">
                   {pricesLoaded ? "يُعلن السعر مع فتح الشعبة" : "يُقرأ السعر…"}
                 </p>
-                <p className="text-[11px] leading-relaxed text-white/50">
+                <p className="text-[11px] leading-5 text-white/50">
                   {pricesLoaded && pricing.priced > 0
                     ? `${pricing.priced} من ${pricing.count} من دوراتك لها شعبة مسعَّرة، والباقي لم تُفتح شعبته بعد. ولا نعرض مجموعا ناقصا.`
                     : "نُسعّر كل شعبة على حدة، ولا نعرض رقما قبل أن يكون هو الرقم الذي تدفعه."}
@@ -447,48 +520,56 @@ function CoursePathPage({ courseId }: { courseId: string }) {
             )}
 
             {/* كود الخصم — حقل مستقل بزر، لا يُطبَّق بالكتابة */}
-            <div className="mt-4 border-t border-white/10 pt-4">
-              <label className="block text-[11px] font-bold text-white/55" htmlFor="promo">كود الخصم</label>
-              <div className="mt-1.5 flex gap-2">
+            <div className="mt-3 border-t border-white/10 pt-3">
+              <div className="flex gap-2">
                 <input
                   id="promo"
                   value={promoInput}
                   onChange={(e) => { setPromoInput(e.target.value.toUpperCase()); setPromoError(false); }}
                   onKeyDown={(e) => { if (e.key === "Enter") applyPromo(); }}
-                  placeholder={FIRST_TIME_PROMO.code}
+                  placeholder={`كود الخصم — مثال ${FIRST_TIME_PROMO.code}`}
+                  aria-label="كود الخصم"
                   dir="ltr"
                   maxLength={24}
-                  className={`min-w-0 flex-1 rounded-xl border bg-white/[0.04] px-3 py-2.5 text-left text-sm tracking-widest placeholder:tracking-normal placeholder:text-white/25 focus:outline-none ${
+                  className={`min-w-0 flex-1 rounded-xl border bg-white/[0.04] px-3 py-2 text-left text-[12px] tracking-widest placeholder:tracking-normal placeholder:text-white/25 focus:outline-none ${
                     promoApplied ? "border-teal-light text-teal-light-ink" : promoError ? "border-gold/60" : "border-white/15 focus:border-teal-light"
                   }`}
                 />
                 <Button
                   onClick={applyPromo}
                   variant="outline"
-                  className="h-auto shrink-0 rounded-xl border-white/20 px-5 font-bold text-white/80"
+                  className="h-auto shrink-0 rounded-xl border-white/20 px-4 py-2 text-[12px] font-bold text-white/80"
                 >
                   تطبيق
                 </Button>
               </div>
               {promoApplied && (
-                <p className="mt-2 text-[11px] font-bold text-teal-light-ink">طُبِّق خصم {promoPct}٪ {FIRST_TIME_PROMO.labelAr}.</p>
+                <p className="mt-1.5 text-[10.5px] font-bold text-teal-light-ink">طُبِّق خصم {promoPct}٪ {FIRST_TIME_PROMO.labelAr}.</p>
               )}
               {promoError && (
-                <p className="mt-2 text-[11px] text-gold-ink">لم نتعرّف على هذا الكود. راجع كتابته، أو تحقّق من أهليتك لخصم فئة أدناه.</p>
+                <p className="mt-1.5 text-[10.5px] text-gold-ink">لم نتعرّف على هذا الكود. راجع كتابته، أو تحقّق من أهليتك لخصم فئة أدناه.</p>
               )}
               {/* الفئات من مصدر السياسة لا من نصٍّ مكتوب هنا: نسبةٌ تُذكر في
                   صفحة الشراء وتُخالف ما يُصدره الإداري كودا هي وعدٌ مكسور.
-                  ومطويّة: من ليس منها لا يُشغل بها، ومن يظن نفسه منها يجدها. */}
-              <details className="group mt-2.5">
-                <summary className="cursor-pointer list-none text-[11px] leading-relaxed text-white/40 [&::-webkit-details-marker]:hidden">
-                  هل قد تكون مؤهلا لخصم فئة (حتى {MAX_CATEGORY_PCT}٪)؟{" "}
-                  <span className="font-bold text-white/60 underline underline-offset-4 transition group-hover:text-[#6EC7D1]">
-                    اطّلع على الفئات وتحقّق من أهليتك
-                  </span>
+                  ومطويّة: من ليس منها لا يُشغل بها، ومن يظن نفسه منها يجدها.
+                  والصياغةُ صياغةُ صفحة المسار نفسِها — سطرٌ واحدٌ يُنقر، لا
+                  سؤالٌ ثمّ رابطٌ في سطرين. */}
+              <details className="group mt-2">
+                <summary className="cursor-pointer list-none text-[11px] font-bold text-white/60 underline underline-offset-4 transition group-hover:text-teal-light-ink [&::-webkit-details-marker]:hidden">
+                  اطّلع على الفئات وتحقّق من أهليتك
                 </summary>
-                <ul className="mt-2.5 space-y-1.5 border-r-2 border-white/10 pe-0 ps-3">
+                {/* خصمُ أوّل شراء أوّلَ القائمة وكودُه معلَنٌ بجانبه: لكلّ أحدٍ
+                    في أوّل مرّة، فلا إثباتَ له ولا سرَّ فيه. */}
+                <ul className="mt-2 space-y-1.5 border-r-2 border-white/10 ps-3">
+                  <li className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] leading-5">
+                    <span className="font-bold text-white/75">خصم أول عملية شراء — {FIRST_TIME_PROMO.percentOff}٪</span>
+                    <code dir="ltr" className="rounded-md border border-gold/40 bg-gold/10 px-1.5 py-0.5 font-mono text-[10.5px] font-black text-gold-ink">
+                      {FIRST_TIME_PROMO.code}
+                    </code>
+                    <span className="text-white/40">· بلا إثبات</span>
+                  </li>
                   {DISCOUNT_CATEGORIES.map((cat) => (
-                    <li key={cat.id} className="text-[11px] leading-relaxed text-white/50">
+                    <li key={cat.id} className="text-[11px] leading-5 text-white/50">
                       <span className="font-bold text-white/75">{cat.label_ar} — {cat.percentOff}٪</span>
                       <span className="text-white/40"> · {cat.evidence_ar}</span>
                     </li>
@@ -504,23 +585,23 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                     وواتساب المستشارين هو القناة الرسميّة المعتمدة أصلا
                     (`CONTACT.whatsapp` في data/stories.ts)، فلا قناةَ جديدة
                     تُفتح هنا بل تُستعمل القائمة. */}
-                <p className="mt-2.5 text-[11px] leading-relaxed text-white/40">
-                  الكود لا يُنشر: يُصدَر لك وحدك بعد التحقق، فلا يتسرّب خصم فئةٍ إلى من ليس منها.{" "}
+                <p className="mt-2 text-[10.5px] leading-5 text-white/45">
                   <a
                     href={`https://wa.me/${CONTACT.whatsapp}?text=${encodeURIComponent("أرغب بالتحقق من أهليتي لخصم فئة — وسأرفق ما يثبت ذلك.")}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="font-bold text-white/60 underline underline-offset-4 transition hover:text-[#6EC7D1]"
+                    className="font-bold text-teal-light-ink underline underline-offset-4 transition hover:text-teal-ink"
                   >
                     راسلنا على واتساب بصورة الإثبات
-                  </a>
+                  </a>{" "}
+                  لمعرفة الكود للطلبة وموظفي الحكومة.
                 </p>
               </details>
             </div>
 
             <Button
               onClick={buy}
-              className="mt-4 h-12 w-full rounded-full bg-gold px-8 font-black text-on-gold hover:bg-gold/90"
+              className="mt-3.5 h-11 w-full rounded-full bg-gold px-6 text-[13px] font-black text-on-gold hover:bg-gold/90"
             >
               <CalendarDays className="ml-2 h-4 w-4" />
               {picked.length === 1 ? "اشترِ هذه الدورة" : `اشترِ (${picked.length} دورات)`}
@@ -528,8 +609,8 @@ function CoursePathPage({ courseId }: { courseId: string }) {
 
             {/* التنبيه — بالكلفة الحقيقية للدورة الإضافية لا بسعرها المعلن */}
             {nudge && (
-              <p className="mt-4 flex items-start gap-2 rounded-xl border border-gold/40 bg-gold/10 px-4 py-3 text-[12px] font-semibold leading-relaxed text-gold-ink">
-                <Sparkles className="mt-0.5 h-4 w-4 shrink-0" />
+              <p className="mt-3 flex items-start gap-2 rounded-xl border border-gold/40 bg-gold/10 px-3.5 py-2.5 text-[11px] font-semibold leading-5 text-gold-ink">
+                <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>
                   دورة واحدة أخرى ترفع خصمك إلى {nudge.nextPct}٪: تصير الـ{nudge.nextCount} بـ<span dir="ltr">{money(nudge.nextPayable)}</span>.
                   {" "}أي أن الدورة الإضافية تكلّفك <span dir="ltr">{money(nudge.marginal)}</span> بدل <span dir="ltr">{money(nudge.listPrice)}</span>.
@@ -539,8 +620,8 @@ function CoursePathPage({ courseId }: { courseId: string }) {
 
             {/* السقف — يُقال بسببه لا بمنعٍ صامت */}
             {pricing.atCap && (
-              <p className="mt-3 flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-[12px] leading-relaxed text-white/60">
-                <ListChecks className="mt-0.5 h-4 w-4 shrink-0 text-teal-light-ink" />
+              <p className="mt-2.5 flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-[11px] leading-5 text-white/60">
+                <ListChecks className="mt-0.5 h-3.5 w-3.5 shrink-0 text-teal-light-ink" />
                 <span>
                   بلغتَ {MAX_BUILT_COURSES} دورات — وهو حدّ ما تبنيه بنفسك. ليس بخلا بل حمايةٌ لإنهائه:
                   خطةٌ تُنجَز خير من خطةٍ تُشترى. وما تختاره بعدها يُحفظ لمرحلتك التالية أدناه.
@@ -549,8 +630,8 @@ function CoursePathPage({ courseId }: { courseId: string }) {
             )}
 
             {matchesPathway && (
-              <p className="mt-3 flex items-start gap-2 text-[12px] leading-relaxed text-teal-light-ink">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+              <p className="mt-2.5 flex items-start gap-2 text-[11px] leading-5 text-teal-light-ink">
+                <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>
                   اخترت دورات مسار «{anchor.pathwayName}» كلها — فتأخذ شهادته كما هي.{" "}
                   <Link to={`/pathways/${matchesPathway}`} className="font-bold underline">
@@ -561,10 +642,9 @@ function CoursePathPage({ courseId }: { courseId: string }) {
             )}
           </div>
         </section>
-
         {/* ══ مرحلتك التالية ══ — ما اختاره بعد السقف، محفوظا لا مرفوضا */}
         {deferred.length > 0 && (
-          <section className="mt-6 rounded-3xl border border-dashed border-gold/40 bg-gold/[0.05] p-5 md:p-6">
+          <section className="mt-6 rounded-3xl border border-dashed border-gold/40 bg-gold/[0.05] p-4 sm:p-5">
             <h2 className="flex items-center gap-2 text-base font-black text-gold-ink">
               <Save className="h-4.5 w-4.5" />
               مرحلتك التالية — محفوظة لك
@@ -598,9 +678,9 @@ function CoursePathPage({ courseId }: { courseId: string }) {
 
         {/* ══ ما يكمل مسارك ══ */}
         {suggestions.length > 0 && (
-          <section className="mt-6 rounded-3xl border border-white/10 bg-white/[0.03] p-5 md:p-6">
-            <h2 className="flex items-center gap-2 text-lg font-black">
-              <Layers className="h-5 w-5 text-teal-light-ink" />
+          <section className="mt-6 rounded-3xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+            <h2 className="flex items-center gap-2 text-base font-black">
+              <Layers className="h-4 w-4 text-teal-light-ink" />
               ما يكمل مسارك
             </h2>
             <p className="mt-1.5 text-xs leading-relaxed text-white/45">
@@ -637,9 +717,9 @@ function CoursePathPage({ courseId }: { courseId: string }) {
 
         {/* ══ سمِّ مسارك ══ */}
         {picked.length >= 2 && (
-          <section className="mt-6 rounded-3xl border border-gold/30 bg-gold/[0.05] p-5 md:p-6">
-            <h2 className="flex items-center gap-2 text-lg font-black text-gold-ink">
-              <Save className="h-5 w-5" />
+          <section className="mt-6 rounded-3xl border border-gold/30 bg-gold/[0.05] p-4 sm:p-5">
+            <h2 className="flex items-center gap-2 text-base font-black text-gold-ink">
+              <Save className="h-4 w-4" />
               سمِّ مسارك
             </h2>
             <p className="mt-1.5 text-sm leading-relaxed text-white/65">
@@ -653,13 +733,13 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                 maxLength={80}
                 placeholder="مثال: مسار التفاوض والبيع للمستقلين"
                 aria-label="اسم مسارك"
-                className="min-w-0 flex-1 rounded-xl border border-white/15 bg-white/[0.04] px-4 py-3 text-sm placeholder:text-white/30 focus:border-gold focus:outline-none"
+                className="min-w-0 flex-1 rounded-xl border border-white/15 bg-white/[0.04] px-3.5 py-2.5 text-[13px] placeholder:text-white/30 focus:border-gold focus:outline-none"
               />
               <Button
                 onClick={() => void saveDraft()}
                 disabled={name.trim().length < 3 || saveState === "saving" || saveState === "saved"}
                 variant="outline"
-                className="h-12 rounded-xl border-gold/60 px-6 font-black text-gold-ink hover:bg-gold/10 disabled:opacity-40"
+                className="h-11 rounded-xl border-gold/60 px-5 text-[13px] font-black text-gold-ink hover:bg-gold/10 disabled:opacity-40"
               >
                 {saveState === "saving" ? "جارٍ الحفظ…" : saveState === "saved" ? "حُفظ — شكرا لك" : "احفظ اسمه"}
               </Button>
@@ -705,7 +785,13 @@ function CoursePathPage({ courseId }: { courseId: string }) {
           title={checkout.title}
           email={session?.email ?? ""}
           initialCoupon={promoApplied ?? ""}
-          lines={picked.map((cid) => ({ courseId: cid, name: courseById(cid)?.name ?? cid }))}
+          lines={picked.map((cid) => ({
+            courseId: cid,
+            name: courseById(cid)?.name ?? cid,
+            /* الشعبةُ التي اختارها هنا تُحمل إلى اللوح: بلا حملها يعود اللوحُ
+               إلى أقرب شعبةٍ فيُفوتَر بموعدٍ غير الذي اختاره ورأى سعرَه. */
+            ...(cohortOf(cid) ? { cohortId: cohortOf(cid)!.id } : {}),
+          }))}
           onClose={() => setCheckout(null)}
         />
       )}

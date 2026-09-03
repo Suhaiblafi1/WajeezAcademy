@@ -44,7 +44,8 @@ describe('العودة من صفحة الدفع', () => {
        إلغاء: /student/learning?paid=<id>&cancelled=1
      وكانت الصفحة تقرأ `paid` وحدَه، فمن ألغى دفعَه يُستقبَل بـ«شكرا لك» ثمّ
      ينتظر شعبا لن تأتي — لأنّه لم يدفع. */
-  const ML = read('src/pages/student/MyLearning.tsx')
+  /* الصفحةُ صارت «رحلتي» والعنوانُ نفسُه باقٍ — فالحارسُ يتبع الشاشة */
+  const ML = read('src/pages/student/Journey.tsx')
 
   it('الإلغاءُ يُقرأ — لا يُستدلّ بـ paid وحدَه', () => {
     expect(ML).toMatch(/params\.get\("cancelled"\)/)
