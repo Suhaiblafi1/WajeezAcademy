@@ -24,7 +24,11 @@ const ACC = {
 }
 
 mkdirSync(OUT, { recursive: true })
-const browser = await chromium.launch()
+/* لا شيءَ يخرج من المتصفّح إلى الإنترنت: الخطوطُ وخدماتُ Google تُوقَف عند
+   الحدّ، وإلّا انتظرت كلُّ صفحةٍ وكيلَ الشبكة في هذه البيئة عشراتَ الثواني. */
+const browser = await chromium.launch({ executablePath: process.env.TOUR_CHROME ?? '/opt/pw-browsers/chromium', args: ['--no-proxy-server', '--disable-background-networking', '--disable-component-update'] })
+const LOCAL = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//
+async function sealContext(ctx) { await ctx.route('**/*', (route) => (LOCAL.test(route.request().url()) ? route.continue() : route.abort('blockedbyclient'))) }
 const log = []
 let shotNo = 0
 
@@ -41,6 +45,7 @@ async function apiAs(cookie, method, path, body) {
 }
 async function ctxAs(role, viewport = { width: 1440, height: 900 }) {
   const ctx = await browser.newContext({ viewport, locale: 'ar' })
+  await sealContext(ctx)
   let cookie = null
   if (role) { cookie = await apiLogin(ACC[role]); await ctx.addCookies([cookie]) }
   return { ctx, cookie }
@@ -55,7 +60,7 @@ function journey(id, titleAr) {
     rec,
     async step(page, name, fn) {
       const s = { name, ok: true, note: '', shot: null, consoleErrs: [], api: [] }
-      const onConsole = (m) => { if (m.type() === 'error') s.consoleErrs.push(m.text().slice(0, 160)) }
+      const onConsole = (m) => { if (m.type() === 'error' && !/ERR_BLOCKED_BY_CLIENT/.test(m.text())) s.consoleErrs.push(m.text().slice(0, 160)) }
       const onResp = (r) => { if (r.url().includes('/api/') && r.request().method() !== 'GET') s.api.push(`${r.request().method()} ${r.url().replace(API, '').replace(WEB, '')} → ${r.status()}`) }
       page.on('console', onConsole); page.on('response', onResp)
       try { const out = await fn(); if (typeof out === 'string') s.note = out; else if (out && typeof out === 'object') Object.assign(s, out) }

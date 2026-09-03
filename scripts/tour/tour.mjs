@@ -73,7 +73,7 @@ const DEAD_END = /لا صلاحيات مفعّلة|لا تملك الصلاحي�
 const MIN_TEXT = 200
 async function waitForContent(page) {
   try {
-    await page.waitForFunction((min) => (document.body?.innerText ?? '').trim().length >= min, MIN_TEXT, { timeout: 20_000 })
+    await page.waitForFunction((min) => (document.body?.innerText ?? '').trim().length >= min, MIN_TEXT, { timeout: 12_000 })
   } catch { /* الصفحةُ الفارغة نتيجةٌ تُسجَّل لا خطأٌ يوقف */ }
   await page.waitForTimeout(700)
 }
@@ -92,7 +92,11 @@ async function loginCookie(email) {
 }
 
 mkdirSync(OUT, { recursive: true })
-const browser = await chromium.launch()
+/* لا شيءَ يخرج من المتصفّح إلى الإنترنت: الخطوطُ وخدماتُ Google تُوقَف عند
+   الحدّ، وإلّا انتظرت كلُّ صفحةٍ وكيلَ الشبكة في هذه البيئة عشراتَ الثواني. */
+const browser = await chromium.launch({ executablePath: process.env.TOUR_CHROME ?? '/opt/pw-browsers/chromium', args: ['--no-proxy-server', '--disable-background-networking', '--disable-component-update'] })
+const LOCAL = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//
+async function sealContext(ctx) { await ctx.route('**/*', (route) => (LOCAL.test(route.request().url()) ? route.continue() : route.abort('blockedbyclient'))) }
 const results = []
 const started = Date.now()
 
@@ -107,13 +111,14 @@ for (const [role, cfg] of Object.entries(ROLES)) {
 
   for (const [vpName, vp] of Object.entries(VIEWPORTS)) {
     const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, isMobile: vp.isMobile ?? false, deviceScaleFactor: vp.deviceScaleFactor ?? 1, locale: 'ar' })
+    await sealContext(ctx)
     if (cookie) await ctx.addCookies([cookie])
 
     for (const path of cfg.pages) {
       const page = await ctx.newPage()
       const consoleErrs = []
       const failedReqs = []
-      page.on('console', (m) => { if (m.type() === 'error') consoleErrs.push(m.text().slice(0, 200)) })
+      page.on('console', (m) => { if (m.type() === 'error' && !/ERR_BLOCKED_BY_CLIENT/.test(m.text())) consoleErrs.push(m.text().slice(0, 200)) })
       page.on('pageerror', (e) => consoleErrs.push(`PAGEERROR: ${String(e).slice(0, 200)}`))
       page.on('response', (r) => { if (r.status() >= 400 && r.url().includes('/api/')) failedReqs.push(`${r.status()} ${r.url().replace(API, '').replace(WEB, '')}`) })
 
