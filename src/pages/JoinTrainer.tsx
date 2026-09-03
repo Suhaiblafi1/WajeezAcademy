@@ -5,7 +5,7 @@ import {
   FileUp, KeyRound, Loader2, Mail, MailCheck, MessageCircle, Mic2, Phone, RefreshCcw, Search, Send, Sparkles, Users,
 } from "lucide-react";
 import {
-  areaCls, ChoiceGrid, ConsentRow, controlCls, Field, FieldRow, FieldSet, OptionGrid, Question,
+  areaCls, ChoiceGrid, ConsentRow, controlCls, Field, FieldRow, FieldSet, invalidProps, OptionGrid, Question,
 } from "@/components/FormKit";
 import SiteShell from "@/components/SiteShell";
 import SeoHead from "@/components/SeoHead";
@@ -384,6 +384,42 @@ export default function JoinTrainer() {
   /* من رفع العلامة يلزمه أن يسمّي الجهة — وإلّا فهي علامةٌ بلا خبر */
   const accreditationReady = !form.hasAccreditation || accreditationName.length >= 3;
 
+  /* ── الخطأُ عند الحقل، لا في ذيل النموذج وحدَه ──
+
+     قائمةُ النقص أسفلَ النموذج تقول ما بقي، ولا تقول أين هو: من أخطأ في
+     بريده يقرأ «بريد إلكتروني صحيح» ثمّ يصعد يمسح الحقولَ بعينه يبحث عن
+     المقصود. فهذه رسالةٌ ثانية عند الحقل نفسِه، موصولةٌ به لقارئ الشاشة
+     بـ`aria-invalid` و`aria-describedby`.
+
+     وشرطُها أن تأتي **بعد أن يُلمس الحقل** — لأنّ رسالةَ خطأٍ على حقلٍ فارغٍ
+     لم يُفتح بعد لومٌ لا إرشاد. فالحقلُ يُوسم «ملموسا» عند خروج المؤشّر منه
+     (`onBlur`)، وعندها فقط تُقرأ رسالتُه. */
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const touch = (k: string) => () => setTouched((t) => (t[k] ? t : { ...t, [k]: true }));
+
+  const fieldErrors = useMemo<Record<string, string | null>>(() => ({
+    name: form.fullName.trim().length >= 3 ? null : 'اكتب اسمك الكامل — ثلاثةُ أحرفٍ على الأقلّ',
+    email: /.+@.+\..+/.test(form.email) ? null : 'بريدٌ بصيغةٍ صحيحة، مثل name@example.com',
+    /* بعد إرسال القسم الأوّل الحسابُ قائم، فلا كلمةَ تُطلب ولا خطأَ يُقال */
+    password: result || password.length >= 8
+      ? null
+      : password.length === 0
+        ? 'كلمةُ مرورٍ لحسابك — ٨ أحرفٍ على الأقلّ'
+        : `بقي ${countAr(8 - password.length, CHAR_FORMS)}`,
+    password2: result || !passwordConfirm || passwordConfirm === password ? null : 'الكلمتان غير متطابقتين',
+    accredBody: !form.hasAccreditation || form.accreditationBody ? null : 'اختر جهةَ الاعتماد التي أشرت إليها',
+    accredOther: !form.hasAccreditation || form.accreditationBody !== ACCREDITATION_OTHER || accreditationName.length >= 3
+      ? null
+      : 'اكتب اسمَ الجهة كما هو في وثيقتك',
+    altEmail: contactChannel !== 'other_email' || /.+@.+\..+/.test(contactAltEmail)
+      ? null
+      : 'بريدٌ آخرُ بصيغةٍ صحيحة، مثل name@example.com',
+  }), [form.fullName, form.email, form.hasAccreditation, form.accreditationBody, accreditationName,
+      password, passwordConfirm, result, contactChannel, contactAltEmail]);
+
+  /** رسالةُ الحقل — تُكتم حتى يُلمس */
+  const errOf = (k: string) => (touched[k] ? fieldErrors[k] ?? null : null);
+
   /* ما ينقص الخطوة، بالاسم لا بزرٍّ مطفأ.
 
      كان «التالي» يُطفأ ولا يقول لماذا: أربعة عشر شرطا في تعبير واحد، والمتقدّم
@@ -726,11 +762,11 @@ export default function JoinTrainer() {
             <div className="space-y-4">
               <Question n={1} title="من أنت؟" hint="نتواصل معك على هذين — فراجعهما قبل المضيّ.">
                 <FieldRow>
-                  <Field label="الاسم الكامل" htmlFor="jt-name" required>
-                    <input id="jt-name" name="name" autoComplete="name" required value={form.fullName} onChange={set("fullName")} className={controlCls} />
+                  <Field label="الاسم الكامل" htmlFor="jt-name" required error={errOf("name")}>
+                    <input id="jt-name" name="name" autoComplete="name" required value={form.fullName} onChange={set("fullName")} onBlur={touch("name")} {...invalidProps("jt-name-error", errOf("name"))} className={controlCls} />
                   </Field>
-                  <Field label="البريد الإلكتروني" htmlFor="jt-email" required>
-                    <input id="jt-email" name="email" type="email" autoComplete="email" required dir="ltr" value={form.email} onChange={set("email")} className={`${controlCls} text-left`} />
+                  <Field label="البريد الإلكتروني" htmlFor="jt-email" required error={errOf("email")}>
+                    <input id="jt-email" name="email" type="email" autoComplete="email" required dir="ltr" value={form.email} onChange={set("email")} onBlur={touch("email")} {...invalidProps("jt-email-error", errOf("email"))} className={`${controlCls} text-left`} />
                   </Field>
                   <Field label="رقم الجوال (واتساب)" htmlFor="jt-phone" hint="بلا رمز الدولة وبلا صفر البداية — مثال: 791234567">
                     <div className="flex gap-2" dir="ltr">
@@ -768,11 +804,12 @@ export default function JoinTrainer() {
                       إن كان لك حساب على وجيز بهذا البريد فأدخل كلمتَه الحالية.
                     </p>
                     <FieldRow>
-                      <Field label="كلمة المرور" htmlFor="jt-password" required hint="٨ أحرف على الأقل">
+                      <Field label="كلمة المرور" htmlFor="jt-password" required hint="٨ أحرف على الأقل" error={errOf("password")}>
                         <div className="relative">
                           <input
                             id="jt-password" type={showPassword ? "text" : "password"} autoComplete="new-password" dir="ltr"
-                            value={password} onChange={(e) => setPassword(e.target.value)}
+                            value={password} onChange={(e) => setPassword(e.target.value)} onBlur={touch("password")}
+                            {...invalidProps("jt-password-error", errOf("password"))}
                             className={`${controlCls} pr-4 pl-11 text-left`}
                           />
                           <button
@@ -784,10 +821,11 @@ export default function JoinTrainer() {
                           </button>
                         </div>
                       </Field>
-                      <Field label="تأكيد كلمة المرور" htmlFor="jt-password2" required>
+                      <Field label="تأكيد كلمة المرور" htmlFor="jt-password2" required error={errOf("password2")}>
                         <input
                           id="jt-password2" type={showPassword ? "text" : "password"} autoComplete="new-password" dir="ltr"
-                          value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)}
+                          value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)} onBlur={touch("password2")}
+                          {...invalidProps("jt-password2-error", errOf("password2"))}
                           className={`${controlCls} text-left ${passwordConfirm && passwordConfirm !== password ? "border-gold/60" : ""}`}
                         />
                       </Field>
@@ -863,9 +901,10 @@ export default function JoinTrainer() {
                   {form.hasAccreditation && (
                     <div className="mt-3 rounded-2xl border border-white/10 bg-black/20 p-4">
                       <FieldRow>
-                        <Field label="جهة الاعتماد" htmlFor="jt-accred-body" required>
+                        <Field label="جهة الاعتماد" htmlFor="jt-accred-body" required error={errOf("accredBody")}>
                           <select
-                            id="jt-accred-body" value={form.accreditationBody} onChange={set("accreditationBody")}
+                            id="jt-accred-body" value={form.accreditationBody} onChange={set("accreditationBody")} onBlur={touch("accredBody")}
+                            {...invalidProps("jt-accred-body-error", errOf("accredBody"))}
                             className={`${controlCls} [&>option]:bg-surface [&>optgroup]:bg-surface`}
                           >
                             <option value="" disabled>اختر الجهة</option>
@@ -884,10 +923,11 @@ export default function JoinTrainer() {
                           />
                         </Field>
                         {form.accreditationBody === ACCREDITATION_OTHER && (
-                          <Field label="اكتب اسم الجهة كما هو في وثيقتك" htmlFor="jt-accred-other" required wide>
+                          <Field label="اكتب اسم الجهة كما هو في وثيقتك" htmlFor="jt-accred-other" required wide error={errOf("accredOther")}>
                             <input
                               id="jt-accred-other" placeholder="مثال: Chartered Institute of Personnel and Development (CIPD)"
-                              value={form.accreditationOther} onChange={set("accreditationOther")} className={controlCls}
+                              value={form.accreditationOther} onChange={set("accreditationOther")} onBlur={touch("accredOther")}
+                              {...invalidProps("jt-accred-other-error", errOf("accredOther"))} className={controlCls}
                             />
                           </Field>
                         )}
@@ -1136,10 +1176,11 @@ export default function JoinTrainer() {
 
                 {contactChannel === "other_email" && (
                   <div className="mt-4">
-                    <Field label="البريد الآخر الذي تفضّله" htmlFor="jt-alt-email" required hint="يُحفظ في طلبك بجانب بريد حسابك — والدخول يبقى ببريد الحساب.">
+                    <Field label="البريد الآخر الذي تفضّله" htmlFor="jt-alt-email" required hint="يُحفظ في طلبك بجانب بريد حسابك — والدخول يبقى ببريد الحساب." error={errOf("altEmail")}>
                       <input
                         id="jt-alt-email" type="email" dir="ltr" autoComplete="email" placeholder="name@example.com"
-                        value={contactAltEmail} onChange={(e) => setContactAltEmail(e.target.value)}
+                        value={contactAltEmail} onChange={(e) => setContactAltEmail(e.target.value)} onBlur={touch("altEmail")}
+                        {...invalidProps("jt-alt-email-error", errOf("altEmail"))}
                         className={`${controlCls} text-left`}
                       />
                     </Field>

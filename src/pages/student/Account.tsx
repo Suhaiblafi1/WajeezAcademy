@@ -59,7 +59,21 @@ const inputCls =
   "w-full rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:border-teal focus:outline-none";
 const labelCls = "mb-1.5 block text-xs font-bold text-white/60";
 
-function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+/* الخطأُ يُقال عند الحقل الذي رُفض، لا في ذيل الصفحة.
+
+   كانت هذه الشاشة تُخبر بالرفض بعد الحفظ وفي موضعٍ واحدٍ أسفلَها، وبنصِّ
+   الخادم كما جاء: من كتب رابط صورةٍ أطولَ من الحدّ يقرأ رسالةً عامّةً ثمّ
+   يبحث بعينه عن الحقل. فصار لكلّ حقلٍ رسالتُه عنده، موصولةً به لقارئ
+   الشاشة بـ`aria-describedby`، ولا تظهر قبل أن يُلمس الحقلُ. */
+function Field({ label, hint, error, name, children }: {
+  label: string;
+  hint?: string;
+  /** رسالةُ هذا الحقل — تُعرض تحته وتُوصَل به */
+  error?: string | null;
+  /** يُشتقّ منه معرّفُ الرسالة كي يصحّ `aria-describedby` */
+  name?: string;
+  children: React.ReactNode;
+}) {
   return (
     <div>
       {/* label يلف الحقل — ارتباط ضمني صحيح لقارئ الشاشة وأدوات الفحص */}
@@ -68,8 +82,16 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
         {children}
       </label>
       {hint && <p className="mt-1 text-[11px] text-white/50">{hint}</p>}
+      {name && error && (
+        <p id={`${name}-error`} role="alert" className="mt-1.5 text-[11px] font-bold leading-5 text-red-300">{error}</p>
+      )}
     </div>
   );
+}
+
+/** ما يُنثَر على الحقل ليُقرأ خطؤه — بلا معرّفٍ حين لا خطأ */
+function bad(name: string, error?: string | null) {
+  return error ? ({ "aria-invalid": true, "aria-describedby": `${name}-error` } as const) : ({} as Record<string, never>);
 }
 
 export default function StudentAccount() {
@@ -131,17 +153,65 @@ export default function StudentAccount() {
 
   const set = <K extends keyof ProfileForm>(k: K, v: ProfileForm[K]) => setForm((f) => ({ ...f, [k]: v }));
 
+  /* الإضافةُ كانت تُرفض بصمتٍ في ثلاث حالات: فارغٌ، ومكرّرٌ، وبعد الثاني
+     عشر. فمن كتب اهتماما موجودا يضغط «أضف» فلا يحدث شيء — ولا يعرف أنّه
+     مضافٌ أصلا. فصار لكلّ رفضٍ سببُه مكتوبا. */
+  const [interestMsg, setInterestMsg] = useState("");
   const addInterest = () => {
     const v = interestDraft.trim();
-    if (!v || form.interests.includes(v) || form.interests.length >= 12) return;
+    if (!v) { setInterestMsg("اكتب اهتماما أوّلا"); return; }
+    if (v.length > 40) { setInterestMsg("٤٠ حرفا حدُّ الاهتمام الواحد"); return; }
+    if (form.interests.includes(v)) { setInterestMsg(`«${v}» مضافٌ عندك بالفعل`); return; }
+    if (form.interests.length >= 12) { setInterestMsg("اثنا عشر اهتماما هي الحدّ — احذف واحدا لتضيف غيره"); return; }
     set("interests", [...form.interests, v]);
     setInterestDraft("");
+    setInterestMsg("");
   };
 
-  const canSave = useMemo(() => form.displayName.trim().length >= 2, [form.displayName]);
+  /* ── حدودُ الخادم مقروءةً هنا ──
+
+     الحدودُ في `patchSchema` على الخادم (الاسم ٢–٨٠، الرابط ٥٠٠، الهاتف ٢٤،
+     الهدف ٣٠٠، الاهتمامات ١٢). ومن تجاوزها كان يضغط «حفظ» فيرجع بخطأٍ عامّ
+     بعد نداءٍ ذهب هدرا. فصارت تُقاس هنا قبل الإرسال، وبالنصِّ الذي يقول
+     الحدَّ لا الذي يقول «تعذّر الحفظ». */
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const touch = (k: string) => () => setTouched((t) => (t[k] ? t : { ...t, [k]: true }));
+
+  const fieldErrors = useMemo<Record<string, string | null>>(() => {
+    const name = form.displayName.trim();
+    const url = form.avatarUrl.trim();
+    return {
+      displayName: name.length < 2 ? "اسمُك حرفان على الأقلّ" : name.length > 80 ? "الاسمُ أطولُ من ٨٠ حرفا" : null,
+      /* الرابطُ يُعرض صورةً في حسابه وشهادته — فرابطٌ بلا بروتوكولٍ صورةٌ مكسورة */
+      avatarUrl: !url ? null
+        : url.length > 500 ? "الرابطُ أطولُ من ٥٠٠ حرف"
+        : /^https?:\/\/\S+$/.test(url) ? null
+        : "رابطٌ مباشرٌ للصورة يبدأ بـ https://",
+      phone: form.phone.trim().length > 24 ? "الرقمُ أطولُ من ٢٤ خانة" : null,
+      /* تاريخُ ميلادٍ في المستقبل يُقبله الخادم ويكسر حسابَ العمر في الشهادة */
+      birthDate: form.birthDate && form.birthDate > new Date().toISOString().slice(0, 10)
+        ? "تاريخٌ في المستقبل — راجع ما كتبت"
+        : null,
+      careerGoal: form.careerGoal.trim().length > 300 ? "٣٠٠ حرفٍ حدُّ هذا الحقل" : null,
+      goalAr: form.goalAr.trim().length > 300 ? "٣٠٠ حرفٍ حدُّ هذا الحقل" : null,
+    };
+  }, [form.displayName, form.avatarUrl, form.phone, form.birthDate, form.careerGoal, form.goalAr]);
+
+  /** رسالةُ الحقل — مكتومةٌ حتى يُلمس، ومعلَنةٌ بعد محاولةِ حفظٍ مرفوضة */
+  const errOf = (k: string) => (touched[k] ? fieldErrors[k] ?? null : null);
+
+  const canSave = useMemo(
+    () => Object.values(fieldErrors).every((e) => !e),
+    [fieldErrors],
+  );
 
   const save = async () => {
-    if (!canSave || busy) return;
+    /* ضغطُ «حفظ» يُوسم كلَّ حقلٍ ملموسا — فمن لم يفتح الحقلَ المرفوض يراه الآن */
+    if (!canSave) {
+      setTouched((t) => ({ ...t, ...Object.fromEntries(Object.keys(fieldErrors).map((k) => [k, true])) }));
+      return;
+    }
+    if (busy) return;
     setBusy(true); setErr(""); setSavedMsg("");
     const payload = {
       ...form,
@@ -270,11 +340,11 @@ export default function StudentAccount() {
           )}
         </div>
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
-          <Field label="الاسم الكامل *">
-            <input value={form.displayName} onChange={(e) => set("displayName", e.target.value)} className={inputCls} autoComplete="name" />
+          <Field label="الاسم الكامل *" name="displayName" error={errOf("displayName")}>
+            <input value={form.displayName} onChange={(e) => set("displayName", e.target.value)} onBlur={touch("displayName")} {...bad("displayName", errOf("displayName"))} className={inputCls} autoComplete="name" />
           </Field>
-          <Field label="رابط الصورة الشخصية" hint="اختياري — رابط صورة مباشر يظهر في حسابك وشهاداتك">
-            <input dir="ltr" value={form.avatarUrl} onChange={(e) => set("avatarUrl", e.target.value)} placeholder="https://…" className={`${inputCls} text-left`} />
+          <Field label="رابط الصورة الشخصية" hint="اختياري — رابط صورة مباشر يظهر في حسابك وشهاداتك" name="avatarUrl" error={errOf("avatarUrl")}>
+            <input dir="ltr" value={form.avatarUrl} onChange={(e) => set("avatarUrl", e.target.value)} onBlur={touch("avatarUrl")} {...bad("avatarUrl", errOf("avatarUrl"))} placeholder="https://…" className={`${inputCls} text-left`} />
           </Field>
         </div>
       </section>
@@ -283,8 +353,8 @@ export default function StudentAccount() {
       <section className="mt-6 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
         <h2 className="flex items-center gap-2 text-base font-black"><User className="h-4 w-4 text-teal-light-ink" /> معلومات شخصية</h2>
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          <Field label="رقم الهاتف (واتساب)">
-            <input dir="ltr" type="tel" autoComplete="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="+962…" className={`${inputCls} text-left`} />
+          <Field label="رقم الهاتف (واتساب)" name="phone" error={errOf("phone")}>
+            <input dir="ltr" type="tel" autoComplete="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)} onBlur={touch("phone")} {...bad("phone", errOf("phone"))} placeholder="+962…" className={`${inputCls} text-left`} />
           </Field>
           <Field label="الدولة">
             <select value={form.country} onChange={(e) => set("country", e.target.value)} className={`${inputCls} [&>option]:bg-surface`}>
@@ -295,8 +365,8 @@ export default function StudentAccount() {
           <Field label="المدينة">
             <input value={form.city} onChange={(e) => set("city", e.target.value)} className={inputCls} />
           </Field>
-          <Field label="تاريخ الميلاد" hint="اختياري — يستخدم لشهاداتك والفرص العمرية فقط">
-            <input type="date" dir="ltr" value={form.birthDate} onChange={(e) => set("birthDate", e.target.value)} className={`${inputCls} text-left`} />
+          <Field label="تاريخ الميلاد" hint="اختياري — يستخدم لشهاداتك والفرص العمرية فقط" name="birthDate" error={errOf("birthDate")}>
+            <input type="date" dir="ltr" max={new Date().toISOString().slice(0, 10)} value={form.birthDate} onChange={(e) => set("birthDate", e.target.value)} onBlur={touch("birthDate")} {...bad("birthDate", errOf("birthDate"))} className={`${inputCls} text-left`} />
           </Field>
           <Field label="الجنس" hint="اختياري تماما">
             <select value={form.gender} onChange={(e) => set("gender", e.target.value as ProfileForm["gender"])} className={`${inputCls} [&>option]:bg-surface`}>
@@ -351,11 +421,11 @@ export default function StudentAccount() {
           </Field>
         </div>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <Field label="هدفك المهني">
-            <textarea rows={2} value={form.careerGoal} onChange={(e) => set("careerGoal", e.target.value)} placeholder="مثال: أن أقود فريق تسويق خلال سنتين" className={`${inputCls} resize-none`} />
+          <Field label="هدفك المهني" name="careerGoal" error={errOf("careerGoal")}>
+            <textarea rows={2} maxLength={300} value={form.careerGoal} onChange={(e) => set("careerGoal", e.target.value)} onBlur={touch("careerGoal")} {...bad("careerGoal", errOf("careerGoal"))} placeholder="مثال: أن أقود فريق تسويق خلال سنتين" className={`${inputCls} resize-none`} />
           </Field>
-          <Field label="هدفك التعلمي" hint="ما الذي تريد أن تتقنه في هذه المرحلة؟">
-            <textarea rows={2} value={form.goalAr} onChange={(e) => set("goalAr", e.target.value)} className={`${inputCls} resize-none`} />
+          <Field label="هدفك التعلمي" hint="ما الذي تريد أن تتقنه في هذه المرحلة؟" name="goalAr" error={errOf("goalAr")}>
+            <textarea rows={2} maxLength={300} value={form.goalAr} onChange={(e) => set("goalAr", e.target.value)} onBlur={touch("goalAr")} {...bad("goalAr", errOf("goalAr"))} className={`${inputCls} resize-none`} />
           </Field>
         </div>
         <div className="mt-4">
@@ -364,7 +434,7 @@ export default function StudentAccount() {
             <span className="flex gap-2">
               <input
                 value={interestDraft}
-                onChange={(e) => setInterestDraft(e.target.value)}
+                onChange={(e) => { setInterestDraft(e.target.value); setInterestMsg(""); }}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addInterest(); } }}
                 placeholder="اكتب اهتماما ثم Enter — حتى 12"
                 className={inputCls}
@@ -374,6 +444,9 @@ export default function StudentAccount() {
               </button>
             </span>
           </label>
+          {interestMsg && (
+            <p role="alert" className="mt-1.5 text-[11px] font-bold leading-5 text-red-300">{interestMsg}</p>
+          )}
           {form.interests.length > 0 && (
             <div className="mt-2.5 flex flex-wrap gap-1.5">
               {form.interests.map((i) => (
@@ -393,8 +466,11 @@ export default function StudentAccount() {
       <div className="mt-6 flex flex-col items-center gap-3">
         {err && <p role="alert" className="rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-2.5 text-xs font-semibold text-red-300">{err}</p>}
         {savedMsg && <p role="status" className="rounded-xl border border-teal/40 bg-teal/10 px-4 py-2.5 text-xs font-bold text-teal-light-ink">{savedMsg}</p>}
+        {/* الزرُّ لا يُطفأ على حقلٍ مرفوض: كان مطفأً والسببُ في حقلٍ قد يكون
+            خارج الشاشة، فتبقى الضغطةُ بلا جواب. فصار يُضغط، ويُظهر الرفضَ
+            عند حقله، ولا يُرسل نداءً يعرف أنّه مردود. */}
         <button
-          onClick={save} disabled={!canSave || busy}
+          onClick={save} disabled={busy}
           className="flex h-12 cursor-pointer items-center gap-2 rounded-full bg-gold px-10 font-black text-on-gold transition hover:bg-gold/90 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}

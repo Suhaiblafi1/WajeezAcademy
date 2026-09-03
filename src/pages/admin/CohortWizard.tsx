@@ -128,13 +128,31 @@ export default function CohortWizard({
     return () => { alive = false };
   }, [step, courseId, trainers]);
 
-  const canNext = [
-    courseId !== "" && title.trim().length >= 3,
-    days.length > 0 && /^\d{2}:\d{2}$/.test(startTime) && Number(weeks) >= 1 && Number(duration) >= 15 && preview.length > 0,
-    Number(capacity) >= 1,
-    true,
-    true,
-  ][step];
+  /* ما ينقص الخطوة، بالاسم لا بزرٍّ مطفأ.
+
+     كان «التالي» يُطفأ على تعبيرٍ واحدٍ فيه خمسةُ شروط، والموظّفُ يمسح
+     الحقولَ بعينه يبحث عن الشرط الذي لم يستوفِه — والخطوةُ الأولى والثالثة
+     لم تكن تقول شيئا أصلا. فصارت الشروطُ قائمةَ نقصٍ تُقرأ بجانب الزرّ،
+     وكلُّ عنصرٍ فيها بصيغة ما يُفعل لا ما يَنقص. */
+  const stepMissing = useMemo<string[]>(() => {
+    const m: string[] = [];
+    if (step === 0) {
+      if (!courseId) m.push("اختر الدورةَ من القائمة");
+      if (title.trim().length < 3) m.push("اكتب عنوانا للشعبة — ثلاثةُ أحرفٍ على الأقلّ");
+    } else if (step === 1) {
+      if (days.length === 0) m.push("اختر يوما واحدا على الأقلّ");
+      if (!/^\d{2}:\d{2}$/.test(startTime)) m.push("حدّد وقتَ البدء");
+      if (!(Number(weeks) >= 1 && Number(weeks) <= 52)) m.push("عددُ الأسابيع بين واحدٍ واثنين وخمسين");
+      if (!(Number(duration) >= 15)) m.push("مدّةُ الجلسة خمسَ عشرةَ دقيقةً على الأقلّ");
+      if (preview.length === 0) m.push("جدولٌ يُنتج جلسةً واحدةً على الأقلّ — راجع أوّلَ أسبوع");
+    } else if (step === 2) {
+      if (!(Number(capacity) >= 1)) m.push("سعةُ الشعبة مقعدٌ واحدٌ على الأقلّ");
+      if (price !== "" && Number(price) < 0) m.push("السعرُ صفرٌ أو أكثر");
+    }
+    return m;
+  }, [step, courseId, title, days, startTime, weeks, duration, preview.length, capacity, price]);
+
+  const canNext = stepMissing.length === 0;
 
   const reset = () => {
     setStep(0); setCourseId(""); setCourseFilter(""); setTitle("");
@@ -411,6 +429,12 @@ export default function CohortWizard({
           className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-white/70 transition hover:border-white/40 disabled:opacity-30">
           <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" /> السابق
         </button>
+        {/* السببُ بجانب الزرّ — لا في ذيل الصفحة ولا في تلميحٍ يظهر بالمرور */}
+        {step < STEPS.length - 1 && stepMissing.length > 0 && (
+          <p role="status" className="order-last w-full text-[11px] leading-6 text-gold-ink sm:order-none sm:w-auto sm:flex-1">
+            قبل «التالي»: {stepMissing.join(" · ")}
+          </p>
+        )}
         {step < STEPS.length - 1 ? (
           <button type="button" disabled={!canNext || busy} onClick={() => setStep(step + 1)}
             className="flex cursor-pointer items-center gap-1.5 rounded-full bg-white/10 px-6 py-2 text-xs font-black text-white transition hover:bg-white/15 disabled:opacity-40">
