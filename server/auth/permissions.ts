@@ -283,6 +283,18 @@ export function refuseDelegation(actor: {
   return null
 }
 
+/** وصفُ صلاحيّةٍ بالعربيّة — للرسائل التي يقرؤها الموظّف عند المنع */
+export function permissionDescriptionAr(key: string): string | null {
+  return PERMISSIONS.find((p) => p.key === key)?.description ?? null
+}
+
+/** الأدوارُ التي تملك هذه الصلاحيّة، بأسمائها العربيّة — «من يستطيع؟» جوابٌ لا تخمين */
+export function rolesWithPermissionAr(key: string): string[] {
+  return Object.entries(ROLE_PERMISSIONS)
+    .filter(([, keys]) => (keys as readonly string[]).includes(key))
+    .map(([role]) => ROLE_NAMES_AR[role] ?? role)
+}
+
 export const ROLE_NAMES_AR: Record<string, string> = {
   super_admin: 'مدير النظام الأعلى',
   academic_manager: 'المدير الأكاديمي',

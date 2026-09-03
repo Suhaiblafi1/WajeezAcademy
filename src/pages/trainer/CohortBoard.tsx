@@ -5,6 +5,7 @@ import {
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import TrainerLayout from "./TrainerLayout";
 import { fmtDateTimeAr } from "@/utils/format";
+import { usePlatformConfig } from "@/hooks/usePlatformConfig";
 
 const API_BASE: string = import.meta.env.VITE_API_URL ?? "";
 
@@ -63,6 +64,7 @@ const RESCHEDULE_STATUS_AR: Record<string, string> = {
 
 /** قمرة الشعبة — بوابة المدرب التشغيلية: شعبي فقط، حضور، تسجيلات، مراجعة وتقدير */
 export default function CohortBoard() {
+  const { fileUploads } = usePlatformConfig();
   const [cohorts, setCohorts] = useState<TrainerCohort[]>([]);
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [reschedules, setReschedules] = useState<RescheduleItem[]>([]);
@@ -328,11 +330,15 @@ export default function CohortBoard() {
                                             <CalendarPlus className="h-3 w-3" /> أضِفها لتقويمك
                                           </a>
                                         )}
-                                        <label className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-bold text-white/60 transition hover:border-teal/50 hover:text-teal-light-ink">
-                                          <Upload className="h-3 w-3" /> ارفع التسجيل
-                                          <input type="file" accept="video/*" className="hidden"
-                                            onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadRecording(s.id, f); e.target.value = ""; }} />
-                                        </label>
+                                        {/* الزرُّ يظهر حين يستطيع الخادمُ تخزينَ الملفّ — لا قبله.
+                                            كان يفشل بعد الضغط، وهو أسوأُ من غيابه. */}
+                                        {fileUploads && (
+                                          <label className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-bold text-white/60 transition hover:border-teal/50 hover:text-teal-light-ink">
+                                            <Upload className="h-3 w-3" /> ارفع التسجيل
+                                            <input type="file" accept="video/*" className="hidden"
+                                              onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadRecording(s.id, f); e.target.value = ""; }} />
+                                          </label>
+                                        )}
                                         {s.status !== "done" && (
                                           <button type="button"
                                             onClick={() => { setRescheduleFor(rescheduleFor === s.id ? null : s.id); setRescheduleForm({ at: "", reason: "" }); }}
@@ -513,15 +519,21 @@ export default function CohortBoard() {
                                   ))}
                                 </ul>
                               ) : (
-                                <p className="mt-2 text-[11px] text-white/45">لا مواد بعد — ارفع كرّاسة أو أضف رابطا.</p>
+                                <p className="mt-2 text-[11px] text-white/45">لا مواد بعد — {fileUploads ? "ارفع كرّاسة أو أضف رابطا." : "أضف رابطا أدناه."}</p>
                               )}
 
                               <div className="mt-4 flex flex-wrap items-center gap-2">
-                                <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-teal/45 px-3.5 py-1.5 text-[11px] font-bold text-teal-light-ink transition hover:bg-teal/10">
-                                  <Upload className="h-3 w-3" /> ارفع ملفا (كرّاسة أو فيديو)
-                                  <input type="file" className="hidden" disabled={busy}
-                                    onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadMaterialFile(c.id, f); e.target.value = ""; }} />
-                                </label>
+                                {fileUploads ? (
+                                  <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-teal/45 px-3.5 py-1.5 text-[11px] font-bold text-teal-light-ink transition hover:bg-teal/10">
+                                    <Upload className="h-3 w-3" /> ارفع ملفا (كرّاسة أو فيديو)
+                                    <input type="file" className="hidden" disabled={busy}
+                                      onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadMaterialFile(c.id, f); e.target.value = ""; }} />
+                                  </label>
+                                ) : (
+                                  <p className="text-[11px] leading-6 text-white/45">
+                                    رفعُ الملفّات لم يُفعَّل على هذه المنصّة بعد — <span className="font-bold text-white/65">أضف المادّةَ برابطٍ أدناه</span> (Drive أو YouTube أو أيّ رابطٍ يفتحه طلبتُك).
+                                  </p>
+                                )}
                               </div>
 
                               <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">

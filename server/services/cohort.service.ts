@@ -7,7 +7,7 @@ import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { EarningsService } from './earnings.service'
-import { newStorageKey, signKey, SIGNED_URL_TTL_MS, MAX_COHORT_MEDIA_BYTES } from './storage.service'
+import { newStorageKey, signKey, SIGNED_URL_TTL_MS, assertFileUploadsEnabled, MAX_COHORT_MEDIA_BYTES } from './storage.service'
 import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
 
 const COHORT_TRANSITIONS: Record<string, string[]> = {
@@ -318,6 +318,7 @@ export class CohortService {
     let storageKey: string | undefined
     let uploadUrl: string | undefined
     if (input.file) {
+      assertFileUploadsEnabled('أضف المادّة برابطٍ خارجيّ حتّى يجهز مخزنُ الملفّات.')
       const max = MAX_COHORT_MEDIA_BYTES
       if (input.file.sizeBytes <= 0 || input.file.sizeBytes > max) throw new AuthError('too_large', 'الملف يتجاوز الحد المسموح', 413)
       storageKey = newStorageKey()
@@ -339,6 +340,7 @@ export class CohortService {
   }) {
     const session = await this.prisma.cohortSession.findUnique({ where: { id: sessionId } })
     if (!session) throw new AuthError('not_found', 'الجلسة غير موجودة', 404)
+    assertFileUploadsEnabled('الصق رابطَ التسجيل من Zoom أو منصّةِ الفيديو كمادّةٍ للشعبة.')
     if (input.sizeBytes <= 0 || input.sizeBytes > MAX_COHORT_MEDIA_BYTES) {
       throw new AuthError('too_large', 'الملف يتجاوز الحد المسموح', 413)
     }

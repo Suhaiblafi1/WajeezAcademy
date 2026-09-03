@@ -5,10 +5,21 @@ import ThemeToggle from "@/components/ThemeToggle";
 import StaffAccountMenu from "@/components/StaffAccountMenu";
 import PortalSearchPalette from "@/components/PortalSearchPalette";
 import { useRealSession } from "@/services/session";
+import { useEffect, useState } from "react";
+import { loadMyPortals } from "@/services/portals";
 
 /** إطار بوابة المستشار: هويته من جلسته وحدها. */
 export default function AdvisorLayout({ children, title }: { children: React.ReactNode; title: string }) {
   const { user, checked } = useRealSession();
+  /* الصلاحيّةُ تكفي للدخول، ولا تكفي للعمل: مديرُ النظام يملكها بلا ملفٍّ في
+     هذه البوّابة، فكانت كلُّ شاشةٍ تسقط وحدَها بـ«لا ملف مستشار مرتبطا بهذا
+     الحساب». فيُسأل مرّةً هنا، ويُقال مرّةً واحدة. */
+  const [hasProfile, setHasProfile] = useState<boolean | null>(null);
+  useEffect(() => {
+    let alive = true;
+    void loadMyPortals().then((p) => { if (alive) setHasProfile(p.advisor); });
+    return () => { alive = false };
+  }, []);
   const realAdvisor = user?.permissions.includes("advisor.cases.view") ?? false;
 
   if (!checked) {
@@ -46,6 +57,25 @@ export default function AdvisorLayout({ children, title }: { children: React.Rea
     { to: "/advisor/earnings", label: "عمولتي", icon: Wallet },
     { to: "/advisor/ratings", label: "ما قيل عنّي", icon: Star },
   ];
+
+  /* له الصلاحيّةُ ولا ملفَّ له: شاشةٌ واحدةٌ تشرح، بدل عشرِ شاشاتٍ تسقط */
+  if (realAdvisor && hasProfile === false) {
+    return (
+      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper px-5 text-white">
+        <Headset className="h-12 w-12 text-[#38A7B4]" />
+        <h1 className="mt-5 text-2xl font-black">بوّابة المستشار</h1>
+        <p className="mt-2 max-w-md text-center text-sm leading-7 text-white/55">
+          حسابُك يملك صلاحيّاتِ المستشار، لكن لا ملفَّ مستشارٍ مرتبطا به — والحالاتُ والعمولةُ والتقييماتُ كلُّها تُقرأ من ذلك الملفّ. فلا شيءَ هنا لنعرضه لك.
+        </p>
+        <p className="mt-3 max-w-md text-center text-xs leading-6 text-white/40">
+          وهذا متوقَّعٌ لمدير النظام: بوّابةُ المستشار لمن يُرشد فعلا. لمعاينتها، ادخل بحساب مستشار.
+        </p>
+        <Link to="/admin" className="mt-7 rounded-full border border-white/15 px-6 py-3 font-bold text-white/80 transition hover:border-white/40">
+          عُد إلى لوحة الإدارة
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div dir="rtl" className="min-h-screen bg-paper text-white">

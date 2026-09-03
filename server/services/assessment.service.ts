@@ -5,7 +5,7 @@ import type { PrismaClient, Prisma } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { EnrollmentService } from './enrollment.service'
-import { newStorageKey, signKey, SIGNED_URL_TTL_MS } from './storage.service'
+import { assertFileUploadsEnabled, newStorageKey, signKey, SIGNED_URL_TTL_MS } from './storage.service'
 import { safeNotify } from './notification.service'
 
 const MAX_SUBMISSION_BYTES = 100 * 1024 * 1024 // 100MB
@@ -73,6 +73,7 @@ export class AssessmentService {
     let storageKey: string | undefined
     let uploadUrl: string | undefined
     if (input.file) {
+      assertFileUploadsEnabled('سلّم نصّا، أو ضع رابطَ ملفّك داخل النصّ.')
       if (input.file.sizeBytes <= 0 || input.file.sizeBytes > MAX_SUBMISSION_BYTES) throw new AuthError('too_large', 'ملف التسليم يتجاوز الحد', 413)
       storageKey = newStorageKey()
       const exp = Date.now() + SIGNED_URL_TTL_MS

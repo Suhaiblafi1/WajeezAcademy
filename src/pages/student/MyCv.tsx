@@ -6,10 +6,13 @@ import PortalLayout from "./PortalLayout";
 import { toast } from "@/components/Toast";
 import { fmtWhen } from "@/utils/format";
 import { apiGet, apiPost, ApiError } from "@/services/api";
+import { usePlatformConfig } from "@/hooks/usePlatformConfig";
 
 /* الخادم هو مصدر الحقيقة: POST/GET /api/learner/cv و POST /api/cv/:id/delete.
    كان هنا `@/data/cv` — محاكاةٌ كاملة للسلوك نفسه في localStorage، فيرفع
    المتعلم سيرته ويراها في صفحته ولا تصل إلى مستشاره أبدا. */
+const API_BASE: string = import.meta.env.VITE_API_URL ?? "";
+
 const CV_ACCEPT = "application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png";
 const CV_MAX_LABEL = "10MB";
 
@@ -24,6 +27,7 @@ function cvKindLabel(mime: string): string {
 
 /** سيرتي الذاتية — رفع بموافقة صريحة إلزامية، تحقق نوع وحجم، حذف منطقي بسبب موثق */
 export default function MyCv() {
+  const { fileUploads } = usePlatformConfig();
   const [cvs, setCvs] = useState<Cv[] | null>(null);
   const [consent, setConsent] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -37,10 +41,21 @@ export default function MyCv() {
   }, []);
   useEffect(() => { load(); }, [load]);
 
+  /* كان هذا يسجّل الوصفَ ولا يرسل الملفَّ قطّ: نداءٌ واحدٌ بالاسم والحجم،
+     ثمّ «رُفعت» — والمستشارُ يفتحها فيجد «الملفّ لم يرفع بعد». والرابطُ
+     الموقّعُ الذي يعيده الخادمُ كان يُهمَل. شُوهد في جولة ٢٠٢٦-٠٩. */
   const onFile = async (f: File) => {
     setErr(null); setBusy(true);
     try {
-      await apiPost("/api/learner/cv", { originalName: f.name, mime: f.type, sizeBytes: f.size, consent });
+      const res = await apiPost<{ uploadUrl?: string }>("/api/learner/cv", { originalName: f.name, mime: f.type, sizeBytes: f.size, consent });
+      if (res.uploadUrl) {
+        const put = await fetch(`${API_BASE}${res.uploadUrl}`, {
+          method: "PUT", credentials: "include",
+          headers: { "content-type": "application/octet-stream" },
+          body: f,
+        });
+        if (!put.ok) throw new ApiError("upload_failed", "سُجّل طلبُك ولم يصل الملفّ — أبلغ الأكاديمية", put.status);
+      }
       toast(`رُفعت «${f.name}» — يراها مستشارك المسند فقط، وتُسجل كل مشاهدة.`);
       setConsent(false);
       load();
@@ -65,16 +80,29 @@ export default function MyCv() {
 
   return (
     <PortalLayout title="سيرتي الذاتية">
-      <p className="mb-5 max-w-2xl rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-xs leading-6 text-white/55">
-        تُرفع السيرة بموافقة صريحة منك فقط، وبصيغة PDF أو Word حتى {CV_MAX_LABEL}.
-        مستشارك المسند يفتحها برابط قراءة موقع وتُسجل كل مشاهدة — والحذف بسبب موثق لا يمحو الأثر.
-      </p>
+      {/* شرحُ الرفع لا يُقال حيث لا رفع — وإلّا نقض القسمَ الذي تحته */}
+      {fileUploads && (
+        <p className="mb-5 max-w-2xl rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-xs leading-6 text-white/55">
+          تُرفع السيرة بموافقة صريحة منك فقط، وبصيغة PDF أو Word حتى {CV_MAX_LABEL}.
+          مستشارك المسند يفتحها برابط قراءة موقع وتُسجل كل مشاهدة — والحذف بسبب موثق لا يمحو الأثر.
+        </p>
+      )}
 
       {err && (
         <p role="alert" className="mb-4 rounded-2xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm font-semibold text-red-300">{err}</p>
       )}
 
-      {/* رفع جديد */}
+      {/* رفع جديد — لا يُعرض إلّا حين يستطيع الخادمُ حفظَ الملفّ */}
+      {!fileUploads && (
+        <section className="rounded-3xl border border-gold/30 bg-gold/[0.06] p-6">
+          <h2 className="flex items-center gap-2 text-sm font-black text-gold-ink"><ShieldCheck className="h-4 w-4" /> رفعُ السيرة غيرُ مفعّلٍ بعد</h2>
+          <p className="mt-3 text-xs leading-7 text-white/70">
+            المنصّةُ لا تحفظ الملفّاتَ في هذه المرحلة، فلن نطلب منك ملفًّا لا يصل. أعطِ سيرتك لمستشارك في جلستكم الأولى،
+            أو تواصل مع الأكاديمية — ويظهر هذا القسمُ تلقائيّا يومَ يُفعَّل الرفع.
+          </p>
+        </section>
+      )}
+      {fileUploads && (
       <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
         <h2 className="flex items-center gap-2 text-sm font-black"><Upload className="h-4 w-4 text-teal-ink" /> رفع سيرة جديدة</h2>
         <input
@@ -109,6 +137,7 @@ export default function MyCv() {
           <p className="mt-2 text-[10px] text-white/50">لن يُقبل أي ملف قبل تفعيل الموافقة — كما يفرض الخادم.</p>
         )}
       </section>
+      )}
 
       {/* سيري الفعالة */}
       <section className="mt-6 space-y-3">
@@ -120,12 +149,14 @@ export default function MyCv() {
             <p className="mx-auto mt-1 max-w-sm text-xs leading-6 text-white/50">
               سيرتك تساعد مستشارك على فهم خلفيتك المهنية قبل أول جلسة — وتُسجل كل مشاهدة لها في السجل.
             </p>
-            <button
-              onClick={() => fileRef.current?.click()}
-              className="mt-4 cursor-pointer rounded-full bg-teal px-6 py-2.5 text-sm font-black text-on-teal transition hover:bg-teal-light"
-            >
-              ارفع أول سيرة
-            </button>
+            {fileUploads && (
+              <button
+                onClick={() => fileRef.current?.click()}
+                className="mt-4 cursor-pointer rounded-full bg-teal px-6 py-2.5 text-sm font-black text-on-teal transition hover:bg-teal-light"
+              >
+                ارفع أول سيرة
+              </button>
+            )}
           </div>
         )}
         {cvs?.map((c) => (

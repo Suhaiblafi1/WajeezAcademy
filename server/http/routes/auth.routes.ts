@@ -133,7 +133,16 @@ export function registerAuthRoutes(app: FastifyInstance, auth: AuthService) {
     return { ok: true, alreadyVerified, message: alreadyVerified ? 'بريدك موثَّق أصلا' : 'وُثّق بريدك — الشراء والشهادة مفتوحان الآن' }
   })
 
-  app.get('/api/auth/me', { schema: { tags: ['auth'], summary: 'هوية الجلسة الحالية وصلاحياتها' } }, async (req) => {
+  /* حارسُ كلّ بوّابةٍ في الواجهة ينادي هذا المسار عند كلّ انتقال، فوقوعُه
+     تحت السقف العامّ (٣٠٠/دقيقة لكلّ عنوان) يعني أنّ مكتبا أو قاعةً بعنوانٍ
+     واحدٍ تُطفئ الصلاحيّاتَ على نفسها: يرى المستخدم «تعذّر التحقّق من
+     صلاحيّاتك» وهو داخلٌ فعلا (شُوهد في جولة ٢٠٢٦-٠٩: ٤٤ ردَّ 429، تسعةَ
+     عشرَ منها على هذا المسار). فله سقفُه: واسعٌ لأنّه قراءةُ جلسةٍ قائمة،
+     ومحدودٌ لأنّه ليس مفتوحا. */
+  app.get('/api/auth/me', {
+    config: { rateLimit: { max: 3000, timeWindow: '1 minute' } },
+    schema: { tags: ['auth'], summary: 'هوية الجلسة الحالية وصلاحياتها' },
+  }, async (req) => {
     return { user: req.auth }
   })
 
