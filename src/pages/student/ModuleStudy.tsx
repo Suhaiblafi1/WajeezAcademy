@@ -26,8 +26,11 @@ import CheckQuestion from "@/components/CheckQuestion";
 import ModuleCheck from "@/components/ModuleCheck";
 import DecisionScenario from "@/components/DecisionScenario";
 import ModuleVideo from "@/components/ModuleVideo";
+import PracticeActivity from "@/components/PracticeActivity";
+import RubricSelfReview from "@/components/RubricSelfReview";
 import { splitLessons } from "@/application/content/lesson-split";
 import { parseChecks, type ModuleCheck as Check } from "@/application/content/module-checks";
+import { parsePractice } from "@/application/content/practice";
 import { usePublishedContent } from "@/services/public-content";
 import { useRealSession } from "@/services/session";
 import { safeGet, safeSet } from "@/services/safe-storage";
@@ -126,7 +129,15 @@ export default function ModuleStudy() {
   const lessonCount = steps.filter((s) => s.kind === "lesson").length;
   const step = steps[pos];
   const isLast = pos === steps.length - 1;
-  const totalMinutes = steps.reduce((s, x) => s + (x.kind === "lesson" ? x.minutes : x.kind === "scenario" ? 10 : 0), 0);
+  /* زمنُ خطوة النشاط — من النشاط المؤلَّف نفسِه لا من تقديرٍ ثابت، وعشرٌ
+     للمراجعة بالروبرك حين يوجد. وكان صفرا فكان الشريطُ يقول للمتعلّم إنّ
+     الوحدةَ نصفُ ساعةٍ وهي ساعتان. */
+  const applyMinutes =
+    (parsePractice(mod.practice).practice?.minutes ?? 0) + (mod.rubric ? 10 : 0);
+  const totalMinutes = steps.reduce(
+    (s, x) => s + (x.kind === "lesson" ? x.minutes : x.kind === "scenario" ? 10 : applyMinutes),
+    0,
+  );
 
   const go = (to: number) => {
     setAt(Math.max(0, Math.min(steps.length - 1, to)));
@@ -219,18 +230,29 @@ export default function ModuleStudy() {
 
       {step?.kind === "apply" && (
         <article className="space-y-4">
-          <div className="rounded-3xl border border-teal/30 bg-teal/[0.05] p-6 md:p-8">
-            <p className="flex items-center gap-2 text-xs font-black text-teal-light-ink">
-              <Target className="h-4 w-4" /> نشاطك الآن
-            </p>
-            <p className="mt-3 text-[15px] leading-9 text-white/85">{mod.activity}</p>
-          </div>
-          <div className="rounded-3xl border border-gold/25 bg-gold/[0.05] p-6 md:p-8">
-            <p className="flex items-center gap-2 text-xs font-black text-gold-ink">
-              <FileText className="h-4 w-4" /> ما تخرج به — ويدخل ملفّك
-            </p>
-            <p className="mt-3 text-[15px] leading-9 text-white/85">{mod.artifact}</p>
-          </div>
+          {/* النشاطُ المؤلَّف (ح-٦) إن وُجد — وإلّا فعبارةُ الكتالوج، وهي كلُّ
+              ما كان يُعرض قبل أن يكون للنشاط حقلٌ يحمله. */}
+          {mod.practice ? (
+            <PracticeActivity raw={mod.practice} moduleId={mod.id} />
+          ) : (
+            <>
+              <div className="rounded-3xl border border-teal/30 bg-teal/[0.05] p-6 md:p-8">
+                <p className="flex items-center gap-2 text-xs font-black text-teal-light-ink">
+                  <Target className="h-4 w-4" /> نشاطك الآن
+                </p>
+                <p className="mt-3 text-[15px] leading-9 text-white/85">{mod.activity}</p>
+              </div>
+              <div className="rounded-3xl border border-gold/25 bg-gold/[0.05] p-6 md:p-8">
+                <p className="flex items-center gap-2 text-xs font-black text-gold-ink">
+                  <FileText className="h-4 w-4" /> ما تخرج به — ويدخل ملفّك
+                </p>
+                <p className="mt-3 text-[15px] leading-9 text-white/85">{mod.artifact}</p>
+              </div>
+            </>
+          )}
+
+          {/* المراجعةُ الذاتيّة (ح-٧) — قبل التسليم لا بعد التقييم */}
+          {mod.rubric && <RubricSelfReview raw={mod.rubric} moduleId={mod.id} />}
 
           {/* تمرينُ الوحدة كاملا مع الجدولة المتباعدة — مكانُه بعد الفهم لا قبله */}
           {mod.checks && (

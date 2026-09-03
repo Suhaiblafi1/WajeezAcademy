@@ -32,6 +32,8 @@ import { READABLE_MODULE_VERSION_STATUSES, readableVersionOf } from '../catalog/
 import { validateChecks } from '../../src/application/content/module-checks'
 import { validateScenario } from '../../src/application/content/scenario'
 import { validateVideo } from '../../src/application/content/module-video'
+import { validatePractice } from '../../src/application/content/practice'
+import { validateRubric } from '../../src/application/content/rubric'
 
 /** حالاتُ التأليف — والمقروءتان في `module-version-visibility` */
 export const DRAFT = 'draft'
@@ -52,9 +54,11 @@ export interface ModuleContentPatch {
   checksAr?: string | null
   videoAr?: string | null
   scenarioAr?: string | null
+  practiceAr?: string | null
+  rubricAr?: string | null
 }
 
-const CONTENT_FIELDS = ['bodyAr', 'checksAr', 'videoAr', 'scenarioAr'] as const
+const CONTENT_FIELDS = ['bodyAr', 'checksAr', 'videoAr', 'scenarioAr', 'practiceAr', 'rubricAr'] as const
 
 /* سقفٌ للمتن: حمايةٌ من لصقِ كتابٍ كاملا في حقلٍ يُنشر في لقطةٍ واحدة
    يقرؤها كلُّ زائر. اللقطة تُبنى كاملةً في كلِّ نشر، فحجمُها ثمنٌ مشترك. */
@@ -117,6 +121,7 @@ export class ModuleAuthoringService {
         moduleId, version: next, sequence: base.sequence, titleAr: base.titleAr,
         outcomeAr: base.outcomeAr, activityAr: base.activityAr, artifactAr: base.artifactAr,
         bodyAr: base.bodyAr, checksAr: base.checksAr, videoAr: base.videoAr, scenarioAr: base.scenarioAr,
+        practiceAr: base.practiceAr, rubricAr: base.rubricAr,
         hours: base.hours, status: DRAFT, createdBy: actorId,
       },
     })
@@ -177,6 +182,16 @@ export class ModuleAuthoringService {
     const video = trimOrNull(patch.videoAr)
     if (patch.videoAr !== undefined && video) {
       const r = validateVideo(video)
+      if (!r.ok) errorsAr.push(...r.errorsAr)
+    }
+    const practice = trimOrNull(patch.practiceAr)
+    if (patch.practiceAr !== undefined && practice) {
+      const r = validatePractice(practice)
+      if (!r.ok) errorsAr.push(...r.errorsAr)
+    }
+    const rubric = trimOrNull(patch.rubricAr)
+    if (patch.rubricAr !== undefined && rubric) {
+      const r = validateRubric(rubric)
       if (!r.ok) errorsAr.push(...r.errorsAr)
     }
     return errorsAr
@@ -325,6 +340,7 @@ export class ModuleAuthoringService {
     return rows.map((v) => ({
       id: v.id, version: v.version, status: v.status, titleAr: v.titleAr,
       bodyAr: v.bodyAr, checksAr: v.checksAr, videoAr: v.videoAr, scenarioAr: v.scenarioAr,
+      practiceAr: v.practiceAr, rubricAr: v.rubricAr,
       createdAt: v.createdAt.toISOString(),
       submittedAt: v.submittedAt?.toISOString() ?? null,
       reviewedAt: v.reviewedAt?.toISOString() ?? null,
@@ -392,6 +408,8 @@ export class ModuleAuthoringService {
         hasChecks: Boolean(readable.checksAr?.trim()),
         hasVideo: Boolean(readable.videoAr?.trim()),
         hasScenario: Boolean(readable.scenarioAr?.trim()),
+        hasPractice: Boolean(readable.practiceAr?.trim()),
+        hasRubric: Boolean(readable.rubricAr?.trim()),
         draftStatus: open?.status ?? null,
         learnersWaiting: learnersByCourse.get(m.courseId) ?? 0,
         courseHasOpenCohort: openCourses.has(m.courseId),
@@ -455,6 +473,7 @@ export class ModuleAuthoringService {
       titleAr: v.titleAr, submittedAt: v.submittedAt?.toISOString() ?? null,
       bodyChars: v.bodyAr?.length ?? 0,
       hasChecks: Boolean(v.checksAr), hasVideo: Boolean(v.videoAr), hasScenario: Boolean(v.scenarioAr),
+      hasPractice: Boolean(v.practiceAr), hasRubric: Boolean(v.rubricAr),
       /* الملاحظةُ العائدة من الحلقة الأخيرة تُقرأ في طابور الوسطى — وإلّا
          عاد العملُ بلا أن يعرف مستقبِلُه لماذا. */
       reviewNoteAr: v.reviewNoteAr,

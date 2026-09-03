@@ -41,7 +41,7 @@ export interface CourseFull {
   totalHours: number
   learningObjectives: string[]
   learningOutcomes: string[]
-  modules: { id: string; title: string; outcome: string; activity: string; artifact: string; hours: number; body: string | null; checks: string | null; video: string | null; scenario: string | null }[]
+  modules: { id: string; title: string; outcome: string; activity: string; artifact: string; hours: number; body: string | null; checks: string | null; video: string | null; scenario: string | null; practice: string | null; rubric: string | null }[]
   practicalProject: string
   relatedSkills: string[]
   referenceIds: string[]
@@ -116,6 +116,10 @@ export function courseFullById(id: string): CourseFull | null {
       video: m.module_video_ar?.trim() ? m.module_video_ar : null,
       /* سيناريو القرار (ح-٥) — نصّه الخام؛ يُحلَّل عند العرض */
       scenario: m.module_scenario_ar?.trim() ? m.module_scenario_ar : null,
+      /* النشاط التطبيقيّ (ح-٦) — نصّه الخام؛ يُحلَّل عند العرض */
+      practice: m.module_practice_ar?.trim() ? m.module_practice_ar : null,
+      /* الروبرك (ح-٧) — نصّه الخام؛ يُحلَّل عند العرض */
+      rubric: m.module_rubric_ar?.trim() ? m.module_rubric_ar : null,
     })),
     practicalProject: c.summative_assessment_ar ?? '',
     relatedSkills: c.skill_names_ar,

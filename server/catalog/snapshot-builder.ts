@@ -125,6 +125,8 @@ export async function buildSnapshotFromDb(
       ...(v.checksAr ? { module_checks_ar: v.checksAr } : {}),
       ...(v.videoAr ? { module_video_ar: v.videoAr } : {}),
       ...(v.scenarioAr ? { module_scenario_ar: v.scenarioAr } : {}),
+      ...(v.practiceAr ? { module_practice_ar: v.practiceAr } : {}),
+      ...(v.rubricAr ? { module_rubric_ar: v.rubricAr } : {}),
     }]
   })
 

@@ -18,6 +18,8 @@ const contentSchema = z.object({
   checksAr: z.string().nullish(),
   videoAr: z.string().nullish(),
   scenarioAr: z.string().nullish(),
+  practiceAr: z.string().nullish(),
+  rubricAr: z.string().nullish(),
 })
 
 const academicSchema = z.object({
@@ -78,7 +80,10 @@ export function registerModuleAuthoringRoutes(app: FastifyInstance, prisma: Pris
   }, async (req) => {
     const { moduleId } = req.params as { moduleId: string }
     const v = await svc.openDraft(moduleId, req.auth!.userId)
-    return { version: v.version, status: v.status, bodyAr: v.bodyAr, checksAr: v.checksAr, videoAr: v.videoAr, scenarioAr: v.scenarioAr }
+    return {
+      version: v.version, status: v.status, bodyAr: v.bodyAr, checksAr: v.checksAr,
+      videoAr: v.videoAr, scenarioAr: v.scenarioAr, practiceAr: v.practiceAr, rubricAr: v.rubricAr,
+    }
   })
 
   app.put('/api/admin/authoring/:moduleId/draft', {
