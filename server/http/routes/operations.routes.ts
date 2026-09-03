@@ -103,7 +103,17 @@ export function registerOperationsRoutes(app: FastifyInstance, prisma: PrismaCli
     schema: { tags: ['advisor-portal'], summary: 'إنجاز متابعة بنتيجة' },
   }, async (req) => {
     const { followUpId } = z.object({ followUpId: z.string().uuid() }).parse(req.params)
-    const body = z.object({ outcome: z.string().min(2), note: z.string().optional() }).parse(req.body)
+    /* النتيجةُ مجموعةٌ مغلقة، لا أيَّ نصٍّ بحرفَين.
+
+       كانت `z.string().min(2)`: فأيُّ نصٍّ يُقبل ويُكتب في القاعدة. والمخطّطُ
+       يعدّ ثلاثَ نتائجَ في تعليقه، واختبارُ المنصّة نفسُه كان يكتب رابعةً
+       (`answered`) — ثلاثُ طبقاتٍ تقول ثلاثةَ أشياءَ مختلفة، ولا واحدةَ
+       منها تمنع. وقيدُ القاعدة الجديد يمنع، فيُقال السببُ هنا قبله بالعربيّة
+       لا برمزِ قيدٍ لا يفهمه أحد. */
+    const body = z.object({
+      outcome: z.enum(['reached', 'no_answer', 'rescheduled']),
+      note: z.string().optional(),
+    }).parse(req.body)
     return advisors.completeFollowUp(req.auth!.userId, followUpId, body.outcome, body.note)
   })
 

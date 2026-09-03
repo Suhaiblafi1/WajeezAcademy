@@ -118,7 +118,20 @@ export async function sendSessionReminders(prisma: PrismaClient, now = new Date(
           select: {
             id: true, title: true,
             /* المسجَّلُ النشطُ وحدَه: من أسقط تسجيلَه لا يُذكَّر بجلسةٍ لا تخصّه */
-            enrollments: { where: { status: { in: ['active', 'completed'] } }, select: { userId: true } },
+            /* ── «enrolled» لا «active» ──
+
+               كان الشرطُ `['active', 'completed']`، و`active` **ليست حالةَ
+               تسجيلٍ أصلا**: حالاتُ التسجيل `enrolled | waitlisted |
+               completed | dropped`. فالوظيفةُ كانت لا تجد أحدا — أي أنّ
+               تذكيرَ الجلسات لم يكن ليصل إلى متعلّمٍ مسجَّلٍ واحد.
+
+               ولم يكشفه اختبارُها لأنّ الاختبارَ كان يُنشئ تسجيلاتٍ بالحالة
+               الخاطئة نفسِها: خطأٌ واحدٌ في موضعَين يُصدّق نفسَه. وكشفه
+               قيدُ الحالات في القاعدة، لا القراءة.
+
+               والمقصودُ من له مقعدٌ قائم: المسجَّلُ والمُكمِل — لا المنتظرُ
+               في القائمة ولا من ترك. */
+            enrollments: { where: { status: { in: ['enrolled', 'completed'] } }, select: { userId: true } },
           },
         },
       },

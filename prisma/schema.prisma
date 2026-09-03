@@ -1755,7 +1755,20 @@ model Certificate {
   issuedAt      DateTime                  @default(now())
   issuedBy      String?                   @db.Uuid // null = إصدار نظامي بعد تحقق القواعد
   status        String                    @default("active") // active | revoked
-  enrollment    Enrollment                @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  /* ── لا سلسلةَ حذفٍ تبلغ شهادةً صادرة ──
+
+     كانت `Cascade`: فحذفُ تسجيلٍ يمحو **شهادةً أُصدرت فعلا** ورقمُها معلَنٌ
+     للناس ويُتحقَّق منه برابط. والشهادةُ ليست أثرا للتسجيل، بل دعوى
+     مستقلّةٌ عن المنصّة على صاحبها — إن سقطت صار الرابطُ يقول «لا شهادةَ
+     بهذا الرقم» عن شهادةٍ صحيحة.
+
+     وطبقةُ الشيفرة تحرسه فعلا: بصمةُ الحساب في `account-purge.service`
+     تعدّ الشهادات وترفض المحوَ إن وُجدت. لكنّ الحرسَ في الشيفرة وحدَها
+     يسقط بأوّل مسارٍ جديدٍ أو استعلامٍ يدويّ — ولا يسقط `Restrict`.
+
+     وسحبُ الشهادة له بابُه: `status: 'revoked'` مع `CertificateRevocation`
+     التي تحمل السببَ ومن سحبها. فالسحبُ يُقال، والمحوُ يُخفي. */
+  enrollment    Enrollment                @relation(fields: [enrollmentId], references: [id], onDelete: Restrict)
   verifications CertificateVerification[]
   revocation    CertificateRevocation?
 

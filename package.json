@@ -45,7 +45,7 @@
     "test:notifications": "vitest run -c vitest.server.config.ts server/tests/notifications",
     "test:support": "vitest run -c vitest.server.config.ts server/tests/support",
     "test:reports": "vitest run -c vitest.server.config.ts server/tests/reports",
-    "test:e2e": "vitest run -c vitest.server.config.ts server/tests",
+    "test:e2e": "vitest run -c vitest.server.config.ts server/tests --reporter=default --reporter=json --outputFile=.vitest-server-results.json; tsx scripts/assert-server-tests.ts",
     "test:integration": "npm run test:e2e",
     "test:diagnostic-regression": "tsx scripts/test-diagnostic-regression.ts",
     "test": "npm run test:diagnostic && npm run test:scenarios",
@@ -79,7 +79,8 @@
     "ci:locale": "tsx scripts/audit-locale.ts --check",
     "ci:csp": "tsx scripts/audit-csp.ts --check",
     "ci:bundle": "node scripts/bundle-api.mjs --check",
-    "ci:migrations": "tsx scripts/audit-migrations.ts"
+    "ci:migrations": "tsx scripts/audit-migrations.ts",
+    "ci:status-checks": "tsx scripts/status-checks.ts --check"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.2",

@@ -80,7 +80,7 @@ describe('تذكيرُ الجلسات: مرّةً واحدةً لكلّ متعل
     })
     sessionId = s.id
     await prisma.cohort.update({ where: { id: cohortId }, data: { status: 'active' } })
-    await prisma.enrollment.create({ data: { userId: learnerId, cohortId, status: 'active' } })
+    await prisma.enrollment.create({ data: { userId: learnerId, cohortId, status: 'enrolled' } })
   })
 
   it('يُنشئ تذكيرَ «غدا» للمسجَّل النشط', async () => {
@@ -118,7 +118,7 @@ describe('تذكيرُ الجلسات: مرّةً واحدةً لكلّ متعل
       startsAt: new Date(Date.now() + 10 * 3_600_000),
       endsAt: new Date(Date.now() + 12 * 3_600_000),
     })
-    await prisma.enrollment.create({ data: { userId: learnerId, cohortId: draft.id, status: 'active' } })
+    await prisma.enrollment.create({ data: { userId: learnerId, cohortId: draft.id, status: 'enrolled' } })
     const out = await sendSessionReminders(prisma)
     expect(out.done).toBe(0)
   })
@@ -131,7 +131,7 @@ describe('تذكيرُ الجلسات: مرّةً واحدةً لكلّ متعل
       startsAt: new Date(Date.now() + 40 * 60_000),
       endsAt: new Date(Date.now() + 100 * 60_000),
     })
-    await prisma.enrollment.create({ data: { userId: learnerId, cohortId: soon.id, status: 'active' } })
+    await prisma.enrollment.create({ data: { userId: learnerId, cohortId: soon.id, status: 'enrolled' } })
     const out = await sendSessionReminders(prisma)
     /* واحدةٌ لنافذة اليوم وواحدةٌ لنافذة الساعة — الجلسةُ نفسُها في كلتَيهما */
     expect(out.done).toBe(2)

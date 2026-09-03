@@ -152,8 +152,13 @@ describe('تخزين وثائق المتقدّم', () => {
     const routes = read('server/http/routes/trainer-applications.routes.ts')
     expect(routes).toContain('bodyLimit: MAX_UPLOAD_ANY')
 
-    /* والواجهة تفحص قبل الرحلة بالحدّ نفسه لا برقمٍ يتقادم وحده */
-    const ui = /export const MAX_DOC_BYTES = (\d+) \* 1024 \* 1024;/.exec(read('src/pages/JoinTrainer.tsx'))?.[1]
+    /* والواجهة تفحص قبل الرحلة بالحدّ نفسه لا برقمٍ يتقادم وحده.
+
+       والحدُّ انتقل إلى `join-trainer/options.ts` حين فُكّكت الصفحةُ (كانت
+       ألفا وثلاثَ مئةِ سطر)، وتُعيد الصفحةُ تصديرَه. فيُقرأ الملفّان معا:
+       الضمانُ لم يتغيّر — تغيّر بيتُه. */
+    const ui = /export const MAX_DOC_BYTES = (\d+) \* 1024 \* 1024;/
+      .exec(read('src/pages/JoinTrainer.tsx') + read('src/pages/join-trainer/options.ts'))?.[1]
     expect(ui, 'حدّ الواجهة مفقود').toBeTruthy()
     expect(Number(ui) * 1024 * 1024, 'الواجهة تعد بحدٍّ يخالف الخادم').toBe(MAX_UPLOAD_ANY)
   })
