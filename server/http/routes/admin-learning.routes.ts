@@ -117,6 +117,22 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     return reply.status(201).send(await cohorts.assignTrainer(id, body.profileId, req.auth!.userId, body.role))
   })
 
+  app.get('/api/admin/cohorts/:id/sessions', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-learning'], summary: 'جلساتُ الشعبة لاختيارها بالعنوان والتاريخ — بديلُ لصق المعرّف' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return cohorts.sessionsFor(id)
+  })
+
+  app.get('/api/admin/learners/search', {
+    preHandler: requirePermission('enrollment.manage'),
+    schema: { tags: ['admin-learning'], summary: 'بحثُ متعلّمٍ بالاسم أو البريد للتسجيل — بديلُ لصق المعرّف' },
+  }, async (req) => {
+    const { q, cohortId } = z.object({ q: z.string().min(2).max(80), cohortId: z.string().uuid().optional() }).parse(req.query)
+    return cohorts.searchLearners(cohortId, q)
+  })
+
   app.get('/api/admin/cohorts/:id/open-checklist', {
     preHandler: requirePermission('cohort.manage'),
     schema: { tags: ['admin-learning'], summary: 'فحص شروط الفتح الستة — يعيد النواقص دون تغيير حالة' },

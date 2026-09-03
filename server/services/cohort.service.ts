@@ -153,6 +153,56 @@ export class CohortService {
      كانت الشاشة تعرض «المدرّبين المعلَنين» بلا أن تقول أيُّهم مؤهَّل، فيُجرَّب
      الإسنادُ ويُردّ بـ409. والفرقُ بين «أسنده» و«أهّله وأسنده» قرارٌ يُتّخذ
      قبل النقر لا بعده. */
+  /* جلساتُ الشعبةِ لاختيارها بالعنوان والتاريخ — لا بلصق معرّفٍ من ٣٦ حرفا.
+
+     كان ربطُ Zoom يطلب «معرف الجلسة (UUID)»، والمعرّفُ لا يظهر على أيّ شاشة
+     أصلا: فالموظّفُ إمّا يفتح القاعدة أو يستسلم (شُوهد في جولة ٢٠٢٦-٠٩). */
+  async sessionsFor(cohortId: string) {
+    const cohort = await this.prisma.cohort.findUnique({ where: { id: cohortId }, select: { id: true } })
+    if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
+    const sessions = await this.prisma.cohortSession.findMany({
+      where: { cohortId },
+      orderBy: { startsAt: 'asc' },
+      select: {
+        id: true, title: true, startsAt: true, endsAt: true, status: true,
+        zoom: { select: { joinUrl: true } },
+      },
+    })
+    return sessions.map((s) => ({
+      id: s.id, title: s.title, startsAt: s.startsAt, endsAt: s.endsAt, status: s.status,
+      hasZoom: s.zoom !== null,
+    }))
+  }
+
+  /* بحثُ متعلّمٍ بالاسم أو البريد — بديلُ حقلِ «معرف المستخدم (UUID)».
+
+     يُقصَر على المتعلّمين النشطين، ويقول من هو مسجَّلٌ في هذه الشعبة أصلا
+     كي لا يُسجَّل مرّتين. وعشرةُ نتائجَ تكفي لاختيارِ اسم. */
+  async searchLearners(cohortId: string | undefined, q: string) {
+    const term = q.trim()
+    if (term.length < 2) return []
+    const users = await this.prisma.user.findMany({
+      where: {
+        status: 'active',
+        roles: { some: { roleId: 'learner' } },
+        OR: [
+          { displayName: { contains: term, mode: 'insensitive' } },
+          { email: { contains: term, mode: 'insensitive' } },
+        ],
+      },
+      orderBy: { displayName: 'asc' },
+      take: 10,
+      select: { id: true, displayName: true, email: true },
+    })
+    if (!cohortId || users.length === 0) return users.map((u) => ({ ...u, enrolled: false }))
+    const enrolled = await this.prisma.enrollment.findMany({
+      where: { cohortId, userId: { in: users.map((u) => u.id) } },
+      select: { userId: true },
+    })
+    const inCohort = new Set(enrolled.map((e) => e.userId))
+    return users.map((u) => ({ ...u, enrolled: inCohort.has(u.id) }))
+  }
+
   async eligibleTrainersFor(cohortId: string) {
     const cohort = await this.prisma.cohort.findUnique({ where: { id: cohortId } })
     if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)

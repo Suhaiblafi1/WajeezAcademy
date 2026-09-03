@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import {
+  AlertTriangle,
   CalendarClock, CalendarPlus, CheckCircle2, ChevronDown, Loader2, Lock, Play, RefreshCw,
   ServerOff, UserPlus, Users, Video, XCircle,
 } from "lucide-react";
@@ -8,6 +9,7 @@ import { apiGet, apiPost, ApiError } from "@/services/api";
 import { CohortOps, LearningSettings } from "./CohortOps";
 import CohortReadiness from "./CohortReadiness";
 import DayOfWeekPicker from "@/components/DayOfWeekPicker";
+import LearnerSearchField, { type LearnerHit } from "@/components/LearnerSearchField";
 import { fmtDateTimeAr } from "@/utils/format";
 import { courseById } from "@/data/courses";
 
@@ -38,6 +40,9 @@ interface CohortRow {
 }
 
 interface CourseOption { id: string; status: string; title: string }
+/** لافتةُ نتيجةٍ تعرف نجاحَها من رفضها */
+type Flash = { kind: "ok" | "error"; text: string } | null
+interface SessionOption { id: string; title: string; startsAt: string; hasZoom: boolean }
 interface Checklist { ready: boolean; missing: string[] }
 
 /** عمليات الشعب — API حقيقي: إنشاء، شروط الفتح الستة، جلسات، Zoom يدوي، تسجيل بسعة محروسة */
@@ -47,7 +52,7 @@ export default function AdminCohorts() {
   /* سعرُ الدورة المختارة وعملتُها من الكتالوج نفسِه — وهو ما يرثه الخادم */
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState<string | null>(null);
-  const [flash, setFlash] = useState("");
+  const [flash, setFlash] = useState<Flash>(null);
   const [busy, setBusy] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [checklist, setChecklist] = useState<Record<string, Checklist>>({});
@@ -62,7 +67,7 @@ export default function AdminCohorts() {
   const selectedListPrice = selectedCourse?.listPrice ?? null;
   const [sessionForm, setSessionForm] = useState({ title: "", date: "", time: "18:00", hours: "2" });
   const [zoomForm, setZoomForm] = useState<Record<string, { sessionId: string; joinUrl: string; meetingId: string; passcode: string }>>({});
-  const [enrollUserId, setEnrollUserId] = useState("");
+  const [enrollLearner, setEnrollLearner] = useState<LearnerHit | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [reschedules, setReschedules] = useState<RescheduleRow[]>([]);
   /* الفلاتر الأربعة — قرارُ صاحب المنصّة: «فلاتر: المدرّب، التاريخ، المجال،
@@ -92,16 +97,20 @@ export default function AdminCohorts() {
 
   useEffect(() => { void load(); }, [load]);
 
+  /* رفضُ الخادم كان يُعرض في لافتةِ النجاح نفسِها — بلونٍ أخضرَ وعلامةِ صحّ،
+     وفي أعلى صفحةٍ طويلةٍ لا يراها من يعمل في بطاقةٍ سفلى. فربطُ Zoom على
+     جلسةٍ مربوطةٍ يُرَدّ بـ409 ولا يظهر شيء (شُوهد ٣ سبتمبر ٢٠٢٦). فصارت
+     اللافتةُ تعرف الفرقَ، وتلزَق أعلى المحتوى فتُرى حيث كان الفعل. */
   const act = async (fn: () => Promise<unknown>, doneMsg: string) => {
     if (busy) return;
-    setBusy(true); setFlash("");
+    setBusy(true); setFlash(null);
     try {
       await fn();
-      setFlash(doneMsg);
+      setFlash({ kind: "ok", text: doneMsg });
       await load();
       if (expanded) await loadChecklist(expanded);
     } catch (err) {
-      setFlash(err instanceof ApiError ? err.message : "تعذر تنفيذ الإجراء");
+      setFlash({ kind: "error", text: err instanceof ApiError ? err.message : "تعذر تنفيذ الإجراء" });
     } finally {
       setBusy(false);
     }
@@ -180,8 +189,18 @@ export default function AdminCohorts() {
   return (
     <AdminLayout title="عمليات الشعب — الفتح المشروط والجلسات والتسجيل">
       {flash && (
-        <p className="mb-5 flex items-center gap-2 rounded-2xl border border-teal/40 bg-teal/10 px-4 py-3 text-sm font-bold text-teal-light-ink">
-          <CheckCircle2 className="h-4 w-4 shrink-0" /> {flash}
+        <p
+          role={flash.kind === "error" ? "alert" : "status"}
+          className={`sticky top-[4.5rem] z-30 mb-5 flex items-center gap-2 rounded-2xl border px-4 py-3 text-sm font-bold backdrop-blur ${
+            flash.kind === "error"
+              ? "border-red-400/40 bg-red-500/15 text-red-200"
+              : "border-teal/40 bg-teal/10 text-teal-light-ink"
+          }`}
+        >
+          {flash.kind === "error"
+            ? <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />
+            : <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />}
+          {flash.text}
         </p>
       )}
 
@@ -469,15 +488,15 @@ export default function AdminCohorts() {
                       <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
                         <p className="mb-3 flex items-center gap-1.5 text-xs font-black text-white/60"><UserPlus className="h-3.5 w-3.5" /> تسجيل متعلم — الفائض يتحول لقائمة انتظار آليا</p>
                         <div className="flex gap-2">
-                          <input placeholder="معرف المستخدم (UUID)" dir="ltr" value={enrollUserId} onChange={(e) => setEnrollUserId(e.target.value)}
-                            className="flex-1 rounded-xl border border-white/15 bg-black/30 px-3 py-2 font-mono text-xs text-white placeholder:text-white/25 focus:border-teal focus:outline-none" />
-                          <button disabled={busy || !enrollUserId.trim()}
+                          <LearnerSearchField cohortId={c.id} value={enrollLearner} onChange={setEnrollLearner} disabled={busy} />
+                          <button disabled={busy || !enrollLearner}
                             onClick={() => act(async () => {
-                              const res = await apiPost<{ status: string }>(`/api/admin/cohorts/${c.id}/enrollments`, { userId: enrollUserId.trim() });
-                              setEnrollUserId("");
-                              setFlash(res.status === "waitlisted" ? "الشعبة ممتلئة — أُدرج المتعلم في قائمة الانتظار" : "سُجل المتعلم بنجاح");
+                              const res = await apiPost<{ status: string }>(`/api/admin/cohorts/${c.id}/enrollments`, { userId: enrollLearner!.id });
+                              const name = enrollLearner!.displayName;
+                              setEnrollLearner(null);
+                              setFlash({ kind: "ok", text: res.status === "waitlisted" ? `الشعبة ممتلئة — أُدرج ${name} في قائمة الانتظار` : `سُجل ${name} بنجاح` });
                             }, "")}
-                            className="cursor-pointer rounded-xl bg-white/10 px-4 py-2 text-xs font-black text-white transition hover:bg-white/15 disabled:opacity-40">
+                            className="shrink-0 cursor-pointer rounded-xl bg-white/10 px-4 py-2 text-xs font-black text-white transition hover:bg-white/15 disabled:opacity-40">
                             سجّل
                           </button>
                         </div>
@@ -494,7 +513,7 @@ export default function AdminCohorts() {
                     </p>
 
                     {/* عمليات متقدمة: مدرب، تعديل، مواد، تقييمات، شهادات، نشر عام */}
-                    <CohortOps cohort={c} onDone={(msg) => { setFlash(msg); void load(); }} />
+                    <CohortOps cohort={c} onDone={(msg) => { setFlash({ kind: "ok", text: msg }); void load(); }} />
                   </div>
                 )}
               </div>
@@ -507,25 +526,53 @@ export default function AdminCohorts() {
       <LearningSettings
         courses={courses.map((c) => ({ id: c.id, title: c.title }))}
         cohorts={rows.map((c) => ({ id: c.id, title: c.title }))}
-        onDone={(msg) => setFlash(msg)}
+        onDone={(msg) => setFlash({ kind: "ok", text: msg })}
       />
     </AdminLayout>
   );
 }
 
-/** نموذج ربط Zoom — يحتاج معرف الجلسة من قاعدة البيانات (يظهر في استجابة إضافة الجلسة أو من المدرب) */
+/* نموذجُ ربط Zoom — الجلسةُ تُختار بعنوانها وتاريخها.
+
+   كان الحقلُ الأوّلُ «معرف الجلسة (UUID)»: قيمةٌ لا تظهر على أيّ شاشةٍ في
+   المنصّة، فلا سبيلَ لتعبئتها إلّا من قاعدة البيانات. وجلساتُ الشعبة معروفةٌ
+   للخادم، فتُقرأ وتُعرض. ومن رُبطت جلستُه يظهر معلَّما كي لا يُربط مرّتين. */
 function ZoomAttach({ cohortId, sessionsCount, value, onChange, busy, onSubmit }: {
   cohortId: string; sessionsCount: number;
   value: { sessionId: string; joinUrl: string; meetingId: string; passcode: string };
   onChange: (v: { sessionId: string; joinUrl: string; meetingId: string; passcode: string }) => void;
   busy: boolean; onSubmit: () => void;
 }) {
-  void cohortId;
+  const [sessions, setSessions] = useState<SessionOption[] | null>(null);
+  useEffect(() => {
+    if (!sessionsCount) return;
+    let alive = true;
+    apiGet<SessionOption[]>(`/api/admin/cohorts/${cohortId}/sessions`)
+      .then((r) => { if (alive) setSessions(r) })
+      .catch(() => { if (alive) setSessions([]) });
+    return () => { alive = false };
+  }, [cohortId, sessionsCount]);
+
   if (!sessionsCount) return <p className="text-[11px] text-white/50">أضف جلسة أولا ثم اربطها باجتماع.</p>;
   return (
     <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-      <input placeholder="معرف الجلسة (UUID)" dir="ltr" value={value.sessionId} onChange={(e) => onChange({ ...value, sessionId: e.target.value })}
-        className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 font-mono text-xs text-white placeholder:text-white/25 focus:border-teal focus:outline-none" />
+      <div>
+        <label className="sr-only" htmlFor={`zoom-session-${cohortId}`}>الجلسة</label>
+        <select
+          id={`zoom-session-${cohortId}`}
+          value={value.sessionId}
+          disabled={sessions === null}
+          onChange={(e) => onChange({ ...value, sessionId: e.target.value })}
+          className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white focus:border-teal focus:outline-none disabled:opacity-50"
+        >
+          <option value="">{sessions === null ? "تُحمَّل الجلسات…" : "اختر الجلسة"}</option>
+          {sessions?.map((sn) => (
+            <option key={sn.id} value={sn.id}>
+              {sn.title} — {fmtDateTimeAr(sn.startsAt)}{sn.hasZoom ? " (مربوطة)" : ""}
+            </option>
+          ))}
+        </select>
+      </div>
       <input placeholder="رابط الانضمام https://…" dir="ltr" value={value.joinUrl} onChange={(e) => onChange({ ...value, joinUrl: e.target.value })}
         className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 font-mono text-xs text-white placeholder:text-white/25 focus:border-teal focus:outline-none lg:col-span-2" />
       <input placeholder="معرف الاجتماع (اختياري)" dir="ltr" value={value.meetingId} onChange={(e) => onChange({ ...value, meetingId: e.target.value })}
@@ -533,7 +580,7 @@ function ZoomAttach({ cohortId, sessionsCount, value, onChange, busy, onSubmit }
       <div className="flex gap-2">
         <input placeholder="رمز المرور" dir="ltr" value={value.passcode} onChange={(e) => onChange({ ...value, passcode: e.target.value })}
           className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 font-mono text-xs text-white placeholder:text-white/25 focus:border-teal focus:outline-none" />
-        <button disabled={busy || !value.sessionId.trim() || !/^https:\/\/.+/.test(value.joinUrl)} onClick={onSubmit}
+        <button disabled={busy || !value.sessionId || !/^https:\/\/.+/.test(value.joinUrl)} onClick={onSubmit}
           className="shrink-0 cursor-pointer rounded-xl bg-white/10 px-4 py-2 text-xs font-black text-white transition hover:bg-white/15 disabled:opacity-40">
           اربط
         </button>
