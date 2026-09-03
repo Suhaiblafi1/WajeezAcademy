@@ -126,7 +126,10 @@ describe('أين تُستعمل الدعوة فعلا', () => {
 
   it('١٣) وللمتعلّم رابطٌ يضيف جلستَه بنفسه', async () => {
     const { readFileSync } = await import('node:fs')
-    const routes = readFileSync('server/http/routes/operations.routes.ts', 'utf8')
+    /* مساراتُ التقويم انتقلت إلى ملفّها حين قُطعت «العمليّات» بحسب المجال
+       (كانت خمسَ مئةٍ وسبعةَ عشرَ سطرا لأربعة مجالات). والضمانُ لم يتغيّر —
+       تغيّر بيتُه. */
+    const routes = readFileSync('server/http/routes/calendar.routes.ts', 'utf8')
     expect(routes).toContain("'/api/calendar/cohort-sessions/:sessionId.ics'")
     expect(routes).toContain("'/api/calendar/trainer-interviews/:interviewId.ics'")
     const ui = readFileSync('src/pages/student/Dashboard.tsx', 'utf8')

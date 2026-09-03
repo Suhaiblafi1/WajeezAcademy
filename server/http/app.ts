@@ -27,6 +27,10 @@ import { registerStaffTaskRoutes } from './routes/staff-tasks.routes'
 import { registerPublicCatalogRoutes } from './routes/public.routes'
 import { registerPathDraftRoutes } from './routes/path-drafts.routes'
 import { registerOperationsRoutes } from './routes/operations.routes'
+/* «العمليّات» كانت أربعةَ مجالاتٍ في ملفٍّ واحد — فُصلت بحسب المجال */
+import { registerAdvisorRoutes } from './routes/advisor.routes'
+import { registerCalendarRoutes } from './routes/calendar.routes'
+import { registerCommerceRoutes } from './routes/commerce.routes'
 import { registerSupportRoutes } from './routes/support.routes'
 import { registerRatingRoutes } from './routes/rating.routes'
 import { registerPlanRoutes } from './routes/plan.routes'
@@ -221,6 +225,9 @@ export async function buildApp(prisma: PrismaClient) {
   registerPublicCatalogRoutes(app, prisma)
   registerPathDraftRoutes(app, prisma)
   registerOperationsRoutes(app, prisma)
+  registerAdvisorRoutes(app, prisma)
+  registerCalendarRoutes(app, prisma)
+  registerCommerceRoutes(app, prisma)
   registerSupportRoutes(app, prisma)
   registerRatingRoutes(app, prisma)
   registerPlanRoutes(app, prisma)

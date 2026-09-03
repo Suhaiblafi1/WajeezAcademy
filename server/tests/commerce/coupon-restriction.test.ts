@@ -62,7 +62,16 @@ describe('صلاحية الكوبون', () => {
 
   it('٦) الفحصُ موحَّدٌ في مواضع الشراء الثلاثة — لا ثلاث نسخ', async () => {
     const { readFileSync } = await import('node:fs')
-    const src = readFileSync('server/services/commerce.service.ts', 'utf8')
+    /* مواضعُ الشراء صارت في ملفَّين حين قُطعت خدمةُ التجارة (كانت ألفا ومئةً
+       وواحدا وتسعين سطرا): السلّةُ والتسعيرُ في `commerce/cart.service`،
+       وحركةُ المال في `commerce.service`. والفحصُ نفسُه في
+       `commerce/cart-types` يُنادى من الاثنين — فيُقرآن معا: الضمانُ لم
+       يتغيّر، تغيّر بيتُه. */
+    const src = [
+      'server/services/commerce.service.ts',
+      'server/services/commerce/cart.service.ts',
+      'server/services/commerce/cart-types.ts',
+    ].map((f) => readFileSync(f, 'utf8')).join('\n')
     const inline = src.match(/coupon\.expiresAt && coupon\.expiresAt < new Date\(\)/g) ?? []
     expect(inline.length, 'عاد الفحصُ منسوخا في موضعٍ آخر — فسيُنسى فيه شرط').toBe(1)
     expect((src.match(/assertCouponUsable\(coupon, /g) ?? []).length, 'ليست كلُّ مواضع الشراء تستدعي الفحص').toBe(3)
