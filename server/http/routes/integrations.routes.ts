@@ -36,15 +36,11 @@ export function registerIntegrationRoutes(app: FastifyInstance, prisma: PrismaCl
 
   app.put('/api/admin/integrations/email', {
     preHandler: requirePermission('settings.manage'),
-    schema: { tags: ['admin-integrations'], summary: 'حفظ إعدادات البريد SMTP' },
+    schema: { tags: ['admin-integrations'], summary: 'حفظ إعدادات البريد (Resend)' },
   }, async (req) => {
     const body = z.object({
       enabled: z.boolean(),
-      host: z.string().max(200).optional(),
-      port: z.number().int().min(1).max(65535).optional(),
-      secure: z.boolean().optional(),
-      user: z.string().max(200).optional(),
-      pass: z.string().max(200).optional(),
+      apiKey: z.string().max(200).optional(),
       fromName: z.string().max(120).optional(),
       fromEmail: z.string().email().max(200).optional(),
     }).parse(req.body)

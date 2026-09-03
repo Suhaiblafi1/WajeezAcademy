@@ -1,8 +1,8 @@
-/* مرسل البريد — غلاف nodemailer فوق إعدادات التكامل.
-   يُستدعى فقط عند قناة email المفعّلة؛ أي فشل SMTP يُعاد كخطأ عربي مفهوم
+/* مرسل البريد — غلاف Resend API فوق إعدادات التكامل.
+   يُستدعى فقط عند قناة email المفعّلة؛ أي فشل من Resend يُعاد كخطأ عربي مفهوم
    ليُسجل في سجل الإشعار ويُعاد المحاولة — لا يُبتلع ولا يُكسر المسار التشغيلي. */
 
-import nodemailer from 'nodemailer'
+import { Resend } from 'resend'
 import type { EmailConfig } from './integrations.service'
 
 export interface MailInput {
@@ -18,34 +18,32 @@ export interface MailInput {
 
 export async function sendEmail(config: EmailConfig, input: MailInput): Promise<{ ok: boolean; error?: string }> {
   if (!config.enabled) return { ok: false, error: 'قناة البريد غير مفعّلة — فعّلها من شاشة التكاملات' }
-  if (!config.host || !config.fromEmail) return { ok: false, error: 'إعدادات البريد ناقصة: المضيف وعنوان المرسل إلزاميان' }
+  if (!config.apiKey || !config.fromEmail) return { ok: false, error: 'إعدادات البريد ناقصة: مفتاح Resend وعنوان المرسل إلزاميان' }
   try {
-    const transport = nodemailer.createTransport({
-      host: config.host,
-      port: config.port,
-      secure: config.secure,
-      auth: config.user ? { user: config.user, pass: config.pass ?? '' } : undefined,
-      connectionTimeout: 10_000,
-    })
-    await transport.sendMail({
-      from: `"${config.fromName}" <${config.fromEmail}>`,
+    const resend = new Resend(config.apiKey)
+    const { error } = await resend.emails.send({
+      from: `${config.fromName} <${config.fromEmail}>`,
       to: input.to,
       subject: input.subject,
       text: input.text,
       attachments: input.icsContent
         ? [{
             filename: input.icsFilename ?? 'wajeez-event.ics',
-            content: input.icsContent,
+            content: Buffer.from(input.icsContent, 'utf-8'),
             contentType: 'text/calendar; charset=utf-8; method=REQUEST',
           }]
         : undefined,
     })
+    if (error) {
+      /* أخطاء Resend الشائعة بصياغة مفهومة لمن يراجع السجل */
+      const name = error.name ?? ''
+      if (/validation|missing_api_key|invalid_api_key/i.test(name)) return { ok: false, error: 'رفض Resend بيانات الدخول — راجع مفتاح API' }
+      if (/rate_limit/i.test(name)) return { ok: false, error: 'تجاوز حد الإرسال لدى Resend — أعد المحاولة لاحقا' }
+      return { ok: false, error: `فشل الإرسال: ${error.message}` }
+    }
     return { ok: true }
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
-    /* أخطاء SMTP الشائعة بصياغة مفهومة لمن يراجع السجل */
-    if (/EAUTH|auth/i.test(msg)) return { ok: false, error: 'رفض خادم البريد بيانات الدخول — راجع المستخدم وكلمة المرور' }
-    if (/ECONN|ETIMEDOUT|timeout/i.test(msg)) return { ok: false, error: 'تعذر الوصول لخادم البريد — راجع المضيف والمنفذ' }
     return { ok: false, error: `فشل الإرسال: ${msg}` }
   }
 }

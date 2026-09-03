@@ -107,7 +107,7 @@ export class CommerceService {
   /** هل تستطيع المنصّة إرسال بريد أصلا؟ — بها وحدها يصير الحاجز قفلا له مفتاح */
   private async emailChannelEnabled(): Promise<boolean> {
     const cfg = await getEmailConfig(this.prisma)
-    return Boolean(cfg.enabled && cfg.host && cfg.fromEmail)
+    return Boolean(cfg.enabled && cfg.apiKey && cfg.fromEmail)
   }
 
   /* ── الخطّة كاملةً: طلبٌ واحد، وفاتورةٌ واحدة (التوصيتان ٢ و٣) ── */
