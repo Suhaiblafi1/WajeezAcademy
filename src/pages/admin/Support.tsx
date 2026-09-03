@@ -31,7 +31,7 @@ interface TicketDetail extends TicketRow {
   statusHistory: { fromStatus: string | null; toStatus: string; createdAt: string }[];
 }
 
-const inputCls = "rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/25 focus:border-teal focus:outline-none";
+const inputCls = "rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none";
 
 export default function Support() {
   const [rows, setRows] = useState<TicketRow[]>([]);
@@ -82,9 +82,9 @@ export default function Support() {
     return (
       <AdminLayout title="الدعم الفني">
         <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
-          <ServerOff className="h-12 w-12 text-white/20" />
-          <p className="mt-4 max-w-md text-sm text-white/55">{offline}</p>
-          <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-white/70 hover:border-white/40">
+          <ServerOff className="h-12 w-12 text-muted-foreground/50" />
+          <p className="mt-4 max-w-md text-sm text-muted-foreground">{offline}</p>
+          <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground hover:border-white/40">
             <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
           </button>
         </div>
@@ -107,17 +107,17 @@ export default function Support() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h3 className="font-black">{t.subject}</h3>
-                  <p className="mt-1 text-xs text-white/50">{t.user.displayName} · <span dir="ltr">{t.user.email}</span> · {t.category}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{t.user.displayName} · <span dir="ltr">{t.user.email}</span> · {t.category}</p>
                 </div>
                 <div className="flex gap-2">
                   <span className="rounded-full border border-teal/40 px-3 py-1 text-[11px] font-bold text-teal-light-ink">{STATUS_AR[t.status] ?? t.status}</span>
-                  <span className={`rounded-full border px-3 py-1 text-[11px] font-bold ${t.priority === "urgent" || t.priority === "high" ? "border-red-500/40 text-red-400" : "border-white/15 text-white/55"}`}>{PRIORITY_AR[t.priority] ?? t.priority}</span>
+                  <span className={`rounded-full border px-3 py-1 text-[11px] font-bold ${t.priority === "urgent" || t.priority === "high" ? "border-red-500/40 text-red-400" : "border-white/15 text-muted-foreground"}`}>{PRIORITY_AR[t.priority] ?? t.priority}</span>
                 </div>
               </div>
               <ol className="mt-5 space-y-3">
                 {t.messages.map((m) => (
-                  <li key={m.id} className={`rounded-2xl border p-3 text-xs leading-6 ${m.internal ? "border-gold/30 bg-gold/5" : "border-white/10 bg-black/20"}`}>
-                    <p className="mb-1 flex items-center gap-2 text-micro font-bold text-white/45">
+                  <li key={m.id} className={`rounded-2xl border p-3 text-xs leading-6 ${m.internal ? "border-gold/30 bg-gold/5" : "border-white/10 bg-paper/20"}`}>
+                    <p className="mb-1 flex items-center gap-2 text-micro font-bold text-muted-foreground">
                       {fmtDateTime(new Date(m.createdAt))}
                       {m.internal && <span className="flex items-center gap-1 text-gold-ink"><EyeOff className="h-3 w-3" /> داخلية — لا يراها العميل</span>}
                     </p>
@@ -128,7 +128,7 @@ export default function Support() {
               <div className="mt-4 border-t border-white/8 pt-4">
                 <textarea value={reply} onChange={(e) => setReply(e.target.value)} rows={3} placeholder="اكتب ردا…" className={`${inputCls} w-full`} />
                 <div className="mt-2 flex flex-wrap items-center gap-3">
-                  <label className="flex cursor-pointer items-center gap-1.5 text-[11px] text-white/60">
+                  <label className="flex cursor-pointer items-center gap-1.5 text-[11px] text-muted-foreground">
                     <input type="checkbox" checked={internal} onChange={(e) => setInternal(e.target.checked)} className="accent-gold" />
                     رد داخلي (مخفي عن العميل)
                   </label>
@@ -149,12 +149,12 @@ export default function Support() {
                 {Object.entries(STATUS_AR).filter(([k]) => k !== t.status).map(([k, v]) => (
                   <button key={k} disabled={busy}
                     onClick={() => act(() => apiPost(`/api/admin/support/tickets/${t.id}/transition`, { to: k }), `الحالة الآن: ${v}`)}
-                    className="cursor-pointer rounded-xl border border-white/15 px-3 py-2 text-[11px] font-bold text-white/60 hover:border-teal/50 hover:text-teal-light-ink disabled:opacity-40">
+                    className="cursor-pointer rounded-xl border border-white/15 px-3 py-2 text-[11px] font-bold text-muted-foreground hover:border-teal/50 hover:text-teal-light-ink disabled:opacity-40">
                     {v}
                   </button>
                 ))}
               </div>
-              <p className="mt-2 text-micro text-white/40">الخادم يرفض الانتقالات غير المشروعة برسالة مفهومة.</p>
+              <p className="mt-2 text-micro text-muted-foreground">الخادم يرفض الانتقالات غير المشروعة برسالة مفهومة.</p>
             </article>
 
             <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
@@ -163,7 +163,7 @@ export default function Support() {
                 {Object.entries(PRIORITY_AR).map(([k, v]) => (
                   <button key={k} disabled={busy || t.priority === k}
                     onClick={() => act(() => apiPost(`/api/admin/support/tickets/${t.id}/priority`, { priority: k }), `الأولوية: ${v}`)}
-                    className={`cursor-pointer rounded-full border px-3 py-1 text-[11px] font-bold transition disabled:opacity-40 ${t.priority === k ? "border-gold bg-gold/10 text-gold-ink" : "border-white/15 text-white/55 hover:border-white/40"}`}>
+                    className={`cursor-pointer rounded-full border px-3 py-1 text-[11px] font-bold transition disabled:opacity-40 ${t.priority === k ? "border-gold bg-gold/10 text-gold-ink" : "border-white/15 text-muted-foreground hover:border-white/40"}`}>
                     {v}
                   </button>
                 ))}
@@ -180,17 +180,17 @@ export default function Support() {
                   إسناد
                 </button>
               </div>
-              <p className="mt-2 text-micro text-white/40">الوكيلون بدور «support» من صفحة المستخدمين.</p>
+              <p className="mt-2 text-micro text-muted-foreground">الوكيلون بدور «support» من صفحة المستخدمين.</p>
             </article>
 
             <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
               <h4 className="text-sm font-black">سجل الحالات</h4>
               <ol className="mt-3 space-y-1.5">
                 {t.statusHistory.map((h, i) => (
-                  <li key={i} className="flex items-center gap-2 text-[11px] text-white/55">
+                  <li key={i} className="flex items-center gap-2 text-[11px] text-muted-foreground">
                     <span className="h-1.5 w-1.5 rounded-full bg-teal" />
-                    <b className="text-white/80">{STATUS_AR[h.toStatus] ?? h.toStatus}</b>
-                    <span className="mr-auto text-white/30">{fmtDateTime(new Date(h.createdAt))}</span>
+                    <b className="text-foreground">{STATUS_AR[h.toStatus] ?? h.toStatus}</b>
+                    <span className="mr-auto text-muted-foreground/50">{fmtDateTime(new Date(h.createdAt))}</span>
                   </li>
                 ))}
               </ol>
@@ -212,28 +212,28 @@ export default function Support() {
       ]} />
       <div className="mb-5 flex flex-wrap items-center gap-2">
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} aria-label="رشّح بالحالة"
-          className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white [&>option]:bg-surface">
+          className="rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground [&>option]:bg-surface">
           <option value="">كل الحالات</option>
           {Object.entries(STATUS_AR).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
-        <button onClick={() => void load()} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-white/60 hover:border-white/40">
+        <button onClick={() => void load()} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-muted-foreground hover:border-white/40">
           <RefreshCw className="h-3.5 w-3.5" /> تحديث
         </button>
       </div>
 
       {loading ? (
-        <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-white/30" /></div>
+        <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" /></div>
       ) : rows.length === 0 ? (
         <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
-          <LifeBuoy className="h-12 w-12 text-white/20" />
-          <p className="mt-4 text-sm text-white/50">لا تذاكر بهذه الحالة — تذاكر المتعلمين تصل هنا فور فتحها من بوابتهم.</p>
+          <LifeBuoy className="h-12 w-12 text-muted-foreground/50" />
+          <p className="mt-4 text-sm text-muted-foreground">لا تذاكر بهذه الحالة — تذاكر المتعلمين تصل هنا فور فتحها من بوابتهم.</p>
         </div>
       ) : (
         <>
         <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="تذكرة"
           placeholder="ابحث بعنوانٍ أو صاحبِ تذكرةٍ أو تصنيف…" />
         {view.total === 0 ? (
-          <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-white/45">
+          <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-muted-foreground">
             لا تذكرة تطابق «{q.trim()}».
           </p>
         ) : (
@@ -243,12 +243,12 @@ export default function Support() {
               className="flex w-full cursor-pointer flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-right transition hover:border-teal/40">
               <div>
                 <p className="font-black">{t.subject}</p>
-                <p className="mt-1 text-xs text-white/50">
+                <p className="mt-1 text-xs text-muted-foreground">
                   {t.user.displayName} · {t._count.messages} رسالة · {t.assignments.length ? "مسندة" : "غير مسندة"} · {fmtDateTime(new Date(t.updatedAt))}
                 </p>
               </div>
               <div className="flex gap-2">
-                <span className={`rounded-full border px-3 py-1 text-[11px] font-bold ${t.priority === "urgent" || t.priority === "high" ? "border-red-500/40 text-red-400" : "border-white/15 text-white/55"}`}>{PRIORITY_AR[t.priority] ?? t.priority}</span>
+                <span className={`rounded-full border px-3 py-1 text-[11px] font-bold ${t.priority === "urgent" || t.priority === "high" ? "border-red-500/40 text-red-400" : "border-white/15 text-muted-foreground"}`}>{PRIORITY_AR[t.priority] ?? t.priority}</span>
                 <span className="rounded-full border border-teal/40 px-3 py-1 text-[11px] font-bold text-teal-light-ink">{STATUS_AR[t.status] ?? t.status}</span>
               </div>
             </button>

@@ -66,7 +66,7 @@ export default function Modal({
   }, [onClose]);
 
   return createPortal(
-    <div className="fixed inset-0 z-[70] overflow-y-auto bg-black/70 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[70] overflow-y-auto bg-paper/70 backdrop-blur-sm" onClick={onClose}>
       <div className="flex min-h-full items-center justify-center p-5">
         <div
           ref={panelRef}

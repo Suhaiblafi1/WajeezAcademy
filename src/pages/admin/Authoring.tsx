@@ -250,23 +250,23 @@ export default function Authoring() {
         {/* ── الطابور ── */}
         <aside className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
           <div className="mb-3 flex items-center gap-2">
-            <Search className="h-4 w-4 shrink-0 text-white/40" />
+            <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
             {/* الاسمُ لا النصُّ النائب: النائبُ يزول عند الكتابة فلا يصلح
                 اسما، وارتفاعُ ثلاثين بكسلا هدفٌ يُخطئه الإصبع على الهاتف. */}
             <input
               value={query} onChange={(e) => setQuery(e.target.value)}
               aria-label="ابحث في طابور المراجعة بعنوان الوحدة أو الدورة"
               placeholder="ابحث بعنوان الوحدة أو الدورة"
-              className="min-h-9 w-full rounded-lg border border-white/10 bg-transparent px-2.5 py-2 text-xs outline-none placeholder:text-white/30 focus:border-teal/50"
+              className="min-h-9 w-full rounded-lg border border-white/10 bg-transparent px-2.5 py-2 text-xs outline-none placeholder:text-muted-foreground/75 focus:border-teal/50"
             />
           </div>
           {/* الدورةُ أوّلا — ثمّ وحداتُها تحتها بترتيبها */}
-          <label className="mb-2.5 block text-[11px] font-bold text-white/50">
+          <label className="mb-2.5 block text-[11px] font-bold text-muted-foreground">
             الدورة
             <select
               value={courseId}
               onChange={(e) => { setCourseId(e.target.value); setSelected(null); setDraft(null); }}
-              className="mt-1 w-full cursor-pointer rounded-lg border border-white/12 bg-white/[0.04] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal/50 [&>option]:bg-surface"
+              className="mt-1 w-full cursor-pointer rounded-lg border border-white/12 bg-white/[0.04] px-2.5 py-1.5 text-xs text-foreground outline-none focus:border-teal/50 [&>option]:bg-surface"
             >
               <option value="">كلّ الدورات</option>
               {(work?.courses ?? []).map((c) => (
@@ -286,7 +286,7 @@ export default function Authoring() {
                 className={`flex-1 cursor-pointer rounded-lg border px-2 py-1 text-[11px] font-bold transition ${
                   bodyFilter === f.id
                     ? "border-teal/60 bg-teal/15 text-teal-light-ink"
-                    : "border-white/10 text-white/50 hover:border-white/25 hover:text-white/75"
+                    : "border-white/10 text-muted-foreground hover:border-white/25 hover:text-foreground"
                 }`}
               >
                 {f.label}
@@ -295,9 +295,9 @@ export default function Authoring() {
           </div>
 
           {loading ? (
-            <div className="grid place-items-center py-10"><Loader2 className="h-5 w-5 animate-spin text-white/40" /></div>
+            <div className="grid place-items-center py-10"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
           ) : rows.length === 0 ? (
-            <p className="py-8 text-center text-xs leading-6 text-white/50">
+            <p className="py-8 text-center text-xs leading-6 text-muted-foreground">
               {bodyFilter === "missing"
                 ? "لا وحدةَ بلا متن هنا — اكتمل ما اخترتَه."
                 : bodyFilter === "written"
@@ -316,7 +316,7 @@ export default function Authoring() {
                         : "border-white/10 bg-white/[0.02] hover:border-white/25"}`}
                   >
                     <span className="block text-xs font-bold leading-5">{r.titleAr}</span>
-                    <span className="mt-0.5 block text-micro text-white/45">{r.courseTitleAr || r.courseId}</span>
+                    <span className="mt-0.5 block text-micro text-muted-foreground">{r.courseTitleAr || r.courseId}</span>
                     <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
                       <Chip on={r.hasBody} label="متن" />
                       <Chip on={r.hasChecks} label="تمرين" />
@@ -340,7 +340,7 @@ export default function Authoring() {
               ))}
             </ul>
           )}
-          <button type="button" onClick={() => void loadWork()} className="mt-3 flex items-center gap-1.5 text-[11px] text-white/50 hover:text-white/80">
+          <button type="button" onClick={() => void loadWork()} className="mt-3 flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground">
             <RefreshCw className="h-3 w-3" /> تحديث الطابور
           </button>
         </aside>
@@ -348,24 +348,24 @@ export default function Authoring() {
         {/* ── المحرّر ── */}
         <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
           {!selected ? (
-            <p className="py-20 text-center text-sm leading-7 text-white/50">
+            <p className="py-20 text-center text-sm leading-7 text-muted-foreground">
               اختر وحدةً من الطابور لتبدأ.
               <br />
-              <span className="text-xs text-white/35">الترتيب يضع من ينتظره متعلّمٌ مسجَّلٌ أوّلا.</span>
+              <span className="text-xs text-muted-foreground">الترتيب يضع من ينتظره متعلّمٌ مسجَّلٌ أوّلا.</span>
             </p>
           ) : !draft ? (
-            <div className="grid place-items-center py-20"><Loader2 className="h-5 w-5 animate-spin text-white/40" /></div>
+            <div className="grid place-items-center py-20"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
           ) : (
             <>
               <header className="mb-4 flex flex-wrap items-start justify-between gap-3 border-b border-white/10 pb-4">
                 <div>
                   <h2 className="text-sm font-black">{selected.titleAr}</h2>
-                  <p className="mt-1 text-[11px] text-white/45">
+                  <p className="mt-1 text-[11px] text-muted-foreground">
                     {selected.courseTitleAr || selected.courseId} · إصدار {draft.version} ·{" "}
-                    <span className={isReview ? "text-gold" : "text-white/60"}>{STATUS_AR[draft.status] ?? draft.status}</span>
+                    <span className={isReview ? "text-gold" : "text-muted-foreground"}>{STATUS_AR[draft.status] ?? draft.status}</span>
                   </p>
                 </div>
-                <p className="max-w-xs rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-micro leading-5 text-white/50">
+                <p className="max-w-xs rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-micro leading-5 text-muted-foreground">
                   يُنشر باسم الأكاديمية — لا يظهر اسم كاتبه للمتعلّم.
                 </p>
               </header>
@@ -377,7 +377,7 @@ export default function Authoring() {
                     <button
                       key={t.id} type="button" onClick={() => setTab(t.id)}
                       className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[11px] font-bold transition ${
-                        tab === t.id ? "border-teal/50 bg-teal/10 text-teal-ink" : "border-white/10 text-white/60 hover:border-white/25"}`}
+                        tab === t.id ? "border-teal/50 bg-teal/10 text-teal-ink" : "border-white/10 text-muted-foreground hover:border-white/25"}`}
                     >
                       <t.icon className="h-3.5 w-3.5" />
                       {t.label}
@@ -394,7 +394,7 @@ export default function Authoring() {
                     readOnly={!isDraft}
                     placeholder={PLACEHOLDER[tab]}
                     rows={18}
-                    className={`w-full rounded-xl border bg-black/20 p-3 font-mono text-xs leading-6 outline-none placeholder:text-white/25 ${
+                    className={`w-full rounded-xl border bg-paper/20 p-3 font-mono text-xs leading-6 outline-none placeholder:text-muted-foreground/75 ${
                       liveErrors.length > 0 ? "border-amber-400/50" : "border-white/10 focus:border-teal/50"} ${
                       isDraft ? "" : "opacity-60"}`}
                   />
@@ -414,17 +414,17 @@ export default function Authoring() {
                   )}
                 </div>
 
-                <div className="rounded-xl border border-white/10 bg-black/20 p-3">
-                  <p className="mb-2 flex items-center gap-1.5 text-micro font-black text-white/45">
+                <div className="rounded-xl border border-white/10 bg-paper/20 p-3">
+                  <p className="mb-2 flex items-center gap-1.5 text-micro font-black text-muted-foreground">
                     <Eye className="h-3 w-3" /> كما يراه المتعلّم
                   </p>
                   <div className="max-h-[26rem] overflow-y-auto">
                     {!value.trim() ? (
-                      <p className="py-10 text-center text-[11px] text-white/35">لا شيء بعد.</p>
+                      <p className="py-10 text-center text-[11px] text-muted-foreground">لا شيء بعد.</p>
                     ) : tab === "body" ? (
                       <LessonBody body={value} />
                     ) : liveErrors.length > 0 ? (
-                      <p className="py-10 text-center text-[11px] leading-6 text-white/40">
+                      <p className="py-10 text-center text-[11px] leading-6 text-muted-foreground">
                         تُعرض المعاينة حين تصحّ الصيغة.
                       </p>
                     ) : tab === "checks" ? (
@@ -465,7 +465,7 @@ export default function Authoring() {
                       رفعٌ للمراجعة
                     </button>
                     {!draft.bodyAr?.trim() && (
-                      <span className="text-[11px] text-white/40">لا تُرفع وحدةٌ بلا متن.</span>
+                      <span className="text-[11px] text-muted-foreground">لا تُرفع وحدةٌ بلا متن.</span>
                     )}
                   </>
                 )}
@@ -493,7 +493,7 @@ export default function Authoring() {
                       value={note} onChange={(e) => setNote(e.target.value)}
                       aria-label="سببُ الإعادة الأكاديميّة — ما الذي يُعدَّل؟"
                       placeholder="ما الذي يُعدَّل؟ (مطلوبٌ عند الإعادة)"
-                      className="min-h-9 min-w-[16rem] flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-xs outline-none placeholder:text-white/30 focus:border-gold/50"
+                      className="min-h-9 min-w-[16rem] flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-xs outline-none placeholder:text-muted-foreground/75 focus:border-gold/50"
                     />
                     <button
                       type="button" onClick={() => void act("approve")} disabled={busy !== ""}
@@ -507,7 +507,7 @@ export default function Authoring() {
                     >
                       إعادةٌ إلى الكاتب مع ملاحظة
                     </button>
-                    <p className="w-full text-micro leading-5 text-white/45">
+                    <p className="w-full text-micro leading-5 text-muted-foreground">
                       الاعتمادُ لا ينشر — يرفعها إلى الموافقة النهائية، ولا يراها متعلّمٌ قبلها.
                     </p>
                   </div>
@@ -523,7 +523,7 @@ export default function Authoring() {
                         value={note} onChange={(e) => setNote(e.target.value)}
                         aria-label="سببُ إعادة الموافقة النهائيّة"
                         placeholder="سببُ الإعادة (مطلوبٌ عند الإعادة)"
-                        className="min-h-9 min-w-[16rem] flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-xs outline-none placeholder:text-white/30 focus:border-teal/50"
+                        className="min-h-9 min-w-[16rem] flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-xs outline-none placeholder:text-muted-foreground/75 focus:border-teal/50"
                       />
                       <button
                         type="button" onClick={() => void act("publish")} disabled={busy !== ""}
@@ -539,7 +539,7 @@ export default function Authoring() {
                       </button>
                     </div>
                   ) : (
-                    <p className="w-full rounded-xl border border-white/10 bg-white/[0.03] p-3 text-[11px] leading-6 text-white/55">
+                    <p className="w-full rounded-xl border border-white/10 bg-white/[0.03] p-3 text-[11px] leading-6 text-muted-foreground">
                       اعتُمدت أكاديميّا وتنتظر الموافقة النهائية — وهي بحبّةِ صلاحيةٍ لا يملكها حسابك.
                     </p>
                   )
@@ -548,7 +548,7 @@ export default function Authoring() {
 
               {history.length > 0 && (
                 <details className="mt-5 rounded-xl border border-white/10 bg-white/[0.02] p-4">
-                  <summary className="cursor-pointer text-[11px] font-black text-white/60">
+                  <summary className="cursor-pointer text-[11px] font-black text-muted-foreground">
                     سجلّ الإصدارات ({history.length})
                   </summary>
                   <ul className="mt-3 space-y-2">
@@ -557,8 +557,8 @@ export default function Authoring() {
                         <p className="flex flex-wrap items-center gap-2 text-[11px]">
                           <span className="font-black">إصدار {h.version}</span>
                           <span className="rounded-full bg-white/10 px-2 py-0.5 text-micro">{STATUS_AR[h.status] ?? h.status}</span>
-                          <span className="text-white/40">{fmtShortDateTimeAr(h.reviewedAt ?? h.submittedAt ?? h.createdAt)}</span>
-                          <span className="text-white/35">{fmtNum(h.bodyAr?.length ?? 0)} حرفا</span>
+                          <span className="text-muted-foreground">{fmtShortDateTimeAr(h.reviewedAt ?? h.submittedAt ?? h.createdAt)}</span>
+                          <span className="text-muted-foreground">{fmtNum(h.bodyAr?.length ?? 0)} حرفا</span>
                         </p>
                         {h.reviewNoteAr && (
                           <p className="mt-1 text-[11px] leading-5 text-gold/80">ملاحظة المراجع: {h.reviewNoteAr}</p>
@@ -577,10 +577,10 @@ export default function Authoring() {
 }
 
 function Stat({ label, value, tone }: { label: string; value: number; tone?: "good" | "warn" }) {
-  const color = tone === "good" ? "text-teal-ink" : tone === "warn" ? "text-gold" : "text-white";
+  const color = tone === "good" ? "text-teal-ink" : tone === "warn" ? "text-gold" : "text-foreground";
   return (
     <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-      <p className="text-[11px] text-white/50">{label}</p>
+      <p className="text-[11px] text-muted-foreground">{label}</p>
       <p className={`mt-1 text-2xl font-black tabular-nums ${color}`}>{fmtNum(value)}</p>
     </div>
   );
@@ -589,7 +589,7 @@ function Stat({ label, value, tone }: { label: string; value: number; tone?: "go
 function Chip({ on, label }: { on: boolean; label: string }) {
   return (
     <span className={`rounded-full px-1.5 py-0.5 text-micro font-bold ${
-      on ? "bg-teal/15 text-teal-ink" : "bg-white/[0.06] text-white/30"}`}>
+      on ? "bg-teal/15 text-teal-ink" : "bg-white/[0.06] text-muted-foreground/50"}`}>
       {label}
     </span>
   );

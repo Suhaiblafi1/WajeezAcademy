@@ -63,7 +63,7 @@ export default function StageOffer({
             />
             {chosen && (
               <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.08] pt-3">
-                <span dir="ltr" className="text-lg font-black text-white">{formatCohortPrice(chosen)}</span>
+                <span dir="ltr" className="text-lg font-black text-foreground">{formatCohortPrice(chosen)}</span>
                 <BuyCohort cohort={chosen} onBought={onChanged} />
               </div>
             )}

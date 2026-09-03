@@ -64,13 +64,13 @@ export default function ConfirmAction({
   const reasonOk = !reason || why.trim().length >= reason.minLength;
   const ready = typingOk && reasonOk && !busy;
 
-  const field = "w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/25 focus:border-teal focus:outline-none";
+  const field = "w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none";
 
   return (
     <Modal onClose={onCancel} label={titleAr} panelClassName="w-full max-w-lg">
       {/* أرضيّةُ اللوح على الطفل لا على `panelClassName` — كما في سائر
           النوافذ (`BuyPanel`): بلا أرضيّةٍ يطفو النصُّ فوق الصفحة المعتّمة. */}
-      <div dir="rtl" className="max-h-[86vh] overflow-y-auto rounded-3xl border border-white/10 bg-surface p-5 text-white sm:p-6">
+      <div dir="rtl" className="max-h-[86vh] overflow-y-auto rounded-3xl border border-white/10 bg-surface p-5 text-foreground sm:p-6">
         <h2 className="flex items-start gap-2 text-sm font-black">
           {tone === "danger" && <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-300" aria-hidden="true" />}
           {titleAr}
@@ -104,7 +104,7 @@ export default function ConfirmAction({
               className={`mt-1 resize-y ${field}`}
             />
             {/* الشرطُ يُقال ما لم يتحقّق، فلا يُقرأ «٤٤ من ١٠» بعد تحقّقه */}
-            <span className={`mt-1 block ${reasonOk ? "text-teal-light-ink" : "text-white/40"}`}>
+            <span className={`mt-1 block ${reasonOk ? "text-teal-light-ink" : "text-muted-foreground"}`}>
               {reasonOk
                 ? "يكفي — ويُقرأ كما كتبتَه"
                 : `اكتب ${reason.minLength - why.trim().length} حرفا أخرى على الأقلّ`}

@@ -23,7 +23,7 @@ export default function AdminLayout({ children, title }: { children: React.React
 
   if (!checked) {
     return (
-      <div dir="rtl" className="grid min-h-screen place-items-center bg-paper text-white">
+      <div dir="rtl" className="grid min-h-screen place-items-center bg-paper text-foreground">
         <Crown className="h-10 w-10 animate-pulse text-[#FABC05]" />
       </div>
     );
@@ -106,25 +106,25 @@ export default function AdminLayout({ children, title }: { children: React.React
   /* من لا تبويبَ له لا يُترك في لوحةٍ فارغة يظنّها معطوبة */
   if (sections.every((sec) => sec.items.every((it) => it.open))) {
     return (
-      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper px-5 text-white">
+      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper px-5 text-foreground">
         <Crown className="h-12 w-12 text-[#FABC05]" />
         <h1 className="mt-5 text-2xl font-black">لا صلاحيات مفعّلة لحسابك</h1>
-        <p className="mt-2 max-w-md text-center text-sm leading-7 text-white/55">
-          حسابك <b className="text-white/75">{user?.displayName}</b> يدخل اللوحة، ولا صلاحية إداريّة مفعّلة عليه بعد.
+        <p className="mt-2 max-w-md text-center text-sm leading-7 text-muted-foreground">
+          حسابك <b className="text-foreground">{user?.displayName}</b> يدخل اللوحة، ولا صلاحية إداريّة مفعّلة عليه بعد.
           راجع مدير النظام ليمنحك ما يخصّ عملك.
         </p>
-        <Link to="/" className="mt-6 text-xs text-white/50 hover:text-white/70">العودة للموقع العام</Link>
+        <Link to="/" className="mt-6 text-xs text-muted-foreground hover:text-foreground">العودة للموقع العام</Link>
       </div>
     );
   }
 
   const linkCls = (isActive: boolean) =>
     `flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-bold transition ${
-      isActive ? "bg-gold text-on-gold" : "text-white/60 hover:bg-white/[0.04] hover:text-white"
+      isActive ? "bg-gold text-on-gold" : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"
     }`;
 
   return (
-    <div dir="rtl" className="min-h-screen bg-paper text-white">
+    <div dir="rtl" className="min-h-screen bg-paper text-foreground">
       <SearchPalette />
       <header className="sticky top-0 z-40 border-b border-white/10 bg-paper/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5">
@@ -140,7 +140,7 @@ export default function AdminLayout({ children, title }: { children: React.React
               الأقسامُ هي أقسامُ الشريط لا تقسيمٌ ثانٍ يفترق عنه. */}
           <select
             aria-label="التنقل بين شاشات الإدارة"
-            className="rounded-xl border border-white/15 bg-paper px-3 py-2 text-xs font-bold text-white lg:hidden"
+            className="rounded-xl border border-white/15 bg-paper px-3 py-2 text-xs font-bold text-foreground lg:hidden"
             value={location.pathname}
             onChange={(e) => navigate(e.target.value)}
           >
@@ -160,7 +160,7 @@ export default function AdminLayout({ children, title }: { children: React.React
               onClick={() => window.dispatchEvent(new Event("wajeez:open-search"))}
               aria-label="بحث سريع — Ctrl+K"
               title="بحث سريع — Ctrl+K"
-              className="hidden cursor-pointer items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[11px] font-bold text-white/45 transition hover:border-white/30 hover:text-white sm:flex"
+              className="hidden cursor-pointer items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[11px] font-bold text-muted-foreground transition hover:border-white/30 hover:text-foreground sm:flex"
             >
               بحث… <kbd className="rounded border border-white/15 px-1.5 text-micro">Ctrl K</kbd>
             </button>
@@ -176,7 +176,7 @@ export default function AdminLayout({ children, title }: { children: React.React
         <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-60 shrink-0 overflow-y-auto border-l border-white/10 py-8 pl-5 lg:block">
           {sections.map((s) => (
             <div key={s.title} className="mb-7">
-              <p className="mb-2 px-3 text-micro font-black tracking-wide text-white/55">{s.title}</p>
+              <p className="mb-2 px-3 text-micro font-black tracking-wide text-muted-foreground">{s.title}</p>
               <nav className="space-y-1">
                 {s.items.map((t) => (
                   <NavLink key={t.to} to={t.to} end={t.end} className={({ isActive }) => linkCls(isActive)}>

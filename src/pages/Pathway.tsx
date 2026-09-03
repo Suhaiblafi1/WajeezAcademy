@@ -218,7 +218,7 @@ export default function PathwayPage() {
       );
     }
     return (
-      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper text-white">
+      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper text-foreground">
         <p className="text-xl font-bold">هذا المسار غير موجود</p>
         <Link to="/" className="mt-4 text-teal-light-ink underline">العودة للرئيسية</Link>
       </div>
@@ -298,7 +298,7 @@ export default function PathwayPage() {
   };
 
   return (
-    <div dir="rtl" className="min-h-screen bg-paper text-white">
+    <div dir="rtl" className="min-h-screen bg-paper text-foreground">
       <SeoHead
         title={pathway.name}
         description={`${pathway.transformation} — مسار ${pathway.level} من ${weeksLabel(pathway.durationWeeks)} في أكاديمية وجيز.`}
@@ -307,7 +307,7 @@ export default function PathwayPage() {
       {/* Top bar */}
       <header className="sticky top-0 z-40 border-b border-white/10 bg-paper/85 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-5">
-          <Link to="/" className="flex items-center gap-2 text-foreground hover:text-white">
+          <Link to="/" className="flex items-center gap-2 text-foreground hover:text-foreground">
             <ArrowRight className="h-5 w-5" />
             <span className="text-sm font-medium">الرئيسية</span>
           </Link>
@@ -482,7 +482,7 @@ export default function PathwayPage() {
                     </div>
                   ))}
                 </div>
-                <p className="mt-4 text-[11px] leading-relaxed text-white/40">
+                <p className="mt-4 text-[11px] leading-relaxed text-muted-foreground">
                   كل دورة يقدمها المدرب الأعمق في موضوعها — وينسّقون معا حتى تتكامل المهارات لا أن تتكرر. تُعلن الأسماء بعد اعتماد الشعبة رسميا.
                 </p>
               </div>
@@ -547,7 +547,7 @@ export default function PathwayPage() {
               <p className="mt-1 text-[11px] text-muted-foreground">قارن بهدوء — والقرار لك.</p>
               <div className="mt-4 grid gap-3.5 md:grid-cols-2">
                 {/* دورة أو أكثر — اختيار حر */}
-                <div className="flex flex-col rounded-2xl border border-white/12 bg-black/25 p-4">
+                <div className="flex flex-col rounded-2xl border border-white/12 bg-paper/25 p-4">
                   <p className="text-[13px] font-black">دورة أو أكثر من المسار</p>
                   <p className="mt-0.5 text-[11px] text-muted-foreground">اختر ما تحتاجه — ورسومك مجموعها فقط</p>
                   <div className="mt-3 space-y-1.5">
@@ -574,7 +574,7 @@ export default function PathwayPage() {
                             </span>
                             <span className="min-w-0">
                               <span className="block text-[12.5px] font-bold leading-snug">{c.name}</span>
-                              <span className="text-micro text-white/40">
+                              <span className="text-micro text-muted-foreground">
                                 {c.weeks} {c.weeks === 1 ? "أسبوع" : "أسابيع"} · {courseTrainer(c).name}
                               </span>
                             </span>
@@ -584,7 +584,7 @@ export default function PathwayPage() {
                             {prices.get(c.id) ? (
                               <span dir="ltr">{formatCohortPrice(prices.get(c.id)!)}</span>
                             ) : (
-                              <span className="text-[11px] font-bold text-white/40">مع الشعبة</span>
+                              <span className="text-[11px] font-bold text-muted-foreground">مع الشعبة</span>
                             )}
                           </span>
                         </button>
@@ -599,7 +599,7 @@ export default function PathwayPage() {
                         اخترت {picked.length === 1 ? "دورة" : `${picked.length} دورات`} من {buyableCourses.length}
                       </span>
                       {pickedTotal ? (
-                        <span dir="ltr" className="text-xl font-black text-white">{formatCohortPrice(pickedTotal)}</span>
+                        <span dir="ltr" className="text-xl font-black text-foreground">{formatCohortPrice(pickedTotal)}</span>
                       ) : (
                         <span className="text-[11px] text-muted-foreground">يُعلن السعر مع الشعبة</span>
                       )}
@@ -646,11 +646,11 @@ export default function PathwayPage() {
                       تُقال أعلاه في خطّة الدورات لا هنا مرّتين. */}
                   {fullPrice && discountedFullPrice ? (
                     <>
-                      {/* المشطوبُ كان `text-sm text-white/35`: رقمٌ باهتٌ صغير لا
+                      {/* المشطوبُ كان `text-sm text-muted-foreground`: رقمٌ باهتٌ صغير لا
                           يُقرأ، فلا يُعرف مقدارُ الوفر أصلا. والوفرُ نصفُ العرض،
                           فيكبر ويُشار إليه بنسبته في شارةٍ بجانبه. */}
                       <div className="mt-3 flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-                        <span dir="ltr" className="text-[26px] font-black leading-none text-white">{formatCohortPrice(discountedFullPrice)}</span>
+                        <span dir="ltr" className="text-[26px] font-black leading-none text-foreground">{formatCohortPrice(discountedFullPrice)}</span>
                         {offer.bundleMaxPct > 0 && (
                           <>
                             <span dir="ltr" className="text-base font-bold text-muted-foreground line-through decoration-white/45 decoration-2">
@@ -662,7 +662,7 @@ export default function PathwayPage() {
                           </>
                         )}
                       </div>
-                      <p className="mt-1.5 text-micro leading-5 text-white/40">
+                      <p className="mt-1.5 text-micro leading-5 text-muted-foreground">
                         {courseIds.length} دورات — وهو ما تُصدره الفاتورة، ويتغيّر إن غيّرت الدورات.
                       </p>
                       {/* خصمُ الفئة — نفس مطويّة صفحة شراء الدورة المفردة،
@@ -682,12 +682,12 @@ export default function PathwayPage() {
                             <code dir="ltr" className="rounded-md border border-gold/40 bg-gold/10 px-1.5 py-0.5 font-mono text-micro font-black text-gold-ink">
                               {FIRST_TIME_PROMO.code}
                             </code>
-                            <span className="text-white/40">· بلا إثبات</span>
+                            <span className="text-muted-foreground">· بلا إثبات</span>
                           </li>
                           {DISCOUNT_CATEGORIES.map((cat) => (
                             <li key={cat.id} className="text-[11px] leading-5 text-muted-foreground">
                               <span className="font-bold text-foreground">{cat.label_ar} — {cat.percentOff}٪</span>
-                              <span className="text-white/40"> · {cat.evidence_ar}</span>
+                              <span className="text-muted-foreground"> · {cat.evidence_ar}</span>
                             </li>
                           ))}
                         </ul>
@@ -708,7 +708,7 @@ export default function PathwayPage() {
                     /* لا شعبة مسعَّرة: لا رقم. رقمٌ لا تسنده شعبة هو الذي جعل
                        الوعد يفترق عن الفاتورة. */
                     <div className="mt-4 space-y-1.5 text-xs">
-                      <p className="text-sm font-black text-white">
+                      <p className="text-sm font-black text-foreground">
                         {pricesLoaded ? "يُعلن السعر مع فتح الشعبة" : "يُقرأ السعر…"}
                       </p>
                       <p className="text-muted-foreground">
@@ -745,12 +745,12 @@ export default function PathwayPage() {
               {/* كان النصّ «طلبك يُراجَع، ثم تصلك فاتورتك» — وهو ما كان يقع فعلا
                   يوم كان الشراء طلبا. وقد صار الدفعُ مباشرا، فيصف النصُّ ما
                   يقع الآن: تُختار الشعبة، ويُدفع، ثمّ تُفتح المنصّة. */}
-              <p className="mt-3.5 text-center text-micro text-white/40">تدفع الآن، ثم تُفتح منصّتك على ما اشتريت</p>
+              <p className="mt-3.5 text-center text-micro text-muted-foreground">تدفع الآن، ثم تُفتح منصّتك على ما اشتريت</p>
               {/* الدعوة إلى التشخيص سطر عند لحظة القرار، لا شريطا مؤطّرا في وسط
                   الصفحة. صفحة المسار الجاهز صفحة منتج معروضة للجميع، وكل صندوق
                   يعترضها يقرأ كأنه نتيجة شخصية لزائر لم يتشخّص أصلا. */}
               {diagTopId !== pathway.id && (
-                <p className="mt-2 text-center text-[11px] leading-relaxed text-white/35">
+                <p className="mt-2 text-center text-[11px] leading-relaxed text-muted-foreground">
                   {hasSavedResult ? "نتيجتك محفوظة — " : "لست متأكدا أنه الأنسب لك؟ "}
                   <Link to="/diagnostic" className="font-bold text-muted-foreground underline underline-offset-4 transition hover:text-[#6EC7D1]">
                     {hasSavedResult ? "عد إليها وأعد تخصيص مسارك" : "ثلاث دقائق مع مؤشر وجيز"}
@@ -805,7 +805,7 @@ export default function PathwayPage() {
               فريقٌ قائم ادّعاء — وهو ما تمنعه قاعدةُ «لا اسم يُعرض كحقيقة قبل
               توثيقه». فبقي الباب مفتوحا وسقط الادّعاء: قناة الاتصال نفسها، بلا
               اسم ولا صورة ولا إلحاح. */}
-          <p className="story-fade mt-6 text-center text-xs leading-relaxed text-white/40">
+          <p className="story-fade mt-6 text-center text-xs leading-relaxed text-muted-foreground">
             ما زلت مترددا؟{" "}
             <AdvisorContact
               text={advisorMsg}

@@ -133,7 +133,7 @@ export default function DecisionScenario({
       )}
 
       {/* العقدة الحالية */}
-      <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4">
+      <div className="mt-5 rounded-2xl border border-white/10 bg-paper/20 p-4">
         <p className="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground">
           <MapPin className="h-3 w-3" aria-hidden="true" />
           {current.titleAr}
@@ -171,7 +171,7 @@ export default function DecisionScenario({
               onChange={(e) => setReflection(e.target.value)}
               maxLength={4000}
               placeholder="اكتب تأملك — بأي قرار كنت ستبدأ لو أعدتها، ولماذا؟"
-              className="w-full rounded-2xl border border-white/12 bg-black/25 px-4 py-3 text-xs leading-7 placeholder:text-white/35 focus:border-teal/60 focus:outline-none"
+              className="w-full rounded-2xl border border-white/12 bg-paper/25 px-4 py-3 text-xs leading-7 placeholder:text-muted-foreground/75 focus:border-teal/60 focus:outline-none"
             />
           </label>
           <div className="mt-3 flex flex-wrap items-center gap-3">

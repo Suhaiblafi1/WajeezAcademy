@@ -117,7 +117,7 @@ export default function RequestsPanel({ caseId }: { caseId: string }) {
           <Plus className="h-3.5 w-3.5" /> اطلب خصما أو تعديلا على الخطّة
         </button>
       ) : (
-        <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+        <div className="rounded-2xl border border-white/10 bg-paper/25 p-4">
           <FieldRow>
             <Field label="نوع الطلب" htmlFor="req-kind" required>
               <select
@@ -162,7 +162,7 @@ export default function RequestsPanel({ caseId }: { caseId: string }) {
                             إلى الماليّة رقمٌ بعملةٍ لا يقبلها الطلب. والعملةُ
                             تُختار عند الدفع وحدَه (`presentment.ts`). */}
                         <span
-                          className={`${controlCls} grid w-24 shrink-0 place-items-center px-2 text-xs font-black text-white/55`}
+                          className={`${controlCls} grid w-24 shrink-0 place-items-center px-2 text-xs font-black text-muted-foreground`}
                           aria-label="العملة"
                         >
                           {LEDGER_CURRENCY}
@@ -208,7 +208,7 @@ export default function RequestsPanel({ caseId }: { caseId: string }) {
             </button>
             <button
               type="button" onClick={() => setOpen(false)}
-              className="cursor-pointer rounded-full border border-white/15 px-5 py-2.5 text-xs font-bold text-white/60 transition hover:border-white/35"
+              className="cursor-pointer rounded-full border border-white/15 px-5 py-2.5 text-xs font-bold text-muted-foreground transition hover:border-white/35"
             >
               إلغاء
             </button>
@@ -221,38 +221,38 @@ export default function RequestsPanel({ caseId }: { caseId: string }) {
 
       {/* الطلبات السابقة */}
       {rows === null ? (
-        <div className="grid place-items-center py-6"><Loader2 className="h-4 w-4 animate-spin text-white/30" /></div>
+        <div className="grid place-items-center py-6"><Loader2 className="h-4 w-4 animate-spin text-muted-foreground/50" /></div>
       ) : rows.length > 0 && (
         <ul className="mt-4 space-y-2">
           {rows.map((r) => (
             <li key={r.id} className={`rounded-xl border p-3 ${
               r.status === 'approved' ? 'border-teal/40 bg-teal/[0.05]'
                 : r.status === 'rejected' ? 'border-gold/35 bg-gold/[0.05]'
-                : 'border-white/10 bg-black/20'
+                : 'border-white/10 bg-paper/20'
             }`}>
               <p className="flex flex-wrap items-center gap-x-2 text-[11px] font-black">
-                <BadgePercent className="h-3.5 w-3.5 text-white/40" />
+                <BadgePercent className="h-3.5 w-3.5 text-muted-foreground" />
                 {KIND_AR[r.kind] ?? r.kind}
                 {r.percentOff && <span className="text-teal-light-ink">{r.percentOff}٪</span>}
                 {r.amountOff && <span className="text-teal-light-ink">{r.amountOff} {r.currency}</span>}
-                {r.courseId && <span className="font-normal text-white/60">— {courseById(r.courseId)?.name ?? r.courseId}</span>}
-                <span className="ms-auto text-micro font-bold text-white/45">{STATUS_AR[r.status] ?? r.status}</span>
+                {r.courseId && <span className="font-normal text-muted-foreground">— {courseById(r.courseId)?.name ?? r.courseId}</span>}
+                <span className="ms-auto text-micro font-bold text-muted-foreground">{STATUS_AR[r.status] ?? r.status}</span>
               </p>
-              <p className="mt-1.5 text-[11px] leading-6 text-white/55">{r.reasonAr}</p>
+              <p className="mt-1.5 text-[11px] leading-6 text-muted-foreground">{r.reasonAr}</p>
               {r.decisionNoteAr && (
-                <p className="mt-1.5 border-t border-white/10 pt-1.5 text-[11px] leading-6 text-white/70">
-                  <span className="font-bold text-white/45">ردّ الإدارة{r.decidedBy ? ` (${r.decidedBy.displayName})` : ''}: </span>
+                <p className="mt-1.5 border-t border-white/10 pt-1.5 text-[11px] leading-6 text-foreground">
+                  <span className="font-bold text-muted-foreground">ردّ الإدارة{r.decidedBy ? ` (${r.decidedBy.displayName})` : ''}: </span>
                   {r.decisionNoteAr}
                 </p>
               )}
               {r.coupon && (
-                <div className="mt-2 flex items-center gap-2 rounded-lg border border-teal/30 bg-black/30 px-2.5 py-1.5">
+                <div className="mt-2 flex items-center gap-2 rounded-lg border border-teal/30 bg-paper/30 px-2.5 py-1.5">
                   <code dir="ltr" className="flex-1 font-mono text-[11px] text-teal-light-ink">{r.coupon.code}</code>
                   <button
                     type="button"
                     onClick={() => { void navigator.clipboard?.writeText(r.coupon!.code); setCopied(r.id) }}
                     aria-label="انسخ رمز الخصم"
-                    className="shrink-0 cursor-pointer text-white/50 transition hover:text-white"
+                    className="shrink-0 cursor-pointer text-muted-foreground transition hover:text-foreground"
                   >
                     {copied === r.id ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                   </button>
@@ -261,7 +261,7 @@ export default function RequestsPanel({ caseId }: { caseId: string }) {
               {r.status === 'pending' && (
                 <button
                   type="button" onClick={() => void cancel(r.id)} disabled={busy}
-                  className="mt-2 flex cursor-pointer items-center gap-1 text-micro font-bold text-white/40 transition hover:text-white/70"
+                  className="mt-2 flex cursor-pointer items-center gap-1 text-micro font-bold text-muted-foreground transition hover:text-foreground"
                 >
                   <X className="h-3 w-3" /> اسحب الطلب
                 </button>

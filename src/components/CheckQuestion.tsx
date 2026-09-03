@@ -56,7 +56,7 @@ export default function CheckQuestion({
         })}
       </div>
       {shown && (
-        <p className="mt-2 rounded-xl border border-white/8 bg-black/20 px-3.5 py-2.5 text-[11px] leading-6 text-foreground">
+        <p className="mt-2 rounded-xl border border-white/8 bg-paper/20 px-3.5 py-2.5 text-[11px] leading-6 text-foreground">
           {chosen === check.correctIndex ? "صحيح. " : "غير صحيح. "}
           {check.explainAr ?? "الجواب الصحيح موضَّح أعلاه."}
         </p>

@@ -74,7 +74,7 @@ export default function StaffInbox() {
 
       {items === null && !error && (
         <div className="grid place-items-center rounded-2xl border border-white/10 py-8">
-          <Loader2 className="h-5 w-5 animate-spin text-white/35" aria-label="يُحمَّل" />
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" aria-label="يُحمَّل" />
         </div>
       )}
 
@@ -97,7 +97,7 @@ export default function StaffInbox() {
                   className={`flex h-full flex-col rounded-2xl border p-4 transition hover:border-white/35 ${tone.box}`}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <p className="flex items-center gap-2 text-xs font-black text-white">
+                    <p className="flex items-center gap-2 text-xs font-black text-foreground">
                       <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> {item.titleAr}
                     </p>
                     <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-black tabular-nums ${tone.chip}`}>

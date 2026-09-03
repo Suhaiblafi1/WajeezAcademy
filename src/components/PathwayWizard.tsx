@@ -31,7 +31,7 @@ interface Readiness {
   steps: { key: string; labelAr: string; ok: boolean; reasonAr: string }[]
 }
 
-const inputCls = "w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/25 outline-none focus:border-gold/60";
+const inputCls = "w-full rounded-xl border border-white/10 bg-paper/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/75 outline-none focus:border-gold/60";
 
 const CHIP = (on: boolean) =>
   `cursor-pointer rounded-full border px-3 py-1 text-[11px] font-bold transition ${
@@ -113,7 +113,7 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
           const now = i === step;
           return (
             <li key={s.key} className="flex items-center gap-2">
-              {i > 0 && <ArrowLeft className="h-3 w-3 text-white/25" aria-hidden="true" />}
+              {i > 0 && <ArrowLeft className="h-3 w-3 text-muted-foreground/50" aria-hidden="true" />}
               <span className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold ${
                 now ? "border-gold bg-gold/15 text-gold-ink"
                   : done ? "border-emerald-400/40 text-emerald-300"
@@ -181,7 +181,7 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
               ))}
             </div>
             {stages.length > 0 && (
-              <p className="mt-2 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-[11px] leading-6 text-foreground">
+              <p className="mt-2 rounded-xl border border-white/10 bg-paper/20 px-3 py-2 text-[11px] leading-6 text-foreground">
                 <Target className="mb-0.5 me-1 inline h-3.5 w-3.5 text-teal-light-ink" aria-hidden="true" />
                 يفتح {stages.length} مرحلة مهنية: <span dir="ltr" className="font-mono">{stages.join(" · ")}</span>
               </p>
@@ -245,7 +245,7 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
           </p>
 
           {readiness && (
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+            <div className="rounded-2xl border border-white/10 bg-paper/20 p-4">
               <p className="mb-3 flex items-center gap-2 text-xs font-black text-foreground">
                 <ShieldCheck className="h-4 w-4 text-gold-ink" aria-hidden="true" /> الجاهزية — نفس ما يفحصه حاجز النشر
               </p>
@@ -267,7 +267,7 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
           </button>
 
           {impact && (
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-xs leading-6 text-foreground">
+            <div className="rounded-2xl border border-white/10 bg-paper/20 p-4 text-xs leading-6 text-foreground">
               <p className="font-bold">تغيّرت توصية {impact.changedCount} من {impact.totalPersonas} شخصية.</p>
               {impact.changed.map((c) => <p key={c.name} className="text-amber-300">• {c.name}</p>)}
               {impact.changedCount === 0 && (

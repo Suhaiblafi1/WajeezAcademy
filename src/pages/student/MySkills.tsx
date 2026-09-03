@@ -41,20 +41,20 @@ function MeasuredRow({ s, showDelta }: { s: MeasuredSkill; showDelta: boolean })
       <div className="min-w-0">
         <p className="truncate text-sm font-bold">{s.nameAr}</p>
         {s.coveredBy.length > 0 && (
-          <p className="mt-0.5 flex items-start gap-1.5 truncate text-[11px] text-white/50">
+          <p className="mt-0.5 flex items-start gap-1.5 truncate text-[11px] text-muted-foreground">
             <BookOpen className="mt-0.5 h-3 w-3 shrink-0" aria-hidden="true" />
             <span className="truncate">تُدرّسها: {s.coveredBy.map((c) => c.titleAr).join(" · ")}</span>
           </p>
         )}
       </div>
       <SkillMeter level={s.level} />
-      <p className="flex flex-wrap items-center gap-2 text-xs tabular-nums text-white/70">
+      <p className="flex flex-wrap items-center gap-2 text-xs tabular-nums text-foreground">
         <span>{levelLabelAr(s.level)}</span>
         {/* شارة النمو (ح-٧): تُعرض لمن أُعيد قياسه فقط، ولا تُصطنع لغيره */}
         {s.growth && s.growth.delta !== null && s.growth.delta !== 0 && (
           <span
             className={`rounded-full border px-2 py-0.5 text-micro font-bold ${
-              s.growth.delta > 0 ? "border-teal/50 text-teal-light-ink" : "border-white/25 text-white/75"
+              s.growth.delta > 0 ? "border-teal/50 text-teal-light-ink" : "border-white/25 text-foreground"
             }`}
             title={s.growth.courseTitleAr ? `قياس بعديّ بعد «${s.growth.courseTitleAr}»` : "قياس بعديّ"}
           >
@@ -85,7 +85,7 @@ function Section({
           {title}
           <span className="rounded-full bg-teal-ink/15 px-2 py-0.5 text-[11px] tabular-nums text-teal-light-ink">{count}</span>
         </h2>
-        <p className="text-[11px] text-white/50">{note}</p>
+        <p className="text-[11px] text-muted-foreground">{note}</p>
       </div>
       <ul className="mt-3">{children}</ul>
     </section>
@@ -99,12 +99,12 @@ function Hero({ p }: { p: SkillsProfile }) {
     <section className="rounded-3xl border border-teal/30 bg-teal-ink/[0.07] p-6">
       <div className="flex flex-wrap items-end justify-between gap-6">
         <div>
-          <p className="text-xs text-white/60">{pct === null ? "مهارات قِيست لك" : "تغطية القياس على متطلبات مسارك"}</p>
+          <p className="text-xs text-muted-foreground">{pct === null ? "مهارات قِيست لك" : "تغطية القياس على متطلبات مسارك"}</p>
           <p className="mt-1 text-5xl font-black leading-none text-teal-light-ink">
             {pct === null ? p.measuredCount : `${pct}٪`}
           </p>
           {pct !== null && (
-            <p className="mt-2 text-xs tabular-nums text-white/55">
+            <p className="mt-2 text-xs tabular-nums text-muted-foreground">
               قِيست {p.requiredCount - p.unmeasured.length} من {p.requiredCount} مهارة يتطلبها المسار
             </p>
           )}
@@ -117,13 +117,13 @@ function Hero({ p }: { p: SkillsProfile }) {
           ].map((t) => (
             <div key={t.k}>
               <dd className="text-2xl font-black tabular-nums">{t.v}</dd>
-              <dt className="mt-0.5 text-[11px] text-white/55">{t.k}</dt>
+              <dt className="mt-0.5 text-[11px] text-muted-foreground">{t.k}</dt>
             </div>
           ))}
         </dl>
       </div>
       {p.pathwayTitleAr && (
-        <p className="mt-4 flex flex-wrap items-center gap-2 text-xs text-white/60">
+        <p className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <Compass className="h-3.5 w-3.5" aria-hidden="true" />
           مقيسة على متطلبات
           <Link to={`/pathways/${p.pathwayId}`} className="font-bold text-teal-light-ink underline-offset-4 hover:underline">
@@ -144,13 +144,13 @@ function Unmeasured({ rows }: { rows: UnmeasuredSkill[] }) {
         لم تُقس بعد
         <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[11px] tabular-nums text-gold-ink">{rows.length}</span>
       </h2>
-      <p className="mt-2 text-xs leading-6 text-white/65">
+      <p className="mt-2 text-xs leading-6 text-foreground">
         هذه مهارات يتطلبها مسارك ولم يسألك المؤشر عنها. لا نفترض لك فيها مستوى — لا مرتفعا ولا منخفضا.
         وكلما قِيس أكثر، ارتفعت ثقة التوصية.
       </p>
       <ul className="mt-3 flex flex-wrap gap-2">
         {rows.map((s) => (
-          <li key={s.slug} className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs text-white/70">
+          <li key={s.slug} className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs text-foreground">
             {s.nameAr}
           </li>
         ))}
@@ -182,7 +182,7 @@ function GrowthPanel({ summary }: { summary: GrowthSummary }) {
           <Ruler className="h-4 w-4 text-teal-light-ink" aria-hidden="true" />
           نموك المقيس بعد الدورات
         </h2>
-        <p className="text-[11px] text-white/50">قياس بالسلّم نفسه قبل الدورة وبعدها — لا وصف</p>
+        <p className="text-[11px] text-muted-foreground">قياس بالسلّم نفسه قبل الدورة وبعدها — لا وصف</p>
       </div>
 
       <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -195,7 +195,7 @@ function GrowthPanel({ summary }: { summary: GrowthSummary }) {
         ].map((t) => (
           <div key={t.k} className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
             <dd className="text-2xl font-black tabular-nums" dir={t.ltr ? "ltr" : undefined}>{t.v}</dd>
-            <dt className="mt-0.5 text-[11px] text-white/55">{t.k}</dt>
+            <dt className="mt-0.5 text-[11px] text-muted-foreground">{t.k}</dt>
           </div>
         ))}
       </dl>
@@ -203,9 +203,9 @@ function GrowthPanel({ summary }: { summary: GrowthSummary }) {
       {summary.courses.map((c) => (
         <div key={c.courseId} className="mt-5 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
           <p className="flex flex-wrap items-baseline justify-between gap-2 text-xs">
-            <span className="font-bold text-white/85">{c.courseTitleAr ?? c.courseId}</span>
+            <span className="font-bold text-foreground">{c.courseTitleAr ?? c.courseId}</span>
             {/* ‎/55 لا ‎/45: الأخيرة تقيس 4.45:1 على سطح البطاقة فتسقط دون 4.5 */}
-            <span className="text-white/55">قِيس في {fmtWhen(c.measuredAt)}</span>
+            <span className="text-muted-foreground">قِيس في {fmtWhen(c.measuredAt)}</span>
           </p>
           <ul className="mt-2">
             {c.skills.map((g) => (
@@ -216,7 +216,7 @@ function GrowthPanel({ summary }: { summary: GrowthSummary }) {
       ))}
 
       {summary.firstMeasured > 0 && (
-        <p className="mt-4 text-[11px] leading-relaxed text-white/50">
+        <p className="mt-4 text-[11px] leading-relaxed text-muted-foreground">
           {summary.firstMeasured} مهارة قِيست أول مرة بعد الدورة — بلا مرجع قبليّ، فلا تدخل حساب الفرق.
         </p>
       )}
@@ -256,13 +256,13 @@ function GrowthInvites({ invites }: { invites: GrowthPayload["invites"] }) {
         أتممت دورة — قِس نموك فيها
         <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[11px] tabular-nums text-gold-ink">{invites.length}</span>
       </h2>
-      <p className="mt-2 text-xs leading-6 text-white/65">
+      <p className="mt-2 text-xs leading-6 text-foreground">
         قِيست مهاراتك قبل الدورة. أعد القياس الآن بالسلّم نفسه ليُحفظ الفرق — مرة واحدة لكل دورة.
       </p>
       <ul className="mt-3 flex flex-col gap-2">
         {invites.map((i) => (
           <li key={i.enrollmentId} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-            <span className="min-w-0 truncate text-xs font-bold text-white/85">{i.cohortTitle}</span>
+            <span className="min-w-0 truncate text-xs font-bold text-foreground">{i.cohortTitle}</span>
             <Link
               to={`/student/remeasure/${i.enrollmentId}`}
               className="inline-flex min-h-11 items-center gap-2 rounded-full bg-gold px-5 text-xs font-black text-on-gold transition hover:bg-gold/90"
@@ -351,9 +351,9 @@ export default function MySkills() {
     return (
       <PortalLayout title="ملف مهاراتي">
         <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] px-6 py-20 text-center">
-          <Sparkles className="h-12 w-12 text-white/20" aria-hidden="true" />
+          <Sparkles className="h-12 w-12 text-muted-foreground/50" aria-hidden="true" />
           <h2 className="mt-4 text-xl font-black">لا قياس بعد</h2>
-          <p className="mt-2 max-w-md text-sm leading-7 text-white/60">
+          <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">
             يُبنى ملف مهاراتك من مؤشر وجيز — أسئلة قصيرة تقيس مستواك الحالي في مهارات مسارك.
             لا نعرض هنا رقما لم نقسه.
           </p>
@@ -420,7 +420,7 @@ export default function MySkills() {
         ))}
       </Section>
 
-      <p className="mt-6 rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-4 text-[11px] leading-relaxed text-white/50">
+      <p className="mt-6 rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-4 text-[11px] leading-relaxed text-muted-foreground">
         سلّم القياس خمس درجات: لا يعرفها · مبتدئ · يستخدمها أحيانا · جيد عمليا · متقدم.
         وتُصنَّف المهارة فجوةً دون «يستخدمها أحيانا»، ومتقنةً من «جيد عمليا» — وهو الحدّ نفسه
         الذي يستعمله المؤشر في حساب الترشيح، فلا يختلف ما تراه عما احتُسب لك.

@@ -12,7 +12,7 @@ import { AlertTriangle, CalendarClock } from 'lucide-react'
 
 /* ═══ الأحبارُ الشفّافةُ على الأبيض، ولماذا بُدِّلت ═══
 
-   `text-white/25` و`/35` وأمثالُها ليست ألوانا بل **أبيضٌ بشفافيّة**: تفترض
+   `text-muted-foreground/50` و`/35` وأمثالُها ليست ألوانا بل **أبيضٌ بشفافيّة**: تفترض
    أنّ ما خلفها داكن. فقياسُ التباين (`npm run a11y:audit`) وجد هنا نصّا
    بـ**٢٫٢٢:‏١** في المظهر الداكن — والمطلوب ٤٫٥ — و**١٫٦٨:‏١** في الفاتح، أي
    نصٌّ موجودٌ لا يُقرأ.
@@ -51,7 +51,7 @@ export default function Pipeline({
               <button
                 key={c.id}
                 onClick={() => onOpen(c.id)}
-                className="cursor-pointer rounded-full border border-gold/40 bg-black/25 px-3.5 py-1.5 text-[11px] font-bold text-white/80 transition hover:border-gold"
+                className="cursor-pointer rounded-full border border-gold/40 bg-paper/25 px-3.5 py-1.5 text-[11px] font-bold text-foreground transition hover:border-gold"
               >
                 {renderName(c.id).name}
                 <span className="ms-2 text-gold-ink">{sinceAr(c.nextFollowUpAt!)}</span>
@@ -85,7 +85,7 @@ export default function Pipeline({
                         key={c.id}
                         onClick={() => onOpen(c.id)}
                         className={`w-full cursor-pointer rounded-xl border p-3 text-right transition hover:-translate-y-0.5 ${
-                          late ? 'border-gold/45 bg-gold/[0.06]' : 'border-white/10 bg-black/25 hover:border-teal/40'
+                          late ? 'border-gold/45 bg-gold/[0.06]' : 'border-white/10 bg-paper/25 hover:border-teal/40'
                         }`}
                       >
                         <p className="truncate text-xs font-bold">{who.name}</p>

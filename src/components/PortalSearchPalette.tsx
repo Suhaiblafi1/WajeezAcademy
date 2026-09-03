@@ -93,7 +93,7 @@ export default function PortalSearchPalette({ kind }: { kind: keyof typeof PALET
 
   let rowIndex = -1;
   return (
-    <div className="fixed inset-0 z-[90] flex items-start justify-center bg-black/70 px-4 pt-24 backdrop-blur-sm" onClick={() => setOpen(false)}>
+    <div className="fixed inset-0 z-[90] flex items-start justify-center bg-paper/70 px-4 pt-24 backdrop-blur-sm" onClick={() => setOpen(false)}>
       <div dir="rtl" className="w-full max-w-xl overflow-hidden rounded-3xl border border-white/15 bg-surface shadow-2xl"
         onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-3 border-b border-white/10 px-5 py-4">
@@ -105,27 +105,27 @@ export default function PortalSearchPalette({ kind }: { kind: keyof typeof PALET
             onKeyDown={onInputKey}
             placeholder={conf.placeholder}
             aria-label={conf.placeholder}
-            className="w-full bg-transparent text-sm text-white placeholder:text-white/30 focus:outline-none"
+            className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground/75 focus:outline-none"
           />
-          <kbd className="rounded-md border border-white/15 px-2 py-0.5 text-micro text-white/40">Esc</kbd>
+          <kbd className="rounded-md border border-white/15 px-2 py-0.5 text-micro text-muted-foreground">Esc</kbd>
         </div>
 
         <div className="max-h-[55vh] overflow-y-auto p-2">
           {q.trim() === "" && (
-            <p className="px-4 py-8 text-center text-xs leading-6 text-white/40">
+            <p className="px-4 py-8 text-center text-xs leading-6 text-muted-foreground">
               {conf.emptyHint}<br />الأسهم ↑↓ للتنقل و Enter للقفز
             </p>
           )}
-          {searching && <p className="px-4 py-6 text-center text-xs text-white/40">يُبحث…</p>}
+          {searching && <p className="px-4 py-6 text-center text-xs text-muted-foreground">يُبحث…</p>}
           {!searching && groups && flat.length === 0 && (
-            <p className="px-4 py-8 text-center text-xs text-white/40">لا نتائج لـ «{q}» ضمن نطاقك</p>
+            <p className="px-4 py-8 text-center text-xs text-muted-foreground">لا نتائج لـ «{q}» ضمن نطاقك</p>
           )}
           {groups && conf.groups.map((g) => {
             const hits = groups[g.key] ?? [];
             if (hits.length === 0) return null;
             return (
               <div key={g.key} className="mb-1">
-                <p className="flex items-center gap-2 px-3 pb-1 pt-2 text-micro font-black text-white/35">
+                <p className="flex items-center gap-2 px-3 pb-1 pt-2 text-micro font-black text-muted-foreground">
                   <g.icon className="h-3 w-3" /> {g.label}
                 </p>
                 {hits.map((h) => {
@@ -142,7 +142,7 @@ export default function PortalSearchPalette({ kind }: { kind: keyof typeof PALET
                     >
                       <span className="min-w-0">
                         <span className="block truncate text-xs font-black text-foreground">{h.title}</span>
-                        <span className="block truncate text-micro text-white/40">{h.sub}</span>
+                        <span className="block truncate text-micro text-muted-foreground">{h.sub}</span>
                       </span>
                       <span className="shrink-0 text-micro font-bold text-teal-light-ink">Enter ↵</span>
                     </button>

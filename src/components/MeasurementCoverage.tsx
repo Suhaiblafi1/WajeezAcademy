@@ -55,7 +55,7 @@ export default function MeasurementCoverage({ className = "" }: { className?: st
           </p>
           <ul className="mt-3 space-y-2">
             {topGaps.slice(0, 3).map((g) => (
-              <li key={g.slug} className="flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-[11px]">
+              <li key={g.slug} className="flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-paper/20 px-3 py-2 text-[11px]">
                 <span className="font-black text-foreground">{g.nameAr}</span>
                 <span dir="ltr" className="font-mono text-muted-foreground">{g.slug}</span>
                 <span className="rounded-full border border-emerald-400/40 px-2 py-0.5 font-bold text-emerald-300">
@@ -100,7 +100,7 @@ export default function MeasurementCoverage({ className = "" }: { className?: st
 
       {/* كل الفجوات */}
       <button onClick={() => setOpenGaps(!openGaps)}
-        className="mt-4 flex cursor-pointer items-center gap-1.5 text-[11px] font-bold text-teal-light-ink hover:text-white">
+        className="mt-4 flex cursor-pointer items-center gap-1.5 text-[11px] font-bold text-teal-light-ink hover:text-foreground">
         <ChevronDown className={`h-3.5 w-3.5 transition ${openGaps ? "rotate-180" : ""}`} aria-hidden="true" />
         {openGaps ? "أخفِ الفجوات" : `اعرض كل الفجوات (${r.gaps.length})`}
       </button>
@@ -108,7 +108,7 @@ export default function MeasurementCoverage({ className = "" }: { className?: st
         <ul className="mt-3 flex flex-wrap gap-2">
           {shownGaps.map((g) => (
             <li key={g.slug} title={`المسارات: ${g.pathwayIds.join("، ")}`}
-              className="rounded-full border border-white/12 bg-black/20 px-3 py-1 text-[11px] text-foreground">
+              className="rounded-full border border-white/12 bg-paper/20 px-3 py-1 text-[11px] text-foreground">
               {g.nameAr}
               <span className="ms-1.5 text-muted-foreground">·{g.pathwayIds.length}</span>
               {g.unlocks.length > 0 && <span className="ms-1 text-emerald-300">↑{g.unlocks.length}</span>}

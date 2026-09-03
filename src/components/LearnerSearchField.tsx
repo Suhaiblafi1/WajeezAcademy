@@ -57,13 +57,13 @@ export default function LearnerSearchField({
     return (
       <div className="flex flex-1 items-center gap-2 rounded-xl border border-teal/40 bg-teal/5 px-3 py-2">
         <UserCheck className="h-3.5 w-3.5 shrink-0 text-teal-light-ink" aria-hidden="true" />
-        <span className="flex-1 truncate text-xs font-bold text-white">{value.displayName}</span>
-        <span dir="ltr" className="truncate text-micro text-white/40">{value.email}</span>
+        <span className="flex-1 truncate text-xs font-bold text-foreground">{value.displayName}</span>
+        <span dir="ltr" className="truncate text-micro text-muted-foreground">{value.email}</span>
         <button
           type="button"
           onClick={() => { onChange(null); setTerm(""); }}
           aria-label="اختر متعلّما آخر"
-          className="shrink-0 cursor-pointer rounded-full p-1 text-muted-foreground transition hover:bg-white/10 hover:text-white"
+          className="shrink-0 cursor-pointer rounded-full p-1 text-muted-foreground transition hover:bg-white/10 hover:text-foreground"
         >
           <X className="h-3.5 w-3.5" />
         </button>
@@ -74,9 +74,9 @@ export default function LearnerSearchField({
   return (
     <div className="relative flex-1">
       <label className="sr-only" htmlFor={`learner-search-${cohortId}`}>ابحث عن متعلّم بالاسم أو البريد</label>
-      <div className="flex items-center gap-2 rounded-xl border border-white/15 bg-black/30 px-3 py-2 focus-within:border-teal">
-        {busy ? <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-white/40" aria-hidden="true" />
-              : <Search className="h-3.5 w-3.5 shrink-0 text-white/35" aria-hidden="true" />}
+      <div className="flex items-center gap-2 rounded-xl border border-white/15 bg-paper/30 px-3 py-2 focus-within:border-teal">
+        {busy ? <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" aria-hidden="true" />
+              : <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />}
         <input
           id={`learner-search-${cohortId}`}
           value={term}
@@ -84,7 +84,7 @@ export default function LearnerSearchField({
           onChange={(e) => setTerm(e.target.value)}
           placeholder="ابحث بالاسم أو البريد — حرفان يكفيان"
           autoComplete="off"
-          className="w-full bg-transparent text-xs text-white placeholder:text-white/30 focus:outline-none"
+          className="w-full bg-transparent text-xs text-foreground placeholder:text-muted-foreground/75 focus:outline-none"
         />
       </div>
 
@@ -101,10 +101,10 @@ export default function LearnerSearchField({
                 onClick={() => { onChange(h); setHits(null); }}
                 className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-right transition hover:bg-white/8 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-transparent"
               >
-                <span className="truncate text-xs font-bold text-white">{h.displayName}</span>
+                <span className="truncate text-xs font-bold text-foreground">{h.displayName}</span>
                 <span className="flex shrink-0 items-center gap-2">
                   {h.enrolled && <span className="rounded-full bg-white/10 px-2 py-0.5 text-micro font-bold text-muted-foreground">مسجَّلٌ هنا</span>}
-                  <span dir="ltr" className="text-micro text-white/40">{h.email}</span>
+                  <span dir="ltr" className="text-micro text-muted-foreground">{h.email}</span>
                 </span>
               </button>
             </li>

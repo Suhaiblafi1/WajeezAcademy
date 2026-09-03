@@ -20,7 +20,7 @@ import { useRealSession } from "@/services/session";
 import { fmtDate, fmtDateTime } from "@/application/text/format-ar";
 import ConfirmAction from "@/components/ConfirmAction";
 
-const inputCls = "rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/25 focus:border-teal focus:outline-none";
+const inputCls = "rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none";
 
 interface EnrollReq {
   id: string; status: string; note: string | null; createdAt: string;
@@ -125,9 +125,9 @@ export default function Finance() {
     return (
       <AdminLayout title="المالية">
         <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
-          <ServerOff className="h-12 w-12 text-white/20" />
-          <p className="mt-4 max-w-md text-sm text-white/55">{offline}</p>
-          <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-white/70 hover:border-white/40">
+          <ServerOff className="h-12 w-12 text-muted-foreground/50" />
+          <p className="mt-4 max-w-md text-sm text-muted-foreground">{offline}</p>
+          <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground hover:border-white/40">
             <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
           </button>
         </div>
@@ -196,12 +196,12 @@ export default function Finance() {
         <div className="flex flex-wrap rounded-full border border-white/15 p-1">
           {tabs.map(([k, label, n]) => (
             <button key={k} onClick={() => { setTab(k); setQ(""); setPage(1); setSel(new Set()); }}
-              className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-black transition ${tab === k ? "bg-gold text-on-gold" : "text-white/60 hover:text-white"}`}>
+              className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-black transition ${tab === k ? "bg-gold text-on-gold" : "text-muted-foreground hover:text-foreground"}`}>
               {label} {n > 0 && <span className="mr-1 opacity-70">({n})</span>}
             </button>
           ))}
         </div>
-        <button onClick={() => void load()} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-white/60 hover:border-white/40">
+        <button onClick={() => void load()} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-muted-foreground hover:border-white/40">
           <RefreshCw className="h-3.5 w-3.5" /> تحديث
         </button>
       </div>
@@ -209,26 +209,26 @@ export default function Finance() {
       {/* ولا يُترك القارئُ يظنّ الشاشةَ معطوبةً لخلوّها من الأزرار: يُقال له
           ما يستطيع وما لا يستطيع ومن يستطيعه — صراحةً، مرّةً في أعلى الصفحة. */}
       {readOnly && (
-        <p className="mb-5 flex items-start gap-2 rounded-2xl border border-white/12 bg-white/[0.03] px-4 py-3 text-[11px] font-bold leading-6 text-white/60">
+        <p className="mb-5 flex items-start gap-2 rounded-2xl border border-white/12 bg-white/[0.03] px-4 py-3 text-[11px] font-bold leading-6 text-muted-foreground">
           <Wallet className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-ink" />
           حسابُك يقرأ المالَ ولا يحرّكه: تعرف من دفع ومن لم يدفع لتقرّر تسجيلا، وتراجع طلباتِ التسجيل.
-          أمّا تسجيلُ دفعةٍ يدويّةٍ واعتمادُ استردادٍ وإنشاءُ كوبونٍ فهي بيد <b className="text-white/80">المالية</b> —
+          أمّا تسجيلُ دفعةٍ يدويّةٍ واعتمادُ استردادٍ وإنشاءُ كوبونٍ فهي بيد <b className="text-foreground">المالية</b> —
           فصلٌ مقصود: من يسجّل التسجيلَ لا يسجّل دفعتَه.
         </p>
       )}
 
-      {loading && <div className="grid place-items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-white/30" /></div>}
+      {loading && <div className="grid place-items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" /></div>}
 
       {/* طلبات التسجيل */}
       {!loading && tab === "requests" && (
         <div className="space-y-3">
-          {requests.length === 0 && <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-white/45">لا طلبات تسجيل.</p>}
+          {requests.length === 0 && <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-muted-foreground">لا طلبات تسجيل.</p>}
           {requests.length > 0 && (
             <ListToolbar q={q} onQ={setQ} onPage={setPage} view={reqView} unit="طلبا"
               placeholder="ابحث باسمِ طالبٍ أو بريدٍ أو شعبة…" />
           )}
           {selectable.length > 0 && (
-            <div className="flex items-center gap-2 text-[11px] text-white/45">
+            <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
               <input type="checkbox"
                 checked={sel.size > 0 && selectable.every((r) => sel.has(r.id))}
                 onChange={(e) => setSel(e.target.checked ? new Set(selectable.map((r) => r.id)) : new Set())}
@@ -247,17 +247,17 @@ export default function Finance() {
             </button>
           </BulkBar>
           {requests.length > 0 && reqView.total === 0 && (
-            <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-white/45">لا طلب يطابق «{q.trim()}».</p>
+            <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-muted-foreground">لا طلب يطابق «{q.trim()}».</p>
           )}
           {reqView.rows.map((r) => (
             <div key={r.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="font-black">{r.user.displayName} <span className="text-[11px] font-normal text-muted-foreground" dir="ltr">{r.user.email}</span></p>
-                  <p className="mt-1 text-xs text-white/55">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     {r.cohort.course.versions[0]?.titleAr ?? "—"} · {r.cohort.title} · {r.cohort.price ? `${r.cohort.price} ${r.cohort.currency}` : "بلا سعر"}
                   </p>
-                  {r.note && <p className="mt-1 text-[11px] text-white/45">ملاحظة المتعلم: {r.note}</p>}
+                  {r.note && <p className="mt-1 text-[11px] text-muted-foreground">ملاحظة المتعلم: {r.note}</p>}
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="rounded-full border border-teal/40 px-3 py-1 text-[11px] font-bold text-teal-light-ink">{ER_STATUS[r.status] ?? r.status}</span>
@@ -293,20 +293,20 @@ export default function Finance() {
       {/* الفواتير */}
       {!loading && tab === "invoices" && (
         <div className="space-y-3">
-          {invoices.length === 0 && <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-white/45">لا فواتير.</p>}
+          {invoices.length === 0 && <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-muted-foreground">لا فواتير.</p>}
           {invoices.length > 0 && (
             <ListToolbar q={q} onQ={setQ} onPage={setPage} view={invView} unit="فاتورة"
               placeholder="ابحث باسمِ مشترٍ أو بريدٍ أو رقمِ فاتورة…" />
           )}
           {invoices.length > 0 && invView.total === 0 && (
-            <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-white/45">لا فاتورة تطابق «{q.trim()}».</p>
+            <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-muted-foreground">لا فاتورة تطابق «{q.trim()}».</p>
           )}
           {invView.rows.map((inv) => (
             <div key={inv.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="font-black">{inv.total} {inv.currency} <span className="mr-2 font-mono text-micro font-normal text-white/40" dir="ltr">{inv.id.slice(0, 8)}…</span></p>
-                  <p className="mt-1 text-xs text-white/55">{inv.order.user.displayName} · {fmtDate(new Date(inv.issuedAt))}</p>
+                  <p className="font-black">{inv.total} {inv.currency} <span className="mr-2 font-mono text-micro font-normal text-muted-foreground" dir="ltr">{inv.id.slice(0, 8)}…</span></p>
+                  <p className="mt-1 text-xs text-muted-foreground">{inv.order.user.displayName} · {fmtDate(new Date(inv.issuedAt))}</p>
                 </div>
                 <span className="rounded-full border border-teal/40 px-3 py-1 text-[11px] font-bold text-teal-light-ink">{INV_STATUS[inv.status] ?? inv.status}</span>
               </div>
@@ -322,9 +322,9 @@ export default function Finance() {
                 </div>
               )}
               {inv.payments.filter((p) => p.status === "succeeded").map((p) => (
-                <div key={p.id} className="mt-2 flex flex-wrap items-center gap-2 rounded-xl border border-white/8 bg-black/20 p-3 text-xs">
+                <div key={p.id} className="mt-2 flex flex-wrap items-center gap-2 rounded-xl border border-white/8 bg-paper/20 p-3 text-xs">
                   <span className="font-bold text-emerald-300">دفعة ناجحة {p.amount} {inv.currency}</span>
-                  <span className="text-white/40">{p.refunds.length} استرداد</span>
+                  <span className="text-muted-foreground">{p.refunds.length} استرداد</span>
                   {canRefund && (<>
                   <input value={refundForm[p.id]?.amount ?? ""} onChange={(e) => setRefundForm({ ...refundForm, [p.id]: { ...refundForm[p.id], amount: e.target.value, reason: refundForm[p.id]?.reason ?? "" } })}
                     placeholder="مبلغ" type="number" className={`${inputCls} w-24`} />
@@ -346,12 +346,12 @@ export default function Finance() {
       {/* الاستردادات */}
       {!loading && tab === "refunds" && (
         <div className="space-y-3">
-          {refunds.length === 0 && <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-white/45">لا طلبات استرداد.</p>}
+          {refunds.length === 0 && <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-muted-foreground">لا طلبات استرداد.</p>}
           {refunds.map((rf) => (
             <div key={rf.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
               <div>
-                <p className="font-black">{rf.amount} <span className="text-xs font-normal text-white/50">— {rf.reason}</span></p>
-                <p className="mt-1 text-[11px] text-white/45">{fmtDateTime(new Date(rf.createdAt))}</p>
+                <p className="font-black">{rf.amount} <span className="text-xs font-normal text-muted-foreground">— {rf.reason}</span></p>
+                <p className="mt-1 text-[11px] text-muted-foreground">{fmtDateTime(new Date(rf.createdAt))}</p>
               </div>
               <div className="flex items-center gap-2">
                 <span className="rounded-full border border-teal/40 px-3 py-1 text-[11px] font-bold text-teal-light-ink">{RF_STATUS[rf.status] ?? rf.status}</span>
@@ -401,10 +401,10 @@ export default function Finance() {
             </button>
             <ul className="mt-4 space-y-2">
               {coupons.map((c) => (
-                <li key={c.id} className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs">
+                <li key={c.id} className="flex items-center gap-3 rounded-xl border border-white/10 bg-paper/20 px-3 py-2 text-xs">
                   <span className="font-mono font-bold text-gold-ink" dir="ltr">{c.code}</span>
-                  <span className="text-white/60">{c.percentOff ? `${c.percentOff}%` : `${c.amountOff} ${c.currency}`}</span>
-                  <span className="text-white/40">{c.usedCount ?? 0}/{c.maxUses ?? "∞"}</span>
+                  <span className="text-muted-foreground">{c.percentOff ? `${c.percentOff}%` : `${c.amountOff} ${c.currency}`}</span>
+                  <span className="text-muted-foreground">{c.usedCount ?? 0}/{c.maxUses ?? "∞"}</span>
                   {!c.active && <span className="rounded-full border border-red-500/40 px-2 py-0.5 text-micro text-red-400">معطل</span>}
                 </li>
               ))}
@@ -432,7 +432,7 @@ export default function Finance() {
               className="mt-3 cursor-pointer rounded-full bg-gold px-5 py-2 text-xs font-black text-on-gold disabled:opacity-40">
               أنشئ الخطة
             </button>
-            <p className="mt-3 flex items-center gap-1.5 text-micro text-white/40">
+            <p className="mt-3 flex items-center gap-1.5 text-micro text-muted-foreground">
               <FileText className="h-3 w-3" /> الخطط الفعالة تظهر للعامة عبر /api/public/subscription-plans
             </p>
           </div>
@@ -447,7 +447,7 @@ export default function Finance() {
           onCancel={() => setBulkConfirm(null)}
           onConfirm={() => { setBulkConfirm(null); void bulkRequests("approve"); }}
         >
-          <p>لكلّ طلبٍ منها: <b className="text-white/85">يُحجَز مقعدٌ في شعبته وتُصدَر فاتورتُه</b>. والمقعدُ المحجوزُ يُنقص السعةَ المعروضةَ فورا.</p>
+          <p>لكلّ طلبٍ منها: <b className="text-foreground">يُحجَز مقعدٌ في شعبته وتُصدَر فاتورتُه</b>. والمقعدُ المحجوزُ يُنقص السعةَ المعروضةَ فورا.</p>
           <p>ولا كوبونَ في الجماعيّ — الكوبونُ قرارٌ لصفٍّ بعينه، وتعميمُه يمنح خصما لمن لم يُقصد.</p>
         </ConfirmAction>
       )}

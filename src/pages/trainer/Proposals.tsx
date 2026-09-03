@@ -185,9 +185,9 @@ export default function TrainerProposals() {
     return (
       <TrainerLayout title="اقتراحات التعديل">
         <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
-          <ServerOff className="h-12 w-12 text-white/20" />
+          <ServerOff className="h-12 w-12 text-muted-foreground/50" />
           <h2 className="mt-4 text-xl font-black">لا يمكن الوصول للبيانات</h2>
-          <p className="mt-2 max-w-md text-sm leading-7 text-white/55">{offline}</p>
+          <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">{offline}</p>
         </div>
       </TrainerLayout>
     );
@@ -204,16 +204,16 @@ export default function TrainerProposals() {
             <p className="flex items-center gap-1.5 text-xs font-black">
               {i === 0 ? <BookOpen className="h-3.5 w-3.5 text-teal-light-ink" aria-hidden="true" />
                 : i === 1 ? <GitPullRequest className="h-3.5 w-3.5 text-gold-ink" aria-hidden="true" />
-                : <Lock className="h-3.5 w-3.5 text-white/50" aria-hidden="true" />}
+                : <Lock className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />}
               {g.titleAr}
             </p>
-            <p className="mt-1.5 text-[11px] leading-6 text-white/65">{g.bodyAr}</p>
+            <p className="mt-1.5 text-[11px] leading-6 text-foreground">{g.bodyAr}</p>
           </div>
         ))}
       </div>
 
       <div className="mb-5 flex items-center justify-between">
-        <p className="text-xs leading-6 text-white/55">
+        <p className="text-xs leading-6 text-muted-foreground">
           تقترح هنا على الدورات المؤهل لها فقط. كل اقتراح يمرّ بمراجعة أكاديمية — لا تعديل مباشرا على المنشور.
         </p>
         <button
@@ -229,18 +229,18 @@ export default function TrainerProposals() {
         <form onSubmit={submit} className="mb-6 space-y-4 rounded-3xl border border-teal/25 bg-teal/[0.04] p-6">
           {/* البند هـ-١: النطاق أول اختيار — والافتراضي شعبتك */}
           <fieldset>
-            <legend className="mb-1.5 text-xs font-bold text-white/60">نطاق الاقتراح *</legend>
+            <legend className="mb-1.5 text-xs font-bold text-muted-foreground">نطاق الاقتراح *</legend>
             <div className="flex flex-wrap gap-2">
               <label className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-2xl border px-4 text-xs ${
-                form.scope === "cohort" ? "border-teal bg-teal-ink/15 font-bold" : "border-white/12 text-white/65"
+                form.scope === "cohort" ? "border-teal bg-teal-ink/15 font-bold" : "border-white/12 text-foreground"
               }`}>
                 <input type="radio" name="tp-scope" checked={form.scope === "cohort"}
                   onChange={() => setForm({ ...form, scope: "cohort" })} className="h-4 w-4 accent-teal" />
                 شعبتي — يُطبَّق على شعبتك وحدها
               </label>
               <label className={`flex min-h-11 items-center gap-2 rounded-2xl border px-4 text-xs ${
-                scopeGate?.allowed === false ? "cursor-not-allowed border-white/10 text-white/35"
-                  : form.scope === "catalog" ? "cursor-pointer border-gold bg-gold/15 font-bold" : "cursor-pointer border-white/12 text-white/65"
+                scopeGate?.allowed === false ? "cursor-not-allowed border-white/10 text-muted-foreground"
+                  : form.scope === "catalog" ? "cursor-pointer border-gold bg-gold/15 font-bold" : "cursor-pointer border-white/12 text-foreground"
               }`}>
                 <input type="radio" name="tp-scope" disabled={scopeGate?.allowed === false}
                   checked={form.scope === "catalog"}
@@ -249,7 +249,7 @@ export default function TrainerProposals() {
               </label>
             </div>
             {scopeGate && (
-              <p className={`mt-2 text-[11px] leading-6 ${scopeGate.allowed ? "text-white/55" : "text-gold-ink"}`}>
+              <p className={`mt-2 text-[11px] leading-6 ${scopeGate.allowed ? "text-muted-foreground" : "text-gold-ink"}`}>
                 {scopeGate.reasonAr}
               </p>
             )}
@@ -257,26 +257,26 @@ export default function TrainerProposals() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label htmlFor="tp-course" className="mb-1.5 block text-xs font-bold text-white/60">الدورة * — من دوراتك المؤهلة</label>
+              <label htmlFor="tp-course" className="mb-1.5 block text-xs font-bold text-muted-foreground">الدورة * — من دوراتك المؤهلة</label>
               <select id="tp-course" required value={form.courseId} onChange={(e) => setForm({ ...form, courseId: e.target.value })}
-                className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white [&>option]:bg-surface">
+                className="w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2.5 text-sm text-foreground [&>option]:bg-surface">
                 <option value="" disabled>اختر الدورة</option>
                 {quals.map((q) => <option key={q.courseId} value={q.courseId}>{q.title} ({q.courseId})</option>)}
               </select>
             </div>
             <div>
-              <label htmlFor="tp-type" className="mb-1.5 block text-xs font-bold text-white/60">نوع التعديل *</label>
+              <label htmlFor="tp-type" className="mb-1.5 block text-xs font-bold text-muted-foreground">نوع التعديل *</label>
               <select id="tp-type" value={form.changeType} onChange={(e) => setForm({ ...form, changeType: e.target.value })}
-                className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white [&>option]:bg-surface">
+                className="w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2.5 text-sm text-foreground [&>option]:bg-surface">
                 {Object.entries(CHANGE_TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
             </div>
           </div>
           {form.scope === "cohort" && (
             <div>
-              <label htmlFor="tp-cohort" className="mb-1.5 block text-xs font-bold text-white/60">الشعبة * — من شعبك التي تدرّبها</label>
+              <label htmlFor="tp-cohort" className="mb-1.5 block text-xs font-bold text-muted-foreground">الشعبة * — من شعبك التي تدرّبها</label>
               <select id="tp-cohort" required value={form.cohortId} onChange={(e) => setForm({ ...form, cohortId: e.target.value })}
-                className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white [&>option]:bg-surface">
+                className="w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2.5 text-sm text-foreground [&>option]:bg-surface">
                 <option value="" disabled>اختر الشعبة</option>
                 {cohorts
                   .filter((c) => !form.courseId || c.cohort.courseId === form.courseId)
@@ -292,21 +292,21 @@ export default function TrainerProposals() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label htmlFor="tp-target" className="mb-1.5 block text-xs font-bold text-white/60">المحور المستهدف (معرفه) — اختياري</label>
+              <label htmlFor="tp-target" className="mb-1.5 block text-xs font-bold text-muted-foreground">المحور المستهدف (معرفه) — اختياري</label>
               <input id="tp-target" dir="ltr" placeholder="C-BIZ-101-M2" value={form.targetKey} onChange={(e) => setForm({ ...form, targetKey: e.target.value })}
-                className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-left font-mono text-sm text-white placeholder:text-white/25 focus:border-teal focus:outline-none" />
+                className="w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2.5 text-left font-mono text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none" />
             </div>
             <div>
-              <label htmlFor="tp-value" className="mb-1.5 block text-xs font-bold text-white/60">القيمة المقترحة *</label>
+              <label htmlFor="tp-value" className="mb-1.5 block text-xs font-bold text-muted-foreground">القيمة المقترحة *</label>
               <input id="tp-value" required value={form.newValue} onChange={(e) => setForm({ ...form, newValue: e.target.value })}
                 placeholder="العنوان الجديد أو النص أو الساعات"
-                className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white placeholder:text-white/25 focus:border-teal focus:outline-none" />
+                className="w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none" />
             </div>
           </div>
           <div>
-            <label htmlFor="tp-reason" className="mb-1.5 block text-xs font-bold text-white/60">سبب التعديل * — لماذا يخدم المتعلم؟</label>
+            <label htmlFor="tp-reason" className="mb-1.5 block text-xs font-bold text-muted-foreground">سبب التعديل * — لماذا يخدم المتعلم؟</label>
             <textarea id="tp-reason" required rows={2} value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })}
-              className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white placeholder:text-white/25 focus:border-teal focus:outline-none" />
+              className="w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none" />
           </div>
           <button type="submit" disabled={busy || form.reason.trim().length < 10 || !form.courseId || !form.newValue.trim()}
             className="cursor-pointer rounded-full bg-gold px-6 py-2.5 text-xs font-black text-on-gold transition hover:bg-gold/90 disabled:opacity-40">
@@ -317,7 +317,7 @@ export default function TrainerProposals() {
 
       {quals.length > 0 && (
         <section className="mb-6 rounded-3xl border border-white/10 bg-white/[0.02] p-5">
-          <h2 className="mb-3 text-sm font-black text-white/80">مخططات دوراتك المؤهلة — اطلع على البنية قبل أن تقترح</h2>
+          <h2 className="mb-3 text-sm font-black text-foreground">مخططات دوراتك المؤهلة — اطلع على البنية قبل أن تقترح</h2>
           <div className="flex flex-wrap gap-2">
             {quals.map((q) => (
               <button key={q.courseId} onClick={() => void viewBlueprint(q.courseId)} disabled={bpBusy === q.courseId}
@@ -335,33 +335,33 @@ export default function TrainerProposals() {
         <section className="mb-6 rounded-3xl border border-teal/25 bg-teal/[0.04] p-6">
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
-              <h2 className="text-lg font-black text-white">{bp.versions[0].titleAr}</h2>
-              <p className="mt-1 text-xs text-white/55">
+              <h2 className="text-lg font-black text-foreground">{bp.versions[0].titleAr}</h2>
+              <p className="mt-1 text-xs text-muted-foreground">
                 <span dir="ltr">{bp.id}</span> · {bp.versions[0].totalHours} ساعة
                 {bp.versions[0].weeklyHours ? ` (${bp.versions[0].weeklyHours} أسبوعيا)` : ""}
                 {bp.versions[0].levelAr ? ` · المستوى: ${bp.versions[0].levelAr}` : ""} · إصدار {bp.versions[0].version}
               </p>
             </div>
             <button onClick={() => setBp(null)} aria-label="إغلاق المخطط"
-              className="cursor-pointer rounded-full border border-white/15 p-2 text-white/50 transition hover:text-white">
+              className="cursor-pointer rounded-full border border-white/15 p-2 text-muted-foreground transition hover:text-foreground">
               <X className="h-4 w-4" />
             </button>
           </div>
-          {bp.versions[0].descriptionAr && <p className="mb-4 text-xs leading-6 text-white/65">{bp.versions[0].descriptionAr}</p>}
+          {bp.versions[0].descriptionAr && <p className="mb-4 text-xs leading-6 text-foreground">{bp.versions[0].descriptionAr}</p>}
 
           <div className="grid gap-4 lg:grid-cols-2">
             {bp.versions[0].objectives.length > 0 && (
-              <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+              <div className="rounded-2xl border border-white/10 bg-paper/20 p-4">
                 <h3 className="mb-2 text-xs font-black text-teal-light-ink">الأهداف التعليمية</h3>
-                <ol className="list-decimal space-y-1 pr-4 text-xs leading-6 text-white/70">
+                <ol className="list-decimal space-y-1 pr-4 text-xs leading-6 text-foreground">
                   {[...bp.versions[0].objectives].sort((a, b) => a.sequence - b.sequence).map((o, i) => <li key={i}>{o.textAr}</li>)}
                 </ol>
               </div>
             )}
             {bp.versions[0].outcomes.length > 0 && (
-              <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+              <div className="rounded-2xl border border-white/10 bg-paper/20 p-4">
                 <h3 className="mb-2 text-xs font-black text-teal-light-ink">المخرجات</h3>
-                <ol className="list-decimal space-y-1 pr-4 text-xs leading-6 text-white/70">
+                <ol className="list-decimal space-y-1 pr-4 text-xs leading-6 text-foreground">
                   {[...bp.versions[0].outcomes].sort((a, b) => a.sequence - b.sequence).map((o, i) => <li key={i}>{o.textAr}</li>)}
                 </ol>
               </div>
@@ -369,7 +369,7 @@ export default function TrainerProposals() {
           </div>
 
           {bp.modules.length > 0 && (
-            <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-4">
+            <div className="mt-4 rounded-2xl border border-white/10 bg-paper/20 p-4">
               <h3 className="mb-2 text-xs font-black text-teal-light-ink">المحاور</h3>
               <div className="space-y-2">
                 {[...bp.modules]
@@ -377,10 +377,10 @@ export default function TrainerProposals() {
                   .map((m) => m.versions[0] && (
                     <div key={m.id} className="flex items-start justify-between gap-3 rounded-xl bg-white/[0.03] px-3 py-2">
                       <div>
-                        <p className="text-xs font-bold text-white/85">{m.versions[0].sequence}. {m.versions[0].titleAr}</p>
-                        {m.versions[0].outcomeAr && <p className="mt-0.5 text-[11px] text-white/50">{m.versions[0].outcomeAr}</p>}
+                        <p className="text-xs font-bold text-foreground">{m.versions[0].sequence}. {m.versions[0].titleAr}</p>
+                        {m.versions[0].outcomeAr && <p className="mt-0.5 text-[11px] text-muted-foreground">{m.versions[0].outcomeAr}</p>}
                       </div>
-                      <span className="shrink-0 text-[11px] text-white/45">{m.versions[0].hours} س · <span dir="ltr">{m.id}</span></span>
+                      <span className="shrink-0 text-[11px] text-muted-foreground">{m.versions[0].hours} س · <span dir="ltr">{m.id}</span></span>
                     </div>
                   ))}
               </div>
@@ -390,18 +390,18 @@ export default function TrainerProposals() {
           {bp.versions[0].project && (
             <div className="mt-4 rounded-2xl border border-gold/25 bg-gold/5 p-4">
               <h3 className="mb-1 text-xs font-black text-gold-ink">المشروع التطبيقي</h3>
-              <p className="text-xs leading-6 text-white/70">{bp.versions[0].project.descriptionAr}</p>
+              <p className="text-xs leading-6 text-foreground">{bp.versions[0].project.descriptionAr}</p>
             </div>
           )}
 
           <div className="mt-4 grid gap-4 lg:grid-cols-2">
             {bp.versions[0].assessments.length > 0 && (
-              <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+              <div className="rounded-2xl border border-white/10 bg-paper/20 p-4">
                 <h3 className="mb-2 text-xs font-black text-teal-light-ink">التقييمات</h3>
-                <ul className="space-y-1.5 text-xs leading-6 text-white/70">
+                <ul className="space-y-1.5 text-xs leading-6 text-foreground">
                   {bp.versions[0].assessments.map((a, i) => (
                     <li key={i} className="flex gap-2">
-                      <span className="shrink-0 rounded-full border border-white/15 px-2 py-0.5 text-micro text-white/55">
+                      <span className="shrink-0 rounded-full border border-white/15 px-2 py-0.5 text-micro text-muted-foreground">
                         {ASSESSMENT_KIND_LABELS[a.kind] ?? a.kind}
                       </span>
                       <span>{a.specAr ?? "—"}</span>
@@ -411,11 +411,11 @@ export default function TrainerProposals() {
               </div>
             )}
             {bp.skillLinks.length > 0 && (
-              <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+              <div className="rounded-2xl border border-white/10 bg-paper/20 p-4">
                 <h3 className="mb-2 text-xs font-black text-teal-light-ink">المهارات المستهدفة</h3>
                 <div className="flex flex-wrap gap-1.5">
                   {bp.skillLinks.map((s) => (
-                    <span key={s.skillId} className="rounded-full border border-white/15 bg-white/[0.04] px-2.5 py-1 text-micro text-white/70">
+                    <span key={s.skillId} className="rounded-full border border-white/15 bg-white/[0.04] px-2.5 py-1 text-micro text-foreground">
                       <span dir="ltr">{s.skillId}</span> · مستوى {s.targetLevel}
                     </span>
                   ))}
@@ -427,12 +427,12 @@ export default function TrainerProposals() {
       )}
 
       {loading ? (
-        <div className="grid place-items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-white/30" /></div>
+        <div className="grid place-items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" /></div>
       ) : mine.length === 0 ? (
         <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center">
-          <GitPullRequest className="h-12 w-12 text-white/20" />
+          <GitPullRequest className="h-12 w-12 text-muted-foreground/50" />
           <h2 className="mt-4 text-xl font-black">لا اقتراحات بعد</h2>
-          <p className="mt-2 max-w-md text-sm leading-7 text-white/55">حين ترى تحسينا يخدم طلابك في دورة مؤهل لها — اقترحه هنا وسيراجعه المسؤول الأكاديمي.</p>
+          <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">حين ترى تحسينا يخدم طلابك في دورة مؤهل لها — اقترحه هنا وسيراجعه المسؤول الأكاديمي.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -440,9 +440,9 @@ export default function TrainerProposals() {
             <article key={r.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="font-black">{r.course.versions[0]?.titleAr ?? r.courseId} <span className="text-micro text-white/50" dir="ltr">{r.courseId}</span></p>
-                  <p className="mt-1 text-xs text-white/55">{r.reason}</p>
-                  <p className="mt-1 text-[11px] text-white/50">
+                  <p className="font-black">{r.course.versions[0]?.titleAr ?? r.courseId} <span className="text-micro text-muted-foreground" dir="ltr">{r.courseId}</span></p>
+                  <p className="mt-1 text-xs text-muted-foreground">{r.reason}</p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
                     {r.items.map((i) => CHANGE_TYPE_LABELS[i.changeType] ?? i.changeType).join(" · ")} — نطاق: {r.scope === "cohort" ? "شعبة" : "الكتالوج"}
                   </p>
                   {r.reviewerComment && (
@@ -455,7 +455,7 @@ export default function TrainerProposals() {
                   </span>
                   {["draft", "submitted", "under_review", "changes_requested"].includes(r.status) && (
                     <button onClick={() => void withdraw(r.id)} title="سحب الاقتراح"
-                      className="cursor-pointer rounded-full border border-white/15 p-2 text-white/50 transition hover:border-red-400/40 hover:text-red-300">
+                      className="cursor-pointer rounded-full border border-white/15 p-2 text-muted-foreground transition hover:border-red-400/40 hover:text-red-300">
                       <Undo2 className="h-3.5 w-3.5" />
                     </button>
                   )}

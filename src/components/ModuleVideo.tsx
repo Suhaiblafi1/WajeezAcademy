@@ -57,7 +57,7 @@ export default function ModuleVideo({
         </a>
       </div>
 
-      <div className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-black/40">
+      <div className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-paper/40">
         <iframe
           key={at}
           src={embedAt(video, at)}

@@ -7,10 +7,10 @@ import ThemeToggle from "@/components/ThemeToggle";
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div dir="rtl" className="min-h-screen bg-paper text-white">
+    <div dir="rtl" className="min-h-screen bg-paper text-foreground">
       <header className="sticky top-0 z-40 border-b border-white/10 bg-paper/85 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-3xl items-center justify-between px-5">
-          <Link to="/" className="flex items-center gap-2 text-foreground transition hover:text-white">
+          <Link to="/" className="flex items-center gap-2 text-foreground transition hover:text-foreground">
             <ArrowRight className="h-5 w-5" />
             <span className="text-sm font-medium">الرئيسية</span>
           </Link>

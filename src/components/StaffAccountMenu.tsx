@@ -59,7 +59,7 @@ export default function StaffAccountMenu({ user }: { user: SessionUser | null })
         aria-haspopup="menu"
         aria-label="قائمة الحساب"
         className={`flex h-10 min-w-0 cursor-pointer items-center gap-2 rounded-full border px-2.5 text-xs font-bold transition ${
-          open ? 'border-gold/50 bg-gold/10 text-gold-ink' : 'border-white/12 text-foreground hover:border-white/30 hover:text-white'
+          open ? 'border-gold/50 bg-gold/10 text-gold-ink' : 'border-white/12 text-foreground hover:border-white/30 hover:text-foreground'
         }`}
       >
         <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-gold/20 text-[11px] font-black text-gold-ink">
@@ -98,7 +98,7 @@ export default function StaffAccountMenu({ user }: { user: SessionUser | null })
               <Link
                 to="/student/account"
                 onClick={() => setOpen(false)}
-                className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs font-bold text-foreground transition hover:bg-white/[0.04] hover:text-white"
+                className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs font-bold text-foreground transition hover:bg-white/[0.04] hover:text-foreground"
               >
                 <UserCog className="h-4 w-4" />
                 حسابي — الاسم وكلمة المرور والجلسات

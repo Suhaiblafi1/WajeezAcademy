@@ -35,7 +35,7 @@ const TONE: Record<Level, { chip: string; box: string; icon: typeof AlertTriangl
   broken: { chip: "bg-red-500/20 text-red-200", box: "border-red-400/35", icon: AlertTriangle, labelAr: "معطَّل" },
   attention: { chip: "bg-gold/20 text-gold-ink", box: "border-gold/30", icon: Clock, labelAr: "يحتاج نظرة" },
   ok: { chip: "bg-teal/20 text-teal-light-ink", box: "border-white/10", icon: CheckCircle2, labelAr: "سليم" },
-  unknown: { chip: "bg-white/10 text-white/60", box: "border-white/10", icon: CircleHelp, labelAr: "لم يُقرأ" },
+  unknown: { chip: "bg-white/10 text-muted-foreground", box: "border-white/10", icon: CircleHelp, labelAr: "لم يُقرأ" },
 };
 
 const HEADLINE: Record<Level, string> = {
@@ -73,13 +73,13 @@ export default function SystemHealth() {
   return (
     <AdminLayout title="صحّة النظام">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs leading-6 text-white/55">
+        <p className="text-xs leading-6 text-muted-foreground">
           محسوبةٌ من حالة القاعدة عند فتح الصفحة — لا رقمَ محفوظا هنا.
           {data && <span className="mr-2 text-muted-foreground">آخرُ قراءة: {fmtDateTime(new Date(data.checkedAt))}</span>}
         </p>
         <button
           type="button" onClick={() => void load()} disabled={busy}
-          className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-white/60 transition hover:border-white/40 disabled:opacity-40"
+          className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-muted-foreground transition hover:border-white/40 disabled:opacity-40"
         >
           {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />} اقرأ الآن
         </button>
@@ -91,7 +91,7 @@ export default function SystemHealth() {
 
       {data === null && !error && (
         <div className="grid place-items-center rounded-3xl border border-white/10 py-20">
-          <Loader2 className="h-6 w-6 animate-spin text-white/35" aria-label="تُقرأ الحالة" />
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-label="تُقرأ الحالة" />
         </div>
       )}
 
@@ -106,13 +106,13 @@ export default function SystemHealth() {
                 {notOk} بندا
               </span>
             )}
-            <Activity className="mr-auto h-4 w-4 text-white/20" aria-hidden="true" />
+            <Activity className="mr-auto h-4 w-4 text-muted-foreground/50" aria-hidden="true" />
           </div>
 
           <div className="space-y-8">
             {data.groups.map((g) => (
               <section key={g.titleAr}>
-                <h2 className="mb-3 text-[11px] font-black tracking-wide text-white/55">{g.titleAr}</h2>
+                <h2 className="mb-3 text-[11px] font-black tracking-wide text-muted-foreground">{g.titleAr}</h2>
                 <ul className="grid gap-3 lg:grid-cols-2">
                   {g.items.map((item) => {
                     const t = TONE[item.level];
@@ -120,15 +120,15 @@ export default function SystemHealth() {
                     return (
                       <li key={item.key} className={`flex h-full flex-col rounded-2xl border bg-white/[0.02] p-4 ${t.box}`}>
                         <div className="flex items-start justify-between gap-3">
-                          <p className="flex items-center gap-2 text-xs font-black text-white">
+                          <p className="flex items-center gap-2 text-xs font-black text-foreground">
                             <ItemIcon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> {item.titleAr}
                           </p>
                           <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-micro font-black ${t.chip}`}>{t.labelAr}</span>
                         </div>
-                        <p className="mt-2 text-[13px] font-bold leading-6 text-white/85">{item.valueAr}</p>
-                        <p className="mt-1.5 text-[11px] leading-5 text-white/55">{item.meaningAr}</p>
+                        <p className="mt-2 text-[13px] font-bold leading-6 text-foreground">{item.valueAr}</p>
+                        <p className="mt-1.5 text-[11px] leading-5 text-muted-foreground">{item.meaningAr}</p>
                         {item.actionAr && (
-                          <p className="mt-2 rounded-xl border border-white/8 bg-black/20 px-3 py-2 text-[11px] leading-5 text-white/70">
+                          <p className="mt-2 rounded-xl border border-white/8 bg-paper/20 px-3 py-2 text-[11px] leading-5 text-foreground">
                             {item.actionAr}
                           </p>
                         )}

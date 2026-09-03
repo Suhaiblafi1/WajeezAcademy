@@ -37,7 +37,7 @@ export function RatingsPanel({ titleAr, view }: { titleAr: string; view: Ratings
       <div className="mt-4 flex items-center gap-3">
         <Star className="h-7 w-7 fill-gold text-gold" />
         <span className="text-3xl font-black">{view.avg?.toFixed(1)}</span>
-        <span className="text-xs text-white/40">من ٥</span>
+        <span className="text-xs text-muted-foreground">من ٥</span>
       </div>
 
       <div className="mt-5 space-y-1.5">
@@ -47,7 +47,7 @@ export function RatingsPanel({ titleAr, view }: { titleAr: string; view: Ratings
             <span className="h-2 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
               <span className="block h-full rounded-full bg-teal" style={{ width: `${(d.count / max) * 100}%` }} />
             </span>
-            <span className="w-6 shrink-0 text-left text-white/40">{d.count}</span>
+            <span className="w-6 shrink-0 text-left text-muted-foreground">{d.count}</span>
           </div>
         ))}
       </div>
@@ -58,7 +58,7 @@ export function RatingsPanel({ titleAr, view }: { titleAr: string; view: Ratings
             <MessageSquareQuote className="h-3.5 w-3.5" /> التعليقات — بلا ترتيب زمنيّ ولا صاحب
           </p>
           {view.comments.map((c, i) => (
-            <blockquote key={i} className="rounded-xl border border-white/[0.07] bg-black/20 px-4 py-3">
+            <blockquote key={i} className="rounded-xl border border-white/[0.07] bg-paper/20 px-4 py-3">
               <span className="mb-1 block text-micro font-bold text-gold">{c.score} ★</span>
               <p className="text-[12px] leading-6 text-foreground">{c.commentAr}</p>
             </blockquote>

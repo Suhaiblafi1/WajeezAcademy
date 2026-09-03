@@ -40,7 +40,7 @@ function Stars({ value, onPick, disabled }: { value: number; onPick: (n: number)
           onClick={() => onPick(n)}
           className="cursor-pointer rounded p-0.5 transition disabled:cursor-not-allowed"
         >
-          <Star className={`h-6 w-6 ${n <= value ? "fill-gold text-gold" : "text-white/25"}`} />
+          <Star className={`h-6 w-6 ${n <= value ? "fill-gold text-gold" : "text-muted-foreground/50"}`} />
         </button>
       ))}
     </div>
@@ -76,13 +76,13 @@ function RatingCard({ item, onSaved }: { item: Rateable; onSaved: () => void }) 
     <article className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <span className="rounded-full border border-white/10 px-2 py-0.5 text-micro font-bold text-white/45">
+          <span className="rounded-full border border-white/10 px-2 py-0.5 text-micro font-bold text-muted-foreground">
             {KIND_AR[item.subjectType]}
           </span>
           <h3 className="mt-1.5 text-sm font-black">{item.nameAr}</h3>
         </div>
         {item.myScore != null && (
-          <span className="text-[11px] text-white/40">قيّمتَ سابقا — يمكنك التعديل</span>
+          <span className="text-[11px] text-muted-foreground">قيّمتَ سابقا — يمكنك التعديل</span>
         )}
       </div>
 
@@ -96,7 +96,7 @@ function RatingCard({ item, onSaved }: { item: Rateable; onSaved: () => void }) 
       </div>
 
       <label className="mt-4 block">
-        <span className="mb-1.5 block text-[11px] font-bold text-white/50">
+        <span className="mb-1.5 block text-[11px] font-bold text-muted-foreground">
           تعليق اختياري — لا يُنشر علنا إلا بعد مراجعة الإدارة
         </span>
         <textarea
@@ -105,7 +105,7 @@ function RatingCard({ item, onSaved }: { item: Rateable; onSaved: () => void }) 
           rows={3}
           maxLength={1500}
           placeholder="ما الذي نفعك؟ وما الذي كان يمكن أن يكون أفضل؟"
-          className="w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs leading-6 outline-none focus:border-teal/60"
+          className="w-full rounded-xl border border-white/10 bg-paper/20 px-3 py-2 text-xs leading-6 outline-none focus:border-teal/60"
         />
       </label>
 
@@ -149,8 +149,8 @@ export default function RateMyLearning() {
       {/* حدود السرّية مكتوبة قبل النموذج لا بعده — تُقرأ قبل أن يُكتب شيء */}
       <div className="mb-6 flex items-start gap-3 rounded-2xl border border-teal/25 bg-teal/[0.05] p-4">
         <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-teal-light-ink" />
-        <p className="text-[12px] leading-6 text-white/65">
-          <span className="font-black text-white/85">اسمك لا يصل المدرّب ولا المستشار.</span>{" "}
+        <p className="text-[12px] leading-6 text-foreground">
+          <span className="font-black text-foreground">اسمك لا يصل المدرّب ولا المستشار.</span>{" "}
           ولا يرى أيٌّ منهما تقييما حتى تبلغ التقييمات الواردة عنه ثلاثة — في العدد
           القليل يُستدلّ على أصحاب الآراء مهما حُذفت الأسماء. والإدارة ترى التعليقات
           فور وصولها، مجهولةَ صاحبها كذلك، لأن عليها أن تتصرّف إن كان في الأمر ما يستدعي.
@@ -159,8 +159,8 @@ export default function RateMyLearning() {
 
       {offline && (
         <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center">
-          <ServerOff className="h-10 w-10 text-white/20" />
-          <p className="mt-3 max-w-md text-sm leading-7 text-white/55">{offline}</p>
+          <ServerOff className="h-10 w-10 text-muted-foreground/50" />
+          <p className="mt-3 max-w-md text-sm leading-7 text-muted-foreground">{offline}</p>
         </div>
       )}
 

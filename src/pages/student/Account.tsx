@@ -56,8 +56,8 @@ interface ServerProfile {
 }
 
 const inputCls =
-  "w-full rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:border-teal focus:outline-none";
-const labelCls = "mb-1.5 block text-xs font-bold text-white/60";
+  "w-full rounded-xl border border-white/15 bg-paper/30 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none";
+const labelCls = "mb-1.5 block text-xs font-bold text-muted-foreground";
 
 /* الخطأُ يُقال عند الحقل الذي رُفض، لا في ذيل الصفحة.
 
@@ -81,7 +81,7 @@ function Field({ label, hint, error, name, children }: {
         <span className={labelCls}>{label}</span>
         {children}
       </label>
-      {hint && <p className="mt-1 text-[11px] text-white/50">{hint}</p>}
+      {hint && <p className="mt-1 text-[11px] text-muted-foreground">{hint}</p>}
       {name && error && (
         <p id={`${name}-error`} role="alert" className="mt-1.5 text-[11px] font-bold leading-5 text-red-300">{error}</p>
       )}
@@ -323,13 +323,13 @@ export default function StudentAccount() {
           {form.avatarUrl ? (
             <img src={form.avatarUrl} alt="صورتك الشخصية" className="h-16 w-16 rounded-2xl border border-white/10 object-cover" />
           ) : (
-            <span className="grid h-16 w-16 place-items-center rounded-2xl bg-gradient-to-br from-teal to-teal-deep text-2xl font-black text-white">
+            <span className="grid h-16 w-16 place-items-center rounded-2xl bg-gradient-to-br from-teal to-teal-deep text-2xl font-black text-foreground">
               {(form.displayName || "م").charAt(0)}
             </span>
           )}
           <div className="min-w-0 flex-1">
             <p className="truncate text-lg font-black">{form.displayName || "—"}</p>
-            <p className="mt-0.5 flex items-center gap-1.5 text-xs text-white/50" dir="ltr">
+            <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground" dir="ltr">
               <Mail className="h-3.5 w-3.5" /> {email || "—"}
             </p>
           </div>
@@ -452,7 +452,7 @@ export default function StudentAccount() {
               {form.interests.map((i) => (
                 <span key={i} className="inline-flex items-center gap-1.5 rounded-full border border-teal/40 bg-teal/10 px-2.5 py-1 text-[11px] font-bold text-teal-light-ink">
                   {i}
-                  <button type="button" aria-label={`أزل ${i}`} onClick={() => set("interests", form.interests.filter((x) => x !== i))} className="grid h-8 w-8 shrink-0 cursor-pointer place-items-center rounded-full text-white/50 hover:bg-white/10 hover:text-white">
+                  <button type="button" aria-label={`أزل ${i}`} onClick={() => set("interests", form.interests.filter((x) => x !== i))} className="grid h-8 w-8 shrink-0 cursor-pointer place-items-center rounded-full text-muted-foreground hover:bg-white/10 hover:text-foreground">
                     <X className="h-3 w-3" />
                   </button>
                 </span>
@@ -493,7 +493,7 @@ export default function StudentAccount() {
             <Link key={x.t} to={x.to} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 transition hover:border-teal/50">
               <x.icon className="h-4 w-4 text-teal-light-ink" />
               <p className="mt-2 text-sm font-black">{x.t}</p>
-              <p className="mt-1 text-[11px] leading-relaxed text-white/45">{x.d}</p>
+              <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{x.d}</p>
             </Link>
           ))}
         </div>
@@ -502,7 +502,7 @@ export default function StudentAccount() {
       {/* بيانات الفوترة والطلبات */}
       <section className="mt-6 rounded-3xl border border-white/10 bg-white/[0.02] p-6 md:p-8">
         <h2 className="flex items-center gap-2 text-base font-black"><Lock className="h-4 w-4 text-teal-light-ink" /> الفوترة والطلبات</h2>
-        <p className="mt-2 text-sm leading-7 text-white/55">
+        <p className="mt-2 text-sm leading-7 text-muted-foreground">
           فواتيرك وطلباتك ودفعاتك — بأرقامها المرجعية وسجل مدفوعاتها — في صفحة{" "}
           <Link to="/student/billing" className="font-bold text-teal-light-ink underline-offset-4 hover:underline">فواتيري</Link>.
           لأي طلب استرداد أو مراجعة فاتورة: <Link to="/contact" className="font-bold text-teal-light-ink underline-offset-4 hover:underline">صفحة التواصل</Link> — اختر «طلب استرداد».
@@ -517,13 +517,13 @@ export default function StudentAccount() {
           <div className="mt-5 flex flex-wrap items-center justify-between gap-4">
             <div className="min-w-0 flex-1">
               <p className="text-sm font-bold">الخروج من كل الأجهزة</p>
-              <p className="mt-1 text-xs leading-6 text-white/50">
+              <p className="mt-1 text-xs leading-6 text-muted-foreground">
                 سجّلت دخولك على جهاز آخر؟ أنهِ كل الجلسات دفعة واحدة — ستحتاج الدخول من جديد على هذا الجهاز أيضا.
               </p>
             </div>
             <button
               type="button" onClick={logoutAll} disabled={!!secBusy}
-              className="flex shrink-0 cursor-pointer items-center gap-2 rounded-full border border-white/20 px-5 py-2.5 text-xs font-bold text-white/80 transition hover:border-teal/60 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex shrink-0 cursor-pointer items-center gap-2 rounded-full border border-white/20 px-5 py-2.5 text-xs font-bold text-foreground transition hover:border-teal/60 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
             >
               {secBusy === "logoutAll" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LogOut className="h-3.5 w-3.5" />}
               إنهاء كل الجلسات
@@ -534,7 +534,7 @@ export default function StudentAccount() {
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-bold text-red-300">تعطيل الحساب</p>
-                <p className="mt-1 text-xs leading-6 text-white/50">
+                <p className="mt-1 text-xs leading-6 text-muted-foreground">
                   يوقف حسابك فورا ويبطل جلساتك — بياناتك وتقدمك محفوظة، وإعادة التفعيل عبر التواصل معنا.
                 </p>
               </div>
@@ -557,7 +557,7 @@ export default function StudentAccount() {
                   </button>
                   <button
                     type="button" onClick={() => setConfirmingDeactivate(false)} disabled={!!secBusy}
-                    className="cursor-pointer rounded-full border border-white/20 px-4 py-2 text-xs font-bold text-white/70 transition hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                    className="cursor-pointer rounded-full border border-white/20 px-4 py-2 text-xs font-bold text-foreground transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     تراجع
                   </button>

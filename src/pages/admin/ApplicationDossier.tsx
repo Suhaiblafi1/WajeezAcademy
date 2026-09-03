@@ -76,10 +76,10 @@ const years = (v?: string | null) => (v ? YEARS_AR[v] ?? v : '—')
 function Row({ icon: Icon, label, children }: { icon: typeof UserRound; label: string; children: ReactNode }) {
   return (
     <div className="flex items-start gap-2.5">
-      <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-white/30" />
+      <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />
       <div className="min-w-0">
-        <p className="text-micro font-bold text-white/40">{label}</p>
-        <div className="mt-0.5 text-xs leading-6 text-white/80">{children}</div>
+        <p className="text-micro font-bold text-muted-foreground">{label}</p>
+        <div className="mt-0.5 text-xs leading-6 text-foreground">{children}</div>
       </div>
     </div>
   )
@@ -87,7 +87,7 @@ function Row({ icon: Icon, label, children }: { icon: typeof UserRound; label: s
 
 function Block({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="rounded-2xl border border-white/10 bg-black/20 p-4">
+    <section className="rounded-2xl border border-white/10 bg-paper/20 p-4">
       <h4 className="mb-3 text-[11px] font-black text-teal-light-ink">{title}</h4>
       <div className="space-y-3">{children}</div>
     </section>
@@ -121,10 +121,10 @@ export default function ApplicationDossier({ a }: { a: Dossier }) {
             <>
               <span className="font-bold text-teal-light-ink">{contactChannelLabel(a.contactChannel)}</span>
               {a.contactChannel === 'other_email' && a.contactAltEmail && (
-                <span dir="ltr" className="block text-right text-white/60">{a.contactAltEmail}</span>
+                <span dir="ltr" className="block text-right text-muted-foreground">{a.contactAltEmail}</span>
               )}
               {(a.contactChannel === 'phone' || a.contactChannel === 'whatsapp') && phone && (
-                <span dir="ltr" className="block text-right text-white/60">{phone}</span>
+                <span dir="ltr" className="block text-right text-muted-foreground">{phone}</span>
               )}
             </>
           ) : '— لم يختر (طلبٌ قديم)'}
@@ -163,7 +163,7 @@ export default function ApplicationDossier({ a }: { a: Dossier }) {
       {/* أهمُّ ما في الطلب: على هذا يُسنَد إلى شعبة بعد الاعتماد */}
       <Block title="ما يستطيع تدريسه — وعليه يُسنَد بعد الاعتماد">
         {teachable.length === 0 && !a.teachableOther ? (
-          <p className="text-xs text-white/40">لم يختر شيئا من الكتالوج ولم يكتب بديلا.</p>
+          <p className="text-xs text-muted-foreground">لم يختر شيئا من الكتالوج ولم يكتب بديلا.</p>
         ) : (
           <>
             {teachable.length > 0 && (
@@ -195,9 +195,9 @@ export default function ApplicationDossier({ a }: { a: Dossier }) {
         <Row icon={Clock} label="توفّره">
           {av?.hoursPerWeek ? `${av.hoursPerWeek} ساعة أسبوعيا` : '— لم يحدّد ساعاته'}
           {av?.startFrom ? ` · يبدأ من ${av.startFrom}` : ''}
-          {has(av?.days) && <span className="mt-1 block text-white/60">{av!.days!.join(' · ')}</span>}
+          {has(av?.days) && <span className="mt-1 block text-muted-foreground">{av!.days!.join(' · ')}</span>}
           {has(av?.periods) && (
-            <span className="mt-0.5 block text-white/50">
+            <span className="mt-0.5 block text-muted-foreground">
               {av!.periods!.map((p) => PERIOD_AR[p] ?? p).join(' و')}
             </span>
           )}

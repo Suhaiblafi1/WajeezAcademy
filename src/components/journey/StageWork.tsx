@@ -257,7 +257,7 @@ export default function StageWork({
                         <ExternalLink className="mt-1 h-3 w-3 shrink-0" />
                         <span>
                           <span className="font-bold text-foreground">{r.name_ar}</span>
-                          <span className="text-white/40"> · {r.organization}</span>
+                          <span className="text-muted-foreground"> · {r.organization}</span>
                         </span>
                       </a>
                     </li>
@@ -337,7 +337,7 @@ function Lessons({
                     <Play className="h-2.5 w-2.5" /> ابدأ من هنا
                   </span>
                 ) : (
-                  <span className="flex shrink-0 items-center gap-1 text-micro text-white/35">
+                  <span className="flex shrink-0 items-center gap-1 text-micro text-muted-foreground">
                     <Circle className="h-2.5 w-2.5" /> لم تبدأ
                   </span>
                 )}
@@ -361,7 +361,7 @@ function Lessons({
           );
         })}
       </ol>
-      <p className="mt-3 text-micro leading-5 text-white/40">
+      <p className="mt-3 text-micro leading-5 text-muted-foreground">
         الدرسُ يكتمل بدليل — تسليمٌ يقبله مدرّبك، أو تقييمٌ تجتازه، أو حضورُ جلسته. لا يُعلَّم مكتملا بضغطة.
       </p>
       {project && (
@@ -387,7 +387,7 @@ function Sessions({ detail }: { detail: EnrollmentDetail }) {
       {detail.cohort.sessions.map((s) => {
         const mine = detail.attendance.find((a) => a.sessionId === s.id);
         return (
-          <div key={s.id} className="rounded-2xl border border-white/8 bg-black/20 p-3.5">
+          <div key={s.id} className="rounded-2xl border border-white/8 bg-paper/20 p-3.5">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
               <div className="min-w-0 flex-1">
                 <p className="text-[12.5px] font-bold leading-snug">{s.title}</p>
@@ -400,7 +400,7 @@ function Sessions({ detail }: { detail: EnrollmentDetail }) {
               )}
               <a
                 href={`/api/calendar/cohort-sessions/${s.id}.ics`}
-                className="flex min-h-9 shrink-0 items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-micro font-bold text-muted-foreground transition hover:border-white/35 hover:text-white"
+                className="flex min-h-9 shrink-0 items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-micro font-bold text-muted-foreground transition hover:border-white/35 hover:text-foreground"
               >
                 <CalendarPlus className="h-3 w-3" /> أضِفها لتقويمك
               </a>
@@ -441,7 +441,7 @@ function Assessments({ detail, handlers }: { detail: EnrollmentDetail; handlers:
         const meta = mine ? SUBMISSION_STATUS[mine.status] : null;
         const canSubmit = !mine || mine.status === "resubmit_requested";
         return (
-          <div key={a.id} className="rounded-2xl border border-white/8 bg-black/20 p-3.5">
+          <div key={a.id} className="rounded-2xl border border-white/8 bg-paper/20 p-3.5">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
               <div className="min-w-0 flex-1">
                 <p className="text-[12.5px] font-bold leading-snug">{a.title}</p>
@@ -468,7 +468,7 @@ function Assessments({ detail, handlers }: { detail: EnrollmentDetail; handlers:
                   onChange={(e) => setAnswers((prev) => ({ ...prev, [a.id]: e.target.value }))}
                   placeholder={mine?.status === "resubmit_requested" ? "أعد التسليم بعد معالجة الملاحظات…" : "اكتب إجابتك هنا…"}
                   rows={3}
-                  className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-[13px] text-white placeholder:text-white/25 focus:border-teal focus:outline-none"
+                  className="w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2.5 text-[13px] text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none"
                 />
                 <button
                   disabled={busy === a.id || !(answers[a.id] ?? "").trim()}
@@ -512,7 +512,7 @@ function QuizAttemptForm({
             value={resp[it.id] ?? ""}
             onChange={(e) => setResp((prev) => ({ ...prev, [it.id]: e.target.value }))}
             placeholder="إجابتك…"
-            className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-[13px] text-white placeholder:text-white/25 focus:border-teal focus:outline-none"
+            className="w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none"
           />
         </div>
       ))}

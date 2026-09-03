@@ -108,7 +108,7 @@ export default function ModuleStudy() {
   }, [pos, moduleId, steps.length]);
 
   if (!checked) {
-    return <PortalLayout title="الوحدة"><div className="grid place-items-center py-24"><Loader2 className="h-7 w-7 animate-spin text-white/40" /></div></PortalLayout>;
+    return <PortalLayout title="الوحدة"><div className="grid place-items-center py-24"><Loader2 className="h-7 w-7 animate-spin text-muted-foreground" /></div></PortalLayout>;
   }
   if (!user) { navigate("/auth", { replace: true }); return null; }
 
@@ -116,9 +116,9 @@ export default function ModuleStudy() {
     return (
       <PortalLayout title="الوحدة">
         <section className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.03] py-16 text-center">
-          <BookOpen className="h-12 w-12 text-white/40" />
-          <p className="mt-5 text-sm text-white/60">لم نجد هذه الوحدة في هذه الدورة.</p>
-          <Link to={`/student/course/${courseId}`} className="mt-6 rounded-full border border-white/15 px-6 py-3 text-sm font-bold text-white/80 hover:border-white/40">
+          <BookOpen className="h-12 w-12 text-muted-foreground" />
+          <p className="mt-5 text-sm text-muted-foreground">لم نجد هذه الوحدة في هذه الدورة.</p>
+          <Link to={`/student/course/${courseId}`} className="mt-6 rounded-full border border-white/15 px-6 py-3 text-sm font-bold text-foreground hover:border-white/40">
             عُد إلى محطّات الدورة
           </Link>
         </section>
@@ -149,10 +149,10 @@ export default function ModuleStudy() {
       {/* شريطُ الموضع — أين أنا، وكم بقي */}
       <nav aria-label="خطوات الوحدة" className="sticky top-16 z-20 -mx-5 mb-6 border-b border-white/10 bg-paper/95 px-5 py-3 backdrop-blur">
         <div className="flex items-center justify-between gap-3">
-          <Link to={`/student/course/${courseId}`} className="flex shrink-0 items-center gap-1.5 text-[11px] font-bold text-white/50 transition hover:text-white">
+          <Link to={`/student/course/${courseId}`} className="flex shrink-0 items-center gap-1.5 text-[11px] font-bold text-muted-foreground transition hover:text-foreground">
             <ArrowRight className="h-3.5 w-3.5" /> محطّات الدورة
           </Link>
-          <span className="truncate text-[11px] text-white/45">
+          <span className="truncate text-[11px] text-muted-foreground">
             الوحدة {modIndex + 1} من {full.modules.length} · خطوة {pos + 1} من {steps.length}
             {totalMinutes > 0 && <> · <Clock className="mb-0.5 inline h-3 w-3" /> {countAr(totalMinutes, MIN_FORMS)}</>}
           </span>
@@ -174,7 +174,7 @@ export default function ModuleStudy() {
         <article className="rounded-3xl border border-white/10 bg-white/[0.02] p-6 md:p-9">
           <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-bold text-teal-light-ink">
             <span className="rounded-full bg-teal/15 px-2.5 py-1">الدرس {pos + 1} من {lessonCount}</span>
-            {step.minutes > 0 && <span className="text-white/40">{countAr(step.minutes, MIN_FORMS)} قراءة</span>}
+            {step.minutes > 0 && <span className="text-muted-foreground">{countAr(step.minutes, MIN_FORMS)} قراءة</span>}
           </p>
           {step.title && <h2 className="mt-3 text-xl font-black leading-snug md:text-2xl">{step.title}</h2>}
 
@@ -189,7 +189,7 @@ export default function ModuleStudy() {
               <p className="flex items-center gap-2 text-xs font-black text-teal-light-ink">
                 <Sparkles className="h-3.5 w-3.5" /> استرجعْ قبل أن تمضي
               </p>
-              <p className="mt-1 text-[11px] leading-6 text-white/45">
+              <p className="mt-1 text-[11px] leading-6 text-muted-foreground">
                 لا درجةَ لهذا ولا وزن — الغرضُ أن تُخرِج الفكرة من رأسك لا أن تعيد قراءتها.
               </p>
               <div className="mt-4 space-y-5">
@@ -221,7 +221,7 @@ export default function ModuleStudy() {
           <p className="text-[11px] font-bold text-teal-light-ink">
             <span className="rounded-full bg-teal/15 px-2.5 py-1">سيناريو قرار</span>
           </p>
-          <p className="mt-3 text-sm leading-7 text-white/55">
+          <p className="mt-3 text-sm leading-7 text-muted-foreground">
             لا إجابةَ واحدة هنا. اختر ما كنت ستفعله فعلا، واقرأ ما يترتّب عليه.
           </p>
           <DecisionScenario raw={step.raw} moduleId={mod.id} className="mt-5" />
@@ -240,13 +240,13 @@ export default function ModuleStudy() {
                 <p className="flex items-center gap-2 text-xs font-black text-teal-light-ink">
                   <Target className="h-4 w-4" /> نشاطك الآن
                 </p>
-                <p className="mt-3 text-[15px] leading-9 text-white/85">{mod.activity}</p>
+                <p className="mt-3 text-[15px] leading-9 text-foreground">{mod.activity}</p>
               </div>
               <div className="rounded-3xl border border-gold/25 bg-gold/[0.05] p-6 md:p-8">
                 <p className="flex items-center gap-2 text-xs font-black text-gold-ink">
                   <FileText className="h-4 w-4" /> ما تخرج به — ويدخل ملفّك
                 </p>
-                <p className="mt-3 text-[15px] leading-9 text-white/85">{mod.artifact}</p>
+                <p className="mt-3 text-[15px] leading-9 text-foreground">{mod.artifact}</p>
               </div>
             </>
           )}
@@ -264,7 +264,7 @@ export default function ModuleStudy() {
           <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-6 text-center md:p-8">
             <CheckCircle2 className="mx-auto h-8 w-8 text-teal-light-ink" />
             <p className="mt-3 text-sm font-black">انتهت قراءةُ هذه الوحدة</p>
-            <p className="mx-auto mt-2 max-w-md text-xs leading-6 text-white/50">
+            <p className="mx-auto mt-2 max-w-md text-xs leading-6 text-muted-foreground">
               وإكمالُها يحتاج دليلا: تسليمٌ مقبول، أو تقييمٌ مجتاز، أو حضورُ جلستها.
               فلا زرَّ «أنهيتُها» تضغطه على نفسك.
             </p>
@@ -287,7 +287,7 @@ export default function ModuleStudy() {
           type="button"
           onClick={() => go(pos - 1)}
           disabled={pos === 0}
-          className="flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2.5 text-xs font-bold text-white/70 transition hover:border-white/40 disabled:cursor-not-allowed disabled:opacity-30"
+          className="flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2.5 text-xs font-bold text-foreground transition hover:border-white/40 disabled:cursor-not-allowed disabled:opacity-30"
         >
           <ArrowRight className="h-4 w-4" /> السابق
         </button>

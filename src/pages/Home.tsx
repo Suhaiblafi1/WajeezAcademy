@@ -630,7 +630,7 @@ function Stories() {
                 <button
                   onClick={() => setOpen(null)}
                   aria-label="إغلاق القصة"
-                  className="absolute left-4 top-4 grid h-11 w-11 place-items-center rounded-full bg-black/50 text-foreground backdrop-blur transition hover:bg-black/70 hover:text-white"
+                  className="absolute left-4 top-4 grid h-11 w-11 place-items-center rounded-full bg-paper/50 text-foreground backdrop-blur transition hover:bg-paper/70 hover:text-foreground"
                 >
                   <X className="h-5 w-5" />
                 </button>

@@ -41,8 +41,8 @@ const TONE_RING: Record<NonNullable<EmptyStateProps["tone"]>, string> = {
 };
 
 const TONE_ICON: Record<NonNullable<EmptyStateProps["tone"]>, string> = {
-  start: "text-white/25",
-  filter: "text-white/25",
+  start: "text-muted-foreground/50",
+  filter: "text-muted-foreground/50",
   done: "text-emerald-300/60",
 };
 
@@ -69,7 +69,7 @@ export default function EmptyState({
                   <ArrowLeft className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
                 </>
               );
-              const cls = "flex cursor-pointer items-center gap-3 rounded-2xl border border-white/12 bg-black/20 px-4 py-3 transition hover:border-teal/50 hover:bg-teal/5";
+              const cls = "flex cursor-pointer items-center gap-3 rounded-2xl border border-white/12 bg-paper/20 px-4 py-3 transition hover:border-teal/50 hover:bg-teal/5";
               return a.to
                 ? <Link key={a.labelAr} to={a.to} className={cls}>{body}</Link>
                 : <button key={a.labelAr} type="button" onClick={a.onClick} className={cls}>{body}</button>;

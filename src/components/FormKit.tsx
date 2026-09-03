@@ -20,11 +20,11 @@ import { Check } from 'lucide-react'
 
 /** قياسٌ واحد لكلّ حقلِ سطرٍ واحد — إدخالا كان أو قائمة */
 export const controlCls =
-  'h-12 w-full rounded-xl border border-white/15 bg-black/30 px-4 text-sm text-white placeholder:text-white/30 focus:border-teal focus:outline-none'
+  'h-12 w-full rounded-xl border border-white/15 bg-paper/30 px-4 text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none'
 
 /** والنصُّ الطويل يشترك في كلّ شيءٍ إلّا الارتفاع */
 export const areaCls =
-  'w-full rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-sm leading-7 text-white placeholder:text-white/30 focus:border-teal focus:outline-none'
+  'w-full rounded-xl border border-white/15 bg-paper/30 px-4 py-3 text-sm leading-7 text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none'
 
 /** نجمةُ الإلزام — بلونٍ واحدٍ في الصفحة كلّها */
 function Req() {
@@ -210,7 +210,7 @@ export function OptionGrid({
             className={`flex min-h-12 w-full cursor-pointer items-center gap-2.5 rounded-xl border px-3 py-2.5 text-right text-[12px] font-bold leading-5 transition-colors ${
               on
                 ? 'border-teal bg-teal/[0.12] text-teal-light-ink'
-                : 'border-white/12 bg-black/25 text-muted-foreground hover:border-white/30 hover:text-foreground'
+                : 'border-white/12 bg-paper/25 text-muted-foreground hover:border-white/30 hover:text-foreground'
             }`}
           >
             <span
@@ -267,7 +267,7 @@ export function ConsentRow({
   return (
     <label
       className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition-colors ${
-        checked ? 'border-teal/40 bg-teal/[0.06]' : 'border-white/12 bg-black/20 hover:border-white/25'
+        checked ? 'border-teal/40 bg-teal/[0.06]' : 'border-white/12 bg-paper/20 hover:border-white/25'
       }`}
     >
       <input

@@ -221,7 +221,7 @@ export default function CohortWizard({
     }
   };
 
-  const inputCls = "mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white placeholder:text-white/25 focus:border-teal focus:outline-none";
+  const inputCls = "mt-1 w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none";
 
   return (
     <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-5">
@@ -236,13 +236,13 @@ export default function CohortWizard({
               className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 font-bold transition ${
                 i === step ? "bg-teal text-on-teal"
                 : i < step ? "cursor-pointer border border-teal/40 text-teal-light-ink hover:bg-teal/10"
-                : "border border-white/10 text-white/35"
+                : "border border-white/10 text-muted-foreground"
               }`}
             >
               {i < step ? <Check className="h-3 w-3" aria-hidden="true" /> : <span>{i + 1}</span>}
               {label}
             </button>
-            {i < STEPS.length - 1 && <ChevronLeft className="h-3 w-3 text-white/20" aria-hidden="true" />}
+            {i < STEPS.length - 1 && <ChevronLeft className="h-3 w-3 text-muted-foreground/50" aria-hidden="true" />}
           </li>
         ))}
       </ol>
@@ -251,31 +251,31 @@ export default function CohortWizard({
       {step === 0 && (
         <div className="grid gap-3 lg:grid-cols-2">
           <div>
-            <label className="text-xs text-white/50" htmlFor="wiz-course-filter">الدورة — المنشورة فقط</label>
+            <label className="text-xs text-muted-foreground" htmlFor="wiz-course-filter">الدورة — المنشورة فقط</label>
             <input id="wiz-course-filter" value={courseFilter} onChange={(e) => setCourseFilter(e.target.value)}
               placeholder="ابحث بعنوان الدورة أو رمزها" className={inputCls} />
             <div className="mt-2 max-h-64 overflow-y-auto rounded-xl border border-white/10">
-              {shown.length === 0 && <p className="px-3 py-3 text-[11px] text-white/45">لا دورةَ بهذا الاسم.</p>}
+              {shown.length === 0 && <p className="px-3 py-3 text-[11px] text-muted-foreground">لا دورةَ بهذا الاسم.</p>}
               {shown.map((c) => (
                 <button key={c.id} type="button" onClick={() => setCourseId(c.id)}
                   className={`flex w-full items-center justify-between gap-3 border-b border-white/5 px-3 py-2.5 text-right transition last:border-b-0 ${
                     courseId === c.id ? "bg-teal/15" : "hover:bg-white/5"
                   }`}>
-                  <span className="truncate text-xs font-bold text-white">{c.title}</span>
-                  <span dir="ltr" className="shrink-0 font-mono text-micro text-white/35">{c.id}</span>
+                  <span className="truncate text-xs font-bold text-foreground">{c.title}</span>
+                  <span dir="ltr" className="shrink-0 font-mono text-micro text-muted-foreground">{c.id}</span>
                 </button>
               ))}
             </div>
           </div>
           <div>
-            <label className="text-xs text-white/50" htmlFor="wiz-title">عنوان الشعبة</label>
+            <label className="text-xs text-muted-foreground" htmlFor="wiz-title">عنوان الشعبة</label>
             <input id="wiz-title" value={title} onChange={(e) => setTitle(e.target.value)}
               placeholder="شعبة أكتوبر 2026 — مسائية" className={inputCls} />
-            <p className="mt-2 text-[11px] leading-6 text-white/40">
+            <p className="mt-2 text-[11px] leading-6 text-muted-foreground">
               يُقترَح من الدورة والشهر، وهو ما يراه المتعلّمُ في فاتورته وشهادته — فاجعله يفرّق هذه الشعبةَ عن أختها.
             </p>
             {course && (
-              <p className="mt-3 rounded-xl border border-white/10 bg-black/20 px-3 py-2.5 text-[11px] text-white/55">
+              <p className="mt-3 rounded-xl border border-white/10 bg-paper/20 px-3 py-2.5 text-[11px] text-muted-foreground">
                 سعرُ قائمة الدورة: {course.listPrice ?? "—"} {currency}
               </p>
             )}
@@ -288,19 +288,19 @@ export default function CohortWizard({
         <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="sm:col-span-2"><DayOfWeekPicker value={days} onChange={setDays} /></div>
-            <label className="text-xs text-white/50">
+            <label className="text-xs text-muted-foreground">
               وقت البدء
               <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className={inputCls} />
             </label>
-            <label className="text-xs text-white/50">
+            <label className="text-xs text-muted-foreground">
               مدّة الجلسة (دقيقة)
               <input type="number" min={15} step={15} value={duration} onChange={(e) => setDuration(e.target.value)} className={inputCls} />
             </label>
-            <label className="text-xs text-white/50">
+            <label className="text-xs text-muted-foreground">
               أوّلُ أسبوع
               <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className={inputCls} />
             </label>
-            <label className="text-xs text-white/50">
+            <label className="text-xs text-muted-foreground">
               عددُ الأسابيع
               <input type="number" min={1} max={52} value={weeks} onChange={(e) => setWeeks(e.target.value)} className={inputCls} />
             </label>
@@ -310,24 +310,24 @@ export default function CohortWizard({
               <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
               {`${preview.length} جلسة ستُنشأ`}
             </p>
-            <p className="mt-1 text-[11px] text-white/45">تُولَّد مع الشعبة، ولك تعديلُ أيٍّ منها بعدها.</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">تُولَّد مع الشعبة، ولك تعديلُ أيٍّ منها بعدها.</p>
             {Number(duration) < 15 && (
               <p role="alert" className="mt-2 text-[11px] font-bold text-red-300">مدّةُ الجلسة خمسَ عشرةَ دقيقةً على الأقلّ.</p>
             )}
             {days.length === 0 && (
               <p role="alert" className="mt-2 text-[11px] font-bold text-red-300">اختر يوما واحدا على الأقلّ.</p>
             )}
-            <ul className="mt-3 max-h-52 space-y-1 overflow-y-auto text-[11px] text-white/65">
+            <ul className="mt-3 max-h-52 space-y-1 overflow-y-auto text-[11px] text-foreground">
               {preview.slice(0, 40).map((s) => (
                 <li key={s.startsAt} className="flex items-center justify-between gap-2 border-b border-white/5 pb-1">
                   <span className="font-bold">{s.title}</span>
-                  <span className="text-white/45">{fmtDateTimeAr(s.startsAt)}</span>
+                  <span className="text-muted-foreground">{fmtDateTimeAr(s.startsAt)}</span>
                 </li>
               ))}
-              {preview.length === 0 && <li className="text-white/45">لا جلسة — راجع الأيّامَ وأوّلَ أسبوع.</li>}
+              {preview.length === 0 && <li className="text-muted-foreground">لا جلسة — راجع الأيّامَ وأوّلَ أسبوع.</li>}
             </ul>
             {preview.length > 40 && (
-              <p className="mt-2 text-micro text-white/35">…و{preview.length - 40} جلسةً أخرى</p>
+              <p className="mt-2 text-micro text-muted-foreground">…و{preview.length - 40} جلسةً أخرى</p>
             )}
           </div>
         </div>
@@ -336,16 +336,16 @@ export default function CohortWizard({
       {/* ٣ · المقاعد والسعر */}
       {step === 2 && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <label className="text-xs text-white/50">
+          <label className="text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5"><Users className="h-3.5 w-3.5" aria-hidden="true" /> السعة</span>
             <input type="number" min={1} value={capacity} onChange={(e) => setCapacity(e.target.value)} className={inputCls} />
-            <span className="mt-1 block text-micro text-white/35">الفائضُ يتحوّل إلى قائمة انتظار آليّا.</span>
+            <span className="mt-1 block text-micro text-muted-foreground">الفائضُ يتحوّل إلى قائمة انتظار آليّا.</span>
           </label>
-          <label className="text-xs text-white/50">
+          <label className="text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5"><Wallet className="h-3.5 w-3.5" aria-hidden="true" /> السعر ({currency})</span>
             <input type="number" min={0} value={price} onChange={(e) => setPrice(e.target.value)}
               placeholder={course?.listPrice != null ? String(course.listPrice) : undefined} className={inputCls} />
-            <span className="mt-1 block text-micro text-white/35">
+            <span className="mt-1 block text-micro text-muted-foreground">
               يُورَث من سعر قائمة الدورة إن تُرك فارغا — والعملةُ عملةُ الدورة لا افتراضا.
             </span>
           </label>
@@ -355,9 +355,9 @@ export default function CohortWizard({
       {/* ٤ · المدرّب */}
       {step === 3 && (
         <div>
-          {trainers === null && <p className="text-xs text-white/45"><Loader2 className="mr-1 inline h-3.5 w-3.5 animate-spin" aria-hidden="true" /> تُقرأ قائمةُ المدرّبين…</p>}
+          {trainers === null && <p className="text-xs text-muted-foreground"><Loader2 className="mr-1 inline h-3.5 w-3.5 animate-spin" aria-hidden="true" /> تُقرأ قائمةُ المدرّبين…</p>}
           {trainers !== null && trainers.length === 0 && (
-            <p className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-[11px] leading-6 text-white/55">
+            <p className="rounded-xl border border-white/10 bg-paper/20 px-4 py-3 text-[11px] leading-6 text-muted-foreground">
               لا مدرّبَ مؤهَّلا لهذه الدورة بعد — تُنشأ الشعبةُ مسودّةً، ويُسنَد المدرّبُ من بطاقتها متى تأهّل.
               وشرطُ الفتح يبقى قائما: لا شعبةَ تُفتح بلا مدرّب.
             </p>
@@ -367,7 +367,7 @@ export default function CohortWizard({
               <li>
                 <button type="button" onClick={() => setTrainerId("")}
                   className={`w-full rounded-xl border px-4 py-3 text-right text-xs font-bold transition ${
-                    trainerId === "" ? "border-teal bg-teal/10 text-white" : "border-white/12 text-white/60 hover:border-white/30"
+                    trainerId === "" ? "border-teal bg-teal/10 text-foreground" : "border-white/12 text-muted-foreground hover:border-white/30"
                   }`}>
                   أُسنده لاحقا
                 </button>
@@ -376,10 +376,10 @@ export default function CohortWizard({
                 <li key={t.profileId}>
                   <button type="button" disabled={t.qualification !== "qualified"} onClick={() => setTrainerId(t.profileId)}
                     className={`flex w-full items-center justify-between gap-2 rounded-xl border px-4 py-3 text-right text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-45 ${
-                      trainerId === t.profileId ? "border-teal bg-teal/10 text-white" : "border-white/12 text-white/70 hover:border-white/30"
+                      trainerId === t.profileId ? "border-teal bg-teal/10 text-foreground" : "border-white/12 text-foreground hover:border-white/30"
                     }`}>
                     <span className="flex items-center gap-1.5"><UserCheck className="h-3.5 w-3.5" aria-hidden="true" /> {t.name}</span>
-                    {t.qualification !== "qualified" && <span className="text-micro text-white/45">غيرُ مؤهَّلٍ لهذه الدورة</span>}
+                    {t.qualification !== "qualified" && <span className="text-micro text-muted-foreground">غيرُ مؤهَّلٍ لهذه الدورة</span>}
                   </button>
                 </li>
               ))}
@@ -391,7 +391,7 @@ export default function CohortWizard({
       {/* ٥ · المراجعة */}
       {step === 4 && (
         <div className="grid gap-3 lg:grid-cols-2">
-          <dl className="rounded-2xl border border-white/10 bg-black/20 p-4 text-xs">
+          <dl className="rounded-2xl border border-white/10 bg-paper/20 p-4 text-xs">
             {[
               ["الدورة", course?.title ?? "—"],
               ["العنوان", title.trim() || "—"],
@@ -407,12 +407,12 @@ export default function CohortWizard({
               ["المدرّب", trainerId ? (trainers?.find((t) => t.profileId === trainerId)?.name ?? "مسنَد") : "لاحقا"],
             ].map(([k, v]) => (
               <div key={k} className="flex items-start justify-between gap-3 border-b border-white/5 py-1.5 last:border-b-0">
-                <dt className="text-white/45">{k}</dt>
-                <dd className="text-left font-bold text-white/85">{v}</dd>
+                <dt className="text-muted-foreground">{k}</dt>
+                <dd className="text-left font-bold text-foreground">{v}</dd>
               </div>
             ))}
           </dl>
-          <div className="rounded-2xl border border-gold/25 bg-gold/[0.06] p-4 text-[11px] leading-6 text-white/70">
+          <div className="rounded-2xl border border-gold/25 bg-gold/[0.06] p-4 text-[11px] leading-6 text-foreground">
             <p className="font-black text-gold-ink">قبل الفتح للتسجيل</p>
             <p className="mt-1">
               الشعبةُ تُنشأ مسودّةً. و«أنشئ وافتح» يفحص شروطَ الفتح الستّة أوّلا: خطّةُ تقديمٍ معتمدة، مدرّبٌ
@@ -426,7 +426,7 @@ export default function CohortWizard({
       {/* التنقّل */}
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-white/8 pt-4">
         <button type="button" disabled={step === 0 || busy} onClick={() => setStep(step - 1)}
-          className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-white/70 transition hover:border-white/40 disabled:opacity-30">
+          className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground transition hover:border-white/40 disabled:opacity-30">
           <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" /> السابق
         </button>
         {/* السببُ بجانب الزرّ — لا في ذيل الصفحة ولا في تلميحٍ يظهر بالمرور */}
@@ -437,13 +437,13 @@ export default function CohortWizard({
         )}
         {step < STEPS.length - 1 ? (
           <button type="button" disabled={!canNext || busy} onClick={() => setStep(step + 1)}
-            className="flex cursor-pointer items-center gap-1.5 rounded-full bg-white/10 px-6 py-2 text-xs font-black text-white transition hover:bg-white/15 disabled:opacity-40">
+            className="flex cursor-pointer items-center gap-1.5 rounded-full bg-white/10 px-6 py-2 text-xs font-black text-foreground transition hover:bg-white/15 disabled:opacity-40">
             التالي <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
           </button>
         ) : (
           <div className="flex flex-wrap gap-2">
             <button type="button" disabled={busy} onClick={() => void create(false)}
-              className="flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-6 py-2 text-xs font-bold text-white/80 transition hover:border-white/40 disabled:opacity-40">
+              className="flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-6 py-2 text-xs font-bold text-foreground transition hover:border-white/40 disabled:opacity-40">
               {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : null} أنشئ مسودّة
             </button>
             <button type="button" disabled={busy} onClick={() => void create(true)}

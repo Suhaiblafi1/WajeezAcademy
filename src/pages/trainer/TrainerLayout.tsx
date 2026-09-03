@@ -24,7 +24,7 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
 
   if (!checked) {
     return (
-      <div dir="rtl" className="grid min-h-screen place-items-center bg-paper text-white">
+      <div dir="rtl" className="grid min-h-screen place-items-center bg-paper text-foreground">
         <GraduationCap className="h-10 w-10 animate-pulse text-[#6EC7D1]" />
       </div>
     );
@@ -35,10 +35,10 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
      كمدرّبين — وقاعدةُ هذا المستودع صريحة: لا اسم مدرّب قبل توثيقه. */
   if (!realTrainer) {
     return (
-      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper px-5 text-white">
+      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper px-5 text-foreground">
         <GraduationCap className="h-12 w-12 text-[#6EC7D1]" />
         <h1 className="mt-5 text-2xl font-black">بوابة المدرب</h1>
-        <p className="mt-2 max-w-md text-center text-sm leading-7 text-white/55">
+        <p className="mt-2 max-w-md text-center text-sm leading-7 text-muted-foreground">
           تُفتح هذه البوابة بحساب مدرّب معتمد. إن كنت مدرّبا فسجّل الدخول،
           وإن أردت الانضمام إلى فريق التدريب فابدأ بطلب العضوية.
         </p>
@@ -46,11 +46,11 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
           <Link to="/auth" className="rounded-full bg-teal px-6 py-3 font-black text-on-teal transition hover:bg-teal-light">
             تسجيل الدخول
           </Link>
-          <Link to="/join-trainer" className="rounded-full border border-white/15 px-6 py-3 font-bold text-white/80 hover:border-white/40">
+          <Link to="/join-trainer" className="rounded-full border border-white/15 px-6 py-3 font-bold text-foreground hover:border-white/40">
             انضم مدرّبا
           </Link>
         </div>
-        <Link to="/" className="mt-6 text-xs text-white/50 hover:text-white/70">العودة للموقع العام</Link>
+        <Link to="/" className="mt-6 text-xs text-muted-foreground hover:text-foreground">العودة للموقع العام</Link>
       </div>
     );
   }
@@ -70,16 +70,16 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
   /* له الصلاحيّةُ ولا ملفَّ له: شاشةٌ واحدةٌ تشرح، بدل عشرِ شاشاتٍ تسقط */
   if (realTrainer && hasProfile === false) {
     return (
-      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper px-5 text-white">
+      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper px-5 text-foreground">
         <GraduationCap className="h-12 w-12 text-[#6EC7D1]" />
         <h1 className="mt-5 text-2xl font-black">بوّابة المدرّب</h1>
-        <p className="mt-2 max-w-md text-center text-sm leading-7 text-white/55">
+        <p className="mt-2 max-w-md text-center text-sm leading-7 text-muted-foreground">
           حسابُك يملك صلاحيّاتِ المدرّب، لكن لا ملفَّ مدرّبٍ مرتبطا به — والشعبُ والتقييماتُ والمستحقّاتُ كلُّها تُقرأ من ذلك الملفّ. فلا شيءَ هنا لنعرضه لك.
         </p>
-        <p className="mt-3 max-w-md text-center text-xs leading-6 text-white/40">
+        <p className="mt-3 max-w-md text-center text-xs leading-6 text-muted-foreground">
           وهذا متوقَّعٌ لمدير النظام: بوّابةُ المدرّب لمن يُدرِّس فعلا. لمعاينتها، ادخل بحساب مدرّب.
         </p>
-        <Link to="/admin" className="mt-7 rounded-full border border-white/15 px-6 py-3 font-bold text-white/80 transition hover:border-white/40">
+        <Link to="/admin" className="mt-7 rounded-full border border-white/15 px-6 py-3 font-bold text-foreground transition hover:border-white/40">
           عُد إلى لوحة الإدارة
         </Link>
       </div>
@@ -87,7 +87,7 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
   }
 
   return (
-    <div dir="rtl" className="min-h-screen bg-paper text-white">
+    <div dir="rtl" className="min-h-screen bg-paper text-foreground">
       <header className="sticky top-0 z-40 border-b border-white/10 bg-paper/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
           <Link to="/" className="flex shrink-0 items-center gap-2">
@@ -102,7 +102,7 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
                 end={t.end}
                 className={({ isActive }) =>
                   `flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition sm:px-4 ${
-                    isActive ? "bg-teal text-on-teal" : "text-white/60 hover:text-white"
+                    isActive ? "bg-teal text-on-teal" : "text-muted-foreground hover:text-foreground"
                   }`
                 }
               >
@@ -118,7 +118,7 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
                 onClick={() => window.dispatchEvent(new Event("wajeez:open-search"))}
                 aria-label="بحث سريع — Ctrl+K"
                 title="بحث سريع — Ctrl+K"
-                className="hidden cursor-pointer items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 text-micro font-bold text-white/45 transition hover:border-teal-light/50 hover:text-teal-light-ink md:flex"
+                className="hidden cursor-pointer items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 text-micro font-bold text-muted-foreground transition hover:border-teal-light/50 hover:text-teal-light-ink md:flex"
               >
                 بحث… <kbd className="rounded border border-white/15 px-1.5 text-micro">Ctrl K</kbd>
               </button>

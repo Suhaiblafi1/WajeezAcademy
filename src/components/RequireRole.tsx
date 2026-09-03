@@ -98,8 +98,8 @@ export default function RequireRole({ allow }: { allow: readonly string[] }) {
   /* لا تحويلَ على تعذُّرِ وصول: من يُحوَّل هنا يظنّ أنّ صلاحيّته سُحبت */
   if (state === 'unreachable') {
     return (
-      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper px-5 text-white">
-        <ServerOff className="h-12 w-12 text-white/25" />
+      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper px-5 text-foreground">
+        <ServerOff className="h-12 w-12 text-muted-foreground/50" />
         <h1 className="mt-5 text-xl font-black">تعذّر التحقّق من صلاحيّتك</h1>
         <p className="mt-2 max-w-md text-center text-sm leading-7 text-muted-foreground">
           لم يصلنا ردٌّ من الخادم، ولا نُقرّر صلاحيّتك بلا ردّ — فلن نأخذك إلى بوابةٍ قد لا تكون بوابتك.

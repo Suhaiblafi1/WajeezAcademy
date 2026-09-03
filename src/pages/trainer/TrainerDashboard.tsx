@@ -82,13 +82,13 @@ function RealTrainerHome({ name }: { name: string }) {
 
   if (failed)
     return (
-      <div className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] py-16 text-white/50">
+      <div className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] py-16 text-muted-foreground">
         <ServerOff className="h-5 w-5" /> تعذر جلب شعبك — تأكد أن الخادم يعمل ثم حدّث الصفحة.
       </div>
     );
   if (!cohorts || !queue)
     return (
-      <div className="flex items-center justify-center gap-2 py-16 text-white/50">
+      <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
         <Loader2 className="h-5 w-5 animate-spin" /> أحضر شعبك…
       </div>
     );
@@ -107,29 +107,29 @@ function RealTrainerHome({ name }: { name: string }) {
 
   return (
     <div>
-      <p className="mb-6 text-sm text-white/60">أهلاً {name} — {cohorts.length > 0 ? `لديك ${countAr(cohorts.length, COHORT_FORMS)} و${countAr(students, STUDENT_FORMS)}.` : "لم تُسند إليك شعب بعد."}</p>
+      <p className="mb-6 text-sm text-muted-foreground">أهلاً {name} — {cohorts.length > 0 ? `لديك ${countAr(cohorts.length, COHORT_FORMS)} و${countAr(students, STUDENT_FORMS)}.` : "لم تُسند إليك شعب بعد."}</p>
 
       {/* بطاقة إرشاد المدرب الجديد — بوابة بلا شعب تشرح ما يحدث تاليا بدل أن تكتفي بأصفار */}
       {cohorts.length === 0 && (
         <section className="mb-8 rounded-3xl border border-teal/30 bg-teal/[0.06] p-6">
           <p className="flex items-center gap-2 text-sm font-black"><GraduationCap className="h-4 w-4 text-teal-light-ink" /> بوابتك جاهزة — هذا ما يحدث تالياً</p>
-          <div className="mt-4 grid gap-3 text-xs leading-6 text-white/70 sm:grid-cols-3">
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+          <div className="mt-4 grid gap-3 text-xs leading-6 text-foreground sm:grid-cols-3">
+            <div className="rounded-2xl border border-white/10 bg-paper/20 p-4">
               <p className="font-black text-teal-light-ink">١ · الإسناد</p>
               <p className="mt-1">الإدارة تسند إليك شعبة من شاشة «الشعب» — يصلك إشعار فور الإسناد.</p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+            <div className="rounded-2xl border border-white/10 bg-paper/20 p-4">
               <p className="font-black text-teal-light-ink">٢ · الظهور التلقائي</p>
               <p className="mt-1">تظهر شعبتك وجلساتها وطلابها هنا وفي شاشة «شعبي» دون أي إجراء منك.</p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+            <div className="rounded-2xl border border-white/10 bg-paper/20 p-4">
               <p className="font-black text-teal-light-ink">٣ · بدء العمل</p>
               <p className="mt-1">تسجّل الحضور وتقيّم التسليمات وتدير الجلسات — كلها من «شعبي».</p>
             </div>
           </div>
-          <p className="mt-4 text-[11px] text-white/50">
+          <p className="mt-4 text-[11px] text-muted-foreground">
             حتى يصلك أول إسناد يمكنك مراجعة المحتوى واقتراح تحسينات عليه من{" "}
-            <Link to="/trainer/proposals" className="font-bold text-teal-light-ink underline decoration-dotted underline-offset-4 hover:text-white">«اقتراحاتي»</Link>.
+            <Link to="/trainer/proposals" className="font-bold text-teal-light-ink underline decoration-dotted underline-offset-4 hover:text-foreground">«اقتراحاتي»</Link>.
           </p>
         </section>
       )}
@@ -158,16 +158,16 @@ function RealTrainerHome({ name }: { name: string }) {
                   key={t.key}
                   onClick={selfCompletable ? () => void completeTask(t.key) : undefined}
                   disabled={!selfCompletable}
-                  className={`flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-right transition ${
+                  className={`flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-paper/20 px-4 py-3 text-right transition ${
                     selfCompletable ? "cursor-pointer hover:border-teal/40" : "cursor-default"
                   }`}
                 >
                   {t.doneAt
                     ? <CheckCircle2 className="h-4.5 w-4.5 shrink-0 text-teal-ink" />
-                    : <Circle className="h-4.5 w-4.5 shrink-0 text-white/25" />}
-                  <span className={`text-sm ${t.doneAt ? "text-white/50 line-through" : "font-bold text-white/85"}`}>{t.title}</span>
+                    : <Circle className="h-4.5 w-4.5 shrink-0 text-muted-foreground/50" />}
+                  <span className={`text-sm ${t.doneAt ? "text-muted-foreground line-through" : "font-bold text-foreground"}`}>{t.title}</span>
                   {!t.doneAt && t.key === "sign_contract" && (
-                    <span className="mr-auto text-micro font-bold text-white/40">يُغلق بتوقيع العقد</span>
+                    <span className="mr-auto text-micro font-bold text-muted-foreground">يُغلق بتوقيع العقد</span>
                   )}
                 </button>
               );
@@ -176,8 +176,8 @@ function RealTrainerHome({ name }: { name: string }) {
         </section>
       )}
 
-      <div className="mb-8 flex flex-wrap items-center gap-2 rounded-2xl border border-dashed border-white/15 bg-white/[0.02] px-4 py-3 text-[11px] text-white/55">
-        <span className="font-black text-white/75">من أين أبدأ؟</span>
+      <div className="mb-8 flex flex-wrap items-center gap-2 rounded-2xl border border-dashed border-white/15 bg-white/[0.02] px-4 py-3 text-[11px] text-muted-foreground">
+        <span className="font-black text-foreground">من أين أبدأ؟</span>
         {/* الترقيمُ لاتينيّ كبقيّة أرقام البوّابة — لا رسمان في بطاقةٍ واحدة */}
         {[
           { key: "open", label: "افتح شعبتك", to: "/trainer/board" },
@@ -185,7 +185,7 @@ function RealTrainerHome({ name }: { name: string }) {
           { key: "grade", label: "قيّم التسليمات", to: "/trainer/grading" },
         ].map((s, i) => (
           <span key={s.key} className="flex items-center gap-2">
-            {i > 0 && <span aria-hidden="true" className="text-white/20">←</span>}
+            {i > 0 && <span aria-hidden="true" className="text-muted-foreground/50">←</span>}
             {/* `py-1` كان يعطي سبعا وعشرين بكسلا — هدفٌ يُخطئه الإصبعُ على
                 الهاتف. والحدُّ المتعارف عليه أربعٌ وأربعون، وستٌّ وثلاثون
                 أقلُّ ما يُقبل في شريطٍ داخليّ. */}
@@ -202,11 +202,11 @@ function RealTrainerHome({ name }: { name: string }) {
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <Link to="/trainer/board" className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-white/30">
-          <p className="flex items-center gap-2 text-xs text-white/50"><GraduationCap className="h-4 w-4" /> شعبي</p>
+          <p className="flex items-center gap-2 text-xs text-muted-foreground"><GraduationCap className="h-4 w-4" /> شعبي</p>
           <p className="mt-2 text-3xl font-black">{cohorts.length}</p>
         </Link>
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-          <p className="flex items-center gap-2 text-xs text-white/50"><Users className="h-4 w-4" /> طلابي</p>
+          <p className="flex items-center gap-2 text-xs text-muted-foreground"><Users className="h-4 w-4" /> طلابي</p>
           <p className="mt-2 text-3xl font-black">{students}</p>
         </div>
         <Link to="/trainer/board" className={`rounded-2xl border p-5 transition hover:border-white/30 ${awaiting > 0 ? "border-gold/40 bg-gold/5" : "border-white/10 bg-white/[0.03]"}`}>
@@ -225,14 +225,14 @@ function RealTrainerHome({ name }: { name: string }) {
       <section className="mt-6 rounded-3xl border border-white/10 bg-white/[0.02] p-5">
         <p className="flex items-center gap-2 text-sm font-black"><Video className="h-4 w-4 text-teal-ink" /> جلساتي القادمة</p>
         <div className="mt-3 space-y-2">
-          {upcoming.length === 0 && <p className="py-3 text-center text-xs text-white/50">لا جلسات قادمة مجدولة</p>}
+          {upcoming.length === 0 && <p className="py-3 text-center text-xs text-muted-foreground">لا جلسات قادمة مجدولة</p>}
           {upcoming.map((s) => (
             <Link key={s.id} to="/trainer/board" className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-2.5 text-xs transition hover:border-white/30">
               <div className="min-w-0 flex-1">
-                <p className="truncate font-bold text-white/85">{s.title}</p>
-                <p className="mt-0.5 truncate text-micro text-white/50">{s.cohortTitle}</p>
+                <p className="truncate font-bold text-foreground">{s.title}</p>
+                <p className="mt-0.5 truncate text-micro text-muted-foreground">{s.cohortTitle}</p>
               </div>
-              <span className="shrink-0 text-micro font-bold text-white/50">
+              <span className="shrink-0 text-micro font-bold text-muted-foreground">
                 {fmtDateTimeAr(s.startsAt)}
               </span>
             </Link>
@@ -240,7 +240,7 @@ function RealTrainerHome({ name }: { name: string }) {
         </div>
       </section>
 
-      <p className="mt-6 text-center text-[11px] text-white/55">
+      <p className="mt-6 text-center text-[11px] text-muted-foreground">
         كل بند أعلاه يقودك إلى مكان تنفيذه — والتفاصيل الكاملة لكل شعبة في شاشة «شعبي».
       </p>
     </div>

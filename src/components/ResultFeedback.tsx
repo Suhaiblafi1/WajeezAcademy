@@ -66,7 +66,7 @@ export default function ResultFeedback({ sessionId, pathwayId }: { sessionId: st
                 className={`rounded-full border px-6 py-2.5 text-sm font-black transition ${
                   verdict === v.id
                     ? "border-gold bg-gold text-on-gold"
-                    : "border-white/20 text-foreground hover:border-teal-light/60 hover:text-white"
+                    : "border-white/20 text-foreground hover:border-teal-light/60 hover:text-foreground"
                 }`}
               >
                 {v.label}
@@ -83,7 +83,7 @@ export default function ResultFeedback({ sessionId, pathwayId }: { sessionId: st
             onChange={(e) => setNote(e.target.value)}
             maxLength={500}
             rows={3}
-            className="mt-2 w-full resize-none rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:border-teal focus:outline-none"
+            className="mt-2 w-full resize-none rounded-xl border border-white/15 bg-paper/30 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none"
             placeholder="اكتب باختصار — ٥٠٠ حرف كحد أقصى"
           />
 

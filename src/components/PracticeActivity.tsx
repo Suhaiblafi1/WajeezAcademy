@@ -97,12 +97,12 @@ export default function PracticeActivity({
                 {isDone ? (
                   <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
                 ) : (
-                  <Circle className="mt-0.5 h-4 w-4 shrink-0 text-white/30" aria-hidden="true" />
+                  <Circle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/50" aria-hidden="true" />
                 )}
                 <span className={`text-[13px] leading-6 ${isDone ? "text-muted-foreground line-through" : ""}`}>
                   {s.textAr}
                 </span>
-                <span className="ms-auto shrink-0 text-[11px] tabular-nums text-white/40">
+                <span className="ms-auto shrink-0 text-[11px] tabular-nums text-muted-foreground">
                   {fmtNum(s.minutes)} د
                 </span>
               </button>

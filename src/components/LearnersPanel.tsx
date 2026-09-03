@@ -98,7 +98,7 @@ export default function LearnersPanel() {
           onSubmit={(e) => { e.preventDefault(); void load(q); }}
           className="flex items-center gap-2 rounded-xl border border-white/12 bg-white/[0.04] px-3 py-1.5"
         >
-          <Search className="h-3.5 w-3.5 shrink-0 text-white/35" />
+          <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
@@ -107,14 +107,14 @@ export default function LearnersPanel() {
             /* الحقلُ كان ارتفاعُه ستّةَ عشرَ بكسلا: نصٌّ بلا حاشيةٍ داخل
                حبّةٍ لها حاشيتُها. والحبّةُ تُرى هدفا، والهدفُ الفعليُّ هو
                الحقل — فيأخذ ارتفاعَه بنفسه. */
-            className="min-h-8 w-48 bg-transparent text-xs text-white outline-none placeholder:text-white/30"
+            className="min-h-8 w-48 bg-transparent text-xs text-foreground outline-none placeholder:text-muted-foreground/75"
           />
         </form>
       </div>
 
       {data.learners.length === 0 ? (
         <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-14 text-center">
-          <GraduationCap className="h-10 w-10 text-white/20" />
+          <GraduationCap className="h-10 w-10 text-muted-foreground/50" />
           <p className="mt-3 text-sm font-black">لا طلبة في نطاقك بعد</p>
           <p className="mt-1 max-w-sm text-xs leading-6 text-muted-foreground">
             {data.scope === "trainer"
@@ -152,7 +152,7 @@ export default function LearnersPanel() {
 
               <ul className="mt-3 space-y-1.5">
                 {l.enrollments.map((e) => (
-                  <li key={e.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/8 bg-black/20 px-3 py-2">
+                  <li key={e.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/8 bg-paper/20 px-3 py-2">
                     <span className="min-w-0">
                       <span className="block text-[12px] font-bold text-foreground">{e.courseTitle}</span>
                       <span className="text-micro text-muted-foreground">
@@ -218,15 +218,15 @@ function EditLearner({ row, busy, onClose, onSave, onEnroll }: {
       .catch(() => setCohorts([]));
   }, [row.enrollments]);
 
-  const field = "w-full rounded-xl border border-white/12 bg-white/[0.04] px-3 py-2 text-xs text-white outline-none focus:border-teal/50";
+  const field = "w-full rounded-xl border border-white/12 bg-white/[0.04] px-3 py-2 text-xs text-foreground outline-none focus:border-teal/50";
   const suspended = row.user.status !== "active";
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4" role="dialog" aria-label={`تعديل حساب ${row.user.displayName}`}>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-paper/70 p-4" role="dialog" aria-label={`تعديل حساب ${row.user.displayName}`}>
       <div className="w-full max-w-md rounded-3xl border border-white/10 bg-surface p-6">
         <div className="flex items-start justify-between gap-3">
           <h3 className="text-sm font-black">تعديل حساب «{row.user.displayName}»</h3>
-          <button onClick={onClose} aria-label="إغلاق" className="cursor-pointer text-white/40 hover:text-foreground">
+          <button onClick={onClose} aria-label="إغلاق" className="cursor-pointer text-muted-foreground hover:text-foreground">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -286,7 +286,7 @@ function EditLearner({ row, busy, onClose, onSave, onEnroll }: {
               <UserPlus className="h-3.5 w-3.5" /> سجّله
             </button>
           </div>
-          <p className="mt-2 text-micro leading-5 text-white/40">
+          <p className="mt-2 text-micro leading-5 text-muted-foreground">
             تسجيلٌ إداريّ بلا فاتورة — يمرّ بحارس السعة نفسِه، والفائضُ يذهب لقائمة الانتظار.
           </p>
         </div>

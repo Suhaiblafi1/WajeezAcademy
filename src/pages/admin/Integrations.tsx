@@ -8,8 +8,8 @@ import { CreditCard, Loader2, Mail, PlugZap, RefreshCw, Send, ServerOff, ShieldC
 import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 
-const inputCls = "rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white focus:border-teal focus:outline-none";
-const labelCls = "block text-micro font-bold text-white/50";
+const inputCls = "rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground focus:border-teal focus:outline-none";
+const labelCls = "block text-micro font-bold text-muted-foreground";
 
 interface IntegrationsView {
   payment: {
@@ -90,9 +90,9 @@ export default function Integrations() {
     return (
       <AdminLayout title="التكاملات">
         <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
-          <ServerOff className="h-12 w-12 text-white/20" />
-          <p className="mt-4 max-w-md text-sm text-white/55">{offline}</p>
-          <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-white/70 hover:border-white/40">
+          <ServerOff className="h-12 w-12 text-muted-foreground/50" />
+          <p className="mt-4 max-w-md text-sm text-muted-foreground">{offline}</p>
+          <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground hover:border-white/40">
             <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
           </button>
         </div>
@@ -106,13 +106,13 @@ export default function Integrations() {
     <AdminLayout title="التكاملات — الدفع والبريد">
 
       {loading || !view ? (
-        <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-white/30" /></div>
+        <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" /></div>
       ) : (
         <div className="grid gap-5 lg:grid-cols-2">
           {/* ════ مزود الدفع ════ */}
           <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
             <p className="flex items-center gap-2 text-sm font-black"><CreditCard className="h-4 w-4 text-gold-ink" /> مزود الدفع</p>
-            <p className="mt-1 text-[11px] leading-5 text-white/50">
+            <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
               المزودان الحقيقيان يعملان بصفحات دفع مستضافة لديهم — لا بيانات بطاقات تمر بخوادمنا أبداً،
               والتسوية تتم عبر webhook موقَّت فقط.
             </p>
@@ -159,8 +159,8 @@ export default function Integrations() {
                       </span>
                     </p>
                   )}
-                  <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-micro leading-5 text-white/50">
-                    <p className="font-bold text-white/70">عنوان الـ webhook — سجّله في لوحة المزود:</p>
+                  <div className="rounded-xl border border-white/10 bg-paper/20 px-3 py-2 text-micro leading-5 text-muted-foreground">
+                    <p className="font-bold text-foreground">عنوان الـ webhook — سجّله في لوحة المزود:</p>
                     <p dir="ltr" className="mt-0.5 select-all font-mono text-teal-light-ink">{webhookUrl}</p>
                     {/* كان هنا أنّ Stripe يحتاج «جسرا» يعيد إرسال التوقيع بترويسة
                         x-payment-signature. صار الخادمُ يقرأ ترويسة Stripe الرسميّة
@@ -168,12 +168,12 @@ export default function Integrations() {
                         («t=…,v1=…» موقَّعةً على «الطابع.الجسم») بنافذةِ خمس دقائق —
                         فبقاءُ النصّ القديم يدفع صاحبَ المنصّة إلى بناء ما لا لزوم له.
                         حارسُ الصيغة: server/tests/commerce/stripe-signature.test.ts */}
-                    <p className="mt-1"><b className="text-white/70">Stripe:</b> صِلْ لوحتَه بهذا العنوان مباشرة وضع <span dir="ltr" className="font-mono">whsec_…</span> في «سر التوقيع» — لا جسرَ ولا رمزَ مشترك. والحدثُ المطلوب <span dir="ltr" className="font-mono">checkout.session.completed</span> وحدَه؛ غيرُه يُسجَّل ويُتجاهَل.</p>
-                    <p className="mt-1"><b className="text-white/70">Moyasar:</b> سجّل «سر التوقيع» نفسَه رمزاً مشتركاً في لوحتهم.</p>
+                    <p className="mt-1"><b className="text-foreground">Stripe:</b> صِلْ لوحتَه بهذا العنوان مباشرة وضع <span dir="ltr" className="font-mono">whsec_…</span> في «سر التوقيع» — لا جسرَ ولا رمزَ مشترك. والحدثُ المطلوب <span dir="ltr" className="font-mono">checkout.session.completed</span> وحدَه؛ غيرُه يُسجَّل ويُتجاهَل.</p>
+                    <p className="mt-1"><b className="text-foreground">Moyasar:</b> سجّل «سر التوقيع» نفسَه رمزاً مشتركاً في لوحتهم.</p>
                   </div>
                 </>
               )}
-              <label className="flex cursor-pointer items-center gap-2 text-xs font-bold text-white/70">
+              <label className="flex cursor-pointer items-center gap-2 text-xs font-bold text-foreground">
                 <input type="checkbox" checked={payForm.enabled} onChange={(e) => setPayForm({ ...payForm, enabled: e.target.checked })} className="accent-gold" />
                 تفعيل هذا المزود — غير المفعّل يعني: المزود الاختباري يعمل
               </label>
@@ -193,7 +193,7 @@ export default function Integrations() {
           {/* ════ البريد ════ */}
           <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
             <p className="flex items-center gap-2 text-sm font-black"><Mail className="h-4 w-4 text-teal-ink" /> خادم البريد (SMTP)</p>
-            <p className="mt-1 text-[11px] leading-5 text-white/50">
+            <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
               فور التفعيل تصبح قناة email في الإشعارات حقيقية — قبول التسجيل والفواتير والشهادات تصل بريداً.
               غير المفعّلة تسجَّل «فشل: لا مزود» وتُعاد المحاولة تلقائياً.
             </p>
@@ -240,11 +240,11 @@ export default function Integrations() {
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-4">
-                <label className="flex cursor-pointer items-center gap-2 text-xs font-bold text-white/70">
+                <label className="flex cursor-pointer items-center gap-2 text-xs font-bold text-foreground">
                   <input type="checkbox" checked={mailForm.secure} onChange={(e) => setMailForm({ ...mailForm, secure: e.target.checked })} className="accent-gold" />
                   اتصال آمن TLS (المنفذ 465 عادة)
                 </label>
-                <label className="flex cursor-pointer items-center gap-2 text-xs font-bold text-white/70">
+                <label className="flex cursor-pointer items-center gap-2 text-xs font-bold text-foreground">
                   <input type="checkbox" checked={mailForm.enabled} onChange={(e) => setMailForm({ ...mailForm, enabled: e.target.checked })} className="accent-gold" />
                   تفعيل قناة البريد
                 </label>
@@ -267,7 +267,7 @@ export default function Integrations() {
           </section>
 
           {/* قاعدة الأمان */}
-          <p className="flex items-start gap-2 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 text-[11px] leading-6 text-white/55 lg:col-span-2">
+          <p className="flex items-start gap-2 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 text-[11px] leading-6 text-muted-foreground lg:col-span-2">
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-teal-ink" />
             قواعد ثابتة: الأسرار تُكتب ولا تُقرأ (آخر 4 خانات فقط للعرض)، ومتغيرات البيئة تغلب الشاشة دائماً لبيئات الإنتاج،
             وكل حفظ وفحص موثق في سجل الأثر — ولا تسوية مالية إلا عبر webhook موقَّت أو تسجيل يدوي بصلاحية.

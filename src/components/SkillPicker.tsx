@@ -105,12 +105,12 @@ export default function SkillPicker({
         </p>
         <label className="relative">
           <span className="sr-only">ابحث في المهارات</span>
-          <Search className="pointer-events-none absolute inset-y-0 end-3 my-auto h-3.5 w-3.5 text-white/40" aria-hidden="true" />
+          <Search className="pointer-events-none absolute inset-y-0 end-3 my-auto h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="ابحث بالاسم أو الشريحة…"
-            className="min-h-11 w-56 rounded-2xl border border-white/12 bg-black/25 px-4 pe-9 text-xs placeholder:text-white/35 focus:border-teal/60 focus:outline-none"
+            className="min-h-11 w-56 rounded-2xl border border-white/12 bg-paper/25 px-4 pe-9 text-xs placeholder:text-muted-foreground/75 focus:border-teal/60 focus:outline-none"
           />
         </label>
       </div>
@@ -127,7 +127,7 @@ export default function SkillPicker({
         </ul>
       )}
 
-      <ul className="mt-2 max-h-72 space-y-1 overflow-y-auto rounded-2xl border border-white/10 bg-black/20 p-2">
+      <ul className="mt-2 max-h-72 space-y-1 overflow-y-auto rounded-2xl border border-white/10 bg-paper/20 p-2">
         {shown.map((r) => {
           const on = selectedIds.includes(r.id);
           return (
@@ -171,7 +171,7 @@ export default function SkillPicker({
             <div className="rounded-2xl border border-white/12 bg-white/[0.03] p-3">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-[11px] font-black text-foreground">طلب مهارة غير موجودة</p>
-                <button type="button" onClick={() => setAskOpen(false)} aria-label="إغلاق" className="cursor-pointer text-muted-foreground hover:text-white">
+                <button type="button" onClick={() => setAskOpen(false)} aria-label="إغلاق" className="cursor-pointer text-muted-foreground hover:text-foreground">
                   <X className="h-4 w-4" />
                 </button>
               </div>
@@ -181,13 +181,13 @@ export default function SkillPicker({
                   onChange={(e) => setAsk({ ...ask, slug: e.target.value })}
                   placeholder="skill_slug"
                   dir="ltr"
-                  className="min-h-11 rounded-2xl border border-white/12 bg-black/25 px-4 font-mono text-xs placeholder:text-white/35 focus:border-teal/60 focus:outline-none"
+                  className="min-h-11 rounded-2xl border border-white/12 bg-paper/25 px-4 font-mono text-xs placeholder:text-muted-foreground/75 focus:border-teal/60 focus:outline-none"
                 />
                 <input
                   value={ask.nameAr}
                   onChange={(e) => setAsk({ ...ask, nameAr: e.target.value })}
                   placeholder="الاسم العربي"
-                  className="min-h-11 rounded-2xl border border-white/12 bg-black/25 px-4 text-xs placeholder:text-white/35 focus:border-teal/60 focus:outline-none"
+                  className="min-h-11 rounded-2xl border border-white/12 bg-paper/25 px-4 text-xs placeholder:text-muted-foreground/75 focus:border-teal/60 focus:outline-none"
                 />
               </div>
               <textarea
@@ -195,7 +195,7 @@ export default function SkillPicker({
                 onChange={(e) => setAsk({ ...ask, reasonAr: e.target.value })}
                 rows={2}
                 placeholder="لماذا لا تكفي مهارة موجودة؟ — يقرأها المراجع"
-                className="mt-2 w-full rounded-2xl border border-white/12 bg-black/25 px-4 py-2 text-xs leading-6 placeholder:text-white/35 focus:border-teal/60 focus:outline-none"
+                className="mt-2 w-full rounded-2xl border border-white/12 bg-paper/25 px-4 py-2 text-xs leading-6 placeholder:text-muted-foreground/75 focus:border-teal/60 focus:outline-none"
               />
               <button
                 type="button"

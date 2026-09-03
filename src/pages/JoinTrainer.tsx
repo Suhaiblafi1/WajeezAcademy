@@ -117,7 +117,7 @@ function MultiPick({ id, label, options, selected, onChange }: {
           {selected.map((s) => (
             <span key={s} className="inline-flex items-center gap-1.5 rounded-full border border-teal/40 bg-teal/10 px-2.5 py-1 text-[11px] font-bold text-teal-light-ink">
               {s}
-              <button type="button" onClick={() => toggleValue(s)} aria-label={`أزل ${s}`} className="cursor-pointer text-muted-foreground transition hover:text-white">×</button>
+              <button type="button" onClick={() => toggleValue(s)} aria-label={`أزل ${s}`} className="cursor-pointer text-muted-foreground transition hover:text-foreground">×</button>
             </span>
           ))}
         </div>
@@ -526,8 +526,8 @@ export default function JoinTrainer() {
                 <BadgeCheck className="h-4 w-4" /> ما التالي؟
               </p>
               <p className="mt-2 text-sm leading-8 text-foreground">
-                سيقرأ فريقنا الأكاديمي طلبك ومستنداتك، ثم <b className="text-white">نتواصل معك عبر {channel?.label ?? "البريد"}</b>
-                {channelValue && <> على <b dir="ltr" className="text-white">{channelValue}</b></>} لتحديد موعد
+                سيقرأ فريقنا الأكاديمي طلبك ومستنداتك، ثم <b className="text-foreground">نتواصل معك عبر {channel?.label ?? "البريد"}</b>
+                {channelValue && <> على <b dir="ltr" className="text-foreground">{channelValue}</b></>} لتحديد موعد
                 اجتماع تعريفي قصير نعرّفك فيه بمنهجية الأكاديمية ونسمع منك.
               </p>
             </div>
@@ -634,7 +634,7 @@ export default function JoinTrainer() {
                     >
                       {state === "done" ? <Check className="h-3.5 w-3.5" /> : s.n}
                     </span>
-                    <span className={`text-xs font-black ${state === "todo" ? "text-muted-foreground" : "text-white"}`}>{s.title}</span>
+                    <span className={`text-xs font-black ${state === "todo" ? "text-muted-foreground" : "text-foreground"}`}>{s.title}</span>
                   </span>
                   <span className="mt-1.5 block text-micro leading-relaxed text-muted-foreground">{s.hint}</span>
                 </div>
@@ -719,7 +719,7 @@ export default function JoinTrainer() {
                           <button
                             type="button" onClick={() => setShowPassword((v) => !v)}
                             aria-label={showPassword ? "أخفِ كلمة المرور" : "أظهر كلمة المرور"}
-                            className="absolute left-1 top-1/2 grid h-11 w-11 -translate-y-1/2 cursor-pointer place-items-center text-muted-foreground transition hover:text-white"
+                            className="absolute left-1 top-1/2 grid h-11 w-11 -translate-y-1/2 cursor-pointer place-items-center text-muted-foreground transition hover:text-foreground"
                           >
                             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </button>
@@ -803,7 +803,7 @@ export default function JoinTrainer() {
                     لدي اعتماد أو ترخيص رسمي من جهة أو هيئة تدريب معترف بها
                   </ConsentRow>
                   {form.hasAccreditation && (
-                    <div className="mt-3 rounded-2xl border border-white/10 bg-black/20 p-4">
+                    <div className="mt-3 rounded-2xl border border-white/10 bg-paper/20 p-4">
                       <FieldRow>
                         <Field label="جهة الاعتماد" htmlFor="jt-accred-body" required error={errOf("accredBody")}>
                           <select
@@ -836,7 +836,7 @@ export default function JoinTrainer() {
                           </Field>
                         )}
                       </FieldRow>
-                      <p className="mt-4 text-[11px] leading-6 text-white/40">
+                      <p className="mt-4 text-[11px] leading-6 text-muted-foreground">
                         نطلب وثيقة الاعتماد لاحقا في خطوة المستندات — والمذكور هنا لا يُنشر ولا يُعرض للمتعلمين قبل توثيقه.
                       </p>
                     </div>
@@ -900,7 +900,7 @@ export default function JoinTrainer() {
                   className={`${areaCls} ${motivationLen > 0 && motivationLen < MOTIVATION_MIN ? "border-gold/50" : ""}`}
                 />
                 <p id="jt-why-count" className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px]">
-                  <span className={motivationLen < MOTIVATION_MIN ? "text-gold-ink" : "text-white/40"}>
+                  <span className={motivationLen < MOTIVATION_MIN ? "text-gold-ink" : "text-muted-foreground"}>
                     {motivationLen < MOTIVATION_MIN
                       ? `اكتب ${MOTIVATION_MIN} حرفا على الأقل. أضف مثالا يوضّح القيمة التي ستقدّمها للمتعلمين في وجيز.`
                       : "شكرا — هذا يكفي."}
@@ -932,7 +932,7 @@ export default function JoinTrainer() {
                     return (
                       <div key={d.kind} className={`rounded-xl border p-4 ${
                         st?.status === "done" ? "border-teal/45 bg-teal/[0.06]"
-                          : st?.status === "error" ? "border-gold/50 bg-gold/[0.06]" : "border-white/12 bg-black/25"
+                          : st?.status === "error" ? "border-gold/50 bg-gold/[0.06]" : "border-white/12 bg-paper/25"
                       }`}>
                         <label className="flex cursor-pointer items-start gap-3">
                           <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white/[0.06]">
@@ -942,7 +942,7 @@ export default function JoinTrainer() {
                           </span>
                           <span className="min-w-0 flex-1">
                             <b className="block text-[12.5px] leading-6 text-foreground">{d.label}{d.required ? " *" : ""}</b>
-                            <span className="mt-0.5 block text-[11px] text-white/40">{d.hint}</span>
+                            <span className="mt-0.5 block text-[11px] text-muted-foreground">{d.hint}</span>
                             {st?.name && <span className="mt-1 block truncate text-[11px] text-muted-foreground">{st.name}</span>}
                           </span>
                           <input type="file" accept={d.accept} className="sr-only"
@@ -1061,7 +1061,7 @@ export default function JoinTrainer() {
                         onClick={() => setContactChannel(c.value)}
                         aria-pressed={on}
                         className={`flex w-full cursor-pointer items-start gap-3 rounded-xl border p-3.5 text-right transition-colors ${
-                          on ? "border-teal bg-teal/[0.12]" : "border-white/12 bg-black/25 hover:border-white/30"
+                          on ? "border-teal bg-teal/[0.12]" : "border-white/12 bg-paper/25 hover:border-white/30"
                         }`}
                       >
                         <span className={`mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg ${on ? "bg-teal/25 text-teal-light-ink" : "bg-white/[0.06] text-muted-foreground"}`}>
@@ -1093,7 +1093,7 @@ export default function JoinTrainer() {
                 {(contactChannel === "phone" || contactChannel === "whatsapp") && normalizeDigits(form.phone) && (
                   <p className="mt-4 flex items-center gap-2 rounded-xl border border-teal/25 bg-teal/[0.05] p-3 text-[11.5px] leading-6 text-foreground">
                     <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-light-ink" />
-                    سنتواصل على <b dir="ltr" className="text-white">{form.phoneCountryCode}{normalizeDigits(form.phone)}</b> — إن لم يكن رقمك، عد إلى القسم الأول وصحّحه.
+                    سنتواصل على <b dir="ltr" className="text-foreground">{form.phoneCountryCode}{normalizeDigits(form.phone)}</b> — إن لم يكن رقمك، عد إلى القسم الأول وصحّحه.
                   </p>
                 )}
                 {(contactChannel === "phone" || contactChannel === "whatsapp") && !normalizeDigits(form.phone) && (

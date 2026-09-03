@@ -76,9 +76,9 @@ export default function RatingModeration() {
     <AdminLayout title="مراجعة تعليقات التقييم">
       <div className="mb-5 flex items-start gap-3 rounded-2xl border border-teal/25 bg-teal/[0.05] p-4">
         <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-teal-light-ink" />
-        <p className="text-[12px] leading-6 text-white/65">
-          قرارك هنا يحكم <span className="font-black text-white/85">التعليق المكتوب</span> وحده:
-          يُنشر علنا أو يُحجب. <span className="font-black text-white/85">الدرجة تدخل المعدّل في كل الأحوال</span> —
+        <p className="text-[12px] leading-6 text-foreground">
+          قرارك هنا يحكم <span className="font-black text-foreground">التعليق المكتوب</span> وحده:
+          يُنشر علنا أو يُحجب. <span className="font-black text-foreground">الدرجة تدخل المعدّل في كل الأحوال</span> —
           فالرقم المعلَن يبقى قياسا لا اختيارا. والقائمة تصلك بلا اسم المُقيِّم عمدا: الحكم على النصّ.
         </p>
       </div>
@@ -89,7 +89,7 @@ export default function RatingModeration() {
             key={t.key}
             onClick={() => setStatus(t.key)}
             className={`cursor-pointer rounded-full border px-4 py-1.5 text-xs font-bold transition ${
-              status === t.key ? "border-teal/60 bg-teal/15 text-teal-light-ink" : "border-white/10 text-white/55 hover:border-white/30"
+              status === t.key ? "border-teal/60 bg-teal/15 text-teal-light-ink" : "border-white/10 text-muted-foreground hover:border-white/30"
             }`}
           >
             {t.label}
@@ -100,8 +100,8 @@ export default function RatingModeration() {
 
       {offline && (
         <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center">
-          <ServerOff className="h-10 w-10 text-white/20" />
-          <p className="mt-3 max-w-md text-sm leading-7 text-white/55">{offline}</p>
+          <ServerOff className="h-10 w-10 text-muted-foreground/50" />
+          <p className="mt-3 max-w-md text-sm leading-7 text-muted-foreground">{offline}</p>
         </div>
       )}
 
@@ -110,7 +110,7 @@ export default function RatingModeration() {
       )}
 
       {!offline && !loading && rows.length === 0 && (
-        <p className="rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-10 text-center text-sm text-white/50">
+        <p className="rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-10 text-center text-sm text-muted-foreground">
           لا تعليقات في هذه الحالة.
         </p>
       )}
@@ -120,15 +120,15 @@ export default function RatingModeration() {
           {rows.map((r) => (
             <li key={r.id} className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
               <div className="flex flex-wrap items-center gap-2 text-micro">
-                <span className="rounded-full border border-white/10 px-2 py-0.5 font-bold text-white/45">{KIND_AR[r.subjectType]}</span>
+                <span className="rounded-full border border-white/10 px-2 py-0.5 font-bold text-muted-foreground">{KIND_AR[r.subjectType]}</span>
                 <span className="font-black text-gold">{r.score} ★</span>
                 {r.subjectNameAr
-                  ? <span className="font-bold text-white/70">{r.subjectNameAr}</span>
-                  : <span dir="ltr" className="text-white/25">{r.subjectId}</span>}
+                  ? <span className="font-bold text-foreground">{r.subjectNameAr}</span>
+                  : <span dir="ltr" className="text-muted-foreground/50">{r.subjectId}</span>}
               </div>
-              <p className="mt-3 text-[13px] leading-7 text-white/75">{r.commentAr}</p>
+              <p className="mt-3 text-[13px] leading-7 text-foreground">{r.commentAr}</p>
               {r.moderationReason && (
-                <p className="mt-2 text-[11px] text-white/40">سبب الحجب: {r.moderationReason}</p>
+                <p className="mt-2 text-[11px] text-muted-foreground">سبب الحجب: {r.moderationReason}</p>
               )}
               {r.publishStatus === "pending" && (
                 <div className="mt-4 flex flex-wrap gap-2">
@@ -142,7 +142,7 @@ export default function RatingModeration() {
                   <button
                     onClick={() => setBlocking(r)}
                     disabled={busy === r.id}
-                    className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-1.5 text-[11px] font-bold text-white/65 transition hover:border-red-400/50 hover:text-red-300 disabled:opacity-50"
+                    className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-1.5 text-[11px] font-bold text-foreground transition hover:border-red-400/50 hover:text-red-300 disabled:opacity-50"
                   >
                     <XCircle className="h-3.5 w-3.5" /> احجب النصّ
                   </button>
@@ -166,8 +166,8 @@ export default function RatingModeration() {
             void act(target.id, false, reason);
           }}
         >
-          <p className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 leading-6 text-white/80">«{blocking.commentAr}»</p>
-          <p>يُحجَب <b className="text-white/85">النصُّ وحدَه</b> — ودرجةُ التقييم باقيةٌ في المعدّل، فالحجبُ لا يُخفي رأيا بل يمنع نشرَ عبارة.</p>
+          <p className="rounded-xl border border-white/10 bg-paper/20 px-3 py-2 leading-6 text-foreground">«{blocking.commentAr}»</p>
+          <p>يُحجَب <b className="text-foreground">النصُّ وحدَه</b> — ودرجةُ التقييم باقيةٌ في المعدّل، فالحجبُ لا يُخفي رأيا بل يمنع نشرَ عبارة.</p>
         </ConfirmAction>
       )}
     </AdminLayout>

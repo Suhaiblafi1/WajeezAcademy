@@ -30,13 +30,13 @@ export default function ListToolbar({
   return (
     <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
       <label className="relative min-w-[220px] flex-1">
-        <Search className="pointer-events-none absolute top-1/2 right-3 h-3.5 w-3.5 -translate-y-1/2 text-white/30" />
+        <Search className="pointer-events-none absolute top-1/2 right-3 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/50" />
         <input
           value={q}
           onChange={(e) => { onQ(e.target.value); onPage(1); }}
           placeholder={placeholder}
           aria-label={placeholder}
-          className="w-full rounded-xl border border-white/12 bg-black/30 py-2 pr-9 pl-3 text-xs text-white placeholder:text-white/30 focus:border-teal focus:outline-none"
+          className="w-full rounded-xl border border-white/12 bg-paper/30 py-2 pr-9 pl-3 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none"
         />
       </label>
 

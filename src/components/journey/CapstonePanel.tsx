@@ -170,7 +170,7 @@ function RequestCard({
       <p className="mt-1.5 text-[11.5px] leading-6 text-muted-foreground">{bodyAr}</p>
 
       {request || sent ? (
-        <div className="mt-3 rounded-xl border border-white/10 bg-black/20 p-3">
+        <div className="mt-3 rounded-xl border border-white/10 bg-paper/20 p-3">
           <span className={`inline-block rounded-full border px-2.5 py-0.5 text-micro font-bold ${meta?.cls ?? REQUEST_STATUS_AR.pending.cls}`}>
             {meta?.label ?? REQUEST_STATUS_AR.pending.label}
           </span>
@@ -201,7 +201,7 @@ function RequestCard({
                 onChange={(e) => setAudience(e.target.value)}
                 maxLength={300}
                 placeholder="مثال: إدارة الموارد البشرية في شركتي، أو لجنة منحة"
-                className="mt-1.5 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-[12.5px] text-white placeholder:text-white/25 focus:border-teal focus:outline-none"
+                className="mt-1.5 w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-[12.5px] text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none"
               />
             </label>
           )}

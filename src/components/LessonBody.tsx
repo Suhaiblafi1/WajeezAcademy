@@ -77,7 +77,7 @@ export default function LessonBody({ body, className = "" }: { body: string; cla
         switch (b.kind) {
           case "h":
             return b.level === 1 ? (
-              <h3 key={k} className="mt-5 text-base font-black text-white first:mt-0">{inline(b.text, k)}</h3>
+              <h3 key={k} className="mt-5 text-base font-black text-foreground first:mt-0">{inline(b.text, k)}</h3>
             ) : b.level === 2 ? (
               <h4 key={k} className="mt-4 text-sm font-black text-foreground first:mt-0">{inline(b.text, k)}</h4>
             ) : (
@@ -115,7 +115,7 @@ export default function LessonBody({ body, className = "" }: { body: string; cla
             );
           case "code":
             return (
-              <pre key={k} dir="ltr" className="overflow-x-auto rounded-2xl border border-white/10 bg-black/30 p-4 text-left">
+              <pre key={k} dir="ltr" className="overflow-x-auto rounded-2xl border border-white/10 bg-paper/30 p-4 text-left">
                 <code className="font-mono text-xs leading-6 text-foreground">{b.text}</code>
               </pre>
             );

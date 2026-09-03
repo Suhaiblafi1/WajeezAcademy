@@ -64,13 +64,13 @@ export default function SkillDelta({ g }: { g: SkillGrowth }) {
 
       <div className="flex items-center gap-2">
         {g.beforeLevel === null ? (
-          <span className="text-[11px] text-white/40">لا قياس قبليّ</span>
+          <span className="text-[11px] text-muted-foreground">لا قياس قبليّ</span>
         ) : (
           <>
             <span className="w-20">
               <SkillMeter level={g.beforeLevel} className="opacity-45" />
             </span>
-            <ArrowLeft className="h-3.5 w-3.5 shrink-0 text-white/40" aria-hidden="true" />
+            <ArrowLeft className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
           </>
         )}
         <span className="w-20">

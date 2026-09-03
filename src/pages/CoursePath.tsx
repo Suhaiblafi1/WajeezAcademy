@@ -42,7 +42,7 @@ import { hasCoreCatalog } from "@/data/core-catalog-source";
 /* سعر الدورة الواحدة في القوائم: رقمٌ من شعبةٍ حقيقية، أو «مع الشعبة» —
    ولا تقدير بينهما. */
 function CoursePriceTag({ amount, money, className }: { amount: number | null; money: (n: number) => string; className: string }) {
-  if (amount === null) return <span className="text-[11px] font-bold text-white/35">مع الشعبة</span>;
+  if (amount === null) return <span className="text-[11px] font-bold text-muted-foreground">مع الشعبة</span>;
   return <span dir="ltr" className={className}>{money(amount)}</span>;
 }
 
@@ -165,7 +165,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
       );
     }
     return (
-      <div dir="rtl" className="grid min-h-screen place-items-center bg-paper px-6 text-center text-white">
+      <div dir="rtl" className="grid min-h-screen place-items-center bg-paper px-6 text-center text-foreground">
         <div>
           <p className="text-lg font-black">لم نجد هذه الدورة</p>
           <p className="mt-2 text-sm text-muted-foreground">قد تكون أُعيدت تسميتها أو نُقلت إلى مسار آخر.</p>
@@ -254,7 +254,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
   };
 
   return (
-    <div dir="rtl" className="min-h-screen bg-paper text-white">
+    <div dir="rtl" className="min-h-screen bg-paper text-foreground">
       <SeoHead
         title={`ابنِ مسارك من «${anchor.name}»`}
         description={`ابدأ بدورة «${anchor.name}» وأضف إليها ما يكملها — وادفع ثمن ما اخترته وحده.`}
@@ -263,7 +263,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
 
       <header className="sticky top-0 z-40 border-b border-white/10 bg-paper/85 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-5">
-          <Link to="/courses" className="flex items-center gap-2 text-foreground hover:text-white">
+          <Link to="/courses" className="flex items-center gap-2 text-foreground hover:text-foreground">
             <ArrowRight className="h-5 w-5" />
             <span className="text-sm font-medium">الدورات</span>
           </Link>
@@ -419,7 +419,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                         <button
                           onClick={() => remove(c.id)}
                           aria-label={`احذف ${c.name} من مسارك`}
-                          className="grid h-7 w-7 place-items-center rounded-lg text-white/35 transition hover:bg-white/5 hover:text-foreground"
+                          className="grid h-7 w-7 place-items-center rounded-lg text-muted-foreground transition hover:bg-white/5 hover:text-foreground"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -483,9 +483,9 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                     {hasBreakdown ? "ما تدفعه" : picked.length === 1 ? "سعر الدورة — ما تدفعه" : `مجموع الـ${picked.length} دورات`}
                   </dt>
                   <dd className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                    <span dir="ltr" className="text-[26px] font-black leading-none text-white">{money(finalPayable)}</span>
+                    <span dir="ltr" className="text-[26px] font-black leading-none text-foreground">{money(finalPayable)}</span>
                     {/* المشطوبُ يُقرأ ونسبةُ الوفر بجانبه: كان `text-sm
-                        text-white/35` فلا يُرى مقدارُ الوفر أصلا. */}
+                        text-muted-foreground` فلا يُرى مقدارُ الوفر أصلا. */}
                     {savedPct > 0 && (
                       <>
                         <span dir="ltr" className="text-base font-bold text-muted-foreground line-through decoration-white/45 decoration-2">
@@ -503,7 +503,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
               /* دورةٌ واحدة بلا شعبةٍ مسعَّرة تُبطل المجموع كله: مجموعُ ثلاثٍ
                  يُقرأ ثمنَ أربع. فلا رقم — ويُقال السبب. */
               <div className="space-y-1 text-[12px]">
-                <p className="text-sm font-black text-white">
+                <p className="text-sm font-black text-foreground">
                   {pricesLoaded ? "يُعلن السعر مع فتح الشعبة" : "يُقرأ السعر…"}
                 </p>
                 <p className="text-[11px] leading-5 text-muted-foreground">
@@ -531,7 +531,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                   aria-label="كود الخصم"
                   dir="ltr"
                   maxLength={24}
-                  className={`min-w-0 flex-1 rounded-xl border bg-white/[0.04] px-3 py-2 text-left text-[12px] tracking-widest placeholder:tracking-normal placeholder:text-white/25 focus:outline-none ${
+                  className={`min-w-0 flex-1 rounded-xl border bg-white/[0.04] px-3 py-2 text-left text-[12px] tracking-widest placeholder:tracking-normal placeholder:text-muted-foreground/75 focus:outline-none ${
                     promoApplied ? "border-teal-light text-teal-light-ink" : promoError ? "border-gold/60" : "border-white/15 focus:border-teal-light"
                   }`}
                 />
@@ -566,12 +566,12 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                     <code dir="ltr" className="rounded-md border border-gold/40 bg-gold/10 px-1.5 py-0.5 font-mono text-micro font-black text-gold-ink">
                       {FIRST_TIME_PROMO.code}
                     </code>
-                    <span className="text-white/40">· بلا إثبات</span>
+                    <span className="text-muted-foreground">· بلا إثبات</span>
                   </li>
                   {DISCOUNT_CATEGORIES.map((cat) => (
                     <li key={cat.id} className="text-[11px] leading-5 text-muted-foreground">
                       <span className="font-bold text-foreground">{cat.label_ar} — {cat.percentOff}٪</span>
-                      <span className="text-white/40"> · {cat.evidence_ar}</span>
+                      <span className="text-muted-foreground"> · {cat.evidence_ar}</span>
                     </li>
                   ))}
                 </ul>
@@ -664,7 +664,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                       <button
                         onClick={() => setDeferred((d) => d.filter((x) => x !== id))}
                         aria-label={`أزل ${c.name} من مرحلتك التالية`}
-                        className="grid h-8 w-8 place-items-center rounded-lg text-white/35 transition hover:bg-white/5 hover:text-foreground"
+                        className="grid h-8 w-8 place-items-center rounded-lg text-muted-foreground transition hover:bg-white/5 hover:text-foreground"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -700,7 +700,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                     <span className="min-w-0">
                       <span className="block text-sm font-black leading-snug">{c.name}</span>
                       <span className="mt-1 block text-[11px] leading-relaxed text-teal-light-ink">{s.reason_ar}</span>
-                      <span className="mt-1 block text-[11px] text-white/40">{weeksLabel(c.weeks)}</span>
+                      <span className="mt-1 block text-[11px] text-muted-foreground">{weeksLabel(c.weeks)}</span>
                     </span>
                     <span className="flex shrink-0 flex-col items-end gap-2">
                       <CoursePriceTag amount={priceOf(c.id)} money={money} className="text-sm font-black text-foreground" />
@@ -733,7 +733,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                 maxLength={80}
                 placeholder="مثال: مسار التفاوض والبيع للمستقلين"
                 aria-label="اسم مسارك"
-                className="min-w-0 flex-1 rounded-xl border border-white/15 bg-white/[0.04] px-3.5 py-2.5 text-[13px] placeholder:text-white/30 focus:border-gold focus:outline-none"
+                className="min-w-0 flex-1 rounded-xl border border-white/15 bg-white/[0.04] px-3.5 py-2.5 text-[13px] placeholder:text-muted-foreground/75 focus:border-gold focus:outline-none"
               />
               <Button
                 onClick={() => void saveDraft()}
@@ -752,7 +752,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
           </section>
         )}
 
-        <p className="mt-8 text-center text-[11px] text-white/40">
+        <p className="mt-8 text-center text-[11px] text-muted-foreground">
           دفع آمن — يصلك تأكيد فوري على بريدك وتُفتح منصة الطالب الخاصة بك
         </p>
       </main>

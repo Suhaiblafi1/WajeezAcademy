@@ -100,7 +100,7 @@ export default function RubricSelfReview({
         {rubric.criteria.map((c, ci) => (
           <div key={ci} className="rounded-2xl border border-white/10 bg-white/[0.02] p-3">
             <p className="flex items-start gap-2 text-[13px] font-bold leading-6">
-              <ScrollText className="mt-0.5 h-3.5 w-3.5 shrink-0 text-white/40" aria-hidden="true" />
+              <ScrollText className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
               {c.titleAr}
             </p>
             <ul className="mt-2 space-y-1.5">

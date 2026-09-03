@@ -38,7 +38,7 @@ const STATUS_META: Record<string, { label: string; cls: string }> = {
   active: { label: "نشط", cls: "border-emerald-400/30 text-emerald-300" },
   invited: { label: "مدعوّ — لم يدخل بعد", cls: "border-gold/40 text-gold-ink" },
   suspended: { label: "موقوف", cls: "border-red-500/40 text-red-400" },
-  archived: { label: "مؤرشَف", cls: "border-white/25 text-white/50" },
+  archived: { label: "مؤرشَف", cls: "border-white/25 text-muted-foreground" },
 };
 
 interface PermRow {
@@ -198,9 +198,9 @@ export default function Users() {
     return (
       <AdminLayout title="المستخدمون والأدوار">
         <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
-          <ServerOff className="h-12 w-12 text-white/20" />
-          <p className="mt-4 max-w-md text-sm text-white/55">{offline}</p>
-          <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-white/70 hover:border-white/40">
+          <ServerOff className="h-12 w-12 text-muted-foreground/50" />
+          <p className="mt-4 max-w-md text-sm text-muted-foreground">{offline}</p>
+          <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground hover:border-white/40">
             <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
           </button>
         </div>
@@ -211,7 +211,7 @@ export default function Users() {
   return (
     <AdminLayout title="المستخدمون والأدوار">
       <div className="mb-5 flex flex-wrap items-center gap-3">
-        <button onClick={() => void load()} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-white/60 hover:border-white/40">
+        <button onClick={() => void load()} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-muted-foreground hover:border-white/40">
           <RefreshCw className="h-3.5 w-3.5" /> تحديث
         </button>
         {/* إنشاءُ حسابٍ إداريّ — لم يكن له مسارٌ أصلا.
@@ -231,7 +231,7 @@ export default function Users() {
       {creating && canManage && (
         <div className="mb-5 rounded-2xl border border-gold/25 bg-gold/[0.04] p-5">
           <h3 className="text-sm font-black text-gold-ink">حسابٌ جديد بدوره</h3>
-          <p className="mt-1 text-[11px] leading-6 text-white/55">
+          <p className="mt-1 text-[11px] leading-6 text-muted-foreground">
             لا كلمةَ مرورٍ تُختار هنا: يصله بريدٌ يشرح دورَه وما يفتحه له، ويعيّن كلمتَه بنفسه من رابطٍ صالحٍ <b>سبعةَ أيّام</b>.
             ويبقى «مدعوّا» حتّى يدخل، فلا يُحسب فريقا عاملا قبل ذلك.
           </p>
@@ -239,17 +239,17 @@ export default function Users() {
             <input
               value={newUser.displayName} onChange={(e) => setNewUser({ ...newUser, displayName: e.target.value })}
               placeholder="الاسم" aria-label="اسم المستخدم الجديد"
-              className="rounded-xl border border-white/12 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/30 focus:border-gold/50 focus:outline-none"
+              className="rounded-xl border border-white/12 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-gold/50 focus:outline-none"
             />
             <input
               value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
               placeholder="البريد" aria-label="بريد المستخدم الجديد" dir="ltr" type="email"
-              className="rounded-xl border border-white/12 bg-black/30 px-3 py-2 text-left text-xs text-white placeholder:text-white/30 focus:border-gold/50 focus:outline-none"
+              className="rounded-xl border border-white/12 bg-paper/30 px-3 py-2 text-left text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-gold/50 focus:outline-none"
             />
             <select
               value={newUser.roleId} onChange={(e) => setNewUser({ ...newUser, roleId: e.target.value })}
               aria-label="دور المستخدم الجديد"
-              className="cursor-pointer rounded-xl border border-white/12 bg-black/30 px-3 py-2 text-xs text-white focus:border-gold/50 focus:outline-none [&>option]:bg-surface"
+              className="cursor-pointer rounded-xl border border-white/12 bg-paper/30 px-3 py-2 text-xs text-foreground focus:border-gold/50 focus:outline-none [&>option]:bg-surface"
             >
               {ALL_ROLES.map((r) => <option key={r} value={r}>{ROLE_NAMES_AR[r]}</option>)}
             </select>
@@ -277,7 +277,7 @@ export default function Users() {
               تأهيلُ ستّةٍ كان ستَّ رحلاتٍ في النموذج نفسِه. */}
           <details className="mt-4 border-t border-white/10 pt-3">
             <summary className="cursor-pointer text-[11px] font-bold text-gold-ink">أو ادعُ فريقا كاملا بدفعةٍ واحدة</summary>
-            <p className="mt-2 text-[11px] leading-6 text-white/50">
+            <p className="mt-2 text-[11px] leading-6 text-muted-foreground">
               سطرٌ لكلّ شخص: <span dir="ltr" className="font-mono">name@example.com, الاسم الكامل</span> — بالدور المختار أعلاه.
               وما يفشل من الأسطر يُقال وحدَه، فلا تتوقّف الدفعةُ عند أوّل خطأ.
             </p>
@@ -285,7 +285,7 @@ export default function Users() {
               value={bulk} onChange={(e) => setBulk(e.target.value)} rows={4}
               aria-label="أسطرُ الدعوة بالدفعة"
               placeholder={"sara@example.com, سارة العامري\nomar@example.com, عمر الشمري"}
-              className="mt-2 w-full rounded-xl border border-white/12 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/25 focus:border-gold/50 focus:outline-none"
+              className="mt-2 w-full rounded-xl border border-white/12 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-gold/50 focus:outline-none"
             />
             <button
               disabled={busy || bulk.trim() === ""}
@@ -316,11 +316,11 @@ export default function Users() {
       )}
 
       {loading ? (
-        <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-white/30" /></div>
+        <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" /></div>
       ) : rows.length === 0 ? (
         <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
-          <UsersIcon className="h-12 w-12 text-white/20" />
-          <p className="mt-4 text-sm text-white/50">لا مستخدمون.</p>
+          <UsersIcon className="h-12 w-12 text-muted-foreground/50" />
+          <p className="mt-4 text-sm text-muted-foreground">لا مستخدمون.</p>
         </div>
       ) : (
         <>
@@ -332,7 +332,7 @@ export default function Users() {
             ["archived", `المؤرشَفة (${countOf("archived")})`],
           ] as const).map(([k, label]) => (
             <button key={k} onClick={() => { setBox(k); setQ(""); setPage(1); setEditing(null); setPermFor(null); }}
-              className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-black transition ${box === k ? "bg-gold text-on-gold" : "text-white/60 hover:text-white"}`}>
+              className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-black transition ${box === k ? "bg-gold text-on-gold" : "text-muted-foreground hover:text-foreground"}`}>
               {label}
             </button>
           ))}
@@ -340,7 +340,7 @@ export default function Users() {
         <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="حسابا"
           placeholder="ابحث باسمٍ أو بريدٍ أو دور…" />
         {view.total === 0 ? (
-          <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-white/45">
+          <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-muted-foreground">
             {q.trim() ? `لا حساب يطابق «${q.trim()}».` : `لا حسابات في هذه الخانة.`}
           </p>
         ) : (
@@ -373,7 +373,7 @@ export default function Users() {
                 <div className="flex gap-2">
                   {canManage && (
                     <button onClick={() => { setEditing(editing === u.id ? null : u.id); setRolePick(u.roles.map((r) => r.id)); }}
-                      className="cursor-pointer rounded-full border border-white/15 px-4 py-1.5 text-xs font-bold text-white/65 hover:border-white/40">
+                      className="cursor-pointer rounded-full border border-white/15 px-4 py-1.5 text-xs font-bold text-foreground hover:border-white/40">
                       الأدوار
                     </button>
                   )}
@@ -410,7 +410,7 @@ export default function Users() {
                   {canManage && u.status !== "archived" && (
                     <button disabled={busy}
                       onClick={() => setConfirming({ kind: "archive", user: u })}
-                      className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/25 px-4 py-1.5 text-xs font-bold text-white/60 hover:border-white/45 disabled:opacity-40">
+                      className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/25 px-4 py-1.5 text-xs font-bold text-muted-foreground hover:border-white/45 disabled:opacity-40">
                       <Archive className="h-3.5 w-3.5" /> أرشفة
                     </button>
                   )}
@@ -442,15 +442,15 @@ export default function Users() {
                 </div>
               </div>
               {permFor === u.id && (
-                <div className="mt-4 rounded-2xl border border-teal/25 bg-black/25 p-4">
+                <div className="mt-4 rounded-2xl border border-teal/25 bg-paper/25 p-4">
                   {!perms ? (
-                    <div className="grid place-items-center py-8"><Loader2 className="h-6 w-6 animate-spin text-white/30" /></div>
+                    <div className="grid place-items-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground/50" /></div>
                   ) : (
                     <>
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
                           <p className="text-sm font-black">صلاحيات {perms.user.displayName}</p>
-                          <p className="mt-0.5 text-[11px] leading-relaxed text-white/45">
+                          <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
                             الدور حزمةٌ، وهذا استثناءٌ لشخصه: منحٌ زائدٌ عليه، أو منعٌ ينزع منه وحده. والمنع أعلى من الدور والمنح معا.
                           </p>
                           {/* لا تفويضَ في العلوّ: من لا يعلو رتبةَ صاحبه لا يمسّ شيئا — ويُقال قبل المحاولة */}
@@ -461,7 +461,7 @@ export default function Users() {
                           )}
                         </div>
                         <div className="text-left">
-                          <p className="text-[11px] text-white/45">صلاحيّاته الفعليّة</p>
+                          <p className="text-[11px] text-muted-foreground">صلاحيّاته الفعليّة</p>
                           <p className="text-lg font-black text-teal-light-ink">{perms.permissions.filter((p) => p.effective).length}</p>
                         </div>
                       </div>
@@ -469,10 +469,10 @@ export default function Users() {
                       <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
                         <input value={permQuery} onChange={(e) => setPermQuery(e.target.value)}
                           placeholder="ابحث في الصلاحيات…" aria-label="ابحث في الصلاحيات"
-                          className="w-full rounded-xl border border-white/12 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/30 focus:border-teal focus:outline-none" />
+                          className="w-full rounded-xl border border-white/12 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none" />
                         <input value={permReason} onChange={(e) => setPermReason(e.target.value)}
                           placeholder="سبب الاستثناء — يُقيَّد باسمك ويُقرأ عند المراجعة" aria-label="سبب الاستثناء"
-                          className="w-full rounded-xl border border-white/12 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/30 focus:border-teal focus:outline-none" />
+                          className="w-full rounded-xl border border-white/12 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none" />
                       </div>
 
                       <div className="mt-3 max-h-96 space-y-4 overflow-y-auto pl-1">
@@ -488,7 +488,7 @@ export default function Users() {
                             }, {}),
                         ).map(([group, list]) => (
                           <div key={group}>
-                            <p className="mb-1.5 text-[11px] font-black text-white/50">{GROUP_AR[group] ?? group}</p>
+                            <p className="mb-1.5 text-[11px] font-black text-muted-foreground">{GROUP_AR[group] ?? group}</p>
                             <div className="space-y-1.5">
                               {list.map((p) => (
                                 <div key={p.key} className={`flex flex-wrap items-center justify-between gap-2 rounded-xl border px-3 py-2 ${
@@ -497,23 +497,23 @@ export default function Users() {
                                     : p.fromRole ? "border-white/10 bg-white/[0.02]" : "border-white/[0.07]"
                                 }`}>
                                   <div className="min-w-0">
-                                    <p className={`text-xs font-bold ${p.effective ? "text-white/85" : "text-white/45 line-through"}`}>{p.description}</p>
-                                    <p className="text-micro text-white/35" dir="ltr">{p.key}</p>
-                                    {p.reason && <p className="mt-0.5 text-micro text-white/45">السبب: {p.reason}</p>}
+                                    <p className={`text-xs font-bold ${p.effective ? "text-foreground" : "text-muted-foreground line-through"}`}>{p.description}</p>
+                                    <p className="text-micro text-muted-foreground" dir="ltr">{p.key}</p>
+                                    {p.reason && <p className="mt-0.5 text-micro text-muted-foreground">السبب: {p.reason}</p>}
                                   </div>
                                   <div className="flex shrink-0 items-center gap-1.5">
                                     <span className={`rounded-full border px-2.5 py-0.5 text-micro font-bold ${
                                       p.effect === "deny" ? "border-red-400/45 text-red-300"
                                         : p.effect === "grant" ? "border-teal/45 text-teal-light-ink"
-                                        : p.fromRole ? "border-white/15 text-white/55" : "border-white/10 text-white/30"
+                                        : p.fromRole ? "border-white/15 text-muted-foreground" : "border-white/10 text-muted-foreground/50"
                                     }`}>
                                       {p.effect === "deny" ? "مُنعت عنه" : p.effect === "grant" ? "مُنحت له" : p.fromRole ? "من دوره" : "خارج دوره"}
                                     </span>
                                     {!p.delegatable ? (
-                                      <span className="max-w-[11rem] text-left text-micro leading-4 text-white/35">{p.refusal}</span>
+                                      <span className="max-w-[11rem] text-left text-micro leading-4 text-muted-foreground">{p.refusal}</span>
                                     ) : p.effect ? (
                                       <button disabled={busy} onClick={() => void setPerm(u.id, p.key, "clear")}
-                                        className="cursor-pointer rounded-full border border-white/15 px-3 py-1 text-micro font-bold text-white/60 hover:border-white/35 disabled:opacity-40">
+                                        className="cursor-pointer rounded-full border border-white/15 px-3 py-1 text-micro font-bold text-muted-foreground hover:border-white/35 disabled:opacity-40">
                                         أزل الاستثناء
                                       </button>
                                     ) : p.fromRole ? (
@@ -535,7 +535,7 @@ export default function Users() {
                         ))}
                       </div>
 
-                      <p className="mt-3 border-t border-white/8 pt-3 text-[11px] leading-relaxed text-white/45">
+                      <p className="mt-3 border-t border-white/8 pt-3 text-[11px] leading-relaxed text-muted-foreground">
                         كلّ منحٍ ومنعٍ يُقيَّد في سجلّ التدقيق باسمك وسببه، وتُبطَل جلسات صاحبه فورا — فلا يعمل بصلاحيةٍ نُزعت ولا ينتظر ليعمل بما مُنح.
                       </p>
                     </>
@@ -548,13 +548,13 @@ export default function Users() {
               <EntityAuditTimeline entityType="user" entityId={u.id} labelAr="أثرُ هذا الحساب" />
 
               {editing === u.id && (
-                <div className="mt-4 rounded-xl border border-white/10 bg-black/20 p-4">
-                  <p className="mb-2 text-[11px] font-bold text-white/50">تعيين الأدوار — يستبدل القائمة كاملة:</p>
+                <div className="mt-4 rounded-xl border border-white/10 bg-paper/20 p-4">
+                  <p className="mb-2 text-[11px] font-bold text-muted-foreground">تعيين الأدوار — يستبدل القائمة كاملة:</p>
                   <div className="flex flex-wrap gap-2">
                     {ALL_ROLES.map((r) => (
                       <button key={r} type="button"
                         onClick={() => setRolePick(rolePick.includes(r) ? rolePick.filter((x) => x !== r) : [...rolePick, r])}
-                        className={`cursor-pointer rounded-full border px-3 py-1 text-[11px] font-bold transition ${rolePick.includes(r) ? "border-gold bg-gold/10 text-gold-ink" : "border-white/15 text-white/55 hover:border-white/40"}`}>
+                        className={`cursor-pointer rounded-full border px-3 py-1 text-[11px] font-bold transition ${rolePick.includes(r) ? "border-gold bg-gold/10 text-gold-ink" : "border-white/15 text-muted-foreground hover:border-white/40"}`}>
                         {ROLE_NAMES_AR[r]}
                       </button>
                     ))}
@@ -597,7 +597,7 @@ export default function Users() {
               "أُرشف الحساب — أُغلق وأُبطلت جلساتُه، وسجلّاتُه كما هي");
           }}
         >
-          <p><b className="text-white/85">الأرشفةُ ليست حذفا:</b> الحسابُ يبقى بسجلّه كلِّه — تسجيلاتُه وفواتيرُه وشهاداتُه — ولا يعود يدخل، وتُبطَل جلساتُه ودعواتُه القائمةُ فورا.</p>
+          <p><b className="text-foreground">الأرشفةُ ليست حذفا:</b> الحسابُ يبقى بسجلّه كلِّه — تسجيلاتُه وفواتيرُه وشهاداتُه — ولا يعود يدخل، وتُبطَل جلساتُه ودعواتُه القائمةُ فورا.</p>
           <p>وتُراجَع بإعادة التنشيط من تبويب «مؤرشَفون» متى شئت.</p>
         </ConfirmAction>
       )}
@@ -615,8 +615,8 @@ export default function Users() {
             void purge(target);
           }}
         >
-          <p>الحذفُ النهائيُّ <b className="text-white/85">لا رجعةَ فيه</b>: يُزال الصفُّ من القاعدة.</p>
-          <p className="font-mono text-white/60" dir="ltr">{confirming.user.email}</p>
+          <p>الحذفُ النهائيُّ <b className="text-foreground">لا رجعةَ فيه</b>: يُزال الصفُّ من القاعدة.</p>
+          <p className="font-mono text-muted-foreground" dir="ltr">{confirming.user.email}</p>
           <p>وإن كان للحساب سجلٌّ (تسجيلٌ أو طلبٌ أو فاتورة) فسيرفض الخادمُ الحذفَ ويقول ما فيه — ولك بعدها خيارُ المحو بالسجلّ. والأرشفةُ هي الفعلُ الموصى به لمن غادر.</p>
         </ConfirmAction>
       )}
@@ -634,11 +634,11 @@ export default function Users() {
             void purgeWithHistory(target, reason ?? "");
           }}
         >
-          <p>لهذا الحساب سجلٌّ <b className="text-white/85">سيُمحى معه</b>:</p>
+          <p>لهذا الحساب سجلٌّ <b className="text-foreground">سيُمحى معه</b>:</p>
           <ul className="space-y-1 pr-4">
             {confirming.blockers.map((b) => <li key={b} className="list-disc">{b}</li>)}
           </ul>
-          <p>محوٌ كاملٌ لا يُستعاد — يصلح لحسابات الديمو والتجربة، <b className="text-white/85">لا لعميلٍ حقيقيّ</b>. وأثرُ المحو نفسُه يبقى في السجلّ بسببه وصاحبه.</p>
+          <p>محوٌ كاملٌ لا يُستعاد — يصلح لحسابات الديمو والتجربة، <b className="text-foreground">لا لعميلٍ حقيقيّ</b>. وأثرُ المحو نفسُه يبقى في السجلّ بسببه وصاحبه.</p>
         </ConfirmAction>
       )}
     </AdminLayout>

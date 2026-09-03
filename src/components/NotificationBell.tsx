@@ -87,7 +87,7 @@ export default function NotificationBell({ audience }: { audience: BellAudience 
       <button
         onClick={() => void toggle()}
         aria-label={`الإشعارات — ${unread} غير مقروءة`}
-        className="relative grid h-9 w-9 cursor-pointer place-items-center rounded-full border border-white/10 bg-white/[0.03] text-muted-foreground transition hover:border-white/30 hover:text-white"
+        className="relative grid h-9 w-9 cursor-pointer place-items-center rounded-full border border-white/10 bg-white/[0.03] text-muted-foreground transition hover:border-white/30 hover:text-foreground"
       >
         <Bell className="h-4 w-4" />
         {unread > 0 && (
@@ -103,14 +103,14 @@ export default function NotificationBell({ audience }: { audience: BellAudience 
             <p className="text-xs font-black">الإشعارات</p>
             {items && items.some((n) => n.status === "sent") && (
               <button onClick={() => void markAll()}
-                className="flex cursor-pointer items-center gap-1 text-micro font-bold text-teal-light-ink hover:text-white">
+                className="flex cursor-pointer items-center gap-1 text-micro font-bold text-teal-light-ink hover:text-foreground">
                 <CheckCheck className="h-3 w-3" /> تعليم الكل كمقروء
               </button>
             )}
           </div>
           <div className="max-h-96 overflow-y-auto">
-            {items === null && <p className="p-6 text-center text-xs text-white/40">يُحمَّل…</p>}
-            {items?.length === 0 && <p className="p-6 text-center text-xs text-white/40">لا إشعارات بعد — تصلك هنا مستحقاتك وشعبك فور حدوثها.</p>}
+            {items === null && <p className="p-6 text-center text-xs text-muted-foreground">يُحمَّل…</p>}
+            {items?.length === 0 && <p className="p-6 text-center text-xs text-muted-foreground">لا إشعارات بعد — تصلك هنا مستحقاتك وشعبك فور حدوثها.</p>}
             {items?.map((n) => (
               <button
                 key={n.id}

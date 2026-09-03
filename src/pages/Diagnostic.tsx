@@ -721,7 +721,7 @@ export default function Diagnostic() {
   const qOptions: DiagOption[] = question ? (resolve(question.options, answers) ?? []) : [];
 
   return (
-    <div dir="rtl" className="min-h-screen bg-paper text-white">
+    <div dir="rtl" className="min-h-screen bg-paper text-foreground">
       <SeoHead
         title="التشخيص الذكي"
         description="تشخيص تعليمي تكيفي يفهم هدفك وواقعك، ويوصي بمسار واحد مفسّر بدرجة ثقة — مجاني ودون حساب."
@@ -730,7 +730,7 @@ export default function Diagnostic() {
       {/* Top bar */}
       <header className="sticky top-0 z-40 border-b border-white/10 bg-paper/85 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-5">
-          <Link to="/" className="flex items-center gap-2 text-foreground hover:text-white">
+          <Link to="/" className="flex items-center gap-2 text-foreground hover:text-foreground">
             <ArrowRight className="h-5 w-5" />
             <span className="text-sm font-medium">العودة للرئيسية</span>
           </Link>
@@ -1016,12 +1016,12 @@ export default function Diagnostic() {
                   onChange={(e) => setTextDraft(e.target.value)}
                   rows={4}
                   placeholder="اكتب بحرية… مثال: أعمل بنظام الورديات ووقتي متقطع، وأحلم أن أفتتح مشروعا صغيرا بعد سنتين"
-                  className="w-full rounded-2xl border border-white/15 bg-white/[0.04] p-5 text-base leading-relaxed text-white placeholder:text-white/30 focus:border-teal-light focus:outline-none"
+                  className="w-full rounded-2xl border border-white/15 bg-white/[0.04] p-5 text-base leading-relaxed text-foreground placeholder:text-muted-foreground/75 focus:border-teal-light focus:outline-none"
                 />
                 <div className="mt-5 flex items-center justify-between">
                   <button
                     onClick={() => answer(question.id, "")}
-                    className="text-sm font-semibold text-muted-foreground transition hover:text-white"
+                    className="text-sm font-semibold text-muted-foreground transition hover:text-foreground"
                   >
                     تخطَّ هذا السؤال
                   </button>
@@ -1071,7 +1071,7 @@ export default function Diagnostic() {
                   ))}
                 </div>
                 <div className="mt-6 flex items-center justify-between">
-                  <span className="text-xs text-white/40">
+                  <span className="text-xs text-muted-foreground">
                     قيّمت {Object.keys(ratingsDraft).length} من {question.items.length}
                   </span>
                   <Button
@@ -1126,7 +1126,7 @@ export default function Diagnostic() {
                   })}
                 </div>
                 <div className="mt-6 flex items-center justify-between">
-                  <span className="text-xs text-white/40">
+                  <span className="text-xs text-muted-foreground">
                     {question.maxSelect ? `اختر حتى ${question.maxSelect} — ` : ""}اخترت {multiDraft.length}
                   </span>
                   <Button
@@ -1144,7 +1144,7 @@ export default function Diagnostic() {
             <div className="mt-8 flex items-center justify-between">
               <button
                 onClick={back}
-                className="flex items-center gap-2 text-sm font-semibold text-muted-foreground transition hover:text-white"
+                className="flex items-center gap-2 text-sm font-semibold text-muted-foreground transition hover:text-foreground"
               >
                 <ArrowRight className="h-4 w-4" />
                 السؤال السابق
@@ -1156,7 +1156,7 @@ export default function Diagnostic() {
                   window.setTimeout(() => setSavedFlash(false), 2200);
                 }}
                 className={`flex items-center gap-2 text-sm font-semibold transition ${
-                  savedFlash ? "text-teal-light-ink" : "text-muted-foreground hover:text-white"
+                  savedFlash ? "text-teal-light-ink" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {savedFlash ? (
@@ -1183,7 +1183,7 @@ export default function Diagnostic() {
               <div className="mt-10 space-y-2.5 border-t border-white/[0.07] pt-5">
                 {understoodDims.length > 0 && (
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="flex items-center gap-1.5 text-[11px] font-bold text-white/40">
+                    <span className="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground">
                       <BrainCircuit className="h-3.5 w-3.5 text-teal-ink" />
                       يفهم الآن:
                     </span>
@@ -1198,7 +1198,7 @@ export default function Diagnostic() {
                   </div>
                 )}
                 {question.source && (
-                  <p className="text-[11px] leading-relaxed text-white/35">
+                  <p className="text-[11px] leading-relaxed text-muted-foreground">
                     <span className="font-bold text-muted-foreground">المصدر العلمي: </span>
                     {question.source}
                   </p>
@@ -1316,7 +1316,7 @@ export default function Diagnostic() {
                       <ListChecks className="ml-2 h-4 w-4" />
                       ابدأ الاستبيان التفصيلي
                     </Button>
-                    <p className="mt-2.5 text-[11px] text-white/40">مواقف عملية تقيس مهاراتك مباشرة — لا إعادة لما أجبت عنه.</p>
+                    <p className="mt-2.5 text-[11px] text-muted-foreground">مواقف عملية تقيس مهاراتك مباشرة — لا إعادة لما أجبت عنه.</p>
                   </div>
                 )}
                 {isExploratory && canDeepen && deepUnavailable && (
@@ -1344,7 +1344,7 @@ export default function Diagnostic() {
                   )}
                 </div>
                 {/* المستشار سطرٌ لمن يحتاجه لا زرٌّ بحجم الخطوة التالية */}
-                <p className="mt-5 text-xs text-white/40">
+                <p className="mt-5 text-xs text-muted-foreground">
                   أو{" "}
                   <AdvisorContact
                     label="تحدّث مع مستشار مهني"
@@ -1357,7 +1357,7 @@ export default function Diagnostic() {
                     }
                   />
                 </p>
-                <p className="mt-4 text-[11px] leading-relaxed text-white/40">
+                <p className="mt-4 text-[11px] leading-relaxed text-muted-foreground">
                   هذا تشخيص تعليمي مهني: ليس تقييما نفسيا أو طبيا. لا نرشّح مسارا بلا دليل كافٍ — هذه مسؤولية لا ضعف.
                 </p>
                 {/* هذه هي الشاشة الفعلية التي تُعرض حين لا مسار — لا الشاشة أدناه
@@ -1399,7 +1399,7 @@ export default function Diagnostic() {
                   لديك دقيقة أخرى لنتأكد أكثر؟
                 </Button>
                 {!deepUnavailable && (
-                  <p className="mx-auto mt-2 max-w-md text-[11px] leading-relaxed text-white/40">
+                  <p className="mx-auto mt-2 max-w-md text-[11px] leading-relaxed text-muted-foreground">
                     خطوة اختيارية تماما: ٤–٨ أسئلة قصيرة تزيد دقة توصيتك — تخطَّها بلا أي أثر إن كانت الصورة واضحة لك.
                   </p>
                 )}
@@ -1704,7 +1704,7 @@ export default function Diagnostic() {
                 انتبه — رصيدك السابق يتقاطع مع هذا المسار
               </h3>
               <p className="mt-3 text-sm leading-loose text-foreground">
-                كتبت أنك درست سابقا ما يشبه: <span className="font-bold text-white">{result.priorOverlap.join("، ")}</span>.
+                كتبت أنك درست سابقا ما يشبه: <span className="font-bold text-foreground">{result.priorOverlap.join("، ")}</span>.
                 راجع محاورها قبل الدفع — وإن كنت أتقنتها فعلا، اطلب من مستشارك استبدالها بدورة أعمق،
                 فوعدنا أنك لن تدفع ثمن ما تعرفه أصلا.
               </p>
@@ -1741,7 +1741,7 @@ export default function Diagnostic() {
               </Button>
               <button
                 onClick={restart}
-                className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground transition hover:text-white"
+                className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground transition hover:text-foreground"
               >
                 <RefreshCcw className="h-3.5 w-3.5" />
                 لا يشبهني؟ أعد التشخيص من جديد

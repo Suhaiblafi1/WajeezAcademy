@@ -19,23 +19,23 @@ function RefCard({ id }: { id: string }) {
   return (
     <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
       <div className="flex flex-wrap items-center gap-2">
-        <p className="text-sm font-black text-white/90">{ref.name_ar}</p>
-        <span className="text-[11px] text-white/55" dir="ltr">
+        <p className="text-sm font-black text-muted-foreground">{ref.name_ar}</p>
+        <span className="text-[11px] text-muted-foreground" dir="ltr">
           {ref.name_en}
         </span>
       </div>
-      <p className="mt-1 text-xs text-white/55">الجهة الناشرة: {ref.organization}</p>
+      <p className="mt-1 text-xs text-muted-foreground">الجهة الناشرة: {ref.organization}</p>
       <div className="mt-3 space-y-2 text-xs leading-6">
-        <p className="text-white/65">
+        <p className="text-muted-foreground">
           <span className="font-bold text-teal-light-ink">كيف تستخدمه وجيز: </span>
           {ref.purpose_ar}
         </p>
-        <p className="text-white/65">
+        <p className="text-muted-foreground">
           <span className="font-bold text-gold-ink">فائدته لك: </span>
           {ref.customer_benefit_ar}
         </p>
-        <p className="text-white/50">
-          <span className="font-bold text-white/65">حدود استخدامه: </span>
+        <p className="text-muted-foreground">
+          <span className="font-bold text-muted-foreground">حدود استخدامه: </span>
           {ref.limitations_ar}
         </p>
       </div>
@@ -45,7 +45,7 @@ function RefCard({ id }: { id: string }) {
         rel="noreferrer"
         /* min-h و py: مساحة اللمس لا تقل عن ٢٤×٢٤ (WCAG 2.5.8) — النص وحده
            كان ١٦ بكسل ارتفاعا، أصغر مما تطاله الإصبع بثقة. */
-        className="mt-3 inline-flex min-h-[24px] items-center gap-1.5 py-1 text-xs font-bold text-teal-light-ink transition hover:text-white"
+        className="mt-3 inline-flex min-h-[24px] items-center gap-1.5 py-1 text-xs font-bold text-teal-light-ink transition hover:text-foreground"
       >
         المصدر الأصلي
         <ExternalLink className="h-3 w-3" />
@@ -109,7 +109,7 @@ export default function Methodology() {
           توصية مبنية على منهجية،
           <span className="text-teal-light-ink"> لا على التخمين</span>
         </h1>
-        <p className="mt-4 max-w-xl leading-loose text-white/60">
+        <p className="mt-4 max-w-xl leading-loose text-muted-foreground">
           يحلل مؤشر وجيز ميولك وأهدافك وفجوات مهاراتك، ثم يربطها بما تحتاج إلى تعلمه ضمن مسار ذي مخرجات واضحة —
           بالاستفادة من {refs.length} أطر مهنية وتعليمية معروفة، نعرضها هنا بشفافية كاملة: كيف نستخدمها، وما فائدتها لك، وما حدودها.
         </p>
@@ -121,7 +121,7 @@ export default function Methodology() {
                 <s.icon className="h-5 w-5 text-gold-ink" />
                 {s.q}
               </h2>
-              <p className="mt-3 text-sm leading-loose text-white/65">{s.a}</p>
+              <p className="mt-3 text-sm leading-loose text-muted-foreground">{s.a}</p>
               {s.refs.map((id) => (
                 <RefCard key={id} id={id} />
               ))}
@@ -129,7 +129,7 @@ export default function Methodology() {
           ))}
         </div>
 
-        <p className="mt-10 rounded-2xl border border-gold/30 bg-gold/5 p-5 text-xs leading-loose text-white/60">
+        <p className="mt-10 rounded-2xl border border-gold/30 bg-gold/5 p-5 text-xs leading-loose text-muted-foreground">
           {DISCLAIMER_METHODOLOGY_AR} الأسماء تُذكر نصيا فقط دون شعارات، التزاما بتراخيص الجهات الناشرة.
         </p>
 
@@ -141,7 +141,7 @@ export default function Methodology() {
             جرّب المنهجية على نفسك — ابدأ التشخيص
             <ArrowLeft className="h-4 w-4" />
           </Link>
-          <p className="mt-3 text-xs text-white/55">
+          <p className="mt-3 text-xs text-muted-foreground">
             {pathways.length} مسارا في الكتالوج، كلها مبنية بهذه المنهجية.
           </p>
         </div>

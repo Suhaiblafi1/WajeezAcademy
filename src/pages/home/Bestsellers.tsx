@@ -185,11 +185,11 @@ export function Bestsellers() {
               <p className="mt-3 max-w-lg text-sm leading-8 text-muted-foreground">{spotlight.p.transformation}</p>
               <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground">
                 <span>{spotlight.p.level}</span>
-                <span className="text-white/20">•</span>
+                <span className="text-muted-foreground/50">•</span>
                 {/* الحجم كلّه في عبارةٍ واحدة: دوراتٌ وساعاتٌ وأسابيع. وكان
                     «الأسابيع» يُكتب مرّتين حين أُضيفت العبارة فوق سطرٍ يحملها. */}
                 <span>{pathwaySizeAr(spotlight.p)}</span>
-                <span className="text-white/20">•</span>
+                <span className="text-muted-foreground/50">•</span>
                 <span>{spotlight.p.weeklyHours} أسبوعيا</span>
               </div>
               {/* المخرَج الملموس — لا اسمُ مدرّبٍ لم يُعيَّن بعد */}

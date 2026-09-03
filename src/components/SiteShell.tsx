@@ -141,7 +141,7 @@ function SiteNav() {
 /* قالب الصفحات العامة الداخلية: ترويسة موحدة + محتوى + تذييل موحد */
 export default function SiteShell({ children }: { children: React.ReactNode }) {
   return (
-    <div dir="rtl" className="min-h-screen bg-paper text-white">
+    <div dir="rtl" className="min-h-screen bg-paper text-foreground">
       <SiteNav />
       <div className="mx-auto max-w-6xl px-5 py-12 md:py-16">{children}</div>
       <footer className="border-t border-white/5 py-8 text-center text-xs leading-6 text-muted-foreground">

@@ -188,14 +188,14 @@ export default function ComposedPlanCard({ plan, courseList = true }: { plan: Co
       {courseList && (plan.deferred?.length ?? 0) > 0 && (
         <div className="mt-4 rounded-2xl border border-dashed border-white/15 bg-white/[0.02] p-3.5 md:p-4">
           <p className="text-[11.5px] font-black text-muted-foreground">وهذان لمرحلتك التالية — لا لهذه الخطة</p>
-          <p className="mt-1 text-[11px] leading-relaxed text-white/40">
+          <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
             يناسبانك أيضا، لكن حشرهما هنا يطيل الخطة ويضعف إنهاءها. نعرضهما كي تعرف ما ينتظرك لا كي تشتريه الآن.
           </p>
           <ul className="mt-2.5 space-y-1.5">
             {plan.deferred!.map((d) => (
               <li key={d.courseId} className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11.5px] text-muted-foreground">
                 <span className="font-bold text-foreground">{d.title_ar}</span>
-                <span className="text-white/35" dir="ltr">{d.hours} ساعة</span>
+                <span className="text-muted-foreground" dir="ltr">{d.hours} ساعة</span>
                 {d.role && (
                   <span className={`rounded-md px-1.5 py-0.5 text-micro font-black ${ROLE_AR[d.role].cls}`}>
                     {ROLE_AR[d.role].label}
@@ -209,7 +209,7 @@ export default function ComposedPlanCard({ plan, courseList = true }: { plan: Co
 
       {plan.uncoveredGaps.length > 0 && (
         <p className="mt-4 flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-[11.5px] leading-relaxed text-muted-foreground">
-          <ArrowUpRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-white/40" />
+          <ArrowUpRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
           <span>
             وتبقى <b className="text-foreground">{plan.uncoveredGaps.length}</b> جوانب خارج هذه الخطة — لا نخفيها عنك:
             تُعالَج في مرحلة تالية أو مع مستشارك، فحشرها هنا يطيل الخطة ويشتّتها.

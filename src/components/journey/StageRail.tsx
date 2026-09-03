@@ -36,7 +36,7 @@ function Dot({ stage, selected }: { stage: WithSeq; selected: boolean }) {
           ? "border-teal-ink bg-teal-ink text-on-teal"
           : open
             ? `border-teal-ink text-teal-light-ink ${selected ? "bg-teal/20" : "bg-surface"}`
-            : "border-white/20 bg-surface text-white/40"
+            : "border-white/20 bg-surface text-muted-foreground"
       }`}
     >
       {done ? <Check className="h-4 w-4" /> : open ? stage.sequenceLabel : <Lock className="h-3 w-3" />}

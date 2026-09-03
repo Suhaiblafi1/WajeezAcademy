@@ -359,7 +359,7 @@ export default function BuyPanel({
                 onChange={(e) => setCoupon(e.target.value.toUpperCase())}
                 placeholder={`كود الخصم — مثال ${FIRST_TIME_PROMO.code}`}
                 dir="ltr"
-                className="min-w-0 flex-1 rounded-xl border border-white/12 bg-white/[0.04] px-3 py-2 text-left text-[12px] font-mono text-white outline-none transition focus:border-gold/50"
+                className="min-w-0 flex-1 rounded-xl border border-white/12 bg-white/[0.04] px-3 py-2 text-left text-[12px] font-mono text-foreground outline-none transition focus:border-gold/50"
               />
               <button
                 onClick={() => setApplied(coupon.trim())}
@@ -404,7 +404,7 @@ export default function BuyPanel({
                     <span dir="ltr">−{money(quote.listTotal - quote.subtotal, quote.currency)}</span>
                   </div>
                 )}
-                <div className="flex items-end justify-between border-t border-white/10 pt-2 text-white">
+                <div className="flex items-end justify-between border-t border-white/10 pt-2 text-foreground">
                   <span className="text-xs font-bold">ما تدفعه الآن</span>
                   <span dir="ltr" className="text-2xl font-black">{shownTotal}</span>
                 </div>
@@ -455,7 +455,7 @@ export default function BuyPanel({
                   {paying || quoting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
                   {paying ? "نحوّلك إلى صفحة الدفع…" : <>ادفع الآن · <span dir="ltr">{shownTotal}</span></>}
                 </button>
-                <p className="mt-2 text-center text-[11px] leading-5 text-white/40">
+                <p className="mt-2 text-center text-[11px] leading-5 text-muted-foreground">
                   الدفع على صفحة المزوّد — لا نحفظ بيانات بطاقتك. وبعد الدفع تُفتح منصّتك على ما اشتريت.
                 </p>
               </>

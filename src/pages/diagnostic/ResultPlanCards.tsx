@@ -199,10 +199,10 @@ export function PlanCourses({
       <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4">
         <p className="text-xs font-bold text-muted-foreground">
           مسارك المخصص الآن:{" "}
-          <span className="text-white">
+          <span className="text-foreground">
             {chosen.length} دورات{gift ? " + هدية مجانية" : ""}
           </span>
-          <span className="text-white/40"> · ~{totalWeeks} أسبوعا · يُحفظ تخصيصك تلقائيا ويظهر في صفحة مسارك بعد الاعتماد</span>
+          <span className="text-muted-foreground"> · ~{totalWeeks} أسبوعا · يُحفظ تخصيصك تلقائيا ويظهر في صفحة مسارك بعد الاعتماد</span>
         </p>
         <div className="mt-2.5 flex flex-wrap gap-1.5">
           {skills.map((s) => (
@@ -266,7 +266,7 @@ export function ResultPriceCard({ courseIds }: { courseIds: readonly string[] })
         <>
           <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
             <span className="text-sm text-muted-foreground">تبدأ من</span>
-            <span dir="ltr" className="text-3xl font-black text-white md:text-4xl">{formatCohortPrice(cheapest)}</span>
+            <span dir="ltr" className="text-3xl font-black text-foreground md:text-4xl">{formatCohortPrice(cheapest)}</span>
             <span className="text-sm text-muted-foreground">للدورة</span>
           </div>
           <p className="mt-1.5 text-xs text-teal-light-ink">
@@ -274,7 +274,7 @@ export function ResultPriceCard({ courseIds }: { courseIds: readonly string[] })
           </p>
         </>
       ) : (
-        <p className="mt-2 text-2xl font-black text-white md:text-3xl">
+        <p className="mt-2 text-2xl font-black text-foreground md:text-3xl">
           {loaded ? "يُعلن السعر مع فتح الشعبة" : "يُقرأ السعر…"}
         </p>
       )}
@@ -288,7 +288,7 @@ export function ResultPriceCard({ courseIds }: { courseIds: readonly string[] })
         </code>
         <span className="text-muted-foreground">— يُكتب في صفحة الدفع.</span>
       </p>
-      <p className="mt-3 text-[11px] leading-5 text-white/40">
+      <p className="mt-3 text-[11px] leading-5 text-muted-foreground">
         سعر خطتك يُحدَّد بعد أن تعتمدها — أنت من يقرّر دوراتها.
         {cheapest && known < courseIds.length && " وبعض دوراتها لم تُفتح لها شعبة بعد."} ولا يُطلب دفعٌ الآن.
       </p>

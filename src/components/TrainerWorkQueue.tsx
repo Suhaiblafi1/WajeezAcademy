@@ -42,7 +42,7 @@ export default function TrainerWorkQueue({ items, className = "" }: { items: Que
       </div>
 
       {items.length === 0 ? (
-        <p className="mt-4 rounded-2xl border border-white/8 bg-black/20 px-4 py-6 text-center text-xs leading-6 text-muted-foreground">
+        <p className="mt-4 rounded-2xl border border-white/8 bg-paper/20 px-4 py-6 text-center text-xs leading-6 text-muted-foreground">
           لا شيء ينتظرك الآن — الحضور مسجَّل والتسليمات مقيَّمة ولا جلسة قريبة.
           <br />
           يظهر هنا كل ما يحتاج إجراءً منك فور حدوثه.

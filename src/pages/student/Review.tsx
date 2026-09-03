@@ -40,7 +40,7 @@ function ReviewCard({
   const correct = chosen !== undefined && chosen === item.correctIndex;
   return (
     <li className="rounded-3xl border border-white/10 bg-white/[0.03] p-5 sm:p-6">
-      <div className="mb-3 flex flex-wrap items-center gap-2 text-[11px] text-white/50">
+      <div className="mb-3 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
         {item.skillNameAr && (
           <span className="inline-flex items-center gap-1.5 rounded-full border border-teal/40 px-2.5 py-0.5 font-bold text-teal-light-ink">
             <Target className="h-3 w-3" aria-hidden="true" />
@@ -67,7 +67,7 @@ function ReviewCard({
         onPick={onPick}
       />
 
-      <p className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/8 pt-3 text-[11px] text-white/55">
+      <p className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/8 pt-3 text-[11px] text-muted-foreground">
         <CalendarClock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         {saved ? (
           <>تعود هذه البطاقة في {fmtWhen(saved.dueAt)}.</>
@@ -152,10 +152,10 @@ export default function Review() {
       <section className="rounded-3xl border border-teal/30 bg-teal-ink/[0.07] p-6">
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div>
-            <p className="text-xs text-white/60">بطاقات استحقّت الاسترجاع اليوم</p>
+            <p className="text-xs text-muted-foreground">بطاقات استحقّت الاسترجاع اليوم</p>
             <p className="mt-1 text-5xl font-black leading-none text-teal-light-ink tabular-nums">{summary?.due ?? 0}</p>
             {summary && summary.due === 0 && summary.nextDueAt && (
-              <p className="mt-2 text-xs text-white/55">التالية في {fmtWhen(summary.nextDueAt)}</p>
+              <p className="mt-2 text-xs text-muted-foreground">التالية في {fmtWhen(summary.nextDueAt)}</p>
             )}
           </div>
           <dl className="grid grid-cols-3 gap-5 text-center">
@@ -166,12 +166,12 @@ export default function Review() {
             ].map((t) => (
               <div key={t.k}>
                 <dd className="text-2xl font-black tabular-nums">{t.v}</dd>
-                <dt className="mt-0.5 text-[11px] text-white/55">{t.k}</dt>
+                <dt className="mt-0.5 text-[11px] text-muted-foreground">{t.k}</dt>
               </div>
             ))}
           </dl>
         </div>
-        <p className="mt-4 text-[11px] leading-relaxed text-white/55">{HONESTY_NOTE}</p>
+        <p className="mt-4 text-[11px] leading-relaxed text-muted-foreground">{HONESTY_NOTE}</p>
       </section>
 
       {queue.length === 0 ? (

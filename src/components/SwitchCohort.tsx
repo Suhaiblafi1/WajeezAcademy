@@ -71,7 +71,7 @@ export default function SwitchCohort({
       >
         <CalendarClock className="h-4 w-4 shrink-0 text-teal-light-ink" />
         <span className="min-w-0 flex-1">غيّر موعدك — لم تبدأ شعبتك بعد</span>
-        <span className="shrink-0 text-[11px] font-bold text-white/40">{options.length} بديل</span>
+        <span className="shrink-0 text-[11px] font-bold text-muted-foreground">{options.length} بديل</span>
       </button>
       {open && (
         <>

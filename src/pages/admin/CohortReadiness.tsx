@@ -69,7 +69,7 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
       <h2 className="flex items-center gap-2 text-sm font-black text-teal-light-ink">
         <Wallet className="h-4 w-4" /> جاهزيّة العرض — لماذا لا تظهر بعض الأسعار
       </h2>
-      <p className="mt-2 max-w-3xl text-[11.5px] leading-6 text-white/60">
+      <p className="mt-2 max-w-3xl text-[11.5px] leading-6 text-muted-foreground">
         السعر يُقرأ من الشعب لا من الكتالوج، فما لا شعبةَ مفتوحةً له لا يظهر له سعر —
         وهذا مقصود: رقمٌ لا تسنده شعبةٌ قابلة للتسجيل وعدٌ يفترق عن الفاتورة.
         اعرض أوّلا لترى ما سيتغيّر، ثمّ نفّذ.
@@ -83,7 +83,7 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         {/* ── فتح الشعب ── */}
-        <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+        <div className="rounded-2xl border border-white/10 bg-paper/25 p-4">
           <p className="flex items-center gap-1.5 text-xs font-black">
             <PlayCircle className="h-3.5 w-3.5 text-teal" /> فتحُ شعبةٍ لكلّ دورة بلا شعبة
           </p>
@@ -110,7 +110,7 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
 
           {open && (
             <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.03] p-3">
-              <p className="text-[11px] leading-6 text-white/70">
+              <p className="text-[11px] leading-6 text-foreground">
                 دورات منشورة <b className="tabular-nums">{open.publishedCourses}</b> ·{" "}
                 {open.applied ? "فُتحت" : "ستُفتح"} <b className="tabular-nums text-teal-light-ink">{open.opened}</b> ·{" "}
                 لها شعبةٌ أصلا <b className="tabular-nums">{open.alreadyLive}</b>
@@ -130,7 +130,7 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
                   </summary>
                   <ul className="mt-1.5 space-y-1">
                     {open.rows.filter((r) => r.reason).map((r) => (
-                      <li key={r.courseId} className="text-micro leading-5 text-white/55">
+                      <li key={r.courseId} className="text-micro leading-5 text-muted-foreground">
                         {r.titleAr} — {r.reason}
                       </li>
                     ))}
@@ -142,7 +142,7 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
         </div>
 
         {/* ── محاذاة الأسعار ── */}
-        <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+        <div className="rounded-2xl border border-white/10 bg-paper/25 p-4">
           <p className="flex items-center gap-1.5 text-xs font-black">
             <Tags className="h-3.5 w-3.5 text-gold" /> توحيدُ أسعار الشعب على سعر القائمة
           </p>
@@ -170,7 +170,7 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
 
           {align && (
             <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.03] p-3">
-              <p className="text-[11px] leading-6 text-white/70">
+              <p className="text-[11px] leading-6 text-foreground">
                 شعب <b className="tabular-nums">{align.cohorts}</b> ·{" "}
                 {align.applied ? "وُحّدت" : "ستُوحَّد"} <b className="tabular-nums text-gold">{align.changed}</b> ·{" "}
                 مطابقة أصلا <b className="tabular-nums">{align.alreadyAligned}</b>
@@ -182,10 +182,10 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
               )}
               {align.rows.length > 0 && (
                 <details className="mt-2">
-                  <summary className="cursor-pointer text-micro text-white/50">التفصيل ({align.rows.length})</summary>
+                  <summary className="cursor-pointer text-micro text-muted-foreground">التفصيل ({align.rows.length})</summary>
                   <ul className="mt-1.5 space-y-1">
                     {align.rows.slice(0, 40).map((r) => (
-                      <li key={r.cohortId} className="text-micro leading-5 text-white/55">
+                      <li key={r.cohortId} className="text-micro leading-5 text-muted-foreground">
                         {r.title} — {r.blocked ? <span className="text-gold">{r.blocked}</span> : <>{r.from} ← <b>{r.to}</b></>}
                       </li>
                     ))}
@@ -196,7 +196,7 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
           )}
         </div>
         {/* ── الحالةُ تتبع التواريخ ── */}
-        <div className="rounded-2xl border border-white/10 bg-black/25 p-4 lg:col-span-2">
+        <div className="rounded-2xl border border-white/10 bg-paper/25 p-4 lg:col-span-2">
           <p className="flex items-center gap-1.5 text-xs font-black">
             <CalendarCheck className="h-3.5 w-3.5 text-teal" /> حالاتٌ متأخّرةٌ عن تواريخها
           </p>
@@ -228,13 +228,13 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
                 </p>
               ) : (
                 <>
-                  <p className="text-[11px] text-white/70">
+                  <p className="text-[11px] text-foreground">
                     {sync.applied ? "حُرّكت" : "ستُحرَّك"} <b className="tabular-nums text-teal-light-ink">{sync.applied ? sync.changed : sync.changes.length}</b> شعبة
                   </p>
                   <ul className="mt-2 space-y-1">
                     {sync.changes.slice(0, 12).map((ch) => (
-                      <li key={ch.cohortId} className="text-micro leading-5 text-white/55">
-                        <b className="text-white/75">{ch.title}</b> — {STATUS_AR[ch.from] ?? ch.from} ← {STATUS_AR[ch.to] ?? ch.to} · {ch.reason}
+                      <li key={ch.cohortId} className="text-micro leading-5 text-muted-foreground">
+                        <b className="text-foreground">{ch.title}</b> — {STATUS_AR[ch.from] ?? ch.from} ← {STATUS_AR[ch.to] ?? ch.to} · {ch.reason}
                       </li>
                     ))}
                   </ul>

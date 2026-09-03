@@ -44,9 +44,9 @@ function MeasureRow({
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="text-sm font-bold">{row.nameAr}</p>
         {row.beforeLevel === null ? (
-          <span className="text-[11px] text-white/45">لم يقسها المؤشر قبل الدورة</span>
+          <span className="text-[11px] text-muted-foreground">لم يقسها المؤشر قبل الدورة</span>
         ) : (
-          <span className="flex items-center gap-2 text-[11px] text-white/55">
+          <span className="flex items-center gap-2 text-[11px] text-muted-foreground">
             قبل الدورة: {levelLabelAr(row.beforeLevel)}
             <span className="w-16">
               <SkillMeter level={row.beforeLevel} className="opacity-45" />
@@ -63,7 +63,7 @@ function MeasureRow({
               <label
                 key={lvl}
                 className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-2xl border px-3 py-2 text-xs transition ${
-                  active ? "border-teal bg-teal-ink/15 font-bold text-white" : "border-white/10 text-white/65 hover:border-white/30"
+                  active ? "border-teal bg-teal-ink/15 font-bold text-foreground" : "border-white/10 text-foreground hover:border-white/30"
                 }`}
               >
                 <input
@@ -105,7 +105,7 @@ function Result({ summary, courseTitle }: { summary: GrowthSummary; courseTitle:
         ].map((t) => (
           <div key={t.k} className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
             <dd className="text-2xl font-black tabular-nums" dir={t.ltr ? "ltr" : undefined}>{t.v}</dd>
-            <dt className="mt-0.5 text-[11px] text-white/55">{t.k}</dt>
+            <dt className="mt-0.5 text-[11px] text-muted-foreground">{t.k}</dt>
           </div>
         ))}
       </dl>
@@ -115,7 +115,7 @@ function Result({ summary, courseTitle }: { summary: GrowthSummary; courseTitle:
         ))}
       </ul>
       {c.firstMeasured > 0 && (
-        <p className="mt-4 text-[11px] leading-relaxed text-white/50">
+        <p className="mt-4 text-[11px] leading-relaxed text-muted-foreground">
           {c.firstMeasured} مهارة قِيست هنا أول مرة — لا مرجع قبليّ لها، فلا تدخل حساب الفرق.
           لو أكملت جولة التعمق في المؤشر قبل دورتك القادمة، صار لها فرق يُقاس.
         </p>
@@ -219,7 +219,7 @@ export default function Remeasure() {
         <>
           <Result summary={summary} courseTitle={courseTitle} />
           {data.measuredAt && !saved && (
-            <p className="mt-4 text-[11px] text-white/45">قِيس هذا النمو في {fmtWhen(data.measuredAt)} — ويُقاس مرة واحدة لكل دورة.</p>
+            <p className="mt-4 text-[11px] text-muted-foreground">قِيس هذا النمو في {fmtWhen(data.measuredAt)} — ويُقاس مرة واحدة لكل دورة.</p>
           )}
         </>
       ) : (
@@ -229,20 +229,20 @@ export default function Remeasure() {
               <Ruler className="h-5 w-5 text-teal-light-ink" aria-hidden="true" />
               أعد قياس مهاراتك بعد «{courseTitle}»
             </h1>
-            <p className="mt-3 text-sm leading-7 text-white/70">
+            <p className="mt-3 text-sm leading-7 text-foreground">
               قِيست مهاراتك قبل الدورة بمؤشر وجيز، والآن نقيسها بعدها بالسلّم نفسه — فيظهر الفرق مقيسا
               لا موصوفا. الإجابة تقديرك أنت لمستواك الآن: لا صحيح ولا خطأ هنا، والرقم يُحفظ
-              <span className="font-bold text-white/90"> مرة واحدة </span>
+              <span className="font-bold text-foreground"> مرة واحدة </span>
               فاختر بصدق.
             </p>
             {!data.gate.open && (
-              <p className="mt-4 flex items-start gap-2 rounded-2xl border border-gold/30 bg-gold/[0.07] px-4 py-3 text-xs leading-6 text-white/75">
+              <p className="mt-4 flex items-start gap-2 rounded-2xl border border-gold/30 bg-gold/[0.07] px-4 py-3 text-xs leading-6 text-foreground">
                 <Lock className="mt-0.5 h-4 w-4 shrink-0 text-gold-ink" aria-hidden="true" />
                 <span>{data.gate.reasonAr} — لأن فرقا بلا إتمام لا يدل على شيء.</span>
               </p>
             )}
             {!data.form.measurable && (
-              <p className="mt-4 flex items-start gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-xs leading-6 text-white/70">
+              <p className="mt-4 flex items-start gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-xs leading-6 text-foreground">
                 <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-gold-ink" aria-hidden="true" />
                 لا مهارات مصنّفة مرتبطة بهذه الدورة بعد — فلا قياس بعديّ لها.
               </p>
@@ -283,7 +283,7 @@ export default function Remeasure() {
                   احفظ القياس واعرض الفرق
                 </button>
                 {!complete && (
-                  <p className="text-xs font-bold text-white/70">
+                  <p className="text-xs font-bold text-foreground">
                     بقيت {rows.length - Object.keys(levels).length} مهارة بلا جواب
                   </p>
                 )}

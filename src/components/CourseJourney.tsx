@@ -110,7 +110,7 @@ export default function CourseJourney({
       {/* سياسة المدربين تُقال مرة واحدة هنا بدل أن تتكرر شارةً على كل بطاقة —
           كانت خمس دورات تحمل خمس نسخ من الجملة نفسها فتغرق ما يختلف بينها.
           والشارة أدناه تبقى للمدرب المُعلَن، لأن اسمه معلومة تخص بطاقته وحدها. */}
-      <p className="mt-1.5 text-[11px] leading-relaxed text-white/40">
+      <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
         نُعلن اسم مدرب كل دورة عند اعتماد شعبتها — ولا نعرض اسما قبل ذلك.
       </p>
 
@@ -160,7 +160,7 @@ export default function CourseJourney({
                           </span>
                         )}
                       </span>
-                      <ChevronDown className="h-4 w-4 shrink-0 text-white/40 transition-transform duration-300 group-data-[state=open]:rotate-180 group-data-[state=open]:text-teal-light-ink" />
+                      <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-300 group-data-[state=open]:rotate-180 group-data-[state=open]:text-teal-light-ink" />
                     </span>
                     {c.shortPromise && (
                       <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">{c.shortPromise}</span>
@@ -327,7 +327,7 @@ export default function CourseJourney({
                               <span className="block font-bold text-foreground">{m.title}</span>
                               {m.outcome && <span className="mt-0.5 block text-muted-foreground">{m.outcome}</span>}
                             </span>
-                            <span className="shrink-0 text-micro text-white/40">{m.hours} س</span>
+                            <span className="shrink-0 text-micro text-muted-foreground">{m.hours} س</span>
                           </li>
                         ))}
                       </ol>
@@ -383,7 +383,7 @@ export default function CourseJourney({
             </span>
             <div className="pt-1">
               <p className="text-sm font-black text-gold-ink">
-                مشروع التخرّج <span className="font-bold text-white/40">— إضافيّ، خارج دورات المسار</span>
+                مشروع التخرّج <span className="font-bold text-muted-foreground">— إضافيّ، خارج دورات المسار</span>
               </p>
               <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{graduationProjectAr}</p>
             </div>
@@ -428,7 +428,7 @@ export default function CourseJourney({
                   <Plus className="h-4 w-4 shrink-0" />
                   <span className="min-w-0 truncate">أضف دورة أخرى إلى مسارك</span>
                 </span>
-                <span className="shrink-0 text-[11px] font-bold text-white/40">{edit.pool.length}</span>
+                <span className="shrink-0 text-[11px] font-bold text-muted-foreground">{edit.pool.length}</span>
                 <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition ${poolOpen ? "rotate-180" : ""}`} />
               </CollapsibleTrigger>
               <CollapsibleContent className="px-4 pb-4">

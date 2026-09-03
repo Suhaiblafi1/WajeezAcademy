@@ -20,14 +20,14 @@ export default function FlowSteps({
                   ? "border border-gold/60 bg-gold/10"
                   : i < (current ?? -1)
                     ? "border border-teal/30 bg-teal/5 opacity-70"
-                    : "border border-white/10 bg-black/20"
+                    : "border border-white/10 bg-paper/20"
               }`}
             >
               <p className={`text-[11px] font-black ${current === i ? "text-gold-ink" : "text-foreground"}`}>{s.label}</p>
               {/* ‎/55 لا ‎/40: اسم الفاعل عند ٩ بكسل يقيس 3.81:1 — والمقياس نفسه في كل شاشة تستعمل هذا المكوّن */}
               <p className="mt-0.5 text-micro text-muted-foreground">{s.actor}</p>
             </div>
-            {i < steps.length - 1 && <ChevronLeft className="h-3.5 w-3.5 shrink-0 text-white/25" />}
+            {i < steps.length - 1 && <ChevronLeft className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />}
           </div>
         ))}
       </div>

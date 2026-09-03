@@ -57,7 +57,7 @@ const STRENGTH_META = [
 type View = "auth" | "reset" | "verify" | "resetConfirm";
 
 const FIELD_CLS =
-  "h-12 w-full rounded-2xl border border-white/15 bg-white/[0.04] pr-11 pl-11 text-left text-sm text-white placeholder:text-white/30 focus:border-teal focus:outline-none";
+  "h-12 w-full rounded-2xl border border-white/15 bg-white/[0.04] pr-11 pl-11 text-left text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none";
 const LABEL_CLS = "mb-1.5 block text-xs font-bold text-muted-foreground";
 
 /** بوابة الدخول والتسجيل — نموذج حقيقي، تحقق آمن، ورسائل عربية لا تكشف شيئا.
@@ -184,7 +184,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
           <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[#38A7B4]/15">
             <Mail className="h-7 w-7 text-[#6EC7D1]" />
           </span>
-          <h2 className="mt-5 text-2xl font-black text-white">تم إنشاء حسابك — بقي تأكيد بريدك</h2>
+          <h2 className="mt-5 text-2xl font-black text-foreground">تم إنشاء حسابك — بقي تأكيد بريدك</h2>
           <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
             أرسلنا رابط تحقق إلى <span dir="ltr" className="font-bold text-foreground">{email.trim()}</span>.
             افتح الرسالة واضغط الرابط لتفعيل حسابك بالكامل.
@@ -222,7 +222,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
         <div className="overflow-hidden rounded-3xl border border-[#38A7B4]/25 bg-gradient-to-b from-panel to-paper shadow-[0_24px_80px_-24px_rgba(56,167,180,0.35)]">
           <div className="border-b border-white/5 px-8 pb-6 pt-8 text-center">
             <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="mx-auto h-12 w-12 object-contain" />
-            <h2 className="mt-4 text-2xl font-black text-white">استعادة كلمة المرور</h2>
+            <h2 className="mt-4 text-2xl font-black text-foreground">استعادة كلمة المرور</h2>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
               أدخل بريدك وسنرسل لك رابط إعادة التعيين
             </p>
@@ -281,7 +281,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
         <div className="overflow-hidden rounded-3xl border border-[#38A7B4]/25 bg-gradient-to-b from-panel to-paper shadow-[0_24px_80px_-24px_rgba(56,167,180,0.35)]">
           <div className="border-b border-white/5 px-8 pb-6 pt-8 text-center">
             <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="mx-auto h-12 w-12 object-contain" />
-            <h2 className="mt-4 text-2xl font-black text-white">تعيين كلمة مرور جديدة</h2>
+            <h2 className="mt-4 text-2xl font-black text-foreground">تعيين كلمة مرور جديدة</h2>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
               أدخل رمز الاستعادة وكلمة المرور الجديدة — تُبطل الجلسات القديمة تلقائيا
             </p>
@@ -379,7 +379,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
       <div className="overflow-hidden rounded-3xl border border-[#38A7B4]/25 bg-gradient-to-b from-panel to-paper shadow-[0_24px_80px_-24px_rgba(56,167,180,0.35)]">
         <div className="border-b border-white/5 px-8 pb-6 pt-8 text-center">
           <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="mx-auto h-12 w-12 object-contain" />
-          <h1 className="mt-4 text-2xl font-black text-white">
+          <h1 className="mt-4 text-2xl font-black text-foreground">
             {mode === "signup" ? "ابدأ رحلتك مع أكاديمية وجيز" : "أهلا بعودتك"}
           </h1>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
@@ -401,7 +401,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
                   setNotice("");
                 }}
                 className={`rounded-full py-2 text-sm font-bold transition ${
-                  mode === m ? "bg-teal text-on-teal" : "text-muted-foreground hover:text-white"
+                  mode === m ? "bg-teal text-on-teal" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {m === "signup" ? "حساب جديد" : "دخول"}

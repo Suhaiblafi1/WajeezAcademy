@@ -76,7 +76,7 @@ export default function SubmissionFeedback({
   return (
     <div className={`space-y-2.5 ${className}`.trim()}>
       {hasRubric && (
-        <div className="rounded-2xl border border-white/8 bg-black/20 p-3.5">
+        <div className="rounded-2xl border border-white/8 bg-paper/20 p-3.5">
           <p className="flex items-center gap-2 text-[11px] font-black text-foreground">
             <ScrollText className="h-3.5 w-3.5 text-teal-light-ink" aria-hidden="true" />
             من أين جاءت درجتك

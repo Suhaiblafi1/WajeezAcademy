@@ -46,7 +46,7 @@ export default function JoinTrainerVerify() {
         {state.kind === "working" && (
           <>
             <Loader2 className="mx-auto h-10 w-10 animate-spin text-teal-light-ink" />
-            <p className="mt-5 text-sm text-white/55">يُوثَّق بريدك…</p>
+            <p className="mt-5 text-sm text-muted-foreground">يُوثَّق بريدك…</p>
           </>
         )}
 
@@ -56,15 +56,15 @@ export default function JoinTrainerVerify() {
             <h1 className="mt-5 text-2xl font-black">
               {state.alreadyVerified ? "بريدك موثَّق من قبل" : "وُثِّق بريدك"}
             </h1>
-            <p className="mt-3 text-sm leading-7 text-white/55">
-              طلبك <b className="font-mono text-white/80" dir="ltr">{reference}</b> عند فريق المراجعة، وسنتواصل معك على
+            <p className="mt-3 text-sm leading-7 text-muted-foreground">
+              طلبك <b className="font-mono text-muted-foreground" dir="ltr">{reference}</b> عند فريق المراجعة، وسنتواصل معك على
               الوسيلة التي اختَرتها لعقد الاجتماع التعريفي.
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <Link to="/auth" className="rounded-full bg-teal px-6 py-3 font-black text-on-teal hover:bg-teal-light">
                 سجّل الدخول لمتابعة طلبك
               </Link>
-              <Link to="/" className="rounded-full border border-white/15 px-6 py-3 font-bold text-white/80 hover:border-white/40">
+              <Link to="/" className="rounded-full border border-white/15 px-6 py-3 font-bold text-muted-foreground hover:border-white/40">
                 الرئيسية
               </Link>
             </div>
@@ -75,15 +75,15 @@ export default function JoinTrainerVerify() {
           <>
             <MailWarning className="mx-auto h-12 w-12 text-[#FABC05]" />
             <h1 className="mt-5 text-2xl font-black">تعذّر توثيق البريد</h1>
-            <p className="mt-3 text-sm leading-7 text-white/60">{state.message}</p>
-            <p className="mt-3 text-xs leading-6 text-white/40">
+            <p className="mt-3 text-sm leading-7 text-muted-foreground">{state.message}</p>
+            <p className="mt-3 text-xs leading-6 text-muted-foreground">
               الروابط تنتهي بعد سبعة أيام. اطلب رسالة جديدة من صفحة الانضمام بإدخال بريدك في «تابع حالة طلبك».
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <Link to="/join-trainer" className="rounded-full bg-teal px-6 py-3 font-black text-on-teal hover:bg-teal-light">
                 صفحة الانضمام
               </Link>
-              <Link to="/auth" className="rounded-full border border-white/15 px-6 py-3 font-bold text-white/80 hover:border-white/40">
+              <Link to="/auth" className="rounded-full border border-white/15 px-6 py-3 font-bold text-muted-foreground hover:border-white/40">
                 تسجيل الدخول
               </Link>
             </div>

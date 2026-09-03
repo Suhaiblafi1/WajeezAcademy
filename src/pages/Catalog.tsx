@@ -101,7 +101,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
         <h1 className="mt-5 text-3xl font-black md:text-4xl">
           {isPathways ? 'كل المسارات — بلا اختصارات' : 'كل الدورات — لمن يعرف ما يريد'}
         </h1>
-        <p className="mx-auto mt-3 max-w-xl leading-8 text-white/60">
+        <p className="mx-auto mt-3 max-w-xl leading-8 text-muted-foreground">
           {isPathways
             ? 'ابحث وصفِّ حسب المجال والمستوى. وإن حارت، التشخيص يطابقك مع الأنسب ويشرح لك لماذا.'
             : 'دورة واحدة تكفي أحيانا. وإن أكملت لاحقا لمسارها الكامل، خُصم ما دفعته من سعره.'}
@@ -111,19 +111,19 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
       {/* شريط البحث والترتيب */}
       <div className="mt-10 flex flex-col gap-3 md:flex-row md:items-center">
         <label className="flex flex-1 items-center gap-2.5 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 transition focus-within:border-teal/60">
-          <Search className="h-4.5 w-4.5 shrink-0 text-white/40" />
+          <Search className="h-4.5 w-4.5 shrink-0 text-muted-foreground" />
           <span className="sr-only">{isPathways ? 'ابحث في المسارات' : 'ابحث في الدورات'}</span>
           <input
             type="search"
             value={q}
             onChange={(e) => patch('q', e.target.value)}
             placeholder={isPathways ? 'ابحث باسم مسار أو مهارة…' : 'ابحث باسم دورة أو مهارة…'}
-            className="w-full bg-transparent text-sm outline-none placeholder:text-white/30"
+            className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground/75"
           />
         </label>
         <label className="flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-          <SlidersHorizontal className="h-4 w-4 text-white/40" />
-          <span className="text-xs text-white/50">الترتيب</span>
+          <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
+          <span className="text-xs text-muted-foreground">الترتيب</span>
           <select
             aria-label="ترتيب النتائج"
             value={sort}
@@ -148,7 +148,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
             className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
               cat === c
                 ? 'border-teal bg-teal-deep text-white'
-                : 'border-white/10 bg-white/[0.03] text-white/60 hover:border-teal/40 hover:text-teal-light-ink'
+                : 'border-white/10 bg-white/[0.03] text-muted-foreground hover:border-teal/40 hover:text-teal-light-ink'
             }`}
           >
             {c}
@@ -165,7 +165,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
               className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition ${
                 level === l
                   ? 'border-gold/60 bg-gold/10 text-gold-ink'
-                  : 'border-white/10 text-white/50 hover:border-gold/40 hover:text-gold-ink'
+                  : 'border-white/10 text-muted-foreground hover:border-gold/40 hover:text-gold-ink'
               }`}
             >
               {l}
@@ -175,7 +175,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
       )}
 
       {/* عدد النتائج — يُعلن لقارئ الشاشة */}
-      <p className="mt-6 text-xs text-white/45" aria-live="polite">
+      <p className="mt-6 text-xs text-muted-foreground" aria-live="polite">
         {count === 0
           ? 'لا نتائج مطابقة — جرّب توسيع البحث'
           : isPathways
@@ -200,19 +200,19 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
                     من مختارات وجيز
                   </span>
                 )}
-                <span className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-white/50">{pwCategory(p.id)}</span>
-                <span className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-white/50">{p.level}</span>
+                <span className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-muted-foreground">{pwCategory(p.id)}</span>
+                <span className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-muted-foreground">{p.level}</span>
                 <FavoriteButton pathwayId={p.id} pathwayName={p.name} className="-ms-1 ms-auto" />
               </div>
               <h2 className="mt-4 text-lg font-bold leading-relaxed">{p.name}</h2>
-              <p className="mt-2 line-clamp-3 text-xs leading-6 text-white/55">{p.transformation}</p>
+              <p className="mt-2 line-clamp-3 text-xs leading-6 text-muted-foreground">{p.transformation}</p>
               {/* المخرَجُ الملموس مكانَ اسم مدرّبٍ لم يُعيَّن بعد — كان يظهر
                   مكرّرا بعدد مدرّبي المسار، فيملأ البطاقة بلا معلومة. */}
               <div className="mt-3 flex items-start gap-1.5 text-[11px] leading-5 text-teal-light-ink">
                 <Target className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span className="line-clamp-2 min-w-0">تتخرّج بـ: {p.output}</span>
               </div>
-              <div className="mt-3 text-[11px] leading-5 text-white/45">
+              <div className="mt-3 text-[11px] leading-5 text-muted-foreground">
                 {pathwaySizeAr(p)} · {p.weeklyHours} أسبوعيا
               </div>
               <div className="mt-auto pt-5">
@@ -259,9 +259,9 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
                   والمسارُ لم يُحذف من البحث: `pathwayName` ما زال ضمن ما
                   يُطابَق عليه في المرشِّح — يُبحث به ولا يُزاحم به المخرَج. */}
               {c.promise && (
-                <p className="mt-1.5 line-clamp-2 text-xs leading-6 text-white/60">{c.promise}</p>
+                <p className="mt-1.5 line-clamp-2 text-xs leading-6 text-muted-foreground">{c.promise}</p>
               )}
-              <p className="mt-1.5 text-[11px] text-white/40">
+              <p className="mt-1.5 text-[11px] text-muted-foreground">
                 {c.weeks} {c.weeks === 1 ? 'أسبوع' : 'أسابيع'}
               </p>
               <span className="mt-3 w-fit rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-[11px] text-teal-light-ink">
@@ -287,7 +287,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
       {/* دعوة للتشخيص */}
       <div className="mt-14 rounded-3xl border border-teal/25 bg-teal/5 p-8 text-center">
         <p className="text-lg font-bold">لم تجد ما يناسبك بالضبط؟</p>
-        <p className="mx-auto mt-2 max-w-md text-sm leading-7 text-white/55">
+        <p className="mx-auto mt-2 max-w-md text-sm leading-7 text-muted-foreground">
           التشخيص يطابقك مع مساراتنا المصممة — أو يركّب لك مسارا مخصصا من عدة مسارات — ويشرح لك لماذا.
         </p>
         <Link to="/diagnostic" className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-teal-deep px-8 py-3.5 font-bold text-white transition hover:bg-teal-darker">
