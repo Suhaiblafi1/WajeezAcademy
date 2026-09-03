@@ -21,7 +21,7 @@ export default function AtRiskList({ learners, className = "" }: { learners: AtR
       </div>
 
       {learners.length === 0 ? (
-        <p className="mt-4 flex items-center justify-center gap-2 rounded-2xl border border-white/8 bg-black/20 px-4 py-6 text-center text-xs text-white/55">
+        <p className="mt-4 flex items-center justify-center gap-2 rounded-2xl border border-white/8 bg-black/20 px-4 py-6 text-center text-xs text-muted-foreground">
           <ShieldCheck className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
           لا متعثر بالمعايير أدناه — الحضور والتسليمات في نطاقها المتوقع.
         </p>
@@ -34,12 +34,12 @@ export default function AtRiskList({ learners, className = "" }: { learners: AtR
             >
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-bold">{l.nameAr}</p>
-                <p className="mt-0.5 truncate text-[11px] text-white/55">{l.cohortTitleAr}</p>
+                <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{l.cohortTitleAr}</p>
                 <ul className="mt-1.5 flex flex-wrap gap-1.5">
                   {l.reasons.map((r) => (
                     <li
                       key={r.kind}
-                      className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-micro leading-5 text-white/75"
+                      className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-micro leading-5 text-foreground"
                     >
                       {r.textAr}
                     </li>
@@ -60,7 +60,7 @@ export default function AtRiskList({ learners, className = "" }: { learners: AtR
         </ul>
       )}
 
-      <p className="mt-4 rounded-2xl border border-white/8 bg-black/20 px-4 py-3 text-[11px] leading-relaxed text-white/55">
+      <p className="mt-4 rounded-2xl border border-white/8 bg-black/20 px-4 py-3 text-[11px] leading-relaxed text-muted-foreground">
         {RISK_RULE_AR}
       </p>
     </section>

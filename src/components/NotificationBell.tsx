@@ -87,7 +87,7 @@ export default function NotificationBell({ audience }: { audience: BellAudience 
       <button
         onClick={() => void toggle()}
         aria-label={`الإشعارات — ${unread} غير مقروءة`}
-        className="relative grid h-9 w-9 cursor-pointer place-items-center rounded-full border border-white/10 bg-white/[0.03] text-white/60 transition hover:border-white/30 hover:text-white"
+        className="relative grid h-9 w-9 cursor-pointer place-items-center rounded-full border border-white/10 bg-white/[0.03] text-muted-foreground transition hover:border-white/30 hover:text-white"
       >
         <Bell className="h-4 w-4" />
         {unread > 0 && (
@@ -123,8 +123,8 @@ export default function NotificationBell({ audience }: { audience: BellAudience 
                   {n.status === "sent" && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-gold" />}
                   {n.title}
                 </p>
-                <p className="mt-1 text-[11px] leading-5 text-white/55">{n.body}</p>
-                <p className="mt-1 text-micro text-white/55">
+                <p className="mt-1 text-[11px] leading-5 text-muted-foreground">{n.body}</p>
+                <p className="mt-1 text-micro text-muted-foreground">
                   {fmtDateTime(new Date(n.sentAt ?? n.createdAt))}
                 </p>
               </button>

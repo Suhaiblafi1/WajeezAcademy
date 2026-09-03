@@ -35,7 +35,7 @@ const STATE_ICON: Record<SkillMeasureState, typeof Check> = {
 const STATE_TONE: Record<SkillMeasureState, string> = {
   measured: "border-teal/50 text-teal-light-ink",
   registered_unmeasured: "border-gold/45 text-gold-ink",
-  inactive: "border-white/25 text-white/60",
+  inactive: "border-white/25 text-muted-foreground",
 };
 
 function StateBadge({ state }: { state: SkillMeasureState }) {
@@ -94,10 +94,10 @@ export default function SkillPicker({
   return (
     <div className={className}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs font-black text-white/60">
+        <p className="text-xs font-black text-muted-foreground">
           المهارات المرتبطة ({assessment.total})
           {assessment.total > 0 && (
-            <span className="ms-2 font-medium text-white/45">
+            <span className="ms-2 font-medium text-muted-foreground">
               {assessment.measured} مقيسة · {assessment.unmeasured} بلا سؤال
               {assessment.inactive > 0 ? ` · ${assessment.inactive} موقوفة` : ""}
             </span>
@@ -119,7 +119,7 @@ export default function SkillPicker({
       {assessment.warningsAr.length > 0 && (
         <ul className="mt-2 space-y-1.5">
           {assessment.warningsAr.map((w) => (
-            <li key={w} className="flex items-start gap-2 rounded-2xl border border-gold/30 bg-gold/[0.07] px-3 py-2 text-[11px] leading-6 text-white/75">
+            <li key={w} className="flex items-start gap-2 rounded-2xl border border-gold/30 bg-gold/[0.07] px-3 py-2 text-[11px] leading-6 text-foreground">
               <AlertTriangle className="mt-1 h-3.5 w-3.5 shrink-0 text-gold-ink" aria-hidden="true" />
               <span>{w}</span>
             </li>
@@ -145,7 +145,7 @@ export default function SkillPicker({
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-xs font-bold">{r.nameAr}</span>
-                  <span className="block truncate text-micro text-white/50">{r.st.noteAr}</span>
+                  <span className="block truncate text-micro text-muted-foreground">{r.st.noteAr}</span>
                 </span>
                 <StateBadge state={r.st.state} />
               </button>
@@ -153,7 +153,7 @@ export default function SkillPicker({
           );
         })}
         {shown.length === 0 && (
-          <li className="px-3 py-6 text-center text-[11px] text-white/45">
+          <li className="px-3 py-6 text-center text-[11px] text-muted-foreground">
             {rows.length === 0 ? "لا مهارات في الكتالوج بعد." : `لا مهارة تطابق «${query}».`}
           </li>
         )}
@@ -170,8 +170,8 @@ export default function SkillPicker({
           ) : askOpen ? (
             <div className="rounded-2xl border border-white/12 bg-white/[0.03] p-3">
               <div className="flex items-center justify-between gap-2">
-                <p className="text-[11px] font-black text-white/70">طلب مهارة غير موجودة</p>
-                <button type="button" onClick={() => setAskOpen(false)} aria-label="إغلاق" className="cursor-pointer text-white/45 hover:text-white">
+                <p className="text-[11px] font-black text-foreground">طلب مهارة غير موجودة</p>
+                <button type="button" onClick={() => setAskOpen(false)} aria-label="إغلاق" className="cursor-pointer text-muted-foreground hover:text-white">
                   <X className="h-4 w-4" />
                 </button>
               </div>
@@ -210,7 +210,7 @@ export default function SkillPicker({
             <button
               type="button"
               onClick={() => setAskOpen(true)}
-              className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 text-[11px] font-bold text-white/70 transition hover:border-teal/60 hover:text-teal-light-ink"
+              className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 text-[11px] font-bold text-foreground transition hover:border-teal/60 hover:text-teal-light-ink"
             >
               <Plus className="h-3.5 w-3.5" aria-hidden="true" />
               اطلب إضافة مهارة غير موجودة

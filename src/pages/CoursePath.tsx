@@ -159,7 +159,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
   if (!anchor) {
     if (!hasCoreCatalog()) {
       return (
-        <div dir="rtl" className="grid min-h-screen place-items-center bg-paper text-white/60">
+        <div dir="rtl" className="grid min-h-screen place-items-center bg-paper text-muted-foreground">
           جارٍ تحميل الكتالوج…
         </div>
       );
@@ -168,7 +168,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
       <div dir="rtl" className="grid min-h-screen place-items-center bg-paper px-6 text-center text-white">
         <div>
           <p className="text-lg font-black">لم نجد هذه الدورة</p>
-          <p className="mt-2 text-sm text-white/55">قد تكون أُعيدت تسميتها أو نُقلت إلى مسار آخر.</p>
+          <p className="mt-2 text-sm text-muted-foreground">قد تكون أُعيدت تسميتها أو نُقلت إلى مسار آخر.</p>
           <Link to="/courses" className="mt-5 inline-block rounded-2xl bg-teal-deep px-7 py-3 font-bold">
             تصفّح الدورات
           </Link>
@@ -263,7 +263,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
 
       <header className="sticky top-0 z-40 border-b border-white/10 bg-paper/85 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-5">
-          <Link to="/courses" className="flex items-center gap-2 text-white/70 hover:text-white">
+          <Link to="/courses" className="flex items-center gap-2 text-foreground hover:text-white">
             <ArrowRight className="h-5 w-5" />
             <span className="text-sm font-medium">الدورات</span>
           </Link>
@@ -280,23 +280,23 @@ function CoursePathPage({ courseId }: { courseId: string }) {
           <span className="rounded-full border border-teal/40 bg-teal/10 px-3 py-1 text-[11px] font-bold text-teal-light-ink">
             {anchor.category}
           </span>
-          <CourseTitle as="h1" name={anchor.name} termEn={anchor.termEn} className="mt-3 text-2xl font-black leading-snug md:text-3xl" termClassName="text-xs text-white/45" />
-          <p className="mt-2 text-sm text-white/50">من مسار «{anchor.pathwayName}»</p>
-          {full?.shortPromise && <p className="mt-4 leading-loose text-white/70">{full.shortPromise}</p>}
+          <CourseTitle as="h1" name={anchor.name} termEn={anchor.termEn} className="mt-3 text-2xl font-black leading-snug md:text-3xl" termClassName="text-xs text-muted-foreground" />
+          <p className="mt-2 text-sm text-muted-foreground">من مسار «{anchor.pathwayName}»</p>
+          {full?.shortPromise && <p className="mt-4 leading-loose text-foreground">{full.shortPromise}</p>}
 
           <div className="mt-5 flex flex-wrap items-center gap-2 text-xs">
-            <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 font-bold text-white/70">
+            <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 font-bold text-foreground">
               <Clock3 className="h-3.5 w-3.5 text-teal-light-ink" /> {weeksLabel(anchor.weeks)}
             </span>
             {full && (
-              <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 font-bold text-white/70" dir="ltr">
+              <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 font-bold text-foreground" dir="ltr">
                 {full.totalHours} ساعة
               </span>
             )}
-            <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 font-bold text-white/70">
+            <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 font-bold text-foreground">
               <BookOpen className="h-3.5 w-3.5 text-teal-light-ink" /> {anchor.skill}
             </span>
-            <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 font-bold text-white/70">
+            <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 font-bold text-foreground">
               <User className="h-3.5 w-3.5 text-teal-light-ink" /> {details.trainer.name}
             </span>
           </div>
@@ -306,17 +306,17 @@ function CoursePathPage({ courseId }: { courseId: string }) {
         <section className="mt-6 grid gap-4 md:grid-cols-2">
           {full?.description && (
             <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-              <h2 className="text-sm font-black text-white/80">عن الدورة</h2>
-              <p className="mt-2 text-sm leading-loose text-white/60">{full.description}</p>
+              <h2 className="text-sm font-black text-foreground">عن الدورة</h2>
+              <p className="mt-2 text-sm leading-loose text-muted-foreground">{full.description}</p>
             </div>
           )}
           {full?.targetAudience && (
             <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-              <h2 className="text-sm font-black text-white/80">لمن هذه الدورة</h2>
-              <p className="mt-2 text-sm leading-loose text-white/60">{full.targetAudience}</p>
+              <h2 className="text-sm font-black text-foreground">لمن هذه الدورة</h2>
+              <p className="mt-2 text-sm leading-loose text-muted-foreground">{full.targetAudience}</p>
               {full.prerequisites && (
-                <p className="mt-3 border-t border-white/10 pt-3 text-xs leading-relaxed text-white/45">
-                  <span className="font-bold text-white/60">ما يُفترض أن تعرفه قبلها: </span>
+                <p className="mt-3 border-t border-white/10 pt-3 text-xs leading-relaxed text-muted-foreground">
+                  <span className="font-bold text-muted-foreground">ما يُفترض أن تعرفه قبلها: </span>
                   {full.prerequisites}
                 </p>
               )}
@@ -326,12 +326,12 @@ function CoursePathPage({ courseId }: { courseId: string }) {
 
         {full && full.learningOutcomes.length > 0 && (
           <section className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-            <h2 className="flex items-center gap-2 text-sm font-black text-white/80">
+            <h2 className="flex items-center gap-2 text-sm font-black text-foreground">
               <Target className="h-4 w-4 text-gold-ink" /> ما ستقدر عليه بعدها
             </h2>
             <ul className="mt-3 grid gap-2 md:grid-cols-2">
               {full.learningOutcomes.map((o) => (
-                <li key={o} className="flex items-start gap-2 text-sm leading-relaxed text-white/65">
+                <li key={o} className="flex items-start gap-2 text-sm leading-relaxed text-foreground">
                   <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-teal-light-ink" />
                   {o}
                 </li>
@@ -342,7 +342,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
 
         {full && full.modules.length > 0 && (
           <section className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-            <h2 className="flex items-center gap-2 text-sm font-black text-white/80">
+            <h2 className="flex items-center gap-2 text-sm font-black text-foreground">
               <ListChecks className="h-4 w-4 text-teal-light-ink" /> وحدات الدورة ({full.modules.length})
             </h2>
             <ol className="mt-3 space-y-2.5">
@@ -353,7 +353,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                   </span>
                   <span className="min-w-0">
                     <span className="block text-sm font-bold leading-snug">{m.title}</span>
-                    {m.outcome && <span className="mt-0.5 block text-xs leading-relaxed text-white/50">{m.outcome}</span>}
+                    {m.outcome && <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">{m.outcome}</span>}
                   </span>
                 </li>
               ))}
@@ -366,7 +366,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
             <h2 className="flex items-center gap-2 text-sm font-black text-gold-ink">
               <Target className="h-4 w-4" /> مشروعها العملي
             </h2>
-            <p className="mt-2 text-sm leading-loose text-white/70">{full.practicalProject}</p>
+            <p className="mt-2 text-sm leading-loose text-foreground">{full.practicalProject}</p>
           </section>
         )}
 
@@ -387,7 +387,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
             {/* العدد والمدة والسقف في شارة واحدة: من يبني يحتاج أن يعرف أين هو
                 من الحد قبل أن يصطدم به، لا بعد أن يُرفض اختياره. */}
             <span className={`rounded-full border px-2.5 py-0.5 text-micro font-bold ${
-              pricing.atCap ? "border-gold/50 bg-gold/10 text-gold-ink" : "border-white/10 bg-white/[0.04] text-white/60"
+              pricing.atCap ? "border-gold/50 bg-gold/10 text-gold-ink" : "border-white/10 bg-white/[0.04] text-muted-foreground"
             }`}>
               <span dir="ltr">{picked.length}</span> من <span dir="ltr">{MAX_BUILT_COURSES}</span> دورات
               {" · "}{weeksLabel(totalWeeks)}
@@ -408,18 +408,18 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                       </span>
                       <span className="min-w-0">
                         <span className="block text-[12.5px] font-black leading-snug">{c.name}</span>
-                        <span className="mt-0.5 block text-micro text-white/45">
+                        <span className="mt-0.5 block text-micro text-muted-foreground">
                           {weeksLabel(c.weeks)} · من مسار «{c.pathwayName}»
                         </span>
                       </span>
                     </span>
                     <span className="flex shrink-0 items-center gap-1.5">
-                      <CoursePriceTag amount={priceOf(c.id)} money={money} className="text-[13px] font-black text-white/85" />
+                      <CoursePriceTag amount={priceOf(c.id)} money={money} className="text-[13px] font-black text-foreground" />
                       {c.id !== anchor.id && (
                         <button
                           onClick={() => remove(c.id)}
                           aria-label={`احذف ${c.name} من مسارك`}
-                          className="grid h-7 w-7 place-items-center rounded-lg text-white/35 transition hover:bg-white/5 hover:text-white/70"
+                          className="grid h-7 w-7 place-items-center rounded-lg text-white/35 transition hover:bg-white/5 hover:text-foreground"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -459,8 +459,8 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                 {hasBreakdown && (
                   <>
                     <div className="flex items-baseline justify-between gap-3">
-                      <dt className="text-white/55">{picked.length === 1 ? "سعر الدورة" : `مجموع الـ${picked.length} دورات`}</dt>
-                      <dd dir="ltr" className="font-bold text-white/80">{money(pricing.separate)}</dd>
+                      <dt className="text-muted-foreground">{picked.length === 1 ? "سعر الدورة" : `مجموع الـ${picked.length} دورات`}</dt>
+                      <dd dir="ltr" className="font-bold text-foreground">{money(pricing.separate)}</dd>
                     </div>
                     {pricing.discountPct > 0 && (
                       <div className="flex items-baseline justify-between gap-3">
@@ -479,7 +479,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                 <div className={`flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1.5 ${
                   hasBreakdown ? "border-t border-white/10 pt-2.5" : ""
                 }`}>
-                  <dt className="text-[11px] text-white/50">
+                  <dt className="text-[11px] text-muted-foreground">
                     {hasBreakdown ? "ما تدفعه" : picked.length === 1 ? "سعر الدورة — ما تدفعه" : `مجموع الـ${picked.length} دورات`}
                   </dt>
                   <dd className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
@@ -488,7 +488,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                         text-white/35` فلا يُرى مقدارُ الوفر أصلا. */}
                     {savedPct > 0 && (
                       <>
-                        <span dir="ltr" className="text-base font-bold text-white/45 line-through decoration-white/45 decoration-2">
+                        <span dir="ltr" className="text-base font-bold text-muted-foreground line-through decoration-white/45 decoration-2">
                           {money(pricing.separate)}
                         </span>
                         <span className="rounded-full bg-teal/15 px-2 py-0.5 text-micro font-black text-teal-light-ink">
@@ -506,7 +506,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                 <p className="text-sm font-black text-white">
                   {pricesLoaded ? "يُعلن السعر مع فتح الشعبة" : "يُقرأ السعر…"}
                 </p>
-                <p className="text-[11px] leading-5 text-white/50">
+                <p className="text-[11px] leading-5 text-muted-foreground">
                   {pricesLoaded && pricing.priced > 0
                     ? `${pricing.priced} من ${pricing.count} من دوراتك لها شعبة مسعَّرة، والباقي لم تُفتح شعبته بعد. ولا نعرض مجموعا ناقصا.`
                     : "نُسعّر كل شعبة على حدة، ولا نعرض رقما قبل أن يكون هو الرقم الذي تدفعه."}
@@ -538,7 +538,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                 <Button
                   onClick={applyPromo}
                   variant="outline"
-                  className="h-auto shrink-0 rounded-xl border-white/20 px-4 py-2 text-[12px] font-bold text-white/80"
+                  className="h-auto shrink-0 rounded-xl border-white/20 px-4 py-2 text-[12px] font-bold text-foreground"
                 >
                   تطبيق
                 </Button>
@@ -555,22 +555,22 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                   والصياغةُ صياغةُ صفحة المسار نفسِها — سطرٌ واحدٌ يُنقر، لا
                   سؤالٌ ثمّ رابطٌ في سطرين. */}
               <details className="group mt-2">
-                <summary className="cursor-pointer list-none text-[11px] font-bold text-white/60 underline underline-offset-4 transition group-hover:text-teal-light-ink [&::-webkit-details-marker]:hidden">
+                <summary className="cursor-pointer list-none text-[11px] font-bold text-muted-foreground underline underline-offset-4 transition group-hover:text-teal-light-ink [&::-webkit-details-marker]:hidden">
                   اطّلع على الفئات وتحقّق من أهليتك
                 </summary>
                 {/* خصمُ أوّل شراء أوّلَ القائمة وكودُه معلَنٌ بجانبه: لكلّ أحدٍ
                     في أوّل مرّة، فلا إثباتَ له ولا سرَّ فيه. */}
                 <ul className="mt-2 space-y-1.5 border-r-2 border-white/10 ps-3">
                   <li className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] leading-5">
-                    <span className="font-bold text-white/75">خصم أول عملية شراء — {FIRST_TIME_PROMO.percentOff}٪</span>
+                    <span className="font-bold text-foreground">خصم أول عملية شراء — {FIRST_TIME_PROMO.percentOff}٪</span>
                     <code dir="ltr" className="rounded-md border border-gold/40 bg-gold/10 px-1.5 py-0.5 font-mono text-micro font-black text-gold-ink">
                       {FIRST_TIME_PROMO.code}
                     </code>
                     <span className="text-white/40">· بلا إثبات</span>
                   </li>
                   {DISCOUNT_CATEGORIES.map((cat) => (
-                    <li key={cat.id} className="text-[11px] leading-5 text-white/50">
-                      <span className="font-bold text-white/75">{cat.label_ar} — {cat.percentOff}٪</span>
+                    <li key={cat.id} className="text-[11px] leading-5 text-muted-foreground">
+                      <span className="font-bold text-foreground">{cat.label_ar} — {cat.percentOff}٪</span>
                       <span className="text-white/40"> · {cat.evidence_ar}</span>
                     </li>
                   ))}
@@ -585,7 +585,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                     وواتساب المستشارين هو القناة الرسميّة المعتمدة أصلا
                     (`CONTACT.whatsapp` في data/stories.ts)، فلا قناةَ جديدة
                     تُفتح هنا بل تُستعمل القائمة. */}
-                <p className="mt-2 text-micro leading-5 text-white/45">
+                <p className="mt-2 text-micro leading-5 text-muted-foreground">
                   <a
                     href={`https://wa.me/${CONTACT.whatsapp}?text=${encodeURIComponent("أرغب بالتحقق من أهليتي لخصم فئة — وسأرفق ما يثبت ذلك.")}`}
                     target="_blank"
@@ -620,7 +620,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
 
             {/* السقف — يُقال بسببه لا بمنعٍ صامت */}
             {pricing.atCap && (
-              <p className="mt-2.5 flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-[11px] leading-5 text-white/60">
+              <p className="mt-2.5 flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-[11px] leading-5 text-muted-foreground">
                 <ListChecks className="mt-0.5 h-3.5 w-3.5 shrink-0 text-teal-light-ink" />
                 <span>
                   بلغتَ {MAX_BUILT_COURSES} دورات — وهو حدّ ما تبنيه بنفسك. ليس بخلا بل حمايةٌ لإنهائه:
@@ -649,7 +649,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
               <Save className="h-4.5 w-4.5" />
               مرحلتك التالية — محفوظة لك
             </h2>
-            <p className="mt-1.5 text-xs leading-relaxed text-white/50">
+            <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
               اخترتها بعد بلوغ الحد، فحفظناها بدل رفضها. أنهِ مسارك الأول ثم ابنِ هذه — أو احذف واحدة من الخمس أعلاه وأدخِلها مكانها.
             </p>
             <ul className="mt-3.5 space-y-2">
@@ -660,11 +660,11 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                   <li key={id} className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2.5">
                     <span className="min-w-0 text-sm font-bold leading-snug">{c.name}</span>
                     <span className="flex shrink-0 items-center gap-2">
-                      <CoursePriceTag amount={priceOf(c.id)} money={money} className="text-xs font-black text-white/60" />
+                      <CoursePriceTag amount={priceOf(c.id)} money={money} className="text-xs font-black text-muted-foreground" />
                       <button
                         onClick={() => setDeferred((d) => d.filter((x) => x !== id))}
                         aria-label={`أزل ${c.name} من مرحلتك التالية`}
-                        className="grid h-8 w-8 place-items-center rounded-lg text-white/35 transition hover:bg-white/5 hover:text-white/70"
+                        className="grid h-8 w-8 place-items-center rounded-lg text-white/35 transition hover:bg-white/5 hover:text-foreground"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -683,7 +683,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
               <Layers className="h-4 w-4 text-teal-light-ink" />
               ما يكمل مسارك
             </h2>
-            <p className="mt-1.5 text-xs leading-relaxed text-white/45">
+            <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
               مرتّبة لا معروضة: تبدأ ببقية المسار الذي بدأت منه بترتيبه المصمَّم، ثم ما يبني على المهارة نفسها،
               ثم ما يوسّعها خارج مجالك. ولكل واحدة سببها مكتوبا.
             </p>
@@ -703,7 +703,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                       <span className="mt-1 block text-[11px] text-white/40">{weeksLabel(c.weeks)}</span>
                     </span>
                     <span className="flex shrink-0 flex-col items-end gap-2">
-                      <CoursePriceTag amount={priceOf(c.id)} money={money} className="text-sm font-black text-white/85" />
+                      <CoursePriceTag amount={priceOf(c.id)} money={money} className="text-sm font-black text-foreground" />
                       <span className="grid h-8 w-8 place-items-center rounded-lg bg-teal/15 text-teal-light-ink">
                         <Plus className="h-4 w-4" />
                       </span>
@@ -722,7 +722,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
               <Save className="h-4 w-4" />
               سمِّ مسارك
             </h2>
-            <p className="mt-1.5 text-sm leading-relaxed text-white/65">
+            <p className="mt-1.5 text-sm leading-relaxed text-foreground">
               أنت رتّبت هذه الدورات لحاجتك. سمِّها، ونحفظها عندنا — فقد تصير مسارا معتمدا لغيرك، وقد نعود إليك
               فيه. الاسم وقائمة دوراتك فقط، بلا شيء آخر.
             </p>
@@ -745,7 +745,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
               </Button>
             </div>
             {saveState === "failed" && (
-              <p className="mt-2 text-xs text-white/55">
+              <p className="mt-2 text-xs text-muted-foreground">
                 تعذّر الحفظ الآن — مسارك أمامك كما هو ويمكنك الشراء، وأعد المحاولة لاحقا.
               </p>
             )}
@@ -761,7 +761,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
       {pending && (
         <Modal onClose={() => setPending(null)} label="التسجيل قبل الدفع" panelClassName="w-full max-w-md">
           <div className="story-fade rounded-3xl border border-white/10 bg-surface p-6">
-            <p className="mb-4 text-center text-sm leading-relaxed text-white/65">
+            <p className="mb-4 text-center text-sm leading-relaxed text-foreground">
               خطوة واحدة قبل الدفع: حساب يحفظ مسارك وشهاداتك.
             </p>
             <AuthGate

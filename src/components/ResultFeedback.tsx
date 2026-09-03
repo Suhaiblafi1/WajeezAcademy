@@ -55,7 +55,7 @@ export default function ResultFeedback({ sessionId, pathwayId }: { sessionId: st
         <p className="mt-4 text-sm font-black text-teal-light-ink">وصلنا رأيك — شكرا لك.</p>
       ) : (
         <>
-          <p className="mt-4 text-sm font-bold text-white/75">هل تصف هذه النتيجة وضعك؟</p>
+          <p className="mt-4 text-sm font-bold text-foreground">هل تصف هذه النتيجة وضعك؟</p>
           <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
             {VERDICTS.map((v) => (
               <button
@@ -66,7 +66,7 @@ export default function ResultFeedback({ sessionId, pathwayId }: { sessionId: st
                 className={`rounded-full border px-6 py-2.5 text-sm font-black transition ${
                   verdict === v.id
                     ? "border-gold bg-gold text-on-gold"
-                    : "border-white/20 text-white/70 hover:border-teal-light/60 hover:text-white"
+                    : "border-white/20 text-foreground hover:border-teal-light/60 hover:text-white"
                 }`}
               >
                 {v.label}
@@ -74,7 +74,7 @@ export default function ResultFeedback({ sessionId, pathwayId }: { sessionId: st
             ))}
           </div>
 
-          <label htmlFor="result-feedback-note" className="mt-5 block text-xs font-bold text-white/55">
+          <label htmlFor="result-feedback-note" className="mt-5 block text-xs font-bold text-muted-foreground">
             ما الذي كنت تتوقعه؟ (اختياري)
           </label>
           <textarea

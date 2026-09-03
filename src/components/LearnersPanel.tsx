@@ -85,7 +85,7 @@ export default function LearnersPanel() {
   }
   if (error) {
     return (
-      <p className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-sm leading-7 text-white/60">{error}</p>
+      <p className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-sm leading-7 text-muted-foreground">{error}</p>
     );
   }
   if (!data) return null;
@@ -93,7 +93,7 @@ export default function LearnersPanel() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-[11.5px] text-white/45">{SCOPE_NOTE[data.scope]}</p>
+        <p className="text-[11.5px] text-muted-foreground">{SCOPE_NOTE[data.scope]}</p>
         <form
           onSubmit={(e) => { e.preventDefault(); void load(q); }}
           className="flex items-center gap-2 rounded-xl border border-white/12 bg-white/[0.04] px-3 py-1.5"
@@ -116,7 +116,7 @@ export default function LearnersPanel() {
         <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-14 text-center">
           <GraduationCap className="h-10 w-10 text-white/20" />
           <p className="mt-3 text-sm font-black">لا طلبة في نطاقك بعد</p>
-          <p className="mt-1 max-w-sm text-xs leading-6 text-white/50">
+          <p className="mt-1 max-w-sm text-xs leading-6 text-muted-foreground">
             {data.scope === "trainer"
               ? "حين تُسنَد إليك شعبةٌ ويُسجَّل فيها متعلّمون، يظهرون هنا."
               : data.scope === "advisor"
@@ -136,13 +136,13 @@ export default function LearnersPanel() {
                       <span className="rounded-full border border-red-400/40 px-2 py-0.5 text-micro font-bold text-red-300">موقوف</span>
                     )}
                   </p>
-                  <p dir="ltr" className="mt-0.5 text-left text-[11px] text-white/45">{l.user.email}</p>
+                  <p dir="ltr" className="mt-0.5 text-left text-[11px] text-muted-foreground">{l.user.email}</p>
                 </div>
                 {data.canWrite && (
                   <div className="flex shrink-0 gap-1.5">
                     <button
                       onClick={() => setEditing(l)}
-                      className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-3 py-1 text-[11px] font-bold text-white/70 transition hover:border-teal/50 hover:text-teal-light-ink"
+                      className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-3 py-1 text-[11px] font-bold text-foreground transition hover:border-teal/50 hover:text-teal-light-ink"
                     >
                       <Pencil className="h-3 w-3" /> عدّل الحساب
                     </button>
@@ -154,8 +154,8 @@ export default function LearnersPanel() {
                 {l.enrollments.map((e) => (
                   <li key={e.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/8 bg-black/20 px-3 py-2">
                     <span className="min-w-0">
-                      <span className="block text-[12px] font-bold text-white/80">{e.courseTitle}</span>
-                      <span className="text-micro text-white/45">
+                      <span className="block text-[12px] font-bold text-foreground">{e.courseTitle}</span>
+                      <span className="text-micro text-muted-foreground">
                         {e.cohortTitle} · {ENROLL_STATUS[e.status] ?? e.status} · {e.percent}٪
                         {e.startsAt ? ` · ${fmtDate(new Date(e.startsAt))}` : ""}
                       </span>
@@ -226,16 +226,16 @@ function EditLearner({ row, busy, onClose, onSave, onEnroll }: {
       <div className="w-full max-w-md rounded-3xl border border-white/10 bg-surface p-6">
         <div className="flex items-start justify-between gap-3">
           <h3 className="text-sm font-black">تعديل حساب «{row.user.displayName}»</h3>
-          <button onClick={onClose} aria-label="إغلاق" className="cursor-pointer text-white/40 hover:text-white/70">
+          <button onClick={onClose} aria-label="إغلاق" className="cursor-pointer text-white/40 hover:text-foreground">
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        <label className="mt-4 block text-[11px] font-bold text-white/50">
+        <label className="mt-4 block text-[11px] font-bold text-muted-foreground">
           الاسم
           <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} className={`${field} mt-1`} />
         </label>
-        <label className="mt-3 block text-[11px] font-bold text-white/50">
+        <label className="mt-3 block text-[11px] font-bold text-muted-foreground">
           البريد
           <input value={email} onChange={(e) => setEmail(e.target.value)} dir="ltr" className={`${field} mt-1 text-left`} />
           {/* يُقال قبل الحفظ لا بعده: تبديلُ البريد يُسقط توثيقَه، والشراءُ
@@ -272,7 +272,7 @@ function EditLearner({ row, busy, onClose, onSave, onEnroll }: {
         </div>
 
         <div className="mt-5 border-t border-white/10 pt-4">
-          <p className="text-[11px] font-bold text-white/50">سجّله في شعبة</p>
+          <p className="text-[11px] font-bold text-muted-foreground">سجّله في شعبة</p>
           <div className="mt-2 flex gap-2">
             <select value={cohortId} onChange={(e) => setCohortId(e.target.value)} className={`${field} flex-1 [&>option]:bg-surface`}>
               <option value="">اختر شعبة…</option>
@@ -281,7 +281,7 @@ function EditLearner({ row, busy, onClose, onSave, onEnroll }: {
             <button
               disabled={busy || !cohortId}
               onClick={() => onEnroll(cohortId)}
-              className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-3.5 py-2 text-[11px] font-bold text-white/75 transition hover:border-teal/50 disabled:opacity-40"
+              className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-3.5 py-2 text-[11px] font-bold text-foreground transition hover:border-teal/50 disabled:opacity-40"
             >
               <UserPlus className="h-3.5 w-3.5" /> سجّله
             </button>

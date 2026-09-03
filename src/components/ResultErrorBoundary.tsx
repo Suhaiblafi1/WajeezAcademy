@@ -31,7 +31,7 @@ export class ResultErrorBoundary extends Component<Props, State> {
     return (
       <section className="mx-auto max-w-xl px-5 py-20 text-center">
         <h1 className="text-2xl font-black">تعذر عرض نتيجتك السابقة</h1>
-        <p className="mt-4 text-sm leading-loose text-white/60">
+        <p className="mt-4 text-sm leading-loose text-muted-foreground">
           حدث خلل أثناء قراءة النتيجة المحفوظة على جهازك — إجاباتك بأمان،
           وأعد التشخيص من جديد ولن يأخذ أكثر من دقائق.
         </p>
@@ -47,7 +47,7 @@ export class ResultErrorBoundary extends Component<Props, State> {
             أعد التشخيص من جديد
           </Button>
           <Link to="/">
-            <Button variant="outline" className="h-12 rounded-full border-white/20 px-8 font-black text-white/70 hover:bg-white/5">
+            <Button variant="outline" className="h-12 rounded-full border-white/20 px-8 font-black text-foreground hover:bg-white/5">
               <Home className="ml-2 h-4 w-4" />
               العودة للرئيسية
             </Button>

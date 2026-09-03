@@ -84,7 +84,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
                 } ${
                   now ? "border-gold bg-gold/15 text-gold-ink"
                     : done ? "border-emerald-400/40 text-emerald-300"
-                    : "border-white/12 text-white/50"
+                    : "border-white/12 text-muted-foreground"
                 }`}>
                 {done ? <Check className="h-3 w-3" aria-hidden="true" /> : <span>{i + 1}</span>}
                 {s.labelAr}
@@ -93,7 +93,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
           );
         })}
       </ol>
-      <p className="mb-4 text-[11px] text-white/60">{COURSE_WIZARD_STEPS[step].hintAr}</p>
+      <p className="mb-4 text-[11px] text-muted-foreground">{COURSE_WIZARD_STEPS[step].hintAr}</p>
 
       {error && <p className="mb-4 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-200">{error}</p>}
 
@@ -119,7 +119,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
           {d.modules.map((m, i) => (
             <div key={i} className="rounded-xl border border-white/10 bg-black/20 p-3">
               <div className="mb-2 flex items-center justify-between">
-                <span className="text-[11px] font-bold text-white/50">الوحدة {i + 1}</span>
+                <span className="text-[11px] font-bold text-muted-foreground">الوحدة {i + 1}</span>
                 {d.modules.length > 1 && (
                   <button type="button" onClick={() => setD({ ...d, modules: d.modules.filter((_, j) => j !== i) })} className="cursor-pointer text-white/40 hover:text-red-300">
                     <Trash2 className="h-3.5 w-3.5" />
@@ -140,7 +140,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
                 placeholder="متن الدرس (اختياري) — # عنوان · - قائمة · > اقتباس · **عريض** · [نص](رابط) · ```كود```"
                 className={`${inputCls} mt-2 w-full font-mono leading-7`}
               />
-              <p className="mt-1 text-micro leading-5 text-white/50">
+              <p className="mt-1 text-micro leading-5 text-muted-foreground">
                 ما يُكتب هنا يظهر للمتعلم درسا داخل الدورة. يمرّ بنفس حاكمية النسخ والاعتماد والنشر — ولا يُعدَّل على إصدار منشور بأثر رجعي.
               </p>
               <textarea
@@ -150,7 +150,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
                 placeholder={"تمرين استرجاع (اختياري)\nس: نص السؤال\n- خيار\n+ الخيار الصحيح\nش: شرح الخطأ"}
                 className={`${inputCls} mt-2 w-full font-mono leading-7`}
               />
-              <p className="mt-1 text-micro leading-5 text-white/50">
+              <p className="mt-1 text-micro leading-5 text-muted-foreground">
                 ثلاثة أسئلة كافية. علامة <span dir="ltr" className="font-mono">+</span> قبل الجواب الصحيح — واحد فقط لكل سؤال، والصيغة تُتحقَّق عند الحفظ.
                 ولربط سؤال بفصل فيديو أضف سطر <span dir="ltr" className="font-mono">ف: 2</span> داخله فيصير نقطة تفتيش بعد الفصل الثاني.
               </p>
@@ -162,7 +162,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
                 dir="ltr"
                 className={`${inputCls} mt-2 w-full font-mono leading-7`}
               />
-              <p className="mt-1 text-micro leading-5 text-white/50">
+              <p className="mt-1 text-micro leading-5 text-muted-foreground">
                 السطر الأول رابط YouTube أو Vimeo عبر https — لا مضيف آخر. ثم سطر لكل فصل بصيغة «د:ث عنوان الفصل».
               </p>
               <textarea
@@ -172,7 +172,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
                 placeholder={"سيناريو قرار (اختياري)\nموقف: وصف الموقف المهني\n\nعقدة: البداية\nنص: ما أول ما تفعله؟\n> خيار: نص الخيار\n  أثر: ما ترتب عليه\n  إلى: عنوان العقدة التالية\n\nعقدة: عنوان العقدة التالية\nنص: النتيجة\nتأمل: سؤال التأمل"}
                 className={`${inputCls} mt-2 w-full font-mono leading-7`}
               />
-              <p className="mt-1 text-micro leading-5 text-white/50">
+              <p className="mt-1 text-micro leading-5 text-muted-foreground">
                 كل عقدة غير نهائية تحتاج خيارين على الأقل، و«إلى:» لا تشير إلا إلى عقدة موجودة،
                 والعقدة النهائية (بلا خيارات) تحتاج «تأمل:». يُتحقَّق المسار كاملا عند الحفظ:
                 عقدة لا تُبلَغ أو مسار يدور بلا نهاية يُرفض.
@@ -180,7 +180,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
             </div>
           ))}
           <button type="button" onClick={() => setD({ ...d, modules: [...d.modules, EMPTY_MODULE] })}
-            className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-1.5 text-xs font-bold text-white/60 hover:border-white/40">
+            className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-1.5 text-xs font-bold text-muted-foreground hover:border-white/40">
             <Plus className="h-3.5 w-3.5" /> وحدة إضافية
           </button>
         </div>
@@ -195,12 +195,12 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
       {key === "review" && (
         <div className="space-y-3 text-sm">
           <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-            <p className="font-black">{d.titleAr || "—"} <span dir="ltr" className="font-mono text-[11px] text-white/50">({d.id})</span></p>
-            <p className="mt-1 text-[11px] text-white/55">
+            <p className="font-black">{d.titleAr || "—"} <span dir="ltr" className="font-mono text-[11px] text-muted-foreground">({d.id})</span></p>
+            <p className="mt-1 text-[11px] text-muted-foreground">
               المسار: {pathways.find((p) => p.id === d.pathwayId)?.title ?? "—"} · {d.totalHours || 0} ساعة · {d.modules.length} وحدة · {d.skillIds.length} مهارة
             </p>
           </div>
-          <p className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-[11px] leading-6 text-white/70">
+          <p className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-[11px] leading-6 text-foreground">
             تُنشأ الدورة مسودة، ثم تمرّ بسير الاعتماد المعتاد (مراجعة فاعتماد فنشر) من «النشر والإصدارات» — لا تُنشر من هنا.
           </p>
         </div>

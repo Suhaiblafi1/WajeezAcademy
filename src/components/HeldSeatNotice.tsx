@@ -36,7 +36,7 @@ export default function HeldSeatNotice({ seat, className = "" }: { seat: HeldSea
     ? "border-teal/40 bg-teal/[0.07] text-teal-light-ink"
     : unpaid
       ? "border-gold/40 bg-gold/[0.06] text-gold-ink"
-      : "border-white/15 bg-white/[0.03] text-white/70";
+      : "border-white/15 bg-white/[0.03] text-foreground";
 
   return (
     <div className={`rounded-2xl border px-4 py-3 ${tone} ${className}`}>
@@ -48,7 +48,7 @@ export default function HeldSeatNotice({ seat, className = "" }: { seat: HeldSea
             ? "مقعدك محجوز — دفعتك لم تكتمل"
             : "طلبك قيد المراجعة — مقعدك محفوظ"}
       </p>
-      <p className="mt-1.5 text-[11px] leading-6 text-white/60">
+      <p className="mt-1.5 text-[11px] leading-6 text-muted-foreground">
         {paid ? (
           <>
             استلمنا دفعتك عن «{seat.courseTitleAr}» ({seat.cohortTitle}) ولا تدفع مرّةً أخرى.
@@ -77,7 +77,7 @@ export default function HeldSeatNotice({ seat, className = "" }: { seat: HeldSea
       {(paid || unpaid) && (
         <Link
           to="/student/billing"
-          className="mt-2 inline-flex min-h-9 items-center gap-1.5 rounded-full border border-white/15 px-4 py-1.5 text-[11px] font-bold text-white/75 transition hover:border-white/40"
+          className="mt-2 inline-flex min-h-9 items-center gap-1.5 rounded-full border border-white/15 px-4 py-1.5 text-[11px] font-bold text-foreground transition hover:border-white/40"
         >
           {paid ? "تفاصيل الفاتورة" : "أكمل الدفع من الفواتير"}
         </Link>

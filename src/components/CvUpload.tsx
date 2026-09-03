@@ -89,13 +89,13 @@ export default function CvUpload({
           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
           تم استلام سيرتك، وسيتمكن المستشار من مراجعتها عند التواصل معك.
         </p>
-        <p className="mt-2 text-xs leading-relaxed text-white/50">
+        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
           الملف: {saved.original_filename} — محفوظ بشكل خاص، وحالته «بانتظار مراجعة المستشار».
         </p>
         <button
           onClick={remove}
           disabled={busy}
-          className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-white/50 transition hover:text-red-300 disabled:opacity-40"
+          className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground transition hover:text-red-300 disabled:opacity-40"
         >
           <Trash2 className="h-3.5 w-3.5" />
           احذف سيرتي قبل مراجعتها
@@ -116,7 +116,7 @@ export default function CvUpload({
       />
       <button
         onClick={() => inputRef.current?.click()}
-        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/20 bg-white/[0.03] px-4 py-4 text-sm font-bold text-white/70 transition hover:border-teal-light/60 hover:text-teal-light-ink"
+        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/20 bg-white/[0.03] px-4 py-4 text-sm font-bold text-foreground transition hover:border-teal-light/60 hover:text-teal-light-ink"
       >
         <FileUp className="h-4 w-4" />
         {file ? file.name : "اختر ملف سيرتك — PDF أو DOC أو DOCX (حتى 5MB)"}
@@ -128,7 +128,7 @@ export default function CvUpload({
       )}
       {file && (
         <div className="story-fade mt-3">
-          <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.03] p-3 text-xs leading-relaxed text-white/65">
+          <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.03] p-3 text-xs leading-relaxed text-foreground">
             <input
               type="checkbox"
               checked={consent}

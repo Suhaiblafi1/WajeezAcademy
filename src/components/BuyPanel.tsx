@@ -240,16 +240,16 @@ export default function BuyPanel({
     <Modal onClose={onClose} label={`الشراء: ${title}`} panelClassName="w-full max-w-lg">
       <div className="story-fade max-h-[86vh] overflow-y-auto rounded-3xl border border-white/10 bg-surface p-6 sm:p-7">
         <h3 className="text-lg font-black">إتمام الشراء</h3>
-        <p className="mt-1 text-sm text-white/55">{title}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{title}</p>
 
         {!loaded && (
-          <p className="mt-6 flex items-center gap-2 text-sm text-white/50">
+          <p className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" /> نقرأ الشعب المتاحة…
           </p>
         )}
 
         {loaded && buyable.length === 0 && (
-          <p className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm leading-6 text-white/60">
+          <p className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm leading-6 text-muted-foreground">
             لا شعبة مفتوحة لهذه الدورات الآن. افتح مسارك في منصّتك وسنُعلمك فور فتح أوّل شعبة.
           </p>
         )}
@@ -268,7 +268,7 @@ export default function BuyPanel({
                       <span className="grid h-5 w-5 shrink-0 place-items-center rounded-md bg-gold/15">
                         <perk.icon className="h-3 w-3 text-gold-ink" />
                       </span>
-                      <span className="text-[11px] leading-relaxed text-white/70">{perk.t}</span>
+                      <span className="text-[11px] leading-relaxed text-foreground">{perk.t}</span>
                     </li>
                   ))}
                 </ul>
@@ -288,8 +288,8 @@ export default function BuyPanel({
                   <li key={line.courseId} className={`p-3 ${out ? "bg-white/[0.02]" : ""}`}>
                     <div className="flex items-start justify-between gap-3">
                       <span className="min-w-0">
-                        <span className={`block text-[13px] font-bold leading-snug ${out ? "text-white/45" : ""}`}>{line.name}</span>
-                        <span className="mt-0.5 flex items-center gap-1 text-micro text-white/45">
+                        <span className={`block text-[13px] font-bold leading-snug ${out ? "text-muted-foreground" : ""}`}>{line.name}</span>
+                        <span className="mt-0.5 flex items-center gap-1 text-micro text-muted-foreground">
                           <CalendarDays className="h-3 w-3" /> {startsLabel(picked)}
                           {!out && picked.seatsLeft !== null && picked.seatsLeft <= 5 && (
                             <span className="text-gold-ink"> · بقي {picked.seatsLeft}</span>
@@ -310,7 +310,7 @@ export default function BuyPanel({
                       ) : null}
                     </div>
                     {out && (
-                      <p className="mt-1.5 text-[11px] leading-5 text-white/50">
+                      <p className="mt-1.5 text-[11px] leading-5 text-muted-foreground">
                         {out.messageAr}
                         {options.length > 1 && " — أو اختر موعدا آخر أدناه."}
                       </p>
@@ -321,7 +321,7 @@ export default function BuyPanel({
                         <select
                           value={chosen[line.courseId] ?? options[0].id}
                           onChange={(e) => setChosen({ ...chosen, [line.courseId]: e.target.value })}
-                          className="w-full cursor-pointer rounded-xl border border-white/12 bg-white/[0.04] px-3 py-2 text-[12px] text-white/75 outline-none transition hover:border-teal/40 focus:border-teal/60"
+                          className="w-full cursor-pointer rounded-xl border border-white/12 bg-white/[0.04] px-3 py-2 text-[12px] text-foreground outline-none transition hover:border-teal/40 focus:border-teal/60"
                         >
                           {options.map((o) => (
                             <option key={o.id} value={o.id} className="bg-surface">
@@ -339,11 +339,11 @@ export default function BuyPanel({
             {/* ما استُبعد يُسمّى: الخادمُ «كلُّ شيءٍ أو لا شيء»، فإسقاطُه صامتا
                 يجعل المشتريَ يظنّ أنّه اشترى ما لم يشترِه. */}
             {withoutCohort.length > 0 && (
-              <p className="mt-3 flex items-start gap-2 rounded-2xl border border-white/10 bg-white/[0.02] p-3 text-[11px] leading-5 text-white/50">
+              <p className="mt-3 flex items-start gap-2 rounded-2xl border border-white/10 bg-white/[0.02] p-3 text-[11px] leading-5 text-muted-foreground">
                 <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>
                   خارج هذا الطلب لأنّها بلا شعبة مفتوحة بعد:{" "}
-                  <span className="text-white/70">{withoutCohort.map((l) => l.name).join("، ")}</span>. تبقى في
+                  <span className="text-foreground">{withoutCohort.map((l) => l.name).join("، ")}</span>. تبقى في
                   مسارك، ونُعلمك فور فتح شعبتها.
                 </span>
               </p>
@@ -351,7 +351,7 @@ export default function BuyPanel({
 
             {/* الكود — يُرسَل فعلا. وكان يُعرض على الشاشة ولا يُرسَل أصلا. */}
             <div className="mt-4 flex items-center gap-2">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white/[0.05] text-white/50">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white/[0.05] text-muted-foreground">
                 <Tag className="h-4 w-4" />
               </span>
               <input
@@ -382,7 +382,7 @@ export default function BuyPanel({
             {/* الحساب — كلُّ سطرٍ منه من الخادم */}
             {quote && !nothingLeft && (
               <div className="mt-4 space-y-1.5 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-[12px]">
-                <div className="flex items-center justify-between text-white/60">
+                <div className="flex items-center justify-between text-muted-foreground">
                   <span>مجموع الدورات</span>
                   <span dir="ltr">{money(quote.subtotal, quote.currency)}</span>
                 </div>
@@ -423,7 +423,7 @@ export default function BuyPanel({
                     className={`cursor-pointer rounded-full border px-2.5 py-0.5 text-micro font-bold transition ${
                       currency === c
                         ? "border-gold/60 bg-gold/15 text-gold-ink"
-                        : "border-white/12 text-white/45 hover:border-white/25 hover:text-white/70"
+                        : "border-white/12 text-muted-foreground hover:border-white/25 hover:text-foreground"
                     }`}
                   >
                     {c}

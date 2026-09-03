@@ -523,7 +523,7 @@ function ImageBand() {
             لا نقيس تعلمك بما شاهدت —
             <span className="text-teal-light-ink"> بل بما أنجزت وأثبتّ.</span>
           </p>
-          <p className="reveal mt-3 max-w-md text-sm leading-7 text-white/70">
+          <p className="reveal mt-3 max-w-md text-sm leading-7 text-foreground">
             مدرب يراجع عملك بيده، ومشروع تخرج يدخل ملفك المهني من أول يوم.
           </p>
         </div>
@@ -630,14 +630,14 @@ function Stories() {
                 <button
                   onClick={() => setOpen(null)}
                   aria-label="إغلاق القصة"
-                  className="absolute left-4 top-4 grid h-11 w-11 place-items-center rounded-full bg-black/50 text-white/80 backdrop-blur transition hover:bg-black/70 hover:text-white"
+                  className="absolute left-4 top-4 grid h-11 w-11 place-items-center rounded-full bg-black/50 text-foreground backdrop-blur transition hover:bg-black/70 hover:text-white"
                 >
                   <X className="h-5 w-5" />
                 </button>
                 <div className="absolute bottom-4 right-6 flex flex-wrap items-center gap-3">
                   <span className="tag-teal rounded-full px-4 py-1.5 text-sm font-bold">{open.tag}</span>
-                  <span className="text-sm text-white/80">{open.name} — {open.role}</span>
-                  <span className="text-[11px] font-normal text-white/50">{STORY_ILLUSTRATIVE_BADGE_AR}</span>
+                  <span className="text-sm text-foreground">{open.name} — {open.role}</span>
+                  <span className="text-[11px] font-normal text-muted-foreground">{STORY_ILLUSTRATIVE_BADGE_AR}</span>
                 </div>
               </div>
 
@@ -1083,7 +1083,7 @@ function advisorHref() {
 function ChannelBadge() {
   const isWhatsApp = Boolean(CONTACT.whatsapp)
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-2.5 py-1 text-micro font-bold text-white/60">
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-2.5 py-1 text-micro font-bold text-muted-foreground">
       <span className={`h-1.5 w-1.5 rounded-full ${isWhatsApp ? 'bg-gradient-to-br from-emerald-300 to-teal' : 'bg-teal'}`} />
       {isWhatsApp ? 'واتساب' : 'بريد'}
     </span>

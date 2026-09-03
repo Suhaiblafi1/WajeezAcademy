@@ -23,7 +23,7 @@ export default function DayOfWeekPicker({
     onChange(value.includes(code) ? value.filter((d) => d !== code) : [...DAY_CODES].filter((d) => d === code || value.includes(d)));
 
   return (
-    <fieldset className="text-xs text-white/50">
+    <fieldset className="text-xs text-muted-foreground">
       <legend className="mb-1">{label}</legend>
       <div className="flex flex-wrap gap-1.5">
         {DAY_CODES.map((code) => {
@@ -35,7 +35,7 @@ export default function DayOfWeekPicker({
               aria-pressed={on}
               onClick={() => toggle(code)}
               className={`cursor-pointer rounded-full border px-3 py-1.5 text-[11px] font-bold transition ${
-                on ? "border-teal bg-teal/15 text-teal-light-ink" : "border-white/15 text-white/55 hover:border-white/35"
+                on ? "border-teal bg-teal/15 text-teal-light-ink" : "border-white/15 text-muted-foreground hover:border-white/35"
               }`}
             >
               {dayLabelAr(code)}

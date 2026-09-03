@@ -71,7 +71,7 @@ export default function LessonBody({ body, className = "" }: { body: string; cla
   const blocks = parseLesson(body);
   if (blocks.length === 0) return null;
   return (
-    <div dir="rtl" className={`course-prose space-y-3 text-sm leading-8 text-white/80 ${className}`.trim()}>
+    <div dir="rtl" className={`course-prose space-y-3 text-sm leading-8 text-foreground ${className}`.trim()}>
       {blocks.map((b, i) => {
         const k = `b${i}`;
         switch (b.kind) {
@@ -79,13 +79,13 @@ export default function LessonBody({ body, className = "" }: { body: string; cla
             return b.level === 1 ? (
               <h3 key={k} className="mt-5 text-base font-black text-white first:mt-0">{inline(b.text, k)}</h3>
             ) : b.level === 2 ? (
-              <h4 key={k} className="mt-4 text-sm font-black text-white/90 first:mt-0">{inline(b.text, k)}</h4>
+              <h4 key={k} className="mt-4 text-sm font-black text-foreground first:mt-0">{inline(b.text, k)}</h4>
             ) : (
-              <h5 key={k} className="mt-3 text-sm font-bold text-white/80 first:mt-0">{inline(b.text, k)}</h5>
+              <h5 key={k} className="mt-3 text-sm font-bold text-foreground first:mt-0">{inline(b.text, k)}</h5>
             );
           case "quote":
             return (
-              <blockquote key={k} className="border-s-2 border-teal/50 bg-teal-ink/[0.06] px-4 py-2.5 text-white/75">
+              <blockquote key={k} className="border-s-2 border-teal/50 bg-teal-ink/[0.06] px-4 py-2.5 text-foreground">
                 {inline(b.text, k)}
               </blockquote>
             );
@@ -116,7 +116,7 @@ export default function LessonBody({ body, className = "" }: { body: string; cla
           case "code":
             return (
               <pre key={k} dir="ltr" className="overflow-x-auto rounded-2xl border border-white/10 bg-black/30 p-4 text-left">
-                <code className="font-mono text-xs leading-6 text-white/80">{b.text}</code>
+                <code className="font-mono text-xs leading-6 text-foreground">{b.text}</code>
               </pre>
             );
           case "hr":

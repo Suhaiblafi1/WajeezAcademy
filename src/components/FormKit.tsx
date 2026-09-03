@@ -57,11 +57,11 @@ export function Question({
         <div className="min-w-0">
           {/* h2 لا h3: عنوانُ الصفحة h1، والقفزُ إلى h3 يوهم قارئَ الشاشة
               بقسمٍ غائب — وبوّابةُ الإتاحة تردّه (heading-order). */}
-          <h2 className="text-sm font-black leading-6 text-white/90">
+          <h2 className="text-sm font-black leading-6 text-foreground">
             {title}
             {required && <Req />}
           </h2>
-          {hint && <p className="mt-1 text-[11.5px] leading-6 text-white/45">{hint}</p>}
+          {hint && <p className="mt-1 text-[11.5px] leading-6 text-muted-foreground">{hint}</p>}
         </div>
       </div>
       <div className="mt-5">{children}</div>
@@ -126,7 +126,7 @@ export function Field({
   const errorId = htmlFor ? `${htmlFor}-error` : undefined
   return (
     <div className={`min-w-0 ${wide ? 'sm:col-span-2' : ''}`}>
-      <label htmlFor={htmlFor} className="block text-[12.5px] font-bold leading-6 text-white/75">
+      <label htmlFor={htmlFor} className="block text-[12.5px] font-bold leading-6 text-foreground">
         {label}
         {required && <Req />}
       </label>
@@ -159,7 +159,7 @@ export function FieldSet({
   const errorId = name ? `${name}-error` : undefined
   return (
     <fieldset className={`min-w-0 ${wide ? 'sm:col-span-2' : ''}`}>
-      <legend className="text-[12.5px] font-bold leading-6 text-white/75">
+      <legend className="text-[12.5px] font-bold leading-6 text-foreground">
         {legend}
         {required && <Req />}
       </legend>
@@ -210,7 +210,7 @@ export function OptionGrid({
             className={`flex min-h-12 w-full cursor-pointer items-center gap-2.5 rounded-xl border px-3 py-2.5 text-right text-[12px] font-bold leading-5 transition-colors ${
               on
                 ? 'border-teal bg-teal/[0.12] text-teal-light-ink'
-                : 'border-white/12 bg-black/25 text-white/60 hover:border-white/30 hover:text-white/80'
+                : 'border-white/12 bg-black/25 text-muted-foreground hover:border-white/30 hover:text-foreground'
             }`}
           >
             <span
@@ -276,7 +276,7 @@ export function ConsentRow({
         onChange={(e) => onChange(e.target.checked)}
         className="mt-0.5 h-4 w-4 shrink-0 accent-teal"
       />
-      <span className="text-[12.5px] leading-7 text-white/70">{children}</span>
+      <span className="text-[12.5px] leading-7 text-foreground">{children}</span>
     </label>
   )
 }

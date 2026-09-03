@@ -212,7 +212,7 @@ export default function PathwayPage() {
        نعرض حالة تحميل حتى يثبت الكتالوج، ثم نحكم بالغياب. */
     if (!hasCoreCatalog()) {
       return (
-        <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-ground text-white/60">
+        <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-ground text-muted-foreground">
           <p className="text-sm">يُحضر المسار…</p>
         </div>
       );
@@ -307,7 +307,7 @@ export default function PathwayPage() {
       {/* Top bar */}
       <header className="sticky top-0 z-40 border-b border-white/10 bg-paper/85 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-5">
-          <Link to="/" className="flex items-center gap-2 text-white/70 hover:text-white">
+          <Link to="/" className="flex items-center gap-2 text-foreground hover:text-white">
             <ArrowRight className="h-5 w-5" />
             <span className="text-sm font-medium">الرئيسية</span>
           </Link>
@@ -317,11 +317,11 @@ export default function PathwayPage() {
           </div>
           <div className="flex items-center gap-3">
             {user ? (
-              <span className="flex items-center gap-1.5 text-xs text-white/50">
+              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <User className="h-4 w-4" /> {user}
               </span>
             ) : (
-              <Link to="/auth" className="flex items-center gap-1.5 rounded-xl border border-white/15 px-3.5 py-1.5 text-xs font-semibold text-white/70 transition hover:border-teal/50 hover:text-teal-light-ink">
+              <Link to="/auth" className="flex items-center gap-1.5 rounded-xl border border-white/15 px-3.5 py-1.5 text-xs font-semibold text-foreground transition hover:border-teal/50 hover:text-teal-light-ink">
                 <User className="h-3.5 w-3.5" />
                 دخول
               </Link>
@@ -345,7 +345,7 @@ export default function PathwayPage() {
               <Badge className="bg-gold font-black text-on-gold">
                 {pathway.badge ?? (diagTopId === pathway.id ? "مسار مرشح لك" : pathwayCategory(pathway.id))}
               </Badge>
-              <Badge variant="outline" className="border-white/20 text-white/70">{pathway.level}</Badge>
+              <Badge variant="outline" className="border-white/20 text-foreground">{pathway.level}</Badge>
               {custom && !compositeCtx && <Badge className="border border-teal-light/50 bg-teal/15 text-teal-light-ink">نسختك المخصصة</Badge>}
               {compositeCtx && <Badge className="border border-gold/60 bg-gold/15 text-gold-ink">خطة مركبة مخصصة</Badge>}
               <FavoriteButton pathwayId={pathway.id} pathwayName={pathway.name} className="ms-auto" />
@@ -353,14 +353,14 @@ export default function PathwayPage() {
             {/* اسم الخطّة كما اعتُمدت — لا اسم المسار المضيف. استعارةُ اسمه هي
                 ما جعل المتعلّم يظنّ أن خطّته أُعيدت تسميتها. */}
             <h1 className="mt-4 text-3xl font-black leading-snug md:text-4xl">{adopted?.nameAr ?? pathway.name}</h1>
-            <p className="mt-4 max-w-2xl leading-loose text-white/65">{pathway.transformation}</p>
+            <p className="mt-4 max-w-2xl leading-loose text-foreground">{pathway.transformation}</p>
 
             <div className="mt-5 flex flex-wrap items-center gap-2">
-              <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1.5 text-xs font-bold text-white/70">
+              <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1.5 text-xs font-bold text-foreground">
                 <CalendarClock className="h-3.5 w-3.5 text-teal-light-ink" />
                 {custom ? `${weeksLabel(totalWeeks)} (مخصصة)` : weeksLabel(pathway.durationWeeks)}
               </span>
-              <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1.5 text-xs font-bold text-white/70">
+              <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1.5 text-xs font-bold text-foreground">
                 <Clock3 className="h-3.5 w-3.5 text-teal-light-ink" />
                 {pathway.weeklyHours} أسبوعيا
               </span>
@@ -383,7 +383,7 @@ export default function PathwayPage() {
           {compositeCtx ? (
             <div className="story-fade mt-6 rounded-2xl border border-gold/40 bg-gold/[0.06] px-5 py-4">
               <p className="text-sm font-black text-gold-ink">خطتك المركبة: «{compositeCtx.name_ar}»</p>
-              <p className="mt-1 text-xs leading-relaxed text-white/60">
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                 الدورات أدناه هي تركيبتك كما ركّبها تشخيصك من أكثر من مجال — تُدار وتُتابع عبر مسار «{pathway.name}» المضيف.
               </p>
             </div>
@@ -393,7 +393,7 @@ export default function PathwayPage() {
                 <Sparkles className="h-4 w-4 shrink-0" />
                 خطّتك من مؤشر وجيز
               </p>
-              <p className="mt-1 text-xs leading-relaxed text-white/60">
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                 هذه ليست صفحة كتالوج — بل الخطّة التي رشّحها تشخيصك واعتمدتها أنت.
                 والدورات أدناه لك: تستبدل وتحذف وتختار هديّتك، ويُحفظ التغيير فور وقوعه.
               </p>
@@ -455,7 +455,7 @@ export default function PathwayPage() {
               قرار صاحب المنصّة: الزائر يرى كل ما يراه المسجَّل — المسار
               ودوراته وفريقه التدريبي ومكان الدفع، بلا حاجزٍ سوى لحظة إتمام
               الشراء نفسها. كان هذا السطر خلف تسجيلٍ كامل، وقد سقط الحاجز. */}
-          <p id="trainers-reveal" className="story-fade mt-8 scroll-mt-24 text-center text-xs text-white/50">
+          <p id="trainers-reveal" className="story-fade mt-8 scroll-mt-24 text-center text-xs text-muted-foreground">
             كل دورة يقدّمها المدرّب الأعمق في موضوعها —{" "}
             <button
               type="button"
@@ -477,7 +477,7 @@ export default function PathwayPage() {
                   {pathwayTrainers(pathway.id).map((t) => (
                     <div key={t.role} className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-sm">
                       <User className="h-4 w-4 shrink-0 text-teal-light-ink" />
-                      <span className="font-bold text-white/85">{t.role}</span>
+                      <span className="font-bold text-foreground">{t.role}</span>
                       <span className="text-teal-light-ink">{t.name}</span>
                     </div>
                   ))}
@@ -517,7 +517,7 @@ export default function PathwayPage() {
                 <UserCheck className="h-5 w-5 shrink-0" />
                 حالتك تستحق جلسة مع مستشار بشري
               </h2>
-              <p className="mt-3 text-sm leading-loose text-white/70">
+              <p className="mt-3 text-sm leading-loose text-foreground">
                 تشخيصك لم يعطنا يقينا كافيا بأنّ هذا المسار هو الأنسب لك — أو أنّك
                 طلبتَ استشارة. جلسةٌ تعريفيّة (٣٠ دقيقة) تصوغ خطّتك بدقّة، وتشخيصُك
                 يجعلها أقصر وأعمق. ولا تدفع شيئا قبلها.
@@ -544,12 +544,12 @@ export default function PathwayPage() {
               تأخذ. فالحشوُ نصفُه، والسعرُ أكبرُ ما فيه، وما عداه يخدمه. */}
           <div id="buy" className="story-fade mt-10 scroll-mt-20 rounded-3xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
               <h3 className="text-base font-black">اختر طريقة شرائك</h3>
-              <p className="mt-1 text-[11px] text-white/45">قارن بهدوء — والقرار لك.</p>
+              <p className="mt-1 text-[11px] text-muted-foreground">قارن بهدوء — والقرار لك.</p>
               <div className="mt-4 grid gap-3.5 md:grid-cols-2">
                 {/* دورة أو أكثر — اختيار حر */}
                 <div className="flex flex-col rounded-2xl border border-white/12 bg-black/25 p-4">
                   <p className="text-[13px] font-black">دورة أو أكثر من المسار</p>
-                  <p className="mt-0.5 text-[11px] text-white/45">اختر ما تحتاجه — ورسومك مجموعها فقط</p>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">اختر ما تحتاجه — ورسومك مجموعها فقط</p>
                   <div className="mt-3 space-y-1.5">
                     {buyableCourses.map((c) => {
                       const on = pickedIds.includes(c.id);
@@ -580,7 +580,7 @@ export default function PathwayPage() {
                             </span>
                           </span>
                           {/* سعر الدورة من شعبتها لا من تقدير — وبلا شعبة لا رقم */}
-                          <span className="shrink-0 text-[13px] font-black text-white/85">
+                          <span className="shrink-0 text-[13px] font-black text-foreground">
                             {prices.get(c.id) ? (
                               <span dir="ltr">{formatCohortPrice(prices.get(c.id)!)}</span>
                             ) : (
@@ -595,13 +595,13 @@ export default function PathwayPage() {
                   {/* المجموع الحي والتلميح الذكي */}
                   {picked.length > 0 && (
                     <div className="mt-3 flex items-end justify-between gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2.5">
-                      <span className="text-[11px] text-white/50">
+                      <span className="text-[11px] text-muted-foreground">
                         اخترت {picked.length === 1 ? "دورة" : `${picked.length} دورات`} من {buyableCourses.length}
                       </span>
                       {pickedTotal ? (
                         <span dir="ltr" className="text-xl font-black text-white">{formatCohortPrice(pickedTotal)}</span>
                       ) : (
-                        <span className="text-[11px] text-white/50">يُعلن السعر مع الشعبة</span>
+                        <span className="text-[11px] text-muted-foreground">يُعلن السعر مع الشعبة</span>
                       )}
                     </div>
                   )}
@@ -639,7 +639,7 @@ export default function PathwayPage() {
                 <div className="relative flex flex-col rounded-2xl border border-gold/35 bg-gold/[0.04] p-4">
                   <span className="absolute left-3 top-3.5 rounded-full bg-gold/20 px-2 py-0.5 text-micro font-black text-gold-ink">الأوفر</span>
                   <p className="text-[13px] font-black">المسار كاملا</p>
-                  <p className="mt-0.5 text-[11px] text-white/45">كل الدورات + التشخيص + المنظومة أدناه</p>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">كل الدورات + التشخيص + المنظومة أدناه</p>
                   {/* السعرُ كاملا لا «تبدأ من» — والرقمُ المعروض بعد خصم الباقة
                       فعلا (`offer.bundleMaxPct`)، لا وعدٌ منفصلٌ عن الفاتورة:
                       الأصليُّ يظهر مشطوبا بجانبه لا نسبةً مجردة. هديّةُ المسار
@@ -653,7 +653,7 @@ export default function PathwayPage() {
                         <span dir="ltr" className="text-[26px] font-black leading-none text-white">{formatCohortPrice(discountedFullPrice)}</span>
                         {offer.bundleMaxPct > 0 && (
                           <>
-                            <span dir="ltr" className="text-base font-bold text-white/45 line-through decoration-white/45 decoration-2">
+                            <span dir="ltr" className="text-base font-bold text-muted-foreground line-through decoration-white/45 decoration-2">
                               {formatCohortPrice(fullPrice)}
                             </span>
                             <span className="rounded-full bg-teal/15 px-2 py-0.5 text-micro font-black text-teal-light-ink">
@@ -669,7 +669,7 @@ export default function PathwayPage() {
                           فالوعدُ واحد أينما ظهر. النسبةُ تُقال داخل المطويّة
                           مع كلّ فئة، لا مكرَّرةً في سطر الدعوة نفسِه. */}
                       <details className="group mt-2.5">
-                        <summary className="cursor-pointer list-none text-[11px] font-bold text-white/60 underline underline-offset-4 transition group-hover:text-teal-light-ink [&::-webkit-details-marker]:hidden">
+                        <summary className="cursor-pointer list-none text-[11px] font-bold text-muted-foreground underline underline-offset-4 transition group-hover:text-teal-light-ink [&::-webkit-details-marker]:hidden">
                           اطّلع على الفئات وتحقّق من أهليتك
                         </summary>
                         {/* خصمُ أوّل شراء في القائمة نفسِها وكودُه بجانبه: هو
@@ -678,20 +678,20 @@ export default function PathwayPage() {
                             مفتوحا. وكودا الفئتين وحدهما يُصدَران بعد التحقّق. */}
                         <ul className="mt-2 space-y-1.5 border-r-2 border-white/10 ps-3">
                           <li className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] leading-5">
-                            <span className="font-bold text-white/75">خصم أول عملية شراء — {FIRST_TIME_PROMO.percentOff}٪</span>
+                            <span className="font-bold text-foreground">خصم أول عملية شراء — {FIRST_TIME_PROMO.percentOff}٪</span>
                             <code dir="ltr" className="rounded-md border border-gold/40 bg-gold/10 px-1.5 py-0.5 font-mono text-micro font-black text-gold-ink">
                               {FIRST_TIME_PROMO.code}
                             </code>
                             <span className="text-white/40">· بلا إثبات</span>
                           </li>
                           {DISCOUNT_CATEGORIES.map((cat) => (
-                            <li key={cat.id} className="text-[11px] leading-5 text-white/50">
-                              <span className="font-bold text-white/75">{cat.label_ar} — {cat.percentOff}٪</span>
+                            <li key={cat.id} className="text-[11px] leading-5 text-muted-foreground">
+                              <span className="font-bold text-foreground">{cat.label_ar} — {cat.percentOff}٪</span>
                               <span className="text-white/40"> · {cat.evidence_ar}</span>
                             </li>
                           ))}
                         </ul>
-                        <p className="mt-2 text-micro leading-5 text-white/45">
+                        <p className="mt-2 text-micro leading-5 text-muted-foreground">
                           <a
                             href={`https://wa.me/${CONTACT.whatsapp}?text=${encodeURIComponent("أرغب بالتحقق من أهليتي لخصم فئة — وسأرفق ما يثبت ذلك.")}`}
                             target="_blank"
@@ -711,7 +711,7 @@ export default function PathwayPage() {
                       <p className="text-sm font-black text-white">
                         {pricesLoaded ? "يُعلن السعر مع فتح الشعبة" : "يُقرأ السعر…"}
                       </p>
-                      <p className="text-white/50">
+                      <p className="text-muted-foreground">
                         نُسعّر كل شعبة على حدة، ولا نعرض رقما قبل أن يكون هو الرقم الذي تدفعه.
                       </p>
                     </div>
@@ -735,7 +735,7 @@ export default function PathwayPage() {
                     {PATHWAY_ONLY_PERKS.map((perk) => (
                       <li key={perk.t} className="flex items-center gap-2">
                         <perk.icon className="h-3.5 w-3.5 shrink-0 text-gold-ink" />
-                        <span className="text-[11px] font-bold leading-5 text-white/75">{perk.t}</span>
+                        <span className="text-[11px] font-bold leading-5 text-foreground">{perk.t}</span>
                       </li>
                     ))}
                   </ul>
@@ -752,7 +752,7 @@ export default function PathwayPage() {
               {diagTopId !== pathway.id && (
                 <p className="mt-2 text-center text-[11px] leading-relaxed text-white/35">
                   {hasSavedResult ? "نتيجتك محفوظة — " : "لست متأكدا أنه الأنسب لك؟ "}
-                  <Link to="/diagnostic" className="font-bold text-white/55 underline underline-offset-4 transition hover:text-[#6EC7D1]">
+                  <Link to="/diagnostic" className="font-bold text-muted-foreground underline underline-offset-4 transition hover:text-[#6EC7D1]">
                     {hasSavedResult ? "عد إليها وأعد تخصيص مسارك" : "ثلاث دقائق مع مؤشر وجيز"}
                   </Link>
                 </p>
@@ -780,7 +780,7 @@ export default function PathwayPage() {
                   </span>
                   <div className="min-w-0">
                     <p className="text-[13px] font-black leading-snug">{b.t}</p>
-                    <p className="mt-0.5 text-[11px] leading-relaxed text-white/50">{b.d}</p>
+                    <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">{b.d}</p>
                   </div>
                 </div>
               ))}
@@ -813,11 +813,11 @@ export default function PathwayPage() {
               /* شذرة فارغة لا null: التوقيع يسقط عند null إلى أيقونة افتراضية،
                  وهذه دعوةٌ داخل جملة لا زرّ — أيقونةٌ فيها ضجيج. */
               icon={<></>}
-              className="font-bold text-white/60 underline underline-offset-4 transition hover:text-[#6EC7D1]"
+              className="font-bold text-muted-foreground underline underline-offset-4 transition hover:text-[#6EC7D1]"
             />
           </p>
 
-          <p className="mt-8 flex items-center justify-center gap-2 text-center text-xs text-white/55">
+          <p className="mt-8 flex items-center justify-center gap-2 text-center text-xs text-muted-foreground">
             <Sparkles className="h-3.5 w-3.5" />
             منصة الطالب الكاملة (الدورات، الواجبات، المتابعة) تُفتح تلقائيا بعد أول دفع ناجح — وهي محطتنا القادمة.
           </p>

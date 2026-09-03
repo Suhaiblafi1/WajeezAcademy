@@ -141,7 +141,7 @@ export default function PortalSearchPalette({ kind }: { kind: keyof typeof PALET
                       }`}
                     >
                       <span className="min-w-0">
-                        <span className="block truncate text-xs font-black text-white/90">{h.title}</span>
+                        <span className="block truncate text-xs font-black text-foreground">{h.title}</span>
                         <span className="block truncate text-micro text-white/40">{h.sub}</span>
                       </span>
                       <span className="shrink-0 text-micro font-bold text-teal-light-ink">Enter ↵</span>

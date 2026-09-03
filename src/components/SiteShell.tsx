@@ -144,7 +144,7 @@ export default function SiteShell({ children }: { children: React.ReactNode }) {
     <div dir="rtl" className="min-h-screen bg-paper text-white">
       <SiteNav />
       <div className="mx-auto max-w-6xl px-5 py-12 md:py-16">{children}</div>
-      <footer className="border-t border-white/5 py-8 text-center text-xs leading-6 text-white/55">
+      <footer className="border-t border-white/5 py-8 text-center text-xs leading-6 text-muted-foreground">
         <div>© 2026 {ECOSYSTEM_NOTE}</div>
         <div className="mt-1">
           {CONTACT.email} ·{' '}
@@ -160,7 +160,7 @@ export default function SiteShell({ children }: { children: React.ReactNode }) {
           ))}
         </div>
         <div className="mt-2">
-          <Link to="/methodology" className="inline-flex min-h-[24px] items-center py-1 font-semibold text-white/50 transition hover:text-teal-light-ink">
+          <Link to="/methodology" className="inline-flex min-h-[24px] items-center py-1 font-semibold text-muted-foreground transition hover:text-teal-light-ink">
             منهجية وجيز
           </Link>
         </div>

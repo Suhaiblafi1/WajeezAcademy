@@ -52,13 +52,13 @@ export default function BarChartCard({
 
   return (
     <section aria-labelledby={titleId} className={`rounded-3xl border border-white/10 bg-white/[0.03] p-6 ${className}`.trim()}>
-      <h2 id={titleId} className="flex items-center gap-2 text-sm font-black text-white/75">
+      <h2 id={titleId} className="flex items-center gap-2 text-sm font-black text-foreground">
         {icon}
         {titleAr}
       </h2>
 
       {failed ? (
-        <p className="mt-5 flex items-center gap-2 text-xs text-white/55">
+        <p className="mt-5 flex items-center gap-2 text-xs text-muted-foreground">
           <ServerOff className="h-4 w-4 shrink-0" aria-hidden="true" />
           تعذّر جلب هذا المخطط — حدّث الصفحة.
         </p>
@@ -67,12 +67,12 @@ export default function BarChartCard({
           <Loader2 className="h-6 w-6 animate-spin text-teal-ink" aria-label="جارٍ التحميل" />
         </div>
       ) : rows.length === 0 ? (
-        <p className="mt-5 text-xs leading-6 text-white/55">{emptyAr}</p>
+        <p className="mt-5 text-xs leading-6 text-muted-foreground">{emptyAr}</p>
       ) : (
         <ol className="mt-5 space-y-2.5">
           {rows.map((b, i) => (
             <li key={`${b.labelAr}-${i}`} className="grid grid-cols-[7.5rem_1fr_auto] items-center gap-3 text-xs sm:grid-cols-[10rem_1fr_auto]">
-              <span className="truncate text-white/70" title={b.labelAr}>{b.labelAr}</span>
+              <span className="truncate text-foreground" title={b.labelAr}>{b.labelAr}</span>
               <span className="relative h-3 rounded-full bg-white/[0.06]">
                 <span
                   aria-hidden="true"
@@ -80,16 +80,16 @@ export default function BarChartCard({
                   style={{ width: `${Math.max(2, Math.round((b.value / peak) * 100))}%` }}
                 />
               </span>
-              <span className="tabular-nums font-black text-white/85">
+              <span className="tabular-nums font-black text-foreground">
                 {fmt(b.value)}
-                {unitAr && <span className="ms-1 font-medium text-white/55">{unitAr}</span>}
+                {unitAr && <span className="ms-1 font-medium text-muted-foreground">{unitAr}</span>}
               </span>
             </li>
           ))}
         </ol>
       )}
 
-      <p className="mt-5 text-[11px] leading-relaxed text-white/50">{methodAr}</p>
+      <p className="mt-5 text-[11px] leading-relaxed text-muted-foreground">{methodAr}</p>
     </section>
   );
 }

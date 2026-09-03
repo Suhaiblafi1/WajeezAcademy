@@ -91,7 +91,7 @@ export default function RubricSelfReview({
         </span>
       </div>
 
-      <p className="mt-2 text-[12px] leading-6 text-white/60">
+      <p className="mt-2 text-[12px] leading-6 text-muted-foreground">
         حكمُك هنا لك وحدَك — لا يُرفع ولا يُحتسب. والمحتسَبُ تقييمُ المدرّب على
         ما ترفعه، وبهذه المعايير نفسِها.
       </p>

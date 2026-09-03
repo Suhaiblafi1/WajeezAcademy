@@ -99,7 +99,7 @@ export default function PracticeActivity({
                 ) : (
                   <Circle className="mt-0.5 h-4 w-4 shrink-0 text-white/30" aria-hidden="true" />
                 )}
-                <span className={`text-[13px] leading-6 ${isDone ? "text-white/50 line-through" : ""}`}>
+                <span className={`text-[13px] leading-6 ${isDone ? "text-muted-foreground line-through" : ""}`}>
                   {s.textAr}
                 </span>
                 <span className="ms-auto shrink-0 text-[11px] tabular-nums text-white/40">
@@ -120,11 +120,11 @@ export default function PracticeActivity({
           <dd className="mt-1">{practice.artifactAr}</dd>
         </div>
         <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-3">
-          <dt className="flex items-center gap-1.5 text-[11px] font-black text-white/60">
+          <dt className="flex items-center gap-1.5 text-[11px] font-black text-muted-foreground">
             <UserRoundSearch className="h-3.5 w-3.5" aria-hidden="true" />
             لمن لا عمل له الآن
           </dt>
-          <dd className="mt-1 text-white/70">{practice.alternativeAr}</dd>
+          <dd className="mt-1 text-foreground">{practice.alternativeAr}</dd>
         </div>
       </dl>
     </section>

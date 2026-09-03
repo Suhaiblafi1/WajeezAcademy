@@ -197,7 +197,7 @@ export function PlanCourses({
         }}
       />
       <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4">
-        <p className="text-xs font-bold text-white/60">
+        <p className="text-xs font-bold text-muted-foreground">
           مسارك المخصص الآن:{" "}
           <span className="text-white">
             {chosen.length} دورات{gift ? " + هدية مجانية" : ""}
@@ -265,9 +265,9 @@ export function ResultPriceCard({ courseIds }: { courseIds: readonly string[] })
       {cheapest ? (
         <>
           <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-            <span className="text-sm text-white/50">تبدأ من</span>
+            <span className="text-sm text-muted-foreground">تبدأ من</span>
             <span dir="ltr" className="text-3xl font-black text-white md:text-4xl">{formatCohortPrice(cheapest)}</span>
-            <span className="text-sm text-white/45">للدورة</span>
+            <span className="text-sm text-muted-foreground">للدورة</span>
           </div>
           <p className="mt-1.5 text-xs text-teal-light-ink">
             وخصمٌ كبير على خطتك كاملة ({courseIds.length} دورات) مقابل شرائها دورةً دورة
@@ -286,7 +286,7 @@ export function ResultPriceCard({ courseIds }: { courseIds: readonly string[] })
         <code dir="ltr" className="rounded-md border border-gold/40 bg-gold/10 px-1.5 py-0.5 font-mono text-micro font-black text-gold-ink">
           {FIRST_TIME_PROMO.code}
         </code>
-        <span className="text-white/45">— يُكتب في صفحة الدفع.</span>
+        <span className="text-muted-foreground">— يُكتب في صفحة الدفع.</span>
       </p>
       <p className="mt-3 text-[11px] leading-5 text-white/40">
         سعر خطتك يُحدَّد بعد أن تعتمدها — أنت من يقرّر دوراتها.
@@ -345,12 +345,12 @@ export function WhyThisPathway({
 
       {evidence.length > 0 && (
         <>
-          <p className="mt-2 text-xs leading-relaxed text-white/50">
+          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
             لم نخمّن — هذه هي إجاباتك التي بُنيت عليها التوصية:
           </p>
           <ul className="mt-4 space-y-2.5">
             {evidence.map((r) => (
-              <li key={r} className="flex items-start gap-2.5 text-sm leading-relaxed text-white/75">
+              <li key={r} className="flex items-start gap-2.5 text-sm leading-relaxed text-foreground">
                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-teal-light-ink" />
                 {r}
               </li>
@@ -362,7 +362,7 @@ export function WhyThisPathway({
       {confidence && (
         <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4 md:p-5">
           <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-            <span className="text-sm font-black text-white/85">قوة أدلة هذه التوصية</span>
+            <span className="text-sm font-black text-foreground">قوة أدلة هذه التوصية</span>
             <span className="text-sm font-black text-teal-light-ink">
               {total}٪{bandAr ? ` — ${bandAr}` : ""}
             </span>
@@ -370,20 +370,20 @@ export function WhyThisPathway({
           <div className="mt-4 space-y-2 text-xs">
             {parts.map((p) => (
               <div key={p.label} className="flex items-center gap-2">
-                <span className="w-36 shrink-0 text-white/55">{p.label}</span>
+                <span className="w-36 shrink-0 text-muted-foreground">{p.label}</span>
                 <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
                   <span
                     className="block h-full rounded-full bg-teal"
                     style={{ width: `${Math.max(0, Math.min(100, Math.floor(p.value * 100)))}%` }}
                   />
                 </span>
-                <span className="w-9 shrink-0 text-left font-bold tabular-nums text-white/70">
+                <span className="w-9 shrink-0 text-left font-bold tabular-nums text-foreground">
                   {Math.floor(p.value * 100)}٪
                 </span>
               </div>
             ))}
           </div>
-          <p className="mt-4 border-t border-white/10 pt-3 text-[11px] leading-relaxed text-white/45">
+          <p className="mt-4 border-t border-white/10 pt-3 text-[11px] leading-relaxed text-muted-foreground">
             ترتفع حين تتفق إجاباتك، وتنخفض عند التناقض أو حين تقف حالتك بين مسارين متقاربين.
             فوق ٧٥٪ نحن واثقون بالترشيح، وبين ٥٠ و٧٥٪ نعرض معه بدائل، ودون ذلك نحيلك لمستشار بشري قبل أي قرار.
           </p>
@@ -391,15 +391,15 @@ export function WhyThisPathway({
       )}
 
       {gapNote && (
-        <p className="mt-4 flex items-start gap-2.5 text-sm leading-relaxed text-white/70">
+        <p className="mt-4 flex items-start gap-2.5 text-sm leading-relaxed text-foreground">
           <Gauge className="mt-0.5 h-4 w-4 shrink-0 text-teal-light-ink" />
           {gapNote}
         </p>
       )}
 
       {changeMakers.length > 0 && (
-        <p className="mt-4 text-xs leading-relaxed text-white/55">
-          <span className="font-bold text-white/75">وما الذي يغيّر هذه التوصية؟ </span>
+        <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
+          <span className="font-bold text-foreground">وما الذي يغيّر هذه التوصية؟ </span>
           {changeMakers[0]}
         </p>
       )}
@@ -420,7 +420,7 @@ export function CompositePlan({ composite }: { composite: CompositeView }) {
           والتسمية الصريحة هنا تحسمها، وما دونها يُوسم مرجعا. */}
       <div className="border-b border-white/10 bg-[#FABC05]/10 px-6 py-3">
         <span className="text-sm font-black text-[#FABC05]">هذه خطتك · {composite.label_ar}</span>
-        <span className="mr-2 text-xs text-white/50">
+        <span className="mr-2 text-xs text-muted-foreground">
           خطة مبنية لحالتك من أكثر من مجال — وليست مسارا جاهزا من الكتالوج
         </span>
       </div>
@@ -429,7 +429,7 @@ export function CompositePlan({ composite }: { composite: CompositeView }) {
 
         {/* المسارات التي استُمدت منها الخطة */}
         {represented.length > 0 && (
-          <p className="mt-3 text-xs leading-relaxed text-white/55">
+          <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
             رُكّبت من: {represented.map((p) => p.name).join(" + ")}
           </p>
         )}
@@ -437,17 +437,17 @@ export function CompositePlan({ composite }: { composite: CompositeView }) {
         {/* النسخة والساعات */}
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           <div className="rounded-xl bg-white/[0.05] p-4">
-            <p className="text-sm text-white/50">نسخة خطتك</p>
+            <p className="text-sm text-muted-foreground">نسخة خطتك</p>
             <p className="font-black text-gold-ink">{variant.label}</p>
-            <p className="mt-1 text-[11px] leading-5 text-white/45">{variant.hint}</p>
+            <p className="mt-1 text-[11px] leading-5 text-muted-foreground">{variant.hint}</p>
           </div>
           <div className="rounded-xl bg-white/[0.05] p-4">
-            <p className="text-sm text-white/50">إجمالي ساعات الخطة</p>
+            <p className="text-sm text-muted-foreground">إجمالي ساعات الخطة</p>
             <p className="font-black">{totalHours} ساعة</p>
             {/* كان مكتوبًا هنا «موزعة على إيقاعك الأسبوعي الذي أخبرتنا به» — وهو ادعاء
                 لا يقع: الرقم مجموع ساعات الدورات الثابتة، لا يُقسَّم على أي إيقاع.
                 والوقت الأسبوعي لم يعد يُسأل عنه أصلًا. */}
-            <p className="mt-1 text-[11px] leading-5 text-white/45">مجموع ساعات دورات خطتك</p>
+            <p className="mt-1 text-[11px] leading-5 text-muted-foreground">مجموع ساعات دورات خطتك</p>
           </div>
         </div>
 
@@ -455,7 +455,7 @@ export function CompositePlan({ composite }: { composite: CompositeView }) {
         {composite.rationale_ar.length > 0 && (
           <ul className="mt-5 space-y-2">
             {composite.rationale_ar.slice(0, 4).map((r) => (
-              <li key={r} className="flex items-start gap-2.5 text-sm leading-relaxed text-white/70">
+              <li key={r} className="flex items-start gap-2.5 text-sm leading-relaxed text-foreground">
                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-gold-ink" />
                 {r}
               </li>
@@ -471,8 +471,8 @@ export function CompositePlan({ composite }: { composite: CompositeView }) {
             <p className="text-sm font-black text-teal-light-ink">أزلناها لأنك تتقنها — لا تدفع ثمن ما تعرفه:</p>
             <ul className="mt-2 space-y-1.5">
               {composite.removed_courses.map((r) => (
-                <li key={r.courseId} className="text-xs leading-relaxed text-white/60">
-                  <span className="font-bold text-white/80">{r.titleAr}</span> — {r.reason_ar}
+                <li key={r.courseId} className="text-xs leading-relaxed text-muted-foreground">
+                  <span className="font-bold text-foreground">{r.titleAr}</span> — {r.reason_ar}
                 </li>
               ))}
             </ul>
@@ -487,7 +487,7 @@ export function CompositePlan({ composite }: { composite: CompositeView }) {
                 <p className="flex items-center gap-2 text-xs font-black text-gold-ink">
                   <FileText className="h-4 w-4" /> مشروع إثبات الجاهزية
                 </p>
-                <p className="mt-2 text-xs leading-6 text-white/65">{composite.capstone_ar}</p>
+                <p className="mt-2 text-xs leading-6 text-foreground">{composite.capstone_ar}</p>
               </div>
             )}
             {composite.success_metric_ar && (
@@ -495,7 +495,7 @@ export function CompositePlan({ composite }: { composite: CompositeView }) {
                 <p className="flex items-center gap-2 text-xs font-black text-teal-light-ink">
                   <Gauge className="h-4 w-4" /> كيف تعرف أنك نجحت؟
                 </p>
-                <p className="mt-2 text-xs leading-6 text-white/65">{composite.success_metric_ar}</p>
+                <p className="mt-2 text-xs leading-6 text-foreground">{composite.success_metric_ar}</p>
               </div>
             )}
           </div>
@@ -503,8 +503,8 @@ export function CompositePlan({ composite }: { composite: CompositeView }) {
 
         {/* أقرب بديل ولماذا لم يُختر */}
         {composite.nearest_alternative && (
-          <p className="mt-5 rounded-xl border border-white/10 bg-white/[0.03] p-4 text-xs leading-6 text-white/55">
-            <span className="font-bold text-white/75">أقرب خطة بديلة كانت «{composite.nearest_alternative.nameAr}»</span>
+          <p className="mt-5 rounded-xl border border-white/10 bg-white/[0.03] p-4 text-xs leading-6 text-muted-foreground">
+            <span className="font-bold text-foreground">أقرب خطة بديلة كانت «{composite.nearest_alternative.nameAr}»</span>
             {" "}— {composite.nearest_alternative.whyNot_ar}
           </p>
         )}

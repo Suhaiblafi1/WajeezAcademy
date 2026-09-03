@@ -104,7 +104,7 @@ function MultiPick({ id, label, options, selected, onChange }: {
             const checked = selected.includes(o);
             return (
               <label key={o} role="option" aria-selected={checked}
-                className={`flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-bold transition hover:bg-white/5 ${checked ? "text-teal-light-ink" : "text-white/70"}`}>
+                className={`flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-bold transition hover:bg-white/5 ${checked ? "text-teal-light-ink" : "text-foreground"}`}>
                 <input type="checkbox" checked={checked} onChange={() => toggleValue(o)} className="h-3.5 w-3.5 shrink-0 accent-teal" />
                 {o}
               </label>
@@ -117,7 +117,7 @@ function MultiPick({ id, label, options, selected, onChange }: {
           {selected.map((s) => (
             <span key={s} className="inline-flex items-center gap-1.5 rounded-full border border-teal/40 bg-teal/10 px-2.5 py-1 text-[11px] font-bold text-teal-light-ink">
               {s}
-              <button type="button" onClick={() => toggleValue(s)} aria-label={`أزل ${s}`} className="cursor-pointer text-white/50 transition hover:text-white">×</button>
+              <button type="button" onClick={() => toggleValue(s)} aria-label={`أزل ${s}`} className="cursor-pointer text-muted-foreground transition hover:text-white">×</button>
             </span>
           ))}
         </div>
@@ -516,7 +516,7 @@ export default function JoinTrainer() {
           </span>
           <h1 className="mt-6 text-2xl font-black">وصل طلبك كاملا — شكرا لك</h1>
           <p className="mt-4 rounded-2xl border border-gold/30 bg-gold/5 p-4">
-            <span className="text-xs text-white/50">رقم طلبك</span>
+            <span className="text-xs text-muted-foreground">رقم طلبك</span>
             <span className="mt-1 block font-mono text-xl font-black tracking-wide text-gold-ink" dir="ltr">{result.reference}</span>
           </p>
 
@@ -525,7 +525,7 @@ export default function JoinTrainer() {
               <p className="flex items-center gap-2 text-sm font-black text-teal-light-ink">
                 <BadgeCheck className="h-4 w-4" /> ما التالي؟
               </p>
-              <p className="mt-2 text-sm leading-8 text-white/70">
+              <p className="mt-2 text-sm leading-8 text-foreground">
                 سيقرأ فريقنا الأكاديمي طلبك ومستنداتك، ثم <b className="text-white">نتواصل معك عبر {channel?.label ?? "البريد"}</b>
                 {channelValue && <> على <b dir="ltr" className="text-white">{channelValue}</b></>} لتحديد موعد
                 اجتماع تعريفي قصير نعرّفك فيه بمنهجية الأكاديمية ونسمع منك.
@@ -538,7 +538,7 @@ export default function JoinTrainer() {
                 {mailSent ? "أرسلنا بريد تأكيد إلى" : "تعذّر إرسال بريد التأكيد الآن"}
                 {mailSent && <b dir="ltr" className="text-teal-light-ink">{form.email.trim()}</b>}
               </p>
-              <p className="mt-2 text-[12px] leading-7 text-white/60">
+              <p className="mt-2 text-[12px] leading-7 text-muted-foreground">
                 {mailSent
                   ? "فيه رقم طلبك وتفاصيله والخطوة التالية — وفيه رابطٌ افتحه مرة واحدة ليُوثَّق بريدك. إن لم يصلك خلال دقائق راجع مجلد الرسائل غير المرغوبة، أو أعد إرساله من صفحة حالتك."
                   : "طلبك محفوظ ومقدَّم على أي حال. يمكنك طلب رسالة التأكيد مجددا من صفحة حالتك بعد الدخول."}
@@ -549,8 +549,8 @@ export default function JoinTrainer() {
               <p className="flex items-center gap-2 text-sm font-black">
                 <KeyRound className="h-4 w-4 text-teal-light-ink" /> تابع حالة طلبك من حسابك
               </p>
-              <p className="mt-2 text-[12px] leading-7 text-white/60">
-                سجّل الدخول ببريدك <b dir="ltr" className="text-white/85">{form.email.trim()}</b> وكلمة المرور التي اختَرتها.
+              <p className="mt-2 text-[12px] leading-7 text-muted-foreground">
+                سجّل الدخول ببريدك <b dir="ltr" className="text-foreground">{form.email.trim()}</b> وكلمة المرور التي اختَرتها.
                 سترى حالة طلبك في كل مرحلة، وإن اعتُمدت تُفتح لك بوابة المدربين من الحساب نفسه.
               </p>
               <Link
@@ -594,7 +594,7 @@ export default function JoinTrainer() {
       <div className="mx-auto max-w-3xl">
         <span className="kicker">انضم إلى نخبة المدربين</span>
         <h1 className="h-section mt-4">درّب ما تتقنه — وأثرّ في مسارات حقيقية</h1>
-        <p className="mt-4 max-w-2xl text-base leading-8 text-white/65">
+        <p className="mt-4 max-w-2xl text-base leading-8 text-foreground">
           مدربو وجيز لا يلقون دروسا مسجلة فحسب — يراجعون واجبات، ويرافقون طلابا، ويقيمون مشاريع تخرج.
           نموذج واحد بثلاثة أقسام — يُحفظ تقدّمك كلما مضيت، ولا ينتظرك بريد بينها.
         </p>
@@ -607,7 +607,7 @@ export default function JoinTrainer() {
           ].map((f) => (
             <div key={f.text} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
               <f.icon className="h-5 w-5 text-teal-light-ink" />
-              <p className="mt-3 text-xs font-bold leading-6 text-white/85">{f.text}</p>
+              <p className="mt-3 text-xs font-bold leading-6 text-foreground">{f.text}</p>
             </div>
           ))}
         </div>
@@ -628,13 +628,13 @@ export default function JoinTrainer() {
                     <span
                       className={`grid h-6 w-6 shrink-0 place-items-center rounded-lg text-[11px] font-black ${
                         state === "current" ? "bg-gold text-on-gold"
-                          : state === "done" ? "bg-teal/20 text-teal-light-ink" : "bg-white/10 text-white/45"
+                          : state === "done" ? "bg-teal/20 text-teal-light-ink" : "bg-white/10 text-muted-foreground"
                       }`}
                       dir="ltr"
                     >
                       {state === "done" ? <Check className="h-3.5 w-3.5" /> : s.n}
                     </span>
-                    <span className={`text-xs font-black ${state === "todo" ? "text-white/45" : "text-white"}`}>{s.title}</span>
+                    <span className={`text-xs font-black ${state === "todo" ? "text-muted-foreground" : "text-white"}`}>{s.title}</span>
                   </span>
                   <span className="mt-1.5 block text-micro leading-relaxed text-muted-foreground">{s.hint}</span>
                 </div>
@@ -653,7 +653,7 @@ export default function JoinTrainer() {
             </p>
             <button
               type="button" onClick={startOver}
-              className="cursor-pointer rounded-full border border-white/20 px-4 py-1.5 text-[11px] font-bold text-white/60 transition hover:border-white/40 hover:text-white/85"
+              className="cursor-pointer rounded-full border border-white/20 px-4 py-1.5 text-[11px] font-bold text-muted-foreground transition hover:border-white/40 hover:text-foreground"
             >
               ابدأ من جديد
             </button>
@@ -703,7 +703,7 @@ export default function JoinTrainer() {
                     <p className="flex items-center gap-2 text-[12.5px] font-black text-teal-light-ink">
                       <KeyRound className="h-4 w-4" /> كلمة مرور لحسابك على المنصّة
                     </p>
-                    <p className="mt-1 text-[11px] leading-6 text-white/50">
+                    <p className="mt-1 text-[11px] leading-6 text-muted-foreground">
                       تدخل بها ببريدك أعلاه لتتابع حالة طلبك في كل مرحلة — وإن اعتُمدت تُفتح لك بوابة المدربين من الحساب نفسه.
                       إن كان لك حساب على وجيز بهذا البريد فأدخل كلمتَه الحالية.
                     </p>
@@ -719,7 +719,7 @@ export default function JoinTrainer() {
                           <button
                             type="button" onClick={() => setShowPassword((v) => !v)}
                             aria-label={showPassword ? "أخفِ كلمة المرور" : "أظهر كلمة المرور"}
-                            className="absolute left-1 top-1/2 grid h-11 w-11 -translate-y-1/2 cursor-pointer place-items-center text-white/45 transition hover:text-white"
+                            className="absolute left-1 top-1/2 grid h-11 w-11 -translate-y-1/2 cursor-pointer place-items-center text-muted-foreground transition hover:text-white"
                           >
                             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </button>
@@ -738,7 +738,7 @@ export default function JoinTrainer() {
                 ) : (
                   <p className="mt-5 flex items-center gap-2 rounded-2xl border border-teal/30 bg-teal/[0.06] p-4 text-[12px] font-bold text-teal-light-ink">
                     <CheckCircle2 className="h-4 w-4 shrink-0" />
-                    حسابك جاهز ببريدك <span dir="ltr" className="text-white/85">{form.email.trim()}</span> — تدخل به بعد الإرسال لمتابعة طلبك.
+                    حسابك جاهز ببريدك <span dir="ltr" className="text-foreground">{form.email.trim()}</span> — تدخل به بعد الإرسال لمتابعة طلبك.
                   </p>
                 )}
               </Question>
@@ -905,7 +905,7 @@ export default function JoinTrainer() {
                       ? `اكتب ${MOTIVATION_MIN} حرفا على الأقل. أضف مثالا يوضّح القيمة التي ستقدّمها للمتعلمين في وجيز.`
                       : "شكرا — هذا يكفي."}
                   </span>
-                  <span className="shrink-0 tabular-nums text-white/45" dir="ltr">
+                  <span className="shrink-0 tabular-nums text-muted-foreground" dir="ltr">
                     {motivationLen} / {MOTIVATION_MAX}
                   </span>
                 </p>
@@ -937,13 +937,13 @@ export default function JoinTrainer() {
                         <label className="flex cursor-pointer items-start gap-3">
                           <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white/[0.06]">
                             {st?.status === "done" ? <CheckCircle2 className="h-4 w-4 text-teal-light-ink" />
-                              : st?.status === "registering" || st?.status === "uploading" ? <Loader2 className="h-4 w-4 animate-spin text-white/60" />
-                              : <FileUp className="h-4 w-4 text-white/45" />}
+                              : st?.status === "registering" || st?.status === "uploading" ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                              : <FileUp className="h-4 w-4 text-muted-foreground" />}
                           </span>
                           <span className="min-w-0 flex-1">
-                            <b className="block text-[12.5px] leading-6 text-white/85">{d.label}{d.required ? " *" : ""}</b>
+                            <b className="block text-[12.5px] leading-6 text-foreground">{d.label}{d.required ? " *" : ""}</b>
                             <span className="mt-0.5 block text-[11px] text-white/40">{d.hint}</span>
-                            {st?.name && <span className="mt-1 block truncate text-[11px] text-white/55">{st.name}</span>}
+                            {st?.name && <span className="mt-1 block truncate text-[11px] text-muted-foreground">{st.name}</span>}
                           </span>
                           <input type="file" accept={d.accept} className="sr-only"
                             onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadFile(d.kind, f); }} />
@@ -1064,12 +1064,12 @@ export default function JoinTrainer() {
                           on ? "border-teal bg-teal/[0.12]" : "border-white/12 bg-black/25 hover:border-white/30"
                         }`}
                       >
-                        <span className={`mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg ${on ? "bg-teal/25 text-teal-light-ink" : "bg-white/[0.06] text-white/50"}`}>
+                        <span className={`mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg ${on ? "bg-teal/25 text-teal-light-ink" : "bg-white/[0.06] text-muted-foreground"}`}>
                           <Icon className="h-4 w-4" />
                         </span>
                         <span className="min-w-0">
-                          <b className={`block text-[12.5px] ${on ? "text-teal-light-ink" : "text-white/85"}`}>{c.label}</b>
-                          <span className={`mt-0.5 block truncate text-[11px] ${c.needsPhone && !phoneShown ? "text-gold-ink" : "text-white/45"}`} dir={c.value === "other_email" ? "rtl" : "ltr"}>
+                          <b className={`block text-[12.5px] ${on ? "text-teal-light-ink" : "text-foreground"}`}>{c.label}</b>
+                          <span className={`mt-0.5 block truncate text-[11px] ${c.needsPhone && !phoneShown ? "text-gold-ink" : "text-muted-foreground"}`} dir={c.value === "other_email" ? "rtl" : "ltr"}>
                             {sub}
                           </span>
                         </span>
@@ -1091,7 +1091,7 @@ export default function JoinTrainer() {
                   </div>
                 )}
                 {(contactChannel === "phone" || contactChannel === "whatsapp") && normalizeDigits(form.phone) && (
-                  <p className="mt-4 flex items-center gap-2 rounded-xl border border-teal/25 bg-teal/[0.05] p-3 text-[11.5px] leading-6 text-white/70">
+                  <p className="mt-4 flex items-center gap-2 rounded-xl border border-teal/25 bg-teal/[0.05] p-3 text-[11.5px] leading-6 text-foreground">
                     <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-light-ink" />
                     سنتواصل على <b dir="ltr" className="text-white">{form.phoneCountryCode}{normalizeDigits(form.phone)}</b> — إن لم يكن رقمك، عد إلى القسم الأول وصحّحه.
                   </p>
@@ -1105,18 +1105,18 @@ export default function JoinTrainer() {
 
               {/* ملخّص ما سيصل المراجع — بلا مفاجآت */}
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-                <p className="flex items-center gap-2 text-xs font-black text-white/75">
+                <p className="flex items-center gap-2 text-xs font-black text-foreground">
                   <Sparkles className="h-3.5 w-3.5 text-teal-light-ink" /> ما سيقرؤه المراجع عنك
                 </p>
-                <ul className="mt-3 space-y-1.5 text-[11.5px] leading-6 text-white/60">
+                <ul className="mt-3 space-y-1.5 text-[11.5px] leading-6 text-muted-foreground">
                   <li>{form.fullName.trim() || "—"} · {specialties.length} تخصصا · {DOMAIN_YEARS.find((y) => y.value === form.domainYears)?.label ?? "—"} في المجال</li>
                   <li>{teachable.length} دورة من الكتالوج تستطيع تدريسها{teachableOther.trim() ? " · وأخرى بقلمك" : ""}</li>
                   <li>{Object.values(uploads).filter((u) => u.status === "done").length} مستندا مرفوعا</li>
                   {seasons.length > 0 && <li>{seasons.map((v) => TRAINING_SEASONS.find((x) => x.value === v)?.label ?? v).join(" · ")}</li>}
                   <li>دافعك: {motivationLen} حرفا</li>
                 </ul>
-                <p className="mt-3 border-t border-white/10 pt-3 text-[11.5px] leading-6 text-white/50">
-                  رقم طلبك: <b className="font-mono text-white/80" dir="ltr">{result?.reference ?? "—"}</b> — سيصلك في بريد التأكيد مع تفاصيل طلبك.
+                <p className="mt-3 border-t border-white/10 pt-3 text-[11.5px] leading-6 text-muted-foreground">
+                  رقم طلبك: <b className="font-mono text-foreground" dir="ltr">{result?.reference ?? "—"}</b> — سيصلك في بريد التأكيد مع تفاصيل طلبك.
                 </p>
               </div>
             </div>
@@ -1132,7 +1132,7 @@ export default function JoinTrainer() {
               <p className="text-xs font-black text-gold-ink">
                 بقي {countAr(missing[step as 1 | 2 | 3].length, MISSING_FORMS)} قبل «{step < 3 ? "التالي" : "الإرسال"}»
               </p>
-              <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 text-[11.5px] leading-6 text-white/65">
+              <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 text-[11.5px] leading-6 text-foreground">
                 {missing[step as 1 | 2 | 3].map((m) => (
                   <li key={m} className="flex items-center gap-1.5">
                     <span className="h-1 w-1 shrink-0 rounded-full bg-gold-ink" /> {m}
@@ -1145,7 +1145,7 @@ export default function JoinTrainer() {
           {/* التنقل — «التالي» معطّل حتى تكتمل الخطوة، لا حتى يكتمل النموذج كله */}
           <div className="flex items-center justify-between gap-3 border-t border-white/5 pt-6">
             {step > 1 ? (
-              <button type="button" onClick={back} className="flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2.5 text-sm font-bold text-white/70 transition hover:border-white/35">
+              <button type="button" onClick={back} className="flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2.5 text-sm font-bold text-foreground transition hover:border-white/35">
                 <ArrowRight className="h-4 w-4" /> السابق
               </button>
             ) : <span />}
@@ -1187,7 +1187,7 @@ export default function JoinTrainer() {
           <summary className="flex cursor-pointer items-center gap-2 text-sm font-black">
             <Search className="h-4 w-4 text-teal-light-ink" /> قدّمت سابقا؟ تابع حالة طلبك
           </summary>
-          <p className="mt-4 text-[11.5px] leading-6 text-white/50">
+          <p className="mt-4 text-[11.5px] leading-6 text-muted-foreground">
             بريدك يكفي. ولتفاصيل أكثر — وسحب الطلب — <Link to="/auth" className="text-teal-light-ink underline">سجّل الدخول</Link> ببريدك وكلمة المرور التي اختَرتها عند التقديم.
           </p>
           <div className="mt-4 grid gap-3 border-t border-white/5 pt-5 sm:grid-cols-2">
@@ -1205,8 +1205,8 @@ export default function JoinTrainer() {
           {lookupResult && (
             <div className="mt-3 rounded-xl border border-teal/30 bg-teal/5 p-4">
               <p className="text-xs font-black text-teal-light-ink">{lookupResult.label}</p>
-              <p className="mt-1 text-[11px] text-white/45" dir="ltr">{lookupResult.reference}</p>
-              {lookupResult.explain && <p className="mt-2 text-[11.5px] leading-6 text-white/65">{lookupResult.explain}</p>}
+              <p className="mt-1 text-[11px] text-muted-foreground" dir="ltr">{lookupResult.reference}</p>
+              {lookupResult.explain && <p className="mt-2 text-[11.5px] leading-6 text-foreground">{lookupResult.explain}</p>}
             </div>
           )}
           {lookupError && <p className="mt-3 text-xs text-red-300" role="alert">{lookupError}</p>}

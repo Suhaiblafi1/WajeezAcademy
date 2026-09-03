@@ -22,10 +22,10 @@ function When({ c }: { c: CohortOption }) {
   const until = untilLabelAr(c.startsAt);
   const days = daysLabelAr(c.daysOfWeek);
   return (
-    <span className="min-w-0 text-[11px] leading-5 text-white/60">
-      <span className="font-bold text-white/80">{fmtDateAr(c.startsAt)}</span>
-      {until && <span className="text-white/45"> · {until}</span>}
-      {days && <span className="text-white/45"> · {days}{c.startTime ? ` ${c.startTime}` : ""}</span>}
+    <span className="min-w-0 text-[11px] leading-5 text-muted-foreground">
+      <span className="font-bold text-foreground">{fmtDateAr(c.startsAt)}</span>
+      {until && <span className="text-muted-foreground"> · {until}</span>}
+      {days && <span className="text-muted-foreground"> · {days}{c.startTime ? ` ${c.startTime}` : ""}</span>}
     </span>
   );
 }
@@ -74,7 +74,7 @@ export default function CohortPicker({
             type="button"
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
-            className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-white/15 px-2.5 py-0.5 text-micro font-bold text-white/55 transition hover:border-white/35 hover:text-white/85"
+            className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-white/15 px-2.5 py-0.5 text-micro font-bold text-muted-foreground transition hover:border-white/35 hover:text-foreground"
           >
             موعد آخر ({others.length})
             <ChevronDown className={`h-3 w-3 transition ${open ? "rotate-180" : ""}`} />

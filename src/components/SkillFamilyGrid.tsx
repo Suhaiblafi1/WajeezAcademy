@@ -54,7 +54,7 @@ export default function SkillFamilyGrid({ families, onDone, onSkip }: Props) {
         <h2 id="sfg-title" className="mt-4 text-2xl font-black md:text-3xl">
           أين أنت الآن من هذه الجوانب؟
         </h2>
-        <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-white/60">
+        <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">
           إجابتك تحدد أي الدورات تبدأ بها وأيها تتخطاها — فلا نعطيك ما تعرفه أصلا،
           ولا ما هو أكبر من مستواك. اترك أي جانب لا تعرف موضعك منه.
         </p>
@@ -100,7 +100,7 @@ export default function SkillFamilyGrid({ families, onDone, onSkip }: Props) {
                       className={`rounded-xl border px-1 py-2.5 text-[11px] font-bold leading-tight transition md:text-xs ${
                         on
                           ? "border-teal bg-teal text-on-teal"
-                          : "border-white/10 bg-white/[0.04] text-white/60 hover:border-teal/40 hover:text-white"
+                          : "border-white/10 bg-white/[0.04] text-muted-foreground hover:border-teal/40 hover:text-white"
                       }`}
                     >
                       {s.short}
@@ -125,7 +125,7 @@ export default function SkillFamilyGrid({ families, onDone, onSkip }: Props) {
         <button
           type="button"
           onClick={onSkip}
-          className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold text-white/50 transition hover:text-white"
+          className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold text-muted-foreground transition hover:text-white"
         >
           <SkipForward className="h-3.5 w-3.5" />
           تخطَّ هذه الخطوة

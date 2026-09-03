@@ -61,7 +61,7 @@ export default function EntityAuditTimeline({
         type="button"
         onClick={() => { const next = !open; setOpen(next); if (next && !data) void load(); }}
         aria-expanded={open}
-        className="flex cursor-pointer items-center gap-1.5 text-[11px] font-bold text-white/50 transition hover:text-white/80"
+        className="flex cursor-pointer items-center gap-1.5 text-[11px] font-bold text-muted-foreground transition hover:text-foreground"
       >
         <History className="h-3.5 w-3.5" aria-hidden="true" /> {labelAr}
         {data && <span className="tabular-nums text-white/40">({data.total})</span>}
@@ -73,18 +73,18 @@ export default function EntityAuditTimeline({
           {busy && <Loader2 className="h-4 w-4 animate-spin text-white/35" aria-label="يُحمَّل" />}
           {error && <p role="alert" className="text-[11px] font-bold text-red-300">{error}</p>}
           {data && data.events.length === 0 && (
-            <p className="text-[11px] text-white/45">لا أثرَ مسجّلا على هذا العنصر بعد.</p>
+            <p className="text-[11px] text-muted-foreground">لا أثرَ مسجّلا على هذا العنصر بعد.</p>
           )}
           {data && data.events.length > 0 && (
             <ol className="space-y-2">
               {data.events.map((e) => (
                 <li key={e.id} className="rounded-xl border border-white/8 bg-black/20 px-3 py-2">
                   <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                    <span className="text-[11px] font-black text-white/85">{e.actionAr}</span>
-                    <span className="text-[11px] text-white/50">— {e.actorAr}</span>
+                    <span className="text-[11px] font-black text-foreground">{e.actionAr}</span>
+                    <span className="text-[11px] text-muted-foreground">— {e.actorAr}</span>
                     <span className="text-micro tabular-nums text-white/35">{fmtDateTime(new Date(e.createdAt))}</span>
                   </div>
-                  {e.reason && <p className="mt-1 text-[11px] leading-5 text-white/60">السبب: {e.reason}</p>}
+                  {e.reason && <p className="mt-1 text-[11px] leading-5 text-muted-foreground">السبب: {e.reason}</p>}
                   {e.changed.length > 0 && (
                     <p className="mt-1 text-micro text-white/40">تغيّر: {e.changed.join("، ")}</p>
                   )}

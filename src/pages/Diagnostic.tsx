@@ -730,7 +730,7 @@ export default function Diagnostic() {
       {/* Top bar */}
       <header className="sticky top-0 z-40 border-b border-white/10 bg-paper/85 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-5">
-          <Link to="/" className="flex items-center gap-2 text-white/70 hover:text-white">
+          <Link to="/" className="flex items-center gap-2 text-foreground hover:text-white">
             <ArrowRight className="h-5 w-5" />
             <span className="text-sm font-medium">العودة للرئيسية</span>
           </Link>
@@ -756,7 +756,7 @@ export default function Diagnostic() {
             بضع دقائق من الوضوح
             <span className="text-teal-light-ink"> تختصر عليك شهورا من التشتت</span>
           </h1>
-          <p className="mx-auto mt-4 max-w-xl leading-8 text-white/60">
+          <p className="mx-auto mt-4 max-w-xl leading-8 text-muted-foreground">
             حديث قصير عن يومك وهدفك — كل إجابة تشكّل سؤالك التالي، وتنتهي بمسارك الواضح.
           </p>
 
@@ -774,7 +774,7 @@ export default function Diagnostic() {
               { icon: Compass, text: "توصية مفسَّرة، ليست حظًا" },
               { icon: Clock3, text: "٣–٦ دقائق" },
             ].map((f) => (
-              <span key={f.text} className="inline-flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-micro font-bold text-white/65 sm:px-3.5 sm:text-[11px]">
+              <span key={f.text} className="inline-flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-micro font-bold text-foreground sm:px-3.5 sm:text-[11px]">
                 <f.icon className="h-3 w-3 shrink-0 text-teal-light-ink sm:h-3.5 sm:w-3.5" />
                 {f.text}
               </span>
@@ -795,7 +795,7 @@ export default function Diagnostic() {
               والإفصاح لم يُلغَ بل صغُر: «سياسة الخصوصية» رابطٌ واحد يقول أين
               التفصيل. وإسقاطُه كلّه كان يترك المنصّة بلا إفصاحٍ ظاهر البتّة —
               والمحرّك يسجّل «إقرار الواجهة» على أي حال (engine.ts). */}
-          <ul className="mx-auto mt-4 max-w-md space-y-1.5 text-xs leading-relaxed text-white/55">
+          <ul className="mx-auto mt-4 max-w-md space-y-1.5 text-xs leading-relaxed text-muted-foreground">
             <li>ابدأ مجانا — ترى مسارك المقترح ونتيجتك كاملة فورا، بلا حساب</li>
             <li className="inline-flex items-center justify-center gap-1.5">
               <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-teal-light-ink" />
@@ -817,7 +817,7 @@ export default function Diagnostic() {
                 <History className="h-4 w-4" />
                 لديك تشخيص غير مكتمل — أجبت على {savedProgress.asked.length} من الأسئلة
               </p>
-              <p className="mt-1.5 text-xs text-white/50">إجاباتك محفوظة على جهازك — أكمل من حيث توقفت متى شئت</p>
+              <p className="mt-1.5 text-xs text-muted-foreground">إجاباتك محفوظة على جهازك — أكمل من حيث توقفت متى شئت</p>
               <div className="mt-4 flex flex-wrap justify-center gap-3">
                 <Button
                   onClick={resume}
@@ -829,7 +829,7 @@ export default function Diagnostic() {
                 <Button
                   variant="outline"
                   onClick={discardSaved}
-                  className="rounded-full border-white/20 text-white/70 hover:bg-white/5"
+                  className="rounded-full border-white/20 text-foreground hover:bg-white/5"
                 >
                   احذفها وابدأ من جديد
                 </Button>
@@ -844,7 +844,7 @@ export default function Diagnostic() {
                 <History className="h-4 w-4" />
                 نتيجتك السابقة لم تعد صالحة
               </p>
-              <p className="mt-1.5 text-xs leading-relaxed text-white/55">{discardedResultNotice}</p>
+              <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{discardedResultNotice}</p>
             </div>
           )}
 
@@ -855,7 +855,7 @@ export default function Diagnostic() {
                 <History className="h-4 w-4" />
                 لديك نتيجة مؤشر محفوظة على جهازك
               </p>
-              <p className="mt-1.5 text-xs text-white/50">أكملت التشخيص سابقا — لا حاجة لإعادته إلا إذا تغيرت ظروفك</p>
+              <p className="mt-1.5 text-xs text-muted-foreground">أكملت التشخيص سابقا — لا حاجة لإعادته إلا إذا تغيرت ظروفك</p>
               <div className="mt-4 flex flex-wrap justify-center gap-3">
                 <Button
                   onClick={showSavedResult}
@@ -869,7 +869,7 @@ export default function Diagnostic() {
           )}
 
           {/* المرجعية العلمية — آخر الشاشة: تطمين هادئ لمن يريد، لا حاجز أمام البدء */}
-          <p className="mx-auto mt-10 max-w-lg rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4 text-xs leading-relaxed text-white/50">
+          <p className="mx-auto mt-10 max-w-lg rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4 text-xs leading-relaxed text-muted-foreground">
             نسترشد في بناء أسئلتنا بأطر مهنية وتعليمية معروفة: <span className="font-bold text-teal-light-ink">RIASEC</span> للميول المهنية،
             و<span className="font-bold text-teal-light-ink">O*NET وESCO</span> لخرائط المهارات،
             و<span className="font-bold text-teal-light-ink">DigComp</span> للجاهزية الرقمية — وتُعرض عليك تفاصيلها في صفحة المنهجية.
@@ -894,7 +894,7 @@ export default function Diagnostic() {
                   <Wand2 className="h-4 w-4" />
                   جولة تدقيق خطتك — أسئلة أعمق لزيادة وضوح التوصية
                 </p>
-                <span className="text-xs font-bold text-white/55">
+                <span className="text-xs font-bold text-muted-foreground">
                   سؤال {deepStep.index} من {deepStep.total}
                 </span>
               </div>
@@ -905,7 +905,7 @@ export default function Diagnostic() {
                 />
               </div>
               {deepReason && (
-                <p className="mt-3 text-[11px] leading-relaxed text-white/50">{deepReason}</p>
+                <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">{deepReason}</p>
               )}
             </div>
           ) : (
@@ -926,7 +926,7 @@ export default function Diagnostic() {
               <span className="font-black text-gold-ink">
                 عن: {JOURNEY_STAGES[currentStageIdx]?.label}
               </span>
-              <span className="shrink-0 font-semibold text-white/45">
+              <span className="shrink-0 font-semibold text-muted-foreground">
                 سؤال {asked.length + 1} من {ESTIMATE_MIN}–{ESTIMATE_MAX}
               </span>
             </div>
@@ -950,7 +950,7 @@ export default function Diagnostic() {
                 إلا لأربعة خيارات ونصف — وقياسُ الاختيار أن ترى بدائلك مجتمعة. */}
             <h2 className="text-xl font-black leading-snug sm:text-2xl md:text-3xl">{qText}</h2>
             {(deepStep?.reasonAr ?? whyAr) && (
-              <p className="mt-3 w-fit rounded-xl border border-teal/30 bg-teal/[0.06] px-3.5 py-2 text-[11px] leading-relaxed text-white/55">
+              <p className="mt-3 w-fit rounded-xl border border-teal/30 bg-teal/[0.06] px-3.5 py-2 text-[11px] leading-relaxed text-muted-foreground">
                 <span className="font-bold text-teal-light-ink">لماذا هذا السؤال؟ </span>
                 {deepStep?.reasonAr ?? whyAr}
               </p>
@@ -961,15 +961,15 @@ export default function Diagnostic() {
                 بسؤال، فيُعرض حيث يمكن حسمه: فوق الخيارات وبجوار «السؤال السابق».
                 ملاحظة لا حاجز: من رأى أن الوصفين يجتمعان في حاله فليمضِ. */}
             {contradictionAr && (
-              <p className="mt-3 flex w-fit items-start gap-2 rounded-xl border border-gold/30 bg-gold/[0.07] px-3.5 py-2 text-[11px] leading-relaxed text-white/65">
+              <p className="mt-3 flex w-fit items-start gap-2 rounded-xl border border-gold/30 bg-gold/[0.07] px-3.5 py-2 text-[11px] leading-relaxed text-foreground">
                 <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-ink" />
                 <span>
                   {contradictionAr}
-                  <span className="text-white/45"> — تستطيع الرجوع وتعديلها، أو المضي إن كانتا تصفانك معا.</span>
+                  <span className="text-muted-foreground"> — تستطيع الرجوع وتعديلها، أو المضي إن كانتا تصفانك معا.</span>
                 </span>
               </p>
             )}
-            {qHint && <p className="mt-3 text-sm leading-relaxed text-white/50">{qHint}</p>}
+            {qHint && <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{qHint}</p>}
 
             {/* transition-colors لا transition-all: الأخيرة تُحرّك outline-width أيضا،
                 فحلقة التركيز في index.css كانت تتصاعد من صفر إلى بكسلين على نحو
@@ -1021,7 +1021,7 @@ export default function Diagnostic() {
                 <div className="mt-5 flex items-center justify-between">
                   <button
                     onClick={() => answer(question.id, "")}
-                    className="text-sm font-semibold text-white/45 transition hover:text-white"
+                    className="text-sm font-semibold text-muted-foreground transition hover:text-white"
                   >
                     تخطَّ هذا السؤال
                   </button>
@@ -1054,7 +1054,7 @@ export default function Diagnostic() {
                               className={`h-10 flex-1 rounded-xl border text-sm font-black transition ${
                                 active
                                   ? "border-teal bg-teal/25 text-teal-light-ink"
-                                  : "border-white/10 bg-white/[0.03] text-white/55 hover:border-teal-light/50"
+                                  : "border-white/10 bg-white/[0.03] text-muted-foreground hover:border-teal-light/50"
                               }`}
                             >
                               {n}
@@ -1062,7 +1062,7 @@ export default function Diagnostic() {
                           );
                         })}
                       </div>
-                      <p className="mt-2 text-left text-[11px] text-white/55" dir="rtl">
+                      <p className="mt-2 text-left text-[11px] text-muted-foreground" dir="rtl">
                         {ratingsDraft[item.key]
                           ? ["", "لم أبدأ بعد", "أعرف الأساسيات", "أستخدمها بمساعدة", "أستخدمها بثقة", "أعلّمها لغيري"][ratingsDraft[item.key]]
                           : "اختر مستواك — بصدق"}
@@ -1144,7 +1144,7 @@ export default function Diagnostic() {
             <div className="mt-8 flex items-center justify-between">
               <button
                 onClick={back}
-                className="flex items-center gap-2 text-sm font-semibold text-white/50 transition hover:text-white"
+                className="flex items-center gap-2 text-sm font-semibold text-muted-foreground transition hover:text-white"
               >
                 <ArrowRight className="h-4 w-4" />
                 السؤال السابق
@@ -1156,7 +1156,7 @@ export default function Diagnostic() {
                   window.setTimeout(() => setSavedFlash(false), 2200);
                 }}
                 className={`flex items-center gap-2 text-sm font-semibold transition ${
-                  savedFlash ? "text-teal-light-ink" : "text-white/50 hover:text-white"
+                  savedFlash ? "text-teal-light-ink" : "text-muted-foreground hover:text-white"
                 }`}
               >
                 {savedFlash ? (
@@ -1199,7 +1199,7 @@ export default function Diagnostic() {
                 )}
                 {question.source && (
                   <p className="text-[11px] leading-relaxed text-white/35">
-                    <span className="font-bold text-white/45">المصدر العلمي: </span>
+                    <span className="font-bold text-muted-foreground">المصدر العلمي: </span>
                     {question.source}
                   </p>
                 )}
@@ -1259,12 +1259,12 @@ export default function Diagnostic() {
                   {isExploratory ? "إجاباتك الحالية لا تكفي بعد لبناء خطة نثق بها" : "حالتك تستحق مستشارًا بشريًا قبل الترشيح"}
                 </h2>
                 {isExploratory && (
-                  <p className="mx-auto mt-4 max-w-md text-sm leading-loose text-white/70">
+                  <p className="mx-auto mt-4 max-w-md text-sm leading-loose text-foreground">
                     لا نريد أن نرشّح لك مسارا عاما لا يعكس فجواتك الفعلية. أجب عن استبيان أعمق مبني على
                     مواقف عملية، وسنحدّد المهارات التي تحتاجها ثم نبني لك خطة دورات مناسبة.
                   </p>
                 )}
-                <div className="mx-auto mt-4 max-w-md space-y-2 text-sm leading-loose text-white/55">
+                <div className="mx-auto mt-4 max-w-md space-y-2 text-sm leading-loose text-muted-foreground">
                   {result.reasons.slice(0, 3).map((r) => (
                     <p key={r}>{r}</p>
                   ))}
@@ -1272,7 +1272,7 @@ export default function Diagnostic() {
 
                 {isExploratory && (exploration?.domain_shortlist?.length ?? 0) > 0 && (
                   <div className="mt-7">
-                    <p className="text-xs font-bold text-white/45">المجالات الأقرب لك من إجاباتك الآن:</p>
+                    <p className="text-xs font-bold text-muted-foreground">المجالات الأقرب لك من إجاباتك الآن:</p>
                     <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
                       {exploration!.domain_shortlist!.map((d) => (
                         <span key={d.id} className="rounded-full border border-teal/40 bg-teal/10 px-4 py-1.5 text-xs font-bold text-teal-light-ink">
@@ -1285,10 +1285,10 @@ export default function Diagnostic() {
 
                 {isExploratory && (exploration?.evidence_suggestions_ar?.length ?? 0) > 0 && (
                   <div className="mx-auto mt-7 max-w-md rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-right">
-                    <p className="text-xs font-black text-white/70">ما الذي يرفع دقة تشخيصك المرة القادمة؟</p>
+                    <p className="text-xs font-black text-foreground">ما الذي يرفع دقة تشخيصك المرة القادمة؟</p>
                     <ul className="mt-3 space-y-2">
                       {exploration!.evidence_suggestions_ar!.slice(0, 4).map((s) => (
-                        <li key={s} className="flex items-start gap-2 text-xs leading-relaxed text-white/60">
+                        <li key={s} className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
                           <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-teal-light-ink" />
                           {s}
                         </li>
@@ -1330,7 +1330,7 @@ export default function Diagnostic() {
                     size="lg"
                     variant={isExploratory && canDeepen ? "outline" : "default"}
                     className={isExploratory && canDeepen
-                      ? "h-12 rounded-full border-white/20 px-8 font-bold text-white/75"
+                      ? "h-12 rounded-full border-white/20 px-8 font-bold text-foreground"
                       : "h-12 rounded-full bg-gold px-8 font-black text-on-gold hover:bg-gold/90"}
                     onClick={restart}
                   >
@@ -1338,7 +1338,7 @@ export default function Diagnostic() {
                     {isExploratory ? "أعد التشخيص السريع" : "ابدأ التشخيص من جديد"}
                   </Button>
                   {isExploratory && (
-                    <Button size="lg" variant="ghost" className="h-12 rounded-full px-6 font-bold text-white/55" asChild>
+                    <Button size="lg" variant="ghost" className="h-12 rounded-full px-6 font-bold text-muted-foreground" asChild>
                       <Link to="/pathways">استعرض المسارات بنفسك</Link>
                     </Button>
                   )}
@@ -1349,7 +1349,7 @@ export default function Diagnostic() {
                   <AdvisorContact
                     label="تحدّث مع مستشار مهني"
                     icon={<></>}
-                    className="font-bold text-white/60 underline underline-offset-4 transition hover:text-[#6EC7D1]"
+                    className="font-bold text-muted-foreground underline underline-offset-4 transition hover:text-[#6EC7D1]"
                     text={
                       isExploratory
                         ? "مرحبا، أكملت مؤشر وجيز ولم تكفِ إجاباتي لبناء خطة — أريد مستشارا يساعدني."
@@ -1425,7 +1425,7 @@ export default function Diagnostic() {
                   <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-teal-light-ink" />
                   <div>
                     <p className="text-sm font-black text-teal-light-ink">اطمئن — بقي مسارك هو نفسه بعد التدقيق</p>
-                    <p className="mt-1 text-xs leading-relaxed text-white/60">
+                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                       {cmp.note_ar} وإن حسّنا دورة داخل مسارك أو اقترحنا إضافة تناسبك فستجدها في خطتك أدناه —
                       ويمكنك تخصيصها بنفسك: استبدالا أو حذفا أو هدية مجانية.
                     </p>
@@ -1444,19 +1444,19 @@ export default function Diagnostic() {
                 </p>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   <div className="rounded-xl bg-white/[0.04] p-4">
-                    <p className="text-[11px] font-bold text-white/45">قبل التدقيق</p>
-                    <p className="mt-1.5 text-sm font-black leading-snug text-white/85">{cmp.before.topLabel_ar}</p>
-                    <p className="mt-1 text-xs text-white/55">مستوى الثبات: {cmp.before.confidenceBand_ar}</p>
+                    <p className="text-[11px] font-bold text-muted-foreground">قبل التدقيق</p>
+                    <p className="mt-1.5 text-sm font-black leading-snug text-foreground">{cmp.before.topLabel_ar}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">مستوى الثبات: {cmp.before.confidenceBand_ar}</p>
                   </div>
                   <div className="rounded-xl border border-teal/30 bg-teal/[0.07] p-4">
                     <p className="text-[11px] font-bold text-teal-light-ink">بعد التدقيق</p>
                     <p className="mt-1.5 text-sm font-black leading-snug">{cmp.after.topLabel_ar}</p>
-                    <p className="mt-1 text-xs text-white/65">مستوى الثبات: {cmp.after.confidenceBand_ar}</p>
+                    <p className="mt-1 text-xs text-foreground">مستوى الثبات: {cmp.after.confidenceBand_ar}</p>
                   </div>
                 </div>
                 <ul className="mt-4 space-y-1.5">
                   {cmp.reasons_ar.map((r) => (
-                    <li key={r} className="flex items-start gap-2 text-xs leading-relaxed text-white/60">
+                    <li key={r} className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
                       <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-teal-light" />
                       {r}
                     </li>
@@ -1486,40 +1486,40 @@ export default function Diagnostic() {
                   لا يعنيه. pathwayCategory تقول له أين يقع مساره بلغته. */}
               <div className="flex flex-wrap items-center gap-2">
                 <Badge className="bg-gold font-black text-on-gold">{topPathway.badge ?? pathwayCategory(topPathway.id)}</Badge>
-                <Badge variant="outline" className="border-white/20 text-white/70">{topPathway.level}</Badge>
+                <Badge variant="outline" className="border-white/20 text-foreground">{topPathway.level}</Badge>
               </div>
               <h2 className="mt-4 text-2xl font-black leading-snug md:text-3xl">{topPathway.name}</h2>
-              <p className="mt-4 leading-loose text-white/70">{topPathway.transformation}</p>
+              <p className="mt-4 leading-loose text-foreground">{topPathway.transformation}</p>
 
               {/* المدة والوقت والمستوى — شارات صغيرة لا تنافس اسم المسار */}
               <div className="mt-5 flex flex-wrap items-center gap-2">
-                <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-bold text-white/70">
+                <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-bold text-foreground">
                   <BookOpen className="h-3.5 w-3.5 text-teal-light-ink" />
                   {(pathwayCourses[topPathway.id] ?? []).length} دورات
                 </span>
-                <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-bold text-white/70">
+                <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-bold text-foreground">
                   <CalendarClock className="h-3.5 w-3.5 text-teal-light-ink" />
                   {weeksLabel(topPathway.durationWeeks)}
                 </span>
-                <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-bold text-white/70">
+                <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-bold text-foreground">
                   <Clock3 className="h-3.5 w-3.5 text-teal-light-ink" />
                   {topPathway.weeklyHours} أسبوعيا
                 </span>
-                <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-bold text-white/70">
+                <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-bold text-foreground">
                   <Gauge className="h-3.5 w-3.5 text-teal-light-ink" />
                   مستوى {topPathway.level}
                 </span>
               </div>
-              <p className="mt-3 flex items-start gap-2 text-sm leading-relaxed text-white/60">
+              <p className="mt-3 flex items-start gap-2 text-sm leading-relaxed text-muted-foreground">
                 <RouteIcon className="mt-0.5 h-4 w-4 shrink-0 text-gold-ink" />
                 <span>
-                  <span className="font-bold text-white/80">المخرج العملي: </span>
+                  <span className="font-bold text-foreground">المخرج العملي: </span>
                   {topPathway.output}
                 </span>
               </p>
 
               <div className="mt-6">
-                <p className="mb-2 text-sm font-bold text-white/60">المهارات المحورية التي ستبنيها:</p>
+                <p className="mb-2 text-sm font-bold text-muted-foreground">المهارات المحورية التي ستبنيها:</p>
                 <div className="flex flex-wrap gap-2">
                   {topPathway.coreSkills.map((s) => (
                     <span key={s} className="rounded-full border border-teal/40 bg-teal/10 px-3 py-1 text-xs font-semibold text-teal-light-ink">
@@ -1531,7 +1531,7 @@ export default function Diagnostic() {
 
               <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.04] p-5">
                 <p className="text-sm font-black text-teal-light-ink">ماذا ستحصل عليه فعليا؟</p>
-                <p className="mt-1.5 text-xs leading-6 text-white/55">
+                <p className="mt-1.5 text-xs leading-6 text-muted-foreground">
                   لا تحصل على قائمة دورات فقط؛ تحصل على ترتيب تعلم، ومتابعة، ومراجعة، ومخرجا تطبيقيا يثبت أنك تقدمت.
                 </p>
                 <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-4">
@@ -1548,7 +1548,7 @@ export default function Diagnostic() {
                     <div key={f.label} className="rounded-xl border border-white/[0.07] bg-white/[0.03] p-3">
                       <f.icon className="h-4 w-4 text-teal-light-ink" />
                       <p className="mt-1.5 text-xs font-bold leading-5">{f.label}</p>
-                      <p className="mt-0.5 text-[11px] leading-5 text-white/45">{f.hint}</p>
+                      <p className="mt-0.5 text-[11px] leading-5 text-muted-foreground">{f.hint}</p>
                     </div>
                   ))}
                 </div>
@@ -1569,8 +1569,8 @@ export default function Diagnostic() {
               <>
                 <CompositePlan composite={compositeView} />
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4">
-                  <p className="text-xs leading-relaxed text-white/60">
-                    <span className="font-bold text-white/80">للاطّلاع فقط — وليس خطتك: «{topPathway.name}»</span>
+                  <p className="text-xs leading-relaxed text-muted-foreground">
+                    <span className="font-bold text-foreground">للاطّلاع فقط — وليس خطتك: «{topPathway.name}»</span>
                     {" "}— أقوى مسار مفرد ضمن خطتك، استُمدت منه دورات أساسية في تركيبتك.
                     راجعه إن أردت التركيز على مجال واحد بدل الخطة أعلاه.
                   </p>
@@ -1688,7 +1688,7 @@ export default function Diagnostic() {
                 "مستشار نجاح يرافقك أسبوعيا",
                 "منظومة ما بعد الإتمام: وظائف وتوصيات وسفراء",
               ].map((f) => (
-                <p key={f} className="flex items-start gap-2 text-xs leading-relaxed text-white/65">
+                <p key={f} className="flex items-start gap-2 text-xs leading-relaxed text-foreground">
                   <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#38A7B4]" />
                   {f}
                 </p>
@@ -1703,7 +1703,7 @@ export default function Diagnostic() {
                 <BookOpen className="h-5 w-5" />
                 انتبه — رصيدك السابق يتقاطع مع هذا المسار
               </h3>
-              <p className="mt-3 text-sm leading-loose text-white/70">
+              <p className="mt-3 text-sm leading-loose text-foreground">
                 كتبت أنك درست سابقا ما يشبه: <span className="font-bold text-white">{result.priorOverlap.join("، ")}</span>.
                 راجع محاورها قبل الدفع — وإن كنت أتقنتها فعلا، اطلب من مستشارك استبدالها بدورة أعمق،
                 فوعدنا أنك لن تدفع ثمن ما تعرفه أصلا.
@@ -1741,7 +1741,7 @@ export default function Diagnostic() {
               </Button>
               <button
                 onClick={restart}
-                className="flex items-center gap-1.5 text-xs font-semibold text-white/45 transition hover:text-white"
+                className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground transition hover:text-white"
               >
                 <RefreshCcw className="h-3.5 w-3.5" />
                 لا يشبهني؟ أعد التشخيص من جديد
@@ -1761,7 +1761,7 @@ export default function Diagnostic() {
               <div className="mt-4 overflow-x-auto">
                 <table className="w-full text-right text-sm">
                   <thead>
-                    <tr className="border-b border-white/10 text-xs text-white/45">
+                    <tr className="border-b border-white/10 text-xs text-muted-foreground">
                       <th className="pb-3 font-semibold">المهارة</th>
                       <th className="pb-3 font-semibold">مستواك الآن</th>
                       <th className="pb-3 font-semibold">المستهدف</th>
@@ -1772,15 +1772,15 @@ export default function Diagnostic() {
                   <tbody>
                     {result.gapDetails.map((g) => (
                       <tr key={g.skill} className="border-b border-white/5">
-                        <td className="py-3 font-bold text-white/85">{g.skill}</td>
-                        <td className="py-3 text-white/55">{g.current}</td>
-                        <td className="py-3 text-white/55">{g.target}</td>
+                        <td className="py-3 font-bold text-foreground">{g.skill}</td>
+                        <td className="py-3 text-muted-foreground">{g.current}</td>
+                        <td className="py-3 text-muted-foreground">{g.target}</td>
                         <td className="py-3">
                           <span
                             className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
                               g.priority === "عالية"
                                 ? "bg-gold/15 text-gold-ink"
-                                : "bg-white/10 text-white/60"
+                                : "bg-white/10 text-muted-foreground"
                             }`}
                           >
                             {g.priority}
@@ -1804,7 +1804,7 @@ export default function Diagnostic() {
                 <BellRing className="h-5 w-5" />
                 مهارات تحتاجها ولا نغطيها بعد — ولن نخفي ذلك عنك
               </h3>
-              <p className="mt-3 text-sm leading-loose text-white/70">
+              <p className="mt-3 text-sm leading-loose text-foreground">
                 فجواتك في {result.unavailableSkills.join(" و")} مهمة لهدفك، لكن كتالوجنا الحالي لا يغطيها بعد.
                 نفضل أن تعرف الحقيقة كاملة على أن نبيعك مسارا ناقصا.
               </p>
@@ -1828,7 +1828,7 @@ export default function Diagnostic() {
                 <UserCheck className="h-5 w-5" />
                 حالتك تستحق جلسة مع مستشار بشري
               </h3>
-              <p className="mt-3 text-sm leading-loose text-white/70">
+              <p className="mt-3 text-sm leading-loose text-foreground">
                 المحرك غير متأكد تمامًا من التوصية الأنسب لحالتك، أو أنك طلبت استشارة شخصية.
                 نوصي بجلسة تعريفية مع مستشار وجيز (30 دقيقة) لصياغة خطتك بدقة — التشخيص الذي
                 أتممته للتو سيجعل الجلسة أقصر وأعمق.
@@ -1848,7 +1848,7 @@ export default function Diagnostic() {
             return (
             <div className="card-soft mt-8">
               <h3 className="h-card">{altCount === 2 ? "خياران" : "خياراتك الثلاثة"} في ميزان واحد — بدّل بثقة</h3>
-              <p className="mt-2 text-xs leading-relaxed text-white/50">
+              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
                 {altCount === 2 ? "مساران انتقاهما المحرك" : "ثلاثة مسارات انتقاها المحرك"} لحالتك تحديدا:
                 توصيتنا الأساسية{result.faster ? "، وبديل أسرع" : ""}{result.cheaper ? "، وبديل أوفر" : ""} — والقرار الأخير لك.
                 تفاصيل الاستثمار تظهر في صفحة المسار بعد اعتماده.
@@ -1858,14 +1858,14 @@ export default function Diagnostic() {
                 <div className="flex flex-col rounded-2xl border border-teal/50 bg-teal/10 p-5">
                   <span className="kicker">توصيتك الحالية</span>
                   <h4 className="mt-3 text-sm font-black leading-snug">{topPathway.name}</h4>
-                  <dl className="mt-3 space-y-1.5 text-xs text-white/55">
+                  <dl className="mt-3 space-y-1.5 text-xs text-muted-foreground">
                     <div className="flex items-center justify-between gap-2">
                       <dt>المدة</dt>
-                      <dd className="font-bold text-white/85">{weeksLabel(topPathway.durationWeeks)}</dd>
+                      <dd className="font-bold text-foreground">{weeksLabel(topPathway.durationWeeks)}</dd>
                     </div>
                     <div className="flex items-center justify-between gap-2">
                       <dt>الوقت الأسبوعي</dt>
-                      <dd className="font-bold text-white/85">{topPathway.weeklyHours}</dd>
+                      <dd className="font-bold text-foreground">{topPathway.weeklyHours}</dd>
                     </div>
                   </dl>
                   <span className="mt-4 flex items-center gap-1.5 text-xs font-bold text-teal-light-ink">
@@ -1880,14 +1880,14 @@ export default function Diagnostic() {
                       <Zap className="h-3 w-3" /> بديل أسرع
                     </span>
                     <h4 className="mt-3 text-sm font-black leading-snug">{result.faster.name}</h4>
-                    <dl className="mt-3 space-y-1.5 text-xs text-white/55">
+                    <dl className="mt-3 space-y-1.5 text-xs text-muted-foreground">
                       <div className="flex items-center justify-between gap-2">
                         <dt>المدة</dt>
-                        <dd className="font-bold text-white/85">{weeksLabel(result.faster.durationWeeks)}</dd>
+                        <dd className="font-bold text-foreground">{weeksLabel(result.faster.durationWeeks)}</dd>
                       </div>
                       <div className="flex items-center justify-between gap-2">
                         <dt>الوقت الأسبوعي</dt>
-                        <dd className="font-bold text-white/85">{result.faster.weeklyHours}</dd>
+                        <dd className="font-bold text-foreground">{result.faster.weeklyHours}</dd>
                       </div>
                     </dl>
                     <Button
@@ -1908,14 +1908,14 @@ export default function Diagnostic() {
                       <Wallet className="h-3 w-3" /> بديل أوفر
                     </span>
                     <h4 className="mt-3 text-sm font-black leading-snug">{result.cheaper.p.name}</h4>
-                    <dl className="mt-3 space-y-1.5 text-xs text-white/55">
+                    <dl className="mt-3 space-y-1.5 text-xs text-muted-foreground">
                       <div className="flex items-center justify-between gap-2">
                         <dt>المدة</dt>
-                        <dd className="font-bold text-white/85">{weeksLabel(result.cheaper.p.durationWeeks)}</dd>
+                        <dd className="font-bold text-foreground">{weeksLabel(result.cheaper.p.durationWeeks)}</dd>
                       </div>
                       <div className="flex items-center justify-between gap-2">
                         <dt>الوقت الأسبوعي</dt>
-                        <dd className="font-bold text-white/85">{result.cheaper.p.weeklyHours}</dd>
+                        <dd className="font-bold text-foreground">{result.cheaper.p.weeklyHours}</dd>
                       </div>
                     </dl>
                     <Button
@@ -1937,7 +1937,7 @@ export default function Diagnostic() {
           {/* شرح قوة الأدلة انتقل إلى بطاقة «لماذا هذا المسار» أعلى المنطقة المكشوفة —
               كان هنا في ذيل الصفحة ومطويًّا، أي بعد أن يكون القرار قد اتُّخذ. */}
 
-          <p className="mt-6 text-center text-xs leading-relaxed text-white/55">
+          <p className="mt-6 text-center text-xs leading-relaxed text-muted-foreground">
             التوصية صادرة عن محرك تشخيص قطعي مبني على إجاباتك، وهي نقطة بداية مفسَّرة —
             القرار النهائي دائمًا بيدك، ومستشارونا موجودون عند الحاجة.
             هذا تشخيص تعليمي مهني: ليس تقييما نفسيا أو طبيا، ولا وعدا بوظيفة أو دخل.

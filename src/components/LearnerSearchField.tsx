@@ -63,7 +63,7 @@ export default function LearnerSearchField({
           type="button"
           onClick={() => { onChange(null); setTerm(""); }}
           aria-label="اختر متعلّما آخر"
-          className="shrink-0 cursor-pointer rounded-full p-1 text-white/50 transition hover:bg-white/10 hover:text-white"
+          className="shrink-0 cursor-pointer rounded-full p-1 text-muted-foreground transition hover:bg-white/10 hover:text-white"
         >
           <X className="h-3.5 w-3.5" />
         </button>
@@ -91,7 +91,7 @@ export default function LearnerSearchField({
       {hits !== null && (
         <ul className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-xl border border-white/15 bg-[#0F1A1D] p-1 shadow-2xl">
           {hits.length === 0 && (
-            <li className="px-3 py-2 text-[11px] text-white/45">لا متعلّمَ بهذا الاسم أو البريد.</li>
+            <li className="px-3 py-2 text-[11px] text-muted-foreground">لا متعلّمَ بهذا الاسم أو البريد.</li>
           )}
           {hits.map((h) => (
             <li key={h.id}>
@@ -103,7 +103,7 @@ export default function LearnerSearchField({
               >
                 <span className="truncate text-xs font-bold text-white">{h.displayName}</span>
                 <span className="flex shrink-0 items-center gap-2">
-                  {h.enrolled && <span className="rounded-full bg-white/10 px-2 py-0.5 text-micro font-bold text-white/60">مسجَّلٌ هنا</span>}
+                  {h.enrolled && <span className="rounded-full bg-white/10 px-2 py-0.5 text-micro font-bold text-muted-foreground">مسجَّلٌ هنا</span>}
                   <span dir="ltr" className="text-micro text-white/40">{h.email}</span>
                 </span>
               </button>

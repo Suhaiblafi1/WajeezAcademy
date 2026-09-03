@@ -40,7 +40,7 @@ export default function ListToolbar({
         />
       </label>
 
-      <div className="flex items-center gap-2 text-[11px] text-white/45">
+      <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
         <span>
           {view.total === 0
             ? "لا نتائج"
@@ -52,7 +52,7 @@ export default function ListToolbar({
               onClick={() => onPage(view.page - 1)}
               disabled={view.page <= 1}
               aria-label="الصفحة السابقة"
-              className="cursor-pointer rounded-lg border border-white/12 p-1.5 text-white/60 transition hover:border-white/35 disabled:cursor-default disabled:opacity-25"
+              className="cursor-pointer rounded-lg border border-white/12 p-1.5 text-muted-foreground transition hover:border-white/35 disabled:cursor-default disabled:opacity-25"
             >
               <ChevronRight className="h-3.5 w-3.5" />
             </button>
@@ -61,7 +61,7 @@ export default function ListToolbar({
               onClick={() => onPage(view.page + 1)}
               disabled={view.page >= view.pages}
               aria-label="الصفحة التالية"
-              className="cursor-pointer rounded-lg border border-white/12 p-1.5 text-white/60 transition hover:border-white/35 disabled:cursor-default disabled:opacity-25"
+              className="cursor-pointer rounded-lg border border-white/12 p-1.5 text-muted-foreground transition hover:border-white/35 disabled:cursor-default disabled:opacity-25"
             >
               <ChevronLeft className="h-3.5 w-3.5" />
             </button>

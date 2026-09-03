@@ -58,7 +58,7 @@ type View = "auth" | "reset" | "verify" | "resetConfirm";
 
 const FIELD_CLS =
   "h-12 w-full rounded-2xl border border-white/15 bg-white/[0.04] pr-11 pl-11 text-left text-sm text-white placeholder:text-white/30 focus:border-teal focus:outline-none";
-const LABEL_CLS = "mb-1.5 block text-xs font-bold text-white/60";
+const LABEL_CLS = "mb-1.5 block text-xs font-bold text-muted-foreground";
 
 /** بوابة الدخول والتسجيل — نموذج حقيقي، تحقق آمن، ورسائل عربية لا تكشف شيئا.
     initialMode: الوضع الابتدائي (بوابة النتيجة تبدأ بـ«حساب جديد»).
@@ -185,8 +185,8 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
             <Mail className="h-7 w-7 text-[#6EC7D1]" />
           </span>
           <h2 className="mt-5 text-2xl font-black text-white">تم إنشاء حسابك — بقي تأكيد بريدك</h2>
-          <p className="mt-3 text-sm leading-relaxed text-white/55">
-            أرسلنا رابط تحقق إلى <span dir="ltr" className="font-bold text-white/80">{email.trim()}</span>.
+          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+            أرسلنا رابط تحقق إلى <span dir="ltr" className="font-bold text-foreground">{email.trim()}</span>.
             افتح الرسالة واضغط الرابط لتفعيل حسابك بالكامل.
           </p>
           <div className="mt-6 space-y-3">
@@ -196,7 +196,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
                 setResent(true);
               }}
               disabled={resent}
-              className="h-11 w-full rounded-2xl border border-white/15 text-sm font-bold text-white/70 transition hover:border-teal/50 hover:text-teal-light-ink disabled:opacity-50"
+              className="h-11 w-full rounded-2xl border border-white/15 text-sm font-bold text-foreground transition hover:border-teal/50 hover:text-teal-light-ink disabled:opacity-50"
             >
               {resent ? "أُعيد إرسال الرسالة — تفقد بريدك" : "لم تصلك؟ أعد إرسال رسالة التحقق"}
             </button>
@@ -207,7 +207,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
               متابعة — سأؤكد بريدي لاحقا
             </button>
           </div>
-          <p className="mt-5 text-[11px] leading-relaxed text-white/55">
+          <p className="mt-5 text-[11px] leading-relaxed text-muted-foreground">
             تفقد مجلد الرسائل غير المرغوبة إن لم تجدها خلال دقائق
           </p>
         </div>
@@ -223,14 +223,14 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
           <div className="border-b border-white/5 px-8 pb-6 pt-8 text-center">
             <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="mx-auto h-12 w-12 object-contain" />
             <h2 className="mt-4 text-2xl font-black text-white">استعادة كلمة المرور</h2>
-            <p className="mt-2 text-sm leading-relaxed text-white/55">
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
               أدخل بريدك وسنرسل لك رابط إعادة التعيين
             </p>
           </div>
           <form onSubmit={submitReset} noValidate className="px-8 py-6">
             <label htmlFor="reset-email" className={LABEL_CLS}>البريد الإلكتروني</label>
             <div className="relative">
-              <Mail className="absolute right-3.5 top-3.5 h-4 w-4 text-white/55" />
+              <Mail className="absolute right-3.5 top-3.5 h-4 w-4 text-muted-foreground" />
               <input
                 id="reset-email"
                 name="email"
@@ -257,14 +257,14 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
             <button
               type="button"
               onClick={() => { setView("auth"); setErr(""); }}
-              className="mt-3 w-full text-center text-xs text-white/45 transition hover:text-teal-light-ink"
+              className="mt-3 w-full text-center text-xs text-muted-foreground transition hover:text-teal-light-ink"
             >
               عودة لتسجيل الدخول
             </button>
             <button
               type="button"
               onClick={() => { setView("resetConfirm"); setErr(""); }}
-              className="mt-2 w-full text-center text-xs text-white/45 transition hover:text-teal-light-ink"
+              className="mt-2 w-full text-center text-xs text-muted-foreground transition hover:text-teal-light-ink"
             >
               وصلك الرمز؟ أدخله مباشرة لتعيين كلمة المرور
             </button>
@@ -282,7 +282,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
           <div className="border-b border-white/5 px-8 pb-6 pt-8 text-center">
             <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="mx-auto h-12 w-12 object-contain" />
             <h2 className="mt-4 text-2xl font-black text-white">تعيين كلمة مرور جديدة</h2>
-            <p className="mt-2 text-sm leading-relaxed text-white/55">
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
               أدخل رمز الاستعادة وكلمة المرور الجديدة — تُبطل الجلسات القديمة تلقائيا
             </p>
           </div>
@@ -290,7 +290,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
             <div>
               <label htmlFor="reset-token" className={LABEL_CLS}>رمز الاستعادة</label>
               <div className="relative">
-                <ShieldCheck className="absolute right-3.5 top-3.5 h-4 w-4 text-white/55" />
+                <ShieldCheck className="absolute right-3.5 top-3.5 h-4 w-4 text-muted-foreground" />
                 <input
                   id="reset-token"
                   name="reset-token"
@@ -308,7 +308,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
             <div>
               <label htmlFor="reset-pass" className={LABEL_CLS}>كلمة المرور الجديدة</label>
               <div className="relative">
-                <Lock className="absolute right-3.5 top-3.5 h-4 w-4 text-white/55" />
+                <Lock className="absolute right-3.5 top-3.5 h-4 w-4 text-muted-foreground" />
                 <input
                   id="reset-pass"
                   name="new-password"
@@ -330,7 +330,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
             <div>
               <label htmlFor="reset-confirm" className={LABEL_CLS}>تأكيد كلمة المرور</label>
               <div className="relative">
-                <Lock className="absolute right-3.5 top-3.5 h-4 w-4 text-white/55" />
+                <Lock className="absolute right-3.5 top-3.5 h-4 w-4 text-muted-foreground" />
                 <input
                   id="reset-confirm"
                   name="new-password-confirm"
@@ -363,7 +363,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
             <button
               type="button"
               onClick={() => { setView("reset"); setErr(""); }}
-              className="w-full text-center text-xs text-white/45 transition hover:text-teal-light-ink"
+              className="w-full text-center text-xs text-muted-foreground transition hover:text-teal-light-ink"
             >
               عودة — اطلب رمزا جديدا
             </button>
@@ -382,7 +382,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
           <h1 className="mt-4 text-2xl font-black text-white">
             {mode === "signup" ? "ابدأ رحلتك مع أكاديمية وجيز" : "أهلا بعودتك"}
           </h1>
-          <p className="mt-2 text-sm leading-relaxed text-white/55">
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
             {message ?? "حساب واحد يحفظ تشخيصك ومسارك وشهاداتك"}
           </p>
         </div>
@@ -401,7 +401,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
                   setNotice("");
                 }}
                 className={`rounded-full py-2 text-sm font-bold transition ${
-                  mode === m ? "bg-teal text-on-teal" : "text-white/55 hover:text-white"
+                  mode === m ? "bg-teal text-on-teal" : "text-muted-foreground hover:text-white"
                 }`}
               >
                 {m === "signup" ? "حساب جديد" : "دخول"}
@@ -421,12 +421,12 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
                   <Linkedin className="h-5 w-5" />
                   المتابعة بحساب لينكدإن
                 </button>
-                <p className="flex items-center justify-center gap-1.5 text-[11px] text-white/55">
+                <p className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
                   <ShieldCheck className="h-3.5 w-3.5 text-teal-ink" />
                   لن ننشر شيئا باسمك أبدا — حسابك لحفظ مسارك ونتيجتك فقط
                 </p>
               </div>
-              <div className="my-5 flex items-center gap-3 text-xs text-white/55">
+              <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
                 <span className="h-px flex-1 bg-white/10" />
                 أو بالبريد الإلكتروني
                 <span className="h-px flex-1 bg-white/10" />
@@ -439,7 +439,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
               <div>
                 <label htmlFor="auth-name" className={LABEL_CLS}>الاسم الكريم</label>
                 <div className="relative">
-                  <UserRound className="absolute right-3.5 top-3.5 h-4 w-4 text-white/55" />
+                  <UserRound className="absolute right-3.5 top-3.5 h-4 w-4 text-muted-foreground" />
                   {name.trim().length >= 2 && <Check className="absolute left-3.5 top-3.5 h-4 w-4 text-[#34A853]" />}
                   <input
                     id="auth-name"
@@ -459,7 +459,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
             <div>
               <label htmlFor="auth-email" className={LABEL_CLS}>البريد الإلكتروني</label>
               <div className="relative">
-                <Mail className="absolute right-3.5 top-3.5 h-4 w-4 text-white/55" />
+                <Mail className="absolute right-3.5 top-3.5 h-4 w-4 text-muted-foreground" />
                 {emailValid && <Check className="absolute left-3.5 top-3.5 h-4 w-4 text-[#34A853]" />}
                 <input
                   id="auth-email"
@@ -485,7 +485,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
             <div>
               <label htmlFor="auth-pass" className={LABEL_CLS}>كلمة المرور</label>
               <div className="relative">
-                <Lock className="absolute right-3.5 top-3.5 h-4 w-4 text-white/55" />
+                <Lock className="absolute right-3.5 top-3.5 h-4 w-4 text-muted-foreground" />
                 <button
                   type="button"
                   onClick={() => setShowPass(!showPass)}
@@ -493,7 +493,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
                   /* كان الزرُّ ١٦ بكسلا عرضا: أيقونةٌ بلا حاشية. والقياسُ على
                      ٣٩٠ بكسلا أظهر ذلك في شاشة الدخول وطلب الانضمام معا.
                      فصار مربّعا ٤٤×٤٤ والأيقونةُ في وسطه، ومكانُها كما كان. */
-                  className="absolute left-1 top-1 grid h-11 w-11 place-items-center text-white/55 transition hover:text-white/70"
+                  className="absolute left-1 top-1 grid h-11 w-11 place-items-center text-muted-foreground transition hover:text-foreground"
                 >
                   {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -512,7 +512,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
                 />
               </div>
               {mode === "signup" && (
-                <p className="mt-1.5 text-[11px] text-white/55">
+                <p className="mt-1.5 text-[11px] text-muted-foreground">
                   ٨ أحرف فأكثر — ويُفضّل رقم أو رمز (! @ #) لتقويتها
                 </p>
               )}
@@ -540,7 +540,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
               <div>
                 <label htmlFor="auth-confirm" className={LABEL_CLS}>تأكيد كلمة المرور</label>
                 <div className="relative">
-                  <Lock className="absolute right-3.5 top-3.5 h-4 w-4 text-white/55" />
+                  <Lock className="absolute right-3.5 top-3.5 h-4 w-4 text-muted-foreground" />
                   {confirm.length > 0 && confirmValid && <Check className="absolute left-3.5 top-3.5 h-4 w-4 text-[#34A853]" />}
                   <input
                     id="auth-confirm"
@@ -569,7 +569,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
                 <button
                   type="button"
                   onClick={() => { setView("reset"); setErr(""); setNotice(""); }}
-                  className="text-xs text-white/45 transition hover:text-teal-light-ink"
+                  className="text-xs text-muted-foreground transition hover:text-teal-light-ink"
                 >
                   نسيت كلمة المرور؟
                 </button>
@@ -587,13 +587,13 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
                   onChange={(e) => setAgreed(e.target.checked)}
                   className="mt-0.5 h-4 w-4 shrink-0 accent-teal"
                 />
-                <span className="text-[11px] leading-relaxed text-white/55">
+                <span className="text-[11px] leading-relaxed text-muted-foreground">
                   أوافق على{" "}
-                  <Link to="/p/terms" className="font-bold text-white/75 underline underline-offset-4 hover:text-teal-light-ink">
+                  <Link to="/p/terms" className="font-bold text-foreground underline underline-offset-4 hover:text-teal-light-ink">
                     شروط الاستخدام
                   </Link>{" "}
                   و
-                  <Link to="/p/privacy" className="font-bold text-white/75 underline underline-offset-4 hover:text-teal-light-ink">
+                  <Link to="/p/privacy" className="font-bold text-foreground underline underline-offset-4 hover:text-teal-light-ink">
                     سياسة الخصوصية
                   </Link>
                 </span>
@@ -621,7 +621,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
           </form>
 
           {mode === "login" && (
-            <p className="mt-4 text-center text-[11px] leading-relaxed text-white/55">
+            <p className="mt-4 text-center text-[11px] leading-relaxed text-muted-foreground">
               لحمايتك: يُقفل الدخول مؤقتا بعد خمس محاولات خاطئة
             </p>
           )}

@@ -41,7 +41,7 @@ export default function StageOffer({
   return (
     <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
       <h3 className="text-base font-black leading-snug">{stage.titleAr}</h3>
-      <p className="mt-0.5 text-[11px] text-white/45">
+      <p className="mt-0.5 text-[11px] text-muted-foreground">
         {stage.hours > 0 && `${stage.hours} ساعة · `}
         {stage.weeks} {stage.weeks === 1 ? "أسبوع" : "أسابيع"}
         {stage.isGift && " · هديّتك في الخطّة"}
@@ -69,7 +69,7 @@ export default function StageOffer({
             )}
           </div>
           {!stage.inPlan && (
-            <p className="mt-2.5 flex items-start gap-1.5 text-[11px] leading-5 text-white/45">
+            <p className="mt-2.5 flex items-start gap-1.5 text-[11px] leading-5 text-muted-foreground">
               <Info className="mt-0.5 h-3 w-3 shrink-0" />
               <span>
                 هذه من دورات المسار ولم تُضِفها بعد. تفاصيلُها كاملةً وخصمُ بناء المسار في{" "}
@@ -83,10 +83,10 @@ export default function StageOffer({
         </>
       ) : stage.inPlan ? (
         <>
-          <p className="mt-4 flex items-start gap-2 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 text-[12px] leading-6 text-white/60">
-            <CalendarClock className="mt-0.5 h-4 w-4 shrink-0 text-white/45" />
+          <p className="mt-4 flex items-start gap-2 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 text-[12px] leading-6 text-muted-foreground">
+            <CalendarClock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
             <span>
-              <span className="font-bold text-white/80">بانتظار شعبة.</span>{" "}
+              <span className="font-bold text-foreground">بانتظار شعبة.</span>{" "}
               لا تُطلب الآن ولا يُدفع ثمنُها — نُعلمك فور جدولتها، أو استبدلها بدورةٍ بديلة.
             </span>
           </p>
@@ -101,7 +101,7 @@ export default function StageOffer({
         </>
       ) : (
         <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-          <p className="text-[12px] leading-6 text-white/60">
+          <p className="text-[12px] leading-6 text-muted-foreground">
             لم تُفتح شعبةٌ لهذه الدورة الآن. صفحتُها العامّة تعرض تفاصيلَها كاملةً، ونُعلمك فور فتح أوّل شعبة.
           </p>
           <Link

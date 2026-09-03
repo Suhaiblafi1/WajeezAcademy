@@ -38,11 +38,11 @@ export default function TrainerWorkQueue({ items, className = "" }: { items: Que
             <span className="rounded-full bg-teal-ink/15 px-2 py-0.5 text-[11px] tabular-nums text-teal-light-ink">{items.length}</span>
           )}
         </h2>
-        <p className="text-[11px] text-white/50">مرتّبة بالإلحاح — لكل سطر إجراء واحد</p>
+        <p className="text-[11px] text-muted-foreground">مرتّبة بالإلحاح — لكل سطر إجراء واحد</p>
       </div>
 
       {items.length === 0 ? (
-        <p className="mt-4 rounded-2xl border border-white/8 bg-black/20 px-4 py-6 text-center text-xs leading-6 text-white/55">
+        <p className="mt-4 rounded-2xl border border-white/8 bg-black/20 px-4 py-6 text-center text-xs leading-6 text-muted-foreground">
           لا شيء ينتظرك الآن — الحضور مسجَّل والتسليمات مقيَّمة ولا جلسة قريبة.
           <br />
           يظهر هنا كل ما يحتاج إجراءً منك فور حدوثه.
@@ -62,10 +62,10 @@ export default function TrainerWorkQueue({ items, className = "" }: { items: Que
                 key={`${it.kind}-${i}`}
                 className={`flex flex-wrap items-center gap-3 rounded-2xl border px-4 py-3 ${TONE[it.kind]}`}
               >
-                <Icon className="h-4 w-4 shrink-0 text-white/70" aria-hidden="true" />
+                <Icon className="h-4 w-4 shrink-0 text-foreground" aria-hidden="true" />
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-bold leading-5">{it.titleAr}</p>
-                  <p className="mt-0.5 truncate text-[11px] text-white/55">{it.detailAr}</p>
+                  <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{it.detailAr}</p>
                 </div>
                 {it.external ? (
                   <a

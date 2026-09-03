@@ -42,11 +42,11 @@ export default function VerifyEmailNotice({ email, className = "" }: { email: st
           {/* ترتيب الجملة مقصود: النقطتان بعد نصّ عربيّ، والعنوان اللاتيني في
               آخرها. كان العنوان قبلهما فتقع النقطتان على يساره في سياق RTL
               فتُقرأ الجملة معكوسة: «‪…@test.local : شراء الشعب‬». */}
-          <p className="mt-1 text-[12px] leading-6 text-white/60">
+          <p className="mt-1 text-[12px] leading-6 text-muted-foreground">
             الدخول والتصفّح والتشخيص مفتوحة كلها. الموقوف شيئان فقط:
-            <span className="font-bold text-white/75"> شراء الشعب</span> و<span className="font-bold text-white/75">استلام الشهادة</span>،
+            <span className="font-bold text-foreground"> شراء الشعب</span> و<span className="font-bold text-foreground">استلام الشهادة</span>،
             حتى تُوثّق عنوانك
-            <span dir="ltr" className="mx-1 inline-block font-bold text-white/75">{email}</span>
+            <span dir="ltr" className="mx-1 inline-block font-bold text-foreground">{email}</span>
           </p>
           <button
             onClick={send}

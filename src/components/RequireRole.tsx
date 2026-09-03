@@ -91,7 +91,7 @@ export default function RequireRole({ allow }: { allow: readonly string[] }) {
     return (
       <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper px-5" aria-busy="true" aria-label="التحقق من الصلاحيات">
         <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/10 border-t-[#38A7B4]" />
-        <p className="mt-4 text-sm font-semibold text-white/50">نتحقق من صلاحياتك…</p>
+        <p className="mt-4 text-sm font-semibold text-muted-foreground">نتحقق من صلاحياتك…</p>
       </div>
     )
   }
@@ -101,13 +101,13 @@ export default function RequireRole({ allow }: { allow: readonly string[] }) {
       <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper px-5 text-white">
         <ServerOff className="h-12 w-12 text-white/25" />
         <h1 className="mt-5 text-xl font-black">تعذّر التحقّق من صلاحيّتك</h1>
-        <p className="mt-2 max-w-md text-center text-sm leading-7 text-white/55">
+        <p className="mt-2 max-w-md text-center text-sm leading-7 text-muted-foreground">
           لم يصلنا ردٌّ من الخادم، ولا نُقرّر صلاحيّتك بلا ردّ — فلن نأخذك إلى بوابةٍ قد لا تكون بوابتك.
           جرّب مرّة أخرى بعد لحظة.
         </p>
         <button
           onClick={() => setAttempt((n) => n + 1)}
-          className="mt-6 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2.5 text-xs font-bold text-white/75 transition hover:border-white/40"
+          className="mt-6 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2.5 text-xs font-bold text-foreground transition hover:border-white/40"
         >
           <RefreshCw className="h-3.5 w-3.5" /> أعد المحاولة
         </button>

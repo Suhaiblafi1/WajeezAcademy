@@ -48,11 +48,20 @@ module.exports = {
         "ramp-3": "rgb(var(--ramp-3) / <alpha-value>)",
         "ramp-4": "rgb(var(--ramp-4) / <alpha-value>)",
         "ramp-5": "rgb(var(--ramp-5) / <alpha-value>)",
-        border: "hsl(var(--border))",
+        /* ── قناةُ الشفافيّة على رموز الحبر ──
+
+           كان `foreground` مسجّلا بلا `<alpha-value>`، فـ`text-foreground/45`
+           لا يُنتج صنفا. وهذا وحدَه هو ما سدّ بابَ الإصلاح: المنصّةُ فيها
+           ١٧٦٩ موضعا من `text-white/NN` — حبرٌ **مبنيٌّ على أنّ ما خلفه
+           داكن** — ولم يكن لها بديلٌ يقبل الدرجةَ نفسَها.
+
+           والإضافةُ لا تُغيّر شيئا قائما: تايلويند يُبدّل الشفافيّةَ بواحدٍ
+           حين لا مُعدِّل، فـ`text-foreground` كما كان. */
+        border: "hsl(var(--border) / <alpha-value>)",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
+        foreground: "hsl(var(--foreground) / <alpha-value>)",
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
@@ -67,7 +76,7 @@ module.exports = {
         },
         muted: {
           DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
+          foreground: "hsl(var(--muted-foreground) / <alpha-value>)",
         },
         accent: {
           DEFAULT: "hsl(var(--accent))",

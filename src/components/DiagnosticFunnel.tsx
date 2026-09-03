@@ -40,12 +40,12 @@ export default function DiagnosticFunnel() {
       aria-labelledby="funnel-title"
     >
       <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h2 id="funnel-title" className="flex items-center gap-2 text-sm font-black text-white/75">
+        <h2 id="funnel-title" className="flex items-center gap-2 text-sm font-black text-foreground">
           <BarChart3 className="h-4 w-4 text-teal-light-ink" aria-hidden="true" />
           قمع التشخيص وجدار التسجيل
         </h2>
         {conversion && (
-          <p className="text-xs text-white/55">
+          <p className="text-xs text-muted-foreground">
             نسبة التحويل عند الجدار:{" "}
             <span className="text-lg font-black tabular-nums text-gold-ink">{String(conversion.users)}</span>
           </p>
@@ -53,9 +53,9 @@ export default function DiagnosticFunnel() {
       </div>
 
       {rows === null ? (
-        <p className="mt-6 text-sm text-white/45">يُحسب من أحداث الرحلة…</p>
+        <p className="mt-6 text-sm text-muted-foreground">يُحسب من أحداث الرحلة…</p>
       ) : started === 0 ? (
-        <p className="mt-6 text-sm text-white/55">
+        <p className="mt-6 text-sm text-muted-foreground">
           لا أحداث بعد. تظهر المراحل هنا حين يبدأ أول متعلم التشخيص.
         </p>
       ) : (
@@ -67,7 +67,7 @@ export default function DiagnosticFunnel() {
               : 0;
             return (
               <li key={s.stage} className="grid grid-cols-[9.5rem_1fr_auto] items-center gap-3 text-xs sm:grid-cols-[11rem_1fr_auto]">
-                <span className="text-white/70">{s.stage}</span>
+                <span className="text-foreground">{s.stage}</span>
                 <span
                   className="relative h-3 rounded-full bg-white/[0.06]"
                   title={`${s.stage}: ${s.users} جهازا${dropFromPrev > 0 ? ` · تسرّب ${dropFromPrev}٪ عن المرحلة السابقة` : ""}`}
@@ -77,10 +77,10 @@ export default function DiagnosticFunnel() {
                     style={{ width: `${Math.max(pct, s.users > 0 ? 2 : 0)}%` }}
                   />
                 </span>
-                <span className="tabular-nums font-black text-white/85">
+                <span className="tabular-nums font-black text-foreground">
                   {s.users}
                   {dropFromPrev > 0 && (
-                    <span className="ms-2 font-medium text-white/45">({dropFromPrev}٪ تسرّب)</span>
+                    <span className="ms-2 font-medium text-muted-foreground">({dropFromPrev}٪ تسرّب)</span>
                   )}
                 </span>
               </li>
@@ -89,7 +89,7 @@ export default function DiagnosticFunnel() {
         </ol>
       )}
 
-      <p className="mt-5 text-[11px] leading-relaxed text-white/45">
+      <p className="mt-5 text-[11px] leading-relaxed text-muted-foreground">
         أجهزة فريدة عند كل مرحلة — لا زيارات. النسبة المئوية بجانب كل مرحلة هي التسرّب عن سابقتها.
       </p>
     </section>

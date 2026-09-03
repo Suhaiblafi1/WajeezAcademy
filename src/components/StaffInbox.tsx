@@ -27,7 +27,7 @@ interface InboxItem {
 const TONE: Record<InboxItem["severity"], { box: string; chip: string; icon: typeof AlertTriangle }> = {
   urgent: { box: "border-red-400/35 bg-red-500/[0.07]", chip: "bg-red-500/20 text-red-200", icon: AlertTriangle },
   attention: { box: "border-gold/30 bg-gold/[0.06]", chip: "bg-gold/20 text-gold-ink", icon: Clock },
-  info: { box: "border-white/12 bg-white/[0.03]", chip: "bg-white/10 text-white/70", icon: Inbox },
+  info: { box: "border-white/12 bg-white/[0.03]", chip: "bg-white/10 text-foreground", icon: Inbox },
 };
 
 export default function StaffInbox() {
@@ -62,7 +62,7 @@ export default function StaffInbox() {
         </h2>
         <button
           type="button" onClick={() => void load()} disabled={busy}
-          className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/12 px-3 py-1 text-[11px] font-bold text-white/55 transition hover:border-white/35 hover:text-white/80 disabled:opacity-40"
+          className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/12 px-3 py-1 text-[11px] font-bold text-muted-foreground transition hover:border-white/35 hover:text-foreground disabled:opacity-40"
         >
           {busy ? <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" /> : <RefreshCw className="h-3 w-3" aria-hidden="true" />} تحديث
         </button>
@@ -104,11 +104,11 @@ export default function StaffInbox() {
                       {item.count}
                     </span>
                   </div>
-                  <p className="mt-1.5 text-[11px] leading-5 text-white/55">{item.whyAr}</p>
+                  <p className="mt-1.5 text-[11px] leading-5 text-muted-foreground">{item.whyAr}</p>
                   {item.sample.length > 0 && (
                     <ul className="mt-2.5 space-y-1">
                       {item.sample.map((s) => (
-                        <li key={s} className="truncate text-[11px] text-white/70">— {s}</li>
+                        <li key={s} className="truncate text-[11px] text-foreground">— {s}</li>
                       ))}
                     </ul>
                   )}
