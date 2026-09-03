@@ -11,7 +11,7 @@ import {
   PERMISSIONS, ROLE_NAMES_AR, ROLE_PERMISSIONS, ROLE_RANK, refuseDelegation, refuseRoleAssignment, rankOf,
   DELEGATABLE_FAMILIES, type PermissionKey,
 } from '../../auth/permissions'
-import { sendStaffInviteEmail } from '../../services/account-mail'
+import { inviteLink, sendStaffInviteEmail } from '../../services/account-mail'
 import { accountFootprint, footprintBlockersAr, purgeAccountWithHistory } from '../../services/account-purge.service'
 
 export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClient, auth: AuthService) {
@@ -25,15 +25,34 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
     async () => {
       const users = await prisma.user.findMany({
         orderBy: { createdAt: 'desc' },
-        include: { roles: true, permissionOverrides: true },
+        include: {
+          roles: true,
+          permissionOverrides: true,
+          /* حالُ دعوته يُقرأ في الصفّ: «دعوةٌ سارية» أو «انتهت» فرقٌ يقرّر
+             هل يُعاد الإرسالُ أم يُنتظر (جولة ٢٠٢٦-٠٩: الدعوةُ كانت ساعةً
+             واحدةً فتنتهي قبل أن يفتح المدعوُّ بريدَه). */
+          resetTokens: {
+            where: { purpose: 'invite', usedAt: null },
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+            select: { expiresAt: true },
+          },
+        },
       })
-      return users.map((u) => ({
-        id: u.id, email: u.email, displayName: u.displayName, status: u.status,
-        createdAt: u.createdAt, roles: u.roles.map((r) => ({ id: r.roleId, nameAr: ROLE_NAMES_AR[r.roleId] ?? r.roleId })),
-        /* عددُ استثناءاته يُقرأ من القائمة: من له استثناءٌ يُعرف قبل فتحه */
-        grants: u.permissionOverrides.filter((o) => o.effect === 'grant').length,
-        denies: u.permissionOverrides.filter((o) => o.effect === 'deny').length,
-      }))
+      const now = new Date()
+      return users.map((u) => {
+        const invite = u.resetTokens[0]
+        return {
+          id: u.id, email: u.email, displayName: u.displayName, status: u.status,
+          createdAt: u.createdAt, roles: u.roles.map((r) => ({ id: r.roleId, nameAr: ROLE_NAMES_AR[r.roleId] ?? r.roleId })),
+          /* عددُ استثناءاته يُقرأ من القائمة: من له استثناءٌ يُعرف قبل فتحه */
+          grants: u.permissionOverrides.filter((o) => o.effect === 'grant').length,
+          denies: u.permissionOverrides.filter((o) => o.effect === 'deny').length,
+          invite: invite
+            ? { state: invite.expiresAt > now ? 'pending' as const : 'expired' as const, expiresAt: invite.expiresAt }
+            : { state: 'none' as const, expiresAt: null },
+        }
+      })
     })
 
   /* ── صلاحيّاتُ شخصٍ بعينه ──
@@ -182,8 +201,11 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
     /* كلمةٌ عشوائيّة لا يعرفها أحد — الدخولُ يبدأ بتعيينِ صاحبه كلمتَه */
     const { userId } = await auth.register(body.email, randomBytes(24).toString('hex'), body.displayName)
     await auth.setRoles(userId, body.roleIds)
+    /* «مدعوّ» لا «نشط»: الحسابُ موجودٌ ولم يدخله صاحبُه بعد، وهذا فرقٌ
+       يُقرأ في القائمة — فمن أُنشئ حسابُه ولم يُفعّله لا يُحسب فريقا عاملا. */
+    await prisma.user.update({ where: { id: userId }, data: { status: 'invited' } })
 
-    const { tokenForDelivery } = await auth.requestPasswordReset(body.email)
+    const { token: tokenForDelivery } = await auth.issueInvite(userId)
     const actor = await prisma.user.findUnique({ where: { id: req.auth!.userId }, select: { displayName: true } })
     const mail = tokenForDelivery
       ? await sendStaffInviteEmail(prisma, {
@@ -215,6 +237,114 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
         ? 'أُنشئ الحساب، ووصلته دعوةٌ تشرح دوره وتفعّل حسابه.'
         : 'أُنشئ الحساب، ولم تُرسل الدعوة — قناةُ البريد غير مفعّلة. اطلب منه «نسيت كلمة المرور» ببريده.',
     })
+  })
+
+  /* إعادةُ إرسال الدعوة — لمن انتهت دعوتُه أو لم تصله.
+
+     كان البديلُ الوحيدُ أن يطلب المدعوُّ «نسيت كلمة المرور» بنفسه، أي أن
+     يصنع لنفسه ما كان يجب أن يصله — وهذا يفترض أنّه يعرف أنّ له حسابا. */
+  app.post('/api/admin/users/:id/resend-invite', {
+    preHandler: guard,
+    schema: { tags: ['admin-users'], summary: 'يُصدر دعوةً جديدةً (٧ أيّام) ويُبطل ما قبلها' },
+  }, async (req, reply) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const user = await prisma.user.findUnique({
+      where: { id }, include: { roles: true },
+    })
+    if (!user) return reply.status(404).send({ error: { code: 'not_found', message_ar: 'الحساب غير موجود' } })
+    if (user.status === 'archived') {
+      return reply.status(409).send({ error: { code: 'archived', message_ar: 'حسابٌ مؤرشَف — أعِد تنشيطَه أوّلا' } })
+    }
+
+    const { token, expiresAt } = await auth.issueInvite(id)
+    const roleIds = user.roles.map((r) => r.roleId)
+    const actor = await prisma.user.findUnique({ where: { id: req.auth!.userId }, select: { displayName: true } })
+    const mail = await sendStaffInviteEmail(prisma, {
+      to: user.email,
+      displayName: user.displayName,
+      token,
+      roleNamesAr: roleIds.map((r) => ROLE_NAMES_AR[r] ?? r),
+      invitedByAr: actor?.displayName ?? 'مدير المنصّة',
+      dutiesAr: [...new Set(roleIds.flatMap((r) => ROLE_PERMISSIONS[r] ?? []))]
+        .flatMap((k) => {
+          const found = PERMISSIONS.find((p) => p.key === k)
+          return found ? [found.description as string] : []
+        })
+        .slice(0, 6),
+    })
+    await recordAudit(prisma, {
+      actorId: req.auth!.userId, action: 'admin.user.invite_resend', entityType: 'user', entityId: id,
+      meta: { email: user.email, sent: mail.status === 'sent' },
+    })
+    return {
+      sent: mail.status === 'sent',
+      expiresAt,
+      note: mail.status === 'sent'
+        ? 'أُرسلت دعوةٌ جديدةٌ صالحةٌ سبعةَ أيّام — والقديمةُ أُبطلت.'
+        : 'أُصدرت دعوةٌ جديدةٌ ولم تُرسل — قناةُ البريد غير مفعّلة. سلّمه الرابطَ بنفسك أو فعّل البريد.',
+      /* الرابطُ يُعاد لمن يملك إدارةَ المستخدمين وحدَه، وحين لا بريد: فهو
+         السبيلُ الوحيدُ لتسليم الدعوة يدويّا — ولا يُسجَّل في الأثر. */
+      link: mail.status === 'sent' ? undefined : inviteLink(token),
+    }
+  })
+
+  /* دعوةُ دفعةٍ من صفوفٍ ملصوقة: «بريد, اسم» في كلّ سطر.
+
+     تأهيلُ فريقٍ من ستّة أشخاصٍ كان ستَّ رحلاتٍ في النموذج نفسِه. والدفعةُ
+     لا تتوقّف عند أوّل خطأ: كلُّ سطرٍ يُجاب عنه بحاله، فيُعاد ما فشل وحدَه. */
+  app.post('/api/admin/users/bulk-invite', {
+    preHandler: guard,
+    schema: { tags: ['admin-users'], summary: 'دعوةُ عدّةِ حساباتٍ بدورٍ واحد — سطرٌ لكلّ شخص' },
+  }, async (req) => {
+    const body = z.object({
+      roleIds: z.array(z.string()).min(1),
+      rows: z.array(z.object({
+        email: z.string().email(),
+        displayName: z.string().trim().min(2).max(120),
+      })).min(1).max(50),
+    }).parse(req.body)
+
+    const actor = await prisma.user.findUnique({ where: { id: req.auth!.userId }, select: { displayName: true } })
+    const dutiesAr = [...new Set(body.roleIds.flatMap((r) => ROLE_PERMISSIONS[r] ?? []))]
+      .flatMap((k) => {
+        const found = PERMISSIONS.find((p) => p.key === k)
+        return found ? [found.description as string] : []
+      })
+      .slice(0, 6)
+
+    const results: { email: string; ok: boolean; sent: boolean; reasonAr?: string }[] = []
+    for (const row of body.rows) {
+      const email = row.email.trim().toLowerCase()
+      try {
+        if (await prisma.user.findUnique({ where: { email } })) {
+          results.push({ email, ok: false, sent: false, reasonAr: 'لهذا البريد حسابٌ بالفعل' })
+          continue
+        }
+        const { userId } = await auth.register(email, randomBytes(24).toString('hex'), row.displayName)
+        await auth.setRoles(userId, body.roleIds)
+        await prisma.user.update({ where: { id: userId }, data: { status: 'invited' } })
+        const { token } = await auth.issueInvite(userId)
+        const mail = await sendStaffInviteEmail(prisma, {
+          to: email, displayName: row.displayName, token,
+          roleNamesAr: body.roleIds.map((r) => ROLE_NAMES_AR[r] ?? r),
+          invitedByAr: actor?.displayName ?? 'مدير المنصّة',
+          dutiesAr,
+        })
+        await recordAudit(prisma, {
+          actorId: req.auth!.userId, action: 'admin.user.create', entityType: 'user', entityId: userId,
+          meta: { email, roles: body.roleIds, bulk: true, inviteSent: mail.status === 'sent' },
+        })
+        results.push({ email, ok: true, sent: mail.status === 'sent' })
+      } catch (e) {
+        results.push({ email, ok: false, sent: false, reasonAr: e instanceof Error ? e.message : 'تعذّر الإنشاء' })
+      }
+    }
+    return {
+      created: results.filter((r) => r.ok).length,
+      sent: results.filter((r) => r.sent).length,
+      failed: results.filter((r) => !r.ok).length,
+      results,
+    }
   })
 
   app.post('/api/admin/users/:id/roles', {
@@ -276,6 +406,44 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
       })
       return { ok: true }
     })
+
+  /* الأرشفةُ قبل الحذف — وهي الفعلُ الموصى به لمن غادر */
+  app.post('/api/admin/users/:id/archive', {
+    preHandler: guard,
+    schema: {
+      tags: ['admin-users'], summary: 'أرشفةُ حساب — يُغلق وتُبطل جلساتُه وتبقى سجلّاتُه',
+      body: { type: 'object', required: ['reason'], properties: { reason: { type: 'string' } } },
+    },
+  }, async (req, reply) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const { reason } = z.object({ reason: z.string().trim().min(10).max(500) }).parse(req.body)
+    if (id === req.auth!.userId) {
+      return reply.status(409).send({ error: { code: 'self_archive', message_ar: 'لا تؤرشف حسابك — استعمل إيقافَ الحساب الذاتيّ' } })
+    }
+    const check = await refuseRank(id, req.auth!.roles, 'أرشفةَ')
+    if ('error' in check) return check
+    await auth.archive(id, req.auth!.userId, reason)
+    await recordAudit(prisma, {
+      actorId: req.auth!.userId, action: 'admin.user.archive', entityType: 'user', entityId: id,
+      meta: { email: check.target.email, reason },
+    })
+    return { ok: true }
+  })
+
+  app.post('/api/admin/users/:id/unarchive', {
+    preHandler: guard,
+    schema: { tags: ['admin-users'], summary: 'إعادةُ تنشيطِ حسابٍ مؤرشَف' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const check = await refuseRank(id, req.auth!.roles, 'إعادةَ تنشيطِ')
+    if ('error' in check) return check
+    await auth.unarchive(id)
+    await recordAudit(prisma, {
+      actorId: req.auth!.userId, action: 'admin.user.unarchive', entityType: 'user', entityId: id,
+      meta: { email: check.target.email },
+    })
+    return { ok: true }
+  })
 
   app.post('/api/admin/users/:id/reinstate', { preHandler: guard, schema: { tags: ['admin-users'], summary: 'رفعُ الإيقاف — يعيد الحساب نشطا' } },
     async (req) => {

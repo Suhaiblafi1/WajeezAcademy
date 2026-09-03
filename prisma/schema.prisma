@@ -19,7 +19,7 @@ model User {
   email                String                     @unique
   passwordHash         String
   displayName          String
-  status               String                     @default("active") // active | suspended
+  status               String                     @default("active") // invited | active | suspended | archived
   createdAt            DateTime                   @default(now())
   updatedAt            DateTime                   @updatedAt
   suspendedAt          DateTime?
@@ -139,10 +139,14 @@ model PasswordResetToken {
   id        String    @id @default(uuid()) @db.Uuid
   userId    String    @db.Uuid
   tokenHash String    @unique
+  /// reset | invite — الغرضُ يحدّد العمرَ والرسالة: استعادةٌ ساعة، ودعوةٌ سبعةَ أيّام
+  purpose   String    @default("reset")
   expiresAt DateTime
   usedAt    DateTime?
   createdAt DateTime  @default(now())
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose, usedAt])
 }
 
 model LoginAttempt {

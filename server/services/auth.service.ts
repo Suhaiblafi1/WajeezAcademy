@@ -161,12 +161,59 @@ export class AuthService {
     return { tokenForDelivery: token }
   }
 
+  /* ── دعوةُ حسابٍ جديد ───────────────────────────────────────────────
+
+     كانت الدعوةُ رمزَ استعادةٍ عمرُه ساعة. والموظّفُ الجديد لا يفتح بريدَه في
+     الساعة التي أُنشئ فيها حسابُه — فأوّلُ محاولةِ تأهيلٍ تفشل غالبا، ويُطلب
+     منه «نسيت كلمة المرور» ليصنع لنفسه ما كان يجب أن يصله (شُوهد في جولة
+     ٢٠٢٦-٠٩، الرحلة ٩).
+
+     فللدعوة رمزُها وعمرُها: سبعةُ أيّام، وغرضٌ مستقلٌّ يُقرأ عليه «هل ما زالت
+     دعوتُه سارية؟». وإصدارُ دعوةٍ جديدةٍ يُبطل ما قبلها: رابطان صالحان لحسابٍ
+     واحدٍ بابان لا باب. */
+  static readonly INVITE_TTL_MS = 7 * 86_400_000
+
+  async issueInvite(userId: string): Promise<{ token: string; expiresAt: Date }> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { id: true } })
+    if (!user) throw new AuthError('not_found', 'الحساب غير موجود', 404)
+    const token = newToken()
+    const expiresAt = new Date(Date.now() + AuthService.INVITE_TTL_MS)
+    await this.prisma.$transaction([
+      this.prisma.passwordResetToken.updateMany({
+        where: { userId, purpose: 'invite', usedAt: null },
+        data: { usedAt: new Date() },
+      }),
+      this.prisma.passwordResetToken.create({
+        data: { userId, tokenHash: sha256(token), purpose: 'invite', expiresAt },
+      }),
+    ])
+    return { token, expiresAt }
+  }
+
+  /** حالُ دعوةِ حسابٍ: سارية، أو منتهية، أو لا دعوةَ له */
+  async inviteState(userId: string): Promise<{ state: 'pending' | 'expired' | 'none'; expiresAt: Date | null }> {
+    const row = await this.prisma.passwordResetToken.findFirst({
+      where: { userId, purpose: 'invite', usedAt: null },
+      orderBy: { createdAt: 'desc' },
+      select: { expiresAt: true },
+    })
+    if (!row) return { state: 'none', expiresAt: null }
+    return { state: row.expiresAt > new Date() ? 'pending' : 'expired', expiresAt: row.expiresAt }
+  }
+
   async resetPassword(token: string, newPassword: string): Promise<void> {
     if (newPassword.length < 8) throw new AuthError('weak_password', 'كلمة المرور 8 أحرف على الأقل')
     const row = await this.prisma.passwordResetToken.findUnique({ where: { tokenHash: sha256(token) } })
     if (!row || row.usedAt || row.expiresAt < new Date()) throw new AuthError('invalid_token', 'رابط الاستعادة غير صالح أو منتهي', 400)
+    /* تعيينُ الكلمة من دعوةٍ يُفعّل الحساب: «مدعوّ» حالةُ من لم يدخل بعد،
+       وهي تنتهي بأوّل كلمةِ مرورٍ يضعها صاحبُه — لا بقرارِ موظّف. */
+    const user = await this.prisma.user.findUnique({ where: { id: row.userId }, select: { status: true } })
+    const activate = row.purpose === 'invite' && user?.status === 'invited'
     await this.prisma.$transaction([
-      this.prisma.user.update({ where: { id: row.userId }, data: { passwordHash: await bcrypt.hash(newPassword, 10) } }),
+      this.prisma.user.update({
+        where: { id: row.userId },
+        data: { passwordHash: await bcrypt.hash(newPassword, 10), ...(activate ? { status: 'active' } : {}) },
+      }),
       this.prisma.passwordResetToken.update({ where: { id: row.id }, data: { usedAt: new Date() } }),
       /* أمن: تغيير كلمة المرور يبطل كل الجلسات القائمة */
       this.prisma.session.updateMany({ where: { userId: row.userId, revokedAt: null }, data: { revokedAt: new Date() } }),
@@ -223,6 +270,39 @@ export class AuthService {
       this.prisma.user.update({ where: { id: userId }, data: { status: 'suspended', suspendedAt: new Date() } }),
       this.prisma.session.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } }),
     ])
+  }
+
+  /* ── الأرشفة: مغادرةٌ لا محوٌ ───────────────────────────────────────
+
+     الحذفُ النهائيُّ كان الخيارَ الوحيدَ لمن غادر، وهو خيارٌ خطأٌ في أكثر
+     الحالات: مدرّبٌ درّس فصلا، ومتعلّمٌ استلم شهادةً، وموظّفٌ اعتمد استردادا —
+     سجلُّهم يجب أن يبقى ليبقى للسجلّ معنى (والحذفُ يُسقط ١٣ نموذجا معه).
+
+     فالأرشفةُ هي الفعلُ الطبيعيّ: الحسابُ يُغلق وتُبطل جلساتُه، وتبقى
+     سجلّاتُه كما هي، ولا يُحسب في «النشطين». والحذفُ يبقى لحالته: طلبُ
+     محوٍ من صاحب الحساب، أو خطأُ إنشاءٍ لا سجلَّ له. */
+  async archive(userId: string, actorId: string, reason: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { status: true } })
+    if (!user) throw new AuthError('not_found', 'الحساب غير موجود', 404)
+    if (user.status === 'archived') throw new AuthError('already_archived', 'الحساب مؤرشَفٌ أصلا', 409)
+    if (reason.trim().length < 10) throw new AuthError('reason_required', 'سببُ الأرشفة يُكتب — يقرؤه من يراجع السجلّ بعد سنة')
+    await this.prisma.$transaction([
+      this.prisma.user.update({ where: { id: userId }, data: { status: 'archived', suspendedAt: new Date() } }),
+      this.prisma.session.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } }),
+      /* ودعواتُه المعلّقةُ تُبطل: لا بابَ يُفتح لحسابٍ أُغلق */
+      this.prisma.passwordResetToken.updateMany({
+        where: { userId, usedAt: null },
+        data: { usedAt: new Date() },
+      }),
+    ])
+    void actorId
+  }
+
+  /** إعادةُ التنشيط — الأرشفةُ قرارٌ يُراجَع كالإيقاف */
+  async unarchive(userId: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { status: true } })
+    if (user?.status !== 'archived') throw new AuthError('not_archived', 'هذا الحساب ليس مؤرشَفا', 409)
+    await this.prisma.user.update({ where: { id: userId }, data: { status: 'active', suspendedAt: null } })
   }
 
   /* والإيقافُ بابٌ يُفتح: «خانةُ الحسابات الموقوفة» بلا رفعِ إيقافٍ سجنٌ
