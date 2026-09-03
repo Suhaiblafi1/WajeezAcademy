@@ -15,7 +15,8 @@ import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { CohortService } from '../../services/cohort.service'
 import {
-  JOBS, cleanupExpired, dispatchQueuedNotifications, runJob, sendSessionReminders, syncCohortStatuses,
+  JOBS, RETENTION_BATCH, RETENTION_DAYS, cleanupExpired, dispatchQueuedNotifications,
+  runJob, sendSessionReminders, syncCohortStatuses,
 } from '../../worker/jobs'
 import { tick } from '../../worker/index'
 
@@ -223,8 +224,73 @@ describe('الدورةُ والأثر', () => {
     /* بعد ثانيةٍ واحدة: لا شيءَ حلَّ موعدُه */
     const second = await tick(prisma, lastRun, new Date(Date.now() + 1_000))
     expect(second.length).toBe(0)
-    /* وبعد ساعة: كلُّها */
-    const later = await tick(prisma, lastRun, new Date(Date.now() + 7 * 3_600_000))
+    /* وبعد أطولِ دورةٍ في الجدول: كلُّها.
+
+       والمدّةُ تُشتقّ من `JOBS` لا تُكتب رقما: كانت سبعَ ساعاتٍ لأنّ أطولَ
+       دورةٍ يومَها ستُّ ساعات، فلمّا أُضيفت وظيفةُ التقليم بدورةِ يومٍ سقط
+       الاختبارُ — وهو اختبارٌ صحيحٌ بمقياسٍ تقادم. */
+    const longestMs = Math.max(...JOBS.map((j) => j.everyMs))
+    const later = await tick(prisma, lastRun, new Date(Date.now() + longestMs + 60_000))
     expect(later.length).toBe(JOBS.length)
+  })
+})
+
+/* ═══════════ الاحتفاظ: جداولُ السجلّ تُقلَّم بمدّةٍ معلنة ═══════════
+
+   العطب: خمسةُ جداولٍ تنمو بلا حدٍّ ولا سياسة — سجلُّ الأثر، والإشعاراتُ،
+   وأحداثُ الاستخدام، ومحاولاتُ الدخول، وأحداثُ خطّافِ الدفع. ولا شيءَ يحذف
+   منها صفّا أبدا. ومنصّةٌ في تجربةٍ لا تشعر؛ وعاملةٌ تكتب عشراتَ الصفوف لكلّ
+   زائر، فتصير القاعدةُ بعد سنةٍ أكثرُها سجلٌّ لا يقرؤه أحد — **ونسخُها
+   الاحتياطيّ يثقل معها، وهو الأخطر**: نسخةٌ تطول استعادتُها ساعاتٍ ليست
+   نسخةً في وقت العطب.
+
+   وما يُحرَس هنا أربعةُ أشياء:
+   ١) القديمُ يُحذف — وإلّا فالسياسةُ كلامٌ.
+   ٢) والحديثُ يبقى — فتقليمٌ يأخذ الحاضرَ معه أسوأُ من نموٍّ بلا حدّ.
+   ٣) **والإشعارُ المنتظرُ في الطابور لا يُحذف بعمره**، وهو أدقُّ ما في
+      السياسة: المقروءُ أدّى غرضَه، والمنتظرُ عملٌ لم يتمّ — وحذفُه بالعمر
+      يُسقط إشعارا لم يصل صاحبَه قطّ.
+   ٤) والحدُّ في الدورة يُحترَم: حذفُ مليون صفٍّ في معاملةٍ يُقفل الجدولَ
+      ويُوقف المنصّة. */
+describe('تقليمُ جداول السجلّ', () => {
+  it('يحذف ما تجاوز مدّةَ حفظه ويُبقي ما هو أحدث', async () => {
+    const old = new Date(Date.now() - (RETENTION_DAYS.analytics + 5) * 86_400_000)
+    const fresh = new Date(Date.now() - 3 * 86_400_000)
+    await prisma.analyticsEvent.createMany({
+      data: [
+        { event: 'retention_old', createdAt: old },
+        { event: 'retention_fresh', createdAt: fresh },
+      ],
+    })
+    const r = await runJob(prisma, 'enforce_retention')
+    expect(r.done).toBeGreaterThanOrEqual(1)
+    expect(await prisma.analyticsEvent.count({ where: { event: 'retention_old' } })).toBe(0)
+    expect(await prisma.analyticsEvent.count({ where: { event: 'retention_fresh' } })).toBe(1)
+  })
+
+  it('والإشعارُ المنتظرُ في الطابور لا يُحذف بعمره — عملٌ لم يتمّ', async () => {
+    const long = new Date(Date.now() - (RETENTION_DAYS.notificationRead + 60) * 86_400_000)
+    const queued = await prisma.notification.create({
+      data: { userId: learnerId, title: 'قديمٌ لم يُرسَل', body: 'نصّ', status: 'queued', queuedAt: long },
+    })
+    const read = await prisma.notification.create({
+      data: { userId: learnerId, title: 'قديمٌ قُرئ', body: 'نصّ', status: 'read', queuedAt: long, readAt: long },
+    })
+    await runJob(prisma, 'enforce_retention')
+    expect(await prisma.notification.findUnique({ where: { id: queued.id } }), 'حُذف إشعارٌ لم يُرسَل بعد').not.toBeNull()
+    expect(await prisma.notification.findUnique({ where: { id: read.id } }), 'بقي إشعارٌ قُرئ قبل تسعين يوما').toBeNull()
+  })
+
+  it('ولكلّ جدولٍ مدّةٌ مكتوبةٌ وحدٌّ للدُفعة — لا رقمٌ مبثوثٌ في الشيفرة', () => {
+    /* المدّةُ في مكانٍ واحدٍ تُقرأ وتُراجَع؛ ورقمٌ مكتوبٌ في موضعِ الاستعلام
+       يفترق عن أخيه بأوّل تعديل. */
+    for (const [k, v] of Object.entries(RETENTION_DAYS)) {
+      expect(v, `${k}: مدّةٌ غيرُ معقولة`).toBeGreaterThan(0)
+      expect(v, `${k}: مدّةٌ أطولُ من ثلاث سنوات`).toBeLessThanOrEqual(1_095)
+    }
+    /* سجلُّ الأثر أطولُ المُدَد: هو جوابُ «من غيّر هذا؟» */
+    expect(RETENTION_DAYS.audit).toBeGreaterThan(RETENTION_DAYS.notificationRead)
+    expect(RETENTION_BATCH).toBeGreaterThan(0)
+    expect(RETENTION_BATCH, 'دُفعةٌ كبيرةٌ تُقفل الجدول').toBeLessThanOrEqual(20_000)
   })
 })

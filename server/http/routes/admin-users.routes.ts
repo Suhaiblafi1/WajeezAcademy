@@ -51,6 +51,9 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
           invite: invite
             ? { state: invite.expiresAt > now ? 'pending' as const : 'expired' as const, expiresAt: invite.expiresAt }
             : { state: 'none' as const, expiresAt: null },
+          /* توثيقُ البريد يُقرأ في الصفّ: بلا توثيقٍ لا تُصدر شهادة، فمن
+             ينظر في الطابور يعرف سببَ التوقّف قبل أن يفتح الحساب. */
+          emailVerified: u.emailVerifiedAt != null,
         }
       })
     })
@@ -440,6 +443,56 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
       })
       return { ok: true }
     })
+
+  /* ── توثيقُ البريد بيدِ موظّف ──
+
+     البريدُ يُوثَّق بفتح رابطٍ يصل به، وقناةُ البريد غيرُ موصولةٍ بعد.
+     والحواجزُ المعتمدةُ عليه تتصرّف تصرّفَين بقصد: الشراءُ يمرّ حين لا قناة
+     («قفلٌ بلا مفتاح» لا يُقفل)، **والشهادةُ تبقى صارمةً ولو تعطّلت** لأنّها
+     تُنسب إلى شخصٍ باسمه. فالمتعذّرُ في طور التجربة **الشهادةُ وحدَها**.
+
+     وهذا بابُها: يوثّق موظّفٌ مسؤولٌ بيده، بسببٍ مكتوبٍ وأثرٍ يُقرأ. وليس
+     نقضا للحاجز بل استثناءٌ معلومُ المسؤول — من وثّق ومتى ولماذا. ويبقى
+     نافعا بعد وصلِ البريد: لمن ارتدّ بريدُه أو فقد الرسالة.
+
+     ولمَ `reason` إلزاميّ: استثناءٌ بلا سببٍ مكتوبٍ لا يُراجَع. */
+  app.post('/api/admin/users/:id/verify-email', {
+    preHandler: guard,
+    schema: {
+      tags: ['admin-users'],
+      summary: 'توثيقُ بريدِ حسابٍ بيدِ موظّف — بسببٍ مكتوب',
+      body: { type: 'object', required: ['reason'], properties: { reason: { type: 'string' } } },
+    },
+  }, async (req, reply) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const { reason } = z.object({
+      reason: z.string().trim().min(5, 'اكتب سببا يُقرأ — خمسةُ أحرفٍ على الأقلّ'),
+    }).parse(req.body)
+
+    /* قيدُ الرتبة نفسُه: من لا يبلغ رتبةَ صاحب الحساب لا يمسّ حسابَه */
+    const check = await refuseRank(id, req.auth!.roles, 'توثيقُ بريد')
+    if ('error' in check) return reply.status(check.status).send({ error: check.error })
+
+    try {
+      const out = await auth.verifyEmailByStaff(id, req.auth!.userId)
+      if (out.alreadyVerified) {
+        return { ok: true, alreadyVerified: true, message_ar: 'بريدُ هذا الحساب موثَّقٌ أصلا — لا شيءَ تغيّر' }
+      }
+      await recordAudit(prisma, {
+        actorId: req.auth!.userId,
+        action: 'admin.user.verify_email',
+        entityType: 'user',
+        entityId: id,
+        reason,
+        meta: { email: out.email, byStaff: true },
+      })
+      return { ok: true, alreadyVerified: false, message_ar: `وُثِّق بريدُ «${check.target.displayName}» — وسُجِّل السببُ في أثر الحساب` }
+    } catch (e) {
+      const err = e as { code?: string; message_ar?: string; status?: number }
+      if (err.code) return reply.status(err.status ?? 409).send({ error: { code: err.code, message_ar: err.message_ar ?? 'تعذّر التوثيق' } })
+      throw e
+    }
+  })
 
   /* الأرشفةُ قبل الحذف — وهي الفعلُ الموصى به لمن غادر */
   app.post('/api/admin/users/:id/archive', {

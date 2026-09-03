@@ -3,7 +3,7 @@
    الحمايات من الخادم: لا سحب super_admin من نفسك ولا إيقاف ذاتي من هنا. */
 import { useCallback, useEffect, useState } from "react";
 import { toast, toastError } from "@/components/Toast";
-import { Archive, KeyRound, Loader2, Minus, Plus, RefreshCw, Send, ServerOff, ShieldCheck, ShieldOff, Trash2, UserPlus, Users as UsersIcon } from "lucide-react";
+import { Archive, BadgeCheck, KeyRound, Loader2, Minus, Plus, RefreshCw, Send, ServerOff, ShieldCheck, ShieldOff, Trash2, UserPlus, Users as UsersIcon } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import ListToolbar from "@/components/admin/ListToolbar";
 import { matchesQuery } from "@/application/text/search-ar";
@@ -31,6 +31,7 @@ interface UserRow {
   grants: number; denies: number;
   /** حالُ دعوته: سارية، أو انتهت، أو لا دعوةَ له */
   invite: { state: "pending" | "expired" | "none"; expiresAt: string | null };
+  emailVerified: boolean;
 }
 
 /** حالاتُ الحساب الأربع بالعربيّة ولونِها — «مدعوّ» ليس «نشطا» */
@@ -92,6 +93,7 @@ export default function Users() {
      سيُمحى بفواصلِ أسطر. وحوارُ المتصفّح يملك المستخدمُ كتمَه — فيصير
      الفعلُ لا يقع ولا يُقال له لماذا. */
   const [confirming, setConfirming] = useState<
+    | { kind: "verifyEmail"; user: UserRow }
     | { kind: "archive"; user: UserRow }
     | { kind: "purge"; user: UserRow }
     | { kind: "purgeHistory"; user: UserRow; blockers: string[] }
@@ -365,6 +367,11 @@ export default function Users() {
                     {u.invite.state === "expired" && (
                       <span className="rounded-full border border-gold/40 px-2.5 py-0.5 text-micro font-bold text-gold-ink">دعوةٌ انتهت</span>
                     )}
+                    {/* بلا توثيقٍ لا تُصدر شهادة — فالشارةُ تقول سببَ التوقّف
+                        قبل أن يُفتح الحساب، ولا تُذكر لمن وثّق. */}
+                    {!u.emailVerified && (
+                      <span className="rounded-full border border-gold/40 px-2.5 py-0.5 text-micro font-bold text-gold-ink">بريدٌ غيرُ موثَّق</span>
+                    )}
                     {/* من له استثناءٌ يُعرف من القائمة قبل فتحه */}
                     {u.grants > 0 && <span className="rounded-full border border-teal/40 px-2.5 py-0.5 text-micro font-bold text-teal-light-ink">+{u.grants} ممنوحة</span>}
                     {u.denies > 0 && <span className="rounded-full border border-red-400/40 px-2.5 py-0.5 text-micro font-bold text-red-300">−{u.denies} ممنوعة</span>}
@@ -381,6 +388,15 @@ export default function Users() {
                     <button onClick={() => void openPerms(u.id)}
                       className="flex cursor-pointer items-center gap-1.5 rounded-full border border-teal/40 px-4 py-1.5 text-xs font-bold text-teal-light-ink hover:bg-teal/10">
                       <KeyRound className="h-3.5 w-3.5" /> صلاحياته
+                    </button>
+                  )}
+                  {/* توثيقُ البريد بيد: لا يُعرض إلّا لمن لم يوثّق — وزرٌّ
+                      يظهر لمن لا يحتاجه ضجيجٌ في صفٍّ مزدحم. */}
+                  {canManage && !u.emailVerified && u.status !== "archived" && (
+                    <button disabled={busy}
+                      onClick={() => setConfirming({ kind: "verifyEmail", user: u })}
+                      className="flex cursor-pointer items-center gap-1.5 rounded-full border border-gold/40 px-4 py-1.5 text-xs font-bold text-gold-ink hover:bg-gold/10 disabled:opacity-40">
+                      <BadgeCheck className="h-3.5 w-3.5" /> وثّق بريده
                     </button>
                   )}
                   {canManage && u.status === "active" && (
@@ -580,6 +596,30 @@ export default function Users() {
         </div>
         )}
         </>
+      )}
+
+      {confirming?.kind === "verifyEmail" && (
+        <ConfirmAction
+          titleAr={`توثيقُ بريد «${confirming.user.displayName}» بيدك`}
+          confirmLabelAr="وثّق البريد"
+          busy={busy}
+          tone="default"
+          reason={{ labelAr: "لماذا تُوثّقه بيدك؟ — يقرؤه من يراجع السجلّ بعد سنة", minLength: 5 }}
+          onCancel={() => setConfirming(null)}
+          onConfirm={(reason) => {
+            const target = confirming.user;
+            setConfirming(null);
+            void act(
+              () => apiPost<{ message_ar: string }>(`/api/admin/users/${target.id}/verify-email`, { reason }),
+              (r) => (r as { message_ar: string }).message_ar,
+            );
+          }}
+        >
+          <p><b className="text-foreground">ما يفتحه هذا:</b> إصدارُ الشهادات. الشهادةُ تُنسب إلى شخصٍ باسمه، فلا تُصدَر لبريدٍ لم يُثبت أنّه له — وهذا الحاجزُ يبقى صارما حتّى مع تعطّل قناة البريد.</p>
+          <p>والشراءُ وطلبُ التسجيل لا يحتاجان هذا: هما يمرّان أصلا حين لا تكون قناةُ البريد موصولة، فالحاجزُ لا يصير قفلا بلا مفتاح.</p>
+          <p><span dir="ltr" className="font-mono text-muted-foreground">{confirming.user.email}</span></p>
+          <p>ويُسجَّل في أثر الحساب: من وثّق، ومتى، وبأيّ سبب.</p>
+        </ConfirmAction>
       )}
 
       {confirming?.kind === "archive" && (

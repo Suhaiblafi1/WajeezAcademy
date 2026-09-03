@@ -17,6 +17,7 @@
 const PHRASES: Record<string, string> = {
   'admin.user.create': 'إنشاءُ حساب',
   'admin.user.suspend': 'إيقافُ حساب',
+  'admin.user.verify_email': 'توثيقُ بريدٍ بيدِ موظّف',
   'admin.user.reinstate': 'رفعُ إيقافٍ عن حساب',
   'admin.user.archive': 'أرشفةُ حساب',
   'admin.user.unarchive': 'إعادةُ تنشيطِ حساب',

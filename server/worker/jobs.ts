@@ -226,6 +226,98 @@ export async function publishScheduledChanges(prisma: PrismaClient, now = new Da
   }
 }
 
+/* ═══════════ ٦ · الاحتفاظُ: جداولُ السجلّ تُقلَّم بسياسةٍ معلنة ═══════════
+
+   العطب: خمسةُ جداولٍ تنمو بلا حدٍّ ولا سياسة — سجلُّ الأثر، والإشعاراتُ
+   المقروءة، وأحداثُ الاستخدام، ومحاولاتُ الدخول، وأحداثُ خطّافِ الدفع. ولا
+   شيءَ يحذف منها صفّا واحدا أبدا. ومنصّةٌ في تجربةٍ لا تشعر بذلك؛ ومنصّةٌ
+   عاملةٌ تكتب في `AnalyticsEvent` عشراتَ الصفوف لكلّ زائر، فتصير القاعدةُ
+   بعد سنةٍ أكثرَها سجلٌّ لا يقرؤه أحد — ونسخُها الاحتياطيّ يثقل معها، وهو
+   الأخطر: نسخةٌ تطول استعادتُها ساعاتٍ ليست نسخةً في وقت العطب.
+
+   ولماذا مُدَدٌ مختلفة: **ما يُقرأ للحساب يُحفظ، وما يُقرأ للتشغيل يُقلَّم.**
+   • سجلُّ الأثر (`AuditEvent`) سنتان — هو جوابُ «من غيّر هذا؟»، ولا سؤالَ
+     عن فعلٍ عمرُه سنتان.
+   • الإشعارُ المقروءُ تسعون يوما — قُرئ فأدّى غرضَه؛ والمنتظرُ في الطابور
+     أو الفاشلُ **لا يُحذف بعمره** لأنّه عملٌ لم يتمّ.
+   • أحداثُ الاستخدام (`AnalyticsEvent`) سنةٌ — تُقرأ اتّجاهاتٍ لا صفوفا.
+   • محاولاتُ الدخول تسعون يوما — تُقرأ للحدّ من التكرار لا للتاريخ.
+   • أحداثُ خطّافِ الدفع سنةٌ — دفترُ المال نفسُه في `Order` و`Payment` ولا
+     يُمَسّ؛ هذه رسائلُ المزوّد التي بُنيت منها، تُحفظ سنةً للتسوية.
+
+   والحدُّ في كلّ دورةٍ (`take`) مقصود: حذفُ مليون صفٍّ في معاملةٍ واحدةٍ
+   يُقفل الجدولَ ويُوقف المنصّة. فتُقلَّم على دُفعاتٍ صغيرة، والدورةُ التالية
+   تُكمل. */
+export const RETENTION_DAYS = {
+  audit: 730,
+  notificationRead: 90,
+  analytics: 365,
+  loginAttempt: 90,
+  paymentWebhook: 365,
+} as const
+
+/** أقصى ما يُحذف من جدولٍ واحدٍ في الدورة — كي لا تُقفل معاملةٌ جدولا */
+export const RETENTION_BATCH = 5_000
+
+export async function enforceRetention(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
+  const started = Date.now()
+  const ago = (days: number) => new Date(now.getTime() - days * DAY)
+
+  /** يحذف على دُفعةٍ واحدةٍ محدودة، ويعيد ما حُذف */
+  const trim = async (
+    labelAr: string,
+    ids: () => Promise<{ id: string }[]>,
+    del: (ids: string[]) => Promise<{ count: number }>,
+  ): Promise<{ labelAr: string; count: number }> => {
+    const rows = await ids()
+    if (rows.length === 0) return { labelAr, count: 0 }
+    const { count } = await del(rows.map((r) => r.id))
+    return { labelAr, count }
+  }
+
+  const parts = await Promise.all([
+    trim('سجلّ الأثر',
+      () => prisma.auditEvent.findMany({
+        where: { createdAt: { lt: ago(RETENTION_DAYS.audit) } },
+        select: { id: true }, take: RETENTION_BATCH,
+      }),
+      (ids) => prisma.auditEvent.deleteMany({ where: { id: { in: ids } } })),
+    /* المقروءُ وحدَه: المنتظرُ والفاشلُ عملٌ لم يتمّ فلا يُحذف بعمره */
+    trim('إشعارات مقروءة',
+      () => prisma.notification.findMany({
+        where: { status: 'read', readAt: { lt: ago(RETENTION_DAYS.notificationRead) } },
+        select: { id: true }, take: RETENTION_BATCH,
+      }),
+      (ids) => prisma.notification.deleteMany({ where: { id: { in: ids } } })),
+    trim('أحداث استخدام',
+      () => prisma.analyticsEvent.findMany({
+        where: { createdAt: { lt: ago(RETENTION_DAYS.analytics) } },
+        select: { id: true }, take: RETENTION_BATCH,
+      }),
+      (ids) => prisma.analyticsEvent.deleteMany({ where: { id: { in: ids } } })),
+    trim('محاولات دخول',
+      () => prisma.loginAttempt.findMany({
+        where: { createdAt: { lt: ago(RETENTION_DAYS.loginAttempt) } },
+        select: { id: true }, take: RETENTION_BATCH,
+      }),
+      (ids) => prisma.loginAttempt.deleteMany({ where: { id: { in: ids } } })),
+    trim('أحداث خطّاف الدفع',
+      () => prisma.paymentWebhookEvent.findMany({
+        where: { createdAt: { lt: ago(RETENTION_DAYS.paymentWebhook) } },
+        select: { id: true }, take: RETENTION_BATCH,
+      }),
+      (ids) => prisma.paymentWebhookEvent.deleteMany({ where: { id: { in: ids } } })),
+  ])
+
+  const done = parts.reduce((a, p) => a + p.count, 0)
+  const said = parts.filter((p) => p.count > 0).map((p) => `${p.count} ${p.labelAr}`)
+  return {
+    job: 'enforce_retention',
+    summaryAr: done === 0 ? 'لا صفَّ تجاوز مدّةَ حفظه' : `قُلِّم: ${said.join(' · ')}`,
+    done, failed: 0, ms: Date.now() - started,
+  }
+}
+
 /* ═══════════ ٥ · تنظيفُ ما انتهى ═══════════
 
    جلسةٌ انتهت صلاحيّتُها لا تفتح شيئا — الحارسُ يفحص التاريخَ في كلّ طلب —
@@ -256,6 +348,8 @@ export const JOBS = [
   { key: 'cohort_status_sync', everyMs: 15 * 60_000, run: syncCohortStatuses, titleAr: 'حالاتُ الشعب بالتواريخ' },
   { key: 'publish_scheduled_changes', everyMs: 5 * 60_000, run: publishScheduledChanges, titleAr: 'النشرُ المجدول' },
   { key: 'cleanup_expired', everyMs: 6 * HOUR, run: cleanupExpired, titleAr: 'تنظيفُ ما انتهى' },
+  /* مرّةً في اليوم: التقليمُ ليس عاجلا، وتكرارُه بلا داعٍ يُقفل جداولَ السجلّ */
+  { key: 'enforce_retention', everyMs: 24 * HOUR, run: enforceRetention, titleAr: 'تقليمُ جداول السجلّ بمدّة حفظها' },
 ] as const
 
 /** دورةٌ واحدةٌ لوظيفةٍ واحدة، بأثرها المسجَّل — لا عملَ صامت */

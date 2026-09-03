@@ -261,8 +261,16 @@ export class SystemHealthService {
 
   /* ── التخزينُ والقاعدة ── */
   private async storage(): Promise<HealthItem[]> {
-    const [docs, migration] = await Promise.all([
+    const [docs, logRows, migration] = await Promise.all([
       this.prisma.trainerApplicationDocument.count(),
+      /* جداولُ السجلّ: تنمو بلا حدٍّ بطبيعتها، ولها الآن مدّةُ حفظٍ معلنة */
+      Promise.all([
+        this.prisma.auditEvent.count(),
+        this.prisma.notification.count(),
+        this.prisma.analyticsEvent.count(),
+        this.prisma.loginAttempt.count(),
+        this.prisma.paymentWebhookEvent.count(),
+      ]),
       this.prisma.$queryRaw<{ migration_name: string; finished_at: Date | null }[]>`
         SELECT migration_name, finished_at FROM "_prisma_migrations"
         WHERE finished_at IS NOT NULL ORDER BY finished_at DESC LIMIT 1
@@ -286,6 +294,19 @@ export class SystemHealthService {
         valueAr: `${docs} وثيقة`,
         level: docs > 500 ? 'attention' : 'ok',
         meaningAr: 'الملفّاتُ في أعمدةِ القاعدة تُثقل النسخَ الاحتياطيّةَ وتنقلها معها. وهي حالٌ مؤقّتةٌ إلى أن يوجد مخزنُ كائنات.',
+      },
+      {
+        /* السياسةُ تُعرَض لا تُخبَّأ: من يقرأ «صحّةَ النظام» يريد أن يعرف أنّ
+           القاعدةَ لا تنمو بلا سقف، وأنّ ما حُذف حُذف بقرارٍ مكتوبٍ لا بصمت. */
+        key: 'log_retention',
+        titleAr: 'جداولُ السجلّ ومدّةُ حفظها',
+        valueAr: `${logRows.reduce((a, b) => a + b, 0)} صفّا في خمسة جداول`,
+        level: logRows.reduce((a, b) => a + b, 0) > 2_000_000 ? 'attention' : 'ok',
+        meaningAr:
+          'سجلُّ الأثر يُحفظ سنتَين (هو جوابُ «من غيّر هذا؟»)، والإشعارُ المقروءُ تسعين يوما، وأحداثُ الاستخدام وخطّافُ الدفع سنةً، ومحاولاتُ الدخول تسعين يوما. '
+          + 'والمنتظرُ في الطابور لا يُحذف بعمره — عملٌ لم يتمّ. '
+          + 'والتقليمُ على دُفعاتٍ محدودةٍ كي لا تُقفل معاملةٌ جدولا.',
+        actionAr: 'يُنفّذه العاملُ الخلفيُّ مرّةً في اليوم — ولا يعمل حتّى يوجد الخادمُ الدائم (المهمّة ٥٤).',
       },
       {
         key: 'last_migration',

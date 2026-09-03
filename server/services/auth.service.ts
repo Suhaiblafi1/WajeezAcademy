@@ -265,6 +265,36 @@ export class AuthService {
   }
 
   /** إيقاف حساب — يبطل جلساته فورا */
+  /* ── توثيقُ البريد بيدِ موظّف ──
+
+     العطب: توثيقُ البريد يقع بفتح رابطٍ يصل بالبريد. وقناةُ البريد غيرُ
+     موصولةٍ بعد، والحواجزُ المعتمدةُ عليه تتصرّف تصرّفَين مختلفَين بقصد:
+     • طلبُ التسجيل والشراءُ يمرّان حين لا قناة — «قفلٌ بلا مفتاح» لا يُقفل.
+     • و**إصدارُ الشهادة يبقى صارما ولو تعطّلت القناة**، لأنّ الشهادةَ تُنسب
+       إلى شخصٍ باسمه — ولا يُنسب مستندٌ إلى عنوانٍ لم يُثبت أنّه له.
+
+     فالنتيجةُ أنّ **الشهادةَ وحدَها تعذّرت** في طور التجربة، لا الشراءُ كما
+     ظننتُ أوّلا. وهذا بابُها: يوثّق موظّفٌ مسؤولٌ البريدَ بيده، **بسببٍ
+     مكتوبٍ وأثرٍ يُقرأ**.
+
+     وليس نقضا للحاجز بل استثناءٌ منه معلومُ المسؤول: من وثّق، ومتى، ولماذا.
+     ويصلح بعد وصلِ البريد أيضا — لمن ارتدّ بريدُه أو فقد الرسالة. */
+  async verifyEmailByStaff(userId: string, actorId: string): Promise<{ alreadyVerified: boolean; email: string }> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId }, select: { id: true, email: true, emailVerifiedAt: true },
+    })
+    if (!user) throw new AuthError('not_found', 'لا حسابَ بهذا المعرّف', 404)
+    if (user.emailVerifiedAt) return { alreadyVerified: true, email: user.email }
+    if (userId === actorId) {
+      throw new AuthError('self_verify', 'لا توثّق بريدَك بنفسك — اطلبه من موظّفٍ آخر', 409)
+    }
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { emailVerifiedAt: new Date(), emailVerifyTokenHash: null, emailVerifyExpiresAt: null },
+    })
+    return { alreadyVerified: false, email: user.email }
+  }
+
   async suspend(userId: string): Promise<void> {
     await this.prisma.$transaction([
       this.prisma.user.update({ where: { id: userId }, data: { status: 'suspended', suspendedAt: new Date() } }),
