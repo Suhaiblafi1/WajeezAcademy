@@ -23,12 +23,17 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const read = (p: string) => readFileSync(join(root, p), 'utf8')
 
 const PAGE = 'src/pages/JoinTrainer.tsx'
+/* القوائمُ الثابتة انتقلت إلى ملفٍّ بجانب الصفحة (الصفحةُ كانت ألفا وثلاثَ
+   مئةِ سطر). والضمانُ لم يتغيّر — تغيّر بيتُه؛ فيُقرأ الاثنان معا كي لا
+   يفلت شيءٌ بحجّة أنّه هناك لا هنا. */
+const OPTIONS = 'src/pages/join-trainer/options.ts'
+const FORM = () => read(PAGE) + read(OPTIONS)
 const ROUTES = 'server/http/routes/trainer-applications.routes.ts'
 const SERVICE = 'server/services/trainer-application.service.ts'
 
 describe('نموذج انضمام المدرب', () => {
   it('حدّ الدافع رقمٌ واحد في الواجهة والمخطط والخدمة', () => {
-    const ui = /export const MOTIVATION_MIN = (\d+);/.exec(read(PAGE))?.[1]
+    const ui = /export const MOTIVATION_MIN = (\d+);/.exec(FORM())?.[1]
     const schema = /motivation: z\.string\(\)\.trim\(\)\.min\((\d+)\)/.exec(read(ROUTES))?.[1]
     const service = /motivation\.length < (\d+)\)/.exec(read(SERVICE))?.[1]
     expect(ui, 'حدّ الواجهة مفقود').toBeTruthy()
@@ -39,7 +44,7 @@ describe('نموذج انضمام المدرب', () => {
   })
 
   it('سؤال الاعتماد مع الخبرة لا بين الروابط', () => {
-    const src = read(PAGE)
+    const src = FORM()
     const years = src.indexOf('id="jt-training"')       // خبرة التدريب
     const accred = src.indexOf('id="jt-accred-body"')   // جهة الاعتماد
     const links = src.indexOf('id="jt-links"')          // لينكدإن — أوّل الروابط
@@ -51,7 +56,7 @@ describe('نموذج انضمام المدرب', () => {
   })
 
   it('جهات الاعتماد قائمةٌ عربية واسعة ومعها باب مفتوح', () => {
-    const src = read(PAGE)
+    const src = FORM()
     const block = /const ACCREDITATION_BODIES[\s\S]*?\n\];/.exec(src)?.[0] ?? ''
     const countries = block.match(/\{ country: "/g) ?? []
     expect(countries.length, 'القائمة أضيق من أن تُغطّي الوطن العربي').toBeGreaterThanOrEqual(12)
@@ -65,7 +70,7 @@ describe('نموذج انضمام المدرب', () => {
   })
 
   it('كلّ شرطٍ يُطفئ «التالي» له اسمٌ يُقرأ', () => {
-    const src = read(PAGE)
+    const src = FORM()
     const block = /const stepValid = useMemo\(\(\) => \(\{[\s\S]*?\}\), \[[^\]]*\]\);/.exec(src)?.[0] ?? ''
     expect(block, 'كتلة stepValid مفقودة').toBeTruthy()
     /* كلّ خطوة تُقاس بقائمة نقصها وحدها — والسقف وحده يُستثنى لأن العدّاد
@@ -99,7 +104,7 @@ describe('نموذج انضمام المدرب', () => {
   })
 
   it('السؤال عن القادم لا عن الماضي: مجالٌ يقصّ الكتالوج، ونصٌّ حرّ بجانبه', () => {
-    const src = read(PAGE)
+    const src = FORM()
     /* «أبرز ثلاث دورات قدّمتها» سقط: ماضٍ يُروى نصّا حرّا لا يُربط بمقرر.
        والتعليق يذكره شرحا — فيُقرأ الوسمُ المعروض لا الشرحُ عنه. */
     const shown = src.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
@@ -131,7 +136,7 @@ describe('نموذج انضمام المدرب', () => {
   })
 
   it('«التالي» لا يُرسل الطلب — وشاشة الحساب لا تُقفَز', () => {
-    const src = read(PAGE)
+    const src = FORM()
     /* زرٌّ واحد يتبدّل نوعه من button إلى submit على العنصر نفسه: فعلُ النقرة
        الافتراضيّ يقع بعد إعادة الرسم فيُرسَل الطلب فورا وتُقفز الخطوة الثالثة.
        مفتاحان مختلفان يجعلان العنصرين اثنين لا واحدا. */
@@ -145,7 +150,7 @@ describe('نموذج انضمام المدرب', () => {
   })
 
   it('التوفّر يقول متى من اليوم لا اليوم وحده', () => {
-    const src = read(PAGE)
+    const src = FORM()
     expect(src).toMatch(/const PERIODS = \[[\s\S]*?value: "morning"[\s\S]*?value: "evening"[\s\S]*?\] as const;/)
     expect(src, 'الفترات لا تُرسَل مع التوفّر').toContain('periods: periods.length ? periods : undefined')
     /* والخادم يقبلها — وإلّا سقط الطلب كلّه عند الإرسال */
@@ -153,7 +158,7 @@ describe('نموذج انضمام المدرب', () => {
   })
 
   it('المسودّة تُحفظ وتُستأنف، ولا تحفظ سرّا', () => {
-    const src = read(PAGE)
+    const src = FORM()
     expect(src, 'لا حفظ للمسودّة').toContain('saveDraft({')
     expect(src, 'لا استئناف').toContain('loadDraft()')
     /* المسح عند نجاح الإرسال بعينه — لا في مكانٍ آخر يجعل الفحص يمرّ به */
@@ -176,7 +181,7 @@ describe('نموذج انضمام المدرب', () => {
      والإصلاحُ بنيويّ لا تجميليّ، فيُحرَس بنيويّا: بطاقةُ سؤالٍ مرقّمة لكلّ
      مجموعة، وشبكةٌ متساوية الخلايا للخيارات — ولا عودةَ للرصف الحرّ. */
   it('الهيئة: كلّ سؤالٍ في بطاقةٍ مرقّمة، والخيارات في شبكةٍ متساوية', () => {
-    const src = read(PAGE)
+    const src = FORM()
 
     /* البطاقات: ثمانٍ في الخطوة الأولى وثلاثٌ في الثانية — لا شريطٌ واحد */
     const cards = src.match(/<Question\b/g) ?? []

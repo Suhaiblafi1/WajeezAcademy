@@ -13,7 +13,10 @@ const SRC = join(process.cwd(), 'src')
 const read = (p: string) => readFileSync(join(SRC, p), 'utf8')
 
 const PATHWAY = read('pages/Pathway.tsx')
-const DIAGNOSTIC = read('pages/Diagnostic.tsx')
+/* بطاقاتُ نتيجة التشخيص انتقلت إلى وحدةٍ بجانب الصفحة (الملفُّ كان ألفين
+   وخمسَ مئةِ سطر). والضمانُ لم يتغيّر — تغيّر بيتُه؛ فيُقرأ الاثنان معا كي
+   لا يفلت شيءٌ بحجّة أنّه هناك لا هنا. */
+const DIAGNOSTIC = read('pages/Diagnostic.tsx') + read('pages/diagnostic/ResultPlanCards.tsx')
 
 describe('مصدر واحد للخطّة المعتمَدة', () => {
   it('لا كتابة إلى المفتاح القديم wajeez_custom', () => {

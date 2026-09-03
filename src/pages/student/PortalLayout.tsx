@@ -237,8 +237,8 @@ export default function PortalLayout({ children, title }: { children: React.Reac
     <div dir="rtl" className="min-h-screen bg-paper text-white">
       <header className="sticky top-0 z-40 border-b border-white/10 bg-paper/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
-          <Link to="/" className="flex items-center gap-2">
-            <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 object-contain" />
+          <Link to="/" className="flex shrink-0 items-center gap-2">
+            <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 shrink-0 object-contain" />
             <span className="hidden font-black sm:block">أكاديمية وجيز</span>
           </Link>
           <nav aria-label="أقسام المنصة" className="hidden items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1 md:flex">
@@ -266,7 +266,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
               >
                 <Bell className="h-3.5 w-3.5" />
                 {unreadCount > 0 && (
-                  <span className="absolute -left-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-gold px-1 text-[9px] font-black text-on-gold">{unreadCount}</span>
+                  <span className="absolute -left-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-gold px-1 text-micro font-black text-on-gold">{unreadCount}</span>
                 )}
               </button>
               {bellOpen && (
@@ -275,7 +275,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                   <div className="absolute left-0 top-10 z-50 w-80 max-w-[85vw] rounded-2xl border border-white/10 bg-surface p-3 shadow-2xl">
                     <div className="flex items-center justify-between px-1 pb-2">
                       <p className="text-xs font-black text-white/80">التنبيهات</p>
-                      <button onClick={markAllRead} className="flex cursor-pointer items-center gap-1 text-[10px] font-bold text-teal-light-ink transition hover:text-white">
+                      <button onClick={markAllRead} className="flex cursor-pointer items-center gap-1 text-micro font-bold text-teal-light-ink transition hover:text-white">
                         <CheckCheck className="h-3 w-3" /> تعليم الكل كمقروء
                       </button>
                     </div>
@@ -405,7 +405,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
             key={sec.id}
             to={sec.to}
             aria-current={activeSection?.id === sec.id ? "page" : undefined}
-            className={`flex flex-col items-center gap-1 py-2.5 text-[10px] font-bold transition ${
+            className={`flex flex-col items-center gap-1 py-2.5 text-micro font-bold transition ${
               activeSection?.id === sec.id ? "text-teal-light-ink" : "text-white/50"
             }`}
           >
@@ -416,7 +416,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
         <button
           onClick={() => setAccountOpen(true)}
           aria-expanded={accountOpen}
-          className={`flex cursor-pointer flex-col items-center gap-1 py-2.5 text-[10px] font-bold transition ${
+          className={`flex cursor-pointer flex-col items-center gap-1 py-2.5 text-micro font-bold transition ${
             accountActive ? "text-teal-light-ink" : "text-white/50"
           }`}
         >

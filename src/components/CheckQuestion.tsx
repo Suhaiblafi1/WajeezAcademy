@@ -49,8 +49,8 @@ export default function CheckQuestion({
               {shown && isCorrect && <Check className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />}
               {shown && isChosen && !isCorrect && <X className="h-4 w-4 shrink-0 text-red-300" aria-hidden="true" />}
               <span className="min-w-0 flex-1">{opt}</span>
-              {shown && isCorrect && <span className="shrink-0 text-[10px] font-bold text-teal-light-ink">الصحيح</span>}
-              {shown && isChosen && !isCorrect && <span className="shrink-0 text-[10px] font-bold text-red-300">اخترته</span>}
+              {shown && isCorrect && <span className="shrink-0 text-micro font-bold text-teal-light-ink">الصحيح</span>}
+              {shown && isChosen && !isCorrect && <span className="shrink-0 text-micro font-bold text-red-300">اخترته</span>}
             </button>
           );
         })}

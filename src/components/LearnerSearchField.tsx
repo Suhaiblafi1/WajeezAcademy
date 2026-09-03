@@ -58,7 +58,7 @@ export default function LearnerSearchField({
       <div className="flex flex-1 items-center gap-2 rounded-xl border border-teal/40 bg-teal/5 px-3 py-2">
         <UserCheck className="h-3.5 w-3.5 shrink-0 text-teal-light-ink" aria-hidden="true" />
         <span className="flex-1 truncate text-xs font-bold text-white">{value.displayName}</span>
-        <span dir="ltr" className="truncate text-[10px] text-white/40">{value.email}</span>
+        <span dir="ltr" className="truncate text-micro text-white/40">{value.email}</span>
         <button
           type="button"
           onClick={() => { onChange(null); setTerm(""); }}
@@ -103,8 +103,8 @@ export default function LearnerSearchField({
               >
                 <span className="truncate text-xs font-bold text-white">{h.displayName}</span>
                 <span className="flex shrink-0 items-center gap-2">
-                  {h.enrolled && <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-bold text-white/60">مسجَّلٌ هنا</span>}
-                  <span dir="ltr" className="text-[10px] text-white/40">{h.email}</span>
+                  {h.enrolled && <span className="rounded-full bg-white/10 px-2 py-0.5 text-micro font-bold text-white/60">مسجَّلٌ هنا</span>}
+                  <span dir="ltr" className="text-micro text-white/40">{h.email}</span>
                 </span>
               </button>
             </li>

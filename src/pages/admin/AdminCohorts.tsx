@@ -347,7 +347,7 @@ export default function AdminCohorts() {
                         ) : (
                           <div className="flex flex-wrap gap-2">
                             {check.missing.map((m) => (
-                              <span key={m} className="flex items-center gap-1.5 rounded-full border border-red-500/40 px-3 py-1 text-[10px] font-bold text-red-400">
+                              <span key={m} className="flex items-center gap-1.5 rounded-full border border-red-500/40 px-3 py-1 text-micro font-bold text-red-400">
                                 <XCircle className="h-3 w-3" /> {m}
                               </span>
                             ))}
@@ -457,7 +457,7 @@ export default function AdminCohorts() {
                                 ولّد
                               </button>
                             </div>
-                            <p className="text-[10px] leading-5 text-white/35 sm:col-span-4">
+                            <p className="text-micro leading-5 text-white/35 sm:col-span-4">
                               الجدول: {daysLabelAr(c.daysOfWeek)} · {c.startTime}. الموجودُ لا يُكرَّر، وبدايةُ الشعبة ونهايتُها تتبعان جلساتِها.
                             </p>
                           </div>
@@ -548,7 +548,7 @@ export default function AdminCohorts() {
                         <Lock className="h-3.5 w-3.5" /> لا يمكن فتحها قبل استيفاء الشروط أعلاه
                       </p>
                     )}
-                    <p className="flex items-center gap-1.5 text-[10px] text-white/50">
+                    <p className="flex items-center gap-1.5 text-micro text-white/50">
                       <Users className="h-3 w-3" /> المسجلون الفعليون: {c.enrolled} — السعة {c.capacity ?? "غير محددة"}
                     </p>
 

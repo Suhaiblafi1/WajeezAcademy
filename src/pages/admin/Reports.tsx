@@ -109,16 +109,16 @@ export default function Reports() {
           <div className="lg:col-span-2">
             <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-5">
               <div className="grid gap-2 sm:grid-cols-4">
-                <label className="text-[10px] text-white/50">من تاريخ
+                <label className="text-micro text-white/50">من تاريخ
                   <input type="date" value={filter.from} onChange={(e) => setFilter({ ...filter, from: e.target.value })} className={`${inputCls} mt-1 w-full`} />
                 </label>
-                <label className="text-[10px] text-white/50">إلى تاريخ
+                <label className="text-micro text-white/50">إلى تاريخ
                   <input type="date" value={filter.to} onChange={(e) => setFilter({ ...filter, to: e.target.value })} className={`${inputCls} mt-1 w-full`} />
                 </label>
-                <label className="text-[10px] text-white/50">معرف دورة (اختياري)
+                <label className="text-micro text-white/50">معرف دورة (اختياري)
                   <input value={filter.courseId} onChange={(e) => setFilter({ ...filter, courseId: e.target.value })} dir="ltr" className={`${inputCls} mt-1 w-full font-mono`} />
                 </label>
-                <label className="text-[10px] text-white/50">معرف شعبة (اختياري)
+                <label className="text-micro text-white/50">معرف شعبة (اختياري)
                   <input value={filter.cohortId} onChange={(e) => setFilter({ ...filter, cohortId: e.target.value })} dir="ltr" className={`${inputCls} mt-1 w-full font-mono`} />
                 </label>
               </div>
@@ -157,7 +157,7 @@ export default function Reports() {
                         ))}
                       </tbody>
                     </table>
-                    {result.rows.length > 200 && <p className="mt-2 text-[10px] text-white/40">يُعرض أول 200 صف — صدّر CSV/XLSX للكامل.</p>}
+                    {result.rows.length > 200 && <p className="mt-2 text-micro text-white/40">يُعرض أول 200 صف — صدّر CSV/XLSX للكامل.</p>}
                   </div>
                 )}
               </div>

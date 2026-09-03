@@ -140,7 +140,7 @@ function MomentumCard({ m, className = "" }: { m: Momentum; className?: string }
 
       {/* ‎/55 لا ‎/40: الأخيرة تقيس 3.83:1 على سطح البطاقة — والقاعدة المعلنة
           أولى النصوص بأن تُقرأ */}
-      <p className="mt-3 text-[10px] leading-5 text-white/55">{NO_STREAK_NOTE}</p>
+      <p className="mt-3 text-micro leading-5 text-white/55">{NO_STREAK_NOTE}</p>
     </section>
   );
 }
@@ -271,7 +271,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
             </svg>
             <span className="absolute inset-0 flex flex-col items-center justify-center">
               <span className="text-xl font-black text-teal-light-ink">{pct}%</span>
-              <span className="text-[9px] text-white/50">من شعبك</span>
+              <span className="text-micro text-white/50">من شعبك</span>
             </span>
           </div>
         </div>
@@ -316,13 +316,13 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
             <div className="flex items-center gap-2 text-sm font-bold text-white/70">
               <BookOpen className="h-4 w-4 text-teal-light-ink" /> شعبي
             </div>
-            <Link to="/student/learning" className="text-[11px] font-bold text-teal-light-ink hover:text-white">الكل ←</Link>
+            <Link to="/student/learning" className="inline-flex min-h-8 items-center px-2 text-[11px] font-bold text-teal-light-ink hover:text-white">الكل ←</Link>
           </div>
           <div className="mt-4 space-y-3">
             {rows.slice(0, 3).map((r) => (
               <div key={r.id}>
                 <p className="truncate text-xs font-bold text-white/85">{r.cohort.course.versions[0]?.titleAr ?? r.cohort.title}</p>
-                <p className="mt-0.5 truncate text-[10px] text-white/45">
+                <p className="mt-0.5 truncate text-micro text-white/45">
                   {r.cohort.trainers.length > 0 ? `المدرب: ${r.cohort.trainers.map((t) => t.profile.application.fullName).join("، ")}` : r.cohort.title}
                 </p>
                 {r.courseProgress && (
@@ -343,7 +343,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
             <div className="flex items-center gap-2 text-sm font-bold text-white/70">
               <CalendarDays className="h-4 w-4 text-gold-ink" /> جدولي — الجلسات القادمة
             </div>
-            <Link to="/student/learning" className="text-[11px] font-bold text-teal-light-ink hover:text-white">تعلّمي ←</Link>
+            <Link to="/student/learning" className="inline-flex min-h-8 items-center px-2 text-[11px] font-bold text-teal-light-ink hover:text-white">تعلّمي ←</Link>
           </div>
           <div className="mt-4 space-y-2.5">
             {details === null ? (
@@ -383,18 +383,18 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
                         وهي ملفٌّ معياريّ يفتحه قوقل وآبل وأوتلوك بلا حساب. */}
                     <a
                       href={`/api/calendar/cohort-sessions/${s.id}.ics`}
-                      className="flex items-center gap-1.5 rounded-full border border-white/15 px-3.5 py-1.5 text-[11px] font-bold text-white/65 transition hover:border-white/35 hover:text-white"
+                      className="flex min-h-9 items-center gap-1.5 rounded-full border border-white/15 px-3.5 py-1.5 text-[11px] font-bold text-white/65 transition hover:border-white/35 hover:text-white"
                     >
                       <CalendarPlus className="h-3.5 w-3.5" /> أضِفها لتقويمك
                     </a>
                     {s.zoom ? (
                       <a href={s.zoom.learnerUrl ?? s.zoom.joinUrl} target="_blank" rel="noreferrer"
-                        className="rounded-full border border-teal/40 px-4 py-1.5 text-xs font-bold text-teal-light-ink transition hover:bg-teal hover:text-on-teal">
+                        className="inline-flex min-h-9 items-center rounded-full border border-teal/40 px-4 py-1.5 text-xs font-bold text-teal-light-ink transition hover:bg-teal hover:text-on-teal">
                         انضم الآن
                       </a>
                     ) : (
                       <Link to="/student/learning"
-                        className="rounded-full border border-teal/40 px-4 py-1.5 text-xs font-bold text-teal-light-ink transition hover:bg-teal hover:text-on-teal">
+                        className="inline-flex min-h-9 items-center rounded-full border border-teal/40 px-4 py-1.5 text-xs font-bold text-teal-light-ink transition hover:bg-teal hover:text-on-teal">
                         التفاصيل
                       </Link>
                     )}
@@ -415,7 +415,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
                   <Link key={a.id} to="/student/learning"
                     className="flex items-center justify-between gap-3 rounded-2xl border border-gold/25 bg-gold/5 px-4 py-2.5 transition hover:border-gold/50">
                     <span className="text-xs font-bold text-white/85">{a.title} <span className="font-normal text-white/45">· {a.cohortTitle}</span></span>
-                    {a.dueAt && <span className="shrink-0 text-[10px] text-gold-ink">يستحق {fmtDate(new Date(a.dueAt))}</span>}
+                    {a.dueAt && <span className="shrink-0 text-micro text-gold-ink">يستحق {fmtDate(new Date(a.dueAt))}</span>}
                   </Link>
                 ))}
               </div>
@@ -429,7 +429,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
             <div className="flex items-center gap-2 text-sm font-bold text-white/70">
               <Bell className="h-4 w-4 text-gold-ink" /> أحدثُ التنبيهات
             </div>
-            {unread > 0 && <span className="rounded-full bg-gold px-2 py-0.5 text-[10px] font-black text-on-gold">{unread} جديد</span>}
+            {unread > 0 && <span className="rounded-full bg-gold px-2 py-0.5 text-micro font-black text-on-gold">{unread} جديد</span>}
           </div>
           <div className="mt-4 space-y-2.5">
             {notifs.length === 0 && <p className="rounded-xl border border-white/5 px-3 py-6 text-center text-xs text-white/45">لا إشعارات بعد</p>}
@@ -440,7 +440,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
               </p>
             ))}
           </div>
-          <Link to="/student/inbox" className="mt-3 block text-center text-[11px] font-bold text-teal-light-ink hover:text-white">كلُّ الرسائل والتنبيهات ←</Link>
+          <Link to="/student/inbox" className="mt-3 flex min-h-9 items-center justify-center text-[11px] font-bold text-teal-light-ink hover:text-white">كلُّ الرسائل والتنبيهات ←</Link>
         </section>
       </div>
 
@@ -460,7 +460,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
         </Link>
         <Link to="/student/certificates" className="block rounded-3xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-white/30">
           <div className="flex items-center gap-2 text-sm font-bold text-white/70">
-            <Award className="h-4 w-4 text-gold-ink" /> شهاداتي {certCount > 0 && <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[10px] text-gold-ink">{certCount}</span>}
+            <Award className="h-4 w-4 text-gold-ink" /> شهاداتي {certCount > 0 && <span className="rounded-full bg-gold/15 px-2 py-0.5 text-micro text-gold-ink">{certCount}</span>}
           </div>
           <p className="mt-2 text-xs leading-6 text-white/55">أرقام تحقق عامة تُشاركها مع أي جهة</p>
         </Link>
@@ -539,16 +539,16 @@ function JourneyGlance({ track, className = "" }: { track: JourneyTrack; classNa
         <dl className="flex gap-5 text-center">
           <div>
             <dd className="text-xl font-black tabular-nums">{counts.completed}</dd>
-            <dt className="mt-0.5 text-[10px] text-white/55">أنجزتها</dt>
+            <dt className="mt-0.5 text-micro text-white/55">أنجزتها</dt>
           </div>
           <div>
             <dd className="text-xl font-black tabular-nums">{counts.owned - counts.completed}</dd>
-            <dt className="mt-0.5 text-[10px] text-white/55">تعمل فيها</dt>
+            <dt className="mt-0.5 text-micro text-white/55">تعمل فيها</dt>
           </div>
           {hours.total > 0 && (
             <div>
               <dd className="text-xl font-black tabular-nums">{hours.done}</dd>
-              <dt className="mt-0.5 text-[10px] text-white/55">من {hours.total} ساعة</dt>
+              <dt className="mt-0.5 text-micro text-white/55">من {hours.total} ساعة</dt>
             </div>
           )}
         </dl>

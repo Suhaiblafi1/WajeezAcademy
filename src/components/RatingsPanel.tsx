@@ -59,7 +59,7 @@ export function RatingsPanel({ titleAr, view }: { titleAr: string; view: Ratings
           </p>
           {view.comments.map((c, i) => (
             <blockquote key={i} className="rounded-xl border border-white/[0.07] bg-black/20 px-4 py-3">
-              <span className="mb-1 block text-[10px] font-bold text-gold">{c.score} ★</span>
+              <span className="mb-1 block text-micro font-bold text-gold">{c.score} ★</span>
               <p className="text-[12px] leading-6 text-white/70">{c.commentAr}</p>
             </blockquote>
           ))}

@@ -128,8 +128,8 @@ export default function AdminLayout({ children, title }: { children: React.React
       <SearchPalette />
       <header className="sticky top-0 z-40 border-b border-white/10 bg-paper/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5">
-          <Link to="/" className="flex items-center gap-2">
-            <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 object-contain" />
+          <Link to="/" className="flex shrink-0 items-center gap-2">
+            <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 shrink-0 object-contain" />
             <span className="hidden font-black sm:block">وجيز — الإدارة والعمليات</span>
           </Link>
           {/* جوال: القائمةُ نفسُها بأبوابها الثلاثة.
@@ -162,7 +162,7 @@ export default function AdminLayout({ children, title }: { children: React.React
               title="بحث سريع — Ctrl+K"
               className="hidden cursor-pointer items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[11px] font-bold text-white/45 transition hover:border-white/30 hover:text-white sm:flex"
             >
-              بحث… <kbd className="rounded border border-white/15 px-1.5 text-[9px]">Ctrl K</kbd>
+              بحث… <kbd className="rounded border border-white/15 px-1.5 text-micro">Ctrl K</kbd>
             </button>
             <NotificationBell audience="staff" />
             <ThemeToggle />
@@ -176,7 +176,7 @@ export default function AdminLayout({ children, title }: { children: React.React
         <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-60 shrink-0 overflow-y-auto border-l border-white/10 py-8 pl-5 lg:block">
           {sections.map((s) => (
             <div key={s.title} className="mb-7">
-              <p className="mb-2 px-3 text-[10px] font-black tracking-wide text-white/55">{s.title}</p>
+              <p className="mb-2 px-3 text-micro font-black tracking-wide text-white/55">{s.title}</p>
               <nav className="space-y-1">
                 {s.items.map((t) => (
                   <NavLink key={t.to} to={t.to} end={t.end} className={({ isActive }) => linkCls(isActive)}>

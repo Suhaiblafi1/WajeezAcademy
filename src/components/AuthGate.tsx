@@ -490,7 +490,10 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
                   type="button"
                   onClick={() => setShowPass(!showPass)}
                   aria-label={showPass ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
-                  className="absolute left-3.5 top-3.5 text-white/55 transition hover:text-white/70"
+                  /* كان الزرُّ ١٦ بكسلا عرضا: أيقونةٌ بلا حاشية. والقياسُ على
+                     ٣٩٠ بكسلا أظهر ذلك في شاشة الدخول وطلب الانضمام معا.
+                     فصار مربّعا ٤٤×٤٤ والأيقونةُ في وسطه، ومكانُها كما كان. */
+                  className="absolute left-1 top-1 grid h-11 w-11 place-items-center text-white/55 transition hover:text-white/70"
                 >
                   {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>

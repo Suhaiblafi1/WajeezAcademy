@@ -167,7 +167,7 @@ function RealTrainerHome({ name }: { name: string }) {
                     : <Circle className="h-4.5 w-4.5 shrink-0 text-white/25" />}
                   <span className={`text-sm ${t.doneAt ? "text-white/50 line-through" : "font-bold text-white/85"}`}>{t.title}</span>
                   {!t.doneAt && t.key === "sign_contract" && (
-                    <span className="mr-auto text-[10px] font-bold text-white/40">يُغلق بتوقيع العقد</span>
+                    <span className="mr-auto text-micro font-bold text-white/40">يُغلق بتوقيع العقد</span>
                   )}
                 </button>
               );
@@ -186,8 +186,11 @@ function RealTrainerHome({ name }: { name: string }) {
         ].map((s, i) => (
           <span key={s.key} className="flex items-center gap-2">
             {i > 0 && <span aria-hidden="true" className="text-white/20">←</span>}
-            <Link to={s.to} className="flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1 font-bold transition hover:border-gold/60 hover:text-gold-ink">
-              <span className="grid h-4 w-4 place-items-center rounded-full bg-gold/15 text-[10px] text-gold-ink">{i + 1}</span>
+            {/* `py-1` كان يعطي سبعا وعشرين بكسلا — هدفٌ يُخطئه الإصبعُ على
+                الهاتف. والحدُّ المتعارف عليه أربعٌ وأربعون، وستٌّ وثلاثون
+                أقلُّ ما يُقبل في شريطٍ داخليّ. */}
+            <Link to={s.to} className="flex min-h-9 items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 font-bold transition hover:border-gold/60 hover:text-gold-ink">
+              <span className="grid h-4 w-4 place-items-center rounded-full bg-gold/15 text-micro text-gold-ink">{i + 1}</span>
               {s.label}
             </Link>
           </span>
@@ -227,9 +230,9 @@ function RealTrainerHome({ name }: { name: string }) {
             <Link key={s.id} to="/trainer/board" className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-2.5 text-xs transition hover:border-white/30">
               <div className="min-w-0 flex-1">
                 <p className="truncate font-bold text-white/85">{s.title}</p>
-                <p className="mt-0.5 truncate text-[10px] text-white/50">{s.cohortTitle}</p>
+                <p className="mt-0.5 truncate text-micro text-white/50">{s.cohortTitle}</p>
               </div>
-              <span className="shrink-0 text-[10px] font-bold text-white/50">
+              <span className="shrink-0 text-micro font-bold text-white/50">
                 {fmtDateTimeAr(s.startsAt)}
               </span>
             </Link>

@@ -112,7 +112,7 @@ function TrainerCoursesTab({ summary }: { summary?: TrainerSummary }) {
   }
   const stat = (label: string, value: string) => (
     <div className="rounded-2xl border border-white/10 bg-black/20 p-3.5">
-      <p className="text-[10.5px] font-bold text-white/45">{label}</p>
+      <p className="text-micro font-bold text-white/45">{label}</p>
       <p className="mt-1 text-lg font-black tabular-nums text-white">{value}</p>
     </div>
   );
@@ -174,11 +174,11 @@ function TrainerCoursesTab({ summary }: { summary?: TrainerSummary }) {
               <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/10 bg-black/20 px-3.5 py-2.5">
                 <span className="min-w-0">
                   <span className="block text-[12px] font-bold text-white/85">{c.title}</span>
-                  <span className="text-[10.5px] text-white/45">
+                  <span className="text-micro text-white/45">
                     {c.courseTitle} · {c.role === "lead" ? "رئيسي" : "مساعد"} · {c.enrolled} متعلّم
                   </span>
                 </span>
-                <span className="shrink-0 text-[10.5px] text-white/40">
+                <span className="shrink-0 text-micro text-white/40">
                   {c.startsAt ? fmtDateTime(new Date(c.startsAt)) : "بلا موعد"}
                 </span>
               </li>
@@ -510,7 +510,7 @@ export default function TrainerApplications() {
               >
                 <Star className="h-3.5 w-3.5" /> سجّل التقييم
               </button>
-              <p className="mt-2 text-center text-[10px] text-white/50">{a.reviews.length} تقييم مسجل</p>
+              <p className="mt-2 text-center text-micro text-white/50">{a.reviews.length} تقييم مسجل</p>
             </article>
 
             <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
@@ -569,10 +569,10 @@ export default function TrainerApplications() {
                         ? "قناة البريد غير مفعّلة — سلّم هذا الرابط للمدرب بنفسك"
                         : "تعذّر إرسال البريد — سلّم هذا الرابط للمدرب بنفسك"}
                   </p>
-                  <code dir="ltr" className="mt-2 block overflow-x-auto whitespace-nowrap rounded-lg bg-black/40 p-2 font-mono text-[10.5px] text-white/75">
+                  <code dir="ltr" className="mt-2 block overflow-x-auto whitespace-nowrap rounded-lg bg-black/40 p-2 font-mono text-micro text-white/75">
                     {invite.url}
                   </code>
-                  <p className="mt-1.5 text-[10.5px] text-white/45">يُستخدم مرة واحدة ويسقط بعد ٧٢ ساعة.</p>
+                  <p className="mt-1.5 text-micro text-white/45">يُستخدم مرة واحدة ويسقط بعد ٧٢ ساعة.</p>
                 </div>
               )}
               {a.profile?.userId && (
@@ -666,14 +666,18 @@ export default function TrainerApplications() {
             >
               {/* المربّعُ خارج الزرّ لا داخله: زرٌّ في زرّ لا يصحّ، ونقرةٌ
                   على التحديد كانت تفتح الملفّ. */}
-              <input type="checkbox" checked={sel.has(a.id)} onChange={() => toggleSel(a.id)}
-                aria-label={`حدّد طلب ${a.fullName}`} className="h-4 w-4 shrink-0 cursor-pointer accent-gold" />
+              {/* الوسمُ حولَه هو الهدف: مربّعٌ بستّةَ عشرَ بكسلا يُخطئه الإصبع،
+                  والوسمُ يمنحه ٣٢×٣٢ بلا أن يُكبَّر المربّعُ نفسُه. */}
+              <label className="grid h-8 w-8 shrink-0 cursor-pointer place-items-center">
+                <input type="checkbox" checked={sel.has(a.id)} onChange={() => toggleSel(a.id)}
+                  aria-label={`حدّد طلب ${a.fullName}`} className="h-4 w-4 shrink-0 cursor-pointer accent-gold" />
+              </label>
             <button
               onClick={() => void openDetail(a.id)}
               className="flex flex-1 cursor-pointer flex-wrap items-center justify-between gap-3 text-right"
             >
               <div>
-                <p className="font-black">{a.fullName} <span className="mr-2 font-mono text-[10px] text-white/50" dir="ltr">{a.reference}</span></p>
+                <p className="font-black">{a.fullName} <span className="mr-2 font-mono text-micro text-white/50" dir="ltr">{a.reference}</span></p>
                 <p className="mt-1 text-xs text-white/50">
                   {a.specialties.join(" · ") || "—"} · خبرة مجال {a.domainYears ?? "—"} · {a.jobTitle ?? "—"}
                 </p>

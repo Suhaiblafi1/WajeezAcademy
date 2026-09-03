@@ -253,4 +253,64 @@ window.__a11y = {
     out.sort(function (a, b) { return a.ratio - b.ratio })
     return out.slice(0, 20)
   },
+
+  /* ─────────── حجمُ هدف اللمس (WCAG 2.5.8) ───────────
+
+     العطبُ الذي وُلدت منه: القياسُ على هاتفٍ عرضُه ٣٩٠ بكسلا وجد في ستّ
+     عشرةَ شاشةً أهدافا لا يصيبها الإصبع — روابطَ بارتفاع ثلاثةَ عشرَ بكسلا
+     في تذييل ستّ صفحات، وزرَّ إظهارِ كلمة المرور بعرض ستّةَ عشر، وحقلَ
+     بحثٍ بارتفاع ستّةَ عشر، وعلامةَ المنصّة مضغوطةً إلى بكسلَين.
+
+     والحدُّ هنا **٢٤×٢٤** لا ٤٤: هو ما يفرضه المعيار في مستوى AA
+     (‏2.5.8 Target Size Minimum)، و٤٤ توصيةٌ في AAA. والبوّابةُ تحرس
+     الإلزامَ، والمراجعةُ تطلب الأفضل.
+
+     وثلاثةُ استثناءاتٍ من المعيار نفسِه — بلا واحدٍ منها يصرخ الفحصُ في غير
+     موضعه فيُهمَل كلُّه:
+     • **الرابطُ في جملة**: تكبيرُه يفكّ سطرَ النصّ، والمعيار يستثنيه نصّا.
+     • **الوسمُ الذي يلفّ الحقل**: هو الهدفُ الفعليّ — الضغطةُ على نصّه
+       تُبدّل المربّع؛ فيُقاس هو لا المربّعُ الصغيرُ داخله.
+     • **المعطَّل**: لا يُضغط أصلا. */
+  targets: function () {
+    var out = []
+    /* نسخةٌ محلّيّة: نظيرتُها في `contrast` مغلقةٌ داخلَ نطاقها */
+    function tagOf(el) {
+      var t = el.tagName.toLowerCase()
+      var cls = (el.getAttribute('class') || '').split(/\s+/).slice(0, 3).join('.')
+      return t + (cls ? '.' + cls : '')
+    }
+    var sel = 'a[href], button, input, select, textarea, [role="button"], [role="checkbox"], [role="tab"]'
+    var nodes = document.querySelectorAll(sel)
+    for (var i = 0; i < nodes.length; i++) {
+      var el = nodes[i]
+      if (el.disabled || el.getAttribute('aria-disabled') === 'true') continue
+      if (el.closest && el.closest('[disabled], [aria-disabled="true"], fieldset[disabled]')) continue
+      var cs = getComputedStyle(el)
+      if (cs.visibility === 'hidden' || cs.display === 'none' || parseFloat(cs.opacity) < 0.05) continue
+      var r = el.getBoundingClientRect()
+      if (r.width < 1 || r.height < 1) continue
+      /* الوسمُ حولَه هو الهدف */
+      var lbl = el.closest('label')
+      if (lbl) {
+        var lr = lbl.getBoundingClientRect()
+        if (lr.width >= 24 && lr.height >= 24) continue
+      }
+      /* رابطٌ داخلَ جملةٍ: أبوه فقرةٌ فيها نصٌّ غيرُ نصّه */
+      if (el.tagName === 'A') {
+        var par = el.closest('p, li, td, dd, blockquote, figcaption')
+        var mine = (el.textContent || '').trim().length
+        if (par && (par.textContent || '').trim().length > mine + 8) continue
+      }
+      if (r.width >= 24 && r.height >= 24) continue
+      out.push({
+        target: tagOf(el),
+        text: ((el.textContent || '').trim() || el.getAttribute('aria-label') || '').slice(0, 32),
+        w: Math.round(r.width),
+        h: Math.round(r.height),
+      })
+    }
+    /* الأصغرُ أوّلا، وعشرون تكفي */
+    out.sort(function (a, b) { return (a.w * a.h) - (b.w * b.h) })
+    return out.slice(0, 20)
+  },
 }

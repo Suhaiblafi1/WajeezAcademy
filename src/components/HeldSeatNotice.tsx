@@ -77,7 +77,7 @@ export default function HeldSeatNotice({ seat, className = "" }: { seat: HeldSea
       {(paid || unpaid) && (
         <Link
           to="/student/billing"
-          className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-white/15 px-4 py-1.5 text-[11px] font-bold text-white/75 transition hover:border-white/40"
+          className="mt-2 inline-flex min-h-9 items-center gap-1.5 rounded-full border border-white/15 px-4 py-1.5 text-[11px] font-bold text-white/75 transition hover:border-white/40"
         >
           {paid ? "تفاصيل الفاتورة" : "أكمل الدفع من الفواتير"}
         </Link>

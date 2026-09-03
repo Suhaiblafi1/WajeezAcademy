@@ -117,12 +117,12 @@ export default function AuditLog() {
           {data && data.pages > 1 && (
             <div className="flex items-center gap-1">
               <button onClick={() => setPage(data.page - 1)} disabled={data.page <= 1} aria-label="الصفحة السابقة"
-                className="cursor-pointer rounded-lg border border-white/12 p-1.5 text-white/60 hover:border-white/35 disabled:cursor-default disabled:opacity-25">
+                className="grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-lg border border-white/12 text-white/60 hover:border-white/35 disabled:cursor-default disabled:opacity-25">
                 <ChevronRight className="h-3.5 w-3.5" />
               </button>
               <span className="tabular-nums">{data.page} / {data.pages}</span>
               <button onClick={() => setPage(data.page + 1)} disabled={data.page >= data.pages} aria-label="الصفحة التالية"
-                className="cursor-pointer rounded-lg border border-white/12 p-1.5 text-white/60 hover:border-white/35 disabled:cursor-default disabled:opacity-25">
+                className="grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-lg border border-white/12 text-white/60 hover:border-white/35 disabled:cursor-default disabled:opacity-25">
                 <ChevronLeft className="h-3.5 w-3.5" />
               </button>
             </div>
@@ -160,13 +160,13 @@ export default function AuditLog() {
                 <div className="mt-3 space-y-2 border-t border-white/8 pt-3 text-[11px] leading-6 text-white/60">
                   {r.actor?.email && <p dir="ltr" className="font-mono text-white/45">{r.actor.email}</p>}
                   {r.reason && <p>السبب المكتوب: {r.reason}</p>}
-                  <p className="font-mono text-[10px] text-white/35" dir="ltr">{r.action}</p>
+                  <p className="font-mono text-micro text-white/35" dir="ltr">{r.action}</p>
                   {r.ip && <p dir="ltr" className="font-mono text-white/40">IP {r.ip}</p>}
-                  <p className="font-mono text-[10px] text-white/45" dir="ltr">{r.entityId}</p>
+                  <p className="font-mono text-micro text-white/45" dir="ltr">{r.entityId}</p>
                   {([["قبل", r.before], ["بعد", r.after], ["تفاصيل", r.meta]] as const).map(([label, value]) => value != null && (
                     <div key={label}>
                       <p className="font-bold text-white/50">{label}</p>
-                      <pre dir="ltr" className="mt-1 overflow-x-auto rounded-xl border border-white/8 bg-black/30 p-3 text-[10px] text-white/60">
+                      <pre dir="ltr" className="mt-1 overflow-x-auto rounded-xl border border-white/8 bg-black/30 p-3 text-micro text-white/60">
                         {JSON.stringify(value, null, 2)}
                       </pre>
                     </div>

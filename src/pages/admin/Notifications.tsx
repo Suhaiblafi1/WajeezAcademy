@@ -96,8 +96,8 @@ export default function Notifications() {
               <li key={t.id} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs">
                 <p className="flex items-center gap-2 font-bold">
                   <span dir="ltr" className="font-mono text-white/50">{t.key}</span>
-                  <span className="rounded-full border border-teal/40 px-2 py-0.5 text-[10px] text-teal-light-ink">{CHANNEL_AR[t.channel] ?? t.channel}</span>
-                  {!t.active && <span className="rounded-full border border-red-500/40 px-2 py-0.5 text-[10px] text-red-400">معطل</span>}
+                  <span className="rounded-full border border-teal/40 px-2 py-0.5 text-micro text-teal-light-ink">{CHANNEL_AR[t.channel] ?? t.channel}</span>
+                  {!t.active && <span className="rounded-full border border-red-500/40 px-2 py-0.5 text-micro text-red-400">معطل</span>}
                 </p>
                 <p className="mt-1 text-white/65">{t.titleAr}</p>
                 <p className="mt-0.5 line-clamp-1 text-white/40">{t.bodyAr}</p>
@@ -125,16 +125,16 @@ export default function Notifications() {
                 <li key={n.id} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs">
                   <div className="flex items-center justify-between gap-2">
                     <p className="font-bold">{n.user.displayName} <span className="font-normal text-white/40">{CHANNEL_AR[n.channel] ?? n.channel}</span></p>
-                    <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${n.status === "failed" ? "border-red-500/40 text-red-400" : "border-emerald-400/30 text-emerald-300"}`}>
+                    <span className={`rounded-full border px-2 py-0.5 text-micro font-bold ${n.status === "failed" ? "border-red-500/40 text-red-400" : "border-emerald-400/30 text-emerald-300"}`}>
                       {LOG_STATUS_AR[n.status] ?? n.status}
                     </span>
                   </div>
-                  {n.lastError && <p className="mt-1 text-[10px] text-red-300">{n.lastError}</p>}
-                  <p className="mt-1 text-[10px] text-white/40">{n.attempts} محاولة · {fmtDateTime(new Date(n.queuedAt))}</p>
+                  {n.lastError && <p className="mt-1 text-micro text-red-300">{n.lastError}</p>}
+                  <p className="mt-1 text-micro text-white/40">{n.attempts} محاولة · {fmtDateTime(new Date(n.queuedAt))}</p>
                   {n.status === "failed" && (
                     <button disabled={busy}
                       onClick={() => act(() => apiPost(`/api/admin/notifications/${n.id}/retry`), "أُعيدت المحاولة")}
-                      className="mt-2 flex cursor-pointer items-center gap-1 rounded-full border border-gold/40 px-3 py-1 text-[10px] font-bold text-gold-ink disabled:opacity-40">
+                      className="mt-2 flex cursor-pointer items-center gap-1 rounded-full border border-gold/40 px-3 py-1 text-micro font-bold text-gold-ink disabled:opacity-40">
                       <RefreshCw className="h-3 w-3" /> إعادة المحاولة
                     </button>
                   )}

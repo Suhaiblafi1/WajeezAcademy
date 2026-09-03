@@ -75,7 +75,7 @@ export default function CourseCertificate({
       <div className="rounded-2xl border border-white/12 bg-white/[0.03] p-3.5">
         <p className="flex flex-wrap items-center gap-2 text-[12px] font-black text-white/80">
           <Award className="h-4 w-4 text-gold-ink" /> شهادة «{courseTitleAr}»
-          <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${meta.cls}`}>{meta.label}</span>
+          <span className={`rounded-full border px-2.5 py-0.5 text-micro font-bold ${meta.cls}`}>{meta.label}</span>
         </p>
         <p className="mt-1.5 text-[11px] leading-5 text-white/50">
           {request?.decisionAr

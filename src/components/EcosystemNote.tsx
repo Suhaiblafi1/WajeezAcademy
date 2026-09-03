@@ -11,7 +11,10 @@ export default function EcosystemNote({ className = '' }: { className?: string }
         href={ECOSYSTEM_URL}
         target="_blank"
         rel="noreferrer"
-        className="transition hover:text-white/75"
+        /* رابطٌ ارتفاعُه ثلاثةَ عشرَ بكسلا هدفٌ يُخطئه الإصبع — قِيس على
+           هاتفٍ عرضُه ٣٩٠ بكسلا في ستّ شاشات. والحدُّ اثنان وثلاثون، ويبقى
+           النصُّ بحجمه فلا يعلو الهامشُ على ما فوقه. */
+        className="inline-flex min-h-8 items-center px-2 transition hover:text-white/75"
       >
         {ECOSYSTEM_NOTE}
       </a>

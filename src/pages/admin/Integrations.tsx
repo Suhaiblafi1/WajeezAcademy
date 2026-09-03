@@ -9,7 +9,7 @@ import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 
 const inputCls = "rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white focus:border-teal focus:outline-none";
-const labelCls = "block text-[10px] font-bold text-white/50";
+const labelCls = "block text-micro font-bold text-white/50";
 
 interface IntegrationsView {
   payment: {
@@ -159,7 +159,7 @@ export default function Integrations() {
                       </span>
                     </p>
                   )}
-                  <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-[10px] leading-5 text-white/50">
+                  <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-micro leading-5 text-white/50">
                     <p className="font-bold text-white/70">عنوان الـ webhook — سجّله في لوحة المزود:</p>
                     <p dir="ltr" className="mt-0.5 select-all font-mono text-teal-light-ink">{webhookUrl}</p>
                     {/* كان هنا أنّ Stripe يحتاج «جسرا» يعيد إرسال التوقيع بترويسة

@@ -90,8 +90,8 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
     <div dir="rtl" className="min-h-screen bg-paper text-white">
       <header className="sticky top-0 z-40 border-b border-white/10 bg-paper/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
-          <Link to="/" className="flex items-center gap-2">
-            <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 object-contain" />
+          <Link to="/" className="flex shrink-0 items-center gap-2">
+            <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 shrink-0 object-contain" />
             <span className="hidden font-black sm:block">وجيز — بوابة المدرب</span>
           </Link>
           <nav className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1">
@@ -118,9 +118,9 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
                 onClick={() => window.dispatchEvent(new Event("wajeez:open-search"))}
                 aria-label="بحث سريع — Ctrl+K"
                 title="بحث سريع — Ctrl+K"
-                className="hidden cursor-pointer items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 text-[10px] font-bold text-white/45 transition hover:border-teal-light/50 hover:text-teal-light-ink md:flex"
+                className="hidden cursor-pointer items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 text-micro font-bold text-white/45 transition hover:border-teal-light/50 hover:text-teal-light-ink md:flex"
               >
-                بحث… <kbd className="rounded border border-white/15 px-1.5 text-[9px]">Ctrl K</kbd>
+                بحث… <kbd className="rounded border border-white/15 px-1.5 text-micro">Ctrl K</kbd>
               </button>
             )}
             <NotificationBell audience="trainer" />

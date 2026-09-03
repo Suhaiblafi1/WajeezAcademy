@@ -83,7 +83,7 @@ export default function StaffAccountMenu({ user }: { user: SessionUser | null })
               {roles.length > 0 && (
                 <div className="mt-2.5 flex flex-wrap gap-1.5">
                   {roles.map((r) => (
-                    <span key={r} className="rounded-full border border-white/12 bg-white/[0.04] px-2 py-0.5 text-[10px] font-bold text-white/60">
+                    <span key={r} className="rounded-full border border-white/12 bg-white/[0.04] px-2 py-0.5 text-micro font-bold text-white/60">
                       {r}
                     </span>
                   ))}

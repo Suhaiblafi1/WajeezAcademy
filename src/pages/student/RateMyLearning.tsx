@@ -76,7 +76,7 @@ function RatingCard({ item, onSaved }: { item: Rateable; onSaved: () => void }) 
     <article className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-bold text-white/45">
+          <span className="rounded-full border border-white/10 px-2 py-0.5 text-micro font-bold text-white/45">
             {KIND_AR[item.subjectType]}
           </span>
           <h3 className="mt-1.5 text-sm font-black">{item.nameAr}</h3>

@@ -251,10 +251,13 @@ export default function Authoring() {
         <aside className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
           <div className="mb-3 flex items-center gap-2">
             <Search className="h-4 w-4 shrink-0 text-white/40" />
+            {/* الاسمُ لا النصُّ النائب: النائبُ يزول عند الكتابة فلا يصلح
+                اسما، وارتفاعُ ثلاثين بكسلا هدفٌ يُخطئه الإصبع على الهاتف. */}
             <input
               value={query} onChange={(e) => setQuery(e.target.value)}
+              aria-label="ابحث في طابور المراجعة بعنوان الوحدة أو الدورة"
               placeholder="ابحث بعنوان الوحدة أو الدورة"
-              className="w-full rounded-lg border border-white/10 bg-transparent px-2.5 py-1.5 text-xs outline-none placeholder:text-white/30 focus:border-teal/50"
+              className="min-h-9 w-full rounded-lg border border-white/10 bg-transparent px-2.5 py-2 text-xs outline-none placeholder:text-white/30 focus:border-teal/50"
             />
           </div>
           {/* الدورةُ أوّلا — ثمّ وحداتُها تحتها بترتيبها */}
@@ -313,7 +316,7 @@ export default function Authoring() {
                         : "border-white/10 bg-white/[0.02] hover:border-white/25"}`}
                   >
                     <span className="block text-xs font-bold leading-5">{r.titleAr}</span>
-                    <span className="mt-0.5 block text-[10px] text-white/45">{r.courseTitleAr || r.courseId}</span>
+                    <span className="mt-0.5 block text-micro text-white/45">{r.courseTitleAr || r.courseId}</span>
                     <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
                       <Chip on={r.hasBody} label="متن" />
                       <Chip on={r.hasChecks} label="تمرين" />
@@ -322,12 +325,12 @@ export default function Authoring() {
                       <Chip on={r.hasPractice} label="نشاط" />
                       <Chip on={r.hasRubric} label="روبرك" />
                       {r.draftStatus && (
-                        <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[9px] font-bold text-gold">
+                        <span className="rounded-full bg-gold/15 px-2 py-0.5 text-micro font-bold text-gold">
                           {STATUS_AR[r.draftStatus] ?? r.draftStatus}
                         </span>
                       )}
                       {r.learnersWaiting > 0 && (
-                        <span className="flex items-center gap-1 rounded-full bg-teal/15 px-2 py-0.5 text-[9px] font-bold text-teal-ink">
+                        <span className="flex items-center gap-1 rounded-full bg-teal/15 px-2 py-0.5 text-micro font-bold text-teal-ink">
                           <Users className="h-2.5 w-2.5" /> {r.learnersWaiting} ينتظر
                         </span>
                       )}
@@ -362,7 +365,7 @@ export default function Authoring() {
                     <span className={isReview ? "text-gold" : "text-white/60"}>{STATUS_AR[draft.status] ?? draft.status}</span>
                   </p>
                 </div>
-                <p className="max-w-xs rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-[10px] leading-5 text-white/50">
+                <p className="max-w-xs rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-micro leading-5 text-white/50">
                   يُنشر باسم الأكاديمية — لا يظهر اسم كاتبه للمتعلّم.
                 </p>
               </header>
@@ -412,7 +415,7 @@ export default function Authoring() {
                 </div>
 
                 <div className="rounded-xl border border-white/10 bg-black/20 p-3">
-                  <p className="mb-2 flex items-center gap-1.5 text-[10px] font-black text-white/45">
+                  <p className="mb-2 flex items-center gap-1.5 text-micro font-black text-white/45">
                     <Eye className="h-3 w-3" /> كما يراه المتعلّم
                   </p>
                   <div className="max-h-[26rem] overflow-y-auto">
@@ -488,8 +491,9 @@ export default function Authoring() {
                     </p>
                     <input
                       value={note} onChange={(e) => setNote(e.target.value)}
+                      aria-label="سببُ الإعادة الأكاديميّة — ما الذي يُعدَّل؟"
                       placeholder="ما الذي يُعدَّل؟ (مطلوبٌ عند الإعادة)"
-                      className="min-w-[16rem] flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-1.5 text-xs outline-none placeholder:text-white/30 focus:border-gold/50"
+                      className="min-h-9 min-w-[16rem] flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-xs outline-none placeholder:text-white/30 focus:border-gold/50"
                     />
                     <button
                       type="button" onClick={() => void act("approve")} disabled={busy !== ""}
@@ -503,7 +507,7 @@ export default function Authoring() {
                     >
                       إعادةٌ إلى الكاتب مع ملاحظة
                     </button>
-                    <p className="w-full text-[10.5px] leading-5 text-white/45">
+                    <p className="w-full text-micro leading-5 text-white/45">
                       الاعتمادُ لا ينشر — يرفعها إلى الموافقة النهائية، ولا يراها متعلّمٌ قبلها.
                     </p>
                   </div>
@@ -517,8 +521,9 @@ export default function Authoring() {
                       </p>
                       <input
                         value={note} onChange={(e) => setNote(e.target.value)}
+                        aria-label="سببُ إعادة الموافقة النهائيّة"
                         placeholder="سببُ الإعادة (مطلوبٌ عند الإعادة)"
-                        className="min-w-[16rem] flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-1.5 text-xs outline-none placeholder:text-white/30 focus:border-teal/50"
+                        className="min-h-9 min-w-[16rem] flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-xs outline-none placeholder:text-white/30 focus:border-teal/50"
                       />
                       <button
                         type="button" onClick={() => void act("publish")} disabled={busy !== ""}
@@ -551,7 +556,7 @@ export default function Authoring() {
                       <li key={h.id} className="rounded-lg border border-white/10 px-3 py-2">
                         <p className="flex flex-wrap items-center gap-2 text-[11px]">
                           <span className="font-black">إصدار {h.version}</span>
-                          <span className="rounded-full bg-white/10 px-2 py-0.5 text-[9px]">{STATUS_AR[h.status] ?? h.status}</span>
+                          <span className="rounded-full bg-white/10 px-2 py-0.5 text-micro">{STATUS_AR[h.status] ?? h.status}</span>
                           <span className="text-white/40">{fmtShortDateTimeAr(h.reviewedAt ?? h.submittedAt ?? h.createdAt)}</span>
                           <span className="text-white/35">{fmtNum(h.bodyAr?.length ?? 0)} حرفا</span>
                         </p>
@@ -583,7 +588,7 @@ function Stat({ label, value, tone }: { label: string; value: number; tone?: "go
 
 function Chip({ on, label }: { on: boolean; label: string }) {
   return (
-    <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${
+    <span className={`rounded-full px-1.5 py-0.5 text-micro font-bold ${
       on ? "bg-teal/15 text-teal-ink" : "bg-white/[0.06] text-white/30"}`}>
       {label}
     </span>

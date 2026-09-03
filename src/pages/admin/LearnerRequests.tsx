@@ -203,13 +203,13 @@ export default function LearnerRequests() {
                     <XCircle className="h-3.5 w-3.5" /> اعتذر
                   </button>
                   {reason.trim().length < MIN_REASON && (
-                    <span className="text-[10.5px] text-white/35">الاعتذار يلزمه سببٌ لا يقلّ عن {MIN_REASON} أحرف</span>
+                    <span className="text-micro text-white/35">الاعتذار يلزمه سببٌ لا يقلّ عن {MIN_REASON} أحرف</span>
                   )}
                 </div>
 
                 {/* إصدارُ الشهادة نفسِها في شاشة الشعبة — هي حاملةُ القواعد */}
                 {r.enrollment && (
-                  <p className="mt-2.5 text-[10.5px] leading-5 text-white/35">
+                  <p className="mt-2.5 text-micro leading-5 text-white/35">
                     الإصدار من «الشعب» ← شعبة «{r.enrollment.cohort.title}» ← مرشَّحو الشهادة، ثمّ سجّل الإنجاز هنا.
                   </p>
                 )}

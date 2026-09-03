@@ -213,7 +213,7 @@ export default function RequestsPanel({ caseId }: { caseId: string }) {
               إلغاء
             </button>
             {!ready && reason.trim().length < 12 && (
-              <span className="text-[10.5px] text-gold-ink">اكتب سببا لا يقلّ عن ١٢ حرفا</span>
+              <span className="text-micro text-gold-ink">اكتب سببا لا يقلّ عن ١٢ حرفا</span>
             )}
           </div>
         </div>
@@ -236,7 +236,7 @@ export default function RequestsPanel({ caseId }: { caseId: string }) {
                 {r.percentOff && <span className="text-teal-light-ink">{r.percentOff}٪</span>}
                 {r.amountOff && <span className="text-teal-light-ink">{r.amountOff} {r.currency}</span>}
                 {r.courseId && <span className="font-normal text-white/60">— {courseById(r.courseId)?.name ?? r.courseId}</span>}
-                <span className="ms-auto text-[10px] font-bold text-white/45">{STATUS_AR[r.status] ?? r.status}</span>
+                <span className="ms-auto text-micro font-bold text-white/45">{STATUS_AR[r.status] ?? r.status}</span>
               </p>
               <p className="mt-1.5 text-[11px] leading-6 text-white/55">{r.reasonAr}</p>
               {r.decisionNoteAr && (
@@ -261,7 +261,7 @@ export default function RequestsPanel({ caseId }: { caseId: string }) {
               {r.status === 'pending' && (
                 <button
                   type="button" onClick={() => void cancel(r.id)} disabled={busy}
-                  className="mt-2 flex cursor-pointer items-center gap-1 text-[10.5px] font-bold text-white/40 transition hover:text-white/70"
+                  className="mt-2 flex cursor-pointer items-center gap-1 text-micro font-bold text-white/40 transition hover:text-white/70"
                 >
                   <X className="h-3 w-3" /> اسحب الطلب
                 </button>

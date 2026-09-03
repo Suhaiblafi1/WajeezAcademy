@@ -25,7 +25,7 @@ export default function FlowSteps({
             >
               <p className={`text-[11px] font-black ${current === i ? "text-gold-ink" : "text-white/80"}`}>{s.label}</p>
               {/* ‎/55 لا ‎/40: اسم الفاعل عند ٩ بكسل يقيس 3.81:1 — والمقياس نفسه في كل شاشة تستعمل هذا المكوّن */}
-              <p className="mt-0.5 text-[9px] text-white/55">{s.actor}</p>
+              <p className="mt-0.5 text-micro text-white/55">{s.actor}</p>
             </div>
             {i < steps.length - 1 && <ChevronLeft className="h-3.5 w-3.5 shrink-0 text-white/25" />}
           </div>

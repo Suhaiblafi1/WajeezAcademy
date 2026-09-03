@@ -155,7 +155,7 @@ export default function CourseJourney({
                       <span className="text-sm font-black leading-snug text-white/90">
                         {c.title}
                         {isGift && (
-                          <span className="mr-2 rounded-full bg-gold px-2 py-0.5 align-middle text-[10px] font-black text-on-gold">
+                          <span className="mr-2 rounded-full bg-gold px-2 py-0.5 align-middle text-micro font-black text-on-gold">
                             هدية مجانية
                           </span>
                         )}
@@ -257,7 +257,7 @@ export default function CourseJourney({
                             className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-right transition hover:border-teal-light/50 hover:bg-white/[0.07]"
                           >
                             <span className="block text-xs font-bold text-white/85">{p.name}</span>
-                            <span className="mt-0.5 block text-[10px] text-white/45">{p.note}</span>
+                            <span className="mt-0.5 block text-micro text-white/45">{p.note}</span>
                           </button>
                         ))}
                       </div>
@@ -320,14 +320,14 @@ export default function CourseJourney({
                       <ol className="space-y-1.5">
                         {c.modules.map((m, mi) => (
                           <li key={m.id} className="flex items-start gap-2.5 rounded-lg bg-white/[0.03] px-3 py-2">
-                            <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-white/[0.06] text-[10px] font-black text-white/55">
+                            <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-white/[0.06] text-micro font-black text-white/55">
                               {mi + 1}
                             </span>
                             <span className="min-w-0 flex-1">
                               <span className="block font-bold text-white/80">{m.title}</span>
                               {m.outcome && <span className="mt-0.5 block text-white/45">{m.outcome}</span>}
                             </span>
-                            <span className="shrink-0 text-[10px] text-white/40">{m.hours} س</span>
+                            <span className="shrink-0 text-micro text-white/40">{m.hours} س</span>
                           </li>
                         ))}
                       </ol>

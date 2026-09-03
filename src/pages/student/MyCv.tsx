@@ -134,7 +134,7 @@ export default function MyCv() {
           </span>
         </label>
         {!consent && (
-          <p className="mt-2 text-[10px] text-white/50">لن يُقبل أي ملف قبل تفعيل الموافقة — كما يفرض الخادم.</p>
+          <p className="mt-2 text-micro text-white/50">لن يُقبل أي ملف قبل تفعيل الموافقة — كما يفرض الخادم.</p>
         )}
       </section>
       )}
@@ -170,10 +170,10 @@ export default function MyCv() {
                 {cvKindLabel(c.mime)} · {Math.ceil(c.sizeBytes / 1024)} كيلوبايت · رُفعت {fmtWhen(c.createdAt)}
               </p>
             </div>
-            <span className="flex items-center gap-1.5 rounded-full bg-teal/15 px-3 py-1 text-[10px] font-black text-teal-light-ink">
+            <span className="flex items-center gap-1.5 rounded-full bg-teal/15 px-3 py-1 text-micro font-black text-teal-light-ink">
               <ShieldCheck className="h-3 w-3" /> فعالة
             </span>
-            <span className="flex items-center gap-1.5 text-[10px] text-white/50">
+            <span className="flex items-center gap-1.5 text-micro text-white/50">
               <Eye className="h-3 w-3" /> مشاهداتها مسجلة في سجل المستشار
             </span>
             <button

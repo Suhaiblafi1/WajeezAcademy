@@ -574,7 +574,7 @@ export default function PathwayPage() {
                             </span>
                             <span className="min-w-0">
                               <span className="block text-[12.5px] font-bold leading-snug">{c.name}</span>
-                              <span className="text-[10.5px] text-white/40">
+                              <span className="text-micro text-white/40">
                                 {c.weeks} {c.weeks === 1 ? "أسبوع" : "أسابيع"} · {courseTrainer(c).name}
                               </span>
                             </span>
@@ -608,7 +608,7 @@ export default function PathwayPage() {
                   {picked.length > 0 && (
                     /* التنبيه بلا مقارنةٍ رقمية: المقارنة القديمة كانت بين رقمين
                        مُختلَقين، فكانت تنصح بناءً على ما لا يُدفع. */
-                    <p className="mt-2 rounded-xl border border-gold/35 bg-gold/[0.08] px-3.5 py-2 text-[10.5px] font-semibold leading-5 text-gold-ink">
+                    <p className="mt-2 rounded-xl border border-gold/35 bg-gold/[0.08] px-3.5 py-2 text-micro font-semibold leading-5 text-gold-ink">
                       المسار كاملا أوفر — خصمُه {offer.bundleMaxPct}٪، ويشمل التشخيص والمتابعة.
                     </p>
                   )}
@@ -637,7 +637,7 @@ export default function PathwayPage() {
                 </div>
                 {/* المسار كاملا */}
                 <div className="relative flex flex-col rounded-2xl border border-gold/35 bg-gold/[0.04] p-4">
-                  <span className="absolute left-3 top-3.5 rounded-full bg-gold/20 px-2 py-0.5 text-[9.5px] font-black text-gold-ink">الأوفر</span>
+                  <span className="absolute left-3 top-3.5 rounded-full bg-gold/20 px-2 py-0.5 text-micro font-black text-gold-ink">الأوفر</span>
                   <p className="text-[13px] font-black">المسار كاملا</p>
                   <p className="mt-0.5 text-[11px] text-white/45">كل الدورات + التشخيص + المنظومة أدناه</p>
                   {/* السعرُ كاملا لا «تبدأ من» — والرقمُ المعروض بعد خصم الباقة
@@ -656,13 +656,13 @@ export default function PathwayPage() {
                             <span dir="ltr" className="text-base font-bold text-white/45 line-through decoration-white/45 decoration-2">
                               {formatCohortPrice(fullPrice)}
                             </span>
-                            <span className="rounded-full bg-teal/15 px-2 py-0.5 text-[10px] font-black text-teal-light-ink">
+                            <span className="rounded-full bg-teal/15 px-2 py-0.5 text-micro font-black text-teal-light-ink">
                               وفّرت {offer.bundleMaxPct}٪
                             </span>
                           </>
                         )}
                       </div>
-                      <p className="mt-1.5 text-[10.5px] leading-5 text-white/40">
+                      <p className="mt-1.5 text-micro leading-5 text-white/40">
                         {courseIds.length} دورات — وهو ما تُصدره الفاتورة، ويتغيّر إن غيّرت الدورات.
                       </p>
                       {/* خصمُ الفئة — نفس مطويّة صفحة شراء الدورة المفردة،
@@ -679,7 +679,7 @@ export default function PathwayPage() {
                         <ul className="mt-2 space-y-1.5 border-r-2 border-white/10 ps-3">
                           <li className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] leading-5">
                             <span className="font-bold text-white/75">خصم أول عملية شراء — {FIRST_TIME_PROMO.percentOff}٪</span>
-                            <code dir="ltr" className="rounded-md border border-gold/40 bg-gold/10 px-1.5 py-0.5 font-mono text-[10.5px] font-black text-gold-ink">
+                            <code dir="ltr" className="rounded-md border border-gold/40 bg-gold/10 px-1.5 py-0.5 font-mono text-micro font-black text-gold-ink">
                               {FIRST_TIME_PROMO.code}
                             </code>
                             <span className="text-white/40">· بلا إثبات</span>
@@ -691,7 +691,7 @@ export default function PathwayPage() {
                             </li>
                           ))}
                         </ul>
-                        <p className="mt-2 text-[10.5px] leading-5 text-white/45">
+                        <p className="mt-2 text-micro leading-5 text-white/45">
                           <a
                             href={`https://wa.me/${CONTACT.whatsapp}?text=${encodeURIComponent("أرغب بالتحقق من أهليتي لخصم فئة — وسأرفق ما يثبت ذلك.")}`}
                             target="_blank"
@@ -745,7 +745,7 @@ export default function PathwayPage() {
               {/* كان النصّ «طلبك يُراجَع، ثم تصلك فاتورتك» — وهو ما كان يقع فعلا
                   يوم كان الشراء طلبا. وقد صار الدفعُ مباشرا، فيصف النصُّ ما
                   يقع الآن: تُختار الشعبة، ويُدفع، ثمّ تُفتح المنصّة. */}
-              <p className="mt-3.5 text-center text-[10.5px] text-white/40">تدفع الآن، ثم تُفتح منصّتك على ما اشتريت</p>
+              <p className="mt-3.5 text-center text-micro text-white/40">تدفع الآن، ثم تُفتح منصّتك على ما اشتريت</p>
               {/* الدعوة إلى التشخيص سطر عند لحظة القرار، لا شريطا مؤطّرا في وسط
                   الصفحة. صفحة المسار الجاهز صفحة منتج معروضة للجميع، وكل صندوق
                   يعترضها يقرأ كأنه نتيجة شخصية لزائر لم يتشخّص أصلا. */}

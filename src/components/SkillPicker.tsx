@@ -41,7 +41,7 @@ const STATE_TONE: Record<SkillMeasureState, string> = {
 function StateBadge({ state }: { state: SkillMeasureState }) {
   const Icon = STATE_ICON[state];
   return (
-    <span className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold ${STATE_TONE[state]}`}>
+    <span className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-micro font-bold ${STATE_TONE[state]}`}>
       <Icon className="h-3 w-3" aria-hidden="true" />
       {STATE_LABEL_AR[state]}
     </span>
@@ -145,7 +145,7 @@ export default function SkillPicker({
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-xs font-bold">{r.nameAr}</span>
-                  <span className="block truncate text-[10px] text-white/50">{r.st.noteAr}</span>
+                  <span className="block truncate text-micro text-white/50">{r.st.noteAr}</span>
                 </span>
                 <StateBadge state={r.st.state} />
               </button>

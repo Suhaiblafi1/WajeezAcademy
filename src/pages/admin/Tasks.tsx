@@ -73,16 +73,16 @@ export default function AdminTasks() {
           <p className={`text-sm font-black ${t.status === "done" ? "text-white/45 line-through" : ""}`}>
             {t.title}
             {t.priority === "high" && t.status !== "done" && (
-              <span className="mr-2 rounded-full border border-red-400/40 px-2 py-0.5 text-[10px] font-bold text-red-300">عاجلة</span>
+              <span className="mr-2 rounded-full border border-red-400/40 px-2 py-0.5 text-micro font-bold text-red-300">عاجلة</span>
             )}
           </p>
           {t.bodyAr && <p className="mt-1 text-[11.5px] leading-6 text-white/60">{t.bodyAr}</p>}
-          <p className="mt-1 text-[10.5px] text-white/40">
+          <p className="mt-1 text-micro text-white/40">
             {showAssignee && t.assignee ? `${t.assignee.displayName} · ` : ""}
             {t.dueAt ? `الموعد ${fmtDate(new Date(t.dueAt))}` : "بلا موعد"}
             {t.status === "done" && t.doneAt ? ` · أُنجزت ${fmtDate(new Date(t.doneAt))}` : ""}
           </p>
-          {t.doneNoteAr && <p className="mt-1 text-[10.5px] text-teal-light-ink">{t.doneNoteAr}</p>}
+          {t.doneNoteAr && <p className="mt-1 text-micro text-teal-light-ink">{t.doneNoteAr}</p>}
         </div>
         {t.status !== "done" && (
           <button

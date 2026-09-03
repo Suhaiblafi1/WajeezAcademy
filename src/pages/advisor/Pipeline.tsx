@@ -69,13 +69,13 @@ export default function Pipeline({
             <section key={s.key} className="w-[240px] shrink-0 lg:w-auto">
               <header className="flex items-baseline justify-between gap-2 rounded-t-2xl border border-white/10 bg-white/[0.04] px-3 py-2.5">
                 <h2 className="truncate text-[11px] font-black">{s.label}</h2>
-                <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-black tabular-nums">
+                <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-micro font-black tabular-nums">
                   {items.length}
                 </span>
               </header>
               <div className="min-h-24 space-y-2 rounded-b-2xl border border-t-0 border-white/10 bg-white/[0.015] p-2">
                 {items.length === 0 ? (
-                  <p className="px-1.5 py-4 text-center text-[10px] leading-5 text-muted-foreground">{s.hint}</p>
+                  <p className="px-1.5 py-4 text-center text-micro leading-5 text-muted-foreground">{s.hint}</p>
                 ) : (
                   items.map((c) => {
                     const who = renderName(c.id)
@@ -89,9 +89,9 @@ export default function Pipeline({
                         }`}
                       >
                         <p className="truncate text-xs font-bold">{who.name}</p>
-                        {who.email && <p dir="ltr" className="mt-0.5 truncate text-right text-[10px] text-muted-foreground">{who.email}</p>}
-                        {c.nextAction && <p className="mt-2 line-clamp-2 text-[10.5px] leading-5 text-muted-foreground">{c.nextAction}</p>}
-                        <p className={`mt-2 flex items-center gap-1 text-[10px] ${late ? 'text-gold-ink' : 'text-muted-foreground'}`}>
+                        {who.email && <p dir="ltr" className="mt-0.5 truncate text-right text-micro text-muted-foreground">{who.email}</p>}
+                        {c.nextAction && <p className="mt-2 line-clamp-2 text-micro leading-5 text-muted-foreground">{c.nextAction}</p>}
+                        <p className={`mt-2 flex items-center gap-1 text-micro ${late ? 'text-gold-ink' : 'text-muted-foreground'}`}>
                           <CalendarClock className="h-3 w-3" />
                           {c.nextFollowUpAt ? sinceAr(c.nextFollowUpAt) : `آخر تحديث ${sinceAr(c.updatedAt)}`}
                         </p>

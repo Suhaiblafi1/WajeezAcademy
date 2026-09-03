@@ -124,7 +124,7 @@ export default function Billing() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="font-black">{o.items.map((i) => i.titleAr ?? i.title ?? "عنصر").join(" · ") || "طلب"}</p>
-                  <p className="mt-1 text-xs text-white/50">{fmtWhen(o.createdAt)} · <span dir="ltr" className="font-mono text-[10px]">{o.id.slice(0, 8)}…</span></p>
+                  <p className="mt-1 text-xs text-white/50">{fmtWhen(o.createdAt)} · <span dir="ltr" className="font-mono text-micro">{o.id.slice(0, 8)}…</span></p>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-lg font-black">{o.total} <span className="text-xs font-normal text-white/50">{o.currency}</span></span>
@@ -142,7 +142,7 @@ export default function Billing() {
                     {PAY_LABEL[provider.driver] ?? PAY_LABEL.test}
                   </button>
                   {provider.driver !== "test" && (
-                    <p className="mt-2 flex items-center gap-1.5 text-[10px] text-white/45">
+                    <p className="mt-2 flex items-center gap-1.5 text-micro text-white/45">
                       <ShieldCheck className="h-3 w-3 text-teal-ink" />
                       تُحوَّل لصفحة دفع مستضافة عند المزود — لا تمر بيانات بطاقتك بخوادمنا، ويُفتح وصولك فور تأكيد المزود.
                     </p>
@@ -175,7 +175,7 @@ export default function Billing() {
                           دفعة {p.amount} {o.invoice!.currency} — {p.status === "succeeded" ? "ناجحة" : p.status === "pending" ? "بانتظار تأكيد المزود" : p.status}
                           {p.method && <span className="text-white/40">({p.method})</span>}
                           {p.refunds.map((r) => (
-                            <span key={r.id} className="flex items-center gap-1 rounded-full border border-gold/30 px-2 py-0.5 text-[10px] text-gold-ink">
+                            <span key={r.id} className="flex items-center gap-1 rounded-full border border-gold/30 px-2 py-0.5 text-micro text-gold-ink">
                               <RotateCcw className="h-2.5 w-2.5" /> استرداد {r.amount} — {r.status}
                             </span>
                           ))}

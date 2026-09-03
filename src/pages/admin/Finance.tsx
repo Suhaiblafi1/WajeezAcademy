@@ -262,8 +262,10 @@ export default function Finance() {
                 <div className="flex items-center gap-3">
                   <span className="rounded-full border border-teal/40 px-3 py-1 text-[11px] font-bold text-teal-light-ink">{ER_STATUS[r.status] ?? r.status}</span>
                   {r.status === "pending" && (
-                    <input type="checkbox" checked={sel.has(r.id)} onChange={() => toggleSel(r.id)}
-                      aria-label={`حدّد طلب ${r.user.displayName}`} className="h-4 w-4 cursor-pointer accent-gold" />
+                    <label className="grid h-8 w-8 shrink-0 cursor-pointer place-items-center">
+                      <input type="checkbox" checked={sel.has(r.id)} onChange={() => toggleSel(r.id)}
+                        aria-label={`حدّد طلب ${r.user.displayName}`} className="h-4 w-4 cursor-pointer accent-gold" />
+                    </label>
                   )}
                 </div>
               </div>
@@ -303,7 +305,7 @@ export default function Finance() {
             <div key={inv.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="font-black">{inv.total} {inv.currency} <span className="mr-2 font-mono text-[10px] font-normal text-white/40" dir="ltr">{inv.id.slice(0, 8)}…</span></p>
+                  <p className="font-black">{inv.total} {inv.currency} <span className="mr-2 font-mono text-micro font-normal text-white/40" dir="ltr">{inv.id.slice(0, 8)}…</span></p>
                   <p className="mt-1 text-xs text-white/55">{inv.order.user.displayName} · {fmtDate(new Date(inv.issuedAt))}</p>
                 </div>
                 <span className="rounded-full border border-teal/40 px-3 py-1 text-[11px] font-bold text-teal-light-ink">{INV_STATUS[inv.status] ?? inv.status}</span>
@@ -330,7 +332,7 @@ export default function Finance() {
                     placeholder="سبب موثق (5+ أحرف)" className={`${inputCls} flex-1`} />
                   <button disabled={busy || (refundForm[p.id]?.reason ?? "").length < 5 || !Number(refundForm[p.id]?.amount)}
                     onClick={() => act(() => apiPost(`/api/admin/payments/${p.id}/refund`, { amount: Number(refundForm[p.id].amount), reason: refundForm[p.id].reason }), "قُدم طلب الاسترداد")}
-                    className="flex cursor-pointer items-center gap-1 rounded-full border border-gold/40 px-3 py-1 text-[10px] font-bold text-gold-ink disabled:opacity-40">
+                    className="flex cursor-pointer items-center gap-1 rounded-full border border-gold/40 px-3 py-1 text-micro font-bold text-gold-ink disabled:opacity-40">
                     <RotateCcw className="h-3 w-3" /> طلب استرداد
                   </button>
                   </>)}
@@ -403,7 +405,7 @@ export default function Finance() {
                   <span className="font-mono font-bold text-gold-ink" dir="ltr">{c.code}</span>
                   <span className="text-white/60">{c.percentOff ? `${c.percentOff}%` : `${c.amountOff} ${c.currency}`}</span>
                   <span className="text-white/40">{c.usedCount ?? 0}/{c.maxUses ?? "∞"}</span>
-                  {!c.active && <span className="rounded-full border border-red-500/40 px-2 py-0.5 text-[10px] text-red-400">معطل</span>}
+                  {!c.active && <span className="rounded-full border border-red-500/40 px-2 py-0.5 text-micro text-red-400">معطل</span>}
                 </li>
               ))}
             </ul>
@@ -430,7 +432,7 @@ export default function Finance() {
               className="mt-3 cursor-pointer rounded-full bg-gold px-5 py-2 text-xs font-black text-on-gold disabled:opacity-40">
               أنشئ الخطة
             </button>
-            <p className="mt-3 flex items-center gap-1.5 text-[10px] text-white/40">
+            <p className="mt-3 flex items-center gap-1.5 text-micro text-white/40">
               <FileText className="h-3 w-3" /> الخطط الفعالة تظهر للعامة عبر /api/public/subscription-plans
             </p>
           </div>

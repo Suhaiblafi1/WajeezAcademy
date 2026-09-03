@@ -142,7 +142,7 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
         </div>
 
         {picked && (
-          <p className="mt-2 text-[10.5px] leading-5 text-white/50">
+          <p className="mt-2 text-micro leading-5 text-white/50">
             {picked.qualification === "qualified"
               ? "مؤهَّل لهذه الدورة — الإسناد يقع الآن، ويُفحص تعارضُ جدوله قبل وقوعه."
               : picked.qualification === "pending"
@@ -153,7 +153,7 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
           </p>
         )}
         {trainers.length === 0 && (
-          <p className="mt-2 text-[10px] text-white/40">لا مدرّبين نشطين بعد — تُعتمد الطلبات من «طلبات المدربين».</p>
+          <p className="mt-2 text-micro text-white/40">لا مدرّبين نشطين بعد — تُعتمد الطلبات من «طلبات المدربين».</p>
         )}
       </MiniCard>
 
@@ -264,7 +264,7 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
           </div>
           <div className="mt-2 flex items-center gap-2">
             <button type="button" onClick={() => setItems([...items, { prompt: "", kind: "text", maxScore: "" }])}
-              className="flex cursor-pointer items-center gap-1 rounded-full border border-white/15 px-3 py-1 text-[10px] font-bold text-white/55 hover:border-white/40">
+              className="flex cursor-pointer items-center gap-1 rounded-full border border-white/15 px-3 py-1 text-micro font-bold text-white/55 hover:border-white/40">
               <Plus className="h-3 w-3" /> بند
             </button>
             <button disabled={busy || assessForm.title.length < 3}
@@ -316,7 +316,7 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
 
       {/* تسجيلات الجلسات وأرشفة المحتوى */}
       <MiniCard icon={BookOpen} title="تسجيلات الجلسات وأرشفة المحتوى — ملفات خاصة موقعة">
-        <p className="mb-2 text-[10px] font-bold text-white/45">تسجيل تسجيل جلسة (يرتبط بالجلسة ووحدة اختيارية):</p>
+        <p className="mb-2 text-micro font-bold text-white/45">تسجيل تسجيل جلسة (يرتبط بالجلسة ووحدة اختيارية):</p>
         <div className="grid gap-2 sm:grid-cols-3">
           <input value={recForm.sessionId} onChange={(e) => setRecForm({ ...recForm, sessionId: e.target.value })}
             placeholder="معرف الجلسة (UUID)" dir="ltr" className={`${inputCls} font-mono`} />
@@ -340,7 +340,7 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
           سجّل التسجيل
         </button>
 
-        <p className="mt-4 mb-2 border-t border-white/8 pt-3 text-[10px] font-bold text-white/45">أرشفة أو تعطيل مادة/تسجيل (لا حذف — أثر قانوني يبقى):</p>
+        <p className="mt-4 mb-2 border-t border-white/8 pt-3 text-micro font-bold text-white/45">أرشفة أو تعطيل مادة/تسجيل (لا حذف — أثر قانوني يبقى):</p>
         <div className="flex flex-wrap gap-2">
           <select value={contentForm.kind} onChange={(e) => setContentForm({ ...contentForm, kind: e.target.value })} className={selectCls}>
             <option value="material">مادة</option>
@@ -401,10 +401,13 @@ export function LearningSettings({ courses, cohorts, onDone }: {
         <input value={rubricTitle} aria-label="عنوان الروبرك" onChange={(e) => setRubricTitle(e.target.value)} placeholder="عنوان الروبرك" className={`${inputCls} mt-3`} />
         <div className="mt-2 space-y-2">
           {criteria.map((c, i) => (
-            <div key={i} className="flex items-center gap-2">
+            /* ثلاثةُ عناصرَ في صفٍّ واحد تنضغط على الهاتف: القياسُ على ٣٩٠
+               بكسلا وجد حقلَ العنوان بستّةٍ وعشرين بكسلَ عرضٍ — لا يُكتب
+               فيه شيء. فيلتفّ الصفُّ الآن، والعنوانُ يأخذ سطرَه وحدَه. */
+            <div key={i} className="flex flex-wrap items-center gap-2">
               <input value={c.title} aria-label={`عنوانُ المعيار ${i + 1}`}
                 onChange={(e) => setCriteria(criteria.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)))}
-                placeholder={`المعيار ${i + 1}`} className={`${inputCls} flex-1`} />
+                placeholder={`المعيار ${i + 1}`} className={`${inputCls} min-w-0 basis-full sm:flex-1 sm:basis-auto`} />
               {/* الدرجةُ العليا كانت حقلا بلا اسمٍ ولا نصٍّ نائب: قارئُ الشاشة
                   يقول «حقلٌ رقميّ» ولا يقول ماذا يُكتب فيه — كشفه فحصُ
                   الإتاحة بعد توسيعه إلى شاشات الفريق. */}
@@ -413,7 +416,9 @@ export function LearningSettings({ courses, cohorts, onDone }: {
                 onChange={(e) => setCriteria(criteria.map((x, j) => (j === i ? { ...x, maxScore: e.target.value } : x)))}
                 className={`${inputCls} w-20`} />
               {criteria.length > 1 && (
-                <button type="button" onClick={() => setCriteria(criteria.filter((_, j) => j !== i))} className="cursor-pointer text-white/40 hover:text-red-300">
+                <button type="button" onClick={() => setCriteria(criteria.filter((_, j) => j !== i))}
+                  aria-label={`احذف المعيار ${i + 1}`}
+                  className="grid h-9 w-9 shrink-0 cursor-pointer place-items-center rounded-lg text-white/40 hover:bg-red-400/10 hover:text-red-300">
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
               )}
@@ -422,7 +427,7 @@ export function LearningSettings({ courses, cohorts, onDone }: {
         </div>
         <div className="mt-3 flex items-center gap-2">
           <button type="button" onClick={() => setCriteria([...criteria, { title: "", maxScore: "10" }])}
-            className="flex cursor-pointer items-center gap-1 rounded-full border border-white/15 px-3 py-1 text-[10px] font-bold text-white/55 hover:border-white/40">
+            className="flex cursor-pointer items-center gap-1 rounded-full border border-white/15 px-3 py-1 text-micro font-bold text-white/55 hover:border-white/40">
             <Plus className="h-3 w-3" /> معيار
           </button>
           <button disabled={busy || rubricTitle.length < 3 || criteria.some((c) => c.title.trim().length < 2)}
@@ -522,18 +527,18 @@ function CertificateCandidates({ cohortId, busy, act }: {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="min-w-0">
               <span className="block text-[12px] font-bold text-white/85">{r.learnerName}</span>
-              <span dir="ltr" className="block text-left text-[10px] text-white/40">{r.email}</span>
+              <span dir="ltr" className="block text-left text-micro text-white/40">{r.email}</span>
             </span>
             <span className="flex shrink-0 items-center gap-2">
-              <span className="text-[10.5px] tabular-nums text-white/45">{r.percent}٪</span>
+              <span className="text-micro tabular-nums text-white/45">{r.percent}٪</span>
               {r.certificate ? (
                 <>
-                  <span dir="ltr" className="rounded-full border border-teal/35 px-2 py-0.5 font-mono text-[10px] text-teal-light-ink">
+                  <span dir="ltr" className="rounded-full border border-teal/35 px-2 py-0.5 font-mono text-micro text-teal-light-ink">
                     {r.certificate.number}
                   </span>
                   <button
                     onClick={() => { setRevoking(revoking === r.certificate!.id ? null : r.certificate!.id); setReason(""); }}
-                    className="cursor-pointer rounded-full border border-red-400/30 px-2.5 py-0.5 text-[10.5px] font-bold text-red-300 hover:bg-red-400/10"
+                    className="cursor-pointer rounded-full border border-red-400/30 px-2.5 py-0.5 text-micro font-bold text-red-300 hover:bg-red-400/10"
                   >
                     ألغِها
                   </button>
@@ -545,12 +550,12 @@ function CertificateCandidates({ cohortId, busy, act }: {
                     () => apiPost(`/api/admin/enrollments/${r.enrollmentId}/certificate`).then(load),
                     `أُصدرت شهادة «${r.learnerName}»`,
                   )}
-                  className="flex cursor-pointer items-center gap-1 rounded-full border border-gold/40 px-3 py-0.5 text-[10.5px] font-black text-gold-ink hover:bg-gold/10 disabled:opacity-40"
+                  className="flex cursor-pointer items-center gap-1 rounded-full border border-gold/40 px-3 py-0.5 text-micro font-black text-gold-ink hover:bg-gold/10 disabled:opacity-40"
                 >
                   <BadgeCheck className="h-3 w-3" /> أصدِر
                 </button>
               ) : (
-                <span className="rounded-full border border-white/12 px-2.5 py-0.5 text-[10.5px] font-bold text-white/40">
+                <span className="rounded-full border border-white/12 px-2.5 py-0.5 text-micro font-bold text-white/40">
                   لم يُنهِ بعد
                 </span>
               )}
@@ -561,7 +566,7 @@ function CertificateCandidates({ cohortId, busy, act }: {
           {!r.eligible && !r.certificate && r.failures.length > 0 && (
             <ul className="mt-1.5 space-y-0.5">
               {r.failures.map((f, i) => (
-                <li key={i} className="text-[10px] leading-4 text-white/40">— {f}</li>
+                <li key={i} className="text-micro leading-4 text-white/40">— {f}</li>
               ))}
             </ul>
           )}

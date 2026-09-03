@@ -176,7 +176,7 @@ export default function Advisors() {
                           </div>
 
                           <div>
-                            <p className="mb-1.5 text-[10.5px] font-black text-white/40">الحالات المسندة ({detail.cases.length})</p>
+                            <p className="mb-1.5 text-micro font-black text-white/40">الحالات المسندة ({detail.cases.length})</p>
                             {detail.cases.length === 0 ? (
                               <p className="text-[11px] text-white/40">لا حالات مسندة له حاليا.</p>
                             ) : (
@@ -192,7 +192,7 @@ export default function Advisors() {
                           </div>
 
                           <div>
-                            <p className="mb-1.5 text-[10.5px] font-black text-white/40">طلباته ({detail.requests.length})</p>
+                            <p className="mb-1.5 text-micro font-black text-white/40">طلباته ({detail.requests.length})</p>
                             {detail.requests.length === 0 ? (
                               <p className="text-[11px] text-white/40">لم يرفع أي طلب خصم أو تعديل خطّة بعد.</p>
                             ) : (

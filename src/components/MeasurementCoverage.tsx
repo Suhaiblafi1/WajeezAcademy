@@ -85,7 +85,7 @@ export default function MeasurementCoverage({ className = "" }: { className?: st
               <tr key={p.pathwayId} className="border-t border-white/8">
                 <td className="py-2.5 align-top">
                   <span className="font-bold text-white/85">{p.titleAr}</span>
-                  <span dir="ltr" className="ms-2 font-mono text-[10px] text-white/55">{p.pathwayId}</span>
+                  <span dir="ltr" className="ms-2 font-mono text-micro text-white/55">{p.pathwayId}</span>
                 </td>
                 <td className="py-2.5 align-top"><Bar value={p.coverage} /></td>
                 <td className="py-2.5 align-top" dir="ltr">

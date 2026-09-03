@@ -141,7 +141,7 @@ export default function ComposedPlanCard({ plan, courseList = true }: { plan: Co
                 <h3 className="flex flex-wrap items-center gap-2 text-sm font-black leading-snug md:text-[15px]">
                   {c.title_ar}
                   {c.role && (
-                    <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-black ${ROLE_AR[c.role].cls}`}>
+                    <span className={`rounded-md px-1.5 py-0.5 text-micro font-black ${ROLE_AR[c.role].cls}`}>
                       {ROLE_AR[c.role].label}
                     </span>
                   )}
@@ -197,7 +197,7 @@ export default function ComposedPlanCard({ plan, courseList = true }: { plan: Co
                 <span className="font-bold text-white/80">{d.title_ar}</span>
                 <span className="text-white/35" dir="ltr">{d.hours} ساعة</span>
                 {d.role && (
-                  <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-black ${ROLE_AR[d.role].cls}`}>
+                  <span className={`rounded-md px-1.5 py-0.5 text-micro font-black ${ROLE_AR[d.role].cls}`}>
                     {ROLE_AR[d.role].label}
                   </span>
                 )}

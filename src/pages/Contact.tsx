@@ -206,7 +206,7 @@ export default function Contact() {
                         <p className="mt-2 text-[11px] font-black leading-snug">
                           <span className="text-gold-ink">{i + 1}. </span>{s.t}
                         </p>
-                        <p className="mt-1 text-[10px] leading-4 text-white/50">{s.d}</p>
+                        <p className="mt-1 text-micro leading-4 text-white/50">{s.d}</p>
                       </li>
                     ))}
                   </ol>

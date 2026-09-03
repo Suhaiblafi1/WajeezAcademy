@@ -56,7 +56,7 @@ function RubricInput({ scores, onChange }: { scores: Record<string, number>; onC
             {[1, 2, 3, 4, 5].map((v) => (
               <button key={v} type="button" onClick={() => onChange({ ...scores, [x.key]: v })}
                 aria-pressed={scores[x.key] === v}
-                className={`grid h-6 w-6 cursor-pointer place-items-center rounded-md border text-[10px] font-bold transition ${
+                className={`grid h-6 w-6 cursor-pointer place-items-center rounded-md border text-micro font-bold transition ${
                   scores[x.key] === v ? "border-gold bg-gold text-on-gold" : "border-white/15 text-white/50 hover:border-white/40"
                 }`}>
                 {v}
@@ -119,7 +119,7 @@ export function TrainerDetailOps({ app, onAction }: {
                     <button key={o} onClick={() => void onAction(
                       () => apiPost(`/api/admin/trainer-interviews/${iv.id}/outcome`, { outcome: o }),
                       "سُجلت نتيجة المقابلة",
-                    )} className="cursor-pointer rounded-full border border-white/15 px-3 py-1 text-[10px] font-bold text-white/60 hover:border-teal/50 hover:text-teal-light-ink">
+                    )} className="cursor-pointer rounded-full border border-white/15 px-3 py-1 text-micro font-bold text-white/60 hover:border-teal/50 hover:text-teal-light-ink">
                       {label}
                     </button>
                   ))}
@@ -302,7 +302,7 @@ function BlastRadiusStrip({ r }: { r: TrainerChangeRequest }) {
       {entities.length > 0 && (
         <ul className="mt-2 flex flex-wrap gap-1.5">
           {entities.map((e) => (
-            <li key={e.id} className="rounded-full border border-white/12 bg-black/20 px-2.5 py-0.5 text-[10px] text-white/70">
+            <li key={e.id} className="rounded-full border border-white/12 bg-black/20 px-2.5 py-0.5 text-micro text-white/70">
               <span dir="ltr" className="font-mono">{e.id}</span>
               <span className="text-white/60"> · {e.roleAr}</span>
             </li>
@@ -310,7 +310,7 @@ function BlastRadiusStrip({ r }: { r: TrainerChangeRequest }) {
         </ul>
       )}
       {b.cohorts.total > b.cohorts.live && (
-        <p className="mt-1.5 text-[10px] text-white/50">
+        <p className="mt-1.5 text-micro text-white/50">
           ومن {b.cohorts.total} شعبة، {b.cohorts.total - b.cohorts.live} غير حيّة (مسودة أو منتهية) — لا يتأثر بها متعلم الآن.
         </p>
       )}
@@ -363,7 +363,7 @@ export function TrainerChangeRequests() {
                 <span className="mr-2 text-[11px] font-bold text-white/50">نطاق: {r.scope === "cohort" ? "شعبة" : "كتالوج"}</span>
               </p>
               <p className="mt-1 text-xs leading-6 text-white/60">{r.reason}</p>
-              <p className="mt-1 text-[10px] text-white/55">
+              <p className="mt-1 text-micro text-white/55">
                 {fmtDateTime(new Date(r.createdAt))} · {r.items?.length ?? 0} بند تعديل
               </p>
             </div>
@@ -496,7 +496,7 @@ function ImpactGate({
                   {q.reordered && <>ترتيب الأسئلة تغيّر</>}
                 </p>
               ))}
-              <p className="mt-2 text-[10px] text-white/55">
+              <p className="mt-2 text-micro text-white/55">
                 الفحص يقارن اللقطة المنشورة بالمنشور + كل ما اعتُمد ولم يُنشر — لا هذا الاقتراح وحده.
               </p>
             </div>
@@ -707,7 +707,7 @@ export function TrainerPayouts() {
               </p>
             );
           })()}
-          <p className="text-[10px] leading-5 text-white/40">
+          <p className="text-micro leading-5 text-white/40">
             قاعدة الشعبة المخصصة تغلب العامة عند الحساب. الحد الأدنى للمقاعد يعني: يُدفع للمدرب عن هذا العدد حتى لو سجّل أقل —
             مثال: معدل 40 وحد أدنى 5، سجّل 3 ← يُحتسب 5 × 40.
           </p>
@@ -763,7 +763,7 @@ export function TrainerPayouts() {
               ))}
             </div>
           )}
-          <p className="text-[10px] leading-5 text-white/40">
+          <p className="text-micro leading-5 text-white/40">
             اكتمال أي شعبة يولّد كشف مدربها تلقائياً إن كانت له قاعدة سارية — هذه الأدوات للتوليد اليدوي عند الحاجة،
             وكلها تمنع التكرار: شعبة واحدة لا تُولّد كشفين لنفس المدرب أبداً.
           </p>
@@ -820,7 +820,7 @@ export function TrainerPayouts() {
         return (
           <>
             {hiddenCount > 0 && (
-              <p className="text-[10px] text-white/40">
+              <p className="text-micro text-white/40">
                 {hiddenCount} {hiddenCount === 1 ? "كشف ملغى صفري مخفي" : "كشوف ملغاة صفرية مخفية"} — فعّل «إظهار الملغاة الصفرية» لعرضها.
               </p>
             )}
@@ -835,11 +835,11 @@ export function TrainerPayouts() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm font-black">
-                {p.profile.application?.fullName ?? "مدرب"} <span dir="ltr" className="font-mono text-[10px] text-white/40">{p.profile.application?.reference}</span>
+                {p.profile.application?.fullName ?? "مدرب"} <span dir="ltr" className="font-mono text-micro text-white/40">{p.profile.application?.reference}</span>
                 <span className="mr-2 text-[11px] font-bold text-white/50">فترة <span dir="ltr" className="font-mono">{p.period}</span></span>
               </p>
               <p className="mt-1 text-xl font-black">{fmt(p.total)} <span className="text-xs font-bold text-white/50">{p.currency}</span></p>
-              {p.paidAt && <p className="mt-0.5 text-[10px] text-white/40">صُرف {fmtDateTime(new Date(p.paidAt))}</p>}
+              {p.paidAt && <p className="mt-0.5 text-micro text-white/40">صُرف {fmtDateTime(new Date(p.paidAt))}</p>}
             </div>
             <span className={`rounded-full border px-3 py-1 text-[11px] font-bold ${PAYOUT_STATUS_CLS[p.status] ?? ""}`}>
               {PAYOUT_STATUS_AR[p.status] ?? p.status}
@@ -848,7 +848,7 @@ export function TrainerPayouts() {
           <ul className="mt-3 space-y-1 border-t border-white/8 pt-3">
             {p.items.map((i) => (
               <li key={i.id} className="flex items-center justify-between gap-3 text-xs text-white/60">
-                <span>{i.description}{i.sourceRef ? <span dir="ltr" className="mr-2 font-mono text-[10px] text-white/35">{i.sourceRef}</span> : null}</span>
+                <span>{i.description}{i.sourceRef ? <span dir="ltr" className="mr-2 font-mono text-micro text-white/35">{i.sourceRef}</span> : null}</span>
                 <span dir="ltr" className="font-mono font-bold text-white/80">{fmt(i.amount)}</span>
               </li>
             ))}

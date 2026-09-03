@@ -171,7 +171,7 @@ function RequestCard({
 
       {request || sent ? (
         <div className="mt-3 rounded-xl border border-white/10 bg-black/20 p-3">
-          <span className={`inline-block rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${meta?.cls ?? REQUEST_STATUS_AR.pending.cls}`}>
+          <span className={`inline-block rounded-full border px-2.5 py-0.5 text-micro font-bold ${meta?.cls ?? REQUEST_STATUS_AR.pending.cls}`}>
             {meta?.label ?? REQUEST_STATUS_AR.pending.label}
           </span>
           {request?.audienceAr && (

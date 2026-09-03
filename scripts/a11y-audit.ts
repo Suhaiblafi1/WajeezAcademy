@@ -21,7 +21,7 @@ import { chromium, type Page } from 'playwright'
 
 /** واقعة إتاحة واحدة — بصيغة واحدة كي تُقارن وتُعدّ. الشكل يقابل probe.browser.js */
 interface A11yFinding {
-  rule: 'name' | 'focus-visible' | 'focus-hidden' | 'tabindex-positive' | 'landmark' | 'reflow' | 'lang' | 'heading-order' | 'contrast'
+  rule: 'name' | 'focus-visible' | 'focus-hidden' | 'tabindex-positive' | 'landmark' | 'reflow' | 'lang' | 'heading-order' | 'contrast' | 'target-size'
   /** ما يمنعه هذا الخلل على المستخدم — لا رقم قاعدة */
   impactAr: string
   target: string
@@ -220,6 +220,28 @@ async function contrastBothThemes(page: Page, labelAr: string): Promise<A11yFind
   return out
 }
 
+/* ─────────── حجمُ الهدف على هاتف ───────────
+
+   الفحصُ كلُّه يعمل على منفذٍ عرضُه ١٢٨٠ — وأهدافُ اللمس تنكسر حيث لا
+   يُفحَص: على الهاتف. فالشريطُ `flex` يضغط علامةَ المنصّة إلى بكسلَين،
+   والحبّةُ التي تسع نصَّها على الحاسوب تلتفّ فيرقّ صفُّها.
+
+   فتُقاس مرّةً على ٣٩٠×٨٤٤ — عرضُ أضيقِ هاتفٍ شائع — بعد أن يستقرّ
+   التخطيط، ثمّ يُعاد المنفذُ كي لا يورَّث الضيقُ إلى قاعدةٍ تالية. */
+async function targetsOnPhone(page: Page): Promise<A11yFinding[]> {
+  interface Hit { target: string; text: string; w: number; h: number }
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.waitForTimeout(500)
+  const hits = await page.evaluate('window.__a11y.targets()') as Hit[]
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.waitForTimeout(200)
+  return hits.map((h) => ({
+    rule: 'target-size' as const,
+    target: `[390px] ${h.target}`,
+    impactAr: `هدفُ لمسٍ ${h.w}×${h.h} والحدُّ ٢٤×٢٤ على هاتفٍ عرضُه ٣٩٠ — «${h.text}»`,
+  }))
+}
+
 const SELECTED = SET === 'public' ? PAGES.filter((p) => !p.as) : PAGES
 
 for (const spec of SELECTED) {
@@ -236,6 +258,7 @@ for (const spec of SELECTED) {
       ...(await focusWalk(page)),
       ...(await reflow(page, spec.labelAr)),
       ...(await contrastBothThemes(page, spec.labelAr)),
+      ...(await targetsOnPhone(page)),
     ]
     results[spec.labelAr] = findings
     const byRule = findings.reduce<Record<string, number>>((a, f) => ({ ...a, [f.rule]: (a[f.rule] ?? 0) + 1 }), {})

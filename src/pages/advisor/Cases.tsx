@@ -202,7 +202,7 @@ export default function AdvisorCases() {
                 <li key={c.id} className="rounded-xl bg-white/[0.04] p-2.5 text-xs leading-5 text-white/70">
                   <span className="font-bold text-white/85">{CHANNEL_LABELS[c.channel] ?? c.channel}</span>
                   {c.direction === "in" ? " (واردة)" : ""} — {c.summary}
-                  <span className="block text-[10px] text-white/50">{fmt(c.createdAt)}</span>
+                  <span className="block text-micro text-white/50">{fmt(c.createdAt)}</span>
                 </li>
               ))}
               {detail.contactEvents.length === 0 && <li className="text-xs text-white/50">لا تواصل مسجل بعد</li>}
@@ -222,7 +222,7 @@ export default function AdvisorCases() {
                   <span className="leading-5 text-white/70">
                     {CHANNEL_LABELS[f.channel] ?? f.channel} — {fmt(f.scheduledAt)}
                     {f.note ? ` — ${f.note}` : ""}
-                    {f.doneAt && <span className="block text-[10px] text-[#34A853]">أُنجزت: {f.outcome}</span>}
+                    {f.doneAt && <span className="block text-micro text-[#34A853]">أُنجزت: {f.outcome}</span>}
                   </span>
                   {!f.doneAt && (
                     <button onClick={() => setClosingFollowUp({ id: f.id, whenAr: fmt(f.scheduledAt) })}
@@ -248,7 +248,7 @@ export default function AdvisorCases() {
                 <li key={t.id} className="flex items-start justify-between gap-2 rounded-xl bg-white/[0.04] p-2.5 text-xs">
                   <span className={`leading-5 ${t.status === "done" ? "text-white/50 line-through" : "text-white/80"}`}>
                     {t.title}
-                    {t.dueAt && <span className="block text-[10px] text-white/50">تستحق: {fmt(t.dueAt)}</span>}
+                    {t.dueAt && <span className="block text-micro text-white/50">تستحق: {fmt(t.dueAt)}</span>}
                   </span>
                   {t.status !== "done" && (
                     <button onClick={() => void act(() => apiPost(`/api/advisor/tasks/${t.id}/complete`, {}), "أُنجزت المهمة")}
@@ -270,7 +270,7 @@ export default function AdvisorCases() {
               {detail.notes.map((n) => (
                 <li key={n.id} className="rounded-xl bg-white/[0.04] p-2.5 text-xs leading-5 text-white/70">
                   {n.body}
-                  <span className="block text-[10px] text-white/50">{fmt(n.createdAt)}</span>
+                  <span className="block text-micro text-white/50">{fmt(n.createdAt)}</span>
                 </li>
               ))}
               {detail.notes.length === 0 && <li className="text-xs text-white/50">لا ملاحظات بعد</li>}
@@ -321,7 +321,7 @@ export default function AdvisorCases() {
                 </div>
                 <div className="flex items-center gap-2">
                   {c.followUps[0] && (
-                    <span className="rounded-full border border-teal/40 px-3 py-1 text-[10px] font-bold text-teal-light-ink">
+                    <span className="rounded-full border border-teal/40 px-3 py-1 text-micro font-bold text-teal-light-ink">
                       متابعة {fmt(c.followUps[0].scheduledAt)}
                     </span>
                   )}

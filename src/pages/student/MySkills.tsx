@@ -53,7 +53,7 @@ function MeasuredRow({ s, showDelta }: { s: MeasuredSkill; showDelta: boolean })
         {/* شارة النمو (ح-٧): تُعرض لمن أُعيد قياسه فقط، ولا تُصطنع لغيره */}
         {s.growth && s.growth.delta !== null && s.growth.delta !== 0 && (
           <span
-            className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${
+            className={`rounded-full border px-2 py-0.5 text-micro font-bold ${
               s.growth.delta > 0 ? "border-teal/50 text-teal-light-ink" : "border-white/25 text-white/75"
             }`}
             title={s.growth.courseTitleAr ? `قياس بعديّ بعد «${s.growth.courseTitleAr}»` : "قياس بعديّ"}
@@ -62,7 +62,7 @@ function MeasuredRow({ s, showDelta }: { s: MeasuredSkill; showDelta: boolean })
           </span>
         )}
         {showDelta && s.toTarget > 0 && (
-          <span className="rounded-full border border-gold/40 px-2 py-0.5 text-[10px] font-bold text-gold-ink">
+          <span className="rounded-full border border-gold/40 px-2 py-0.5 text-micro font-bold text-gold-ink">
             يحتاج <span dir="ltr">+{s.toTarget}</span>
           </span>
         )}

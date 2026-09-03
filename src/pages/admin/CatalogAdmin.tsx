@@ -280,7 +280,7 @@ export default function CatalogAdmin() {
                     <Pill v={s.status} />
                   </div>
                   {s.measureNoteAr && (
-                    <p className={`mt-1 text-[10px] ${s.measureState === "measured" ? "text-teal-light-ink" : "text-white/50"}`}>
+                    <p className={`mt-1 text-micro ${s.measureState === "measured" ? "text-teal-light-ink" : "text-white/50"}`}>
                       {s.measureNoteAr}
                     </p>
                   )}

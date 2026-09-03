@@ -202,11 +202,11 @@ export default function StoriesPage() {
                   >
                     <p className="text-sm font-bold leading-relaxed">{m.skill}</p>
                     <p className="flex items-start gap-2 text-xs leading-6 text-white/55">
-                      <span className="mt-0.5 shrink-0 rounded-full bg-white/5 px-2 py-0.5 text-[10px] font-bold">قبل</span>
+                      <span className="mt-0.5 shrink-0 rounded-full bg-white/5 px-2 py-0.5 text-micro font-bold">قبل</span>
                       {m.before}
                     </p>
                     <p className="flex items-start gap-2 text-xs leading-6 text-white/90">
-                      <span className="mt-0.5 shrink-0 rounded-full bg-teal/15 px-2 py-0.5 text-[10px] font-bold text-teal-light-ink">بعد</span>
+                      <span className="mt-0.5 shrink-0 rounded-full bg-teal/15 px-2 py-0.5 text-micro font-bold text-teal-light-ink">بعد</span>
                       {m.after}
                     </p>
                   </div>

@@ -107,7 +107,7 @@ export default function PortalSearchPalette({ kind }: { kind: keyof typeof PALET
             aria-label={conf.placeholder}
             className="w-full bg-transparent text-sm text-white placeholder:text-white/30 focus:outline-none"
           />
-          <kbd className="rounded-md border border-white/15 px-2 py-0.5 text-[10px] text-white/40">Esc</kbd>
+          <kbd className="rounded-md border border-white/15 px-2 py-0.5 text-micro text-white/40">Esc</kbd>
         </div>
 
         <div className="max-h-[55vh] overflow-y-auto p-2">
@@ -125,7 +125,7 @@ export default function PortalSearchPalette({ kind }: { kind: keyof typeof PALET
             if (hits.length === 0) return null;
             return (
               <div key={g.key} className="mb-1">
-                <p className="flex items-center gap-2 px-3 pb-1 pt-2 text-[10px] font-black text-white/35">
+                <p className="flex items-center gap-2 px-3 pb-1 pt-2 text-micro font-black text-white/35">
                   <g.icon className="h-3 w-3" /> {g.label}
                 </p>
                 {hits.map((h) => {
@@ -142,9 +142,9 @@ export default function PortalSearchPalette({ kind }: { kind: keyof typeof PALET
                     >
                       <span className="min-w-0">
                         <span className="block truncate text-xs font-black text-white/90">{h.title}</span>
-                        <span className="block truncate text-[10px] text-white/40">{h.sub}</span>
+                        <span className="block truncate text-micro text-white/40">{h.sub}</span>
                       </span>
-                      <span className="shrink-0 text-[9px] font-bold text-teal-light-ink">Enter ↵</span>
+                      <span className="shrink-0 text-micro font-bold text-teal-light-ink">Enter ↵</span>
                     </button>
                   );
                 })}

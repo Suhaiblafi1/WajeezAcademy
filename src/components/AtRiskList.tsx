@@ -39,7 +39,7 @@ export default function AtRiskList({ learners, className = "" }: { learners: AtR
                   {l.reasons.map((r) => (
                     <li
                       key={r.kind}
-                      className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-[10px] leading-5 text-white/75"
+                      className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-micro leading-5 text-white/75"
                     >
                       {r.textAr}
                     </li>

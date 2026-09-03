@@ -125,12 +125,12 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
               )}
               {open.rows.some((r) => r.reason) && (
                 <details className="mt-2">
-                  <summary className="cursor-pointer text-[10.5px] text-gold">
+                  <summary className="cursor-pointer text-micro text-gold">
                     دوراتٌ لم تُفتح ({open.rows.filter((r) => r.reason).length}) — ولماذا
                   </summary>
                   <ul className="mt-1.5 space-y-1">
                     {open.rows.filter((r) => r.reason).map((r) => (
-                      <li key={r.courseId} className="text-[10.5px] leading-5 text-white/55">
+                      <li key={r.courseId} className="text-micro leading-5 text-white/55">
                         {r.titleAr} — {r.reason}
                       </li>
                     ))}
@@ -182,10 +182,10 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
               )}
               {align.rows.length > 0 && (
                 <details className="mt-2">
-                  <summary className="cursor-pointer text-[10.5px] text-white/50">التفصيل ({align.rows.length})</summary>
+                  <summary className="cursor-pointer text-micro text-white/50">التفصيل ({align.rows.length})</summary>
                   <ul className="mt-1.5 space-y-1">
                     {align.rows.slice(0, 40).map((r) => (
-                      <li key={r.cohortId} className="text-[10.5px] leading-5 text-white/55">
+                      <li key={r.cohortId} className="text-micro leading-5 text-white/55">
                         {r.title} — {r.blocked ? <span className="text-gold">{r.blocked}</span> : <>{r.from} ← <b>{r.to}</b></>}
                       </li>
                     ))}
@@ -233,7 +233,7 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
                   </p>
                   <ul className="mt-2 space-y-1">
                     {sync.changes.slice(0, 12).map((ch) => (
-                      <li key={ch.cohortId} className="text-[10.5px] leading-5 text-white/55">
+                      <li key={ch.cohortId} className="text-micro leading-5 text-white/55">
                         <b className="text-white/75">{ch.title}</b> — {STATUS_AR[ch.from] ?? ch.from} ← {STATUS_AR[ch.to] ?? ch.to} · {ch.reason}
                       </li>
                     ))}

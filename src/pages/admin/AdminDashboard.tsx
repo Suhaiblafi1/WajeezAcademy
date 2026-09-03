@@ -210,8 +210,9 @@ export default function AdminDashboard() {
         ].map((s, i) => (
           <span key={s.to} className="flex items-center gap-2">
             {i > 0 && <span aria-hidden="true" className="text-white/20">←</span>}
-            <Link to={s.to} className="flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1 font-bold transition hover:border-gold/60 hover:text-gold-ink">
-              <span className="grid h-4 w-4 place-items-center rounded-full bg-gold/15 text-[10px] text-gold-ink">{i + 1}</span>
+            {/* `py-1` كان يعطي سبعا وعشرين بكسلا — قِيس على هاتفٍ عرضُه ٣٩٠ */}
+            <Link to={s.to} className="flex min-h-9 items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 font-bold transition hover:border-gold/60 hover:text-gold-ink">
+              <span className="grid h-4 w-4 place-items-center rounded-full bg-gold/15 text-micro text-gold-ink">{i + 1}</span>
               {s.label}
             </Link>
           </span>

@@ -91,7 +91,7 @@ export default function NotificationBell({ audience }: { audience: BellAudience 
       >
         <Bell className="h-4 w-4" />
         {unread > 0 && (
-          <span className="absolute -top-1 -left-1 grid h-4 min-w-4 place-items-center rounded-full bg-gold px-1 text-[9px] font-black text-on-gold">
+          <span className="absolute -top-1 -left-1 grid h-4 min-w-4 place-items-center rounded-full bg-gold px-1 text-micro font-black text-on-gold">
             {unread > 9 ? "9+" : unread}
           </span>
         )}
@@ -103,7 +103,7 @@ export default function NotificationBell({ audience }: { audience: BellAudience 
             <p className="text-xs font-black">الإشعارات</p>
             {items && items.some((n) => n.status === "sent") && (
               <button onClick={() => void markAll()}
-                className="flex cursor-pointer items-center gap-1 text-[10px] font-bold text-teal-light-ink hover:text-white">
+                className="flex cursor-pointer items-center gap-1 text-micro font-bold text-teal-light-ink hover:text-white">
                 <CheckCheck className="h-3 w-3" /> تعليم الكل كمقروء
               </button>
             )}
@@ -124,7 +124,7 @@ export default function NotificationBell({ audience }: { audience: BellAudience 
                   {n.title}
                 </p>
                 <p className="mt-1 text-[11px] leading-5 text-white/55">{n.body}</p>
-                <p className="mt-1 text-[9px] text-white/55">
+                <p className="mt-1 text-micro text-white/55">
                   {fmtDateTime(new Date(n.sentAt ?? n.createdAt))}
                 </p>
               </button>

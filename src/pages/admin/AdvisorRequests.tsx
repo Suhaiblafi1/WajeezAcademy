@@ -158,7 +158,7 @@ export default function AdvisorRequests() {
                     <XCircle className="h-3.5 w-3.5" /> ارفض
                   </button>
                   {reason.trim().length < MIN_REASON && (
-                    <span className="text-[10.5px] text-white/35">الرفض يلزمه سببٌ لا يقلّ عن {MIN_REASON} حرفا</span>
+                    <span className="text-micro text-white/35">الرفض يلزمه سببٌ لا يقلّ عن {MIN_REASON} حرفا</span>
                   )}
                 </div>
               </li>

@@ -452,7 +452,7 @@ export default function StudentAccount() {
               {form.interests.map((i) => (
                 <span key={i} className="inline-flex items-center gap-1.5 rounded-full border border-teal/40 bg-teal/10 px-2.5 py-1 text-[11px] font-bold text-teal-light-ink">
                   {i}
-                  <button type="button" aria-label={`أزل ${i}`} onClick={() => set("interests", form.interests.filter((x) => x !== i))} className="cursor-pointer text-white/50 hover:text-white">
+                  <button type="button" aria-label={`أزل ${i}`} onClick={() => set("interests", form.interests.filter((x) => x !== i))} className="grid h-8 w-8 shrink-0 cursor-pointer place-items-center rounded-full text-white/50 hover:bg-white/10 hover:text-white">
                     <X className="h-3 w-3" />
                   </button>
                 </span>

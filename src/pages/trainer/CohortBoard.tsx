@@ -310,7 +310,7 @@ export default function CohortBoard() {
                                         </div>
                                         {s.zoom && (
                                           <a href={s.zoom.joinUrl} target="_blank" rel="noreferrer"
-                                            className="flex items-center gap-1.5 rounded-full bg-teal px-4 py-1.5 text-[11px] font-black text-on-teal transition hover:bg-teal-light">
+                                            className="flex min-h-9 items-center gap-1.5 rounded-full bg-teal px-4 py-1.5 text-[11px] font-black text-on-teal transition hover:bg-teal-light">
                                             <Video className="h-3 w-3" /> افتح الاجتماع
                                           </a>
                                         )}
@@ -319,7 +319,7 @@ export default function CohortBoard() {
                                         {s.status !== "done" && (
                                           <a
                                             href={`/api/calendar/cohort-sessions/${s.id}.ics`}
-                                            className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-bold text-white/60 transition hover:border-white/35 hover:text-white"
+                                            className="flex min-h-9 items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-bold text-white/60 transition hover:border-white/35 hover:text-white"
                                           >
                                             <CalendarPlus className="h-3 w-3" /> أضِفها لتقويمك
                                           </a>
@@ -327,7 +327,7 @@ export default function CohortBoard() {
                                         {/* الزرُّ يظهر حين يستطيع الخادمُ تخزينَ الملفّ — لا قبله.
                                             كان يفشل بعد الضغط، وهو أسوأُ من غيابه. */}
                                         {fileUploads && (
-                                          <label className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-bold text-white/60 transition hover:border-teal/50 hover:text-teal-light-ink">
+                                          <label className="flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-bold text-white/60 transition hover:border-teal/50 hover:text-teal-light-ink">
                                             <Upload className="h-3 w-3" /> ارفع التسجيل
                                             <input type="file" accept="video/*" className="hidden"
                                               onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadRecording(s.id, f); e.target.value = ""; }} />
@@ -336,7 +336,7 @@ export default function CohortBoard() {
                                         {s.status !== "done" && (
                                           <button type="button"
                                             onClick={() => { setRescheduleFor(rescheduleFor === s.id ? null : s.id); setRescheduleForm({ at: "", reason: "" }); }}
-                                            className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-bold text-white/60 transition hover:border-gold/50 hover:text-gold-ink">
+                                            className="flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-bold text-white/60 transition hover:border-gold/50 hover:text-gold-ink">
                                             <CalendarClock className="h-3 w-3" /> اقترح موعدا
                                           </button>
                                         )}
@@ -385,7 +385,7 @@ export default function CohortBoard() {
                                                 {ATTENDANCE_OPTIONS.map((opt) => (
                                                   <button key={opt.value} disabled={busy}
                                                     onClick={() => void markAttendance(s.id, e.id, opt.value)}
-                                                    className={`cursor-pointer rounded-full border px-2.5 py-1 text-[10px] font-bold transition disabled:opacity-40 ${
+                                                    className={`cursor-pointer rounded-full border px-2.5 py-1 text-micro font-bold transition disabled:opacity-40 ${
                                                       current === opt.value
                                                         ? "border-teal bg-teal/15 text-teal-light-ink"
                                                         : "border-white/12 text-white/50 hover:border-white/30 hover:text-white/70"
@@ -418,7 +418,7 @@ export default function CohortBoard() {
                                       <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
                                         <div className="h-full rounded-full bg-teal" style={{ width: `${e.courseProgress?.percent ?? 0}%` }} />
                                       </div>
-                                      <p className="w-10 text-left text-[10px] text-white/45">{e.courseProgress?.percent ?? 0}٪</p>
+                                      <p className="w-10 text-left text-micro text-white/45">{e.courseProgress?.percent ?? 0}٪</p>
                                     </div>
                                   ))}
                                 </div>
@@ -459,7 +459,7 @@ export default function CohortBoard() {
                                 />
                                 <button type="button" disabled={busy || (msgForm[c.id]?.body ?? "").trim().length < 2}
                                   onClick={() => sendMessage(c.id)}
-                                  className="flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-5 py-1.5 text-[11px] font-black text-on-teal transition hover:bg-teal-light disabled:cursor-not-allowed disabled:opacity-40">
+                                  className="flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full bg-teal px-5 py-1.5 text-[11px] font-black text-on-teal transition hover:bg-teal-light disabled:cursor-not-allowed disabled:opacity-40">
                                   <MessageSquarePlus className="h-3 w-3" /> أرسل
                                 </button>
                               </div>
@@ -476,7 +476,7 @@ export default function CohortBoard() {
                                     <ul className="mt-2.5 space-y-2">
                                       {msgLog[c.id].map((m) => (
                                         <li key={m.id} className="rounded-xl border border-white/8 bg-black/20 p-3">
-                                          <p className="text-[10.5px] text-white/45">
+                                          <p className="text-micro text-white/45">
                                             {m.audience === "cohort"
                                               ? `إلى الشعبة · ${m.recipients} متعلّما`
                                               : `إلى ${m.enrollment?.user.displayName ?? "متعلّم"}`}

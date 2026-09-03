@@ -123,7 +123,7 @@ export default function SystemHealth() {
                           <p className="flex items-center gap-2 text-xs font-black text-white">
                             <ItemIcon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> {item.titleAr}
                           </p>
-                          <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-black ${t.chip}`}>{t.labelAr}</span>
+                          <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-micro font-black ${t.chip}`}>{t.labelAr}</span>
                         </div>
                         <p className="mt-2 text-[13px] font-bold leading-6 text-white/85">{item.valueAr}</p>
                         <p className="mt-1.5 text-[11px] leading-5 text-white/55">{item.meaningAr}</p>

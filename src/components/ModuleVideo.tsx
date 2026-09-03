@@ -86,7 +86,7 @@ export default function ModuleVideo({
                   >
                     <PlayCircle className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
                     <span className="min-w-0 flex-1 truncate font-bold">{ch.titleAr}</span>
-                    <span dir="ltr" className="shrink-0 font-mono text-[10px] tabular-nums text-white/55">{ch.atAr}</span>
+                    <span dir="ltr" className="shrink-0 font-mono text-micro tabular-nums text-white/55">{ch.atAr}</span>
                   </button>
                   {check && (
                     <button

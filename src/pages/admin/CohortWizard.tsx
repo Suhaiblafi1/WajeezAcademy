@@ -262,7 +262,7 @@ export default function CohortWizard({
                     courseId === c.id ? "bg-teal/15" : "hover:bg-white/5"
                   }`}>
                   <span className="truncate text-xs font-bold text-white">{c.title}</span>
-                  <span dir="ltr" className="shrink-0 font-mono text-[10px] text-white/35">{c.id}</span>
+                  <span dir="ltr" className="shrink-0 font-mono text-micro text-white/35">{c.id}</span>
                 </button>
               ))}
             </div>
@@ -327,7 +327,7 @@ export default function CohortWizard({
               {preview.length === 0 && <li className="text-white/45">لا جلسة — راجع الأيّامَ وأوّلَ أسبوع.</li>}
             </ul>
             {preview.length > 40 && (
-              <p className="mt-2 text-[10px] text-white/35">…و{preview.length - 40} جلسةً أخرى</p>
+              <p className="mt-2 text-micro text-white/35">…و{preview.length - 40} جلسةً أخرى</p>
             )}
           </div>
         </div>
@@ -339,13 +339,13 @@ export default function CohortWizard({
           <label className="text-xs text-white/50">
             <span className="flex items-center gap-1.5"><Users className="h-3.5 w-3.5" aria-hidden="true" /> السعة</span>
             <input type="number" min={1} value={capacity} onChange={(e) => setCapacity(e.target.value)} className={inputCls} />
-            <span className="mt-1 block text-[10px] text-white/35">الفائضُ يتحوّل إلى قائمة انتظار آليّا.</span>
+            <span className="mt-1 block text-micro text-white/35">الفائضُ يتحوّل إلى قائمة انتظار آليّا.</span>
           </label>
           <label className="text-xs text-white/50">
             <span className="flex items-center gap-1.5"><Wallet className="h-3.5 w-3.5" aria-hidden="true" /> السعر ({currency})</span>
             <input type="number" min={0} value={price} onChange={(e) => setPrice(e.target.value)}
               placeholder={course?.listPrice != null ? String(course.listPrice) : undefined} className={inputCls} />
-            <span className="mt-1 block text-[10px] text-white/35">
+            <span className="mt-1 block text-micro text-white/35">
               يُورَث من سعر قائمة الدورة إن تُرك فارغا — والعملةُ عملةُ الدورة لا افتراضا.
             </span>
           </label>
@@ -379,7 +379,7 @@ export default function CohortWizard({
                       trainerId === t.profileId ? "border-teal bg-teal/10 text-white" : "border-white/12 text-white/70 hover:border-white/30"
                     }`}>
                     <span className="flex items-center gap-1.5"><UserCheck className="h-3.5 w-3.5" aria-hidden="true" /> {t.name}</span>
-                    {t.qualification !== "qualified" && <span className="text-[10px] text-white/45">غيرُ مؤهَّلٍ لهذه الدورة</span>}
+                    {t.qualification !== "qualified" && <span className="text-micro text-white/45">غيرُ مؤهَّلٍ لهذه الدورة</span>}
                   </button>
                 </li>
               ))}

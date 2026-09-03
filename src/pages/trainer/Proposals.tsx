@@ -401,7 +401,7 @@ export default function TrainerProposals() {
                 <ul className="space-y-1.5 text-xs leading-6 text-white/70">
                   {bp.versions[0].assessments.map((a, i) => (
                     <li key={i} className="flex gap-2">
-                      <span className="shrink-0 rounded-full border border-white/15 px-2 py-0.5 text-[10px] text-white/55">
+                      <span className="shrink-0 rounded-full border border-white/15 px-2 py-0.5 text-micro text-white/55">
                         {ASSESSMENT_KIND_LABELS[a.kind] ?? a.kind}
                       </span>
                       <span>{a.specAr ?? "—"}</span>
@@ -415,7 +415,7 @@ export default function TrainerProposals() {
                 <h3 className="mb-2 text-xs font-black text-teal-light-ink">المهارات المستهدفة</h3>
                 <div className="flex flex-wrap gap-1.5">
                   {bp.skillLinks.map((s) => (
-                    <span key={s.skillId} className="rounded-full border border-white/15 bg-white/[0.04] px-2.5 py-1 text-[10px] text-white/70">
+                    <span key={s.skillId} className="rounded-full border border-white/15 bg-white/[0.04] px-2.5 py-1 text-micro text-white/70">
                       <span dir="ltr">{s.skillId}</span> · مستوى {s.targetLevel}
                     </span>
                   ))}
@@ -440,7 +440,7 @@ export default function TrainerProposals() {
             <article key={r.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="font-black">{r.course.versions[0]?.titleAr ?? r.courseId} <span className="text-[10px] text-white/50" dir="ltr">{r.courseId}</span></p>
+                  <p className="font-black">{r.course.versions[0]?.titleAr ?? r.courseId} <span className="text-micro text-white/50" dir="ltr">{r.courseId}</span></p>
                   <p className="mt-1 text-xs text-white/55">{r.reason}</p>
                   <p className="mt-1 text-[11px] text-white/50">
                     {r.items.map((i) => CHANGE_TYPE_LABELS[i.changeType] ?? i.changeType).join(" · ")} — نطاق: {r.scope === "cohort" ? "شعبة" : "الكتالوج"}

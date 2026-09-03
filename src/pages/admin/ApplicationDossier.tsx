@@ -78,7 +78,7 @@ function Row({ icon: Icon, label, children }: { icon: typeof UserRound; label: s
     <div className="flex items-start gap-2.5">
       <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-white/30" />
       <div className="min-w-0">
-        <p className="text-[10.5px] font-bold text-white/40">{label}</p>
+        <p className="text-micro font-bold text-white/40">{label}</p>
         <div className="mt-0.5 text-xs leading-6 text-white/80">{children}</div>
       </div>
     </div>
@@ -107,9 +107,9 @@ export default function ApplicationDossier({ a }: { a: Dossier }) {
         <Row icon={Mail} label="البريد">
           <span dir="ltr" className="block text-right">{a.email}</span>
           {a.emailVerifiedAt ? (
-            <span className="text-[10.5px] text-teal-light-ink">متحقَّق ✓</span>
+            <span className="text-micro text-teal-light-ink">متحقَّق ✓</span>
           ) : (
-            <span className="text-[10.5px] text-gold-ink">غير متحقَّق</span>
+            <span className="text-micro text-gold-ink">غير متحقَّق</span>
           )}
         </Row>
         <Row icon={Phone} label="الجوال (واتساب)">
@@ -153,7 +153,7 @@ export default function ApplicationDossier({ a }: { a: Dossier }) {
           <Row icon={BookOpen} label="تخصّصاته">
             <span className="flex flex-wrap gap-1.5">
               {a.specialties!.map((s) => (
-                <span key={s.specialty} className="rounded-full border border-white/12 px-2 py-0.5 text-[10.5px]">{s.specialty}</span>
+                <span key={s.specialty} className="rounded-full border border-white/12 px-2 py-0.5 text-micro">{s.specialty}</span>
               ))}
             </span>
           </Row>
@@ -204,7 +204,7 @@ export default function ApplicationDossier({ a }: { a: Dossier }) {
           {has(av?.seasons) && (
             <span className="mt-1 flex flex-wrap gap-1.5">
               {av!.seasons!.map((s) => (
-                <span key={s} className="rounded-full border border-gold/30 bg-gold/[0.06] px-2 py-0.5 text-[10.5px] text-gold-ink">{seasonLabel(s)}</span>
+                <span key={s} className="rounded-full border border-gold/30 bg-gold/[0.06] px-2 py-0.5 text-micro text-gold-ink">{seasonLabel(s)}</span>
               ))}
             </span>
           )}

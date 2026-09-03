@@ -91,7 +91,7 @@ function RealEarningsView() {
                 </div>
                 <div className="text-left">
                   <p className="text-xl font-black">{fmt(p.total)} <span className="text-xs text-white/50">{p.currency}</span></p>
-                  <p className={`mt-1 inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${meta.cls}`}>
+                  <p className={`mt-1 inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-micro font-bold ${meta.cls}`}>
                     <meta.icon className="h-3 w-3" /> {meta.label}
                   </p>
                 </div>

@@ -289,7 +289,7 @@ export default function BuyPanel({
                     <div className="flex items-start justify-between gap-3">
                       <span className="min-w-0">
                         <span className={`block text-[13px] font-bold leading-snug ${out ? "text-white/45" : ""}`}>{line.name}</span>
-                        <span className="mt-0.5 flex items-center gap-1 text-[10.5px] text-white/45">
+                        <span className="mt-0.5 flex items-center gap-1 text-micro text-white/45">
                           <CalendarDays className="h-3 w-3" /> {startsLabel(picked)}
                           {!out && picked.seatsLeft !== null && picked.seatsLeft <= 5 && (
                             <span className="text-gold-ink"> · بقي {picked.seatsLeft}</span>
@@ -420,7 +420,7 @@ export default function BuyPanel({
                     onClick={() => setCurrency(c)}
                     aria-pressed={currency === c}
                     title={PRESENTMENT_CURRENCIES[c].labelAr}
-                    className={`cursor-pointer rounded-full border px-2.5 py-0.5 text-[10px] font-bold transition ${
+                    className={`cursor-pointer rounded-full border px-2.5 py-0.5 text-micro font-bold transition ${
                       currency === c
                         ? "border-gold/60 bg-gold/15 text-gold-ink"
                         : "border-white/12 text-white/45 hover:border-white/25 hover:text-white/70"

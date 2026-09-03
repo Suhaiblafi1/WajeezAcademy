@@ -386,7 +386,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
             </h2>
             {/* العدد والمدة والسقف في شارة واحدة: من يبني يحتاج أن يعرف أين هو
                 من الحد قبل أن يصطدم به، لا بعد أن يُرفض اختياره. */}
-            <span className={`rounded-full border px-2.5 py-0.5 text-[10.5px] font-bold ${
+            <span className={`rounded-full border px-2.5 py-0.5 text-micro font-bold ${
               pricing.atCap ? "border-gold/50 bg-gold/10 text-gold-ink" : "border-white/10 bg-white/[0.04] text-white/60"
             }`}>
               <span dir="ltr">{picked.length}</span> من <span dir="ltr">{MAX_BUILT_COURSES}</span> دورات
@@ -408,7 +408,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                       </span>
                       <span className="min-w-0">
                         <span className="block text-[12.5px] font-black leading-snug">{c.name}</span>
-                        <span className="mt-0.5 block text-[10.5px] text-white/45">
+                        <span className="mt-0.5 block text-micro text-white/45">
                           {weeksLabel(c.weeks)} · من مسار «{c.pathwayName}»
                         </span>
                       </span>
@@ -491,7 +491,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                         <span dir="ltr" className="text-base font-bold text-white/45 line-through decoration-white/45 decoration-2">
                           {money(pricing.separate)}
                         </span>
-                        <span className="rounded-full bg-teal/15 px-2 py-0.5 text-[10px] font-black text-teal-light-ink">
+                        <span className="rounded-full bg-teal/15 px-2 py-0.5 text-micro font-black text-teal-light-ink">
                           وفّرت {savedPct}٪
                         </span>
                       </>
@@ -544,10 +544,10 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                 </Button>
               </div>
               {promoApplied && (
-                <p className="mt-1.5 text-[10.5px] font-bold text-teal-light-ink">طُبِّق خصم {promoPct}٪ {FIRST_TIME_PROMO.labelAr}.</p>
+                <p className="mt-1.5 text-micro font-bold text-teal-light-ink">طُبِّق خصم {promoPct}٪ {FIRST_TIME_PROMO.labelAr}.</p>
               )}
               {promoError && (
-                <p className="mt-1.5 text-[10.5px] text-gold-ink">لم نتعرّف على هذا الكود. راجع كتابته، أو تحقّق من أهليتك لخصم فئة أدناه.</p>
+                <p className="mt-1.5 text-micro text-gold-ink">لم نتعرّف على هذا الكود. راجع كتابته، أو تحقّق من أهليتك لخصم فئة أدناه.</p>
               )}
               {/* الفئات من مصدر السياسة لا من نصٍّ مكتوب هنا: نسبةٌ تُذكر في
                   صفحة الشراء وتُخالف ما يُصدره الإداري كودا هي وعدٌ مكسور.
@@ -563,7 +563,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                 <ul className="mt-2 space-y-1.5 border-r-2 border-white/10 ps-3">
                   <li className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] leading-5">
                     <span className="font-bold text-white/75">خصم أول عملية شراء — {FIRST_TIME_PROMO.percentOff}٪</span>
-                    <code dir="ltr" className="rounded-md border border-gold/40 bg-gold/10 px-1.5 py-0.5 font-mono text-[10.5px] font-black text-gold-ink">
+                    <code dir="ltr" className="rounded-md border border-gold/40 bg-gold/10 px-1.5 py-0.5 font-mono text-micro font-black text-gold-ink">
                       {FIRST_TIME_PROMO.code}
                     </code>
                     <span className="text-white/40">· بلا إثبات</span>
@@ -585,7 +585,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                     وواتساب المستشارين هو القناة الرسميّة المعتمدة أصلا
                     (`CONTACT.whatsapp` في data/stories.ts)، فلا قناةَ جديدة
                     تُفتح هنا بل تُستعمل القائمة. */}
-                <p className="mt-2 text-[10.5px] leading-5 text-white/45">
+                <p className="mt-2 text-micro leading-5 text-white/45">
                   <a
                     href={`https://wa.me/${CONTACT.whatsapp}?text=${encodeURIComponent("أرغب بالتحقق من أهليتي لخصم فئة — وسأرفق ما يثبت ذلك.")}`}
                     target="_blank"

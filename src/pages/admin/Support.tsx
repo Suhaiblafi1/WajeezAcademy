@@ -117,7 +117,7 @@ export default function Support() {
               <ol className="mt-5 space-y-3">
                 {t.messages.map((m) => (
                   <li key={m.id} className={`rounded-2xl border p-3 text-xs leading-6 ${m.internal ? "border-gold/30 bg-gold/5" : "border-white/10 bg-black/20"}`}>
-                    <p className="mb-1 flex items-center gap-2 text-[10px] font-bold text-white/45">
+                    <p className="mb-1 flex items-center gap-2 text-micro font-bold text-white/45">
                       {fmtDateTime(new Date(m.createdAt))}
                       {m.internal && <span className="flex items-center gap-1 text-gold-ink"><EyeOff className="h-3 w-3" /> داخلية — لا يراها العميل</span>}
                     </p>
@@ -154,7 +154,7 @@ export default function Support() {
                   </button>
                 ))}
               </div>
-              <p className="mt-2 text-[10px] text-white/40">الخادم يرفض الانتقالات غير المشروعة برسالة مفهومة.</p>
+              <p className="mt-2 text-micro text-white/40">الخادم يرفض الانتقالات غير المشروعة برسالة مفهومة.</p>
             </article>
 
             <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
@@ -180,7 +180,7 @@ export default function Support() {
                   إسناد
                 </button>
               </div>
-              <p className="mt-2 text-[10px] text-white/40">الوكيلون بدور «support» من صفحة المستخدمين.</p>
+              <p className="mt-2 text-micro text-white/40">الوكيلون بدور «support» من صفحة المستخدمين.</p>
             </article>
 
             <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">

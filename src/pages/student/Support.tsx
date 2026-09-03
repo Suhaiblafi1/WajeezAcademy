@@ -163,7 +163,7 @@ export default function StudentSupport() {
                     {t.messages.map((m) => (
                       <li key={m.id} className="rounded-xl border border-white/8 bg-black/20 p-3 text-xs leading-6 text-white/75">
                         {m.body}
-                        <span className="mt-1 block text-[10px] text-white/35">{fmtWhen(m.createdAt)}</span>
+                        <span className="mt-1 block text-micro text-white/35">{fmtWhen(m.createdAt)}</span>
                       </li>
                     ))}
                   </ol>

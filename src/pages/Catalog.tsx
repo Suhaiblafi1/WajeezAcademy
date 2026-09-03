@@ -236,7 +236,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
             >
               <div className="flex items-center gap-2">
                 {bestsellerCourseIds.has(c.id) && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2.5 py-1 text-[10px] font-bold text-gold-ink">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2.5 py-1 text-micro font-bold text-gold-ink">
                     <Flame className="h-3 w-3" />
                     مختارة
                   </span>

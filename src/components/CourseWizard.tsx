@@ -140,7 +140,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
                 placeholder="متن الدرس (اختياري) — # عنوان · - قائمة · > اقتباس · **عريض** · [نص](رابط) · ```كود```"
                 className={`${inputCls} mt-2 w-full font-mono leading-7`}
               />
-              <p className="mt-1 text-[10px] leading-5 text-white/50">
+              <p className="mt-1 text-micro leading-5 text-white/50">
                 ما يُكتب هنا يظهر للمتعلم درسا داخل الدورة. يمرّ بنفس حاكمية النسخ والاعتماد والنشر — ولا يُعدَّل على إصدار منشور بأثر رجعي.
               </p>
               <textarea
@@ -150,7 +150,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
                 placeholder={"تمرين استرجاع (اختياري)\nس: نص السؤال\n- خيار\n+ الخيار الصحيح\nش: شرح الخطأ"}
                 className={`${inputCls} mt-2 w-full font-mono leading-7`}
               />
-              <p className="mt-1 text-[10px] leading-5 text-white/50">
+              <p className="mt-1 text-micro leading-5 text-white/50">
                 ثلاثة أسئلة كافية. علامة <span dir="ltr" className="font-mono">+</span> قبل الجواب الصحيح — واحد فقط لكل سؤال، والصيغة تُتحقَّق عند الحفظ.
                 ولربط سؤال بفصل فيديو أضف سطر <span dir="ltr" className="font-mono">ف: 2</span> داخله فيصير نقطة تفتيش بعد الفصل الثاني.
               </p>
@@ -162,7 +162,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
                 dir="ltr"
                 className={`${inputCls} mt-2 w-full font-mono leading-7`}
               />
-              <p className="mt-1 text-[10px] leading-5 text-white/50">
+              <p className="mt-1 text-micro leading-5 text-white/50">
                 السطر الأول رابط YouTube أو Vimeo عبر https — لا مضيف آخر. ثم سطر لكل فصل بصيغة «د:ث عنوان الفصل».
               </p>
               <textarea
@@ -172,7 +172,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
                 placeholder={"سيناريو قرار (اختياري)\nموقف: وصف الموقف المهني\n\nعقدة: البداية\nنص: ما أول ما تفعله؟\n> خيار: نص الخيار\n  أثر: ما ترتب عليه\n  إلى: عنوان العقدة التالية\n\nعقدة: عنوان العقدة التالية\nنص: النتيجة\nتأمل: سؤال التأمل"}
                 className={`${inputCls} mt-2 w-full font-mono leading-7`}
               />
-              <p className="mt-1 text-[10px] leading-5 text-white/50">
+              <p className="mt-1 text-micro leading-5 text-white/50">
                 كل عقدة غير نهائية تحتاج خيارين على الأقل، و«إلى:» لا تشير إلا إلى عقدة موجودة،
                 والعقدة النهائية (بلا خيارات) تحتاج «تأمل:». يُتحقَّق المسار كاملا عند الحفظ:
                 عقدة لا تُبلَغ أو مسار يدور بلا نهاية يُرفض.

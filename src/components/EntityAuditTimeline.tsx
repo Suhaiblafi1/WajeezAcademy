@@ -82,16 +82,16 @@ export default function EntityAuditTimeline({
                   <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
                     <span className="text-[11px] font-black text-white/85">{e.actionAr}</span>
                     <span className="text-[11px] text-white/50">— {e.actorAr}</span>
-                    <span className="text-[10px] tabular-nums text-white/35">{fmtDateTime(new Date(e.createdAt))}</span>
+                    <span className="text-micro tabular-nums text-white/35">{fmtDateTime(new Date(e.createdAt))}</span>
                   </div>
                   {e.reason && <p className="mt-1 text-[11px] leading-5 text-white/60">السبب: {e.reason}</p>}
                   {e.changed.length > 0 && (
-                    <p className="mt-1 text-[10px] text-white/40">تغيّر: {e.changed.join("، ")}</p>
+                    <p className="mt-1 text-micro text-white/40">تغيّر: {e.changed.join("، ")}</p>
                   )}
                 </li>
               ))}
               {data.total > data.events.length && (
-                <li className="text-[10px] text-white/35">
+                <li className="text-micro text-white/35">
                   وأقدمُ من ذلك {data.total - data.events.length} حدثا — تُقرأ كاملةً في «سجلّ الأثر».
                 </li>
               )}

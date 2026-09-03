@@ -31,132 +31,36 @@ import {
    يسأله كيف نصل إليه للاجتماع التعريفيّ، ثمّ يصله بريدُ تأكيدٍ بتفاصيل طلبه
    ورقمه، وفي البريد رابطٌ يوثّق عنوانه. */
 
-const DOMAIN_YEARS = [
-  { value: "1-3", label: "١–٣ سنوات" },
-  { value: "4-7", label: "٤–٧ سنوات" },
-  { value: "8-12", label: "٨–١٢ سنة" },
-  { value: "12+", label: "أكثر من ١٢ سنة" },
-];
+/* القوائمُ الثابتة (جهاتُ الاعتماد والدولُ ورموزُ الهاتف وصيغُ العدّ) في
+   ملفٍّ بجانب هذا — بياناتٌ لا واجهة، ومئةٌ وعشرون سطرا كانت تقف بين
+   قارئِ الصفحة وبين منطقِها. */
+import {
+  ACCREDITATION_BODIES,
+  ACCREDITATION_OTHER,
+  ALL_ARAB,
+  ARAB_COUNTRIES,
+  CHAR_FORMS,
+  COUNTRY_CODES,
+  COUNTRY_TIMEZONE,
+  DAYS,
+  DOC_KINDS,
+  DOMAIN_YEARS,
+  EMPLOYMENT_STATUS,
+  LANGUAGES,
+  MAX_DOC_BYTES,
+  MISSING_FORMS,
+  MOTIVATION_MAX,
+  MOTIVATION_MIN,
+  PERIODS,
+  STEPS,
+  TARGET_AUDIENCES,
+  TRAINING_YEARS,
+  type UploadState,
+} from "./join-trainer/options";
 
-const TRAINING_YEARS = [
-  { value: "none", label: "لم أدرّب بعد — لكني أتقن مجالي" },
-  { value: "informal", label: "تدريب غير رسمي (زملاء / فريقي)" },
-  { value: "workshops", label: "ورش ودورات قصيرة" },
-  { value: "formal_teaching", label: "تدريب منهجي معتاد (دورات/شعب)" },
-];
-
-const LANGUAGES = ["العربية", "الإنجليزية", "الفرنسية"];
-const COUNTRY_CODES = ["+962", "+966", "+971", "+20", "+965", "+974", "+968", "+973", "+964", "+218", "+249"];
-
-const ARAB_COUNTRIES = [
-  "الأردن", "السعودية", "الإمارات", "مصر", "الكويت", "قطر", "عُمان", "البحرين",
-  "العراق", "فلسطين", "لبنان", "سوريا", "ليبيا", "تونس", "الجزائر", "المغرب", "السودان", "اليمن", "موريتانيا",
-];
-const ALL_ARAB = "كل الدول العربية";
-
-/* المنطقة الزمنية تُشتق تلقائيا من دولة الإقامة — لا سؤال إضافي */
-const COUNTRY_TIMEZONE: Record<string, string> = {
-  "الأردن": "Asia/Amman", "السعودية": "Asia/Riyadh", "الإمارات": "Asia/Dubai", "مصر": "Africa/Cairo",
-  "الكويت": "Asia/Kuwait", "قطر": "Asia/Qatar", "عُمان": "Asia/Muscat", "البحرين": "Asia/Bahrain",
-  "العراق": "Asia/Baghdad", "فلسطين": "Asia/Hebron", "لبنان": "Asia/Beirut", "سوريا": "Asia/Damascus",
-  "ليبيا": "Africa/Tripoli", "تونس": "Africa/Tunis", "الجزائر": "Africa/Algiers", "المغرب": "Africa/Casablanca",
-  "السودان": "Africa/Khartoum", "اليمن": "Asia/Aden", "موريتانيا": "Africa/Nouakchott",
-};
-
-/* جهات الاعتماد الرسمية في الوطن العربي — قائمةٌ تُختار لا حقل نصٍّ حرّ.
-
-   «اسم الجهة» مكتوبا بالأيدي يصل المراجعَ بعشر صيغ للجهة الواحدة (ETEC،
-   «هيئة تقويم»، «تقويم التعليم والتدريب»)، فلا يُفرز ولا يُحصى ولا يُتحقّق
-   منه. والقائمة هنا وطنية حكومية — وهي ما يملكه المتقدّم العربي فعلا — و«أخرى»
-   تبقى مفتوحة لمن اعتمادُه دوليٌّ أو خاصّ فيكتبه كما هو. */
-const ACCREDITATION_BODIES: { country: string; bodies: string[] }[] = [
-  { country: "السعودية", bodies: [
-    "هيئة تقويم التعليم والتدريب (ETEC)",
-    "المؤسسة العامة للتدريب التقني والمهني (TVTC)",
-  ] },
-  { country: "الأردن", bodies: [
-    "هيئة تنمية وتطوير المهارات المهنية والتقنية (TVSDC)",
-    "هيئة الاعتماد وضمان الجودة للمؤسسات التعليمية",
-  ] },
-  { country: "الإمارات", bodies: [
-    "المركز الوطني للتأهيل المؤسسي والمهني (NQA)",
-    "هيئة المعرفة والتنمية البشرية — دبي (KHDA)",
-  ] },
-  { country: "مصر", bodies: [
-    "الهيئة القومية لضمان جودة التعليم والاعتماد",
-    "الأكاديمية المهنية للمعلمين",
-  ] },
-  { country: "قطر", bodies: ["وزارة التربية والتعليم والتعليم العالي — إدارة التدريب"] },
-  { country: "الكويت", bodies: ["الهيئة العامة للتعليم التطبيقي والتدريب"] },
-  { country: "عُمان", bodies: ["الهيئة العُمانية للاعتماد الأكاديمي وضمان جودة التعليم"] },
-  { country: "البحرين", bodies: ["هيئة جودة التعليم والتدريب (BQA)"] },
-  { country: "العراق", bodies: ["وزارة التعليم العالي والبحث العلمي — جهاز الإشراف والتقويم"] },
-  { country: "فلسطين", bodies: ["هيئة الاعتماد والجودة لمؤسسات التعليم العالي"] },
-  { country: "لبنان", bodies: ["المديرية العامة للتعليم المهني والتقني"] },
-  { country: "المغرب", bodies: ["مكتب التكوين المهني وإنعاش الشغل (OFPPT)"] },
-  { country: "تونس", bodies: ["الوكالة التونسية للتكوين المهني"] },
-  { country: "الجزائر", bodies: ["وزارة التكوين والتعليم المهنيين"] },
-  { country: "ليبيا", bodies: ["المركز الوطني لضمان جودة واعتماد المؤسسات التعليمية والتدريبية"] },
-  { country: "السودان", bodies: ["المجلس القومي للتدريب المهني والتلمذة"] },
-  { country: "اليمن", bodies: ["وزارة التعليم الفني والتدريب المهني"] },
-];
-const ACCREDITATION_OTHER = "أخرى — أكتبها بنفسي";
-
-const EMPLOYMENT_STATUS = [
-  { value: "employed", label: "موظف — أعمل لدى جهة" },
-  { value: "own_business", label: "لدي عملي الخاص" },
-  { value: "full_time_training", label: "متفرغ للتدريب" },
-];
-
-const TARGET_AUDIENCES = [
-  "طلاب المدارس والجامعات", "خريجون جدد", "موظفو القطاع الخاص", "موظفو القطاع الحكومي",
-  "رواد أعمال وأصحاب مشاريع", "قادة ومديرون", "مستقلون وأعمال حرة", "الباحثون عن عمل",
-];
-
-/* «بقي 2 أشياء» عربيةٌ مكسورة يقرؤها المتقدّم في أول احتكاك به */
-const MISSING_FORMS = { one: "بند", two: "بندان", few: "بنود", many: "بندا" } as const;
-const CHAR_FORMS = { one: "حرف", two: "حرفان", few: "أحرف", many: "حرفا" } as const;
-
-/* ثلاثة أقسام في نموذج واحد لا مرحلتان بينهما بريد.
-
-   كان الطلب يُقسم مرحلتين: مرحلة أولى تُرسَل، ثم رابطٌ يصل بالبريد يفتح مرحلة
-   ثانية. وكلفة ذلك أن كل متقدّم يعبر بابين لا بابا، وأن قناة البريد صارت
-   شرطا لإكمال الطلب — من لم تصله الرسالة توقف طلبه عند نصفه.
-   والقسمان الأخيران يحتاجان مرجع الطلب (لرفع الملفات)، فيُرسَل القسم
-   الأول في الخلفية عند الانتقال إلى الثاني — والمتقدّم يرى نموذجا واحدا. */
-/* حدّ الدافع: ٧٥ حرفا. كان ١٥٠ فصار سطرين يُكتبان لا فقرةً تُستدرّ — والعشرة
-   الأولى («أحب التدريب») هي ما أُغلق، لا الإيجاز. والسقف ٥٠٠ يمنع سيرةً ذاتية
-   ثانية في حقل نصّ. الرقمان هنا مطابقان لما يفرضه الخادم — والعدّاد يقرأ منهما. */
-export const MOTIVATION_MIN = 75;
-export const MOTIVATION_MAX = 500;
-
-/* سقفٌ واحدٌ معلومٌ يُوفى: ٤MB. وكان المكتوب ١٠ و٢٠ و٣٠٠، وكلّها أرقام في
-   النصّ لا في الواقع — الدالة السحابية لا تستقبل جسما أكبر من ٤٫٥MB، فالفيديو
-   يُردّ قبل أن يبلغ الخادم. والفيديو صار رابطا في حقله أعلاه لا ملفّا. */
-export const MAX_DOC_BYTES = 4 * 1024 * 1024;
-
-const DOC_KINDS = [
-  { kind: "cv", label: "السيرة الذاتية", hint: "PDF · حتى ٤MB", accept: "application/pdf", required: true },
-  { kind: "evidence", label: "ملف أعمال أو نماذج تدريب سابقة", hint: "PDF أو صورة · حتى ٤MB", accept: "application/pdf,image/*", required: false },
-  { kind: "certificate", label: "شهادات واعتمادات", hint: "PDF أو صورة · حتى ٤MB", accept: "application/pdf,image/*", required: false },
-] as const;
-
-const DAYS = ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"];
-const PERIODS = [
-  { value: "morning", label: "صباحي" },
-  { value: "evening", label: "مسائي" },
-] as const;
-
-interface UploadState { status: "idle" | "registering" | "uploading" | "done" | "error"; name?: string; error?: string }
-
-/* ثلاث خطوات: من هو (وكلمةُ حسابه)، وأدلتُه وتوفّره، وكيف نصل إليه.
-   الحسابُ انتقل من الخطوة الأخيرة إلى الأولى: كان اختياريا يُنشأ بعد كلّ
-   شيء فلا يُنشئه أحد، وصار مع البريد — فمن يكتب بريده يكتب كلمته. */
-const STEPS = [
-  { n: 1, title: "معلوماتك وخبرتك", hint: "من أنت وماذا تُتقن" },
-  { n: 2, title: "نماذجك وأدلتك", hint: "سيرتك ودوراتك وتوفّرك" },
-  { n: 3, title: "التواصل والإرسال", hint: "كيف نصل إليك للاجتماع التعريفي" },
-] as const;
+/* الحدّان يُعاد تصديرُهما من هنا: الاختبارُ يقرؤهما من هذا الملفّ حرسا
+   لتطابقهما مع الخادم، وموضعُ التعريف انتقل لا الضمان. */
+export { MAX_DOC_BYTES, MOTIVATION_MAX, MOTIVATION_MIN };
 
 /** قائمة منسدلة متعددة الاختيار — مربع صح بجانب كل خيار، والمختار يظهر وسمًا صغيرًا قابلا للإزالة */
 function MultiPick({ id, label, options, selected, onChange }: {
@@ -732,7 +636,7 @@ export default function JoinTrainer() {
                     </span>
                     <span className={`text-xs font-black ${state === "todo" ? "text-white/45" : "text-white"}`}>{s.title}</span>
                   </span>
-                  <span className="mt-1.5 block text-[10.5px] leading-relaxed text-muted-foreground">{s.hint}</span>
+                  <span className="mt-1.5 block text-micro leading-relaxed text-muted-foreground">{s.hint}</span>
                 </div>
               </li>
             );
@@ -815,7 +719,7 @@ export default function JoinTrainer() {
                           <button
                             type="button" onClick={() => setShowPassword((v) => !v)}
                             aria-label={showPassword ? "أخفِ كلمة المرور" : "أظهر كلمة المرور"}
-                            className="absolute left-3 top-1/2 -translate-y-1/2 cursor-pointer text-white/45 transition hover:text-white"
+                            className="absolute left-1 top-1/2 grid h-11 w-11 -translate-y-1/2 cursor-pointer place-items-center text-white/45 transition hover:text-white"
                           >
                             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </button>

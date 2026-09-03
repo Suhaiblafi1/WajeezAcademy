@@ -352,22 +352,22 @@ export default function Users() {
                   <p className="font-black">{u.displayName || "—"} <span className="mr-2 text-[11px] font-normal text-muted-foreground" dir="ltr">{u.email}</span></p>
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
                     {u.roles.map((r) => (
-                      <span key={r.id} className="rounded-full border border-teal/40 px-2.5 py-0.5 text-[10px] font-bold text-teal-light-ink">{r.nameAr}</span>
+                      <span key={r.id} className="rounded-full border border-teal/40 px-2.5 py-0.5 text-micro font-bold text-teal-light-ink">{r.nameAr}</span>
                     ))}
-                    <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${(STATUS_META[u.status] ?? STATUS_META.suspended).cls}`}>
+                    <span className={`rounded-full border px-2.5 py-0.5 text-micro font-bold ${(STATUS_META[u.status] ?? STATUS_META.suspended).cls}`}>
                       {(STATUS_META[u.status] ?? { label: u.status }).label}
                     </span>
                     {u.invite.state === "pending" && (
-                      <span className="rounded-full border border-teal/40 px-2.5 py-0.5 text-[10px] font-bold text-teal-light-ink">
+                      <span className="rounded-full border border-teal/40 px-2.5 py-0.5 text-micro font-bold text-teal-light-ink">
                         دعوةٌ سارية حتّى {fmtDateAr(u.invite.expiresAt)}
                       </span>
                     )}
                     {u.invite.state === "expired" && (
-                      <span className="rounded-full border border-gold/40 px-2.5 py-0.5 text-[10px] font-bold text-gold-ink">دعوةٌ انتهت</span>
+                      <span className="rounded-full border border-gold/40 px-2.5 py-0.5 text-micro font-bold text-gold-ink">دعوةٌ انتهت</span>
                     )}
                     {/* من له استثناءٌ يُعرف من القائمة قبل فتحه */}
-                    {u.grants > 0 && <span className="rounded-full border border-teal/40 px-2.5 py-0.5 text-[10px] font-bold text-teal-light-ink">+{u.grants} ممنوحة</span>}
-                    {u.denies > 0 && <span className="rounded-full border border-red-400/40 px-2.5 py-0.5 text-[10px] font-bold text-red-300">−{u.denies} ممنوعة</span>}
+                    {u.grants > 0 && <span className="rounded-full border border-teal/40 px-2.5 py-0.5 text-micro font-bold text-teal-light-ink">+{u.grants} ممنوحة</span>}
+                    {u.denies > 0 && <span className="rounded-full border border-red-400/40 px-2.5 py-0.5 text-micro font-bold text-red-300">−{u.denies} ممنوعة</span>}
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -498,11 +498,11 @@ export default function Users() {
                                 }`}>
                                   <div className="min-w-0">
                                     <p className={`text-xs font-bold ${p.effective ? "text-white/85" : "text-white/45 line-through"}`}>{p.description}</p>
-                                    <p className="text-[10px] text-white/35" dir="ltr">{p.key}</p>
-                                    {p.reason && <p className="mt-0.5 text-[10px] text-white/45">السبب: {p.reason}</p>}
+                                    <p className="text-micro text-white/35" dir="ltr">{p.key}</p>
+                                    {p.reason && <p className="mt-0.5 text-micro text-white/45">السبب: {p.reason}</p>}
                                   </div>
                                   <div className="flex shrink-0 items-center gap-1.5">
-                                    <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${
+                                    <span className={`rounded-full border px-2.5 py-0.5 text-micro font-bold ${
                                       p.effect === "deny" ? "border-red-400/45 text-red-300"
                                         : p.effect === "grant" ? "border-teal/45 text-teal-light-ink"
                                         : p.fromRole ? "border-white/15 text-white/55" : "border-white/10 text-white/30"
@@ -510,20 +510,20 @@ export default function Users() {
                                       {p.effect === "deny" ? "مُنعت عنه" : p.effect === "grant" ? "مُنحت له" : p.fromRole ? "من دوره" : "خارج دوره"}
                                     </span>
                                     {!p.delegatable ? (
-                                      <span className="max-w-[11rem] text-left text-[10px] leading-4 text-white/35">{p.refusal}</span>
+                                      <span className="max-w-[11rem] text-left text-micro leading-4 text-white/35">{p.refusal}</span>
                                     ) : p.effect ? (
                                       <button disabled={busy} onClick={() => void setPerm(u.id, p.key, "clear")}
-                                        className="cursor-pointer rounded-full border border-white/15 px-3 py-1 text-[10px] font-bold text-white/60 hover:border-white/35 disabled:opacity-40">
+                                        className="cursor-pointer rounded-full border border-white/15 px-3 py-1 text-micro font-bold text-white/60 hover:border-white/35 disabled:opacity-40">
                                         أزل الاستثناء
                                       </button>
                                     ) : p.fromRole ? (
                                       <button disabled={busy || permReason.trim().length < 5} onClick={() => void setPerm(u.id, p.key, "deny")}
-                                        className="flex cursor-pointer items-center gap-1 rounded-full border border-red-400/40 px-3 py-1 text-[10px] font-bold text-red-300 hover:bg-red-400/10 disabled:opacity-40">
+                                        className="flex cursor-pointer items-center gap-1 rounded-full border border-red-400/40 px-3 py-1 text-micro font-bold text-red-300 hover:bg-red-400/10 disabled:opacity-40">
                                         <Minus className="h-3 w-3" /> امنعها
                                       </button>
                                     ) : (
                                       <button disabled={busy || permReason.trim().length < 5} onClick={() => void setPerm(u.id, p.key, "grant")}
-                                        className="flex cursor-pointer items-center gap-1 rounded-full border border-teal/45 px-3 py-1 text-[10px] font-bold text-teal-light-ink hover:bg-teal/10 disabled:opacity-40">
+                                        className="flex cursor-pointer items-center gap-1 rounded-full border border-teal/45 px-3 py-1 text-micro font-bold text-teal-light-ink hover:bg-teal/10 disabled:opacity-40">
                                         <Plus className="h-3 w-3" /> امنحها
                                       </button>
                                     )}

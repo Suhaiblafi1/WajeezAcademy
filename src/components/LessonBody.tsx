@@ -105,7 +105,7 @@ export default function LessonBody({ body, className = "" }: { body: string; cla
               <ol key={k} className="space-y-1.5 ps-1">
                 {b.items.map((it, j) => (
                   <li key={j} className="flex items-start gap-2.5">
-                    <span className="mt-1 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-teal-ink/15 text-[10px] font-black tabular-nums text-teal-light-ink">
+                    <span className="mt-1 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-teal-ink/15 text-micro font-black tabular-nums text-teal-light-ink">
                       {j + 1}
                     </span>
                     <span className="min-w-0">{inline(it, `${k}-${j}`)}</span>

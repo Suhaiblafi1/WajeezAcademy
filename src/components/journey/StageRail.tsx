@@ -72,16 +72,16 @@ export default function StageRail({
         <dl className="flex gap-4 text-center">
           <div>
             <dd className="text-base font-black tabular-nums">{counts.completed}</dd>
-            <dt className="text-[10px] text-white/50">أنجزتها</dt>
+            <dt className="text-micro text-white/50">أنجزتها</dt>
           </div>
           <div>
             <dd className="text-base font-black tabular-nums">{counts.owned - counts.completed}</dd>
-            <dt className="text-[10px] text-white/50">تعمل فيها</dt>
+            <dt className="text-micro text-white/50">تعمل فيها</dt>
           </div>
           {hours.total > 0 && (
             <div>
               <dd className="text-base font-black tabular-nums">{hours.done}</dd>
-              <dt className="text-[10px] text-white/50">من {hours.total} ساعة</dt>
+              <dt className="text-micro text-white/50">من {hours.total} ساعة</dt>
             </div>
           )}
         </dl>
@@ -116,9 +116,9 @@ export default function StageRail({
                   <span className={`block text-[11.5px] font-bold leading-[1.3] line-clamp-2 ${s.state === "not_owned" ? "text-white/50" : ""}`}>
                     {s.titleAr}
                   </span>
-                  <span className="mt-1 block text-[10px] leading-4 text-white/45">{STAGE_LABEL_AR[s.state]}</span>
+                  <span className="mt-1 block text-micro leading-4 text-white/45">{STAGE_LABEL_AR[s.state]}</span>
                   {isCurrent && (
-                    <span className="mt-1 inline-block rounded-full border border-gold/50 px-1.5 text-[10px] font-black text-gold-ink">
+                    <span className="mt-1 inline-block rounded-full border border-gold/50 px-1.5 text-micro font-black text-gold-ink">
                       أنت هنا
                     </span>
                   )}
@@ -128,7 +128,7 @@ export default function StageRail({
                       <span className="h-1 flex-1 overflow-hidden rounded-full bg-teal-ink/15">
                         <span className="block h-full rounded-full bg-teal-ink" style={{ width: `${s.percent}%` }} />
                       </span>
-                      <span className="text-[9.5px] tabular-nums text-white/50">{s.percent}٪</span>
+                      <span className="text-micro tabular-nums text-white/50">{s.percent}٪</span>
                     </span>
                   )}
                 </span>
@@ -155,7 +155,7 @@ export default function StageRail({
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block text-[11.5px] font-bold leading-4 text-gold-ink">مشروع التخرج</span>
-                <span className="mt-1 block text-[10px] leading-4 text-white/45">نهاية المسار · وشهادته</span>
+                <span className="mt-1 block text-micro leading-4 text-white/45">نهاية المسار · وشهادته</span>
               </span>
             </button>
           </li>

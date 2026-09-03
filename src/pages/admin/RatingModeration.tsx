@@ -119,7 +119,7 @@ export default function RatingModeration() {
         <ul className="space-y-3">
           {rows.map((r) => (
             <li key={r.id} className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
-              <div className="flex flex-wrap items-center gap-2 text-[10px]">
+              <div className="flex flex-wrap items-center gap-2 text-micro">
                 <span className="rounded-full border border-white/10 px-2 py-0.5 font-bold text-white/45">{KIND_AR[r.subjectType]}</span>
                 <span className="font-black text-gold">{r.score} ★</span>
                 {r.subjectNameAr

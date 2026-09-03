@@ -79,7 +79,7 @@ export default function BuyCohort({
               onClick={() => setCurrency(c)}
               aria-pressed={currency === c}
               title={PRESENTMENT_CURRENCIES[c].labelAr}
-              className={`cursor-pointer rounded-full border px-2 py-0.5 text-[10px] font-bold transition ${
+              className={`cursor-pointer rounded-full border px-2 py-0.5 text-micro font-bold transition ${
                 currency === c
                   ? "border-gold/60 bg-gold/15 text-gold-ink"
                   : "border-white/12 text-white/45 hover:border-white/25 hover:text-white/70"

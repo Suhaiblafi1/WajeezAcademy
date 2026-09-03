@@ -174,11 +174,11 @@ export default function Trainers() {
                   <div className="mt-3 space-y-2">
                     {t.testimonials.map((c, i) => (
                       <blockquote key={i} className="rounded-xl border border-white/[0.07] bg-black/20 px-3 py-2">
-                        <span className="mb-0.5 block text-[10px] font-bold text-gold-ink">{c.score} ★</span>
+                        <span className="mb-0.5 block text-micro font-bold text-gold-ink">{c.score} ★</span>
                         <p className="text-[11px] leading-6 text-white/60">{c.commentAr}</p>
                       </blockquote>
                     ))}
-                    <p className="text-[10px] text-white/30">
+                    <p className="text-micro text-white/30">
                       تعليقات متعلّمين، منشورة باعتماد الأكاديمية. والمتوسّط أعلاه من كل التقييمات لا من المعروض منها.
                     </p>
                   </div>

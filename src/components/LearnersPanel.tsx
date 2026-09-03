@@ -104,7 +104,10 @@ export default function LearnersPanel() {
             onChange={(e) => setQ(e.target.value)}
             placeholder="ابحث بالاسم أو البريد…"
             aria-label="بحث في الطلبة"
-            className="w-48 bg-transparent text-xs text-white outline-none placeholder:text-white/30"
+            /* الحقلُ كان ارتفاعُه ستّةَ عشرَ بكسلا: نصٌّ بلا حاشيةٍ داخل
+               حبّةٍ لها حاشيتُها. والحبّةُ تُرى هدفا، والهدفُ الفعليُّ هو
+               الحقل — فيأخذ ارتفاعَه بنفسه. */
+            className="min-h-8 w-48 bg-transparent text-xs text-white outline-none placeholder:text-white/30"
           />
         </form>
       </div>
@@ -130,7 +133,7 @@ export default function LearnersPanel() {
                   <p className="flex items-center gap-2 text-sm font-black">
                     {l.user.displayName}
                     {l.user.status !== "active" && (
-                      <span className="rounded-full border border-red-400/40 px-2 py-0.5 text-[10px] font-bold text-red-300">موقوف</span>
+                      <span className="rounded-full border border-red-400/40 px-2 py-0.5 text-micro font-bold text-red-300">موقوف</span>
                     )}
                   </p>
                   <p dir="ltr" className="mt-0.5 text-left text-[11px] text-white/45">{l.user.email}</p>
@@ -152,7 +155,7 @@ export default function LearnersPanel() {
                   <li key={e.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/8 bg-black/20 px-3 py-2">
                     <span className="min-w-0">
                       <span className="block text-[12px] font-bold text-white/80">{e.courseTitle}</span>
-                      <span className="text-[10.5px] text-white/45">
+                      <span className="text-micro text-white/45">
                         {e.cohortTitle} · {ENROLL_STATUS[e.status] ?? e.status} · {e.percent}٪
                         {e.startsAt ? ` · ${fmtDate(new Date(e.startsAt))}` : ""}
                       </span>
@@ -164,7 +167,7 @@ export default function LearnersPanel() {
                           `أُخرج «${l.user.displayName}» من «${e.cohortTitle}» — والسجلّ باقٍ`,
                         )}
                         disabled={busy}
-                        className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-red-400/30 px-2.5 py-1 text-[10.5px] font-bold text-red-300 transition hover:bg-red-400/10 disabled:opacity-40"
+                        className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-red-400/30 px-2.5 py-1 text-micro font-bold text-red-300 transition hover:bg-red-400/10 disabled:opacity-40"
                       >
                         <Trash2 className="h-3 w-3" /> أخرجه
                       </button>
@@ -238,7 +241,7 @@ function EditLearner({ row, busy, onClose, onSave, onEnroll }: {
           {/* يُقال قبل الحفظ لا بعده: تبديلُ البريد يُسقط توثيقَه، والشراءُ
               والشهادةُ موقوفان على التوثيق. */}
           {email !== row.user.email && (
-            <span className="mt-1 block text-[10.5px] font-normal leading-5 text-gold-ink">
+            <span className="mt-1 block text-micro font-normal leading-5 text-gold-ink">
               تبديلُ البريد يُسقط توثيقَه — سيحتاج أن يوثّق العنوان الجديد قبل الشراء والشهادة.
             </span>
           )}
@@ -283,7 +286,7 @@ function EditLearner({ row, busy, onClose, onSave, onEnroll }: {
               <UserPlus className="h-3.5 w-3.5" /> سجّله
             </button>
           </div>
-          <p className="mt-2 text-[10.5px] leading-5 text-white/40">
+          <p className="mt-2 text-micro leading-5 text-white/40">
             تسجيلٌ إداريّ بلا فاتورة — يمرّ بحارس السعة نفسِه، والفائضُ يذهب لقائمة الانتظار.
           </p>
         </div>
