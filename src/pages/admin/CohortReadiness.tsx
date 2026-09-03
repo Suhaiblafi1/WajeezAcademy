@@ -11,7 +11,7 @@
    يكتب في قاعدةٍ حيّة فيها مدفوعات. */
 
 import { useState } from "react";
-import { AlertTriangle, CheckCircle2, Loader2, PlayCircle, Tags, Wallet } from "lucide-react";
+import { AlertTriangle, CalendarCheck, CheckCircle2, Loader2, PlayCircle, Tags, Wallet } from "lucide-react";
 import { apiPost, ApiError } from "@/services/api";
 
 interface OpenResult {
@@ -25,14 +25,25 @@ interface AlignResult {
   rows: { cohortId: string; courseId: string; title: string; from: string; to: string; blocked?: string }[];
 }
 
+/** حالاتُ الشعبة بالعربيّة — الرموزُ في القاعدة، والعرضُ للناس */
+const STATUS_AR: Record<string, string> = {
+  draft: "مسودّة", open: "مفتوحة", full: "ممتلئة", active: "جارية", completed: "منتهية", cancelled: "ملغاة",
+};
+
+interface SyncResult {
+  applied: boolean; changed: number;
+  changes: { cohortId: string; title: string; from: string; to: string; reason: string }[];
+}
+
 export default function CohortReadiness({ onApplied }: { onApplied?: () => void }) {
   const [open, setOpen] = useState<OpenResult | null>(null);
   const [align, setAlign] = useState<AlignResult | null>(null);
+  const [sync, setSync] = useState<SyncResult | null>(null);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
 
   const run = async (
-    what: "open" | "align",
+    what: "open" | "align" | "sync",
     apply: boolean,
   ) => {
     setBusy(`${what}-${apply ? "apply" : "preview"}`);
@@ -40,8 +51,10 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
     try {
       if (what === "open") {
         setOpen(await apiPost<OpenResult>("/api/admin/cohorts/open-all", { apply }));
-      } else {
+      } else if (what === "align") {
         setAlign(await apiPost<AlignResult>("/api/admin/cohorts/align-prices", { apply }));
+      } else {
+        setSync(await apiPost<SyncResult>("/api/admin/cohorts/sync-statuses", { apply }));
       }
       if (apply) onApplied?.();
     } catch (e) {
@@ -178,6 +191,54 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
                     ))}
                   </ul>
                 </details>
+              )}
+            </div>
+          )}
+        </div>
+        {/* ── الحالةُ تتبع التواريخ ── */}
+        <div className="rounded-2xl border border-white/10 bg-black/25 p-4 lg:col-span-2">
+          <p className="flex items-center gap-1.5 text-xs font-black">
+            <CalendarCheck className="h-3.5 w-3.5 text-teal" /> حالاتٌ متأخّرةٌ عن تواريخها
+          </p>
+          <p className="mt-1 text-[11px] leading-5 text-white/45">
+            شعبةٌ بدأت جلساتُها تصير «جارية»، وشعبةٌ انتهت آخرُ جلساتها تصير «منتهية» — ومستحقّاتُ
+            مدرّبها تُولَّد عند الإكمال، فتأخّرُ الحالة يؤخّرها. ولا تُفتح شعبةٌ آليّا: الفتحُ يمرّ بشروطه وبقرارك.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button" onClick={() => void run("sync", false)} disabled={busy !== ""}
+              className="rounded-lg bg-white/10 px-3.5 py-1.5 text-[11px] font-bold hover:bg-white/15 disabled:opacity-40"
+            >
+              {busy === "sync-preview" ? <Loader2 className="h-3 w-3 animate-spin" /> : "اعرض ما سيتغيّر"}
+            </button>
+            {sync && !sync.applied && sync.changes.length > 0 && (
+              <button
+                type="button" onClick={() => void run("sync", true)} disabled={busy !== ""}
+                className="rounded-lg bg-teal px-3.5 py-1.5 text-[11px] font-black text-on-teal hover:brightness-110 disabled:opacity-40"
+              >
+                {busy === "sync-apply" ? <Loader2 className="h-3 w-3 animate-spin" /> : `حرّك ${sync.changes.length} شعبة`}
+              </button>
+            )}
+          </div>
+          {sync && (
+            <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.03] p-3">
+              {sync.changes.length === 0 ? (
+                <p className="flex items-center gap-1.5 text-[11px] font-bold text-teal-light-ink">
+                  <CheckCircle2 className="h-3 w-3" /> كلُّ الحالات مطابقةٌ لتواريخها.
+                </p>
+              ) : (
+                <>
+                  <p className="text-[11px] text-white/70">
+                    {sync.applied ? "حُرّكت" : "ستُحرَّك"} <b className="tabular-nums text-teal-light-ink">{sync.applied ? sync.changed : sync.changes.length}</b> شعبة
+                  </p>
+                  <ul className="mt-2 space-y-1">
+                    {sync.changes.slice(0, 12).map((ch) => (
+                      <li key={ch.cohortId} className="text-[10.5px] leading-5 text-white/55">
+                        <b className="text-white/75">{ch.title}</b> — {STATUS_AR[ch.from] ?? ch.from} ← {STATUS_AR[ch.to] ?? ch.to} · {ch.reason}
+                      </li>
+                    ))}
+                  </ul>
+                </>
               )}
             </div>
           )}

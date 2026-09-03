@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   AlertTriangle,
-  CalendarClock, CalendarPlus, CheckCircle2, ChevronDown, Loader2, Lock, Play, RefreshCw,
+  CalendarClock, CalendarPlus, CheckCircle2, ChevronDown, CopyPlus, Loader2, Lock, Play, RefreshCw, Sparkles,
   ServerOff, UserPlus, Users, Video, XCircle,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { CohortOps, LearningSettings } from "./CohortOps";
 import CohortReadiness from "./CohortReadiness";
-import DayOfWeekPicker from "@/components/DayOfWeekPicker";
+import CohortWizard from "./CohortWizard";
 import LearnerSearchField, { type LearnerHit } from "@/components/LearnerSearchField";
-import { fmtDateTimeAr } from "@/utils/format";
+import { daysLabelAr, fmtDateTimeAr } from "@/utils/format";
 import { courseById } from "@/data/courses";
 
 const STATUS_META: Record<string, { label: string; cls: string }> = {
@@ -57,15 +57,11 @@ export default function AdminCohorts() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [checklist, setChecklist] = useState<Record<string, Checklist>>({});
 
-  /* نماذج */
-  const [createForm, setCreateForm] = useState<{ courseId: string; title: string; capacity: string; price: string; days: string[]; startTime: string }>(
-    { courseId: "", title: "", capacity: "20", price: "", days: [], startTime: "18:00" });
-  /* سعرُ الدورة المختارة وعملتُها من الكتالوج — وهو ما يرثه الخادم فعلا
-     (cohort.service.ts:64–65)، فالعنوانُ يقول ما سيقع لا ما نظنّه. */
-  const selectedCourse = createForm.courseId ? courseById(createForm.courseId) : null;
-  const selectedCurrency = selectedCourse?.listCurrency ?? "USD";
-  const selectedListPrice = selectedCourse?.listPrice ?? null;
+  /* نماذج — والإنشاءُ صار في المعالج (CohortWizard)، وسعرُ الدورة وعملتُها
+     يُمرَّران إليه من الكتالوج لأنّهما ما يرثه الخادمُ فعلا. */
   const [sessionForm, setSessionForm] = useState({ title: "", date: "", time: "18:00", hours: "2" });
+  const [genForm, setGenForm] = useState({ weeks: "8", from: "", duration: "120" });
+  const [dupForm, setDupForm] = useState({ title: "", shiftWeeks: "8", withSessions: true });
   const [zoomForm, setZoomForm] = useState<Record<string, { sessionId: string; joinUrl: string; meetingId: string; passcode: string }>>({});
   const [enrollLearner, setEnrollLearner] = useState<LearnerHit | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -135,19 +131,6 @@ export default function AdminCohorts() {
     setExpanded(next);
     if (next) void loadChecklist(next);
   };
-
-  const createCohort = () => act(async () => {
-    await apiPost("/api/admin/cohorts", {
-      courseId: createForm.courseId,
-      title: createForm.title,
-      capacity: createForm.capacity ? Number(createForm.capacity) : undefined,
-      price: createForm.price ? Number(createForm.price) : undefined,
-      daysOfWeek: createForm.days.length > 0 ? createForm.days : undefined,
-      startTime: createForm.startTime || undefined,
-    });
-    setCreateForm({ courseId: "", title: "", capacity: "20", price: "", days: [], startTime: "18:00" });
-    setCreateOpen(false);
-  }, "أُنشئت الشعبة كمسودة — أكمل شروط الفتح الستة");
 
   /* خياراتُ الفلاتر من الصفوف نفسِها لا من قائمةٍ ثانية تبلى */
   const pathwayOf = (courseId: string) => courseById(courseId)?.pathwayName ?? "";
@@ -256,66 +239,24 @@ export default function AdminCohorts() {
         </div>
       )}
 
-      {/* إنشاء شعبة */}
-      <div className="mb-6 rounded-3xl border border-white/10 bg-white/[0.02] p-5">
-        <button onClick={() => setCreateOpen(!createOpen)} className="flex w-full cursor-pointer items-center justify-between text-sm font-black">
+      {/* إنشاء شعبة — معالجٌ من خمس خطوات: الدورة، الجدول (وجلساتُه تُولَّد)،
+          المقاعد والسعر، المدرّب، ثمّ مراجعةٌ قبل الإنشاء. استعاض عن نموذجٍ
+          واحدٍ كانت شروطُه الستّةُ تُكتشَف بعد الحفظ. */}
+      <div className="mb-6">
+        <button onClick={() => setCreateOpen(!createOpen)}
+          className="mb-3 flex w-full cursor-pointer items-center justify-between rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-3.5 text-sm font-black">
           <span>شعبة جديدة</span>
           <ChevronDown className={`h-4 w-4 transition ${createOpen ? "rotate-180" : ""}`} />
         </button>
         {createOpen && (
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <label className="text-xs text-white/50">
-              الدورة (المنشورة فقط)
-              <select value={createForm.courseId} onChange={(e) => setCreateForm({ ...createForm, courseId: e.target.value })}
-                className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white focus:border-teal focus:outline-none">
-                <option value="">اختر دورة…</option>
-                {courses.map((c) => <option key={c.id} value={c.id}>{c.title} ({c.id})</option>)}
-              </select>
-            </label>
-            <label className="text-xs text-white/50">
-              عنوان الشعبة
-              <input value={createForm.title} onChange={(e) => setCreateForm({ ...createForm, title: e.target.value })}
-                placeholder="شعبة أكتوبر 2026 — مسائية"
-                className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white placeholder:text-white/25 focus:border-teal focus:outline-none" />
-            </label>
-            <label className="text-xs text-white/50">
-              السعة
-              <input value={createForm.capacity} onChange={(e) => setCreateForm({ ...createForm, capacity: e.target.value })} type="number" min={1}
-                className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white focus:border-teal focus:outline-none" />
-            </label>
-            {/* العملةُ تُقرأ ولا تُفترض.
-
-                كان مكتوبا «السعر (دينار أردني)»، وأسعارُ الكتالوج كلُّها
-                بالدولار (٨١ دورة)، والشعبةُ ترث عملةَ دورتها
-                (cohort.service.ts:65) لا الافتراضَ الأردنيّ. فمن يكتب ١٢٥
-                ظانّا أنّها دنانير، تُقبض منه ١٢٥ **دولارا** — والفرقُ نحو
-                الأربعين بالمئة، ولا شيءَ على الشاشة يُنبّه.
-
-                فصار العنوان يقول عملةَ الدورة المختارة نفسِها. */}
-            <label className="text-xs text-white/50">
-              السعر ({selectedCurrency})
-              <input value={createForm.price} onChange={(e) => setCreateForm({ ...createForm, price: e.target.value })} type="number" min={0}
-                placeholder={selectedListPrice !== null ? String(selectedListPrice) : undefined}
-                className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white placeholder:text-white/25 focus:border-teal focus:outline-none" />
-              {selectedListPrice !== null && (
-                <span className="mt-1 block text-[10px] text-white/35">
-                  سعر قائمة الدورة {selectedListPrice} {selectedCurrency} — يُورَث إن تُرك فارغا
-                </span>
-              )}
-            </label>
-            <DayOfWeekPicker value={createForm.days} onChange={(days) => setCreateForm({ ...createForm, days })} />
-            <label className="text-xs text-white/50">
-              وقت البدء
-              <input value={createForm.startTime} onChange={(e) => setCreateForm({ ...createForm, startTime: e.target.value })} type="time"
-                className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white focus:border-teal focus:outline-none" />
-            </label>
-            <div className="flex items-end">
-              <button disabled={busy || !createForm.courseId || createForm.title.length < 3} onClick={createCohort}
-                className="flex cursor-pointer items-center gap-2 rounded-full bg-teal px-6 py-2.5 text-xs font-black text-on-teal transition hover:bg-teal-light disabled:opacity-40">
-                {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null} أنشئ المسودة
-              </button>
-            </div>
-          </div>
+          <CohortWizard
+            courses={courses.map((c) => {
+              const meta = courseById(c.id);
+              return { id: c.id, title: c.title, currency: meta?.listCurrency ?? "USD", listPrice: meta?.listPrice ?? null };
+            })}
+            onDone={(msg) => { setFlash({ kind: "ok", text: msg }); setCreateOpen(false); void load(); }}
+            onError={(msg) => setFlash({ kind: "error", text: msg })}
+          />
         )}
       </div>
 
@@ -466,6 +407,104 @@ export default function AdminCohorts() {
                         </div>
                       </div>
                     )}
+
+                    {/* توليدُ الجلسات من جدول الشعبة، وتكرارُ الشعبة لفصلٍ قادم.
+
+                        الأوّلُ يُغني عن إضافةِ ستّةَ عشرَ صفًّا بيدٍ واحدة،
+                        والثاني يُغني عن إعادةِ الإعداد كلِّه في كلّ فصل. */}
+                    {!["completed", "cancelled"].includes(c.status) && (
+                      <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
+                        <p className="mb-3 flex items-center gap-1.5 text-xs font-black text-white/60">
+                          <Sparkles className="h-3.5 w-3.5" /> توليدُ الجلسات من الجدول
+                        </p>
+                        {c.daysOfWeek.length === 0 || !c.startTime ? (
+                          <p className="text-[11px] text-white/45">
+                            لا جدولَ أسبوعيًّا لهذه الشعبة — اضبط أيّامَها ووقتَها من «تعديل الشعبة» ثمّ ولّد جلساتها.
+                          </p>
+                        ) : (
+                          <div className="grid gap-2 sm:grid-cols-4">
+                            <label className="text-[11px] text-white/45">
+                              أسابيع
+                              <input type="number" min={1} max={52} value={genForm.weeks}
+                                onChange={(e) => setGenForm({ ...genForm, weeks: e.target.value })}
+                                className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white focus:border-teal focus:outline-none" />
+                            </label>
+                            <label className="text-[11px] text-white/45">
+                              من تاريخ
+                              <input type="date" value={genForm.from}
+                                onChange={(e) => setGenForm({ ...genForm, from: e.target.value })}
+                                className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white focus:border-teal focus:outline-none" />
+                            </label>
+                            <label className="text-[11px] text-white/45">
+                              مدّة (دقيقة)
+                              <input type="number" min={15} step={15} value={genForm.duration}
+                                onChange={(e) => setGenForm({ ...genForm, duration: e.target.value })}
+                                className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white focus:border-teal focus:outline-none" />
+                            </label>
+                            <div className="flex items-end gap-2">
+                              <button disabled={busy || Number(genForm.duration) < 15 || Number(genForm.weeks) < 1}
+                                onClick={() => act(async () => {
+                                  const r = await apiPost<{ created: number; skipped: number }>(`/api/admin/cohorts/${c.id}/sessions/generate`, {
+                                    weeks: Number(genForm.weeks),
+                                    from: genForm.from ? new Date(`${genForm.from}T00:00:00.000Z`).toISOString() : undefined,
+                                    durationMinutes: Number(genForm.duration),
+                                    apply: true,
+                                  });
+                                  setFlash({ kind: "ok", text: `وُلِّدت ${r.created} جلسة${r.skipped ? ` · وتُخطّيت ${r.skipped} موجودةً أصلا` : ""}` });
+                                }, "")}
+                                className="flex-1 cursor-pointer rounded-xl bg-teal px-4 py-2 text-xs font-black text-on-teal transition hover:bg-teal-light disabled:opacity-40">
+                                ولّد
+                              </button>
+                            </div>
+                            <p className="text-[10px] leading-5 text-white/35 sm:col-span-4">
+                              الجدول: {daysLabelAr(c.daysOfWeek)} · {c.startTime}. الموجودُ لا يُكرَّر، وبدايةُ الشعبة ونهايتُها تتبعان جلساتِها.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
+                      <p className="mb-3 flex items-center gap-1.5 text-xs font-black text-white/60">
+                        <CopyPlus className="h-3.5 w-3.5" /> تكرارُ الشعبة لفصلٍ قادم
+                      </p>
+                      <div className="grid gap-2 sm:grid-cols-4">
+                        <label className="text-[11px] text-white/45 sm:col-span-2">
+                          عنوانُ النسخة
+                          <input value={dupForm.title} onChange={(e) => setDupForm({ ...dupForm, title: e.target.value })}
+                            placeholder={`${c.title} — نسخة`}
+                            className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/25 focus:border-teal focus:outline-none" />
+                        </label>
+                        <label className="text-[11px] text-white/45">
+                          إزاحةُ الأسابيع
+                          <input type="number" min={0} max={104} value={dupForm.shiftWeeks}
+                            onChange={(e) => setDupForm({ ...dupForm, shiftWeeks: e.target.value })}
+                            className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white focus:border-teal focus:outline-none" />
+                        </label>
+                        <div className="flex items-end">
+                          <button disabled={busy}
+                            onClick={() => act(async () => {
+                              await apiPost(`/api/admin/cohorts/${c.id}/duplicate`, {
+                                title: dupForm.title.trim() || undefined,
+                                shiftWeeks: Number(dupForm.shiftWeeks) || 0,
+                                withSessions: dupForm.withSessions,
+                                withMaterials: true,
+                                withAssessments: true,
+                              });
+                              setDupForm({ title: "", shiftWeeks: "8", withSessions: true });
+                            }, "أُنشئت نسخةٌ مسودّةً — بجدولها وموادّها وتكاليفها، بلا تسجيلاتٍ ولا حضور")}
+                            className="w-full cursor-pointer rounded-xl bg-white/10 px-4 py-2 text-xs font-black text-white transition hover:bg-white/15 disabled:opacity-40">
+                            كرّرها
+                          </button>
+                        </div>
+                        <label className="flex cursor-pointer items-center gap-2 text-[11px] text-white/50 sm:col-span-4">
+                          <input type="checkbox" checked={dupForm.withSessions}
+                            onChange={(e) => setDupForm({ ...dupForm, withSessions: e.target.checked })}
+                            className="h-3.5 w-3.5 cursor-pointer accent-teal" />
+                          انسخ الجلساتَ أيضا بإزاحة الأسابيع (وإلّا فولّدها في النسخة بجدولها)
+                        </label>
+                      </div>
+                    </div>
 
                     {/* ربط Zoom يدوي لجلسة */}
                     <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
