@@ -12,6 +12,9 @@ import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { notifyRole, sendDirectEmail, publicSiteUrl, type DirectMailStatus } from './notification.service'
 import { newStorageKey, signKey, SIGNED_URL_TTL_MS, MAX_UPLOAD_BYTES } from './storage.service'
+/* مُنسّقُ التاريخ من مصدرِ اللغة الواحد — لا `Intl` جديدٌ يُسمّي لغةً بنفسه:
+   موضعان يسمّيانها يفترقان في التقويم أو الأرقام يوما ما. */
+import { fmtDateLong } from '../../src/application/text/format-ar'
 import {
   CONTACT_CHANNELS, contactChannelLabel,
   type ContactChannel, type TrainingSeason,
@@ -73,8 +76,6 @@ const TERMINAL_STATUSES: TrainerStatus[] = ['rejected', 'withdrawn']
 
 /* رابطُ التأكيد في بريدٍ يُقرأ بعد أيّام لا ساعات — سبعةُ أيّام */
 const VERIFY_TTL_MS = 7 * 24 * 3600_000
-
-const DATE_AR = new Intl.DateTimeFormat('ar-u-nu-latn-ca-gregory', { dateStyle: 'long' })
 
 export interface Phase1Input {
   fullName: string
@@ -278,7 +279,7 @@ export class TrainerApplicationService {
         `مرحبا ${app.fullName},\n\n` +
         `وصلنا طلبك للانضمام إلى نخبة مدربي أكاديمية وجيز — وهذه تفاصيله:\n` +
         `· رقم الطلب: ${app.reference}\n` +
-        `· تاريخ التقديم: ${DATE_AR.format(app.createdAt)}\n` +
+        `· تاريخ التقديم: ${fmtDateLong(app.createdAt)}\n` +
         `· التخصصات: ${app.specialties.map((x) => x.specialty).join('، ') || '—'}\n` +
         `· نمط التدريب: ${delivery}\n` +
         `· وسيلة التواصل التي اختَرتها: ${channel}${channelValue ? ` — ${channelValue}` : ''}\n\n` +
