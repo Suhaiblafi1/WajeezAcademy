@@ -137,7 +137,7 @@ export default function RateMyLearning() {
   useEffect(() => { void load(); }, [load]);
 
   return (
-    <PortalLayout title="تقييمي">
+    <PortalLayout title="رأيي في التدريب">
       {/* حدود السرّية مكتوبة قبل النموذج لا بعده — تُقرأ قبل أن يُكتب شيء */}
       <div className="mb-6 flex items-start gap-3 rounded-2xl border border-teal/25 bg-teal/[0.05] p-4">
         <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-teal-light-ink" />

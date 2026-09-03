@@ -362,7 +362,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
                   ...(rows[0]
                     ? [{ to: "/student/learning", labelAr: `تابع «${rows[0].cohort.course.versions[0]?.titleAr ?? rows[0].cohort.title}»`, hintAr: "الوحدات والمواد" }]
                     : []),
-                  { to: "/student/review", labelAr: "راجع ما تعلّمته", hintAr: "بطاقات الاسترجاع" },
+                  { to: "/student/review", labelAr: "ثبّت ما تعلّمته", hintAr: "بطاقاتُ تذكّرٍ تعود في موعدها" },
                   { to: "/student/pathway", labelAr: "افتح مسارك", hintAr: "مواعيد دوراتك القادمة واختيارها" },
                 ]}
               />
@@ -427,7 +427,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
         <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-bold text-white/70">
-              <Bell className="h-4 w-4 text-gold-ink" /> الإشعارات
+              <Bell className="h-4 w-4 text-gold-ink" /> أحدثُ التنبيهات
             </div>
             {unread > 0 && <span className="rounded-full bg-gold px-2 py-0.5 text-[10px] font-black text-on-gold">{unread} جديد</span>}
           </div>
@@ -440,7 +440,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
               </p>
             ))}
           </div>
-          <Link to="/student/notifications" className="mt-3 block text-center text-[11px] font-bold text-teal-light-ink hover:text-white">كل الإشعارات ←</Link>
+          <Link to="/student/inbox" className="mt-3 block text-center text-[11px] font-bold text-teal-light-ink hover:text-white">كلُّ الرسائل والتنبيهات ←</Link>
         </section>
       </div>
 

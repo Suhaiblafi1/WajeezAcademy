@@ -28,12 +28,21 @@ interface Section {
 }
 
 /* شؤون الحساب لا تكون تبويبا في شريط التعلّم — مكانها قائمة الحساب أعلى
-   اليسار، كما في المنصّات التي يعرفها المتعلم. */
+   اليسار، كما في المنصّات التي يعرفها المتعلم.
+
+   ═══ وبابٌ واحدٌ للرسائل، باسمٍ يقول ما فيه ═══
+
+   كان هنا **صندوقان**: «صندوقي» يجمع التنبيهاتَ وتعليقاتِ المدرّب وملاحظاتِ
+   التسليم وردودَ الدعم، و«الإشعارات» تعرض التنبيهاتَ وحدَها — أي جزءا من
+   الأوّل. ومعهما جرسٌ في الشريط يعرضها ثالثةً. فثلاثةُ أبوابٍ لشيءٍ واحد،
+   واختيارُ البابِ صار قرارا على المتعلّم أن يتّخذه قبل أن يقرأ رسالة.
+
+   فبقي بابٌ واحد. وصفحةُ التنبيهات وحدَها باقيةٌ على مسارها — لا رابطَ
+   يُكسَر — ويقود إليها الجرسُ نفسُه. */
 const ACCOUNT_ITEMS: { to: string; label: string; icon: typeof LayoutDashboard }[] = [
   { to: "/student/account", label: "الملف الشخصي", icon: UserCircle },
   { to: "/student/billing", label: "فواتيري", icon: ReceiptText },
-  { to: "/student/inbox", label: "صندوقي", icon: Inbox },
-  { to: "/student/notifications", label: "الإشعارات", icon: Bell },
+  { to: "/student/inbox", label: "الرسائل والتنبيهات", icon: Inbox },
   { to: "/student/support", label: "الدعم", icon: LifeBuoy },
 ]
 
@@ -183,7 +192,11 @@ export default function PortalLayout({ children, title }: { children: React.Reac
          مراحلَ واحد، وعملُ المرحلة أسفلَه، ومبدّلُ مساراتٍ عند تعدّدها. */
       items: [
         { to: "/student/learning", label: "رحلتي" },
-        { to: "/student/review", label: "مراجعتي" },
+        /* «مراجعتي» كانت اسمَ صفحةِ الاسترجاع المتباعد — و«مراجعة» في
+           المنصّة ثلاثةُ معانٍ: مراجعةُ المحتوى عند الموظّف، ومراجعةُ تعليقِ
+           التقييم، وهذه. والمتعلّمُ يقرؤها «ما سأراجعه» أو «رأيي»، لا
+           «تدريبا على التذكّر». فالاسمُ يقول الغرض. */
+        { to: "/student/review", label: "تثبيتُ ما تعلّمت" },
       ],
       /* صفحتا الوحدة وإعادة القياس تتبعان القسم وإن لم تكونا في شريطه */
       match: ["/student/learning", "/student/pathway", "/student/review", "/student/course", "/student/remeasure"],
@@ -191,11 +204,15 @@ export default function PortalLayout({ children, title }: { children: React.Reac
     {
       id: "vault", label: "خزانتي", icon: Award, to: "/student/certificates",
       items: [
-        { to: "/student/vault", label: "نواتجي" },
+        /* «ناتج» مصطلحٌ داخليّ: مخرَجُ النشاطِ في الوحدة. والمتعلّمُ يسمّيه عملَه. */
+        { to: "/student/vault", label: "أعمالي" },
         { to: "/student/certificates", label: "شهاداتي" },
         { to: "/student/cv", label: "سيرتي" },
         { to: "/student/skills", label: "مهاراتي" },
-        { to: "/student/rate", label: "تقييمي" },
+        /* «تقييمي» كان يعني رأيَه في مدرّبه — و«تقييم» في المنصّة يعني أيضا
+           الواجبَ والاختبارَ والدرجة. فمن رآها بين «مهاراتي» و«شهاداتي»
+           قرأها «درجاتي». والاسمُ يقول من يُقيَّم. */
+        { to: "/student/rate", label: "رأيي في التدريب" },
       ],
       match: ["/student/vault", "/student/certificates", "/student/cv", "/student/skills", "/student/rate"],
     },
@@ -257,7 +274,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                   <button aria-label="إغلاق الإشعارات" onClick={() => setBellOpen(false)} className="fixed inset-0 z-40 cursor-default" />
                   <div className="absolute left-0 top-10 z-50 w-80 max-w-[85vw] rounded-2xl border border-white/10 bg-surface p-3 shadow-2xl">
                     <div className="flex items-center justify-between px-1 pb-2">
-                      <p className="text-xs font-black text-white/80">الإشعارات</p>
+                      <p className="text-xs font-black text-white/80">التنبيهات</p>
                       <button onClick={markAllRead} className="flex cursor-pointer items-center gap-1 text-[10px] font-bold text-teal-light-ink transition hover:text-white">
                         <CheckCheck className="h-3 w-3" /> تعليم الكل كمقروء
                       </button>
@@ -279,6 +296,15 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                         <p className="px-2 py-6 text-center text-[11px] text-white/55">تعذّر جلب إشعاراتك الآن</p>
                       )}
                     </div>
+                    {/* والجرسُ لا ينتهي عند ستّة: يقود إلى البابِ الواحد الذي
+                        يجمع التنبيهاتَ وتعليقاتِ المدرّب وردودَ الدعم. */}
+                    <Link
+                      to="/student/inbox"
+                      onClick={() => setBellOpen(false)}
+                      className="mt-2 block rounded-xl border border-white/10 px-3 py-2 text-center text-[11px] font-bold text-teal-light-ink transition hover:border-white/30"
+                    >
+                      افتح «الرسائل والتنبيهات»
+                    </Link>
                   </div>
                 </>
               )}

@@ -133,7 +133,7 @@ export default function Review() {
 
   if (snap === null) {
     return (
-      <PortalLayout title="مراجعتي">
+      <PortalLayout title="تثبيتُ ما تعلّمت">
         <div className="grid place-items-center py-20">
           <Loader2 className="h-8 w-8 animate-spin text-teal-ink" aria-label="جارٍ التحميل" />
         </div>
@@ -144,7 +144,7 @@ export default function Review() {
   const answeredAll = queue.length > 0 && queue.every((i) => picked[`${i.moduleId}#${i.checkIndex}`] !== undefined);
 
   return (
-    <PortalLayout title="مراجعتي">
+    <PortalLayout title="تثبيتُ ما تعلّمت">
       {error && (
         <p className="mb-4 rounded-2xl border border-red-500/30 bg-red-500/10 px-5 py-4 text-sm text-red-200">{error}</p>
       )}

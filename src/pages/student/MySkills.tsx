@@ -239,7 +239,7 @@ function DueReviewStrip({ due }: { due: number }) {
         بطاقة استرجاع استحقّت اليوم
       </span>
       <span className="flex items-center gap-1.5 text-xs font-bold text-teal-light-ink">
-        اذهب إلى مراجعتي
+        اذهب إلى «تثبيتُ ما تعلّمت»
         <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
       </span>
     </Link>

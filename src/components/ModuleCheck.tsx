@@ -108,7 +108,7 @@ export default function ModuleCheck({
               <CalendarClock className="h-3.5 w-3.5 shrink-0 text-teal-light-ink" aria-hidden="true" />
               جُدولت عودة هذه الأسئلة: بعد {spacingLabelAr(0)}، ثم يتباعد الموعد كلما استرجعتها.
               <Link to="/student/review" className="font-bold text-teal-light-ink underline underline-offset-4">
-                صفحة مراجعتي
+                صفحة «تثبيتُ ما تعلّمت»
               </Link>
             </p>
           ) : sched === "unavailable" ? null : (

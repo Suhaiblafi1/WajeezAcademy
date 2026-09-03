@@ -77,7 +77,7 @@ export default function Inbox() {
   };
 
   return (
-    <PortalLayout title="صندوقي">
+    <PortalLayout title="الرسائل والتنبيهات">
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <button onClick={() => { setItems(null); setReload((n) => n + 1); }} className="flex min-h-11 cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 text-xs font-bold text-white/70 hover:border-white/40">
           <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" /> تحديث

@@ -59,7 +59,7 @@ export default function MyVault() {
 
   if (!checked || (sessionUser && rows === null)) {
     return (
-      <PortalLayout title="نواتجي">
+      <PortalLayout title="أعمالي">
         <div className="grid place-items-center py-24"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" aria-label="يُحمَّل" /></div>
       </PortalLayout>
     );
@@ -69,15 +69,15 @@ export default function MyVault() {
   const accepted = list.filter((a) => a.status === "accepted").length;
 
   return (
-    <PortalLayout title="نواتجي">
+    <PortalLayout title="أعمالي">
       <section className="rounded-3xl border border-gold/25 bg-gradient-to-b from-warmglow/30 to-transparent p-6">
         <h2 className="flex items-center gap-2 text-lg font-black text-gold-ink">
           <Sparkles className="h-5 w-5" /> ما صنعتَه حتى الآن
         </h2>
         <p className="mt-2 max-w-2xl text-sm leading-7 text-white/60">
-          كلُّ محطة في وجيز تُنتج شيئا تملكه — لا درسا تشاهده. وهذه خزانتك:
+          كلُّ محطة في وجيز تُنتج شيئا تملكه — لا درسا تشاهده. وهذه أعمالك:
           {list.length > 0
-            ? ` ${list.length} ناتجا سلّمتَه، منها ${accepted} معتمدا من مدرّبك.`
+            ? ` ${list.length} عملا سلّمتَه، منها ${accepted} معتمدا من مدرّبك.`
             : " تمتلئ مع أوّل تسليم."}
         </p>
       </section>
@@ -85,9 +85,9 @@ export default function MyVault() {
       {list.length === 0 ? (
         <section className="mt-6 grid place-items-center rounded-3xl border border-dashed border-white/15 py-16 text-center">
           <FileText className="h-10 w-10 text-white/30" />
-          <p className="mt-4 font-black">لا نواتج بعد</p>
+          <p className="mt-4 font-black">لا أعمال بعد</p>
           <p className="mx-auto mt-2 max-w-sm text-xs leading-6 text-white/50">
-            ناتجك الأول يظهر هنا فور تسليمه. افتح محطات دورتك وابدأ بالتطبيق
+            أوّلُ عملٍ لك يظهر هنا فور تسليمه. افتح محطات دورتك وابدأ بالتطبيق
             العملي — فهو ما يُراجعه مدرّبك ويبقى في سيرتك.
           </p>
           <Link to="/student/learning" className="mt-5 rounded-full bg-teal px-6 py-2.5 text-sm font-black text-on-teal transition hover:bg-teal-light">
@@ -143,7 +143,7 @@ function ArtifactCard({ a, catalogVersion }: { a: Artifact; catalogVersion: numb
         to={`/student/course/${a.courseId}`}
         className="mt-3 inline-block text-[11px] font-bold text-teal-light-ink hover:text-white"
       >
-        افتح محطة هذا الناتج ←
+        افتح محطة هذا العمل ←
       </Link>
     </li>
   );
