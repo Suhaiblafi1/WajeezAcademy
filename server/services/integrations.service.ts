@@ -20,11 +20,7 @@ export interface PaymentConfig {
 
 export interface EmailConfig {
   enabled: boolean
-  host: string
-  port: number
-  secure: boolean
-  user?: string
-  pass?: string
+  apiKey?: string
   fromName: string
   fromEmail: string
 }
@@ -64,19 +60,14 @@ export async function getEmailConfig(prisma: PrismaClient): Promise<EmailConfig>
   const c = (row?.config ?? {}) as Partial<EmailConfig>
   const base: EmailConfig = {
     enabled: row?.enabled ?? false,
-    host: c.host ?? '', port: Number(c.port ?? 465), secure: c.secure !== false,
-    user: c.user || undefined, pass: c.pass || undefined,
+    apiKey: c.apiKey || undefined,
     fromName: c.fromName ?? 'أكاديمية وجيز', fromEmail: c.fromEmail || ACADEMY_EMAIL,
   }
-  /* غشاء البيئة — كل متغير موجود يغلب حقله استقلالا، ووجود المضيف يفعّل القناة */
+  /* غشاء البيئة — كل متغير موجود يغلب حقله استقلالا، ووجود المفتاح يفعّل القناة */
   const env = process.env
-  if (env.SMTP_HOST) { base.host = env.SMTP_HOST; base.enabled = true }
-  if (env.SMTP_PORT) base.port = Number(env.SMTP_PORT)
-  if (env.SMTP_SECURE) base.secure = env.SMTP_SECURE !== 'false'
-  if (env.SMTP_USER) base.user = env.SMTP_USER
-  if (env.SMTP_PASS) base.pass = env.SMTP_PASS
-  if (env.SMTP_FROM_NAME) base.fromName = env.SMTP_FROM_NAME
-  if (env.SMTP_FROM_EMAIL) base.fromEmail = env.SMTP_FROM_EMAIL
+  if (env.RESEND_API_KEY) { base.apiKey = env.RESEND_API_KEY; base.enabled = true }
+  if (env.RESEND_FROM_NAME) base.fromName = env.RESEND_FROM_NAME
+  if (env.RESEND_FROM_EMAIL) base.fromEmail = env.RESEND_FROM_EMAIL
   return base
 }
 
@@ -122,18 +113,13 @@ export async function savePaymentConfig(prisma: PrismaClient, actorId: string, i
 }
 
 export async function saveEmailConfig(prisma: PrismaClient, actorId: string, input: Partial<EmailConfig>) {
-  if (input.host !== undefined && input.host.trim().length < 3) throw new AuthError('bad_host', 'أدخل مضيف SMTP صحيحا')
   const current = await getRawConfig(prisma, 'email')
   const next: Record<string, unknown> = {
     ...current,
-    host: input.host ?? current.host ?? '',
-    port: input.port ?? current.port ?? 465,
-    secure: input.secure ?? current.secure ?? true,
-    user: input.user ?? current.user ?? '',
     fromName: input.fromName ?? current.fromName ?? 'أكاديمية وجيز',
     fromEmail: input.fromEmail ?? current.fromEmail ?? '',
   }
-  if (input.pass && !MASK.test(input.pass)) next.pass = input.pass
+  if (input.apiKey && !MASK.test(input.apiKey)) next.apiKey = input.apiKey
   const row = await prisma.integrationSetting.upsert({
     where: { provider: 'email' },
     update: { config: next as Prisma.InputJsonValue, enabled: input.enabled ?? false, updatedBy: actorId },
@@ -141,7 +127,7 @@ export async function saveEmailConfig(prisma: PrismaClient, actorId: string, inp
   })
   await recordAudit(prisma, {
     actorId, action: 'integration.email.save', entityType: 'integration_setting', entityId: 'email',
-    meta: { host: next.host, enabled: row.enabled, passRotated: !!(input.pass && !MASK.test(input.pass)) },
+    meta: { enabled: row.enabled, apiKeyRotated: !!(input.apiKey && !MASK.test(input.apiKey)) },
   })
   return row
 }
@@ -155,7 +141,7 @@ async function getRawConfig(prisma: PrismaClient, provider: string): Promise<Rec
 
 export async function maskedIntegrationsView(prisma: PrismaClient) {
   const [pay, mail] = await Promise.all([getPaymentConfig(prisma), getEmailConfig(prisma)])
-  const envSourced = { payment: !!process.env.PAYMENT_DRIVER, email: !!process.env.SMTP_HOST }
+  const envSourced = { payment: !!process.env.PAYMENT_DRIVER, email: !!process.env.RESEND_API_KEY }
   return {
     payment: {
       enabled: pay.enabled, driver: pay.driver, envSourced: envSourced.payment,
@@ -167,9 +153,8 @@ export async function maskedIntegrationsView(prisma: PrismaClient) {
     },
     email: {
       enabled: mail.enabled, envSourced: envSourced.email,
-      host: mail.host, port: mail.port, secure: mail.secure,
-      user: mail.user ?? '', pass: mask(mail.pass),
-      fromName: mail.fromName, fromEmail: mail.fromEmail, hasPass: !!mail.pass,
+      apiKey: mask(mail.apiKey),
+      fromName: mail.fromName, fromEmail: mail.fromEmail, hasApiKey: !!mail.apiKey,
     },
   }
 }
