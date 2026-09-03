@@ -31,7 +31,7 @@ import CourseJourney from "@/components/CourseJourney";
 import Modal from "@/components/Modal";
 import { pathwayById, pathwayCategory } from "@/data/pathways";
 import { hasCoreCatalog } from "@/data/core-catalog-source";
-import { readAdoptedPlan, saveAdoptedPlan, syncAdoptedPlan } from "@/application/plan/adopted-plan";
+import { readAdoptedPlan, saveAdoptedPlan, syncAdoptedPlan, PERSONAL_PLAN_NAME_AR } from "@/application/plan/adopted-plan";
 import { FIRST_TIME_PROMO } from "@/application/commerce/first-time-promo";
 import { useCoursePrices, formatCohortPrice, totalOf } from "@/services/cohort-prices";
 import { courseById, courses, pathwaySupportCourses, readyPathwayCourseIds, pathwayDelivery, pathwayTrainers, courseTrainer, weeksLabel, MIN_PATHWAY_COURSES, MAX_PATHWAY_COURSES } from "@/data/courses";
@@ -252,6 +252,22 @@ export default function PathwayPage() {
   const togglePick = (cid: string) =>
     setPickedIds(pickedIds.includes(cid) ? pickedIds.filter((x) => x !== cid) : [...pickedIds, cid]);
   const totalWeeks = pathwayCoursesList.reduce((s, c) => s + c.weeks, 0);
+
+  /* اسمُ ما يُشترى — من الخطّة المعتمَدة لا من المسار المضيف.
+
+     الخطّةُ المركّبة تُستضاف على صفحة أوّل مسارٍ رُكّبت منه، ودوراتُها من
+     أكثر من مجال. وكان عنوانُ الشراء يُبنى من اسم المضيف وحده، فمن اشترى
+     تركيبةً عابرةً لمجالين وصله إيصالٌ باسم أحدهما — والرأسُ فوقه يقول اسمَ
+     خطّته (`adopted?.nameAr`). فالوعدُ يفترق عن الإيصال في الشاشة نفسها.
+     والاسمُ هنا يتبع ما يقرؤه المتعلّم، فلا يفترقان. */
+  const composedPlan = Boolean(adopted?.composed);
+  const planNameAr = composedPlan
+    ? (compositeCtx?.name_ar ?? adopted?.nameAr ?? PERSONAL_PLAN_NAME_AR)
+    : pathway.name;
+  const fullPlanTitleAr = composedPlan
+    ? `خطّة «${planNameAr}» كاملة (${pathwayCoursesList.length} دورات)`
+    : `مسار «${planNameAr}» كاملا (${pathwayCoursesList.length} دورات)`;
+  const fromPlanAr = composedPlan ? `من خطّتك «${planNameAr}»` : `من مسار ${planNameAr}`;
 
   /* بدء الشراء: المسجّل تفتح له نافذة الدفع مباشرة — والزائر تظهر له بوابة التسجيل أولا ثم نكمل الدفع تلقائيا.
 
@@ -688,8 +704,8 @@ export default function PathwayPage() {
                       startCheckout({
                         title:
                           picked.length === 1
-                            ? `دورة «${picked[0].name}» من مسار ${pathway.name}`
-                            : `${picked.length} دورات مختارة من مسار ${pathway.name}`,
+                            ? `دورة «${picked[0].name}» ${fromPlanAr}`
+                            : `${picked.length} دورات مختارة ${fromPlanAr}`,
                         amount: pickedTotal?.amount ?? 0,
                         kind: picked.length === 1 ? "course" : "courses",
                         courseIds: picked.map((c) => c.id),
@@ -776,7 +792,7 @@ export default function PathwayPage() {
                     </div>
                   )}
                   <Button
-                    onClick={() => startCheckout({ title: `مسار «${pathway.name}» كاملا (${pathwayCoursesList.length} دورات)`, amount: 0, kind: "pathway" })}
+                    onClick={() => startCheckout({ title: fullPlanTitleAr, amount: 0, kind: "pathway" })}
                     disabled={syncing}
                     className="mt-4 h-11 rounded-full bg-gold font-black text-on-gold hover:bg-gold/90 disabled:opacity-60"
                   >
