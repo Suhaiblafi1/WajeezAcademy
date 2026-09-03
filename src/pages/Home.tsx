@@ -891,7 +891,11 @@ function Bestsellers() {
   }, [shownCourses.length, crCat, catalogVersion])
 
   return (
-    <section id="bestsellers" className="scroll-mt-24 pb-20 pt-24 md:pb-24 md:pt-28">
+    /* الفراغُ كان مرّتين: `scroll-mt-24` يُنزل القسمَ ٩٦ بكسلا تحت أعلى
+       الشاشة، ثم `pt-24/28` يضيف ٩٦–١١٢ قبل أوّل سطر — فمن نقر «المسارات»
+       رأى شاشةً فارغةً نصفَها. والترويسةُ ٦٤ بكسلا وحدها، فـ`scroll-mt-20`
+       يكفي لتجاوزها، والحشوُ العلويّ يصير نصفَه. */
+    <section id="bestsellers" className="scroll-mt-20 pb-20 pt-10 md:pb-24 md:pt-14">
       <div className="mx-auto max-w-6xl px-5">
         <div className="reveal flex flex-wrap items-end justify-between gap-4">
           <div>

@@ -35,9 +35,9 @@ import { useCoursePrices, cheapestOf, pricedCount, formatCohortPrice } from "@/s
 import { ensurePublishedSnapshot } from "@/services/catalog-snapshot";
 import { ensurePublishedContent } from "@/services/public-content";
 import SeoHead from "@/components/SeoHead";
+import { FIRST_TIME_PROMO } from "@/application/commerce/first-time-promo";
 import EcosystemNote from "@/components/EcosystemNote";
 import { Badge } from "@/components/ui/badge";
-import DiscountEmailCapture from "@/components/DiscountEmailCapture";
 import ResultFeedback from "@/components/ResultFeedback";
 import CourseJourney, { type CourseSuggestion } from "@/components/CourseJourney";
 import { ResultErrorBoundary } from "@/components/ResultErrorBoundary";
@@ -416,7 +416,7 @@ const VARIANT_AR: Record<CompositeView["variant"], { label: string; hint: string
 
    والصيغة «تبدأ من … للدورة» لا «الخطة كاملة = كذا»: عدد دورات الخطة يتغيّر
    بيد المتعلم في الشاشة التالية، فسعرُ الخطة يُحدَّد بعد أن يعتمدها هو. */
-function ResultPriceCard({ courseIds, pathwayId }: { courseIds: readonly string[]; pathwayId: string }) {
+function ResultPriceCard({ courseIds }: { courseIds: readonly string[] }) {
   const { prices, loaded } = useCoursePrices();
   const cheapest = cheapestOf(courseIds, prices);
   const known = pricedCount(courseIds, prices);
@@ -441,11 +441,16 @@ function ResultPriceCard({ courseIds, pathwayId }: { courseIds: readonly string[
           {loaded ? "يُعلن السعر مع فتح الشعبة" : "يُقرأ السعر…"}
         </p>
       )}
-      {/* كان هنا كودُ خصمٍ ظاهرا للجميع بلا مقابل («سجّل الآن لتعرف المزيد»
-          — وعدٌ بمزيدٍ صار كاذبا بعد أن سقطت بوّابة النتيجة، والكود نفسه
-          كان مكشوفا فلا داعي لأحد أن يترك بريده لأجله). صار وراء بريدٍ
-          حقيقي — نفس الكود، لكن مقابل إشارة تسويقية بدل مجّانا. */}
-      <DiscountEmailCapture source="diagnostic_discount" pathwayId={pathwayId} className="mt-5" />
+      {/* وكان هنا صندوقٌ يطلب بريدا مقابل الكود. وقرارُ صاحب المنصّة: لا داعي
+          له — البريدُ يُكتب عند الشراء أصلا، فطلبُه مرّتين حاجزٌ بلا مقابل.
+          والكودُ يُقال سطرا واحدا: هو لأوّل شراءٍ لكلّ أحد. */}
+      <p className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-gold/30 bg-gold/[0.06] px-3.5 py-2.5 text-[11.5px] leading-5">
+        <span className="font-bold text-gold-ink">خصم {FIRST_TIME_PROMO.percentOff}٪ لأول عملية شراء بالكود</span>
+        <code dir="ltr" className="rounded-md border border-gold/40 bg-gold/10 px-1.5 py-0.5 font-mono text-[10.5px] font-black text-gold-ink">
+          {FIRST_TIME_PROMO.code}
+        </code>
+        <span className="text-white/45">— يُكتب في صفحة الدفع.</span>
+      </p>
       <p className="mt-3 text-[11px] leading-5 text-white/40">
         سعر خطتك يُحدَّد بعد أن تعتمدها — أنت من يقرّر دوراتها.
         {cheapest && known < courseIds.length && " وبعض دوراتها لم تُفتح لها شعبة بعد."} ولا يُطلب دفعٌ الآن.
@@ -1895,9 +1900,6 @@ export default function Diagnostic() {
                     تمرّ بـ`landOnPathway` الذي ينقل مباشرة إلى صفحة المسار متى
                     وُجد `top`، فلا يبقى لهذا الفرع لحظة يُصادَف فيها topPathway).
                     فبريد الخصم مكانه هنا لا هناك — وإلا بقي بلا زائر أبدا. */}
-                <div className="mx-auto mt-6 max-w-sm">
-                  <DiscountEmailCapture source="diagnostic_discount" />
-                </div>
               </section>
             );
           })()
@@ -2245,7 +2247,7 @@ export default function Diagnostic() {
           )}
 
           {/* السعر آخر ما يُقرأ قبل التسجيل — بعد أن عرف المسار ودوراته وسببه */}
-          <ResultPriceCard courseIds={planCourseIds} pathwayId={topPathway.id} />
+          <ResultPriceCard courseIds={planCourseIds} />
 
           {/* بوّابة التسجيل هنا — محذوفة.
 

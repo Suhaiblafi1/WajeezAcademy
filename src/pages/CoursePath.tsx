@@ -419,8 +419,11 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                 <div className="flex flex-wrap items-baseline justify-between gap-3 border-t border-white/10 pt-2.5">
                   <dt className="text-xs text-white/50">ما تدفعه</dt>
                   <dd className="flex items-baseline gap-2">
+                    {/* المشطوبُ يُقرأ: كان `text-sm text-white/35` فلا يُرى مقدارُ الوفر */}
                     {finalPayable < pricing.separate && (
-                      <span dir="ltr" className="text-sm text-white/35 line-through">{money(pricing.separate)}</span>
+                      <span dir="ltr" className="text-base font-bold text-white/45 line-through decoration-white/45 decoration-2">
+                        {money(pricing.separate)}
+                      </span>
                     )}
                     <span dir="ltr" className="text-3xl font-black text-white">{money(finalPayable)}</span>
                   </dd>
@@ -486,9 +489,18 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                     اطّلع على الفئات وتحقّق من أهليتك
                   </span>
                 </summary>
-                <ul className="mt-2.5 space-y-1.5 border-r-2 border-white/10 pe-0 ps-3">
+                {/* خصمُ أوّل شراء أوّلَ القائمة وكودُه معلَنٌ بجانبه: لكلّ أحدٍ
+                    في أوّل مرّة، فلا إثباتَ له ولا سرَّ فيه. */}
+                <ul className="mt-2.5 space-y-1.5 border-r-2 border-white/10 ps-3">
+                  <li className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] leading-5">
+                    <span className="font-bold text-white/75">خصم أول عملية شراء — {FIRST_TIME_PROMO.percentOff}٪</span>
+                    <code dir="ltr" className="rounded-md border border-gold/40 bg-gold/10 px-1.5 py-0.5 font-mono text-[10.5px] font-black text-gold-ink">
+                      {FIRST_TIME_PROMO.code}
+                    </code>
+                    <span className="text-white/40">· بلا إثبات</span>
+                  </li>
                   {DISCOUNT_CATEGORIES.map((cat) => (
-                    <li key={cat.id} className="text-[11px] leading-relaxed text-white/50">
+                    <li key={cat.id} className="text-[11px] leading-5 text-white/50">
                       <span className="font-bold text-white/75">{cat.label_ar} — {cat.percentOff}٪</span>
                       <span className="text-white/40"> · {cat.evidence_ar}</span>
                     </li>
@@ -504,16 +516,16 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                     وواتساب المستشارين هو القناة الرسميّة المعتمدة أصلا
                     (`CONTACT.whatsapp` في data/stories.ts)، فلا قناةَ جديدة
                     تُفتح هنا بل تُستعمل القائمة. */}
-                <p className="mt-2.5 text-[11px] leading-relaxed text-white/40">
-                  الكود لا يُنشر: يُصدَر لك وحدك بعد التحقق، فلا يتسرّب خصم فئةٍ إلى من ليس منها.{" "}
+                <p className="mt-2.5 text-[11px] leading-5 text-white/45">
                   <a
                     href={`https://wa.me/${CONTACT.whatsapp}?text=${encodeURIComponent("أرغب بالتحقق من أهليتي لخصم فئة — وسأرفق ما يثبت ذلك.")}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="font-bold text-white/60 underline underline-offset-4 transition hover:text-[#6EC7D1]"
+                    className="font-bold text-[#6EC7D1] underline underline-offset-4 transition hover:text-white"
                   >
                     راسلنا على واتساب بصورة الإثبات
-                  </a>
+                  </a>{" "}
+                  لمعرفة الكود للطلبة وموظفي الحكومة.
                 </p>
               </details>
             </div>

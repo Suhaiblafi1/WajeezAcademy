@@ -86,11 +86,15 @@ describe('الكودُ فوق الناتج لا فوق الأصل', () => {
   /* سياسةُ الخصومات تقول حرفيّا: «كود واحد فوق الناتج». وتطبيقُه على
      `subtotal` يعطي خصما أكبر ممّا كُتب — وهو فرقٌ صامت لا يُرمى له خطأ. */
   it('١٠٪ تُحسب بعد خصم الباقة', () => {
+    /* الأرقامُ مشتقّةٌ من السلّم لا مكتوبة: كانت ٢٦٤ و٢٦٫٤ و٢٣٧٫٦ محسوبةً
+       على ١٢٪، فرفعُ درجةِ الثلاث كسر الاختبارَ بلا أن تنكسر النيّة. والنيّةُ
+       واحدة: الكودُ فوق الناتج لا فوق الأصل. */
     const p = priceCart(lines(3), null, { percentOff: 10, amountOff: null })
     const afterBundle = 300 - (300 * buildDiscountPct(3)) / 100
-    expect(afterBundle, 'الثلاثُ على ١٢٪').toBe(264)
-    expect(p.couponDiscount, '١٠٪ من ٢٦٤ لا من ٣٠٠').toBe(26.4)
-    expect(p.total).toBe(237.6)
+    expect(p.couponDiscount, `١٠٪ من ${afterBundle} لا من ٣٠٠`).toBe(Math.round(afterBundle * 10) / 100)
+    expect(p.total).toBe(Math.round((afterBundle - afterBundle / 10) * 100) / 100)
+    /* ولو حُسب على الأصل لكان الخصمُ ٣٠ — فالفرقُ يُفحَص لا يُفترض */
+    expect(p.couponDiscount).toBeLessThan(30)
   })
 
   it('وخصمٌ مقطوع لا يتجاوز الباقي — فلا مجموعٌ سالب', () => {

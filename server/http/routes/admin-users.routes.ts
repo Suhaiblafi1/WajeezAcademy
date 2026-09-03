@@ -8,10 +8,11 @@ import { requirePermission } from '../auth-plugin'
 import { recordAudit } from '../../services/audit'
 import { randomBytes } from 'node:crypto'
 import {
-  PERMISSIONS, ROLE_NAMES_AR, ROLE_PERMISSIONS, refuseDelegation, refuseRoleAssignment, rankOf,
+  PERMISSIONS, ROLE_NAMES_AR, ROLE_PERMISSIONS, ROLE_RANK, refuseDelegation, refuseRoleAssignment, rankOf,
   DELEGATABLE_FAMILIES, type PermissionKey,
 } from '../../auth/permissions'
 import { sendStaffInviteEmail } from '../../services/account-mail'
+import { accountFootprint, footprintBlockersAr, purgeAccountWithHistory } from '../../services/account-purge.service'
 
 export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClient, auth: AuthService) {
   /* ثلاثُ حبّات: الرؤية · تعيين الأدوار والإيقاف · التفويض. والمدير
@@ -240,9 +241,19 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
   /* حارسُ الرتبة على ما يمسّ حسابَ غيرِك: لا يُوقَف ولا يُحذَف من هو في
      رتبتك أو فوقها. وإلّا صار مَن مُنح «إدارة المستخدمين» استثناءً قادرا على
      إيقاف مدير النظام الأعلى. */
+  const isTopAdmin = (roles: readonly string[]) => rankOf(roles) >= ROLE_RANK.super_admin
+  /* المحوُ بالسجلّ حبّةٌ مستقلّة لا رتبةٌ تُفحَص: الرتبةُ تحرس «من تمسّ»،
+     والحبّةُ تحرس «أيَّ محوٍ تملك». ومديرُ النظام الأعلى يملكها وحدَه لأنّ
+     `ROLE_PERMISSIONS` تمنحه كلَّ الحبّات، ويفوّضها لغيره إن أراد. */
+  const canForcePurge = (req: { auth: { permissions: string[] } | null }) =>
+    req.auth?.permissions.includes('admin.users.purge_history') ?? false
   const refuseRank = async (targetId: string, actorRoles: string[], verbAr: string) => {
     const target = await prisma.user.findUnique({ where: { id: targetId }, include: { roles: true } })
     if (!target) return { error: { code: 'not_found', message_ar: 'لا حسابَ بهذا المعرّف' } }
+    /* مديرُ النظام الأعلى يدير كلَّ حسابٍ سوى حسابه (والذاتُ محروسةٌ قبل هذا):
+       كان القيدُ «رتبتك أو فوقها» يمنعه من إيقاف مديرِ نظامٍ آخر أو حذفِ
+       حسابِ ديمو بدوره — فلا أحدٌ فوقَ الأعلى يفكّه. */
+    if (isTopAdmin(actorRoles)) return { target }
     const targetRank = rankOf(target.roles.map((r) => r.roleId))
     if (targetRank >= rankOf(actorRoles)) {
       return { error: { code: 'rank_exceeded', message_ar: `لا تستطيع ${verbAr} حسابا في رتبتك أو فوقها` } }
@@ -296,43 +307,54 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
      ويدلّ على البديل. */
   app.delete('/api/admin/users/:id', {
     preHandler: requirePermission('admin.users.purge'),
-    schema: { tags: ['admin-users'], summary: 'حذفُ حسابٍ نهائيّا — يُرفض إن كان له سجلٌّ ماليّ أو تعليميّ' },
+    schema: { tags: ['admin-users'], summary: 'حذفُ حسابٍ نهائيّا — يُرفض إن كان له سجلٌّ إلّا قسرا من مدير النظام الأعلى بسبب' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const { force } = z.object({ force: z.enum(['1', 'true']).optional() }).parse(req.query ?? {})
+    const { reason } = z.object({ reason: z.string().trim().max(500).optional() }).parse(req.body ?? {})
     if (id === req.auth!.userId) {
       return { error: { code: 'self_purge', message_ar: 'لا تحذف حسابك من هنا' } }
     }
     const check = await refuseRank(id, req.auth!.roles, 'حذفَ')
     if ('error' in check) return check
 
-    const [enrollments, orders, tickets, certificates, ratings] = await Promise.all([
-      prisma.enrollment.count({ where: { userId: id } }),
-      prisma.order.count({ where: { userId: id } }),
-      prisma.supportTicket.count({ where: { userId: id } }),
-      prisma.certificate.count({ where: { enrollment: { userId: id } } }),
-      prisma.rating.count({ where: { raterId: id } }),
-    ])
-    const blockers: string[] = []
-    if (orders > 0) blockers.push(`${orders} طلبَ شراءٍ وفواتيرَه`)
-    if (enrollments > 0) blockers.push(`${enrollments} تسجيلا في شعب`)
-    if (certificates > 0) blockers.push(`${certificates} شهادة`)
-    if (tickets > 0) blockers.push(`${tickets} تذكرةَ دعم`)
-    if (ratings > 0) blockers.push(`${ratings} تقييما`)
-    if (blockers.length > 0) {
+    const footprint = await accountFootprint(prisma, id)
+    const blockers = footprintBlockersAr(footprint)
+    if (blockers.length > 0 && !force) {
       return {
         error: {
           code: 'has_history',
           message_ar: `لا يُحذف هذا الحساب: له ${blockers.join('، و')} — وحذفُه يمحوها معه. أوقفه بدل ذلك، فيبقى السجلّ ويُمنع الدخول.`,
+          blockers,
+          /* لمدير النظام الأعلى بابٌ ثانٍ: المحوُ بالسجلّ، بسبب */
+          forceAllowed: canForcePurge(req),
         },
+      }
+    }
+
+    /* المحوُ بالسجلّ: للأعلى وحده، وبسببٍ يُقرأ — حسابُ ديمو أو تجربةٍ لا دفترُ عميل */
+    if (blockers.length > 0) {
+      if (!canForcePurge(req)) {
+        return { error: { code: 'force_forbidden', message_ar: 'المحوُ بالسجلّ لمن يملك حبّته وحده — أوقف الحساب بدل ذلك' } }
+      }
+      if (!reason || reason.length < 5) {
+        return { error: { code: 'reason_required', message_ar: 'اكتب سببَ المحو بالسجلّ — يُحفظ في الأثر بعد أن يذهب الحساب' } }
       }
     }
 
     /* الأثرُ يُكتب قبل المحو: بعده لا يبقى ما يُشار إليه */
     await recordAudit(prisma, {
-      actorId: req.auth!.userId, action: 'admin.user.purge', entityType: 'user', entityId: id,
-      meta: { email: check.target.email, displayName: check.target.displayName, roles: check.target.roles.map((r) => r.roleId) },
+      actorId: req.auth!.userId, action: blockers.length > 0 ? 'admin.user.purge_with_history' : 'admin.user.purge',
+      entityType: 'user', entityId: id,
+      reason: reason || undefined,
+      meta: {
+        email: check.target.email, displayName: check.target.displayName, roles: check.target.roles.map((r) => r.roleId),
+        ...(blockers.length > 0 ? { footprint } : {}),
+      },
     })
-    await prisma.user.delete({ where: { id } })
-    return { ok: true, purged: check.target.email }
+    if (blockers.length > 0) await purgeAccountWithHistory(prisma, id)
+    else await prisma.user.delete({ where: { id } })
+    return { ok: true, purged: check.target.email, withHistory: blockers.length > 0 }
   })
 }
+
