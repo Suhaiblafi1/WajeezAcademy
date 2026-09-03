@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
+import { toast, toastError } from "@/components/Toast";
 import {
-  CalendarClock, CalendarDays, CalendarPlus, CheckCircle2, ChevronDown, ClipboardCheck, Loader2, MessageSquarePlus, RefreshCw, ServerOff, Star, Upload, Users, Video,
+  CalendarClock, CalendarDays, CalendarPlus, ChevronDown, ClipboardCheck, Loader2, MessageSquarePlus, RefreshCw, ServerOff, Star, Upload, Users, Video,
 } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import TrainerLayout from "./TrainerLayout";
@@ -71,7 +72,6 @@ export default function CohortBoard() {
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [flash, setFlash] = useState("");
   const [busy, setBusy] = useState(false);
   const [reviewNote, setReviewNote] = useState<Record<string, string>>({});
   const [gradeForm, setGradeForm] = useState<Record<string, string>>({});
@@ -107,13 +107,13 @@ export default function CohortBoard() {
 
   const act = async (fn: () => Promise<unknown>, doneMsg: string) => {
     if (busy) return;
-    setBusy(true); setFlash("");
+    setBusy(true);
     try {
       await fn();
-      setFlash(doneMsg);
+      toast(doneMsg);
       await load();
     } catch (err) {
-      setFlash(err instanceof ApiError ? err.message : "تعذر تنفيذ الإجراء");
+      toastError(err instanceof ApiError ? err.message : "تعذر تنفيذ الإجراء");
     } finally {
       setBusy(false);
     }
@@ -253,12 +253,6 @@ export default function CohortBoard() {
                 التخطي غامضا وتُجبر قارئ الشاشة على الاختيار بين منطقتين. */}
 
       <div className="mx-auto max-w-5xl px-5 py-8">
-        {flash && (
-          <p className="mb-5 flex items-center gap-2 rounded-2xl border border-teal/40 bg-teal/10 px-4 py-3 text-sm font-bold text-teal-light-ink">
-            <CheckCircle2 className="h-4 w-4 shrink-0" /> {flash}
-          </p>
-        )}
-
         {offline ? (
           <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
             <ServerOff className="h-12 w-12 text-white/20" />

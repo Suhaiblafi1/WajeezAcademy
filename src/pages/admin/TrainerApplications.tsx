@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { toast, toastError } from "@/components/Toast";
 import {
   CalendarCheck, CheckCircle2, ChevronLeft, ClipboardList, FileText, KeyRound,
   Loader2, MailCheck, RefreshCw, ServerOff, Star, UserPlus, XCircle,
@@ -16,6 +17,7 @@ import { useAutoRefresh } from "@/services/useAutoRefresh";
 import { TrainerDetailOps, TrainerChangeRequests, TrainerPayouts, type TrainerSummary } from "./TrainerOps";
 import ApplicationDossier, { type Dossier } from "./ApplicationDossier";
 import { fmtDateTime } from "@/application/text/format-ar";
+import ConfirmAction from "@/components/ConfirmAction";
 
 const STATUS_LABELS: Record<string, string> = {
   draft: "مسودة — لم يُكمل", email_verification_pending: "بانتظار تحقق البريد",
@@ -198,13 +200,14 @@ export default function TrainerApplications() {
      على صفٍّ غاب عن العين بلا علمِ صاحب القرار. */
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [bulkProgress, setBulkProgress] = useState("");
+  /* رفضٌ أو انتظارٌ على دفعةٍ: كلاهما يصل صاحبَ الطلب، فسببُه يُكتب أوّلا */
+  const [bulkDecision, setBulkDecision] = useState<{ action: string; labelAr: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState<string | null>(null);
   const [selected, setSelected] = useState<AppDetail | null>(null);
   const [scores, setScores] = useState<Record<string, number>>({});
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
-  const [flash, setFlash] = useState("");
   const [purging, setPurging] = useState(false);
   const [purgeReason, setPurgeReason] = useState("");
   const [tab, setTab] = useState<DetailTab>("dossier");
@@ -236,20 +239,20 @@ export default function TrainerApplications() {
       setSelected(detail);
       setScores({}); setNote("");
     } catch (err) {
-      setFlash(err instanceof ApiError ? err.message : "تعذر فتح الطلب");
+      toastError(err instanceof ApiError ? err.message : "تعذر فتح الطلب");
     }
   };
 
   const act = async (fn: () => Promise<unknown>, doneMsg: string) => {
     if (busy) return;
-    setBusy(true); setFlash("");
+    setBusy(true);
     try {
       await fn();
-      setFlash(doneMsg);
+      toast(doneMsg);
       if (selected) await openDetail(selected.id);
       await load();
     } catch (err) {
-      setFlash(err instanceof ApiError ? err.message : "تعذر تنفيذ الإجراء");
+      toastError(err instanceof ApiError ? err.message : "تعذر تنفيذ الإجراء");
     } finally {
       setBusy(false);
     }
@@ -272,25 +275,20 @@ export default function TrainerApplications() {
   const commonActions = selectedRows.length === 0 ? [] :
     DECISIONS.filter((d) => BULK_ACTIONS.includes(d.action) && selectedRows.every((a) => d.from.includes(a.status)));
 
-  const bulkDecide = async (action: string, labelAr: string) => {
+  /* السببُ يأتي من نافذة التأكيد لا من حوار متصفّح — و**لا يُقرأ من حالة
+     الصفحة**: `note` أعلاه هو نصُّ مراجعةِ طلبٍ واحدٍ في نموذجٍ آخر، وخلطُه
+     بالقرار الجماعيّ يُرسل ملاحظةَ مراجعٍ إلى عشراتٍ لم تُكتب لهم. */
+  const bulkDecide = async (action: string, labelAr: string, decisionNote?: string) => {
     if (busy || sel.size === 0) return;
-    /* الرفضُ يحتاج سببا يُكتب في الأثر ويصل صاحبَ الطلب — ولا يُجمَّع بلا سبب */
-    let note: string | undefined;
-    if (action === "reject" || action === "waitlist") {
-      const typed = window.prompt(`سببُ «${labelAr}» على ${sel.size} طلبا (يصل صاحبَ الطلب):`);
-      if (typed === null) return;
-      if (typed.trim().length < 5) { setFlash("السببُ أقصرُ من أن يُفهم — اكتب خمسةَ أحرفٍ فأكثر."); return; }
-      note = typed.trim();
-    }
-    setBusy(true); setFlash(""); setBulkProgress("");
+    setBusy(true); setBulkProgress("");
     const outcome = await runBulk(
       [...sel],
-      (id) => apiPost(`/api/admin/trainer-applications/${id}/decision`, { action, note }),
+      (id) => apiPost(`/api/admin/trainer-applications/${id}/decision`, { action, note: decisionNote }),
       (done, total) => setBulkProgress(`${done} من ${total}`),
     );
     setBulkProgress("");
     setSel(new Set(outcome.failed.map((f) => f.id)));
-    setFlash(bulkMessage(outcome, `نُفّذ «${labelAr}»`));
+    toast(bulkMessage(outcome, `نُفّذ «${labelAr}»`));
     setBusy(false);
     await load();
   };
@@ -321,7 +319,6 @@ export default function TrainerApplications() {
           <ChevronLeft className="h-4 w-4" /> كل الطلبات
         </button>
 
-        {flash && <p className="mb-4 rounded-xl border border-white/10 bg-white/[0.04] p-3 text-xs font-bold text-white/80" role="status">{flash}</p>}
 
         {/* ── الحذف النهائيّ ──
 
@@ -353,10 +350,10 @@ export default function TrainerApplications() {
                     await apiDelete(`/api/admin/trainer-applications/${encodeURIComponent(a.reference)}`, { reasonAr: purgeReason.trim() });
                     setPurgeReason("");
                     setSelected(null);
-                    setFlash(`حُذف الطلب ${a.reference} نهائيّا.`);
+                    toast(`حُذف الطلب ${a.reference} نهائيّا.`);
                     await load();
                   } catch (e) {
-                    setFlash(e instanceof ApiError ? e.message : "تعذّر الحذف");
+                    toastError(e instanceof ApiError ? e.message : "تعذّر الحذف");
                   } finally {
                     setPurging(false);
                   }
@@ -623,7 +620,6 @@ export default function TrainerApplications() {
             </button>
           </>
         )}
-        {flash && <span className="text-xs font-bold text-teal-light-ink" role="status">{flash}</span>}
       </div>
 
       {mode === "changes" && <TrainerChangeRequests />}
@@ -648,7 +644,10 @@ export default function TrainerApplications() {
                 لا إجراءَ يصلح للمحدَّد كلِّه — الحالاتُ مختلفة، فاختر ما يتّحد حالُه.
               </span>
             ) : commonActions.map((d) => (
-              <button key={d.action} onClick={() => void bulkDecide(d.action, d.label)}
+              <button key={d.action}
+                onClick={() => (d.action === "reject" || d.action === "waitlist"
+                  ? setBulkDecision({ action: d.action, labelAr: d.label })
+                  : void bulkDecide(d.action, d.label))}
                 className={`cursor-pointer rounded-full px-4 py-1.5 text-[11px] font-black transition ${
                   d.tone === "danger" ? "border border-red-400/40 text-red-300 hover:bg-red-400/10" : "bg-gold text-on-gold hover:bg-gold/90"
                 }`}>
@@ -691,6 +690,23 @@ export default function TrainerApplications() {
           ))}
         </div>
       ))}
+
+      {bulkDecision && (
+        <ConfirmAction
+          titleAr={`«${bulkDecision.labelAr}» على ${sel.size} طلبَ انضمام`}
+          confirmLabelAr={`${bulkDecision.labelAr} — على ${sel.size}`}
+          busy={busy}
+          reason={{ labelAr: "السببُ — يصل صاحبَ كلّ طلبٍ كما تكتبه، ويبقى في الأثر", minLength: 5 }}
+          onCancel={() => setBulkDecision(null)}
+          onConfirm={(reason) => {
+            const target = bulkDecision;
+            setBulkDecision(null);
+            void bulkDecide(target.action, target.labelAr, reason);
+          }}
+        >
+          <p>يُطبَّق القرارُ على المحدَّد كلِّه، ويُخبَر أصحابُه. والسببُ واحدٌ للجميع — فاكتبه عامّا يصلح لكلّ من يقرؤه.</p>
+        </ConfirmAction>
+      )}
     </AdminLayout>
   );
 }

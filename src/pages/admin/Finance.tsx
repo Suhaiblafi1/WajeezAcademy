@@ -1,6 +1,7 @@
 /* المالية — API حقيقي: طلبات التسجيل (موافقة بكوبون/رفض)، فواتير ودفعات يدوية
    واستردادات، كوبونات، خطط اشتراك. */
 import { useCallback, useEffect, useState } from "react";
+import { toast, toastError } from "@/components/Toast";
 import {
   BadgePercent, CheckCircle2, CreditCard, FileText, Loader2, RefreshCw,
   RotateCcw, ServerOff, Wallet, XCircle,
@@ -17,6 +18,7 @@ import { LEDGER_CURRENCY } from "@/application/commerce/presentment";
 import { useAutoRefresh } from "@/services/useAutoRefresh";
 import { useRealSession } from "@/services/session";
 import { fmtDate, fmtDateTime } from "@/application/text/format-ar";
+import ConfirmAction from "@/components/ConfirmAction";
 
 const inputCls = "rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/25 focus:border-teal focus:outline-none";
 
@@ -68,9 +70,13 @@ export default function Finance() {
   /* التحديدُ للطلبات المعلَّقة وحدَها — وسيأتي بيانُ لِمَ لا يشمل غيرَها */
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [bulkProgress, setBulkProgress] = useState("");
+  /* الفعلُ الجماعيُّ يُؤكَّد في نافذة المنصّة لا في حوار متصفّح: يحجز مقاعدَ
+     ويُصدر فواتيرَ لعشراتٍ في ضغطةٍ واحدة، والرفضُ يصل صاحبَه بسببه. */
+  const [bulkConfirm, setBulkConfirm] = useState<"approve" | "reject" | null>(null);
+  /* رفضُ طلبٍ واحد — بالنافذة نفسِها التي يُرفض بها عشرون */
+  const [rejecting, setRejecting] = useState<{ id: string; whoAr: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState<string | null>(null);
-  const [flash, setFlash] = useState("");
   const [busy, setBusy] = useState(false);
   const [requests, setRequests] = useState<EnrollReq[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -109,9 +115,9 @@ export default function Finance() {
 
   const act = async (fn: () => Promise<unknown>, doneMsg: string) => {
     if (busy) return;
-    setBusy(true); setFlash("");
-    try { await fn(); setFlash(doneMsg); await load(); }
-    catch (e) { setFlash(e instanceof ApiError ? e.message : "فشل الإجراء"); }
+    setBusy(true);
+    try { await fn(); toast(doneMsg); await load(); }
+    catch (e) { toastError(e instanceof ApiError ? e.message : "فشل الإجراء"); }
     finally { setBusy(false); }
   };
 
@@ -151,18 +157,9 @@ export default function Finance() {
     return next;
   });
 
-  const bulkRequests = async (kind: "approve" | "reject") => {
+  const bulkRequests = async (kind: "approve" | "reject", reason?: string) => {
     if (busy || sel.size === 0) return;
-    let reason: string | undefined;
-    if (kind === "reject") {
-      const typed = window.prompt(`سببُ الرفض على ${sel.size} طلبا (يصل صاحبَ الطلب):`);
-      if (typed === null) return;
-      if (typed.trim().length < 5) { setFlash("السببُ أقصرُ من أن يُفهم — خمسةُ أحرفٍ فأكثر."); return; }
-      reason = typed.trim();
-    } else if (!window.confirm(`الموافقةُ على ${sel.size} طلبا تحجز مقاعدَها وتُصدر فواتيرَها. أتمضي؟`)) {
-      return;
-    }
-    setBusy(true); setFlash(""); setBulkProgress("");
+    setBusy(true); setBulkProgress("");
     const outcome = await runBulk(
       [...sel],
       (id) => kind === "approve"
@@ -174,7 +171,7 @@ export default function Finance() {
     );
     setBulkProgress("");
     setSel(new Set(outcome.failed.map((f) => f.id)));
-    setFlash(bulkMessage(outcome, kind === "approve" ? "وُوفق" : "رُفض"));
+    toast(bulkMessage(outcome, kind === "approve" ? "وُوفق" : "رُفض"));
     setBusy(false);
     await load();
   };
@@ -207,7 +204,6 @@ export default function Finance() {
         <button onClick={() => void load()} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-white/60 hover:border-white/40">
           <RefreshCw className="h-3.5 w-3.5" /> تحديث
         </button>
-        {flash && <span className="text-xs font-bold text-teal-light-ink" role="status">{flash}</span>}
       </div>
 
       {/* ولا يُترك القارئُ يظنّ الشاشةَ معطوبةً لخلوّها من الأزرار: يُقال له
@@ -241,11 +237,11 @@ export default function Finance() {
             </div>
           )}
           <BulkBar count={sel.size} busy={busy} progress={bulkProgress} onClear={() => setSel(new Set())}>
-            <button onClick={() => void bulkRequests("approve")}
+            <button onClick={() => setBulkConfirm("approve")}
               className="cursor-pointer rounded-full bg-teal px-4 py-1.5 text-[11px] font-black text-on-teal hover:bg-teal-light">
               وافق واحجز المقاعد — على {sel.size}
             </button>
-            <button onClick={() => void bulkRequests("reject")}
+            <button onClick={() => setBulkConfirm("reject")}
               className="cursor-pointer rounded-full border border-red-400/40 px-4 py-1.5 text-[11px] font-bold text-red-300 hover:bg-red-400/10">
               ارفض بسبب — على {sel.size}
             </button>
@@ -281,10 +277,7 @@ export default function Finance() {
                     <CheckCircle2 className="h-3.5 w-3.5" /> موافقة وحجز مقعد
                   </button>
                   <button disabled={busy}
-                    onClick={() => {
-                      const reason = window.prompt("سبب الرفض (5+ أحرف):");
-                      if (reason && reason.length >= 5) void act(() => apiPost(`/api/admin/enrollment-requests/${r.id}/reject`, { reason }), "رُفض الطلب");
-                    }}
+                    onClick={() => setRejecting({ id: r.id, whoAr: r.user.displayName })}
                     className="flex cursor-pointer items-center gap-1.5 rounded-full border border-red-500/40 px-4 py-1.5 text-xs font-bold text-red-400 hover:bg-red-500/10 disabled:opacity-40">
                     <XCircle className="h-3.5 w-3.5" /> رفض
                   </button>
@@ -442,6 +435,49 @@ export default function Finance() {
             </p>
           </div>
         </div>
+      )}
+      {bulkConfirm === "approve" && (
+        <ConfirmAction
+          tone="default"
+          titleAr={`الموافقةُ على ${sel.size} طلبَ تسجيل`}
+          confirmLabelAr={`وافق على ${sel.size}`}
+          busy={busy}
+          onCancel={() => setBulkConfirm(null)}
+          onConfirm={() => { setBulkConfirm(null); void bulkRequests("approve"); }}
+        >
+          <p>لكلّ طلبٍ منها: <b className="text-white/85">يُحجَز مقعدٌ في شعبته وتُصدَر فاتورتُه</b>. والمقعدُ المحجوزُ يُنقص السعةَ المعروضةَ فورا.</p>
+          <p>ولا كوبونَ في الجماعيّ — الكوبونُ قرارٌ لصفٍّ بعينه، وتعميمُه يمنح خصما لمن لم يُقصد.</p>
+        </ConfirmAction>
+      )}
+
+      {rejecting && (
+        <ConfirmAction
+          titleAr={`رفضُ طلبِ «${rejecting.whoAr}»`}
+          confirmLabelAr="ارفض الطلب"
+          busy={busy}
+          reason={{ labelAr: "سببُ الرفض — يصل صاحبَ الطلب كما تكتبه", minLength: 5 }}
+          onCancel={() => setRejecting(null)}
+          onConfirm={(reason) => {
+            const target = rejecting;
+            setRejecting(null);
+            void act(() => apiPost(`/api/admin/enrollment-requests/${target.id}/reject`, { reason }), "رُفض الطلب — ووصل السببُ صاحبَه");
+          }}
+        >
+          <p>يُغلَق الطلبُ ولا يُحجَز له مقعد، ويقرأ صاحبُه سببَك كما تكتبه.</p>
+        </ConfirmAction>
+      )}
+
+      {bulkConfirm === "reject" && (
+        <ConfirmAction
+          titleAr={`رفضُ ${sel.size} طلبَ تسجيل`}
+          confirmLabelAr={`ارفض ${sel.size}`}
+          busy={busy}
+          reason={{ labelAr: "سببُ الرفض — يصل صاحبَ الطلب كما تكتبه", minLength: 5 }}
+          onCancel={() => setBulkConfirm(null)}
+          onConfirm={(reason) => { setBulkConfirm(null); void bulkRequests("reject", reason); }}
+        >
+          <p>يُغلَق كلُّ طلبٍ منها ويُخبَر صاحبُه. والسببُ الذي تكتبه هو ما يقرؤه — فاكتبه له لا للسجلّ.</p>
+        </ConfirmAction>
       )}
     </AdminLayout>
   );

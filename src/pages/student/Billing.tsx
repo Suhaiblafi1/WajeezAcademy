@@ -6,6 +6,7 @@ import { CircleSlash, CreditCard, Loader2, ReceiptText, RefreshCw, RotateCcw, Sh
 import PortalLayout from "./PortalLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { fmtWhen } from "@/utils/format";
+import { toast, toastError } from '@/components/Toast';
 
 interface Payment { id: string; amount: string; status: string; method: string | null; refunds: { id: string; status: string; amount: string }[] }
 interface Invoice { id: string; total: string; currency: string; status: string; issuedAt: string; payments: Payment[] }
@@ -47,7 +48,6 @@ export default function Billing() {
   const [provider, setProvider] = useState<PaymentProviderInfo>({ driver: "test" });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [flash, setFlash] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -64,7 +64,7 @@ export default function Billing() {
 
   const pay = async (order: Order) => {
     if (busy) return;
-    setBusy(order.id); setFlash("");
+    setBusy(order.id);
     try {
       /* مفتاح idempotency للمحاولة لا للطلب.
 
@@ -81,9 +81,9 @@ export default function Billing() {
       });
       /* مزود مستضاف: نحوّل المتعلم لصفحة الدفع عند المزود — التسوية تصل بـ webhook */
       if (res.redirectUrl) { window.location.assign(res.redirectUrl); return; }
-      setFlash(provider.driver === "test" ? "تم الدفع الاختباري — فُتح وصولك وتحدثت الفاتورة" : "سُجل الدفع — فُتح وصولك");
+      toast(provider.driver === "test" ? "تم الدفع الاختباري — فُتح وصولك وتحدثت الفاتورة" : "سُجل الدفع — فُتح وصولك");
       await load();
-    } catch (e) { setFlash(e instanceof ApiError ? e.message : "فشل الدفع"); }
+    } catch (e) { toastError(e instanceof ApiError ? e.message : "فشل الدفع"); }
     finally { setBusy(null); }
   };
 
@@ -94,18 +94,17 @@ export default function Billing() {
      مقعده. وبلا هذا يبقى طلبٌ متروكٌ قافلا شعبةً لا يشتريها ولا يتركها. */
   const cancel = async (order: Order) => {
     if (busy) return;
-    setBusy(order.id); setFlash("");
+    setBusy(order.id);
     try {
       await apiPost(`/api/learner/orders/${order.id}/cancel`, {});
-      setFlash("أُلغي طلبك وفُكّ حجزُ مقعدك — يمكنك الشراء من جديد متى شئت");
+      toast("أُلغي طلبك وفُكّ حجزُ مقعدك — يمكنك الشراء من جديد متى شئت");
       await load();
-    } catch (e) { setFlash(e instanceof ApiError ? e.message : "تعذّر إلغاء الطلب"); }
+    } catch (e) { toastError(e instanceof ApiError ? e.message : "تعذّر إلغاء الطلب"); }
     finally { setBusy(null); }
   };
 
   return (
     <PortalLayout title="فواتيري وطلباتي">
-      {flash && <p className="mb-4 rounded-xl border border-teal/40 bg-teal/10 px-4 py-3 text-sm font-bold text-teal-light-ink" role="status">{flash}</p>}
       {error && <p className="mb-4 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-200">{error}</p>}
 
       {loading ? (

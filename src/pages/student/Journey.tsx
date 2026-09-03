@@ -35,6 +35,7 @@ import {
   type JourneyPlan, type JourneyRow, type JourneyTrack,
 } from "@/application/student/journey";
 import { courseFullById } from "@/data/courses";
+import { toast, toastError } from '@/components/Toast';
 
 /** الطلبُ كما يعرضه الشريطُ بعد العودة من صفحة الدفع */
 interface PaidOrder {
@@ -68,7 +69,6 @@ export default function Journey() {
   const [requests, setRequests] = useState<LearnerRequest[]>([]);
   const [offline, setOffline] = useState<string | null>(null);
   const [paid, setPaid] = useState<PaidOrder | null>(null);
-  const [flash, setFlash] = useState("");
 
   const [detail, setDetail] = useState<EnrollmentDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -171,7 +171,7 @@ export default function Journey() {
       .catch((e) => {
         if (!on) return;
         setDetail(null);
-        setFlash(e instanceof ApiError ? e.message : "تعذّر فتح محتوى هذه المرحلة");
+        toastError(e instanceof ApiError ? e.message : "تعذّر فتح محتوى هذه المرحلة");
       })
       .finally(() => { if (on) setDetailLoading(false); });
     return () => { on = false; };
@@ -185,7 +185,6 @@ export default function Journey() {
     next.delete("paid");
     next.delete("cancelled");
     setParams(next, { replace: true });
-    setFlash("");
   };
 
   const switchTrack = (trackId: string) => {
@@ -208,14 +207,13 @@ export default function Journey() {
     const text = (answers[assessmentId] ?? "").trim();
     if (busy || !text) return;
     setBusy(assessmentId);
-    setFlash("");
     try {
       await apiPost(`/api/learner/assessments/${assessmentId}/${isResubmit ? "resubmit" : "submissions"}`, { textAnswer: text });
       setAnswers((prev) => ({ ...prev, [assessmentId]: "" }));
-      setFlash(isResubmit ? "أُعيد التسليم — سيراجعه مدرّبك" : "سُلّم الواجب — سيراجعه مدرّبك");
+      toast(isResubmit ? "أُعيد التسليم — سيراجعه مدرّبك" : "سُلّم الواجب — سيراجعه مدرّبك");
       await reloadDetail();
     } catch (err) {
-      setFlash(err instanceof ApiError ? err.message : "تعذّر التسليم");
+      toastError(err instanceof ApiError ? err.message : "تعذّر التسليم");
     } finally {
       setBusy(null);
     }
@@ -224,13 +222,12 @@ export default function Journey() {
   const submitQuiz = async (assessmentId: string, responses: { itemId: string; answer: string }[]) => {
     if (busy || responses.length === 0) return;
     setBusy(assessmentId);
-    setFlash("");
     try {
       await apiPost(`/api/learner/assessments/${assessmentId}/attempts`, { responses });
-      setFlash("سُلّمت إجاباتك — تُقيَّم وتظهر درجتك هنا");
+      toast("سُلّمت إجاباتك — تُقيَّم وتظهر درجتك هنا");
       await reloadDetail();
     } catch (err) {
-      setFlash(err instanceof ApiError ? err.message : "تعذّر تسليم الاختبار");
+      toastError(err instanceof ApiError ? err.message : "تعذّر تسليم الاختبار");
     } finally {
       setBusy(null);
     }
@@ -297,11 +294,6 @@ export default function Journey() {
               وتفصيل الفاتورة في <Link to="/student/billing" className="font-bold text-teal-light-ink underline underline-offset-4">الفواتير</Link>.
             </p>
           </div>
-        )}
-        {flash && (
-          <p className="mb-5 flex items-center gap-2 rounded-2xl border border-teal/40 bg-teal/10 px-4 py-3 text-sm font-bold text-teal-light-ink">
-            <CheckCircle2 className="h-4 w-4 shrink-0" /> {flash}
-          </p>
         )}
 
         {looseHeld.length > 0 && (

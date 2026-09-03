@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { toast, toastError } from "@/components/Toast";
 import { BookOpen, GitPullRequest, Loader2, Lock, Plus, ServerOff, Undo2, X } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
@@ -81,7 +82,6 @@ export default function TrainerProposals() {
     scope: "cohort" as "cohort" | "catalog", cohortId: "",
   });
   const [busy, setBusy] = useState(false);
-  const [flash, setFlash] = useState("");
   const [bp, setBp] = useState<Blueprint | null>(null);
   const [bpErr, setBpErr] = useState("");
   const [bpBusy, setBpBusy] = useState("");
@@ -146,7 +146,7 @@ export default function TrainerProposals() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy || !form.courseId || form.reason.trim().length < 10) return;
-    setBusy(true); setFlash("");
+    setBusy(true);
     try {
       await apiPost("/api/trainer/change-requests", {
         courseId: form.courseId,
@@ -161,12 +161,12 @@ export default function TrainerProposals() {
             : { text: form.newValue },
         }],
       });
-      setFlash("أُرسل اقتراحك للمراجعة الأكاديمية — لن يُطبَّق قبل الاعتماد");
+      toast("أُرسل اقتراحك للمراجعة الأكاديمية — لن يُطبَّق قبل الاعتماد");
       setShowForm(false);
       setForm({ courseId: "", reason: "", changeType: "module_title_edit", targetKey: "", newValue: "", scope: "cohort", cohortId: "" });
       await load();
     } catch (err) {
-      setFlash(err instanceof ApiError ? err.message : "تعذر إرسال الاقتراح");
+      toastError(err instanceof ApiError ? err.message : "تعذر إرسال الاقتراح");
     } finally {
       setBusy(false);
     }
@@ -177,7 +177,7 @@ export default function TrainerProposals() {
       await apiPost(`/api/trainer/change-requests/${id}/withdraw`);
       await load();
     } catch (err) {
-      setFlash(err instanceof ApiError ? err.message : "تعذر السحب");
+      toastError(err instanceof ApiError ? err.message : "تعذر السحب");
     }
   };
 
@@ -224,7 +224,6 @@ export default function TrainerProposals() {
         </button>
       </div>
 
-      {flash && <p className="mb-4 rounded-xl border border-white/10 bg-white/[0.04] p-3 text-xs font-bold text-white/80" role="status">{flash}</p>}
 
       {showForm && (
         <form onSubmit={submit} className="mb-6 space-y-4 rounded-3xl border border-teal/25 bg-teal/[0.04] p-6">

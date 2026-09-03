@@ -13,6 +13,7 @@ import { apiGet, apiPost, ApiError } from '@/services/api'
 import { courseById, courses } from '@/data/courses'
 import { controlCls, areaCls, Field, FieldRow } from '@/components/FormKit'
 import { LEDGER_CURRENCY } from "@/application/commerce/presentment"
+import { toast, toastError } from '@/components/Toast'
 
 /** أعلى نسبةٍ يطلبها مستشار — مطابقةٌ لما يفرضه الخادم */
 const MAX_PERCENT = 50
@@ -48,7 +49,6 @@ export default function RequestsPanel({ caseId }: { caseId: string }) {
   const [rows, setRows] = useState<Row[] | null>(null)
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [flash, setFlash] = useState('')
 
   const [kind, setKind] = useState<'discount' | 'plan_add' | 'plan_remove'>('discount')
   const [mode, setMode] = useState<'percent' | 'amount'>('percent')
@@ -71,7 +71,7 @@ export default function RequestsPanel({ caseId }: { caseId: string }) {
   useEffect(() => { void load() }, [load])
 
   const submit = async () => {
-    setBusy(true); setFlash('')
+    setBusy(true); toast('')
     try {
       await apiPost(`/api/advisor/cases/${caseId}/requests`, {
         kind,
@@ -81,11 +81,11 @@ export default function RequestsPanel({ caseId }: { caseId: string }) {
         courseId: kind === 'discount' ? undefined : courseId,
         reasonAr: reason.trim(),
       })
-      setFlash('رُفع الطلب — تراه الإدارة في طابورها')
+      toast('رُفع الطلب — تراه الإدارة في طابورها')
       setOpen(false); setReason(''); setCourseId('')
       await load()
     } catch (e) {
-      setFlash(e instanceof ApiError ? e.message : 'تعذّر رفع الطلب')
+      toastError(e instanceof ApiError ? e.message : 'تعذّر رفع الطلب')
     } finally {
       setBusy(false)
     }
@@ -97,7 +97,7 @@ export default function RequestsPanel({ caseId }: { caseId: string }) {
       await apiPost(`/api/advisor/requests/${id}/cancel`)
       await load()
     } catch (e) {
-      setFlash(e instanceof ApiError ? e.message : 'تعذّر سحب الطلب')
+      toastError(e instanceof ApiError ? e.message : 'تعذّر سحب الطلب')
     } finally {
       setBusy(false)
     }
@@ -107,7 +107,6 @@ export default function RequestsPanel({ caseId }: { caseId: string }) {
 
   return (
     <div>
-      {flash && <p role="status" className="mb-3 rounded-xl border border-white/10 bg-white/[0.04] p-2.5 text-[11px] font-bold text-white/80">{flash}</p>}
 
       {!open ? (
         <button

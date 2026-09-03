@@ -3,6 +3,7 @@
    وفحصا الاتصال حيان يضربان خادم المزود/البريد فعلا. متغيرات البيئة تغلب كل شيء. */
 
 import { useCallback, useEffect, useState } from "react";
+import { toast, toastError } from "@/components/Toast";
 import { CreditCard, Loader2, Mail, PlugZap, RefreshCw, Send, ServerOff, ShieldCheck } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
@@ -34,7 +35,6 @@ export default function Integrations() {
   const [offline, setOffline] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [flash, setFlash] = useState("");
 
   const [payForm, setPayForm] = useState({ enabled: false, driver: "test", publishableKey: "", secretKey: "", webhookSecret: "" });
   const [mailForm, setMailForm] = useState({ enabled: false, host: "", port: 465, secure: true, user: "", pass: "", fromName: "", fromEmail: "" });
@@ -61,28 +61,28 @@ export default function Integrations() {
 
   const act = async (fn: () => Promise<unknown>, doneMsg: string) => {
     if (busy) return;
-    setBusy(true); setFlash("");
-    try { await fn(); setFlash(doneMsg); await load(); }
-    catch (e) { setFlash(e instanceof ApiError ? e.message : "فشل الإجراء"); }
+    setBusy(true);
+    try { await fn(); toast(doneMsg); await load(); }
+    catch (e) { toastError(e instanceof ApiError ? e.message : "فشل الإجراء"); }
     finally { setBusy(false); }
   };
 
   const testPayment = async () => {
-    setBusy(true); setFlash("");
+    setBusy(true);
     try {
       const r = await apiPost<{ ok: boolean; message: string }>("/api/admin/integrations/payment/test");
-      setFlash(r.message);
-    } catch (e) { setFlash(e instanceof ApiError ? e.message : "فشل الفحص"); }
+      toast(r.message);
+    } catch (e) { toastError(e instanceof ApiError ? e.message : "فشل الفحص"); }
     finally { setBusy(false); }
   };
 
   const testEmail = async () => {
-    if (!testTo.includes("@")) { setFlash("أدخل بريداً صحيحاً للاختبار"); return; }
-    setBusy(true); setFlash("");
+    if (!testTo.includes("@")) { toast("أدخل بريداً صحيحاً للاختبار"); return; }
+    setBusy(true);
     try {
       const r = await apiPost<{ ok: boolean; message: string }>("/api/admin/integrations/email/test", { to: testTo });
-      setFlash(r.message ?? (r.ok ? "أُرسل" : "فشل"));
-    } catch (e) { setFlash(e instanceof ApiError ? e.message : "فشل الإرسال التجريبي"); }
+      toastError(r.message ?? (r.ok ? "أُرسل" : "فشل"));
+    } catch (e) { toastError(e instanceof ApiError ? e.message : "فشل الإرسال التجريبي"); }
     finally { setBusy(false); }
   };
 
@@ -104,7 +104,6 @@ export default function Integrations() {
 
   return (
     <AdminLayout title="التكاملات — الدفع والبريد">
-      {flash && <p role="status" className="mb-4 rounded-xl border border-teal/30 bg-teal/10 px-4 py-3 text-sm font-bold text-teal-light-ink">{flash}</p>}
 
       {loading || !view ? (
         <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-white/30" /></div>

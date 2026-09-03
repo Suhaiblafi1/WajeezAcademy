@@ -2,7 +2,8 @@
    ورفعُه، وحذفٌ نهائيّ — ولمدير النظام الأعلى محوُ حسابٍ بسجلّه (ديمو وتجربة).
    الحمايات من الخادم: لا سحب super_admin من نفسك ولا إيقاف ذاتي من هنا. */
 import { useCallback, useEffect, useState } from "react";
-import { Archive, CheckCircle2, KeyRound, Loader2, Minus, Plus, RefreshCw, Send, ServerOff, ShieldCheck, ShieldOff, Trash2, UserPlus, Users as UsersIcon } from "lucide-react";
+import { toast, toastError } from "@/components/Toast";
+import { Archive, KeyRound, Loader2, Minus, Plus, RefreshCw, Send, ServerOff, ShieldCheck, ShieldOff, Trash2, UserPlus, Users as UsersIcon } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import ListToolbar from "@/components/admin/ListToolbar";
 import { matchesQuery } from "@/application/text/search-ar";
@@ -11,6 +12,7 @@ import { apiDelete, apiGet, apiPost, ApiError, permissionMessage } from "@/servi
 import { fmtDateAr } from "@/utils/format";
 import { useRealSession } from "@/services/session";
 import EntityAuditTimeline from "@/components/EntityAuditTimeline";
+import ConfirmAction from "@/components/ConfirmAction";
 
 const ROLE_NAMES_AR: Record<string, string> = {
   super_admin: "مدير النظام الأعلى", academic_manager: "المدير الأكاديمي",
@@ -79,11 +81,22 @@ export default function Users() {
   const [box, setBox] = useState<"active" | "invited" | "suspended" | "archived">("active");
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState<string | null>(null);
-  const [flash, setFlash] = useState("");
   const [creating, setCreating] = useState(false);
   const [newUser, setNewUser] = useState({ email: "", displayName: "", roleId: "support" });
   const [bulk, setBulk] = useState("");
   const [busy, setBusy] = useState(false);
+  /* ═══ نافذةٌ واحدةٌ لكلّ فعلٍ لا رجعةَ فيه ═══
+
+     كانت الأرشفةُ تسأل سببَها بـ`window.prompt`، والحذفُ يطلب البريدَ
+     بـ`prompt` آخر، ثمّ المحوُ بالسجلّ بـ`prompt` ثالثٍ يكتب قائمةَ ما
+     سيُمحى بفواصلِ أسطر. وحوارُ المتصفّح يملك المستخدمُ كتمَه — فيصير
+     الفعلُ لا يقع ولا يُقال له لماذا. */
+  const [confirming, setConfirming] = useState<
+    | { kind: "archive"; user: UserRow }
+    | { kind: "purge"; user: UserRow }
+    | { kind: "purgeHistory"; user: UserRow; blockers: string[] }
+    | null
+  >(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [rolePick, setRolePick] = useState<string[]>([]);
   /* صلاحيات شخصٍ بعينه — لمدير النظام وحده */
@@ -106,7 +119,7 @@ export default function Users() {
     if (permFor === userId) { setPermFor(null); setPerms(null); return; }
     setPermFor(userId); setPerms(null); setPermReason(""); setPermQuery("");
     try { setPerms(await apiGet<PermView>(`/api/admin/users/${userId}/permissions`)); }
-    catch (e) { setFlash(permissionMessage(e, "تعذّر جلب الصلاحيات")); setPermFor(null); }
+    catch (e) { toastError(permissionMessage(e, "تعذّر جلب الصلاحيات")); setPermFor(null); }
   };
 
   const setPerm = (userId: string, key: string, effect: "grant" | "deny" | "clear") =>
@@ -133,39 +146,42 @@ export default function Users() {
      لا بريد — والخادمُ يعرف أأُرسلت أم لا، فيُقرأ منه لا يُفترض عنه. */
   const act = async (fn: () => Promise<unknown>, doneMsg: string | ((res: unknown) => string)) => {
     if (busy) return;
-    setBusy(true); setFlash("");
+    setBusy(true);
     try {
       const res = await fn() as { error?: { message_ar: string } } | undefined;
-      if (res?.error) { setFlash(res.error.message_ar); return; }
-      setFlash(typeof doneMsg === "function" ? doneMsg(res) : doneMsg); await load();
-    } catch (e) { setFlash(e instanceof ApiError ? e.message : "فشل الإجراء"); }
+      if (res?.error) { toastError(res.error.message_ar); return; }
+      toast(typeof doneMsg === "function" ? doneMsg(res) : doneMsg); await load();
+    } catch (e) { toastError(e instanceof ApiError ? e.message : "فشل الإجراء"); }
     finally { setBusy(false); }
   };
 
   /* الحذفُ النهائيّ: بريدٌ يُكتب تأكيدا، ثمّ إن كان للحساب سجلٌّ عُرض
      السجلُّ بالعدد — ولمدير النظام الأعلى أن يمحوه معه بسببٍ يكتبه.
      الطلبُ الأوّل بلا قسر عمدا: الخادمُ هو من يقول ما للحساب من أثر. */
+  /* الحذفُ خطوتان بطبيعته: الأولى تُجرَّب فيقول الخادمُ إن كان للحساب سجلّ،
+     والثانيةُ محوٌ بالسجلّ بسببٍ مكتوب. وكلُّ خطوةٍ نافذتُها — ولا تُفتح
+     الثانيةُ إلّا بجوابِ الخادم، فلا تُعرض قائمةُ محوٍ مختلَقة. */
   const purge = async (u: UserRow) => {
-    const typed = window.prompt(`الحذفُ النهائيُّ لا رجعةَ فيه. اكتب بريدَ الحساب لتأكيده:\n${u.email}`);
-    if (typed === null) return;
-    if (typed.trim().toLowerCase() !== u.email.toLowerCase()) { setFlash("البريدُ لا يطابق — لم يُحذف شيء."); return; }
-    setBusy(true); setFlash("");
+    setBusy(true);
     try {
       const first = await apiDelete(`/api/admin/users/${u.id}`) as
         { ok?: boolean; error?: { code: string; message_ar: string; blockers?: string[]; forceAllowed?: boolean } } | undefined;
-      if (!first?.error) { setFlash("حُذف الحساب نهائيّا من القاعدة."); await load(); return; }
-      if (first.error.code !== "has_history" || !first.error.forceAllowed) { setFlash(first.error.message_ar); return; }
-      const list = (first.error.blockers ?? []).map((b) => `· ${b}`).join("\n");
-      const reason = window.prompt(
-        `لهذا الحساب سجلٌّ سيُمحى معه:\n${list}\n\nهذا محوٌ كامل لا يُستعاد — يصلح لحسابات الديمو والتجربة لا لعميلٍ حقيقيّ.\nاكتب سببَ المحو للأثر (٥ أحرف على الأقل)، أو ألغِ:`,
-      );
-      if (reason === null) { setFlash("أُلغي — لم يُحذف شيء."); return; }
-      const second = await apiDelete(`/api/admin/users/${u.id}?force=1`, { reason: reason.trim() }) as
+      if (!first?.error) { toast("حُذف الحساب نهائيّا من القاعدة."); await load(); return; }
+      if (first.error.code !== "has_history" || !first.error.forceAllowed) { toastError(first.error.message_ar); return; }
+      setConfirming({ kind: "purgeHistory", user: u, blockers: first.error.blockers ?? [] });
+    } catch (e) { toastError(e instanceof ApiError ? e.message : "فشل الحذف"); }
+    finally { setBusy(false); }
+  };
+
+  const purgeWithHistory = async (u: UserRow, reason: string) => {
+    setBusy(true);
+    try {
+      const res = await apiDelete(`/api/admin/users/${u.id}?force=1`, { reason }) as
         { ok?: boolean; error?: { message_ar: string } } | undefined;
-      if (second?.error) { setFlash(second.error.message_ar); return; }
-      setFlash("مُحي الحساب بسجلّه كلّه — والأثرُ محفوظ.");
+      if (res?.error) { toastError(res.error.message_ar); return; }
+      toast("مُحي الحساب بسجلّه كلّه — والأثرُ محفوظ.");
       await load();
-    } catch (e) { setFlash(e instanceof ApiError ? e.message : "فشل الحذف"); }
+    } catch (e) { toastError(e instanceof ApiError ? e.message : "فشل المحو"); }
     finally { setBusy(false); }
   };
 
@@ -204,13 +220,12 @@ export default function Users() {
             يُنسى بلا دور يدخل ولا يجد شيئا، ويُقرأ ذلك عطبا لا نقصَ خطوة. */}
         {canManage && (
           <button
-            onClick={() => { setCreating(!creating); setFlash(""); }}
+            onClick={() => { setCreating(!creating);  }}
             className="flex cursor-pointer items-center gap-1.5 rounded-full bg-gold px-4 py-2 text-xs font-black text-on-gold transition hover:bg-gold/90"
           >
             <UserPlus className="h-3.5 w-3.5" /> {creating ? "إلغاء" : "أنشئ حسابا"}
           </button>
         )}
-        {flash && <span className="flex items-center gap-1.5 text-xs font-bold text-teal-light-ink" role="status"><CheckCircle2 className="h-3.5 w-3.5" /> {flash}</span>}
       </div>
 
       {creating && canManage && (
@@ -394,12 +409,7 @@ export default function Users() {
                   )}
                   {canManage && u.status !== "archived" && (
                     <button disabled={busy}
-                      onClick={() => {
-                        const reason = window.prompt("سببُ الأرشفة — يقرؤه من يراجع السجلّ بعد سنة (١٠ أحرف على الأقلّ):");
-                        if (!reason || reason.trim().length < 10) return;
-                        void act(() => apiPost(`/api/admin/users/${u.id}/archive`, { reason: reason.trim() }),
-                          "أُرشف الحساب — أُغلق وأُبطلت جلساتُه، وسجلّاتُه كما هي");
-                      }}
+                      onClick={() => setConfirming({ kind: "archive", user: u })}
                       className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/25 px-4 py-1.5 text-xs font-bold text-white/60 hover:border-white/45 disabled:opacity-40">
                       <Archive className="h-3.5 w-3.5" /> أرشفة
                     </button>
@@ -424,7 +434,7 @@ export default function Users() {
                       يوقف تسعةً ثمّ يحذف تسعة. */}
                   {canPurge && (u.status === "suspended" || u.status === "archived" || canPurgeHistory) && (
                     <button disabled={busy}
-                      onClick={() => void purge(u)}
+                      onClick={() => setConfirming({ kind: "purge", user: u })}
                       className="flex cursor-pointer items-center gap-1.5 rounded-full border border-red-500/60 bg-red-500/10 px-4 py-1.5 text-xs font-black text-red-300 hover:bg-red-500/20 disabled:opacity-40">
                       <Trash2 className="h-3.5 w-3.5" /> احذف نهائيّا
                     </button>
@@ -570,6 +580,66 @@ export default function Users() {
         </div>
         )}
         </>
+      )}
+
+      {confirming?.kind === "archive" && (
+        <ConfirmAction
+          titleAr={`أرشفةُ حساب «${confirming.user.displayName}»`}
+          confirmLabelAr="أرشِف الحساب"
+          busy={busy}
+          tone="default"
+          reason={{ labelAr: "سببُ الأرشفة — يقرؤه من يراجع السجلّ بعد سنة", minLength: 10 }}
+          onCancel={() => setConfirming(null)}
+          onConfirm={(reason) => {
+            const target = confirming.user;
+            setConfirming(null);
+            void act(() => apiPost(`/api/admin/users/${target.id}/archive`, { reason }),
+              "أُرشف الحساب — أُغلق وأُبطلت جلساتُه، وسجلّاتُه كما هي");
+          }}
+        >
+          <p><b className="text-white/85">الأرشفةُ ليست حذفا:</b> الحسابُ يبقى بسجلّه كلِّه — تسجيلاتُه وفواتيرُه وشهاداتُه — ولا يعود يدخل، وتُبطَل جلساتُه ودعواتُه القائمةُ فورا.</p>
+          <p>وتُراجَع بإعادة التنشيط من تبويب «مؤرشَفون» متى شئت.</p>
+        </ConfirmAction>
+      )}
+
+      {confirming?.kind === "purge" && (
+        <ConfirmAction
+          titleAr={`حذفُ حساب «${confirming.user.displayName}» نهائيّا`}
+          confirmLabelAr="احذف نهائيّا"
+          busy={busy}
+          typing={{ expected: confirming.user.email, labelAr: "اكتب بريدَ الحساب حرفا بحرف لتأكيد القصد" }}
+          onCancel={() => setConfirming(null)}
+          onConfirm={() => {
+            const target = confirming.user;
+            setConfirming(null);
+            void purge(target);
+          }}
+        >
+          <p>الحذفُ النهائيُّ <b className="text-white/85">لا رجعةَ فيه</b>: يُزال الصفُّ من القاعدة.</p>
+          <p className="font-mono text-white/60" dir="ltr">{confirming.user.email}</p>
+          <p>وإن كان للحساب سجلٌّ (تسجيلٌ أو طلبٌ أو فاتورة) فسيرفض الخادمُ الحذفَ ويقول ما فيه — ولك بعدها خيارُ المحو بالسجلّ. والأرشفةُ هي الفعلُ الموصى به لمن غادر.</p>
+        </ConfirmAction>
+      )}
+
+      {confirming?.kind === "purgeHistory" && (
+        <ConfirmAction
+          titleAr={`محوُ حساب «${confirming.user.displayName}» بسجلّه كلّه`}
+          confirmLabelAr="امحُ الحسابَ وسجلَّه"
+          busy={busy}
+          reason={{ labelAr: "سببُ المحو — يبقى في الأثر بعد زوال الحساب", minLength: 5 }}
+          onCancel={() => setConfirming(null)}
+          onConfirm={(reason) => {
+            const target = confirming.user;
+            setConfirming(null);
+            void purgeWithHistory(target, reason ?? "");
+          }}
+        >
+          <p>لهذا الحساب سجلٌّ <b className="text-white/85">سيُمحى معه</b>:</p>
+          <ul className="space-y-1 pr-4">
+            {confirming.blockers.map((b) => <li key={b} className="list-disc">{b}</li>)}
+          </ul>
+          <p>محوٌ كاملٌ لا يُستعاد — يصلح لحسابات الديمو والتجربة، <b className="text-white/85">لا لعميلٍ حقيقيّ</b>. وأثرُ المحو نفسُه يبقى في السجلّ بسببه وصاحبه.</p>
+        </ConfirmAction>
       )}
     </AdminLayout>
   );

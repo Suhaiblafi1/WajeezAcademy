@@ -8,6 +8,7 @@
    يلزمه سبب يقرؤه صاحبُه. والاعتمادُ يُنتج كوبونا مقصورا على العميل. */
 
 import { useCallback, useEffect, useState } from "react";
+import { toast, toastError } from "@/components/Toast";
 import { BadgePercent, CheckCircle2, Clock, Loader2, Route, ServerOff, XCircle } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
@@ -48,7 +49,6 @@ export default function AdvisorRequests() {
   const [offline, setOffline] = useState<string | null>(null);
   const [note, setNote] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState("");
-  const [flash, setFlash] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -62,13 +62,13 @@ export default function AdvisorRequests() {
   useEffect(() => { void load(); }, [load]);
 
   const decide = async (id: string, decision: "approved" | "rejected") => {
-    setBusy(id); setFlash("");
+    setBusy(id);
     try {
       await apiPost(`/api/admin/advisor-requests/${id}/decision`, { decision, noteAr: note[id]?.trim() || undefined });
-      setFlash(decision === "approved" ? "اعتُمد الطلب — ووُلّد كوبونٌ مقصور على العميل إن كان خصما" : "رُفض الطلب، ويصل سببُك إلى المستشار");
+      toast(decision === "approved" ? "اعتُمد الطلب — ووُلّد كوبونٌ مقصور على العميل إن كان خصما" : "رُفض الطلب، ويصل سببُك إلى المستشار");
       await load();
     } catch (e) {
-      setFlash(e instanceof ApiError ? e.message : "تعذّر تنفيذ القرار");
+      toastError(e instanceof ApiError ? e.message : "تعذّر تنفيذ القرار");
     } finally {
       setBusy("");
     }
@@ -88,7 +88,6 @@ export default function AdvisorRequests() {
 
   return (
     <AdminLayout title="طلبات المستشارين — خصمٌ وتعديلُ خطّة">
-      {flash && <p role="status" className="mb-4 rounded-xl border border-white/10 bg-white/[0.04] p-3 text-xs font-bold text-white/80">{flash}</p>}
 
       {rows === null ? (
         <div className="grid place-items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-white/30" /></div>

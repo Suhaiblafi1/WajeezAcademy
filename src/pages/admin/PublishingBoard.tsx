@@ -5,6 +5,7 @@ import AdminLayout from "./AdminLayout";
 import FlowSteps from "@/components/FlowSteps";
 import { apiDelete, apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
 import { fmtDateTime } from "@/application/text/format-ar";
+import ConfirmAction from '@/components/ConfirmAction'
 
 type Version = {
   id: string; label: string; status: string; createdAt: string; publishedAt: string | null
@@ -23,7 +24,9 @@ export default function PublishingBoard() {
   const [impact, setImpact] = useState<Impact | null>(null);
   const [label, setLabel] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null)
+  /* مسودّةٌ تنتظر تأكيدَ حذفها — نافذةٌ واحدةٌ للفعل الذي لا يُستعاد */
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; label: string } | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -128,10 +131,9 @@ export default function PublishingBoard() {
                     تُسترجع، وتحجز تسميتها للأبد. هذا طريقها الوحيد للخروج. */}
                 {v.status === "draft" && v.snapshots.length === 0 && (
                   <button disabled={busy !== null}
-                    onClick={() => {
-                      if (!confirm(`حذف المسودة المعلّقة «${v.label}»؟ تُحرَّر تسميتها للاستعمال، ويُسجَّل الحذف في التدقيق.`)) return
-                      void act(`del-${v.id}`, () => apiDelete(`/api/admin/publishing/versions/${v.id}`, { reasonAr: "تنظيف مسودة معلّقة من لوحة النشر" }))
-                    }}
+                    /* كان `confirm` خامّا: سطرٌ واحدٌ في حوار متصفّحٍ يملك
+                       المستخدمُ كتمَه — فيصير الحذفُ لا يقع ولا يُقال لماذا. */
+                    onClick={() => setPendingDelete({ id: v.id, label: v.label })}
                     className="flex cursor-pointer items-center gap-1 rounded-full border border-white/20 px-3 py-1.5 text-xs font-bold text-white/60 hover:border-rose-400/50 hover:text-rose-300 disabled:opacity-40">
                     <Trash2 className="h-3.5 w-3.5" /> احذف المسودة
                   </button>
@@ -162,6 +164,23 @@ export default function PublishingBoard() {
           ))}
         </div>
       </section>
+
+      {pendingDelete && (
+        <ConfirmAction
+          titleAr={`حذفُ المسودّة المعلّقة «${pendingDelete.label}»`}
+          confirmLabelAr="احذف المسودّة"
+          busy={busy !== null}
+          onCancel={() => setPendingDelete(null)}
+          onConfirm={() => {
+            const target = pendingDelete
+            setPendingDelete(null)
+            void act(`del-${target.id}`, () => apiDelete(`/api/admin/publishing/versions/${target.id}`, { reasonAr: "تنظيف مسودة معلّقة من لوحة النشر" }))
+          }}
+        >
+          <p>مسودّةٌ بلا لقطةٍ تعني نشرا أخفق بعد إنشاء الإصدار: لا تُنشر ولا تُسترجع، وتحجز تسميتها للأبد.</p>
+          <p>بحذفها <b className="text-white/85">تُحرَّر التسميةُ للاستعمال</b>، ويُسجَّل الحذفُ في سجلّ الأثر بصاحبه ووقته. ولا يُمَسّ أيُّ إصدارٍ منشور.</p>
+        </ConfirmAction>
+      )}
     </AdminLayout>
   );
 }

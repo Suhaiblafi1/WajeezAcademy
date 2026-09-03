@@ -1,10 +1,11 @@
 /* دعم الطالب — API حقيقي: فتح تذكرة برسالة أولى، تذاكري بخيوطها (الداخلية مخفية)،
    رد، وإعادة فتح للمحلولة/المغلقة. */
 import { useCallback, useEffect, useState } from "react";
-import { CheckCircle2, ChevronRight, LifeBuoy, Loader2, Plus, RefreshCw, Send } from "lucide-react";
+import { ChevronRight, LifeBuoy, Loader2, Plus, RefreshCw, Send } from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { fmtWhen } from "@/utils/format";
+import { toast, toastError } from '@/components/Toast';
 
 const STATUS_AR: Record<string, string> = {
   open: "مفتوحة", in_progress: "قيد المعالجة", waiting_customer: "بانتظار ردك",
@@ -22,7 +23,6 @@ export default function StudentSupport() {
   const [rows, setRows] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [flash, setFlash] = useState("");
   const [busy, setBusy] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -42,9 +42,9 @@ export default function StudentSupport() {
 
   const act = async (fn: () => Promise<unknown>, doneMsg: string) => {
     if (busy) return;
-    setBusy(true); setFlash("");
-    try { await fn(); setFlash(doneMsg); await load(); }
-    catch (e) { setFlash(e instanceof ApiError ? e.message : "فشل الإجراء"); }
+    setBusy(true);
+    try { await fn(); toast(doneMsg); await load(); }
+    catch (e) { toastError(e instanceof ApiError ? e.message : "فشل الإجراء"); }
     finally { setBusy(false); }
   };
 
@@ -52,7 +52,6 @@ export default function StudentSupport() {
 
   return (
     <PortalLayout title="الدعم الفني">
-      {flash && <p className="mb-4 flex items-center gap-2 rounded-xl border border-teal/40 bg-teal/10 px-4 py-3 text-sm font-bold text-teal-light-ink" role="status"><CheckCircle2 className="h-4 w-4" /> {flash}</p>}
       {error && <p className="mb-4 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-200">{error}</p>}
 
       {/* فتح تذكرة */}

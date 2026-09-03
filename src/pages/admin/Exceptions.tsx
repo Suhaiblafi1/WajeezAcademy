@@ -2,7 +2,8 @@
    الإسناد يتطلب صلاحية advisor.assign؛ قائمة المستشارين من صلاحية admin.users.manage
    وإن لم تتوفر يُدخل المعرف يدويا. */
 import { useCallback, useEffect, useState } from "react";
-import { CheckCircle2, Loader2, RefreshCw, ServerOff, ShieldAlert, UserPlus } from "lucide-react";
+import { toast, toastError } from "@/components/Toast";
+import { Loader2, RefreshCw, ServerOff, ShieldAlert, UserPlus } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import FlowSteps from "@/components/FlowSteps";
 import { apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
@@ -25,7 +26,6 @@ export default function Exceptions() {
   const [advisors, setAdvisors] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState<string | null>(null);
-  const [flash, setFlash] = useState("");
   const [busy, setBusy] = useState(false);
   const [pick, setPick] = useState<Record<string, string>>({});
 
@@ -46,12 +46,12 @@ export default function Exceptions() {
   const assign = async (caseId: string) => {
     const advisorId = (pick[caseId] ?? "").trim();
     if (!advisorId || busy) return;
-    setBusy(true); setFlash("");
+    setBusy(true);
     try {
       await apiPost(`/api/admin/advisor-cases/${caseId}/assign`, { advisorId });
-      setFlash("أُسندت الحالة — تاريخ الإسناد محفوظ");
+      toast("أُسندت الحالة — تاريخ الإسناد محفوظ");
       await load();
-    } catch (e) { setFlash(e instanceof ApiError ? e.message : "فشل الإسناد"); }
+    } catch (e) { toastError(e instanceof ApiError ? e.message : "فشل الإسناد"); }
     finally { setBusy(false); }
   };
 
@@ -80,7 +80,6 @@ export default function Exceptions() {
         <button onClick={() => void load()} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-white/60 hover:border-white/40">
           <RefreshCw className="h-3.5 w-3.5" /> تحديث
         </button>
-        {flash && <span className="flex items-center gap-1.5 text-xs font-bold text-teal-light-ink" role="status"><CheckCircle2 className="h-3.5 w-3.5" /> {flash}</span>}
       </div>
 
       {loading ? (

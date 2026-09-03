@@ -12,6 +12,7 @@
    نفسِها يبقى في شاشة الشعبة: هي التي تحمل قواعدَ الإصدار وحاجزَ البريد. */
 
 import { useCallback, useEffect, useState } from "react";
+import { toast, toastError } from "@/components/Toast";
 import { Award, BadgeCheck, CheckCircle2, Clock, Eye, Loader2, ServerOff, XCircle } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
@@ -51,7 +52,6 @@ export default function LearnerRequests() {
   const [offline, setOffline] = useState<string | null>(null);
   const [note, setNote] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState("");
-  const [flash, setFlash] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -66,13 +66,12 @@ export default function LearnerRequests() {
 
   const decide = async (id: string, status: "in_review" | "fulfilled" | "declined") => {
     setBusy(id);
-    setFlash("");
     try {
       await apiPost(`/api/admin/learner-requests/${id}/decide`, {
         status,
         decisionAr: note[id]?.trim() || undefined,
       });
-      setFlash(
+      toast(
         status === "fulfilled"
           ? "سُجّل الإنجاز — ويصل الخبرُ إلى صاحب الطلب"
           : status === "declined"
@@ -81,7 +80,7 @@ export default function LearnerRequests() {
       );
       await load();
     } catch (e) {
-      setFlash(e instanceof ApiError ? e.message : "تعذّر تنفيذ القرار");
+      toastError(e instanceof ApiError ? e.message : "تعذّر تنفيذ القرار");
     } finally {
       setBusy("");
     }
@@ -101,12 +100,6 @@ export default function LearnerRequests() {
 
   return (
     <AdminLayout title="طلبات المتعلّمين — شهادةٌ وتوصية">
-      {flash && (
-        <p role="status" className="mb-4 rounded-xl border border-white/10 bg-white/[0.04] p-3 text-xs font-bold text-white/80">
-          {flash}
-        </p>
-      )}
-
       {rows === null ? (
         <div className="grid place-items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-white/30" /></div>
       ) : rows.length === 0 ? (

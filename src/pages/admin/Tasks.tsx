@@ -7,6 +7,7 @@
    كلّفتُ به غيري؟ وماذا أبثّ؟ وفصلُها في ثلاث شاشاتٍ يجعل المتابعةَ تنقّلا. */
 
 import { useCallback, useEffect, useState } from "react";
+import { toast, toastError } from "@/components/Toast";
 import { Bell, CheckCircle2, ClipboardList, Loader2, Send } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
@@ -33,7 +34,6 @@ export default function AdminTasks() {
   const [assigned, setAssigned] = useState<Task[]>([]);
   const [people, setPeople] = useState<StaffUser[]>([]);
   const [loading, setLoading] = useState(true);
-  const [flash, setFlash] = useState("");
   const [busy, setBusy] = useState(false);
 
   const [form, setForm] = useState({ assigneeId: "", title: "", bodyAr: "", dueAt: "", priority: "normal" });
@@ -48,7 +48,7 @@ export default function AdminTasks() {
         setPeople(await apiGet<StaffUser[]>("/api/admin/users").catch(() => []));
       }
     } catch (e) {
-      setFlash(permissionMessage(e, "تعذّر قراءة المهامّ"));
+      toastError(permissionMessage(e, "تعذّر قراءة المهامّ"));
     } finally { setLoading(false); }
   }, [canAssign, canNotify]);
 
@@ -56,9 +56,9 @@ export default function AdminTasks() {
 
   const act = async (fn: () => Promise<unknown>, msg: string) => {
     if (busy) return;
-    setBusy(true); setFlash("");
-    try { await fn(); setFlash(msg); await load(); }
-    catch (e) { setFlash(e instanceof ApiError ? e.message : "تعذّر الإجراء"); }
+    setBusy(true);
+    try { await fn(); toast(msg); await load(); }
+    catch (e) { toastError(e instanceof ApiError ? e.message : "تعذّر الإجراء"); }
     finally { setBusy(false); }
   };
 
@@ -100,9 +100,6 @@ export default function AdminTasks() {
   return (
     <AdminLayout title="المهامّ والتكليفات">
       <div className="mx-auto max-w-4xl space-y-5">
-        {flash && (
-          <p className="rounded-xl border border-teal/35 bg-teal/[0.07] px-4 py-2.5 text-xs font-bold text-teal-light-ink" role="status">{flash}</p>
-        )}
 
         {loading ? (
           <div className="grid place-items-center py-16"><Loader2 className="h-7 w-7 animate-spin text-teal-ink" /></div>

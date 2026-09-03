@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { toast, toastError } from "@/components/Toast";
 import { BadgePercent, ChevronDown, ChevronUp, Loader2, RefreshCw, ServerOff, Star, UserCheck } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import ListToolbar from "@/components/admin/ListToolbar";
@@ -34,7 +35,6 @@ export default function Advisors() {
   const [rows, setRows] = useState<AdvisorRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState<string | null>(null);
-  const [flash, setFlash] = useState("");
   const [busy, setBusy] = useState(false);
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
@@ -48,7 +48,7 @@ export default function Advisors() {
     if (detailFor === userId) { setDetailFor(null); setDetail(null); return; }
     setDetailFor(userId); setDetail(null); setDetailLoading(true);
     try { setDetail(await apiGet<AdvisorDetail>(`/api/admin/advisors/${userId}`)); }
-    catch (e) { setFlash(e instanceof ApiError ? e.message : "تعذّر جلب ملفّ المستشار"); }
+    catch (e) { toastError(e instanceof ApiError ? e.message : "تعذّر جلب ملفّ المستشار"); }
     finally { setDetailLoading(false); }
   };
 
@@ -63,17 +63,17 @@ export default function Advisors() {
 
   const save = async (userId: string) => {
     const pct = Number(form.commissionPct);
-    if (!Number.isFinite(pct) || pct < 0 || pct > 100) { setFlash("النسبةُ بين صفرٍ ومئة."); return; }
-    setBusy(true); setFlash("");
+    if (!Number.isFinite(pct) || pct < 0 || pct > 100) { toastError("النسبةُ بين صفرٍ ومئة."); return; }
+    setBusy(true);
     try {
       const res = await apiPatch<{ error?: { message_ar: string } }>(`/api/admin/advisors/${userId}`, {
         commissionPct: pct, notesAr: form.notesAr.trim() || undefined,
       });
-      if (res?.error) { setFlash(res.error.message_ar); return; }
-      setFlash("حُفظت العمولة — وسُجّل التغيير بصاحبه ووقته.");
+      if (res?.error) { toastError(res.error.message_ar); return; }
+      toast("حُفظت العمولة — وسُجّل التغيير بصاحبه ووقته.");
       setEditing(null);
       await load();
-    } catch (e) { setFlash(e instanceof ApiError ? e.message : "تعذّر الحفظ"); }
+    } catch (e) { toastError(e instanceof ApiError ? e.message : "تعذّر الحفظ"); }
     finally { setBusy(false); }
   };
 
@@ -100,7 +100,6 @@ export default function Advisors() {
         نسبةُ العمولة تُكتب هنا لا تُتذكَّر، ويُسجَّل كلُّ تغييرٍ فيها بصاحبه ووقته والرقمين معا.
         وإسنادُ الحالات من «الاستثناءات»، والبتُّ في طلبات الخصم من «طلبات المستشارين».
       </p>
-      {flash && <p className="mb-4 rounded-xl border border-teal/30 bg-teal/5 px-4 py-2.5 text-xs font-bold text-teal-light-ink" role="status">{flash}</p>}
 
       {loading ? (
         <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-white/30" /></div>
@@ -148,7 +147,6 @@ export default function Advisors() {
                         onClick={() => {
                           setEditing(editing === r.userId ? null : r.userId);
                           setForm({ commissionPct: r.commissionPct === null ? "" : String(r.commissionPct), notesAr: r.notesAr });
-                          setFlash("");
                         }}
                         className="flex cursor-pointer items-center gap-1.5 rounded-full border border-gold/45 px-4 py-1.5 text-xs font-bold text-gold-ink hover:bg-gold/10">
                         <BadgePercent className="h-3.5 w-3.5" /> {editing === r.userId ? "إغلاق" : "العمولة"}

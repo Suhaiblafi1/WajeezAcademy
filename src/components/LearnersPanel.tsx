@@ -15,6 +15,7 @@ import { useCallback, useEffect, useState } from "react";
 import { GraduationCap, Loader2, Pencil, Search, ShieldOff, Trash2, UserPlus, X } from "lucide-react";
 import { apiDelete, apiGet, apiPatch, apiPost, ApiError } from "@/services/api";
 import { fmtDate } from "@/application/text/format-ar";
+import { toast, toastError } from './Toast';
 
 interface LearnerEnrollment {
   id: string;
@@ -52,7 +53,6 @@ export default function LearnersPanel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [q, setQ] = useState("");
-  const [flash, setFlash] = useState("");
   const [editing, setEditing] = useState<LearnerRow | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -75,9 +75,8 @@ export default function LearnersPanel() {
   const act = async (fn: () => Promise<unknown>, msg: string) => {
     if (busy) return;
     setBusy(true);
-    setFlash("");
-    try { await fn(); setFlash(msg); await load(q); }
-    catch (e) { setFlash(e instanceof ApiError ? e.message : "تعذّر الإجراء"); }
+    try { await fn(); toast(msg); await load(q); }
+    catch (e) { toastError(e instanceof ApiError ? e.message : "تعذّر الإجراء"); }
     finally { setBusy(false); }
   };
 
@@ -109,12 +108,6 @@ export default function LearnersPanel() {
           />
         </form>
       </div>
-
-      {flash && (
-        <p className="rounded-xl border border-teal/35 bg-teal/[0.08] px-3.5 py-2.5 text-xs font-bold text-teal-light-ink" role="status">
-          {flash}
-        </p>
-      )}
 
       {data.learners.length === 0 ? (
         <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-14 text-center">

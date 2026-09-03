@@ -9,6 +9,7 @@ import { Loader2, ServerOff, ShieldCheck, Star } from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import EmptyState from "@/components/EmptyState";
 import { apiGet, apiPost, ApiError } from "@/services/api";
+import { toast } from '@/components/Toast';
 
 interface Rateable {
   subjectType: "trainer" | "advisor" | "course";
@@ -50,18 +51,17 @@ function RatingCard({ item, onSaved }: { item: Rateable; onSaved: () => void }) 
   const [score, setScore] = useState(item.myScore ?? 0);
   const [comment, setComment] = useState(item.myComment ?? "");
   const [busy, setBusy] = useState(false);
-  const [flash, setFlash] = useState("");
   const [error, setError] = useState("");
 
   const save = async () => {
     if (score < 1 || busy) return;
-    setBusy(true); setFlash(""); setError("");
+    setBusy(true);  setError("");
     try {
       await apiPost("/api/learner/ratings", {
         enrollmentId: item.enrollmentId, subjectType: item.subjectType,
         subjectId: item.subjectId, score, ...(comment.trim() ? { commentAr: comment.trim() } : {}),
       });
-      setFlash(item.myScore == null ? "شكرا — وصل تقييمك" : "حُدّث تقييمك");
+      toast(item.myScore == null ? "شكرا — وصل تقييمك" : "حُدّث تقييمك");
       onSaved();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "تعذّر إرسال التقييم");
@@ -110,7 +110,6 @@ function RatingCard({ item, onSaved }: { item: Rateable; onSaved: () => void }) 
         >
           {busy ? "يُرسَل…" : item.myScore == null ? "أرسل التقييم" : "حدّث التقييم"}
         </button>
-        {flash && <span role="status" className="text-[11px] font-bold text-emerald-300">{flash}</span>}
         {error && <span role="alert" className="text-[11px] font-bold text-red-300">{error}</span>}
       </div>
     </article>

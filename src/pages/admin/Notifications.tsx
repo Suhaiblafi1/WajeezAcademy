@@ -1,7 +1,8 @@
 /* إدارة الإشعارات — API حقيقي: قوالب (upsert بمتغيرات {{key}})، سجل الإرسال
    بترشيح الحالة، وإعادة محاولة الفاشل (حد ثلاث محاولات من الخادم). */
 import { useCallback, useEffect, useState } from "react";
-import { Bell, CheckCircle2, Loader2, RefreshCw, Save, Send, ServerOff } from "lucide-react";
+import { toast, toastError } from "@/components/Toast";
+import { Bell, Loader2, RefreshCw, Save, Send, ServerOff } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { fmtDateTime } from "@/application/text/format-ar";
@@ -23,7 +24,6 @@ export default function Notifications() {
   const [logFilter, setLogFilter] = useState("");
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState<string | null>(null);
-  const [flash, setFlash] = useState("");
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({ key: "", channel: "in_app", titleAr: "", bodyAr: "", active: true });
 
@@ -43,9 +43,9 @@ export default function Notifications() {
 
   const act = async (fn: () => Promise<unknown>, doneMsg: string) => {
     if (busy) return;
-    setBusy(true); setFlash("");
-    try { await fn(); setFlash(doneMsg); await load(); }
-    catch (e) { setFlash(e instanceof ApiError ? e.message : "فشل الإجراء"); }
+    setBusy(true);
+    try { await fn(); toast(doneMsg); await load(); }
+    catch (e) { toastError(e instanceof ApiError ? e.message : "فشل الإجراء"); }
     finally { setBusy(false); }
   };
 
@@ -65,7 +65,6 @@ export default function Notifications() {
 
   return (
     <AdminLayout title="الإشعارات — القوالب والسجل">
-      {flash && <p className="mb-4 flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] p-3 text-xs font-bold text-teal-light-ink" role="status"><CheckCircle2 className="h-4 w-4" /> {flash}</p>}
 
       <div className="grid gap-5 lg:grid-cols-2">
         {/* قالب جديد / تحديث */}

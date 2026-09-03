@@ -358,7 +358,7 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
     const { roleIds } = z.object({ roleIds: z.array(z.string()).min(1) }).parse(req.body)
     /* ممنوع سحب دور super_admin من نفسك — حماية من الإغلاق الذاتي */
     if (id === req.auth!.userId && !roleIds.includes('super_admin') && req.auth!.roles.includes('super_admin')) {
-      return { error: { code: 'self_lockout', message_ar: 'لا يمكنك سحب دور مدير النظام من حسابك بنفسك' } }
+      return reply.status(409).send({ error: { code: 'self_lockout', message_ar: 'لا يمكنك سحب دور مدير النظام من حسابك بنفسك' } })
     }
     /* ولا يُعيَّن دورٌ أعلى من رتبة المعيِّن — وكان هذا الباب مفتوحا: من مُنح
        `admin.users.manage` بالتفويض صار يستطيع أن يرقّي نفسه مديرَ نظام. */
@@ -396,28 +396,43 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
      `ROLE_PERMISSIONS` تمنحه كلَّ الحبّات، ويفوّضها لغيره إن أراد. */
   const canForcePurge = (req: { auth: { permissions: string[] } | null }) =>
     req.auth?.permissions.includes('admin.users.purge_history') ?? false
-  const refuseRank = async (targetId: string, actorRoles: string[], verbAr: string) => {
+  /* ═══ ورمزُ الحالة يقول ما قاله الجسم ═══
+
+     كانت هذه المساراتُ ترجع رفضَها بـ**٢٠٠** وجسمٍ فيه `error`: «لا حسابَ
+     بهذا المعرّف» و«لا تستطيع إيقافَ من فوقك» تصل كلُّها بحالةِ نجاح. فأيُّ
+     مستهلكٍ يفحص `res.ok` — وهو الفحصُ الطبيعيُّ في `fetch` — يقرأ الرفضَ
+     نجاحا. وشاشاتُنا نجت لأنّها تفحص `res.error` بالاسم، وهو عقدٌ هشٌّ يخصّها
+     ولا يُلزم غيرَها.
+
+     فصار لكلّ رفضٍ رمزُه: ٤٠٤ لما لا وجودَ له، و٤٠٣ لما لا صلاحيّةَ عليه،
+     و٤٠٩ لتضاربِ الحالة (ومنها ما يمسّ حسابَ الفاعل نفسِه). */
+  const refuseRank = async (
+    targetId: string, actorRoles: string[], verbAr: string,
+  ): Promise<
+    | { status: number; error: { code: string; message_ar: string } }
+    | { target: { id: string; email: string; displayName: string; status: string; roles: { roleId: string }[] } }
+  > => {
     const target = await prisma.user.findUnique({ where: { id: targetId }, include: { roles: true } })
-    if (!target) return { error: { code: 'not_found', message_ar: 'لا حسابَ بهذا المعرّف' } }
+    if (!target) return { status: 404, error: { code: 'not_found', message_ar: 'لا حسابَ بهذا المعرّف' } }
     /* مديرُ النظام الأعلى يدير كلَّ حسابٍ سوى حسابه (والذاتُ محروسةٌ قبل هذا):
        كان القيدُ «رتبتك أو فوقها» يمنعه من إيقاف مديرِ نظامٍ آخر أو حذفِ
        حسابِ ديمو بدوره — فلا أحدٌ فوقَ الأعلى يفكّه. */
     if (isTopAdmin(actorRoles)) return { target }
     const targetRank = rankOf(target.roles.map((r) => r.roleId))
     if (targetRank >= rankOf(actorRoles)) {
-      return { error: { code: 'rank_exceeded', message_ar: `لا تستطيع ${verbAr} حسابا في رتبتك أو فوقها` } }
+      return { status: 403, error: { code: 'rank_exceeded', message_ar: `لا تستطيع ${verbAr} حسابا في رتبتك أو فوقها` } }
     }
     return { target }
   }
 
   app.post('/api/admin/users/:id/suspend', { preHandler: guard, schema: { tags: ['admin-users'], summary: 'إيقاف حساب — يبطل جلساته فورا' } },
-    async (req) => {
+    async (req, reply) => {
       const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
       if (id === req.auth!.userId) {
-        return { error: { code: 'self_suspend', message_ar: 'استخدم إيقاف الحساب الذاتي من ملفك — لا توقف نفسك من هنا' } }
+        return reply.status(409).send({ error: { code: 'self_suspend', message_ar: 'استخدم إيقاف الحساب الذاتي من ملفك — لا توقف نفسك من هنا' } })
       }
       const check = await refuseRank(id, req.auth!.roles, 'إيقاف')
-      if ('error' in check) return check
+      if ('error' in check) return reply.status(check.status).send({ error: check.error })
       await auth.suspend(id)
       await recordAudit(prisma, {
         actorId: req.auth!.userId, action: 'admin.user.suspend', entityType: 'user', entityId: id,
@@ -440,7 +455,7 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
       return reply.status(409).send({ error: { code: 'self_archive', message_ar: 'لا تؤرشف حسابك — استعمل إيقافَ الحساب الذاتيّ' } })
     }
     const check = await refuseRank(id, req.auth!.roles, 'أرشفةَ')
-    if ('error' in check) return check
+    if ('error' in check) return reply.status(check.status).send({ error: check.error })
     await auth.archive(id, req.auth!.userId, reason)
     /* السببُ في عمودِه `reason` لا في `meta`: الشاشةُ تقرأ «السببُ المكتوب»
        من العمود، والمرشّحاتُ تعمل عليه. وإلزامُ سببٍ ثمّ إخفاؤه في حمولةٍ
@@ -455,10 +470,10 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
   app.post('/api/admin/users/:id/unarchive', {
     preHandler: guard,
     schema: { tags: ['admin-users'], summary: 'إعادةُ تنشيطِ حسابٍ مؤرشَف' },
-  }, async (req) => {
+  }, async (req, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const check = await refuseRank(id, req.auth!.roles, 'إعادةَ تنشيطِ')
-    if ('error' in check) return check
+    if ('error' in check) return reply.status(check.status).send({ error: check.error })
     await auth.unarchive(id)
     await recordAudit(prisma, {
       actorId: req.auth!.userId, action: 'admin.user.unarchive', entityType: 'user', entityId: id,
@@ -468,12 +483,12 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
   })
 
   app.post('/api/admin/users/:id/reinstate', { preHandler: guard, schema: { tags: ['admin-users'], summary: 'رفعُ الإيقاف — يعيد الحساب نشطا' } },
-    async (req) => {
+    async (req, reply) => {
       const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
       const check = await refuseRank(id, req.auth!.roles, 'رفعَ الإيقاف عن')
-      if ('error' in check) return check
+      if ('error' in check) return reply.status(check.status).send({ error: check.error })
       if (check.target.status !== 'suspended') {
-        return { error: { code: 'not_suspended', message_ar: 'هذا الحساب ليس موقوفا' } }
+        return reply.status(409).send({ error: { code: 'not_suspended', message_ar: 'هذا الحساب ليس موقوفا' } })
       }
       await auth.reinstate(id)
       await recordAudit(prisma, {
@@ -498,15 +513,15 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
   app.delete('/api/admin/users/:id', {
     preHandler: requirePermission('admin.users.purge'),
     schema: { tags: ['admin-users'], summary: 'حذفُ حسابٍ نهائيّا — يُرفض إن كان له سجلٌّ إلّا قسرا من مدير النظام الأعلى بسبب' },
-  }, async (req) => {
+  }, async (req, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const { force } = z.object({ force: z.enum(['1', 'true']).optional() }).parse(req.query ?? {})
     const { reason } = z.object({ reason: z.string().trim().max(500).optional() }).parse(req.body ?? {})
     if (id === req.auth!.userId) {
-      return { error: { code: 'self_purge', message_ar: 'لا تحذف حسابك من هنا' } }
+      return reply.status(409).send({ error: { code: 'self_purge', message_ar: 'لا تحذف حسابك من هنا' } })
     }
     const check = await refuseRank(id, req.auth!.roles, 'حذفَ')
-    if ('error' in check) return check
+    if ('error' in check) return reply.status(check.status).send({ error: check.error })
 
     const footprint = await accountFootprint(prisma, id)
     const blockers = footprintBlockersAr(footprint)
@@ -525,7 +540,7 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
     /* المحوُ بالسجلّ: للأعلى وحده، وبسببٍ يُقرأ — حسابُ ديمو أو تجربةٍ لا دفترُ عميل */
     if (blockers.length > 0) {
       if (!canForcePurge(req)) {
-        return { error: { code: 'force_forbidden', message_ar: 'المحوُ بالسجلّ لمن يملك حبّته وحده — أوقف الحساب بدل ذلك' } }
+        return reply.status(403).send({ error: { code: 'force_forbidden', message_ar: 'المحوُ بالسجلّ لمن يملك حبّته وحده — أوقف الحساب بدل ذلك' } })
       }
       if (!reason || reason.length < 5) {
         return { error: { code: 'reason_required', message_ar: 'اكتب سببَ المحو بالسجلّ — يُحفظ في الأثر بعد أن يذهب الحساب' } }

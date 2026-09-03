@@ -6,9 +6,11 @@
    دفعةً بعد دفعة. والقائمة تصل مجهولةَ المُقيِّم حتى هنا: الحكم على النصّ. */
 
 import { useCallback, useEffect, useState } from "react";
+import { toast, toastError } from "@/components/Toast";
 import { CheckCircle2, Loader2, ServerOff, ShieldCheck, XCircle } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
+import ConfirmAction from "@/components/ConfirmAction";
 
 interface QueueItem {
   id: string;
@@ -37,7 +39,6 @@ export default function RatingModeration() {
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-  const [flash, setFlash] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -53,21 +54,19 @@ export default function RatingModeration() {
 
   useEffect(() => { void load(); }, [load]);
 
-  const act = async (id: string, approve: boolean) => {
+  /* الحجبُ يحتاج سببا يُقرأ في الأثر — يُكتب في نافذة المنصّة لا في حوار
+     متصفّحٍ يملك المستخدمُ كتمَه. والاعتمادُ لا يحتاج تأكيدا: يُراجَع بالحجب. */
+  const [blocking, setBlocking] = useState<QueueItem | null>(null);
+
+  const act = async (id: string, approve: boolean, reason?: string) => {
     if (busy) return;
-    let reason: string | undefined;
-    if (!approve) {
-      const entered = window.prompt("سبب الحجب (يُسجَّل في التدقيق):")?.trim();
-      if (!entered) return;
-      reason = entered;
-    }
-    setBusy(id); setFlash("");
+    setBusy(id);
     try {
       await apiPost(`/api/admin/ratings/${id}/moderate`, { approve, ...(reason ? { reason } : {}) });
-      setFlash(approve ? "اعتُمد التعليق للنشر" : "حُجب التعليق — ودرجته باقية في المعدّل");
+      toast(approve ? "اعتُمد التعليق للنشر" : "حُجب التعليق — ودرجته باقية في المعدّل");
       await load();
     } catch (e) {
-      setFlash(e instanceof ApiError ? e.message : "تعذّر تنفيذ القرار");
+      toastError(e instanceof ApiError ? e.message : "تعذّر تنفيذ القرار");
     } finally {
       setBusy(null);
     }
@@ -98,7 +97,6 @@ export default function RatingModeration() {
         ))}
       </div>
 
-      {flash && <p role="status" className="mb-4 text-xs font-bold text-teal-light-ink">{flash}</p>}
 
       {offline && (
         <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center">
@@ -142,7 +140,7 @@ export default function RatingModeration() {
                     <CheckCircle2 className="h-3.5 w-3.5" /> اعتمد للنشر
                   </button>
                   <button
-                    onClick={() => void act(r.id, false)}
+                    onClick={() => setBlocking(r)}
                     disabled={busy === r.id}
                     className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-1.5 text-[11px] font-bold text-white/65 transition hover:border-red-400/50 hover:text-red-300 disabled:opacity-50"
                   >
@@ -153,6 +151,24 @@ export default function RatingModeration() {
             </li>
           ))}
         </ul>
+      )}
+
+      {blocking && (
+        <ConfirmAction
+          titleAr="حجبُ تعليقٍ عن النشر"
+          confirmLabelAr="احجب النصّ"
+          busy={busy === blocking.id}
+          reason={{ labelAr: "سببُ الحجب — يُسجَّل في الأثر ويُقرأ عند المراجعة", minLength: 5 }}
+          onCancel={() => setBlocking(null)}
+          onConfirm={(reason) => {
+            const target = blocking;
+            setBlocking(null);
+            void act(target.id, false, reason);
+          }}
+        >
+          <p className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 leading-6 text-white/80">«{blocking.commentAr}»</p>
+          <p>يُحجَب <b className="text-white/85">النصُّ وحدَه</b> — ودرجةُ التقييم باقيةٌ في المعدّل، فالحجبُ لا يُخفي رأيا بل يمنع نشرَ عبارة.</p>
+        </ConfirmAction>
       )}
     </AdminLayout>
   );

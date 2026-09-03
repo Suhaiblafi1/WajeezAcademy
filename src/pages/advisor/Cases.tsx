@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { toast, toastError } from "@/components/Toast";
 import {
   CalendarClock, CheckCircle2, ChevronLeft, ClipboardList, Loader2, MessageSquarePlus,
   PhoneCall, Send, ServerOff, StickyNote, UserRound, GraduationCap, BadgePercent,
@@ -10,6 +11,7 @@ import LearnerPanel from "./LearnerPanel";
 import RequestsPanel from "./RequestsPanel";
 import { STATUS_AR } from "@/application/advisor/pipeline";
 import { fmtDateWith } from "@/application/text/format-ar";
+import ConfirmAction from "@/components/ConfirmAction";
 
 /* أسماءُ المراحل من `pipeline` وحدَه — لا جدولَ ثانيا يفترق عن القِمع */
 const STATUS_LABELS = STATUS_AR;
@@ -73,7 +75,9 @@ export default function AdvisorCases() {
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState<string | null>(null);
   const [detail, setDetail] = useState<CaseDetail | null>(null);
-  const [flash, setFlash] = useState("");
+  /* نتيجةُ المتابعة تُكتب في نافذة المنصّة: كانت `window.prompt("نتيجة
+     المتابعة؟")` — سؤالٌ بلا سياقٍ في حوارٍ يملك المتصفّحُ كتمَه. */
+  const [closingFollowUp, setClosingFollowUp] = useState<{ id: string; whenAr: string } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -90,11 +94,10 @@ export default function AdvisorCases() {
   useEffect(() => { void load(); }, [load]);
 
   const openCase = async (id: string) => {
-    setFlash("");
     try {
       setDetail(await apiGet<CaseDetail>(`/api/advisor/cases/${id}`));
     } catch (err) {
-      setFlash(err instanceof ApiError ? err.message : "تعذر فتح الحالة");
+      toastError(err instanceof ApiError ? err.message : "تعذر فتح الحالة");
     }
   };
 
@@ -102,11 +105,11 @@ export default function AdvisorCases() {
   const act = async (fn: () => Promise<unknown>, okMsg: string) => {
     try {
       await fn();
-      setFlash(okMsg);
+      toast(okMsg);
       if (detail) await openCase(detail.id);
       await load();
     } catch (err) {
-      setFlash(err instanceof ApiError ? err.message : "تعذر تنفيذ الإجراء");
+      toastError(err instanceof ApiError ? err.message : "تعذر تنفيذ الإجراء");
     }
   };
 
@@ -129,7 +132,6 @@ export default function AdvisorCases() {
         <button onClick={() => setDetail(null)} className="mb-4 flex cursor-pointer items-center gap-1 text-xs text-white/55 hover:text-white">
           <ChevronLeft className="h-4 w-4" /> عودة للقائمة
         </button>
-        {flash && <p role="status" className="mb-4 rounded-xl border border-white/10 bg-white/[0.04] p-3 text-xs font-bold text-white/80">{flash}</p>}
 
         <div className="grid gap-5 lg:grid-cols-3">
           {/* العميل والتشخيص */}
@@ -223,10 +225,8 @@ export default function AdvisorCases() {
                     {f.doneAt && <span className="block text-[10px] text-[#34A853]">أُنجزت: {f.outcome}</span>}
                   </span>
                   {!f.doneAt && (
-                    <button onClick={() => {
-                      const outcome = window.prompt("نتيجة المتابعة؟");
-                      if (outcome && outcome.length >= 2) void act(() => apiPost(`/api/advisor/follow-ups/${f.id}/complete`, { outcome }), "أُنجزت المتابعة");
-                    }} className="cursor-pointer rounded-full border border-white/15 p-1.5 text-white/50 transition hover:border-[#34A853]/50 hover:text-[#34A853]" title="إنجاز المتابعة">
+                    <button onClick={() => setClosingFollowUp({ id: f.id, whenAr: fmt(f.scheduledAt) })}
+                      className="cursor-pointer rounded-full border border-white/15 p-1.5 text-white/50 transition hover:border-[#34A853]/50 hover:text-[#34A853]" title="إنجاز المتابعة">
                       <CheckCircle2 className="h-3.5 w-3.5" />
                     </button>
                   )}
@@ -298,7 +298,6 @@ export default function AdvisorCases() {
         ))}
       </div>
 
-      {flash && <p role="status" className="mb-4 rounded-xl border border-white/10 bg-white/[0.04] p-3 text-xs font-bold text-white/80">{flash}</p>}
 
       {loading ? (
         <div className="grid place-items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-white/30" /></div>
@@ -343,6 +342,23 @@ export default function AdvisorCases() {
             return c ? partyOf(c) : { name: "—", email: "" };
           }}
         />
+      )}
+
+      {closingFollowUp && (
+        <ConfirmAction
+          tone="default"
+          titleAr={`إنجازُ متابعةِ ${closingFollowUp.whenAr}`}
+          confirmLabelAr="سجّل الإنجاز"
+          reason={{ labelAr: "ماذا كانت النتيجة؟ — تُقرأ في سجلّ الحالة", minLength: 2 }}
+          onCancel={() => setClosingFollowUp(null)}
+          onConfirm={(outcome) => {
+            const target = closingFollowUp;
+            setClosingFollowUp(null);
+            void act(() => apiPost(`/api/advisor/follow-ups/${target.id}/complete`, { outcome }), "أُنجزت المتابعة");
+          }}
+        >
+          <p>تُغلَق المتابعةُ وتبقى نتيجتُها في سجلّ الحالة — يقرؤها من يتابع بعدك.</p>
+        </ConfirmAction>
       )}
     </AdvisorLayout>
   );

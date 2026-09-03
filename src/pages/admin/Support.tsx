@@ -1,8 +1,9 @@
 /* الدعم الفني للإدارة — API حقيقي: قائمة، تفاصيل ورسائل، رد (عام/داخلي)،
    تحويل حالة، أولوية، إسناد لوكيل. الرسائل الداخلية مخفية عن العميل. */
 import { useCallback, useEffect, useState } from "react";
+import { toast, toastError } from "@/components/Toast";
 import {
-  CheckCircle2, ChevronRight, EyeOff, LifeBuoy, Loader2, RefreshCw, Send, ServerOff, UserPlus,
+  ChevronRight, EyeOff, LifeBuoy, Loader2, RefreshCw, Send, ServerOff, UserPlus,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import ListToolbar from "@/components/admin/ListToolbar";
@@ -39,7 +40,6 @@ export default function Support() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState<string | null>(null);
-  const [flash, setFlash] = useState("");
   const [busy, setBusy] = useState(false);
   const [detail, setDetail] = useState<TicketDetail | null>(null);
   const [reply, setReply] = useState("");
@@ -60,17 +60,17 @@ export default function Support() {
 
   const openDetail = async (id: string) => {
     try { setDetail(await apiGet<TicketDetail>(`/api/admin/support/tickets/${id}`)); setReply(""); setInternal(false); }
-    catch (e) { setFlash(e instanceof ApiError ? e.message : "تعذر فتح التذكرة"); }
+    catch (e) { toastError(e instanceof ApiError ? e.message : "تعذر فتح التذكرة"); }
   };
 
   const act = async (fn: () => Promise<unknown>, doneMsg: string) => {
     if (busy) return;
-    setBusy(true); setFlash("");
+    setBusy(true);
     try {
-      await fn(); setFlash(doneMsg);
+      await fn(); toast(doneMsg);
       if (detail) await openDetail(detail.id);
       await load();
-    } catch (e) { setFlash(e instanceof ApiError ? e.message : "فشل الإجراء"); }
+    } catch (e) { toastError(e instanceof ApiError ? e.message : "فشل الإجراء"); }
     finally { setBusy(false); }
   };
 
@@ -100,7 +100,6 @@ export default function Support() {
         <button onClick={() => setDetail(null)} className="mb-4 flex cursor-pointer items-center gap-1.5 text-xs font-bold text-teal-light-ink hover:text-teal-ink">
           <ChevronRight className="h-4 w-4" /> كل التذاكر
         </button>
-        {flash && <p className="mb-4 rounded-xl border border-white/10 bg-white/[0.04] p-3 text-xs font-bold text-white/80" role="status">{flash}</p>}
 
         <div className="grid gap-5 lg:grid-cols-3">
           <div className="space-y-4 lg:col-span-2">
@@ -220,7 +219,6 @@ export default function Support() {
         <button onClick={() => void load()} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-white/60 hover:border-white/40">
           <RefreshCw className="h-3.5 w-3.5" /> تحديث
         </button>
-        {flash && <span className="flex items-center gap-1.5 text-xs font-bold text-teal-light-ink" role="status"><CheckCircle2 className="h-3.5 w-3.5" /> {flash}</span>}
       </div>
 
       {loading ? (
