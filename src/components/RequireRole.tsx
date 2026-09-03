@@ -79,9 +79,12 @@ export default function RequireRole({ allow }: { allow: readonly string[] }) {
     setState('loading')
     void run()
     return () => { alive = false }
-    // allow قائمة ثابتة من ثوابت الملف — لا تتغير بين التصييرات
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [attempt])
+    /* `allow` في الاعتماديّات عمدا. الحرّاسُ الخمسة في App.tsx إخوةٌ في الموضع
+       نفسِه من شجرة المسارات، فحين يُحوَّل متعلّمٌ من `/admin` إلى `/student`
+       يُعيد React استعمالَ هذه النسخةِ نفسِها بقائمةٍ جديدة — ولو لم يُعَد
+       التحقّق لبقيت الحالةُ «ممنوع» و`<Navigate>` إلى الصفحةِ التي نحن فيها،
+       فتُعرض صفحةٌ سوداءُ بلا شيء (شُوهدت في جولة ٢٠٢٦-٠٩). */
+  }, [attempt, allow])
 
   if (state === 'loading') {
     return (

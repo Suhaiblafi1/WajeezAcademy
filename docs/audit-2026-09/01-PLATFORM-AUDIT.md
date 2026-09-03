@@ -1,7 +1,7 @@
 # 01 · Wajeez Academy — Full Platform Audit
 
 > Date: 3 September 2026 · Branch: `claude/wajeez-academy-audit-9d910f` (from `main` at `fe806fa`)
-> Status: **audit complete. Four safe fixes applied on this branch (A1, A10, A11, A13); no data touched, no infrastructure changed.**
+> Status: **audit complete; branch merged with `main` (`9a00445`), all gates green; four safe fixes applied (A1, A10, A11, A13); corrections in §0.5; browser tour in [05](05-BROWSER-TOUR-AR.md). No production data or infrastructure touched.**
 >
 > **Owner context (3 Sep):** the site is in a testing phase with no public users. By the owner's decision: the payment driver stays `test` until the last step before launch; prices, cohorts and all data are left untouched; the domain is deferred; connecting email is a launch item, not a today item. §J's roadmap is re-ordered accordingly.
 > Companion docs: [02 capabilities](02-CAPABILITIES-DESIGN.md) · [03 architecture](03-ARCHITECTURE.md) · [04 migration](04-MIGRATION-PLAN.md)
@@ -50,6 +50,24 @@ The server suite needed the embedded PostgreSQL data directory to be owned by th
 
 ---
 
+## 0.5 · Corrections after merging `main` — what this audit got wrong or was overtaken by
+
+**Admission.** This audit was performed on `fe806fa`. At that moment `main` was already **nine commits ahead** (PR #13, merged as `9a00445`: 90 files, +6,015/−3,105). I did not compare the branch to `main` before auditing; that was my error. The branch has since been merged with `main` (`800fd0a`) and every gate re-run green (879 browser tests, 630 server tests). The table below is the honest ledger of which findings survive.
+
+| Finding | What `main` already did | Verdict |
+|---|---|---|
+| **A14** — five roles without demo accounts, therefore never exercised | `951b999` adds demo accounts for diagnostics/operations/finance/support (nine in total); `trainer_applicant` is defined as an application *state*, tested from `/join-trainer`. But `docs/ROLE_AUDIT_TOUR_AR.md` §4 ("what was actually tested") was **not** updated: the accounts exist, nobody has logged in with them | **Half withdrawn, half kept.** Re-worded: accounts exist; the tour was never run — the browser tour in doc 05 runs it |
+| **F.1** — "two student homes" (`/student` vs `/student/learning`) | `5af08a4` unifies the learner journey into `Journey` (`/student/learning` with `?stage=`); `MyLearning`, `MyPathway`, `CourseMilestones` and the pathway map are deleted; old URLs redirect | **Withdrawn.** Moved to "fixed before review". The new `Journey` is examined in doc 05 instead |
+| **A12** — hard delete with no alternative | `account-purge.service.ts`: computes an account *footprint* first, refuses deletion of accounts with history, allows a forced purge only for the top super-admin with a written reason and an audit fingerprint, behind a separate permission `admin.users.purge_history` | **Amended.** Deletion is now disciplined. The missing piece is narrower: an `archived` state for people who *left* but whose records must stay |
+| **A11** — learner routes unguarded on the client | Still true on `main` (`App.tsx` learner block had no `RequireRole`). This branch's fix survives the merge and now also covers `Journey` | **Kept — fixed on this branch** |
+| **B5** — invitation token valid 1 hour | Unchanged on `main` | **Kept** |
+| **F.3/B4** — cohort form "~12–15 raw fields" | Counted in the browser: the create form has **6** fields (course, title, capacity, price, weekdays, start time); sessions, enrolment-by-UUID and Zoom-by-UUID are separate sub-forms on the same page | **Corrected.** The number was wrong; the UUID inputs (the real complaint) are confirmed by screenshot in doc 05 |
+| — | New on `main`, not covered by this audit: `LearnerRequest` + `/admin/learner-requests` (certificate/recommendation queue), `scripts/promote-super-admin.ts` (bootstrapping the first admin), rebuilt trainer application with email verification and a guarded `/join-trainer/status`, `Order`-level pathway discount ladder | **Added to the tour's scope** |
+
+Rule applied throughout: a finding is withdrawn only when its evidence no longer exists in the code under review; one whose evidence half-remains is re-worded, not deleted.
+
+---
+
 ## A · Critical issues (fix before scaling or migrating)
 
 | # | Problem | Why it matters | Impact | Recommended solution | Priority |
@@ -67,7 +85,7 @@ The server suite needed the embedded PostgreSQL data directory to be owned by th
 | A11 | **Learner portal routes are not role-guarded on the client** — all `/student/*` plus `/trainer/ratings` and `/admin/ratings` sit outside `RequireRole` (`App.tsx:165–188`). Server APIs are guarded (learning-portal: 33 of 34 routes have a `preHandler`; the one without is the public certificate verifier), so this is a UX/exposure issue, not data leakage. | Wrong-role users see empty shells and confusing errors; `/admin/ratings` renders admin chrome for anyone logged in. | Confusion, minor information exposure | `/student/*` now sits inside `RequireRole allow={LEARNER_ROLES}`; `/trainer/ratings` and `/admin/ratings` moved into their own portals | ✅ **fixed on this branch** |
 | A12 | **Hard delete of user accounts** (`admin.users.purge`) with no archive/anonymise alternative; 16 models cascade on user delete, 9 on enrollment delete (incl. Attendance, Certificate, Grade history). | Deleting a learner destroys academic records the academy may be legally required to keep. | Compliance and history | `archived` + `anonymised` states; purge only for accounts with no history (doc 02 §6) | **P1** |
 | A13 | **No request logging or error tracking in production.** `Fastify({ logger: false })` in `app.ts`; only `console.error` on 5xx in `errors.ts`; no Sentry. | Incidents are diagnosed from user complaints. The owner's "login is slow and fails" report took code archaeology instead of a dashboard. | Time-to-detect | pino logger enabled with cookie/signature redaction, silent under tests ✅ **on this branch**; Sentry and uptime checks stay **P1** and land with the server move |
-| A14 | **Five of ten roles have never been exercised** and have no demo accounts (`ROLE_AUDIT_TOUR_AR.md` §4). | Unknown breakage in operations/diagnostic/finance/support screens. | Hidden defects | Seed demo accounts for all roles; run the tour in §7 of that doc on staging | **P1** |
+| A14 | **Five of ten roles have never been exercised.** (`main` has since seeded accounts for all of them — `951b999` — but nobody logged in with them: `ROLE_AUDIT_TOUR_AR.md` §4 is unchanged.) | Unknown breakage in operations/diagnostic/finance/support screens. | Hidden defects | Run the tour — done in doc 05 with all nine accounts | ✅ **exercised in doc 05** |
 
 ---
 

@@ -111,7 +111,13 @@ export async function buildApp(prisma: PrismaClient) {
   /* تحديد معدل الطلبات — سقف عام لكل IP (يُسترخى في بيئة الاختبار الآلية فقط)،
      وتُشدَّد نقاط الهوية في مساراتها (10/5د للدخول والتسجيل، 5/15د للاستعادة) */
   const isTestEnv = process.env.NODE_ENV === 'test' || process.env.VITEST === 'true'
-  await app.register(rateLimit, { max: isTestEnv ? 100_000 : 300, timeWindow: '1 minute' })
+  /* السقفُ العامّ قابلٌ للضبط من البيئة (`RATE_LIMIT_MAX`) — لا لتعطيله بل
+     لأنّ ٣٠٠ طلبٍ في الدقيقة **لكلّ عنوان IP** رقمٌ يبلغه مكتبٌ خلف عنوانٍ
+     واحد في أوّل دقيقةٍ من جلسةٍ حيّة: ثلاثون متعلّما × عشرةُ نداءاتٍ لكلّ
+     صفحة. وحين يُرفض `/api/auth/me` يرى المستخدمُ «تعذّر التحقّق من
+     صلاحيّاتك» لا «أعد المحاولة» — فالمشغّلُ يحتاج مقبضا لا نشرَ شيفرة. */
+  const rateMax = Number(process.env.RATE_LIMIT_MAX) || 300
+  await app.register(rateLimit, { max: isTestEnv ? 100_000 : rateMax, timeWindow: '1 minute' })
   await app.register(swagger, {
     openapi: {
       info: {
