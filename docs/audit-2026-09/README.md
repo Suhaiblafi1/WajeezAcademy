@@ -1,8 +1,8 @@
 # تدقيق منصّة أكاديمية وجيز وخطّة التنفيذ — سبتمبر ٢٠٢٦
 
-> **الحالة: تدقيقٌ وخطّةٌ فقط. لم يُغيَّر أيّ سطرٍ من شيفرة المنصّة، ولم يُمَسّ الإنتاج، ولا تبدأ أيّ خطوةٍ كبرى قبل موافقة صاحب المنصّة.**
+> **الحالة: تدقيقٌ وخطّةٌ، ثمّ جولةُ متصفّحٍ أثبتتهما بالتجربة (الوثيقة ٠٥)، مع إصلاحاتٍ صغيرةٍ آمنةٍ لما شُوهد (مذكورةٌ كلُّها في 01 §0.6). لم يُمَسّ الإنتاجُ ولا بياناتُه، ولا تبدأ أيّ خطوةٍ كبرى قبل موافقة صاحب المنصّة.**
 >
-> Status: **audit and plan only. No platform code, infrastructure, or data was modified. No major step starts before the owner's approval.**
+> Status: **audit and plan, then a browser tour that exercised every role (doc 05), with small safe fixes for what was observed (all listed in 01 §0.6). Production and its data were not touched. No major step starts before the owner's approval.**
 
 | الوثيقة | ما فيها |
 |---|---|
