@@ -48,6 +48,10 @@ import { track } from "@/services/analytics";
 export interface BuyLine {
   courseId: string;
   name: string;
+  /** الشعبةُ التي اختارها في الصفحة قبل أن يفتح اللوح — تُحترم لا تُدهَس.
+      وبلا هذا الحقل كان اللوحُ يعيد الاختيارَ إلى أقرب شعبةٍ دائما، فمن
+      اختار موعدا ثانيا في صفحة الدورة يُفوتَر بالأوّل. */
+  cohortId?: string;
 }
 
 interface QuoteItem {
@@ -154,7 +158,9 @@ export default function BuyPanel({
       const next = { ...prev };
       for (const { line, options } of buyable) {
         if (!next[line.courseId] || !options.some((o) => o.id === next[line.courseId])) {
-          next[line.courseId] = options[0].id;
+          /* ما اختاره في الصفحة أوّلا — إن كان ما زال متاحا — ثمّ أقربُ شعبة */
+          const preferred = line.cohortId && options.some((o) => o.id === line.cohortId) ? line.cohortId : options[0].id;
+          next[line.courseId] = preferred;
           changed = true;
         }
       }

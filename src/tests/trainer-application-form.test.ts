@@ -162,7 +162,7 @@ describe('نموذج انضمام المدرب', () => {
 
     /* كلمة المرور ورمز التحقق أسرارٌ عابرة: تُستثنى في الوحدة نفسها لا بالنسيان */
     const draft = read('src/application/trainer/application-draft.ts')
-    expect(draft).toMatch(/NEVER_PERSISTED = \['accountPassword', 'verifyTokenInput', 'password'\]/)
+    expect(draft).toMatch(/NEVER_PERSISTED = \['accountPassword', 'verifyTokenInput', 'password', 'passwordConfirm'\]/)
     expect(draft, 'الاستثناء معلَنٌ ولا يُطبَّق').toContain('if ((NEVER_PERSISTED as readonly string[]).includes(k)) continue')
   })
 

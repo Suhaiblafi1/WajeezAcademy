@@ -39,7 +39,10 @@ const applicant = (email: string, name: string) => ({
 /** يمضي بمتقدم حتى يصير مدربا فعالا بحساب، ويعيد ملفه ورمز جلسته */
 async function makeTrainer(email: string, name: string, password: string) {
   const apps = new TrainerApplicationService(prisma)
-  const res = await apps.submitPhase1(applicant(email, name))
+  const res = await apps.submitPhase1({ ...applicant(email, name), password })
+  await apps.completePhase2(res.reference, res.candidateToken, {
+    previousCourses: [], teachableCourseIds: [], availability: {}, demoConsent: true, contact: { channel: 'email' },
+  })
   const row = await prisma.trainerApplication.findUnique({ where: { reference: res.reference } })
   const id = row!.id
   await review.decide(id, adminId, 'move_to_review')
@@ -51,8 +54,7 @@ async function makeTrainer(email: string, name: string, password: string) {
   await review.decide(id, adminId, 'conditionally_approve')
   const contract = await review.createContract(id, adminId, { title: 'عقد', terms: {} })
   await review.signContract(contract.id, adminId)
-  const inv = await review.createInvitation(id, adminId)
-  await review.consumeInvitation(inv.tokenForDelivery, password, name)
+  await review.decide(id, adminId, 'activate')
   const session = await auth.login(email, password, '127.0.0.1', 'test')
   const profile = await prisma.trainerProfile.findFirst({ where: { applicationId: id } })
   return { profileId: profile!.id, token: session.token }

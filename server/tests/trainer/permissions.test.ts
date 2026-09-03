@@ -65,9 +65,9 @@ describe('صلاحيات منظومة المدربين عبر HTTP', () => {
   })
 
   let applicantReference = ''
-  let applicantVerifyToken = ''
+  let applicantToken = ''
 
-  it('3) التقديم العام لا يتطلب حسابا ولا يمنح أي دور', async () => {
+  it('3) التقديم ينشئ حساب متقدّم بدور التقديم وحده — لا مدرب ولا متعلم', async () => {
     const res = await app.inject({
       method: 'POST', url: '/api/v1/trainer-applications',
       payload: {
@@ -75,16 +75,20 @@ describe('صلاحيات منظومة المدربين عبر HTTP', () => {
         specialties: ['القيادة وتطوير المدراء'], domainYears: '4-7', trainingYears: 'workshops',
         trainingLanguages: ['العربية'], deliveryMode: 'remote',
         motivation: 'أريد الانضمام إلى وجيز لأنني درّبت فرقا حقيقية في بيئات عمل عربية، وأعرف الفرق بين من يعرف المادة ومن يستطيع تعليمها. سأقدّم للمتعلمين مهمة تطبيقية من واقع عملهم في كل وحدة، وأراجع مخرجاتهم بنفسي وأكتب لكل واحد ما ينقصه تحديدا لا تقييما عاما.', privacyConsent: true,
+        password: 'Trainer#12345',
       },
     })
     expect(res.statusCode).toBe(201)
     const body = res.json()
     expect(body.reference).toMatch(/^WJ-TR-/)
-    expect(body.devVerificationToken).toBeTruthy() // التطوير فقط
+    expect(body.status).toBe('draft')
+    expect(body.candidateToken).toBeTruthy()
     applicantReference = body.reference
-    applicantVerifyToken = body.devVerificationToken
-    /* لا مستخدم أُنشئ */
-    expect(await prisma.user.findUnique({ where: { email: 'perm-applicant@test.local' } })).toBeNull()
+    applicantToken = body.candidateToken
+    /* حسابٌ بدور التقديم وحده */
+    const user = await prisma.user.findUnique({ where: { email: 'perm-applicant@test.local' }, include: { roles: true } })
+    expect(user).toBeTruthy()
+    expect(user!.roles.map((r) => r.roleId)).toEqual(['trainer_applicant'])
   })
 
   it('4) المتقدم لا يستطيع الوصول لمسارات الإدارة ولا منح نفسه دورا', async () => {
@@ -102,8 +106,10 @@ describe('صلاحيات منظومة المدربين عبر HTTP', () => {
   let trainerCookie = ''
 
   it('5) دورة كاملة عبر HTTP: قرار → عقد → دعوة → حساب → بوابة', async () => {
-    /* تحقق البريد أولا — لا قرار إداري قبله */
-    await appsSvc.verifyEmail(applicantReference, applicantVerifyToken)
+    /* إكمالُ الطلب أولا — لا قرار إداري على مسودّة */
+    await appsSvc.completePhase2(applicantReference, applicantToken, {
+      previousCourses: [], teachableCourseIds: [], availability: {}, demoConsent: true, contact: { channel: 'email' },
+    })
     const appRow = await prisma.trainerApplication.findFirst({ where: { email: 'perm-applicant@test.local' } })
     const adminUser = await prisma.user.findUnique({ where: { email: 'perm-admin@test.local' } })
     const aid = appRow!.id
@@ -117,8 +123,9 @@ describe('صلاحيات منظومة المدربين عبر HTTP', () => {
     await review.decide(aid, adminId, 'conditionally_approve')
     const contract = await review.createContract(aid, adminId, { title: 'عقد' })
     await review.signContract(contract.id, adminId)
-    const inv = await review.createInvitation(aid, adminId)
-    const acc = await review.consumeInvitation(inv.tokenForDelivery, 'Trainer#12345')
+    /* حسابُه قائم — التفعيلُ يربطه ويمنحه الدور، ولا دعوة */
+    await expect(review.createInvitation(aid, adminId)).rejects.toMatchObject({ code: 'has_account' })
+    await review.decide(aid, adminId, 'activate')
 
     const profile = await prisma.trainerProfile.findUnique({ where: { applicationId: aid } })
     profileId = profile!.id
@@ -128,7 +135,6 @@ describe('صلاحيات منظومة المدربين عبر HTTP', () => {
     const me = await app.inject({ method: 'GET', url: '/api/trainer/me', headers: { cookie: trainerCookie } })
     expect(me.statusCode).toBe(200)
     expect(me.json().application.email).toBe('perm-applicant@test.local')
-    void acc
   })
 
   it('6) المدرب لا يصل مسارات الإدارة رغم جلسته الصالحة', async () => {

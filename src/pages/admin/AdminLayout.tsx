@@ -1,5 +1,5 @@
 import { Link, NavLink, useLocation, useNavigate } from "react-router";
-import { BadgePercent, CalendarCog, Crown, FlaskConical, GitBranch, ClipboardList, GraduationCap, History, Layers, PenLine, ShieldAlert, LayoutDashboard, UserCheck, UserPlus, Users, BarChart3, LifeBuoy, Wallet, Bell, PlugZap, Star } from "lucide-react";
+import { Award, BadgePercent, CalendarCog, Crown, FlaskConical, GitBranch, ClipboardList, GraduationCap, History, Layers, PenLine, ShieldAlert, LayoutDashboard, UserCheck, UserPlus, Users, BarChart3, LifeBuoy, Wallet, Bell, PlugZap, Star } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import ThemeToggle from "@/components/ThemeToggle";
 import StaffAccountMenu from "@/components/StaffAccountMenu";
@@ -59,6 +59,9 @@ export default function AdminLayout({ children, title }: { children: React.React
         { to: "/admin/learners", label: "الطلبة المسجَّلون", icon: GraduationCap , need: "enrollment.manage"},
         { to: "/admin/trainers", label: "طلبات المدربين", icon: UserPlus , need: "trainer.applications.view"},
         { to: "/admin/advisor-requests", label: "طلبات المستشارين", icon: BadgePercent , need: "advisor.request.review"},
+        /* طابورُ شهاداتِ المتعلّمين وتوصياتِهم — كان الإصدارُ لا يُطلب أصلا،
+           فمن أنهى دورتَه في شعبةٍ لا أحدَ يفتحها بقي بلا شهادة. */
+        { to: "/admin/learner-requests", label: "طلبات المتعلّمين", icon: Award , need: "certificate.issue"},
         { to: "/admin/advisors", label: "المستشارون والعمولة", icon: UserCheck , need: "advisor.manage"},
         { to: "/admin/exceptions", label: "الاستثناءات", icon: ShieldAlert , need: "enrollment.request.review"},
         { to: "/admin/quality", label: "جودة التشخيص", icon: FlaskConical , need: "diagnostic.simulate"},

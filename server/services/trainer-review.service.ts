@@ -282,12 +282,19 @@ export class TrainerReviewService {
        الضغط بل يُمنع قبله. */
     if (action === 'activate') {
       const profile = await this.prisma.trainerProfile.findUnique({ where: { applicationId } })
-      if (!profile?.userId) {
-        throw new AuthError(
-          'no_account',
-          'لا حساب لهذا المدرّب بعد — أرسل دعوة إنشاء الحساب أوّلا، فالتفعيل بلا حساب يجعله نشطا ولا يستطيع الدخول',
-          409,
-        )
+      if (!profile) throw new AuthError('no_profile', 'لا ملف مدرب لهذا الطلب', 409)
+      if (!profile.userId) {
+        /* للمتقدّم حسابٌ منذ تقديمه: التفعيلُ يربطه بالملفّ ويمنحه دورَ المدرّب
+           — فتُفتح له بوّابتُه من الحساب نفسه الذي تابع به طلبه. */
+        if (app.userId) {
+          await this.linkApplicantAsTrainer(profile.id, app.userId, actorId)
+        } else {
+          throw new AuthError(
+            'no_account',
+            'لا حساب لهذا المدرّب بعد — أرسل دعوة إنشاء الحساب أوّلا، فالتفعيل بلا حساب يجعله نشطا ولا يستطيع الدخول',
+            409,
+          )
+        }
       }
     }
 
@@ -364,6 +371,22 @@ export class TrainerReviewService {
   /* ─────────── الدعوة الآمنة وإنشاء الحساب ───────────
      تُرسل بعد الاعتماد والعقد فقط. الرمز يُحفظ هاش، صالح 72 ساعة، يُستخدم مرة. */
 
+  /** ربطُ حساب المتقدّم بملفّ المدرّب ومنحُه دورَ المدرّب — دورُ التقديم يسقط */
+  private async linkApplicantAsTrainer(profileId: string, userId: string, actorId: string | null): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      await tx.trainerProfile.update({ where: { id: profileId }, data: { userId } })
+      await tx.userRole.upsert({
+        where: { userId_roleId: { userId, roleId: 'trainer' } },
+        update: {}, create: { userId, roleId: 'trainer' },
+      })
+      await tx.userRole.deleteMany({ where: { userId, roleId: 'trainer_applicant' } })
+      await recordAudit(tx, {
+        actorId, action: 'trainer.account.link', entityType: 'trainer_profile', entityId: profileId,
+        meta: { userId },
+      })
+    })
+  }
+
   async createInvitation(applicationId: string, actorId: string): Promise<{
     tokenForDelivery: string
     expiresAt: Date
@@ -377,6 +400,9 @@ export class TrainerReviewService {
     }
     if (!app.profile) throw new AuthError('no_profile', 'لا ملف مدرب لهذا الطلب', 409)
     if (app.profile.userId) throw new AuthError('already_linked', 'الحساب أُنشئ وربط مسبقا', 409)
+    if (app.userId) {
+      throw new AuthError('has_account', 'للمتقدّم حسابٌ منذ تقديمه — لا دعوةَ تلزمه؛ زرّ التفعيل يربطه بملفّه ويفتح له بوّابته', 409)
+    }
 
     const token = newToken()
     const expiresAt = new Date(Date.now() + INVITATION_TTL_MS)
@@ -413,16 +439,30 @@ export class TrainerReviewService {
 
     const email = app.email
     const existing = await this.prisma.user.findUnique({ where: { email } })
-    if (existing) throw new AuthError('email_taken', 'يوجد حساب بهذا البريد — سجّل الدخول واطلب ربط الملف من الإدارة', 409)
+    /* حسابُ المتقدّم نفسِه (أُنشئ عند التقديم) يُربَط لا يُرفض — وحسابُ غيرِه يُردّ */
+    if (existing && existing.id !== app.userId) {
+      throw new AuthError('email_taken', 'يوجد حساب بهذا البريد — سجّل الدخول واطلب ربط الملف من الإدارة', 409)
+    }
 
     return this.prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({
-        data: {
-          email, displayName: displayName?.trim() || app.fullName,
-          passwordHash: await bcrypt.hash(password, 10),
-          roles: { create: { roleId: 'trainer' } },
-        },
-      })
+      const user = existing
+        ? await tx.user.update({
+            where: { id: existing.id },
+            data: {
+              passwordHash: await bcrypt.hash(password, 10),
+              roles: {
+                deleteMany: { roleId: 'trainer_applicant' },
+                connectOrCreate: { where: { userId_roleId: { userId: existing.id, roleId: 'trainer' } }, create: { roleId: 'trainer' } },
+              },
+            },
+          })
+        : await tx.user.create({
+            data: {
+              email, displayName: displayName?.trim() || app.fullName,
+              passwordHash: await bcrypt.hash(password, 10),
+              roles: { create: { roleId: 'trainer' } },
+            },
+          })
       await tx.trainerProfile.update({ where: { id: app.profile!.id }, data: { userId: user.id } })
       await tx.trainerInvitation.update({ where: { id: inv.id }, data: { usedAt: new Date() } })
       await recordAudit(tx, {

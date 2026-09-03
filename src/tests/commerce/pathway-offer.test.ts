@@ -140,25 +140,36 @@ describe('الشراءُ مباشرٌ في الصفحتين اللتين يقع 
   })
 })
 
-/* بوّابة نتيجة التشخيص الكاملة (ResultGate) حُذفت بنفس قرار صفحة المسار —
-   «نعم يشمل الجميع» بصريح كلام صاحب المنصّة. والبديل عن الإشارة التسويقية
-   المفقودة: بريدٌ يُترك طوعا مقابل كود خصمٍ حقيقي، لا حسابا كاملا. */
-describe('بوّابة نتيجة التشخيص حُذفت — والبديل بريدٌ مقابل كود خصم', () => {
+/* بوّابةُ نتيجة التشخيص (ResultGate) حُذفت — «نعم يشمل الجميع» بصريح كلام
+   صاحب المنصّة. وحُذف بعدها صندوقُ «بريدٌ مقابل كود الخصم» الذي وُضع بديلا
+   عنها، بقراره أيضا: «لا داعي لهذه الخانة لأنه عند الشراء سيضع ايميله».
+
+   فالكودُ صار معلَنا في بطاقة الفئات نفسِها — لأنّه لأوّل شراءٍ لكلّ أحد،
+   لا خصمَ فئةٍ يُصدَر بعد تحقّق. وحُذف معه مسارُ الخادم وخدمتُه وبريدُه:
+   خادمٌ بلا شاشةٍ تناديه دينٌ لا حارس له. */
+describe('بوّابةُ النتيجة وصندوقُ البريد — كلاهما محذوف', () => {
   it('لا ResultGate.tsx ولا استيرادٌ له في صفحة التشخيص', () => {
     expect(existsSync(join(process.cwd(), 'src/components/ResultGate.tsx')), 'ResultGate.tsx ما زال قائما').toBe(false)
     const diag = readFileSync(join(process.cwd(), 'src/pages/Diagnostic.tsx'), 'utf8')
     expect(diag).not.toMatch(/ResultGate/)
   })
 
-  it('مكوّن البريد مقابل الكود مركَّبٌ في الصفحتين، وموصولٌ بمسار الخادم', () => {
-    const capture = readFileSync(join(process.cwd(), 'src/components/DiscountEmailCapture.tsx'), 'utf8')
-    expect(capture).toMatch(/\/api\/leads\/discount-email/)
+  it('لا مكوّنَ التقاطِ بريدٍ ولا مسارَ خادمٍ له — ولا استيرادٌ في أيّ صفحة', () => {
+    expect(existsSync(join(process.cwd(), 'src/components/DiscountEmailCapture.tsx'))).toBe(false)
+    expect(existsSync(join(process.cwd(), 'server/http/routes/leads.routes.ts'))).toBe(false)
+    expect(existsSync(join(process.cwd(), 'server/services/leads.service.ts'))).toBe(false)
+    for (const f of ['src/pages/Pathway.tsx', 'src/pages/Diagnostic.tsx']) {
+      expect(readFileSync(join(process.cwd(), f), 'utf8'), f).not.toMatch(/DiscountEmailCapture/)
+    }
+    expect(readFileSync(join(process.cwd(), 'server/http/app.ts'), 'utf8')).not.toMatch(/registerLeadRoutes/)
+  })
 
-    const pathway = readFileSync(join(process.cwd(), 'src/pages/Pathway.tsx'), 'utf8')
-    expect(pathway).toMatch(/<DiscountEmailCapture\b/)
-
-    const diag = readFileSync(join(process.cwd(), 'src/pages/Diagnostic.tsx'), 'utf8')
-    expect(diag).toMatch(/<DiscountEmailCapture\b/)
+  it('كودُ أوّل الشراء معلَنٌ في بطاقتَي الفئات — لا مخفيّا وراء بريد', () => {
+    for (const f of ['src/pages/Pathway.tsx', 'src/pages/CoursePath.tsx']) {
+      const src = readFileSync(join(process.cwd(), f), 'utf8')
+      expect(src, f).toMatch(/FIRST_TIME_PROMO\.code/)
+      expect(src, `${f}: الجملة الجديدة`).toMatch(/لمعرفة الكود للطلبة وموظفي الحكومة/)
+    }
   })
 
   it('الكود نفسه مصدرٌ واحد — لا رقم مكرَّر في المكوّن', () => {

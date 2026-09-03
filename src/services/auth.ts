@@ -44,6 +44,8 @@ const ROLE_HOME: Record<string, string> = {
   support: "/admin",
   advisor: "/advisor",
   trainer: "/trainer",
+  /* متقدّمٌ للتدريب: لا بوّابةَ متعلّم ولا مدرّب — صفحةُ حالة طلبه */
+  trainer_applicant: "/join-trainer/status",
 };
 
 /** مسار البوابة الأنسب لأقوى دور يحمله المستخدم — الافتراضي بوابة المتعلم.

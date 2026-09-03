@@ -37,7 +37,6 @@ import { registerSearchRoutes } from './routes/search.routes'
 import { registerIntegrationRoutes } from './routes/integrations.routes'
 import { registerDemoRoutes } from './routes/demo.routes'
 import { registerAnalyticsRoutes } from './routes/analytics.routes'
-import { registerLeadRoutes } from './routes/leads.routes'
 
 export async function buildApp(prisma: PrismaClient) {
   /* ── السجلّ ──
@@ -225,7 +224,6 @@ export async function buildApp(prisma: PrismaClient) {
   registerSearchRoutes(app, prisma)
   registerIntegrationRoutes(app, prisma)
   registerAnalyticsRoutes(app, prisma)
-  registerLeadRoutes(app, prisma)
   /* مسارات الديمو: /status يخبر الواجهة بالوضع، و/switch-role يرفض 404 ما لم DEMO_MODE=true */
   registerDemoRoutes(app, auth)
 

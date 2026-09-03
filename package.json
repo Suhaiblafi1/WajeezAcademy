@@ -52,6 +52,7 @@
     "check:theme": "node scripts/check-theme-hex.mjs",
     "audit:skill-coverage": "tsx scripts/with-db.ts tsx scripts/audit-skill-coverage-matrix.ts",
     "seed:demo": "tsx scripts/with-db.ts tsx server/db/seed-demo.ts",
+    "promote:super-admin": "tsx scripts/with-db.ts tsx scripts/promote-super-admin.ts",
     "build:v2_1-overlays": "tsx scripts/build-v2_1-overlays.ts",
     "ci:overlays": "tsx scripts/build-v2-overlays.ts --check && tsx scripts/build-v2_1-overlays.ts --check",
     "ci:coverage-baseline": "tsx scripts/coverage-baseline.ts",

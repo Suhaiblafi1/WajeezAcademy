@@ -84,6 +84,17 @@ describe('الإيقافُ ورفعُه', () => {
     expect(res.error?.code).toBe('not_suspended')
   })
 
+  it('ومديرُ النظام الأعلى يوقف مديرَ نظامٍ آخر ويرفع عنه — فلا حسابَ فوق يده', async () => {
+    /* كان القيدُ «رتبتك أو فوقها» يمنع الأعلى من إيقاف نظيره أو حذفِ حسابِ
+       ديمو بدور `super_admin` — فلا أحدَ يفكّه، والسبيلُ الوحيد SQL على
+       الإنتاج. والأعلى لا أعلى منه، فيُستثنى من القيد (وحسابُه محروسٌ قبله
+       بحارس «لا توقف نفسك»). */
+    const peer = await mkUser('peer-super', ['super_admin'])
+    expect(body(await app.inject({ method: 'POST', url: `/api/admin/users/${peer}/suspend`, headers: { cookie: superCookie } })).ok).toBe(true)
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: peer } })).status).toBe('suspended')
+    expect(body(await app.inject({ method: 'POST', url: `/api/admin/users/${peer}/reinstate`, headers: { cookie: superCookie } })).ok).toBe(true)
+  })
+
   it('ومن دون رتبةٍ كافية لا يوقف من فوقه', async () => {
     const res = body(await app.inject({ method: 'POST', url: `/api/admin/users/${superId}/suspend`, headers: { cookie: opsCookie } }))
     expect(res.error?.code, 'مدير العمليات أوقف مديرَ النظام الأعلى').toBe('rank_exceeded')
@@ -118,6 +129,65 @@ describe('الحذفُ النهائيّ', () => {
     const res = await app.inject({ method: 'DELETE', url: `/api/admin/users/${id}`, headers: { cookie: opsCookie } })
     expect(res.statusCode, 'من يوقِف صار يمحو').toBe(403)
     expect(await prisma.user.findUnique({ where: { id } })).not.toBeNull()
+  })
+
+  /* ─────────── المحوُ بالسجلّ ───────────
+
+     قرارُ صاحب المنصّة: «اريد ان احذف حسابات كانت تجريبيه». وحساباتُ الديمو
+     لها تسجيلاتٌ وطلباتٌ وتقييمات — فبوّابةُ «لا يُحذف من ترك أثرا» كانت
+     تحبسها كلَّها، ولا سبيلَ إلى إزالتها إلّا SQL على الإنتاج.
+
+     فبابٌ ثانٍ بحبّةٍ مستقلّة (`admin.users.purge_history`) وبسببٍ يُكتب
+     ويُحفظ في الأثر قبل المحو. ولا يُفتح بالخطأ: الطلبُ الأوّل بلا قسرٍ
+     يُردّ بالسجلّ معدودا، والقسرُ يُطلب صريحا بعده. */
+  it('يمحو حسابا بسجلّه بحبّته وبسبب — ويسجّل بصمتَه قبل المحو', async () => {
+    const id = await mkUser('demo-with-history')
+    const order = await prisma.order.create({
+      data: { userId: id, status: 'pending_payment', subtotal: 100, total: 100, currency: 'USD' },
+    })
+    await prisma.invoice.create({ data: { orderId: order.id, number: `INV-SP-${STAMP}`, amount: 100, currency: 'USD' } })
+
+    /* بلا قسر: يُردّ بالسجلّ معدودا وبأنّ البابَ الثاني متاح */
+    const first = JSON.parse((await app.inject({
+      method: 'DELETE', url: `/api/admin/users/${id}`, headers: { cookie: superCookie },
+    })).body) as { error?: { code: string; blockers?: string[]; forceAllowed?: boolean } }
+    expect(first.error?.code).toBe('has_history')
+    expect(first.error?.blockers?.join(' · ')).toContain('طلبَ شراء')
+    expect(first.error?.forceAllowed).toBe(true)
+    expect(await prisma.user.findUnique({ where: { id } }), 'مُحي بلا قسر').not.toBeNull()
+
+    /* قسرٌ بلا سبب: يُردّ */
+    const noReason = body(await app.inject({
+      method: 'DELETE', url: `/api/admin/users/${id}?force=1`, headers: { cookie: superCookie }, payload: {},
+    }))
+    expect(noReason.error?.code).toBe('reason_required')
+
+    /* وبسبب: يُمحى هو وسجلُّه، والأثرُ يشهد */
+    const done = body(await app.inject({
+      method: 'DELETE', url: `/api/admin/users/${id}?force=1`, headers: { cookie: superCookie },
+      payload: { reason: 'حساب تجربة — يُزال هو وسجلّه' },
+    }))
+    expect(done.ok).toBe(true)
+    expect(await prisma.user.findUnique({ where: { id } })).toBeNull()
+    expect(await prisma.order.findUnique({ where: { id: order.id } }), 'بقي طلبٌ بلا صاحب').toBeNull()
+    const audit = await prisma.auditEvent.findFirst({ where: { action: 'admin.user.purge_with_history', entityId: id } })
+    expect(audit, 'مُحي بلا أثرٍ يشهد').not.toBeNull()
+    expect(audit?.reason).toContain('حساب تجربة')
+  })
+
+  it('ولا يملك القسرَ من يملك الحذفَ العاديّ وحدَه', async () => {
+    const id = await mkUser('force-by-ops')
+    await prisma.order.create({ data: { userId: id, status: 'pending_payment', subtotal: 50, total: 50, currency: 'USD' } })
+    await prisma.userPermission.create({
+      data: { userId: opsId, permissionKey: 'admin.users.purge', effect: 'grant', reason: 'اختبار حبّة القسر' },
+    })
+    const opsFresh = await cookieFor(`sp-ops-${STAMP}@test.local`, 'Ops#12345')
+    const res = JSON.parse((await app.inject({
+      method: 'DELETE', url: `/api/admin/users/${id}?force=1`, headers: { cookie: opsFresh },
+      payload: { reason: 'محاولةُ محوٍ بلا حبّته' },
+    })).body) as { error?: { code: string; forceAllowed?: boolean } }
+    expect(res.error?.code).toBe('force_forbidden')
+    expect(await prisma.user.findUnique({ where: { id } }), 'مُحي بلا حبّة القسر').not.toBeNull()
   })
 
   it('ولا يحذف صاحبُ الحساب نفسَه من هنا', async () => {

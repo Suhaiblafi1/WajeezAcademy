@@ -11,6 +11,7 @@ import { EnrollmentService } from '../../services/enrollment.service'
 import { AssessmentService } from '../../services/assessment.service'
 import { ProgressService } from '../../services/progress.service'
 import { CertificateService } from '../../services/certificate.service'
+import { LearnerRequestService, LEARNER_REQUEST_KINDS } from '../../services/learner-request.service'
 import { SkillGrowthService } from '../../services/skill-growth.service'
 import { RetrievalService } from '../../services/retrieval.service'
 import { ScenarioService } from '../../services/scenario.service'
@@ -59,6 +60,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
   const assessments = new AssessmentService(prisma)
   const progress = new ProgressService(prisma)
   const certificates = new CertificateService(prisma)
+  const learnerRequests = new LearnerRequestService(prisma)
   const skillGrowth = new SkillGrowthService(prisma)
   const retrieval = new RetrievalService(prisma)
   const scenarios = new ScenarioService(prisma)
@@ -245,6 +247,47 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     preHandler: requirePermission('learner.portal'),
     schema: { tags: ['learner-portal'], summary: 'شهاداتي — أرقام التحقق وحالاتها' },
   }, async (req) => certificates.myCertificates(req.auth!.userId))
+
+  /* ══════════ طلباتُ آخر الرحلة — شهادةٌ أو توصية ══════════
+
+     الشهادةُ تبقى بيد الإدارة: وثيقةٌ تُنسب إلى الأكاديميّة وتُتحقَّق علنا
+     برقمها، فلا تُسكّها ضغطةٌ من صاحبها. وهذه المساراتُ بابُ الطلب وقراءةُ
+     حالته — والأهليّةُ تُقرأ قبل الضغط لا بعده، فلا زرَّ يَعِد بما يُرفض. */
+
+  app.get('/api/learner/requests', {
+    preHandler: requirePermission('learner.portal'),
+    schema: { tags: ['learner-portal'], summary: 'طلباتي — شهادةُ دورة أو مسار أو توصية، بحالتها' },
+  }, async (req) => learnerRequests.mine(req.auth!.userId))
+
+  app.get('/api/learner/enrollments/:id/certificate-eligibility', {
+    preHandler: requirePermission('learner.portal'),
+    schema: { tags: ['learner-portal'], summary: 'أهليّة شهادة الدورة — وأسبابُ المنع بالنصّ' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return learnerRequests.courseEligibility(req.auth!.userId, id)
+  })
+
+  app.get('/api/learner/pathways/:pathwayId/completion', {
+    preHandler: requirePermission('learner.portal'),
+    schema: { tags: ['learner-portal'], summary: 'إنجازُ المسار كاملا — كم دورةً أنجز من كم' },
+  }, async (req) => {
+    const { pathwayId } = z.object({ pathwayId: z.string().min(3).max(64) }).parse(req.params)
+    return learnerRequests.pathwayEligibility(req.auth!.userId, pathwayId)
+  })
+
+  app.post('/api/learner/requests', {
+    preHandler: requirePermission('learner.portal'),
+    schema: { tags: ['learner-portal'], summary: 'طلبُ شهادةِ دورةٍ أو شهادةِ مسارٍ كاملا أو توصية' },
+  }, async (req) => {
+    const body = z.object({
+      kind: z.enum(LEARNER_REQUEST_KINDS),
+      enrollmentId: z.string().uuid().optional(),
+      pathwayId: z.string().min(3).max(64).optional(),
+      audienceAr: z.string().max(300).optional(),
+      noteAr: z.string().max(2_000).optional(),
+    }).parse(req.body)
+    return learnerRequests.create(req.auth!.userId, body)
+  })
 
   /* ══════════ بوابة المدرب التشغيلية — شعبه فقط ══════════ */
 

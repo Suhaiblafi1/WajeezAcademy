@@ -81,11 +81,16 @@ npm run catalog:import
 
 ## 8) الحسابات التجريبية
 
-لا توجد حسابات مبذورة في التطوير عمدا (نزاهة البيانات). لإنشاء حساب إداري محلي:
+لا توجد حسابات مبذورة في التطوير عمدا (نزاهة البيانات). التسجيل يمنح `learner` وحده، وتعيين `super_admin` من الشاشة لا يملكه إلا `super_admin` — فقاعدة بلا مدير نظام تحتاج سطر الأوامر مرة واحدة:
 
 ```bash
-# عبر الاختبارات أو سكربت: auth.register ثم auth.setRoles(userId, ['academic_manager'])
+# سجّل الحساب من الموقع أولا، ثم:
+npm run promote:super-admin -- you@example.com            # يعرض ولا يكتب
+npm run promote:super-admin -- you@example.com --apply    # يضيف الدور ويسجّله في الأثر
+# على الإنتاج: DATABASE_URL=postgres://… npx tsx scripts/promote-super-admin.ts you@example.com --apply
 ```
+
+بعدها يُنشأ بقية الموظفين من `/admin/users` («أنشئ حسابا») بأدوارهم.
 
 الأدوار التسعة المعرفة: `super_admin · academic_manager · diagnostic_manager · operations_manager · advisor · trainer · finance · support · learner` — مصفوفة الصلاحيات في `server/auth/permissions.ts`، ومطابقتها للبذر مثبتة باختبار `server/tests/rbac/roles-matrix.test.ts`.
 

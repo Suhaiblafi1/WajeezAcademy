@@ -18,10 +18,10 @@ import {
   Briefcase,
 } from "lucide-react";
 import { PATHWAY_ONLY_PERKS } from "@/data/pathway-perks";
+import { FIRST_TIME_PROMO } from "@/application/commerce/first-time-promo";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import AuthGate from "@/components/AuthGate";
-import DiscountEmailCapture from "@/components/DiscountEmailCapture";
 import FavoriteButton from "@/components/FavoriteButton";
 import ThemeToggle from "@/components/ThemeToggle";
 import AdvisorContact from "@/components/AdvisorContact";
@@ -536,15 +536,21 @@ export default function PathwayPage() {
               المنصّة: لا داعي لذلك — يرى الزائر ما يراه المسجَّل تماما،
               والتسجيل يُطلب فقط لحظة إتمام الشراء فعلا (بوّابة
               `pendingCheckout` أسفل الصفحة). */}
-          <div id="buy" className="story-fade mt-10 scroll-mt-24 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
-              <h3 className="text-xl font-black">اختر طريقة شرائك</h3>
-              <p className="mt-2 text-xs leading-relaxed text-white/50">خياران واضحان بلا ضغط — قارن بهدوء، والقرار لك.</p>
-              <div className="mt-6 grid gap-5 md:grid-cols-2">
+          {/* لوحُ الشراء — مضغوطٌ بقصد.
+
+              كان صندوقا في صندوقٍ في صندوق: حشوُ ٣٢ بكسلا خارجا، وعشرين في
+              كلّ بطاقة، وثلاثةَ عشرَ سطرا في المسار الكامل وحده — فيملأ
+              الشاشةَ ولا يُقرأ منه القرار. والقرارُ سطران: كم تدفع، وماذا
+              تأخذ. فالحشوُ نصفُه، والسعرُ أكبرُ ما فيه، وما عداه يخدمه. */}
+          <div id="buy" className="story-fade mt-10 scroll-mt-20 rounded-3xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+              <h3 className="text-base font-black">اختر طريقة شرائك</h3>
+              <p className="mt-1 text-[11px] text-white/45">قارن بهدوء — والقرار لك.</p>
+              <div className="mt-4 grid gap-3.5 md:grid-cols-2">
                 {/* دورة أو أكثر — اختيار حر */}
-                <div className="flex flex-col rounded-2xl border border-white/15 bg-black/30 p-5">
-                  <p className="font-black text-sm">دورة أو أكثر من المسار</p>
-                  <p className="mt-1 text-xs text-white/50">اختر ما تحتاجه بالضبط — دورة واحدة أو عدة دورات — ورسومك مجموعها فقط</p>
-                  <div className="mt-4 space-y-2">
+                <div className="flex flex-col rounded-2xl border border-white/12 bg-black/25 p-4">
+                  <p className="text-[13px] font-black">دورة أو أكثر من المسار</p>
+                  <p className="mt-0.5 text-[11px] text-white/45">اختر ما تحتاجه — ورسومك مجموعها فقط</p>
+                  <div className="mt-3 space-y-1.5">
                     {buyableCourses.map((c) => {
                       const on = pickedIds.includes(c.id);
                       return (
@@ -552,7 +558,7 @@ export default function PathwayPage() {
                           key={c.id}
                           onClick={() => togglePick(c.id)}
                           aria-pressed={on}
-                          className={`flex w-full items-center justify-between gap-3 rounded-xl border px-4 py-3 text-right transition ${
+                          className={`flex w-full items-center justify-between gap-2.5 rounded-xl border px-3 py-2.5 text-right transition ${
                             on
                               ? "border-teal bg-teal/15"
                               : "border-white/10 bg-white/[0.03] hover:border-teal/50"
@@ -566,15 +572,15 @@ export default function PathwayPage() {
                             >
                               <CheckCircle2 className="h-3.5 w-3.5" />
                             </span>
-                            <span>
-                              <span className="block text-sm font-bold leading-snug">{c.name}</span>
-                              <span className="text-[11px] text-white/45">
+                            <span className="min-w-0">
+                              <span className="block text-[12.5px] font-bold leading-snug">{c.name}</span>
+                              <span className="text-[10.5px] text-white/40">
                                 {c.weeks} {c.weeks === 1 ? "أسبوع" : "أسابيع"} · {courseTrainer(c).name}
                               </span>
                             </span>
                           </span>
                           {/* سعر الدورة من شعبتها لا من تقدير — وبلا شعبة لا رقم */}
-                          <span className="shrink-0 text-sm font-black text-white/85">
+                          <span className="shrink-0 text-[13px] font-black text-white/85">
                             {prices.get(c.id) ? (
                               <span dir="ltr">{formatCohortPrice(prices.get(c.id)!)}</span>
                             ) : (
@@ -588,22 +594,22 @@ export default function PathwayPage() {
 
                   {/* المجموع الحي والتلميح الذكي */}
                   {picked.length > 0 && (
-                    <div className="mt-4 flex items-end justify-between gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3">
-                      <span className="text-xs text-white/55">
-                        اخترت {picked.length === 1 ? "دورة واحدة" : `${picked.length} دورات`} من {buyableCourses.length}
+                    <div className="mt-3 flex items-end justify-between gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2.5">
+                      <span className="text-[11px] text-white/50">
+                        اخترت {picked.length === 1 ? "دورة" : `${picked.length} دورات`} من {buyableCourses.length}
                       </span>
                       {pickedTotal ? (
-                        <span dir="ltr" className="text-2xl font-black text-white">{formatCohortPrice(pickedTotal)}</span>
+                        <span dir="ltr" className="text-xl font-black text-white">{formatCohortPrice(pickedTotal)}</span>
                       ) : (
-                        <span className="text-xs text-white/50">يُعلن السعر مع الشعبة</span>
+                        <span className="text-[11px] text-white/50">يُعلن السعر مع الشعبة</span>
                       )}
                     </div>
                   )}
                   {picked.length > 0 && (
                     /* التنبيه بلا مقارنةٍ رقمية: المقارنة القديمة كانت بين رقمين
                        مُختلَقين، فكانت تنصح بناءً على ما لا يُدفع. */
-                    <p className="mt-2 rounded-xl border border-gold/40 bg-gold/10 px-4 py-2.5 text-[11px] font-semibold leading-relaxed text-gold-ink">
-                      المسار كاملا أوفر: خصمُ الباقة يرتفع كلّما زادت دوراتك، ويشمل التشخيص والمتابعة.
+                    <p className="mt-2 rounded-xl border border-gold/35 bg-gold/[0.08] px-3.5 py-2 text-[10.5px] font-semibold leading-5 text-gold-ink">
+                      المسار كاملا أوفر — خصمُه {offer.bundleMaxPct}٪، ويشمل التشخيص والمتابعة.
                     </p>
                   )}
                   <Button
@@ -620,7 +626,7 @@ export default function PathwayPage() {
                     }
                     disabled={picked.length === 0}
                     variant="outline"
-                    className="mt-4 h-11 rounded-full border-teal/60 bg-transparent font-black text-teal-light-ink hover:bg-teal/10 hover:text-teal-light-ink disabled:opacity-40"
+                    className="mt-3 h-10 rounded-full border-teal/60 bg-transparent text-[13px] font-black text-teal-light-ink hover:bg-teal/10 hover:text-teal-light-ink disabled:opacity-40"
                   >
                     {picked.length === 0
                       ? "اختر دورة واحدة على الأقل"
@@ -630,24 +636,34 @@ export default function PathwayPage() {
                   </Button>
                 </div>
                 {/* المسار كاملا */}
-                <div className="relative flex flex-col rounded-2xl border border-gold/30 bg-white/[0.03] p-4">
-                  <span className="absolute left-3 top-3 rounded-full bg-gold/15 px-2.5 py-0.5 text-[10px] font-black text-gold-ink">الأوفر</span>
-                  <p className="font-black text-sm">المسار كاملا</p>
-                  <p className="mt-1 text-xs text-white/50">كل الدورات + التشخيص الكامل + المنظومة الست أدناه</p>
+                <div className="relative flex flex-col rounded-2xl border border-gold/35 bg-gold/[0.04] p-4">
+                  <span className="absolute left-3 top-3.5 rounded-full bg-gold/20 px-2 py-0.5 text-[9.5px] font-black text-gold-ink">الأوفر</span>
+                  <p className="text-[13px] font-black">المسار كاملا</p>
+                  <p className="mt-0.5 text-[11px] text-white/45">كل الدورات + التشخيص + المنظومة أدناه</p>
                   {/* السعرُ كاملا لا «تبدأ من» — والرقمُ المعروض بعد خصم الباقة
                       فعلا (`offer.bundleMaxPct`)، لا وعدٌ منفصلٌ عن الفاتورة:
                       الأصليُّ يظهر مشطوبا بجانبه لا نسبةً مجردة. هديّةُ المسار
                       تُقال أعلاه في خطّة الدورات لا هنا مرّتين. */}
                   {fullPrice && discountedFullPrice ? (
                     <>
-                      <div className="mt-4 flex flex-wrap items-end gap-2">
-                        <span dir="ltr" className="text-2xl font-black text-white">{formatCohortPrice(discountedFullPrice)}</span>
+                      {/* المشطوبُ كان `text-sm text-white/35`: رقمٌ باهتٌ صغير لا
+                          يُقرأ، فلا يُعرف مقدارُ الوفر أصلا. والوفرُ نصفُ العرض،
+                          فيكبر ويُشار إليه بنسبته في شارةٍ بجانبه. */}
+                      <div className="mt-3 flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+                        <span dir="ltr" className="text-[26px] font-black leading-none text-white">{formatCohortPrice(discountedFullPrice)}</span>
                         {offer.bundleMaxPct > 0 && (
-                          <span dir="ltr" className="text-sm font-bold text-white/35 line-through">{formatCohortPrice(fullPrice)}</span>
+                          <>
+                            <span dir="ltr" className="text-base font-bold text-white/45 line-through decoration-white/45 decoration-2">
+                              {formatCohortPrice(fullPrice)}
+                            </span>
+                            <span className="rounded-full bg-teal/15 px-2 py-0.5 text-[10px] font-black text-teal-light-ink">
+                              وفّرت {offer.bundleMaxPct}٪
+                            </span>
+                          </>
                         )}
                       </div>
-                      <p className="mt-0.5 text-[11px] text-white/40">
-                        {courseIds.length} دورات بعد خصم الباقة ({offer.bundleMaxPct}٪) — وهو ما تُصدره الفاتورة
+                      <p className="mt-1.5 text-[10.5px] leading-5 text-white/40">
+                        {courseIds.length} دورات — وهو ما تُصدره الفاتورة، ويتغيّر إن غيّرت الدورات.
                       </p>
                       {/* خصمُ الفئة — نفس مطويّة صفحة شراء الدورة المفردة،
                           فالوعدُ واحد أينما ظهر. النسبةُ تُقال داخل المطويّة
@@ -656,29 +672,37 @@ export default function PathwayPage() {
                         <summary className="cursor-pointer list-none text-[11px] font-bold text-white/60 underline underline-offset-4 transition group-hover:text-teal-light-ink [&::-webkit-details-marker]:hidden">
                           اطّلع على الفئات وتحقّق من أهليتك
                         </summary>
-                        <ul className="mt-2.5 space-y-1.5 border-r-2 border-white/10 pe-0 ps-3">
+                        {/* خصمُ أوّل شراء في القائمة نفسِها وكودُه بجانبه: هو
+                            لكلّ أحدٍ في أوّل مرّة فلا إثباتَ له ولا سرَّ فيه —
+                            وإخفاؤه في صندوقٍ ثانٍ يطلب بريدا كان يخفي عرضا
+                            مفتوحا. وكودا الفئتين وحدهما يُصدَران بعد التحقّق. */}
+                        <ul className="mt-2 space-y-1.5 border-r-2 border-white/10 ps-3">
+                          <li className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] leading-5">
+                            <span className="font-bold text-white/75">خصم أول عملية شراء — {FIRST_TIME_PROMO.percentOff}٪</span>
+                            <code dir="ltr" className="rounded-md border border-gold/40 bg-gold/10 px-1.5 py-0.5 font-mono text-[10.5px] font-black text-gold-ink">
+                              {FIRST_TIME_PROMO.code}
+                            </code>
+                            <span className="text-white/40">· بلا إثبات</span>
+                          </li>
                           {DISCOUNT_CATEGORIES.map((cat) => (
-                            <li key={cat.id} className="text-[11px] leading-relaxed text-white/50">
+                            <li key={cat.id} className="text-[11px] leading-5 text-white/50">
                               <span className="font-bold text-white/75">{cat.label_ar} — {cat.percentOff}٪</span>
                               <span className="text-white/40"> · {cat.evidence_ar}</span>
                             </li>
                           ))}
                         </ul>
-                        <p className="mt-2.5 text-[11px] leading-relaxed text-white/40">
-                          الكود لا يُنشر: يُصدَر لك وحدك بعد التحقق، فلا يتسرّب خصم فئةٍ إلى من ليس منها.{" "}
+                        <p className="mt-2 text-[10.5px] leading-5 text-white/45">
                           <a
                             href={`https://wa.me/${CONTACT.whatsapp}?text=${encodeURIComponent("أرغب بالتحقق من أهليتي لخصم فئة — وسأرفق ما يثبت ذلك.")}`}
                             target="_blank"
                             rel="noreferrer"
-                            className="font-bold text-white/60 underline underline-offset-4 transition hover:text-teal-light-ink"
+                            className="font-bold text-teal-light-ink underline underline-offset-4 transition hover:text-teal-ink"
                           >
                             راسلنا على واتساب بصورة الإثبات
-                          </a>
+                          </a>{" "}
+                          لمعرفة الكود للطلبة وموظفي الحكومة.
                         </p>
                       </details>
-                      <p className="mt-2 text-[11px] text-white/45">
-                        الرقم أعلاه لهذه الدورات — ويتغيّر إن غيّرتها.
-                      </p>
                     </>
                   ) : (
                     /* لا شعبة مسعَّرة: لا رقم. رقمٌ لا تسنده شعبة هو الذي جعل
@@ -695,42 +719,33 @@ export default function PathwayPage() {
                   <Button
                     onClick={() => startCheckout({ title: fullPlanTitleAr, amount: 0, kind: "pathway" })}
                     disabled={syncing}
-                    className="mt-4 h-11 rounded-full bg-gold font-black text-on-gold hover:bg-gold/90 disabled:opacity-60"
+                    className="mt-3.5 h-10 rounded-full bg-gold text-[13px] font-black text-on-gold hover:bg-gold/90 disabled:opacity-60"
                   >
-                    <CalendarDays className="ml-2 h-4 w-4" />
+                    <CalendarDays className="ml-1.5 h-3.5 w-3.5" />
                     {syncing ? "نحفظ خطّتك…" : "اشترِ المسار كاملا"}
                   </Button>
                   {/* كان أسفل الزر فراغ في صندوق أطول من محتواه. وثلاثة من عناصر
                       «المنظومة» التسعة أدناه هي في الحقيقة فرق بين شراء دورة وشراء
                       مسار — لا تُعطى لمن يشتري دورة واحدة — فمكانها هنا لا في قائمة
                       عامة أسفل الصفحة. بقيت ستة هناك. */}
-                  <div className="mt-4 border-t border-white/10 pt-3.5">
-                    <p className="text-[11px] font-black text-gold-ink">ومعه ثلاثة لا تأتي مع الدورة المفردة:</p>
-                    <ul className="mt-2 space-y-2">
-                      {PATHWAY_ONLY_PERKS.map((perk) => (
-                        <li key={perk.t} className="flex items-start gap-2.5">
-                          <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-gold/15">
-                            <perk.icon className="h-3.5 w-3.5 text-gold-ink" />
-                          </span>
-                          <span className="min-w-0">
-                            <span className="block text-[12px] font-black leading-snug text-white/90">{perk.t}</span>
-                            <span className="block text-[10.5px] leading-relaxed text-white/45">{perk.d}</span>
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                  {/* ثلاثةُ عناوينَ بلا فقرةٍ تحت كلٍّ: الوصفُ كان يطوّل البطاقةَ
+                      ثلاثةَ أسطرٍ ولا يُقرأ — والعنوانُ يقول ما يكفي، وتفصيلُه
+                      في «المنظومة» أسفل الصفحة لمن أراد. */}
+                  <ul className="mt-3.5 space-y-1.5 border-t border-white/10 pt-3">
+                    {PATHWAY_ONLY_PERKS.map((perk) => (
+                      <li key={perk.t} className="flex items-center gap-2">
+                        <perk.icon className="h-3.5 w-3.5 shrink-0 text-gold-ink" />
+                        <span className="text-[11px] font-bold leading-5 text-white/75">{perk.t}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               </div>
-
-              {/* بريدٌ مقابل كود خصم — بديل صندوق التسجيل الكامل المحذوف؛
-                  اختياريٌّ صراحة، لا يحجب شيئا مما فوقه أو تحته. */}
-              <DiscountEmailCapture source="pathway_discount" pathwayId={pathway.id} className="mt-5" />
 
               {/* كان النصّ «طلبك يُراجَع، ثم تصلك فاتورتك» — وهو ما كان يقع فعلا
                   يوم كان الشراء طلبا. وقد صار الدفعُ مباشرا، فيصف النصُّ ما
                   يقع الآن: تُختار الشعبة، ويُدفع، ثمّ تُفتح المنصّة. */}
-              <p className="mt-4 text-center text-[11px] text-white/40">تدفع الآن، ثم تُفتح منصّتك على ما اشتريت وتختار مواعيدك</p>
+              <p className="mt-3.5 text-center text-[10.5px] text-white/40">تدفع الآن، ثم تُفتح منصّتك على ما اشتريت</p>
               {/* الدعوة إلى التشخيص سطر عند لحظة القرار، لا شريطا مؤطّرا في وسط
                   الصفحة. صفحة المسار الجاهز صفحة منتج معروضة للجميع، وكل صندوق
                   يعترضها يقرأ كأنه نتيجة شخصية لزائر لم يتشخّص أصلا. */}
