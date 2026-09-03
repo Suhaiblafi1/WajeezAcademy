@@ -15,8 +15,14 @@
 
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { validateChecks } from '../src/application/content/module-checks'
+import { validateScenario } from '../src/application/content/scenario'
+import { parsePractice, validatePractice } from '../src/application/content/practice'
+import { validateRubric } from '../src/application/content/rubric'
+import { checkLibraryRefs, type LibraryIndex } from '../src/application/content/library'
 
 const CATALOG = join(process.cwd(), 'src/data/catalog/core-catalog.v2.json')
+const LIBRARY = join(process.cwd(), 'src/data/library/wajeez-library.json')
 
 interface Course {
   course_id: string
@@ -31,11 +37,16 @@ interface Module {
   module_body_ar?: string | null
   module_checks_ar?: string | null
   module_scenario_ar?: string | null
+  module_practice_ar?: string | null
+  module_rubric_ar?: string | null
 }
 
 /* ── حدودُ السياسة، رقما رقما ── */
 const LESSONS_FOR_HOURS: Record<number, number> = { 2: 4, 3: 5 }
 const CHECKS_FOR_HOURS: Record<number, number> = { 2: 5, 3: 7 }
+/* زمنُ النشاط بحسب زمن الوحدة (§٢) — ٥٠–٦٠ لوحدة الساعتين، وأوسعُ لوحدة
+   الثلاث ساعات لأنّ نشاطَها أوسعُ لا لأنّ الحدَّ أرخى. */
+const PRACTICE_MINUTES_FOR_HOURS: Record<number, [number, number]> = { 2: [50, 60], 3: [60, 75] }
 const MIN_WORDS = 450
 const MAX_WORDS = 650
 /* هامشٌ يمنع الردَّ على كلمةٍ واحدة — والسياسة نطاقٌ لا رقمٌ حدّيّ */
@@ -99,7 +110,7 @@ function parseChecks(raw: string) {
   })
 }
 
-function auditModule(m: Module, courseSkills: Map<string, string[]>): Violation[] {
+function auditModule(m: Module, courseSkills: Map<string, string[]>, library: LibraryIndex): Violation[] {
   const v: Violation[] = []
   const add = (rule: string, detail: string) => v.push({ moduleId: m.module_id, rule, detail })
   const body = (m.module_body_ar ?? '').trim()
@@ -119,6 +130,28 @@ function auditModule(m: Module, courseSkills: Map<string, string[]>): Violation[
     if (w > MAX_WORDS + SLACK) add('حجم الدرس', `الدرس ${i + 1} «${l.title || 'بلا عنوان'}» ${w} كلمة — والسقف ${MAX_WORDS}`)
     if (!l.title) add('عنوان الدرس', `الدرس ${i + 1} بلا عنوان — والعنوانُ وعدُ الدرس`)
 
+    /* ٢أ) الأجزاءُ الخمسةُ في كلّ درس (§٣).
+
+       السياسةُ تُلزم خمسةَ أجزاءٍ بترتيبها، وتقول عن الخطأ الشائع إنّه
+       «أنفعُ ما في الدرس، وأوّلُ ما يُحذف حين يستعجل المؤلّف». وكانت
+       البوّابةُ تفحص عددَ الدروس وحجمَها ولا تفحص ما فيها — فمرّ تسعةٌ
+       وعشرون درسا من اثنين وخمسين بلا «افعل الآن»، وكلُّها في آخر الوحدة
+       حيث يستعجل المؤلّفُ فعلا.
+
+       والخطّافُ والفكرةُ لا يُفحصان هنا بقصد: لا عنوانَ لهما، وقياسُهما
+       بطول النثر قبل أوّل عنوانٍ فرعيّ جُرِّب فأنتج إنذاراتٍ كاذبةً على
+       خطّافاتٍ سليمةٍ من سطرين — وبوّابةٌ تُنذر بالباطل تُعلَّم أن تُتجاوَز.
+       فيبقى الخطّافُ على عين المراجع (§١١)، والأجزاءُ الثلاثةُ المعنونةُ
+       على البوّابة. */
+    /* العنوانُ يُطابق ببدايته لا بحرفه: «### الخطأ الشائع: أن تبني ما لا يُقرأ»
+       جزءٌ مكتوبٌ لا ناقص، والعنوانُ الفرعيُّ فيه تحسينٌ لا مخالفة. وكان
+       الشرطُ تطابقا حرفيّا فأنذر بالباطل في أربعين درسا — وقُدِّم الدَّينُ
+       ٢٣٠ وهو ١٨٦. فالفحصُ الذي يُنذر بالباطل يُكذّب تقريرَه كلَّه. */
+    for (const part of ['مثالٌ محلول', 'الخطأ الشائع', 'افعل الآن']) {
+      if (!new RegExp(`^###\\s+${part}`, 'm').test(l.body)) {
+        add('أجزاءُ الدرس', `الدرس ${i + 1} «${l.title || 'بلا عنوان'}» بلا «${part}»`)
+      }
+    }
     /* ٢ب) أثرُ لصقٍ مكرَّر — عنوانٌ فرعيّ يتكرّر داخل الدرس الواحد.
 
        تكرارُ «مثالٌ محلول» عبر دروس الوحدة مقصود: لكلّ درسٍ مثالُه. أمّا
@@ -189,8 +222,71 @@ function auditModule(m: Module, courseSkills: Map<string, string[]>): Violation[
   }
 
   /* ٥) سيناريو القرار */
-  if (!(m.module_scenario_ar ?? '').trim()) {
+  const scenarioRaw = (m.module_scenario_ar ?? '').trim()
+  if (!scenarioRaw) {
     add('سيناريو', 'لا سيناريو قرارٍ في الوحدة')
+  }
+
+  /* ٦) النشاطُ التطبيقيُّ والروبرك (§٢ و§٨).
+
+     وهذان أطولُ ما في ميزانيّة الوحدة: النشاطُ ٥٠–٦٠ دقيقةً والمراجعةُ عشر،
+     أي نصفُ المئةِ والعشرين. وكانا بلا حقلٍ في نموذج البيانات، فكان الموجودُ
+     عبارةً واحدةً مولَّدةً من عنوان الوحدة تصلح لصفحة البيع ولا يعمل بها
+     أحد — فبوّابةٌ تفحص المتنَ والتمرينَ وتسكت عن نصف الوحدة تُصدّق على
+     وحدةٍ ناقصةٍ نصفَها. */
+  const practiceRaw = (m.module_practice_ar ?? '').trim()
+  if (!practiceRaw) {
+    add('نشاط', 'لا نشاطَ مؤلَّفا — والنشاطُ نصفُ ميزانيّة وقت المتعلّم')
+  } else {
+    const r = validatePractice(practiceRaw)
+    if (!r.ok) for (const e of r.errorsAr) add('نشاط', e)
+    const { practice } = parsePractice(practiceRaw)
+    const band = PRACTICE_MINUTES_FOR_HOURS[m.expected_hours]
+    if (practice && band && (practice.minutes < band[0] || practice.minutes > band[1])) {
+      add('نشاط', `زمنُ النشاط ${practice.minutes} دقيقة — ووحدةُ ${m.expected_hours} ساعات ميزانيّتُها ${band[0]}–${band[1]}`)
+    }
+  }
+
+  const rubricRaw = (m.module_rubric_ar ?? '').trim()
+  if (!rubricRaw) {
+    add('روبرك', 'لا روبرك — فلا يعرف المتعلّم بم يُراجع مخرَجه قبل التسليم')
+  } else {
+    const r = validateRubric(rubricRaw)
+    if (!r.ok) for (const e of r.errorsAr) add('روبرك', e)
+  }
+
+  /* ٦ب) إحالةُ مكتبة وجيز (§٧) — تُفحَص بالفهرس لا بالنيّة.
+
+     والقاعدةُ «لا يُخترع عنوانُ كتابٍ ولا رابط» لا تُفحَص إلّا بفهرسٍ يُقرأ.
+     فحتّى تُربط واجهةُ «وجيز مهارات» يبقى الفهرسُ فارغا وهذا البندُ صامتا:
+     حاجزٌ على ما لا يملك المؤلّفُ التحقّقَ منه حاجزٌ ظالم، وسكوتُ اثنتين
+     وخمسين وحدةً عن الإحالة أصدقُ من عنوانٍ لا يُتحقَّق منه.
+     وحين يُربط: يُردّ كلُّ عنوانٍ يُذكر في القسم ولا وجودَ له في الفهرس. */
+  {
+    const r = checkLibraryRefs(body, library)
+    if (!r.pending) {
+      for (const t of r.unknownTitles) {
+        add('مكتبة وجيز', `العنوان «${t}» لا وجودَ له في فهرس المكتبة — ولا يُخترع عنوان`)
+      }
+      if (!r.hasSection) add('مكتبة وجيز', 'لا إحالةَ إلى ملخّصٍ من المكتبة — والفهرسُ مربوط')
+    }
+  }
+
+  /* ٧) ما ترفضه الشاشة يُردّ هنا — لا فحصَ موازيا أضعفَ من المحرّر.
+
+     البنودُ أعلاه سياسةُ تحرير، وهذا البندُ عقدُ المنصّة: `validateChecks`
+     و`validateScenario` هما ما يحكم به الخادمُ عند الحفظ (والنشاطُ والروبرك
+     يمرّان بمحلّليهما في البند السابق). وكانت البوّابةُ
+     تفحص السيناريو بوجودِه وحده، فمرّت ستّةَ عشرَ سيناريو فيها عقدةٌ بخيارٍ
+     واحدٍ ومعها «تأمل:» — يرفضها المحرّرُ ويقبلها الكتالوج. ووحدةٌ لا
+     تُفتح في الشاشة التي تملكها ليست مؤلَّفةً بل محبوسة. */
+  {
+    const r = validateChecks(m.module_checks_ar)
+    if (!r.ok) for (const e of r.errorsAr) add('عقد المنصّة', `تمارين: ${e}`)
+  }
+  if (scenarioRaw) {
+    const r = validateScenario(scenarioRaw)
+    if (!r.ok) for (const e of r.errorsAr) add('عقد المنصّة', `سيناريو: ${e}`)
   }
 
   return v
@@ -204,8 +300,9 @@ function main() {
     raw.courses.map((c) => [c.course_id, c.skill_slugs ?? []]),
   )
   const authored = all.filter((m) => (m.module_body_ar ?? '').trim())
+  const library = JSON.parse(readFileSync(LIBRARY, 'utf8')) as LibraryIndex
 
-  const violations = authored.flatMap((m) => auditModule(m, courseSkills))
+  const violations = authored.flatMap((m) => auditModule(m, courseSkills, library))
 
   console.log(`\nبوّابةُ التأليف — ${authored.length} وحدةً مؤلَّفة من ${all.length} (${Math.round((authored.length / all.length) * 100)}٪)`)
 
@@ -219,11 +316,28 @@ function main() {
       byModule.set(v.moduleId, list)
     }
     console.log(`\n✗ ${violations.length} مخالفة في ${byModule.size} وحدة:\n`)
+
+    /* خلاصةٌ بالبند قبل التفصيل — فقائمةٌ من مئتي سطرٍ تُقرأ عجزا لا عملا،
+       وسطرٌ يقول «٢٣٠ في بند واحد» يقول إنّ العطبَ نمطٌ لا فوضى. */
+    const byRule = new Map<string, number>()
+    for (const v of violations) byRule.set(v.rule, (byRule.get(v.rule) ?? 0) + 1)
+    for (const [rule, n] of [...byRule].sort((a, b) => b[1] - a[1])) {
+      console.log(`  ${n} في بند «${rule}»`)
+    }
+    console.log('')
     for (const [id, list] of byModule) {
       console.log(`  ${id}`)
       for (const v of list) console.log(`    · [${v.rule}] ${v.detail}`)
     }
     console.log('')
+  }
+
+  /* حالُ فهرس المكتبة تُعلَن — فبندٌ صامتٌ بلا إعلانٍ يُقرأ نجاحا */
+  if (library.items.length === 0) {
+    console.log('⏳ إحالاتُ مكتبة وجيز (§٧) معلَّقة — بانتظار ربط واجهة «وجيز مهارات».')
+    console.log('   وحين تُربط يصير كلُّ عنوانٍ يُذكر مقابَلا بالفهرس.\n')
+  } else {
+    console.log(`📚 فهرسُ المكتبة مربوط: ${library.items.length} ملخّصا — والإحالاتُ تُقابَل به.\n`)
   }
 
   /* التغطيةُ تُعرض ولا تُسقط: من لم يؤلّف بعدُ لم يخالف */
