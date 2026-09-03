@@ -9,7 +9,7 @@
    خيار: TOUR_ONLY=J1,J5 */
 
 import { chromium } from 'playwright'
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const API = process.env.TOUR_API ?? 'http://localhost:7101'
@@ -32,11 +32,15 @@ async function sealContext(ctx) { await ctx.route('**/*', (route) => (LOCAL.test
 const log = []
 let shotNo = 0
 
+const cookieCache = new Map()
 async function apiLogin(email) {
+  if (cookieCache.has(email)) return cookieCache.get(email)
   const res = await fetch(`${API}/api/auth/login`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, password: PASSWORD }) })
   if (!res.ok) throw new Error(`login ${email}: ${res.status}`)
   const [pair] = (res.headers.get('set-cookie') ?? '').split(';'); const eq = pair.indexOf('=')
-  return { name: pair.slice(0, eq), value: pair.slice(eq + 1), domain: 'localhost', path: '/' }
+  const cookie = { name: pair.slice(0, eq), value: pair.slice(eq + 1), domain: 'localhost', path: '/' }
+  cookieCache.set(email, cookie)
+  return cookie
 }
 async function apiAs(cookie, method, path, body) {
   const res = await fetch(`${API}${path}`, { method, headers: { 'content-type': 'application/json', cookie: `${cookie.name}=${cookie.value}` }, body: body ? JSON.stringify(body) : undefined })
@@ -100,7 +104,7 @@ if (want('J1')) {
       if (await skip.isVisible().catch(() => false)) { await skip.click(); J.click(); continue }
       const rating = page.locator('button[aria-label*="مستوى 3"]')
       if (await rating.first().isVisible().catch(() => false)) { const n = await rating.count(); for (let j = 0; j < n; j++) { await rating.nth(j).click(); J.click() } const nx = page.getByRole('button', { name: /متابعة/ }); if (await nx.isVisible().catch(() => false)) { await nx.click(); J.click() } continue }
-      const opts = page.locator('div.grid.gap-3 > button')
+      const opts = page.locator('main button[aria-pressed], div.grid.gap-3 > button')
       if (await opts.first().isVisible().catch(() => false)) {
         const n = await opts.count(); let picked = 0
         for (let j = 0; j < n; j++) { const t = (await opts.nth(j).textContent()) ?? ''; if (t.includes('من 25 إلى 34')) { picked = j; break } }
@@ -204,7 +208,7 @@ if (want('J5')) {
     await b.click(); J.click(); await page.waitForTimeout(300)
     const dt = page.locator('input[type="datetime-local"]').first(); if (await dt.isVisible().catch(() => false)) { const d = new Date(Date.now() + 9 * 86400_000); await dt.fill(d.toISOString().slice(0, 16)); J.click() }
     await page.getByPlaceholder(/سفر في موعد الجلسة/).fill('تعارضٌ مع دورةٍ أخرى في التاريخ نفسه — اقتراحُ الجولة'); J.click()
-    await page.getByRole('button', { name: /أرسل الاقتراح|اقترح|إرسال/ }).first().click(); J.click(); await page.waitForTimeout(1200)
+    await page.getByRole('button', { name: /أرسل الاقتراح/ }).first().click(); J.click(); await page.waitForTimeout(1200)
     return T(await page.locator('body').innerText()).match(/(أُرسل|اقتراح)[^\n]{0,120}/)?.[0] ?? T(await page.locator('body').innerText()).slice(0, 160)
   })
   await J.step(page, 'رفعُ تسجيل (ملفّ صغير)', async () => {
@@ -229,7 +233,7 @@ if (want('J6')) {
   const J = journey('J6', 'تصحيحُ تسليمٍ منتظر')
   const { ctx } = await ctxAs('trainer'); const page = await ctx.newPage()
   await J.step(page, 'فتح طابور التصحيح', async () => { await page.goto(`${WEB}/trainer/grading`, { waitUntil: 'networkidle' }); await page.waitForTimeout(1200); return T(await page.locator('body').innerText()).slice(0, 200) })
-  await J.step(page, 'بدءُ المراجعة', async () => { const b = page.getByRole('button', { name: /ابدأ المراجعة|بدء/ }).first(); if (!(await b.isVisible().catch(() => false))) return 'لا تسليمَ منتظرا'; await b.click(); J.click(); await page.waitForTimeout(900); return 'بدأت' })
+  await J.step(page, 'بدءُ المراجعة', async () => { const b = page.getByRole('button', { name: /ابدأ المراجعة|بدء|قيّمه|قيمه/ }).or(page.getByRole('link', { name: /قيّمه|قيمه/ })).first(); if (!(await b.isVisible().catch(() => false))) return 'لا تسليمَ منتظرا'; const label = T(await b.innerText()); await b.click(); J.click(); await page.waitForTimeout(1200); const sub = page.getByRole('button', { name: /ابدأ المراجعة|بدء المراجعة/ }).first(); if (await sub.isVisible().catch(() => false)) { await sub.click(); J.click(); await page.waitForTimeout(900) } return `ضُغط «${label}» → ${page.url().replace(WEB, '')}${(await sub.count()) ? ' · ثمّ «ابدأ المراجعة»' : ' · لا زرَّ «ابدأ المراجعة» هنا'}` })
   await J.step(page, 'درجةٌ وقبول', async () => {
     const g = page.locator('input[placeholder^="من "]').first(); if (await g.isVisible().catch(() => false)) { await g.fill('17'); J.click(); const gb = page.getByRole('button', { name: /سجّل الدرجة|احفظ الدرجة|الدرجة/ }).first(); if (await gb.isVisible().catch(() => false)) { await gb.click(); J.click(); await page.waitForTimeout(800) } }
     const note = page.getByPlaceholder(/ملاحظة للمتعلم/).first(); if (await note.isVisible().catch(() => false)) { await note.fill('تقديرٌ واقعيّ، أحسنت.'); J.click() }
@@ -270,8 +274,12 @@ if (want('J7')) {
     return T(await page.locator('body').innerText()).match(/(أُضيفت|أُنشئت|خطأ|تعذر)[^\n]{0,100}/)?.[0] ?? 'بلا رسالة تأكيد'
   })
   await J.step(page, 'تسجيلُ طالبٍ — الحقلُ يطلب UUID', async () => {
+    /* نموذجُ التسجيل يظهر للشعب المفتوحة فقط، لا للمسودة التي أُنشئت الآن — فنفتح شعبةَ الديمو المفتوحة */
+    const clear = page.getByRole('button', { name: /امسح الفلاتر/ }).first(); if (await clear.isVisible().catch(() => false)) { await clear.click(); J.click(); await page.waitForTimeout(800) }
+    const demo = page.getByRole('button', { name: /شعبة ديمو — اختيار العملية/ }).first(); if (await demo.isVisible().catch(() => false)) { await demo.scrollIntoViewIfNeeded(); await demo.click(); J.click(); await page.waitForTimeout(800) } else return 'شعبةُ الديمو الجارية غيرُ ظاهرة حتّى بعد مسح الفلاتر'
+    await page.getByPlaceholder(/معرف المستخدم/).first().scrollIntoViewIfNeeded().catch(() => {})
     const users = await apiAs(cookie, 'GET', '/api/admin/users'); const st = (users.json ?? []).find?.((u) => u.email === ACC.student); studentId = st?.id ?? null
-    const inp = page.getByPlaceholder(/معرف المستخدم/).first(); if (!(await inp.isVisible().catch(() => false))) return 'لا حقلَ تسجيلٍ ظاهرا'
+    const inp = page.getByPlaceholder(/معرف المستخدم/).first(); if (!(await inp.isVisible().catch(() => false))) return 'لا حقلَ تسجيلٍ ظاهرا حتّى في الشعبة المفتوحة'
     await inp.fill(studentId ?? ''); J.click(); await inp.locator('xpath=following::button[1]').click().catch(() => {}); J.click(); await page.waitForTimeout(1200)
     return `الحقل يطلب UUID (placeholder «معرف المستخدم (UUID)») · ${T(await page.locator('body').innerText()).match(/(سُجل|سُجِّل|خطأ|تعذر|مسجَّل)[^\n]{0,120}/)?.[0] ?? 'بلا رسالة'}`
   })
@@ -290,7 +298,7 @@ if (want('J7')) {
 if (want('J8')) {
   const J = journey('J8', 'الاعتمادات: تأجيلٌ وشهادة')
   const { ctx } = await ctxAs('academic'); const page = await ctx.newPage()
-  await J.step(page, 'اقتراحاتُ التأجيل في الشعب', async () => { await page.goto(`${WEB}/admin/cohorts`, { waitUntil: 'networkidle' }); await page.waitForTimeout(1200); const n = await page.getByLabel(/تعليق على اقتراح/).count(); return `اقتراحاتٌ معلّقة: ${n}` })
+  await J.step(page, 'اقتراحاتُ التأجيل في الشعب', async () => { await page.goto(`${WEB}/admin/cohorts`, { waitUntil: 'networkidle' }); await page.waitForTimeout(1200); const clear = page.getByRole('button', { name: /امسح الفلاتر/ }).first(); if (await clear.isVisible().catch(() => false)) { await clear.click(); J.click(); await page.waitForTimeout(800) } const demo = page.getByRole('button', { name: /شعبة ديمو/ }).first(); if (await demo.isVisible().catch(() => false)) { await demo.click(); J.click(); await page.waitForTimeout(800) } const n = await page.getByLabel(/تعليق على اقتراح/).count(); return `اقتراحاتٌ معلّقة داخل بطاقة شعبة الديمو: ${n} · (لا مؤشّرَ على مستوى القائمة — يجب فتحُ كلِّ بطاقةٍ لمعرفة ما ينتظر)` })
   await J.step(page, 'اعتمادُ اقتراح', async () => { const c = page.getByLabel(/تعليق على اقتراح/).first(); if (!(await c.isVisible().catch(() => false))) return 'لا اقتراحَ معلّقا'; await c.fill('موافق — بلّغ الطلبة'); J.click(); await page.getByRole('button', { name: /اعتمد|موافقة|قبول/ }).first().click(); J.click(); await page.waitForTimeout(1200); return T(await page.locator('body').innerText()).match(/(اعتُمد|حُرِّك|أُبلغ|خطأ|تعذر)[^\n]{0,120}/)?.[0] ?? 'بلا رسالة' })
   await J.step(page, 'طلباتُ المتعلّمين', async () => { await page.goto(`${WEB}/admin/learner-requests`, { waitUntil: 'networkidle' }); await page.waitForTimeout(1200); return T(await page.locator('body').innerText()).slice(0, 240) })
   await J.step(page, 'البتّ في طلب', async () => { const b = page.getByRole('button', { name: /أصدر|نفّذ|وافق|اقبل/ }).first(); if (!(await b.isVisible().catch(() => false))) return 'لا طلبَ يُبتّ فيه'; await b.click(); J.click(); await page.waitForTimeout(1200); return T(await page.locator('body').innerText()).match(/(نُفِّذ|صدرت|أُصدرت|خطأ|تعذر)[^\n]{0,120}/)?.[0] ?? 'بلا رسالة' })
@@ -311,11 +319,12 @@ if (want('J9')) {
   })
   await J.step(page, 'منحُ صلاحيّةٍ بسبب', async () => {
     await page.getByPlaceholder(/ابحث باسمٍ/).fill('الجولة'); J.click(); await page.waitForTimeout(600)
-    const perms = page.getByRole('button', { name: /الصلاحيات|صلاحيّات/ }).first(); if (!(await perms.isVisible().catch(() => false))) return 'لا زرَّ صلاحيّات'
+    const perms = page.getByRole('button', { name: /صلاحي/ }).first(); if (!(await perms.isVisible().catch(() => false))) return 'لا زرَّ صلاحيّات'
     await perms.click(); J.click(); await page.waitForTimeout(600)
-    await page.getByLabel('ابحث في الصلاحيات').fill('reports.view'); await page.getByLabel(/سبب الاستثناء/).fill('تجربةُ الجولة — يُنزع بعدها'); J.click(); J.click()
-    const grant = page.getByRole('button', { name: /^منح$|منح/ }).first(); if (await grant.isVisible().catch(() => false)) { await grant.click(); J.click(); await page.waitForTimeout(1000) }
-    return T(await page.locator('body').innerText()).match(/(مُنحت|أُضيفت|خطأ|تعذر)[^\n]{0,120}/)?.[0] ?? 'بلا رسالة'
+    await page.getByLabel('ابحث في الصلاحيات').fill('admin.users'); await page.getByLabel(/سبب الاستثناء/).fill('تجربةُ الجولة — يُنزع بعدها'); J.click(); J.click(); await page.waitForTimeout(400)
+    const grant = page.getByRole('button', { name: /امنح|منح/ }).first(); const had = await grant.isVisible().catch(() => false); if (had) { await grant.click(); J.click(); await page.waitForTimeout(1000) }
+    const body = T(await page.locator('body').innerText())
+    return `${had ? 'ضُغط «امنحها»' : 'لا زرَّ منحٍ لصلاحيّةٍ خارج الدور'} · ${body.match(/(مُنحت|أُضيفت|استثناء|خطأ|تعذر)[^\n]{0,120}/)?.[0] ?? ''} · عدّادُ الصلاحيّات: ${body.match(/صلاحيّاته الفعليّة\s*(\d+)/)?.[1] ?? '?'}`
   })
   await J.step(page, 'إيقافٌ ثمّ إعادة', async () => {
     const stop = page.getByRole('button', { name: /^إيقاف$|أوقف|إيقاف الحساب/ }).first(); if (!(await stop.isVisible().catch(() => false))) return 'لا زرَّ إيقاف'
@@ -351,5 +360,11 @@ if (want('J10')) {
 
 await browser.close()
 for (const r of log) r.durationMs = Date.now() - r.startedAt
-writeFileSync(join(OUT, 'journeys.json'), JSON.stringify({ generatedAt: new Date().toISOString(), journeys: log }, null, 2))
+mkdirSync(OUT, { recursive: true })
+let merged = log
+if (ONLY && existsSync(join(OUT, 'journeys.json'))) {
+  const prev = JSON.parse(readFileSync(join(OUT, 'journeys.json'), 'utf8')).journeys
+  merged = prev.map((p) => log.find((r) => r.id === p.id) ?? p); for (const r of log) if (!merged.some((m) => m.id === r.id)) merged.push(r)
+}
+writeFileSync(join(OUT, 'journeys.json'), JSON.stringify({ generatedAt: new Date().toISOString(), journeys: merged }, null, 2))
 console.log(`\n═══ ${log.length} رحلات · ${log.reduce((n, r) => n + r.steps.length, 0)} خطوة · ${log.reduce((n, r) => n + r.steps.filter((s) => !s.ok).length, 0)} خطوة متعذّرة ═══`)

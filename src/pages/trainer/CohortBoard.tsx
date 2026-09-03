@@ -130,7 +130,11 @@ export default function CohortBoard() {
       if (res.uploadUrl) {
         const put = await fetch(`${API_BASE}${res.uploadUrl}`, {
           method: "PUT", credentials: "include",
-          headers: { "content-type": file.type || "application/octet-stream" },
+          /* الخادم يفكّ جسمَ الرفع كـ octet-stream فقط (نمطُ JoinTrainer)؛ إرسالُ
+             نوعِ الملف الحقيقيّ (video/mp4, application/pdf) كان يُردّ بـ415
+             قبل أن يصل الحقلَ — شُوهد في جولة ٢٠٢٦-٠٩. النوعُ الحقيقيّ مسجَّلٌ
+             في خطوة التسجيل التي قبل هذه. */
+          headers: { "content-type": "application/octet-stream" },
           body: file,
         });
         if (!put.ok) throw new ApiError("upload_failed", "تعذر رفع الملف بعد تسجيل المادة", put.status);
@@ -163,7 +167,11 @@ export default function CohortBoard() {
       if (res.uploadUrl) {
         const put = await fetch(`${API_BASE}${res.uploadUrl}`, {
           method: "PUT", credentials: "include",
-          headers: { "content-type": file.type || "application/octet-stream" },
+          /* الخادم يفكّ جسمَ الرفع كـ octet-stream فقط (نمطُ JoinTrainer)؛ إرسالُ
+             نوعِ الملف الحقيقيّ (video/mp4, application/pdf) كان يُردّ بـ415
+             قبل أن يصل الحقلَ — شُوهد في جولة ٢٠٢٦-٠٩. النوعُ الحقيقيّ مسجَّلٌ
+             في خطوة التسجيل التي قبل هذه. */
+          headers: { "content-type": "application/octet-stream" },
           body: file,
         });
         if (!put.ok) throw new ApiError("upload_failed", "تعذر رفع الملف بعد التسجيل", put.status);

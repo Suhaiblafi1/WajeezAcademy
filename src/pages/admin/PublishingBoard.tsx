@@ -28,7 +28,10 @@ export default function PublishingBoard() {
   const refresh = useCallback(async () => {
     try {
       setVersions(await apiGet<Version[]>("/api/admin/publishing/versions"));
-      setRuns(await apiGet<RegressionRun[]>("/api/admin/quality/regression-runs"));
+      /* تشغيلاتُ الارتداد تخصّ صلاحيّةَ الجودة؛ المديرُ الأكاديميّ يرى الإصداراتَ
+         بلا لافتة «تتطلّب مدير النظام» على صفحته هو (شُوهدت في جولة ٢٠٢٦-٠٩) */
+      try { setRuns(await apiGet<RegressionRun[]>("/api/admin/quality/regression-runs")); }
+      catch (e) { if (!(e instanceof ApiError && e.status === 403)) throw e; setRuns([]); }
     } catch (e) {
       setError(permissionMessage(e, "تعذر الاتصال بخادم API — شغّله بـ npm run api:dev"));
     }

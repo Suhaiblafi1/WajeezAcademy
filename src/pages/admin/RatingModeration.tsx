@@ -14,6 +14,7 @@ interface QueueItem {
   id: string;
   subjectType: "trainer" | "advisor" | "course";
   subjectId: string;
+  subjectNameAr?: string | null;
   score: number;
   commentAr: string;
   publishStatus: string;
@@ -123,7 +124,9 @@ export default function RatingModeration() {
               <div className="flex flex-wrap items-center gap-2 text-[10px]">
                 <span className="rounded-full border border-white/10 px-2 py-0.5 font-bold text-white/45">{KIND_AR[r.subjectType]}</span>
                 <span className="font-black text-gold">{r.score} ★</span>
-                <span dir="ltr" className="text-white/25">{r.subjectId}</span>
+                {r.subjectNameAr
+                  ? <span className="font-bold text-white/70">{r.subjectNameAr}</span>
+                  : <span dir="ltr" className="text-white/25">{r.subjectId}</span>}
               </div>
               <p className="mt-3 text-[13px] leading-7 text-white/75">{r.commentAr}</p>
               {r.moderationReason && (
