@@ -12,9 +12,10 @@ import { bulkMessage, runBulk } from "@/application/admin/bulk";
 import { matchesQuery } from "@/application/text/search-ar";
 import { paginate } from "@/application/admin/paginate";
 import FlowSteps from "@/components/FlowSteps";
-import { apiGet, apiPost, ApiError } from "@/services/api";
+import { apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
 import { LEDGER_CURRENCY } from "@/application/commerce/presentment";
 import { useAutoRefresh } from "@/services/useAutoRefresh";
+import { useRealSession } from "@/services/session";
 import { fmtDate, fmtDateTime } from "@/application/text/format-ar";
 
 const inputCls = "rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/25 focus:border-teal focus:outline-none";
@@ -39,6 +40,26 @@ const RF_STATUS: Record<string, string> = { requested: "مطلوب", approved: "
 type Tab = "requests" | "invoices" | "refunds" | "coupons";
 
 export default function Finance() {
+  /* ═══ الشاشةُ تعرض ما يستطيع صاحبُها، لا كلَّ ما فيها ═══
+
+     بعد فصل المال عن الأكاديميّ صار المديرُ الأكاديميّ يملك `finance.view`
+     وحدَها: يقرأ الفواتيرَ ليعرف أدفع المتعلّمُ أم لا، ولا يسجّل دفعةً ولا
+     يعتمد استردادا ولا يصنع كوبونا. وبلا هذا الترشيح كان سيرى الأزرارَ
+     كلَّها ويصطدم بـ٤٠٣ عند الضغط — وهي القاعدةُ نفسُها التي حكمت المرحلةَ
+     الأولى: لا زرَّ يعِد بما لا تستطيعه المنصّةُ لصاحبه.
+
+     والقراءةُ تُحصَّن أيضا: نداءُ الكوبونات يُردّ بـ٤٠٣ لمن لا يملكها، وكان
+     ذلك سيُسقط الشاشةَ كلَّها في «الخادم غير متصل». */
+  const { user } = useRealSession();
+  const can = (key: string) => user?.permissions.includes(key) ?? false;
+  const canRecordPayment = can("finance.payment.record");
+  const canRefund = can("finance.refund.process");
+  const canCommerce = can("commerce.manage");
+  /* `finance.view` شرطُ الشاشة نفسِها: من لا يملكها لا يُعرض له لوحٌ فارغ،
+     بل الرسالةُ الصريحةُ التي يقولها الخادم (اسمُ الصلاحيّة ومن يملكها). */
+  const canViewMoney = can("finance.view");
+  const readOnly = canViewMoney && !canRecordPayment && !canRefund && !canCommerce;
+
   const [tab, setTab] = useState<Tab>("requests");
   /* بحثٌ وترقيمٌ للتبويبين اللذين يطولان بالعمل: الطلبات والفواتير.
      والاستردادُ والكوبونُ محدودان بطبيعتهما فلا يُثقلان بشريط. */
@@ -64,16 +85,22 @@ export default function Finance() {
   const load = useCallback(async (silent = false) => {
     if (!silent) { setLoading(true); setOffline(null); }
     try {
+      /* الممنوعُ من قائمةٍ لا يُسقط الشاشة: يعود فارغا ويبقى ما يستطيع */
+      const allowed = async <T,>(p: Promise<T[]>): Promise<T[]> => {
+        try { return await p } catch (e) { if (e instanceof ApiError && e.status === 403) return []; throw e }
+      };
       const [er, inv, rf, cp] = await Promise.all([
-        apiGet<EnrollReq[]>("/api/admin/enrollment-requests"),
-        apiGet<Invoice[]>("/api/admin/invoices"),
-        apiGet<Refund[]>("/api/admin/refunds"),
-        apiGet<Coupon[]>("/api/admin/coupons"),
+        allowed(apiGet<EnrollReq[]>("/api/admin/enrollment-requests")),
+        /* والفواتيرُ لا تُلتمَس بلا صلاحيّتها: منعُها يُقال صراحةً لا يُبتلع،
+           ولا يُعاد النداءُ كلَّ دقيقةٍ ليُردّ كلَّ دقيقة. */
+        canViewMoney ? apiGet<Invoice[]>("/api/admin/invoices") : Promise.resolve([] as Invoice[]),
+        canViewMoney ? allowed(apiGet<Refund[]>("/api/admin/refunds")) : Promise.resolve([] as Refund[]),
+        canCommerce ? allowed(apiGet<Coupon[]>("/api/admin/coupons")) : Promise.resolve([] as Coupon[]),
       ]);
       setRequests(er); setInvoices(inv); setRefunds(rf); setCoupons(cp);
-    } catch (e) { if (!silent) setOffline(e instanceof ApiError ? e.message : "الخادم غير متصل"); }
+    } catch (e) { if (!silent) setOffline(permissionMessage(e, "الخادم غير متصل")); }
     finally { if (!silent) setLoading(false); }
-  }, []);
+  }, [canCommerce, canViewMoney]);
 
   useEffect(() => { void load(); }, [load]);
   /* نبض صامت كل دقيقة — طلبات التسجيل والفواتير تتحدث دون تحديث يدوي */
@@ -104,9 +131,12 @@ export default function Finance() {
 
   const tabs: [Tab, string, number][] = [
     ["requests", "طلبات التسجيل", requests.filter((r) => r.status === "pending").length],
-    ["invoices", "الفواتير", invoices.length],
-    ["refunds", "الاستردادات", refunds.filter((r) => r.status === "requested").length],
-    ["coupons", "الكوبونات والخطط", coupons.length],
+    ...(canViewMoney ? ([
+      ["invoices", "الفواتير", invoices.length],
+      ["refunds", "الاستردادات", refunds.filter((r) => r.status === "requested").length],
+    ] as [Tab, string, number][]) : []),
+    /* الكوبوناتُ والخططُ بندٌ ماليّ — لا تُعرض لمن لا يملك `commerce.manage` */
+    ...(canCommerce ? [["coupons", "الكوبونات والخطط", coupons.length] as [Tab, string, number]] : []),
   ];
 
     /* الجماعيُّ على المعلَّق وحدَه.
@@ -179,6 +209,17 @@ export default function Finance() {
         </button>
         {flash && <span className="text-xs font-bold text-teal-light-ink" role="status">{flash}</span>}
       </div>
+
+      {/* ولا يُترك القارئُ يظنّ الشاشةَ معطوبةً لخلوّها من الأزرار: يُقال له
+          ما يستطيع وما لا يستطيع ومن يستطيعه — صراحةً، مرّةً في أعلى الصفحة. */}
+      {readOnly && (
+        <p className="mb-5 flex items-start gap-2 rounded-2xl border border-white/12 bg-white/[0.03] px-4 py-3 text-[11px] font-bold leading-6 text-white/60">
+          <Wallet className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-ink" />
+          حسابُك يقرأ المالَ ولا يحرّكه: تعرف من دفع ومن لم يدفع لتقرّر تسجيلا، وتراجع طلباتِ التسجيل.
+          أمّا تسجيلُ دفعةٍ يدويّةٍ واعتمادُ استردادٍ وإنشاءُ كوبونٍ فهي بيد <b className="text-white/80">المالية</b> —
+          فصلٌ مقصود: من يسجّل التسجيلَ لا يسجّل دفعتَه.
+        </p>
+      )}
 
       {loading && <div className="grid place-items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-white/30" /></div>}
 
@@ -274,7 +315,7 @@ export default function Finance() {
                 </div>
                 <span className="rounded-full border border-teal/40 px-3 py-1 text-[11px] font-bold text-teal-light-ink">{INV_STATUS[inv.status] ?? inv.status}</span>
               </div>
-              {inv.status === "issued" && (
+              {inv.status === "issued" && canRecordPayment && (
                 <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/8 pt-3">
                   <input value={payForm[inv.id] ?? ""} onChange={(e) => setPayForm({ ...payForm, [inv.id]: e.target.value })}
                     placeholder="طريقة الدفع — تحويل بنكي / كاش" className={`${inputCls} flex-1`} />
@@ -289,6 +330,7 @@ export default function Finance() {
                 <div key={p.id} className="mt-2 flex flex-wrap items-center gap-2 rounded-xl border border-white/8 bg-black/20 p-3 text-xs">
                   <span className="font-bold text-emerald-300">دفعة ناجحة {p.amount} {inv.currency}</span>
                   <span className="text-white/40">{p.refunds.length} استرداد</span>
+                  {canRefund && (<>
                   <input value={refundForm[p.id]?.amount ?? ""} onChange={(e) => setRefundForm({ ...refundForm, [p.id]: { ...refundForm[p.id], amount: e.target.value, reason: refundForm[p.id]?.reason ?? "" } })}
                     placeholder="مبلغ" type="number" className={`${inputCls} w-24`} />
                   <input value={refundForm[p.id]?.reason ?? ""} onChange={(e) => setRefundForm({ ...refundForm, [p.id]: { ...refundForm[p.id], reason: e.target.value, amount: refundForm[p.id]?.amount ?? "" } })}
@@ -298,6 +340,7 @@ export default function Finance() {
                     className="flex cursor-pointer items-center gap-1 rounded-full border border-gold/40 px-3 py-1 text-[10px] font-bold text-gold-ink disabled:opacity-40">
                     <RotateCcw className="h-3 w-3" /> طلب استرداد
                   </button>
+                  </>)}
                 </div>
               ))}
             </div>
@@ -317,7 +360,7 @@ export default function Finance() {
               </div>
               <div className="flex items-center gap-2">
                 <span className="rounded-full border border-teal/40 px-3 py-1 text-[11px] font-bold text-teal-light-ink">{RF_STATUS[rf.status] ?? rf.status}</span>
-                {rf.status === "requested" && (
+                {rf.status === "requested" && canRefund && (
                   <>
                     <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/refunds/${rf.id}/process`, { approve: true }), "نُفذ الاسترداد وحُدثت الدفعة والطلب")}
                       className="cursor-pointer rounded-full bg-emerald-500/20 border border-emerald-400/40 px-4 py-1.5 text-xs font-bold text-emerald-300 disabled:opacity-40">

@@ -88,6 +88,22 @@ Rule applied throughout: a finding is withdrawn only when its evidence no longer
 
 ---
 
+## 0.7 · Separation of duties and the roles that were missing (stage 2E)
+
+Three things came out of reading `permissions.ts` against what the demo accounts could actually do in the browser. All three are shipped on this branch with server tests and screenshots in `tour/evidence-stage2/`.
+
+| # | What was true | What it means | Now |
+|---|---|---|---|
+| S1 | The **academic manager held four jobs in one bundle** (52 permissions): authoring and publishing content, running cohorts, **moving money** (`finance.payment.record`, `finance.refund.process`, `commerce.manage`) and **configuring the payment provider itself** (`settings.manage` → `/admin/integrations`, where the gateway keys live) | The person who books an enrolment was also the person who could record its payment and approve its refund, and could switch the payment driver. That is not a suspicion about anyone; it is the definition of no separation of duties | The bundle is **48 permissions**. `finance.view` stays — they need to know whether a learner paid in order to decide an enrolment — and nothing else in the money path. `commerce.manage` (orders, coupons, subscription plans) **moved to `finance`**, where it belonged and was oddly absent: finance could record a payment but did not own the order it paid for. `settings.manage` is now super-admin only. The finance screen filters itself by what the viewer can do, and says so in one line instead of showing buttons that 403 |
+| S2 | **`trainer_applicant` was an assignable role.** Staff could grant it by hand from `/admin/users`, or strip it from a real applicant | Granted by hand it produces an account with no portal at all and one screen that says «لا طلبَ لك» — a dead end its owner cannot leave. Stripped from a real applicant it loses them the view of an application still sitting in the queue | It is a **lifecycle state**: put on by the application flow, taken off by the decision. Assignment refuses to add or remove it (`LIFECYCLE_ROLES`, HTTP 403 `lifecycle_role`) and names where the decision is made instead. Editing an applicant's *other* roles still works — the check is on what changed, not on what is in the list |
+| S3 | There was **no role between `operations_manager` (12 permissions, cannot open a cohort, manage material or issue a certificate) and `academic_manager` (52)** | Delegating a day's work — open the cohorts, enrol the learners, issue the earned certificates — meant handing over publishing, money and the user list. So it was not delegated | **`academic_coordinator`** (10 permissions, rank 65): cohorts and sessions, enrolments and enrolment requests, materials, `certificate.issue`, trainer view and assignment, reports. No publishing, no rollback, no money, no users, no audit log, no integrations, and no delegation. Verified in the browser: nine sidebar items, cohort creation works, `/admin/users` and `/admin/audit` return the honest "this needs permission «…» — held by: …" screen |
+
+**One finding withdrawn here, of my own.** §1 item 7 and §E.3 proposed regrouping the admin sidebar. The grouping into three doors («الأكاديمية» · «الأمور الفنّية» · «الصلاحيات العامّة للموقع») is a decision the owner already made and it is recorded in `AdminLayout.tsx`; reversing it is not mine to do, and the list is already filtered per role (the coordinator sees nine items, not twenty). What was actually broken was the **mobile** dropdown: it flattened all three groups into one unlabelled list, so on a phone the doors did not exist. It now carries the same three `<optgroup>`s.
+
+**And one gap this uncovered.** `seedRbac` only ever *added* grants. Permissions are resolved on every request from the `RolePermission` rows, not from the code — so removing a permission from `ROLE_PERMISSIONS` had **no effect on any live database**, only on a freshly created one such as the test DB. The separation in S1 would have been ink on paper everywhere it mattered. Seeding now reconciles: what is not in the matrix is revoked (per-person `UserPermission` exceptions are untouched). Confirmed locally — the academic manager's grants went 52 → 48 on the next seed.
+
+---
+
 ## A · Critical issues (fix before scaling or migrating)
 
 | # | Problem | Why it matters | Impact | Recommended solution | Priority |
@@ -111,17 +127,17 @@ Rule applied throughout: a finding is withdrawn only when its evidence no longer
 
 ## B · High-value improvements
 
-| # | Improvement | Value | Evidence |
-|---|---|---|---|
+| # | Improvement | Value | Evidence | Status |
+|---|---|---|---|---|
 | B1 | **Zoom API provider + attendance sync + reminders + ICS feed** (doc 02 §2) | Turns the platform from "a page with a pasted link" into an academy operations system; removes the largest manual chore (marking attendance, sending links) | `zoom/provider.ts` stub throws; `Attendance.markedBy` manual; `AdminCohorts.tsx:527–534` paste form |
 | B2 | **Recording review workflow + managed video with signed embeds** (doc 02 §3) | Paid content stops being an unlisted YouTube link; first honest watch-progress data | `module-video.ts` whitelist; `ModuleVideo.tsx` disclaims progress |
-| B3 | **Cohort wizard with session generation, status automation, "duplicate cohort"** (doc 02 §4) | Cuts cohort setup from ~15 raw fields + manual sessions to 5 guided steps; eliminates the two-sources-of-truth schedule | `schema.prisma` Cohort vs CohortSession; `AdminCohorts.tsx` form |
-| B4 | **Replace UUID inputs with search-and-pick** (learners by email/name, sessions by title/date) | The single most visible "built for developers" smell | `AdminCohorts.tsx:472` «معرف المستخدم (UUID)», `:527` «معرف الجلسة (UUID)» |
-| B5 | **Invitations that last 7 days, `invited` state, resend, bulk CSV** (doc 02 §6) | Current invite is a 1-hour reset token; staff onboarding fails on first try | `account-mail.ts:105` |
-| B6 | **Academic coordinator role; retire `operations_manager`; applicant becomes a state** (doc 02 §6) | Roles that match real jobs are roles people can be trained on | `permissions.ts` ROLE_PERMISSIONS |
+| B3 | **Cohort wizard with session generation, status automation, "duplicate cohort"** (doc 02 §4) | Cuts cohort setup from ~15 raw fields + manual sessions to 5 guided steps; eliminates the two-sources-of-truth schedule | `schema.prisma` Cohort vs CohortSession; `AdminCohorts.tsx` form | ✅ **done** (stage 2B): wizard, session generation from the weekly schedule, status automation, duplicate |
+| B4 | **Replace UUID inputs with search-and-pick** (learners by email/name, sessions by title/date) | The single most visible "built for developers" smell | `AdminCohorts.tsx:472` «معرف المستخدم (UUID)», `:527` «معرف الجلسة (UUID)» | ✅ **done** (stage 2A): learners by name/email, sessions by title and date |
+| B5 | **Invitations that last 7 days, `invited` state, resend, bulk CSV** (doc 02 §6) | Current invite is a 1-hour reset token; staff onboarding fails on first try | `account-mail.ts:105` | ✅ **done** (stage 2D): 7-day invite with its own purpose, `invited`/`archived` states, resend, bulk |
+| B6 | **Academic coordinator role; retire `operations_manager`; applicant becomes a state** (doc 02 §6) | Roles that match real jobs are roles people can be trained on | `permissions.ts` ROLE_PERMISSIONS | ✅ **coordinator added, applicant is now a state** (§0.7 S1/S2). Retiring `operations_manager` **not done**: it is a staffed, distinct scope and removing a role is destructive — the owner's call, not mine |
 | B7 | **Per-entity audit timeline tabs + coverage test** (doc 02 §7) | Admins see "who changed this cohort" where they work | `/admin/audit` global only |
 | B8 | **Consultation booking via Calendly behind a provider interface** (doc 02 §1) | Advisors get bookings inside the platform instead of WhatsApp threads | no booking model exists |
-| B9 | **Staff "next action" inbox** — surface failed jobs, pending reviews, cohorts blocked on trainer/price as tasks | Removes the need to know which of 20 admin screens to open | `StaffTask` exists; `/admin` dashboard |
+| B9 | **Staff "next action" inbox** — surface failed jobs, pending reviews, cohorts blocked on trainer/price as tasks | Removes the need to know which of 20 admin screens to open | `StaffTask` exists; `/admin` dashboard | ✅ **done** (stage 2C): `GET /api/staff/inbox`, computed from state, filtered by the viewer's permissions |
 | B10 | **Fix date locales**: 8 remaining `ar-SA`/`ar-JO` calls show Hijri or Levantine months to some users while others see Gregorian | Small, embarrassing, quick | grep: 8 occurrences in `src/` |
 | B11 | **Rename or split `commerce.service.ts`** (1 191 lines) and the 489-line `operations.routes.ts` | The two files most likely to hide the next money bug | `wc -l` |
 | B12 | **Reduce the front page and diagnostic component sizes** (`Diagnostic.tsx` 2 493 lines, `Home.tsx` 1 559, `JoinTrainer.tsx` 1 246) | Maintainability; these are the three screens every visitor touches | `wc -l` |

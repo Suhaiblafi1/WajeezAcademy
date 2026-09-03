@@ -38,6 +38,7 @@ interface ServerUser {
 const ROLE_HOME: Record<string, string> = {
   super_admin: "/admin",
   academic_manager: "/admin",
+  academic_coordinator: "/admin",
   diagnostic_manager: "/admin",
   operations_manager: "/admin",
   finance: "/admin",

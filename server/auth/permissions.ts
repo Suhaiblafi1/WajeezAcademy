@@ -147,10 +147,11 @@ export const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
     'cohort.manage', 'cohort.open', 'cohort.override_capacity', 'enrollment.manage',
     'material.manage', 'certificate.issue', 'certificate.revoke',
     'advisor.assign', 'advisor.request.review', 'advisor.learner.view', 'cv.manage', 'cv.view',
-    'enrollment.request.review', 'commerce.manage',
-    'finance.view', 'finance.payment.record', 'finance.refund.process',
+    'enrollment.request.review',
+    /* يرى المالَ ولا يحرّكه — الفصلُ مقصود، انظر التعليقَ أسفلَ الحزمة */
+    'finance.view',
     'reports.view', 'reports.export',
-    'notifications.manage', 'support.operate', 'support.assign', 'settings.manage',
+    'notifications.manage', 'support.operate', 'support.assign',
     'rating.moderate',
     /* يرى مرؤوسيه ويفوّض لهم — ولا يعيّن الأدوار ولا يوقف الحسابات */
     'admin.users.view', 'admin.permissions.delegate',
@@ -158,6 +159,46 @@ export const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
        يقع في نطاقه. ولا يُمنح `advisor.manage`: ذاك تعيينُ نسبة عمولة، بندٌ
        ماليّ يبقى محفوظا لمدير النظام وحده. */
     'audit.view',
+    /* ═══ ما نُزع عنه، ولماذا ═══
+
+       كانت حزمتُه اثنتين وخمسين حبّةً تجمع أربعةَ أعمالٍ في يدٍ واحدة:
+       تأليفُ المحتوى ونشرُه، وتشغيلُ الشعب، و**تحريكُ المال**
+       (`finance.payment.record` و`finance.refund.process` و`commerce.manage`)،
+       و**إعدادُ مزوّد الدفع والبريد** (`settings.manage`).
+
+       والأخيرتان ليستا عملَه: من يسجّل التسجيلَ لا يجوز أن يكون هو من
+       يسجّل دفعتَه ويعتمد استردادَها — تلك قاعدةُ فصلِ الأعمال، لا اتّهامٌ
+       لأحد؛ وشاشةُ التكاملات تُبدّل مفاتيحَ مزوّد الدفع نفسِه، وهذا شأنُ
+       مديرِ النظام وحدَه.
+
+       فبقيت له `finance.view`: يرى أدفع المتعلّمُ أم لا — وهي المعلومةُ
+       التي يحتاجها ليقرّر تسجيلا — ولا يحرّك قرشا. و`commerce.manage`
+       (الطلباتُ والكوبوناتُ وخططُ الاشتراك) نُقلت إلى **المالية**، وكانت
+       عندها مقلوبةً: تملك المالية تسجيلَ الدفعات ولا تملك الطلباتَ التي
+       تُدفع عنها. */
+  ],
+  /* ═══════════ المنسّقُ الأكاديميّ — الفجوةُ بين اثنتَي عشرةَ حبّةً وخمسين ═══════════
+
+     لم يكن على المنصّة من يُشغّل الأكاديميةَ يوميّا إلّا المديرُ الأكاديميّ:
+     من أراد أن يُوكّل إلى موظّفٍ **فتحَ الشعب وتسجيلَ المتعلّمين وإصدارَ
+     الشهادات** لم يجد إلّا بابَين — «مديرُ عمليّات» (لا يملك مادّةً ولا
+     شهادةً ولا فتحَ شعبة)، أو «مديرٌ أكاديميّ» بحزمته كاملةً: النشرُ
+     والمالُ وقائمةُ المستخدمين. فكان منحُ عملِ يومٍ منحا لمفاتيح البيت.
+
+     وهذا الدورُ هو ذلك العملُ وحدَه: يُجهّز ويُشغّل ويُصدر ما استُحقّ، ولا
+     ينشر متنا، ولا يمسّ مالا، ولا يعيّن دورا، ولا يفوّض شيئا. */
+  academic_coordinator: [
+    'catalog.view',
+    /* الشعبُ وجلساتُها: إنشاءٌ وجدولةٌ وفتحٌ — ولا تجاوزَ للسعة، ذاك قرارُ
+       مديرٍ يُوقَّع باستثناء. */
+    'cohort.manage', 'cohort.open',
+    'enrollment.manage', 'enrollment.request.review',
+    'material.manage',
+    /* يُصدر ما استُحقّ ولا يُلغي ما صدر: الإلغاءُ يُبطل شهادةً في يد صاحبها. */
+    'certificate.issue',
+    /* يرى المدرّبين ويُسندهم إلى شعبه — ولا يقرّر قبولَ متقدّمٍ ولا نشرَه. */
+    'trainer.applications.view', 'trainer.assign',
+    'reports.view',
   ],
   diagnostic_manager: [
     'catalog.view',
@@ -177,7 +218,10 @@ export const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
   /* حساب التقديم — لا بوابة متعلم ولا بوابة مدرب. يصير مدربا بالدعوة بعد
      الاعتماد (trainer.invite)، وحتى ذلك الحين لا يملك إلا رؤية طلبه. */
   trainer_applicant: ['trainer.application.own'],
-  finance: ['trainer.compensation.manage', 'finance.view', 'finance.payment.record', 'finance.refund.process', 'reports.view', 'reports.export'],
+  /* `commerce.manage` هنا لا عند المديرِ الأكاديميّ: الطلباتُ والكوبوناتُ
+     وخططُ الاشتراك بندٌ ماليّ، ومن يسجّل الدفعةَ هو من يملك الطلبَ الذي
+     دُفع عنه. */
+  finance: ['trainer.compensation.manage', 'commerce.manage', 'finance.view', 'finance.payment.record', 'finance.refund.process', 'reports.view', 'reports.export'],
   support: ['catalog.view', 'support.operate'],
   learner: ['learner.portal', 'learner.submit', 'cv.upload', 'enrollment.request', 'rating.submit'],
 }
@@ -201,6 +245,8 @@ export const ROLE_RANK: Record<string, number> = {
   super_admin: 100,
   academic_manager: 80,
   operations_manager: 70,
+  /* دون مديرِ العمليّات وفوق الدعم: يُشغّل ولا يُقرّر سياسةً */
+  academic_coordinator: 65,
   diagnostic_manager: 70,
   finance: 70,
   support: 60,
@@ -209,6 +255,21 @@ export const ROLE_RANK: Record<string, number> = {
   trainer_applicant: 20,
   learner: 10,
 }
+
+/* ─────────── أدوارُ الحالة: تُكتسب بالفعل، لا تُمنح بالتعيين ───────────
+
+   `trainer_applicant` ليس منصبا يُوكَل، بل حالةُ شخصٍ بدأ طلبَ انضمامٍ ولم
+   يُبتّ فيه: يضعها عليه `trainer-application.service` عند أوّل قسمٍ يحفظه،
+   وينزعها `trainer-review.service` ساعةَ الاعتماد أو الرفض.
+
+   ولم يكن شيءٌ يمنع إسنادَها بالاسم من شاشة المستخدمين. ومن أُسندت إليه يدا
+   وقع في حالةٍ لا مخرجَ منها بنفسه: حسابٌ لا بوابةَ متعلّمٍ فيه ولا بوابةَ
+   مدرّب، وشاشةٌ واحدةٌ (`/join-trainer/status`) تقول له «لا طلبَ لك». ونزعُها
+   يدا من متقدّمٍ حقيقيٍّ أسوأُ: طلبُه باقٍ في الطابور وقد فقد رؤيتَه وملفّاتَه.
+
+   فهذه الحالةُ تُقرأ ولا تُكتب: القائمةُ تعرضها، والتعيينُ يرفض إضافتَها
+   ونزعَها معا — ومسارُها هو الطلبُ نفسُه. */
+export const LIFECYCLE_ROLES = ['trainer_applicant'] as const
 
 /** عائلاتُ الصلاحيات التي يفوّضها كلُّ دور — مهامُّه لا كلُّ ما يملك */
 export const DELEGATABLE_FAMILIES: Record<string, string[]> = {
@@ -241,8 +302,25 @@ export function rankOf(roles: readonly string[]): number {
 export function refuseRoleAssignment(
   actorRoles: readonly string[],
   roleIds: readonly string[],
+  /** أدوارُ الحسابِ الآن — لتُفحَص أدوارُ الحالة على التغيير لا على الوجود */
+  currentRoles: readonly string[] = [],
 ): DelegationRefusal | null {
   const actorRank = rankOf(actorRoles)
+  /* أدوارُ الحالة: لا تُضاف بالتعيين ولا تُنزَع به (انظر `LIFECYCLE_ROLES`).
+     والفحصُ على الفرق لا على القائمة، وإلّا لم يُعدَّل دورُ متقدّمٍ أصلا —
+     فشاشةُ الأدوار تُرسل القائمةَ كاملةً في كلّ حفظ. */
+  const lifecycle = LIFECYCLE_ROLES as readonly string[]
+  const touched = [
+    ...roleIds.filter((r) => lifecycle.includes(r) && !currentRoles.includes(r)),
+    ...currentRoles.filter((r) => lifecycle.includes(r) && !roleIds.includes(r)),
+  ]
+  if (touched.length > 0) {
+    const names = [...new Set(touched)].map((r) => ROLE_NAMES_AR[r] ?? r).join('، ')
+    return {
+      code: 'lifecycle_role',
+      message_ar: `«${names}» حالةٌ يكتسبها صاحبُها بطلب الانضمام وتنتهي بقرارٍ عليه — لا تُسند ولا تُنزع من هنا. البتُّ في الطلب من شاشة «طلبات المدربين».`,
+    }
+  }
   const tooHigh = roleIds.filter((r) => (ROLE_RANK[r] ?? 0) > actorRank)
   if (tooHigh.length > 0) {
     const names = tooHigh.map((r) => ROLE_NAMES_AR[r] ?? r).join('، ')
@@ -298,6 +376,7 @@ export function rolesWithPermissionAr(key: string): string[] {
 export const ROLE_NAMES_AR: Record<string, string> = {
   super_admin: 'مدير النظام الأعلى',
   academic_manager: 'المدير الأكاديمي',
+  academic_coordinator: 'منسّق أكاديميّ',
   diagnostic_manager: 'مدير التشخيص',
   operations_manager: 'مدير العمليات',
   advisor: 'مستشار',

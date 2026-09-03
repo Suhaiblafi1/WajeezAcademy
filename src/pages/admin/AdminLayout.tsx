@@ -129,15 +129,24 @@ export default function AdminLayout({ children, title }: { children: React.React
             <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 object-contain" />
             <span className="hidden font-black sm:block">وجيز — الإدارة والعمليات</span>
           </Link>
-          {/* جوال: قائمة منسدلة بسيطة بكل الشاشات */}
+          {/* جوال: القائمةُ نفسُها بأبوابها الثلاثة.
+
+              كانت تُسطَّح: عشرونَ خيارا في قائمةٍ واحدة بلا عنوان، فأبوابُ
+              الشريط الجانبيّ الثلاثة تختفي على الهاتف ويصير الاختيارُ قراءةَ
+              عشرين سطرا بحثا عن واحد. و`optgroup` يُعيد التقسيمَ نفسَه —
+              الأقسامُ هي أقسامُ الشريط لا تقسيمٌ ثانٍ يفترق عنه. */}
           <select
             aria-label="التنقل بين شاشات الإدارة"
             className="rounded-xl border border-white/15 bg-paper px-3 py-2 text-xs font-bold text-white lg:hidden"
             value={location.pathname}
             onChange={(e) => navigate(e.target.value)}
           >
-            {sections.flatMap((s) => s.items).map((t) => (
-              <option key={t.to} value={t.to}>{t.label}</option>
+            {sections.map((s) => (
+              <optgroup key={s.title} label={s.title}>
+                {s.items.map((t) => (
+                  <option key={t.to} value={t.to}>{t.label}</option>
+                ))}
+              </optgroup>
             ))}
           </select>
           {/* ب-٣: min-w-0 يسمح للصفّ بالتقلّص عند التكبير ٤٠٠٪ (٣٢٠ بكسل CSS).

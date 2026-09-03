@@ -13,8 +13,12 @@ import { useRealSession } from "@/services/session";
 
 const ROLE_NAMES_AR: Record<string, string> = {
   super_admin: "مدير النظام الأعلى", academic_manager: "المدير الأكاديمي",
+  academic_coordinator: "منسّق أكاديميّ",
   diagnostic_manager: "مدير التشخيص", operations_manager: "مدير العمليات",
   advisor: "مستشار", trainer: "مدرب", finance: "المالية", support: "الدعم", learner: "متعلم",
+  /* «متقدّم لعضوية التدريب» ليس في القائمة عمدا: حالةٌ يكتسبها صاحبُها
+     بطلبه وينزعها القرارُ عليه، والخادمُ يرفض إسنادَها من هنا
+     (`LIFECYCLE_ROLES`). واسمُها معروضٌ في بطاقة الحساب لا في أزرار التعيين. */
 };
 const ALL_ROLES = Object.keys(ROLE_NAMES_AR);
 

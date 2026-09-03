@@ -22,6 +22,7 @@ import type { SessionUser } from '@/services/session'
 const ROLE_NAMES_AR: Record<string, string> = {
   super_admin: 'مدير النظام الأعلى',
   academic_manager: 'المدير الأكاديمي',
+  academic_coordinator: 'منسّق أكاديميّ',
   diagnostic_manager: 'مدير التشخيص',
   operations_manager: 'مدير العمليات',
   advisor: 'مستشار',

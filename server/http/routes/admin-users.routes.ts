@@ -362,7 +362,11 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
     }
     /* ولا يُعيَّن دورٌ أعلى من رتبة المعيِّن — وكان هذا الباب مفتوحا: من مُنح
        `admin.users.manage` بالتفويض صار يستطيع أن يرقّي نفسه مديرَ نظام. */
-    const rankRefusal = refuseRoleAssignment(req.auth!.roles, roleIds)
+    /* وأدوارُه الحاليّة تُقرأ قبل الحكم: أدوارُ الحالة (`LIFECYCLE_ROLES`)
+       تُفحَص على ما تغيّر لا على ما في القائمة، فتُعدَّل أدوارُ متقدّمٍ
+       الأخرى بلا أن تُمسّ حالتُه. */
+    const before = await prisma.user.findUnique({ where: { id }, select: { roles: { select: { roleId: true } } } })
+    const rankRefusal = refuseRoleAssignment(req.auth!.roles, roleIds, before?.roles.map((r) => r.roleId) ?? [])
     if (rankRefusal) return reply.status(403).send({ error: rankRefusal })
     await auth.setRoles(id, roleIds)
     return { ok: true }

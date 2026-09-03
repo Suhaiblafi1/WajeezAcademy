@@ -26,6 +26,7 @@ import { homePathForRoles, verifySession } from '../services/auth'
 export const ADMIN_ROLES = [
   'super_admin',
   'academic_manager',
+  'academic_coordinator',
   'diagnostic_manager',
   'operations_manager',
   'finance',
