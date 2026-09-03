@@ -150,34 +150,67 @@ export class AdvisorService {
   async myEarnings(advisorId: string) {
     const [profile, assignments] = await Promise.all([
       this.prisma.advisorProfile.findUnique({ where: { userId: advisorId } }),
+      /* كلُّ الإسنادات لا النشطةَ وحدَها.
+
+         كان الشرطُ `unassignedAt: null`، فمن أغلق حالةً ورُفع إسنادُها —
+         وهو ما يقع عند كلّ بيعةٍ تمّت — سقطت عمولتُها من حسابه. أي أنّ
+         إتمامَ العمل كان يمحو أجرَه. */
       this.prisma.advisorAssignment.findMany({
-        where: { advisorId, unassignedAt: null },
-        select: { caseId: true, case: { select: { clientId: true } } },
+        where: { advisorId },
+        select: { assignedAt: true, unassignedAt: true, case: { select: { clientId: true } } },
       }),
     ])
-    const clientIds = [...new Set(
-      assignments.map((a) => a.case.clientId).filter((id): id is string => Boolean(id)),
-    )]
+
+    /* ومتى بدأت نسبتُه من كلّ عميل: أوّلُ يومٍ أُسند إليه فيه.
+
+       وكان يُحسب مجموعُ ما دفعه العميلُ **في عمره كلِّه** — بما اشتراه قبل
+       أن يعرف المستشارَ أصلا، وما يشتريه بعد سنةٍ بلا وساطته. فالنسبةُ
+       على ما دُفع من يوم إسناده فصاعدا: ما قبلَه ليس من عمله. */
+    const firstTouch = new Map<string, Date>()
+    for (const a of assignments) {
+      const clientId = a.case.clientId
+      if (!clientId) continue
+      const prev = firstTouch.get(clientId)
+      if (!prev || a.assignedAt < prev) firstTouch.set(clientId, a.assignedAt)
+    }
+    const clientIds = [...firstTouch.keys()]
 
     const MIN_RATINGS_TO_SHOW = 3
     const [paidOrders, ratingAgg] = await Promise.all([
       clientIds.length > 0
-        ? this.prisma.order.findMany({ where: { userId: { in: clientIds }, status: 'paid' }, select: { total: true } })
+        ? this.prisma.order.findMany({
+            where: { userId: { in: clientIds }, status: 'paid' },
+            select: { userId: true, total: true, paidAt: true, createdAt: true },
+          })
         : Promise.resolve([]),
+      /* المعدَّلُ على كلّ التقييمات المرسَلة لا على المعتمَد منها.
+
+         كان مقيَّدا بـ`publishStatus: 'approved'` — وهي القاعدة التي يمنعها
+         المخطَّطُ نفسُه صراحة: الاعتمادُ يحكم **التعليقَ المكتوب وحدَه** لا
+         الدرجة، «لو اختارت الإدارةُ أيَّ الدرجات تدخل فيه لصار الرقمُ
+         مصنوعا». و`rating.service` يحسبه بلا هذا القيد — فكانت للمستشار
+         قاعدةٌ تخالف قاعدةَ المدرّب والدورة. */
       this.prisma.rating.aggregate({
-        where: { subjectType: 'advisor', subjectId: advisorId, publishStatus: 'approved' },
+        where: { subjectType: 'advisor', subjectId: advisorId },
         _avg: { score: true }, _count: true,
       }),
     ])
 
-    const revenueFromReferrals = paidOrders.reduce((sum, o) => sum + Number(o.total), 0)
+    const revenueFromReferrals = paidOrders.reduce((sum, o) => {
+      const since = firstTouch.get(o.userId)
+      /* `paidAt` قد يغيب على صفٍّ قديم — فيُقرأ تاريخُ الطلب بدلا منه */
+      const when = o.paidAt ?? o.createdAt
+      return since && when >= since ? sum + Number(o.total) : sum
+    }, 0)
+
     /* لا عمولةَ بلا نسبةٍ اتّفقت عليها الإدارة صراحة — «لم تُحدَّد بعد» غير «صفر» */
     const commissionPct = profile ? Number(profile.commissionPct) : null
     const commissionOwed = commissionPct !== null ? Math.round(revenueFromReferrals * commissionPct) / 100 : null
 
     return {
       commissionPct, commissionOwed, revenueFromReferrals, currency: 'USD',
-      activeCases: assignments.length,
+      /* «الحالات النشطة» تعني النشطةَ فعلا — بخلاف مقام العمولة */
+      activeCases: assignments.filter((a) => a.unassignedAt === null).length,
       ratingAvg: ratingAgg._count >= MIN_RATINGS_TO_SHOW ? Number(ratingAgg._avg.score) : null,
       ratingCount: ratingAgg._count,
     }

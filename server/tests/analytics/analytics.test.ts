@@ -37,11 +37,11 @@ describe('POST /api/events', () => {
     const res = await app.inject({
       method: 'POST', url: '/api/events',
       headers: { cookie },
-      payload: { event: 'gate_viewed', meta: { confidence: 82 }, anonId: 'anon-events-1' },
+      payload: { event: 'result_full_viewed', meta: { confidence: 82 }, anonId: 'anon-events-1' },
     })
     expect(res.statusCode).toBe(200)
     const row = await prisma.analyticsEvent.findFirst({ where: { anonId: 'anon-events-1' } })
-    expect(row?.event).toBe('gate_viewed')
+    expect(row?.event).toBe('result_full_viewed')
     expect(row?.userId).toBe(userId)
   })
 
@@ -52,12 +52,12 @@ describe('POST /api/events', () => {
     expect(unknown.statusCode).toBe(422)
     const freeText = await app.inject({
       method: 'POST', url: '/api/events',
-      payload: { event: 'gate_viewed', meta: { note: 'نص حر بالعربية لا يجوز' } },
+      payload: { event: 'result_full_viewed', meta: { note: 'نص حر بالعربية لا يجوز' } },
     })
     expect(freeText.statusCode).toBe(422)
     const longText = await app.inject({
       method: 'POST', url: '/api/events',
-      payload: { event: 'gate_viewed', meta: { note: 'x'.repeat(200) } },
+      payload: { event: 'result_full_viewed', meta: { note: 'x'.repeat(200) } },
     })
     expect(longText.statusCode).toBe(422)
     /* رمز مصنف عربي بلا مسافات مقبول — المسافة هي علامة النص الحر لا اللغة */

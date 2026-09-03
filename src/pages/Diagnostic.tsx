@@ -37,8 +37,7 @@ import { ensurePublishedContent } from "@/services/public-content";
 import SeoHead from "@/components/SeoHead";
 import EcosystemNote from "@/components/EcosystemNote";
 import { Badge } from "@/components/ui/badge";
-import ResultGate from "@/components/ResultGate";
-import { FIRST_TIME_PROMO } from "@/application/commerce/first-time-promo";
+import DiscountEmailCapture from "@/components/DiscountEmailCapture";
 import ResultFeedback from "@/components/ResultFeedback";
 import CourseJourney, { type CourseSuggestion } from "@/components/CourseJourney";
 import { ResultErrorBoundary } from "@/components/ResultErrorBoundary";
@@ -205,7 +204,6 @@ function ComposedSwap({
   pathwayIds,
   gaps,
   delivery,
-  authed,
   onChange,
 }: {
   planCourseIds: string[];
@@ -213,7 +211,6 @@ function ComposedSwap({
   pathwayIds: string[];
   gaps: string[];
   delivery?: string;
-  authed: boolean;
   /** يبلّغ الصفحة بالقائمة الحالية — الاعتماد يكتب ما على الشاشة لا ما يشتقّه من جديد */
   onChange: (ids: string[]) => void;
 }) {
@@ -246,23 +243,19 @@ function ComposedSwap({
       courseIds={chosenIds}
       reasons={reasons}
       delivery={delivery}
-      edit={
-        authed
-          ? {
-              giftId: null,
-              swapForId,
-              pool,
-              minReached: true,
-              maxReached: true,
-              swapOnly: true,
-              onSwapToggle: setSwapForId,
-              onSwapPick: swapPick,
-              onRemove: () => {},
-              onAdd: () => {},
-              onGiftToggle: () => {},
-            }
-          : undefined
-      }
+      edit={{
+        giftId: null,
+        swapForId,
+        pool,
+        minReached: true,
+        maxReached: true,
+        swapOnly: true,
+        onSwapToggle: setSwapForId,
+        onSwapPick: swapPick,
+        onRemove: () => {},
+        onAdd: () => {},
+        onGiftToggle: () => {},
+      }}
     />
   );
 }
@@ -271,13 +264,11 @@ function ComposedSwap({
 function PlanCourses({
   pathway,
   gaps,
-  authed,
   resetKey,
   onChange,
 }: {
   pathway: Pathway;
   gaps: string[];
-  authed: boolean;
   resetKey: number; // يتغير عند تبديل المسار لإعادة التهيئة
   /** يبلّغ الصفحة بما على الشاشة — الاعتماد وحده يكتب، بمسلك واحد للحالتين */
   onChange: (ids: string[], giftId: string | null) => void;
@@ -355,41 +346,35 @@ function PlanCourses({
       <CourseJourney
         courseIds={shownIds}
         delivery={pathwayDelivery(pathway.id)}
-        edit={
-          authed
-            ? {
-                giftId,
-                swapForId,
-                pool,
-                minReached: chosenIds.length <= MIN_PATHWAY_COURSES,
-                maxReached: chosenIds.length >= MAX_PATHWAY_COURSES,
-                onSwapToggle: setSwapForId,
-                onSwapPick: swapPick,
-                onRemove: removeCourse,
-                onAdd: addCourse,
-                onGiftToggle: giftToggle,
-              }
-            : undefined
-        }
+        edit={{
+          giftId,
+          swapForId,
+          pool,
+          minReached: chosenIds.length <= MIN_PATHWAY_COURSES,
+          maxReached: chosenIds.length >= MAX_PATHWAY_COURSES,
+          onSwapToggle: setSwapForId,
+          onSwapPick: swapPick,
+          onRemove: removeCourse,
+          onAdd: addCourse,
+          onGiftToggle: giftToggle,
+        }}
       />
-      {authed && (
-        <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4">
-          <p className="text-xs font-bold text-white/60">
-            مسارك المخصص الآن:{" "}
-            <span className="text-white">
-              {chosen.length} دورات{gift ? " + هدية مجانية" : ""}
+      <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4">
+        <p className="text-xs font-bold text-white/60">
+          مسارك المخصص الآن:{" "}
+          <span className="text-white">
+            {chosen.length} دورات{gift ? " + هدية مجانية" : ""}
+          </span>
+          <span className="text-white/40"> · ~{totalWeeks} أسبوعا · يُحفظ تخصيصك تلقائيا ويظهر في صفحة مسارك بعد الاعتماد</span>
+        </p>
+        <div className="mt-2.5 flex flex-wrap gap-1.5">
+          {skills.map((s) => (
+            <span key={s} className="rounded-full border border-teal/40 bg-teal/10 px-2.5 py-0.5 text-[11px] font-semibold text-teal-light-ink">
+              {s}
             </span>
-            <span className="text-white/40"> · ~{totalWeeks} أسبوعا · يُحفظ تخصيصك تلقائيا ويظهر في صفحة مسارك بعد الاعتماد</span>
-          </p>
-          <div className="mt-2.5 flex flex-wrap gap-1.5">
-            {skills.map((s) => (
-              <span key={s} className="rounded-full border border-teal/40 bg-teal/10 px-2.5 py-0.5 text-[11px] font-semibold text-teal-light-ink">
-                {s}
-              </span>
-            ))}
-          </div>
+          ))}
         </div>
-      )}
+      </div>
     </>
   );
 }
@@ -431,7 +416,7 @@ const VARIANT_AR: Record<CompositeView["variant"], { label: string; hint: string
 
    والصيغة «تبدأ من … للدورة» لا «الخطة كاملة = كذا»: عدد دورات الخطة يتغيّر
    بيد المتعلم في الشاشة التالية، فسعرُ الخطة يُحدَّد بعد أن يعتمدها هو. */
-function ResultPriceCard({ courseIds }: { courseIds: readonly string[] }) {
+function ResultPriceCard({ courseIds, pathwayId }: { courseIds: readonly string[]; pathwayId: string }) {
   const { prices, loaded } = useCoursePrices();
   const cheapest = cheapestOf(courseIds, prices);
   const known = pricedCount(courseIds, prices);
@@ -456,18 +441,11 @@ function ResultPriceCard({ courseIds }: { courseIds: readonly string[] }) {
           {loaded ? "يُعلن السعر مع فتح الشعبة" : "يُقرأ السعر…"}
         </p>
       )}
-      <div className="mt-5 rounded-2xl border border-teal/35 bg-teal/[0.07] p-4">
-        <p className="text-sm font-black leading-relaxed text-teal-light-ink">
-          سجّل الآن لتعرف المزيد — ولك خصم إضافي {FIRST_TIME_PROMO.percentOff}٪ {FIRST_TIME_PROMO.labelAr}
-        </p>
-        <p className="mt-2 flex flex-wrap items-center gap-2 text-xs text-white/60">
-          <span>بالكود</span>
-          <code className="rounded-lg border border-teal/50 bg-black/30 px-2.5 py-1 text-sm font-black tracking-widest text-white" dir="ltr">
-            {FIRST_TIME_PROMO.code}
-          </code>
-          <span>يُكتب في نافذة الدفع.</span>
-        </p>
-      </div>
+      {/* كان هنا كودُ خصمٍ ظاهرا للجميع بلا مقابل («سجّل الآن لتعرف المزيد»
+          — وعدٌ بمزيدٍ صار كاذبا بعد أن سقطت بوّابة النتيجة، والكود نفسه
+          كان مكشوفا فلا داعي لأحد أن يترك بريده لأجله). صار وراء بريدٍ
+          حقيقي — نفس الكود، لكن مقابل إشارة تسويقية بدل مجّانا. */}
+      <DiscountEmailCapture source="diagnostic_discount" pathwayId={pathwayId} className="mt-5" />
       <p className="mt-3 text-[11px] leading-5 text-white/40">
         سعر خطتك يُحدَّد بعد أن تعتمدها — أنت من يقرّر دوراتها.
         {cheapest && known < courseIds.length && " وبعض دوراتها لم تُفتح لها شعبة بعد."} ولا يُطلب دفعٌ الآن.
@@ -743,10 +721,6 @@ export default function Diagnostic() {
   const [savedProgress, setSavedProgress] = useState<SavedProgress | null>(() => loadProgress());
   /* جلسة المحرك الحتمي — مصدر الأسئلة والنتيجة الوحيد */
   const sessionRef = useRef<AssessmentSession | null>(null);
-  /* الضيف أولا: يكمل التشخيص كاملا ويرى نتيجته حتى حدّ الظهور، والحساب يُطلب فقط لكشف الباقي والحفظ */
-  const [authed, setAuthed] = useState(() => Boolean(safeGet("wajeez_user")));
-  /* انكشف للتو من بوابة النتيجة — نجمّد كل ما فوق حدّ الظهور كما هو حتى لا يقفز التخطيط لحظة الكشف */
-  const [justRevealed, setJustRevealed] = useState(false);
   const [offline, setOffline] = useState(() => !navigator.onLine);
   const [savedFlash, setSavedFlash] = useState(false);
   /* جولة تدقيق الخطة: حالة السؤال المعروض وسبب فتح الجولة */
@@ -778,18 +752,12 @@ export default function Diagnostic() {
     []
   );
 
-  /* أحداث بوابة النتيجة: الضيف يرى النصف والجدار، والموثق يرى الكاملة —
-     يُطلق result_full_viewed أيضا لحظة انكشاف الصفحة بعد التسجيل من الجدار */
+  /* مشاهدة شاشة النتيجة — لا فرق بين ضيف وموثّق بعد الآن، فالجميع يرى الكاملة */
   useEffect(() => {
     if (stage !== "result" || !result || !topPathway) return;
     if (result.resultJson.kind === "guardrail_stop") return;
-    if (authed) {
-      track("result_full_viewed", { confidence: Math.round(result.confidence) });
-    } else {
-      track("result_teaser_viewed", { confidence: Math.round(result.confidence) });
-      track("gate_viewed");
-    }
-  }, [stage, result, topPathway, authed]);
+    track("result_full_viewed", { confidence: Math.round(result.confidence) });
+  }, [stage, result, topPathway]);
   /* كل سؤال يبدأ من أعلاه.
 
      الصفحة كانت تحتفظ بموضع التمرير بين سؤالين، والسؤال أطولُ على الهاتف منه
@@ -1079,14 +1047,6 @@ export default function Diagnostic() {
     void apiPost("/api/learner/diagnostic-attach", { snapshot: res as unknown as Record<string, unknown> }).catch(() => undefined);
   };
 
-  /* نجاح التسجيل من بوابة النتيجة: نفس الصفحة ينكشف فيها الضباب بلا انتقال ولا
-     قفزة تخطيط، ونتيجة الضيف المحلية تُدمج بالحساب الجديد — لا إعادة تشخيص ولا فقد */
-  const revealResult = () => {
-    setAuthed(true);
-    setJustRevealed(true);
-    if (result) attachToAccount(result);
-  };
-
   const submitFamilyRatings = (ratings: Record<string, number>) => {
     sessionRef.current?.setFamilyRatings(ratings);
     track("skills_rated", { families: Object.keys(ratings).length });
@@ -1368,7 +1328,7 @@ export default function Diagnostic() {
               التفصيل. وإسقاطُه كلّه كان يترك المنصّة بلا إفصاحٍ ظاهر البتّة —
               والمحرّك يسجّل «إقرار الواجهة» على أي حال (engine.ts). */}
           <ul className="mx-auto mt-4 max-w-md space-y-1.5 text-xs leading-relaxed text-white/55">
-            <li>ابدأ مجانا — ترى مسارك المقترح فورا، وحسابك المجاني يفتح نتيجتك كاملة</li>
+            <li>ابدأ مجانا — ترى مسارك المقترح ونتيجتك كاملة فورا، بلا حساب</li>
             <li className="inline-flex items-center justify-center gap-1.5">
               <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-teal-light-ink" />
               تشخيص تعليمي — لا نفسي ولا طبي
@@ -1789,33 +1749,15 @@ export default function Diagnostic() {
       {/* ─── Result ─── */}
       {stage === "result" && result && (
         <ResultErrorBoundary onReset={restart}>
-        {result.resultJson.kind === "guardrail_stop" ? (
-          /* توقف حوكمي (رفض الموافقة أو قاصر) — شاشة هادئة بلا توصية ولا تشتيت */
-          (() => {
-            const guardMsg = result.reasons[0] ?? "";
-            const isMinor = guardMsg.includes("قاصر");
-            return (
-          <section className="story-fade mx-auto max-w-xl px-5 py-12 text-center md:py-16">
-            <p className="text-lg font-black leading-relaxed">
-              {isMinor ? "هذه الجلسة تُكمل مع ولي الأمر" : "احترمنا اختيارك — توقف التشخيص هنا بلا أي توصية."}
-            </p>
-            <p className="mt-3 text-sm leading-loose text-white/55">
-              {isMinor
-                ? "لأن المتعلم قاصر، يجب أن يجلس ولي أمره معه ويكمل الإجابات بنفسه — ثم تظهر التوصية كاملة."
-                : "لم نحفظ توصية ولم نرشّح مسارا. إن غيّرت رأيك فالبداية الجديدة تستغرق دقائق."}
-            </p>
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-              <Button size="lg" className="h-12 rounded-full bg-gold px-8 font-black text-on-gold hover:bg-gold/90" onClick={restart}>
-                ابدأ من جديد
-              </Button>
-              <Button size="lg" variant="outline" className="h-12 rounded-full border-white/15 px-8 font-bold text-white/70" asChild>
-                <Link to="/">العودة للرئيسية</Link>
-              </Button>
-            </div>
-          </section>
-            );
-          })()
-        ) : !topPathway ? (
+        {/* شاشة «التوقف الحوكمي» (رفض الموافقة/قاصر) حُذفت: كانت لمحرك v1 القديم
+            وحده — محرك v2_1 المفعَّل اليوم لا سؤال عمر ولا موافقة فيه أصلا،
+            و`guardrailStop` في حالته يُهيَّأ بـ null ولا يُعيَّن أبدا (تحقّقتُ
+            من الكود)، فهذا الفرع كان كودا ميتا لا يصل إليه زائر إطلاقا. قرار
+            صاحب المنصّة: حذفه بدل إبقائه. ولو رجع محرك v1 يوما عبر
+            VITE_DIAGNOSTIC_ENGINE_VERSION=v1 فسيُعرض guardrail_stop حينها
+            بواجهة الفرع أدناه (اتجاه استكشافي) لا بواجهته المخصَّصة له —
+            قرارٌ واعٍ لا سهو. */}
+        {!topPathway ? (
           /* اتجاه استكشافي / إحالة مستشار بلا مسار مفروض — بطاقة هادئة موجِّهة، لا صفحة فارغة أبدًا */
           (() => {
             const exploration = (result.resultJson.exploration as {
@@ -1948,15 +1890,22 @@ export default function Diagnostic() {
                 <p className="mt-4 text-[11px] leading-relaxed text-white/40">
                   هذا تشخيص تعليمي مهني: ليس تقييما نفسيا أو طبيا. لا نرشّح مسارا بلا دليل كافٍ — هذه مسؤولية لا ضعف.
                 </p>
+                {/* هذه هي الشاشة الفعلية التي تُعرض حين لا مسار — لا الشاشة أدناه
+                    (فرعها الآخر لا يُعرض أبدا: كل أبواب الوصول إلى "result"
+                    تمرّ بـ`landOnPathway` الذي ينقل مباشرة إلى صفحة المسار متى
+                    وُجد `top`، فلا يبقى لهذا الفرع لحظة يُصادَف فيها topPathway).
+                    فبريد الخصم مكانه هنا لا هناك — وإلا بقي بلا زائر أبدا. */}
+                <div className="mx-auto mt-6 max-w-sm">
+                  <DiscountEmailCapture source="diagnostic_discount" />
+                </div>
               </section>
             );
           })()
         ) : (
         <section className="story-fade mx-auto max-w-3xl px-5 py-12 md:py-16">
-          {/* حدّ الظهور المعتمد: الجميع — ضيفا كان أو موثقا — يرى مقروءا كل شيء
-              حتى نهاية بطاقة «ماذا ستحصل عليه فعليا؟» بلا أي تغيير ولا ضباب.
-              وكل ما بعدها يبقى في مكانه داخل بوابة النتيجة: ضباب بلا معالم للضيف
-              تطفو فوقه بطاقة التسجيل، ويزول في نفس الصفحة بعد التسجيل بلا قفزة تخطيط */}
+          {/* الجميع — ضيفا كان أو موثقا — يرى النتيجة كاملة مقروءةً بلا ضباب
+              ولا حاجز تسجيل. التسجيل يُطلب فقط لحظة الشراء الفعليّة في صفحة
+              المسار، لا هنا. */}
           {(() => {
             const compositeView = (result.resultJson.composite as CompositeView | null) ?? null;
             const deepeningDone = Boolean(result.resultJson.deepening);
@@ -1970,9 +1919,8 @@ export default function Diagnostic() {
               </Badge>
             </div>
             {/* اسم المسار يظهر في بطاقة التوصية أدناه — لا تكرار هنا */}
-            {/* جولة التدقيق — للموثق المستقر فقط: تُخفى عن الضيف، وعن من انكشف للتو
-                حتى لا يظهر عنصر جديد فوق حدّ الظهور فيقفز ما تحته لحظة الكشف */}
-            {authed && !justRevealed && deepeningOffered && (
+            {/* جولة التدقيق متاحة للجميع — لا حاجز تسجيل عليها، بلا علاقة بالشراء */}
+            {deepeningOffered && (
               <div className="mt-7 print:hidden">
                 <Button
                   size="lg"
@@ -2204,7 +2152,6 @@ export default function Diagnostic() {
                   pathwayIds={compositeView.represented_pathway_ids}
                   gaps={result.gaps}
                   delivery={pathwayDelivery(topPathway.id)}
-                  authed={authed}
                   onChange={(ids) => { shownPlanRef.current = { courseIds: ids, giftId: null }; }}
                 />
               );
@@ -2219,7 +2166,6 @@ export default function Diagnostic() {
                   pathwayIds={[...new Set(cp.courses.map((c) => c.pathwayId))]}
                   gaps={result.gaps}
                   delivery={pathwayDelivery(topPathway.id)}
-                  authed={authed}
                   onChange={(ids) => { shownPlanRef.current = { courseIds: ids, giftId: null }; }}
                 />
               );
@@ -2229,7 +2175,6 @@ export default function Diagnostic() {
               <PlanCourses
                 pathway={topPathway}
                 gaps={result.gaps}
-                authed={authed}
                 resetKey={swapCount}
                 onChange={(ids, gift) => { shownPlanRef.current = { courseIds: ids, giftId: gift }; }}
               />
@@ -2300,20 +2245,18 @@ export default function Diagnostic() {
           )}
 
           {/* السعر آخر ما يُقرأ قبل التسجيل — بعد أن عرف المسار ودوراته وسببه */}
-          <ResultPriceCard courseIds={planCourseIds} />
+          <ResultPriceCard courseIds={planCourseIds} pathwayId={topPathway.id} />
 
-          {/* ─── حدّ الظهور ───
-              كان ينتهي المقروء عند بطاقة «ماذا ستحصل عليه فعليا؟» — أي عند تسع
-              بطاقات منافع تسويقية — ويقع خلفه الدليلُ كلُّه: الدورات ومخرجاتها،
-              وأسباب الترشيح، وتحذير «لن تدفع ثمن ما تعرفه أصلا». فالزائر الشكّاك،
-              وهو من يجب إقناعه، كان يرى الوعود ويُطلب منه حساب.
+          {/* بوّابة التسجيل هنا — محذوفة.
 
-              فانتقل الحدّ إلى ما بعد الخطة وتحذير التقاطع: القيمة تُثبَت أولًا ثم
-              يُطلب البريد. وبقي خلفه ما يحتاج حسابا فعلا — والاعتماد أوّلها، لأنه
-              فعلٌ يقود إلى صفحة الدفع لا معلومةٌ تُقرأ. ─── */}
-          <ResultGate revealed={authed} onDone={revealResult}>
-
-          {/* الاعتماد أسفل الخطة مباشرة — يظهر للضيف مضبّبا في مكانه، ويعمل فور انكشافه بالتسجيل */}
+              كانت تُخفي كلَّ ما بعد هذه النقطة (خريطة الفجواتِ، البدائل،
+              التنبيهات، الاعتماد نفسه) خلف ضبابٍ ونموذج تسجيلٍ كامل. وقرار
+              صاحب المنصّة: الزائر يرى نتيجته كاملةً بلا حاجز — والتسجيل
+              يُطلب فقط لحظة الشراء الفعليّة في صفحة المسار، تماما كما صار
+              في `Pathway.tsx`. وأغلب النتائج أصلا لا تصل هذه الشاشة: `landOnPathway`
+              تنقل مباشرة إلى صفحة المسار بلا بوّابة؛ هذا التغيير يوحّد
+              الحالتين المتبقّيتين (توقّفٌ حوكميّ أو اتّجاهٌ استكشافيّ) مع
+              ذلك السلوك، لا يبتكر جديدا. */}
           {(() => {
             const compositeView = (result.resultJson.composite as CompositeView | null) ?? null;
             const isComposed = Boolean(compositeView) || Boolean(composedPrimary);
@@ -2536,12 +2479,11 @@ export default function Diagnostic() {
           {/* تعريف المنظومة — سطر ثقة ختامي بعد إخلاء المسؤولية، ثانوي بصريا */}
           <EcosystemNote className="mt-4 print:hidden" />
 
-          {/* بطاقة الرأي — أسفل النتيجة، داخل البوابة: مضبّبة للضيف وتعمل بعد التسجيل */}
+          {/* بطاقة الرأي — أسفل النتيجة، ظاهرة للجميع لا مضبّبة لضيف بعد الآن */}
           <ResultFeedback
             sessionId={(result.resultJson.session_id as string | undefined) ?? `result-${topPathway.id}`}
             pathwayId={topPathway.id}
           />
-          </ResultGate>
         </section>
         )}
         </ResultErrorBoundary>
