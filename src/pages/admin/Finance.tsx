@@ -253,7 +253,7 @@ export default function Finance() {
             <div key={r.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="font-black">{r.user.displayName} <span className="text-[11px] font-normal text-white/40" dir="ltr">{r.user.email}</span></p>
+                  <p className="font-black">{r.user.displayName} <span className="text-[11px] font-normal text-muted-foreground" dir="ltr">{r.user.email}</span></p>
                   <p className="mt-1 text-xs text-white/55">
                     {r.cohort.course.versions[0]?.titleAr ?? "—"} · {r.cohort.title} · {r.cohort.price ? `${r.cohort.price} ${r.cohort.currency}` : "بلا سعر"}
                   </p>

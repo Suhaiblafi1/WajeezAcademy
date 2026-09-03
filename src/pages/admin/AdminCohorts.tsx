@@ -204,11 +204,11 @@ export default function AdminCohorts() {
             {reschedules.map((r) => (
               <div key={r.id} className="rounded-2xl border border-white/10 bg-black/25 p-4">
                 <p className="text-sm font-bold">{r.session.title}</p>
-                <p className="mt-0.5 text-[11px] text-white/50">
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
                   {r.session.cohort.title} · اقترحه {r.requester.displayName}
                 </p>
                 <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-1.5 text-[11.5px]">
-                  <span className="text-white/55">الموعد الآن: <span className="text-white/80">{fmtDateTimeAr(r.currentStartsAt)}</span></span>
+                  <span className="text-muted-foreground">الموعد الآن: <span className="text-foreground">{fmtDateTimeAr(r.currentStartsAt)}</span></span>
                   <span className="text-gold-ink">المقترح: <span className="font-bold">{fmtDateTimeAr(r.proposedStartsAt)}</span></span>
                 </div>
                 <p className="mt-2.5 rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-xs leading-6 text-white/70">{r.reason}</p>
@@ -234,7 +234,7 @@ export default function AdminCohorts() {
               </div>
             ))}
           </div>
-          <p className="mt-3 text-[11px] leading-relaxed text-white/45">
+          <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
             الاعتماد يحرّك الموعد ويُخبر المتعلّمين. والردّ لا يحرّكه، ويصل المدرب بتعليقك.
           </p>
         </div>

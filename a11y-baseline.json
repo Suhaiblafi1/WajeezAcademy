@@ -1,4 +1,6 @@
 {
-  "all": {},
+  "all": {
+    "contrast": 3
+  },
   "public": {}
 }

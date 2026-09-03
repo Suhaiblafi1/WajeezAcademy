@@ -87,7 +87,7 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
           <p className="flex items-center gap-1.5 text-xs font-black">
             <PlayCircle className="h-3.5 w-3.5 text-teal" /> فتحُ شعبةٍ لكلّ دورة بلا شعبة
           </p>
-          <p className="mt-1 text-[11px] leading-5 text-white/45">
+          <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
             تبدأ بعد ستّة أسابيع · ثلاثاء وخميس ٦ مساءً بتوقيت عمّان · سعة ٢٠ · بسعر قائمة دورتها.
           </p>
 
@@ -146,7 +146,7 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
           <p className="flex items-center gap-1.5 text-xs font-black">
             <Tags className="h-3.5 w-3.5 text-gold" /> توحيدُ أسعار الشعب على سعر القائمة
           </p>
-          <p className="mt-1 text-[11px] leading-5 text-white/45">
+          <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
             شعبةٌ سعرُها يخالف كتالوجها تقول للصفحة رقما وتُطالب الفاتورة بغيره.
             والمقعدُ المحجوز أو المدفوع لا يُعاد تسعيره.
           </p>
@@ -200,7 +200,7 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
           <p className="flex items-center gap-1.5 text-xs font-black">
             <CalendarCheck className="h-3.5 w-3.5 text-teal" /> حالاتٌ متأخّرةٌ عن تواريخها
           </p>
-          <p className="mt-1 text-[11px] leading-5 text-white/45">
+          <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
             شعبةٌ بدأت جلساتُها تصير «جارية»، وشعبةٌ انتهت آخرُ جلساتها تصير «منتهية» — ومستحقّاتُ
             مدرّبها تُولَّد عند الإكمال، فتأخّرُ الحالة يؤخّرها. ولا تُفتح شعبةٌ آليّا: الفتحُ يمرّ بشروطه وبقرارك.
           </p>

@@ -398,13 +398,19 @@ export function LearningSettings({ courses, cohorts, onDone }: {
     <section className="mt-8 grid gap-4 lg:grid-cols-2">
       <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-5">
         <h3 className="flex items-center gap-2 text-sm font-black"><CalendarPlus className="h-4 w-4 text-teal-ink" /> روبرك تقييم جديد — قابل لإعادة الاستخدام</h3>
-        <input value={rubricTitle} onChange={(e) => setRubricTitle(e.target.value)} placeholder="عنوان الروبرك" className={`${inputCls} mt-3`} />
+        <input value={rubricTitle} aria-label="عنوان الروبرك" onChange={(e) => setRubricTitle(e.target.value)} placeholder="عنوان الروبرك" className={`${inputCls} mt-3`} />
         <div className="mt-2 space-y-2">
           {criteria.map((c, i) => (
             <div key={i} className="flex items-center gap-2">
-              <input value={c.title} onChange={(e) => setCriteria(criteria.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)))}
+              <input value={c.title} aria-label={`عنوانُ المعيار ${i + 1}`}
+                onChange={(e) => setCriteria(criteria.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)))}
                 placeholder={`المعيار ${i + 1}`} className={`${inputCls} flex-1`} />
-              <input type="number" min={1} value={c.maxScore} onChange={(e) => setCriteria(criteria.map((x, j) => (j === i ? { ...x, maxScore: e.target.value } : x)))}
+              {/* الدرجةُ العليا كانت حقلا بلا اسمٍ ولا نصٍّ نائب: قارئُ الشاشة
+                  يقول «حقلٌ رقميّ» ولا يقول ماذا يُكتب فيه — كشفه فحصُ
+                  الإتاحة بعد توسيعه إلى شاشات الفريق. */}
+              <input type="number" min={1} value={c.maxScore}
+                aria-label={`الدرجةُ العليا للمعيار ${i + 1}`}
+                onChange={(e) => setCriteria(criteria.map((x, j) => (j === i ? { ...x, maxScore: e.target.value } : x)))}
                 className={`${inputCls} w-20`} />
               {criteria.length > 1 && (
                 <button type="button" onClick={() => setCriteria(criteria.filter((_, j) => j !== i))} className="cursor-pointer text-white/40 hover:text-red-300">
@@ -451,7 +457,8 @@ export function LearningSettings({ courses, cohorts, onDone }: {
             <option value="project_accepted">مشروع مقبول</option>
             <option value="assessment_passed">تقييم مجتاز</option>
           </select>
-          <input type="number" min={1} value={ruleForm.threshold} onChange={(e) => setRuleForm({ ...ruleForm, threshold: e.target.value })}
+          <input type="number" min={1} value={ruleForm.threshold} aria-label="عتبةُ القاعدة"
+            onChange={(e) => setRuleForm({ ...ruleForm, threshold: e.target.value })}
             placeholder="العتبة" className={inputCls} />
         </div>
         <label className="mt-2 flex cursor-pointer items-center gap-1.5 text-[11px] text-white/60">
