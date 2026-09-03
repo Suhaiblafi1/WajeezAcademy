@@ -35,6 +35,13 @@ export const ADMIN_ROLES = [
 /** بوابتا المدرب والمستشار: دورهما + مدير النظام (يملك صلاحياتهما جميعا) */
 export const TRAINER_ROLES = ['trainer', 'super_admin'] as const
 export const ADVISOR_ROLES = ['advisor', 'super_admin'] as const
+/* بوابةُ المتعلّم — كانت مساراتها كلُّها خارج أيّ حارس.
+
+   والحمايةُ الحقيقيّة عند الخادم (كلُّ مسار في `learning-portal` بحارس
+   صلاحيّة)، فلم تكن ثغرةَ بيانات. لكنّ من يفتح `/student/learning` بدورٍ
+   آخر كان يرى هيكلَ الصفحة ثمّ أخطاءَ ٤٠٣ متفرّقة بدل أن يُوجَّه إلى
+   بوابته — وهو ما يقرأه المستخدم عطبا لا منعا. */
+export const LEARNER_ROLES = ['learner', 'super_admin'] as const
 
 type GuardState = 'loading' | 'ok' | 'anon' | 'forbidden' | 'unreachable'
 

@@ -4,6 +4,10 @@
 > Scope: how to move Wajeez Academy off Vercel/Neon onto Hetzner with zero data loss and a rollback path, while the current production stays online throughout.
 > Companion docs: [01 audit](01-PLATFORM-AUDIT.md) · [02 capabilities](02-CAPABILITIES-DESIGN.md) · [03 architecture](03-ARCHITECTURE.md)
 
+> **Owner decisions of 3 Sep that change how this plan is sequenced, not what it contains:**
+> the site is in a testing phase with no public users; the **domain is deferred**, so Phase 3 (cutover) does not begin until the owner picks it; the payment driver stays `test`, so step 2.6 (the second Stripe webhook) and step 3.7 move to the pre-launch checklist; **no data is touched** (prices, cohorts, courses stay exactly as they are — this plan only ever *copies* data); email connection is a launch item.
+> Practical consequence: **Phases 0–2 run to completion and the new environment runs in parallel with Vercel on a temporary hostname for as long as the owner wants.** Only two things are needed to start: a Hetzner account and a read-only Neon role. That is also the safest possible way to migrate — the new stack proves itself under real data before anything points at it.
+
 ---
 
 ## 0 · Executive summary
@@ -15,7 +19,7 @@
 | Is Hetzner a good target? | Yes, with two caveats: (1) no Middle-East region, so pick Falkenstein/Nuremberg and put a CDN in front of static assets later if latency matters; (2) you take on operations (patching, backups, monitoring) that Vercel/Neon did for you. The repo's `deploy/` folder already contains a complete single-server Docker + Caddy design that was built for exactly this and has never been used in production. |
 | Biggest risks | Not the move itself. The real risks are three pre-existing conditions that the move exposes: **no background job runner**, **no staging environment**, and **Vercel preview builds running database migrations against the production Neon database**. All three should be fixed before or during the move. |
 | Estimated effort | About 2–3 working weeks of one developer including staging, rehearsal, and cutover. Monthly hosting cost after move: roughly €30–45 for production + staging + backups + object storage, versus Vercel Pro + Neon paid tiers. |
-| Downtime | One planned maintenance window of 30–60 minutes for the final data sync and DNS switch. Users stay logged in (sessions are database rows, not signed cookies). |
+| Downtime | One planned maintenance window of 30–60 minutes for the final data sync and DNS switch — **scheduled by the owner, not by this plan**. Users stay logged in (sessions are database rows, not signed cookies). |
 
 ---
 

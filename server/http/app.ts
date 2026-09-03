@@ -40,7 +40,32 @@ import { registerAnalyticsRoutes } from './routes/analytics.routes'
 import { registerLeadRoutes } from './routes/leads.routes'
 
 export async function buildApp(prisma: PrismaClient) {
-  const app = Fastify({ logger: false })
+  /* ── السجلّ ──
+     كان `logger: false`، فلا سطرَ واحدَ عن أيّ طلب: لا رمزَ حالة، ولا مسارا،
+     ولا زمنا. وحين وُصف «الدخول بطيء ويتعطّل أحيانا» لم يكن في اليد ما يُقرأ،
+     فشُخِّص بقراءة الشيفرة لا بقياس. والاختبارُ وحده يبقى صامتا: ٦١٢ اختبارا
+     تطبع سجلَّ كلِّ طلبٍ تجعل الإخفاقَ الحقيقيّ لا يُرى.
+
+     والتنقيةُ صريحة: الكعكةُ تحمل رمزَ الجلسة، والترويسةُ قد تحمل توقيعَ
+     سترايب — وسجلٌّ يحفظ رمزَ جلسةٍ صالحة هو مفتاحُ حسابٍ في ملفّ نصّيّ. */
+  const quietLogs = process.env.NODE_ENV === 'test' || process.env.VITEST === 'true'
+  const app = Fastify({
+    logger: quietLogs
+      ? false
+      : {
+          level: process.env.LOG_LEVEL ?? 'info',
+          redact: {
+            paths: [
+              'req.headers.cookie',
+              'req.headers.authorization',
+              'req.headers["stripe-signature"]',
+              'req.headers["x-zm-signature"]',
+              'res.headers["set-cookie"]',
+            ],
+            censor: '[محذوف]',
+          },
+        },
+  })
   const auth = new AuthService(prisma)
 
   /* الجسم الخام محفوظا مع الجسم المحلَّل — لتوقيع webhook الدفع.
@@ -97,7 +122,18 @@ export async function buildApp(prisma: PrismaClient) {
       },
     },
   })
-  await app.register(swaggerUi, { routePrefix: '/docs' })
+  /* واجهةُ التوثيق التفاعليّة — لا تُنشر للعموم.
+
+     كانت `/docs` مفتوحةً على الإنتاج تعرض سطحَ الواجهة كاملا: ٢٩٨ مسارا
+     بمعاملاتها وأشكال أجسامها، أي خريطةً جاهزةً لمن يبحث عن مدخل. والمخطَّطُ
+     نفسُه يبقى مولَّدا (يستفيد منه التوليدُ والاختبار)، والمحجوبُ هو الصفحة.
+
+     وتُفتَح عند الحاجة بـ`ENABLE_API_DOCS=true` — فحين يحتاجها مطوّرٌ على
+     الإنتاج تُفتَح بمتغيّرٍ ثمّ تُغلَق، لا بنشر شيفرة. */
+  const docsOpen = process.env.NODE_ENV !== 'production' || process.env.ENABLE_API_DOCS === 'true'
+  if (docsOpen) {
+    await app.register(swaggerUi, { routePrefix: '/docs' })
+  }
 
   app.setErrorHandler(errorHandler)
   registerAuth(app, auth)

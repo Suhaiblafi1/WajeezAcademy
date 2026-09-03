@@ -1,7 +1,9 @@
 # 01 · Wajeez Academy — Full Platform Audit
 
 > Date: 3 September 2026 · Branch: `claude/wajeez-academy-audit-9d910f` (from `main` at `fe806fa`)
-> Status: **audit only. No production system, code path, or data was changed.**
+> Status: **audit complete. Four safe fixes applied on this branch (A1, A10, A11, A13); no data touched, no infrastructure changed.**
+>
+> **Owner context (3 Sep):** the site is in a testing phase with no public users. By the owner's decision: the payment driver stays `test` until the last step before launch; prices, cohorts and all data are left untouched; the domain is deferred; connecting email is a launch item, not a today item. §J's roadmap is re-ordered accordingly.
 > Companion docs: [02 capabilities](02-CAPABILITIES-DESIGN.md) · [03 architecture](03-ARCHITECTURE.md) · [04 migration](04-MIGRATION-PLAN.md)
 
 ---
@@ -52,19 +54,19 @@ The server suite needed the embedded PostgreSQL data directory to be owned by th
 
 | # | Problem | Why it matters | Impact | Recommended solution | Priority |
 |---|---|---|---|---|---|
-| A1 | **Preview deployments migrate the production database.** `scripts/vercel-build.sh` runs `prisma migrate deploy` for every build; the comment explains the retry exists because prod and preview race for the same Neon lock. | A migration on any pushed branch changes the live schema before review or merge. A destructive migration in a PR = production incident. | Data integrity of the live system | Run migrations only when `VERCEL_ENV=production` (one `if`); long-term, staging with its own DB (doc 04 Phase 0.1/1) | **P0 — this week** |
+| A1 | **Preview deployments migrate the production database.** `scripts/vercel-build.sh` runs `prisma migrate deploy` for every build; the comment explains the retry exists because prod and preview race for the same Neon lock. | A migration on any pushed branch changes the live schema before review or merge. A destructive migration in a PR = production incident. | Data integrity of the live system | Run migrations only when `VERCEL_ENV=production`; long-term, staging with its own DB (doc 04 Phase 0.1/1) | ✅ **fixed on this branch** |
 | A2 | **No background job runner.** `deploy/README.md` "لا مجدول يعمل"; grep of `server/` finds no cron/queue. `Notification.status = queued` rows, `scheduledPublishAt`, `nextFollowUpAt`, `nextDueAt` are written and never acted upon. | Every promise the UI makes about "we will notify you" is false. No session reminders, no scheduled publishing, no follow-ups, no email retry. | Learner no-shows, staff manual chasing, broken trust | pg-boss worker container (doc 02 §0); requires the long-running server (doc 04) | **P0** |
-| A3 | **Email channel not connected in production** (as of `HANDOVER_2026-08-31.md`; verify today). `.env.example` explains the consequence: no verification, no password reset, invitations not sent. | A learner who forgets a password is locked out permanently. Purchases are blocked by unverifiable email. Admin-created accounts receive "لم تُرسل الدعوة". | Direct revenue and support load | Connect Resend/Postmark in `/admin/integrations`, add SPF/DKIM/DMARC. Zero code. | **P0 — owner action** |
-| A4 | **Payment driver state is ambiguous and the fallback is silent.** `HANDOVER_2026-08-31.md` says `driver: "test"` ("نجاح بلا مال"); `DECISIONS_PENDING_AR.md` §6 says payments are live. `.env.example`: without a secret key the system "falls back to the test provider **silently**". | Either real customers are getting free enrolments, or the docs are wrong. A silent fallback in the money path is a defect in itself. | Revenue | Verify in Vercel env today. Change the code so a hosted driver with a missing key **refuses to start** in production rather than falling back (`integrations.service.ts`). | **P0** |
+| A3 | **Email channel not connected in production** (as of `HANDOVER_2026-08-31.md`; verify today). `.env.example` explains the consequence: no verification, no password reset, invitations not sent. | A learner who forgets a password is locked out permanently. Purchases are blocked by unverifiable email. Admin-created accounts receive "لم تُرسل الدعوة". | Direct revenue and support load | Connect Resend/Postmark in `/admin/integrations`, add SPF/DKIM/DMARC. Zero code. | 🕓 **deferred to launch by owner** — no public users today |
+| A4 | **Payment driver state is ambiguous and the fallback is silent.** `HANDOVER_2026-08-31.md` says `driver: "test"` ("نجاح بلا مال"); `DECISIONS_PENDING_AR.md` §6 says payments are live. `.env.example`: without a secret key the system "falls back to the test provider **silently**". | Either real customers are getting free enrolments, or the docs are wrong. A silent fallback in the money path is a defect in itself. | Revenue | Owner's decision: driver stays `test` through the testing phase. The silent-fallback fix (a hosted driver with a missing key must **refuse to start**) moves to the pre-launch checklist. | 🕓 **deferred to launch by owner** |
 | A5 | **No staging environment; no maintenance mode.** Previews share the production DB (A1). Nothing can be rehearsed. | Every change is tested in production or not at all; the migration cannot be rehearsed safely. | Change risk | Staging server + `MAINTENANCE_MODE` flag (doc 04 Phase 0/1) | **P0 before migration** |
 | A6 | **Files live in the database (4 MB cap); cohort material and recording uploads are broken in production.** `storage.service.ts` header; `PLATFORM_UX_PRODUCT_TASKS_AR.md` §1ب "معطّل". Trainer board still shows «ارفع التسجيل» and «ارفع ملفا» buttons (`CohortBoard.tsx:324,513`). | Trainers click upload and it fails; recordings cannot exist; the DB backup carries binary blobs. | Core teaching workflow non-functional | Object storage with pre-signed URLs (doc 02 §5, doc 03 §2.2); hide the buttons until then | **P0** |
 | A7 | **Secrets entered through the admin UI are stored in plaintext JSON** (`IntegrationSetting.config`, acknowledged in `CONNECT_AR.md` §4 and `DECISIONS_PENDING_AR.md` §6). | A database dump or a read-only DB role leaks Stripe/SMTP secrets. | Financial and account security | Env-only for secrets on the server (doc 03 §2.2); if DB storage stays, encrypt with a key from env. Rotate the Stripe test keys the handover says were pasted into a chat. | **P1** |
 | A8 | **Hand-built 13 MB API bundle committed to git** (`api/index.js`). Went stale twice and left routes dead in production (`bundle-api.mjs` header). Also bundles `embedded-postgres`. | A class of outage that tests cannot catch; a merge-conflict magnet; a 13 MB diff on every server change. | Reliability, developer friction | Disappears with the hosting move; until then keep the `ci:bundle` gate required on PRs | **P1** |
 | A9 | **Storage signing key derived from `DATABASE_URL`** when `STORAGE_SECRET` is unset (`storage.service.ts`). | Changing the database URL (the migration!) silently rotates the key. | Broken document links at cutover | Set `STORAGE_SECRET` explicitly now (doc 04 Phase 0.2) | **P1** |
-| A10 | **Swagger UI (`/docs`) is public in production** (`deploy/README.md`, Caddyfile comment). Helmet CSP for the API allows `unsafe-inline` to keep it working. | Full API surface enumerable by anyone; helps attackers map 298 routes. | Security posture | Return 404 in production or restrict by IP; the OpenAPI JSON can still be generated in CI | **P1** |
-| A11 | **Learner portal routes are not role-guarded on the client** — all `/student/*` plus `/trainer/ratings` and `/admin/ratings` sit outside `RequireRole` (`App.tsx:165–188`). Server APIs are guarded (learning-portal: 33 of 34 routes have a `preHandler`; the one without is the public certificate verifier), so this is a UX/exposure issue, not data leakage. | Wrong-role users see empty shells and confusing errors; `/admin/ratings` renders admin chrome for anyone logged in. | Confusion, minor information exposure | Move the three route groups inside their guards (15-minute change) | **P1** |
+| A10 | **Swagger UI (`/docs`) is public in production** (`deploy/README.md`, Caddyfile comment). Helmet CSP for the API allows `unsafe-inline` to keep it working. | Full API surface enumerable by anyone; helps attackers map 298 routes. | Security posture | Swagger UI now registers only outside production, or with `ENABLE_API_DOCS=true`; the OpenAPI spec is still generated | ✅ **fixed on this branch** |
+| A11 | **Learner portal routes are not role-guarded on the client** — all `/student/*` plus `/trainer/ratings` and `/admin/ratings` sit outside `RequireRole` (`App.tsx:165–188`). Server APIs are guarded (learning-portal: 33 of 34 routes have a `preHandler`; the one without is the public certificate verifier), so this is a UX/exposure issue, not data leakage. | Wrong-role users see empty shells and confusing errors; `/admin/ratings` renders admin chrome for anyone logged in. | Confusion, minor information exposure | `/student/*` now sits inside `RequireRole allow={LEARNER_ROLES}`; `/trainer/ratings` and `/admin/ratings` moved into their own portals | ✅ **fixed on this branch** |
 | A12 | **Hard delete of user accounts** (`admin.users.purge`) with no archive/anonymise alternative; 16 models cascade on user delete, 9 on enrollment delete (incl. Attendance, Certificate, Grade history). | Deleting a learner destroys academic records the academy may be legally required to keep. | Compliance and history | `archived` + `anonymised` states; purge only for accounts with no history (doc 02 §6) | **P1** |
-| A13 | **No request logging or error tracking in production.** `Fastify({ logger: false })` in `app.ts`; only `console.error` on 5xx in `errors.ts`; no Sentry. | Incidents are diagnosed from user complaints. The owner's "login is slow and fails" report took code archaeology instead of a dashboard. | Time-to-detect | pino logger on, Sentry, uptime check (doc 04 §5.2) | **P1** |
+| A13 | **No request logging or error tracking in production.** `Fastify({ logger: false })` in `app.ts`; only `console.error` on 5xx in `errors.ts`; no Sentry. | Incidents are diagnosed from user complaints. The owner's "login is slow and fails" report took code archaeology instead of a dashboard. | Time-to-detect | pino logger enabled with cookie/signature redaction, silent under tests ✅ **on this branch**; Sentry and uptime checks stay **P1** and land with the server move |
 | A14 | **Five of ten roles have never been exercised** and have no demo accounts (`ROLE_AUDIT_TOUR_AR.md` §4). | Unknown breakage in operations/diagnostic/finance/support screens. | Hidden defects | Seed demo accounts for all roles; run the tour in §7 of that doc on staging | **P1** |
 
 ---
@@ -308,25 +310,39 @@ The document is accurate on structure (10 roles, 79 permissions, 4 portals, 51 s
 
 ## J · Recommended roadmap
 
-### Phase A — Critical (before migration or scaling; ~3–4 weeks in parallel with doc 04 Phases 0–1)
-1. A1 preview-migration fix (1 hour) · A9 `STORAGE_SECRET` (10 min) · A3 connect email (owner, 1 hour) · A4 verify payment driver and make the fallback fail loudly (half day)
-2. A11 route guards (15 min) · A10 close `/docs` (15 min) · A13 logger + Sentry (1 day)
-3. Hosting move with staging, worker, monitoring, backups (doc 04) — 2–3 weeks
-4. A6 object storage for materials; hide broken upload buttons until it lands — 3 days
-5. A14 demo accounts for all roles + run the tour on staging — 1 day
-6. A7 secrets to env; rotate exposed test keys — half day
-7. B5 invitations (7-day, states, resend) — 3 days
-8. A12 archive/anonymise instead of purge — 3 days
+> **Re-ordered 3 Sep on the owner's instruction.** The site is in testing with no public users, so nothing is urgent *because it touches money or a learner*. Work therefore starts with what the internal team sees on screen; server-dependent capabilities are built ready and wait for the server; everything that needs an owner account or decision is deferred to its own moment.
 
-### Phase B — High value (next ~6–8 weeks)
-1. B3 cohort wizard + session generation + status automation + duplicate cohort
-2. B4 search-and-pick everywhere a UUID is typed
-3. B1 Zoom API provider, registrants, webhooks, attendance sync, reminders, ICS feed (doc 02 §2)
-4. B2 video platform + recording review workflow + Zoom auto-ingest (doc 02 §3)
-5. B6 role adjustments; B7 audit coverage test + entity timelines; B9 staff task inbox from system events
-6. B10 locale fixes; E.3 success-feedback pattern; inline validation on the 5 most-used forms
-7. D admin IA regroup (5 areas) and student nav trim
-8. E.2 enums for hot status fields; `Restrict` on history cascades; retention jobs
+### Phase A0 — Done on this branch (needed no owner input)
+A1 preview-migration fix · A11 learner-portal guards · A10 `/docs` closed in production · A13 pino logging with redaction. All gates re-run green.
+
+### Phase A1 — Team-facing work that needs no new infrastructure (~3–4 weeks)
+1. B3 cohort wizard + session generation from the weekly pattern; cohort status automation
+2. B3 duplicate-cohort
+3. B4 search-and-pick everywhere a UUID is typed
+4. D admin IA regroup (5 areas) · B6 `academic_coordinator` role, applicant becomes a state
+5. B9 staff task inbox fed by system events
+6. B5 invitations (7-day tokens, `invited` state, resend, bulk) · A12 archive/anonymise instead of purge
+7. A14 demo accounts for the five unexercised roles, then run the role tour
+8. The worker (02 §0) written and tested locally — **runs only on the new server**
+9. A9 `STORAGE_SECRET` set explicitly (10 min, before any data move)
+
+### Phase A2 — The hosting move (~2.5 weeks; starts when the Hetzner account exists)
+Staging + production on Hetzner running **in parallel** with Vercel on a temporary hostname · verified backups · monitoring · full rehearsal · **cutover only when the owner picks the domain** (doc 04 Phases 1–3). A7 secrets-to-env and test-key rotation land here.
+
+### Phase A3 — What the server unblocks (~4 weeks)
+A2 reminders and scheduled work actually running · A6 object storage, uploads fixed · B1 Zoom API, per-learner join links, attendance sync, ICS/webcal · B2 video platform + recording review workflow
+
+### Pre-launch checklist (owner's items, deferred by decision)
+A3 connect email · A4 real payment keys and make the silent fallback fail loudly · prices and cohorts · domain and DNS cutover · Sentry alerting reviewed
+
+### Phase B — Quality and consistency (folded into A1/A3 above where dependencies allow)
+1. B7 audit coverage test + per-entity timelines
+2. B10 locale fixes (8 remaining `ar-SA`/`ar-JO` calls)
+3. E.3 one success-feedback pattern; inline validation on the five most-used forms
+4. Student nav trim (19 items → ~8 plus a "more" section)
+5. E.2 enums for hot status fields; `Restrict` on history cascades; retention jobs for `AuditEvent`/`Notification`
+6. B11/B12 split `commerce.service.ts`, `Diagnostic.tsx`, `Home.tsx`, `JoinTrainer.tsx`
+7. B13 documentation reset (one architecture page, one runbook, one env reference)
 
 ### Phase C — Future
 1. B8 Calendly consultations and interview booking (doc 02 §1); Cal.com if Arabic UX demands it
