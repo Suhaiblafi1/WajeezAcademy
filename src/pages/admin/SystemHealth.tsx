@@ -75,7 +75,7 @@ export default function SystemHealth() {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs leading-6 text-white/55">
           محسوبةٌ من حالة القاعدة عند فتح الصفحة — لا رقمَ محفوظا هنا.
-          {data && <span className="mr-2 text-white/35">آخرُ قراءة: {fmtDateTime(new Date(data.checkedAt))}</span>}
+          {data && <span className="mr-2 text-muted-foreground">آخرُ قراءة: {fmtDateTime(new Date(data.checkedAt))}</span>}
         </p>
         <button
           type="button" onClick={() => void load()} disabled={busy}

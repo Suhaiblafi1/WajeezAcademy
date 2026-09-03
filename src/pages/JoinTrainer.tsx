@@ -188,7 +188,7 @@ function MultiPick({ id, label, options, selected, onChange }: {
       <button
         type="button" id={id} aria-expanded={open} aria-haspopup="listbox"
         onClick={() => setOpen(!open)}
-        className={`${controlCls} flex cursor-pointer items-center justify-between text-right ${selected.length ? "text-white" : "text-white/40"}`}
+        className={`${controlCls} flex cursor-pointer items-center justify-between text-right ${selected.length ? "text-foreground" : "text-muted-foreground"}`}
       >
         <span>{label}</span>
         <ChevronDown aria-hidden="true" className={`h-4 w-4 shrink-0 text-teal-light-ink transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
@@ -696,7 +696,7 @@ export default function JoinTrainer() {
                     </span>
                     <span className={`text-xs font-black ${state === "todo" ? "text-white/45" : "text-white"}`}>{s.title}</span>
                   </span>
-                  <span className="mt-1.5 block text-[10.5px] leading-relaxed text-white/40">{s.hint}</span>
+                  <span className="mt-1.5 block text-[10.5px] leading-relaxed text-muted-foreground">{s.hint}</span>
                 </div>
               </li>
             );

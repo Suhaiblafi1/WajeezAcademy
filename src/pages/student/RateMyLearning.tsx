@@ -49,6 +49,8 @@ function Stars({ value, onPick, disabled }: { value: number; onPick: (n: number)
 
 function RatingCard({ item, onSaved }: { item: Rateable; onSaved: () => void }) {
   const [score, setScore] = useState(item.myScore ?? 0);
+  /* لا تُقال «اختر نجمةً» قبل أن يُحاول: لومٌ على حقلٍ لم يُلمس ليس إرشادا */
+  const [needsScore, setNeedsScore] = useState(false);
   const [comment, setComment] = useState(item.myComment ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -85,7 +87,12 @@ function RatingCard({ item, onSaved }: { item: Rateable; onSaved: () => void }) 
       </div>
 
       <div className="mt-4">
-        <Stars value={score} onPick={setScore} disabled={busy} />
+        <Stars value={score} onPick={(v) => { setScore(v); setNeedsScore(false); }} disabled={busy} />
+        {needsScore && score < 1 && (
+          <p role="alert" className="mt-2 text-[11px] font-bold leading-5 text-red-300">
+            اختر عددَ النجوم أوّلا — التعليقُ وحدَه لا يُرسَل تقييما.
+          </p>
+        )}
       </div>
 
       <label className="mt-4 block">
@@ -103,9 +110,11 @@ function RatingCard({ item, onSaved }: { item: Rateable; onSaved: () => void }) 
       </label>
 
       <div className="mt-3 flex flex-wrap items-center gap-3">
+        {/* الزرُّ لا يُغلَق بلا سبب: كان باهتا حتّى تُختار نجمةٌ ولا شيءَ
+            يقول ذلك — فيُضغَط الآن فيُقال ما ينقص، عند موضعه. */}
         <button
-          onClick={save}
-          disabled={score < 1 || busy}
+          onClick={score < 1 ? () => setNeedsScore(true) : save}
+          disabled={busy}
           className="cursor-pointer rounded-full bg-teal px-5 py-2 text-xs font-black text-on-teal transition hover:bg-teal-light disabled:cursor-not-allowed disabled:opacity-40"
         >
           {busy ? "يُرسَل…" : item.myScore == null ? "أرسل التقييم" : "حدّث التقييم"}

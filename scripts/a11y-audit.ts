@@ -21,7 +21,7 @@ import { chromium, type Page } from 'playwright'
 
 /** واقعة إتاحة واحدة — بصيغة واحدة كي تُقارن وتُعدّ. الشكل يقابل probe.browser.js */
 interface A11yFinding {
-  rule: 'name' | 'focus-visible' | 'focus-hidden' | 'tabindex-positive' | 'landmark' | 'reflow' | 'lang' | 'heading-order'
+  rule: 'name' | 'focus-visible' | 'focus-hidden' | 'tabindex-positive' | 'landmark' | 'reflow' | 'lang' | 'heading-order' | 'contrast'
   /** ما يمنعه هذا الخلل على المستخدم — لا رقم قاعدة */
   impactAr: string
   target: string
@@ -49,7 +49,7 @@ interface PageSpec {
   path: string
   labelAr: string
   /** حساب يُدخَل قبل الزيارة — الصفحات العامة بلا حساب */
-  as?: 'learner' | 'admin'
+  as?: 'learner' | 'admin' | 'trainer' | 'advisor' | 'superadmin'
   /** مُنتقٍ يثبت أن المحتوى المُدار بالبيانات رُسم فعلا — انظر waitForContent */
   readySel?: string
 }
@@ -66,14 +66,33 @@ const PAGES: PageSpec[] = [
   { path: '/student/review', labelAr: 'مراجعتي', as: 'learner' },
   { path: '/admin/catalog', labelAr: 'إدارة الكتالوج', as: 'admin' },
   { path: '/admin/quality', labelAr: 'جودة التشخيص', as: 'admin' },
+  /* ═══ ما كان خارجَ الفحص: شاشاتُ العمل اليوميّ ═══
+
+     كان الفحصُ على تسعِ صفحاتٍ أكثرُها عامّة، وشاشتَي إدارةٍ اثنتَين. أمّا
+     الشاشاتُ التي يقضي فيها الفريقُ يومَه — الشعبُ والمستخدمون والمالية
+     والدعمُ ولوحُ المدرّب وحالاتُ المستشار — فلم تُفحَص مرّةً. وهي أكثفُ
+     الشاشات جداولَ ونماذجَ وأزرارا، أي أكثرُها احتمالا للخلل. */
+  { path: '/admin', labelAr: 'لوحة الإدارة', as: 'admin' },
+  { path: '/admin/cohorts', labelAr: 'الشعب', as: 'admin' },
+  { path: '/admin/finance', labelAr: 'المالية', as: 'admin' },
+  { path: '/admin/support', labelAr: 'تذاكر الدعم', as: 'admin' },
+  { path: '/admin/users', labelAr: 'المستخدمون والأدوار', as: 'superadmin' },
+  { path: '/admin/system-health', labelAr: 'صحّة النظام', as: 'superadmin' },
+  { path: '/trainer', labelAr: 'بوّابة المدرّب', as: 'trainer' },
+  { path: '/advisor', labelAr: 'بوّابة المستشار', as: 'advisor' },
 ]
 
 const CREDS = {
   learner: { email: 'student.demo@wajeez.local', password: 'Wajeez-Demo-2026' },
   admin: { email: 'admin.demo@wajeez.local', password: 'Wajeez-Demo-2026' },
+  /* بوّابتا المدرّب والمستشار كانتا خارجَ الفحص كلَّه — وهما بوّابتان كاملتان
+     يعمل فيهما فريقٌ يوميّا، لا شاشتان هامشيّتان. */
+  trainer: { email: 'trainer.demo@wajeez.local', password: 'Wajeez-Demo-2026' },
+  advisor: { email: 'consultant.demo@wajeez.local', password: 'Wajeez-Demo-2026' },
+  superadmin: { email: 'superadmin.demo@wajeez.local', password: 'Wajeez-Demo-2026' },
 }
 
-async function login(page: Page, as: 'learner' | 'admin') {
+async function login(page: Page, as: keyof typeof CREDS) {
   await page.goto(`${BASE}/auth`, { waitUntil: 'networkidle' })
   await page.fill('input[type=email]', CREDS[as].email)
   await page.fill('input[type=password]', CREDS[as].password)
@@ -167,6 +186,40 @@ async function waitForContent(page: Page, spec: PageSpec): Promise<void> {
   await page.waitForTimeout(600)
 }
 
+/* ─────────── التباينُ في المظهرَين ───────────
+
+   المنصّةُ تفتح داكنةً دائما، والفاتحُ اختيارٌ يعيش الزيارةَ الحاليّة
+   (`sessionStorage`). وأكثرُ ألوانِ النصّ مبنيّةٌ على أرضيّةٍ داكنة
+   (`text-white/45` وأمثالُها) — فمن بقي منها في الفاتح صار أبيضَ باهتا على
+   ورقٍ فاتح. وقد وقع هذا في زرّ تبديل المظهر نفسِه (تعليقُ `ThemeToggle`)،
+   فالفحصُ في مظهرٍ واحدٍ يفوّت نصفَ المنصّة. */
+async function contrastBothThemes(page: Page, labelAr: string): Promise<A11yFinding[]> {
+  interface Hit { target: string; text: string; ratio: number; need: number; size: number }
+  const out: A11yFinding[] = []
+  for (const theme of ['dark', 'light'] as const) {
+    await page.evaluate((t) => {
+      document.documentElement.dataset.theme = t
+      try { sessionStorage.setItem('wajeez_theme', t) } catch { /* وضعٌ خاصٌّ بلا تخزين */ }
+    }, theme)
+    /* لحظةٌ لتستقرّ الأنماطُ المنتقلة قبل قراءة الألوان المحسوبة */
+    await page.waitForTimeout(180)
+    const hits = await page.evaluate('window.__a11y.contrast()') as Hit[]
+    for (const h of hits) {
+      out.push({
+        rule: 'contrast',
+        target: `[${theme}] ${h.target}`,
+        impactAr: `نصٌّ بتباين ${h.ratio}:1 والمطلوب ${h.need}:1 في المظهر ${theme === 'dark' ? 'الداكن' : 'الفاتح'} — «${h.text}» (${h.size}px)`,
+      })
+    }
+    if (hits.length > 0) {
+      console.log(`    · ${labelAr} · ${theme}: ${hits.length} نصّا دون الحدّ، أسوأُها ${hits[0].ratio}:1`)
+    }
+  }
+  /* تُعاد إلى الداكن كي لا يورَّث المظهرُ إلى فحصٍ تالٍ في السياق نفسِه */
+  await page.evaluate(() => { document.documentElement.dataset.theme = 'dark' })
+  return out
+}
+
 const SELECTED = SET === 'public' ? PAGES.filter((p) => !p.as) : PAGES
 
 for (const spec of SELECTED) {
@@ -182,6 +235,7 @@ for (const spec of SELECTED) {
       ...(await page.evaluate('window.__a11y.names()') as A11yFinding[]),
       ...(await focusWalk(page)),
       ...(await reflow(page, spec.labelAr)),
+      ...(await contrastBothThemes(page, spec.labelAr)),
     ]
     results[spec.labelAr] = findings
     const byRule = findings.reduce<Record<string, number>>((a, f) => ({ ...a, [f.rule]: (a[f.rule] ?? 0) + 1 }), {})

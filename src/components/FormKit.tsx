@@ -75,12 +75,43 @@ export function FieldRow({ children }: { children: ReactNode }) {
 }
 
 /** حقلٌ واحد: عنوانُه فوقه، وتلميحُه تحت العنوان، والمسافةُ واحدة دائما */
+/* ─────────── خطأُ الحقل: يُقال عنده لا في آخر النموذج ───────────
+
+   كانت النماذجُ تُخبر بالخطأ **بعد الإرسال** وفي موضعٍ واحدٍ أعلى الصفحة أو
+   أسفلها: «أكمل الحقولَ المطلوبة». فمن ملأ عشرةَ حقولٍ وأخطأ في واحدٍ يبحث
+   عنه بعينه، ولا يعرف أيُّها المقصود.
+
+   والشرطان اللذان يجعلان الرسالةَ مفيدةً حقّا:
+   • **تظهر عند الحقل** لا في نهايةِ النموذج.
+   • **وتُعلَن لقارئ الشاشة** موصولةً بالحقل نفسِه: `aria-invalid` تقول إنّ
+     فيه خطأً، و`aria-describedby` تقول ما هو. وبلا الوصلِ يسمع المستخدمُ
+     «حقلٌ نصّيّ» ولا يسمع سببَ الرفض.
+
+   ولا تظهر قبل أن يُحاول: رسالةُ خطأٍ على حقلٍ لم يُلمس بعد لومٌ لا إرشاد. */
+export function FieldError({ id, children }: { id: string; children?: string | null }) {
+  if (!children) return null
+  return (
+    <p id={id} role="alert" className="mt-1.5 text-[11px] font-bold leading-5 text-red-300">
+      {children}
+    </p>
+  )
+}
+
+/** ما يُوصَل بالحقل نفسِه ليُقرأ خطؤه — يُنثَر على `input` أو `textarea` */
+// eslint-disable-next-line react-refresh/only-export-components -- سماتٌ خالصةٌ بلا حالة؛ بقاؤها بجانب `FieldError` مقصود
+export function invalidProps(errorId: string, error?: string | null) {
+  return error
+    ? ({ 'aria-invalid': true, 'aria-describedby': errorId } as const)
+    : ({} as Record<string, never>)
+}
+
 export function Field({
   label,
   htmlFor,
   hint,
   required = false,
   wide = false,
+  error,
   children,
 }: {
   label: string
@@ -88,16 +119,20 @@ export function Field({
   hint?: ReactNode
   required?: boolean
   wide?: boolean
+  /** خطأُ هذا الحقل — يُعرض عنده ويُوصَل به */
+  error?: string | null
   children: ReactNode
 }) {
+  const errorId = htmlFor ? `${htmlFor}-error` : undefined
   return (
     <div className={`min-w-0 ${wide ? 'sm:col-span-2' : ''}`}>
       <label htmlFor={htmlFor} className="block text-[12.5px] font-bold leading-6 text-white/75">
         {label}
         {required && <Req />}
       </label>
-      {hint && <p className="mt-0.5 text-[11px] leading-5 text-white/40">{hint}</p>}
+      {hint && <p className="mt-0.5 text-[11px] leading-5 text-muted-foreground">{hint}</p>}
       <div className="mt-2">{children}</div>
+      {errorId && <FieldError id={errorId}>{error}</FieldError>}
     </div>
   )
 }
@@ -108,22 +143,29 @@ export function FieldSet({
   hint,
   required = false,
   wide = false,
+  error,
+  name,
   children,
 }: {
   legend: string
   hint?: ReactNode
   required?: boolean
   wide?: boolean
+  error?: string | null
+  /** يُشتقّ منه معرّفُ رسالة الخطأ حين لا يكون للمجموعة `htmlFor` */
+  name?: string
   children: ReactNode
 }) {
+  const errorId = name ? `${name}-error` : undefined
   return (
     <fieldset className={`min-w-0 ${wide ? 'sm:col-span-2' : ''}`}>
       <legend className="text-[12.5px] font-bold leading-6 text-white/75">
         {legend}
         {required && <Req />}
       </legend>
-      {hint && <p className="mt-0.5 text-[11px] leading-5 text-white/40">{hint}</p>}
+      {hint && <p className="mt-0.5 text-[11px] leading-5 text-muted-foreground">{hint}</p>}
       <div className="mt-2">{children}</div>
+      {errorId && <FieldError id={errorId}>{error}</FieldError>}
     </fieldset>
   )
 }

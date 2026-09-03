@@ -557,7 +557,7 @@ function Stories() {
             كل رحلة تبدأ بتشخيص أو بمسار جاهز، وتمر بدورات الكتالوج، وتنتهي بمشروع تخرج يدخل ملفك — اختر نموذجا واقرأه كاملا.
           </p>
           {/* الصدقُ باقٍ والصوتُ خافت: تنويهٌ لا يزاحم ما جاء الزائرُ ليقرأه */}
-          <p className="mx-auto mt-3 max-w-md text-[11px] leading-5 text-muted-foreground/60">
+          <p className="mx-auto mt-3 max-w-md text-[11px] leading-5 text-muted-foreground">
             نماذج توضيحية مركبة من أنماط شائعة — ليست شهادات لأشخاص حقيقيين.
           </p>
         </div>
@@ -1102,7 +1102,7 @@ function Bestsellers() {
             )}
             <div className="mt-auto pt-4">
               {/* تفتح مسارا من هذه الدورة وحدها — لا نافذة مقتطفة ولا المسار كاملا */}
-              <Link to={`/build/${c.id}`} onClick={() => track('course_viewed', { category: c.category })} className="block w-full cursor-pointer rounded-lg border border-white/15 py-2 text-center text-xs font-semibold transition group-hover:border-teal/50 group-hover:text-teal-light-ink">
+              <Link to={`/build/${c.id}`} onClick={() => track('course_viewed', { category: c.category })} className="block w-full cursor-pointer rounded-lg border border-white/15 py-2 text-center text-xs font-semibold text-foreground transition group-hover:border-teal/50 group-hover:text-teal-light-ink">
                 تفاصيل الدورة
               </Link>
             </div>

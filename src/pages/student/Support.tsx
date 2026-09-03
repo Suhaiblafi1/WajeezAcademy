@@ -6,6 +6,7 @@ import PortalLayout from "./PortalLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { fmtWhen } from "@/utils/format";
 import { toast, toastError } from '@/components/Toast';
+import { FieldError, invalidProps } from "@/components/FormKit";
 
 const STATUS_AR: Record<string, string> = {
   open: "مفتوحة", in_progress: "قيد المعالجة", waiting_customer: "بانتظار ردك",
@@ -30,6 +31,24 @@ export default function StudentSupport() {
   const [reply, setReply] = useState("");
   const [reopenFor, setReopenFor] = useState<string | null>(null);
   const [reopenNote, setReopenNote] = useState("");
+  /* ═══ التحقّقُ عند الحقل، بعد أوّل لمسةٍ لا قبلها ═══
+
+     كان الزرُّ يُغلَق بلا سبب: من كتب موضوعا بحرفَين يجد «إرسال التذكرة»
+     باهتا ولا شيءَ يقول له لماذا. فيظنّ العطبَ في المنصّة لا في مُدخَله.
+
+     والرسالةُ لا تظهر قبل أن يلمس الحقلَ: لومٌ على حقلٍ فارغٍ لم يُكتب فيه
+     بعد ليس إرشادا. */
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const errors = {
+    subject: form.subject.trim().length === 0
+      ? "اكتب موضوعا يُعرَف به طلبُك"
+      : form.subject.trim().length < 3 ? "الموضوعُ قصيرٌ — ثلاثةُ أحرفٍ فأكثر" : null,
+    body: form.body.trim().length === 0
+      ? "اشرح المشكلة كي يفهمها من يقرؤها"
+      : form.body.trim().length < 3 ? "الشرحُ قصيرٌ جدّا — أضف تفصيلا يُعين على الفهم" : null,
+  };
+  const showError = (k: keyof typeof errors) => (touched[k] ? errors[k] : null);
+  const formReady = !errors.subject && !errors.body;
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
@@ -63,21 +82,53 @@ export default function StudentSupport() {
         {createOpen && (
           <div className="mt-4 space-y-3">
             <div className="grid gap-3 sm:grid-cols-2">
-              <input value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} placeholder="الموضوع" className={inputCls} />
-              <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className={`${inputCls} [&>option]:bg-surface`}>
-                <option value="billing">الفواتير والدفع</option>
-                <option value="learning">المحتوى والجلسات</option>
-                <option value="technical">مشكلة تقنية</option>
-                <option value="other">أخرى</option>
-              </select>
+              <div>
+                <label className="sr-only" htmlFor="ticket-subject">موضوعُ التذكرة</label>
+                <input
+                  id="ticket-subject"
+                  value={form.subject}
+                  onChange={(e) => setForm({ ...form, subject: e.target.value })}
+                  onBlur={() => setTouched((t) => ({ ...t, subject: true }))}
+                  placeholder="الموضوع"
+                  className={`${inputCls} ${showError("subject") ? "border-red-400/60" : ""}`}
+                  {...invalidProps("ticket-subject-error", showError("subject"))}
+                />
+                <FieldError id="ticket-subject-error">{showError("subject")}</FieldError>
+              </div>
+              <div>
+                <label className="sr-only" htmlFor="ticket-category">تصنيفُ التذكرة</label>
+                <select id="ticket-category" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className={`${inputCls} [&>option]:bg-surface`}>
+                  <option value="billing">الفواتير والدفع</option>
+                  <option value="learning">المحتوى والجلسات</option>
+                  <option value="technical">مشكلة تقنية</option>
+                  <option value="other">أخرى</option>
+                </select>
+              </div>
             </div>
-            <textarea value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} rows={3} placeholder="اشرح المشكلة بالتفصيل…" className={inputCls} />
-            <button disabled={busy || form.subject.trim().length < 3 || form.body.trim().length < 3}
-              onClick={() => act(async () => {
-                await apiPost("/api/learner/support/tickets", form);
-                setForm({ subject: "", category: "other", body: "" });
-                setCreateOpen(false);
-              }, "فُتحت التذكرة — يرد عليك فريق الدعم هنا")}
+            <div>
+              <label className="sr-only" htmlFor="ticket-body">شرحُ المشكلة</label>
+              <textarea
+                id="ticket-body"
+                value={form.body}
+                onChange={(e) => setForm({ ...form, body: e.target.value })}
+                onBlur={() => setTouched((t) => ({ ...t, body: true }))}
+                rows={3}
+                placeholder="اشرح المشكلة بالتفصيل…"
+                className={`${inputCls} ${showError("body") ? "border-red-400/60" : ""}`}
+                {...invalidProps("ticket-body-error", showError("body"))}
+              />
+              <FieldError id="ticket-body-error">{showError("body")}</FieldError>
+            </div>
+            {/* الزرُّ لا يُغلَق بلا سبب: يُضغَط فيُظهر ما ينقص عند حقله */}
+            <button disabled={busy}
+              onClick={!formReady
+                ? () => setTouched({ subject: true, body: true })
+                : () => act(async () => {
+                  await apiPost("/api/learner/support/tickets", form);
+                  setForm({ subject: "", category: "other", body: "" });
+                  setTouched({});
+                  setCreateOpen(false);
+                }, "فُتحت التذكرة — يرد عليك فريق الدعم هنا")}
               className="cursor-pointer rounded-full bg-teal px-6 py-2.5 text-xs font-black text-on-teal transition hover:bg-teal-light disabled:opacity-40">
               إرسال التذكرة
             </button>

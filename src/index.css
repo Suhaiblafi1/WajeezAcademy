@@ -286,16 +286,23 @@
   .btn-cta {
     @apply inline-flex h-12 items-center justify-center gap-2 rounded-full bg-[#FABC05] px-8 font-black text-[#0D0D0D] transition hover:bg-[#FABC05]/90 disabled:opacity-40;
   }
+  /* والحبرُ رمزٌ لا لونٌ ثابت — للسبب نفسِه في `.kicker`: `#6EC7D1` يصلح على
+     الورق الداكن وحدَه، و`text-white/50` أبيضٌ بشفافيّةٍ يختفي على الفاتح. */
   .btn-outline-brand {
-    @apply inline-flex h-11 items-center justify-center gap-2 rounded-full border border-[#38A7B4]/50 px-6 text-sm font-bold text-[#6EC7D1] transition hover:bg-[#38A7B4]/15 disabled:opacity-40;
+    @apply inline-flex h-11 items-center justify-center gap-2 rounded-full border border-[#38A7B4]/50 px-6 text-sm font-bold text-teal-light-ink transition hover:bg-[#38A7B4]/15 disabled:opacity-40;
   }
   .btn-ghost-muted {
-    @apply inline-flex items-center gap-2 text-sm font-semibold text-white/50 transition hover:text-white;
+    @apply inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground transition hover:text-foreground;
   }
 
-  /* شارة القسم الصغيرة فوق العناوين */
+  /* شارة القسم الصغيرة فوق العناوين.
+
+     وحبرُها كان `#6EC7D1` ثابتا — فيروزيٌّ فاتحٌ يصلح على الورق الداكن
+     وحدَه. وقياسُ التباين وجده **١٫٦٣:‏١** في المظهر الفاتح (والمطلوب ٤٫٥)،
+     أي شارةٌ تُقرأ في مظهرٍ ولا تُقرأ في الآخر. و`teal-light-ink` رمزٌ
+     ينقلب: هو نفسُه في الداكن، ويصير `#1F6E77` على الورق الفاتح. */
   .kicker {
-    @apply inline-flex w-fit items-center gap-1.5 rounded-full border border-[#38A7B4]/40 bg-[#38A7B4]/10 px-3.5 py-1 text-xs font-bold text-[#6EC7D1];
+    @apply inline-flex w-fit items-center gap-1.5 rounded-full border border-[#38A7B4]/40 bg-[#38A7B4]/10 px-3.5 py-1 text-xs font-bold text-teal-light-ink;
   }
   .kicker-amber {
     @apply inline-flex w-fit items-center gap-1.5 rounded-full border border-[#FABC05]/40 bg-[#FABC05]/10 px-3.5 py-1 text-xs font-bold text-[#FABC05];
@@ -401,8 +408,17 @@
    يرسب. فيُستبدل الاثنان بـ#1F6E77 (5.24:1). والأصفر بـ#8F6E00 (4.71:1).
    أما --on-teal و--on-gold فلا ينقلبان: التعبئة ساطعة في الوضعين. */
 html[data-theme="light"] {
-  --teal-ink: 31 110 119;        /* #1F6E77 — 5.37:1 على الورق */
-  --teal-light-ink: 31 110 119;  /* #1F6E77 */
+  /* ═══ ولماذا غُمِّق الحبرُ الفيروزيّ ═══
+
+     كان `#1F6E77` وقياسُه ٥٫٣٧:‏١ — **على الورق العاري**. وهو في المنصّة
+     يُستعمل داخل شارةٍ خلفيّتُها `bg-teal/10`، أي فيروزيٌّ بعشرةٍ في المئة
+     فوق الورق. فقياسُ التباين الفعليّ (‏`npm run ci:a11y`) وجده **٤٫١١:‏١**
+     في عشرين شارةً على الصفحة الرئيسيّة — والمطلوب ٤٫٥.
+
+     والدرسُ أنّ قياسَ الحبر على أرضيّةٍ واحدةٍ لا يكفي إن كان يُستعمل على
+     غيرها. و`#1A5C64` يعطي ٦٫٩:‏١ على الورق و**نحوَ ٦٫٣:‏١ فوق الشارة**. */
+  --teal-ink: 26 92 100;         /* #1A5C64 — ٦٫٩:‏١ على الورق، ٦٫٣:‏١ فوق شارةٍ فيروزيّة */
+  --teal-light-ink: 26 92 100;   /* #1A5C64 */
   --zoom-ink: 14 90 184;         /* #0E5AB8 — 6.12:1 على الورق */
   --gold-ink: 131 100 0;         /* #836400 — 5.04:1 على الورق و4.79:1 فوق
                                     تعبئة bg-gold/10؛ #8A6A00 يرسب هناك بـ4.38 */
