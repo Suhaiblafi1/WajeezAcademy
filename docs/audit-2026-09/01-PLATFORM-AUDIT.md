@@ -84,6 +84,7 @@ Rule applied throughout: a finding is withdrawn only when its evidence no longer
 | T10 | With the email channel disconnected (A3, deferred by owner) the learner banner says verification is required for **buying a cohort and receiving a certificate** and offers no other path («قناة البريد غير مفعّلة — تواصل مع الأكاديمية») | **blocks the test phase's purchase flow**, not only launch — needs either SMTP now or a staff action "mark email verified" (see doc 05 §4) |
 | T11 | Cohort creation: 5 inputs + weekday toggles; learner enrolment and Zoom attachment require pasting UUIDs (`AdminCohorts.tsx:472,527`) | confirms B4 |
 | T12 | The rest of the sweep is clean: no horizontal overflow on 390 px, no console errors other than one Vite HMR notice caused by the fix in T1 landing mid-run, every public page and every learner page renders with content | — |
+| ~~T13~~ | **Withdrawn on re-verification.** I claimed pending reschedule proposals had no list-level indicator and that the cohort list hid running cohorts by default. Both were artefacts of my own journey script: `AdminCohorts.tsx:197` renders a top-of-page panel «اقتراحات تأجيل تنتظر قرارك (n)», and the filters initialise empty (`:72`) — the date I saw in «تبدأ بعد» was typed there by the script. The real adjacent gap (only staff who open that screen ever see the panel) is what the task inbox addresses | withdrawn; inbox shipped |
 
 ---
 

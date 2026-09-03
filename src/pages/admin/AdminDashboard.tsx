@@ -5,6 +5,7 @@ import {
   Minus, RotateCcw, ServerOff, Users,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
+import StaffInbox from "@/components/StaffInbox";
 import { apiGet } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import DiagnosticFunnel from "@/components/DiagnosticFunnel";
@@ -192,6 +193,9 @@ export default function AdminDashboard() {
   return (
     <AdminLayout title="الرئيسية — نظرة عامة">
       <p className="mb-6 text-sm text-white/60">{greet} يا {firstName} — هذا ما يحتاج انتباهك اليوم:</p>
+
+      {/* «ما ينتظرك» قبل العدّادات: العدّادُ يقول كم، وهذا يقول ما تعمله الآن */}
+      <StaffInbox />
 
       {/* من أين أبدأ؟ — التسلسل التشغيلي الصحيح: محتوى ← نشر ← شعبة ← تسجيلات */}
       <div className="mb-8 flex flex-wrap items-center gap-2 rounded-2xl border border-dashed border-white/15 bg-white/[0.02] px-4 py-3 text-[11px] text-white/55">
