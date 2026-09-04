@@ -103,6 +103,8 @@ const PHRASES: Record<string, string> = {
   'trainer.publish_approve': 'اعتمادُ ظهورِ المدرّبِ للعامّة',
   /* إتاحةُ المدرّب (المهمّة ٧١) — تُسجَّل لأنّ الغيابَ **يردُّ إسنادا**:
      فمن سأل «لماذا لم يُسنَد؟» يجد الجوابَ في الأثر لا في واتساب. */
+  'notification.pref.mute': 'كتمُ صنفِ إشعاراتٍ بطلب صاحبه',
+  'notification.pref.enable': 'إعادةُ صنفِ إشعاراتٍ بطلب صاحبه',
   'trainer.availability.set': 'إعلانُ المدرّبِ ساعاتِه الأسبوعيّة',
   'trainer.blackout.add': 'تسجيلُ المدرّبِ فترةَ غياب',
   'trainer.blackout.remove': 'حذفُ المدرّبِ فترةَ غياب',

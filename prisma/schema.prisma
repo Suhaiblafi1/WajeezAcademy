@@ -50,6 +50,7 @@ model User {
   subscriptions        Subscription[]
   orders               Order[]
   notifications        Notification[]
+  notificationPrefs    NotificationPreference[]
   staffTasks           StaffTask[]                @relation("StaffTaskAssignee")
   supportTickets       SupportTicket[]            @relation("TicketOwner")
   learnerRequests      LearnerRequest[]
@@ -2421,6 +2422,32 @@ model StaffTask {
 
   @@index([assigneeId, status])
   @@index([assignedBy, status])
+}
+
+/**
+ * ═══ تفضيلاتُ الإشعارات (المهمّة ٧٢) ═══
+ * صفٌّ واحدٌ لكلّ (حساب · صنف · قناة) **يُكتب فقط عند المخالفة**: الغيابُ يعني
+ * «مُفعَّل». فحسابٌ لم يفتح الشاشةَ قطّ لا صفوفَ له، ولا يتغيّر سلوكُه —
+ * والافتراضيُّ يبقى وصولَ الخبر لا كتمَه.
+ * والأصنافُ وحدُّ ما يُكتَم منها في `src/application/notifications/categories.ts`:
+ * التذكيرُ والتقدّمُ والإعلاناتُ تُكتَم، والمالُ والشهاداتُ وعملُ الموظّف لا.
+ * والحدُّ يُفرَض في الخادم لا في الشاشة: `notify` يتجاهل تفضيلا يُسكِت خبرا
+ * لا يجوز كتمُه، فلو وصله صفٌّ محفورٌ بيدٍ في القاعدة لم يُغيّر شيئا.
+ */
+model NotificationPreference {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  /**
+   * مفتاحُ صنفٍ من `NOTIFICATION_CATEGORIES` — لا مفتاحُ قالبٍ بعينه
+   */
+  category  String
+  channel   String   @default("in_app") // in_app | email
+  enabled   Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, category, channel])
+  @@index([userId])
 }
 
 model Notification {

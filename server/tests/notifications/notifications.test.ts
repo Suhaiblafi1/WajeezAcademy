@@ -27,6 +27,14 @@ beforeAll(async () => {
   await auth.setRoles(managerId, ['academic_manager'])
 }, 240_000)
 
+/* `notify` صار يُرجع `null` حين يكتم صاحبُ الحساب صنفَ الإشعار (المهمّة ٧٢).
+   وإشعاراتُ هذا الملفّ بلا `templateKey`، فلا صنفَ لها ولا تُكتَم — والتأكيدُ
+   هنا يقول ذلك صراحةً بدل `!` صامتة. */
+function sent<T>(v: T | null): NonNullable<T> {
+  expect(v, 'أُشعِر بأنّه مكتوم وهو لا صنفَ له — الكتمُ يجب أن يقع بالتفضيل وحدَه').not.toBeNull()
+  return v as NonNullable<T>
+}
+
 describe('الإشعارات', () => {
   it('1) قالب بمتغيرات {{key}} يُنشأ ويُملأ', async () => {
     await notifications.upsertTemplate(managerId, {
@@ -40,7 +48,7 @@ describe('الإشعارات', () => {
   })
 
   it('2) إشعار داخلي يصل فورا ويُحسب غير مقروء ثم يُعلَّم مقروءا', async () => {
-    const n = await notifications.notify({ userId, channel: 'in_app', title: 'أهلا', body: 'رسالة داخلية' })
+    const n = sent(await notifications.notify({ userId, channel: 'in_app', title: 'أهلا', body: 'رسالة داخلية' }))
     expect(n.status).toBe('sent')
     expect(await notifications.unreadCount(userId)).toBe(1)
     await notifications.markRead(userId, n.id)
@@ -49,14 +57,14 @@ describe('الإشعارات', () => {
   })
 
   it('3) قناة خارجية بلا مزود تفشل بأمان وتُسجل', async () => {
-    const n = await notifications.notify({ userId, channel: 'email', title: 'تجربة', body: 'بلا مزود' })
+    const n = sent(await notifications.notify({ userId, channel: 'email', title: 'تجربة', body: 'بلا مزود' }))
     expect(n.status).toBe('failed')
     expect(n.attempts).toBe(1)
     expect(n.lastError).toBeTruthy()
   })
 
   it('4) إعادة المحاولة حتى الحد الأقصى ثم الرفض', async () => {
-    const n = await notifications.notify({ userId, channel: 'sms', title: 'تجربة', body: 'بلا مزود' })
+    const n = sent(await notifications.notify({ userId, channel: 'sms', title: 'تجربة', body: 'بلا مزود' }))
     const r1 = await notifications.retry(n.id)
     expect(r1.attempts).toBe(2)
     const r2 = await notifications.retry(n.id)
@@ -65,7 +73,7 @@ describe('الإشعارات', () => {
   })
 
   it('5) إعادة محاولة إشعار ناجح مرفوضة', async () => {
-    const n = await notifications.notify({ userId, channel: 'in_app', title: 'وصل', body: 'تم' })
+    const n = sent(await notifications.notify({ userId, channel: 'in_app', title: 'وصل', body: 'تم' }))
     await expect(notifications.retry(n.id)).rejects.toMatchObject({ code: 'bad_state' })
   })
 

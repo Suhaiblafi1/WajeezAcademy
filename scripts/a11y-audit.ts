@@ -82,6 +82,10 @@ const PAGES: PageSpec[] = [
   /* شاشةٌ جديدةٌ بنماذجَ وحقولِ وقتٍ وتاريخ (المهمّة ٧١) — تُفحَص من أوّل يوم
      لا بعد أن يشكو مدرّب: فيها منسدلاتٌ وأزرارُ حذفٍ صغيرةٌ وحقولُ `time`. */
   { path: '/trainer/qualifications', labelAr: 'مؤهّلات المدرّب وإتاحته', as: 'trainer' },
+  /* شاشةُ إشعارات المتعلّم — ولوحُ التفضيلات فيها (المهمّة ٧٢): مربّعاتُ
+     اختيارٍ وشاراتٌ مقفلةٌ ونصوصُ سببٍ صغيرة، وهي أوّلُ شاشةٍ يفتحها من
+     أزعجه الجرس. */
+  { path: '/student/notifications', labelAr: 'إشعارات المتعلّم وتفضيلاتها', as: 'learner' },
   { path: '/advisor', labelAr: 'بوّابة المستشار', as: 'advisor' },
 ]
 
@@ -245,7 +249,17 @@ async function targetsOnPhone(page: Page): Promise<A11yFinding[]> {
   }))
 }
 
-const SELECTED = SET === 'public' ? PAGES.filter((p) => !p.as) : PAGES
+/* المجموعةُ الكاملةُ تستغرق نحوَ نصف ساعة، فمن أضاف شاشةً واحدةً كان
+   أمامه أن يشغّل الكلَّ أو أن يتخطّى الفحص — والثاني هو ما يحدث فعلا.
+   فـ`A11Y_ONLY` يُرشِّح بمطابقةٍ جزئيّةٍ للمسار: شاشةٌ واحدةٌ في دقيقة.
+   وهو للتشغيل اليدويّ وحدَه؛ البوّابةُ في CI تبقى على المجموعة. */
+const ONLY = process.env.A11Y_ONLY?.trim()
+const SELECTED = (SET === 'public' ? PAGES.filter((p) => !p.as) : PAGES)
+  .filter((p) => !ONLY || p.path.includes(ONLY))
+if (ONLY && SELECTED.length === 0) {
+  console.error(`لا صفحةَ يطابق مسارُها «${ONLY}» — راجع قائمة PAGES`)
+  process.exit(1)
+}
 
 for (const spec of SELECTED) {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } })

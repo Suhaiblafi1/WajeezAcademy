@@ -7,6 +7,8 @@ import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { NOTIFICATION_AUDIENCES, NotificationService } from '../../services/notification.service'
 import { requireAuth, requirePermission } from '../auth-plugin'
+import { NOTIFICATION_CATEGORIES } from '../../../src/application/notifications/categories'
+import { recordAudit } from '../../services/audit'
 
 /* البوابة التي يسأل منها الجرس. والافتراضي `learner` لأنّه ما كانت عليه
    النقطة قبل الفصل — فقارئٌ قديم لا يُكسَر، ويرى ما كان يخصّه أصلا. */
@@ -40,6 +42,66 @@ export function registerNotificationRoutes(app: FastifyInstance, prisma: PrismaC
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return notifications.markRead(req.auth!.userId, id)
+  })
+
+  /* ════ تفضيلاتي (المهمّة ٧٢) ════
+
+     الشاشةُ تُبنى من الخادم لا من ثابتٍ في المتصفّح: الأصنافُ وأسماؤها
+     وحدُّ ما يُكتَم منها وسببُ قفلِ ما لا يُكتَم — كلُّها من مصدرٍ واحد.
+     ولو أُضيف صنفٌ غدا ظهر في الشاشة بلا نشرِ واجهة.
+
+     ولا يُعرَض مفتاحُ بريدٍ اليوم: البريدُ غيرُ موصول، ومفتاحٌ لا يفعل شيئا
+     هو نفسُه العطبُ الذي عالجته المرحلةُ ١ — زرٌّ يَعِد بما لا يفعل. */
+  app.get('/api/me/notification-preferences', {
+    preHandler: requireAuth,
+    schema: { tags: ['notifications'], summary: 'أصنافُ الإشعارات وتفضيلي في كلٍّ منها' },
+  }, async (req) => {
+    const rows = await prisma.notificationPreference.findMany({
+      where: { userId: req.auth!.userId, channel: 'in_app' },
+    })
+    const byCategory = new Map(rows.map((r) => [r.category, r.enabled]))
+    return {
+      channel: 'in_app',
+      categories: NOTIFICATION_CATEGORIES.map((c) => ({
+        key: c.key, labelAr: c.labelAr, whatAr: c.whatAr,
+        silenceable: c.silenceable, lockedWhyAr: c.lockedWhyAr ?? null,
+        /* الغيابُ يعني «مُفعَّل» */
+        enabled: byCategory.get(c.key) ?? true,
+      })),
+      emailNoteAr: 'تفضيلاتُ البريد تظهر هنا يومَ يُوصَل مزوّدُ بريد — ولا يُعرض اليوم مفتاحٌ لا يفعل شيئا.',
+    }
+  })
+
+  app.put('/api/me/notification-preferences', {
+    preHandler: requireAuth,
+    schema: { tags: ['notifications'], summary: 'كتمُ صنفٍ أو إعادتُه — وما لا يُكتَم يُردّ صريحا' },
+  }, async (req) => {
+    const body = z.object({ category: z.string(), enabled: z.boolean() }).parse(req.body)
+    const category = NOTIFICATION_CATEGORIES.find((c) => c.key === body.category)
+    if (!category) {
+      return { error: { code: 'unknown_category', message_ar: 'صنفٌ غيرُ معروف' } }
+    }
+    /* الحدُّ يُقال صريحا لا يُتجاهَل صامتا: من طلب كتمَ إيصالِ دفعٍ يستحقّ
+       جوابا يفهمه، لا مفتاحا يرتدّ بلا كلمة. */
+    if (!category.silenceable && !body.enabled) {
+      return {
+        error: {
+          code: 'not_silenceable',
+          message_ar: category.lockedWhyAr ?? 'هذا الصنفُ لا يُكتَم',
+        },
+      }
+    }
+    await prisma.notificationPreference.upsert({
+      where: { userId_category_channel: { userId: req.auth!.userId, category: category.key, channel: 'in_app' } },
+      update: { enabled: body.enabled },
+      create: { userId: req.auth!.userId, category: category.key, channel: 'in_app', enabled: body.enabled },
+    })
+    /* أثرٌ يُقرأ: كتمُ صنفٍ يُفسّر لاحقا «لم يصلني إشعار» */
+    await recordAudit(prisma, {
+      actorId: req.auth!.userId, action: body.enabled ? 'notification.pref.enable' : 'notification.pref.mute',
+      entityType: 'user', entityId: req.auth!.userId, meta: { category: category.key, channel: 'in_app' },
+    })
+    return { ok: true, category: category.key, enabled: body.enabled }
   })
 
   /* ════ الإدارة ════ */

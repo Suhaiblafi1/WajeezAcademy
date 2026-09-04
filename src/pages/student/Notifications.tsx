@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Bell, CheckCheck, Loader2, RefreshCw } from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
+import NotificationPreferences from "@/components/NotificationPreferences";
 import { fmtWhen } from "@/utils/format";
 
 interface Notif {
@@ -74,6 +75,12 @@ export default function Notifications() {
           ))}
         </div>
       )}
+
+      {/* تفضيلاتي — في الشاشة نفسِها التي أقرأ فيها إشعاراتي (المهمّة ٧٢).
+          ومن كتَم صنفا يجد هنا سببَ ما لا يُكتَم بدل أن يبحث عنه. */}
+      <div className="mt-8">
+        <NotificationPreferences />
+      </div>
     </PortalLayout>
   );
 }
