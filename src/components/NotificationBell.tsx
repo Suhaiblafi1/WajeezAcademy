@@ -87,11 +87,11 @@ export default function NotificationBell({ audience }: { audience: BellAudience 
       <button
         onClick={() => void toggle()}
         aria-label={`الإشعارات — ${unread} غير مقروءة`}
-        className="relative grid h-9 w-9 cursor-pointer place-items-center rounded-full border border-white/10 bg-white/[0.03] text-white/60 transition hover:border-white/30 hover:text-white"
+        className="relative grid h-9 w-9 cursor-pointer place-items-center rounded-full border border-white/10 bg-white/[0.03] text-muted-foreground transition hover:border-white/30 hover:text-foreground"
       >
         <Bell className="h-4 w-4" />
         {unread > 0 && (
-          <span className="absolute -top-1 -left-1 grid h-4 min-w-4 place-items-center rounded-full bg-gold px-1 text-[9px] font-black text-on-gold">
+          <span className="absolute -top-1 -left-1 grid h-4 min-w-4 place-items-center rounded-full bg-gold px-1 text-micro font-black text-on-gold">
             {unread > 9 ? "9+" : unread}
           </span>
         )}
@@ -103,14 +103,14 @@ export default function NotificationBell({ audience }: { audience: BellAudience 
             <p className="text-xs font-black">الإشعارات</p>
             {items && items.some((n) => n.status === "sent") && (
               <button onClick={() => void markAll()}
-                className="flex cursor-pointer items-center gap-1 text-[10px] font-bold text-teal-light-ink hover:text-white">
+                className="flex cursor-pointer items-center gap-1 text-micro font-bold text-teal-light-ink hover:text-foreground">
                 <CheckCheck className="h-3 w-3" /> تعليم الكل كمقروء
               </button>
             )}
           </div>
           <div className="max-h-96 overflow-y-auto">
-            {items === null && <p className="p-6 text-center text-xs text-white/40">يُحمَّل…</p>}
-            {items?.length === 0 && <p className="p-6 text-center text-xs text-white/40">لا إشعارات بعد — تصلك هنا مستحقاتك وشعبك فور حدوثها.</p>}
+            {items === null && <p className="p-6 text-center text-xs text-muted-foreground">يُحمَّل…</p>}
+            {items?.length === 0 && <p className="p-6 text-center text-xs text-muted-foreground">لا إشعارات بعد — تصلك هنا مستحقاتك وشعبك فور حدوثها.</p>}
             {items?.map((n) => (
               <button
                 key={n.id}
@@ -123,8 +123,8 @@ export default function NotificationBell({ audience }: { audience: BellAudience 
                   {n.status === "sent" && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-gold" />}
                   {n.title}
                 </p>
-                <p className="mt-1 text-[11px] leading-5 text-white/55">{n.body}</p>
-                <p className="mt-1 text-[9px] text-white/55">
+                <p className="mt-1 text-[11px] leading-5 text-muted-foreground">{n.body}</p>
+                <p className="mt-1 text-micro text-muted-foreground">
                   {fmtDateTime(new Date(n.sentAt ?? n.createdAt))}
                 </p>
               </button>

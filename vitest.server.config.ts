@@ -14,6 +14,11 @@ export default mergeConfig(
   defineConfig({
     test: {
       globalSetup: ['./server/tests/helpers/global-setup.ts'],
+      /* رفعُ الملفّات مطفأٌ افتراضيّا في المنصّة (storage.service.ts) لأنّ
+         بايتاتَ ما عدا وثائقِ طلب الانضمام لا مكانَ لها بعد. واختباراتُ العقد
+         هنا تفحص التوقيعَ والصلاحيّةَ لا التخزين، فتعمل والمفتاحُ مشتعل؛
+         وحالةُ الإطفاء لها اختبارُها الخاصّ في uploads-gate.test.ts. */
+      env: { FILE_UPLOADS: 'on' },
       /* التوازي بين الملفات ممنوع: كل ملف يعيد بناء قاعدة الاختبار من الصفر */
       fileParallelism: false,
     },

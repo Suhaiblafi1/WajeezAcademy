@@ -45,7 +45,7 @@
     "test:notifications": "vitest run -c vitest.server.config.ts server/tests/notifications",
     "test:support": "vitest run -c vitest.server.config.ts server/tests/support",
     "test:reports": "vitest run -c vitest.server.config.ts server/tests/reports",
-    "test:e2e": "vitest run -c vitest.server.config.ts server/tests",
+    "test:e2e": "vitest run -c vitest.server.config.ts server/tests --reporter=default --reporter=json --outputFile=.vitest-server-results.json; tsx scripts/assert-server-tests.ts",
     "test:integration": "npm run test:e2e",
     "test:diagnostic-regression": "tsx scripts/test-diagnostic-regression.ts",
     "test": "npm run test:diagnostic && npm run test:scenarios",
@@ -53,6 +53,8 @@
     "audit:skill-coverage": "tsx scripts/with-db.ts tsx scripts/audit-skill-coverage-matrix.ts",
     "seed:demo": "tsx scripts/with-db.ts tsx server/db/seed-demo.ts",
     "promote:super-admin": "tsx scripts/with-db.ts tsx scripts/promote-super-admin.ts",
+    "worker": "tsx server/worker/index.ts",
+    "worker:once": "tsx scripts/with-db.ts tsx server/worker/index.ts --once",
     "build:v2_1-overlays": "tsx scripts/build-v2_1-overlays.ts",
     "ci:overlays": "tsx scripts/build-v2-overlays.ts --check && tsx scripts/build-v2_1-overlays.ts --check",
     "ci:coverage-baseline": "tsx scripts/coverage-baseline.ts",
@@ -77,7 +79,8 @@
     "ci:locale": "tsx scripts/audit-locale.ts --check",
     "ci:csp": "tsx scripts/audit-csp.ts --check",
     "ci:bundle": "node scripts/bundle-api.mjs --check",
-    "ci:migrations": "tsx scripts/audit-migrations.ts"
+    "ci:migrations": "tsx scripts/audit-migrations.ts",
+    "ci:status-checks": "tsx scripts/status-checks.ts --check"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.2",

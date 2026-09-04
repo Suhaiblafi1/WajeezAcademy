@@ -175,7 +175,8 @@ export class CertificateService {
     const updated = await this.prisma.$transaction(async (tx) => {
       const c = await tx.certificate.update({ where: { id: certificateId }, data: { status: 'revoked' } })
       await tx.certificateRevocation.create({ data: { certificateId, reason, revokedBy: actorId } })
-      await recordAudit(tx, { actorId, action: 'certificate.revoke', entityType: 'certificate', entityId: certificateId, meta: { reason } })
+      /* السببُ في عمودِه لا في الحمولة — شاشةُ الأثر تقرؤه من هناك */
+      await recordAudit(tx, { actorId, action: 'certificate.revoke', entityType: 'certificate', entityId: certificateId, reason })
       return c
     })
     return updated

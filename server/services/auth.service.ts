@@ -26,6 +26,51 @@ export class AuthError extends Error {
 }
 
 const SESSION_TTL_DAYS = Number(process.env.SESSION_TTL_DAYS ?? 30)
+
+/* ═══ سقوفُ الدخول (المهمّة ١٧) — ثلاثةٌ لا واحد ═══
+   كانت القاعدةُ سقفا واحدا بمفتاحٍ «البريد **أو** الشبكة»: خمسُ إخفاقاتٍ من
+   الشبكة نفسِها تُقفلها كلَّها ولو كانت لخمسةِ أشخاصٍ مختلفين — فقاعةٌ فيها
+   ثلاثون متعلّما على عنوانٍ واحد تُقفل نفسَها بأخطاءٍ صادقة، ويُرَدُّ معها من
+   كتب كلمتَه صحيحة.
+
+   والمفتاحُ الضيّق وحدَه (بريدٌ + شبكة) يفتح رشَّ كلمات المرور: أربعُ محاولاتٍ
+   على كلٍّ من ألف بريدٍ من جهازٍ واحد — أربعةُ آلافِ محاولةٍ بلا قفلٍ واحد.
+
+   فالسقوفُ ثلاثةٌ، وأيُّها بلغ حدَّه أقفل:
+   ١) «بريدٌ + شبكة» ٥ — الشخصُ نفسُه من المكان نفسِه، وهو القفلُ المقصود.
+   ٢) الشبكةُ وحدَها ٤٠ — قاعةٌ من ثلاثين لا تبلغها بأخطاءٍ صادقة، والمهاجمُ
+      من جهازٍ واحدٍ يبلغها في ثوان.
+   ٣) البريدُ وحدَه عبر كلّ الشبكات ٢٥ — فلا يُخمَّن بريدُ مدير النظام من ألف جهاز.
+
+   والرقمان ٤٠ و٢٥ قرارُ صاحب المنصّة (٤ سبتمبر ٢٠٢٦)، لا تقديرُ مطوّر:
+   رفعُ سقفٍ أمنيٍّ يُوازن راحةَ قاعةٍ بأمان حساباتِ الفريق. */
+const LOGIN_WINDOW_MS = 15 * 60_000
+const LOGIN_MAX_PER_IDENTITY = 5
+const LOGIN_MAX_PER_IP = 40
+const LOGIN_MAX_PER_EMAIL = 25
+
+/* ═══ سقوفُ التسجيل الذاتيّ (سقفُ التسجيل) ═══
+   لا تنتقل سقوفُ الدخول إلى هذا الباب، لأنّ **البريدَ هنا يختاره المتقدّم**:
+   فمفتاحُ «بريدٌ + شبكة» زوجٌ جديدٌ في كلّ محاولةٍ فلا يبلغ سقفَه أبدا،
+   ومفتاحُ «البريد وحدَه» لا بريدَ متكرّرا يحميه. فالمفتاحُ الشبكةُ وحدَها،
+   والمقياسُ يتغيّر: يُعَدُّ ما يدلُّ على إساءةٍ لا ما يدلُّ على استعمال.
+
+   ١) **حجمُ ما أُنشئ فعلا** — ٤٠ في الساعة و١٠٠ في اليوم: ضررُ هذا الباب
+      حجمٌ لا سرعة، فقاعةٌ من ثلاثين تُسجّل ومصنعُ حساباتٍ وهميّة يُقفَل.
+   ٢) **ما ارتدّ بـ«البريد مسجَّل»** — ١٠ في ربع ساعة: المسارُ يقول صراحةً إن
+      كان البريدُ مسجَّلا (٤٠٩)، فمن جرّب ألفَ بريدٍ عرف أيُّها له حسابٌ عندنا.
+      وهذا السقفُ أضيقُ من سقف المسار الذي كان يحدُّ الإحصاءَ عرَضا (١٠ لكلّ
+      ٥ دقائق)، فرفعُ ذاك لا يُوسّع الإحصاء بل يُضيّقه هذا.
+
+   والأرقامُ الثلاثة قرارُ صاحب المنصّة (٤ سبتمبر ٢٠٢٦).
+
+   ولا يمسّ هذا ما تُنشئه الإدارةُ بصلاحيّة (`admin.users.create` ودفعةُ CSV):
+   ذاك فعلٌ مأذونٌ له سجلُّ أثر، ولو خضع لسقفِ شبكةٍ لانقفلت دفعةُ مئةِ حسابٍ
+   يُدخلها موظّفٌ من مكتبٍ واحد. فالسقفُ في `registerSelf` لا في `register`. */
+export const SIGNUP_MAX_PER_HOUR = 40
+export const SIGNUP_MAX_PER_DAY = 100
+export const SIGNUP_MAX_TAKEN = 10
+export const SIGNUP_TAKEN_WINDOW_MS = 15 * 60_000
 const GENERIC_LOGIN_FAIL = 'البريد أو كلمة المرور غير صحيحة'
 /** مهلة رابط توثيق البريد — يومان: أطول من مهلة الاستعادة لأنه ليس إجراء طوارئ */
 const EMAIL_VERIFY_TTL_MS = 48 * 3600_000
@@ -65,20 +110,84 @@ export class AuthService {
     return { userId: user.id }
   }
 
-  /** دخول — يسجل المحاولة دائما، ولا يكشف هل البريد موجود، ويقفل بعد 5 إخفاقات متتالية */
+  /** تسجيلٌ ذاتيٌّ من الواجهة العامّة — `register` وحوله سقوفُ الشبكة وسجلُّها */
+  async registerSelf(
+    email: string,
+    password: string,
+    displayName: string,
+    ip?: string,
+  ): Promise<{ userId: string }> {
+    await this.assertSignupAllowed(ip)
+    try {
+      const out = await this.register(email, password, displayName)
+      await this.prisma.registrationAttempt.create({ data: { ip, outcome: 'created' } })
+      return out
+    } catch (e) {
+      /* «البريدُ مسجَّل» وحدَه يُسجَّل: هو إشارةُ الإحصاء. وصيغةٌ خاطئةٌ أو
+         كلمةٌ قصيرةٌ خطأُ مستعملٍ لا محاولةَ استكشاف، فلا تُعَدّ عليه. */
+      if (e instanceof AuthError && e.code === 'email_taken') {
+        await this.prisma.registrationAttempt.create({ data: { ip, outcome: 'taken' } })
+      }
+      throw e
+    }
+  }
+
+  /** السقوفُ الثلاثة أعلاه — والشبكةُ المجهولة لا سقفَ لها إذ لا يُنسب إليها شيء */
+  private async assertSignupAllowed(ip?: string): Promise<void> {
+    if (!ip) return
+    const since = (ms: number) => new Date(Date.now() - ms)
+    const [lastHour, lastDay, taken] = await Promise.all([
+      this.prisma.registrationAttempt.count({
+        where: { ip, outcome: 'created', createdAt: { gte: since(3600_000) } },
+      }),
+      this.prisma.registrationAttempt.count({
+        where: { ip, outcome: 'created', createdAt: { gte: since(24 * 3600_000) } },
+      }),
+      this.prisma.registrationAttempt.count({
+        where: { ip, outcome: 'taken', createdAt: { gte: since(SIGNUP_TAKEN_WINDOW_MS) } },
+      }),
+    ])
+    if (lastHour >= SIGNUP_MAX_PER_HOUR || lastDay >= SIGNUP_MAX_PER_DAY) {
+      throw new AuthError(
+        'too_many_registrations',
+        'حسابات كثيرة أُنشئت من شبكتك — انتظر قليلا، أو تواصل مع الأكاديمية لتسجيل مجموعة',
+        429,
+      )
+    }
+    if (taken >= SIGNUP_MAX_TAKEN) {
+      throw new AuthError(
+        'too_many_registrations',
+        'محاولات إنشاء كثيرة — انتظر 15 دقيقة ثم حاول مجددا',
+        429,
+      )
+    }
+  }
+
+  /** دخول — يسجل المحاولة دائما، ولا يكشف هل البريد موجود، وله ثلاثةُ سقوف (أعلاه) */
   async login(email: string, password: string, ip?: string, userAgent?: string): Promise<{ token: string; expiresAt: Date }> {
     const normalized = email.trim().toLowerCase()
 
-    /* قفل مؤقت ضد التخمين: 5 إخفاقات خلال 15 دقيقة على البريد أو الـIP تُمهّل المحاولة التالية */
-    const windowStart = new Date(Date.now() - 15 * 60_000)
-    const recentFails = await this.prisma.loginAttempt.count({
-      where: {
-        success: false, createdAt: { gte: windowStart },
-        OR: [{ email: normalized }, ...(ip ? [{ ip }] : [])],
-      },
-    })
-    if (recentFails >= 5) {
+    /* السقوفُ الثلاثة تُقاس على النافذة نفسِها، وتُعدُّ معا في رحلةٍ واحدة.
+       والشبكةُ المجهولة (لا `ip`) لا سقفَ لها: لا يُنسب إليها إخفاقٌ فلا تُقفَل
+       بذنبِ غيرها — والسقفُ الثالث يبقى حارسَ البريد في تلك الحالة. */
+    const windowStart = new Date(Date.now() - LOGIN_WINDOW_MS)
+    const base = { success: false, createdAt: { gte: windowStart } }
+    const [perIdentity, perIp, perEmail] = await Promise.all([
+      this.prisma.loginAttempt.count({ where: { ...base, email: normalized, ip: ip ?? null } }),
+      ip ? this.prisma.loginAttempt.count({ where: { ...base, ip } }) : Promise.resolve(0),
+      this.prisma.loginAttempt.count({ where: { ...base, email: normalized } }),
+    ])
+    if (perIdentity >= LOGIN_MAX_PER_IDENTITY || perEmail >= LOGIN_MAX_PER_EMAIL) {
       throw new AuthError('too_many_attempts', 'محاولات كثيرة متتالية — انتظر 15 دقيقة ثم حاول مجددا', 429)
+    }
+    /* رسالةٌ مختلفةٌ للشبكة عن الشخص: من كتب كلمتَه صحيحةً وقُفل بذنب جارِه
+       يحتاج أن يعرف أنّ العطلَ ليس في حسابه — ولا يُكشف بها شيءٌ لا يعرفه المهاجم. */
+    if (perIp >= LOGIN_MAX_PER_IP) {
+      throw new AuthError(
+        'too_many_attempts',
+        'محاولاتُ دخولٍ كثيرة من شبكتك — انتظر 15 دقيقة، أو جرّب من شبكة أخرى',
+        429,
+      )
     }
 
     const user = await this.prisma.user.findUnique({ where: { email: normalized } })
@@ -161,12 +270,59 @@ export class AuthService {
     return { tokenForDelivery: token }
   }
 
+  /* ── دعوةُ حسابٍ جديد ───────────────────────────────────────────────
+
+     كانت الدعوةُ رمزَ استعادةٍ عمرُه ساعة. والموظّفُ الجديد لا يفتح بريدَه في
+     الساعة التي أُنشئ فيها حسابُه — فأوّلُ محاولةِ تأهيلٍ تفشل غالبا، ويُطلب
+     منه «نسيت كلمة المرور» ليصنع لنفسه ما كان يجب أن يصله (شُوهد في جولة
+     ٢٠٢٦-٠٩، الرحلة ٩).
+
+     فللدعوة رمزُها وعمرُها: سبعةُ أيّام، وغرضٌ مستقلٌّ يُقرأ عليه «هل ما زالت
+     دعوتُه سارية؟». وإصدارُ دعوةٍ جديدةٍ يُبطل ما قبلها: رابطان صالحان لحسابٍ
+     واحدٍ بابان لا باب. */
+  static readonly INVITE_TTL_MS = 7 * 86_400_000
+
+  async issueInvite(userId: string): Promise<{ token: string; expiresAt: Date }> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { id: true } })
+    if (!user) throw new AuthError('not_found', 'الحساب غير موجود', 404)
+    const token = newToken()
+    const expiresAt = new Date(Date.now() + AuthService.INVITE_TTL_MS)
+    await this.prisma.$transaction([
+      this.prisma.passwordResetToken.updateMany({
+        where: { userId, purpose: 'invite', usedAt: null },
+        data: { usedAt: new Date() },
+      }),
+      this.prisma.passwordResetToken.create({
+        data: { userId, tokenHash: sha256(token), purpose: 'invite', expiresAt },
+      }),
+    ])
+    return { token, expiresAt }
+  }
+
+  /** حالُ دعوةِ حسابٍ: سارية، أو منتهية، أو لا دعوةَ له */
+  async inviteState(userId: string): Promise<{ state: 'pending' | 'expired' | 'none'; expiresAt: Date | null }> {
+    const row = await this.prisma.passwordResetToken.findFirst({
+      where: { userId, purpose: 'invite', usedAt: null },
+      orderBy: { createdAt: 'desc' },
+      select: { expiresAt: true },
+    })
+    if (!row) return { state: 'none', expiresAt: null }
+    return { state: row.expiresAt > new Date() ? 'pending' : 'expired', expiresAt: row.expiresAt }
+  }
+
   async resetPassword(token: string, newPassword: string): Promise<void> {
     if (newPassword.length < 8) throw new AuthError('weak_password', 'كلمة المرور 8 أحرف على الأقل')
     const row = await this.prisma.passwordResetToken.findUnique({ where: { tokenHash: sha256(token) } })
     if (!row || row.usedAt || row.expiresAt < new Date()) throw new AuthError('invalid_token', 'رابط الاستعادة غير صالح أو منتهي', 400)
+    /* تعيينُ الكلمة من دعوةٍ يُفعّل الحساب: «مدعوّ» حالةُ من لم يدخل بعد،
+       وهي تنتهي بأوّل كلمةِ مرورٍ يضعها صاحبُه — لا بقرارِ موظّف. */
+    const user = await this.prisma.user.findUnique({ where: { id: row.userId }, select: { status: true } })
+    const activate = row.purpose === 'invite' && user?.status === 'invited'
     await this.prisma.$transaction([
-      this.prisma.user.update({ where: { id: row.userId }, data: { passwordHash: await bcrypt.hash(newPassword, 10) } }),
+      this.prisma.user.update({
+        where: { id: row.userId },
+        data: { passwordHash: await bcrypt.hash(newPassword, 10), ...(activate ? { status: 'active' } : {}) },
+      }),
       this.prisma.passwordResetToken.update({ where: { id: row.id }, data: { usedAt: new Date() } }),
       /* أمن: تغيير كلمة المرور يبطل كل الجلسات القائمة */
       this.prisma.session.updateMany({ where: { userId: row.userId, revokedAt: null }, data: { revokedAt: new Date() } }),
@@ -218,11 +374,74 @@ export class AuthService {
   }
 
   /** إيقاف حساب — يبطل جلساته فورا */
+  /* ── توثيقُ البريد بيدِ موظّف ──
+
+     العطب: توثيقُ البريد يقع بفتح رابطٍ يصل بالبريد. وقناةُ البريد غيرُ
+     موصولةٍ بعد، والحواجزُ المعتمدةُ عليه تتصرّف تصرّفَين مختلفَين بقصد:
+     • طلبُ التسجيل والشراءُ يمرّان حين لا قناة — «قفلٌ بلا مفتاح» لا يُقفل.
+     • و**إصدارُ الشهادة يبقى صارما ولو تعطّلت القناة**، لأنّ الشهادةَ تُنسب
+       إلى شخصٍ باسمه — ولا يُنسب مستندٌ إلى عنوانٍ لم يُثبت أنّه له.
+
+     فالنتيجةُ أنّ **الشهادةَ وحدَها تعذّرت** في طور التجربة، لا الشراءُ كما
+     ظننتُ أوّلا. وهذا بابُها: يوثّق موظّفٌ مسؤولٌ البريدَ بيده، **بسببٍ
+     مكتوبٍ وأثرٍ يُقرأ**.
+
+     وليس نقضا للحاجز بل استثناءٌ منه معلومُ المسؤول: من وثّق، ومتى، ولماذا.
+     ويصلح بعد وصلِ البريد أيضا — لمن ارتدّ بريدُه أو فقد الرسالة. */
+  async verifyEmailByStaff(userId: string, actorId: string): Promise<{ alreadyVerified: boolean; email: string }> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId }, select: { id: true, email: true, emailVerifiedAt: true },
+    })
+    if (!user) throw new AuthError('not_found', 'لا حسابَ بهذا المعرّف', 404)
+    if (user.emailVerifiedAt) return { alreadyVerified: true, email: user.email }
+    if (userId === actorId) {
+      throw new AuthError('self_verify', 'لا توثّق بريدَك بنفسك — اطلبه من موظّفٍ آخر', 409)
+    }
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { emailVerifiedAt: new Date(), emailVerifyTokenHash: null, emailVerifyExpiresAt: null },
+    })
+    return { alreadyVerified: false, email: user.email }
+  }
+
   async suspend(userId: string): Promise<void> {
     await this.prisma.$transaction([
       this.prisma.user.update({ where: { id: userId }, data: { status: 'suspended', suspendedAt: new Date() } }),
       this.prisma.session.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } }),
     ])
+  }
+
+  /* ── الأرشفة: مغادرةٌ لا محوٌ ───────────────────────────────────────
+
+     الحذفُ النهائيُّ كان الخيارَ الوحيدَ لمن غادر، وهو خيارٌ خطأٌ في أكثر
+     الحالات: مدرّبٌ درّس فصلا، ومتعلّمٌ استلم شهادةً، وموظّفٌ اعتمد استردادا —
+     سجلُّهم يجب أن يبقى ليبقى للسجلّ معنى (والحذفُ يُسقط ١٣ نموذجا معه).
+
+     فالأرشفةُ هي الفعلُ الطبيعيّ: الحسابُ يُغلق وتُبطل جلساتُه، وتبقى
+     سجلّاتُه كما هي، ولا يُحسب في «النشطين». والحذفُ يبقى لحالته: طلبُ
+     محوٍ من صاحب الحساب، أو خطأُ إنشاءٍ لا سجلَّ له. */
+  async archive(userId: string, actorId: string, reason: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { status: true } })
+    if (!user) throw new AuthError('not_found', 'الحساب غير موجود', 404)
+    if (user.status === 'archived') throw new AuthError('already_archived', 'الحساب مؤرشَفٌ أصلا', 409)
+    if (reason.trim().length < 10) throw new AuthError('reason_required', 'سببُ الأرشفة يُكتب — يقرؤه من يراجع السجلّ بعد سنة')
+    await this.prisma.$transaction([
+      this.prisma.user.update({ where: { id: userId }, data: { status: 'archived', suspendedAt: new Date() } }),
+      this.prisma.session.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } }),
+      /* ودعواتُه المعلّقةُ تُبطل: لا بابَ يُفتح لحسابٍ أُغلق */
+      this.prisma.passwordResetToken.updateMany({
+        where: { userId, usedAt: null },
+        data: { usedAt: new Date() },
+      }),
+    ])
+    void actorId
+  }
+
+  /** إعادةُ التنشيط — الأرشفةُ قرارٌ يُراجَع كالإيقاف */
+  async unarchive(userId: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { status: true } })
+    if (user?.status !== 'archived') throw new AuthError('not_archived', 'هذا الحساب ليس مؤرشَفا', 409)
+    await this.prisma.user.update({ where: { id: userId }, data: { status: 'active', suspendedAt: null } })
   }
 
   /* والإيقافُ بابٌ يُفتح: «خانةُ الحسابات الموقوفة» بلا رفعِ إيقافٍ سجنٌ

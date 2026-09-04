@@ -36,7 +36,7 @@ function Dot({ stage, selected }: { stage: WithSeq; selected: boolean }) {
           ? "border-teal-ink bg-teal-ink text-on-teal"
           : open
             ? `border-teal-ink text-teal-light-ink ${selected ? "bg-teal/20" : "bg-surface"}`
-            : "border-white/20 bg-surface text-white/40"
+            : "border-white/20 bg-surface text-muted-foreground"
       }`}
     >
       {done ? <Check className="h-4 w-4" /> : open ? stage.sequenceLabel : <Lock className="h-3 w-3" />}
@@ -62,7 +62,7 @@ export default function StageRail({
     <section aria-label="شريط مسارك" className="rounded-3xl border border-teal/25 bg-teal-ink/[0.05] p-4 sm:p-5">
       <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
         <div className="min-w-0">
-          <p className="text-[11px] text-white/55">أين أنت من رحلتك</p>
+          <p className="text-[11px] text-muted-foreground">أين أنت من رحلتك</p>
           <p className="mt-0.5 text-lg font-black leading-tight text-teal-light-ink">
             {currentIndex === -1
               ? "أنجزت مراحلك كلها"
@@ -72,16 +72,16 @@ export default function StageRail({
         <dl className="flex gap-4 text-center">
           <div>
             <dd className="text-base font-black tabular-nums">{counts.completed}</dd>
-            <dt className="text-[10px] text-white/50">أنجزتها</dt>
+            <dt className="text-micro text-muted-foreground">أنجزتها</dt>
           </div>
           <div>
             <dd className="text-base font-black tabular-nums">{counts.owned - counts.completed}</dd>
-            <dt className="text-[10px] text-white/50">تعمل فيها</dt>
+            <dt className="text-micro text-muted-foreground">تعمل فيها</dt>
           </div>
           {hours.total > 0 && (
             <div>
               <dd className="text-base font-black tabular-nums">{hours.done}</dd>
-              <dt className="text-[10px] text-white/50">من {hours.total} ساعة</dt>
+              <dt className="text-micro text-muted-foreground">من {hours.total} ساعة</dt>
             </div>
           )}
         </dl>
@@ -113,12 +113,12 @@ export default function StageRail({
                 <span className="min-w-0 flex-1">
                   {/* سطران لا سطرٌ مقصوص: عناوينُ الدورات جملٌ كاملة، و`truncate`
                       كان يُخرج «دورة التخطيط لل…» فلا يُعرف أيُّ مرحلةٍ هي. */}
-                  <span className={`block text-[11.5px] font-bold leading-[1.3] line-clamp-2 ${s.state === "not_owned" ? "text-white/50" : ""}`}>
+                  <span className={`block text-[11.5px] font-bold leading-[1.3] line-clamp-2 ${s.state === "not_owned" ? "text-muted-foreground" : ""}`}>
                     {s.titleAr}
                   </span>
-                  <span className="mt-1 block text-[10px] leading-4 text-white/45">{STAGE_LABEL_AR[s.state]}</span>
+                  <span className="mt-1 block text-micro leading-4 text-muted-foreground">{STAGE_LABEL_AR[s.state]}</span>
                   {isCurrent && (
-                    <span className="mt-1 inline-block rounded-full border border-gold/50 px-1.5 text-[10px] font-black text-gold-ink">
+                    <span className="mt-1 inline-block rounded-full border border-gold/50 px-1.5 text-micro font-black text-gold-ink">
                       أنت هنا
                     </span>
                   )}
@@ -128,7 +128,7 @@ export default function StageRail({
                       <span className="h-1 flex-1 overflow-hidden rounded-full bg-teal-ink/15">
                         <span className="block h-full rounded-full bg-teal-ink" style={{ width: `${s.percent}%` }} />
                       </span>
-                      <span className="text-[9.5px] tabular-nums text-white/50">{s.percent}٪</span>
+                      <span className="text-micro tabular-nums text-muted-foreground">{s.percent}٪</span>
                     </span>
                   )}
                 </span>
@@ -155,7 +155,7 @@ export default function StageRail({
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block text-[11.5px] font-bold leading-4 text-gold-ink">مشروع التخرج</span>
-                <span className="mt-1 block text-[10px] leading-4 text-white/45">نهاية المسار · وشهادته</span>
+                <span className="mt-1 block text-micro leading-4 text-muted-foreground">نهاية المسار · وشهادته</span>
               </span>
             </button>
           </li>

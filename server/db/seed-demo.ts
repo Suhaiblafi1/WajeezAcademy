@@ -26,6 +26,10 @@ export const DEMO_ACCOUNTS = [
   { key: 'operations', email: 'operations.demo@wajeez.local', name: 'مدير العمليات — حساب ديمو', roles: ['operations_manager'] },
   { key: 'finance', email: 'finance.demo@wajeez.local', name: 'المالية — حساب ديمو', roles: ['finance'] },
   { key: 'support', email: 'support.demo@wajeez.local', name: 'الدعم — حساب ديمو', roles: ['support'] },
+  /* المنسّقُ الأكاديميّ — الدورُ الذي يُشغّل الأكاديميةَ يوميّا بلا نشرٍ ولا
+     مالٍ ولا قائمةِ مستخدمين. وحسابُه هنا كي تُفحَص حدودُه بالعين: ما يراه
+     في القائمة وما يُردّ عنه. */
+  { key: 'coordinator', email: 'coordinator.demo@wajeez.local', name: 'منسّق أكاديميّ — حساب ديمو', roles: ['academic_coordinator'] },
 ] as const
 
 export type DemoRoleKey = (typeof DEMO_ACCOUNTS)[number]['key']

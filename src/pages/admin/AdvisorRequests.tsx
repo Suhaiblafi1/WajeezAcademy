@@ -8,6 +8,7 @@
    يلزمه سبب يقرؤه صاحبُه. والاعتمادُ يُنتج كوبونا مقصورا على العميل. */
 
 import { useCallback, useEffect, useState } from "react";
+import { toast, toastError } from "@/components/Toast";
 import { BadgePercent, CheckCircle2, Clock, Loader2, Route, ServerOff, XCircle } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
@@ -48,7 +49,6 @@ export default function AdvisorRequests() {
   const [offline, setOffline] = useState<string | null>(null);
   const [note, setNote] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState("");
-  const [flash, setFlash] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -62,13 +62,13 @@ export default function AdvisorRequests() {
   useEffect(() => { void load(); }, [load]);
 
   const decide = async (id: string, decision: "approved" | "rejected") => {
-    setBusy(id); setFlash("");
+    setBusy(id);
     try {
       await apiPost(`/api/admin/advisor-requests/${id}/decision`, { decision, noteAr: note[id]?.trim() || undefined });
-      setFlash(decision === "approved" ? "اعتُمد الطلب — ووُلّد كوبونٌ مقصور على العميل إن كان خصما" : "رُفض الطلب، ويصل سببُك إلى المستشار");
+      toast(decision === "approved" ? "اعتُمد الطلب — ووُلّد كوبونٌ مقصور على العميل إن كان خصما" : "رُفض الطلب، ويصل سببُك إلى المستشار");
       await load();
     } catch (e) {
-      setFlash(e instanceof ApiError ? e.message : "تعذّر تنفيذ القرار");
+      toastError(e instanceof ApiError ? e.message : "تعذّر تنفيذ القرار");
     } finally {
       setBusy("");
     }
@@ -78,9 +78,9 @@ export default function AdvisorRequests() {
     return (
       <AdminLayout title="طلبات المستشارين">
         <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
-          <ServerOff className="h-12 w-12 text-white/20" />
+          <ServerOff className="h-12 w-12 text-muted-foreground/50" />
           <h2 className="mt-4 text-xl font-black">لا يمكن الوصول للبيانات</h2>
-          <p className="mt-2 max-w-md text-sm leading-7 text-white/55">{offline}</p>
+          <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">{offline}</p>
         </div>
       </AdminLayout>
     );
@@ -88,15 +88,14 @@ export default function AdvisorRequests() {
 
   return (
     <AdminLayout title="طلبات المستشارين — خصمٌ وتعديلُ خطّة">
-      {flash && <p role="status" className="mb-4 rounded-xl border border-white/10 bg-white/[0.04] p-3 text-xs font-bold text-white/80">{flash}</p>}
 
       {rows === null ? (
-        <div className="grid place-items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-white/30" /></div>
+        <div className="grid place-items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" /></div>
       ) : rows.length === 0 ? (
         <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center">
           <CheckCircle2 className="h-12 w-12 text-teal-light-ink/50" />
           <h2 className="mt-4 text-xl font-black">لا طلبَ ينتظر قرارك</h2>
-          <p className="mt-2 max-w-md text-sm leading-7 text-white/55">
+          <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">
             حين يطلب مستشارٌ خصما لعميله أو تعديلا على خطّته يظهر هنا بسببه كاملا.
           </p>
         </div>
@@ -115,24 +114,24 @@ export default function AdvisorRequests() {
                       {KIND_AR[r.kind] ?? r.kind}
                       {r.percentOff !== null && <span className="text-gold-ink">{r.percentOff}٪</span>}
                       {r.amountOff && <span className="text-gold-ink">{r.amountOff} {r.currency}</span>}
-                      {r.courseId && <span className="font-normal text-white/65">— {courseById(r.courseId)?.name ?? r.courseId}</span>}
+                      {r.courseId && <span className="font-normal text-foreground">— {courseById(r.courseId)?.name ?? r.courseId}</span>}
                     </p>
-                    <p className="mt-1.5 text-xs text-white/60">
-                      للعميل <b className="text-white/85">{who}</b>
-                      {email && <span dir="ltr" className="ms-2 text-white/40">{email}</span>}
+                    <p className="mt-1.5 text-xs text-muted-foreground">
+                      للعميل <b className="text-foreground">{who}</b>
+                      {email && <span dir="ltr" className="ms-2 text-muted-foreground">{email}</span>}
                     </p>
-                    <p className="mt-0.5 text-[11px] text-white/40">
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">
                       رفعه {r.advisor.displayName} · <Clock className="mb-0.5 inline h-3 w-3" /> {fmtDateTimeAr(r.createdAt)}
                     </p>
                   </div>
                 </div>
 
-                <p className="mt-3 rounded-xl border border-white/10 bg-black/25 px-4 py-3 text-xs leading-7 text-white/75">
-                  <span className="font-bold text-white/45">سببُه: </span>{r.reasonAr}
+                <p className="mt-3 rounded-xl border border-white/10 bg-paper/25 px-4 py-3 text-xs leading-7 text-foreground">
+                  <span className="font-bold text-muted-foreground">سببُه: </span>{r.reasonAr}
                 </p>
 
                 <div className="mt-3">
-                  <label htmlFor={`note-${r.id}`} className="mb-1.5 block text-[11px] font-bold text-white/55">
+                  <label htmlFor={`note-${r.id}`} className="mb-1.5 block text-[11px] font-bold text-muted-foreground">
                     ردُّك — إلزاميٌّ عند الرفض، يقرؤه المستشار
                   </label>
                   <textarea
@@ -159,7 +158,7 @@ export default function AdvisorRequests() {
                     <XCircle className="h-3.5 w-3.5" /> ارفض
                   </button>
                   {reason.trim().length < MIN_REASON && (
-                    <span className="text-[10.5px] text-white/35">الرفض يلزمه سببٌ لا يقلّ عن {MIN_REASON} حرفا</span>
+                    <span className="text-micro text-muted-foreground">الرفض يلزمه سببٌ لا يقلّ عن {MIN_REASON} حرفا</span>
                   )}
                 </div>
               </li>

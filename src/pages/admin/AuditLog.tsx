@@ -5,24 +5,22 @@ import { apiGet, permissionMessage } from "@/services/api";
 import { fmtDateTime } from "@/application/text/format-ar";
 
 interface AuditRow {
-  id: string; action: string; entityType: string; entityId: string; createdAt: string;
+  id: string; action: string; actionAr: string; entityType: string; entityTypeAr: string; entityId: string; createdAt: string;
   reason: string | null; ip: string | null;
   actor: { id: string; displayName: string; email: string } | null;
   meta: unknown; before: unknown; after: unknown;
 }
 interface AuditPage {
   total: number; page: number; pages: number; pageSize: number; rows: AuditRow[];
-  facets: { actions: { value: string; count: number }[]; entityTypes: { value: string; count: number }[] };
+  facets: { actions: { value: string; labelAr: string; count: number }[]; entityTypes: { value: string; labelAr: string; count: number }[] };
 }
 
-const ENTITY_AR: Record<string, string> = {
-  user: "حساب", enrollment: "تسجيل", cohort: "شعبة", course: "دورة", invoice: "فاتورة",
-  order: "طلب شراء", payment: "دفعة", refund: "استرداد", notification: "إشعار",
-  trainer_application: "طلب مدرّب", trainer_profile: "ملفّ مدرّب", certificate: "شهادة",
-  support_ticket: "تذكرة دعم", staff_task: "مهمّة", module: "وحدة", pathway: "مسار",
-};
+/* حُذف جدولُ أنواعِ الكيانات من هذه الصفحة: كان يعرّب ستّةَ عشرَ نوعا من
+   سبعةٍ وثلاثين، فما لم يكن فيه يُعرض بمفتاحه. والخادمُ يعرّبها كلَّها من
+   المعجم الواحد (`src/application/audit/labels.ts`) ويرسلها مع الصفّ —
+   فمعجمٌ واحدٌ لا اثنان يفترقان. */
 
-const field = "rounded-xl border border-white/12 bg-black/30 px-3 py-2 text-xs text-white focus:border-teal focus:outline-none [&>option]:bg-surface";
+const field = "rounded-xl border border-white/12 bg-paper/30 px-3 py-2 text-xs text-foreground focus:border-teal focus:outline-none [&>option]:bg-surface";
 
 /** سجلُّ الأثر الموحَّد — ما وقع، ومن أوقعه، ومتى.
 
@@ -58,9 +56,9 @@ export default function AuditLog() {
     return (
       <AdminLayout title="سجلّ الأثر">
         <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
-          <ServerOff className="h-12 w-12 text-white/20" />
-          <p className="mt-4 max-w-md text-sm text-white/55">{offline}</p>
-          <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-white/70 hover:border-white/40">
+          <ServerOff className="h-12 w-12 text-muted-foreground/50" />
+          <p className="mt-4 max-w-md text-sm text-muted-foreground">{offline}</p>
+          <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground hover:border-white/40">
             <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
           </button>
         </div>
@@ -70,61 +68,61 @@ export default function AuditLog() {
 
   return (
     <AdminLayout title="سجلّ الأثر — من فعل ماذا ومتى">
-      <p className="mb-4 max-w-2xl text-xs leading-6 text-white/50">
+      <p className="mb-4 max-w-2xl text-xs leading-6 text-muted-foreground">
         كلُّ فعلٍ يقع على المنصّة يُكتب هنا بصاحبه ووقته: الأدوارُ والإيقافُ والحذف، وفتحُ الشعب
         والتسجيلُ والترقيةُ من الانتظار، والفواتيرُ والاستردادات، واعتمادُ المتون وقراراتُ المدربين.
         السجلُّ يُقرأ ولا يُكتب من هنا.
       </p>
 
       <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        <label className="text-[11px] text-white/45">
+        <label className="text-[11px] text-muted-foreground">
           الفعل
           <select value={filters.action} onChange={(e) => set({ action: e.target.value })} className={`mt-1 w-full ${field}`}>
             <option value="">كلّ الأفعال</option>
             {(data?.facets.actions ?? []).map((a) => (
-              <option key={a.value} value={a.value}>{a.value} ({a.count})</option>
+              <option key={a.value} value={a.value}>{a.labelAr} ({a.count})</option>
             ))}
           </select>
         </label>
-        <label className="text-[11px] text-white/45">
+        <label className="text-[11px] text-muted-foreground">
           نوع الكيان
           <select value={filters.entityType} onChange={(e) => set({ entityType: e.target.value })} className={`mt-1 w-full ${field}`}>
             <option value="">كلّ الأنواع</option>
             {(data?.facets.entityTypes ?? []).map((e2) => (
-              <option key={e2.value} value={e2.value}>{ENTITY_AR[e2.value] ?? e2.value} ({e2.count})</option>
+              <option key={e2.value} value={e2.value}>{e2.labelAr} ({e2.count})</option>
             ))}
           </select>
         </label>
-        <label className="text-[11px] text-white/45">
+        <label className="text-[11px] text-muted-foreground">
           من تاريخ
           <input type="date" value={filters.from} onChange={(e) => set({ from: e.target.value })} className={`mt-1 w-full ${field}`} />
         </label>
-        <label className="text-[11px] text-white/45">
+        <label className="text-[11px] text-muted-foreground">
           إلى تاريخ
           <input type="date" value={filters.to} onChange={(e) => set({ to: e.target.value })} className={`mt-1 w-full ${field}`} />
         </label>
       </div>
 
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-3 text-[11px] text-white/45">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3 text-[11px] text-muted-foreground">
         <span>
           {data ? (data.total === 0 ? "لا وقائع بهذا الفرز" : `${(data.page - 1) * data.pageSize + 1}–${Math.min(data.page * data.pageSize, data.total)} من ${data.total} واقعة`) : "…"}
         </span>
         <div className="flex items-center gap-2">
           {Object.values(filters).some(Boolean) && (
             <button onClick={() => { setFilters({ action: "", entityType: "", from: "", to: "" }); setPage(1); }}
-              className="cursor-pointer rounded-full border border-white/15 px-3 py-1 font-bold text-white/60 hover:border-white/35">
+              className="cursor-pointer rounded-full border border-white/15 px-3 py-1 font-bold text-muted-foreground hover:border-white/35">
               امسح الفرز
             </button>
           )}
           {data && data.pages > 1 && (
             <div className="flex items-center gap-1">
               <button onClick={() => setPage(data.page - 1)} disabled={data.page <= 1} aria-label="الصفحة السابقة"
-                className="cursor-pointer rounded-lg border border-white/12 p-1.5 text-white/60 hover:border-white/35 disabled:cursor-default disabled:opacity-25">
+                className="grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-lg border border-white/12 text-muted-foreground hover:border-white/35 disabled:cursor-default disabled:opacity-25">
                 <ChevronRight className="h-3.5 w-3.5" />
               </button>
               <span className="tabular-nums">{data.page} / {data.pages}</span>
               <button onClick={() => setPage(data.page + 1)} disabled={data.page >= data.pages} aria-label="الصفحة التالية"
-                className="cursor-pointer rounded-lg border border-white/12 p-1.5 text-white/60 hover:border-white/35 disabled:cursor-default disabled:opacity-25">
+                className="grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-lg border border-white/12 text-muted-foreground hover:border-white/35 disabled:cursor-default disabled:opacity-25">
                 <ChevronLeft className="h-3.5 w-3.5" />
               </button>
             </div>
@@ -133,11 +131,11 @@ export default function AuditLog() {
       </div>
 
       {loading ? (
-        <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-white/30" /></div>
+        <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" /></div>
       ) : !data || data.rows.length === 0 ? (
         <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
-          <Search className="h-12 w-12 text-white/20" />
-          <p className="mt-4 text-sm text-white/50">لا وقائع تطابق هذا الفرز — وسّع المدى أو امسحه.</p>
+          <Search className="h-12 w-12 text-muted-foreground/50" />
+          <p className="mt-4 text-sm text-muted-foreground">لا وقائع تطابق هذا الفرز — وسّع المدى أو امسحه.</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -145,26 +143,30 @@ export default function AuditLog() {
             <div key={r.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
               <button onClick={() => setOpen(open === r.id ? null : r.id)}
                 className="flex w-full cursor-pointer flex-wrap items-center gap-3 text-right">
-                <History className="h-3.5 w-3.5 shrink-0 text-white/30" />
-                <span className="font-mono text-[11px] font-bold text-gold-ink" dir="ltr">{r.action}</span>
-                <span className="text-[11px] text-white/55">
-                  {ENTITY_AR[r.entityType] ?? r.entityType}
-                  <span className="mr-1.5 font-mono text-white/35" dir="ltr">{r.entityId.slice(0, 8)}…</span>
+                <History className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />
+                {/* الاسمُ العربيُّ في الصدارة، والمفتاحُ الخامُ عند الفتح.
+                    وكان السجلُّ يعرض `cohort.session.add` نصّا لاتينيّا لمن
+                    يقرأ — وهو ما أُصلح في لوحة المدير (T5) وبقي هنا. */}
+                <span className="text-[11px] font-black text-gold-ink">{r.actionAr}</span>
+                <span className="text-[11px] text-muted-foreground">
+                  {r.entityTypeAr}
+                  <span className="mr-1.5 font-mono text-muted-foreground" dir="ltr">{r.entityId.slice(0, 8)}…</span>
                 </span>
                 {/* الفاعلُ يُسمّى دائما: «النظام» ليس فراغا بل فاعلٌ آخر */}
-                <span className="text-[11px] text-white/70">{r.actor ? r.actor.displayName : "النظام (تلقائيّ)"}</span>
-                <span className="mr-auto text-[11px] text-white/40">{fmtDateTime(new Date(r.createdAt))}</span>
+                <span className="text-[11px] text-foreground">{r.actor ? r.actor.displayName : "النظام (تلقائيّ)"}</span>
+                <span className="mr-auto text-[11px] text-muted-foreground">{fmtDateTime(new Date(r.createdAt))}</span>
               </button>
               {open === r.id && (
-                <div className="mt-3 space-y-2 border-t border-white/8 pt-3 text-[11px] leading-6 text-white/60">
-                  {r.actor?.email && <p dir="ltr" className="font-mono text-white/45">{r.actor.email}</p>}
+                <div className="mt-3 space-y-2 border-t border-white/8 pt-3 text-[11px] leading-6 text-muted-foreground">
+                  {r.actor?.email && <p dir="ltr" className="font-mono text-muted-foreground">{r.actor.email}</p>}
                   {r.reason && <p>السبب المكتوب: {r.reason}</p>}
-                  {r.ip && <p dir="ltr" className="font-mono text-white/40">IP {r.ip}</p>}
-                  <p className="font-mono text-[10px] text-white/45" dir="ltr">{r.entityId}</p>
+                  <p className="font-mono text-micro text-muted-foreground" dir="ltr">{r.action}</p>
+                  {r.ip && <p dir="ltr" className="font-mono text-muted-foreground">IP {r.ip}</p>}
+                  <p className="font-mono text-micro text-muted-foreground" dir="ltr">{r.entityId}</p>
                   {([["قبل", r.before], ["بعد", r.after], ["تفاصيل", r.meta]] as const).map(([label, value]) => value != null && (
                     <div key={label}>
-                      <p className="font-bold text-white/50">{label}</p>
-                      <pre dir="ltr" className="mt-1 overflow-x-auto rounded-xl border border-white/8 bg-black/30 p-3 text-[10px] text-white/60">
+                      <p className="font-bold text-muted-foreground">{label}</p>
+                      <pre dir="ltr" className="mt-1 overflow-x-auto rounded-xl border border-white/8 bg-paper/30 p-3 text-micro text-muted-foreground">
                         {JSON.stringify(value, null, 2)}
                       </pre>
                     </div>

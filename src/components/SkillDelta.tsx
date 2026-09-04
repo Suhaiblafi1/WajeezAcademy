@@ -35,14 +35,14 @@ export function DeltaBadge({ g, className = "" }: { g: SkillGrowth; className?: 
   }
   if (g.direction === "down") {
     return (
-      <span className={`${base} border-white/25 text-white/75 ${className}`}>
+      <span className={`${base} border-white/25 text-foreground ${className}`}>
         <TrendingDown className="h-3 w-3" aria-hidden="true" />
         <span dir="ltr">{g.delta}</span>
       </span>
     );
   }
   return (
-    <span className={`${base} border-white/15 text-white/60 ${className}`}>
+    <span className={`${base} border-white/15 text-muted-foreground ${className}`}>
       <Minus className="h-3 w-3" aria-hidden="true" />
       بلا تغيّر
     </span>
@@ -55,7 +55,7 @@ export default function SkillDelta({ g }: { g: SkillGrowth }) {
     <li className="grid grid-cols-1 gap-2 border-t border-white/5 py-3 first:border-t-0 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center sm:gap-4">
       <div className="min-w-0">
         <p className="truncate text-sm font-bold">{g.nameAr}</p>
-        <p className="mt-0.5 text-[11px] text-white/50">
+        <p className="mt-0.5 text-[11px] text-muted-foreground">
           {g.beforeLevel === null
             ? `قِيست أول مرة بعد الدورة: ${levelLabelAr(g.afterLevel)}`
             : `${levelLabelAr(g.beforeLevel)} ← ${levelLabelAr(g.afterLevel)}`}
@@ -64,13 +64,13 @@ export default function SkillDelta({ g }: { g: SkillGrowth }) {
 
       <div className="flex items-center gap-2">
         {g.beforeLevel === null ? (
-          <span className="text-[11px] text-white/40">لا قياس قبليّ</span>
+          <span className="text-[11px] text-muted-foreground">لا قياس قبليّ</span>
         ) : (
           <>
             <span className="w-20">
               <SkillMeter level={g.beforeLevel} className="opacity-45" />
             </span>
-            <ArrowLeft className="h-3.5 w-3.5 shrink-0 text-white/40" aria-hidden="true" />
+            <ArrowLeft className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
           </>
         )}
         <span className="w-20">

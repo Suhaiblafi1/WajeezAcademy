@@ -7,10 +7,10 @@ import ThemeToggle from "@/components/ThemeToggle";
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div dir="rtl" className="min-h-screen bg-paper text-white">
+    <div dir="rtl" className="min-h-screen bg-paper text-foreground">
       <header className="sticky top-0 z-40 border-b border-white/10 bg-paper/85 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-3xl items-center justify-between px-5">
-          <Link to="/" className="flex items-center gap-2 text-white/70 transition hover:text-white">
+          <Link to="/" className="flex items-center gap-2 text-foreground transition hover:text-foreground">
             <ArrowRight className="h-5 w-5" />
             <span className="text-sm font-medium">الرئيسية</span>
           </Link>
@@ -27,7 +27,7 @@ function Shell({ children }: { children: React.ReactNode }) {
                 (App.tsx) وهي هدف رابط «تجاوز إلى المحتوى». main متداخلة تجعل
                 التخطي غامضا وتُجبر قارئ الشاشة على الاختيار بين منطقتين. */}
       <div className="mx-auto max-w-3xl px-5 py-12 md:py-16">{children}</div>
-      <footer className="border-t border-white/5 py-8 text-center text-xs text-white/55">
+      <footer className="border-t border-white/5 py-8 text-center text-xs text-muted-foreground">
         © 2026 أكاديمية وجيز — من مجموعة wajeez.com
       </footer>
     </div>
@@ -48,7 +48,7 @@ function StaticContent({ slug }: { slug: string }) {
     <Shell>
       <SeoHead title={page.title} description={page.intro} path={`/p/${page.slug}`} />
       <h1 className="text-3xl font-black leading-snug md:text-4xl">{page.title}</h1>
-      <p className="mt-4 text-lg leading-loose text-white/60">{page.intro}</p>
+      <p className="mt-4 text-lg leading-loose text-muted-foreground">{page.intro}</p>
       <div className="mt-10 space-y-8">
         {page.sections.map((s, i) => (
           <section key={i} className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
@@ -59,12 +59,12 @@ function StaticContent({ slug }: { slug: string }) {
               </h2>
             )}
             {s.paragraphs?.map((p, j) => (
-              <p key={j} className="mt-4 leading-loose text-white/70">{p}</p>
+              <p key={j} className="mt-4 leading-loose text-foreground">{p}</p>
             ))}
             {s.bullets && (
               <ul className="mt-4 space-y-3">
                 {s.bullets.map((b, j) => (
-                  <li key={j} className="flex items-start gap-3 leading-relaxed text-white/70">
+                  <li key={j} className="flex items-start gap-3 leading-relaxed text-foreground">
                     <span className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gold" />
                     {b}
                   </li>
@@ -76,7 +76,7 @@ function StaticContent({ slug }: { slug: string }) {
       </div>
       <div className="mt-8 rounded-3xl border border-teal/40 bg-teal/10 p-6 text-center md:p-8">
         <h2 className="text-xl font-black">لم تجد إجابتك؟</h2>
-        <p className="mt-2 text-sm text-white/60">فريقنا يقرأ كل رسالة بنفسه ويرد خلال يوم عمل واحد.</p>
+        <p className="mt-2 text-sm text-muted-foreground">فريقنا يقرأ كل رسالة بنفسه ويرد خلال يوم عمل واحد.</p>
         <Link
           to="/contact"
           className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-teal-deep px-6 py-3 font-bold text-white transition hover:bg-teal-darker"
@@ -100,7 +100,7 @@ function FaqPage() {
     <Shell>
       <SeoHead title="الأسئلة الشائعة" description="إجابات صريحة عن أكثر ما يسألنا عنه الزوار: التشخيص، الأسعار، الشهادات، والاسترداد." path="/p/faq" />
       <h1 className="text-3xl font-black leading-snug md:text-4xl">الأسئلة الشائعة</h1>
-      <p className="mt-4 text-lg leading-loose text-white/60">جمعنا ما يسألنا عنه الزوار فعلا — وأجبنا بلا مجاملة.</p>
+      <p className="mt-4 text-lg leading-loose text-muted-foreground">جمعنا ما يسألنا عنه الزوار فعلا — وأجبنا بلا مجاملة.</p>
       <div className="mt-10 space-y-3">
         {faqs.map((f, i) => (
           <div key={i} className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
@@ -113,7 +113,7 @@ function FaqPage() {
             </button>
             <div className={`grid transition-all duration-300 ${open === i ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
               <div className="overflow-hidden">
-                <p className="px-6 pb-6 leading-loose text-white/60">{f.a}</p>
+                <p className="px-6 pb-6 leading-loose text-muted-foreground">{f.a}</p>
               </div>
             </div>
           </div>

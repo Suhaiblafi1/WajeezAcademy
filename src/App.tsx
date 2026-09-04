@@ -10,7 +10,7 @@ import Trainers from './pages/Trainers'
 import Contact from './pages/Contact'
 import Auth from './pages/Auth'
 import NotFound from './pages/NotFound'
-import RequireRole, { ADMIN_ROLES, ADVISOR_ROLES, APPLICANT_ROLES, TRAINER_ROLES } from './components/RequireRole'
+import RequireRole, { ADMIN_ROLES, ADVISOR_ROLES, APPLICANT_ROLES, LEARNER_ROLES, TRAINER_ROLES } from './components/RequireRole'
 import ToastHost from './components/Toast'
 
 /* مبدل أدوار الديمو — يُحمَّل كقطعة منفصلة ولا يُجلب ولا يظهر إلا في بناء الديمو */
@@ -55,6 +55,8 @@ const JoinTrainerVerify = lazy(() => import('./pages/JoinTrainerVerify'))
 const ApplicantStatus = lazy(() => import('./pages/ApplicantStatus'))
 const TrainerAcceptInvite = lazy(() => import('./pages/TrainerAcceptInvite'))
 const TrainerProposals = lazy(() => import('./pages/trainer/Proposals'))
+const TrainerQualifications = lazy(() => import('./pages/trainer/Qualifications'))
+const TrainerSchedule = lazy(() => import('./pages/trainer/Schedule'))
 const CohortBoard = lazy(() => import('./pages/trainer/CohortBoard'))
 const Exceptions = lazy(() => import('./pages/admin/Exceptions'))
 const AdminAdvisorRequests = lazy(() => import('./pages/admin/AdvisorRequests'))
@@ -68,6 +70,7 @@ const AdminLearners = lazy(() => import('./pages/admin/Learners'))
 const AdminTasks = lazy(() => import('./pages/admin/Tasks'))
 const AdminAdvisors = lazy(() => import("./pages/admin/Advisors"));
 const AdminAuditLog = lazy(() => import("./pages/admin/AuditLog"));
+const AdminSystemHealth = lazy(() => import("./pages/admin/SystemHealth"));
 const TrainerMyLearners = lazy(() => import('./pages/trainer/MyLearners'))
 const AdvisorMyLearners = lazy(() => import('./pages/advisor/MyLearners'))
 const AdvisorMyRatings = lazy(() => import('./pages/advisor/MyRatings'))
@@ -179,31 +182,38 @@ export default function App() {
           <Route path="/verify" element={<Verify />} />
           <Route path="/verify/:number" element={<Verify />} />
           <Route path="/p/:slug" element={<StaticPage />} />
-          <Route path="/student" element={<StudentDashboard />} />
-          {/* «مساري» و«دوراتي» صارتا رحلةً واحدة — والعنوانان القديمان
-              يُحوَّلان إليها: روابطُ بريدٍ أُرسلت وإشعاراتٌ تشير إليهما. */}
-          <Route path="/student/pathway" element={<Navigate to="/student/learning" replace />} />
-          <Route path="/student/skills" element={<MySkills />} />
-          <Route path="/student/remeasure/:enrollmentId" element={<Remeasure />} />
-          <Route path="/student/review" element={<Review />} />
-          {/* صفحةُ الدورة صارت مرحلةً في شريط الرحلة — فالعنوانُ القديم
-              يفتح الرحلةَ على مرحلتها بعينها لا على أوّلها. */}
-          <Route path="/student/course/:courseId" element={<CourseStageRedirect />} />
-          <Route path="/student/course/:courseId/module/:moduleId" element={<ModuleStudy />} />
-          <Route path="/student/project" element={<Navigate to="/student/learning" replace />} />
-          <Route path="/student/vault" element={<MyVault />} />
-          <Route path="/student/library" element={<StudentLibrary />} />
-          <Route path="/student/rate" element={<RateMyLearning />} />
-          <Route path="/trainer/ratings" element={<TrainerMyRatings />} />
-          <Route path="/admin/ratings" element={<AdminRatingModeration />} />
-          <Route path="/student/certificates" element={<Certificates />} />
-          <Route path="/student/learning" element={<Journey />} />
-          <Route path="/student/account" element={<StudentAccount />} />
-          <Route path="/student/billing" element={<StudentBilling />} />
-          <Route path="/student/cv" element={<StudentCv />} />
-          <Route path="/student/notifications" element={<StudentNotifications />} />
-          <Route path="/student/inbox" element={<StudentInbox />} />
-          <Route path="/student/support" element={<StudentSupport />} />
+          {/* بوابةُ المتعلّم — محروسةٌ كسائر البوابات.
+
+              كانت مساراتها كلُّها خارج كلّ حارس، ومعها «تقييمي» للمدرّب
+              و«مراجعةُ التقييمات» للإدارة. والخادمُ يحرس بياناتِها (مسارُ
+              بوابة التعلّم كلُّه بحارس صلاحيّة)، فلم تكن ثغرةَ بيانات — لكنّ
+              من يفتحها بدورٍ آخر كان يرى الهيكلَ ثمّ أخطاءَ ٤٠٣، بدل أن
+              يُوجَّه إلى بوابته. */}
+          <Route element={<RequireRole allow={LEARNER_ROLES} />}>
+            <Route path="/student" element={<StudentDashboard />} />
+            {/* «مساري» و«دوراتي» صارتا رحلةً واحدة — والعنوانان القديمان
+                يُحوَّلان إليها: روابطُ بريدٍ أُرسلت وإشعاراتٌ تشير إليهما. */}
+            <Route path="/student/pathway" element={<Navigate to="/student/learning" replace />} />
+            <Route path="/student/skills" element={<MySkills />} />
+            <Route path="/student/remeasure/:enrollmentId" element={<Remeasure />} />
+            <Route path="/student/review" element={<Review />} />
+            {/* صفحةُ الدورة صارت مرحلةً في شريط الرحلة — فالعنوانُ القديم
+                يفتح الرحلةَ على مرحلتها بعينها لا على أوّلها. */}
+            <Route path="/student/course/:courseId" element={<CourseStageRedirect />} />
+            <Route path="/student/course/:courseId/module/:moduleId" element={<ModuleStudy />} />
+            <Route path="/student/project" element={<Navigate to="/student/learning" replace />} />
+            <Route path="/student/vault" element={<MyVault />} />
+            <Route path="/student/library" element={<StudentLibrary />} />
+            <Route path="/student/rate" element={<RateMyLearning />} />
+            <Route path="/student/certificates" element={<Certificates />} />
+            <Route path="/student/learning" element={<Journey />} />
+            <Route path="/student/account" element={<StudentAccount />} />
+            <Route path="/student/billing" element={<StudentBilling />} />
+            <Route path="/student/cv" element={<StudentCv />} />
+            <Route path="/student/notifications" element={<StudentNotifications />} />
+            <Route path="/student/inbox" element={<StudentInbox />} />
+            <Route path="/student/support" element={<StudentSupport />} />
+          </Route>
           {/* دعوة المدرب مسار عام برمز دعوة — خارج حارس الأدوار عمدا */}
           <Route path="/trainer/accept-invite" element={<TrainerAcceptInvite />} />
           {/* بوابات الفريق — حارس يتحقق من الجلسة والدور عند الخادم */}
@@ -220,6 +230,8 @@ export default function App() {
           </Route>
           <Route element={<RequireRole allow={TRAINER_ROLES} />}>
             <Route path="/trainer" element={<TrainerDashboard />} />
+            <Route path="/trainer/qualifications" element={<TrainerQualifications />} />
+            <Route path="/trainer/schedule" element={<TrainerSchedule />} />
             <Route path="/trainer/grading" element={<GradingQueue />} />
             <Route path="/trainer/learners" element={<TrainerMyLearners />} />
             {/* حُذفت `CohortView`: شعبةٌ كاملة بطلابها وجلساتها وحضورهم من `data/trainer`،
@@ -228,9 +240,11 @@ export default function App() {
             <Route path="/trainer/earnings" element={<Earnings />} />
             <Route path="/trainer/proposals" element={<TrainerProposals />} />
             <Route path="/trainer/board" element={<CohortBoard />} />
+            <Route path="/trainer/ratings" element={<TrainerMyRatings />} />
           </Route>
           <Route element={<RequireRole allow={ADMIN_ROLES} />}>
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/ratings" element={<AdminRatingModeration />} />
             <Route path="/admin/cohorts" element={<AdminCohorts />} />
             <Route path="/admin/exceptions" element={<Exceptions />} />
             <Route path="/admin/advisor-requests" element={<AdminAdvisorRequests />} />
@@ -248,6 +262,7 @@ export default function App() {
             <Route path="/admin/tasks" element={<AdminTasks />} />
             <Route path="/admin/advisors" element={<AdminAdvisors />} />
             <Route path="/admin/audit" element={<AdminAuditLog />} />
+            <Route path="/admin/system-health" element={<AdminSystemHealth />} />
             <Route path="/admin/reports" element={<AdminReports />} />
             <Route path="/admin/support" element={<AdminSupport />} />
             <Route path="/admin/finance" element={<AdminFinance />} />

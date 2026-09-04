@@ -31,20 +31,16 @@ import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
 import { track } from "@/services/analytics";
 import { apiPost } from "@/services/api";
-import { useCoursePrices, cheapestOf, pricedCount, formatCohortPrice } from "@/services/cohort-prices";
 import { ensurePublishedSnapshot } from "@/services/catalog-snapshot";
 import { ensurePublishedContent } from "@/services/public-content";
 import SeoHead from "@/components/SeoHead";
-import { FIRST_TIME_PROMO } from "@/application/commerce/first-time-promo";
 import EcosystemNote from "@/components/EcosystemNote";
 import { Badge } from "@/components/ui/badge";
 import ResultFeedback from "@/components/ResultFeedback";
-import CourseJourney, { type CourseSuggestion } from "@/components/CourseJourney";
 import { ResultErrorBoundary } from "@/components/ResultErrorBoundary";
 import SkillFamilyGrid, { type FamilyToRate } from "@/components/SkillFamilyGrid";
-import ComposedPlanCard, { type ComposedPathView, type ComposedCourseView } from "@/components/ComposedPlanCard";
+import ComposedPlanCard, { type ComposedPathView } from "@/components/ComposedPlanCard";
 import { Q } from "@/domain/diagnostic/v2_1/maps";
-import { skillNamesAr, courseById as catalogCourseById } from "@/domain/diagnostic/catalog";
 import {
   type DiagQuestion,
   type DiagOption,
@@ -57,17 +53,20 @@ import { loadSession, saveLastResult, loadLastResultSafe } from "@/application/d
 import { foldComposedPlan } from "@/application/diagnostic/composed-fold";
 import { saveAdoptedPlan, syncAdoptedPlan, PERSONAL_PLAN_NAME_AR } from "@/application/plan/adopted-plan";
 import { NEEDS_ADVISOR_KEY } from "@/application/plan/advisor-referral";
-import {
-  courseById,
-  pathwayCourses,
-  pathwayDelivery,
-  courses,
-  MIN_PATHWAY_COURSES,
-  MAX_PATHWAY_COURSES,
-  weeksLabel,
-} from "@/data/courses";
+import { pathwayCourses, pathwayDelivery, MAX_PATHWAY_COURSES, weeksLabel } from "@/data/courses";
 import AdvisorContact from "@/components/AdvisorContact";
-import { pathways, pathwayCategory, type Pathway } from "@/data/pathways";
+import { pathwayCategory, type Pathway } from "@/data/pathways";
+
+import {
+  ComposedSwap,
+  CompositePlan,
+  PlanCourses,
+  ResultPriceCard,
+  WhyThisPathway,
+  type CompositeView,
+  type ConfidenceParts,
+} from "./diagnostic/ResultPlanCards";
+import { composedReason, templateCourseReason } from "./diagnostic/plan-reasons";
 
 type DiagAnswers = Record<string, string>;
 type Stage = "intro" | "questions" | "skills" | "computing" | "result";
@@ -139,542 +138,6 @@ function clearProgress() {
   /* الإزالة الفعلية تتم عبر AssessmentSession.abandon() أو عند الحفظ النهائي */
 }
 
-
-/* ═══════════ رحلة الدورات القابلة للتخصيص — «ماذا ستحقق من خلال خطتك؟» ═══════════ */
-
-/* سبب وجود المقرر في خطة مركّبة من المقررات — بلغة المتعلم لا بلغة المحرك.
-
-   كان السطر «يسدّ ٤ من فجواتك المقيسة · في صميم مجالك الأول» — ويظهر بنصّه هذا
-   حرفيا تحت كل دورة في الخطة. عددٌ متساوٍ ووصفٌ ثابت لا يفرّقان دورة عن أخرى،
-   فسؤال «لماذا هذه بالذات؟» يبقى بلا جواب رغم وجود سطر يدّعي أنه جوابه.
-   والمحرك يعرف أيّ الفجوات تسدّها كلٌّ منها بالاسم (closesGaps رموزُ مهارات)،
-   فتُسمّى. وتُذكر الصفة الثابتة «في صميم مجالك» فقط حين تنتفي — أي حين يخرج
-   المقرر عن مجاله الأول — لأن ذلك وحده ما قد يفاجئ القارئ. */
-function composedReason(c: ComposedCourseView): string {
-  const bits: string[] = [];
-  const names = skillNamesAr(c.closesGaps);
-  if (names.length > 0) {
-    const shown = names.slice(0, 3).join('، ');
-    const rest = names.length - 3;
-    bits.push(
-      names.length === 1
-        ? `يسدّ فجوتك في ${shown}`
-        : `يسدّ فجواتك في ${shown}${rest > 0 ? ` و${rest === 1 ? 'واحدة' : `${rest}`} غيرها` : ''}`,
-    );
-  }
-  if (!c.onAnchor) bits.push('من خارج مجالك الأول — أُدرج لفجوة قوية');
-  return bits.length > 0 ? `${bits.join(' · ')}.` : 'يبني الأساس الذي تقوم عليه بقية خطتك.';
-}
-
-/* سبب وجود المقرر في خطة قالب مركّب.
-
-   القالب يعطي كل مقرر وصفَ دوره فقط: «مقرر أساسي في هذه الخطة» — وهو نصّ واحد
-   يتكرر تحت ستة مقررات، فيسأل القارئ «ولماذا هذا بالذات؟» ولا يجد جوابا.
-   الجواب موجود على جهازه أصلا: مهارات المقرر تتقاطع مع فجواته المقاسة، والفارق
-   بين مقرر وآخر هو أيّ فجوة يسدّ. فإن عُرف التقاطع سُمّي، وإلا بقي وصف الدور
-   كما هو — لا نخترع سببا حيث لا دليل. */
-function templateCourseReason(courseId: string, gapSlugs: Set<string>, fallbackAr: string): string {
-  const skills = catalogCourseById.get(courseId)?.skill_slugs ?? [];
-  const named = skillNamesAr(skills.filter((s) => gapSlugs.has(s)));
-  if (named.length === 0) return fallbackAr;
-  const shown = named.slice(0, 3).join("، ");
-  const rest = named.length - 3;
-  const head =
-    named.length === 1
-      ? `يسدّ فجوتك في ${shown}`
-      : `يسدّ فجواتك في ${shown}${rest > 0 ? ` و${rest === 1 ? "واحدة" : rest} غيرها` : ""}`;
-  /* وصف الدور يبقى فقط حين يضيف معنى — الشرطي والجسري يفسّران سبب الإدراج،
-     أما «أساسي» فهو حال الأغلب فلا يفرّق. */
-  const roleAdds = !fallbackAr.startsWith("مقرر أساسي");
-  return roleAdds ? `${head} · ${fallbackAr}` : `${head}.`;
-}
-
-/* ─────────── الخطة المركّبة قابلة للاستبدال — لا للحذف ولا للإضافة ───────────
-
-   كانت الخطة المركّبة تُعرض بلا أي أداة تخصيص، بينما المسار القياسي يُمرَّر إليه
-   استبدال وحذف وإضافة وهدية. فالمتعلم صاحب أعقد حالة — الذي احتاج خطة من أكثر
-   من مجال — كان الوحيد الذي لا يملك ضبط خطته.
-
-   والتبديل وحده لا الحذف: عدد الدورات هو ما يحدد السعر، فتثبيته يفتح الاختيار
-   ويُبقي السعر ثابتا. والمجموعة تُبنى من المسارات التي رُكّبت منها الخطة نفسها —
-   فالبديل يبقى داخل مجالاتها لا خارجها — ويتقدّم فيها ما يسدّ فجوة معروفة. */
-function ComposedSwap({
-  planCourseIds,
-  reasons,
-  pathwayIds,
-  gaps,
-  delivery,
-  onChange,
-}: {
-  planCourseIds: string[];
-  reasons: Record<string, string>;
-  pathwayIds: string[];
-  gaps: string[];
-  delivery?: string;
-  /** يبلّغ الصفحة بالقائمة الحالية — الاعتماد يكتب ما على الشاشة لا ما يشتقّه من جديد */
-  onChange: (ids: string[]) => void;
-}) {
-  const [chosenIds, setChosenIds] = useState<string[]>(planCourseIds);
-  const [swapForId, setSwapForId] = useState<string | null>(null);
-
-  const pool = useMemo<CourseSuggestion[]>(() => {
-    const taken = new Set(chosenIds);
-    const inPlan = new Set(pathwayIds);
-    const closesGap = (skill: string | undefined) =>
-      skill && gaps.some((g) => g.includes(skill.slice(0, 8))) ? 1 : 0;
-    return courses
-      .filter((c) => !taken.has(c.id) && inPlan.has(c.pathwayId))
-      .sort((x, y) => closesGap(y.skill) - closesGap(x.skill))
-      .slice(0, 6)
-      .map((c) => ({ id: c.id, name: c.name, note: `${c.skill} · من مسار ${c.pathwayName}` }));
-  }, [chosenIds, pathwayIds, gaps]);
-
-  const swapPick = (oldId: string, newId: string) => {
-    const next = chosenIds.map((i) => (i === oldId ? newId : i));
-    setChosenIds(next);
-    setSwapForId(null);
-    /* كان يكتب هنا سجلّا بلا hostPathwayId، وصفحة المسار ترفضه فتعرض غيره.
-       صار يبلّغ الصفحة، والاعتماد وحده يكتب — بهوية مضيفٍ صريحة. */
-    onChange(next);
-  };
-
-  return (
-    <CourseJourney
-      courseIds={chosenIds}
-      reasons={reasons}
-      delivery={delivery}
-      edit={{
-        giftId: null,
-        swapForId,
-        pool,
-        minReached: true,
-        maxReached: true,
-        swapOnly: true,
-        onSwapToggle: setSwapForId,
-        onSwapPick: swapPick,
-        onRemove: () => {},
-        onAdd: () => {},
-        onGiftToggle: () => {},
-      }}
-    />
-  );
-}
-
-/* ─────────── رحلة الدورات القابلة للتخصيص — دمج التخصيص داخل «ماذا ستحقق من خلال خطتك؟» ─────────── */
-function PlanCourses({
-  pathway,
-  gaps,
-  resetKey,
-  onChange,
-}: {
-  pathway: Pathway;
-  gaps: string[];
-  resetKey: number; // يتغير عند تبديل المسار لإعادة التهيئة
-  /** يبلّغ الصفحة بما على الشاشة — الاعتماد وحده يكتب، بمسلك واحد للحالتين */
-  onChange: (ids: string[], giftId: string | null) => void;
-}) {
-  const baseIds = pathwayCourses[pathway.id] ?? [];
-  const [chosenIds, setChosenIds] = useState<string[]>(baseIds.slice(0, MAX_PATHWAY_COURSES));
-  const [giftId, setGiftId] = useState<string | null>(null);
-  const [swapForId, setSwapForId] = useState<string | null>(null);
-  const [lastReset, setLastReset] = useState(resetKey);
-
-  if (lastReset !== resetKey) {
-    setLastReset(resetKey);
-    setChosenIds((pathwayCourses[pathway.id] ?? []).slice(0, MAX_PATHWAY_COURSES));
-    setGiftId(null);
-    setSwapForId(null);
-  }
-
-  const base = baseIds.map((id) => courseById(id)!).filter(Boolean);
-  const category = base[0]?.category ?? "أساسيات";
-
-  /* مقترحات: من نفس المجال أولا، وأولوية لما يعالج فجوات المستخدم */
-  const pool = useMemo<CourseSuggestion[]>(() => {
-    const chosenSet = new Set(chosenIds);
-    if (giftId) chosenSet.add(giftId);
-    return courses
-      .filter((c) => c.category === category && !chosenSet.has(c.id))
-      .sort((x, y) => {
-        const xm = gaps.some((g) => x.skill && g.includes(x.skill.slice(0, 8))) ? 1 : 0;
-        const ym = gaps.some((g) => y.skill && g.includes(y.skill.slice(0, 8))) ? 1 : 0;
-        return ym - xm;
-      })
-      .slice(0, 6)
-      .map((c) => ({ id: c.id, name: c.name, note: `${c.skill} · من مسار ${c.pathwayName}` }));
-  }, [chosenIds, giftId, category, gaps]);
-
-  /* كان يكتب هنا سجلّ `wajeez_custom` مع كل تغيير. صار يبلّغ الصفحة فقط:
-     الاعتماد هو الكتابة الوحيدة، فلا شكلان للسجلّ ولا قارئان يفترقان. */
-  const persist = (ids: string[], gift: string | null) => {
-    onChange(ids, gift);
-  };
-  const swapPick = (oldId: string, newId: string) => {
-    const next = chosenIds.map((i) => (i === oldId ? newId : i));
-    setChosenIds(next);
-    setSwapForId(null);
-    persist(next, giftId);
-  };
-  const removeCourse = (id: string) => {
-    if (chosenIds.length <= MIN_PATHWAY_COURSES) return;
-    const next = chosenIds.filter((i) => i !== id);
-    setChosenIds(next);
-    if (swapForId === id) setSwapForId(null);
-    persist(next, giftId);
-  };
-  const addCourse = (id: string) => {
-    if (chosenIds.length >= MAX_PATHWAY_COURSES) return;
-    const next = [...chosenIds, id];
-    setChosenIds(next);
-    persist(next, giftId);
-  };
-  const giftToggle = (id: string) => {
-    const next = giftId === id ? null : id; // الهدية فوق المسار ولا تُحتسب في العدد
-    setGiftId(next);
-    persist(chosenIds, next);
-  };
-
-  const shownIds = giftId ? [...chosenIds, giftId] : chosenIds;
-  const chosen = chosenIds.map((id) => courseById(id)!).filter(Boolean);
-  const gift = giftId ? courseById(giftId) : undefined;
-  const allShown = gift ? [...chosen, gift] : chosen;
-  const totalWeeks = allShown.reduce((s, c) => s + c.weeks, 0);
-  const skills = Array.from(new Set(allShown.map((c) => c.skill).filter(Boolean))).slice(0, 8);
-
-  return (
-    <>
-      <CourseJourney
-        courseIds={shownIds}
-        delivery={pathwayDelivery(pathway.id)}
-        edit={{
-          giftId,
-          swapForId,
-          pool,
-          minReached: chosenIds.length <= MIN_PATHWAY_COURSES,
-          maxReached: chosenIds.length >= MAX_PATHWAY_COURSES,
-          onSwapToggle: setSwapForId,
-          onSwapPick: swapPick,
-          onRemove: removeCourse,
-          onAdd: addCourse,
-          onGiftToggle: giftToggle,
-        }}
-      />
-      <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4">
-        <p className="text-xs font-bold text-white/60">
-          مسارك المخصص الآن:{" "}
-          <span className="text-white">
-            {chosen.length} دورات{gift ? " + هدية مجانية" : ""}
-          </span>
-          <span className="text-white/40"> · ~{totalWeeks} أسبوعا · يُحفظ تخصيصك تلقائيا ويظهر في صفحة مسارك بعد الاعتماد</span>
-        </p>
-        <div className="mt-2.5 flex flex-wrap gap-1.5">
-          {skills.map((s) => (
-            <span key={s} className="rounded-full border border-teal/40 bg-teal/10 px-2.5 py-0.5 text-[11px] font-semibold text-teal-light-ink">
-              {s}
-            </span>
-          ))}
-        </div>
-      </div>
-    </>
-  );
-}
-
-/* ─────────── الخطة المركبة المخصصة — تعرض عندما يختار المحرك قالبا مركبا ─────────── */
-interface CompositeView {
-  template_id: string;
-  name_ar: string;
-  variant: "starter" | "full" | "extended";
-  label_ar: string;
-  courses: { courseId: string; titleAr: string; hours: number; sequence: number; type: "required" | "conditional" | "bridge"; reason_ar: string }[];
-  fit: number;
-  removed_courses: { courseId: string; titleAr: string; reason_ar: string }[];
-  missing_required_facts: string[];
-  rationale_ar: string[];
-  represented_pathway_ids: string[];
-  capstone_ar: string | null;
-  success_metric_ar: string | null;
-  nearest_alternative: { templateId: string; nameAr: string; fit: number; whyNot_ar: string } | null;
-  advisor_handoff: { filterId: string; rationale_ar: string } | null;
-}
-
-const VARIANT_AR: Record<CompositeView["variant"], { label: string; hint: string }> = {
-  starter: { label: "نسخة البداية", hint: "جوهر الخطة بأقل عبء — تبدأ بها وتتوسع لاحقا" },
-  full: { label: "النسخة الكاملة", hint: "كل الدورات الأساسية مع ما يناسب ظرفك من الشرطية" },
-  extended: { label: "النسخة الموسعة", hint: "الكاملة مع دورات جسرية تربط المجالين" },
-};
-
-/* سعر الخطة — أسفل الصفحة قبل التسجيل مباشرة، لا في أول بطاقة يراها المتعلم.
-
-   كان الرقم داخل بطاقة التوصية الأولى، فأول ما يقرؤه من أنهى تشخيصه ثمنٌ قبل
-   أن يعرف ما يشتري. والترتيب الذي يقنع هو ترتيب السؤال في رأس القارئ: ما
-   المسار؟ ثم ماذا سأتعلم؟ ثم لماذا هذا بالذات؟ ثم — وقد عرف — بكم؟
-
-   والرقم من **شعبةٍ حقيقية** لا من تقديرٍ في المتصفّح. كان يُحسب بـ
-   `pathwayPriceFor(العدد)` و`coursePriceOf(العنوان)` — أي بعدد الدورات
-   ومطابقةِ كلماتٍ في أسمائها — بينما الفاتورة تُصدر بسعر الشعبة وبعملتها.
-   فالرقم الذي وعدنا به ليس الرقم الذي نُطالب به. وحين لا شعبة مسعَّرة: لا رقم.
-
-   والصيغة «تبدأ من … للدورة» لا «الخطة كاملة = كذا»: عدد دورات الخطة يتغيّر
-   بيد المتعلم في الشاشة التالية، فسعرُ الخطة يُحدَّد بعد أن يعتمدها هو. */
-function ResultPriceCard({ courseIds }: { courseIds: readonly string[] }) {
-  const { prices, loaded } = useCoursePrices();
-  const cheapest = cheapestOf(courseIds, prices);
-  const known = pricedCount(courseIds, prices);
-  if (courseIds.length === 0) return null;
-
-  return (
-    <div className="story-fade mt-8 rounded-3xl border border-gold/35 bg-gradient-to-b from-gold/[0.07] to-transparent p-6 md:p-7">
-      <p className="text-[11px] font-black tracking-wide text-gold-ink">وبكم؟</p>
-      {cheapest ? (
-        <>
-          <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-            <span className="text-sm text-white/50">تبدأ من</span>
-            <span dir="ltr" className="text-3xl font-black text-white md:text-4xl">{formatCohortPrice(cheapest)}</span>
-            <span className="text-sm text-white/45">للدورة</span>
-          </div>
-          <p className="mt-1.5 text-xs text-teal-light-ink">
-            وخصمٌ كبير على خطتك كاملة ({courseIds.length} دورات) مقابل شرائها دورةً دورة
-          </p>
-        </>
-      ) : (
-        <p className="mt-2 text-2xl font-black text-white md:text-3xl">
-          {loaded ? "يُعلن السعر مع فتح الشعبة" : "يُقرأ السعر…"}
-        </p>
-      )}
-      {/* وكان هنا صندوقٌ يطلب بريدا مقابل الكود. وقرارُ صاحب المنصّة: لا داعي
-          له — البريدُ يُكتب عند الشراء أصلا، فطلبُه مرّتين حاجزٌ بلا مقابل.
-          والكودُ يُقال سطرا واحدا: هو لأوّل شراءٍ لكلّ أحد. */}
-      <p className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-gold/30 bg-gold/[0.06] px-3.5 py-2.5 text-[11.5px] leading-5">
-        <span className="font-bold text-gold-ink">خصم {FIRST_TIME_PROMO.percentOff}٪ لأول عملية شراء بالكود</span>
-        <code dir="ltr" className="rounded-md border border-gold/40 bg-gold/10 px-1.5 py-0.5 font-mono text-[10.5px] font-black text-gold-ink">
-          {FIRST_TIME_PROMO.code}
-        </code>
-        <span className="text-white/45">— يُكتب في صفحة الدفع.</span>
-      </p>
-      <p className="mt-3 text-[11px] leading-5 text-white/40">
-        سعر خطتك يُحدَّد بعد أن تعتمدها — أنت من يقرّر دوراتها.
-        {cheapest && known < courseIds.length && " وبعض دوراتها لم تُفتح لها شعبة بعد."} ولا يُطلب دفعٌ الآن.
-      </p>
-    </div>
-  );
-}
-
-export interface ConfidenceParts {
-  coverage: number;
-  consistency: number;
-  separation: number;
-  evidenceQuality: number;
-  stability: number;
-  total?: number;
-}
-
-/* «لماذا هذا المسار» — الوعد الخامس في بطاقة التسجيل، وأول ما يُكشف بعدها.
-   ثلاث طبقات بترتيب ما يسأل عنه القارئ: على أي شيء بُنيت التوصية، وما قوة
-   أدلتها، وما الذي يغيّرها. كلها محسوبة في المحرك من قبل — هذه عرضها فقط. */
-function WhyThisPathway({
-  reasons,
-  confidence,
-  bandAr,
-  changeMakers,
-  gapNote,
-}: {
-  reasons: string[];
-  confidence: ConfidenceParts | undefined;
-  bandAr: string | null;
-  changeMakers: string[];
-  /** أثر معايرة الجوانب حين لا تستحق قائمة مستقلة — تفسير لا تكرار */
-  gapNote?: string | null;
-}) {
-  const evidence = reasons.filter((r) => r.trim().length > 0).slice(0, 5);
-  if (evidence.length === 0 && !confidence) return null;
-
-  const parts = confidence
-    ? [
-        { label: "اكتمال صورتك", value: confidence.coverage },
-        { label: "اتساق إجاباتك", value: confidence.consistency },
-        { label: "وضوح الفارق بين المسارات", value: confidence.separation },
-        { label: "جودة الأدلة", value: confidence.evidenceQuality },
-        { label: "ثبات النتيجة", value: confidence.stability },
-      ]
-    : [];
-  const total = Math.floor((confidence?.total ?? 0) * 100);
-
-  return (
-    <div className="card-soft mt-8">
-      <h3 className="h-card flex items-center gap-2">
-        <Sparkles className="h-5 w-5 text-gold-ink" />
-        لماذا هذا المسار بالذات؟
-      </h3>
-
-      {evidence.length > 0 && (
-        <>
-          <p className="mt-2 text-xs leading-relaxed text-white/50">
-            لم نخمّن — هذه هي إجاباتك التي بُنيت عليها التوصية:
-          </p>
-          <ul className="mt-4 space-y-2.5">
-            {evidence.map((r) => (
-              <li key={r} className="flex items-start gap-2.5 text-sm leading-relaxed text-white/75">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-teal-light-ink" />
-                {r}
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-
-      {confidence && (
-        <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4 md:p-5">
-          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-            <span className="text-sm font-black text-white/85">قوة أدلة هذه التوصية</span>
-            <span className="text-sm font-black text-teal-light-ink">
-              {total}٪{bandAr ? ` — ${bandAr}` : ""}
-            </span>
-          </div>
-          <div className="mt-4 space-y-2 text-xs">
-            {parts.map((p) => (
-              <div key={p.label} className="flex items-center gap-2">
-                <span className="w-36 shrink-0 text-white/55">{p.label}</span>
-                <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
-                  <span
-                    className="block h-full rounded-full bg-teal"
-                    style={{ width: `${Math.max(0, Math.min(100, Math.floor(p.value * 100)))}%` }}
-                  />
-                </span>
-                <span className="w-9 shrink-0 text-left font-bold tabular-nums text-white/70">
-                  {Math.floor(p.value * 100)}٪
-                </span>
-              </div>
-            ))}
-          </div>
-          <p className="mt-4 border-t border-white/10 pt-3 text-[11px] leading-relaxed text-white/45">
-            ترتفع حين تتفق إجاباتك، وتنخفض عند التناقض أو حين تقف حالتك بين مسارين متقاربين.
-            فوق ٧٥٪ نحن واثقون بالترشيح، وبين ٥٠ و٧٥٪ نعرض معه بدائل، ودون ذلك نحيلك لمستشار بشري قبل أي قرار.
-          </p>
-        </div>
-      )}
-
-      {gapNote && (
-        <p className="mt-4 flex items-start gap-2.5 text-sm leading-relaxed text-white/70">
-          <Gauge className="mt-0.5 h-4 w-4 shrink-0 text-teal-light-ink" />
-          {gapNote}
-        </p>
-      )}
-
-      {changeMakers.length > 0 && (
-        <p className="mt-4 text-xs leading-relaxed text-white/55">
-          <span className="font-bold text-white/75">وما الذي يغيّر هذه التوصية؟ </span>
-          {changeMakers[0]}
-        </p>
-      )}
-    </div>
-  );
-}
-
-function CompositePlan({ composite }: { composite: CompositeView }) {
-  const totalHours = composite.courses.reduce((s, c) => s + c.hours, 0);
-  const variant = VARIANT_AR[composite.variant] ?? VARIANT_AR.full;
-  const represented = composite.represented_pathway_ids
-    .map((id) => pathways.find((p) => p.id === id))
-    .filter((p): p is Pathway => Boolean(p));
-  return (
-    <div className="mt-10 overflow-hidden rounded-3xl border border-[#FABC05]/40 bg-gradient-to-b from-surface to-paper">
-      {/* «التوصية الأولى» تركت المتعلم يرى ثلاثة كيانات مسمّاة على شاشة واحدة —
-          الخطة المركّبة، وأقوى مسار مفرد، ونسخة الخطة — بلا جملة تقول أيّها خطته.
-          والتسمية الصريحة هنا تحسمها، وما دونها يُوسم مرجعا. */}
-      <div className="border-b border-white/10 bg-[#FABC05]/10 px-6 py-3">
-        <span className="text-sm font-black text-[#FABC05]">هذه خطتك · {composite.label_ar}</span>
-        <span className="mr-2 text-xs text-white/50">
-          خطة مبنية لحالتك من أكثر من مجال — وليست مسارا جاهزا من الكتالوج
-        </span>
-      </div>
-      <div className="p-6 md:p-8">
-        <h3 className="text-xl font-black leading-snug md:text-2xl">{composite.name_ar}</h3>
-
-        {/* المسارات التي استُمدت منها الخطة */}
-        {represented.length > 0 && (
-          <p className="mt-3 text-xs leading-relaxed text-white/55">
-            رُكّبت من: {represented.map((p) => p.name).join(" + ")}
-          </p>
-        )}
-
-        {/* النسخة والساعات */}
-        <div className="mt-5 grid gap-3 sm:grid-cols-2">
-          <div className="rounded-xl bg-white/[0.05] p-4">
-            <p className="text-sm text-white/50">نسخة خطتك</p>
-            <p className="font-black text-gold-ink">{variant.label}</p>
-            <p className="mt-1 text-[11px] leading-5 text-white/45">{variant.hint}</p>
-          </div>
-          <div className="rounded-xl bg-white/[0.05] p-4">
-            <p className="text-sm text-white/50">إجمالي ساعات الخطة</p>
-            <p className="font-black">{totalHours} ساعة</p>
-            {/* كان مكتوبًا هنا «موزعة على إيقاعك الأسبوعي الذي أخبرتنا به» — وهو ادعاء
-                لا يقع: الرقم مجموع ساعات الدورات الثابتة، لا يُقسَّم على أي إيقاع.
-                والوقت الأسبوعي لم يعد يُسأل عنه أصلًا. */}
-            <p className="mt-1 text-[11px] leading-5 text-white/45">مجموع ساعات دورات خطتك</p>
-          </div>
-        </div>
-
-        {/* لماذا رُكّبت هذه الخطة */}
-        {composite.rationale_ar.length > 0 && (
-          <ul className="mt-5 space-y-2">
-            {composite.rationale_ar.slice(0, 4).map((r) => (
-              <li key={r} className="flex items-start gap-2.5 text-sm leading-relaxed text-white/70">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-gold-ink" />
-                {r}
-              </li>
-            ))}
-          </ul>
-        )}
-
-        {/* دورات الخطة تُعرض في «رحلة الدورات» الموحدة أسفل هذه البطاقة — لا تكرار */}
-
-        {/* دورات أُزيلت بدليل إتقان موثق */}
-        {composite.removed_courses.length > 0 && (
-          <div className="mt-5 rounded-2xl border border-teal/30 bg-teal/[0.06] p-4">
-            <p className="text-sm font-black text-teal-light-ink">أزلناها لأنك تتقنها — لا تدفع ثمن ما تعرفه:</p>
-            <ul className="mt-2 space-y-1.5">
-              {composite.removed_courses.map((r) => (
-                <li key={r.courseId} className="text-xs leading-relaxed text-white/60">
-                  <span className="font-bold text-white/80">{r.titleAr}</span> — {r.reason_ar}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* مشروع التخرج ومؤشر النجاح */}
-        {(composite.capstone_ar || composite.success_metric_ar) && (
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            {composite.capstone_ar && (
-              <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
-                <p className="flex items-center gap-2 text-xs font-black text-gold-ink">
-                  <FileText className="h-4 w-4" /> مشروع إثبات الجاهزية
-                </p>
-                <p className="mt-2 text-xs leading-6 text-white/65">{composite.capstone_ar}</p>
-              </div>
-            )}
-            {composite.success_metric_ar && (
-              <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
-                <p className="flex items-center gap-2 text-xs font-black text-teal-light-ink">
-                  <Gauge className="h-4 w-4" /> كيف تعرف أنك نجحت؟
-                </p>
-                <p className="mt-2 text-xs leading-6 text-white/65">{composite.success_metric_ar}</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* أقرب بديل ولماذا لم يُختر */}
-        {composite.nearest_alternative && (
-          <p className="mt-5 rounded-xl border border-white/10 bg-white/[0.03] p-4 text-xs leading-6 text-white/55">
-            <span className="font-bold text-white/75">أقرب خطة بديلة كانت «{composite.nearest_alternative.nameAr}»</span>
-            {" "}— {composite.nearest_alternative.whyNot_ar}
-          </p>
-        )}
-      </div>
-    </div>
-  );
-}
 
 /* ─────────── الصفحة ─────────── */
 /* اشتقاقان نقيّان خارج المكوّن.
@@ -1258,7 +721,7 @@ export default function Diagnostic() {
   const qOptions: DiagOption[] = question ? (resolve(question.options, answers) ?? []) : [];
 
   return (
-    <div dir="rtl" className="min-h-screen bg-paper text-white">
+    <div dir="rtl" className="min-h-screen bg-paper text-foreground">
       <SeoHead
         title="التشخيص الذكي"
         description="تشخيص تعليمي تكيفي يفهم هدفك وواقعك، ويوصي بمسار واحد مفسّر بدرجة ثقة — مجاني ودون حساب."
@@ -1267,7 +730,7 @@ export default function Diagnostic() {
       {/* Top bar */}
       <header className="sticky top-0 z-40 border-b border-white/10 bg-paper/85 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-5">
-          <Link to="/" className="flex items-center gap-2 text-white/70 hover:text-white">
+          <Link to="/" className="flex items-center gap-2 text-foreground hover:text-foreground">
             <ArrowRight className="h-5 w-5" />
             <span className="text-sm font-medium">العودة للرئيسية</span>
           </Link>
@@ -1293,7 +756,7 @@ export default function Diagnostic() {
             بضع دقائق من الوضوح
             <span className="text-teal-light-ink"> تختصر عليك شهورا من التشتت</span>
           </h1>
-          <p className="mx-auto mt-4 max-w-xl leading-8 text-white/60">
+          <p className="mx-auto mt-4 max-w-xl leading-8 text-muted-foreground">
             حديث قصير عن يومك وهدفك — كل إجابة تشكّل سؤالك التالي، وتنتهي بمسارك الواضح.
           </p>
 
@@ -1311,7 +774,7 @@ export default function Diagnostic() {
               { icon: Compass, text: "توصية مفسَّرة، ليست حظًا" },
               { icon: Clock3, text: "٣–٦ دقائق" },
             ].map((f) => (
-              <span key={f.text} className="inline-flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-[10px] font-bold text-white/65 sm:px-3.5 sm:text-[11px]">
+              <span key={f.text} className="inline-flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-micro font-bold text-foreground sm:px-3.5 sm:text-[11px]">
                 <f.icon className="h-3 w-3 shrink-0 text-teal-light-ink sm:h-3.5 sm:w-3.5" />
                 {f.text}
               </span>
@@ -1332,14 +795,16 @@ export default function Diagnostic() {
               والإفصاح لم يُلغَ بل صغُر: «سياسة الخصوصية» رابطٌ واحد يقول أين
               التفصيل. وإسقاطُه كلّه كان يترك المنصّة بلا إفصاحٍ ظاهر البتّة —
               والمحرّك يسجّل «إقرار الواجهة» على أي حال (engine.ts). */}
-          <ul className="mx-auto mt-4 max-w-md space-y-1.5 text-xs leading-relaxed text-white/55">
+          <ul className="mx-auto mt-4 max-w-md space-y-1.5 text-xs leading-relaxed text-muted-foreground">
             <li>ابدأ مجانا — ترى مسارك المقترح ونتيجتك كاملة فورا، بلا حساب</li>
             <li className="inline-flex items-center justify-center gap-1.5">
               <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-teal-light-ink" />
               تشخيص تعليمي — لا نفسي ولا طبي
             </li>
             <li>
-              <Link to="/p/privacy" className="underline-offset-4 hover:text-teal-light-ink hover:underline">
+              {/* رابطٌ وحدَه في عنصر قائمةٍ — لا داخلَ جملة — فلا يشمله
+                  استثناءُ المعيار، وارتفاعُه كان أربعةَ عشرَ بكسلا. */}
+              <Link to="/p/privacy" className="inline-flex min-h-8 items-center px-2 underline-offset-4 hover:text-teal-light-ink hover:underline">
                 سياسة الخصوصية
               </Link>
             </li>
@@ -1352,7 +817,7 @@ export default function Diagnostic() {
                 <History className="h-4 w-4" />
                 لديك تشخيص غير مكتمل — أجبت على {savedProgress.asked.length} من الأسئلة
               </p>
-              <p className="mt-1.5 text-xs text-white/50">إجاباتك محفوظة على جهازك — أكمل من حيث توقفت متى شئت</p>
+              <p className="mt-1.5 text-xs text-muted-foreground">إجاباتك محفوظة على جهازك — أكمل من حيث توقفت متى شئت</p>
               <div className="mt-4 flex flex-wrap justify-center gap-3">
                 <Button
                   onClick={resume}
@@ -1364,7 +829,7 @@ export default function Diagnostic() {
                 <Button
                   variant="outline"
                   onClick={discardSaved}
-                  className="rounded-full border-white/20 text-white/70 hover:bg-white/5"
+                  className="rounded-full border-white/20 text-foreground hover:bg-white/5"
                 >
                   احذفها وابدأ من جديد
                 </Button>
@@ -1379,7 +844,7 @@ export default function Diagnostic() {
                 <History className="h-4 w-4" />
                 نتيجتك السابقة لم تعد صالحة
               </p>
-              <p className="mt-1.5 text-xs leading-relaxed text-white/55">{discardedResultNotice}</p>
+              <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{discardedResultNotice}</p>
             </div>
           )}
 
@@ -1390,7 +855,7 @@ export default function Diagnostic() {
                 <History className="h-4 w-4" />
                 لديك نتيجة مؤشر محفوظة على جهازك
               </p>
-              <p className="mt-1.5 text-xs text-white/50">أكملت التشخيص سابقا — لا حاجة لإعادته إلا إذا تغيرت ظروفك</p>
+              <p className="mt-1.5 text-xs text-muted-foreground">أكملت التشخيص سابقا — لا حاجة لإعادته إلا إذا تغيرت ظروفك</p>
               <div className="mt-4 flex flex-wrap justify-center gap-3">
                 <Button
                   onClick={showSavedResult}
@@ -1404,7 +869,7 @@ export default function Diagnostic() {
           )}
 
           {/* المرجعية العلمية — آخر الشاشة: تطمين هادئ لمن يريد، لا حاجز أمام البدء */}
-          <p className="mx-auto mt-10 max-w-lg rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4 text-xs leading-relaxed text-white/50">
+          <p className="mx-auto mt-10 max-w-lg rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4 text-xs leading-relaxed text-muted-foreground">
             نسترشد في بناء أسئلتنا بأطر مهنية وتعليمية معروفة: <span className="font-bold text-teal-light-ink">RIASEC</span> للميول المهنية،
             و<span className="font-bold text-teal-light-ink">O*NET وESCO</span> لخرائط المهارات،
             و<span className="font-bold text-teal-light-ink">DigComp</span> للجاهزية الرقمية — وتُعرض عليك تفاصيلها في صفحة المنهجية.
@@ -1429,7 +894,7 @@ export default function Diagnostic() {
                   <Wand2 className="h-4 w-4" />
                   جولة تدقيق خطتك — أسئلة أعمق لزيادة وضوح التوصية
                 </p>
-                <span className="text-xs font-bold text-white/55">
+                <span className="text-xs font-bold text-muted-foreground">
                   سؤال {deepStep.index} من {deepStep.total}
                 </span>
               </div>
@@ -1440,7 +905,7 @@ export default function Diagnostic() {
                 />
               </div>
               {deepReason && (
-                <p className="mt-3 text-[11px] leading-relaxed text-white/50">{deepReason}</p>
+                <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">{deepReason}</p>
               )}
             </div>
           ) : (
@@ -1461,7 +926,7 @@ export default function Diagnostic() {
               <span className="font-black text-gold-ink">
                 عن: {JOURNEY_STAGES[currentStageIdx]?.label}
               </span>
-              <span className="shrink-0 font-semibold text-white/45">
+              <span className="shrink-0 font-semibold text-muted-foreground">
                 سؤال {asked.length + 1} من {ESTIMATE_MIN}–{ESTIMATE_MAX}
               </span>
             </div>
@@ -1485,7 +950,7 @@ export default function Diagnostic() {
                 إلا لأربعة خيارات ونصف — وقياسُ الاختيار أن ترى بدائلك مجتمعة. */}
             <h2 className="text-xl font-black leading-snug sm:text-2xl md:text-3xl">{qText}</h2>
             {(deepStep?.reasonAr ?? whyAr) && (
-              <p className="mt-3 w-fit rounded-xl border border-teal/30 bg-teal/[0.06] px-3.5 py-2 text-[11px] leading-relaxed text-white/55">
+              <p className="mt-3 w-fit rounded-xl border border-teal/30 bg-teal/[0.06] px-3.5 py-2 text-[11px] leading-relaxed text-muted-foreground">
                 <span className="font-bold text-teal-light-ink">لماذا هذا السؤال؟ </span>
                 {deepStep?.reasonAr ?? whyAr}
               </p>
@@ -1496,15 +961,15 @@ export default function Diagnostic() {
                 بسؤال، فيُعرض حيث يمكن حسمه: فوق الخيارات وبجوار «السؤال السابق».
                 ملاحظة لا حاجز: من رأى أن الوصفين يجتمعان في حاله فليمضِ. */}
             {contradictionAr && (
-              <p className="mt-3 flex w-fit items-start gap-2 rounded-xl border border-gold/30 bg-gold/[0.07] px-3.5 py-2 text-[11px] leading-relaxed text-white/65">
+              <p className="mt-3 flex w-fit items-start gap-2 rounded-xl border border-gold/30 bg-gold/[0.07] px-3.5 py-2 text-[11px] leading-relaxed text-foreground">
                 <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-ink" />
                 <span>
                   {contradictionAr}
-                  <span className="text-white/45"> — تستطيع الرجوع وتعديلها، أو المضي إن كانتا تصفانك معا.</span>
+                  <span className="text-muted-foreground"> — تستطيع الرجوع وتعديلها، أو المضي إن كانتا تصفانك معا.</span>
                 </span>
               </p>
             )}
-            {qHint && <p className="mt-3 text-sm leading-relaxed text-white/50">{qHint}</p>}
+            {qHint && <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{qHint}</p>}
 
             {/* transition-colors لا transition-all: الأخيرة تُحرّك outline-width أيضا،
                 فحلقة التركيز في index.css كانت تتصاعد من صفر إلى بكسلين على نحو
@@ -1551,12 +1016,12 @@ export default function Diagnostic() {
                   onChange={(e) => setTextDraft(e.target.value)}
                   rows={4}
                   placeholder="اكتب بحرية… مثال: أعمل بنظام الورديات ووقتي متقطع، وأحلم أن أفتتح مشروعا صغيرا بعد سنتين"
-                  className="w-full rounded-2xl border border-white/15 bg-white/[0.04] p-5 text-base leading-relaxed text-white placeholder:text-white/30 focus:border-teal-light focus:outline-none"
+                  className="w-full rounded-2xl border border-white/15 bg-white/[0.04] p-5 text-base leading-relaxed text-foreground placeholder:text-muted-foreground/75 focus:border-teal-light focus:outline-none"
                 />
                 <div className="mt-5 flex items-center justify-between">
                   <button
                     onClick={() => answer(question.id, "")}
-                    className="text-sm font-semibold text-white/45 transition hover:text-white"
+                    className="text-sm font-semibold text-muted-foreground transition hover:text-foreground"
                   >
                     تخطَّ هذا السؤال
                   </button>
@@ -1589,7 +1054,7 @@ export default function Diagnostic() {
                               className={`h-10 flex-1 rounded-xl border text-sm font-black transition ${
                                 active
                                   ? "border-teal bg-teal/25 text-teal-light-ink"
-                                  : "border-white/10 bg-white/[0.03] text-white/55 hover:border-teal-light/50"
+                                  : "border-white/10 bg-white/[0.03] text-muted-foreground hover:border-teal-light/50"
                               }`}
                             >
                               {n}
@@ -1597,7 +1062,7 @@ export default function Diagnostic() {
                           );
                         })}
                       </div>
-                      <p className="mt-2 text-left text-[11px] text-white/55" dir="rtl">
+                      <p className="mt-2 text-left text-[11px] text-muted-foreground" dir="rtl">
                         {ratingsDraft[item.key]
                           ? ["", "لم أبدأ بعد", "أعرف الأساسيات", "أستخدمها بمساعدة", "أستخدمها بثقة", "أعلّمها لغيري"][ratingsDraft[item.key]]
                           : "اختر مستواك — بصدق"}
@@ -1606,7 +1071,7 @@ export default function Diagnostic() {
                   ))}
                 </div>
                 <div className="mt-6 flex items-center justify-between">
-                  <span className="text-xs text-white/40">
+                  <span className="text-xs text-muted-foreground">
                     قيّمت {Object.keys(ratingsDraft).length} من {question.items.length}
                   </span>
                   <Button
@@ -1661,7 +1126,7 @@ export default function Diagnostic() {
                   })}
                 </div>
                 <div className="mt-6 flex items-center justify-between">
-                  <span className="text-xs text-white/40">
+                  <span className="text-xs text-muted-foreground">
                     {question.maxSelect ? `اختر حتى ${question.maxSelect} — ` : ""}اخترت {multiDraft.length}
                   </span>
                   <Button
@@ -1679,7 +1144,7 @@ export default function Diagnostic() {
             <div className="mt-8 flex items-center justify-between">
               <button
                 onClick={back}
-                className="flex items-center gap-2 text-sm font-semibold text-white/50 transition hover:text-white"
+                className="flex items-center gap-2 text-sm font-semibold text-muted-foreground transition hover:text-foreground"
               >
                 <ArrowRight className="h-4 w-4" />
                 السؤال السابق
@@ -1691,7 +1156,7 @@ export default function Diagnostic() {
                   window.setTimeout(() => setSavedFlash(false), 2200);
                 }}
                 className={`flex items-center gap-2 text-sm font-semibold transition ${
-                  savedFlash ? "text-teal-light-ink" : "text-white/50 hover:text-white"
+                  savedFlash ? "text-teal-light-ink" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {savedFlash ? (
@@ -1718,7 +1183,7 @@ export default function Diagnostic() {
               <div className="mt-10 space-y-2.5 border-t border-white/[0.07] pt-5">
                 {understoodDims.length > 0 && (
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="flex items-center gap-1.5 text-[11px] font-bold text-white/40">
+                    <span className="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground">
                       <BrainCircuit className="h-3.5 w-3.5 text-teal-ink" />
                       يفهم الآن:
                     </span>
@@ -1733,8 +1198,8 @@ export default function Diagnostic() {
                   </div>
                 )}
                 {question.source && (
-                  <p className="text-[11px] leading-relaxed text-white/35">
-                    <span className="font-bold text-white/45">المصدر العلمي: </span>
+                  <p className="text-[11px] leading-relaxed text-muted-foreground">
+                    <span className="font-bold text-muted-foreground">المصدر العلمي: </span>
                     {question.source}
                   </p>
                 )}
@@ -1794,12 +1259,12 @@ export default function Diagnostic() {
                   {isExploratory ? "إجاباتك الحالية لا تكفي بعد لبناء خطة نثق بها" : "حالتك تستحق مستشارًا بشريًا قبل الترشيح"}
                 </h2>
                 {isExploratory && (
-                  <p className="mx-auto mt-4 max-w-md text-sm leading-loose text-white/70">
+                  <p className="mx-auto mt-4 max-w-md text-sm leading-loose text-foreground">
                     لا نريد أن نرشّح لك مسارا عاما لا يعكس فجواتك الفعلية. أجب عن استبيان أعمق مبني على
                     مواقف عملية، وسنحدّد المهارات التي تحتاجها ثم نبني لك خطة دورات مناسبة.
                   </p>
                 )}
-                <div className="mx-auto mt-4 max-w-md space-y-2 text-sm leading-loose text-white/55">
+                <div className="mx-auto mt-4 max-w-md space-y-2 text-sm leading-loose text-muted-foreground">
                   {result.reasons.slice(0, 3).map((r) => (
                     <p key={r}>{r}</p>
                   ))}
@@ -1807,7 +1272,7 @@ export default function Diagnostic() {
 
                 {isExploratory && (exploration?.domain_shortlist?.length ?? 0) > 0 && (
                   <div className="mt-7">
-                    <p className="text-xs font-bold text-white/45">المجالات الأقرب لك من إجاباتك الآن:</p>
+                    <p className="text-xs font-bold text-muted-foreground">المجالات الأقرب لك من إجاباتك الآن:</p>
                     <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
                       {exploration!.domain_shortlist!.map((d) => (
                         <span key={d.id} className="rounded-full border border-teal/40 bg-teal/10 px-4 py-1.5 text-xs font-bold text-teal-light-ink">
@@ -1820,10 +1285,10 @@ export default function Diagnostic() {
 
                 {isExploratory && (exploration?.evidence_suggestions_ar?.length ?? 0) > 0 && (
                   <div className="mx-auto mt-7 max-w-md rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-right">
-                    <p className="text-xs font-black text-white/70">ما الذي يرفع دقة تشخيصك المرة القادمة؟</p>
+                    <p className="text-xs font-black text-foreground">ما الذي يرفع دقة تشخيصك المرة القادمة؟</p>
                     <ul className="mt-3 space-y-2">
                       {exploration!.evidence_suggestions_ar!.slice(0, 4).map((s) => (
-                        <li key={s} className="flex items-start gap-2 text-xs leading-relaxed text-white/60">
+                        <li key={s} className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
                           <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-teal-light-ink" />
                           {s}
                         </li>
@@ -1851,7 +1316,7 @@ export default function Diagnostic() {
                       <ListChecks className="ml-2 h-4 w-4" />
                       ابدأ الاستبيان التفصيلي
                     </Button>
-                    <p className="mt-2.5 text-[11px] text-white/40">مواقف عملية تقيس مهاراتك مباشرة — لا إعادة لما أجبت عنه.</p>
+                    <p className="mt-2.5 text-[11px] text-muted-foreground">مواقف عملية تقيس مهاراتك مباشرة — لا إعادة لما أجبت عنه.</p>
                   </div>
                 )}
                 {isExploratory && canDeepen && deepUnavailable && (
@@ -1865,7 +1330,7 @@ export default function Diagnostic() {
                     size="lg"
                     variant={isExploratory && canDeepen ? "outline" : "default"}
                     className={isExploratory && canDeepen
-                      ? "h-12 rounded-full border-white/20 px-8 font-bold text-white/75"
+                      ? "h-12 rounded-full border-white/20 px-8 font-bold text-foreground"
                       : "h-12 rounded-full bg-gold px-8 font-black text-on-gold hover:bg-gold/90"}
                     onClick={restart}
                   >
@@ -1873,18 +1338,18 @@ export default function Diagnostic() {
                     {isExploratory ? "أعد التشخيص السريع" : "ابدأ التشخيص من جديد"}
                   </Button>
                   {isExploratory && (
-                    <Button size="lg" variant="ghost" className="h-12 rounded-full px-6 font-bold text-white/55" asChild>
+                    <Button size="lg" variant="ghost" className="h-12 rounded-full px-6 font-bold text-muted-foreground" asChild>
                       <Link to="/pathways">استعرض المسارات بنفسك</Link>
                     </Button>
                   )}
                 </div>
                 {/* المستشار سطرٌ لمن يحتاجه لا زرٌّ بحجم الخطوة التالية */}
-                <p className="mt-5 text-xs text-white/40">
+                <p className="mt-5 text-xs text-muted-foreground">
                   أو{" "}
                   <AdvisorContact
                     label="تحدّث مع مستشار مهني"
                     icon={<></>}
-                    className="font-bold text-white/60 underline underline-offset-4 transition hover:text-[#6EC7D1]"
+                    className="font-bold text-muted-foreground underline underline-offset-4 transition hover:text-[#6EC7D1]"
                     text={
                       isExploratory
                         ? "مرحبا، أكملت مؤشر وجيز ولم تكفِ إجاباتي لبناء خطة — أريد مستشارا يساعدني."
@@ -1892,7 +1357,7 @@ export default function Diagnostic() {
                     }
                   />
                 </p>
-                <p className="mt-4 text-[11px] leading-relaxed text-white/40">
+                <p className="mt-4 text-[11px] leading-relaxed text-muted-foreground">
                   هذا تشخيص تعليمي مهني: ليس تقييما نفسيا أو طبيا. لا نرشّح مسارا بلا دليل كافٍ — هذه مسؤولية لا ضعف.
                 </p>
                 {/* هذه هي الشاشة الفعلية التي تُعرض حين لا مسار — لا الشاشة أدناه
@@ -1934,7 +1399,7 @@ export default function Diagnostic() {
                   لديك دقيقة أخرى لنتأكد أكثر؟
                 </Button>
                 {!deepUnavailable && (
-                  <p className="mx-auto mt-2 max-w-md text-[11px] leading-relaxed text-white/40">
+                  <p className="mx-auto mt-2 max-w-md text-[11px] leading-relaxed text-muted-foreground">
                     خطوة اختيارية تماما: ٤–٨ أسئلة قصيرة تزيد دقة توصيتك — تخطَّها بلا أي أثر إن كانت الصورة واضحة لك.
                   </p>
                 )}
@@ -1960,7 +1425,7 @@ export default function Diagnostic() {
                   <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-teal-light-ink" />
                   <div>
                     <p className="text-sm font-black text-teal-light-ink">اطمئن — بقي مسارك هو نفسه بعد التدقيق</p>
-                    <p className="mt-1 text-xs leading-relaxed text-white/60">
+                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                       {cmp.note_ar} وإن حسّنا دورة داخل مسارك أو اقترحنا إضافة تناسبك فستجدها في خطتك أدناه —
                       ويمكنك تخصيصها بنفسك: استبدالا أو حذفا أو هدية مجانية.
                     </p>
@@ -1979,19 +1444,19 @@ export default function Diagnostic() {
                 </p>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   <div className="rounded-xl bg-white/[0.04] p-4">
-                    <p className="text-[11px] font-bold text-white/45">قبل التدقيق</p>
-                    <p className="mt-1.5 text-sm font-black leading-snug text-white/85">{cmp.before.topLabel_ar}</p>
-                    <p className="mt-1 text-xs text-white/55">مستوى الثبات: {cmp.before.confidenceBand_ar}</p>
+                    <p className="text-[11px] font-bold text-muted-foreground">قبل التدقيق</p>
+                    <p className="mt-1.5 text-sm font-black leading-snug text-foreground">{cmp.before.topLabel_ar}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">مستوى الثبات: {cmp.before.confidenceBand_ar}</p>
                   </div>
                   <div className="rounded-xl border border-teal/30 bg-teal/[0.07] p-4">
                     <p className="text-[11px] font-bold text-teal-light-ink">بعد التدقيق</p>
                     <p className="mt-1.5 text-sm font-black leading-snug">{cmp.after.topLabel_ar}</p>
-                    <p className="mt-1 text-xs text-white/65">مستوى الثبات: {cmp.after.confidenceBand_ar}</p>
+                    <p className="mt-1 text-xs text-foreground">مستوى الثبات: {cmp.after.confidenceBand_ar}</p>
                   </div>
                 </div>
                 <ul className="mt-4 space-y-1.5">
                   {cmp.reasons_ar.map((r) => (
-                    <li key={r} className="flex items-start gap-2 text-xs leading-relaxed text-white/60">
+                    <li key={r} className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
                       <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-teal-light" />
                       {r}
                     </li>
@@ -2021,40 +1486,40 @@ export default function Diagnostic() {
                   لا يعنيه. pathwayCategory تقول له أين يقع مساره بلغته. */}
               <div className="flex flex-wrap items-center gap-2">
                 <Badge className="bg-gold font-black text-on-gold">{topPathway.badge ?? pathwayCategory(topPathway.id)}</Badge>
-                <Badge variant="outline" className="border-white/20 text-white/70">{topPathway.level}</Badge>
+                <Badge variant="outline" className="border-white/20 text-foreground">{topPathway.level}</Badge>
               </div>
               <h2 className="mt-4 text-2xl font-black leading-snug md:text-3xl">{topPathway.name}</h2>
-              <p className="mt-4 leading-loose text-white/70">{topPathway.transformation}</p>
+              <p className="mt-4 leading-loose text-foreground">{topPathway.transformation}</p>
 
               {/* المدة والوقت والمستوى — شارات صغيرة لا تنافس اسم المسار */}
               <div className="mt-5 flex flex-wrap items-center gap-2">
-                <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-bold text-white/70">
+                <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-bold text-foreground">
                   <BookOpen className="h-3.5 w-3.5 text-teal-light-ink" />
                   {(pathwayCourses[topPathway.id] ?? []).length} دورات
                 </span>
-                <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-bold text-white/70">
+                <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-bold text-foreground">
                   <CalendarClock className="h-3.5 w-3.5 text-teal-light-ink" />
                   {weeksLabel(topPathway.durationWeeks)}
                 </span>
-                <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-bold text-white/70">
+                <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-bold text-foreground">
                   <Clock3 className="h-3.5 w-3.5 text-teal-light-ink" />
                   {topPathway.weeklyHours} أسبوعيا
                 </span>
-                <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-bold text-white/70">
+                <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-bold text-foreground">
                   <Gauge className="h-3.5 w-3.5 text-teal-light-ink" />
                   مستوى {topPathway.level}
                 </span>
               </div>
-              <p className="mt-3 flex items-start gap-2 text-sm leading-relaxed text-white/60">
+              <p className="mt-3 flex items-start gap-2 text-sm leading-relaxed text-muted-foreground">
                 <RouteIcon className="mt-0.5 h-4 w-4 shrink-0 text-gold-ink" />
                 <span>
-                  <span className="font-bold text-white/80">المخرج العملي: </span>
+                  <span className="font-bold text-foreground">المخرج العملي: </span>
                   {topPathway.output}
                 </span>
               </p>
 
               <div className="mt-6">
-                <p className="mb-2 text-sm font-bold text-white/60">المهارات المحورية التي ستبنيها:</p>
+                <p className="mb-2 text-sm font-bold text-muted-foreground">المهارات المحورية التي ستبنيها:</p>
                 <div className="flex flex-wrap gap-2">
                   {topPathway.coreSkills.map((s) => (
                     <span key={s} className="rounded-full border border-teal/40 bg-teal/10 px-3 py-1 text-xs font-semibold text-teal-light-ink">
@@ -2066,7 +1531,7 @@ export default function Diagnostic() {
 
               <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.04] p-5">
                 <p className="text-sm font-black text-teal-light-ink">ماذا ستحصل عليه فعليا؟</p>
-                <p className="mt-1.5 text-xs leading-6 text-white/55">
+                <p className="mt-1.5 text-xs leading-6 text-muted-foreground">
                   لا تحصل على قائمة دورات فقط؛ تحصل على ترتيب تعلم، ومتابعة، ومراجعة، ومخرجا تطبيقيا يثبت أنك تقدمت.
                 </p>
                 <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-4">
@@ -2083,7 +1548,7 @@ export default function Diagnostic() {
                     <div key={f.label} className="rounded-xl border border-white/[0.07] bg-white/[0.03] p-3">
                       <f.icon className="h-4 w-4 text-teal-light-ink" />
                       <p className="mt-1.5 text-xs font-bold leading-5">{f.label}</p>
-                      <p className="mt-0.5 text-[11px] leading-5 text-white/45">{f.hint}</p>
+                      <p className="mt-0.5 text-[11px] leading-5 text-muted-foreground">{f.hint}</p>
                     </div>
                   ))}
                 </div>
@@ -2104,8 +1569,8 @@ export default function Diagnostic() {
               <>
                 <CompositePlan composite={compositeView} />
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4">
-                  <p className="text-xs leading-relaxed text-white/60">
-                    <span className="font-bold text-white/80">للاطّلاع فقط — وليس خطتك: «{topPathway.name}»</span>
+                  <p className="text-xs leading-relaxed text-muted-foreground">
+                    <span className="font-bold text-foreground">للاطّلاع فقط — وليس خطتك: «{topPathway.name}»</span>
                     {" "}— أقوى مسار مفرد ضمن خطتك، استُمدت منه دورات أساسية في تركيبتك.
                     راجعه إن أردت التركيز على مجال واحد بدل الخطة أعلاه.
                   </p>
@@ -2223,7 +1688,7 @@ export default function Diagnostic() {
                 "مستشار نجاح يرافقك أسبوعيا",
                 "منظومة ما بعد الإتمام: وظائف وتوصيات وسفراء",
               ].map((f) => (
-                <p key={f} className="flex items-start gap-2 text-xs leading-relaxed text-white/65">
+                <p key={f} className="flex items-start gap-2 text-xs leading-relaxed text-foreground">
                   <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#38A7B4]" />
                   {f}
                 </p>
@@ -2238,8 +1703,8 @@ export default function Diagnostic() {
                 <BookOpen className="h-5 w-5" />
                 انتبه — رصيدك السابق يتقاطع مع هذا المسار
               </h3>
-              <p className="mt-3 text-sm leading-loose text-white/70">
-                كتبت أنك درست سابقا ما يشبه: <span className="font-bold text-white">{result.priorOverlap.join("، ")}</span>.
+              <p className="mt-3 text-sm leading-loose text-foreground">
+                كتبت أنك درست سابقا ما يشبه: <span className="font-bold text-foreground">{result.priorOverlap.join("، ")}</span>.
                 راجع محاورها قبل الدفع — وإن كنت أتقنتها فعلا، اطلب من مستشارك استبدالها بدورة أعمق،
                 فوعدنا أنك لن تدفع ثمن ما تعرفه أصلا.
               </p>
@@ -2276,7 +1741,7 @@ export default function Diagnostic() {
               </Button>
               <button
                 onClick={restart}
-                className="flex items-center gap-1.5 text-xs font-semibold text-white/45 transition hover:text-white"
+                className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground transition hover:text-foreground"
               >
                 <RefreshCcw className="h-3.5 w-3.5" />
                 لا يشبهني؟ أعد التشخيص من جديد
@@ -2296,7 +1761,7 @@ export default function Diagnostic() {
               <div className="mt-4 overflow-x-auto">
                 <table className="w-full text-right text-sm">
                   <thead>
-                    <tr className="border-b border-white/10 text-xs text-white/45">
+                    <tr className="border-b border-white/10 text-xs text-muted-foreground">
                       <th className="pb-3 font-semibold">المهارة</th>
                       <th className="pb-3 font-semibold">مستواك الآن</th>
                       <th className="pb-3 font-semibold">المستهدف</th>
@@ -2307,15 +1772,15 @@ export default function Diagnostic() {
                   <tbody>
                     {result.gapDetails.map((g) => (
                       <tr key={g.skill} className="border-b border-white/5">
-                        <td className="py-3 font-bold text-white/85">{g.skill}</td>
-                        <td className="py-3 text-white/55">{g.current}</td>
-                        <td className="py-3 text-white/55">{g.target}</td>
+                        <td className="py-3 font-bold text-foreground">{g.skill}</td>
+                        <td className="py-3 text-muted-foreground">{g.current}</td>
+                        <td className="py-3 text-muted-foreground">{g.target}</td>
                         <td className="py-3">
                           <span
                             className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
                               g.priority === "عالية"
                                 ? "bg-gold/15 text-gold-ink"
-                                : "bg-white/10 text-white/60"
+                                : "bg-white/10 text-muted-foreground"
                             }`}
                           >
                             {g.priority}
@@ -2339,7 +1804,7 @@ export default function Diagnostic() {
                 <BellRing className="h-5 w-5" />
                 مهارات تحتاجها ولا نغطيها بعد — ولن نخفي ذلك عنك
               </h3>
-              <p className="mt-3 text-sm leading-loose text-white/70">
+              <p className="mt-3 text-sm leading-loose text-foreground">
                 فجواتك في {result.unavailableSkills.join(" و")} مهمة لهدفك، لكن كتالوجنا الحالي لا يغطيها بعد.
                 نفضل أن تعرف الحقيقة كاملة على أن نبيعك مسارا ناقصا.
               </p>
@@ -2363,7 +1828,7 @@ export default function Diagnostic() {
                 <UserCheck className="h-5 w-5" />
                 حالتك تستحق جلسة مع مستشار بشري
               </h3>
-              <p className="mt-3 text-sm leading-loose text-white/70">
+              <p className="mt-3 text-sm leading-loose text-foreground">
                 المحرك غير متأكد تمامًا من التوصية الأنسب لحالتك، أو أنك طلبت استشارة شخصية.
                 نوصي بجلسة تعريفية مع مستشار وجيز (30 دقيقة) لصياغة خطتك بدقة — التشخيص الذي
                 أتممته للتو سيجعل الجلسة أقصر وأعمق.
@@ -2383,7 +1848,7 @@ export default function Diagnostic() {
             return (
             <div className="card-soft mt-8">
               <h3 className="h-card">{altCount === 2 ? "خياران" : "خياراتك الثلاثة"} في ميزان واحد — بدّل بثقة</h3>
-              <p className="mt-2 text-xs leading-relaxed text-white/50">
+              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
                 {altCount === 2 ? "مساران انتقاهما المحرك" : "ثلاثة مسارات انتقاها المحرك"} لحالتك تحديدا:
                 توصيتنا الأساسية{result.faster ? "، وبديل أسرع" : ""}{result.cheaper ? "، وبديل أوفر" : ""} — والقرار الأخير لك.
                 تفاصيل الاستثمار تظهر في صفحة المسار بعد اعتماده.
@@ -2393,14 +1858,14 @@ export default function Diagnostic() {
                 <div className="flex flex-col rounded-2xl border border-teal/50 bg-teal/10 p-5">
                   <span className="kicker">توصيتك الحالية</span>
                   <h4 className="mt-3 text-sm font-black leading-snug">{topPathway.name}</h4>
-                  <dl className="mt-3 space-y-1.5 text-xs text-white/55">
+                  <dl className="mt-3 space-y-1.5 text-xs text-muted-foreground">
                     <div className="flex items-center justify-between gap-2">
                       <dt>المدة</dt>
-                      <dd className="font-bold text-white/85">{weeksLabel(topPathway.durationWeeks)}</dd>
+                      <dd className="font-bold text-foreground">{weeksLabel(topPathway.durationWeeks)}</dd>
                     </div>
                     <div className="flex items-center justify-between gap-2">
                       <dt>الوقت الأسبوعي</dt>
-                      <dd className="font-bold text-white/85">{topPathway.weeklyHours}</dd>
+                      <dd className="font-bold text-foreground">{topPathway.weeklyHours}</dd>
                     </div>
                   </dl>
                   <span className="mt-4 flex items-center gap-1.5 text-xs font-bold text-teal-light-ink">
@@ -2415,14 +1880,14 @@ export default function Diagnostic() {
                       <Zap className="h-3 w-3" /> بديل أسرع
                     </span>
                     <h4 className="mt-3 text-sm font-black leading-snug">{result.faster.name}</h4>
-                    <dl className="mt-3 space-y-1.5 text-xs text-white/55">
+                    <dl className="mt-3 space-y-1.5 text-xs text-muted-foreground">
                       <div className="flex items-center justify-between gap-2">
                         <dt>المدة</dt>
-                        <dd className="font-bold text-white/85">{weeksLabel(result.faster.durationWeeks)}</dd>
+                        <dd className="font-bold text-foreground">{weeksLabel(result.faster.durationWeeks)}</dd>
                       </div>
                       <div className="flex items-center justify-between gap-2">
                         <dt>الوقت الأسبوعي</dt>
-                        <dd className="font-bold text-white/85">{result.faster.weeklyHours}</dd>
+                        <dd className="font-bold text-foreground">{result.faster.weeklyHours}</dd>
                       </div>
                     </dl>
                     <Button
@@ -2443,14 +1908,14 @@ export default function Diagnostic() {
                       <Wallet className="h-3 w-3" /> بديل أوفر
                     </span>
                     <h4 className="mt-3 text-sm font-black leading-snug">{result.cheaper.p.name}</h4>
-                    <dl className="mt-3 space-y-1.5 text-xs text-white/55">
+                    <dl className="mt-3 space-y-1.5 text-xs text-muted-foreground">
                       <div className="flex items-center justify-between gap-2">
                         <dt>المدة</dt>
-                        <dd className="font-bold text-white/85">{weeksLabel(result.cheaper.p.durationWeeks)}</dd>
+                        <dd className="font-bold text-foreground">{weeksLabel(result.cheaper.p.durationWeeks)}</dd>
                       </div>
                       <div className="flex items-center justify-between gap-2">
                         <dt>الوقت الأسبوعي</dt>
-                        <dd className="font-bold text-white/85">{result.cheaper.p.weeklyHours}</dd>
+                        <dd className="font-bold text-foreground">{result.cheaper.p.weeklyHours}</dd>
                       </div>
                     </dl>
                     <Button
@@ -2472,7 +1937,7 @@ export default function Diagnostic() {
           {/* شرح قوة الأدلة انتقل إلى بطاقة «لماذا هذا المسار» أعلى المنطقة المكشوفة —
               كان هنا في ذيل الصفحة ومطويًّا، أي بعد أن يكون القرار قد اتُّخذ. */}
 
-          <p className="mt-6 text-center text-xs leading-relaxed text-white/55">
+          <p className="mt-6 text-center text-xs leading-relaxed text-muted-foreground">
             التوصية صادرة عن محرك تشخيص قطعي مبني على إجاباتك، وهي نقطة بداية مفسَّرة —
             القرار النهائي دائمًا بيدك، ومستشارونا موجودون عند الحاجة.
             هذا تشخيص تعليمي مهني: ليس تقييما نفسيا أو طبيا، ولا وعدا بوظيفة أو دخل.

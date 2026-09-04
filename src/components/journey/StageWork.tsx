@@ -39,7 +39,7 @@ import {
 } from "@/services/enrollment-detail";
 
 const SUBMISSION_STATUS: Record<string, { label: string; cls: string }> = {
-  submitted: { label: "بانتظار المراجعة", cls: "border-white/20 text-white/60" },
+  submitted: { label: "بانتظار المراجعة", cls: "border-white/20 text-muted-foreground" },
   under_review: { label: "قيد مراجعة المدرب", cls: "border-gold/50 text-gold-ink" },
   resubmit_requested: { label: "مطلوب إعادة التسليم", cls: "border-red-500/40 text-red-400" },
   accepted: { label: "مقبول", cls: "border-teal/50 text-teal-light-ink" },
@@ -103,7 +103,7 @@ export default function StageWork({
         <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
           <div className="min-w-0">
             <h3 className="text-base font-black leading-snug">{stage.titleAr}</h3>
-            <p className="mt-0.5 text-[11px] leading-5 text-white/45">
+            <p className="mt-0.5 text-[11px] leading-5 text-muted-foreground">
               {detail.cohort.title}
               {trainers.length > 0 && ` · ${trainers.join("، ")}`}
               {stage.hours > 0 && ` · ${stage.hours} ساعة`}
@@ -113,7 +113,7 @@ export default function StageWork({
             <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
               <div className="h-full rounded-full bg-teal transition-all" style={{ width: `${Math.max(2, percent)}%` }} />
             </div>
-            <p className="mt-1 text-[10px] text-white/45">{percent}٪ من دروسها مكتملة</p>
+            <p className="mt-1 text-micro text-muted-foreground">{percent}٪ من دروسها مكتملة</p>
           </div>
         </div>
 
@@ -138,12 +138,12 @@ export default function StageWork({
                 aria-selected={on}
                 onClick={() => setTab(t.id)}
                 className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[12px] font-bold transition ${
-                  on ? "border-teal bg-teal/15 text-teal-light-ink" : "border-white/10 bg-white/[0.03] text-white/60 hover:border-white/30"
+                  on ? "border-teal bg-teal/15 text-teal-light-ink" : "border-white/10 bg-white/[0.03] text-muted-foreground hover:border-white/30"
                 }`}
               >
                 <t.icon className="h-3.5 w-3.5" />
                 {t.label}
-                {t.count > 0 && <span className="tabular-nums text-white/45">{t.count}</span>}
+                {t.count > 0 && <span className="tabular-nums text-muted-foreground">{t.count}</span>}
                 {nudge && <span className="h-1.5 w-1.5 rounded-full bg-gold" aria-label="بانتظارك" />}
               </button>
             );
@@ -168,8 +168,8 @@ export default function StageWork({
         {(detail.status === "completed" || percent >= 100 || detail.certificates.length > 0) && (
           <div className="mt-4 space-y-3 border-t border-white/10 pt-4">
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-teal/25 bg-teal-ink/[0.06] p-3.5">
-              <p className="min-w-0 text-[12px] leading-5 text-white/65">
-                <span className="flex items-center gap-1.5 font-black text-white/85">
+              <p className="min-w-0 text-[12px] leading-5 text-foreground">
+                <span className="flex items-center gap-1.5 font-black text-foreground">
                   <Ruler className="h-3.5 w-3.5 text-teal-light-ink" /> قِس نموّك في مهارات هذه الدورة
                 </span>
                 بالسلّم نفسه الذي قاسك قبلها — فيظهر الفرق مقيسا. مرّة واحدة لكلّ دورة.
@@ -194,18 +194,18 @@ export default function StageWork({
 
       {/* ══ صندوقُ المصادر — ما يُرجَع إليه ══ */}
       <section className="rounded-3xl border border-white/10 bg-white/[0.02] p-4 sm:p-5">
-        <h3 className="flex items-center gap-2 text-[13px] font-black text-white/75">
+        <h3 className="flex items-center gap-2 text-[13px] font-black text-foreground">
           <Library className="h-4 w-4 text-gold-ink" /> مصادر هذه المرحلة
         </h3>
         {!hasResources ? (
-          <p className="mt-2 text-[11.5px] leading-6 text-white/45">
+          <p className="mt-2 text-[11.5px] leading-6 text-muted-foreground">
             لم تُرفَع موادُّ هذه الشعبة بعد. ما يرفعه مدرّبك يظهر هنا، ومعه تسجيلاتُ الجلسات فور جهوزها.
           </p>
         ) : (
           <div className="mt-3 space-y-4">
             {detail.cohort.materials.length > 0 && (
               <div>
-                <p className="text-[11px] font-bold text-white/55">موادُّ الشعبة</p>
+                <p className="text-[11px] font-bold text-muted-foreground">موادُّ الشعبة</p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {detail.cohort.materials.map((m) => (
                     <a
@@ -213,7 +213,7 @@ export default function StageWork({
                       href={m.readUrl ?? m.externalUrl ?? "#"}
                       target="_blank"
                       rel="noreferrer"
-                      className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-bold text-white/65 transition hover:border-teal/50 hover:text-teal-light-ink"
+                      className="flex min-h-9 items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-bold text-foreground transition hover:border-teal/50 hover:text-teal-light-ink"
                     >
                       <FileText className="h-3 w-3" /> {m.title}
                     </a>
@@ -223,7 +223,7 @@ export default function StageWork({
             )}
             {recordings.length > 0 && (
               <div>
-                <p className="text-[11px] font-bold text-white/55">تسجيلاتُ الجلسات</p>
+                <p className="text-[11px] font-bold text-muted-foreground">تسجيلاتُ الجلسات</p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {recordings.map((rec) => (
                     <a
@@ -231,7 +231,7 @@ export default function StageWork({
                       href={rec.readUrl ?? "#"}
                       target="_blank"
                       rel="noreferrer"
-                      className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-bold text-white/65 transition hover:border-teal/50 hover:text-teal-light-ink"
+                      className="flex min-h-9 items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-bold text-foreground transition hover:border-teal/50 hover:text-teal-light-ink"
                     >
                       <PlayCircle className="h-3 w-3" /> {rec.title}
                       {rec.durationSec ? ` · ${Math.round(rec.durationSec / 60)} د` : ""}
@@ -244,7 +244,7 @@ export default function StageWork({
                 يُعرف كودُه يُسقَط: لا مرجعَ يُختلق للمتعلّم. */}
             {references.length > 0 && (
               <div>
-                <p className="text-[11px] font-bold text-white/55">مراجعُها العلميّة</p>
+                <p className="text-[11px] font-bold text-muted-foreground">مراجعُها العلميّة</p>
                 <ul className="mt-2 space-y-1.5">
                   {references.map((r) => (
                     <li key={r.id}>
@@ -252,12 +252,12 @@ export default function StageWork({
                         href={r.source_url}
                         target="_blank"
                         rel="noreferrer"
-                        className="flex items-start gap-1.5 text-[11.5px] leading-5 text-white/60 transition hover:text-teal-light-ink"
+                        className="flex items-start gap-1.5 text-[11.5px] leading-5 text-muted-foreground transition hover:text-teal-light-ink"
                       >
                         <ExternalLink className="mt-1 h-3 w-3 shrink-0" />
                         <span>
-                          <span className="font-bold text-white/75">{r.name_ar}</span>
-                          <span className="text-white/40"> · {r.organization}</span>
+                          <span className="font-bold text-foreground">{r.name_ar}</span>
+                          <span className="text-muted-foreground"> · {r.organization}</span>
                         </span>
                       </a>
                     </li>
@@ -289,7 +289,7 @@ function Lessons({
 }) {
   if (modules.length === 0) {
     return (
-      <p className="rounded-2xl border border-dashed border-white/15 px-4 py-6 text-center text-[11.5px] leading-6 text-white/50">
+      <p className="rounded-2xl border border-dashed border-white/15 px-4 py-6 text-center text-[11.5px] leading-6 text-muted-foreground">
         لم يُكتب متنُ هذه الدورة بعد. جلساتُها وواجباتُها في تبويبَيهما، ويظهر المتن هنا فور كتابته.
       </p>
     );
@@ -312,16 +312,16 @@ function Lessons({
               <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
                 <span
                   className={`grid h-7 w-7 shrink-0 place-items-center rounded-xl text-[11px] font-black ${
-                    done ? "bg-teal text-on-teal" : next ? "bg-teal/20 text-teal-light-ink" : "bg-white/5 text-white/45"
+                    done ? "bg-teal text-on-teal" : next ? "bg-teal/20 text-teal-light-ink" : "bg-white/5 text-muted-foreground"
                   }`}
                 >
                   {done ? <CheckCircle2 className="h-4 w-4" /> : i + 1}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className={`block text-[12.5px] font-bold leading-snug ${done || next ? "" : "text-white/70"}`}>
+                  <span className={`block text-[12.5px] font-bold leading-snug ${done || next ? "" : "text-foreground"}`}>
                     {m.title}
                   </span>
-                  <span className="mt-0.5 block text-[10.5px] leading-4 text-white/45">
+                  <span className="mt-0.5 block text-micro leading-4 text-muted-foreground">
                     {m.hours} ساعة
                     {lessons.length > 0 && ` · ${lessons.length} درسا`}
                     {checks > 0 && ` · ${checks} تمرين استرجاع`}
@@ -329,22 +329,22 @@ function Lessons({
                   </span>
                 </span>
                 {done ? (
-                  <span className="shrink-0 rounded-full border border-teal/50 px-2.5 py-0.5 text-[10px] font-bold text-teal-ink">
+                  <span className="shrink-0 rounded-full border border-teal/50 px-2.5 py-0.5 text-micro font-bold text-teal-ink">
                     أنجزتها
                   </span>
                 ) : next ? (
-                  <span className="flex shrink-0 items-center gap-1 rounded-full bg-teal px-2.5 py-0.5 text-[10px] font-black text-on-teal">
+                  <span className="flex shrink-0 items-center gap-1 rounded-full bg-teal px-2.5 py-0.5 text-micro font-black text-on-teal">
                     <Play className="h-2.5 w-2.5" /> ابدأ من هنا
                   </span>
                 ) : (
-                  <span className="flex shrink-0 items-center gap-1 text-[10px] text-white/35">
+                  <span className="flex shrink-0 items-center gap-1 text-micro text-muted-foreground">
                     <Circle className="h-2.5 w-2.5" /> لم تبدأ
                   </span>
                 )}
                 {lessons.length > 0 && (
                   <Link
                     to={`/student/course/${courseId}/module/${m.id}`}
-                    className="shrink-0 rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-bold text-white/70 transition hover:border-teal/50 hover:text-teal-light-ink"
+                    className="shrink-0 rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-bold text-foreground transition hover:border-teal/50 hover:text-teal-light-ink"
                   >
                     {done ? "راجعها" : "افتحها"}
                   </Link>
@@ -352,16 +352,16 @@ function Lessons({
               </div>
               {/* ناتجُ الدرس — سطرٌ واحد: هو ما يُقاس عليه الإنجاز */}
               {m.artifact && (
-                <p className="mt-2 flex items-start gap-1.5 border-t border-white/[0.06] pt-2 text-[10.5px] leading-5 text-white/50">
+                <p className="mt-2 flex items-start gap-1.5 border-t border-white/[0.06] pt-2 text-micro leading-5 text-muted-foreground">
                   <FileText className="mt-0.5 h-3 w-3 shrink-0 text-gold-ink" />
-                  <span><span className="font-bold text-white/65">ما تخرج به: </span>{m.artifact}</span>
+                  <span><span className="font-bold text-foreground">ما تخرج به: </span>{m.artifact}</span>
                 </p>
               )}
             </li>
           );
         })}
       </ol>
-      <p className="mt-3 text-[10.5px] leading-5 text-white/40">
+      <p className="mt-3 text-micro leading-5 text-muted-foreground">
         الدرسُ يكتمل بدليل — تسليمٌ يقبله مدرّبك، أو تقييمٌ تجتازه، أو حضورُ جلسته. لا يُعلَّم مكتملا بضغطة.
       </p>
       {project && (
@@ -369,7 +369,7 @@ function Lessons({
           <p className="flex items-center gap-1.5 text-[11.5px] font-black text-gold-ink">
             <FileText className="h-3.5 w-3.5" /> مشروع هذه الدورة
           </p>
-          <p className="mt-1.5 text-[12px] leading-6 text-white/70">{project}</p>
+          <p className="mt-1.5 text-[12px] leading-6 text-foreground">{project}</p>
         </div>
       )}
     </>
@@ -380,27 +380,27 @@ function Lessons({
 
 function Sessions({ detail }: { detail: EnrollmentDetail }) {
   if (detail.cohort.sessions.length === 0) {
-    return <p className="text-[11.5px] leading-6 text-white/45">لم تُجدول جلسات هذه الشعبة بعد — تظهر هنا بمواعيدها فور جدولتها.</p>;
+    return <p className="text-[11.5px] leading-6 text-muted-foreground">لم تُجدول جلسات هذه الشعبة بعد — تظهر هنا بمواعيدها فور جدولتها.</p>;
   }
   return (
     <div className="space-y-2">
       {detail.cohort.sessions.map((s) => {
         const mine = detail.attendance.find((a) => a.sessionId === s.id);
         return (
-          <div key={s.id} className="rounded-2xl border border-white/8 bg-black/20 p-3.5">
+          <div key={s.id} className="rounded-2xl border border-white/8 bg-paper/20 p-3.5">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
               <div className="min-w-0 flex-1">
                 <p className="text-[12.5px] font-bold leading-snug">{s.title}</p>
-                <p className="mt-0.5 text-[10.5px] text-white/45">{fmtDateTime(new Date(s.startsAt))}</p>
+                <p className="mt-0.5 text-micro text-muted-foreground">{fmtDateTime(new Date(s.startsAt))}</p>
               </div>
               {mine && (
-                <span className="shrink-0 rounded-full border border-white/15 px-2.5 py-0.5 text-[10px] font-bold text-white/55">
+                <span className="shrink-0 rounded-full border border-white/15 px-2.5 py-0.5 text-micro font-bold text-muted-foreground">
                   {ATTENDANCE_LABEL[mine.status] ?? mine.status}
                 </span>
               )}
               <a
                 href={`/api/calendar/cohort-sessions/${s.id}.ics`}
-                className="flex shrink-0 items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[10.5px] font-bold text-white/60 transition hover:border-white/35 hover:text-white"
+                className="flex min-h-9 shrink-0 items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-micro font-bold text-muted-foreground transition hover:border-white/35 hover:text-foreground"
               >
                 <CalendarPlus className="h-3 w-3" /> أضِفها لتقويمك
               </a>
@@ -409,15 +409,15 @@ function Sessions({ detail }: { detail: EnrollmentDetail }) {
                   href={s.zoom.learnerUrl ?? s.zoom.joinUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex shrink-0 items-center gap-1.5 rounded-full bg-teal px-4 py-1.5 text-[10.5px] font-black text-on-teal transition hover:bg-teal-light"
+                  className="flex min-h-9 shrink-0 items-center gap-1.5 rounded-full bg-teal px-4 py-1.5 text-micro font-black text-on-teal transition hover:bg-teal-light"
                 >
                   <Video className="h-3 w-3" /> ادخل الجلسة
                 </a>
               )}
             </div>
             {s.zoom?.passcode && (
-              <p className="mt-2 text-[10.5px] text-white/45">
-                رمز المرور: <span className="font-mono text-white/70" dir="ltr">{s.zoom.passcode}</span>
+              <p className="mt-2 text-micro text-muted-foreground">
+                رمز المرور: <span className="font-mono text-foreground" dir="ltr">{s.zoom.passcode}</span>
               </p>
             )}
           </div>
@@ -432,7 +432,7 @@ function Sessions({ detail }: { detail: EnrollmentDetail }) {
 function Assessments({ detail, handlers }: { detail: EnrollmentDetail; handlers: StageWorkHandlers }) {
   const { answers, setAnswers, busy, onSubmit, onSubmitQuiz } = handlers;
   if (detail.cohort.assessments.length === 0) {
-    return <p className="text-[11.5px] leading-6 text-white/45">لا واجبات على هذه الشعبة بعد — ما يُسنده مدرّبك يظهر هنا بموعد استحقاقه.</p>;
+    return <p className="text-[11.5px] leading-6 text-muted-foreground">لا واجبات على هذه الشعبة بعد — ما يُسنده مدرّبك يظهر هنا بموعد استحقاقه.</p>;
   }
   return (
     <div className="space-y-3">
@@ -441,18 +441,18 @@ function Assessments({ detail, handlers }: { detail: EnrollmentDetail; handlers:
         const meta = mine ? SUBMISSION_STATUS[mine.status] : null;
         const canSubmit = !mine || mine.status === "resubmit_requested";
         return (
-          <div key={a.id} className="rounded-2xl border border-white/8 bg-black/20 p-3.5">
+          <div key={a.id} className="rounded-2xl border border-white/8 bg-paper/20 p-3.5">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
               <div className="min-w-0 flex-1">
                 <p className="text-[12.5px] font-bold leading-snug">{a.title}</p>
-                <p className="mt-0.5 text-[10.5px] text-white/45">
+                <p className="mt-0.5 text-micro text-muted-foreground">
                   {ASSESSMENT_TYPE[a.type] ?? a.type} · من {a.maxScore}
                   {a.dueAt && ` · يستحق ${fmtDate(a.dueAt)}`}
                 </p>
               </div>
-              {meta && <span className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${meta.cls}`}>{meta.label}</span>}
+              {meta && <span className={`shrink-0 rounded-full border px-2.5 py-0.5 text-micro font-bold ${meta.cls}`}>{meta.label}</span>}
               {mine?.grades[0] && (
-                <span className="shrink-0 rounded-full bg-teal/15 px-2.5 py-0.5 text-[10px] font-black text-teal-light-ink">
+                <span className="shrink-0 rounded-full bg-teal/15 px-2.5 py-0.5 text-micro font-black text-teal-light-ink">
                   {Number(mine.grades[0].score)}/{Number(mine.grades[0].maxScore)}
                 </span>
               )}
@@ -468,7 +468,7 @@ function Assessments({ detail, handlers }: { detail: EnrollmentDetail; handlers:
                   onChange={(e) => setAnswers((prev) => ({ ...prev, [a.id]: e.target.value }))}
                   placeholder={mine?.status === "resubmit_requested" ? "أعد التسليم بعد معالجة الملاحظات…" : "اكتب إجابتك هنا…"}
                   rows={3}
-                  className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-[13px] text-white placeholder:text-white/25 focus:border-teal focus:outline-none"
+                  className="w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2.5 text-[13px] text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none"
                 />
                 <button
                   disabled={busy === a.id || !(answers[a.id] ?? "").trim()}
@@ -503,16 +503,16 @@ function QuizAttemptForm({
     <div className="mt-3 space-y-3">
       {items.map((it, idx) => (
         <div key={it.id}>
-          <p className="mb-1 text-[12px] font-bold text-white/75">
+          <p className="mb-1 text-[12px] font-bold text-foreground">
             {idx + 1}. {it.prompt}
-            {it.maxScore ? <span className="mr-2 text-[10px] font-normal text-white/50">({it.maxScore} درجات)</span> : null}
+            {it.maxScore ? <span className="mr-2 text-micro font-normal text-muted-foreground">({it.maxScore} درجات)</span> : null}
           </p>
           <textarea
             rows={2}
             value={resp[it.id] ?? ""}
             onChange={(e) => setResp((prev) => ({ ...prev, [it.id]: e.target.value }))}
             placeholder="إجابتك…"
-            className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-[13px] text-white placeholder:text-white/25 focus:border-teal focus:outline-none"
+            className="w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none"
           />
         </div>
       ))}
@@ -531,7 +531,7 @@ function QuizAttemptForm({
 /** شارةُ «لا شهادة بعد» — تُستعمل في لوحاتٍ أخرى تعرض المرحلة مختصرة */
 export function CertificateChip({ cert }: { cert: { number: string; status: string } }) {
   return (
-    <span className="flex items-center gap-1.5 rounded-full border border-gold/30 bg-gold/[0.08] px-2.5 py-0.5 text-[10px] font-black text-gold-ink">
+    <span className="flex items-center gap-1.5 rounded-full border border-gold/30 bg-gold/[0.08] px-2.5 py-0.5 text-micro font-black text-gold-ink">
       <Award className="h-3 w-3" />
       <span dir="ltr" className="font-mono">{cert.number}</span>
     </span>

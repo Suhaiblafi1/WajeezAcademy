@@ -1,6 +1,7 @@
 /* المالية — API حقيقي: طلبات التسجيل (موافقة بكوبون/رفض)، فواتير ودفعات يدوية
    واستردادات، كوبونات، خطط اشتراك. */
 import { useCallback, useEffect, useState } from "react";
+import { toast, toastError } from "@/components/Toast";
 import {
   BadgePercent, CheckCircle2, CreditCard, FileText, Loader2, RefreshCw,
   RotateCcw, ServerOff, Wallet, XCircle,
@@ -12,12 +13,14 @@ import { bulkMessage, runBulk } from "@/application/admin/bulk";
 import { matchesQuery } from "@/application/text/search-ar";
 import { paginate } from "@/application/admin/paginate";
 import FlowSteps from "@/components/FlowSteps";
-import { apiGet, apiPost, ApiError } from "@/services/api";
+import { apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
 import { LEDGER_CURRENCY } from "@/application/commerce/presentment";
 import { useAutoRefresh } from "@/services/useAutoRefresh";
+import { useRealSession } from "@/services/session";
 import { fmtDate, fmtDateTime } from "@/application/text/format-ar";
+import ConfirmAction from "@/components/ConfirmAction";
 
-const inputCls = "rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/25 focus:border-teal focus:outline-none";
+const inputCls = "rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none";
 
 interface EnrollReq {
   id: string; status: string; note: string | null; createdAt: string;
@@ -39,6 +42,26 @@ const RF_STATUS: Record<string, string> = { requested: "مطلوب", approved: "
 type Tab = "requests" | "invoices" | "refunds" | "coupons";
 
 export default function Finance() {
+  /* ═══ الشاشةُ تعرض ما يستطيع صاحبُها، لا كلَّ ما فيها ═══
+
+     بعد فصل المال عن الأكاديميّ صار المديرُ الأكاديميّ يملك `finance.view`
+     وحدَها: يقرأ الفواتيرَ ليعرف أدفع المتعلّمُ أم لا، ولا يسجّل دفعةً ولا
+     يعتمد استردادا ولا يصنع كوبونا. وبلا هذا الترشيح كان سيرى الأزرارَ
+     كلَّها ويصطدم بـ٤٠٣ عند الضغط — وهي القاعدةُ نفسُها التي حكمت المرحلةَ
+     الأولى: لا زرَّ يعِد بما لا تستطيعه المنصّةُ لصاحبه.
+
+     والقراءةُ تُحصَّن أيضا: نداءُ الكوبونات يُردّ بـ٤٠٣ لمن لا يملكها، وكان
+     ذلك سيُسقط الشاشةَ كلَّها في «الخادم غير متصل». */
+  const { user } = useRealSession();
+  const can = (key: string) => user?.permissions.includes(key) ?? false;
+  const canRecordPayment = can("finance.payment.record");
+  const canRefund = can("finance.refund.process");
+  const canCommerce = can("commerce.manage");
+  /* `finance.view` شرطُ الشاشة نفسِها: من لا يملكها لا يُعرض له لوحٌ فارغ،
+     بل الرسالةُ الصريحةُ التي يقولها الخادم (اسمُ الصلاحيّة ومن يملكها). */
+  const canViewMoney = can("finance.view");
+  const readOnly = canViewMoney && !canRecordPayment && !canRefund && !canCommerce;
+
   const [tab, setTab] = useState<Tab>("requests");
   /* بحثٌ وترقيمٌ للتبويبين اللذين يطولان بالعمل: الطلبات والفواتير.
      والاستردادُ والكوبونُ محدودان بطبيعتهما فلا يُثقلان بشريط. */
@@ -47,9 +70,13 @@ export default function Finance() {
   /* التحديدُ للطلبات المعلَّقة وحدَها — وسيأتي بيانُ لِمَ لا يشمل غيرَها */
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [bulkProgress, setBulkProgress] = useState("");
+  /* الفعلُ الجماعيُّ يُؤكَّد في نافذة المنصّة لا في حوار متصفّح: يحجز مقاعدَ
+     ويُصدر فواتيرَ لعشراتٍ في ضغطةٍ واحدة، والرفضُ يصل صاحبَه بسببه. */
+  const [bulkConfirm, setBulkConfirm] = useState<"approve" | "reject" | null>(null);
+  /* رفضُ طلبٍ واحد — بالنافذة نفسِها التي يُرفض بها عشرون */
+  const [rejecting, setRejecting] = useState<{ id: string; whoAr: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState<string | null>(null);
-  const [flash, setFlash] = useState("");
   const [busy, setBusy] = useState(false);
   const [requests, setRequests] = useState<EnrollReq[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -64,16 +91,22 @@ export default function Finance() {
   const load = useCallback(async (silent = false) => {
     if (!silent) { setLoading(true); setOffline(null); }
     try {
+      /* الممنوعُ من قائمةٍ لا يُسقط الشاشة: يعود فارغا ويبقى ما يستطيع */
+      const allowed = async <T,>(p: Promise<T[]>): Promise<T[]> => {
+        try { return await p } catch (e) { if (e instanceof ApiError && e.status === 403) return []; throw e }
+      };
       const [er, inv, rf, cp] = await Promise.all([
-        apiGet<EnrollReq[]>("/api/admin/enrollment-requests"),
-        apiGet<Invoice[]>("/api/admin/invoices"),
-        apiGet<Refund[]>("/api/admin/refunds"),
-        apiGet<Coupon[]>("/api/admin/coupons"),
+        allowed(apiGet<EnrollReq[]>("/api/admin/enrollment-requests")),
+        /* والفواتيرُ لا تُلتمَس بلا صلاحيّتها: منعُها يُقال صراحةً لا يُبتلع،
+           ولا يُعاد النداءُ كلَّ دقيقةٍ ليُردّ كلَّ دقيقة. */
+        canViewMoney ? apiGet<Invoice[]>("/api/admin/invoices") : Promise.resolve([] as Invoice[]),
+        canViewMoney ? allowed(apiGet<Refund[]>("/api/admin/refunds")) : Promise.resolve([] as Refund[]),
+        canCommerce ? allowed(apiGet<Coupon[]>("/api/admin/coupons")) : Promise.resolve([] as Coupon[]),
       ]);
       setRequests(er); setInvoices(inv); setRefunds(rf); setCoupons(cp);
-    } catch (e) { if (!silent) setOffline(e instanceof ApiError ? e.message : "الخادم غير متصل"); }
+    } catch (e) { if (!silent) setOffline(permissionMessage(e, "الخادم غير متصل")); }
     finally { if (!silent) setLoading(false); }
-  }, []);
+  }, [canCommerce, canViewMoney]);
 
   useEffect(() => { void load(); }, [load]);
   /* نبض صامت كل دقيقة — طلبات التسجيل والفواتير تتحدث دون تحديث يدوي */
@@ -82,9 +115,9 @@ export default function Finance() {
 
   const act = async (fn: () => Promise<unknown>, doneMsg: string) => {
     if (busy) return;
-    setBusy(true); setFlash("");
-    try { await fn(); setFlash(doneMsg); await load(); }
-    catch (e) { setFlash(e instanceof ApiError ? e.message : "فشل الإجراء"); }
+    setBusy(true);
+    try { await fn(); toast(doneMsg); await load(); }
+    catch (e) { toastError(e instanceof ApiError ? e.message : "فشل الإجراء"); }
     finally { setBusy(false); }
   };
 
@@ -92,9 +125,9 @@ export default function Finance() {
     return (
       <AdminLayout title="المالية">
         <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
-          <ServerOff className="h-12 w-12 text-white/20" />
-          <p className="mt-4 max-w-md text-sm text-white/55">{offline}</p>
-          <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-white/70 hover:border-white/40">
+          <ServerOff className="h-12 w-12 text-muted-foreground/50" />
+          <p className="mt-4 max-w-md text-sm text-muted-foreground">{offline}</p>
+          <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground hover:border-white/40">
             <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
           </button>
         </div>
@@ -104,9 +137,12 @@ export default function Finance() {
 
   const tabs: [Tab, string, number][] = [
     ["requests", "طلبات التسجيل", requests.filter((r) => r.status === "pending").length],
-    ["invoices", "الفواتير", invoices.length],
-    ["refunds", "الاستردادات", refunds.filter((r) => r.status === "requested").length],
-    ["coupons", "الكوبونات والخطط", coupons.length],
+    ...(canViewMoney ? ([
+      ["invoices", "الفواتير", invoices.length],
+      ["refunds", "الاستردادات", refunds.filter((r) => r.status === "requested").length],
+    ] as [Tab, string, number][]) : []),
+    /* الكوبوناتُ والخططُ بندٌ ماليّ — لا تُعرض لمن لا يملك `commerce.manage` */
+    ...(canCommerce ? [["coupons", "الكوبونات والخطط", coupons.length] as [Tab, string, number]] : []),
   ];
 
     /* الجماعيُّ على المعلَّق وحدَه.
@@ -121,18 +157,9 @@ export default function Finance() {
     return next;
   });
 
-  const bulkRequests = async (kind: "approve" | "reject") => {
+  const bulkRequests = async (kind: "approve" | "reject", reason?: string) => {
     if (busy || sel.size === 0) return;
-    let reason: string | undefined;
-    if (kind === "reject") {
-      const typed = window.prompt(`سببُ الرفض على ${sel.size} طلبا (يصل صاحبَ الطلب):`);
-      if (typed === null) return;
-      if (typed.trim().length < 5) { setFlash("السببُ أقصرُ من أن يُفهم — خمسةُ أحرفٍ فأكثر."); return; }
-      reason = typed.trim();
-    } else if (!window.confirm(`الموافقةُ على ${sel.size} طلبا تحجز مقاعدَها وتُصدر فواتيرَها. أتمضي؟`)) {
-      return;
-    }
-    setBusy(true); setFlash(""); setBulkProgress("");
+    setBusy(true); setBulkProgress("");
     const outcome = await runBulk(
       [...sel],
       (id) => kind === "approve"
@@ -144,7 +171,7 @@ export default function Finance() {
     );
     setBulkProgress("");
     setSel(new Set(outcome.failed.map((f) => f.id)));
-    setFlash(bulkMessage(outcome, kind === "approve" ? "وُوفق" : "رُفض"));
+    toast(bulkMessage(outcome, kind === "approve" ? "وُوفق" : "رُفض"));
     setBusy(false);
     await load();
   };
@@ -169,29 +196,39 @@ export default function Finance() {
         <div className="flex flex-wrap rounded-full border border-white/15 p-1">
           {tabs.map(([k, label, n]) => (
             <button key={k} onClick={() => { setTab(k); setQ(""); setPage(1); setSel(new Set()); }}
-              className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-black transition ${tab === k ? "bg-gold text-on-gold" : "text-white/60 hover:text-white"}`}>
+              className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-black transition ${tab === k ? "bg-gold text-on-gold" : "text-muted-foreground hover:text-foreground"}`}>
               {label} {n > 0 && <span className="mr-1 opacity-70">({n})</span>}
             </button>
           ))}
         </div>
-        <button onClick={() => void load()} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-white/60 hover:border-white/40">
+        <button onClick={() => void load()} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-muted-foreground hover:border-white/40">
           <RefreshCw className="h-3.5 w-3.5" /> تحديث
         </button>
-        {flash && <span className="text-xs font-bold text-teal-light-ink" role="status">{flash}</span>}
       </div>
 
-      {loading && <div className="grid place-items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-white/30" /></div>}
+      {/* ولا يُترك القارئُ يظنّ الشاشةَ معطوبةً لخلوّها من الأزرار: يُقال له
+          ما يستطيع وما لا يستطيع ومن يستطيعه — صراحةً، مرّةً في أعلى الصفحة. */}
+      {readOnly && (
+        <p className="mb-5 flex items-start gap-2 rounded-2xl border border-white/12 bg-white/[0.03] px-4 py-3 text-[11px] font-bold leading-6 text-muted-foreground">
+          <Wallet className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-ink" />
+          حسابُك يقرأ المالَ ولا يحرّكه: تعرف من دفع ومن لم يدفع لتقرّر تسجيلا، وتراجع طلباتِ التسجيل.
+          أمّا تسجيلُ دفعةٍ يدويّةٍ واعتمادُ استردادٍ وإنشاءُ كوبونٍ فهي بيد <b className="text-foreground">المالية</b> —
+          فصلٌ مقصود: من يسجّل التسجيلَ لا يسجّل دفعتَه.
+        </p>
+      )}
+
+      {loading && <div className="grid place-items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" /></div>}
 
       {/* طلبات التسجيل */}
       {!loading && tab === "requests" && (
         <div className="space-y-3">
-          {requests.length === 0 && <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-white/45">لا طلبات تسجيل.</p>}
+          {requests.length === 0 && <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-muted-foreground">لا طلبات تسجيل.</p>}
           {requests.length > 0 && (
             <ListToolbar q={q} onQ={setQ} onPage={setPage} view={reqView} unit="طلبا"
               placeholder="ابحث باسمِ طالبٍ أو بريدٍ أو شعبة…" />
           )}
           {selectable.length > 0 && (
-            <div className="flex items-center gap-2 text-[11px] text-white/45">
+            <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
               <input type="checkbox"
                 checked={sel.size > 0 && selectable.every((r) => sel.has(r.id))}
                 onChange={(e) => setSel(e.target.checked ? new Set(selectable.map((r) => r.id)) : new Set())}
@@ -200,33 +237,35 @@ export default function Finance() {
             </div>
           )}
           <BulkBar count={sel.size} busy={busy} progress={bulkProgress} onClear={() => setSel(new Set())}>
-            <button onClick={() => void bulkRequests("approve")}
+            <button onClick={() => setBulkConfirm("approve")}
               className="cursor-pointer rounded-full bg-teal px-4 py-1.5 text-[11px] font-black text-on-teal hover:bg-teal-light">
               وافق واحجز المقاعد — على {sel.size}
             </button>
-            <button onClick={() => void bulkRequests("reject")}
+            <button onClick={() => setBulkConfirm("reject")}
               className="cursor-pointer rounded-full border border-red-400/40 px-4 py-1.5 text-[11px] font-bold text-red-300 hover:bg-red-400/10">
               ارفض بسبب — على {sel.size}
             </button>
           </BulkBar>
           {requests.length > 0 && reqView.total === 0 && (
-            <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-white/45">لا طلب يطابق «{q.trim()}».</p>
+            <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-muted-foreground">لا طلب يطابق «{q.trim()}».</p>
           )}
           {reqView.rows.map((r) => (
             <div key={r.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="font-black">{r.user.displayName} <span className="text-[11px] font-normal text-white/40" dir="ltr">{r.user.email}</span></p>
-                  <p className="mt-1 text-xs text-white/55">
+                  <p className="font-black">{r.user.displayName} <span className="text-[11px] font-normal text-muted-foreground" dir="ltr">{r.user.email}</span></p>
+                  <p className="mt-1 text-xs text-muted-foreground">
                     {r.cohort.course.versions[0]?.titleAr ?? "—"} · {r.cohort.title} · {r.cohort.price ? `${r.cohort.price} ${r.cohort.currency}` : "بلا سعر"}
                   </p>
-                  {r.note && <p className="mt-1 text-[11px] text-white/45">ملاحظة المتعلم: {r.note}</p>}
+                  {r.note && <p className="mt-1 text-[11px] text-muted-foreground">ملاحظة المتعلم: {r.note}</p>}
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="rounded-full border border-teal/40 px-3 py-1 text-[11px] font-bold text-teal-light-ink">{ER_STATUS[r.status] ?? r.status}</span>
                   {r.status === "pending" && (
-                    <input type="checkbox" checked={sel.has(r.id)} onChange={() => toggleSel(r.id)}
-                      aria-label={`حدّد طلب ${r.user.displayName}`} className="h-4 w-4 cursor-pointer accent-gold" />
+                    <label className="grid h-8 w-8 shrink-0 cursor-pointer place-items-center">
+                      <input type="checkbox" checked={sel.has(r.id)} onChange={() => toggleSel(r.id)}
+                        aria-label={`حدّد طلب ${r.user.displayName}`} className="h-4 w-4 cursor-pointer accent-gold" />
+                    </label>
                   )}
                 </div>
               </div>
@@ -240,10 +279,7 @@ export default function Finance() {
                     <CheckCircle2 className="h-3.5 w-3.5" /> موافقة وحجز مقعد
                   </button>
                   <button disabled={busy}
-                    onClick={() => {
-                      const reason = window.prompt("سبب الرفض (5+ أحرف):");
-                      if (reason && reason.length >= 5) void act(() => apiPost(`/api/admin/enrollment-requests/${r.id}/reject`, { reason }), "رُفض الطلب");
-                    }}
+                    onClick={() => setRejecting({ id: r.id, whoAr: r.user.displayName })}
                     className="flex cursor-pointer items-center gap-1.5 rounded-full border border-red-500/40 px-4 py-1.5 text-xs font-bold text-red-400 hover:bg-red-500/10 disabled:opacity-40">
                     <XCircle className="h-3.5 w-3.5" /> رفض
                   </button>
@@ -257,24 +293,24 @@ export default function Finance() {
       {/* الفواتير */}
       {!loading && tab === "invoices" && (
         <div className="space-y-3">
-          {invoices.length === 0 && <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-white/45">لا فواتير.</p>}
+          {invoices.length === 0 && <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-muted-foreground">لا فواتير.</p>}
           {invoices.length > 0 && (
             <ListToolbar q={q} onQ={setQ} onPage={setPage} view={invView} unit="فاتورة"
               placeholder="ابحث باسمِ مشترٍ أو بريدٍ أو رقمِ فاتورة…" />
           )}
           {invoices.length > 0 && invView.total === 0 && (
-            <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-white/45">لا فاتورة تطابق «{q.trim()}».</p>
+            <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-muted-foreground">لا فاتورة تطابق «{q.trim()}».</p>
           )}
           {invView.rows.map((inv) => (
             <div key={inv.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="font-black">{inv.total} {inv.currency} <span className="mr-2 font-mono text-[10px] font-normal text-white/40" dir="ltr">{inv.id.slice(0, 8)}…</span></p>
-                  <p className="mt-1 text-xs text-white/55">{inv.order.user.displayName} · {fmtDate(new Date(inv.issuedAt))}</p>
+                  <p className="font-black">{inv.total} {inv.currency} <span className="mr-2 font-mono text-micro font-normal text-muted-foreground" dir="ltr">{inv.id.slice(0, 8)}…</span></p>
+                  <p className="mt-1 text-xs text-muted-foreground">{inv.order.user.displayName} · {fmtDate(new Date(inv.issuedAt))}</p>
                 </div>
                 <span className="rounded-full border border-teal/40 px-3 py-1 text-[11px] font-bold text-teal-light-ink">{INV_STATUS[inv.status] ?? inv.status}</span>
               </div>
-              {inv.status === "issued" && (
+              {inv.status === "issued" && canRecordPayment && (
                 <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/8 pt-3">
                   <input value={payForm[inv.id] ?? ""} onChange={(e) => setPayForm({ ...payForm, [inv.id]: e.target.value })}
                     placeholder="طريقة الدفع — تحويل بنكي / كاش" className={`${inputCls} flex-1`} />
@@ -286,18 +322,20 @@ export default function Finance() {
                 </div>
               )}
               {inv.payments.filter((p) => p.status === "succeeded").map((p) => (
-                <div key={p.id} className="mt-2 flex flex-wrap items-center gap-2 rounded-xl border border-white/8 bg-black/20 p-3 text-xs">
+                <div key={p.id} className="mt-2 flex flex-wrap items-center gap-2 rounded-xl border border-white/8 bg-paper/20 p-3 text-xs">
                   <span className="font-bold text-emerald-300">دفعة ناجحة {p.amount} {inv.currency}</span>
-                  <span className="text-white/40">{p.refunds.length} استرداد</span>
+                  <span className="text-muted-foreground">{p.refunds.length} استرداد</span>
+                  {canRefund && (<>
                   <input value={refundForm[p.id]?.amount ?? ""} onChange={(e) => setRefundForm({ ...refundForm, [p.id]: { ...refundForm[p.id], amount: e.target.value, reason: refundForm[p.id]?.reason ?? "" } })}
                     placeholder="مبلغ" type="number" className={`${inputCls} w-24`} />
                   <input value={refundForm[p.id]?.reason ?? ""} onChange={(e) => setRefundForm({ ...refundForm, [p.id]: { ...refundForm[p.id], reason: e.target.value, amount: refundForm[p.id]?.amount ?? "" } })}
                     placeholder="سبب موثق (5+ أحرف)" className={`${inputCls} flex-1`} />
                   <button disabled={busy || (refundForm[p.id]?.reason ?? "").length < 5 || !Number(refundForm[p.id]?.amount)}
                     onClick={() => act(() => apiPost(`/api/admin/payments/${p.id}/refund`, { amount: Number(refundForm[p.id].amount), reason: refundForm[p.id].reason }), "قُدم طلب الاسترداد")}
-                    className="flex cursor-pointer items-center gap-1 rounded-full border border-gold/40 px-3 py-1 text-[10px] font-bold text-gold-ink disabled:opacity-40">
+                    className="flex cursor-pointer items-center gap-1 rounded-full border border-gold/40 px-3 py-1 text-micro font-bold text-gold-ink disabled:opacity-40">
                     <RotateCcw className="h-3 w-3" /> طلب استرداد
                   </button>
+                  </>)}
                 </div>
               ))}
             </div>
@@ -308,16 +346,16 @@ export default function Finance() {
       {/* الاستردادات */}
       {!loading && tab === "refunds" && (
         <div className="space-y-3">
-          {refunds.length === 0 && <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-white/45">لا طلبات استرداد.</p>}
+          {refunds.length === 0 && <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-muted-foreground">لا طلبات استرداد.</p>}
           {refunds.map((rf) => (
             <div key={rf.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
               <div>
-                <p className="font-black">{rf.amount} <span className="text-xs font-normal text-white/50">— {rf.reason}</span></p>
-                <p className="mt-1 text-[11px] text-white/45">{fmtDateTime(new Date(rf.createdAt))}</p>
+                <p className="font-black">{rf.amount} <span className="text-xs font-normal text-muted-foreground">— {rf.reason}</span></p>
+                <p className="mt-1 text-[11px] text-muted-foreground">{fmtDateTime(new Date(rf.createdAt))}</p>
               </div>
               <div className="flex items-center gap-2">
                 <span className="rounded-full border border-teal/40 px-3 py-1 text-[11px] font-bold text-teal-light-ink">{RF_STATUS[rf.status] ?? rf.status}</span>
-                {rf.status === "requested" && (
+                {rf.status === "requested" && canRefund && (
                   <>
                     <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/refunds/${rf.id}/process`, { approve: true }), "نُفذ الاسترداد وحُدثت الدفعة والطلب")}
                       className="cursor-pointer rounded-full bg-emerald-500/20 border border-emerald-400/40 px-4 py-1.5 text-xs font-bold text-emerald-300 disabled:opacity-40">
@@ -363,11 +401,11 @@ export default function Finance() {
             </button>
             <ul className="mt-4 space-y-2">
               {coupons.map((c) => (
-                <li key={c.id} className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs">
+                <li key={c.id} className="flex items-center gap-3 rounded-xl border border-white/10 bg-paper/20 px-3 py-2 text-xs">
                   <span className="font-mono font-bold text-gold-ink" dir="ltr">{c.code}</span>
-                  <span className="text-white/60">{c.percentOff ? `${c.percentOff}%` : `${c.amountOff} ${c.currency}`}</span>
-                  <span className="text-white/40">{c.usedCount ?? 0}/{c.maxUses ?? "∞"}</span>
-                  {!c.active && <span className="rounded-full border border-red-500/40 px-2 py-0.5 text-[10px] text-red-400">معطل</span>}
+                  <span className="text-muted-foreground">{c.percentOff ? `${c.percentOff}%` : `${c.amountOff} ${c.currency}`}</span>
+                  <span className="text-muted-foreground">{c.usedCount ?? 0}/{c.maxUses ?? "∞"}</span>
+                  {!c.active && <span className="rounded-full border border-red-500/40 px-2 py-0.5 text-micro text-red-400">معطل</span>}
                 </li>
               ))}
             </ul>
@@ -394,11 +432,54 @@ export default function Finance() {
               className="mt-3 cursor-pointer rounded-full bg-gold px-5 py-2 text-xs font-black text-on-gold disabled:opacity-40">
               أنشئ الخطة
             </button>
-            <p className="mt-3 flex items-center gap-1.5 text-[10px] text-white/40">
+            <p className="mt-3 flex items-center gap-1.5 text-micro text-muted-foreground">
               <FileText className="h-3 w-3" /> الخطط الفعالة تظهر للعامة عبر /api/public/subscription-plans
             </p>
           </div>
         </div>
+      )}
+      {bulkConfirm === "approve" && (
+        <ConfirmAction
+          tone="default"
+          titleAr={`الموافقةُ على ${sel.size} طلبَ تسجيل`}
+          confirmLabelAr={`وافق على ${sel.size}`}
+          busy={busy}
+          onCancel={() => setBulkConfirm(null)}
+          onConfirm={() => { setBulkConfirm(null); void bulkRequests("approve"); }}
+        >
+          <p>لكلّ طلبٍ منها: <b className="text-foreground">يُحجَز مقعدٌ في شعبته وتُصدَر فاتورتُه</b>. والمقعدُ المحجوزُ يُنقص السعةَ المعروضةَ فورا.</p>
+          <p>ولا كوبونَ في الجماعيّ — الكوبونُ قرارٌ لصفٍّ بعينه، وتعميمُه يمنح خصما لمن لم يُقصد.</p>
+        </ConfirmAction>
+      )}
+
+      {rejecting && (
+        <ConfirmAction
+          titleAr={`رفضُ طلبِ «${rejecting.whoAr}»`}
+          confirmLabelAr="ارفض الطلب"
+          busy={busy}
+          reason={{ labelAr: "سببُ الرفض — يصل صاحبَ الطلب كما تكتبه", minLength: 5 }}
+          onCancel={() => setRejecting(null)}
+          onConfirm={(reason) => {
+            const target = rejecting;
+            setRejecting(null);
+            void act(() => apiPost(`/api/admin/enrollment-requests/${target.id}/reject`, { reason }), "رُفض الطلب — ووصل السببُ صاحبَه");
+          }}
+        >
+          <p>يُغلَق الطلبُ ولا يُحجَز له مقعد، ويقرأ صاحبُه سببَك كما تكتبه.</p>
+        </ConfirmAction>
+      )}
+
+      {bulkConfirm === "reject" && (
+        <ConfirmAction
+          titleAr={`رفضُ ${sel.size} طلبَ تسجيل`}
+          confirmLabelAr={`ارفض ${sel.size}`}
+          busy={busy}
+          reason={{ labelAr: "سببُ الرفض — يصل صاحبَ الطلب كما تكتبه", minLength: 5 }}
+          onCancel={() => setBulkConfirm(null)}
+          onConfirm={(reason) => { setBulkConfirm(null); void bulkRequests("reject", reason); }}
+        >
+          <p>يُغلَق كلُّ طلبٍ منها ويُخبَر صاحبُه. والسببُ الذي تكتبه هو ما يقرؤه — فاكتبه له لا للسجلّ.</p>
+        </ConfirmAction>
       )}
     </AdminLayout>
   );

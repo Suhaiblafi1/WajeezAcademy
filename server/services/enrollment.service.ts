@@ -136,7 +136,21 @@ export class EnrollmentService {
 
     const from = enrollment.cohort
     const moved = await this.prisma.$transaction(async (tx) => {
-      if (clash) await tx.enrollment.delete({ where: { id: clash.id } })
+      /* المقعدُ المتروكُ في الوجهة يُحذف ليخلو الطريقُ للقيد الفريد
+         (cohortId, userId). وقد يكون له تاريخٌ لا يُمحى — شهادةٌ صادرة —
+         فالقاعدةُ ترفض المحوَ بـ`Restrict` وتُلقي خطأً لا يفهمه أحد. فيُقال
+         السببُ قبل أن يقع، بالعربيّة، وباسم الشيء لا برمزِ قيد. */
+      if (clash) {
+        const issued = await tx.certificate.count({ where: { enrollmentId: clash.id } })
+        if (issued > 0) {
+          throw new AuthError(
+            'certificate_on_dropped_seat',
+            `لك في «${to.title}» مقعدٌ سابقٌ صدرت عنه ${issued === 1 ? 'شهادة' : `${issued} شهادات`} — ولا تُمحى الشهادةُ لتحويلِ مقعد. راسلنا لنعيد فتح مقعدك هناك.`,
+            409,
+          )
+        }
+        await tx.enrollment.delete({ where: { id: clash.id } })
+      }
       const e = await tx.enrollment.update({ where: { id: enrollmentId }, data: { cohortId: to.id } })
       /* سجلُّ حجز المقعد ينتقل معه: تركُه على الشعبة المغادَرة يُبقيها تُحسب
          ممتلئةً بمقعدٍ لا أحد فيه، ويُخرج الوجهةَ من عدّ المقاعد. */

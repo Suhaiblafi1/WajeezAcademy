@@ -18,6 +18,11 @@ export function resetPasswordLink(token: string): string {
   return `${publicSiteUrl()}/auth/reset?token=${encodeURIComponent(token)}`
 }
 
+/** رابطُ الدعوة — الصفحةُ نفسُها، والنصُّ الذي حولَه هو ما يفترق */
+export function inviteLink(token: string): string {
+  return resetPasswordLink(token)
+}
+
 export async function sendVerifyEmail(
   prisma: PrismaClient,
   input: { to: string; displayName: string; token: string },
@@ -80,7 +85,7 @@ export async function sendStaffInviteEmail(
       `أنشأ لك ${input.invitedByAr} حسابا في منصّة أكاديمية وجيز بدور: ${roles}.\n` +
       duties +
       `\nلتفعيل حسابك عيّن كلمة مرورك من هذا الرابط:\n${link}\n\n` +
-      `الرابط صالحٌ لساعة واحدة. فإن انتهى فاطلب «نسيت كلمة المرور» من صفحة الدخول ببريدك هذا.\n\n` +
+      `الرابط صالحٌ سبعةَ أيّام. فإن انتهى فاطلب من مُنشئ حسابك إعادةَ إرسال الدعوة، أو استعمل «نسيت كلمة المرور» ببريدك هذا.\n\n` +
       `إن لم تكن تتوقّع هذه الدعوة فلا تفتح الرابط، وأبلغ من أرسلها إليك.\n— أكاديمية وجيز`,
   })
 }

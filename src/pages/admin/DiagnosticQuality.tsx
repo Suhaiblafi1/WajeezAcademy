@@ -84,17 +84,17 @@ export default function DiagnosticQuality() {
         {counts && (
           <div className="mt-3 flex flex-wrap gap-2">
             {Object.entries(counts).map(([k, v]) => (
-              <span key={k} className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-[11px] text-white/60">
-                <span className="font-black text-white">{v}</span> {COUNT_AR[k] ?? k}
+              <span key={k} className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-[11px] text-muted-foreground">
+                <span className="font-black text-foreground">{v}</span> {COUNT_AR[k] ?? k}
               </span>
             ))}
           </div>
         )}
-        {!latest && <p className="mt-3 text-sm text-white/50">لا تشغيلات بعد — شغّل المحاكاة من لوحة النشر.</p>}
+        {!latest && <p className="mt-3 text-sm text-muted-foreground">لا تشغيلات بعد — شغّل المحاكاة من لوحة النشر.</p>}
         {latest && (
           <div className="mt-4 overflow-x-auto rounded-2xl border border-white/10">
             <table className="w-full text-right text-xs">
-              <thead className="bg-white/[0.04] text-white/50">
+              <thead className="bg-white/[0.04] text-muted-foreground">
                 <tr>
                   <th className="px-3 py-2">الشخصية</th><th className="px-3 py-2">أسئلة</th><th className="px-3 py-2">النوع</th>
                   <th className="px-3 py-2">المسار الأول</th><th className="px-3 py-2">القالب</th><th className="px-3 py-2">الثقة</th><th className="px-3 py-2">التطابق</th>
@@ -121,14 +121,14 @@ export default function DiagnosticQuality() {
       <section className="mt-8">
         <h2 className="text-lg font-black">تحليلات الأثر السابقة</h2>
         <div className="mt-4 space-y-2">
-          {impacts.length === 0 && <p className="text-sm text-white/50">لا تحليلات بعد.</p>}
+          {impacts.length === 0 && <p className="text-sm text-muted-foreground">لا تحليلات بعد.</p>}
           {impacts.map((r) => (
             <div key={r.id} className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-bold">{r.changeRef}</p>
-                <p className="text-[11px] text-white/50">{fmtDateTime(new Date(r.createdAt))}</p>
+                <p className="text-[11px] text-muted-foreground">{fmtDateTime(new Date(r.createdAt))}</p>
               </div>
-              <p className="mt-1 text-xs text-white/60">
+              <p className="mt-1 text-xs text-muted-foreground">
                 تغيّرت {r.summary.changedCount} من {r.summary.totalPersonas} شخصية
                 {r.summary.changed.length > 0 && <span className="text-amber-300"> — {r.summary.changed.map((c) => c.name).join("، ")}</span>}
               </p>
@@ -139,27 +139,27 @@ export default function DiagnosticQuality() {
 
       <section className="mt-8">
         <h2 className="text-lg font-black">آراء المتعلمين في نتائجهم</h2>
-        <p className="mt-1 text-xs text-white/50">بطاقة «هل تصف هذه النتيجة وضعك؟» أسفل النتيجة الكاملة — مربوطة بجلسة التشخيص والمسار.</p>
+        <p className="mt-1 text-xs text-muted-foreground">بطاقة «هل تصف هذه النتيجة وضعك؟» أسفل النتيجة الكاملة — مربوطة بجلسة التشخيص والمسار.</p>
         {!feedback || feedback.total === 0 ? (
-          <p className="mt-3 text-sm text-white/50">لا آراء بعد — تصل هنا فور إرسال أول متعلم رأيه.</p>
+          <p className="mt-3 text-sm text-muted-foreground">لا آراء بعد — تصل هنا فور إرسال أول متعلم رأيه.</p>
         ) : (
           <>
             <div className="mt-4 grid gap-3 sm:grid-cols-4">
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center">
                 <p className="text-2xl font-black">{feedback.total}</p>
-                <p className="mt-1 text-[11px] text-white/55">إجمالي الآراء</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">إجمالي الآراء</p>
               </div>
               <div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/5 p-4 text-center">
                 <p className="text-2xl font-black text-emerald-300">{feedback.verdicts.yes}</p>
-                <p className="mt-1 text-[11px] text-white/55">نعم — تصف وضعهم</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">نعم — تصف وضعهم</p>
               </div>
               <div className="rounded-2xl border border-gold/30 bg-gold/5 p-4 text-center">
                 <p className="text-2xl font-black text-gold-ink">{feedback.verdicts.somewhat}</p>
-                <p className="mt-1 text-[11px] text-white/55">إلى حد ما</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">إلى حد ما</p>
               </div>
               <div className="rounded-2xl border border-red-400/30 bg-red-400/5 p-4 text-center">
                 <p className="text-2xl font-black text-red-300">{feedback.verdicts.no}</p>
-                <p className="mt-1 text-[11px] text-white/55">لا</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">لا</p>
               </div>
             </div>
             <div className="mt-4 space-y-2">
@@ -169,9 +169,9 @@ export default function DiagnosticQuality() {
                     <span className="rounded-full border border-teal/40 bg-teal/10 px-2.5 py-0.5 text-[11px] font-bold text-teal-light-ink">
                       {VERDICT_AR[r.verdict] ?? r.verdict}
                     </span>
-                    <p className="text-[11px] text-white/45" dir="ltr">{r.pathwayId ?? "—"} · {fmtDateTime(new Date(r.createdAt))}</p>
+                    <p className="text-[11px] text-muted-foreground" dir="ltr">{r.pathwayId ?? "—"} · {fmtDateTime(new Date(r.createdAt))}</p>
                   </div>
-                  <p className="mt-2 text-xs leading-relaxed text-white/70">{r.note}</p>
+                  <p className="mt-2 text-xs leading-relaxed text-foreground">{r.note}</p>
                 </div>
               ))}
             </div>
@@ -179,7 +179,7 @@ export default function DiagnosticQuality() {
         )}
       </section>
 
-      <button onClick={() => void refresh()} className="mt-6 flex cursor-pointer items-center gap-1.5 text-xs text-white/50 hover:text-white">
+      <button onClick={() => void refresh()} className="mt-6 flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
         <RefreshCw className="h-3.5 w-3.5" /> تحديث
       </button>
     </AdminLayout>

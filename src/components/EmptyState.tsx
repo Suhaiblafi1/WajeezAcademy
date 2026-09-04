@@ -41,8 +41,8 @@ const TONE_RING: Record<NonNullable<EmptyStateProps["tone"]>, string> = {
 };
 
 const TONE_ICON: Record<NonNullable<EmptyStateProps["tone"]>, string> = {
-  start: "text-white/25",
-  filter: "text-white/25",
+  start: "text-muted-foreground/50",
+  filter: "text-muted-foreground/50",
   done: "text-emerald-300/60",
 };
 
@@ -53,11 +53,11 @@ export default function EmptyState({
     <div className={`grid place-items-center rounded-3xl border px-6 py-12 text-center ${TONE_RING[tone]} ${className}`}>
       <Icon className={`h-10 w-10 ${TONE_ICON[tone]}`} aria-hidden="true" />
       <h2 className="mt-4 text-lg font-black">{titleAr}</h2>
-      <p className="mt-2 max-w-md text-sm leading-7 text-white/60">{reasonAr}</p>
+      <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">{reasonAr}</p>
 
       {actions.length > 0 && (
         <>
-          <p className="mt-6 text-[11px] font-black text-white/60">
+          <p className="mt-6 text-[11px] font-black text-muted-foreground">
             {tone === "done" ? "وإن أردت المتابعة:" : "ابدأ من هنا:"}
           </p>
           <div className="mt-3 flex w-full max-w-lg flex-col gap-2">
@@ -65,11 +65,11 @@ export default function EmptyState({
               const body = (
                 <>
                   <span className="flex-1 text-start text-sm font-bold">{a.labelAr}</span>
-                  {a.hintAr && <span className="hidden text-[11px] text-white/60 sm:block">{a.hintAr}</span>}
+                  {a.hintAr && <span className="hidden text-[11px] text-muted-foreground sm:block">{a.hintAr}</span>}
                   <ArrowLeft className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
                 </>
               );
-              const cls = "flex cursor-pointer items-center gap-3 rounded-2xl border border-white/12 bg-black/20 px-4 py-3 transition hover:border-teal/50 hover:bg-teal/5";
+              const cls = "flex cursor-pointer items-center gap-3 rounded-2xl border border-white/12 bg-paper/20 px-4 py-3 transition hover:border-teal/50 hover:bg-teal/5";
               return a.to
                 ? <Link key={a.labelAr} to={a.to} className={cls}>{body}</Link>
                 : <button key={a.labelAr} type="button" onClick={a.onClick} className={cls}>{body}</button>;

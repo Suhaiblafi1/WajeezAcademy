@@ -81,7 +81,7 @@ export default function AwaitingCourseChoices({
 
   return (
     <div className="w-full border-t border-white/8 pt-3">
-      <p className="text-[11px] leading-5 text-white/45">
+      <p className="text-[11px] leading-5 text-muted-foreground">
         لا شعبةَ لها بعد. تستطيع أن تنتظرها، أو تستبدلها بما يخدم المهارات نفسَها الآن، أو تحذفها من خطّتك.
       </p>
 
@@ -94,14 +94,14 @@ export default function AwaitingCourseChoices({
       <div className="mt-2.5 flex flex-wrap items-center gap-2">
         <button
           type="button" onClick={() => void openReplace()} disabled={busy !== ""}
-          className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-bold text-white/75 transition hover:border-teal/50 hover:text-teal-light-ink disabled:opacity-40"
+          className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-bold text-foreground transition hover:border-teal/50 hover:text-teal-light-ink disabled:opacity-40"
         >
           <ArrowLeftRight className="h-3 w-3" /> استبدلها
         </button>
 
         <button
           type="button" onClick={() => setMode(mode === "remove" ? null : "remove")} disabled={busy !== ""}
-          className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-bold text-white/75 transition hover:border-red-500/50 hover:text-red-300 disabled:opacity-40"
+          className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-bold text-foreground transition hover:border-red-500/50 hover:text-red-300 disabled:opacity-40"
         >
           <Trash2 className="h-3 w-3" /> احذفها من خطّتي
         </button>
@@ -110,8 +110,8 @@ export default function AwaitingCourseChoices({
           type="button" onClick={() => void act("notify")} disabled={busy !== ""}
           className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-bold transition disabled:opacity-40 ${
             notifyOnCohort
-              ? "border-teal/40 text-teal-light-ink hover:border-white/25 hover:text-white/70"
-              : "border-white/15 text-white/50 hover:border-teal/50 hover:text-teal-light-ink"}`}
+              ? "border-teal/40 text-teal-light-ink hover:border-white/25 hover:text-foreground"
+              : "border-white/15 text-muted-foreground hover:border-teal/50 hover:text-teal-light-ink"}`}
         >
           {busy === "notify" ? <Loader2 className="h-3 w-3 animate-spin" />
             : notifyOnCohort ? <Bell className="h-3 w-3" /> : <BellOff className="h-3 w-3" />}
@@ -122,7 +122,7 @@ export default function AwaitingCourseChoices({
       {/* ── تأكيد الحذف ── */}
       {mode === "remove" && (
         <div className="mt-3 rounded-xl border border-red-500/25 bg-red-500/[0.06] p-3">
-          <p className="text-[11.5px] leading-6 text-white/75">
+          <p className="text-[11.5px] leading-6 text-foreground">
             تُحذف «{courseTitle}» من خطّتك. تستطيع إضافتها لاحقا من الكتالوج.
           </p>
           <div className="mt-2.5 flex items-center gap-2">
@@ -134,7 +134,7 @@ export default function AwaitingCourseChoices({
             </button>
             <button
               type="button" onClick={() => setMode(null)}
-              className="rounded-full border border-white/15 px-4 py-1.5 text-[11px] font-bold text-white/60 hover:text-white/85"
+              className="rounded-full border border-white/15 px-4 py-1.5 text-[11px] font-bold text-muted-foreground hover:text-foreground"
             >
               تراجع
             </button>
@@ -146,25 +146,25 @@ export default function AwaitingCourseChoices({
       {mode === "replace" && (
         <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.03] p-3">
           <div className="flex items-center justify-between">
-            <p className="text-[11px] font-black text-white/70">بدائلُ لها شعبةٌ الآن</p>
-            <button type="button" onClick={() => setMode(null)} aria-label="إغلاق البدائل" className="text-white/40 hover:text-white/70">
+            <p className="text-[11px] font-black text-foreground">بدائلُ لها شعبةٌ الآن</p>
+            <button type="button" onClick={() => setMode(null)} aria-label="إغلاق البدائل" className="text-muted-foreground hover:text-foreground">
               <X className="h-3.5 w-3.5" />
             </button>
           </div>
 
           {busy === "alts" ? (
-            <div className="grid place-items-center py-6"><Loader2 className="h-4 w-4 animate-spin text-white/40" /></div>
+            <div className="grid place-items-center py-6"><Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /></div>
           ) : !alts || alts.length === 0 ? (
-            <p className="py-4 text-[11px] leading-6 text-white/50">
+            <p className="py-4 text-[11px] leading-6 text-muted-foreground">
               لا بديلَ الآن يخدم مهاراتها وله شعبةٌ مفتوحة. أبقِها منتظرةً ونُعلمك عند فتحها.
             </p>
           ) : (
             <ul className="mt-2 space-y-1.5">
               {alts.map((a) => (
-                <li key={a.courseId} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 bg-black/20 px-3 py-2">
+                <li key={a.courseId} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 bg-paper/20 px-3 py-2">
                   <div className="min-w-0">
                     <p className="truncate text-[11.5px] font-bold">{a.titleAr}</p>
-                    <p className="mt-0.5 text-[10px] text-white/45">
+                    <p className="mt-0.5 text-micro text-muted-foreground">
                       تشترك في {a.sharedSkills} {a.sharedSkills === 1 ? "مهارة" : a.sharedSkills === 2 ? "مهارتين" : "مهارات"}
                       {a.price !== null && <> · {Number(a.price)} {a.currency}</>}
                     </p>

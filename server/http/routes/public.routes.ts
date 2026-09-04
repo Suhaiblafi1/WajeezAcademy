@@ -5,9 +5,18 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { PublicCatalogService } from '../../services/public-catalog.service'
+import { fileUploadsEnabled } from '../../services/storage.service'
 
 export function registerPublicCatalogRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const catalog = new PublicCatalogService(prisma)
+
+  /* ما تستطيعه هذه المنصّةُ فعلا — تقرأه الواجهةُ قبل أن تعرض زرّا.
+     الواجهةُ كانت تعرض «ارفع التسجيل» و«ارفع سيرتك» حيث لا مخزنَ يقبلهما،
+     فتفشل الأولى بعد الضغط وتكذب الثانيةُ فلا تُرسل الملفَّ أصلا. فبدل
+     تكرار المعرفة في الواجهة، يقولها الخادمُ مرّةً واحدة. */
+  app.get('/api/config', {
+    schema: { tags: ['public-catalog'], summary: 'قدراتُ المنصّة المفعّلة — تقرؤها الواجهة لتخفي ما لا يعمل' },
+  }, async () => ({ fileUploads: fileUploadsEnabled(), demoMode: process.env.DEMO_MODE === 'true' }))
 
   app.get('/api/public/pathways', {
     schema: { tags: ['public-catalog'], summary: 'المسارات المنشورة مع دوراتها مرتبة' },

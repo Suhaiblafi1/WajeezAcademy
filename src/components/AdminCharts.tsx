@@ -57,6 +57,13 @@ function lastByKey(rows: Record<string, unknown>[], keyField: string, valueField
     .map((x) => ({ labelAr: x.k, value: x.v }));
 }
 
+/* حالاتُ التسجيل كما في القاعدة (enrolled | waitlisted | completed | dropped …) —
+   كانت تُعرض بالإنجليزيّة الخام على لوحة المدير (جولة ٢٠٢٦-٠٩) */
+const ENROLLMENT_STATUS_AR: Record<string, string> = {
+  enrolled: "مسجَّل", active: "جارٍ", completed: "أكمل", waitlisted: "قائمة انتظار",
+  dropped: "انسحب", withdrawn: "انسحب", seat_held: "مقعد محجوز", pending: "بانتظار الدفع", cancelled: "أُلغي",
+};
+
 export default function AdminCharts({ className = "" }: { className?: string }) {
   const progress = useReport("progress-completion");
   const diagnostic = useReport("diagnostic");
@@ -78,7 +85,7 @@ export default function AdminCharts({ className = "" }: { className?: string }) 
   const enrollmentBars: ChartBar[] | null = enrollments.rows
     ? Object.entries(
         enrollments.rows.reduce<Record<string, number>>((acc, r) => {
-          const k = str(r.status) || "غير محدد";
+          const k = ENROLLMENT_STATUS_AR[str(r.status)] ?? (str(r.status) || "غير محدد");
           acc[k] = (acc[k] ?? 0) + num(r.count);
           return acc;
         }, {}),

@@ -65,21 +65,53 @@ else
   echo "⚠️  أخفق استيراد الكتالوج — الموقع الحيّ لم يتأثر. أعده يدويا لاحقا."
 fi
 
-ok=0
+# ── الفحصان: داخليٌّ ثمّ عامّ، ولكلٍّ حكمُه ──
+#
+# كان الفحصُ واحدا على `https://$SITE_DOMAIN`. وخطّةُ النقل تقول صراحةً إنّ
+# الحزمةَ الجديدة **تعمل بالتوازي على عنوانٍ مؤقّت قبل تحويل النطاق** — وفي
+# تلك المدّة لا يشير النطاقُ إلى هذا الخادم بعد، فيسقط الفحصُ وينصح السكربتُ
+# بالرجوع، **والنشرُ ناجحٌ تماما**. ونصيحةُ رجوعٍ في غير موضعها أسوأُ من لا
+# نصيحة: تُدرّب المشغّلَ على تجاهل آخر سطرٍ في المخرَج.
+#
+# فصار الفحصُ داخليّا أوّلا (الخادمُ نفسُه يجيب في شبكة Docker)، ثمّ عامّا
+# من الخارج. والحكمُ يفرّق بين ثلاث حالات لا حالتين.
+
+internal=0
 for i in $(seq 1 20); do
-  if curl -fsS --max-time 5 "https://${SITE_DOMAIN}/api/version" >/dev/null 2>&1; then ok=1; break; fi
+  if $COMPOSE exec -T app node -e \
+      "fetch('http://127.0.0.1:'+(process.env.API_PORT||7101)+'/api/version').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" \
+      >/dev/null 2>&1; then internal=1; break; fi
   sleep 3
 done
 
-if [ "$ok" = 1 ]; then
+if [ "$internal" != 1 ]; then
+  printf '\n\033[31m✗ الخادم نفسُه لا يجيب — هذا إخفاقُ نشرٍ حقيقيّ\033[0m\n' >&2
+  echo "السجل:  $COMPOSE logs --tail=80 app" >&2
+  echo "للرجوع: git checkout <الإصدار السابق> && bash deploy/deploy.sh" >&2
+  exit 1
+fi
+
+public=0
+for i in $(seq 1 20); do
+  if curl -fsS --max-time 5 "https://${SITE_DOMAIN}/api/version" >/dev/null 2>&1; then public=1; break; fi
+  sleep 3
+done
+
+if [ "$public" = 1 ]; then
   printf '\n\033[32m✓ نُشر الإصدار %s على https://%s\033[0m\n' "$COMMIT" "$SITE_DOMAIN"
   echo
   echo "لم يبقَ إلا التحقّق اليدويّ من المال:"
   echo "  · أرسل حدث اختبار من لوحة سترايب وتأكّد من ٢٠٠"
   echo "  · $COMPOSE logs -f app   لمتابعة السجل"
+elif ! getent hosts "$SITE_DOMAIN" >/dev/null 2>&1; then
+  # النطاقُ لا يُترجَم بعد: هذه مرحلةُ التوازي، والنشرُ ناجح
+  printf '\n\033[32m✓ نُشر الإصدار %s — والخادم يجيب داخليّا\033[0m\n' "$COMMIT"
+  printf '\033[33m…و%s لا يُترجَم بعد، فلا يُفحَص من الخارج. هذا متوقَّعٌ قبل تحويل النطاق.\033[0m\n' "$SITE_DOMAIN"
+  echo "افحصه بعنوان الخادم المؤقّت، أو أضف سطرا في /etc/hosts للفحص وحدَه."
 else
-  printf '\n\033[31m✗ الموقع لا يجيب بعد النشر\033[0m\n' >&2
-  echo "السجل:  $COMPOSE logs --tail=80 app caddy" >&2
-  echo "للرجوع: git checkout <الإصدار السابق> && bash deploy/deploy.sh" >&2
+  # النطاقُ يُترجَم ولا يجيب: الخادمُ يعمل والطريقُ إليه مقطوع
+  printf '\n\033[31m✗ الخادم يجيب داخليّا، ولا يجيب على https://%s\033[0m\n' "$SITE_DOMAIN" >&2
+  echo "فابحث في الطريق لا في التطبيق: شهادةُ Caddy · جدارُ النار (٤٤٣) · سجلّ DNS" >&2
+  echo "السجل:  $COMPOSE logs --tail=80 caddy" >&2
   exit 1
 fi

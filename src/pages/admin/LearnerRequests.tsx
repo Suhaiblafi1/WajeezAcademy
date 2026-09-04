@@ -12,6 +12,7 @@
    نفسِها يبقى في شاشة الشعبة: هي التي تحمل قواعدَ الإصدار وحاجزَ البريد. */
 
 import { useCallback, useEffect, useState } from "react";
+import { toast, toastError } from "@/components/Toast";
 import { Award, BadgeCheck, CheckCircle2, Clock, Eye, Loader2, ServerOff, XCircle } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
@@ -51,7 +52,6 @@ export default function LearnerRequests() {
   const [offline, setOffline] = useState<string | null>(null);
   const [note, setNote] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState("");
-  const [flash, setFlash] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -66,13 +66,12 @@ export default function LearnerRequests() {
 
   const decide = async (id: string, status: "in_review" | "fulfilled" | "declined") => {
     setBusy(id);
-    setFlash("");
     try {
       await apiPost(`/api/admin/learner-requests/${id}/decide`, {
         status,
         decisionAr: note[id]?.trim() || undefined,
       });
-      setFlash(
+      toast(
         status === "fulfilled"
           ? "سُجّل الإنجاز — ويصل الخبرُ إلى صاحب الطلب"
           : status === "declined"
@@ -81,7 +80,7 @@ export default function LearnerRequests() {
       );
       await load();
     } catch (e) {
-      setFlash(e instanceof ApiError ? e.message : "تعذّر تنفيذ القرار");
+      toastError(e instanceof ApiError ? e.message : "تعذّر تنفيذ القرار");
     } finally {
       setBusy("");
     }
@@ -91,9 +90,9 @@ export default function LearnerRequests() {
     return (
       <AdminLayout title="طلبات المتعلّمين">
         <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
-          <ServerOff className="h-12 w-12 text-white/20" />
+          <ServerOff className="h-12 w-12 text-muted-foreground/50" />
           <h2 className="mt-4 text-xl font-black">لا يمكن الوصول للبيانات</h2>
-          <p className="mt-2 max-w-md text-sm leading-7 text-white/55">{offline}</p>
+          <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">{offline}</p>
         </div>
       </AdminLayout>
     );
@@ -101,19 +100,13 @@ export default function LearnerRequests() {
 
   return (
     <AdminLayout title="طلبات المتعلّمين — شهادةٌ وتوصية">
-      {flash && (
-        <p role="status" className="mb-4 rounded-xl border border-white/10 bg-white/[0.04] p-3 text-xs font-bold text-white/80">
-          {flash}
-        </p>
-      )}
-
       {rows === null ? (
-        <div className="grid place-items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-white/30" /></div>
+        <div className="grid place-items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" /></div>
       ) : rows.length === 0 ? (
         <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center">
           <CheckCircle2 className="h-12 w-12 text-teal-light-ink/50" />
           <h2 className="mt-4 text-xl font-black">لا طلبَ ينتظر قرارك</h2>
-          <p className="mt-2 max-w-md text-sm leading-7 text-white/55">
+          <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">
             حين يُنهي متعلّمٌ دورتَه أو مسارَه ويطلب شهادتَه أو توصيةً يظهر هنا — مستوفيا قواعدَ الإكمال، فحسابُ
             الأهليّة يقع قبل الطلب لا بعده.
           </p>
@@ -136,39 +129,39 @@ export default function LearnerRequests() {
                     <p className="flex flex-wrap items-center gap-x-2 text-sm font-black">
                       <meta.icon className="h-4 w-4 text-gold-ink" />
                       {meta.label}
-                      <span className="font-normal text-white/65">— {subject}</span>
+                      <span className="font-normal text-foreground">— {subject}</span>
                     </p>
-                    <p className="mt-1.5 text-xs text-white/60">
-                      للمتعلّم <b className="text-white/85">{r.user.displayName}</b>
+                    <p className="mt-1.5 text-xs text-muted-foreground">
+                      للمتعلّم <b className="text-foreground">{r.user.displayName}</b>
                       {" · "}
                       {/* الفاصلُ نصٌّ لا هامش: هامشُ عنصرٍ `dir=ltr` داخل سطرٍ
                           عربيّ يقع على الجهة المقابلة، فيلتصق البريدُ بالاسم. */}
-                      <span dir="ltr" className="text-white/40">{r.user.email}</span>
+                      <span dir="ltr" className="text-muted-foreground">{r.user.email}</span>
                     </p>
-                    <p className="mt-0.5 text-[11px] text-white/40">
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">
                       <Clock className="mb-0.5 inline h-3 w-3" /> {fmtDateTimeAr(r.createdAt)}
                       {r.enrollment && <> · شعبة «{r.enrollment.cohort.title}»</>}
                     </p>
                   </div>
-                  <span className="shrink-0 rounded-full border border-white/15 px-3 py-1 text-[11px] font-bold text-white/60">
+                  <span className="shrink-0 rounded-full border border-white/15 px-3 py-1 text-[11px] font-bold text-muted-foreground">
                     {STATUS_AR[r.status] ?? r.status}
                   </span>
                 </div>
 
                 {/* جهةُ التوصية بكلام صاحبها — عليها تُكتب، فلا تُكتب عامّة */}
                 {r.audienceAr && (
-                  <p className="mt-3 rounded-xl border border-teal/25 bg-teal/[0.06] px-4 py-3 text-xs leading-7 text-white/75">
-                    <span className="font-bold text-white/45">الجهةُ التي يريدها: </span>{r.audienceAr}
+                  <p className="mt-3 rounded-xl border border-teal/25 bg-teal/[0.06] px-4 py-3 text-xs leading-7 text-foreground">
+                    <span className="font-bold text-muted-foreground">الجهةُ التي يريدها: </span>{r.audienceAr}
                   </p>
                 )}
                 {r.noteAr && (
-                  <p className="mt-2 rounded-xl border border-white/10 bg-black/25 px-4 py-3 text-xs leading-7 text-white/75">
-                    <span className="font-bold text-white/45">ملاحظتُه: </span>{r.noteAr}
+                  <p className="mt-2 rounded-xl border border-white/10 bg-paper/25 px-4 py-3 text-xs leading-7 text-foreground">
+                    <span className="font-bold text-muted-foreground">ملاحظتُه: </span>{r.noteAr}
                   </p>
                 )}
 
                 <div className="mt-3">
-                  <label htmlFor={`note-${r.id}`} className="mb-1.5 block text-[11px] font-bold text-white/55">
+                  <label htmlFor={`note-${r.id}`} className="mb-1.5 block text-[11px] font-bold text-muted-foreground">
                     ردُّك — إلزاميٌّ عند الاعتذار، يقرؤه المتعلّم في بوابته
                   </label>
                   <textarea
@@ -196,7 +189,7 @@ export default function LearnerRequests() {
                       type="button"
                       onClick={() => void decide(r.id, "in_review")}
                       disabled={busy === r.id}
-                      className="flex cursor-pointer items-center gap-2 rounded-full border border-white/20 px-5 py-2.5 text-xs font-bold text-white/75 transition hover:border-white/40 disabled:opacity-40"
+                      className="flex cursor-pointer items-center gap-2 rounded-full border border-white/20 px-5 py-2.5 text-xs font-bold text-foreground transition hover:border-white/40 disabled:opacity-40"
                     >
                       <Eye className="h-3.5 w-3.5" /> قيد المراجعة
                     </button>
@@ -210,13 +203,13 @@ export default function LearnerRequests() {
                     <XCircle className="h-3.5 w-3.5" /> اعتذر
                   </button>
                   {reason.trim().length < MIN_REASON && (
-                    <span className="text-[10.5px] text-white/35">الاعتذار يلزمه سببٌ لا يقلّ عن {MIN_REASON} أحرف</span>
+                    <span className="text-micro text-muted-foreground">الاعتذار يلزمه سببٌ لا يقلّ عن {MIN_REASON} أحرف</span>
                   )}
                 </div>
 
                 {/* إصدارُ الشهادة نفسِها في شاشة الشعبة — هي حاملةُ القواعد */}
                 {r.enrollment && (
-                  <p className="mt-2.5 text-[10.5px] leading-5 text-white/35">
+                  <p className="mt-2.5 text-micro leading-5 text-muted-foreground">
                     الإصدار من «الشعب» ← شعبة «{r.enrollment.cohort.title}» ← مرشَّحو الشهادة، ثمّ سجّل الإنجاز هنا.
                   </p>
                 )}

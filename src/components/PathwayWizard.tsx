@@ -31,11 +31,11 @@ interface Readiness {
   steps: { key: string; labelAr: string; ok: boolean; reasonAr: string }[]
 }
 
-const inputCls = "w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/25 outline-none focus:border-gold/60";
+const inputCls = "w-full rounded-xl border border-white/10 bg-paper/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/75 outline-none focus:border-gold/60";
 
 const CHIP = (on: boolean) =>
   `cursor-pointer rounded-full border px-3 py-1 text-[11px] font-bold transition ${
-    on ? "border-gold bg-gold/15 text-gold-ink" : "border-white/15 text-white/60 hover:border-white/40"
+    on ? "border-gold bg-gold/15 text-gold-ink" : "border-white/15 text-muted-foreground hover:border-white/40"
   }`;
 
 export default function PathwayWizard({ courses, onDone }: { courses: CourseOption[]; onDone: () => void }) {
@@ -113,11 +113,11 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
           const now = i === step;
           return (
             <li key={s.key} className="flex items-center gap-2">
-              {i > 0 && <ArrowLeft className="h-3 w-3 text-white/25" aria-hidden="true" />}
+              {i > 0 && <ArrowLeft className="h-3 w-3 text-muted-foreground/50" aria-hidden="true" />}
               <span className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold ${
                 now ? "border-gold bg-gold/15 text-gold-ink"
                   : done ? "border-emerald-400/40 text-emerald-300"
-                  : "border-white/12 text-white/50"
+                  : "border-white/12 text-muted-foreground"
               }`}>
                 {done ? <Check className="h-3 w-3" aria-hidden="true" /> : <span>{i + 1}</span>}
                 {s.labelAr}
@@ -126,7 +126,7 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
           );
         })}
       </ol>
-      <p className="mb-4 text-[11px] text-white/60">{WIZARD_STEPS[step].hintAr}</p>
+      <p className="mb-4 text-[11px] text-muted-foreground">{WIZARD_STEPS[step].hintAr}</p>
 
       {error && <p className="mb-4 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-200">{error}</p>}
 
@@ -149,16 +149,16 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
       {/* ٢ · الدورات */}
       {key === "courses" && (
         <>
-          <p className="mb-2 text-xs font-black text-white/70">دورات المسار ({d.courseIds.length}) — بالترتيب الذي تختاره به</p>
+          <p className="mb-2 text-xs font-black text-foreground">دورات المسار ({d.courseIds.length}) — بالترتيب الذي تختاره به</p>
           <div className="flex max-h-72 flex-wrap gap-2 overflow-y-auto">
             {courses.map((c) => (
               <button key={c.id} type="button" onClick={() => setD({ ...d, courseIds: toggle(d.courseIds, c.id) })}
                 className={CHIP(d.courseIds.includes(c.id))}>
                 {d.courseIds.includes(c.id) && <span className="ml-1">{d.courseIds.indexOf(c.id) + 1}.</span>}
-                {c.title} <span className="font-mono text-white/55" dir="ltr">({c.id})</span>
+                {c.title} <span className="font-mono text-muted-foreground" dir="ltr">({c.id})</span>
               </button>
             ))}
-            {courses.length === 0 && <span className="text-[11px] text-white/60">أنشئ دورات أولا من نموذج الدورة.</span>}
+            {courses.length === 0 && <span className="text-[11px] text-muted-foreground">أنشئ دورات أولا من نموذج الدورة.</span>}
           </div>
         </>
       )}
@@ -167,8 +167,8 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
       {key === "profile" && (
         <div className="space-y-5">
           <div>
-            <p className="mb-1 text-xs font-black text-white/70">الشخصيات ({d.personas.length}) — إلزامي</p>
-            <p className="mb-2 text-[11px] leading-6 text-white/60">
+            <p className="mb-1 text-xs font-black text-foreground">الشخصيات ({d.personas.length}) — إلزامي</p>
+            <p className="mb-2 text-[11px] leading-6 text-muted-foreground">
               الشخصية تفتح المراحل المهنية التي يُرشَّح لها المسار. والفراغ لا يعني «الكل بحذر» — يعني أن المسار
               يطابق كل شخصية بلا قيد، فينافس من لا يناسبه.
             </p>
@@ -181,7 +181,7 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
               ))}
             </div>
             {stages.length > 0 && (
-              <p className="mt-2 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-[11px] leading-6 text-white/70">
+              <p className="mt-2 rounded-xl border border-white/10 bg-paper/20 px-3 py-2 text-[11px] leading-6 text-foreground">
                 <Target className="mb-0.5 me-1 inline h-3.5 w-3.5 text-teal-light-ink" aria-hidden="true" />
                 يفتح {stages.length} مرحلة مهنية: <span dir="ltr" className="font-mono">{stages.join(" · ")}</span>
               </p>
@@ -189,8 +189,8 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
           </div>
 
           <div>
-            <p className="mb-1 text-xs font-black text-white/70">الأهداف ({d.goals.length}) — إلزامي</p>
-            <p className="mb-2 text-[11px] leading-6 text-white/60">
+            <p className="mb-1 text-xs font-black text-foreground">الأهداف ({d.goals.length}) — إلزامي</p>
+            <p className="mb-2 text-[11px] leading-6 text-muted-foreground">
               الأهداف المعروضة هي ما يستطيع تدفق التشخيص إنتاجه فعلا — مشتقة من المحرك لا مكتوبة يدويا.
             </p>
             <div className="flex flex-wrap gap-2">
@@ -219,8 +219,8 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
       {/* ٤ · المجال */}
       {key === "domains" && (
         <>
-          <p className="mb-1 text-xs font-black text-white/70">مجالات المسار ({d.domainIds.length}) — إلزامي</p>
-          <p className="mb-2 text-[11px] leading-6 text-white/60">
+          <p className="mb-1 text-xs font-black text-foreground">مجالات المسار ({d.domainIds.length}) — إلزامي</p>
+          <p className="mb-2 text-[11px] leading-6 text-muted-foreground">
             المجال هو الباب الذي يدخل منه المسار إلى التوصية: يُطابَق بهدف المتعلم ووظيفته.
             بلا مجال يُنشر المسار ولا يُوصى به أبدا — ولذلك لا يجتاز حاجز النشر.
             {d.domainIds.length > 1 && " الأول في اختيارك هو الأقرب."}
@@ -245,16 +245,16 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
           </p>
 
           {readiness && (
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-              <p className="mb-3 flex items-center gap-2 text-xs font-black text-white/75">
+            <div className="rounded-2xl border border-white/10 bg-paper/20 p-4">
+              <p className="mb-3 flex items-center gap-2 text-xs font-black text-foreground">
                 <ShieldCheck className="h-4 w-4 text-gold-ink" aria-hidden="true" /> الجاهزية — نفس ما يفحصه حاجز النشر
               </p>
               <ul className="space-y-1.5">
                 {readiness.steps.map((s) => (
                   <li key={s.key} className="flex items-start gap-2 text-[11px] leading-6">
                     <span className={s.ok ? "text-emerald-300" : "text-amber-300"} aria-hidden="true">{s.ok ? "✓" : "•"}</span>
-                    <span className="font-bold text-white/80">{s.labelAr}:</span>
-                    <span className={s.ok ? "text-white/60" : "text-amber-300"}>{s.reasonAr}</span>
+                    <span className="font-bold text-foreground">{s.labelAr}:</span>
+                    <span className={s.ok ? "text-muted-foreground" : "text-amber-300"}>{s.reasonAr}</span>
                   </li>
                 ))}
               </ul>
@@ -267,11 +267,11 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
           </button>
 
           {impact && (
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-xs leading-6 text-white/75">
+            <div className="rounded-2xl border border-white/10 bg-paper/20 p-4 text-xs leading-6 text-foreground">
               <p className="font-bold">تغيّرت توصية {impact.changedCount} من {impact.totalPersonas} شخصية.</p>
               {impact.changed.map((c) => <p key={c.name} className="text-amber-300">• {c.name}</p>)}
               {impact.changedCount === 0 && (
-                <p className="mt-1 text-white/60">
+                <p className="mt-1 text-muted-foreground">
                   لا تغيير على الشخصيات الاثنتي عشرة — طبيعيٌّ لمسار جديد لا ينافس أحدا بعد،
                   والأثر يظهر حين يصبح منشورا ويدخل المنافسة.
                 </p>
@@ -279,7 +279,7 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
             </div>
           )}
 
-          <p className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-[11px] leading-6 text-white/70">
+          <p className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-[11px] leading-6 text-foreground">
             لا يُنشر المسار من هنا: كل كيان معتمد يحتاج طلب تغيير يعتمده <strong>شخص آخر</strong>
             {" "}(maker-checker) — واعتماد الذات مرفوض. الزر التالي يقدّمه للاعتماد، ثم يَنشره
             المعتمد من «النشر والإصدارات» بعد اجتياز البوابة كاملة.
@@ -326,7 +326,7 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
           </button>
         )}
         {step === 4 && !impact && (
-          <span className="text-[11px] text-white/60">افحص الأثر أولا — لا يُقدَّم مسار لم يُعرف أثره.</span>
+          <span className="text-[11px] text-muted-foreground">افحص الأثر أولا — لا يُقدَّم مسار لم يُعرف أثره.</span>
         )}
       </div>
     </div>

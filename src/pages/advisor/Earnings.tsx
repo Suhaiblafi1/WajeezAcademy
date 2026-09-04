@@ -39,8 +39,8 @@ export default function AdvisorEarnings() {
     return (
       <AdvisorLayout title="عمولتي">
         <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center">
-          <ServerOff className="h-10 w-10 text-white/20" />
-          <p className="mt-3 max-w-md text-sm leading-7 text-white/55">{offline}</p>
+          <ServerOff className="h-10 w-10 text-muted-foreground/50" />
+          <p className="mt-3 max-w-md text-sm leading-7 text-muted-foreground">{offline}</p>
         </div>
       </AdvisorLayout>
     );
@@ -57,13 +57,13 @@ export default function AdvisorEarnings() {
     <AdvisorLayout title="عمولتي">
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-          <p className="text-xs text-white/50">نسبة عمولتي</p>
+          <p className="text-xs text-muted-foreground">نسبة عمولتي</p>
           <p className="mt-2 text-2xl font-black">
             {data.commissionPct !== null ? `${data.commissionPct}%` : "لم تُتّفق بعد"}
           </p>
         </div>
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-          <p className="text-xs text-white/50">إيراد عملائي الدافعين</p>
+          <p className="text-xs text-muted-foreground">إيراد عملائي الدافعين</p>
           <p className="mt-2 text-2xl font-black" dir="ltr">{fmtMoney(data.revenueFromReferrals, data.currency)}</p>
         </div>
         <div className="rounded-2xl border border-teal/30 bg-teal/5 p-5">
@@ -75,19 +75,19 @@ export default function AdvisorEarnings() {
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-5">
-        <p className="flex items-center gap-2 text-xs text-white/60">
-          <Banknote className="h-4 w-4 text-white/40" /> {data.activeCases} حالة نشطة مسندة إليّ
+        <p className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Banknote className="h-4 w-4 text-muted-foreground" /> {data.activeCases} حالة نشطة مسندة إليّ
         </p>
         {data.ratingAvg !== null ? (
-          <p className="flex items-center gap-1.5 text-xs text-white/60">
+          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Star className="h-4 w-4 fill-gold text-gold" /> {data.ratingAvg.toFixed(1)} من ٥ — {data.ratingCount} تقييما
           </p>
         ) : (
-          <p className="text-xs text-white/40">لا يظهر تقييمك بعد — يُحسب من ثلاثة تقييمات فأكثر</p>
+          <p className="text-xs text-muted-foreground">لا يظهر تقييمك بعد — يُحسب من ثلاثة تقييمات فأكثر</p>
         )}
       </div>
 
-      <p className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4 text-center text-[11px] leading-6 text-white/45">
+      <p className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4 text-center text-[11px] leading-6 text-muted-foreground">
         الإيراد محسوب من الطلبات المدفوعة فعلا لعملائك ضمن حالاتك النشطة، والعمولة نسبةٌ تُعيّنها الإدارة —
         لأي استفسار عن الرقم أو النسبة تواصل مع منسّقك.
       </p>

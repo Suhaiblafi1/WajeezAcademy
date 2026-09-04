@@ -13,17 +13,17 @@ export default function NotFound() {
           <Compass className="h-8 w-8 text-teal-light-ink" />
         </span>
         <h1 className="mt-6 text-3xl font-black">هذه الصفحة غير موجودة</h1>
-        <p className="mt-3 max-w-md leading-8 text-white/55">
+        <p className="mt-3 max-w-md leading-8 text-muted-foreground">
           ربما تغيّر العنوان أو نُقلت الصفحة. أصدق طريق للعودة: التشخيص — يعرف دائما أين تبدأ.
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <Link to="/diagnostic" className="rounded-2xl bg-teal-deep px-7 py-3.5 font-bold text-white transition hover:bg-teal-darker">
             ابدأ التشخيص
           </Link>
-          <Link to="/" className="rounded-2xl border border-white/15 px-7 py-3.5 font-bold text-white/75 transition hover:border-white/40">
+          <Link to="/" className="rounded-2xl border border-white/15 px-7 py-3.5 font-bold text-muted-foreground transition hover:border-white/40">
             الرئيسية
           </Link>
-          <Link to="/pathways" className="rounded-2xl border border-white/15 px-7 py-3.5 font-bold text-white/75 transition hover:border-white/40">
+          <Link to="/pathways" className="rounded-2xl border border-white/15 px-7 py-3.5 font-bold text-muted-foreground transition hover:border-white/40">
             تصفح المسارات
           </Link>
         </div>

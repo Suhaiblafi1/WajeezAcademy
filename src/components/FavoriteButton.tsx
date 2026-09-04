@@ -41,7 +41,7 @@ export default function FavoriteButton({
         className={`grid h-9 w-9 shrink-0 place-items-center rounded-full border transition ${
           fav
             ? "border-gold/60 bg-gold/15 text-gold-ink"
-            : "border-white/10 bg-white/[0.04] text-white/45 hover:border-gold/50 hover:text-gold-ink"
+            : "border-white/10 bg-white/[0.04] text-muted-foreground hover:border-gold/50 hover:text-gold-ink"
         } ${className}`}
       >
         <Heart className={`h-4 w-4 ${fav ? "fill-current" : ""}`} />

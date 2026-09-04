@@ -69,12 +69,30 @@ describe('المدير الأكاديميّ يدير من هو أقلّ منه',
   })
 
   it('ولا يفوّض خارج مهامّه — ولو كان يملكها', () => {
-    /* يملك «تسجيل دفعة» بحكم عمله، ولا يفوّضها: عائلةُ الصلاحية تقول لمن تخصّ */
-    expect(ROLE_PERMISSIONS.academic_manager).toContain('finance.payment.record')
-    expect(refuseDelegation(academic, targetOf('trainer'), 'finance.payment.record'))
+    /* يملك «عرضَ الفواتير» بحكم عمله — يحتاج أن يعرف أدفع المتعلّمُ أم لا —
+       ولا يفوّضها: عائلةُ الصلاحية تقول لمن تخصّ */
+    expect(ROLE_PERMISSIONS.academic_manager).toContain('finance.view')
+    expect(refuseDelegation(academic, targetOf('trainer'), 'finance.view'))
       .toMatchObject({ code: 'out_of_scope' })
     expect(refuseDelegation(academic, targetOf('trainer'), 'settings.manage'))
       .toMatchObject({ code: 'out_of_scope' })
+  })
+
+  /* ═══ فصلُ المال عن الأكاديميّ ═══
+
+     كانت حزمتُه تجمع تسجيلَ التسجيل وتسجيلَ دفعته واعتمادَ استردادها
+     وتبديلَ مفاتيح مزوّد الدفع — أربعةَ أعمالٍ في يد. والفحصُ يحرس الفصلَ
+     كي لا يعود بحبّةٍ تُضاف سهوا. */
+  it('ولا يحرّك مالا: لا دفعةً يسجّلها ولا استردادا يعتمده ولا مزوّدَ دفعٍ يبدّله', () => {
+    for (const key of ['finance.payment.record', 'finance.refund.process', 'commerce.manage', 'settings.manage'] as const) {
+      expect(ROLE_PERMISSIONS.academic_manager, `${key} عادت إلى المدير الأكاديميّ`).not.toContain(key)
+    }
+    /* والطلباتُ والكوبوناتُ عند المالية — وكانت مقلوبة: تملك المالية تسجيلَ
+       الدفعة ولا تملك الطلبَ الذي دُفع عنه. */
+    expect(ROLE_PERMISSIONS.finance).toContain('commerce.manage')
+    /* ومفاتيحُ التكاملات لمديرِ النظام وحدَه */
+    expect(ROLE_PERMISSIONS.finance).not.toContain('settings.manage')
+    expect(ROLE_PERMISSIONS.super_admin).toContain('settings.manage')
   })
 
   it('ولا يفوّض ما لا يملكه هو', () => {
@@ -102,8 +120,8 @@ describe('مديرُ النظام', () => {
 })
 
 describe('من لا يفوّض', () => {
-  it('المالية والدعم والعمليات لا يفوّضون شيئا', () => {
-    for (const role of ['finance', 'support', 'operations_manager', 'diagnostic_manager', 'trainer', 'learner']) {
+  it('المالية والدعم والعمليات والتنسيق لا يفوّضون شيئا', () => {
+    for (const role of ['finance', 'support', 'operations_manager', 'diagnostic_manager', 'academic_coordinator', 'trainer', 'learner']) {
       expect(DELEGATABLE_FAMILIES[role], `${role} صار مفوِّضا بلا قرار`).toBeUndefined()
       expect(refuseDelegation(actorOf(role), targetOf('learner'), 'learner.submit'), role)
         .toMatchObject({ code: 'not_delegator' })

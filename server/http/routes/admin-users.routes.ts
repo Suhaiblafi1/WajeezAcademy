@@ -11,7 +11,7 @@ import {
   PERMISSIONS, ROLE_NAMES_AR, ROLE_PERMISSIONS, ROLE_RANK, refuseDelegation, refuseRoleAssignment, rankOf,
   DELEGATABLE_FAMILIES, type PermissionKey,
 } from '../../auth/permissions'
-import { sendStaffInviteEmail } from '../../services/account-mail'
+import { inviteLink, sendStaffInviteEmail } from '../../services/account-mail'
 import { accountFootprint, footprintBlockersAr, purgeAccountWithHistory } from '../../services/account-purge.service'
 
 export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClient, auth: AuthService) {
@@ -25,15 +25,37 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
     async () => {
       const users = await prisma.user.findMany({
         orderBy: { createdAt: 'desc' },
-        include: { roles: true, permissionOverrides: true },
+        include: {
+          roles: true,
+          permissionOverrides: true,
+          /* حالُ دعوته يُقرأ في الصفّ: «دعوةٌ سارية» أو «انتهت» فرقٌ يقرّر
+             هل يُعاد الإرسالُ أم يُنتظر (جولة ٢٠٢٦-٠٩: الدعوةُ كانت ساعةً
+             واحدةً فتنتهي قبل أن يفتح المدعوُّ بريدَه). */
+          resetTokens: {
+            where: { purpose: 'invite', usedAt: null },
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+            select: { expiresAt: true },
+          },
+        },
       })
-      return users.map((u) => ({
-        id: u.id, email: u.email, displayName: u.displayName, status: u.status,
-        createdAt: u.createdAt, roles: u.roles.map((r) => ({ id: r.roleId, nameAr: ROLE_NAMES_AR[r.roleId] ?? r.roleId })),
-        /* عددُ استثناءاته يُقرأ من القائمة: من له استثناءٌ يُعرف قبل فتحه */
-        grants: u.permissionOverrides.filter((o) => o.effect === 'grant').length,
-        denies: u.permissionOverrides.filter((o) => o.effect === 'deny').length,
-      }))
+      const now = new Date()
+      return users.map((u) => {
+        const invite = u.resetTokens[0]
+        return {
+          id: u.id, email: u.email, displayName: u.displayName, status: u.status,
+          createdAt: u.createdAt, roles: u.roles.map((r) => ({ id: r.roleId, nameAr: ROLE_NAMES_AR[r.roleId] ?? r.roleId })),
+          /* عددُ استثناءاته يُقرأ من القائمة: من له استثناءٌ يُعرف قبل فتحه */
+          grants: u.permissionOverrides.filter((o) => o.effect === 'grant').length,
+          denies: u.permissionOverrides.filter((o) => o.effect === 'deny').length,
+          invite: invite
+            ? { state: invite.expiresAt > now ? 'pending' as const : 'expired' as const, expiresAt: invite.expiresAt }
+            : { state: 'none' as const, expiresAt: null },
+          /* توثيقُ البريد يُقرأ في الصفّ: بلا توثيقٍ لا تُصدر شهادة، فمن
+             ينظر في الطابور يعرف سببَ التوقّف قبل أن يفتح الحساب. */
+          emailVerified: u.emailVerifiedAt != null,
+        }
+      })
     })
 
   /* ── صلاحيّاتُ شخصٍ بعينه ──
@@ -182,8 +204,11 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
     /* كلمةٌ عشوائيّة لا يعرفها أحد — الدخولُ يبدأ بتعيينِ صاحبه كلمتَه */
     const { userId } = await auth.register(body.email, randomBytes(24).toString('hex'), body.displayName)
     await auth.setRoles(userId, body.roleIds)
+    /* «مدعوّ» لا «نشط»: الحسابُ موجودٌ ولم يدخله صاحبُه بعد، وهذا فرقٌ
+       يُقرأ في القائمة — فمن أُنشئ حسابُه ولم يُفعّله لا يُحسب فريقا عاملا. */
+    await prisma.user.update({ where: { id: userId }, data: { status: 'invited' } })
 
-    const { tokenForDelivery } = await auth.requestPasswordReset(body.email)
+    const { token: tokenForDelivery } = await auth.issueInvite(userId)
     const actor = await prisma.user.findUnique({ where: { id: req.auth!.userId }, select: { displayName: true } })
     const mail = tokenForDelivery
       ? await sendStaffInviteEmail(prisma, {
@@ -217,6 +242,114 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
     })
   })
 
+  /* إعادةُ إرسال الدعوة — لمن انتهت دعوتُه أو لم تصله.
+
+     كان البديلُ الوحيدُ أن يطلب المدعوُّ «نسيت كلمة المرور» بنفسه، أي أن
+     يصنع لنفسه ما كان يجب أن يصله — وهذا يفترض أنّه يعرف أنّ له حسابا. */
+  app.post('/api/admin/users/:id/resend-invite', {
+    preHandler: guard,
+    schema: { tags: ['admin-users'], summary: 'يُصدر دعوةً جديدةً (٧ أيّام) ويُبطل ما قبلها' },
+  }, async (req, reply) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const user = await prisma.user.findUnique({
+      where: { id }, include: { roles: true },
+    })
+    if (!user) return reply.status(404).send({ error: { code: 'not_found', message_ar: 'الحساب غير موجود' } })
+    if (user.status === 'archived') {
+      return reply.status(409).send({ error: { code: 'archived', message_ar: 'حسابٌ مؤرشَف — أعِد تنشيطَه أوّلا' } })
+    }
+
+    const { token, expiresAt } = await auth.issueInvite(id)
+    const roleIds = user.roles.map((r) => r.roleId)
+    const actor = await prisma.user.findUnique({ where: { id: req.auth!.userId }, select: { displayName: true } })
+    const mail = await sendStaffInviteEmail(prisma, {
+      to: user.email,
+      displayName: user.displayName,
+      token,
+      roleNamesAr: roleIds.map((r) => ROLE_NAMES_AR[r] ?? r),
+      invitedByAr: actor?.displayName ?? 'مدير المنصّة',
+      dutiesAr: [...new Set(roleIds.flatMap((r) => ROLE_PERMISSIONS[r] ?? []))]
+        .flatMap((k) => {
+          const found = PERMISSIONS.find((p) => p.key === k)
+          return found ? [found.description as string] : []
+        })
+        .slice(0, 6),
+    })
+    await recordAudit(prisma, {
+      actorId: req.auth!.userId, action: 'admin.user.invite_resend', entityType: 'user', entityId: id,
+      meta: { email: user.email, sent: mail.status === 'sent' },
+    })
+    return {
+      sent: mail.status === 'sent',
+      expiresAt,
+      note: mail.status === 'sent'
+        ? 'أُرسلت دعوةٌ جديدةٌ صالحةٌ سبعةَ أيّام — والقديمةُ أُبطلت.'
+        : 'أُصدرت دعوةٌ جديدةٌ ولم تُرسل — قناةُ البريد غير مفعّلة. سلّمه الرابطَ بنفسك أو فعّل البريد.',
+      /* الرابطُ يُعاد لمن يملك إدارةَ المستخدمين وحدَه، وحين لا بريد: فهو
+         السبيلُ الوحيدُ لتسليم الدعوة يدويّا — ولا يُسجَّل في الأثر. */
+      link: mail.status === 'sent' ? undefined : inviteLink(token),
+    }
+  })
+
+  /* دعوةُ دفعةٍ من صفوفٍ ملصوقة: «بريد, اسم» في كلّ سطر.
+
+     تأهيلُ فريقٍ من ستّة أشخاصٍ كان ستَّ رحلاتٍ في النموذج نفسِه. والدفعةُ
+     لا تتوقّف عند أوّل خطأ: كلُّ سطرٍ يُجاب عنه بحاله، فيُعاد ما فشل وحدَه. */
+  app.post('/api/admin/users/bulk-invite', {
+    preHandler: guard,
+    schema: { tags: ['admin-users'], summary: 'دعوةُ عدّةِ حساباتٍ بدورٍ واحد — سطرٌ لكلّ شخص' },
+  }, async (req) => {
+    const body = z.object({
+      roleIds: z.array(z.string()).min(1),
+      rows: z.array(z.object({
+        email: z.string().email(),
+        displayName: z.string().trim().min(2).max(120),
+      })).min(1).max(50),
+    }).parse(req.body)
+
+    const actor = await prisma.user.findUnique({ where: { id: req.auth!.userId }, select: { displayName: true } })
+    const dutiesAr = [...new Set(body.roleIds.flatMap((r) => ROLE_PERMISSIONS[r] ?? []))]
+      .flatMap((k) => {
+        const found = PERMISSIONS.find((p) => p.key === k)
+        return found ? [found.description as string] : []
+      })
+      .slice(0, 6)
+
+    const results: { email: string; ok: boolean; sent: boolean; reasonAr?: string }[] = []
+    for (const row of body.rows) {
+      const email = row.email.trim().toLowerCase()
+      try {
+        if (await prisma.user.findUnique({ where: { email } })) {
+          results.push({ email, ok: false, sent: false, reasonAr: 'لهذا البريد حسابٌ بالفعل' })
+          continue
+        }
+        const { userId } = await auth.register(email, randomBytes(24).toString('hex'), row.displayName)
+        await auth.setRoles(userId, body.roleIds)
+        await prisma.user.update({ where: { id: userId }, data: { status: 'invited' } })
+        const { token } = await auth.issueInvite(userId)
+        const mail = await sendStaffInviteEmail(prisma, {
+          to: email, displayName: row.displayName, token,
+          roleNamesAr: body.roleIds.map((r) => ROLE_NAMES_AR[r] ?? r),
+          invitedByAr: actor?.displayName ?? 'مدير المنصّة',
+          dutiesAr,
+        })
+        await recordAudit(prisma, {
+          actorId: req.auth!.userId, action: 'admin.user.create', entityType: 'user', entityId: userId,
+          meta: { email, roles: body.roleIds, bulk: true, inviteSent: mail.status === 'sent' },
+        })
+        results.push({ email, ok: true, sent: mail.status === 'sent' })
+      } catch (e) {
+        results.push({ email, ok: false, sent: false, reasonAr: e instanceof Error ? e.message : 'تعذّر الإنشاء' })
+      }
+    }
+    return {
+      created: results.filter((r) => r.ok).length,
+      sent: results.filter((r) => r.sent).length,
+      failed: results.filter((r) => !r.ok).length,
+      results,
+    }
+  })
+
   app.post('/api/admin/users/:id/roles', {
     preHandler: guard,
     schema: {
@@ -228,13 +361,32 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
     const { roleIds } = z.object({ roleIds: z.array(z.string()).min(1) }).parse(req.body)
     /* ممنوع سحب دور super_admin من نفسك — حماية من الإغلاق الذاتي */
     if (id === req.auth!.userId && !roleIds.includes('super_admin') && req.auth!.roles.includes('super_admin')) {
-      return { error: { code: 'self_lockout', message_ar: 'لا يمكنك سحب دور مدير النظام من حسابك بنفسك' } }
+      return reply.status(409).send({ error: { code: 'self_lockout', message_ar: 'لا يمكنك سحب دور مدير النظام من حسابك بنفسك' } })
     }
     /* ولا يُعيَّن دورٌ أعلى من رتبة المعيِّن — وكان هذا الباب مفتوحا: من مُنح
        `admin.users.manage` بالتفويض صار يستطيع أن يرقّي نفسه مديرَ نظام. */
-    const rankRefusal = refuseRoleAssignment(req.auth!.roles, roleIds)
+    /* وأدوارُه الحاليّة تُقرأ قبل الحكم: أدوارُ الحالة (`LIFECYCLE_ROLES`)
+       تُفحَص على ما تغيّر لا على ما في القائمة، فتُعدَّل أدوارُ متقدّمٍ
+       الأخرى بلا أن تُمسّ حالتُه. */
+    const before = await prisma.user.findUnique({ where: { id }, select: { roles: { select: { roleId: true } } } })
+    const rankRefusal = refuseRoleAssignment(req.auth!.roles, roleIds, before?.roles.map((r) => r.roleId) ?? [])
     if (rankRefusal) return reply.status(403).send({ error: rankRefusal })
     await auth.setRoles(id, roleIds)
+    /* ═══ وتعيينُ الأدوار يُسجَّل ═══
+
+       لم يكن يُسجَّل. وهو **أعلى فعلٍ سلطةً على المنصّة**: به يصير حسابٌ
+       مديرَ نظامٍ أعلى، وبه تُنزع بوّابةُ التعلّم عن متعلّمٍ له تسجيلات.
+       وكلُّ ما هو أدنى منه مسجَّل — الإيقافُ والأرشفةُ ومنحُ حبّةٍ واحدةٍ
+       باستثناء — فكان الأثرُ يحفظ الفروعَ ويترك الأصل.
+
+       و«قبل» و«بعد» هما جوهرُ الفائدة هنا: «صار مديرَ نظام» جوابٌ، و«غُيّرت
+       أدوارُه» ليس جوابا. والقائمتان مرتّبتان كي يُقرأ الفرقُ لا ترتيبُ
+       الإدخال. */
+    await recordAudit(prisma, {
+      actorId: req.auth!.userId, action: 'roles.set', entityType: 'user', entityId: id,
+      before: { roles: (before?.roles.map((r) => r.roleId) ?? []).sort() },
+      after: { roles: [...roleIds].sort() },
+    })
     return { ok: true }
   })
 
@@ -247,28 +399,43 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
      `ROLE_PERMISSIONS` تمنحه كلَّ الحبّات، ويفوّضها لغيره إن أراد. */
   const canForcePurge = (req: { auth: { permissions: string[] } | null }) =>
     req.auth?.permissions.includes('admin.users.purge_history') ?? false
-  const refuseRank = async (targetId: string, actorRoles: string[], verbAr: string) => {
+  /* ═══ ورمزُ الحالة يقول ما قاله الجسم ═══
+
+     كانت هذه المساراتُ ترجع رفضَها بـ**٢٠٠** وجسمٍ فيه `error`: «لا حسابَ
+     بهذا المعرّف» و«لا تستطيع إيقافَ من فوقك» تصل كلُّها بحالةِ نجاح. فأيُّ
+     مستهلكٍ يفحص `res.ok` — وهو الفحصُ الطبيعيُّ في `fetch` — يقرأ الرفضَ
+     نجاحا. وشاشاتُنا نجت لأنّها تفحص `res.error` بالاسم، وهو عقدٌ هشٌّ يخصّها
+     ولا يُلزم غيرَها.
+
+     فصار لكلّ رفضٍ رمزُه: ٤٠٤ لما لا وجودَ له، و٤٠٣ لما لا صلاحيّةَ عليه،
+     و٤٠٩ لتضاربِ الحالة (ومنها ما يمسّ حسابَ الفاعل نفسِه). */
+  const refuseRank = async (
+    targetId: string, actorRoles: string[], verbAr: string,
+  ): Promise<
+    | { status: number; error: { code: string; message_ar: string } }
+    | { target: { id: string; email: string; displayName: string; status: string; roles: { roleId: string }[] } }
+  > => {
     const target = await prisma.user.findUnique({ where: { id: targetId }, include: { roles: true } })
-    if (!target) return { error: { code: 'not_found', message_ar: 'لا حسابَ بهذا المعرّف' } }
+    if (!target) return { status: 404, error: { code: 'not_found', message_ar: 'لا حسابَ بهذا المعرّف' } }
     /* مديرُ النظام الأعلى يدير كلَّ حسابٍ سوى حسابه (والذاتُ محروسةٌ قبل هذا):
        كان القيدُ «رتبتك أو فوقها» يمنعه من إيقاف مديرِ نظامٍ آخر أو حذفِ
        حسابِ ديمو بدوره — فلا أحدٌ فوقَ الأعلى يفكّه. */
     if (isTopAdmin(actorRoles)) return { target }
     const targetRank = rankOf(target.roles.map((r) => r.roleId))
     if (targetRank >= rankOf(actorRoles)) {
-      return { error: { code: 'rank_exceeded', message_ar: `لا تستطيع ${verbAr} حسابا في رتبتك أو فوقها` } }
+      return { status: 403, error: { code: 'rank_exceeded', message_ar: `لا تستطيع ${verbAr} حسابا في رتبتك أو فوقها` } }
     }
     return { target }
   }
 
   app.post('/api/admin/users/:id/suspend', { preHandler: guard, schema: { tags: ['admin-users'], summary: 'إيقاف حساب — يبطل جلساته فورا' } },
-    async (req) => {
+    async (req, reply) => {
       const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
       if (id === req.auth!.userId) {
-        return { error: { code: 'self_suspend', message_ar: 'استخدم إيقاف الحساب الذاتي من ملفك — لا توقف نفسك من هنا' } }
+        return reply.status(409).send({ error: { code: 'self_suspend', message_ar: 'استخدم إيقاف الحساب الذاتي من ملفك — لا توقف نفسك من هنا' } })
       }
       const check = await refuseRank(id, req.auth!.roles, 'إيقاف')
-      if ('error' in check) return check
+      if ('error' in check) return reply.status(check.status).send({ error: check.error })
       await auth.suspend(id)
       await recordAudit(prisma, {
         actorId: req.auth!.userId, action: 'admin.user.suspend', entityType: 'user', entityId: id,
@@ -277,13 +444,104 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
       return { ok: true }
     })
 
+  /* ── توثيقُ البريد بيدِ موظّف ──
+
+     البريدُ يُوثَّق بفتح رابطٍ يصل به، وقناةُ البريد غيرُ موصولةٍ بعد.
+     والحواجزُ المعتمدةُ عليه تتصرّف تصرّفَين بقصد: الشراءُ يمرّ حين لا قناة
+     («قفلٌ بلا مفتاح» لا يُقفل)، **والشهادةُ تبقى صارمةً ولو تعطّلت** لأنّها
+     تُنسب إلى شخصٍ باسمه. فالمتعذّرُ في طور التجربة **الشهادةُ وحدَها**.
+
+     وهذا بابُها: يوثّق موظّفٌ مسؤولٌ بيده، بسببٍ مكتوبٍ وأثرٍ يُقرأ. وليس
+     نقضا للحاجز بل استثناءٌ معلومُ المسؤول — من وثّق ومتى ولماذا. ويبقى
+     نافعا بعد وصلِ البريد: لمن ارتدّ بريدُه أو فقد الرسالة.
+
+     ولمَ `reason` إلزاميّ: استثناءٌ بلا سببٍ مكتوبٍ لا يُراجَع. */
+  app.post('/api/admin/users/:id/verify-email', {
+    preHandler: guard,
+    schema: {
+      tags: ['admin-users'],
+      summary: 'توثيقُ بريدِ حسابٍ بيدِ موظّف — بسببٍ مكتوب',
+      body: { type: 'object', required: ['reason'], properties: { reason: { type: 'string' } } },
+    },
+  }, async (req, reply) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const { reason } = z.object({
+      reason: z.string().trim().min(5, 'اكتب سببا يُقرأ — خمسةُ أحرفٍ على الأقلّ'),
+    }).parse(req.body)
+
+    /* قيدُ الرتبة نفسُه: من لا يبلغ رتبةَ صاحب الحساب لا يمسّ حسابَه */
+    const check = await refuseRank(id, req.auth!.roles, 'توثيقُ بريد')
+    if ('error' in check) return reply.status(check.status).send({ error: check.error })
+
+    try {
+      const out = await auth.verifyEmailByStaff(id, req.auth!.userId)
+      if (out.alreadyVerified) {
+        return { ok: true, alreadyVerified: true, message_ar: 'بريدُ هذا الحساب موثَّقٌ أصلا — لا شيءَ تغيّر' }
+      }
+      await recordAudit(prisma, {
+        actorId: req.auth!.userId,
+        action: 'admin.user.verify_email',
+        entityType: 'user',
+        entityId: id,
+        reason,
+        meta: { email: out.email, byStaff: true },
+      })
+      return { ok: true, alreadyVerified: false, message_ar: `وُثِّق بريدُ «${check.target.displayName}» — وسُجِّل السببُ في أثر الحساب` }
+    } catch (e) {
+      const err = e as { code?: string; message_ar?: string; status?: number }
+      if (err.code) return reply.status(err.status ?? 409).send({ error: { code: err.code, message_ar: err.message_ar ?? 'تعذّر التوثيق' } })
+      throw e
+    }
+  })
+
+  /* الأرشفةُ قبل الحذف — وهي الفعلُ الموصى به لمن غادر */
+  app.post('/api/admin/users/:id/archive', {
+    preHandler: guard,
+    schema: {
+      tags: ['admin-users'], summary: 'أرشفةُ حساب — يُغلق وتُبطل جلساتُه وتبقى سجلّاتُه',
+      body: { type: 'object', required: ['reason'], properties: { reason: { type: 'string' } } },
+    },
+  }, async (req, reply) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const { reason } = z.object({ reason: z.string().trim().min(10).max(500) }).parse(req.body)
+    if (id === req.auth!.userId) {
+      return reply.status(409).send({ error: { code: 'self_archive', message_ar: 'لا تؤرشف حسابك — استعمل إيقافَ الحساب الذاتيّ' } })
+    }
+    const check = await refuseRank(id, req.auth!.roles, 'أرشفةَ')
+    if ('error' in check) return reply.status(check.status).send({ error: check.error })
+    await auth.archive(id, req.auth!.userId, reason)
+    /* السببُ في عمودِه `reason` لا في `meta`: الشاشةُ تقرأ «السببُ المكتوب»
+       من العمود، والمرشّحاتُ تعمل عليه. وإلزامُ سببٍ ثمّ إخفاؤه في حمولةٍ
+       لا تُعرض يُبطل الغرضَ من إلزامه. */
+    await recordAudit(prisma, {
+      actorId: req.auth!.userId, action: 'admin.user.archive', entityType: 'user', entityId: id,
+      reason, meta: { email: check.target.email },
+    })
+    return { ok: true }
+  })
+
+  app.post('/api/admin/users/:id/unarchive', {
+    preHandler: guard,
+    schema: { tags: ['admin-users'], summary: 'إعادةُ تنشيطِ حسابٍ مؤرشَف' },
+  }, async (req, reply) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const check = await refuseRank(id, req.auth!.roles, 'إعادةَ تنشيطِ')
+    if ('error' in check) return reply.status(check.status).send({ error: check.error })
+    await auth.unarchive(id)
+    await recordAudit(prisma, {
+      actorId: req.auth!.userId, action: 'admin.user.unarchive', entityType: 'user', entityId: id,
+      meta: { email: check.target.email },
+    })
+    return { ok: true }
+  })
+
   app.post('/api/admin/users/:id/reinstate', { preHandler: guard, schema: { tags: ['admin-users'], summary: 'رفعُ الإيقاف — يعيد الحساب نشطا' } },
-    async (req) => {
+    async (req, reply) => {
       const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
       const check = await refuseRank(id, req.auth!.roles, 'رفعَ الإيقاف عن')
-      if ('error' in check) return check
+      if ('error' in check) return reply.status(check.status).send({ error: check.error })
       if (check.target.status !== 'suspended') {
-        return { error: { code: 'not_suspended', message_ar: 'هذا الحساب ليس موقوفا' } }
+        return reply.status(409).send({ error: { code: 'not_suspended', message_ar: 'هذا الحساب ليس موقوفا' } })
       }
       await auth.reinstate(id)
       await recordAudit(prisma, {
@@ -308,15 +566,15 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
   app.delete('/api/admin/users/:id', {
     preHandler: requirePermission('admin.users.purge'),
     schema: { tags: ['admin-users'], summary: 'حذفُ حسابٍ نهائيّا — يُرفض إن كان له سجلٌّ إلّا قسرا من مدير النظام الأعلى بسبب' },
-  }, async (req) => {
+  }, async (req, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const { force } = z.object({ force: z.enum(['1', 'true']).optional() }).parse(req.query ?? {})
     const { reason } = z.object({ reason: z.string().trim().max(500).optional() }).parse(req.body ?? {})
     if (id === req.auth!.userId) {
-      return { error: { code: 'self_purge', message_ar: 'لا تحذف حسابك من هنا' } }
+      return reply.status(409).send({ error: { code: 'self_purge', message_ar: 'لا تحذف حسابك من هنا' } })
     }
     const check = await refuseRank(id, req.auth!.roles, 'حذفَ')
-    if ('error' in check) return check
+    if ('error' in check) return reply.status(check.status).send({ error: check.error })
 
     const footprint = await accountFootprint(prisma, id)
     const blockers = footprintBlockersAr(footprint)
@@ -335,7 +593,7 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
     /* المحوُ بالسجلّ: للأعلى وحده، وبسببٍ يُقرأ — حسابُ ديمو أو تجربةٍ لا دفترُ عميل */
     if (blockers.length > 0) {
       if (!canForcePurge(req)) {
-        return { error: { code: 'force_forbidden', message_ar: 'المحوُ بالسجلّ لمن يملك حبّته وحده — أوقف الحساب بدل ذلك' } }
+        return reply.status(403).send({ error: { code: 'force_forbidden', message_ar: 'المحوُ بالسجلّ لمن يملك حبّته وحده — أوقف الحساب بدل ذلك' } })
       }
       if (!reason || reason.length < 5) {
         return { error: { code: 'reason_required', message_ar: 'اكتب سببَ المحو بالسجلّ — يُحفظ في الأثر بعد أن يذهب الحساب' } }

@@ -19,6 +19,11 @@ const MAX_COURSES = 12
 
 export function registerPathDraftRoutes(app: FastifyInstance, prisma: PrismaClient) {
   app.post('/api/path-drafts', {
+    /* المسارُ عامٌّ بلا حساب، وكان بلا سقفٍ خاصٍّ يعتمد على السقف العامّ وحدَه
+       (٣٠٠ في الدقيقة) — أي ألوفَ المسودّات في الساعة من سكربتٍ واحد. ومتعلّمٌ
+       حقيقيٌّ يحفظ مسارا أو ثلاثةً في جلسته، فثلاثون لكلّ ربع ساعةٍ سعةٌ واسعة.
+       ولا فخَّ هنا: لا نموذجَ يُعبّئه إنسانٌ بحقولٍ حرّة، بل اسمٌ وقائمةُ دورات. */
+    config: { rateLimit: { max: 30, timeWindow: '15 minutes' } },
     schema: { tags: ['path-drafts'], summary: 'حفظ مسار سمّاه متعلم — اسم وقائمة دورات، بلا بيانات شخصية' },
   }, async (req, reply) => {
     const body = z

@@ -86,10 +86,13 @@ describe('فصل جمهور الإشعارات', () => {
     const n = await notifications.notify({
       userId: staffId, channel: 'in_app', title: 'اعتُمد تسجيلك', body: 'رسالة تخصّ تعلّمك',
     })
-    expect(n.status).toBe('sent')
+    /* `notify` يُرجع `null` عند الكتم (المهمّة ٧٢) — وهذا بلا `templateKey`
+       فلا صنفَ له ولا يُكتَم. والتأكيدُ يقول ذلك صراحةً. */
+    expect(n, 'إشعارٌ بلا صنفٍ يجب أن يمضي').not.toBeNull()
+    expect(n!.status).toBe('sent')
 
     const mine = await notifications.myNotifications(staffId)
-    expect(mine.map((m) => m.id)).toEqual([n.id])
+    expect(mine.map((m) => m.id)).toEqual([n!.id])
     expect(await notifications.unreadCount(staffId)).toBe(1)
   })
 

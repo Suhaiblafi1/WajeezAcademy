@@ -15,6 +15,7 @@ import { LearnerRequestService, LEARNER_REQUEST_KINDS } from '../../services/lea
 import { SkillGrowthService } from '../../services/skill-growth.service'
 import { RetrievalService } from '../../services/retrieval.service'
 import { ScenarioService } from '../../services/scenario.service'
+import { DeadlinesService } from '../../services/deadlines.service'
 import { CohortMessageService } from '../../services/cohort-message.service'
 import { AuthError } from '../../services/auth.service'
 import { requirePermission } from '../auth-plugin'
@@ -64,6 +65,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
   const skillGrowth = new SkillGrowthService(prisma)
   const retrieval = new RetrievalService(prisma)
   const scenarios = new ScenarioService(prisma)
+  const deadlines = new DeadlinesService(prisma)
 
   /* ══════════ بوابة المتعلم ══════════ */
 
@@ -75,6 +77,13 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     /* لا مفاتيح تخزين في قائمة النظرة العامة */
     return rows.map((r) => ({ ...r, cohort: { ...r.cohort } }))
   })
+
+  /* مواعيدي — والبياناتُ موجودةٌ منذ زمنٍ ولا شاشةَ تجمعها بالوقت:
+     من له ثلاثةُ تسجيلاتٍ يفتح كلَّ واحدٍ على حدةٍ ليرى واجباته. */
+  app.get('/api/learner/deadlines', {
+    preHandler: requirePermission('learner.portal'),
+    schema: { tags: ['learner-portal'], summary: 'مواعيدي النهائيّة — تسليماتٌ بموعدٍ لم تُسلَّم بعد' },
+  }, async (req) => deadlines.forLearner(req.auth!.userId))
 
   app.get('/api/learner/artifacts', {
     preHandler: requirePermission('learner.portal'),
@@ -297,6 +306,17 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
   }, async (req) => {
     const rows = await enrollments.trainerCohorts(req.auth!.userId)
     return rows.map((r) => ({ role: r.role, cohort: signCohortContent(r.cohort, cohorts, { revealPasscode: true }) }))
+  })
+
+  /* جدولي عبر شعبي — خطٌّ زمنيٌّ واحدٌ ومعه التزاحمُ بين شعبه هو.
+     وحارسُ الإسناد يمنع الجديدَ المتعارض، ولا يمنع جلستَين أُضيفتا بعد
+     الإسناد إلى شعبتَين قائمتَين — فهذه الشاشةُ هي التي تُظهرهما. */
+  app.get('/api/trainer/me/schedule', {
+    preHandler: requirePermission('trainer.cohort.operate'),
+    schema: { tags: ['trainer-ops'], summary: 'جدولي — جلساتُ شعبي كلِّها في خطٍّ زمنيٍّ واحد' },
+  }, async (req) => {
+    const { days } = z.object({ days: z.coerce.number().int().min(1).max(120).optional() }).parse(req.query)
+    return deadlines.forTrainer(req.auth!.userId, new Date(), days ?? 30)
   })
 
   app.post('/api/trainer/sessions/:sessionId/attendance', {

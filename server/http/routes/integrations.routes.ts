@@ -6,6 +6,7 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { requirePermission } from '../auth-plugin'
+import { SystemHealthService } from '../../services/system-health.service'
 import {
   getPaymentConfig, getEmailConfig, savePaymentConfig, saveEmailConfig, maskedIntegrationsView,
 } from '../../services/integrations.service'
@@ -13,6 +14,21 @@ import { sendEmail } from '../../services/mail'
 import { recordAudit } from '../../services/audit'
 
 export function registerIntegrationRoutes(app: FastifyInstance, prisma: PrismaClient) {
+  /* ─────────── «هل النظامُ سليم؟» ───────────
+
+     سؤالٌ لم يكن له جوابٌ إلّا في سجلّات الخادم — ولم يكن للخادم سجلٌّ حتّى
+     هذا الفرع. والصفحةُ تقرأ الحالةَ القائمةَ في القاعدة وتقول ما تعنيه:
+     «٤٣ إشعارا في الطابور منذ يومَين ولا عاملَ يُرسلها» جوابٌ، و«٤٣» ليس.
+
+     وصلاحيّتُها `settings.manage` — أي مديرُ النظام وحدَه بعد فصل المال
+     (المرحلة ٢هـ): البنودُ تكشف حالةَ مزوّد الدفع والبريد وأرقامَ محاولات
+     الدخول الفاشلة، وهي شأنُ من يملك الإعدادات. */
+  const health = new SystemHealthService(prisma)
+  app.get('/api/admin/system-health', {
+    preHandler: requirePermission('settings.manage'),
+    schema: { tags: ['admin-integrations'], summary: 'صحّةُ النظام — محسوبةٌ من حالة القاعدة الآن' },
+  }, async () => health.snapshot())
+
   /* عرض مقنَّع — مفاتيح بآخر 4 خانات فقط */
   app.get('/api/admin/integrations', {
     preHandler: requirePermission('settings.manage'),

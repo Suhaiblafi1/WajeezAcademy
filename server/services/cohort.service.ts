@@ -7,8 +7,12 @@ import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { EarningsService } from './earnings.service'
-import { newStorageKey, signKey, SIGNED_URL_TTL_MS, MAX_COHORT_MEDIA_BYTES } from './storage.service'
+import { newStorageKey, signKey, SIGNED_URL_TTL_MS, assertFileUploadsEnabled, MAX_COHORT_MEDIA_BYTES } from './storage.service'
 import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
+import { DAY_CODES } from '../../src/application/schedule/days'
+
+/** ترتيبُ اليوم في الأسبوع — الأحدُ صفر، كما في `Date.getUTCDay` */
+const DAY_INDEX: Record<string, number> = Object.fromEntries(DAY_CODES.map((d, i) => [d, i]))
 
 const COHORT_TRANSITIONS: Record<string, string[]> = {
   draft: ['open', 'cancelled'],
@@ -153,33 +157,180 @@ export class CohortService {
      كانت الشاشة تعرض «المدرّبين المعلَنين» بلا أن تقول أيُّهم مؤهَّل، فيُجرَّب
      الإسنادُ ويُردّ بـ409. والفرقُ بين «أسنده» و«أهّله وأسنده» قرارٌ يُتّخذ
      قبل النقر لا بعده. */
+  /* جلساتُ الشعبةِ لاختيارها بالعنوان والتاريخ — لا بلصق معرّفٍ من ٣٦ حرفا.
+
+     كان ربطُ Zoom يطلب «معرف الجلسة (UUID)»، والمعرّفُ لا يظهر على أيّ شاشة
+     أصلا: فالموظّفُ إمّا يفتح القاعدة أو يستسلم (شُوهد في جولة ٢٠٢٦-٠٩). */
+  async sessionsFor(cohortId: string) {
+    const cohort = await this.prisma.cohort.findUnique({ where: { id: cohortId }, select: { id: true } })
+    if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
+    const sessions = await this.prisma.cohortSession.findMany({
+      where: { cohortId },
+      orderBy: { startsAt: 'asc' },
+      select: {
+        id: true, title: true, startsAt: true, endsAt: true, status: true,
+        zoom: { select: { joinUrl: true } },
+      },
+    })
+    return sessions.map((s) => ({
+      id: s.id, title: s.title, startsAt: s.startsAt, endsAt: s.endsAt, status: s.status,
+      hasZoom: s.zoom !== null,
+    }))
+  }
+
+  /* بحثُ متعلّمٍ بالاسم أو البريد — بديلُ حقلِ «معرف المستخدم (UUID)».
+
+     يُقصَر على المتعلّمين النشطين، ويقول من هو مسجَّلٌ في هذه الشعبة أصلا
+     كي لا يُسجَّل مرّتين. وعشرةُ نتائجَ تكفي لاختيارِ اسم. */
+  async searchLearners(cohortId: string | undefined, q: string) {
+    const term = q.trim()
+    if (term.length < 2) return []
+    const users = await this.prisma.user.findMany({
+      where: {
+        status: 'active',
+        roles: { some: { roleId: 'learner' } },
+        OR: [
+          { displayName: { contains: term, mode: 'insensitive' } },
+          { email: { contains: term, mode: 'insensitive' } },
+        ],
+      },
+      orderBy: { displayName: 'asc' },
+      take: 10,
+      select: { id: true, displayName: true, email: true },
+    })
+    if (!cohortId || users.length === 0) return users.map((u) => ({ ...u, enrolled: false }))
+    const enrolled = await this.prisma.enrollment.findMany({
+      where: { cohortId, userId: { in: users.map((u) => u.id) } },
+      select: { userId: true },
+    })
+    const inCohort = new Set(enrolled.map((e) => e.userId))
+    return users.map((u) => ({ ...u, enrolled: inCohort.has(u.id) }))
+  }
+
+  /* ═══ الغيابُ المعلن مانعٌ كالتعارض (المهمّة ٧١) ═══
+
+     المدرّبُ أعلن أنّه غيرُ موجودٍ في مدّةٍ بعينها. وإسنادُ جلسةٍ فيها ليس
+     خطأَ جدولٍ في المنصّة بل موعدٌ لن يحضره أحد — فيُردّ الآن لا يوم الجلسة.
+     والرسالةُ تسمّي المدّةَ وسببَها إن كتبه، كي يعرف المُسنِدُ ما يفعل. */
+  private async assertNotOnLeave(profileId: string, sessions: { startsAt: Date; endsAt: Date | null }[]) {
+    const spanStart = new Date(Math.min(...sessions.map((s) => s.startsAt.getTime())))
+    const lastEnd = Math.max(...sessions.map((s) => (s.endsAt ?? new Date(s.startsAt.getTime() + 3600_000)).getTime()))
+    const blackouts = await this.prisma.trainerBlackout.findMany({
+      where: { profileId, endsAt: { gte: spanStart }, startsAt: { lte: new Date(lastEnd) } },
+    })
+    if (blackouts.length === 0) return
+    for (const s of sessions) {
+      const sEnd = s.endsAt ?? new Date(s.startsAt.getTime() + 3600_000)
+      const hit = blackouts.find((b) => s.startsAt < b.endsAt && b.startsAt < sEnd)
+      if (hit) {
+        const from = hit.startsAt.toISOString().slice(0, 10)
+        const to = hit.endsAt.toISOString().slice(0, 10)
+        const why = hit.reason ? ` (${hit.reason})` : ''
+        throw new AuthError('trainer_on_leave',
+          `المدرب أعلن غيابه من ${from} إلى ${to}${why} — وهذا الموعد يقع فيه`, 409)
+      }
+    }
+  }
+
+  /* والساعاتُ الأسبوعيّةُ إرشادٌ لا منع: من لم يُعلن شيئا لا يُمنَع من شيء،
+     وإلّا صار الحقلُ الفارغُ قفلا. ومن أعلنها يُعَدُّ له ما يقع خارجَها
+     فيَراه المُسنِدُ رقما ويقرّر. */
+  async sessionsOutsideDeclaredHours(profileId: string, sessions: { startsAt: Date; endsAt: Date | null }[]): Promise<number | null> {
+    const windows = await this.prisma.trainerAvailability.findMany({ where: { profileId } })
+    if (windows.length === 0) return null
+    let outside = 0
+    for (const s of sessions) {
+      const day = s.startsAt.getDay()
+      const startMin = s.startsAt.getHours() * 60 + s.startsAt.getMinutes()
+      const end = s.endsAt ?? new Date(s.startsAt.getTime() + 3600_000)
+      const endMin = end.getHours() * 60 + end.getMinutes()
+      const fits = windows.some((w) => w.weekday === day && w.startMinute <= startMin && endMin <= w.endMinute)
+      if (!fits) outside += 1
+    }
+    return outside
+  }
+
   async eligibleTrainersFor(cohortId: string) {
     const cohort = await this.prisma.cohort.findUnique({ where: { id: cohortId } })
     if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
+    return this.eligibleTrainers(cohort.courseId, cohortId)
+  }
+
+  /* المؤهَّلون لدورةٍ — يُسأل عنهم قبل وجود الشعبة أيضا: معالجُ الإنشاء يعرض
+     المدرّبَ في خطوته الرابعة، ولا شعبةَ بعد. والتأهيلُ للدورة لا للشعبة. */
+  async eligibleTrainers(courseId: string, cohortId?: string) {
     const profiles = await this.prisma.trainerProfile.findMany({
       where: { suspendedAt: null, application: { status: 'active' } },
       include: {
         application: { select: { fullName: true } },
-        qualifications: { where: { courseId: cohort.courseId } },
-        cohortTrainers: { where: { cohortId }, select: { role: true } },
+        qualifications: { where: { courseId } },
+        cohortTrainers: cohortId ? { where: { cohortId }, select: { role: true } } : false,
       },
       orderBy: { createdAt: 'asc' },
     })
+    /* إشاراتُ الإتاحة تُقرأ مع القائمة لا في شاشةٍ ثانية (المهمّة ٧١): من
+       يُسنِد يحتاج أن يرى **قبل الضغط** أنّ المدرّبَ معتذرٌ في تلك المدّة أو
+       أنّ الجلساتَ خارج ساعاته المعلنة. واستعلامان لكلّ القائمة لا استعلامان
+       لكلّ مدرّب. */
+    const ids = profiles.map((p) => p.id)
+    const sessions = cohortId
+      ? await this.prisma.cohortSession.findMany({
+          where: { cohortId, status: { not: 'cancelled' } },
+          select: { startsAt: true, endsAt: true },
+        })
+      : []
+    let blackouts: { profileId: string; startsAt: Date; endsAt: Date; reason: string | null }[] = []
+    let windows: { profileId: string; weekday: number; startMinute: number; endMinute: number }[] = []
+    if (sessions.length > 0 && ids.length > 0) {
+      const spanStart = new Date(Math.min(...sessions.map((s) => s.startsAt.getTime())))
+      const spanEnd = new Date(Math.max(...sessions.map((s) => (s.endsAt ?? new Date(s.startsAt.getTime() + 3600_000)).getTime())))
+      ;[blackouts, windows] = await Promise.all([
+        this.prisma.trainerBlackout.findMany({
+          where: { profileId: { in: ids }, endsAt: { gte: spanStart }, startsAt: { lte: spanEnd } },
+          select: { profileId: true, startsAt: true, endsAt: true, reason: true },
+        }),
+        this.prisma.trainerAvailability.findMany({
+          where: { profileId: { in: ids } },
+          select: { profileId: true, weekday: true, startMinute: true, endMinute: true },
+        }),
+      ])
+    }
+
     return profiles.map((p) => {
       const q = p.qualifications[0]
+      const mine = blackouts.filter((b) => b.profileId === p.id)
+      const onLeave = sessions.some((s) => {
+        const sEnd = s.endsAt ?? new Date(s.startsAt.getTime() + 3600_000)
+        return mine.some((b) => s.startsAt < b.endsAt && b.startsAt < sEnd)
+      })
+      const myWindows = windows.filter((w) => w.profileId === p.id)
+      /* `null` تعني «لم يُعلن ساعاته» — وهي ليست صفرا: الصفرُ يقول «كلُّ
+         الجلسات داخل ساعاته»، والغيابُ يقول «لا علم لنا». */
+      const outsideDeclaredHours = myWindows.length === 0 || sessions.length === 0
+        ? null
+        : sessions.filter((s) => {
+            const day = s.startsAt.getDay()
+            const startMin = s.startsAt.getHours() * 60 + s.startsAt.getMinutes()
+            const end = s.endsAt ?? new Date(s.startsAt.getTime() + 3600_000)
+            const endMin = end.getHours() * 60 + end.getMinutes()
+            return !myWindows.some((w) => w.weekday === day && w.startMinute <= startMin && endMin <= w.endMinute)
+          }).length
       return {
         profileId: p.id,
         name: p.application.fullName,
         qualification: (q?.status ?? 'none') as 'qualified' | 'pending' | 'rejected' | 'retired' | 'none',
         qualificationId: q?.id ?? null,
-        assignedRole: p.cohortTrainers[0]?.role ?? null,
+        assignedRole: (cohortId ? p.cohortTrainers[0]?.role : null) ?? null,
+        onLeave,
+        outsideDeclaredHours,
       }
     })
   }
 
-  /** تعارض جدول المدرب: جلستان متداخلتان في شعبتين غير ملغاتين/منتهيتين */
+  /** تعارض جدول المدرب: جلستان متداخلتان في شعبتين غير ملغاتين/منتهيتين — ومعه الغياب المعلن */
   private async assertNoScheduleConflict(profileId: string, sessions: { startsAt: Date; endsAt: Date | null }[], ignoreCohortId?: string) {
     if (!sessions.length) return
+    await this.assertNotOnLeave(profileId, sessions)
     const otherCohorts = await this.prisma.cohortTrainer.findMany({
       where: { profileId, cohortId: ignoreCohortId ? { not: ignoreCohortId } : undefined,
         cohort: { status: { in: ['draft', 'open', 'full', 'active'] } } },
@@ -242,6 +393,60 @@ export class CohortService {
     return this.prisma.cohort.update({ where: { id: cohortId }, data: { registrationOpen: true } })
   }
 
+  /* ═══ الحالةُ تتبع التواريخَ لا الضغطات ═══
+
+     كانت الإدارةُ تُحرّك الشعبةَ بيدها: زرٌّ يفتح، وزرٌّ يبدأ، وزرٌّ ينهي.
+     فمن نسي زرَّ «انتهت» بقيت شعبتُه «جارية» شهورا، ومستحقّاتُ مدرّبها لا
+     تُولَّد (فهي تُولَّد عند الإكمال)، ولوحاتُ التقارير تعدّ ما انتهى جاريا.
+
+     والحقيقةُ في الجلسات: شعبةٌ بدأت أوّلُ جلساتها «جارية»، وانتهت آخرُها
+     «منتهية». فهذه الدالّةُ تُصلح ما تأخّر، وتُنادى من الشاشة الآن ومن
+     العامل الخلفيّ يومَ يوجد (المهمّة ٥٤ في خطّة التنفيذ).
+
+     وما لا تفعله بقصد: لا تفتح شعبةً — الفتحُ يمرّ بشروطه الستّة وبقرار
+     إنسان؛ ولا تلمس ملغاةً؛ ولا تُنهي شعبةً بلا جلسة. */
+  async syncStatusesByDate(actorId: string | null, options: { apply?: boolean; now?: Date } = {}) {
+    const now = options.now ?? new Date()
+    const candidates = await this.prisma.cohort.findMany({
+      where: { status: { in: ['open', 'full', 'active'] } },
+      select: {
+        id: true, title: true, status: true,
+        sessions: { select: { startsAt: true, endsAt: true }, orderBy: { startsAt: 'asc' } },
+      },
+    })
+    const changes: { cohortId: string; title: string; from: string; to: string; reason: string }[] = []
+    for (const c of candidates) {
+      if (c.sessions.length === 0) continue
+      const first = c.sessions[0].startsAt
+      const last = c.sessions.reduce<Date>((max, sn) => {
+        const end = sn.endsAt ?? sn.startsAt
+        return end > max ? end : max
+      }, c.sessions[0].endsAt ?? c.sessions[0].startsAt)
+
+      if (last < now) {
+        changes.push({ cohortId: c.id, title: c.title, from: c.status, to: 'completed', reason: 'انتهت آخرُ جلساتها' })
+      } else if (first <= now && c.status !== 'active') {
+        changes.push({ cohortId: c.id, title: c.title, from: c.status, to: 'active', reason: 'بدأت أوّلُ جلساتها' })
+      }
+    }
+    if (options.apply !== true) return { applied: false, changed: 0, changes }
+
+    let changed = 0
+    for (const ch of changes) {
+      try {
+        await this.transition(ch.cohortId, ch.to, actorId, `آليّا: ${ch.reason}`)
+        changed += 1
+      } catch {
+        /* انتقالٌ غيرُ مسموحٍ لشعبةٍ بعينها لا يوقف الباقي — ويظهر في القائمة بلا تطبيق */
+      }
+    }
+    await recordAudit(this.prisma, {
+      actorId, action: 'cohort.status.sync', entityType: 'cohort', entityId: 'batch',
+      meta: { considered: candidates.length, changed },
+    })
+    return { applied: true, changed, changes }
+  }
+
   async transition(cohortId: string, to: string, actorId: string | null, note?: string) {
     const cohort = await this.prisma.cohort.findUnique({ where: { id: cohortId } })
     if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
@@ -285,6 +490,168 @@ export class CohortService {
     return session
   }
 
+  /* ═══ توليدُ الجلسات من الجدول الأسبوعيّ ═══
+
+     الجدولُ كان محفوظا مرّتين بلا رابط: حقولُ النمط في الشعبة (`daysOfWeek`
+     و`startTime`) وصفوفُ الجلسات. فالموظّفُ يعبّئ النمطَ ثمّ يضيف ستّةَ عشرَ
+     صفًّا بيده، وأيُّ اختلافٍ بينهما لا يكشفه شيء. والحقيقةُ صفوفُ الجلسات —
+     لأنّها ما يراه المتعلّمُ ويُربَط باجتماعه وحضورِه — والنمطُ مولِّدُها.
+
+     ولا يُكتب شيءٌ إلّا بطلبٍ صريح: `preview` يعرض ما سيُنشأ أوّلا. */
+  async generateSessions(actorId: string, cohortId: string, input: {
+    weeks: number
+    /** أوّلُ أسبوعٍ يُولَّد منه — الافتراضُ بدايةُ الشعبة أو اليوم */
+    from?: Date
+    durationMinutes?: number
+    /** نمطٌ يُملى لهذه المرّة، وإلّا فنمطُ الشعبة المحفوظ */
+    daysOfWeek?: string[]
+    startTime?: string
+    titlePrefix?: string
+    apply?: boolean
+  }) {
+    const cohort = await this.prisma.cohort.findUnique({
+      where: { id: cohortId },
+      include: { trainers: true, sessions: { select: { id: true, startsAt: true } } },
+    })
+    if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
+    if (['completed', 'cancelled'].includes(cohort.status)) throw new AuthError('bad_state', 'لا جلسات لشعبة منتهية', 409)
+
+    const days = (input.daysOfWeek ?? cohort.daysOfWeek).filter((d) => DAY_INDEX[d] !== undefined)
+    if (days.length === 0) throw new AuthError('no_pattern', 'لا أيّامَ في جدول الشعبة — اختر أيّامَ الأسبوع أوّلا')
+    const time = input.startTime ?? cohort.startTime
+    if (!time || !/^\d{2}:\d{2}$/.test(time)) throw new AuthError('no_time', 'وقتُ البدء غير محدّد — اضبطه بصيغة 18:00')
+    if (input.weeks < 1 || input.weeks > 52) throw new AuthError('bad_weeks', 'عددُ الأسابيع بين ١ و٥٢')
+
+    const [hh, mm] = time.split(':').map(Number)
+    const duration = input.durationMinutes && input.durationMinutes > 0 ? input.durationMinutes : 120
+    const from = input.from ?? cohort.startsAt ?? new Date()
+    /* أوّلُ أحدٍ في أسبوع البداية — كي تكون الأيّامُ منسوبةً إلى أسبوعٍ لا إلى اليوم */
+    const weekStart = new Date(Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate() - from.getUTCDay()))
+
+    const taken = new Set(cohort.sessions.map((s) => s.startsAt.getTime()))
+    const planned: { title: string; startsAt: Date; endsAt: Date; duplicate: boolean }[] = []
+    const prefix = input.titlePrefix?.trim() || 'الجلسة'
+    let n = cohort.sessions.length
+    for (let w = 0; w < input.weeks; w += 1) {
+      for (const day of [...days].sort((a, b) => DAY_INDEX[a] - DAY_INDEX[b])) {
+        const startsAt = new Date(weekStart)
+        startsAt.setUTCDate(weekStart.getUTCDate() + w * 7 + DAY_INDEX[day])
+        startsAt.setUTCHours(hh, mm, 0, 0)
+        /* ما مضى لا يُجدَّل: الأسبوعُ الأوّلُ قد يبدأ بعد يومٍ فات */
+        if (startsAt < from) continue
+        const duplicate = taken.has(startsAt.getTime())
+        if (!duplicate) n += 1
+        planned.push({
+          title: duplicate ? `${prefix} (موجودة)` : `${prefix} ${n}`,
+          startsAt,
+          endsAt: new Date(startsAt.getTime() + duration * 60_000),
+          duplicate,
+        })
+      }
+    }
+    const fresh = planned.filter((p) => !p.duplicate)
+    if (input.apply !== true) {
+      return { applied: false, created: 0, skipped: planned.length - fresh.length, sessions: planned }
+    }
+    if (fresh.length === 0) throw new AuthError('nothing_to_create', 'لا جلسةَ جديدةً في هذا النطاق — كلُّها موجودةٌ أصلا', 409)
+
+    /* تعارضُ جدول المدرّب يُفحص للمجموعة كلِّها قبل كتابةِ أيٍّ منها */
+    for (const t of cohort.trainers) {
+      await this.assertNoScheduleConflict(t.profileId, fresh.map((f) => ({ startsAt: f.startsAt, endsAt: f.endsAt })), cohortId)
+    }
+    await this.prisma.cohortSession.createMany({
+      data: fresh.map((f) => ({ cohortId, title: f.title, startsAt: f.startsAt, endsAt: f.endsAt, timezone: cohort.timezone })),
+    })
+    /* بدايةُ الشعبة ونهايتُها تتبعان جلساتِها لا العكس */
+    const bounds = await this.prisma.cohortSession.aggregate({
+      where: { cohortId }, _min: { startsAt: true }, _max: { endsAt: true },
+    })
+    await this.prisma.cohort.update({
+      where: { id: cohortId },
+      data: { startsAt: bounds._min.startsAt ?? undefined, endsAt: bounds._max.endsAt ?? undefined },
+    })
+    await recordAudit(this.prisma, {
+      actorId, action: 'cohort.sessions.generate', entityType: 'cohort', entityId: cohortId,
+      meta: { weeks: input.weeks, days, startTime: time, created: fresh.length },
+    })
+    return { applied: true, created: fresh.length, skipped: planned.length - fresh.length, sessions: planned }
+  }
+
+  /* ═══ تكرارُ شعبةٍ من فصلٍ سابق ═══
+
+     إعدادُ الفصل الجديد كان يُعاد من الصفر في كلّ مرّة: النمطُ والسعرُ والسعةُ
+     والموادُّ والتكاليفُ كلُّها تُكتب ثانيةً، وأيُّ سهوٍ يُكتشَف بعد الفتح.
+     والنسخُ لا يحمل ما يخصّ أشخاصا: لا تسجيلاتٍ ولا حضورَ ولا تسليماتٍ ولا
+     اجتماعاتِ Zoom — الشعبةُ الجديدةُ مسودّةٌ نظيفة. */
+  async duplicate(actorId: string, cohortId: string, input: {
+    title?: string
+    /** تُنقل الجلساتُ بإزاحةِ هذا العدد من الأسابيع (الافتراض: تُولَّد لاحقا) */
+    shiftWeeks?: number
+    withSessions?: boolean
+    withMaterials?: boolean
+    withAssessments?: boolean
+  }) {
+    const source = await this.prisma.cohort.findUnique({
+      where: { id: cohortId },
+      include: {
+        sessions: { orderBy: { startsAt: 'asc' } },
+        materials: true,
+        assessments: true,
+      },
+    })
+    if (!source) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
+
+    const shift = (input.shiftWeeks ?? 0) * 7 * 86_400_000
+    const created = await this.prisma.cohort.create({
+      data: {
+        courseId: source.courseId, pathwayId: source.pathwayId,
+        title: input.title?.trim() || `${source.title} — نسخة`,
+        status: 'draft', registrationOpen: false, financialReady: false,
+        daysOfWeek: source.daysOfWeek, startTime: source.startTime, timezone: source.timezone,
+        capacity: source.capacity, price: source.price, currency: source.currency,
+        language: source.language, deliveryMode: source.deliveryMode,
+        startsAt: input.withSessions && source.startsAt ? new Date(source.startsAt.getTime() + shift) : null,
+        endsAt: input.withSessions && source.endsAt ? new Date(source.endsAt.getTime() + shift) : null,
+      },
+    })
+
+    if (input.withSessions && source.sessions.length) {
+      await this.prisma.cohortSession.createMany({
+        data: source.sessions.map((sn) => ({
+          cohortId: created.id, title: sn.title, moduleId: sn.moduleId, timezone: sn.timezone,
+          startsAt: new Date(sn.startsAt.getTime() + shift),
+          endsAt: sn.endsAt ? new Date(sn.endsAt.getTime() + shift) : null,
+        })),
+      })
+    }
+    /* الموادُّ تُنسخ روابطَها ووصفَها؛ وملفُّها الخاصُّ لا يُنسخ (مفتاحُ تخزينٍ
+       واحدٌ لا يُشارَك بين شعبتَين) */
+    if (input.withMaterials && source.materials.length) {
+      await this.prisma.learningMaterial.createMany({
+        data: source.materials
+          .filter((m) => m.externalUrl !== null)
+          .map((m) => ({
+            cohortId: created.id, title: m.title, kind: m.kind, moduleId: m.moduleId,
+            externalUrl: m.externalUrl, createdBy: actorId,
+          })),
+      })
+    }
+    if (input.withAssessments && source.assessments.length) {
+      await this.prisma.cohortAssessment.createMany({
+        data: source.assessments.map((a) => ({
+          cohortId: created.id, title: a.title, type: a.type, maxScore: a.maxScore,
+          passScore: a.passScore, rubricId: a.rubricId,
+          status: 'draft', createdBy: actorId,
+        })),
+      })
+    }
+    await recordAudit(this.prisma, {
+      actorId, action: 'cohort.duplicate', entityType: 'cohort', entityId: created.id,
+      meta: { sourceCohortId: cohortId, shiftWeeks: input.shiftWeeks ?? 0 },
+    })
+    return created
+  }
+
   /** ربط اجتماع Zoom يدوي — لا اجتماع حقيقي دون مفاتيح */
   async attachManualZoom(actorId: string, sessionId: string, input: {
     joinUrl: string; meetingId?: string; passcode?: string; learnerUrl?: string; hostProfileId?: string
@@ -318,6 +685,7 @@ export class CohortService {
     let storageKey: string | undefined
     let uploadUrl: string | undefined
     if (input.file) {
+      assertFileUploadsEnabled('أضف المادّة برابطٍ خارجيّ حتّى يجهز مخزنُ الملفّات.')
       const max = MAX_COHORT_MEDIA_BYTES
       if (input.file.sizeBytes <= 0 || input.file.sizeBytes > max) throw new AuthError('too_large', 'الملف يتجاوز الحد المسموح', 413)
       storageKey = newStorageKey()
@@ -339,6 +707,7 @@ export class CohortService {
   }) {
     const session = await this.prisma.cohortSession.findUnique({ where: { id: sessionId } })
     if (!session) throw new AuthError('not_found', 'الجلسة غير موجودة', 404)
+    assertFileUploadsEnabled('الصق رابطَ التسجيل من Zoom أو منصّةِ الفيديو كمادّةٍ للشعبة.')
     if (input.sizeBytes <= 0 || input.sizeBytes > MAX_COHORT_MEDIA_BYTES) {
       throw new AuthError('too_large', 'الملف يتجاوز الحد المسموح', 413)
     }

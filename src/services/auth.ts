@@ -9,6 +9,7 @@
    - تسجيل الخروج يبطل الجلسة عند الخادم ثم يمسح النسخة المحلية. */
 
 import { ApiError, apiGet, apiPost } from "./api";
+import { HONEYPOT_FIELD } from "../components/HoneypotField";
 import { safeGet, safeSet, safeRemove } from "./safe-storage";
 
 export const OAUTH_READY = false; // أزرار قوقل ولينكدإن مخفية حتى يكتمل ربط OAuth الحقيقي
@@ -38,6 +39,7 @@ interface ServerUser {
 const ROLE_HOME: Record<string, string> = {
   super_admin: "/admin",
   academic_manager: "/admin",
+  academic_coordinator: "/admin",
   diagnostic_manager: "/admin",
   operations_manager: "/admin",
   finance: "/admin",
@@ -196,12 +198,19 @@ function toMessage(e: unknown): string {
 }
 
 /** إنشاء حساب متعلم ثم دخوله مباشرة — الدور الافتراضي learner (لا تصعيد ذاتي) */
-export async function signUp(name: string, email: string, pass: string): Promise<AuthResult> {
+export async function signUp(
+  name: string,
+  email: string,
+  pass: string,
+  /* حقلُ الفخّ — يبقى فارغا عند الإنسان، ويردُّه الخادمُ إن جاء مملوءا */
+  honeypot?: string,
+): Promise<AuthResult> {
   try {
     await apiPost("/api/auth/register", {
       email: email.trim().toLowerCase(),
       password: pass,
       displayName: name.trim(),
+      ...(honeypot ? { [HONEYPOT_FIELD]: honeypot } : {}),
     });
   } catch (e) {
     if (e instanceof ApiError && e.code === "email_taken") {
@@ -248,10 +257,14 @@ export function clearLocalSession(): void {
 }
 
 /** طلب استعادة كلمة المرور — رسالة الخادم آمنة ولا تكشف وجود الحساب */
-export async function requestPasswordReset(email: string): Promise<{ message: string; devToken?: string }> {
+export async function requestPasswordReset(
+  email: string,
+  honeypot?: string,
+): Promise<{ message: string; devToken?: string }> {
   try {
     return await apiPost<{ message: string; devToken?: string }>("/api/auth/password/forgot", {
       email: email.trim().toLowerCase(),
+      ...(honeypot ? { [HONEYPOT_FIELD]: honeypot } : {}),
     });
   } catch (e) {
     return { message: e instanceof ApiError ? e.message : NETWORK_FAIL };

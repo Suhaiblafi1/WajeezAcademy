@@ -210,7 +210,20 @@ export class RatingService {
         publishStatus: true, createdAt: true, moderationReason: true,
       },
     })
-    return rows
+    /* اسمُ المُقيَّم لا معرّفُه — المراجعُ كان يرى UUID المدرّب بدل اسمه (جولة ٢٠٢٦-٠٩).
+       المُقيِّم يبقى مجهولا؛ أمّا المُقيَّم فمعروفٌ بالضرورة. */
+    const ids = (t: string) => [...new Set(rows.filter((r) => r.subjectType === t).map((r) => r.subjectId))]
+    const [trainers, advisors, courses] = await Promise.all([
+      ids('trainer').length ? this.prisma.trainerProfile.findMany({ where: { id: { in: ids('trainer') } }, select: { id: true, application: { select: { fullName: true } } } }) : [],
+      ids('advisor').length ? this.prisma.user.findMany({ where: { id: { in: ids('advisor') } }, select: { id: true, displayName: true } }) : [],
+      ids('course').length ? this.prisma.course.findMany({ where: { id: { in: ids('course') } }, select: { id: true, versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true } } } }) : [],
+    ])
+    const name = new Map<string, string>([
+      ...trainers.map((t) => [`trainer|${t.id}`, t.application.fullName] as const),
+      ...advisors.map((a) => [`advisor|${a.id}`, a.displayName] as const),
+      ...courses.map((c) => [`course|${c.id}`, c.versions[0]?.titleAr ?? c.id] as const),
+    ])
+    return rows.map((r) => ({ ...r, subjectNameAr: name.get(`${r.subjectType}|${r.subjectId}`) ?? null }))
   }
 
   /** اعتماد تعليقٍ للنشر أو رفضه — الدرجة لا تتأثّر بهذا القرار أبدا */

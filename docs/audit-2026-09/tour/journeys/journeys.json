@@ -1,0 +1,597 @@
+{
+  "generatedAt": "2026-09-03T11:35:57.015Z",
+  "journeys": [
+    {
+      "id": "J1",
+      "titleAr": "من التشخيص إلى الشراء التجريبيّ",
+      "steps": [
+        {
+          "name": "فتح التشخيص",
+          "ok": true,
+          "note": "بضع دقائق من الوضوح تختصر عليك شهورا من التشتت",
+          "shot": "docs/audit-2026-09/tour/journeys/J1-01-فتح_التشخيص.jpg",
+          "consoleErrs": [],
+          "api": []
+        },
+        {
+          "name": "بدء الحديث",
+          "ok": true,
+          "note": "تجاوز إلى المحتوى الرئيسي العودة للرئيسية أكاديمية وجيز عن: من أنت سؤال 1 من 8–14 أي وصف يقترب أكثر من وضعك الحالي؟ لماذا هذا السؤال؟ المرحلة المهنية أول حقيقة ",
+          "shot": "docs/audit-2026-09/tour/journeys/J1-02-بدء_الحديث.jpg",
+          "consoleErrs": [],
+          "api": [
+            "POST /api/events → 200"
+          ]
+        },
+        {
+          "name": "الإجابة حتّى النهاية",
+          "ok": true,
+          "note": "أسئلة/خطوات: 14 · انتهى؟ true · ظهرت التوصية؟ true",
+          "shot": "docs/audit-2026-09/tour/journeys/J1-03-الإجابة_حت_ى_النهاية.jpg",
+          "consoleErrs": [
+            "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+          ],
+          "api": [
+            "POST /api/events → 200",
+            "POST /api/events → 200",
+            "POST /api/events → 200",
+            "POST /api/events → 200",
+            "POST /api/events → 200",
+            "POST /api/events → 200",
+            "POST /api/events → 200",
+            "POST /api/events → 200",
+            "POST /api/events → 200",
+            "POST /api/events → 200",
+            "POST /api/events → 200",
+            "POST /api/events → 200",
+            "POST /api/events → 200",
+            "POST /api/learner/plan → 401",
+            "POST /api/events → 200",
+            "POST /api/events → 200",
+            "POST /api/events → 200",
+            "POST /api/events → 200",
+            "POST /api/events → 200",
+            "POST /api/events → 200"
+          ]
+        },
+        {
+          "name": "شاشة النتيجة",
+          "ok": true,
+          "note": "تجاوز إلى المحتوى الرئيسي الرئيسية أكاديمية وجيز دخول مسار مرشح لك أساسي نسختك المخصصة التحضير لأول وظيفة: من السيرة إلى قبول العرض ملف مهني مستهدف، مشروع إثبات، مقابلة موثقة، ونظام بحث عن فرصة لمدة 6 أسابيع. 9 أسابيع (مخصصة) 5–6 ساعات أسبوعيا خطّتك من مؤشر وجيز هذه ليست صفحة كتالوج — بل الخطّة التي",
+          "shot": "docs/audit-2026-09/tour/journeys/J1-04-شاشة_النتيجة.jpg",
+          "consoleErrs": [],
+          "api": []
+        },
+        {
+          "name": "الوصول إلى لوح الشراء",
+          "ok": true,
+          "note": "/pathways/PW-STU-002 · زرُّ الشراء ظاهر؟ true «اشترِ المسار كاملا»",
+          "shot": "docs/audit-2026-09/tour/journeys/J1-05-الوصول_إلى_لوح_الشراء.jpg",
+          "consoleErrs": [],
+          "api": []
+        },
+        {
+          "name": "ضغطُ الشراء بلا حساب",
+          "ok": true,
+          "note": "/pathways/PW-STU-002 · تجاوز إلى المحتوى الرئيسي الرئيسية أكاديمية وجيز دخول مسار مرشح لك أساسي نسختك المخصصة التحضير لأول وظيفة: من السيرة إلى قبول العرض ملف مهني مستهدف، مشروع إثبات، مقابلة موثقة، ونظام بحث عن فرصة لمدة 6",
+          "shot": "docs/audit-2026-09/tour/journeys/J1-06-ضغط_الشراء_بلا_حساب.jpg",
+          "consoleErrs": [],
+          "api": []
+        },
+        {
+          "name": "الشراء بحساب الطالب (test)",
+          "ok": true,
+          "note": "quote 200 · checkout 409 {\"error\":{\"code\":\"order_pending\",\"message_ar\":\"لك طلبٌ لم يكتمل دفعُه عن «دورة أساسيات الذكاء الاصطناعي وهندسة الأوامر — · pay - \"\"",
+          "shot": "docs/audit-2026-09/tour/journeys/J1-07-الشراء_بحساب_الطالب_test_.jpg",
+          "consoleErrs": [],
+          "api": []
+        }
+      ],
+      "clicks": 16,
+      "startedAt": 1788435019178,
+      "durationMs": 174846
+    },
+    {
+      "id": "J2",
+      "titleAr": "الوحدة: المتن والفيديو داخل الصفحة",
+      "steps": [
+        {
+          "name": "فتح الوحدة الأولى",
+          "ok": true,
+          "note": "/student/course/C-AUT-101/module/C-AUT-101-M1 · «العملية الحالية ونقطة الألم»",
+          "shot": "docs/audit-2026-09/tour/journeys/J2-08-فتح_الوحدة_الأولى.jpg",
+          "consoleErrs": [],
+          "api": []
+        },
+        {
+          "name": "هل الفيديو مُدمَج؟",
+          "ok": true,
+          "note": "iframes: 1 · https://www.youtube-nocookie.com/embed/aircAruvnKk",
+          "shot": "docs/audit-2026-09/tour/journeys/J2-09-هل_الفيديو_م_دم_ج_.jpg",
+          "consoleErrs": [],
+          "api": []
+        },
+        {
+          "name": "فتح فصلٍ من الفيديو",
+          "ok": true,
+          "note": "ضُغط الفصل",
+          "shot": "docs/audit-2026-09/tour/journeys/J2-10-فتح_فصل_من_الفيديو.jpg",
+          "consoleErrs": [],
+          "api": []
+        },
+        {
+          "name": "تفتيشٌ بعد الفصل",
+          "ok": true,
+          "note": "تجاوز إلى المحتوى الرئيسي أكاديمية وجيز الرئيسية تعلّمي خزانتي 3 ل ليان العملية الحالية ونقطة الألم بريدك غير موثَّق الدخول والتصفّح والتشخيص مفتوحة كلها. الموق",
+          "shot": "docs/audit-2026-09/tour/journeys/J2-11-تفتيش_بعد_الفصل.jpg",
+          "consoleErrs": [],
+          "api": []
+        },
+        {
+          "name": "المتن والتمارين — طولُ الصفحة",
+          "ok": true,
+          "note": "ارتفاع 2291px · 178 كلمة",
+          "shot": "docs/audit-2026-09/tour/journeys/J2-12-المتن_والتمارين_طول_الصفحة.jpg",
+          "consoleErrs": [],
+          "api": []
+        }
+      ],
+      "clicks": 2,
+      "startedAt": 1788435041753,
+      "durationMs": 152271
+    },
+    {
+      "id": "J3",
+      "titleAr": "الجلسة القادمة ورابطُ الدخول",
+      "steps": [
+        {
+          "name": "لوحة الطالب — التالي الآن",
+          "ok": true,
+          "note": "بطاقةُ «التالي الآن» ظاهرة",
+          "shot": "docs/audit-2026-09/tour/journeys/J3-13-لوحة_الطالب_التالي_الآن.jpg",
+          "consoleErrs": [],
+          "api": []
+        },
+        {
+          "name": "رابط الانضمام",
+          "ok": true,
+          "note": "href=/student/learning target=null",
+          "shot": "docs/audit-2026-09/tour/journeys/J3-14-رابط_الانضمام.jpg",
+          "consoleErrs": [],
+          "api": []
+        },
+        {
+          "name": "رحلة التعلّم — الجلسات",
+          "ok": true,
+          "note": "لا زرَّ جلسة · رمزُ مرورٍ ظاهر؟ false",
+          "shot": "docs/audit-2026-09/tour/journeys/J3-15-رحلة_التعل_م_الجلسات.jpg",
+          "consoleErrs": [],
+          "api": []
+        }
+      ],
+      "clicks": 0,
+      "startedAt": 1788435047949,
+      "durationMs": 146075
+    },
+    {
+      "id": "J4",
+      "titleAr": "تذكرةُ دعم وطلبُ شهادة",
+      "steps": [
+        {
+          "name": "فتح الدعم",
+          "ok": true,
+          "note": "الدعم الفني",
+          "shot": "docs/audit-2026-09/tour/journeys/J4-16-فتح_الدعم.jpg",
+          "consoleErrs": [],
+          "api": []
+        },
+        {
+          "name": "فتح نموذج التذكرة",
+          "ok": true,
+          "note": "فُتح",
+          "shot": "docs/audit-2026-09/tour/journeys/J4-17-فتح_نموذج_التذكرة.jpg",
+          "consoleErrs": [],
+          "api": []
+        },
+        {
+          "name": "تعبئةٌ وإرسال",
+          "ok": true,
+          "note": "تجاوز إلى المحتوى الرئيسي أكاديمية وجيز الرئيسية تعلّمي خزانتي 3 ل ليان الدعم الفني بريدك غير موثَّق الدخول والتصفّح والتشخيص مفتوحة كلها. الموقوف شيئان فقط: شراء الشعب واستلام الشهادة، حتى تُوثّق عنوانكstudent.demo@waje",
+          "shot": "docs/audit-2026-09/tour/journeys/J4-18-تعبئة_وإرسال.jpg",
+          "consoleErrs": [],
+          "api": [
+            "POST /api/auth/email/verify/request → 200"
+          ]
+        },
+        {
+          "name": "طلبُ شهادة من الرحلة",
+          "ok": true,
+          "note": "لا زرَّ طلبِ شهادةٍ ظاهر في هذه المرحلة",
+          "shot": "docs/audit-2026-09/tour/journeys/J4-19-طلب_شهادة_من_الرحلة.jpg",
+          "consoleErrs": [],
+          "api": []
+        }
+      ],
+      "clicks": 5,
+      "startedAt": 1788435055130,
+      "durationMs": 138894
+    },
+    {
+      "id": "J5",
+      "titleAr": "لوحُ الشعبة: حضور وتأجيل ورفع تسجيل",
+      "steps": [
+        {
+          "name": "فتح لوح الشعبة",
+          "ok": true,
+          "note": "شعبي وجلساتها",
+          "shot": "docs/audit-2026-09/tour/journeys/J5-20-فتح_لوح_الشعبة.jpg",
+          "consoleErrs": [],
+          "api": []
+        },
+        {
+          "name": "تسجيل حضور",
+          "ok": true,
+          "note": "سُجل الحضور وأُعيد حساب التقدم شعبي دورة تحليل فرص الأتمتة والربط بين التطبيقات شعبة ديمو — اختيار العملية وجدوى الأتمتة · دورك: مدرب رئيس · 1 متعلما · 6 جلسة الجلسات والحضور الجلسة 1 — بيانات ديمو الخميس، 13 أغسطس، 10:25 ص · انتهت ارفع التسجيل ليان الحوراني — حساب ديمو حاضر متأخر غائب معذور الجلسة 2 — بيانات ديمو الخميس، 20 أغسطس، 10:25 ص · انتهت ارفع التسجيل ليان الحوراني — حساب ديمو حاضر متأخر غائب معذور الجلسة 3 — بيانات ديمو الخميس، 27 أغسطس، 10:25 ص · انتهت ارفع التسجيل ليان الحوراني — حساب ديمو حاضر متأخر غائب معذور الجلسة 4 — بيانات ديمو الخميس، 10 سبتمبر، 10:25 ص أضِفها لتقويمك ارفع التسجيل اقترح موعدا ليان الحوراني — حساب ديمو حاضر متأخر غائب معذور الجلسة 5 — بيانات ديمو الخميس، 17 سبتمبر، 10:25 ص أضِفها لتقويمك ارفع التسجيل اقترح موعدا ليان الحوراني — حساب ديمو حاضر متأخر غائب معذور الجلسة 6 — بيانات ديمو الخميس، 24 سبتمبر، 10:25 ص أضِفها لتقويمك ارفع التسجيل اقترح موعدا ليان الحوراني — حساب ديمو حاضر متأخر غائب معذور تقدم المتعلمين ليان الحوراني — حساب ديمو 73٪ مخاطبة الشعبة إعلانٌ يبلغ كلّ مسجَّل، أو رسالةٌ إلى متعلّم بعينه. وكلاهما يبقى في السجلّ أدناه. إلى الشعبة كلّها (1 متعلّما) إلى ليان الحوراني — حساب ديمو وحده أرسل اعرض سجلّ ما أُرسل مواد الشعبة كرّاسةُ الوحدة الأولى — رابط مرجعٌ خارجيّ — الجولة مرجعٌ خارجيّ — الجولة ارفع ملفا (كرّاسة أو فيديو) أضف رابطا تكليف جديد ما تؤلّفه هنا يصل المسجلين، ويعود إليك تسليمهم في طابور المراجعة أدناه. واجب اختبار مشروع تخرج أنشئ طابور المراجعة لا تسليمات معلقة — كل شيء تحت السيطرة.",
+          "shot": "docs/audit-2026-09/tour/journeys/J5-21-تسجيل_حضور.jpg",
+          "consoleErrs": [],
+          "api": [
+            "POST /api/trainer/sessions/5715a2aa-c946-4d99-9335-c45a9106a0e5/attendance → 200"
+          ]
+        },
+        {
+          "name": "اقتراح موعد",
+          "ok": true,
+          "note": "اقتراحاتي مستحقاتي ما قيل عنّي بحث… Ctrl K أ أستاذ شعبي وجلساتها وصل اقتراحك الإدارة — والموعد لا يتغيّر حتى تعتمده شعبي دورة ",
+          "shot": "docs/audit-2026-09/tour/journeys/J5-22-اقتراح_موعد.jpg",
+          "consoleErrs": [],
+          "api": [
+            "POST /api/trainer/sessions/51ceceb8-f0ca-42fb-8780-a546ad16bff5/reschedule → 201"
+          ]
+        },
+        {
+          "name": "رفعُ تسجيل (ملفّ صغير)",
+          "ok": true,
+          "note": "تعذر رفع الملف بعد التسجيل شعبي دورة تحليل فرص الأتمتة والربط بين التطبيقات شعبة ديمو — اختيار العملية وجدوى الأتمتة · دورك: مدرب رئيس · 1 متعلما · ",
+          "shot": "docs/audit-2026-09/tour/journeys/J5-23-رفع_تسجيل_ملف_صغير_.jpg",
+          "consoleErrs": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "api": [
+            "POST /api/trainer/sessions/5715a2aa-c946-4d99-9335-c45a9106a0e5/recordings → 201",
+            "PUT /api/v1/uploads/_dSlKpFSP1Sof6RYzLJl5cadpcMMjZlY?exp=1788435672103&sig=I2-k6SdneaOoX62QTXJUKTQwejuNSbCIorG10tZez_M → 404"
+          ]
+        },
+        {
+          "name": "رفعُ مادّةٍ (رابط)",
+          "ok": true,
+          "note": "أُضيف الرابط إلى مواد الشعبة شعبي دورة تحليل فرص الأتمتة والربط بين التطبيقات شعبة ديمو — اختيار العملية وجدوى الأتمتة · دورك",
+          "shot": "docs/audit-2026-09/tour/journeys/J5-24-رفع_ماد_ة_رابط_.jpg",
+          "consoleErrs": [],
+          "api": [
+            "POST /api/trainer/cohorts/0abebcac-7aaa-47e7-991f-20306d2f278b/materials → 201"
+          ]
+        }
+      ],
+      "clicks": 10,
+      "startedAt": 1788435064217,
+      "durationMs": 129807
+    },
+    {
+      "id": "J6",
+      "titleAr": "تصحيحُ تسليمٍ منتظر",
+      "steps": [
+        {
+          "name": "فتح طابور التصحيح",
+          "ok": true,
+          "note": "تجاوز إلى المحتوى الرئيسي وجيز — بوابة المدرب الرئيسية شعبي طلبتي طابور التقييم اقتراحاتي مستحقاتي ما قيل عنّي بحث… Ctrl K أ أستاذ طابور التقييم الطابور نظيف — لا تسليمات بانتظارك كل ما وصلك قيّمته. أ",
+          "shot": "docs/audit-2026-09/tour/journeys/J6-25-فتح_طابور_التصحيح.jpg",
+          "consoleErrs": [],
+          "api": []
+        },
+        {
+          "name": "بدءُ المراجعة",
+          "ok": true,
+          "note": "لا تسليمَ منتظرا",
+          "shot": "docs/audit-2026-09/tour/journeys/J6-26-بدء_المراجعة.jpg",
+          "consoleErrs": [],
+          "api": []
+        },
+        {
+          "name": "درجةٌ وقبول",
+          "ok": true,
+          "note": "تجاوز إلى المحتوى الرئيسي وجيز — بوابة المدرب الرئيسية شعبي طلبتي طابور التقييم اقتراحاتي مستحقاتي ما قيل عنّي بحث… Ctrl K أ أستاذ طابور التقييم الطابور نظيف — ",
+          "shot": "docs/audit-2026-09/tour/journeys/J6-27-درجة_وقبول.jpg",
+          "consoleErrs": [],
+          "api": []
+        }
+      ],
+      "clicks": 0,
+      "startedAt": 1788435077718,
+      "durationMs": 116306
+    },
+    {
+      "id": "J7",
+      "titleAr": "إنشاء شعبة: الحقول والمعرّفات",
+      "steps": [
+        {
+          "name": "فتح الشعب وعدُّ حقول النموذج",
+          "ok": true,
+          "note": "حقول: 5 · التسميات: الدورة (المنشورة فقط) | عنوان الشعبة | السعة | السعر (USD) | وقت البدء",
+          "shot": "docs/audit-2026-09/tour/journeys/J7-01-فتح_الشعب_وعد_حقول_النموذج.jpg",
+          "consoleErrs": [],
+          "api": []
+        },
+        {
+          "name": "تعبئةُ النموذج وإنشاءُ المسودة",
+          "ok": true,
+          "note": "دورات في القائمة: 81 · أُنشئت الشعبة كمسودة — أكمل شروط الفتح الستة جاهزيّة العرض — لماذا لا تظهر بعض الأسعار السعر يُقرأ من الشعب لا من الكتالوج، فم",
+          "shot": "docs/audit-2026-09/tour/journeys/J7-02-تعبئة_النموذج_وإنشاء_المسودة.jpg",
+          "consoleErrs": [],
+          "api": [
+            "POST /api/admin/cohorts → 201"
+          ]
+        },
+        {
+          "name": "فتح الشعبة الجديدة وإضافةُ جلسة",
+          "ok": true,
+          "note": "أُنشئت الشعبة كمسودة — أكمل شروط الفتح الستة جاهزيّة العرض — لماذا لا تظهر بعض الأسعار السعر يُقرأ من الشع",
+          "shot": "docs/audit-2026-09/tour/journeys/J7-03-فتح_الشعبة_الجديدة_وإضافة_جلسة.jpg",
+          "consoleErrs": [],
+          "api": []
+        },
+        {
+          "name": "تسجيلُ طالبٍ — الحقلُ يطلب UUID",
+          "ok": true,
+          "note": "الحقل يطلب UUID (placeholder «معرف المستخدم (UUID)») · مسجَّلون طلبات المدربين طلبات المستشارين طلبات المتعلّمين الاستثناءات مراجعة التقييمات الأمور الفنّية الطلبات والفواتير التقار",
+          "shot": "docs/audit-2026-09/tour/journeys/J7-04-تسجيل_طالب_الحقل_يطلب_UUID.jpg",
+          "consoleErrs": [
+            "Failed to load resource: the server responded with a status of 409 (Conflict)"
+          ],
+          "api": [
+            "POST /api/admin/cohorts/0abebcac-7aaa-47e7-991f-20306d2f278b/enrollments → 409"
+          ]
+        },
+        {
+          "name": "ربطُ Zoom — الحقلُ يطلب معرّف الجلسة",
+          "ok": true,
+          "note": "معرّفُ الجلسة غيرُ متاح على الشاشة · بلا رسالة",
+          "shot": "docs/audit-2026-09/tour/journeys/J7-05-ربط_Zoom_الحقل_يطلب_معر_ف_الجلسة.jpg",
+          "consoleErrs": [],
+          "api": []
+        }
+      ],
+      "clicks": 20,
+      "startedAt": 1788435298882,
+      "durationMs": 58133
+    },
+    {
+      "id": "J8",
+      "titleAr": "الاعتمادات: تأجيلٌ وشهادة",
+      "steps": [
+        {
+          "name": "اقتراحاتُ التأجيل في الشعب",
+          "ok": true,
+          "note": "اقتراحاتٌ معلّقة داخل بطاقة شعبة الديمو: 1 · (لا مؤشّرَ على مستوى القائمة — يجب فتحُ كلِّ بطاقةٍ لمعرفة ما ينتظر)",
+          "shot": "docs/audit-2026-09/tour/journeys/J8-33-اقتراحات_التأجيل_في_الشعب.jpg",
+          "consoleErrs": [],
+          "api": []
+        },
+        {
+          "name": "اعتمادُ اقتراح",
+          "ok": true,
+          "note": "اعتُمد الموعد الجديد — وأُخبر المتعلّمون جاهزيّة العرض — لماذا لا تظهر بعض الأسعار السعر يُقرأ من الشعب لا من الكتالوج، فما لا",
+          "shot": "docs/audit-2026-09/tour/journeys/J8-34-اعتماد_اقتراح.jpg",
+          "consoleErrs": [],
+          "api": [
+            "POST /api/admin/session-reschedules/888c868a-9283-455b-9fda-c1ebd0e80b74/review → 200"
+          ]
+        },
+        {
+          "name": "طلباتُ المتعلّمين",
+          "ok": true,
+          "note": "تجاوز إلى المحتوى الرئيسي وجيز — الإدارة والعمليات بحث… Ctrl K م مدير الأكاديمية الرئيسية الكتالوج تأليف المتون النشر والإصدارات الشعب الطلبة المسجَّلون طلبات المدربين طلبات المستشارين طلبات المتعلّمين الاستثناءات مراجعة التقييمات الأمور ال",
+          "shot": "docs/audit-2026-09/tour/journeys/J8-35-طلبات_المتعل_مين.jpg",
+          "consoleErrs": [],
+          "api": []
+        },
+        {
+          "name": "البتّ في طلب",
+          "ok": true,
+          "note": "لا طلبَ يُبتّ فيه",
+          "shot": "docs/audit-2026-09/tour/journeys/J8-36-البت_في_طلب.jpg",
+          "consoleErrs": [],
+          "api": []
+        }
+      ],
+      "clicks": 3,
+      "startedAt": 1788435156737,
+      "durationMs": 37287
+    },
+    {
+      "id": "J9",
+      "titleAr": "المستخدمون: دعوةٌ وصلاحيّةٌ وإيقافٌ وحذف",
+      "steps": [
+        {
+          "name": "فتح المستخدمين",
+          "ok": true,
+          "note": "المستخدمون والأدوار",
+          "shot": "docs/audit-2026-09/tour/journeys/J9-06-فتح_المستخدمين.jpg",
+          "consoleErrs": [],
+          "api": []
+        },
+        {
+          "name": "إنشاءُ حساب — ما تقوله الرسالة",
+          "ok": true,
+          "note": "أُنشئ الحساب، ولم تُرسل الدعوة — قناةُ البريد غير مفعّلة. اطلب منه «نسيت كلمة المرور» ببريده. الحسابات النشطة (10) الحسابات الموقوفة (3) 1–10 من 10 حسابا موظّفُ الجولة tour",
+          "shot": "docs/audit-2026-09/tour/journeys/J9-07-إنشاء_حساب_ما_تقوله_الرسالة.jpg",
+          "consoleErrs": [],
+          "api": [
+            "POST /api/admin/users → 201"
+          ]
+        },
+        {
+          "name": "منحُ صلاحيّةٍ بسبب",
+          "ok": true,
+          "note": "ضُغط «امنحها» · استثناءات جودة التشخيص مراجعة التقييمات الأمور الفنّية الطلبات والفواتير التقارير والتصدير تذاكر الدعم الإشعارات المهامّ والتكل · عدّادُ الصلاحيّات: 53",
+          "shot": "docs/audit-2026-09/tour/journeys/J9-08-منح_صلاحي_ة_بسبب.jpg",
+          "consoleErrs": [],
+          "api": [
+            "POST /api/admin/users/ca505b77-e683-4a91-8eb1-8e18abc5a3f6/permissions → 200"
+          ]
+        },
+        {
+          "name": "إيقافٌ ثمّ إعادة",
+          "ok": true,
+          "note": "أُوقف الحساب وأُبطلت جلساته فورا الحسابات النشطة (9) الحسابات الموقوفة (4) لا نتائج ل → نشطة (9) الحسابات الموقوفة (4) لا نتائج لا حساب يطابق «الجولة».",
+          "shot": "docs/audit-2026-09/tour/journeys/J9-09-إيقاف_ثم_إعادة.jpg",
+          "consoleErrs": [],
+          "api": [
+            "POST /api/admin/users/ca505b77-e683-4a91-8eb1-8e18abc5a3f6/suspend → 200"
+          ]
+        },
+        {
+          "name": "محاولةُ حذفِ حسابٍ له سجلّ",
+          "ok": true,
+          "note": "حوار: الحذفُ النهائيُّ لا رجعةَ فيه. اكتب بريدَ الحساب لتأكيده: student.demo@wajeez.local |  · ",
+          "shot": "docs/audit-2026-09/tour/journeys/J9-10-محاولة_حذف_حساب_له_سجل_.jpg",
+          "consoleErrs": [],
+          "api": []
+        }
+      ],
+      "clicks": 13,
+      "startedAt": 1788435343268,
+      "durationMs": 13747
+    },
+    {
+      "id": "J10",
+      "titleAr": "الأدوار الإداريّة الأربعة — أوّل شاشة",
+      "steps": [
+        {
+          "name": "operations: /admin",
+          "ok": true,
+          "note": "لوحةٌ ظاهرة · بنودُ القائمة: الرئيسية · الكتالوج · النشر والإصدارات · الشعب · الطلبة المسجَّلون · طلبات المدربين · الاستثناءات · التقارير والتصدير · المهامّ والتكليفات",
+          "shot": "docs/audit-2026-09/tour/journeys/J10-42-operations_admin.jpg",
+          "consoleErrs": [
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+          ],
+          "api": []
+        },
+        {
+          "name": "diagnostics: /admin",
+          "ok": true,
+          "note": "لوحةٌ ظاهرة · بنودُ القائمة: الرئيسية · الكتالوج · النشر والإصدارات · جودة التشخيص · التقارير والتصدير · المهامّ والتكليفات",
+          "shot": "docs/audit-2026-09/tour/journeys/J10-43-diagnostics_admin.jpg",
+          "consoleErrs": [
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+          ],
+          "api": []
+        },
+        {
+          "name": "finance: /admin",
+          "ok": true,
+          "note": "لوحةٌ ظاهرة · بنودُ القائمة: الرئيسية · الطلبات والفواتير · التقارير والتصدير · المهامّ والتكليفات",
+          "shot": "docs/audit-2026-09/tour/journeys/J10-44-finance_admin.jpg",
+          "consoleErrs": [
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+          ],
+          "api": []
+        },
+        {
+          "name": "support: /admin",
+          "ok": true,
+          "note": "لوحةٌ ظاهرة · بنودُ القائمة: الرئيسية · الكتالوج · تذاكر الدعم · المهامّ والتكليفات",
+          "shot": "docs/audit-2026-09/tour/journeys/J10-45-support_admin.jpg",
+          "consoleErrs": [
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+          ],
+          "api": []
+        }
+      ],
+      "clicks": 0,
+      "startedAt": 1788435180384,
+      "durationMs": 13640
+    }
+  ]
+}

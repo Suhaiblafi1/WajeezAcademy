@@ -112,7 +112,17 @@ export class PublishingService {
 
     /* الدورات المعتمدة: وحدة واحدة على الأقل، ومهاراتها موجودة */
     for (const c of approved.courses) {
-      const modules = await this.prisma.courseModule.count({ where: { courseId: c.id, status: { in: ['approved', 'published'] } } })
+      /* الوحدةُ لا تُراجَع، فلا تُعدُّ بحالةِ المراجعة.
+
+         كان الشرطُ `status IN ('approved','published')` — وهو يعتمد على أنّ
+         اعتمادَ الدورة يكتب `approved` على وحداتها، **وهي حالةٌ لا تملكها
+         الوحدة** (حالاتُها: `draft | published | archived`). فالحاجزُ كان
+         يتحقّق من أثرِ عطبٍ لا من حقيقة، ولمّا زال العطبُ سقط الحاجزُ معه —
+         وهذا ما كشفه هذا التغيير.
+
+         والسؤالُ المقصود: «هل لهذه الدورة وحداتٌ حيّة؟» — فكلُّ ما ليس
+         مؤرشَفا يُعدّ. */
+      const modules = await this.prisma.courseModule.count({ where: { courseId: c.id, status: { not: 'archived' } } })
       if (modules === 0) errors.push(`course ${c.id}: بلا وحدات`)
       const links = await this.prisma.courseSkillLink.findMany({ where: { courseId: c.id } })
       for (const l of links) {

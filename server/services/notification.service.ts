@@ -7,6 +7,7 @@ import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { getEmailConfig, type EmailConfig } from './integrations.service'
 import { sendEmail } from './mail'
+import { categoryForTemplate } from '../../src/application/notifications/categories'
 
 /* لأيّ بوابةٍ الإشعار — جرسُ كلٍّ يعرض جمهورَه وحده.
 
@@ -175,8 +176,35 @@ export class NotificationService {
     return { title: fill(tpl.titleAr), body: fill(tpl.bodyAr) }
   }
 
-  /** إرسال (أو محاولة) إشعار — يسجل النتيجة دائما */
+  /* ═══ تفضيلُ صاحب الحساب — وحدُّه (المهمّة ٧٢) ═══
+
+     الكتمُ يقع **قبل الكتابة**: إشعارٌ مكتومٌ لا يُنشأ صفّا ثمّ يُخفى، فلا
+     جرسٌ يعدّ ما لن يُقرأ ولا جدولٌ ينمو بما لا يُرى.
+
+     والحدُّ يُفرَض هنا لا في الشاشة: صنفٌ غيرُ قابلٍ للكتم (المال · الشهادات ·
+     عملُ الموظّف) يمضي إشعارُه **مهما كان في القاعدة** — فلو حُفر صفُّ تفضيلٍ
+     بيدٍ لم يُسكِت خبرا يترتّب عليه حقٌّ أو واجب. وما لا صنفَ له بعد يمضي
+     أيضا: السهوُ في التصنيف لا يُسكِت أحدا.
+
+     ويُرجَع `null` عند الكتم، ولا قارئَ لناتج `notify` في المستودع كلِّه —
+     فُحص. */
+  private async suppressedFor(payload: NotificationPayload): Promise<boolean> {
+    const category = categoryForTemplate(payload.templateKey)
+    if (!category || !category.silenceable) return false
+    const pref = await this.prisma.notificationPreference.findUnique({
+      where: {
+        userId_category_channel: {
+          userId: payload.userId, category: category.key, channel: payload.channel,
+        },
+      },
+    })
+    /* الغيابُ يعني «مُفعَّل»: من لم يفتح الشاشةَ لا يتغيّر سلوكُه */
+    return pref ? !pref.enabled : false
+  }
+
+  /** إرسال (أو محاولة) إشعار — يسجل النتيجة دائما، إلّا ما كتَمَه صاحبُه */
   async notify(payload: NotificationPayload) {
+    if (await this.suppressedFor(payload)) return null
     const notification = await this.prisma.notification.create({
       data: {
         userId: payload.userId, channel: payload.channel, templateKey: payload.templateKey,

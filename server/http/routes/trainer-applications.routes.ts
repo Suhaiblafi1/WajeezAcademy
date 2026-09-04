@@ -13,6 +13,7 @@ import {
 } from '../../services/storage.service'
 import { requirePermission } from '../auth-plugin'
 import { CONTACT_CHANNEL_VALUES, TRAINING_SEASON_VALUES } from '../../../src/application/trainer/application-options'
+import { assertNotBot } from '../honeypot'
 
 const IS_PROD = process.env.NODE_ENV === 'production'
 
@@ -39,6 +40,7 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
     config: { rateLimit: { max: 10, timeWindow: '15 minutes' } },
     schema: { tags: ['trainer-applications'], summary: 'القسم الأوّل — ينشئ الطلبَ مسودّةً وحسابَ المتقدّم' },
   }, async (req, reply) => {
+    assertNotBot(req.body)
     const body = z.object({
       fullName: z.string().min(3), email: z.string().email(),
       password: z.string().min(8).max(200),
