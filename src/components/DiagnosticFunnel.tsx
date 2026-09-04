@@ -44,7 +44,13 @@ export default function DiagnosticFunnel() {
           <BarChart3 className="h-4 w-4 text-teal-light-ink" aria-hidden="true" />
           قمع التشخيص وجدار التسجيل
         </h2>
-        {conversion && (
+        {/* النسبةُ لا تُعرض قبل أن يبدأ أحد.
+
+            كانت تُعرض دائما، فتقول «نسبة التحويل عند الجدار: ٠٪» بينما الجسمُ
+            تحتها يقول «لا أحداث بعد» — فيُقرأ الصفرُ **نتيجةً** وهو **غيابُ
+            بيانات**، وبينهما فرقٌ يُبنى عليه قرار: الأوّلُ يقول «الجدارُ يطرد
+            الناسَ كلَّهم» والثاني يقول «لم يمرّ أحدٌ بعد». */}
+        {conversion && started > 0 && (
           <p className="text-xs text-white/55">
             نسبة التحويل عند الجدار:{" "}
             <span className="text-lg font-black tabular-nums text-gold-ink">{String(conversion.users)}</span>
