@@ -134,7 +134,7 @@ export default function PublishingBoard() {
                     /* كان `confirm` خامّا: سطرٌ واحدٌ في حوار متصفّحٍ يملك
                        المستخدمُ كتمَه — فيصير الحذفُ لا يقع ولا يُقال لماذا. */
                     onClick={() => setPendingDelete({ id: v.id, label: v.label })}
-                    className="flex cursor-pointer items-center gap-1 rounded-full border border-white/20 px-3 py-1.5 text-xs font-bold text-muted-foreground hover:border-rose-400/50 hover:text-rose-300 disabled:opacity-40">
+                    className="flex cursor-pointer items-center gap-1 rounded-full border border-white/20 px-3 py-1.5 text-xs font-bold text-muted-foreground hover:border-rose-400/50 hover:text-danger-ink disabled:opacity-40">
                     <Trash2 className="h-3.5 w-3.5" /> احذف المسودة
                   </button>
                 )}

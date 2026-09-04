@@ -27,6 +27,20 @@ const FORBIDDEN_HEX = [
 /** مرافق الأسطح التي يجب ألا تحمل hex محظورا */
 const SURFACE_UTILS = ['bg', 'from', 'via', 'to', 'fill', 'stroke', 'ring'];
 
+/* ── حبرُ الخطر: عائلةٌ واحدةٌ مغطّاةٌ وأخرى ليست ──
+
+   `text-red-200` و`text-red-300` لهما تجاوزٌ في `src/styles/light.css` منذ
+   المهمّة ٢٠ (كانتا ١٫٢:‏١ على الورق في سبعةَ عشرةَ شاشة). و**`text-rose-*`
+   لا تجاوزَ لها** — فكتابتُها تُعيد العطبَ نفسَه بلونٍ آخر. وهذا ما وقع
+   فعلا في المهمّة ٧٢: كتبتُ `text-rose-200` في شاشةٍ جديدة، فقاسها فحصُ
+   الإتاحة **١٫٢٩:‏١ في المظهر الفاتح** — وأمسكها لأنّ الشاشةَ كانت في
+   مجموعة الفحص. ولو كانت شاشةً غيرَ مفحوصةٍ لَمَرّت.
+
+   فالرمزُ `text-danger-ink` ينقلب في المظهرين (`--danger-ink` في
+   `src/index.css`)، وهذا الحارسُ يمنع عودةَ العائلة غير المغطّاة — في كلّ
+   ملفٍّ لا في المفحوص وحدَه. */
+const FORBIDDEN_INK = /\btext-rose-\d{2,3}\b/g;
+
 const hexAlt = FORBIDDEN_HEX.join('|');
 const utilAlt = SURFACE_UTILS.join('|');
 const pattern = new RegExp(`(?:${utilAlt})-\\[#(?:${hexAlt})\\]`, 'gi');
@@ -37,6 +51,7 @@ const files = execSync(
 ).trim().split('\n').filter(Boolean);
 
 let violations = 0;
+let inkViolations = 0;
 for (const file of files) {
   const lines = readFileSync(file, 'utf8').split('\n');
   lines.forEach((line, i) => {
@@ -46,6 +61,12 @@ for (const file of files) {
       violations++;
       console.error(`✗ ${file}:${i + 1} — ${m[0]}`);
     }
+    FORBIDDEN_INK.lastIndex = 0;
+    let ink;
+    while ((ink = FORBIDDEN_INK.exec(line)) !== null) {
+      inkViolations++;
+      console.error(`✗ ${file}:${i + 1} — ${ink[0]} (لا تجاوزَ لها على الورق)`);
+    }
   });
 }
 
@@ -54,7 +75,15 @@ if (violations > 0) {
 ❌ حارس الثيم: وُجد ${violations} لون سطح داكن حرفي.
    استخدم الرموز السيميائية بدلا منه (bg-paper / bg-surface / bg-panel …)
    — هي تتكيف مع الوضعين تلقائيا. التفاصيل في src/index.css.`);
-  process.exit(1);
 }
 
-console.log(`✅ حارس الثيم: ${files.length} ملف نظيف — لا أسطح داكنة حرفية.`);
+if (inkViolations > 0) {
+  console.error(`
+❌ حارس الثيم: وُجد ${inkViolations} حبرَ خطرٍ من عائلة rose.
+   استخدم text-danger-ink — ينقلب في المظهرين. و«rose» بلا تجاوزٍ على الورق
+   فتُقاس نحوَ ١٫٣:‏١، وهو ما أمسكه فحصُ الإتاحة في المهمّة ٧٢.`);
+}
+
+if (violations + inkViolations > 0) process.exit(1);
+
+console.log(`✅ حارس الثيم: ${files.length} ملف نظيف — لا أسطح داكنة حرفية ولا حبرَ خطرٍ بلا تجاوز.`);

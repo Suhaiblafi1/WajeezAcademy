@@ -14,6 +14,7 @@ import {
   type EvidenceKind, type Momentum,
 } from "@/application/student/momentum";
 import EmptyState from "@/components/EmptyState";
+import MyDeadlines from "@/components/MyDeadlines";
 import { fmtDate, fmtSession } from "@/application/text/format-ar";
 
 /* حُذفت خريطة ADVISORS هنا كما حُذفت في صفحة المسار: أسماءُ أشخاصٍ مكتوبةٌ في
@@ -288,6 +289,10 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
 
       {/* مؤشر الزخم (ط-٥) — بعد «أين أنا» وقبل «ماذا الآن»: ما فعلته فعلا */}
       {momentum && <MomentumCard m={momentum} className="mt-6" />}
+
+      {/* «مواعيدي» (المهمّة ٧٢) — قبل «ماذا الآن» لأنّ ما له موعدٌ يسبق ما
+          لا موعدَ له: كان على المتعلّم أن يفتح كلَّ تسجيلٍ ليعرف ما عليه. */}
+      <MyDeadlines className="mt-6" />
 
       <div className="mt-6 grid gap-5 [&>*]:min-w-0 lg:grid-cols-3">
         {/* التالي الآن — حقيقي */}
