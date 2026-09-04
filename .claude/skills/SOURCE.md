@@ -4,8 +4,12 @@
 كتبها يوجّه سلوكه هنا — ولهذا يُسجَّل مصدر كل ملف والتزامُه بالضبط، لا «من
 GitHub» ولا «من الفرع الرئيسي». وأي تحديث لاحق يقارَن بهذه الالتزامات.
 
-جُلبت بـ`curl` من `raw.githubusercontent.com` بلا استنساخ المستودعات.
-تاريخ الجلب: 2026-08-28، ودفعةٌ ثانية 2026-08-31.
+جُلبت الدفعتان الأولى والثانية بـ`curl` من `raw.githubusercontent.com`.
+وفي الثالثة أُغلق `api.github.com` على هذه الجلسة (٤٠٣: المستودعُ غيرُ مُصرَّحٍ به)
+فتعذَّر سردُ الأشجار بلا استنساخ، فاستُنسخت الخمسةُ استنساخا سطحيّا
+(`--depth 1`) إلى مجلَّدٍ مؤقّتٍ **خارج** المستودع، وقُرئت منه، ونُقل المثبَّت
+منه نسخا حرفيّا. ولم يُستنسخ شيءٌ داخل المستودع.
+تواريخ الجلب: 2026-08-28، و2026-08-31، ودفعةٌ ثالثة 2026-09-03.
 
 ## ما استُورد
 
@@ -25,13 +29,21 @@ GitHub» ولا «من الفرع الرئيسي». وأي تحديث لاحق �
 | عشر مهارات KST + `shared-references` | [vanderbilt-data-science/knowledge-spaces](https://github.com/vanderbilt-data-science/knowledge-spaces) · `.claude/skills/` | `08e7aef` | MIT |
 | `lecture-to-study-guide` · `rubric` · `concept-map` | [Jellypod-Inc/school-skills](https://github.com/Jellypod-Inc/school-skills) · `skills/` | `cd48479` | MIT |
 | `product-marketing` · `cro` · `signup` · `pricing` · `copywriting` | [coreyhaines31/marketingskills](https://github.com/coreyhaines31/marketingskills) · `skills/` | `e55de88` | MIT |
+| إحدى عشرة مهارةً من Superpowers (`brainstorming` · `dispatching-parallel-agents` · `executing-plans` · `finishing-a-development-branch` · `receiving-code-review` · `requesting-code-review` · `subagent-driven-development` · `using-git-worktrees` · `using-superpowers` · `writing-plans` · `writing-skills`) | obra/superpowers · `skills/` | `b36e082` | MIT |
+| `find-skills` | [vercel-labs/skills](https://github.com/vercel-labs/skills) · `skills/find-skills/` | `435076e` | MIT |
+| `task-observer` | [rebelytics/one-skill-to-rule-them-all](https://github.com/rebelytics/one-skill-to-rule-them-all) · الجذر و`references/` و`scripts/` | `510caad` | CC BY 4.0 |
+| `impeccable` (١٦٣ ملفا) وأربعةُ وكلاءَ في `.claude/agents/` | [pbakaus/impeccable](https://github.com/pbakaus/impeccable) · `.claude/skills/impeccable/` و`.claude/agents/` | `fcc271c` | Apache 2.0 |
 
 نصوص الرخص محفوظة: `LICENSE-superpowers.txt` و`webapp-testing/LICENSE.txt`
 و`LICENSE-education-skills.txt` و`frontend-design/LICENSE.txt`
 و`mcp-builder/LICENSE.txt` و`ui-ux-pro-max/LICENSE`
 و`shared-references/LICENSE-knowledge-spaces.txt` و`LICENSE-school-skills.txt`
-و`LICENSE-marketingskills.txt`. كلُّها تشترط بقاء إشعار الرخصة مع النسخة —
-وهو هنا.
+و`LICENSE-marketingskills.txt` و`LICENSE-vercel-skills.txt`
+و`LICENSE-task-observer.txt` و`impeccable/LICENSE` (ومعه `impeccable/NOTICE.md`،
+وهو إشعارُ الأصلِ نفسِه عن مادّةٍ اقتبسها من `ehmo/platform-design-skills`).
+وSuperpowers تُغطّيها `LICENSE-superpowers.txt` الموجودة: الالتزامُ لم يتغيَّر
+(`b36e082` نفسه)، فالإحدى عشرةُ الجديدةُ من الشجرة عينِها. كلُّها تشترط بقاء
+إشعار الرخصة مع النسخة — وهو هنا.
 
 ## تنبيه على CC BY-SA 4.0
 
@@ -39,6 +51,14 @@ GitHub» ولا «من الفرع الرئيسي». وأي تحديث لاحق �
 لا يُلزم شيئا زائدا. لكنّ **أيَّ تعديل على ملفّاتها الأربعة يجعله عملا مشتقّا
 يجب نشره بالرخصة نفسها**. فلا تُعدَّل، وما يخصّنا في ملفٍّ مجاور مستقلّ لا
 يقتبس نصّها (`WAJEEZ-AUTHORING.md`).
+
+## تنبيه على CC BY 4.0 — `task-observer`
+
+نسبةٌ بلا مشاركةٍ بالمثل، وهي أخفُّ من CC BY-SA: التعديلُ مباحٌ ما بقيت
+النسبة. ومع ذلك **لا تُعدَّل** على قاعدتنا العامّة أدناه (النسخُ حرفا كي
+تُقارَن التحديثات بالأصل). والنسبةُ مكتوبةٌ في متن `SKILL.md` نفسِه —
+Eoghan Henn / rebelytics.com — فلا تُحذَف منه، ونصُّ الرخصة في
+`LICENSE-task-observer.txt`.
 
 المكتبة `GarethManning/claude-education-skills`: ١٦٥ مهارة في ٢٠ نطاقا، كلٌّ
 منها بأدلّةٍ مُسمّاة وتقديرٍ صريح لقوّتها (strong · moderate · emerging)،
@@ -98,12 +118,83 @@ strong`، وكلُّها تطابق ما نؤلّفه فعلا. وتُركت `le
   بمتصفّح مثبّت المسار. بلا هذا الملف تكون المهارة صحيحة المبدأ ومستحيلة التنفيذ.
 - `test-driven-development/WAJEEZ-SCOPE.md` — أين يُلزم قانونها الحديدي في هذا
   المستودع، وما البديل المكافئ حيث لا يصلح اختبارٌ فاشل أولا.
+- `WAJEEZ-SUPERPOWERS.md` — أين تصطدم الإحدى عشرةُ الجديدةُ بقواعد هذا
+  المستودع (الفرعُ المعتمد، وأدواتُ الرسم الغائبة، والمسارات).
+- `impeccable/WAJEEZ-RUNTIME.md` — الخُطّافانِ لم يُوصَلا، وما يصل إلى الشبكة،
+  وأين تتقاطع المهارةُ مع `ui-ux-pro-max`.
+- `task-observer/WAJEEZ-ACTIVATION.md` — التنشيطُ الدائمُ لم يُوصَل، ومساحةُ
+  العملِ التي يطلبها تموت مع حاويةِ الجلسة البعيدة.
+- `find-skills/WAJEEZ-REVIEW-RULE.md` — المهارةُ تأمر بتثبيتٍ بلا تأكيد
+  (`-g -y`)، وقاعدةُ المراجعة تمنعه.
 - `shared-references/WAJEEZ-PATHS.md` — مهاراتُ KST العشر تشير إلى
   `scripts/kst_utils.py` بمسارٍ نسبيٍّ إلى جذر مستودعها لا جذرِنا. الملفُّ
   يصحّح المسار بلا أن يمسّ نصّها، ويقول أين تنفع عندنا وأين لا تنفع.
 
 و`_catalogs/` ليست مهاراتٍ بل فهارسُ محفوظة (لا `SKILL.md` فيها فلا
 يلتقطها كلود مهارةً): ما في المكتبتين الكبيرتين لنختار منه لاحقا بالقراءة.
+
+### من دفعة 2026-09-03 — ما طُلب وما استُثني
+
+| المستودع | ما هو فعلا | القرار |
+|---|---|---|
+| `thedotmack/claude-mem` | تطبيقٌ كامل (`claude-mem` v13.24.0): خادمُ MCP، وعمليةُ عاملٍ على منفذٍ محليّ، وقاعدةُ SQLite في `~/.claude-mem/`، وخُطّافاتٌ تضغط سجلَّ الجلسة، ومزامنةٌ سحابيّةٌ مدفوعة عبر cmem.ai | **لا يُنسخ في المستودع، وقد ثُبِّت إضافةً** — انظر القسمَ التالي |
+
+ومن `obra/superpowers` كانت ثلاثٌ مثبَّتةً من الدفعة الأولى بالالتزام نفسِه،
+فأُكملت الشجرةُ إلى أربعَ عشرةَ — لم تُرقَّ ولم تُمسَّ الثلاثُ القديمة:
+`git ls-remote` يُرجع `b36e082` نفسَه، أي أنّ المنبع لم يتحرَّك منذ الدفعة الأولى.
+
+### `claude-mem` — إضافةٌ لا نسخةٌ في الشجرة
+
+مهاراتُه التسعُ والعشرون **عملاءُ** لتشغيلٍ مثبَّت: تنادي أداةَ MCP باسم
+`search`، وتستعلم منفذَ عاملٍ محليّ، وتقرأ `~/.claude-mem/claude-mem.db`.
+فنسخُ `SKILL.md` منها إلى `.claude/skills/` يضع في المستودع تعليماتٍ تشير
+إلى أدواتٍ لا وجود لها — وهي عينُ العلَّةِ التي مُنع بها جلبُ سكربتات
+`webapp-testing`. **فلا شيءَ منه في هذه الشجرة، ولا سطرَ له في جدول
+«ما استُورد» أعلاه.**
+
+وثُبِّت بطريقته الصحيحة في 2026-09-03 بأمرِ صاحبِ الطلب:
+
+```
+claude plugin marketplace add thedotmack/claude-mem
+claude plugin install claude-mem@thedotmack
+```
+
+**ونطاقُه `user` لا `project`:** مُسجَّلٌ في `~/.claude/settings.json`
+(`extraKnownMarketplaces` و`enabledPlugins`)، لا في المستودع. فلا يُفرَض على
+من يستنسخ المستودع، ولا يراه مراجعٌ في طلب دمج — وهو المقصود: تثبيتُه قرارُ
+كلِّ جهازٍ على حدة.
+
+**وما يجلبه فعلا** (من `claude plugin details`): تسعَ عشرةَ مهارة، وستةَ
+خُطّافات — ومنها `PreToolUse` و`PostToolUse` و`Stop`، أي أنّه يقرأ سجلَّ
+الجلسة كلَّه — وخادمَ MCP واحدا (`mcp-search`)، وكُلفةً دائمةً نحوَ
+١٧٥٥ رمزا **تُضاف إلى كلِّ جلسة**. وقاعدةُ SQLite تُنشأ عند أوّلِ جلسةٍ
+لاحقةٍ بخُطّافِ `Setup`؛ ولم تكن موجودةً بعدَ التثبيت مباشرةً.
+
+**وتنبيهانِ يلزمان:**
+
+1. **في الجلسات البعيدة يموت التثبيتُ مع الحاوية.** `~/.claude/` داخلَ
+   حاويةٍ تُستعاد بعد سكون، فالإضافةُ تُثبَّت من جديدٍ في كلِّ جلسةٍ بعيدة.
+   والدائمُ إنّما يكون على جهاز المستخدم نفسِه، أو بتصريحٍ في
+   `.claude/settings.json` مُلتزَمٍ في المستودع — وذاك يفرضه على كلِّ من
+   يستنسخ، فلم يُفعَل بلا طلب.
+2. **المزامنةُ السحابيّةُ مغلقةٌ ما لم يُوصَل حسابُ cmem.ai** بمهارة
+   `cloud-sync`. فالبياناتُ إلى الآن محليّةٌ في `~/.claude-mem/` وحدَها.
+
+وفيه مهارةُ `babysit` — تُشابه في اسمها ما تشير إليه قواعدُ متابعةِ طلبات
+الدمج (`.claude/skills/babysit/SKILL.md`)، وهي **ليست** إيّاها: تلك مسارٌ في
+المستودع، وهذه مهارةُ إضافةٍ باسمها. فلا تُقرأ إحداهما مكانَ الأخرى.
+
+### استثناءٌ مُعلَن على قاعدة المراجعة — حِزَمُ `impeccable` المُصغَّرة
+
+القاعدةُ أدناه تقول: تُقرأ المهارةُ كاملةً قبل إدخالها. و`impeccable` ١٦٣ ملفا
+و٥ ميغابايت، منها نحوُ ٩٠٠ كيلوبايت جافاسكربت مُصغَّرةٌ للمتصفِّح
+(`live-browser.js` و`detect-antipatterns-browser.js` و`detector/browser/injected/`)
+ومليونٌ فهرسُ خطوطٍ JSON. **وهذه لم تُقرأ، ولا يمكن أن تُقرأ قراءةً مفيدة.**
+فالمُقروءُ فعلا: `SKILL.md` و٤٥ ملفَّ `reference/` وسكربتاتُ المدخل
+(`context.mjs` و`doctor.mjs`) وجَرْدُ ما تستورده الحِزَمُ كلُّها وما تصل إليه
+من الشبكة. وهذا استثناءٌ اختاره صاحبُ الطلب صراحةً بعد عرضِ البديلين عليه
+(الوثائقُ وحدَها بلا سكربتات، أو التثبيتُ إضافةً لا نسخا) — ويُسجَّل هنا
+استثناءً مُعلَنا لا سابقةً تُقاس عليها.
 
 ## قاعدة المراجعة
 
