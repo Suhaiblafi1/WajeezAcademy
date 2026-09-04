@@ -25,6 +25,10 @@ interface EligibleTrainer {
   qualification: "qualified" | "pending" | "rejected" | "retired" | "none";
   qualificationId: string | null;
   assignedRole: string | null;
+  /* إشارتا الإتاحة (المهمّة ٧١) — تُقرآن قبل النقر لا بعد الرفض */
+  onLeave: boolean;
+  /** `null` = لم يُعلن ساعاته · رقمٌ = جلساتٌ خارجها. والصفرُ معلومةٌ لا غياب */
+  outsideDeclaredHours: number | null;
 }
 
 const QUALIFICATION_LABEL: Record<EligibleTrainer["qualification"], string> = {
@@ -111,6 +115,8 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
             {trainers.map((t) => (
               <option key={t.profileId} value={t.profileId}>
                 {t.name} — {QUALIFICATION_LABEL[t.qualification]}{t.assignedRole ? " · مُسنَد" : ""}
+                {t.onLeave ? " · غائب في هذه المدّة" : ""}
+                {t.outsideDeclaredHours ? ` · ${t.outsideDeclaredHours} جلسة خارج ساعاته` : ""}
               </option>
             ))}
           </select>
@@ -140,6 +146,19 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
             </button>
           )}
         </div>
+
+        {/* الغيابُ يُقال أوّلا لأنّه **مانعٌ** لا تنبيه: الزرُّ سيُردّ بـ409،
+            فمن حقّ المُسنِد أن يعرف قبل أن يضغط. والساعاتُ تنبيهٌ بعده. */}
+        {picked?.onLeave && (
+          <p className="mt-2 rounded-xl border border-red-400/30 bg-red-400/[0.06] p-2 text-micro font-bold leading-5 text-red-200" role="status">
+            المدرّبُ أعلن غيابَه في مدّةٍ تقع فيها جلسةٌ من جلسات هذه الشعبة — الإسنادُ سيُردّ. اختر غيرَه، أو راجعه ليحدّث إتاحته.
+          </p>
+        )}
+        {!picked?.onLeave && picked?.outsideDeclaredHours ? (
+          <p className="mt-2 rounded-xl border border-gold/30 bg-gold/[0.06] p-2 text-micro font-bold leading-5 text-gold-ink" role="status">
+            {picked.outsideDeclaredHours} من جلسات هذه الشعبة تقع خارجَ ساعاته المعلنة — الإسنادُ جائزٌ، والقرارُ لك.
+          </p>
+        ) : null}
 
         {picked && (
           <p className="mt-2 text-micro leading-5 text-muted-foreground">

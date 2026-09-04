@@ -55,6 +55,7 @@ const JoinTrainerVerify = lazy(() => import('./pages/JoinTrainerVerify'))
 const ApplicantStatus = lazy(() => import('./pages/ApplicantStatus'))
 const TrainerAcceptInvite = lazy(() => import('./pages/TrainerAcceptInvite'))
 const TrainerProposals = lazy(() => import('./pages/trainer/Proposals'))
+const TrainerQualifications = lazy(() => import('./pages/trainer/Qualifications'))
 const CohortBoard = lazy(() => import('./pages/trainer/CohortBoard'))
 const Exceptions = lazy(() => import('./pages/admin/Exceptions'))
 const AdminAdvisorRequests = lazy(() => import('./pages/admin/AdvisorRequests'))
@@ -228,6 +229,7 @@ export default function App() {
           </Route>
           <Route element={<RequireRole allow={TRAINER_ROLES} />}>
             <Route path="/trainer" element={<TrainerDashboard />} />
+            <Route path="/trainer/qualifications" element={<TrainerQualifications />} />
             <Route path="/trainer/grading" element={<GradingQueue />} />
             <Route path="/trainer/learners" element={<TrainerMyLearners />} />
             {/* حُذفت `CohortView`: شعبةٌ كاملة بطلابها وجلساتها وحضورهم من `data/trainer`،

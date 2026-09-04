@@ -79,6 +79,9 @@ const PAGES: PageSpec[] = [
   { path: '/admin/users', labelAr: 'المستخدمون والأدوار', as: 'superadmin' },
   { path: '/admin/system-health', labelAr: 'صحّة النظام', as: 'superadmin' },
   { path: '/trainer', labelAr: 'بوّابة المدرّب', as: 'trainer' },
+  /* شاشةٌ جديدةٌ بنماذجَ وحقولِ وقتٍ وتاريخ (المهمّة ٧١) — تُفحَص من أوّل يوم
+     لا بعد أن يشكو مدرّب: فيها منسدلاتٌ وأزرارُ حذفٍ صغيرةٌ وحقولُ `time`. */
+  { path: '/trainer/qualifications', labelAr: 'مؤهّلات المدرّب وإتاحته', as: 'trainer' },
   { path: '/advisor', labelAr: 'بوّابة المستشار', as: 'advisor' },
 ]
 

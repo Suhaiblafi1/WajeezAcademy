@@ -207,6 +207,49 @@ export class CohortService {
     return users.map((u) => ({ ...u, enrolled: inCohort.has(u.id) }))
   }
 
+  /* ═══ الغيابُ المعلن مانعٌ كالتعارض (المهمّة ٧١) ═══
+
+     المدرّبُ أعلن أنّه غيرُ موجودٍ في مدّةٍ بعينها. وإسنادُ جلسةٍ فيها ليس
+     خطأَ جدولٍ في المنصّة بل موعدٌ لن يحضره أحد — فيُردّ الآن لا يوم الجلسة.
+     والرسالةُ تسمّي المدّةَ وسببَها إن كتبه، كي يعرف المُسنِدُ ما يفعل. */
+  private async assertNotOnLeave(profileId: string, sessions: { startsAt: Date; endsAt: Date | null }[]) {
+    const spanStart = new Date(Math.min(...sessions.map((s) => s.startsAt.getTime())))
+    const lastEnd = Math.max(...sessions.map((s) => (s.endsAt ?? new Date(s.startsAt.getTime() + 3600_000)).getTime()))
+    const blackouts = await this.prisma.trainerBlackout.findMany({
+      where: { profileId, endsAt: { gte: spanStart }, startsAt: { lte: new Date(lastEnd) } },
+    })
+    if (blackouts.length === 0) return
+    for (const s of sessions) {
+      const sEnd = s.endsAt ?? new Date(s.startsAt.getTime() + 3600_000)
+      const hit = blackouts.find((b) => s.startsAt < b.endsAt && b.startsAt < sEnd)
+      if (hit) {
+        const from = hit.startsAt.toISOString().slice(0, 10)
+        const to = hit.endsAt.toISOString().slice(0, 10)
+        const why = hit.reason ? ` (${hit.reason})` : ''
+        throw new AuthError('trainer_on_leave',
+          `المدرب أعلن غيابه من ${from} إلى ${to}${why} — وهذا الموعد يقع فيه`, 409)
+      }
+    }
+  }
+
+  /* والساعاتُ الأسبوعيّةُ إرشادٌ لا منع: من لم يُعلن شيئا لا يُمنَع من شيء،
+     وإلّا صار الحقلُ الفارغُ قفلا. ومن أعلنها يُعَدُّ له ما يقع خارجَها
+     فيَراه المُسنِدُ رقما ويقرّر. */
+  async sessionsOutsideDeclaredHours(profileId: string, sessions: { startsAt: Date; endsAt: Date | null }[]): Promise<number | null> {
+    const windows = await this.prisma.trainerAvailability.findMany({ where: { profileId } })
+    if (windows.length === 0) return null
+    let outside = 0
+    for (const s of sessions) {
+      const day = s.startsAt.getDay()
+      const startMin = s.startsAt.getHours() * 60 + s.startsAt.getMinutes()
+      const end = s.endsAt ?? new Date(s.startsAt.getTime() + 3600_000)
+      const endMin = end.getHours() * 60 + end.getMinutes()
+      const fits = windows.some((w) => w.weekday === day && w.startMinute <= startMin && endMin <= w.endMinute)
+      if (!fits) outside += 1
+    }
+    return outside
+  }
+
   async eligibleTrainersFor(cohortId: string) {
     const cohort = await this.prisma.cohort.findUnique({ where: { id: cohortId } })
     if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
@@ -225,21 +268,69 @@ export class CohortService {
       },
       orderBy: { createdAt: 'asc' },
     })
+    /* إشاراتُ الإتاحة تُقرأ مع القائمة لا في شاشةٍ ثانية (المهمّة ٧١): من
+       يُسنِد يحتاج أن يرى **قبل الضغط** أنّ المدرّبَ معتذرٌ في تلك المدّة أو
+       أنّ الجلساتَ خارج ساعاته المعلنة. واستعلامان لكلّ القائمة لا استعلامان
+       لكلّ مدرّب. */
+    const ids = profiles.map((p) => p.id)
+    const sessions = cohortId
+      ? await this.prisma.cohortSession.findMany({
+          where: { cohortId, status: { not: 'cancelled' } },
+          select: { startsAt: true, endsAt: true },
+        })
+      : []
+    let blackouts: { profileId: string; startsAt: Date; endsAt: Date; reason: string | null }[] = []
+    let windows: { profileId: string; weekday: number; startMinute: number; endMinute: number }[] = []
+    if (sessions.length > 0 && ids.length > 0) {
+      const spanStart = new Date(Math.min(...sessions.map((s) => s.startsAt.getTime())))
+      const spanEnd = new Date(Math.max(...sessions.map((s) => (s.endsAt ?? new Date(s.startsAt.getTime() + 3600_000)).getTime())))
+      ;[blackouts, windows] = await Promise.all([
+        this.prisma.trainerBlackout.findMany({
+          where: { profileId: { in: ids }, endsAt: { gte: spanStart }, startsAt: { lte: spanEnd } },
+          select: { profileId: true, startsAt: true, endsAt: true, reason: true },
+        }),
+        this.prisma.trainerAvailability.findMany({
+          where: { profileId: { in: ids } },
+          select: { profileId: true, weekday: true, startMinute: true, endMinute: true },
+        }),
+      ])
+    }
+
     return profiles.map((p) => {
       const q = p.qualifications[0]
+      const mine = blackouts.filter((b) => b.profileId === p.id)
+      const onLeave = sessions.some((s) => {
+        const sEnd = s.endsAt ?? new Date(s.startsAt.getTime() + 3600_000)
+        return mine.some((b) => s.startsAt < b.endsAt && b.startsAt < sEnd)
+      })
+      const myWindows = windows.filter((w) => w.profileId === p.id)
+      /* `null` تعني «لم يُعلن ساعاته» — وهي ليست صفرا: الصفرُ يقول «كلُّ
+         الجلسات داخل ساعاته»، والغيابُ يقول «لا علم لنا». */
+      const outsideDeclaredHours = myWindows.length === 0 || sessions.length === 0
+        ? null
+        : sessions.filter((s) => {
+            const day = s.startsAt.getDay()
+            const startMin = s.startsAt.getHours() * 60 + s.startsAt.getMinutes()
+            const end = s.endsAt ?? new Date(s.startsAt.getTime() + 3600_000)
+            const endMin = end.getHours() * 60 + end.getMinutes()
+            return !myWindows.some((w) => w.weekday === day && w.startMinute <= startMin && endMin <= w.endMinute)
+          }).length
       return {
         profileId: p.id,
         name: p.application.fullName,
         qualification: (q?.status ?? 'none') as 'qualified' | 'pending' | 'rejected' | 'retired' | 'none',
         qualificationId: q?.id ?? null,
         assignedRole: (cohortId ? p.cohortTrainers[0]?.role : null) ?? null,
+        onLeave,
+        outsideDeclaredHours,
       }
     })
   }
 
-  /** تعارض جدول المدرب: جلستان متداخلتان في شعبتين غير ملغاتين/منتهيتين */
+  /** تعارض جدول المدرب: جلستان متداخلتان في شعبتين غير ملغاتين/منتهيتين — ومعه الغياب المعلن */
   private async assertNoScheduleConflict(profileId: string, sessions: { startsAt: Date; endsAt: Date | null }[], ignoreCohortId?: string) {
     if (!sessions.length) return
+    await this.assertNotOnLeave(profileId, sessions)
     const otherCohorts = await this.prisma.cohortTrainer.findMany({
       where: { profileId, cohortId: ignoreCohortId ? { not: ignoreCohortId } : undefined,
         cohort: { status: { in: ['draft', 'open', 'full', 'active'] } } },

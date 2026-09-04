@@ -101,6 +101,11 @@ const PHRASES: Record<string, string> = {
   'notification.failed': 'إشعارٌ فشل إرسالُه',
   'trainer.change.apply_catalog': 'تطبيقُ اقتراحِ مدرّبٍ على الكتالوج',
   'trainer.publish_approve': 'اعتمادُ ظهورِ المدرّبِ للعامّة',
+  /* إتاحةُ المدرّب (المهمّة ٧١) — تُسجَّل لأنّ الغيابَ **يردُّ إسنادا**:
+     فمن سأل «لماذا لم يُسنَد؟» يجد الجوابَ في الأثر لا في واتساب. */
+  'trainer.availability.set': 'إعلانُ المدرّبِ ساعاتِه الأسبوعيّة',
+  'trainer.blackout.add': 'تسجيلُ المدرّبِ فترةَ غياب',
+  'trainer.blackout.remove': 'حذفُ المدرّبِ فترةَ غياب',
   'trainer_compensation.set_rule': 'تعيينُ قاعدةِ تعويضِ مدرّب',
   'trainer_payout.generate_skipped': 'تخطّي توليدِ مستحقّ',
   'request_resubmit': 'طلبُ إعادةِ تقديم',
