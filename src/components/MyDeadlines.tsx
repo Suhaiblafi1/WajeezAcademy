@@ -7,7 +7,16 @@
    فالبطاقاتُ سطرٌ واحدٌ يشير إلى شاشتها، لا صفوفٌ تُغرق واجبا.
 
    واللوحُ يقول معناه بنفسه (`meaningAr` من الخادم): من لا موعدَ عليه
-   يُقرأ له ذلك صريحا، فلا يُفهَم الفراغُ عطبا. */
+   يُقرأ له ذلك صريحا، فلا يُفهَم الفراغُ عطبا.
+
+   ─────────── وموضعُه في الصفحة، وحجمُه ───────────
+
+   كان أسفلَ «زخمك»، أي **تحت الطيّة** في شاشةٍ عاديّة — فموعدٌ فات موعدُه
+   يُرى بعد تمريرٍ طويل. والموعدُ أعجلُ ما في الصفحة، فصعد إلى أعلاها.
+
+   ولأنّه صعد، لا يجوز أن يشغل صدرَ الصفحة بلا سبب: **من لا موعدَ عليه يقرأ
+   سطرا واحدا**، ومن عليه مواعيدُ يرى اللوحَ كاملا. فالمساحةُ تتبع الحاجةَ
+   لا العكس — وهي القاعدةُ نفسُها التي طُبِّقت على بلاغ البريد. */
 
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
@@ -60,6 +69,21 @@ export default function MyDeadlines({ className = "" }: { className?: string }) 
 
   if (!data) return null;
 
+  /* لا موعدَ عليه: سطرٌ واحدٌ يقول ذلك ويشير إلى المراجعة إن استُحقّت */
+  if (data.items.length === 0) {
+    return (
+      <p className={`flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-2.5 text-micro leading-6 text-muted-foreground ${className}`.trim()}>
+        <CalendarClock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+        {data.meaningAr}
+        {data.retrievalDue > 0 && (
+          <Link to="/student/review" className="font-bold text-teal-light-ink underline">
+            افتح «مراجعتي»
+          </Link>
+        )}
+      </p>
+    );
+  }
+
   return (
     <section
       aria-labelledby="deadlines-h"
@@ -79,8 +103,7 @@ export default function MyDeadlines({ className = "" }: { className?: string }) 
 
       <p className="mt-2 text-sm leading-7">{data.meaningAr}</p>
 
-      {data.items.length > 0 && (
-        <ul className="mt-4 space-y-2">
+      <ul className="mt-4 space-y-2">
           {data.items.map((d) => (
             <li key={d.assessmentId} className={`rounded-2xl border p-3 ${TONE[d.urgency]}`}>
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -111,8 +134,7 @@ export default function MyDeadlines({ className = "" }: { className?: string }) 
               </div>
             </li>
           ))}
-        </ul>
-      )}
+      </ul>
 
       {/* البطاقاتُ تُذكَر ولا تُعرَض — أثرُها مختلف، وموضعُها شاشتُها */}
       {data.retrievalDue > 0 && (
