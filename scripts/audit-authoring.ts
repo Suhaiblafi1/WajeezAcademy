@@ -24,12 +24,12 @@ import { checkLibraryRefs, type LibraryIndex } from '../src/application/content/
 const CATALOG = join(process.cwd(), 'src/data/catalog/core-catalog.v2.json')
 const LIBRARY = join(process.cwd(), 'src/data/library/wajeez-library.json')
 
-interface Course {
+export interface Course {
   course_id: string
   skill_slugs?: string[]
 }
 
-interface Module {
+export interface Module {
   module_id: string
   course_id: string
   title_ar: string
@@ -113,7 +113,7 @@ function parseChecks(raw: string) {
   })
 }
 
-function auditModule(m: Module, courseSkills: Map<string, string[]>, library: LibraryIndex): Violation[] {
+export function auditModule(m: Module, courseSkills: Map<string, string[]>, library: LibraryIndex): Violation[] {
   const v: Violation[] = []
   const add = (rule: string, detail: string) => v.push({ moduleId: m.module_id, rule, detail })
   const body = (m.module_body_ar ?? '').trim()
@@ -365,4 +365,13 @@ function main() {
   if (check && violations.length > 0) process.exit(1)
 }
 
-main()
+/* لا يعمل إلّا تشغيلا مباشرا.
+
+   `check-authoring-files.ts` يستورد `auditModule` منه ليفحص ملفّاتِ التأليف
+   قبل تطبيقها **بالبوّابة نفسِها** لا بنسخةٍ منها. وكان الاستيرادُ يُشغّل
+   `main()` فتعمل البوّابةُ على الكتالوج ويظهر جوابُها مكانَ جواب الفاحص —
+   فيُقرأ «لا مخالفة» وفي الملفّات مخالفة. */
+const runDirect =
+  process.argv[1] !== undefined && import.meta.url.endsWith(process.argv[1].split('/').pop() ?? '\u0000')
+
+if (runDirect) main()
