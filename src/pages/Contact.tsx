@@ -129,7 +129,8 @@ export default function Contact() {
           <div className="mt-7 space-y-3">
             <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
               <Mail className="h-4 w-4 shrink-0 text-teal-light-ink" />
-              <a href={`mailto:${CONTACT.email}`} dir="ltr" className="text-sm font-bold text-teal-light-ink underline-offset-4 hover:underline">
+              {/* ٢٤ نقطةً ارتفاعا: رابطٌ في سطرٍ وحدَه لا داخلَ جملة (WCAG 2.5.8) */}
+              <a href={`mailto:${CONTACT.email}`} dir="ltr" className="inline-flex min-h-6 items-center text-sm font-bold text-teal-light-ink underline-offset-4 hover:underline">
                 {CONTACT.email}
               </a>
               <span className="mr-auto text-xs text-muted-foreground">نرد خلال يوم عمل</span>

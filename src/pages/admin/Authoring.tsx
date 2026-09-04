@@ -577,7 +577,10 @@ export default function Authoring() {
 }
 
 function Stat({ label, value, tone }: { label: string; value: number; tone?: "good" | "warn" }) {
-  const color = tone === "good" ? "text-teal-ink" : tone === "warn" ? "text-gold" : "text-foreground";
+  /* `text-gold` تعبئةٌ لا حبر: قياسُها ١٫٧١:‏١ على الورق والمطلوب ٣ لنصٍّ
+     كبير. والحبرُ الذهبيُّ رمزٌ ينقلب (`--gold-ink`) — وهذا هو الخطأُ نفسُه
+     الذي عالجته المهمّةُ ٢٠ في ألفَي موضع، وبقي هنا لأنّ الشاشةَ لم تُفحَص. */
+  const color = tone === "good" ? "text-teal-ink" : tone === "warn" ? "text-gold-ink" : "text-foreground";
   return (
     <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
       <p className="text-[11px] text-muted-foreground">{label}</p>
@@ -588,8 +591,11 @@ function Stat({ label, value, tone }: { label: string; value: number; tone?: "go
 
 function Chip({ on, label }: { on: boolean; label: string }) {
   return (
+    /* قناةُ شفافيّةٍ على حبرٍ خافتٍ أصلا: ٢٫٧٣:‏١ داكنا و٢٫٥٣:‏١ فاتحا.
+       والتفرقةُ بين «موجود» و«غائب» تحملها التعبئةُ والحبرُ الفيروزيّ —
+       فلا حاجةَ إلى إضعافِ الخافت حتّى يخرج من الحدّ. */
     <span className={`rounded-full px-1.5 py-0.5 text-micro font-bold ${
-      on ? "bg-teal/15 text-teal-ink" : "bg-white/[0.06] text-muted-foreground/50"}`}>
+      on ? "bg-teal/15 text-teal-ink" : "bg-white/[0.06] text-muted-foreground"}`}>
       {label}
     </span>
   );

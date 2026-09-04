@@ -89,6 +89,73 @@ const PAGES: PageSpec[] = [
      أزعجه الجرس. */
   { path: '/student/notifications', labelAr: 'إشعارات المتعلّم وتفضيلاتها', as: 'learner' },
   { path: '/advisor', labelAr: 'بوّابة المستشار', as: 'advisor' },
+
+  /* ═══ وبقيّةُ الشاشات — والسببُ أنّ الحاجزَ يمسك ما في مجموعته وحدَها ═══
+
+     في المهمّة ٧٢ كتبتُ حبرَ خطرٍ غيرَ مقروءٍ على الورق، فأمسكه الفحصُ
+     **لأنّ الشاشةَ كانت في المجموعة**. وفي اليوم نفسِه أمسك حارسُ السمة
+     حالةً مثلَها في `PublishingBoard` — شاشةٌ **خارج المجموعة**، فبقيت
+     منذ كُتبت ولم يرها أحد. والدرسُ أنّ المجموعةَ الناقصةَ تُعطي طمأنينةً
+     بقدر ما تفحص لا بقدر ما في المنصّة.
+
+     فهذه بقيّةُ الشاشات: أربعون شاشةً كانت خارجَ الفحص، فصارت المجموعةُ
+     **ستّين** — أي كلَّ مسارٍ يفتحه إنسانٌ بحسابه. وما بقي خارجَها ثلاثةٌ
+     بعذر: مسارٌ يحتاج رمزا في الرابط (`/auth/reset`, `/verify` بنتيجة،
+     `/trainer/accept-invite`), ومسارٌ بمعرّفٍ متغيّر (`/student/course/:id`),
+     وإعادةُ توجيهٍ ليست شاشةً (`/for-business`, `/student/pathway`).
+
+     والمجموعةُ العامّةُ (بلا `as`) هي بوّابةُ CI — تعمل على بناء الإنتاج بلا
+     قاعدةٍ ولا حسابات. فما أُضيف إليها لا يعتمد على نداءٍ ينجح: الصفحةُ
+     تُفحَص بحالتها الفارغةِ الصادقة. */
+
+  /* ── العامّة (تدخل بوّابةَ CI) ── */
+  { path: '/courses', labelAr: 'الدورات', readySel: 'article' },
+  { path: '/methodology', labelAr: 'المنهجيّة' },
+  { path: '/stories', labelAr: 'قصصُ المتعلّمين' },
+  { path: '/trainers', labelAr: 'المدرّبون' },
+  { path: '/contact', labelAr: 'تواصلْ معنا' },
+
+  /* ── بوّابةُ المتعلّم ── */
+  { path: '/student/learning', labelAr: 'تعلّمي', as: 'learner' },
+  { path: '/student/skills', labelAr: 'مهاراتي', as: 'learner' },
+  { path: '/student/certificates', labelAr: 'شهاداتي', as: 'learner' },
+  { path: '/student/billing', labelAr: 'فواتيري', as: 'learner' },
+  { path: '/student/inbox', labelAr: 'صندوقُ المتعلّم', as: 'learner' },
+  { path: '/student/support', labelAr: 'دعمُ المتعلّم', as: 'learner' },
+  { path: '/student/account', labelAr: 'حسابي', as: 'learner' },
+  { path: '/student/cv', labelAr: 'سيرتي الذاتيّة', as: 'learner' },
+  { path: '/student/vault', labelAr: 'خزنتي', as: 'learner' },
+  { path: '/student/library', labelAr: 'المكتبة', as: 'learner' },
+  { path: '/student/rate', labelAr: 'تقييمُ تجربتي', as: 'learner' },
+
+  /* ── بوّابةُ المدرّب ── */
+  { path: '/trainer/board', labelAr: 'لوحُ شعبي', as: 'trainer' },
+  { path: '/trainer/grading', labelAr: 'طابورُ التقييم', as: 'trainer' },
+  { path: '/trainer/learners', labelAr: 'طلبةُ المدرّب', as: 'trainer' },
+  { path: '/trainer/proposals', labelAr: 'اقتراحاتُ المدرّب', as: 'trainer' },
+  { path: '/trainer/earnings', labelAr: 'مستحقّاتُ المدرّب', as: 'trainer' },
+  { path: '/trainer/ratings', labelAr: 'ما قيل عن المدرّب', as: 'trainer' },
+
+  /* ── بوّابةُ المستشار ── */
+  { path: '/advisor/learners', labelAr: 'متعلّمو المستشار', as: 'advisor' },
+  { path: '/advisor/ratings', labelAr: 'تقييماتُ المستشار', as: 'advisor' },
+  { path: '/advisor/earnings', labelAr: 'مستحقّاتُ المستشار', as: 'advisor' },
+
+  /* ── شاشاتُ الإدارة الباقية ── */
+  { path: '/admin/tasks', labelAr: 'ما ينتظرك', as: 'admin' },
+  { path: '/admin/publishing', labelAr: 'لوحُ النشر', as: 'admin' },
+  { path: '/admin/authoring', labelAr: 'التأليف', as: 'admin' },
+  { path: '/admin/learners', labelAr: 'المتعلّمون', as: 'admin' },
+  { path: '/admin/trainers', labelAr: 'طلباتُ المدرّبين', as: 'admin' },
+  { path: '/admin/exceptions', labelAr: 'الاستثناءات', as: 'admin' },
+  { path: '/admin/advisor-requests', labelAr: 'طلباتُ الاستشارة', as: 'admin' },
+  { path: '/admin/learner-requests', labelAr: 'طلباتُ المتعلّمين', as: 'admin' },
+  { path: '/admin/ratings', labelAr: 'مراجعةُ التقييمات', as: 'admin' },
+  { path: '/admin/notifications', labelAr: 'قوالبُ الإشعارات', as: 'admin' },
+  { path: '/admin/integrations', labelAr: 'التكاملات', as: 'admin' },
+  { path: '/admin/audit', labelAr: 'سجلُّ الأثر', as: 'admin' },
+  { path: '/admin/reports', labelAr: 'التقارير', as: 'admin' },
+  { path: '/admin/advisors', labelAr: 'المستشارون', as: 'superadmin' },
 ]
 
 const CREDS = {
@@ -182,15 +249,44 @@ const results: Record<string, A11yFinding[]> = {}
 const MIN_TEXT = 400
 const CONTENT_TIMEOUT_MS = 25_000
 
+/* ولمَ صار الحدُّ شرطَين لا شرطا واحدا.
+
+   حدُّ النصّ وحدَه يمنع قياسَ هيكلٍ لم يُملأ — وهذا صحيح. لكنّه يخلط
+   حالتَين: صفحةً ما زالت تدور، وصفحةً **حالتُها الفارغةُ قصيرة**. ووقع
+   ذلك فعلا حين وُسّعت المجموعة: «طابورُ التقييم» و«طلبةُ المدرّب» سقطتا
+   بمهلةٍ منتهية، وسببُهما أنّ طابورَ المدرّب نظيفٌ فنصُّ الصفحة دون
+   الأربعِ مئة — وحالةُ الفراغ فيهما **جيّدةٌ ومكتوبة**، لا عطبٌ.
+
+   فالشرطُ صار: نصٌّ كافٍ **أو** (عنوانٌ ظاهرٌ ولا مؤشّرَ تحميلٍ يدور).
+   والثانيةُ تفرّق الفراغَ عن الانتظار بدليلٍ في الصفحة لا بتخمين: مؤشّراتُ
+   التحميل في المنصّة كلُّها `animate-spin` أو `aria-busy`. */
 async function waitForContent(page: Page, spec: PageSpec): Promise<void> {
   if (spec.readySel) {
     await page.waitForSelector(spec.readySel, { state: 'visible', timeout: CONTENT_TIMEOUT_MS })
   }
-  await page.waitForFunction(
-    (min) => (document.body?.innerText ?? '').trim().length >= min,
-    MIN_TEXT,
-    { timeout: CONTENT_TIMEOUT_MS },
-  )
+  try {
+    await page.waitForFunction(
+      (min) => (document.body?.innerText ?? '').trim().length >= min,
+      MIN_TEXT,
+      { timeout: CONTENT_TIMEOUT_MS },
+    )
+  } catch {
+    /* المهلةُ انتهت — والسؤالُ: هل الصفحةُ تدور، أم فراغُها قصير؟ الشرطُ
+       الثاني يُسأل **بعد** الأوّل لا بديلا عنه: لو كان بديلا لَعاد أسرعَ من
+       اكتمال الرسم في الصفحات الغنيّة فقيست أثناء انتقال الألوان — وهذا وقع
+       فعلا: الصفحةُ الرئيسيّة أعطت ٢٤ واقعةَ تباينٍ كاذبةً بقيمٍ وسيطةٍ
+       (٤٫١٦:‏١ حيث القياسُ المستقرّ ٦٫٩:‏١). فالأصلُ انتظارُ النصّ، وهذا
+       استدراكٌ عند تعذّره. */
+    await page.waitForFunction(
+      () => {
+        const spinning = document.querySelector('.animate-spin, [aria-busy="true"]')
+        const titled = document.querySelector('h1, h2')
+        return !spinning && !!titled && (document.body?.innerText ?? '').trim().length > 0
+      },
+      undefined,
+      { timeout: CONTENT_TIMEOUT_MS },
+    )
+  }
   /* هدأة قصيرة بعد ظهور المحتوى: التخطيط يستقر بعد الرسم الأول */
   await page.waitForTimeout(600)
 }

@@ -69,7 +69,9 @@ export default function Notifications() {
       <div className="grid gap-5 lg:grid-cols-2">
         {/* قالب جديد / تحديث */}
         <section className="rounded-3xl border border-white/10 bg-white/[0.02] p-5">
-          <h3 className="flex items-center gap-2 text-sm font-black"><Bell className="h-4 w-4 text-gold-ink" /> قالب جديد أو تحديث — متغيرات {"{{key}}"}</h3>
+          {/* h2 لا h3: قسمان تحت عنوان الصفحة مباشرةً، والقفزُ من h1 إلى h3
+              يوهم قارئَ الشاشة بقسمٍ غائبٍ بينهما. */}
+          <h2 className="flex items-center gap-2 text-sm font-black"><Bell className="h-4 w-4 text-gold-ink" /> قالب جديد أو تحديث — متغيرات {"{{key}}"}</h2>
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
             <input value={form.key} onChange={(e) => setForm({ ...form, key: e.target.value })} placeholder="المفتاح — enrollment.approved" dir="ltr" className={`${inputCls} font-mono`} />
             <select value={form.channel} onChange={(e) => setForm({ ...form, channel: e.target.value })} className={`${inputCls} [&>option]:bg-surface`}>
@@ -110,7 +112,7 @@ export default function Notifications() {
         {/* سجل الإرسال */}
         <section className="rounded-3xl border border-white/10 bg-white/[0.02] p-5">
           <div className="flex items-center justify-between gap-2">
-            <h3 className="flex items-center gap-2 text-sm font-black"><Send className="h-4 w-4 text-gold-ink" /> سجل الإرسال</h3>
+            <h2 className="flex items-center gap-2 text-sm font-black"><Send className="h-4 w-4 text-gold-ink" /> سجل الإرسال</h2>
             <select value={logFilter} onChange={(e) => setLogFilter(e.target.value)} aria-label="رشّح بالحالة"
               className={`${inputCls} [&>option]:bg-surface`}>
               <option value="">كل الحالات</option>

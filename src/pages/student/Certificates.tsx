@@ -43,7 +43,12 @@ function GrowthStrip({ growth, enrollmentId }: { growth: CourseGrowth | null; en
         <span dir="ltr">{growth.netPoints > 0 ? `+${growth.netPoints}` : growth.netPoints}</span>
         {growth.declined > 0 ? ` · تراجعت ${growth.declined}` : ""}
       </p>
-      <Link to="/student/skills" className="mt-1 inline-block text-[11px] font-bold text-teal-light-ink underline underline-offset-4">
+      {/* رابطٌ في سطرٍ وحدَه، لا داخلَ جملة — فلا يشمله استثناءُ المعيار،
+          ويلزمه ٢٤ نقطةً ارتفاعا (WCAG 2.5.8). */}
+      <Link
+        to="/student/skills"
+        className="mt-1 inline-flex min-h-6 items-center text-[11px] font-bold text-teal-light-ink underline underline-offset-4"
+      >
         التفصيل في ملف مهاراتي
       </Link>
     </div>
@@ -100,7 +105,9 @@ export default function Certificates() {
                   {c.status === "revoked" ? "ملغاة" : "سارية"}
                 </span>
               </div>
-              <h3 className="mt-4 font-black">دورة <span dir="ltr" className="font-mono text-sm">{c.courseId}</span> — إصدار {c.courseVersion}</h3>
+              {/* h2 لا h3: البطاقةُ تحت عنوان الصفحة مباشرةً بلا قسمٍ بينهما،
+                  والقفزُ من h1 إلى h3 يوهم قارئَ الشاشة بقسمٍ غائب. */}
+              <h2 className="mt-4 font-black">دورة <span dir="ltr" className="font-mono text-sm">{c.courseId}</span> — إصدار {c.courseVersion}</h2>
               <p className="mt-1 text-xs text-muted-foreground">باسم: {c.learnerName}</p>
               <p className="mt-1 text-xs text-muted-foreground">أُصدرت في {fmtDate(new Date(c.issuedAt))}</p>
               {c.revocation && <p className="mt-2 rounded-xl border border-red-500/30 bg-paper/20 p-2 text-[11px] text-red-300">سبب الإلغاء: {c.revocation.reason}</p>}

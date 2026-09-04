@@ -274,7 +274,10 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
                 <Link
                   to={`/build/${c.id}`}
                   onClick={() => track('course_viewed', { from: 'catalog', category: c.category })}
-                  className="block w-full cursor-pointer rounded-lg border border-white/15 py-2 text-center text-xs font-semibold transition group-hover:border-teal/50 group-hover:text-teal-light-ink"
+                  /* حبرٌ صريحٌ كبطاقة المسار المجاورة: بلا صنفِ لونٍ كان
+                     الرابطُ يرث لونا مبنيّا على أرضيّةٍ داكنة، فقياسُه على
+                     الورق ١٫٦:‏١ — والشاشةُ لم تكن في مجموعة الفحص. */
+                  className="block w-full cursor-pointer rounded-lg border border-white/15 py-2 text-center text-xs font-semibold text-teal-light-ink transition group-hover:border-teal/50"
                 >
                   تفاصيل الدورة
                 </Link>

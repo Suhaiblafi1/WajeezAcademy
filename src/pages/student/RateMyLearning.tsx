@@ -79,7 +79,8 @@ function RatingCard({ item, onSaved }: { item: Rateable; onSaved: () => void }) 
           <span className="rounded-full border border-white/10 px-2 py-0.5 text-micro font-bold text-muted-foreground">
             {KIND_AR[item.subjectType]}
           </span>
-          <h3 className="mt-1.5 text-sm font-black">{item.nameAr}</h3>
+          {/* h2 لا h3 — البطاقةُ تحت عنوان الصفحة مباشرةً (انظر «شهاداتي») */}
+          <h2 className="mt-1.5 text-sm font-black">{item.nameAr}</h2>
         </div>
         {item.myScore != null && (
           <span className="text-[11px] text-muted-foreground">قيّمتَ سابقا — يمكنك التعديل</span>
