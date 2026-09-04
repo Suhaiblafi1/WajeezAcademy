@@ -48,6 +48,29 @@ const LOGIN_WINDOW_MS = 15 * 60_000
 const LOGIN_MAX_PER_IDENTITY = 5
 const LOGIN_MAX_PER_IP = 40
 const LOGIN_MAX_PER_EMAIL = 25
+
+/* ═══ سقوفُ التسجيل الذاتيّ (سقفُ التسجيل) ═══
+   لا تنتقل سقوفُ الدخول إلى هذا الباب، لأنّ **البريدَ هنا يختاره المتقدّم**:
+   فمفتاحُ «بريدٌ + شبكة» زوجٌ جديدٌ في كلّ محاولةٍ فلا يبلغ سقفَه أبدا،
+   ومفتاحُ «البريد وحدَه» لا بريدَ متكرّرا يحميه. فالمفتاحُ الشبكةُ وحدَها،
+   والمقياسُ يتغيّر: يُعَدُّ ما يدلُّ على إساءةٍ لا ما يدلُّ على استعمال.
+
+   ١) **حجمُ ما أُنشئ فعلا** — ٤٠ في الساعة و١٠٠ في اليوم: ضررُ هذا الباب
+      حجمٌ لا سرعة، فقاعةٌ من ثلاثين تُسجّل ومصنعُ حساباتٍ وهميّة يُقفَل.
+   ٢) **ما ارتدّ بـ«البريد مسجَّل»** — ١٠ في ربع ساعة: المسارُ يقول صراحةً إن
+      كان البريدُ مسجَّلا (٤٠٩)، فمن جرّب ألفَ بريدٍ عرف أيُّها له حسابٌ عندنا.
+      وهذا السقفُ أضيقُ من سقف المسار الذي كان يحدُّ الإحصاءَ عرَضا (١٠ لكلّ
+      ٥ دقائق)، فرفعُ ذاك لا يُوسّع الإحصاء بل يُضيّقه هذا.
+
+   والأرقامُ الثلاثة قرارُ صاحب المنصّة (٤ سبتمبر ٢٠٢٦).
+
+   ولا يمسّ هذا ما تُنشئه الإدارةُ بصلاحيّة (`admin.users.create` ودفعةُ CSV):
+   ذاك فعلٌ مأذونٌ له سجلُّ أثر، ولو خضع لسقفِ شبكةٍ لانقفلت دفعةُ مئةِ حسابٍ
+   يُدخلها موظّفٌ من مكتبٍ واحد. فالسقفُ في `registerSelf` لا في `register`. */
+export const SIGNUP_MAX_PER_HOUR = 40
+export const SIGNUP_MAX_PER_DAY = 100
+export const SIGNUP_MAX_TAKEN = 10
+export const SIGNUP_TAKEN_WINDOW_MS = 15 * 60_000
 const GENERIC_LOGIN_FAIL = 'البريد أو كلمة المرور غير صحيحة'
 /** مهلة رابط توثيق البريد — يومان: أطول من مهلة الاستعادة لأنه ليس إجراء طوارئ */
 const EMAIL_VERIFY_TTL_MS = 48 * 3600_000
@@ -85,6 +108,59 @@ export class AuthService {
       },
     })
     return { userId: user.id }
+  }
+
+  /** تسجيلٌ ذاتيٌّ من الواجهة العامّة — `register` وحوله سقوفُ الشبكة وسجلُّها */
+  async registerSelf(
+    email: string,
+    password: string,
+    displayName: string,
+    ip?: string,
+  ): Promise<{ userId: string }> {
+    await this.assertSignupAllowed(ip)
+    try {
+      const out = await this.register(email, password, displayName)
+      await this.prisma.registrationAttempt.create({ data: { ip, outcome: 'created' } })
+      return out
+    } catch (e) {
+      /* «البريدُ مسجَّل» وحدَه يُسجَّل: هو إشارةُ الإحصاء. وصيغةٌ خاطئةٌ أو
+         كلمةٌ قصيرةٌ خطأُ مستعملٍ لا محاولةَ استكشاف، فلا تُعَدّ عليه. */
+      if (e instanceof AuthError && e.code === 'email_taken') {
+        await this.prisma.registrationAttempt.create({ data: { ip, outcome: 'taken' } })
+      }
+      throw e
+    }
+  }
+
+  /** السقوفُ الثلاثة أعلاه — والشبكةُ المجهولة لا سقفَ لها إذ لا يُنسب إليها شيء */
+  private async assertSignupAllowed(ip?: string): Promise<void> {
+    if (!ip) return
+    const since = (ms: number) => new Date(Date.now() - ms)
+    const [lastHour, lastDay, taken] = await Promise.all([
+      this.prisma.registrationAttempt.count({
+        where: { ip, outcome: 'created', createdAt: { gte: since(3600_000) } },
+      }),
+      this.prisma.registrationAttempt.count({
+        where: { ip, outcome: 'created', createdAt: { gte: since(24 * 3600_000) } },
+      }),
+      this.prisma.registrationAttempt.count({
+        where: { ip, outcome: 'taken', createdAt: { gte: since(SIGNUP_TAKEN_WINDOW_MS) } },
+      }),
+    ])
+    if (lastHour >= SIGNUP_MAX_PER_HOUR || lastDay >= SIGNUP_MAX_PER_DAY) {
+      throw new AuthError(
+        'too_many_registrations',
+        'حسابات كثيرة أُنشئت من شبكتك — انتظر قليلا، أو تواصل مع الأكاديمية لتسجيل مجموعة',
+        429,
+      )
+    }
+    if (taken >= SIGNUP_MAX_TAKEN) {
+      throw new AuthError(
+        'too_many_registrations',
+        'محاولات إنشاء كثيرة — انتظر 15 دقيقة ثم حاول مجددا',
+        429,
+      )
+    }
   }
 
   /** دخول — يسجل المحاولة دائما، ولا يكشف هل البريد موجود، وله ثلاثةُ سقوف (أعلاه) */

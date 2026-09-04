@@ -253,6 +253,7 @@ export const RETENTION_DAYS = {
   notificationRead: 90,
   analytics: 365,
   loginAttempt: 90,
+  registrationAttempt: 90,
   paymentWebhook: 365,
 } as const
 
@@ -301,6 +302,12 @@ export async function enforceRetention(prisma: PrismaClient, now = new Date()): 
         select: { id: true }, take: RETENTION_BATCH,
       }),
       (ids) => prisma.loginAttempt.deleteMany({ where: { id: { in: ids } } })),
+    trim('محاولات تسجيل',
+      () => prisma.registrationAttempt.findMany({
+        where: { createdAt: { lt: ago(RETENTION_DAYS.registrationAttempt) } },
+        select: { id: true }, take: RETENTION_BATCH,
+      }),
+      (ids) => prisma.registrationAttempt.deleteMany({ where: { id: { in: ids } } })),
     trim('أحداث خطّاف الدفع',
       () => prisma.paymentWebhookEvent.findMany({
         where: { createdAt: { lt: ago(RETENTION_DAYS.paymentWebhook) } },

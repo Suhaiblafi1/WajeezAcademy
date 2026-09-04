@@ -11,8 +11,16 @@ const email = z.string().trim().toLowerCase().email('صيغة البريد غي�
 const password = z.string().min(8, 'كلمة المرور 8 أحرف على الأقل')
 
 export function registerAuthRoutes(app: FastifyInstance, auth: AuthService) {
+  /* سقفُ المسار هنا حاجزُ غَمرٍ لا حاجزُ إساءة، كما في الدخول (المهمّة ١٧).
+     كان **عشرةَ طلباتٍ لكلّ ٥ دقائق لكلّ شبكة** يعدُّ كلَّ طلب، فثلاثون
+     متعلّما يُنشئون حساباتهم أوّلَ يومٍ يُرَدُّ حادي عشرُهم. وما كان يحرسه
+     هذا الرقمُ عرَضا — إحصاءُ البريد — صار له سقفُه الخاصُّ وهو **أضيق**
+     (١٠ ارتداداتٍ لكلّ ربع ساعة في `auth.service.ts`)، ومعه سقفا الحجم
+     (٤٠ في الساعة و١٠٠ في اليوم). فرفعُ هذا لا يُوسّع الإحصاء. */
+  const registerRateMax = Number(process.env.REGISTER_RATE_MAX) || 120
+
   app.post('/api/auth/register', {
-    config: { rateLimit: { max: 10, timeWindow: '5 minutes' } },
+    config: { rateLimit: { max: registerRateMax, timeWindow: '5 minutes' } },
     schema: {
       tags: ['auth'], summary: 'إنشاء حساب متعلم',
       body: {
@@ -22,7 +30,7 @@ export function registerAuthRoutes(app: FastifyInstance, auth: AuthService) {
     },
   }, async (req, reply) => {
     const body = z.object({ email, password, displayName: z.string().trim().max(80).optional() }).parse(req.body)
-    const { userId } = await auth.register(body.email, body.password, body.displayName ?? '')
+    const { userId } = await auth.registerSelf(body.email, body.password, body.displayName ?? '', req.ip)
     /* رابط التوثيق يُرسل مع الإنشاء لا بعده بخطوة يدوية — ولا يُسقط التسجيل
        عند تعذّر الإرسال: الحساب أُنشئ فعلا، وردٌّ بخطأ يجعل المستخدم يظنّ أنه
        لم يُنشأ فيعيد المحاولة فيصطدم بـ«هذا البريد مسجل». */
