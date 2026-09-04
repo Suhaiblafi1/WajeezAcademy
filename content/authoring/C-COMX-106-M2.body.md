@@ -50,15 +50,17 @@
 
 **وبريدُك فُهم كلَّ الفهم**: قُرئ إعلاما، لأنّه كُتب كما يُكتب الإعلام.
 
-الذي يفتح بريدَك يقرأ سطرين — في لوحة المعاينة أحيانا — ثمّ يقرّر: **أفعلُ شيئا الآن، أم أُصنّفه للعلم؟** فإن لم يجد في السطرين فعلا مطلوبا منه **صنّفه للعلم وأغلقه**، وهو مطمئنٌّ أنّه قرأ رسالتك.
+الذي يفتح بريدَك يقرأ سطرين  ثمّ يقرّر: **أفعلُ شيئا الآن، أم أُصنّفه للعلم؟** فإن لم يجد في السطرين فعلا مطلوبا منه **صنّفه للعلم وأغلقه**، وهو مطمئنٌّ أنّه قرأ رسالتك.
 
-والمقدّمةُ التي أخّرت طلبَك ليست خطأً في العربيّة: **الافتتاحُ بالتحيّة والثناء في المكاتبة العربيّة أدبٌ حقيقيّ** وحذفُه جفاء. لكنّك نقلتَ بنيةً إلى لغةٍ لا تحمل فيها المعنى نفسَه: **فما هو في العربيّة تهيئةٌ للطلب يُقرأ في بريد العمل الإنجليزيّ تأخيرا للطلب** — وربّما امتناعا عنه.
+والمقدّمةُ التي أخّرت طلبَك ليست خطأً في العربيّة: **الافتتاحُ بالتحيّة والثناء في المكاتبة العربيّة أدبٌ حقيقيّ** وحذفُه جفاء. لكنّك نقلتَ بنيةً إلى لغةٍ لا تحمل فيها المعنى نفسَه: **فما هو في العربيّة تهيئةٌ للطلب يُقرأ في بريد العمل الإنجليزيّ تأخيرا للطلب**.
 
 **والأدبُ في الإنجليزيّة محمولٌ على صيغة الطلب لا على طول ما قبله.** الصيغةُ نفسُها تحمل التأدّب: `Could you send me the January figures?` · `Would you mind confirming the delivery date?` · `Please send the file by Thursday.` **وهذه ليست أقلَّ أدبا من ثلاثة أسطرٍ من الثناء** — بل هي أوقعُ، لأنّها تحترم وقتَه وتُبقي طلبَك ظاهرا.
 
 **والترجمةُ الحرفيّةُ تُفسد الطلبَ في موضعٍ أخفى**: «أرجو» و«نأمل» تُنقَلان إلى `I hope` و`We hope`، **فيصير الطلبُ خبرا عن شعورٍ عندك لا فعلا مطلوبا من غيرك.** فـ`We hope to receive the data soon` تصف رجاءَك **ولا تسأل القارئَ شيئا**؛ و`Could you send the data by Thursday?` سؤالٌ يُجاب بنعم أو بموعدٍ آخر.
 
 **و«التكرّم» و«سعادتكم» كذلك**: `I would be grateful if you could kindly provide us` لا خطأَ في نحوها وتُقرأ تكلّفا أو استجداءً — **فتُضعف موقعَك لا تُقوّيه.**
+
+**وفي التحيّة نفسِها فخُّ ترجمة**: «الأستاذة نور» تُنقَل `Ms. Nour` — و`Ms.` تلزمها **العائلةُ** لا الاسمُ الأوّل، فالصحيحُ `Hi Nour,` وهي أدبٌ تامّ.
 
 **والبنيةُ التي تعمل ثلاثةُ أجزاء**: سطرُ تحيّةٍ (`Hi Faisal,`)، ثمّ **الطلبُ في جملةٍ واحدة**، ثمّ سببٌ يجعله معقولا. وإن كتبتَ لمن لا يعرفك فسطرُ تعريفٍ قبل الطلب: `I'm Salem from the projects team at Al-Ufuq.` **سطرٌ واحد لا فقرة.**
 
@@ -72,7 +74,7 @@
 
 **فأعاد الكتابةَ في أربعة أسطر:**
 
-`Hi Ms. Nour, Could you send us the 2025 uptime figures for the three sites? We need them to close the annual report, which goes to the director on Sunday 12 October. Please send them by Thursday 9 October, 4 pm. Thanks — Fadi, IT Department.`
+`Hi Nour, Could you send us the 2025 uptime figures for the three sites? We need them to close the annual report, which goes to the director on Sunday 12 October. Please send them by Thursday 9 October, 4 pm. Thanks — Fadi, IT Department.`
 
 **فجاءت الأرقامُ في اليوم نفسِه.**
 
@@ -118,7 +120,7 @@
 
 **فأعادت الكتابة:**
 
-`Hi, Shipment 88-4102 (order placed 2 September, Jeddah store) has not arrived. Our sale starts on Sunday 12 October, so I need the goods in the store by Thursday 9 October. Could you confirm the delivery date before 3 pm today, Jeddah time? If it will miss Thursday, tell me the earliest date you can commit to.`
+`Hi Tariq, Shipment 88-4102 (order placed 2 September, Jeddah store) has not arrived. Our sale starts on Sunday 12 October, so I need the goods in the store by Thursday 9 October. Could you confirm the delivery date before 3 pm today, Jeddah time? If it won't arrive by Thursday, tell me the earliest date you can commit to.`
 
 **فجاء الردُّ في ساعتين بتاريخٍ صريح**، ومعه أنّ الشحنةَ في الجمارك.
 
@@ -150,7 +152,7 @@
 
 **ثمّ ما يُسلَّم الآن**: `In the meantime, here are the two numbers you need for tomorrow's committee.` **وهذا أقوى ما في البريد**: من أرسل ما يحتاجه اجتماعُ الغد **حلّ مشكلةَ القارئ ولو بقي تقريرُه ناقصا.**
 
-**والسببُ؟ نصفُ سطرٍ وبشرط**: أن يمنع التأخّرَ القادم لا أن يُعفيك من هذا: `The branch data arrived Tuesday; I've asked for it a week earlier next quarter.` **وأمّا الشرحُ المطوَّلُ فيُقرأ إحالةً للمسؤوليّة على غيرك.**
+**والسببُ؟ نصفُ سطرٍ وبشرط**: أن يمنع التأخّرَ القادم لا أن يُعفيك من هذا: `The branch data arrived Tuesday; I've asked for it to be sent a week earlier next quarter.` **وأمّا الشرحُ المطوَّلُ فيُقرأ إحالةً للمسؤوليّة على غيرك.**
 
 **وهذا البريدُ يُرسَل قبل الموعد لا بعده**: سطرٌ يسبق التسليمَ بيومين يكلّفك سطرا، **وبريدٌ يجيء بعده بيومين يكلّفك ثقةً تُبنى في أشهر.**
 
@@ -160,13 +162,13 @@
 
 **سامي** مهندسٌ في شركةٍ بعمّان، تأخّر يومين عن تقريرٍ تنتظره لجنةٌ تجتمع غدا. **فكتب أوّلا:**
 
-`Dear Ms. Hind, I sincerely apologize for the delay in sending the report. As you know, we faced many unexpected challenges, and the branch data was late. I apologize again for any inconvenience, and I will do my best to compensate in the next report.`
+`Dear Ms. Salem, I sincerely apologize for the delay in sending the report. As you know, we faced many unexpected challenges, and the branch data was late. I apologize again for any inconvenience, and I will do my best to compensate in the next report.`
 
 **فجاء الردّ**: `Thanks. When will it be ready?`
 
 **فأعاد الكتابةَ في ثلاثة أسطر:**
 
-`Hi Ms. Hind, Apologies — the report is two days late. I'll send the full version by Tuesday 14 October, 2 pm. In the meantime, here are the two numbers the committee needs tomorrow: six hours of downtime in September, and 18,300 dinars in repair cost.`
+`Hi Hind, Apologies — the report is two days late. I'll send the full version by Tuesday 14 October, 2 pm. In the meantime, here are the two numbers the committee needs tomorrow: six hours of downtime in September, and 18,300 dinars in repair cost.`
 
 **فجاء الردّ**: `That works — thanks.`
 
