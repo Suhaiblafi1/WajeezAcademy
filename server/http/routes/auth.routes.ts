@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { AuthService } from '../../services/auth.service'
 import { SESSION_COOKIE, requireAuth } from '../auth-plugin'
 import { sendPasswordResetEmail, sendVerifyEmail } from '../../services/account-mail'
+import { assertNotBot } from '../honeypot'
 import { getPrisma } from '../../db/client'
 
 const email = z.string().trim().toLowerCase().email('صيغة البريد غير صحيحة')
@@ -29,6 +30,7 @@ export function registerAuthRoutes(app: FastifyInstance, auth: AuthService) {
       },
     },
   }, async (req, reply) => {
+    assertNotBot(req.body)
     const body = z.object({ email, password, displayName: z.string().trim().max(80).optional() }).parse(req.body)
     const { userId } = await auth.registerSelf(body.email, body.password, body.displayName ?? '', req.ip)
     /* رابط التوثيق يُرسل مع الإنشاء لا بعده بخطوة يدوية — ولا يُسقط التسجيل
@@ -94,6 +96,7 @@ export function registerAuthRoutes(app: FastifyInstance, auth: AuthService) {
       body: { type: 'object', required: ['email'], properties: { email: { type: 'string', format: 'email' } } },
     },
   }, async (req) => {
+    assertNotBot(req.body)
     const body = z.object({ email }).parse(req.body)
     const { tokenForDelivery } = await auth.requestPasswordReset(body.email)
     /* كان الرمز يُولَّد ثم يُسقَط: يُعاد في التطوير وحده، ولا يُرسَل في الإنتاج

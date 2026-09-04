@@ -11,6 +11,7 @@ import {
   signUp,
 } from "@/services/auth";
 import { track } from "@/services/analytics";
+import { useHoneypot } from "./HoneypotField";
 
 /* أيقونة قوقل الرسمية بألوانها الأربعة — جاهزة ليوم اكتمال ربط OAuth */
 function GoogleMark() {
@@ -64,6 +65,7 @@ const LABEL_CLS = "mb-1.5 block text-xs font-bold text-muted-foreground";
     initialMode: الوضع الابتدائي (بوابة النتيجة تبدأ بـ«حساب جديد»).
     source: وسم تحليلات اختياري يميّز مصدر التسجيل (مثل result_gate). */
 export default function AuthGate({ onDone, message, initialMode = "login", source }: { onDone: () => void; message?: string; initialMode?: "login" | "signup"; source?: string }) {
+  const hp = useHoneypot();
   const [mode, setMode] = useState<"login" | "signup">(initialMode);
   const [view, setView] = useState<View>("auth");
   const [name, setName] = useState("");
@@ -112,7 +114,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
     track("account_started", { mode, ...(source ? { source } : {}) });
     try {
       const result =
-        mode === "signup" ? await signUp(name, email, pass) : await signIn(email, pass);
+        mode === "signup" ? await signUp(name, email, pass, hp.value) : await signIn(email, pass);
       if (!result.ok) {
         track("account_failed");
         setErr(result.error);
@@ -136,7 +138,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
     setBusy(true);
     try {
       // رسالة الخادم آمنة ولا تكشف وجود الحساب
-      const { message, devToken } = await requestPasswordReset(email);
+      const { message, devToken } = await requestPasswordReset(email, hp.value);
       setErr("");
       if (devToken) {
         // وضع التطوير: الخادم يعيد الرمز مباشرة بدل البريد — نكمل التعيين فورا
@@ -228,6 +230,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
             </p>
           </div>
           <form onSubmit={submitReset} noValidate className="px-8 py-6">
+          {hp.field}
             <label htmlFor="reset-email" className={LABEL_CLS}>البريد الإلكتروني</label>
             <div className="relative">
               <Mail className="absolute right-3.5 top-3.5 h-4 w-4 text-muted-foreground" />
@@ -435,6 +438,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
           )}
 
           <form onSubmit={submit} noValidate className="space-y-4">
+            {hp.field}
             {mode === "signup" && (
               <div>
                 <label htmlFor="auth-name" className={LABEL_CLS}>الاسم الكريم</label>

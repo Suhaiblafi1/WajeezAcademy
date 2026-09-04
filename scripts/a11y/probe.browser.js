@@ -48,7 +48,15 @@ window.__a11y = {
       var cs = getComputedStyle(el)
       if (cs.display === 'none' || cs.visibility === 'hidden') return false
       var r = el.getBoundingClientRect()
-      return r.width > 0 && r.height > 0
+      if (r.width <= 0 || r.height <= 0) return false
+      return onScreenX(r)
+    }
+    /* عنصرٌ مدفوعٌ خارجَ الشاشة **أفقيّا** لا يراه أحدٌ ولا يُلمَس: حقلُ الفخّ
+       (`left:-9999px`)، وقائمةٌ جانبيّةٌ مطويّة. والشرطُ أفقيٌّ وحدَه عن قصد:
+       ما كان أسفلَ الطيّة هدفٌ حقيقيٌّ يُدرَك بالتمرير، فيبقى مقيسا. */
+    function onScreenX(r) {
+      var vw = window.innerWidth || document.documentElement.clientWidth
+      return r.right > 0 && r.left < vw
     }
 
     var interactive = Array.prototype.slice.call(
@@ -289,6 +297,9 @@ window.__a11y = {
       if (cs.visibility === 'hidden' || cs.display === 'none' || parseFloat(cs.opacity) < 0.05) continue
       var r = el.getBoundingClientRect()
       if (r.width < 1 || r.height < 1) continue
+      /* خارجَ الشاشة أفقيّا: لا يُلمَس فلا حجمَ هدفٍ له (نظيرُ الشرط في `visible`) */
+      var vw = window.innerWidth || document.documentElement.clientWidth
+      if (r.right <= 0 || r.left >= vw) continue
       /* الوسمُ حولَه هو الهدف */
       var lbl = el.closest('label')
       if (lbl) {

@@ -57,6 +57,7 @@ import {
   TRAINING_YEARS,
   type UploadState,
 } from "./join-trainer/options";
+import { HONEYPOT_FIELD, useHoneypot } from "@/components/HoneypotField";
 
 /* الحدّان يُعاد تصديرُهما من هنا: الاختبارُ يقرؤهما من هذا الملفّ حرسا
    لتطابقهما مع الخادم، وموضعُ التعريف انتقل لا الضمان. */
@@ -156,6 +157,7 @@ const codeSelectCls = `${controlCls.replace("w-full", "")} w-28 shrink-0 px-2 [&
 
 /** صفحة انضمام المدربين — على API حقيقي: قسمٌ أوّل يُنشئ الطلب والحساب، وقسمٌ أخير يُكمله */
 export default function JoinTrainer() {
+  const hp = useHoneypot();
   const [params] = useSearchParams();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
@@ -454,6 +456,7 @@ export default function JoinTrainer() {
     setBusy(true); setError("");
     try {
       const res = await apiPost<SubmitResponse>("/api/v1/trainer-applications", {
+        ...(hp.value ? { [HONEYPOT_FIELD]: hp.value } : {}),
         fullName: form.fullName, email: form.email.trim().toLowerCase(), password,
         phoneCountryCode: form.phone ? form.phoneCountryCode || undefined : undefined,
         phone: normalizeDigits(form.phone) || undefined,
@@ -661,6 +664,7 @@ export default function JoinTrainer() {
         )}
 
         <form onSubmit={submit} className="mt-5 space-y-6 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-9">
+          {hp.field}
           {/* ══ ١) من أنت ══ */}
           {step === 1 && (
             <div className="space-y-4">
