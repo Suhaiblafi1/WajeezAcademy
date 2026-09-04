@@ -40,7 +40,6 @@ import ResultFeedback from "@/components/ResultFeedback";
 import { ResultErrorBoundary } from "@/components/ResultErrorBoundary";
 import SkillFamilyGrid, { type FamilyToRate } from "@/components/SkillFamilyGrid";
 import ComposedPlanCard, { type ComposedPathView } from "@/components/ComposedPlanCard";
-import { Q } from "@/domain/diagnostic/v2_1/maps";
 import {
   type DiagQuestion,
   type DiagOption,
@@ -49,7 +48,15 @@ import {
 } from "@/data/diagnostic";
 import { AssessmentSession, createAssessment, diagQuestionById, type NextStep } from "@/application/diagnostic/assessment-service";
 import type { DeepeningComparison } from "@/application/diagnostic/assessment-service";
-import { loadSession, saveLastResult, loadLastResultSafe } from "@/application/diagnostic/session-store";
+import { saveLastResult, loadLastResultSafe } from "@/application/diagnostic/session-store";
+import {
+  JOURNEY_STAGES,
+  loadProgress,
+  planCourseIdsOf,
+  composedPrimaryOf,
+  stageIndexOf,
+  type SavedProgress,
+} from "@/application/diagnostic/plan-selection";
 import { foldComposedPlan } from "@/application/diagnostic/composed-fold";
 import { saveAdoptedPlan, syncAdoptedPlan, PERSONAL_PLAN_NAME_AR } from "@/application/plan/adopted-plan";
 import { NEEDS_ADVISOR_KEY } from "@/application/plan/advisor-referral";
@@ -82,82 +89,9 @@ const DIM_LABELS: Record<Dim, string> = {
   interest: "اهتماماتك",
 };
 
-/* ═══════════ وحدات الرحلة الخمس — شريط التقدم الجديد ═══════════ */
-const JOURNEY_STAGES = [
-  { key: "who", label: "من أنت" },
-  { key: "goal", label: "هدفك" },
-  { key: "story", label: "قصتك وواقعك" },
-  { key: "skills", label: "مهاراتك ورصيدك" },
-  { key: "life", label: "ظروفك وخطتك" },
-] as const;
-
-/* أسئلة القرار الست (وحدة QC) تُوزَّع على مراحلها بمعرّفها لا بوحدتها: وحدتها
-   واحدة بينما تنتمي إلى ثلاث مراحل مختلفة. وقبل هذا كانت تسقط إلى الفرع الأخير
-   فيرى المتعلم «المرحلة ٥ من ٥» في السؤال الأول — وهي أسئلة «من أنت» و«هدفك»
-   نفسها — ثم يتذبذب المؤشر ٥→٢→٥. */
-const QC_STAGE: Record<string, number> = {
-  [Q.STAGE]: 0,       // من أنت
-  [Q.EMPLOYMENT]: 0,  // من أنت
-  [Q.GOAL]: 1,        // هدفك
-  [Q.NEED]: 1,        // هدفك
-  [Q.TIME]: 4,        // ظروفك وخطتك
-  [Q.MASTERY]: 4,     // ظروفك وخطتك
-};
-
-function stageIndexOf(q: DiagQuestion | null): number {
-  if (!q) return 0;
-  const qc = QC_STAGE[q.id];
-  if (qc !== undefined) return qc;
-  const m = q.module;
-  if (m === "M0" || m === "M1") return 0;
-  if (m === "M2" || m === "M2B" || m === "M8") return 1;
-  if (m.startsWith("M3")) return 2;
-  if (m === "M4" || m === "M4B" || m === "M5" || m === "M6") return 3;
-  return 4; // M7 وM9
-}
-
-/* ═══════════ الحفظ والاستئناف — عبر مستودع الجلسة المحلي (demo-only) ═══════════ */
-interface SavedProgress {
-  answers: DiagAnswers;
-  asked: string[];
-  savedAt: number;
-}
-/** قراءة تقدم محفوظ من المستودع الجديد */
-function loadProgress(): SavedProgress | null {
-  const s = loadSession();
-  if (!s || s.answers.length < 2) return null;
-  return {
-    answers: Object.fromEntries(
-      s.answers.map((a) => [a.questionId, Array.isArray(a.value) ? a.value.join(",") : a.value])
-    ),
-    asked: s.answers.map((a) => a.questionId),
-    savedAt: Date.parse(s.savedAt) || Date.now(),
-  };
-}
-function clearProgress() {
-  /* الإزالة الفعلية تتم عبر AssessmentSession.abandon() أو عند الحفظ النهائي */
-}
-
-
-/* ─────────── الصفحة ─────────── */
-/* اشتقاقان نقيّان خارج المكوّن.
-
-   كانا `useMemo` داخله، فلمّا احتاجهما `finish()` بالنتيجة الطازجة — قبل أن
-   تستقرّ حالة React — لم يصلحا. واستخراجُهما إلى الوحدة يجعلهما نقيّين:
-   يُنادَيان من الخطّاف ومن الحدث سواء، ولا يدخلان قائمة اعتماد. */
-function composedPrimaryOf(res: DiagResult | null): ComposedPathView | null {
-  if ((res?.resultJson.composite as CompositeView | null) ?? null) return null;
-  const cp = (res?.resultJson.composed_path as ComposedPathView | null | undefined) ?? null;
-  return cp && cp.courses.length > 0 && !cp.matchesPathwayId ? cp : null;
-}
-
-function planCourseIdsOf(res: DiagResult | null, hostId: string | undefined): string[] {
-  const composite = (res?.resultJson.composite as CompositeView | null) ?? null;
-  if (composite) return [...composite.courses].sort((a, b) => a.sequence - b.sequence).map((c) => c.courseId);
-  const cp = composedPrimaryOf(res);
-  if (cp) return cp.courses.map((c) => c.courseId);
-  return (pathwayCourses[hostId ?? ""] ?? []).slice(0, MAX_PATHWAY_COURSES);
-}
+/* منطقُ اختيار الخطّة ومراحلُ الشريط أُخرجا إلى
+   `src/application/diagnostic/plan-selection.ts` باختباراتهما: منهما تُشتقّ
+   دوراتُ المتعلّم وسعرُها، وكانا هنا غيرَ مصدَّرَين فلا يُختبَران. */
 
 export default function Diagnostic() {
   const navigate = useNavigate();
@@ -304,7 +238,9 @@ export default function Diagnostic() {
   /* خطة المقررات هي التوصية الأولى متى وُجدت وتجاوزت مسارا واحدا: لا قالب فاز،
      وقيّم المتعلم جوانبه، ولا تطابق مقرراتُها مسارا قائما. وحين تكون كذلك تحمل
      رأس الصفحة أيضا — لا رأسَ مسارٍ جاهز فوق قائمة مقررات مركّبة. */
-  const composedPrimary = useMemo(() => composedPrimaryOf(result), [result]);
+  /* وسيطُ النوعِ صريحٌ: الدالّةُ نقيّةٌ لا تعرف نوعَ العرض، والقيمةُ تُمرَّر
+     إلى `ComposedPlanCard` فتلزمها بنيتُه الكاملة. */
+  const composedPrimary = useMemo(() => composedPrimaryOf<ComposedPathView>(result), [result]);
 
   /* مقررات الخطة المعروضة فعلا — بالترتيب الذي تختاره الصفحة نفسها: قالب مركّب
      فاز، ثم خطة مقررات، ثم مسار جاهز حتى السقف. عددها هو ما يحدد السعر، فلا
@@ -397,7 +333,6 @@ export default function Diagnostic() {
   };
 
   const discardSaved = () => {
-    clearProgress();
     sessionRef.current?.abandon();
     setSavedProgress(null);
   };
@@ -434,7 +369,7 @@ export default function Diagnostic() {
     const top = res.top;
     if (!top) return;
     const c = (res.resultJson.composite as CompositeView | null) ?? null;
-    const composed = Boolean(c) || Boolean(composedPrimaryOf(res));
+    const composed = Boolean(c) || Boolean(composedPrimaryOf<ComposedPathView>(res));
     const hostId = c
       ? (c.represented_pathway_ids.includes(top.id) ? top.id : (c.represented_pathway_ids[0] ?? top.id))
       : top.id;
@@ -696,7 +631,6 @@ export default function Diagnostic() {
     setResult(null);
     setTopPathway(null);
     setMultiDraft([]);
-    clearProgress();
     setSavedProgress(null);
     setStage("intro");
     window.scrollTo(0, 0);

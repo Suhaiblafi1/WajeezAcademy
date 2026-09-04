@@ -55,8 +55,15 @@ describe('التشخيص ينتهي على صفحة المسار', () => {
   it('٣) الاعتماد يشتقّ من النتيجة لا من حالة React', () => {
     /* قراءتُه من الحالة كانت تمنع نداءه من `finish`: الحالة لم تستقرّ بعد */
     expect(diag).toContain('const adoptFromResult = (res: DiagResult')
-    expect(diag).toContain('function planCourseIdsOf(res: DiagResult | null')
-    expect(diag).toContain('function composedPrimaryOf(res: DiagResult | null')
+    /* الاشتقاقان أُخرجا إلى `plan-selection.ts` باختباراتهما — والضمانُ نفسُه:
+       دالّتان نقيّتان تأخذان النتيجةَ وسيطا، فتُنادَيان من `finish` بالنتيجة
+       الطازجة قبل أن تستقرّ حالةُ React. فالقراءةُ صارت في الملفَّين معا:
+       التعريفُ هناك، والنداءُ بالنتيجة هنا. */
+    const plan = read('src/application/diagnostic/plan-selection.ts')
+    expect(plan).toContain('export function planCourseIdsOf(res: DiagResult | null')
+    expect(plan).toContain('export function composedPrimaryOf<T extends ComposedPathLike>(res: DiagResult | null)')
+    expect(diag).toContain('planCourseIdsOf(res, hostId)')
+    expect(diag).toContain('composedPrimaryOf<ComposedPathView>(res)')
   })
 
   it('٤) وجهة الانتقال هي صفحة المسار بهوية المضيف', () => {
