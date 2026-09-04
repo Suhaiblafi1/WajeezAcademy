@@ -157,6 +157,9 @@ model LoginAttempt {
   createdAt DateTime @default(now())
 
   @@index([email, createdAt])
+  /* سقفُ الشبكة (المهمّة ١٧) يعدُّ إخفاقاتِ عنوانٍ واحدٍ في نافذةِ ربعِ ساعة،
+     فبلا هذا الفهرس يمسح كلَّ جدولِ المحاولات في كلّ دخول. */
+  @@index([ip, createdAt])
 }
 
 /**

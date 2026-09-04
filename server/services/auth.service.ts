@@ -26,6 +26,28 @@ export class AuthError extends Error {
 }
 
 const SESSION_TTL_DAYS = Number(process.env.SESSION_TTL_DAYS ?? 30)
+
+/* ═══ سقوفُ الدخول (المهمّة ١٧) — ثلاثةٌ لا واحد ═══
+   كانت القاعدةُ سقفا واحدا بمفتاحٍ «البريد **أو** الشبكة»: خمسُ إخفاقاتٍ من
+   الشبكة نفسِها تُقفلها كلَّها ولو كانت لخمسةِ أشخاصٍ مختلفين — فقاعةٌ فيها
+   ثلاثون متعلّما على عنوانٍ واحد تُقفل نفسَها بأخطاءٍ صادقة، ويُرَدُّ معها من
+   كتب كلمتَه صحيحة.
+
+   والمفتاحُ الضيّق وحدَه (بريدٌ + شبكة) يفتح رشَّ كلمات المرور: أربعُ محاولاتٍ
+   على كلٍّ من ألف بريدٍ من جهازٍ واحد — أربعةُ آلافِ محاولةٍ بلا قفلٍ واحد.
+
+   فالسقوفُ ثلاثةٌ، وأيُّها بلغ حدَّه أقفل:
+   ١) «بريدٌ + شبكة» ٥ — الشخصُ نفسُه من المكان نفسِه، وهو القفلُ المقصود.
+   ٢) الشبكةُ وحدَها ٤٠ — قاعةٌ من ثلاثين لا تبلغها بأخطاءٍ صادقة، والمهاجمُ
+      من جهازٍ واحدٍ يبلغها في ثوان.
+   ٣) البريدُ وحدَه عبر كلّ الشبكات ٢٥ — فلا يُخمَّن بريدُ مدير النظام من ألف جهاز.
+
+   والرقمان ٤٠ و٢٥ قرارُ صاحب المنصّة (٤ سبتمبر ٢٠٢٦)، لا تقديرُ مطوّر:
+   رفعُ سقفٍ أمنيٍّ يُوازن راحةَ قاعةٍ بأمان حساباتِ الفريق. */
+const LOGIN_WINDOW_MS = 15 * 60_000
+const LOGIN_MAX_PER_IDENTITY = 5
+const LOGIN_MAX_PER_IP = 40
+const LOGIN_MAX_PER_EMAIL = 25
 const GENERIC_LOGIN_FAIL = 'البريد أو كلمة المرور غير صحيحة'
 /** مهلة رابط توثيق البريد — يومان: أطول من مهلة الاستعادة لأنه ليس إجراء طوارئ */
 const EMAIL_VERIFY_TTL_MS = 48 * 3600_000
@@ -65,20 +87,31 @@ export class AuthService {
     return { userId: user.id }
   }
 
-  /** دخول — يسجل المحاولة دائما، ولا يكشف هل البريد موجود، ويقفل بعد 5 إخفاقات متتالية */
+  /** دخول — يسجل المحاولة دائما، ولا يكشف هل البريد موجود، وله ثلاثةُ سقوف (أعلاه) */
   async login(email: string, password: string, ip?: string, userAgent?: string): Promise<{ token: string; expiresAt: Date }> {
     const normalized = email.trim().toLowerCase()
 
-    /* قفل مؤقت ضد التخمين: 5 إخفاقات خلال 15 دقيقة على البريد أو الـIP تُمهّل المحاولة التالية */
-    const windowStart = new Date(Date.now() - 15 * 60_000)
-    const recentFails = await this.prisma.loginAttempt.count({
-      where: {
-        success: false, createdAt: { gte: windowStart },
-        OR: [{ email: normalized }, ...(ip ? [{ ip }] : [])],
-      },
-    })
-    if (recentFails >= 5) {
+    /* السقوفُ الثلاثة تُقاس على النافذة نفسِها، وتُعدُّ معا في رحلةٍ واحدة.
+       والشبكةُ المجهولة (لا `ip`) لا سقفَ لها: لا يُنسب إليها إخفاقٌ فلا تُقفَل
+       بذنبِ غيرها — والسقفُ الثالث يبقى حارسَ البريد في تلك الحالة. */
+    const windowStart = new Date(Date.now() - LOGIN_WINDOW_MS)
+    const base = { success: false, createdAt: { gte: windowStart } }
+    const [perIdentity, perIp, perEmail] = await Promise.all([
+      this.prisma.loginAttempt.count({ where: { ...base, email: normalized, ip: ip ?? null } }),
+      ip ? this.prisma.loginAttempt.count({ where: { ...base, ip } }) : Promise.resolve(0),
+      this.prisma.loginAttempt.count({ where: { ...base, email: normalized } }),
+    ])
+    if (perIdentity >= LOGIN_MAX_PER_IDENTITY || perEmail >= LOGIN_MAX_PER_EMAIL) {
       throw new AuthError('too_many_attempts', 'محاولات كثيرة متتالية — انتظر 15 دقيقة ثم حاول مجددا', 429)
+    }
+    /* رسالةٌ مختلفةٌ للشبكة عن الشخص: من كتب كلمتَه صحيحةً وقُفل بذنب جارِه
+       يحتاج أن يعرف أنّ العطلَ ليس في حسابه — ولا يُكشف بها شيءٌ لا يعرفه المهاجم. */
+    if (perIp >= LOGIN_MAX_PER_IP) {
+      throw new AuthError(
+        'too_many_attempts',
+        'محاولاتُ دخولٍ كثيرة من شبكتك — انتظر 15 دقيقة، أو جرّب من شبكة أخرى',
+        429,
+      )
     }
 
     const user = await this.prisma.user.findUnique({ where: { email: normalized } })
