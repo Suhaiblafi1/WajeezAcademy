@@ -104,6 +104,9 @@ function parseChecks(raw: string) {
       prompt: lines.find((l) => l.startsWith('س:'))?.slice(2).trim() ?? '',
       correct: lines.filter((l) => l.startsWith('+')).length,
       options: lines.filter((l) => l.startsWith('+') || l.startsWith('-')).length,
+      /* موضعُ الصحيح — واحدٌ أو اثنانِ أو ثلاثة، وصفرٌ إن لم يوجد */
+      correctAt:
+        lines.filter((l) => l.startsWith('+') || l.startsWith('-')).findIndex((l) => l.startsWith('+')) + 1,
       why: lines.find((l) => l.startsWith('ش:'))?.slice(2).trim() ?? '',
       skill: lines.find((l) => l.startsWith('م:'))?.slice(2).trim() ?? '',
     }
@@ -218,6 +221,21 @@ function auditModule(m: Module, courseSkills: Map<string, string[]>, library: Li
       else if (allowed.length > 0 && !allowed.includes(c.skill)) {
         add('مهارة مجهولة', `التمرين ${i + 1} مربوطٌ بـ«${c.skill}» وليست من مهارات الدورة (${allowed.join('، ')})`)
       }
+    }
+
+    /* موضعُ الجواب الصحيح يتنقّل — وإلّا فالوحدةُ تُجاب بلا قراءة.
+
+       قالبُ §٥ يعرض المثالَ بـ«+» في الوسط، فقُرئ موضعا لا مثالا: مئتانِ
+       وأربعون سؤالا من ثلاثِ مئةٍ وأربعةٍ وعشرين كان جوابُها في الخيار
+       الأوسط، واثنتانِ وأربعون وحدةً كلُّ أسئلتها فيه — فمن يختار الأوسطَ
+       دائما بلا أن يقرأ يُصيب خمسةً وتسعين في المئة. ولم يمسكه شيء: كلُّ
+       سؤالٍ على حدته سليمُ الصيغة، والعطبُ في التوزيع لا في السؤال.
+
+       والفحصُ على الوحدة لا على السؤال، ويُشترط ثلاثةُ أسئلةٍ فأكثرُ حتّى
+       لا يُنذر بالباطل في وحدةٍ صغيرة. */
+    const spots = checks.map((c) => c.correctAt).filter((n) => n > 0)
+    if (spots.length >= 3 && new Set(spots).size === 1) {
+      add('موضع الجواب', `جوابُ كلّ التمارين في الخيار ${spots[0]} — يُجاب بلا قراءة، فنوّع المواضع`)
     }
   }
 
