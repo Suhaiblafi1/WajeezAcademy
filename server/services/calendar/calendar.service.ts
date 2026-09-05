@@ -11,12 +11,13 @@
    المدرّبُ فإلى شعبه المسنَدة إليه وحدها. وكانت الصلاحيتان مجموعتين في
    رايةٍ واحدة تتخطّى الفحص كلَّه — فمرّت شعبةٌ ليست له. */
 
+import { ACADEMY_EMAIL } from '../integrations.service'
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from '../auth.service'
 import { buildIcs } from './ics'
 
 /** المنظِّمُ واحدٌ في كلّ دعواتنا — ويُقرأ من إعدادات البريد حين تُضبط */
-const ORGANIZER = { name: 'أكاديمية وجيز', email: 'Academy@wajeez.co' }
+const ORGANIZER = { name: 'أكاديمية وجيز', email: ACADEMY_EMAIL }
 
 /** ساعةٌ افتراضية للجلسة التي لا نهايةَ لها في القاعدة */
 const DEFAULT_MINUTES = 60

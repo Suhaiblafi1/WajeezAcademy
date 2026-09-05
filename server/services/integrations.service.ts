@@ -53,6 +53,9 @@ export async function getPaymentConfig(prisma: PrismaClient): Promise<PaymentCon
 
    كان الافتراضي سلسلة فارغة، وmail.ts يرفض الإرسال بلا عنوان مرسِل: فمن يفعّل
    القناة من شاشة التكاملات وينسى الحقل يجد قناةً «مفعّلة» لا ترسل شيئا. */
+/* نسخةُ الخادم من عنوان الأكاديميّة — والأصلُ في `src/data/academy-email.ts`.
+   لا يستورد الخادمُ من `src/`، فالتكرارُ لازم؛ ويحرس تطابقَهما
+   `src/tests/academy-email.test.ts`. يُغيَّر الاثنان معا أبدا. */
 export const ACADEMY_EMAIL = 'Academy@wajeez.co'
 
 export async function getEmailConfig(prisma: PrismaClient): Promise<EmailConfig> {

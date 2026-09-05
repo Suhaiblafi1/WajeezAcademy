@@ -1,3 +1,4 @@
+import { ACADEMY_EMAIL } from '@/data/academy-email'
 import { useEffect, useMemo, useRef, useState } from "react";
 import { safeGet, safeSet, safeRemove } from "@/services/safe-storage";
 import { Link, useNavigate, useSearchParams } from "react-router";
@@ -1744,7 +1745,7 @@ export default function Diagnostic() {
               </p>
               <Button variant="outline" className="mt-4 border-gold/60 text-gold-ink hover:bg-gold/10" asChild>
                 <a
-                  href={`mailto:Academy@wajeez.co?subject=${encodeURIComponent("أشعرني عند توفر: " + result.unavailableSkills.join("، "))}`}
+                  href={`mailto:${ACADEMY_EMAIL}?subject=${encodeURIComponent("أشعرني عند توفر: " + result.unavailableSkills.join("، "))}`}
                 >
                   أشعِرني عند توفرها
                 </a>

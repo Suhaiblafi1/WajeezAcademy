@@ -4,6 +4,7 @@
    مبدأ الفصل: قبول الطلب ≠ إنشاء الحساب ≠ تفعيل الدور ≠ التأهيل ≠ التعيين ≠ النشر.
    المتقدم لا يمنح نفسه دور trainer أبدا — الحساب يُنشأ فقط عبر دعوة إدارية. */
 
+import { ACADEMY_EMAIL } from './integrations.service'
 import { createHash, randomBytes } from 'node:crypto'
 import bcrypt from 'bcryptjs'
 import type { PrismaClient, Prisma } from '@prisma/client'
@@ -179,7 +180,7 @@ export class TrainerReviewService {
         durationMinutes: 45,
         description: `مقابلةٌ بشأن طلبك رقم ${app.reference}. ${remote ? 'عن بُعد — يصلك الرابط قبل الموعد.' : 'حضوريّة.'}`,
         url: `${publicSiteUrl()}/join-trainer`,
-        organizer: { name: 'أكاديمية وجيز', email: 'Academy@wajeez.co' },
+        organizer: { name: 'أكاديمية وجيز', email: ACADEMY_EMAIL },
         attendee: { name: app.fullName, email: app.email },
       })
       const res = await sendDirectEmail(this.prisma, {
