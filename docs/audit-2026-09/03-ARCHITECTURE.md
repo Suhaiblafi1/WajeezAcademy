@@ -1,5 +1,12 @@
 # 03 · Recommended Architecture
 
+> ⚠️ **سجلٌّ مؤرَّخٌ — لا يوصف الواقعَ الحاليّ.**
+> كُتبت هذه الوثيقةُ حين كان الإنتاجُ على **Vercel** والنطاقُ المقصودُ
+> `academy.wajeez.com`. والمنصّةُ اليوم على **Cloudways** والنطاقُ
+> `www.wajeezacademy.com`، والـAPI عمليّةُ Node على الخادم نفسِه.
+> **المرجعُ للواقع الحاليّ: [`docs/DEPLOYMENT.md`](../DEPLOYMENT.md).**
+> وما دون ذلك يُقرأ سجلَّ قرارٍ لا تعليماتِ تنفيذ.
+
 > Status: **proposal, awaiting owner approval.**
 > Principle: technically sophisticated inside, radically simple outside. Every choice below is the simplest option that is reliable at 10× today's usage. Where the current code already makes the right choice, this document says "keep".
 > Companion docs: [01 audit](01-PLATFORM-AUDIT.md) · [02 capabilities](02-CAPABILITIES-DESIGN.md) · [04 migration](04-MIGRATION-PLAN.md)

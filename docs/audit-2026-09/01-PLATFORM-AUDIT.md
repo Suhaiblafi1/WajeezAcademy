@@ -1,5 +1,12 @@
 # 01 · Wajeez Academy — Full Platform Audit
 
+> ⚠️ **سجلٌّ مؤرَّخٌ — لا يوصف الواقعَ الحاليّ.**
+> كُتبت هذه الوثيقةُ حين كان الإنتاجُ على **Vercel** والنطاقُ المقصودُ
+> `academy.wajeez.com`. والمنصّةُ اليوم على **Cloudways** والنطاقُ
+> `www.wajeezacademy.com`، والـAPI عمليّةُ Node على الخادم نفسِه.
+> **المرجعُ للواقع الحاليّ: [`docs/DEPLOYMENT.md`](../DEPLOYMENT.md).**
+> وما دون ذلك يُقرأ سجلَّ قرارٍ لا تعليماتِ تنفيذ.
+
 > Date: 3 September 2026 · Branch: `claude/wajeez-academy-audit-9d910f` (from `main` at `fe806fa`)
 > Status: **audit complete; branch merged with `main` (`9a00445`), all gates green; four safe fixes applied (A1, A10, A11, A13); corrections in §0.5; browser tour in [05](05-BROWSER-TOUR-AR.md). No production data or infrastructure touched.**
 >

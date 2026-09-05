@@ -4,7 +4,7 @@
 وأين يُوضع، وكيف تتأكّد أنه اشتغل في دقيقة.
 
 **قاعدة واحدة لا تُكسر:** لا مفتاح سرّي في المستودع أبدا. مكانه متغيّرات
-البيئة في Vercel، أو شاشة `/admin/integrations`. ولا ترسل لي مفتاحا حيّا في
+البيئة على Cloudways، أو شاشة `/admin/integrations`. ولا ترسل لي مفتاحا حيّا في
 محادثة إن كنت تستطيع وضعه بنفسك — الشاشة مصمّمة لتضعه أنت.
 
 ---
@@ -24,7 +24,7 @@
 
 ### أين يُوضع
 
-**إمّا** في Vercel → Settings → Environment Variables:
+**إمّا** في متغيّرات البيئة على Cloudways (Application → Environment):
 
 ```
 SMTP_HOST · SMTP_PORT · SMTP_SECURE · SMTP_USER · SMTP_PASS
@@ -67,7 +67,7 @@ SMTP_FROM_NAME · SMTP_FROM_EMAIL
 
 ### أين يُوضع
 
-**إمّا** في Vercel:
+**إمّا** في متغيّرات البيئة على Cloudways:
 
 ```
 PAYMENT_DRIVER=stripe        (أو moyasar)
@@ -85,7 +85,7 @@ PAYMENT_WEBHOOK_SECRET=…
 
 في لوحة Stripe ← Developers ← Webhooks ← Add endpoint:
 
-- **العنوان:** `https://academy.wajeez.com/api/webhooks/payments/stripe`
+- **العنوان:** `https://www.wajeezacademy.com/api/webhooks/payments/stripe`
 - **الحدث:** `checkout.session.completed`
 - ثم انسخ `whsec_…` وضعه في `PAYMENT_WEBHOOK_SECRET`
 
@@ -102,7 +102,7 @@ PAYMENT_WEBHOOK_SECRET=…
 
 - **`APP_URL` شرطٌ للدفع لا للبريد وحده.** عليه تُبنى صفحة العودة بعد الدفع
   ورابط التوثيق. بدونه يُعاد المشتري إلى عنوان لا يفتح عنده.
-  ضع `APP_URL=https://academy.wajeez.com`.
+  ضع `APP_URL=https://www.wajeezacademy.com`.
 - **بلا مفتاح سرّي، يعود النظام إلى المزوّد الاختباري صامتا** — أي «نجاح» بلا
   مال. فبعد الوصل تأكّد من «فحص الاتصال الحي» ولا تكتفِ بأن الحفظ نجح.
 
@@ -127,8 +127,8 @@ PAYMENT_WEBHOOK_SECRET=…
 ## ٤) ما يبقى مفتوحا بعد الوصل — قرارك
 
 - **المفاتيح تُحفظ نصّا صريحا في القاعدة** حين تُدخَل من الشاشة. الأسلم أن
-  تضعها في متغيّرات Vercel وحدها (وهي تغلب الشاشة على أيّ حال).
+  تضعها في متغيّرات البيئة وحدها (وهي تغلب الشاشة على أيّ حال).
 - **`POST /api/learner/orders/:id/pay-test`** اسمٌ مضلّل: هذا هو مسار الشراء
   الوحيد، وهو يشحن البطاقات الحيّة. يُعاد تسميته في دفعة قادمة.
-- **التخزين المحلّي للملفّات** (`storage/private/`) لا يبقى على Vercel — يحتاج
+- **التخزين المحلّي للملفّات** (`storage/private/`) لا يُعتمد عليه — يحتاج
   S3/MinIO قبل أن يرفع المتعلمون نواتجهم في الإنتاج.

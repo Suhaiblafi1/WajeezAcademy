@@ -1,5 +1,12 @@
 # تدقيق منصّة أكاديمية وجيز وخطّة التنفيذ — سبتمبر ٢٠٢٦
 
+> ⚠️ **سجلٌّ مؤرَّخٌ — لا يوصف الواقعَ الحاليّ.**
+> كُتبت هذه الوثيقةُ حين كان الإنتاجُ على **Vercel** والنطاقُ المقصودُ
+> `academy.wajeez.com`. والمنصّةُ اليوم على **Cloudways** والنطاقُ
+> `www.wajeezacademy.com`، والـAPI عمليّةُ Node على الخادم نفسِه.
+> **المرجعُ للواقع الحاليّ: [`docs/DEPLOYMENT.md`](../DEPLOYMENT.md).**
+> وما دون ذلك يُقرأ سجلَّ قرارٍ لا تعليماتِ تنفيذ.
+
 > **الحالة: تدقيقٌ وخطّةٌ، ثمّ جولةُ متصفّحٍ أثبتتهما بالتجربة (الوثيقة ٠٥)، مع إصلاحاتٍ صغيرةٍ آمنةٍ لما شُوهد (مذكورةٌ كلُّها في 01 §0.6). لم يُمَسّ الإنتاجُ ولا بياناتُه، ولا تبدأ أيّ خطوةٍ كبرى قبل موافقة صاحب المنصّة.**
 >
 > Status: **audit and plan, then a browser tour that exercised every role (doc 05), with small safe fixes for what was observed (all listed in 01 §0.6). Production and its data were not touched. No major step starts before the owner's approval.**
