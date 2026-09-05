@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prebuild": "tsx scripts/write-build-stamp.ts || true",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",

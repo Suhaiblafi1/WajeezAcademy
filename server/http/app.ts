@@ -41,6 +41,7 @@ import { registerSearchRoutes } from './routes/search.routes'
 import { registerIntegrationRoutes } from './routes/integrations.routes'
 import { registerDemoRoutes } from './routes/demo.routes'
 import { registerAnalyticsRoutes } from './routes/analytics.routes'
+import { buildStamp, runtimeEnvLabel } from '../build-stamp'
 
 export async function buildApp(prisma: PrismaClient) {
   /* ── السجلّ ──
@@ -166,17 +167,24 @@ export async function buildApp(prisma: PrismaClient) {
   })
 
   /* «كيف أعرف أن المنشور هو آخر نسخة؟» — سؤال كان جوابه تنقّلا بين لوحة
-     Vercel وGitHub ومقارنة بصمات بالعين. وهو سؤال يتكرر بعد كل دفعة.
+     المزوّد وGitHub ومقارنة بصمات بالعين. وهو سؤال يتكرر بعد كل دفعة.
 
      العنوان الواحد يجيبه: الالتزام الذي بُني منه الكود العامل، واللقطة التي
      يقرأها المحرك، وهل هما من نفس الالتزام. والمقارنة ممكنة أصلا لأن تسمية
      اللقطة الآلية تحمل بصمة التزامها (auto-<sha7>-<hash6>) — فالخادم يقارن
      نفسه بنفسه بلا مصدر خارجي.
 
+     ⚠ وكان يقرأ `VERCEL_GIT_COMMIT_SHA` مباشرة. فلمّا انتقلت المنصّة إلى
+     Cloudways لم يعد للمتغيّر وجود، فردّ على الإنتاج الحيّ: «الالتزام: null ·
+     البيئة: محلية» — وامتنع عن الحكم امتناعا صحيحا عن **سؤال صار أعمى**.
+     فصار مصدر البصمة `server/build-stamp.ts`: بيئةُ المضيف بأيّ اسم أعلنها،
+     وإلا فختمٌ يُكتب وقت البناء. ووقتُ البناء يُعرض معها، لأنه يفضح نشرةً لم
+     تصل ولو بقي الالتزام مجهولا.
+
      ولا يكشف شيئا ليس معلنا: بصمة التزام في مستودع، وتسمية لقطة منشورة. */
   app.get('/api/version', { schema: { tags: ['system'], summary: 'النسخة العاملة واللقطة المنشورة — هل هما من نفس الالتزام؟' } }, async () => {
-    const sha = process.env.VERCEL_GIT_COMMIT_SHA ?? null
-    const sha7 = sha ? sha.slice(0, 7) : null
+    const stamp = buildStamp()
+    const sha7 = stamp.commit ? stamp.commit.slice(0, 7) : null
     const { getActiveSnapshot } = await import('../catalog/snapshot-builder')
     const active = await getActiveSnapshot(prisma)
     const payload = active?.payload as
@@ -196,9 +204,11 @@ export async function buildApp(prisma: PrismaClient) {
     return {
       الكود: {
         الالتزام: sha7,
-        الفرع: process.env.VERCEL_GIT_COMMIT_REF ?? null,
-        رسالة_الالتزام: process.env.VERCEL_GIT_COMMIT_MESSAGE?.split('\n')[0] ?? null,
-        البيئة: process.env.VERCEL_ENV ?? 'محلية',
+        الفرع: stamp.ref,
+        رسالة_الالتزام: stamp.message,
+        البيئة: runtimeEnvLabel(),
+        وقت_البناء: stamp.builtAt,
+        مصدر_البصمة: stamp.source,
       },
       اللقطة_المنشورة: {
         التسمية: active?.label ?? null,
@@ -214,7 +224,9 @@ export async function buildApp(prisma: PrismaClient) {
          ولا يملك هذا المسار تاريخ الالتزامين ليرتّبهما، فيصف ما يراه ولا يخمّن. */
       متطابقان:
         inSync === null
-          ? 'لا يمكن الحكم — لقطة يدوية أو تشغيل محلي'
+          ? sha7
+            ? 'لا يمكن الحكم — اللقطة نُشرت بلا بصمة التزام (نشر يدوي أو بناء لا يعرف التزامه)'
+            : 'لا يمكن الحكم — البناء العامل بلا ختم التزام؛ انظر «وقت_البناء» وراجع خطوة ختم البناء في سكربت النشر'
           : inSync
             ? 'نعم — الكود واللقطة من نفس الالتزام'
             : 'لا — الكود واللقطة من التزامين مختلفين؛ الأرجح أن نشرا جاريا لم يكتمل بعد',
