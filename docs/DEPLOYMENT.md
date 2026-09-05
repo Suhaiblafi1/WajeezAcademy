@@ -146,11 +146,11 @@ https://www.wajeezacademy.com/api/version
 طرفه على قاعدةٍ حقيقيّةٍ وواجهةِ Resend وهميّةٍ محلّيّة:
 
 ```
-قناةُ البريد  : موصولة · مفتاح: موجود · من: Academy@wajeez.co
+قناةُ البريد  : موصولة · مفتاح: موجود · من: no-reply@wajeezacademy.com
 قبل الدورة    : queued
 خبرُ الدورة   : حُوِّل ١ إشعارا: وصل ١، وسقط ٠
 بعد الدورة    : sent · أُرسلت · لا خطأ
-وواجهةُ Resend: POST /emails · من: أكاديمية وجيز <Academy@wajeez.co>
+وواجهةُ Resend: POST /emails · من: أكاديمية وجيز <no-reply@wajeezacademy.com>
                 إلى: عنوانُ المتعلّم · الموضوع: «وثّق بريدك»
 ```
 
@@ -169,7 +169,7 @@ https://www.wajeezacademy.com/api/version
 |---|---|
 | `RESEND_API_KEY` | **وجودُه وحدَه يفعّل القناة** · يبدأ بـ`re_` |
 | `RESEND_FROM_NAME` | «أكاديمية وجيز» افتراضا |
-| `RESEND_FROM_EMAIL` | `Academy@wajeez.co` افتراضا |
+| `RESEND_FROM_EMAIL` | `no-reply@wajeezacademy.com` افتراضا |
 
 > **ونطاقُ المُرسِل هو ما يُوثَّق في Resend وتُضبط له SPF/DKIM — لا نطاقُ
 > الموقع.** ورسالةٌ من نطاقٍ غيرِ موثَّقٍ يرفضها Resend نفسُه.

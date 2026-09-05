@@ -3,7 +3,7 @@
    ليُسجل في سجل الإشعار ويُعاد المحاولة — لا يُبتلع ولا يُكسر المسار التشغيلي. */
 
 import { Resend } from 'resend'
-import type { EmailConfig } from './integrations.service'
+import { ACADEMY_EMAILS, type EmailConfig } from './integrations.service'
 
 export interface MailInput {
   to: string
@@ -24,6 +24,10 @@ export async function sendEmail(config: EmailConfig, input: MailInput): Promise<
     const { error } = await resend.emails.send({
       from: `${config.fromName} <${config.fromEmail}>`,
       to: input.to,
+      /* المُرسِلُ `no-reply@` صادقٌ في اسمه — لا يُقرأ ما يصله. لكنّ من يضغط
+         «ردّ» على رسالةِ توثيقٍ إنسانٌ ينتظر جوابا، فيُوجَّه ردُّه إلى الدعم
+         بدل أن يذهب إلى صندوقٍ لا يفتحه أحد. */
+      replyTo: config.replyTo || ACADEMY_EMAILS.support,
       subject: input.subject,
       text: input.text,
       attachments: input.icsContent

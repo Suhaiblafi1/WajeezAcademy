@@ -21,6 +21,8 @@ export interface PaymentConfig {
 export interface EmailConfig {
   enabled: boolean
   apiKey?: string
+  /** وجهةُ «ردّ» على الرسائل الآليّة — الدعمُ افتراضا */
+  replyTo?: string
   fromName: string
   fromEmail: string
 }
@@ -53,10 +55,22 @@ export async function getPaymentConfig(prisma: PrismaClient): Promise<PaymentCon
 
    كان الافتراضي سلسلة فارغة، وmail.ts يرفض الإرسال بلا عنوان مرسِل: فمن يفعّل
    القناة من شاشة التكاملات وينسى الحقل يجد قناةً «مفعّلة» لا ترسل شيئا. */
-/* نسخةُ الخادم من عنوان الأكاديميّة — والأصلُ في `src/data/academy-email.ts`.
+/* نسخةُ الخادم من عناوين الأكاديميّة — والأصلُ في `src/data/academy-email.ts`.
    لا يستورد الخادمُ من `src/`، فالتكرارُ لازم؛ ويحرس تطابقَهما
-   `src/tests/academy-email.test.ts`. يُغيَّر الاثنان معا أبدا. */
-export const ACADEMY_EMAIL = 'Academy@wajeez.co'
+   `src/tests/academy-email.test.ts`. تُغيَّر النسختان معا أبدا.
+
+   والتقسيمُ بالغاية مشروحٌ في الأصل: العناوينُ رخيصةٌ والصناديقُ ليست كذلك،
+   فتُنشأ أسماءً مستعارةً تصبّ في صندوقٍ واحد. */
+export const ACADEMY_EMAIL_DOMAIN = 'wajeezacademy.com'
+
+export const ACADEMY_EMAILS = {
+  noReply: `no-reply@${ACADEMY_EMAIL_DOMAIN}`,
+  support: `support@${ACADEMY_EMAIL_DOMAIN}`,
+  calendar: `calendar@${ACADEMY_EMAIL_DOMAIN}`,
+} as const
+
+/** المُرسِلُ الافتراضيُّ لكلّ رسالةٍ آليّة — لا يُقرأ ما يصله */
+export const ACADEMY_EMAIL = ACADEMY_EMAILS.noReply
 
 export async function getEmailConfig(prisma: PrismaClient): Promise<EmailConfig> {
   const row = await prisma.integrationSetting.findUnique({ where: { provider: 'email' } })
@@ -64,6 +78,7 @@ export async function getEmailConfig(prisma: PrismaClient): Promise<EmailConfig>
   const base: EmailConfig = {
     enabled: row?.enabled ?? false,
     apiKey: c.apiKey || undefined,
+    replyTo: c.replyTo || undefined,
     fromName: c.fromName ?? 'أكاديمية وجيز', fromEmail: c.fromEmail || ACADEMY_EMAIL,
   }
   /* غشاء البيئة — كل متغير موجود يغلب حقله استقلالا، ووجود المفتاح يفعّل القناة */
@@ -71,6 +86,7 @@ export async function getEmailConfig(prisma: PrismaClient): Promise<EmailConfig>
   if (env.RESEND_API_KEY) { base.apiKey = env.RESEND_API_KEY; base.enabled = true }
   if (env.RESEND_FROM_NAME) base.fromName = env.RESEND_FROM_NAME
   if (env.RESEND_FROM_EMAIL) base.fromEmail = env.RESEND_FROM_EMAIL
+  if (env.RESEND_REPLY_TO) base.replyTo = env.RESEND_REPLY_TO
   return base
 }
 

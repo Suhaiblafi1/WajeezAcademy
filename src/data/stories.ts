@@ -1,4 +1,4 @@
-import { ACADEMY_EMAIL } from './academy-email'
+import { ACADEMY_EMAILS } from './academy-email'
 /* نماذج توضيحية لرحلات التعلم + آراء مستخدمي تطبيق وجيز + شعارات الشركاء —
    مصدر واحد تتقاسمه الرئيسية وصفحة القصص المستقلة.
    نزاهة تسويقية: هذه القصص نماذج توضيحية مركبة من أنماط شائعة — ليست شهادات
@@ -240,7 +240,7 @@ export const partnerLogos = [
 /* بيانات التواصل الموثقة — واتساب المستشارين هو القناة الرسمية المعتمدة،
    والبريد لدعم عام. المواقع: الرياض وعمّان */
 export const CONTACT = {
-  email: ACADEMY_EMAIL,
+  email: ACADEMY_EMAILS.support,
   whatsapp: '962771052222',
   address: 'الرياض — حي الياسمين — شارع أنس بن مالك',
   locations: [
