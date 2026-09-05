@@ -21,8 +21,8 @@ let freeCohortId: string
 
 /** يفعّل قناة البريد لهذا الاختبار وحده — عبر غشاء البيئة الذي تقرأه getEmailConfig */
 function withEmailChannel(on: boolean) {
-  if (on) process.env.SMTP_HOST = 'smtp.test.local'
-  else delete process.env.SMTP_HOST
+  if (on) process.env.RESEND_API_KEY = 're_test'
+  else delete process.env.RESEND_API_KEY
 }
 
 beforeAll(async () => {

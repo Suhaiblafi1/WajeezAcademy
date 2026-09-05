@@ -53,8 +53,8 @@ export class UnwiredExternalProvider implements NotificationProvider {
   }
 }
 
-/** مزود البريد الحقيقي — SMTP عبر إعدادات التكامل؛ يُرسل لبريد المستخدم المسجل */
-export class SmtpEmailProvider implements NotificationProvider {
+/** مزود البريد الحقيقي — Resend عبر إعدادات التكامل؛ يُرسل لبريد المستخدم المسجل */
+export class ResendEmailProvider implements NotificationProvider {
   readonly channel = 'email'
   private config: EmailConfig
   private toEmail: string
@@ -89,7 +89,7 @@ export async function sendDirectEmail(
 ): Promise<DirectMailResult> {
   try {
     const config = await getEmailConfig(prisma)
-    if (!config.enabled || !config.host || !config.fromEmail) return { status: 'not_configured' }
+    if (!config.enabled || !config.apiKey || !config.fromEmail) return { status: 'not_configured' }
     const res = await sendEmail(config, input)
     return res.ok ? { status: 'sent' } : { status: 'failed', error: res.error }
   } catch (e) {
@@ -160,9 +160,9 @@ export class NotificationService {
     if (channel === 'in_app') return new InAppProvider()
     if (channel === 'email') {
       const config = await getEmailConfig(this.prisma)
-      if (config.enabled && config.host) {
+      if (config.enabled && config.apiKey) {
         const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { email: true } })
-        if (user?.email) return new SmtpEmailProvider(config, user.email)
+        if (user?.email) return new ResendEmailProvider(config, user.email)
       }
     }
     return new UnwiredExternalProvider(channel as 'email' | 'whatsapp' | 'sms')

@@ -18,8 +18,7 @@ interface IntegrationsView {
     publishableKey: string; secretKey: string; webhookSecret: string; hasSecret: boolean; hasWebhookSecret: boolean;
   };
   email: {
-    enabled: boolean; envSourced: boolean; host: string; port: number; secure: boolean;
-    user: string; pass: string; fromName: string; fromEmail: string; hasPass: boolean;
+    enabled: boolean; envSourced: boolean; apiKey: string; fromName: string; fromEmail: string; hasApiKey: boolean;
   };
 }
 
@@ -37,7 +36,7 @@ export default function Integrations() {
   const [busy, setBusy] = useState(false);
 
   const [payForm, setPayForm] = useState({ enabled: false, driver: "test", publishableKey: "", secretKey: "", webhookSecret: "" });
-  const [mailForm, setMailForm] = useState({ enabled: false, host: "", port: 465, secure: true, user: "", pass: "", fromName: "", fromEmail: "" });
+  const [mailForm, setMailForm] = useState({ enabled: false, apiKey: "", fromName: "", fromEmail: "" });
   const [testTo, setTestTo] = useState("");
 
   const load = useCallback(async () => {
@@ -50,8 +49,7 @@ export default function Integrations() {
         publishableKey: v.payment.publishableKey, secretKey: v.payment.secretKey, webhookSecret: v.payment.webhookSecret,
       });
       setMailForm({
-        enabled: v.email.enabled, host: v.email.host, port: v.email.port, secure: v.email.secure,
-        user: v.email.user, pass: v.email.pass, fromName: v.email.fromName, fromEmail: v.email.fromEmail,
+        enabled: v.email.enabled, apiKey: v.email.apiKey, fromName: v.email.fromName, fromEmail: v.email.fromEmail,
       });
     } catch (e) { setOffline(e instanceof ApiError ? e.message : "الخادم غير متصل"); }
     finally { setLoading(false); }
@@ -192,40 +190,21 @@ export default function Integrations() {
 
           {/* ════ البريد ════ */}
           <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
-            <p className="flex items-center gap-2 text-sm font-black"><Mail className="h-4 w-4 text-teal-ink" /> خادم البريد (SMTP)</p>
+            <p className="flex items-center gap-2 text-sm font-black"><Mail className="h-4 w-4 text-teal-ink" /> قناة البريد (Resend)</p>
             <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
               فور التفعيل تصبح قناة email في الإشعارات حقيقية — قبول التسجيل والفواتير والشهادات تصل بريداً.
               غير المفعّلة تسجَّل «فشل: لا مزود» وتُعاد المحاولة تلقائياً.
             </p>
             {view.email.envSourced && (
               <p className="mt-3 rounded-xl border border-gold/30 bg-gold/5 px-3 py-2 text-[11px] font-bold text-gold-ink">
-                هذا التكامل يُدار من متغيرات البيئة (SMTP_HOST…) — الحفظ هنا لن يؤثر حتى تُزال متغيرات البيئة.
+                هذا التكامل يُدار من متغيرات البيئة (RESEND_API_KEY…) — الحفظ هنا لن يؤثر حتى تُزال متغيرات البيئة.
               </p>
             )}
             <div className="mt-4 space-y-3">
-              <div className="grid grid-cols-3 gap-2">
-                <div className="col-span-2">
-                  <label className={labelCls}>المضيف</label>
-                  <input dir="ltr" value={mailForm.host} onChange={(e) => setMailForm({ ...mailForm, host: e.target.value })}
-                    placeholder="smtp.resend.com" className={`${inputCls} mt-1 w-full font-mono`} />
-                </div>
-                <div>
-                  <label className={labelCls}>المنفذ</label>
-                  <input dir="ltr" inputMode="numeric" value={mailForm.port} onChange={(e) => setMailForm({ ...mailForm, port: Number(e.target.value) || 465 })}
-                    className={`${inputCls} mt-1 w-full font-mono`} />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className={labelCls}>المستخدم</label>
-                  <input dir="ltr" value={mailForm.user} onChange={(e) => setMailForm({ ...mailForm, user: e.target.value })}
-                    placeholder="apikey أو بريد الحساب" className={`${inputCls} mt-1 w-full font-mono`} />
-                </div>
-                <div>
-                  <label className={labelCls}>كلمة المرور — تُخزَّن ولا تُعرض كاملة</label>
-                  <input dir="ltr" type="password" value={mailForm.pass} onChange={(e) => setMailForm({ ...mailForm, pass: e.target.value })}
-                    placeholder={view.email.hasPass ? view.email.pass : "••••"} className={`${inputCls} mt-1 w-full font-mono`} />
-                </div>
+              <div>
+                <label className={labelCls}>مفتاح Resend API — يُخزَّن ولا يُعرض كاملاً أبداً</label>
+                <input dir="ltr" type="password" value={mailForm.apiKey} onChange={(e) => setMailForm({ ...mailForm, apiKey: e.target.value })}
+                  placeholder={view.email.hasApiKey ? view.email.apiKey : "re_…"} className={`${inputCls} mt-1 w-full font-mono`} />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
@@ -240,10 +219,6 @@ export default function Integrations() {
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-4">
-                <label className="flex cursor-pointer items-center gap-2 text-xs font-bold text-foreground">
-                  <input type="checkbox" checked={mailForm.secure} onChange={(e) => setMailForm({ ...mailForm, secure: e.target.checked })} className="accent-gold" />
-                  اتصال آمن TLS (المنفذ 465 عادة)
-                </label>
                 <label className="flex cursor-pointer items-center gap-2 text-xs font-bold text-foreground">
                   <input type="checkbox" checked={mailForm.enabled} onChange={(e) => setMailForm({ ...mailForm, enabled: e.target.checked })} className="accent-gold" />
                   تفعيل قناة البريد
