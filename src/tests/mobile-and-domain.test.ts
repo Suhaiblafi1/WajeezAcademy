@@ -48,7 +48,7 @@ describe("«المجال» مجالٌ معرفيّ لا فئةٌ مستهدفة"
     expect(courseDomain("C-AI-101")).toBe("الذكاء الاصطناعي");
     expect(courseDomain("C-FINM-101")).toBe("المالية والمحاسبة");
     /* وهذه هي الفئة المستهدفة — شيءٌ آخر تماما */
-    expect(pathwayCategory("PW-EMP-001")).toBe("موظفون");
+    expect(pathwayCategory("PW-EMP-001")).toBe("موظفون ومختصون");
   });
 
   it("٥) ولا عائلةَ تختفي بصمت — ما لم يُسمَّ يقع في «أخرى»", () => {

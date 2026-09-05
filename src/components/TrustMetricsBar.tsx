@@ -21,7 +21,7 @@ export default function TrustMetricsBar() {
 
   return (
     <section aria-label="وجيز مهارات بالأرقام" className="border-y border-white/5 bg-white/[0.02] py-10 md:py-12">
-      <div className="mx-auto max-w-6xl px-5">
+      <div className="mx-auto max-w-7xl px-5">
         <div className="reveal text-center">
           <h2 className="text-sm font-bold text-teal-light-ink md:text-base">وجيز مهارات بالأرقام</h2>
           <p className="mx-auto mt-2 max-w-xl text-[11px] leading-relaxed text-muted-foreground">

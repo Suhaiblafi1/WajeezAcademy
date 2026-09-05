@@ -124,7 +124,7 @@ export function PlanCourses({
   }
 
   const base = baseIds.map((id) => courseById(id)!).filter(Boolean);
-  const category = base[0]?.category ?? "أساسيات";
+  const category = base[0]?.category ?? "أفراد ومهن ناشئة";
 
   /* مقترحات: من نفس المجال أولا، وأولوية لما يعالج فجوات المستخدم */
   const pool = useMemo<CourseSuggestion[]>(() => {
