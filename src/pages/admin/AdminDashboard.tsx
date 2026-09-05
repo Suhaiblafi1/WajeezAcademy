@@ -13,6 +13,7 @@ import AdminCharts from "@/components/AdminCharts";
 import { useAutoRefresh } from "@/services/useAutoRefresh";
 import { countWindows, flowTrend, stockTrend, trendBadgeAr, type Trend } from "@/application/metrics/trend";
 import { fmtNum, fmtTime } from "@/application/text/format-ar";
+import { isLiveCohort } from "@/application/schedule/cohort-status";
 
 /* اللوحة العليا — نظرة تنفيذية من مصادر الخادم الحقيقية فقط.
    كل بطاقة تتحمل غياب الصلاحية (403) فتختفي بهدوء بدل كسر الصفحة. */
@@ -148,7 +149,7 @@ export default function AdminDashboard() {
       });
     }
     if (cohorts) {
-      const n = cohorts.filter((c) => c.status === "open" || c.status === "running" || c.status === "full").length;
+      const n = cohorts.filter((c) => isLiveCohort(c.status)).length;
       /* رقمُ لحظة بلا سجل: لا نعرف كم كانت نشطة الأسبوع الماضي، فلا نخترع اتجاها */
       out.push({
         to: "/admin/cohorts", label: "شعب نشطة الآن", value: String(n),

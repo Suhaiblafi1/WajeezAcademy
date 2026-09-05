@@ -13,6 +13,7 @@ import LearnerSearchField, { type LearnerHit } from "@/components/LearnerSearchF
 import EntityAuditTimeline from "@/components/EntityAuditTimeline";
 import { daysLabelAr, fmtDateTimeAr } from "@/utils/format";
 import { courseById } from "@/data/courses";
+import { isLiveCohort } from "@/application/schedule/cohort-status";
 
 const STATUS_META: Record<string, { label: string; cls: string }> = {
   draft: { label: "مسودة", cls: "border-white/20 text-muted-foreground" },
@@ -524,7 +525,7 @@ export default function AdminCohorts() {
                     </div>
 
                     {/* تسجيل متعلم */}
-                    {["open", "full", "active"].includes(c.status) && c.registrationOpen && (
+                    {isLiveCohort(c.status) && c.registrationOpen && (
                       <div className="rounded-2xl border border-white/8 bg-paper/20 p-4">
                         <p className="mb-3 flex items-center gap-1.5 text-xs font-black text-muted-foreground"><UserPlus className="h-3.5 w-3.5" /> تسجيل متعلم — الفائض يتحول لقائمة انتظار آليا</p>
                         <div className="flex gap-2">

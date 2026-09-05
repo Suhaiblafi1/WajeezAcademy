@@ -80,7 +80,8 @@
     "ci:csp": "tsx scripts/audit-csp.ts --check",
     "ci:bundle": "node scripts/bundle-api.mjs --check",
     "ci:migrations": "tsx scripts/audit-migrations.ts",
-    "ci:status-checks": "tsx scripts/status-checks.ts --check"
+    "ci:status-checks": "tsx scripts/status-checks.ts --check",
+    "check:authoring-files": "tsx scripts/check-authoring-files.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.2",
