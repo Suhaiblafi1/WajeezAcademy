@@ -22,10 +22,7 @@ import { join } from 'node:path'
 const ROOT = process.cwd()
 const SW = readFileSync(join(ROOT, 'public/sw.js'), 'utf8')
 const MAIN = readFileSync(join(ROOT, 'src/main.tsx'), 'utf8')
-const VERCEL = JSON.parse(readFileSync(join(ROOT, 'vercel.json'), 'utf8')) as {
-  rewrites: { source: string; destination: string }[]
-  headers: { source: string; headers: { key: string; value: string }[] }[]
-}
+const HTACCESS = readFileSync(join(ROOT, 'public/.htaccess'), 'utf8')
 const HTML = readFileSync(join(ROOT, 'index.html'), 'utf8')
 
 describe('عاملُ الخدمة موجودٌ ومسجَّل في موضعه', () => {
@@ -55,20 +52,20 @@ describe('عاملُ الخدمة موجودٌ ومسجَّل في موضعه', 
   })
 
   it('`worker-src` مُعلَنةٌ صراحةً — لا اعتمادَ على سلسلة الارتداد', () => {
-    const csp = VERCEL.headers
-      .flatMap((h) => h.headers)
-      .find((h) => h.key === 'Content-Security-Policy')
-    expect(csp?.value).toContain("worker-src 'self'")
+    const csp = /Content-Security-Policy\s+"([^"]+)"/.exec(HTACCESS)?.[1] ?? ''
+    expect(csp).toContain("worker-src 'self'")
   })
 
-  it('إعادةُ الكتابة تستثني `sw.js` — وإلّا خُدِّمت `index.html` مكانه', () => {
-    const spa = VERCEL.rewrites.find((r) => r.destination === '/index.html')
-    expect(spa?.source).toContain('sw\\.js')
+  it('`sw.js` ملفٌّ حقيقيّ فيُقدَّم كما هو — لا يقع في إعادة كتابة SPA', () => {
+    /* على Apache التمييزُ بوجود الملفّ فعلا (-f) لا باستثناء اسمٍ في قاعدة —
+       فأيّ ملفٍّ حقيقيٍّ، ومنه sw.js، يُخدَّم قبل أن يصل التحويلُ الشامل. */
+    expect(HTACCESS).toMatch(/RewriteCond %\{REQUEST_FILENAME\} -f/)
+    expect(HTACCESS).toMatch(/RewriteRule \^ - \[L\]/)
   })
 
   it('لا يُخزَّن العاملُ نفسُه طويلا — فمفتاحُ الإطفاء يصل بنشرةٍ واحدة', () => {
-    const swHeaders = VERCEL.headers.find((h) => h.source === '/sw.js')
-    expect(swHeaders?.headers[0]?.value).toContain('max-age=0')
+    const swBlock = /<FilesMatch "\^sw\\\.js\$">([\s\S]*?)<\/FilesMatch>/.exec(HTACCESS)?.[1] ?? ''
+    expect(swBlock).toContain('max-age=0')
   })
 
   it('مفتاحُ إطفاءٍ قائم — عاملٌ يُلغي تسجيلَ نفسِه ويمحو ما خزّن', () => {

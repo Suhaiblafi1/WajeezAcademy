@@ -9,6 +9,16 @@
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
+
+  # أصلٌ مفقود تحت assets/ يردّ 404 صريحا — لا index.html.
+  # بصماتُ الأصول تتغيّر مع كل بناء؛ فمتصفّحٌ بصفحةٍ مخزّنةٍ قديمة يطلب
+  # أصلا لم يعد موجودا. ولو رجع هنا index.html (200 · text/html) لرفضه
+  # المتصفّح بصرامة أنواع الوحدات لسكربتات type="module" — صفحةٌ بيضاء
+  # لا تحمّل بتاتا. والصوابُ فشلٌ فوريٌّ (404) يدفع المتصفّح لإعادة تحميل
+  # الصفحة فيجلب index.html الجديد بأصوله الجديدة.
+  RewriteCond %{REQUEST_URI} ^/assets/
+  RewriteRule ^ - [R=404,L]
+
   # وما عداها يعود للتطبيق
   RewriteRule ^ index.html [L]
 </IfModule>
@@ -20,27 +30,25 @@
   Header always set X-Frame-Options "SAMEORIGIN"
   Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
 
-  # سياسة المحتوى — لم تكن هنا إطلاقا، وكانت في vercel.json وحده.
-  # وvercel.json لا يعمل خارج Vercel، فالموقع على Apache كان بلا سياسة أصلا.
+  # سياسة المحتوى — الملف الوحيد الذي يُقرأ فعلا على Cloudways.
   #
   # وworker-src معلنة صراحة بقصد: تركُها يجعل سفاري يرتدّ في سلسلة
   # (worker-src ← child-src ← script-src) معالجتُها معروفةٌ بثقوبها عنده،
   # فيُرفض عاملُ الخدمة بلا سببٍ ظاهر. وهذا عطبٌ عولج مرّة (طلب السحب ١٢)
   # وكان سيعود مع الانتقال.
   #
-  # وscript-src هنا 'unsafe-inline' لا بصمات: البصماتُ تُحسب على كلّ بناء
-  # (scripts/audit-csp.ts) وهذا ملفٌّ ساكنٌ لا يُعاد توليدُه — فبصمةٌ ثابتةٌ
-  # هنا تبطل بأوّل تغييرٍ في index.html فتُحجب سكربتات الصفحة بصمتٍ تامّ.
-  # وهو الخيار نفسُه المتّخذ في deploy/Caddyfile للسبب نفسِه.
+  # وscript-src هنا 'unsafe-inline' لا بصمات: البصماتُ تُحسب على كلّ بناء،
+  # وهذا ملفٌّ ساكنٌ لا يُعاد توليدُه — فبصمةٌ ثابتةٌ هنا تبطل بأوّل تغييرٍ
+  # في index.html فتُحجب سكربتات الصفحة بصمتٍ تامّ.
   Header always set Content-Security-Policy "default-src 'self'; worker-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
 
   # عاملُ الخدمة لا يُخزَّن — وهذا شرطُ أن يصل مفتاحُ إطفائه.
   #
   # القاعدةُ في (3) تُخزّن كلَّ ما نوعُه application/javascript سنةً كاملة،
-  # و/sw.js منها — فيُجمَّد في متصفّح كلّ زائرٍ سنة. وvercel.json كان يستثنيه
-  # صراحةً بـmax-age=0 لهذا السبب بعينه، مكتوبا في سطره: عاملٌ معطوبٌ يُطفَأ
-  # بـDISABLED=true ونشرةٍ واحدة — وذلك مستحيلٌ إن كانت نسختُه القديمة محفوظةً
-  # في المتصفّح. والاستثناءُ يُكتب هنا لأنّ الملفّ لا يحمل بصمةَ محتوى في اسمه.
+  # و/sw.js منها — فيُجمَّد في متصفّح كلّ زائرٍ سنة. فيُستثنى صراحةً بـ
+  # max-age=0 لهذا السبب بعينه: عاملٌ معطوبٌ يُطفَأ بـDISABLED=true ونشرةٍ
+  # واحدة — وذلك مستحيلٌ إن كانت نسختُه القديمة محفوظةً في المتصفّح.
+  # والاستثناءُ يُكتب هنا لأنّ الملفّ لا يحمل بصمةَ محتوى في اسمه.
   # و`Header set` لا `always`: الأولى تكتب في جدول الاستجابات الناجحة فتُنفَّذ
   # بعد mod_expires فتستبدل قيمته، والثانية تكتب في جدولٍ آخر قد تُضاعِف
   # الترويسةَ بدل أن تحلّ محلّها. ومعها إطفاءُ Expires لهذا الملفّ وحدَه
