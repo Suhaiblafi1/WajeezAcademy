@@ -256,6 +256,9 @@ export class CartService {
     userId: string,
     cohorts: CartCohort[],
     couponCode?: string,
+    /* عملةُ السلّة — يلزم الحسابَ لأنّ سقفَ مبلغ الباقة مبلغٌ لا نسبة.
+       ويُشتقّ هنا حين لا يُمرَّر، فلا يسقط السقفُ صامتا بنسيان وسيط. */
+    currency?: string,
   ) {
     const gift = await this.giftFor(userId, new Set(cohorts.map((c) => c.courseId)))
     const coupon = await this.couponFor(userId, couponCode)
@@ -265,6 +268,7 @@ export class CartService {
       })),
       gift,
       coupon ? { percentOff: coupon.percentOff, amountOff: coupon.amountOff === null ? null : num(coupon.amountOff) } : null,
+      currency ?? this.cartCurrency(cohorts, cohorts),
     )
     return { pricing, couponId: coupon?.id, couponCode: coupon?.code ?? null }
   }

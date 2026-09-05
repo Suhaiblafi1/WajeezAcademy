@@ -10,7 +10,7 @@
 
 import { courseById } from '../../data/courses'
 import { FIRST_TIME_PROMO } from './first-time-promo'
-import { buildDiscountPct, MAX_BUILT_COURSES } from './discount-policy'
+import { buildDiscountPct, bundlePayable, MAX_BUILT_COURSES } from './discount-policy'
 
 /** أقصى ما يبلغه خصم المسار كاملا — يُعلَن «يصل إلى» لا «هو».
 
@@ -52,6 +52,66 @@ export function pathwayOffer(courseIds: readonly string[]): PathwayOffer {
     fullPrice: complete && prices.length > 0 ? prices.reduce((a, b) => a + b, 0) : null,
     firstTimePct: FIRST_TIME_PROMO.percentOff,
     bundleMaxPct: PATHWAY_BUNDLE_MAX_PCT,
+  }
+}
+
+/* ─────────── سعرُ المسار الجاهز — رقمُ الشاشة ورقمُ الفاتورة واحد ─────────── */
+
+/** سعرُ شعبةٍ كما يصل الشاشة — أو null حين لا يُعرف */
+export interface OfferPrice { amount: number; currency: string }
+export type OfferPriceOf = (courseId: string) => OfferPrice | null
+
+export interface PathwayPrice {
+  /** مجموعُ أسعار القائمة شاملا الهديّة — وهو المشطوب على الشاشة */
+  list: number
+  /** ما يُدفع فعلا: الهديّةُ مطروحة، ثمّ سلّمُ الباقة، ثمّ سقفُ المبلغ */
+  payable: number
+  /** الوفرُ نسبةً — مشتقٌّ من الرقمين لا معلَنٌ قبلهما */
+  savedPct: number
+  currency: string
+}
+
+/** سعرُ المسار الجاهز كما يُعرض وكما يُصدَر.
+
+    ولماذا هنا لا في الصفحة: كانت `Pathway.tsx` تضرب **مجموعَ الستّ** في نسبة
+    الباقة، والخادمُ يفي بالهديّة (بندٌ بصفر، والسلّمُ على المدفوع وحدَه) —
+    فتعرض الشاشةُ ٦١٨ والفاتورةُ تُصدر ٥٢٠ على مسارٍ نموذجيّ. والخطأُ في جهة
+    «أكثر»، فلا شكوى تصل ولذلك بقي؛ لكنّه يبيع العرضَ بأضعفَ ممّا هو ويجعل
+    السطرَ «وهو ما تُصدره الفاتورة» غيرَ صحيح.
+
+    فصار الحسابُ واحدا، ويحرس `pathway-price-parity` مطابقتَه لـ`priceCart`
+    على المسارات كلِّها — مطابقةً بنيةً لا باتّفاق.
+
+    و`null` حين ينقص سعرُ دورةٍ واحدة أو تختلف العملات: مجموعٌ ناقصٌ يُقرأ
+    كاملا. */
+export function readyPathwayPrice(
+  courseIds: readonly string[],
+  giftCourseId: string | null,
+  priceOf: OfferPriceOf,
+): PathwayPrice | null {
+  if (courseIds.length === 0) return null
+  let list = 0
+  let paid = 0
+  let paidCount = 0
+  let currency: string | null = null
+  for (const id of courseIds) {
+    const p = priceOf(id)
+    if (!p) return null
+    if (currency === null) currency = p.currency
+    else if (p.currency !== currency) return null
+    list += p.amount
+    if (id !== giftCourseId) {
+      paid += p.amount
+      paidCount += 1
+    }
+  }
+  if (currency === null) return null
+  const payable = bundlePayable(paid, paidCount, currency)
+  return {
+    list,
+    payable,
+    savedPct: list > 0 ? Math.round((1 - payable / list) * 100) : 0,
+    currency,
   }
 }
 

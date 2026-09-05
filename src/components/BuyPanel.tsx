@@ -81,6 +81,7 @@ interface Quote {
   listTotal: number;
   bundlePct: number;
   bundleDiscount: number;
+  capDiscount: number;
   couponDiscount: number;
   discount: number;
   total: number;
@@ -90,7 +91,10 @@ interface Quote {
 interface CheckoutResult { orderId: string }
 interface PayResult { redirectUrl?: string }
 
-const money = (n: number, c: string) => `${n.toLocaleString("en-US")} ${c}`;
+/* الكسرُ خانتان أو لا شيء — «402.5 USD» لا يُقرأ مبلغا. ونظيرتُها في
+   `cohort-prices.ts` لنفس السبب. */
+const money = (n: number, c: string) =>
+  `${n.toLocaleString("en-US", Number.isInteger(n) ? undefined : { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${c}`;
 
 /* شارةٌ قصيرةٌ لسبب الاستبعاد — والنصُّ الكاملُ من الخادم يُعرض تحتها */
 const REASON_AR: Record<string, string> = {
@@ -390,6 +394,15 @@ export default function BuyPanel({
                   <div className="flex items-center justify-between text-teal-light-ink">
                     <span>خصم الباقة — {quote.bundlePct}٪</span>
                     <span dir="ltr">−{money(quote.bundleDiscount, quote.currency)}</span>
+                  </div>
+                )}
+                {/* سقفُ سعر المسار — بندٌ باسمه لا نسبةٌ مدموجةٌ في خصم
+                    الباقة: سببان مختلفان، ودمجُهما يُخرج نسبةً (٣٣٪ · ٤١٪)
+                    لا يقابلها شيءٌ في السياسة فتُقرأ وعدا في سلّةٍ أخرى. */}
+                {quote.capDiscount > 0 && (
+                  <div className="flex items-center justify-between text-teal-light-ink">
+                    <span>حدُّ سعر المسار</span>
+                    <span dir="ltr">−{money(quote.capDiscount, quote.currency)}</span>
                   </div>
                 )}
                 {quote.couponDiscount > 0 && (

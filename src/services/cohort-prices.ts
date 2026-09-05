@@ -127,7 +127,13 @@ export function useCoursePrices(): { prices: Map<string, CoursePrice>; loaded: b
 }
 
 export function formatCohortPrice(p: { amount: number; currency: string }): string {
-  return `${p.amount.toLocaleString('en-US')} ${p.currency}`
+  /* الكسرُ يُكتب خانتين أو لا يُكتب — و«402.5 USD» لا يُقرأ مبلغا.
+     وأسعارُ القائمة أعدادٌ صحيحة، فالكسرُ لا يأتي إلا من خصمِ باقةٍ على
+     مجموعٍ فرديّ (٥٧٥ × ٧٠٪ = ٤٠٢٫٥٠) — وهو مبلغٌ يُقتطع فعلا فيُكتب كاملا. */
+  const opts = Number.isInteger(p.amount)
+    ? undefined
+    : { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+  return `${p.amount.toLocaleString('en-US', opts)} ${p.currency}`
 }
 
 /** أرخص دورة معلومة السعر في مجموعة — «تبدأ من». null حين لا سعر معلوم. */

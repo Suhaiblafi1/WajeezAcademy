@@ -269,7 +269,7 @@ export class CommerceService {
     const currency = this.cart.cartCurrency(buyable, cohorts)
     /* الباقةُ والهديّةُ والكوبونُ على المشتراة وحدَها — وهي بعينها ما
        سيُرسَل إلى `checkout`، فالمعروضُ هو المُصدَر */
-    const { pricing, couponCode: code } = await this.cart.priceFor(userId, buyable, couponCode)
+    const { pricing, couponCode: code } = await this.cart.priceFor(userId, buyable, couponCode, currency)
     const emailOk = (await this.cart.emailVerified(userId)) || !(await this.cart.emailChannelEnabled())
     return {
       currency,
@@ -285,6 +285,7 @@ export class CommerceService {
       listTotal: pricing.listTotal,
       bundlePct: pricing.bundlePct,
       bundleDiscount: pricing.bundleDiscount,
+      capDiscount: pricing.capDiscount,
       couponDiscount: pricing.couponDiscount,
       discount: pricing.discount,
       total: pricing.total,
@@ -310,7 +311,7 @@ export class CommerceService {
      هنا سجلُّ حجزِ مقعدٍ داخليّ لا خطوةَ موافقةٍ بشريّة. */
   async checkout(userId: string, cohortIds: string[], couponCode?: string) {
     const { unique, cohorts, currency } = await this.cart.validatedCart(userId, cohortIds, true)
-    const { pricing, couponId } = await this.cart.priceFor(userId, cohorts, couponCode)
+    const { pricing, couponId } = await this.cart.priceFor(userId, cohorts, couponCode, currency)
     const { subtotal, discount, total } = pricing
 
     const order = await this.prisma.$transaction(async (tx) => {

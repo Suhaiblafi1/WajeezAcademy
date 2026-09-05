@@ -38,7 +38,7 @@ import { useRealSession } from "@/services/session";
 import { usePublishedContent } from "@/services/public-content";
 import SeoHead from "@/components/SeoHead";
 import EcosystemNote from "@/components/EcosystemNote";
-import { pathwayOffer } from "@/application/commerce/pathway-offer";
+import { pathwayOffer, readyPathwayPrice } from "@/application/commerce/pathway-offer";
 import { needsAdvisorReferral } from "@/application/plan/advisor-referral";
 import { DISCOUNT_CATEGORIES } from "@/application/commerce/discount-policy";
 import { CONTACT } from "@/data/stories";
@@ -182,11 +182,21 @@ export default function PathwayPage() {
   const { prices, loaded: pricesLoaded } = useCoursePrices();
   /* سعرُ المسار كاملا — أو null إن نقص سعرُ دورةٍ واحدة، فلا مجموعَ ناقصا */
   const fullPrice = totalOf(courseIds, prices);
-  /* السعر بعد خصم الباقة — نفس النسبة (`offer.bundleMaxPct`) التي يطبّقها
-     الخادم فعلا عند الدفع (`cart-pricing.ts`)، فالرقمُ هنا هو ما يُدفع لا وعدٌ منفصل. */
-  const discountedFullPrice = fullPrice
-    ? { amount: Math.round(fullPrice.amount * (100 - offer.bundleMaxPct)) / 100, currency: fullPrice.currency }
-    : null;
+
+  /* الهديّةُ تُطرح قبل السلّم — وكانت لا تُطرح هنا.
+
+     الخادمُ يفي بالهديّة فعلا (`cart.service.ts#giftFor`): بندُها بصفر،
+     والسلّمُ على المدفوع وحدَه. وكانت هذه الشاشةُ تضرب **مجموعَ الستّ**
+     في نسبة الباقة — فتعرض على مسارٍ نموذجيّ ٦١٨ والفاتورةُ تُصدر ٥٢٠.
+
+     والخطأُ في جهة «أكثر»: نطلب على الشاشة أغلى ممّا نأخذ. فلا شكوى تصل —
+     ولذلك بقي. لكنّه يبيع عرضَنا بأضعفَ ممّا هو، ويجعل السطرَ الذي تحته
+     («وهو ما تُصدره الفاتورة») غيرَ صحيح. */
+  const pathPrice = readyPathwayPrice(courseIds, giftId, (id) => prices.get(id) ?? null);
+  const discountedFullPrice = pathPrice ? { amount: pathPrice.payable, currency: pathPrice.currency } : null;
+  /* النسبةُ المعروضةُ تُشتقّ من الرقمين لا تُعلَن قبلهما: هي وفرُ الهديّة
+     والسلّم والسقف مجتمعةً، وأكبرُ من نسبة السلّم وحدَها. */
+  const savedPct = pathPrice?.savedPct ?? 0;
 
   /* المسار الذي اعتمده تشخيصه سابقا — إن وُجد */
   const diagTopId = useMemo(() => {
@@ -651,13 +661,13 @@ export default function PathwayPage() {
                           فيكبر ويُشار إليه بنسبته في شارةٍ بجانبه. */}
                       <div className="mt-3 flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
                         <span dir="ltr" className="text-[26px] font-black leading-none text-foreground">{formatCohortPrice(discountedFullPrice)}</span>
-                        {offer.bundleMaxPct > 0 && (
+                        {savedPct > 0 && (
                           <>
                             <span dir="ltr" className="text-base font-bold text-muted-foreground line-through decoration-white/45 decoration-2">
                               {formatCohortPrice(fullPrice)}
                             </span>
                             <span className="rounded-full bg-teal/15 px-2 py-0.5 text-micro font-black text-teal-light-ink">
-                              وفّرت {offer.bundleMaxPct}٪
+                              وفّرت {savedPct}٪
                             </span>
                           </>
                         )}
