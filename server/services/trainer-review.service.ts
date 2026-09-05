@@ -244,6 +244,7 @@ export class TrainerReviewService {
      قرار بشري موثق — لا قرار آلي في هذه المنظومة. */
 
   async decide(applicationId: string, actorId: string, action:
+    | 'approve'
     | 'move_to_review' | 'request_info' | 'shortlist' | 'request_demo' | 'academic_review'
     | 'conditionally_approve' | 'waitlist' | 'reject'
     | 'start_onboarding' | 'activate' | 'reinstate', note?: string) {
@@ -256,6 +257,14 @@ export class TrainerReviewService {
     }
 
     const targets: Record<typeof action, Parameters<TrainerApplicationService['transition']>[1]> = {
+      /* ─────────── النقرةُ الواحدة ───────────
+
+         بقرار صاحب المنصّة: الاعتمادُ نقرةٌ واحدة، وما عداه يجري خارج المنصّة.
+         فـ`approve` تفعل في خطوةٍ ما كانت تفعله ثمانٍ: تُنشئ ملفَّ المدرّب،
+         وتربط حسابَه وتمنحه دورَه، وتنقله إلى «نشط»، وتُعلمه.
+
+         والسلسلةُ التفصيليّةُ باقيةٌ لمن أرادها — لم يُحذف زرٌّ واحد. */
+      approve: 'active',
       move_to_review: 'under_review',
       request_info: 'information_requested',
       shortlist: 'shortlisted',
@@ -281,8 +290,12 @@ export class TrainerReviewService {
     /* التفعيلُ يشترط حسابا: مدرّبٌ «نشط» بلا حسابٍ لا يفتح بوابتَه ولا يُسنَد
        إليه شيء، وحالتُه في الشاشة تقول غيرَ الحقيقة. ولا يُقال هذا بعد
        الضغط بل يُمنع قبله. */
-    if (action === 'activate') {
-      const profile = await this.prisma.trainerProfile.findUnique({ where: { applicationId } })
+    if (action === 'activate' || action === 'approve') {
+      /* النقرةُ الواحدة تُنشئ الملفَّ إن لم يكن — فهي تختصر «القبولَ المشروط»
+         الذي كان ينشئه. و`activate` تبقى على شرطها: ملفٌّ موجودٌ مسبقا. */
+      const profile = action === 'approve'
+        ? await this.ensureProfile(applicationId, app, actorId)
+        : await this.prisma.trainerProfile.findUnique({ where: { applicationId } })
       if (!profile) throw new AuthError('no_profile', 'لا ملف مدرب لهذا الطلب', 409)
       if (!profile.userId) {
         /* للمتقدّم حسابٌ منذ تقديمه: التفعيلُ يربطه بالملفّ ويمنحه دورَ المدرّب
@@ -319,28 +332,64 @@ export class TrainerReviewService {
 
     /* القبول المشروط ينشئ ملف المدرب — قبل الحساب وقبل الدور */
     if (action === 'conditionally_approve') {
-      await this.prisma.$transaction(async (tx) => {
-        const existing = await tx.trainerProfile.findUnique({ where: { applicationId } })
-        if (!existing) {
-          const profile = await tx.trainerProfile.create({
-            data: { applicationId, headline: app.jobTitle ?? null, bioPublic: app.bio ?? null },
-          })
-          const taskSeeds = [
-            { key: 'sign_contract', title: 'توقيع العقد' },
-            { key: 'academy_orientation', title: 'التعريف بمنهجية الأكاديمية' },
-            { key: 'lms_setup', title: 'تهيئة حساب منصة التدريب' },
-            { key: 'first_cohort_brief', title: 'موجز الشعبة الأولى' },
-          ]
-          for (const t of taskSeeds) {
-            await tx.trainerOnboardingTask.create({ data: { profileId: profile.id, key: t.key, title: t.title } })
-          }
-          await recordAudit(tx, {
-            actorId, action: 'trainer.profile.create', entityType: 'trainer_profile', entityId: profile.id,
-            meta: { applicationId },
-          })
-        }
-      })
+      await this.ensureProfile(applicationId, app, actorId)
     }
+
+    /* ولا يُعتمَد أحدٌ في صمت: النقرةُ الواحدة تُنهي المسارَ كلَّه، فلو لم
+       تُعلمه لَبقي ينتظر ردّا وصل ولا يعلم. وإخفاقُ البريد لا يُسقط الاعتماد
+       — هو حقيقةٌ في القاعدة، والرسالةُ إشعارٌ بها؛ فيُسجَّل الإخفاقُ ويُكمَل. */
+    if (action === 'approve') {
+      await this.notifyApproved(app.email, app.fullName, app.reference, actorId, applicationId)
+    }
+  }
+
+  /** ملفُّ المدرّب — يُنشأ مرّةً بمهامّ تهيئته، ويُعاد إن كان موجودا */
+  private async ensureProfile(
+    applicationId: string,
+    app: { jobTitle: string | null; bio: string | null },
+    actorId: string,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.trainerProfile.findUnique({ where: { applicationId } })
+      if (existing) return existing
+      const profile = await tx.trainerProfile.create({
+        data: { applicationId, headline: app.jobTitle ?? null, bioPublic: app.bio ?? null },
+      })
+      const taskSeeds = [
+        { key: 'sign_contract', title: 'توقيع العقد' },
+        { key: 'academy_orientation', title: 'التعريف بمنهجية الأكاديمية' },
+        { key: 'lms_setup', title: 'تهيئة حساب منصة التدريب' },
+        { key: 'first_cohort_brief', title: 'موجز الشعبة الأولى' },
+      ]
+      for (const t of taskSeeds) {
+        await tx.trainerOnboardingTask.create({ data: { profileId: profile.id, key: t.key, title: t.title } })
+      }
+      await recordAudit(tx, {
+        actorId, action: 'trainer.profile.create', entityType: 'trainer_profile', entityId: profile.id,
+        meta: { applicationId },
+      })
+      return profile
+    })
+  }
+
+  /** بريدُ الاعتماد — يُرسَل ولا يُسقط الاعتمادَ إن أخفق */
+  private async notifyApproved(
+    to: string, fullName: string, reference: string, actorId: string, applicationId: string,
+  ): Promise<void> {
+    const portalUrl = `${publicSiteUrl()}/trainer`
+    const mail = await sendDirectEmail(this.prisma, {
+      to,
+      subject: 'اعتُمدتَ مدرّبا في أكاديمية وجيز',
+      text:
+        `مرحبا ${fullName},\n\n` +
+        `اعتُمد طلبك (${reference}) — أهلا بك مدرّبا في أكاديمية وجيز.\n` +
+        `بوّابتك مفتوحة الآن بالحساب نفسه الذي تابعتَ به طلبك:\n${portalUrl}\n\n` +
+        `تجد فيها ملفَّك ومهامَّ التهيئة، وتصلك الشعبُ حين تُسنَد إليك.\n— أكاديمية وجيز`,
+    })
+    await recordAudit(this.prisma, {
+      actorId, action: 'trainer.approved.notify', entityType: 'trainer_application', entityId: applicationId,
+      meta: { sentTo: to, emailDelivery: mail.status },
+    })
   }
 
   /* ─────────── العقد ─────────── */

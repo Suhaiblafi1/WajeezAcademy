@@ -47,13 +47,21 @@ beforeAll(async () => {
   const admin = await auth.register('admin-trainer-e2e@test.local', 'Admin#12345', 'المدير الأكاديمي')
   adminId = admin.userId
   await auth.setRoles(adminId, ['academic_manager'])
-  /* قناة البريد مفعّلة بمضيف لا يستجيب: الإرسال يخفق، والبوابة تبقى قائمة —
+  /* قناة البريد مفعّلة ووجهتُها لا تستجيب: الإرسال يخفق، والبوابة تبقى قائمة —
      وهذا بالضبط ما تفحصه هذه الدورة. أما قناةٌ غير مفعّلة فلها اختبارها المستقل
-     أدناه، لأن سلوكها مختلف عمدا. */
+     أدناه، لأن سلوكها مختلف عمدا.
+
+     وكانت الإعدادات هنا بشكل SMTP (`host`/`port`)، فلمّا انتقل الإرسال إلى
+     Resend صارت القناةُ تُقرأ «غير مهيّأة» لا «تخفق» — فسقطت ثلاثةُ فحوصٍ على
+     فرقٍ في شكل الإعداد لا في السلوك المقصود. والشكلُ الآن شكلُ Resend،
+     والإخفاقُ يأتي من وجهةٍ ميّتة (`RESEND_BASE_URL`) لا من مفتاحٍ خاطئ —
+     فلا يخرج الفحصُ إلى الشبكة أصلا. */
+  process.env.RESEND_BASE_URL = 'http://127.0.0.1:1'
+  const emailConfig = { apiKey: 're_test_key', fromName: 'أكاديمية وجيز', fromEmail: 'no-reply@test.local' }
   await prisma.integrationSetting.upsert({
     where: { provider: 'email' },
-    update: { enabled: true, config: { host: '127.0.0.1', port: 1, secure: false, fromEmail: 'no-reply@test.local' } },
-    create: { provider: 'email', enabled: true, config: { host: '127.0.0.1', port: 1, secure: false, fromEmail: 'no-reply@test.local' } },
+    update: { enabled: true, config: emailConfig },
+    create: { provider: 'email', enabled: true, config: emailConfig },
   })
 }, 180_000)
 

@@ -18,6 +18,7 @@ import { TrainerDetailOps, TrainerChangeRequests, TrainerPayouts, type TrainerSu
 import ApplicationDossier, { type Dossier } from "./ApplicationDossier";
 import { fmtDateTime } from "@/application/text/format-ar";
 import ConfirmAction from "@/components/ConfirmAction";
+import { ONE_CLICK_APPROVABLE_STATUSES } from "@/application/trainer/approval";
 
 const STATUS_LABELS: Record<string, string> = {
   draft: "مسودة — لم يُكمل", email_verification_pending: "بانتظار تحقق البريد",
@@ -46,7 +47,16 @@ const RUBRIC_AXES: { key: string; label: string }[] = [
    لا يُجمَّع، ولو جُمّع لصار الاعتمادُ ختما لا مراجعة. */
 const BULK_ACTIONS = ["move_to_review", "waitlist", "reject"];
 
+/* القراران اللذان يُتَّخذان فعلا — وما عداهما توثيقٌ اختياريّ.
+
+   كان الاعتمادُ ثمانَ نقراتٍ لا تُتّخذ إلا بالترتيب، وكلُّ واحدةٍ تُنسى.
+   وبقرار صاحب المنصّة صار الاعتمادُ نقرةً واحدةً من أيّ حالة، وما عداه
+   يجري خارج المنصّة. فهذان بارزان، والسلسلةُ التفصيليّةُ خلف مطويّة —
+   لم يُحذف منها زرّ. */
+const PRIMARY_ACTIONS = ["approve", "reject"];
+
 const DECISIONS: { action: string; label: string; from: string[]; tone: "main" | "warn" | "danger" }[] = [
+  { action: "approve", label: "اعتمِدْه مدرّبا — بنقرة", from: [...ONE_CLICK_APPROVABLE_STATUSES], tone: "main" },
   { action: "move_to_review", label: "بدء المراجعة", from: ["submitted", "waitlisted"], tone: "main" },
   { action: "request_info", label: "اطلب معلومات إضافية", from: ["under_review"], tone: "warn" },
   { action: "shortlist", label: "اختصار أولي", from: ["under_review"], tone: "main" },
@@ -312,6 +322,25 @@ export default function TrainerApplications() {
   if (selected) {
     const a = selected;
     const available = DECISIONS.filter((d) => d.from.includes(a.status));
+    const primary = available.filter((d) => PRIMARY_ACTIONS.includes(d.action));
+    const detailed = available.filter((d) => !PRIMARY_ACTIONS.includes(d.action));
+    const decisionButton = (d: (typeof DECISIONS)[number]) => (
+      <button
+        key={d.action} disabled={busy}
+        onClick={() => void act(
+          () => apiPost(`/api/admin/trainer-applications/${a.id}/decision`, { action: d.action, note: note || undefined }),
+          "نُفذ القرار وسُجل في الأثر",
+        )}
+        className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-full py-2.5 text-xs font-black transition disabled:opacity-40 ${
+          d.tone === "main" ? "bg-gold text-on-gold hover:bg-gold/90"
+            : d.tone === "warn" ? "border border-gold/50 text-gold-ink hover:bg-gold/10"
+            : "border border-white/15 text-muted-foreground hover:border-red-400/40 hover:text-red-300"
+        }`}
+      >
+        {d.tone === "danger" ? <XCircle className="h-3.5 w-3.5" /> : d.action === "request_demo" ? <CalendarCheck className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+        {d.label}
+      </button>
+    );
     const rubricComplete = RUBRIC_AXES.every((x) => scores[x.key] >= 1);
     return (
       <AdminLayout title={`الطلب ${a.reference}`}>
@@ -517,24 +546,28 @@ export default function TrainerApplications() {
               <h4 className="text-sm font-black">القرار — بشري بالكامل</h4>
               <div className="mt-3 space-y-2">
                 {available.length === 0 && <p className="text-xs text-muted-foreground">لا إجراءات متاحة في هذه الحالة.</p>}
-                {available.map((d) => (
-                  <button
-                    key={d.action} disabled={busy}
-                    onClick={() => void act(
-                      () => apiPost(`/api/admin/trainer-applications/${a.id}/decision`, { action: d.action, note: note || undefined }),
-                      "نُفذ القرار وسُجل في الأثر",
-                    )}
-                    className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-full py-2.5 text-xs font-black transition disabled:opacity-40 ${
-                      d.tone === "main" ? "bg-gold text-on-gold hover:bg-gold/90"
-                        : d.tone === "warn" ? "border border-gold/50 text-gold-ink hover:bg-gold/10"
-                        : "border border-white/15 text-muted-foreground hover:border-red-400/40 hover:text-red-300"
-                    }`}
-                  >
-                    {d.tone === "danger" ? <XCircle className="h-3.5 w-3.5" /> : d.action === "request_demo" ? <CalendarCheck className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-                    {d.label}
-                  </button>
-                ))}
+                {primary.map((d) => decisionButton(d))}
+                {primary.some((d) => d.action === "approve") && (
+                  <p className="pt-0.5 text-center text-micro leading-5 text-muted-foreground">
+                    الاعتمادُ ينشئ ملفَّه، ويفتح بوّابتَه بحسابه نفسِه، ويُعلمه بالبريد.
+                  </p>
+                )}
               </div>
+
+              {/* السلسلةُ التفصيليّة — لمن أراد توثيقَ مقابلةٍ أو عقد.
+                  مطويّةٌ لا محذوفة: الطلباتُ العالقةُ في منتصفها تُكمَل منها. */}
+              {detailed.length > 0 && (
+                <details className="mt-3 rounded-2xl border border-white/10 bg-white/[0.02] p-3">
+                  <summary className="cursor-pointer text-[11.5px] font-black text-muted-foreground">
+                    خطواتٌ تفصيليّة ({detailed.length}) — اختياريّة
+                  </summary>
+                  <p className="mt-2 text-micro leading-5 text-muted-foreground">
+                    لا يلزم شيءٌ منها للاعتماد. تُستعمل حين تريد أن يبقى أثرُ المقابلة
+                    أو الدرس التجريبيّ أو العقد في سجلّ الطلب.
+                  </p>
+                  <div className="mt-3 space-y-2">{detailed.map((d) => decisionButton(d))}</div>
+                </details>
+              )}
 
               {/* للمتقدّم حسابٌ منذ تقديمه: التفعيلُ يربطه — فلا زرَّ دعوةٍ له */}
               {a.status === "onboarding" && !a.profile?.userId && a.userId && (

@@ -122,13 +122,17 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.post('/api/admin/trainer-applications/:id/decision', {
     preHandler: requirePermission('trainer.applications.decide'),
-    schema: { tags: ['admin-trainers'], summary: 'قرار بشري — من بدء المراجعة إلى التفعيل النهائي أو رفع الإيقاف' },
+    schema: { tags: ['admin-trainers'], summary: 'قرار بشري — اعتمادٌ بنقرة، أو خطوةٌ من السلسلة التفصيلية' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({
-      action: z.enum(['move_to_review', 'request_info', 'shortlist', 'request_demo', 'academic_review',
+      action: z.enum([
+        /* الاعتمادُ بنقرةٍ واحدة — يُنشئ الملفَّ ويربط الحسابَ ويمنح الدورَ
+           ويُعلم صاحبَه، من أيّ حالةٍ حيّة. وما بعده السلسلةُ التفصيليّةُ
+           لمن أرادها: لم يُحذف منها زرّ. */
+        'approve',
+        'move_to_review', 'request_info', 'shortlist', 'request_demo', 'academic_review',
         'conditionally_approve', 'waitlist', 'reject',
-        /* آخرُ السلسلة — كان مفقودا، فلا قرارَ إداريّ ينهي مسار المدرّب */
         'start_onboarding', 'activate', 'reinstate']),
       note: z.string().max(1000).optional(),
     }).parse(req.body)

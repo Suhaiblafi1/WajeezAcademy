@@ -64,6 +64,7 @@ const PHRASES: Record<string, string> = {
   'learner.enroll.manual': 'تسجيلٌ يدويٌّ لمتعلّم',
   'trainer.application.submit': 'تقديمُ طلبِ انضمامٍ للتدريب',
   'trainer.invitation.create': 'دعوةُ مدرّبٍ لإنشاء حسابه',
+  'trainer.approved.notify': 'إشعارُ مدرّبٍ باعتماده',
   'trainer.qualify': 'تأهيلُ مدرّبٍ لدورة',
   'trainer.suspend': 'إيقافُ مدرّب',
   'trainer.reinstate': 'رفعُ إيقافٍ عن مدرّب',
