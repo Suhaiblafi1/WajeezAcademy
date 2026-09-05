@@ -146,13 +146,15 @@ https://www.wajeezacademy.com/api/version
 **لا يمنح `super_admin` إلّا `super_admin`**. فقاعدةٌ بلا مديرِ نظامٍ لا سبيلَ
 إليها من الواجهة أصلا — وهذا السبيل:
 
+**والبريدُ المعتمَد بقرار صاحب المنصّة: `suhaib@wajeez.co`**
+
 ```bash
-# ١) يسجّل صاحبُ المنصّة حسابا عاديّا من الموقع ببريده
+# ١) يسجّل صاحبُ المنصّة حسابا عاديّا من الموقع بهذا البريد
 # ٢) ثمّ من الخادم — عرضٌ بلا كتابة أوّلا:
-DATABASE_URL="…" npx tsx scripts/promote-super-admin.ts suhaib@example.com
+DATABASE_URL="…" npx tsx scripts/promote-super-admin.ts suhaib@wajeez.co
 
 # ٣) وإذا صحّ ما يعرضه:
-DATABASE_URL="…" npx tsx scripts/promote-super-admin.ts suhaib@example.com --apply
+DATABASE_URL="…" npx tsx scripts/promote-super-admin.ts suhaib@wajeez.co --apply
 ```
 
 يُضيف الدورَ ولا ينزع شيئا، ويسجّل الفعلَ في سجلّ الأثر. والصلاحياتُ تُقرأ من
@@ -169,6 +171,11 @@ DATABASE_URL="…" npx tsx scripts/promote-super-admin.ts suhaib@example.com --a
 > أحدٌ ما يصله — **فحسابُ إدارةٍ عليه يعني استعادةَ كلمةِ مرورٍ لا تصل أبدا**.
 >
 > وإن أُريد بريدٌ على النطاق الجديد فليكن **بعد** أن يصير صندوقا يستقبل فعلا.
+>
+> ⚠️ **وملاحظةٌ على `wajeez.co`:** هو نطاقٌ غيرُ نطاق الموقع، والحسابُ يعمل به
+> ما دام صندوقُه يستقبل. **فإن تُرك النطاقُ أو انتهى اشتراكُه ضاعت استعادةُ
+> كلمة المرور معه** — والحسابُ لا يُفتح. فإن عُزم على تركه يوما، **يُغيَّر بريدُ
+> الحساب قبل ذلك لا بعده.**
 
 ---
 
