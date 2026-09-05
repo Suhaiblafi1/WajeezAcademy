@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   AlertTriangle,
-  CalendarClock, CalendarPlus, CheckCircle2, ChevronDown, CopyPlus, Loader2, Lock, Play, RefreshCw, Sparkles,
+  CalendarClock, CalendarPlus, CheckCircle2, ChevronDown, CopyPlus, FileText, Loader2, Lock, Play, RefreshCw, Sparkles,
   ServerOff, UserPlus, Users, Video, XCircle,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
-import { apiGet, apiPost, ApiError } from "@/services/api";
+import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
+import { areaCls } from "@/components/FormKit";
 import { CohortOps, LearningSettings } from "./CohortOps";
 import CohortReadiness from "./CohortReadiness";
 import CohortWizard from "./CohortWizard";
@@ -58,6 +59,7 @@ export default function AdminCohorts() {
   const [busy, setBusy] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [checklist, setChecklist] = useState<Record<string, Checklist>>({});
+  const [planDraft, setPlanDraft] = useState<Record<string, string>>({});
 
   /* نماذج — والإنشاءُ صار في المعالج (CohortWizard)، وسعرُ الدورة وعملتُها
      يُمرَّران إليه من الكتالوج لأنّهما ما يرثه الخادمُ فعلا. */
@@ -356,6 +358,45 @@ export default function AdminCohorts() {
                         )
                       ) : <Loader2 className="h-4 w-4 animate-spin text-muted-foreground/50" />}
                     </div>
+
+                    {/* ── خطّةُ التقديم — الشرطُ الذي لم يكن يُوفَّى من المنصّة ──
+
+                        صفوفُ خطط الشعبة كانت تُكتب في موضعٍ واحدٍ فقط: نشرُ
+                        اقتراحِ تعديلٍ من مدرّبٍ بنطاق شعبة. فالشرطُ قائمٌ ولا
+                        بابَ إليه، وكلُّ شعبةٍ يدويّةٍ عالقةٌ في المسوّدة أبدا.
+                        وتُعرض هنا لا في شاشةٍ أخرى: مكانُ الشرط مكانُ إيفائه. */}
+                    {check && !check.ready && check.missing.some((m) => m.startsWith("لا خطة تقديم")) && (
+                      <div className="rounded-2xl border border-gold/30 bg-gold/[0.05] p-4">
+                        <p className="text-xs font-black text-gold-ink">اكتب خطّةَ التقديم</p>
+                        <p className="mt-1 text-[11px] leading-6 text-muted-foreground">
+                          كيف تُقدَّم هذه الشعبة فعلا: الأيّامُ والوقتُ وطريقةُ التقديم وما يلزم المتعلّمَ إحضارُه.
+                          تُقرأ ولا تُصدَّق تلقائيّا — فاكتب ما يقع، لا ما يُشتهى.
+                        </p>
+                        <textarea
+                          value={planDraft[c.id] ?? ""}
+                          onChange={(e) => setPlanDraft((d) => ({ ...d, [c.id]: e.target.value }))}
+                          rows={3}
+                          placeholder="مثال: تقديمٌ عن بُعد عبر Zoom، الثلاثاء والخميس ٦ مساءً بتوقيت عمّان، ثماني جلسات، مع تمرينٍ تطبيقيٍّ بعد كلّ جلسة يُراجَع في التي تليها."
+                          aria-label="خطة تقديم الشعبة"
+                          className={`${areaCls} mt-2.5`}
+                        />
+                        <button
+                          type="button"
+                          disabled={busy || (planDraft[c.id] ?? "").trim().length < 20}
+                          onClick={() => act(async () => {
+                            await apiPut(`/api/admin/cohorts/${c.id}/delivery-plan`, { notesAr: (planDraft[c.id] ?? "").trim() });
+                            setPlanDraft((d) => ({ ...d, [c.id]: "" }));
+                            await loadChecklist(c.id);
+                          }, "حُفظت خطّةُ التقديم")}
+                          className="mt-2.5 flex cursor-pointer items-center gap-1.5 rounded-full bg-gold px-4 py-2 text-xs font-black text-on-gold transition hover:bg-gold/90 disabled:opacity-40"
+                        >
+                          <FileText className="h-3.5 w-3.5" /> احفظ الخطّة
+                        </button>
+                        {(planDraft[c.id] ?? "").trim().length > 0 && (planDraft[c.id] ?? "").trim().length < 20 && (
+                          <p className="mt-1.5 text-micro text-muted-foreground">٢٠ حرفا فأكثر — خطّةٌ أقصرُ لا تُقرأ.</p>
+                        )}
+                      </div>
+                    )}
 
                     {/* إجراءات الحالة */}
                     <div className="flex flex-wrap gap-2">

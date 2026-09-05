@@ -36,7 +36,17 @@ const main = async () => {
   }
 
   console.log('')
-  console.log(`دورات منشورة: ${r.publishedCourses} · ${APPLY ? 'فُتحت' : 'ستُفتح'} ${r.opened} · لها شعبةٌ أصلا ${r.alreadyLive} · مُتخطّاة ${r.skippedNoListPrice}`)
+  console.log(
+    `دورات منشورة: ${r.publishedCourses} · ${APPLY ? 'هُيّئت' : 'ستُهيّأ'} ${APPLY ? r.opened + r.prepared : r.opened}`
+    + (APPLY ? ` (فُتحت ${r.opened} · بقيت مسوّدةً ${r.prepared})` : '')
+    + ` · لها شعبةٌ أصلا ${r.alreadyLive} · مُتخطّاة ${r.skippedNoListPrice}`,
+  )
+  /* ما هُيّئ ولم يُفتح: الشرطُ الناقص يُطبع، فلا يُترك أحدٌ يظنّ أنّ الشعبةَ للبيع */
+  const blocked = r.rows.filter((x) => x.blocked?.length)
+  if (blocked.length > 0) {
+    console.log(`\nهُيّئت ولم تُفتح (${blocked.length}) — وما ينقصها:`)
+    for (const x of blocked) console.log(`  · ${x.titleAr}: ${x.blocked!.join(' — ')}`)
+  }
   if (!APPLY && r.opened > 0) console.log('لم يُكتب شيء. للتنفيذ: npx tsx scripts/open-all-cohorts.ts --apply')
 }
 

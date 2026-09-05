@@ -209,6 +209,17 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     )
   })
 
+  /* قائمةُ المدرّبين للتشغيل — بصلاحية التأهيل لا بصلاحية المستحقّات.
+
+     `‎/api/admin/trainer-profiles` وراء `trainer.compensation.manage`، وهي
+     ليست للمدير الأكاديميّ. فمن يملك التأهيلَ والإسنادَ والإيقاف كان **لا
+     يستطيع أن يرى من يؤهّله** — والمسارُ موجودٌ والشاشةُ لا تُبنى عليه.
+     وحمولةُ هذه ما يلزم القرارَ: لا مبالغَ ولا قواعدَ تعويض. */
+  app.get('/api/admin/trainers/ops', {
+    preHandler: requirePermission('trainer.qualify'),
+    schema: { tags: ['admin-trainers'], summary: 'المدرّبون وحالاتُهم التشغيلية — تأهيلا وإسنادا وظهورا' },
+  }, async () => review.listForOps())
+
   app.get('/api/admin/qualification-requests', {
     preHandler: requirePermission('trainer.qualify'),
     schema: { tags: ['admin-trainers'], summary: 'طلبات التأهيل المعلّقة — بانتظار قرار المدير الأكاديميّ' },

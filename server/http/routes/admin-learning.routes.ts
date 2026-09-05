@@ -66,6 +66,31 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     return alignCohortPrices(prisma, { apply: b.apply === true, actorId: req.auth!.userId })
   })
 
+  /* خطّةُ التقديم — الشرطُ الذي لم يكن يُوفَّى من المنصّة.
+
+     صفوفُ `CohortDeliveryPlan` كانت تُكتب في موضعٍ واحدٍ فقط: نشرُ اقتراحِ
+     تعديلٍ من مدرّبٍ بنطاق شعبة. فكلُّ شعبةٍ يدويّةٍ عالقةٌ في المسوّدة أبدا،
+     لأنّ الشرطَ قائمٌ ولا بابَ إليه. */
+  app.get('/api/admin/cohorts/:cohortId/delivery-plans', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-learning'], summary: 'خطط تقديم الشعبة — الأساسية وما جاء من اقتراحات المدربين' },
+  }, async (req) => {
+    const { cohortId } = z.object({ cohortId: z.string().uuid() }).parse(req.params)
+    return cohorts.deliveryPlans(cohortId)
+  })
+
+  app.put('/api/admin/cohorts/:cohortId/delivery-plan', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-learning'], summary: 'كتابة خطة التقديم الأساسية — أحد شروط فتح الشعبة' },
+  }, async (req) => {
+    const { cohortId } = z.object({ cohortId: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      notesAr: z.string().min(1).max(4000),
+      deliveryMode: z.string().max(40).optional(),
+    }).parse(req.body)
+    return cohorts.setDeliveryPlan(cohortId, req.auth!.userId, body)
+  })
+
   app.post('/api/admin/cohorts', {
     preHandler: requirePermission('cohort.manage'),
     schema: { tags: ['admin-learning'], summary: 'إنشاء شعبة — مسودة حتى تكتمل شروط الفتح' },

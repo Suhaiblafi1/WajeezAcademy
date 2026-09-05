@@ -15,21 +15,35 @@
 import type { PrismaClient } from '@prisma/client'
 import { recordAudit } from './audit'
 import { safeNotify } from './notification.service'
+import { CohortService } from './cohort.service'
 
 export const DEFAULT_WEEKS_AHEAD = 6
 export const DEFAULT_CAPACITY = 20
+/** أسابيعُ الجلسات المولَّدة مع الشعبة — تُحرَّر من بطاقتها بعدُ */
+export const DEFAULT_SESSION_WEEKS = 6
 
 /** حالاتُ شعبةٍ تُعدّ «حيّة» فلا تُفتح لها أخرى */
 const LIVE = ['open', 'full', 'active']
 
+/* حالاتٌ تعني «لهذه الدورة شعبةٌ قائمةٌ فلا تُنشأ ثانية».
+
+   كانت الشعبةُ تُنشأ مفتوحةً، فكفى فحصُ `LIVE` لمنع التكرار. ولمّا صارت
+   تُنشأ مسوّدةً (تنتظر مدرّبا) خرجت المسوّدةُ من الفحص — فكلُّ نداءٍ ثانٍ
+   يُنشئ نسخةً أخرى، وتتراكم المسوّداتُ بعدد الضغطات. فالمسوّدةُ تُعدّ قائمة:
+   هي شعبةٌ تنتظر شرطا، لا فراغٌ يُملأ. */
+const EXISTING = [...LIVE, 'draft']
+
 export interface OpenCohortsResult {
   applied: boolean
   publishedCourses: number
+  /** شعبٌ أُنشئت **وفُتحت** فعلا — استوفت شروط الفتح الستّة */
   opened: number
+  /** شعبٌ أُنشئت وبقيت مسوّدةً لأنّ شرطا نقص — والسببُ في صفّها */
+  prepared: number
   alreadyLive: number
   skippedNoListPrice: number
   startsAt: string
-  rows: { courseId: string; titleAr: string; price: number; currency: string; reason?: string }[]
+  rows: { courseId: string; titleAr: string; price: number; currency: string; reason?: string; blocked?: string[] }[]
 }
 
 export interface AlignPricesResult {
@@ -96,10 +110,26 @@ export async function notifyPlanWaiters(
 }
 
 /**
- * يفتح شعبةً لكلّ دورةٍ منشورة لا شعبةَ حيّةَ لها.
+ * يهيّئ شعبةً لكلّ دورةٍ منشورة لا شعبةَ حيّةَ لها، **ويفتح ما استوفى شروطَه**.
  *
  * ولا تُفتح دورةٌ بلا سعرِ قائمة: فتحُها يوجب اختلاق سعر، والسعرُ المختلَق
  * أسوأ من غياب السعر — لأنّ الأوّل يُطالَب به في الفاتورة.
+ *
+ * ── ولماذا لم يعد يفتح كلَّ شيء ──
+ *
+ * كان يُنشئ الصفَّ بـ`status: 'open'` و`registrationOpen: true` **مباشرةً**،
+ * فيتخطّى شروطَ الفتح الستّة كلَّها (`CohortService.openChecklist`). والنتيجةُ
+ * أنّ زرّا واحدا يفتح للبيع **شعبا بلا مدرّبٍ ولا جدولٍ ولا خطّةِ تقديم** —
+ * فيدفع متعلّمٌ ثمنَ مقعدٍ لا أحدَ يدرّس فيه ولا موعدَ له. وهو أسوأُ ما قد
+ * يفعله زرٌّ في هذه المنصّة: لا يفشل، ولا يشتكي أحد، حتّى يأتي أوّلُ موعد.
+ *
+ * فصار يهيّئ ما يستطيع تهيئتَه: يُنشئ الشعبةَ مسوّدةً بسعرها وسعتها، **ويولّد
+ * جلساتِها** من نمطها، **ويكتب خطّةَ تقديمٍ أساسيّة** — ثمّ يستدعي `open()`
+ * نفسَها التي يستدعيها الزرُّ المفرد. فما استوفى فُتح، وما نقصه شيءٌ بقي
+ * مسوّدةً **ونقصُه مكتوبٌ في صفّه** لا مخفيّا.
+ *
+ * والباقي في الغالب مدرّب — وهو ما لا يُختلق: يُسنَد من شاشة «التأهيل
+ * والإسناد».
  */
 export async function openAllCohorts(
   prisma: PrismaClient,
@@ -112,7 +142,7 @@ export async function openAllCohorts(
     where: { status: 'published' },
     include: {
       versions: { orderBy: { version: 'desc' }, take: 1 },
-      cohorts: { select: { id: true, status: true, registrationOpen: true } },
+      cohorts: { select: { id: true, status: true } },
     },
     orderBy: { id: 'asc' },
   })
@@ -121,11 +151,12 @@ export async function openAllCohorts(
   startsAt.setUTCHours(15, 0, 0, 0) /* ١٨:٠٠ بتوقيت عمّان */
 
   const rows: OpenCohortsResult['rows'] = []
-  let opened = 0, alreadyLive = 0, skippedNoListPrice = 0
+  let opened = 0, prepared = 0, alreadyLive = 0, skippedNoListPrice = 0
+  const service = new CohortService(prisma)
 
   for (const c of courses) {
-    const live = c.cohorts.some((h) => LIVE.includes(h.status) && h.registrationOpen)
-    if (live) { alreadyLive++; continue }
+    const exists = c.cohorts.some((h) => EXISTING.includes(h.status))
+    if (exists) { alreadyLive++; continue }
     if (c.listPrice === null) {
       skippedNoListPrice++
       rows.push({ courseId: c.id, titleAr: c.versions[0]?.titleAr ?? c.id, price: 0, currency: '—', reason: 'بلا سعر قائمة — لا تُفتح بسعرٍ مُختلَق' })
@@ -134,32 +165,55 @@ export async function openAllCohorts(
     const titleAr = c.versions[0]?.titleAr ?? c.id
     const price = Number(c.listPrice)
     const currency = c.listCurrency ?? 'USD'
-    rows.push({ courseId: c.id, titleAr, price, currency })
-    if (opts.apply) {
-      await prisma.cohort.create({
-        data: {
-          courseId: c.id, title: `${titleAr} — الدفعة الأولى`, status: 'open', startsAt,
-          daysOfWeek: ['tue', 'thu'], startTime: '18:00', timezone: 'Asia/Amman',
-          capacity, price, currency, language: 'العربية', deliveryMode: 'remote',
-          registrationOpen: true, financialReady: true,
-        },
-      })
+    const row: OpenCohortsResult['rows'][number] = { courseId: c.id, titleAr, price, currency }
+    rows.push(row)
+    if (!opts.apply) { opened++; continue }
+
+    const cohort = await prisma.cohort.create({
+      data: {
+        /* مسوّدةٌ حتّى تستوفي شروطَها — والفتحُ أدناه بالبوّابة نفسِها */
+        courseId: c.id, title: `${titleAr} — الدفعة الأولى`, status: 'draft', startsAt,
+        daysOfWeek: ['tue', 'thu'], startTime: '18:00', timezone: 'Asia/Amman',
+        capacity, price, currency, language: 'العربية', deliveryMode: 'remote',
+        registrationOpen: false, financialReady: true,
+      },
+    })
+
+    /* جلساتٌ من نمط الشعبة، وخطّةُ تقديمٍ أساسيّة — شرطان من الستّة يُوفَّيان
+       هنا بلا اختلاق: النمطُ معلَنٌ في الصفّ نفسِه، والخطّةُ تصف ما يقع فعلا. */
+    const actor = opts.actorId ?? null
+    await service.generateSessions(actor, cohort.id, {
+      weeks: DEFAULT_SESSION_WEEKS, apply: true,
+    }).catch(() => undefined)
+    await service.setDeliveryPlan(cohort.id, actor, {
+      notesAr: `تقديمٌ عن بُعد بجلساتٍ أسبوعيّةٍ يومَي الثلاثاء والخميس ٦ مساءً بتوقيت عمّان، ${DEFAULT_SESSION_WEEKS} أسابيع. خطّةٌ أساسيّةٌ أُنشئت مع الشعبة، وتُحرَّر من بطاقتها.`,
+      deliveryMode: 'remote',
+    }).catch(() => undefined)
+
+    /* البوّابةُ نفسُها التي يمرّ بها الزرُّ المفرد — لا بابَ خلفيّ */
+    const check = await service.openChecklist(cohort.id)
+    if (check.ready) {
+      await service.open(cohort.id, actor)
+      opened++
+    } else {
+      row.blocked = check.missing
+      prepared++
     }
-    opened++
   }
 
   if (opts.apply && opened > 0) {
     await recordAudit(prisma, {
       actorId: opts.actorId ?? null, action: 'catalog.cohorts.open_all',
       entityType: 'catalog', entityId: 'all',
-      meta: { opened, alreadyLive, skippedNoListPrice, weeks, capacity },
+      meta: { opened, prepared, alreadyLive, skippedNoListPrice, weeks, capacity },
     })
-    /* من انتظر يُعلَم — وإلّا بقي الوعد في الشاشة بلا منفّذ */
-    await notifyPlanWaiters(prisma, rows.filter((r) => !r.reason).map((r) => r.courseId))
+    /* من انتظر يُعلَم — **بما فُتح فعلا** لا بما هُيّئ.
+       إشعارُ منتظرٍ بشعبةٍ مسوّدةٍ يرسله إلى صفحةٍ لا زرَّ شراءٍ فيها. */
+    await notifyPlanWaiters(prisma, rows.filter((r) => !r.reason && !r.blocked).map((r) => r.courseId))
   }
 
   return {
-    applied: opts.apply, publishedCourses: courses.length, opened, alreadyLive,
+    applied: opts.apply, publishedCourses: courses.length, opened, prepared, alreadyLive,
     skippedNoListPrice, startsAt: startsAt.toISOString(), rows,
   }
 }

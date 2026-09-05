@@ -32,9 +32,18 @@ beforeAll(async () => {
   const u = await auth.register(`planner-${STAMP}@test.local`, 'Planner#12345', 'learner')
   userId = u.userId
 
-  /* قاعدةُ الاختبار تُبنى بلا شعب — تُفتح كما تُفتح في الإنتاج، بالخدمة
-     نفسِها لا ببذرٍ خاصّ، كي يكون ما يُختبَر هو الواقع. */
+  /* قاعدةُ الاختبار تُبنى بلا شعب — تُهيَّأ بالخدمة نفسِها لا ببذرٍ خاصّ،
+     كي تكون الشعبُ كشعب الإنتاج بأسعارها وجلساتها.
+
+     ثمّ تُفتح **بذرا صريحا**: هذا الملفُّ موضوعُه خياراتُ خطّة المتعلّم، لا
+     بوّابةُ فتح الشعبة. والبوّابةُ تشترط مدرّبا مؤهَّلا (وهو صواب، ويحرسه
+     `cohort-open-gate.test.ts`)، فبناءُ مدرّبٍ كاملٍ هنا يجعل الفحصَ يفشل
+     لسببٍ لا علاقةَ له بما يقيسه. */
   await openAllCohorts(prisma, { apply: true })
+  await prisma.cohort.updateMany({
+    where: { status: 'draft' },
+    data: { status: 'open', registrationOpen: true },
+  })
 
   /* دوراتٌ لها شعبةٌ مفتوحة، وأخرى بلا — من الواقع لا مُختلَقة */
   const open = await prisma.cohort.findMany({

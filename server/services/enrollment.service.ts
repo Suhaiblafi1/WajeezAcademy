@@ -21,8 +21,25 @@ export class EnrollmentService {
     if (!['open', 'full', 'active'].includes(cohort.status) || !cohort.registrationOpen) {
       throw new AuthError('closed', 'التسجيل في هذه الشعبة غير مفتوح', 409)
     }
+    /* حالاتُ الحساب التي يجوز التسجيلُ فيها.
+
+       كان الشرطُ `status !== 'active'` فيرفض، فكان **المتعلّمُ المدعوُّ لا
+       يمكن تسجيلُه أبدا**: الإداريُّ ينشئ له حسابا (فيصير `invited` حتّى يقبل
+       الدعوةَ ويضع كلمتَه) ثمّ يحاول وضعَه في شعبةٍ فيُردّ بـ«المستخدم غير
+       موجود أو موقوف» — وهو موجودٌ وليس موقوفا. فبقي المسارُ الوحيدُ أن يسجّل
+       الطالبُ نفسَه، وهو نقيضُ الغاية من إنشاء الحساب له.
+
+       والمقعدُ يُحجَز قبل أوّل دخوله عمدا: يقبل دعوتَه فيجد شعبتَه في
+       انتظاره، لا شاشةً فارغةً ورسالةً ثانيةً تُطلب.
+
+       و`suspended` و`archived` تبقيان مرفوضتين — والرسالةُ تقول أيَّهما وقع
+       بدل أن تجمعهما في «غير موجود أو موقوف». */
+    const ENROLLABLE_STATUSES = ['active', 'invited']
     const user = await this.prisma.user.findUnique({ where: { id: userId }, include: { roles: true } })
-    if (!user || user.status !== 'active') throw new AuthError('unknown_user', 'المستخدم غير موجود أو موقوف', 404)
+    if (!user) throw new AuthError('unknown_user', 'المستخدم غير موجود', 404)
+    if (!ENROLLABLE_STATUSES.includes(user.status)) {
+      throw new AuthError('unknown_user', `لا يُسجَّل حسابٌ حالتُه «${user.status}» — ارفع الإيقافَ أوّلا`, 409)
+    }
 
     const existing = await this.prisma.enrollment.findUnique({ where: { cohortId_userId: { cohortId, userId } } })
     if (existing && existing.status !== 'dropped') throw new AuthError('already_enrolled', 'المتعلم مسجل في هذه الشعبة مسبقا', 409)
