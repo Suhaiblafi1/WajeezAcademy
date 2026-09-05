@@ -147,7 +147,7 @@ export function Bestsellers() {
        رأى شاشةً فارغةً نصفَها. والترويسةُ ٦٤ بكسلا وحدها، فـ`scroll-mt-20`
        يكفي لتجاوزها، والحشوُ العلويّ يصير نصفَه. */
     <section id="bestsellers" className="scroll-mt-20 pb-20 pt-10 md:pb-24 md:pt-14">
-      <div className="mx-auto max-w-6xl px-5">
+      <div className="mx-auto max-w-7xl px-5">
         <div className="reveal flex flex-wrap items-end justify-between gap-4">
           <div>
             <SectionLabel>مختارات وجيز</SectionLabel>
@@ -166,7 +166,7 @@ export function Bestsellers() {
 
       {/* البطاقة المميزة — اختيار وجيز الأول في هذا المجال */}
       {spotlight && (
-        <div className="mx-auto max-w-6xl px-5">
+        <div className="mx-auto max-w-7xl px-5">
           <div className="reveal relative mt-8">
           <Link
             to={`/pathways/${spotlight.id}`}
@@ -214,7 +214,7 @@ export function Bestsellers() {
       <p className="sr-only" aria-live="polite">
         {`يعرض ${railPathways.length} ${railPathways.length === 1 ? 'مسارا' : 'مسارات'} — اسحب بإصبعك أو استخدم أسهم لوحة المفاتيح للتنقل بينها`}
       </p>
-      <div className="mx-auto max-w-6xl px-5">
+      <div className="mx-auto max-w-7xl px-5">
       <div
         ref={pwRailRef}
         role="region"
@@ -302,7 +302,7 @@ export function Bestsellers() {
       </div>
 
       {/* راويل الدورات المختارة */}
-      <div id="top-courses" className="mx-auto mt-12 max-w-6xl scroll-mt-24 px-5">
+      <div id="top-courses" className="mx-auto mt-12 max-w-7xl scroll-mt-24 px-5">
         <div className="reveal flex flex-wrap items-end justify-between gap-4">
           <div>
             <h3 className="flex items-center gap-2 text-2xl font-bold">
@@ -322,7 +322,7 @@ export function Bestsellers() {
       <p className="sr-only" aria-live="polite">
         {`يعرض ${shownCourses.length} ${shownCourses.length === 1 ? 'دورة' : 'دورات'} — اسحب بإصبعك أو استخدم أسهم لوحة المفاتيح للتنقل بينها`}
       </p>
-      <div className="mx-auto max-w-6xl px-5">
+      <div className="mx-auto max-w-7xl px-5">
       <div
         ref={crRailRef}
         role="region"
@@ -372,7 +372,7 @@ export function Bestsellers() {
         </button>
       </div>
       </div>
-      <div className="mx-auto mt-10 flex max-w-6xl flex-wrap items-center justify-center gap-3 px-5">
+      <div className="mx-auto mt-10 flex max-w-7xl flex-wrap items-center justify-center gap-3 px-5">
         <Link
           to="/pathways"
           className="inline-flex items-center gap-2 rounded-2xl border border-teal/40 px-6 py-3 text-sm font-bold text-teal-light-ink transition hover:bg-teal-deep hover:text-white"
