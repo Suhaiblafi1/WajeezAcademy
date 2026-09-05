@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { ArrowLeft, BookOpen, Flame, Route, Search, SlidersHorizontal, Target } from 'lucide-react'
-import { bestsellers, pathways } from '@/data/pathways'
+import { bestsellers, pathwayDomain, pathwayDomains, pathways } from '@/data/pathways'
 import { bestsellerCourses, courseCategories, courses, pathwaySizeAr } from '@/data/courses'
 import FavoriteButton from '@/components/FavoriteButton'
 import SiteShell from '@/components/SiteShell'
@@ -10,12 +10,6 @@ import CourseTitle from "@/components/CourseTitle";
 import { track } from '@/services/analytics'
 import { usePublishedContent } from '@/services/public-content'
 
-/* ───────────────── تصنيف المسار من عائلته ───────────────── */
-const PW_CATEGORY: Record<string, string> = {
-  FND: 'أساسيات', STU: 'طلاب ومهنة', CAREER: 'طلاب ومهنة', EMP: 'موظفون',
-  GOV: 'حكومي', BIZ: 'أعمال', FREE: 'أعمال', LEAD: 'قيادة', FAM: 'أسرة ورفاه', WELL: 'أسرة ورفاه',
-}
-const pwCategory = (id: string) => PW_CATEGORY[id.split('-')[1]] ?? 'أساسيات'
 const LEVELS = ['الكل', 'أساسي', 'متوسط', 'متقدم'] as const
 /* البند ع-١: كانت هذه المجموعتان تُحسبان في نطاق الوحدة — لقطة وقت الاستيراد.
    بعد جعل الكتالوج المضمن كسولا صارت البيانات تصل لاحقا، فلا بد أن تُحسبا
@@ -64,7 +58,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
   const shownPathways = useMemo(() => {
     let list = pathways.filter(
       (p) =>
-        (cat === 'الكل' || pwCategory(p.id) === cat) &&
+        (cat === 'الكل' || pathwayDomain(p.id) === cat) &&
         (level === 'الكل' || p.level === level) &&
         (!q || p.name.includes(q) || p.coreSkills.some((s) => s.includes(q)))
     )
@@ -149,9 +143,9 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
         </label>
       </div>
 
-      {/* فلاتر المجال والمستوى */}
-      <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="تصفية حسب المجال">
-        {courseCategories.map((c) => (
+      {/* فلاتر المجال (مسارات) أو الفئة (دورات) والمستوى */}
+      <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label={isPathways ? 'تصفية حسب المجال' : 'تصفية حسب الفئة'}>
+        {(isPathways ? pathwayDomains : courseCategories).map((c) => (
           <button
             key={c}
             onClick={() => patch('cat', c)}
@@ -211,7 +205,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
                     من مختارات وجيز
                   </span>
                 )}
-                <span className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-muted-foreground">{pwCategory(p.id)}</span>
+                <span className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-muted-foreground">{pathwayDomain(p.id)}</span>
                 <span className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-muted-foreground">{p.level}</span>
                 <FavoriteButton pathwayId={p.id} pathwayName={p.name} className="-ms-1 ms-auto" />
               </div>

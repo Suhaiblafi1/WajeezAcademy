@@ -20,7 +20,7 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import '../setup-catalog'
 import { courses, courseCategories } from '../../data/courses'
-import { pathways, pathwayCategory } from '../../data/pathways'
+import { pathways, pathwayDomain } from '../../data/pathways'
 
 const SOURCE = readFileSync(new URL('../../pages/Catalog.tsx', import.meta.url), 'utf8')
 
@@ -41,7 +41,7 @@ describe('المرشِّحُ الافتراضيُّ في التصفّح', () => 
 
   /** المُسنَدُ نفسُه المستعمَلُ في `Catalog.tsx` — يُعاد هنا ليُقاس أثرُه */
   const shownCourses = (cat: string) => courses.filter((c) => cat === 'الكل' || c.category === cat)
-  const shownPathways = (cat: string) => pathways.filter((c) => cat === 'الكل' || pathwayCategory(c.id) === cat)
+  const shownPathways = (cat: string) => pathways.filter((c) => cat === 'الكل' || pathwayDomain(c.id) === cat)
 
   it('الافتراضيُّ لا يُخفي دورةً ولا مسارا', () => {
     expect(courses.length).toBeGreaterThan(0)

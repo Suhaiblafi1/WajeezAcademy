@@ -240,18 +240,6 @@ function Hero() {
             يبدأ بفهم هدفك.
           </span>
         </h1>
-        {/* الإثباتُ سطرٌ واحد لا ثلاثُ شارات.
-
-            الشاراتُ المحاطةُ بحدودٍ وخلفيّةٍ تُقرأ عناصرَ واجهةٍ لها وزنُها، وهي
-            هنا تعيد قولَ ما قاله العنوانُ فوقها («نقرأ هدفك» ≈ «يبدأ بفهم هدفك»).
-            فصارت سطرا نصّيّا بفواصل: المعنى باقٍ كاملا، والوزنُ البصريّ ذاهب. */}
-        <p className="reveal is-visible mx-auto mt-3.5 flex max-w-xl flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[12.5px] leading-7 text-muted-foreground">
-          <span>نقرأ هدفك</span>
-          <span aria-hidden="true" className="text-teal-light-ink/45">·</span>
-          <span>وقتك المتاح</span>
-          <span aria-hidden="true" className="text-teal-light-ink/45">·</span>
-          <span>فجواتك الأقرب</span>
-        </p>
         <div className="reveal is-visible mt-11 flex flex-col items-center justify-center">
           <a
             href="#diagnostic"
@@ -1042,6 +1030,9 @@ function Footer() {
             صُنع بعناية — الفهم قبل البيع
           </div>
         </div>
+        {/* تعريف المنظومة — انتقل إلى هنا من أسفل الصدر مباشرة: سطر هوية
+            ثانوي لا يستحق مكانا في أول ما تراه العين بعد الهيرو. */}
+        <EcosystemNote className="mt-3" />
       </div>
     </footer>
   )
@@ -1151,12 +1142,6 @@ export default function Home() {
       <Nav />
       <div>
         <Hero />
-        {/* تعريف المنظومة — أسفل الصدر، ومنفصلٌ عنه بفراغٍ يُرى.
-
-            كان `mt-1` (٤px) فوق حشوِ الصدر السفليّ، فيُقرأ سطرَه السابع لا سطرَ
-            هويّةٍ مستقلّا — وهو أحدُ ما جعل الصدرَ يبدو مزدحما. والفصلُ الآن
-            ٤٠px مقابل ١٢–١٤ داخل مجموعات الصدر، فيقع خارجَها بوضوح. */}
-        <EcosystemNote className="mt-10 pb-7 md:mt-8 md:pb-5" />
         <DiagnosticTeaser />
         <HowItWorks />
         {/* شريط الثقة — أرقام وجيز مهارات الموثقة فقط، بعد شرح الرحلة (مصدر مركزي: data/trustMetrics) */}

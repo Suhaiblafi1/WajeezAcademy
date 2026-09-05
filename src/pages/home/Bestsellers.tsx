@@ -10,7 +10,7 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react"
 import { Link } from "react-router"
 import { ArrowLeft, BookOpen, ChevronDown, ChevronLeft, ChevronRight, Compass, Flame, Route, Target } from "lucide-react"
-import { bestsellers, pathwayById, pathwayCategory } from "@/data/pathways"
+import { bestsellers, pathwayById, pathwayDomain } from "@/data/pathways"
 import { getCatalogVersion, onCoreCatalogInstalled } from "@/data/core-catalog-source"
 import { bestsellerCourses, courseById, pathwaySizeAr } from "@/data/courses"
 import { track } from "@/services/analytics"
@@ -121,12 +121,12 @@ export function Bestsellers() {
     for (const c of items) m.set(c, (m.get(c) ?? 0) + 1)
     return [...m.entries()].sort((a, b) => b[1] - a[1])
   }
-  const pwCounts = useMemo(() => countBy(allPathways.map((b) => pathwayCategory(b.p.id))), [allPathways])
+  const pwCounts = useMemo(() => countBy(allPathways.map((b) => pathwayDomain(b.p.id))), [allPathways])
   const crCounts = useMemo(() => countBy(allCourses.map((b) => b.c.category)), [allCourses])
 
   /* الرئيسية تعرض كل المختارات — الشرائط قابلة للتمرير أفقيا */
   const shownPathways = allPathways
-    .filter((b) => pwCat === 'الكل' || pathwayCategory(b.p.id) === pwCat)
+    .filter((b) => pwCat === 'الكل' || pathwayDomain(b.p.id) === pwCat)
   const shownCourses = allCourses
     .filter((b) => crCat === 'الكل' || b.c.category === crCat)
   const spotlight = shownPathways[0]
