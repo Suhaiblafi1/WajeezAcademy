@@ -43,9 +43,14 @@ function killStaleApi(): void {
    عنوان لا يستجيب، ومعاينةُ رابطٍ يُشارَك تفشل.
 
    الترتيب: VITE_SITE_ORIGIN إن ضُبط، ثم نطاق إنتاج Vercel (يوفّره البناء
-   نفسه)، ثم النطاق النهائي. ولا يُترك %VITE_SITE_ORIGIN% حرفيا في أي حال —
-   وسمٌ نصفُ مستبدَل أسوأ من نطاق خاطئ. */
-const CANONICAL_ORIGIN = "https://academy.wajeez.com"
+   نفسه)، ثم النطاق الحيّ. ولا يُترك %VITE_SITE_ORIGIN% حرفيا في أي حال —
+   وسمٌ نصفُ مستبدَل أسوأ من نطاق خاطئ.
+
+   والقيمةُ مكرّرةٌ هنا عمدا: هذا الملفّ يعمل في Node قبل أن تُترجَم شيفرةُ
+   التطبيق، فلا يستورد من `src/`. ولذلك يحرس `src/tests/site-origin.test.ts`
+   تطابقَها مع `CANONICAL_ORIGIN` هناك — فقد افترقتا فعلا يوم انتقل الموقع
+   إلى نطاقه الحيّ، وبقي البناءُ يطبع النطاقَ القديم في كلّ وسمٍ ساكن. */
+const CANONICAL_ORIGIN = "https://www.wajeezacademy.com"
 function siteOriginHtml(): Plugin {
   const origin = (
     process.env.VITE_SITE_ORIGIN ||
@@ -53,7 +58,7 @@ function siteOriginHtml(): Plugin {
     CANONICAL_ORIGIN
   ).replace(/\/+$/, "")
   if (!/^https?:\/\/[^/\s]+$/.test(origin)) {
-    throw new Error(`VITE_SITE_ORIGIN غير صالح: «${origin}» — يُتوقع أصل مطلق بلا مسار، مثل https://academy.wajeez.com`)
+    throw new Error(`VITE_SITE_ORIGIN غير صالح: «${origin}» — يُتوقع أصل مطلق بلا مسار، مثل https://www.wajeezacademy.com`)
   }
   return {
     name: "wajeez-site-origin",

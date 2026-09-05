@@ -22,9 +22,25 @@ const TEMPLATED = ['index.html', 'public/sitemap.xml', 'public/robots.txt']
 
 describe('الأصل القانوني للموقع', () => {
   it('النطاق النهائي معلن مرة واحدة في وحدته', () => {
-    expect(CANONICAL_ORIGIN).toBe('https://academy.wajeez.com')
+    expect(CANONICAL_ORIGIN).toBe('https://www.wajeezacademy.com')
     /* بلا شرطة مائلة في الذيل: كل استعمال يضيف المسار بنفسه */
     expect(CANONICAL_ORIGIN.endsWith('/')).toBe(false)
+  })
+
+  /* والنسخةُ الثانية من الثابت — تلك التي أفلتت.
+
+     `vite.config.ts` يعمل في Node قبل ترجمة شيفرة التطبيق فلا يستورد من
+     `src/`، فالقيمة مكتوبةٌ فيه مرّةً ثانية. وكان الحارسُ يغطّي الملفّات
+     الساكنة الثلاثة ولا يغطّي ملفّ البناء — فحين انتقل الموقع إلى نطاقه
+     الحيّ تغيّر أحدُ المصدرين وبقي الآخر، وظلّ البناءُ يطبع النطاقَ القديم
+     في canonical وog:url وخريطة الموقع وrobots، وكلُّ الاختبارات خضراء.
+
+     فالمقيسُ هنا التطابقُ لا القيمة: أيُّ نطاقٍ أرادوه، يكفي أن يكون واحدا. */
+  it('ونسخةُ ملفّ البناء تطابق المصدر — فلا يفترقان ثانية', () => {
+    const vite = read('vite.config.ts')
+    const m = vite.match(/const CANONICAL_ORIGIN = "([^"]+)"/)
+    expect(m, 'vite.config.ts يعلن CANONICAL_ORIGIN').not.toBeNull()
+    expect(m![1]).toBe(CANONICAL_ORIGIN)
   })
 
   it('الملفات الساكنة تحمل العلامة لا النطاق', () => {
@@ -36,7 +52,8 @@ describe('الأصل القانوني للموقع', () => {
         .split('\n')
         .filter((l) => !/^\s*(<!--|#|\/\/)/.test(l) && !l.includes('لا تكتب نطاقا'))
         .join('\n')
-      expect(live, `${f} يكتب النطاق حرفا`).not.toContain('academy.wajeez.com')
+      expect(live, `${f} يكتب النطاق حرفا`).not.toContain('wajeezacademy.com')
+      expect(live, `${f} يحمل نطاقا مهجورا`).not.toContain('academy.wajeez.com')
     }
   })
 
