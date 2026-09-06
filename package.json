@@ -79,8 +79,6 @@
     "library:check": "tsx scripts/sync-wajeez-library.ts --check",
     "ci:authoring": "tsx scripts/audit-authoring.ts --check",
     "ci:locale": "tsx scripts/audit-locale.ts --check",
-    "ci:csp": "tsx scripts/audit-csp.ts --check",
-    "ci:bundle": "node scripts/bundle-api.mjs --check",
     "ci:migrations": "tsx scripts/audit-migrations.ts",
     "ci:status-checks": "tsx scripts/status-checks.ts --check",
     "check:authoring-files": "tsx scripts/check-authoring-files.ts"
@@ -117,7 +115,6 @@
     "@types/pg": "^8.21.0",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
-    "@vercel/node": "^5.10.1",
     "@vitejs/plugin-react": "^5.1.1",
     "autoprefixer": "^10.4.23",
     "embedded-postgres": "^18.4.0-beta.17",

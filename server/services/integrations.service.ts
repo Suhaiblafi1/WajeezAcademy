@@ -99,9 +99,9 @@ export async function savePaymentConfig(prisma: PrismaClient, actorId: string, i
   /* لا يُفعَّل مزوّدٌ مستضاف وعنوانُ الموقع غيرُ مضبوط.
 
      `createCharge` يبني `success_url` و`cancel_url` من `publicSiteUrl()`،
-     واحتياطيُّه `http://localhost:7100`. فلو فُعِّل Stripe بلا `APP_URL` ولا
-     `VERCEL_PROJECT_PRODUCTION_URL`، خرج المشتري إلى صفحة الدفع ودفع ثمّ
-     أُعيد إلى عنوانٍ لا يفتح عنده. والـwebhook مستقلّ عن المتصفّح، فالطلبُ
+     واحتياطيُّه `http://localhost:7100`. فلو فُعِّل Stripe بلا `APP_URL`،
+     خرج المشتري إلى صفحة الدفع ودفع ثمّ أُعيد إلى عنوانٍ لا يفتح عنده.
+     والـwebhook مستقلّ عن المتصفّح، فالطلبُ
      يُسوّى والمقعدُ يُحجز والسجلّاتُ كلُّها خضراء — ولا يظهر العطبُ إلا عند
      المشتري وحدَه بعد أن دفع. فالرفضُ هنا، عند الحفظ، أرخصُ من اكتشافه هناك. */
   const driver = input.driver ?? 'test'
