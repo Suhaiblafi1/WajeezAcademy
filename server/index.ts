@@ -12,8 +12,11 @@ const main = async () => {
   const port = Number(process.env.API_PORT ?? 7101)
   /* العنوان قابل للضبط، وافتراضه المغلق لا المفتوح.
      على الجهاز 127.0.0.1 هو الصواب: لا يُنصت الخادم على الشبكة بلا قصد —
-     الوسيطُ العكسيّ (Apache على Cloudways) يتحدّث إليه محليّا على المنفذ
-     نفسِه (انظر docs/DEPLOYMENT.md). */
+     الوسيطُ العكسيّ (**Caddy** على Hetzner) يتحدّث إليه محليّا على المنفذ
+     نفسِه — والحاويةُ لا تَنشُر منفذا إلى المضيف (`deploy/compose.prod.yml`).
+     وهذا شرطُ صحّةِ `trustProxy: 1` في `http/app.ts`: لو نُشر المنفذُ مكشوفا
+     لأمكن تجاوزُ الوسيط، فيصير `X-Forwarded-For` الذي يلصقه الزائرُ مفتاحَه.
+     (كان هنا «Apache على Cloudways» — والمضيفُ تغيّر. المرجع: `deploy/`.) */
   const host = process.env.API_HOST ?? '127.0.0.1'
   await app.listen({ port, host })
   console.log(`✅ خادم وجيز يعمل: http://localhost:${port} — التوثيق: http://localhost:${port}/docs`)
