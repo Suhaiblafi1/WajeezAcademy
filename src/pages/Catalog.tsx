@@ -12,6 +12,7 @@ import { usePublishedContent } from '@/services/public-content'
 import { catalogRank, matchesCatalogQuery } from '@/application/catalog/catalog-search'
 import { resolveCatalogRefsAr } from '@/application/catalog/visitor-text'
 import { sortKeyAr } from '@/application/catalog/course-title'
+import { UpcomingTermBanner } from '@/components/UpcomingTermNote'
 
 const LEVELS = ['الكل', 'أساسي', 'متوسط', 'متقدم'] as const
 /* البند ع-١: كانت هذه المجموعتان تُحسبان في نطاق الوحدة — لقطة وقت الاستيراد.
@@ -215,6 +216,11 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
           ))}
         </div>
       )}
+
+      {/* ــ الفصلُ القادم: هاتان الصفحتان لا تعرضان تاريخا إطلاقا (البند ٥٢).
+             وموضعُه فوق النتائج لا تحتَها: من يتصفّح ثمانين بطاقةً لا يصل
+             إلى ذيل الصفحة، والتاريخُ يُقرأ قبل الاختيار لا بعده. */}
+      <UpcomingTermBanner className="mt-6" />
 
       {/* عدد النتائج — يُعلن لقارئ الشاشة */}
       <p className="mt-6 text-xs text-muted-foreground" aria-live="polite">

@@ -89,18 +89,30 @@ describe('٥١ · ٥٢ · النافذةُ والفصلُ القادم يبلغ�
   })
 
   it('و«يُعلن الموعد مع فتح الشعبة» صار لها تتمّةٌ حين يوجد فصل', () => {
+    /* كان هذا يفحص أنّ `CohortPicker` ينادي `useUpcomingTerm` ويكتب «تُفتح في»
+       بنفسه — وهي آليّةٌ لا ثابت. ولمّا بلغت الجملةُ خمسةَ أسطحٍ صار كتبُها في
+       كلٍّ منها هو العطبَ بعينه، فانتقلت إلى مكوّنٍ واحد. والثابتُ الذي كان
+       يُقصد باقٍ: المنتقي يقول التتمّةَ حين يوجد فصل، والجملةَ القديمةَ حين
+       لا فصل. وتفصيلُ الأسطح الخمسة في `upcoming-term-surfaces.test.ts`. */
     const picker = read('src/components/CohortPicker.tsx')
-    expect(picker).toContain('useUpcomingTerm')
-    expect(picker).toContain('تُفتح في')
-    /* وتبقى الجملةُ القديمةُ حين لا فصلَ — لا يُخترع موعد */
+    expect(picker).toMatch(/from ["']@\/components\/UpcomingTermNote["']/)
     expect(picker).toContain('يُعلن الموعد مع فتح الشعبة')
+    const note = read('src/components/UpcomingTermNote.tsx')
+    expect(note).toContain('تُفتح في')
   })
 
   it('ونافذةُ التسجيل تُقرأ في مكانٍ واحد — لا ستّةُ مواضعَ تعيد اشتقاقَها', () => {
+    /* وكان هذا يفحص `return true` في `term.service` — أي أنّ الحسابَ هناك.
+       ثمّ وُصلت المواضعُ الستّة بـ`registration-window` (البند ٥١) فصار ما في
+       الخدمة نسخةً ثانيةً منه بحرفه، وهو عينُ العيب. فذهب الحسابُ وبقي الاسم،
+       وهذا ما يُفحص: أنّها **تفوّض** ولا تعيد الاشتقاق. */
     const svc = read('server/services/term.service.ts')
     expect(svc).toMatch(/static registrationOpen\(/)
-    /* والفارغةُ لا تمنع: «لم تُحدَّد» ليست «مغلقة» */
-    expect(svc).toContain('return true')
+    expect(svc, 'الخدمةُ تعيد اشتقاقَ النافذة بنفسها').toContain('termWindowVerdict')
+    expect(svc).not.toMatch(/now < term\.registrationOpensAt/)
+    /* والفارغةُ لا تمنع — والحكمُ في موضعه الواحد */
+    const win = read('server/services/registration-window.ts')
+    expect(win).toMatch(/if \(!term\) return \{ open: true \}/)
   })
 })
 

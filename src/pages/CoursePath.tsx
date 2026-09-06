@@ -25,6 +25,7 @@ import CohortPicker from "@/components/CohortPicker";
 import { useRealSession } from "@/services/session";
 import CourseTitle from "@/components/CourseTitle";
 import { Button } from "@/components/ui/button";
+import { UpcomingTermLine } from "@/components/UpcomingTermNote";
 import { usePublishedContent } from "@/services/public-content";
 import { useCourseCohorts, type CohortOption } from "@/services/cohort-prices";
 import { track } from "@/services/analytics";
@@ -514,6 +515,12 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                 {pricing.discountPct > 0 && (
                   <p className="text-[11px] font-bold text-teal-light-ink">
                     وخصم بناء المسار عند {pricing.count} دورات — {pricing.discountPct}٪ — قائمٌ لك حين تُفتح الشعب.
+                  </p>
+                )}
+                {/* «حين تُفتح الشعب» — ومتى تُفتح؟ (البند ٥٢) */}
+                {pricesLoaded && (
+                  <p className="text-[11px] font-bold leading-5 text-foreground">
+                    <UpcomingTermLine />
                   </p>
                 )}
               </div>

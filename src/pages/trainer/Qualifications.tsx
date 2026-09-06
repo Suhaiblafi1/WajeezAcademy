@@ -17,7 +17,7 @@
    يُترك فراغا أو يُملأ خوفا. */
 
 import { useCallback, useEffect, useState } from "react";
-import { Award, CalendarOff, Clock, Loader2, Lock, Plus, ServerOff, Trash2 } from "lucide-react";
+import { Award, CalendarCheck, CalendarOff, Clock, Loader2, Lock, Plus, ServerOff, Trash2 } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import EmptyState from "@/components/EmptyState";
 import { toast, toastError } from "@/components/Toast";
@@ -28,6 +28,26 @@ interface ScopeGate { allowed: boolean; basis: "earned" | "granted" | "none"; re
 interface Window { weekday: number; startMinute: number; endMinute: number }
 interface Blackout { id: string; startsAt: string; endsAt: string; reason: string | null; past: boolean }
 interface Availability { windows: Window[]; blackouts: Blackout[]; meaningAr: string }
+
+/* ── فصولي (البند ٥٣) ──
+   `myStatus` ثلاثيّةٌ لا ثنائيّة: `null` تعني «لم أُسأل بعدُ ولم أقل شيئا»،
+   وهي ليست موافقةً ولا اعتذارا. و`declared` ما ورّثه الترحيلُ من مواسمَ
+   أعلنها في طلبه — إعلانٌ قديمٌ لم يؤكّده بعد. */
+interface MyTerm {
+  id: string; titleAr: string; season: string;
+  startsOn: string; endsOn: string;
+  registrationOpensAt: string | null; registrationClosesAt: string | null;
+  termStatus: string;
+  myStatus: "declared" | "confirmed" | "declined" | null;
+  maxCohorts: number | null; note: string | null;
+  assignedCohorts: { id: string; title: string; courseId: string; startsAt: string | null; status: string }[];
+}
+
+const TERM_STATE: Record<string, { label: string; cls: string }> = {
+  confirmed: { label: "أكّدتُ إتاحتي", cls: "border-teal/50 bg-teal/10 text-teal-light-ink" },
+  declined: { label: "اعتذرتُ عنه", cls: "border-white/15 bg-white/[0.03] text-muted-foreground" },
+  declared: { label: "معلَنٌ من طلبك — لم تؤكّده", cls: "border-gold/50 bg-gold/10 text-gold-ink" },
+};
 
 const DAYS = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
 
@@ -50,15 +70,19 @@ export default function TrainerQualifications() {
   const [draft, setDraft] = useState<Window[]>([]);
   const [leave, setLeave] = useState({ startsAt: "", endsAt: "", reason: "" });
   const [leaveErr, setLeaveErr] = useState("");
+  const [terms, setTerms] = useState<MyTerm[] | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const [q, s, a] = await Promise.all([
+      const [q, s, a, t] = await Promise.all([
         apiGet<Qualification[]>("/api/trainer/me/qualifications"),
         apiGet<ScopeGate>("/api/trainer/catalog-scope"),
         apiGet<Availability>("/api/trainer/me/availability"),
+        /* الفصولُ لا تُسقط الشاشةَ إن تعذّرت: المؤهّلاتُ والساعاتُ أسبقُ منها،
+           ولا يُحرَم المدرّبُ منهما لأنّ جدولا ثالثا لم يُجب. */
+        apiGet<MyTerm[]>("/api/trainer/me/terms").catch(() => null),
       ]);
-      setQuals(q); setScope(s); setAvail(a); setDraft(a.windows); setDown(false);
+      setQuals(q); setScope(s); setAvail(a); setDraft(a.windows); setTerms(t); setDown(false);
     } catch {
       setDown(true);
     }
@@ -95,6 +119,20 @@ export default function TrainerQualifications() {
       toast("سُجّل غيابك — ولن تُسنَد لك جلسةٌ فيه");
     } catch (e) {
       setLeaveErr(e instanceof ApiError ? e.message : "تعذّر التسجيل");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /** تأكيدٌ أو اعتذارٌ عن فصل — والقرارُ للمدرّب لا يُعلَن نيابةً عنه */
+  const answerTerm = async (termId: string, status: "confirmed" | "declined") => {
+    setBusy(true);
+    try {
+      await apiPost(`/api/trainer/me/terms/${termId}`, { status });
+      await load();
+      toast(status === "confirmed" ? "أُثبتت إتاحتك في هذا الفصل" : "سُجّل اعتذارك — ولن تُخطَّط لك شعبةٌ فيه");
+    } catch (e) {
+      toastError(e instanceof ApiError ? e.message : "تعذّر الحفظ — أعد المحاولة");
     } finally {
       setBusy(false);
     }
@@ -249,6 +287,69 @@ export default function TrainerQualifications() {
             {dirty && <span className="text-micro font-bold text-gold-ink">تغييراتٌ لم تُحفظ</span>}
           </div>
         </section>
+
+        {/* ── فصولي (البند ٥٣) ── */}
+        {terms && terms.length > 0 && (
+          <section>
+            <h2 className="flex items-center gap-2 text-lg font-black">
+              <CalendarCheck className="h-5 w-5 text-teal" aria-hidden="true" />
+              فصولي
+            </h2>
+            <p className="mt-1 text-sm leading-7 text-muted-foreground">
+              <b>الإتاحةُ إعلانُك أنت:</b> تُبنى عليها قائمةُ «المدرّبون المتاحون لهذا الفصل» قبل أن تُنشأ
+              شعبةٌ واحدة. ومن اعتذر لا تُخطَّط له شعبةٌ في ذلك الفصل.
+            </p>
+
+            <ul className="mt-4 space-y-3">
+              {terms.map((t) => {
+                const state = t.myStatus ? TERM_STATE[t.myStatus] : null;
+                return (
+                  <li key={t.id} className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                      <span className="text-sm font-black">{t.titleAr}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {fmtDate(t.startsOn)} — {fmtDate(t.endsOn)}
+                      </span>
+                      <span
+                        className={`rounded-full border px-2.5 py-0.5 text-micro font-black ${
+                          state ? state.cls : "border-white/15 text-muted-foreground"
+                        }`}
+                      >
+                        {state ? state.label : "لم تُجب بعد"}
+                      </span>
+                    </div>
+
+                    {/* ما خُطِّط له فيه — فالاعتذارُ عن فصلٍ فيه ثلاثُ شعبٍ قرارٌ آخر */}
+                    {t.assignedCohorts.length > 0 && (
+                      <p className="mt-2 text-xs leading-6 text-gold-ink">
+                        مُسنَدٌ إليك فيه {t.assignedCohorts.length}{" "}
+                        {t.assignedCohorts.length === 1 ? "شعبة" : t.assignedCohorts.length === 2 ? "شعبتان" : "شعب"} —{" "}
+                        {t.assignedCohorts.map((c) => c.title).join(" · ")}
+                      </p>
+                    )}
+
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        type="button" disabled={busy || t.myStatus === "confirmed"}
+                        onClick={() => void answerTerm(t.id, "confirmed")}
+                        className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-teal px-5 text-sm font-black text-on-teal disabled:opacity-50"
+                      >
+                        أنا متاحٌ فيه
+                      </button>
+                      <button
+                        type="button" disabled={busy || t.myStatus === "declined"}
+                        onClick={() => void answerTerm(t.id, "declined")}
+                        className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-white/15 px-5 text-sm font-bold text-muted-foreground transition hover:text-foreground disabled:opacity-50"
+                      >
+                        أعتذر عنه
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
 
         {/* ── غيابي ── */}
         <section>

@@ -55,6 +55,7 @@ function useReveal() {
 import { stories, partnerLogos, STORY_ILLUSTRATIVE_BADGE_AR } from '@/data/stories'
 import StoryAvatar from '@/components/StoryAvatar'
 import RemoteImage from '@/components/RemoteImage'
+import { UpcomingTermLine } from '@/components/UpcomingTermNote'
 
 /* «مؤشر وجيز» — خمسة أسئلة وعي مستقلة: تُحفظ محليا على جهاز الزائر فقط ولا تغذي التشخيص،
    بل توقظ فيه السؤال الصحيح وتفتح شهيته لخدمتنا، ثم يبدأ التشخيص الكامل من الصفر باحترافية */
@@ -263,6 +264,15 @@ function Hero() {
             <Route className="h-3.5 w-3.5" />
             <span className="underline-offset-4 hover:underline">اختر مسارك بنفسك</span>
           </a>
+          {/* ── سطرٌ ثانٍ مؤرَّخ (البند ٥٢) ──
+
+              الدعوةُ فوقَه صحيحةٌ ولا يُمسّ ترتيبُها: التشخيصُ قِمعُ المنصّة.
+              لكنّها — كدعوات الرئيسة كلِّها — **بلا تاريخ**، ودعوةٌ بلا تاريخٍ
+              تُقرأ لافتةً لا نداء. فيُقال تحتها متى يبدأ الفصلُ ومتى تُغلق
+              نافذتُه، ولا شيءَ يُقال قبل أن يُنشأ فصل. */}
+          <p className="mt-4 text-xs font-bold leading-6 text-muted-foreground">
+            <UpcomingTermLine prefix="الفصل القادم:" />
+          </p>
         </div>
       </div>
     </section>

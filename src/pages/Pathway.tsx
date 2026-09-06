@@ -38,6 +38,7 @@ import { useRealSession } from "@/services/session";
 import { usePublishedContent } from "@/services/public-content";
 import SeoHead from "@/components/SeoHead";
 import EcosystemNote from "@/components/EcosystemNote";
+import { UpcomingTermLine } from "@/components/UpcomingTermNote";
 import { pathwayOffer, readyPathwayPrice } from "@/application/commerce/pathway-offer";
 import { needsAdvisorReferral } from "@/application/plan/advisor-referral";
 import { DISCOUNT_CATEGORIES } from "@/application/commerce/discount-policy";
@@ -724,6 +725,13 @@ export default function PathwayPage() {
                       <p className="text-muted-foreground">
                         نُسعّر كل شعبة على حدة، ولا نعرض رقما قبل أن يكون هو الرقم الذي تدفعه.
                       </p>
+                      {/* والسعرُ يبقى مجهولا، أمّا الموعدُ فلا: «مع فتح الشعبة» متى؟
+                          — هذا هو الجواب (البند ٥٢). */}
+                      {pricesLoaded && (
+                        <p className="text-[11px] font-bold leading-5 text-foreground">
+                          <UpcomingTermLine />
+                        </p>
+                      )}
                     </div>
                   )}
                   <Button
