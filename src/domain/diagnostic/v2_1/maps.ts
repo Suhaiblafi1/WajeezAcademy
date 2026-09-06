@@ -194,7 +194,22 @@ export const NEEDS_V21: NeedDefV21[] = [
   { code: 'need_operations', label_ar: 'العمليات وتحسين الإجراءات', stages: [...EMPLOYED_LIKE, 'founder'], domains: ['operations'] },
   /* مدخل قالب تجربة العميل (TPL-CX-001): الاحتياج ينتج حقيقة current_pain القابلة للاستخدام
      عبر قاعدة اشتقاق موثقة (facts.ts) — لا سؤال «ما ألمك؟» نصي عام */
-  { code: 'need_customer_experience', label_ar: 'تجربة العميل / المستفيد وجودة الخدمة', stages: [...EMPLOYED_LIKE, 'founder'], domains: ['operations'] },
+  /* ── «المستفيد» في العنوان، و«gov_services» لا يصل إليه أحد (البند ٣٩) ──
+
+     هذا الاحتياجُ يقول «تجربة العميل / **المستفيد**» — و«المستفيد» كلمةُ
+     القطاع العامّ بعينها. ومجالُ `gov_services` كان يصل إليه **صفرُ
+     احتياجات**، فبقي `PW-GOV-002` الكيانَ الوحيدَ في الفضاء النشط الذي لا
+     تفوز له توليفةٌ واحدة: جرّبت حزمةُ الذهب ٢٨ توليفةً فردّته كلَّها
+     بـ«الكيان خارج مجال حاجتك».
+
+     والخريطةُ القديمةُ (`pathway-domains.v2.json`) تقول الصوابَ منذ البداية:
+     `improve_customer_experience` ← `['gov_services', 'communication_influence']`.
+     فالسطرُ هنا كان يُسقط ما تقوله الخريطةُ نفسُها.
+
+     والعلاجُ توجيهُ إشارةٍ لا محتوًى جديد: المسارُ مؤلَّفٌ ودوراتُه قائمة،
+     وينقصه طريقٌ يصل إليه. ولا يُفتح لغير أهله: بوّابةُ `sector: public`
+     تبقى كما هي، فلا يراه إلّا من قال إنّه في القطاع العامّ. */
+  { code: 'need_customer_experience', label_ar: 'تجربة العميل / المستفيد وجودة الخدمة', stages: [...EMPLOYED_LIKE, 'founder'], domains: ['operations', 'gov_services'] },
   { code: 'need_sales', label_ar: 'المبيعات والتعامل مع العملاء', stages: [...EMPLOYED_LIKE, 'founder', 'freelancer'], domains: ['sales'] },
   { code: 'need_marketing', label_ar: 'التسويق والنمو', stages: ['early_career', 'experienced', 'manager', 'founder', 'freelancer', 'other_unsure'], domains: ['marketing_growth'] },
   { code: 'need_negotiation', label_ar: 'التفاوض وإغلاق الصفقات', stages: ['experienced', 'manager', 'senior_manager', 'founder', 'freelancer'], domains: ['sales', 'communication_influence'] },
