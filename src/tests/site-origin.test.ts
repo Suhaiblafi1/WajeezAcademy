@@ -57,6 +57,28 @@ describe('الأصل القانوني للموقع', () => {
     }
   })
 
+  /* والموضعُ الذي أفلت من هذا الحارس كلِّه: مثالُ بيئة الإنتاج.
+
+     `deploy/.env.production.example` هو ما يُنسَخ على الخادم حرفا. وقد بقي
+     فيه النطاقُ المهجور في ثلاثة حقول بعد الانتقال: `SITE_DOMAIN` — ومنه
+     يطلب Caddy الشهادة، فنطاقٌ لا يشير إلى الخادم يجعل Let's Encrypt يرفض
+     ولا موقعَ أصلا — و`APP_URL` الذي تُبنى منه روابطُ كلِّ رسالة،
+     و`WEB_ORIGIN` الذي يُسقط خطؤه نداءات المتصفّح كلَّها.
+
+     والحارسُ السابق يقرأ `src/` و`public/` فلم يره. فالمقيسُ هنا الملفُّ
+     الذي يُنسَخ، لا الشيفرةُ وحدَها. */
+  it('ومثالُ بيئة الإنتاج لا يحمل نطاقا مهجورا — فهو يُنسَخ حرفا', () => {
+    const env = read('deploy/.env.production.example')
+    const live = env.split('\n').filter((l) => !l.trim().startsWith('#')).join('\n')
+    expect(live, 'نطاقٌ حُجز ولم يُوجَّه قطّ').not.toContain('academy.wajeez.com')
+    expect(live, 'SITE_DOMAIN منه تُطلب الشهادة').toMatch(/^SITE_DOMAIN=\S+/m)
+    for (const key of ['SITE_DOMAIN', 'APP_URL', 'WEB_ORIGIN']) {
+      const m = live.match(new RegExp(`^${key}=(\\S+)`, 'm'))
+      expect(m, `${key} غائبٌ عن المثال`).not.toBeNull()
+      expect(m![1], `${key} لا يحمل النطاق الحيّ`).toContain('www.wajeezacademy.com')
+    }
+  })
+
   it('SeoHead لا يكتب نطاقا — يسأل الوحدة', () => {
     const src = read('src/components/SeoHead.tsx')
     expect(src).toContain('siteOrigin()')
