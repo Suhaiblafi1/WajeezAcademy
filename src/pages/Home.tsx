@@ -138,7 +138,7 @@ function Nav() {
     )
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-white/5 bg-paper/80 backdrop-blur-xl">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5">
         <a href="#top" className="flex items-center gap-2.5">
           <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-8 w-8 object-contain md:h-10 md:w-10" />
           <span className="text-base font-black leading-none md:text-lg"><span className="hidden min-[370px]:inline">أكاديمية </span><span className="text-teal-light-ink">وجيز</span></span>
@@ -228,7 +228,7 @@ function Hero() {
       <div className="pointer-events-none absolute -top-40 right-1/4 h-[480px] w-[480px] rounded-full bg-teal/15 blur-[140px] animate-pulse-glow" />
       <div className="pointer-events-none absolute top-40 left-0 h-[380px] w-[380px] rounded-full bg-teal-deep/20 blur-[120px] animate-pulse-glow" style={{ animationDelay: '2s' }} />
 
-      <div className="relative mx-auto max-w-6xl px-5 text-center">
+      <div className="relative mx-auto max-w-7xl px-5 text-center">
         <div className="reveal is-visible">
           <SectionLabel>منصة تفهمك قبل أن تعلّمك</SectionLabel>
         </div>
@@ -240,18 +240,6 @@ function Hero() {
             يبدأ بفهم هدفك.
           </span>
         </h1>
-        {/* الإثباتُ سطرٌ واحد لا ثلاثُ شارات.
-
-            الشاراتُ المحاطةُ بحدودٍ وخلفيّةٍ تُقرأ عناصرَ واجهةٍ لها وزنُها، وهي
-            هنا تعيد قولَ ما قاله العنوانُ فوقها («نقرأ هدفك» ≈ «يبدأ بفهم هدفك»).
-            فصارت سطرا نصّيّا بفواصل: المعنى باقٍ كاملا، والوزنُ البصريّ ذاهب. */}
-        <p className="reveal is-visible mx-auto mt-3.5 flex max-w-xl flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[12.5px] leading-7 text-muted-foreground">
-          <span>نقرأ هدفك</span>
-          <span aria-hidden="true" className="text-teal-light-ink/45">·</span>
-          <span>وقتك المتاح</span>
-          <span aria-hidden="true" className="text-teal-light-ink/45">·</span>
-          <span>فجواتك الأقرب</span>
-        </p>
         <div className="reveal is-visible mt-11 flex flex-col items-center justify-center">
           <a
             href="#diagnostic"
@@ -474,7 +462,7 @@ const steps = [
 function HowItWorks() {
   return (
     <section id="how" className="scroll-mt-24 border-y border-white/5 bg-white/[0.02] py-14 md:py-16">
-      <div className="mx-auto max-w-6xl px-5">
+      <div className="mx-auto max-w-7xl px-5">
         <div className="reveal flex flex-wrap items-center justify-center gap-3 text-center md:justify-between md:text-right">
           <h2 className="text-xl font-bold md:text-2xl">كيف تسير رحلتك — أربع خطوات لا أكثر</h2>
           <SectionLabel>من أول سؤال إلى مخرج مُثبت</SectionLabel>
@@ -518,7 +506,7 @@ function ImageBand() {
       />
       <div className="absolute inset-0 bg-gradient-to-t from-paper via-paper/55 to-paper/25" />
       <div className="absolute inset-0 flex items-end">
-        <div className="mx-auto w-full max-w-6xl px-5 pb-10">
+        <div className="mx-auto w-full max-w-7xl px-5 pb-10">
           <p className="reveal max-w-xl text-2xl font-bold leading-relaxed md:text-3xl">
             لا نقيس تعلمك بما شاهدت —
             <span className="text-teal-light-ink"> بل بما أنجزت وأثبتّ.</span>
@@ -539,7 +527,7 @@ function Stories() {
   return (
     <section id="stories" className="scroll-mt-24 relative py-20 md:py-24">
       <div className="pointer-events-none absolute left-1/3 top-0 h-[400px] w-[400px] rounded-full bg-teal/8 blur-[130px]" />
-      <div className="mx-auto max-w-6xl px-5">
+      <div className="mx-auto max-w-7xl px-5">
         <div className="reveal text-center">
           <SectionLabel>نماذج توضيحية لرحلات التعلم</SectionLabel>
           <h2 className="mt-5 text-3xl font-bold md:text-4xl">هكذا تُبنى الرحلة عندنا</h2>
@@ -986,7 +974,7 @@ const footerCols: { title: string; icon: typeof GraduationCap; links: { label: s
 function Footer() {
   return (
     <footer className="border-t border-white/5 bg-surface3">
-      <div className="mx-auto max-w-6xl px-5 py-9">
+      <div className="mx-auto max-w-7xl px-5 py-9">
         <div className="grid gap-x-6 gap-y-7 md:grid-cols-5">
           <div className="md:col-span-1">
             <div className="flex items-center gap-2.5">
@@ -1042,6 +1030,9 @@ function Footer() {
             صُنع بعناية — الفهم قبل البيع
           </div>
         </div>
+        {/* تعريف المنظومة — انتقل إلى هنا من أسفل الصدر مباشرة: سطر هوية
+            ثانوي لا يستحق مكانا في أول ما تراه العين بعد الهيرو. */}
+        <EcosystemNote className="mt-3" />
       </div>
     </footer>
   )
@@ -1094,7 +1085,7 @@ function ChannelBadge() {
 function AdvisorStrip() {
   const isWhatsApp = Boolean(CONTACT.whatsapp)
   return (
-    <section className="mx-auto max-w-6xl px-5 pb-4">
+    <section className="mx-auto max-w-7xl px-5 pb-4">
       <div className="reveal flex flex-col items-center justify-between gap-5 rounded-3xl border border-teal/20 bg-gradient-to-l from-panel/80 to-card px-6 py-6 md:flex-row md:px-8">
         <div className="flex items-center gap-4 text-center md:text-right">
           <span className="relative hidden h-12 w-12 shrink-0 place-items-center rounded-2xl bg-teal/12 text-teal-ink md:grid">
@@ -1151,12 +1142,6 @@ export default function Home() {
       <Nav />
       <div>
         <Hero />
-        {/* تعريف المنظومة — أسفل الصدر، ومنفصلٌ عنه بفراغٍ يُرى.
-
-            كان `mt-1` (٤px) فوق حشوِ الصدر السفليّ، فيُقرأ سطرَه السابع لا سطرَ
-            هويّةٍ مستقلّا — وهو أحدُ ما جعل الصدرَ يبدو مزدحما. والفصلُ الآن
-            ٤٠px مقابل ١٢–١٤ داخل مجموعات الصدر، فيقع خارجَها بوضوح. */}
-        <EcosystemNote className="mt-10 pb-7 md:mt-8 md:pb-5" />
         <DiagnosticTeaser />
         <HowItWorks />
         {/* شريط الثقة — أرقام وجيز مهارات الموثقة فقط، بعد شرح الرحلة (مصدر مركزي: data/trustMetrics) */}

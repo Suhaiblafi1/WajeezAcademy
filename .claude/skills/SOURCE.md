@@ -19,7 +19,7 @@ GitHub» ولا «من الفرع الرئيسي». وأي تحديث لاحق �
 | `cognitive-load-analyser` | المصدر نفسه · `skills/memory-learning-science/` | السجلّ نفسه | CC BY-SA 4.0 |
 | `backwards-design-unit-planner` | المصدر نفسه · `skills/curriculum-assessment/` | السجلّ نفسه | CC BY-SA 4.0 |
 | `assessment-validity-checker` | المصدر نفسه · `skills/curriculum-assessment/` | السجلّ نفسه | CC BY-SA 4.0 |
-| `frontend-design` | [anthropics/skills](https://github.com/anthropics/skills) · `skills/frontend-design/` | `3b3fad9` | Apache 2.0 |
+| `frontend-design` | [anthropics/skills](https://github.com/anthropics/skills) · `skills/frontend-design/` | `41bbe19` | Apache 2.0 |
 | `mcp-builder` (+ أربعة مراجع) | anthropics/skills · `skills/mcp-builder/` | `3b3fad9` | Apache 2.0 |
 | `ui-ux-pro-max` (٤٢ ملفا: بيانات وسكربتات) | [nextlevelbuilder/ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) · `.claude/skills/ui-ux-pro-max/` | `d279284` | MIT |
 | عشر مهارات KST + `shared-references` | [vanderbilt-data-science/knowledge-spaces](https://github.com/vanderbilt-data-science/knowledge-spaces) · `.claude/skills/` | `08e7aef` | MIT |
@@ -111,3 +111,35 @@ strong`، وكلُّها تطابق ما نؤلّفه فعلا. وتُركت `le
 المنتج — كي يراها المراجع وحدها. وإن أمرت مهارةٌ بما يخالف قواعد هذا المستودع
 (القياس قبل التغيير، البوابات السبع، لا دفع إلى فرع غير الفرع المعتمد، لا أسماء
 تُعرض كحقيقة قبل توثيقها) فقواعد المستودع هي التي تُتّبع، ويُقال ذلك صراحة.
+
+## تدقيق 2026-09-05 — نفس الدفعة طُلبت ثانية، ومقارنة الالتزامات الستّة بأصلها الحيّ
+
+طُلب استيراد نفس مستودعات دفعة 2026-08-31 تقريبا (بأسماء مختلفة أحيانا: Find
+Skills · Superpowers · Claude Mem · Impeccable · Task Observer، ومستودعاتٌ
+مرقّمة). لم يُستورد جديد: كلُّ ما فيها إمّا مثبَّتٌ من قبل (Superpowers، ٥ من
+marketingskills، ui-ux-pro-max) أو مرفوضٌ سابقا بنفس الأسباب أعلاه (ECC،
+ai-berkshire، public-apis، awesomeclaude.ai، PERSONALIZED-LEARNING-PLATFORM)،
+أو غير مطروحٍ من قبل ورُفض الآن: `vercel-labs/skills` (مثبِّتُ مهاراتٍ تلقائيٌّ
+يُدخل مهاراتٍ بعيدة بلا قراءة — عكس قاعدة المراجعة هنا)، `thedotmack/claude-mem`
+(خدمةٌ خلفيّة وقاعدةُ بياناتٍ متّجهة، أثرٌ أكبر من مهارةِ ماركداون، ولا حاجة
+لذاكرةٍ عابرة للجلسات هنا)، `pbakaus/impeccable` (يتداخل مع `ui-ux-pro-max`
+المثبَّتة)، `rebelytics/one-skill-to-rule-them-all` (مهارةٌ تُراقب الجلسة
+وتقترح تعديل مهاراتٍ أخرى تلقائيا — مشروعٌ صغيرٌ غير مدقَّق لغرضٍ حسّاس).
+
+وطُلب أيضا فحصُ ما استُورد فعلا: هل تحرّك أصلُه منذ الالتزام المسجَّل؟ لكلّ
+مصدرٍ في الجدول أعلاه، قورن HEAD الحالي (بروتوكول `git`، لا واجهة GitHub API
+المحجوبة عن مستودعاتٍ خارج نطاق الجلسة) بالالتزام المثبَّت:
+
+| المصدر | الالتزام المثبَّت | HEAD الحالي | الأثر على ما استُورد فعلا |
+|---|---|---|---|
+| `obra/superpowers` | `b36e082` | `b36e082` (بلا تغيير) | لا شيء |
+| `vanderbilt-data-science/knowledge-spaces` | `08e7aef` | `08e7aef` (بلا تغيير) | لا شيء |
+| `Jellypod-Inc/school-skills` | `cd48479` | `cd48479` (بلا تغيير) | لا شيء |
+| `coreyhaines31/marketingskills` | `e55de88` | `5b2c000` (تحرّك) | صفر تغيير داخل المهارات الخمس المستوردة تحديدا |
+| `nextlevelbuilder/ui-ux-pro-max-skill` | `d279284` | `f3ac195` (تحرّك) | التغييرات (`catalog-summary.json` و`validate_data.py` وملفّا اختبار) في ملفّاتٍ لم تُستورد أصلا (استُبعدت وقت الإدخال: التحقّق والاختبارات الداخلية، لا حِمل المهارة) |
+| `anthropics/skills` | `3b3fad9` | `41bbe19` (تحرّك) | `frontend-design/SKILL.md` تغيّر فعلا (إعادة صياغة وتوسيع: فقرة «بصمات» جديدة لأنماط SaaS الرتيبة، إرشاد طباعي أدقّ) — **حُدِّث هنا لأنه نفس المصدر الموثوق نفسه بلا تعديل منّا** |
+
+`webapp-testing` و`mcp-builder` (من `anthropics/skills` أيضا) بلا تغيير رغم
+تحرّك المستودع. ولم يُفحص التحديث عبر GitHub API لأنه محجوبٌ عن مستودعاتٍ
+خارج نطاق الجلسة؛ استُخدم `git ls-remote` و`git diff` على نسخةٍ مستنسخة في
+مجلّد عملٍ مؤقّت بدلا من ذلك.
