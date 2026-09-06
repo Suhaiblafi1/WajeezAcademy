@@ -5,7 +5,7 @@ import { BarChart3, Download, Loader2, Play, RefreshCw, ServerOff } from "lucide
 import AdminLayout from "./AdminLayout";
 import { apiGet, ApiError } from "@/services/api";
 
-import { Panel } from "@/components/ui/Surface";
+import { Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 const inputCls = "rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground focus:border-teal focus:outline-none";
 
@@ -88,7 +88,7 @@ export default function Reports() {
 
   return (
     <AdminLayout title="التقارير التشغيلية — 17 تقريرا بطريقة حساب معلنة">
-      {error && <p className="mb-4 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-200">{error}</p>}
+      {error && <Inset as="p" tone="danger" className="mb-4 px-4 py-3 text-sm text-red-200">{error}</Inset>}
 
       {loading ? (
         <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" /></div>

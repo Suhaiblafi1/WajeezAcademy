@@ -6,6 +6,7 @@ import SeoHead from "@/components/SeoHead";
 import { apiPost, ApiError } from "@/services/api";
 
 import Button from "@/components/ui/Button";
+import { Inset } from "@/components/ui/Surface";
 const inputCls =
   "w-full rounded-xl border border-white/15 bg-paper/30 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none";
 
@@ -80,7 +81,7 @@ export default function TrainerAcceptInvite() {
                 <input type="checkbox" checked={showPw} onChange={(e) => setShowPw(e.target.checked)} className="h-4 w-4 accent-teal" />
                 إظهار كلمة المرور
               </label>
-              {error && <p className="rounded-xl border border-red-400/30 bg-red-400/10 p-3 text-xs text-red-200" role="alert">{error}</p>}
+              {error && <Inset as="p" tone="danger" className="text-xs text-red-200" role="alert">{error}</Inset>}
               <Button tone="primary" type="submit" disabled={!valid || busy} className="w-full">
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
                 فعّل حسابي

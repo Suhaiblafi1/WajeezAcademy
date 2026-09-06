@@ -291,9 +291,9 @@ function Lessons({
 }) {
   if (modules.length === 0) {
     return (
-      <p className="rounded-2xl border border-dashed border-white/15 px-4 py-6 text-center text-[11.5px] leading-6 text-muted-foreground">
+      <Card as="p" className="border-dashed px-4 py-6 text-center text-[11.5px] leading-6 text-muted-foreground">
         لم يُكتب متنُ هذه الدورة بعد. جلساتُها وواجباتُها في تبويبَيهما، ويظهر المتن هنا فور كتابته.
-      </p>
+      </Card>
     );
   }
   return (

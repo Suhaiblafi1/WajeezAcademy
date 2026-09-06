@@ -7,6 +7,7 @@ import { ECOSYSTEM_NOTE } from '@/data/siteContent'
 import ThemeToggle from '@/components/ThemeToggle'
 import { homePathForRoles, readRoles } from '@/services/auth'
 
+import { Inset } from "@/components/ui/Surface";
 /* اسم المستخدم المحفوظ محليا — نفس منطق ترويسة الرئيسية */
 function readUserName(): string | null {
   const raw = safeGet('wajeez_user')
@@ -77,18 +78,15 @@ function SiteNav() {
         <div className="flex items-center gap-3">
           <ThemeToggle />
           {userName ? (
-            <Link to={portalHome} className="hidden items-center gap-2 rounded-xl border border-teal/40 bg-teal/10 px-4 py-2 text-sm font-semibold text-teal-light-ink transition hover:bg-teal/20 md:inline-flex">
+            <Inset as={Link} tone="accent" interactive to={portalHome} className="hidden items-center gap-2 px-4 py-2 text-sm font-semibold text-teal-light-ink transition hover:bg-teal/20 md:inline-flex">
               <User className="h-4 w-4" />
               {userName}
-            </Link>
+            </Inset>
           ) : (
-            <Link
-              to="/auth"
-              className="hidden items-center gap-2 rounded-xl border border-white/15 px-4 py-2 text-sm font-semibold text-muted-foreground transition hover:border-teal/50 hover:text-teal-light-ink md:inline-flex"
-            >
+            <Inset as={Link} tone="accent" interactive to="/auth" className="hidden items-center gap-2 px-4 py-2 text-sm font-semibold text-muted-foreground transition hover:border-teal/50 hover:text-teal-light-ink md:inline-flex">
               <User className="h-4 w-4" />
               دخول
-            </Link>
+            </Inset>
           )}
           <a
             href="/#diagnostic"
@@ -114,17 +112,14 @@ function SiteNav() {
             renderLink(l, 'block py-2.5 text-muted-foreground hover:text-teal-light-ink', () => setOpen(false))
           )}
           {userName ? (
-            <Link to={portalHome} onClick={() => setOpen(false)} className="mt-2 flex items-center justify-center gap-2 rounded-xl border border-teal/40 px-5 py-3 font-semibold text-teal-light-ink">
+            <Inset as={Link} tone="accent" interactive to={portalHome} onClick={() => setOpen(false)} className="mt-2 flex items-center justify-center gap-2 px-5 py-3 font-semibold text-teal-light-ink">
               <User className="h-4 w-4" /> {userName}
-            </Link>
+            </Inset>
           ) : (
-            <Link
-              to="/auth"
-              onClick={() => setOpen(false)}
-              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 px-5 py-3 font-semibold text-muted-foreground"
-            >
+            <Inset as={Link} interactive to="/auth"
+              onClick={() => setOpen(false)} className="mt-2 flex w-full items-center justify-center gap-2 px-5 py-3 font-semibold text-muted-foreground">
               <User className="h-4 w-4" /> دخول / إنشاء حساب
-            </Link>
+            </Inset>
           )}
           <a href="/#diagnostic" onClick={() => setOpen(false)} className="btn-teal mt-2 flex w-full px-5 py-3">
             ابدأ مؤشر وجيز

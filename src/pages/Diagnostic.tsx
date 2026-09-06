@@ -804,11 +804,11 @@ export default function Diagnostic() {
           )}
 
           {/* المرجعية العلمية — آخر الشاشة: تطمين هادئ لمن يريد، لا حاجز أمام البدء */}
-          <p className="mx-auto mt-10 max-w-lg rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4 text-xs leading-relaxed text-muted-foreground">
+          <Card as="p" className="mx-auto mt-10 max-w-lg px-5 py-4 text-xs leading-relaxed text-muted-foreground">
             نسترشد في بناء أسئلتنا بأطر مهنية وتعليمية معروفة: <span className="font-bold text-teal-light-ink">RIASEC</span> للميول المهنية،
             و<span className="font-bold text-teal-light-ink">O*NET وESCO</span> لخرائط المهارات،
             و<span className="font-bold text-teal-light-ink">DigComp</span> للجاهزية الرقمية — وتُعرض عليك تفاصيلها في صفحة المنهجية.
-          </p>
+          </Card>
         </section>
       )}
 
@@ -885,10 +885,10 @@ export default function Diagnostic() {
                 إلا لأربعة خيارات ونصف — وقياسُ الاختيار أن ترى بدائلك مجتمعة. */}
             <h2 className="text-xl font-black leading-snug sm:text-2xl md:text-3xl">{qText}</h2>
             {(deepStep?.reasonAr ?? whyAr) && (
-              <p className="mt-3 w-fit rounded-xl border border-teal/30 bg-teal/[0.06] px-3.5 py-2 text-micro leading-relaxed text-muted-foreground">
+              <Inset as="p" tone="accent" className="mt-3 w-fit px-3.5 py-2 text-micro leading-relaxed text-muted-foreground">
                 <span className="font-bold text-teal-light-ink">لماذا هذا السؤال؟ </span>
                 {deepStep?.reasonAr ?? whyAr}
-              </p>
+              </Inset>
             )}
             {/* المحرك يكشف التناقض بين إجابتين ويخفض به «اتساق إجاباتك» في قوة
                 الأدلة، وكان لا يُعرض منه شيء — فيمضي التشخيص يسأل من قال إنه لا
@@ -896,13 +896,13 @@ export default function Diagnostic() {
                 بسؤال، فيُعرض حيث يمكن حسمه: فوق الخيارات وبجوار «السؤال السابق».
                 ملاحظة لا حاجز: من رأى أن الوصفين يجتمعان في حاله فليمضِ. */}
             {contradictionAr && (
-              <p className="mt-3 flex w-fit items-start gap-2 rounded-xl border border-gold/30 bg-gold/[0.07] px-3.5 py-2 text-micro leading-relaxed text-foreground">
+              <Inset as="p" tone="warn" className="mt-3 flex w-fit items-start gap-2 px-3.5 py-2 text-micro leading-relaxed text-foreground">
                 <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-ink" />
                 <span>
                   {contradictionAr}
                   <span className="text-muted-foreground"> — تستطيع الرجوع وتعديلها، أو المضي إن كانتا تصفانك معا.</span>
                 </span>
-              </p>
+              </Inset>
             )}
             {qHint && <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{qHint}</p>}
 
@@ -1255,10 +1255,10 @@ export default function Diagnostic() {
                   </div>
                 )}
                 {isExploratory && canDeepen && deepUnavailable && (
-                  <p className="mx-auto mt-9 max-w-md rounded-2xl border border-gold/35 bg-gold/[0.07] px-5 py-3 text-xs leading-relaxed text-gold-ink">
+                  <Card as="p" tone="warn" className="mx-auto mt-9 max-w-md px-5 py-3 text-xs leading-relaxed text-gold-ink">
                     لا تكفي أسئلتنا المتبقية لاستبيان تفصيلي مفيد على إجاباتك الحالية — فإعادة التشخيص
                     بإجابات أدقّ أنفع لك من أسئلة لا تضيف.
-                  </p>
+                  </Card>
                 )}
                 <div className={`flex flex-wrap items-center justify-center gap-3 ${isExploratory && canDeepen ? "mt-5" : "mt-9"}`}>
                   <Button tone="confirm"

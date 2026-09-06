@@ -11,6 +11,7 @@ import SeoHead from "@/components/SeoHead";
 import { apiPost, permissionMessage } from "@/services/api";
 
 import Button from "@/components/ui/Button";
+import { Card } from "@/components/ui/Surface";
 export default function ResetPassword() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
@@ -60,9 +61,9 @@ export default function ResetPassword() {
             <KeyRound className="h-10 w-10 text-[#FABC05]" />
             <h1 className="mt-4 text-2xl font-black">كلمة مرور جديدة</h1>
             {!token && (
-              <p className="mt-3 rounded-2xl border border-[#FABC05]/30 bg-[#FABC05]/5 px-4 py-3 text-xs leading-6 text-muted-foreground">
+              <Card as="p" className="mt-3 border-[#FABC05]/30 bg-[#FABC05]/5 px-4 py-3 text-xs leading-6 text-muted-foreground">
                 الرابط بلا رمز — افتحه من رسالة الاستعادة كما وصلتك، أو اطلب رسالة جديدة.
-              </p>
+              </Card>
             )}
             <form onSubmit={submit} className="mt-6 space-y-4">
               <label className="block">
@@ -84,9 +85,9 @@ export default function ResetPassword() {
                 {mismatch && <span className="mt-1.5 block text-micro text-[#FABC05]">الكلمتان غير متطابقتين</span>}
               </label>
               {error && (
-                <p role="alert" className="rounded-2xl border border-red-400/30 bg-red-500/5 px-4 py-3 text-xs leading-6 text-red-200">
+                <Card as="p" tone="danger" role="alert" className="px-4 py-3 text-xs leading-6 text-red-200">
                   {error}
-                </p>
+                </Card>
               )}
               <Button tone="confirm" type="submit" disabled={!ready} className="w-full disabled:cursor-not-allowed">
                 {busy ? "يُعيَّن…" : "تعيين كلمة المرور"}

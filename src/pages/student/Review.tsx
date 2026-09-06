@@ -24,7 +24,7 @@ import {
 } from "@/application/student/retrieval-schedule";
 import EmptyState from "@/components/EmptyState";
 
-import { Panel } from "@/components/ui/Surface";
+import { Card, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 const HONESTY_NOTE =
   "الاسترجاع لا يرفع مستوى مهارتك ولا يخفضه — مستواك يأتي من القياس في مؤشر وجيز ومن إعادة القياس بعد الدورة. " +
@@ -148,7 +148,7 @@ export default function Review() {
   return (
     <PortalLayout title="تثبيتُ ما تعلّمت">
       {error && (
-        <p className="mb-4 rounded-2xl border border-red-500/30 bg-red-500/10 px-5 py-4 text-sm text-red-200">{error}</p>
+        <Card as="p" tone="danger" className="mb-4 px-5 py-4 text-sm text-red-200">{error}</Card>
       )}
 
       <Panel as="section" tone="accent" className="bg-teal-ink/[0.07]">

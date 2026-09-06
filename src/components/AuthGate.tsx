@@ -13,7 +13,7 @@ import {
 import { track } from "@/services/analytics";
 import { useHoneypot } from "./HoneypotField";
 
-import { Panel } from "@/components/ui/Surface";
+import { Inset, Panel } from "@/components/ui/Surface";
 /* أيقونة قوقل الرسمية بألوانها الأربعة — جاهزة ليوم اكتمال ربط OAuth */
 function GoogleMark() {
   return (
@@ -353,9 +353,9 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
               )}
             </div>
             {err && (
-              <p role="alert" className="rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-2.5 text-center text-xs font-semibold leading-relaxed text-red-300">
+              <Inset as="p" tone="danger" role="alert" className="px-4 py-2.5 text-center text-xs font-semibold leading-relaxed text-red-300">
                 {err}
-              </p>
+              </Inset>
             )}
             <button
               type="submit"
@@ -582,7 +582,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
             )}
 
             {mode === "signup" && (
-              <label htmlFor="auth-consent" className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.03] p-3">
+              <Inset as="label" htmlFor="auth-consent" className="flex cursor-pointer items-start gap-2.5">
                 <input
                   id="auth-consent"
                   name="consent"
@@ -602,18 +602,18 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
                     سياسة الخصوصية
                   </Link>
                 </span>
-              </label>
+              </Inset>
             )}
 
             {notice && (
-              <p className="rounded-xl border border-teal/30 bg-teal/10 px-4 py-2.5 text-center text-xs font-semibold leading-relaxed text-teal-light-ink">
+              <Inset as="p" tone="accent" className="px-4 py-2.5 text-center text-xs font-semibold leading-relaxed text-teal-light-ink">
                 {notice}
-              </p>
+              </Inset>
             )}
             {err && (
-              <p role="alert" className="rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-2.5 text-center text-xs font-semibold leading-relaxed text-red-300">
+              <Inset as="p" tone="danger" role="alert" className="px-4 py-2.5 text-center text-xs font-semibold leading-relaxed text-red-300">
                 {err}
-              </p>
+              </Inset>
             )}
 
             <button

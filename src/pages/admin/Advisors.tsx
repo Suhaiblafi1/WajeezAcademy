@@ -117,9 +117,9 @@ export default function Advisors() {
           <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="مستشارا"
             placeholder="ابحث باسمٍ أو بريد…" />
           {view.total === 0 ? (
-            <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-muted-foreground">
+            <Panel as="p" className="py-16 text-center text-sm text-muted-foreground">
               لا مستشار يطابق «{q.trim()}».
-            </p>
+            </Panel>
           ) : (
             <div className="space-y-3">
               {view.rows.map((r) => (

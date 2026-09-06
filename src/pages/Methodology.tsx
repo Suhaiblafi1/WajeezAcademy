@@ -130,9 +130,9 @@ export default function Methodology() {
           ))}
         </div>
 
-        <p className="mt-10 rounded-2xl border border-gold/30 bg-gold/5 p-5 text-xs leading-loose text-muted-foreground">
+        <Card as="p" tone="warn" className="mt-10 text-xs leading-loose text-muted-foreground">
           {DISCLAIMER_METHODOLOGY_AR} الأسماء تُذكر نصيا فقط دون شعارات، التزاما بتراخيص الجهات الناشرة.
-        </p>
+        </Card>
 
         <div className="mt-10 text-center">
           <Link

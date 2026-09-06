@@ -84,13 +84,13 @@ export default function StageOffer({
         </>
       ) : stage.inPlan ? (
         <>
-          <p className="mt-4 flex items-start gap-2 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 text-xs leading-6 text-muted-foreground">
+          <Card as="p" className="mt-4 flex items-start gap-2 px-4 py-3 text-xs leading-6 text-muted-foreground">
             <CalendarClock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
             <span>
               <span className="font-bold text-foreground">بانتظار شعبة.</span>{" "}
               لا تُطلب الآن ولا يُدفع ثمنُها — نُعلمك فور جدولتها، أو استبدلها بدورةٍ بديلة.
             </span>
-          </p>
+          </Card>
           <div className="mt-3">
             <AwaitingCourseChoices
               courseId={stage.courseId}

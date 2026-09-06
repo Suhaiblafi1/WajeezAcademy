@@ -88,10 +88,10 @@ export default function AdvisorEarnings() {
         )}
       </Card>
 
-      <p className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4 text-center text-micro leading-6 text-muted-foreground">
+      <Card as="p" className="mt-6 px-5 py-4 text-center text-micro leading-6 text-muted-foreground">
         الإيراد محسوب من الطلبات المدفوعة فعلا لعملائك ضمن حالاتك النشطة، والعمولة نسبةٌ تُعيّنها الإدارة —
         لأي استفسار عن الرقم أو النسبة تواصل مع منسّقك.
-      </p>
+      </Card>
     </AdvisorLayout>
   );
 }

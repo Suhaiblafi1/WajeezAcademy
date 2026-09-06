@@ -3,6 +3,7 @@ import { Compass } from 'lucide-react'
 import SiteShell from '@/components/SiteShell'
 import SeoHead from '@/components/SeoHead'
 
+import { Card } from "@/components/ui/Surface";
 /* ───────────────── صفحة 404 ───────────────── */
 export default function NotFound() {
   return (
@@ -20,12 +21,12 @@ export default function NotFound() {
           <Link to="/diagnostic" className="rounded-2xl bg-teal-deep px-7 py-3.5 font-bold text-white transition hover:bg-teal-darker">
             ابدأ التشخيص
           </Link>
-          <Link to="/" className="rounded-2xl border border-white/15 px-7 py-3.5 font-bold text-muted-foreground transition hover:border-white/40">
+          <Card as={Link} interactive to="/" className="px-7 py-3.5 font-bold text-muted-foreground transition hover:border-white/40">
             الرئيسية
-          </Link>
-          <Link to="/pathways" className="rounded-2xl border border-white/15 px-7 py-3.5 font-bold text-muted-foreground transition hover:border-white/40">
+          </Card>
+          <Card as={Link} interactive to="/pathways" className="px-7 py-3.5 font-bold text-muted-foreground transition hover:border-white/40">
             تصفح المسارات
-          </Link>
+          </Card>
         </div>
       </div>
     </SiteShell>

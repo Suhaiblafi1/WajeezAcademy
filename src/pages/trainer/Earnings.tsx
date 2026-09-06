@@ -42,7 +42,7 @@ function RealEarningsView() {
   if (err) {
     return (
       <TrainerLayout title="مستحقاتي">
-        <p className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-center text-sm font-bold text-red-300" role="alert">{err}</p>
+        <Card as="p" tone="danger" className="text-center text-sm font-bold text-red-300" role="alert">{err}</Card>
       </TrainerLayout>
     );
   }
@@ -110,10 +110,10 @@ function RealEarningsView() {
         })}
       </div>
 
-      <p className="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4 text-center text-micro leading-6 text-muted-foreground">
+      <Card as="p" className="mt-8 px-5 py-4 text-center text-micro leading-6 text-muted-foreground">
         الكشف يمر بثلاث مراحل: إنشاء من الإدارة المالية ← اعتماد ← صرف. كل بند مرتبط بمصدره لمنع الازدواج —
         ولأي استفسار عن بند تواصل مع منسقك قبل موعد الصرف.
-      </p>
+      </Card>
     </TrainerLayout>
   );
 }

@@ -12,7 +12,7 @@ import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import ConfirmAction from "@/components/ConfirmAction";
 
-import { Panel, Card } from "@/components/ui/Surface";
+import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 interface QueueItem {
   id: string;
@@ -112,9 +112,9 @@ export default function RatingModeration() {
       )}
 
       {!offline && !loading && rows.length === 0 && (
-        <p className="rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-10 text-center text-sm text-muted-foreground">
+        <Card as="p" className="px-5 py-10 text-center text-sm text-muted-foreground">
           لا تعليقات في هذه الحالة.
-        </p>
+        </Card>
       )}
 
       {!offline && !loading && rows.length > 0 && (
@@ -162,7 +162,7 @@ export default function RatingModeration() {
             void act(target.id, false, reason);
           }}
         >
-          <p className="rounded-xl border border-white/10 bg-paper/20 px-3 py-2 leading-6 text-foreground">«{blocking.commentAr}»</p>
+          <Inset as="p" className="px-3 py-2 leading-6 text-foreground">«{blocking.commentAr}»</Inset>
           <p>يُحجَب <b className="text-foreground">النصُّ وحدَه</b> — ودرجةُ التقييم باقيةٌ في المعدّل، فالحجبُ لا يُخفي رأيا بل يمنع نشرَ عبارة.</p>
         </ConfirmAction>
       )}

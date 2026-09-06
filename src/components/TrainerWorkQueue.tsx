@@ -5,6 +5,7 @@ import { Link } from "react-router";
 import { AlertTriangle, ClipboardCheck, ClipboardList, ListChecks, Radio, Video, Upload, ArrowLeft } from "lucide-react";
 import type { QueueItem, QueueKind } from "@/application/trainer/work-queue";
 
+import { Inset } from "@/components/ui/Surface";
 const ICON: Record<QueueKind, typeof Video> = {
   session_now: Radio,
   session_soon: Video,
@@ -42,11 +43,11 @@ export default function TrainerWorkQueue({ items, className = "" }: { items: Que
       </div>
 
       {items.length === 0 ? (
-        <p className="mt-4 rounded-2xl border border-white/8 bg-paper/20 px-4 py-6 text-center text-xs leading-6 text-muted-foreground">
+        <Inset as="p" className="mt-4 px-4 py-6 text-center text-xs leading-6 text-muted-foreground">
           لا شيء ينتظرك الآن — الحضور مسجَّل والتسليمات مقيَّمة ولا جلسة قريبة.
           <br />
           يظهر هنا كل ما يحتاج إجراءً منك فور حدوثه.
-        </p>
+        </Inset>
       ) : (
         <ul className="mt-4 space-y-2.5">
           {items.map((it, i) => {

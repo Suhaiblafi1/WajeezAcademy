@@ -16,7 +16,7 @@ import { daysLabelAr, fmtDateTimeAr } from "@/utils/format";
 import { courseById } from "@/data/courses";
 import { isLiveCohort } from "@/application/schedule/cohort-status";
 
-import { Panel, Card } from "@/components/ui/Surface";
+import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 const STATUS_META: Record<string, { label: string; cls: string }> = {
   draft: { label: "مسودة", cls: "border-white/20 text-muted-foreground" },
@@ -216,7 +216,7 @@ export default function AdminCohorts() {
                   <span className="text-muted-foreground">الموعد الآن: <span className="text-foreground">{fmtDateTimeAr(r.currentStartsAt)}</span></span>
                   <span className="text-gold-ink">المقترح: <span className="font-bold">{fmtDateTimeAr(r.proposedStartsAt)}</span></span>
                 </div>
-                <p className="mt-2.5 rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-xs leading-6 text-foreground">{r.reason}</p>
+                <Inset as="p" className="mt-2.5 px-3 py-2 text-xs leading-6 text-foreground">{r.reason}</Inset>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   <input
                     aria-label={`تعليق على اقتراح ${r.session.title}`}
@@ -311,12 +311,12 @@ export default function AdminCohorts() {
       {loading ? (
         <div className="grid place-items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" /></div>
       ) : rows.length === 0 ? (
-        <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-muted-foreground">لا شعب بعد — أنشئ أول شعبة من الأعلى.</p>
+        <Panel as="p" className="py-16 text-center text-sm text-muted-foreground">لا شعب بعد — أنشئ أول شعبة من الأعلى.</Panel>
       ) : filtered.length === 0 ? (
         /* «لا نتائج» غيرُ «لا شعب»: الأولى تُمسح فلاترُها، والثانية تُنشأ شعبةً */
-        <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-muted-foreground">
+        <Panel as="p" className="py-16 text-center text-sm text-muted-foreground">
           لا شعبة تطابق الفلاتر — وسّع المدى أو امسحها.
-        </p>
+        </Panel>
       ) : (
         <div className="space-y-4">
           {filtered.map((c) => {

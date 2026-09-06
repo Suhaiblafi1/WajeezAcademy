@@ -428,21 +428,21 @@ function PlanRequest({ track, onDone }: { track: JourneyTrack; onDone: () => voi
 
   if (done) {
     return (
-      <p className="mt-3 rounded-2xl border border-teal/35 bg-teal/[0.07] px-4 py-3 text-xs leading-6 text-teal-light-ink">
+      <Card as="p" tone="accent" className="mt-3 px-4 py-3 text-xs leading-6 text-teal-light-ink">
         وصلنا طلبك على {done.requested.length === 1 ? "دورة واحدة" : `${done.requested.length} دورات`}.
         نراجعها ونحجز مقاعدك، ثمّ تصلك فاتورةٌ واحدة للخطّة كلها.
         {done.awaiting.length > 0 && ` و${done.awaiting.length} من دوراتك تنتظر فتح شعبتها — لا تُحتسب عليك الآن.`}
-      </p>
+      </Card>
     );
   }
 
   if (askable === 0) {
     if (pending > 0) {
       return (
-        <p className="mt-3 rounded-2xl border border-gold/30 bg-gold/[0.06] px-4 py-3 text-xs leading-6 text-gold-ink">
+        <Card as="p" tone="warn" className="mt-3 px-4 py-3 text-xs leading-6 text-gold-ink">
           طلبك على {pending === 1 ? "دورة واحدة" : `${pending} دورات`} قيد المراجعة. نحجز مقاعدك ثمّ تصلك
           فاتورةٌ واحدة للخطّة كلها — دفعةٌ واحدة لا أربع.
-        </p>
+        </Card>
       );
     }
     if (awaiting === 0) return null;

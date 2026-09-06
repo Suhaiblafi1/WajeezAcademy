@@ -75,7 +75,7 @@ const INSET_TONE: Record<SurfaceTone, string> = {
 
    والتحويمُ معها: حدٌّ يميل إلى الفيروزيّ يقول «هذا يُضغط» قبل الضغط. */
 const INTERACTIVE =
-  'cursor-pointer text-right transition hover:border-teal/40 hover:bg-teal/[0.04] '
+  'cursor-pointer text-start transition hover:border-teal/40 hover:bg-teal/[0.04] '
   + 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-2 '
   + 'focus-visible:ring-offset-paper disabled:cursor-not-allowed disabled:opacity-40'
 
@@ -88,6 +88,9 @@ export interface SurfaceProps extends Omit<HTMLAttributes<HTMLElement>, 'color'>
   /** مسافاتٌ وعرضٌ وشبكةٌ فقط — لا حدَّ ولا انحناءَ ولا أرضيّة */
   className?: string
   children?: ReactNode
+  /* السطحُ يصير أيَّ وسمٍ أو مكوّن (`as={Link}`، `as="label"`)، فيحمل خصائصَه:
+     `to` للرابط، و`htmlFor` للّصيقة. ولا يُعرف نوعُها هنا لأنّها تتبع `as`. */
+  [key: string]: unknown
 }
 
 function make(depth: keyof typeof DEPTH) {

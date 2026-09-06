@@ -180,7 +180,7 @@ export default function CatalogAdmin() {
 
   return (
     <AdminLayout title="إدارة الكتالوج الأكاديمي">
-      {error && <p className="mb-4 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-200">{error}</p>}
+      {error && <Inset as="p" tone="danger" className="mb-4 px-4 py-3 text-sm text-red-200">{error}</Inset>}
 
       {overview && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
@@ -231,9 +231,9 @@ export default function CatalogAdmin() {
             </div>
             <ListToolbar q={q} onQ={setQ} onPage={setPage} view={browseUi.view} unit={browseUi.unit} placeholder={browseUi.ph} />
             {browseUi.view.total === 0 && (
-              <p className="rounded-2xl border border-white/10 bg-white/[0.02] py-10 text-center text-sm text-muted-foreground">
+              <Card as="p" className="py-10 text-center text-sm text-muted-foreground">
                 لا نتيجة بهذا الفرز — وسّعه أو امسح البحث.
-              </p>
+              </Card>
             )}
           </div>
         )}
@@ -267,12 +267,12 @@ export default function CatalogAdmin() {
         {browse === "skills" && (
           <>
             {/* ب-٤: الحصيلة أولا — «كم مهارة تُقاس فعلا» هو السؤال الذي يخفيه جدول من ٣٠٥ صفوف */}
-            <p className="mt-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-micro leading-6 text-foreground">
+            <Card as="p" className="mt-3 px-4 py-3 text-micro leading-6 text-foreground">
               {skills.filter((s) => s.measureState === "measured").length} مقيسة ·{" "}
               {skills.filter((s) => s.measureState === "registered_unmeasured").length} مسجَّلة بلا سؤال ·{" "}
               {skills.filter((s) => s.measureState === "inactive").length} موقوفة تشخيصيا · من {skills.length}
               <span className="text-muted-foreground"> — غير المقيسة تدخل مقام تغطية القياس ولا تُقاس أبدا.</span>
-            </p>
+            </Card>
             <ul className="mt-2 grid gap-2 sm:grid-cols-2">
               {skillView.rows.map((s) => (
                 <Inset as="li" key={s.id} className="px-4 py-2.5">

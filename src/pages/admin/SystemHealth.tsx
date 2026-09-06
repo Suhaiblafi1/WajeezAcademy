@@ -17,7 +17,7 @@ import AdminLayout from "./AdminLayout";
 import { apiGet, ApiError, permissionMessage } from "@/services/api";
 import { fmtDateTime } from "@/application/text/format-ar";
 
-import { Panel } from "@/components/ui/Surface";
+import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 type Level = "ok" | "attention" | "broken" | "unknown";
 
@@ -85,7 +85,7 @@ export default function SystemHealth() {
       </div>
 
       {error && (
-        <p role="alert" className="rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-xs font-bold leading-6 text-red-200">{error}</p>
+        <Card as="p" tone="danger" role="alert" className="px-4 py-3 text-xs font-bold leading-6 text-red-200">{error}</Card>
       )}
 
       {data === null && !error && (
@@ -127,9 +127,9 @@ export default function SystemHealth() {
                         <p className="mt-2 text-[13px] font-bold leading-6 text-foreground">{item.valueAr}</p>
                         <p className="mt-1.5 text-micro leading-5 text-muted-foreground">{item.meaningAr}</p>
                         {item.actionAr && (
-                          <p className="mt-2 rounded-xl border border-white/8 bg-paper/20 px-3 py-2 text-micro leading-5 text-foreground">
+                          <Inset as="p" className="mt-2 px-3 py-2 text-micro leading-5 text-foreground">
                             {item.actionAr}
-                          </p>
+                          </Inset>
                         )}
                         {item.href && (
                           <Link to={item.href} className="mt-3 flex items-center gap-1 text-micro font-bold text-teal-light-ink hover:underline">

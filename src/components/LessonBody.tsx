@@ -16,6 +16,7 @@
 import { Fragment, type ReactNode } from "react";
 import { parseLesson } from "@/application/content/lesson-markup";
 
+import { Inset } from "@/components/ui/Surface";
 const SAFE_LINK = /^(https?:\/\/|mailto:)/i;
 
 /** يقسّم النص على الأنماط السطرية ويعيد عناصر React — بلا HTML خام */
@@ -115,9 +116,9 @@ export default function LessonBody({ body, className = "" }: { body: string; cla
             );
           case "code":
             return (
-              <pre key={k} dir="ltr" className="overflow-x-auto rounded-2xl border border-white/10 bg-paper/30 p-4 text-left">
+              <Inset as="pre" key={k} dir="ltr" className="overflow-x-auto text-left">
                 <code className="font-mono text-xs leading-6 text-foreground">{b.text}</code>
-              </pre>
+              </Inset>
             );
           case "hr":
             return <hr key={k} className="border-white/10" />;

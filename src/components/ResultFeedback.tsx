@@ -7,7 +7,7 @@ import { apiPost, ApiError } from "@/services/api";
 import { track } from "@/services/analytics";
 
 import Button from "@/components/ui/Button";
-import { Panel } from "@/components/ui/Surface";
+import { Inset, Panel } from "@/components/ui/Surface";
 type Verdict = "yes" | "somewhat" | "no";
 
 const VERDICTS: { id: Verdict; label: string }[] = [
@@ -89,9 +89,9 @@ export default function ResultFeedback({ sessionId, pathwayId }: { sessionId: st
           />
 
           {error && (
-            <p role="alert" className="mt-3 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-2.5 text-xs font-bold text-red-200">
+            <Inset as="p" tone="danger" role="alert" className="mt-3 px-4 py-2.5 text-xs font-bold text-red-200">
               {error}
-            </p>
+            </Inset>
           )}
 
           <Button tone="confirm"

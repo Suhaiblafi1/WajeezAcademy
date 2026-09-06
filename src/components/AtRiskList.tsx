@@ -4,7 +4,7 @@
 import { AlertTriangle, Mail, ShieldCheck } from "lucide-react";
 import { RISK_RULE_AR, type AtRiskLearner } from "@/application/trainer/at-risk";
 
-import { Card } from "@/components/ui/Surface";
+import { Card, Inset } from "@/components/ui/Surface";
 export default function AtRiskList({ learners, className = "" }: { learners: AtRiskLearner[]; className?: string }) {
   return (
     <section
@@ -22,10 +22,10 @@ export default function AtRiskList({ learners, className = "" }: { learners: AtR
       </div>
 
       {learners.length === 0 ? (
-        <p className="mt-4 flex items-center justify-center gap-2 rounded-2xl border border-white/8 bg-paper/20 px-4 py-6 text-center text-xs text-muted-foreground">
+        <Inset as="p" className="mt-4 flex items-center justify-center gap-2 px-4 py-6 text-center text-xs text-muted-foreground">
           <ShieldCheck className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
           لا متعثر بالمعايير أدناه — الحضور والتسليمات في نطاقها المتوقع.
-        </p>
+        </Inset>
       ) : (
         <ul className="mt-4 space-y-2.5">
           {learners.map((l) => (
@@ -58,9 +58,9 @@ export default function AtRiskList({ learners, className = "" }: { learners: AtR
         </ul>
       )}
 
-      <p className="mt-4 rounded-2xl border border-white/8 bg-paper/20 px-4 py-3 text-micro leading-relaxed text-muted-foreground">
+      <Inset as="p" className="mt-4 px-4 py-3 text-micro leading-relaxed text-muted-foreground">
         {RISK_RULE_AR}
-      </p>
+      </Inset>
     </section>
   );
 }

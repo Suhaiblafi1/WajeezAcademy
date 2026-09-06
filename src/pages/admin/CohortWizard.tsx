@@ -277,9 +277,9 @@ export default function CohortWizard({
               يُقترَح من الدورة والشهر، وهو ما يراه المتعلّمُ في فاتورته وشهادته — فاجعله يفرّق هذه الشعبةَ عن أختها.
             </p>
             {course && (
-              <p className="mt-3 rounded-xl border border-white/10 bg-paper/20 px-3 py-2.5 text-micro text-muted-foreground">
+              <Inset as="p" className="mt-3 px-3 py-2.5 text-micro text-muted-foreground">
                 سعرُ قائمة الدورة: {course.listPrice ?? "—"} {currency}
-              </p>
+              </Inset>
             )}
           </div>
         </div>
@@ -359,10 +359,10 @@ export default function CohortWizard({
         <div>
           {trainers === null && <p className="text-xs text-muted-foreground"><Loader2 className="mr-1 inline h-3.5 w-3.5 animate-spin" aria-hidden="true" /> تُقرأ قائمةُ المدرّبين…</p>}
           {trainers !== null && trainers.length === 0 && (
-            <p className="rounded-xl border border-white/10 bg-paper/20 px-4 py-3 text-micro leading-6 text-muted-foreground">
+            <Inset as="p" className="px-4 py-3 text-micro leading-6 text-muted-foreground">
               لا مدرّبَ مؤهَّلا لهذه الدورة بعد — تُنشأ الشعبةُ مسودّةً، ويُسنَد المدرّبُ من بطاقتها متى تأهّل.
               وشرطُ الفتح يبقى قائما: لا شعبةَ تُفتح بلا مدرّب.
-            </p>
+            </Inset>
           )}
           {trainers !== null && trainers.length > 0 && (
             <ul className="grid gap-2 sm:grid-cols-2">

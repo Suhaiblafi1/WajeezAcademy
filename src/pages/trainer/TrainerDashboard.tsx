@@ -202,10 +202,10 @@ function RealTrainerHome({ name }: { name: string }) {
       {cohorts.length > 0 && <TrainerWorkQueue items={work} className="mb-6" />}
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <Link to="/trainer/board" className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-white/30">
+        <Card as={Link} interactive to="/trainer/board" className="transition hover:border-white/30">
           <p className="flex items-center gap-2 text-xs text-muted-foreground"><GraduationCap className="h-4 w-4" /> شعبي</p>
           <p className="mt-2 text-3xl font-black">{cohorts.length}</p>
-        </Link>
+        </Card>
         <Card>
           <p className="flex items-center gap-2 text-xs text-muted-foreground"><Users className="h-4 w-4" /> طلابي</p>
           <p className="mt-2 text-3xl font-black">{students}</p>
@@ -214,10 +214,10 @@ function RealTrainerHome({ name }: { name: string }) {
           <p className="flex items-center gap-2 text-xs text-gold-ink"><ClipboardCheck className="h-4 w-4" /> تسليمات بانتظار تقييمي</p>
           <p className="mt-2 text-3xl font-black text-gold-ink">{awaiting}</p>
         </Link>
-        <Link to="/trainer/proposals" className="rounded-2xl border border-teal/30 bg-teal/5 p-5 transition hover:border-teal/60">
+        <Card as={Link} tone="accent" interactive to="/trainer/proposals" className="transition hover:border-teal/60">
           <p className="flex items-center gap-2 text-xs text-teal-light-ink"><GitPullRequest className="h-4 w-4" /> اقتراحاتي على المحتوى</p>
           <p className="mt-2 text-3xl font-black text-teal-light-ink">↗</p>
-        </Link>
+        </Card>
       </div>
 
       {/* ف-٢ · من يحتاج تدخلك — أهم معلومة عند المدرب ولم تكن معروضة */}
@@ -228,7 +228,7 @@ function RealTrainerHome({ name }: { name: string }) {
         <div className="mt-3 space-y-2">
           {upcoming.length === 0 && <p className="py-3 text-center text-xs text-muted-foreground">لا جلسات قادمة مجدولة</p>}
           {upcoming.map((s) => (
-            <Link key={s.id} to="/trainer/board" className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-2.5 text-xs transition hover:border-white/30">
+            <Card as={Link} interactive key={s.id} to="/trainer/board" className="flex items-center gap-3 px-4 py-2.5 text-xs transition hover:border-white/30">
               <div className="min-w-0 flex-1">
                 <p className="truncate font-bold text-foreground">{s.title}</p>
                 <p className="mt-0.5 truncate text-micro text-muted-foreground">{s.cohortTitle}</p>
@@ -236,7 +236,7 @@ function RealTrainerHome({ name }: { name: string }) {
               <span className="shrink-0 text-micro font-bold text-muted-foreground">
                 {fmtDateTimeAr(s.startsAt)}
               </span>
-            </Link>
+            </Card>
           ))}
         </div>
       </Panel>

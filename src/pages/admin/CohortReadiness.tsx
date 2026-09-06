@@ -77,9 +77,9 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
       </p>
 
       {error && (
-        <p className="mt-3 flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+        <Inset as="p" tone="danger" className="mt-3 flex items-center gap-2 px-3 py-2 text-xs text-red-300">
           <AlertTriangle className="h-3.5 w-3.5 shrink-0" /> {error}
-        </p>
+        </Inset>
       )}
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">

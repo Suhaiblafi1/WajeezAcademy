@@ -10,7 +10,7 @@ import {
 } from "@/application/cv/cv-store";
 
 import Button from "@/components/ui/Button";
-import { Card } from "@/components/ui/Surface";
+import { Card, Inset } from "@/components/ui/Surface";
 /* «أرسل سيرتك للمستشار» — اختياري تماما، لا يمنع رؤية النتيجة.
    الملف يُخزن خاصا على جهاز المستخدم (IndexedDB) في هذا الإصدار،
    ولا يُرسل لأي نموذج ذكاء اصطناعي — يقرأه المستشار البشري فقط. */
@@ -129,7 +129,7 @@ export default function CvUpload({
       )}
       {file && (
         <div className="story-fade mt-3">
-          <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.03] p-3 text-xs leading-relaxed text-foreground">
+          <Inset as="label" className="flex cursor-pointer items-start gap-2.5 text-xs leading-relaxed text-foreground">
             <input
               type="checkbox"
               checked={consent}
@@ -137,7 +137,7 @@ export default function CvUpload({
               className="mt-0.5 h-4 w-4 shrink-0 accent-teal"
             />
             {CV_CONSENT_TEXT_AR}
-          </label>
+          </Inset>
           <Button tone="confirm"
             onClick={send}
             disabled={!consent || busy}

@@ -7,7 +7,7 @@ import { apiGet } from '@/services/api'
 import SiteShell from '@/components/SiteShell'
 import SeoHead from '@/components/SeoHead'
 
-import { Panel } from "@/components/ui/Surface";
+import { Card, Panel } from "@/components/ui/Surface";
 interface PublicTrainer {
   id: string; name: string; headline: string | null; bio: string | null;
   country: string | null; specialties: string[]; assignedCourseIds: string[];
@@ -95,10 +95,10 @@ export default function Trainers() {
         <p className="mx-auto mt-3 max-w-xl leading-8 text-muted-foreground">
           كل دورة بمدرب متخصص يراجع مخرجك بيده، وكل مسار يجمع اثنين إلى ثلاثة مدربين.
         </p>
-        <p className="mx-auto mt-3 flex max-w-md items-center justify-center gap-2 rounded-2xl border border-gold/30 bg-gold/[0.06] px-4 py-2.5 text-xs font-bold leading-6 text-gold-ink">
+        <Card as="p" tone="warn" className="mx-auto mt-3 flex max-w-md items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold leading-6 text-gold-ink">
           <ShieldCheck className="h-4 w-4 shrink-0" />
           {TRAINER_PENDING_AR} — لا ننشر اسما قبل اعتماده رسميا.
-        </p>
+        </Card>
 
         {/* البحث بالاسم أو المجال */}
         <div className="relative mx-auto mt-6 max-w-md">

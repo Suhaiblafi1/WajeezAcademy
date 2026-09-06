@@ -609,24 +609,24 @@ function CoursePathPage({ courseId }: { courseId: string }) {
 
             {/* التنبيه — بالكلفة الحقيقية للدورة الإضافية لا بسعرها المعلن */}
             {nudge && (
-              <p className="mt-3 flex items-start gap-2 rounded-xl border border-gold/40 bg-gold/10 px-3.5 py-2.5 text-micro font-semibold leading-5 text-gold-ink">
+              <Inset as="p" tone="warn" className="mt-3 flex items-start gap-2 px-3.5 py-2.5 text-micro font-semibold leading-5 text-gold-ink">
                 <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>
                   دورة واحدة أخرى ترفع خصمك إلى {nudge.nextPct}٪: تصير الـ{nudge.nextCount} بـ<span dir="ltr">{money(nudge.nextPayable)}</span>.
                   {" "}أي أن الدورة الإضافية تكلّفك <span dir="ltr">{money(nudge.marginal)}</span> بدل <span dir="ltr">{money(nudge.listPrice)}</span>.
                 </span>
-              </p>
+              </Inset>
             )}
 
             {/* السقف — يُقال بسببه لا بمنعٍ صامت */}
             {pricing.atCap && (
-              <p className="mt-2.5 flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-micro leading-5 text-muted-foreground">
+              <Inset as="p" className="mt-2.5 flex items-start gap-2 px-3.5 py-2.5 text-micro leading-5 text-muted-foreground">
                 <ListChecks className="mt-0.5 h-3.5 w-3.5 shrink-0 text-teal-light-ink" />
                 <span>
                   بلغتَ {MAX_BUILT_COURSES} دورات — وهو حدّ ما تبنيه بنفسك. ليس بخلا بل حمايةٌ لإنهائه:
                   خطةٌ تُنجَز خير من خطةٍ تُشترى. وما تختاره بعدها يُحفظ لمرحلتك التالية أدناه.
                 </span>
-              </p>
+              </Inset>
             )}
 
             {matchesPathway && (

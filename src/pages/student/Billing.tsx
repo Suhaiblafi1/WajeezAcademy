@@ -8,7 +8,7 @@ import { apiGet, apiPost, ApiError } from "@/services/api";
 import { fmtWhen } from "@/utils/format";
 import { toast, toastError } from '@/components/Toast';
 
-import { Panel, Card } from "@/components/ui/Surface";
+import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 interface Payment { id: string; amount: string; status: string; method: string | null; refunds: { id: string; status: string; amount: string }[] }
 interface Invoice { id: string; total: string; currency: string; status: string; issuedAt: string; payments: Payment[] }
@@ -107,7 +107,7 @@ export default function Billing() {
 
   return (
     <PortalLayout title="فواتيري وطلباتي">
-      {error && <p className="mb-4 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-200">{error}</p>}
+      {error && <Inset as="p" tone="danger" className="mb-4 px-4 py-3 text-sm text-red-200">{error}</Inset>}
 
       {loading ? (
         <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" /></div>
@@ -156,9 +156,9 @@ export default function Billing() {
                 </Button>
               )}
               {isUnpaid(o.status) && provider.driver === "manual" && (
-                <p className="mt-4 rounded-xl border border-gold/30 bg-gold/5 px-4 py-2.5 text-xs font-bold text-gold-ink">
+                <Inset as="p" tone="warn" className="mt-4 px-4 py-2.5 text-xs font-bold text-gold-ink">
                   {PAY_LABEL.manual}
-                </p>
+                </Inset>
               )}
 
               {o.invoice && (

@@ -16,7 +16,7 @@ import { courseById } from "@/data/courses";
 import { areaCls } from "@/components/FormKit";
 import { fmtDateTimeAr } from "@/utils/format";
 
-import { Panel } from "@/components/ui/Surface";
+import { Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 interface Row {
   id: string;
@@ -128,9 +128,9 @@ export default function AdvisorRequests() {
                   </div>
                 </div>
 
-                <p className="mt-3 rounded-xl border border-white/10 bg-paper/25 px-4 py-3 text-xs leading-7 text-foreground">
+                <Inset as="p" className="mt-3 px-4 py-3 text-xs leading-7 text-foreground">
                   <span className="font-bold text-muted-foreground">سببُه: </span>{r.reasonAr}
-                </p>
+                </Inset>
 
                 <div className="mt-3">
                   <label htmlFor={`note-${r.id}`} className="mb-1.5 block text-micro font-bold text-muted-foreground">

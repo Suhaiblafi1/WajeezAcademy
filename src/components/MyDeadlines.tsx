@@ -23,6 +23,7 @@ import { Link } from "react-router";
 import { CalendarClock, RotateCcw } from "lucide-react";
 import { apiGet } from "@/services/api";
 
+import { Inset } from "@/components/ui/Surface";
 interface Deadline {
   assessmentId: string;
   title: string;
@@ -122,14 +123,11 @@ export default function MyDeadlines({ className = "" }: { className?: string }) 
                     </span>
                   )}
                   <span className="text-xs font-black">{d.dueLabelAr}</span>
-                  <Link
-                    /* الرابطُ يفتح مرحلةَ الدورة في «تعلّمي» حيث نموذجُ
+                  <Inset as={Link} interactive /* الرابطُ يفتح مرحلةَ الدورة في «تعلّمي» حيث نموذجُ
                        التسليم — لا صفحةً عامّةً يبحث فيها عن واجبه */
-                    to={`/student/learning?stage=${encodeURIComponent(d.courseId)}`}
-                    className="inline-flex min-h-[44px] items-center rounded-xl border border-white/15 px-3 text-xs font-bold hover:bg-white/5"
-                  >
+                    to={`/student/learning?stage=${encodeURIComponent(d.courseId)}`} className="inline-flex min-h-[44px] items-center px-3 text-xs font-bold hover:bg-white/5">
                     افتح للتسليم
-                  </Link>
+                  </Inset>
                 </div>
               </div>
             </li>

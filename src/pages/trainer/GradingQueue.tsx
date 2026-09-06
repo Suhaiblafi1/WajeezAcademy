@@ -7,7 +7,7 @@ import TrainerLayout from "./TrainerLayout";
 import { apiGet } from "@/services/api";
 import { fmtShortDateTimeAr } from "@/utils/format";
 
-import { Panel } from "@/components/ui/Surface";
+import { Card, Panel } from "@/components/ui/Surface";
 interface RealQueueItem {
   id: string; status: string; submittedAt: string;
   assessment: { title: string; cohort: { title: string } };
@@ -60,7 +60,7 @@ function RealGradingQueue() {
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">لديك {actionable.length} {actionable.length === 1 ? "تسليم يحتاج" : "تسليمات تحتاج"} تقييمك:</p>
           {actionable.map((q) => (
-            <Link key={q.id} to="/trainer/board" className="flex items-center gap-3 rounded-2xl border border-gold/30 bg-gold/5 px-5 py-4 text-sm transition hover:border-gold/60">
+            <Card as={Link} tone="warn" interactive key={q.id} to="/trainer/board" className="flex items-center gap-3 px-5 py-4 text-sm transition hover:border-gold/60">
               <FileText className="h-4 w-4 shrink-0 text-gold-ink" />
               <div className="min-w-0 flex-1">
                 <p className="truncate font-bold text-foreground">{q.assessment.title}</p>
@@ -69,7 +69,7 @@ function RealGradingQueue() {
                 </p>
               </div>
               <span className="shrink-0 rounded-full bg-gold px-3 py-1 text-micro font-black text-on-gold">قيّمه من «شعبي»</span>
-            </Link>
+            </Card>
           ))}
         </div>
       )}

@@ -20,7 +20,7 @@ import { domainsV2 } from "@/domain/diagnostic/v2/data";
 import { apiPost, apiGet, ApiError } from "@/services/api";
 import { toast } from "@/components/Toast";
 
-import { Panel, Card } from "@/components/ui/Surface";
+import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 interface CourseOption { id: string; title: string }
 
@@ -130,7 +130,7 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
       </ol>
       <p className="mb-4 text-micro text-muted-foreground">{WIZARD_STEPS[step].hintAr}</p>
 
-      {error && <p className="mb-4 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-200">{error}</p>}
+      {error && <Inset as="p" tone="danger" className="mb-4 px-4 py-3 text-sm text-red-200">{error}</Inset>}
 
       {/* ١ · بيانات المسار */}
       {key === "basics" && (
@@ -183,10 +183,10 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
               ))}
             </div>
             {stages.length > 0 && (
-              <p className="mt-2 rounded-xl border border-white/10 bg-paper/20 px-3 py-2 text-micro leading-6 text-foreground">
+              <Inset as="p" className="mt-2 px-3 py-2 text-micro leading-6 text-foreground">
                 <Target className="mb-0.5 me-1 inline h-3.5 w-3.5 text-teal-light-ink" aria-hidden="true" />
                 يفتح {stages.length} مرحلة مهنية: <span dir="ltr" className="font-mono">{stages.join(" · ")}</span>
-              </p>
+              </Inset>
             )}
           </div>
 
@@ -204,10 +204,10 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
               ))}
             </div>
             {unreachable.length > 0 && (
-              <p className="mt-2 flex items-start gap-2 rounded-xl border border-amber-400/30 bg-amber-400/5 px-3 py-2 text-micro leading-6 text-amber-300">
+              <Inset as="p" tone="warn" className="mt-2 flex items-start gap-2 px-3 py-2 text-micro leading-6 text-amber-300">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                 <span>أهداف لا يُنتجها التدفق الحالي: <span dir="ltr" className="font-mono">{unreachable.join(" · ")}</span> — تُحفظ ولا تمنع، لكن المسار لن يُرشَّح منها؛ يبقى المجال والمهارة والمرحلة.</span>
-              </p>
+              </Inset>
             )}
           </div>
 
@@ -242,9 +242,9 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
       {/* ٥ · الأثر والمراجعة */}
       {key === "review" && (
         <div className="space-y-4">
-          <p className="rounded-xl border border-emerald-400/25 bg-emerald-400/5 px-4 py-3 text-xs leading-6 text-emerald-300">
+          <Inset as="p" tone="positive" className="px-4 py-3 text-xs leading-6 text-emerald-300">
             أُنشئ المسار <span dir="ltr" className="font-mono">{createdId}</span> كمسودة بجمهوره ومجالاته ودوراته.
-          </p>
+          </Inset>
 
           {readiness && (
             <Card className="bg-paper/20">
@@ -280,11 +280,11 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
             </Card>
           )}
 
-          <p className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-micro leading-6 text-foreground">
+          <Inset as="p" className="px-4 py-3 text-micro leading-6 text-foreground">
             لا يُنشر المسار من هنا: كل كيان معتمد يحتاج طلب تغيير يعتمده <strong>شخص آخر</strong>
             {" "}(maker-checker) — واعتماد الذات مرفوض. الزر التالي يقدّمه للاعتماد، ثم يَنشره
             المعتمد من «النشر والإصدارات» بعد اجتياز البوابة كاملة.
-          </p>
+          </Inset>
         </div>
       )}
 

@@ -18,7 +18,7 @@ import CourseTitle from "@/components/CourseTitle"
 import FavoriteButton from "@/components/FavoriteButton"
 import SectionLabel from "./SectionLabel"
 
-import { Card, Panel } from "@/components/ui/Surface";
+import { Card, Inset, Panel } from "@/components/ui/Surface";
 function CategoryFilter({
   counts, active, onChange, label,
 }: {
@@ -169,10 +169,7 @@ export function Bestsellers() {
       {spotlight && (
         <div className="mx-auto max-w-7xl px-5">
           <div className="reveal relative mt-8">
-          <Link
-            to={`/pathways/${spotlight.id}`}
-            className="group grid overflow-hidden rounded-3xl border border-teal/30 bg-gradient-to-l from-panel to-card transition hover:border-teal/60 hover:shadow-[0_30px_80px_-40px_rgba(56,167,180,0.5)] md:grid-cols-5"
-          >
+          <Panel as={Link} tone="accent" interactive to={`/pathways/${spotlight.id}`} className="group grid overflow-hidden bg-gradient-to-l from-panel to-card transition hover:border-teal/60 hover:shadow-[0_30px_80px_-40px_rgba(56,167,180,0.5)] md:grid-cols-5">
             <div className="relative flex min-h-[104px] items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_70%_30%,rgba(56,167,180,0.4),transparent_65%)] md:col-span-2 md:min-h-[190px]">
               <Route className="h-10 w-10 text-teal-light-ink/70 md:h-16 md:w-16" />
               <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-gold px-2.5 py-1 text-micro font-black text-on-gold md:right-5 md:top-5 md:gap-1.5 md:px-3.5 md:py-1.5 md:text-xs">
@@ -203,7 +200,7 @@ export function Bestsellers() {
                 <ArrowLeft className="h-4 w-4 transition group-hover:-translate-x-1" />
               </span>
             </div>
-          </Link>
+          </Panel>
           {/* مفضلة البطاقة المميزة — فوق الرابط بزاوية حرة، والنقر لا يفتح المسار */}
           <FavoriteButton pathwayId={spotlight.id} pathwayName={spotlight.p.name}
             className="absolute left-3 top-3 z-10 bg-paper/70 backdrop-blur md:left-5 md:top-5" />
@@ -260,21 +257,15 @@ export function Bestsellers() {
               {p.level} · {pathwaySizeAr(p)}
             </div>
             <div className="mt-auto pt-5">
-              <Link
-                to={`/pathways/${id}`}
-                className="block rounded-xl border border-teal/40 py-2.5 text-center text-sm font-semibold text-teal-light-ink transition group-hover:bg-teal-deep group-hover:text-white"
-              >
+              <Inset as={Link} tone="accent" interactive to={`/pathways/${id}`} className="block py-2.5 text-center text-sm font-semibold text-teal-light-ink transition group-hover:bg-teal-deep group-hover:text-white">
                 تفاصيل المسار
-              </Link>
+              </Inset>
             </div>
           </Panel>
         ))}
 
         {/* بطاقة ختامية تعيد للتشخيص */}
-        <Link
-          to="/diagnostic"
-          className="flex w-[280px] shrink-0 snap-start flex-col items-center justify-center rounded-3xl border border-dashed border-teal/30 bg-teal/5 p-6 text-center transition hover:border-teal/60 hover:bg-teal/10"
-        >
+        <Panel as={Link} tone="accent" interactive to="/diagnostic" className="flex w-[280px] shrink-0 snap-start flex-col items-center justify-center border-dashed text-center transition hover:border-teal/60 hover:bg-teal/10">
           <Compass className="h-8 w-8 text-teal-ink" />
           <p className="mt-4 font-bold leading-relaxed">لم تجد ما يناسبك؟</p>
           <p className="mt-2 text-sm leading-7 text-muted-foreground">
@@ -284,7 +275,7 @@ export function Bestsellers() {
             ابدأ التشخيص
             <ArrowLeft className="h-4 w-4" />
           </span>
-        </Link>
+        </Panel>
       </div>
       {/* أسهم التقليب — أسفل الشريط: يبقى السحب بالإصبع متاحا والأسهم بديل واضح */}
       <div className="mt-4 flex items-center justify-center gap-3">
@@ -368,20 +359,14 @@ export function Bestsellers() {
       </div>
       </div>
       <div className="mx-auto mt-10 flex max-w-7xl flex-wrap items-center justify-center gap-3 px-5">
-        <Link
-          to="/pathways"
-          className="inline-flex items-center gap-2 rounded-2xl border border-teal/40 px-6 py-3 text-sm font-bold text-teal-light-ink transition hover:bg-teal-deep hover:text-white"
-        >
+        <Card as={Link} tone="accent" interactive to="/pathways" className="inline-flex items-center gap-2 px-6 py-3 text-sm font-bold text-teal-light-ink transition hover:bg-teal-deep hover:text-white">
           تصفح كل المسارات
           <ArrowLeft className="h-4 w-4" />
-        </Link>
-        <Link
-          to="/courses"
-          className="inline-flex items-center gap-2 rounded-2xl border border-white/15 px-6 py-3 text-sm font-bold text-muted-foreground transition hover:border-gold/50 hover:text-gold-ink"
-        >
+        </Card>
+        <Card as={Link} tone="warn" interactive to="/courses" className="inline-flex items-center gap-2 px-6 py-3 text-sm font-bold text-muted-foreground transition hover:border-gold/50 hover:text-gold-ink">
           تصفح كل الدورات
           <ArrowLeft className="h-4 w-4" />
-        </Link>
+        </Card>
       </div>
 
     </section>

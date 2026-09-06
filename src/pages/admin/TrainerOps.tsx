@@ -352,7 +352,7 @@ export function TrainerChangeRequests() {
 
   return (
     <div className="space-y-3">
-      {msg && <p className="rounded-xl border border-white/10 bg-white/[0.04] p-3 text-xs font-bold text-foreground" role="status">{msg}</p>}
+      {msg && <Inset as="p" className="text-xs font-bold text-foreground" role="status">{msg}</Inset>}
       {rows.length === 0 && (
         <Panel className="grid place-items-center py-16 text-center">
           <CheckCircle2 className="h-10 w-10 text-muted-foreground/50" />
@@ -691,13 +691,13 @@ export function TrainerPayouts() {
               && !r.cohortId && !r.courseId && !ruleForm.cohortId)
               ?? rules.find((r) => r.profileId === ruleForm.profileId && !r.effectiveTo && r.cohortId === ruleForm.cohortId && ruleForm.cohortId);
             return (
-              <p className="rounded-xl border border-white/10 bg-paper/20 px-3 py-2 text-micro text-muted-foreground">
+              <Inset as="p" className="px-3 py-2 text-micro text-muted-foreground">
                 {active
                   ? <>القاعدة السارية{active.cohortId ? " لهذه الشعبة" : " (العامة)"}: <b className="text-foreground">{RULE_TYPE_AR[active.type]}</b> بمعدل <b dir="ltr" className="font-mono text-foreground">{Number(active.rate)}</b> {active.currency}
                       {active.type === "per_seat" && active.minSeats > 0 ? <> · حد أدنى <b className="text-foreground">{active.minSeats}</b> مقاعد</> : null}
                       {" "}— حفظ قاعدة جديدة بنفس النطاق يغلقها تلقائياً دون مسح تاريخها.</>
                   : "لا قاعدة سارية بهذا النطاق بعد — بدونها لن يُولَّد أي كشف تلقائي."}
-              </p>
+              </Inset>
             );
           })()}
           <p className="text-micro leading-5 text-muted-foreground">

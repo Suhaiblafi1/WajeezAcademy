@@ -20,7 +20,7 @@ import TrainerLayout from "./TrainerLayout";
 import EmptyState from "@/components/EmptyState";
 import { apiGet } from "@/services/api";
 
-import { Panel } from "@/components/ui/Surface";
+import { Card, Panel } from "@/components/ui/Surface";
 interface Slot {
   sessionId: string;
   title: string;
@@ -104,7 +104,7 @@ export default function TrainerSchedule() {
         <p className="mt-1 text-sm leading-7 text-muted-foreground">{data.meaningAr}</p>
 
         {data.clashing > 0 && (
-          <p className="mt-3 flex items-start gap-2 rounded-2xl border border-rose-400/40 bg-rose-500/[0.07] p-3 text-xs leading-6 text-danger-ink">
+          <Card as="p" tone="danger" className="mt-3 flex items-start gap-2 text-xs leading-6 text-danger-ink">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
             <span>
               جلساتٌ من شعبَتين تتزاحم في وقتٍ واحد. حارسُ الإسناد يمنع الشعبةَ المتعارضةَ عند إسنادها،
@@ -112,7 +112,7 @@ export default function TrainerSchedule() {
               <Link to="/trainer/board" className="font-bold underline">لوح شعبي</Link>.
               {" "}وجلسةٌ بلا وقتِ نهايةٍ تُحسب ساعةً واحدة.
             </span>
-          </p>
+          </Card>
         )}
       </Panel>
 

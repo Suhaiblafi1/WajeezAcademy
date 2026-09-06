@@ -332,10 +332,10 @@ export default function PathwayPage() {
                 <User className="h-4 w-4" /> {user}
               </span>
             ) : (
-              <Link to="/auth" className="flex items-center gap-1.5 rounded-xl border border-white/15 px-3.5 py-1.5 text-xs font-semibold text-foreground transition hover:border-teal/50 hover:text-teal-light-ink">
+              <Inset as={Link} tone="accent" interactive to="/auth" className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-foreground transition hover:border-teal/50 hover:text-teal-light-ink">
                 <User className="h-3.5 w-3.5" />
                 دخول
-              </Link>
+              </Inset>
             )}
             <ThemeToggle />
           </div>
@@ -619,9 +619,9 @@ export default function PathwayPage() {
                   {picked.length > 0 && (
                     /* التنبيه بلا مقارنةٍ رقمية: المقارنة القديمة كانت بين رقمين
                        مُختلَقين، فكانت تنصح بناءً على ما لا يُدفع. */
-                    <p className="mt-2 rounded-xl border border-gold/35 bg-gold/[0.08] px-3.5 py-2 text-micro font-semibold leading-5 text-gold-ink">
+                    <Inset as="p" tone="warn" className="mt-2 px-3.5 py-2 text-micro font-semibold leading-5 text-gold-ink">
                       المسار كاملا أوفر — خصمُه {offer.bundleMaxPct}٪، ويشمل التشخيص والمتابعة.
-                    </p>
+                    </Inset>
                   )}
                   <Button tone="confirm"
                     onClick={() =>

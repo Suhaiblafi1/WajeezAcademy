@@ -152,14 +152,14 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
         {/* الغيابُ يُقال أوّلا لأنّه **مانعٌ** لا تنبيه: الزرُّ سيُردّ بـ409،
             فمن حقّ المُسنِد أن يعرف قبل أن يضغط. والساعاتُ تنبيهٌ بعده. */}
         {picked?.onLeave && (
-          <p className="mt-2 rounded-xl border border-red-400/30 bg-red-400/[0.06] p-2 text-micro font-bold leading-5 text-red-200" role="status">
+          <Inset as="p" tone="danger" className="mt-2 p-2 text-micro font-bold leading-5 text-red-200" role="status">
             المدرّبُ أعلن غيابَه في مدّةٍ تقع فيها جلسةٌ من جلسات هذه الشعبة — الإسنادُ سيُردّ. اختر غيرَه، أو راجعه ليحدّث إتاحته.
-          </p>
+          </Inset>
         )}
         {!picked?.onLeave && picked?.outsideDeclaredHours ? (
-          <p className="mt-2 rounded-xl border border-gold/30 bg-gold/[0.06] p-2 text-micro font-bold leading-5 text-gold-ink" role="status">
+          <Inset as="p" tone="warn" className="mt-2 p-2 text-micro font-bold leading-5 text-gold-ink" role="status">
             {picked.outsideDeclaredHours} من جلسات هذه الشعبة تقع خارجَ ساعاته المعلنة — الإسنادُ جائزٌ، والقرارُ لك.
-          </p>
+          </Inset>
         ) : null}
 
         {picked && (

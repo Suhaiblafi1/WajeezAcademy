@@ -2,7 +2,7 @@ import { Route as RouteIcon, CheckCircle2, ArrowUpRight } from "lucide-react";
 import { skillNamesAr } from "@/domain/diagnostic/catalog";
 import { useCoursePrices, cheapestOf, pricedCount, formatCohortPrice } from "@/services/cohort-prices";
 
-import { Card, Panel } from "@/components/ui/Surface";
+import { Card, Inset, Panel } from "@/components/ui/Surface";
 /* بطاقة الخطة المركّبة — تُعرض حين يقيّم المتعلم جوانبه.
 
    لماذا بطاقة مستقلة لا تعديل على CourseJourney: رحلة الدورات القائمة تخدم
@@ -209,13 +209,13 @@ export default function ComposedPlanCard({ plan, courseList = true }: { plan: Co
       )}
 
       {plan.uncoveredGaps.length > 0 && (
-        <p className="mt-4 flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-[11.5px] leading-relaxed text-muted-foreground">
+        <Inset as="p" className="mt-4 flex items-start gap-2 px-4 py-3 text-[11.5px] leading-relaxed text-muted-foreground">
           <ArrowUpRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
           <span>
             وتبقى <b className="text-foreground">{plan.uncoveredGaps.length}</b> جوانب خارج هذه الخطة — لا نخفيها عنك:
             تُعالَج في مرحلة تالية أو مع مستشارك، فحشرها هنا يطيل الخطة ويشتّتها.
           </span>
-        </p>
+        </Inset>
       )}
     </Panel>
   );

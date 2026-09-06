@@ -12,7 +12,7 @@ import { buildGrowthSummary, type CourseGrowth, type RemeasureRecord } from "@/a
 import EmptyState from "@/components/EmptyState";
 import { fmtDate } from "@/application/text/format-ar";
 
-import { Card } from "@/components/ui/Surface";
+import { Card, Inset } from "@/components/ui/Surface";
 interface Cert {
   id: string; number: string; learnerName: string; courseId: string; courseVersion: number;
   enrollmentId: string;
@@ -23,13 +23,10 @@ interface Cert {
 function GrowthStrip({ growth, enrollmentId }: { growth: CourseGrowth | null; enrollmentId: string }) {
   if (!growth) {
     return (
-      <Link
-        to={`/student/remeasure/${enrollmentId}`}
-        className="mt-3 flex items-center gap-2 rounded-2xl border border-teal/25 bg-teal-ink/[0.06] px-3 py-2 text-micro font-bold text-teal-light-ink transition hover:border-teal/50"
-      >
+      <Card as={Link} tone="accent" interactive to={`/student/remeasure/${enrollmentId}`} className="mt-3 flex items-center gap-2 bg-teal-ink/[0.06] px-3 py-2 text-micro font-bold text-teal-light-ink transition hover:border-teal/50">
         <Ruler className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         قِس نموك في مهارات هذه الدورة ليصير مع الشهادة دليل مقيس
-      </Link>
+      </Card>
     );
   }
   return (
@@ -79,7 +76,7 @@ export default function Certificates() {
 
   return (
     <PortalLayout title="شهاداتي">
-      {error && <p className="mb-4 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-200">{error}</p>}
+      {error && <Inset as="p" tone="danger" className="mb-4 px-4 py-3 text-sm text-red-200">{error}</Inset>}
 
       {loading ? (
         <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" /></div>
@@ -111,7 +108,7 @@ export default function Certificates() {
               <h2 className="mt-4 font-black">دورة <span dir="ltr" className="font-mono text-sm">{c.courseId}</span> — إصدار {c.courseVersion}</h2>
               <p className="mt-1 text-xs text-muted-foreground">باسم: {c.learnerName}</p>
               <p className="mt-1 text-xs text-muted-foreground">أُصدرت في {fmtDate(new Date(c.issuedAt))}</p>
-              {c.revocation && <p className="mt-2 rounded-xl border border-red-500/30 bg-paper/20 p-2 text-micro text-red-300">سبب الإلغاء: {c.revocation.reason}</p>}
+              {c.revocation && <Inset as="p" tone="danger" className="mt-2 p-2 text-micro text-red-300">سبب الإلغاء: {c.revocation.reason}</Inset>}
               <div className="mt-4 flex items-center justify-between gap-2 border-t border-white/8 pt-3">
                 <span className="font-mono text-micro text-muted-foreground" dir="ltr">{c.number}</span>
                 {c.status !== "revoked" && (

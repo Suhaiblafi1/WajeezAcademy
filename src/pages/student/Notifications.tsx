@@ -6,7 +6,7 @@ import { apiGet, apiPost, ApiError } from "@/services/api";
 import NotificationPreferences from "@/components/NotificationPreferences";
 import { fmtWhen } from "@/utils/format";
 
-import { Panel } from "@/components/ui/Surface";
+import { Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 interface Notif {
   id: string; title: string; body: string; status: string; sentAt: string | null; queuedAt: string;
@@ -51,7 +51,7 @@ export default function Notifications() {
         )}
       </div>
 
-      {error && <p className="mb-4 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-200">{error}</p>}
+      {error && <Inset as="p" tone="danger" className="mb-4 px-4 py-3 text-sm text-red-200">{error}</Inset>}
 
       {loading ? (
         <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" /></div>

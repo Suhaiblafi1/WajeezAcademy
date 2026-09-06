@@ -6,7 +6,7 @@ import { apiGet, ApiError } from "@/services/api";
 import MeasurementCoverage from "@/components/MeasurementCoverage";
 import { fmtDateTime } from "@/application/text/format-ar";
 
-import { Card } from "@/components/ui/Surface";
+import { Card, Inset } from "@/components/ui/Surface";
 type PersonaResult = {
   persona: string; questions?: number; kind: string; top: string | null; tpl: string | null; conf?: number; match: boolean
 };
@@ -72,7 +72,7 @@ export default function DiagnosticQuality() {
 
   return (
     <AdminLayout title="جودة التشخيص والمحاكي">
-      {error && <p className="mb-4 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-200">{error}</p>}
+      {error && <Inset as="p" tone="danger" className="mb-4 px-4 py-3 text-sm text-red-200">{error}</Inset>}
 
       {/* موجة ٦ · أ-١: التغطية أولا — أضخم أصل خامل يُرى قبل أي شيء آخر */}
       <MeasurementCoverage className="mb-10" />

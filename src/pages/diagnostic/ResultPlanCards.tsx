@@ -282,13 +282,13 @@ export function ResultPriceCard({ courseIds }: { courseIds: readonly string[] })
       {/* وكان هنا صندوقٌ يطلب بريدا مقابل الكود. وقرارُ صاحب المنصّة: لا داعي
           له — البريدُ يُكتب عند الشراء أصلا، فطلبُه مرّتين حاجزٌ بلا مقابل.
           والكودُ يُقال سطرا واحدا: هو لأوّل شراءٍ لكلّ أحد. */}
-      <p className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-gold/30 bg-gold/[0.06] px-3.5 py-2.5 text-[11.5px] leading-5">
+      <Inset as="p" tone="warn" className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 px-3.5 py-2.5 text-[11.5px] leading-5">
         <span className="font-bold text-gold-ink">خصم {FIRST_TIME_PROMO.percentOff}٪ لأول عملية شراء بالكود</span>
         <code dir="ltr" className="rounded-md border border-gold/40 bg-gold/10 px-1.5 py-0.5 font-mono text-micro font-black text-gold-ink">
           {FIRST_TIME_PROMO.code}
         </code>
         <span className="text-muted-foreground">— يُكتب في صفحة الدفع.</span>
-      </p>
+      </Inset>
       <p className="mt-3 text-micro leading-5 text-muted-foreground">
         سعر خطتك يُحدَّد بعد أن تعتمدها — أنت من يقرّر دوراتها.
         {cheapest && known < courseIds.length && " وبعض دوراتها لم تُفتح لها شعبة بعد."} ولا يُطلب دفعٌ الآن.
@@ -504,10 +504,10 @@ export function CompositePlan({ composite }: { composite: CompositeView }) {
 
         {/* أقرب بديل ولماذا لم يُختر */}
         {composite.nearest_alternative && (
-          <p className="mt-5 rounded-xl border border-white/10 bg-white/[0.03] p-4 text-xs leading-6 text-muted-foreground">
+          <Inset as="p" className="mt-5 text-xs leading-6 text-muted-foreground">
             <span className="font-bold text-foreground">أقرب خطة بديلة كانت «{composite.nearest_alternative.nameAr}»</span>
             {" "}— {composite.nearest_alternative.whyNot_ar}
-          </p>
+          </Inset>
         )}
       </div>
     </Panel>

@@ -97,7 +97,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
       </ol>
       <p className="mb-4 text-micro text-muted-foreground">{COURSE_WIZARD_STEPS[step].hintAr}</p>
 
-      {error && <p className="mb-4 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-200">{error}</p>}
+      {error && <Inset as="p" tone="danger" className="mb-4 px-4 py-3 text-sm text-red-200">{error}</Inset>}
 
       {/* ١ · بيانات الدورة */}
       {key === "basics" && (
@@ -201,9 +201,9 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
               المسار: {pathways.find((p) => p.id === d.pathwayId)?.title ?? "—"} · {d.totalHours || 0} ساعة · {d.modules.length} وحدة · {d.skillIds.length} مهارة
             </p>
           </Card>
-          <p className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-micro leading-6 text-foreground">
+          <Inset as="p" className="px-4 py-3 text-micro leading-6 text-foreground">
             تُنشأ الدورة مسودة، ثم تمرّ بسير الاعتماد المعتاد (مراجعة فاعتماد فنشر) من «النشر والإصدارات» — لا تُنشر من هنا.
-          </p>
+          </Inset>
         </div>
       )}
 

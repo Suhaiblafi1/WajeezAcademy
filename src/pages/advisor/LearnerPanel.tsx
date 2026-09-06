@@ -69,9 +69,9 @@ export default function LearnerPanel({ caseId }: { caseId: string }) {
 
   if (!snap.hasAccount) {
     return (
-      <p className="rounded-xl border border-dashed border-white/15 px-4 py-5 text-center text-micro leading-6 text-muted-foreground">
+      <Inset as="p" className="border-dashed px-4 py-5 text-center text-micro leading-6 text-muted-foreground">
         لا حساب لهذا العميل بعد — عميلٌ محتمل لم يسجّل. تظهر هنا دوراتُه وتقدّمُه فور إنشائه حسابه.
-      </p>
+      </Inset>
     )
   }
 

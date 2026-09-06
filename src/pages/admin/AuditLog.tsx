@@ -4,7 +4,7 @@ import AdminLayout from "./AdminLayout";
 import { apiGet, permissionMessage } from "@/services/api";
 import { fmtDateTime } from "@/application/text/format-ar";
 
-import { Panel, Card } from "@/components/ui/Surface";
+import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 interface AuditRow {
   id: string; action: string; actionAr: string; entityType: string; entityTypeAr: string; entityId: string; createdAt: string;
@@ -167,9 +167,9 @@ export default function AuditLog() {
                   {([["قبل", r.before], ["بعد", r.after], ["تفاصيل", r.meta]] as const).map(([label, value]) => value != null && (
                     <div key={label}>
                       <p className="font-bold text-muted-foreground">{label}</p>
-                      <pre dir="ltr" className="mt-1 overflow-x-auto rounded-xl border border-white/8 bg-paper/30 p-3 text-micro text-muted-foreground">
+                      <Inset as="pre" dir="ltr" className="mt-1 overflow-x-auto text-micro text-muted-foreground">
                         {JSON.stringify(value, null, 2)}
-                      </pre>
+                      </Inset>
                     </div>
                   ))}
                 </div>

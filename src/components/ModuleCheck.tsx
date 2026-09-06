@@ -22,6 +22,7 @@ import { apiPost } from "@/services/api";
 import { spacingLabelAr } from "@/application/student/retrieval-schedule";
 
 import Button from "@/components/ui/Button";
+import { Card } from "@/components/ui/Surface";
 export default function ModuleCheck({
   raw,
   moduleId,
@@ -105,13 +106,13 @@ export default function ModuleCheck({
 
           {/* الاسترجاع المتباعد (ح-٤) — طلب صريح، وموعد معلَن قبل الضغط */}
           {sched === "done" ? (
-            <p className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl border border-teal/30 bg-teal-ink/[0.07] px-4 py-3 text-micro leading-6 text-foreground">
+            <Card as="p" tone="accent" className="mt-3 flex flex-wrap items-center gap-2 bg-teal-ink/[0.07] px-4 py-3 text-micro leading-6 text-foreground">
               <CalendarClock className="h-3.5 w-3.5 shrink-0 text-teal-light-ink" aria-hidden="true" />
               جُدولت عودة هذه الأسئلة: بعد {spacingLabelAr(0)}، ثم يتباعد الموعد كلما استرجعتها.
               <Link to="/student/review" className="font-bold text-teal-light-ink underline underline-offset-4">
                 صفحة «تثبيتُ ما تعلّمت»
               </Link>
-            </p>
+            </Card>
           ) : sched === "unavailable" ? null : (
             <Button tone="confirm" type="button"
               onClick={() => void schedule()}

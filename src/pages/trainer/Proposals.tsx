@@ -4,7 +4,7 @@ import { BookOpen, GitPullRequest, Loader2, Lock, Plus, ServerOff, Undo2, X } fr
 import TrainerLayout from "./TrainerLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 
-import { Panel, Card } from "@/components/ui/Surface";
+import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 const STATUS_LABELS: Record<string, string> = {
   draft: "مسودة", submitted: "مُقدَّم", under_review: "قيد المراجعة",
@@ -324,7 +324,7 @@ export default function TrainerProposals() {
               </Button>
             ))}
           </div>
-          {bpErr && <p role="alert" className="mt-3 rounded-xl border border-red-400/30 bg-red-400/10 p-3 text-xs font-semibold text-red-300">{bpErr}</p>}
+          {bpErr && <Inset as="p" tone="danger" role="alert" className="mt-3 text-xs font-semibold text-red-300">{bpErr}</Inset>}
         </Panel>
       )}
 
