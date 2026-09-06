@@ -9,6 +9,8 @@
     "prebuild": "tsx scripts/write-build-stamp.ts || true",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json",
+    "verify": "npm run typecheck && npx tsx scripts/lint-baseline.ts && vitest run src/tests",
     "preview": "vite preview",
     "api:dev": "tsx server/index.ts",
     "db:start": "docker compose up -d db minio",
