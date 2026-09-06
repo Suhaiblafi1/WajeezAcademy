@@ -5,9 +5,13 @@ import { toast, toastError } from "@/components/Toast";
 import {
   BadgePercent, CheckCircle2, CreditCard, FileText, Loader2, RefreshCw,
   RotateCcw, ServerOff, Wallet, XCircle,
+  Inbox, Receipt, Undo2,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import ListToolbar from "@/components/admin/ListToolbar";
+import EmptyState from "@/components/EmptyState";
+import { Panel, Card, Inset } from "@/components/ui/Surface";
+import Chip from "@/components/ui/Chip";
 import BulkBar from "@/components/admin/BulkBar";
 import { bulkMessage, runBulk } from "@/application/admin/bulk";
 import { matchesQuery } from "@/application/text/search-ar";
@@ -124,13 +128,12 @@ export default function Finance() {
   if (offline) {
     return (
       <AdminLayout title="المالية">
-        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
-          <ServerOff className="h-12 w-12 text-muted-foreground/50" />
-          <p className="mt-4 max-w-md text-sm text-muted-foreground">{offline}</p>
-          <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground hover:border-white/40">
-            <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
-          </button>
-        </div>
+        <EmptyState
+          icon={ServerOff}
+          titleAr="الخادم لا يجيب"
+          reasonAr={offline}
+          actions={[{ onClick: () => void load(), labelAr: "إعادة المحاولة", hintAr: "تُعاد قراءةُ الطلبات والفواتير" }]}
+        />
       </AdminLayout>
     );
   }
@@ -222,7 +225,11 @@ export default function Finance() {
       {/* طلبات التسجيل */}
       {!loading && tab === "requests" && (
         <div className="space-y-3">
-          {requests.length === 0 && <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-muted-foreground">لا طلبات تسجيل.</p>}
+          {requests.length === 0 && (
+            <EmptyState icon={Inbox} titleAr="لا طلباتِ تسجيلٍ تنتظر"
+              reasonAr="طلبُ التسجيل يصل هنا حين يختار متعلّمٌ شعبةً بلا شراءٍ مباشر — والشراءُ المباشر لا يمرّ بهذه الشاشة."
+              tone="done" />
+          )}
           {requests.length > 0 && (
             <ListToolbar q={q} onQ={setQ} onPage={setPage} view={reqView} unit="طلبا"
               placeholder="ابحث باسمِ طالبٍ أو بريدٍ أو شعبة…" />
@@ -247,10 +254,12 @@ export default function Finance() {
             </button>
           </BulkBar>
           {requests.length > 0 && reqView.total === 0 && (
-            <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-muted-foreground">لا طلب يطابق «{q.trim()}».</p>
+            <EmptyState icon={Inbox} titleAr="لا طلب يطابق بحثك" tone="filter"
+              reasonAr={`لا شيءَ يطابق «${q.trim()}» في أسماء المتعلّمين ولا بريدهم ولا الشعب.`}
+              actions={[{ onClick: () => { setQ(""); setPage(1); }, labelAr: "امسح البحث", hintAr: "تعود القائمةُ كاملةً" }]} />
           )}
           {reqView.rows.map((r) => (
-            <div key={r.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+            <Card key={r.id}>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="font-black">{r.user.displayName} <span className="text-[11px] font-normal text-muted-foreground" dir="ltr">{r.user.email}</span></p>
@@ -260,7 +269,7 @@ export default function Finance() {
                   {r.note && <p className="mt-1 text-[11px] text-muted-foreground">ملاحظة المتعلم: {r.note}</p>}
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="rounded-full border border-teal/40 px-3 py-1 text-[11px] font-bold text-teal-light-ink">{ER_STATUS[r.status] ?? r.status}</span>
+                  <Chip tone="accent" srPrefixAr="الحالة">{ER_STATUS[r.status] ?? r.status}</Chip>
                   {r.status === "pending" && (
                     <label className="grid h-8 w-8 shrink-0 cursor-pointer place-items-center">
                       <input type="checkbox" checked={sel.has(r.id)} onChange={() => toggleSel(r.id)}
@@ -285,7 +294,7 @@ export default function Finance() {
                   </button>
                 </div>
               )}
-            </div>
+            </Card>
           ))}
         </div>
       )}
@@ -293,22 +302,27 @@ export default function Finance() {
       {/* الفواتير */}
       {!loading && tab === "invoices" && (
         <div className="space-y-3">
-          {invoices.length === 0 && <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-muted-foreground">لا فواتير.</p>}
+          {invoices.length === 0 && (
+            <EmptyState icon={Receipt} titleAr="لا فواتير بعد"
+              reasonAr="تُنشأ الفاتورةُ عند الموافقة على طلبِ تسجيلٍ أو عند شراءٍ مباشر." tone="start" />
+          )}
           {invoices.length > 0 && (
             <ListToolbar q={q} onQ={setQ} onPage={setPage} view={invView} unit="فاتورة"
               placeholder="ابحث باسمِ مشترٍ أو بريدٍ أو رقمِ فاتورة…" />
           )}
           {invoices.length > 0 && invView.total === 0 && (
-            <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-muted-foreground">لا فاتورة تطابق «{q.trim()}».</p>
+            <EmptyState icon={Receipt} titleAr="لا فاتورة تطابق بحثك" tone="filter"
+              reasonAr={`لا شيءَ يطابق «${q.trim()}» في أسماء المشترين ولا بريدهم ولا أرقام الفواتير.`}
+              actions={[{ onClick: () => { setQ(""); setPage(1); }, labelAr: "امسح البحث", hintAr: "تعود القائمةُ كاملةً" }]} />
           )}
           {invView.rows.map((inv) => (
-            <div key={inv.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+            <Card key={inv.id}>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="font-black">{inv.total} {inv.currency} <span className="mr-2 font-mono text-micro font-normal text-muted-foreground" dir="ltr">{inv.id.slice(0, 8)}…</span></p>
                   <p className="mt-1 text-xs text-muted-foreground">{inv.order.user.displayName} · {fmtDate(new Date(inv.issuedAt))}</p>
                 </div>
-                <span className="rounded-full border border-teal/40 px-3 py-1 text-[11px] font-bold text-teal-light-ink">{INV_STATUS[inv.status] ?? inv.status}</span>
+                <Chip tone="accent" srPrefixAr="حالةُ الفاتورة">{INV_STATUS[inv.status] ?? inv.status}</Chip>
               </div>
               {inv.status === "issued" && canRecordPayment && (
                 <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/8 pt-3">
@@ -322,7 +336,7 @@ export default function Finance() {
                 </div>
               )}
               {inv.payments.filter((p) => p.status === "succeeded").map((p) => (
-                <div key={p.id} className="mt-2 flex flex-wrap items-center gap-2 rounded-xl border border-white/8 bg-paper/20 p-3 text-xs">
+                <Inset key={p.id} tone="positive" className="mt-2 flex flex-wrap items-center gap-2 text-xs">
                   <span className="font-bold text-emerald-300">دفعة ناجحة {p.amount} {inv.currency}</span>
                   <span className="text-muted-foreground">{p.refunds.length} استرداد</span>
                   {canRefund && (<>
@@ -336,9 +350,9 @@ export default function Finance() {
                     <RotateCcw className="h-3 w-3" /> طلب استرداد
                   </button>
                   </>)}
-                </div>
+                </Inset>
               ))}
-            </div>
+            </Card>
           ))}
         </div>
       )}
@@ -346,15 +360,18 @@ export default function Finance() {
       {/* الاستردادات */}
       {!loading && tab === "refunds" && (
         <div className="space-y-3">
-          {refunds.length === 0 && <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-muted-foreground">لا طلبات استرداد.</p>}
+          {refunds.length === 0 && (
+            <EmptyState icon={Undo2} titleAr="لا طلباتِ استردادٍ تنتظر"
+              reasonAr="يُقدَّم طلبُ الاسترداد من بوّابة المتعلّم، ويظهر هنا لحظةَ تقديمه." tone="done" />
+          )}
           {refunds.map((rf) => (
-            <div key={rf.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+            <Card key={rf.id} className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="font-black">{rf.amount} <span className="text-xs font-normal text-muted-foreground">— {rf.reason}</span></p>
                 <p className="mt-1 text-[11px] text-muted-foreground">{fmtDateTime(new Date(rf.createdAt))}</p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="rounded-full border border-teal/40 px-3 py-1 text-[11px] font-bold text-teal-light-ink">{RF_STATUS[rf.status] ?? rf.status}</span>
+                <Chip tone="accent" srPrefixAr="حالةُ الطلب">{RF_STATUS[rf.status] ?? rf.status}</Chip>
                 {rf.status === "requested" && canRefund && (
                   <>
                     <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/refunds/${rf.id}/process`, { approve: true }), "نُفذ الاسترداد وحُدثت الدفعة والطلب")}
@@ -368,7 +385,7 @@ export default function Finance() {
                   </>
                 )}
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}
@@ -376,7 +393,7 @@ export default function Finance() {
       {/* الكوبونات والخطط */}
       {!loading && tab === "coupons" && (
         <div className="grid gap-5 lg:grid-cols-2">
-          <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-5">
+          <Panel as="section">
             <h3 className="flex items-center gap-2 text-sm font-black"><BadgePercent className="h-4 w-4 text-gold-ink" /> كوبون جديد</h3>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               <input value={couponForm.code} onChange={(e) => setCouponForm({ ...couponForm, code: e.target.value.toUpperCase() })} placeholder="الرمز — WAJEEZ20" dir="ltr" className={`${inputCls} font-mono`} />
@@ -401,17 +418,17 @@ export default function Finance() {
             </button>
             <ul className="mt-4 space-y-2">
               {coupons.map((c) => (
-                <li key={c.id} className="flex items-center gap-3 rounded-xl border border-white/10 bg-paper/20 px-3 py-2 text-xs">
+                <Inset as="li" key={c.id} className="flex items-center gap-3 px-3 py-2 text-xs">
                   <span className="font-mono font-bold text-gold-ink" dir="ltr">{c.code}</span>
                   <span className="text-muted-foreground">{c.percentOff ? `${c.percentOff}%` : `${c.amountOff} ${c.currency}`}</span>
                   <span className="text-muted-foreground">{c.usedCount ?? 0}/{c.maxUses ?? "∞"}</span>
-                  {!c.active && <span className="rounded-full border border-red-500/40 px-2 py-0.5 text-micro text-red-400">معطل</span>}
-                </li>
+                  {!c.active && <Chip tone="danger">معطّل</Chip>}
+                </Inset>
               ))}
             </ul>
-          </div>
+          </Panel>
 
-          <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-5">
+          <Panel as="section">
             <h3 className="flex items-center gap-2 text-sm font-black"><Wallet className="h-4 w-4 text-gold-ink" /> خطة اشتراك جديدة</h3>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               <input value={planForm.code} onChange={(e) => setPlanForm({ ...planForm, code: e.target.value })} placeholder="الرمز — monthly" dir="ltr" className={`${inputCls} font-mono`} />
@@ -435,7 +452,7 @@ export default function Finance() {
             <p className="mt-3 flex items-center gap-1.5 text-micro text-muted-foreground">
               <FileText className="h-3 w-3" /> الخطط الفعالة تظهر للعامة عبر /api/public/subscription-plans
             </p>
-          </div>
+          </Panel>
         </div>
       )}
       {bulkConfirm === "approve" && (
