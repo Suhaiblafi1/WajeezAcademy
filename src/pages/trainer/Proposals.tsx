@@ -209,7 +209,7 @@ export default function TrainerProposals() {
                 : <Lock className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />}
               {g.titleAr}
             </p>
-            <p className="mt-1.5 text-[11px] leading-6 text-foreground">{g.bodyAr}</p>
+            <p className="mt-1.5 text-micro leading-6 text-foreground">{g.bodyAr}</p>
           </div>
         ))}
       </div>
@@ -248,7 +248,7 @@ export default function TrainerProposals() {
               </label>
             </div>
             {scopeGate && (
-              <p className={`mt-2 text-[11px] leading-6 ${scopeGate.allowed ? "text-muted-foreground" : "text-gold-ink"}`}>
+              <p className={`mt-2 text-micro leading-6 ${scopeGate.allowed ? "text-muted-foreground" : "text-gold-ink"}`}>
                 {scopeGate.reasonAr}
               </p>
             )}
@@ -282,7 +282,7 @@ export default function TrainerProposals() {
                   .map((c) => <option key={c.cohort.id} value={c.cohort.id}>{c.cohort.title}</option>)}
               </select>
               {cohorts.filter((c) => !form.courseId || c.cohort.courseId === form.courseId).length === 0 && (
-                <p className="mt-1.5 text-[11px] text-gold-ink">
+                <p className="mt-1.5 text-micro text-gold-ink">
                   لا شعبة لك في هذه الدورة — اختر دورة تدرّبها، أو اقترح بنطاق الكتالوج إن كان مفتوحا لك.
                 </p>
               )}
@@ -374,9 +374,9 @@ export default function TrainerProposals() {
                     <div key={m.id} className="flex items-start justify-between gap-3 rounded-xl bg-white/[0.03] px-3 py-2">
                       <div>
                         <p className="text-xs font-bold text-foreground">{m.versions[0].sequence}. {m.versions[0].titleAr}</p>
-                        {m.versions[0].outcomeAr && <p className="mt-0.5 text-[11px] text-muted-foreground">{m.versions[0].outcomeAr}</p>}
+                        {m.versions[0].outcomeAr && <p className="mt-0.5 text-micro text-muted-foreground">{m.versions[0].outcomeAr}</p>}
                       </div>
-                      <span className="shrink-0 text-[11px] text-muted-foreground">{m.versions[0].hours} س · <span dir="ltr">{m.id}</span></span>
+                      <span className="shrink-0 text-micro text-muted-foreground">{m.versions[0].hours} س · <span dir="ltr">{m.id}</span></span>
                     </div>
                   ))}
               </div>
@@ -438,15 +438,15 @@ export default function TrainerProposals() {
                 <div>
                   <p className="font-black">{r.course.versions[0]?.titleAr ?? r.courseId} <span className="text-micro text-muted-foreground" dir="ltr">{r.courseId}</span></p>
                   <p className="mt-1 text-xs text-muted-foreground">{r.reason}</p>
-                  <p className="mt-1 text-[11px] text-muted-foreground">
+                  <p className="mt-1 text-micro text-muted-foreground">
                     {r.items.map((i) => CHANGE_TYPE_LABELS[i.changeType] ?? i.changeType).join(" · ")} — نطاق: {r.scope === "cohort" ? "شعبة" : "الكتالوج"}
                   </p>
                   {r.reviewerComment && (
-                    <p className="mt-2 rounded-lg border border-gold/25 bg-gold/5 p-2 text-[11px] text-gold-ink">تعليق المراجع: {r.reviewerComment}</p>
+                    <p className="mt-2 rounded-lg border border-gold/25 bg-gold/5 p-2 text-micro text-gold-ink">تعليق المراجع: {r.reviewerComment}</p>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="rounded-full border border-teal/40 px-3 py-1 text-[11px] font-bold text-teal-light-ink">
+                  <span className="rounded-full border border-teal/40 px-3 py-1 text-micro font-bold text-teal-light-ink">
                     {STATUS_LABELS[r.status] ?? r.status}
                   </span>
                   {["draft", "submitted", "under_review", "changes_requested"].includes(r.status) && (

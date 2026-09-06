@@ -122,7 +122,7 @@ export default function AdvisorRequests() {
                       للعميل <b className="text-foreground">{who}</b>
                       {email && <span dir="ltr" className="ms-2 text-muted-foreground">{email}</span>}
                     </p>
-                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                    <p className="mt-0.5 text-micro text-muted-foreground">
                       رفعه {r.advisor.displayName} · <Clock className="mb-0.5 inline h-3 w-3" /> {fmtDateTimeAr(r.createdAt)}
                     </p>
                   </div>
@@ -133,7 +133,7 @@ export default function AdvisorRequests() {
                 </p>
 
                 <div className="mt-3">
-                  <label htmlFor={`note-${r.id}`} className="mb-1.5 block text-[11px] font-bold text-muted-foreground">
+                  <label htmlFor={`note-${r.id}`} className="mb-1.5 block text-micro font-bold text-muted-foreground">
                     ردُّك — إلزاميٌّ عند الرفض، يقرؤه المستشار
                   </label>
                   <textarea

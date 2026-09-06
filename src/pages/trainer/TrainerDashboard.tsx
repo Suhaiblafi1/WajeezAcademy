@@ -128,7 +128,7 @@ function RealTrainerHome({ name }: { name: string }) {
               <p className="mt-1">تسجّل الحضور وتقيّم التسليمات وتدير الجلسات — كلها من «شعبي».</p>
             </Card>
           </div>
-          <p className="mt-4 text-[11px] text-muted-foreground">
+          <p className="mt-4 text-micro text-muted-foreground">
             حتى يصلك أول إسناد يمكنك مراجعة المحتوى واقتراح تحسينات عليه من{" "}
             <Link to="/trainer/proposals" className="font-bold text-teal-light-ink underline decoration-dotted underline-offset-4 hover:text-foreground">«اقتراحاتي»</Link>.
           </p>
@@ -177,7 +177,7 @@ function RealTrainerHome({ name }: { name: string }) {
         </Panel>
       )}
 
-      <Card className="mb-8 flex flex-wrap items-center gap-2 border-dashed px-4 py-3 text-[11px] text-muted-foreground">
+      <Card className="mb-8 flex flex-wrap items-center gap-2 border-dashed px-4 py-3 text-micro text-muted-foreground">
         <span className="font-black text-foreground">من أين أبدأ؟</span>
         {/* الترقيمُ لاتينيّ كبقيّة أرقام البوّابة — لا رسمان في بطاقةٍ واحدة */}
         {[
@@ -241,7 +241,7 @@ function RealTrainerHome({ name }: { name: string }) {
         </div>
       </Panel>
 
-      <p className="mt-6 text-center text-[11px] text-muted-foreground">
+      <p className="mt-6 text-center text-micro text-muted-foreground">
         كل بند أعلاه يقودك إلى مكان تنفيذه — والتفاصيل الكاملة لكل شعبة في شاشة «شعبي».
       </p>
     </div>

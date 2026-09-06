@@ -228,7 +228,7 @@ export default function CohortWizard({
   return (
     <Panel>
       {/* خطواتٌ مرقّمة — الرقمُ يقول أين أنت لا يزيّن */}
-      <ol className="mb-5 flex flex-wrap items-center gap-x-2 gap-y-2 text-[11px]">
+      <ol className="mb-5 flex flex-wrap items-center gap-x-2 gap-y-2 text-micro">
         {STEPS.map((label, i) => (
           <li key={label} className="flex items-center gap-2">
             <button
@@ -257,7 +257,7 @@ export default function CohortWizard({
             <input id="wiz-course-filter" value={courseFilter} onChange={(e) => setCourseFilter(e.target.value)}
               placeholder="ابحث بعنوان الدورة أو رمزها" className={inputCls} />
             <Inset className="mt-2 max-h-64 overflow-y-auto">
-              {shown.length === 0 && <p className="px-3 py-3 text-[11px] text-muted-foreground">لا دورةَ بهذا الاسم.</p>}
+              {shown.length === 0 && <p className="px-3 py-3 text-micro text-muted-foreground">لا دورةَ بهذا الاسم.</p>}
               {shown.map((c) => (
                 <button key={c.id} type="button" onClick={() => setCourseId(c.id)}
                   className={`flex w-full items-center justify-between gap-3 border-b border-white/5 px-3 py-2.5 text-right transition last:border-b-0 ${
@@ -273,11 +273,11 @@ export default function CohortWizard({
             <label className="text-xs text-muted-foreground" htmlFor="wiz-title">عنوان الشعبة</label>
             <input id="wiz-title" value={title} onChange={(e) => setTitle(e.target.value)}
               placeholder="شعبة أكتوبر 2026 — مسائية" className={inputCls} />
-            <p className="mt-2 text-[11px] leading-6 text-muted-foreground">
+            <p className="mt-2 text-micro leading-6 text-muted-foreground">
               يُقترَح من الدورة والشهر، وهو ما يراه المتعلّمُ في فاتورته وشهادته — فاجعله يفرّق هذه الشعبةَ عن أختها.
             </p>
             {course && (
-              <p className="mt-3 rounded-xl border border-white/10 bg-paper/20 px-3 py-2.5 text-[11px] text-muted-foreground">
+              <p className="mt-3 rounded-xl border border-white/10 bg-paper/20 px-3 py-2.5 text-micro text-muted-foreground">
                 سعرُ قائمة الدورة: {course.listPrice ?? "—"} {currency}
               </p>
             )}
@@ -312,14 +312,14 @@ export default function CohortWizard({
               <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
               {`${preview.length} جلسة ستُنشأ`}
             </p>
-            <p className="mt-1 text-[11px] text-muted-foreground">تُولَّد مع الشعبة، ولك تعديلُ أيٍّ منها بعدها.</p>
+            <p className="mt-1 text-micro text-muted-foreground">تُولَّد مع الشعبة، ولك تعديلُ أيٍّ منها بعدها.</p>
             {Number(duration) < 15 && (
-              <p role="alert" className="mt-2 text-[11px] font-bold text-red-300">مدّةُ الجلسة خمسَ عشرةَ دقيقةً على الأقلّ.</p>
+              <p role="alert" className="mt-2 text-micro font-bold text-red-300">مدّةُ الجلسة خمسَ عشرةَ دقيقةً على الأقلّ.</p>
             )}
             {days.length === 0 && (
-              <p role="alert" className="mt-2 text-[11px] font-bold text-red-300">اختر يوما واحدا على الأقلّ.</p>
+              <p role="alert" className="mt-2 text-micro font-bold text-red-300">اختر يوما واحدا على الأقلّ.</p>
             )}
-            <ul className="mt-3 max-h-52 space-y-1 overflow-y-auto text-[11px] text-foreground">
+            <ul className="mt-3 max-h-52 space-y-1 overflow-y-auto text-micro text-foreground">
               {preview.slice(0, 40).map((s) => (
                 <li key={s.startsAt} className="flex items-center justify-between gap-2 border-b border-white/5 pb-1">
                   <span className="font-bold">{s.title}</span>
@@ -359,7 +359,7 @@ export default function CohortWizard({
         <div>
           {trainers === null && <p className="text-xs text-muted-foreground"><Loader2 className="mr-1 inline h-3.5 w-3.5 animate-spin" aria-hidden="true" /> تُقرأ قائمةُ المدرّبين…</p>}
           {trainers !== null && trainers.length === 0 && (
-            <p className="rounded-xl border border-white/10 bg-paper/20 px-4 py-3 text-[11px] leading-6 text-muted-foreground">
+            <p className="rounded-xl border border-white/10 bg-paper/20 px-4 py-3 text-micro leading-6 text-muted-foreground">
               لا مدرّبَ مؤهَّلا لهذه الدورة بعد — تُنشأ الشعبةُ مسودّةً، ويُسنَد المدرّبُ من بطاقتها متى تأهّل.
               وشرطُ الفتح يبقى قائما: لا شعبةَ تُفتح بلا مدرّب.
             </p>
@@ -414,7 +414,7 @@ export default function CohortWizard({
               </div>
             ))}
           </dl>
-          <Card tone="warn" className="text-[11px] leading-6 text-foreground">
+          <Card tone="warn" className="text-micro leading-6 text-foreground">
             <p className="font-black text-gold-ink">قبل الفتح للتسجيل</p>
             <p className="mt-1">
               الشعبةُ تُنشأ مسودّةً. و«أنشئ وافتح» يفحص شروطَ الفتح الستّة أوّلا: خطّةُ تقديمٍ معتمدة، مدرّبٌ
@@ -432,7 +432,7 @@ export default function CohortWizard({
         </Button>
         {/* السببُ بجانب الزرّ — لا في ذيل الصفحة ولا في تلميحٍ يظهر بالمرور */}
         {step < STEPS.length - 1 && stepMissing.length > 0 && (
-          <p role="status" className="order-last w-full text-[11px] leading-6 text-gold-ink sm:order-none sm:w-auto sm:flex-1">
+          <p role="status" className="order-last w-full text-micro leading-6 text-gold-ink sm:order-none sm:w-auto sm:flex-1">
             قبل «التالي»: {stepMissing.join(" · ")}
           </p>
         )}

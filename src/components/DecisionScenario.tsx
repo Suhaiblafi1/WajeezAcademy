@@ -108,13 +108,13 @@ export default function DecisionScenario({
           <Split className="h-4 w-4 text-teal-light-ink" aria-hidden="true" />
           سيناريو قرار
         </h3>
-        <p className="text-[11px] text-muted-foreground">قرارك يفتح مسارا — والمسار يظهر أثره</p>
+        <p className="text-micro text-muted-foreground">قرارك يفتح مسارا — والمسار يظهر أثره</p>
       </div>
 
       <p className="mt-3 whitespace-pre-line rounded-2xl border border-teal/25 bg-teal-ink/[0.06] px-4 py-3 text-sm leading-7">
         {scenario.situationAr}
       </p>
-      <p className="mt-2 text-[11px] leading-6 text-muted-foreground">{NO_GRADE_NOTE}</p>
+      <p className="mt-2 text-micro leading-6 text-muted-foreground">{NO_GRADE_NOTE}</p>
 
       {/* المسار المقطوع — القرار وأثره، فلا تأمل بلا تذكّر */}
       {taken.length > 0 && (
@@ -128,7 +128,7 @@ export default function DecisionScenario({
                   {t.labelAr}
                 </span>
               </p>
-              {t.effectAr && <p className="mt-1.5 ps-6 text-[11px] leading-6 text-foreground">{t.effectAr}</p>}
+              {t.effectAr && <p className="mt-1.5 ps-6 text-micro leading-6 text-foreground">{t.effectAr}</p>}
             </Card>
           ))}
         </ol>
@@ -136,7 +136,7 @@ export default function DecisionScenario({
 
       {/* العقدة الحالية */}
       <Card className="mt-5 bg-paper/20">
-        <p className="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground">
+        <p className="flex items-center gap-1.5 text-micro font-bold text-muted-foreground">
           <MapPin className="h-3 w-3" aria-hidden="true" />
           {current.titleAr}
         </p>

@@ -40,7 +40,7 @@ export default function ListToolbar({
         />
       </label>
 
-      <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+      <div className="flex items-center gap-2 text-micro text-muted-foreground">
         <span>
           {view.total === 0
             ? "لا نتائج"

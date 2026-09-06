@@ -162,14 +162,14 @@ function TrainerCoursesTab({ summary }: { summary?: TrainerSummary }) {
         ) : (
           <ul className="mt-3 flex flex-wrap gap-1.5">
             {summary.qualifiedCourses.map((c) => (
-              <li key={c.courseId} className="rounded-full border border-teal/35 bg-teal/[0.08] px-3 py-1 text-[11px] font-bold text-teal-light-ink">
+              <li key={c.courseId} className="rounded-full border border-teal/35 bg-teal/[0.08] px-3 py-1 text-micro font-bold text-teal-light-ink">
                 {c.titleAr}
               </li>
             ))}
           </ul>
         )}
         {summary.pendingQualifications > 0 && (
-          <p className="mt-3 text-[11px] text-gold-ink">
+          <p className="mt-3 text-micro text-gold-ink">
             وله {summary.pendingQualifications} طلبُ تأهيلٍ بانتظار القرار.
           </p>
         )}
@@ -186,7 +186,7 @@ function TrainerCoursesTab({ summary }: { summary?: TrainerSummary }) {
             {summary.cohorts.map((c) => (
               <Inset as="li" key={c.id} className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5">
                 <span className="min-w-0">
-                  <span className="block text-[12px] font-bold text-foreground">{c.title}</span>
+                  <span className="block text-xs font-bold text-foreground">{c.title}</span>
                   <span className="text-micro text-muted-foreground">
                     {c.courseTitle} · {c.role === "lead" ? "رئيسي" : "مساعد"} · {c.enrolled} متعلّم
                   </span>
@@ -390,7 +390,7 @@ export default function TrainerApplications() {
                     setPurging(false);
                   }
                 }}
-                className="rounded-lg bg-red-500/85 px-4 py-1.5 text-[11px] font-black text-white hover:bg-red-500 disabled:opacity-40"
+                className="rounded-lg bg-red-500/85 px-4 py-1.5 text-micro font-black text-white hover:bg-red-500 disabled:opacity-40"
               >
                 {purging ? "يُحذف…" : "احذفه نهائيّا"}
               </button>
@@ -440,9 +440,9 @@ export default function TrainerApplications() {
                       return emp ? ` · ${emp}` : "";
                     })()}
                   </p>
-                  <p className="mt-1 text-[11px] text-muted-foreground" dir="ltr">{a.email}</p>
+                  <p className="mt-1 text-micro text-muted-foreground" dir="ltr">{a.email}</p>
                 </div>
-                <span className="rounded-full border border-teal/40 px-3 py-1 text-[11px] font-bold text-teal-light-ink">
+                <span className="rounded-full border border-teal/40 px-3 py-1 text-micro font-bold text-teal-light-ink">
                   {STATUS_LABELS[a.status] ?? a.status}
                 </span>
               </div>
@@ -490,7 +490,7 @@ export default function TrainerApplications() {
               <h4 className="flex items-center gap-2 text-sm font-black"><ClipboardList className="h-4 w-4 text-teal-light-ink" /> سجل الحالة</h4>
               <ol className="mt-3 space-y-2">
                 {a.statusHistory.map((h, i) => (
-                  <li key={i} className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                  <li key={i} className="flex items-center gap-2 text-micro text-muted-foreground">
                     <span className="h-1.5 w-1.5 rounded-full bg-teal" />
                     <b className="text-foreground">{STATUS_LABELS[h.toStatus] ?? h.toStatus}</b>
                     {h.note && <span>— {h.note}</span>}
@@ -513,13 +513,13 @@ export default function TrainerApplications() {
               <div className="mt-3 space-y-2">
                 {RUBRIC_AXES.map((x) => (
                   <div key={x.key} className="flex items-center justify-between gap-2">
-                    <span className="text-[11px] text-muted-foreground">{x.label}</span>
+                    <span className="text-micro text-muted-foreground">{x.label}</span>
                     <div className="flex gap-1" role="radiogroup" aria-label={x.label}>
                       {[1, 2, 3, 4, 5].map((v) => (
                         <button
                           key={v} type="button" onClick={() => setScores({ ...scores, [x.key]: v })}
                           aria-pressed={scores[x.key] === v}
-                          className={`grid h-7 w-7 cursor-pointer place-items-center rounded-lg border text-[11px] font-bold transition ${
+                          className={`grid h-7 w-7 cursor-pointer place-items-center rounded-lg border text-micro font-bold transition ${
                             scores[x.key] === v ? "border-gold bg-gold text-on-gold" : "border-white/15 text-muted-foreground hover:border-white/40"
                           }`}
                         >
@@ -571,7 +571,7 @@ export default function TrainerApplications() {
 
               {/* للمتقدّم حسابٌ منذ تقديمه: التفعيلُ يربطه — فلا زرَّ دعوةٍ له */}
               {a.status === "onboarding" && !a.profile?.userId && a.userId && (
-                <p className="mt-3 rounded-xl border border-teal/30 bg-teal/[0.05] p-3 text-[11px] leading-6 text-foreground">
+                <p className="mt-3 rounded-xl border border-teal/30 bg-teal/[0.05] p-3 text-micro leading-6 text-foreground">
                   للمتقدّم حسابٌ منذ تقديمه — «فعّله مدرّبا نشطا» يربط حسابه بملفّه ويفتح له بوّابة المدربين مباشرة.
                 </p>
               )}
@@ -592,7 +592,7 @@ export default function TrainerApplications() {
               )}
               {invite && a.status === "onboarding" && !a.profile?.userId && !a.userId && (
                 <Inset tone="accent" className="mt-3">
-                  <p className="text-[11px] font-black text-teal-light-ink">
+                  <p className="text-micro font-black text-teal-light-ink">
                     {invite.delivery === "sent"
                       ? "أُرسلت الدعوة إلى بريد المدرب — وهذه نسخة الرابط إن لم تصله"
                       : invite.delivery === "not_configured"
@@ -606,7 +606,7 @@ export default function TrainerApplications() {
                 </Inset>
               )}
               {a.profile?.userId && (
-                <p className="mt-3 flex items-center justify-center gap-1.5 text-[11px] font-bold text-teal-light-ink">
+                <p className="mt-3 flex items-center justify-center gap-1.5 text-micro font-bold text-teal-light-ink">
                   <MailCheck className="h-3.5 w-3.5" /> الحساب مُنشأ ومرتبط بالملف
                 </p>
               )}
@@ -671,7 +671,7 @@ export default function TrainerApplications() {
             placeholder="ابحث باسمٍ أو بريدٍ أو رقمِ طلبٍ أو تخصّص…" />
           <BulkBar count={sel.size} busy={busy} progress={bulkProgress} onClear={() => setSel(new Set())}>
             {commonActions.length === 0 ? (
-              <span className="text-[11px] text-muted-foreground">
+              <span className="text-micro text-muted-foreground">
                 لا إجراءَ يصلح للمحدَّد كلِّه — الحالاتُ مختلفة، فاختر ما يتّحد حالُه.
               </span>
             ) : commonActions.map((d) => (
@@ -679,7 +679,7 @@ export default function TrainerApplications() {
                 onClick={() => (d.action === "reject" || d.action === "waitlist"
                   ? setBulkDecision({ action: d.action, labelAr: d.label })
                   : void bulkDecide(d.action, d.label))}
-                className={`cursor-pointer rounded-full px-4 py-1.5 text-[11px] font-black transition ${
+                className={`cursor-pointer rounded-full px-4 py-1.5 text-micro font-black transition ${
                   d.tone === "danger" ? "border border-red-400/40 text-red-300 hover:bg-red-400/10" : "bg-gold text-on-gold hover:bg-gold/90"
                 }`}>
                 {d.label} — على {sel.size}
@@ -712,12 +712,12 @@ export default function TrainerApplications() {
                 <p className="mt-1 text-xs text-muted-foreground">
                   {a.specialties.join(" · ") || "—"} · خبرة مجال {a.domainYears ?? "—"} · {a.jobTitle ?? "—"}
                 </p>
-                <p className="mt-1 text-[11px] text-muted-foreground">
+                <p className="mt-1 text-micro text-muted-foreground">
                   {a.emailVerified ? "بريد متحقق ✓" : "بريد غير متحقق"} · {a.documentsCount} وثيقة · {a.reviewsCount} تقييم · {a.interviewsCount} مقابلة
                   {a.phase2Done ? " · أكمل المرحلة الثانية" : ""}
                 </p>
               </div>
-              <span className="rounded-full border border-teal/40 px-3 py-1 text-[11px] font-bold text-teal-light-ink">
+              <span className="rounded-full border border-teal/40 px-3 py-1 text-micro font-bold text-teal-light-ink">
                 {STATUS_LABELS[a.status] ?? a.status}
               </span>
             </button>

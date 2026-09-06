@@ -105,7 +105,7 @@ export default function StageWork({
         <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
           <div className="min-w-0">
             <h3 className="text-base font-black leading-snug">{stage.titleAr}</h3>
-            <p className="mt-0.5 text-[11px] leading-5 text-muted-foreground">
+            <p className="mt-0.5 text-micro leading-5 text-muted-foreground">
               {detail.cohort.title}
               {trainers.length > 0 && ` · ${trainers.join("، ")}`}
               {stage.hours > 0 && ` · ${stage.hours} ساعة`}
@@ -139,7 +139,7 @@ export default function StageWork({
                 role="tab"
                 aria-selected={on}
                 onClick={() => setTab(t.id)}
-                className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[12px] font-bold transition ${
+                className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-bold transition ${
                   on ? "border-teal bg-teal/15 text-teal-light-ink" : "border-white/10 bg-white/[0.03] text-muted-foreground hover:border-white/30"
                 }`}
               >
@@ -170,7 +170,7 @@ export default function StageWork({
         {(detail.status === "completed" || percent >= 100 || detail.certificates.length > 0) && (
           <div className="mt-4 space-y-3 border-t border-white/10 pt-4">
             <Card tone="accent" className="flex flex-wrap items-center justify-between gap-3 bg-teal-ink/[0.06] p-3.5">
-              <p className="min-w-0 text-[12px] leading-5 text-foreground">
+              <p className="min-w-0 text-xs leading-5 text-foreground">
                 <span className="flex items-center gap-1.5 font-black text-foreground">
                   <Ruler className="h-3.5 w-3.5 text-teal-light-ink" /> قِس نموّك في مهارات هذه الدورة
                 </span>
@@ -178,7 +178,7 @@ export default function StageWork({
               </p>
               <Link
                 to={`/student/remeasure/${detail.id}`}
-                className="shrink-0 rounded-full border border-teal/50 px-4 py-2 text-[12px] font-black text-teal-light-ink transition hover:bg-teal/10"
+                className="shrink-0 rounded-full border border-teal/50 px-4 py-2 text-xs font-black text-teal-light-ink transition hover:bg-teal/10"
               >
                 افتح القياس
               </Link>
@@ -207,7 +207,7 @@ export default function StageWork({
           <div className="mt-3 space-y-4">
             {detail.cohort.materials.length > 0 && (
               <div>
-                <p className="text-[11px] font-bold text-muted-foreground">موادُّ الشعبة</p>
+                <p className="text-micro font-bold text-muted-foreground">موادُّ الشعبة</p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {detail.cohort.materials.map((m) => (
                     <a
@@ -215,7 +215,7 @@ export default function StageWork({
                       href={m.readUrl ?? m.externalUrl ?? "#"}
                       target="_blank"
                       rel="noreferrer"
-                      className="flex min-h-9 items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-bold text-foreground transition hover:border-teal/50 hover:text-teal-light-ink"
+                      className="flex min-h-9 items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-micro font-bold text-foreground transition hover:border-teal/50 hover:text-teal-light-ink"
                     >
                       <FileText className="h-3 w-3" /> {m.title}
                     </a>
@@ -225,7 +225,7 @@ export default function StageWork({
             )}
             {recordings.length > 0 && (
               <div>
-                <p className="text-[11px] font-bold text-muted-foreground">تسجيلاتُ الجلسات</p>
+                <p className="text-micro font-bold text-muted-foreground">تسجيلاتُ الجلسات</p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {recordings.map((rec) => (
                     <a
@@ -233,7 +233,7 @@ export default function StageWork({
                       href={rec.readUrl ?? "#"}
                       target="_blank"
                       rel="noreferrer"
-                      className="flex min-h-9 items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-bold text-foreground transition hover:border-teal/50 hover:text-teal-light-ink"
+                      className="flex min-h-9 items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-micro font-bold text-foreground transition hover:border-teal/50 hover:text-teal-light-ink"
                     >
                       <PlayCircle className="h-3 w-3" /> {rec.title}
                       {rec.durationSec ? ` · ${Math.round(rec.durationSec / 60)} د` : ""}
@@ -246,7 +246,7 @@ export default function StageWork({
                 يُعرف كودُه يُسقَط: لا مرجعَ يُختلق للمتعلّم. */}
             {references.length > 0 && (
               <div>
-                <p className="text-[11px] font-bold text-muted-foreground">مراجعُها العلميّة</p>
+                <p className="text-micro font-bold text-muted-foreground">مراجعُها العلميّة</p>
                 <ul className="mt-2 space-y-1.5">
                   {references.map((r) => (
                     <li key={r.id}>
@@ -313,7 +313,7 @@ function Lessons({
             >
               <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
                 <span
-                  className={`grid h-7 w-7 shrink-0 place-items-center rounded-xl text-[11px] font-black ${
+                  className={`grid h-7 w-7 shrink-0 place-items-center rounded-xl text-micro font-black ${
                     done ? "bg-teal text-on-teal" : next ? "bg-teal/20 text-teal-light-ink" : "bg-white/5 text-muted-foreground"
                   }`}
                 >
@@ -346,7 +346,7 @@ function Lessons({
                 {lessons.length > 0 && (
                   <Link
                     to={`/student/course/${courseId}/module/${m.id}`}
-                    className="shrink-0 rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-bold text-foreground transition hover:border-teal/50 hover:text-teal-light-ink"
+                    className="shrink-0 rounded-full border border-white/15 px-3 py-1.5 text-micro font-bold text-foreground transition hover:border-teal/50 hover:text-teal-light-ink"
                   >
                     {done ? "راجعها" : "افتحها"}
                   </Link>
@@ -371,7 +371,7 @@ function Lessons({
           <p className="flex items-center gap-1.5 text-[11.5px] font-black text-gold-ink">
             <FileText className="h-3.5 w-3.5" /> مشروع هذه الدورة
           </p>
-          <p className="mt-1.5 text-[12px] leading-6 text-foreground">{project}</p>
+          <p className="mt-1.5 text-xs leading-6 text-foreground">{project}</p>
         </Card>
       )}
     </>
@@ -502,7 +502,7 @@ function QuizAttemptForm({
     <div className="mt-3 space-y-3">
       {items.map((it, idx) => (
         <div key={it.id}>
-          <p className="mb-1 text-[12px] font-bold text-foreground">
+          <p className="mb-1 text-xs font-bold text-foreground">
             {idx + 1}. {it.prompt}
             {it.maxScore ? <span className="mr-2 text-micro font-normal text-muted-foreground">({it.maxScore} درجات)</span> : null}
           </p>

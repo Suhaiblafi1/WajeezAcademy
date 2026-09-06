@@ -478,7 +478,7 @@ function HowItWorks() {
                 </div>
                 <div>
                   <h3 className="flex items-center gap-2 text-sm font-bold">
-                    <span className="text-[11px] font-black text-teal-ink">{i + 1}</span>
+                    <span className="text-micro font-black text-teal-ink">{i + 1}</span>
                     {s.title}
                   </h3>
                   <p className="mt-1 text-xs leading-6 text-muted-foreground">{s.text}</p>
@@ -535,7 +535,7 @@ function Stories() {
             كل رحلة تبدأ بتشخيص أو بمسار جاهز، وتمر بدورات الكتالوج، وتنتهي بمشروع تخرج يدخل ملفك — اختر نموذجا واقرأه كاملا.
           </p>
           {/* الصدقُ باقٍ والصوتُ خافت: تنويهٌ لا يزاحم ما جاء الزائرُ ليقرأه */}
-          <p className="mx-auto mt-3 max-w-md text-[11px] leading-5 text-muted-foreground">
+          <p className="mx-auto mt-3 max-w-md text-micro leading-5 text-muted-foreground">
             نماذج توضيحية مركبة من أنماط شائعة — ليست شهادات لأشخاص حقيقيين.
           </p>
         </div>
@@ -565,7 +565,7 @@ function Stories() {
                 <StoryAvatar id={s.id} name={s.name} look={s.look} className="h-20 w-20" />
               </div>
               <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
-              <span className="tag-teal absolute bottom-3 right-4 rounded-full px-3 py-1 text-[11px] font-bold">{s.tag}</span>
+              <span className="tag-teal absolute bottom-3 right-4 rounded-full px-3 py-1 text-micro font-bold">{s.tag}</span>
             </div>
             <div className="flex flex-1 flex-col p-5">
               <p className="text-sm font-bold">
@@ -625,7 +625,7 @@ function Stories() {
                 <div className="absolute bottom-4 right-6 flex flex-wrap items-center gap-3">
                   <span className="tag-teal rounded-full px-4 py-1.5 text-sm font-bold">{open.tag}</span>
                   <span className="text-sm text-foreground">{open.name} — {open.role}</span>
-                  <span className="text-[11px] font-normal text-muted-foreground">{STORY_ILLUSTRATIVE_BADGE_AR}</span>
+                  <span className="text-micro font-normal text-muted-foreground">{STORY_ILLUSTRATIVE_BADGE_AR}</span>
                 </div>
               </div>
 
@@ -1107,7 +1107,7 @@ function AdvisorStrip() {
             <MessageCircle className="h-4 w-4" />
             احجز حديثك
           </a>
-          <p className="flex items-center gap-2 text-[11px] text-muted-foreground">
+          <p className="flex items-center gap-2 text-micro text-muted-foreground">
             مجاني · خمس عشرة دقيقة · بلا التزام
             <ChannelBadge />
           </p>

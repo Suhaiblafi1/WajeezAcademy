@@ -262,7 +262,7 @@ export default function Authoring() {
             />
           </div>
           {/* الدورةُ أوّلا — ثمّ وحداتُها تحتها بترتيبها */}
-          <label className="mb-2.5 block text-[11px] font-bold text-muted-foreground">
+          <label className="mb-2.5 block text-micro font-bold text-muted-foreground">
             الدورة
             <select
               value={courseId}
@@ -284,7 +284,7 @@ export default function Authoring() {
                 key={f.id}
                 onClick={() => setBodyFilter(f.id)}
                 aria-pressed={bodyFilter === f.id}
-                className={`flex-1 cursor-pointer rounded-lg border px-2 py-1 text-[11px] font-bold transition ${
+                className={`flex-1 cursor-pointer rounded-lg border px-2 py-1 text-micro font-bold transition ${
                   bodyFilter === f.id
                     ? "border-teal/60 bg-teal/15 text-teal-light-ink"
                     : "border-white/10 text-muted-foreground hover:border-white/25 hover:text-foreground"
@@ -341,7 +341,7 @@ export default function Authoring() {
               ))}
             </ul>
           )}
-          <button type="button" onClick={() => void loadWork()} className="mt-3 flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground">
+          <button type="button" onClick={() => void loadWork()} className="mt-3 flex items-center gap-1.5 text-micro text-muted-foreground hover:text-foreground">
             <RefreshCw className="h-3 w-3" /> تحديث الطابور
           </button>
         </aside>
@@ -361,7 +361,7 @@ export default function Authoring() {
               <header className="mb-4 flex flex-wrap items-start justify-between gap-3 border-b border-white/10 pb-4">
                 <div>
                   <h2 className="text-sm font-black">{selected.titleAr}</h2>
-                  <p className="mt-1 text-[11px] text-muted-foreground">
+                  <p className="mt-1 text-micro text-muted-foreground">
                     {selected.courseTitleAr || selected.courseId} · إصدار {draft.version} ·{" "}
                     <span className={isReview ? "text-gold" : "text-muted-foreground"}>{STATUS_AR[draft.status] ?? draft.status}</span>
                   </p>
@@ -377,7 +377,7 @@ export default function Authoring() {
                   return (
                     <button
                       key={t.id} type="button" onClick={() => setTab(t.id)}
-                      className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[11px] font-bold transition ${
+                      className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-micro font-bold transition ${
                         tab === t.id ? "border-teal/50 bg-teal/10 text-teal-ink" : "border-white/10 text-muted-foreground hover:border-white/25"}`}
                     >
                       <t.icon className="h-3.5 w-3.5" />
@@ -400,14 +400,14 @@ export default function Authoring() {
                       isDraft ? "" : "opacity-60"}`}
                   />
                   {!isDraft && (
-                    <p className="mt-2 text-[11px] leading-5 text-gold">
+                    <p className="mt-2 text-micro leading-5 text-gold">
                       المسوّدة قيد المراجعة — اسحبها لتعديلها.
                     </p>
                   )}
                   {liveErrors.length > 0 && (
                     <ul className="mt-2 space-y-1 rounded-xl border border-amber-400/30 bg-amber-400/10 p-3">
                       {liveErrors.map((e, i) => (
-                        <li key={i} className="flex gap-2 text-[11px] leading-5 text-amber-200">
+                        <li key={i} className="flex gap-2 text-micro leading-5 text-amber-200">
                           <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" /> {e}
                         </li>
                       ))}
@@ -421,11 +421,11 @@ export default function Authoring() {
                   </p>
                   <div className="max-h-[26rem] overflow-y-auto">
                     {!value.trim() ? (
-                      <p className="py-10 text-center text-[11px] text-muted-foreground">لا شيء بعد.</p>
+                      <p className="py-10 text-center text-micro text-muted-foreground">لا شيء بعد.</p>
                     ) : tab === "body" ? (
                       <LessonBody body={value} />
                     ) : liveErrors.length > 0 ? (
-                      <p className="py-10 text-center text-[11px] leading-6 text-muted-foreground">
+                      <p className="py-10 text-center text-micro leading-6 text-muted-foreground">
                         تُعرض المعاينة حين تصحّ الصيغة.
                       </p>
                     ) : tab === "checks" ? (
@@ -466,7 +466,7 @@ export default function Authoring() {
                       رفعٌ للمراجعة
                     </button>
                     {!draft.bodyAr?.trim() && (
-                      <span className="text-[11px] text-muted-foreground">لا تُرفع وحدةٌ بلا متن.</span>
+                      <span className="text-micro text-muted-foreground">لا تُرفع وحدةٌ بلا متن.</span>
                     )}
                   </>
                 )}
@@ -487,7 +487,7 @@ export default function Authoring() {
                     الحلقةُ الوسطى تعتمد ولا تنشر، والأخيرةُ توقّع أو تُعيد. */}
                 {isReview && canDecide && (
                   <Inset tone="warn" className="flex w-full flex-wrap items-center gap-2">
-                    <p className="flex w-full items-center gap-1.5 text-[11px] font-black text-gold">
+                    <p className="flex w-full items-center gap-1.5 text-micro font-black text-gold">
                       <ShieldCheck className="h-3.5 w-3.5" /> الاعتماد الأكاديميّ — ولا يعتمد أحدٌ ما كتبه
                     </p>
                     <input
@@ -517,7 +517,7 @@ export default function Authoring() {
                 {isAwaitingFinal && (
                   canFinalApprove ? (
                     <Inset tone="accent" className="flex w-full flex-wrap items-center gap-2">
-                      <p className="flex w-full items-center gap-1.5 text-[11px] font-black text-teal-light-ink">
+                      <p className="flex w-full items-center gap-1.5 text-micro font-black text-teal-light-ink">
                         <ShieldCheck className="h-3.5 w-3.5" /> الموافقة النهائية — ولا يوقّعها كاتبُها ولا مَن اعتمدها أكاديميّا
                       </p>
                       <input
@@ -540,7 +540,7 @@ export default function Authoring() {
                       </button>
                     </Inset>
                   ) : (
-                    <p className="w-full rounded-xl border border-white/10 bg-white/[0.03] p-3 text-[11px] leading-6 text-muted-foreground">
+                    <p className="w-full rounded-xl border border-white/10 bg-white/[0.03] p-3 text-micro leading-6 text-muted-foreground">
                       اعتُمدت أكاديميّا وتنتظر الموافقة النهائية — وهي بحبّةِ صلاحيةٍ لا يملكها حسابك.
                     </p>
                   )
@@ -549,20 +549,20 @@ export default function Authoring() {
 
               {history.length > 0 && (
                 <details className="mt-5 rounded-xl border border-white/10 bg-white/[0.02] p-4">
-                  <summary className="cursor-pointer text-[11px] font-black text-muted-foreground">
+                  <summary className="cursor-pointer text-micro font-black text-muted-foreground">
                     سجلّ الإصدارات ({history.length})
                   </summary>
                   <ul className="mt-3 space-y-2">
                     {history.map((h) => (
                       <li key={h.id} className="rounded-lg border border-white/10 px-3 py-2">
-                        <p className="flex flex-wrap items-center gap-2 text-[11px]">
+                        <p className="flex flex-wrap items-center gap-2 text-micro">
                           <span className="font-black">إصدار {h.version}</span>
                           <span className="rounded-full bg-white/10 px-2 py-0.5 text-micro">{STATUS_AR[h.status] ?? h.status}</span>
                           <span className="text-muted-foreground">{fmtShortDateTimeAr(h.reviewedAt ?? h.submittedAt ?? h.createdAt)}</span>
                           <span className="text-muted-foreground">{fmtNum(h.bodyAr?.length ?? 0)} حرفا</span>
                         </p>
                         {h.reviewNoteAr && (
-                          <p className="mt-1 text-[11px] leading-5 text-gold/80">ملاحظة المراجع: {h.reviewNoteAr}</p>
+                          <p className="mt-1 text-micro leading-5 text-gold/80">ملاحظة المراجع: {h.reviewNoteAr}</p>
                         )}
                       </li>
                     ))}
@@ -584,7 +584,7 @@ function Stat({ label, value, tone }: { label: string; value: number; tone?: "go
   const color = tone === "good" ? "text-teal-ink" : tone === "warn" ? "text-gold-ink" : "text-foreground";
   return (
     <Card>
-      <p className="text-[11px] text-muted-foreground">{label}</p>
+      <p className="text-micro text-muted-foreground">{label}</p>
       <p className={`mt-1 text-2xl font-black tabular-nums ${color}`}>{fmtNum(value)}</p>
     </Card>
   );

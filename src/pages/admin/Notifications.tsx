@@ -82,7 +82,7 @@ export default function Notifications() {
             <input value={form.titleAr} onChange={(e) => setForm({ ...form, titleAr: e.target.value })} placeholder="العنوان" className={`${inputCls} sm:col-span-2`} />
             <textarea value={form.bodyAr} onChange={(e) => setForm({ ...form, bodyAr: e.target.value })} rows={3} placeholder="النص — مرحبا {{name}}…" className={`${inputCls} sm:col-span-2`} />
           </div>
-          <label className="mt-2 flex cursor-pointer items-center gap-1.5 text-[11px] text-muted-foreground">
+          <label className="mt-2 flex cursor-pointer items-center gap-1.5 text-micro text-muted-foreground">
             <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} className="accent-teal" />
             قالب فعال
           </label>

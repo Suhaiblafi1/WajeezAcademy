@@ -90,7 +90,7 @@ export default function LearnerSearchField({
       {hits !== null && (
         <ul className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-xl border border-white/15 bg-[#0F1A1D] p-1 shadow-2xl">
           {hits.length === 0 && (
-            <li className="px-3 py-2 text-[11px] text-muted-foreground">لا متعلّمَ بهذا الاسم أو البريد.</li>
+            <li className="px-3 py-2 text-micro text-muted-foreground">لا متعلّمَ بهذا الاسم أو البريد.</li>
           )}
           {hits.map((h) => (
             <li key={h.id}>

@@ -256,7 +256,7 @@ export default function Journey() {
             <p className="flex items-center gap-2 text-sm font-black text-gold-ink">
               <CircleSlash className="h-4 w-4 shrink-0" /> لم تكتمل دفعتك — ولم يُخصم منك شيء
             </p>
-            <p className="mt-1.5 text-[12px] leading-6 text-muted-foreground">
+            <p className="mt-1.5 text-xs leading-6 text-muted-foreground">
               طلبك محفوظ كما تركته. أكمل الدفع متى شئت من{" "}
               <Link to="/student/billing" className="font-bold text-gold-ink underline underline-offset-4">الفواتير</Link>
               {" "}— ولن تفقد مقعدك ما دامت الشعبة مفتوحة.
@@ -272,7 +272,7 @@ export default function Journey() {
               <Inset className="mt-3 p-3.5">
                 <ul className="space-y-1">
                   {paid.items.map((it) => (
-                    <li key={it.id} className="flex items-start justify-between gap-3 text-[12px]">
+                    <li key={it.id} className="flex items-start justify-between gap-3 text-xs">
                       <span className="min-w-0 text-foreground">{it.titleAr}</span>
                       {/* الهديّةُ تُقرأ هديّةً لا صفرا — صفرٌ في فاتورةٍ يُقرأ عطبا */}
                       <span dir="ltr" className="shrink-0 font-bold text-muted-foreground">
@@ -282,7 +282,7 @@ export default function Journey() {
                   ))}
                 </ul>
                 <div className="mt-2.5 flex items-end justify-between border-t border-white/10 pt-2">
-                  <span className="text-[11px] text-muted-foreground">
+                  <span className="text-micro text-muted-foreground">
                     {paid.invoice ? <>فاتورة <span dir="ltr" className="font-mono">{paid.invoice.number}</span></> : "المجموع المدفوع"}
                   </span>
                   <span dir="ltr" className="text-lg font-black text-foreground">
@@ -291,7 +291,7 @@ export default function Journey() {
                 </div>
               </Inset>
             )}
-            <p className="mt-2.5 text-[12px] leading-6 text-muted-foreground">
+            <p className="mt-2.5 text-xs leading-6 text-muted-foreground">
               نؤكّد دفعتك مع البنك، ومراحلُك تظهر أدناه فور تأكيدها — عادةً خلال دقائق.
               وتفصيل الفاتورة في <Link to="/student/billing" className="font-bold text-teal-light-ink underline underline-offset-4">الفواتير</Link>.
             </p>
@@ -330,7 +330,7 @@ export default function Journey() {
                       key={t.id}
                       onClick={() => switchTrack(t.id)}
                       aria-current={on ? "true" : undefined}
-                      className={`flex shrink-0 cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-[12px] font-bold transition ${
+                      className={`flex shrink-0 cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-xs font-bold transition ${
                         on ? "border-teal bg-teal/15 text-teal-light-ink" : "border-white/10 bg-white/[0.03] text-muted-foreground hover:border-white/30"
                       }`}
                     >
@@ -347,7 +347,7 @@ export default function Journey() {
 
             <div className="mb-1 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
               <h2 className="text-lg font-black">{activeTrack.titleAr}</h2>
-              {activeTrack.subtitleAr && <p className="text-[11px] text-muted-foreground">{activeTrack.subtitleAr}</p>}
+              {activeTrack.subtitleAr && <p className="text-micro text-muted-foreground">{activeTrack.subtitleAr}</p>}
             </div>
 
             <StageRail track={activeTrack} selectedId={selectedId} onSelect={select} />
@@ -428,7 +428,7 @@ function PlanRequest({ track, onDone }: { track: JourneyTrack; onDone: () => voi
 
   if (done) {
     return (
-      <p className="mt-3 rounded-2xl border border-teal/35 bg-teal/[0.07] px-4 py-3 text-[12px] leading-6 text-teal-light-ink">
+      <p className="mt-3 rounded-2xl border border-teal/35 bg-teal/[0.07] px-4 py-3 text-xs leading-6 text-teal-light-ink">
         وصلنا طلبك على {done.requested.length === 1 ? "دورة واحدة" : `${done.requested.length} دورات`}.
         نراجعها ونحجز مقاعدك، ثمّ تصلك فاتورةٌ واحدة للخطّة كلها.
         {done.awaiting.length > 0 && ` و${done.awaiting.length} من دوراتك تنتظر فتح شعبتها — لا تُحتسب عليك الآن.`}
@@ -439,7 +439,7 @@ function PlanRequest({ track, onDone }: { track: JourneyTrack; onDone: () => voi
   if (askable === 0) {
     if (pending > 0) {
       return (
-        <p className="mt-3 rounded-2xl border border-gold/30 bg-gold/[0.06] px-4 py-3 text-[12px] leading-6 text-gold-ink">
+        <p className="mt-3 rounded-2xl border border-gold/30 bg-gold/[0.06] px-4 py-3 text-xs leading-6 text-gold-ink">
           طلبك على {pending === 1 ? "دورة واحدة" : `${pending} دورات`} قيد المراجعة. نحجز مقاعدك ثمّ تصلك
           فاتورةٌ واحدة للخطّة كلها — دفعةٌ واحدة لا أربع.
         </p>
@@ -448,14 +448,14 @@ function PlanRequest({ track, onDone }: { track: JourneyTrack; onDone: () => voi
     if (awaiting === 0) return null;
     return (
       <Card className="mt-3 flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-        <p className="min-w-0 text-[12px] leading-6 text-muted-foreground">
+        <p className="min-w-0 text-xs leading-6 text-muted-foreground">
           <span className="font-bold text-foreground">{awaiting} من دوراتك لم تُفتح لها شعبة بعد.</span>{" "}
           لا تُطلب ولا يُدفع ثمنُها — نُعلمك فور جدولتها، أو راجعها مع مستشارك.
         </p>
         <AdvisorContact
           text={reviewMsg}
           label="مراجعة خطّتي"
-          className="flex shrink-0 items-center gap-2 rounded-full border border-gold/40 px-4 py-2 text-[12px] font-bold text-gold-ink transition hover:bg-gold/10"
+          className="flex shrink-0 items-center gap-2 rounded-full border border-gold/40 px-4 py-2 text-xs font-bold text-gold-ink transition hover:bg-gold/10"
         />
       </Card>
     );
@@ -479,11 +479,11 @@ function PlanRequest({ track, onDone }: { track: JourneyTrack; onDone: () => voi
         {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
         اطلب تسجيلك في {askable === 1 ? "دورتك المتاحة" : `دوراتك الـ${askable} المتاحة`}
       </Button>
-      <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
+      <p className="mt-2 text-micro leading-5 text-muted-foreground">
         طلبٌ واحد لخطّتك كلها، وفاتورةٌ واحدة بعد حجز مقاعدك — لا دورةً دورة.
         {awaiting > 0 && " وما لم تُفتح شعبتُه لا يُطلب ولا يُدفع ثمنه."}
       </p>
-      {error && <p className="mt-2 text-[11px] font-bold text-gold-ink">{error}</p>}
+      {error && <p className="mt-2 text-micro font-bold text-gold-ink">{error}</p>}
     </Card>
   );
 }

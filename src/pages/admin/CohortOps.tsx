@@ -99,7 +99,7 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
 
   return (
     <div className="space-y-3">
-      {localMsg && <p className="text-[11px] font-bold text-teal-light-ink" role="status">{localMsg}</p>}
+      {localMsg && <p className="text-micro font-bold text-teal-light-ink" role="status">{localMsg}</p>}
 
       {/* تعيين مدرب — خطوةٌ واحدة للمؤهَّل، وطلبٌ واحد لغيره.
 
@@ -187,7 +187,7 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
             <input type="time" value={editForm.startTime} onChange={(e) => setEditForm({ ...editForm, startTime: e.target.value })} className={inputCls} />
             <input type="number" min={1} value={editForm.capacity} onChange={(e) => setEditForm({ ...editForm, capacity: e.target.value })} placeholder="السعة" className={inputCls} />
             <input type="number" min={0} value={editForm.price} onChange={(e) => setEditForm({ ...editForm, price: e.target.value })} placeholder={`السعر (${cohort.currency})`} className={inputCls} />
-            <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
+            <div className="flex items-center gap-4 text-micro text-muted-foreground">
               <label className="flex cursor-pointer items-center gap-1.5">
                 <input type="checkbox" checked={editForm.registrationOpen} onChange={(e) => setEditForm({ ...editForm, registrationOpen: e.target.checked })} className="accent-teal" />
                 التسجيل مفتوح
@@ -483,7 +483,7 @@ export function LearningSettings({ courses, cohorts, onDone }: {
             onChange={(e) => setRuleForm({ ...ruleForm, threshold: e.target.value })}
             placeholder="العتبة" className={inputCls} />
         </div>
-        <label className="mt-2 flex cursor-pointer items-center gap-1.5 text-[11px] text-muted-foreground">
+        <label className="mt-2 flex cursor-pointer items-center gap-1.5 text-micro text-muted-foreground">
           <input type="checkbox" checked={ruleForm.required} onChange={(e) => setRuleForm({ ...ruleForm, required: e.target.checked })} className="accent-teal" />
           قاعدة إلزامية للشهادة
         </label>
@@ -532,9 +532,9 @@ function CertificateCandidates({ cohortId, busy, act }: {
   }, [cohortId]);
   useEffect(() => { load(); }, [load]);
 
-  if (error) return <p className="text-[11px] leading-6 text-muted-foreground">{error}</p>;
-  if (!rows) return <p className="text-[11px] text-muted-foreground">نقرأ المرشَّحين…</p>;
-  if (rows.length === 0) return <p className="text-[11px] text-muted-foreground">لا مسجَّلين في هذه الشعبة بعد.</p>;
+  if (error) return <p className="text-micro leading-6 text-muted-foreground">{error}</p>;
+  if (!rows) return <p className="text-micro text-muted-foreground">نقرأ المرشَّحين…</p>;
+  if (rows.length === 0) return <p className="text-micro text-muted-foreground">لا مسجَّلين في هذه الشعبة بعد.</p>;
 
   return (
     <ul className="space-y-1.5">
@@ -542,7 +542,7 @@ function CertificateCandidates({ cohortId, busy, act }: {
         <Inset as="li" key={r.enrollmentId} className="px-3 py-2.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="min-w-0">
-              <span className="block text-[12px] font-bold text-foreground">{r.learnerName}</span>
+              <span className="block text-xs font-bold text-foreground">{r.learnerName}</span>
               <span dir="ltr" className="block text-left text-micro text-muted-foreground">{r.email}</span>
             </span>
             <span className="flex shrink-0 items-center gap-2">
@@ -586,7 +586,7 @@ function CertificateCandidates({ cohortId, busy, act }: {
               <input
                 value={reason} onChange={(e) => setReason(e.target.value)}
                 placeholder="سببُ الإلغاء — يبقى في السجلّ (٥ أحرف فأكثر)"
-                className="min-w-[14rem] flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-1.5 text-[11px] outline-none placeholder:text-muted-foreground/75 focus:border-red-400/50"
+                className="min-w-[14rem] flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-1.5 text-micro outline-none placeholder:text-muted-foreground/75 focus:border-red-400/50"
               />
               <button
                 disabled={busy || reason.trim().length < 5}
@@ -595,7 +595,7 @@ function CertificateCandidates({ cohortId, busy, act }: {
                     .then(() => { setRevoking(null); setReason(""); load(); }),
                   "أُلغيت الشهادة ووُثّق السبب",
                 )}
-                className="cursor-pointer rounded-lg border border-red-500/40 px-3 py-1.5 text-[11px] font-bold text-red-400 hover:bg-red-500/10 disabled:opacity-40"
+                className="cursor-pointer rounded-lg border border-red-500/40 px-3 py-1.5 text-micro font-bold text-red-400 hover:bg-red-500/10 disabled:opacity-40"
               >
                 أكّد الإلغاء
               </button>

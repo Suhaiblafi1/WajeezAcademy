@@ -711,7 +711,7 @@ export default function Diagnostic() {
               { icon: Compass, text: "توصية مفسَّرة، ليست حظًا" },
               { icon: Clock3, text: "٣–٦ دقائق" },
             ].map((f) => (
-              <span key={f.text} className="inline-flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-micro font-bold text-foreground sm:px-3.5 sm:text-[11px]">
+              <span key={f.text} className="inline-flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-micro font-bold text-foreground sm:px-3.5 sm:text-micro">
                 <f.icon className="h-3 w-3 shrink-0 text-teal-light-ink sm:h-3.5 sm:w-3.5" />
                 {f.text}
               </span>
@@ -842,7 +842,7 @@ export default function Diagnostic() {
                 />
               </div>
               {deepReason && (
-                <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">{deepReason}</p>
+                <p className="mt-3 text-micro leading-relaxed text-muted-foreground">{deepReason}</p>
               )}
             </Card>
           ) : (
@@ -887,7 +887,7 @@ export default function Diagnostic() {
                 إلا لأربعة خيارات ونصف — وقياسُ الاختيار أن ترى بدائلك مجتمعة. */}
             <h2 className="text-xl font-black leading-snug sm:text-2xl md:text-3xl">{qText}</h2>
             {(deepStep?.reasonAr ?? whyAr) && (
-              <p className="mt-3 w-fit rounded-xl border border-teal/30 bg-teal/[0.06] px-3.5 py-2 text-[11px] leading-relaxed text-muted-foreground">
+              <p className="mt-3 w-fit rounded-xl border border-teal/30 bg-teal/[0.06] px-3.5 py-2 text-micro leading-relaxed text-muted-foreground">
                 <span className="font-bold text-teal-light-ink">لماذا هذا السؤال؟ </span>
                 {deepStep?.reasonAr ?? whyAr}
               </p>
@@ -898,7 +898,7 @@ export default function Diagnostic() {
                 بسؤال، فيُعرض حيث يمكن حسمه: فوق الخيارات وبجوار «السؤال السابق».
                 ملاحظة لا حاجز: من رأى أن الوصفين يجتمعان في حاله فليمضِ. */}
             {contradictionAr && (
-              <p className="mt-3 flex w-fit items-start gap-2 rounded-xl border border-gold/30 bg-gold/[0.07] px-3.5 py-2 text-[11px] leading-relaxed text-foreground">
+              <p className="mt-3 flex w-fit items-start gap-2 rounded-xl border border-gold/30 bg-gold/[0.07] px-3.5 py-2 text-micro leading-relaxed text-foreground">
                 <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-ink" />
                 <span>
                   {contradictionAr}
@@ -999,7 +999,7 @@ export default function Diagnostic() {
                           );
                         })}
                       </div>
-                      <p className="mt-2 text-left text-[11px] text-muted-foreground" dir="rtl">
+                      <p className="mt-2 text-left text-micro text-muted-foreground" dir="rtl">
                         {ratingsDraft[item.key]
                           ? ["", "لم أبدأ بعد", "أعرف الأساسيات", "أستخدمها بمساعدة", "أستخدمها بثقة", "أعلّمها لغيري"][ratingsDraft[item.key]]
                           : "اختر مستواك — بصدق"}
@@ -1120,14 +1120,14 @@ export default function Diagnostic() {
               <div className="mt-10 space-y-2.5 border-t border-white/[0.07] pt-5">
                 {understoodDims.length > 0 && (
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground">
+                    <span className="flex items-center gap-1.5 text-micro font-bold text-muted-foreground">
                       <BrainCircuit className="h-3.5 w-3.5 text-teal-ink" />
                       يفهم الآن:
                     </span>
                     {understoodDims.map((d) => (
                       <span
                         key={d}
-                        className="rounded-full border border-teal/25 bg-teal/[0.08] px-2.5 py-0.5 text-[11px] font-semibold text-teal-light-ink"
+                        className="rounded-full border border-teal/25 bg-teal/[0.08] px-2.5 py-0.5 text-micro font-semibold text-teal-light-ink"
                       >
                         {DIM_LABELS[d]}
                       </span>
@@ -1135,7 +1135,7 @@ export default function Diagnostic() {
                   </div>
                 )}
                 {question.source && (
-                  <p className="text-[11px] leading-relaxed text-muted-foreground">
+                  <p className="text-micro leading-relaxed text-muted-foreground">
                     <span className="font-bold text-muted-foreground">المصدر العلمي: </span>
                     {question.source}
                   </p>
@@ -1253,7 +1253,7 @@ export default function Diagnostic() {
                       <ListChecks className="ml-2 h-4 w-4" />
                       ابدأ الاستبيان التفصيلي
                     </Button>
-                    <p className="mt-2.5 text-[11px] text-muted-foreground">مواقف عملية تقيس مهاراتك مباشرة — لا إعادة لما أجبت عنه.</p>
+                    <p className="mt-2.5 text-micro text-muted-foreground">مواقف عملية تقيس مهاراتك مباشرة — لا إعادة لما أجبت عنه.</p>
                   </div>
                 )}
                 {isExploratory && canDeepen && deepUnavailable && (
@@ -1294,7 +1294,7 @@ export default function Diagnostic() {
                     }
                   />
                 </p>
-                <p className="mt-4 text-[11px] leading-relaxed text-muted-foreground">
+                <p className="mt-4 text-micro leading-relaxed text-muted-foreground">
                   هذا تشخيص تعليمي مهني: ليس تقييما نفسيا أو طبيا. لا نرشّح مسارا بلا دليل كافٍ — هذه مسؤولية لا ضعف.
                 </p>
                 {/* هذه هي الشاشة الفعلية التي تُعرض حين لا مسار — لا الشاشة أدناه
@@ -1336,14 +1336,14 @@ export default function Diagnostic() {
                   لديك دقيقة أخرى لنتأكد أكثر؟
                 </Button>
                 {!deepUnavailable && (
-                  <p className="mx-auto mt-2 max-w-md text-[11px] leading-relaxed text-muted-foreground">
+                  <p className="mx-auto mt-2 max-w-md text-micro leading-relaxed text-muted-foreground">
                     خطوة اختيارية تماما: ٤–٨ أسئلة قصيرة تزيد دقة توصيتك — تخطَّها بلا أي أثر إن كانت الصورة واضحة لك.
                   </p>
                 )}
               </div>
             )}
             {deepUnavailable && (
-              <p className="mt-2 text-[11px] font-bold text-teal-light-ink print:hidden">
+              <p className="mt-2 text-micro font-bold text-teal-light-ink print:hidden">
                 صورتك مكتملة بما يكفي — لا أسئلة إضافية نافعة، توصيتك جاهزة بثقة.
               </p>
             )}
@@ -1381,12 +1381,12 @@ export default function Diagnostic() {
                 </p>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   <div className="rounded-xl bg-white/[0.04] p-4">
-                    <p className="text-[11px] font-bold text-muted-foreground">قبل التدقيق</p>
+                    <p className="text-micro font-bold text-muted-foreground">قبل التدقيق</p>
                     <p className="mt-1.5 text-sm font-black leading-snug text-foreground">{cmp.before.topLabel_ar}</p>
                     <p className="mt-1 text-xs text-muted-foreground">مستوى الثبات: {cmp.before.confidenceBand_ar}</p>
                   </div>
                   <Inset tone="accent">
-                    <p className="text-[11px] font-bold text-teal-light-ink">بعد التدقيق</p>
+                    <p className="text-micro font-bold text-teal-light-ink">بعد التدقيق</p>
                     <p className="mt-1.5 text-sm font-black leading-snug">{cmp.after.topLabel_ar}</p>
                     <p className="mt-1 text-xs text-foreground">مستوى الثبات: {cmp.after.confidenceBand_ar}</p>
                   </Inset>
@@ -1485,7 +1485,7 @@ export default function Diagnostic() {
                     <Inset key={f.label}>
                       <f.icon className="h-4 w-4 text-teal-light-ink" />
                       <p className="mt-1.5 text-xs font-bold leading-5">{f.label}</p>
-                      <p className="mt-0.5 text-[11px] leading-5 text-muted-foreground">{f.hint}</p>
+                      <p className="mt-0.5 text-micro leading-5 text-muted-foreground">{f.hint}</p>
                     </Inset>
                   ))}
                 </div>
@@ -1714,7 +1714,7 @@ export default function Diagnostic() {
                         <td className="py-3 text-muted-foreground">{g.target}</td>
                         <td className="py-3">
                           <span
-                            className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
+                            className={`rounded-full px-2.5 py-0.5 text-micro font-bold ${
                               g.priority === "عالية"
                                 ? "bg-gold/15 text-gold-ink"
                                 : "bg-white/10 text-muted-foreground"

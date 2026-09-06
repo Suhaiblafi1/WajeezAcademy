@@ -274,7 +274,7 @@ export default function BuyPanel({
                       <span className="grid h-5 w-5 shrink-0 place-items-center rounded-md bg-gold/15">
                         <perk.icon className="h-3 w-3 text-gold-ink" />
                       </span>
-                      <span className="text-[11px] leading-relaxed text-foreground">{perk.t}</span>
+                      <span className="text-micro leading-relaxed text-foreground">{perk.t}</span>
                     </li>
                   ))}
                 </ul>
@@ -306,17 +306,17 @@ export default function BuyPanel({
                           المستبعَدَ يُقال سببُه في موضعه — وإلّا بقي بندٌ في
                           القائمة لا يدخل المجموعَ بلا أن يُعرف لماذا. */}
                       {out ? (
-                        <span className="shrink-0 text-[11px] font-bold text-gold-ink">
+                        <span className="shrink-0 text-micro font-bold text-gold-ink">
                           {REASON_AR[out.reason] ?? "غير متاحة الآن"}
                         </span>
                       ) : item?.isGift ? (
-                        <span className="flex shrink-0 items-center gap-1 text-[11px] font-black text-gold-ink">
+                        <span className="flex shrink-0 items-center gap-1 text-micro font-black text-gold-ink">
                           <Gift className="h-3.5 w-3.5" /> هديّة
                         </span>
                       ) : null}
                     </div>
                     {out && (
-                      <p className="mt-1.5 text-[11px] leading-5 text-muted-foreground">
+                      <p className="mt-1.5 text-micro leading-5 text-muted-foreground">
                         {out.messageAr}
                         {options.length > 1 && " — أو اختر موعدا آخر أدناه."}
                       </p>
@@ -327,7 +327,7 @@ export default function BuyPanel({
                         <select
                           value={chosen[line.courseId] ?? options[0].id}
                           onChange={(e) => setChosen({ ...chosen, [line.courseId]: e.target.value })}
-                          className="w-full cursor-pointer rounded-xl border border-white/12 bg-white/[0.04] px-3 py-2 text-[12px] text-foreground outline-none transition hover:border-teal/40 focus:border-teal/60"
+                          className="w-full cursor-pointer rounded-xl border border-white/12 bg-white/[0.04] px-3 py-2 text-xs text-foreground outline-none transition hover:border-teal/40 focus:border-teal/60"
                         >
                           {options.map((o) => (
                             <option key={o.id} value={o.id} className="bg-surface">
@@ -345,7 +345,7 @@ export default function BuyPanel({
             {/* ما استُبعد يُسمّى: الخادمُ «كلُّ شيءٍ أو لا شيء»، فإسقاطُه صامتا
                 يجعل المشتريَ يظنّ أنّه اشترى ما لم يشترِه. */}
             {withoutCohort.length > 0 && (
-              <p className="mt-3 flex items-start gap-2 rounded-2xl border border-white/10 bg-white/[0.02] p-3 text-[11px] leading-5 text-muted-foreground">
+              <p className="mt-3 flex items-start gap-2 rounded-2xl border border-white/10 bg-white/[0.02] p-3 text-micro leading-5 text-muted-foreground">
                 <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>
                   خارج هذا الطلب لأنّها بلا شعبة مفتوحة بعد:{" "}
@@ -365,12 +365,12 @@ export default function BuyPanel({
                 onChange={(e) => setCoupon(e.target.value.toUpperCase())}
                 placeholder={`كود الخصم — مثال ${FIRST_TIME_PROMO.code}`}
                 dir="ltr"
-                className="min-w-0 flex-1 rounded-xl border border-white/12 bg-white/[0.04] px-3 py-2 text-left text-[12px] font-mono text-foreground outline-none transition focus:border-gold/50"
+                className="min-w-0 flex-1 rounded-xl border border-white/12 bg-white/[0.04] px-3 py-2 text-left text-xs font-mono text-foreground outline-none transition focus:border-gold/50"
               />
               <button
                 onClick={() => setApplied(coupon.trim())}
                 disabled={quoting || coupon.trim() === applied}
-                className="shrink-0 cursor-pointer rounded-xl border border-gold/40 px-3 py-2 text-[12px] font-black text-gold-ink transition hover:bg-gold/10 disabled:opacity-40"
+                className="shrink-0 cursor-pointer rounded-xl border border-gold/40 px-3 py-2 text-xs font-black text-gold-ink transition hover:bg-gold/10 disabled:opacity-40"
               >
                 طبّق
               </button>
@@ -379,7 +379,7 @@ export default function BuyPanel({
             {/* لا شيء يُشترى: كلُّه مملوكٌ أو محجوز — يُقال صراحةً بدل صفٍّ
                 من الأصفار وزرِّ دفعٍ لا يفعل شيئا. */}
             {nothingLeft && (
-              <p className="mt-4 rounded-2xl border border-teal/35 bg-teal/[0.07] p-4 text-[12px] leading-6 text-teal-light-ink">
+              <p className="mt-4 rounded-2xl border border-teal/35 bg-teal/[0.07] p-4 text-xs leading-6 text-teal-light-ink">
                 كلُّ ما في هذا الطلب لك بالفعل — لا شيء يُدفع ثمنُه مرّةً أخرى.
                 تجد شعبك ومقاعدك المحجوزة في «تعلّمي».
               </p>
@@ -387,7 +387,7 @@ export default function BuyPanel({
 
             {/* الحساب — كلُّ سطرٍ منه من الخادم */}
             {quote && !nothingLeft && (
-              <Card className="mt-4 space-y-1.5 text-[12px]">
+              <Card className="mt-4 space-y-1.5 text-xs">
                 <div className="flex items-center justify-between text-muted-foreground">
                   <span>مجموع الدورات</span>
                   <span dir="ltr">{money(quote.subtotal, quote.currency)}</span>
@@ -455,7 +455,7 @@ export default function BuyPanel({
             )}
 
             {error && (
-              <p className="mt-3 rounded-xl border border-red-400/30 bg-red-400/[0.07] px-3 py-2 text-[12px] leading-5 text-red-200">
+              <p className="mt-3 rounded-xl border border-red-400/30 bg-red-400/[0.07] px-3 py-2 text-xs leading-5 text-red-200">
                 {error}
               </p>
             )}
@@ -467,7 +467,7 @@ export default function BuyPanel({
                   {paying || quoting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
                   {paying ? "نحوّلك إلى صفحة الدفع…" : <>ادفع الآن · <span dir="ltr">{shownTotal}</span></>}
                 </Button>
-                <p className="mt-2 text-center text-[11px] leading-5 text-muted-foreground">
+                <p className="mt-2 text-center text-micro leading-5 text-muted-foreground">
                   الدفع على صفحة المزوّد — لا نحفظ بيانات بطاقتك. وبعد الدفع تُفتح منصّتك على ما اشتريت.
                 </p>
               </>

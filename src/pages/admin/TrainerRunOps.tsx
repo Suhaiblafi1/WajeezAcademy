@@ -246,13 +246,13 @@ export default function TrainerRunOps() {
                           </span>
                         )}
                       </p>
-                      <p dir="ltr" className="mt-0.5 text-right text-[11px] text-muted-foreground">{t.email}</p>
+                      <p dir="ltr" className="mt-0.5 text-right text-micro text-muted-foreground">{t.email}</p>
                     </div>
                   </div>
 
                   {/* ما يمنع الخطوةَ التالية — يُقال قبل الضغط لا بعده */}
                   {!t.hasAccount && (
-                    <p className="mt-2.5 flex items-start gap-1.5 rounded-xl border border-gold/30 bg-gold/[0.06] p-2.5 text-[11px] leading-6 text-gold-ink">
+                    <p className="mt-2.5 flex items-start gap-1.5 rounded-xl border border-gold/30 bg-gold/[0.06] p-2.5 text-micro leading-6 text-gold-ink">
                       <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                       لا حسابَ مربوطٌ بهذا الملفّ — فلا تُفتح له بوّابتُه ولو أُسنِد. اعتمِدْه من تبويب «الطلبات».
                     </p>
@@ -262,9 +262,9 @@ export default function TrainerRunOps() {
                     <div>
                       <p className="text-micro font-black text-muted-foreground">مؤهَّلٌ لـ</p>
                       {t.qualifications.length === 0 ? (
-                        <p className="mt-1 text-[11px] text-muted-foreground">لا تأهيلَ بعد — وبلا تأهيلٍ لا يُسنَد إلى شعبة.</p>
+                        <p className="mt-1 text-micro text-muted-foreground">لا تأهيلَ بعد — وبلا تأهيلٍ لا يُسنَد إلى شعبة.</p>
                       ) : (
-                        <ul className="mt-1 space-y-0.5 text-[11px] leading-6">
+                        <ul className="mt-1 space-y-0.5 text-micro leading-6">
                           {t.qualifications.map((x) => (
                             <li key={x.courseId}>
                               {x.courseTitle}
@@ -277,9 +277,9 @@ export default function TrainerRunOps() {
                     <div>
                       <p className="text-micro font-black text-muted-foreground">مُسنَدٌ إلى</p>
                       {t.assignments.length === 0 ? (
-                        <p className="mt-1 text-[11px] text-muted-foreground">لا إسنادَ نشط.</p>
+                        <p className="mt-1 text-micro text-muted-foreground">لا إسنادَ نشط.</p>
                       ) : (
-                        <ul className="mt-1 space-y-0.5 text-[11px] leading-6">
+                        <ul className="mt-1 space-y-0.5 text-micro leading-6">
                           {t.assignments.map((a, i) => (
                             <li key={`${a.courseId}-${a.cohortId ?? i}`}>
                               {a.courseTitle}{a.cohortTitle ? ` — ${a.cohortTitle}` : " — بلا شعبة"}

@@ -251,11 +251,11 @@ export function Bestsellers() {
 
                 فبقي الأخصُّ: ما يتخرّج به، وحجمُ ما يشتريه. والعامُّ يُقرأ في
                 صفحة المسار حيث للقارئ نيّةُ القراءة. */}
-            <div className="mt-3 flex items-start gap-1.5 text-[11px] leading-5 text-teal-light-ink">
+            <div className="mt-3 flex items-start gap-1.5 text-micro leading-5 text-teal-light-ink">
               <Target className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               <span className="line-clamp-2">تتخرّج بـ: {p.output}</span>
             </div>
-            <div className="mt-3 text-[11px] leading-5 text-muted-foreground">
+            <div className="mt-3 text-micro leading-5 text-muted-foreground">
               {p.level} · {pathwaySizeAr(p)}
             </div>
             <div className="mt-auto pt-5">
@@ -332,16 +332,16 @@ export function Bestsellers() {
         {shownCourses.map(({ id, note, c }) => (
           <Card as="article" tone="accent" key={id} className="group flex w-[270px] shrink-0 snap-start flex-col bg-card transition-all duration-200 hover:-translate-y-1 hover:border-teal/50 hover:shadow-[0_20px_60px_-30px_rgba(56,167,180,0.4)]">
             <div className="flex items-center gap-2">
-              <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-teal/10 px-3 py-1 text-[11px] font-bold text-teal-light-ink">
+              <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-teal/10 px-3 py-1 text-micro font-bold text-teal-light-ink">
                 <Flame className="h-3 w-3" />
                 {note}
               </span>
-              <span className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-muted-foreground">{c.category}</span>
+              <span className="rounded-full border border-white/10 px-2.5 py-1 text-micro text-muted-foreground">{c.category}</span>
             </div>
             <CourseTitle as="h4" name={c.name} termEn={c.termEn} className="mt-3 font-bold leading-relaxed" termClassName="text-muted-foreground" />
             <p className="mt-1 text-xs text-muted-foreground">من مسار «{c.pathwayName}» · {c.weeks} {c.weeks === 1 ? 'أسبوع' : 'أسابيع'}</p>
             {c.skill && (
-              <span className="mt-3 w-fit rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-[11px] text-teal-light-ink">
+              <span className="mt-3 w-fit rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-micro text-teal-light-ink">
                 {c.skill}
               </span>
             )}

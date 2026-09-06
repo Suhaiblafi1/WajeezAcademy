@@ -130,7 +130,7 @@ export default function Billing() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-lg font-black">{o.total} <span className="text-xs font-normal text-muted-foreground">{o.currency}</span></span>
-                  <span className={`rounded-full border px-3 py-1 text-[11px] font-bold ${o.status === "paid" ? "border-emerald-400/30 text-emerald-300" : "border-gold/40 text-gold-ink"}`}>
+                  <span className={`rounded-full border px-3 py-1 text-micro font-bold ${o.status === "paid" ? "border-emerald-400/30 text-emerald-300" : "border-gold/40 text-gold-ink"}`}>
                     {ORDER_STATUS[o.status] ?? o.status}
                   </span>
                 </div>
@@ -170,7 +170,7 @@ export default function Billing() {
                   {o.invoice.payments.length > 0 && (
                     <ul className="mt-2 space-y-1.5">
                       {o.invoice.payments.map((p) => (
-                        <li key={p.id} className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                        <li key={p.id} className="flex flex-wrap items-center gap-2 text-micro text-muted-foreground">
                           <CreditCard className="h-3 w-3 text-muted-foreground/50" />
                           دفعة {p.amount} {o.invoice!.currency} — {p.status === "succeeded" ? "ناجحة" : p.status === "pending" ? "بانتظار تأكيد المزود" : p.status}
                           {p.method && <span className="text-muted-foreground">({p.method})</span>}

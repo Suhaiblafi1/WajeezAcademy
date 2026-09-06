@@ -65,7 +65,7 @@ export default function Pipeline({
           return (
             <section key={s.key} className="w-[240px] shrink-0 lg:w-auto">
               <header className="flex items-baseline justify-between gap-2 rounded-t-2xl border border-white/10 bg-white/[0.04] px-3 py-2.5">
-                <h2 className="truncate text-[11px] font-black">{s.label}</h2>
+                <h2 className="truncate text-micro font-black">{s.label}</h2>
                 <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-micro font-black tabular-nums">
                   {items.length}
                 </span>
@@ -105,7 +105,7 @@ export default function Pipeline({
       {/* الخارجون من القِمع */}
       {CLOSED_STAGES.some((s) => byStage(s.key).length > 0) && (
         <details className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-          <summary className="cursor-pointer text-[11px] font-bold text-muted-foreground">
+          <summary className="cursor-pointer text-micro font-bold text-muted-foreground">
             خرجوا من القِمع ({CLOSED_STAGES.reduce((n, s) => n + byStage(s.key).length, 0)})
           </summary>
           <div className="mt-3 flex flex-wrap gap-2">

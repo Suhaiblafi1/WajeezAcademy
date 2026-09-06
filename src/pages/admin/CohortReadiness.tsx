@@ -88,21 +88,21 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
           <p className="flex items-center gap-1.5 text-xs font-black">
             <PlayCircle className="h-3.5 w-3.5 text-teal" /> فتحُ شعبةٍ لكلّ دورة بلا شعبة
           </p>
-          <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
+          <p className="mt-1 text-micro leading-5 text-muted-foreground">
             تبدأ بعد ستّة أسابيع · ثلاثاء وخميس ٦ مساءً بتوقيت عمّان · سعة ٢٠ · بسعر قائمة دورتها.
           </p>
 
           <div className="mt-3 flex flex-wrap gap-2">
             <button
               type="button" onClick={() => void run("open", false)} disabled={busy !== ""}
-              className="rounded-lg bg-white/10 px-3.5 py-1.5 text-[11px] font-bold hover:bg-white/15 disabled:opacity-40"
+              className="rounded-lg bg-white/10 px-3.5 py-1.5 text-micro font-bold hover:bg-white/15 disabled:opacity-40"
             >
               {busy === "open-preview" ? <Loader2 className="h-3 w-3 animate-spin" /> : "اعرض ما سيتغيّر"}
             </button>
             {open && !open.applied && open.opened > 0 && (
               <button
                 type="button" onClick={() => void run("open", true)} disabled={busy !== ""}
-                className="rounded-lg bg-teal px-3.5 py-1.5 text-[11px] font-black text-on-teal hover:brightness-110 disabled:opacity-40"
+                className="rounded-lg bg-teal px-3.5 py-1.5 text-micro font-black text-on-teal hover:brightness-110 disabled:opacity-40"
               >
                 {busy === "open-apply" ? <Loader2 className="h-3 w-3 animate-spin" /> : `هيّئ ${open.opened} شعبة`}
               </button>
@@ -111,7 +111,7 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
 
           {open && (
             <Inset className="mt-3">
-              <p className="text-[11px] leading-6 text-foreground">
+              <p className="text-micro leading-6 text-foreground">
                 دورات منشورة <b className="tabular-nums">{open.publishedCourses}</b> ·{" "}
                 {open.applied ? "هُيّئت" : "ستُهيّأ"} <b className="tabular-nums">{open.applied ? open.opened + open.prepared : open.opened}</b>
                 {open.applied && (
@@ -123,7 +123,7 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
                 )}
               </p>
               {open.applied && open.opened > 0 && (
-                <p className="mt-1.5 flex items-center gap-1.5 text-[11px] font-bold text-teal-light-ink">
+                <p className="mt-1.5 flex items-center gap-1.5 text-micro font-bold text-teal-light-ink">
                   <CheckCircle2 className="h-3 w-3" /> ظهرت أسعارُها الآن في الموقع.
                 </p>
               )}
@@ -175,7 +175,7 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
           <p className="flex items-center gap-1.5 text-xs font-black">
             <Tags className="h-3.5 w-3.5 text-gold" /> توحيدُ أسعار الشعب على سعر القائمة
           </p>
-          <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
+          <p className="mt-1 text-micro leading-5 text-muted-foreground">
             شعبةٌ سعرُها يخالف كتالوجها تقول للصفحة رقما وتُطالب الفاتورة بغيره.
             والمقعدُ المحجوز أو المدفوع لا يُعاد تسعيره.
           </p>
@@ -183,14 +183,14 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
           <div className="mt-3 flex flex-wrap gap-2">
             <button
               type="button" onClick={() => void run("align", false)} disabled={busy !== ""}
-              className="rounded-lg bg-white/10 px-3.5 py-1.5 text-[11px] font-bold hover:bg-white/15 disabled:opacity-40"
+              className="rounded-lg bg-white/10 px-3.5 py-1.5 text-micro font-bold hover:bg-white/15 disabled:opacity-40"
             >
               {busy === "align-preview" ? <Loader2 className="h-3 w-3 animate-spin" /> : "اعرض ما سيتغيّر"}
             </button>
             {align && !align.applied && align.changed > 0 && (
               <button
                 type="button" onClick={() => void run("align", true)} disabled={busy !== ""}
-                className="rounded-lg bg-gold px-3.5 py-1.5 text-[11px] font-black text-on-gold hover:brightness-110 disabled:opacity-40"
+                className="rounded-lg bg-gold px-3.5 py-1.5 text-micro font-black text-on-gold hover:brightness-110 disabled:opacity-40"
               >
                 {busy === "align-apply" ? <Loader2 className="h-3 w-3 animate-spin" /> : `وحّد ${align.changed} شعبة`}
               </button>
@@ -199,13 +199,13 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
 
           {align && (
             <Inset className="mt-3">
-              <p className="text-[11px] leading-6 text-foreground">
+              <p className="text-micro leading-6 text-foreground">
                 شعب <b className="tabular-nums">{align.cohorts}</b> ·{" "}
                 {align.applied ? "وُحّدت" : "ستُوحَّد"} <b className="tabular-nums text-gold">{align.changed}</b> ·{" "}
                 مطابقة أصلا <b className="tabular-nums">{align.alreadyAligned}</b>
               </p>
               {align.skippedCommitted > 0 && (
-                <p className="mt-1.5 text-[11px] leading-5 text-gold">
+                <p className="mt-1.5 text-micro leading-5 text-gold">
                   {align.skippedCommitted} شعبةً فيها مقاعدُ محجوزة أو مدفوعة — تُركت عمدا، عالجها يدويا.
                 </p>
               )}
@@ -229,21 +229,21 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
           <p className="flex items-center gap-1.5 text-xs font-black">
             <CalendarCheck className="h-3.5 w-3.5 text-teal" /> حالاتٌ متأخّرةٌ عن تواريخها
           </p>
-          <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
+          <p className="mt-1 text-micro leading-5 text-muted-foreground">
             شعبةٌ بدأت جلساتُها تصير «جارية»، وشعبةٌ انتهت آخرُ جلساتها تصير «منتهية» — ومستحقّاتُ
             مدرّبها تُولَّد عند الإكمال، فتأخّرُ الحالة يؤخّرها. ولا تُفتح شعبةٌ آليّا: الفتحُ يمرّ بشروطه وبقرارك.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <button
               type="button" onClick={() => void run("sync", false)} disabled={busy !== ""}
-              className="rounded-lg bg-white/10 px-3.5 py-1.5 text-[11px] font-bold hover:bg-white/15 disabled:opacity-40"
+              className="rounded-lg bg-white/10 px-3.5 py-1.5 text-micro font-bold hover:bg-white/15 disabled:opacity-40"
             >
               {busy === "sync-preview" ? <Loader2 className="h-3 w-3 animate-spin" /> : "اعرض ما سيتغيّر"}
             </button>
             {sync && !sync.applied && sync.changes.length > 0 && (
               <button
                 type="button" onClick={() => void run("sync", true)} disabled={busy !== ""}
-                className="rounded-lg bg-teal px-3.5 py-1.5 text-[11px] font-black text-on-teal hover:brightness-110 disabled:opacity-40"
+                className="rounded-lg bg-teal px-3.5 py-1.5 text-micro font-black text-on-teal hover:brightness-110 disabled:opacity-40"
               >
                 {busy === "sync-apply" ? <Loader2 className="h-3 w-3 animate-spin" /> : `حرّك ${sync.changes.length} شعبة`}
               </button>
@@ -252,12 +252,12 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
           {sync && (
             <Inset className="mt-3">
               {sync.changes.length === 0 ? (
-                <p className="flex items-center gap-1.5 text-[11px] font-bold text-teal-light-ink">
+                <p className="flex items-center gap-1.5 text-micro font-bold text-teal-light-ink">
                   <CheckCircle2 className="h-3 w-3" /> كلُّ الحالات مطابقةٌ لتواريخها.
                 </p>
               ) : (
                 <>
-                  <p className="text-[11px] text-foreground">
+                  <p className="text-micro text-foreground">
                     {sync.applied ? "حُرّكت" : "ستُحرَّك"} <b className="tabular-nums text-teal-light-ink">{sync.applied ? sync.changed : sync.changes.length}</b> شعبة
                   </p>
                   <ul className="mt-2 space-y-1">

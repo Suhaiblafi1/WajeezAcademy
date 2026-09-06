@@ -49,7 +49,7 @@ interface CaseDetail extends CaseRow {
 }
 
 const INPUT = "w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none";
-const LBL = "mb-1 block text-[11px] font-bold text-muted-foreground";
+const LBL = "mb-1 block text-micro font-bold text-muted-foreground";
 
 /* `ar-SA` تُخرج تقويما **هجريّا**، فكان المستشار وحده يرى «١٥ ربيع الآخر»
    بينما الشعبةُ مجدولةٌ ميلاديّا في كل شاشةٍ أخرى — فيُقارن موعدين
@@ -142,7 +142,7 @@ export default function AdvisorCases() {
             <p className="font-black">{partyOf(detail).name}</p>
             {partyOf(detail).email && <p className="mt-1 text-xs text-muted-foreground" dir="ltr">{partyOf(detail).email}</p>}
             {partyOf(detail).phone && <p className="text-xs text-muted-foreground" dir="ltr">{partyOf(detail).phone}</p>}
-            <p className="mt-2 text-[11px] text-muted-foreground">المصدر: {partyOf(detail).source === "diagnostic" ? "التشخيص الذكي" : partyOf(detail).source ?? "حساب مسجل"}</p>
+            <p className="mt-2 text-micro text-muted-foreground">المصدر: {partyOf(detail).source === "diagnostic" ? "التشخيص الذكي" : partyOf(detail).source ?? "حساب مسجل"}</p>
             <p className="mt-3 rounded-xl bg-white/[0.04] p-3 text-xs leading-6 text-foreground">
               {snapshotSummary(detail.client?.learnerProfile?.diagnosticSnapshot ?? detail.diagnosticSnapshot)}
             </p>
@@ -163,7 +163,7 @@ export default function AdvisorCases() {
               {Object.entries(STATUS_LABELS).map(([k, v]) => (
                 <button key={k} disabled={detail.status === k}
                   onClick={() => void act(() => apiPost(`/api/advisor/cases/${detail.id}/status`, { status: k }), `انتقلت الحالة إلى «${v}»`)}
-                  className={`cursor-pointer rounded-full border px-3 py-1 text-[11px] font-bold transition disabled:cursor-default ${
+                  className={`cursor-pointer rounded-full border px-3 py-1 text-micro font-bold transition disabled:cursor-default ${
                     detail.status === k ? "border-gold bg-gold/10 text-gold-ink" : "border-white/15 text-muted-foreground hover:border-teal/50 hover:text-foreground"
                   }`}>
                   {v}
@@ -186,7 +186,7 @@ export default function AdvisorCases() {
           {/* ما لا يملكه المستشار وحده */}
           <Card as="section" className="lg:col-span-2">
             <h2 className="mb-1 flex items-center gap-2 text-sm font-black text-teal-light-ink"><BadgePercent className="h-4 w-4" /> طلباتٌ تبتّ فيها الإدارة</h2>
-            <p className="mb-3 text-[11px] leading-6 text-muted-foreground">
+            <p className="mb-3 text-micro leading-6 text-muted-foreground">
               خصمٌ على فاتورته، أو تعديلٌ على خطّته. لا يُنفَّذ بطلبك وحده — ويبقى أثرُه مكتوبا.
             </p>
             <RequestsPanel key={detail.id} caseId={detail.id} />
@@ -315,9 +315,9 @@ export default function AdvisorCases() {
               className="block w-full cursor-pointer rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-right transition hover:border-teal/50">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="font-black">{partyOf(c).name} <span className="text-[11px] font-normal text-muted-foreground" dir="ltr">{partyOf(c).email}</span></p>
+                  <p className="font-black">{partyOf(c).name} <span className="text-micro font-normal text-muted-foreground" dir="ltr">{partyOf(c).email}</span></p>
                   <p className="mt-1 text-xs text-muted-foreground">{snapshotSummary(c.diagnosticSnapshot)}</p>
-                  {c.nextAction && <p className="mt-1 text-[11px] text-gold-ink">التالي: {c.nextAction}{c.nextFollowUpAt ? ` — ${fmt(c.nextFollowUpAt)}` : ""}</p>}
+                  {c.nextAction && <p className="mt-1 text-micro text-gold-ink">التالي: {c.nextAction}{c.nextFollowUpAt ? ` — ${fmt(c.nextFollowUpAt)}` : ""}</p>}
                 </div>
                 <div className="flex items-center gap-2">
                   {c.followUps[0] && (
@@ -325,7 +325,7 @@ export default function AdvisorCases() {
                       متابعة {fmt(c.followUps[0].scheduledAt)}
                     </span>
                   )}
-                  <span className="rounded-full border border-white/15 px-3 py-1 text-[11px] font-bold text-foreground">
+                  <span className="rounded-full border border-white/15 px-3 py-1 text-micro font-bold text-foreground">
                     {STATUS_LABELS[c.status] ?? c.status}
                   </span>
                 </div>

@@ -44,7 +44,7 @@ import Button from "@/components/ui/Button";
 /* سعر الدورة الواحدة في القوائم: رقمٌ من شعبةٍ حقيقية، أو «مع الشعبة» —
    ولا تقدير بينهما. */
 function CoursePriceTag({ amount, money, className }: { amount: number | null; money: (n: number) => string; className: string }) {
-  if (amount === null) return <span className="text-[11px] font-bold text-muted-foreground">مع الشعبة</span>;
+  if (amount === null) return <span className="text-micro font-bold text-muted-foreground">مع الشعبة</span>;
   return <span dir="ltr" className={className}>{money(amount)}</span>;
 }
 
@@ -279,7 +279,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
       <main className="mx-auto max-w-5xl px-5 pb-24 pt-8">
         {/* ترويسة: هذه دورة واحدة، وهي مسارك حتى الآن */}
         <Panel tone="accent" className="md:p-8">
-          <span className="rounded-full border border-teal/40 bg-teal/10 px-3 py-1 text-[11px] font-bold text-teal-light-ink">
+          <span className="rounded-full border border-teal/40 bg-teal/10 px-3 py-1 text-micro font-bold text-teal-light-ink">
             {anchor.category}
           </span>
           <CourseTitle as="h1" name={anchor.name} termEn={anchor.termEn} className="mt-3 text-2xl font-black leading-snug md:text-3xl" termClassName="text-xs text-muted-foreground" />
@@ -350,7 +350,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
             <ol className="mt-3 space-y-2.5">
               {full.modules.map((m, i) => (
                 <li key={m.id} className="flex items-start gap-3">
-                  <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-teal/15 text-[11px] font-black text-teal-light-ink" dir="ltr">
+                  <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-teal/15 text-micro font-black text-teal-light-ink" dir="ltr">
                     {i + 1}
                   </span>
                   <span className="min-w-0">
@@ -405,7 +405,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                 <Card as="li" key={c.id}>
                   <div className="flex items-start justify-between gap-2.5">
                     <span className="flex min-w-0 items-start gap-2.5">
-                      <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-teal/15 text-[11px] font-black text-teal-light-ink" dir="ltr">
+                      <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-teal/15 text-micro font-black text-teal-light-ink" dir="ltr">
                         {i + 1}
                       </span>
                       <span className="min-w-0">
@@ -457,7 +457,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
               واحد: تكرارُه سطرين كان يُكبّر الصندوق ولا يُضيف علما. */}
           <Card className="mt-3.5 p-3.5">
             {pricing.allPriced ? (
-              <dl className="space-y-1 text-[12px]">
+              <dl className="space-y-1 text-xs">
                 {hasBreakdown && (
                   <>
                     <div className="flex items-baseline justify-between gap-3">
@@ -481,7 +481,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                 <div className={`flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1.5 ${
                   hasBreakdown ? "border-t border-white/10 pt-2.5" : ""
                 }`}>
-                  <dt className="text-[11px] text-muted-foreground">
+                  <dt className="text-micro text-muted-foreground">
                     {hasBreakdown ? "ما تدفعه" : picked.length === 1 ? "سعر الدورة — ما تدفعه" : `مجموع الـ${picked.length} دورات`}
                   </dt>
                   <dd className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
@@ -504,17 +504,17 @@ function CoursePathPage({ courseId }: { courseId: string }) {
             ) : (
               /* دورةٌ واحدة بلا شعبةٍ مسعَّرة تُبطل المجموع كله: مجموعُ ثلاثٍ
                  يُقرأ ثمنَ أربع. فلا رقم — ويُقال السبب. */
-              <div className="space-y-1 text-[12px]">
+              <div className="space-y-1 text-xs">
                 <p className="text-sm font-black text-foreground">
                   {pricesLoaded ? "يُعلن السعر مع فتح الشعبة" : "يُقرأ السعر…"}
                 </p>
-                <p className="text-[11px] leading-5 text-muted-foreground">
+                <p className="text-micro leading-5 text-muted-foreground">
                   {pricesLoaded && pricing.priced > 0
                     ? `${pricing.priced} من ${pricing.count} من دوراتك لها شعبة مسعَّرة، والباقي لم تُفتح شعبته بعد. ولا نعرض مجموعا ناقصا.`
                     : "نُسعّر كل شعبة على حدة، ولا نعرض رقما قبل أن يكون هو الرقم الذي تدفعه."}
                 </p>
                 {pricing.discountPct > 0 && (
-                  <p className="text-[11px] font-bold text-teal-light-ink">
+                  <p className="text-micro font-bold text-teal-light-ink">
                     وخصم بناء المسار عند {pricing.count} دورات — {pricing.discountPct}٪ — قائمٌ لك حين تُفتح الشعب.
                   </p>
                 )}
@@ -533,14 +533,14 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                   aria-label="كود الخصم"
                   dir="ltr"
                   maxLength={24}
-                  className={`min-w-0 flex-1 rounded-xl border bg-white/[0.04] px-3 py-2 text-left text-[12px] tracking-widest placeholder:tracking-normal placeholder:text-muted-foreground/75 focus:outline-none ${
+                  className={`min-w-0 flex-1 rounded-xl border bg-white/[0.04] px-3 py-2 text-left text-xs tracking-widest placeholder:tracking-normal placeholder:text-muted-foreground/75 focus:outline-none ${
                     promoApplied ? "border-teal-light text-teal-light-ink" : promoError ? "border-gold/60" : "border-white/15 focus:border-teal-light"
                   }`}
                 />
                 <Button
                   onClick={applyPromo}
                   variant="outline"
-                  className="h-auto shrink-0 rounded-xl border-white/20 px-4 py-2 text-[12px] font-bold text-foreground"
+                  className="h-auto shrink-0 rounded-xl border-white/20 px-4 py-2 text-xs font-bold text-foreground"
                 >
                   تطبيق
                 </Button>
@@ -557,13 +557,13 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                   والصياغةُ صياغةُ صفحة المسار نفسِها — سطرٌ واحدٌ يُنقر، لا
                   سؤالٌ ثمّ رابطٌ في سطرين. */}
               <details className="group mt-2">
-                <summary className="cursor-pointer list-none text-[11px] font-bold text-muted-foreground underline underline-offset-4 transition group-hover:text-teal-light-ink [&::-webkit-details-marker]:hidden">
+                <summary className="cursor-pointer list-none text-micro font-bold text-muted-foreground underline underline-offset-4 transition group-hover:text-teal-light-ink [&::-webkit-details-marker]:hidden">
                   اطّلع على الفئات وتحقّق من أهليتك
                 </summary>
                 {/* خصمُ أوّل شراء أوّلَ القائمة وكودُه معلَنٌ بجانبه: لكلّ أحدٍ
                     في أوّل مرّة، فلا إثباتَ له ولا سرَّ فيه. */}
                 <ul className="mt-2 space-y-1.5 border-r-2 border-white/10 ps-3">
-                  <li className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] leading-5">
+                  <li className="flex flex-wrap items-center gap-x-2 gap-y-1 text-micro leading-5">
                     <span className="font-bold text-foreground">خصم أول عملية شراء — {FIRST_TIME_PROMO.percentOff}٪</span>
                     <code dir="ltr" className="rounded-md border border-gold/40 bg-gold/10 px-1.5 py-0.5 font-mono text-micro font-black text-gold-ink">
                       {FIRST_TIME_PROMO.code}
@@ -571,7 +571,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                     <span className="text-muted-foreground">· بلا إثبات</span>
                   </li>
                   {DISCOUNT_CATEGORIES.map((cat) => (
-                    <li key={cat.id} className="text-[11px] leading-5 text-muted-foreground">
+                    <li key={cat.id} className="text-micro leading-5 text-muted-foreground">
                       <span className="font-bold text-foreground">{cat.label_ar} — {cat.percentOff}٪</span>
                       <span className="text-muted-foreground"> · {cat.evidence_ar}</span>
                     </li>
@@ -611,7 +611,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
 
             {/* التنبيه — بالكلفة الحقيقية للدورة الإضافية لا بسعرها المعلن */}
             {nudge && (
-              <p className="mt-3 flex items-start gap-2 rounded-xl border border-gold/40 bg-gold/10 px-3.5 py-2.5 text-[11px] font-semibold leading-5 text-gold-ink">
+              <p className="mt-3 flex items-start gap-2 rounded-xl border border-gold/40 bg-gold/10 px-3.5 py-2.5 text-micro font-semibold leading-5 text-gold-ink">
                 <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>
                   دورة واحدة أخرى ترفع خصمك إلى {nudge.nextPct}٪: تصير الـ{nudge.nextCount} بـ<span dir="ltr">{money(nudge.nextPayable)}</span>.
@@ -622,7 +622,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
 
             {/* السقف — يُقال بسببه لا بمنعٍ صامت */}
             {pricing.atCap && (
-              <p className="mt-2.5 flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-[11px] leading-5 text-muted-foreground">
+              <p className="mt-2.5 flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-micro leading-5 text-muted-foreground">
                 <ListChecks className="mt-0.5 h-3.5 w-3.5 shrink-0 text-teal-light-ink" />
                 <span>
                   بلغتَ {MAX_BUILT_COURSES} دورات — وهو حدّ ما تبنيه بنفسك. ليس بخلا بل حمايةٌ لإنهائه:
@@ -632,7 +632,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
             )}
 
             {matchesPathway && (
-              <p className="mt-2.5 flex items-start gap-2 text-[11px] leading-5 text-teal-light-ink">
+              <p className="mt-2.5 flex items-start gap-2 text-micro leading-5 text-teal-light-ink">
                 <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>
                   اخترت دورات مسار «{anchor.pathwayName}» كلها — فتأخذ شهادته كما هي.{" "}
@@ -701,8 +701,8 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                   >
                     <span className="min-w-0">
                       <span className="block text-sm font-black leading-snug">{c.name}</span>
-                      <span className="mt-1 block text-[11px] leading-relaxed text-teal-light-ink">{s.reason_ar}</span>
-                      <span className="mt-1 block text-[11px] text-muted-foreground">{weeksLabel(c.weeks)}</span>
+                      <span className="mt-1 block text-micro leading-relaxed text-teal-light-ink">{s.reason_ar}</span>
+                      <span className="mt-1 block text-micro text-muted-foreground">{weeksLabel(c.weeks)}</span>
                     </span>
                     <span className="flex shrink-0 flex-col items-end gap-2">
                       <CoursePriceTag amount={priceOf(c.id)} money={money} className="text-sm font-black text-foreground" />
@@ -754,7 +754,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
           </Panel>
         )}
 
-        <p className="mt-8 text-center text-[11px] text-muted-foreground">
+        <p className="mt-8 text-center text-micro text-muted-foreground">
           دفع آمن — يصلك تأكيد فوري على بريدك وتُفتح منصة الطالب الخاصة بك
         </p>
       </main>

@@ -59,7 +59,7 @@ export default function StaffInbox() {
         <h2 className="flex items-center gap-2 text-sm font-black">
           <Inbox className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> ما ينتظرك
           {items !== null && total > 0 && (
-            <span className="rounded-full bg-teal/20 px-2 py-0.5 text-[11px] font-black tabular-nums text-teal-light-ink">{total}</span>
+            <span className="rounded-full bg-teal/20 px-2 py-0.5 text-micro font-black tabular-nums text-teal-light-ink">{total}</span>
           )}
         </h2>
         <Button tone="secondary" size="sm" type="button" onClick={() => void load()} disabled={busy}>
@@ -99,19 +99,19 @@ export default function StaffInbox() {
                     <p className="flex items-center gap-2 text-xs font-black text-foreground">
                       <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> {item.titleAr}
                     </p>
-                    <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-black tabular-nums ${tone.chip}`}>
+                    <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-micro font-black tabular-nums ${tone.chip}`}>
                       {item.count}
                     </span>
                   </div>
-                  <p className="mt-1.5 text-[11px] leading-5 text-muted-foreground">{item.whyAr}</p>
+                  <p className="mt-1.5 text-micro leading-5 text-muted-foreground">{item.whyAr}</p>
                   {item.sample.length > 0 && (
                     <ul className="mt-2.5 space-y-1">
                       {item.sample.map((s) => (
-                        <li key={s} className="truncate text-[11px] text-foreground">— {s}</li>
+                        <li key={s} className="truncate text-micro text-foreground">— {s}</li>
                       ))}
                     </ul>
                   )}
-                  <span className="mt-3 flex items-center gap-1 text-[11px] font-bold text-teal-light-ink">
+                  <span className="mt-3 flex items-center gap-1 text-micro font-bold text-teal-light-ink">
                     افتح <ChevronLeft className="h-3 w-3" aria-hidden="true" />
                   </span>
                 </Link>

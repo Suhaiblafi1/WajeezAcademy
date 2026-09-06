@@ -64,11 +64,11 @@ function RealGradingQueue() {
               <FileText className="h-4 w-4 shrink-0 text-gold-ink" />
               <div className="min-w-0 flex-1">
                 <p className="truncate font-bold text-foreground">{q.assessment.title}</p>
-                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                <p className="mt-0.5 text-micro text-muted-foreground">
                   {q.assessment.cohort.title} · أُرسل {fmtShortDateTimeAr(q.submittedAt)}
                 </p>
               </div>
-              <span className="shrink-0 rounded-full bg-gold px-3 py-1 text-[11px] font-black text-on-gold">قيّمه من «شعبي»</span>
+              <span className="shrink-0 rounded-full bg-gold px-3 py-1 text-micro font-black text-on-gold">قيّمه من «شعبي»</span>
             </Link>
           ))}
         </div>

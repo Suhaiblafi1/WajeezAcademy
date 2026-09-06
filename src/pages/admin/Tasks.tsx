@@ -119,7 +119,7 @@ export default function AdminTasks() {
               <Panel as="section" tone="warn">
                 <h2 className="text-sm font-black text-gold-ink">كلّف موظّفا بمهمّة</h2>
                 {/* التكليفُ يُشعِر مكلَّفَه في الفعل نفسِه — لا خطوةَ إشعارٍ بعده */}
-                <p className="mt-1 text-[11px] text-muted-foreground">يصله إشعارٌ بها فورا، ولا يُكلَّف من هو أعلى رتبةً منك.</p>
+                <p className="mt-1 text-micro text-muted-foreground">يصله إشعارٌ بها فورا، ولا يُكلَّف من هو أعلى رتبةً منك.</p>
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">
                   <select value={form.assigneeId} onChange={(e) => setForm({ ...form, assigneeId: e.target.value })}
                     aria-label="المكلَّف" className={`${field} cursor-pointer [&>option]:bg-surface`}>
@@ -171,7 +171,7 @@ export default function AdminTasks() {
                   <Bell className="h-4 w-4 text-teal-light-ink" /> إشعارٌ بلا مهمّة
                 </h2>
                 {/* إعلانٌ يصل ولا يُتابَع ولا يُغلَق — وحبّتُه منفصلة عن التكليف */}
-                <p className="mt-1 text-[11px] text-muted-foreground">يصل ولا يُتابَع ولا يُغلَق. للتكليف الذي يُتابَع استعمل اللوح أعلاه.</p>
+                <p className="mt-1 text-micro text-muted-foreground">يصل ولا يُتابَع ولا يُغلَق. للتكليف الذي يُتابَع استعمل اللوح أعلاه.</p>
                 <div className="mt-3 space-y-2">
                   <input value={announce.title} onChange={(e) => setAnnounce({ ...announce, title: e.target.value })}
                     placeholder="عنوان الإشعار" aria-label="عنوان الإشعار" className={field} />
@@ -179,7 +179,7 @@ export default function AdminTasks() {
                     rows={2} placeholder="نصّ الإشعار" aria-label="نص الإشعار" className={field} />
                   <Inset className="max-h-40 space-y-1 overflow-y-auto p-2">
                     {people.map((p) => (
-                      <label key={p.id} className="flex cursor-pointer items-center gap-2 text-[11px] text-foreground">
+                      <label key={p.id} className="flex cursor-pointer items-center gap-2 text-micro text-foreground">
                         <input
                           type="checkbox" className="accent-teal"
                           checked={announce.to.includes(p.id)}

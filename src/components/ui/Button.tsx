@@ -47,7 +47,7 @@ const TONE: Record<ButtonTone, string> = {
 }
 
 const SIZE: Record<ButtonSize, string> = {
-  sm: 'gap-1.5 px-4 py-1.5 text-[11px]',
+  sm: 'gap-1.5 px-4 py-1.5 text-micro',
   md: 'gap-2 px-5 py-2 text-xs',
 }
 

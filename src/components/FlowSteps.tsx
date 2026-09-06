@@ -24,7 +24,7 @@ export default function FlowSteps({
                     : "border border-white/10 bg-paper/20"
               }`}
             >
-              <p className={`text-[11px] font-black ${current === i ? "text-gold-ink" : "text-foreground"}`}>{s.label}</p>
+              <p className={`text-micro font-black ${current === i ? "text-gold-ink" : "text-foreground"}`}>{s.label}</p>
               {/* ‎/55 لا ‎/40: اسم الفاعل عند ٩ بكسل يقيس 3.81:1 — والمقياس نفسه في كل شاشة تستعمل هذا المكوّن */}
               <p className="mt-0.5 text-micro text-muted-foreground">{s.actor}</p>
             </div>

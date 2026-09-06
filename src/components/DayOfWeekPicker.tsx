@@ -34,7 +34,7 @@ export default function DayOfWeekPicker({
               type="button"
               aria-pressed={on}
               onClick={() => toggle(code)}
-              className={`cursor-pointer rounded-full border px-3 py-1.5 text-[11px] font-bold transition ${
+              className={`cursor-pointer rounded-full border px-3 py-1.5 text-micro font-bold transition ${
                 on ? "border-teal bg-teal/15 text-teal-light-ink" : "border-white/15 text-muted-foreground hover:border-white/35"
               }`}
             >

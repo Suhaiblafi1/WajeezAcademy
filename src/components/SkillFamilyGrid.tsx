@@ -69,7 +69,7 @@ export default function SkillFamilyGrid({ families, onDone, onSkip }: Props) {
             <Card as="li" key={f.family} className="md:p-5">
               <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                 <h3 className="text-base font-black">{f.label_ar}</h3>
-                <span className="text-[11px] text-muted-foreground">
+                <span className="text-micro text-muted-foreground">
                   يظهر في {f.courseCount} من دوراتك المرشحة
                 </span>
               </div>
@@ -96,7 +96,7 @@ export default function SkillFamilyGrid({ families, onDone, onSkip }: Props) {
                           return next;
                         })
                       }
-                      className={`rounded-xl border px-1 py-2.5 text-[11px] font-bold leading-tight transition md:text-xs ${
+                      className={`rounded-xl border px-1 py-2.5 text-micro font-bold leading-tight transition md:text-xs ${
                         on
                           ? "border-teal bg-teal text-on-teal"
                           : "border-white/10 bg-white/[0.04] text-muted-foreground hover:border-teal/40 hover:text-foreground"
@@ -130,7 +130,7 @@ export default function SkillFamilyGrid({ families, onDone, onSkip }: Props) {
           تخطَّ هذه الخطوة
         </button>
       </div>
-      <p className="mt-3 text-center text-[11px] text-muted-foreground">
+      <p className="mt-3 text-center text-micro text-muted-foreground">
         {answered > 0
           ? `قيّمت ${answered} من ${families.length} — كل جانب تقيّمه يجعل خطتك أدق.`
           : "هذه الخطوة هي ما يحوّل الترشيح من مسار جاهز إلى خطة مبنية لك — وتخطّيها يعطيك أقرب مسار في الكتالوج."}

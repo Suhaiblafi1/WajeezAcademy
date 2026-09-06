@@ -34,7 +34,7 @@ export default function StoriesPage() {
         <p className="mx-auto mt-3 max-w-xl leading-8 text-muted-foreground">
           كل رحلة تبدأ بتشخيص أو بمسار جاهز، وتمر بدورات الكتالوج، وتنتهي بمشروع تخرج يدخل ملفك — ومعها قياس لما تغير فعلا.
         </p>
-        <p className="mx-auto mt-3 max-w-lg text-[11px] leading-5 text-muted-foreground">
+        <p className="mx-auto mt-3 max-w-lg text-micro leading-5 text-muted-foreground">
           نماذج توضيحية مركبة من أنماط شائعة بين المتعلمين — ليست شهادات لأشخاص حقيقيين.
           قصص المتعلمين الموثقة بموافقة أصحابها تُنشر هنا بعد اعتمادها.
         </p>
@@ -53,7 +53,7 @@ export default function StoriesPage() {
                 <StoryAvatar id={s.id} name={s.name} look={s.look} className="h-28 w-28" />
               </div>
               <div className="absolute inset-0 bg-gradient-to-t from-surface to-transparent" />
-              <span className="absolute bottom-3 right-4 rounded-full bg-[#247B84] px-3 py-1 text-[11px] font-bold text-white">{s.tag}</span>
+              <span className="absolute bottom-3 right-4 rounded-full bg-[#247B84] px-3 py-1 text-micro font-bold text-white">{s.tag}</span>
             </div>
             <div className="flex flex-1 flex-col p-5">
               <p className="text-sm font-bold">
@@ -136,7 +136,7 @@ export default function StoriesPage() {
               <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-6 pb-1 pt-3 md:absolute md:bottom-4 md:right-6 md:p-0">
                 <span className="rounded-full bg-teal-deep px-4 py-1.5 text-sm font-bold text-white">{open.tag}</span>
                 <span className="text-sm text-muted-foreground">{open.name} — {open.role}</span>
-                <span className="w-full text-[11px] font-normal text-muted-foreground md:w-auto">{STORY_ILLUSTRATIVE_BADGE_AR}</span>
+                <span className="w-full text-micro font-normal text-muted-foreground md:w-auto">{STORY_ILLUSTRATIVE_BADGE_AR}</span>
               </div>
             </div>
 

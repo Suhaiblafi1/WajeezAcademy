@@ -165,7 +165,7 @@ export default function MyCv() {
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate font-black">{c.originalName}</p>
-              <p className="mt-0.5 text-[11px] text-muted-foreground">
+              <p className="mt-0.5 text-micro text-muted-foreground">
                 {cvKindLabel(c.mime)} · {Math.ceil(c.sizeBytes / 1024)} كيلوبايت · رُفعت {fmtWhen(c.createdAt)}
               </p>
             </div>

@@ -77,7 +77,7 @@ export default function AuditLog() {
       </p>
 
       <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        <label className="text-[11px] text-muted-foreground">
+        <label className="text-micro text-muted-foreground">
           الفعل
           <select value={filters.action} onChange={(e) => set({ action: e.target.value })} className={`mt-1 w-full ${field}`}>
             <option value="">كلّ الأفعال</option>
@@ -86,7 +86,7 @@ export default function AuditLog() {
             ))}
           </select>
         </label>
-        <label className="text-[11px] text-muted-foreground">
+        <label className="text-micro text-muted-foreground">
           نوع الكيان
           <select value={filters.entityType} onChange={(e) => set({ entityType: e.target.value })} className={`mt-1 w-full ${field}`}>
             <option value="">كلّ الأنواع</option>
@@ -95,17 +95,17 @@ export default function AuditLog() {
             ))}
           </select>
         </label>
-        <label className="text-[11px] text-muted-foreground">
+        <label className="text-micro text-muted-foreground">
           من تاريخ
           <input type="date" value={filters.from} onChange={(e) => set({ from: e.target.value })} className={`mt-1 w-full ${field}`} />
         </label>
-        <label className="text-[11px] text-muted-foreground">
+        <label className="text-micro text-muted-foreground">
           إلى تاريخ
           <input type="date" value={filters.to} onChange={(e) => set({ to: e.target.value })} className={`mt-1 w-full ${field}`} />
         </label>
       </div>
 
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-3 text-[11px] text-muted-foreground">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3 text-micro text-muted-foreground">
         <span>
           {data ? (data.total === 0 ? "لا وقائع بهذا الفرز" : `${(data.page - 1) * data.pageSize + 1}–${Math.min(data.page * data.pageSize, data.total)} من ${data.total} واقعة`) : "…"}
         </span>
@@ -148,17 +148,17 @@ export default function AuditLog() {
                 {/* الاسمُ العربيُّ في الصدارة، والمفتاحُ الخامُ عند الفتح.
                     وكان السجلُّ يعرض `cohort.session.add` نصّا لاتينيّا لمن
                     يقرأ — وهو ما أُصلح في لوحة المدير (T5) وبقي هنا. */}
-                <span className="text-[11px] font-black text-gold-ink">{r.actionAr}</span>
-                <span className="text-[11px] text-muted-foreground">
+                <span className="text-micro font-black text-gold-ink">{r.actionAr}</span>
+                <span className="text-micro text-muted-foreground">
                   {r.entityTypeAr}
                   <span className="mr-1.5 font-mono text-muted-foreground" dir="ltr">{r.entityId.slice(0, 8)}…</span>
                 </span>
                 {/* الفاعلُ يُسمّى دائما: «النظام» ليس فراغا بل فاعلٌ آخر */}
-                <span className="text-[11px] text-foreground">{r.actor ? r.actor.displayName : "النظام (تلقائيّ)"}</span>
-                <span className="mr-auto text-[11px] text-muted-foreground">{fmtDateTime(new Date(r.createdAt))}</span>
+                <span className="text-micro text-foreground">{r.actor ? r.actor.displayName : "النظام (تلقائيّ)"}</span>
+                <span className="mr-auto text-micro text-muted-foreground">{fmtDateTime(new Date(r.createdAt))}</span>
               </button>
               {open === r.id && (
-                <div className="mt-3 space-y-2 border-t border-white/8 pt-3 text-[11px] leading-6 text-muted-foreground">
+                <div className="mt-3 space-y-2 border-t border-white/8 pt-3 text-micro leading-6 text-muted-foreground">
                   {r.actor?.email && <p dir="ltr" className="font-mono text-muted-foreground">{r.actor.email}</p>}
                   {r.reason && <p>السبب المكتوب: {r.reason}</p>}
                   <p className="font-mono text-micro text-muted-foreground" dir="ltr">{r.action}</p>

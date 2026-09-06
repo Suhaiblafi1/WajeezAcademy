@@ -140,12 +140,12 @@ export default function LearnerRequests() {
                           عربيّ يقع على الجهة المقابلة، فيلتصق البريدُ بالاسم. */}
                       <span dir="ltr" className="text-muted-foreground">{r.user.email}</span>
                     </p>
-                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                    <p className="mt-0.5 text-micro text-muted-foreground">
                       <Clock className="mb-0.5 inline h-3 w-3" /> {fmtDateTimeAr(r.createdAt)}
                       {r.enrollment && <> · شعبة «{r.enrollment.cohort.title}»</>}
                     </p>
                   </div>
-                  <span className="shrink-0 rounded-full border border-white/15 px-3 py-1 text-[11px] font-bold text-muted-foreground">
+                  <span className="shrink-0 rounded-full border border-white/15 px-3 py-1 text-micro font-bold text-muted-foreground">
                     {STATUS_AR[r.status] ?? r.status}
                   </span>
                 </div>
@@ -163,7 +163,7 @@ export default function LearnerRequests() {
                 )}
 
                 <div className="mt-3">
-                  <label htmlFor={`note-${r.id}`} className="mb-1.5 block text-[11px] font-bold text-muted-foreground">
+                  <label htmlFor={`note-${r.id}`} className="mb-1.5 block text-micro font-bold text-muted-foreground">
                     ردُّك — إلزاميٌّ عند الاعتذار، يقرؤه المتعلّم في بوابته
                   </label>
                   <textarea

@@ -32,7 +32,7 @@ export default function AdvisorMyRatings() {
 
   return (
     <AdvisorLayout title="ما قيل عنّي">
-      <p className="mb-6 max-w-2xl text-[12px] leading-6 text-muted-foreground">
+      <p className="mb-6 max-w-2xl text-xs leading-6 text-muted-foreground">
         التقييمات تصلك <span className="font-bold text-foreground">مجمّعة وبلا أسماء</span>، ولا يُعرض
         منها شيء حتى تبلغ ثلاثة عن الهدف الواحد — في العدد القليل يُستدلّ على أصحاب
         الآراء مهما حُذفت الأسماء، وحمايتُهم شرطُ صدقهم معك.

@@ -172,7 +172,7 @@ export default function JoinTrainerComplete() {
           {/* الدورات السابقة */}
           <fieldset>
             <legend className="text-sm font-black">أبرز ثلاث دورات قدّمتها عبر الإنترنت</legend>
-            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+            <p className="mt-1 text-micro leading-relaxed text-muted-foreground">
               اذكر اسم الدورة، والجهة أو المنصة التي قدّمتها من خلالها، ورابطا أو نموذجا مختصرا إن توفّر.
             </p>
             <div className="mt-3 space-y-3">
@@ -243,7 +243,7 @@ export default function JoinTrainerComplete() {
             {busy ? "جاري الحفظ…" : "أكمل ملفي المهني"}
           </Button>
           {!valid && (
-            <p className="text-center text-[11px] text-muted-foreground">
+            <p className="text-center text-micro text-muted-foreground">
               يلزم: سيرة ذاتية مرفوعة + دورة سابقة واحدة على الأقل + دورة قابلة للتدريس + موافقة الديمو.
             </p>
           )}

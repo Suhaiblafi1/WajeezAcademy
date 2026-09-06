@@ -281,10 +281,10 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                     <div className="max-h-72 space-y-1.5 overflow-y-auto">
                       {realNotifs ? (
                         <>
-                          {realNotifs.length === 0 && <p className="px-2 py-6 text-center text-[11px] text-muted-foreground">لا إشعارات بعد</p>}
+                          {realNotifs.length === 0 && <p className="px-2 py-6 text-center text-micro text-muted-foreground">لا إشعارات بعد</p>}
                           {realNotifs.map((n) => (
                             <button key={n.id} onClick={() => markOneRead(n.id)}
-                              className={`block w-full cursor-pointer rounded-xl border px-3 py-2 text-right text-[11px] leading-5 ${n.status === "read" ? "border-white/5 text-muted-foreground" : "border-teal/25 bg-teal/5 text-foreground"}`}>
+                              className={`block w-full cursor-pointer rounded-xl border px-3 py-2 text-right text-micro leading-5 ${n.status === "read" ? "border-white/5 text-muted-foreground" : "border-teal/25 bg-teal/5 text-foreground"}`}>
                               <span className="block font-bold">{n.title}</span>
                               {n.body}
                             </button>
@@ -292,7 +292,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                         </>
                       ) : (
                         /* تعذّر نداء الخادم — لا بديل محليّ يُعرض */
-                        <p className="px-2 py-6 text-center text-[11px] text-muted-foreground">تعذّر جلب إشعاراتك الآن</p>
+                        <p className="px-2 py-6 text-center text-micro text-muted-foreground">تعذّر جلب إشعاراتك الآن</p>
                       )}
                     </div>
                     {/* والجرسُ لا ينتهي عند ستّة: يقود إلى البابِ الواحد الذي
@@ -300,7 +300,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                     <Link
                       to="/student/inbox"
                       onClick={() => setBellOpen(false)}
-                      className="mt-2 block rounded-xl border border-white/10 px-3 py-2 text-center text-[11px] font-bold text-teal-light-ink transition hover:border-white/30"
+                      className="mt-2 block rounded-xl border border-white/10 px-3 py-2 text-center text-micro font-bold text-teal-light-ink transition hover:border-white/30"
                     >
                       افتح «الرسائل والتنبيهات»
                     </Link>
@@ -320,7 +320,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                   accountActive || accountOpen ? "border-teal/50 bg-teal/10 text-teal-light-ink" : "border-white/10 text-muted-foreground hover:border-white/25 hover:text-foreground"
                 }`}
               >
-                <span className="grid h-7 w-7 place-items-center rounded-full bg-teal/20 text-[11px] font-black text-teal-light-ink">
+                <span className="grid h-7 w-7 place-items-center rounded-full bg-teal/20 text-micro font-black text-teal-light-ink">
                   {user.trim().charAt(0) || "و"}
                 </span>
                 <span className="max-w-[90px] truncate">{user.split(" ")[0]}</span>
@@ -330,7 +330,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                 <>
                   <button aria-label="إغلاق قائمة الحساب" onClick={() => setAccountOpen(false)} className="fixed inset-0 z-40 cursor-default" />
                   <Inset role="menu" className="absolute left-0 top-14 z-50 w-60 bg-surface p-2 shadow-2xl">
-                    <p className="px-3 pb-2 pt-1 text-[11px] text-muted-foreground">{user}</p>
+                    <p className="px-3 pb-2 pt-1 text-micro text-muted-foreground">{user}</p>
                     {ACCOUNT_ITEMS.map((a) => (
                       <NavLink
                         key={a.to}

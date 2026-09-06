@@ -104,7 +104,7 @@ export default function PublishingBoard() {
               {busy === "create" || busy === "publish" ? "ينشر…" : "أنشئ وانشر"}
             </Button>
           </div>
-          <p className="mt-2 text-[11px] text-muted-foreground">النشر ذري: يرفض عند أي نقص ولا ينشر شيئًا جزئيًا.</p>
+          <p className="mt-2 text-micro text-muted-foreground">النشر ذري: يرفض عند أي نقص ولا ينشر شيئًا جزئيًا.</p>
         </Card>
       </div>
 
@@ -115,10 +115,10 @@ export default function PublishingBoard() {
             <Card key={v.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
               <div>
                 <p className="font-bold text-sm" dir="ltr">{v.label}</p>
-                <p className="mt-0.5 text-[11px] text-muted-foreground" dir="ltr">{v.snapshots[0]?.payloadHash.slice(0, 12)}… · {v.events.map((e) => e.action).join(", ") || "—"}</p>
+                <p className="mt-0.5 text-micro text-muted-foreground" dir="ltr">{v.snapshots[0]?.payloadHash.slice(0, 12)}… · {v.events.map((e) => e.action).join(", ") || "—"}</p>
               </div>
               <div className="flex items-center gap-2">
-                <span className={`rounded-full border px-2 py-0.5 text-[11px] font-bold ${v.status === "published" ? "border-emerald-400/30 text-emerald-300" : "border-white/15 text-muted-foreground"}`}>
+                <span className={`rounded-full border px-2 py-0.5 text-micro font-bold ${v.status === "published" ? "border-emerald-400/30 text-emerald-300" : "border-white/15 text-muted-foreground"}`}>
                   {STATUS_AR[v.status] ?? v.status}
                 </span>
                 {v.status !== "published" && v.snapshots.length > 0 && (

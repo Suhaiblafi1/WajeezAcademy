@@ -39,7 +39,7 @@ function Dot({ stage, selected }: { stage: WithSeq; selected: boolean }) {
   return (
     <span
       aria-hidden="true"
-      className={`grid h-8 w-8 shrink-0 place-items-center rounded-full border-2 text-[11px] font-black transition ${
+      className={`grid h-8 w-8 shrink-0 place-items-center rounded-full border-2 text-micro font-black transition ${
         done
           ? "border-teal-ink bg-teal-ink text-on-teal"
           : mine
@@ -82,7 +82,7 @@ export default function StageRail({
     <Panel as="section" tone="accent" aria-label="شريط مسارك" className="bg-teal-ink/[0.05] sm:p-5">
       <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
         <div className="min-w-0">
-          <p className="text-[11px] text-muted-foreground">أين أنت من رحلتك</p>
+          <p className="text-micro text-muted-foreground">أين أنت من رحلتك</p>
           <p className="mt-0.5 text-lg font-black leading-tight text-teal-light-ink">
             {currentIndex === -1
               ? "أنجزت مراحلك كلها"

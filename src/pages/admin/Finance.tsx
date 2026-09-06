@@ -213,7 +213,7 @@ export default function Finance() {
       {/* ولا يُترك القارئُ يظنّ الشاشةَ معطوبةً لخلوّها من الأزرار: يُقال له
           ما يستطيع وما لا يستطيع ومن يستطيعه — صراحةً، مرّةً في أعلى الصفحة. */}
       {readOnly && (
-        <p className="mb-5 flex items-start gap-2 rounded-2xl border border-white/12 bg-white/[0.03] px-4 py-3 text-[11px] font-bold leading-6 text-muted-foreground">
+        <p className="mb-5 flex items-start gap-2 rounded-2xl border border-white/12 bg-white/[0.03] px-4 py-3 text-micro font-bold leading-6 text-muted-foreground">
           <Wallet className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-ink" />
           حسابُك يقرأ المالَ ولا يحرّكه: تعرف من دفع ومن لم يدفع لتقرّر تسجيلا، وتراجع طلباتِ التسجيل.
           أمّا تسجيلُ دفعةٍ يدويّةٍ واعتمادُ استردادٍ وإنشاءُ كوبونٍ فهي بيد <b className="text-foreground">المالية</b> —
@@ -236,7 +236,7 @@ export default function Finance() {
               placeholder="ابحث باسمِ طالبٍ أو بريدٍ أو شعبة…" />
           )}
           {selectable.length > 0 && (
-            <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+            <div className="flex items-center gap-2 text-micro text-muted-foreground">
               <input type="checkbox"
                 checked={sel.size > 0 && selectable.every((r) => sel.has(r.id))}
                 onChange={(e) => setSel(e.target.checked ? new Set(selectable.map((r) => r.id)) : new Set())}
@@ -261,11 +261,11 @@ export default function Finance() {
             <Card key={r.id}>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="font-black">{r.user.displayName} <span className="text-[11px] font-normal text-muted-foreground" dir="ltr">{r.user.email}</span></p>
+                  <p className="font-black">{r.user.displayName} <span className="text-micro font-normal text-muted-foreground" dir="ltr">{r.user.email}</span></p>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {r.cohort.course.versions[0]?.titleAr ?? "—"} · {r.cohort.title} · {r.cohort.price ? `${r.cohort.price} ${r.cohort.currency}` : "بلا سعر"}
                   </p>
-                  {r.note && <p className="mt-1 text-[11px] text-muted-foreground">ملاحظة المتعلم: {r.note}</p>}
+                  {r.note && <p className="mt-1 text-micro text-muted-foreground">ملاحظة المتعلم: {r.note}</p>}
                 </div>
                 <div className="flex items-center gap-3">
                   <Chip tone="accent" srPrefixAr="الحالة">{ER_STATUS[r.status] ?? r.status}</Chip>
@@ -363,7 +363,7 @@ export default function Finance() {
             <Card key={rf.id} className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="font-black">{rf.amount} <span className="text-xs font-normal text-muted-foreground">— {rf.reason}</span></p>
-                <p className="mt-1 text-[11px] text-muted-foreground">{fmtDateTime(new Date(rf.createdAt))}</p>
+                <p className="mt-1 text-micro text-muted-foreground">{fmtDateTime(new Date(rf.createdAt))}</p>
               </div>
               <div className="flex items-center gap-2">
                 <Chip tone="accent" srPrefixAr="حالةُ الطلب">{RF_STATUS[rf.status] ?? rf.status}</Chip>

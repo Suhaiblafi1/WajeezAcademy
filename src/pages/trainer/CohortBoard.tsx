@@ -305,14 +305,14 @@ export default function CohortBoard() {
                                       <div className="flex flex-wrap items-center gap-3">
                                         <div className="min-w-0 flex-1">
                                           <p className="text-sm font-bold">{s.title}</p>
-                                          <p className="mt-0.5 text-[11px] text-muted-foreground">
+                                          <p className="mt-0.5 text-micro text-muted-foreground">
                                             {fmtDateTimeAr(s.startsAt)}
                                             {s.status === "done" && " · انتهت"}
                                           </p>
                                         </div>
                                         {s.zoom && (
                                           <a href={s.zoom.joinUrl} target="_blank" rel="noreferrer"
-                                            className="flex min-h-9 items-center gap-1.5 rounded-full bg-teal px-4 py-1.5 text-[11px] font-black text-on-teal transition hover:bg-teal-light">
+                                            className="flex min-h-9 items-center gap-1.5 rounded-full bg-teal px-4 py-1.5 text-micro font-black text-on-teal transition hover:bg-teal-light">
                                             <Video className="h-3 w-3" /> افتح الاجتماع
                                           </a>
                                         )}
@@ -321,7 +321,7 @@ export default function CohortBoard() {
                                         {s.status !== "done" && (
                                           <a
                                             href={`/api/calendar/cohort-sessions/${s.id}.ics`}
-                                            className="flex min-h-9 items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-bold text-muted-foreground transition hover:border-white/35 hover:text-foreground"
+                                            className="flex min-h-9 items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-micro font-bold text-muted-foreground transition hover:border-white/35 hover:text-foreground"
                                           >
                                             <CalendarPlus className="h-3 w-3" /> أضِفها لتقويمك
                                           </a>
@@ -329,7 +329,7 @@ export default function CohortBoard() {
                                         {/* الزرُّ يظهر حين يستطيع الخادمُ تخزينَ الملفّ — لا قبله.
                                             كان يفشل بعد الضغط، وهو أسوأُ من غيابه. */}
                                         {fileUploads && (
-                                          <label className="flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-bold text-muted-foreground transition hover:border-teal/50 hover:text-teal-light-ink">
+                                          <label className="flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-micro font-bold text-muted-foreground transition hover:border-teal/50 hover:text-teal-light-ink">
                                             <Upload className="h-3 w-3" /> ارفع التسجيل
                                             <input type="file" accept="video/*" className="hidden"
                                               onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadRecording(s.id, f); e.target.value = ""; }} />
@@ -347,18 +347,18 @@ export default function CohortBoard() {
                                           قبل الضغط لا بعده، فلا يظنّ المدرب أن الموعد تبدّل. */}
                                       {rescheduleFor === s.id && (
                                         <Card tone="warn" className="mt-3 space-y-2.5 p-3.5">
-                                          <p className="text-[11px] leading-relaxed text-gold-ink">
+                                          <p className="text-micro leading-relaxed text-gold-ink">
                                             تقترح ولا تغيّر: الموعد يبقى كما هو عند متعلّميك حتى تعتمد الإدارة اقتراحك.
                                           </p>
                                           <div className="grid gap-2.5 sm:grid-cols-2">
                                             <div>
-                                              <label htmlFor={`rs-at-${s.id}`} className="mb-1 block text-[11px] font-bold text-muted-foreground">الموعد المقترح</label>
+                                              <label htmlFor={`rs-at-${s.id}`} className="mb-1 block text-micro font-bold text-muted-foreground">الموعد المقترح</label>
                                               <input id={`rs-at-${s.id}`} type="datetime-local" dir="ltr" value={rescheduleForm.at}
                                                 onChange={(e) => setRescheduleForm((f) => ({ ...f, at: e.target.value }))}
                                                 className="w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-left text-xs text-foreground focus:border-teal focus:outline-none" />
                                             </div>
                                             <div>
-                                              <label htmlFor={`rs-why-${s.id}`} className="mb-1 block text-[11px] font-bold text-muted-foreground">السبب — تقرؤه الإدارة لتقرّر</label>
+                                              <label htmlFor={`rs-why-${s.id}`} className="mb-1 block text-micro font-bold text-muted-foreground">السبب — تقرؤه الإدارة لتقرّر</label>
                                               <input id={`rs-why-${s.id}`} value={rescheduleForm.reason}
                                                 onChange={(e) => setRescheduleForm((f) => ({ ...f, reason: e.target.value }))}
                                                 placeholder="مثال: سفر في موعد الجلسة"
@@ -372,7 +372,7 @@ export default function CohortBoard() {
                                         </Card>
                                       )}
                                       {s.zoom?.passcode && (
-                                        <p className="mt-2 text-[11px] text-muted-foreground">رمز المرور: <span className="font-mono text-foreground" dir="ltr">{s.zoom.passcode}</span></p>
+                                        <p className="mt-2 text-micro text-muted-foreground">رمز المرور: <span className="font-mono text-foreground" dir="ltr">{s.zoom.passcode}</span></p>
                                       )}
                                       {/* شبكة الحضور */}
                                       <div className="mt-3 space-y-1.5 border-t border-white/8 pt-3">
@@ -398,7 +398,7 @@ export default function CohortBoard() {
                                           );
                                         })}
                                         {c.enrollments.filter((e) => e.status !== "waitlisted").length === 0 && (
-                                          <p className="text-[11px] text-muted-foreground">لا متعلمين مسجلين بعد.</p>
+                                          <p className="text-micro text-muted-foreground">لا متعلمين مسجلين بعد.</p>
                                         )}
                                       </div>
                                     </Card>
@@ -435,7 +435,7 @@ export default function CohortBoard() {
                               <h3 className="flex items-center gap-2 text-sm font-black text-foreground">
                                 <MessageSquarePlus className="h-4 w-4 text-teal-light-ink" /> مخاطبة الشعبة
                               </h3>
-                              <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                              <p className="mt-1 text-micro leading-relaxed text-muted-foreground">
                                 إعلانٌ يبلغ كلّ مسجَّل، أو رسالةٌ إلى متعلّم بعينه. وكلاهما يبقى في السجلّ أدناه.
                               </p>
                               <div className="mt-3 space-y-2.5">
@@ -465,12 +465,12 @@ export default function CohortBoard() {
 
                               <div className="mt-4 border-t border-white/8 pt-3">
                                 <button type="button" onClick={() => void loadMessages(c.id)}
-                                  className="cursor-pointer text-[11px] font-bold text-teal-light-ink transition hover:text-teal-ink">
+                                  className="cursor-pointer text-micro font-bold text-teal-light-ink transition hover:text-teal-ink">
                                   {msgLog[c.id] ? "حدّث السجلّ" : "اعرض سجلّ ما أُرسل"}
                                 </button>
                                 {msgLog[c.id] && (
                                   msgLog[c.id].length === 0 ? (
-                                    <p className="mt-2 text-[11px] text-muted-foreground">لم تُرسل شيئا في هذه الشعبة بعد.</p>
+                                    <p className="mt-2 text-micro text-muted-foreground">لم تُرسل شيئا في هذه الشعبة بعد.</p>
                                   ) : (
                                     <ul className="mt-2.5 space-y-2">
                                       {msgLog[c.id].map((m) => (
@@ -512,18 +512,18 @@ export default function CohortBoard() {
                                   ))}
                                 </ul>
                               ) : (
-                                <p className="mt-2 text-[11px] text-muted-foreground">لا مواد بعد — {fileUploads ? "ارفع كرّاسة أو أضف رابطا." : "أضف رابطا أدناه."}</p>
+                                <p className="mt-2 text-micro text-muted-foreground">لا مواد بعد — {fileUploads ? "ارفع كرّاسة أو أضف رابطا." : "أضف رابطا أدناه."}</p>
                               )}
 
                               <div className="mt-4 flex flex-wrap items-center gap-2">
                                 {fileUploads ? (
-                                  <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-teal/45 px-3.5 py-1.5 text-[11px] font-bold text-teal-light-ink transition hover:bg-teal/10">
+                                  <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-teal/45 px-3.5 py-1.5 text-micro font-bold text-teal-light-ink transition hover:bg-teal/10">
                                     <Upload className="h-3 w-3" /> ارفع ملفا (كرّاسة أو فيديو)
                                     <input type="file" className="hidden" disabled={busy}
                                       onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadMaterialFile(c.id, f); e.target.value = ""; }} />
                                   </label>
                                 ) : (
-                                  <p className="text-[11px] leading-6 text-muted-foreground">
+                                  <p className="text-micro leading-6 text-muted-foreground">
                                     رفعُ الملفّات لم يُفعَّل على هذه المنصّة بعد — <span className="font-bold text-foreground">أضف المادّةَ برابطٍ أدناه</span> (Drive أو YouTube أو أيّ رابطٍ يفتحه طلبتُك).
                                   </p>
                                 )}
@@ -545,7 +545,7 @@ export default function CohortBoard() {
                                 <button
                                   disabled={busy || !materialLink[c.id]?.title?.trim() || !materialLink[c.id]?.url?.trim()}
                                   onClick={() => void addMaterialLink(c.id)}
-                                  className="cursor-pointer rounded-lg border border-white/15 px-4 py-2 text-[11px] font-bold text-foreground transition hover:border-teal/50 hover:text-teal-light-ink disabled:opacity-40"
+                                  className="cursor-pointer rounded-lg border border-white/15 px-4 py-2 text-micro font-bold text-foreground transition hover:border-teal/50 hover:text-teal-light-ink disabled:opacity-40"
                                 >
                                   أضف رابطا
                                 </button>
@@ -555,7 +555,7 @@ export default function CohortBoard() {
                                 <h3 className="flex items-center gap-2 text-sm font-black text-foreground">
                                   <ClipboardCheck className="h-4 w-4 text-gold-ink" /> تكليف جديد
                                 </h3>
-                                <p className="mt-1 text-[11px] text-muted-foreground">
+                                <p className="mt-1 text-micro text-muted-foreground">
                                   ما تؤلّفه هنا يصل المسجلين، ويعود إليك تسليمهم في طابور المراجعة أدناه.
                                 </p>
                                 <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto_auto]">
@@ -578,7 +578,7 @@ export default function CohortBoard() {
                                   <button
                                     disabled={busy || !taskForm[c.id]?.title?.trim()}
                                     onClick={() => void createAssessment(c.id)}
-                                    className="cursor-pointer rounded-lg border border-gold/50 px-4 py-2 text-[11px] font-bold text-gold-ink transition hover:bg-gold/10 disabled:opacity-40"
+                                    className="cursor-pointer rounded-lg border border-gold/50 px-4 py-2 text-micro font-bold text-gold-ink transition hover:bg-gold/10 disabled:opacity-40"
                                   >
                                     أنشئ
                                   </button>
@@ -606,13 +606,13 @@ export default function CohortBoard() {
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-bold">{r.session.title} — {r.session.cohort.title}</p>
-                          <p className="mt-0.5 text-[11px] text-muted-foreground">موعد مقترح: {fmtDateTimeAr(r.proposedStartsAt)}</p>
+                          <p className="mt-0.5 text-micro text-muted-foreground">موعد مقترح: {fmtDateTimeAr(r.proposedStartsAt)}</p>
                           <p className="mt-1 text-xs text-muted-foreground">{r.reason}</p>
                           {r.reviewerComment && (
-                            <p className="mt-1 text-[11px] text-muted-foreground">ملاحظة الإدارة: {r.reviewerComment}</p>
+                            <p className="mt-1 text-micro text-muted-foreground">ملاحظة الإدارة: {r.reviewerComment}</p>
                           )}
                         </div>
-                        <span className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-bold ${r.status === "approved" ? "border-teal/40 text-teal-light-ink" : r.status === "rejected" ? "border-red-400/40 text-red-300" : r.status === "withdrawn" ? "border-white/15 text-muted-foreground" : "border-gold/40 text-gold-ink"}`}>
+                        <span className={`shrink-0 rounded-full border px-3 py-1 text-micro font-bold ${r.status === "approved" ? "border-teal/40 text-teal-light-ink" : r.status === "rejected" ? "border-red-400/40 text-red-300" : r.status === "withdrawn" ? "border-white/15 text-muted-foreground" : "border-gold/40 text-gold-ink"}`}>
                           {RESCHEDULE_STATUS_AR[r.status] ?? r.status}
                         </span>
                         {r.status === "pending" && (
@@ -647,7 +647,7 @@ export default function CohortBoard() {
                           </p>
                         </div>
                         {q.grades[0] && (
-                          <span className="rounded-full bg-teal/15 px-3 py-1 text-[11px] font-black text-teal-light-ink">
+                          <span className="rounded-full bg-teal/15 px-3 py-1 text-micro font-black text-teal-light-ink">
                             {Number(q.grades[0].score)}/{Number(q.grades[0].maxScore)}
                           </span>
                         )}
@@ -700,7 +700,7 @@ export default function CohortBoard() {
                           placeholder="تغذية راجعة إضافية للمتعلم…"
                           className="flex-1 rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none" />
                         <button disabled={busy || (feedbackForm[q.id] ?? "").trim().length < 3} onClick={() => void sendFeedback(q.id)}
-                          className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-[11px] font-black text-foreground transition hover:bg-white/15 disabled:opacity-40">
+                          className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-micro font-black text-foreground transition hover:bg-white/15 disabled:opacity-40">
                           <MessageSquarePlus className="h-3 w-3" /> أرسل
                         </button>
                       </div>

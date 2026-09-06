@@ -76,7 +76,7 @@ export default function PracticeActivity({
           <ClipboardList className="h-4 w-4 text-teal-light-ink" aria-hidden="true" />
           النشاط التطبيقيّ
         </h3>
-        <span className="flex items-center gap-1 rounded-full bg-teal-ink/15 px-2 py-0.5 text-[11px] tabular-nums text-teal-light-ink">
+        <span className="flex items-center gap-1 rounded-full bg-teal-ink/15 px-2 py-0.5 text-micro tabular-nums text-teal-light-ink">
           <Timer className="h-3 w-3" aria-hidden="true" />
           {fmtNum(practice.minutes)} دقيقة
         </span>
@@ -103,7 +103,7 @@ export default function PracticeActivity({
                 <span className={`text-[13px] leading-6 ${isDone ? "text-muted-foreground line-through" : ""}`}>
                   {s.textAr}
                 </span>
-                <span className="ms-auto shrink-0 text-[11px] tabular-nums text-muted-foreground">
+                <span className="ms-auto shrink-0 text-micro tabular-nums text-muted-foreground">
                   {fmtNum(s.minutes)} د
                 </span>
               </button>
@@ -114,14 +114,14 @@ export default function PracticeActivity({
 
       <dl className="mt-4 space-y-3 text-[13px] leading-6">
         <Card>
-          <dt className="flex items-center gap-1.5 text-[11px] font-black text-teal-light-ink">
+          <dt className="flex items-center gap-1.5 text-micro font-black text-teal-light-ink">
             <FileUp className="h-3.5 w-3.5" aria-hidden="true" />
             المخرَج — وهو ما يُرفع
           </dt>
           <dd className="mt-1">{practice.artifactAr}</dd>
         </Card>
         <Card>
-          <dt className="flex items-center gap-1.5 text-[11px] font-black text-muted-foreground">
+          <dt className="flex items-center gap-1.5 text-micro font-black text-muted-foreground">
             <UserRoundSearch className="h-3.5 w-3.5" aria-hidden="true" />
             لمن لا عمل له الآن
           </dt>

@@ -66,7 +66,7 @@ export default function VerifyEmailNotice({ email, className = "" }: { email: st
     return (
       <div className={`flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border border-[#FABC05]/25 bg-[#FABC05]/[0.04] px-4 py-2.5 ${className}`}>
         <MailWarning className="h-4 w-4 shrink-0 text-[#FABC05]" aria-hidden="true" />
-        <p className="min-w-0 flex-1 text-[12px] leading-6">
+        <p className="min-w-0 flex-1 text-xs leading-6">
           <span className="font-bold">بريدك غير موثَّق</span>
           <span className="text-muted-foreground"> — الشراءُ والشهادةُ موقوفان حتّى تُوثّقه.</span>
         </p>
@@ -77,7 +77,7 @@ export default function VerifyEmailNotice({ email, className = "" }: { email: st
           التفصيل <ChevronDown className="h-3 w-3" aria-hidden="true" />
         </Button>
         {result && (
-          <p role="status" className={`w-full text-[11px] leading-6 ${result.tone === "ok" ? "text-emerald-300" : "text-[#FABC05]"}`}>
+          <p role="status" className={`w-full text-micro leading-6 ${result.tone === "ok" ? "text-emerald-300" : "text-[#FABC05]"}`}>
             {result.text}
           </p>
         )}
@@ -103,7 +103,7 @@ export default function VerifyEmailNotice({ email, className = "" }: { email: st
           {/* ترتيب الجملة مقصود: النقطتان بعد نصّ عربيّ، والعنوان اللاتيني في
               آخرها. كان العنوان قبلهما فتقع النقطتان على يساره في سياق RTL
               فتُقرأ الجملة معكوسة: «‪…@test.local : شراء الشعب‬». */}
-          <p className="mt-1 text-[12px] leading-6 text-muted-foreground">
+          <p className="mt-1 text-xs leading-6 text-muted-foreground">
             الدخول والتصفّح والتشخيص مفتوحة كلها. الموقوف شيئان فقط:
             <span className="font-bold text-foreground"> شراء الشعب</span> و<span className="font-bold text-foreground">استلام الشهادة</span>،
             حتى تُوثّق عنوانك
@@ -111,7 +111,7 @@ export default function VerifyEmailNotice({ email, className = "" }: { email: st
           </p>
           <div className="mt-3">{sendButton}</div>
           {result && (
-            <p role="status" className={`mt-2.5 text-[11px] leading-6 ${result.tone === "ok" ? "text-emerald-300" : "text-[#FABC05]"}`}>
+            <p role="status" className={`mt-2.5 text-micro leading-6 ${result.tone === "ok" ? "text-emerald-300" : "text-[#FABC05]"}`}>
               {result.text}
             </p>
           )}

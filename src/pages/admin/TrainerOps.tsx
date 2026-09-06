@@ -53,7 +53,7 @@ function RubricInput({ scores, onChange }: { scores: Record<string, number>; onC
     <div className="space-y-2">
       {RUBRIC_AXES.map((x) => (
         <div key={x.key} className="flex items-center justify-between gap-2">
-          <span className="text-[11px] text-muted-foreground">{x.label}</span>
+          <span className="text-micro text-muted-foreground">{x.label}</span>
           <div className="flex gap-1" role="radiogroup" aria-label={x.label}>
             {[1, 2, 3, 4, 5].map((v) => (
               <button key={v} type="button" onClick={() => onChange({ ...scores, [x.key]: v })}
@@ -157,7 +157,7 @@ export function TrainerDetailOps({ app, onAction }: {
         <div className="mt-3 flex flex-wrap gap-2">
           {([["pass", "يجتاز"], ["retry", "يعيد"], ["fail", "لا يجتاز"]] as const).map(([d, label]) => (
             <button key={d} type="button" onClick={() => setDemoDecision(d)}
-              className={`cursor-pointer rounded-full border px-3 py-1 text-[11px] font-bold transition ${demoDecision === d ? "border-gold bg-gold/10 text-gold-ink" : "border-white/15 text-muted-foreground"}`}>
+              className={`cursor-pointer rounded-full border px-3 py-1 text-micro font-bold transition ${demoDecision === d ? "border-gold bg-gold/10 text-gold-ink" : "border-white/15 text-muted-foreground"}`}>
               {label}
             </button>
           ))}
@@ -240,21 +240,21 @@ export function TrainerDetailOps({ app, onAction }: {
       {app.profile && (
         <Card icon={Briefcase} title="الدورات المؤهَّل لها" defaultOpen={app.status === "active"}>
           {(app.summary?.qualifiedCourses?.length ?? 0) === 0 ? (
-            <p className="text-[11px] leading-6 text-muted-foreground">
+            <p className="text-micro leading-6 text-muted-foreground">
               لا دورة مؤهَّلا لها بعد. التأهيل يُطلب من الشعبة التي يُراد إسنادُه إليها — وموافقة المدير
               الأكاديميّ تؤهّله وتُسنده في فعلٍ واحد.
             </p>
           ) : (
             <ul className="flex flex-wrap gap-1.5">
               {app.summary!.qualifiedCourses.map((c) => (
-                <li key={c.courseId} className="rounded-full border border-teal/35 bg-teal/[0.08] px-3 py-1 text-[11px] font-bold text-teal-light-ink">
+                <li key={c.courseId} className="rounded-full border border-teal/35 bg-teal/[0.08] px-3 py-1 text-micro font-bold text-teal-light-ink">
                   {c.titleAr}
                 </li>
               ))}
             </ul>
           )}
           {(app.summary?.pendingQualifications ?? 0) > 0 && (
-            <p className="mt-2.5 text-[11px] text-gold-ink">
+            <p className="mt-2.5 text-micro text-gold-ink">
               وله {app.summary!.pendingQualifications} طلبُ تأهيلٍ بانتظار القرار.
             </p>
           )}
@@ -289,7 +289,7 @@ function BlastRadiusStrip({ r }: { r: TrainerChangeRequest }) {
   const entities = [...b.pathways, ...b.templates];
   return (
     <div className={`mt-3 rounded-2xl border px-4 py-3 ${wide ? "border-gold/35 bg-gold/[0.07]" : "border-white/10 bg-white/[0.02]"}`}>
-      <p className="flex items-start gap-2 text-[11px] font-bold leading-6">
+      <p className="flex items-start gap-2 text-micro font-bold leading-6">
         {wide
           ? <AlertTriangle className="mt-1 h-3.5 w-3.5 shrink-0 text-gold-ink" aria-hidden="true" />
           : <Info className="mt-1 h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />}
@@ -356,14 +356,14 @@ export function TrainerChangeRequests() {
             <div>
               <p className="text-sm font-black">
                 دورة <span dir="ltr" className="font-mono text-xs">{r.courseId ?? r.course?.id ?? "—"}</span>
-                <span className="mr-2 text-[11px] font-bold text-muted-foreground">نطاق: {r.scope === "cohort" ? "شعبة" : "كتالوج"}</span>
+                <span className="mr-2 text-micro font-bold text-muted-foreground">نطاق: {r.scope === "cohort" ? "شعبة" : "كتالوج"}</span>
               </p>
               <p className="mt-1 text-xs leading-6 text-muted-foreground">{r.reason}</p>
               <p className="mt-1 text-micro text-muted-foreground">
                 {fmtDateTime(new Date(r.createdAt))} · {r.items?.length ?? 0} بند تعديل
               </p>
             </div>
-            <span className="rounded-full border border-teal/40 px-3 py-1 text-[11px] font-bold text-teal-light-ink">
+            <span className="rounded-full border border-teal/40 px-3 py-1 text-micro font-bold text-teal-light-ink">
               {CR_STATUS_AR[r.status] ?? r.status}
             </span>
           </div>
@@ -456,15 +456,15 @@ function ImpactGate({
               {running ? "يشغّل ١٢ شخصية…" : "افحص الأثر التشخيصي"}
             </Button>
             {checked === false && !verdict && (
-              <span className="text-[11px] font-bold text-gold-ink">لم يُفحص بعد — النشر بنطاق الكتالوج موقوف حتى الفحص.</span>
+              <span className="text-micro font-bold text-gold-ink">لم يُفحص بعد — النشر بنطاق الكتالوج موقوف حتى الفحص.</span>
             )}
             {checked === true && !verdict && (
-              <span className="text-[11px] text-muted-foreground">فُحص الأثر بعد الاعتماد — يمكن النشر.</span>
+              <span className="text-micro text-muted-foreground">فُحص الأثر بعد الاعتماد — يمكن النشر.</span>
             )}
           </div>
 
           {verdict && (
-            <div className={`mt-2 rounded-2xl border px-4 py-3 text-[11px] leading-6 ${
+            <div className={`mt-2 rounded-2xl border px-4 py-3 text-micro leading-6 ${
               verdict.touchesDiagnostic ? "border-gold/35 bg-gold/[0.07]" : "border-teal/30 bg-teal-ink/[0.06]"
             }`}>
               <p className="font-bold text-foreground">{verdict.verdictAr}</p>
@@ -639,7 +639,7 @@ export function TrainerPayouts() {
           <option value="">كل الحالات</option>
           {Object.entries(PAYOUT_STATUS_AR).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
-        <label className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 text-[11px] font-bold text-muted-foreground transition hover:border-white/30">
+        <label className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 text-micro font-bold text-muted-foreground transition hover:border-white/30">
           <input type="checkbox" checked={showCancelledZero} onChange={(e) => setShowCancelledZero(e.target.checked)} className="accent-gold" />
           إظهار الملغاة الصفرية
         </label>
@@ -682,7 +682,7 @@ export function TrainerPayouts() {
               && !r.cohortId && !r.courseId && !ruleForm.cohortId)
               ?? rules.find((r) => r.profileId === ruleForm.profileId && !r.effectiveTo && r.cohortId === ruleForm.cohortId && ruleForm.cohortId);
             return (
-              <p className="rounded-xl border border-white/10 bg-paper/20 px-3 py-2 text-[11px] text-muted-foreground">
+              <p className="rounded-xl border border-white/10 bg-paper/20 px-3 py-2 text-micro text-muted-foreground">
                 {active
                   ? <>القاعدة السارية{active.cohortId ? " لهذه الشعبة" : " (العامة)"}: <b className="text-foreground">{RULE_TYPE_AR[active.type]}</b> بمعدل <b dir="ltr" className="font-mono text-foreground">{Number(active.rate)}</b> {active.currency}
                       {active.type === "per_seat" && active.minSeats > 0 ? <> · حد أدنى <b className="text-foreground">{active.minSeats}</b> مقاعد</> : null}
@@ -737,7 +737,7 @@ export function TrainerPayouts() {
             </Card>
           )}
           {batchResult && (
-            <Card className="space-y-1 bg-paper/20 text-[11px] leading-6">
+            <Card className="space-y-1 bg-paper/20 text-micro leading-6">
               <p className="font-black text-emerald-300">وُلّد {batchResult.generated.length} كشفاً</p>
               {batchResult.skipped.map((s, i) => (
                 <p key={i} className="text-muted-foreground">تُركت «{s.title}»: {s.reason}</p>
@@ -753,7 +753,7 @@ export function TrainerPayouts() {
 
       {showCreate && (
         <Panel tone="warn" className="space-y-3">
-          <p className="text-sm font-black">كشف مستحقات جديد <span className="text-[11px] font-bold text-muted-foreground">— يولد بحالة «بانتظار الاعتماد»</span></p>
+          <p className="text-sm font-black">كشف مستحقات جديد <span className="text-micro font-bold text-muted-foreground">— يولد بحالة «بانتظار الاعتماد»</span></p>
           <div className="flex flex-wrap gap-2">
             <select value={form.profileId} onChange={(e) => setForm({ ...form, profileId: e.target.value })} className={`${selectCls} flex-1`}>
               <option value="">اختر المدرب…</option>
@@ -815,12 +815,12 @@ export function TrainerPayouts() {
             <div>
               <p className="text-sm font-black">
                 {p.profile.application?.fullName ?? "مدرب"} <span dir="ltr" className="font-mono text-micro text-muted-foreground">{p.profile.application?.reference}</span>
-                <span className="mr-2 text-[11px] font-bold text-muted-foreground">فترة <span dir="ltr" className="font-mono">{p.period}</span></span>
+                <span className="mr-2 text-micro font-bold text-muted-foreground">فترة <span dir="ltr" className="font-mono">{p.period}</span></span>
               </p>
               <p className="mt-1 text-xl font-black">{fmt(p.total)} <span className="text-xs font-bold text-muted-foreground">{p.currency}</span></p>
               {p.paidAt && <p className="mt-0.5 text-micro text-muted-foreground">صُرف {fmtDateTime(new Date(p.paidAt))}</p>}
             </div>
-            <span className={`rounded-full border px-3 py-1 text-[11px] font-bold ${PAYOUT_STATUS_CLS[p.status] ?? ""}`}>
+            <span className={`rounded-full border px-3 py-1 text-micro font-bold ${PAYOUT_STATUS_CLS[p.status] ?? ""}`}>
               {PAYOUT_STATUS_AR[p.status] ?? p.status}
             </span>
           </div>

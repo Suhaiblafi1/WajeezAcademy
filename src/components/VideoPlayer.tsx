@@ -60,7 +60,7 @@ export default function VideoPlayer({
           }} className="grid h-16 w-16 place-items-center shadow-[0_0_40px_-5px_#38A7B4]" aria-label={playing ? "إيقاف" : "تشغيل"}>
           {playing ? <Pause className="h-7 w-7" /> : <Play className="h-7 w-7 -translate-x-0.5" />}
         </Button>
-        <span className="absolute bottom-3 right-4 rounded-full bg-paper/60 px-2.5 py-1 text-[11px] text-foreground">
+        <span className="absolute bottom-3 right-4 rounded-full bg-paper/60 px-2.5 py-1 text-micro text-foreground">
           معاينة تجريبية — يُعرض الفيديو الحقيقي هنا عند الربط
         </span>
         {pct >= 90 && (

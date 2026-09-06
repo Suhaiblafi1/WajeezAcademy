@@ -46,7 +46,7 @@ export default function Chip({
 }: ChipProps) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold ${TONE[tone]} ${className}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-micro font-bold ${TONE[tone]} ${className}`}
     >
       {srPrefixAr && <span className="sr-only">{srPrefixAr}: </span>}
       {Icon && <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />}

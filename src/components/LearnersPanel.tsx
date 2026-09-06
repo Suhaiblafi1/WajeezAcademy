@@ -138,7 +138,7 @@ export default function LearnersPanel() {
                       <span className="rounded-full border border-red-400/40 px-2 py-0.5 text-micro font-bold text-red-300">موقوف</span>
                     )}
                   </p>
-                  <p dir="ltr" className="mt-0.5 text-left text-[11px] text-muted-foreground">{l.user.email}</p>
+                  <p dir="ltr" className="mt-0.5 text-left text-micro text-muted-foreground">{l.user.email}</p>
                 </div>
                 {data.canWrite && (
                   <div className="flex shrink-0 gap-1.5">
@@ -153,7 +153,7 @@ export default function LearnersPanel() {
                 {l.enrollments.map((e) => (
                   <Inset as="li" key={e.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
                     <span className="min-w-0">
-                      <span className="block text-[12px] font-bold text-foreground">{e.courseTitle}</span>
+                      <span className="block text-xs font-bold text-foreground">{e.courseTitle}</span>
                       <span className="text-micro text-muted-foreground">
                         {e.cohortTitle} · {ENROLL_STATUS[e.status] ?? e.status} · {e.percent}٪
                         {e.startsAt ? ` · ${fmtDate(new Date(e.startsAt))}` : ""}
@@ -227,11 +227,11 @@ function EditLearner({ row, busy, onClose, onSave, onEnroll }: {
           </button>
         </div>
 
-        <label className="mt-4 block text-[11px] font-bold text-muted-foreground">
+        <label className="mt-4 block text-micro font-bold text-muted-foreground">
           الاسم
           <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} className={`${field} mt-1`} />
         </label>
-        <label className="mt-3 block text-[11px] font-bold text-muted-foreground">
+        <label className="mt-3 block text-micro font-bold text-muted-foreground">
           البريد
           <input value={email} onChange={(e) => setEmail(e.target.value)} dir="ltr" className={`${field} mt-1 text-left`} />
           {/* يُقال قبل الحفظ لا بعده: تبديلُ البريد يُسقط توثيقَه، والشراءُ
@@ -265,7 +265,7 @@ function EditLearner({ row, busy, onClose, onSave, onEnroll }: {
         </div>
 
         <div className="mt-5 border-t border-white/10 pt-4">
-          <p className="text-[11px] font-bold text-muted-foreground">سجّله في شعبة</p>
+          <p className="text-micro font-bold text-muted-foreground">سجّله في شعبة</p>
           <div className="mt-2 flex gap-2">
             <select value={cohortId} onChange={(e) => setCohortId(e.target.value)} className={`${field} flex-1 [&>option]:bg-surface`}>
               <option value="">اختر شعبة…</option>

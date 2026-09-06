@@ -25,7 +25,7 @@ function GrowthStrip({ growth, enrollmentId }: { growth: CourseGrowth | null; en
     return (
       <Link
         to={`/student/remeasure/${enrollmentId}`}
-        className="mt-3 flex items-center gap-2 rounded-2xl border border-teal/25 bg-teal-ink/[0.06] px-3 py-2 text-[11px] font-bold text-teal-light-ink transition hover:border-teal/50"
+        className="mt-3 flex items-center gap-2 rounded-2xl border border-teal/25 bg-teal-ink/[0.06] px-3 py-2 text-micro font-bold text-teal-light-ink transition hover:border-teal/50"
       >
         <Ruler className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         قِس نموك في مهارات هذه الدورة ليصير مع الشهادة دليل مقيس
@@ -34,11 +34,11 @@ function GrowthStrip({ growth, enrollmentId }: { growth: CourseGrowth | null; en
   }
   return (
     <Card tone="accent" className="mt-3 bg-teal-ink/[0.06] px-3 py-2">
-      <p className="flex items-center gap-2 text-[11px] font-bold text-teal-light-ink">
+      <p className="flex items-center gap-2 text-micro font-bold text-teal-light-ink">
         <Ruler className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         نمو مقيس بعد هذه الدورة
       </p>
-      <p className="mt-1 text-[11px] leading-6 tabular-nums text-foreground">
+      <p className="mt-1 text-micro leading-6 tabular-nums text-foreground">
         ارتفعت {growth.improved} مهارة · بلغت المستهدف {growth.crossedTarget} · مجموع الدرجات{" "}
         {/* dir=ltr على الرقم المُوقَّع فلا يُقرأ «+4» بصورة «4+» */}
         <span dir="ltr">{growth.netPoints > 0 ? `+${growth.netPoints}` : growth.netPoints}</span>
@@ -48,7 +48,7 @@ function GrowthStrip({ growth, enrollmentId }: { growth: CourseGrowth | null; en
           ويلزمه ٢٤ نقطةً ارتفاعا (WCAG 2.5.8). */}
       <Link
         to="/student/skills"
-        className="mt-1 inline-flex min-h-6 items-center text-[11px] font-bold text-teal-light-ink underline underline-offset-4"
+        className="mt-1 inline-flex min-h-6 items-center text-micro font-bold text-teal-light-ink underline underline-offset-4"
       >
         التفصيل في ملف مهاراتي
       </Link>
@@ -102,7 +102,7 @@ export default function Certificates() {
                 <span className={`grid h-11 w-11 place-items-center rounded-2xl ${c.status === "revoked" ? "bg-red-500/10 text-red-400" : "bg-gold/10 text-gold-ink"}`}>
                   {c.status === "revoked" ? <ShieldOff className="h-5 w-5" /> : <Award className="h-5 w-5" />}
                 </span>
-                <span className={`rounded-full border px-3 py-1 text-[11px] font-bold ${c.status === "revoked" ? "border-red-500/40 text-red-400" : "border-emerald-400/30 text-emerald-300"}`}>
+                <span className={`rounded-full border px-3 py-1 text-micro font-bold ${c.status === "revoked" ? "border-red-500/40 text-red-400" : "border-emerald-400/30 text-emerald-300"}`}>
                   {c.status === "revoked" ? "ملغاة" : "سارية"}
                 </span>
               </div>
@@ -111,12 +111,12 @@ export default function Certificates() {
               <h2 className="mt-4 font-black">دورة <span dir="ltr" className="font-mono text-sm">{c.courseId}</span> — إصدار {c.courseVersion}</h2>
               <p className="mt-1 text-xs text-muted-foreground">باسم: {c.learnerName}</p>
               <p className="mt-1 text-xs text-muted-foreground">أُصدرت في {fmtDate(new Date(c.issuedAt))}</p>
-              {c.revocation && <p className="mt-2 rounded-xl border border-red-500/30 bg-paper/20 p-2 text-[11px] text-red-300">سبب الإلغاء: {c.revocation.reason}</p>}
+              {c.revocation && <p className="mt-2 rounded-xl border border-red-500/30 bg-paper/20 p-2 text-micro text-red-300">سبب الإلغاء: {c.revocation.reason}</p>}
               <div className="mt-4 flex items-center justify-between gap-2 border-t border-white/8 pt-3">
-                <span className="font-mono text-[11px] text-muted-foreground" dir="ltr">{c.number}</span>
+                <span className="font-mono text-micro text-muted-foreground" dir="ltr">{c.number}</span>
                 {c.status !== "revoked" && (
                   <Link to={`/verify/${c.number}`}
-                    className="flex items-center gap-1.5 rounded-full border border-teal/40 px-3 py-1 text-[11px] font-bold text-teal-light-ink transition hover:bg-teal/10">
+                    className="flex items-center gap-1.5 rounded-full border border-teal/40 px-3 py-1 text-micro font-bold text-teal-light-ink transition hover:bg-teal/10">
                     <BadgeCheck className="h-3.5 w-3.5" /> صفحة التحقق العامة
                   </Link>
                 )}

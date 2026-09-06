@@ -122,7 +122,7 @@ export default function NotificationBell({ audience }: { audience: BellAudience 
                   {n.status === "sent" && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-gold" />}
                   {n.title}
                 </p>
-                <p className="mt-1 text-[11px] leading-5 text-muted-foreground">{n.body}</p>
+                <p className="mt-1 text-micro leading-5 text-muted-foreground">{n.body}</p>
                 <p className="mt-1 text-micro text-muted-foreground">
                   {fmtDateTime(new Date(n.sentAt ?? n.createdAt))}
                 </p>

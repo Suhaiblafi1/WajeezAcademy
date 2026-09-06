@@ -85,21 +85,21 @@ function RatingCard({ item, onSaved }: { item: Rateable; onSaved: () => void }) 
           <h2 className="mt-1.5 text-sm font-black">{item.nameAr}</h2>
         </div>
         {item.myScore != null && (
-          <span className="text-[11px] text-muted-foreground">قيّمتَ سابقا — يمكنك التعديل</span>
+          <span className="text-micro text-muted-foreground">قيّمتَ سابقا — يمكنك التعديل</span>
         )}
       </div>
 
       <div className="mt-4">
         <Stars value={score} onPick={(v) => { setScore(v); setNeedsScore(false); }} disabled={busy} />
         {needsScore && score < 1 && (
-          <p role="alert" className="mt-2 text-[11px] font-bold leading-5 text-red-300">
+          <p role="alert" className="mt-2 text-micro font-bold leading-5 text-red-300">
             اختر عددَ النجوم أوّلا — التعليقُ وحدَه لا يُرسَل تقييما.
           </p>
         )}
       </div>
 
       <label className="mt-4 block">
-        <span className="mb-1.5 block text-[11px] font-bold text-muted-foreground">
+        <span className="mb-1.5 block text-micro font-bold text-muted-foreground">
           تعليق اختياري — لا يُنشر علنا إلا بعد مراجعة الإدارة
         </span>
         <textarea
@@ -119,7 +119,7 @@ function RatingCard({ item, onSaved }: { item: Rateable; onSaved: () => void }) 
           disabled={busy} className="disabled:cursor-not-allowed">
           {busy ? "يُرسَل…" : item.myScore == null ? "أرسل التقييم" : "حدّث التقييم"}
         </Button>
-        {error && <span role="alert" className="text-[11px] font-bold text-red-300">{error}</span>}
+        {error && <span role="alert" className="text-micro font-bold text-red-300">{error}</span>}
       </div>
     </Card>
   );
@@ -149,7 +149,7 @@ export default function RateMyLearning() {
       {/* حدود السرّية مكتوبة قبل النموذج لا بعده — تُقرأ قبل أن يُكتب شيء */}
       <Card tone="accent" className="mb-6 flex items-start gap-3">
         <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-teal-light-ink" />
-        <p className="text-[12px] leading-6 text-foreground">
+        <p className="text-xs leading-6 text-foreground">
           <span className="font-black text-foreground">اسمك لا يصل المدرّب ولا المستشار.</span>{" "}
           ولا يرى أيٌّ منهما تقييما حتى تبلغ التقييمات الواردة عنه ثلاثة — في العدد
           القليل يُستدلّ على أصحاب الآراء مهما حُذفت الأسماء. والإدارة ترى التعليقات

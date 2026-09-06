@@ -121,7 +121,7 @@ export default function SkillPicker({
       {assessment.warningsAr.length > 0 && (
         <ul className="mt-2 space-y-1.5">
           {assessment.warningsAr.map((w) => (
-            <Card as="li" tone="warn" key={w} className="flex items-start gap-2 px-3 py-2 text-[11px] leading-6 text-foreground">
+            <Card as="li" tone="warn" key={w} className="flex items-start gap-2 px-3 py-2 text-micro leading-6 text-foreground">
               <AlertTriangle className="mt-1 h-3.5 w-3.5 shrink-0 text-gold-ink" aria-hidden="true" />
               <span>{w}</span>
             </Card>
@@ -155,7 +155,7 @@ export default function SkillPicker({
           );
         })}
         {shown.length === 0 && (
-          <li className="px-3 py-6 text-center text-[11px] text-muted-foreground">
+          <li className="px-3 py-6 text-center text-micro text-muted-foreground">
             {rows.length === 0 ? "لا مهارات في الكتالوج بعد." : `لا مهارة تطابق «${query}».`}
           </li>
         )}
@@ -165,14 +165,14 @@ export default function SkillPicker({
       {onRequestSkill && (
         <div className="mt-2">
           {asked ? (
-            <p className="flex items-center gap-2 text-[11px] font-bold text-teal-light-ink">
+            <p className="flex items-center gap-2 text-micro font-bold text-teal-light-ink">
               <Check className="h-3.5 w-3.5" aria-hidden="true" />
               قُدّم طلب المهارة للمراجعة — لا تُضاف قبل الاعتماد.
             </p>
           ) : askOpen ? (
             <Card>
               <div className="flex items-center justify-between gap-2">
-                <p className="text-[11px] font-black text-foreground">طلب مهارة غير موجودة</p>
+                <p className="text-micro font-black text-foreground">طلب مهارة غير موجودة</p>
                 <button type="button" onClick={() => setAskOpen(false)} aria-label="إغلاق" className="cursor-pointer text-muted-foreground hover:text-foreground">
                   <X className="h-4 w-4" />
                 </button>

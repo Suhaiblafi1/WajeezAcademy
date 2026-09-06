@@ -136,7 +136,7 @@ export default function Support() {
               <div className="mt-4 border-t border-white/8 pt-4">
                 <textarea value={reply} onChange={(e) => setReply(e.target.value)} rows={3} placeholder="اكتب ردا…" className={`${inputCls} w-full`} />
                 <div className="mt-2 flex flex-wrap items-center gap-3">
-                  <label className="flex cursor-pointer items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <label className="flex cursor-pointer items-center gap-1.5 text-micro text-muted-foreground">
                     <input type="checkbox" checked={internal} onChange={(e) => setInternal(e.target.checked)} className="accent-gold" />
                     رد داخلي (مخفي عن العميل)
                   </label>
@@ -156,7 +156,7 @@ export default function Support() {
                 {Object.entries(STATUS_AR).filter(([k]) => k !== t.status).map(([k, v]) => (
                   <button key={k} disabled={busy}
                     onClick={() => act(() => apiPost(`/api/admin/support/tickets/${t.id}/transition`, { to: k }), `الحالة الآن: ${v}`)}
-                    className="cursor-pointer rounded-xl border border-white/15 px-3 py-2 text-[11px] font-bold text-muted-foreground hover:border-teal/50 hover:text-teal-light-ink disabled:opacity-40">
+                    className="cursor-pointer rounded-xl border border-white/15 px-3 py-2 text-micro font-bold text-muted-foreground hover:border-teal/50 hover:text-teal-light-ink disabled:opacity-40">
                     {v}
                   </button>
                 ))}
@@ -170,7 +170,7 @@ export default function Support() {
                 {Object.entries(PRIORITY_AR).map(([k, v]) => (
                   <button key={k} disabled={busy || t.priority === k}
                     onClick={() => act(() => apiPost(`/api/admin/support/tickets/${t.id}/priority`, { priority: k }), `الأولوية: ${v}`)}
-                    className={`cursor-pointer rounded-full border px-3 py-1 text-[11px] font-bold transition disabled:opacity-40 ${t.priority === k ? "border-gold bg-gold/10 text-gold-ink" : "border-white/15 text-muted-foreground hover:border-white/40"}`}>
+                    className={`cursor-pointer rounded-full border px-3 py-1 text-micro font-bold transition disabled:opacity-40 ${t.priority === k ? "border-gold bg-gold/10 text-gold-ink" : "border-white/15 text-muted-foreground hover:border-white/40"}`}>
                     {v}
                   </button>
                 ))}
@@ -193,7 +193,7 @@ export default function Support() {
               <h4 className="text-sm font-black">سجل الحالات</h4>
               <ol className="mt-3 space-y-1.5">
                 {t.statusHistory.map((h, i) => (
-                  <li key={i} className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                  <li key={i} className="flex items-center gap-2 text-micro text-muted-foreground">
                     <span className="h-1.5 w-1.5 rounded-full bg-teal" />
                     <b className="text-foreground">{STATUS_AR[h.toStatus] ?? h.toStatus}</b>
                     <span className="mr-auto text-muted-foreground/50">{fmtDateTime(new Date(h.createdAt))}</span>

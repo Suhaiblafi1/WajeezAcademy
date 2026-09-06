@@ -70,9 +70,9 @@ export default function Library() {
                   <span className="min-w-0 flex-1">
                     <span className="block text-sm font-bold leading-6">{r.title_ar}</span>
                     {r.description_ar && (
-                      <span className="mt-1 block text-[12px] leading-6 text-muted-foreground">{r.description_ar}</span>
+                      <span className="mt-1 block text-xs leading-6 text-muted-foreground">{r.description_ar}</span>
                     )}
-                    <span className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
+                    <span className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-micro text-muted-foreground">
                       <span className="rounded-full border border-white/10 px-2 py-0.5 font-bold">{kind.label}</span>
                       {r.source_ar && <span>{r.source_ar}</span>}
                       {r.minutes ? <span>{r.minutes} دقيقة</span> : null}

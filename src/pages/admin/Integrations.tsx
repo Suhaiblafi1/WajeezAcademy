@@ -113,12 +113,12 @@ export default function Integrations() {
           {/* ════ مزود الدفع ════ */}
           <Panel as="section">
             <p className="flex items-center gap-2 text-sm font-black"><CreditCard className="h-4 w-4 text-gold-ink" /> مزود الدفع</p>
-            <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
+            <p className="mt-1 text-micro leading-5 text-muted-foreground">
               المزودان الحقيقيان يعملان بصفحات دفع مستضافة لديهم — لا بيانات بطاقات تمر بخوادمنا أبداً،
               والتسوية تتم عبر webhook موقَّت فقط.
             </p>
             {view.payment.envSourced && (
-              <p className="mt-3 rounded-xl border border-gold/30 bg-gold/5 px-3 py-2 text-[11px] font-bold text-gold-ink">
+              <p className="mt-3 rounded-xl border border-gold/30 bg-gold/5 px-3 py-2 text-micro font-bold text-gold-ink">
                 هذا التكامل يُدار من متغيرات البيئة (PAYMENT_DRIVER…) — الحفظ هنا لن يؤثر حتى تُزال متغيرات البيئة.
               </p>
             )}
@@ -153,7 +153,7 @@ export default function Integrations() {
                       من دفع إلى عنوانٍ لا يفتح عنده — والـwebhook مستقلّ، فيُسوّى
                       الطلبُ وتبقى سجلّاتُنا خضراء والعطبُ عند المشتري وحدَه. */}
                   {!view.payment.siteUrlExplicit && (
-                    <p className="rounded-xl border border-red-500/40 bg-red-500/[0.07] px-3 py-2 text-[11px] font-bold leading-5 text-red-300">
+                    <p className="rounded-xl border border-red-500/40 bg-red-500/[0.07] px-3 py-2 text-micro font-bold leading-5 text-red-300">
                       اضبط <span dir="ltr" className="font-mono">APP_URL</span> بعنوان الموقع في بيئة الخادم أولا — لن يُقبل التفعيل بدونه.
                       <span className="mt-1 block font-normal text-red-300/75">
                         العنوان المستعمل الآن: <span dir="ltr" className="font-mono">{view.payment.siteUrl}</span> — ومنه تُبنى صفحة عودة المشتري بعد الدفع.
@@ -192,12 +192,12 @@ export default function Integrations() {
           {/* ════ البريد ════ */}
           <Panel as="section">
             <p className="flex items-center gap-2 text-sm font-black"><Mail className="h-4 w-4 text-teal-ink" /> قناة البريد (Resend)</p>
-            <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
+            <p className="mt-1 text-micro leading-5 text-muted-foreground">
               فور التفعيل تصبح قناة email في الإشعارات حقيقية — قبول التسجيل والفواتير والشهادات تصل بريداً.
               غير المفعّلة تسجَّل «فشل: لا مزود» وتُعاد المحاولة تلقائياً.
             </p>
             {view.email.envSourced && (
-              <p className="mt-3 rounded-xl border border-gold/30 bg-gold/5 px-3 py-2 text-[11px] font-bold text-gold-ink">
+              <p className="mt-3 rounded-xl border border-gold/30 bg-gold/5 px-3 py-2 text-micro font-bold text-gold-ink">
                 هذا التكامل يُدار من متغيرات البيئة (RESEND_API_KEY…) — الحفظ هنا لن يؤثر حتى تُزال متغيرات البيئة.
               </p>
             )}
@@ -241,7 +241,7 @@ export default function Integrations() {
           </Panel>
 
           {/* قاعدة الأمان */}
-          <p className="flex items-start gap-2 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 text-[11px] leading-6 text-muted-foreground lg:col-span-2">
+          <p className="flex items-start gap-2 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 text-micro leading-6 text-muted-foreground lg:col-span-2">
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-teal-ink" />
             قواعد ثابتة: الأسرار تُكتب ولا تُقرأ (آخر 4 خانات فقط للعرض)، ومتغيرات البيئة تغلب الشاشة دائماً لبيئات الإنتاج،
             وكل حفظ وفحص موثق في سجل الأثر — ولا تسوية مالية إلا عبر webhook موقَّت أو تسجيل يدوي بصلاحية.

@@ -23,7 +23,7 @@ function When({ c }: { c: CohortOption }) {
   const until = untilLabelAr(c.startsAt);
   const days = daysLabelAr(c.daysOfWeek);
   return (
-    <span className="min-w-0 text-[11px] leading-5 text-muted-foreground">
+    <span className="min-w-0 text-micro leading-5 text-muted-foreground">
       <span className="font-bold text-foreground">{fmtDateAr(c.startsAt)}</span>
       {until && <span className="text-muted-foreground"> · {until}</span>}
       {days && <span className="text-muted-foreground"> · {days}{c.startTime ? ` ${c.startTime}` : ""}</span>}
@@ -49,7 +49,7 @@ export default function CohortPicker({
   /* لا شعبة = لا تاريخ يُختلق. الصفحة تقول ذلك ولا تعرض زرّا لا يعمل. */
   if (cohorts.length === 0) {
     return (
-      <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground">
+      <span className="inline-flex items-center gap-1.5 text-micro font-bold text-muted-foreground">
         <CalendarDays className="h-3.5 w-3.5 shrink-0" />
         يُعلن الموعد مع فتح الشعبة
       </span>

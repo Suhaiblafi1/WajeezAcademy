@@ -85,7 +85,7 @@ export default function DiagnosticQuality() {
         {counts && (
           <div className="mt-3 flex flex-wrap gap-2">
             {Object.entries(counts).map(([k, v]) => (
-              <span key={k} className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-[11px] text-muted-foreground">
+              <span key={k} className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-micro text-muted-foreground">
                 <span className="font-black text-foreground">{v}</span> {COUNT_AR[k] ?? k}
               </span>
             ))}
@@ -127,7 +127,7 @@ export default function DiagnosticQuality() {
             <Card key={r.id} className="px-4 py-3">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-bold">{r.changeRef}</p>
-                <p className="text-[11px] text-muted-foreground">{fmtDateTime(new Date(r.createdAt))}</p>
+                <p className="text-micro text-muted-foreground">{fmtDateTime(new Date(r.createdAt))}</p>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
                 تغيّرت {r.summary.changedCount} من {r.summary.totalPersonas} شخصية
@@ -148,29 +148,29 @@ export default function DiagnosticQuality() {
             <div className="mt-4 grid gap-3 sm:grid-cols-4">
               <Card className="text-center">
                 <p className="text-2xl font-black">{feedback.total}</p>
-                <p className="mt-1 text-[11px] text-muted-foreground">إجمالي الآراء</p>
+                <p className="mt-1 text-micro text-muted-foreground">إجمالي الآراء</p>
               </Card>
               <Card tone="positive" className="text-center">
                 <p className="text-2xl font-black text-emerald-300">{feedback.verdicts.yes}</p>
-                <p className="mt-1 text-[11px] text-muted-foreground">نعم — تصف وضعهم</p>
+                <p className="mt-1 text-micro text-muted-foreground">نعم — تصف وضعهم</p>
               </Card>
               <Card tone="warn" className="text-center">
                 <p className="text-2xl font-black text-gold-ink">{feedback.verdicts.somewhat}</p>
-                <p className="mt-1 text-[11px] text-muted-foreground">إلى حد ما</p>
+                <p className="mt-1 text-micro text-muted-foreground">إلى حد ما</p>
               </Card>
               <Card tone="danger" className="text-center">
                 <p className="text-2xl font-black text-red-300">{feedback.verdicts.no}</p>
-                <p className="mt-1 text-[11px] text-muted-foreground">لا</p>
+                <p className="mt-1 text-micro text-muted-foreground">لا</p>
               </Card>
             </div>
             <div className="mt-4 space-y-2">
               {feedback.recent.filter((r) => r.note).map((r) => (
                 <Card key={r.id} className="px-4 py-3">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="rounded-full border border-teal/40 bg-teal/10 px-2.5 py-0.5 text-[11px] font-bold text-teal-light-ink">
+                    <span className="rounded-full border border-teal/40 bg-teal/10 px-2.5 py-0.5 text-micro font-bold text-teal-light-ink">
                       {VERDICT_AR[r.verdict] ?? r.verdict}
                     </span>
-                    <p className="text-[11px] text-muted-foreground" dir="ltr">{r.pathwayId ?? "—"} · {fmtDateTime(new Date(r.createdAt))}</p>
+                    <p className="text-micro text-muted-foreground" dir="ltr">{r.pathwayId ?? "—"} · {fmtDateTime(new Date(r.createdAt))}</p>
                   </div>
                   <p className="mt-2 text-xs leading-relaxed text-foreground">{r.note}</p>
                 </Card>

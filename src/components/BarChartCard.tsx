@@ -89,7 +89,7 @@ export default function BarChartCard({
         </ol>
       )}
 
-      <p className="mt-5 text-[11px] leading-relaxed text-muted-foreground">{methodAr}</p>
+      <p className="mt-5 text-micro leading-relaxed text-muted-foreground">{methodAr}</p>
     </section>
   );
 }

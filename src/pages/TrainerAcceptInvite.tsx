@@ -74,7 +74,7 @@ export default function TrainerAcceptInvite() {
                   required value={confirm} onChange={(e) => setConfirm(e.target.value)}
                   className={inputCls} dir="ltr"
                 />
-                {confirm && password !== confirm && <p className="mt-1.5 text-[11px] text-red-300">كلمتا المرور غير متطابقتين</p>}
+                {confirm && password !== confirm && <p className="mt-1.5 text-micro text-red-300">كلمتا المرور غير متطابقتين</p>}
               </div>
               <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
                 <input type="checkbox" checked={showPw} onChange={(e) => setShowPw(e.target.checked)} className="h-4 w-4 accent-teal" />

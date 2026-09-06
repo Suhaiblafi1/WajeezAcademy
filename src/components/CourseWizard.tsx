@@ -81,7 +81,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
                 type="button"
                 disabled={i > step}
                 onClick={() => { if (i < step) setStep(i); }}
-                className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold ${
+                className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-micro font-bold ${
                   i < step ? "cursor-pointer" : "cursor-default"
                 } ${
                   now ? "border-gold bg-gold/15 text-gold-ink"
@@ -95,7 +95,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
           );
         })}
       </ol>
-      <p className="mb-4 text-[11px] text-muted-foreground">{COURSE_WIZARD_STEPS[step].hintAr}</p>
+      <p className="mb-4 text-micro text-muted-foreground">{COURSE_WIZARD_STEPS[step].hintAr}</p>
 
       {error && <p className="mb-4 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-200">{error}</p>}
 
@@ -121,7 +121,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
           {d.modules.map((m, i) => (
             <Inset key={i}>
               <div className="mb-2 flex items-center justify-between">
-                <span className="text-[11px] font-bold text-muted-foreground">الوحدة {i + 1}</span>
+                <span className="text-micro font-bold text-muted-foreground">الوحدة {i + 1}</span>
                 {d.modules.length > 1 && (
                   <button type="button" onClick={() => setD({ ...d, modules: d.modules.filter((_, j) => j !== i) })} className="cursor-pointer text-muted-foreground hover:text-red-300">
                     <Trash2 className="h-3.5 w-3.5" />
@@ -196,12 +196,12 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
       {key === "review" && (
         <div className="space-y-3 text-sm">
           <Card className="bg-paper/20">
-            <p className="font-black">{d.titleAr || "—"} <span dir="ltr" className="font-mono text-[11px] text-muted-foreground">({d.id})</span></p>
-            <p className="mt-1 text-[11px] text-muted-foreground">
+            <p className="font-black">{d.titleAr || "—"} <span dir="ltr" className="font-mono text-micro text-muted-foreground">({d.id})</span></p>
+            <p className="mt-1 text-micro text-muted-foreground">
               المسار: {pathways.find((p) => p.id === d.pathwayId)?.title ?? "—"} · {d.totalHours || 0} ساعة · {d.modules.length} وحدة · {d.skillIds.length} مهارة
             </p>
           </Card>
-          <p className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-[11px] leading-6 text-foreground">
+          <p className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-micro leading-6 text-foreground">
             تُنشأ الدورة مسودة، ثم تمرّ بسير الاعتماد المعتاد (مراجعة فاعتماد فنشر) من «النشر والإصدارات» — لا تُنشر من هنا.
           </p>
         </div>
@@ -210,7 +210,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
       {blockers.length > 0 && (
         <ul className="mt-4 space-y-1 rounded-xl border border-amber-400/30 bg-amber-400/5 px-4 py-3">
           {blockers.map((b) => (
-            <li key={b} className="flex items-start gap-2 text-[11px] leading-6 text-amber-300">
+            <li key={b} className="flex items-start gap-2 text-micro leading-6 text-amber-300">
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" /> {b}
             </li>
           ))}

@@ -102,7 +102,7 @@ export default function Reports() {
                 <p className="flex items-center gap-2 text-sm font-black">
                   <BarChart3 className={`h-4 w-4 ${selected === d.key ? "text-gold-ink" : "text-muted-foreground"}`} /> {d.titleAr}
                 </p>
-                <p className="mt-1 text-[11px] leading-5 text-muted-foreground">{d.methodAr}</p>
+                <p className="mt-1 text-micro leading-5 text-muted-foreground">{d.methodAr}</p>
               </button>
             ))}
           </div>
@@ -139,7 +139,7 @@ export default function Reports() {
 
             {result && (
               <Panel className="mt-4">
-                <h3 className="text-sm font-black">{result.titleAr} <span className="text-[11px] font-normal text-muted-foreground">— {result.rows.length} صف</span></h3>
+                <h3 className="text-sm font-black">{result.titleAr} <span className="text-micro font-normal text-muted-foreground">— {result.rows.length} صف</span></h3>
                 {result.rows.length === 0 ? (
                   <p className="mt-3 text-xs text-muted-foreground">لا صفوف ضمن الفلاتر الحالية.</p>
                 ) : (

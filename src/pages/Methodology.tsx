@@ -21,7 +21,7 @@ function RefCard({ id }: { id: string }) {
     <Card className="mt-4">
       <div className="flex flex-wrap items-center gap-2">
         <p className="text-sm font-black text-muted-foreground">{ref.name_ar}</p>
-        <span className="text-[11px] text-muted-foreground" dir="ltr">
+        <span className="text-micro text-muted-foreground" dir="ltr">
           {ref.name_en}
         </span>
       </div>

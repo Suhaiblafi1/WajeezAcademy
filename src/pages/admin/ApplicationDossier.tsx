@@ -88,7 +88,7 @@ function Row({ icon: Icon, label, children }: { icon: typeof UserRound; label: s
 function Block({ title, children }: { title: string; children: ReactNode }) {
   return (
     <Card as="section" className="bg-paper/20">
-      <h4 className="mb-3 text-[11px] font-black text-teal-light-ink">{title}</h4>
+      <h4 className="mb-3 text-micro font-black text-teal-light-ink">{title}</h4>
       <div className="space-y-3">{children}</div>
     </Card>
   )

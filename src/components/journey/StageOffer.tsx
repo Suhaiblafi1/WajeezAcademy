@@ -42,7 +42,7 @@ export default function StageOffer({
   return (
     <Panel as="section" className="sm:p-5">
       <h3 className="text-base font-black leading-snug">{stage.titleAr}</h3>
-      <p className="mt-0.5 text-[11px] text-muted-foreground">
+      <p className="mt-0.5 text-micro text-muted-foreground">
         {stage.hours > 0 && `${stage.hours} ساعة · `}
         {stage.weeks} {stage.weeks === 1 ? "أسبوع" : "أسابيع"}
         {stage.isGift && " · هديّتك في الخطّة"}
@@ -70,7 +70,7 @@ export default function StageOffer({
             )}
           </Card>
           {!stage.inPlan && (
-            <p className="mt-2.5 flex items-start gap-1.5 text-[11px] leading-5 text-muted-foreground">
+            <p className="mt-2.5 flex items-start gap-1.5 text-micro leading-5 text-muted-foreground">
               <Info className="mt-0.5 h-3 w-3 shrink-0" />
               <span>
                 هذه من دورات المسار ولم تُضِفها بعد. تفاصيلُها كاملةً وخصمُ بناء المسار في{" "}
@@ -84,7 +84,7 @@ export default function StageOffer({
         </>
       ) : stage.inPlan ? (
         <>
-          <p className="mt-4 flex items-start gap-2 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 text-[12px] leading-6 text-muted-foreground">
+          <p className="mt-4 flex items-start gap-2 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 text-xs leading-6 text-muted-foreground">
             <CalendarClock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
             <span>
               <span className="font-bold text-foreground">بانتظار شعبة.</span>{" "}
@@ -102,12 +102,12 @@ export default function StageOffer({
         </>
       ) : (
         <Card className="mt-4">
-          <p className="text-[12px] leading-6 text-muted-foreground">
+          <p className="text-xs leading-6 text-muted-foreground">
             لم تُفتح شعبةٌ لهذه الدورة الآن. صفحتُها العامّة تعرض تفاصيلَها كاملةً، ونُعلمك فور فتح أوّل شعبة.
           </p>
           <Link
             to={`/build/${stage.courseId}`}
-            className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-teal/50 px-4 py-2 text-[12px] font-black text-teal-light-ink transition hover:bg-teal/10"
+            className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-teal/50 px-4 py-2 text-xs font-black text-teal-light-ink transition hover:bg-teal/10"
           >
             <ShoppingCart className="h-3.5 w-3.5" /> افتح صفحة الدورة
           </Link>

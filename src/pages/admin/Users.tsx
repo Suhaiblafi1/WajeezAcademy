@@ -232,7 +232,7 @@ export default function Users() {
       {creating && canManage && (
         <Card tone="warn" className="mb-5">
           <h3 className="text-sm font-black text-gold-ink">حسابٌ جديد بدوره</h3>
-          <p className="mt-1 text-[11px] leading-6 text-muted-foreground">
+          <p className="mt-1 text-micro leading-6 text-muted-foreground">
             لا كلمةَ مرورٍ تُختار هنا: يصله بريدٌ يشرح دورَه وما يفتحه له، ويعيّن كلمتَه بنفسه من رابطٍ صالحٍ <b>سبعةَ أيّام</b>.
             ويبقى «مدعوّا» حتّى يدخل، فلا يُحسب فريقا عاملا قبل ذلك.
           </p>
@@ -277,8 +277,8 @@ export default function Users() {
           {/* دفعةٌ واحدةٌ لفريقٍ كامل — سطرٌ لكلّ شخص «بريد, اسم».
               تأهيلُ ستّةٍ كان ستَّ رحلاتٍ في النموذج نفسِه. */}
           <details className="mt-4 border-t border-white/10 pt-3">
-            <summary className="cursor-pointer text-[11px] font-bold text-gold-ink">أو ادعُ فريقا كاملا بدفعةٍ واحدة</summary>
-            <p className="mt-2 text-[11px] leading-6 text-muted-foreground">
+            <summary className="cursor-pointer text-micro font-bold text-gold-ink">أو ادعُ فريقا كاملا بدفعةٍ واحدة</summary>
+            <p className="mt-2 text-micro leading-6 text-muted-foreground">
               سطرٌ لكلّ شخص: <span dir="ltr" className="font-mono">name@example.com, الاسم الكامل</span> — بالدور المختار أعلاه.
               وما يفشل من الأسطر يُقال وحدَه، فلا تتوقّف الدفعةُ عند أوّل خطأ.
             </p>
@@ -350,7 +350,7 @@ export default function Users() {
             <Card key={u.id}>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="font-black">{u.displayName || "—"} <span className="mr-2 text-[11px] font-normal text-muted-foreground" dir="ltr">{u.email}</span></p>
+                  <p className="font-black">{u.displayName || "—"} <span className="mr-2 text-micro font-normal text-muted-foreground" dir="ltr">{u.email}</span></p>
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
                     {u.roles.map((r) => (
                       <span key={r.id} className="rounded-full border border-teal/40 px-2.5 py-0.5 text-micro font-bold text-teal-light-ink">{r.nameAr}</span>
@@ -456,18 +456,18 @@ export default function Users() {
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
                           <p className="text-sm font-black">صلاحيات {perms.user.displayName}</p>
-                          <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
+                          <p className="mt-0.5 text-micro leading-relaxed text-muted-foreground">
                             الدور حزمةٌ، وهذا استثناءٌ لشخصه: منحٌ زائدٌ عليه، أو منعٌ ينزع منه وحده. والمنع أعلى من الدور والمنح معا.
                           </p>
                           {/* لا تفويضَ في العلوّ: من لا يعلو رتبةَ صاحبه لا يمسّ شيئا — ويُقال قبل المحاولة */}
                           {perms.rank.actor <= perms.rank.target && (
-                            <p className="mt-2 rounded-xl border border-[#FABC05]/40 bg-[#FABC05]/10 px-3 py-2 text-[11px] font-bold leading-6 text-[#FABC05]">
+                            <p className="mt-2 rounded-xl border border-[#FABC05]/40 bg-[#FABC05]/10 px-3 py-2 text-micro font-bold leading-6 text-[#FABC05]">
                               لا تُدار إلّا صلاحياتُ من هو أقلّ منك رتبة — هذا الحساب في رتبتك أو فوقها.
                             </p>
                           )}
                         </div>
                         <div className="text-left">
-                          <p className="text-[11px] text-muted-foreground">صلاحيّاته الفعليّة</p>
+                          <p className="text-micro text-muted-foreground">صلاحيّاته الفعليّة</p>
                           <p className="text-lg font-black text-teal-light-ink">{perms.permissions.filter((p) => p.effective).length}</p>
                         </div>
                       </div>
@@ -494,7 +494,7 @@ export default function Users() {
                             }, {}),
                         ).map(([group, list]) => (
                           <div key={group}>
-                            <p className="mb-1.5 text-[11px] font-black text-muted-foreground">{GROUP_AR[group] ?? group}</p>
+                            <p className="mb-1.5 text-micro font-black text-muted-foreground">{GROUP_AR[group] ?? group}</p>
                             <div className="space-y-1.5">
                               {list.map((p) => (
                                 <div key={p.key} className={`flex flex-wrap items-center justify-between gap-2 rounded-xl border px-3 py-2 ${
@@ -538,7 +538,7 @@ export default function Users() {
                         ))}
                       </div>
 
-                      <p className="mt-3 border-t border-white/8 pt-3 text-[11px] leading-relaxed text-muted-foreground">
+                      <p className="mt-3 border-t border-white/8 pt-3 text-micro leading-relaxed text-muted-foreground">
                         كلّ منحٍ ومنعٍ يُقيَّد في سجلّ التدقيق باسمك وسببه، وتُبطَل جلسات صاحبه فورا — فلا يعمل بصلاحيةٍ نُزعت ولا ينتظر ليعمل بما مُنح.
                       </p>
                     </>
@@ -552,12 +552,12 @@ export default function Users() {
 
               {editing === u.id && (
                 <Inset className="mt-4">
-                  <p className="mb-2 text-[11px] font-bold text-muted-foreground">تعيين الأدوار — يستبدل القائمة كاملة:</p>
+                  <p className="mb-2 text-micro font-bold text-muted-foreground">تعيين الأدوار — يستبدل القائمة كاملة:</p>
                   <div className="flex flex-wrap gap-2">
                     {ALL_ROLES.map((r) => (
                       <button key={r} type="button"
                         onClick={() => setRolePick(rolePick.includes(r) ? rolePick.filter((x) => x !== r) : [...rolePick, r])}
-                        className={`cursor-pointer rounded-full border px-3 py-1 text-[11px] font-bold transition ${rolePick.includes(r) ? "border-gold bg-gold/10 text-gold-ink" : "border-white/15 text-muted-foreground hover:border-white/40"}`}>
+                        className={`cursor-pointer rounded-full border px-3 py-1 text-micro font-bold transition ${rolePick.includes(r) ? "border-gold bg-gold/10 text-gold-ink" : "border-white/15 text-muted-foreground hover:border-white/40"}`}>
                         {ROLE_NAMES_AR[r]}
                       </button>
                     ))}
@@ -565,7 +565,7 @@ export default function Users() {
                   {/* نزعُ «متعلّم» يُغلق بوابة تعلّم صاحب الحساب — ولا يظهر أثره
                       إلّا عنده لا هنا. فيُقال قبل الحفظ لا بعد الشكوى. */}
                   {u.roles.some((r) => r.id === "learner") && !rolePick.includes("learner") && (
-                    <p className="mt-3 flex items-start gap-2 rounded-xl border border-[#FABC05]/40 bg-[#FABC05]/10 px-3 py-2.5 text-[11px] font-bold leading-6 text-[#FABC05]">
+                    <p className="mt-3 flex items-start gap-2 rounded-xl border border-[#FABC05]/40 bg-[#FABC05]/10 px-3 py-2.5 text-micro font-bold leading-6 text-[#FABC05]">
                       <ShieldOff className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                       بنزع «متعلّم» تُغلق بوابة التعلّم عن هذا الحساب: لا شعبه ولا نواتجه
                       ولا شهاداته. وما اشتراه يبقى محفوظا ويعود بإعادة الدور.
