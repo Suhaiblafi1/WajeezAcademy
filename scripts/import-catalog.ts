@@ -10,7 +10,7 @@ const prisma = await getPrisma()
 const url = process.env.DATABASE_URL!
 
 /* سكربتُ النشر ينشر الهجرات في خطوةٍ سابقةٍ لهذه (`npx prisma migrate deploy`
-   في `scripts/deploy-cloudways.sh`)، فيمرّر هذا العلم. وإعادةُ نشرها هنا
+   في `deploy/deploy.sh`)، فيمرّر هذا العلم. وإعادةُ نشرها هنا
    عملٌ مكرَّرٌ بلا فائدة — وكانت على Vercel أسوأَ من ذلك: بناءان متزاحمان
    على القفل الاستشاريّ، وهو السباقُ الذي كُتب هذا التخطّي لتفاديه. */
 if (process.env.CATALOG_IMPORT_SKIP_MIGRATE === '1') {
