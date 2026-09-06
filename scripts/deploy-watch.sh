@@ -31,7 +31,7 @@
 #   crontab -e   ثمّ سطرٌ واحد:
 #     */5 * * * * /bin/bash /المسار/إلى/المستودَع/scripts/deploy-watch.sh
 #
-#   أو من لوحة Cloudways: Application ← Cron Job Management.
+#   والمستودَع على خادم الإنتاج في `/opt/wajeez` (راجع `deploy/README.md` §٢).
 #
 #   والسجلّ في `~/wajeez-deploy.log` (يُغيَّر بـWAJEEZ_DEPLOY_LOG).
 #
