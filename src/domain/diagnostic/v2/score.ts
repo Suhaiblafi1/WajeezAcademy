@@ -108,6 +108,8 @@ export function scoreEligiblePathways(
       pathwayId,
       total,
       measuredSkillCoverage: skills.measuredCoverage,
+      measurableSkillCoverage: skills.measurableCoverage,
+      hasDirectSkillEvidence: skills.measured.length > 0,
       gapSkillSlugs: skills.gap.map((g) => g.slug),
       masteredSkillSlugs: skills.mastered.map((m) => m.slug),
       unknownSkillSlugs: skills.unknown.map((u) => u.slug),

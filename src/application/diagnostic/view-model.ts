@@ -156,6 +156,10 @@ export function recommendationToDiagResult(
           }
         : null,
       confidence: rec.confidence,
+      /* موانعُ الدرجة العليا — تُعرض مع الدرجة لا تُترك للتخمين (البند ٣٤).
+         كانت تُحسب وتُسجَّل في الأثر ولا تبلغ الشاشةَ التي تعرض الدرجة. */
+      strong_blockers_ar:
+        (rec as { v2?: { confidence?: { strongBlockers_ar?: string[] } } }).v2?.confidence?.strongBlockers_ar ?? [],
       reasons_ar: rec.reasons_ar,
       change_makers_ar: rec.change_makers_ar,
       unavailable_skills: rec.unavailable_skills,

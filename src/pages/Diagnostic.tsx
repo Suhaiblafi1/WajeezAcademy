@@ -1629,6 +1629,7 @@ export default function Diagnostic() {
             reasons={result.reasons}
             confidence={result.resultJson.confidence as ConfidenceParts | undefined}
             bandAr={result.confidenceBand}
+            blockers={(result.resultJson.strong_blockers_ar as string[] | undefined) ?? []}
             changeMakers={(result.resultJson.change_makers_ar as string[] | undefined) ?? []}
             gapNote={composedFold.gapNote}
           />

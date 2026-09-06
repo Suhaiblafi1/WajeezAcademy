@@ -312,12 +312,15 @@ export function WhyThisPathway({
   reasons,
   confidence,
   bandAr,
+  blockers = [],
   changeMakers,
   gapNote,
 }: {
   reasons: string[];
   confidence: ConfidenceParts | undefined;
   bandAr: string | null;
+  /** لماذا لم تعلُ الدرجة — يُعرض مع الدرجة لا يُترك للتخمين */
+  blockers?: string[];
   changeMakers: string[];
   /** أثر معايرة الجوانب حين لا تستحق قائمة مستقلة — تفسير لا تكرار */
   gapNote?: string | null;
@@ -361,12 +364,43 @@ export function WhyThisPathway({
 
       {confidence && (
         <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4 md:p-5">
+          {/* ── الرقمُ شيءٌ والدرجةُ شيءٌ آخر ──
+
+              كانا يُطبعان في سطرٍ واحد: «٩٧٪ — أفضل تطابق حالي». فيقرأ
+              المتعلّمُ رقما عاليا وتحته عبارةٌ تنفيه، وقِيس أنّ **١٧٪ من
+              الجلسات** تعرض ٧٨٪ فأعلى تحت «ليس قويّا»، وأعلى ما رُصد ٩٧٫١٪.
+
+              وهما لا يتناقضان أصلا لأنّهما لا يقيسان الشيءَ نفسَه: الرقمُ
+              **قوّةُ الأدلة المجموعة** (خمسةُ مكوّناتٍ مفصّلةٌ تحته)، والدرجةُ
+              **صنفُ القرار** — وهي تُحجَب لمانعٍ واحدٍ بعينه مهما علا الرقم.
+
+              فصارا سطرين، **ومع الدرجةِ سببُها**: مانعٌ يُقرأ خيرٌ من تناقضٍ
+              يُخمَّن. */}
           <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
             <span className="text-sm font-black text-foreground">قوة أدلة هذه التوصية</span>
-            <span className="text-sm font-black text-teal-light-ink">
-              {total}٪{bandAr ? ` — ${bandAr}` : ""}
-            </span>
+            <span className="text-sm font-black text-teal-light-ink">{total}٪</span>
           </div>
+          {bandAr && (
+            <div className="mt-2 rounded-xl border border-white/10 bg-paper/30 px-3 py-2">
+              <p className="text-xs font-bold text-foreground">
+                صنفُ النتيجة: <span className="text-teal-light-ink">{bandAr}</span>
+              </p>
+              {blockers.length > 0 ? (
+                <ul className="mt-1.5 space-y-1">
+                  {blockers.map((b) => (
+                    <li key={b} className="flex items-start gap-1.5 text-[11px] leading-5 text-muted-foreground">
+                      <span aria-hidden="true" className="mt-2 h-1 w-1 shrink-0 rounded-full bg-gold-ink" />
+                      {b}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
+                  لا مانعَ قائم — قِسنا ما تسمح المنصّة بقياسه، والباقي يبقى مجهولا لا مفترَضا.
+                </p>
+              )}
+            </div>
+          )}
           <div className="mt-4 space-y-2 text-xs">
             {parts.map((p) => (
               <div key={p.label} className="flex items-center gap-2">

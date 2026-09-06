@@ -21,6 +21,7 @@ import {
 import { WEEKLY_LOAD_ORDER } from '../config'
 import type { FactBag } from '../types'
 import { pathwayDomainsV2, layersOfSkill, isDiagnosticSkillActive, functionDomainsV2 } from '../v2/data'
+import { resetFamilyIndex } from './skill-families'
 import type { DomainId } from '../v2/types'
 import { GOALS_V21, NEEDS_V21, type CareerStage } from './maps'
 import { planOf } from './data'
@@ -653,6 +654,9 @@ export function resetUniverseCache() {
    تترك الفضاء والمهارات المقيسة محسوبين على اللقطة السابقة. الاتجاه محفوظ —
    هذا الملف يستورد catalog لا العكس. */
 onCatalogInstalled(resetUniverseCache)
+/* وفهرسُ العائلات يُشتقّ منه أيضا — فيُبطَل معه، وإلّا عُوير كتالوجٌ جديدٌ
+   بفهرسٍ قديم (العيبُ نفسُه الموثَّقُ أعلاه). */
+onCatalogInstalled(resetFamilyIndex)
 
 /* ─── أدوات مساندة للمحرك ─── */
 

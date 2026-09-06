@@ -16,6 +16,8 @@ import type { FactBag } from '../types'
 import { DOMAIN_CONFIDENCE_MIN } from '../v2/domains'
 import { basePersonaCode } from '../v2/personas'
 import { TARGET_LEVEL } from '../v2/skills'
+import { resolveSkillLevels, evidenceCoverage } from './skill-families'
+import { measurableSkills } from './universe'
 import { layersOfSkill, isDiagnosticSkillActive, functionDomainsV2, domainLabelAr } from '../v2/data'
 import type { DecisionContext, DomainId, SkillState } from '../v2/types'
 import type { CareerStage } from './maps'
@@ -60,14 +62,31 @@ export const CATALOG_GAP_FIT_FLOOR = 0.35
 
 export interface EntitySkillAssessment {
   measuredCoverage: number
+  /** المقيسُ ممّا **يستطيع البنكُ قياسَه** — المقاسُ بوزنٍ كامل والمستدَلُّ بنصفه.
+      سقفُها المئة، وعليها وحدَها يُعاير مانعُ «التطابق القويّ». */
+  measurableCoverage: number
+  /** أبينَ مهاراتِ هذا الكيان مهارةٌ **قِيست مباشرةً**؟ */
+  hasDirectSkillEvidence: boolean
   gapScore: number | null
   gapSkillSlugs: string[]
   masteredSkillSlugs: string[]
   unknownSkillSlugs: string[]
 }
 
-/** تقييم مهارات كيان (قياسي أو مركب) على مجموعة مهاراته — المقاس فقط، المجهول مجهول */
-export function assessEntitySkills(entity: RecommendationEntity, skillStates: Map<string, SkillState>): EntitySkillAssessment {
+/* ═══════════ ما يُقاس، وما يُرجَّح، وما يبقى مجهولا ═══════════
+
+   `gap` و`mastered` و`measuredCoverage` تبقى **على المقاس مباشرةً وحدَه**:
+   هذه ادّعاءاتٌ عن المتعلّم تُعرض له وتدخل حسابَ الفجوة، وتقييمُه الذاتيَّ
+   لعائلةٍ ترجيحٌ لا يجوز أن يصير «فجوةً مقيسة».
+
+   والجديدةُ `measurableCoverage` تجيب سؤالا آخر: **هل استوفينا ما نملك؟**
+   وفيها يُحتسب المستدَلُّ بنصف وزنٍ — وهو رقمٌ موثَّقٌ في `skill-families`،
+   إعلانُ أنّ الترجيح لا يساوي القياس. */
+export function assessEntitySkills(
+  entity: RecommendationEntity,
+  skillStates: Map<string, SkillState>,
+  familyRatings: Record<string, number> = {},
+): EntitySkillAssessment {
   const required = entity.skill_slugs.filter((slug) => {
     const meta = layersOfSkill(slug)
     return isDiagnosticSkillActive(meta)
@@ -76,10 +95,12 @@ export function assessEntitySkills(entity: RecommendationEntity, skillStates: Ma
   const gap: string[] = []
   const mastered: string[] = []
   const unknown: string[] = []
+  const measuredSlugs = new Set<string>()
   for (const slug of required) {
     const st = skillStates.get(slug)
     if (st?.state === 'measured' && st.level !== undefined) {
       measured.push(st.level)
+      measuredSlugs.add(slug)
       if (st.level < 3) gap.push(slug)
       else if (st.level >= TARGET_LEVEL) mastered.push(slug)
     } else {
@@ -87,9 +108,24 @@ export function assessEntitySkills(entity: RecommendationEntity, skillStates: Ma
     }
   }
   const measuredCoverage = required.length === 0 ? 1 : measured.length / required.length
+
+  /* التغطيةُ على المسطرة التي نملكها */
+  const canMeasure = measurableSkills()
+  const measurableRequired = required.filter((slug) => canMeasure.has(slug))
+  const resolved = resolveSkillLevels(measurableRequired, skillStates, familyRatings)
+  const measurableCoverage = measurableRequired.length === 0 ? 1 : evidenceCoverage(resolved)
+
   const gapScore =
     measured.length === 0 ? null : measured.reduce((s, l) => s + Math.max(0, TARGET_LEVEL - l) / TARGET_LEVEL, 0) / measured.length
-  return { measuredCoverage, gapScore, gapSkillSlugs: gap, masteredSkillSlugs: mastered, unknownSkillSlugs: unknown }
+  return {
+    measuredCoverage,
+    measurableCoverage,
+    hasDirectSkillEvidence: measuredSlugs.size > 0,
+    gapScore,
+    gapSkillSlugs: gap,
+    masteredSkillSlugs: mastered,
+    unknownSkillSlugs: unknown,
+  }
 }
 
 /* ─── الأهلية الصارمة (Hard Eligibility) ─── */
@@ -421,7 +457,7 @@ export function compositeBurden(entity: RecommendationEntity): number {
 }
 
 export function scoreEntity(entity: RecommendationEntity, facts: FactBag, ctx: DecisionContext): EntityCandidate {
-  const skills = assessEntitySkills(entity, ctx.skillStates)
+  const skills = assessEntitySkills(entity, ctx.skillStates, ctx.familyRatings ?? {})
   const activeDomains = activeDomainsOf(facts, ctx.domains)
   const needDomainMatch = entity.domains.some((d) => activeDomains.includes(d))
 

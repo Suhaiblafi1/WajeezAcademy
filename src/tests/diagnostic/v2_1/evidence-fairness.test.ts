@@ -17,7 +17,9 @@ import { describe, expect, it } from 'vitest'
 import { createEngineV21, type RecommendationV21 } from '../../../domain/diagnostic/v2_1'
 import { Q, GOALS_V21, type CareerStage } from '../../../domain/diagnostic/v2_1/maps'
 import { recommendationUniverse, measurableSkills } from '../../../domain/diagnostic/v2_1/universe'
-import { compositeVictoryCheck, type CompetitionResult } from '../../../domain/diagnostic/v2_1/compete'
+import { assessEntitySkills, compositeVictoryCheck, type CompetitionResult } from '../../../domain/diagnostic/v2_1/compete'
+import { familyIndex } from '../../../domain/diagnostic/v2_1/skill-families'
+import type { SkillState } from '../../../domain/diagnostic/v2/types'
 import { questionPlanV21 } from '../../../domain/diagnostic/v2_1/data'
 
 /* ─── جسر الرحلات (نفس نمط recommendation-universe) ─── */
@@ -213,20 +215,25 @@ describe('Regression المرحلة 4 — عدالة الدليل المهاري
     expect(rec.confidence.total).toBeGreaterThan(0)
   })
 
-  it('٤ب) «قوية» لا تُمنح دون نصف المهارات مقيسة — ولو اتضح الهدف واتسع الهامش', () => {
-    /* كان هذا الاختبار يقفل «قوية» لهذه الوصفة، ويمر لسببٍ غير الذي يدّعيه:
-       اسمه «دليل مكتمل» بينما تغطيته المقيسة 10.5٪ فقط. ومرّ لأن مانع المهارات
-       كان مشروطا بضيق الهامش (separation < 0.533) وهامش هذه الوصفة 0.56 —
-       نجا بفارق 0.027 لا باستيفاء الشرط. وكان يناقض القاعدة رقم ٤ صراحة:
-       «لا تطابق قوي مع تغطية مهارات دون 50٪».
+  it('٤ب) «قوية بما قِسناه» تُمنح متى استُوفي ما نستطيع قياسَه — لا قبله', () => {
+    /* ═══ ما كان، ولمَ تغيّر ═══
 
-       ولما أُغلق باب الكيان بلا جمهور معلن (كان يملأ المقعد الثاني بلا حق)،
-       وصار المانع قاعدةً لا استثناء، انكشف التناقض. والقاعدة ٤ هي التي تبقى:
-       «تطابق قوي» ادّعاء معرفةٍ بالمتعلم، ولا يُقال لمن قِسنا عُشر مهاراته.
+       كان الشرط: نصفُ **كلّ** مهارات المسار مقيسٌ بدليل مباشر. وسجّلت جولةٌ
+       سابقة أنّ عدمَ بلوغه «وصفٌ صادق لحال القياس لا عيبٌ في المعايرة»،
+       وأنّ ما يفتحه «رفعُ التغطية لا تحريكُ العتبة».
 
-       فالنطاق الأعلى اليوم غير قابل للبلوغ عمليا — وهذا وصفٌ صادق لحال القياس
-       لا عيبٌ في المعايرة: تغطية القياس عند 4.9٪ من مهارات المقررات. يفتحه
-       رفعُ التغطية لا تحريكُ العتبة. */
+       والقياسُ يقول إنّ العتبةَ نفسَها غيرُ قابلةٍ للبلوغ **بنيويّا**: البنكُ
+       يقيس سبعا وعشرين مهارة، ومتوسّطُ ما يمكن قياسُه من مهارات المسار
+       الواحد **٢٠٪**، وأعلى مسارٍ لا يبلغ الخمسين ولو أجاب المتعلّمُ عن كلّ
+       سؤالٍ في المنصّة. فالخانةُ لم تكن صعبةً بل **ميّتة**: صفرٌ من عشرة
+       آلاف جلسة، والمانعُ يُطلَق في مئةٍ بالمئة منها.
+
+       فالمسطرةُ تغيّرت لا العتبةُ وحدَها: **ستّون بالمئة ممّا نستطيع قياسَه**،
+       **ومعها مهارةٌ مقيسةٌ مباشرةً على الأقلّ** — فلا يفتحها ترجيحٌ ذاتيّ.
+       **والعبارةُ تغيّرت معها**: «قوية بما قِسناه» لا «قوية»، فلا يُدَّعى
+       علمٌ بما لم يُقَس.
+
+       وهذا يعكس قرارا مسجَّلا في الشيفرة، ومرفوعٌ إلى صاحب المنصّة صراحةً. */
     const { rec } = runJourneyTraced('خريج-قوي', {
       stage: 'fresh_graduate',
       employment: 'لا أعمل حاليًا',
@@ -237,10 +244,45 @@ describe('Regression المرحلة 4 — عدالة الدليل المهاري
       skillLevel: 4,
     })
     expect(rec.primaryPathway?.pathwayId).toBe('PW-STU-002')
-    const conf = (rec as unknown as { v2?: { confidence: { skillEvidenceCoverage: number; strongBlockers_ar: string[] } } }).v2
-    expect(conf!.confidence.skillEvidenceCoverage).toBeLessThan(0.5)
-    expect(conf!.confidence.strongBlockers_ar).toContain('أغلب مهارات المسار المتصدر لم تُقس بدليل مباشر.')
-    expect(rec.confidence.band).toBe('good')
+    const conf = (rec as unknown as {
+      v2?: { confidence: { skillEvidenceCoverage: number; strongBlockers_ar: string[]; outputKind: string } }
+    }).v2!.confidence
+
+    /* الرقمُ المعروضُ يبقى على المسطرة الكاملة — لا يتضخّم بتغيير مقامه */
+    expect(conf.skillEvidenceCoverage, 'التغطيةُ المعروضةُ تضخّمت').toBeLessThan(0.5)
+    /* والدرجةُ تُمنح لأنّ ما يمكن قياسُه قِيس */
+    expect(conf.outputKind).toBe('strong_match')
+    expect(conf.strongBlockers_ar).toEqual([])
+    /* والعبارةُ تقول أساسَها — «قوية» وحدَها ادّعاءُ علمٍ بما لم يُقَس */
+    expect(rec.confidence.band_ar).toContain('بما قِسناه')
+  })
+
+  it('٤ج) ولا يفتحها ترجيحٌ ذاتيٌّ وحدَه — الاستدلالُ يرفع التغطية ولا يمنح المعرفة', () => {
+    /* الشرطُ الثاني: تقييمُ المتعلّم لعائلات مهاراته يرفع `measurableCoverage`
+       (بنصف وزنٍ موثَّق)، لكنّه **لا يفتح الدرجةَ العليا وحدَه** — «قويّ»
+       ادّعاءُ معرفةٍ، ومن قيّم نفسَه لم يُقَس. */
+    const measured = new Map<string, SkillState>()
+    const entity = recommendationUniverse().byId.get('PW-STU-002')!
+    const canMeasure = measurableSkills()
+    const required = entity.skill_slugs.filter((s) => canMeasure.has(s))
+    expect(required.length, 'المسارُ بلا مهارةٍ يمكن قياسُها — يُراجَع هذا الحارس').toBeGreaterThan(0)
+
+    /* ترجيحٌ كاملٌ بلا قياسٍ واحد */
+    const famIdx = familyIndex()
+    const ratings: Record<string, number> = {}
+    for (const slug of required) {
+      const fam = famIdx.familyOf.get(slug)
+      if (fam) ratings[fam] = 4
+    }
+    const inferredOnly = assessEntitySkills(entity, measured, ratings)
+    expect(inferredOnly.hasDirectSkillEvidence, 'ادُّعي دليلٌ مباشرٌ بلا قياس').toBe(false)
+
+    /* وقياسٌ واحدٌ يقلب الشرط */
+    measured.set(required[0], { slug: required[0], state: 'measured', level: 4 })
+    const withOne = assessEntitySkills(entity, measured, ratings)
+    expect(withOne.hasDirectSkillEvidence).toBe(true)
+    expect(withOne.measurableCoverage, 'القياسُ المباشر لا يزيد التغطية عن الترجيح')
+      .toBeGreaterThan(inferredOnly.measurableCoverage)
   })
 
   it('٥) سباق مريح + حاسمة غير مقيسة → فوز نظيف بلا وسم مستشار (لا إفراط إحالة)', () => {

@@ -114,6 +114,12 @@ export interface V2Candidate {
   total: number
   /** تغطية المهارات المقاسة من متطلبات المسار: measuredRequired/required — 0 إن لم يقس شيء */
   measuredSkillCoverage: number
+  /** المقيسُ ممّا **يستطيع البنكُ قياسَه** من مهارات المسار — سقفُها المئة.
+      عليها وحدَها يُعاير مانعُ «التطابق القويّ»: قياسٌ بمسطرةٍ نملكها. */
+  measurableSkillCoverage: number
+  /** هل بين المقيس مهارةٌ **مقيسةٌ مباشرةً** لا مستدَلّةٌ من عائلتها؟
+      شرطُ فتح الدرجة العليا: الترجيحُ يرفع التغطية ولا يفتح ادّعاءَ المعرفة. */
+  hasDirectSkillEvidence: boolean
   /** مهارات مقاسة دون المستوى المستهدف — مقاسة فقط، لا مفترضة */
   gapSkillSlugs: string[]
   masteredSkillSlugs: string[]
@@ -193,4 +199,11 @@ export interface DecisionContext {
   persona: PersonaResult
   domains: DomainAssessment
   skillStates: Map<string, SkillState>
+  /** تقييمُ المتعلّم لعائلات مهاراته — ترجيحٌ يُستدَلّ منه مستوى، لا قياس.
+
+      كان يصل إلى **موضعٍ واحدٍ**: تركيبُ قائمة الدورات. فيُقيّم المتعلّمُ
+      عائلاتِه فتتغيّر القائمةُ المعروضة، **ولا يتغيّر الترتيبُ ولا التغطيةُ
+      ولا الثقة** — وأُثبت ذلك بثمانِ مئةِ جلسةٍ بتقييمٍ كامل: معدّلُ المانع
+      بقي مئةً بالمئة. فصار في السياق ليبلغ حيث يُقرَّر. */
+  familyRatings?: Record<string, number>
 }
