@@ -873,7 +873,7 @@ export class TrainerReviewService {
     })
     const visible = assignments.filter((a) =>
       a.profile.publicVisibility && a.profile.isVerified && !a.profile.suspendedAt)
-    if (!visible.length) return { announced: false, messageAr: 'يُعلن المدرب عند اعتماد الشعبة', trainers: [] }
+    if (!visible.length) return { announced: false, messageAr: 'سيتم تعيين المدرب قريبا', trainers: [] }
     return {
       announced: true,
       trainers: visible.map((a) => ({ id: a.profile.id, name: a.profile.application.fullName, headline: a.profile.headline })),

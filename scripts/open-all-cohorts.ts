@@ -11,7 +11,10 @@
  *
  *   npx tsx scripts/open-all-cohorts.ts              يعرض ولا يكتب
  *   npx tsx scripts/open-all-cohorts.ts --apply      ينفّذ
- *   npx tsx scripts/open-all-cohorts.ts --weeks 8    يغيّر البعد الزمني
+ *   npx tsx scripts/open-all-cohorts.ts --weeks 8    يرفع أقلَّ مهلةٍ للتسجيل
+ *
+ * ومواعيدُ البدء موزّعةٌ على الفصل الأوّل (موجةٌ كلَّ أسبوع، ستّةُ مواعيدَ
+ * متناوبة) لا تاريخٌ واحدٌ للجميع — والتفصيل في الخدمة.
  */
 
 import { getPrisma } from '../server/db/client'
@@ -32,7 +35,7 @@ const main = async () => {
 
   for (const row of r.rows) {
     if (row.reason) console.log(`⏭  ${row.courseId} — ${row.reason}`)
-    else console.log(`${APPLY ? '✔' : '·'} ${row.courseId} — ${row.price} ${row.currency} · تبدأ ${r.startsAt.slice(0, 10)}`)
+    else console.log(`${APPLY ? '✔' : '·'} ${row.courseId} — ${row.price} ${row.currency} · تبدأ ${(row.startsAt ?? r.startsAt).slice(0, 10)}`)
   }
 
   console.log('')

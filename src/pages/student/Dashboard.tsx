@@ -330,7 +330,9 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
               <div key={r.id}>
                 <p className="truncate text-xs font-bold text-foreground">{r.cohort.course.versions[0]?.titleAr ?? r.cohort.title}</p>
                 <p className="mt-0.5 truncate text-micro text-muted-foreground">
-                  {r.cohort.trainers.length > 0 ? `المدرب: ${r.cohort.trainers.map((t) => t.profile.application.fullName).join("، ")}` : r.cohort.title}
+                  {/* الشعبُ تُفتح على الفصل الأوّل والمدرّبون يُسنَدون دفعةً
+                      واحدة، فبينهما فراغٌ يُقال ولا يُترك عنوانا مكرّرا. */}
+                  {r.cohort.trainers.length > 0 ? `المدرب: ${r.cohort.trainers.map((t) => t.profile.application.fullName).join("، ")}` : "سيتم تعيين المدرب قريبا"}
                 </p>
                 {r.courseProgress && (
                   <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/10">

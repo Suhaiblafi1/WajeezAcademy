@@ -116,17 +116,17 @@ describe('دورة حياة الشعبة', () => {
     expect(link.cohortId).toBe(far.id)
   })
 
-  it('4) الفتح مرفوض بقائمة النواقص قبل اكتمال الشروط الستة', async () => {
+  it('4) الفتح مرفوض بقائمة النواقص قبل اكتمال الشروط الخمسة', async () => {
     const empty = await cohorts.create(managerId, { courseId: COURSE, title: 'شعبة ناقصة الشروط' })
     const check = await cohorts.openChecklist(empty.id)
     expect(check.ready).toBe(false)
-    expect(check.missing.join(' ')).toContain('مدرب')
+    expect(check.missing.join(' ')).toContain('جدول')
     await expect(cohorts.open(empty.id, managerId)).rejects.toMatchObject({ code: 'open_blocked' })
   })
 
   it('5) بعد اكتمال الشروط يفتح ويصبح التسجيل متاحا', async () => {
-    /* شروط الفتح: دورة منشورة ✓ + مدرب مؤهل ✓ (خطوة 2) + جدول ✓ (خطوة 3)
-       + سعة + خطة تقديم + إعداد مالي */
+    /* شروط الفتح: دورة منشورة ✓ + جدول ✓ (خطوة 3) + سعة + خطة تقديم
+       + إعداد مالي. والمدرّبُ خارجَها — يُسنَد لاحقا. */
     await cohorts.update(managerId, cohortId, { capacity: 1, price: 500, currency: 'JOD', financialReady: true })
     await prisma.cohortDeliveryPlan.create({
       data: { cohortId, content: { note: 'خطة تقديم الشعبة' }, status: 'approved', createdBy: managerId },

@@ -153,7 +153,7 @@ describe('صلاحيات منظومة المدربين عبر HTTP', () => {
     /* دورة الدورة المعروضة بلا مدرب معتمد تعلن عبارة الانتظار */
     const c = await app.inject({ method: 'GET', url: '/api/courses/C-BIZ-101/trainer' })
     expect(c.json().announced).toBe(false)
-    expect(c.json().messageAr).toContain('يُعلن المدرب عند اعتماد الشعبة')
+    expect(c.json().messageAr).toContain('سيتم تعيين المدرب قريبا')
 
     const adminUser = await prisma.user.findUnique({ where: { email: 'perm-admin@test.local' } })
     await review.approvePublicVisibility(profileId, adminUser!.id)

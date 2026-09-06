@@ -22,6 +22,76 @@ export const DEFAULT_CAPACITY = 20
 /** أسابيعُ الجلسات المولَّدة مع الشعبة — تُحرَّر من بطاقتها بعدُ */
 export const DEFAULT_SESSION_WEEKS = 6
 
+/* ═════════ توزيعُ الفصل الأوّل ═════════
+
+   ٨١ دورةً لا تبدأ كلُّها في يومٍ واحد: مدرّبٌ واحدٌ لا يغطّيها، ومتعلّمٌ
+   يريد دورتين يجدهما في الساعة نفسِها، ولوحةُ «جدولي» تصير جدارا. فالفتحُ
+   واحدٌ (تُفتح كلُّها للتسجيل الآن) والبدءُ موزَّع على الفصل.
+
+   وثلاثةُ قراراتٍ في التوزيع، وكلُّها تُغيَّر يدويّا من بطاقة الشعبة:
+
+   ١) **الأسبقيّةُ لما يُدرَّس اليوم.** الدوراتُ التي اكتملت متونُها تبدأ في
+      الموجات الأولى، والتي تنتظر التأليفَ تبدأ بعدها — فيصير فارقُ الأسابيع
+      مهلةَ تأليفٍ لا وعدا مؤجَّلا. وداخل كلّ مجموعة: ترتيبُ المسار ثمّ الدورة.
+
+   ٢) **ستّةُ مواعيدَ تتناوب** (يومان في الأسبوع، ٦ أو ٨ مساءً بتوقيت عمّان،
+      من الأحد إلى الخميس). فما بدأ في الموجة نفسِها لا يتزاحم.
+
+   ٣) **جلستان لكلّ وحدة**: دورةُ أربعِ وحداتٍ أربعةُ أسابيع، وذاتُ الثماني
+      ثمانية. فالجدولُ يتبع الدورةَ لا رقما ثابتا.
+
+   وتاريخُ البدء لا يقع في الماضي ولا غدا: مبدأُ الفصل أو أسبوعان من اليوم،
+   أيّهما أبعد — كي يبقى للتسجيل والدفع متّسع. */
+
+/** مبدأُ الفصل الأوّل — أوّلُ أحدٍ من أكتوبر ٢٠٢٦ */
+export const SEMESTER_FIRST_DAY = '2026-10-04'
+/** أقلُّ مهلةٍ بين الفتح وأوّل جلسة — أسبوعان للتسجيل والدفع */
+const MIN_LEAD_DAYS = 14
+/** كم دورةً تبدأ في الأسبوع الواحد */
+const COURSES_PER_WAVE = 6
+/** جلستان لكلّ وحدة — والأسابيعُ تتبع عددَ الوحدات */
+const SESSIONS_PER_MODULE = 2
+
+/** المواعيدُ الستّةُ المتناوبة — يومان وساعةٌ لكلّ شعبة */
+const SLOTS: { daysOfWeek: string[]; startTime: string }[] = [
+  { daysOfWeek: ['sun', 'tue'], startTime: '18:00' },
+  { daysOfWeek: ['mon', 'wed'], startTime: '18:00' },
+  { daysOfWeek: ['tue', 'thu'], startTime: '18:00' },
+  { daysOfWeek: ['sun', 'wed'], startTime: '20:00' },
+  { daysOfWeek: ['mon', 'thu'], startTime: '20:00' },
+  { daysOfWeek: ['tue', 'thu'], startTime: '20:00' },
+]
+
+/** أوّلُ أحدٍ في أو بعد التاريخ المعطى، عند ٠٠:٠٠ عالميّا */
+function firstSunday(at: Date): Date {
+  const d = new Date(Date.UTC(at.getUTCFullYear(), at.getUTCMonth(), at.getUTCDate()))
+  d.setUTCDate(d.getUTCDate() + ((7 - d.getUTCDay()) % 7))
+  return d
+}
+
+/** مبدأُ الموجة الأولى: مبدأُ الفصل أو أسبوعان من اليوم، أيّهما أبعد */
+export function semesterAnchor(now: Date = new Date(), leadDays: number = MIN_LEAD_DAYS): Date {
+  const declared = new Date(`${SEMESTER_FIRST_DAY}T00:00:00Z`)
+  const earliest = new Date(now.getTime() + leadDays * 86_400_000)
+  return firstSunday(declared > earliest ? declared : earliest)
+}
+
+/** أسماءُ الأيّام عربيّةً — لخطّة التقديم التي يقرؤها المتعلّم */
+const DAY_AR: Record<string, string> = {
+  sun: 'الأحد', mon: 'الإثنين', tue: 'الثلاثاء', wed: 'الأربعاء',
+  thu: 'الخميس', fri: 'الجمعة', sat: 'السبت',
+}
+function dayNames(days: string[]): string {
+  return days.map((d) => DAY_AR[d] ?? d).join(' و')
+}
+/** ١٨:٠٠ ← «٦ مساءً» */
+function amman(hhmm: string): string {
+  const h = Number(hhmm.slice(0, 2))
+  const suffix = h >= 12 ? 'مساءً' : 'صباحا'
+  const twelve = h % 12 === 0 ? 12 : h % 12
+  return `${twelve} ${suffix}`
+}
+
 /** حالاتُ شعبةٍ تُعدّ «حيّة» فلا تُفتح لها أخرى */
 const LIVE = ['open', 'full', 'active']
 
@@ -36,14 +106,14 @@ const EXISTING = [...LIVE, 'draft']
 export interface OpenCohortsResult {
   applied: boolean
   publishedCourses: number
-  /** شعبٌ أُنشئت **وفُتحت** فعلا — استوفت شروط الفتح الستّة */
+  /** شعبٌ أُنشئت **وفُتحت** فعلا — استوفت شروط الفتح الخمسة */
   opened: number
   /** شعبٌ أُنشئت وبقيت مسوّدةً لأنّ شرطا نقص — والسببُ في صفّها */
   prepared: number
   alreadyLive: number
   skippedNoListPrice: number
   startsAt: string
-  rows: { courseId: string; titleAr: string; price: number; currency: string; reason?: string; blocked?: string[] }[]
+  rows: { courseId: string; titleAr: string; price: number; currency: string; startsAt?: string; reason?: string; blocked?: string[] }[]
 }
 
 export interface AlignPricesResult {
@@ -118,7 +188,7 @@ export async function notifyPlanWaiters(
  * ── ولماذا لم يعد يفتح كلَّ شيء ──
  *
  * كان يُنشئ الصفَّ بـ`status: 'open'` و`registrationOpen: true` **مباشرةً**،
- * فيتخطّى شروطَ الفتح الستّة كلَّها (`CohortService.openChecklist`). والنتيجةُ
+ * فيتخطّى شروطَ الفتح الخمسة كلَّها (`CohortService.openChecklist`). والنتيجةُ
  * أنّ زرّا واحدا يفتح للبيع **شعبا بلا مدرّبٍ ولا جدولٍ ولا خطّةِ تقديم** —
  * فيدفع متعلّمٌ ثمنَ مقعدٍ لا أحدَ يدرّس فيه ولا موعدَ له. وهو أسوأُ ما قد
  * يفعله زرٌّ في هذه المنصّة: لا يفشل، ولا يشتكي أحد، حتّى يأتي أوّلُ موعد.
@@ -128,14 +198,17 @@ export async function notifyPlanWaiters(
  * نفسَها التي يستدعيها الزرُّ المفرد. فما استوفى فُتح، وما نقصه شيءٌ بقي
  * مسوّدةً **ونقصُه مكتوبٌ في صفّه** لا مخفيّا.
  *
- * والباقي في الغالب مدرّب — وهو ما لا يُختلق: يُسنَد من شاشة «التأهيل
- * والإسناد».
+ * وبعد أن خرج المدرّبُ من شروط الفتح (`openChecklist`) صارت الخمسةُ الباقيةُ
+ * كلُّها ممّا يُوفّى هنا — فالمتوقَّع أن تُفتح كلُّها، ويبقى `prepared` لما
+ * يعجز عنه شيءٌ غيرُ متوقَّع فيُقال سببُه في صفّه.
  */
 export async function openAllCohorts(
   prisma: PrismaClient,
   opts: { apply: boolean; weeks?: number; capacity?: number; actorId?: string } = { apply: false },
 ): Promise<OpenCohortsResult> {
-  const weeks = Math.min(Math.max(opts.weeks ?? DEFAULT_WEEKS_AHEAD, 1), 52)
+  /* `weeks` صار مهلةَ التسجيل قبل أوّل جلسة لا موعدَ البدء: الموعدُ من
+     توزيع الفصل أعلاه، وهذا حدُّه الأدنى. */
+  const leadDays = opts.weeks === undefined ? MIN_LEAD_DAYS : Math.min(Math.max(opts.weeks, 1), 52) * 7
   const capacity = Math.min(Math.max(opts.capacity ?? DEFAULT_CAPACITY, 1), 500)
 
   const courses = await prisma.course.findMany({
@@ -143,18 +216,40 @@ export async function openAllCohorts(
     include: {
       versions: { orderBy: { version: 'desc' }, take: 1 },
       cohorts: { select: { id: true, status: true } },
+      modules: {
+        where: { status: 'published' },
+        select: { id: true, versions: { orderBy: { version: 'desc' }, take: 1, select: { bodyAr: true } } },
+      },
     },
     orderBy: { id: 'asc' },
   })
 
-  const startsAt = new Date(Date.now() + weeks * 7 * 86_400_000)
-  startsAt.setUTCHours(15, 0, 0, 0) /* ١٨:٠٠ بتوقيت عمّان */
+  /* ترتيبُ الموجات: ما اكتمل متنُه أوّلا، ثمّ الباقي على ترتيب معرّفه.
+     ومن لا وحدةَ له يُعدّ غيرَ مكتمل — لا يُقدَّم على من له متن. */
+  const readiness = new Map<string, { modules: number; authored: number }>()
+  for (const c of courses) {
+    const modules = c.modules.length
+    const authored = c.modules.filter((m) => (m.versions[0]?.bodyAr ?? '').trim().length > 0).length
+    readiness.set(c.id, { modules, authored })
+  }
+  const ordered = [...courses].sort((a, b) => {
+    const ra = readiness.get(a.id)!, rb = readiness.get(b.id)!
+    const fa = ra.modules > 0 && ra.authored === ra.modules ? 0 : 1
+    const fb = rb.modules > 0 && rb.authored === rb.modules ? 0 : 1
+    return fa - fb || a.id.localeCompare(b.id)
+  })
+
+  const anchor = semesterAnchor(new Date(), leadDays)
 
   const rows: OpenCohortsResult['rows'] = []
   let opened = 0, prepared = 0, alreadyLive = 0, skippedNoListPrice = 0
   const service = new CohortService(prisma)
 
-  for (const c of courses) {
+  /* موضعُ الدورة في التوزيع يُحسب على المُنشأ فعلا لا على القائمة كلِّها،
+     وإلّا تركت الدوراتُ التي لها شعبةٌ قائمةٌ ثقوبا في الجدول. */
+  let placed = 0
+
+  for (const c of ordered) {
     const exists = c.cohorts.some((h) => EXISTING.includes(h.status))
     if (exists) { alreadyLive++; continue }
     if (c.listPrice === null) {
@@ -165,7 +260,20 @@ export async function openAllCohorts(
     const titleAr = c.versions[0]?.titleAr ?? c.id
     const price = Number(c.listPrice)
     const currency = c.listCurrency ?? 'USD'
-    const row: OpenCohortsResult['rows'][number] = { courseId: c.id, titleAr, price, currency }
+
+    /* الموجةُ والموعد — وأسابيعُ الجلسات بعدد وحدات الدورة */
+    const wave = Math.floor(placed / COURSES_PER_WAVE)
+    const slot = SLOTS[placed % SLOTS.length]
+    placed++
+    const startsAt = new Date(anchor.getTime() + wave * 7 * 86_400_000)
+    const moduleCount = readiness.get(c.id)!.modules
+    const sessionWeeks = moduleCount > 0
+      ? Math.max(1, Math.ceil((moduleCount * SESSIONS_PER_MODULE) / slot.daysOfWeek.length))
+      : DEFAULT_SESSION_WEEKS
+
+    const row: OpenCohortsResult['rows'][number] = {
+      courseId: c.id, titleAr, price, currency, startsAt: startsAt.toISOString(),
+    }
     rows.push(row)
     if (!opts.apply) { opened++; continue }
 
@@ -173,20 +281,20 @@ export async function openAllCohorts(
       data: {
         /* مسوّدةٌ حتّى تستوفي شروطَها — والفتحُ أدناه بالبوّابة نفسِها */
         courseId: c.id, title: `${titleAr} — الدفعة الأولى`, status: 'draft', startsAt,
-        daysOfWeek: ['tue', 'thu'], startTime: '18:00', timezone: 'Asia/Amman',
+        daysOfWeek: slot.daysOfWeek, startTime: slot.startTime, timezone: 'Asia/Amman',
         capacity, price, currency, language: 'العربية', deliveryMode: 'remote',
         registrationOpen: false, financialReady: true,
       },
     })
 
-    /* جلساتٌ من نمط الشعبة، وخطّةُ تقديمٍ أساسيّة — شرطان من الستّة يُوفَّيان
+    /* جلساتٌ من نمط الشعبة، وخطّةُ تقديمٍ أساسيّة — شرطان من الخمسة يُوفَّيان
        هنا بلا اختلاق: النمطُ معلَنٌ في الصفّ نفسِه، والخطّةُ تصف ما يقع فعلا. */
     const actor = opts.actorId ?? null
     await service.generateSessions(actor, cohort.id, {
-      weeks: DEFAULT_SESSION_WEEKS, apply: true,
+      weeks: sessionWeeks, from: startsAt, apply: true,
     }).catch(() => undefined)
     await service.setDeliveryPlan(cohort.id, actor, {
-      notesAr: `تقديمٌ عن بُعد بجلساتٍ أسبوعيّةٍ يومَي الثلاثاء والخميس ٦ مساءً بتوقيت عمّان، ${DEFAULT_SESSION_WEEKS} أسابيع. خطّةٌ أساسيّةٌ أُنشئت مع الشعبة، وتُحرَّر من بطاقتها.`,
+      notesAr: `تقديمٌ عن بُعد عبر زوم، ${dayNames(slot.daysOfWeek)} الساعة ${amman(slot.startTime)} بتوقيت عمّان، ${sessionWeeks} أسابيع بجلستين أسبوعيّا. أوّلُ جلسةٍ ${startsAt.toISOString().slice(0, 10)}. المدرّبُ يُعيَّن قريبا، ويُعدَّل الجدولُ من بطاقة الشعبة بموافقة الإدارة.`,
       deliveryMode: 'remote',
     }).catch(() => undefined)
 
@@ -205,7 +313,7 @@ export async function openAllCohorts(
     await recordAudit(prisma, {
       actorId: opts.actorId ?? null, action: 'catalog.cohorts.open_all',
       entityType: 'catalog', entityId: 'all',
-      meta: { opened, prepared, alreadyLive, skippedNoListPrice, weeks, capacity },
+      meta: { opened, prepared, alreadyLive, skippedNoListPrice, leadDays, capacity, anchor: anchor.toISOString() },
     })
     /* من انتظر يُعلَم — **بما فُتح فعلا** لا بما هُيّئ.
        إشعارُ منتظرٍ بشعبةٍ مسوّدةٍ يرسله إلى صفحةٍ لا زرَّ شراءٍ فيها. */
@@ -214,7 +322,7 @@ export async function openAllCohorts(
 
   return {
     applied: opts.apply, publishedCourses: courses.length, opened, prepared, alreadyLive,
-    skippedNoListPrice, startsAt: startsAt.toISOString(), rows,
+    skippedNoListPrice, startsAt: anchor.toISOString(), rows,
   }
 }
 

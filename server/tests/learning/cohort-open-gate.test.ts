@@ -2,7 +2,7 @@
 
    ── ① خطّةُ التقديم: شرطٌ بلا باب ──
 
-   من شروط الفتح الستّة «خطّةُ تقديمٍ للشعبة». وصفوفُ `CohortDeliveryPlan`
+   من شروط الفتح الخمسة «خطّةُ تقديمٍ للشعبة». وصفوفُ `CohortDeliveryPlan`
    كانت تُكتب في **موضعٍ واحدٍ في المستودَع كلِّه**: نشرُ اقتراحِ تعديلٍ من
    مدرّبٍ بنطاق شعبة. فكلُّ شعبةٍ تُنشأ يدويّا عالقةٌ في المسوّدة أبدا — لا
    لعطبٍ في المنطق بل لأنّ الشرطَ لا سبيلَ إلى إيفائه.
@@ -10,7 +10,7 @@
    ── ② الزرُّ الجماعيُّ: بابٌ خلفيّ ──
 
    `openAllCohorts` كان يُنشئ الصفَّ بـ`status: 'open'` و`registrationOpen`
-   مباشرةً، فيتخطّى الشروطَ الستّة كلَّها. فزرٌّ واحدٌ يفتح للبيع **شعبا بلا
+   مباشرةً، فيتخطّى الشروطَ الخمسة كلَّها. فزرٌّ واحدٌ يفتح للبيع **شعبا بلا
    مدرّبٍ ولا جدولٍ ولا خطّة** — ويدفع متعلّمٌ ثمنَ مقعدٍ لا أحدَ يدرّس فيه.
    ولا يفشل شيءٌ ولا يشتكي أحدٌ حتّى يأتي أوّلُ موعد.
 
@@ -76,33 +76,46 @@ describe('خطّةُ التقديم — الشرطُ صار له باب', () => 
 })
 
 describe('الزرُّ الجماعيّ يمرّ بالبوّابة نفسِها', () => {
-  it('لا يفتح شعبةً ناقصةَ الشروط — ويقول ما نقصها', async () => {
+  /* ── ما تغيّر، ولماذا يُحرَس عكسُ ما كان يُحرَس ──
+
+     كان هذا الوصفُ يشترط ألّا تُفتح شعبةٌ بلا مدرّبٍ مؤهَّل. وقرارُ صاحب
+     الأكاديميّة أن تُفتح الشعبُ كلُّها الآن على الفصل الأوّل وأن يُسنَد
+     المدرّبون دفعةً واحدةً لاحقا — فخرج المدرّبُ من شروط الفتح.
+
+     والحراسةُ لا تُرفع بل تنتقل إلى ما بقي صوابا: أن تُفتح **بجدولٍ وسعرٍ
+     وخطّةٍ ومقعد**، فلا يُباع موعدٌ لا وجودَ له. */
+
+  it('يفتح الشعبَ كلَّها — كلٌّ بجدولها وخطّتها', async () => {
     const res = await openAllCohorts(prisma, { apply: true, actorId })
     expect(res.applied).toBe(true)
+    expect(res.opened, 'لم تُفتح شعبةٌ واحدة').toBeGreaterThan(0)
+    expect(res.prepared, `بقيت شعبٌ مسوّدةً: ${JSON.stringify(res.rows.filter((r) => r.blocked))}`).toBe(0)
 
-    /* كلُّ ما أنشأه هذا النداء: لا شعبةَ مفتوحةً بلا مدرّبٍ مؤهَّل */
     const opened = await prisma.cohort.findMany({
       where: { status: 'open' },
-      include: { trainers: true },
-    })
-    for (const c of opened) {
-      expect(c.trainers.length, `شعبةٌ مفتوحةٌ بلا مدرّب: ${c.title}`).toBeGreaterThan(0)
-    }
-
-    /* وما لم يُفتح يُقال سببُه لا يُخفى */
-    expect(res.prepared, 'لم تُهيَّأ شعبةٌ واحدة — الفحصُ لا يقيس شيئا').toBeGreaterThan(0)
-    const blocked = res.rows.filter((r) => r.blocked?.length)
-    expect(blocked.length).toBeGreaterThan(0)
-    expect(blocked[0].blocked!.join(' '), 'لم يُذكر نقصُ المدرّب').toContain('مدرب')
-  })
-
-  it('والمهيّأةُ تحمل جلساتِها وخطّتَها — فلا يبقى ناقصا إلّا ما لا يُختلق', async () => {
-    const c = await prisma.cohort.findFirstOrThrow({
-      where: { status: 'draft', title: { contains: 'الدفعة الأولى' } },
       include: { sessions: true, plans: true },
     })
-    expect(c.sessions.length, 'هُيّئت بلا جلسات — والنمطُ معلَنٌ في صفّها').toBeGreaterThan(0)
-    expect(c.plans.length, 'هُيّئت بلا خطّةِ تقديم').toBeGreaterThan(0)
-    expect(c.registrationOpen, 'مسوّدةٌ والتسجيلُ مفتوح').toBe(false)
+    for (const c of opened) {
+      expect(c.sessions.length, `شعبةٌ مفتوحةٌ بلا جلسات: ${c.title}`).toBeGreaterThan(0)
+      expect(c.plans.length, `شعبةٌ مفتوحةٌ بلا خطّةِ تقديم: ${c.title}`).toBeGreaterThan(0)
+      expect(c.price, `شعبةٌ مفتوحةٌ بلا سعر: ${c.title}`).not.toBeNull()
+      expect(c.registrationOpen, `شعبةٌ مفتوحةٌ والتسجيلُ مغلق: ${c.title}`).toBe(true)
+    }
+  })
+
+  it('ولا جلسةَ قبل موعد الشعبة — الجدولُ يبدأ حيث وُضعت في الفصل', async () => {
+    const opened = await prisma.cohort.findMany({
+      where: { status: 'open', title: { contains: 'الدفعة الأولى' } },
+      include: { sessions: { orderBy: { startsAt: 'asc' } } },
+    })
+    expect(opened.length).toBeGreaterThan(0)
+    for (const c of opened) {
+      expect(c.startsAt, `شعبةٌ بلا تاريخ بدء: ${c.title}`).not.toBeNull()
+      expect(c.sessions[0].startsAt.getTime(), `جلسةٌ قبل موعد شعبتها: ${c.title}`)
+        .toBeGreaterThanOrEqual(new Date().getTime())
+    }
+    /* والمواعيدُ موزّعةٌ لا مكوّمةٌ في يومٍ واحد */
+    const distinctStarts = new Set(opened.map((c) => c.startsAt!.toISOString().slice(0, 10)))
+    expect(distinctStarts.size, 'كلُّ الشعب تبدأ في اليوم نفسِه').toBeGreaterThan(1)
   })
 })
