@@ -33,10 +33,35 @@ export function normalizeAr(input: string): string {
     .trim()
 }
 
+/* ─────────── «أل» التعريف — تُوسَّع ولا تُحذف ───────────
+
+   المطابقةُ باحتواء النصّ تكفي في اتّجاهٍ واحد: من كتب «قيادة» يجد «القيادة»
+   لأنّها تحتويها. **والعكسُ يسقط**: من كتب «القيادة» لا يجد «قيادة الذات»
+   ولا «قيادة التغيير» — والفرقُ مقيسٌ على الكتالوج: **خمسُ دوراتٍ بدل واحدة**.
+
+   والحذفُ الأعمى للألف واللام يُفسد أكثرَ ممّا يُصلح: «التزام» ليست «ال» +
+   «تزام»، و«الكل» ليست «ال» + «كل».
+
+   فالكلمةُ تُجرَّب بأشكالها الثلاثة — كما كُتبت، وبلا «ال»، وبـ«ال» — ويكفي
+   أن يطابق أحدُها. توسعةٌ لا تُتلف شيئا: أسوأُ ما فيها مطابقةٌ زائدةٌ نادرة،
+   وأسوأُ ما في الحذف نتيجةٌ تضيع. */
+export function termVariantsAr(term: string): string[] {
+  const out = new Set([term])
+  if (term.startsWith('ال') && term.length > 3) out.add(term.slice(2))
+  else if (term.length > 1) out.add(`ال${term}`)
+  return [...out]
+}
+
 /** أتطابق كلُّ كلمةٍ من الاستعلام مع حقلٍ من الحقول؟ واستعلامٌ فارغ يطابق الكلّ */
 export function matchesQuery(query: string, fields: readonly (string | null | undefined)[]): boolean {
-  const terms = normalizeAr(query).split(' ').filter(Boolean)
+  return matchesTerms(normalizeAr(query).split(' ').filter(Boolean), fields)
+}
+
+/** المطابقةُ نفسُها بكلماتٍ مُطبَّعةٍ سلفا — لمن وسّع الاستعلامَ بمرادفاته */
+export function matchesTerms(
+  terms: readonly string[], fields: readonly (string | null | undefined)[],
+): boolean {
   if (terms.length === 0) return true
   const hay = fields.filter((f): f is string => Boolean(f)).map(normalizeAr)
-  return terms.every((t) => hay.some((h) => h.includes(t)))
+  return terms.every((t) => termVariantsAr(t).some((v) => hay.some((h) => h.includes(v))))
 }

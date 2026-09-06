@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { safeGet, safeRemove } from '@/services/safe-storage'
 import { Link } from 'react-router'
-import { Menu, User, X } from 'lucide-react'
+import PublicSearch from './PublicSearch'
+import { Menu, Search as SearchIcon, User, X } from 'lucide-react'
 import { CONTACT } from '@/data/stories'
 import { ECOSYSTEM_NOTE } from '@/data/siteContent'
 import ThemeToggle from '@/components/ThemeToggle'
@@ -75,6 +76,15 @@ function SiteNav() {
           )}
         </nav>
         <div className="flex items-center gap-3">
+          {/* بحثُ الزائر — كان لوحُ البحث محجوبا على الموظّفين وحدَهم */}
+          <button
+            onClick={() => window.dispatchEvent(new Event('wajeez:open-public-search'))}
+            aria-label="ابحث في المسارات والدورات"
+            title="ابحث (Ctrl+K)"
+            className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-white/12 text-muted-foreground transition hover:border-teal/50 hover:text-teal-light-ink"
+          >
+            <SearchIcon className="h-4 w-4" />
+          </button>
           <ThemeToggle />
           {userName ? (
             <Link to={portalHome} className="hidden items-center gap-2 rounded-xl border border-teal/40 bg-teal/10 px-4 py-2 text-sm font-semibold text-teal-light-ink transition hover:bg-teal/20 md:inline-flex">
@@ -134,6 +144,8 @@ function SiteNav() {
           </div>
         </nav>
       )}
+      {/* اللوحُ نفسُه — يُصيَّر مرّةً مع الترويسة فيُفتح من أيّ صفحةٍ عامّة */}
+      <PublicSearch />
     </header>
   )
 }

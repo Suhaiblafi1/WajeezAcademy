@@ -13,6 +13,15 @@ import { domainsOfPathway } from '@/domain/diagnostic/v2/data'
 export interface Pathway {
   id: string
   name: string
+  /** الاسمُ القصير — للبطاقات. العنوانُ الكامل يصلح للصفحة لا لبطاقةٍ في شبكة:
+      متوسّطُه ٤٥ حرفا، و١٦ من ٢٠ فيه نقطتان. والحقلُ مؤلَّفٌ لكلّ مسارٍ في
+      الكتالوج (`short_title`) ولم يكن يُعرض لأحد. */
+  shortName: string
+  /** لمن هذا المسار — نصُّ المؤلِّف (`audience`)، مؤلَّفٌ ولا يُعرض */
+  audience: string
+  /** **ولمن ليس** (`not_for`) — أصدقُ سطرٍ في الكتالوج، ولم يكن يُقرأ.
+      وقولُ «ليست لك إن…» يمنع شراءً خاطئا، والمنعُ خدمةٌ لا خسارة. */
+  notFor: string
   sector: 'B2C' | 'B2B' | 'B2G' | 'B2B2C'
   level: 'أساسي' | 'متوسط' | 'متقدم'
   durationWeeks: number
@@ -120,6 +129,10 @@ function buildPathways(raw: CoreCatalogRaw): Pathway[] {
   return raw.launch_pathways.map((p) => ({
     id: p.id,
     name: p.title,
+    /* والقصيرُ يرتدّ إلى الكامل إن غاب — لا بطاقةَ بلا اسم */
+    shortName: p.short_title?.trim() || p.title,
+    audience: p.audience ?? '',
+    notFor: p.not_for ?? '',
     sector: sectorOf(p.id),
     level: levelOf(p.level),
     durationWeeks: p.duration_weeks,

@@ -9,6 +9,9 @@ import SeoHead from '@/components/SeoHead'
 import CourseTitle from "@/components/CourseTitle";
 import { track } from '@/services/analytics'
 import { usePublishedContent } from '@/services/public-content'
+import { catalogRank, matchesCatalogQuery } from '@/application/catalog/catalog-search'
+import { resolveCatalogRefsAr } from '@/application/catalog/visitor-text'
+import { sortKeyAr } from '@/application/catalog/course-title'
 
 const LEVELS = ['الكل', 'أساسي', 'متوسط', 'متقدم'] as const
 /* البند ع-١: كانت هذه المجموعتان تُحسبان في نطاق الوحدة — لقطة وقت الاستيراد.
@@ -56,31 +59,54 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
   }
 
   const shownPathways = useMemo(() => {
+    const pathwayRank = (p: (typeof pathways)[number]) =>
+      catalogRank(q, [[p.name, p.shortName], [...p.coreSkills], [p.audience, p.transformation, p.output]])
     let list = pathways.filter(
       (p) =>
         (cat === 'الكل' || pathwayDomain(p.id) === cat) &&
         (level === 'الكل' || p.level === level) &&
-        (!q || p.name.includes(q) || p.coreSkills.some((s) => s.includes(q)))
+        /* الحقولُ كلُّها لا حقلان: الاسمُ القصيرُ والمهاراتُ **والجمهورُ
+           والتحوّلُ والمخرَج** — وكلُّها مؤلَّفةٌ في الكتالوج اليوم ولم يكن
+           يبحث فيها أحد. */
+        matchesCatalogQuery(q, [p.name, p.shortName, p.audience, p.transformation, p.output, ...p.coreSkills])
     )
     if (sort === 'shortest') list = [...list].sort((a, b) => a.durationWeeks - b.durationWeeks)
     else if (sort === 'longest') list = [...list].sort((a, b) => b.durationWeeks - a.durationWeeks)
-    else if (sort === 'name') list = [...list].sort((a, b) => a.name.localeCompare(b.name, 'ar'))
+    else if (sort === 'name') list = [...list].sort((a, b) => sortKeyAr(a.name).localeCompare(sortKeyAr(b.name), 'ar'))
     else list = [...list].sort((a, b) => Number(bestsellerIds.has(b.id)) - Number(bestsellerIds.has(a.id)))
+    /* والصلةُ تتقدّم على الترتيب المختار حين يكون هناك بحث: من كتب كلمةً
+       يريد ما يحملها في اسمه أوّلا، ثمّ يبقى ترتيبُه فاصلا بين المتساويين. */
+    if (q) list = [...list].sort((a, b) => pathwayRank(b) - pathwayRank(a))
     return list
   }, [q, cat, level, sort, bestsellerIds, catalogVersion])
 
   const shownCourses = useMemo(() => {
+    const courseRank = (c: (typeof courses)[number]) =>
+      catalogRank(q, [[c.name], [c.promise, ...c.skills], [c.audience, c.pathwayName]])
     let list = courses.filter(
       (c) =>
         (cat === 'الكل' || c.category === cat) &&
-        (!q || c.name.includes(q) || c.skill.includes(q) || c.pathwayName.includes(q))
+        matchesCatalogQuery(q, [c.name, c.promise, c.audience, c.pathwayName, ...c.skills])
     )
     if (sort === 'shortest') list = [...list].sort((a, b) => a.weeks - b.weeks)
     else if (sort === 'longest') list = [...list].sort((a, b) => b.weeks - a.weeks)
-    else if (sort === 'name') list = [...list].sort((a, b) => a.name.localeCompare(b.name, 'ar'))
+    /* ── والترتيبُ بالاسم يرتّب فعلا ──
+
+       ٨١ عنوانا من ٨١ يبدأ بكلمة «دورة» (وهي بقرار صاحب المنتج، تبقى)،
+       فكان «الترتيب: بالاسم» يضعها كلَّها تحت حرف الدال ثمّ يرتّب داخلها
+       بما لا يراه أحد. فالمفتاحُ يتجاوز السابقةَ المشتركة، والعنوانُ
+       المعروضُ لا يتغيّر. */
+    else if (sort === 'name') list = [...list].sort((a, b) => sortKeyAr(a.name).localeCompare(sortKeyAr(b.name), 'ar'))
     else list = [...list].sort((a, b) => Number(bestsellerCourseIds.has(b.id)) - Number(bestsellerCourseIds.has(a.id)))
+    if (q) list = [...list].sort((a, b) => courseRank(b) - courseRank(a))
     return list
   }, [q, cat, sort, bestsellerCourseIds, catalogVersion])
+
+  /* الأسماءُ القصيرةُ بمعرِّفاتها — لفكّ الإحالات الداخليّة في «ليس لك إن…» */
+  const nameById = useMemo(
+    () => new Map(pathways.map((p) => [p.id, p.shortName])),
+    [catalogVersion],
+  )
 
   const isPathways = kind === 'pathways'
   const count = isPathways ? shownPathways.length : shownCourses.length
@@ -209,8 +235,32 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
                 <span className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-muted-foreground">{p.level}</span>
                 <FavoriteButton pathwayId={p.id} pathwayName={p.name} className="-ms-1 ms-auto" />
               </div>
-              <h2 className="mt-4 text-lg font-bold leading-relaxed">{p.name}</h2>
+              {/* ── الاسمُ القصيرُ في البطاقة، والكاملُ في الصفحة ──
+
+                  العنوانُ الكاملُ مكتوبٌ بلغة التحوّل — «ريادة الأعمال: من
+                  الفكرة إلى أوّل عميلٍ يدفع» — وهو صحيحٌ ويُحافَظ عليه. لكنّه
+                  يصلح للصفحة لا لبطاقةٍ في شبكةٍ من أربع: متوسّطُه ٤٥ حرفا،
+                  و١٦ من ٢٠ فيه نقطتان. و`short_title` مؤلَّفٌ لكلّ مسارٍ في
+                  الكتالوج ولم يكن يُعرض لأحد. */}
+              <h2 className="mt-4 text-lg font-bold leading-relaxed">{p.shortName}</h2>
               <p className="mt-2 line-clamp-3 text-xs leading-6 text-muted-foreground">{p.transformation}</p>
+              {/* ── لمن هو، ولمن ليس ──
+
+                  الحقلان (`audience` و`not_for`) مؤلَّفان لكلّ مسارٍ من عشرين
+                  ولا يُعرض واحدٌ منهما. و«ليست لك إن…» أصدقُ سطرٍ في الكتالوج:
+                  يمنع شراءً خاطئا قبل وقوعه، **والمنعُ خدمةٌ لا خسارة** — ومن
+                  ردَّته الجملةُ عن مسارٍ لا يناسبه لم نخسره، بل كسبنا ثقتَه. */}
+              {p.audience && (
+                <p className="mt-3 line-clamp-2 text-[11px] leading-5 text-muted-foreground">
+                  <span className="font-bold text-foreground">لمن؟ </span>{p.audience}
+                </p>
+              )}
+              {p.notFor && (
+                <p className="mt-1.5 line-clamp-2 text-[11px] leading-5 text-muted-foreground">
+                  <span className="font-bold text-gold-ink">ليس لك إن: </span>
+                  {resolveCatalogRefsAr(p.notFor, (id) => nameById.get(id))}
+                </p>
+              )}
               {/* المخرَجُ الملموس مكانَ اسم مدرّبٍ لم يُعيَّن بعد — كان يظهر
                   مكرّرا بعدد مدرّبي المسار، فيملأ البطاقة بلا معلومة. */}
               <div className="mt-3 flex items-start gap-1.5 text-[11px] leading-5 text-teal-light-ink">

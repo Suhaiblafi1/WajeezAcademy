@@ -13,6 +13,7 @@ import { faqs } from '@/data/siteContent'
    وخمسَ مئةٍ وستّةً وستّين سطرا في عشرين قسما. */
 import SectionLabel from './home/SectionLabel'
 import { Bestsellers } from './home/Bestsellers'
+import { WhoAreYou } from './home/WhoAreYou'
 
 /** كم سؤالا يُعرض على الرئيسية — والباقي في `/p/faq` */
 const HOME_FAQ_COUNT = 4
@@ -1142,6 +1143,9 @@ export default function Home() {
       <Nav />
       <div>
         <Hero />
+        {/* «أين أنت الآن؟» قبل شرحِ الرحلة وقبل الكتالوج: أوّلُ سؤالٍ يُطرح
+            على الزائر يجب أن يكون عمّا يعرفه عن نفسه، لا عن تصنيفٍ لم يضعه. */}
+        <WhoAreYou />
         <DiagnosticTeaser />
         <HowItWorks />
         {/* شريط الثقة — أرقام وجيز مهارات الموثقة فقط، بعد شرح الرحلة (مصدر مركزي: data/trustMetrics) */}

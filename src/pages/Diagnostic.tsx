@@ -2,6 +2,7 @@ import { ACADEMY_EMAILS } from '@/data/academy-email'
 import { useEffect, useMemo, useRef, useState } from "react";
 import { safeGet, safeSet, safeRemove } from "@/services/safe-storage";
 import { Link, useNavigate, useSearchParams } from "react-router";
+import { STAGE_PARAM, STAGE_QUESTION_ID, resolveEntryStage } from "@/application/diagnostic/entry-stage";
 import {
   ArrowRight,
   ArrowLeft,
@@ -311,8 +312,37 @@ export default function Diagnostic() {
     const session = createAssessment();
     sessionRef.current = session;
     setHistory([]);
+    /* ── من أجاب في الرئيسيّة لا يُسأل ثانيةً ──
+
+       شبكةُ «أين أنت الآن؟» تسأل سؤالَ المحرّك الأوّلَ بعينه. فإن جاء الزائرُ
+       منها بجوابٍ يعرفه البنك، سُلِّم للمحرّك قبل أوّل سؤالٍ يُعرض — فيبدأ
+       التشخيصُ من الثاني. وما لا يعرفه البنكُ يُتجاهَل بلا ضجّة: يُبدأ من
+       أوّله كما لو لم يُمرَّر شيء. */
+    const seeded = resolveEntryStage(searchParams.get(STAGE_PARAM));
+    if (seeded) {
+      const step = session.submit(STAGE_QUESTION_ID, seeded.value, seeded.optionIds);
+      const asked = diagQuestionById(STAGE_QUESTION_ID);
+      if (asked) setHistory([asked]);
+      applyStep(step);
+      return;
+    }
     applyStep(session.next());
   };
+
+  /* ── من نقر مرحلتَه في الرئيسيّة يبدأ فورا ──
+
+     لو وقف عند شاشة «ابدأ» بعد نقرةٍ صريحةٍ على مرحلته لكان قد نقر ولم يقع
+     شيء — والشبكةُ تَعِد بأنّها بدايةٌ لا إعلان. والشرطُ ضيّق: مرحلةٌ يعرفها
+     البنك، ولا نتيجةٌ محفوظةٌ مفتوحة، ولا جلسةٌ جارية. */
+  const stageParam = searchParams.get(STAGE_PARAM);
+  useEffect(() => {
+    if (!stageParam || openSaved || sessionRef.current) return;
+    if (!resolveEntryStage(stageParam)) return;
+    void start();
+    /* مرّةً واحدة لكلّ عنوان: الاعتمادُ على `stageParam` وحدَه مقصود —
+       `start` تُعاد بناؤها كلَّ تصيير، وإدراجُها يُعيد البدءَ بلا نهاية. */
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stageParam]);
 
   /* استئناف تشخيص غير مكتمل — المحرك حتمي فيعيد نفس الأسئلة لنفس الإجابات */
   const doResume = async () => {
