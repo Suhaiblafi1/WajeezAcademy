@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { PATHWAY_ONLY_PERKS } from "@/data/pathway-perks";
 import { FIRST_TIME_PROMO } from "@/application/commerce/first-time-promo";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/legacy-button";
 import { Badge } from "@/components/ui/badge";
 import AuthGate from "@/components/AuthGate";
 import FavoriteButton from "@/components/FavoriteButton";
@@ -43,8 +43,6 @@ import { needsAdvisorReferral } from "@/application/plan/advisor-referral";
 import { DISCOUNT_CATEGORIES } from "@/application/commerce/discount-policy";
 import { CONTACT } from "@/data/stories";
 
-import { Panel, Card, Inset } from "@/components/ui/Surface";
-import Button from "@/components/ui/Button";
 /* اسم المستخدم — يدعم الصيغتين: JSON الجديدة والنص القديم، ويحترم انتهاء الجلسة */
 function readUserName(): string | null {
   const raw = safeGet("wajeez_user");
@@ -393,14 +391,14 @@ export default function PathwayPage() {
               يُقال في أيٍّ منهما ما لا نعرفه: الاعتمادُ واقعٌ (وإلّا لم يُعرض
               الصندوق)، والتعديلُ متاحٌ فعلا (`editable`)، والحفظُ فوريّ. */}
           {compositeCtx ? (
-            <Card tone="warn" className="story-fade mt-6 px-5 py-4">
+            <div className="story-fade mt-6 rounded-2xl border border-gold/40 bg-gold/[0.06] px-5 py-4">
               <p className="text-sm font-black text-gold-ink">خطتك المركبة: «{compositeCtx.name_ar}»</p>
               <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                 الدورات أدناه هي تركيبتك كما ركّبها تشخيصك من أكثر من مجال — تُدار وتُتابع عبر مسار «{pathway.name}» المضيف.
               </p>
-            </Card>
+            </div>
           ) : custom ? (
-            <Card tone="accent" className="story-fade mt-6 border-teal-light/40 px-5 py-4">
+            <div className="story-fade mt-6 rounded-2xl border border-teal-light/40 bg-teal/[0.07] px-5 py-4">
               <p className="flex items-center gap-1.5 text-sm font-black text-teal-light-ink">
                 <Sparkles className="h-4 w-4 shrink-0" />
                 خطّتك من مؤشر وجيز
@@ -409,7 +407,7 @@ export default function PathwayPage() {
                 هذه ليست صفحة كتالوج — بل الخطّة التي رشّحها تشخيصك واعتمدتها أنت.
                 والدورات أدناه لك: تستبدل وتحذف وتختار هديّتك، ويُحفظ التغيير فور وقوعه.
               </p>
-            </Card>
+            </div>
           ) : null}
 
           {/* «ماذا ستحقق من خلال خطتك؟» — رحلة الدورات بأكورديون، بلا قائمة مكررة فوقها */}
@@ -480,24 +478,24 @@ export default function PathwayPage() {
 
           {trainersOpen && (
             <Modal onClose={() => setTrainersOpen(false)} label={`الفريق التدريبي لمسار ${pathway.name}`} panelClassName="w-full max-w-md">
-              <Inset className="story-fade bg-surface">
+              <div className="story-fade rounded-3xl border border-white/10 bg-surface p-6">
                 <h3 className="flex items-center gap-2 text-base font-black">
                   <User className="h-4 w-4 text-teal-light-ink" />
                   الفريق التدريبي لهذا المسار
                 </h3>
                 <div className="mt-4 space-y-2">
                   {pathwayTrainers(pathway.id).map((t) => (
-                    <Inset key={t.role} className="flex items-center gap-2.5 px-3.5 py-2.5 text-sm">
+                    <div key={t.role} className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-sm">
                       <User className="h-4 w-4 shrink-0 text-teal-light-ink" />
                       <span className="font-bold text-foreground">{t.role}</span>
                       <span className="text-teal-light-ink">{t.name}</span>
-                    </Inset>
+                    </div>
                   ))}
                 </div>
                 <p className="mt-4 text-micro leading-relaxed text-muted-foreground">
                   كل دورة يقدمها المدرب الأعمق في موضوعها — وينسّقون معا حتى تتكامل المهارات لا أن تتكرر. تُعلن الأسماء بعد اعتماد الشعبة رسميا.
                 </p>
-              </Inset>
+              </div>
             </Modal>
           )}
 
@@ -524,7 +522,7 @@ export default function PathwayPage() {
 
               وموضعها فوق العرض مقصود: تُقرأ قبل السعر لا بعده. */}
           {advisorReferral && (
-            <Panel tone="warn" className="story-fade mt-10 md:p-8">
+            <div className="story-fade mt-10 rounded-3xl border border-gold/40 bg-gold/5 p-6 md:p-8">
               <h2 className="flex items-center gap-2 text-lg font-black text-gold-ink">
                 <UserCheck className="h-5 w-5 shrink-0" />
                 حالتك تستحق جلسة مع مستشار بشري
@@ -539,7 +537,7 @@ export default function PathwayPage() {
                 label="احجز جلسة مستشار عبر واتساب"
                 className="mt-4 inline-flex items-center gap-2 rounded-full border border-gold/60 px-5 py-2.5 text-sm font-bold text-gold-ink transition hover:bg-gold/10"
               />
-            </Panel>
+            </div>
           )}
 
           {/* مقارنة الشراء: دورة واحدة أم المسار كاملا — مكشوفة للجميع.
@@ -554,12 +552,12 @@ export default function PathwayPage() {
               كلّ بطاقة، وثلاثةَ عشرَ سطرا في المسار الكامل وحده — فيملأ
               الشاشةَ ولا يُقرأ منه القرار. والقرارُ سطران: كم تدفع، وماذا
               تأخذ. فالحشوُ نصفُه، والسعرُ أكبرُ ما فيه، وما عداه يخدمه. */}
-          <Panel id="buy" className="story-fade mt-10 scroll-mt-20 sm:p-5">
+          <div id="buy" className="story-fade mt-10 scroll-mt-20 rounded-3xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
               <h3 className="text-base font-black">اختر طريقة شرائك</h3>
               <p className="mt-1 text-micro text-muted-foreground">قارن بهدوء — والقرار لك.</p>
               <div className="mt-4 grid gap-3.5 md:grid-cols-2">
                 {/* دورة أو أكثر — اختيار حر */}
-                <Card className="flex flex-col bg-paper/25">
+                <div className="flex flex-col rounded-2xl border border-white/12 bg-paper/25 p-4">
                   <p className="text-[13px] font-black">دورة أو أكثر من المسار</p>
                   <p className="mt-0.5 text-micro text-muted-foreground">اختر ما تحتاجه — ورسومك مجموعها فقط</p>
                   <div className="mt-3 space-y-1.5">
@@ -606,7 +604,7 @@ export default function PathwayPage() {
 
                   {/* المجموع الحي والتلميح الذكي */}
                   {picked.length > 0 && (
-                    <Inset className="mt-3 flex items-end justify-between gap-2 px-3.5 py-2.5">
+                    <div className="mt-3 flex items-end justify-between gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2.5">
                       <span className="text-micro text-muted-foreground">
                         اخترت {picked.length === 1 ? "دورة" : `${picked.length} دورات`} من {buyableCourses.length}
                       </span>
@@ -615,7 +613,7 @@ export default function PathwayPage() {
                       ) : (
                         <span className="text-micro text-muted-foreground">يُعلن السعر مع الشعبة</span>
                       )}
-                    </Inset>
+                    </div>
                   )}
                   {picked.length > 0 && (
                     /* التنبيه بلا مقارنةٍ رقمية: المقارنة القديمة كانت بين رقمين
@@ -646,9 +644,9 @@ export default function PathwayPage() {
                         ? "اشترِ هذه الدورة"
                         : `اشترِ (${picked.length} دورات)`}
                   </Button>
-                </Card>
+                </div>
                 {/* المسار كاملا */}
-                <Card tone="warn" className="relative flex flex-col">
+                <div className="relative flex flex-col rounded-2xl border border-gold/35 bg-gold/[0.04] p-4">
                   <span className="absolute left-3 top-3.5 rounded-full bg-gold/20 px-2 py-0.5 text-micro font-black text-gold-ink">الأوفر</span>
                   <p className="text-[13px] font-black">المسار كاملا</p>
                   <p className="mt-0.5 text-micro text-muted-foreground">كل الدورات + التشخيص + المنظومة أدناه</p>
@@ -751,7 +749,7 @@ export default function PathwayPage() {
                       </li>
                     ))}
                   </ul>
-                </Card>
+                </div>
               </div>
 
               {/* كان النصّ «طلبك يُراجَع، ثم تصلك فاتورتك» — وهو ما كان يقع فعلا
@@ -769,10 +767,10 @@ export default function PathwayPage() {
                   </Link>
                 </p>
               )}
-          </Panel>
+          </div>
 
           {/* ما ستحصل عليه مع المسار — من عروض أكاديمية وجيز (نسخة مضغوطة: خانات أصغر ومتقاربة) */}
-          <Panel className="story-fade mt-8 md:p-6">
+          <div className="story-fade mt-8 rounded-3xl border border-white/10 bg-white/[0.03] p-5 md:p-6">
             <h2 className="flex items-center gap-2 text-lg font-black">
               <Sparkles className="h-5 w-5 text-[#FABC05]" />
               مع المسار لا تأخذ دورات فقط — تأخذ منظومة كاملة
@@ -786,7 +784,7 @@ export default function PathwayPage() {
                 { icon: RouteIcon, t: "خطة تقدم شخصية", d: "خطوة تالية واضحة بعد المسار — ماذا تتعلم بعده ولماذا" },
                 { icon: Briefcase, t: "منظومة ما بعد الإتمام", d: "لوحة وظائف وتوصيات مهنية وبرنامج سفراء وجيز" },
               ].map((b) => (
-                <Inset key={b.t} className="flex items-start gap-2.5 p-2.5">
+                <div key={b.t} className="flex items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.04] p-2.5">
                   <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-[#38A7B4]/15">
                     <b.icon className="h-3.5 w-3.5 text-[#6EC7D1]" />
                   </span>
@@ -794,10 +792,10 @@ export default function PathwayPage() {
                     <p className="text-[13px] font-black leading-snug">{b.t}</p>
                     <p className="mt-0.5 text-micro leading-relaxed text-muted-foreground">{b.d}</p>
                   </div>
-                </Inset>
+                </div>
               ))}
             </div>
-          </Panel>
+          </div>
 
           {/* حُذف زرّ «ابدأ الآن لنسختك القادمة».
 

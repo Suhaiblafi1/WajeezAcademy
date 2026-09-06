@@ -24,6 +24,7 @@ import { RefreshCw, ServerOff } from 'lucide-react'
 import { homePathForRoles, verifySession } from '../services/auth'
 
 
+import Button from "@/components/ui/Button";
 /** أدوار بوابة الإدارة — تطابق مصفوفة الصلاحيات في server/auth/permissions.ts */
 export const ADMIN_ROLES = [
   'super_admin',

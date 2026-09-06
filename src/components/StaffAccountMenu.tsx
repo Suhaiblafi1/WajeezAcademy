@@ -18,6 +18,7 @@ import { ChevronDown, LogOut, UserCog } from 'lucide-react'
 import { signOut } from '@/services/auth'
 import type { SessionUser } from '@/services/session'
 
+import { Inset } from "@/components/ui/Surface";
 /* أسماء الأدوار بالعربية — مطابقةٌ لما في `server/auth/permissions.ts` */
 const ROLE_NAMES_AR: Record<string, string> = {
   super_admin: 'مدير النظام الأعلى',

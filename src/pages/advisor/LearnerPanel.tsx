@@ -14,6 +14,7 @@ import { courseById } from '@/data/courses'
 import { pathwayById } from '@/data/pathways'
 import { fmtDateTimeAr } from '@/utils/format'
 
+import { Inset } from "@/components/ui/Surface";
 interface Snapshot {
   hasAccount: boolean
   enrollments: {

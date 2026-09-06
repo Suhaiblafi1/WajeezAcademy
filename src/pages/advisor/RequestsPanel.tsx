@@ -15,6 +15,8 @@ import { controlCls, areaCls, Field, FieldRow } from '@/components/FormKit'
 import { LEDGER_CURRENCY } from "@/application/commerce/presentment"
 import { toast, toastError } from '@/components/Toast'
 
+import { Card } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 /** أعلى نسبةٍ يطلبها مستشار — مطابقةٌ لما يفرضه الخادم */
 const MAX_PERCENT = 50
 

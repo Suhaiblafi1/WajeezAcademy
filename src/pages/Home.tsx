@@ -55,6 +55,7 @@ import { stories, partnerLogos, STORY_ILLUSTRATIVE_BADGE_AR } from '@/data/stori
 import StoryAvatar from '@/components/StoryAvatar'
 import RemoteImage from '@/components/RemoteImage'
 
+import { Card, Panel } from "@/components/ui/Surface";
 /* «مؤشر وجيز» — خمسة أسئلة وعي مستقلة: تُحفظ محليا على جهاز الزائر فقط ولا تغذي التشخيص،
    بل توقظ فيه السؤال الصحيح وتفتح شهيته لخدمتنا، ثم يبدأ التشخيص الكامل من الصفر باحترافية */
 const mirrorQuestions = [

@@ -14,6 +14,8 @@ import { controlCls, Field, OptionGrid } from '@/components/FormKit'
 import { courses, courseDomain } from '@/data/courses'
 import { usePublishedContent } from '@/services/public-content'
 
+import { Card } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 export default function TeachableCoursePicker({
   selected,
   onChange,

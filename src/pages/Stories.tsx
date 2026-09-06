@@ -7,6 +7,7 @@ import SiteShell from '@/components/SiteShell'
 import SeoHead from '@/components/SeoHead'
 import StoryAvatar from '@/components/StoryAvatar'
 
+import { Card, Inset } from "@/components/ui/Surface";
 /* ───────────────── صفحة القصص: كل قصص المتعلمين + آراء تطبيق وجيز ─────────────────
 
    ما يُعرض في القصّة ثلاثةٌ لا رابعَ لها: كيف دخل (تشخيصٌ أم مسارٌ جاهز)،

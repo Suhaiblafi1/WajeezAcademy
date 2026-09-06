@@ -18,6 +18,7 @@ import CourseTitle from "@/components/CourseTitle"
 import FavoriteButton from "@/components/FavoriteButton"
 import SectionLabel from "./SectionLabel"
 
+import { Card, Panel } from "@/components/ui/Surface";
 function CategoryFilter({
   counts, active, onChange, label,
 }: {

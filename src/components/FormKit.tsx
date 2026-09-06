@@ -18,6 +18,7 @@
 import type { ReactNode } from 'react'
 import { Check } from 'lucide-react'
 
+import { Card } from "@/components/ui/Surface";
 /** قياسٌ واحد لكلّ حقلِ سطرٍ واحد — إدخالا كان أو قائمة */
 export const controlCls =
   'h-12 w-full rounded-xl border border-white/15 bg-paper/30 px-4 text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none'

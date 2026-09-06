@@ -8,8 +8,6 @@ import {
 } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { fmtDateTime } from "@/application/text/format-ar";
-import { Panel, Card, Inset } from "@/components/ui/Surface";
-import Button from "@/components/ui/Button";
 import { LEDGER_CURRENCY } from "@/application/commerce/presentment"
 
 const inputCls = "w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-[#38A7B4] focus:outline-none";
@@ -38,13 +36,13 @@ function Card({ icon: Icon, title, children, defaultOpen = false }: {
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <Panel as="article">
+    <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
       <button onClick={() => setOpen(!open)} className="flex w-full cursor-pointer items-center justify-between text-sm font-black">
         <span className="flex items-center gap-2"><Icon className="h-4 w-4 text-teal-light-ink" /> {title}</span>
         <ChevronDown className={`h-4 w-4 text-muted-foreground transition ${open ? "rotate-180" : ""}`} />
       </button>
       {open && <div className="mt-4">{children}</div>}
-    </Panel>
+    </article>
   );
 }
 
@@ -113,21 +111,21 @@ export function TrainerDetailOps({ app, onAction }: {
       <Card icon={CalendarCheck} title={`المقابلات (${app.interviews.length})`}>
         <div className="space-y-3">
           {app.interviews.map((iv) => (
-            <Inset key={iv.id} className="text-xs">
+            <div key={iv.id} className="rounded-xl border border-white/10 bg-paper/20 p-3 text-xs">
               <p className="font-bold">{fmtDateTime(new Date(iv.scheduledAt))} — {iv.outcome ?? "بلا نتيجة"}</p>
               {!iv.outcome && (
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {([["passed", "ناجح"], ["hold", "تعليق"], ["failed", "راسب"]] as const).map(([o, label]) => (
-                    <Button tone="secondary" size="sm" key={o} onClick={() => void onAction(
+                    <button key={o} onClick={() => void onAction(
                       () => apiPost(`/api/admin/trainer-interviews/${iv.id}/outcome`, { outcome: o }),
                       "سُجلت نتيجة المقابلة",
-                    )} className="text-micro">
+                    )} className="cursor-pointer rounded-full border border-white/15 px-3 py-1 text-micro font-bold text-muted-foreground hover:border-teal/50 hover:text-teal-light-ink">
                       {label}
-                    </Button>
+                    </button>
                   ))}
                 </div>
               )}
-            </Inset>
+            </div>
           ))}
           <div className="grid gap-2 sm:grid-cols-3">
             <input type="datetime-local" value={interviewForm.scheduledAt}
@@ -139,15 +137,16 @@ export function TrainerDetailOps({ app, onAction }: {
             <input value={interviewForm.notes} onChange={(e) => setInterviewForm({ ...interviewForm, notes: e.target.value })}
               placeholder="ملاحظات (اختياري)" className={inputCls} />
           </div>
-          <Button tone="confirm" size="sm" disabled={!interviewForm.scheduledAt}
+          <button disabled={!interviewForm.scheduledAt}
             onClick={() => void onAction(
               () => apiPost(`/api/admin/trainer-applications/${app.id}/interviews`, {
                 scheduledAt: new Date(interviewForm.scheduledAt), mode: interviewForm.mode, notes: interviewForm.notes || undefined,
               }),
               "جُدولت المقابلة وانتقل الطلب",
-            )}>
+            )}
+            className="cursor-pointer rounded-full bg-teal px-4 py-1.5 text-xs font-black text-on-teal hover:bg-teal-light disabled:opacity-40">
             جدولة مقابلة
-          </Button>
+          </button>
         </div>
       </Card>
 
@@ -163,15 +162,16 @@ export function TrainerDetailOps({ app, onAction }: {
           ))}
         </div>
         <textarea value={demoNotes} onChange={(e) => setDemoNotes(e.target.value)} rows={2} placeholder="ملاحظات التقييم…" className={`${inputCls} mt-3`} />
-        <Button tone="confirm" size="sm" disabled={!demoComplete}
+        <button disabled={!demoComplete}
           onClick={() => void onAction(
             () => apiPost(`/api/admin/trainer-applications/${app.id}/demo-evaluations`, {
               scores: demoScores, decision: demoDecision, notes: demoNotes || undefined,
             }),
             "سُجل تقييم الديمو",
-          )} className="mt-3">
+          )}
+          className="mt-3 cursor-pointer rounded-full bg-teal px-4 py-1.5 text-xs font-black text-on-teal hover:bg-teal-light disabled:opacity-40">
           سجّل تقييم الديمو
-        </Button>
+        </button>
       </Card>
 
       {/* المراجع المهنية */}
@@ -183,21 +183,23 @@ export function TrainerDetailOps({ app, onAction }: {
           <input value={refForm.note} onChange={(e) => setRefForm({ ...refForm, note: e.target.value })} placeholder="ملاحظة" className={inputCls} />
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <Button tone="confirm" size="sm" disabled={refForm.name.trim().length < 2}
+          <button disabled={refForm.name.trim().length < 2}
             onClick={() => void onAction(
               () => apiPost(`/api/admin/trainer-applications/${app.id}/references`, {
                 name: refForm.name, relation: refForm.relation || undefined,
                 contact: refForm.contact || undefined, note: refForm.note || undefined,
               }),
               "أُضيف المرجع",
-            )}>
+            )}
+            className="cursor-pointer rounded-full bg-teal px-4 py-1.5 text-xs font-black text-on-teal hover:bg-teal-light disabled:opacity-40">
             أضف مرجعا
-          </Button>
+          </button>
           <input value={verifyId} onChange={(e) => setVerifyId(e.target.value)} placeholder="معرف مرجع للتوثيق (UUID)" dir="ltr" className={`${inputCls} max-w-56 font-mono`} />
-          <Button tone="secondary" size="sm" disabled={!verifyId.trim()}
-            onClick={() => void onAction(() => apiPost(`/api/admin/trainer-references/${verifyId.trim()}/verify`), "وُثق المرجع")}>
+          <button disabled={!verifyId.trim()}
+            onClick={() => void onAction(() => apiPost(`/api/admin/trainer-references/${verifyId.trim()}/verify`), "وُثق المرجع")}
+            className="cursor-pointer rounded-full border border-emerald-400/40 px-4 py-1.5 text-xs font-bold text-emerald-300 disabled:opacity-40">
             توثيق
-          </Button>
+          </button>
         </div>
       </Card>
 
@@ -206,20 +208,22 @@ export function TrainerDetailOps({ app, onAction }: {
         <div className="flex flex-wrap gap-2">
           <input value={contractForm.title} onChange={(e) => setContractForm({ ...contractForm, title: e.target.value })}
             placeholder="عنوان العقد — عقد تدريب 2026" className={`${inputCls} flex-1`} />
-          <Button tone="confirm" size="sm" disabled={contractForm.title.trim().length < 3}
+          <button disabled={contractForm.title.trim().length < 3}
             onClick={() => void onAction(async () => {
               const c = await apiPost<{ id: string }>(`/api/admin/trainer-applications/${app.id}/contracts`, { title: contractForm.title });
               setLastContractId(c.id);
-            }, "أُنشئ العقد وأُرسل — الطلب في contract_pending")}>
+            }, "أُنشئ العقد وأُرسل — الطلب في contract_pending")}
+            className="cursor-pointer rounded-full bg-teal px-4 py-1.5 text-xs font-black text-on-teal hover:bg-teal-light disabled:opacity-40">
             أنشئ وأرسل
-          </Button>
+          </button>
         </div>
         <div className="mt-2 flex flex-wrap gap-2">
           <input value={lastContractId} onChange={(e) => setLastContractId(e.target.value)} placeholder="معرف العقد (UUID)" dir="ltr" className={`${inputCls} flex-1 font-mono`} />
-          <Button tone="secondary" size="sm" disabled={!lastContractId.trim()}
-            onClick={() => void onAction(() => apiPost(`/api/admin/trainer-contracts/${lastContractId.trim()}/sign`), "سُجل التوقيع — الطلب في التهيئة")}>
+          <button disabled={!lastContractId.trim()}
+            onClick={() => void onAction(() => apiPost(`/api/admin/trainer-contracts/${lastContractId.trim()}/sign`), "سُجل التوقيع — الطلب في التهيئة")}
+            className="cursor-pointer rounded-full border border-emerald-400/40 px-4 py-1.5 text-xs font-bold text-emerald-300 disabled:opacity-40">
             سجّل التوقيع
-          </Button>
+          </button>
         </div>
       </Card>
 
@@ -345,13 +349,13 @@ export function TrainerChangeRequests() {
     <div className="space-y-3">
       {msg && <p className="rounded-xl border border-white/10 bg-white/[0.04] p-3 text-xs font-bold text-foreground" role="status">{msg}</p>}
       {rows.length === 0 && (
-        <Panel className="grid place-items-center py-16 text-center">
+        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center">
           <CheckCircle2 className="h-10 w-10 text-muted-foreground/50" />
           <p className="mt-3 text-sm text-muted-foreground">لا اقتراحات من المدربين بعد — تصل من بوابة المدرب ← «اقتراحاتي».</p>
-        </Panel>
+        </div>
       )}
       {rows.map((r) => (
-        <Card key={r.id}>
+        <div key={r.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm font-black">
@@ -373,18 +377,22 @@ export function TrainerChangeRequests() {
               <input value={comment[r.id] ?? ""} onChange={(e) => setComment({ ...comment, [r.id]: e.target.value })}
                 placeholder="تعليق المراجع (اختياري)" className={inputCls} />
               <div className="flex flex-wrap gap-2">
-                <Button tone="secondary" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/decision`, { action: "approve_for_cohort", comment: comment[r.id] || undefined }), "اعتُمد للشعبة")}>
+                <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/decision`, { action: "approve_for_cohort", comment: comment[r.id] || undefined }), "اعتُمد للشعبة")}
+                  className="flex cursor-pointer items-center gap-1 rounded-full border border-emerald-400/40 px-3 py-1.5 text-xs font-bold text-emerald-300 disabled:opacity-40">
                   <BadgeCheck className="h-3.5 w-3.5" /> اعتماد للشعبة
-                </Button>
-                <Button tone="secondary" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/decision`, { action: "approve_for_catalog", comment: comment[r.id] || undefined }), "اعتُمد للكتالوج")}>
+                </button>
+                <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/decision`, { action: "approve_for_catalog", comment: comment[r.id] || undefined }), "اعتُمد للكتالوج")}
+                  className="flex cursor-pointer items-center gap-1 rounded-full border border-emerald-400/40 px-3 py-1.5 text-xs font-bold text-emerald-300 disabled:opacity-40">
                   <BadgeCheck className="h-3.5 w-3.5" /> اعتماد للكتالوج
-                </Button>
-                <Button tone="secondary" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/decision`, { action: "request_changes", comment: comment[r.id] || "راجع التفاصيل" }), "طُلب تعديل")}>
+                </button>
+                <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/decision`, { action: "request_changes", comment: comment[r.id] || "راجع التفاصيل" }), "طُلب تعديل")}
+                  className="flex cursor-pointer items-center gap-1 rounded-full border border-amber-400/40 px-3 py-1.5 text-xs font-bold text-amber-300 disabled:opacity-40">
                   <XCircle className="h-3.5 w-3.5" /> طلب تعديل
-                </Button>
-                <Button tone="danger" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/decision`, { action: "reject", comment: comment[r.id] || "مرفوض" }), "رُفض الاقتراح")}>
+                </button>
+                <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/decision`, { action: "reject", comment: comment[r.id] || "مرفوض" }), "رُفض الاقتراح")}
+                  className="flex cursor-pointer items-center gap-1 rounded-full border border-red-500/40 px-3 py-1.5 text-xs font-bold text-red-400 disabled:opacity-40">
                   <XCircle className="h-3.5 w-3.5" /> رفض
-                </Button>
+                </button>
               </div>
             </div>
           )}
@@ -396,7 +404,7 @@ export function TrainerChangeRequests() {
               onPublish={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/publish`), "نُشر الاقتراح في نطاقه")}
             />
           )}
-        </Card>
+        </div>
       ))}
     </div>
   );
@@ -449,12 +457,15 @@ function ImpactGate({
       {needsImpact && (
         <>
           <div className="flex flex-wrap items-center gap-2">
-            <Button tone="confirm" type="button"
+            <button
+              type="button"
               disabled={running}
-              onClick={() => void run()} className="min-h-11 text-teal-light-ink">
+              onClick={() => void run()}
+              className="flex min-h-11 cursor-pointer items-center gap-1.5 rounded-full border border-teal/45 px-4 text-xs font-bold text-teal-light-ink transition hover:bg-teal/10 disabled:opacity-40"
+            >
               {running ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Activity className="h-3.5 w-3.5" />}
               {running ? "يشغّل ١٢ شخصية…" : "افحص الأثر التشخيصي"}
-            </Button>
+            </button>
             {checked === false && !verdict && (
               <span className="text-micro font-bold text-gold-ink">لم يُفحص بعد — النشر بنطاق الكتالوج موقوف حتى الفحص.</span>
             )}
@@ -493,10 +504,13 @@ function ImpactGate({
         </>
       )}
 
-      <Button tone="primary" disabled={busy || (needsImpact && checked !== true)}
-        onClick={onPublish} className="mt-2 min-h-11 disabled:cursor-not-allowed">
+      <button
+        disabled={busy || (needsImpact && checked !== true)}
+        onClick={onPublish}
+        className="mt-2 flex min-h-11 cursor-pointer items-center gap-1.5 rounded-full bg-gold px-4 text-xs font-black text-on-gold disabled:cursor-not-allowed disabled:opacity-40"
+      >
         <Globe className="h-3.5 w-3.5" /> نشر في النطاق
-      </Button>
+      </button>
     </div>
   );
 }
@@ -643,9 +657,10 @@ export function TrainerPayouts() {
           <input type="checkbox" checked={showCancelledZero} onChange={(e) => setShowCancelledZero(e.target.checked)} className="accent-gold" />
           إظهار الملغاة الصفرية
         </label>
-        <Button tone="primary" onClick={() => setShowCreate(!showCreate)}>
+        <button onClick={() => setShowCreate(!showCreate)}
+          className="flex cursor-pointer items-center gap-1.5 rounded-full bg-gold px-4 py-2 text-xs font-black text-on-gold">
           <Banknote className="h-3.5 w-3.5" /> كشف يدوي جديد
-        </Button>
+        </button>
         {msg && <span className="text-xs font-bold text-teal-light-ink" role="status">{msg}</span>}
       </div>
 
@@ -673,9 +688,10 @@ export function TrainerPayouts() {
               <option value="">عامة — كل الشعب</option>
               {allCohorts.map((c) => <option key={c.id} value={c.id}>خاصة: {c.title}</option>)}
             </select>
-            <Button tone="primary" size="sm" disabled={busy || !ruleForm.profileId || !(Number(ruleForm.rate) > 0)} onClick={saveRule}>
+            <button disabled={busy || !ruleForm.profileId || !(Number(ruleForm.rate) > 0)} onClick={saveRule}
+              className="cursor-pointer rounded-full bg-gold px-4 py-1.5 text-xs font-black text-on-gold disabled:opacity-40">
               حفظ القاعدة
-            </Button>
+            </button>
           </div>
           {ruleForm.profileId && (() => {
             const active = rules.find((r) => r.profileId === ruleForm.profileId && !r.effectiveTo
@@ -706,15 +722,17 @@ export function TrainerPayouts() {
               <option value="">اختر شعبة مكتملة…</option>
               {allCohorts.filter((c) => c.status === "completed").map((c) => <option key={c.id} value={c.id}>{c.title} — {c.courseTitle}</option>)}
             </select>
-            <Button tone="secondary" size="sm" disabled={busy || !genCohortId} onClick={() => void doPreview()} className="text-teal-light-ink">
+            <button disabled={busy || !genCohortId} onClick={() => void doPreview()}
+              className="cursor-pointer rounded-full border border-teal/40 px-4 py-1.5 text-xs font-bold text-teal-light-ink disabled:opacity-40">
               معاينة الحساب
-            </Button>
-            <Button tone="secondary" size="sm" disabled={busy} onClick={doBatch} className="text-gold-ink">
+            </button>
+            <button disabled={busy} onClick={doBatch}
+              className="cursor-pointer rounded-full border border-gold/40 px-4 py-1.5 text-xs font-bold text-gold-ink disabled:opacity-40">
               توليد كل المكتملة دفعة واحدة
-            </Button>
+            </button>
           </div>
           {preview && (
-            <Card tone="accent" className="space-y-2">
+            <div className="space-y-2 rounded-2xl border border-teal/25 bg-teal/5 p-4">
               <p className="text-xs font-black">
                 {preview.profile.fullName} · قاعدة «{RULE_TYPE_AR[preview.rule.type]}»
                 {preview.rule.scope !== "general" ? " (مخصصة لهذه الشعبة/الدورة)" : ""} بمعدل <span dir="ltr" className="font-mono">{preview.rule.rate}</span> {preview.rule.currency}
@@ -730,19 +748,20 @@ export function TrainerPayouts() {
               </ul>
               <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-2">
                 <p className="text-sm font-black">الإجمالي: <span dir="ltr" className="font-mono">{preview.total.toLocaleString("en-US", { maximumFractionDigits: 2 })}</span> {preview.rule.currency}</p>
-                <Button tone="ghost" size="sm" disabled={busy || preview.total <= 0} onClick={doGenerate} className="bg-emerald-500 text-white">
+                <button disabled={busy || preview.total <= 0} onClick={doGenerate}
+                  className="cursor-pointer rounded-full bg-emerald-500 px-4 py-1.5 text-xs font-black text-white disabled:opacity-40">
                   توليد الكشف — بانتظار الاعتماد
-                </Button>
+                </button>
               </div>
-            </Card>
+            </div>
           )}
           {batchResult && (
-            <Card className="space-y-1 bg-paper/20 text-micro leading-6">
+            <div className="space-y-1 rounded-2xl border border-white/10 bg-paper/20 p-4 text-micro leading-6">
               <p className="font-black text-emerald-300">وُلّد {batchResult.generated.length} كشفاً</p>
               {batchResult.skipped.map((s, i) => (
                 <p key={i} className="text-muted-foreground">تُركت «{s.title}»: {s.reason}</p>
               ))}
-            </Card>
+            </div>
           )}
           <p className="text-micro leading-5 text-muted-foreground">
             اكتمال أي شعبة يولّد كشف مدربها تلقائياً إن كانت له قاعدة سارية — هذه الأدوات للتوليد اليدوي عند الحاجة،
@@ -752,7 +771,7 @@ export function TrainerPayouts() {
       </Card>
 
       {showCreate && (
-        <Panel tone="warn" className="space-y-3">
+        <div className="space-y-3 rounded-3xl border border-gold/25 bg-gold/5 p-5">
           <p className="text-sm font-black">كشف مستحقات جديد <span className="text-micro font-bold text-muted-foreground">— يولد بحالة «بانتظار الاعتماد»</span></p>
           <div className="flex flex-wrap gap-2">
             <select value={form.profileId} onChange={(e) => setForm({ ...form, profileId: e.target.value })} className={`${selectCls} flex-1`}>
@@ -782,15 +801,17 @@ export function TrainerPayouts() {
             </div>
           ))}
           <div className="flex flex-wrap items-center gap-2">
-            <Button tone="secondary" size="sm" onClick={() => setItems([...items, { description: "", amount: "", sourceRef: "" }])}>
+            <button onClick={() => setItems([...items, { description: "", amount: "", sourceRef: "" }])}
+              className="cursor-pointer rounded-full border border-white/15 px-3 py-1.5 text-micro font-bold text-muted-foreground hover:border-white/40">
               + بند آخر
-            </Button>
-            <Button tone="primary" size="sm" disabled={busy || !form.profileId || !/^\d{4}-(0[1-9]|1[0-2])$/.test(form.period) || items.some((i) => i.description.trim().length < 3 || !(Number(i.amount) > 0))}
-              onClick={create}>
+            </button>
+            <button disabled={busy || !form.profileId || !/^\d{4}-(0[1-9]|1[0-2])$/.test(form.period) || items.some((i) => i.description.trim().length < 3 || !(Number(i.amount) > 0))}
+              onClick={create}
+              className="cursor-pointer rounded-full bg-gold px-5 py-1.5 text-xs font-black text-on-gold disabled:opacity-40">
               إنشاء الكشف
-            </Button>
+            </button>
           </div>
-        </Panel>
+        </div>
       )}
 
       {(() => {
@@ -804,13 +825,13 @@ export function TrainerPayouts() {
               </p>
             )}
             {visibleRows.length === 0 && (
-              <Panel className="grid place-items-center py-16 text-center">
+              <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center">
                 <Banknote className="h-10 w-10 text-muted-foreground/50" />
                 <p className="mt-3 text-sm text-muted-foreground">لا كشوف بهذه الحالة — أنشئ أول كشف من زر «كشف جديد».</p>
-              </Panel>
+              </div>
             )}
             {visibleRows.map((p) => (
-        <Card key={p.id}>
+        <div key={p.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm font-black">
@@ -835,24 +856,27 @@ export function TrainerPayouts() {
           {(p.status === "pending" || p.status === "approved") && (
             <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/8 pt-3">
               {p.status === "pending" && (
-                <Button tone="secondary" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-payouts/${p.id}/approve`), "اعتُمد الكشف")}>
+                <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-payouts/${p.id}/approve`), "اعتُمد الكشف")}
+                  className="flex cursor-pointer items-center gap-1 rounded-full border border-emerald-400/40 px-3 py-1.5 text-xs font-bold text-emerald-300 disabled:opacity-40">
                   <BadgeCheck className="h-3.5 w-3.5" /> اعتماد
-                </Button>
+                </button>
               )}
               {p.status === "approved" && (
-                <Button tone="ghost" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-payouts/${p.id}/pay`), "سُجل الصرف")} className="bg-emerald-500 text-white">
+                <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-payouts/${p.id}/pay`), "سُجل الصرف")}
+                  className="flex cursor-pointer items-center gap-1 rounded-full bg-emerald-500 px-3 py-1.5 text-xs font-black text-white disabled:opacity-40">
                   <CheckCircle2 className="h-3.5 w-3.5" /> تأكيد الصرف
-                </Button>
+                </button>
               )}
               <input value={cancelReason[p.id] ?? ""} onChange={(e) => setCancelReason({ ...cancelReason, [p.id]: e.target.value })}
                 placeholder="سبب الإلغاء…" className={`${inputCls} max-w-48`} />
-              <Button tone="danger" size="sm" disabled={busy || (cancelReason[p.id] ?? "").trim().length < 5}
-                onClick={() => act(() => apiPost(`/api/admin/trainer-payouts/${p.id}/cancel`, { reason: cancelReason[p.id] }), "أُلغي الكشف")}>
+              <button disabled={busy || (cancelReason[p.id] ?? "").trim().length < 5}
+                onClick={() => act(() => apiPost(`/api/admin/trainer-payouts/${p.id}/cancel`, { reason: cancelReason[p.id] }), "أُلغي الكشف")}
+                className="flex cursor-pointer items-center gap-1 rounded-full border border-red-500/40 px-3 py-1.5 text-xs font-bold text-red-400 disabled:opacity-40">
                 <XCircle className="h-3.5 w-3.5" /> إلغاء
-              </Button>
+              </button>
             </div>
           )}
-        </Card>
+        </div>
             ))}
           </>
         );

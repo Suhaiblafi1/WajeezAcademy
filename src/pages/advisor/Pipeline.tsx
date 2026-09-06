@@ -22,6 +22,8 @@ import { AlertTriangle, CalendarClock } from 'lucide-react'
    تبديل المظهر. */
 import { CLOSED_STAGES, isOverdue, sinceAr, STAGES, type PipelineCase } from '@/application/advisor/pipeline'
 
+import { Card } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 export default function Pipeline({
   cases,
   onOpen,

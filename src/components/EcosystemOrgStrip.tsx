@@ -1,5 +1,6 @@
 import { displayedEcosystemOrgs } from '@/data/ecosystemOrganizations'
 
+import { Inset } from "@/components/ui/Surface";
 /* شريط «مؤسسات وثقت بمنظومة وجيز» — إثبات اجتماعي مؤسسي هادئ.
    - المصدر المركزي الوحيد: data/ecosystemOrganizations (لا نسخ في الصفحات).
    - لا marquee ولا autoscroll — شبكة ثابتة تلتف بشكل طبيعي على الجوال.

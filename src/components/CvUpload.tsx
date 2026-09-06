@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { FileUp, CheckCircle2, Trash2, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/Surface";
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/legacy-button";
 import {
   CV_CONSENT_TEXT_AR,
   deleteCv,
@@ -86,7 +84,7 @@ export default function CvUpload({
 
   if (saved) {
     return (
-      <Card tone="accent">
+      <div className="rounded-2xl border border-teal/40 bg-teal/[0.07] p-4">
         <p className="flex items-start gap-2.5 text-sm font-bold leading-relaxed text-teal-light-ink">
           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
           تم استلام سيرتك، وسيتمكن المستشار من مراجعتها عند التواصل معك.
@@ -102,7 +100,7 @@ export default function CvUpload({
           <Trash2 className="h-3.5 w-3.5" />
           احذف سيرتي قبل مراجعتها
         </button>
-      </Card>
+      </div>
     );
   }
 

@@ -7,6 +7,7 @@ import { apiGet } from '@/services/api'
 import SiteShell from '@/components/SiteShell'
 import SeoHead from '@/components/SeoHead'
 
+import { Panel } from "@/components/ui/Surface";
 interface PublicTrainer {
   id: string; name: string; headline: string | null; bio: string | null;
   country: string | null; specialties: string[]; assignedCourseIds: string[];

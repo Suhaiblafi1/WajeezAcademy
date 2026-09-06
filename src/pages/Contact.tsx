@@ -9,6 +9,7 @@ import SiteShell from '@/components/SiteShell'
 import SeoHead from '@/components/SeoHead'
 import { track } from '@/services/analytics'
 
+import { Card, Inset, Panel } from "@/components/ui/Surface";
 /* ───────────── التواصل الموحد — بلا صفحات منفصلة للجهات ─────────────
    قرار المالك 2026-08-20: صفحة تواصل واحدة تكفي — الزائر يحدد «من هو»
    من النموذج نفسه، وترى الجهات المؤسسية مخطط الأثر المتوقع ولماذا نحن
