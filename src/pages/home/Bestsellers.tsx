@@ -57,8 +57,18 @@ export function Bestsellers() {
         </div>
 
         {/* البطاقة المميزة — اختيار وجيز الأول */}
+        {/* ── ولماذا `article` لا `div` ──
+
+            البطاقةُ عنصرٌ قائمٌ بذاته: عنوانٌ ووصفٌ ومدّةٌ ومخرَجٌ ورابط —
+            وهذا تعريفُ `article` في HTML، لا زخرفةٌ دلاليّة.
+
+            وله أثرٌ مقيس: فحصُ الإتاحة ينتظر `article` علامةً على أنّ
+            الرئيسةَ اكتملت (`scripts/a11y-audit.ts:59`). وحين حُذف الشريطان
+            في هذا البند ذهبت معهما **كلُّ** عناصر `article` من الصفحة، فوقف
+            الفحصُ ٢٥ ثانيةً ثمّ عدّها واقعةَ إتاحة: `landmark: 0 ← 1`.
+            وأمسكها CI لا أنا. */}
         {spotlight && (
-          <div className="reveal relative mt-8">
+          <article className="reveal relative mt-8">
             <Link
               to={`/pathways/${spotlight.id}`}
               className="group grid overflow-hidden rounded-3xl border border-teal/30 bg-gradient-to-l from-panel to-card transition hover:border-teal/60 hover:shadow-[0_30px_80px_-40px_rgba(56,167,180,0.5)] md:grid-cols-5"
@@ -97,7 +107,7 @@ export function Bestsellers() {
             {/* مفضلة البطاقة المميزة — فوق الرابط بزاوية حرة، والنقر لا يفتح المسار */}
             <FavoriteButton pathwayId={spotlight.id} pathwayName={spotlight.p.name}
               className="absolute left-3 top-3 z-10 bg-paper/70 backdrop-blur md:left-5 md:top-5" />
-          </div>
+          </article>
         )}
 
         {/* البابان — وهما ما كان الفلتران والشريطان يقلّدانه */}
