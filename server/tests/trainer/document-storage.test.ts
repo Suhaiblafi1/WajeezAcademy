@@ -26,8 +26,14 @@ import {
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..')
 const read = (p: string) => readFileSync(join(root, p), 'utf8')
 
-/* سقف جسم الطلب في الدالة السحابية — أيّ حدٍّ فوقه وعدٌ لا يُوفى */
-const VERCEL_BODY_LIMIT = 4.5 * 1024 * 1024
+/* سقفُ جسم الطلب الذي يمرّ فعلا — أيّ حدٍّ معلَنٍ فوقه وعدٌ لا يُوفى.
+
+   ⚠️ ورقمُه ٤٫٥ ميغا لأنّه كان سقفَ دالّة Vercel، وقد زال ذلك السقفُ بزوالها:
+   الخادمُ اليومَ عمليّةُ Node على Cloudways، وحدُّها ما نضعه نحن. فالرقمُ
+   يبقى **قرارَنا لا قيدَ مضيف** — الوثائقُ تُخزَّن في عمود `Bytes` بجانب
+   السجلّ (`storage.service.ts`)، فرفعُ السقف يرفع حجمَ القاعدة وذاكرةَ
+   الطلب معا. رفعُه قرارُ منتَجٍ يُتّخذ عمدا، لا أثرٌ جانبيٌّ لتغيير مضيف. */
+const HOST_BODY_LIMIT = 4.5 * 1024 * 1024
 
 let prisma: PrismaClient
 let apps: TrainerApplicationService
@@ -141,11 +147,11 @@ describe('تخزين وثائق المتقدّم', () => {
     }
   })
 
-  it('كلّ حدٍّ معلَنٍ يمرّ فعلا من الدالة السحابية، والواجهة تعلن حدّ الخادم نفسه', () => {
+  it('كلّ حدٍّ معلَنٍ يمرّ فعلا، والواجهة تعلن حدّ الخادم نفسه', () => {
     for (const [kind, max] of Object.entries(MAX_UPLOAD_BYTES)) {
-      expect(max, `حدّ ${kind} فوق ما تستقبله الدالة السحابية — وعدٌ لا يُوفى`).toBeLessThanOrEqual(VERCEL_BODY_LIMIT)
+      expect(max, `حدّ ${kind} فوق ما يمرّ من جسم الطلب — وعدٌ لا يُوفى`).toBeLessThanOrEqual(HOST_BODY_LIMIT)
     }
-    expect(MAX_UPLOAD_ANY).toBeLessThanOrEqual(VERCEL_BODY_LIMIT)
+    expect(MAX_UPLOAD_ANY).toBeLessThanOrEqual(HOST_BODY_LIMIT)
 
     /* سقف Fastify هو السقف نفسه: أكبرُ منه يقبل ما يُردّ لاحقا، وأصغرُ يقطع
        الاتّصال قبل أن تصل رسالة ٤١٣ إلى المتقدّم. */

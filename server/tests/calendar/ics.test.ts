@@ -90,10 +90,10 @@ describe('دعوةُ تقويم', () => {
     expect(bare).not.toContain('LOCATION:')
     const full = buildIcs({
       uid: 'u@w', title: 'جلسة', startsAt: AT, durationMinutes: 60,
-      description: 'رابط الجلسة في بوّابتك', url: 'https://wajeez-academy.vercel.app/student',
+      description: 'رابط الجلسة في بوّابتك', url: 'https://www.wajeezacademy.com/student',
     })
     expect(full).toContain('DESCRIPTION:')
-    expect(full).toContain('URL:https://wajeez-academy.vercel.app/student')
+    expect(full).toContain('URL:https://www.wajeezacademy.com/student')
   })
 
   it('١٠) المنظِّمُ والمدعوُّ يُكتبان بصيغة العنوان البريديّ', () => {
