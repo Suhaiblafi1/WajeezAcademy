@@ -38,7 +38,7 @@ function Dot({ stage, selected }: { stage: WithSeq; selected: boolean }) {
   return (
     <span
       aria-hidden="true"
-      className={`grid h-8 w-8 shrink-0 place-items-center rounded-full border-2 text-[11px] font-black transition ${
+      className={`grid h-8 w-8 shrink-0 place-items-center rounded-full border-2 text-fine font-black transition ${
         done
           ? "border-teal-ink bg-teal-ink text-on-teal"
           : mine
@@ -81,7 +81,7 @@ export default function StageRail({
     <section aria-label="شريط مسارك" className="rounded-3xl border border-teal/25 bg-teal-ink/[0.05] p-4 sm:p-5">
       <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
         <div className="min-w-0">
-          <p className="text-[11px] text-muted-foreground">أين أنت من رحلتك</p>
+          <p className="text-fine text-muted-foreground">أين أنت من رحلتك</p>
           <p className="mt-0.5 text-lg font-black leading-tight text-teal-light-ink">
             {currentIndex === -1
               ? "أنجزت مراحلك كلها"
@@ -99,16 +99,16 @@ export default function StageRail({
           <dl className="flex gap-4 text-center">
             <div>
               <dd className="text-base font-black tabular-nums">{counts.completed}</dd>
-              <dt className="text-micro text-muted-foreground">أنجزتها</dt>
+              <dt className="text-fine text-muted-foreground">أنجزتها</dt>
             </div>
             <div>
               <dd className="text-base font-black tabular-nums">{counts.owned - counts.completed}</dd>
-              <dt className="text-micro text-muted-foreground">تعمل فيها</dt>
+              <dt className="text-fine text-muted-foreground">تعمل فيها</dt>
             </div>
             {hours.total > 0 && (
               <div>
                 <dd className="text-base font-black tabular-nums">{hours.done}</dd>
-                <dt className="text-micro text-muted-foreground">من {hours.total} ساعة</dt>
+                <dt className="text-fine text-muted-foreground">من {hours.total} ساعة</dt>
               </div>
             )}
           </dl>
@@ -116,12 +116,12 @@ export default function StageRail({
           <dl className="flex gap-4 text-center">
             <div>
               <dd className="text-base font-black tabular-nums">{counts.total}</dd>
-              <dt className="text-micro text-muted-foreground">{counts.total === 1 ? "دورة أمامك" : "دورات أمامك"}</dt>
+              <dt className="text-fine text-muted-foreground">{counts.total === 1 ? "دورة أمامك" : "دورات أمامك"}</dt>
             </div>
             {hours.total > 0 && (
               <div>
                 <dd className="text-base font-black tabular-nums">{hours.total}</dd>
-                <dt className="text-micro text-muted-foreground">ساعة تدريب</dt>
+                <dt className="text-fine text-muted-foreground">ساعة تدريب</dt>
               </div>
             )}
           </dl>
@@ -154,12 +154,12 @@ export default function StageRail({
                 <span className="min-w-0 flex-1">
                   {/* سطران لا سطرٌ مقصوص: عناوينُ الدورات جملٌ كاملة، و`truncate`
                       كان يُخرج «دورة التخطيط لل…» فلا يُعرف أيُّ مرحلةٍ هي. */}
-                  <span className={`block text-[11.5px] font-bold leading-[1.3] line-clamp-2 ${s.state === "not_owned" ? "text-muted-foreground" : ""}`}>
+                  <span className={`block text-fine font-bold leading-[1.3] line-clamp-2 ${s.state === "not_owned" ? "text-muted-foreground" : ""}`}>
                     {s.titleAr}
                   </span>
-                  <span className="mt-1 block text-micro leading-4 text-muted-foreground">{STAGE_LABEL_AR[s.state]}</span>
+                  <span className="mt-1 block text-fine leading-4 text-muted-foreground">{STAGE_LABEL_AR[s.state]}</span>
                   {isCurrent && (
-                    <span className="mt-1 inline-block rounded-full border border-gold/50 px-1.5 text-micro font-black text-gold-ink">
+                    <span className="mt-1 inline-block rounded-full border border-gold/50 px-1.5 text-fine font-black text-gold-ink">
                       أنت هنا
                     </span>
                   )}
@@ -169,7 +169,7 @@ export default function StageRail({
                       <span className="h-1 flex-1 overflow-hidden rounded-full bg-teal-ink/15">
                         <span className="block h-full rounded-full bg-teal-ink" style={{ width: `${s.percent}%` }} />
                       </span>
-                      <span className="text-micro tabular-nums text-muted-foreground">{s.percent}٪</span>
+                      <span className="text-fine tabular-nums text-muted-foreground">{s.percent}٪</span>
                     </span>
                   )}
                 </span>
@@ -195,8 +195,8 @@ export default function StageRail({
                 <Trophy className="h-4 w-4" />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-[11.5px] font-bold leading-4 text-gold-ink">مشروع التخرج</span>
-                <span className="mt-1 block text-micro leading-4 text-muted-foreground">نهاية المسار · وشهادته</span>
+                <span className="block text-fine font-bold leading-4 text-gold-ink">مشروع التخرج</span>
+                <span className="mt-1 block text-fine leading-4 text-muted-foreground">نهاية المسار · وشهادته</span>
               </span>
             </button>
           </li>

@@ -116,7 +116,7 @@ export default function CalendarPage() {
                 <section key={m.month} className="rounded-3xl border border-white/10 bg-white/[0.02] p-4">
                   <h2 className="flex items-center justify-between text-sm font-black">
                     {MONTH_LABEL[m.month - 1] ?? `الشهر ${m.month}`}
-                    <span className="text-[11px] font-bold text-muted-foreground">{shown.length}</span>
+                    <span className="text-fine font-bold text-muted-foreground">{shown.length}</span>
                   </h2>
                   {shown.length === 0 ? (
                     <p className="mt-4 rounded-2xl border border-white/8 py-8 text-center text-xs text-muted-foreground">
@@ -129,25 +129,25 @@ export default function CalendarPage() {
                           <Link to={`/build/${e.courseId}`} className="block">
                             <p className="text-[13px] font-bold leading-6 text-foreground">{courseTitleAr(e.titleAr)}</p>
                           </Link>
-                          <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
+                          <p className="mt-1 text-fine leading-5 text-muted-foreground">
                             {e.startsAt && <>تبدأ {fmtDateAr(e.startsAt)}</>}
                             {e.daysOfWeek.length > 0 && <> · {daysLabelAr(e.daysOfWeek)}{e.startTime ? ` ${e.startTime}` : ""}</>}
                           </p>
                           <div className="mt-2 flex flex-wrap items-center gap-1.5">
                             {e.domainAr && (
-                              <span className="rounded-full border border-white/10 px-2 py-0.5 text-micro text-muted-foreground">{e.domainAr}</span>
+                              <span className="rounded-full border border-white/10 px-2 py-0.5 text-fine text-muted-foreground">{e.domainAr}</span>
                             )}
                             {/* اسمُ المدرّب لمن اعتُمد نشرُه وحدَه — والخادمُ يفرضها */}
                             {e.trainerNameAr && (
-                              <span className="rounded-full border border-teal/25 px-2 py-0.5 text-micro text-teal-light-ink">{e.trainerNameAr}</span>
+                              <span className="rounded-full border border-teal/25 px-2 py-0.5 text-fine text-teal-light-ink">{e.trainerNameAr}</span>
                             )}
                             {typeof e.seatsLeft === "number" && e.seatsLeft <= 5 && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-gold/15 px-2 py-0.5 text-micro font-black text-gold-ink">
+                              <span className="inline-flex items-center gap-1 rounded-full bg-gold/15 px-2 py-0.5 text-fine font-black text-gold-ink">
                                 <Users className="h-3 w-3" /> {e.seatsLeft} مقاعد
                               </span>
                             )}
                             {e.enrolled && (
-                              <span className="rounded-full bg-teal/20 px-2 py-0.5 text-micro font-black text-teal-light-ink">مسجَّلٌ فيها</span>
+                              <span className="rounded-full bg-teal/20 px-2 py-0.5 text-fine font-black text-teal-light-ink">مسجَّلٌ فيها</span>
                             )}
                           </div>
                         </li>

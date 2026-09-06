@@ -116,7 +116,7 @@ function MultiPick({ id, label, options, selected, onChange }: {
       {selected.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1.5">
           {selected.map((s) => (
-            <span key={s} className="inline-flex items-center gap-1.5 rounded-full border border-teal/40 bg-teal/10 px-2.5 py-1 text-[11px] font-bold text-teal-light-ink">
+            <span key={s} className="inline-flex items-center gap-1.5 rounded-full border border-teal/40 bg-teal/10 px-2.5 py-1 text-fine font-bold text-teal-light-ink">
               {s}
               <button type="button" onClick={() => toggleValue(s)} aria-label={`أزل ${s}`} className="cursor-pointer text-muted-foreground transition hover:text-foreground">×</button>
             </span>
@@ -629,7 +629,7 @@ export default function JoinTrainer() {
                 >
                   <span className="flex items-center gap-2">
                     <span
-                      className={`grid h-6 w-6 shrink-0 place-items-center rounded-lg text-[11px] font-black ${
+                      className={`grid h-6 w-6 shrink-0 place-items-center rounded-lg text-fine font-black ${
                         state === "current" ? "bg-gold text-on-gold"
                           : state === "done" ? "bg-teal/20 text-teal-light-ink" : "bg-white/10 text-muted-foreground"
                       }`}
@@ -639,7 +639,7 @@ export default function JoinTrainer() {
                     </span>
                     <span className={`text-xs font-black ${state === "todo" ? "text-muted-foreground" : "text-foreground"}`}>{s.title}</span>
                   </span>
-                  <span className="mt-1.5 block text-micro leading-relaxed text-muted-foreground">{s.hint}</span>
+                  <span className="mt-1.5 block text-fine leading-relaxed text-muted-foreground">{s.hint}</span>
                 </div>
               </li>
             );
@@ -656,7 +656,7 @@ export default function JoinTrainer() {
             </p>
             <button
               type="button" onClick={startOver}
-              className="cursor-pointer rounded-full border border-white/20 px-4 py-1.5 text-[11px] font-bold text-muted-foreground transition hover:border-white/40 hover:text-foreground"
+              className="cursor-pointer rounded-full border border-white/20 px-4 py-1.5 text-fine font-bold text-muted-foreground transition hover:border-white/40 hover:text-foreground"
             >
               ابدأ من جديد
             </button>
@@ -707,7 +707,7 @@ export default function JoinTrainer() {
                     <p className="flex items-center gap-2 text-[12.5px] font-black text-teal-light-ink">
                       <KeyRound className="h-4 w-4" /> كلمة مرور لحسابك على المنصّة
                     </p>
-                    <p className="mt-1 text-[11px] leading-6 text-muted-foreground">
+                    <p className="mt-1 text-fine leading-6 text-muted-foreground">
                       تدخل بها ببريدك أعلاه لتتابع حالة طلبك في كل مرحلة — وإن اعتُمدت تُفتح لك بوابة المدربين من الحساب نفسه.
                       إن كان لك حساب على وجيز بهذا البريد فأدخل كلمتَه الحالية.
                     </p>
@@ -840,7 +840,7 @@ export default function JoinTrainer() {
                           </Field>
                         )}
                       </FieldRow>
-                      <p className="mt-4 text-[11px] leading-6 text-muted-foreground">
+                      <p className="mt-4 text-fine leading-6 text-muted-foreground">
                         نطلب وثيقة الاعتماد لاحقا في خطوة المستندات — والمذكور هنا لا يُنشر ولا يُعرض للمتعلمين قبل توثيقه.
                       </p>
                     </div>
@@ -903,7 +903,7 @@ export default function JoinTrainer() {
                   aria-describedby="jt-why-count"
                   className={`${areaCls} ${motivationLen > 0 && motivationLen < MOTIVATION_MIN ? "border-gold/50" : ""}`}
                 />
-                <p id="jt-why-count" className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                <p id="jt-why-count" className="mt-2 flex flex-wrap items-center justify-between gap-2 text-fine">
                   <span className={motivationLen < MOTIVATION_MIN ? "text-gold-ink" : "text-muted-foreground"}>
                     {motivationLen < MOTIVATION_MIN
                       ? `اكتب ${MOTIVATION_MIN} حرفا على الأقل. أضف مثالا يوضّح القيمة التي ستقدّمها للمتعلمين في وجيز.`
@@ -946,14 +946,14 @@ export default function JoinTrainer() {
                           </span>
                           <span className="min-w-0 flex-1">
                             <b className="block text-[12.5px] leading-6 text-foreground">{d.label}{d.required ? " *" : ""}</b>
-                            <span className="mt-0.5 block text-[11px] text-muted-foreground">{d.hint}</span>
-                            {st?.name && <span className="mt-1 block truncate text-[11px] text-muted-foreground">{st.name}</span>}
+                            <span className="mt-0.5 block text-fine text-muted-foreground">{d.hint}</span>
+                            {st?.name && <span className="mt-1 block truncate text-fine text-muted-foreground">{st.name}</span>}
                           </span>
                           <input type="file" accept={d.accept} className="sr-only"
                             onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadFile(d.kind, f); }} />
                         </label>
                         {st?.status === "error" && (
-                          <p className="mt-2 flex items-center gap-1.5 text-[11px] text-gold-ink">
+                          <p className="mt-2 flex items-center gap-1.5 text-fine text-gold-ink">
                             <RefreshCcw className="h-3 w-3" /> {st.error ?? "تعذّر الرفع"} — اختر الملف مجددا
                           </p>
                         )}
@@ -1073,7 +1073,7 @@ export default function JoinTrainer() {
                         </span>
                         <span className="min-w-0">
                           <b className={`block text-[12.5px] ${on ? "text-teal-light-ink" : "text-foreground"}`}>{c.label}</b>
-                          <span className={`mt-0.5 block truncate text-[11px] ${c.needsPhone && !phoneShown ? "text-gold-ink" : "text-muted-foreground"}`} dir={c.value === "other_email" ? "rtl" : "ltr"}>
+                          <span className={`mt-0.5 block truncate text-fine ${c.needsPhone && !phoneShown ? "text-gold-ink" : "text-muted-foreground"}`} dir={c.value === "other_email" ? "rtl" : "ltr"}>
                             {sub}
                           </span>
                         </span>
@@ -1095,13 +1095,13 @@ export default function JoinTrainer() {
                   </div>
                 )}
                 {(contactChannel === "phone" || contactChannel === "whatsapp") && normalizeDigits(form.phone) && (
-                  <p className="mt-4 flex items-center gap-2 rounded-xl border border-teal/25 bg-teal/[0.05] p-3 text-[11.5px] leading-6 text-foreground">
+                  <p className="mt-4 flex items-center gap-2 rounded-xl border border-teal/25 bg-teal/[0.05] p-3 text-fine leading-6 text-foreground">
                     <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-light-ink" />
                     سنتواصل على <b dir="ltr" className="text-foreground">{form.phoneCountryCode}{normalizeDigits(form.phone)}</b> — إن لم يكن رقمك، عد إلى القسم الأول وصحّحه.
                   </p>
                 )}
                 {(contactChannel === "phone" || contactChannel === "whatsapp") && !normalizeDigits(form.phone) && (
-                  <p className="mt-4 rounded-xl border border-gold/30 bg-gold/[0.06] p-3 text-[11.5px] leading-6 text-gold-ink">
+                  <p className="mt-4 rounded-xl border border-gold/30 bg-gold/[0.06] p-3 text-fine leading-6 text-gold-ink">
                     لم تذكر رقم جوالك في القسم الأول. <button type="button" onClick={() => setStep(1)} className="cursor-pointer font-black underline">عد وأضفه</button> أو اختر البريد.
                   </p>
                 )}
@@ -1112,14 +1112,14 @@ export default function JoinTrainer() {
                 <p className="flex items-center gap-2 text-xs font-black text-foreground">
                   <Sparkles className="h-3.5 w-3.5 text-teal-light-ink" /> ما سيقرؤه المراجع عنك
                 </p>
-                <ul className="mt-3 space-y-1.5 text-[11.5px] leading-6 text-muted-foreground">
+                <ul className="mt-3 space-y-1.5 text-fine leading-6 text-muted-foreground">
                   <li>{form.fullName.trim() || "—"} · {specialties.length} تخصصا · {DOMAIN_YEARS.find((y) => y.value === form.domainYears)?.label ?? "—"} في المجال</li>
                   <li>{teachable.length} دورة من الكتالوج تستطيع تدريسها{teachableOther.trim() ? " · وأخرى بقلمك" : ""}</li>
                   <li>{Object.values(uploads).filter((u) => u.status === "done").length} مستندا مرفوعا</li>
                   {seasons.length > 0 && <li>{seasons.map((v) => TRAINING_SEASONS.find((x) => x.value === v)?.label ?? v).join(" · ")}</li>}
                   <li>دافعك: {motivationLen} حرفا</li>
                 </ul>
-                <p className="mt-3 border-t border-white/10 pt-3 text-[11.5px] leading-6 text-muted-foreground">
+                <p className="mt-3 border-t border-white/10 pt-3 text-fine leading-6 text-muted-foreground">
                   رقم طلبك: <b className="font-mono text-foreground" dir="ltr">{result?.reference ?? "—"}</b> — سيصلك في بريد التأكيد مع تفاصيل طلبك.
                 </p>
               </div>
@@ -1136,7 +1136,7 @@ export default function JoinTrainer() {
               <p className="text-xs font-black text-gold-ink">
                 بقي {countAr(missing[step as 1 | 2 | 3].length, MISSING_FORMS)} قبل «{step < 3 ? "التالي" : "الإرسال"}»
               </p>
-              <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 text-[11.5px] leading-6 text-foreground">
+              <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 text-fine leading-6 text-foreground">
                 {missing[step as 1 | 2 | 3].map((m) => (
                   <li key={m} className="flex items-center gap-1.5">
                     <span className="h-1 w-1 shrink-0 rounded-full bg-gold-ink" /> {m}
@@ -1191,7 +1191,7 @@ export default function JoinTrainer() {
           <summary className="flex cursor-pointer items-center gap-2 text-sm font-black">
             <Search className="h-4 w-4 text-teal-light-ink" /> قدّمت سابقا؟ تابع حالة طلبك
           </summary>
-          <p className="mt-4 text-[11.5px] leading-6 text-muted-foreground">
+          <p className="mt-4 text-fine leading-6 text-muted-foreground">
             بريدك يكفي. ولتفاصيل أكثر — وسحب الطلب — <Link to="/auth" className="text-teal-light-ink underline">سجّل الدخول</Link> ببريدك وكلمة المرور التي اختَرتها عند التقديم.
           </p>
           <div className="mt-4 grid gap-3 border-t border-white/5 pt-5 sm:grid-cols-2">
@@ -1209,8 +1209,8 @@ export default function JoinTrainer() {
           {lookupResult && (
             <div className="mt-3 rounded-xl border border-teal/30 bg-teal/5 p-4">
               <p className="text-xs font-black text-teal-light-ink">{lookupResult.label}</p>
-              <p className="mt-1 text-[11px] text-muted-foreground" dir="ltr">{lookupResult.reference}</p>
-              {lookupResult.explain && <p className="mt-2 text-[11.5px] leading-6 text-foreground">{lookupResult.explain}</p>}
+              <p className="mt-1 text-fine text-muted-foreground" dir="ltr">{lookupResult.reference}</p>
+              {lookupResult.explain && <p className="mt-2 text-fine leading-6 text-foreground">{lookupResult.explain}</p>}
             </div>
           )}
           {lookupError && <p className="mt-3 text-xs text-red-300" role="alert">{lookupError}</p>}

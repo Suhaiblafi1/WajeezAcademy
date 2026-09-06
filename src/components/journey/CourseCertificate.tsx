@@ -58,10 +58,10 @@ export default function CourseCertificate({
         <span className="flex items-center gap-1.5 text-[12px] font-black text-gold-ink">
           <Award className="h-4 w-4" /> صدرت شهادتك
         </span>
-        <span dir="ltr" className="min-w-0 flex-1 font-mono text-[11.5px] text-foreground">{issued.number}</span>
+        <span dir="ltr" className="min-w-0 flex-1 font-mono text-fine text-foreground">{issued.number}</span>
         <Link
           to={`/verify/${issued.number}`}
-          className="shrink-0 text-[11px] font-bold text-teal-light-ink underline underline-offset-4"
+          className="shrink-0 text-fine font-bold text-teal-light-ink underline underline-offset-4"
         >
           صفحة التحقق العامة
         </Link>
@@ -75,9 +75,9 @@ export default function CourseCertificate({
       <div className="rounded-2xl border border-white/12 bg-white/[0.03] p-3.5">
         <p className="flex flex-wrap items-center gap-2 text-[12px] font-black text-foreground">
           <Award className="h-4 w-4 text-gold-ink" /> شهادة «{courseTitleAr}»
-          <span className={`rounded-full border px-2.5 py-0.5 text-micro font-bold ${meta.cls}`}>{meta.label}</span>
+          <span className={`rounded-full border px-2.5 py-0.5 text-fine font-bold ${meta.cls}`}>{meta.label}</span>
         </p>
-        <p className="mt-1.5 text-[11px] leading-5 text-muted-foreground">
+        <p className="mt-1.5 text-fine leading-5 text-muted-foreground">
           {request?.decisionAr
             ? request.decisionAr
             : "نراجع قواعد الإكمال ثم تُصدَر الشهادة برقم تحقّق، وتصلك في «شهاداتي»."}
@@ -92,12 +92,12 @@ export default function CourseCertificate({
         <Award className="h-4 w-4 text-gold-ink" /> شهادة هذه الدورة
       </p>
       {eligibility === null ? (
-        <p className="mt-1.5 flex items-center gap-2 text-[11px] text-muted-foreground">
+        <p className="mt-1.5 flex items-center gap-2 text-fine text-muted-foreground">
           <Loader2 className="h-3 w-3 animate-spin" /> نقرأ استحقاقك…
         </p>
       ) : eligibility.eligible ? (
         <>
-          <p className="mt-1.5 text-[11px] leading-5 text-muted-foreground">
+          <p className="mt-1.5 text-fine leading-5 text-muted-foreground">
             استوفيت قواعد إكمال الدورة. اطلبها الآن، وتُصدَر برقم تحقّقٍ باسمك.
           </p>
           <button
@@ -124,15 +124,15 @@ export default function CourseCertificate({
       ) : (
         <>
           {/* ما ينقصه بالنصّ — لا زرٌّ مطفأ يُقرأ عطبا */}
-          <p className="mt-1.5 text-[11px] leading-5 text-muted-foreground">ما يبقى قبل شهادتك:</p>
+          <p className="mt-1.5 text-fine leading-5 text-muted-foreground">ما يبقى قبل شهادتك:</p>
           <ul className="mt-1.5 space-y-1 border-r-2 border-white/10 ps-3">
             {eligibility.reasonsAr.map((r) => (
-              <li key={r} className="text-[11px] leading-5 text-muted-foreground">{r}</li>
+              <li key={r} className="text-fine leading-5 text-muted-foreground">{r}</li>
             ))}
           </ul>
         </>
       )}
-      {error && <p className="mt-2 text-[11px] font-bold text-gold-ink">{error}</p>}
+      {error && <p className="mt-2 text-fine font-bold text-gold-ink">{error}</p>}
     </div>
   );
 }

@@ -35,22 +35,69 @@ const PALETTES: Palette[] = [
   { accent: '#D9A94C', figure: '#3A2E16', garment: '#8A6C2C' },
   { accent: '#7FC8D4', figure: '#14303A', garment: '#356E80' },
   { accent: '#9BD1B0', figure: '#16332A', garment: '#3B7A5E' },
+  { accent: '#8FB8E8', figure: '#152A3E', garment: '#33608C' },
+  { accent: '#C9A0D8', figure: '#2C1B38', garment: '#6B4A82' },
+  { accent: '#E0A88F', figure: '#3A2620', garment: '#8C5B45' },
 ]
 
-function paletteFor(id: string): Palette {
-  let h = 0
+/* ــ بُعدٌ ثالثٌ محايد: سَعةٌ لا إصلاح (البند ٦٢) ــ
+
+   المخطَّطُ يقول: «الهيئاتُ الخمسُ تتكرّر على القصص، فقصّتان بالهيئة نفسِها
+   واللونِ نفسِه تبدوان شخصا واحدا» — ويصفه بأنّه تحسينٌ صغيرٌ اختياريّ.
+
+   **والقياسُ يقول إنّ التكرارَ لا يقع اليوم:** القصصُ **خمس**، ولكلٍّ منها
+   هيئةٌ مختلفة (حجاب · لحية · شعرٌ طويل · قصير · مجموعة) ولوحةٌ مختلفة —
+   صفرُ تصادم. (وأوّلُ قياسٍ أجريتُه قال «إحدى وعشرون من خمسٍ وعشرين
+   تتشارك»، وكان خطأ: عَدَّ `id` داخلَ دورات القصّة لا القصصَ نفسَها.)
+
+   فهذا التنويعُ **سَعةٌ لما يأتي** لا إصلاحٌ لعطبٍ قائم: خمسُ هيئاتٍ × ثمانِ
+   لوحاتٍ × أربعِ ياقاتٍ = مئةٌ وستّون تركيبة. فمتى بلغت القصصُ عشرين أو
+   ثلاثين بقي لكلٍّ مظهرُها.
+
+   ولا تُشتقّ **الهيئةُ** من المعرّف لتوسيع المدى: `look` تحمل دلالةً
+   (حجابٌ · لحية) قد تناقض اسمَ صاحب القصّة إن اختيرت بالقرعة — وذلك أسوأُ
+   من التكرار. فالبُعدان المضافان محايدان لا دلالةَ لهما: لونٌ وياقة. */
+const COLLARS = ['plain', 'vee', 'round', 'scarf'] as const
+type Collar = (typeof COLLARS)[number]
+
+/** بذرتان مختلفتان من المعرّف نفسِه — وإلّا سار البُعدان معا فلم يزيدا شيئا */
+function hash(id: string, salt: number): number {
+  let h = salt >>> 0
   for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0
-  return PALETTES[h % PALETTES.length]
+  return h
+}
+
+function paletteFor(id: string): Palette {
+  return PALETTES[hash(id, 0) % PALETTES.length]
+}
+
+function collarFor(id: string): Collar {
+  return COLLARS[hash(id, 0x9e37) % COLLARS.length]
 }
 
 /** ظِلُّ شخصٍ واحد — رأسٌ وكتفان، بلا ملامح */
-function Figure({ p, look }: { p: Palette; look: StoryAvatarLook }) {
+function Figure({ p, look, collar }: { p: Palette; look: StoryAvatarLook; collar: Collar }) {
   return (
     <g>
       {/* الكتفان — يُرسمان أوّلا ليمرّ الرأسُ فوقهما */}
       <path d="M4 96c0-20 19.7-32 44-32s44 12 44 32z" fill={p.garment} />
-      {/* ياقةٌ خفيفة: خطٌّ واحدٌ يعطي الهيئةَ عمقا بلا تفصيل */}
-      <path d="M38 66.5c3 5.5 17 5.5 20 0l4.5 2.2L48 80 33.5 68.7z" fill={p.figure} fillOpacity="0.18" />
+      {/* الياقةُ: تفصيلُ ملبسٍ محايد، وهي البُعدُ الذي يفرّق المتشابهات.
+          وتبقى ظِلّا بلا خطوطٍ دقيقة — لا تفاصيلَ تُقرأ رسما كرتونيّا. */}
+      {collar === 'plain' && (
+        <path d="M38 66.5c3 5.5 17 5.5 20 0l4.5 2.2L48 80 33.5 68.7z" fill={p.figure} fillOpacity="0.18" />
+      )}
+      {collar === 'vee' && (
+        <path d="M36 65.5 48 84l12-18.5-5-2.2L48 74l-7-10.7z" fill={p.figure} fillOpacity="0.22" />
+      )}
+      {collar === 'round' && (
+        <path d="M32 68c4.6 6.4 27.4 6.4 32 0l-3.4-3.4C56 69 40 69 35.4 64.6z" fill={p.figure} fillOpacity="0.2" />
+      )}
+      {collar === 'scarf' && (
+        <>
+          <path d="M31 69c5 7 31 7 36 0l2.4 5.6c-6 7.4-34.8 7.4-40.8 0z" fill={p.accent} fillOpacity="0.5" />
+          <path d="M55 76.5 60 96h-8l-2.4-17.6z" fill={p.accent} fillOpacity="0.38" />
+        </>
+      )}
 
       {/* الشعرُ الخلفيّ أو الحجاب — قبل الرأس ليظهر من خلفه */}
       {look === 'longHair' && (
@@ -95,6 +142,7 @@ export default function StoryAvatar({
   className?: string
 }) {
   const p = paletteFor(id)
+  const collar = collarFor(id)
   const gid = `av-${id}`
 
   return (
@@ -131,11 +179,11 @@ export default function StoryAvatar({
               <path d="M65.5 54c0-11 5-15.5 11.5-15.5S88.5 43 88.5 54c0-6.4-4.6-9.6-11.5-9.6s-11.5 3.2-11.5 9.6z" fill={p.figure} />
             </g>
             <g transform="translate(48,52) scale(0.9) translate(-48,-46)">
-              <Figure p={p} look="short" />
+              <Figure p={p} look="short" collar={collar} />
             </g>
           </g>
         ) : (
-          <Figure p={p} look={look} />
+          <Figure p={p} look={look} collar={collar} />
         )}
       </g>
       <circle cx="48" cy="48" r="46" fill="none" stroke={p.accent} strokeOpacity="0.5" strokeWidth="2" />

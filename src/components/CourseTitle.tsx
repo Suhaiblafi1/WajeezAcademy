@@ -22,7 +22,7 @@ export default function CourseTitle({
     <>
       <Tag className={className}>{courseTitleAr(name)}</Tag>
       {hasTermEn(termEn) && (
-        <span dir="ltr" className={`mt-0.5 block text-[11px] tracking-wide text-muted-foreground ${termClassName}`}>
+        <span dir="ltr" className={`mt-0.5 block text-fine tracking-wide text-muted-foreground ${termClassName}`}>
           {termEn}
         </span>
       )}

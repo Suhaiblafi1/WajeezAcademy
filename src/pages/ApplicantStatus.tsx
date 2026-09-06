@@ -143,7 +143,7 @@ export default function ApplicantStatus() {
           <div className="mt-6 space-y-4">
             {/* الحالة — بلغة صاحب الطلب */}
             <section className={`rounded-3xl border p-6 ${TONE_CLS[st.tone]}`}>
-              <p className="text-[11px] font-bold opacity-70">رقم طلبك</p>
+              <p className="text-fine font-bold opacity-70">رقم طلبك</p>
               <p className="mt-1 font-mono text-lg font-black tracking-wide" dir="ltr">{mine.reference}</p>
               <h2 className="mt-4 text-xl font-black">{st.label}</h2>
               <p className="mt-2 text-sm leading-7 opacity-90">{st.explain}</p>
@@ -169,16 +169,16 @@ export default function ApplicantStatus() {
             {/* البريد والتواصل */}
             <section className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                <p className="flex items-center gap-2 text-[11px] font-bold text-muted-foreground"><Mail className="h-3.5 w-3.5" /> بريدك</p>
+                <p className="flex items-center gap-2 text-fine font-bold text-muted-foreground"><Mail className="h-3.5 w-3.5" /> بريدك</p>
                 <p dir="ltr" className="mt-1 text-right text-sm text-muted-foreground">{mine.email}</p>
                 {mine.emailVerifiedAt ? (
-                  <p className="mt-2 flex items-center gap-1.5 text-[11px] font-bold text-emerald-300"><CheckCircle2 className="h-3.5 w-3.5" /> موثَّق</p>
+                  <p className="mt-2 flex items-center gap-1.5 text-fine font-bold text-emerald-300"><CheckCircle2 className="h-3.5 w-3.5" /> موثَّق</p>
                 ) : mine.status !== "draft" ? (
                   <div className="mt-2">
-                    <p className="flex items-center gap-1.5 text-[11px] font-bold text-gold-ink"><MailWarning className="h-3.5 w-3.5" /> غير موثَّق — افتح رابط التأكيد في بريدك</p>
+                    <p className="flex items-center gap-1.5 text-fine font-bold text-gold-ink"><MailWarning className="h-3.5 w-3.5" /> غير موثَّق — افتح رابط التأكيد في بريدك</p>
                     <button
                       type="button" onClick={resendConfirmation} disabled={resent === "busy" || resent === "done"}
-                      className="mt-1.5 cursor-pointer text-[11px] font-bold text-teal-light-ink underline decoration-dotted underline-offset-4 disabled:cursor-default disabled:text-muted-foreground disabled:no-underline"
+                      className="mt-1.5 cursor-pointer text-fine font-bold text-teal-light-ink underline decoration-dotted underline-offset-4 disabled:cursor-default disabled:text-muted-foreground disabled:no-underline"
                     >
                       {resent === "done" ? "أُعيد الإرسال — راجع بريدك" : resent === "error" ? "تعذّر — حاول بعد قليل" : "لم تصلك الرسالة؟ أعد الإرسال"}
                     </button>
@@ -186,7 +186,7 @@ export default function ApplicantStatus() {
                 ) : null}
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                <p className="flex items-center gap-2 text-[11px] font-bold text-muted-foreground"><Phone className="h-3.5 w-3.5" /> سنتواصل معك عبر</p>
+                <p className="flex items-center gap-2 text-fine font-bold text-muted-foreground"><Phone className="h-3.5 w-3.5" /> سنتواصل معك عبر</p>
                 {mine.contactChannel ? (
                   <>
                     <p className="mt-1 text-sm font-bold text-muted-foreground">{contactChannelLabel(mine.contactChannel)}</p>

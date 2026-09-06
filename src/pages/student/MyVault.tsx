@@ -119,11 +119,11 @@ function ArtifactCard({ a, catalogVersion }: { a: Artifact; catalogVersion: numb
         </span>
         <div className="min-w-0 flex-1">
           <p className="font-black leading-snug">{mod?.artifact ?? a.assessmentTitle}</p>
-          <p className="mt-1 text-[11px] text-muted-foreground">
+          <p className="mt-1 text-fine text-muted-foreground">
             {mod ? `${mod.title} · ` : ""}دورة {a.courseTitleAr} · سُلِّم {fmtWhen(a.submittedAt)}
           </p>
         </div>
-        <span className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold ${meta.cls}`}>
+        <span className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-fine font-bold ${meta.cls}`}>
           <meta.icon className="h-3 w-3" /> {meta.label}
         </span>
       </div>
@@ -141,7 +141,7 @@ function ArtifactCard({ a, catalogVersion }: { a: Artifact; catalogVersion: numb
 
       <Link
         to={`/student/course/${a.courseId}`}
-        className="mt-3 inline-block text-[11px] font-bold text-teal-light-ink hover:text-foreground"
+        className="mt-3 inline-block text-fine font-bold text-teal-light-ink hover:text-foreground"
       >
         افتح محطة هذا العمل ←
       </Link>

@@ -150,12 +150,12 @@ export default function Inbox() {
                     {i.unread && <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full bg-gold" />}
                     <Icon className="h-3.5 w-3.5 shrink-0 text-teal-light-ink" aria-hidden="true" />
                     {i.titleAr}
-                    <span className="rounded-full border border-white/10 px-2 py-0.5 text-micro font-bold text-muted-foreground">
+                    <span className="rounded-full border border-white/10 px-2 py-0.5 text-fine font-bold text-muted-foreground">
                       {KIND_LABEL_AR[i.kind]}
                     </span>
                   </p>
                   <p className="mt-1.5 whitespace-pre-line text-xs leading-6 text-foreground">{i.bodyAr}</p>
-                  <p className="mt-1.5 text-micro text-muted-foreground">{fmtWhen(i.at)}</p>
+                  <p className="mt-1.5 text-fine text-muted-foreground">{fmtWhen(i.at)}</p>
                 </Link>
               </li>
             );

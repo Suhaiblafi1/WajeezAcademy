@@ -204,15 +204,15 @@ export default function Contact() {
                         <span className="grid h-8 w-8 place-items-center rounded-lg bg-teal/15">
                           <s.icon className="h-4 w-4 text-teal-light-ink" />
                         </span>
-                        <p className="mt-2 text-[11px] font-black leading-snug">
+                        <p className="mt-2 text-fine font-black leading-snug">
                           <span className="text-gold-ink">{i + 1}. </span>{s.t}
                         </p>
-                        <p className="mt-1 text-micro leading-4 text-muted-foreground">{s.d}</p>
+                        <p className="mt-1 text-fine leading-4 text-muted-foreground">{s.d}</p>
                       </li>
                     ))}
                   </ol>
                   {ENTITY_NOTE[entity] && (
-                    <p className="mt-3 border-t border-white/5 pt-3 text-[11px] leading-5 text-muted-foreground">
+                    <p className="mt-3 border-t border-white/5 pt-3 text-fine leading-5 text-muted-foreground">
                       {ENTITY_NOTE[entity]}
                     </p>
                   )}

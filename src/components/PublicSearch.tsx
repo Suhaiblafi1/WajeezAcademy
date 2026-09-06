@@ -146,7 +146,7 @@ export default function PublicSearch() {
               <p className="text-xs leading-6 text-muted-foreground">لا نتيجةَ لـ«{q}».</p>
               <Link
                 to="/#diagnostic" onClick={close}
-                className="mt-3 inline-flex rounded-full border border-teal/40 px-4 py-2 text-[11px] font-bold text-teal-light-ink hover:bg-teal/10"
+                className="mt-3 inline-flex rounded-full border border-teal/40 px-4 py-2 text-fine font-bold text-teal-light-ink hover:bg-teal/10"
               >
                 لا تعرف ما تريد بعد؟ ابدأ بمؤشّر وجيز
               </Link>
@@ -167,7 +167,7 @@ export default function PublicSearch() {
                       : <BookOpen className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-ink" aria-hidden="true" />}
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-bold text-foreground">{h.title}</span>
-                      <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">{h.sub}</span>
+                      <span className="mt-0.5 block truncate text-fine text-muted-foreground">{h.sub}</span>
                     </span>
                   </button>
                 </li>

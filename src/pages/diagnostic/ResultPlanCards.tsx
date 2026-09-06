@@ -206,7 +206,7 @@ export function PlanCourses({
         </p>
         <div className="mt-2.5 flex flex-wrap gap-1.5">
           {skills.map((s) => (
-            <span key={s} className="rounded-full border border-teal/40 bg-teal/10 px-2.5 py-0.5 text-[11px] font-semibold text-teal-light-ink">
+            <span key={s} className="rounded-full border border-teal/40 bg-teal/10 px-2.5 py-0.5 text-fine font-semibold text-teal-light-ink">
               {s}
             </span>
           ))}
@@ -261,7 +261,7 @@ export function ResultPriceCard({ courseIds }: { courseIds: readonly string[] })
 
   return (
     <div className="story-fade mt-8 rounded-3xl border border-gold/35 bg-gradient-to-b from-gold/[0.07] to-transparent p-6 md:p-7">
-      <p className="text-[11px] font-black tracking-wide text-gold-ink">وبكم؟</p>
+      <p className="text-fine font-black tracking-wide text-gold-ink">وبكم؟</p>
       {cheapest ? (
         <>
           <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
@@ -281,14 +281,14 @@ export function ResultPriceCard({ courseIds }: { courseIds: readonly string[] })
       {/* وكان هنا صندوقٌ يطلب بريدا مقابل الكود. وقرارُ صاحب المنصّة: لا داعي
           له — البريدُ يُكتب عند الشراء أصلا، فطلبُه مرّتين حاجزٌ بلا مقابل.
           والكودُ يُقال سطرا واحدا: هو لأوّل شراءٍ لكلّ أحد. */}
-      <p className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-gold/30 bg-gold/[0.06] px-3.5 py-2.5 text-[11.5px] leading-5">
+      <p className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-gold/30 bg-gold/[0.06] px-3.5 py-2.5 text-fine leading-5">
         <span className="font-bold text-gold-ink">خصم {FIRST_TIME_PROMO.percentOff}٪ لأول عملية شراء بالكود</span>
-        <code dir="ltr" className="rounded-md border border-gold/40 bg-gold/10 px-1.5 py-0.5 font-mono text-micro font-black text-gold-ink">
+        <code dir="ltr" className="rounded-md border border-gold/40 bg-gold/10 px-1.5 py-0.5 font-mono text-fine font-black text-gold-ink">
           {FIRST_TIME_PROMO.code}
         </code>
         <span className="text-muted-foreground">— يُكتب في صفحة الدفع.</span>
       </p>
-      <p className="mt-3 text-[11px] leading-5 text-muted-foreground">
+      <p className="mt-3 text-fine leading-5 text-muted-foreground">
         سعر خطتك يُحدَّد بعد أن تعتمدها — أنت من يقرّر دوراتها.
         {cheapest && known < courseIds.length && " وبعض دوراتها لم تُفتح لها شعبة بعد."} ولا يُطلب دفعٌ الآن.
       </p>
@@ -391,14 +391,14 @@ export function WhyThisPathway({
               {blockers.length > 0 ? (
                 <ul className="mt-1.5 space-y-1">
                   {blockers.map((b) => (
-                    <li key={b} className="flex items-start gap-1.5 text-[11px] leading-5 text-muted-foreground">
+                    <li key={b} className="flex items-start gap-1.5 text-fine leading-5 text-muted-foreground">
                       <span aria-hidden="true" className="mt-2 h-1 w-1 shrink-0 rounded-full bg-gold-ink" />
                       {b}
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
+                <p className="mt-1 text-fine leading-5 text-muted-foreground">
                   لا مانعَ قائم — قِسنا ما تسمح المنصّة بقياسه، والباقي يبقى مجهولا لا مفترَضا.
                 </p>
               )}
@@ -408,7 +408,7 @@ export function WhyThisPathway({
                   لا يُهمَلان: كم مهارةً قِيست من كم يمكن قياسُها، وكم بقي
                   مجهولا. فيقرأ المتعلّمُ **حدَّ ما نعرفه عنه** لا وصفَه. */}
               {basis && basis.measurable > 0 && (
-                <p className="mt-2 border-t border-white/8 pt-2 text-[11px] leading-5 text-muted-foreground">
+                <p className="mt-2 border-t border-white/8 pt-2 text-fine leading-5 text-muted-foreground">
                   قِسنا <b className="text-foreground">{basis.measured}</b> من{" "}
                   <b className="text-foreground">{basis.measurable}</b> مهارةٍ تسمح المنصّةُ بقياسها في هذا المسار
                   {basis.unknown > 0 && (
@@ -434,7 +434,7 @@ export function WhyThisPathway({
               </div>
             ))}
           </div>
-          <p className="mt-4 border-t border-white/10 pt-3 text-[11px] leading-relaxed text-muted-foreground">
+          <p className="mt-4 border-t border-white/10 pt-3 text-fine leading-relaxed text-muted-foreground">
             ترتفع حين تتفق إجاباتك، وتنخفض عند التناقض أو حين تقف حالتك بين مسارين متقاربين.
             فوق ٧٥٪ نحن واثقون بالترشيح، وبين ٥٠ و٧٥٪ نعرض معه بدائل، ودون ذلك نحيلك لمستشار بشري قبل أي قرار.
           </p>
@@ -490,7 +490,7 @@ export function CompositePlan({ composite }: { composite: CompositeView }) {
           <div className="rounded-xl bg-white/[0.05] p-4">
             <p className="text-sm text-muted-foreground">نسخة خطتك</p>
             <p className="font-black text-gold-ink">{variant.label}</p>
-            <p className="mt-1 text-[11px] leading-5 text-muted-foreground">{variant.hint}</p>
+            <p className="mt-1 text-fine leading-5 text-muted-foreground">{variant.hint}</p>
           </div>
           <div className="rounded-xl bg-white/[0.05] p-4">
             <p className="text-sm text-muted-foreground">إجمالي ساعات الخطة</p>
@@ -498,7 +498,7 @@ export function CompositePlan({ composite }: { composite: CompositeView }) {
             {/* كان مكتوبًا هنا «موزعة على إيقاعك الأسبوعي الذي أخبرتنا به» — وهو ادعاء
                 لا يقع: الرقم مجموع ساعات الدورات الثابتة، لا يُقسَّم على أي إيقاع.
                 والوقت الأسبوعي لم يعد يُسأل عنه أصلًا. */}
-            <p className="mt-1 text-[11px] leading-5 text-muted-foreground">مجموع ساعات دورات خطتك</p>
+            <p className="mt-1 text-fine leading-5 text-muted-foreground">مجموع ساعات دورات خطتك</p>
           </div>
         </div>
 

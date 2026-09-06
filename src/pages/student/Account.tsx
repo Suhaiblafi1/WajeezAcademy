@@ -81,9 +81,9 @@ function Field({ label, hint, error, name, children }: {
         <span className={labelCls}>{label}</span>
         {children}
       </label>
-      {hint && <p className="mt-1 text-[11px] text-muted-foreground">{hint}</p>}
+      {hint && <p className="mt-1 text-fine text-muted-foreground">{hint}</p>}
       {name && error && (
-        <p id={`${name}-error`} role="alert" className="mt-1.5 text-[11px] font-bold leading-5 text-red-300">{error}</p>
+        <p id={`${name}-error`} role="alert" className="mt-1.5 text-fine font-bold leading-5 text-red-300">{error}</p>
       )}
     </div>
   );
@@ -334,7 +334,7 @@ export default function StudentAccount() {
             </p>
           </div>
           {mode === "server" && (
-            <span className="flex items-center gap-1.5 rounded-full border border-teal/40 bg-teal/10 px-3 py-1 text-[11px] font-bold text-teal-light-ink">
+            <span className="flex items-center gap-1.5 rounded-full border border-teal/40 bg-teal/10 px-3 py-1 text-fine font-bold text-teal-light-ink">
               <CheckCircle2 className="h-3.5 w-3.5" /> محفوظ في قاعدة البيانات
             </span>
           )}
@@ -445,12 +445,12 @@ export default function StudentAccount() {
             </span>
           </label>
           {interestMsg && (
-            <p role="alert" className="mt-1.5 text-[11px] font-bold leading-5 text-red-300">{interestMsg}</p>
+            <p role="alert" className="mt-1.5 text-fine font-bold leading-5 text-red-300">{interestMsg}</p>
           )}
           {form.interests.length > 0 && (
             <div className="mt-2.5 flex flex-wrap gap-1.5">
               {form.interests.map((i) => (
-                <span key={i} className="inline-flex items-center gap-1.5 rounded-full border border-teal/40 bg-teal/10 px-2.5 py-1 text-[11px] font-bold text-teal-light-ink">
+                <span key={i} className="inline-flex items-center gap-1.5 rounded-full border border-teal/40 bg-teal/10 px-2.5 py-1 text-fine font-bold text-teal-light-ink">
                   {i}
                   <button type="button" aria-label={`أزل ${i}`} onClick={() => set("interests", form.interests.filter((x) => x !== i))} className="grid h-8 w-8 shrink-0 cursor-pointer place-items-center rounded-full text-muted-foreground hover:bg-white/10 hover:text-foreground">
                     <X className="h-3 w-3" />
@@ -493,7 +493,7 @@ export default function StudentAccount() {
             <Link key={x.t} to={x.to} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 transition hover:border-teal/50">
               <x.icon className="h-4 w-4 text-teal-light-ink" />
               <p className="mt-2 text-sm font-black">{x.t}</p>
-              <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{x.d}</p>
+              <p className="mt-1 text-fine leading-relaxed text-muted-foreground">{x.d}</p>
             </Link>
           ))}
         </div>
@@ -547,7 +547,7 @@ export default function StudentAccount() {
                 </button>
               ) : (
                 <div className="flex shrink-0 items-center gap-2">
-                  <span className="text-[11px] font-bold text-red-300">متأكد؟ الإجراء فوري</span>
+                  <span className="text-fine font-bold text-red-300">متأكد؟ الإجراء فوري</span>
                   <button
                     type="button" onClick={deactivate} disabled={!!secBusy}
                     className="flex cursor-pointer items-center gap-1.5 rounded-full bg-red-500 px-4 py-2 text-xs font-black text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-40"

@@ -66,7 +66,7 @@ function CategoryFilter({
           }`}
         >
           {c}
-          <span className={`rounded-full px-1.5 text-micro font-black tabular-nums ${active === c ? 'bg-black/25' : 'bg-foreground/[0.07] text-muted-foreground'}`}>
+          <span className={`rounded-full px-1.5 text-fine font-black tabular-nums ${active === c ? 'bg-black/25' : 'bg-foreground/[0.07] text-muted-foreground'}`}>
             {n}
           </span>
         </button>
@@ -174,7 +174,7 @@ export function Bestsellers() {
           >
             <div className="relative flex min-h-[104px] items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_70%_30%,rgba(56,167,180,0.4),transparent_65%)] md:col-span-2 md:min-h-[190px]">
               <Route className="h-10 w-10 text-teal-light-ink/70 md:h-16 md:w-16" />
-              <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-gold px-2.5 py-1 text-micro font-black text-on-gold md:right-5 md:top-5 md:gap-1.5 md:px-3.5 md:py-1.5 md:text-xs">
+              <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-gold px-2.5 py-1 text-fine font-black text-on-gold md:right-5 md:top-5 md:gap-1.5 md:px-3.5 md:py-1.5 md:text-xs">
                 <Flame className="h-3.5 w-3.5" />
                 {spotlight.note}
               </span>
@@ -239,7 +239,7 @@ export function Bestsellers() {
                 وصغُر: ١٠px وحدٌّ رفيع بلا خلفيّةٍ ولا أيقونة — يُقرأ وسما
                 لا زرّا، فلا ينافس عنوانَ المسار تحته. */}
             <div className="flex items-center gap-2">
-              <span className="rounded-full border border-teal/30 px-2.5 py-0.5 text-micro font-semibold text-teal-light-ink">
+              <span className="rounded-full border border-teal/30 px-2.5 py-0.5 text-fine font-semibold text-teal-light-ink">
                 {note}
               </span>
               <FavoriteButton pathwayId={id} pathwayName={p.name} className="-ms-1 ms-auto" />
@@ -254,11 +254,11 @@ export function Bestsellers() {
 
                 فبقي الأخصُّ: ما يتخرّج به، وحجمُ ما يشتريه. والعامُّ يُقرأ في
                 صفحة المسار حيث للقارئ نيّةُ القراءة. */}
-            <div className="mt-3 flex items-start gap-1.5 text-[11px] leading-5 text-teal-light-ink">
+            <div className="mt-3 flex items-start gap-1.5 text-fine leading-5 text-teal-light-ink">
               <Target className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               <span className="line-clamp-2">تتخرّج بـ: {p.output}</span>
             </div>
-            <div className="mt-3 text-[11px] leading-5 text-muted-foreground">
+            <div className="mt-3 text-fine leading-5 text-muted-foreground">
               {p.level} · {pathwaySizeAr(p)}
             </div>
             <div className="mt-auto pt-5">
@@ -338,16 +338,16 @@ export function Bestsellers() {
             className="group flex w-[270px] shrink-0 snap-start flex-col rounded-2xl border border-white/10 bg-card p-5 transition-all duration-200 hover:-translate-y-1 hover:border-teal/50 hover:shadow-[0_20px_60px_-30px_rgba(56,167,180,0.4)]"
           >
             <div className="flex items-center gap-2">
-              <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-teal/10 px-3 py-1 text-[11px] font-bold text-teal-light-ink">
+              <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-teal/10 px-3 py-1 text-fine font-bold text-teal-light-ink">
                 <Flame className="h-3 w-3" />
                 {note}
               </span>
-              <span className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-muted-foreground">{c.category}</span>
+              <span className="rounded-full border border-white/10 px-2.5 py-1 text-fine text-muted-foreground">{c.category}</span>
             </div>
             <CourseTitle as="h4" name={c.name} termEn={c.termEn} className="mt-3 font-bold leading-relaxed" termClassName="text-muted-foreground" />
             <p className="mt-1 text-xs text-muted-foreground">من مسار «{c.pathwayName}» · {c.weeks} {c.weeks === 1 ? 'أسبوع' : 'أسابيع'}</p>
             {c.skill && (
-              <span className="mt-3 w-fit rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-[11px] text-teal-light-ink">
+              <span className="mt-3 w-fit rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-fine text-teal-light-ink">
                 {c.skill}
               </span>
             )}

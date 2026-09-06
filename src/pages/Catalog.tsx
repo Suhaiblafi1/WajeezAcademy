@@ -243,13 +243,13 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
                   فتخرج البطاقة خارج شبكتها ويظهر تمرير أفقي عند التكبير. */}
               <div className="flex flex-wrap items-center gap-2">
                 {bestsellerIds.has(p.id) && (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-gold/10 px-3 py-1 text-[11px] font-bold text-gold-ink">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-gold/10 px-3 py-1 text-fine font-bold text-gold-ink">
                     <Flame className="h-3 w-3" />
                     من مختارات وجيز
                   </span>
                 )}
-                <span className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-muted-foreground">{pathwayDomain(p.id)}</span>
-                <span className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-muted-foreground">{p.level}</span>
+                <span className="rounded-full border border-white/10 px-2.5 py-1 text-fine text-muted-foreground">{pathwayDomain(p.id)}</span>
+                <span className="rounded-full border border-white/10 px-2.5 py-1 text-fine text-muted-foreground">{p.level}</span>
                 <FavoriteButton pathwayId={p.id} pathwayName={p.name} className="-ms-1 ms-auto" />
               </div>
               {/* ── الاسمُ القصيرُ في البطاقة، والكاملُ في الصفحة ──
@@ -268,23 +268,23 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
                   يمنع شراءً خاطئا قبل وقوعه، **والمنعُ خدمةٌ لا خسارة** — ومن
                   ردَّته الجملةُ عن مسارٍ لا يناسبه لم نخسره، بل كسبنا ثقتَه. */}
               {p.audience && (
-                <p className="mt-3 line-clamp-2 text-[11px] leading-5 text-muted-foreground">
+                <p className="mt-3 line-clamp-2 text-fine leading-5 text-muted-foreground">
                   <span className="font-bold text-foreground">لمن؟ </span>{p.audience}
                 </p>
               )}
               {p.notFor && (
-                <p className="mt-1.5 line-clamp-2 text-[11px] leading-5 text-muted-foreground">
+                <p className="mt-1.5 line-clamp-2 text-fine leading-5 text-muted-foreground">
                   <span className="font-bold text-gold-ink">ليس لك إن: </span>
                   {resolveCatalogRefsAr(p.notFor, (id) => nameById.get(id))}
                 </p>
               )}
               {/* المخرَجُ الملموس مكانَ اسم مدرّبٍ لم يُعيَّن بعد — كان يظهر
                   مكرّرا بعدد مدرّبي المسار، فيملأ البطاقة بلا معلومة. */}
-              <div className="mt-3 flex items-start gap-1.5 text-[11px] leading-5 text-teal-light-ink">
+              <div className="mt-3 flex items-start gap-1.5 text-fine leading-5 text-teal-light-ink">
                 <Target className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span className="line-clamp-2 min-w-0">تتخرّج بـ: {p.output}</span>
               </div>
-              <div className="mt-3 text-[11px] leading-5 text-muted-foreground">
+              <div className="mt-3 text-fine leading-5 text-muted-foreground">
                 {pathwaySizeAr(p)} · {p.weeklyHours} أسبوعيا
               </div>
               <div className="mt-auto pt-5">
@@ -308,7 +308,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
             >
               <div className="flex items-center gap-2">
                 {bestsellerCourseIds.has(c.id) && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2.5 py-1 text-micro font-bold text-gold-ink">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2.5 py-1 text-fine font-bold text-gold-ink">
                     <Flame className="h-3 w-3" />
                     مختارة
                   </span>
@@ -333,10 +333,10 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
               {c.promise && (
                 <p className="mt-1.5 line-clamp-2 text-xs leading-6 text-muted-foreground">{c.promise}</p>
               )}
-              <p className="mt-1.5 text-[11px] text-muted-foreground">
+              <p className="mt-1.5 text-fine text-muted-foreground">
                 {c.weeks} {c.weeks === 1 ? 'أسبوع' : 'أسابيع'}
               </p>
-              <span className="mt-3 w-fit rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-[11px] text-teal-light-ink">
+              <span className="mt-3 w-fit rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-fine text-teal-light-ink">
                 {c.skill}
               </span>
               <div className="mt-auto pt-4">

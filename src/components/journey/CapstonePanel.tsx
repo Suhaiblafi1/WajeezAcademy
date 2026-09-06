@@ -59,7 +59,7 @@ export default function CapstonePanel({
         <h3 className="flex items-center gap-2 text-base font-black text-gold-ink">
           <Trophy className="h-4.5 w-4.5" /> مشروع تخرّجك
         </h3>
-        <p className="mt-0.5 text-[11px] text-muted-foreground">
+        <p className="mt-0.5 text-fine text-muted-foreground">
           نهاية «{track.titleAr}» — بعد دوراته، لا مرحلةً فيه.
         </p>
         {track.capstoneAr ? (
@@ -70,7 +70,7 @@ export default function CapstonePanel({
           </p>
         )}
         <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-gold/20 pt-3.5">
-          <p className="min-w-0 flex-1 text-[11px] leading-5 text-muted-foreground">
+          <p className="min-w-0 flex-1 text-fine leading-5 text-muted-foreground">
             تسليمُ المشروع يُرتَّب مع فريقنا الأكاديميّ: تراسله، فيُسنَد لك مقيّمٌ وموعد.
             {completion && !completion.eligible && " ويُقدَّم بعد إنجاز دورات المسار."}
           </p>
@@ -90,7 +90,7 @@ export default function CapstonePanel({
               أنجزت <span className="tabular-nums">{completion.done}</span> من{" "}
               <span className="tabular-nums">{completion.total}</span> دورات المسار
             </p>
-            <p className="text-[11px] tabular-nums text-muted-foreground">{completion.percent}٪</p>
+            <p className="text-fine tabular-nums text-muted-foreground">{completion.percent}٪</p>
           </div>
           <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
             <div className="h-full rounded-full bg-teal transition-all" style={{ width: `${Math.max(2, completion.percent)}%` }} />
@@ -167,35 +167,35 @@ function RequestCard({
   return (
     <section className="flex flex-col rounded-2xl border border-white/12 bg-white/[0.03] p-4">
       <p className="flex items-center gap-2 text-[13px] font-black">{icon}{title}</p>
-      <p className="mt-1.5 text-[11.5px] leading-6 text-muted-foreground">{bodyAr}</p>
+      <p className="mt-1.5 text-fine leading-6 text-muted-foreground">{bodyAr}</p>
 
       {request || sent ? (
         <div className="mt-3 rounded-xl border border-white/10 bg-paper/20 p-3">
-          <span className={`inline-block rounded-full border px-2.5 py-0.5 text-micro font-bold ${meta?.cls ?? REQUEST_STATUS_AR.pending.cls}`}>
+          <span className={`inline-block rounded-full border px-2.5 py-0.5 text-fine font-bold ${meta?.cls ?? REQUEST_STATUS_AR.pending.cls}`}>
             {meta?.label ?? REQUEST_STATUS_AR.pending.label}
           </span>
           {request?.audienceAr && (
-            <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
+            <p className="mt-2 text-fine leading-5 text-muted-foreground">
               <span className="font-bold text-foreground">الجهة: </span>{request.audienceAr}
             </p>
           )}
-          {request?.decisionAr && <p className="mt-2 text-[11px] leading-5 text-muted-foreground">{request.decisionAr}</p>}
+          {request?.decisionAr && <p className="mt-2 text-fine leading-5 text-muted-foreground">{request.decisionAr}</p>}
         </div>
       ) : loading ? (
-        <p className="mt-3 flex items-center gap-2 text-[11px] text-muted-foreground">
+        <p className="mt-3 flex items-center gap-2 text-fine text-muted-foreground">
           <Loader2 className="h-3 w-3 animate-spin" /> نقرأ إنجازك…
         </p>
       ) : !eligible ? (
         <ul className="mt-3 space-y-1 border-r-2 border-white/10 ps-3">
           {reasonsAr.map((r) => (
-            <li key={r} className="text-[11px] leading-5 text-muted-foreground">{r}</li>
+            <li key={r} className="text-fine leading-5 text-muted-foreground">{r}</li>
           ))}
         </ul>
       ) : (
         <div className="mt-3">
           {needsAudience && (
             <label className="block">
-              <span className="text-[11px] font-bold text-muted-foreground">لأيّ جهةٍ تريدها؟</span>
+              <span className="text-fine font-bold text-muted-foreground">لأيّ جهةٍ تريدها؟</span>
               <input
                 value={audience}
                 onChange={(e) => setAudience(e.target.value)}
@@ -227,7 +227,7 @@ function RequestCard({
           </button>
         </div>
       )}
-      {error && <p className="mt-2 text-[11px] font-bold text-gold-ink">{error}</p>}
+      {error && <p className="mt-2 text-fine font-bold text-gold-ink">{error}</p>}
     </section>
   );
 }

@@ -41,7 +41,7 @@ function MeasuredRow({ s, showDelta }: { s: MeasuredSkill; showDelta: boolean })
       <div className="min-w-0">
         <p className="truncate text-sm font-bold">{s.nameAr}</p>
         {s.coveredBy.length > 0 && (
-          <p className="mt-0.5 flex items-start gap-1.5 truncate text-[11px] text-muted-foreground">
+          <p className="mt-0.5 flex items-start gap-1.5 truncate text-fine text-muted-foreground">
             <BookOpen className="mt-0.5 h-3 w-3 shrink-0" aria-hidden="true" />
             <span className="truncate">تُدرّسها: {s.coveredBy.map((c) => c.titleAr).join(" · ")}</span>
           </p>
@@ -53,7 +53,7 @@ function MeasuredRow({ s, showDelta }: { s: MeasuredSkill; showDelta: boolean })
         {/* شارة النمو (ح-٧): تُعرض لمن أُعيد قياسه فقط، ولا تُصطنع لغيره */}
         {s.growth && s.growth.delta !== null && s.growth.delta !== 0 && (
           <span
-            className={`rounded-full border px-2 py-0.5 text-micro font-bold ${
+            className={`rounded-full border px-2 py-0.5 text-fine font-bold ${
               s.growth.delta > 0 ? "border-teal/50 text-teal-light-ink" : "border-white/25 text-foreground"
             }`}
             title={s.growth.courseTitleAr ? `قياس بعديّ بعد «${s.growth.courseTitleAr}»` : "قياس بعديّ"}
@@ -62,7 +62,7 @@ function MeasuredRow({ s, showDelta }: { s: MeasuredSkill; showDelta: boolean })
           </span>
         )}
         {showDelta && s.toTarget > 0 && (
-          <span className="rounded-full border border-gold/40 px-2 py-0.5 text-micro font-bold text-gold-ink">
+          <span className="rounded-full border border-gold/40 px-2 py-0.5 text-fine font-bold text-gold-ink">
             يحتاج <span dir="ltr">+{s.toTarget}</span>
           </span>
         )}
@@ -83,9 +83,9 @@ function Section({
         <h2 className="flex items-center gap-2 text-sm font-black">
           <Icon className="h-4 w-4 text-teal-light-ink" aria-hidden="true" />
           {title}
-          <span className="rounded-full bg-teal-ink/15 px-2 py-0.5 text-[11px] tabular-nums text-teal-light-ink">{count}</span>
+          <span className="rounded-full bg-teal-ink/15 px-2 py-0.5 text-fine tabular-nums text-teal-light-ink">{count}</span>
         </h2>
-        <p className="text-[11px] text-muted-foreground">{note}</p>
+        <p className="text-fine text-muted-foreground">{note}</p>
       </div>
       <ul className="mt-3">{children}</ul>
     </section>
@@ -117,7 +117,7 @@ function Hero({ p }: { p: SkillsProfile }) {
           ].map((t) => (
             <div key={t.k}>
               <dd className="text-2xl font-black tabular-nums">{t.v}</dd>
-              <dt className="mt-0.5 text-[11px] text-muted-foreground">{t.k}</dt>
+              <dt className="mt-0.5 text-fine text-muted-foreground">{t.k}</dt>
             </div>
           ))}
         </dl>
@@ -142,7 +142,7 @@ function Unmeasured({ rows }: { rows: UnmeasuredSkill[] }) {
       <h2 className="flex items-center gap-2 text-sm font-black">
         <HelpCircle className="h-4 w-4 text-gold-ink" aria-hidden="true" />
         لم تُقس بعد
-        <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[11px] tabular-nums text-gold-ink">{rows.length}</span>
+        <span className="rounded-full bg-gold/15 px-2 py-0.5 text-fine tabular-nums text-gold-ink">{rows.length}</span>
       </h2>
       <p className="mt-2 text-xs leading-6 text-foreground">
         هذه مهارات يتطلبها مسارك ولم يسألك المؤشر عنها. لا نفترض لك فيها مستوى — لا مرتفعا ولا منخفضا.
@@ -182,7 +182,7 @@ function GrowthPanel({ summary }: { summary: GrowthSummary }) {
           <Ruler className="h-4 w-4 text-teal-light-ink" aria-hidden="true" />
           نموك المقيس بعد الدورات
         </h2>
-        <p className="text-[11px] text-muted-foreground">قياس بالسلّم نفسه قبل الدورة وبعدها — لا وصف</p>
+        <p className="text-fine text-muted-foreground">قياس بالسلّم نفسه قبل الدورة وبعدها — لا وصف</p>
       </div>
 
       <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -195,7 +195,7 @@ function GrowthPanel({ summary }: { summary: GrowthSummary }) {
         ].map((t) => (
           <div key={t.k} className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
             <dd className="text-2xl font-black tabular-nums" dir={t.ltr ? "ltr" : undefined}>{t.v}</dd>
-            <dt className="mt-0.5 text-[11px] text-muted-foreground">{t.k}</dt>
+            <dt className="mt-0.5 text-fine text-muted-foreground">{t.k}</dt>
           </div>
         ))}
       </dl>
@@ -216,7 +216,7 @@ function GrowthPanel({ summary }: { summary: GrowthSummary }) {
       ))}
 
       {summary.firstMeasured > 0 && (
-        <p className="mt-4 text-[11px] leading-relaxed text-muted-foreground">
+        <p className="mt-4 text-fine leading-relaxed text-muted-foreground">
           {summary.firstMeasured} مهارة قِيست أول مرة بعد الدورة — بلا مرجع قبليّ، فلا تدخل حساب الفرق.
         </p>
       )}
@@ -254,7 +254,7 @@ function GrowthInvites({ invites }: { invites: GrowthPayload["invites"] }) {
       <h2 className="flex items-center gap-2 text-sm font-black">
         <Ruler className="h-4 w-4 text-gold-ink" aria-hidden="true" />
         أتممت دورة — قِس نموك فيها
-        <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[11px] tabular-nums text-gold-ink">{invites.length}</span>
+        <span className="rounded-full bg-gold/15 px-2 py-0.5 text-fine tabular-nums text-gold-ink">{invites.length}</span>
       </h2>
       <p className="mt-2 text-xs leading-6 text-foreground">
         قِيست مهاراتك قبل الدورة. أعد القياس الآن بالسلّم نفسه ليُحفظ الفرق — مرة واحدة لكل دورة.
@@ -420,7 +420,7 @@ export default function MySkills() {
         ))}
       </Section>
 
-      <p className="mt-6 rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-4 text-[11px] leading-relaxed text-muted-foreground">
+      <p className="mt-6 rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-4 text-fine leading-relaxed text-muted-foreground">
         سلّم القياس خمس درجات: لا يعرفها · مبتدئ · يستخدمها أحيانا · جيد عمليا · متقدم.
         وتُصنَّف المهارة فجوةً دون «يستخدمها أحيانا»، ومتقنةً من «جيد عمليا» — وهو الحدّ نفسه
         الذي يستعمله المؤشر في حساب الترشيح، فلا يختلف ما تراه عما احتُسب لك.

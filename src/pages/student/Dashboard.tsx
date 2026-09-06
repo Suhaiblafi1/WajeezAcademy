@@ -134,7 +134,7 @@ function MomentumCard({ m, className = "" }: { m: Momentum; className?: string }
         <h3 className="flex items-center gap-2 text-sm font-bold text-foreground">
           <Activity className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> زخمك
         </h3>
-        <p className="text-[11px] text-muted-foreground">آخر {m.windowDays} يوما</p>
+        <p className="text-fine text-muted-foreground">آخر {m.windowDays} يوما</p>
       </div>
 
       <p className="mt-3 text-sm font-black">
@@ -147,19 +147,19 @@ function MomentumCard({ m, className = "" }: { m: Momentum; className?: string }
       {m.countedTotal > 0 ? (
         <ul className="mt-4 flex flex-wrap gap-2">
           {kinds.map((k) => (
-            <li key={k} className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-[11px] text-foreground">
+            <li key={k} className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-fine text-foreground">
               <span className="tabular-nums font-bold text-teal-light-ink">{m.counted[k]}</span> {KIND_LABEL_AR[k]}
             </li>
           ))}
         </ul>
       ) : (
-        <p className="mt-4 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 text-[11px] leading-6 text-muted-foreground">
+        <p className="mt-4 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 text-fine leading-6 text-muted-foreground">
           لا أثر مسجَّل في آخر {m.windowDays} يوما. وهذا ما تقوله السجلات — لا حكم فيه ولا عدّاد ينكسر.
         </p>
       )}
 
       {m.cohortPace && m.cohortPace.total > 0 && (
-        <p className="mt-4 border-t border-white/8 pt-3 text-[11px] leading-6 text-muted-foreground">
+        <p className="mt-4 border-t border-white/8 pt-3 text-fine leading-6 text-muted-foreground">
           إيقاع شعبتك: انتهت{" "}
           <span className="font-bold tabular-nums text-foreground">{m.cohortPace.done}</span> من{" "}
           <span className="tabular-nums">{m.cohortPace.total}</span> جلسة
@@ -169,7 +169,7 @@ function MomentumCard({ m, className = "" }: { m: Momentum; className?: string }
 
       {/* ‎/55 لا ‎/40: الأخيرة تقيس 3.83:1 على سطح البطاقة — والقاعدة المعلنة
           أولى النصوص بأن تُقرأ */}
-      <p className="mt-3 text-micro leading-5 text-muted-foreground">{NO_STREAK_NOTE}</p>
+      <p className="mt-3 text-fine leading-5 text-muted-foreground">{NO_STREAK_NOTE}</p>
     </section>
   );
 }
@@ -300,7 +300,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
             </svg>
             <span className="absolute inset-0 flex flex-col items-center justify-center">
               <span className="text-xl font-black text-teal-light-ink">{pct}%</span>
-              <span className="text-micro text-muted-foreground">من شعبك</span>
+              <span className="text-fine text-muted-foreground">من شعبك</span>
             </span>
           </div>
         </div>
@@ -350,13 +350,13 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
             <div className="flex items-center gap-2 text-sm font-bold text-foreground">
               <BookOpen className="h-4 w-4 text-teal-light-ink" /> شعبي
             </div>
-            <Link to="/student/learning" className="inline-flex min-h-8 items-center px-2 text-[11px] font-bold text-teal-light-ink hover:text-foreground">الكل ←</Link>
+            <Link to="/student/learning" className="inline-flex min-h-8 items-center px-2 text-fine font-bold text-teal-light-ink hover:text-foreground">الكل ←</Link>
           </div>
           <div className="mt-4 space-y-3">
             {rows.slice(0, 3).map((r) => (
               <div key={r.id}>
                 <p className="truncate text-xs font-bold text-foreground">{r.cohort.course.versions[0]?.titleAr ?? r.cohort.title}</p>
-                <p className="mt-0.5 truncate text-micro text-muted-foreground">
+                <p className="mt-0.5 truncate text-fine text-muted-foreground">
                   {r.cohort.trainers.length > 0 ? `المدرب: ${r.cohort.trainers.map((t) => t.profile.application.fullName).join("، ")}` : r.cohort.title}
                 </p>
                 {r.courseProgress && (
@@ -377,7 +377,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
             <div className="flex items-center gap-2 text-sm font-bold text-foreground">
               <CalendarDays className="h-4 w-4 text-gold-ink" /> جدولي — الجلسات القادمة
             </div>
-            <Link to="/student/learning" className="inline-flex min-h-8 items-center px-2 text-[11px] font-bold text-teal-light-ink hover:text-foreground">تعلّمي ←</Link>
+            <Link to="/student/learning" className="inline-flex min-h-8 items-center px-2 text-fine font-bold text-teal-light-ink hover:text-foreground">تعلّمي ←</Link>
           </div>
           <div className="mt-4 space-y-2.5">
             {details === null ? (
@@ -409,7 +409,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
                     </span>
                     <div>
                       <p className="text-sm font-bold">{s.title}</p>
-                      <p className="text-[11px] text-muted-foreground">{s.cohortTitle} · {fmtWhen(s.startsAt)}</p>
+                      <p className="text-fine text-muted-foreground">{s.cohortTitle} · {fmtWhen(s.startsAt)}</p>
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
@@ -417,7 +417,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
                         وهي ملفٌّ معياريّ يفتحه قوقل وآبل وأوتلوك بلا حساب. */}
                     <a
                       href={`/api/calendar/cohort-sessions/${s.id}.ics`}
-                      className="flex min-h-9 items-center gap-1.5 rounded-full border border-white/15 px-3.5 py-1.5 text-[11px] font-bold text-foreground transition hover:border-white/35 hover:text-foreground"
+                      className="flex min-h-9 items-center gap-1.5 rounded-full border border-white/15 px-3.5 py-1.5 text-fine font-bold text-foreground transition hover:border-white/35 hover:text-foreground"
                     >
                       <CalendarPlus className="h-3.5 w-3.5" /> أضِفها لتقويمك
                     </a>
@@ -449,7 +449,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
                   <Link key={a.id} to="/student/learning"
                     className="flex items-center justify-between gap-3 rounded-2xl border border-gold/25 bg-gold/5 px-4 py-2.5 transition hover:border-gold/50">
                     <span className="text-xs font-bold text-foreground">{a.title} <span className="font-normal text-muted-foreground">· {a.cohortTitle}</span></span>
-                    {a.dueAt && <span className="shrink-0 text-micro text-gold-ink">يستحق {fmtDate(new Date(a.dueAt))}</span>}
+                    {a.dueAt && <span className="shrink-0 text-fine text-gold-ink">يستحق {fmtDate(new Date(a.dueAt))}</span>}
                   </Link>
                 ))}
               </div>
@@ -463,7 +463,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
             <div className="flex items-center gap-2 text-sm font-bold text-foreground">
               <Bell className="h-4 w-4 text-gold-ink" /> أحدثُ التنبيهات
             </div>
-            {unread > 0 && <span className="rounded-full bg-gold px-2 py-0.5 text-micro font-black text-on-gold">{unread} جديد</span>}
+            {unread > 0 && <span className="rounded-full bg-gold px-2 py-0.5 text-fine font-black text-on-gold">{unread} جديد</span>}
           </div>
           <div className="mt-4 space-y-2.5">
             {notifs.length === 0 && <p className="rounded-xl border border-white/5 px-3 py-6 text-center text-xs text-muted-foreground">لا إشعارات بعد</p>}
@@ -474,7 +474,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
               </p>
             ))}
           </div>
-          <Link to="/student/inbox" className="mt-3 flex min-h-9 items-center justify-center text-[11px] font-bold text-teal-light-ink hover:text-foreground">كلُّ الرسائل والتنبيهات ←</Link>
+          <Link to="/student/inbox" className="mt-3 flex min-h-9 items-center justify-center text-fine font-bold text-teal-light-ink hover:text-foreground">كلُّ الرسائل والتنبيهات ←</Link>
         </section>
       </div>
 
@@ -494,7 +494,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
         </Link>
         <Link to="/student/certificates" className="block rounded-3xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-white/30">
           <div className="flex items-center gap-2 text-sm font-bold text-foreground">
-            <Award className="h-4 w-4 text-gold-ink" /> شهاداتي {certCount > 0 && <span className="rounded-full bg-gold/15 px-2 py-0.5 text-micro text-gold-ink">{certCount}</span>}
+            <Award className="h-4 w-4 text-gold-ink" /> شهاداتي {certCount > 0 && <span className="rounded-full bg-gold/15 px-2 py-0.5 text-fine text-gold-ink">{certCount}</span>}
           </div>
           <p className="mt-2 text-xs leading-6 text-muted-foreground">أرقام تحقق عامة تُشاركها مع أي جهة</p>
         </Link>
@@ -506,7 +506,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
         </Link>
       </div>
 
-      <p className="mt-8 flex items-center justify-center gap-2 text-center text-[11px] text-muted-foreground">
+      <p className="mt-8 flex items-center justify-center gap-2 text-center text-fine text-muted-foreground">
         <Sparkles className="h-3.5 w-3.5" />
         <Clock3 className="h-3.5 w-3.5" />
         تقدمك يُحفظ في الخادم تلقائيا — أكمل من أي جهاز
@@ -666,16 +666,16 @@ function JourneyGlance({ track, className = "" }: { track: JourneyTrack; classNa
         <dl className="flex gap-5 text-center">
           <div>
             <dd className="text-xl font-black tabular-nums">{counts.completed}</dd>
-            <dt className="mt-0.5 text-micro text-muted-foreground">أنجزتها</dt>
+            <dt className="mt-0.5 text-fine text-muted-foreground">أنجزتها</dt>
           </div>
           <div>
             <dd className="text-xl font-black tabular-nums">{counts.owned - counts.completed}</dd>
-            <dt className="mt-0.5 text-micro text-muted-foreground">تعمل فيها</dt>
+            <dt className="mt-0.5 text-fine text-muted-foreground">تعمل فيها</dt>
           </div>
           {hours.total > 0 && (
             <div>
               <dd className="text-xl font-black tabular-nums">{hours.done}</dd>
-              <dt className="mt-0.5 text-micro text-muted-foreground">من {hours.total} ساعة</dt>
+              <dt className="mt-0.5 text-fine text-muted-foreground">من {hours.total} ساعة</dt>
             </div>
           )}
         </dl>

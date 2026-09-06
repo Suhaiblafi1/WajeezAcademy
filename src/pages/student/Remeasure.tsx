@@ -44,9 +44,9 @@ function MeasureRow({
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="text-sm font-bold">{row.nameAr}</p>
         {row.beforeLevel === null ? (
-          <span className="text-[11px] text-muted-foreground">لم يقسها المؤشر قبل الدورة</span>
+          <span className="text-fine text-muted-foreground">لم يقسها المؤشر قبل الدورة</span>
         ) : (
-          <span className="flex items-center gap-2 text-[11px] text-muted-foreground">
+          <span className="flex items-center gap-2 text-fine text-muted-foreground">
             قبل الدورة: {levelLabelAr(row.beforeLevel)}
             <span className="w-16">
               <SkillMeter level={row.beforeLevel} className="opacity-45" />
@@ -105,7 +105,7 @@ function Result({ summary, courseTitle }: { summary: GrowthSummary; courseTitle:
         ].map((t) => (
           <div key={t.k} className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
             <dd className="text-2xl font-black tabular-nums" dir={t.ltr ? "ltr" : undefined}>{t.v}</dd>
-            <dt className="mt-0.5 text-[11px] text-muted-foreground">{t.k}</dt>
+            <dt className="mt-0.5 text-fine text-muted-foreground">{t.k}</dt>
           </div>
         ))}
       </dl>
@@ -115,7 +115,7 @@ function Result({ summary, courseTitle }: { summary: GrowthSummary; courseTitle:
         ))}
       </ul>
       {c.firstMeasured > 0 && (
-        <p className="mt-4 text-[11px] leading-relaxed text-muted-foreground">
+        <p className="mt-4 text-fine leading-relaxed text-muted-foreground">
           {c.firstMeasured} مهارة قِيست هنا أول مرة — لا مرجع قبليّ لها، فلا تدخل حساب الفرق.
           لو أكملت جولة التعمق في المؤشر قبل دورتك القادمة، صار لها فرق يُقاس.
         </p>
@@ -219,7 +219,7 @@ export default function Remeasure() {
         <>
           <Result summary={summary} courseTitle={courseTitle} />
           {data.measuredAt && !saved && (
-            <p className="mt-4 text-[11px] text-muted-foreground">قِيس هذا النمو في {fmtWhen(data.measuredAt)} — ويُقاس مرة واحدة لكل دورة.</p>
+            <p className="mt-4 text-fine text-muted-foreground">قِيس هذا النمو في {fmtWhen(data.measuredAt)} — ويُقاس مرة واحدة لكل دورة.</p>
           )}
         </>
       ) : (
@@ -253,7 +253,7 @@ export default function Remeasure() {
             <section className="mt-6 rounded-3xl border border-white/10 bg-white/[0.03] p-5 sm:p-6">
               <h2 className="text-sm font-black">
                 مستواك الآن في {rows.length} مهارة
-                <span className="ms-2 rounded-full bg-teal-ink/15 px-2 py-0.5 text-[11px] tabular-nums text-teal-light-ink">
+                <span className="ms-2 rounded-full bg-teal-ink/15 px-2 py-0.5 text-fine tabular-nums text-teal-light-ink">
                   {Object.keys(levels).length}/{rows.length}
                 </span>
               </h2>

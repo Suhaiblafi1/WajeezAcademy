@@ -77,7 +77,7 @@ export default function SubmissionFeedback({
     <div className={`space-y-2.5 ${className}`.trim()}>
       {hasRubric && (
         <div className="rounded-2xl border border-white/8 bg-paper/20 p-3.5">
-          <p className="flex items-center gap-2 text-[11px] font-black text-foreground">
+          <p className="flex items-center gap-2 text-fine font-black text-foreground">
             <ScrollText className="h-3.5 w-3.5 text-teal-light-ink" aria-hidden="true" />
             من أين جاءت درجتك
           </p>
@@ -85,7 +85,7 @@ export default function SubmissionFeedback({
             {rubric.map((c) => {
               const got = byId.get(c.id);
               return (
-                <li key={c.id} className="grid grid-cols-[1fr_auto] items-center gap-3 text-[11px]">
+                <li key={c.id} className="grid grid-cols-[1fr_auto] items-center gap-3 text-fine">
                   <span className="min-w-0 truncate text-foreground">{c.title}</span>
                   <span className="shrink-0 tabular-nums font-bold">
                     {got === undefined ? <span className="text-muted-foreground">لم يُقيَّم</span> : <>{got}<span className="text-muted-foreground">/{c.maxScore}</span></>}
@@ -98,7 +98,7 @@ export default function SubmissionFeedback({
       )}
 
       {revision && (
-        <p className="flex items-start gap-2 rounded-xl border border-gold/30 bg-gold/[0.06] px-3.5 py-2.5 text-[11px] leading-6 text-foreground">
+        <p className="flex items-start gap-2 rounded-xl border border-gold/30 bg-gold/[0.06] px-3.5 py-2.5 text-fine leading-6 text-foreground">
           <History className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-ink" aria-hidden="true" />
           <span>
             عُدِّلت درجتك من <span className="tabular-nums font-bold">{num(revision.oldScore)}</span> إلى{" "}
@@ -110,22 +110,22 @@ export default function SubmissionFeedback({
 
       {submission.reviewNote && (
         <div className="rounded-2xl border border-teal/25 bg-teal-ink/[0.06] p-3.5">
-          <p className="flex items-center gap-2 text-[11px] font-black text-teal-light-ink">
+          <p className="flex items-center gap-2 text-fine font-black text-teal-light-ink">
             <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
             {noteLabel}
           </p>
-          <p className="mt-1.5 text-[11px] leading-6 text-foreground">{submission.reviewNote}</p>
+          <p className="mt-1.5 text-fine leading-6 text-foreground">{submission.reviewNote}</p>
         </div>
       )}
 
       {submission.feedback.map((f, i) => (
         <div key={i} className="rounded-2xl border border-white/8 bg-white/[0.03] p-3.5">
-          <p className="flex flex-wrap items-center gap-2 text-[11px] font-black text-foreground">
+          <p className="flex flex-wrap items-center gap-2 text-fine font-black text-foreground">
             <MessageSquare className="h-3.5 w-3.5 text-teal-light-ink" aria-hidden="true" />
             تعليق مدربك
             <span className="font-medium text-muted-foreground">{fmtDate(f.createdAt)}</span>
           </p>
-          <p className="mt-1.5 whitespace-pre-line text-[11px] leading-6 text-foreground">{f.body}</p>
+          <p className="mt-1.5 whitespace-pre-line text-fine leading-6 text-foreground">{f.body}</p>
         </div>
       ))}
     </div>

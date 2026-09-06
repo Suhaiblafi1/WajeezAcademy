@@ -77,12 +77,12 @@ export default function VerifyEmailNotice({ email, className = "" }: { email: st
           type="button"
           onClick={() => fold(false)}
           aria-expanded={false}
-          className="inline-flex min-h-9 cursor-pointer items-center gap-1 rounded-full border border-[#FABC05]/30 px-3 text-micro font-bold text-muted-foreground transition hover:text-foreground"
+          className="inline-flex min-h-9 cursor-pointer items-center gap-1 rounded-full border border-[#FABC05]/30 px-3 text-fine font-bold text-muted-foreground transition hover:text-foreground"
         >
           التفصيل <ChevronDown className="h-3 w-3" aria-hidden="true" />
         </button>
         {result && (
-          <p role="status" className={`w-full text-[11px] leading-6 ${result.tone === "ok" ? "text-emerald-300" : "text-[#FABC05]"}`}>
+          <p role="status" className={`w-full text-fine leading-6 ${result.tone === "ok" ? "text-emerald-300" : "text-[#FABC05]"}`}>
             {result.text}
           </p>
         )}
@@ -103,7 +103,7 @@ export default function VerifyEmailNotice({ email, className = "" }: { email: st
               type="button"
               onClick={() => fold(true)}
               aria-expanded
-              className="inline-flex min-h-9 cursor-pointer items-center gap-1 rounded-full border border-[#FABC05]/30 px-3 text-micro font-bold text-muted-foreground transition hover:text-foreground"
+              className="inline-flex min-h-9 cursor-pointer items-center gap-1 rounded-full border border-[#FABC05]/30 px-3 text-fine font-bold text-muted-foreground transition hover:text-foreground"
             >
               اطوِه <ChevronUp className="h-3 w-3" aria-hidden="true" />
             </button>
@@ -119,7 +119,7 @@ export default function VerifyEmailNotice({ email, className = "" }: { email: st
           </p>
           <div className="mt-3">{sendButton}</div>
           {result && (
-            <p role="status" className={`mt-2.5 text-[11px] leading-6 ${result.tone === "ok" ? "text-emerald-300" : "text-[#FABC05]"}`}>
+            <p role="status" className={`mt-2.5 text-fine leading-6 ${result.tone === "ok" ? "text-emerald-300" : "text-[#FABC05]"}`}>
               {result.text}
             </p>
           )}

@@ -274,7 +274,7 @@ export default function Journey() {
                   ))}
                 </ul>
                 <div className="mt-2.5 flex items-end justify-between border-t border-white/10 pt-2">
-                  <span className="text-[11px] text-muted-foreground">
+                  <span className="text-fine text-muted-foreground">
                     {paid.invoice ? <>فاتورة <span dir="ltr" className="font-mono">{paid.invoice.number}</span></> : "المجموع المدفوع"}
                   </span>
                   <span dir="ltr" className="text-lg font-black text-foreground">
@@ -342,7 +342,7 @@ export default function Journey() {
 
             <div className="mb-1 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
               <h2 className="text-lg font-black">{activeTrack.titleAr}</h2>
-              {activeTrack.subtitleAr && <p className="text-[11px] text-muted-foreground">{activeTrack.subtitleAr}</p>}
+              {activeTrack.subtitleAr && <p className="text-fine text-muted-foreground">{activeTrack.subtitleAr}</p>}
             </div>
 
             <StageRail track={activeTrack} selectedId={selectedId} onSelect={select} />

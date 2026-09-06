@@ -134,7 +134,7 @@ export default function MyCv() {
           </span>
         </label>
         {!consent && (
-          <p className="mt-2 text-micro text-muted-foreground">لن يُقبل أي ملف قبل تفعيل الموافقة — كما يفرض الخادم.</p>
+          <p className="mt-2 text-fine text-muted-foreground">لن يُقبل أي ملف قبل تفعيل الموافقة — كما يفرض الخادم.</p>
         )}
       </section>
       )}
@@ -166,14 +166,14 @@ export default function MyCv() {
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate font-black">{c.originalName}</p>
-              <p className="mt-0.5 text-[11px] text-muted-foreground">
+              <p className="mt-0.5 text-fine text-muted-foreground">
                 {cvKindLabel(c.mime)} · {Math.ceil(c.sizeBytes / 1024)} كيلوبايت · رُفعت {fmtWhen(c.createdAt)}
               </p>
             </div>
-            <span className="flex items-center gap-1.5 rounded-full bg-teal/15 px-3 py-1 text-micro font-black text-teal-light-ink">
+            <span className="flex items-center gap-1.5 rounded-full bg-teal/15 px-3 py-1 text-fine font-black text-teal-light-ink">
               <ShieldCheck className="h-3 w-3" /> فعالة
             </span>
-            <span className="flex items-center gap-1.5 text-micro text-muted-foreground">
+            <span className="flex items-center gap-1.5 text-fine text-muted-foreground">
               <Eye className="h-3 w-3" /> مشاهداتها مسجلة في سجل المستشار
             </span>
             <button

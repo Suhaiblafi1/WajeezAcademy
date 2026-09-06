@@ -76,28 +76,28 @@ function RatingCard({ item, onSaved }: { item: Rateable; onSaved: () => void }) 
     <article className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <span className="rounded-full border border-white/10 px-2 py-0.5 text-micro font-bold text-muted-foreground">
+          <span className="rounded-full border border-white/10 px-2 py-0.5 text-fine font-bold text-muted-foreground">
             {KIND_AR[item.subjectType]}
           </span>
           {/* h2 لا h3 — البطاقةُ تحت عنوان الصفحة مباشرةً (انظر «شهاداتي») */}
           <h2 className="mt-1.5 text-sm font-black">{item.nameAr}</h2>
         </div>
         {item.myScore != null && (
-          <span className="text-[11px] text-muted-foreground">قيّمتَ سابقا — يمكنك التعديل</span>
+          <span className="text-fine text-muted-foreground">قيّمتَ سابقا — يمكنك التعديل</span>
         )}
       </div>
 
       <div className="mt-4">
         <Stars value={score} onPick={(v) => { setScore(v); setNeedsScore(false); }} disabled={busy} />
         {needsScore && score < 1 && (
-          <p role="alert" className="mt-2 text-[11px] font-bold leading-5 text-red-300">
+          <p role="alert" className="mt-2 text-fine font-bold leading-5 text-red-300">
             اختر عددَ النجوم أوّلا — التعليقُ وحدَه لا يُرسَل تقييما.
           </p>
         )}
       </div>
 
       <label className="mt-4 block">
-        <span className="mb-1.5 block text-[11px] font-bold text-muted-foreground">
+        <span className="mb-1.5 block text-fine font-bold text-muted-foreground">
           تعليق اختياري — لا يُنشر علنا إلا بعد مراجعة الإدارة
         </span>
         <textarea
@@ -120,7 +120,7 @@ function RatingCard({ item, onSaved }: { item: Rateable; onSaved: () => void }) 
         >
           {busy ? "يُرسَل…" : item.myScore == null ? "أرسل التقييم" : "حدّث التقييم"}
         </button>
-        {error && <span role="alert" className="text-[11px] font-bold text-red-300">{error}</span>}
+        {error && <span role="alert" className="text-fine font-bold text-red-300">{error}</span>}
       </div>
     </article>
   );

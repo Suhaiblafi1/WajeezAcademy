@@ -188,7 +188,7 @@ export default function JoinTrainerComplete() {
           {/* الدورات السابقة */}
           <fieldset>
             <legend className="text-sm font-black">أبرز ثلاث دورات قدّمتها عبر الإنترنت</legend>
-            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+            <p className="mt-1 text-fine leading-relaxed text-muted-foreground">
               اذكر اسم الدورة، والجهة أو المنصة التي قدّمتها من خلالها، ورابطا أو نموذجا مختصرا إن توفّر.
             </p>
             <div className="mt-3 space-y-3">
@@ -223,7 +223,7 @@ export default function JoinTrainerComplete() {
             <legend className="text-sm font-black">
               الفصول التي تستطيع التدريس فيها <span className="text-gold-ink">*</span>
             </legend>
-            <p className="mt-1 text-[11.5px] leading-6 text-muted-foreground">
+            <p className="mt-1 text-fine leading-6 text-muted-foreground">
               الشعبُ تُفتح في فصولٍ لها مواعيد — واختيارُك هنا هو ما يضعك في قائمة
               «المدرّبون المتاحون» لكلّ فصلٍ تختاره.
             </p>
@@ -302,7 +302,7 @@ export default function JoinTrainerComplete() {
             {busy ? "جاري الحفظ…" : "أكمل ملفي المهني"}
           </button>
           {!valid && (
-            <p className="text-center text-[11px] text-muted-foreground">
+            <p className="text-center text-fine text-muted-foreground">
               يلزم: سيرة ذاتية مرفوعة + دورة سابقة واحدة على الأقل + دورة قابلة للتدريس + موافقة الديمو.
             </p>
           )}

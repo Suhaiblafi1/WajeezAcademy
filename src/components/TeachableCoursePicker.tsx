@@ -63,7 +63,7 @@ export default function TeachableCoursePicker({
           بعضها يملأ السطر وبعضها كلمتين — وهو التبعثر الذي شُكي منه. */}
       {domain && (
         <div className="rounded-2xl border border-white/10 bg-paper/20 p-3">
-          <p className="mb-3 text-[11px] leading-6 text-muted-foreground">
+          <p className="mb-3 text-fine leading-6 text-muted-foreground">
             اختر ما تستطيع تدريسه الآن من {domain} — ولك أن تعود وتختار مجالا آخر.
           </p>
           <div className="max-h-64 overflow-y-auto pl-1">
@@ -81,14 +81,14 @@ export default function TeachableCoursePicker({
       {/* المختار يبقى مرئيا ولو غادر مجاله — وإلا ظنّ أنه فقده */}
       {picked.length > 0 && (
         <div>
-          <p className="mb-2 text-[11px] font-bold text-muted-foreground">اخترت {picked.length} دورة:</p>
+          <p className="mb-2 text-fine font-bold text-muted-foreground">اخترت {picked.length} دورة:</p>
           <ul className="flex flex-wrap gap-2">
             {picked.map((c) => (
               <li key={c.id}>
                 <button
                   type="button" onClick={() => toggle(c.id)}
                   aria-label={`أزل ${c.name}`}
-                  className="flex cursor-pointer items-center gap-1.5 rounded-full border border-teal/50 bg-teal/10 px-3 py-1.5 text-[11px] font-bold text-teal-light-ink transition hover:border-teal"
+                  className="flex cursor-pointer items-center gap-1.5 rounded-full border border-teal/50 bg-teal/10 px-3 py-1.5 text-fine font-bold text-teal-light-ink transition hover:border-teal"
                 >
                   {c.name}
                   <X className="h-3 w-3" />

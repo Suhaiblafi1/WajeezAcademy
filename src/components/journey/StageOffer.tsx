@@ -41,7 +41,7 @@ export default function StageOffer({
   return (
     <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
       <h3 className="text-base font-black leading-snug">{stage.titleAr}</h3>
-      <p className="mt-0.5 text-[11px] text-muted-foreground">
+      <p className="mt-0.5 text-fine text-muted-foreground">
         {stage.hours > 0 && `${stage.hours} ساعة · `}
         {stage.weeks} {stage.weeks === 1 ? "أسبوع" : "أسابيع"}
         {stage.isGift && " · هديّتك في الخطّة"}
@@ -69,7 +69,7 @@ export default function StageOffer({
             )}
           </div>
           {!stage.inPlan && (
-            <p className="mt-2.5 flex items-start gap-1.5 text-[11px] leading-5 text-muted-foreground">
+            <p className="mt-2.5 flex items-start gap-1.5 text-fine leading-5 text-muted-foreground">
               <Info className="mt-0.5 h-3 w-3 shrink-0" />
               <span>
                 هذه من دورات المسار ولم تُضِفها بعد. تفاصيلُها كاملةً وخصمُ بناء المسار في{" "}

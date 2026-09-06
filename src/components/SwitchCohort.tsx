@@ -71,11 +71,11 @@ export default function SwitchCohort({
       >
         <CalendarClock className="h-4 w-4 shrink-0 text-teal-light-ink" />
         <span className="min-w-0 flex-1">غيّر موعدك — لم تبدأ شعبتك بعد</span>
-        <span className="shrink-0 text-[11px] font-bold text-muted-foreground">{options.length} بديل</span>
+        <span className="shrink-0 text-fine font-bold text-muted-foreground">{options.length} بديل</span>
       </button>
       {open && (
         <>
-          <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
+          <p className="mt-2 text-fine leading-5 text-muted-foreground">
             مواعيد الدورة نفسها. مقعدك ينتقل معك بلا دفعٍ جديد.
           </p>
           <ul className="mt-3 space-y-1.5">
@@ -93,13 +93,13 @@ export default function SwitchCohort({
                   {busy ? (
                     <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" />
                   ) : (
-                    <span className="shrink-0 text-[11px] font-black text-teal-light-ink">انقلني</span>
+                    <span className="shrink-0 text-fine font-black text-teal-light-ink">انقلني</span>
                   )}
                 </button>
               </li>
             ))}
           </ul>
-          {error && <p className="mt-2 text-[11px] leading-5 text-red-300">{error}</p>}
+          {error && <p className="mt-2 text-fine leading-5 text-red-300">{error}</p>}
         </>
       )}
     </div>

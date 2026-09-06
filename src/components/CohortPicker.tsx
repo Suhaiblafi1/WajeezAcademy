@@ -23,7 +23,7 @@ function When({ c }: { c: CohortOption }) {
   const until = untilLabelAr(c.startsAt);
   const days = daysLabelAr(c.daysOfWeek);
   return (
-    <span className="min-w-0 text-[11px] leading-5 text-muted-foreground">
+    <span className="min-w-0 text-fine leading-5 text-muted-foreground">
       <span className="font-bold text-foreground">{fmtDateAr(c.startsAt)}</span>
       {until && <span className="text-muted-foreground"> · {until}</span>}
       {days && <span className="text-muted-foreground"> · {days}{c.startTime ? ` ${c.startTime}` : ""}</span>}
@@ -54,7 +54,7 @@ export default function CohortPicker({
      المسار وصفحة الدورة، وأربعُ نسخٍ منه تفترق عند أوّل تعديل. */
   if (cohorts.length === 0) {
     return (
-      <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] font-bold text-muted-foreground">
+      <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-fine font-bold text-muted-foreground">
         <CalendarDays className="h-3.5 w-3.5 shrink-0" />
         <UpcomingTermLine fallback="يُعلن الموعد مع فتح الشعبة" />
       </span>
@@ -70,7 +70,7 @@ export default function CohortPicker({
         <CalendarDays className="h-3.5 w-3.5 shrink-0 text-teal-light-ink" />
         <When c={selected} />
         {typeof selected.seatsLeft === "number" && selected.seatsLeft <= 5 && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-gold/15 px-2 py-0.5 text-micro font-black text-gold-ink">
+          <span className="inline-flex items-center gap-1 rounded-full bg-gold/15 px-2 py-0.5 text-fine font-black text-gold-ink">
             <Users className="h-3 w-3" />
             {selected.seatsLeft} مقاعد
           </span>
@@ -80,7 +80,7 @@ export default function CohortPicker({
             type="button"
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
-            className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-white/15 px-2.5 py-0.5 text-micro font-bold text-muted-foreground transition hover:border-white/35 hover:text-foreground"
+            className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-white/15 px-2.5 py-0.5 text-fine font-bold text-muted-foreground transition hover:border-white/35 hover:text-foreground"
           >
             موعد آخر ({others.length})
             <ChevronDown className={`h-3 w-3 transition ${open ? "rotate-180" : ""}`} />
@@ -109,11 +109,11 @@ export default function CohortPicker({
                     يوشك أن يمتلئ قبل أن يقع اختيارُه عليه. */}
                 <span className="min-w-0">
                   <When c={c} />
-                  {c.title && <span className="mt-0.5 block truncate text-micro leading-4 text-muted-foreground">{c.title}</span>}
+                  {c.title && <span className="mt-0.5 block truncate text-fine leading-4 text-muted-foreground">{c.title}</span>}
                 </span>
                 <span className="flex shrink-0 items-center gap-1.5">
                   {typeof c.seatsLeft === "number" && c.seatsLeft <= 5 && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-gold/15 px-1.5 py-0.5 text-micro font-black text-gold-ink">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-gold/15 px-1.5 py-0.5 text-fine font-black text-gold-ink">
                       <Users className="h-2.5 w-2.5" />
                       {c.seatsLeft}
                     </span>
