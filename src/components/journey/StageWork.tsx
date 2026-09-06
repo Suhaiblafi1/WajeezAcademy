@@ -21,7 +21,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import {
   Award, BookOpen, CalendarDays, CalendarPlus, CheckCircle2, Circle, ExternalLink,
-  FileText, Library, Loader2, Play, PlayCircle, Ruler, Send, Video,
+  FileText, Library, Loader2, PenLine, Play, PlayCircle, Ruler, Send, Video,
 } from "lucide-react";
 import SubmissionFeedback from "@/components/SubmissionFeedback";
 import SwitchCohort from "@/components/SwitchCohort";
@@ -328,9 +328,17 @@ function Lessons({
                     {lessons.length > 0 && ` · ${lessons.length} درسا`}
                     {checks > 0 && ` · ${checks} تمرين استرجاع`}
                     {m.scenario && " · سيناريو قرار"}
+                    {lessons.length === 0 && " · متنُها يُكتب الآن"}
                   </span>
                 </span>
-                {done ? (
+                {/* وحدةٌ بلا متن لا تُوسَم «ابدأ من هنا» ولا «لم تبدأ»:
+                    الأولى دعوةٌ إلى فراغ، والثانية تُلقي التأخيرَ على
+                    المتعلّم. فتُقال حالُها كما هي. */}
+                {lessons.length === 0 ? (
+                  <span className="flex shrink-0 items-center gap-1 rounded-full border border-gold/40 bg-gold/[0.07] px-2.5 py-0.5 text-micro font-bold text-gold-ink">
+                    <PenLine className="h-2.5 w-2.5" /> قيد التأليف
+                  </span>
+                ) : done ? (
                   <span className="shrink-0 rounded-full border border-teal/50 px-2.5 py-0.5 text-micro font-bold text-teal-ink">
                     أنجزتها
                   </span>

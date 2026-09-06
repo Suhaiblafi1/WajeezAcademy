@@ -18,7 +18,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import {
   ArrowLeft, ArrowRight, BookOpen, CheckCircle2, Clock, FileText,
-  Loader2, Sparkles, Target,
+  Loader2, PenLine, Sparkles, Target,
 } from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import LessonBody from "@/components/LessonBody";
@@ -121,6 +121,40 @@ export default function ModuleStudy() {
           <BookOpen className="h-12 w-12 text-muted-foreground" />
           <p className="mt-5 text-sm text-muted-foreground">لم نجد هذه الوحدة في هذه الدورة.</p>
           <Link to={`/student/course/${courseId}`} className="mt-6 rounded-full border border-white/15 px-6 py-3 text-sm font-bold text-foreground hover:border-white/40">
+            عُد إلى محطّات الدورة
+          </Link>
+        </Panel>
+      </PortalLayout>
+    );
+  }
+
+  /* ── وحدةٌ بلا متن: تُقال حالُها ولا تُعرض خطوةً فارغة ──
+
+     الشعبُ تُفتح على الفصل الأوّل والتأليفُ يلحق بها موجةً موجة، فيقع أن
+     يفتح متعلّمٌ وحدةً لم يُكتب متنُها بعد. وكان يرى **أسوأ من صفحةٍ
+     فارغة**: شريطَ تقدّمٍ يقول «خطوة ١ من ١» وخطوةً واحدةً اسمها «التطبيق»
+     لا شيءَ فيها — أي وحدةً تبدو قابلةً للإنهاء وهي خاوية.
+
+     فتُقال الحقيقة: قيد التأليف، وموعدُها موعدُ جلستها في جدولك. ولا يُوعَد
+     بإشعارٍ لا مُرسِلَ له. */
+  if (!mod.body?.trim()) {
+    return (
+      <PortalLayout title={mod.title}>
+        <Panel as="section" className="py-14 text-center">
+          <PenLine className="mx-auto h-10 w-10 text-gold-ink" />
+          <p className="mt-5 text-sm font-black text-foreground">هذه الوحدة قيد التأليف</p>
+          <p className="mx-auto mt-2 max-w-md text-xs leading-6 text-muted-foreground">
+            متنُها يُكتب الآن، ويظهر هنا قبل موعد جلستها في جدولك. وما عداها من وحدات الدورة مفتوحٌ لك.
+          </p>
+          {mod.outcome && (
+            <p className="mx-auto mt-4 max-w-md rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-micro leading-6 text-muted-foreground">
+              <span className="font-bold text-foreground">ما ستخرج به منها: </span>{mod.outcome}
+            </p>
+          )}
+          <Link
+            to={`/student/course/${courseId}`}
+            className="mt-6 inline-flex rounded-full border border-white/15 px-6 py-3 text-sm font-bold text-foreground hover:border-white/40"
+          >
             عُد إلى محطّات الدورة
           </Link>
         </Panel>
