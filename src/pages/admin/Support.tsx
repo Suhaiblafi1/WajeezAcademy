@@ -10,6 +10,9 @@ import ListToolbar from "@/components/admin/ListToolbar";
 import { matchesQuery } from "@/application/text/search-ar";
 import { paginate } from "@/application/admin/paginate";
 import FlowSteps from "@/components/FlowSteps";
+import EmptyState from "@/components/EmptyState";
+import { Panel, Card, Inset } from "@/components/ui/Surface";
+import Chip from "@/components/ui/Chip";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { useAutoRefresh } from "@/services/useAutoRefresh";
 import { fmtDateTime } from "@/application/text/format-ar";
@@ -81,13 +84,12 @@ export default function Support() {
   if (offline) {
     return (
       <AdminLayout title="الدعم الفني">
-        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
-          <ServerOff className="h-12 w-12 text-muted-foreground/50" />
-          <p className="mt-4 max-w-md text-sm text-muted-foreground">{offline}</p>
-          <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground hover:border-white/40">
-            <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
-          </button>
-        </div>
+        <EmptyState
+          icon={ServerOff}
+          titleAr="الخادم لا يجيب"
+          reasonAr={offline}
+          actions={[{ onClick: () => void load(), labelAr: "إعادة المحاولة", hintAr: "يُعاد طلبُ التذاكر الآن" }]}
+        />
       </AdminLayout>
     );
   }
@@ -103,26 +105,31 @@ export default function Support() {
 
         <div className="grid gap-5 lg:grid-cols-3">
           <div className="space-y-4 lg:col-span-2">
-            <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+            <Panel as="article">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h3 className="font-black">{t.subject}</h3>
                   <p className="mt-1 text-xs text-muted-foreground">{t.user.displayName} · <span dir="ltr">{t.user.email}</span> · {t.category}</p>
                 </div>
                 <div className="flex gap-2">
-                  <span className="rounded-full border border-teal/40 px-3 py-1 text-[11px] font-bold text-teal-light-ink">{STATUS_AR[t.status] ?? t.status}</span>
-                  <span className={`rounded-full border px-3 py-1 text-[11px] font-bold ${t.priority === "urgent" || t.priority === "high" ? "border-red-500/40 text-red-400" : "border-white/15 text-muted-foreground"}`}>{PRIORITY_AR[t.priority] ?? t.priority}</span>
+                  <Chip tone="accent" srPrefixAr="الحالة">{STATUS_AR[t.status] ?? t.status}</Chip>
+                  <Chip
+                    tone={t.priority === "urgent" || t.priority === "high" ? "danger" : "neutral"}
+                    srPrefixAr="الأولوية"
+                  >
+                    {PRIORITY_AR[t.priority] ?? t.priority}
+                  </Chip>
                 </div>
               </div>
               <ol className="mt-5 space-y-3">
                 {t.messages.map((m) => (
-                  <li key={m.id} className={`rounded-2xl border p-3 text-xs leading-6 ${m.internal ? "border-gold/30 bg-gold/5" : "border-white/10 bg-paper/20"}`}>
+                  <Inset as="li" key={m.id} tone={m.internal ? "warn" : "default"} className="text-xs leading-6">
                     <p className="mb-1 flex items-center gap-2 text-micro font-bold text-muted-foreground">
                       {fmtDateTime(new Date(m.createdAt))}
                       {m.internal && <span className="flex items-center gap-1 text-gold-ink"><EyeOff className="h-3 w-3" /> داخلية — لا يراها العميل</span>}
                     </p>
                     {m.body}
-                  </li>
+                  </Inset>
                 ))}
               </ol>
               <div className="mt-4 border-t border-white/8 pt-4">
@@ -139,11 +146,11 @@ export default function Support() {
                   </button>
                 </div>
               </div>
-            </article>
+            </Panel>
           </div>
 
           <div className="space-y-4">
-            <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
+            <Card as="article">
               <h4 className="text-sm font-black">تحويل الحالة</h4>
               <div className="mt-3 grid grid-cols-2 gap-2">
                 {Object.entries(STATUS_AR).filter(([k]) => k !== t.status).map(([k, v]) => (
@@ -155,9 +162,9 @@ export default function Support() {
                 ))}
               </div>
               <p className="mt-2 text-micro text-muted-foreground">الخادم يرفض الانتقالات غير المشروعة برسالة مفهومة.</p>
-            </article>
+            </Card>
 
-            <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
+            <Card as="article">
               <h4 className="text-sm font-black">الأولوية</h4>
               <div className="mt-3 flex flex-wrap gap-2">
                 {Object.entries(PRIORITY_AR).map(([k, v]) => (
@@ -168,9 +175,9 @@ export default function Support() {
                   </button>
                 ))}
               </div>
-            </article>
+            </Card>
 
-            <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
+            <Card as="article">
               <h4 className="flex items-center gap-2 text-sm font-black"><UserPlus className="h-4 w-4 text-teal-light-ink" /> إسناد لوكيل دعم</h4>
               <div className="mt-3 flex gap-2">
                 <input value={agentId} onChange={(e) => setAgentId(e.target.value)} placeholder="معرف الوكيل (UUID)" dir="ltr" className={`${inputCls} flex-1 font-mono`} />
@@ -181,9 +188,9 @@ export default function Support() {
                 </button>
               </div>
               <p className="mt-2 text-micro text-muted-foreground">الوكيلون بدور «support» من صفحة المستخدمين.</p>
-            </article>
+            </Card>
 
-            <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
+            <Card as="article">
               <h4 className="text-sm font-black">سجل الحالات</h4>
               <ol className="mt-3 space-y-1.5">
                 {t.statusHistory.map((h, i) => (
@@ -194,7 +201,7 @@ export default function Support() {
                   </li>
                 ))}
               </ol>
-            </article>
+            </Card>
           </div>
         </div>
       </AdminLayout>
@@ -224,23 +231,37 @@ export default function Support() {
       {loading ? (
         <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" /></div>
       ) : rows.length === 0 ? (
-        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
-          <LifeBuoy className="h-12 w-12 text-muted-foreground/50" />
-          <p className="mt-4 text-sm text-muted-foreground">لا تذاكر بهذه الحالة — تذاكر المتعلمين تصل هنا فور فتحها من بوابتهم.</p>
-        </div>
+        <EmptyState
+          icon={LifeBuoy}
+          titleAr={statusFilter ? `لا تذاكر بحالة «${STATUS_AR[statusFilter]}»` : "لا تذاكر بعد"}
+          reasonAr="تذاكرُ المتعلّمين تصل هنا فورَ فتحها من بوّابتهم — ولا تُنشأ من هذه الشاشة."
+          tone={statusFilter ? "filter" : "start"}
+          actions={statusFilter
+            ? [{ onClick: () => setStatusFilter(""), labelAr: "اعرض كلَّ الحالات", hintAr: "يُزال المرشّحُ الحاليّ" }]
+            : []}
+        />
       ) : (
         <>
         <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="تذكرة"
           placeholder="ابحث بعنوانٍ أو صاحبِ تذكرةٍ أو تصنيف…" />
         {view.total === 0 ? (
-          <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-muted-foreground">
-            لا تذكرة تطابق «{q.trim()}».
-          </p>
+          <EmptyState
+            icon={LifeBuoy}
+            titleAr="لا تذكرة تطابق بحثك"
+            reasonAr={`لا شيءَ يطابق «${q.trim()}» في العناوين ولا أصحابِ التذاكر ولا التصنيفات.`}
+            tone="filter"
+            actions={[{ onClick: () => { setQ(""); setPage(1); }, labelAr: "امسح البحث", hintAr: "تعود القائمةُ كاملةً" }]}
+          />
         ) : (
         <div className="space-y-3">
           {view.rows.map((t) => (
-            <button key={t.id} onClick={() => void openDetail(t.id)}
-              className="flex w-full cursor-pointer flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-right transition hover:border-teal/40">
+            <Card
+              key={t.id}
+              as="button"
+              interactive
+              onClick={() => void openDetail(t.id)}
+              className="flex w-full flex-wrap items-center justify-between gap-3"
+            >
               <div>
                 <p className="font-black">{t.subject}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
@@ -248,10 +269,15 @@ export default function Support() {
                 </p>
               </div>
               <div className="flex gap-2">
-                <span className={`rounded-full border px-3 py-1 text-[11px] font-bold ${t.priority === "urgent" || t.priority === "high" ? "border-red-500/40 text-red-400" : "border-white/15 text-muted-foreground"}`}>{PRIORITY_AR[t.priority] ?? t.priority}</span>
-                <span className="rounded-full border border-teal/40 px-3 py-1 text-[11px] font-bold text-teal-light-ink">{STATUS_AR[t.status] ?? t.status}</span>
+                <Chip
+                  tone={t.priority === "urgent" || t.priority === "high" ? "danger" : "neutral"}
+                  srPrefixAr="الأولوية"
+                >
+                  {PRIORITY_AR[t.priority] ?? t.priority}
+                </Chip>
+                <Chip tone="accent" srPrefixAr="الحالة">{STATUS_AR[t.status] ?? t.status}</Chip>
               </div>
-            </button>
+            </Card>
           ))}
         </div>
         )}
