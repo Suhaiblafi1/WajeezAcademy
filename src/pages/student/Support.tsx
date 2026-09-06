@@ -9,6 +9,7 @@ import { toast, toastError } from '@/components/Toast';
 import { FieldError, invalidProps } from "@/components/FormKit";
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 const STATUS_AR: Record<string, string> = {
   open: "مفتوحة", in_progress: "قيد المعالجة", waiting_customer: "بانتظار ردك",
   resolved: "محلولة", closed: "مغلقة", reopened: "أُعيد فتحها",
@@ -121,7 +122,7 @@ export default function StudentSupport() {
               <FieldError id="ticket-body-error">{showError("body")}</FieldError>
             </div>
             {/* الزرُّ لا يُغلَق بلا سبب: يُضغَط فيُظهر ما ينقص عند حقله */}
-            <button disabled={busy}
+            <Button tone="confirm" disabled={busy}
               onClick={!formReady
                 ? () => setTouched({ subject: true, body: true })
                 : () => act(async () => {
@@ -129,10 +130,9 @@ export default function StudentSupport() {
                   setForm({ subject: "", category: "other", body: "" });
                   setTouched({});
                   setCreateOpen(false);
-                }, "فُتحت التذكرة — يرد عليك فريق الدعم هنا")}
-              className="cursor-pointer rounded-full bg-teal px-6 py-2.5 text-xs font-black text-on-teal transition hover:bg-teal-light disabled:opacity-40">
+                }, "فُتحت التذكرة — يرد عليك فريق الدعم هنا")}>
               إرسال التذكرة
-            </button>
+            </Button>
           </div>
         )}
       </Panel>
@@ -202,11 +202,10 @@ export default function StudentSupport() {
                         </button>
                       </div>
                     ) : (
-                      <button disabled={busy}
-                        onClick={() => { setReopenFor(t.id); setReopenNote(""); }}
-                        className="mt-3 cursor-pointer rounded-full border border-gold/40 px-4 py-1.5 text-xs font-bold text-gold-ink hover:bg-gold/10 disabled:opacity-40">
+                      <Button tone="primary" size="sm" disabled={busy}
+                        onClick={() => { setReopenFor(t.id); setReopenNote(""); }} className="mt-3 text-gold-ink">
                         إعادة فتح التذكرة
-                      </button>
+                      </Button>
                     )
                   )}
                 </div>

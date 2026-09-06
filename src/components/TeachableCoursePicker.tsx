@@ -85,14 +85,11 @@ export default function TeachableCoursePicker({
           <ul className="flex flex-wrap gap-2">
             {picked.map((c) => (
               <li key={c.id}>
-                <button
-                  type="button" onClick={() => toggle(c.id)}
-                  aria-label={`أزل ${c.name}`}
-                  className="flex cursor-pointer items-center gap-1.5 rounded-full border border-teal/50 bg-teal/10 px-3 py-1.5 text-[11px] font-bold text-teal-light-ink transition hover:border-teal"
-                >
+                <Button tone="confirm" size="sm" type="button" onClick={() => toggle(c.id)}
+                  aria-label={`أزل ${c.name}`} className="text-teal-light-ink">
                   {c.name}
                   <X className="h-3 w-3" />
-                </button>
+                </Button>
               </li>
             ))}
           </ul>

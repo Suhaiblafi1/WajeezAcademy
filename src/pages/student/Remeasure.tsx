@@ -17,6 +17,7 @@ import { apiGet, apiPost } from "@/services/api";
 import { fmtWhen } from "@/utils/format";
 import { LEVEL_LABELS_AR, levelLabelAr } from "@/application/student/skills-profile";
 import { Panel, Card } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 import {
   REMEASURE_MAX, REMEASURE_MIN, buildGrowthSummary, validateRemeasure,
   type GrowthSummary, type RemeasureRecord, type RemeasureRow,
@@ -274,15 +275,12 @@ export default function Remeasure() {
               {/* العدد المتبقي في سطر كامل التباين لا داخل زر معطَّل باهت:
                   التوجيه لا يُدفن في عنصر خامل. */}
               <div className="mt-5 flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
+                <Button tone="primary" type="button"
                   onClick={() => void submit()}
-                  disabled={!complete || saving}
-                  className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full bg-gold px-6 text-sm font-black text-on-gold transition hover:bg-gold/90 disabled:cursor-not-allowed disabled:opacity-40"
-                >
+                  disabled={!complete || saving} className="min-h-11 disabled:cursor-not-allowed">
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <CheckCircle2 className="h-4 w-4" aria-hidden="true" />}
                   احفظ القياس واعرض الفرق
-                </button>
+                </Button>
                 {!complete && (
                   <p className="text-xs font-bold text-foreground">
                     بقيت {rows.length - Object.keys(levels).length} مهارة بلا جواب

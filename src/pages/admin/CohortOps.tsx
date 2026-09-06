@@ -10,6 +10,7 @@ import { apiGet, apiPatch, apiPost, ApiError } from "@/services/api";
 import DayOfWeekPicker from "@/components/DayOfWeekPicker";
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 const inputCls = "w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-[#38A7B4] focus:outline-none";
 const selectCls = `${inputCls} [&>option]:bg-surface`;
 
@@ -283,10 +284,9 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
             ))}
           </div>
           <div className="mt-2 flex items-center gap-2">
-            <button type="button" onClick={() => setItems([...items, { prompt: "", kind: "text", maxScore: "" }])}
-              className="flex cursor-pointer items-center gap-1 rounded-full border border-white/15 px-3 py-1 text-micro font-bold text-muted-foreground hover:border-white/40">
+            <Button tone="secondary" size="sm" type="button" onClick={() => setItems([...items, { prompt: "", kind: "text", maxScore: "" }])} className="text-micro">
               <Plus className="h-3 w-3" /> بند
-            </button>
+            </Button>
             <button disabled={busy || assessForm.title.length < 3}
               onClick={() => act(async () => {
                 await apiPost(`/api/admin/cohorts/${cohort.id}/assessments`, {
@@ -383,11 +383,10 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
 
       {/* نشر عام */}
       {cohort.status === "open" && (
-        <button disabled={busy}
-          onClick={() => act(() => apiPost(`/api/admin/cohorts/${cohort.id}/publish`), "نُشرت الشعبة — إسنادات المدربين ظاهرة للعامة")}
-          className="flex cursor-pointer items-center gap-1.5 rounded-full border border-gold/40 px-4 py-2 text-xs font-bold text-gold-ink transition hover:bg-gold/10 disabled:opacity-40">
+        <Button tone="primary" disabled={busy}
+          onClick={() => act(() => apiPost(`/api/admin/cohorts/${cohort.id}/publish`), "نُشرت الشعبة — إسنادات المدربين ظاهرة للعامة")} className="text-gold-ink">
           <Globe className="h-3.5 w-3.5" /> نشر عام لإسنادات المدربين
-        </button>
+        </Button>
       )}
       {busy && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground/50" />}
     </div>
@@ -446,21 +445,19 @@ export function LearningSettings({ courses, cohorts, onDone }: {
           ))}
         </div>
         <div className="mt-3 flex items-center gap-2">
-          <button type="button" onClick={() => setCriteria([...criteria, { title: "", maxScore: "10" }])}
-            className="flex cursor-pointer items-center gap-1 rounded-full border border-white/15 px-3 py-1 text-micro font-bold text-muted-foreground hover:border-white/40">
+          <Button tone="secondary" size="sm" type="button" onClick={() => setCriteria([...criteria, { title: "", maxScore: "10" }])} className="text-micro">
             <Plus className="h-3 w-3" /> معيار
-          </button>
-          <button disabled={busy || rubricTitle.length < 3 || criteria.some((c) => c.title.trim().length < 2)}
+          </Button>
+          <Button tone="confirm" size="sm" disabled={busy || rubricTitle.length < 3 || criteria.some((c) => c.title.trim().length < 2)}
             onClick={() => act(async () => {
               await apiPost("/api/admin/rubrics", {
                 title: rubricTitle,
                 criteria: criteria.map((c) => ({ title: c.title, maxScore: Number(c.maxScore) || 1 })),
               });
               setRubricTitle(""); setCriteria([{ title: "", maxScore: "10" }]);
-            }, "أُنشئ الروبرك")}
-            className="cursor-pointer rounded-full bg-teal px-4 py-1.5 text-xs font-black text-on-teal hover:bg-teal-light disabled:opacity-40">
+            }, "أُنشئ الروبرك")}>
             أنشئ الروبرك
-          </button>
+          </Button>
         </div>
       </Panel>
 
@@ -490,14 +487,13 @@ export function LearningSettings({ courses, cohorts, onDone }: {
           <input type="checkbox" checked={ruleForm.required} onChange={(e) => setRuleForm({ ...ruleForm, required: e.target.checked })} className="accent-teal" />
           قاعدة إلزامية للشهادة
         </label>
-        <button disabled={busy || !ruleForm.courseId || Number(ruleForm.threshold) < 1}
+        <Button tone="confirm" size="sm" disabled={busy || !ruleForm.courseId || Number(ruleForm.threshold) < 1}
           onClick={() => act(() => apiPost("/api/admin/completion-rules", {
             courseId: ruleForm.courseId, cohortId: ruleForm.cohortId || undefined,
             type: ruleForm.type, threshold: Number(ruleForm.threshold), required: ruleForm.required,
-          }), "حُفظت قاعدة الإكمال")}
-          className="mt-3 cursor-pointer rounded-full bg-teal px-4 py-1.5 text-xs font-black text-on-teal hover:bg-teal-light disabled:opacity-40">
+          }), "حُفظت قاعدة الإكمال")} className="mt-3">
           احفظ القاعدة
-        </button>
+        </Button>
       </Panel>
       {msg && <p className="text-xs font-bold text-teal-light-ink lg:col-span-2" role="status">{msg}</p>}
     </section>
@@ -556,24 +552,18 @@ function CertificateCandidates({ cohortId, busy, act }: {
                   <span dir="ltr" className="rounded-full border border-teal/35 px-2 py-0.5 font-mono text-micro text-teal-light-ink">
                     {r.certificate.number}
                   </span>
-                  <button
-                    onClick={() => { setRevoking(revoking === r.certificate!.id ? null : r.certificate!.id); setReason(""); }}
-                    className="cursor-pointer rounded-full border border-red-400/30 px-2.5 py-0.5 text-micro font-bold text-red-300 hover:bg-red-400/10"
-                  >
+                  <Button tone="danger" onClick={() => { setRevoking(revoking === r.certificate!.id ? null : r.certificate!.id); setReason(""); }} className="px-2.5 text-micro">
                     ألغِها
-                  </button>
+                  </Button>
                 </>
               ) : r.eligible ? (
-                <button
-                  disabled={busy}
+                <Button tone="primary" disabled={busy}
                   onClick={() => act(
                     () => apiPost(`/api/admin/enrollments/${r.enrollmentId}/certificate`).then(load),
                     `أُصدرت شهادة «${r.learnerName}»`,
-                  )}
-                  className="flex cursor-pointer items-center gap-1 rounded-full border border-gold/40 px-3 py-0.5 text-micro font-black text-gold-ink hover:bg-gold/10 disabled:opacity-40"
-                >
+                  )} className="text-micro text-gold-ink">
                   <BadgeCheck className="h-3 w-3" /> أصدِر
-                </button>
+                </Button>
               ) : (
                 <span className="rounded-full border border-white/12 px-2.5 py-0.5 text-micro font-bold text-muted-foreground">
                   لم يُنهِ بعد

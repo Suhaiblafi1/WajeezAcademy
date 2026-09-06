@@ -34,6 +34,7 @@ import type { CourseFull } from "@/data/courses";
 import type { JourneyStage } from "@/application/student/journey";
 import type { LearnerRequest } from "@/services/learner-requests";
 import { Panel, Card } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 import {
   latestSubmission, pendingAssessmentCount,
   type CohortAssessment, type EnrollmentDetail,
@@ -471,14 +472,11 @@ function Assessments({ detail, handlers }: { detail: EnrollmentDetail; handlers:
                   rows={3}
                   className="w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2.5 text-[13px] text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none"
                 />
-                <button
-                  disabled={busy === a.id || !(answers[a.id] ?? "").trim()}
-                  onClick={() => onSubmit(a.id, mine?.status === "resubmit_requested")}
-                  className="mt-2 flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-5 py-2 text-[12px] font-black text-on-teal transition hover:bg-teal-light disabled:opacity-40"
-                >
+                <Button tone="confirm" disabled={busy === a.id || !(answers[a.id] ?? "").trim()}
+                  onClick={() => onSubmit(a.id, mine?.status === "resubmit_requested")} className="mt-2">
                   {busy === a.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
                   {mine?.status === "resubmit_requested" ? "أعد التسليم" : "سلّم الواجب"}
-                </button>
+                </Button>
               </div>
             )}
           </Card>
@@ -517,14 +515,11 @@ function QuizAttemptForm({
           />
         </div>
       ))}
-      <button
-        disabled={busy || answered < items.length}
-        onClick={() => onSubmit(items.map((i) => ({ itemId: i.id, answer: (resp[i.id] ?? "").trim() })))}
-        className="flex cursor-pointer items-center gap-1.5 rounded-full bg-gold px-5 py-2 text-[12px] font-black text-on-gold transition hover:bg-gold/90 disabled:opacity-40"
-      >
+      <Button tone="primary" disabled={busy || answered < items.length}
+        onClick={() => onSubmit(items.map((i) => ({ itemId: i.id, answer: (resp[i.id] ?? "").trim() })))}>
         {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
         سلّم الاختبار ({answered}/{items.length})
-      </button>
+      </Button>
     </div>
   );
 }

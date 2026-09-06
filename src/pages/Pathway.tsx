@@ -44,6 +44,7 @@ import { DISCOUNT_CATEGORIES } from "@/application/commerce/discount-policy";
 import { CONTACT } from "@/data/stories";
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 /* اسم المستخدم — يدعم الصيغتين: JSON الجديدة والنص القديم، ويحترم انتهاء الجلسة */
 function readUserName(): string | null {
   const raw = safeGet("wajeez_user");

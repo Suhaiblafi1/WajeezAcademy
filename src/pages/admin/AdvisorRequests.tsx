@@ -17,6 +17,7 @@ import { areaCls } from "@/components/FormKit";
 import { fmtDateTimeAr } from "@/utils/format";
 
 import { Panel } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 interface Row {
   id: string;
   kind: string;
@@ -144,20 +145,14 @@ export default function AdvisorRequests() {
                 </div>
 
                 <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <button
-                    type="button" onClick={() => void decide(r.id, "approved")} disabled={busy === r.id}
-                    className="flex cursor-pointer items-center gap-2 rounded-full bg-teal px-6 py-2.5 text-xs font-black text-on-teal transition hover:bg-teal-light disabled:opacity-40"
-                  >
+                  <Button tone="confirm" type="button" onClick={() => void decide(r.id, "approved")} disabled={busy === r.id}>
                     {busy === r.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
                     اعتمد
-                  </button>
-                  <button
-                    type="button" onClick={() => void decide(r.id, "rejected")}
-                    disabled={busy === r.id || reason.trim().length < MIN_REASON}
-                    className="flex cursor-pointer items-center gap-2 rounded-full border border-red-400/40 px-6 py-2.5 text-xs font-bold text-red-300 transition hover:bg-red-400/10 disabled:cursor-not-allowed disabled:opacity-35"
-                  >
+                  </Button>
+                  <Button tone="danger" type="button" onClick={() => void decide(r.id, "rejected")}
+                    disabled={busy === r.id || reason.trim().length < MIN_REASON} className="disabled:cursor-not-allowed disabled:opacity-35">
                     <XCircle className="h-3.5 w-3.5" /> ارفض
-                  </button>
+                  </Button>
                   {reason.trim().length < MIN_REASON && (
                     <span className="text-micro text-muted-foreground">الرفض يلزمه سببٌ لا يقلّ عن {MIN_REASON} حرفا</span>
                   )}

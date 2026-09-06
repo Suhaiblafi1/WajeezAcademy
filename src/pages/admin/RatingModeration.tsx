@@ -13,6 +13,7 @@ import { apiGet, apiPost, ApiError } from "@/services/api";
 import ConfirmAction from "@/components/ConfirmAction";
 
 import { Panel, Card } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 interface QueueItem {
   id: string;
   subjectType: "trainer" | "advisor" | "course";
@@ -133,20 +134,14 @@ export default function RatingModeration() {
               )}
               {r.publishStatus === "pending" && (
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <button
-                    onClick={() => void act(r.id, true)}
-                    disabled={busy === r.id}
-                    className="flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-4 py-1.5 text-[11px] font-black text-on-teal transition hover:bg-teal-light disabled:opacity-50"
-                  >
+                  <Button tone="confirm" size="sm" onClick={() => void act(r.id, true)}
+                    disabled={busy === r.id} className="disabled:opacity-50">
                     <CheckCircle2 className="h-3.5 w-3.5" /> اعتمد للنشر
-                  </button>
-                  <button
-                    onClick={() => setBlocking(r)}
-                    disabled={busy === r.id}
-                    className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-1.5 text-[11px] font-bold text-foreground transition hover:border-red-400/50 hover:text-red-300 disabled:opacity-50"
-                  >
+                  </Button>
+                  <Button tone="danger" size="sm" onClick={() => setBlocking(r)}
+                    disabled={busy === r.id} className="disabled:opacity-50">
                     <XCircle className="h-3.5 w-3.5" /> احجب النصّ
-                  </button>
+                  </Button>
                 </div>
               )}
             </Card>

@@ -16,6 +16,7 @@ import { apiPost, ApiError } from "@/services/api";
 import { toast } from "@/components/Toast";
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 interface PathwayOption { id: string; title: string }
 interface SkillRow {
   id: string; status: string; slug: string; nameAr: string; familyId: string | null;
@@ -180,10 +181,9 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
               </p>
             </Inset>
           ))}
-          <button type="button" onClick={() => setD({ ...d, modules: [...d.modules, EMPTY_MODULE] })}
-            className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-1.5 text-xs font-bold text-muted-foreground hover:border-white/40">
+          <Button tone="secondary" size="sm" type="button" onClick={() => setD({ ...d, modules: [...d.modules, EMPTY_MODULE] })}>
             <Plus className="h-3.5 w-3.5" /> وحدة إضافية
-          </button>
+          </Button>
         </div>
       )}
 
@@ -219,20 +219,18 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
 
       <div className="mt-5 flex flex-wrap items-center gap-3">
         {step > 0 && (
-          <button onClick={() => setStep(step - 1)} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-sm font-bold hover:border-white/40">
+          <Button tone="secondary" onClick={() => setStep(step - 1)}>
             <ArrowRight className="h-4 w-4" aria-hidden="true" /> السابق
-          </button>
+          </Button>
         )}
         {step < COURSE_WIZARD_STEPS.length - 1 ? (
-          <button disabled={blockers.length > 0} onClick={() => setStep(step + 1)}
-            className="flex cursor-pointer items-center gap-2 rounded-full bg-gold px-6 py-2 text-sm font-black text-on-gold disabled:opacity-40">
+          <Button tone="primary" disabled={blockers.length > 0} onClick={() => setStep(step + 1)}>
             التالي <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          </button>
+          </Button>
         ) : (
-          <button disabled={busy} onClick={() => void create()}
-            className="flex cursor-pointer items-center gap-2 rounded-full bg-gold px-6 py-2 text-sm font-black text-on-gold disabled:opacity-40">
+          <Button tone="primary" disabled={busy} onClick={() => void create()}>
             {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null} أنشئ المسودة
-          </button>
+          </Button>
         )}
       </div>
     </Panel>

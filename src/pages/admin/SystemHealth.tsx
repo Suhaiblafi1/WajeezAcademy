@@ -18,6 +18,7 @@ import { apiGet, ApiError, permissionMessage } from "@/services/api";
 import { fmtDateTime } from "@/application/text/format-ar";
 
 import { Panel } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 type Level = "ok" | "attention" | "broken" | "unknown";
 
 interface HealthItem {
@@ -78,12 +79,9 @@ export default function SystemHealth() {
           محسوبةٌ من حالة القاعدة عند فتح الصفحة — لا رقمَ محفوظا هنا.
           {data && <span className="mr-2 text-muted-foreground">آخرُ قراءة: {fmtDateTime(new Date(data.checkedAt))}</span>}
         </p>
-        <button
-          type="button" onClick={() => void load()} disabled={busy}
-          className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-muted-foreground transition hover:border-white/40 disabled:opacity-40"
-        >
+        <Button tone="secondary" type="button" onClick={() => void load()} disabled={busy}>
           {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />} اقرأ الآن
-        </button>
+        </Button>
       </div>
 
       {error && (

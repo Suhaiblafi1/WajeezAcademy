@@ -21,6 +21,7 @@ import { apiPost, apiGet, ApiError } from "@/services/api";
 import { toast } from "@/components/Toast";
 
 import { Panel, Card } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 interface CourseOption { id: string; title: string }
 
 interface Impact {
@@ -262,10 +263,9 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
             </Card>
           )}
 
-          <button disabled={busy !== null} onClick={checkImpact}
-            className="cursor-pointer rounded-full border border-white/15 px-4 py-2 text-sm font-bold hover:border-gold/60 disabled:opacity-40">
+          <Button tone="secondary" disabled={busy !== null} onClick={checkImpact}>
             {busy === "impact" ? "يحاكي ١٢ شخصية…" : impact ? "أعِد فحص الأثر" : "افحص الأثر التشخيصي"}
-          </button>
+          </Button>
 
           {impact && (
             <Card className="bg-paper/20 text-xs leading-6 text-foreground">
@@ -302,29 +302,26 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
       {/* التنقل */}
       <div className="mt-5 flex flex-wrap items-center gap-3">
         {step > 0 && !createdId && (
-          <button onClick={() => setStep(step - 1)} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-sm font-bold hover:border-white/40">
+          <Button tone="secondary" onClick={() => setStep(step - 1)}>
             <ArrowRight className="h-4 w-4" aria-hidden="true" /> السابق
-          </button>
+          </Button>
         )}
         {step < 3 && (
-          <button disabled={blockers.length > 0} onClick={() => setStep(step + 1)}
-            className="flex cursor-pointer items-center gap-2 rounded-full bg-gold px-6 py-2 text-sm font-black text-on-gold disabled:opacity-40">
+          <Button tone="primary" disabled={blockers.length > 0} onClick={() => setStep(step + 1)}>
             التالي <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          </button>
+          </Button>
         )}
         {step === 3 && (
-          <button disabled={blockers.length > 0 || busy !== null} onClick={createDraft}
-            className="flex cursor-pointer items-center gap-2 rounded-full bg-gold px-6 py-2 text-sm font-black text-on-gold disabled:opacity-40">
+          <Button tone="primary" disabled={blockers.length > 0 || busy !== null} onClick={createDraft}>
             {busy === "create" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
             أنشئ المسودة وافحص الأثر
-          </button>
+          </Button>
         )}
         {step === 4 && (
-          <button disabled={busy !== null || !impact} onClick={submitForReview}
-            className="flex cursor-pointer items-center gap-2 rounded-full bg-gold px-6 py-2 text-sm font-black text-on-gold disabled:opacity-40">
+          <Button tone="primary" disabled={busy !== null || !impact} onClick={submitForReview}>
             {busy === "submit" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
             قدّم للاعتماد
-          </button>
+          </Button>
         )}
         {step === 4 && !impact && (
           <span className="text-[11px] text-muted-foreground">افحص الأثر أولا — لا يُقدَّم مسار لم يُعرف أثره.</span>

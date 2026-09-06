@@ -48,14 +48,11 @@ export default function Pipeline({
           </h2>
           <div className="mt-3 flex flex-wrap gap-2">
             {overdue.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => onOpen(c.id)}
-                className="cursor-pointer rounded-full border border-gold/40 bg-paper/25 px-3.5 py-1.5 text-[11px] font-bold text-foreground transition hover:border-gold"
-              >
+              <Button tone="secondary" size="sm" key={c.id}
+                onClick={() => onOpen(c.id)} className="bg-paper/25 px-3.5">
                 {renderName(c.id).name}
                 <span className="ms-2 text-gold-ink">{sinceAr(c.nextFollowUpAt!)}</span>
-              </button>
+              </Button>
             ))}
           </div>
         </Card>
@@ -114,13 +111,10 @@ export default function Pipeline({
           <div className="mt-3 flex flex-wrap gap-2">
             {CLOSED_STAGES.flatMap((s) =>
               byStage(s.key).map((c) => (
-                <button
-                  key={c.id}
-                  onClick={() => onOpen(c.id)}
-                  className="cursor-pointer rounded-full border border-white/12 px-3.5 py-1.5 text-[11px] text-muted-foreground transition hover:border-white/30 hover:text-foreground"
-                >
+                <Button tone="secondary" size="sm" key={c.id}
+                  onClick={() => onOpen(c.id)} className="px-3.5">
                   {renderName(c.id).name} <span className="text-muted-foreground">· {s.label}</span>
-                </button>
+                </Button>
               )),
             )}
           </div>

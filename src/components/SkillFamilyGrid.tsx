@@ -3,6 +3,7 @@ import { Gauge, ArrowLeft, SkipForward } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import { Card } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 /* شبكة تقييم عائلات المهارات — شاشة واحدة لا أسئلة متتالية.
 
    لماذا شاشة واحدة: ست عائلات = ستة أسئلة لو فُرِّقت، وقد أمضينا الجهد كله في

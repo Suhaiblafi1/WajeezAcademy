@@ -15,6 +15,7 @@ import { buildInbox, KIND_LABEL_AR, type InboxItem, type InboxKind } from "@/app
 import EmptyState from "@/components/EmptyState";
 import { countAr } from "@/application/text/count-ar";
 
+import Button from "@/components/ui/Button";
 const ICON: Record<InboxKind, typeof Bell> = {
   notification: Bell,
   trainer_feedback: MessageSquare,
@@ -79,13 +80,13 @@ export default function Inbox() {
   return (
     <PortalLayout title="الرسائل والتنبيهات">
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <button onClick={() => { setItems(null); setReload((n) => n + 1); }} className="flex min-h-11 cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 text-xs font-bold text-foreground hover:border-white/40">
+        <Button tone="secondary" onClick={() => { setItems(null); setReload((n) => n + 1); }} className="min-h-11">
           <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" /> تحديث
-        </button>
+        </Button>
         {unread.length > 0 && (
-          <button onClick={() => void markAll()} className="flex min-h-11 cursor-pointer items-center gap-1.5 rounded-full border border-teal/40 px-4 text-xs font-bold text-teal-light-ink hover:bg-teal-ink/10">
+          <Button tone="confirm" onClick={() => void markAll()} className="min-h-11 text-teal-light-ink">
             <CheckCheck className="h-3.5 w-3.5" aria-hidden="true" /> تعليم الإشعارات كمقروءة ({unread.length})
-          </button>
+          </Button>
         )}
       </div>
 

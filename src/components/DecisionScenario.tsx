@@ -15,6 +15,7 @@ import { useMemo, useState } from "react";
 import { CheckCircle2, CornerDownLeft, Loader2, MapPin, RotateCcw, Save, Split, TriangleAlert } from "lucide-react";
 import { apiPost } from "@/services/api";
 import { Card } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 import {
   entryOf, isTerminal, nodeOf, parseScenario, validateScenario,
   type ScenarioNode, type ScenarioStep,
@@ -186,39 +187,30 @@ export default function DecisionScenario({
                 تُحفَظ الجولة لمن سُجّل في الدورة — تابع بلا حفظ، والسيناريو نفسه هو الفائدة.
               </p>
             ) : (
-              <button
-                type="button"
+              <Button tone="primary" type="button"
                 onClick={() => void saveRun()}
-                disabled={save === "busy"}
-                className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full bg-gold px-5 text-xs font-black text-on-gold transition hover:bg-gold/90 disabled:cursor-not-allowed disabled:opacity-40"
-              >
+                disabled={save === "busy"} className="min-h-11 disabled:cursor-not-allowed">
                 {save === "busy"
                   ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                   : <Save className="h-3.5 w-3.5" aria-hidden="true" />}
                 احفظ الجولة والتأمل
-              </button>
+              </Button>
             )}
-            <button
-              type="button"
-              onClick={restart}
-              className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 text-xs font-bold transition hover:border-teal/60 hover:text-teal-light-ink"
-            >
+            <Button tone="secondary" type="button"
+              onClick={restart} className="min-h-11">
               <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
               أعد من البداية بقرار آخر
-            </button>
+            </Button>
           </div>
         </Card>
       )}
 
       {!ended && taken.length > 0 && (
-        <button
-          type="button"
-          onClick={restart}
-          className="mt-4 inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 text-xs font-bold transition hover:border-teal/60 hover:text-teal-light-ink"
-        >
+        <Button tone="secondary" type="button"
+          onClick={restart} className="mt-4 min-h-11">
           <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
           أعد من البداية
-        </button>
+        </Button>
       )}
     </section>
   );

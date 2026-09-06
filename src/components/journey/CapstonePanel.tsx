@@ -28,6 +28,7 @@ import {
 import type { JourneyTrack } from "@/application/student/journey";
 
 import { Card, Panel, Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 export default function CapstonePanel({
   track,
   requests,
@@ -206,8 +207,7 @@ function RequestCard({
               />
             </label>
           )}
-          <button
-            onClick={async () => {
+          <Button tone="confirm" onClick={async () => {
               setBusy(true);
               setError(null);
               try {
@@ -220,12 +220,10 @@ function RequestCard({
                 setBusy(false);
               }
             }}
-            disabled={busy || (needsAudience && audience.trim().length < 3)}
-            className="mt-2.5 flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-5 py-2 text-[12px] font-black text-on-teal transition hover:bg-teal-light disabled:opacity-40"
-          >
+            disabled={busy || (needsAudience && audience.trim().length < 3)} className="mt-2.5">
             {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
             {cta}
-          </button>
+          </Button>
         </div>
       )}
       {error && <p className="mt-2 text-[11px] font-bold text-gold-ink">{error}</p>}

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Moon, Sun } from "lucide-react";
 import { getTheme, toggleTheme } from "@/services/theme";
 
+import Button from "@/components/ui/Button";
 /** زر تبديل المظهر — شمس في الداكن، قمر في الفاتح؛ يُحفظ الاختيار ويعمل فورا عبر المنصة كلها.
 
     ولماذا رموزُ السمة لا `white/…`: كان الزرّ `border-white/10 text-muted-foreground`،
@@ -17,16 +18,13 @@ export default function ThemeToggle() {
   const [theme, setTheme] = useState(getTheme);
   const next = theme === "light" ? "الداكن" : "الفاتح";
   return (
-    <button
-      onClick={() => setTheme(toggleTheme())}
+    <Button tone="primary" onClick={() => setTheme(toggleTheme())}
       aria-label={`التبديل إلى المظهر ${next}`}
       title={`المظهر ${next}`}
       /* `shrink-0`: القياسُ على هاتفٍ عرضُه ٣٩٠ بكسلا وجد الزرَّ ٢٠×٤٤ لا
          ٤٤×٤٤ — لأنّ الشريطَ الذي يحمله `flex`، وعنوانُ الصفحة الطويلُ
-         بجانبه يضغطه فيصير خطّا رأسيّا لا زرّا. */
-      className="grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-full border border-border bg-foreground/[0.04] text-muted-foreground transition hover:border-gold/60 hover:bg-gold/10 hover:text-gold-ink"
-    >
+         بجانبه يضغطه فيصير خطّا رأسيّا لا زرّا. */ className="grid h-11 w-11 shrink-0 place-items-center border-border bg-foreground/[0.04]">
       {theme === "light" ? <Moon className="h-[18px] w-[18px]" /> : <Sun className="h-[18px] w-[18px]" />}
-    </button>
+    </Button>
   );
 }

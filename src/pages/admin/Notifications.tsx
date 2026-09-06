@@ -8,6 +8,7 @@ import { apiGet, apiPost, ApiError } from "@/services/api";
 import { fmtDateTime } from "@/application/text/format-ar";
 
 import { Panel, Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 const inputCls = "rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none";
 
 const CHANNEL_AR: Record<string, string> = { in_app: "داخلي", email: "بريد", sms: "رسالة نصية", whatsapp: "واتساب" };
@@ -56,9 +57,9 @@ export default function Notifications() {
         <Panel className="grid place-items-center py-20 text-center">
           <ServerOff className="h-12 w-12 text-muted-foreground/50" />
           <p className="mt-4 max-w-md text-sm text-muted-foreground">{offline}</p>
-          <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground hover:border-white/40">
+          <Button tone="secondary" onClick={() => void load()} className="mt-5">
             <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
-          </button>
+          </Button>
         </Panel>
       </AdminLayout>
     );
@@ -85,14 +86,13 @@ export default function Notifications() {
             <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} className="accent-teal" />
             قالب فعال
           </label>
-          <button disabled={busy || form.key.length < 2 || !form.titleAr || !form.bodyAr}
+          <Button tone="primary" disabled={busy || form.key.length < 2 || !form.titleAr || !form.bodyAr}
             onClick={() => act(async () => {
               await apiPost("/api/admin/notification-templates", form);
               setForm({ key: "", channel: "in_app", titleAr: "", bodyAr: "", active: true });
-            }, "حُفظ القالب (upsert بالمفتاح والقناة)")}
-            className="mt-3 flex cursor-pointer items-center gap-1.5 rounded-full bg-gold px-5 py-2 text-xs font-black text-on-gold disabled:opacity-40">
+            }, "حُفظ القالب (upsert بالمفتاح والقناة)")} className="mt-3">
             <Save className="h-3.5 w-3.5" /> حفظ القالب
-          </button>
+          </Button>
 
           <ul className="mt-4 space-y-2">
             {templates.map((t) => (
@@ -135,11 +135,10 @@ export default function Notifications() {
                   {n.lastError && <p className="mt-1 text-micro text-red-300">{n.lastError}</p>}
                   <p className="mt-1 text-micro text-muted-foreground">{n.attempts} محاولة · {fmtDateTime(new Date(n.queuedAt))}</p>
                   {n.status === "failed" && (
-                    <button disabled={busy}
-                      onClick={() => act(() => apiPost(`/api/admin/notifications/${n.id}/retry`), "أُعيدت المحاولة")}
-                      className="mt-2 flex cursor-pointer items-center gap-1 rounded-full border border-gold/40 px-3 py-1 text-micro font-bold text-gold-ink disabled:opacity-40">
+                    <Button tone="secondary" size="sm" disabled={busy}
+                      onClick={() => act(() => apiPost(`/api/admin/notifications/${n.id}/retry`), "أُعيدت المحاولة")} className="mt-2 text-micro text-gold-ink">
                       <RefreshCw className="h-3 w-3" /> إعادة المحاولة
-                    </button>
+                    </Button>
                   )}
                 </Inset>
               ))}

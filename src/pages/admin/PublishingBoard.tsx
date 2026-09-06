@@ -6,6 +6,7 @@ import FlowSteps from "@/components/FlowSteps";
 import { apiDelete, apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
 import { fmtDateTime } from "@/application/text/format-ar";
 import { Card } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 import ConfirmAction from '@/components/ConfirmAction'
 
 type Version = {
@@ -62,10 +63,9 @@ export default function PublishingBoard() {
       <div className="grid gap-4 lg:grid-cols-3">
         <Card as="section">
           <h2 className="flex items-center gap-2 font-black"><ShieldCheck className="h-5 w-5 text-gold-ink" /> 1 · التحقق البنيوي</h2>
-          <button disabled={busy !== null} onClick={() => act("validate", async () => setValidation(await apiPost<Validation>("/api/admin/publishing/validate")))}
-            className="mt-4 w-full cursor-pointer rounded-full border border-white/15 px-4 py-2 text-sm font-bold hover:border-gold/60 disabled:opacity-40">
+          <Button tone="secondary" disabled={busy !== null} onClick={() => act("validate", async () => setValidation(await apiPost<Validation>("/api/admin/publishing/validate")))} className="mt-4 w-full">
             {busy === "validate" ? "يفحص…" : "فحص الكيانات المعتمدة"}
-          </button>
+          </Button>
           {validation && (
             <div className="mt-3 text-xs leading-6">
               {validation.ok
@@ -77,10 +77,9 @@ export default function PublishingBoard() {
 
         <Card as="section">
           <h2 className="flex items-center gap-2 font-black"><Activity className="h-5 w-5 text-gold-ink" /> 2 · تحليل الأثر</h2>
-          <button disabled={busy !== null} onClick={() => act("impact", async () => setImpact(await apiPost<Impact>("/api/admin/publishing/impact", { changeRef: "تحليل من لوحة النشر" })))}
-            className="mt-4 w-full cursor-pointer rounded-full border border-white/15 px-4 py-2 text-sm font-bold hover:border-gold/60 disabled:opacity-40">
+          <Button tone="secondary" disabled={busy !== null} onClick={() => act("impact", async () => setImpact(await apiPost<Impact>("/api/admin/publishing/impact", { changeRef: "تحليل من لوحة النشر" })))} className="mt-4 w-full">
             {busy === "impact" ? "يحاكي 12 شخصية…" : "محاكاة قبل/بعد (12 شخصية)"}
-          </button>
+          </Button>
           {impact && (
             <p className="mt-3 text-xs leading-6 text-foreground">
               تغيّرت توصية {impact.changedCount} من {impact.totalPersonas} شخصية.
@@ -97,13 +96,13 @@ export default function PublishingBoard() {
           <div className="mt-4 flex gap-2">
             <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="2026.08.16-01" dir="ltr"
               className="w-full rounded-xl border border-white/10 bg-paper/30 px-3 py-2 text-sm outline-none focus:border-gold/60" />
-            <button disabled={busy !== null || !label.trim()} onClick={() => act("create", async () => {
+            <Button tone="primary" disabled={busy !== null || !label.trim()} onClick={() => act("create", async () => {
               const v = await apiPost<Version>("/api/admin/publishing/versions", { label: label.trim() });
               setLabel("");
               await act("publish", () => apiPost(`/api/admin/publishing/versions/${v.id}/publish`));
-            })} className="cursor-pointer rounded-full bg-gold px-4 py-2 text-sm font-black text-on-gold disabled:opacity-40">
+            })}>
               {busy === "create" || busy === "publish" ? "ينشر…" : "أنشئ وانشر"}
-            </button>
+            </Button>
           </div>
           <p className="mt-2 text-[11px] text-muted-foreground">النشر ذري: يرفض عند أي نقص ولا ينشر شيئًا جزئيًا.</p>
         </Card>
@@ -123,21 +122,19 @@ export default function PublishingBoard() {
                   {STATUS_AR[v.status] ?? v.status}
                 </span>
                 {v.status !== "published" && v.snapshots.length > 0 && (
-                  <button disabled={busy !== null} onClick={() => act(`rb-${v.id}`, () => apiPost("/api/admin/publishing/rollback", { targetVersionId: v.id, reasonAr: "رجوع من لوحة النشر" }))}
-                    className="flex cursor-pointer items-center gap-1 rounded-full border border-amber-400/40 px-3 py-1.5 text-xs font-bold text-amber-300 disabled:opacity-40">
+                  <Button tone="secondary" size="sm" disabled={busy !== null} onClick={() => act(`rb-${v.id}`, () => apiPost("/api/admin/publishing/rollback", { targetVersionId: v.id, reasonAr: "رجوع من لوحة النشر" }))}>
                     <Undo2 className="h-3.5 w-3.5" /> استرجاع هذه اللقطة
-                  </button>
+                  </Button>
                 )}
                 {/* مسودة بلا لقطة = نشرٌ أخفق بعد إنشاء الإصدار: لا تُنشر ولا
                     تُسترجع، وتحجز تسميتها للأبد. هذا طريقها الوحيد للخروج. */}
                 {v.status === "draft" && v.snapshots.length === 0 && (
-                  <button disabled={busy !== null}
+                  <Button tone="danger" size="sm" disabled={busy !== null}
                     /* كان `confirm` خامّا: سطرٌ واحدٌ في حوار متصفّحٍ يملك
                        المستخدمُ كتمَه — فيصير الحذفُ لا يقع ولا يُقال لماذا. */
-                    onClick={() => setPendingDelete({ id: v.id, label: v.label })}
-                    className="flex cursor-pointer items-center gap-1 rounded-full border border-white/20 px-3 py-1.5 text-xs font-bold text-muted-foreground hover:border-rose-400/50 hover:text-danger-ink disabled:opacity-40">
+                    onClick={() => setPendingDelete({ id: v.id, label: v.label })}>
                     <Trash2 className="h-3.5 w-3.5" /> احذف المسودة
-                  </button>
+                  </Button>
                 )}
               </div>
             </Card>
@@ -148,10 +145,9 @@ export default function PublishingBoard() {
       <section className="mt-8">
         <div className="flex items-center justify-between">
           <h2 className="flex items-center gap-2 text-lg font-black"><PlayCircle className="h-5 w-5 text-gold-ink" /> اختبار الارتداد</h2>
-          <button disabled={busy !== null} onClick={() => act("sim", () => apiPost("/api/admin/quality/simulate"))}
-            className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold hover:border-gold/60 disabled:opacity-40">
+          <Button tone="secondary" disabled={busy !== null} onClick={() => act("sim", () => apiPost("/api/admin/quality/simulate"))}>
             <ArrowUpCircle className="h-4 w-4" /> {busy === "sim" ? "يحاكي…" : "تشغيل الآن (منشور مقابل مضمن)"}
-          </button>
+          </Button>
         </div>
         <div className="mt-4 space-y-2">
           {runs.length === 0 && <p className="text-sm text-muted-foreground">لا تشغيلات بعد.</p>}

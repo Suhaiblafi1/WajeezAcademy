@@ -17,6 +17,7 @@ import { courseById } from "@/data/courses";
 import { isLiveCohort } from "@/application/schedule/cohort-status";
 
 import { Panel, Card } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 const STATUS_META: Record<string, { label: string; cls: string }> = {
   draft: { label: "مسودة", cls: "border-white/20 text-muted-foreground" },
   open: { label: "مفتوحة للتسجيل", cls: "border-teal/50 text-teal-light-ink" },
@@ -166,9 +167,9 @@ export default function AdminCohorts() {
           <ServerOff className="h-12 w-12 text-muted-foreground/50" />
           <h2 className="mt-4 text-xl font-black">لا يمكن الوصول للبيانات</h2>
           <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">{offline}</p>
-          <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground hover:border-white/40">
+          <Button tone="secondary" onClick={() => void load()} className="mt-5">
             <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
-          </button>
+          </Button>
         </Panel>
       </AdminLayout>
     );
@@ -224,16 +225,14 @@ export default function AdminCohorts() {
                     placeholder="تعليقك — يصل المدرب مع القرار"
                     className="min-w-0 flex-1 rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none"
                   />
-                  <button type="button" disabled={busy}
-                    onClick={() => void reviewReschedule(r.id, "approve")}
-                    className="cursor-pointer rounded-full bg-teal px-5 py-2 text-[11px] font-black text-on-teal transition hover:bg-teal-light disabled:opacity-40">
+                  <Button tone="confirm" type="button" disabled={busy}
+                    onClick={() => void reviewReschedule(r.id, "approve")}>
                     اعتمد الموعد
-                  </button>
-                  <button type="button" disabled={busy}
-                    onClick={() => void reviewReschedule(r.id, "reject")}
-                    className="cursor-pointer rounded-full border border-red-400/40 px-5 py-2 text-[11px] font-bold text-red-300 transition hover:bg-red-400/10 disabled:opacity-40">
+                  </Button>
+                  <Button tone="danger" type="button" disabled={busy}
+                    onClick={() => void reviewReschedule(r.id, "reject")}>
                     لا أعتمده
-                  </button>
+                  </Button>
                 </div>
               </Card>
             ))}
@@ -301,10 +300,9 @@ export default function AdminCohorts() {
           {filtering && (
             <div className="mt-3 flex items-center gap-3 text-[11px] text-muted-foreground">
               <span>{filtered.length} من {rows.length} شعبة</span>
-              <button onClick={() => setFilters({ status: "", pathway: "", trainer: "", from: "", to: "" })}
-                className="cursor-pointer rounded-full border border-white/15 px-3 py-1 font-bold text-muted-foreground hover:border-white/35">
+              <Button tone="secondary" size="sm" onClick={() => setFilters({ status: "", pathway: "", trainer: "", from: "", to: "" })}>
                 امسح الفلاتر
-              </button>
+              </Button>
             </div>
           )}
         </Panel>
@@ -381,18 +379,15 @@ export default function AdminCohorts() {
                           aria-label="خطة تقديم الشعبة"
                           className={`${areaCls} mt-2.5`}
                         />
-                        <button
-                          type="button"
+                        <Button tone="primary" type="button"
                           disabled={busy || (planDraft[c.id] ?? "").trim().length < 20}
                           onClick={() => act(async () => {
                             await apiPut(`/api/admin/cohorts/${c.id}/delivery-plan`, { notesAr: (planDraft[c.id] ?? "").trim() });
                             setPlanDraft((d) => ({ ...d, [c.id]: "" }));
                             await loadChecklist(c.id);
-                          }, "حُفظت خطّةُ التقديم")}
-                          className="mt-2.5 flex cursor-pointer items-center gap-1.5 rounded-full bg-gold px-4 py-2 text-xs font-black text-on-gold transition hover:bg-gold/90 disabled:opacity-40"
-                        >
+                          }, "حُفظت خطّةُ التقديم")} className="mt-2.5">
                           <FileText className="h-3.5 w-3.5" /> احفظ الخطّة
-                        </button>
+                        </Button>
                         {(planDraft[c.id] ?? "").trim().length > 0 && (planDraft[c.id] ?? "").trim().length < 20 && (
                           <p className="mt-1.5 text-micro text-muted-foreground">٢٠ حرفا فأكثر — خطّةٌ أقصرُ لا تُقرأ.</p>
                         )}
@@ -402,28 +397,24 @@ export default function AdminCohorts() {
                     {/* إجراءات الحالة */}
                     <div className="flex flex-wrap gap-2">
                       {c.status === "draft" && (
-                        <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/cohorts/${c.id}/open`), "فُتحت الشعبة — التسجيل متاح الآن")}
-                          className="flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-4 py-2 text-xs font-black text-on-teal transition hover:bg-teal-light disabled:opacity-40">
+                        <Button tone="confirm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/cohorts/${c.id}/open`), "فُتحت الشعبة — التسجيل متاح الآن")}>
                           <Play className="h-3.5 w-3.5" /> افتح الشعبة
-                        </button>
+                        </Button>
                       )}
                       {["open", "full"].includes(c.status) && (
-                        <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/cohorts/${c.id}/transition`, { to: "active" }), "الشعبة جارية الآن")}
-                          className="cursor-pointer rounded-full border border-teal/50 px-4 py-2 text-xs font-bold text-teal-light-ink transition hover:bg-teal/10">
+                        <Button tone="confirm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/cohorts/${c.id}/transition`, { to: "active" }), "الشعبة جارية الآن")} className="text-teal-light-ink">
                           ابدأ التقديم
-                        </button>
+                        </Button>
                       )}
                       {c.status === "active" && (
-                        <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/cohorts/${c.id}/transition`, { to: "completed" }), "اكتملت الشعبة")}
-                          className="cursor-pointer rounded-full border border-white/20 px-4 py-2 text-xs font-bold text-foreground transition hover:border-white/40">
+                        <Button tone="secondary" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/cohorts/${c.id}/transition`, { to: "completed" }), "اكتملت الشعبة")}>
                           اختتم الشعبة
-                        </button>
+                        </Button>
                       )}
                       {!["completed", "cancelled"].includes(c.status) && (
-                        <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/cohorts/${c.id}/transition`, { to: "cancelled", note: "إلغاء من لوحة الإدارة" }), "أُلغيت الشعبة")}
-                          className="cursor-pointer rounded-full border border-red-500/40 px-4 py-2 text-xs font-bold text-red-400 transition hover:bg-red-500/10">
+                        <Button tone="danger" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/cohorts/${c.id}/transition`, { to: "cancelled", note: "إلغاء من لوحة الإدارة" }), "أُلغيت الشعبة")}>
                           إلغاء
-                        </button>
+                        </Button>
                       )}
                     </div>
 

@@ -200,18 +200,12 @@ export default function RequestsPanel({ caseId }: { caseId: string }) {
           </FieldRow>
 
           <div className="mt-4 flex flex-wrap items-center gap-2">
-            <button
-              type="button" onClick={() => void submit()} disabled={!ready || busy}
-              className="flex cursor-pointer items-center gap-2 rounded-full bg-teal px-6 py-2.5 text-xs font-black text-on-teal transition hover:bg-teal-light disabled:cursor-not-allowed disabled:opacity-40"
-            >
+            <Button tone="confirm" type="button" onClick={() => void submit()} disabled={!ready || busy} className="disabled:cursor-not-allowed">
               {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />} ارفع الطلب
-            </button>
-            <button
-              type="button" onClick={() => setOpen(false)}
-              className="cursor-pointer rounded-full border border-white/15 px-5 py-2.5 text-xs font-bold text-muted-foreground transition hover:border-white/35"
-            >
+            </Button>
+            <Button tone="secondary" type="button" onClick={() => setOpen(false)}>
               إلغاء
-            </button>
+            </Button>
             {!ready && reason.trim().length < 12 && (
               <span className="text-micro text-gold-ink">اكتب سببا لا يقلّ عن ١٢ حرفا</span>
             )}

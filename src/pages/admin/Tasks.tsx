@@ -15,6 +15,7 @@ import { useRealSession } from "@/services/session";
 import { fmtDate } from "@/application/text/format-ar";
 
 import { Panel, Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 interface Task {
   id: string; title: string; bodyAr: string | null;
   dueAt: string | null; priority: string; status: string;
@@ -86,13 +87,10 @@ export default function AdminTasks() {
           {t.doneNoteAr && <p className="mt-1 text-micro text-teal-light-ink">{t.doneNoteAr}</p>}
         </div>
         {t.status !== "done" && (
-          <button
-            disabled={busy}
-            onClick={() => act(() => apiPost(`/api/staff/tasks/${t.id}/complete`, {}), "أُغلقت المهمّة")}
-            className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-teal/45 px-3 py-1 text-[11px] font-bold text-teal-light-ink transition hover:bg-teal/10 disabled:opacity-40"
-          >
+          <Button tone="confirm" size="sm" disabled={busy}
+            onClick={() => act(() => apiPost(`/api/staff/tasks/${t.id}/complete`, {}), "أُغلقت المهمّة")} className="shrink-0 text-teal-light-ink">
             <CheckCircle2 className="h-3 w-3" /> أنجزتُها
-          </button>
+          </Button>
         )}
       </div>
     </li>
@@ -141,8 +139,7 @@ export default function AdminTasks() {
                     {Object.entries(PRIORITY_AR).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                   </select>
                 </div>
-                <button
-                  disabled={busy || !form.assigneeId || form.title.trim().length < 3}
+                <Button tone="primary" disabled={busy || !form.assigneeId || form.title.trim().length < 3}
                   onClick={() => act(
                     () => apiPost("/api/staff/tasks", {
                       assigneeId: form.assigneeId, title: form.title.trim(),
@@ -151,11 +148,9 @@ export default function AdminTasks() {
                       priority: form.priority,
                     }).then(() => setForm({ assigneeId: "", title: "", bodyAr: "", dueAt: "", priority: "normal" })),
                     "كُلّف الموظّف — ووصله إشعارٌ بها",
-                  )}
-                  className="mt-3 cursor-pointer rounded-full bg-gold px-5 py-2 text-xs font-black text-on-gold transition hover:bg-gold/90 disabled:opacity-40"
-                >
+                  )} className="mt-3">
                   كلّفه
-                </button>
+                </Button>
               </Panel>
             )}
 
@@ -198,18 +193,15 @@ export default function AdminTasks() {
                     ))}
                   </Inset>
                 </div>
-                <button
-                  disabled={busy || announce.to.length === 0 || announce.title.trim().length < 3 || announce.bodyAr.trim().length < 3}
+                <Button tone="confirm" disabled={busy || announce.to.length === 0 || announce.title.trim().length < 3 || announce.bodyAr.trim().length < 3}
                   onClick={() => act(
                     () => apiPost("/api/staff/notify", {
                       userIds: announce.to, title: announce.title.trim(), bodyAr: announce.bodyAr.trim(),
                     }).then(() => setAnnounce({ title: "", bodyAr: "", to: [] })),
                     `أُرسل الإشعار إلى ${announce.to.length}`,
-                  )}
-                  className="mt-3 flex cursor-pointer items-center gap-1.5 rounded-full border border-teal/50 px-5 py-2 text-xs font-black text-teal-light-ink transition hover:bg-teal/10 disabled:opacity-40"
-                >
+                  )} className="mt-3 text-teal-light-ink">
                   <Send className="h-3.5 w-3.5" /> أرسِل
-                </button>
+                </Button>
               </Panel>
             )}
           </>

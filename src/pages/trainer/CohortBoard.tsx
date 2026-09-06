@@ -9,6 +9,7 @@ import { fmtDateTimeAr } from "@/utils/format";
 import { usePlatformConfig } from "@/hooks/usePlatformConfig";
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 const API_BASE: string = import.meta.env.VITE_API_URL ?? "";
 
 const ATTENDANCE_OPTIONS = [
@@ -259,9 +260,9 @@ export default function CohortBoard() {
             <ServerOff className="h-12 w-12 text-muted-foreground/50" />
             <h2 className="mt-4 text-xl font-black">لا يمكن الوصول لشعبك</h2>
             <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">{offline}</p>
-            <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground hover:border-white/40">
+            <Button tone="secondary" onClick={() => void load()} className="mt-5">
               <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
-            </button>
+            </Button>
           </Panel>
         ) : loading ? (
           <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" /></div>
@@ -335,11 +336,10 @@ export default function CohortBoard() {
                                           </label>
                                         )}
                                         {s.status !== "done" && (
-                                          <button type="button"
-                                            onClick={() => { setRescheduleFor(rescheduleFor === s.id ? null : s.id); setRescheduleForm({ at: "", reason: "" }); }}
-                                            className="flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-bold text-muted-foreground transition hover:border-gold/50 hover:text-gold-ink">
+                                          <Button tone="secondary" size="sm" type="button"
+                                            onClick={() => { setRescheduleFor(rescheduleFor === s.id ? null : s.id); setRescheduleForm({ at: "", reason: "" }); }} className="min-h-9">
                                             <CalendarClock className="h-3 w-3" /> اقترح موعدا
-                                          </button>
+                                          </Button>
                                         )}
                                       </div>
 
@@ -365,11 +365,10 @@ export default function CohortBoard() {
                                                 className="w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none" />
                                             </div>
                                           </div>
-                                          <button type="button" disabled={busy || !rescheduleForm.at || rescheduleForm.reason.trim().length < 10}
-                                            onClick={() => void proposeReschedule(s.id)}
-                                            className="cursor-pointer rounded-full bg-gold px-5 py-1.5 text-[11px] font-black text-on-gold transition hover:bg-gold/90 disabled:cursor-not-allowed disabled:opacity-40">
+                                          <Button tone="primary" size="sm" type="button" disabled={busy || !rescheduleForm.at || rescheduleForm.reason.trim().length < 10}
+                                            onClick={() => void proposeReschedule(s.id)} className="disabled:cursor-not-allowed">
                                             أرسل الاقتراح للإدارة
-                                          </button>
+                                          </Button>
                                         </Card>
                                       )}
                                       {s.zoom?.passcode && (
@@ -458,11 +457,10 @@ export default function CohortBoard() {
                                   placeholder="اكتب ما تريد أن يبلغهم…"
                                   className="w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs leading-6 text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none"
                                 />
-                                <button type="button" disabled={busy || (msgForm[c.id]?.body ?? "").trim().length < 2}
-                                  onClick={() => sendMessage(c.id)}
-                                  className="flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full bg-teal px-5 py-1.5 text-[11px] font-black text-on-teal transition hover:bg-teal-light disabled:cursor-not-allowed disabled:opacity-40">
+                                <Button tone="confirm" size="sm" type="button" disabled={busy || (msgForm[c.id]?.body ?? "").trim().length < 2}
+                                  onClick={() => sendMessage(c.id)} className="min-h-9 disabled:cursor-not-allowed">
                                   <MessageSquarePlus className="h-3 w-3" /> أرسل
-                                </button>
+                                </Button>
                               </div>
 
                               <div className="mt-4 border-t border-white/8 pt-3">
@@ -618,11 +616,10 @@ export default function CohortBoard() {
                           {RESCHEDULE_STATUS_AR[r.status] ?? r.status}
                         </span>
                         {r.status === "pending" && (
-                          <button type="button" disabled={busy}
-                            onClick={() => void withdrawReschedule(r.id)}
-                            className="shrink-0 cursor-pointer rounded-full border border-white/15 px-4 py-1.5 text-[11px] font-bold text-muted-foreground transition hover:border-red-400/40 hover:text-red-300 disabled:opacity-40">
+                          <Button tone="danger" size="sm" type="button" disabled={busy}
+                            onClick={() => void withdrawReschedule(r.id)} className="shrink-0">
                             سحب الاقتراح
-                          </button>
+                          </Button>
                         )}
                       </div>
                     </Card>
@@ -667,25 +664,21 @@ export default function CohortBoard() {
                       />
                       <div className="mt-3 flex flex-wrap items-center gap-2">
                         {q.status === "submitted" && (
-                          <button disabled={busy} onClick={() => void reviewAction(q.id, "start_review")}
-                            className="cursor-pointer rounded-full border border-white/20 px-4 py-1.5 text-[11px] font-bold text-foreground transition hover:border-white/40">
+                          <Button tone="secondary" size="sm" disabled={busy} onClick={() => void reviewAction(q.id, "start_review")}>
                             ابدأ المراجعة
-                          </button>
+                          </Button>
                         )}
                         {q.status === "under_review" && (
                           <>
-                            <button disabled={busy} onClick={() => void reviewAction(q.id, "accept")}
-                              className="cursor-pointer rounded-full bg-teal px-4 py-1.5 text-[11px] font-black text-on-teal transition hover:bg-teal-light">
+                            <Button tone="confirm" size="sm" disabled={busy} onClick={() => void reviewAction(q.id, "accept")}>
                               قبول
-                            </button>
-                            <button disabled={busy} onClick={() => void reviewAction(q.id, "request_resubmit")}
-                              className="cursor-pointer rounded-full border border-gold/40 px-4 py-1.5 text-[11px] font-bold text-gold-ink transition hover:bg-gold/10">
+                            </Button>
+                            <Button tone="primary" size="sm" disabled={busy} onClick={() => void reviewAction(q.id, "request_resubmit")} className="text-gold-ink">
                               اطلب إعادة التسليم
-                            </button>
-                            <button disabled={busy} onClick={() => void reviewAction(q.id, "reject")}
-                              className="cursor-pointer rounded-full border border-red-500/40 px-4 py-1.5 text-[11px] font-bold text-red-400 transition hover:bg-red-500/10">
+                            </Button>
+                            <Button tone="danger" size="sm" disabled={busy} onClick={() => void reviewAction(q.id, "reject")}>
                               رفض
-                            </button>
+                            </Button>
                           </>
                         )}
                         {["under_review", "submitted"].includes(q.status) && (
@@ -695,10 +688,9 @@ export default function CohortBoard() {
                               onChange={(e) => setGradeForm((prev) => ({ ...prev, [q.id]: e.target.value }))}
                               placeholder={`من ${q.assessment.maxScore}`}
                               className="w-20 rounded-lg border border-white/15 bg-paper/30 px-2 py-1.5 text-xs text-foreground focus:border-teal focus:outline-none" />
-                            <button disabled={busy || !(gradeForm[q.id] ?? "").trim()} onClick={() => void grade(q.id, q.assessment.maxScore)}
-                              className="cursor-pointer rounded-full border border-white/20 px-3 py-1.5 text-[11px] font-bold text-foreground transition hover:border-white/40 disabled:opacity-40">
+                            <Button tone="secondary" size="sm" disabled={busy || !(gradeForm[q.id] ?? "").trim()} onClick={() => void grade(q.id, q.assessment.maxScore)}>
                               سجّل الدرجة
-                            </button>
+                            </Button>
                           </span>
                         )}
                       </div>

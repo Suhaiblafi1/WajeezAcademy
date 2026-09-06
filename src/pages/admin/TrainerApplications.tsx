@@ -22,6 +22,7 @@ import ConfirmAction from "@/components/ConfirmAction";
 import { ONE_CLICK_APPROVABLE_STATUSES } from "@/application/trainer/approval";
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 const STATUS_LABELS: Record<string, string> = {
   draft: "مسودة — لم يُكمل", email_verification_pending: "بانتظار تحقق البريد",
   submitted: "مُقدَّم", under_review: "قيد المراجعة",
@@ -312,9 +313,9 @@ export default function TrainerApplications() {
           <ServerOff className="h-12 w-12 text-muted-foreground/50" />
           <h2 className="mt-4 text-xl font-black">لا يمكن الوصول للبيانات</h2>
           <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">{offline}</p>
-          <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground hover:border-white/40">
+          <Button tone="secondary" onClick={() => void load()} className="mt-5">
             <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
-          </button>
+          </Button>
         </Panel>
       </AdminLayout>
     );
@@ -534,13 +535,10 @@ export default function TrainerApplications() {
                 aria-label="ملاحظة المراجع"
                 className="mt-3 w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none"
               />
-              <button
-                disabled={!rubricComplete || busy}
-                onClick={() => void act(() => apiPost(`/api/admin/trainer-applications/${a.id}/reviews`, { scores, overallNote: note || undefined }), "سُجل التقييم")}
-                className="mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-teal py-2.5 text-xs font-black text-on-teal transition hover:bg-teal/90 disabled:opacity-40"
-              >
+              <Button tone="confirm" disabled={!rubricComplete || busy}
+                onClick={() => void act(() => apiPost(`/api/admin/trainer-applications/${a.id}/reviews`, { scores, overallNote: note || undefined }), "سُجل التقييم")} className="mt-3 w-full">
                 <Star className="h-3.5 w-3.5" /> سجّل التقييم
-              </button>
+              </Button>
               <p className="mt-2 text-center text-micro text-muted-foreground">{a.reviews.length} تقييم مسجل</p>
             </Panel>
 
@@ -578,8 +576,7 @@ export default function TrainerApplications() {
                 </p>
               )}
               {a.status === "onboarding" && !a.profile?.userId && !a.userId && (
-                <button
-                  disabled={busy}
+                <Button tone="confirm" disabled={busy}
                   onClick={() => void act(async () => {
                     /* الرابط يُعرض للمسؤول دائما لا في التطوير وحده: كان يُحجب في
                        الإنتاج انتظارا لقناة بريد لا وجود لها، فتُنشأ الدعوة ولا
@@ -589,11 +586,9 @@ export default function TrainerApplications() {
                       `/api/admin/trainer-applications/${a.id}/invitations`,
                     );
                     setInvite({ url: r.acceptUrl, delivery: r.emailDelivery });
-                  }, "أُنشئت الدعوة الآمنة")}
-                  className="mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-teal/50 py-2.5 text-xs font-black text-teal-light-ink transition hover:bg-teal/10 disabled:opacity-40"
-                >
+                  }, "أُنشئت الدعوة الآمنة")} className="mt-3 w-full text-teal-light-ink">
                   <KeyRound className="h-3.5 w-3.5" /> أرسل دعوة إنشاء الحساب
-                </button>
+                </Button>
               )}
               {invite && a.status === "onboarding" && !a.profile?.userId && !a.userId && (
                 <Inset tone="accent" className="mt-3">
@@ -650,9 +645,9 @@ export default function TrainerApplications() {
               <option value="">كل الحالات</option>
               {Object.entries(STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
-            <button onClick={() => void load()} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-muted-foreground hover:border-white/40">
+            <Button tone="secondary" onClick={() => void load()}>
               <RefreshCw className="h-3.5 w-3.5" /> تحديث
-            </button>
+            </Button>
           </>
         )}
       </div>

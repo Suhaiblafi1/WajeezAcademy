@@ -10,6 +10,7 @@ import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 import { DEFAULT_SENDER_EMAIL } from "@/application/site/origin";
 
 import { Panel, Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 const inputCls = "rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground focus:border-teal focus:outline-none";
 const labelCls = "block text-micro font-bold text-muted-foreground";
 
@@ -92,9 +93,9 @@ export default function Integrations() {
         <Panel className="grid place-items-center py-20 text-center">
           <ServerOff className="h-12 w-12 text-muted-foreground/50" />
           <p className="mt-4 max-w-md text-sm text-muted-foreground">{offline}</p>
-          <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground hover:border-white/40">
+          <Button tone="secondary" onClick={() => void load()} className="mt-5">
             <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
-          </button>
+          </Button>
         </Panel>
       </AdminLayout>
     );
@@ -178,14 +179,12 @@ export default function Integrations() {
                 تفعيل هذا المزود — غير المفعّل يعني: المزود الاختباري يعمل
               </label>
               <div className="flex flex-wrap gap-2">
-                <button disabled={busy} onClick={() => act(() => apiPut("/api/admin/integrations/payment", payForm), "حُفظت إعدادات الدفع")}
-                  className="cursor-pointer rounded-full bg-gold px-5 py-2 text-xs font-black text-on-gold disabled:opacity-40">
+                <Button tone="primary" disabled={busy} onClick={() => act(() => apiPut("/api/admin/integrations/payment", payForm), "حُفظت إعدادات الدفع")}>
                   حفظ إعدادات الدفع
-                </button>
-                <button disabled={busy} onClick={() => void testPayment()}
-                  className="flex cursor-pointer items-center gap-1.5 rounded-full border border-teal/40 px-4 py-2 text-xs font-bold text-teal-light-ink disabled:opacity-40">
+                </Button>
+                <Button tone="secondary" disabled={busy} onClick={() => void testPayment()} className="text-teal-light-ink">
                   <PlugZap className="h-3.5 w-3.5" /> فحص الاتصال الحي
-                </button>
+                </Button>
               </div>
             </div>
           </Panel>
@@ -227,17 +226,15 @@ export default function Integrations() {
                 </label>
               </div>
               <div className="flex flex-wrap gap-2">
-                <button disabled={busy} onClick={() => act(() => apiPut("/api/admin/integrations/email", mailForm), "حُفظت إعدادات البريد")}
-                  className="cursor-pointer rounded-full bg-gold px-5 py-2 text-xs font-black text-on-gold disabled:opacity-40">
+                <Button tone="primary" disabled={busy} onClick={() => act(() => apiPut("/api/admin/integrations/email", mailForm), "حُفظت إعدادات البريد")}>
                   حفظ إعدادات البريد
-                </button>
+                </Button>
                 <div className="flex flex-1 items-center gap-2">
                   <input dir="ltr" value={testTo} onChange={(e) => setTestTo(e.target.value)} placeholder="بريد الاختبار…"
                     className={`${inputCls} min-w-0 flex-1 font-mono`} />
-                  <button disabled={busy} onClick={() => void testEmail()}
-                    className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-teal/40 px-4 py-2 text-xs font-bold text-teal-light-ink disabled:opacity-40">
+                  <Button tone="secondary" disabled={busy} onClick={() => void testEmail()} className="shrink-0 text-teal-light-ink">
                     <Send className="h-3.5 w-3.5" /> إرسال تجريبي
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>

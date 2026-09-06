@@ -15,6 +15,7 @@ import { AlertTriangle, CheckCircle2, ChevronLeft, Clock, Inbox, Loader2, Refres
 import { apiGet, ApiError } from "@/services/api";
 
 import { Card } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 interface InboxItem {
   key: string;
   titleAr: string;
@@ -61,12 +62,9 @@ export default function StaffInbox() {
             <span className="rounded-full bg-teal/20 px-2 py-0.5 text-[11px] font-black tabular-nums text-teal-light-ink">{total}</span>
           )}
         </h2>
-        <button
-          type="button" onClick={() => void load()} disabled={busy}
-          className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/12 px-3 py-1 text-[11px] font-bold text-muted-foreground transition hover:border-white/35 hover:text-foreground disabled:opacity-40"
-        >
+        <Button tone="secondary" size="sm" type="button" onClick={() => void load()} disabled={busy}>
           {busy ? <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" /> : <RefreshCw className="h-3 w-3" aria-hidden="true" />} تحديث
-        </button>
+        </Button>
       </div>
 
       {error && (

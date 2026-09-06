@@ -10,6 +10,7 @@ import { apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
 import { fmtDate } from "@/application/text/format-ar";
 
 import { Panel, Card } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 const CASE_STATUS_AR: Record<string, string> = {
   new: "جديدة", contacted: "تم التواصل", qualified: "مؤهلة", follow_up: "متابعة",
   enrolled: "سجلت", not_interested: "غير مهتمة", closed: "مغلقة", converted: "تحولت",
@@ -62,9 +63,9 @@ export default function Exceptions() {
         <Panel className="grid place-items-center py-20 text-center">
           <ServerOff className="h-12 w-12 text-muted-foreground/50" />
           <p className="mt-4 max-w-md text-sm text-muted-foreground">{offline}</p>
-          <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground hover:border-white/40">
+          <Button tone="secondary" onClick={() => void load()} className="mt-5">
             <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
-          </button>
+          </Button>
         </Panel>
       </AdminLayout>
     );
@@ -78,9 +79,9 @@ export default function Exceptions() {
         { label: "المستشار يستلمها", actor: "تظهر في بوابته فوراً" },
       ]} />
       <div className="mb-5 flex items-center gap-3">
-        <button onClick={() => void load()} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-muted-foreground hover:border-white/40">
+        <Button tone="secondary" onClick={() => void load()}>
           <RefreshCw className="h-3.5 w-3.5" /> تحديث
-        </button>
+        </Button>
       </div>
 
       {loading ? (
@@ -114,10 +115,9 @@ export default function Exceptions() {
                     placeholder="معرف المستشار (UUID)" dir="ltr"
                     className="w-56 rounded-xl border border-white/15 bg-paper/30 px-3 py-2 font-mono text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none" />
                 )}
-                <button disabled={busy || !(pick[c.id] ?? "").trim()} onClick={() => void assign(c.id)}
-                  className="flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-4 py-2 text-xs font-black text-on-teal transition hover:bg-teal-light disabled:opacity-40">
+                <Button tone="confirm" disabled={busy || !(pick[c.id] ?? "").trim()} onClick={() => void assign(c.id)}>
                   <UserPlus className="h-3.5 w-3.5" /> إسناد
-                </button>
+                </Button>
               </div>
             </Card>
           ))}

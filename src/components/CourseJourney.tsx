@@ -7,6 +7,7 @@ import { courseFullById, weeksLabel, MIN_PATHWAY_COURSES, MAX_PATHWAY_COURSES } 
 import { apiGet } from "@/services/api";
 
 import { Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 /** مقترح استبدال/إضافة/هدية — يحسبه المحرك من مجال المسار وفجوات المتعلم */
 export interface CourseSuggestion {
   id: string;
@@ -451,13 +452,10 @@ export default function CourseJourney({
                     </span>
                     <span className="flex shrink-0 items-center gap-1">
                       {!edit.maxReached && (
-                        <button
-                          onClick={() => edit.onAdd(p.id)}
-                          aria-label={`أضف «${p.name}» إلى مسارك`}
-                          className="grid h-6 w-6 cursor-pointer place-items-center rounded-full border border-white/15 text-muted-foreground transition hover:border-teal-light/60 hover:text-teal-light-ink"
-                        >
+                        <Button tone="secondary" onClick={() => edit.onAdd(p.id)}
+                          aria-label={`أضف «${p.name}» إلى مسارك`} className="grid h-6 w-6 place-items-center">
                           <Plus className="h-3 w-3" />
-                        </button>
+                        </Button>
                       )}
                     </span>
                   </Inset>

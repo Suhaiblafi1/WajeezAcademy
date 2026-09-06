@@ -10,6 +10,7 @@ import { Loader2, Search, UserCheck, X } from "lucide-react";
 import { apiGet } from "@/services/api";
 
 import { Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 export interface LearnerHit {
   id: string;
   displayName: string;
@@ -60,14 +61,11 @@ export default function LearnerSearchField({
         <UserCheck className="h-3.5 w-3.5 shrink-0 text-teal-light-ink" aria-hidden="true" />
         <span className="flex-1 truncate text-xs font-bold text-foreground">{value.displayName}</span>
         <span dir="ltr" className="truncate text-micro text-muted-foreground">{value.email}</span>
-        <button
-          type="button"
+        <Button tone="ghost" type="button"
           onClick={() => { onChange(null); setTerm(""); }}
-          aria-label="اختر متعلّما آخر"
-          className="shrink-0 cursor-pointer rounded-full p-1 text-muted-foreground transition hover:bg-white/10 hover:text-foreground"
-        >
+          aria-label="اختر متعلّما آخر" className="shrink-0 p-1">
           <X className="h-3.5 w-3.5" />
-        </button>
+        </Button>
       </Inset>
     );
   }

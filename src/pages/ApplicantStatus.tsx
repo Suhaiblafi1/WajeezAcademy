@@ -12,6 +12,7 @@ import { APPLICANT_STATUS, BOOKABLE_STATUSES, WITHDRAWABLE_STATUSES, contactChan
 import BookInterview from "@/components/BookInterview";
 
 import { Card } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 /* بوّابةُ المتقدّم للتدريب — صفحةٌ واحدة تقول له أين طلبه.
 
    المتقدّم يدخل ببريده وكلمته التي اختارها عند التقديم، فيرى: حالةَ طلبه
@@ -119,12 +120,9 @@ export default function ApplicantStatus() {
             <span className="kicker">طلب الانضمام كمدرب</span>
             <h1 className="mt-3 text-2xl font-black">حالة طلبك</h1>
           </div>
-          <button
-            type="button" onClick={doSignOut}
-            className="flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-muted-foreground transition hover:border-white/40 hover:text-foreground"
-          >
+          <Button tone="secondary" type="button" onClick={doSignOut}>
             <LogOut className="h-3.5 w-3.5" /> تسجيل الخروج
-          </button>
+          </Button>
         </div>
 
         {loading && (
@@ -151,12 +149,9 @@ export default function ApplicantStatus() {
               <p className="mt-2 text-sm leading-7 opacity-90">{st.explain}</p>
 
               {mine.status === "draft" && (
-                <button
-                  type="button" onClick={resume}
-                  className="mt-4 flex cursor-pointer items-center gap-2 rounded-full bg-gold px-6 py-2.5 text-sm font-black text-on-gold transition hover:bg-gold/90"
-                >
+                <Button tone="primary" type="button" onClick={resume} className="mt-4">
                   أكمل طلبك <ArrowLeft className="h-4 w-4" />
-                </button>
+                </Button>
               )}
               {(mine.status === "active" || isTrainer) && (
                 <Link
@@ -254,13 +249,10 @@ export default function ApplicantStatus() {
               <Card as="section">
                 <p className="text-xs font-bold text-muted-foreground">غيّرت رأيك؟ يمكنك سحب طلبك نهائيا — والتقديم من جديد متى شئت.</p>
                 <div className="mt-3 flex flex-wrap items-center gap-3">
-                  <button
-                    type="button" onClick={withdraw} disabled={withdrawing}
-                    className="flex cursor-pointer items-center gap-2 rounded-full border border-red-400/40 px-5 py-2 text-xs font-bold text-red-300 transition hover:bg-red-400/10 disabled:opacity-40"
-                  >
+                  <Button tone="danger" type="button" onClick={withdraw} disabled={withdrawing}>
                     {withdrawing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <XCircle className="h-3.5 w-3.5" />}
                     {confirmWithdraw ? "نعم — اسحب طلبي نهائيا" : "اسحب طلبي"}
-                  </button>
+                  </Button>
                   {confirmWithdraw && (
                     <button type="button" onClick={() => setConfirmWithdraw(false)} className="cursor-pointer text-xs font-bold text-muted-foreground hover:text-foreground">
                       تراجع

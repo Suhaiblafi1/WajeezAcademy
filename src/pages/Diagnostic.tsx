@@ -77,6 +77,7 @@ import {
 import { composedReason, templateCourseReason } from "./diagnostic/plan-reasons";
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 type DiagAnswers = Record<string, string>;
 type Stage = "intro" | "questions" | "skills" | "computing" | "result";
 

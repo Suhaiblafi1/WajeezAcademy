@@ -17,6 +17,7 @@ import { apiGet, apiPost, ApiError } from "@/services/api";
 import { useAutoRefresh } from "@/services/useAutoRefresh";
 import { fmtDateTime } from "@/application/text/format-ar";
 
+import Button from "@/components/ui/Button";
 const STATUS_AR: Record<string, string> = {
   open: "مفتوحة", in_progress: "قيد المعالجة", waiting_customer: "بانتظار العميل",
   resolved: "محلولة", closed: "مغلقة", reopened: "أُعيد فتحها",
@@ -139,11 +140,10 @@ export default function Support() {
                     <input type="checkbox" checked={internal} onChange={(e) => setInternal(e.target.checked)} className="accent-gold" />
                     رد داخلي (مخفي عن العميل)
                   </label>
-                  <button disabled={busy || !reply.trim()}
-                    onClick={() => act(() => apiPost(`/api/admin/support/tickets/${t.id}/reply`, { body: reply, internal }), "أُرسل الرد")}
-                    className="flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-5 py-2 text-xs font-black text-on-teal hover:bg-teal-light disabled:opacity-40">
+                  <Button tone="confirm" disabled={busy || !reply.trim()}
+                    onClick={() => act(() => apiPost(`/api/admin/support/tickets/${t.id}/reply`, { body: reply, internal }), "أُرسل الرد")}>
                     <Send className="h-3.5 w-3.5" /> إرسال
-                  </button>
+                  </Button>
                 </div>
               </div>
             </Panel>
@@ -181,11 +181,10 @@ export default function Support() {
               <h4 className="flex items-center gap-2 text-sm font-black"><UserPlus className="h-4 w-4 text-teal-light-ink" /> إسناد لوكيل دعم</h4>
               <div className="mt-3 flex gap-2">
                 <input value={agentId} onChange={(e) => setAgentId(e.target.value)} placeholder="معرف الوكيل (UUID)" dir="ltr" className={`${inputCls} flex-1 font-mono`} />
-                <button disabled={busy || !agentId.trim()}
-                  onClick={() => act(() => apiPost(`/api/admin/support/tickets/${t.id}/assign`, { agentId: agentId.trim() }), "أُسندت التذكرة")}
-                  className="cursor-pointer rounded-full bg-teal px-4 py-2 text-xs font-black text-on-teal disabled:opacity-40">
+                <Button tone="confirm" disabled={busy || !agentId.trim()}
+                  onClick={() => act(() => apiPost(`/api/admin/support/tickets/${t.id}/assign`, { agentId: agentId.trim() }), "أُسندت التذكرة")}>
                   إسناد
-                </button>
+                </Button>
               </div>
               <p className="mt-2 text-micro text-muted-foreground">الوكيلون بدور «support» من صفحة المستخدمين.</p>
             </Card>
@@ -223,9 +222,9 @@ export default function Support() {
           <option value="">كل الحالات</option>
           {Object.entries(STATUS_AR).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
-        <button onClick={() => void load()} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-muted-foreground hover:border-white/40">
+        <Button tone="secondary" onClick={() => void load()}>
           <RefreshCw className="h-3.5 w-3.5" /> تحديث
-        </button>
+        </Button>
       </div>
 
       {loading ? (

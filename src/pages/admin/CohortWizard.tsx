@@ -18,6 +18,7 @@ import DayOfWeekPicker from "@/components/DayOfWeekPicker";
 import { daysLabelAr, fmtDateAr, fmtDateTimeAr } from "@/utils/format";
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 export interface WizardCourse {
   id: string;
   title: string;
@@ -426,10 +427,9 @@ export default function CohortWizard({
 
       {/* التنقّل */}
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-white/8 pt-4">
-        <button type="button" disabled={step === 0 || busy} onClick={() => setStep(step - 1)}
-          className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground transition hover:border-white/40 disabled:opacity-30">
+        <Button tone="secondary" type="button" disabled={step === 0 || busy} onClick={() => setStep(step - 1)} className="disabled:opacity-30">
           <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" /> السابق
-        </button>
+        </Button>
         {/* السببُ بجانب الزرّ — لا في ذيل الصفحة ولا في تلميحٍ يظهر بالمرور */}
         {step < STEPS.length - 1 && stepMissing.length > 0 && (
           <p role="status" className="order-last w-full text-[11px] leading-6 text-gold-ink sm:order-none sm:w-auto sm:flex-1">
@@ -437,21 +437,18 @@ export default function CohortWizard({
           </p>
         )}
         {step < STEPS.length - 1 ? (
-          <button type="button" disabled={!canNext || busy} onClick={() => setStep(step + 1)}
-            className="flex cursor-pointer items-center gap-1.5 rounded-full bg-white/10 px-6 py-2 text-xs font-black text-foreground transition hover:bg-white/15 disabled:opacity-40">
+          <Button tone="ghost" type="button" disabled={!canNext || busy} onClick={() => setStep(step + 1)} className="bg-white/10">
             التالي <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
-          </button>
+          </Button>
         ) : (
           <div className="flex flex-wrap gap-2">
-            <button type="button" disabled={busy} onClick={() => void create(false)}
-              className="flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-6 py-2 text-xs font-bold text-foreground transition hover:border-white/40 disabled:opacity-40">
+            <Button tone="secondary" type="button" disabled={busy} onClick={() => void create(false)}>
               {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : null} أنشئ مسودّة
-            </button>
-            <button type="button" disabled={busy} onClick={() => void create(true)}
-              className="flex cursor-pointer items-center gap-2 rounded-full bg-teal px-6 py-2 text-xs font-black text-on-teal transition hover:bg-teal-light disabled:opacity-40">
+            </Button>
+            <Button tone="confirm" type="button" disabled={busy} onClick={() => void create(true)}>
               {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />}
               أنشئ وافتح إن استوفت
-            </button>
+            </Button>
           </div>
         )}
       </div>

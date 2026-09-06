@@ -8,6 +8,7 @@ import { apiPost, ApiError } from "@/services/api";
 import { track } from "@/services/analytics";
 
 import { Panel } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 type Verdict = "yes" | "somewhat" | "no";
 
 const VERDICTS: { id: Verdict; label: string }[] = [

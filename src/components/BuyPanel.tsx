@@ -46,6 +46,7 @@ import { fmtDateAr } from "@/utils/format";
 import { track } from "@/services/analytics";
 
 import { Card, Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 export interface BuyLine {
   courseId: string;
   name: string;
@@ -461,14 +462,11 @@ export default function BuyPanel({
 
             {!nothingLeft && (
               <>
-                <button
-                  onClick={() => void pay()}
-                  disabled={paying || quoting || !quote || !quote.emailVerified || payableIds.length === 0}
-                  className="mt-5 flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-gold py-3.5 text-sm font-black text-on-gold transition hover:bg-gold/90 disabled:opacity-50"
-                >
+                <Button tone="primary" onClick={() => void pay()}
+                  disabled={paying || quoting || !quote || !quote.emailVerified || payableIds.length === 0} className="mt-5 w-full disabled:opacity-50">
                   {paying || quoting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
                   {paying ? "نحوّلك إلى صفحة الدفع…" : <>ادفع الآن · <span dir="ltr">{shownTotal}</span></>}
-                </button>
+                </Button>
                 <p className="mt-2 text-center text-[11px] leading-5 text-muted-foreground">
                   الدفع على صفحة المزوّد — لا نحفظ بيانات بطاقتك. وبعد الدفع تُفتح منصّتك على ما اشتريت.
                 </p>

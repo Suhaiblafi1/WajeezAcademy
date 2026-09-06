@@ -61,6 +61,7 @@ import {
 import { HONEYPOT_FIELD, useHoneypot } from "@/components/HoneypotField";
 
 import { Card, Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 /* الحدّان يُعاد تصديرُهما من هنا: الاختبارُ يقرؤهما من هذا الملفّ حرسا
    لتطابقهما مع الخادم، وموضعُ التعريف انتقل لا الضمان. */
 export { MAX_DOC_BYTES, MOTIVATION_MAX, MOTIVATION_MIN };
@@ -659,12 +660,9 @@ export default function JoinTrainer() {
               <RefreshCcw className="h-3.5 w-3.5" />
               أكملنا من حيث توقّفت — إجاباتك محفوظة في هذا المتصفّح.
             </p>
-            <button
-              type="button" onClick={startOver}
-              className="cursor-pointer rounded-full border border-white/20 px-4 py-1.5 text-[11px] font-bold text-muted-foreground transition hover:border-white/40 hover:text-foreground"
-            >
+            <Button tone="secondary" size="sm" type="button" onClick={startOver}>
               ابدأ من جديد
-            </button>
+            </Button>
           </Card>
         )}
 
@@ -1154,9 +1152,9 @@ export default function JoinTrainer() {
           {/* التنقل — «التالي» معطّل حتى تكتمل الخطوة، لا حتى يكتمل النموذج كله */}
           <div className="flex items-center justify-between gap-3 border-t border-white/5 pt-6">
             {step > 1 ? (
-              <button type="button" onClick={back} className="flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2.5 text-sm font-bold text-foreground transition hover:border-white/35">
+              <Button tone="secondary" type="button" onClick={back}>
                 <ArrowRight className="h-4 w-4" /> السابق
-              </button>
+              </Button>
             ) : <span />}
 
             {/* مفتاحان مختلفان لا زرٌّ واحد يتبدّل نوعه.
@@ -1167,24 +1165,18 @@ export default function JoinTrainer() {
                 الزرّ وقد صار submit، فيُرسَل الطلبُ فورا وتُقفز الخطوة الثالثة
                 كلها. عطبٌ صامت: المتقدّم لا يرى شاشة حسابه أصلا. */}
             {step < 3 ? (
-              <button
-                key="next"
-                type="button" onClick={next} disabled={!stepValid[step as 1 | 2 | 3] || busy}
-                className="flex cursor-pointer items-center gap-2 rounded-full bg-teal px-7 py-2.5 text-sm font-black text-on-teal transition hover:bg-teal/90 disabled:cursor-not-allowed disabled:opacity-40"
-              >
+              <Button tone="confirm" key="next"
+                type="button" onClick={next} disabled={!stepValid[step as 1 | 2 | 3] || busy} className="disabled:cursor-not-allowed">
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 {busy ? "نحفظ قسمك الأول…" : "التالي"}
                 {!busy && <ArrowLeft className="h-4 w-4" />}
-              </button>
+              </Button>
             ) : (
-              <button
-                key="send"
-                type="submit" disabled={!valid || busy}
-                className="flex cursor-pointer items-center justify-center gap-2 rounded-full bg-gold px-8 py-3 font-black text-on-gold transition hover:bg-gold/90 disabled:cursor-not-allowed disabled:opacity-40"
-              >
+              <Button tone="primary" key="send"
+                type="submit" disabled={!valid || busy} className="disabled:cursor-not-allowed">
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 {busy ? "جاري الإرسال…" : "أرسل طلب الانضمام"}
-              </button>
+              </Button>
             )}
           </div>
         </form>
@@ -1205,12 +1197,9 @@ export default function JoinTrainer() {
             <input dir="ltr" placeholder="رقم الطلب (اختياري) WJ-TR-…" aria-label="الرقم المرجعي (اختياري)" value={lookup.reference}
               onChange={(e) => setLookup({ ...lookup, reference: e.target.value })} className={`${controlCls} text-left font-mono`} />
           </div>
-          <button
-            onClick={checkStatus} disabled={!/.+@.+\..+/.test(lookup.email) || lookupBusy}
-            className="mt-3 flex cursor-pointer items-center gap-2 rounded-full border border-teal/50 px-5 py-2 text-xs font-bold text-teal-light-ink transition hover:bg-teal/10 disabled:opacity-40"
-          >
+          <Button tone="confirm" onClick={checkStatus} disabled={!/.+@.+\..+/.test(lookup.email) || lookupBusy} className="mt-3 text-teal-light-ink">
             {lookupBusy && <Loader2 className="h-3.5 w-3.5 animate-spin" />} اعرض الحالة
-          </button>
+          </Button>
           {lookupResult && (
             <Inset tone="accent" className="mt-3">
               <p className="text-xs font-black text-teal-light-ink">{lookupResult.label}</p>

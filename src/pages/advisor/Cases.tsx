@@ -14,6 +14,7 @@ import { fmtDateWith } from "@/application/text/format-ar";
 import ConfirmAction from "@/components/ConfirmAction";
 
 import { Panel, Card } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 /* أسماءُ المراحل من `pipeline` وحدَه — لا جدولَ ثانيا يفترق عن القِمع */
 const STATUS_LABELS = STATUS_AR;
 const CHANNEL_LABELS: Record<string, string> = { whatsapp: "واتساب", email: "بريد", phone: "اتصال", in_app: "داخل المنصة" };
@@ -226,10 +227,9 @@ export default function AdvisorCases() {
                     {f.doneAt && <span className="block text-micro text-[#34A853]">أُنجزت: {f.outcome}</span>}
                   </span>
                   {!f.doneAt && (
-                    <button onClick={() => setClosingFollowUp({ id: f.id, whenAr: fmt(f.scheduledAt) })}
-                      className="cursor-pointer rounded-full border border-white/15 p-1.5 text-muted-foreground transition hover:border-[#34A853]/50 hover:text-[#34A853]" title="إنجاز المتابعة">
+                    <Button tone="secondary" onClick={() => setClosingFollowUp({ id: f.id, whenAr: fmt(f.scheduledAt) })} className="p-1.5 hover:border-[#34A853]/50 hover:text-[#34A853]" title="إنجاز المتابعة">
                       <CheckCircle2 className="h-3.5 w-3.5" />
-                    </button>
+                    </Button>
                   )}
                 </li>
               ))}
@@ -252,10 +252,9 @@ export default function AdvisorCases() {
                     {t.dueAt && <span className="block text-micro text-muted-foreground">تستحق: {fmt(t.dueAt)}</span>}
                   </span>
                   {t.status !== "done" && (
-                    <button onClick={() => void act(() => apiPost(`/api/advisor/tasks/${t.id}/complete`, {}), "أُنجزت المهمة")}
-                      className="cursor-pointer rounded-full border border-white/15 p-1.5 text-muted-foreground transition hover:border-[#34A853]/50 hover:text-[#34A853]" title="إنجاز المهمة">
+                    <Button tone="secondary" onClick={() => void act(() => apiPost(`/api/advisor/tasks/${t.id}/complete`, {}), "أُنجزت المهمة")} className="p-1.5 hover:border-[#34A853]/50 hover:text-[#34A853]" title="إنجاز المهمة">
                       <CheckCircle2 className="h-3.5 w-3.5" />
-                    </button>
+                    </Button>
                   )}
                 </li>
               ))}
@@ -379,10 +378,9 @@ function NextActionForm({ current, currentAt, onSubmit }: {
       <input value={text} onChange={(e) => setText(e.target.value)} placeholder="مثال: تأكيد موعد المقابلة" className={INPUT} />
       <label className={`${LBL} mt-2`}>موعد المتابعة القادم (اختياري)</label>
       <input type="datetime-local" value={at} onChange={(e) => setAt(e.target.value)} className={INPUT} dir="ltr" />
-      <button type="submit" disabled={text.trim().length < 3}
-        className="mt-2 flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-4 py-1.5 text-[11px] font-black text-on-teal transition hover:bg-teal/90 disabled:opacity-40">
+      <Button tone="confirm" size="sm" type="submit" disabled={text.trim().length < 3} className="mt-2">
         <Send className="h-3 w-3" /> حفظ الإجراء
-      </button>
+      </Button>
     </form>
   );
 }
@@ -399,10 +397,9 @@ function ContactForm({ onSubmit }: { onSubmit: (channel: string, summary: string
         </select>
         <input value={summary} onChange={(e) => setSummary(e.target.value)} placeholder="ملخص التواصل…" className={INPUT} />
       </div>
-      <button type="submit" disabled={summary.trim().length < 3}
-        className="mt-2 flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-4 py-1.5 text-[11px] font-black text-on-teal transition hover:bg-teal/90 disabled:opacity-40">
+      <Button tone="confirm" size="sm" type="submit" disabled={summary.trim().length < 3} className="mt-2">
         <MessageSquarePlus className="h-3 w-3" /> تسجيل
-      </button>
+      </Button>
     </form>
   );
 }
@@ -421,10 +418,9 @@ function FollowUpForm({ onSubmit }: { onSubmit: (scheduledAt: string, channel: s
         </select>
         <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="ملاحظة (اختياري)" className={INPUT} />
       </div>
-      <button type="submit" disabled={!at}
-        className="mt-2 flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-4 py-1.5 text-[11px] font-black text-on-teal transition hover:bg-teal/90 disabled:opacity-40">
+      <Button tone="confirm" size="sm" type="submit" disabled={!at} className="mt-2">
         <CalendarClock className="h-3 w-3" /> جدولة
-      </button>
+      </Button>
     </form>
   );
 }
@@ -436,10 +432,9 @@ function TaskForm({ onSubmit }: { onSubmit: (title: string, dueAt: string) => vo
     <form onSubmit={(e) => { e.preventDefault(); if (title.trim().length >= 3) { onSubmit(title.trim(), due ? new Date(due).toISOString() : ""); setTitle(""); setDue(""); } }}>
       <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="عنوان المهمة…" className={INPUT} />
       <input type="datetime-local" value={due} onChange={(e) => setDue(e.target.value)} className={`${INPUT} mt-2`} dir="ltr" />
-      <button type="submit" disabled={title.trim().length < 3}
-        className="mt-2 flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-4 py-1.5 text-[11px] font-black text-on-teal transition hover:bg-teal/90 disabled:opacity-40">
+      <Button tone="confirm" size="sm" type="submit" disabled={title.trim().length < 3} className="mt-2">
         <ClipboardList className="h-3 w-3" /> إضافة مهمة
-      </button>
+      </Button>
     </form>
   );
 }
@@ -449,10 +444,9 @@ function NoteForm({ onSubmit }: { onSubmit: (body: string) => void }) {
   return (
     <form onSubmit={(e) => { e.preventDefault(); if (body.trim().length >= 3) { onSubmit(body.trim()); setBody(""); } }}>
       <textarea rows={2} value={body} onChange={(e) => setBody(e.target.value)} placeholder="ملاحظة داخلية…" className={INPUT} />
-      <button type="submit" disabled={body.trim().length < 3}
-        className="mt-2 flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-4 py-1.5 text-[11px] font-black text-on-teal transition hover:bg-teal/90 disabled:opacity-40">
+      <Button tone="confirm" size="sm" type="submit" disabled={body.trim().length < 3} className="mt-2">
         <StickyNote className="h-3 w-3" /> حفظ الملاحظة
-      </button>
+      </Button>
     </form>
   );
 }

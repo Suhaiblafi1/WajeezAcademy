@@ -22,6 +22,7 @@ import {
 import type { EnrollmentCertificate } from "@/services/enrollment-detail";
 
 import { Card } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 export default function CourseCertificate({
   enrollmentId,
   courseTitleAr,
@@ -101,8 +102,7 @@ export default function CourseCertificate({
           <p className="mt-1.5 text-[11px] leading-5 text-muted-foreground">
             استوفيت قواعد إكمال الدورة. اطلبها الآن، وتُصدَر برقم تحقّقٍ باسمك.
           </p>
-          <button
-            onClick={async () => {
+          <Button tone="primary" onClick={async () => {
               setBusy(true);
               setError(null);
               try {
@@ -115,12 +115,10 @@ export default function CourseCertificate({
                 setBusy(false);
               }
             }}
-            disabled={busy}
-            className="mt-2.5 flex cursor-pointer items-center gap-1.5 rounded-full bg-gold px-5 py-2 text-[12px] font-black text-on-gold transition hover:bg-gold/90 disabled:opacity-50"
-          >
+            disabled={busy} className="mt-2.5 disabled:opacity-50">
             {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
             اطلب شهادة الدورة
-          </button>
+          </Button>
         </>
       ) : (
         <>

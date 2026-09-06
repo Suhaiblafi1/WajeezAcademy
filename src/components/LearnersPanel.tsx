@@ -18,6 +18,7 @@ import { fmtDate } from "@/application/text/format-ar";
 import { toast, toastError } from './Toast';
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 interface LearnerEnrollment {
   id: string;
   cohortId: string;
@@ -141,12 +142,9 @@ export default function LearnersPanel() {
                 </div>
                 {data.canWrite && (
                   <div className="flex shrink-0 gap-1.5">
-                    <button
-                      onClick={() => setEditing(l)}
-                      className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-3 py-1 text-[11px] font-bold text-foreground transition hover:border-teal/50 hover:text-teal-light-ink"
-                    >
+                    <Button tone="secondary" size="sm" onClick={() => setEditing(l)}>
                       <Pencil className="h-3 w-3" /> عدّل الحساب
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -162,16 +160,13 @@ export default function LearnersPanel() {
                       </span>
                     </span>
                     {data.canWrite && (
-                      <button
-                        onClick={() => void act(
+                      <Button tone="danger" size="sm" onClick={() => void act(
                           () => apiDelete(`/api/staff/learners/enrollments/${e.id}`, { note: "إخراجٌ من شاشة الطلبة" }),
                           `أُخرج «${l.user.displayName}» من «${e.cohortTitle}» — والسجلّ باقٍ`,
                         )}
-                        disabled={busy}
-                        className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-red-400/30 px-2.5 py-1 text-micro font-bold text-red-300 transition hover:bg-red-400/10 disabled:opacity-40"
-                      >
+                        disabled={busy} className="shrink-0 px-2.5 text-micro">
                         <Trash2 className="h-3 w-3" /> أخرجه
-                      </button>
+                      </Button>
                     )}
                   </Inset>
                 ))}
@@ -249,16 +244,13 @@ function EditLearner({ row, busy, onClose, onSave, onEnroll }: {
         </label>
 
         <div className="mt-4 flex gap-2">
-          <button
-            disabled={busy}
+          <Button tone="confirm" disabled={busy}
             onClick={() => onSave({
               ...(displayName !== row.user.displayName ? { displayName } : {}),
               ...(email !== row.user.email ? { email } : {}),
-            })}
-            className="flex-1 cursor-pointer rounded-full bg-teal py-2.5 text-xs font-black text-on-teal transition hover:bg-teal-light disabled:opacity-40"
-          >
+            })} className="flex-1">
             احفظ
-          </button>
+          </Button>
           <button
             disabled={busy}
             onClick={() => onSave({ status: suspended ? "active" : "suspended" })}
@@ -279,13 +271,10 @@ function EditLearner({ row, busy, onClose, onSave, onEnroll }: {
               <option value="">اختر شعبة…</option>
               {cohorts.map((c) => <option key={c.id} value={c.id}>{c.courseTitle} — {c.title}</option>)}
             </select>
-            <button
-              disabled={busy || !cohortId}
-              onClick={() => onEnroll(cohortId)}
-              className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-3.5 py-2 text-[11px] font-bold text-foreground transition hover:border-teal/50 disabled:opacity-40"
-            >
+            <Button tone="secondary" disabled={busy || !cohortId}
+              onClick={() => onEnroll(cohortId)} className="shrink-0 px-3.5">
               <UserPlus className="h-3.5 w-3.5" /> سجّله
-            </button>
+            </Button>
           </div>
           <p className="mt-2 text-micro leading-5 text-muted-foreground">
             تسجيلٌ إداريّ بلا فاتورة — يمرّ بحارس السعة نفسِه، والفائضُ يذهب لقائمة الانتظار.

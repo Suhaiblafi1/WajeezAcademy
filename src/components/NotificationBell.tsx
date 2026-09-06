@@ -5,6 +5,7 @@ import { useRealSession } from "@/services/session";
 import { fmtDateTime } from "@/application/text/format-ar";
 
 import { Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 interface InAppNotification {
   id: string; title: string; body: string; status: string;
   sentAt?: string | null; createdAt: string; readAt?: string | null;
@@ -85,18 +86,15 @@ export default function NotificationBell({ audience }: { audience: BellAudience 
 
   return (
     <div ref={boxRef} className="relative">
-      <button
-        onClick={() => void toggle()}
-        aria-label={`الإشعارات — ${unread} غير مقروءة`}
-        className="relative grid h-9 w-9 cursor-pointer place-items-center rounded-full border border-white/10 bg-white/[0.03] text-muted-foreground transition hover:border-white/30 hover:text-foreground"
-      >
+      <Button tone="secondary" onClick={() => void toggle()}
+        aria-label={`الإشعارات — ${unread} غير مقروءة`} className="relative grid h-9 w-9 place-items-center bg-white/[0.03]">
         <Bell className="h-4 w-4" />
         {unread > 0 && (
           <span className="absolute -top-1 -left-1 grid h-4 min-w-4 place-items-center rounded-full bg-gold px-1 text-micro font-black text-on-gold">
             {unread > 9 ? "9+" : unread}
           </span>
         )}
-      </button>
+      </Button>
 
       {open && (
         <Inset className="absolute left-0 top-11 z-50 w-80 overflow-hidden bg-surface shadow-2xl shadow-black/60 sm:w-96">

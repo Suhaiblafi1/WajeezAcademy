@@ -6,6 +6,7 @@ import SeoHead from "@/components/SeoHead";
 import { apiPost, ApiError } from "@/services/api";
 
 import { Card } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 const inputCls =
   "w-full rounded-xl border border-white/15 bg-paper/30 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none";
 
@@ -237,13 +238,10 @@ export default function JoinTrainerComplete() {
 
           {error && <p className="rounded-xl border border-red-400/30 bg-red-400/10 p-3 text-xs text-red-200" role="alert">{error}</p>}
 
-          <button
-            type="submit" disabled={!valid || busy}
-            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-gold py-3.5 font-black text-on-gold transition hover:bg-gold/90 disabled:cursor-not-allowed disabled:opacity-40"
-          >
+          <Button tone="primary" type="submit" disabled={!valid || busy} className="w-full disabled:cursor-not-allowed">
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
             {busy ? "جاري الحفظ…" : "أكمل ملفي المهني"}
-          </button>
+          </Button>
           {!valid && (
             <p className="text-center text-[11px] text-muted-foreground">
               يلزم: سيرة ذاتية مرفوعة + دورة سابقة واحدة على الأقل + دورة قابلة للتدريس + موافقة الديمو.

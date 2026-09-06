@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { FileUp, CheckCircle2, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 import {
   CV_CONSENT_TEXT_AR,
   deleteCv,

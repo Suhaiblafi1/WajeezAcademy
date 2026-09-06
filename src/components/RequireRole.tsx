@@ -107,12 +107,9 @@ export default function RequireRole({ allow }: { allow: readonly string[] }) {
           لم يصلنا ردٌّ من الخادم، ولا نُقرّر صلاحيّتك بلا ردّ — فلن نأخذك إلى بوابةٍ قد لا تكون بوابتك.
           جرّب مرّة أخرى بعد لحظة.
         </p>
-        <button
-          onClick={() => setAttempt((n) => n + 1)}
-          className="mt-6 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2.5 text-xs font-bold text-foreground transition hover:border-white/40"
-        >
+        <Button tone="secondary" onClick={() => setAttempt((n) => n + 1)} className="mt-6">
           <RefreshCw className="h-3.5 w-3.5" /> أعد المحاولة
-        </button>
+        </Button>
       </div>
     )
   }

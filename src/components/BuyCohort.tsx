@@ -13,6 +13,7 @@ import { CreditCard, Loader2 } from "lucide-react";
 import { apiPost, ApiError } from "@/services/api";
 import type { CohortOption } from "@/services/cohort-prices";
 import { formatOfferPrice } from "@/application/commerce/pathway-offer";
+import Button from "@/components/ui/Button";
 import {
   PRESENTMENT_CODES, PRESENTMENT_CURRENCIES, convertFromUsd, formatPresentment,
   type PresentmentCurrency,
@@ -90,14 +91,11 @@ export default function BuyCohort({
           ))}
         </div>
       )}
-      <button
-        onClick={() => void buy()}
-        disabled={busy}
-        className="flex cursor-pointer items-center gap-2 rounded-full bg-gold px-5 py-2 text-xs font-black text-on-gold transition hover:bg-gold/90 disabled:opacity-50"
-      >
+      <Button tone="primary" onClick={() => void buy()}
+        disabled={busy} className="disabled:opacity-50">
         {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CreditCard className="h-3.5 w-3.5" />}
         اشترِ الآن · <span dir="ltr">{shown}</span>
-      </button>
+      </Button>
       {error && <p className="max-w-[16rem] text-left text-[11px] leading-4 text-red-300">{error}</p>}
     </div>
   );

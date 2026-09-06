@@ -31,6 +31,7 @@ import { fmtDateTime } from "@/application/text/format-ar";
 import ConfirmAction from "@/components/ConfirmAction";
 
 import { Panel, Card } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 interface OpsQualification { courseId: string; courseTitle: string; status: string }
 interface OpsAssignment {
   courseId: string; courseTitle: string
@@ -180,24 +181,18 @@ export default function TrainerRunOps() {
                     aria-label="ملاحظة القرار"
                     className={`${controlCls} min-w-[16rem] flex-1`}
                   />
-                  <button
-                    type="button" disabled={busy === r.id}
+                  <Button tone="primary" type="button" disabled={busy === r.id}
                     onClick={() => void act(r.id,
                       () => apiPost(`/api/admin/qualification-requests/${r.id}/decide`, { approve: true, note: note[r.id]?.trim() || undefined }),
-                      "أُهِّل وأُسنِد إلى الشعبة")}
-                    className="flex cursor-pointer items-center gap-1.5 rounded-full bg-gold px-4 py-2 text-xs font-black text-on-gold transition hover:bg-gold/90 disabled:opacity-40"
-                  >
+                      "أُهِّل وأُسنِد إلى الشعبة")}>
                     <CheckCircle2 className="h-3.5 w-3.5" /> أهِّله وأسنِده
-                  </button>
-                  <button
-                    type="button" disabled={busy === r.id}
+                  </Button>
+                  <Button tone="danger" type="button" disabled={busy === r.id}
                     onClick={() => void act(r.id,
                       () => apiPost(`/api/admin/qualification-requests/${r.id}/decide`, { approve: false, note: note[r.id]?.trim() || undefined }),
-                      "رُفض الطلب")}
-                    className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-black text-muted-foreground transition hover:border-red-400/40 hover:text-red-300 disabled:opacity-40"
-                  >
+                      "رُفض الطلب")}>
                     <XCircle className="h-3.5 w-3.5" /> ارفض
-                  </button>
+                  </Button>
                 </div>
               </Card>
             ))}
@@ -305,15 +300,12 @@ export default function TrainerRunOps() {
                       <option value="">اختر دورة…</option>
                       {courses.map((c) => <option key={c.id} value={c.id}>{c.titleAr ?? c.title ?? c.id}</option>)}
                     </select>
-                    <button
-                      type="button" disabled={!sel.courseId || busy === k("qual")}
+                    <Button tone="primary" type="button" disabled={!sel.courseId || busy === k("qual")}
                       onClick={() => void act(k("qual"),
                         () => apiPost(`/api/admin/trainers/${t.profileId}/qualifications`, { courseId: sel.courseId }),
-                        "أُهِّل للدورة")}
-                      className="flex cursor-pointer items-center gap-1.5 rounded-full border border-gold/50 px-3.5 py-2 text-xs font-black text-gold-ink transition hover:bg-gold/10 disabled:opacity-40"
-                    >
+                        "أُهِّل للدورة")} className="px-3.5 text-gold-ink">
                       <GraduationCap className="h-3.5 w-3.5" /> أهِّله مباشرة
-                    </button>
+                    </Button>
 
                     <select
                       value={sel.cohortId} aria-label="الشعبة"
@@ -325,40 +317,31 @@ export default function TrainerRunOps() {
                       </option>
                       {eligibleCohorts.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
                     </select>
-                    <button
-                      type="button" disabled={!sel.cohortId || busy === k("assign")}
+                    <Button tone="confirm" type="button" disabled={!sel.cohortId || busy === k("assign")}
                       onClick={() => {
                         const cohort = cohorts.find((c) => c.id === sel.cohortId);
                         if (!cohort) return;
                         void act(k("assign"),
                           () => apiPost(`/api/admin/trainers/${t.profileId}/assignments`, { courseId: cohort.courseId, cohortId: cohort.id }),
                           "أُسنِد إلى الشعبة");
-                      }}
-                      className="flex cursor-pointer items-center gap-1.5 rounded-full border border-teal/50 px-3.5 py-2 text-xs font-black text-teal-light-ink transition hover:bg-teal/10 disabled:opacity-40"
-                    >
+                      }} className="px-3.5 text-teal-light-ink">
                       <UserCheck className="h-3.5 w-3.5" /> أسنِده
-                    </button>
+                    </Button>
 
                     {!t.publiclyVisible && (
-                      <button
-                        type="button" disabled={busy === k("publish")}
+                      <Button tone="secondary" type="button" disabled={busy === k("publish")}
                         onClick={() => void act(k("publish"),
                           () => apiPost(`/api/admin/trainers/${t.profileId}/publish-approval`),
-                          "اعتُمد ظهورُه العامّ")}
-                        className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-3.5 py-2 text-xs font-black text-muted-foreground transition hover:border-teal/50 hover:text-teal-light-ink disabled:opacity-40"
-                      >
+                          "اعتُمد ظهورُه العامّ")} className="px-3.5">
                         <BadgeCheck className="h-3.5 w-3.5" /> اعتمِد ظهورَه العامّ
-                      </button>
+                      </Button>
                     )}
 
                     {!t.suspended && (
-                      <button
-                        type="button" disabled={busy === k("suspend")}
-                        onClick={() => setSuspendTarget(t)}
-                        className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-3.5 py-2 text-xs font-black text-muted-foreground transition hover:border-red-400/40 hover:text-red-300 disabled:opacity-40"
-                      >
+                      <Button tone="danger" type="button" disabled={busy === k("suspend")}
+                        onClick={() => setSuspendTarget(t)} className="px-3.5">
                         <XCircle className="h-3.5 w-3.5" /> أوقِفه
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </Card>

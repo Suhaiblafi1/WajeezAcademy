@@ -7,6 +7,7 @@ import NotificationPreferences from "@/components/NotificationPreferences";
 import { fmtWhen } from "@/utils/format";
 
 import { Panel } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 interface Notif {
   id: string; title: string; body: string; status: string; sentAt: string | null; queuedAt: string;
 }
@@ -40,13 +41,13 @@ export default function Notifications() {
   return (
     <PortalLayout title="إشعاراتي">
       <div className="mb-4 flex items-center gap-3">
-        <button onClick={() => void load()} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-muted-foreground hover:border-white/40">
+        <Button tone="secondary" onClick={() => void load()}>
           <RefreshCw className="h-3.5 w-3.5" /> تحديث
-        </button>
+        </Button>
         {rows.some((n) => n.status !== "read") && (
-          <button onClick={() => void markAll()} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-teal/40 px-4 py-2 text-xs font-bold text-teal-light-ink hover:bg-teal/10">
+          <Button tone="confirm" onClick={() => void markAll()} className="text-teal-light-ink">
             <CheckCheck className="h-3.5 w-3.5" /> تعليم الكل كمقروء
-          </button>
+          </Button>
         )}
       </div>
 

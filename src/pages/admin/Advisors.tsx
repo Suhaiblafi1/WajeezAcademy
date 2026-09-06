@@ -9,6 +9,7 @@ import { apiGet, apiPatch, ApiError, permissionMessage } from "@/services/api";
 import { fmtMoney, fmtDate } from "@/application/text/format-ar";
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 interface AdvisorRow {
   userId: string; displayName: string; email: string; status: string;
   commissionPct: number | null; notesAr: string; activeCases: number;
@@ -87,9 +88,9 @@ export default function Advisors() {
         <Panel className="grid place-items-center py-20 text-center">
           <ServerOff className="h-12 w-12 text-muted-foreground/50" />
           <p className="mt-4 max-w-md text-sm text-muted-foreground">{offline}</p>
-          <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground hover:border-white/40">
+          <Button tone="secondary" onClick={() => void load()} className="mt-5">
             <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
-          </button>
+          </Button>
         </Panel>
       </AdminLayout>
     );
@@ -139,19 +140,15 @@ export default function Advisors() {
                       {r.notesAr && <p className="mt-1.5 text-[11px] leading-6 text-muted-foreground">{r.notesAr}</p>}
                     </div>
                     <div className="flex shrink-0 gap-2">
-                      <button
-                        onClick={() => void toggleDetail(r.userId)}
-                        className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-1.5 text-xs font-bold text-foreground hover:border-teal/50 hover:text-teal-light-ink">
+                      <Button tone="secondary" size="sm" onClick={() => void toggleDetail(r.userId)}>
                         {detailFor === r.userId ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />} الملفّ الكامل
-                      </button>
-                      <button
-                        onClick={() => {
+                      </Button>
+                      <Button tone="primary" size="sm" onClick={() => {
                           setEditing(editing === r.userId ? null : r.userId);
                           setForm({ commissionPct: r.commissionPct === null ? "" : String(r.commissionPct), notesAr: r.notesAr });
-                        }}
-                        className="flex cursor-pointer items-center gap-1.5 rounded-full border border-gold/45 px-4 py-1.5 text-xs font-bold text-gold-ink hover:bg-gold/10">
+                        }} className="text-gold-ink">
                         <BadgePercent className="h-3.5 w-3.5" /> {editing === r.userId ? "إغلاق" : "العمولة"}
-                      </button>
+                      </Button>
                     </div>
                   </div>
 
@@ -229,10 +226,9 @@ export default function Advisors() {
                           className="mt-1 w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-gold focus:outline-none" />
                       </label>
                       <div className="flex items-end">
-                        <button disabled={busy} onClick={() => void save(r.userId)}
-                          className="cursor-pointer rounded-full bg-gold px-5 py-2 text-xs font-black text-on-gold hover:bg-gold/90 disabled:opacity-40">
+                        <Button tone="primary" disabled={busy} onClick={() => void save(r.userId)}>
                           {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "احفظ"}
-                        </button>
+                        </Button>
                       </div>
                     </Inset>
                   )}

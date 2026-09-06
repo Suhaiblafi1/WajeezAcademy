@@ -40,6 +40,7 @@ import {
 import { hasCoreCatalog } from "@/data/core-catalog-source";
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 /* سعر الدورة الواحدة في القوائم: رقمٌ من شعبةٍ حقيقية، أو «مع الشعبة» —
    ولا تقدير بينهما. */
 function CoursePriceTag({ amount, money, className }: { amount: number | null; money: (n: number) => string; className: string }) {

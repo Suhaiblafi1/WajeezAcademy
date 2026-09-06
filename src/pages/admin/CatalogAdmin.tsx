@@ -17,6 +17,7 @@ import CourseWizard from "@/components/CourseWizard";
 import { fmtDateTime } from "@/application/text/format-ar";
 
 import { Card, Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 type Overview = {
   pathways: Record<string, number>; courses: Record<string, number>; skills: Record<string, number>
   templates: Record<string, number>; questions: Record<string, number>; changeRequests: Record<string, number>
@@ -352,14 +353,13 @@ export default function CatalogAdmin() {
                   placeholder={ph} className={inputCls} />
               ))}
             </div>
-            <button disabled={busy || !skillForm.id || !skillForm.slug || skillForm.nameAr.length < 2}
+            <Button tone="primary" disabled={busy || !skillForm.id || !skillForm.slug || skillForm.nameAr.length < 2}
               onClick={() => act(async () => {
                 await apiPost("/api/admin/catalog/skills", { ...skillForm, familyId: skillForm.familyId || undefined });
                 setSkillForm({ id: "", slug: "", nameAr: "", familyId: "" });
-              }, "أُنشئت المهارة كمسودة")}
-              className="mt-4 cursor-pointer rounded-full bg-gold px-5 py-2 text-sm font-black text-on-gold disabled:opacity-40">
+              }, "أُنشئت المهارة كمسودة")} className="mt-4">
               إنشاء المسودة
-            </button>
+            </Button>
           </Card>
         )}
 
@@ -380,10 +380,9 @@ export default function CatalogAdmin() {
             <p className="mt-2 text-[11px] text-muted-foreground">
               أمثلة حقول: titleAr للاسم، objectives للأهداف، skillIds لربط المهارات — تُدمج في إصدار جديد بعد الاعتماد والنشر.
             </p>
-            <button disabled={busy || !crForm.entityId.trim()} onClick={submitChangeRequest}
-              className="mt-3 cursor-pointer rounded-full bg-gold px-6 py-2 text-sm font-black text-on-gold disabled:opacity-40">
+            <Button tone="primary" disabled={busy || !crForm.entityId.trim()} onClick={submitChangeRequest} className="mt-3">
               تقديم الطلب
-            </button>
+            </Button>
           </Card>
         )}
       </section>
@@ -403,14 +402,12 @@ export default function CatalogAdmin() {
                 <Pill v={cr.status} />
                 {cr.status === "in_review" && (
                   <>
-                    <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/catalog/change-requests/${cr.id}/decision`, { decision: "approve" }), "اعتُمد الطلب")}
-                      className="flex cursor-pointer items-center gap-1 rounded-full border border-emerald-400/40 px-3 py-1.5 text-xs font-bold text-emerald-300 disabled:opacity-40">
+                    <Button tone="secondary" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/catalog/change-requests/${cr.id}/decision`, { decision: "approve" }), "اعتُمد الطلب")}>
                       <CheckCircle2 className="h-3.5 w-3.5" /> اعتماد
-                    </button>
-                    <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/catalog/change-requests/${cr.id}/decision`, { decision: "request_changes", noteAr: "راجع التفاصيل" }), "طُلب تعديل")}
-                      className="flex cursor-pointer items-center gap-1 rounded-full border border-amber-400/40 px-3 py-1.5 text-xs font-bold text-amber-300 disabled:opacity-40">
+                    </Button>
+                    <Button tone="secondary" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/catalog/change-requests/${cr.id}/decision`, { decision: "request_changes", noteAr: "راجع التفاصيل" }), "طُلب تعديل")}>
                       <XCircle className="h-3.5 w-3.5" /> طلب تعديل
-                    </button>
+                    </Button>
                   </>
                 )}
               </div>

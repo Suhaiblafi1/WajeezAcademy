@@ -38,6 +38,7 @@ import { courseFullById } from "@/data/courses";
 import { toast, toastError } from '@/components/Toast';
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 /** الطلبُ كما يعرضه الشريطُ بعد العودة من صفحة الدفع */
 interface PaidOrder {
   id: string;
@@ -308,12 +309,9 @@ export default function Journey() {
             <ServerOff className="h-12 w-12 text-muted-foreground/50" />
             <h2 className="mt-4 text-xl font-black">لا يمكن الوصول لرحلتك</h2>
             <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">{offline}</p>
-            <button
-              onClick={() => void load()}
-              className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground hover:border-white/40"
-            >
+            <Button tone="secondary" onClick={() => void load()} className="mt-5">
               <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
-            </button>
+            </Button>
           </Panel>
         ) : rows === null ? (
           <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" aria-label="يُحمَّل" /></div>
@@ -465,8 +463,7 @@ function PlanRequest({ track, onDone }: { track: JourneyTrack; onDone: () => voi
 
   return (
     <Card tone="accent" className="mt-3 px-4 py-3.5">
-      <button
-        onClick={async () => {
+      <Button tone="confirm" onClick={async () => {
           setBusy(true);
           setError(null);
           try {
@@ -478,12 +475,10 @@ function PlanRequest({ track, onDone }: { track: JourneyTrack; onDone: () => voi
             setBusy(false);
           }
         }}
-        disabled={busy}
-        className="flex cursor-pointer items-center gap-2 rounded-full bg-teal px-5 py-2.5 text-[12.5px] font-black text-on-teal transition hover:bg-teal-light disabled:opacity-50"
-      >
+        disabled={busy} className="text-[12.5px] disabled:opacity-50">
         {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
         اطلب تسجيلك في {askable === 1 ? "دورتك المتاحة" : `دوراتك الـ${askable} المتاحة`}
-      </button>
+      </Button>
       <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
         طلبٌ واحد لخطّتك كلها، وفاتورةٌ واحدة بعد حجز مقاعدك — لا دورةً دورة.
         {awaiting > 0 && " وما لم تُفتح شعبتُه لا يُطلب ولا يُدفع ثمنه."}

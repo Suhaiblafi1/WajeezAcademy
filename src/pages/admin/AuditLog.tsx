@@ -5,6 +5,7 @@ import { apiGet, permissionMessage } from "@/services/api";
 import { fmtDateTime } from "@/application/text/format-ar";
 
 import { Panel, Card } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 interface AuditRow {
   id: string; action: string; actionAr: string; entityType: string; entityTypeAr: string; entityId: string; createdAt: string;
   reason: string | null; ip: string | null;
@@ -59,9 +60,9 @@ export default function AuditLog() {
         <Panel className="grid place-items-center py-20 text-center">
           <ServerOff className="h-12 w-12 text-muted-foreground/50" />
           <p className="mt-4 max-w-md text-sm text-muted-foreground">{offline}</p>
-          <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground hover:border-white/40">
+          <Button tone="secondary" onClick={() => void load()} className="mt-5">
             <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
-          </button>
+          </Button>
         </Panel>
       </AdminLayout>
     );
@@ -110,10 +111,9 @@ export default function AuditLog() {
         </span>
         <div className="flex items-center gap-2">
           {Object.values(filters).some(Boolean) && (
-            <button onClick={() => { setFilters({ action: "", entityType: "", from: "", to: "" }); setPage(1); }}
-              className="cursor-pointer rounded-full border border-white/15 px-3 py-1 font-bold text-muted-foreground hover:border-white/35">
+            <Button tone="secondary" size="sm" onClick={() => { setFilters({ action: "", entityType: "", from: "", to: "" }); setPage(1); }}>
               امسح الفرز
-            </button>
+            </Button>
           )}
           {data && data.pages > 1 && (
             <div className="flex items-center gap-1">

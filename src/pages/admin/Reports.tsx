@@ -6,6 +6,7 @@ import AdminLayout from "./AdminLayout";
 import { apiGet, ApiError } from "@/services/api";
 
 import { Panel } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 const inputCls = "rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground focus:border-teal focus:outline-none";
 
 interface ReportDef { key: string; titleAr: string; methodAr: string }
@@ -75,9 +76,9 @@ export default function Reports() {
         <Panel className="grid place-items-center py-20 text-center">
           <ServerOff className="h-12 w-12 text-muted-foreground/50" />
           <p className="mt-4 max-w-md text-sm text-muted-foreground">{offline}</p>
-          <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground hover:border-white/40">
+          <Button tone="secondary" onClick={() => void load()} className="mt-5">
             <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
-          </button>
+          </Button>
         </Panel>
       </AdminLayout>
     );
@@ -124,18 +125,15 @@ export default function Reports() {
                 </label>
               </div>
               <div className="mt-3 flex flex-wrap items-center gap-2">
-                <button onClick={() => void run()} disabled={running || !selected}
-                  className="flex cursor-pointer items-center gap-1.5 rounded-full bg-gold px-5 py-2 text-xs font-black text-on-gold disabled:opacity-40">
+                <Button tone="primary" onClick={() => void run()} disabled={running || !selected}>
                   {running ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />} شغّل التقرير
-                </button>
-                <button onClick={() => void download("csv")} disabled={!selected}
-                  className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-muted-foreground hover:border-white/40 disabled:opacity-40">
+                </Button>
+                <Button tone="secondary" onClick={() => void download("csv")} disabled={!selected}>
                   <Download className="h-3.5 w-3.5" /> CSV
-                </button>
-                <button onClick={() => void download("xlsx")} disabled={!selected}
-                  className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-muted-foreground hover:border-white/40 disabled:opacity-40">
+                </Button>
+                <Button tone="secondary" onClick={() => void download("xlsx")} disabled={!selected}>
                   <Download className="h-3.5 w-3.5" /> XLSX
-                </button>
+                </Button>
               </div>
             </Panel>
 

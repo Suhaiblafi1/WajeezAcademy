@@ -20,6 +20,7 @@ import { AlertTriangle } from "lucide-react";
 import Modal from "./Modal";
 
 import { Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 export interface ConfirmTyping {
   /** ما يُطلب كتابتُه بالحرف — بريدٌ أو رمزٌ يراه المستخدم أمامه */
   expected: string
@@ -124,13 +125,10 @@ export default function ConfirmAction({
           >
             {confirmLabelAr}
           </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="cursor-pointer rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground transition hover:border-white/40"
-          >
+          <Button tone="secondary" type="button"
+            onClick={onCancel}>
             تراجَع
-          </button>
+          </Button>
         </div>
       </Inset>
     </Modal>

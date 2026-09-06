@@ -24,6 +24,7 @@ import { ChevronDown, ChevronUp, MailCheck, MailWarning } from "lucide-react";
 import { apiPost, permissionMessage } from "@/services/api";
 import { safeGet, safeSet } from "@/services/safe-storage";
 
+import Button from "@/components/ui/Button";
 type Result = { tone: "ok" | "warn"; text: string };
 
 const FOLD_KEY = "wajeez_verify_notice_folded";
@@ -53,14 +54,11 @@ export default function VerifyEmailNotice({ email, className = "" }: { email: st
   };
 
   const sendButton = (
-    <button
-      onClick={send}
-      disabled={busy}
-      className="inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-full bg-[#FABC05] px-4 text-xs font-black text-on-gold transition hover:brightness-110 disabled:opacity-60"
-    >
+    <Button tone="ghost" onClick={send}
+      disabled={busy} className="min-h-9 bg-[#FABC05] disabled:opacity-60">
       <MailCheck className="h-3.5 w-3.5" />
       {busy ? "يُرسَل…" : "أرسل لي رابط التوثيق"}
-    </button>
+    </Button>
   );
 
   /* المطويُّ سطرٌ واحد: الحدُّ ما زال معلَنا، والصفحةُ صارت لصاحبها */
@@ -73,14 +71,11 @@ export default function VerifyEmailNotice({ email, className = "" }: { email: st
           <span className="text-muted-foreground"> — الشراءُ والشهادةُ موقوفان حتّى تُوثّقه.</span>
         </p>
         {sendButton}
-        <button
-          type="button"
+        <Button tone="secondary" type="button"
           onClick={() => fold(false)}
-          aria-expanded={false}
-          className="inline-flex min-h-9 cursor-pointer items-center gap-1 rounded-full border border-[#FABC05]/30 px-3 text-micro font-bold text-muted-foreground transition hover:text-foreground"
-        >
+          aria-expanded={false} className="min-h-9 border-[#FABC05]/30 text-micro">
           التفصيل <ChevronDown className="h-3 w-3" aria-hidden="true" />
-        </button>
+        </Button>
         {result && (
           <p role="status" className={`w-full text-[11px] leading-6 ${result.tone === "ok" ? "text-emerald-300" : "text-[#FABC05]"}`}>
             {result.text}
@@ -99,14 +94,11 @@ export default function VerifyEmailNotice({ email, className = "" }: { email: st
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm font-black">بريدك غير موثَّق</p>
-            <button
-              type="button"
+            <Button tone="secondary" type="button"
               onClick={() => fold(true)}
-              aria-expanded
-              className="inline-flex min-h-9 cursor-pointer items-center gap-1 rounded-full border border-[#FABC05]/30 px-3 text-micro font-bold text-muted-foreground transition hover:text-foreground"
-            >
+              aria-expanded className="min-h-9 border-[#FABC05]/30 text-micro">
               اطوِه <ChevronUp className="h-3 w-3" aria-hidden="true" />
-            </button>
+            </Button>
           </div>
           {/* ترتيب الجملة مقصود: النقطتان بعد نصّ عربيّ، والعنوان اللاتيني في
               آخرها. كان العنوان قبلهما فتقع النقطتان على يساره في سياق RTL

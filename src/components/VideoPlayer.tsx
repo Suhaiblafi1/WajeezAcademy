@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Pause, Play, RotateCcw } from "lucide-react";
 
 import { Card } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 /**
  * مشغل فيديو تجريبي — يحاكي التشغيل الحقيقي:
  * تقدم بالثواني، سرعات تشغيل، استئناف من آخر نقطة، وإكمال عند 90%+.
@@ -53,16 +54,12 @@ export default function VideoPlayer({
     <Card className="overflow-hidden bg-black">
       {/* شاشة العرض */}
       <div className="relative grid h-52 place-items-center bg-gradient-to-br from-panel via-paper to-panelto sm:h-64">
-        <button
-          onClick={() => {
+        <Button tone="confirm" onClick={() => {
             if (playing && pct > lastSaved.current) { lastSaved.current = pct; onProgress(pct); }
             setPlaying(!playing);
-          }}
-          className="grid h-16 w-16 cursor-pointer place-items-center rounded-full bg-teal/90 text-on-teal shadow-[0_0_40px_-5px_#38A7B4] transition hover:scale-105"
-          aria-label={playing ? "إيقاف" : "تشغيل"}
-        >
+          }} className="grid h-16 w-16 place-items-center shadow-[0_0_40px_-5px_#38A7B4]" aria-label={playing ? "إيقاف" : "تشغيل"}>
           {playing ? <Pause className="h-7 w-7" /> : <Play className="h-7 w-7 -translate-x-0.5" />}
-        </button>
+        </Button>
         <span className="absolute bottom-3 right-4 rounded-full bg-paper/60 px-2.5 py-1 text-[11px] text-foreground">
           معاينة تجريبية — يُعرض الفيديو الحقيقي هنا عند الربط
         </span>
