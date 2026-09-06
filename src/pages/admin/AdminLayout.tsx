@@ -133,7 +133,7 @@ export default function AdminLayout({ children, title }: { children: React.React
   }
 
   const linkCls = (isActive: boolean) =>
-    `flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-bold transition ${
+    `flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-bold transition ${
       isActive ? "bg-gold text-on-gold" : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"
     }`;
 

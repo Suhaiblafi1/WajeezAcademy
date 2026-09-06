@@ -199,7 +199,7 @@ export default function SkillPicker({
                 placeholder="لماذا لا تكفي مهارة موجودة؟ — يقرأها المراجع"
                 className="mt-2 w-full rounded-2xl border border-white/12 bg-paper/25 px-4 py-2 text-xs leading-6 placeholder:text-muted-foreground/75 focus:border-teal/60 focus:outline-none"
               />
-              <Button tone="primary" type="button"
+              <Button tone="confirm" type="button"
                 onClick={() => void submitAsk()}
                 disabled={asking || !ask.slug.trim() || !ask.nameAr.trim()} className="mt-2 min-h-11 disabled:cursor-not-allowed">
                 قدّم الطلب للمراجعة

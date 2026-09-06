@@ -16,7 +16,7 @@ import EmptyState from "@/components/EmptyState";
 import { countAr } from "@/application/text/count-ar";
 
 import Button from "@/components/ui/Button";
-import { Inset } from "@/components/ui/Surface";
+import { Card, Inset } from "@/components/ui/Surface";
 const ICON: Record<InboxKind, typeof Bell> = {
   notification: Bell,
   trainer_feedback: MessageSquare,
@@ -142,12 +142,7 @@ export default function Inbox() {
             const Icon = ICON[i.kind];
             return (
               <li key={i.id}>
-                <Link
-                  to={i.href}
-                  className={`block rounded-2xl border p-4 transition ${
-                    i.unread ? "border-teal/25 bg-teal-ink/[0.06] hover:border-teal/50" : "border-white/8 bg-white/[0.02] hover:border-white/25"
-                  }`}
-                >
+                <Card as={Link} tone={i.unread ? "accent" : "default"} interactive to={i.href} className={`block transition ${i.unread ? "bg-teal-ink/[0.06] hover:border-teal/50" : "hover:border-white/25"}`}>
                   <p className="flex flex-wrap items-center gap-2 text-sm font-black">
                     {i.unread && <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full bg-gold" />}
                     <Icon className="h-3.5 w-3.5 shrink-0 text-teal-light-ink" aria-hidden="true" />
@@ -158,7 +153,7 @@ export default function Inbox() {
                   </p>
                   <p className="mt-1.5 whitespace-pre-line text-xs leading-6 text-foreground">{i.bodyAr}</p>
                   <p className="mt-1.5 text-fine text-muted-foreground">{fmtWhen(i.at)}</p>
-                </Link>
+                </Card>
               </li>
             );
           })}

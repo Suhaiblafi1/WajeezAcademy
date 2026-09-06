@@ -297,7 +297,7 @@ function BlastRadiusStrip({ r }: { r: TrainerChangeRequest }) {
   const wide = b.entityCount > 0 || b.learners > 0;
   const entities = [...b.pathways, ...b.templates];
   return (
-    <div className={`mt-3 rounded-2xl border px-4 py-3 ${wide ? "border-gold/35 bg-gold/[0.07]" : "border-white/10 bg-white/[0.02]"}`}>
+    <Card tone={wide ? "warn" : "default"} className="mt-3 px-4 py-3">
       <p className="flex items-start gap-2 text-micro font-bold leading-6">
         {wide
           ? <AlertTriangle className="mt-1 h-3.5 w-3.5 shrink-0 text-gold-ink" aria-hidden="true" />
@@ -319,7 +319,7 @@ function BlastRadiusStrip({ r }: { r: TrainerChangeRequest }) {
           ومن {b.cohorts.total} شعبة، {b.cohorts.total - b.cohorts.live} غير حيّة (مسودة أو منتهية) — لا يتأثر بها متعلم الآن.
         </p>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -473,9 +473,7 @@ function ImpactGate({
           </div>
 
           {verdict && (
-            <div className={`mt-2 rounded-2xl border px-4 py-3 text-micro leading-6 ${
-              verdict.touchesDiagnostic ? "border-gold/35 bg-gold/[0.07]" : "border-teal/30 bg-teal-ink/[0.06]"
-            }`}>
+            <Card tone={verdict.touchesDiagnostic ? "warn" : "accent"} className={`mt-2 px-4 py-3 text-micro leading-6 ${verdict.touchesDiagnostic ? "" : "bg-teal-ink/[0.06]"}`}>
               <p className="font-bold text-foreground">{verdict.verdictAr}</p>
               {verdict.changedWinners.map((w) => (
                 <p key={`w-${w.name}`} className="mt-1 text-foreground">
@@ -497,7 +495,7 @@ function ImpactGate({
               <p className="mt-2 text-micro text-muted-foreground">
                 الفحص يقارن اللقطة المنشورة بالمنشور + كل ما اعتُمد ولم يُنشر — لا هذا الاقتراح وحده.
               </p>
-            </div>
+            </Card>
           )}
         </>
       )}
@@ -652,7 +650,7 @@ export function TrainerPayouts() {
           <input type="checkbox" checked={showCancelledZero} onChange={(e) => setShowCancelledZero(e.target.checked)} className="accent-gold" />
           إظهار الملغاة الصفرية
         </label>
-        <Button tone="primary" onClick={() => setShowCreate(!showCreate)}>
+        <Button tone="secondary" onClick={() => setShowCreate(!showCreate)}>
           <Banknote className="h-3.5 w-3.5" /> كشف يدوي جديد
         </Button>
         {msg && <span className="text-xs font-bold text-teal-light-ink" role="status">{msg}</span>}
@@ -682,7 +680,7 @@ export function TrainerPayouts() {
               <option value="">عامة — كل الشعب</option>
               {allCohorts.map((c) => <option key={c.id} value={c.id}>خاصة: {c.title}</option>)}
             </select>
-            <Button tone="primary" size="sm" disabled={busy || !ruleForm.profileId || !(Number(ruleForm.rate) > 0)} onClick={saveRule}>
+            <Button tone="confirm" size="sm" disabled={busy || !ruleForm.profileId || !(Number(ruleForm.rate) > 0)} onClick={saveRule}>
               حفظ القاعدة
             </Button>
           </div>
@@ -794,7 +792,7 @@ export function TrainerPayouts() {
             <Button tone="secondary" size="sm" onClick={() => setItems([...items, { description: "", amount: "", sourceRef: "" }])} className="text-micro">
               + بند آخر
             </Button>
-            <Button tone="primary" size="sm" disabled={busy || !form.profileId || !/^\d{4}-(0[1-9]|1[0-2])$/.test(form.period) || items.some((i) => i.description.trim().length < 3 || !(Number(i.amount) > 0))}
+            <Button tone="confirm" size="sm" disabled={busy || !form.profileId || !/^\d{4}-(0[1-9]|1[0-2])$/.test(form.period) || items.some((i) => i.description.trim().length < 3 || !(Number(i.amount) > 0))}
               onClick={create}>
               إنشاء الكشف
             </Button>

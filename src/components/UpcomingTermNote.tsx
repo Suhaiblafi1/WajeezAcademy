@@ -26,6 +26,7 @@
 import { CalendarDays } from 'lucide-react'
 import { useUpcomingTerm } from '@/services/upcoming-term'
 import { termMonthsAr, termUrgencyAr } from '@/application/terms/upcoming-text'
+import { Card } from "@/components/ui/Surface";
 
 /* ─────────── الأشكالُ الثلاثة ─────────── */
 
@@ -61,8 +62,9 @@ export function UpcomingTermBanner({ className = '' }: { className?: string }) {
   if (!term) return null
   const urgency = termUrgencyAr(term)
   return (
-    <div
-      className={`flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl border border-teal/25 bg-teal/[0.06] px-4 py-3 ${className}`}
+    <Card
+      tone="accent"
+      className={`flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 ${className}`}
     >
       <CalendarDays className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
       <span className="text-sm font-black text-foreground">
@@ -78,6 +80,6 @@ export function UpcomingTermBanner({ className = '' }: { className?: string }) {
           تصفّح تقويم الفصل
         </a>
       )}
-    </div>
+    </Card>
   )
 }

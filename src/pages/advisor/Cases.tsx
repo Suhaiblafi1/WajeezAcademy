@@ -365,7 +365,7 @@ export default function AdvisorCases() {
             }, "فُتحت الحالة وأُسندت إليك");
           }}
         >
-          <p className="text-[11.5px] leading-6 text-muted-foreground">
+          <p className="text-xs leading-6 text-muted-foreground">
             بريدٌ أو هاتفٌ على الأقلّ — <b className="text-foreground">حالةٌ بلا سبيلٍ إلى صاحبها لا تُفتح</b>.
             ولا تشخيصَ يُنسب إليه قبل أن يُقاس.
           </p>

@@ -1001,7 +1001,7 @@ export default function Diagnostic() {
                           : "border-white/10 bg-white/[0.03] hover:border-teal-light/60 hover:bg-white/[0.06]"
                       } ${dimmed ? "opacity-40" : ""}`}
                     >
-                      <span className="text-[13.5px] font-semibold leading-6 sm:text-[15px]">{opt.label}</span>
+                      <span className="text-sm font-semibold leading-6 sm:text-base">{opt.label}</span>
                       {confirming && <CheckCircle2 className="h-5 w-5 shrink-0 text-teal-light-ink" />}
                     </button>
                   );
@@ -1117,7 +1117,7 @@ export default function Diagnostic() {
                             : "border-white/10 bg-white/[0.03] hover:border-gold/60 disabled:opacity-40"
                         }`}
                       >
-                        <span className="flex items-center justify-between gap-2 text-[13px] font-semibold leading-6">
+                        <span className="flex items-center justify-between gap-2 text-sm font-semibold leading-6">
                           {opt.label}
                           {selected && <CheckCircle2 className="h-4 w-4 shrink-0 text-gold-ink" />}
                         </span>
@@ -1433,7 +1433,7 @@ export default function Diagnostic() {
               );
             }
             return (
-              <div className={`mt-8 rounded-3xl border p-6 md:p-8 ${cmp.changed ? "border-gold/50 bg-gold/[0.06]" : "border-teal/40 bg-teal/[0.05]"}`}>
+              <Panel tone={cmp.changed ? "warn" : "accent"} className="mt-8 md:p-8">
                 <h3 className="flex items-center gap-2 text-lg font-black">
                   <Wand2 className={`h-5 w-5 ${cmp.changed ? "text-gold-ink" : "text-teal-light-ink"}`} />
                   نتيجة تدقيق خطتك
@@ -1461,7 +1461,7 @@ export default function Diagnostic() {
                     </li>
                   ))}
                 </ul>
-              </div>
+              </Panel>
             );
           })()}
 

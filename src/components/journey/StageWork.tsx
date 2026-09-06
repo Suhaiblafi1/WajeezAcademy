@@ -196,11 +196,11 @@ export default function StageWork({
 
       {/* ══ صندوقُ المصادر — ما يُرجَع إليه ══ */}
       <Panel as="section" className="sm:p-5">
-        <h3 className="flex items-center gap-2 text-[13px] font-black text-foreground">
+        <h3 className="flex items-center gap-2 text-sm font-black text-foreground">
           <Library className="h-4 w-4 text-gold-ink" /> مصادر هذه المرحلة
         </h3>
         {!hasResources ? (
-          <p className="mt-2 text-fine leading-6 text-muted-foreground">
+          <p className="mt-2 text-xs leading-6 text-muted-foreground">
             لم تُرفَع موادُّ هذه الشعبة بعد. ما يرفعه مدرّبك يظهر هنا، ومعه تسجيلاتُ الجلسات فور جهوزها.
           </p>
         ) : (
@@ -254,7 +254,7 @@ export default function StageWork({
                         href={r.source_url}
                         target="_blank"
                         rel="noreferrer"
-                        className="flex items-start gap-1.5 text-fine leading-5 text-muted-foreground transition hover:text-teal-light-ink"
+                        className="flex items-start gap-1.5 text-xs leading-5 text-muted-foreground transition hover:text-teal-light-ink"
                       >
                         <ExternalLink className="mt-1 h-3 w-3 shrink-0" />
                         <span>
@@ -291,7 +291,7 @@ function Lessons({
 }) {
   if (modules.length === 0) {
     return (
-      <Card as="p" className="border-dashed px-4 py-6 text-center text-fine leading-6 text-muted-foreground">
+      <Card as="p" className="border-dashed px-4 py-6 text-center text-xs leading-6 text-muted-foreground">
         لم يُكتب متنُ هذه الدورة بعد. جلساتُها وواجباتُها في تبويبَيهما، ويظهر المتن هنا فور كتابته.
       </Card>
     );
@@ -320,7 +320,7 @@ function Lessons({
                   {done ? <CheckCircle2 className="h-4 w-4" /> : i + 1}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className={`block text-[12.5px] font-bold leading-snug ${done || next ? "" : "text-foreground"}`}>
+                  <span className={`block text-xs font-bold leading-snug ${done || next ? "" : "text-foreground"}`}>
                     {m.title}
                   </span>
                   <span className="mt-0.5 block text-fine leading-4 text-muted-foreground">
@@ -368,7 +368,7 @@ function Lessons({
       </p>
       {project && (
         <Card tone="warn" className="mt-4">
-          <p className="flex items-center gap-1.5 text-fine font-black text-gold-ink">
+          <p className="flex items-center gap-1.5 text-xs font-black text-gold-ink">
             <FileText className="h-3.5 w-3.5" /> مشروع هذه الدورة
           </p>
           <p className="mt-1.5 text-xs leading-6 text-foreground">{project}</p>
@@ -382,7 +382,7 @@ function Lessons({
 
 function Sessions({ detail }: { detail: EnrollmentDetail }) {
   if (detail.cohort.sessions.length === 0) {
-    return <p className="text-fine leading-6 text-muted-foreground">لم تُجدول جلسات هذه الشعبة بعد — تظهر هنا بمواعيدها فور جدولتها.</p>;
+    return <p className="text-xs leading-6 text-muted-foreground">لم تُجدول جلسات هذه الشعبة بعد — تظهر هنا بمواعيدها فور جدولتها.</p>;
   }
   return (
     <div className="space-y-2">
@@ -392,7 +392,7 @@ function Sessions({ detail }: { detail: EnrollmentDetail }) {
           <Card key={s.id} className="bg-paper/20 p-3.5">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
               <div className="min-w-0 flex-1">
-                <p className="text-[12.5px] font-bold leading-snug">{s.title}</p>
+                <p className="text-xs font-bold leading-snug">{s.title}</p>
                 <p className="mt-0.5 text-fine text-muted-foreground">{fmtDateTime(new Date(s.startsAt))}</p>
               </div>
               {mine && (
@@ -434,7 +434,7 @@ function Sessions({ detail }: { detail: EnrollmentDetail }) {
 function Assessments({ detail, handlers }: { detail: EnrollmentDetail; handlers: StageWorkHandlers }) {
   const { answers, setAnswers, busy, onSubmit, onSubmitQuiz } = handlers;
   if (detail.cohort.assessments.length === 0) {
-    return <p className="text-fine leading-6 text-muted-foreground">لا واجبات على هذه الشعبة بعد — ما يُسنده مدرّبك يظهر هنا بموعد استحقاقه.</p>;
+    return <p className="text-xs leading-6 text-muted-foreground">لا واجبات على هذه الشعبة بعد — ما يُسنده مدرّبك يظهر هنا بموعد استحقاقه.</p>;
   }
   return (
     <div className="space-y-3">
@@ -446,7 +446,7 @@ function Assessments({ detail, handlers }: { detail: EnrollmentDetail; handlers:
           <Card key={a.id} className="bg-paper/20 p-3.5">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
               <div className="min-w-0 flex-1">
-                <p className="text-[12.5px] font-bold leading-snug">{a.title}</p>
+                <p className="text-xs font-bold leading-snug">{a.title}</p>
                 <p className="mt-0.5 text-fine text-muted-foreground">
                   {ASSESSMENT_TYPE[a.type] ?? a.type} · من {a.maxScore}
                   {a.dueAt && ` · يستحق ${fmtDate(a.dueAt)}`}
@@ -470,7 +470,7 @@ function Assessments({ detail, handlers }: { detail: EnrollmentDetail; handlers:
                   onChange={(e) => setAnswers((prev) => ({ ...prev, [a.id]: e.target.value }))}
                   placeholder={mine?.status === "resubmit_requested" ? "أعد التسليم بعد معالجة الملاحظات…" : "اكتب إجابتك هنا…"}
                   rows={3}
-                  className="w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2.5 text-[13px] text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none"
+                  className="w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none"
                 />
                 <Button tone="confirm" disabled={busy === a.id || !(answers[a.id] ?? "").trim()}
                   onClick={() => onSubmit(a.id, mine?.status === "resubmit_requested")} className="mt-2">
@@ -511,7 +511,7 @@ function QuizAttemptForm({
             value={resp[it.id] ?? ""}
             onChange={(e) => setResp((prev) => ({ ...prev, [it.id]: e.target.value }))}
             placeholder="إجابتك…"
-            className="w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none"
+            className="w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none"
           />
         </div>
       ))}

@@ -100,7 +100,7 @@ export default function CalendarPage() {
               {domains.map((d) => (
                 <button
                   key={d} onClick={() => setDomain(d)}
-                  className={`inline-flex shrink-0 snap-start items-center rounded-full border px-3.5 py-1.5 text-[13px] font-bold transition ${
+                  className={`inline-flex shrink-0 snap-start items-center rounded-full border px-3.5 py-1.5 text-sm font-bold transition ${
                     domain === d ? "border-teal bg-teal/15 text-teal-light-ink" : "border-white/15 text-muted-foreground hover:border-white/35"
                   }`}
                 >
@@ -128,7 +128,7 @@ export default function CalendarPage() {
                       {shown.map((e) => (
                         <Card as="li" key={e.cohortId} className="p-3.5">
                           <Link to={`/build/${e.courseId}`} className="block">
-                            <p className="text-[13px] font-bold leading-6 text-foreground">{courseTitleAr(e.titleAr)}</p>
+                            <p className="text-sm font-bold leading-6 text-foreground">{courseTitleAr(e.titleAr)}</p>
                           </Link>
                           <p className="mt-1 text-fine leading-5 text-muted-foreground">
                             {e.startsAt && <>تبدأ {fmtDateAr(e.startsAt)}</>}

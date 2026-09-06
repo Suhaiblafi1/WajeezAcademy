@@ -12,7 +12,7 @@ import { buildGrowthSummary, type CourseGrowth, type RemeasureRecord } from "@/a
 import EmptyState from "@/components/EmptyState";
 import { fmtDate } from "@/application/text/format-ar";
 
-import { Card, Inset } from "@/components/ui/Surface";
+import { Card, Inset, Panel } from "@/components/ui/Surface";
 interface Cert {
   id: string; number: string; learnerName: string; courseId: string; courseVersion: number;
   enrollmentId: string;
@@ -94,7 +94,7 @@ export default function Certificates() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {rows.map((c) => (
-            <article key={c.id} className={`rounded-3xl border p-6 ${c.status === "revoked" ? "border-red-500/30 bg-red-500/5" : "border-white/10 bg-white/[0.03]"}`}>
+            <Panel as="article" tone={c.status === "revoked" ? "danger" : "default"} key={c.id}>
               <div className="flex items-start justify-between gap-3">
                 <span className={`grid h-11 w-11 place-items-center rounded-2xl ${c.status === "revoked" ? "bg-red-500/10 text-red-400" : "bg-gold/10 text-gold-ink"}`}>
                   {c.status === "revoked" ? <ShieldOff className="h-5 w-5" /> : <Award className="h-5 w-5" />}
@@ -121,7 +121,7 @@ export default function Certificates() {
               {c.status !== "revoked" && (
                 <GrowthStrip growth={growthByCourse[c.courseId] ?? null} enrollmentId={c.enrollmentId} />
               )}
-            </article>
+            </Panel>
           ))}
         </div>
       )}

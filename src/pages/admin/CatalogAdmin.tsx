@@ -353,7 +353,7 @@ export default function CatalogAdmin() {
                   placeholder={ph} className={inputCls} />
               ))}
             </div>
-            <Button tone="primary" disabled={busy || !skillForm.id || !skillForm.slug || skillForm.nameAr.length < 2}
+            <Button tone="confirm" disabled={busy || !skillForm.id || !skillForm.slug || skillForm.nameAr.length < 2}
               onClick={() => act(async () => {
                 await apiPost("/api/admin/catalog/skills", { ...skillForm, familyId: skillForm.familyId || undefined });
                 setSkillForm({ id: "", slug: "", nameAr: "", familyId: "" });

@@ -86,7 +86,7 @@ export default function Notifications() {
             <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} className="accent-teal" />
             قالب فعال
           </label>
-          <Button tone="primary" disabled={busy || form.key.length < 2 || !form.titleAr || !form.bodyAr}
+          <Button tone="confirm" disabled={busy || form.key.length < 2 || !form.titleAr || !form.bodyAr}
             onClick={() => act(async () => {
               await apiPost("/api/admin/notification-templates", form);
               setForm({ key: "", channel: "in_app", titleAr: "", bodyAr: "", active: true });

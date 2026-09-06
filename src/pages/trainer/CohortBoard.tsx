@@ -319,7 +319,7 @@ export default function CohortBoard() {
                                                 className="w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none" />
                                             </div>
                                           </div>
-                                          <Button tone="primary" size="sm" type="button" disabled={busy || !rescheduleForm.at || rescheduleForm.reason.trim().length < 10}
+                                          <Button tone="confirm" size="sm" type="button" disabled={busy || !rescheduleForm.at || rescheduleForm.reason.trim().length < 10}
                                             onClick={() => void proposeReschedule(s.id)} className="disabled:cursor-not-allowed">
                                             أرسل الاقتراح للإدارة
                                           </Button>
@@ -553,8 +553,8 @@ export default function CohortBoard() {
                 كانا قسمَين في هذا اللوح من ٧٢٤ سطرا، مدفونَين تحت الحضور
                 والموادّ والتكليفات والرسائل. فنُقل التصحيحُ إلى `GradingQueue`
                 — التبويبِ الذي يحمل اسمَه — واقتراحاتُ التأجيل إلى `Schedule`
-                حيث المواعيد. وأعادهما ترحيلُ الأسطح الآليُّ مرّتين، فيُحذفان
-                ثالثةً ويبقى هذا السطرُ يقول لمن يأتي بعدُ لماذا. */}
+                حيث المواعيد. وأعادهما ترحيلُ الأسطح الآليُّ ثلاثَ مرّات،
+                فيُحذفان رابعةً ويبقى هذا السطرُ يقول لمن يأتي بعدُ لماذا. */}
           </div>
         )}
       </div>

@@ -123,7 +123,7 @@ export default function AwaitingCourseChoices({
       {/* ── تأكيد الحذف ── */}
       {mode === "remove" && (
         <Inset tone="danger" className="mt-3">
-          <p className="text-fine leading-6 text-foreground">
+          <p className="text-xs leading-6 text-foreground">
             تُحذف «{courseTitle}» من خطّتك. تستطيع إضافتها لاحقا من الكتالوج.
           </p>
           <div className="mt-2.5 flex items-center gap-2">
@@ -164,7 +164,7 @@ export default function AwaitingCourseChoices({
               {alts.map((a) => (
                 <li key={a.courseId} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 bg-paper/20 px-3 py-2">
                   <div className="min-w-0">
-                    <p className="truncate text-fine font-bold">{a.titleAr}</p>
+                    <p className="truncate text-xs font-bold">{a.titleAr}</p>
                     <p className="mt-0.5 text-fine text-muted-foreground">
                       تشترك في {a.sharedSkills} {a.sharedSkills === 1 ? "مهارة" : a.sharedSkills === 2 ? "مهارتين" : "مهارات"}
                       {a.price !== null && <> · {Number(a.price)} {a.currency}</>}

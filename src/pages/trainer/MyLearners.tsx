@@ -30,7 +30,7 @@ import TrainerLayout from "./TrainerLayout";
 import EmptyState from "@/components/EmptyState";
 import { apiGet, ApiError } from "@/services/api";
 import { matchesQuery } from "@/application/text/search-ar";
-import { Panel } from "@/components/ui/Surface";
+import { Card, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import { controlCls } from "@/components/FormKit";
 
@@ -214,9 +214,11 @@ export default function TrainerMyLearners() {
               {shown.map((r) => {
                 const waiting = pending[r.userId] ?? 0;
                 return (
-                  <li
+                  <Card
+                    as="li"
                     key={r.enrollmentId}
-                    className={`rounded-2xl border p-4 ${r.concern >= 2 ? "border-gold/35 bg-gold/[0.05]" : "border-white/10 bg-white/[0.02]"}`}
+                    tone={r.concern >= 2 ? "warn" : "default"}
+                    className="p-4"
                   >
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0">
@@ -256,7 +258,7 @@ export default function TrainerMyLearners() {
                         </Link>
                       )}
                     </div>
-                  </li>
+                  </Card>
                 );
               })}
             </ul>

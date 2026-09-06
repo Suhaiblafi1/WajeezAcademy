@@ -156,7 +156,7 @@ export default function TrainerRunOps() {
             <span className="rounded-full bg-gold/20 px-2 py-0.5 text-micro font-black text-gold-ink">{requests.length}</span>
           )}
         </h3>
-        <p className="mt-1 text-[11.5px] leading-6 text-muted-foreground">
+        <p className="mt-1 text-xs leading-6 text-muted-foreground">
           يُقدَّمها من يجدول الشعبة، ويبتّ فيها من يملك التأهيل — <b>فمن يطلب ليس من يقرّر</b>.
           والموافقةُ <b>تؤهّل وتُسند إلى الشعبة المطلوبة في فعلٍ واحد</b>.
         </p>
@@ -171,7 +171,7 @@ export default function TrainerRunOps() {
             {requests.map((r) => (
               <Card as="li" tone="warn" key={r.id}>
                 <p className="text-sm font-black">{r.profile.application.fullName}</p>
-                <p className="mt-1 text-[11.5px] leading-6 text-muted-foreground">
+                <p className="mt-1 text-xs leading-6 text-muted-foreground">
                   للدورة: <b className="text-foreground">{r.course.versions[0]?.titleAr ?? courseName(r.courseId)}</b>
                   {r.requestedCohort && (
                     <> · للشعبة: <b className="text-foreground">{r.requestedCohort.title}</b>
@@ -180,7 +180,7 @@ export default function TrainerRunOps() {
                   )}
                   {r.requestedAt && <> · طُلب {fmtDateTime(new Date(r.requestedAt))}</>}
                 </p>
-                {r.note && <p className="mt-2 rounded-xl bg-paper/30 p-2.5 text-[11.5px] leading-6">{r.note}</p>}
+                {r.note && <p className="mt-2 rounded-xl bg-paper/30 p-2.5 text-xs leading-6">{r.note}</p>}
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   <input
                     value={note[r.id] ?? ""}
@@ -189,7 +189,7 @@ export default function TrainerRunOps() {
                     aria-label="ملاحظة القرار"
                     className={`${controlCls} min-w-[16rem] flex-1`}
                   />
-                  <Button tone="primary" type="button" disabled={busy === r.id}
+                  <Button tone="confirm" type="button" disabled={busy === r.id}
                     onClick={() => void act(r.id,
                       () => apiPost(`/api/admin/qualification-requests/${r.id}/decide`, { approve: true, note: note[r.id]?.trim() || undefined }),
                       "أُهِّل وأُسنِد إلى الشعبة")}>
@@ -265,7 +265,7 @@ export default function TrainerRunOps() {
               })();
             }}
           >
-            <p className="text-[11.5px] leading-6 text-muted-foreground">
+            <p className="text-xs leading-6 text-muted-foreground">
               يُنشأ في خطوةٍ واحدة: <b className="text-foreground">حسابُه</b> و<b className="text-foreground">ملفُّ مدرّبٍ نشط</b> و<b className="text-foreground">دورُه</b> —
               فيُؤهَّل ويُسنَد من هذه الشاشة مباشرة. ولا يظهر للعامّة حتّى تُعتمد صورتُه ونبذتُه.
             </p>
@@ -312,8 +312,8 @@ export default function TrainerRunOps() {
           <Card className="mt-3 p-8 text-center">
             <GraduationCap className="mx-auto h-10 w-10 text-muted-foreground/50" />
             <p className="mt-3 text-sm font-black">لا مدرّبَ بعد</p>
-            <p className="mt-1 text-[11.5px] leading-6 text-muted-foreground">
-              يظهر هنا كلُّ من أُنشئ له ملفُّ مدرّب — من اعتُمد من تبويب «الطلبات»، أو عُيّن هنا مباشرة.
+            <p className="mt-1 text-xs leading-6 text-muted-foreground">
+              يظهر هنا كلُّ من أُنشئ له ملفُّ مدرّب — أي من اعتُمد من تبويب «الطلبات».
             </p>
           </Card>
         ) : (
@@ -392,7 +392,7 @@ export default function TrainerRunOps() {
                       <option value="">اختر دورة…</option>
                       {courses.map((c) => <option key={c.id} value={c.id}>{c.titleAr ?? c.title ?? c.id}</option>)}
                     </select>
-                    <Button tone="primary" type="button" disabled={!sel.courseId || busy === k("qual")}
+                    <Button tone="confirm" type="button" disabled={!sel.courseId || busy === k("qual")}
                       onClick={() => void act(k("qual"),
                         () => apiPost(`/api/admin/trainers/${t.profileId}/qualifications`, { courseId: sel.courseId }),
                         "أُهِّل للدورة")} className="px-3.5 text-gold-ink">

@@ -155,7 +155,7 @@ export default function StageRail({
                 <span className="min-w-0 flex-1">
                   {/* سطران لا سطرٌ مقصوص: عناوينُ الدورات جملٌ كاملة، و`truncate`
                       كان يُخرج «دورة التخطيط لل…» فلا يُعرف أيُّ مرحلةٍ هي. */}
-                  <span className={`block text-fine font-bold leading-[1.3] line-clamp-2 ${s.state === "not_owned" ? "text-muted-foreground" : ""}`}>
+                  <span className={`block text-xs font-bold leading-[1.3] line-clamp-2 ${s.state === "not_owned" ? "text-muted-foreground" : ""}`}>
                     {s.titleAr}
                   </span>
                   <span className="mt-1 block text-fine leading-4 text-muted-foreground">{STAGE_LABEL_AR[s.state]}</span>
@@ -196,7 +196,7 @@ export default function StageRail({
                 <Trophy className="h-4 w-4" />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-fine font-bold leading-4 text-gold-ink">مشروع التخرج</span>
+                <span className="block text-xs font-bold leading-4 text-gold-ink">مشروع التخرج</span>
                 <span className="mt-1 block text-fine leading-4 text-muted-foreground">نهاية المسار · وشهادته</span>
               </span>
             </button>

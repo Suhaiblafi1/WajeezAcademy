@@ -143,7 +143,7 @@ export default function Advisors() {
                       <Button tone="secondary" size="sm" onClick={() => void toggleDetail(r.userId)}>
                         {detailFor === r.userId ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />} الملفّ الكامل
                       </Button>
-                      <Button tone="primary" size="sm" onClick={() => {
+                      <Button tone="confirm" size="sm" onClick={() => {
                           setEditing(editing === r.userId ? null : r.userId);
                           setForm({ commissionPct: r.commissionPct === null ? "" : String(r.commissionPct), notesAr: r.notesAr });
                         }} className="text-gold-ink">

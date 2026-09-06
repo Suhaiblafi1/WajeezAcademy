@@ -62,12 +62,7 @@ function MeasureRow({
           {LEVELS.map((lvl) => {
             const active = value === lvl;
             return (
-              <label
-                key={lvl}
-                className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-2xl border px-3 py-2 text-xs transition ${
-                  active ? "border-teal bg-teal-ink/15 font-bold text-foreground" : "border-white/10 text-foreground hover:border-white/30"
-                }`}
-              >
+              <Card as="label" tone={active ? "accent" : "default"} key={lvl} className={`flex min-h-11 cursor-pointer items-center gap-2 px-3 py-2 text-xs transition ${active ? "bg-teal-ink/15 font-bold text-foreground" : "text-foreground hover:border-white/30"}`}>
                 <input
                   type="radio"
                   name={`skill-${row.slug}`}
@@ -78,7 +73,7 @@ function MeasureRow({
                 />
                 <span className="tabular-nums">{lvl}</span>
                 <span className="truncate">{LEVEL_LABELS_AR[lvl - 1]}</span>
-              </label>
+              </Card>
             );
           })}
         </div>
@@ -275,7 +270,7 @@ export default function Remeasure() {
               {/* العدد المتبقي في سطر كامل التباين لا داخل زر معطَّل باهت:
                   التوجيه لا يُدفن في عنصر خامل. */}
               <div className="mt-5 flex flex-wrap items-center gap-3">
-                <Button tone="primary" type="button"
+                <Button tone="confirm" type="button"
                   onClick={() => void submit()}
                   disabled={!complete || saving} className="min-h-11 disabled:cursor-not-allowed">
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <CheckCircle2 className="h-4 w-4" aria-hidden="true" />}

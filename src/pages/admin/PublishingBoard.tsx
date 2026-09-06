@@ -96,7 +96,7 @@ export default function PublishingBoard() {
           <div className="mt-4 flex gap-2">
             <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="2026.08.16-01" dir="ltr"
               className="w-full rounded-xl border border-white/10 bg-paper/30 px-3 py-2 text-sm outline-none focus:border-gold/60" />
-            <Button tone="primary" disabled={busy !== null || !label.trim()} onClick={() => act("create", async () => {
+            <Button tone="confirm" disabled={busy !== null || !label.trim()} onClick={() => act("create", async () => {
               const v = await apiPost<Version>("/api/admin/publishing/versions", { label: label.trim() });
               setLabel("");
               await act("publish", () => apiPost(`/api/admin/publishing/versions/${v.id}/publish`));

@@ -458,7 +458,7 @@ function PlanRequest({ track }: { track: JourneyTrack }) {
   /* له شعبٌ مفتوحة: الشراءُ في بطاقة المرحلة نفسِها — حيث الموعدُ والسعر.
      ولا زرَّ ثانيا هنا يفتح مسارا آخر لنفس العمليّة. */
   return (
-    <Card tone="accent" className="mt-3 px-4 py-3 text-fine leading-6 text-teal-light-ink">
+    <Card tone="accent" className="mt-3 px-4 py-3 text-xs leading-6 text-teal-light-ink">
       <span className="font-bold">
         {askable === 1 ? "دورةٌ من خطّتك مفتوحةٌ للتسجيل" : `${askable} من دوراتك مفتوحةٌ للتسجيل`}.
       </span>{" "}

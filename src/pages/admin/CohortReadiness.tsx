@@ -70,7 +70,7 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
       <h2 className="flex items-center gap-2 text-sm font-black text-teal-light-ink">
         <Wallet className="h-4 w-4" /> جاهزيّة العرض — لماذا لا تظهر بعض الأسعار
       </h2>
-      <p className="mt-2 max-w-3xl text-[11.5px] leading-6 text-muted-foreground">
+      <p className="mt-2 max-w-3xl text-xs leading-6 text-muted-foreground">
         السعر يُقرأ من الشعب لا من الكتالوج، فما لا شعبةَ مفتوحةً له لا يظهر له سعر —
         وهذا مقصود: رقمٌ لا تسنده شعبةٌ قابلة للتسجيل وعدٌ يفترق عن الفاتورة.
         اعرض أوّلا لترى ما سيتغيّر، ثمّ نفّذ.

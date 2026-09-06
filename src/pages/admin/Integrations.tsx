@@ -179,7 +179,7 @@ export default function Integrations() {
                 تفعيل هذا المزود — غير المفعّل يعني: المزود الاختباري يعمل
               </label>
               <div className="flex flex-wrap gap-2">
-                <Button tone="primary" disabled={busy} onClick={() => act(() => apiPut("/api/admin/integrations/payment", payForm), "حُفظت إعدادات الدفع")}>
+                <Button tone="confirm" disabled={busy} onClick={() => act(() => apiPut("/api/admin/integrations/payment", payForm), "حُفظت إعدادات الدفع")}>
                   حفظ إعدادات الدفع
                 </Button>
                 <Button tone="secondary" disabled={busy} onClick={() => void testPayment()} className="text-teal-light-ink">
@@ -226,7 +226,7 @@ export default function Integrations() {
                 </label>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Button tone="primary" disabled={busy} onClick={() => act(() => apiPut("/api/admin/integrations/email", mailForm), "حُفظت إعدادات البريد")}>
+                <Button tone="confirm" disabled={busy} onClick={() => act(() => apiPut("/api/admin/integrations/email", mailForm), "حُفظت إعدادات البريد")}>
                   حفظ إعدادات البريد
                 </Button>
                 <div className="flex flex-1 items-center gap-2">

@@ -183,7 +183,7 @@ export default function ModuleStudy() {
           حسابه أو في المنصّة. والحقيقةُ أبسطُ وأصدق: الوحدةُ تُدرَّس مباشرةً
           مع مدرّبها، ومتنُها المكتوبُ قيد التأليف. **وقولُها خيرٌ من إخفائها.** */}
       {lessonCount === 0 && (
-        <Card as="p" tone="warn" className="mb-6 flex items-start gap-2 p-4 text-[12.5px] leading-7 text-gold-ink">
+        <Card as="p" tone="warn" className="mb-6 flex items-start gap-2 p-4 text-xs leading-7 text-gold-ink">
           <BookOpen className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           <span>
             متنُ هذه الوحدة المكتوب <b>قيد التأليف</b> — وهي تُدرَّس مع مدرّبك في جلستها.
@@ -203,7 +203,7 @@ export default function ModuleStudy() {
           {/* الفيديو مع الدرس الأوّل وحده — لا يتكرّر في كل خطوة */}
           {pos === 0 && mod.video && <ModuleVideo raw={mod.video} checksRaw={mod.checks} moduleId={mod.id} className="mt-5" />}
 
-          <LessonBody body={step.body} className="mt-5 text-[15px] leading-9" />
+          <LessonBody body={step.body} className="mt-5 text-base leading-9" />
 
           {/* استرجاعٌ بعد الدرس مباشرة — لا في آخر الوحدة وحدها */}
           {step.checks.length > 0 && (
@@ -262,13 +262,13 @@ export default function ModuleStudy() {
                 <p className="flex items-center gap-2 text-xs font-black text-teal-light-ink">
                   <Target className="h-4 w-4" /> نشاطك الآن
                 </p>
-                <p className="mt-3 text-[15px] leading-9 text-foreground">{mod.activity}</p>
+                <p className="mt-3 text-base leading-9 text-foreground">{mod.activity}</p>
               </Panel>
               <Panel tone="warn" className="md:p-8">
                 <p className="flex items-center gap-2 text-xs font-black text-gold-ink">
                   <FileText className="h-4 w-4" /> ما تخرج به — ويدخل ملفّك
                 </p>
-                <p className="mt-3 text-[15px] leading-9 text-foreground">{mod.artifact}</p>
+                <p className="mt-3 text-base leading-9 text-foreground">{mod.artifact}</p>
               </Panel>
             </>
           )}

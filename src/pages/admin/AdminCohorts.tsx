@@ -178,19 +178,12 @@ export default function AdminCohorts() {
   return (
     <AdminLayout title="عمليات الشعب — الفتح المشروط والجلسات والتسجيل">
       {flash && (
-        <p
-          role={flash.kind === "error" ? "alert" : "status"}
-          className={`sticky top-[4.5rem] z-30 mb-5 flex items-center gap-2 rounded-2xl border px-4 py-3 text-sm font-bold backdrop-blur ${
-            flash.kind === "error"
-              ? "border-red-400/40 bg-red-500/15 text-red-200"
-              : "border-teal/40 bg-teal/10 text-teal-light-ink"
-          }`}
-        >
+        <Card as="p" tone={flash.kind === "error" ? "danger" : "accent"} role={flash.kind === "error" ? "alert" : "status"} className={`sticky top-[4.5rem] z-30 mb-5 flex items-center gap-2 px-4 py-3 text-sm font-bold backdrop-blur ${flash.kind === "error" ? "text-red-200" : "text-teal-light-ink"}`}>
           {flash.kind === "error"
             ? <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />
             : <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />}
           {flash.text}
-        </p>
+        </Card>
       )}
 
       <CohortReadiness onApplied={() => void load()} />
@@ -212,7 +205,7 @@ export default function AdminCohorts() {
                 <p className="mt-0.5 text-micro text-muted-foreground">
                   {r.session.cohort.title} · اقترحه {r.requester.displayName}
                 </p>
-                <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-1.5 text-[11.5px]">
+                <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-1.5 text-xs">
                   <span className="text-muted-foreground">الموعد الآن: <span className="text-foreground">{fmtDateTimeAr(r.currentStartsAt)}</span></span>
                   <span className="text-gold-ink">المقترح: <span className="font-bold">{fmtDateTimeAr(r.proposedStartsAt)}</span></span>
                 </div>
@@ -379,7 +372,7 @@ export default function AdminCohorts() {
                           aria-label="خطة تقديم الشعبة"
                           className={`${areaCls} mt-2.5`}
                         />
-                        <Button tone="primary" type="button"
+                        <Button tone="confirm" type="button"
                           disabled={busy || (planDraft[c.id] ?? "").trim().length < 20}
                           onClick={() => act(async () => {
                             await apiPut(`/api/admin/cohorts/${c.id}/delivery-plan`, { notesAr: (planDraft[c.id] ?? "").trim() });

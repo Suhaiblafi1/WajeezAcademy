@@ -128,7 +128,7 @@ export default function RatingModeration() {
                   ? <span className="font-bold text-foreground">{r.subjectNameAr}</span>
                   : <span dir="ltr" className="text-muted-foreground/50">{r.subjectId}</span>}
               </div>
-              <p className="mt-3 text-[13px] leading-7 text-foreground">{r.commentAr}</p>
+              <p className="mt-3 text-sm leading-7 text-foreground">{r.commentAr}</p>
               {r.moderationReason && (
                 <p className="mt-2 text-micro text-muted-foreground">سبب الحجب: {r.moderationReason}</p>
               )}

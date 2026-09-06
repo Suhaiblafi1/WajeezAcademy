@@ -65,7 +65,7 @@ export default function CapstonePanel({
           نهاية «{track.titleAr}» — بعد دوراته، لا مرحلةً فيه.
         </p>
         {track.capstoneAr ? (
-          <p className="mt-3 text-[13px] leading-7 text-foreground">{track.capstoneAr}</p>
+          <p className="mt-3 text-sm leading-7 text-foreground">{track.capstoneAr}</p>
         ) : (
           <p className="mt-3 text-xs leading-6 text-muted-foreground">
             لم يُكتب نصُّ مشروع هذا المسار في الكتالوج بعد.
@@ -168,8 +168,8 @@ function RequestCard({
 
   return (
     <Card as="section" className="flex flex-col">
-      <p className="flex items-center gap-2 text-[13px] font-black">{icon}{title}</p>
-      <p className="mt-1.5 text-fine leading-6 text-muted-foreground">{bodyAr}</p>
+      <p className="flex items-center gap-2 text-sm font-black">{icon}{title}</p>
+      <p className="mt-1.5 text-xs leading-6 text-muted-foreground">{bodyAr}</p>
 
       {request || sent ? (
         <Inset className="mt-3">
@@ -203,7 +203,7 @@ function RequestCard({
                 onChange={(e) => setAudience(e.target.value)}
                 maxLength={300}
                 placeholder="مثال: إدارة الموارد البشرية في شركتي، أو لجنة منحة"
-                className="mt-1.5 w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-[12.5px] text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none"
+                className="mt-1.5 w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none"
               />
             </label>
           )}

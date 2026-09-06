@@ -8,6 +8,7 @@ import { TRAINING_SEASONS } from "@/application/trainer/application-options";
 
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
+import type { ReactNode } from "react";
 const inputCls =
   "w-full rounded-xl border border-white/15 bg-paper/30 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none";
 
@@ -28,6 +29,21 @@ interface UploadState { status: "idle" | "registering" | "uploading" | "done" | 
    سابقين، وكسرُها يوقف طلبا في منتصفه ولا يعلم صاحبه. فتبقى تعمل بالعقد
    الجديد نفسه: بلا «إجمالي المتدربين» ولا «جهات عملت معها» ولا «أدلة
    وتوصيات» — حقولٌ حُذفت لأن المتقدّم يكتبها عن نفسه بلا تحقق. */
+/* اختيارٌ متعدّدٌ يُضغط — ثلاثُ مجموعاتٍ في هذه الشاشة تشترك في هيئته.
+   وكانت الصيغةُ مكتوبةً ثلاثَ مرّاتٍ حرفا بحرف، فتتغيّر واحدةٌ ويبقى أختاها. */
+function Choice({ on, onClick, children }: { on: boolean; onClick: () => void; children: ReactNode }) {
+  return (
+    <button
+      type="button" onClick={onClick} aria-pressed={on}
+      className={`cursor-pointer rounded-full border px-3.5 py-1.5 text-xs font-bold transition ${
+        on ? "border-teal bg-teal/15 text-teal-light-ink" : "border-white/15 text-muted-foreground hover:border-white/35"
+      }`}
+    >
+      {children}
+    </button>
+  )
+}
+
 export default function JoinTrainerComplete() {
   const [params] = useSearchParams();
   const reference = params.get("ref") ?? "";
@@ -231,30 +247,22 @@ export default function JoinTrainerComplete() {
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               {TRAINING_SEASONS.map((s) => (
-                <button
-                  type="button" key={s.value}
+                <Choice
+                  key={s.value} on={seasons.includes(s.value)}
                   onClick={() => setSeasons(seasons.includes(s.value) ? seasons.filter((x) => x !== s.value) : [...seasons, s.value])}
-                  aria-pressed={seasons.includes(s.value)}
-                  className={`cursor-pointer rounded-full border px-3.5 py-1.5 text-xs font-bold transition ${
-                    seasons.includes(s.value) ? "border-teal bg-teal/15 text-teal-light-ink" : "border-white/15 text-muted-foreground hover:border-white/35"
-                  }`}
                 >
                   {s.label} <span className="text-muted-foreground">({s.months})</span>
-                </button>
+                </Choice>
               ))}
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
               {[{ v: "morning", l: "صباحيّ" }, { v: "evening", l: "مسائيّ" }].map((p) => (
-                <button
-                  type="button" key={p.v}
+                <Choice
+                  key={p.v} on={periods.includes(p.v)}
                   onClick={() => setPeriods(periods.includes(p.v) ? periods.filter((x) => x !== p.v) : [...periods, p.v])}
-                  aria-pressed={periods.includes(p.v)}
-                  className={`cursor-pointer rounded-full border px-3.5 py-1.5 text-xs font-bold transition ${
-                    periods.includes(p.v) ? "border-teal bg-teal/15 text-teal-light-ink" : "border-white/15 text-muted-foreground hover:border-white/35"
-                  }`}
                 >
                   {p.l}
-                </button>
+                </Choice>
               ))}
             </div>
           </fieldset>
@@ -264,15 +272,12 @@ export default function JoinTrainerComplete() {
             <legend className="text-sm font-black">توفرك الأسبوعي</legend>
             <div className="mt-3 flex flex-wrap gap-2">
               {DAYS.map((d) => (
-                <button
-                  type="button" key={d} onClick={() => setDays(days.includes(d) ? days.filter((x) => x !== d) : [...days, d])}
-                  aria-pressed={days.includes(d)}
-                  className={`cursor-pointer rounded-full border px-3.5 py-1.5 text-xs font-bold transition ${
-                    days.includes(d) ? "border-teal bg-teal/15 text-teal-light-ink" : "border-white/15 text-muted-foreground hover:border-white/35"
-                  }`}
+                <Choice
+                  key={d} on={days.includes(d)}
+                  onClick={() => setDays(days.includes(d) ? days.filter((x) => x !== d) : [...days, d])}
                 >
                   {d}
-                </button>
+                </Choice>
               ))}
             </div>
             <div className="mt-3 grid gap-4 sm:grid-cols-2">

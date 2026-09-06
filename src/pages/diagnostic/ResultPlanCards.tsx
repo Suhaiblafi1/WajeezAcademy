@@ -282,7 +282,7 @@ export function ResultPriceCard({ courseIds }: { courseIds: readonly string[] })
       {/* وكان هنا صندوقٌ يطلب بريدا مقابل الكود. وقرارُ صاحب المنصّة: لا داعي
           له — البريدُ يُكتب عند الشراء أصلا، فطلبُه مرّتين حاجزٌ بلا مقابل.
           والكودُ يُقال سطرا واحدا: هو لأوّل شراءٍ لكلّ أحد. */}
-      <Inset as="p" tone="warn" className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 px-3.5 py-2.5 text-fine leading-5">
+      <Inset as="p" tone="warn" className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 px-3.5 py-2.5 text-xs leading-5">
         <span className="font-bold text-gold-ink">خصم {FIRST_TIME_PROMO.percentOff}٪ لأول عملية شراء بالكود</span>
         <code dir="ltr" className="rounded-md border border-gold/40 bg-gold/10 px-1.5 py-0.5 font-mono text-fine font-black text-gold-ink">
           {FIRST_TIME_PROMO.code}

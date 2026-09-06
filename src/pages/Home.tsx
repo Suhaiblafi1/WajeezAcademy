@@ -333,7 +333,7 @@ function DiagnosticTeaser() {
           <h2 className="mt-4 text-xl font-bold leading-snug sm:text-2xl md:text-4xl">
             قبل أن تختار دورة… اعرف لماذا لم تبدأ بعد
           </h2>
-          <p className="mx-auto mt-2.5 max-w-lg text-[13px] leading-6 text-muted-foreground sm:mt-4 sm:text-base sm:leading-8">
+          <p className="mx-auto mt-2.5 max-w-lg text-sm leading-6 text-muted-foreground sm:mt-4 sm:text-base sm:leading-8">
             سؤالان صادقان يبني عليهما التشخيص الكامل.
           </p>
         </div>
@@ -948,16 +948,16 @@ function Footer() {
               <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 object-contain" />
               <div className="font-bold">وجيز <span className="text-teal-light-ink">أكاديمي</span></div>
             </div>
-            <p className="mt-2.5 max-w-xs text-[12.5px] leading-6 text-muted-foreground">
+            <p className="mt-2.5 max-w-xs text-xs leading-6 text-muted-foreground">
               منصة تفهم الإنسان قبل أن تقترح ما يتعلمه — من مجموعة وجيز wajeez.com
             </p>
-            <div className="mt-3 flex items-center gap-2 text-fine text-muted-foreground">
+            <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
               <Mail className="h-4 w-4 text-teal-ink" />
               <span dir="ltr">{CONTACT.email}</span>
             </div>
             <div className="mt-2 space-y-1">
               {CONTACT.locations.map((loc) => (
-                <div key={loc.label} className="flex items-start gap-2 text-fine leading-5 text-muted-foreground">
+                <div key={loc.label} className="flex items-start gap-2 text-xs leading-5 text-muted-foreground">
                   <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-teal-ink" />
                   {loc.href ? (
                     <a href={loc.href} target="_blank" rel="noreferrer" className="transition hover:text-teal-light-ink">
@@ -972,11 +972,11 @@ function Footer() {
           </div>
           {footerCols.map((col) => (
             <div key={col.title}>
-              <div className="mb-2 flex items-center gap-1.5 text-[13px] font-bold">
+              <div className="mb-2 flex items-center gap-1.5 text-sm font-bold">
                 <col.icon className="h-3.5 w-3.5 text-teal-ink" />
                 {col.title}
               </div>
-              <ul className="space-y-1 text-[12.5px] leading-6 text-muted-foreground">
+              <ul className="space-y-1 text-xs leading-6 text-muted-foreground">
                 {col.links.map((l) => (
                   <li key={l.label}>
                     {l.to.startsWith('#') ? (
@@ -990,7 +990,7 @@ function Footer() {
             </div>
           ))}
         </div>
-        <div className="mt-7 flex flex-col items-center justify-between gap-2 border-t border-white/5 pt-5 text-fine text-muted-foreground md:flex-row">
+        <div className="mt-7 flex flex-col items-center justify-between gap-2 border-t border-white/5 pt-5 text-xs text-muted-foreground md:flex-row">
           <div>© 2026 أكاديمية وجيز — جميع الحقوق محفوظة</div>
           <div className="flex items-center gap-2">
             <Clock className="h-3.5 w-3.5" />

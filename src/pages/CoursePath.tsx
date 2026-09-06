@@ -409,14 +409,14 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                         {i + 1}
                       </span>
                       <span className="min-w-0">
-                        <span className="block text-[12.5px] font-black leading-snug">{c.name}</span>
+                        <span className="block text-xs font-black leading-snug">{c.name}</span>
                         <span className="mt-0.5 block text-fine text-muted-foreground">
                           {weeksLabel(c.weeks)} · من مسار «{c.pathwayName}»
                         </span>
                       </span>
                     </span>
                     <span className="flex shrink-0 items-center gap-1.5">
-                      <CoursePriceTag amount={priceOf(c.id)} money={money} className="text-[13px] font-black text-foreground" />
+                      <CoursePriceTag amount={priceOf(c.id)} money={money} className="text-sm font-black text-foreground" />
                       {c.id !== anchor.id && (
                         <button
                           onClick={() => remove(c.id)}
@@ -608,7 +608,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
 
             <Button tone="confirm"
               onClick={buy}
-              className="mt-3.5 h-11 w-full rounded-full bg-gold px-6 text-[13px] font-black text-on-gold hover:bg-gold/90"
+              className="mt-3.5 h-11 w-full rounded-full bg-gold px-6 text-sm font-black text-on-gold hover:bg-gold/90"
             >
               <CalendarDays className="ml-2 h-4 w-4" />
               {picked.length === 1 ? "اشترِ هذه الدورة" : `اشترِ (${picked.length} دورات)`}
@@ -740,13 +740,13 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                 maxLength={80}
                 placeholder="مثال: مسار التفاوض والبيع للمستقلين"
                 aria-label="اسم مسارك"
-                className="min-w-0 flex-1 rounded-xl border border-white/15 bg-white/[0.04] px-3.5 py-2.5 text-[13px] placeholder:text-muted-foreground/75 focus:border-gold focus:outline-none"
+                className="min-w-0 flex-1 rounded-xl border border-white/15 bg-white/[0.04] px-3.5 py-2.5 text-sm placeholder:text-muted-foreground/75 focus:border-gold focus:outline-none"
               />
               <Button tone="confirm"
                 onClick={() => void saveDraft()}
                 disabled={name.trim().length < 3 || saveState === "saving" || saveState === "saved"}
                 variant="outline"
-                className="h-11 rounded-xl border-gold/60 px-5 text-[13px] font-black text-gold-ink hover:bg-gold/10 disabled:opacity-40"
+                className="h-11 rounded-xl border-gold/60 px-5 text-sm font-black text-gold-ink hover:bg-gold/10 disabled:opacity-40"
               >
                 {saveState === "saving" ? "جارٍ الحفظ…" : saveState === "saved" ? "حُفظ — شكرا لك" : "احفظ اسمه"}
               </Button>
