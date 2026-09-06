@@ -52,18 +52,33 @@ const EXEMPT = join('src', 'components', 'ui')
 
 /* ═══ السقوف — تُخفَض ولا تُرفع ═══
 
-   قِيست في ٦ سبتمبر ٢٠٢٦، وتُخفض مع كلّ ترحيل: ٧٦٠ ← ٧٥١ (Support) ← ٧٣٨ (Finance) ← ٤٦٦ ← ٢٩١ (بالنبرة) ← ١٢٤ (بوسوم النصّ والروابط) · وأزرارٌ ٢٣٤ ← ٣. أي ٧٦٣ سطحا و٤٧٢ زرّا صارت ٢٩١ و٣ في يومٍ واحد. وكلُّ ترحيلٍ يُنقص العددَ يُخفض
+   قِيست في ٦ سبتمبر ٢٠٢٦، وتُخفض مع كلّ ترحيل: ٧٦٠ ← ٧٥١ (Support) ← ٧٣٨ (Finance) ← ٤٦٦ ← ٢٩١ (بالنبرة) ← ١٢٤ (بوسوم النصّ والروابط). ثمّ رُفع إلى ١٨٧ و٣٠ حين وُسّع الحارسُ ليرى القوالبَ النصّيّة — ثغرةٌ كانت فيه لا في الشيفرة · وأزرارٌ ٢٣٤ ← ٣. أي ٧٦٣ سطحا و٤٧٢ زرّا صارت ٢٩١ و٣ في يومٍ واحد. وكلُّ ترحيلٍ يُنقص العددَ يُخفض
    السقفَ في الالتزام نفسِه — وإلّا فُتح البابُ لصيغةٍ جديدةٍ مكانَ المُرحَّلة. */
 const CEILING = {
   /** مستطيلٌ بحدٍّ وانحناء — مكانُه `Panel` أو `Card` أو `Inset` */
-  surface: 124,
+  surface: 172,
   /** زرٌّ بصيغةٍ كاملةٍ مكتوبةٍ في مكانها */
-  button: 3,
+  button: 30,
 } as const
 
+/* ═══ ثغرةٌ كانت في هذا الحارس نفسِه ═══
+
+   كان يعدّ `className="…"` وحدَه — ولا يرى الصيغةَ في قالبٍ نصّيّ
+   (`` className={`…`} ``). فمن كتب سطحا هناك لم يُحمِّر شيئا، وكانت ٦٣ صيغةَ
+   سطحٍ و٢٧ زرّا خارجَ العدّ كلِّه.
+
+   وهو العطبُ الذي أحرسُ منه بعينه: حارسٌ يقيس نصفَ الساحةِ يُطمئن بلا حقّ —
+   والرقمُ ينزل وهو لا ينزل. فوُسّع ليقرأ الصيغتَين، ورُفع السقفُ إلى الواقع
+   الكامل بتراجعٍ مُعلَن. */
 const PATTERNS = {
-  surface: /className="[^"]*\brounded-(?:xl|2xl|3xl)\b[^"]*\bborder\b[^"]*"/g,
-  button: /className="[^"]*\bcursor-pointer\b[^"]*\brounded-full\b[^"]*"/g,
+  surface: [
+    /className="[^"]*\brounded-(?:xl|2xl|3xl)\b[^"]*\bborder\b[^"]*"/g,
+    /className=\{`[^`]*\brounded-(?:xl|2xl|3xl)\b[^`]*\bborder\b[^`]*`\}/g,
+  ],
+  button: [
+    /className="[^"]*\bcursor-pointer\b[^"]*\brounded-full\b[^"]*"/g,
+    /className=\{`[^`]*\bcursor-pointer\b[^`]*\brounded-full\b[^`]*`\}/g,
+  ],
 } as const
 
 function tsxFiles(dir: string, out: string[] = []): string[] {
@@ -86,7 +101,7 @@ function countAll() {
     const src = readFileSync(f, 'utf8')
     let here = 0
     for (const key of Object.keys(PATTERNS) as (keyof typeof PATTERNS)[]) {
-      const n = src.match(PATTERNS[key])?.length ?? 0
+      const n = PATTERNS[key].reduce((a, re) => a + (src.match(re)?.length ?? 0), 0)
       counts[key] += n
       here += n
     }

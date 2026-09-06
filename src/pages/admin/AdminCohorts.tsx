@@ -178,19 +178,12 @@ export default function AdminCohorts() {
   return (
     <AdminLayout title="عمليات الشعب — الفتح المشروط والجلسات والتسجيل">
       {flash && (
-        <p
-          role={flash.kind === "error" ? "alert" : "status"}
-          className={`sticky top-[4.5rem] z-30 mb-5 flex items-center gap-2 rounded-2xl border px-4 py-3 text-sm font-bold backdrop-blur ${
-            flash.kind === "error"
-              ? "border-red-400/40 bg-red-500/15 text-red-200"
-              : "border-teal/40 bg-teal/10 text-teal-light-ink"
-          }`}
-        >
+        <Card as="p" tone={flash.kind === "error" ? "danger" : "accent"} role={flash.kind === "error" ? "alert" : "status"} className={`sticky top-[4.5rem] z-30 mb-5 flex items-center gap-2 px-4 py-3 text-sm font-bold backdrop-blur ${flash.kind === "error" ? "text-red-200" : "text-teal-light-ink"}`}>
           {flash.kind === "error"
             ? <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />
             : <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />}
           {flash.text}
-        </p>
+        </Card>
       )}
 
       <CohortReadiness onApplied={() => void load()} />

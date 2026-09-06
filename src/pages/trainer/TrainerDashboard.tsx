@@ -210,10 +210,10 @@ function RealTrainerHome({ name }: { name: string }) {
           <p className="flex items-center gap-2 text-xs text-muted-foreground"><Users className="h-4 w-4" /> طلابي</p>
           <p className="mt-2 text-3xl font-black">{students}</p>
         </Card>
-        <Link to="/trainer/board" className={`rounded-2xl border p-5 transition hover:border-white/30 ${awaiting > 0 ? "border-gold/40 bg-gold/5" : "border-white/10 bg-white/[0.03]"}`}>
+        <Card as={Link} tone={awaiting > 0 ? "warn" : "default"} interactive to="/trainer/board" className="transition hover:border-white/30">
           <p className="flex items-center gap-2 text-xs text-gold-ink"><ClipboardCheck className="h-4 w-4" /> تسليمات بانتظار تقييمي</p>
           <p className="mt-2 text-3xl font-black text-gold-ink">{awaiting}</p>
-        </Link>
+        </Card>
         <Card as={Link} tone="accent" interactive to="/trainer/proposals" className="transition hover:border-teal/60">
           <p className="flex items-center gap-2 text-xs text-teal-light-ink"><GitPullRequest className="h-4 w-4" /> اقتراحاتي على المحتوى</p>
           <p className="mt-2 text-3xl font-black text-teal-light-ink">↗</p>

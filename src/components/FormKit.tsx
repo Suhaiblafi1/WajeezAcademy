@@ -266,11 +266,7 @@ export function ConsentRow({
   children: ReactNode
 }) {
   return (
-    <label
-      className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition-colors ${
-        checked ? 'border-teal/40 bg-teal/[0.06]' : 'border-white/12 bg-paper/20 hover:border-white/25'
-      }`}
-    >
+    <Card as="label" tone={checked ? "accent" : "default"} className={`flex cursor-pointer items-start gap-3 transition-colors ${checked ? "" : "hover:border-white/25"}`}>
       <input
         type="checkbox"
         checked={checked}
@@ -278,6 +274,6 @@ export function ConsentRow({
         className="mt-0.5 h-4 w-4 shrink-0 accent-teal"
       />
       <span className="text-xs leading-7 text-foreground">{children}</span>
-    </label>
+    </Card>
   )
 }

@@ -692,9 +692,7 @@ export default function TrainerApplications() {
             </Panel>
           )}
           {view.rows.map((a) => (
-            <div key={a.id}
-              className={`flex flex-wrap items-center gap-3 rounded-2xl border bg-white/[0.03] p-5 transition ${sel.has(a.id) ? "border-gold/45" : "border-white/10 hover:border-teal/40"}`}
-            >
+            <Card tone={sel.has(a.id) ? "warn" : "accent"} key={a.id} className={`flex flex-wrap items-center gap-3 transition ${sel.has(a.id) ? "" : "hover:border-teal/40"}`}>
               {/* المربّعُ خارج الزرّ لا داخله: زرٌّ في زرّ لا يصحّ، ونقرةٌ
                   على التحديد كانت تفتح الملفّ. */}
               {/* الوسمُ حولَه هو الهدف: مربّعٌ بستّةَ عشرَ بكسلا يُخطئه الإصبع،
@@ -721,7 +719,7 @@ export default function TrainerApplications() {
                 {STATUS_LABELS[a.status] ?? a.status}
               </span>
             </button>
-            </div>
+            </Card>
           ))}
         </div>
       ))}

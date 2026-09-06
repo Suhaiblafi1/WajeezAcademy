@@ -1368,7 +1368,7 @@ export default function Diagnostic() {
               );
             }
             return (
-              <div className={`mt-8 rounded-3xl border p-6 md:p-8 ${cmp.changed ? "border-gold/50 bg-gold/[0.06]" : "border-teal/40 bg-teal/[0.05]"}`}>
+              <Panel tone={cmp.changed ? "warn" : "accent"} className="mt-8 md:p-8">
                 <h3 className="flex items-center gap-2 text-lg font-black">
                   <Wand2 className={`h-5 w-5 ${cmp.changed ? "text-gold-ink" : "text-teal-light-ink"}`} />
                   نتيجة تدقيق خطتك
@@ -1396,7 +1396,7 @@ export default function Diagnostic() {
                     </li>
                   ))}
                 </ul>
-              </div>
+              </Panel>
             );
           })()}
 

@@ -113,7 +113,7 @@ function ArtifactCard({ a, catalogVersion }: { a: Artifact; catalogVersion: numb
   const meta = STATUS[a.status] ?? { label: a.status, cls: "border-white/20 text-muted-foreground", icon: Clock3 };
 
   return (
-    <li className={`rounded-3xl border p-5 ${a.status === "accepted" ? "border-teal/40 bg-teal/[0.04]" : "border-white/10 bg-white/[0.02]"}`}>
+    <Panel as="li" tone={a.status === "accepted" ? "accent" : "default"}>
       <div className="flex flex-wrap items-start gap-4">
         <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl ${a.status === "accepted" ? "bg-teal/20 text-teal-light-ink" : "bg-white/5 text-muted-foreground"}`}>
           <FileText className="h-5 w-5" />
@@ -146,6 +146,6 @@ function ArtifactCard({ a, catalogVersion }: { a: Artifact; catalogVersion: numb
       >
         افتح محطة هذا العمل ←
       </Link>
-    </li>
+    </Panel>
   );
 }

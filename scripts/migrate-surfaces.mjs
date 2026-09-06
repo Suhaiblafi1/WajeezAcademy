@@ -105,15 +105,24 @@ function* openTags(src) {
     if (end < 0) continue
     const attrs = src.slice(m.index + name.length + 1, end - 1)
     const cm = /(^|\s)className="([^"]*)"/.exec(attrs)
-    if (!cm) continue
-    yield {
-      index: m.index,
-      name,
-      end,
-      cls: cm[2],
-      before: attrs.slice(0, cm.index).trim(),
-      after: attrs.slice(cm.index + cm[0].length).trim(),
-    }
+    /* والصيغةُ في قالبٍ نصّيّ: `` className={`… ${cond ? "…" : "…"}`} ``.
+       شرطٌ ثنائيٌّ واحدٌ لا أكثر — وما زاد تركيبٌ يُقرأ بالعين. */
+    const tm = cm ? null
+      : /(^|\s)className=\{`([^`$]*)\$\{\s*([^?{}]+?)\s*\?\s*(["'])([^"']*)\4\s*:\s*(["'])([^"']*)\6\s*\}([^`$]*)`\}/.exec(attrs)
+    if (!cm && !tm) continue
+    yield cm
+      ? {
+        index: m.index, name, end, cls: cm[2], cond: null,
+        before: attrs.slice(0, cm.index).trim(),
+        after: attrs.slice(cm.index + cm[0].length).trim(),
+      }
+      : {
+        index: m.index, name, end,
+        cls: `${tm[2]} ${tm[8]}`.trim(),
+        cond: { test: tm[3], yes: tm[5], no: tm[7] },
+        before: attrs.slice(0, tm.index).trim(),
+        after: attrs.slice(tm.index + tm[0].length).trim(),
+      }
   }
 }
 
@@ -174,11 +183,32 @@ for (const file of files) {
     const asAttr = m.name === 'div' ? ''
       : m.name === 'Link' ? 'as={Link}'
         : `as="${m.name}"`
-    const tone = toneFor(m.cls)
-    const toneAttr = tone ? `tone="${tone}"` : ''
-    const cls = residue(m.cls)
+    /* شرطٌ ثنائيّ: نبرةٌ لكلّ فرع. وما بقي من الفرعَين بعد نزع الحدّ
+       والأرضيّة يبقى شرطا ثانيا — لونُ نصٍّ أو تحويمٌ لا يبتلعه السطح. */
+    const stripTone = (b) => b.split(/\s+/)
+      .filter((c) => c && !/^(?:border(?:-\w+(?:-\d+)?(?:\/\[?[\d.]+\]?)?)?|bg-\w+(?:-\d+)?(?:\/\[?[\d.]+\]?)?)$/.test(c))
+      .join(' ')
+    let toneAttr = ''
+    let condCls = ''
+    if (m.cond) {
+      const yes = toneFor(m.cond.yes) ?? 'default'
+      const no = toneFor(m.cond.no) ?? 'default'
+      if (yes === no) continue /* لا فرقَ في النبرة — الشرطُ لشيءٍ آخر */
+      toneAttr = `tone={${m.cond.test} ? "${yes}" : "${no}"}`
+      const y = stripTone(m.cond.yes)
+      const n2 = stripTone(m.cond.no)
+      if (y || n2) condCls = `\${${m.cond.test} ? "${y}" : "${n2}"}`
+    } else {
+      const tone = toneFor(m.cls)
+      toneAttr = tone ? `tone="${tone}"` : ''
+    }
+    const base = residue(m.cls)
+    const cls = condCls ? null : base
     const interactive = m.name === 'Link' ? 'interactive' : ''
-    const rest = [asAttr, toneAttr, interactive, m.before, cls ? `className="${cls}"` : '', m.after]
+    const clsAttr = condCls
+      ? `className={\`${[base, condCls].filter(Boolean).join(' ')}\`}`
+      : cls ? `className="${cls}"` : ''
+    const rest = [asAttr, toneAttr, interactive, m.before, clsAttr, m.after]
       .filter(Boolean).join(' ')
     out += src.slice(cursor, m.index)
     out += rest ? `<${tag} ${rest}>` : `<${tag}>`

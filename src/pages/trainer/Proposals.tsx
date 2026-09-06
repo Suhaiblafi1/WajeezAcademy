@@ -230,13 +230,11 @@ export default function TrainerProposals() {
           <fieldset>
             <legend className="mb-1.5 text-xs font-bold text-muted-foreground">نطاق الاقتراح *</legend>
             <div className="flex flex-wrap gap-2">
-              <label className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-2xl border px-4 text-xs ${
-                form.scope === "cohort" ? "border-teal bg-teal-ink/15 font-bold" : "border-white/12 text-foreground"
-              }`}>
+              <Card as="label" tone={form.scope === "cohort" ? "accent" : "default"} className={`flex min-h-11 cursor-pointer items-center gap-2 px-4 text-xs ${form.scope === "cohort" ? "bg-teal-ink/15 font-bold" : "text-foreground"}`}>
                 <input type="radio" name="tp-scope" checked={form.scope === "cohort"}
                   onChange={() => setForm({ ...form, scope: "cohort" })} className="h-4 w-4 accent-teal" />
                 شعبتي — يُطبَّق على شعبتك وحدها
-              </label>
+              </Card>
               <label className={`flex min-h-11 items-center gap-2 rounded-2xl border px-4 text-xs ${
                 scopeGate?.allowed === false ? "cursor-not-allowed border-white/10 text-muted-foreground"
                   : form.scope === "catalog" ? "cursor-pointer border-gold bg-gold/15 font-bold" : "cursor-pointer border-white/12 text-foreground"

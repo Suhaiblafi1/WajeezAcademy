@@ -541,7 +541,7 @@ export default function JoinTrainer() {
               </p>
             </Card>
 
-            <div className={`rounded-2xl border p-5 ${mailSent ? "border-white/10 bg-white/[0.03]" : "border-gold/30 bg-gold/[0.07]"}`}>
+            <Card tone={mailSent ? "default" : "warn"}>
               <p className="flex items-center gap-2 text-sm font-black">
                 <MailCheck className="h-4 w-4 text-teal-light-ink" />
                 {mailSent ? "أرسلنا بريد تأكيد إلى" : "تعذّر إرسال بريد التأكيد الآن"}
@@ -552,7 +552,7 @@ export default function JoinTrainer() {
                   ? "فيه رقم طلبك وتفاصيله والخطوة التالية — وفيه رابطٌ افتحه مرة واحدة ليُوثَّق بريدك. إن لم يصلك خلال دقائق راجع مجلد الرسائل غير المرغوبة، أو أعد إرساله من صفحة حالتك."
                   : "طلبك محفوظ ومقدَّم على أي حال. يمكنك طلب رسالة التأكيد مجددا من صفحة حالتك بعد الدخول."}
               </p>
-            </div>
+            </Card>
 
             <Card>
               <p className="flex items-center gap-2 text-sm font-black">

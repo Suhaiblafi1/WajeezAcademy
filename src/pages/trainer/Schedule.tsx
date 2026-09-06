@@ -132,10 +132,7 @@ export default function TrainerSchedule() {
                 {slots.map((s) => {
                   const clash = s.clashesWith.length > 0;
                   return (
-                    <li
-                      key={s.sessionId}
-                      className={`rounded-2xl border p-3 ${clash ? "border-rose-400/40 bg-rose-500/[0.06]" : "border-white/10 bg-white/[0.02]"}`}
-                    >
+                    <Card as="li" tone={clash ? "danger" : "default"} key={s.sessionId}>
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="min-w-0">
                           <p className="truncate font-bold">{s.title}</p>
@@ -155,7 +152,7 @@ export default function TrainerSchedule() {
                           </span>
                         </div>
                       </div>
-                    </li>
+                    </Card>
                   );
                 })}
               </ul>

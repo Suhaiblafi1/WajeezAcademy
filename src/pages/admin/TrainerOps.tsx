@@ -297,7 +297,7 @@ function BlastRadiusStrip({ r }: { r: TrainerChangeRequest }) {
   const wide = b.entityCount > 0 || b.learners > 0;
   const entities = [...b.pathways, ...b.templates];
   return (
-    <div className={`mt-3 rounded-2xl border px-4 py-3 ${wide ? "border-gold/35 bg-gold/[0.07]" : "border-white/10 bg-white/[0.02]"}`}>
+    <Card tone={wide ? "warn" : "default"} className="mt-3 px-4 py-3">
       <p className="flex items-start gap-2 text-micro font-bold leading-6">
         {wide
           ? <AlertTriangle className="mt-1 h-3.5 w-3.5 shrink-0 text-gold-ink" aria-hidden="true" />
@@ -319,7 +319,7 @@ function BlastRadiusStrip({ r }: { r: TrainerChangeRequest }) {
           ومن {b.cohorts.total} شعبة، {b.cohorts.total - b.cohorts.live} غير حيّة (مسودة أو منتهية) — لا يتأثر بها متعلم الآن.
         </p>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -473,9 +473,7 @@ function ImpactGate({
           </div>
 
           {verdict && (
-            <div className={`mt-2 rounded-2xl border px-4 py-3 text-micro leading-6 ${
-              verdict.touchesDiagnostic ? "border-gold/35 bg-gold/[0.07]" : "border-teal/30 bg-teal-ink/[0.06]"
-            }`}>
+            <Card tone={verdict.touchesDiagnostic ? "warn" : "accent"} className={`mt-2 px-4 py-3 text-micro leading-6 ${verdict.touchesDiagnostic ? "" : "bg-teal-ink/[0.06]"}`}>
               <p className="font-bold text-foreground">{verdict.verdictAr}</p>
               {verdict.changedWinners.map((w) => (
                 <p key={`w-${w.name}`} className="mt-1 text-foreground">
@@ -497,7 +495,7 @@ function ImpactGate({
               <p className="mt-2 text-micro text-muted-foreground">
                 الفحص يقارن اللقطة المنشورة بالمنشور + كل ما اعتُمد ولم يُنشر — لا هذا الاقتراح وحده.
               </p>
-            </div>
+            </Card>
           )}
         </>
       )}

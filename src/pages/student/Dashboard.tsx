@@ -440,10 +440,10 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
           <div className="mt-4 space-y-2.5">
             {notifs.length === 0 && <Inset as="p" className="px-3 py-6 text-center text-xs text-muted-foreground">لا إشعارات بعد</Inset>}
             {notifs.map((n) => (
-              <p key={n.id} className={`rounded-xl border px-3 py-2.5 text-xs leading-6 ${n.status === "read" ? "border-white/5 text-muted-foreground" : "border-teal/25 bg-teal/5 text-foreground"}`}>
+              <Inset as="p" tone={n.status === "read" ? "default" : "accent"} key={n.id} className={`px-3 py-2.5 text-xs leading-6 ${n.status === "read" ? "text-muted-foreground" : "text-foreground"}`}>
                 <span className="block font-bold">{n.title}</span>
                 {n.body}
-              </p>
+              </Inset>
             ))}
           </div>
           <Link to="/student/inbox" className="mt-3 flex min-h-9 items-center justify-center text-micro font-bold text-teal-light-ink hover:text-foreground">كلُّ الرسائل والتنبيهات ←</Link>
