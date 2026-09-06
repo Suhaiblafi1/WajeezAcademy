@@ -1,0 +1,794 @@
+<title>دفتر أدلة وجيز</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Noto+Kufi+Arabic:wght@500;700;800&display=swap">
+<style>
+  /* ═══ الرموز — الفاتح أصلا، والداكن يُعيد تعريفها وحدها ═══ */
+  :root{
+    --paper:#F6F4EF; --surface:#FFFFFF; --panel:#EFEBE2; --ink:#16211F;
+    --ink-2:#33413E; --muted:#63736F; --line:#16211F1a; --line-2:#16211F0d;
+    --accent:#1F6E77; --accent-soft:#1F6E7714; --accent-ink:#155158;
+    --rust:#A8452A; --rust-soft:#A8452A14;
+    --ochre:#8A6C2C; --ochre-soft:#8A6C2C16;
+    --moss:#2E7F70; --moss-soft:#2E7F7016;
+    --shadow:0 1px 2px #16211F0f, 0 8px 24px -12px #16211F26;
+    --display:"Noto Kufi Arabic","IBM Plex Sans Arabic",system-ui,sans-serif;
+    --body:"IBM Plex Sans Arabic",system-ui,-apple-system,"Segoe UI",sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --paper:#0E1917; --surface:#152321; --panel:#1B2C29; --ink:#EAF0EE;
+      --ink-2:#C6D3D0; --muted:#8CA09C; --line:#EAF0EE1f; --line-2:#EAF0EE12;
+      --accent:#4FBAC6; --accent-soft:#4FBAC61a; --accent-ink:#9BDCE4;
+      --rust:#E08163; --rust-soft:#E081631a;
+      --ochre:#D9B063; --ochre-soft:#D9B0631a;
+      --moss:#63C4AE; --moss-soft:#63C4AE1a;
+      --shadow:0 1px 2px #0006, 0 10px 28px -14px #0009;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0E1917; --surface:#152321; --panel:#1B2C29; --ink:#EAF0EE;
+    --ink-2:#C6D3D0; --muted:#8CA09C; --line:#EAF0EE1f; --line-2:#EAF0EE12;
+    --accent:#4FBAC6; --accent-soft:#4FBAC61a; --accent-ink:#9BDCE4;
+    --rust:#E08163; --rust-soft:#E081631a;
+    --ochre:#D9B063; --ochre-soft:#D9B0631a;
+    --moss:#63C4AE; --moss-soft:#63C4AE1a;
+    --shadow:0 1px 2px #0006, 0 10px 28px -14px #0009;
+  }
+
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    direction:rtl; background:var(--paper); color:var(--ink);
+    font-family:var(--body); font-size:16px; line-height:1.85;
+    font-weight:400; -webkit-font-smoothing:antialiased;
+  }
+  @media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto} *{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important} }
+
+  .wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+  .col{max-width:70ch}
+  h1,h2,h3,h4{font-family:var(--display);text-wrap:balance;line-height:1.4;margin:0}
+  h2{font-size:clamp(1.45rem,3.2vw,2rem);font-weight:800;letter-spacing:-.01em}
+  h3{font-size:1.12rem;font-weight:700}
+  h4{font-size:.95rem;font-weight:700}
+  p{margin:0 0 1em}
+  a{color:var(--accent-ink)}
+  strong{font-weight:600;color:var(--ink)}
+  code,.mono{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:.82em;direction:ltr;unicode-bidi:isolate}
+
+  /* ── الترويسة ── */
+  .mast{padding:64px 0 40px;border-bottom:1px solid var(--line)}
+  .eyebrow{font-family:var(--display);font-size:.72rem;font-weight:700;letter-spacing:.16em;color:var(--accent);margin:0 0 18px}
+  .mast h1{font-size:clamp(2rem,5.4vw,3.3rem);font-weight:800;letter-spacing:-.02em;line-height:1.25}
+  .mast .lede{font-size:clamp(1.02rem,2vw,1.18rem);color:var(--ink-2);max-width:62ch;margin-top:20px;line-height:1.9}
+  .stamp{display:inline-flex;align-items:center;gap:8px;font-size:.76rem;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:5px 13px;margin-top:26px}
+  .stamp b{font-weight:600;color:var(--ink-2)}
+
+  /* ── بطاقات الأرقام ── */
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin:38px 0 0}
+  .tile{background:var(--surface);padding:20px 18px}
+  .tile .n{font-family:var(--display);font-size:1.9rem;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+  .tile .k{font-size:.79rem;color:var(--muted);margin-top:7px;line-height:1.65}
+  .tile.bad .n{color:var(--rust)} .tile.warn .n{color:var(--ochre)} .tile.good .n{color:var(--moss)}
+
+  /* ── الفهرس ── */
+  nav.toc{position:sticky;top:0;z-index:40;background:color-mix(in srgb,var(--paper) 92%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);margin-top:44px}
+  nav.toc ol{display:flex;gap:2px;list-style:none;margin:0;padding:0;overflow-x:auto;scrollbar-width:thin}
+  nav.toc a{display:block;white-space:nowrap;padding:12px 13px;font-size:.79rem;font-weight:600;color:var(--muted);text-decoration:none;border-bottom:2px solid transparent}
+  nav.toc a:hover{color:var(--ink);border-bottom-color:var(--line)}
+  nav.toc a:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+
+  section{padding:56px 0;border-bottom:1px solid var(--line-2)}
+  .sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:8px}
+  .sec-num{font-family:var(--display);font-size:.8rem;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums}
+  .sec-sub{color:var(--muted);font-size:.95rem;max-width:64ch;margin:6px 0 30px}
+
+  /* ── القيد: كل حكم ومعه دليله ── */
+  .ledger{display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .entry{background:var(--surface);padding:18px 20px;display:grid;grid-template-columns:auto 1fr;gap:0 14px;align-items:start}
+  .entry .mark{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font-size:.72rem;font-weight:700;font-family:var(--display);font-variant-numeric:tabular-nums;background:var(--panel);color:var(--muted);margin-top:2px}
+  .entry.blocking .mark{background:var(--rust-soft);color:var(--rust)}
+  .entry.waiting .mark{background:var(--ochre-soft);color:var(--ochre)}
+  .entry.done .mark{background:var(--moss-soft);color:var(--moss)}
+  .entry h4{margin-bottom:4px}
+  .entry p{font-size:.92rem;color:var(--ink-2);margin:0 0 8px;line-height:1.8}
+  .proof{grid-column:2;font-size:.75rem;color:var(--muted);border-inline-start:2px solid var(--line);padding-inline-start:10px;line-height:1.7}
+  .proof b{font-weight:600;color:var(--ink-2);font-family:var(--display);font-size:.72rem;letter-spacing:.06em}
+
+  .pill{display:inline-block;font-size:.68rem;font-weight:700;font-family:var(--display);padding:2px 8px;border-radius:999px;vertical-align:middle;margin-inline-start:7px}
+  .p-block{background:var(--rust-soft);color:var(--rust)}
+  .p-wait{background:var(--ochre-soft);color:var(--ochre)}
+  .p-done{background:var(--moss-soft);color:var(--moss)}
+  .p-new{background:var(--accent-soft);color:var(--accent-ink)}
+
+  /* ── الجداول ── */
+  .tw{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+  table{border-collapse:collapse;width:100%;font-size:.88rem;min-width:560px}
+  th,td{text-align:start;padding:11px 14px;border-bottom:1px solid var(--line-2);vertical-align:top}
+  th{font-family:var(--display);font-size:.76rem;font-weight:700;color:var(--muted);background:var(--panel);white-space:nowrap}
+  tr:last-child td{border-bottom:0}
+  td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+
+  /* ── لوح الاقتباس ── */
+  .verdict{background:var(--panel);border-inline-start:3px solid var(--accent);border-radius:0 12px 12px 0;padding:20px 22px;margin:28px 0;font-size:1rem;line-height:1.9}
+  .verdict.warnbar{border-inline-start-color:var(--rust)}
+  .verdict p:last-child{margin:0}
+
+  /* ── إطار الشاشة ── */
+  .screen{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--surface);box-shadow:var(--shadow)}
+  .screen-bar{display:flex;align-items:center;gap:8px;padding:9px 14px;background:var(--panel);border-bottom:1px solid var(--line);font-size:.73rem;color:var(--muted)}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--line);flex:none}
+  .screen-body{padding:18px}
+  .split{display:grid;gap:18px;grid-template-columns:1fr}
+  @media(min-width:880px){.split{grid-template-columns:1fr 1fr}}
+  .cap{font-size:.78rem;color:var(--muted);margin-top:9px;line-height:1.7}
+  .cap b{font-family:var(--display);font-size:.72rem;letter-spacing:.05em}
+
+  /* ═══ نموذج: بطاقات اليوم مقابل الموحّدة ═══ */
+  .chaos{display:flex;flex-wrap:wrap;gap:9px}
+  .c1{border-radius:16px;border:1px solid #8883;background:#8881;padding:20px 16px;font-size:11px}
+  .c2{border-radius:24px;border:1px solid #8882;background:#8880d;padding:16px;font-size:11px}
+  .c3{border-radius:16px;border:1px solid #8883;background:#8881;padding:16px;font-size:12px}
+  .c4{border-radius:24px;border:1px solid #8883;background:#8881;padding:24px;font-size:11px}
+  .c5{border-radius:12px;border:1px solid #8883;background:#8881;padding:12px;font-size:11px}
+  .u-card{border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:16px}
+  .u-card + .u-card{margin-top:10px}
+  .u-lab{font-family:var(--display);font-size:.7rem;font-weight:700;letter-spacing:.08em;color:var(--muted)}
+  .u-val{font-size:1.35rem;font-weight:700;font-family:var(--display);font-variant-numeric:tabular-nums;margin-top:4px}
+  .u-note{font-size:.8rem;color:var(--muted);margin-top:6px}
+
+  /* ═══ نموذج: شاشة المدرّب ═══ */
+  .t-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+  .t-title{font-family:var(--display);font-size:1.15rem;font-weight:800}
+  .t-date{font-size:.76rem;color:var(--muted);font-variant-numeric:tabular-nums}
+  .queue{display:flex;flex-direction:column;gap:9px}
+  .qrow{display:grid;grid-template-columns:4px 1fr auto;gap:12px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--surface)}
+  .qrow .stripe{width:4px;height:100%;min-height:34px;border-radius:99px}
+  .s-block{background:var(--rust)} .s-wait{background:var(--ochre)} .s-ok{background:var(--moss)}
+  .qrow .who{font-weight:600;font-size:.92rem}
+  .qrow .why{font-size:.78rem;color:var(--muted);margin-top:2px}
+  .qbtn{font-family:var(--display);font-size:.76rem;font-weight:700;border:1px solid var(--accent);color:var(--accent-ink);background:var(--accent-soft);border-radius:999px;padding:6px 14px;white-space:nowrap;cursor:pointer}
+  .qbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .advisor{display:inline-flex;align-items:center;gap:5px;font-size:.72rem;color:var(--muted);border:1px dashed var(--line);border-radius:999px;padding:2px 9px;margin-top:6px}
+
+  /* ═══ نموذج: البريد ═══ */
+  .mail-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+  .mail-tab{font-family:var(--display);font-size:.78rem;font-weight:700;padding:7px 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer}
+  .mail-tab[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+  .mail-tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .mail{background:#F2F0EA;padding:22px 14px;border-radius:12px}
+  .mail-card{max-width:520px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px #0002;color:#16211F;direction:rtl}
+  .mail-head{background:#16211F;padding:20px 22px;display:flex;align-items:center;gap:11px}
+  .mail-logo{width:30px;height:30px;border-radius:8px;background:#1F6E77;display:grid;place-items:center;color:#fff;font-family:var(--display);font-weight:800;font-size:.95rem;flex:none}
+  .mail-brand{color:#F6F4EF;font-family:var(--display);font-weight:700;font-size:.92rem;line-height:1.3}
+  .mail-brand span{display:block;font-size:.68rem;color:#F6F4EF99;font-weight:500}
+  .mail-body{padding:24px 22px;font-size:.88rem;line-height:1.95;font-family:var(--body)}
+  .mail-body h5{font-family:var(--display);font-size:1.1rem;font-weight:800;margin:0 0 12px;color:#16211F}
+  .mail-body p{margin:0 0 12px;color:#33413E}
+  .mail-cta{display:inline-block;background:#1F6E77;color:#fff;font-family:var(--display);font-weight:700;font-size:.86rem;padding:11px 26px;border-radius:999px;text-decoration:none;margin:6px 0 4px}
+  .mail-rule{height:1px;background:#16211F14;margin:18px 0}
+  .mail-line{display:flex;justify-content:space-between;gap:12px;font-size:.83rem;padding:4px 0}
+  .mail-line b{font-weight:600}
+  .mail-total{display:flex;justify-content:space-between;font-family:var(--display);font-weight:800;font-size:.95rem;padding-top:9px;border-top:1px solid #16211F14;margin-top:9px}
+  .mail-foot{background:#F2F0EA;padding:16px 22px;font-size:.7rem;color:#63736F;line-height:1.8}
+  .mail-foot a{color:#155158}
+  .seal{display:inline-grid;place-items:center;width:64px;height:64px;border-radius:50%;border:2px solid #1F6E77;color:#1F6E77;font-family:var(--display);font-weight:800;font-size:.62rem;text-align:center;line-height:1.25;margin-bottom:8px}
+
+  /* ═══ نموذج: شريط الرئيسة ═══ */
+  .hero-demo{position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:linear-gradient(180deg,var(--panel),var(--surface))}
+  .hero-demo svg{display:block;width:100%;height:auto}
+  .hero-txt{position:absolute;inset-block:0;left:0;width:52%;display:flex;flex-direction:column;justify-content:center;padding:20px 26px;background:linear-gradient(90deg,var(--paper) 55%,transparent)}
+  .hero-txt p{font-family:var(--display);font-weight:800;font-size:clamp(1rem,2.2vw,1.4rem);line-height:1.6;margin:0;max-width:22ch}
+  .hero-txt .sub{font-family:var(--body);font-weight:400;font-size:.82rem;color:var(--muted);margin-top:10px;max-width:26ch;line-height:1.75}
+  @media(max-width:620px){.hero-txt{position:static;width:auto;background:none;padding:16px 18px 20px}}
+  .hero-txt em{font-style:normal;color:var(--accent-ink)}
+  .draw{stroke-dasharray:var(--len);stroke-dashoffset:var(--len);animation:draw 1.1s ease forwards}
+  @keyframes draw{to{stroke-dashoffset:0}}
+  .pop{opacity:0;transform-box:fill-box;transform-origin:center;animation:pop .5s cubic-bezier(.2,1.3,.4,1) forwards}
+  @keyframes pop{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:scale(1)}}
+  .scan{animation:scan 2.4s ease-in-out infinite}
+  @keyframes scan{0%,100%{transform:translateX(0);opacity:0}12%{opacity:.55}50%{transform:translateX(-176px);opacity:.55}62%{opacity:0}}
+  @media (prefers-reduced-motion:reduce){ .draw{stroke-dashoffset:0;animation:none} .pop{opacity:1;animation:none} .scan{display:none} }
+
+  /* ── الخطة ── */
+  .phase{border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:20px;margin-bottom:14px}
+  .phase-h{display:flex;align-items:baseline;gap:11px;flex-wrap:wrap;margin-bottom:4px}
+  .phase-h .id{font-family:var(--display);font-size:.72rem;font-weight:700;letter-spacing:.1em;color:#fff;background:var(--accent);border-radius:6px;padding:3px 9px}
+  .phase-h h3{flex:1;min-width:180px}
+  .phase-h .cost{font-size:.76rem;color:var(--muted);font-variant-numeric:tabular-nums}
+  .phase .why{font-size:.86rem;color:var(--muted);margin:8px 0 14px;line-height:1.8}
+  ul.tick{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+  ul.tick li{font-size:.9rem;padding-inline-start:22px;position:relative;line-height:1.75;color:var(--ink-2)}
+  ul.tick li::before{content:"";position:absolute;inset-inline-start:6px;top:.66em;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+  .risk{font-size:.78rem;color:var(--muted);margin-top:13px;padding-top:11px;border-top:1px dashed var(--line)}
+  .risk b{font-family:var(--display);font-size:.72rem;letter-spacing:.05em;color:var(--ink-2)}
+
+  footer{padding:48px 0 72px;color:var(--muted);font-size:.82rem;line-height:1.9}
+</style>
+
+<div class="wrap">
+  <header class="mast">
+    <p class="eyebrow">مراجعةُ المنصّات الأربع · ٦ سبتمبر ٢٠٢٦</p>
+    <h1>دفتر أدلة وجيز</h1>
+    <p class="lede">
+      لا حكمَ في هذه الصفحة بلا قياسٍ تحته. مئةُ فحصٍ على شيفرة <span class="mono">main</span> اليوم،
+      وتشغيلٌ فعليٌّ لمحرّك التشخيص والبناء والبحث — لأنّ منصّةً شعارُها
+      «لا نقيس تعلمك بما شاهدت، بل بما أنجزت وأثبتّ» لا يليق بها تقريرٌ يُقاس بالانطباع.
+    </p>
+    <p class="stamp">رأسُ <b>main</b>: <span class="mono">edc7576</span> · الفرع = main حرفيّا · طلبا سحبٍ مفتوحان</p>
+
+    <div class="tiles">
+      <div class="tile bad"><div class="n">٩٢٪</div><div class="k">من استعلامات البحث العربيّة الواقعيّة تُرجع صفرا — ١١ من ١٢، مقيسةً على الكتالوج الحيّ (٨١ دورة)</div></div>
+      <div class="tile bad"><div class="n">٧٥٣</div><div class="k">صيغةَ «بطاقة» مختلفةً في الشيفرة — وتسعةُ ملفّاتٍ فقط من ١٦٦ تستعمل مكوّنا مشتركا</div></div>
+      <div class="tile warn"><div class="n">صفر</div><div class="k">رسالةَ بريدٍ تحمل هويّةَ المنصّة — كلُّ ما يخرج نصٌّ خام، ولا إيصالَ شراءٍ أصلا</div></div>
+      <div class="tile bad"><div class="n">٢٤٪</div><div class="k">من وحدات الدورات لها متنٌ مؤلَّف — ٩٦ من ٤٠٤، بلا تغيّرٍ منذ تقرير أمس</div></div>
+    </div>
+  </header>
+
+  <nav class="toc" aria-label="أقسام التقرير">
+    <ol>
+      <li><a href="#deploy">١ · النشر</a></li>
+      <li><a href="#pending">٢ · منجَزٌ لم يصل</a></li>
+      <li><a href="#design">٣ · جذرُ التصميم</a></li>
+      <li><a href="#trainer">٤ · المدرّب</a></li>
+      <li><a href="#mail">٥ · البريد</a></li>
+      <li><a href="#measure">٦ · القياس</a></li>
+      <li><a href="#engine">٧ · المحرّك</a></li>
+      <li><a href="#ops">٨ · الأمن والأدوار</a></li>
+      <li><a href="#hero">٩ · الرئيسة</a></li>
+      <li><a href="#mandate">١٠ · التفويض</a></li>
+      <li><a href="#plan">١١ · الخطّة</a></li>
+      <li><a href="#start">١٢ · التوصية</a></li>
+    </ol>
+  </nav>
+
+  <!-- ═══════════ ١ ═══════════ -->
+  <section id="deploy">
+    <div class="sec-head"><span class="sec-num">١</span><h2>لماذا ترى موقعا قديما — الجوابُ حُسم</h2></div>
+    <p class="sec-sub">هذا يسبق كلَّ حكمٍ تصميميّ، لأنّه قد يُبطله. وقد بحثتُ في المشتبهين الثلاثة، فسقط اثنان وثبت الثالث.</p>
+
+    <div class="col">
+      <p><strong>سقط عاملُ الخدمة.</strong> قرأتُ <span class="mono">public/sw.js</span> سطرا سطرا: قاعدتُه «الشبكةُ أوّلا دائما»، ولا يقرأ المحفوظَ إلّا حين ترفض الشبكةُ رفضا تامّا، ويستثني <span class="mono">/api/</span> صراحةً فلا يخزّن بيانا حيّا أبدا. وهو بريء.</p>
+      <p><strong>وسقطت ترويسات التخزين.</strong> <span class="mono">.htaccess</span> يعطي <span class="mono">text/html</span> صفرَ ثانية، ويستثني <span class="mono">sw.js</span> من سنة التخزين استثناءً صريحا. سليمةٌ كما هي.</p>
+      <p><strong>وثبت الثالث: لا يوجد نشرٌ آليٌّ إطلاقا.</strong></p>
+    </div>
+
+    <div class="verdict warnbar">
+      <p>في ٥ سبتمبر تقرّر تفعيلُ النشر التلقائيّ عند خضرة الفحص، ونُفِّذ في فرعه. ثم <strong>حُذف ملفُّ النشر كلُّه</strong> في طلب السحب نفسِه الذي دُمج بعد ساعات، بحجّة أنّه «لم يُستعمل قطّ». فالنتيجةُ اليوم: <strong>لا ملفَّ نشرٍ في المستودَع</strong>، وآخرُ تشغيلَين لخطّ النشر (<span class="mono">#7</span> و<span class="mono">#8</span>) <strong>فشلا كلاهما</strong> في ثوانٍ.</p>
+      <p>وكلُّ نشرةٍ اليومَ خمسةُ أوامرَ يكتبها إنسانٌ بيده على الخادم، ومنها سطرٌ مكتوبٌ في دليلكم بخطٍّ عريض: <span class="mono">supervisorctl restart all</span> — «بلا هذا لا يتغيّر الـAPI أبدا». وقد وقع هذا فعلا وسُجِّل في المستودَع: صفحةُ الدورات عرضت ٨١ دورةً بينما الـAPI باقٍ على شيفرةٍ سابقة، لأنّ أحدا لم يُعِد تشغيل عمليّة Node.</p>
+    </div>
+
+    <div class="col">
+      <p>فما رأيتَه ليس عطبا في التصميم ولا في التخزين المؤقّت: هو <strong>نصفُ نشرةٍ وصلت</strong>. والملفّاتُ الساكنة تُحدَّث لأنّ رفعَها كافٍ، والـAPI يبقى قديما لأنّه يحتاج خطوةً يسهل نسيانُها. وهذا يفسّر — بالضبط — أن ترى شاشةً جديدةً ببياناتٍ قديمة، فتبدو المنصّةُ كأنّها لم تتغيّر.</p>
+      <p><strong>وهو أرخصُ ما في هذا التقرير إصلاحا</strong>: إعادةُ ملفِّ النشر المحذوف (٤٤ سطرا موجودةٌ في تاريخ Git) أو سكربتٌ واحدٌ على الخادم يجمع الأوامر الخمسة. ساعةٌ واحدة تُنهي فئةَ سوءِ فهمٍ كاملة.</p>
+    </div>
+
+    <div class="ledger" style="margin-top:26px">
+      <div class="entry blocking"><span class="mark">١</span><div><h4>لا نشرَ آليّا — والنشرةُ اليدويّةُ تنسى إعادةَ تشغيل الخادم<span class="pill p-block">حاجب</span></h4><p>الملفُّ <span class="mono">.github/workflows/deploy.yml</span> حُذف في <span class="mono">edc7576</span>؛ ولم يبقَ في <span class="mono">.github/workflows/</span> إلّا <span class="mono">ci.yml</span>.</p></div><p class="proof"><b>الدليل</b> — تشغيلا «Deploy» رقم ٧ و٨ على <span class="mono">70bc703</span> بتاريخ ٥ سبتمبر: <span class="mono">conclusion: failure</span> بعد ٨ ثوانٍ. ثمّ حُذف الملفّ في الدمج التالي.</p></div>
+      <div class="entry waiting"><span class="mark">٢</span><div><h4>روابطُ دعوات التقويم تشير إلى نطاقٍ ميّت</h4><p>كلُّ ملفّ <span class="mono">.ics</span> يخرج من المنصّة يحمل رابطا إلى <span class="mono">wajeez-academy.vercel.app</span> — نطاقٌ هُجر مع الانتقال إلى Cloudways.</p></div><p class="proof"><b>الدليل</b> — <span class="mono">calendar.service.ts:29</span> قيمةٌ افتراضيّة، و<span class="mono">calendar.routes.ts:15</span> يُنشئ الخدمةَ بلا تمرير العنوان.</p></div>
+    </div>
+  </section>
+
+  <!-- ═══════════ ٢ ═══════════ -->
+  <section id="pending">
+    <div class="sec-head"><span class="sec-num">٢</span><h2>منجَزٌ ولم يصل — لا يُبنى، يُدمَج</h2></div>
+    <p class="sec-sub">قارنتُ محتوى كلّ فرعٍ بعيدٍ بـ<span class="mono">main</span> لا عددَ التزاماته — فالدمجُ هنا بالضغط، وفرعٌ يبدو متأخّرا بعشرة التزاماتٍ قد يكون محتواه مدموجا كلَّه. وهذا ما حدث مع فرع الدفع فعلا.</p>
+
+    <div class="tw">
+      <table>
+        <thead><tr><th>الفرع</th><th>ماذا فيه</th><th>الحكم بعد مقارنة المحتوى</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">cloudwe-migration<br><span style="color:var(--rust);font-family:var(--display);font-size:.72rem">طلب السحب ٢٤ · مفتوح · الفحص أخضر</span></td><td>خمسةُ مساراتٍ بلا شاشة · شرطُ خطّة التسليم · الزرُّ الجماعيُّ يمرّ بالبوّابة · المتعلّمُ المدعوّ يُسجَّل · شاشةُ <span class="mono">TrainerRunOps</span> (٣٩٣ سطرا)</td><td><strong>لم يصل — وهو حاجزُ كلِّ ما بعده.</strong> اليومَ لا يستطيع أحدٌ أن يجعل مدرّبا مؤهَّلا، ولا أن يعرض مدرّبا في الصفحة العامّة، ولا أن يفتح شعبةً يدويّةً واحدة.</td></tr>
+          <tr><td class="mono">student-platform-<br>registration-payment</td><td>حجزُ المقعد · منعُ الدفع مرّتين · إلغاءُ الطلب</td><td><span class="pill p-done">مدموج</span> فحصتُ العلامات في <span class="mono">main</span>: <span class="mono">myHeldSeats</span> و<span class="mono">cancelOrder</span> و<span class="mono">classifyCart</span> كلُّها موجودة. الفرعُ صار أثرا.</td></tr>
+          <tr><td class="mono">auto-deploy-on-ci-green</td><td>النشرُ التلقائيّ عند خضرة الفحص</td><td><strong>أُضيف ثمّ حُذف في الدمج نفسِه.</strong> انظر القسم ١.</td></tr>
+          <tr><td class="mono">wajeez-diagnostic-<br>result-fix</td><td>حذفُ شاشةٍ ميّتة في التشخيص · نقلُ بريد كود الخصم إلى الشاشة التي تُعرض فعلا</td><td>لم يصل — ملفٌّ واحد، ١٨ سطرا. صغيرٌ ونظيف.</td></tr>
+          <tr><td class="mono">install-skills<br><span style="font-family:var(--display);font-size:.72rem;color:var(--muted)">طلب السحب ١٧</span></td><td>مهاراتُ أدواتِ التطوير</td><td>لا أثرَ على المنتج ولا على ما يراه مستخدم.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="cap"><b>ملاحظة</b> — أربعةُ فروعٍ أخرى (<span class="mono">module-body-content</span> · <span class="mono">resend-vs-smtp</span> · <span class="mono">admin-trainer-approval</span> · <span class="mono">website-access-preview</span>) محتواها في <span class="mono">main</span> بلا فرق، فهي جاهزةٌ للأرشفة.</p>
+  </section>
+
+  <!-- ═══════════ ٣ ═══════════ -->
+  <section id="design">
+    <div class="sec-head"><span class="sec-num">٣</span><h2>«التصاميم لم تتغيّر ومازالت معقّدة» — الجذرُ واحد</h2></div>
+    <p class="sec-sub">هذه أثقلُ شكواك، وهي صحيحة — ولها سببٌ بنيويٌّ واحدٌ يفسّر لماذا كلُّ تحسينٍ سابقٍ بدا وكأنّه لم يقع.</p>
+
+    <div class="col">
+      <p>المنصّاتُ الأربع <strong>ليست مبنيّةً على نظام تصميمٍ واحد</strong>. في المشروع ثلاثةُ مكوّناتٍ أساسيّةٍ فقط (زرّ · وسم · مطويّة)، وتسعةُ ملفّاتٍ من ١٦٦ تستوردها. وما عدا ذلك يُكتب في مكانه: عددتُ <strong>٧٥٣ صيغةً مختلفةً</strong> لما هو «بطاقة» — تختلف في نصف قطر الحافّة وشفافيّة الأرضيّة والحشو، بلا أن يعني الاختلافُ شيئا.</p>
+      <p>وهذا هو الجواب: <strong>حين تُحسَّن شاشةٌ واحدة، تبقى الثلاثُ الأخريات كما هي</strong>، لأنّها لا تشترك معها في شيء. فيقرأ صاحبُ المنصّة النتيجةَ صادقةً: «لم يتغيّر شيء». والترقيعُ يغيّر واحدةً ويترك ثلاثا؛ وتوحيدُ المكوّنات يغيّر الأربعةَ دفعةً واحدة.</p>
+    </div>
+
+    <div class="split" style="margin-top:26px">
+      <div>
+        <div class="screen">
+          <div class="screen-bar"><span class="dot"></span> اليوم — ستٌّ من ٧٥٣ صيغة</div>
+          <div class="screen-body">
+            <div class="chaos">
+              <div class="c1">مقاعد<br><b>١٢</b></div>
+              <div class="c2">مدرّب<br><b>مُسنَد</b></div>
+              <div class="c3">تبدأ<br><b>٢ نوفمبر</b></div>
+              <div class="c4">الحالة<br><b>مسوّدة</b></div>
+              <div class="c5">السعر<br><b>٣٢٠</b></div>
+              <div class="c1" style="border-radius:8px;padding:10px">جلسات<br><b>١٦</b></div>
+            </div>
+          </div>
+        </div>
+        <p class="cap"><b>الأثر</b> — ستُّ حوافَّ وأربعةُ أحجامِ حشوٍ وثلاثةُ أحجامِ خطٍّ في صفٍّ واحد. العينُ تقرأ الفوضى «تعقيدا» قبل أن تقرأ كلمة.</p>
+      </div>
+      <div>
+        <div class="screen">
+          <div class="screen-bar"><span class="dot" style="background:var(--accent)"></span> المقترَح — مكوّنٌ واحدٌ برموزٍ واحدة</div>
+          <div class="screen-body">
+            <div class="u-card"><div class="u-lab">المقاعد المتاحة</div><div class="u-val">١٢ من ٢٠</div><div class="u-note">تُغلق قبل البدء بأسبوع</div></div>
+            <div class="u-card"><div class="u-lab">المدرّب</div><div class="u-val">سلمى العُمري</div><div class="u-note">مؤهَّلةٌ لهذه الدورة منذ مايو</div></div>
+            <div class="u-card"><div class="u-lab">تبدأ</div><div class="u-val">٢ نوفمبر ٢٠٢٦</div><div class="u-note">ثلاثاء وخميس · ٦:٠٠ م بتوقيت الرياض</div></div>
+          </div>
+        </div>
+        <p class="cap"><b>القاعدة</b> — حافّةٌ واحدة، حشوٌ واحد، وثلاثةُ مستوياتِ خطٍّ لا أكثر: تسمية · قيمة · شرح. ولا تُرسم حافّةٌ إلّا حول شيءٍ منفصلٍ فعلا.</p>
+      </div>
+    </div>
+
+    <div class="ledger" style="margin-top:30px">
+      <div class="entry blocking"><span class="mark">٣</span><div><h4>أرضيّةُ الخطّ ١١ بكسل في كلّ مكان<span class="pill p-block">أكبرُ أثرٍ بأقلّ كلفة</span></h4><p>٦٧٥ موضعا بمقاس <span class="mono">11px</span> و٧٨٦ بمقاس <span class="mono">12px</span>. والعربيّةُ تحتاج مقاسا أكبرَ من اللاتينيّة للوضوح نفسِه — فما يُنتج إحساسَ «التعقيد» ليس عددَ الأشياء بل أنّها مرصوصةٌ وصغيرة.</p></div><p class="proof"><b>الدليل</b> — عدُّ الصنف <span class="mono">text-[11px]</span> في <span class="mono">src/**/*.tsx</span>: ٦٧٥.</p></div>
+
+      <div class="entry blocking"><span class="mark">٤</span><div><h4>لوحةُ الطالب تدور إلى الأبد إن فشل الطلب<span class="pill p-block">حاجب</span></h4><p>عند فشل الشبكة تبقى الحالةُ <span class="mono">null</span>، وهي نفسُها حالةُ «ما زال يُحمَّل» — فيرى الطالبُ دوّامةً لا تتوقّف، بلا خطأ ولا زرِّ إعادة. والتعليقُ في الشيفرة يعترف بهذا ويؤجّله.</p></div><p class="proof"><b>الدليل</b> — <span class="mono">student/Dashboard.tsx:83</span> ثمّ الفرع في <span class="mono">:87</span>.</p></div>
+
+      <div class="entry blocking"><span class="mark">٥</span><div><h4>«حسابك جاهز — بقيت أول شعبة» تصف مسارا لم يعد موجودا</h4><p>النصُّ يقول: «اطلب التسجيل؛ عند موافقة العمليات تصلك فاتورتك». والشراءُ اليومَ <strong>مباشر</strong> بلا موافقةِ عمليّاتٍ أصلا. فأوّلُ شاشةٍ يراها كلُّ حسابٍ جديدٍ تعلّمه إجراءً لا وجودَ له.</p></div><p class="proof"><b>الدليل</b> — <span class="mono">student/Dashboard.tsx:499</span> مقابلَ <span class="mono">commerce.service.ts:532</span> حيث تُسوّى الدفعةُ فورا.</p></div>
+
+      <div class="entry waiting"><span class="mark">٦</span><div><h4>حالةُ الفراغ الجيّدة مكتوبةٌ ولا تُستعمل</h4><p>مكوّن <span class="mono">EmptyState</span> ممتاز: يفرّق بين «لا شيء بعد» و«مرشّحٌ يحجب» و«أنجزتَ كلَّ شيء»، ولا يقترح إجراءً غيرَ متاح. يُستعمل في <strong>٩ ملفّات</strong> — بينما ٤٥ موضعا آخر يكتب مستطيلا فارغا بيده.</p></div><p class="proof"><b>الدليل</b> — <span class="mono">EmptyState</span> في ٩ ملفّات · وصيغةُ المستطيل الفارغ اليدويّة ٤٥ مرّة. وهذه أوّلُ شاشةٍ يراها كلُّ حسابٍ بعد المسح.</p></div>
+
+      <div class="entry done"><span class="mark">٧</span><div><h4>اتّجاهُ العربيّة سليمٌ فعلا — لا مجرّد نصٍّ في تخطيطٍ إنجليزيّ<span class="pill p-done">قوّةٌ تُبنى عليها</span></h4><p>فحصتُ أشهرَ فشلٍ في المنتجات العربيّة فلم أجده: «السابق» يحمل سهما إلى اليمين و«التالي» إلى اليسار في كلّ معالجٍ فحصتُه، والصفحةُ <span class="mono">dir="rtl"</span> من جذرها.</p></div><p class="proof"><b>الدليل</b> — <span class="mono">PathwayWizard:305,311</span> · <span class="mono">CourseWizard:222</span> · <span class="mono">CohortWizard:430,441</span>.</p></div>
+
+      <div class="entry done"><span class="mark">٨</span><div><h4>الأرقامُ والتواريخ موحّدةٌ بقرارٍ مكتوب — إلّا اثنَي عشرَ موضعا</h4><p><span class="mono">format-ar.ts</span> يفرض لغةً واحدة: أرقامٌ لاتينيّةٌ وتقويمٌ ميلاديّ، ويشرح لماذا. لكن ١٢ موضعا ما زالت تتجاوزه، وأربعةٌ منها تستعمل <span class="mono">"ar"</span> وحدَها — <strong>وهي تُعطي تاريخا هجريّا في بعض البيئات</strong>، فيقرأ المستخدمُ موعدا غيرَ الذي في القاعدة.</p></div><p class="proof"><b>الدليل</b> — <span class="mono">CohortWizard:83</span> · <span class="mono">trainer/Schedule.tsx:44</span> · <span class="mono">trainer/Qualifications.tsx:42</span>.</p></div>
+
+      <div class="entry waiting"><span class="mark">٩</span><div><h4>الخطُّ العربيّ يُجلَب من خادمٍ خارجيّ — ومجلّدُ الخطوط المحلّيّ فارغ</h4><p><span class="mono">IBM Plex Sans Arabic</span> يُحمَّل من Google Fonts في رأس الصفحة، بينما <span class="mono">public/fonts/</span> لا يحوي إلّا ملفَّ شرح. وهذا يخالف قاعدتَك «كلُّ شيءٍ يُستضاف محلّيّا»، ويضيف رحلتَي اتّصالٍ قبل أوّل حرفٍ يظهر.</p></div><p class="proof"><b>الدليل</b> — <span class="mono">index.html:205-208</span> · <span class="mono">ls public/fonts/</span> = <span class="mono">README.md</span> وحدَه.</p></div>
+    </div>
+  </section>
+
+  <!-- ═══════════ ٤ ═══════════ -->
+  <section id="trainer">
+    <div class="sec-head"><span class="sec-num">٤</span><h2>مسارُ المدرّب — أولويّتك الأولى، وأضعفُ ما فحصت</h2></div>
+    <p class="sec-sub">مشيتُ الأحدَ عشرَ مطلبا التي ذكرتَها واحدا واحدا في الخادم والواجهة معا. النتيجة: ثلاثةٌ مبنيّة، وثمانيةٌ غيرُ موجودةٍ أصلا.</p>
+
+    <div class="tw">
+      <table>
+        <thead><tr><th style="width:26%">ما طلبتَه</th><th>ما وجدتُه في الشيفرة</th><th style="width:16%">الحكم</th></tr></thead>
+        <tbody>
+          <tr><td>الدوراتُ التي صرّح بأنّه مؤهَّلٌ لها تنتقل إلى ملفّه</td><td><span class="mono">teachableCourseIds</span> يُحفظ في الطلب ويُعرض للأدمن في ملفّ الطلب — <strong>ولا سطرَ واحدٌ في المستودَع كلِّه ينقله إلى جدول التأهيلات عند الاعتماد</strong>. فيبقى نصّا في ورقةٍ لا يقرؤها أحدٌ بعد القرار.</td><td><span class="pill p-block">غير موجود</span></td></tr>
+          <tr><td>الأدمن يعيّنه من قائمة مؤهّلاته لا من الكتالوج كلِّه</td><td><span class="mono">qualifyForCourse</span> يقبل أيَّ دورةٍ في الكتالوج بلا سياق. ولا شيءَ يعرض «ما صرّح به» بجانب «ما تُعيّنه عليه».</td><td><span class="pill p-block">غير موجود</span></td></tr>
+          <tr><td>المدرّب يضيف بنفسه دوراتٍ إلى مؤهّلاته</td><td>في بوّابة المدرّب <span class="mono">GET /api/trainer/me/qualifications</span> وحدَها — <strong>قراءةٌ بلا كتابة</strong>. لا مسارَ يضيف.</td><td><span class="pill p-block">غير موجود</span></td></tr>
+          <tr><td>يقترح دورةً جديدةً من الصفر</td><td>«اقتراحاتي» موجودةٌ فعلا لكنّها <strong>اثنا عشرَ نوعَ تعديلٍ على دورةٍ قائمة</strong> (عنوانُ محور، شرح، نشاط، واجب…). ولا بنيةَ تستقبل دورةً جديدةً بعنوانها وأهدافها ووحداتها المقترحة.</td><td><span class="pill p-block">غير موجود</span></td></tr>
+          <tr><td>تعديلُ المتون من خلاله</td><td><strong>مبنيٌّ وجيّد.</strong> نطاقان: تعديلُ شعبته يُطبَّق عليها وحدَها، وتعديلُ الكتالوج يمرّ بمراجعةٍ أوسع. ودليلُ المدرّب مكتوبٌ داخل الشاشة نفسِها: ما يغيّره بحرّيّة · ما يحتاج مراجعة · ما لا يلمسه ولماذا.</td><td><span class="pill p-done">موجود</span></td></tr>
+          <tr><td>يرى سيرته الذاتيّة ويستبدلها</td><td>لا مسارَ سيرةٍ في بوّابة المدرّب إطلاقا.</td><td><span class="pill p-block">غير موجود</span></td></tr>
+          <tr><td>يضيف مراجعَ متى شاء</td><td><span class="mono">TrainerReference</span> تُكتب من شاشة <strong>مراجعة الطلب الإداريّة</strong> وحدَها. المدرّبُ لا يملك إليها بابا.</td><td><span class="pill p-block">غير موجود</span></td></tr>
+          <tr><td>نبذةٌ بقلمه تظهر في «تعرّف على مدرّبي هذا المسار»</td><td>الحقلُ <span class="mono">bioPublic</span> موجود، ويُنسَخ <strong>مرّةً واحدة</strong> من نصِّ طلبه لحظةَ إنشاء الملفّ — ثمّ لا يستطيع تعديله أبدا. <br><em>وفحصتُ مصدرَ تلك الشاشة كما طلبت: هي تقرأ ملفّاتِ مدرّبين حقيقيّةً معتمَدة لا بياناتٍ مؤقّتة — لكنّ اعتمادَ الظهور العامّ بلا شاشةٍ اليوم، فلا يمكن أن تعرض أحدا.</em></td><td><span class="pill p-block">غير موجود</span></td></tr>
+          <tr><td>قناةُ اقتراحاتٍ للإدارة لها حالة</td><td>لا رابطَ دعمٍ ولا تذكرةً في أيّ صفحةٍ من صفحات المدرّب التسع.</td><td><span class="pill p-block">غير موجود</span></td></tr>
+          <tr><td>إدارةُ طلبته</td><td><strong>«طلبتي» عند المدرّب هي حرفيّا جدولُ المتعلّمين في لوحة الإدارة</strong> — المكوّن نفسُه (<span class="mono">LearnersPanel</span>)، والملفُّ ستّةَ عشرَ سطرا يستدعيه. بحثٌ بالاسم والبريد وأعمدةُ حساب، لا شيءَ عن التدريس.</td><td><span class="pill p-wait">موجود خطأً</span></td></tr>
+          <tr><td>مستشارُ كلّ طالبٍ بجانب اسمه ومراسلتُه</td><td>الإسنادُ موجودٌ في القاعدة، ولا يُعرض للمدرّب. ورسائلُ الشعبة موجودةٌ (للشعبة كلِّها أو لمتعلّمٍ بعينه) — <strong>ولا قناةَ بين مدرّبٍ ومستشارٍ إطلاقا.</strong></td><td><span class="pill p-block">غير موجود</span></td></tr>
+          <tr><td>رابطُ دعوةٍ خاصٌّ بكلّ مدرّب</td><td>لا وجودَ له. والنمطُ مبنيٌّ للمستشارين (نسبةُ عمولةٍ وإيرادٌ من الإحالات) فيُقاس عليه.</td><td><span class="pill p-block">غير موجود</span></td></tr>
+          <tr><td>ثلاثةُ أرقامٍ تضبطها الإدارة</td><td><strong>اثنان من الثلاثة مبنيّان ويُحسبان فعلا</strong>: أجرُ المقعد الواحد، و«الحدُّ الأدنى المضمون» (<span class="mono">minSeats</span>) — والكشفُ يشرح مصدرَه بنصٍّ صريح: «فعليّ ٧ — طُبِّق الحدُّ الأدنى ١٢». الثالثُ (سعرٌ أعلى لطالبٍ من رابط الدعوة) ينتظر الرابطَ نفسَه.</td><td><span class="pill p-done">ثلثاه</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="margin-top:38px">شاشةُ المدرّب كما ينبغي أن تكون</h3>
+    <p class="sec-sub">صفحةُ المدرّب يجب أن تجيب سؤالا واحدا حين يفتحها: <strong>ما الذي ينتظرني أنا اليوم؟</strong> — لا أن تعرض عليه جدولَ إدارةٍ مصغَّرا.</p>
+
+    <div class="split">
+      <div>
+        <div class="screen">
+          <div class="screen-bar"><span class="dot"></span> اليوم — /trainer/learners</div>
+          <div class="screen-body" style="font-size:.82rem;color:var(--muted)">
+            <div style="border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin-bottom:12px">🔍 ابحث بالاسم أو البريد…</div>
+            <div class="tw" style="border-radius:10px"><table style="min-width:0;font-size:.78rem">
+              <thead><tr><th>الاسم</th><th>البريد</th><th>الحالة</th></tr></thead>
+              <tbody>
+                <tr><td>نورة الحربي</td><td class="mono">n.h@…</td><td>نشط</td></tr>
+                <tr><td>ماجد الشمري</td><td class="mono">m.s@…</td><td>نشط</td></tr>
+                <tr><td>ريم القحطاني</td><td class="mono">r.q@…</td><td>نشط</td></tr>
+              </tbody>
+            </table></div>
+            <p style="margin:12px 0 0;font-size:.76rem">ثلاثةُ أسماءٍ وثلاثةُ عناوينَ بريد. ولا سطرَ واحدٌ يقول للمدرّب ماذا يفعل.</p>
+          </div>
+        </div>
+        <p class="cap"><b>لماذا هذا خطأ</b> — البريدُ الإلكترونيُّ بيانُ حساب، لا بيانُ تدريس. والمدرّبُ لا يملك تعديلَ شيءٍ منه أصلا، فلماذا يراه؟</p>
+      </div>
+
+      <div>
+        <div class="screen">
+          <div class="screen-bar"><span class="dot" style="background:var(--accent)"></span> المقترَح — «ما ينتظرك اليوم»</div>
+          <div class="screen-body">
+            <div class="t-top"><span class="t-title">ما ينتظرك اليوم</span><span class="t-date">ثلاثةُ بنود · الأحد ٦ سبتمبر</span></div>
+            <div class="queue">
+              <div class="qrow"><span class="stripe s-block"></span>
+                <div><div class="who">ماجد الشمري</div><div class="why">سلّم مشروعَ الوحدة الثالثة قبل يومين — ينتظر تقييمك</div>
+                  <span class="advisor">مستشاره: هدى الزهراني · +٢ آخرَين معها</span></div>
+                <button class="qbtn" type="button">افتح التقييم</button></div>
+              <div class="qrow"><span class="stripe s-wait"></span>
+                <div><div class="who">نورة الحربي</div><div class="why">غابت عن جلستَين متتاليتَين — ولم تفتح الوحدةَ الرابعة</div>
+                  <span class="advisor">مستشارها: هدى الزهراني</span></div>
+                <button class="qbtn" type="button">راسِل مستشارها</button></div>
+              <div class="qrow"><span class="stripe s-ok"></span>
+                <div><div class="who">جلسة «قياس أثر الحملة»</div><div class="why">غدا ٦:٠٠ م · ١٤ مسجَّلا · الرابط جاهز</div></div>
+                <button class="qbtn" type="button">افتح الجلسة</button></div>
+            </div>
+          </div>
+        </div>
+        <p class="cap"><b>القاعدة</b> — كلُّ صفٍّ يذكر <em>سببَ وجوده</em> وينتهي بإجراءٍ واحد. ومن كان مستشارُه واحدا لعدّة طلبة يُعرض مجموعةً واحدة لا مكرّرا في كلّ صفّ — كما طلبتَ حرفيّا.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ ٥ ═══════════ -->
+  <section id="mail">
+    <div class="sec-head"><span class="sec-num">٥</span><h2>البريدُ الصادر — واجهةُ المنصّة عند من لم يرَ شاشةً بعد</h2></div>
+    <p class="sec-sub">حصرتُ كلَّ ما يخرج من المنصّة. والنتيجةُ أخطرُ ممّا توقّعت: ليست مسألةَ تصميمٍ ضعيف، بل مسألةُ رسائلَ لا تُرسَل أصلا.</p>
+
+    <div class="verdict warnbar">
+      <p><strong>أوّلا: لا رسالةَ واحدةً فيها هويّة.</strong> مُرسِلُ البريد يُمرِّر حقلَ <span class="mono">text</span> وحدَه إلى Resend، ولا يمرّر <span class="mono">html</span> إطلاقا. فكلُّ ما يصل مستخدميك نصٌّ خام: بلا لوقو، بلا لون، بلا توقيع.</p>
+      <p><strong>وثانيا — وهذا الأثقل: ٤٢ إشعارا في المنصّة كلُّها من نوع «داخل التطبيق»، وصفرٌ من نوع «بريد».</strong> فمن دفع لا تصله فاتورة، ومن سُجِّل في شعبةٍ لا يصله تأكيد، ومن حصل على شهادةٍ لا يصله خبر، وتذكيرُ الجلسة قبل ٢٤ ساعةً يُكتب في جرسٍ داخل المنصّة لا في بريده. <strong>لا يعلم أحدٌ بشيءٍ إلّا إن دخل بنفسه ونظر.</strong></p>
+    </div>
+
+    <div class="tw">
+      <table>
+        <thead><tr><th>الرسالة</th><th>هل تصل بالبريد اليوم؟</th></tr></thead>
+        <tbody>
+          <tr><td>توثيقُ البريد · استعادةُ كلمة المرور · دعوةُ حسابٍ إداريّ · اعتمادُ مدرّب</td><td><span class="pill p-done">تصل</span> نصّا خاما — وصياغتُها العربيّةُ أصيلةٌ جيّدة، لا مترجَمة</td></tr>
+          <tr><td><strong>إيصالُ شراء / فاتورة</strong></td><td><span class="pill p-block">لا تُرسَل</span></td></tr>
+          <tr><td>تأكيدُ التسجيل في شعبة</td><td><span class="pill p-block">لا تُرسَل</span></td></tr>
+          <tr><td>تذكيرُ الجلسة (٢٤ ساعة / ساعة)</td><td><span class="pill p-block">لا تُرسَل</span> — الوظيفةُ تعمل وتكتب إشعارا داخليّا فقط</td></tr>
+          <tr><td>إصدارُ الشهادة</td><td><span class="pill p-block">لا تُرسَل</span></td></tr>
+          <tr><td>كشفُ مستحقّات المدرّب</td><td><span class="pill p-block">لا تُرسَل</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="cap"><b>وثالثا</b> — شاشةُ «قوالب الإشعارات» في لوحة الإدارة تحرّر جدولا لا يقرؤه أحد: الدالّةُ <span class="mono">renderTemplate</span> لا تُستدعى في المستودَع كلِّه إلّا داخل اختبارٍ واحد. فمن يحرّر قالبا هناك يظنّ أنّه غيّر رسالةً — ولم يغيّر شيئا.</p>
+
+    <h3 style="margin-top:38px">القالبُ الأساسيّ المقترَح — واحدٌ تتفرّع منه كلُّ الرسائل</h3>
+    <div class="mail-tabs" role="tablist" aria-label="نماذج الرسائل">
+      <button class="mail-tab" role="tab" aria-selected="true" data-mail="verify" type="button">توثيقُ البريد</button>
+      <button class="mail-tab" role="tab" aria-selected="false" data-mail="receipt" type="button">إيصالُ الشراء</button>
+      <button class="mail-tab" role="tab" aria-selected="false" data-mail="cert" type="button">الشهادة</button>
+    </div>
+    <div class="mail">
+      <div class="mail-card">
+        <div class="mail-head"><span class="mail-logo">و</span><span class="mail-brand">أكاديمية وجيز<span>نقيس ما أنجزت، لا ما شاهدت</span></span></div>
+        <div class="mail-body" id="mail-body"></div>
+        <div class="mail-foot" id="mail-foot"></div>
+      </div>
+    </div>
+    <p class="cap"><b>ما يحمله القالب</b> — لوقو نصّيٌّ لا صورة (فيظهر في كلّ عميلِ بريدٍ ولو حجب الصور) · جدولُ عرضٍ واحدٌ بعرضٍ ثابتٍ يعمل على الجوال وفي Outlook · <span class="mono">dir="rtl"</span> على كلّ عنصر لا على الجسد وحدَه · هدفٌ واحدٌ وزرٌّ واحدٌ بارز · وألوانٌ صريحةٌ لا تعتمد على مظهر العميل الداكن.</p>
+
+    <div class="ledger" style="margin-top:26px">
+      <div class="entry blocking"><span class="mark">١٠</span><div><h4>الفاتورةُ بلا ضريبةٍ ولا بياناتِ جهةِ إصدار<span class="pill p-block">جاهزيّةٌ قانونيّة</span></h4><p>جدولُ الفاتورة يحمل رقما ومبلغا وعملةً وحالةً — <strong>ولا حقلَ ضريبةٍ في المخطَّط كلِّه</strong>: لا نسبة، ولا رقمَ تسجيلٍ ضريبيّ، ولا مبلغَ ضريبةٍ منفصل. والعنوانُ المعلَن على الموقع في الرياض، والفاتورةُ المبسَّطة هناك لها متطلَّباتٌ محدَّدة.</p></div><p class="proof"><b>الدليل</b> — بحثٌ عن <span class="mono">vat|tax|ضريب</span> في المخطَّط والخادم والواجهة: صفرُ نتائج. وعملةُ الدفتر <span class="mono">USD</span>.</p></div>
+    </div>
+  </section>
+
+  <!-- ═══════════ ٦ ═══════════ -->
+  <section id="measure">
+    <div class="sec-head"><span class="sec-num">٦</span><h2>القياس — لماذا لا نعرف أين يتعثّر المستخدم</h2></div>
+    <p class="sec-sub">طبقةُ التحليلات هنا مبنيّةٌ بعنايةٍ حقيقيّة: قائمةٌ بيضاءُ للأحداث يشترك فيها الطرفان، ومعرّفٌ مجهولٌ للجهاز، ورفضٌ صريحٌ لأيّ نصٍّ حرّ. ثمّ يقع العطبُ في آخرِ مترٍ من الطريق.</p>
+
+    <div class="tw">
+      <table>
+        <thead><tr><th>الحدث</th><th>مُعلَنٌ في القائمة</th><th>يُطلَق فعلا</th><th>يقرؤه تقريرُ القمع</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">diagnostic_started</td><td>✓</td><td>✓</td><td>✓</td></tr>
+          <tr><td class="mono">diagnostic_completed</td><td>✓</td><td>✓</td><td>✓</td></tr>
+          <tr><td class="mono">result_teaser_viewed</td><td style="color:var(--rust)">✗</td><td style="color:var(--rust)">✗</td><td>✓</td></tr>
+          <tr><td class="mono">gate_viewed</td><td style="color:var(--rust)">✗</td><td style="color:var(--rust)">✗</td><td>✓</td></tr>
+          <tr><td class="mono">checkout_started</td><td>✓</td><td style="color:var(--rust)">✗</td><td style="color:var(--rust)">✗</td></tr>
+          <tr><td class="mono">payment_succeeded</td><td style="color:var(--rust)">✗</td><td style="color:var(--rust)">✗</td><td style="color:var(--rust)">✗</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="verdict warnbar" style="margin-top:22px">
+      <p>تقرير «قمعُ التشخيص وجدارُ التسجيل» في لوحة الإدارة يقرأ حدثَين <strong>لا يُطلقهما أحد</strong>. فثلاثةٌ من صفوفه الستّة تعرض صفرا إلى الأبد — ومنها الصفُّ الأخير: <strong>«نسبةُ التحويل عند الجدار» تساوي ٠٪ دائما</strong>، مهما بلغ التحويلُ الحقيقيّ.</p>
+      <p>وحدثُ بدءِ الشراء معلَنٌ ولا يُطلَق. ولا حدثَ نجاحِ دفعٍ على الخادم. فالقمعُ ينتهي قبل المال — وكلُّ سؤالٍ عن «أين نخسرهم» يُجاب اليومَ بالإحساس.</p>
+    </div>
+
+    <div class="ledger">
+      <div class="entry waiting"><span class="mark">١١</span><div><h4>توثيقُ البريد شرطٌ قبل الدفع</h4><p>القاعدةُ نفسُها مطبَّقةٌ في مسارَين، وتسقط تلقائيّا حين تكون قناةُ البريد معطّلة — وهي مفعّلةٌ الآن. والتصفّحُ والتشخيصُ مفتوحان بلا توثيق، وهذا صواب. لكنّ حاجزَ التوثيق قبل الشراء من أشهر قاتلات التسجيل المدفوع، <strong>وهو أخطرُ هنا بالذات لأنّ رسالةَ التوثيق نصٌّ خامٌّ بلا هويّة</strong> — وهي أكثرُ ما يقع في «غير المرغوب».</p></div><p class="proof"><b>الدليل</b> — <span class="mono">commerce.service.ts</span> حاجزُ <span class="mono">requireVerifiedEmail</span> · و<span class="mono">mail.ts:29</span> بلا حقل <span class="mono">html</span>.</p></div>
+      <div class="entry waiting"><span class="mark">١٢</span><div><h4>لا رصدَ إطلاقا — ولا استثناء</h4><p>لا تتبّعَ أخطاء، ولا مراقبةَ توفّر، ولا مكتبةَ سجلّاتٍ مهيكلة. لا شيءَ في الحزم كلِّها: بحثتُ عن تسعة أسماءٍ معروفةٍ فلم أجد واحدا. ونقطتا <span class="mono">/api/health</span> و<span class="mono">/api/version</span> موجودتان — <strong>ولا أحدَ يسألهما</strong>.</p><p>وهذا سببُ بقاء أعطاب هذا التقرير مجهولةً حتّى اشتكى منها صاحبُ المنصّة بنفسه: <strong>لا أحدَ يُخبَر حين تفشل الرسائلُ أو يسقط مسار.</strong></p></div><p class="proof"><b>الدليل</b> — <span class="mono">package.json</span>: صفرُ حزمِ رصد.</p></div>
+    </div>
+  </section>
+
+  <!-- ═══════════ ٧ ═══════════ -->
+  <section id="engine">
+    <div class="sec-head"><span class="sec-num">٧</span><h2>محرّكُ التشخيص — عشرةُ آلافِ جلسةٍ شغّلتُها اليوم</h2></div>
+    <p class="sec-sub">لم أحكم بالانطباع: شغّلتُ المحرّكَ على عشرة آلافِ جلسةٍ محاكاةً وعلى الرحلات التسع الحتميّة. الأرقامُ أدناه من تشغيل اليوم لا من وثيقةٍ سابقة.</p>
+
+    <div class="tiles" style="margin-bottom:28px">
+      <div class="tile bad"><div class="n">٠</div><div class="k">جلسةً بلغت درجة «تطابقٌ قويّ» من ١٠٠٠٠ — الدرجةُ العليا مستحيلةٌ حسابيّا لا نادرة</div></div>
+      <div class="tile warn"><div class="n">٢١٫٣٪</div><div class="k">يخرجون بلا مسارٍ محدَّد: ١١٫٢٪ «راجِع مستشارا» و١٠٫١٪ «اتّجاهٌ استكشافيّ»</div></div>
+      <div class="tile warn"><div class="n">٢١٫٤٪</div><div class="k">من الجلسات تصل إلى توصيةٍ <strong>بصفر دليلٍ مهاريّ</strong> — ١٧٣٦ من ٨١٠٧</div></div>
+      <div class="tile"><div class="n">١٢٫١</div><div class="k">متوسّطُ الأسئلة · ومنها ٩٫٨٪ مقاعدُ ميتةٌ لا يغيّر أيُّ جوابٍ فيها شيئا</div></div>
+    </div>
+
+    <div class="col">
+      <p><strong>وأخطرُ ما وجدتُه ليس رقما بل تناقضا يراه المتعلّم.</strong> نطاقا الثقة اللذان يصلهما أحدٌ فعلا هما «تمهيديّ» (٣٦٩٠) و«جيّد» (٦٣١٠) — والدرجةُ العليا مغلقةٌ ببناءٍ لا ببيانات. فالمنصّةُ التي تَعِد بأنّها «تقيس ما أثبتّ» لا تستطيع أن تقول لأحدٍ يوما إنّ تطابقَه قويّ.</p>
+      <p><strong>وفي بنك الأسئلة ثروةٌ لا تُستعمل.</strong> البنكُ ٢٠٥ أسئلةٍ مؤلَّفة، ولا يُسأل منها عمليّا إلّا ٥٩. ومن الـ١٤٦ الباقية <strong>ثمانيةَ عشرَ سؤالَ ميولٍ مهنيّةٍ (RIASEC) وأربعةَ عشرَ سؤالَ أساليبِ عملٍ وتعلُّم</strong> — أي أنّ الاختبارَين اللذين طلبتَهما (تحليلُ الشخصيّة · بوصلةُ الخرّيج) <strong>موادُّهما مؤلَّفةٌ سلفا ونائمةٌ في البنك</strong>. لا تُؤلَّف من الصفر؛ تُوقَظ.</p>
+      <p><strong>وشفافيّةُ النتيجة سليمة</strong>: بطاقةُ «لماذا هذا المسار» موجودةٌ وتشرح للمتعلّم ما قاد إليه، وسؤالُ التعميق يقول سببَ طرحه قبل أن يُطرح. هذا معيارٌ مهمٌّ نجحت فيه المنصّة.</p>
+      <p><strong>وحدٌّ لا يُتجاوز في الاختبار الجديد بلا حساب:</strong> إفصاحٌ صريحٌ أنّه أداةٌ استرشاديّةٌ لا مقياسٌ نفسيٌّ معتمَد · وموافقةٌ واعيةٌ قبل الأسئلة الشخصيّة · ومخرجٌ للزائر لا ينتهي به إلى صفحةِ بيعٍ مغلقة · وقرارٌ مكتوبٌ في ماذا يحدث لإجابات من لم يسجّل. والادّعاءُ العلميُّ الزائد يضرّ سمعةَ المنصّة أكثرَ ممّا ينفع تسويقَها.</p>
+    </div>
+  </section>
+
+  <!-- ═══════════ ٨ ═══════════ -->
+  <section id="ops">
+    <div class="sec-head"><span class="sec-num">٨</span><h2>الأدوارُ والأمنُ والفصولُ وZoom</h2></div>
+
+    <h3>الأدوارُ الإداريّة: سبعةٌ تُختصر إلى ثلاثة — وفخٌّ واحدٌ في الطريق</h3>
+    <p class="sec-sub">فحصتُ حزمةَ كلِّ دورٍ حبّةً حبّة، لأنّ الخطرَ في الدمج ليس فقدانَ صلاحيّةٍ بل اكتسابَها صامتا.</p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>الدور</th><th>ما يملكه حصرا</th><th>القرار</th></tr></thead>
+        <tbody>
+          <tr><td>المنسّقُ الأكاديميّ</td><td>لا شيء — حزمتُه كلُّها داخل حزمة المدير الأكاديميّ</td><td><span class="pill p-done">يُدمج بأمان</span></td></tr>
+          <tr><td>مديرُ العمليّات</td><td>لا شيء — حزمتُه كلُّها داخل حزمة المدير الأكاديميّ</td><td><span class="pill p-done">يُدمج بأمان</span></td></tr>
+          <tr><td>الدعم</td><td>لا شيء — <span class="mono">support.operate</span> يملكها المديرُ الأكاديميُّ أصلا</td><td><span class="pill p-done">يُدمج بأمان</span></td></tr>
+          <tr><td><strong>مديرُ التشخيص</strong></td><td><strong>ثمانُ صلاحيّاتٍ لا يملكها المديرُ الأكاديميُّ إطلاقا</strong>: تحريرُ ملفّ التشخيص ومراجعتُه ونشرُه · تحريرُ الأسئلة · تحريرُ التسعير التشخيصيّ ونشرُه · المحاكاة</td><td><span class="pill p-block">الفخّ</span> دمجُه في «مدير الأكاديميّة» <strong>يمنحه محرّكَ التشخيص كلَّه</strong> بلا أن يطلبه أحد. فتذهب هذه الثمانُ إلى السوبر أدمن وحدَه.</td></tr>
+          <tr><td>المالية</td><td>تسجيلُ الدفعات · الاسترداد · الطلبات والكوبونات · مستحقّاتُ المدرّبين</td><td><span class="pill p-done">يبقى</span> «المدير الماليّ»</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="cap"><b>وخبرٌ جيّد</b> — «حسابُ أدمن بصلاحيّاتٍ يحدّدها السوبر أدمن حسابا حسابا» <strong>مبنيٌّ تسعين بالمئة</strong>: جدولُ منحٍ ومنعٍ فرديٍّ موجودٌ في القاعدة (<span class="mono">UserPermission</span> بـ<span class="mono">grant/deny</span> وسببٍ إلزاميّ)، ومسارُه في الخادم، وشاشتُه في لوحة المستخدمين. الناقصُ اسمُ دورٍ فارغٍ يُبنى فوقه — لا البنية.</p>
+
+    <h3 style="margin-top:34px">الأمنُ — ما فحصتُه فوجدتُه سليما، وما وجدتُه ناقصا</h3>
+    <div class="ledger">
+      <div class="entry done"><span class="mark">١٣</span><div><h4>الصلاحيّاتُ في الخادم لا في الواجهة<span class="pill p-done">سليم</span></h4><p>عددتُ الحرّاسَ مقابلَ المسارات في ٢٩ ملفَّ توجيه: التطابقُ شبهُ تامّ، وما بلا حارسٍ عامٌّ بقصده (الصفحاتُ العامّة · الدخول · تقديمُ طلب مدرّب). ومعها اثنا عشرَ ملفَّ اختبارٍ للصلاحيّات وحدَها.</p></div></div>
+      <div class="entry done"><span class="mark">١٤</span><div><h4>الدفعُ يُعتمَد من إشعار المزوّد الموقَّع لا من عودة المتصفّح<span class="pill p-done">سليم</span></h4><p>المسار <span class="mono">POST /api/webhooks/payments/:provider</span> بتوقيعٍ إلزاميٍّ وتجاهُلٍ للحدث المكرَّر. والمزوّدان الحقيقيّان يعملان بصفحاتِ دفعٍ مستضافةٍ عندهما — فلا بياناتِ بطاقاتٍ تمرّ بخادمكم أبدا. والأسرارُ مُقنَّعةٌ في الشاشة (<span class="mono">••••</span> وآخرُ أربعة) ولا تُعاد خاما.</p></div></div>
+      <div class="entry waiting"><span class="mark">١٥</span><div><h4>الوثائقُ القانونيّةُ موجودة — والفاتورةُ الضريبيّةُ لا</h4><p>الخصوصيّةُ والشروطُ والاستردادُ صفحاتٌ منشورةٌ فعلا بمحتوًى حقيقيّ. الناقصُ ما يظهر على الإيصال (القسم ٥) — وحذفُ الحساب بطلب صاحبه، وهو غيرُ المسح الإداريّ.</p></div></div>
+    </div>
+
+    <h3 style="margin-top:34px">الفصولُ الأربعة · وZoom</h3>
+    <div class="col">
+      <p><strong>الفصولُ موجودةٌ اسما لا بنية.</strong> المواسمُ الأربعةُ مكتوبةٌ بحدودها الصحيحة (نوفمبر–يناير · فبراير–أبريل · مايو–يوليو · أغسطس–أكتوبر) — لكنّها <strong>خيارٌ في نموذج تقديم المدرّب وحدَه</strong>. لا عمودَ فصلٍ على الشعبة، ولا كيانَ فصلٍ في القاعدة. فلا يمكن اليومَ أن تُسأل قاعدةُ البيانات «ما شعبُ فصل نوفمبر؟».</p>
+      <p><strong>وZoom واجهةٌ بلا جسد.</strong> المزوّدُ الآليُّ مكتوبٌ ويرمي «لم يُربط بعد»، ودالّةُ اختيار المزوّد <strong>لا تُستدعى في المستودَع كلِّه</strong>. والموجودُ فعلا يدويٌّ محض: الإدارةُ تلصق رابطا. فربطُ حسابك لن يفعل شيئا وحدَه — يحتاج وصلَ المزوّد بمسار إنشاء الجلسة أوّلا، ثمّ فحصَ حدود باقتك مقابل عدد الشعب المتزامنة قبل التشغيل الواسع.</p>
+    </div>
+  </section>
+
+  <!-- ═══════════ ٩ ═══════════ -->
+  <section id="hero">
+    <div class="sec-head"><span class="sec-num">٩</span><h2>شريطُ الصورة — يناقض الجملةَ التي فوقه</h2></div>
+    <p class="sec-sub">الصورةُ الحاليّةُ وصفُها في الشيفرة: «متعلمون يتعاونون حول طاولة واحدة». أي أشخاصٌ <em>يجلسون ويستمعون</em> — وهو بعينه ما ترفضه الجملةُ المكتوبةُ فوقهم. والوزنُ ٢٤٧ كيلوبايت لعنصرٍ زخرفيّ.</p>
+
+    <div class="hero-demo">
+      <svg viewBox="220 62 420 180" role="img" aria-label="مشهد: الإنجاز يُبنى، ثم يُراجَع، ثم يُختَم">
+        <defs>
+          <linearGradient id="g1" x1="1" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="var(--accent)" stop-opacity=".22"/>
+            <stop offset="1" stop-color="var(--accent)" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <rect x="0" y="0" width="640" height="260" fill="url(#g1)"/>
+        <!-- ١ يُبنى: طبقاتٌ تُرسم -->
+        <g fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round">
+          <path d="M470 196 L586 196" style="--len:116" class="draw" stroke-opacity=".9"/>
+          <path d="M470 168 L556 168" style="--len:86;animation-delay:.18s" class="draw" stroke-opacity=".75"/>
+          <path d="M470 140 L604 140" style="--len:134;animation-delay:.36s" class="draw" stroke-opacity=".6"/>
+          <path d="M470 112 L534 112" style="--len:64;animation-delay:.54s" class="draw" stroke-opacity=".45"/>
+        </g>
+        <!-- ٢ يُراجَع: علاماتٌ تظهر ثمّ مسحةُ مراجعة -->
+        <g stroke="var(--moss)" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M436 191 l7 7 l13 -15" class="pop" style="animation-delay:1.15s"/>
+          <path d="M436 163 l7 7 l13 -15" class="pop" style="animation-delay:1.35s"/>
+          <path d="M436 135 l7 7 l13 -15" class="pop" style="animation-delay:1.55s"/>
+        </g>
+        <rect class="scan" x="440" y="96" width="2" height="116" fill="var(--accent)" opacity="0"/>
+        <!-- ٣ يُختَم -->
+        <g class="pop" style="animation-delay:1.95s">
+          <circle cx="360" cy="152" r="34" fill="none" stroke="var(--accent)" stroke-width="2.5"/>
+          <circle cx="360" cy="152" r="27" fill="none" stroke="var(--accent)" stroke-width="1" stroke-opacity=".45" stroke-dasharray="3 5"/>
+          <text x="360" y="149" text-anchor="middle" font-family="Noto Kufi Arabic, sans-serif" font-size="12" font-weight="800" fill="var(--accent)">مُثبَت</text>
+          <text x="360" y="164" text-anchor="middle" font-family="IBM Plex Sans Arabic, sans-serif" font-size="8" fill="var(--accent)" opacity=".75">بمشروعٍ مُقيَّم</text>
+        </g>
+      </svg>
+      <div class="hero-txt">
+        <p>لا نقيس تعلمك بما شاهدت — <em>بل بما أنجزت وأثبتّ.</em></p>
+        <p class="sub">مدرّبٌ يراجع عملك بيده، ومشروعُ تخرّجٍ يدخل ملفّك المهنيّ من أوّل يوم.</p>
+      </div>
+    </div>
+    <p class="cap"><b>ما يفعله المشهد</b> — يبني أربعَ طبقاتٍ (عملُ المتعلّم) ثمّ تمرّ عليها مراجعةٌ تضع ثلاثَ علامات (المدرّبُ يراجع بيده) ثمّ يُختَم «مُثبَت · بمشروعٍ مُقيَّم». <b>متجهٌ خالصٌ داخل الصفحة</b> — لا صورة، لا مصدرَ خارجيّ، ولا كيلوبايت واحدٌ يُحمَّل، ويحترم <span class="mono">prefers-reduced-motion</span> فيقف على إطاره الأخير. وهو يقول الجملةَ بدل أن يناقضها.</p>
+    <p class="cap" style="margin-top:14px"><b>وأفاتاراتُ القصص لا تُعاد</b> — فحصتُها فوجدتُها منفَّذةً على ما طلبتَ بالضبط: ظِلالٌ نظيفةٌ بلا ملامح، خمسُ لوحاتٍ لونيّةٍ ثابتة، بلا صورةٍ فوتوغرافيّةٍ توحي بشخصٍ حقيقيّ وبلا طابعٍ كرتونيّ. المتبقّي تنويعُ الظلال، وهو تحسينٌ صغير. <b>وأصلٌ ميّت</b>: <span class="mono">public/story-team.jpg</span> (٩٩ ك.ب) لا يُشار إليه في المشروع كلِّه.</p>
+  </section>
+
+  <!-- ═══════════ ١٠ ═══════════ -->
+  <section id="mandate">
+    <div class="sec-head"><span class="sec-num">١٠</span><h2>التفويضُ الصريح — ولماذا أوقفتُه بشرطك أنت</h2></div>
+    <p class="sec-sub">فوّضتَني فتحَ شعبةٍ لكلّ دورةٍ للفصل القادم، وجعلتَني صاحبَ القرار الأخير فيه — بشرطَين. وفحصتُ الشرطَين قبل التشغيل كما أمرت.</p>
+
+    <div class="verdict warnbar">
+      <p><strong>الشرط (ب) سقط.</strong> قرأتُ الإجراءَ الذي كنتُ سأستعمله (<span class="mono">openAllCohorts</span>) على <span class="mono">main</span> اليوم، فإذا هو يُنشئ الشعبةَ مباشرةً بحالة <span class="mono">open</span> و<span class="mono">registrationOpen: true</span> و<span class="mono">financialReady: true</span> — <strong>بلا مدرّب، وبلا جدولِ جلسات، وبلا خطّةِ تسليم، ومتخطّيا الشروطَ الستّةَ كلَّها</strong>. وكلُّها بتاريخِ بدءٍ واحدٍ لثمانين شعبة، بتوقيت عمّان لا الرياض.</p>
+      <p>فتشغيلُه على نطاقٍ واسعٍ اليومَ يعني بالضبط ما حذّرتَ منه: <strong>مقاعدُ تُباع في شعبٍ لا مدرّبَ لها ولا جلسة.</strong> وأنت من كتب الشرط، فالوقوفُ عنده تنفيذٌ لتفويضك لا مخالفةٌ له.</p>
+    </div>
+
+    <div class="col">
+      <p><strong>والشرط (أ) فحصتُه كذلك</strong>، وسألتُ ما طلبتَ حرفيّا: ماذا يرى الطالبُ حين يفتح وحدةً بلا متن اليوم؟ الجواب: <strong>ليست شاشةً فارغةً ولا تخطّيا صامتا — بل أسوأُ منهما.</strong> يرى صفحةَ وحدةٍ كاملةً بشريط تقدّمٍ يقول «خطوة ١ من ١»، وخطوةً واحدةً اسمها «التطبيق» لا شيءَ فيها. أي أنّ الوحدةَ تبدو <em>قابلةً للإنهاء</em> وهي خاوية.</p>
+      <p>و٣٠٨ وحداتٍ من ٤٠٤ بلا متنٍ اليوم (٢٤٪ مؤلَّفة). ففتحُ ثمانين شعبةً الآن يعني بيعَ مقاعدَ في هذه الحالة بالذات.</p>
+      <p><strong>وما يجعل التفويضَ قابلا للتنفيذ خلال أيّام</strong>: طلبُ السحب ٢٤ — وهو مفتوحٌ وفحصُه أخضر — يُعيد كتابة الإجراء نفسِه: يهيّئ ما يستطيع (يُنشئ الشعبةَ مسوّدةً بسعرها وسعتها، <strong>ويولّد جلساتِها</strong>، <strong>ويكتب خطّةً أساسيّة</strong>) ثمّ يمرّ بالبوّابة نفسِها التي يمرّ بها الزرُّ المفرد. فما استوفى فُتح، وما نقصه مدرّبٌ بقي مسوّدةً <strong>ونقصُه مكتوبٌ في صفّه</strong>. وهذا هو الفرقُ بين «شعبةٌ تُفتح مبكّرا بشفافيّة» و«طالبٌ دفع فوجد فراغا».</p>
+      <p style="margin-bottom:0"><strong>فالتسلسل الذي أوصي به:</strong> يُدمج طلبُ السحب ٢٤ ← تُضاف حالةُ «قيد التأليف» الصادقةُ للوحدة بلا متن ← يُفتح الفصلُ كلُّه بأمرٍ واحد، والشعبُ بلا متنٍ تُعرض <strong>«تُفتح للحجز — يبدأ التسليم في نوفمبر»</strong> لا تسجيلا فوريّا لمحتوًى فارغ. وحينها أنفّذ التفويضَ بلا رجوعٍ إليك، كما اتّفقنا.</p>
+    </div>
+
+    <p class="cap" style="margin-top:18px"><b>وأمّا حسابُ <span class="mono">suhaib@wajeez.co</span></b> — الآليّةُ موجودةٌ وجاهزة (<span class="mono">npm run promote:super-admin</span>، وإنشاءُ الحسابات من لوحة المستخدمين مع دعوةٍ بالبريد). لكنّ هذه الجلسةَ <strong>بلا اتّصالٍ بقاعدة الإنتاج</strong>، فلا يمكن التحقّقُ من وجوده ولا إنشاؤه من هنا. وهو أمرٌ واحدٌ يُشغَّل على الخادم في دقيقة.</p>
+  </section>
+
+  <!-- ═══════════ ١١ ═══════════ -->
+  <section id="plan">
+    <div class="sec-head"><span class="sec-num">١١</span><h2>الخطّةُ بمراحلها</h2></div>
+    <p class="sec-sub">لكلّ مرحلةٍ سببُ ترتيبها. والقاعدةُ الحاكمة: <strong>لا تُجمَّل شاشةٌ تكذب، ولا يُبسَّط مسارٌ مقطوع.</strong></p>
+
+    <div class="phase">
+      <div class="phase-h"><span class="id">المرحلة ٠</span><h3>يومٌ واحد — تُخرج قيمةً محبوسةً بلا بناءِ شيءٍ جديد</h3><span class="cost">لا تنتظر أحدا</span></div>
+      <p class="why">ستّةُ بنودٍ مجموعُها ساعاتٌ، وأثرُها أكبرُ من أيّ إعادةِ تصميم. وأوّلُها يحسم صدقَ كلِّ حكمٍ تصميميٍّ تالٍ.</p>
+      <ul class="tick">
+        <li><strong>أعِد ملفَّ النشر المحذوف</strong> (أو سكربتا واحدا على الخادم يجمع الأوامر الخمسة ومنها إعادةُ تشغيل عمليّة Node). هذا وحدَه يُنهي «لماذا أرى نسخةً قديمة».</li>
+        <li><strong>ادمج طلبَ السحب ٢٤</strong> — فحصُه أخضر، ويفتح خمسةَ مساراتٍ مقفلةٍ اليوم.</li>
+        <li>اضبط <span class="mono">VITE_SITE_ORIGIN</span> و<span class="mono">APP_URL</span> في بيئة البناء — بدونهما تسقط روابطُ البريد والعودةُ بعد الدفع إلى <span class="mono">localhost</span>.</li>
+        <li>مرّر عنوانَ الموقع إلى خدمة التقويم فتتوقّف دعواتُ الاجتماعات عن الإشارة إلى نطاقٍ ميّت.</li>
+        <li>ارفع أرضيّةَ الخطّ من ١١ إلى ١٣ بكسل في شاشات المتعلّم — <strong>أكبرُ أثرٍ بصريٍّ في هذا التقرير لأقلّ كلفة</strong>.</li>
+        <li>احذف <span class="mono">public/story-team.jpg</span>، وأرشِف الفروعَ الأربعةَ الميّتة.</li>
+      </ul>
+      <p class="risk"><b>الخطر</b> — لا يُذكر. لا شيءَ هنا يمسّ منطقَ عملٍ ولا بيانات.</p>
+    </div>
+
+    <div class="phase">
+      <div class="phase-h"><span class="id">المرحلة ١</span><h3>أسبوع — الشاشاتُ تصدق قبل أن تُجمَّل</h3><span class="cost">لا تنتظر أحدا</span></div>
+      <p class="why">شاشةٌ جميلةٌ تقول للطالب شيئا مخالفا لما فعله أسوأُ من شاشةٍ عاديّةٍ تصدق. وهذه كلُّها أعطابُ صدقٍ يراها المستخدمُ اليوم.</p>
+      <ul class="tick">
+        <li>أصلح دوّامةَ لوحة الطالب اللانهائيّة: حالةُ فشلٍ صريحةٌ وزرُّ إعادة.</li>
+        <li>أعد كتابة «حسابك جاهز — بقيت أول شعبة» على المسار الحقيقيّ (شراءٌ مباشر)، واجعلها تعرف من دفع وينتظر تسويةً فلا تقول له «ابدأ» وهو بدأ.</li>
+        <li>عمِّم <span class="mono">EmptyState</span> على الـ٤٥ موضعا — <strong>هذه أوّلُ شاشةٍ سيراها كلُّ حسابٍ بعد المسح</strong>.</li>
+        <li>أطلِق حدثَي <span class="mono">gate_viewed</span> و<span class="mono">result_teaser_viewed</span>، وحدثَ بدءِ الشراء، وحدثَ نجاحِ الدفع على الخادم — فيصير تقريرُ القمع يقول رقما بدل صفر.</li>
+        <li>وحِّد المواضعَ الاثنَي عشرَ الشاردةَ في الأرقام والتواريخ (وأخطرُها الأربعةُ التي قد تعرض تاريخا هجريّا).</li>
+      </ul>
+      <p class="risk"><b>الخطر</b> — منخفض · <b>الأثر</b> — يُنهي شكواك الأولى من جذرها، ويُنهي «لا نعرف أين نخسرهم».</p>
+    </div>
+
+    <div class="phase">
+      <div class="phase-h"><span class="id">المرحلة ٢</span><h3>أسبوعان — نظامُ التصميم الواحد</h3><span class="cost">قرارُك في الاتّجاه البصريّ</span></div>
+      <p class="why">هذه هي الوحيدةُ التي تجيب شكواك «التصاميم لم تتغيّر»: <strong>تغيّر الأربعةَ دفعةً واحدة</strong>. وتُنفَّذ بعد المرحلة ١ لا قبلها.</p>
+      <ul class="tick">
+        <li>ابنِ عشرةَ مكوّناتٍ مشتركةٍ تغطّي ٩٠٪ ممّا يُرسم اليوم: بطاقة · صفُّ قائمة · جدول · حقل · وسم حالة · شريط أدوات · مطويّة · نافذة تأكيد · حالة فراغ · حالة فشل.</li>
+        <li>حوّل الشاشات إليها منصّةً منصّة، بدءا بالمتعلّم ثمّ المدرّب — واحذف الصيغَ الـ٧٥٣ كلَّما استُبدلت.</li>
+        <li>ثبّت سلّم خطٍّ واحدا (١٣ · ١٥ · ١٧ · ٢١ · ٢٨) وارتفاعَ سطرٍ يناسب العربيّة، واستضِف الخطَّ محلّيّا.</li>
+        <li>احرس القاعدة بفحصٍ آليّ: صنفُ حافّةٍ أو أرضيّةٍ جديدٌ خارج الرموز يوقف الدمج.</li>
+      </ul>
+      <p class="risk"><b>الخطر</b> — متوسّط في الحجم لا في المنطق: التغييرُ عرضٌ محضٌ ولا يمسّ خادما. والحارسُ الآليُّ هو ما يمنع عودةَ الفوضى بعد شهر.</p>
+    </div>
+
+    <div class="phase">
+      <div class="phase-h"><span class="id">المرحلة ٣</span><h3>أسبوعان — بوّابةُ المدرّب كما وصفتَها</h3><span class="cost">أولويّتك الأولى</span></div>
+      <p class="why">تُبنى بعد المرحلة ٠ لأنّ طلبَ السحب ٢٤ يفتح التأهيلَ والإسنادَ أصلا؛ وبعد المرحلة ٢ لتُبنى الشاشاتُ الجديدةُ بمكوّناتٍ موحّدةٍ لا بصيغةٍ رقم ٧٥٤.</p>
+      <ul class="tick">
+        <li><strong>انقل ما صرّح به عند التقديم إلى «دوراتٌ أنا مؤهَّلٌ لها»</strong> لحظةَ الاعتماد — وأظهرها للأدمن في شاشة التعيين، وميّز التعيينَ خارجها بأنّه قرارٌ صريحٌ مرئيّ.</li>
+        <li>افتح للمدرّب إضافةَ دوراتٍ إلى مؤهّلاته بنفسه (إعلانُ تأهّلٍ لا تعيين)، وسيرتَه الذاتيّةَ يستبدلها، ومراجعَه يضيفها، ونبذتَه يكتبها بعدّادِ أحرفٍ ظاهرٍ مشتقٍّ من قياس الشاشة نفسِها.</li>
+        <li>أضف «اقتراحُ دورةٍ جديدة»: عنوان · وصف · أهداف · وحداتٌ مقترحة ← تصل الإدارةَ مقترَحا لا دورةً منشورة، بثلاثة مصائر (رفض · تعديل · اعتماد يضيفها للكتالوج).</li>
+        <li>أعد بناء «طلبتي» صفحةَ تدريسٍ لا جدولَ إدارة (النموذجُ أعلاه)، وأظهر مستشارَ كلّ طالبٍ مجموعا لا مكرّرا، وافتح قناةَ مراسلةٍ بين المدرّب والمستشار.</li>
+        <li>أضف قناةَ اقتراحاتٍ واحدةً لها حالةٌ ظاهرة: وصل · قيد النظر · رُدَّ عليه.</li>
+      </ul>
+      <p class="risk"><b>الخطر</b> — منخفض · <b>الأثر</b> — هذه هي المنصّةُ التي «فيها ما يلزمه هو فقط».</p>
+    </div>
+
+    <div class="phase">
+      <div class="phase-h"><span class="id">المرحلة ٤</span><h3>أسبوع — البريدُ يصل ويحمل هويّة</h3><span class="cost">لا تنتظر أحدا</span></div>
+      <p class="why">تُنفَّذ قبل أيّ حملةِ تسجيل: كلُّ ريالٍ تنفقه على جلب زائرٍ يمرّ برسالةِ توثيقٍ نصٍّ خامّ اليوم.</p>
+      <ul class="tick">
+        <li>قالبٌ أساسيٌّ واحدٌ (النموذجُ في القسم ٥) يمرّر <span class="mono">html</span> مع <span class="mono">text</span>، فتتفرّع منه كلُّ الرسائل بلا إعادةِ تصميمٍ لكلٍّ منها.</li>
+        <li><strong>حوّل ستّةَ إشعاراتٍ إلى قناة البريد</strong>: إيصالُ الشراء · تأكيدُ التسجيل · تذكيرُ الجلسة · الشهادة · كشفُ المستحقّات · قرارُ طلب المتعلّم.</li>
+        <li>أضف حقولَ الضريبة وجهةِ الإصدار إلى الفاتورة قبل أوّل عمليّةِ بيعٍ حقيقيّة.</li>
+        <li>إمّا أن تُوصَل شاشةُ قوالب الإشعارات بمسار الإرسال فعلا، وإمّا أن تُحذف — فشاشةٌ تكذب أسوأُ من غيابها.</li>
+      </ul>
+      <p class="risk"><b>الخطر</b> — منخفض تقنيّا · <b>وعالٍ إن تأخّر</b>: كلُّ مشترٍ اليومَ لا يملك إيصالا.</p>
+    </div>
+
+    <div class="phase">
+      <div class="phase-h"><span class="id">المرحلة ٥</span><h3>ثلاثةُ أسابيع — الفصولُ والتقويم والكتالوج</h3><span class="cost">ترحيلٌ على قاعدةٍ حيّة</span></div>
+      <p class="why">أكبرُ بندٍ بنيويّ، ويجب أن يسبقه إصلاحُ فتح الشعب (المرحلة ٠) وإلّا بُني الفصلُ فوق إجراءٍ معطوب. وتوقيتُه ملائم: فصلُ نوفمبر يبدأ بعد أقلَّ من شهرين.</p>
+      <ul class="tick">
+        <li>أضف الفصلَ إلى نموذج البيانات وعمودَ المجال على الدورة — بدونهما لا يعمل مخطِّطُ تجنّب التعارض.</li>
+        <li>«افتح الفصل» إجراءٌ واحدٌ يمرّ بالشروط، بمعاينةٍ قبل التطبيق وتوزيعٍ للمواعيد على أشهر الفصل الثلاثة.</li>
+        <li>تقويمٌ موحّدٌ يراه الزائرُ والمسجَّل، ونافذةُ تسجيلٍ لكلّ فصلٍ بدل «سجّل الآن» الدائمة.</li>
+        <li><strong>بحثٌ يفهم العربيّة</strong>: تطبيعُ الهمزات والتاء المربوطة، وتجزئةُ الكلمات، وإسقاطُ «ال»، وتوسيعُ الحقول المبحوثة. <strong>قِستُه: من ١١ فشلا في ١٢ إلى ٤ — ثلاثةُ أضعافٍ بخمسةَ عشرَ سطرا.</strong> والأربعةُ الباقيةُ تحتاج جدولَ مرادفاتٍ صغيرا.</li>
+      </ul>
+      <p class="risk"><b>الخطر</b> — متوسّط: ترحيلٌ يُملأ بلا فقدِ بيانات، والمخطِّطُ بمعاينةٍ وتثبيتٍ بشريٍّ لا تطبيقٍ صامت.</p>
+    </div>
+
+    <div class="phase">
+      <div class="phase-h"><span class="id">المرحلة ٦</span><h3>بعد النسخ الاحتياطيّة المحقَّقة — إعادةُ الضبط</h3><span class="cost">لا رجعةَ فيه</span></div>
+      <p class="why">طلبتَ المسحَ لتتحقّق من الرحلات بحساباتٍ نظيفة. والتحقّقُ بحساباتٍ نظيفةٍ من سلسلةٍ مقطوعةٍ يفشل في الخطوة الثانية — فتُوصَل السلسلةُ أوّلا، ثمّ يُمسَح، فيكون المسحُ <strong>اختبارَ قبولٍ لا اكتشافَ أعطاب</strong>.</p>
+      <ul class="tick">
+        <li>استعِد نسخةً احتياطيّةً فعليّا كاختبار — لا افتراضَ وجودها. <strong>شرطٌ لا يُتجاوَز.</strong></li>
+        <li>«إعادةُ ضبط الحسابات» للسوبر أدمن وحدَه: معاينةٌ بالأعداد ← تأكيدٌ مزدوجٌ بكتابة العدد وسببٍ ← سجلُّ أثرٍ يُكتب قبل الحذف. ولا تمسّ متونا ولا دوراتٍ ولا محرّكَ تشخيص.</li>
+        <li>ثمّ امشِ الرحلاتِ الثلاثَ بحساباتٍ جديدةٍ حقيقيّة، وكلُّ خطوةٍ تفشل أو تبدو معقّدةً تُضاف عطبا مؤكّدا لا ملاحظةً عابرة.</li>
+      </ul>
+      <p class="risk"><b>الخطر</b> — الأعلى في القائمة كلِّها. ولا يُنفَّذ على الإنتاج إلّا بكلمة «ارفع».</p>
+    </div>
+  </section>
+
+  <!-- ═══════════ ١٢ ═══════════ -->
+  <section id="start">
+    <div class="sec-head"><span class="sec-num">١٢</span><h2>التوصية — من أين نبدأ، وأين تنتهي هذه الدفعة</h2></div>
+
+    <div class="verdict">
+      <p style="font-family:var(--display);font-weight:800;font-size:1.1rem;margin-bottom:12px">ابدأ بالمرحلة ٠ اليوم، وانتهِ عند نهاية المرحلة ٣ — بوّابةُ المدرّب.</p>
+      <p><strong>ولماذا هذا الحدُّ بالضبط:</strong></p>
+      <p>١ · <strong>المرحلةُ ٠ تكشف ما إذا كانت المشكلةُ موجودةً أصلا.</strong> نصفُ ما اشتكيتَ منه قد يكون مبنيّا في <span class="mono">main</span> ولم يصل خادمَك قطّ. وإعادةُ ملفِّ النشر ودمجُ طلب السحب ٢٤ يستغرقان ساعاتٍ ويغيّران ما تراه على شاشتك فورا. <strong>لا شيءَ في هذا التقرير أعلى عائدا على ساعةِ عمل.</strong></p>
+      <p>٢ · <strong>المرحلةُ ١ تجعل الشاشاتِ تصدق.</strong> ولا يصحّ أن أقترح عليك إعادةَ تصميمٍ قبل أن تتوقّف اللوحةُ عن الدوران إلى الأبد، وقبل أن تتوقّف عن وصف إجراءٍ لا وجودَ له.</p>
+      <p>٣ · <strong>والمرحلتان ٢ و٣ هما جوابُ شكواك مباشرةً.</strong> «التصاميم لم تتغيّر» جوابُها المكوّناتُ المشتركة لا ترقيعُ شاشة. و«صفحةُ المدرّب مختلفةٌ تماما عن الإدارة» جوابُها أن تتوقّف صفحتُه عن أن تكون — حرفيّا — صفحةَ الإدارة.</p>
+      <p style="margin-bottom:0">وقد قلتَ إنّ العملَ سيبدأ بالمدرّبين. فهذا الحدُّ يوصلك إلى مدرّبٍ يُعتمَد بنقرة، ويجد دوراتِه التي صرّح بها في انتظاره، ويضيف مؤهّلاته ومراجعَه ونبذتَه، ويقترح دورةً جديدة، ويرى طلبتَه بما ينتظر تدخّله هو.</p>
+    </div>
+
+    <h3 style="margin-top:32px">وأين لا أوصي بالبدء</h3>
+    <ul class="tick" style="margin-top:14px">
+      <li><strong>لا تبدأ بإعادة الضبط.</strong> ستمسح، ثمّ تنشئ حساباتٍ، ثمّ تكتشف أنّ الشعبةَ لا تُفتح والمدرّبَ لا يُؤهَّل — فتكون قد أنفقتَ المسحَ في اكتشاف أعطابٍ يعرفها هذا التقريرُ سلفا.</li>
+      <li><strong>ولا بفتح شعب الفصل القادم</strong> قبل دمج طلب السحب ٢٤ — للسبب المفصَّل في القسم ١٠، وهو شرطُك أنت.</li>
+      <li><strong>ولا بمسارٍ جديدٍ ولا دورةٍ جديدة.</strong> ٧٦٪ ممّا تعرضه اليومَ بلا متن؛ وتوسيعُ الكتالوج قبل تأليف ما فيه يزيد الفجوةَ ولا يسدّها.</li>
+      <li><strong>ولا بربط Zoom</strong> قبل وصل المزوّد بمسار إنشاء الجلسة — ربطُ الحساب وحدَه لن يُنشئ اجتماعا واحدا.</li>
+    </ul>
+
+    <h3 style="margin-top:32px">ثلاثةُ قراراتٍ تنتظرك وحدَك</h3>
+    <div class="ledger" style="margin-top:16px">
+      <div class="entry"><span class="mark">أ</span><div><h4>النشرُ التلقائيّ — أتعيده؟</h4><p>قرارُك في ٥ سبتمبر كان «نعم»، ثمّ حُذف الملفُّ في الدمج نفسِه بعد ساعات. فأيُّهما تريد؟ وأيّا كان الجواب، لا يجوز أن يبقى النشرُ خمسةَ أوامرَ يدويّةٍ يسهل نسيانُ إحداها.</p></div></div>
+      <div class="entry"><span class="mark">ب</span><div><h4>العملةُ والفاتورةُ الضريبيّة</h4><p>دفترُ المنصّة اليومَ بالدولار وعنوانُك في الرياض. تحديدُ عملةِ البيع ومتطلّبات الفاتورة قرارٌ لك، وتُبنى عليه المرحلةُ ٤.</p></div></div>
+      <div class="entry"><span class="mark">ج</span><div><h4>أرقامُ المدرّبين الثلاثة</h4><p>أجرُ المقعد · الحدُّ الأدنى المضمون · وسعرُ الطالب القادم من رابط الدعوة. الأوّلان مبنيّان وينتظران قيمك، والثالثُ ينتظر الرابطَ نفسَه — ومعه قراران دقيقان: <strong>متى يُثبَّت الانتساب — عند التسجيل أم عند الدفع؟</strong> و<strong>كيف يُمنع أن يُنسَب للمدرّب طالبٌ كان قادما أصلا؟</strong></p></div></div>
+    </div>
+  </section>
+
+  <footer>
+    <p><strong>حدودُ هذا التقرير، كما ينبغي أن تُقال:</strong> لم يُفتح الموقعُ الحيّ ولم تُفحص قاعدةُ الإنتاج — لا اتّصالَ بهما من بيئة العمل. فكلُّ رقمٍ هنا من الشيفرة في <span class="mono">main</span>، أو من تشغيلٍ فعليٍّ للمحرّك والبناء والبحث في هذه الجلسة. ولم يُنفَّذ من هذا التقرير شيءٌ على الإنتاج، بما فيه التفويضُ المذكورُ في القسم ١٠ — وسببُ إيقافه مكتوبٌ هناك.</p>
+    <p style="margin:0">ويبني هذا التقريرُ على مراجعة ٥ سبتمبر (<span class="mono">docs/review-2026-09-05/</span>) ولا يكرّرها: ما ثبت إنجازُه منها قيل إنّه أُنجز، وما تغيّر صُحِّح، وما بقي أُعيد قياسُه اليوم لا نقلُه.</p>
+  </footer>
+</div>
+
+<script>
+  const MAILS = {
+    verify: {
+      body: `<h5>خطوةٌ واحدةٌ ويكتمل حسابك</h5>
+        <p>مرحبا نورة،</p>
+        <p>نحتاج أن نتأكّد أنّ هذا البريد يصلك — لأنّ فاتورتك ومواعيد جلساتك وشهادتك ستصل إليه.</p>
+        <p><a class="mail-cta" href="#">وثّق بريدي الآن</a></p>
+        <p style="font-size:.8rem;color:#63736F">الرابط صالحٌ ٤٨ ساعة. ويمكنك الدخول والتصفّح والتشخيص من غير هذه الخطوة — التوثيقُ مطلوبٌ للشراء والشهادة فقط.</p>`,
+      foot: `أُرسلت من أكاديمية وجيز · الرياض<br>لم تنشئ هذا الحساب؟ تجاهل الرسالة ولن يحدث شيء. · <a href="#">تواصل معنا</a>`
+    },
+    receipt: {
+      body: `<h5>إيصالُ شرائك · WJ-INV-2026-00418</h5>
+        <p>وصلتنا دفعتك، ومقعدك مفتوحٌ الآن. هذا إيصالك — احتفظ به.</p>
+        <div class="mail-rule"></div>
+        <div class="mail-line"><span>مسار «قيادةُ فريقٍ لأوّل مرّة»</span><b>٩٦٠٫٠٠</b></div>
+        <div class="mail-line"><span>٤ دورات · شعبةُ نوفمبر · تبدأ ٢ نوفمبر ٢٠٢٦</span><b style="color:#63736F;font-weight:400">—</b></div>
+        <div class="mail-line"><span>خصمُ الحزمة</span><b>٩٦٫٠٠−</b></div>
+        <div class="mail-line"><span>ضريبةُ القيمة المضافة ١٥٪</span><b>١٢٩٫٦٠</b></div>
+        <div class="mail-total"><span>الإجمالي المدفوع</span><span>٩٩٣٫٦٠ ر.س</span></div>
+        <div class="mail-rule"></div>
+        <p style="font-size:.82rem">التاريخ: ٦ سبتمبر ٢٠٢٦ · طريقةُ الدفع: بطاقةٌ تنتهي ٤٢٩١ · المرجع: <span style="font-family:monospace;direction:ltr;display:inline-block">MYS-8841-QK</span></p>
+        <p><a class="mail-cta" href="#">افتح شعبتك</a></p>`,
+      foot: `أكاديمية وجيز · الرياض — حي الياسمين · الرقمُ الضريبيّ: ٣xxxxxxxxxxxxx3<br>سياسةُ الاسترداد منشورةٌ على <a href="#">صفحة الاسترداد</a> · <a href="#">فواتيري كلُّها</a>`
+    },
+    cert: {
+      body: `<div style="text-align:center"><span class="seal">مُثبَت<br>٢٠٢٦</span></div>
+        <h5 style="text-align:center">أنجزتِه — وهذه شهادتك</h5>
+        <p style="text-align:center">نورة، أنهيتِ «قيادةُ فريقٍ لأوّل مرّة» بمشروعٍ راجعه مدرّبك بيده. وهذا ليس حضورا سُجِّل — بل عملٌ قُيِّم.</p>
+        <div class="mail-rule"></div>
+        <div class="mail-line"><span>الوحداتُ المكتملة</span><b>١٢ من ١٢</b></div>
+        <div class="mail-line"><span>مشروعُ التخرّج</span><b>مُقيَّمٌ ومقبول</b></div>
+        <div class="mail-line"><span>رقمُ التحقّق</span><b style="font-family:monospace;direction:ltr;display:inline-block">WJ-C-7K42-90</b></div>
+        <div class="mail-rule"></div>
+        <p style="text-align:center"><a class="mail-cta" href="#">حمّل شهادتك</a></p>
+        <p style="font-size:.8rem;color:#63736F;text-align:center">ولأيّ جهةٍ تسأل: صفحةُ تحقّقٍ عامّةٌ تؤكّد الشهادةَ برقمها بلا حاجةٍ إلى حساب.</p>`,
+      foot: `أكاديمية وجيز · نقيس ما أنجزت، لا ما شاهدت<br><a href="#">تحقّق من هذه الشهادة</a> · <a href="#">شاركها على LinkedIn</a>`
+    }
+  };
+  const bodyEl = document.getElementById('mail-body');
+  const footEl = document.getElementById('mail-foot');
+  function showMail(key){
+    const m = MAILS[key]; if(!m) return;
+    bodyEl.innerHTML = m.body; footEl.innerHTML = m.foot;
+    document.querySelectorAll('.mail-tab').forEach(function(b){
+      b.setAttribute('aria-selected', String(b.dataset.mail === key));
+    });
+  }
+  document.querySelectorAll('.mail-tab').forEach(function(b){
+    b.addEventListener('click', function(){ showMail(b.dataset.mail); });
+  });
+  showMail('verify');
+</script>
