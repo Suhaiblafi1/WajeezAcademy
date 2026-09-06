@@ -3,10 +3,11 @@
 
 import { useState } from "react";
 import { Loader2, MessageSquareHeart, Send } from "lucide-react";
-import { Button } from "@/components/ui/legacy-button";
 import { apiPost, ApiError } from "@/services/api";
 import { track } from "@/services/analytics";
 
+import Button from "@/components/ui/Button";
+import { Panel } from "@/components/ui/Surface";
 type Verdict = "yes" | "somewhat" | "no";
 
 const VERDICTS: { id: Verdict; label: string }[] = [
@@ -43,7 +44,7 @@ export default function ResultFeedback({ sessionId, pathwayId }: { sessionId: st
   };
 
   return (
-    <section className="mt-10 rounded-3xl border border-teal/40 bg-teal/[0.05] p-6 text-center md:p-8 print:hidden">
+    <Panel as="section" tone="accent" className="mt-10 text-center md:p-8 print:hidden">
       <span className="mx-auto grid h-11 w-11 place-items-center rounded-2xl bg-teal/15">
         <MessageSquareHeart className="h-5 w-5 text-teal-light-ink" />
       </span>
@@ -93,7 +94,7 @@ export default function ResultFeedback({ sessionId, pathwayId }: { sessionId: st
             </p>
           )}
 
-          <Button
+          <Button tone="confirm"
             onClick={submit}
             disabled={!verdict || busy}
             className="mt-4 h-11 rounded-full bg-teal px-8 font-black text-on-teal hover:bg-teal/90 disabled:opacity-40"
@@ -103,6 +104,6 @@ export default function ResultFeedback({ sessionId, pathwayId }: { sessionId: st
           </Button>
         </>
       )}
-    </section>
+    </Panel>
   );
 }

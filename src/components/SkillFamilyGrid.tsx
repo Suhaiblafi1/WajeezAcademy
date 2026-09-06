@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Gauge, ArrowLeft, SkipForward } from "lucide-react";
-import { Button } from "@/components/ui/legacy-button";
 
+import Button from "@/components/ui/Button";
+import { Card } from "@/components/ui/Surface";
 /* شبكة تقييم عائلات المهارات — شاشة واحدة لا أسئلة متتالية.
 
    لماذا شاشة واحدة: ست عائلات = ستة أسئلة لو فُرِّقت، وقد أمضينا الجهد كله في
@@ -64,10 +65,7 @@ export default function SkillFamilyGrid({ families, onDone, onSkip }: Props) {
         {families.map((f) => {
           const cur = ratings[f.family];
           return (
-            <li
-              key={f.family}
-              className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 md:p-5"
-            >
+            <Card as="li" key={f.family} className="md:p-5">
               <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                 <h3 className="text-base font-black">{f.label_ar}</h3>
                 <span className="text-micro text-muted-foreground">
@@ -108,13 +106,13 @@ export default function SkillFamilyGrid({ families, onDone, onSkip }: Props) {
                   );
                 })}
               </div>
-            </li>
+            </Card>
           );
         })}
       </ul>
 
       <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
-        <Button
+        <Button tone="confirm"
           size="lg"
           onClick={() => onDone(ratings)}
           className="h-12 rounded-full bg-teal px-8 font-black text-on-teal hover:bg-teal-deep"
