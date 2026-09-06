@@ -559,7 +559,7 @@ export default function PathwayPage() {
               <div className="mt-4 grid gap-3.5 md:grid-cols-2">
                 {/* دورة أو أكثر — اختيار حر */}
                 <Inset className="flex flex-col">
-                  <p className="text-[13px] font-black">دورة أو أكثر من المسار</p>
+                  <p className="text-sm font-black">دورة أو أكثر من المسار</p>
                   <p className="mt-0.5 text-micro text-muted-foreground">اختر ما تحتاجه — ورسومك مجموعها فقط</p>
                   <div className="mt-3 space-y-1.5">
                     {buyableCourses.map((c) => {
@@ -584,14 +584,14 @@ export default function PathwayPage() {
                               <CheckCircle2 className="h-3.5 w-3.5" />
                             </span>
                             <span className="min-w-0">
-                              <span className="block text-[12.5px] font-bold leading-snug">{c.name}</span>
+                              <span className="block text-xs font-bold leading-snug">{c.name}</span>
                               <span className="text-micro text-muted-foreground">
                                 {c.weeks} {c.weeks === 1 ? "أسبوع" : "أسابيع"} · {courseTrainer(c).name}
                               </span>
                             </span>
                           </span>
                           {/* سعر الدورة من شعبتها لا من تقدير — وبلا شعبة لا رقم */}
-                          <span className="shrink-0 text-[13px] font-black text-foreground">
+                          <span className="shrink-0 text-sm font-black text-foreground">
                             {prices.get(c.id) ? (
                               <span dir="ltr">{formatCohortPrice(prices.get(c.id)!)}</span>
                             ) : (
@@ -637,7 +637,7 @@ export default function PathwayPage() {
                     }
                     disabled={picked.length === 0}
                     variant="outline"
-                    className="mt-3 h-10 rounded-full border-teal/60 bg-transparent text-[13px] font-black text-teal-light-ink hover:bg-teal/10 hover:text-teal-light-ink disabled:opacity-40"
+                    className="mt-3 h-10 rounded-full border-teal/60 bg-transparent text-sm font-black text-teal-light-ink hover:bg-teal/10 hover:text-teal-light-ink disabled:opacity-40"
                   >
                     {picked.length === 0
                       ? "اختر دورة واحدة على الأقل"
@@ -649,7 +649,7 @@ export default function PathwayPage() {
                 {/* المسار كاملا */}
                 <Card tone="warn" className="relative flex flex-col">
                   <span className="absolute left-3 top-3.5 rounded-full bg-gold/20 px-2 py-0.5 text-micro font-black text-gold-ink">الأوفر</span>
-                  <p className="text-[13px] font-black">المسار كاملا</p>
+                  <p className="text-sm font-black">المسار كاملا</p>
                   <p className="mt-0.5 text-micro text-muted-foreground">كل الدورات + التشخيص + المنظومة أدناه</p>
                   {/* السعرُ كاملا لا «تبدأ من» — والرقمُ المعروض بعد خصم الباقة
                       فعلا (`offer.bundleMaxPct`)، لا وعدٌ منفصلٌ عن الفاتورة:
@@ -730,7 +730,7 @@ export default function PathwayPage() {
                   <Button tone="confirm"
                     onClick={() => startCheckout({ title: fullPlanTitleAr, amount: 0, kind: "pathway" })}
                     disabled={syncing}
-                    className="mt-3.5 h-10 rounded-full bg-gold text-[13px] font-black text-on-gold hover:bg-gold/90 disabled:opacity-60"
+                    className="mt-3.5 h-10 rounded-full bg-gold text-sm font-black text-on-gold hover:bg-gold/90 disabled:opacity-60"
                   >
                     <CalendarDays className="ml-1.5 h-3.5 w-3.5" />
                     {syncing ? "نحفظ خطّتك…" : "اشترِ المسار كاملا"}
@@ -790,7 +790,7 @@ export default function PathwayPage() {
                     <b.icon className="h-3.5 w-3.5 text-[#6EC7D1]" />
                   </span>
                   <div className="min-w-0">
-                    <p className="text-[13px] font-black leading-snug">{b.t}</p>
+                    <p className="text-sm font-black leading-snug">{b.t}</p>
                     <p className="mt-0.5 text-micro leading-relaxed text-muted-foreground">{b.d}</p>
                   </div>
                 </Inset>

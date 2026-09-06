@@ -124,7 +124,7 @@ export default function SystemHealth() {
                           </p>
                           <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-micro font-black ${t.chip}`}>{t.labelAr}</span>
                         </div>
-                        <p className="mt-2 text-[13px] font-bold leading-6 text-foreground">{item.valueAr}</p>
+                        <p className="mt-2 text-sm font-bold leading-6 text-foreground">{item.valueAr}</p>
                         <p className="mt-1.5 text-micro leading-5 text-muted-foreground">{item.meaningAr}</p>
                         {item.actionAr && (
                           <Inset as="p" className="mt-2 px-3 py-2 text-micro leading-5 text-foreground">

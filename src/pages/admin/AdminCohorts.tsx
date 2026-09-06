@@ -212,7 +212,7 @@ export default function AdminCohorts() {
                 <p className="mt-0.5 text-micro text-muted-foreground">
                   {r.session.cohort.title} · اقترحه {r.requester.displayName}
                 </p>
-                <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-1.5 text-[11.5px]">
+                <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-1.5 text-xs">
                   <span className="text-muted-foreground">الموعد الآن: <span className="text-foreground">{fmtDateTimeAr(r.currentStartsAt)}</span></span>
                   <span className="text-gold-ink">المقترح: <span className="font-bold">{fmtDateTimeAr(r.proposedStartsAt)}</span></span>
                 </div>

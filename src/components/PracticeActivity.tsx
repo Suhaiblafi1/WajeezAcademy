@@ -100,7 +100,7 @@ export default function PracticeActivity({
                 ) : (
                   <Circle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/50" aria-hidden="true" />
                 )}
-                <span className={`text-[13px] leading-6 ${isDone ? "text-muted-foreground line-through" : ""}`}>
+                <span className={`text-sm leading-6 ${isDone ? "text-muted-foreground line-through" : ""}`}>
                   {s.textAr}
                 </span>
                 <span className="ms-auto shrink-0 text-micro tabular-nums text-muted-foreground">
@@ -112,7 +112,7 @@ export default function PracticeActivity({
         })}
       </ol>
 
-      <dl className="mt-4 space-y-3 text-[13px] leading-6">
+      <dl className="mt-4 space-y-3 text-sm leading-6">
         <Card>
           <dt className="flex items-center gap-1.5 text-micro font-black text-teal-light-ink">
             <FileUp className="h-3.5 w-3.5" aria-hidden="true" />

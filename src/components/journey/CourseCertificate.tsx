@@ -60,7 +60,7 @@ export default function CourseCertificate({
         <span className="flex items-center gap-1.5 text-xs font-black text-gold-ink">
           <Award className="h-4 w-4" /> صدرت شهادتك
         </span>
-        <span dir="ltr" className="min-w-0 flex-1 font-mono text-[11.5px] text-foreground">{issued.number}</span>
+        <span dir="ltr" className="min-w-0 flex-1 font-mono text-xs text-foreground">{issued.number}</span>
         <Link
           to={`/verify/${issued.number}`}
           className="shrink-0 text-micro font-bold text-teal-light-ink underline underline-offset-4"

@@ -475,7 +475,7 @@ function PlanRequest({ track, onDone }: { track: JourneyTrack; onDone: () => voi
             setBusy(false);
           }
         }}
-        disabled={busy} className="text-[12.5px] disabled:opacity-50">
+        disabled={busy} className="text-xs disabled:opacity-50">
         {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
         اطلب تسجيلك في {askable === 1 ? "دورتك المتاحة" : `دوراتك الـ${askable} المتاحة`}
       </Button>

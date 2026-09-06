@@ -78,7 +78,7 @@ export default function AdminTasks() {
               <span className="mr-2 rounded-full border border-red-400/40 px-2 py-0.5 text-micro font-bold text-red-300">عاجلة</span>
             )}
           </p>
-          {t.bodyAr && <p className="mt-1 text-[11.5px] leading-6 text-muted-foreground">{t.bodyAr}</p>}
+          {t.bodyAr && <p className="mt-1 text-xs leading-6 text-muted-foreground">{t.bodyAr}</p>}
           <p className="mt-1 text-micro text-muted-foreground">
             {showAssignee && t.assignee ? `${t.assignee.displayName} · ` : ""}
             {t.dueAt ? `الموعد ${fmtDate(new Date(t.dueAt))}` : "بلا موعد"}

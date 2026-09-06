@@ -145,7 +145,7 @@ function TrainerCoursesTab({ summary }: { summary?: TrainerSummary }) {
             : "—")}
         </div>
         {summary.nextSession && (
-          <Inset as="p" tone="accent" className="mt-3 px-3.5 py-2.5 text-[11.5px] leading-6 text-teal-light-ink">
+          <Inset as="p" tone="accent" className="mt-3 px-3.5 py-2.5 text-xs leading-6 text-teal-light-ink">
             أقرب جلسة: <b>{summary.nextSession.title}</b> — شعبة «{summary.nextSession.cohortTitle}» ·{" "}
             {fmtDateTime(new Date(summary.nextSession.startsAt))}
           </Inset>
@@ -361,7 +361,7 @@ export default function TrainerApplications() {
           && ["draft", "email_verification_pending", "rejected", "withdrawn"].includes(a.status) && (
           <details className="mb-4 rounded-2xl border border-red-500/25 bg-red-500/[0.05] p-4">
             <summary className="cursor-pointer text-xs font-black text-red-300">حذفٌ نهائيّ لهذا الطلب</summary>
-            <p className="mt-2 text-[11.5px] leading-6 text-foreground">
+            <p className="mt-2 text-xs leading-6 text-foreground">
               يُحذف الطلبُ ومستنداتُه ومراجعاتُه ولا يُستردّ. ويبقى أثرُ الحذف في سجلّ
               التدقيق: من حذف، ومتى، ولماذا. ولا يُحذف طلبُ من صار مدرّبا.
             </p>
@@ -558,7 +558,7 @@ export default function TrainerApplications() {
                   مطويّةٌ لا محذوفة: الطلباتُ العالقةُ في منتصفها تُكمَل منها. */}
               {detailed.length > 0 && (
                 <details className="mt-3 rounded-2xl border border-white/10 bg-white/[0.02] p-3">
-                  <summary className="cursor-pointer text-[11.5px] font-black text-muted-foreground">
+                  <summary className="cursor-pointer text-xs font-black text-muted-foreground">
                     خطواتٌ تفصيليّة ({detailed.length}) — اختياريّة
                   </summary>
                   <p className="mt-2 text-micro leading-5 text-muted-foreground">

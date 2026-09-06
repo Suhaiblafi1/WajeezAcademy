@@ -95,7 +95,7 @@ export default function LearnersPanel() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-[11.5px] text-muted-foreground">{SCOPE_NOTE[data.scope]}</p>
+        <p className="text-xs text-muted-foreground">{SCOPE_NOTE[data.scope]}</p>
         <form
           onSubmit={(e) => { e.preventDefault(); void load(q); }}
           className="flex items-center gap-2 rounded-xl border border-white/12 bg-white/[0.04] px-3 py-1.5"

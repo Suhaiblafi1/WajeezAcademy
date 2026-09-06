@@ -47,7 +47,7 @@ function CategoryFilter({
 
      و`-mx-5 px-5` تمدّ الشريطَ إلى حافّتي الشاشة داخل حاوية `px-5`: بلاها
      يبدو الزرُّ الأخير مقصوصا عند حدٍّ داخليٍّ لا يفهمه القارئ. */
-  const chip = 'inline-flex shrink-0 snap-start items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] font-semibold transition sm:px-4 sm:py-2 sm:text-sm'
+  const chip = 'inline-flex shrink-0 snap-start items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold transition sm:px-4 sm:py-2 sm:text-sm'
 
   return (
     <div

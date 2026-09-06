@@ -294,7 +294,7 @@ export default function BuyPanel({
                   <li key={line.courseId} className={`p-3 ${out ? "bg-white/[0.02]" : ""}`}>
                     <div className="flex items-start justify-between gap-3">
                       <span className="min-w-0">
-                        <span className={`block text-[13px] font-bold leading-snug ${out ? "text-muted-foreground" : ""}`}>{line.name}</span>
+                        <span className={`block text-sm font-bold leading-snug ${out ? "text-muted-foreground" : ""}`}>{line.name}</span>
                         <span className="mt-0.5 flex items-center gap-1 text-micro text-muted-foreground">
                           <CalendarDays className="h-3 w-3" /> {startsLabel(picked)}
                           {!out && picked.seatsLeft !== null && picked.seatsLeft <= 5 && (
