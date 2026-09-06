@@ -27,6 +27,18 @@
 /** النطاق الحيّ للموقع — يُعلن هنا مرة واحدة */
 export const CANONICAL_ORIGIN = 'https://www.wajeezacademy.com'
 
+/** نطاقُ البريد — نطاقُ الموقع بلا `www`. وهو **النطاقُ الذي يُوثَّق في
+    Resend**، ومزوّدُ البريد يرفض كلَّ رسالةٍ من سواه. */
+export const EMAIL_DOMAIN = CANONICAL_ORIGIN.replace(/^https?:\/\/(www\.)?/, '')
+
+/** بريدُ المُرسِل الافتراضيّ — يطابق `ACADEMY_EMAIL` على الخادم.
+
+    ⚠️ ويُشتقّ ولا يُكتب حرفا: كانت خانةُ «بريد المرسل» في شاشة التكاملات
+    تقترح `no-reply@wajeez.sa` — نطاقا ثالثا لا هو نطاقُ الموقع ولا النطاقُ
+    الموثَّق. ومن يتبع الاقتراحَ يضبط مُرسِلا يرفضه Resend، والرفضُ يُكتب في
+    صفّ الإشعار لا في شاشة: رسائلُ لا تصل وقناةٌ تبدو مفعَّلة. */
+export const DEFAULT_SENDER_EMAIL = `no-reply@${EMAIL_DOMAIN}`
+
 const isLocal = (host: string) =>
   host === 'localhost' || host === '127.0.0.1' || host.endsWith('.local')
 

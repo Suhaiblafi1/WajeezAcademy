@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { CANONICAL_ORIGIN, siteOrigin } from '../application/site/origin'
+import { CANONICAL_ORIGIN, DEFAULT_SENDER_EMAIL, EMAIL_DOMAIN, siteOrigin } from '../application/site/origin'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const read = (p: string) => readFileSync(join(root, p), 'utf8')
@@ -117,5 +117,31 @@ describe('نطاقُ المُرسِل في قالب الإنتاج', () => {
 
   it('ولا يُترك المفتاحُ مملوءا في قالبٍ يُرفع إلى Git', () => {
     expect(live, 'سرٌّ في المستودَع').toMatch(/^RESEND_API_KEY=\s*$/m)
+  })
+})
+
+/* ═══ بريدُ المُرسِل الافتراضيّ — مصدرٌ واحدٌ للواجهة والخادم ═══
+
+   كان في المستودَع ثلاثةُ نطاقاتٍ للمُرسِل: `wajeezacademy.com` في الشيفرة،
+   و`wajeez.co` في قالب الإنتاج، و`wajeez.sa` في اقتراحِ خانةِ الشاشة. وواحدٌ
+   منها فقط هو الموثَّق في Resend — والباقي يُرفض، والرفضُ يُكتب في صفّ
+   الإشعار لا في شاشة. */
+describe('بريدُ المُرسِل الافتراضيّ', () => {
+  it('يُشتقّ من النطاق الحيّ ولا يُكتب حرفا', () => {
+    expect(EMAIL_DOMAIN).toBe('wajeezacademy.com')
+    expect(DEFAULT_SENDER_EMAIL).toBe('no-reply@wajeezacademy.com')
+  })
+
+  it('ويطابق افتراضَ الخادم — فلا يفترق ما تقترحه الشاشةُ عمّا يرسله الخادم', () => {
+    const src = readFileSync(join(root, 'server/services/integrations.service.ts'), 'utf8')
+    const m = src.match(/ACADEMY_EMAIL_DOMAIN = '([^']+)'/)
+    expect(m, 'الخادمُ يعلن نطاقَ البريد').not.toBeNull()
+    expect(m![1]).toBe(EMAIL_DOMAIN)
+  })
+
+  it('ولا تقترح الشاشةُ نطاقا مكتوبا حرفا', () => {
+    const src = readFileSync(join(root, 'src/pages/admin/Integrations.tsx'), 'utf8')
+    expect(src, 'اقتراحٌ يُتَّبع فيُضبط مُرسِلٌ يرفضه المزوّد').not.toMatch(/placeholder="no-reply@/)
+    expect(src).toMatch(/DEFAULT_SENDER_EMAIL/)
   })
 })
