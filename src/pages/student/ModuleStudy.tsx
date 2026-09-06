@@ -170,6 +170,26 @@ export default function ModuleStudy() {
         </ol>
       </nav>
 
+      {/* ── وحدةٌ لم يُكتب متنُها بعد ──
+
+          ٣٠٨ وحداتٍ من ٤٠٤ بلا متنِ دراسةٍ ذاتيّة (والعنوانُ والمخرَجُ
+          والنشاطُ والمخرَجُ المطلوبُ مؤلَّفةٌ في الأربعِ مئةٍ كلِّها). فكان
+          المشغّلُ يُسقط خطوةَ الدرس صامتا ويهبط بالمتعلّم إلى «نشاطك
+          ومخرَجك» مباشرةً — **بلا كلمةٍ تقول لماذا**.
+
+          فيقرأ من دفع ثمنَ دورةٍ وحدةً من خطوةٍ واحدة، ويظنّ العطبَ في
+          حسابه أو في المنصّة. والحقيقةُ أبسطُ وأصدق: الوحدةُ تُدرَّس مباشرةً
+          مع مدرّبها، ومتنُها المكتوبُ قيد التأليف. **وقولُها خيرٌ من إخفائها.** */}
+      {lessonCount === 0 && (
+        <p className="mb-6 flex items-start gap-2 rounded-2xl border border-gold/30 bg-gold/[0.06] p-4 text-[12.5px] leading-7 text-gold-ink">
+          <BookOpen className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          <span>
+            متنُ هذه الوحدة المكتوب <b>قيد التأليف</b> — وهي تُدرَّس مع مدرّبك في جلستها.
+            ومخرَجُ الوحدة ونشاطُها والمخرَجُ المطلوبُ منك أدناه كما هي.
+          </span>
+        </p>
+      )}
+
       {step?.kind === "lesson" && (
         <article className="rounded-3xl border border-white/10 bg-white/[0.02] p-6 md:p-9">
           <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-bold text-teal-light-ink">
