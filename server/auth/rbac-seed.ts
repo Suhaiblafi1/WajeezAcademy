@@ -94,7 +94,7 @@ export async function seedRbac(prisma: PrismaClient): Promise<{ roles: number; p
    بزوال الدالّة، ويبقى الفحصُ صوابا: إقلاعُ الخادم بعد كلّ نشرةٍ لا يُنفق
    ٩٩ رحلةً على عملٍ تمّ.
 
-   والبذر أصلا يجري في النشر: `scripts/deploy-cloudways.sh` ينادي
+   والبذر أصلا يجري في النشر: `deploy/deploy.sh` ينادي
    `catalog:import` وهي تبذر. فنداؤه في مسار الطلب تكرارٌ لعملٍ تمّ.
 
    ولا يُحذف بلا بديل: لو نُشرت قاعدةٌ بلا بذرٍ لردّ الخادم ٤٠٣ على كلّ شيء.
@@ -102,7 +102,7 @@ export async function seedRbac(prisma: PrismaClient): Promise<{ roles: number; p
 
    وسحبُ المنحِ الزائد (انظر `seedRbac`) ليس من هذا الفحص: عدُّ الأدوار
    والصلاحيّات لا يكشف منحا زائدا. فمصدرُه البذرُ في النشر
-   (`scripts/deploy-cloudways.sh` → `catalog:import`) لا مسارُ الطلب — وهو
+   (`deploy/deploy.sh` → `catalog:import`) لا مسارُ الطلب — وهو
    الموضعُ الصحيح: مطابقةُ المصفوفة عملُ إصدارٍ لا عملُ كلّ إقلاع. */
 export async function ensureRbacSeeded(prisma: PrismaClient): Promise<{ seeded: boolean }> {
   try {
