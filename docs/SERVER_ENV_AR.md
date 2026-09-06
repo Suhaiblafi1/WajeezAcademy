@@ -153,7 +153,7 @@ curl -s https://www.wajeezacademy.com/api/version
 ## ٤) ⚠️ ما لا يُفعل — وإلّا انكسر النشر
 
 **لا تضع `NODE_ENV=production` في `.bashrc` ولا في `.profile` ولا في مُدخَلة
-cron التي تشغّل [`scripts/deploy-watch.sh`](../scripts/deploy-watch.sh).**
+cron التي تشغّل سكربتَ النشر.**
 
 سكربتُ النشر يشغّل `npm ci`، وهي مع `NODE_ENV=production` **تُسقط حزمَ
 التطوير** التي يحتاجها البناء (`tsc`، `vite`، `prisma`) — فيفشل كلُّ نشرة.
