@@ -19,6 +19,7 @@ import {
   runJob, sendSessionReminders, syncCohortStatuses,
 } from '../../worker/jobs'
 import { tick } from '../../worker/index'
+import { liveChannels } from '../../services/notification.service'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -64,6 +65,58 @@ describe('طابورُ الإشعارات يُفرَّغ', () => {
     expect(out.summaryAr).toBe('لا إشعارَ في الطابور')
     const after = await prisma.notification.findMany({ select: { id: true, status: true, attempts: true } })
     expect(after).toEqual(before)
+  })
+})
+
+/* ═══ القناةُ غيرُ الموصولة: الخطرُ الذي أبقى العاملَ متوقّفا ═══
+
+   `attemptSend` تُعلّم الصفَّ `failed` حين لا مزوّدَ لقناته، و
+   `dispatchQueuedNotifications` تختار `queued` وحدَها — فالصفُّ المحروق لا
+   يُعاد إليه أبدا، ويرتفع عدّادُه حتّى يموت عند الثالثة.
+
+   فلو شُغِّل العاملُ وقناةُ البريد مغلقة، احترق طابورُ البريد كلُّه في دورةٍ
+   واحدةٍ بلا رجعة: رسائلُ توثيقِ البريد ودعواتُ إنشاء الحساب ورسائلُ استعادة
+   كلمة السرّ — كلُّها تُعلَّم «فشلت» ولم يحاول أحدٌ إرسالَها. والتعافي يدويٌّ
+   صفّا صفّا من شاشة الإدارة.
+
+   وهذا ما يُقاس هنا. وهو حارسُ **غياب**: لو عاد الاختيارُ إلى كلّ الطابور لم
+   تحمرّ شاشةٌ ولم يسقط مسار — يُحرَق الطابورُ صامتا على الإنتاج. */
+describe('قناةٌ غيرُ موصولةٍ لا يُحرَق طابورُها', () => {
+  const KEY = 'RESEND_API_KEY'
+
+  it('لا تُعدّ قناةُ البريد موصولةً بلا مفتاح', async () => {
+    const had = process.env[KEY]
+    delete process.env[KEY]
+    expect(await liveChannels(prisma)).toEqual(['in_app'])
+    if (had !== undefined) process.env[KEY] = had
+  })
+
+  it('وتُعدّ موصولةً حين يُضبط المفتاح — فالحارسُ يرفع نفسَه بلا تدخّل', async () => {
+    const had = process.env[KEY]
+    process.env[KEY] = 're_test_key'
+    expect(await liveChannels(prisma)).toContain('email')
+    if (had === undefined) delete process.env[KEY]
+    else process.env[KEY] = had
+  })
+
+  it('ولا يُمَسّ صفُّ بريدٍ منتظرٌ وقناتُه مغلقة — يبقى `queued` بلا محاولة', async () => {
+    const had = process.env[KEY]
+    delete process.env[KEY]
+    const n = await prisma.notification.create({
+      data: { userId: learnerId, channel: 'email', title: 'توثيقُ بريد', body: 'نصّ', status: 'queued' },
+    })
+
+    /* دورتان لا واحدة: العطبُ تراكميٌّ — كلُّ دورةٍ ترفع العدّاد */
+    await dispatchQueuedNotifications(prisma)
+    const out = await dispatchQueuedNotifications(prisma)
+
+    const after = await prisma.notification.findUnique({ where: { id: n.id } })
+    expect(after?.status, 'حُرق صفُّ بريدٍ لم يحاول أحدٌ إرسالَه').toBe('queued')
+    expect(after?.attempts, 'ارتفع عدّادُ المحاولات بلا محاولة').toBe(0)
+    expect(out.summaryAr, 'ينتظر صامتا — ولا يُقال عددُه').toContain('ينتظر قناةً لم تُوصَل')
+
+    await prisma.notification.delete({ where: { id: n.id } })
+    if (had !== undefined) process.env[KEY] = had
   })
 })
 

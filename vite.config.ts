@@ -42,9 +42,14 @@ function killStaleApi(): void {
    النطاق النهائي دائما، والموقع في فترة تجريبية على نطاق آخر: canonical إلى
    عنوان لا يستجيب، ومعاينةُ رابطٍ يُشارَك تفشل.
 
-   الترتيب: VITE_SITE_ORIGIN إن ضُبط، ثم نطاق إنتاج Vercel (يوفّره البناء
-   نفسه)، ثم النطاق الحيّ. ولا يُترك %VITE_SITE_ORIGIN% حرفيا في أي حال —
-   وسمٌ نصفُ مستبدَل أسوأ من نطاق خاطئ.
+   الترتيب: VITE_SITE_ORIGIN إن ضُبط، ثم النطاق الحيّ. ولا يُترك
+   %VITE_SITE_ORIGIN% حرفيا في أي حال — وسمٌ نصفُ مستبدَل أسوأ من نطاق خاطئ.
+
+   وكان بينهما ثالثٌ: `VERCEL_PROJECT_PRODUCTION_URL` يحقنه البناءُ على
+   Vercel. فلمّا انتقلت المنصّةُ عن Vercel لم يعد يُحقَن أبدا — حلقةٌ ميّتةٌ في
+   السلسلة توهم القارئ أنّ للنطاق مصدرا ثالثا، فحُذفت. والبديلُ عندنا أن
+   يُمرَّر `VITE_SITE_ORIGIN` وسيطَ بناءٍ إلى `Dockerfile` — ولا يُمرَّر اليوم،
+   فيقع البناءُ على النطاق الحيّ المكتوب أدناه (`docs/DEPLOYMENT.md` §٣).
 
    والقيمةُ مكرّرةٌ هنا عمدا: هذا الملفّ يعمل في Node قبل أن تُترجَم شيفرةُ
    التطبيق، فلا يستورد من `src/`. ولذلك يحرس `src/tests/site-origin.test.ts`
@@ -54,7 +59,6 @@ const CANONICAL_ORIGIN = "https://www.wajeezacademy.com"
 function siteOriginHtml(): Plugin {
   const origin = (
     process.env.VITE_SITE_ORIGIN ||
-    (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "") ||
     CANONICAL_ORIGIN
   ).replace(/\/+$/, "")
   if (!/^https?:\/\/[^/\s]+$/.test(origin)) {

@@ -4,7 +4,7 @@
 وأين يُوضع، وكيف تتأكّد أنه اشتغل في دقيقة.
 
 **قاعدة واحدة لا تُكسر:** لا مفتاح سرّي في المستودع أبدا. مكانه متغيّرات
-البيئة على Cloudways، أو شاشة `/admin/integrations`. ولا ترسل لي مفتاحا حيّا في
+البيئة في `deploy/.env.production` على الخادم، أو شاشة `/admin/integrations`. ولا ترسل لي مفتاحا حيّا في
 محادثة إن كنت تستطيع وضعه بنفسك — الشاشة مصمّمة لتضعه أنت.
 
 ---
@@ -50,7 +50,7 @@
 
 ### أين يُوضع
 
-**إمّا** في متغيّرات البيئة على Cloudways (Application → Environment):
+**إمّا** في `deploy/.env.production` على الخادم (ثمّ `bash deploy/deploy.sh`):
 
 ```
 RESEND_API_KEY · RESEND_FROM_NAME · RESEND_FROM_EMAIL
@@ -221,7 +221,7 @@ nslookup -type=MX  wajeezacademy.com
 
 ### أين يُوضع
 
-**إمّا** في متغيّرات البيئة على Cloudways:
+**إمّا** في `deploy/.env.production` على الخادم (ثمّ `bash deploy/deploy.sh`):
 
 ```
 PAYMENT_DRIVER=stripe        (أو moyasar)

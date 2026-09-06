@@ -19,9 +19,20 @@ import type { AuthService } from '../../services/auth.service'
 import { DEMO_ACCOUNTS, DEMO_PASSWORD, type DemoRoleKey } from '../../db/seed-demo'
 import { SESSION_COOKIE } from '../auth-plugin'
 
-/** نشرٌ إنتاجيّ؟ VERCEL_ENV تحقنه المنصّة، وNODE_ENV يغطّي الاستضافة الذاتية */
+/** نشرٌ إنتاجيّ؟
+
+    ⚠️ كان هذا الحارسُ يسأل `VERCEL_ENV` أوّلا — تحقنه منصّةُ Vercel بنفسها بلا
+    ضبطٍ من أحد. فلمّا انتقلت المنصّةُ عن Vercel إلى خادمٍ نملكه اختفى المتغيّرُ
+    ولم يخلفه شيء، وبقي السؤالُ معلّقا على `NODE_ENV` وحده — وهو لم يكن مضبوطا
+    وقتَها، فصار الحارسُ الثالثُ في الإنتاج يجيب «لست إنتاجا».
+
+    والبديلُ `APP_ENV` — اسمٌ محايدُ المضيف لا يفترض شيئا عن المضيف. واليومَ
+    يُضبط الاثنان صراحةً على خدمة `app` وحدَها في `deploy/compose.prod.yml`،
+    فلا يمسّان البناءَ في `Dockerfile`. **والحارسُ يقبلهما معا بقصد**: حارسٌ
+    أعمى لا يُخطئ فيَظهر، بل يفتح بابَ الديمو بصمت. وهو نفسُه ما يقرؤه
+    `server/build-stamp.ts` لإعلان البيئة في `‎/api/version`. */
 const productionDeployment = () =>
-  process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production'
+  process.env.APP_ENV === 'production' || process.env.NODE_ENV === 'production'
 
 /** الديمو مفعّل: علمٌ مضبوط **و** ليس نشرا إنتاجيّا. الشرطان معا لا أحدهما. */
 const demoEnabled = () => process.env.DEMO_MODE === 'true' && !productionDeployment()

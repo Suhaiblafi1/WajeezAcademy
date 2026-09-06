@@ -7,6 +7,7 @@ import { toast, toastError } from "@/components/Toast";
 import { CreditCard, Loader2, Mail, PlugZap, RefreshCw, Send, ServerOff, ShieldCheck } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
+import { DEFAULT_SENDER_EMAIL } from "@/application/site/origin";
 
 const inputCls = "rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground focus:border-teal focus:outline-none";
 const labelCls = "block text-micro font-bold text-muted-foreground";
@@ -151,7 +152,7 @@ export default function Integrations() {
                       الطلبُ وتبقى سجلّاتُنا خضراء والعطبُ عند المشتري وحدَه. */}
                   {!view.payment.siteUrlExplicit && (
                     <p className="rounded-xl border border-red-500/40 bg-red-500/[0.07] px-3 py-2 text-[11px] font-bold leading-5 text-red-300">
-                      اضبط <span dir="ltr" className="font-mono">APP_URL</span> بعنوان الموقع في Vercel أولا — لن يُقبل التفعيل بدونه.
+                      اضبط <span dir="ltr" className="font-mono">APP_URL</span> بعنوان الموقع في بيئة الخادم أولا — لن يُقبل التفعيل بدونه.
                       <span className="mt-1 block font-normal text-red-300/75">
                         العنوان المستعمل الآن: <span dir="ltr" className="font-mono">{view.payment.siteUrl}</span> — ومنه تُبنى صفحة عودة المشتري بعد الدفع.
                       </span>
@@ -215,7 +216,7 @@ export default function Integrations() {
                 <div>
                   <label className={labelCls}>بريد المرسل</label>
                   <input dir="ltr" value={mailForm.fromEmail} onChange={(e) => setMailForm({ ...mailForm, fromEmail: e.target.value })}
-                    placeholder="no-reply@wajeez.sa" className={`${inputCls} mt-1 w-full font-mono`} />
+                    placeholder={DEFAULT_SENDER_EMAIL} className={`${inputCls} mt-1 w-full font-mono`} />
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-4">

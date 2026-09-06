@@ -13,6 +13,7 @@ import { apiPost, apiGet, ApiError } from "@/services/api";
 import { TRAINING_SPECIALIZATIONS } from "@/data/trainer-contracts";
 import { countAr } from "@/application/text/count-ar";
 import TeachableCoursePicker from "@/components/TeachableCoursePicker";
+import BookInterview from "@/components/BookInterview";
 import { clearDraft, draftHasContent, loadDraft, saveDraft } from "@/application/trainer/application-draft";
 import {
   APPLICANT_STATUS, CONTACT_CHANNELS, TRAINING_SEASONS, type ContactChannel,
@@ -524,14 +525,18 @@ export default function JoinTrainer() {
           </p>
 
           <div className="mt-6 space-y-4 text-right">
-            <div className="rounded-2xl border border-teal/30 bg-teal/[0.05] p-5">
-              <p className="flex items-center gap-2 text-sm font-black text-teal-light-ink">
-                <BadgeCheck className="h-4 w-4" /> ما التالي؟
+            {/* الحجزُ أوّلا لا الانتظار: كانت هذه البطاقةُ تَعِد بأن «نتواصل معك
+                لتحديد موعد»، فيقف المتقدّمُ بلا شيءٍ بيده. والموعدُ صار بيده. */}
+            <BookInterview name={form.fullName.trim()} email={form.email.trim()} reference={result.reference} />
+
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+              <p className="flex items-center gap-2 text-sm font-black">
+                <BadgeCheck className="h-4 w-4 text-teal-light-ink" /> وفي أثناء ذلك
               </p>
-              <p className="mt-2 text-sm leading-8 text-foreground">
-                سيقرأ فريقنا الأكاديمي طلبك ومستنداتك، ثم <b className="text-foreground">نتواصل معك عبر {channel?.label ?? "البريد"}</b>
-                {channelValue && <> على <b dir="ltr" className="text-foreground">{channelValue}</b></>} لتحديد موعد
-                اجتماع تعريفي قصير نعرّفك فيه بمنهجية الأكاديمية ونسمع منك.
+              <p className="mt-2 text-sm leading-8 text-muted-foreground">
+                يقرأ فريقنا الأكاديميُّ طلبك ومستنداتك. وإن احتجنا شيئا قبل الموعد
+                {" "}<b className="text-foreground">نتواصل معك عبر {channel?.label ?? "البريد"}</b>
+                {channelValue && <> على <b dir="ltr" className="text-foreground">{channelValue}</b></>}.
               </p>
             </div>
 

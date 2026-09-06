@@ -37,6 +37,40 @@ export function contactChannelLabel(value: string): string {
   return CONTACT_CHANNELS.find((c) => c.value === value)?.label ?? value
 }
 
+/* ═══════════ حجزُ المقابلة — قرارُ صاحب المنصّة (٦ سبتمبر ٢٠٢٦) ═══════════
+
+   المقابلةُ تجري **خارج** المنصّة منذ صار الاعتمادُ بنقرةٍ واحدة. وكانت شاشةُ
+   «وصل طلبك» تَعِد المتقدّمَ وعدا سلبيّا: «نتواصل معك… لتحديد موعد» — فيقف
+   ينتظر مكالمةً قد تتأخّر، ولا شيءَ بيده. فصار الموعدُ يُحجَز بيده هو.
+
+   ولماذا أداةٌ خارجيّة لا شاشةٌ عندنا: جدولةُ المواعيد المتاحة تحتاج تقويمَ
+   المُقابِل وحجبَ ما حُجز ودعوةَ Zoom ورسالةَ تأكيد — وثلاثتُها لا تملكها
+   المنصّةُ اليوم (لا قناةَ بريدٍ فعّالة أصلا). فتُستعمل الأداةُ لما تحسنه،
+   ولا يُبنى نصفُ مُجدوِلٍ لا يُرسل شيئا.
+
+   ورابطٌ لا وحدةٌ مضمَّنة: سياسةُ المحتوى `default-src 'self'` تحجب إطارَ
+   Calendly وسكربتَه حجبا تامّا — فالتضمينُ يُنتج مستطيلا أبيضَ بلا خطأٍ ظاهر. */
+export const TRAINER_INTERVIEW = {
+  /** يُغيَّر من هنا وحدَه — تقرؤه الشاشتان معا */
+  url: 'https://calendly.com/hadeel-7/wajeez-academy',
+  minutes: 30,
+  platformAr: 'Zoom',
+} as const
+
+/** الرابطُ معبَّأً سلفا باسم المتقدّم وبريده ورقم طلبه.
+
+    ولماذا التعبئة: من يفتح صفحةَ الحجز بعد نموذجٍ من أربعة أقسام لا يكتب
+    اسمَه وبريدَه مرّةً ثالثة. و`a1` أوّلُ سؤالٍ مخصّصٍ في Calendly — يُملأ
+    برقم الطلب إن وُجد السؤال، ويُتجاهَل بلا ضررٍ إن لم يوجد. */
+export function trainerInterviewUrl(input: { name?: string; email?: string; reference?: string }): string {
+  const q = new URLSearchParams()
+  if (input.name?.trim()) q.set('name', input.name.trim())
+  if (input.email?.trim()) q.set('email', input.email.trim())
+  if (input.reference?.trim()) q.set('a1', input.reference.trim())
+  const s = q.toString()
+  return s ? `${TRAINER_INTERVIEW.url}?${s}` : TRAINER_INTERVIEW.url
+}
+
 /** حالاتُ الطلب كما تُقال لصاحبه — لا كما تُقال للمراجع.
     الاسمُ قصير، والشرحُ يقول ما يجري الآن وما الذي يليه. */
 export const APPLICANT_STATUS: Record<string, { label: string; explain: string; tone: 'neutral' | 'progress' | 'good' | 'warn' | 'bad' }> = {
@@ -52,7 +86,7 @@ export const APPLICANT_STATUS: Record<string, { label: string; explain: string; 
   },
   submitted: {
     label: 'وصل طلبك — بانتظار المراجعة',
-    explain: 'طلبك كامل عند فريقنا. سنقرؤه ثم نتواصل معك على الوسيلة التي اختَرتها لعقد اجتماع تعريفي.',
+    explain: 'طلبك كامل عند فريقنا. احجز موعدَ اجتماعك التعريفيّ من الزرّ أدناه — ونقرأ طلبك قبله.',
     tone: 'progress',
   },
   under_review: {
@@ -67,7 +101,7 @@ export const APPLICANT_STATUS: Record<string, { label: string; explain: string; 
   },
   shortlisted: {
     label: 'اختيار أولي',
-    explain: 'اجتاز طلبك الفرز الأولي. الخطوة التالية مقابلة قصيرة سنرتّب موعدها معك.',
+    explain: 'اجتاز طلبك الفرز الأوّليّ. الخطوةُ التالية مقابلةٌ قصيرة — احجز موعدَها من الزرّ أدناه.',
     tone: 'progress',
   },
   interview_scheduled: {
@@ -133,3 +167,15 @@ export const WITHDRAWABLE_STATUSES = [
   'shortlisted', 'interview_scheduled', 'demo_requested', 'academic_review',
   'conditionally_approved', 'contract_pending', 'waitlisted',
 ] as const
+
+/** الحالاتُ التي يُعرض فيها حجزُ المقابلة — والحدُّ من طرفَيه مقصود.
+
+    لا قبلها: `draft` و`email_verification_pending` طلبٌ لم يصل بعد، فيُكمله
+    أوّلا ولا يحجز موعدا لما لا يُقرأ.
+
+    ولا بعدها: `interview_scheduled` موعدُه محجوزٌ فعلا — وزرُّ «احجز» فوقه
+    يدعوه إلى حجزٍ ثانٍ. وما بعده (ديمو · مراجعة · عقد · نشط) مرّ المقابلةَ،
+    و`rejected` و`withdrawn` انتهيا. */
+export const BOOKABLE_STATUSES: readonly string[] = [
+  'submitted', 'under_review', 'information_requested', 'shortlisted',
+]

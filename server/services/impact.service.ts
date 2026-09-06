@@ -185,8 +185,9 @@ export async function runRegressionAgainstBundled(prisma: PrismaClient, catalogV
      كانت تُقرأ من القرص بجذر محسوب من import.meta.url بصعود مستويين: صحيح
      للمصدر (server/services/…)، وخاطئ للحزمة التي يشغّلها الإنتاج من
      api/index.js وحده — فيصعد المستويان فوق جذر المستودع وتسقط القراءة
-     بـENOENT. الاستيراد الثابت يزيل الحساب والقراءة معا، ويجعل تتبّع ملفات
-     Vercel يرى الاعتماد بدل أن يخمّنه. */
+     بـENOENT. الاستيراد الثابت يزيل الحساب والقراءة معا: الاعتمادُ يُرى في
+     الشيفرة ولا يُخمَّن من مسارٍ يُحسب وقتَ التشغيل. وحزمةُ Vercel زالت بزوالها،
+     والقاعدةُ تبقى — فما يُقرأ من القرص وقتَ التشغيل يكسره أوّلُ تغييرِ تخطيط. */
   const bundled = {
     questions: questionsJson,
     skills: skillsJson,

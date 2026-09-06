@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { CANONICAL_ORIGIN, siteOrigin } from '../application/site/origin'
+import { CANONICAL_ORIGIN, DEFAULT_SENDER_EMAIL, EMAIL_DOMAIN, siteOrigin } from '../application/site/origin'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const read = (p: string) => readFileSync(join(root, p), 'utf8')
@@ -57,6 +57,28 @@ describe('الأصل القانوني للموقع', () => {
     }
   })
 
+  /* والموضعُ الذي أفلت من هذا الحارس كلِّه: مثالُ بيئة الإنتاج.
+
+     `deploy/.env.production.example` هو ما يُنسَخ على الخادم حرفا. وقد بقي
+     فيه النطاقُ المهجور في ثلاثة حقول بعد الانتقال: `SITE_DOMAIN` — ومنه
+     يطلب Caddy الشهادة، فنطاقٌ لا يشير إلى الخادم يجعل Let's Encrypt يرفض
+     ولا موقعَ أصلا — و`APP_URL` الذي تُبنى منه روابطُ كلِّ رسالة،
+     و`WEB_ORIGIN` الذي يُسقط خطؤه نداءات المتصفّح كلَّها.
+
+     والحارسُ السابق يقرأ `src/` و`public/` فلم يره. فالمقيسُ هنا الملفُّ
+     الذي يُنسَخ، لا الشيفرةُ وحدَها. */
+  it('ومثالُ بيئة الإنتاج لا يحمل نطاقا مهجورا — فهو يُنسَخ حرفا', () => {
+    const env = read('deploy/.env.production.example')
+    const live = env.split('\n').filter((l) => !l.trim().startsWith('#')).join('\n')
+    expect(live, 'نطاقٌ حُجز ولم يُوجَّه قطّ').not.toContain('academy.wajeez.com')
+    expect(live, 'SITE_DOMAIN منه تُطلب الشهادة').toMatch(/^SITE_DOMAIN=\S+/m)
+    for (const key of ['SITE_DOMAIN', 'APP_URL', 'WEB_ORIGIN']) {
+      const m = live.match(new RegExp(`^${key}=(\\S+)`, 'm'))
+      expect(m, `${key} غائبٌ عن المثال`).not.toBeNull()
+      expect(m![1], `${key} لا يحمل النطاق الحيّ`).toContain('www.wajeezacademy.com')
+    }
+  })
+
   it('SeoHead لا يكتب نطاقا — يسأل الوحدة', () => {
     const src = read('src/components/SeoHead.tsx')
     expect(src).toContain('siteOrigin()')
@@ -66,5 +88,60 @@ describe('الأصل القانوني للموقع', () => {
   it('خارج المتصفح يسقط على النطاق النهائي لا على localhost', () => {
     expect(siteOrigin()).toBe(CANONICAL_ORIGIN)
     expect(siteOrigin()).not.toContain('localhost')
+  })
+})
+
+/* ═══ نطاقُ المُرسِل — الحقلُ الذي يُسقط البريدَ كلَّه بصمت ═══
+
+   Resend يرفض كلَّ رسالةٍ من نطاقٍ لم يُوثَّق عنده. والرفضُ لا يظهر في شاشة:
+   يُكتب في `lastError` داخل صفّ الإشعار، فالمتعلّمُ ينتظر رسالةً لا تأتي ولا
+   أحدَ يعلم.
+
+   وقد كان القالبُ يقول `Academy@wajeez.co` — نطاقٌ غيرُ نطاق الموقع وغيرُ
+   الافتراض في الشيفرة (`ACADEMY_EMAIL`). ومتغيّرُ البيئة **يغلب شاشةَ
+   الإدارة**، فتصحيحُه من `/admin/integrations` كان سيبدو ناجحا ولا يفعل شيئا.
+
+   وهو الخطأُ نفسُه الذي كان في `SITE_DOMAIN` في هذا الملفّ بعينه: قيمةٌ من
+   عهدٍ مضى في قالبٍ يُنسَخ حرفا. */
+describe('نطاقُ المُرسِل في قالب الإنتاج', () => {
+  const read2 = (p: string) => readFileSync(join(root, p), 'utf8')
+  const live = read2('deploy/.env.production.example')
+    .split('\n').filter((l) => !l.trim().startsWith('#')).join('\n')
+
+  it.each(['RESEND_FROM_EMAIL', 'RESEND_REPLY_TO'])('«%s» على نطاق الموقع لا على نطاقٍ آخر', (key) => {
+    const m = live.match(new RegExp(`^${key}=(\\S+)`, 'm'))
+    expect(m, `${key} غائبٌ عن القالب`).not.toBeNull()
+    expect(m![1], 'نطاقٌ غيرُ موثَّقٍ في Resend يُسقط كلَّ رسالة، ورفضُه لا يظهر في شاشة')
+      .toContain('@' + new URL(CANONICAL_ORIGIN).hostname.replace(/^www\./, ''))
+  })
+
+  it('ولا يُترك المفتاحُ مملوءا في قالبٍ يُرفع إلى Git', () => {
+    expect(live, 'سرٌّ في المستودَع').toMatch(/^RESEND_API_KEY=\s*$/m)
+  })
+})
+
+/* ═══ بريدُ المُرسِل الافتراضيّ — مصدرٌ واحدٌ للواجهة والخادم ═══
+
+   كان في المستودَع ثلاثةُ نطاقاتٍ للمُرسِل: `wajeezacademy.com` في الشيفرة،
+   و`wajeez.co` في قالب الإنتاج، و`wajeez.sa` في اقتراحِ خانةِ الشاشة. وواحدٌ
+   منها فقط هو الموثَّق في Resend — والباقي يُرفض، والرفضُ يُكتب في صفّ
+   الإشعار لا في شاشة. */
+describe('بريدُ المُرسِل الافتراضيّ', () => {
+  it('يُشتقّ من النطاق الحيّ ولا يُكتب حرفا', () => {
+    expect(EMAIL_DOMAIN).toBe('wajeezacademy.com')
+    expect(DEFAULT_SENDER_EMAIL).toBe('no-reply@wajeezacademy.com')
+  })
+
+  it('ويطابق افتراضَ الخادم — فلا يفترق ما تقترحه الشاشةُ عمّا يرسله الخادم', () => {
+    const src = readFileSync(join(root, 'server/services/integrations.service.ts'), 'utf8')
+    const m = src.match(/ACADEMY_EMAIL_DOMAIN = '([^']+)'/)
+    expect(m, 'الخادمُ يعلن نطاقَ البريد').not.toBeNull()
+    expect(m![1]).toBe(EMAIL_DOMAIN)
+  })
+
+  it('ولا تقترح الشاشةُ نطاقا مكتوبا حرفا', () => {
+    const src = readFileSync(join(root, 'src/pages/admin/Integrations.tsx'), 'utf8')
+    expect(src, 'اقتراحٌ يُتَّبع فيُضبط مُرسِلٌ يرفضه المزوّد').not.toMatch(/placeholder="no-reply@/)
+    expect(src).toMatch(/DEFAULT_SENDER_EMAIL/)
   })
 })

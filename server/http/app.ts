@@ -21,7 +21,6 @@ import { registerTrainerApplicationRoutes } from './routes/trainer-applications.
 import { registerAdminTrainerRoutes } from './routes/admin-trainer.routes'
 import { registerTrainerPortalRoutes } from './routes/trainer-portal.routes'
 import { registerAdminLearningRoutes } from './routes/admin-learning.routes'
-import { registerTermRoutes } from './routes/term.routes'
 import { registerLearningPortalRoutes } from './routes/learning-portal.routes'
 import { registerLearnerRoutes } from './routes/learners.routes'
 import { registerStaffTaskRoutes } from './routes/staff-tasks.routes'
@@ -58,15 +57,15 @@ export async function buildApp(prisma: PrismaClient) {
     /* ═══ عنوانُ العميل الحقيقيّ (المهمّة ١٧) ═══
        كلُّ سقفٍ في هذا الملفّ وفي خدمة المصادقة مفتاحُه «الشبكة»، و`request.ip`
        بلا هذا الإعداد هو **عنوانُ المقبس** لا عنوانُ الزائر. والخادمُ لا يُرى
-       من الإنترنت مباشرةً في أيّ بيئة: على Vercel دالّةٌ خلف وسيطها
-       (`vercel-handler.ts` يُمرّر الطلبَ إلى Fastify)، وعلى Hetzner خادمٌ خلف
-       Caddy. فكان عنوانُ الوسيط هو المفتاحَ **لكلّ الزوّار معا**: سقفُ الدخول
-       (١٠ لكلّ ٥ دقائق) دلوٌ واحدٌ للعالم كلِّه، لا لكلّ شبكة.
+       من الإنترنت مباشرةً في أيّ بيئة: هو اليومَ عمليّةُ Node في حاويةٍ خلف
+       Caddy، وكان قبلها دالّةً خلف وسيط Vercel. فكان عنوانُ الوسيط هو
+       المفتاحَ **لكلّ الزوّار معا**: سقفُ الدخول (١٠ لكلّ ٥ دقائق) دلوٌ واحدٌ
+       للعالم كلِّه، لا لكلّ شبكة.
 
        و`1` تعني ثقةً بوسيطٍ واحدٍ فقط: يُقرأ العنوانُ الذي رآه الوسيطُ الموثوق،
        فما يُلصقه الزائرُ في `X-Forwarded-For` يبقى إلى يساره ولا يصير مفتاحَه.
        **وشرطُ صحّته أن لا يُنشَر منفذُ الخادم مكشوفا** — يُربَط على 127.0.0.1
-       ويُقدَّم من Caddy (مذكورٌ في خطّة النقل، المهمّة ٤٧). */
+       ويُقدَّم من الوسيط العكسيّ (`API_HOST` في `docs/DEPLOYMENT.md` §٢). */
     trustProxy: 1,
     logger: quietLogs
       ? false
@@ -112,7 +111,10 @@ export async function buildApp(prisma: PrismaClient) {
   /* ترويسات أمان على كل استجابة (API + /docs) — تعمل في الدالة السحابية أيضا:
      CSP وnosniff وframeguard وReferrer-Policy وHSTS. الاستثناء الوحيد المقصود:
      unsafe-inline في script/style داخل CSP لأن توثيق Swagger UI يعتمد عليهما —
-     وهو صفحة توثيق داخلية، ولا يمتد أثره إلى الواجهة (ترويساتها في vercel.json) */
+     وهو صفحة توثيق داخلية، ولا يمتد أثره إلى الواجهة: ترويساتُها في
+     `deploy/Caddyfile` — وهو الموضعُ الوحيدُ الذي تُطبَّق منه على هذا الخادم
+     (كانت في `vercel.json`، ثمّ نُقلت إلى `public/.htaccess` وهو ملفُّ Apache
+     لا يقرؤه Caddy بتاتا — راجع `deploy/README.md`) */
   await app.register(helmet, {
     contentSecurityPolicy: {
       directives: {
@@ -175,8 +177,8 @@ export async function buildApp(prisma: PrismaClient) {
      اللقطة الآلية تحمل بصمة التزامها (auto-<sha7>-<hash6>) — فالخادم يقارن
      نفسه بنفسه بلا مصدر خارجي.
 
-     ⚠ وكان يقرأ `VERCEL_GIT_COMMIT_SHA` مباشرة. فلمّا انتقلت المنصّة عن
-     Vercel لم يعد للمتغيّر وجود، فردّ على الإنتاج الحيّ: «الالتزام: null ·
+     ⚠ وكان يقرأ `VERCEL_GIT_COMMIT_SHA` مباشرة. فلمّا انتقلت المنصّة عن Vercel
+     إلى خادمٍ نملكه لم يعد للمتغيّر وجود، فردّ على الإنتاج الحيّ: «الالتزام: null ·
      البيئة: محلية» — وامتنع عن الحكم امتناعا صحيحا عن **سؤال صار أعمى**.
      فصار مصدر البصمة `server/build-stamp.ts`: بيئةُ المضيف بأيّ اسم أعلنها،
      وإلا فختمٌ يُكتب وقت البناء. ووقتُ البناء يُعرض معها، لأنه يفضح نشرةً لم
@@ -245,7 +247,6 @@ export async function buildApp(prisma: PrismaClient) {
   registerAdminTrainerRoutes(app, prisma)
   registerTrainerPortalRoutes(app, prisma)
   registerAdminLearningRoutes(app, prisma)
-  registerTermRoutes(app, prisma)
   registerLearningPortalRoutes(app, prisma)
   registerLearnerRoutes(app, prisma)
   registerStaffTaskRoutes(app, prisma)

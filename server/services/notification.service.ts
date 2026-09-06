@@ -99,7 +99,7 @@ export async function sendDirectEmail(
 
 /** أصل الموقع العام لبناء الروابط في الرسائل.
 
-    APP_URL إلزاميٌّ على الإنتاج (`deploy/.env.production`)، والمحلّيُّ احتياطيٌّ
+    APP_URL إلزاميٌّ في الإنتاج (`deploy/.env.production`)، والمحلّيُّ احتياطيٌّ
     للتطوير وحده. وبلا هذا الاحتياطي كانت روابط تأكيد البريد ودعوة إنشاء
     الحساب تُبنى على localhost:7100 في الإنتاج ما لم يُضبط المتغير يدويا —
     رسالة تصل برابط لا يفتح عند أحد. */
@@ -121,6 +121,33 @@ export function hasExplicitSiteUrl(): boolean {
 }
 
 const MAX_ATTEMPTS = 3
+
+/* ═══ القنواتُ الموصولةُ الآن — ولماذا تُسأل قبل الإرسال لا بعده ═══
+
+   `attemptSend` تُعلّم الصفَّ `failed` حين لا مزوّدَ لقناته. وهذا صحيحٌ لصفٍّ
+   حاولنا إرسالَه فتعذّر، وخطأٌ فادحٌ لصفٍّ **لم نحاول إرساله أصلا**: قناةٌ
+   غيرُ موصولةٍ ليست فشلا في الإرسال، بل غيابُ إرسال.
+
+   والفرقُ ليس تسميةً: `dispatchQueuedNotifications` تختار `queued` وحدَها،
+   فالصفُّ الذي صار `failed` لا تعود إليه أبدا — ويرتفع عدّادُ محاولاته،
+   وعند الثالثة يموت نهائيّا (`retry` ترفض بعد `MAX_ATTEMPTS`). فدورةٌ واحدةٌ
+   للعامل وقناةُ البريد مغلقة تُحرق الطابورَ كلَّه بلا رجعة، والتعافي يدويٌّ
+   صفّا صفّا من شاشة الإدارة.
+
+   وهذا هو المانعُ الذي أبقى العاملَ متوقّفا (`docs/DEPLOYMENT.md` §١٠). فيُسأل
+   هنا مرّةً للدورة الواحدة — لا لكلّ صفّ — ويُترَك ما لا قناةَ له في
+   `queued` ينتظر وصلَ قناته.
+
+   ⚠️ وحدُّه صريح: يقيس **القناة** لا الصفّ. فمستخدمٌ بلا بريدٍ مسجَّلٍ يبقى
+   صفُّه يُعلَّم `failed` — وهو صوابٌ هنا: لا عنوانَ له اليوم ولا غدا. */
+export async function liveChannels(prisma: PrismaClient): Promise<string[]> {
+  const live = ['in_app']
+  const email = await getEmailConfig(prisma)
+  if (email.enabled && email.apiKey) live.push('email')
+  /* whatsapp و sms: لا مزوّدَ لهما في الشيفرة كلِّها — `UnwiredExternalProvider`
+     هو كلُّ ما يجيبهما. فلا يُدرجان حتّى يُكتب مزوّدُهما. */
+  return live
+}
 
 /** إشعار غير معيق — فشله لا يوقف أي مسار تشغيلي (قبول/دفع/شهادة/مالية) */
 export async function safeNotify(prisma: PrismaClient, payload: NotificationPayload): Promise<void> {

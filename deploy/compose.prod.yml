@@ -38,6 +38,10 @@ services:
     build:
       context: ..
       dockerfile: Dockerfile
+    # اسمٌ صريحٌ لأنّ العاملَ يتقاسمها: `deploy.sh` يبني `app` وحدَه، فلو تُركت
+    # التسميةُ للافتراض بنى العاملُ صورةً ثانيةً — وافترقت الشيفرتان بلا أن
+    # يلاحظ أحد.
+    image: wajeez-app:latest
     restart: unless-stopped
     depends_on:
       db:
@@ -50,31 +54,34 @@ services:
       API_HOST: 0.0.0.0
       API_PORT: "7101"
       NODE_ENV: production
+      # ‏NODE_ENV يحرس أربعةَ أبوابٍ (رمزُ الاستعادة في جسم الاستجابة · راية
+      # ‏`secure` للكعكة · توثيقُ Swagger · تحذيرُ STORAGE_SECRET). وهو مضبوطٌ
+      # هنا منذ اليوم الأوّل، فلم يكن أيٌّ منها مفتوحا على هذا الخادم قطّ.
+      #
+      # و`APP_ENV` اسمٌ محايدُ المضيف أُضيف في #26 خلَفا لـ`VERCEL_ENV` الذي
+      # زال. حارسُ الديمو يقبل الاثنين، فـ`NODE_ENV` يكفيه هنا — ويُضبط هذا
+      # معه صراحةً لأنّ حارسا أعمى لا يُخطئ بل يفتح بابا بصمت.
+      APP_ENV: production
     volumes:
       - storage:/app/storage        # الملفات الخاصة — تبقى بين الإصدارات
       - web:/srv/web                # الواجهة المبنية، يقرؤها Caddy
     # لا ports: — Caddy وحده يواجه الإنترنت
 
-  # ── العاملُ الخلفيّ — موجودٌ ولا يبدأ وحدَه ──
+  # ── العامل الخلفيّ ──
   #
-  # خطّةُ النقل رصدت غيابَه صراحةً: «Needs a `worker` service … added».
-  # ورأسُ `server/worker/index.ts` يقول إنّه «يُشغَّل يومَ يوجد خادمٌ دائم»
-  # — وقد وُجد: هذا الخادم.
+  # عمليّةٌ ثانيةٌ من الصورة نفسِها، بأمرٍ آخر. وبدونها كلُّ «سنُعلمك» في
+  # الواجهة وعدٌ لا يُنفَّذ: طابورُ الإشعارات يمتلئ ولا يُفرَّغ، وتذكيراتُ
+  # الجلسات لا تُرسَل، والنشرُ المجدول يمرّ موعدُه ولا يُنشَر عنده شيء.
   #
-  # ولماذا `profiles` لا تشغيلٌ تلقائيّ: تشغيلُه يبدأ بتصريف **طابورٍ
-  # متراكم** من الإشعارات، وأوّلُ نشرةٍ ليست موضعَ إرسالِ بريدٍ لم يُقصد.
-  # فيبقى وراء علمٍ صريح، ويُشغَّل حين يُقرَّر:
+  # ولماذا حاويةٌ منفصلةٌ لا خيطٌ داخل الخادم: سقوطُ العامل لا يُسقط الموقع،
+  # وإعادةُ تشغيله لا تقطع طلبا. وسجلُّه منفصلٌ فيُقرأ.
   #
-  #     docker compose -f deploy/compose.prod.yml --profile worker up -d
-  #
-  # وشرطُه المسجَّل: وصلُ البريد (RESEND_API_KEY في .env.production).
+  # ولا `ports` ولا حجمَ الواجهة: لا يواجه الإنترنت، ولا يقرأ ملفّا — وظائفُه
+  # الستُّ كلُّها قاعدةٌ خالصة. ونقطةُ الدخول تتخطّى نسخَ الواجهة لغياب
+  # `/srv/web` عنده.
   worker:
-    profiles: ["worker"]
-    build:
-      context: ..
-      dockerfile: Dockerfile
+    image: wajeez-app:latest
     restart: unless-stopped
-    command: ["npm", "run", "worker"]
     depends_on:
       db:
         condition: service_healthy
@@ -83,9 +90,14 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       NODE_ENV: production
-    volumes:
-      - storage:/app/storage
-    # لا ports: — لا يواجه الإنترنت
+      APP_ENV: production
+      # العلمُ الصريح — بدونه يطبع سببَ توقّفه ويخرج بنجاح
+      WORKER_ENABLED: "on"
+    command: ["npx", "tsx", "server/worker/index.ts"]
+    # فحصُ صحّةِ الصورة يسأل `/api/version`، ولا خادمَ ويبٍ هنا — فيُطفأ كي
+    # لا تُعلَّم حاويةٌ سليمةٌ «غيرَ صحّيّة» فيُطارَد عطلٌ لا وجودَ له.
+    healthcheck:
+      disable: true
 
   caddy:
     image: caddy:2-alpine
