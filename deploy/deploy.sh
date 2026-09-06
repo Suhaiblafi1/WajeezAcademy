@@ -39,6 +39,13 @@ fi
 
 step "٣/٧ · بناء الصورة الجديدة"
 # البناء أولا: الموقع القديم يخدم طوال هذه الخطوة
+#
+# وبصمةُ الالتزام تُصدَّر إلى البناء: `.dockerignore` يستثني `.git`، فلا
+# يستطيع `write-build-stamp.ts` قراءتَها من داخل الصورة. وبلا ذلك يقول
+# `/api/version` «الالتزام: null» — فلا يُعرف أوصلت النشرةُ أم لا، وهو
+# السؤالُ الذي بُني ذلك المسارُ للجواب عنه.
+export GIT_COMMIT_SHA="$(git rev-parse HEAD 2>/dev/null || true)"
+export GIT_COMMIT_REF="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
 $COMPOSE build app || fail "أخفق البناء — الموقع القديم ما زال يعمل، لم يتغيّر شيء"
 
 step "٤/٧ · تشغيل القاعدة وانتظار جاهزيتها"
