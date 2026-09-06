@@ -157,9 +157,13 @@ describe('٥٦ · الرئيسةُ أقصر — جدارا الشعارات صا
     const best = read('src/pages/home/Bestsellers.tsx')
 
     it('لا فلترَ ولا شريطَ بطاقاتٍ — الكتالوجُ له صفحتُه', () => {
-      expect(best, 'عاد فلترُ المجالات').not.toContain('CategoryFilter')
+      /* على **البنية** لا على ورودِ الاسم في الملفّ: أوّلُ صياغةٍ كانت
+         `not.toContain('top-courses')` فسقطت على تعليقٍ يشرح **حذفَ**
+         المرساة — والمرساةُ محذوفةٌ فعلا. وهي المصيدةُ نفسُها التي وقعتُ
+         فيها في `UpcomingTermNote` و`shortestMarkX`: النثرُ ليس شيفرة. */
+      expect(best, 'عاد فلترُ المجالات').not.toMatch(/<CategoryFilter|function CategoryFilter/)
       expect(best, 'عاد شريطُ البطاقات').not.toMatch(/snap-x snap-mandatory/)
-      expect(best).not.toContain('top-courses')
+      expect(best, 'عادت مرساةُ الدورات').not.toMatch(/id="top-courses"/)
     })
 
     it('ويبقى الدليلُ والبابان', () => {
