@@ -22,17 +22,14 @@ const NEVER_TOUCHED = new Proxy({}, {
   get() { throw new Error('لمست القاعدةَ قبل الحارس') },
 }) as unknown as PrismaClient
 
-const SAVED = { APP_URL: process.env.APP_URL, VERCEL: process.env.VERCEL_PROJECT_PRODUCTION_URL }
+const SAVED = { APP_URL: process.env.APP_URL }
 
 beforeEach(() => {
   delete process.env.APP_URL
-  delete process.env.VERCEL_PROJECT_PRODUCTION_URL
 })
 afterEach(() => {
   if (SAVED.APP_URL === undefined) delete process.env.APP_URL
   else process.env.APP_URL = SAVED.APP_URL
-  if (SAVED.VERCEL === undefined) delete process.env.VERCEL_PROJECT_PRODUCTION_URL
-  else process.env.VERCEL_PROJECT_PRODUCTION_URL = SAVED.VERCEL
 })
 
 describe('عنوانُ الموقع شرطٌ لتفعيل مزوّدٍ مستضاف', () => {
@@ -68,12 +65,6 @@ describe('عنوانُ الموقع شرطٌ لتفعيل مزوّدٍ مستض�
     await expect(
       savePaymentConfig(NEVER_TOUCHED, 'actor', { enabled: true, driver: 'stripe' }),
     ).rejects.toThrow(/لمست القاعدة/)
-  })
-
-  it('وعنوانُ Vercel وحدَه يكفي — لا يُلزَم صاحبُ المنصّة بضبط اثنين', () => {
-    expect(hasExplicitSiteUrl()).toBe(false)
-    process.env.VERCEL_PROJECT_PRODUCTION_URL = 'wajeez.vercel.app'
-    expect(hasExplicitSiteUrl()).toBe(true)
   })
 
   it('والفراغُ لا يُحسب عنوانا', () => {

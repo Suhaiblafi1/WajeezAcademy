@@ -91,7 +91,7 @@ if (DISABLED) {
     if (url.origin !== self.location.origin) return  // خطوطٌ وصورٌ خارجية
     if (url.pathname.startsWith('/api/')) return     // بياناتٌ حيّة لا تُخزَّن أبدا
 
-    /* التنقّلُ كلُّه يرثُ قوقعةً واحدة: التطبيقُ صفحةٌ واحدة، و`vercel.json`
+    /* التنقّلُ كلُّه يرثُ قوقعةً واحدة: التطبيقُ صفحةٌ واحدة، و`.htaccess`
        يعيد كتابة كلّ مسارٍ إلى `index.html` — فمفتاحٌ واحد يكفي كلَّ المسارات */
     if (request.mode === 'navigate') {
       event.respondWith(networkFirst(request, SHELL))

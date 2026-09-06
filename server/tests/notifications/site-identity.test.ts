@@ -61,15 +61,8 @@ describe('أصل روابط الرسائل', () => {
     expect(publicSiteUrl()).toBe('https://academy.example')
   })
 
-  it('نطاق إنتاج Vercel حين لا APP_URL — لا localhost', () => {
+  it('المحلي احتياطيٌّ حين لا APP_URL', () => {
     delete process.env.APP_URL
-    process.env.VERCEL_PROJECT_PRODUCTION_URL = 'wajeez-academy.vercel.app'
-    expect(publicSiteUrl()).toBe('https://wajeez-academy.vercel.app')
-  })
-
-  it('المحلي آخر الخيارات لا أولها', () => {
-    delete process.env.APP_URL
-    delete process.env.VERCEL_PROJECT_PRODUCTION_URL
     expect(publicSiteUrl()).toBe('http://localhost:7100')
   })
 })

@@ -82,17 +82,11 @@ describe('الحارسُ يعيد المحاولة ولا يُحوّل بلا ج
 })
 
 describe('إقلاعٌ واحد مهما تزامنت النداءات', () => {
-  /* دالّةُ Vercel تستقبل طلباتٍ متزامنة على النسخة الواحدة. وحارسُ الإقلاع
+  /* عمليّةُ Node تستقبل طلباتٍ متزامنة على النسخة الواحدة. وحارسُ الإقلاع
      كان على الناتج لا على الوعد، والإقلاعُ بينهما غيرُ ذرّيّ — فيُقلع كلُّ
      نداءٍ من الصفر: عدّةُ عملاء Prisma وعدّةُ برك اتّصال، ويفوز آخرُها
      ويبقى الباقي ممسكا ببركه. */
-  it('معالجُ Vercel يخزّن الوعد', () => {
-    const H = code('server/http/vercel-handler.ts')
-    expect(H).toMatch(/let booting: Promise<FastifyInstance> \| null/)
-    expect(H, 'الفشلُ يُخزَّن فيرثه كلُّ نداءٍ بعده').toMatch(/booting = null/)
-  })
-
-  it('وعميلُ Prisma كذلك — بركةٌ واحدة لا برك', () => {
+  it('عميلُ Prisma بركةٌ واحدة لا برك', () => {
     const C = code('server/db/client.ts')
     expect(C).toMatch(/let connecting: Promise<PrismaClient> \| null/)
     expect(C).toMatch(/connecting = null/)
