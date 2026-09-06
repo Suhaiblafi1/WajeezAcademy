@@ -3,7 +3,7 @@
    الحالات: draft | open | full | active | completed | cancelled. */
 
 import { notifyPlanWaiters } from './catalog-readiness.service'
-import type { PrismaClient } from '@prisma/client'
+import type { PrismaClient, Prisma } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { EarningsService } from './earnings.service'
@@ -363,7 +363,7 @@ export class CohortService {
     if (!cohort.sessions.length) missing.push('لا جدول جلسات')
     if (!cohort.capacity || cohort.capacity < 1) missing.push('لا سعة محددة')
     if (!cohort.plans.some((p) => ['approved', 'published'].includes(p.status)) && !cohort.plans.length) {
-      missing.push('لا خطة تقديم للشعبة')
+      missing.push('لا خطة تقديم للشعبة — اكتبها من بطاقة الشعبة')
     }
     if (!cohort.financialReady || cohort.price === null) missing.push('الإعداد المالي غير مكتمل (السعر والعملة)')
     return { ready: missing.length === 0, missing }
@@ -383,8 +383,68 @@ export class CohortService {
     return false
   }
 
+  /* ─────────── خطّةُ التقديم — الشرطُ الذي لم يكن يُوفَّى ───────────
+
+     من شروط الفتح الستّة «خطّةُ تقديمٍ للشعبة». وصفوفُ `CohortDeliveryPlan`
+     كانت تُكتب **في موضعٍ واحدٍ في المستودَع كلِّه**: حين يُنشر اقتراحُ تعديلٍ
+     من مدرّبٍ بنطاق شعبة. فلا مسارَ إداريّ ولا شاشة.
+
+     والنتيجةُ أنّ كلَّ شعبةٍ تُنشأ يدويّا **عالقةٌ في المسوّدة إلى الأبد**:
+     الشرطُ قائمٌ ولا سبيلَ إلى إيفائه إلّا بأن يقترح مدرّبٌ تعديلا ثمّ يُعتمَد
+     ويُنشَر — وهو طريقٌ لا علاقةَ له بأن تقول «هكذا تُقدَّم هذه الشعبة».
+
+     فهذه خطّةٌ أساسيّةٌ يكتبها من يدير الشعبة. وهي `approved` لا `draft`:
+     كاتبُها هو صاحبُ قرار الفتح نفسِه، فحلقةُ اعتمادٍ ثانيةٌ عليه من نفسه
+     مراسمُ لا حراسة.
+
+     ولا تمسّ خطّةً جاءت من اقتراح مدرّب: تلك أثرُ قرارٍ في سجلّه، وهذه
+     أساسٌ يُحرَّر. */
+
+  /** خطّةُ التقديم الأساسية — تُكتب أو تُحدَّث، ولا تُكرَّر */
+  async setDeliveryPlan(cohortId: string, actorId: string | null, input: { notesAr: string; deliveryMode?: string }) {
+    const cohort = await this.prisma.cohort.findUnique({ where: { id: cohortId } })
+    if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
+    const notesAr = input.notesAr.trim()
+    if (notesAr.length < 20) {
+      throw new AuthError('plan_too_short', 'خطّةُ التقديم أقصرُ من أن تُقرأ — اكتب كيف تُقدَّم هذه الشعبة فعلا (٢٠ حرفا فأكثر)')
+    }
+    const content = {
+      kind: 'baseline',
+      notesAr,
+      deliveryMode: input.deliveryMode ?? cohort.deliveryMode ?? null,
+      authoredBy: 'admin',
+    }
+    const existing = await this.prisma.cohortDeliveryPlan.findFirst({
+      where: { cohortId, sourceChangeRequestId: null },
+      orderBy: { createdAt: 'desc' },
+    })
+    const plan = existing
+      ? await this.prisma.cohortDeliveryPlan.update({
+          where: { id: existing.id },
+          data: { content: content as unknown as Prisma.InputJsonValue, status: 'approved' },
+        })
+      : await this.prisma.cohortDeliveryPlan.create({
+          data: {
+            cohortId, content: content as unknown as Prisma.InputJsonValue,
+            status: 'approved', createdBy: actorId,
+          },
+        })
+    await recordAudit(this.prisma, {
+      actorId, action: 'cohort.delivery_plan.set', entityType: 'cohort', entityId: cohortId,
+      meta: { planId: plan.id, updated: Boolean(existing) },
+    })
+    return plan
+  }
+
+  /** خططُ الشعبة — الأساسيّةُ وما جاء من اقتراحات المدرّبين */
+  async deliveryPlans(cohortId: string) {
+    return this.prisma.cohortDeliveryPlan.findMany({
+      where: { cohortId }, orderBy: { createdAt: 'desc' },
+    })
+  }
+
   /** فتح الشعبة — يرفض بقائمة النواقص إن لم تكتمل الشروط */
-  async open(cohortId: string, actorId: string) {
+  async open(cohortId: string, actorId: string | null) {
     const check = await this.openChecklist(cohortId)
     if (!check.ready) {
       throw new AuthError('open_blocked', `لا يمكن فتح الشعبة: ${check.missing.join(' — ')}`, 409)
@@ -498,7 +558,7 @@ export class CohortService {
      لأنّها ما يراه المتعلّمُ ويُربَط باجتماعه وحضورِه — والنمطُ مولِّدُها.
 
      ولا يُكتب شيءٌ إلّا بطلبٍ صريح: `preview` يعرض ما سيُنشأ أوّلا. */
-  async generateSessions(actorId: string, cohortId: string, input: {
+  async generateSessions(actorId: string | null, cohortId: string, input: {
     weeks: number
     /** أوّلُ أسبوعٍ يُولَّد منه — الافتراضُ بدايةُ الشعبة أو اليوم */
     from?: Date

@@ -15,6 +15,7 @@ import { apiGet, apiPost, apiDelete, ApiError } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import { useAutoRefresh } from "@/services/useAutoRefresh";
 import { TrainerDetailOps, TrainerChangeRequests, TrainerPayouts, type TrainerSummary } from "./TrainerOps";
+import TrainerRunOps from "./TrainerRunOps";
 import ApplicationDossier, { type Dossier } from "./ApplicationDossier";
 import { fmtDateTime } from "@/application/text/format-ar";
 import ConfirmAction from "@/components/ConfirmAction";
@@ -224,7 +225,7 @@ export default function TrainerApplications() {
   const { user } = useRealSession();
   /* رابط الدعوة بعد إنشائها — يُعرض للمسؤول ليسلّمه حين لا يصل البريد */
   const [invite, setInvite] = useState<{ url: string; delivery: string } | null>(null);
-  const [mode, setMode] = useState<"apps" | "changes" | "payouts">("apps");
+  const [mode, setMode] = useState<"apps" | "run" | "changes" | "payouts">("apps");
 
   const load = useCallback(async (silent = false) => {
     if (!silent) { setLoading(true); setOffline(null); }
@@ -632,7 +633,7 @@ export default function TrainerApplications() {
       ]} />
       <div className="mb-5 flex flex-wrap items-center gap-2">
         <div className="flex rounded-full border border-white/15 p-1">
-          {([["apps", "الطلبات"], ["changes", "اقتراحات تعديل الدورات"], ["payouts", "مستحقات المدربين"]] as const).map(([k, label]) => (
+          {([["apps", "الطلبات"], ["run", "التأهيل والإسناد"], ["changes", "اقتراحات تعديل الدورات"], ["payouts", "مستحقات المدربين"]] as const).map(([k, label]) => (
             <button key={k} onClick={() => setMode(k)}
               className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-black transition ${mode === k ? "bg-gold text-on-gold" : "text-muted-foreground hover:text-foreground"}`}>
               {label}
@@ -655,6 +656,7 @@ export default function TrainerApplications() {
         )}
       </div>
 
+      {mode === "run" && <TrainerRunOps />}
       {mode === "changes" && <TrainerChangeRequests />}
       {mode === "payouts" && <TrainerPayouts />}
       {mode === "apps" && (loading ? (

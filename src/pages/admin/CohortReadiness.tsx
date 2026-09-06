@@ -15,9 +15,9 @@ import { AlertTriangle, CalendarCheck, CheckCircle2, Loader2, PlayCircle, Tags, 
 import { apiPost, ApiError } from "@/services/api";
 
 interface OpenResult {
-  applied: boolean; publishedCourses: number; opened: number; alreadyLive: number;
+  applied: boolean; publishedCourses: number; opened: number; prepared: number; alreadyLive: number;
   skippedNoListPrice: number; startsAt: string;
-  rows: { courseId: string; titleAr: string; price: number; currency: string; reason?: string }[];
+  rows: { courseId: string; titleAr: string; price: number; currency: string; reason?: string; blocked?: string[] }[];
 }
 interface AlignResult {
   applied: boolean; cohorts: number; changed: number; alreadyAligned: number;
@@ -103,7 +103,7 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
                 type="button" onClick={() => void run("open", true)} disabled={busy !== ""}
                 className="rounded-lg bg-teal px-3.5 py-1.5 text-[11px] font-black text-on-teal hover:brightness-110 disabled:opacity-40"
               >
-                {busy === "open-apply" ? <Loader2 className="h-3 w-3 animate-spin" /> : `افتح ${open.opened} شعبة`}
+                {busy === "open-apply" ? <Loader2 className="h-3 w-3 animate-spin" /> : `هيّئ ${open.opened} شعبة`}
               </button>
             )}
           </div>
@@ -112,8 +112,11 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
             <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.03] p-3">
               <p className="text-[11px] leading-6 text-foreground">
                 دورات منشورة <b className="tabular-nums">{open.publishedCourses}</b> ·{" "}
-                {open.applied ? "فُتحت" : "ستُفتح"} <b className="tabular-nums text-teal-light-ink">{open.opened}</b> ·{" "}
-                لها شعبةٌ أصلا <b className="tabular-nums">{open.alreadyLive}</b>
+                {open.applied ? "هُيّئت" : "ستُهيّأ"} <b className="tabular-nums">{open.applied ? open.opened + open.prepared : open.opened}</b>
+                {open.applied && (
+                  <> · <span className="text-teal-light-ink">فُتحت <b className="tabular-nums">{open.opened}</b></span></>
+                )}
+                {" "}· لها شعبةٌ أصلا <b className="tabular-nums">{open.alreadyLive}</b>
                 {open.skippedNoListPrice > 0 && (
                   <> · <span className="text-gold">بلا سعر قائمة {open.skippedNoListPrice}</span></>
                 )}
@@ -122,6 +125,31 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
                 <p className="mt-1.5 flex items-center gap-1.5 text-[11px] font-bold text-teal-light-ink">
                   <CheckCircle2 className="h-3 w-3" /> ظهرت أسعارُها الآن في الموقع.
                 </p>
+              )}
+
+              {/* ما هُيّئ ولم يُفتح — والسببُ يُقال لا يُخفى.
+
+                  كان هذا الزرُّ ينشئ الشعبةَ **مفتوحةً للبيع مباشرةً**
+                  متخطّيا شروطَ الفتح الستّة: بلا مدرّبٍ ولا جدولٍ ولا خطّة.
+                  فصار يمرّ بالبوّابة نفسِها، وما نقصه شيءٌ يبقى مسوّدةً
+                  ونقصُه مكتوب. */}
+              {open.applied && open.prepared > 0 && (
+                <details className="mt-2" open>
+                  <summary className="cursor-pointer text-micro font-bold text-gold">
+                    هُيّئت ولم تُفتح ({open.prepared}) — وما ينقصها
+                  </summary>
+                  <p className="mt-1.5 text-micro leading-5 text-muted-foreground">
+                    أُنشئت بجلساتها وخطّةِ تقديمها وسعرها، ولم تُفتح لأنّ شرطا نقص.
+                    وأكثرُه مدرّبٌ مؤهَّل — يُسنَد من «المدربون ← التأهيل والإسناد».
+                  </p>
+                  <ul className="mt-1.5 space-y-1">
+                    {open.rows.filter((r) => r.blocked?.length).slice(0, 40).map((r) => (
+                      <li key={r.courseId} className="text-micro leading-5 text-muted-foreground">
+                        {r.titleAr} — <span className="text-gold">{r.blocked!.join(" · ")}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
               )}
               {open.rows.some((r) => r.reason) && (
                 <details className="mt-2">

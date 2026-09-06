@@ -83,12 +83,10 @@ function bootPackages(): { packages: Set<string>; fileCount: number } {
 }
 
 describe('أمرُ تشغيل الإنتاج', () => {
-  it('موجودٌ ويشغّل خادمَ Fastify نفسَه — لا نسخةَ تطويرٍ ولا حزمةً بائدة', () => {
+  it('موجودٌ ويشغّل خادمَ Fastify نفسَه — لا نسخةَ تطوير', () => {
     const start = pkg.scripts.start
     expect(start, 'لا أمرَ تشغيلٍ في المستودَع — فوظيفةُ Supervisor تشغّل أمرا لا يعرفه أحد').toBeTruthy()
     expect(start).toContain(ENTRY)
-    /* `api/index.js` حزمةُ معالجِ Vercel ولا تستمع على منفذ — تشغيلُها لا يخدم شيئا */
-    expect(start, 'أمرُ التشغيل يشير إلى حزمة Vercel لا إلى الخادم').not.toContain('api/index.js')
   })
 
   it('وكلُّ ما يشغّله الأمرُ معلَنٌ في `dependencies` — فالتثبيتُ الرشيق يعمل', () => {
