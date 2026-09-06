@@ -1,0 +1,70 @@
+# Caddy — شهادة TLS تلقائية، وواجهةٌ ساكنة، وواجهةُ برمجةٍ خلفها.
+#
+# لماذا Caddy لا nginx: الشهادة تُجلب وتُجدَّد بلا تدخّل. وانتهاءُ الشهادة هو
+# أكثر ما قد يوقف webhooks سترايب بصمت — فمالٌ يُقبض ولا تسجيل يُنشأ. إخراج
+# التجديد من يد الإنسان ليس رفاهية لمشغّلٍ واحد.
+
+{
+	email {$ACME_EMAIL}
+	# لتجربة الإعداد بلا استهلاك حصة Let's Encrypt، أزل التعليق ثم أعده:
+	# acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+}
+
+{$SITE_DOMAIN} {
+	encode zstd gzip
+
+	# ── ترويسات الأمان ──
+	# منقولة حرفا بحرف عن vercel.json. أيّ نقصٍ هنا تراجعٌ أمنيّ صامت:
+	# لا اختبار يحمرّ، ولا شاشة تتغيّر.
+	header {
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+
+	# ── واجهة البرمجة ──
+	# بلا أيّ تعديلٍ على الجسم. توقيع سترايب يُحسب على البايتات كما أرسلها،
+	# فأيّ إعادة ترميزٍ أو ضغطٍ هنا تُسقط كل webhook.
+	handle /api/* {
+		reverse_proxy app:7101 {
+			header_up X-Real-IP {remote_host}
+		}
+	}
+
+	# ── توثيق واجهة البرمجة ──
+	# **مغلقٌ على الإنتاج من الخادم نفسِه**، لا من هنا: `app.ts` لا يسجّل
+	# صفحةَ Swagger إلّا خارج الإنتاج أو بـ`ENABLE_API_DOCS=true`. فهذه
+	# الكتلةُ تُمرّر النداءَ فيجيب الخادمُ ٤٠٤ — وقد جُرّب في تمرين النشر
+	# المحلّيّ (٤ سبتمبر): `GET /docs` عبر Caddy أجاب ٤٠٤.
+	#
+	# والتمريرُ يبقى بقصد: يومَ يحتاجها مطوّرٌ على الإنتاج تُفتَح بمتغيّرِ
+	# بيئةٍ ثمّ تُغلَق، بلا لمسِ إعداد Caddy ولا نشرِ شيفرة.
+	handle /docs* {
+		reverse_proxy app:7101
+	}
+
+	# ── الواجهة الساكنة ──
+	handle {
+		root * /srv/web
+		# الأصول مُبصمة بالمحتوى (index-Xq-pZg9a.js) فتُخزَّن للأبد بأمان
+		@hashed path_regexp \.[0-9a-zA-Z_-]{8,}\.(js|css|woff2|png|jpg|svg)$
+		header @hashed Cache-Control "public, max-age=31536000, immutable"
+		# وindex.html لا يُخزَّن أبدا: هو الذي يدلّ على الأصول الجديدة
+		@html path /index.html /
+		header @html Cache-Control "no-cache"
+
+		try_files {path} /index.html
+		file_server
+	}
+
+	log {
+		output file /data/access.log {
+			roll_size 20mb
+			roll_keep 7
+		}
+	}
+}
