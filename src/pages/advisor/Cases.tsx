@@ -14,6 +14,7 @@ import { fmtDateWith } from "@/application/text/format-ar";
 import ConfirmAction from "@/components/ConfirmAction";
 
 import { Panel, Card } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 /* أسماءُ المراحل من `pipeline` وحدَه — لا جدولَ ثانيا يفترق عن القِمع */
 const STATUS_LABELS = STATUS_AR;
 const CHANNEL_LABELS: Record<string, string> = { whatsapp: "واتساب", email: "بريد", phone: "اتصال", in_app: "داخل المنصة" };
@@ -48,9 +49,7 @@ interface CaseDetail extends CaseRow {
 }
 
 const INPUT = "w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none";
-const LBL = "mb-1 block text-[11px] font-bold text-muted-foreground";
-/* زرُّ الإرسال في نماذجها الخمسة واحد — فيُكتب مرّةً كأختيه أعلاه */
-const SUBMIT = "mt-2 flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-4 py-1.5 text-[11px] font-black text-on-teal transition hover:bg-teal/90 disabled:opacity-40";
+const LBL = "mb-1 block text-micro font-bold text-muted-foreground";
 
 /* `ar-SA` تُخرج تقويما **هجريّا**، فكان المستشار وحده يرى «١٥ ربيع الآخر»
    بينما الشعبةُ مجدولةٌ ميلاديّا في كل شاشةٍ أخرى — فيُقارن موعدين
@@ -160,7 +159,7 @@ export default function AdvisorCases() {
             <p className="font-black">{partyOf(detail).name}</p>
             {partyOf(detail).email && <p className="mt-1 text-xs text-muted-foreground" dir="ltr">{partyOf(detail).email}</p>}
             {partyOf(detail).phone && <p className="text-xs text-muted-foreground" dir="ltr">{partyOf(detail).phone}</p>}
-            <p className="mt-2 text-[11px] text-muted-foreground">المصدر: {partyOf(detail).source === "diagnostic" ? "التشخيص الذكي" : partyOf(detail).source ?? "حساب مسجل"}</p>
+            <p className="mt-2 text-micro text-muted-foreground">المصدر: {partyOf(detail).source === "diagnostic" ? "التشخيص الذكي" : partyOf(detail).source ?? "حساب مسجل"}</p>
             <p className="mt-3 rounded-xl bg-white/[0.04] p-3 text-xs leading-6 text-foreground">
               {snapshotSummary(detail.client?.learnerProfile?.diagnosticSnapshot ?? detail.diagnosticSnapshot)}
             </p>
@@ -180,14 +179,12 @@ export default function AdvisorCases() {
                   {(detail.client?.cvSubmissions ?? []).map((cv) => (
                     <li key={cv.id} className="flex flex-wrap items-center justify-between gap-2">
                       <span className="min-w-0 text-xs text-foreground">{cv.originalName} — {fmt(cv.createdAt)}</span>
-                      <button
-                        onClick={() => void openCv(cv.id)}
-                        disabled={openingCv === cv.id}
-                        className="flex shrink-0 cursor-pointer items-center gap-1 rounded-full border border-teal/35 px-3 py-1 text-[11px] font-bold text-teal-light-ink transition hover:border-teal disabled:cursor-not-allowed disabled:opacity-50"
+                      <Button
+                        size="sm" icon={FileText} loading={openingCv === cv.id}
+                        onClick={() => void openCv(cv.id)} className="shrink-0 text-teal-light-ink"
                       >
-                        {openingCv === cv.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileText className="h-3 w-3" />}
                         افتحها
-                      </button>
+                      </Button>
                     </li>
                   ))}
                 </ul>
@@ -203,7 +200,7 @@ export default function AdvisorCases() {
               {Object.entries(STATUS_LABELS).map(([k, v]) => (
                 <button key={k} disabled={detail.status === k}
                   onClick={() => void act(() => apiPost(`/api/advisor/cases/${detail.id}/status`, { status: k }), `انتقلت الحالة إلى «${v}»`)}
-                  className={`cursor-pointer rounded-full border px-3 py-1 text-[11px] font-bold transition disabled:cursor-default ${
+                  className={`cursor-pointer rounded-full border px-3 py-1 text-micro font-bold transition disabled:cursor-default ${
                     detail.status === k ? "border-gold bg-gold/10 text-gold-ink" : "border-white/15 text-muted-foreground hover:border-teal/50 hover:text-foreground"
                   }`}>
                   {v}
@@ -226,7 +223,7 @@ export default function AdvisorCases() {
           {/* ما لا يملكه المستشار وحده */}
           <Card as="section" className="lg:col-span-2">
             <h2 className="mb-1 flex items-center gap-2 text-sm font-black text-teal-light-ink"><BadgePercent className="h-4 w-4" /> طلباتٌ تبتّ فيها الإدارة</h2>
-            <p className="mb-3 text-[11px] leading-6 text-muted-foreground">
+            <p className="mb-3 text-micro leading-6 text-muted-foreground">
               خصمٌ على فاتورته، أو تعديلٌ على خطّته. لا يُنفَّذ بطلبك وحده — ويبقى أثرُه مكتوبا.
             </p>
             <RequestsPanel key={detail.id} caseId={detail.id} />
@@ -267,10 +264,9 @@ export default function AdvisorCases() {
                     {f.doneAt && <span className="block text-micro text-[#34A853]">أُنجزت: {f.outcome}</span>}
                   </span>
                   {!f.doneAt && (
-                    <button onClick={() => setClosingFollowUp({ id: f.id, whenAr: fmt(f.scheduledAt) })}
-                      className="cursor-pointer rounded-full border border-white/15 p-1.5 text-muted-foreground transition hover:border-[#34A853]/50 hover:text-[#34A853]" title="إنجاز المتابعة">
+                    <Button tone="secondary" onClick={() => setClosingFollowUp({ id: f.id, whenAr: fmt(f.scheduledAt) })} className="p-1.5 hover:border-[#34A853]/50 hover:text-[#34A853]" title="إنجاز المتابعة">
                       <CheckCircle2 className="h-3.5 w-3.5" />
-                    </button>
+                    </Button>
                   )}
                 </li>
               ))}
@@ -293,10 +289,9 @@ export default function AdvisorCases() {
                     {t.dueAt && <span className="block text-micro text-muted-foreground">تستحق: {fmt(t.dueAt)}</span>}
                   </span>
                   {t.status !== "done" && (
-                    <button onClick={() => void act(() => apiPost(`/api/advisor/tasks/${t.id}/complete`, {}), "أُنجزت المهمة")}
-                      className="cursor-pointer rounded-full border border-white/15 p-1.5 text-muted-foreground transition hover:border-[#34A853]/50 hover:text-[#34A853]" title="إنجاز المهمة">
+                    <Button tone="secondary" onClick={() => void act(() => apiPost(`/api/advisor/tasks/${t.id}/complete`, {}), "أُنجزت المهمة")} className="p-1.5 hover:border-[#34A853]/50 hover:text-[#34A853]" title="إنجاز المهمة">
                       <CheckCircle2 className="h-3.5 w-3.5" />
-                    </button>
+                    </Button>
                   )}
                 </li>
               ))}
@@ -338,10 +333,9 @@ export default function AdvisorCases() {
             {v}
           </button>
         ))}
-        <button onClick={() => setNewOpen((v) => !v)}
-          className="me-auto flex cursor-pointer items-center gap-1.5 rounded-full border border-teal/40 bg-teal/10 px-4 py-1.5 text-xs font-black text-teal-light-ink transition hover:border-teal">
-          <Plus className="h-3.5 w-3.5" /> {newOpen ? "أغلق" : "أدخِل عميلا"}
-        </button>
+        <Button onClick={() => setNewOpen((v) => !v)} icon={Plus} className="me-auto text-teal-light-ink">
+          {newOpen ? "أغلق" : "أدخِل عميلا"}
+        </Button>
       </div>
 
       {/* ── من قابلتَه خارج المنصّة ──
@@ -397,11 +391,10 @@ export default function AdvisorCases() {
             <textarea rows={2} maxLength={2000} className={INPUT}
               value={newForm.note} onChange={(e) => setNewForm((f) => ({ ...f, note: e.target.value }))} />
           </label>
-          <button type="submit"
-            disabled={newForm.fullName.trim().length < 2 || (!newForm.email.trim() && !newForm.phone.trim())}
-            className="mt-3 flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-5 py-2 text-xs font-black text-on-teal transition hover:bg-teal-light disabled:cursor-not-allowed disabled:opacity-40">
-            <Plus className="h-3.5 w-3.5" /> افتح الحالة
-          </button>
+          <Button type="submit" tone="confirm" icon={Plus} className="mt-3"
+            disabled={newForm.fullName.trim().length < 2 || (!newForm.email.trim() && !newForm.phone.trim())}>
+            افتح الحالة
+          </Button>
         </Card>
       )}
 
@@ -422,9 +415,9 @@ export default function AdvisorCases() {
               className="block w-full cursor-pointer rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-right transition hover:border-teal/50">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="font-black">{partyOf(c).name} <span className="text-[11px] font-normal text-muted-foreground" dir="ltr">{partyOf(c).email}</span></p>
+                  <p className="font-black">{partyOf(c).name} <span className="text-micro font-normal text-muted-foreground" dir="ltr">{partyOf(c).email}</span></p>
                   <p className="mt-1 text-xs text-muted-foreground">{snapshotSummary(c.diagnosticSnapshot)}</p>
-                  {c.nextAction && <p className="mt-1 text-[11px] text-gold-ink">التالي: {c.nextAction}{c.nextFollowUpAt ? ` — ${fmt(c.nextFollowUpAt)}` : ""}</p>}
+                  {c.nextAction && <p className="mt-1 text-micro text-gold-ink">التالي: {c.nextAction}{c.nextFollowUpAt ? ` — ${fmt(c.nextFollowUpAt)}` : ""}</p>}
                 </div>
                 <div className="flex items-center gap-2">
                   {c.followUps[0] && (
@@ -432,7 +425,7 @@ export default function AdvisorCases() {
                       متابعة {fmt(c.followUps[0].scheduledAt)}
                     </span>
                   )}
-                  <span className="rounded-full border border-white/15 px-3 py-1 text-[11px] font-bold text-foreground">
+                  <span className="rounded-full border border-white/15 px-3 py-1 text-micro font-bold text-foreground">
                     {STATUS_LABELS[c.status] ?? c.status}
                   </span>
                 </div>
@@ -485,10 +478,9 @@ function NextActionForm({ current, currentAt, onSubmit }: {
       <input value={text} onChange={(e) => setText(e.target.value)} placeholder="مثال: تأكيد موعد المقابلة" className={INPUT} />
       <label className={`${LBL} mt-2`}>موعد المتابعة القادم (اختياري)</label>
       <input type="datetime-local" value={at} onChange={(e) => setAt(e.target.value)} className={INPUT} dir="ltr" />
-      <button type="submit" disabled={text.trim().length < 3}
-        className={SUBMIT}>
+      <Button tone="confirm" size="sm" type="submit" disabled={text.trim().length < 3} className="mt-2">
         <Send className="h-3 w-3" /> حفظ الإجراء
-      </button>
+      </Button>
     </form>
   );
 }
@@ -505,10 +497,9 @@ function ContactForm({ onSubmit }: { onSubmit: (channel: string, summary: string
         </select>
         <input value={summary} onChange={(e) => setSummary(e.target.value)} placeholder="ملخص التواصل…" className={INPUT} />
       </div>
-      <button type="submit" disabled={summary.trim().length < 3}
-        className={SUBMIT}>
+      <Button tone="confirm" size="sm" type="submit" disabled={summary.trim().length < 3} className="mt-2">
         <MessageSquarePlus className="h-3 w-3" /> تسجيل
-      </button>
+      </Button>
     </form>
   );
 }
@@ -527,10 +518,9 @@ function FollowUpForm({ onSubmit }: { onSubmit: (scheduledAt: string, channel: s
         </select>
         <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="ملاحظة (اختياري)" className={INPUT} />
       </div>
-      <button type="submit" disabled={!at}
-        className={SUBMIT}>
+      <Button tone="confirm" size="sm" type="submit" disabled={!at} className="mt-2">
         <CalendarClock className="h-3 w-3" /> جدولة
-      </button>
+      </Button>
     </form>
   );
 }
@@ -542,10 +532,9 @@ function TaskForm({ onSubmit }: { onSubmit: (title: string, dueAt: string) => vo
     <form onSubmit={(e) => { e.preventDefault(); if (title.trim().length >= 3) { onSubmit(title.trim(), due ? new Date(due).toISOString() : ""); setTitle(""); setDue(""); } }}>
       <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="عنوان المهمة…" className={INPUT} />
       <input type="datetime-local" value={due} onChange={(e) => setDue(e.target.value)} className={`${INPUT} mt-2`} dir="ltr" />
-      <button type="submit" disabled={title.trim().length < 3}
-        className={SUBMIT}>
+      <Button tone="confirm" size="sm" type="submit" disabled={title.trim().length < 3} className="mt-2">
         <ClipboardList className="h-3 w-3" /> إضافة مهمة
-      </button>
+      </Button>
     </form>
   );
 }
@@ -555,10 +544,9 @@ function NoteForm({ onSubmit }: { onSubmit: (body: string) => void }) {
   return (
     <form onSubmit={(e) => { e.preventDefault(); if (body.trim().length >= 3) { onSubmit(body.trim()); setBody(""); } }}>
       <textarea rows={2} value={body} onChange={(e) => setBody(e.target.value)} placeholder="ملاحظة داخلية…" className={INPUT} />
-      <button type="submit" disabled={body.trim().length < 3}
-        className={SUBMIT}>
+      <Button tone="confirm" size="sm" type="submit" disabled={body.trim().length < 3} className="mt-2">
         <StickyNote className="h-3 w-3" /> حفظ الملاحظة
-      </button>
+      </Button>
     </form>
   );
 }

@@ -8,7 +8,6 @@ import {
 } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { fmtDateTime } from "@/application/text/format-ar";
-import { Panel, Card, Inset } from "@/components/ui/Surface";
 import { LEDGER_CURRENCY } from "@/application/commerce/presentment"
 
 const inputCls = "w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-[#38A7B4] focus:outline-none";
@@ -39,13 +38,13 @@ function Fold({ icon: Icon, title, children, defaultOpen = false }: {
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <Panel as="article">
+    <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
       <button onClick={() => setOpen(!open)} className="flex w-full cursor-pointer items-center justify-between text-sm font-black">
         <span className="flex items-center gap-2"><Icon className="h-4 w-4 text-teal-light-ink" /> {title}</span>
         <ChevronDown className={`h-4 w-4 text-muted-foreground transition ${open ? "rotate-180" : ""}`} />
       </button>
       {open && <div className="mt-4">{children}</div>}
-    </Panel>
+    </article>
   );
 }
 
@@ -54,7 +53,7 @@ function RubricInput({ scores, onChange }: { scores: Record<string, number>; onC
     <div className="space-y-2">
       {RUBRIC_AXES.map((x) => (
         <div key={x.key} className="flex items-center justify-between gap-2">
-          <span className="text-[11px] text-muted-foreground">{x.label}</span>
+          <span className="text-micro text-muted-foreground">{x.label}</span>
           <div className="flex gap-1" role="radiogroup" aria-label={x.label}>
             {[1, 2, 3, 4, 5].map((v) => (
               <button key={v} type="button" onClick={() => onChange({ ...scores, [x.key]: v })}
@@ -114,7 +113,7 @@ export function TrainerDetailOps({ app, onAction }: {
       <Fold icon={CalendarCheck} title={`المقابلات (${app.interviews.length})`}>
         <div className="space-y-3">
           {app.interviews.map((iv) => (
-            <Inset key={iv.id} className="text-xs">
+            <div key={iv.id} className="rounded-xl border border-white/10 bg-paper/20 p-3 text-xs">
               <p className="font-bold">{fmtDateTime(new Date(iv.scheduledAt))} — {iv.outcome ?? "بلا نتيجة"}</p>
               {!iv.outcome && (
                 <div className="mt-2 flex flex-wrap gap-1.5">
@@ -128,7 +127,7 @@ export function TrainerDetailOps({ app, onAction }: {
                   ))}
                 </div>
               )}
-            </Inset>
+            </div>
           ))}
           <div className="grid gap-2 sm:grid-cols-3">
             <input type="datetime-local" value={interviewForm.scheduledAt}
@@ -159,7 +158,7 @@ export function TrainerDetailOps({ app, onAction }: {
         <div className="mt-3 flex flex-wrap gap-2">
           {([["pass", "يجتاز"], ["retry", "يعيد"], ["fail", "لا يجتاز"]] as const).map(([d, label]) => (
             <button key={d} type="button" onClick={() => setDemoDecision(d)}
-              className={`cursor-pointer rounded-full border px-3 py-1 text-[11px] font-bold transition ${demoDecision === d ? "border-gold bg-gold/10 text-gold-ink" : "border-white/15 text-muted-foreground"}`}>
+              className={`cursor-pointer rounded-full border px-3 py-1 text-micro font-bold transition ${demoDecision === d ? "border-gold bg-gold/10 text-gold-ink" : "border-white/15 text-muted-foreground"}`}>
               {label}
             </button>
           ))}
@@ -247,21 +246,21 @@ export function TrainerDetailOps({ app, onAction }: {
       {app.profile && (
         <Fold icon={Briefcase} title="الدورات المؤهَّل لها" defaultOpen={app.status === "active"}>
           {(app.summary?.qualifiedCourses?.length ?? 0) === 0 ? (
-            <p className="text-[11px] leading-6 text-muted-foreground">
+            <p className="text-micro leading-6 text-muted-foreground">
               لا دورة مؤهَّلا لها بعد. التأهيل يُطلب من الشعبة التي يُراد إسنادُه إليها — وموافقة المدير
               الأكاديميّ تؤهّله وتُسنده في فعلٍ واحد.
             </p>
           ) : (
             <ul className="flex flex-wrap gap-1.5">
               {app.summary!.qualifiedCourses.map((c) => (
-                <li key={c.courseId} className="rounded-full border border-teal/35 bg-teal/[0.08] px-3 py-1 text-[11px] font-bold text-teal-light-ink">
+                <li key={c.courseId} className="rounded-full border border-teal/35 bg-teal/[0.08] px-3 py-1 text-micro font-bold text-teal-light-ink">
                   {c.titleAr}
                 </li>
               ))}
             </ul>
           )}
           {(app.summary?.pendingQualifications ?? 0) > 0 && (
-            <p className="mt-2.5 text-[11px] text-gold-ink">
+            <p className="mt-2.5 text-micro text-gold-ink">
               وله {app.summary!.pendingQualifications} طلبُ تأهيلٍ بانتظار القرار.
             </p>
           )}
@@ -296,7 +295,7 @@ function BlastRadiusStrip({ r }: { r: TrainerChangeRequest }) {
   const entities = [...b.pathways, ...b.templates];
   return (
     <div className={`mt-3 rounded-2xl border px-4 py-3 ${wide ? "border-gold/35 bg-gold/[0.07]" : "border-white/10 bg-white/[0.02]"}`}>
-      <p className="flex items-start gap-2 text-[11px] font-bold leading-6">
+      <p className="flex items-start gap-2 text-micro font-bold leading-6">
         {wide
           ? <AlertTriangle className="mt-1 h-3.5 w-3.5 shrink-0 text-gold-ink" aria-hidden="true" />
           : <Info className="mt-1 h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />}
@@ -352,25 +351,25 @@ export function TrainerChangeRequests() {
     <div className="space-y-3">
       {msg && <p className="rounded-xl border border-white/10 bg-white/[0.04] p-3 text-xs font-bold text-foreground" role="status">{msg}</p>}
       {rows.length === 0 && (
-        <Panel className="grid place-items-center py-16 text-center">
+        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center">
           <CheckCircle2 className="h-10 w-10 text-muted-foreground/50" />
           <p className="mt-3 text-sm text-muted-foreground">لا اقتراحات من المدربين بعد — تصل من بوابة المدرب ← «اقتراحاتي».</p>
-        </Panel>
+        </div>
       )}
       {rows.map((r) => (
-        <Card key={r.id}>
+        <div key={r.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm font-black">
                 دورة <span dir="ltr" className="font-mono text-xs">{r.courseId ?? r.course?.id ?? "—"}</span>
-                <span className="mr-2 text-[11px] font-bold text-muted-foreground">نطاق: {r.scope === "cohort" ? "شعبة" : "كتالوج"}</span>
+                <span className="mr-2 text-micro font-bold text-muted-foreground">نطاق: {r.scope === "cohort" ? "شعبة" : "كتالوج"}</span>
               </p>
               <p className="mt-1 text-xs leading-6 text-muted-foreground">{r.reason}</p>
               <p className="mt-1 text-micro text-muted-foreground">
                 {fmtDateTime(new Date(r.createdAt))} · {r.items?.length ?? 0} بند تعديل
               </p>
             </div>
-            <span className="rounded-full border border-teal/40 px-3 py-1 text-[11px] font-bold text-teal-light-ink">
+            <span className="rounded-full border border-teal/40 px-3 py-1 text-micro font-bold text-teal-light-ink">
               {CR_STATUS_AR[r.status] ?? r.status}
             </span>
           </div>
@@ -407,7 +406,7 @@ export function TrainerChangeRequests() {
               onPublish={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/publish`), "نُشر الاقتراح في نطاقه")}
             />
           )}
-        </Card>
+        </div>
       ))}
     </div>
   );
@@ -470,15 +469,15 @@ function ImpactGate({
               {running ? "يشغّل ١٢ شخصية…" : "افحص الأثر التشخيصي"}
             </button>
             {checked === false && !verdict && (
-              <span className="text-[11px] font-bold text-gold-ink">لم يُفحص بعد — النشر بنطاق الكتالوج موقوف حتى الفحص.</span>
+              <span className="text-micro font-bold text-gold-ink">لم يُفحص بعد — النشر بنطاق الكتالوج موقوف حتى الفحص.</span>
             )}
             {checked === true && !verdict && (
-              <span className="text-[11px] text-muted-foreground">فُحص الأثر بعد الاعتماد — يمكن النشر.</span>
+              <span className="text-micro text-muted-foreground">فُحص الأثر بعد الاعتماد — يمكن النشر.</span>
             )}
           </div>
 
           {verdict && (
-            <div className={`mt-2 rounded-2xl border px-4 py-3 text-[11px] leading-6 ${
+            <div className={`mt-2 rounded-2xl border px-4 py-3 text-micro leading-6 ${
               verdict.touchesDiagnostic ? "border-gold/35 bg-gold/[0.07]" : "border-teal/30 bg-teal-ink/[0.06]"
             }`}>
               <p className="font-bold text-foreground">{verdict.verdictAr}</p>
@@ -656,7 +655,7 @@ export function TrainerPayouts() {
           <option value="">كل الحالات</option>
           {Object.entries(PAYOUT_STATUS_AR).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
-        <label className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 text-[11px] font-bold text-muted-foreground transition hover:border-white/30">
+        <label className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 text-micro font-bold text-muted-foreground transition hover:border-white/30">
           <input type="checkbox" checked={showCancelledZero} onChange={(e) => setShowCancelledZero(e.target.checked)} className="accent-gold" />
           إظهار الملغاة الصفرية
         </label>
@@ -701,7 +700,7 @@ export function TrainerPayouts() {
               && !r.cohortId && !r.courseId && !ruleForm.cohortId)
               ?? rules.find((r) => r.profileId === ruleForm.profileId && !r.effectiveTo && r.cohortId === ruleForm.cohortId && ruleForm.cohortId);
             return (
-              <p className="rounded-xl border border-white/10 bg-paper/20 px-3 py-2 text-[11px] text-muted-foreground">
+              <p className="rounded-xl border border-white/10 bg-paper/20 px-3 py-2 text-micro text-muted-foreground">
                 {active
                   ? <>القاعدة السارية{active.cohortId ? " لهذه الشعبة" : " (العامة)"}: <b className="text-foreground">{RULE_TYPE_AR[active.type]}</b> بمعدل <b dir="ltr" className="font-mono text-foreground">{Number(active.rate)}</b> {active.currency}
                       {active.type === "per_seat" && active.minSeats > 0 ? <> · حد أدنى <b className="text-foreground">{active.minSeats}</b> مقاعد</> : null}
@@ -735,7 +734,7 @@ export function TrainerPayouts() {
             </button>
           </div>
           {preview && (
-            <Card tone="accent" className="space-y-2">
+            <div className="space-y-2 rounded-2xl border border-teal/25 bg-teal/5 p-4">
               <p className="text-xs font-black">
                 {preview.profile.fullName} · قاعدة «{RULE_TYPE_AR[preview.rule.type]}»
                 {preview.rule.scope !== "general" ? " (مخصصة لهذه الشعبة/الدورة)" : ""} بمعدل <span dir="ltr" className="font-mono">{preview.rule.rate}</span> {preview.rule.currency}
@@ -756,15 +755,15 @@ export function TrainerPayouts() {
                   توليد الكشف — بانتظار الاعتماد
                 </button>
               </div>
-            </Card>
+            </div>
           )}
           {batchResult && (
-            <Card className="space-y-1 bg-paper/20 text-[11px] leading-6">
+            <div className="space-y-1 rounded-2xl border border-white/10 bg-paper/20 p-4 text-micro leading-6">
               <p className="font-black text-emerald-300">وُلّد {batchResult.generated.length} كشفاً</p>
               {batchResult.skipped.map((s, i) => (
                 <p key={i} className="text-muted-foreground">تُركت «{s.title}»: {s.reason}</p>
               ))}
-            </Card>
+            </div>
           )}
           <p className="text-micro leading-5 text-muted-foreground">
             اكتمال أي شعبة يولّد كشف مدربها تلقائياً إن كانت له قاعدة سارية — هذه الأدوات للتوليد اليدوي عند الحاجة،
@@ -774,8 +773,8 @@ export function TrainerPayouts() {
       </Fold>
 
       {showCreate && (
-        <Panel tone="warn" className="space-y-3">
-          <p className="text-sm font-black">كشف مستحقات جديد <span className="text-[11px] font-bold text-muted-foreground">— يولد بحالة «بانتظار الاعتماد»</span></p>
+        <div className="space-y-3 rounded-3xl border border-gold/25 bg-gold/5 p-5">
+          <p className="text-sm font-black">كشف مستحقات جديد <span className="text-micro font-bold text-muted-foreground">— يولد بحالة «بانتظار الاعتماد»</span></p>
           <div className="flex flex-wrap gap-2">
             <select value={form.profileId} onChange={(e) => setForm({ ...form, profileId: e.target.value })} className={`${selectCls} flex-1`}>
               <option value="">اختر المدرب…</option>
@@ -805,7 +804,7 @@ export function TrainerPayouts() {
           ))}
           <div className="flex flex-wrap items-center gap-2">
             <button onClick={() => setItems([...items, { description: "", amount: "", sourceRef: "" }])}
-              className="cursor-pointer rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-bold text-muted-foreground hover:border-white/40">
+              className="cursor-pointer rounded-full border border-white/15 px-3 py-1.5 text-micro font-bold text-muted-foreground hover:border-white/40">
               + بند آخر
             </button>
             <button disabled={busy || !form.profileId || !/^\d{4}-(0[1-9]|1[0-2])$/.test(form.period) || items.some((i) => i.description.trim().length < 3 || !(Number(i.amount) > 0))}
@@ -814,7 +813,7 @@ export function TrainerPayouts() {
               إنشاء الكشف
             </button>
           </div>
-        </Panel>
+        </div>
       )}
 
       {(() => {
@@ -828,23 +827,23 @@ export function TrainerPayouts() {
               </p>
             )}
             {visibleRows.length === 0 && (
-              <Panel className="grid place-items-center py-16 text-center">
+              <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center">
                 <Banknote className="h-10 w-10 text-muted-foreground/50" />
                 <p className="mt-3 text-sm text-muted-foreground">لا كشوف بهذه الحالة — أنشئ أول كشف من زر «كشف جديد».</p>
-              </Panel>
+              </div>
             )}
             {visibleRows.map((p) => (
-        <Card key={p.id}>
+        <div key={p.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm font-black">
                 {p.profile.application?.fullName ?? "مدرب"} <span dir="ltr" className="font-mono text-micro text-muted-foreground">{p.profile.application?.reference}</span>
-                <span className="mr-2 text-[11px] font-bold text-muted-foreground">فترة <span dir="ltr" className="font-mono">{p.period}</span></span>
+                <span className="mr-2 text-micro font-bold text-muted-foreground">فترة <span dir="ltr" className="font-mono">{p.period}</span></span>
               </p>
               <p className="mt-1 text-xl font-black">{fmt(p.total)} <span className="text-xs font-bold text-muted-foreground">{p.currency}</span></p>
               {p.paidAt && <p className="mt-0.5 text-micro text-muted-foreground">صُرف {fmtDateTime(new Date(p.paidAt))}</p>}
             </div>
-            <span className={`rounded-full border px-3 py-1 text-[11px] font-bold ${PAYOUT_STATUS_CLS[p.status] ?? ""}`}>
+            <span className={`rounded-full border px-3 py-1 text-micro font-bold ${PAYOUT_STATUS_CLS[p.status] ?? ""}`}>
               {PAYOUT_STATUS_AR[p.status] ?? p.status}
             </span>
           </div>
@@ -879,7 +878,7 @@ export function TrainerPayouts() {
               </button>
             </div>
           )}
-        </Card>
+        </div>
             ))}
           </>
         );

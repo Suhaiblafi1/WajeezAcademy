@@ -24,9 +24,10 @@ import { toast, toastError } from "@/components/Toast";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { fmtDateTimeAr } from "@/utils/format";
 import { Panel } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 
 /* أزرارُ الإجراء الخمسة تشترك في هيئةٍ واحدة، ويفترق لونُها وحدَه */
-const ACT = "cursor-pointer rounded-full border px-4 py-1.5 text-[11px] font-bold transition disabled:opacity-40";
+const ACT = "cursor-pointer rounded-full border px-4 py-1.5 text-micro font-bold transition disabled:opacity-40";
 
 const SUBMISSION_STATUS: Record<string, string> = {
   submitted: "بانتظار المراجعة", under_review: "قيد المراجعة",
@@ -98,9 +99,7 @@ export default function GradingQueue() {
           <ServerOff className="h-12 w-12 text-muted-foreground/50" />
           <h2 className="mt-4 text-xl font-black">لا يمكن الوصول للطابور</h2>
           <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">{offline}</p>
-          <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground hover:border-white/40">
-            <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
-          </button>
+          <Button onClick={() => void load()} icon={RefreshCw} className="mt-5">إعادة المحاولة</Button>
         </Panel>
       </TrainerLayout>
     );
@@ -151,7 +150,7 @@ export default function GradingQueue() {
                   </p>
                 </div>
                 {q.grades[0] && (
-                  <span className="rounded-full bg-teal/15 px-3 py-1 text-[11px] font-black text-teal-light-ink">
+                  <span className="rounded-full bg-teal/15 px-3 py-1 text-micro font-black text-teal-light-ink">
                     {Number(q.grades[0].score)}/{Number(q.grades[0].maxScore)}
                   </span>
                 )}
@@ -211,7 +210,7 @@ export default function GradingQueue() {
                   aria-label={`تغذيةٌ راجعةٌ على «${q.assessment.title}»`}
                   className="flex-1 rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none" />
                 <button disabled={busy || (feedbackForm[q.id] ?? "").trim().length < 3} onClick={() => void sendFeedback(q.id)}
-                  className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-[11px] font-black text-foreground transition hover:bg-white/15 disabled:opacity-40">
+                  className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-micro font-black text-foreground transition hover:bg-white/15 disabled:opacity-40">
                   <MessageSquarePlus className="h-3 w-3" /> أرسل
                 </button>
               </div>

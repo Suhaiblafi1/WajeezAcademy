@@ -23,6 +23,7 @@ import { apiGet, apiPost, ApiError } from "@/services/api";
 import { fmtDateTimeAr } from "@/utils/format";
 
 import { Panel, Card } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 interface Slot {
   sessionId: string;
   title: string;
@@ -221,21 +222,20 @@ export default function TrainerSchedule() {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-bold">{r.session.title} — {r.session.cohort.title}</p>
-                    <p className="mt-0.5 text-[11px] text-muted-foreground">موعد مقترح: {fmtDateTimeAr(r.proposedStartsAt)}</p>
+                    <p className="mt-0.5 text-micro text-muted-foreground">موعد مقترح: {fmtDateTimeAr(r.proposedStartsAt)}</p>
                     <p className="mt-1 text-xs text-muted-foreground">{r.reason}</p>
                     {r.reviewerComment && (
-                      <p className="mt-1 text-[11px] text-muted-foreground">ملاحظة الإدارة: {r.reviewerComment}</p>
+                      <p className="mt-1 text-micro text-muted-foreground">ملاحظة الإدارة: {r.reviewerComment}</p>
                     )}
                   </div>
-                  <span className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-bold ${r.status === "approved" ? "border-teal/40 text-teal-light-ink" : r.status === "rejected" ? "border-red-400/40 text-red-300" : r.status === "withdrawn" ? "border-white/15 text-muted-foreground" : "border-gold/40 text-gold-ink"}`}>
+                  <span className={`shrink-0 rounded-full border px-3 py-1 text-micro font-bold ${r.status === "approved" ? "border-teal/40 text-teal-light-ink" : r.status === "rejected" ? "border-red-400/40 text-red-300" : r.status === "withdrawn" ? "border-white/15 text-muted-foreground" : "border-gold/40 text-gold-ink"}`}>
                     {RESCHEDULE_STATUS_AR[r.status] ?? r.status}
                   </span>
                   {r.status === "pending" && (
-                    <button type="button" disabled={busy}
-                      onClick={() => void withdrawReschedule(r.id)}
-                      className="shrink-0 cursor-pointer rounded-full border border-white/15 px-4 py-1.5 text-[11px] font-bold text-muted-foreground transition hover:border-red-400/40 hover:text-red-300 disabled:opacity-40">
+                    <Button type="button" size="sm" tone="danger" disabled={busy}
+                      onClick={() => void withdrawReschedule(r.id)} className="shrink-0">
                       سحب الاقتراح
-                    </button>
+                    </Button>
                   )}
                 </div>
               </Card>

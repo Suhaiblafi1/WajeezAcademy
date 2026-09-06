@@ -32,7 +32,7 @@ export default function BookInterview({ name, email, reference, className = '' }
         وتصلك دعوةُ الاجتماع على بريدك فورَ الحجز.
       </p>
 
-      <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[12px] text-muted-foreground">
+      <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
         <span className="inline-flex items-center gap-1.5">
           <CalendarClock className="h-3.5 w-3.5" /> {TRAINER_INTERVIEW.minutes} دقيقة
         </span>

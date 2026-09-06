@@ -15,6 +15,7 @@ import { useRealSession } from "@/services/session";
 import { fmtDate } from "@/application/text/format-ar";
 
 import { Panel, Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 interface Task {
   id: string; title: string; bodyAr: string | null;
   dueAt: string | null; priority: string; status: string;
@@ -86,13 +87,10 @@ export default function AdminTasks() {
           {t.doneNoteAr && <p className="mt-1 text-micro text-teal-light-ink">{t.doneNoteAr}</p>}
         </div>
         {t.status !== "done" && (
-          <button
-            disabled={busy}
-            onClick={() => act(() => apiPost(`/api/staff/tasks/${t.id}/complete`, {}), "أُغلقت المهمّة")}
-            className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-teal/45 px-3 py-1 text-[11px] font-bold text-teal-light-ink transition hover:bg-teal/10 disabled:opacity-40"
-          >
+          <Button tone="confirm" size="sm" disabled={busy}
+            onClick={() => act(() => apiPost(`/api/staff/tasks/${t.id}/complete`, {}), "أُغلقت المهمّة")} className="shrink-0 text-teal-light-ink">
             <CheckCircle2 className="h-3 w-3" /> أنجزتُها
-          </button>
+          </Button>
         )}
       </div>
     </li>
@@ -121,7 +119,7 @@ export default function AdminTasks() {
               <Panel as="section" tone="warn">
                 <h2 className="text-sm font-black text-gold-ink">كلّف موظّفا بمهمّة</h2>
                 {/* التكليفُ يُشعِر مكلَّفَه في الفعل نفسِه — لا خطوةَ إشعارٍ بعده */}
-                <p className="mt-1 text-[11px] text-muted-foreground">يصله إشعارٌ بها فورا، ولا يُكلَّف من هو أعلى رتبةً منك.</p>
+                <p className="mt-1 text-micro text-muted-foreground">يصله إشعارٌ بها فورا، ولا يُكلَّف من هو أعلى رتبةً منك.</p>
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">
                   <select value={form.assigneeId} onChange={(e) => setForm({ ...form, assigneeId: e.target.value })}
                     aria-label="المكلَّف" className={`${field} cursor-pointer [&>option]:bg-surface`}>
@@ -141,8 +139,7 @@ export default function AdminTasks() {
                     {Object.entries(PRIORITY_AR).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                   </select>
                 </div>
-                <button
-                  disabled={busy || !form.assigneeId || form.title.trim().length < 3}
+                <Button tone="primary" disabled={busy || !form.assigneeId || form.title.trim().length < 3}
                   onClick={() => act(
                     () => apiPost("/api/staff/tasks", {
                       assigneeId: form.assigneeId, title: form.title.trim(),
@@ -151,11 +148,9 @@ export default function AdminTasks() {
                       priority: form.priority,
                     }).then(() => setForm({ assigneeId: "", title: "", bodyAr: "", dueAt: "", priority: "normal" })),
                     "كُلّف الموظّف — ووصله إشعارٌ بها",
-                  )}
-                  className="mt-3 cursor-pointer rounded-full bg-gold px-5 py-2 text-xs font-black text-on-gold transition hover:bg-gold/90 disabled:opacity-40"
-                >
+                  )} className="mt-3">
                   كلّفه
-                </button>
+                </Button>
               </Panel>
             )}
 
@@ -176,7 +171,7 @@ export default function AdminTasks() {
                   <Bell className="h-4 w-4 text-teal-light-ink" /> إشعارٌ بلا مهمّة
                 </h2>
                 {/* إعلانٌ يصل ولا يُتابَع ولا يُغلَق — وحبّتُه منفصلة عن التكليف */}
-                <p className="mt-1 text-[11px] text-muted-foreground">يصل ولا يُتابَع ولا يُغلَق. للتكليف الذي يُتابَع استعمل اللوح أعلاه.</p>
+                <p className="mt-1 text-micro text-muted-foreground">يصل ولا يُتابَع ولا يُغلَق. للتكليف الذي يُتابَع استعمل اللوح أعلاه.</p>
                 <div className="mt-3 space-y-2">
                   <input value={announce.title} onChange={(e) => setAnnounce({ ...announce, title: e.target.value })}
                     placeholder="عنوان الإشعار" aria-label="عنوان الإشعار" className={field} />
@@ -184,7 +179,7 @@ export default function AdminTasks() {
                     rows={2} placeholder="نصّ الإشعار" aria-label="نص الإشعار" className={field} />
                   <Inset className="max-h-40 space-y-1 overflow-y-auto p-2">
                     {people.map((p) => (
-                      <label key={p.id} className="flex cursor-pointer items-center gap-2 text-[11px] text-foreground">
+                      <label key={p.id} className="flex cursor-pointer items-center gap-2 text-micro text-foreground">
                         <input
                           type="checkbox" className="accent-teal"
                           checked={announce.to.includes(p.id)}
@@ -198,18 +193,15 @@ export default function AdminTasks() {
                     ))}
                   </Inset>
                 </div>
-                <button
-                  disabled={busy || announce.to.length === 0 || announce.title.trim().length < 3 || announce.bodyAr.trim().length < 3}
+                <Button tone="confirm" disabled={busy || announce.to.length === 0 || announce.title.trim().length < 3 || announce.bodyAr.trim().length < 3}
                   onClick={() => act(
                     () => apiPost("/api/staff/notify", {
                       userIds: announce.to, title: announce.title.trim(), bodyAr: announce.bodyAr.trim(),
                     }).then(() => setAnnounce({ title: "", bodyAr: "", to: [] })),
                     `أُرسل الإشعار إلى ${announce.to.length}`,
-                  )}
-                  className="mt-3 flex cursor-pointer items-center gap-1.5 rounded-full border border-teal/50 px-5 py-2 text-xs font-black text-teal-light-ink transition hover:bg-teal/10 disabled:opacity-40"
-                >
+                  )} className="mt-3 text-teal-light-ink">
                   <Send className="h-3.5 w-3.5" /> أرسِل
-                </button>
+                </Button>
               </Panel>
             )}
           </>

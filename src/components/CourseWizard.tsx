@@ -16,6 +16,7 @@ import { apiPost, ApiError } from "@/services/api";
 import { toast } from "@/components/Toast";
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 interface PathwayOption { id: string; title: string }
 interface SkillRow {
   id: string; status: string; slug: string; nameAr: string; familyId: string | null;
@@ -80,7 +81,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
                 type="button"
                 disabled={i > step}
                 onClick={() => { if (i < step) setStep(i); }}
-                className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold ${
+                className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-micro font-bold ${
                   i < step ? "cursor-pointer" : "cursor-default"
                 } ${
                   now ? "border-gold bg-gold/15 text-gold-ink"
@@ -94,7 +95,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
           );
         })}
       </ol>
-      <p className="mb-4 text-[11px] text-muted-foreground">{COURSE_WIZARD_STEPS[step].hintAr}</p>
+      <p className="mb-4 text-micro text-muted-foreground">{COURSE_WIZARD_STEPS[step].hintAr}</p>
 
       {error && <p className="mb-4 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-200">{error}</p>}
 
@@ -120,7 +121,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
           {d.modules.map((m, i) => (
             <Inset key={i}>
               <div className="mb-2 flex items-center justify-between">
-                <span className="text-[11px] font-bold text-muted-foreground">الوحدة {i + 1}</span>
+                <span className="text-micro font-bold text-muted-foreground">الوحدة {i + 1}</span>
                 {d.modules.length > 1 && (
                   <button type="button" onClick={() => setD({ ...d, modules: d.modules.filter((_, j) => j !== i) })} className="cursor-pointer text-muted-foreground hover:text-red-300">
                     <Trash2 className="h-3.5 w-3.5" />
@@ -180,10 +181,9 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
               </p>
             </Inset>
           ))}
-          <button type="button" onClick={() => setD({ ...d, modules: [...d.modules, EMPTY_MODULE] })}
-            className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-1.5 text-xs font-bold text-muted-foreground hover:border-white/40">
+          <Button tone="secondary" size="sm" type="button" onClick={() => setD({ ...d, modules: [...d.modules, EMPTY_MODULE] })}>
             <Plus className="h-3.5 w-3.5" /> وحدة إضافية
-          </button>
+          </Button>
         </div>
       )}
 
@@ -196,12 +196,12 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
       {key === "review" && (
         <div className="space-y-3 text-sm">
           <Card className="bg-paper/20">
-            <p className="font-black">{d.titleAr || "—"} <span dir="ltr" className="font-mono text-[11px] text-muted-foreground">({d.id})</span></p>
-            <p className="mt-1 text-[11px] text-muted-foreground">
+            <p className="font-black">{d.titleAr || "—"} <span dir="ltr" className="font-mono text-micro text-muted-foreground">({d.id})</span></p>
+            <p className="mt-1 text-micro text-muted-foreground">
               المسار: {pathways.find((p) => p.id === d.pathwayId)?.title ?? "—"} · {d.totalHours || 0} ساعة · {d.modules.length} وحدة · {d.skillIds.length} مهارة
             </p>
           </Card>
-          <p className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-[11px] leading-6 text-foreground">
+          <p className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-micro leading-6 text-foreground">
             تُنشأ الدورة مسودة، ثم تمرّ بسير الاعتماد المعتاد (مراجعة فاعتماد فنشر) من «النشر والإصدارات» — لا تُنشر من هنا.
           </p>
         </div>
@@ -210,7 +210,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
       {blockers.length > 0 && (
         <ul className="mt-4 space-y-1 rounded-xl border border-amber-400/30 bg-amber-400/5 px-4 py-3">
           {blockers.map((b) => (
-            <li key={b} className="flex items-start gap-2 text-[11px] leading-6 text-amber-300">
+            <li key={b} className="flex items-start gap-2 text-micro leading-6 text-amber-300">
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" /> {b}
             </li>
           ))}
@@ -219,20 +219,18 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
 
       <div className="mt-5 flex flex-wrap items-center gap-3">
         {step > 0 && (
-          <button onClick={() => setStep(step - 1)} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-sm font-bold hover:border-white/40">
+          <Button tone="secondary" onClick={() => setStep(step - 1)}>
             <ArrowRight className="h-4 w-4" aria-hidden="true" /> السابق
-          </button>
+          </Button>
         )}
         {step < COURSE_WIZARD_STEPS.length - 1 ? (
-          <button disabled={blockers.length > 0} onClick={() => setStep(step + 1)}
-            className="flex cursor-pointer items-center gap-2 rounded-full bg-gold px-6 py-2 text-sm font-black text-on-gold disabled:opacity-40">
+          <Button tone="primary" disabled={blockers.length > 0} onClick={() => setStep(step + 1)}>
             التالي <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          </button>
+          </Button>
         ) : (
-          <button disabled={busy} onClick={() => void create()}
-            className="flex cursor-pointer items-center gap-2 rounded-full bg-gold px-6 py-2 text-sm font-black text-on-gold disabled:opacity-40">
+          <Button tone="primary" disabled={busy} onClick={() => void create()}>
             {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null} أنشئ المسودة
-          </button>
+          </Button>
         )}
       </div>
     </Panel>

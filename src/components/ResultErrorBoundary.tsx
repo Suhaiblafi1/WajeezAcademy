@@ -2,7 +2,7 @@
    يتحول لحالة استعادة مفهومة بدل صفحة فارغة. */
 
 import { Component, type ReactNode } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/legacy-button";
 import { RotateCcw, Home } from "lucide-react";
 import { Link } from "react-router";
 

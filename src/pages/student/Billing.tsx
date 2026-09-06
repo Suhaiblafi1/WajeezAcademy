@@ -9,6 +9,7 @@ import { fmtWhen } from "@/utils/format";
 import { toast, toastError } from '@/components/Toast';
 
 import { Panel, Card } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 interface Payment { id: string; amount: string; status: string; method: string | null; refunds: { id: string; status: string; amount: string }[] }
 interface Invoice { id: string; total: string; currency: string; status: string; issuedAt: string; payments: Payment[] }
 interface Order {
@@ -137,11 +138,10 @@ export default function Billing() {
 
               {isUnpaid(o.status) && provider.driver !== "manual" && (
                 <div className="mt-4">
-                  <button disabled={busy === o.id} onClick={() => void pay(o)}
-                    className="flex cursor-pointer items-center gap-2 rounded-full bg-gold px-6 py-2.5 text-xs font-black text-on-gold transition hover:bg-gold/90 disabled:opacity-40">
+                  <Button tone="primary" disabled={busy === o.id} onClick={() => void pay(o)}>
                     {busy === o.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CreditCard className="h-3.5 w-3.5" />}
                     {PAY_LABEL[provider.driver] ?? PAY_LABEL.test}
-                  </button>
+                  </Button>
                   {provider.driver !== "test" && (
                     <p className="mt-2 flex items-center gap-1.5 text-fine text-muted-foreground">
                       <ShieldCheck className="h-3 w-3 text-teal-ink" />
@@ -151,10 +151,9 @@ export default function Billing() {
                 </div>
               )}
               {isUnpaid(o.status) && (
-                <button disabled={busy === o.id} onClick={() => void cancel(o)}
-                  className="mt-3 flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-1.5 text-fine font-bold text-muted-foreground transition hover:border-white/40 disabled:opacity-40">
+                <Button tone="secondary" size="sm" disabled={busy === o.id} onClick={() => void cancel(o)} className="mt-3">
                   <CircleSlash className="h-3 w-3" /> ألغِ الطلب وافكّ حجز مقعدي
-                </button>
+                </Button>
               )}
               {isUnpaid(o.status) && provider.driver === "manual" && (
                 <p className="mt-4 rounded-xl border border-gold/30 bg-gold/5 px-4 py-2.5 text-xs font-bold text-gold-ink">

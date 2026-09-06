@@ -5,6 +5,7 @@ import TrainerLayout from "./TrainerLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 
 import { Panel, Card } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 const STATUS_LABELS: Record<string, string> = {
   draft: "مسودة", submitted: "مُقدَّم", under_review: "قيد المراجعة",
   changes_requested: "طُلبت تعديلات", approved_for_cohort: "معتمد للشعبة",
@@ -208,7 +209,7 @@ export default function TrainerProposals() {
                 : <Lock className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />}
               {g.titleAr}
             </p>
-            <p className="mt-1.5 text-[11px] leading-6 text-foreground">{g.bodyAr}</p>
+            <p className="mt-1.5 text-micro leading-6 text-foreground">{g.bodyAr}</p>
           </div>
         ))}
       </div>
@@ -217,12 +218,9 @@ export default function TrainerProposals() {
         <p className="text-xs leading-6 text-muted-foreground">
           تقترح هنا على الدورات المؤهل لها فقط. كل اقتراح يمرّ بمراجعة أكاديمية — لا تعديل مباشرا على المنشور.
         </p>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full bg-teal px-4 py-2 text-xs font-black text-on-teal transition hover:bg-teal/90"
-        >
+        <Button tone="confirm" onClick={() => setShowForm(!showForm)} className="shrink-0">
           <Plus className="h-3.5 w-3.5" /> اقتراح جديد
-        </button>
+        </Button>
       </div>
 
 
@@ -250,7 +248,7 @@ export default function TrainerProposals() {
               </label>
             </div>
             {scopeGate && (
-              <p className={`mt-2 text-[11px] leading-6 ${scopeGate.allowed ? "text-muted-foreground" : "text-gold-ink"}`}>
+              <p className={`mt-2 text-micro leading-6 ${scopeGate.allowed ? "text-muted-foreground" : "text-gold-ink"}`}>
                 {scopeGate.reasonAr}
               </p>
             )}
@@ -284,7 +282,7 @@ export default function TrainerProposals() {
                   .map((c) => <option key={c.cohort.id} value={c.cohort.id}>{c.cohort.title}</option>)}
               </select>
               {cohorts.filter((c) => !form.courseId || c.cohort.courseId === form.courseId).length === 0 && (
-                <p className="mt-1.5 text-[11px] text-gold-ink">
+                <p className="mt-1.5 text-micro text-gold-ink">
                   لا شعبة لك في هذه الدورة — اختر دورة تدرّبها، أو اقترح بنطاق الكتالوج إن كان مفتوحا لك.
                 </p>
               )}
@@ -309,10 +307,9 @@ export default function TrainerProposals() {
             <textarea id="tp-reason" required rows={2} value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })}
               className="w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none" />
           </div>
-          <button type="submit" disabled={busy || form.reason.trim().length < 10 || !form.courseId || !form.newValue.trim()}
-            className="cursor-pointer rounded-full bg-gold px-6 py-2.5 text-xs font-black text-on-gold transition hover:bg-gold/90 disabled:opacity-40">
+          <Button tone="primary" type="submit" disabled={busy || form.reason.trim().length < 10 || !form.courseId || !form.newValue.trim()}>
             {busy ? "جاري الإرسال…" : "أرسل للمراجعة"}
-          </button>
+          </Button>
         </form>
       )}
 
@@ -321,11 +318,10 @@ export default function TrainerProposals() {
           <h2 className="mb-3 text-sm font-black text-foreground">مخططات دوراتك المؤهلة — اطلع على البنية قبل أن تقترح</h2>
           <div className="flex flex-wrap gap-2">
             {quals.map((q) => (
-              <button key={q.courseId} onClick={() => void viewBlueprint(q.courseId)} disabled={bpBusy === q.courseId}
-                className="flex cursor-pointer items-center gap-1.5 rounded-full border border-teal/40 px-4 py-2 text-xs font-bold text-teal-light-ink transition hover:bg-teal/10 disabled:opacity-50">
+              <Button tone="confirm" key={q.courseId} onClick={() => void viewBlueprint(q.courseId)} disabled={bpBusy === q.courseId} className="text-teal-light-ink disabled:opacity-50">
                 {bpBusy === q.courseId ? <Loader2 className="h-3 w-3 animate-spin" /> : <BookOpen className="h-3 w-3" />}
                 {q.title} — المخطط
-              </button>
+              </Button>
             ))}
           </div>
           {bpErr && <p role="alert" className="mt-3 rounded-xl border border-red-400/30 bg-red-400/10 p-3 text-xs font-semibold text-red-300">{bpErr}</p>}
@@ -343,10 +339,9 @@ export default function TrainerProposals() {
                 {bp.versions[0].levelAr ? ` · المستوى: ${bp.versions[0].levelAr}` : ""} · إصدار {bp.versions[0].version}
               </p>
             </div>
-            <button onClick={() => setBp(null)} aria-label="إغلاق المخطط"
-              className="cursor-pointer rounded-full border border-white/15 p-2 text-muted-foreground transition hover:text-foreground">
+            <Button tone="secondary" onClick={() => setBp(null)} aria-label="إغلاق المخطط" className="p-2">
               <X className="h-4 w-4" />
-            </button>
+            </Button>
           </div>
           {bp.versions[0].descriptionAr && <p className="mb-4 text-xs leading-6 text-foreground">{bp.versions[0].descriptionAr}</p>}
 
@@ -379,9 +374,9 @@ export default function TrainerProposals() {
                     <div key={m.id} className="flex items-start justify-between gap-3 rounded-xl bg-white/[0.03] px-3 py-2">
                       <div>
                         <p className="text-xs font-bold text-foreground">{m.versions[0].sequence}. {m.versions[0].titleAr}</p>
-                        {m.versions[0].outcomeAr && <p className="mt-0.5 text-[11px] text-muted-foreground">{m.versions[0].outcomeAr}</p>}
+                        {m.versions[0].outcomeAr && <p className="mt-0.5 text-micro text-muted-foreground">{m.versions[0].outcomeAr}</p>}
                       </div>
-                      <span className="shrink-0 text-[11px] text-muted-foreground">{m.versions[0].hours} س · <span dir="ltr">{m.id}</span></span>
+                      <span className="shrink-0 text-micro text-muted-foreground">{m.versions[0].hours} س · <span dir="ltr">{m.id}</span></span>
                     </div>
                   ))}
               </div>
@@ -443,22 +438,21 @@ export default function TrainerProposals() {
                 <div>
                   <p className="font-black">{r.course.versions[0]?.titleAr ?? r.courseId} <span className="text-micro text-muted-foreground" dir="ltr">{r.courseId}</span></p>
                   <p className="mt-1 text-xs text-muted-foreground">{r.reason}</p>
-                  <p className="mt-1 text-[11px] text-muted-foreground">
+                  <p className="mt-1 text-micro text-muted-foreground">
                     {r.items.map((i) => CHANGE_TYPE_LABELS[i.changeType] ?? i.changeType).join(" · ")} — نطاق: {r.scope === "cohort" ? "شعبة" : "الكتالوج"}
                   </p>
                   {r.reviewerComment && (
-                    <p className="mt-2 rounded-lg border border-gold/25 bg-gold/5 p-2 text-[11px] text-gold-ink">تعليق المراجع: {r.reviewerComment}</p>
+                    <p className="mt-2 rounded-lg border border-gold/25 bg-gold/5 p-2 text-micro text-gold-ink">تعليق المراجع: {r.reviewerComment}</p>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="rounded-full border border-teal/40 px-3 py-1 text-[11px] font-bold text-teal-light-ink">
+                  <span className="rounded-full border border-teal/40 px-3 py-1 text-micro font-bold text-teal-light-ink">
                     {STATUS_LABELS[r.status] ?? r.status}
                   </span>
                   {["draft", "submitted", "under_review", "changes_requested"].includes(r.status) && (
-                    <button onClick={() => void withdraw(r.id)} title="سحب الاقتراح"
-                      className="cursor-pointer rounded-full border border-white/15 p-2 text-muted-foreground transition hover:border-red-400/40 hover:text-red-300">
+                    <Button tone="danger" onClick={() => void withdraw(r.id)} title="سحب الاقتراح" className="p-2">
                       <Undo2 className="h-3.5 w-3.5" />
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>

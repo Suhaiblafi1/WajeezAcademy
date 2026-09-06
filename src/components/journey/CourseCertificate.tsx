@@ -22,6 +22,7 @@ import {
 import type { EnrollmentCertificate } from "@/services/enrollment-detail";
 
 import { Card } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 export default function CourseCertificate({
   enrollmentId,
   courseTitleAr,
@@ -56,7 +57,7 @@ export default function CourseCertificate({
   if (issued) {
     return (
       <Card tone="warn" className="flex flex-wrap items-center gap-x-3 gap-y-2 p-3.5">
-        <span className="flex items-center gap-1.5 text-[12px] font-black text-gold-ink">
+        <span className="flex items-center gap-1.5 text-xs font-black text-gold-ink">
           <Award className="h-4 w-4" /> صدرت شهادتك
         </span>
         <span dir="ltr" className="min-w-0 flex-1 font-mono text-fine text-foreground">{issued.number}</span>
@@ -74,7 +75,7 @@ export default function CourseCertificate({
     const meta = REQUEST_STATUS_AR[request?.status ?? "pending"] ?? REQUEST_STATUS_AR.pending;
     return (
       <Card className="p-3.5">
-        <p className="flex flex-wrap items-center gap-2 text-[12px] font-black text-foreground">
+        <p className="flex flex-wrap items-center gap-2 text-xs font-black text-foreground">
           <Award className="h-4 w-4 text-gold-ink" /> شهادة «{courseTitleAr}»
           <span className={`rounded-full border px-2.5 py-0.5 text-fine font-bold ${meta.cls}`}>{meta.label}</span>
         </p>
@@ -89,7 +90,7 @@ export default function CourseCertificate({
 
   return (
     <Card className="p-3.5">
-      <p className="flex items-center gap-1.5 text-[12px] font-black text-foreground">
+      <p className="flex items-center gap-1.5 text-xs font-black text-foreground">
         <Award className="h-4 w-4 text-gold-ink" /> شهادة هذه الدورة
       </p>
       {eligibility === null ? (
@@ -101,8 +102,7 @@ export default function CourseCertificate({
           <p className="mt-1.5 text-fine leading-5 text-muted-foreground">
             استوفيت قواعد إكمال الدورة. اطلبها الآن، وتُصدَر برقم تحقّقٍ باسمك.
           </p>
-          <button
-            onClick={async () => {
+          <Button tone="primary" onClick={async () => {
               setBusy(true);
               setError(null);
               try {
@@ -115,12 +115,10 @@ export default function CourseCertificate({
                 setBusy(false);
               }
             }}
-            disabled={busy}
-            className="mt-2.5 flex cursor-pointer items-center gap-1.5 rounded-full bg-gold px-5 py-2 text-[12px] font-black text-on-gold transition hover:bg-gold/90 disabled:opacity-50"
-          >
+            disabled={busy} className="mt-2.5 disabled:opacity-50">
             {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
             اطلب شهادة الدورة
-          </button>
+          </Button>
         </>
       ) : (
         <>

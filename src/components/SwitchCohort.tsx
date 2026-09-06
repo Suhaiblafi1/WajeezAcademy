@@ -87,7 +87,7 @@ export default function SwitchCohort({
                   disabled={busy}
                   className="flex w-full cursor-pointer items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-right transition hover:border-teal/50 disabled:opacity-50"
                 >
-                  <span className="min-w-0 text-[12px] font-bold text-foreground">
+                  <span className="min-w-0 text-xs font-bold text-foreground">
                     {o.startsAt ? fmtDateAr(o.startsAt) : "بلا موعد"}
                     {o.title && <span className="text-muted-foreground"> — {o.title}</span>}
                   </span>

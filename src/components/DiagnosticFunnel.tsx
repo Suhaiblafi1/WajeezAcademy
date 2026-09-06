@@ -93,7 +93,7 @@ export default function DiagnosticFunnel() {
         </ol>
       )}
 
-      <p className="mt-5 text-[11px] leading-relaxed text-muted-foreground">
+      <p className="mt-5 text-micro leading-relaxed text-muted-foreground">
         أجهزة فريدة عند كل مرحلة — لا زيارات. النسبة المئوية بجانب كل مرحلة هي التسرّب عن سابقتها.
       </p>
     </Panel>

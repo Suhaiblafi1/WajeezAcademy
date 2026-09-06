@@ -10,6 +10,7 @@ import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 import { DEFAULT_SENDER_EMAIL } from "@/application/site/origin";
 
 import { Panel, Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 const inputCls = "rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground focus:border-teal focus:outline-none";
 const labelCls = "block text-micro font-bold text-muted-foreground";
 
@@ -92,9 +93,9 @@ export default function Integrations() {
         <Panel className="grid place-items-center py-20 text-center">
           <ServerOff className="h-12 w-12 text-muted-foreground/50" />
           <p className="mt-4 max-w-md text-sm text-muted-foreground">{offline}</p>
-          <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground hover:border-white/40">
+          <Button tone="secondary" onClick={() => void load()} className="mt-5">
             <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
-          </button>
+          </Button>
         </Panel>
       </AdminLayout>
     );
@@ -112,12 +113,12 @@ export default function Integrations() {
           {/* ════ مزود الدفع ════ */}
           <Panel as="section">
             <p className="flex items-center gap-2 text-sm font-black"><CreditCard className="h-4 w-4 text-gold-ink" /> مزود الدفع</p>
-            <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
+            <p className="mt-1 text-micro leading-5 text-muted-foreground">
               المزودان الحقيقيان يعملان بصفحات دفع مستضافة لديهم — لا بيانات بطاقات تمر بخوادمنا أبداً،
               والتسوية تتم عبر webhook موقَّت فقط.
             </p>
             {view.payment.envSourced && (
-              <p className="mt-3 rounded-xl border border-gold/30 bg-gold/5 px-3 py-2 text-[11px] font-bold text-gold-ink">
+              <p className="mt-3 rounded-xl border border-gold/30 bg-gold/5 px-3 py-2 text-micro font-bold text-gold-ink">
                 هذا التكامل يُدار من متغيرات البيئة (PAYMENT_DRIVER…) — الحفظ هنا لن يؤثر حتى تُزال متغيرات البيئة.
               </p>
             )}
@@ -152,7 +153,7 @@ export default function Integrations() {
                       من دفع إلى عنوانٍ لا يفتح عنده — والـwebhook مستقلّ، فيُسوّى
                       الطلبُ وتبقى سجلّاتُنا خضراء والعطبُ عند المشتري وحدَه. */}
                   {!view.payment.siteUrlExplicit && (
-                    <p className="rounded-xl border border-red-500/40 bg-red-500/[0.07] px-3 py-2 text-[11px] font-bold leading-5 text-red-300">
+                    <p className="rounded-xl border border-red-500/40 bg-red-500/[0.07] px-3 py-2 text-micro font-bold leading-5 text-red-300">
                       اضبط <span dir="ltr" className="font-mono">APP_URL</span> بعنوان الموقع في بيئة الخادم أولا — لن يُقبل التفعيل بدونه.
                       <span className="mt-1 block font-normal text-red-300/75">
                         العنوان المستعمل الآن: <span dir="ltr" className="font-mono">{view.payment.siteUrl}</span> — ومنه تُبنى صفحة عودة المشتري بعد الدفع.
@@ -178,14 +179,12 @@ export default function Integrations() {
                 تفعيل هذا المزود — غير المفعّل يعني: المزود الاختباري يعمل
               </label>
               <div className="flex flex-wrap gap-2">
-                <button disabled={busy} onClick={() => act(() => apiPut("/api/admin/integrations/payment", payForm), "حُفظت إعدادات الدفع")}
-                  className="cursor-pointer rounded-full bg-gold px-5 py-2 text-xs font-black text-on-gold disabled:opacity-40">
+                <Button tone="primary" disabled={busy} onClick={() => act(() => apiPut("/api/admin/integrations/payment", payForm), "حُفظت إعدادات الدفع")}>
                   حفظ إعدادات الدفع
-                </button>
-                <button disabled={busy} onClick={() => void testPayment()}
-                  className="flex cursor-pointer items-center gap-1.5 rounded-full border border-teal/40 px-4 py-2 text-xs font-bold text-teal-light-ink disabled:opacity-40">
+                </Button>
+                <Button tone="secondary" disabled={busy} onClick={() => void testPayment()} className="text-teal-light-ink">
                   <PlugZap className="h-3.5 w-3.5" /> فحص الاتصال الحي
-                </button>
+                </Button>
               </div>
             </div>
           </Panel>
@@ -193,12 +192,12 @@ export default function Integrations() {
           {/* ════ البريد ════ */}
           <Panel as="section">
             <p className="flex items-center gap-2 text-sm font-black"><Mail className="h-4 w-4 text-teal-ink" /> قناة البريد (Resend)</p>
-            <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
+            <p className="mt-1 text-micro leading-5 text-muted-foreground">
               فور التفعيل تصبح قناة email في الإشعارات حقيقية — قبول التسجيل والفواتير والشهادات تصل بريداً.
               غير المفعّلة تسجَّل «فشل: لا مزود» وتُعاد المحاولة تلقائياً.
             </p>
             {view.email.envSourced && (
-              <p className="mt-3 rounded-xl border border-gold/30 bg-gold/5 px-3 py-2 text-[11px] font-bold text-gold-ink">
+              <p className="mt-3 rounded-xl border border-gold/30 bg-gold/5 px-3 py-2 text-micro font-bold text-gold-ink">
                 هذا التكامل يُدار من متغيرات البيئة (RESEND_API_KEY…) — الحفظ هنا لن يؤثر حتى تُزال متغيرات البيئة.
               </p>
             )}
@@ -227,24 +226,22 @@ export default function Integrations() {
                 </label>
               </div>
               <div className="flex flex-wrap gap-2">
-                <button disabled={busy} onClick={() => act(() => apiPut("/api/admin/integrations/email", mailForm), "حُفظت إعدادات البريد")}
-                  className="cursor-pointer rounded-full bg-gold px-5 py-2 text-xs font-black text-on-gold disabled:opacity-40">
+                <Button tone="primary" disabled={busy} onClick={() => act(() => apiPut("/api/admin/integrations/email", mailForm), "حُفظت إعدادات البريد")}>
                   حفظ إعدادات البريد
-                </button>
+                </Button>
                 <div className="flex flex-1 items-center gap-2">
                   <input dir="ltr" value={testTo} onChange={(e) => setTestTo(e.target.value)} placeholder="بريد الاختبار…"
                     className={`${inputCls} min-w-0 flex-1 font-mono`} />
-                  <button disabled={busy} onClick={() => void testEmail()}
-                    className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-teal/40 px-4 py-2 text-xs font-bold text-teal-light-ink disabled:opacity-40">
+                  <Button tone="secondary" disabled={busy} onClick={() => void testEmail()} className="shrink-0 text-teal-light-ink">
                     <Send className="h-3.5 w-3.5" /> إرسال تجريبي
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
           </Panel>
 
           {/* قاعدة الأمان */}
-          <p className="flex items-start gap-2 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 text-[11px] leading-6 text-muted-foreground lg:col-span-2">
+          <p className="flex items-start gap-2 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 text-micro leading-6 text-muted-foreground lg:col-span-2">
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-teal-ink" />
             قواعد ثابتة: الأسرار تُكتب ولا تُقرأ (آخر 4 خانات فقط للعرض)، ومتغيرات البيئة تغلب الشاشة دائماً لبيئات الإنتاج،
             وكل حفظ وفحص موثق في سجل الأثر — ولا تسوية مالية إلا عبر webhook موقَّت أو تسجيل يدوي بصلاحية.

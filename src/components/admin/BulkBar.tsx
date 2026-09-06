@@ -28,7 +28,7 @@ export default function BulkBar({
         <div className="flex flex-wrap items-center gap-2">{children}</div>
       )}
       <button onClick={onClear} disabled={busy}
-        className="mr-auto flex cursor-pointer items-center gap-1 text-[11px] font-bold text-muted-foreground hover:text-foreground disabled:opacity-40">
+        className="mr-auto flex cursor-pointer items-center gap-1 text-micro font-bold text-muted-foreground hover:text-foreground disabled:opacity-40">
         <X className="h-3 w-3" /> ألغِ التحديد
       </button>
     </Card>

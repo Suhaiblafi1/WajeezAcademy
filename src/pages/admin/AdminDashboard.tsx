@@ -200,7 +200,7 @@ export default function AdminDashboard() {
       <StaffInbox />
 
       {/* من أين أبدأ؟ — التسلسل التشغيلي الصحيح: محتوى ← نشر ← شعبة ← تسجيلات */}
-      <Card className="mb-8 flex flex-wrap items-center gap-2 border-dashed px-4 py-3 text-[11px] text-muted-foreground">
+      <Card className="mb-8 flex flex-wrap items-center gap-2 border-dashed px-4 py-3 text-micro text-muted-foreground">
         <span className="font-black text-foreground">من أين أبدأ؟</span>
         {/* الترقيمُ لاتينيّ كبقيّة أرقام اللوحة — ورقمان مختلفا الرسم في
             البطاقة الواحدة يُقرآن واجهتين مركّبتين لا واجهةً واحدة */}
@@ -248,7 +248,7 @@ export default function AdminDashboard() {
 
                 {/* إد-١ · سطر الاتجاه: شارة وسهم ونص «كذا مقابل كذا».
                     الرقم الموقَّع داخل dir="ltr" — «+3» في سياق عربي يُقلب «3+». */}
-                <p className={`mt-3 flex flex-wrap items-center gap-2 rounded-xl border px-2.5 py-1.5 text-[11px] leading-5 ${TREND_TONE[c.trend.direction]}`}>
+                <p className={`mt-3 flex flex-wrap items-center gap-2 rounded-xl border px-2.5 py-1.5 text-micro leading-5 ${TREND_TONE[c.trend.direction]}`}>
                   {c.trend.showArrow && <TrendArrow d={c.trend.direction} />}
                   {badge && <span dir="ltr" className="font-black">{badge}</span>}
                   <span className="text-foreground">
@@ -256,14 +256,14 @@ export default function AdminDashboard() {
                   </span>
                 </p>
 
-                <p className="mt-2 text-[11px] text-muted-foreground">{c.hint}</p>
+                <p className="mt-2 text-micro text-muted-foreground">{c.hint}</p>
               </Link>
             );
           })}
         </div>
       )}
 
-      <p className="mt-8 text-center text-[11px] text-muted-foreground">
+      <p className="mt-8 text-center text-micro text-muted-foreground">
         كل الأرقام هنا حية من قاعدة البيانات وتُحدَّث تلقائيا كل 45 ثانية
         {updatedAt && ` — آخر تحديث ${fmtTime(updatedAt)}`}.
         التقارير التفصيلية والتصدير في شاشة «التقارير».

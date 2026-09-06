@@ -24,7 +24,7 @@ function Bar({ value }: { value: number }) {
       <span className="h-1.5 w-20 overflow-hidden rounded-full bg-white/10">
         <span className={`block h-full rounded-full ${tone}`} style={{ width: `${Math.max(2, pct)}%` }} />
       </span>
-      <span dir="ltr" className="tabular-nums text-[11px] text-foreground">{pct}%</span>
+      <span dir="ltr" className="tabular-nums text-micro text-foreground">{pct}%</span>
     </span>
   );
 }
@@ -50,13 +50,13 @@ export default function MeasurementCoverage({ className = "" }: { className?: st
           <p className="flex items-center gap-2 text-xs font-black text-gold-ink">
             <Target className="h-4 w-4" aria-hidden="true" /> أرخص طريق: سؤال واحد لكل مهارة
           </p>
-          <p className="mt-1 text-[11px] leading-6 text-foreground">
+          <p className="mt-1 text-micro leading-6 text-foreground">
             هذه المهارات يتطلبها أكثر من مسار بلا تغطية — فسؤال قياس واحد لكل واحدة
             يُخرج عدة مسارات من الصفر معا. الترتيب بما يُفتح لا بما يُستعمل.
           </p>
           <ul className="mt-3 space-y-2">
             {topGaps.slice(0, 3).map((g) => (
-              <Inset as="li" key={g.slug} className="flex flex-wrap items-center gap-2 px-3 py-2 text-[11px]">
+              <Inset as="li" key={g.slug} className="flex flex-wrap items-center gap-2 px-3 py-2 text-micro">
                 <span className="font-black text-foreground">{g.nameAr}</span>
                 <span dir="ltr" className="font-mono text-muted-foreground">{g.slug}</span>
                 <span className="rounded-full border border-emerald-400/40 px-2 py-0.5 font-bold text-emerald-300">
@@ -74,7 +74,7 @@ export default function MeasurementCoverage({ className = "" }: { className?: st
         <table className="w-full min-w-[38rem] text-right text-xs">
           <caption className="sr-only">تغطية قياس المهارات لكل مسار، من الأسوأ إلى الأفضل</caption>
           <thead>
-            <tr className="text-[11px] text-muted-foreground">
+            <tr className="text-micro text-muted-foreground">
               <th scope="col" className="py-2 font-bold">المسار</th>
               <th scope="col" className="py-2 font-bold">التغطية</th>
               <th scope="col" className="py-2 font-bold">مقيس / نشط</th>
@@ -92,7 +92,7 @@ export default function MeasurementCoverage({ className = "" }: { className?: st
                 <td className="py-2.5 align-top" dir="ltr">
                   <span className="tabular-nums text-foreground">{p.measured} / {p.activeSkills}</span>
                 </td>
-                <td className="py-2.5 align-top text-[11px] leading-5 text-foreground">{p.costAr}</td>
+                <td className="py-2.5 align-top text-micro leading-5 text-foreground">{p.costAr}</td>
               </tr>
             ))}
           </tbody>
@@ -101,7 +101,7 @@ export default function MeasurementCoverage({ className = "" }: { className?: st
 
       {/* كل الفجوات */}
       <button onClick={() => setOpenGaps(!openGaps)}
-        className="mt-4 flex cursor-pointer items-center gap-1.5 text-[11px] font-bold text-teal-light-ink hover:text-foreground">
+        className="mt-4 flex cursor-pointer items-center gap-1.5 text-micro font-bold text-teal-light-ink hover:text-foreground">
         <ChevronDown className={`h-3.5 w-3.5 transition ${openGaps ? "rotate-180" : ""}`} aria-hidden="true" />
         {openGaps ? "أخفِ الفجوات" : `اعرض كل الفجوات (${r.gaps.length})`}
       </button>
@@ -109,7 +109,7 @@ export default function MeasurementCoverage({ className = "" }: { className?: st
         <ul className="mt-3 flex flex-wrap gap-2">
           {shownGaps.map((g) => (
             <li key={g.slug} title={`المسارات: ${g.pathwayIds.join("، ")}`}
-              className="rounded-full border border-white/12 bg-paper/20 px-3 py-1 text-[11px] text-foreground">
+              className="rounded-full border border-white/12 bg-paper/20 px-3 py-1 text-micro text-foreground">
               {g.nameAr}
               <span className="ms-1.5 text-muted-foreground">·{g.pathwayIds.length}</span>
               {g.unlocks.length > 0 && <span className="ms-1 text-emerald-300">↑{g.unlocks.length}</span>}
@@ -127,7 +127,7 @@ export default function MeasurementCoverage({ className = "" }: { className?: st
             {r.orphanQuestions.length} سؤال قياس يقيس مفتاحا ليس مهارة مسجَّلة
             <ChevronDown className={`ms-auto h-3.5 w-3.5 transition ${openOrphans ? "rotate-180" : ""}`} aria-hidden="true" />
           </button>
-          <p className="mt-1 text-[11px] leading-6 text-foreground">
+          <p className="mt-1 text-micro leading-6 text-foreground">
             جوابُ هذه الأسئلة يسقط في متجه المهارات تحت مفتاح لا تطلبه دورة ولا يحتاجه مسار.
             ما كان منها على سطح B2C يُسأل المتعلم فعلا ولا يُحتسب — وما كان خارجه لا يُسأل،
             فالخلل فيه توثيقي لا وقتُ متعلم مهدور.
@@ -135,7 +135,7 @@ export default function MeasurementCoverage({ className = "" }: { className?: st
           {openOrphans && (
             <ul className="mt-3 space-y-1.5">
               {r.orphanQuestions.map((q) => (
-                <li key={q.questionId} className="flex flex-wrap items-center gap-2 text-[11px] leading-6">
+                <li key={q.questionId} className="flex flex-wrap items-center gap-2 text-micro leading-6">
                   <span dir="ltr" className="font-mono text-foreground">{q.questionId}</span>
                   <span className="text-muted-foreground">→</span>
                   <span dir="ltr" className="font-mono text-amber-300">{q.measuredKey}</span>
@@ -152,7 +152,7 @@ export default function MeasurementCoverage({ className = "" }: { className?: st
         </Card>
       )}
 
-      <p className="mt-4 flex items-start gap-2 text-[11px] leading-6 text-muted-foreground">
+      <p className="mt-4 flex items-start gap-2 text-micro leading-6 text-muted-foreground">
         <Activity className="mt-0.5 h-3.5 w-3.5 shrink-0 text-teal-light-ink" aria-hidden="true" />
         <span>
           الأرقام من الكتالوج المثبَّت الآن — أي من اللقطة المنشورة التي يعيشها المتعلم، لا من ملفات المستودع.

@@ -12,6 +12,7 @@ import { apiGet, apiPost, ApiError } from "@/services/api";
 import { toast } from '@/components/Toast';
 
 import { Panel, Card } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 interface Rateable {
   subjectType: "trainer" | "advisor" | "course";
   subjectId: string;
@@ -114,13 +115,10 @@ function RatingCard({ item, onSaved }: { item: Rateable; onSaved: () => void }) 
       <div className="mt-3 flex flex-wrap items-center gap-3">
         {/* الزرُّ لا يُغلَق بلا سبب: كان باهتا حتّى تُختار نجمةٌ ولا شيءَ
             يقول ذلك — فيُضغَط الآن فيُقال ما ينقص، عند موضعه. */}
-        <button
-          onClick={score < 1 ? () => setNeedsScore(true) : save}
-          disabled={busy}
-          className="cursor-pointer rounded-full bg-teal px-5 py-2 text-xs font-black text-on-teal transition hover:bg-teal-light disabled:cursor-not-allowed disabled:opacity-40"
-        >
+        <Button tone="confirm" onClick={score < 1 ? () => setNeedsScore(true) : save}
+          disabled={busy} className="disabled:cursor-not-allowed">
           {busy ? "يُرسَل…" : item.myScore == null ? "أرسل التقييم" : "حدّث التقييم"}
-        </button>
+        </Button>
         {error && <span role="alert" className="text-fine font-bold text-red-300">{error}</span>}
       </div>
     </Card>
@@ -151,7 +149,7 @@ export default function RateMyLearning() {
       {/* حدود السرّية مكتوبة قبل النموذج لا بعده — تُقرأ قبل أن يُكتب شيء */}
       <Card tone="accent" className="mb-6 flex items-start gap-3">
         <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-teal-light-ink" />
-        <p className="text-[12px] leading-6 text-foreground">
+        <p className="text-xs leading-6 text-foreground">
           <span className="font-black text-foreground">اسمك لا يصل المدرّب ولا المستشار.</span>{" "}
           ولا يرى أيٌّ منهما تقييما حتى تبلغ التقييمات الواردة عنه ثلاثة — في العدد
           القليل يُستدلّ على أصحاب الآراء مهما حُذفت الأسماء. والإدارة ترى التعليقات

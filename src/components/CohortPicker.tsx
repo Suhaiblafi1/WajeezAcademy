@@ -18,6 +18,7 @@ import type { CohortOption } from "@/services/cohort-prices";
 import { daysLabelAr, fmtDateAr, untilLabelAr } from "@/utils/format";
 import { UpcomingTermLine } from "@/components/UpcomingTermNote";
 
+import Button from "@/components/ui/Button";
 /** سطرُ موعدٍ واحد — التاريخ ثمّ بُعده ثمّ أيّامه */
 function When({ c }: { c: CohortOption }) {
   const until = untilLabelAr(c.startsAt);
@@ -54,7 +55,7 @@ export default function CohortPicker({
      المسار وصفحة الدورة، وأربعُ نسخٍ منه تفترق عند أوّل تعديل. */
   if (cohorts.length === 0) {
     return (
-      <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-fine font-bold text-muted-foreground">
+      <span className="inline-flex items-center gap-1.5 text-fine font-bold text-muted-foreground">
         <CalendarDays className="h-3.5 w-3.5 shrink-0" />
         <UpcomingTermLine fallback="يُعلن الموعد مع فتح الشعبة" />
       </span>
@@ -76,15 +77,12 @@ export default function CohortPicker({
           </span>
         )}
         {others.length > 0 && (
-          <button
-            type="button"
+          <Button tone="secondary" type="button"
             onClick={() => setOpen((v) => !v)}
-            aria-expanded={open}
-            className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-white/15 px-2.5 py-0.5 text-fine font-bold text-muted-foreground transition hover:border-white/35 hover:text-foreground"
-          >
+            aria-expanded={open} className="px-2.5 text-fine">
             موعد آخر ({others.length})
             <ChevronDown className={`h-3 w-3 transition ${open ? "rotate-180" : ""}`} />
-          </button>
+          </Button>
         )}
       </div>
 

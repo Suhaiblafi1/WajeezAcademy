@@ -84,7 +84,7 @@ export default function StageOffer({
         </>
       ) : stage.inPlan ? (
         <>
-          <p className="mt-4 flex items-start gap-2 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 text-[12px] leading-6 text-muted-foreground">
+          <p className="mt-4 flex items-start gap-2 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 text-xs leading-6 text-muted-foreground">
             <CalendarClock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
             <span>
               <span className="font-bold text-foreground">بانتظار شعبة.</span>{" "}
@@ -102,12 +102,12 @@ export default function StageOffer({
         </>
       ) : (
         <Card className="mt-4">
-          <p className="text-[12px] leading-6 text-muted-foreground">
+          <p className="text-xs leading-6 text-muted-foreground">
             لم تُفتح شعبةٌ لهذه الدورة الآن. صفحتُها العامّة تعرض تفاصيلَها كاملةً، ونُعلمك فور فتح أوّل شعبة.
           </p>
           <Link
             to={`/build/${stage.courseId}`}
-            className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-teal/50 px-4 py-2 text-[12px] font-black text-teal-light-ink transition hover:bg-teal/10"
+            className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-teal/50 px-4 py-2 text-xs font-black text-teal-light-ink transition hover:bg-teal/10"
           >
             <ShoppingCart className="h-3.5 w-3.5" /> افتح صفحة الدورة
           </Link>

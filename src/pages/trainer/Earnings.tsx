@@ -88,7 +88,7 @@ function RealEarningsView() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="font-black">كشف فترة <span dir="ltr" className="font-mono text-sm">{p.period}</span></p>
-                  {p.paidAt && <p className="mt-0.5 text-[11px] text-muted-foreground">صُرف {fmtDateAr(p.paidAt)}</p>}
+                  {p.paidAt && <p className="mt-0.5 text-micro text-muted-foreground">صُرف {fmtDateAr(p.paidAt)}</p>}
                 </div>
                 <div className="text-left">
                   <p className="text-xl font-black">{fmt(p.total)} <span className="text-xs text-muted-foreground">{p.currency}</span></p>
@@ -110,7 +110,7 @@ function RealEarningsView() {
         })}
       </div>
 
-      <p className="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4 text-center text-[11px] leading-6 text-muted-foreground">
+      <p className="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4 text-center text-micro leading-6 text-muted-foreground">
         الكشف يمر بثلاث مراحل: إنشاء من الإدارة المالية ← اعتماد ← صرف. كل بند مرتبط بمصدره لمنع الازدواج —
         ولأي استفسار عن بند تواصل مع منسقك قبل موعد الصرف.
       </p>

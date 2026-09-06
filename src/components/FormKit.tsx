@@ -51,7 +51,7 @@ export function Question({
       <div className="flex items-start gap-3">
         <span
           aria-hidden="true"
-          className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-teal/15 text-[12px] font-black tabular-nums text-teal-light-ink"
+          className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-teal/15 text-xs font-black tabular-nums text-teal-light-ink"
         >
           {n}
         </span>
@@ -92,7 +92,7 @@ export function FieldRow({ children }: { children: ReactNode }) {
 export function FieldError({ id, children }: { id: string; children?: string | null }) {
   if (!children) return null
   return (
-    <p id={id} role="alert" className="mt-1.5 text-[11px] font-bold leading-5 text-red-300">
+    <p id={id} role="alert" className="mt-1.5 text-micro font-bold leading-5 text-red-300">
       {children}
     </p>
   )
@@ -131,7 +131,7 @@ export function Field({
         {label}
         {required && <Req />}
       </label>
-      {hint && <p className="mt-0.5 text-[11px] leading-5 text-muted-foreground">{hint}</p>}
+      {hint && <p className="mt-0.5 text-micro leading-5 text-muted-foreground">{hint}</p>}
       <div className="mt-2">{children}</div>
       {errorId && <FieldError id={errorId}>{error}</FieldError>}
     </div>
@@ -164,7 +164,7 @@ export function FieldSet({
         {legend}
         {required && <Req />}
       </legend>
-      {hint && <p className="mt-0.5 text-[11px] leading-5 text-muted-foreground">{hint}</p>}
+      {hint && <p className="mt-0.5 text-micro leading-5 text-muted-foreground">{hint}</p>}
       <div className="mt-2">{children}</div>
       {errorId && <FieldError id={errorId}>{error}</FieldError>}
     </fieldset>
@@ -208,7 +208,7 @@ export function OptionGrid({
             onClick={() => onToggle(it.value)}
             aria-pressed={on}
             aria-label={name ? `${name}: ${it.label}` : it.label}
-            className={`flex min-h-12 w-full cursor-pointer items-center gap-2.5 rounded-xl border px-3 py-2.5 text-right text-[12px] font-bold leading-5 transition-colors ${
+            className={`flex min-h-12 w-full cursor-pointer items-center gap-2.5 rounded-xl border px-3 py-2.5 text-right text-xs font-bold leading-5 transition-colors ${
               on
                 ? 'border-teal bg-teal/[0.12] text-teal-light-ink'
                 : 'border-white/12 bg-paper/25 text-muted-foreground hover:border-white/30 hover:text-foreground'

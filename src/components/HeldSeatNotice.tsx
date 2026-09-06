@@ -40,7 +40,7 @@ export default function HeldSeatNotice({ seat, className = "" }: { seat: HeldSea
 
   return (
     <div className={`rounded-2xl border px-4 py-3 ${tone} ${className}`}>
-      <p className="flex items-center gap-2 text-[12px] font-black">
+      <p className="flex items-center gap-2 text-xs font-black">
         {unpaid ? <CreditCard className="h-3.5 w-3.5 shrink-0" /> : <Clock className="h-3.5 w-3.5 shrink-0" />}
         {paid
           ? "مقعدك محجوز — نؤكّد دفعتك مع البنك"

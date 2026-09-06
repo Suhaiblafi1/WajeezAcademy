@@ -18,6 +18,7 @@ import { apiGet, ApiError, permissionMessage } from "@/services/api";
 import { fmtDateTime } from "@/application/text/format-ar";
 
 import { Panel } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 type Level = "ok" | "attention" | "broken" | "unknown";
 
 interface HealthItem {
@@ -78,12 +79,9 @@ export default function SystemHealth() {
           محسوبةٌ من حالة القاعدة عند فتح الصفحة — لا رقمَ محفوظا هنا.
           {data && <span className="mr-2 text-muted-foreground">آخرُ قراءة: {fmtDateTime(new Date(data.checkedAt))}</span>}
         </p>
-        <button
-          type="button" onClick={() => void load()} disabled={busy}
-          className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-muted-foreground transition hover:border-white/40 disabled:opacity-40"
-        >
+        <Button tone="secondary" type="button" onClick={() => void load()} disabled={busy}>
           {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />} اقرأ الآن
-        </button>
+        </Button>
       </div>
 
       {error && (
@@ -103,7 +101,7 @@ export default function SystemHealth() {
             <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
             <p className="text-sm font-black">{HEADLINE[worst]}</p>
             {notOk > 0 && (
-              <span className={`rounded-full px-3 py-0.5 text-[11px] font-black tabular-nums ${tone.chip}`}>
+              <span className={`rounded-full px-3 py-0.5 text-micro font-black tabular-nums ${tone.chip}`}>
                 {notOk} بندا
               </span>
             )}
@@ -113,7 +111,7 @@ export default function SystemHealth() {
           <div className="space-y-8">
             {data.groups.map((g) => (
               <section key={g.titleAr}>
-                <h2 className="mb-3 text-[11px] font-black tracking-wide text-muted-foreground">{g.titleAr}</h2>
+                <h2 className="mb-3 text-micro font-black tracking-wide text-muted-foreground">{g.titleAr}</h2>
                 <ul className="grid gap-3 lg:grid-cols-2">
                   {g.items.map((item) => {
                     const t = TONE[item.level];
@@ -127,14 +125,14 @@ export default function SystemHealth() {
                           <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-micro font-black ${t.chip}`}>{t.labelAr}</span>
                         </div>
                         <p className="mt-2 text-[13px] font-bold leading-6 text-foreground">{item.valueAr}</p>
-                        <p className="mt-1.5 text-[11px] leading-5 text-muted-foreground">{item.meaningAr}</p>
+                        <p className="mt-1.5 text-micro leading-5 text-muted-foreground">{item.meaningAr}</p>
                         {item.actionAr && (
-                          <p className="mt-2 rounded-xl border border-white/8 bg-paper/20 px-3 py-2 text-[11px] leading-5 text-foreground">
+                          <p className="mt-2 rounded-xl border border-white/8 bg-paper/20 px-3 py-2 text-micro leading-5 text-foreground">
                             {item.actionAr}
                           </p>
                         )}
                         {item.href && (
-                          <Link to={item.href} className="mt-3 flex items-center gap-1 text-[11px] font-bold text-teal-light-ink hover:underline">
+                          <Link to={item.href} className="mt-3 flex items-center gap-1 text-micro font-bold text-teal-light-ink hover:underline">
                             افتح الشاشة <ChevronLeft className="h-3 w-3" aria-hidden="true" />
                           </Link>
                         )}

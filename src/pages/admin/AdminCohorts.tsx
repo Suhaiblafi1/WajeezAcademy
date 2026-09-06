@@ -17,6 +17,7 @@ import { courseById } from "@/data/courses";
 import { isLiveCohort } from "@/application/schedule/cohort-status";
 
 import { Panel, Card } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 const STATUS_META: Record<string, { label: string; cls: string }> = {
   draft: { label: "مسودة", cls: "border-white/20 text-muted-foreground" },
   open: { label: "مفتوحة للتسجيل", cls: "border-teal/50 text-teal-light-ink" },
@@ -166,9 +167,9 @@ export default function AdminCohorts() {
           <ServerOff className="h-12 w-12 text-muted-foreground/50" />
           <h2 className="mt-4 text-xl font-black">لا يمكن الوصول للبيانات</h2>
           <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">{offline}</p>
-          <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground hover:border-white/40">
+          <Button tone="secondary" onClick={() => void load()} className="mt-5">
             <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
-          </button>
+          </Button>
         </Panel>
       </AdminLayout>
     );
@@ -208,7 +209,7 @@ export default function AdminCohorts() {
             {reschedules.map((r) => (
               <Card key={r.id} className="bg-paper/25">
                 <p className="text-sm font-bold">{r.session.title}</p>
-                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                <p className="mt-0.5 text-micro text-muted-foreground">
                   {r.session.cohort.title} · اقترحه {r.requester.displayName}
                 </p>
                 <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-1.5 text-[11.5px]">
@@ -224,21 +225,19 @@ export default function AdminCohorts() {
                     placeholder="تعليقك — يصل المدرب مع القرار"
                     className="min-w-0 flex-1 rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none"
                   />
-                  <button type="button" disabled={busy}
-                    onClick={() => void reviewReschedule(r.id, "approve")}
-                    className="cursor-pointer rounded-full bg-teal px-5 py-2 text-[11px] font-black text-on-teal transition hover:bg-teal-light disabled:opacity-40">
+                  <Button tone="confirm" type="button" disabled={busy}
+                    onClick={() => void reviewReschedule(r.id, "approve")}>
                     اعتمد الموعد
-                  </button>
-                  <button type="button" disabled={busy}
-                    onClick={() => void reviewReschedule(r.id, "reject")}
-                    className="cursor-pointer rounded-full border border-red-400/40 px-5 py-2 text-[11px] font-bold text-red-300 transition hover:bg-red-400/10 disabled:opacity-40">
+                  </Button>
+                  <Button tone="danger" type="button" disabled={busy}
+                    onClick={() => void reviewReschedule(r.id, "reject")}>
                     لا أعتمده
-                  </button>
+                  </Button>
                 </div>
               </Card>
             ))}
           </div>
-          <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
+          <p className="mt-3 text-micro leading-relaxed text-muted-foreground">
             الاعتماد يحرّك الموعد ويُخبر المتعلّمين. والردّ لا يحرّكه، ويصل المدرب بتعليقك.
           </p>
         </Panel>
@@ -268,43 +267,42 @@ export default function AdminCohorts() {
       {!loading && rows.length > 0 && (
         <Panel className="mb-4">
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-            <label className="text-[11px] text-muted-foreground">
+            <label className="text-micro text-muted-foreground">
               الحالة
               <select value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })} className={filterCls}>
                 <option value="">كلّ الحالات</option>
                 {statuses.map((st) => <option key={st} value={st}>{(STATUS_META[st] ?? STATUS_META.draft).label}</option>)}
               </select>
             </label>
-            <label className="text-[11px] text-muted-foreground">
+            <label className="text-micro text-muted-foreground">
               المجال
               <select value={filters.pathway} onChange={(e) => setFilters({ ...filters, pathway: e.target.value })} className={filterCls}>
                 <option value="">كلّ المجالات</option>
                 {pathways.map((p) => <option key={p} value={p}>{p}</option>)}
               </select>
             </label>
-            <label className="text-[11px] text-muted-foreground">
+            <label className="text-micro text-muted-foreground">
               المدرّب
               <select value={filters.trainer} onChange={(e) => setFilters({ ...filters, trainer: e.target.value })} className={filterCls}>
                 <option value="">كلّ المدرّبين</option>
                 {trainerNames.map((n) => <option key={n} value={n}>{n}</option>)}
               </select>
             </label>
-            <label className="text-[11px] text-muted-foreground">
+            <label className="text-micro text-muted-foreground">
               تبدأ بعد
               <input type="date" value={filters.from} onChange={(e) => setFilters({ ...filters, from: e.target.value })} className={filterCls} />
             </label>
-            <label className="text-[11px] text-muted-foreground">
+            <label className="text-micro text-muted-foreground">
               تبدأ قبل
               <input type="date" value={filters.to} onChange={(e) => setFilters({ ...filters, to: e.target.value })} className={filterCls} />
             </label>
           </div>
           {filtering && (
-            <div className="mt-3 flex items-center gap-3 text-[11px] text-muted-foreground">
+            <div className="mt-3 flex items-center gap-3 text-micro text-muted-foreground">
               <span>{filtered.length} من {rows.length} شعبة</span>
-              <button onClick={() => setFilters({ status: "", pathway: "", trainer: "", from: "", to: "" })}
-                className="cursor-pointer rounded-full border border-white/15 px-3 py-1 font-bold text-muted-foreground hover:border-white/35">
+              <Button tone="secondary" size="sm" onClick={() => setFilters({ status: "", pathway: "", trainer: "", from: "", to: "" })}>
                 امسح الفلاتر
-              </button>
+              </Button>
             </div>
           )}
         </Panel>
@@ -336,7 +334,7 @@ export default function AdminCohorts() {
                       {c.price ? ` · ${c.price} ${c.currency}` : ""}
                     </p>
                   </div>
-                  <span className={`rounded-full border px-3 py-1 text-[11px] font-bold ${meta.cls}`}>{meta.label}</span>
+                  <span className={`rounded-full border px-3 py-1 text-micro font-bold ${meta.cls}`}>{meta.label}</span>
                   <ChevronDown className={`h-4 w-4 text-muted-foreground transition ${isOpen ? "rotate-180" : ""}`} />
                 </button>
 
@@ -369,7 +367,7 @@ export default function AdminCohorts() {
                     {check && !check.ready && check.missing.some((m) => m.startsWith("لا خطة تقديم")) && (
                       <Card tone="warn">
                         <p className="text-xs font-black text-gold-ink">اكتب خطّةَ التقديم</p>
-                        <p className="mt-1 text-[11px] leading-6 text-muted-foreground">
+                        <p className="mt-1 text-micro leading-6 text-muted-foreground">
                           كيف تُقدَّم هذه الشعبة فعلا: الأيّامُ والوقتُ وطريقةُ التقديم وما يلزم المتعلّمَ إحضارُه.
                           تُقرأ ولا تُصدَّق تلقائيّا — فاكتب ما يقع، لا ما يُشتهى.
                         </p>
@@ -381,18 +379,15 @@ export default function AdminCohorts() {
                           aria-label="خطة تقديم الشعبة"
                           className={`${areaCls} mt-2.5`}
                         />
-                        <button
-                          type="button"
+                        <Button tone="primary" type="button"
                           disabled={busy || (planDraft[c.id] ?? "").trim().length < 20}
                           onClick={() => act(async () => {
                             await apiPut(`/api/admin/cohorts/${c.id}/delivery-plan`, { notesAr: (planDraft[c.id] ?? "").trim() });
                             setPlanDraft((d) => ({ ...d, [c.id]: "" }));
                             await loadChecklist(c.id);
-                          }, "حُفظت خطّةُ التقديم")}
-                          className="mt-2.5 flex cursor-pointer items-center gap-1.5 rounded-full bg-gold px-4 py-2 text-xs font-black text-on-gold transition hover:bg-gold/90 disabled:opacity-40"
-                        >
+                          }, "حُفظت خطّةُ التقديم")} className="mt-2.5">
                           <FileText className="h-3.5 w-3.5" /> احفظ الخطّة
-                        </button>
+                        </Button>
                         {(planDraft[c.id] ?? "").trim().length > 0 && (planDraft[c.id] ?? "").trim().length < 20 && (
                           <p className="mt-1.5 text-micro text-muted-foreground">٢٠ حرفا فأكثر — خطّةٌ أقصرُ لا تُقرأ.</p>
                         )}
@@ -402,28 +397,24 @@ export default function AdminCohorts() {
                     {/* إجراءات الحالة */}
                     <div className="flex flex-wrap gap-2">
                       {c.status === "draft" && (
-                        <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/cohorts/${c.id}/open`), "فُتحت الشعبة — التسجيل متاح الآن")}
-                          className="flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-4 py-2 text-xs font-black text-on-teal transition hover:bg-teal-light disabled:opacity-40">
+                        <Button tone="confirm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/cohorts/${c.id}/open`), "فُتحت الشعبة — التسجيل متاح الآن")}>
                           <Play className="h-3.5 w-3.5" /> افتح الشعبة
-                        </button>
+                        </Button>
                       )}
                       {["open", "full"].includes(c.status) && (
-                        <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/cohorts/${c.id}/transition`, { to: "active" }), "الشعبة جارية الآن")}
-                          className="cursor-pointer rounded-full border border-teal/50 px-4 py-2 text-xs font-bold text-teal-light-ink transition hover:bg-teal/10">
+                        <Button tone="confirm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/cohorts/${c.id}/transition`, { to: "active" }), "الشعبة جارية الآن")} className="text-teal-light-ink">
                           ابدأ التقديم
-                        </button>
+                        </Button>
                       )}
                       {c.status === "active" && (
-                        <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/cohorts/${c.id}/transition`, { to: "completed" }), "اكتملت الشعبة")}
-                          className="cursor-pointer rounded-full border border-white/20 px-4 py-2 text-xs font-bold text-foreground transition hover:border-white/40">
+                        <Button tone="secondary" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/cohorts/${c.id}/transition`, { to: "completed" }), "اكتملت الشعبة")}>
                           اختتم الشعبة
-                        </button>
+                        </Button>
                       )}
                       {!["completed", "cancelled"].includes(c.status) && (
-                        <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/cohorts/${c.id}/transition`, { to: "cancelled", note: "إلغاء من لوحة الإدارة" }), "أُلغيت الشعبة")}
-                          className="cursor-pointer rounded-full border border-red-500/40 px-4 py-2 text-xs font-bold text-red-400 transition hover:bg-red-500/10">
+                        <Button tone="danger" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/cohorts/${c.id}/transition`, { to: "cancelled", note: "إلغاء من لوحة الإدارة" }), "أُلغيت الشعبة")}>
                           إلغاء
-                        </button>
+                        </Button>
                       )}
                     </div>
 
@@ -462,24 +453,24 @@ export default function AdminCohorts() {
                           <Sparkles className="h-3.5 w-3.5" /> توليدُ الجلسات من الجدول
                         </p>
                         {c.daysOfWeek.length === 0 || !c.startTime ? (
-                          <p className="text-[11px] text-muted-foreground">
+                          <p className="text-micro text-muted-foreground">
                             لا جدولَ أسبوعيًّا لهذه الشعبة — اضبط أيّامَها ووقتَها من «تعديل الشعبة» ثمّ ولّد جلساتها.
                           </p>
                         ) : (
                           <div className="grid gap-2 sm:grid-cols-4">
-                            <label className="text-[11px] text-muted-foreground">
+                            <label className="text-micro text-muted-foreground">
                               أسابيع
                               <input type="number" min={1} max={52} value={genForm.weeks}
                                 onChange={(e) => setGenForm({ ...genForm, weeks: e.target.value })}
                                 className="mt-1 w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground focus:border-teal focus:outline-none" />
                             </label>
-                            <label className="text-[11px] text-muted-foreground">
+                            <label className="text-micro text-muted-foreground">
                               من تاريخ
                               <input type="date" value={genForm.from}
                                 onChange={(e) => setGenForm({ ...genForm, from: e.target.value })}
                                 className="mt-1 w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground focus:border-teal focus:outline-none" />
                             </label>
-                            <label className="text-[11px] text-muted-foreground">
+                            <label className="text-micro text-muted-foreground">
                               مدّة (دقيقة)
                               <input type="number" min={15} step={15} value={genForm.duration}
                                 onChange={(e) => setGenForm({ ...genForm, duration: e.target.value })}
@@ -513,13 +504,13 @@ export default function AdminCohorts() {
                         <CopyPlus className="h-3.5 w-3.5" /> تكرارُ الشعبة لفصلٍ قادم
                       </p>
                       <div className="grid gap-2 sm:grid-cols-4">
-                        <label className="text-[11px] text-muted-foreground sm:col-span-2">
+                        <label className="text-micro text-muted-foreground sm:col-span-2">
                           عنوانُ النسخة
                           <input value={dupForm.title} onChange={(e) => setDupForm({ ...dupForm, title: e.target.value })}
                             placeholder={`${c.title} — نسخة`}
                             className="mt-1 w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none" />
                         </label>
-                        <label className="text-[11px] text-muted-foreground">
+                        <label className="text-micro text-muted-foreground">
                           إزاحةُ الأسابيع
                           <input type="number" min={0} max={104} value={dupForm.shiftWeeks}
                             onChange={(e) => setDupForm({ ...dupForm, shiftWeeks: e.target.value })}
@@ -541,7 +532,7 @@ export default function AdminCohorts() {
                             كرّرها
                           </button>
                         </div>
-                        <label className="flex cursor-pointer items-center gap-2 text-[11px] text-muted-foreground sm:col-span-4">
+                        <label className="flex cursor-pointer items-center gap-2 text-micro text-muted-foreground sm:col-span-4">
                           <input type="checkbox" checked={dupForm.withSessions}
                             onChange={(e) => setDupForm({ ...dupForm, withSessions: e.target.checked })}
                             className="h-3.5 w-3.5 cursor-pointer accent-teal" />
@@ -587,7 +578,7 @@ export default function AdminCohorts() {
                     )}
 
                     {c.status === "draft" && check && !check.ready && (
-                      <p className="flex items-center gap-1.5 text-[11px] text-red-300">
+                      <p className="flex items-center gap-1.5 text-micro text-red-300">
                         <Lock className="h-3.5 w-3.5" /> لا يمكن فتحها قبل استيفاء الشروط أعلاه
                       </p>
                     )}
@@ -640,7 +631,7 @@ function ZoomAttach({ cohortId, sessionsCount, value, onChange, busy, onSubmit }
     return () => { alive = false };
   }, [cohortId, sessionsCount]);
 
-  if (!sessionsCount) return <p className="text-[11px] text-muted-foreground">أضف جلسة أولا ثم اربطها باجتماع.</p>;
+  if (!sessionsCount) return <p className="text-micro text-muted-foreground">أضف جلسة أولا ثم اربطها باجتماع.</p>;
   return (
     <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
       <div>

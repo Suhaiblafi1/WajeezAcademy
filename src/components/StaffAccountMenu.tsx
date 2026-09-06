@@ -63,7 +63,7 @@ export default function StaffAccountMenu({ user }: { user: SessionUser | null })
           open ? 'border-gold/50 bg-gold/10 text-gold-ink' : 'border-white/12 text-foreground hover:border-white/30 hover:text-foreground'
         }`}
       >
-        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-gold/20 text-[11px] font-black text-gold-ink">
+        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-gold/20 text-micro font-black text-gold-ink">
           {name.trim().charAt(0) || 'و'}
         </span>
         <span className="hidden max-w-[7rem] truncate sm:block">{name.split(' ')[0]}</span>
@@ -80,7 +80,7 @@ export default function StaffAccountMenu({ user }: { user: SessionUser | null })
           <Inset role="menu" className="absolute left-0 top-12 z-50 w-72 bg-surface p-2 shadow-2xl">
             <div className="px-3 pb-3 pt-2">
               <p className="truncate text-sm font-black">{name}</p>
-              <p dir="ltr" className="mt-0.5 truncate text-right text-[11px] text-muted-foreground">{user?.email ?? '—'}</p>
+              <p dir="ltr" className="mt-0.5 truncate text-right text-micro text-muted-foreground">{user?.email ?? '—'}</p>
               {roles.length > 0 && (
                 <div className="mt-2.5 flex flex-wrap gap-1.5">
                   {roles.map((r) => (

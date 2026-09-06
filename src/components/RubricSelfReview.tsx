@@ -87,12 +87,12 @@ export default function RubricSelfReview({
           <ClipboardCheck className="h-4 w-4 text-teal-light-ink" aria-hidden="true" />
           راجع مخرَجك قبل أن تُسلّمه
         </h3>
-        <span className="rounded-full bg-teal-ink/15 px-2 py-0.5 text-[11px] tabular-nums text-teal-light-ink">
+        <span className="rounded-full bg-teal-ink/15 px-2 py-0.5 text-micro tabular-nums text-teal-light-ink">
           {fmtNum(rubric.criteria.length)} معايير
         </span>
       </div>
 
-      <p className="mt-2 text-[12px] leading-6 text-muted-foreground">
+      <p className="mt-2 text-xs leading-6 text-muted-foreground">
         حكمُك هنا لك وحدَك — لا يُرفع ولا يُحتسب. والمحتسَبُ تقييمُ المدرّب على
         ما ترفعه، وبهذه المعايير نفسِها.
       </p>
@@ -113,13 +113,13 @@ export default function RubricSelfReview({
                       type="button"
                       onClick={() => mark(ci, l.level)}
                       aria-pressed={picked}
-                      className={`flex w-full items-start gap-2 rounded-xl border p-2.5 text-right text-[12px] leading-6 transition ${
+                      className={`flex w-full items-start gap-2 rounded-xl border p-2.5 text-right text-xs leading-6 transition ${
                         picked
                           ? "border-teal-ink/50 bg-teal-ink/15"
                           : "border-white/10 bg-transparent hover:bg-white/[0.04]"
                       }`}
                     >
-                      <span className="shrink-0 rounded-md bg-white/10 px-1.5 py-0.5 text-[11px] font-black tabular-nums">
+                      <span className="shrink-0 rounded-md bg-white/10 px-1.5 py-0.5 text-micro font-black tabular-nums">
                         {fmtNum(l.level)}
                       </span>
                       <span>{l.textAr}</span>
@@ -133,7 +133,7 @@ export default function RubricSelfReview({
       </div>
 
       {answered === rubric.criteria.length && lowest !== undefined && lowest < 3 && (
-        <p className="mt-3 rounded-2xl border border-amber-400/20 bg-amber-400/10 p-3 text-[12px] leading-6 text-amber-100">
+        <p className="mt-3 rounded-2xl border border-amber-400/20 bg-amber-400/10 p-3 text-xs leading-6 text-amber-100">
           أدنى ما حكمتَ به على نفسك {fmtNum(lowest)} — وهذا موضعُ عملك قبل التسليم،
           لا بعد التقييم.
         </p>

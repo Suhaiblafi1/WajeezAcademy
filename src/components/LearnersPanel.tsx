@@ -18,6 +18,7 @@ import { fmtDate } from "@/application/text/format-ar";
 import { toast, toastError } from './Toast';
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 interface LearnerEnrollment {
   id: string;
   cohortId: string;
@@ -137,16 +138,13 @@ export default function LearnersPanel() {
                       <span className="rounded-full border border-red-400/40 px-2 py-0.5 text-micro font-bold text-red-300">موقوف</span>
                     )}
                   </p>
-                  <p dir="ltr" className="mt-0.5 text-left text-[11px] text-muted-foreground">{l.user.email}</p>
+                  <p dir="ltr" className="mt-0.5 text-left text-micro text-muted-foreground">{l.user.email}</p>
                 </div>
                 {data.canWrite && (
                   <div className="flex shrink-0 gap-1.5">
-                    <button
-                      onClick={() => setEditing(l)}
-                      className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-3 py-1 text-[11px] font-bold text-foreground transition hover:border-teal/50 hover:text-teal-light-ink"
-                    >
+                    <Button tone="secondary" size="sm" onClick={() => setEditing(l)}>
                       <Pencil className="h-3 w-3" /> عدّل الحساب
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -155,23 +153,20 @@ export default function LearnersPanel() {
                 {l.enrollments.map((e) => (
                   <Inset as="li" key={e.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
                     <span className="min-w-0">
-                      <span className="block text-[12px] font-bold text-foreground">{e.courseTitle}</span>
+                      <span className="block text-xs font-bold text-foreground">{e.courseTitle}</span>
                       <span className="text-micro text-muted-foreground">
                         {e.cohortTitle} · {ENROLL_STATUS[e.status] ?? e.status} · {e.percent}٪
                         {e.startsAt ? ` · ${fmtDate(new Date(e.startsAt))}` : ""}
                       </span>
                     </span>
                     {data.canWrite && (
-                      <button
-                        onClick={() => void act(
+                      <Button tone="danger" size="sm" onClick={() => void act(
                           () => apiDelete(`/api/staff/learners/enrollments/${e.id}`, { note: "إخراجٌ من شاشة الطلبة" }),
                           `أُخرج «${l.user.displayName}» من «${e.cohortTitle}» — والسجلّ باقٍ`,
                         )}
-                        disabled={busy}
-                        className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-red-400/30 px-2.5 py-1 text-micro font-bold text-red-300 transition hover:bg-red-400/10 disabled:opacity-40"
-                      >
+                        disabled={busy} className="shrink-0 px-2.5 text-micro">
                         <Trash2 className="h-3 w-3" /> أخرجه
-                      </button>
+                      </Button>
                     )}
                   </Inset>
                 ))}
@@ -232,11 +227,11 @@ function EditLearner({ row, busy, onClose, onSave, onEnroll }: {
           </button>
         </div>
 
-        <label className="mt-4 block text-[11px] font-bold text-muted-foreground">
+        <label className="mt-4 block text-micro font-bold text-muted-foreground">
           الاسم
           <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} className={`${field} mt-1`} />
         </label>
-        <label className="mt-3 block text-[11px] font-bold text-muted-foreground">
+        <label className="mt-3 block text-micro font-bold text-muted-foreground">
           البريد
           <input value={email} onChange={(e) => setEmail(e.target.value)} dir="ltr" className={`${field} mt-1 text-left`} />
           {/* يُقال قبل الحفظ لا بعده: تبديلُ البريد يُسقط توثيقَه، والشراءُ
@@ -249,16 +244,13 @@ function EditLearner({ row, busy, onClose, onSave, onEnroll }: {
         </label>
 
         <div className="mt-4 flex gap-2">
-          <button
-            disabled={busy}
+          <Button tone="confirm" disabled={busy}
             onClick={() => onSave({
               ...(displayName !== row.user.displayName ? { displayName } : {}),
               ...(email !== row.user.email ? { email } : {}),
-            })}
-            className="flex-1 cursor-pointer rounded-full bg-teal py-2.5 text-xs font-black text-on-teal transition hover:bg-teal-light disabled:opacity-40"
-          >
+            })} className="flex-1">
             احفظ
-          </button>
+          </Button>
           <button
             disabled={busy}
             onClick={() => onSave({ status: suspended ? "active" : "suspended" })}
@@ -273,19 +265,16 @@ function EditLearner({ row, busy, onClose, onSave, onEnroll }: {
         </div>
 
         <div className="mt-5 border-t border-white/10 pt-4">
-          <p className="text-[11px] font-bold text-muted-foreground">سجّله في شعبة</p>
+          <p className="text-micro font-bold text-muted-foreground">سجّله في شعبة</p>
           <div className="mt-2 flex gap-2">
             <select value={cohortId} onChange={(e) => setCohortId(e.target.value)} className={`${field} flex-1 [&>option]:bg-surface`}>
               <option value="">اختر شعبة…</option>
               {cohorts.map((c) => <option key={c.id} value={c.id}>{c.courseTitle} — {c.title}</option>)}
             </select>
-            <button
-              disabled={busy || !cohortId}
-              onClick={() => onEnroll(cohortId)}
-              className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-3.5 py-2 text-[11px] font-bold text-foreground transition hover:border-teal/50 disabled:opacity-40"
-            >
+            <Button tone="secondary" disabled={busy || !cohortId}
+              onClick={() => onEnroll(cohortId)} className="shrink-0 px-3.5">
               <UserPlus className="h-3.5 w-3.5" /> سجّله
-            </button>
+            </Button>
           </div>
           <p className="mt-2 text-micro leading-5 text-muted-foreground">
             تسجيلٌ إداريّ بلا فاتورة — يمرّ بحارس السعة نفسِه، والفائضُ يذهب لقائمة الانتظار.

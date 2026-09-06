@@ -16,6 +16,7 @@ import { LEDGER_CURRENCY } from "@/application/commerce/presentment"
 import { toast, toastError } from '@/components/Toast'
 import { Card } from '@/components/ui/Surface'
 
+import Button from "@/components/ui/Button";
 /** أعلى نسبةٍ يطلبها مستشار — مطابقةٌ لما يفرضه الخادم */
 const MAX_PERCENT = 50
 
@@ -201,18 +202,12 @@ export default function RequestsPanel({ caseId }: { caseId: string }) {
           </FieldRow>
 
           <div className="mt-4 flex flex-wrap items-center gap-2">
-            <button
-              type="button" onClick={() => void submit()} disabled={!ready || busy}
-              className="flex cursor-pointer items-center gap-2 rounded-full bg-teal px-6 py-2.5 text-xs font-black text-on-teal transition hover:bg-teal-light disabled:cursor-not-allowed disabled:opacity-40"
-            >
+            <Button tone="confirm" type="button" onClick={() => void submit()} disabled={!ready || busy} className="disabled:cursor-not-allowed">
               {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />} ارفع الطلب
-            </button>
-            <button
-              type="button" onClick={() => setOpen(false)}
-              className="cursor-pointer rounded-full border border-white/15 px-5 py-2.5 text-xs font-bold text-muted-foreground transition hover:border-white/35"
-            >
+            </Button>
+            <Button tone="secondary" type="button" onClick={() => setOpen(false)}>
               إلغاء
-            </button>
+            </Button>
             {!ready && reason.trim().length < 12 && (
               <span className="text-micro text-gold-ink">اكتب سببا لا يقلّ عن ١٢ حرفا</span>
             )}
@@ -231,7 +226,7 @@ export default function RequestsPanel({ caseId }: { caseId: string }) {
                 : r.status === 'rejected' ? 'border-gold/35 bg-gold/[0.05]'
                 : 'border-white/10 bg-paper/20'
             }`}>
-              <p className="flex flex-wrap items-center gap-x-2 text-[11px] font-black">
+              <p className="flex flex-wrap items-center gap-x-2 text-micro font-black">
                 <BadgePercent className="h-3.5 w-3.5 text-muted-foreground" />
                 {KIND_AR[r.kind] ?? r.kind}
                 {r.percentOff && <span className="text-teal-light-ink">{r.percentOff}٪</span>}
@@ -239,16 +234,16 @@ export default function RequestsPanel({ caseId }: { caseId: string }) {
                 {r.courseId && <span className="font-normal text-muted-foreground">— {courseById(r.courseId)?.name ?? r.courseId}</span>}
                 <span className="ms-auto text-micro font-bold text-muted-foreground">{STATUS_AR[r.status] ?? r.status}</span>
               </p>
-              <p className="mt-1.5 text-[11px] leading-6 text-muted-foreground">{r.reasonAr}</p>
+              <p className="mt-1.5 text-micro leading-6 text-muted-foreground">{r.reasonAr}</p>
               {r.decisionNoteAr && (
-                <p className="mt-1.5 border-t border-white/10 pt-1.5 text-[11px] leading-6 text-foreground">
+                <p className="mt-1.5 border-t border-white/10 pt-1.5 text-micro leading-6 text-foreground">
                   <span className="font-bold text-muted-foreground">ردّ الإدارة{r.decidedBy ? ` (${r.decidedBy.displayName})` : ''}: </span>
                   {r.decisionNoteAr}
                 </p>
               )}
               {r.coupon && (
                 <div className="mt-2 flex items-center gap-2 rounded-lg border border-teal/30 bg-paper/30 px-2.5 py-1.5">
-                  <code dir="ltr" className="flex-1 font-mono text-[11px] text-teal-light-ink">{r.coupon.code}</code>
+                  <code dir="ltr" className="flex-1 font-mono text-micro text-teal-light-ink">{r.coupon.code}</code>
                   <button
                     type="button"
                     onClick={() => { void navigator.clipboard?.writeText(r.coupon!.code); setCopied(r.id) }}

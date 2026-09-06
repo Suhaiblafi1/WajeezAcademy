@@ -28,6 +28,7 @@ import {
 import type { JourneyTrack } from "@/application/student/journey";
 
 import { Card, Panel, Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 export default function CapstonePanel({
   track,
   requests,
@@ -66,7 +67,7 @@ export default function CapstonePanel({
         {track.capstoneAr ? (
           <p className="mt-3 text-[13px] leading-7 text-foreground">{track.capstoneAr}</p>
         ) : (
-          <p className="mt-3 text-[12px] leading-6 text-muted-foreground">
+          <p className="mt-3 text-xs leading-6 text-muted-foreground">
             لم يُكتب نصُّ مشروع هذا المسار في الكتالوج بعد.
           </p>
         )}
@@ -78,7 +79,7 @@ export default function CapstonePanel({
           <AdvisorContact
             text={`مرحبا، أنهيت دورات «${track.titleAr}» وأريد ترتيب تسليم مشروع التخرج.`}
             label="راسلنا لتسليم المشروع"
-            className="flex shrink-0 items-center gap-2 rounded-full border border-gold/50 px-4 py-2 text-[12px] font-black text-gold-ink transition hover:bg-gold/10"
+            className="flex shrink-0 items-center gap-2 rounded-full border border-gold/50 px-4 py-2 text-xs font-black text-gold-ink transition hover:bg-gold/10"
           />
         </div>
       </Panel>
@@ -87,7 +88,7 @@ export default function CapstonePanel({
       {completion && (
         <Card as="section" className="p-3.5">
           <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-            <p className="text-[12px] font-black text-foreground">
+            <p className="text-xs font-black text-foreground">
               أنجزت <span className="tabular-nums">{completion.done}</span> من{" "}
               <span className="tabular-nums">{completion.total}</span> دورات المسار
             </p>
@@ -206,8 +207,7 @@ function RequestCard({
               />
             </label>
           )}
-          <button
-            onClick={async () => {
+          <Button tone="confirm" onClick={async () => {
               setBusy(true);
               setError(null);
               try {
@@ -220,12 +220,10 @@ function RequestCard({
                 setBusy(false);
               }
             }}
-            disabled={busy || (needsAudience && audience.trim().length < 3)}
-            className="mt-2.5 flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-5 py-2 text-[12px] font-black text-on-teal transition hover:bg-teal-light disabled:opacity-40"
-          >
+            disabled={busy || (needsAudience && audience.trim().length < 3)} className="mt-2.5">
             {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
             {cta}
-          </button>
+          </Button>
         </div>
       )}
       {error && <p className="mt-2 text-fine font-bold text-gold-ink">{error}</p>}

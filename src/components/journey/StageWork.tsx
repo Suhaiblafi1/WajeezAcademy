@@ -34,6 +34,7 @@ import type { CourseFull } from "@/data/courses";
 import type { JourneyStage } from "@/application/student/journey";
 import type { LearnerRequest } from "@/services/learner-requests";
 import { Panel, Card } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 import {
   latestSubmission, pendingAssessmentCount,
   type CohortAssessment, type EnrollmentDetail,
@@ -138,7 +139,7 @@ export default function StageWork({
                 role="tab"
                 aria-selected={on}
                 onClick={() => setTab(t.id)}
-                className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[12px] font-bold transition ${
+                className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-bold transition ${
                   on ? "border-teal bg-teal/15 text-teal-light-ink" : "border-white/10 bg-white/[0.03] text-muted-foreground hover:border-white/30"
                 }`}
               >
@@ -169,7 +170,7 @@ export default function StageWork({
         {(detail.status === "completed" || percent >= 100 || detail.certificates.length > 0) && (
           <div className="mt-4 space-y-3 border-t border-white/10 pt-4">
             <Card tone="accent" className="flex flex-wrap items-center justify-between gap-3 bg-teal-ink/[0.06] p-3.5">
-              <p className="min-w-0 text-[12px] leading-5 text-foreground">
+              <p className="min-w-0 text-xs leading-5 text-foreground">
                 <span className="flex items-center gap-1.5 font-black text-foreground">
                   <Ruler className="h-3.5 w-3.5 text-teal-light-ink" /> قِس نموّك في مهارات هذه الدورة
                 </span>
@@ -177,7 +178,7 @@ export default function StageWork({
               </p>
               <Link
                 to={`/student/remeasure/${detail.id}`}
-                className="shrink-0 rounded-full border border-teal/50 px-4 py-2 text-[12px] font-black text-teal-light-ink transition hover:bg-teal/10"
+                className="shrink-0 rounded-full border border-teal/50 px-4 py-2 text-xs font-black text-teal-light-ink transition hover:bg-teal/10"
               >
                 افتح القياس
               </Link>
@@ -370,7 +371,7 @@ function Lessons({
           <p className="flex items-center gap-1.5 text-fine font-black text-gold-ink">
             <FileText className="h-3.5 w-3.5" /> مشروع هذه الدورة
           </p>
-          <p className="mt-1.5 text-[12px] leading-6 text-foreground">{project}</p>
+          <p className="mt-1.5 text-xs leading-6 text-foreground">{project}</p>
         </Card>
       )}
     </>
@@ -471,14 +472,11 @@ function Assessments({ detail, handlers }: { detail: EnrollmentDetail; handlers:
                   rows={3}
                   className="w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2.5 text-[13px] text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none"
                 />
-                <button
-                  disabled={busy === a.id || !(answers[a.id] ?? "").trim()}
-                  onClick={() => onSubmit(a.id, mine?.status === "resubmit_requested")}
-                  className="mt-2 flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-5 py-2 text-[12px] font-black text-on-teal transition hover:bg-teal-light disabled:opacity-40"
-                >
+                <Button tone="confirm" disabled={busy === a.id || !(answers[a.id] ?? "").trim()}
+                  onClick={() => onSubmit(a.id, mine?.status === "resubmit_requested")} className="mt-2">
                   {busy === a.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
                   {mine?.status === "resubmit_requested" ? "أعد التسليم" : "سلّم الواجب"}
-                </button>
+                </Button>
               </div>
             )}
           </Card>
@@ -504,7 +502,7 @@ function QuizAttemptForm({
     <div className="mt-3 space-y-3">
       {items.map((it, idx) => (
         <div key={it.id}>
-          <p className="mb-1 text-[12px] font-bold text-foreground">
+          <p className="mb-1 text-xs font-bold text-foreground">
             {idx + 1}. {it.prompt}
             {it.maxScore ? <span className="mr-2 text-fine font-normal text-muted-foreground">({it.maxScore} درجات)</span> : null}
           </p>
@@ -517,14 +515,11 @@ function QuizAttemptForm({
           />
         </div>
       ))}
-      <button
-        disabled={busy || answered < items.length}
-        onClick={() => onSubmit(items.map((i) => ({ itemId: i.id, answer: (resp[i.id] ?? "").trim() })))}
-        className="flex cursor-pointer items-center gap-1.5 rounded-full bg-gold px-5 py-2 text-[12px] font-black text-on-gold transition hover:bg-gold/90 disabled:opacity-40"
-      >
+      <Button tone="primary" disabled={busy || answered < items.length}
+        onClick={() => onSubmit(items.map((i) => ({ itemId: i.id, answer: (resp[i.id] ?? "").trim() })))}>
         {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
         سلّم الاختبار ({answered}/{items.length})
-      </button>
+      </Button>
     </div>
   );
 }

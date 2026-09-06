@@ -8,6 +8,7 @@ import { useRealSession } from "@/services/session";
 import { useEffect, useState } from "react";
 import { loadMyPortals } from "@/services/portals";
 
+import Button from "@/components/ui/Button";
 /** إطار بوابة المدرب: هويته من جلسته وحدها. */
 export default function TrainerLayout({ children, title }: { children: React.ReactNode; title: string }) {
   const { user, checked } = useRealSession();
@@ -116,14 +117,11 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
           <div className="flex items-center gap-3">
             {/* بحث سريع Ctrl+K — لجلسة المدرب الحقيقية فقط: يضرب نقطة الخادم المقيدة بإسناداته */}
             {realTrainer && (
-              <button
-                onClick={() => window.dispatchEvent(new Event("wajeez:open-search"))}
+              <Button tone="secondary" size="sm" onClick={() => window.dispatchEvent(new Event("wajeez:open-search"))}
                 aria-label="بحث سريع — Ctrl+K"
-                title="بحث سريع — Ctrl+K"
-                className="hidden cursor-pointer items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 text-micro font-bold text-muted-foreground transition hover:border-teal-light/50 hover:text-teal-light-ink md:flex"
-              >
+                title="بحث سريع — Ctrl+K" className="hidden text-micro md:flex">
                 بحث… <kbd className="rounded border border-white/15 px-1.5 text-micro">Ctrl K</kbd>
-              </button>
+              </Button>
             )}
             <NotificationBell audience="trainer" />
             <ThemeToggle />

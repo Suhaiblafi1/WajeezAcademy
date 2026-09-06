@@ -20,6 +20,7 @@ import { AlertTriangle } from "lucide-react";
 import Modal from "./Modal";
 
 import { Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 export interface ConfirmTyping {
   /** ما يُطلب كتابتُه بالحرف — بريدٌ أو رمزٌ يراه المستخدم أمامه */
   expected: string
@@ -77,10 +78,10 @@ export default function ConfirmAction({
           {titleAr}
         </h2>
 
-        <div className="mt-3 space-y-2 text-[12px] leading-6 text-foreground">{children}</div>
+        <div className="mt-3 space-y-2 text-xs leading-6 text-foreground">{children}</div>
 
         {typing && (
-          <label className="mt-4 block text-[11px] font-bold text-muted-foreground">
+          <label className="mt-4 block text-micro font-bold text-muted-foreground">
             {typing.labelAr}
             <input
               value={typed}
@@ -96,7 +97,7 @@ export default function ConfirmAction({
         )}
 
         {reason && (
-          <label className="mt-4 block text-[11px] font-bold text-muted-foreground">
+          <label className="mt-4 block text-micro font-bold text-muted-foreground">
             {reason.labelAr}
             <textarea
               value={why}
@@ -124,13 +125,10 @@ export default function ConfirmAction({
           >
             {confirmLabelAr}
           </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="cursor-pointer rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground transition hover:border-white/40"
-          >
+          <Button tone="secondary" type="button"
+            onClick={onCancel}>
             تراجَع
-          </button>
+          </Button>
         </div>
       </Inset>
     </Modal>

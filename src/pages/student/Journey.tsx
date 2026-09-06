@@ -38,6 +38,7 @@ import { courseFullById } from "@/data/courses";
 import { toast, toastError } from '@/components/Toast';
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 /** الطلبُ كما يعرضه الشريطُ بعد العودة من صفحة الدفع */
 interface PaidOrder {
   id: string;
@@ -249,7 +250,7 @@ export default function Journey() {
             <p className="flex items-center gap-2 text-sm font-black text-gold-ink">
               <CircleSlash className="h-4 w-4 shrink-0" /> لم تكتمل دفعتك — ولم يُخصم منك شيء
             </p>
-            <p className="mt-1.5 text-[12px] leading-6 text-muted-foreground">
+            <p className="mt-1.5 text-xs leading-6 text-muted-foreground">
               طلبك محفوظ كما تركته. أكمل الدفع متى شئت من{" "}
               <Link to="/student/billing" className="font-bold text-gold-ink underline underline-offset-4">الفواتير</Link>
               {" "}— ولن تفقد مقعدك ما دامت الشعبة مفتوحة.
@@ -265,7 +266,7 @@ export default function Journey() {
               <Inset className="mt-3 p-3.5">
                 <ul className="space-y-1">
                   {paid.items.map((it) => (
-                    <li key={it.id} className="flex items-start justify-between gap-3 text-[12px]">
+                    <li key={it.id} className="flex items-start justify-between gap-3 text-xs">
                       <span className="min-w-0 text-foreground">{it.titleAr}</span>
                       {/* الهديّةُ تُقرأ هديّةً لا صفرا — صفرٌ في فاتورةٍ يُقرأ عطبا */}
                       <span dir="ltr" className="shrink-0 font-bold text-muted-foreground">
@@ -284,7 +285,7 @@ export default function Journey() {
                 </div>
               </Inset>
             )}
-            <p className="mt-2.5 text-[12px] leading-6 text-muted-foreground">
+            <p className="mt-2.5 text-xs leading-6 text-muted-foreground">
               نؤكّد دفعتك مع البنك، ومراحلُك تظهر أدناه فور تأكيدها — عادةً خلال دقائق.
               وتفصيل الفاتورة في <Link to="/student/billing" className="font-bold text-teal-light-ink underline underline-offset-4">الفواتير</Link>.
             </p>
@@ -302,12 +303,9 @@ export default function Journey() {
             <ServerOff className="h-12 w-12 text-muted-foreground/50" />
             <h2 className="mt-4 text-xl font-black">لا يمكن الوصول لرحلتك</h2>
             <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">{offline}</p>
-            <button
-              onClick={() => void load()}
-              className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground hover:border-white/40"
-            >
+            <Button tone="secondary" onClick={() => void load()} className="mt-5">
               <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
-            </button>
+            </Button>
           </Panel>
         ) : rows === null ? (
           <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" aria-label="يُحمَّل" /></div>
@@ -326,7 +324,7 @@ export default function Journey() {
                       key={t.id}
                       onClick={() => switchTrack(t.id)}
                       aria-current={on ? "true" : undefined}
-                      className={`flex shrink-0 cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-[12px] font-bold transition ${
+                      className={`flex shrink-0 cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-xs font-bold transition ${
                         on ? "border-teal bg-teal/15 text-teal-light-ink" : "border-white/10 bg-white/[0.03] text-muted-foreground hover:border-white/30"
                       }`}
                     >
@@ -435,7 +433,7 @@ function PlanRequest({ track }: { track: JourneyTrack }) {
   if (askable === 0) {
     if (pending > 0) {
       return (
-        <p className="mt-3 rounded-2xl border border-gold/30 bg-gold/[0.06] px-4 py-3 text-[12px] leading-6 text-gold-ink">
+        <p className="mt-3 rounded-2xl border border-gold/30 bg-gold/[0.06] px-4 py-3 text-xs leading-6 text-gold-ink">
           طلبك على {pending === 1 ? "دورة واحدة" : `${pending} دورات`} قيد المراجعة. نحجز مقاعدك ثمّ تصلك
           فاتورةٌ واحدة للخطّة كلها — دفعةٌ واحدة لا أربع.
         </p>
@@ -444,14 +442,14 @@ function PlanRequest({ track }: { track: JourneyTrack }) {
     if (awaiting === 0) return null;
     return (
       <Card className="mt-3 flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-        <p className="min-w-0 text-[12px] leading-6 text-muted-foreground">
+        <p className="min-w-0 text-xs leading-6 text-muted-foreground">
           <span className="font-bold text-foreground">{awaiting} من دوراتك لم تُفتح لها شعبة بعد.</span>{" "}
           لا تُطلب ولا يُدفع ثمنُها — نُعلمك فور جدولتها، أو راجعها مع مستشارك.
         </p>
         <AdvisorContact
           text={reviewMsg}
           label="مراجعة خطّتي"
-          className="flex shrink-0 items-center gap-2 rounded-full border border-gold/40 px-4 py-2 text-[12px] font-bold text-gold-ink transition hover:bg-gold/10"
+          className="flex shrink-0 items-center gap-2 rounded-full border border-gold/40 px-4 py-2 text-xs font-bold text-gold-ink transition hover:bg-gold/10"
         />
       </Card>
     );
@@ -460,7 +458,7 @@ function PlanRequest({ track }: { track: JourneyTrack }) {
   /* له شعبٌ مفتوحة: الشراءُ في بطاقة المرحلة نفسِها — حيث الموعدُ والسعر.
      ولا زرَّ ثانيا هنا يفتح مسارا آخر لنفس العمليّة. */
   return (
-    <Card tone="accent" className="mt-3 px-4 py-3 text-[12px] leading-6 text-teal-light-ink">
+    <Card tone="accent" className="mt-3 px-4 py-3 text-fine leading-6 text-teal-light-ink">
       <span className="font-bold">
         {askable === 1 ? "دورةٌ من خطّتك مفتوحةٌ للتسجيل" : `${askable} من دوراتك مفتوحةٌ للتسجيل`}.
       </span>{" "}

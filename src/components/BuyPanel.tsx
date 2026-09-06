@@ -46,6 +46,7 @@ import { fmtDateAr } from "@/utils/format";
 import { track } from "@/services/analytics";
 
 import { Card, Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 export interface BuyLine {
   courseId: string;
   name: string;
@@ -335,7 +336,7 @@ export default function BuyPanel({
                         <select
                           value={chosen[line.courseId] ?? options[0].id}
                           onChange={(e) => setChosen({ ...chosen, [line.courseId]: e.target.value })}
-                          className="w-full cursor-pointer rounded-xl border border-white/12 bg-white/[0.04] px-3 py-2 text-[12px] text-foreground outline-none transition hover:border-teal/40 focus:border-teal/60"
+                          className="w-full cursor-pointer rounded-xl border border-white/12 bg-white/[0.04] px-3 py-2 text-xs text-foreground outline-none transition hover:border-teal/40 focus:border-teal/60"
                         >
                           {options.map((o) => (
                             <option key={o.id} value={o.id} className="bg-surface">
@@ -373,12 +374,12 @@ export default function BuyPanel({
                 onChange={(e) => setCoupon(e.target.value.toUpperCase())}
                 placeholder={`كود الخصم — مثال ${FIRST_TIME_PROMO.code}`}
                 dir="ltr"
-                className="min-w-0 flex-1 rounded-xl border border-white/12 bg-white/[0.04] px-3 py-2 text-left text-[12px] font-mono text-foreground outline-none transition focus:border-gold/50"
+                className="min-w-0 flex-1 rounded-xl border border-white/12 bg-white/[0.04] px-3 py-2 text-left text-xs font-mono text-foreground outline-none transition focus:border-gold/50"
               />
               <button
                 onClick={() => setApplied(coupon.trim())}
                 disabled={quoting || coupon.trim() === applied}
-                className="shrink-0 cursor-pointer rounded-xl border border-gold/40 px-3 py-2 text-[12px] font-black text-gold-ink transition hover:bg-gold/10 disabled:opacity-40"
+                className="shrink-0 cursor-pointer rounded-xl border border-gold/40 px-3 py-2 text-xs font-black text-gold-ink transition hover:bg-gold/10 disabled:opacity-40"
               >
                 طبّق
               </button>
@@ -387,7 +388,7 @@ export default function BuyPanel({
             {/* لا شيء يُشترى: كلُّه مملوكٌ أو محجوز — يُقال صراحةً بدل صفٍّ
                 من الأصفار وزرِّ دفعٍ لا يفعل شيئا. */}
             {nothingLeft && (
-              <p className="mt-4 rounded-2xl border border-teal/35 bg-teal/[0.07] p-4 text-[12px] leading-6 text-teal-light-ink">
+              <p className="mt-4 rounded-2xl border border-teal/35 bg-teal/[0.07] p-4 text-xs leading-6 text-teal-light-ink">
                 كلُّ ما في هذا الطلب لك بالفعل — لا شيء يُدفع ثمنُه مرّةً أخرى.
                 تجد شعبك ومقاعدك المحجوزة في «تعلّمي».
               </p>
@@ -395,7 +396,7 @@ export default function BuyPanel({
 
             {/* الحساب — كلُّ سطرٍ منه من الخادم */}
             {quote && !nothingLeft && (
-              <Card className="mt-4 space-y-1.5 text-[12px]">
+              <Card className="mt-4 space-y-1.5 text-xs">
                 <div className="flex items-center justify-between text-muted-foreground">
                   <span>مجموع الدورات</span>
                   <span dir="ltr">{money(quote.subtotal, quote.currency)}</span>
@@ -483,21 +484,18 @@ export default function BuyPanel({
             )}
 
             {error && (
-              <p className="mt-3 rounded-xl border border-red-400/30 bg-red-400/[0.07] px-3 py-2 text-[12px] leading-5 text-red-200">
+              <p className="mt-3 rounded-xl border border-red-400/30 bg-red-400/[0.07] px-3 py-2 text-xs leading-5 text-red-200">
                 {error}
               </p>
             )}
 
             {!nothingLeft && (
               <>
-                <button
-                  onClick={() => void pay()}
-                  disabled={paying || quoting || !quote || !quote.emailVerified || payableIds.length === 0}
-                  className="mt-5 flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-gold py-3.5 text-sm font-black text-on-gold transition hover:bg-gold/90 disabled:opacity-50"
-                >
+                <Button tone="primary" onClick={() => void pay()}
+                  disabled={paying || quoting || !quote || !quote.emailVerified || payableIds.length === 0} className="mt-5 w-full disabled:opacity-50">
                   {paying || quoting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
                   {paying ? "نحوّلك إلى صفحة الدفع…" : <>ادفع الآن · <span dir="ltr">{shownTotal}</span></>}
-                </button>
+                </Button>
                 <p className="mt-2 text-center text-fine leading-5 text-muted-foreground">
                   الدفع على صفحة المزوّد — لا نحفظ بيانات بطاقتك. وبعد الدفع تُفتح منصّتك على ما اشتريت.
                 </p>

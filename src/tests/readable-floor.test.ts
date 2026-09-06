@@ -51,6 +51,30 @@ describe('أصغرُ حجمٍ مقروء', () => {
     expect(offenders, `استعمل text-micro بدلا منها:\n${offenders.join('\n')}`).toEqual([])
   })
 
+  /* ═══ والاسمُ لا يكفي حتّى يُستعمَل ═══
+
+     `text-micro` معرَّفٌ منذ قرارِ الأرضيّةِ المقروءة — و**٦٤٦ موضعا ظلّ يكتب
+     `text-[11px]`** إلى ٦ سبتمبر، ومعها ٥٦ بـ`text-[12px]` وهو `text-xs`
+     بعينه. أي أنّ التجريدَ وُجد ولم يُتبنَّ، وهو النمطُ نفسُه الذي أصاب
+     مكتبةَ `ui/` الأولى.
+
+     والحدُّ أعلاه يمنع ما **دون** الأحدَ عشر. وهذا يمنع كتابةَ الرقم حيث له
+     اسم: لا لأنّ الناتجَ يختلف — هو مطابق — بل لأنّ اسما واحدا يُغيَّر في
+     ملفٍّ واحد، ورقما مكتوبا في ستّمئة موضعٍ لا يُغيَّر أبدا. */
+  it('ولا يُكتب رقمٌ حيث له اسمٌ في السلّم', () => {
+    const NAMED: Record<string, string> = { '11': 'text-micro', '12': 'text-xs' }
+    const offenders: string[] = []
+    for (const file of walk('src')) {
+      if (file.startsWith('src/tests/')) continue
+      for (const m of read(file).matchAll(ARBITRARY)) {
+        const name = NAMED[m[1]]
+        if (name) offenders.push(`${file}: ${m[0]} ← ${name}`)
+      }
+    }
+    expect(offenders, `أحجامٌ لها أسماءٌ في السلّم:\n${offenders.slice(0, 10).join('\n')}`)
+      .toEqual([])
+  })
+
   it('«micro» حجمٌ معرَّفٌ لا اسمٌ بلا حجم', () => {
     const cfg = read('tailwind.config.js')
     expect(cfg).toMatch(/fontSize:\s*\{[^}]*micro:\s*'11px'/s)

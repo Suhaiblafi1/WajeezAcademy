@@ -25,6 +25,7 @@ import {
 import EmptyState from "@/components/EmptyState";
 
 import { Panel } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 const HONESTY_NOTE =
   "الاسترجاع لا يرفع مستوى مهارتك ولا يخفضه — مستواك يأتي من القياس في مؤشر وجيز ومن إعادة القياس بعد الدورة. " +
   "هذه البطاقات لتثبيت ما تعلمته، لا لتقييمك.";
@@ -222,14 +223,11 @@ export default function Review() {
               <p className="min-w-0 flex-1 text-sm font-bold">
                 أنهيت مستحقّ اليوم. كل بطاقة جُدولت لموعدها المذكور تحتها.
               </p>
-              <button
-                type="button"
-                onClick={() => { setPicked({}); setSaved({}); setSnap(null); setReload((n) => n + 1); }}
-                className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 text-xs font-bold transition hover:border-teal/60 hover:text-teal-light-ink"
-              >
+              <Button tone="secondary" type="button"
+                onClick={() => { setPicked({}); setSaved({}); setSnap(null); setReload((n) => n + 1); }} className="min-h-11">
                 <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
                 حدّث القائمة
-              </button>
+              </Button>
             </Panel>
           )}
         </>

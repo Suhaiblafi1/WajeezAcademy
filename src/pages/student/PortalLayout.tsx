@@ -12,6 +12,7 @@ import { usePublishedContent } from "@/services/public-content";
 import { getLibraryResources } from "@/data/core-catalog-source";
 
 import { Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 interface RealNotif { id: string; title: string; body: string; status: string; sentAt: string | null; queuedAt: string }
 
 /** قسمٌ في التنقّل الرئيسي: عنوانه وسؤاله، وصفحاتُه تنقّلٌ ثانويّ تحته */
@@ -260,16 +261,13 @@ export default function PortalLayout({ children, title }: { children: React.Reac
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             {/* جرس الإشعارات */}
             <div className="relative">
-              <button
-                onClick={() => setBellOpen((v) => !v)}
-                aria-label="الإشعارات"
-                className="relative grid h-11 w-11 cursor-pointer place-items-center rounded-full border border-white/10 text-muted-foreground transition hover:border-teal-light/50 hover:text-teal-light-ink"
-              >
+              <Button tone="secondary" onClick={() => setBellOpen((v) => !v)}
+                aria-label="الإشعارات" className="relative grid h-11 w-11 place-items-center">
                 <Bell className="h-3.5 w-3.5" />
                 {unreadCount > 0 && (
                   <span className="absolute -left-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-gold px-1 text-fine font-black text-on-gold">{unreadCount}</span>
                 )}
-              </button>
+              </Button>
               {bellOpen && (
                 <>
                   <button aria-label="إغلاق الإشعارات" onClick={() => setBellOpen(false)} className="fixed inset-0 z-40 cursor-default" />

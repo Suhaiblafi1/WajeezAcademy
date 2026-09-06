@@ -39,6 +39,7 @@ import { countAr } from "@/application/text/count-ar";
 import { courseFullById } from "@/data/courses";
 
 import { Panel, Card } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 /** خطوةٌ في المشغّل: درسٌ، أو سيناريو، أو النشاط والمخرَج */
 type Step =
   | { kind: "lesson"; title: string; body: string; minutes: number; checks: Check[] }
@@ -304,22 +305,16 @@ export default function ModuleStudy() {
 
       {/* التنقّل — ثابتٌ أسفل الشاشة على الهاتف */}
       <div className="sticky bottom-0 -mx-5 mt-6 flex items-center justify-between gap-3 border-t border-white/10 bg-paper/95 px-5 py-3 backdrop-blur md:static md:mx-0 md:border-0 md:bg-transparent md:px-0">
-        <button
-          type="button"
+        <Button tone="secondary" type="button"
           onClick={() => go(pos - 1)}
-          disabled={pos === 0}
-          className="flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2.5 text-xs font-bold text-foreground transition hover:border-white/40 disabled:cursor-not-allowed disabled:opacity-30"
-        >
+          disabled={pos === 0} className="disabled:cursor-not-allowed disabled:opacity-30">
           <ArrowRight className="h-4 w-4" /> السابق
-        </button>
+        </Button>
         {!isLast ? (
-          <button
-            type="button"
-            onClick={() => go(pos + 1)}
-            className="flex cursor-pointer items-center gap-2 rounded-full bg-teal px-7 py-2.5 text-xs font-black text-on-teal transition hover:bg-teal-light"
-          >
+          <Button tone="confirm" type="button"
+            onClick={() => go(pos + 1)}>
             التالي <ArrowLeft className="h-4 w-4" />
-          </button>
+          </Button>
         ) : (
           <Link
             to={`/student/course/${courseId}`}

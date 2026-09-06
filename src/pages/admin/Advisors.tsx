@@ -9,6 +9,7 @@ import { apiGet, apiPatch, ApiError, permissionMessage } from "@/services/api";
 import { fmtMoney, fmtDate } from "@/application/text/format-ar";
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 interface AdvisorRow {
   userId: string; displayName: string; email: string; status: string;
   commissionPct: number | null; notesAr: string; activeCases: number;
@@ -87,9 +88,9 @@ export default function Advisors() {
         <Panel className="grid place-items-center py-20 text-center">
           <ServerOff className="h-12 w-12 text-muted-foreground/50" />
           <p className="mt-4 max-w-md text-sm text-muted-foreground">{offline}</p>
-          <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground hover:border-white/40">
+          <Button tone="secondary" onClick={() => void load()} className="mt-5">
             <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
-          </button>
+          </Button>
         </Panel>
       </AdminLayout>
     );
@@ -127,31 +128,27 @@ export default function Advisors() {
                     <div>
                       <p className="font-black">
                         {r.displayName || "—"}
-                        <span className="mr-2 text-[11px] font-normal text-muted-foreground" dir="ltr">{r.email}</span>
+                        <span className="mr-2 text-micro font-normal text-muted-foreground" dir="ltr">{r.email}</span>
                       </p>
-                      <p className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                      <p className="mt-1 flex flex-wrap items-center gap-2 text-micro text-muted-foreground">
                         <span className={`rounded-full border px-2.5 py-0.5 font-bold ${r.commissionPct === null ? "border-white/20 text-muted-foreground" : "border-gold/45 text-gold-ink"}`}>
                           {r.commissionPct === null ? "لم تُتّفق العمولة بعد" : `عمولة ${r.commissionPct}%`}
                         </span>
                         <span>{r.activeCases} حالةً مسندة</span>
                         {r.status !== "active" && <span className="text-red-400">موقوف</span>}
                       </p>
-                      {r.notesAr && <p className="mt-1.5 text-[11px] leading-6 text-muted-foreground">{r.notesAr}</p>}
+                      {r.notesAr && <p className="mt-1.5 text-micro leading-6 text-muted-foreground">{r.notesAr}</p>}
                     </div>
                     <div className="flex shrink-0 gap-2">
-                      <button
-                        onClick={() => void toggleDetail(r.userId)}
-                        className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-1.5 text-xs font-bold text-foreground hover:border-teal/50 hover:text-teal-light-ink">
+                      <Button tone="secondary" size="sm" onClick={() => void toggleDetail(r.userId)}>
                         {detailFor === r.userId ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />} الملفّ الكامل
-                      </button>
-                      <button
-                        onClick={() => {
+                      </Button>
+                      <Button tone="primary" size="sm" onClick={() => {
                           setEditing(editing === r.userId ? null : r.userId);
                           setForm({ commissionPct: r.commissionPct === null ? "" : String(r.commissionPct), notesAr: r.notesAr });
-                        }}
-                        className="flex cursor-pointer items-center gap-1.5 rounded-full border border-gold/45 px-4 py-1.5 text-xs font-bold text-gold-ink hover:bg-gold/10">
+                        }} className="text-gold-ink">
                         <BadgePercent className="h-3.5 w-3.5" /> {editing === r.userId ? "إغلاق" : "العمولة"}
-                      </button>
+                      </Button>
                     </div>
                   </div>
 
@@ -161,7 +158,7 @@ export default function Advisors() {
                         <div className="grid place-items-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground/50" /></div>
                       ) : !detail ? null : (
                         <div className="space-y-4">
-                          <div className="flex flex-wrap gap-4 text-[11px]">
+                          <div className="flex flex-wrap gap-4 text-micro">
                             <span className="text-muted-foreground">
                               إيراد العملاء المحوَّلين: <b className="text-foreground">{fmtMoney(detail.revenueFromReferrals, detail.currency)}</b>
                             </span>
@@ -179,11 +176,11 @@ export default function Advisors() {
                           <div>
                             <p className="mb-1.5 text-micro font-black text-muted-foreground">الحالات المسندة ({detail.cases.length})</p>
                             {detail.cases.length === 0 ? (
-                              <p className="text-[11px] text-muted-foreground">لا حالات مسندة له حاليا.</p>
+                              <p className="text-micro text-muted-foreground">لا حالات مسندة له حاليا.</p>
                             ) : (
                               <ul className="space-y-1">
                                 {detail.cases.map((c) => (
-                                  <li key={c.caseId} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/8 bg-white/[0.02] px-3 py-1.5 text-[11px]">
+                                  <li key={c.caseId} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/8 bg-white/[0.02] px-3 py-1.5 text-micro">
                                     <span>{c.clientName} {c.clientEmail && <span dir="ltr" className="text-muted-foreground">— {c.clientEmail}</span>}</span>
                                     <span className="text-muted-foreground">{c.status} · {fmtDate(new Date(c.assignedAt))}</span>
                                   </li>
@@ -195,11 +192,11 @@ export default function Advisors() {
                           <div>
                             <p className="mb-1.5 text-micro font-black text-muted-foreground">طلباته ({detail.requests.length})</p>
                             {detail.requests.length === 0 ? (
-                              <p className="text-[11px] text-muted-foreground">لم يرفع أي طلب خصم أو تعديل خطّة بعد.</p>
+                              <p className="text-micro text-muted-foreground">لم يرفع أي طلب خصم أو تعديل خطّة بعد.</p>
                             ) : (
                               <ul className="space-y-1">
                                 {detail.requests.map((req) => (
-                                  <li key={req.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/8 bg-white/[0.02] px-3 py-1.5 text-[11px]">
+                                  <li key={req.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/8 bg-white/[0.02] px-3 py-1.5 text-micro">
                                     <span>{REQUEST_KIND_AR[req.kind] ?? req.kind} — {req.reasonAr}</span>
                                     <span className="text-muted-foreground">{REQUEST_STATUS_AR[req.status] ?? req.status} · {fmtDate(new Date(req.createdAt))}</span>
                                   </li>
@@ -214,14 +211,14 @@ export default function Advisors() {
 
                   {editing === r.userId && (
                     <Inset tone="warn" className="mt-4 grid gap-3 sm:grid-cols-[8rem_1fr_auto]">
-                      <label className="text-[11px] text-muted-foreground">
+                      <label className="text-micro text-muted-foreground">
                         النسبة %
                         <input type="number" min={0} max={100} step={0.5} value={form.commissionPct}
                           onChange={(e) => setForm({ ...form, commissionPct: e.target.value })}
                           aria-label="نسبة العمولة"
                           className="mt-1 w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-sm text-foreground focus:border-gold focus:outline-none" />
                       </label>
-                      <label className="text-[11px] text-muted-foreground">
+                      <label className="text-micro text-muted-foreground">
                         ملاحظة (اختيارية)
                         <input value={form.notesAr} onChange={(e) => setForm({ ...form, notesAr: e.target.value })}
                           placeholder="شرطٌ أو استثناءٌ متّفقٌ عليه"
@@ -229,10 +226,9 @@ export default function Advisors() {
                           className="mt-1 w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-gold focus:outline-none" />
                       </label>
                       <div className="flex items-end">
-                        <button disabled={busy} onClick={() => void save(r.userId)}
-                          className="cursor-pointer rounded-full bg-gold px-5 py-2 text-xs font-black text-on-gold hover:bg-gold/90 disabled:opacity-40">
+                        <Button tone="primary" disabled={busy} onClick={() => void save(r.userId)}>
                           {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "احفظ"}
-                        </button>
+                        </Button>
                       </div>
                     </Inset>
                   )}

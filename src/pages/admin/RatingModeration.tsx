@@ -13,6 +13,7 @@ import { apiGet, apiPost, ApiError } from "@/services/api";
 import ConfirmAction from "@/components/ConfirmAction";
 
 import { Panel, Card } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 interface QueueItem {
   id: string;
   subjectType: "trainer" | "advisor" | "course";
@@ -77,7 +78,7 @@ export default function RatingModeration() {
     <AdminLayout title="مراجعة تعليقات التقييم">
       <Card tone="accent" className="mb-5 flex items-start gap-3">
         <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-teal-light-ink" />
-        <p className="text-[12px] leading-6 text-foreground">
+        <p className="text-xs leading-6 text-foreground">
           قرارك هنا يحكم <span className="font-black text-foreground">التعليق المكتوب</span> وحده:
           يُنشر علنا أو يُحجب. <span className="font-black text-foreground">الدرجة تدخل المعدّل في كل الأحوال</span> —
           فالرقم المعلَن يبقى قياسا لا اختيارا. والقائمة تصلك بلا اسم المُقيِّم عمدا: الحكم على النصّ.
@@ -129,24 +130,18 @@ export default function RatingModeration() {
               </div>
               <p className="mt-3 text-[13px] leading-7 text-foreground">{r.commentAr}</p>
               {r.moderationReason && (
-                <p className="mt-2 text-[11px] text-muted-foreground">سبب الحجب: {r.moderationReason}</p>
+                <p className="mt-2 text-micro text-muted-foreground">سبب الحجب: {r.moderationReason}</p>
               )}
               {r.publishStatus === "pending" && (
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <button
-                    onClick={() => void act(r.id, true)}
-                    disabled={busy === r.id}
-                    className="flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-4 py-1.5 text-[11px] font-black text-on-teal transition hover:bg-teal-light disabled:opacity-50"
-                  >
+                  <Button tone="confirm" size="sm" onClick={() => void act(r.id, true)}
+                    disabled={busy === r.id} className="disabled:opacity-50">
                     <CheckCircle2 className="h-3.5 w-3.5" /> اعتمد للنشر
-                  </button>
-                  <button
-                    onClick={() => setBlocking(r)}
-                    disabled={busy === r.id}
-                    className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-1.5 text-[11px] font-bold text-foreground transition hover:border-red-400/50 hover:text-red-300 disabled:opacity-50"
-                  >
+                  </Button>
+                  <Button tone="danger" size="sm" onClick={() => setBlocking(r)}
+                    disabled={busy === r.id} className="disabled:opacity-50">
                     <XCircle className="h-3.5 w-3.5" /> احجب النصّ
-                  </button>
+                  </Button>
                 </div>
               )}
             </Card>

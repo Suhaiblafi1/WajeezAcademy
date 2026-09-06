@@ -9,6 +9,7 @@ import { apiGet, apiPost, ApiError } from "@/services/api";
 import { usePlatformConfig } from "@/hooks/usePlatformConfig";
 
 import { Panel, Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 /* الخادم هو مصدر الحقيقة: POST/GET /api/learner/cv و POST /api/cv/:id/delete.
    كان هنا `@/data/cv` — محاكاةٌ كاملة للسلوك نفسه في localStorage، فيرفع
    المتعلم سيرته ويراها في صفحته ولا تصل إلى مستشاره أبدا. */
@@ -151,12 +152,9 @@ export default function MyCv() {
               سيرتك تساعد مستشارك على فهم خلفيتك المهنية قبل أول جلسة — وتُسجل كل مشاهدة لها في السجل.
             </p>
             {fileUploads && (
-              <button
-                onClick={() => fileRef.current?.click()}
-                className="mt-4 cursor-pointer rounded-full bg-teal px-6 py-2.5 text-sm font-black text-on-teal transition hover:bg-teal-light"
-              >
+              <Button tone="confirm" onClick={() => fileRef.current?.click()} className="mt-4">
                 ارفع أول سيرة
-              </button>
+              </Button>
             )}
           </Panel>
         )}
@@ -177,12 +175,9 @@ export default function MyCv() {
             <span className="flex items-center gap-1.5 text-fine text-muted-foreground">
               <Eye className="h-3 w-3" /> مشاهداتها مسجلة في سجل المستشار
             </span>
-            <button
-              onClick={() => { setDelId(c.id); setDelReason(""); setErr(null); }}
-              className="flex cursor-pointer items-center gap-1.5 rounded-full border border-red-400/40 px-4 py-1.5 text-xs font-bold text-red-300 transition hover:bg-red-400/10"
-            >
+            <Button tone="danger" size="sm" onClick={() => { setDelId(c.id); setDelReason(""); setErr(null); }}>
               <Trash2 className="h-3.5 w-3.5" /> حذف
-            </button>
+            </Button>
           </Panel>
         ))}
       </section>
@@ -206,13 +201,10 @@ export default function MyCv() {
               placeholder="مثال: رفعت نسخة أحدث وأريد إزالة القديمة"
               className="mt-1.5 w-full resize-none rounded-xl border border-white/15 bg-paper px-3 py-2.5 text-sm text-foreground focus:border-red-400 focus:outline-none"
             />
-            <button
-              onClick={() => void confirmDelete()}
-              disabled={busy || delReason.trim().length < 5}
-              className="mt-4 w-full cursor-pointer rounded-full bg-red-400 py-3 font-black text-on-gold transition hover:bg-red-300 disabled:cursor-not-allowed disabled:opacity-40"
-            >
+            <Button tone="ghost" onClick={() => void confirmDelete()}
+              disabled={busy || delReason.trim().length < 5} className="mt-4 w-full bg-red-400 disabled:cursor-not-allowed">
               تأكيد الحذف الموثق
-            </button>
+            </Button>
           </Inset>
         </div>
       )}

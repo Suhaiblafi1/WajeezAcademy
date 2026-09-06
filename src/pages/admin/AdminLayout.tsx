@@ -6,6 +6,7 @@ import StaffAccountMenu from "@/components/StaffAccountMenu";
 import SearchPalette from "@/components/SearchPalette";
 import { useRealSession } from "@/services/session";
 
+import Button from "@/components/ui/Button";
 /** إطار لوحة الإدارة والعمليات — هويّة الإداريّ من جلسته وحدها.
 
     حُذفت شاشة «من أنت؟» التي كانت تعرض ثلاثة أسماء إداريّين مختلَقين
@@ -169,14 +170,11 @@ export default function AdminLayout({ children, title }: { children: React.React
               بلا ذلك كان اسم الحساب يفيض ٣٨ بكسل خارج الشاشة فيظهر تمرير أفقي
               على مستوى المستند — والقراءة تصير سطرا سطرا بتمرير يمينا ويسارا. */}
           <div className="flex min-w-0 items-center gap-3">
-            <button
-              onClick={() => window.dispatchEvent(new Event("wajeez:open-search"))}
+            <Button tone="secondary" size="sm" onClick={() => window.dispatchEvent(new Event("wajeez:open-search"))}
               aria-label="بحث سريع — Ctrl+K"
-              title="بحث سريع — Ctrl+K"
-              className="hidden cursor-pointer items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[11px] font-bold text-muted-foreground transition hover:border-white/30 hover:text-foreground sm:flex"
-            >
+              title="بحث سريع — Ctrl+K" className="hidden bg-white/[0.03] sm:flex">
               بحث… <kbd className="rounded border border-white/15 px-1.5 text-micro">Ctrl K</kbd>
-            </button>
+            </Button>
             <NotificationBell audience="staff" />
             <ThemeToggle />
             <StaffAccountMenu user={user} />

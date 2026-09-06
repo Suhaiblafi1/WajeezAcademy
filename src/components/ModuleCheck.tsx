@@ -21,6 +21,7 @@ import { track } from "@/services/analytics";
 import { apiPost } from "@/services/api";
 import { spacingLabelAr } from "@/application/student/retrieval-schedule";
 
+import Button from "@/components/ui/Button";
 export default function ModuleCheck({
   raw,
   moduleId,
@@ -72,7 +73,7 @@ export default function ModuleCheck({
           <Sparkles className="h-4 w-4 text-teal-light-ink" aria-hidden="true" />
           تمرين استرجاع — {checks.length} {checks.length === 1 ? "سؤال" : "أسئلة"}
         </h3>
-        <p className="text-[11px] text-muted-foreground">بلا درجة ولا وزن — الاسترجاع نفسه هو الفائدة</p>
+        <p className="text-micro text-muted-foreground">بلا درجة ولا وزن — الاسترجاع نفسه هو الفائدة</p>
       </div>
 
       <ol className="mt-5 space-y-5">
@@ -104,7 +105,7 @@ export default function ModuleCheck({
 
           {/* الاسترجاع المتباعد (ح-٤) — طلب صريح، وموعد معلَن قبل الضغط */}
           {sched === "done" ? (
-            <p className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl border border-teal/30 bg-teal-ink/[0.07] px-4 py-3 text-[11px] leading-6 text-foreground">
+            <p className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl border border-teal/30 bg-teal-ink/[0.07] px-4 py-3 text-micro leading-6 text-foreground">
               <CalendarClock className="h-3.5 w-3.5 shrink-0 text-teal-light-ink" aria-hidden="true" />
               جُدولت عودة هذه الأسئلة: بعد {spacingLabelAr(0)}، ثم يتباعد الموعد كلما استرجعتها.
               <Link to="/student/review" className="font-bold text-teal-light-ink underline underline-offset-4">
@@ -112,17 +113,14 @@ export default function ModuleCheck({
               </Link>
             </p>
           ) : sched === "unavailable" ? null : (
-            <button
-              type="button"
+            <Button tone="confirm" type="button"
               onClick={() => void schedule()}
-              disabled={sched === "busy"}
-              className="mt-3 inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-teal/40 px-4 text-xs font-bold text-teal-light-ink transition hover:bg-teal/10 disabled:cursor-not-allowed disabled:opacity-40"
-            >
+              disabled={sched === "busy"} className="mt-3 min-h-11 text-teal-light-ink disabled:cursor-not-allowed">
               {sched === "busy"
                 ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                 : <CalendarClock className="h-3.5 w-3.5" aria-hidden="true" />}
               جدّل عودتها متباعدة — تبدأ بعد {spacingLabelAr(0)}
-            </button>
+            </Button>
           )}
         </div>
       )}

@@ -32,6 +32,7 @@ import ConfirmAction from "@/components/ConfirmAction";
 import { useRealSession } from "@/services/session";
 
 import { Panel, Card } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 interface OpsQualification { courseId: string; courseTitle: string; status: string }
 interface OpsAssignment {
   courseId: string; courseTitle: string
@@ -188,24 +189,18 @@ export default function TrainerRunOps() {
                     aria-label="ملاحظة القرار"
                     className={`${controlCls} min-w-[16rem] flex-1`}
                   />
-                  <button
-                    type="button" disabled={busy === r.id}
+                  <Button tone="primary" type="button" disabled={busy === r.id}
                     onClick={() => void act(r.id,
                       () => apiPost(`/api/admin/qualification-requests/${r.id}/decide`, { approve: true, note: note[r.id]?.trim() || undefined }),
-                      "أُهِّل وأُسنِد إلى الشعبة")}
-                    className="flex cursor-pointer items-center gap-1.5 rounded-full bg-gold px-4 py-2 text-xs font-black text-on-gold transition hover:bg-gold/90 disabled:opacity-40"
-                  >
+                      "أُهِّل وأُسنِد إلى الشعبة")}>
                     <CheckCircle2 className="h-3.5 w-3.5" /> أهِّله وأسنِده
-                  </button>
-                  <button
-                    type="button" disabled={busy === r.id}
+                  </Button>
+                  <Button tone="danger" type="button" disabled={busy === r.id}
                     onClick={() => void act(r.id,
                       () => apiPost(`/api/admin/qualification-requests/${r.id}/decide`, { approve: false, note: note[r.id]?.trim() || undefined }),
-                      "رُفض الطلب")}
-                    className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-black text-muted-foreground transition hover:border-red-400/40 hover:text-red-300 disabled:opacity-40"
-                  >
+                      "رُفض الطلب")}>
                     <XCircle className="h-3.5 w-3.5" /> ارفض
-                  </button>
+                  </Button>
                 </div>
               </Card>
             ))}
@@ -221,12 +216,9 @@ export default function TrainerRunOps() {
           </h3>
           <div className="flex flex-wrap items-center gap-3">
             {canAddTrainer && (
-              <button
-                onClick={() => setAddOpen((v) => !v)}
-                className="flex cursor-pointer items-center gap-1.5 rounded-full border border-teal/40 bg-teal/10 px-4 py-2 text-xs font-black text-teal-light-ink transition hover:border-teal"
-              >
-                <UserPlus className="h-3.5 w-3.5" /> {addOpen ? "أغلق" : "أضف مدرّبا"}
-              </button>
+              <Button onClick={() => setAddOpen((v) => !v)} icon={UserPlus} className="text-teal-light-ink">
+                {addOpen ? "أغلق" : "أضف مدرّبا"}
+              </Button>
             )}
             <label className="relative">
               <Search className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -279,7 +271,7 @@ export default function TrainerRunOps() {
             </p>
             <div className="mt-3 grid gap-3 sm:grid-cols-3">
               <label className="block">
-                <span className="mb-1 block text-[11px] font-bold text-muted-foreground">الاسم الكامل</span>
+                <span className="mb-1 block text-micro font-bold text-muted-foreground">الاسم الكامل</span>
                 <input
                   required minLength={2} maxLength={120}
                   value={addForm.fullName}
@@ -288,7 +280,7 @@ export default function TrainerRunOps() {
                 />
               </label>
               <label className="block">
-                <span className="mb-1 block text-[11px] font-bold text-muted-foreground">البريد</span>
+                <span className="mb-1 block text-micro font-bold text-muted-foreground">البريد</span>
                 <input
                   required type="email" dir="ltr"
                   value={addForm.email}
@@ -297,7 +289,7 @@ export default function TrainerRunOps() {
                 />
               </label>
               <label className="block">
-                <span className="mb-1 block text-[11px] font-bold text-muted-foreground">المسمّى (اختياريّ)</span>
+                <span className="mb-1 block text-micro font-bold text-muted-foreground">المسمّى (اختياريّ)</span>
                 <input
                   maxLength={160}
                   value={addForm.headline}
@@ -306,14 +298,13 @@ export default function TrainerRunOps() {
                 />
               </label>
             </div>
-            <button
-              type="submit"
-              disabled={busy === "add-trainer" || addForm.fullName.trim().length < 2 || !addForm.email.trim()}
-              className="mt-3 flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-5 py-2 text-xs font-black text-on-teal transition hover:bg-teal-light disabled:cursor-not-allowed disabled:opacity-40"
+            <Button
+              type="submit" tone="confirm" icon={UserPlus} loading={busy === "add-trainer"}
+              disabled={addForm.fullName.trim().length < 2 || !addForm.email.trim()}
+              className="mt-3"
             >
-              {busy === "add-trainer" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserPlus className="h-3.5 w-3.5" />}
               عيّنه مدرّبا
-            </button>
+            </Button>
           </Card>
         )}
 
@@ -347,13 +338,13 @@ export default function TrainerRunOps() {
                           </span>
                         )}
                       </p>
-                      <p dir="ltr" className="mt-0.5 text-right text-[11px] text-muted-foreground">{t.email}</p>
+                      <p dir="ltr" className="mt-0.5 text-right text-micro text-muted-foreground">{t.email}</p>
                     </div>
                   </div>
 
                   {/* ما يمنع الخطوةَ التالية — يُقال قبل الضغط لا بعده */}
                   {!t.hasAccount && (
-                    <p className="mt-2.5 flex items-start gap-1.5 rounded-xl border border-gold/30 bg-gold/[0.06] p-2.5 text-[11px] leading-6 text-gold-ink">
+                    <p className="mt-2.5 flex items-start gap-1.5 rounded-xl border border-gold/30 bg-gold/[0.06] p-2.5 text-micro leading-6 text-gold-ink">
                       <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                       لا حسابَ مربوطٌ بهذا الملفّ — فلا تُفتح له بوّابتُه ولو أُسنِد. اعتمِدْه من تبويب «الطلبات».
                     </p>
@@ -363,9 +354,9 @@ export default function TrainerRunOps() {
                     <div>
                       <p className="text-micro font-black text-muted-foreground">مؤهَّلٌ لـ</p>
                       {t.qualifications.length === 0 ? (
-                        <p className="mt-1 text-[11px] text-muted-foreground">لا تأهيلَ بعد — وبلا تأهيلٍ لا يُسنَد إلى شعبة.</p>
+                        <p className="mt-1 text-micro text-muted-foreground">لا تأهيلَ بعد — وبلا تأهيلٍ لا يُسنَد إلى شعبة.</p>
                       ) : (
-                        <ul className="mt-1 space-y-0.5 text-[11px] leading-6">
+                        <ul className="mt-1 space-y-0.5 text-micro leading-6">
                           {t.qualifications.map((x) => (
                             <li key={x.courseId}>
                               {x.courseTitle}
@@ -378,9 +369,9 @@ export default function TrainerRunOps() {
                     <div>
                       <p className="text-micro font-black text-muted-foreground">مُسنَدٌ إلى</p>
                       {t.assignments.length === 0 ? (
-                        <p className="mt-1 text-[11px] text-muted-foreground">لا إسنادَ نشط.</p>
+                        <p className="mt-1 text-micro text-muted-foreground">لا إسنادَ نشط.</p>
                       ) : (
-                        <ul className="mt-1 space-y-0.5 text-[11px] leading-6">
+                        <ul className="mt-1 space-y-0.5 text-micro leading-6">
                           {t.assignments.map((a, i) => (
                             <li key={`${a.courseId}-${a.cohortId ?? i}`}>
                               {a.courseTitle}{a.cohortTitle ? ` — ${a.cohortTitle}` : " — بلا شعبة"}
@@ -401,15 +392,12 @@ export default function TrainerRunOps() {
                       <option value="">اختر دورة…</option>
                       {courses.map((c) => <option key={c.id} value={c.id}>{c.titleAr ?? c.title ?? c.id}</option>)}
                     </select>
-                    <button
-                      type="button" disabled={!sel.courseId || busy === k("qual")}
+                    <Button tone="primary" type="button" disabled={!sel.courseId || busy === k("qual")}
                       onClick={() => void act(k("qual"),
                         () => apiPost(`/api/admin/trainers/${t.profileId}/qualifications`, { courseId: sel.courseId }),
-                        "أُهِّل للدورة")}
-                      className="flex cursor-pointer items-center gap-1.5 rounded-full border border-gold/50 px-3.5 py-2 text-xs font-black text-gold-ink transition hover:bg-gold/10 disabled:opacity-40"
-                    >
+                        "أُهِّل للدورة")} className="px-3.5 text-gold-ink">
                       <GraduationCap className="h-3.5 w-3.5" /> أهِّله مباشرة
-                    </button>
+                    </Button>
 
                     <select
                       value={sel.cohortId} aria-label="الشعبة"
@@ -421,40 +409,31 @@ export default function TrainerRunOps() {
                       </option>
                       {eligibleCohorts.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
                     </select>
-                    <button
-                      type="button" disabled={!sel.cohortId || busy === k("assign")}
+                    <Button tone="confirm" type="button" disabled={!sel.cohortId || busy === k("assign")}
                       onClick={() => {
                         const cohort = cohorts.find((c) => c.id === sel.cohortId);
                         if (!cohort) return;
                         void act(k("assign"),
                           () => apiPost(`/api/admin/trainers/${t.profileId}/assignments`, { courseId: cohort.courseId, cohortId: cohort.id }),
                           "أُسنِد إلى الشعبة");
-                      }}
-                      className="flex cursor-pointer items-center gap-1.5 rounded-full border border-teal/50 px-3.5 py-2 text-xs font-black text-teal-light-ink transition hover:bg-teal/10 disabled:opacity-40"
-                    >
+                      }} className="px-3.5 text-teal-light-ink">
                       <UserCheck className="h-3.5 w-3.5" /> أسنِده
-                    </button>
+                    </Button>
 
                     {!t.publiclyVisible && (
-                      <button
-                        type="button" disabled={busy === k("publish")}
+                      <Button tone="secondary" type="button" disabled={busy === k("publish")}
                         onClick={() => void act(k("publish"),
                           () => apiPost(`/api/admin/trainers/${t.profileId}/publish-approval`),
-                          "اعتُمد ظهورُه العامّ")}
-                        className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-3.5 py-2 text-xs font-black text-muted-foreground transition hover:border-teal/50 hover:text-teal-light-ink disabled:opacity-40"
-                      >
+                          "اعتُمد ظهورُه العامّ")} className="px-3.5">
                         <BadgeCheck className="h-3.5 w-3.5" /> اعتمِد ظهورَه العامّ
-                      </button>
+                      </Button>
                     )}
 
                     {!t.suspended && (
-                      <button
-                        type="button" disabled={busy === k("suspend")}
-                        onClick={() => setSuspendTarget(t)}
-                        className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-3.5 py-2 text-xs font-black text-muted-foreground transition hover:border-red-400/40 hover:text-red-300 disabled:opacity-40"
-                      >
+                      <Button tone="danger" type="button" disabled={busy === k("suspend")}
+                        onClick={() => setSuspendTarget(t)} className="px-3.5">
                         <XCircle className="h-3.5 w-3.5" /> أوقِفه
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </Card>

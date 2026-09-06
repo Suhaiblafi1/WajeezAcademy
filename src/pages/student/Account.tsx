@@ -9,6 +9,7 @@ import { apiGet, apiPatch, apiPost, ApiError } from "@/services/api";
 import { clearLocalSession, readSession } from "@/services/auth";
 
 import { Panel, Card } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 /* ─────────── صفحة «حسابي» — الملف الشخصي الكامل للطالب ───────────
    وضعان صادقان:
    - خادم حقيقي: جلسة API فعّالة → قراءة وحفظ في قاعدة البيانات.
@@ -453,9 +454,9 @@ export default function StudentAccount() {
               {form.interests.map((i) => (
                 <span key={i} className="inline-flex items-center gap-1.5 rounded-full border border-teal/40 bg-teal/10 px-2.5 py-1 text-fine font-bold text-teal-light-ink">
                   {i}
-                  <button type="button" aria-label={`أزل ${i}`} onClick={() => set("interests", form.interests.filter((x) => x !== i))} className="grid h-8 w-8 shrink-0 cursor-pointer place-items-center rounded-full text-muted-foreground hover:bg-white/10 hover:text-foreground">
+                  <Button tone="ghost" type="button" aria-label={`أزل ${i}`} onClick={() => set("interests", form.interests.filter((x) => x !== i))} className="grid h-8 w-8 shrink-0 place-items-center">
                     <X className="h-3 w-3" />
-                  </button>
+                  </Button>
                 </span>
               ))}
             </div>
@@ -470,13 +471,10 @@ export default function StudentAccount() {
         {/* الزرُّ لا يُطفأ على حقلٍ مرفوض: كان مطفأً والسببُ في حقلٍ قد يكون
             خارج الشاشة، فتبقى الضغطةُ بلا جواب. فصار يُضغط، ويُظهر الرفضَ
             عند حقله، ولا يُرسل نداءً يعرف أنّه مردود. */}
-        <button
-          onClick={save} disabled={busy}
-          className="flex h-12 cursor-pointer items-center gap-2 rounded-full bg-gold px-10 font-black text-on-gold transition hover:bg-gold/90 disabled:cursor-not-allowed disabled:opacity-40"
-        >
+        <Button tone="primary" onClick={save} disabled={busy} className="h-12 disabled:cursor-not-allowed">
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           احفظ ملفي
-        </button>
+        </Button>
       </div>
 
       {/* روابط بقية أقسام الملف */}
@@ -522,13 +520,10 @@ export default function StudentAccount() {
                 سجّلت دخولك على جهاز آخر؟ أنهِ كل الجلسات دفعة واحدة — ستحتاج الدخول من جديد على هذا الجهاز أيضا.
               </p>
             </div>
-            <button
-              type="button" onClick={logoutAll} disabled={!!secBusy}
-              className="flex shrink-0 cursor-pointer items-center gap-2 rounded-full border border-white/20 px-5 py-2.5 text-xs font-bold text-foreground transition hover:border-teal/60 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
-            >
+            <Button tone="secondary" type="button" onClick={logoutAll} disabled={!!secBusy} className="shrink-0 disabled:cursor-not-allowed">
               {secBusy === "logoutAll" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LogOut className="h-3.5 w-3.5" />}
               إنهاء كل الجلسات
-            </button>
+            </Button>
           </div>
 
           <Card tone="danger" className="mt-5">
@@ -540,28 +535,19 @@ export default function StudentAccount() {
                 </p>
               </div>
               {!confirmingDeactivate ? (
-                <button
-                  type="button" onClick={() => setConfirmingDeactivate(true)} disabled={!!secBusy}
-                  className="shrink-0 cursor-pointer rounded-full border border-red-400/40 px-5 py-2.5 text-xs font-bold text-red-300 transition hover:bg-red-400/10 disabled:cursor-not-allowed disabled:opacity-40"
-                >
+                <Button tone="danger" type="button" onClick={() => setConfirmingDeactivate(true)} disabled={!!secBusy} className="shrink-0 disabled:cursor-not-allowed">
                   تعطيل حسابي
-                </button>
+                </Button>
               ) : (
                 <div className="flex shrink-0 items-center gap-2">
                   <span className="text-fine font-bold text-red-300">متأكد؟ الإجراء فوري</span>
-                  <button
-                    type="button" onClick={deactivate} disabled={!!secBusy}
-                    className="flex cursor-pointer items-center gap-1.5 rounded-full bg-red-500 px-4 py-2 text-xs font-black text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
+                  <Button tone="ghost" type="button" onClick={deactivate} disabled={!!secBusy} className="bg-red-500 text-white disabled:cursor-not-allowed">
                     {secBusy === "deactivate" && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                     نعم، عطّل حسابي
-                  </button>
-                  <button
-                    type="button" onClick={() => setConfirmingDeactivate(false)} disabled={!!secBusy}
-                    className="cursor-pointer rounded-full border border-white/20 px-4 py-2 text-xs font-bold text-foreground transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
-                  >
+                  </Button>
+                  <Button tone="secondary" type="button" onClick={() => setConfirmingDeactivate(false)} disabled={!!secBusy} className="disabled:cursor-not-allowed">
                     تراجع
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>

@@ -23,6 +23,7 @@ import { AlertTriangle, CalendarClock } from 'lucide-react'
 import { CLOSED_STAGES, isOverdue, sinceAr, STAGES, type PipelineCase } from '@/application/advisor/pipeline'
 import { Card } from '@/components/ui/Surface'
 
+import Button from "@/components/ui/Button";
 export default function Pipeline({
   cases,
   onOpen,
@@ -49,14 +50,11 @@ export default function Pipeline({
           </h2>
           <div className="mt-3 flex flex-wrap gap-2">
             {overdue.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => onOpen(c.id)}
-                className="cursor-pointer rounded-full border border-gold/40 bg-paper/25 px-3.5 py-1.5 text-[11px] font-bold text-foreground transition hover:border-gold"
-              >
+              <Button tone="secondary" size="sm" key={c.id}
+                onClick={() => onOpen(c.id)} className="bg-paper/25 px-3.5">
                 {renderName(c.id).name}
                 <span className="ms-2 text-gold-ink">{sinceAr(c.nextFollowUpAt!)}</span>
-              </button>
+              </Button>
             ))}
           </div>
         </Card>
@@ -69,7 +67,7 @@ export default function Pipeline({
           return (
             <section key={s.key} className="w-[240px] shrink-0 lg:w-auto">
               <header className="flex items-baseline justify-between gap-2 rounded-t-2xl border border-white/10 bg-white/[0.04] px-3 py-2.5">
-                <h2 className="truncate text-[11px] font-black">{s.label}</h2>
+                <h2 className="truncate text-micro font-black">{s.label}</h2>
                 <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-micro font-black tabular-nums">
                   {items.length}
                 </span>
@@ -109,19 +107,16 @@ export default function Pipeline({
       {/* الخارجون من القِمع */}
       {CLOSED_STAGES.some((s) => byStage(s.key).length > 0) && (
         <details className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-          <summary className="cursor-pointer text-[11px] font-bold text-muted-foreground">
+          <summary className="cursor-pointer text-micro font-bold text-muted-foreground">
             خرجوا من القِمع ({CLOSED_STAGES.reduce((n, s) => n + byStage(s.key).length, 0)})
           </summary>
           <div className="mt-3 flex flex-wrap gap-2">
             {CLOSED_STAGES.flatMap((s) =>
               byStage(s.key).map((c) => (
-                <button
-                  key={c.id}
-                  onClick={() => onOpen(c.id)}
-                  className="cursor-pointer rounded-full border border-white/12 px-3.5 py-1.5 text-[11px] text-muted-foreground transition hover:border-white/30 hover:text-foreground"
-                >
+                <Button tone="secondary" size="sm" key={c.id}
+                  onClick={() => onOpen(c.id)} className="px-3.5">
                   {renderName(c.id).name} <span className="text-muted-foreground">· {s.label}</span>
-                </button>
+                </Button>
               )),
             )}
           </div>

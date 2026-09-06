@@ -15,6 +15,7 @@ import EntityAuditTimeline from "@/components/EntityAuditTimeline";
 import ConfirmAction from "@/components/ConfirmAction";
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 const ROLE_NAMES_AR: Record<string, string> = {
   super_admin: "مدير النظام الأعلى", academic_manager: "المدير الأكاديمي",
   academic_coordinator: "منسّق أكاديميّ",
@@ -203,9 +204,9 @@ export default function Users() {
         <Panel className="grid place-items-center py-20 text-center">
           <ServerOff className="h-12 w-12 text-muted-foreground/50" />
           <p className="mt-4 max-w-md text-sm text-muted-foreground">{offline}</p>
-          <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground hover:border-white/40">
+          <Button tone="secondary" onClick={() => void load()} className="mt-5">
             <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
-          </button>
+          </Button>
         </Panel>
       </AdminLayout>
     );
@@ -214,27 +215,24 @@ export default function Users() {
   return (
     <AdminLayout title="المستخدمون والأدوار">
       <div className="mb-5 flex flex-wrap items-center gap-3">
-        <button onClick={() => void load()} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-muted-foreground hover:border-white/40">
+        <Button tone="secondary" onClick={() => void load()}>
           <RefreshCw className="h-3.5 w-3.5" /> تحديث
-        </button>
+        </Button>
         {/* إنشاءُ حسابٍ إداريّ — لم يكن له مسارٌ أصلا.
 
             والدورُ يُختار عند الإنشاء لا بعده: حسابٌ يُنشأ بلا دورٍ ثمّ
             يُنسى بلا دور يدخل ولا يجد شيئا، ويُقرأ ذلك عطبا لا نقصَ خطوة. */}
         {canManage && (
-          <button
-            onClick={() => { setCreating(!creating);  }}
-            className="flex cursor-pointer items-center gap-1.5 rounded-full bg-gold px-4 py-2 text-xs font-black text-on-gold transition hover:bg-gold/90"
-          >
+          <Button tone="primary" onClick={() => { setCreating(!creating);  }}>
             <UserPlus className="h-3.5 w-3.5" /> {creating ? "إلغاء" : "أنشئ حسابا"}
-          </button>
+          </Button>
         )}
       </div>
 
       {creating && canManage && (
         <Card tone="warn" className="mb-5">
           <h3 className="text-sm font-black text-gold-ink">حسابٌ جديد بدوره</h3>
-          <p className="mt-1 text-[11px] leading-6 text-muted-foreground">
+          <p className="mt-1 text-micro leading-6 text-muted-foreground">
             لا كلمةَ مرورٍ تُختار هنا: يصله بريدٌ يشرح دورَه وما يفتحه له، ويعيّن كلمتَه بنفسه من رابطٍ صالحٍ <b>سبعةَ أيّام</b>.
             ويبقى «مدعوّا» حتّى يدخل، فلا يُحسب فريقا عاملا قبل ذلك.
           </p>
@@ -279,8 +277,8 @@ export default function Users() {
           {/* دفعةٌ واحدةٌ لفريقٍ كامل — سطرٌ لكلّ شخص «بريد, اسم».
               تأهيلُ ستّةٍ كان ستَّ رحلاتٍ في النموذج نفسِه. */}
           <details className="mt-4 border-t border-white/10 pt-3">
-            <summary className="cursor-pointer text-[11px] font-bold text-gold-ink">أو ادعُ فريقا كاملا بدفعةٍ واحدة</summary>
-            <p className="mt-2 text-[11px] leading-6 text-muted-foreground">
+            <summary className="cursor-pointer text-micro font-bold text-gold-ink">أو ادعُ فريقا كاملا بدفعةٍ واحدة</summary>
+            <p className="mt-2 text-micro leading-6 text-muted-foreground">
               سطرٌ لكلّ شخص: <span dir="ltr" className="font-mono">name@example.com, الاسم الكامل</span> — بالدور المختار أعلاه.
               وما يفشل من الأسطر يُقال وحدَه، فلا تتوقّف الدفعةُ عند أوّل خطأ.
             </p>
@@ -352,7 +350,7 @@ export default function Users() {
             <Card key={u.id}>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="font-black">{u.displayName || "—"} <span className="mr-2 text-[11px] font-normal text-muted-foreground" dir="ltr">{u.email}</span></p>
+                  <p className="font-black">{u.displayName || "—"} <span className="mr-2 text-micro font-normal text-muted-foreground" dir="ltr">{u.email}</span></p>
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
                     {u.roles.map((r) => (
                       <span key={r.id} className="rounded-full border border-teal/40 px-2.5 py-0.5 text-micro font-bold text-teal-light-ink">{r.nameAr}</span>
@@ -380,37 +378,33 @@ export default function Users() {
                 </div>
                 <div className="flex gap-2">
                   {canManage && (
-                    <button onClick={() => { setEditing(editing === u.id ? null : u.id); setRolePick(u.roles.map((r) => r.id)); }}
-                      className="cursor-pointer rounded-full border border-white/15 px-4 py-1.5 text-xs font-bold text-foreground hover:border-white/40">
+                    <Button tone="secondary" size="sm" onClick={() => { setEditing(editing === u.id ? null : u.id); setRolePick(u.roles.map((r) => r.id)); }}>
                       الأدوار
-                    </button>
+                    </Button>
                   )}
                   {canDelegate && (
-                    <button onClick={() => void openPerms(u.id)}
-                      className="flex cursor-pointer items-center gap-1.5 rounded-full border border-teal/40 px-4 py-1.5 text-xs font-bold text-teal-light-ink hover:bg-teal/10">
+                    <Button tone="confirm" size="sm" onClick={() => void openPerms(u.id)} className="text-teal-light-ink">
                       <KeyRound className="h-3.5 w-3.5" /> صلاحياته
-                    </button>
+                    </Button>
                   )}
                   {/* توثيقُ البريد بيد: لا يُعرض إلّا لمن لم يوثّق — وزرٌّ
                       يظهر لمن لا يحتاجه ضجيجٌ في صفٍّ مزدحم. */}
                   {canManage && !u.emailVerified && u.status !== "archived" && (
-                    <button disabled={busy}
-                      onClick={() => setConfirming({ kind: "verifyEmail", user: u })}
-                      className="flex cursor-pointer items-center gap-1.5 rounded-full border border-gold/40 px-4 py-1.5 text-xs font-bold text-gold-ink hover:bg-gold/10 disabled:opacity-40">
+                    <Button tone="primary" size="sm" disabled={busy}
+                      onClick={() => setConfirming({ kind: "verifyEmail", user: u })} className="text-gold-ink">
                       <BadgeCheck className="h-3.5 w-3.5" /> وثّق بريده
-                    </button>
+                    </Button>
                   )}
                   {canManage && u.status === "active" && (
-                    <button disabled={busy}
-                      onClick={() => act(() => apiPost(`/api/admin/users/${u.id}/suspend`), "أُوقف الحساب وأُبطلت جلساته فورا")}
-                      className="flex cursor-pointer items-center gap-1.5 rounded-full border border-red-500/40 px-4 py-1.5 text-xs font-bold text-red-400 hover:bg-red-500/10 disabled:opacity-40">
+                    <Button tone="danger" size="sm" disabled={busy}
+                      onClick={() => act(() => apiPost(`/api/admin/users/${u.id}/suspend`), "أُوقف الحساب وأُبطلت جلساته فورا")}>
                       <ShieldOff className="h-3.5 w-3.5" /> إيقاف
-                    </button>
+                    </Button>
                   )}
                   {/* إعادةُ الدعوة: لمن لم يدخل بعد، أو من انتهت دعوتُه.
                       وحين لا بريدَ يُعاد الرابطُ في الرسالة ليُسلَّم بيد. */}
                   {canManage && (u.status === "invited" || u.invite.state === "expired") && (
-                    <button disabled={busy}
+                    <Button tone="primary" size="sm" disabled={busy}
                       onClick={() => act(
                         () => apiPost<{ sent: boolean; note: string; link?: string }>(`/api/admin/users/${u.id}/resend-invite`, {}),
                         /* الجملةُ من الخادم: هو وحده يعرف أوصلت أم لا، ويعيد
@@ -419,42 +413,37 @@ export default function Users() {
                           const r = res as { note?: string; link?: string } | undefined;
                           return r?.link ? `${r.note} الرابط: ${r.link}` : (r?.note ?? "أُصدرت دعوةٌ جديدة.");
                         },
-                      )}
-                      className="flex cursor-pointer items-center gap-1.5 rounded-full border border-gold/45 px-4 py-1.5 text-xs font-bold text-gold-ink hover:bg-gold/10 disabled:opacity-40">
+                      )} className="text-gold-ink">
                       <Send className="h-3.5 w-3.5" /> أعد إرسال الدعوة
-                    </button>
+                    </Button>
                   )}
                   {canManage && u.status !== "archived" && (
-                    <button disabled={busy}
-                      onClick={() => setConfirming({ kind: "archive", user: u })}
-                      className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/25 px-4 py-1.5 text-xs font-bold text-muted-foreground hover:border-white/45 disabled:opacity-40">
+                    <Button tone="secondary" size="sm" disabled={busy}
+                      onClick={() => setConfirming({ kind: "archive", user: u })}>
                       <Archive className="h-3.5 w-3.5" /> أرشفة
-                    </button>
+                    </Button>
                   )}
                   {canManage && u.status === "archived" && (
-                    <button disabled={busy}
-                      onClick={() => act(() => apiPost(`/api/admin/users/${u.id}/unarchive`), "أُعيد تنشيطُ الحساب")}
-                      className="flex cursor-pointer items-center gap-1.5 rounded-full border border-emerald-400/40 px-4 py-1.5 text-xs font-bold text-emerald-300 hover:bg-emerald-400/10 disabled:opacity-40">
+                    <Button tone="secondary" size="sm" disabled={busy}
+                      onClick={() => act(() => apiPost(`/api/admin/users/${u.id}/unarchive`), "أُعيد تنشيطُ الحساب")}>
                       <ShieldCheck className="h-3.5 w-3.5" /> أعد التنشيط
-                    </button>
+                    </Button>
                   )}
                   {canManage && u.status === "suspended" && (
-                    <button disabled={busy}
-                      onClick={() => act(() => apiPost(`/api/admin/users/${u.id}/reinstate`), "رُفع الإيقاف — الحساب نشطٌ ويدخل من جديد")}
-                      className="flex cursor-pointer items-center gap-1.5 rounded-full border border-emerald-400/40 px-4 py-1.5 text-xs font-bold text-emerald-300 hover:bg-emerald-400/10 disabled:opacity-40">
+                    <Button tone="secondary" size="sm" disabled={busy}
+                      onClick={() => act(() => apiPost(`/api/admin/users/${u.id}/reinstate`), "رُفع الإيقاف — الحساب نشطٌ ويدخل من جديد")}>
                       <ShieldCheck className="h-3.5 w-3.5" /> ارفع الإيقاف
-                    </button>
+                    </Button>
                   )}
                   {/* الحذفُ النهائيّ لا رجعةَ فيه، فيُستأذن ويُكتب البريدُ تأكيدا.
                       في خانة الموقوفة لكلّ من يملك الحبّة؛ وفي خانة النشطة
                       لمدير النظام الأعلى وحده — فمن ينظّف حساباتَ الديمو لا
                       يوقف تسعةً ثمّ يحذف تسعة. */}
                   {canPurge && (u.status === "suspended" || u.status === "archived" || canPurgeHistory) && (
-                    <button disabled={busy}
-                      onClick={() => setConfirming({ kind: "purge", user: u })}
-                      className="flex cursor-pointer items-center gap-1.5 rounded-full border border-red-500/60 bg-red-500/10 px-4 py-1.5 text-xs font-black text-red-300 hover:bg-red-500/20 disabled:opacity-40">
+                    <Button tone="danger" size="sm" disabled={busy}
+                      onClick={() => setConfirming({ kind: "purge", user: u })} className="bg-red-500/10">
                       <Trash2 className="h-3.5 w-3.5" /> احذف نهائيّا
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>
@@ -467,18 +456,18 @@ export default function Users() {
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
                           <p className="text-sm font-black">صلاحيات {perms.user.displayName}</p>
-                          <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
+                          <p className="mt-0.5 text-micro leading-relaxed text-muted-foreground">
                             الدور حزمةٌ، وهذا استثناءٌ لشخصه: منحٌ زائدٌ عليه، أو منعٌ ينزع منه وحده. والمنع أعلى من الدور والمنح معا.
                           </p>
                           {/* لا تفويضَ في العلوّ: من لا يعلو رتبةَ صاحبه لا يمسّ شيئا — ويُقال قبل المحاولة */}
                           {perms.rank.actor <= perms.rank.target && (
-                            <p className="mt-2 rounded-xl border border-[#FABC05]/40 bg-[#FABC05]/10 px-3 py-2 text-[11px] font-bold leading-6 text-[#FABC05]">
+                            <p className="mt-2 rounded-xl border border-[#FABC05]/40 bg-[#FABC05]/10 px-3 py-2 text-micro font-bold leading-6 text-[#FABC05]">
                               لا تُدار إلّا صلاحياتُ من هو أقلّ منك رتبة — هذا الحساب في رتبتك أو فوقها.
                             </p>
                           )}
                         </div>
                         <div className="text-left">
-                          <p className="text-[11px] text-muted-foreground">صلاحيّاته الفعليّة</p>
+                          <p className="text-micro text-muted-foreground">صلاحيّاته الفعليّة</p>
                           <p className="text-lg font-black text-teal-light-ink">{perms.permissions.filter((p) => p.effective).length}</p>
                         </div>
                       </div>
@@ -505,7 +494,7 @@ export default function Users() {
                             }, {}),
                         ).map(([group, list]) => (
                           <div key={group}>
-                            <p className="mb-1.5 text-[11px] font-black text-muted-foreground">{GROUP_AR[group] ?? group}</p>
+                            <p className="mb-1.5 text-micro font-black text-muted-foreground">{GROUP_AR[group] ?? group}</p>
                             <div className="space-y-1.5">
                               {list.map((p) => (
                                 <div key={p.key} className={`flex flex-wrap items-center justify-between gap-2 rounded-xl border px-3 py-2 ${
@@ -529,20 +518,17 @@ export default function Users() {
                                     {!p.delegatable ? (
                                       <span className="max-w-[11rem] text-left text-micro leading-4 text-muted-foreground">{p.refusal}</span>
                                     ) : p.effect ? (
-                                      <button disabled={busy} onClick={() => void setPerm(u.id, p.key, "clear")}
-                                        className="cursor-pointer rounded-full border border-white/15 px-3 py-1 text-micro font-bold text-muted-foreground hover:border-white/35 disabled:opacity-40">
+                                      <Button tone="secondary" size="sm" disabled={busy} onClick={() => void setPerm(u.id, p.key, "clear")} className="text-micro">
                                         أزل الاستثناء
-                                      </button>
+                                      </Button>
                                     ) : p.fromRole ? (
-                                      <button disabled={busy || permReason.trim().length < 5} onClick={() => void setPerm(u.id, p.key, "deny")}
-                                        className="flex cursor-pointer items-center gap-1 rounded-full border border-red-400/40 px-3 py-1 text-micro font-bold text-red-300 hover:bg-red-400/10 disabled:opacity-40">
+                                      <Button tone="danger" size="sm" disabled={busy || permReason.trim().length < 5} onClick={() => void setPerm(u.id, p.key, "deny")} className="text-micro">
                                         <Minus className="h-3 w-3" /> امنعها
-                                      </button>
+                                      </Button>
                                     ) : (
-                                      <button disabled={busy || permReason.trim().length < 5} onClick={() => void setPerm(u.id, p.key, "grant")}
-                                        className="flex cursor-pointer items-center gap-1 rounded-full border border-teal/45 px-3 py-1 text-micro font-bold text-teal-light-ink hover:bg-teal/10 disabled:opacity-40">
+                                      <Button tone="confirm" size="sm" disabled={busy || permReason.trim().length < 5} onClick={() => void setPerm(u.id, p.key, "grant")} className="text-micro text-teal-light-ink">
                                         <Plus className="h-3 w-3" /> امنحها
-                                      </button>
+                                      </Button>
                                     )}
                                   </div>
                                 </div>
@@ -552,7 +538,7 @@ export default function Users() {
                         ))}
                       </div>
 
-                      <p className="mt-3 border-t border-white/8 pt-3 text-[11px] leading-relaxed text-muted-foreground">
+                      <p className="mt-3 border-t border-white/8 pt-3 text-micro leading-relaxed text-muted-foreground">
                         كلّ منحٍ ومنعٍ يُقيَّد في سجلّ التدقيق باسمك وسببه، وتُبطَل جلسات صاحبه فورا — فلا يعمل بصلاحيةٍ نُزعت ولا ينتظر ليعمل بما مُنح.
                       </p>
                     </>
@@ -566,12 +552,12 @@ export default function Users() {
 
               {editing === u.id && (
                 <Inset className="mt-4">
-                  <p className="mb-2 text-[11px] font-bold text-muted-foreground">تعيين الأدوار — يستبدل القائمة كاملة:</p>
+                  <p className="mb-2 text-micro font-bold text-muted-foreground">تعيين الأدوار — يستبدل القائمة كاملة:</p>
                   <div className="flex flex-wrap gap-2">
                     {ALL_ROLES.map((r) => (
                       <button key={r} type="button"
                         onClick={() => setRolePick(rolePick.includes(r) ? rolePick.filter((x) => x !== r) : [...rolePick, r])}
-                        className={`cursor-pointer rounded-full border px-3 py-1 text-[11px] font-bold transition ${rolePick.includes(r) ? "border-gold bg-gold/10 text-gold-ink" : "border-white/15 text-muted-foreground hover:border-white/40"}`}>
+                        className={`cursor-pointer rounded-full border px-3 py-1 text-micro font-bold transition ${rolePick.includes(r) ? "border-gold bg-gold/10 text-gold-ink" : "border-white/15 text-muted-foreground hover:border-white/40"}`}>
                         {ROLE_NAMES_AR[r]}
                       </button>
                     ))}
@@ -579,17 +565,16 @@ export default function Users() {
                   {/* نزعُ «متعلّم» يُغلق بوابة تعلّم صاحب الحساب — ولا يظهر أثره
                       إلّا عنده لا هنا. فيُقال قبل الحفظ لا بعد الشكوى. */}
                   {u.roles.some((r) => r.id === "learner") && !rolePick.includes("learner") && (
-                    <p className="mt-3 flex items-start gap-2 rounded-xl border border-[#FABC05]/40 bg-[#FABC05]/10 px-3 py-2.5 text-[11px] font-bold leading-6 text-[#FABC05]">
+                    <p className="mt-3 flex items-start gap-2 rounded-xl border border-[#FABC05]/40 bg-[#FABC05]/10 px-3 py-2.5 text-micro font-bold leading-6 text-[#FABC05]">
                       <ShieldOff className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                       بنزع «متعلّم» تُغلق بوابة التعلّم عن هذا الحساب: لا شعبه ولا نواتجه
                       ولا شهاداته. وما اشتراه يبقى محفوظا ويعود بإعادة الدور.
                     </p>
                   )}
-                  <button disabled={busy || rolePick.length === 0}
-                    onClick={() => act(() => apiPost(`/api/admin/users/${u.id}/roles`, { roleIds: rolePick }), "حُدثت الأدوار")}
-                    className="mt-3 cursor-pointer rounded-full bg-gold px-5 py-1.5 text-xs font-black text-on-gold disabled:opacity-40">
+                  <Button tone="primary" size="sm" disabled={busy || rolePick.length === 0}
+                    onClick={() => act(() => apiPost(`/api/admin/users/${u.id}/roles`, { roleIds: rolePick }), "حُدثت الأدوار")} className="mt-3">
                     احفظ الأدوار
-                  </button>
+                  </Button>
                 </Inset>
               )}
             </Card>

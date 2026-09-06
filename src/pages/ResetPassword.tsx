@@ -10,6 +10,7 @@ import SiteShell from "@/components/SiteShell";
 import SeoHead from "@/components/SeoHead";
 import { apiPost, permissionMessage } from "@/services/api";
 
+import Button from "@/components/ui/Button";
 export default function ResetPassword() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
@@ -50,12 +51,9 @@ export default function ResetPassword() {
             <p className="mt-3 text-sm leading-7 text-muted-foreground">
               أُخرجت من كل الأجهزة — سجّل الدخول بكلمتك الجديدة.
             </p>
-            <button
-              onClick={() => navigate("/auth")}
-              className="mt-8 cursor-pointer rounded-full bg-teal px-6 py-3 font-black text-on-teal hover:bg-teal-light"
-            >
+            <Button tone="confirm" onClick={() => navigate("/auth")} className="mt-8">
               تسجيل الدخول
-            </button>
+            </Button>
           </div>
         ) : (
           <>
@@ -90,12 +88,9 @@ export default function ResetPassword() {
                   {error}
                 </p>
               )}
-              <button
-                type="submit" disabled={!ready}
-                className="w-full cursor-pointer rounded-full bg-teal px-6 py-3 font-black text-on-teal transition hover:bg-teal-light disabled:cursor-not-allowed disabled:opacity-40"
-              >
+              <Button tone="confirm" type="submit" disabled={!ready} className="w-full disabled:cursor-not-allowed">
                 {busy ? "يُعيَّن…" : "تعيين كلمة المرور"}
-              </button>
+              </Button>
               <p className="text-center text-fine text-muted-foreground">
                 تعيين كلمة جديدة يُخرجك من كل الأجهزة. · <Link to="/auth" className="text-teal-light-ink hover:underline">تسجيل الدخول</Link>
               </p>

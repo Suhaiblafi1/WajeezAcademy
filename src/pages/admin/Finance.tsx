@@ -24,6 +24,7 @@ import { useRealSession } from "@/services/session";
 import { fmtDate, fmtDateTime } from "@/application/text/format-ar";
 import ConfirmAction from "@/components/ConfirmAction";
 
+import Button from "@/components/ui/Button";
 const inputCls = "rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none";
 
 interface EnrollReq {
@@ -204,15 +205,15 @@ export default function Finance() {
             </button>
           ))}
         </div>
-        <button onClick={() => void load()} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-muted-foreground hover:border-white/40">
+        <Button tone="secondary" onClick={() => void load()}>
           <RefreshCw className="h-3.5 w-3.5" /> تحديث
-        </button>
+        </Button>
       </div>
 
       {/* ولا يُترك القارئُ يظنّ الشاشةَ معطوبةً لخلوّها من الأزرار: يُقال له
           ما يستطيع وما لا يستطيع ومن يستطيعه — صراحةً، مرّةً في أعلى الصفحة. */}
       {readOnly && (
-        <p className="mb-5 flex items-start gap-2 rounded-2xl border border-white/12 bg-white/[0.03] px-4 py-3 text-[11px] font-bold leading-6 text-muted-foreground">
+        <p className="mb-5 flex items-start gap-2 rounded-2xl border border-white/12 bg-white/[0.03] px-4 py-3 text-micro font-bold leading-6 text-muted-foreground">
           <Wallet className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-ink" />
           حسابُك يقرأ المالَ ولا يحرّكه: تعرف من دفع ومن لم يدفع لتقرّر تسجيلا، وتراجع طلباتِ التسجيل.
           أمّا تسجيلُ دفعةٍ يدويّةٍ واعتمادُ استردادٍ وإنشاءُ كوبونٍ فهي بيد <b className="text-foreground">المالية</b> —
@@ -235,7 +236,7 @@ export default function Finance() {
               placeholder="ابحث باسمِ طالبٍ أو بريدٍ أو شعبة…" />
           )}
           {selectable.length > 0 && (
-            <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+            <div className="flex items-center gap-2 text-micro text-muted-foreground">
               <input type="checkbox"
                 checked={sel.size > 0 && selectable.every((r) => sel.has(r.id))}
                 onChange={(e) => setSel(e.target.checked ? new Set(selectable.map((r) => r.id)) : new Set())}
@@ -244,14 +245,12 @@ export default function Finance() {
             </div>
           )}
           <BulkBar count={sel.size} busy={busy} progress={bulkProgress} onClear={() => setSel(new Set())}>
-            <button onClick={() => setBulkConfirm("approve")}
-              className="cursor-pointer rounded-full bg-teal px-4 py-1.5 text-[11px] font-black text-on-teal hover:bg-teal-light">
+            <Button tone="confirm" size="sm" onClick={() => setBulkConfirm("approve")}>
               وافق واحجز المقاعد — على {sel.size}
-            </button>
-            <button onClick={() => setBulkConfirm("reject")}
-              className="cursor-pointer rounded-full border border-red-400/40 px-4 py-1.5 text-[11px] font-bold text-red-300 hover:bg-red-400/10">
+            </Button>
+            <Button tone="danger" size="sm" onClick={() => setBulkConfirm("reject")}>
               ارفض بسبب — على {sel.size}
-            </button>
+            </Button>
           </BulkBar>
           {requests.length > 0 && reqView.total === 0 && (
             <EmptyState icon={Inbox} titleAr="لا طلب يطابق بحثك" tone="filter"
@@ -262,11 +261,11 @@ export default function Finance() {
             <Card key={r.id}>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="font-black">{r.user.displayName} <span className="text-[11px] font-normal text-muted-foreground" dir="ltr">{r.user.email}</span></p>
+                  <p className="font-black">{r.user.displayName} <span className="text-micro font-normal text-muted-foreground" dir="ltr">{r.user.email}</span></p>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {r.cohort.course.versions[0]?.titleAr ?? "—"} · {r.cohort.title} · {r.cohort.price ? `${r.cohort.price} ${r.cohort.currency}` : "بلا سعر"}
                   </p>
-                  {r.note && <p className="mt-1 text-[11px] text-muted-foreground">ملاحظة المتعلم: {r.note}</p>}
+                  {r.note && <p className="mt-1 text-micro text-muted-foreground">ملاحظة المتعلم: {r.note}</p>}
                 </div>
                 <div className="flex items-center gap-3">
                   <Chip tone="accent" srPrefixAr="الحالة">{ER_STATUS[r.status] ?? r.status}</Chip>
@@ -282,16 +281,14 @@ export default function Finance() {
                 <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/8 pt-3">
                   <input value={couponFor[r.id] ?? ""} onChange={(e) => setCouponFor({ ...couponFor, [r.id]: e.target.value })}
                     placeholder="كوبون (اختياري)" dir="ltr" className={`${inputCls} w-32 font-mono`} />
-                  <button disabled={busy}
-                    onClick={() => act(() => apiPost(`/api/admin/enrollment-requests/${r.id}/approve`, { couponCode: couponFor[r.id] || undefined }), "وُوفق: حُجز المقعد وأُنشئت الفاتورة")}
-                    className="flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-4 py-1.5 text-xs font-black text-on-teal hover:bg-teal-light disabled:opacity-40">
+                  <Button tone="confirm" size="sm" disabled={busy}
+                    onClick={() => act(() => apiPost(`/api/admin/enrollment-requests/${r.id}/approve`, { couponCode: couponFor[r.id] || undefined }), "وُوفق: حُجز المقعد وأُنشئت الفاتورة")}>
                     <CheckCircle2 className="h-3.5 w-3.5" /> موافقة وحجز مقعد
-                  </button>
-                  <button disabled={busy}
-                    onClick={() => setRejecting({ id: r.id, whoAr: r.user.displayName })}
-                    className="flex cursor-pointer items-center gap-1.5 rounded-full border border-red-500/40 px-4 py-1.5 text-xs font-bold text-red-400 hover:bg-red-500/10 disabled:opacity-40">
+                  </Button>
+                  <Button tone="danger" size="sm" disabled={busy}
+                    onClick={() => setRejecting({ id: r.id, whoAr: r.user.displayName })}>
                     <XCircle className="h-3.5 w-3.5" /> رفض
-                  </button>
+                  </Button>
                 </div>
               )}
             </Card>
@@ -328,11 +325,10 @@ export default function Finance() {
                 <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/8 pt-3">
                   <input value={payForm[inv.id] ?? ""} onChange={(e) => setPayForm({ ...payForm, [inv.id]: e.target.value })}
                     placeholder="طريقة الدفع — تحويل بنكي / كاش" className={`${inputCls} flex-1`} />
-                  <button disabled={busy || (payForm[inv.id] ?? "").length < 3}
-                    onClick={() => act(() => apiPost(`/api/admin/invoices/${inv.id}/manual-payment`, { methodNote: payForm[inv.id] }), "سُجلت الدفعة اليدوية الموثقة")}
-                    className="flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-4 py-1.5 text-xs font-black text-on-teal hover:bg-teal-light disabled:opacity-40">
+                  <Button tone="confirm" size="sm" disabled={busy || (payForm[inv.id] ?? "").length < 3}
+                    onClick={() => act(() => apiPost(`/api/admin/invoices/${inv.id}/manual-payment`, { methodNote: payForm[inv.id] }), "سُجلت الدفعة اليدوية الموثقة")}>
                     <CreditCard className="h-3.5 w-3.5" /> تسجيل دفعة يدوية
-                  </button>
+                  </Button>
                 </div>
               )}
               {inv.payments.filter((p) => p.status === "succeeded").map((p) => (
@@ -344,11 +340,10 @@ export default function Finance() {
                     placeholder="مبلغ" type="number" className={`${inputCls} w-24`} />
                   <input value={refundForm[p.id]?.reason ?? ""} onChange={(e) => setRefundForm({ ...refundForm, [p.id]: { ...refundForm[p.id], reason: e.target.value, amount: refundForm[p.id]?.amount ?? "" } })}
                     placeholder="سبب موثق (5+ أحرف)" className={`${inputCls} flex-1`} />
-                  <button disabled={busy || (refundForm[p.id]?.reason ?? "").length < 5 || !Number(refundForm[p.id]?.amount)}
-                    onClick={() => act(() => apiPost(`/api/admin/payments/${p.id}/refund`, { amount: Number(refundForm[p.id].amount), reason: refundForm[p.id].reason }), "قُدم طلب الاسترداد")}
-                    className="flex cursor-pointer items-center gap-1 rounded-full border border-gold/40 px-3 py-1 text-micro font-bold text-gold-ink disabled:opacity-40">
+                  <Button tone="secondary" size="sm" disabled={busy || (refundForm[p.id]?.reason ?? "").length < 5 || !Number(refundForm[p.id]?.amount)}
+                    onClick={() => act(() => apiPost(`/api/admin/payments/${p.id}/refund`, { amount: Number(refundForm[p.id].amount), reason: refundForm[p.id].reason }), "قُدم طلب الاسترداد")} className="text-micro text-gold-ink">
                     <RotateCcw className="h-3 w-3" /> طلب استرداد
-                  </button>
+                  </Button>
                   </>)}
                 </Inset>
               ))}
@@ -368,20 +363,18 @@ export default function Finance() {
             <Card key={rf.id} className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="font-black">{rf.amount} <span className="text-xs font-normal text-muted-foreground">— {rf.reason}</span></p>
-                <p className="mt-1 text-[11px] text-muted-foreground">{fmtDateTime(new Date(rf.createdAt))}</p>
+                <p className="mt-1 text-micro text-muted-foreground">{fmtDateTime(new Date(rf.createdAt))}</p>
               </div>
               <div className="flex items-center gap-2">
                 <Chip tone="accent" srPrefixAr="حالةُ الطلب">{RF_STATUS[rf.status] ?? rf.status}</Chip>
                 {rf.status === "requested" && canRefund && (
                   <>
-                    <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/refunds/${rf.id}/process`, { approve: true }), "نُفذ الاسترداد وحُدثت الدفعة والطلب")}
-                      className="cursor-pointer rounded-full bg-emerald-500/20 border border-emerald-400/40 px-4 py-1.5 text-xs font-bold text-emerald-300 disabled:opacity-40">
+                    <Button tone="secondary" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/refunds/${rf.id}/process`, { approve: true }), "نُفذ الاسترداد وحُدثت الدفعة والطلب")} className="bg-emerald-500/20">
                       تنفيذ
-                    </button>
-                    <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/refunds/${rf.id}/process`, { approve: false, note: "مرفوض من المالية" }), "رُفض الاسترداد")}
-                      className="cursor-pointer rounded-full border border-red-500/40 px-4 py-1.5 text-xs font-bold text-red-400 disabled:opacity-40">
+                    </Button>
+                    <Button tone="danger" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/refunds/${rf.id}/process`, { approve: false, note: "مرفوض من المالية" }), "رُفض الاسترداد")}>
                       رفض
-                    </button>
+                    </Button>
                   </>
                 )}
               </div>
@@ -402,7 +395,7 @@ export default function Finance() {
               <input type="number" min={1} value={couponForm.maxUses} onChange={(e) => setCouponForm({ ...couponForm, maxUses: e.target.value })} placeholder="أقصى استخدام" className={inputCls} />
               <input type="date" value={couponForm.expiresAt} onChange={(e) => setCouponForm({ ...couponForm, expiresAt: e.target.value })} className={inputCls} />
             </div>
-            <button disabled={busy || couponForm.code.length < 3 || (!couponForm.percentOff && !couponForm.amountOff)}
+            <Button tone="primary" disabled={busy || couponForm.code.length < 3 || (!couponForm.percentOff && !couponForm.amountOff)}
               onClick={() => act(async () => {
                 await apiPost("/api/admin/coupons", {
                   code: couponForm.code,
@@ -412,10 +405,9 @@ export default function Finance() {
                   expiresAt: couponForm.expiresAt ? new Date(couponForm.expiresAt) : undefined,
                 });
                 setCouponForm({ code: "", percentOff: "", amountOff: "", maxUses: "", expiresAt: "" });
-              }, "أُنشئ الكوبون")}
-              className="mt-3 cursor-pointer rounded-full bg-gold px-5 py-2 text-xs font-black text-on-gold disabled:opacity-40">
+              }, "أُنشئ الكوبون")} className="mt-3">
               أنشئ الكوبون
-            </button>
+            </Button>
             <ul className="mt-4 space-y-2">
               {coupons.map((c) => (
                 <Inset as="li" key={c.id} className="flex items-center gap-3 px-3 py-2 text-xs">
@@ -437,7 +429,7 @@ export default function Finance() {
               <input type="number" min={1} value={planForm.intervalMonths} onChange={(e) => setPlanForm({ ...planForm, intervalMonths: e.target.value })} placeholder="كل كم شهر" className={inputCls} />
               <input value={planForm.features} onChange={(e) => setPlanForm({ ...planForm, features: e.target.value })} placeholder="مزايا مفصولة بفاصلة" className={`${inputCls} sm:col-span-2`} />
             </div>
-            <button disabled={busy || planForm.code.length < 2 || planForm.nameAr.length < 3 || !planForm.price}
+            <Button tone="primary" disabled={busy || planForm.code.length < 2 || planForm.nameAr.length < 3 || !planForm.price}
               onClick={() => act(async () => {
                 await apiPost("/api/admin/subscription-plans", {
                   code: planForm.code, nameAr: planForm.nameAr, price: Number(planForm.price),
@@ -445,10 +437,9 @@ export default function Finance() {
                   features: planForm.features ? planForm.features.split(/[،,]/).map((f) => f.trim()).filter(Boolean) : undefined,
                 });
                 setPlanForm({ code: "", nameAr: "", price: "", intervalMonths: "1", features: "" });
-              }, "أُنشئت الخطة وأصبحت عامة فورا")}
-              className="mt-3 cursor-pointer rounded-full bg-gold px-5 py-2 text-xs font-black text-on-gold disabled:opacity-40">
+              }, "أُنشئت الخطة وأصبحت عامة فورا")} className="mt-3">
               أنشئ الخطة
-            </button>
+            </Button>
             <p className="mt-3 flex items-center gap-1.5 text-micro text-muted-foreground">
               <FileText className="h-3 w-3" /> الخطط الفعالة تظهر للعامة عبر /api/public/subscription-plans
             </p>
