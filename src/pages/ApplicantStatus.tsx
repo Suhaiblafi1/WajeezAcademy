@@ -8,7 +8,8 @@ import SeoHead from "@/components/SeoHead";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { readRoles, signOut } from "@/services/auth";
 import { fmtDate } from "@/application/text/format-ar";
-import { APPLICANT_STATUS, WITHDRAWABLE_STATUSES, contactChannelLabel } from "@/application/trainer/application-options";
+import { APPLICANT_STATUS, BOOKABLE_STATUSES, WITHDRAWABLE_STATUSES, contactChannelLabel } from "@/application/trainer/application-options";
+import BookInterview from "@/components/BookInterview";
 
 /* بوّابةُ المتقدّم للتدريب — صفحةٌ واحدة تقول له أين طلبه.
 
@@ -165,6 +166,18 @@ export default function ApplicantStatus() {
                 </Link>
               )}
             </section>
+
+            {/* الحجزُ يبقى في متناوله ما دام الطلبُ قبل القرار.
+
+                رآه مرّةً في «وصل طلبك» ثمّ أغلق الصفحة. ولو لم يُعرض هنا لَما
+                وجد إليه سبيلا بعدها — ورابطٌ يُرى مرّةً ثمّ يختفي كأنّه لم يكن.
+
+                ولا يُعرض بعد القرار: من قُبل صار مدرّبا، ومن رُدّ لا يُدعى إلى
+                مقابلة. والمسوّدةُ وانتظارُ توثيق البريد قبلَ ذلك — يُكمل طلبَه
+                أوّلا فلا يحجز موعدا لطلبٍ لم يصل. */}
+            {BOOKABLE_STATUSES.includes(mine.status) && (
+              <BookInterview name={mine.fullName} email={mine.email} reference={mine.reference} />
+            )}
 
             {/* البريد والتواصل */}
             <section className="grid gap-3 sm:grid-cols-2">
