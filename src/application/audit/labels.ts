@@ -65,6 +65,8 @@ const PHRASES: Record<string, string> = {
   'trainer.application.submit': 'تقديمُ طلبِ انضمامٍ للتدريب',
   'trainer.invitation.create': 'دعوةُ مدرّبٍ لإنشاء حسابه',
   'trainer.approved.notify': 'إشعارُ مدرّبٍ باعتماده',
+  'trainer.create_direct': 'تعيينُ مدرّبٍ داخليّا — بلا نموذجِ تقدّم',
+  'advisor.case.create_own': 'إدخالُ المستشارِ عميلا وفتحُ حالته',
   'trainer.qualify': 'تأهيلُ مدرّبٍ لدورة',
   'trainer.suspend': 'إيقافُ مدرّب',
   'trainer.reinstate': 'رفعُ إيقافٍ عن مدرّب',

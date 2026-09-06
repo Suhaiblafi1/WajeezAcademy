@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast, toastError } from "@/components/Toast";
 import {
-  CalendarClock, CheckCircle2, ChevronLeft, ClipboardList, Loader2, MessageSquarePlus,
-  PhoneCall, Send, ServerOff, StickyNote, UserRound, GraduationCap, BadgePercent,
+  CalendarClock, CheckCircle2, ChevronLeft, ClipboardList, FileText, Loader2, MessageSquarePlus,
+  PhoneCall, Plus, Send, ServerOff, StickyNote, UserRound, GraduationCap, BadgePercent,
 } from "lucide-react";
 import AdvisorLayout from "./AdvisorLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
@@ -78,6 +78,10 @@ export default function AdvisorCases() {
   /* نتيجةُ المتابعة تُكتب في نافذة المنصّة: كانت `window.prompt("نتيجة
      المتابعة؟")` — سؤالٌ بلا سياقٍ في حوارٍ يملك المتصفّحُ كتمَه. */
   const [closingFollowUp, setClosingFollowUp] = useState<{ id: string; whenAr: string } | null>(null);
+  const [openingCv, setOpeningCv] = useState<string | null>(null);
+  /* إدخالُ عميلٍ قابله المستشارُ خارج المنصّة (البند ٢٥) */
+  const [newOpen, setNewOpen] = useState(false);
+  const [newForm, setNewForm] = useState({ fullName: "", email: "", phone: "", note: "" });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -98,6 +102,19 @@ export default function AdvisorCases() {
       setDetail(await apiGet<CaseDetail>(`/api/advisor/cases/${id}`));
     } catch (err) {
       toastError(err instanceof ApiError ? err.message : "تعذر فتح الحالة");
+    }
+  };
+
+  /* فتحُ سيرةٍ برابطٍ موقَّع — يُطلَب عند النقر، ويُسجَّل عند طلبه */
+  const openCv = async (cvId: string) => {
+    setOpeningCv(cvId);
+    try {
+      const { url } = await apiGet<{ url: string }>(`/api/cv/${cvId}/read-url`);
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      toastError(err instanceof ApiError ? err.message : "تعذّر فتح السيرة");
+    } finally {
+      setOpeningCv(null);
     }
   };
 
@@ -144,12 +161,34 @@ export default function AdvisorCases() {
             <p className="mt-3 rounded-xl bg-white/[0.04] p-3 text-xs leading-6 text-foreground">
               {snapshotSummary(detail.client?.learnerProfile?.diagnosticSnapshot ?? detail.diagnosticSnapshot)}
             </p>
+            {/* ── سيرةُ العميل: تُقرأ لا تُعدّ ──
+
+                كانت أسماءُ السير تُعرض ولا شيءَ يفتحها: `cv.view` ممنوحةٌ
+                للمستشار، والخادمُ يأذن صراحةً «للمستشار المُسنَد» في
+                `/api/cv/:id/read-url` — والبابُ الوحيدُ الذي يبلغه لم يكن
+                مرسوما في أيّ شاشة. فكان يقرأ اسمَ ملفٍّ لا يستطيع فتحه.
+
+                والرابطُ يُطلَب عند النقر لا عند العرض: هو موقَّعٌ بمهلة،
+                وكلُّ طلبٍ له يُسجَّل في الأثر — فلا تُسجَّل فتحةٌ لم تقع. */}
             {(detail.client?.cvSubmissions ?? []).length > 0 && (
               <div className="mt-3">
                 <h3 className={LBL}>السير الذاتية النشطة</h3>
-                {(detail.client?.cvSubmissions ?? []).map((cv) => (
-                  <p key={cv.id} className="text-xs text-foreground">{cv.originalName} — {fmt(cv.createdAt)}</p>
-                ))}
+                <ul className="space-y-1.5">
+                  {(detail.client?.cvSubmissions ?? []).map((cv) => (
+                    <li key={cv.id} className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="min-w-0 text-xs text-foreground">{cv.originalName} — {fmt(cv.createdAt)}</span>
+                      <button
+                        onClick={() => void openCv(cv.id)}
+                        disabled={openingCv === cv.id}
+                        className="flex shrink-0 cursor-pointer items-center gap-1 rounded-full border border-teal/35 px-3 py-1 text-[11px] font-bold text-teal-light-ink transition hover:border-teal disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {openingCv === cv.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileText className="h-3 w-3" />}
+                        افتحها
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-1.5 text-micro leading-5 text-muted-foreground">كلُّ فتحةٍ تُسجَّل في سجلّ الأثر باسمك.</p>
               </div>
             )}
           </section>
@@ -296,7 +335,72 @@ export default function AdvisorCases() {
             {v}
           </button>
         ))}
+        <button onClick={() => setNewOpen((v) => !v)}
+          className="me-auto flex cursor-pointer items-center gap-1.5 rounded-full border border-teal/40 bg-teal/10 px-4 py-1.5 text-xs font-black text-teal-light-ink transition hover:border-teal">
+          <Plus className="h-3.5 w-3.5" /> {newOpen ? "أغلق" : "أدخِل عميلا"}
+        </button>
       </div>
+
+      {/* ── من قابلتَه خارج المنصّة ──
+
+          كانت الحالاتُ تولد من متعلّمٍ **مسجَّلٍ أنهى التشخيص** ثمّ يُسنِدها
+          إداريّ، ولا مسارَ غيرُه. فمن قابلَ عميلا في معرضٍ أو مكالمةٍ لم يجد
+          موضعا يُدخله فيه: ينتظر أن يأتيَ الرجلُ ويُشخّص، ثمّ ينتظر إداريّا.
+          والحالةُ التي تُدخلها تُسنَد إليك في الفعل نفسِه. */}
+      {newOpen && (
+        <form
+          className="mb-5 rounded-2xl border border-teal/25 bg-teal/[0.04] p-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const fullName = newForm.fullName.trim();
+            const email = newForm.email.trim();
+            const phone = newForm.phone.trim();
+            if (fullName.length < 2 || (!email && !phone)) return;
+            void act(async () => {
+              await apiPost("/api/advisor/cases", {
+                fullName,
+                ...(email ? { email } : {}),
+                ...(phone ? { phone } : {}),
+                ...(newForm.note.trim() ? { note: newForm.note.trim() } : {}),
+              });
+              setNewForm({ fullName: "", email: "", phone: "", note: "" });
+              setNewOpen(false);
+            }, "فُتحت الحالة وأُسندت إليك");
+          }}
+        >
+          <p className="text-[11.5px] leading-6 text-muted-foreground">
+            بريدٌ أو هاتفٌ على الأقلّ — <b className="text-foreground">حالةٌ بلا سبيلٍ إلى صاحبها لا تُفتح</b>.
+            ولا تشخيصَ يُنسب إليه قبل أن يُقاس.
+          </p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-3">
+            <label className="block">
+              <span className={LBL}>الاسم الكامل</span>
+              <input required minLength={2} maxLength={120} className={INPUT}
+                value={newForm.fullName} onChange={(e) => setNewForm((f) => ({ ...f, fullName: e.target.value }))} />
+            </label>
+            <label className="block">
+              <span className={LBL}>البريد</span>
+              <input type="email" dir="ltr" className={`${INPUT} text-right`}
+                value={newForm.email} onChange={(e) => setNewForm((f) => ({ ...f, email: e.target.value }))} />
+            </label>
+            <label className="block">
+              <span className={LBL}>الهاتف</span>
+              <input dir="ltr" maxLength={30} className={`${INPUT} text-right`}
+                value={newForm.phone} onChange={(e) => setNewForm((f) => ({ ...f, phone: e.target.value }))} />
+            </label>
+          </div>
+          <label className="mt-3 block">
+            <span className={LBL}>ملاحظةُ أوّلِ لقاء (اختياريّة) — تُحفظ ملاحظةً داخليّة</span>
+            <textarea rows={2} maxLength={2000} className={INPUT}
+              value={newForm.note} onChange={(e) => setNewForm((f) => ({ ...f, note: e.target.value }))} />
+          </label>
+          <button type="submit"
+            disabled={newForm.fullName.trim().length < 2 || (!newForm.email.trim() && !newForm.phone.trim())}
+            className="mt-3 flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-5 py-2 text-xs font-black text-on-teal transition hover:bg-teal-light disabled:cursor-not-allowed disabled:opacity-40">
+            <Plus className="h-3.5 w-3.5" /> افتح الحالة
+          </button>
+        </form>
+      )}
 
 
       {loading ? (
@@ -305,7 +409,7 @@ export default function AdvisorCases() {
         <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center">
           <ClipboardList className="h-12 w-12 text-muted-foreground/50" />
           <h2 className="mt-4 text-xl font-black">لا حالات مسندة هنا</h2>
-          <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">حين يُسند إليك عميل من لوحة الأدمن (الاستثناءات) سيظهر هنا فورا.</p>
+          <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">حين تُسنَد إليك حالةٌ من لوحة الإدارة تظهر هنا فورا — ويصلك جرسُها. أو <b className="text-foreground">أدخِل عميلا قابلتَه</b> بنفسك من الزرّ أعلاه.</p>
         </div>
       ) : statusFilter ? (
         /* تصفيةٌ صريحة: قائمةٌ مسطّحة أنفعُ من قِمعٍ بعمودٍ واحد */

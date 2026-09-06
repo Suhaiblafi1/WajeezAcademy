@@ -21,7 +21,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   BadgeCheck, CheckCircle2, Clock, GraduationCap, Loader2, Search,
-  ServerOff, ShieldAlert, UserCheck, Users, XCircle,
+  ServerOff, ShieldAlert, UserCheck, UserPlus, Users, XCircle,
 } from "lucide-react";
 import { toast, toastError } from "@/components/Toast";
 import { apiGet, apiPost, ApiError } from "@/services/api";
@@ -29,6 +29,7 @@ import { controlCls } from "@/components/FormKit";
 import { matchesQuery } from "@/application/text/search-ar";
 import { fmtDateTime } from "@/application/text/format-ar";
 import ConfirmAction from "@/components/ConfirmAction";
+import { useRealSession } from "@/services/session";
 
 interface OpsQualification { courseId: string; courseTitle: string; status: string }
 interface OpsAssignment {
@@ -77,6 +78,13 @@ export default function TrainerRunOps() {
   const [note, setNote] = useState<Record<string, string>>({});
   const [pick, setPick] = useState<Record<string, { courseId: string; cohortId: string }>>({});
   const [suspendTarget, setSuspendTarget] = useState<OpsTrainer | null>(null);
+  /* تعيينُ مدرّبٍ داخليّا — ثلاثةُ حقولٍ ونقرة (البند ٢٢) */
+  const { user: sessionUser } = useRealSession();
+  const canAddTrainer =
+    (sessionUser?.permissions.includes("admin.users.manage") ?? false) &&
+    (sessionUser?.permissions.includes("trainer.applications.decide") ?? false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [addForm, setAddForm] = useState({ fullName: "", email: "", headline: "" });
 
   const load = useCallback(async () => {
     try {
@@ -210,22 +218,110 @@ export default function TrainerRunOps() {
           <h3 className="flex items-center gap-2 text-sm font-black">
             <Users className="h-4 w-4 text-teal-light-ink" /> المدرّبون ({shown.length})
           </h3>
-          <label className="relative">
-            <Search className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <input
-              value={q} onChange={(e) => setQ(e.target.value)} placeholder="ابحث باسمٍ أو بريد"
-              aria-label="ابحث في المدرّبين"
-              className={`${controlCls} w-64 pr-9`}
-            />
-          </label>
+          <div className="flex flex-wrap items-center gap-3">
+            {canAddTrainer && (
+              <button
+                onClick={() => setAddOpen((v) => !v)}
+                className="flex cursor-pointer items-center gap-1.5 rounded-full border border-teal/40 bg-teal/10 px-4 py-2 text-xs font-black text-teal-light-ink transition hover:border-teal"
+              >
+                <UserPlus className="h-3.5 w-3.5" /> {addOpen ? "أغلق" : "أضف مدرّبا"}
+              </button>
+            )}
+            <label className="relative">
+              <Search className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <input
+                value={q} onChange={(e) => setQ(e.target.value)} placeholder="ابحث باسمٍ أو بريد"
+                aria-label="ابحث في المدرّبين"
+                className={`${controlCls} w-64 pr-9`}
+              />
+            </label>
+          </div>
         </div>
+
+        {/* ── تعيينُ مدرّبٍ داخليّا ──
+
+            لم يكن للمدير طريقٌ إلى هذا أصلا: ملفُّ المدرّب لا يُنشأ إلّا من
+            البتّ في طلبٍ عامّ، فمن أراد تعيينَ زميلٍ أو متعاقدٍ من خارج
+            الطابور كان يملأ له النموذجَ العامّ بنفسه — أو يُنشئ حسابا بدور
+            «مدرّب» فيصطدم صاحبُه بجدارِ «بلا ملفّ مدرّب». */}
+        {addOpen && canAddTrainer && (
+          <form
+            className="mt-3 rounded-2xl border border-teal/25 bg-teal/[0.04] p-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const fullName = addForm.fullName.trim();
+              const email = addForm.email.trim();
+              if (fullName.length < 2 || !email) return;
+              /* الرسالةُ من الخادم لا من الشاشة: هو وحدَه يعلم أوصلت الدعوةُ
+                 أم أنّ قناةَ البريد مغلقة — و«أُرسلت» كاذبةً أسوأُ من صمت. */
+              void (async () => {
+                setBusy("add-trainer");
+                try {
+                  const res = await apiPost<{ noteAr: string }>("/api/admin/trainers/direct", {
+                    fullName, email, headline: addForm.headline.trim() || undefined,
+                  });
+                  setAddForm({ fullName: "", email: "", headline: "" });
+                  setAddOpen(false);
+                  toast(res.noteAr);
+                  await load();
+                } catch (err) {
+                  toastError(err instanceof ApiError ? err.message : "تعذّر تعيين المدرّب");
+                } finally {
+                  setBusy("");
+                }
+              })();
+            }}
+          >
+            <p className="text-[11.5px] leading-6 text-muted-foreground">
+              يُنشأ في خطوةٍ واحدة: <b className="text-foreground">حسابُه</b> و<b className="text-foreground">ملفُّ مدرّبٍ نشط</b> و<b className="text-foreground">دورُه</b> —
+              فيُؤهَّل ويُسنَد من هذه الشاشة مباشرة. ولا يظهر للعامّة حتّى تُعتمد صورتُه ونبذتُه.
+            </p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-3">
+              <label className="block">
+                <span className="mb-1 block text-[11px] font-bold text-muted-foreground">الاسم الكامل</span>
+                <input
+                  required minLength={2} maxLength={120}
+                  value={addForm.fullName}
+                  onChange={(e) => setAddForm((f) => ({ ...f, fullName: e.target.value }))}
+                  className={`${controlCls} w-full`}
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-[11px] font-bold text-muted-foreground">البريد</span>
+                <input
+                  required type="email" dir="ltr"
+                  value={addForm.email}
+                  onChange={(e) => setAddForm((f) => ({ ...f, email: e.target.value }))}
+                  className={`${controlCls} w-full text-right`}
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-[11px] font-bold text-muted-foreground">المسمّى (اختياريّ)</span>
+                <input
+                  maxLength={160}
+                  value={addForm.headline}
+                  onChange={(e) => setAddForm((f) => ({ ...f, headline: e.target.value }))}
+                  className={`${controlCls} w-full`}
+                />
+              </label>
+            </div>
+            <button
+              type="submit"
+              disabled={busy === "add-trainer" || addForm.fullName.trim().length < 2 || !addForm.email.trim()}
+              className="mt-3 flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-5 py-2 text-xs font-black text-on-teal transition hover:bg-teal-light disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {busy === "add-trainer" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserPlus className="h-3.5 w-3.5" />}
+              عيّنه مدرّبا
+            </button>
+          </form>
+        )}
 
         {shown.length === 0 ? (
           <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.02] p-8 text-center">
             <GraduationCap className="mx-auto h-10 w-10 text-muted-foreground/50" />
             <p className="mt-3 text-sm font-black">لا مدرّبَ بعد</p>
             <p className="mt-1 text-[11.5px] leading-6 text-muted-foreground">
-              يظهر هنا كلُّ من أُنشئ له ملفُّ مدرّب — أي من اعتُمد من تبويب «الطلبات».
+              يظهر هنا كلُّ من أُنشئ له ملفُّ مدرّب — من اعتُمد من تبويب «الطلبات»، أو عُيّن هنا مباشرة.
             </p>
           </div>
         ) : (

@@ -4,6 +4,7 @@
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
+import { safeNotify } from './notification.service'
 
 export const CASE_STATUSES = [
   'new', 'contacted', 'needs_review', 'follow_up', 'recommended', 'enrolled', 'not_interested', 'closed',
@@ -107,6 +108,23 @@ export class AdvisorService {
       data: { caseId, advisorId, assignedBy: actorId },
     })
     await recordAudit(this.prisma, { actorId, action: 'advisor.case.assign', entityType: 'advisor_case', entityId: caseId, meta: { advisorId } })
+    /* ── ولا يُسنَد أحدٌ في صمت ──
+
+       كان الإسنادُ لا يكتب إشعارا، فيكتشف المستشارون الحالاتِ الجديدةَ
+       **بإعادة التحميل**. وهذا خبرُ عملٍ يترتّب عليه واجب — فلا يُكتَم،
+       وجمهورُه `staff` لأنّ بوّابةَ المستشار تقرأ جرسَها من هناك. */
+    const who = await this.prisma.advisorCase.findUnique({
+      where: { id: caseId },
+      select: { lead: { select: { fullName: true } }, client: { select: { displayName: true } } },
+    })
+    const clientName = who?.client?.displayName ?? who?.lead?.fullName ?? 'عميل جديد'
+    await safeNotify(this.prisma, {
+      userId: advisorId, channel: 'in_app', audience: 'staff',
+      templateKey: 'advisor.case.assigned',
+      title: 'أُسنِدت إليك حالةٌ جديدة',
+      body: `حالةُ «${clientName}» صارت في عهدتك — افتحها من «حالاتي» وابدأ بأوّل تواصل.`,
+      data: { caseId },
+    })
     return link
   }
 
@@ -116,6 +134,70 @@ export class AdvisorService {
       include: { lead: true, client: { select: { displayName: true, email: true } } },
       orderBy: { createdAt: 'asc' },
     })
+  }
+
+  /* ═══════════ المستشارُ يُدخل من قابله ═══════════
+
+     كانت الحالاتُ تولد من **متعلّمٍ مسجَّلٍ أنهى التشخيص** ثمّ يُسنِدها
+     إداريّ — ولا مسارَ غيرُه إطلاقا. فالمستشارُ الذي قابل عميلا في معرضٍ أو
+     مكالمةٍ لا يستطيع إدخالَه: ينتظر أن يأتيَ الرجلُ إلى الموقع ويُنهي
+     تشخيصا، ثمّ ينتظر إداريّا يُسنِدَه إليه.
+
+     فهذا يُنشئ العميلَ المحتمَل وحالتَه **ويُسندها إليه في الفعل نفسِه** —
+     من أدخل من قابله هو صاحبُها؛ لا معنًى لطابورِ إسنادٍ لحالةٍ لها صاحب.
+
+     ── وحدّان يُقالان صراحةً ──
+
+     ١) **قناةُ وصولٍ واحدةٌ على الأقلّ** (بريدٌ أو هاتف): حالةٌ بلا سبيلٍ
+        إلى صاحبها ليست حالةً بل سطرا.
+     ٢) **ولا تشخيصَ يُدَّعى**: `diagnosticSnapshot` تبقى فارغةً — ما لم
+        يُقَس لا يُكتب، وشاشةُ الحالة تعرض «لا تشخيصَ بعد» فتُقرأ كما هي. */
+  async createOwnCase(advisorId: string, input: {
+    fullName: string; email?: string | null; phone?: string | null; note?: string | null
+  }) {
+    const fullName = input.fullName.trim()
+    const email = input.email?.trim().toLowerCase() || null
+    const phone = input.phone?.trim() || null
+    if (fullName.length < 2) throw new AuthError('bad_name', 'الاسم حرفان على الأقلّ', 400)
+    if (!email && !phone) {
+      throw new AuthError('no_contact', 'بريدٌ أو هاتف — حالةٌ بلا سبيلٍ إلى صاحبها لا تُفتح', 400)
+    }
+
+    /* لا حالتان مفتوحتان لعميلٍ واحد — ولو أدخله اثنان */
+    if (email) {
+      const open = await this.prisma.advisorCase.findFirst({
+        where: {
+          status: { notIn: ['closed', 'enrolled', 'not_interested'] },
+          OR: [{ lead: { email } }, { client: { email } }],
+        },
+        select: { id: true },
+      })
+      if (open) {
+        throw new AuthError('case_exists', 'لهذا البريد حالةٌ مفتوحةٌ بالفعل — افتحها بدل إنشاء ثانية', 409)
+      }
+    }
+
+    const created = await this.prisma.$transaction(async (tx) => {
+      /* حسابُ العميل إن كان له حسابٌ ببريده — فتُقرأ سيرتُه وتقدّمُه */
+      const client = email ? await tx.user.findUnique({ where: { email }, select: { id: true } }) : null
+      const lead = await tx.lead.create({
+        data: { fullName, email, phone, source: 'advisor', userId: client?.id ?? null },
+      })
+      const kase = await tx.advisorCase.create({
+        data: { leadId: lead.id, clientId: client?.id ?? null, nextAction: 'تواصل أول مع العميل' },
+      })
+      /* من أدخله هو صاحبُه — إسنادٌ في الفعل نفسِه لا طابورٌ ثانٍ */
+      await tx.advisorAssignment.create({ data: { caseId: kase.id, advisorId, assignedBy: advisorId } })
+      if (input.note?.trim()) {
+        await tx.advisorNote.create({ data: { caseId: kase.id, authorId: advisorId, body: input.note.trim() } })
+      }
+      await recordAudit(tx, {
+        actorId: advisorId, action: 'advisor.case.create_own', entityType: 'advisor_case', entityId: kase.id,
+        meta: { leadId: lead.id, hasAccount: Boolean(client) },
+      })
+      return kase
+    })
+    return created
   }
 
   /* ── بوابة المستشار — المسند إليه فقط ── */

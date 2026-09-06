@@ -75,12 +75,17 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
   {
     key: 'work',
     labelAr: 'عملي في الأكاديمية',
-    whatAr: 'مهمّةٌ كُلِّفتَ بها · طلبٌ ينتظر قرارك · تذكرةُ دعمٍ أو طلبُ انضمامٍ جديد',
+    whatAr: 'مهمّةٌ كُلِّفتَ بها · طلبٌ ينتظر قرارك · شعبةٌ أُسنِدت إليك · تذكرةُ دعمٍ أو طلبُ انضمامٍ جديد',
     silenceable: false,
     lockedWhyAr: 'تكليفٌ لا يعلم به صاحبُه ليس تكليفا — ولذلك لا يُكتَم عملُ الموظّف.',
     templateKeys: [
       'staff.task.assigned', 'staff.task.done', 'admin.support.ticket', 'admin.support_ticket',
       'admin.trainer_application', 'admin.learner_request', 'trainer.qualify.request',
+      /* التأهيلُ والإسنادُ خبرا عملٍ لا مجاملة: من أُسنِد إلى شعبةٍ عليه أن
+         يحضر، ومن أُهِّل لدورةٍ صار يُنتظَر منه تدريسُها. */
+      'trainer.qualified', 'trainer.qualify.rejected', 'trainer.assigned',
+      /* والمستشارُ مثلُه: حالةٌ أُسنِدت إليه عملٌ ينتظره، وكان يكتشفها بإعادة التحميل */
+      'advisor.case.assigned',
     ],
   },
 ]
