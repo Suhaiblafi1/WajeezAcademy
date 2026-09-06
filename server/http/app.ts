@@ -237,7 +237,7 @@ export async function buildApp(prisma: PrismaClient) {
     }
   })
 
-  registerAuthRoutes(app, auth)
+  registerAuthRoutes(app, auth, prisma)
   registerAdminUserRoutes(app, prisma, auth)
   registerAdminAdvisorRoutes(app, prisma)
   registerModuleAuthoringRoutes(app, prisma)

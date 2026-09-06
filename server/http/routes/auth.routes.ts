@@ -1,18 +1,34 @@
 /* مسارات المصادقة — تسجيل، دخول، خروج، استعادة كلمة مرور، هوية، إيقاف ذاتي */
 
 import type { FastifyInstance } from 'fastify'
+import type { PrismaClient } from '@prisma/client'
 import { z } from 'zod'
 import { AuthService } from '../../services/auth.service'
 import { SESSION_COOKIE, requireAuth } from '../auth-plugin'
 import { sendPasswordResetEmail, sendVerifyEmail } from '../../services/account-mail'
 import { assertNotBot } from '../honeypot'
-import { getPrisma } from '../../db/client'
 import { getEmailConfig } from '../../services/integrations.service'
 
 const email = z.string().trim().toLowerCase().email('صيغة البريد غير صحيحة')
 const password = z.string().min(8, 'كلمة المرور 8 أحرف على الأقل')
 
-export function registerAuthRoutes(app: FastifyInstance, auth: AuthService) {
+/* ═══ العميلُ يُمرَّر ولا يُلتقَط من المحيط ═══
+
+   كان هذا الملفُّ وحدَه في `server/http` ينادي العميلَ المحيطيَّ
+   (`db/client`) بدل عميل التطبيق الممرَّر إلى `buildApp`. والفرقُ بينهما ليس
+   أناقة: المحيطيُّ يقرأ `DATABASE_URL`، وهي **غيرُ مضبوطةٍ في جولة
+   الاختبار**، فيهبط إلى PostgreSQL المدمجة على قاعدة `wajeez` — وقاعدةُ
+   الاختبار `wajeez_test`. والترحيلاتُ تُنشَر على الثانية وحدَها.
+
+   فعلى جهازي مرّ: قاعدةُ `wajeez` تحمل الجداولَ من عملٍ سابق. وفي CI —
+   حيث `.pgdata/` تُبنى نظيفةً ولا تُخزَّن — القاعدةُ **بلا جدولٍ واحد**،
+   فيُرمى الاستعلامُ ويردّ `/api/auth/me` بـ500، فيقرأ الاختبارُ
+   `me.json().user` فيجده `undefined`. وهذا بعينه ما أسقط ثلاثةَ اختباراتٍ
+   في CI وهي خضراءُ محلّيّا في سبع جولات.
+
+   والقاعدةُ الآن صريحة: عميلُ التطبيق يُمرَّر، ويحرسها
+   `server/tests/http/app-prisma-only.test.ts`. */
+export function registerAuthRoutes(app: FastifyInstance, auth: AuthService, prisma: PrismaClient) {
   /* سقفُ المسار هنا حاجزُ غَمرٍ لا حاجزُ إساءة، كما في الدخول (المهمّة ١٧).
      كان **عشرةَ طلباتٍ لكلّ ٥ دقائق لكلّ شبكة** يعدُّ كلَّ طلب، فثلاثون
      متعلّما يُنشئون حساباتهم أوّلَ يومٍ يُرَدُّ حادي عشرُهم. وما كان يحرسه
@@ -38,7 +54,7 @@ export function registerAuthRoutes(app: FastifyInstance, auth: AuthService) {
        عند تعذّر الإرسال: الحساب أُنشئ فعلا، وردٌّ بخطأ يجعل المستخدم يظنّ أنه
        لم يُنشأ فيعيد المحاولة فيصطدم بـ«هذا البريد مسجل». */
     const issued = await auth.issueEmailVerification(userId)
-    const mail = issued ? await sendVerifyEmail(await getPrisma(), { to: issued.email, displayName: issued.displayName, token: issued.token }) : null
+    const mail = issued ? await sendVerifyEmail(prisma, { to: issued.email, displayName: issued.displayName, token: issued.token }) : null
     return reply.status(201).send({
       userId,
       message: 'أنشئ الحساب — يمكنك تسجيل الدخول الآن',
@@ -104,7 +120,7 @@ export function registerAuthRoutes(app: FastifyInstance, auth: AuthService) {
        أبدا — والردّ مع ذلك يقول «ستصلك رسالة». فمن نسي كلمته على الموقع الحيّ
        لم يكن له سبيل. الإرسال هنا هو الإصلاح، والنصّ في account-mail.ts. */
     if (tokenForDelivery) {
-      await sendPasswordResetEmail(await getPrisma(), { to: body.email, token: tokenForDelivery })
+      await sendPasswordResetEmail(prisma, { to: body.email, token: tokenForDelivery })
     }
     /* الردّ واحد سواء وُجد البريد أم لا وسواء نجح الإرسال أم لا: تفريقُه يكشف
        من له حساب عندنا لمن يجرّب العناوين. */
@@ -136,7 +152,7 @@ export function registerAuthRoutes(app: FastifyInstance, auth: AuthService) {
   }, async (req) => {
     const issued = await auth.issueEmailVerification(req.auth!.userId)
     if (!issued) return { status: 'already_verified', message: 'بريدك موثَّق أصلا' }
-    const mail = await sendVerifyEmail(await getPrisma(), { to: issued.email, displayName: issued.displayName, token: issued.token })
+    const mail = await sendVerifyEmail(prisma, { to: issued.email, displayName: issued.displayName, token: issued.token })
     /* الحالة تُعاد كما هي: «not_configured» تعني أن قناة البريد لم تُفعَّل بعد،
        وقولُ «أُرسل» حينها يجعل المستخدم ينتظر رسالة لا وجود لها. */
     if (mail.status === 'sent') return { status: 'sent', message: `أُرسل رابط التوثيق إلى ${issued.email}` }
@@ -176,7 +192,7 @@ export function registerAuthRoutes(app: FastifyInstance, auth: AuthService) {
     config: { rateLimit: { max: 3000, timeWindow: '1 minute' } },
     schema: { tags: ['auth'], summary: 'هوية الجلسة الحالية وصلاحياتها وحالةُ قناة البريد' },
   }, async (req) => {
-    const cfg = await getEmailConfig(await getPrisma())
+    const cfg = await getEmailConfig(prisma)
     return { user: req.auth, emailChannelEnabled: Boolean(cfg.enabled && cfg.apiKey && cfg.fromEmail) }
   })
 
