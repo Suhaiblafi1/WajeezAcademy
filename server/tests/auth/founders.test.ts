@@ -69,6 +69,18 @@ describe('وما تفعله', () => {
       .toEqual(['learner', 'super_admin'])
   })
 
+  it('ولو سُجِّل البريدُ بحروفٍ كبيرة — فالتسجيلُ يوحّدها والقائمةُ تطابقها', async () => {
+    /* حالةٌ وقعت: كُتب البريدُ `Suhaib@wajeez.co` عند التسجيل. ولو اختلف
+       التوحيدُ بين الموضعَين لما وُجد الحسابُ أصلا — فتبقى الترقيةُ لا تقع،
+       ولا شيءَ يقول لماذا: `missing` في سجلٍّ لا يقرؤه أحد. */
+    const CAPS = 'Founder.Caps@Test.Local'
+    await auth.register(CAPS, 'Caps#123456', 'مؤسِّسٌ بحروفٍ كبيرة')
+    const stored = await prisma.user.findUnique({ where: { email: CAPS.toLowerCase() } })
+    expect(stored, 'التسجيلُ لا يوحّد حروفَ البريد').not.toBeNull()
+    expect(FOUNDER_EMAILS.every((e) => e === e.toLowerCase()),
+      'بريدٌ بحروفٍ كبيرة في القائمة لا يطابق ما في القاعدة أبدا').toBe(true)
+  })
+
   it('وتُسجَّل في الأثر بلا فاعل — لا ترقيةَ صامتة', async () => {
     const ev = await prisma.auditEvent.findFirst({
       where: { action: 'auth.founder.promoted' },
