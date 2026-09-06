@@ -30,7 +30,9 @@
   Header always set X-Frame-Options "SAMEORIGIN"
   Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
 
-  # سياسة المحتوى — الملف الوحيد الذي يُقرأ فعلا على Cloudways.
+  # سياسة المحتوى. ⚠️ وهذا الملفُّ **لا يُقرأ على خادم الإنتاج**: هو ملفُّ
+  # Apache، وخادمُنا Caddy ولا يقرؤه بتاتا. المصدرُ العامل `deploy/Caddyfile`،
+  # وما هنا يبقى نسخةً موازيةً لمضيفٍ يقرؤه — فأبقِ الاثنين متطابقين.
   #
   # وworker-src معلنة صراحة بقصد: تركُها يجعل سفاري يرتدّ في سلسلة
   # (worker-src ← child-src ← script-src) معالجتُها معروفةٌ بثقوبها عنده،
