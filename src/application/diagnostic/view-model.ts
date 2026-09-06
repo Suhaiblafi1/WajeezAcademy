@@ -160,6 +160,13 @@ export function recommendationToDiagResult(
          كانت تُحسب وتُسجَّل في الأثر ولا تبلغ الشاشةَ التي تعرض الدرجة. */
       strong_blockers_ar:
         (rec as { v2?: { confidence?: { strongBlockers_ar?: string[] } } }).v2?.confidence?.strongBlockers_ar ?? [],
+      /* ── أساسُ الدرجة رقما لا عبارة ──
+
+         «قوية بما قِسناه» عبارةٌ قد يُهمَل قيدُها ويُقرأ صدرُها. والرقمان
+         لا يُهمَلان: **قِسنا كذا من كذا يمكن قياسُها، وبقي كذا مجهولا**.
+         فيرى المتعلّمُ حدَّ ما نعرفه عنه لا وصفَه. */
+      evidence_basis:
+        (rec as { v2?: { confidence?: { evidenceBasis?: unknown } } }).v2?.confidence?.evidenceBasis ?? null,
       reasons_ar: rec.reasons_ar,
       change_makers_ar: rec.change_makers_ar,
       unavailable_skills: rec.unavailable_skills,

@@ -67,6 +67,10 @@ export interface EntitySkillAssessment {
   measurableCoverage: number
   /** أبينَ مهاراتِ هذا الكيان مهارةٌ **قِيست مباشرةً**؟ */
   hasDirectSkillEvidence: boolean
+  /** كم مهارةً من مهارات الكيان **يملك البنكُ سؤالا يقيسها** */
+  measurableRequiredCount: number
+  /** وكم منها قِيست مباشرةً فعلا — الرقمان يُعرضان للمتعلّم كما هما */
+  measurableMeasuredCount: number
   gapScore: number | null
   gapSkillSlugs: string[]
   masteredSkillSlugs: string[]
@@ -121,6 +125,8 @@ export function assessEntitySkills(
     measuredCoverage,
     measurableCoverage,
     hasDirectSkillEvidence: measuredSlugs.size > 0,
+    measurableRequiredCount: measurableRequired.length,
+    measurableMeasuredCount: measurableRequired.filter((slug) => measuredSlugs.has(slug)).length,
     gapScore,
     gapSkillSlugs: gap,
     masteredSkillSlugs: mastered,

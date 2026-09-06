@@ -166,5 +166,10 @@ export function computeConfidenceV2(
     outputKind,
     outputKind_ar,
     strongBlockers_ar: blockers,
+    evidenceBasis: {
+      measured: top?.measurableMeasuredCount ?? 0,
+      measurable: top?.measurableRequiredCount ?? 0,
+      unknown: top?.unknownSkillSlugs.length ?? 0,
+    },
   }
 }

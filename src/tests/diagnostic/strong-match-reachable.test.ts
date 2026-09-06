@@ -151,4 +151,31 @@ describe('٣٤ · الرقمُ شيءٌ والدرجةُ شيءٌ آخر', () =>
     const engine = read('src/domain/diagnostic/v2_1/engine.ts')
     expect(engine).toContain('قوية بما قِسناه')
   })
+
+  /* القيدُ في العبارة قد يُهمَل ويُقرأ صدرُها؛ والرقمُ لا يُهمَل. فالأساسُ
+     يُعرض عددا: كم قِيست من كم يمكن قياسُها، وكم بقي مجهولا. */
+  it('والأساسُ يُعرض رقما لا عبارةً وحدَها', () => {
+    const entity = recommendationUniverse().byId.get('PW-STU-002')!
+    const canMeasure = measurableSkills()
+    const req = entity.skill_slugs.filter((s) => canMeasure.has(s))
+    const measured = new Map<string, SkillState>([[req[0], { slug: req[0], state: 'measured', level: 4 }]])
+    const a = assessEntitySkills(entity, measured, {})
+    expect(a.measurableRequiredCount).toBe(req.length)
+    expect(a.measurableMeasuredCount).toBe(1)
+    /* والترجيحُ لا يُحسب قياسا في هذا العدّ — وإلّا كذب الرقمُ الذي يراه */
+    const idx = familyIndex()
+    const ratings: Record<string, number> = {}
+    for (const slug of req) {
+      const fam = idx.familyOf.get(slug)
+      if (fam) ratings[fam] = 5
+    }
+    expect(assessEntitySkills(entity, measured, ratings).measurableMeasuredCount,
+      'الترجيحُ الذاتيُّ عُدَّ قياسا في الرقم المعروض').toBe(1)
+
+    const card = read('src/pages/diagnostic/ResultPlanCards.tsx')
+    expect(card).toContain('تسمح المنصّةُ بقياسها')
+    expect(card).toMatch(/basis\.measured/)
+    const vm = read('src/application/diagnostic/view-model.ts')
+    expect(vm).toContain('evidence_basis')
+  })
 })

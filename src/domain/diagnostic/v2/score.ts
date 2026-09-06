@@ -110,6 +110,9 @@ export function scoreEligiblePathways(
       measuredSkillCoverage: skills.measuredCoverage,
       measurableSkillCoverage: skills.measurableCoverage,
       hasDirectSkillEvidence: skills.measured.length > 0,
+      measurableRequiredCount: skills.measurableRequired.length,
+      measurableMeasuredCount: skills.measured.filter((m) =>
+        skills.measurableRequired.some((r) => r.slug === m.slug)).length,
       gapSkillSlugs: skills.gap.map((g) => g.slug),
       masteredSkillSlugs: skills.mastered.map((m) => m.slug),
       unknownSkillSlugs: skills.unknown.map((u) => u.slug),

@@ -313,6 +313,7 @@ export function WhyThisPathway({
   confidence,
   bandAr,
   blockers = [],
+  basis = null,
   changeMakers,
   gapNote,
 }: {
@@ -321,6 +322,8 @@ export function WhyThisPathway({
   bandAr: string | null;
   /** لماذا لم تعلُ الدرجة — يُعرض مع الدرجة لا يُترك للتخمين */
   blockers?: string[];
+  /** أساسُ الدرجة رقما: المقيسُ من الممكن قياسُه، وما بقي مجهولا */
+  basis?: { measured: number; measurable: number; unknown: number } | null;
   changeMakers: string[];
   /** أثر معايرة الجوانب حين لا تستحق قائمة مستقلة — تفسير لا تكرار */
   gapNote?: string | null;
@@ -397,6 +400,20 @@ export function WhyThisPathway({
               ) : (
                 <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
                   لا مانعَ قائم — قِسنا ما تسمح المنصّة بقياسه، والباقي يبقى مجهولا لا مفترَضا.
+                </p>
+              )}
+              {/* ── الأساسُ رقما لا عبارة ──
+
+                  «قوية بما قِسناه» قيدٌ قد يُهمَل ويُقرأ صدرُها وحدَه. والرقمان
+                  لا يُهمَلان: كم مهارةً قِيست من كم يمكن قياسُها، وكم بقي
+                  مجهولا. فيقرأ المتعلّمُ **حدَّ ما نعرفه عنه** لا وصفَه. */}
+              {basis && basis.measurable > 0 && (
+                <p className="mt-2 border-t border-white/8 pt-2 text-[11px] leading-5 text-muted-foreground">
+                  قِسنا <b className="text-foreground">{basis.measured}</b> من{" "}
+                  <b className="text-foreground">{basis.measurable}</b> مهارةٍ تسمح المنصّةُ بقياسها في هذا المسار
+                  {basis.unknown > 0 && (
+                    <> — و<b className="text-foreground">{basis.unknown}</b> من مهاراته تبقى مجهولةً عندنا</>
+                  )}.
                 </p>
               )}
             </div>

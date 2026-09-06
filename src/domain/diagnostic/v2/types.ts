@@ -120,6 +120,10 @@ export interface V2Candidate {
   /** هل بين المقيس مهارةٌ **مقيسةٌ مباشرةً** لا مستدَلّةٌ من عائلتها؟
       شرطُ فتح الدرجة العليا: الترجيحُ يرفع التغطية ولا يفتح ادّعاءَ المعرفة. */
   hasDirectSkillEvidence: boolean
+  /** كم مهارةً من مهارات المسار يملك البنكُ سؤالا يقيسها */
+  measurableRequiredCount: number
+  /** وكم منها قِيست مباشرةً فعلا */
+  measurableMeasuredCount: number
   /** مهارات مقاسة دون المستوى المستهدف — مقاسة فقط، لا مفترضة */
   gapSkillSlugs: string[]
   masteredSkillSlugs: string[]
@@ -152,6 +156,9 @@ export interface ConfidenceV2 {
   outputKind_ar: string
   /** لماذا لم تكن التوصية قوية — للتفسير */
   strongBlockers_ar: string[]
+  /** أساسُ الدرجة رقما: كم مهارةً قِيست من كم يمكن قياسُها، وكم بقي مجهولا.
+      العبارةُ قد يُهمَل قيدُها؛ والرقمُ لا يُهمَل. */
+  evidenceBasis: { measured: number; measurable: number; unknown: number }
 }
 
 /* ─── التفسير الكامل ─── */

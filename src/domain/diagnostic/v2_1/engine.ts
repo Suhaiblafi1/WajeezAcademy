@@ -1613,6 +1613,8 @@ function toV2Candidate(c: EntityCandidate): V2Candidate {
     measuredSkillCoverage: c.skills.measuredCoverage,
     measurableSkillCoverage: c.skills.measurableCoverage,
     hasDirectSkillEvidence: c.skills.hasDirectSkillEvidence,
+    measurableRequiredCount: c.skills.measurableRequiredCount,
+    measurableMeasuredCount: c.skills.measurableMeasuredCount,
     gapSkillSlugs: c.skills.gapSkillSlugs,
     masteredSkillSlugs: c.skills.masteredSkillSlugs,
     unknownSkillSlugs: c.skills.unknownSkillSlugs,

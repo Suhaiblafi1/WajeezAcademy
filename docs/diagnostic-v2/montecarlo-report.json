@@ -1,46 +1,46 @@
 {
   "seed": 20260816,
-  "sessions": 6000,
+  "sessions": 4000,
   "questions": {
-    "avg": 10.45,
+    "avg": 10.42,
     "median": 10,
     "max": 14
   },
-  "advisorReferralRate": 0.2508,
+  "advisorReferralRate": 0.2455,
   "pathwayDistribution": {
-    "PW-FND-003": 0.3243,
-    "PW-STU-003": 0.215,
-    "PW-BIZ-001": 0.0887,
-    "PW-HR-001": 0.0555,
-    "PW-STU-002": 0.04,
-    "PW-EMP-005": 0.0132,
+    "PW-FND-003": 0.3287,
+    "PW-STU-003": 0.2182,
+    "PW-BIZ-001": 0.0865,
+    "PW-HR-001": 0.056,
+    "PW-STU-002": 0.0382,
+    "PW-EMP-005": 0.0143,
     "PW-GOV-002": 0.0125
   },
   "pathwayTop3Distribution": {
-    "PW-FND-003": 0.3368,
-    "PW-BIZ-001": 0.308,
-    "PW-STU-003": 0.2573,
-    "PW-AUT-001": 0.171,
-    "PW-COM-001": 0.1422,
-    "PW-STU-002": 0.0865,
-    "PW-HR-001": 0.0687,
-    "PW-NEG-001": 0.0687,
-    "PW-CYB-001": 0.0668,
-    "PW-EMP-005": 0.0332,
+    "PW-FND-003": 0.34,
+    "PW-BIZ-001": 0.311,
+    "PW-STU-003": 0.26,
+    "PW-AUT-001": 0.1777,
+    "PW-COM-001": 0.141,
+    "PW-STU-002": 0.0848,
+    "PW-HR-001": 0.0703,
+    "PW-NEG-001": 0.0703,
+    "PW-CYB-001": 0.0658,
+    "PW-EMP-005": 0.0335,
     "PW-GOV-002": 0.0125,
-    "PW-EMP-004": 0.0085
+    "PW-EMP-004": 0.0083
   },
   "domainDistribution": {
-    "ai_productivity": 0.3182,
-    "career_direction": 0.2777,
-    "entrepreneurship": 0.1493,
-    "employment_readiness": 0.1107,
-    "communication_influence": 0.0785,
-    "family_parenting": 0.0657
+    "ai_productivity": 0.323,
+    "career_direction": 0.2775,
+    "entrepreneurship": 0.1415,
+    "employment_readiness": 0.1118,
+    "communication_influence": 0.0808,
+    "family_parenting": 0.0655
   },
   "outputKindDistribution": {
-    "best_current_match": 0.9365,
-    "strong_match": 0.0157,
+    "best_current_match": 0.935,
+    "strong_match": 0.0173,
     "exploratory_direction": 0.0478
   },
   "invariants": {
